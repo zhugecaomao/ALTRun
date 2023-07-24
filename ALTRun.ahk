@@ -1,20 +1,7 @@
-﻿/*=============================================================
-# ALTRun
-ALTRun - An effective launcher for Windows, open source project
-Similar to RunZ(AutoHotkey) and ALTRun(Pascal).
-
-1. Pure portable software, will not write anything into Registry.
-2. Small size (< 2MB) and low resource usage (< 10MB RAM). 
-3. Highly customizable with GUI (Main Window, Options, Command Manager)
-2. Listary Quick Switch Dir function added
-3. AppControl func added, eg. Press middle mouse button to open PT Tools
-
-# GUI
-![GUI](https://github.com/zhugecaomao/ALTRun/releases)
-
-# [Download](https://github.com/zhugecaomao/ALTRun/releases)
-===============================================================
-*/
+;==============================================================
+; ALTRun - An effective launcher for Windows.
+; https://github.com/zhugecaomao/ALTRun
+;==============================================================
 #Requires AutoHotkey v1.1
 #NoEnv                                                                  ; Recommended for performance and compatibility.
 #Warn All, StdOut ; OutputDebug / MsgBox                                ; Enable warnings to assist with detecting common errors.
