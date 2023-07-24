@@ -1,5 +1,6 @@
 # ALTRun
-ALTRun - An effective launcher for Windows, open source project
+ALTRun - An effective launcher for Windows, an open source project.
+
 Similar to RunZ(AutoHotkey) and ALTRun(Pascal).
 
 1. Pure portable software, will not write anything into Registry.
@@ -17,4 +18,5 @@ Similar to RunZ(AutoHotkey) and ALTRun(Pascal).
 # Release
 
 You may download the exe file if you do not have AutoHotkey installed on your PC.
+
 [Download](https://github.com/zhugecaomao/ALTRun/releases)
