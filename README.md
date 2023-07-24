@@ -9,7 +9,12 @@ Similar to RunZ(AutoHotkey) and ALTRun(Pascal).
 3. AppControl function added
 
 # Screenshot
-![Screenshot_1](https://github.com/zhugecaomao/ALTRun/assets/11486126/b64b7756-4d04-4895-866a-44f3e260cb2a)
+
+![Screenshot_1](https://github.com/zhugecaomao/ALTRun/assets/11486126/8a2da4d7-5fde-4669-bec2-0a264d6a1484)
+
 ![Screenshot_2](https://github.com/zhugecaomao/ALTRun/assets/11486126/972be68f-cacb-4ac4-902b-db16a88ecefa)
 
-# [Download](https://github.com/zhugecaomao/ALTRun/releases)
+# Release
+
+You may download the exe file if you do not have AutoHotkey installed on your PC.
+[Download](https://github.com/zhugecaomao/ALTRun/releases)
