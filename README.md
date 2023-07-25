@@ -11,9 +11,13 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 
 # Screenshot
 
-![Screenshot_1](https://github.com/zhugecaomao/ALTRun/assets/11486126/8a2da4d7-5fde-4669-bec2-0a264d6a1484)
+![Screenshot_1](https://github.com/zhugecaomao/ALTRun/assets/11486126/db441712-cc6e-4787-8115-164395843fa8)
 
-![Screenshot_2](https://github.com/zhugecaomao/ALTRun/assets/11486126/972be68f-cacb-4ac4-902b-db16a88ecefa)
+![Screenshot_2](https://github.com/zhugecaomao/ALTRun/assets/11486126/bf5894a7-1223-405f-8ed4-c8f06bd2e6eb)
+
+![Screenshot_3](https://github.com/zhugecaomao/ALTRun/assets/11486126/256c13d6-5f8a-44d0-8028-c854f8fc7a04)
+
+![Screenshot_4](https://github.com/zhugecaomao/ALTRun/assets/11486126/24efb0d1-cd5f-4a31-8e81-6fe93624692a)
 
 # Release
 
