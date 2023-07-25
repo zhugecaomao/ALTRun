@@ -76,7 +76,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_WinWidth := 900
 , g_EditHeight := 24
 , g_ListHeight := 260                       ; Command List Height
-, g_CtrlColor := "EBFFEB"
+, g_CtrlColor := "Default"
 , g_WinColor := "Default"
 , g_BackgroundPicture := "Default"
 , g_BGPicture                               ; Real path of the BackgroundPicture
@@ -1263,8 +1263,8 @@ OpenPath(filePath)
 
     if (FileExist(g_TCPath))                                            ; 因为采用系统相对路径的文件夹用FileExist(filePath)检测不到,so need to use UseErrorLevel or Try
     {
-        T := g_TCNewTab ? "/T" : ""                                     ; Open in new Tab
-        Run, "%g_TCPath%" /O %T% /S /L="%Path%",, UseErrorLevel         ; /S switch TC /L as Source, /R as Target. /O: If TC is running, active it. /T: open in new tab
+        T := g_TCNewTab ? "/T" : ""                                     ;  /T: open in new tab
+        Run, "%g_TCPath%" /O %T% /S /L="%Path%",, UseErrorLevel         ; /S switch TC /L as Source, /R as Target. /O: If TC is running, active it.
     }
     else
     {
@@ -1308,7 +1308,7 @@ WM_MOUSEMOVE(wParam, lParam)
     {
         static CurrControl := "", PrevControl := "", _TT := ""          ; _TT is kept blank for use by the ToolTip command below.
         CurrControl := A_GuiControl
-        if (CurrControl != PrevControl)                                 ; 显示各个控件的ToolTip
+        if (CurrControl != PrevControl)                                 ; ToolTip for each control
         {
             ToolTip                                                     ; Turn off any previous tooltip.
             Try                                                         ; Using try will guard "CurrControl" against all possible errors
@@ -1338,14 +1338,14 @@ WM_ACTIVATE(wParam, lParam)
     }
     else if (wParam <= 0)                                               ; 窗口非激活,这样有可能第一次显示主界面时,窗口失去焦点后不关闭
     {
-        if (WinExist(g_WinName) && !g_UseDisplay)                       ; 暂时没有好的解决方法,如果改用 SetTimer 调用,会导致用快捷键显示主窗口失败
+        if (WinExist(g_WinName) && !g_UseDisplay)
         {
             MainGuiClose()
         }
     }
 }
 
-UpdateSendTo(create := true)                                            ; the lnk in SendTo must be point to a exe
+UpdateSendTo(create := true)                                            ; the lnk in SendTo must point to a exe
 {
     lnkPath := StrReplace(A_StartMenu, "\Start Menu", "\SendTo\") "ALTRun.lnk"
 
@@ -1398,7 +1398,7 @@ TaskScheduler(SchEnable = False)
 {
 
     TaskSch_Clean = SchTasks /delete /TN AHK_Shutdown /F                ; Delete old scheduler, /TN: TaskName
-    Log.Msg("Cleaning task scheduler...Re=" GetCmdOutput(TaskSch_Clean)) ; Run & Get output, and write into Log
+    Log.Msg("Cleaning task scheduler...Re=" GetCmdOutput(TaskSch_Clean)) ; Run and get output, record into log
     
     if (SchEnable)                                                      ; If enable task scheduler
     {
@@ -1449,38 +1449,25 @@ Help()
 ;===========================================================================================
 ; Library - Listary ( QuickSwitch Function )
 ; 仿照Listary快速切换文件夹功能, 可以独立成单独的AHK文件
-; 在保存/打开对话框中点击菜单项,可以更换对话框到相应路径
-; Ctrl+E 将对话框路径切换到资源管理器的路径
-; Ctrl+G 将对话框路径切换到TC的路径
-; 增加自动切换路径功能
+; 在保存/打开对话框中点击菜单项,可以更换对话框到相应路径, 增加自动切换路径功能
+; Ctrl+G 将对话框路径切换到TC的路径, Ctrl+E 将对话框路径切换到资源管理器的路径
 ;===========================================================================================
 Listary()
 {
     Log.Msg("Starting Listary Function...")
 
-    ;================================================
-    ; QuickSwitch Base File Explorer
-    ; Total Commander, alternative Windows Explorer
-    ;================================================
-    GroupAdd, FileManager, ahk_class TTOTAL_CMD
-    GroupAdd, FileManager, ahk_class CabinetWClass
+    GroupAdd, FileManager, ahk_class TTOTAL_CMD                         ; QuickSwitch File Manager Class - Total Commander
+    GroupAdd, FileManager, ahk_class CabinetWClass                      ; QuickSwitch File Manager Class - Windows Explorer
 
-    ;================================================
-    ; 需要QuickSwith的窗口, 包括打开/保存对话框等
-    ;================================================
-    GroupAdd, DialogBox, ahk_class %g_DialogClass%                      ; The class for a dialog box.
+    GroupAdd, DialogBox, ahk_class %g_DialogClass%                      ; 需要QuickSwith的窗口, 包括打开/保存对话框等
 
-    ;================================================
-    ; 排除特定窗口,避免被QuickSwitch影响
-    ;================================================
-    GroupAdd, ExcludeWin, ahk_exe 7zG.exe                               ; 7Zip Dialog
-    GroupAdd, ExcludeWin, ahk_exe Explorer.EXE                          ; Folder/File Properties Dialog
+    GroupAdd, ExcludeWin, ahk_exe 7zG.exe                               ; 排除特定窗口,避免被 Auto-QuickSwitch 影响
+    GroupAdd, ExcludeWin, ahk_exe Explorer.exe                          ; Folder/File Properties Dialog
     GroupAdd, ExcludeWin, ahk_class SysListView32
     GroupAdd, ExcludeWin, ahk_exe Totalcmd64.exe
     GroupAdd, ExcludeWin, ADAPT Licensing
     GroupAdd, ExcludeWin, AutoCAD LT Alert
     GroupAdd, ExcludeWin, Open - Foreign DWG File
-    GroupAdd, ExcludeWin, About G Suite Sync
     GroupAdd, ExcludeWin, AutoCAD LT Error Report
     GroupAdd, ExcludeWin, AutoCAD LT
     GroupAdd, ExcludeWin, RAPT
@@ -1523,19 +1510,19 @@ LocateTC()
     ChangePath(GetTC())
 }
 
-GetTC()                                        ; 获取TC 当前文件夹路径
+GetTC()                                                                 ; 获取TC 当前文件夹路径
 {
     ClipSaved := ClipboardAll 
     Clipboard =
     SendMessage 1075, 2029, 0, , ahk_class TTOTAL_CMD
     ClipWait, 200
-    OutDir=%Clipboard%\                        ; 结尾添加\ 符号,变为路径,试图解决AutoCAD不识别路径问题
+    OutDir=%Clipboard%\                                                 ; 结尾添加\ 符号,变为路径,试图解决AutoCAD不识别路径问题
     Clipboard := ClipSaved 
     ClipSaved = 
     Return OutDir
 }
 
-GetExplorer()                                  ; 获取Explorer路径
+GetExplorer()                                                           ; 获取Explorer路径
 {
     Loop,9
     {
@@ -1547,7 +1534,7 @@ GetExplorer()                                  ; 获取Explorer路径
         Dir:="C:\"
 
     InitialAdd:=SubStr(Dir,2,2)
-    If (InitialAdd != ":\")                    ; then Explorer lists it as one of the library directories such as Music or Pictures
+    If (InitialAdd != ":\")                                             ; then Explorer lists it as one of the library directories such as Music or Pictures
         Dir:=% "C:\Users\" A_UserName "\" Dir
 
     Return Dir
@@ -1559,17 +1546,13 @@ ChangePath(Dir)
     ControlClick, Edit1, A
     ControlSetText, Edit1, %Dir%, A
     ControlSend, Edit1, {Enter}, A
-    ;以下两行是为了还原之前的窗口 File Name 中的文字
-    ;在选择文件的对话框的时候没有问题
-    ;但是在选择文件夹的对话框是有Bug,所以暂时注释掉
     ;Sleep,100
-    ;ControlSetText, Edit1, %w_Edit1Text%, A
+    ;ControlSetText, Edit1, %w_Edit1Text%, A                            ;还原之前的窗口 File Name 内容, 在选择文件的对话框时没有问题, 但是在选择文件夹的对话框有Bug,所以暂时注释掉
     Log.Msg("Listary Change Path=" Dir)
 }
 
 ;=========================================================
 ; 命令管理可视化功能
-; 新代码接管了之前的功能代码（类似批处理）
 ;=========================================================
 CmdMgr(Arg1, Arg2)
 {
@@ -1802,10 +1785,9 @@ NameAddDate(WinName, CurrCtrl, isFile:= True)                           ; 在文
     Log.Msg(WinName ", RenameWithDate=" NameWithDate)
 }
 ;=============================================================
-;使用 CapsLock 切换输入法
-;为了让 Mac/Win 下的体验稍微一致些, 写了一个 ahk 脚本针对 CapsLock 键:
-;单击 切换输入法(本质是调用 win + sapce)
-;双击/长按 切换 CapsLock 状态
+; 使用 CapsLock 切换输入法
+; 为了让 Mac/Win 下的体验稍微一致些, 写了一个 ahk 脚本针对 CapsLock 键:
+; 单击 切换输入法(本质是调用 win + sapce), 双击/长按 切换 CapsLock 状态
 ;=============================================================
 switchCapsLockState() 
 {
@@ -1850,8 +1832,7 @@ CapsLock::
                 ; 切换为中文时经常是中文输入法的英文模式,因为调用Win同时会调用Ctrl,Win10中设置：输入法模式右键-Key Configuration-Chinese/English mode switch-untick Ctrl+Space
                 ; 对当前窗口激活下一输入法,会在中文（中文模式）,中文（英文模式）,英文循环切换
                 ;DllCall("SendMessage", UInt, WinActive("A"), UInt, 80, UInt, 1, UInt, DllCall("ActivateKeyboardLayout", UInt, 1, UInt, 256))
-            } else {
-                ; double click
+            } else {                                                    ; double click
                 ToggleAndShowTip()
             }
         }
@@ -1945,8 +1926,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Button, xp+235 yp w25 hp vg_SelectTCPath gSelectTCPath, ...
     Gui, Setting:Add, CheckBox, xp+35 yp+4 vg_TCNewTab checked%g_TCNewTab%, New Tab
     
-    ;==================== Index Tab ====================
-    Gui, Setting:Tab, 2
+    Gui, Setting:Tab, 2                                                 ; Index Tab
     Gui, Setting:Add, GroupBox, w520 h420, Index Options
 
     Gui, Setting:Add, Text, xp+10 yp+40, Index Locations: 
@@ -1959,8 +1939,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Text, xp-150 yp+40, HistorySize: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_HistorySize, %g_HistorySize%
 
-    ;======================= GUI Tab =======================
-    Gui, Setting:Tab, 3
+    Gui, Setting:Tab, 3                                                 ; GUI Tab
     Gui, Setting:Add, GroupBox, w520 h420, GUI Details
 
     Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_HideTitle checked%g_HideTitle%, Hide Title Bar
@@ -1998,8 +1977,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Text, xp+100 yp+5, #Border Size: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80,
 
-    ;========================= Hotkey Tab ===========================
-    Gui, Setting:Tab, 5
+    Gui, Setting:Tab, 5                                                 ; Hotkey Tab
 
     Gui, Setting:Add, GroupBox, w520 h85, Active ALTRun Global Hotkey:
     Gui, Setting:Add, Text, xp+10 yp+25 , Global Hotkey 1:
@@ -2028,12 +2006,11 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Trigger3, %g_Trigger3%
 
-    ;=============== Plugins / Listary / Scheduler Tab ================
-    Gui, Setting:Tab, 6
+    Gui, Setting:Tab, 6                                                 ; Plugins / Listary / Scheduler Tab
     Gui, Setting:Add, GroupBox, w520 h170, Listary Function
     Gui, Setting:Add, Text, xp+10 yp+35 , File Manager Class: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_FileMgrClass, %g_FileMgrClass%
-    Gui, Setting:Add, Text, xp-150 yp+40, Open/Save Dialog Box Class: 
+    Gui, Setting:Add, Text, xp-150 yp+40, Open/Save Dialog Class: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_DialogClass, %g_DialogClass%
     Gui, Setting:Add, Text, xp-150 yp+40, Exclude Windows Class: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_ExcludeWinClass, %g_ExcludeWinClass%
@@ -2043,8 +2020,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Text, xp+250 yp, Shutdown Time:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_ShutdownTime, %g_ShutdownTime%
 
-    ;============================ Help Tab =============================
-    Gui, Setting:Tab, 7
+    Gui, Setting:Tab, 7                                                 ; Help Tab
     Gui, Setting:Add, GroupBox, w520 h420, Help Information:
 
     AllFunctions := GetAllFunctions()
@@ -2108,9 +2084,8 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
 
     %AllFunctions%
     )
-    
-    ;============== 即后续添加的控件将不属于前面那个选项卡控件 ================
-    Gui, Setting:Tab
+
+    Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面那个选项卡控件
     Gui, Setting:Add, Button, Default x320 w65, OK
     Gui, Setting:Add, Button, xp+75 yp w65, Cancel
     Gui, Setting:Add, Button, xp+75 yp w65, Help
@@ -2404,7 +2379,7 @@ SaveConfig(Arg)
 }
 
 ;=======================================================================
-; Library - Common.ahk
+; Libraries
 ;=======================================================================
 
 SwitchIME(dwLayout)
@@ -2463,11 +2438,8 @@ Extract_BG(_Filename)
 }
 
 ;=============================================================
-; Plugins combine into main AHK below
+; Some Built-in Functions
 ;=============================================================
-; ALTRun:Core
-; 核心功能
-
 CmdRun()
 {
     global
@@ -2511,10 +2483,7 @@ Clip()
 
 TurnMonitorOff()                                                        ; 关闭显示器:
 {
-    SendMessage, 0x112, 0xF170, 2,, Program Manager
-    ; 0x112 is WM_SYSCOMMAND, 0xF170 is SC_MONITORPOWER.
-    ; 对上面命令的注释: 使用 -1 代替 2 来打开显示器.
-    ; 使用 1 代替 2 来激活显示器的节能模式.
+    SendMessage, 0x112, 0xF170, 2,, Program Manager                     ; 0x112 is WM_SYSCOMMAND, 0xF170 is SC_MONITORPOWER, 使用 -1 代替 2 来打开显示器, 使用 1 代替 2 来激活显示器的节能模式.
 }
 
 EmptyRecycle()
