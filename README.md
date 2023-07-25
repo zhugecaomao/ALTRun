@@ -1,5 +1,5 @@
 # ALTRun
-ALTRun - An effective launcher for Windows, an open-source project.
+ALTRun - An effective launcher for Windows, an AutoHotkey open-source project.
 
 1. Pure portable software, not write anything into Registry.
 2. Small size (< 200KB), low resource usage (< 10MB RAM), and high performance.
