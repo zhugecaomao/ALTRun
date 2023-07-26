@@ -32,38 +32,38 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , KEYLIST_GUI    := "HideTitle,ShowTrayIcon,HideCol2,LVGrid,DisplayRows,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,BackgroundPicture"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey1Win,GlobalHotkey2,GlobalHotkey2Win,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,RunCmdAlt,EnableCapsLockIME"
 
-, g_EnableSendTo := 1                       ; 是否创建“发送到”菜单,1 创建,0 删除
 , g_AutoStartup := 1                        ; 是否添加快捷方式到开机启动
+, g_EnableSendTo := 1                       ; 是否创建“发送到”菜单
 , g_InStartMenu := 1                        ; 是否添加快捷方式到开始菜单中
-, g_IndexDir := "A_ProgramsCommon | A_StartMenu" ; 搜索的目录,可以使用 全路径 或 ahk 以 A_ 开头的变量,必须以 " | " 分隔, 路径可包含空格,无需加引号
-, g_IndexFileType := "*.lnk | *.exe"        ; 搜索的文件类型,必须以 " | " 分隔
+, g_IndexDir := "A_ProgramsCommon | A_StartMenu" ; 搜索的目录,可以使用 全路径 或以 A_ 开头的AHK变量, 以 " | " 分隔, 路径可包含空格, 无需加引号
+, g_IndexFileType := "*.lnk | *.exe"        ; 搜索的文件类型, 以 " | " 分隔
 , g_IndexExclude := "Uninstall | 卸载"      ; 排除的文件,正则表达式
 , g_SearchFullPath := 0                     ; 搜索完整路径,否则只搜文件名
 , g_ShowFileExt := 1                        ; 在界面显示文件扩展名
 , g_ShowIcon := 1                           ; Show Icon in File ListView
 , g_KeepInputText := 1                      ; 窗口隐藏时不清空编辑框内容
-, g_TCPath := "C:\Apps\TCMD\Totalcmd64.exe" ; TotalCommander 路径,如果为空则使用资源管理器打开
+, g_TCPath := A_Space                       ; TotalCommander 路径,如果为空则使用资源管理器打开
 , g_TCNewTab := 1                           ; 是否在 Total Commander 新的页面中打开文件
 , g_RunIfOnlyOne := 0                       ; 如果结果中只有一个则直接运行
-, g_HideOnDeactivate := 1                   ; 窗口失去焦点后窗口关闭,启用后窗口置顶显示功能失效
+, g_HideOnDeactivate := 1                   ; 窗口失去焦点后关闭窗口
 , g_AlwaysOnTop := 1                        ; 窗口置顶显示
 , g_SaveHistory := 1                        ; 记录历史
 , g_HistorySize := 15                       ; 记录历史的数量
-, g_RunCount := 0                           ; Record app run counting times, special need initialize from IniRead
-, g_isLogging := 1                          ; The log size (days) to keep, set to 0 to disable log, default is 3 days.
-, g_AutoRank := 1                           ; 自动根据使用频率调节顺序,因为效率问题,结果不能实时体现,重启或 Ctrl + I 后更新
+, g_RunCount := 0                           ; Record command execution times
+, g_isLogging := 1                          ; Enable log record
+, g_AutoRank := 1                           ; 自动根据使用频率调节顺序
 , g_SwitchToEngIME := 0                     ; 每次激活窗口自动切换到英文输入法
 , g_EscClearInput := 1                      ; 输入 Esc 时,如果输入框有内容则清空,无内容才关闭窗口
-, g_Editor := "C:\Apps\NP2\Notepad2.exe"    ; 用来打开配置文件的编辑器,默认为资源管理器关联的编辑器,可以右键->属性->打开方式修改
+, g_Editor := A_Space                       ; 用来打开配置文件的编辑器,推荐Notepad2,默认为资源管理器关联的编辑器,可以右键->属性->打开方式修改
 , g_SendToGetLnk := 1                       ; 如果使用发送到菜单发送的文件是 .lnk 的快捷方式,从文件读取路径后添加目标文件
-, g_Everything := "C:\Apps\Everything.exe"  ; Everything.exe 文件路径
+, g_Everything := A_Space                   ; Everything.exe 文件路径
 , g_EnableScheduler := 0                    ; Task Scheduler for PC auto shutdown
-, g_ShutdownTime := "22:30"                 ; Set PC auto shutdown time
+, g_ShutdownTime := "22:30"                 ; Set timing for PC auto shutdown
 , g_AutoSwitchDir := 0
 , g_FileMgrClass := "TTOTAL_CMD | CabinetWClass"
 , g_DialogClass := "#32770"                 ; Class name of the Dialog Box which Listary Switch Dir will take effect
 , g_ExcludeWinClass := "ahk_exe 7zG.exe | ahk_class SysListView32 | AutoCAD LT | RAPT | ahk_exe Totalcmd64.exe" ; Exclude those windows that not want Listary Switch Dir take effect
-, g_HideTitle := 0                          ; 隐藏标题栏"
+, g_HideTitle := 0                          ; 隐藏标题栏
 , g_ShowTrayIcon := 1                       ; 是否显示托盘图标
 , g_DisplayRows := 9                        ; 在列表中显示的行数,如果超过9行,定位到该行的快捷键将无效
 , g_Col3Width := 415                        ; 在列表中第三列的宽度
@@ -204,18 +204,18 @@ g_FileMgrClass_TT := "Takeover File Manager"
 g_DialogClass_TT := "Class name of the Dialog Box which Listary Switch Dir will take effect"
 g_ExcludeWinClass_TT := "Exclude those windows that not want Listary Switch Dir take effect"
 g_EnableScheduler_TT := "Enable shutdown scheduled task"
-g_ShutdownTime_TT := "Scheduled shutdown time"
+g_ShutdownTime_TT := "Set timing for PC auto shutdown"
 
 OK_TT := "Save and Apply the changes"
 Cancel_TT := "Discard the changes"
 
 ;=============================================================
-; Load Config & Plugins
+; Load Config and Set Logger
 ;=============================================================
 Global Log := New Logger(g_LogFile)                                     ; Global Log so that can use in other Lib
 Log.Msg("==== ALTRun is starting ====")
 
-LoadConfig("init")                                                      ; Load ini config, IniWrite will create it if not exist
+LoadConfig("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
 ;=============================================================
 ; Create ContextMenu and TrayMenu
@@ -333,23 +333,17 @@ ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show i
 ;=============================================================
 Log.Msg("Resolving command line Args=" A_Args[1] " " A_Args[2] " " A_Args[3])
 
-if (A_Args[1] = "-startup")                                             ; App run from startup
+if (A_Args[1] = "-startup" or A_Args[2]="-hide")                        ; App run from startup
 {
     HideWin := " Hide"
-    Log.Msg("Starting ALTRun from Startup lnk...")
+    Log.Msg("Starting ALTRun from Startup lnk or in Silent Mode...")
 }
 
 if (A_Args[1] = "-SendTo")
 {
     HideWin := " Hide"
-    Log.Msg("Starting ALTRun SendTo...")
+    Log.Msg("Starting ALTRun SendTo Mode...")
     CmdMgr(A_Args[2], A_Args[3])
-}
-
-if (A_Args[1]="-hide" or A_Args[2]="-hide" or A_Args[3]="-hide")
-{
-    HideWin := " Hide"
-    Log.Msg("Starting ALTRun (Silent Mode)...")
 }
 
 Gui, Main:Show, xCenter y%WinY% w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName%
@@ -365,7 +359,6 @@ if (g_HideOnDeactivate)
 }
 
 OnMessage(0x0200, "WM_MOUSEMOVE")
-
 OnExit("ExitFunc")
 
 ;=============================================================
@@ -870,14 +863,12 @@ ChangeCommand(Step = 1, ResetSelRow = false)
 }
 
 ;=============================================================
-; GuiContextMenu right click on GUI Control (not work for Edit)
+; GuiContextMenu right click on GUI Control
 ;=============================================================
 MainGuiContextMenu()                                                    ; 运行此标签来响应右键点击或按下 Appskey, 指定响应窗口为Main
 {
     if (A_GuiControl = g_ListView)                                      ; 仅在 ListView 中点击时才显示菜单
         Menu, LV_ContextMenu, Show, %A_GuiX%, %A_GuiY%                  ; 在提供的坐标处显示菜单, 应该使用 A_GuiX & A_GuiY,因为即使用户按下 Appskey 它们也会提供正确的坐标
-    else
-        Menu, Tray, Show, %A_GuiX%, %A_GuiY%
 }
 
 ContextMenu()                                                           ; ListView ContextMenu actions
@@ -1261,12 +1252,13 @@ OpenPath(filePath)
     }
     else
     {
-        Run, Explorer "%Path%",, UseErrorLevel
+        Run, Explorer.exe /select`, "%Path%",, UseErrorLevel
     }
     if ErrorLevel
     {
-        MsgBox, 4096, %g_WinName%, Path not found:`n`n%Path%`n`nCurrent file path not exist or using relative path!
+        MsgBox, 4096, %g_WinName%, Error found, error code : %A_LastError%
     }
+    Log.Msg("Opening path="Path)
 }
 
 OpenCurrentFileDir()
@@ -2149,7 +2141,7 @@ LoadConfig(Arg)
 {
     Log.Msg("Loading config...Arg=" Arg)
     
-    if (Arg = "config" or Arg = "init" or Arg = "all")
+    if (Arg = "config" or Arg = "initialize" or Arg = "all")
     {
         Loop Parse, KEYLIST_CONFIG, `,                                  ; Read config section
         {
@@ -2177,7 +2169,7 @@ LoadConfig(Arg)
         }
     }
 
-    if (Arg = "CMD_SECS" or Arg = "init" or Arg = "all")                ; Built-in command initialize
+    if (Arg = "CMD_SECS" or Arg = "initialize" or Arg = "all")          ; Built-in command initialize
     {
         IniRead, DFTCMDSEC, %g_IniFile%, %SEC_DFTCMD%
         if (DFTCMDSEC = "")
