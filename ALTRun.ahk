@@ -29,7 +29,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
     ,  SEC_INDEX    := "Index"
 
 , KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,IndexDir,IndexFileType,IndexExclude,SearchFullPath,ShowFileExt,ShowIcon,KeepInputText,RunIfOnlyOne,HideOnDeactivate,AlwaysOnTop,SaveHistory,HistorySize,isLogging,AutoRank,SwitchToEngIME,EscClearInput,SendToGetLnk,Editor,TCPath,TCNewTab,Everything,RunCount,EnableScheduler,ShutdownTime,AutoSwitchDir,FileMgrClass,DialogClass,ExcludeWinClass"
-, KEYLIST_GUI    := "HideTitle,ShowTrayIcon,HideCol2,LVGrid,DisplayRows,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,BackgroundPicture,WinTransparent"
+, KEYLIST_GUI    := "HideTitle,ShowTrayIcon,HideCol2,LVGrid,DisplayRows,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,BackgroundPicture"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey1Win,GlobalHotkey2,GlobalHotkey2Win,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,RunCmdAlt,EnableCapsLockIME"
 
 , g_EnableSendTo := 1                       ; 是否创建“发送到”菜单,1 创建,0 删除
@@ -80,7 +80,6 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_WinColor := "Default"
 , g_BackgroundPicture := "Default"
 , g_BGPicture                               ; Real path of the BackgroundPicture
-, g_WinTransparent := 255
 , g_Hints := ["You have run shortcut xxx times by now!"
     , "It's better to show me by press hotkey (Default is ALT + Space)"
     , "ALT + Space = Show / Hide window"
@@ -186,7 +185,6 @@ g_ListHeight_TT := "Command List Height"
 g_CtrlColor_TT := "Set Color for Controls in Window"
 g_WinColor_TT := "Window background color, including border color, current command detail box color, value can be like: White, Default, EBFFEB, 0xEBFFEB"
 g_BackgroundPicture_TT := "Background picture, the background picture can only be displayed in the border part.`nIf there is a splash screen after using the picture, first adjust the size of the picture to solve the window size and improve the loading speed.`nIf the splash screen is still obvious, please Hollow and fill the position of the text box on the picture with a color similar to the text background, or modify it to the transparent color of png"
-g_WinTransparent_TT := "Set window transparent, value from 100 to 255, less than 100 you will difficult to find the window"
 
 g_Hotkey1_TT := "Shortcut key 1`nkey=Default can cancel the key mapping in the code`n Note that the priority is higher than the default Alt + alphanumeric series keys, do not modify the Alt mapping without special reasons"
 g_Trigger1_TT := "Function to be triggered by Hotkey 1"
@@ -309,7 +307,7 @@ Gui, Main:%HideTitle% %AlwaysOnTop%
 Gui, Main:Add, Picture, x0 y0 0x4000000, %g_BGPicture%                  ; If the picture cannot be loaded or displayed, the control is left empty and its W&H are set to zero. So FileExist() is not necessary.
 Gui, Main:Add, Edit, x10 y10 w%ListWidth% h%g_EditHeight% -WantReturn v%g_InputBox% gSearchCommand, Type anything here to search...
 Gui, Main:Add, ListView, Count15 y+10 w%ListWidth% h%g_ListHeight% v%g_ListView% gLVAction +LV0x00010000 %LVGrid% -Multi AltSubmit, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
-Gui, Main:Add, StatusBar, v%g_StatusBar%, 😁 Nice! You have run shortcut %g_RunCount% times by now!
+Gui, Main:Add, StatusBar, v%g_StatusBar%, Nice! You have run shortcut %g_RunCount% times by now!
 Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
 Gui, Main:Default                                                       ; Set default GUI before any ListView update
 
@@ -359,11 +357,6 @@ Gui, Main:Show, xCenter y%WinY% w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName
 if (g_SwitchToEngIME)
 {
     SwitchToEngIME()
-}
-
-if (g_WinTransparent < 250)
-{
-    WinSet, Transparent, %g_WinTransparent%, %g_WinName%
 }
 
 if (g_HideOnDeactivate)
@@ -1030,7 +1023,7 @@ SetStatusBar(currentCommandMode := True)                                ; Status
         Random, HintIndex, 1, g_Hints.Length()                          ; 随机抽出一条提示信息
         SBText := g_Hints[HintIndex]                                    ; 每次有效激活窗口之后StatusBar展示提示信息
     }
-    SB_SetText("➡️ " SBText, 1)                                         ; Use emoji instead of SB_SetIcon for performance
+    SB_SetText(SBText, 1)                                               ; Cancel SB_SetIcon for better performance
 }
 
 RunCurrentCommand()
@@ -1966,8 +1959,8 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_EditHeight, %g_EditHeight%
     Gui, Setting:Add, Text, xp-400 yp+40, Command List Height: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_ListHeight, %g_ListHeight%
-    Gui, Setting:Add, Text, xp+100 yp+5, Transparency (100-255): 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_WinTransparent, %g_WinTransparent%
+    Gui, Setting:Add, Text, xp+100 yp+5, #Transparency (100-255):
+    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80,
     Gui, Setting:Add, Text, xp-400 yp+40, Controls' Color:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_CtrlColor, %g_CtrlColor%
     Gui, Setting:Add, Text, xp+100 yp+5, Window's Color:
