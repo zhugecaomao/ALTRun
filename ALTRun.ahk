@@ -28,7 +28,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
     ,  SEC_HISTORY  := "History"
     ,  SEC_INDEX    := "Index"
 
-, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,IndexDir,IndexFileType,IndexExclude,SearchFullPath,ShowFileExt,ShowIcon,KeepInputText,RunIfOnlyOne,HideOnDeactivate,AlwaysOnTop,SaveHistory,HistorySize,isLogging,AutoRank,SwitchToEngIME,EscClearInput,SendToGetLnk,Editor,TCPath,TCNewTab,Everything,RunCount,EnableScheduler,ShutdownTime,AutoSwitchDir,FileMgrClass,DialogClass,ExcludeWinClass"
+, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,IndexDir,IndexFileType,IndexExclude,SearchFullPath,ShowFileExt,ShowIcon,KeepInputText,RunIfOnlyOne,HideOnDeactivate,AlwaysOnTop,SaveHistory,HistorySize,isLogging,AutoRank,SwitchToEngIME,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,EnableScheduler,ShutdownTime,AutoSwitchDir,FileMgrClass,DialogClass,ExcludeWinClass"
 , KEYLIST_GUI    := "HideTitle,ShowTrayIcon,HideCol2,LVGrid,DisplayRows,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,BackgroundPicture"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey1Win,GlobalHotkey2,GlobalHotkey2Win,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,RunCmdAlt,EnableCapsLockIME"
 
@@ -43,7 +43,6 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_ShowIcon := 1                           ; Show Icon in File ListView
 , g_KeepInputText := 1                      ; 窗口隐藏时不清空编辑框内容
 , g_TCPath := A_Space                       ; TotalCommander 路径,如果为空则使用资源管理器打开
-, g_TCNewTab := 1                           ; 是否在 Total Commander 新的页面中打开文件
 , g_RunIfOnlyOne := 0                       ; 如果结果中只有一个则直接运行
 , g_HideOnDeactivate := 1                   ; 窗口失去焦点后关闭窗口
 , g_AlwaysOnTop := 1                        ; 窗口置顶显示
@@ -80,14 +79,13 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_WinColor := "Default"
 , g_BackgroundPicture := "Default"
 , g_BGPicture                               ; Real path of the BackgroundPicture
-, g_Hints := ["You have run shortcut xxx times by now!"
-    , "It's better to show me by press hotkey (Default is ALT + Space)"
+, g_Hints := ["It's better to show me by press hotkey (Default is ALT + Space)"
     , "ALT + Space = Show / Hide window"
     , "Alt + F4 = Exit"
     , "Esc = Clear Input / Close window"
     , "Enter = Run current command"
     , "Alt + No. = Run that specific command"
-    , "Shift + No. = Select that specific command"
+    , "Ctrl + No. = Select that specific command"
     , "F1 = Show Help"
     , "F2 = Open Setting Config window"
     , "F3 = Edit config file (ALTRun.ini) directly"
@@ -98,13 +96,11 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
     , "Ctrl+'-' = Decrease rank of current command"
     , "Ctrl+I = Reindex file search database"
     , "Ctrl+Q = Reload ALTRun"
-    , "Ctrl+D = Open current command dir with Total Commander / File Explorer"
-    , "Ctrl+Del = Delete current command"
-    , "Command priority (rank) will auto-adjust based on frequency"
+    , "Ctrl+D = Open current command dir with TC / File Explorer"
+    , "Command priority (rank) will auto adjust based on frequency"
     , "Start with www or http = Open website"
     , "Start with + = Add New Command"
-    , "Start with space = Search by Everything"
-    , "Space = After input Space, lock the search result"]
+    , "Start with space = Search by Everything"]
 
 , g_Hotkey1 := "^s", g_Trigger1 := "Everything"
 , g_Hotkey2 := "^p", g_Trigger2 := "RunPTTools"
@@ -121,7 +117,7 @@ EnvGet, OneDriveCommercial, OneDriveCommercial                          ; OneDri
 ; 声明全局变量
 ; 当前输入命令的参数,数组,为了方便没有添加 g_ 前缀
 ;=============================================================
-global Arg                                    ; 用来调用管道的完整参数（所有列）,供有必要的插件使用
+global Arg                                    ; 用来调用管道的完整参数（所有列）
 , FullPipeArg                                 ; 不能是 ALTRun.ahk 的子串,否则按键绑定会有问题
 , g_WinName := "ALTRun - Ver 07.2023"         ; 主窗口标题
 , g_OptionsWinName := "ALTRun Options"        ; 选项窗口标题
@@ -153,7 +149,7 @@ g_SearchFullPath_TT := "Search full path of the file or command, otherwise only 
 g_ShowFileExt_TT := "Show file extension on interface"
 g_ShowIcon_TT := "Show icon in file ListView"
 g_KeepInputText_TT := "Do not clear the content of the edit box when the window is hidden"
-g_TCPath_TT := "TotalCommander path, if empty, use explorer to open"
+g_TCPath_TT := "TotalCommander path with parameters, eg: C:\OneDrive\Apps\TotalCMD64\Totalcmd64.exe /O /T /S /L=, if empty, use explorer to open"
 g_SelectTCPath_TT := "Select Total Commander file path"
 g_RunIfOnlyOne_TT := "Run directly if there is only one result"
 g_HideOnDeactivate_TT := "The window closes after the window loses focus, and the window stay-on-top display function fails after activation"
@@ -166,7 +162,6 @@ g_SwitchToEngIME_TT := "Automatically switch to English input method every time 
 g_EscClearInput_TT := "When inputting Esc, if there is content in the input box, it will be cleared, and if there is no content, the window will be closed"
 g_Editor_TT := "The editor used to open the configuration file, the default is the editor associated with the resource manager, you can right-click->properties->open method to modify"
 g_SendToGetLnk_TT := "If the file sent using the Send To menu is a .lnk shortcut, add the target file after reading the path from the file"
-g_TCNewTab_TT := "Open the file in a new tab in Total Commander"
 g_Everything_TT := "Everything.exe file path"
 
 g_HideTitle_TT := "Hide Title Bar"
@@ -327,6 +322,7 @@ ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show i
          . "Function | UP or DOWN | Select previous or next command`n"
          . "Function | CTRL+D | Open cmd dir with TC or File Explorer"
          , False, False, False)
+SB_SetParts(g_WinWidth-120)
 
 ;=============================================================
 ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
@@ -738,19 +734,6 @@ RunCommand(originCmd)
 
     if (_Type = "file")
     {
-        if (InStr(_Path, ".lnk"))
-        {
-            FileGetShortcut, %_Path%, RealPath                          ; 处理 32 位 ahk 运行不了某些 64 位系统 .lnk 的问题
-            if (!FileExist(RealPath))
-            {
-                RealPath := StrReplace(RealPath, "C:\Program Files (x86)", "C:\Program Files")
-                if (FileExist(RealPath))
-                {
-                    _Path := RealPath
-                }
-            }
-        }
-
         SplitPath, _Path, , WorkingDir, ,
         if (Arg = "")
         {
@@ -967,7 +950,7 @@ ALTRun_Log()
 {
     if (g_Editor != "")
     {
-        Run, %g_Editor% " /m " %A_Now% " """ %g_LogFile% """"           ; /m Match text, /g Jump to specified position, /g -1 means end of file.
+        Run, % g_Editor " /m " A_Now " """ g_LogFile """"               ; /m Match text, /g Jump to specified position, /g -1 means end of file.
     }
     else
     {
@@ -995,7 +978,7 @@ AddCommand()
     CmdMgr(Path, Desc)
 }
 
-ClearInput()                                                            ; 给插件用的函数
+ClearInput()
 {
     GuiControl, Main:Text, %g_InputBox%,
     GuiControl, Main:Focus, %g_InputBox%
@@ -1010,11 +993,12 @@ SetStatusBar(currentCommandMode := True)                                ; Status
     else
     {
         g_RunCount ++
-        g_Hints[1] := "You have run shortcut " g_RunCount " times by now!" ; 更新运行次数信息
         Random, HintIndex, 1, g_Hints.Length()                          ; 随机抽出一条提示信息
         SBText := g_Hints[HintIndex]                                    ; 每次有效激活窗口之后StatusBar展示提示信息
     }
-    SB_SetText(SBText, 1)                                               ; Cancel SB_SetIcon for better performance
+    SB_SetText(SBText, 1)                                               ; Omite SB_SetIcon for better performance
+    SB_SetText("RunCount: "g_RunCount, 2)
+
 }
 
 RunCurrentCommand()
@@ -1245,10 +1229,9 @@ OpenPath(filePath)
         Path := filePath
     }
 
-    if (FileExist(g_TCPath))                                            ; 因为采用系统相对路径的文件夹用FileExist(filePath)检测不到,so need to use UseErrorLevel or Try
+    if (g_TCPath)
     {
-        T := g_TCNewTab ? "/T" : ""                                     ;  /T: open in new tab
-        Run, "%g_TCPath%" /O %T% /S /L="%Path%",, UseErrorLevel         ; /S switch TC /L as Source, /R as Target. /O: If TC is running, active it.
+        Run, %g_TCPath% "%Path%",, UseErrorLevel                        ; /S switch TC /L as Source, /R as Target. /O: If TC is running, active it. /T: open in new tab
     }
     else
     {
@@ -1907,9 +1890,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Everything, %g_Everything%
 
     Gui, Setting:Add, Text, xp-150 yp+40, Total Commander Path: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w230 vg_TCPath, %g_TCPath%
-    Gui, Setting:Add, Button, xp+235 yp w25 hp vg_SelectTCPath gSelectTCPath, ...
-    Gui, Setting:Add, CheckBox, xp+35 yp+4 vg_TCNewTab checked%g_TCNewTab%, New Tab
+    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_TCPath, %g_TCPath%
     
     Gui, Setting:Tab, 2                                                 ; Index Tab
     Gui, Setting:Add, GroupBox, w520 h420, Index Options
@@ -2080,17 +2061,6 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
 }
 
 ;=============== 设置选项窗口 - 按钮动作 =================
-SelectTCPath()
-{
-    Gui +OwnDialogs                                                     ; Make open dialog Modal
-    FileSelectFile, SelectedFile, 3, , TC Path, *.exe
-    if (SelectedFile != "")
-    {
-        g_TCPath := SelectedFile
-        GuiControl,, g_TCPath, %g_TCPath%
-    }
-}
-
 GetAllFunctions()
 {
     result := ""
@@ -2113,14 +2083,12 @@ SettingButtonOK()
 
 SettingGuiEscape()
 {
-    RemoveToolTip()
-    Gui, Setting:Destroy
+    SettingGuiClose()
 }
 
 SettingButtonCancel()
 {
-    RemoveToolTip()
-    Gui, Setting:Destroy
+    SettingGuiClose()
 }
 
 SettingGuiClose()
@@ -2509,14 +2477,9 @@ SearchOnBing()
 
 Everything()
 {
-    if (FileExist(g_Everything))
-    {
-        Run, %g_Everything% -s "%Arg%"
-    }
-    else
-    {
-        MsgBox, % "Everything not found,`n`nPlease check ALTRun setting and Everything program file."
-    }
+    Run, %g_Everything% -s "%Arg%",, UseErrorLevel
+    if ErrorLevel
+        MsgBox, % "Everything software not found.`n`nPlease check ALTRun setting and Everything program file."
 }
 
 ;=======================================================================
