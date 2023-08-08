@@ -149,7 +149,7 @@ g_SearchFullPath_TT := "Search full path of the file or command, otherwise only 
 g_ShowFileExt_TT := "Show file extension on interface"
 g_ShowIcon_TT := "Show icon in file ListView"
 g_KeepInputText_TT := "Do not clear the content of the edit box when the window is hidden"
-g_TCPath_TT := "TotalCommander path with parameters, eg: C:\OneDrive\Apps\TotalCMD64\Totalcmd64.exe /O /T /S /L=, if empty, use explorer to open"
+g_TCPath_TT := "TotalCommander path with parameters, eg: C:\OneDrive\Apps\TotalCMD64\Totalcmd64.exe /O /T /S, if empty, use explorer to open"
 g_SelectTCPath_TT := "Select Total Commander file path"
 g_RunIfOnlyOne_TT := "Run directly if there is only one result"
 g_HideOnDeactivate_TT := "The window closes after the window loses focus, and the window stay-on-top display function fails after activation"
@@ -240,11 +240,6 @@ Menu, LV_ContextMenu, Default, Run`tEnter                               ; 让 "R
 
 if (g_ShowTrayIcon)
 {
-    Menu, Tray, Icon
-    Menu, Tray, Icon, Shell32.dll, -25                                  ; if the index of an icon changes between Windows versions but the resource ID is consistent, refer to the icon by ID instead of index
-    Menu, Tray, NoStandard
-    Menu, Tray, Tip, %g_WinName%
-
     Menu, Tray, Add, Show, ActivateALTRun
     Menu, Tray, Add
     Menu, Tray, Add, Options `tF2, Options
@@ -259,6 +254,9 @@ if (g_ShowTrayIcon)
     Menu, Tray, Add, Reload `tCtrl+Q, ALTRun_Reload                     ; Call ALTRun_Reload function with Arg=Reload `tCtrl+Q
     Menu, Tray, Add, Exit `tAlt+F4, ExitALTRun
 
+    Menu, Tray, NoStandard
+    Menu, Tray, Icon
+    Menu, Tray, Icon, Shell32.dll, -25                                  ; if the index of an icon changes between Windows versions but the resource ID is consistent, refer to the icon by ID instead of index
     Menu, Tray, Icon, Show, Shell32.dll, -25
     Menu, Tray, Icon, Options `tF2, Shell32.dll, -16826
     Menu, Tray, Icon, ReIndex `tCtrl+I, Shell32.dll, -16776
@@ -266,6 +264,7 @@ if (g_ShowTrayIcon)
     Menu, Tray, Icon, AutoHotkey, %A_AhkPath%, -160
     Menu, Tray, Icon, Reload `tCtrl+Q, Shell32.dll, -16739
     Menu, Tray, Icon, Exit `tAlt+F4, Imageres.dll, -5102
+    Menu, Tray, Tip, %g_WinName%
     Menu, Tray, Default, Show
     Menu, Tray, Click, 1                                                ; Sets the number of clicks to activate the tray menu's default menu item.
 }
@@ -616,12 +615,12 @@ ListResult(text := "", ActWin := false, UseDisplay := false, UpdateSB := true) ;
     if (g_ShowIcon)
     {
         ImageListID1 := IL_Create(10, 5)                                ; Create an ImageList so that the ListView can display some icons
-        IL_Add(ImageListID1, "shell32.dll", -4)                         ; Add folder icon for dir type (IconNumber=1)
-        IL_Add(ImageListID1, "shell32.dll", -25)                        ; Add app default icon for function type (IconNumber=2)
-        IL_Add(ImageListID1, "shell32.dll", -512)                       ; Add Browser icon for url type (IconNumber=3)
-        IL_Add(ImageListID1, "shell32.dll", -22)                        ; Add control panel icon for control type (IconNumber=4)
+        IL_Add(ImageListID1, "shell32.dll", -4)                         ; Add folder icon for dir type (IconNo=1)
+        IL_Add(ImageListID1, "shell32.dll", -25)                        ; Add app default icon for function type (IconNo=2)
+        IL_Add(ImageListID1, "shell32.dll", -512)                       ; Add Browser icon for url type (IconNo=3)
+        IL_Add(ImageListID1, "shell32.dll", -22)                        ; Add control panel icon for control type (IconNo=4)
         LV_SetImageList(ImageListID1)                                   ; Attach the ImageLists to the ListView so that it can later display the icons
-        IconNumber  := ""
+        IconNo  := ""
         sfi_size    := A_PtrSize + 8 + 680                              ; 计算 SHFILEINFO 结构需要的缓存大小
         VarSetCapacity(sfi, sfi_size)
     }
@@ -640,12 +639,8 @@ ListResult(text := "", ActWin := false, UseDisplay := false, UpdateSB := true) ;
             _Path    := Trim(StrSplit(A_LoopField, " | ")[2])           ; Must store in var for future use, trim space
             _Desc    := Trim(StrSplit(A_LoopField, " | ")[3])
         }
+        _AbsPath := AbsPath(_Path)
 
-        _AbsPath := StrReplace(_Path,  "*RunAs ", "")                   ; Remove *RunAs (Admin Run) to get absolute path
-        _AbsPath := StrReplace(_AbsPath, "%OneDrive%", OneDrive)                     ; Convert OneDrive to absolute path due to #NoEnv
-        _AbsPath := StrReplace(_AbsPath, "%OneDriveConsumer%", OneDriveConsumer)     ; Convert OneDrive to absolute path due to #NoEnv
-        _AbsPath := StrReplace(_AbsPath, "%OneDriveCommercial%", OneDriveCommercial) ; Convert OneDrive to absolute path due to #NoEnv
-        
         ; 建立唯一的扩展 ID 以避免变量名中的非法字符, 例如破折号. 这种使用唯一 ID 的方法也会执行地更好, 因为在数组中查找项目不需要进行搜索循环.
         SplitPath, _AbsPath,,, FileExt                                  ; 获取文件扩展名.
 
@@ -653,23 +648,23 @@ ListResult(text := "", ActWin := false, UseDisplay := false, UpdateSB := true) ;
         {
             if _Type contains Dir,Tender,Project
             {
-                ExtID := "dir", IconNumber := 1
+                ExtID := "dir", IconNo := 1
             }
             else if _Type contains Function,CMD
             {
-                ExtID := "cmd", IconNumber := 2
+                ExtID := "cmd", IconNo := 2
             }
             else if _Type contains URL
             {
-                ExtID := "url", IconNumber := 3
+                ExtID := "url", IconNo := 3
             }
             else if _Type contains Control
             {
-                ExtID := "cpl", IconNumber := 4
+                ExtID := "cpl", IconNo := 4
             }
-            else if FileExt in EXE,ICO,ANI,CUR
+            else if FileExt in EXE,ICO,ANI,CUR,LNK
             {
-                ExtID := FileExt, IconNumber := 0                       ; ExtID 特殊 ID 作为占位符, IconNumber 进行标记这样每种类型就含有唯一的图标.
+                ExtID := FileExt, IconNo := 0                           ; ExtID 特殊 ID 作为占位符, IconNo 进行标记这样每种类型就含有唯一的图标.
             }
             else                                                        ; 其他的扩展名/文件类型, 计算它们的唯一 ID.
             {
@@ -681,23 +676,23 @@ ListResult(text := "", ActWin := false, UseDisplay := false, UpdateSB := true) ;
                         break
                     ExtID := ExtID | (Ord(ExtChar) << (8 * (A_Index - 1))) ; 把每个字符与不同的位位置进行运算来得到唯一 ID
                 }
-                IconNumber := IconList%ExtID%                           ; 检查此文件扩展名的图标是否已经在图像列表中. 如果是, 可以避免多次调用并极大提高性能, 尤其对于包含数以百计文件的文件夹而言
+                IconNo := IconList%ExtID%                               ; 检查此文件扩展名的图标是否已经在图像列表中. 如果是, 可以避免多次调用并极大提高性能, 尤其对于包含数以百计文件的文件夹而言
             }
 
-            if (!IconNumber)                                            ; 此扩展名还没有相应的图标, 所以进行加载.
+            if (!IconNo)                                                ; 此扩展名还没有相应的图标, 所以进行加载.
             {
                 ; 获取与此文件扩展名关联的高质量小图标:
                 if (!DllCall("Shell32\SHGetFileInfoW", "Str", _AbsPath, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101))  ; 0x101 为 SHGFI_ICON+SHGFI_SMALLICON
-                    IconNumber = 9999999                                ; 如果未成功加载到图标, 把它设置到范围外来显示空图标.
+                    IconNo = 9999999                                    ; 如果未成功加载到图标, 把它设置到范围外来显示空图标.
                 else                                                    ; 成功加载图标.
                 {
                     hIcon := NumGet(sfi, 0)                             ; 从结构中提取 hIcon 成员
-                    IconNumber := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID1, "int", -1, "ptr", hIcon) + 1 ; 直接添加 HICON 到图标列表, 下面加上 1 来把返回的索引从基于零转换到基于1
+                    IconNo := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID1, "int", -1, "ptr", hIcon) + 1 ; 直接添加 HICON 到图标列表, 下面加上 1 来把返回的索引从基于零转换到基于1
                     DllCall("DestroyIcon", "ptr", hIcon)                ; 现在已经把它复制到图像列表, 所以应销毁原来的
-                    IconList%ExtID% := IconNumber                       ; 缓存图标来节省内存并提升加载性能:
+                    IconList%ExtID% := IconNo                           ; 缓存图标来节省内存并提升加载性能:
                 }
             }
-            LV_Add("Icon" . IconNumber, A_Index, _Type, _Path, _Desc)
+            LV_Add("Icon"IconNo, A_Index, _Type, _Path, _Desc)
         }
         else
         {
@@ -718,19 +713,31 @@ ListResult(text := "", ActWin := false, UseDisplay := false, UpdateSB := true) ;
         SetStatusBar(True)
 }
 
+AbsPath(Path)                                                           ; Convert to absolute path
+{
+    Path := StrReplace(Path,  "*RunAs ", "")                            ; Remove *RunAs (Admin Run) to get absolute path
+
+    if (InStr(Path, "A_"))                                              ; Resolve path like A_ScriptDir
+    {
+        Path := %Path%
+    }
+
+    Path := StrReplace(Path, "%OneDrive%", OneDrive)                    ; Convert OneDrive to absolute path due to #NoEnv
+    Path := StrReplace(Path, "%OneDriveConsumer%", OneDriveConsumer)    ; Convert OneDrive to absolute path due to #NoEnv
+    Path := StrReplace(Path, "%OneDriveCommercial%", OneDriveCommercial) ; Convert OneDrive to absolute path due to #NoEnv
+    Return Path
+}
+
 RunCommand(originCmd)
 {
     MainGuiClose()                                                      ; 先隐藏或者关闭窗口,防止出现延迟的感觉
     ParseArg()
-
+    Log.Msg("Execute(" g_RunCount ")=" originCmd)
     g_UseDisplay := false
 
     _Type := StrSplit(originCmd, " | ")[1]
     _Path := StrSplit(originCmd, " | ")[2]
-    _Path := StrReplace(_Path, "%OneDrive%", OneDrive)                  ; Convert OneDrive to absolute path (due to #NoEnv)
-    _Path := StrReplace(_Path, "%OneDriveConsumer%", OneDriveConsumer)  ; Convert OneDrive to absolute path (due to #NoEnv)
-    _Path := StrReplace(_Path, "%OneDriveCommercial%", OneDriveCommercial) ; Convert OneDrive to absolute path (due to #NoEnv)
-    Log.Msg("Execute(" g_RunCount ")=" originCmd)
+    _Path := AbsPath(_Path)
 
     if (_Type = "file")
     {
@@ -748,7 +755,7 @@ RunCommand(originCmd)
     }
     else if _Type in dir,tender,project
     {
-        OpenPath(_Path)
+        OpenDir(_Path)
     }
     else if (_Type = "function" and IsFunc(_Path))
     {
@@ -1216,38 +1223,44 @@ RunWithCmd(command)
     Run, % ComSpec " /C " command " & pause"
 }
 
-OpenPath(filePath)
+OpenDir(Path, isOpenContainer := False)
 {
-    filePath := StrReplace(filePath, "*RunAs ", "")                     ; 如果是以管理员权限运行,则去掉开头的 *RunAs 以得到正确的路径
+    Path := AbsPath(Path)
 
-    if (InStr(filePath, "A_"))                                          ; Condier path like A_ScriptDir
+    if (isOpenContainer)
     {
-        Path := %filePath%
+        if (g_TCPath)
+        {
+            Run, %g_TCPath% " /P " "%Path%",, UseErrorLevel             ; /P Parent folder
+        }
+        else
+        {
+            Run, Explorer.exe /select`, "%Path%",, UseErrorLevel
+        }
     }
     else
     {
-        Path := filePath
+        if (g_TCPath)
+        {
+            Run, %g_TCPath% "%Path%",, UseErrorLevel                    ; /S switch TC /L as Source, /R as Target. /O: If TC is running, active it. /T: open in new tab
+        }
+        else
+        {
+            Run, Explorer.exe "%Path%",, UseErrorLevel
+        }
     }
 
-    if (g_TCPath)
-    {
-        Run, %g_TCPath% "%Path%",, UseErrorLevel                        ; /S switch TC /L as Source, /R as Target. /O: If TC is running, active it. /T: open in new tab
-    }
-    else
-    {
-        Run, Explorer.exe /select`, "%Path%",, UseErrorLevel
-    }
     if ErrorLevel
     {
         MsgBox, 4096, %g_WinName%, Error found, error code : %A_LastError%
     }
-    Log.Msg("Opening path="Path)
+    Log.Msg("Opening Dir="Path)
 }
 
 OpenCurrentFileDir()
 {
-    filePath := StrSplit(g_CurrentCommand, " | ")[2]
-    OpenPath(filePath)
+    Path := StrSplit(g_CurrentCommand, " | ")[2]
+    OpenDir(Path, True)
 }
 
 EditCurrentCommand()
@@ -1498,7 +1511,7 @@ GetExplorer()                                                           ; 获取
     } until (InStr(Dir,"Address"))
  
     Dir:=StrReplace(Dir,"Address: ","")
-    if (Dir="Computer" )
+    if (Dir="Computer")
         Dir:="C:\"
 
     InitialAdd:=SubStr(Dir,2,2)
@@ -1536,19 +1549,15 @@ CmdMgr(Arg1, Arg2)
         
         if InStr(FileExist(_Path), "D")                                 ; True only if the file exists and is a directory.
         {
+            _Type := 5                                                  ; It is a normal folder
+
             if InStr(_Path, "PROPOSALS & TENDERS")                      ; Check if the path contain "PROPOSALS & TENDERS"
             {
-                _Type := 6
-                _Desc := ""
+                _Type := 6, _Desc := ""
             }
             else if InStr(_Path, "DESIGN PROJECTS")                     ; Check if the path contain "DESIGN PROJECTS"
             {
-                _Type := 7
-                _Desc := ""
-            }
-            else                                                        ; It is a normal folder
-            {
-                _Type := 5
+                _Type := 7, _Desc := ""
             }
         }
         
@@ -1751,95 +1760,6 @@ NameAddDate(WinName, CurrCtrl, isFile:= True)                           ; 在文
     Sleep,10
     SendInput {End}
     Log.Msg(WinName ", RenameWithDate=" NameWithDate)
-}
-;=============================================================
-; 使用 CapsLock 切换输入法
-; 为了让 Mac/Win 下的体验稍微一致些, 写了一个 ahk 脚本针对 CapsLock 键:
-; 单击 切换输入法(本质是调用 win + sapce), 双击/长按 切换 CapsLock 状态
-;=============================================================
-switchCapsLockState() 
-{
-    state := GetKeyState("CapsLock", "T")
-    nextState := !state
-    SetCapsLockState % nextState
-    
-    return nextState
-}
-
-showTip(isOn) 
-{
-    title := isOn ? "CapsLock: ON" : "CapsLock: OFF"
-    text := isOn ? "已打开" : "已关闭"
-
-    TrayTip, %title%, %text%, 1, 16
-    return 
-}
-
-ToggleAndShowTip()
-{
-    nextState :=switchCapsLockState()
-    showTip(nextState)
-
-    return
-}
-
-CapsLock::
-    if (g_EnableCapsLockIME)
-    {
-        KeyWait, CapsLock, T0.3
-
-        if (ErrorLevel) {
-            ; long click
-            ToggleAndShowTip()
-        } else {
-            KeyWait, CapsLock, D T0.1
-
-            if (ErrorLevel) {
-                ; single click
-                SendInput #{Space} 
-                ; 切换为中文时经常是中文输入法的英文模式,因为调用Win同时会调用Ctrl,Win10中设置：输入法模式右键-Key Configuration-Chinese/English mode switch-untick Ctrl+Space
-                ; 对当前窗口激活下一输入法,会在中文（中文模式）,中文（英文模式）,英文循环切换
-                ;DllCall("SendMessage", UInt, WinActive("A"), UInt, 80, UInt, 1, UInt, DllCall("ActivateKeyboardLayout", UInt, 1, UInt, 256))
-            } else {                                                    ; double click
-                ToggleAndShowTip()
-            }
-        }
-
-        KeyWait, CapsLock
-    }
-    else
-    {
-        switchCapsLockState()
-    }
-Return
-
-;=======================================================================
-; Library - Logger
-; Logs := New Logger("Logger.log")
-; Logs.Debug(A_LineNumber, "Test Log Message")
-;=======================================================================
-Class Logger
-{
-    __New(filename)
-    {
-        this.filename := filename
-        this.enable := True
-
-        if (!g_isLogging)                                               ; If disable logging, clean up logs
-        {
-            this.enable := False
-            FileDelete, %g_LogFile%
-            Return
-        }
-    }
-
-    Msg(Msg)
-    {
-        if (this.enable)
-        {
-            FileAppend, % "[" A_Now "] " Msg "`n", % this.filename
-        }
-    }
 }
 
 ;============================================================
@@ -2331,9 +2251,64 @@ SaveConfig(Arg)
     Return
 }
 
-;=======================================================================
-; Libraries
-;=======================================================================
+;=============================================================
+; Language Library (Switch ENG on Activate, CapsLock switch IME)
+; 为了让 Mac/Win 下的体验稍微一致些, 写了一个 ahk 脚本针对 CapsLock 键:
+; 单击 切换输入法(本质是调用 win + sapce), 双击/长按 切换 CapsLock 状态
+;=============================================================
+switchCapsLockState() 
+{
+    state := GetKeyState("CapsLock", "T")
+    nextState := !state
+    SetCapsLockState % nextState
+    
+    return nextState
+}
+
+showTip(isOn) 
+{
+    title := isOn ? "CapsLock: ON" : "CapsLock: OFF"
+    text := isOn ? "已打开" : "已关闭"
+
+    TrayTip, %title%, %text%, 1, 16
+    return 
+}
+
+ToggleAndShowTip()
+{
+    nextState :=switchCapsLockState()
+    showTip(nextState)
+
+    return
+}
+
+CapsLock::
+    if (g_EnableCapsLockIME)
+    {
+        KeyWait, CapsLock, T0.3
+
+        if (ErrorLevel) {                                               ; long click
+            ToggleAndShowTip()
+        } else {
+            KeyWait, CapsLock, D T0.1
+
+            if (ErrorLevel) {                                           ; single click
+                SendInput #{Space} 
+                ; 切换为中文时经常是中文输入法的英文模式,因为调用Win同时会调用Ctrl,Win10中设置：输入法模式右键-Key Configuration-Chinese/English mode switch-untick Ctrl+Space
+                ; 对当前窗口激活下一输入法,会在中文（中文模式）,中文（英文模式）,英文循环切换
+                ;DllCall("SendMessage", UInt, WinActive("A"), UInt, 80, UInt, 1, UInt, DllCall("ActivateKeyboardLayout", UInt, 1, UInt, 256))
+            } else {                                                    ; double click
+                ToggleAndShowTip()
+            }
+        }
+
+        KeyWait, CapsLock
+    }
+    else
+    {
+        switchCapsLockState()
+    }
+Return
 
 SwitchIME(dwLayout)
 {
@@ -2344,13 +2319,11 @@ SwitchIME(dwLayout)
 
 SwitchToEngIME()
 {
-    ; 下方代码可只保留一个
     SwitchIME(0x04090409) ; 英语(美国) 美式键盘
     SwitchIME(0x08040804) ; 中文(中国) 简体中文-美式键盘 / 中文(简体,新加坡)
 }
 
-; 0：英文 1：中文
-GetInputState(WinTitle = "A")
+GetInputState(WinTitle = "A")                                           ; 0：英文 1：中文
 {
     ControlGet, hwnd, HWND, , , %WinTitle%
     if (A_Cursor = "IBeam")
@@ -2503,4 +2476,33 @@ Eval(Expr, Format := FALSE)
     return InStr(Expr, "d") ? "" : InStr(Expr, "false") ? FALSE    ; d = body | undefined
                                  : InStr(Expr, "true")  ? TRUE
                                  : ( Format && InStr(Expr, "e") ? Format("{:f}",Expr) : Expr )
+}
+
+;=======================================================================
+; Library - Logger
+; Logs := New Logger("Logger.log")
+; Logs.Debug(A_LineNumber, "Test Log Message")
+;=======================================================================
+Class Logger
+{
+    __New(filename)
+    {
+        this.filename := filename
+        this.enable := True
+
+        if (!g_isLogging)                                               ; If disable logging, clean up logs
+        {
+            this.enable := False
+            FileDelete, %g_LogFile%
+            Return
+        }
+    }
+
+    Msg(Msg)
+    {
+        if (this.enable)
+        {
+            FileAppend, % "[" A_Now "] " Msg "`n", % this.filename
+        }
+    }
 }
