@@ -1,4 +1,4 @@
-;==============================================================
+﻿;==============================================================
 ; ALTRun - An effective launcher for Windows.
 ; https://github.com/zhugecaomao/ALTRun
 ;==============================================================
@@ -37,7 +37,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_InStartMenu := 1                        ; 是否添加快捷方式到开始菜单中
 , g_IndexDir := "A_ProgramsCommon | A_StartMenu" ; 搜索的目录,可以使用 全路径 或以 A_ 开头的AHK变量, 以 " | " 分隔, 路径可包含空格, 无需加引号
 , g_IndexFileType := "*.lnk | *.exe"        ; 搜索的文件类型, 以 " | " 分隔
-, g_IndexExclude := "Uninstall | 卸载"      ; 排除的文件,正则表达式
+, g_IndexExclude := "卸载 *|Uninstall *"    ; 排除的文件,正则表达式
 , g_SearchFullPath := 0                     ; 搜索完整路径,否则只搜文件名
 , g_ShowFileExt := 1                        ; 在界面显示文件扩展名
 , g_ShowIcon := 1                           ; Show Icon in File ListView
@@ -261,7 +261,7 @@ if (g_ShowTrayIcon)
     Menu, Tray, Icon, Options `tF2, Shell32.dll, -16826
     Menu, Tray, Icon, ReIndex `tCtrl+I, Shell32.dll, -16776
     Menu, Tray, Icon, Help `tF1, Shell32.dll, -24
-    Menu, Tray, Icon, AutoHotkey, %A_AhkPath%, -160
+    Menu, Tray, Icon, AutoHotkey, Imageres.dll, -160
     Menu, Tray, Icon, Reload `tCtrl+Q, Shell32.dll, -16739
     Menu, Tray, Icon, Exit `tAlt+F4, Imageres.dll, -5102
     Menu, Tray, Tip, %g_WinName%
