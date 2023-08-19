@@ -4,15 +4,12 @@
 ;==============================================================
 #Requires AutoHotkey v1.1
 #NoEnv                                                                  ; Recommended for performance and compatibility.
-#Warn All, StdOut ; OutputDebug / MsgBox                                ; Enable warnings to assist with detecting common errors.
 #SingleInstance, Force
 #NoTrayIcon
 #Persistent
 
 FileEncoding, UTF-8
-SendMode Input                                                          ; Recommended due to its superior speed and reliability.
 SetWorkingDir %A_ScriptDir%                                             ; Ensures a consistent starting directory.
-SetKeyDelay 0
 
 ;=============================================================
 ; 声明全局变量,定义配置文件设置
@@ -37,7 +34,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_InStartMenu := 1                        ; 是否添加快捷方式到开始菜单中
 , g_IndexDir := "A_ProgramsCommon | A_StartMenu" ; 搜索的目录,可以使用 全路径 或以 A_ 开头的AHK变量, 以 " | " 分隔, 路径可包含空格, 无需加引号
 , g_IndexFileType := "*.lnk | *.exe"        ; 搜索的文件类型, 以 " | " 分隔
-, g_IndexExclude := "卸载 *|Uninstall *"    ; 排除的文件,正则表达式
+, g_IndexExclude := "Uninstall *"           ; 排除的文件,正则表达式
 , g_SearchFullPath := 0                     ; 搜索完整路径,否则只搜文件名
 , g_ShowFileExt := 1                        ; 在界面显示文件扩展名
 , g_ShowIcon := 1                           ; Show Icon in File ListView
@@ -89,8 +86,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
     , "F1 = Show Help"
     , "F2 = Open Setting Config window"
     , "F3 = Edit config file (ALTRun.ini) directly"
-    , "Down Arrow = Move to next command"
-    , "Up Arrow = Move to previous command"
+    , "Arrow Up / Down = Move to Previous / Next command"
     , "Ctrl+H = Show command history"
     , "Ctrl+'+' = Increase rank of current command"
     , "Ctrl+'-' = Decrease rank of current command"
@@ -99,7 +95,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
     , "Ctrl+D = Open current command dir with TC / File Explorer"
     , "Command priority (rank) will auto adjust based on frequency"
     , "Start with www or http = Open website"
-    , "Start with + = Add New Command"
+    , "Start with + = New Command"
     , "Start with space = Search by Everything"]
 
 , g_Hotkey1 := "^s", g_Trigger1 := "Everything"
@@ -119,7 +115,7 @@ EnvGet, OneDriveCommercial, OneDriveCommercial                          ; OneDri
 ;=============================================================
 global Arg                                    ; 用来调用管道的完整参数（所有列）
 , FullPipeArg                                 ; 不能是 ALTRun.ahk 的子串,否则按键绑定会有问题
-, g_WinName := "ALTRun - Ver 07.2023"         ; 主窗口标题
+, g_WinName := "ALTRun - Ver 08.2023"         ; 主窗口标题
 , g_OptionsWinName := "ALTRun Options"        ; 选项窗口标题
 , g_CmdMgrWinName := "Command Manager"        ; 选项窗口标题
 , g_Commands                                  ; 所有命令
@@ -152,7 +148,7 @@ g_KeepInputText_TT := "Do not clear the content of the edit box when the window 
 g_TCPath_TT := "TotalCommander path with parameters, eg: C:\OneDrive\Apps\TotalCMD64\Totalcmd64.exe /O /T /S, if empty, use explorer to open"
 g_SelectTCPath_TT := "Select Total Commander file path"
 g_RunIfOnlyOne_TT := "Run directly if there is only one result"
-g_HideOnDeactivate_TT := "The window closes after the window loses focus, and the window stay-on-top display function fails after activation"
+g_HideOnDeactivate_TT := "The window closes after the window loses focus"
 g_AlwaysOnTop_TT := "Window on top most display"
 g_SaveHistory_TT := "Save command history"
 g_HistorySize_TT := "Number of recorded history"
@@ -208,7 +204,7 @@ Cancel_TT := "Discard the changes"
 ; Load Config and Set Logger
 ;=============================================================
 Global Log := New Logger(g_LogFile)                                     ; Global Log so that can use in other Lib
-Log.Msg("==== ALTRun is starting ====")
+Log.Msg("====== ALTRun is starting ======")
 
 LoadConfig("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
@@ -219,7 +215,7 @@ Menu, LV_ContextMenu, Add, Run`tEnter, ContextMenu                      ; ListVi
 Menu, LV_ContextMenu, Add, Open Path`tCtrl+D, OpenCurrentFileDir
 Menu, LV_ContextMenu, Add, Copy Command, ContextMenu
 Menu, LV_ContextMenu, Add
-Menu, LV_ContextMenu, Add, New Command, AddCommand
+Menu, LV_ContextMenu, Add, New Command, CmdMgr
 Menu, LV_ContextMenu, Add, Edit Command`tF3, EditCurrentCommand
 Menu, LV_ContextMenu, Add, User-defined Command`tF4, UserCommandList
 Menu, LV_ContextMenu, Add
@@ -291,7 +287,6 @@ AlwaysOnTop  := g_AlwaysOnTop ? "+AlwaysOnTop" : ""                     ; Check 
 Col2Width    := g_HideCol2 ? 0 : 60                                     ; Check ListView column 2 hide status
 LVGrid       := g_LVGrid ? "Grid" : ""                                  ; Check ListView Grid option
 WinHeight    := g_EditHeight + g_ListHeight + 30 + 23                   ; Original WinHeight
-WinY         := (A_ScreenHeight - WinHeight) / 3                        ; Set Win location
 ListWidth    := g_WinWidth - 20
 HideWin      := ""
 
@@ -326,7 +321,7 @@ SB_SetParts(g_WinWidth-120)
 ;=============================================================
 ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
 ;=============================================================
-Log.Msg("Resolving command line Args=" A_Args[1] " " A_Args[2] " " A_Args[3])
+Log.Msg("Resolving command line args=" A_Args[1] " " A_Args[2])
 
 if (A_Args[1] = "-startup" or A_Args[2]="-hide")                        ; App run from startup
 {
@@ -336,12 +331,11 @@ if (A_Args[1] = "-startup" or A_Args[2]="-hide")                        ; App ru
 
 if (A_Args[1] = "-SendTo")
 {
-    HideWin := " Hide"
-    Log.Msg("Starting ALTRun SendTo Mode...")
-    CmdMgr(A_Args[2], A_Args[3])
+    Log.Msg("Starting SendTo Mode...")
+    HideWin := " Hide", CmdMgr(A_Args[2])
 }
 
-Gui, Main:Show, xCenter y%WinY% w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName%
+Gui, Main:Show, Center w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName%
 
 if (g_SwitchToEngIME)
 {
@@ -424,10 +418,10 @@ TaskScheduler(g_EnableScheduler)                                        ; Task S
 
 ActivateALTRun()
 {
-    Gui, Main:Show,, %g_WinName%
     Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
+    Gui, Main:Show,, %g_WinName%
 
-    WinWaitActive, %g_WinName%,, 2                                      ; Use WinWaitActive 2s instead of previous Loop method
+    WinWaitActive, %g_WinName%,, 5                                      ; Use WinWaitActive 5s instead of previous Loop method
     {
         if (g_SwitchToEngIME)
         {
@@ -501,7 +495,7 @@ SearchCommand(command := "", firstRun := false)
 
     for index, element in g_Commands
     {
-        if (InStr(fullResult, element "`n") or inStr(g_ExcludedCommands, element "`n"))
+        if (InStr(fullResult, element) or inStr(g_ExcludedCommands, element))
         {
             continue
         }
@@ -516,7 +510,7 @@ SearchCommand(command := "", firstRun := false)
             SplitPath, _Path, fileName, fileDir, , nameNoExt
 
             elementToShow   := _Type " | " _Path " | " _Desc            ; Use _Path to show file icons
-            elementToSearch := _Type " " fileName " " _Desc             ; search file name include extension
+            elementToSearch := fileName " " _Desc                       ; search file name include extension & desc
 
             if (g_SearchFullPath)
             {
@@ -528,7 +522,7 @@ SearchCommand(command := "", firstRun := false)
             SplitPath, _Path, fileName, Dir, Ext, nameNoExt, Drive      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name) 
 
             elementToShow   := _Type " | " fileName " | " _Desc         ; Show folder name only
-            elementToSearch := _Type " " fileName " " _Desc             ; Search dir type + folder name + desc
+            elementToSearch := fileName " " _Desc                       ; Search dir type + folder name + desc
 
             if (g_SearchFullPath)
             {
@@ -540,7 +534,7 @@ SearchCommand(command := "", firstRun := false)
             elementToShow   := _Type " | " _Path " | " _Desc
             elementToSearch := StrReplace(_Path, "/", " ")
             elementToSearch := StrReplace(_Path, "\", " ")
-            elementToSearch := _type " " elementToSearch " " _Desc
+            elementToSearch := elementToSearch " " _Desc
         }
 
         if (g_CurrentInput = "" or FuzzyMatch(elementToSearch, g_CurrentInput))
@@ -558,11 +552,11 @@ SearchCommand(command := "", firstRun := false)
             {
                 result .= "`n" elementToShow
                 order++
-            }
-
-            if (order > g_DisplayRows)
-            {
-                break
+                
+                if (order > g_DisplayRows)
+                {
+                    break
+                }
             }
         }
     }
@@ -621,8 +615,7 @@ ListResult(text := "", ActWin := false, UseDisplay := false, UpdateSB := true) ;
         IL_Add(ImageListID1, "shell32.dll", -22)                        ; Add control panel icon for control type (IconNo=4)
         LV_SetImageList(ImageListID1)                                   ; Attach the ImageLists to the ListView so that it can later display the icons
         IconNo  := ""
-        sfi_size    := A_PtrSize + 8 + 680                              ; 计算 SHFILEINFO 结构需要的缓存大小
-        VarSetCapacity(sfi, sfi_size)
+        VarSetCapacity(sfi, sfi_size := 698)                            ; 计算 SHFILEINFO 结构需要的缓存大小
     }
     
     Loop Parse, text, `n, `r
@@ -977,14 +970,6 @@ UserCommandList()
     }
 }
 
-
-AddCommand()
-{
-    Path := """Command Path to specific..."""
-    Desc := """" Arg """"
-    CmdMgr(Path, Desc)
-}
-
 ClearInput()
 {
     GuiControl, Main:Text, %g_InputBox%,
@@ -1001,7 +986,7 @@ SetStatusBar(currentCommandMode := True)                                ; Status
     {
         g_RunCount ++
         Random, HintIndex, 1, g_Hints.Length()                          ; 随机抽出一条提示信息
-        SBText := g_Hints[HintIndex]                                    ; 每次有效激活窗口之后StatusBar展示提示信息
+        SBText := "Tip : " g_Hints[HintIndex]                           ; 每次有效激活窗口之后StatusBar展示提示信息
     }
     SB_SetText(SBText, 1)                                               ; Omite SB_SetIcon for better performance
     SB_SetText("RunCount: "g_RunCount, 2)
@@ -1047,7 +1032,7 @@ ParseArg()
 FuzzyMatch(Haystack, Needle)
 {
     Needle := StrReplace(Needle, " ", ".*")                             ; RegExMatch should able to search with space as & separater, but do not know now, use this way first.
-    Return RegExMatch(Haystack, "im)" Needle)                           ; Use RegExMatch replace InStr & TCMatch
+    Return RegExMatch(Haystack, "imS)" Needle)
 }
 
 ChangeRank(originCmd, showToolTip := false, inc := 1)
@@ -1532,50 +1517,37 @@ ChangePath(Dir)
     Log.Msg("Listary Change Path=" Dir)
 }
 
-;=========================================================
-; 命令管理可视化功能
-;=========================================================
-CmdMgr(Arg1, Arg2)
+;============================= 命令管理窗口 =============================
+CmdMgr(Param := "")
 {
-    global
-    Log.Msg("Starting Command Manager... Args=" Arg1 " " Arg2)
+    Global
+    _Path := Param
+    Log.Msg("Starting Command Manager... Args=" _Path)
 
-    _Path   := Arg1                                                     ; _Path: cmd type eg. file, url, cmd, dir
-    _Desc   := Arg2                                                     ; _Desc: cmd name or description, searchable
-
-    if (_Desc = "")                                                     ; Normally this type is from file right click "SendTo"
+    SplitPath _Path, _Desc, fileDir, fileExt, nameNoExt, fileDrive      ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name) 
+    
+    if InStr(FileExist(_Path), "D")                                     ; True only if the file exists and is a directory.
     {
-        SplitPath _Path, _Desc, fileDir, fileExt, nameNoExt, fileDrive  ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name) 
-        
-        if InStr(FileExist(_Path), "D")                                 ; True only if the file exists and is a directory.
-        {
-            _Type := 5                                                  ; It is a normal folder
+        _Type := 5                                                      ; It is a normal folder
 
-            if InStr(_Path, "PROPOSALS & TENDERS")                      ; Check if the path contain "PROPOSALS & TENDERS"
-            {
-                _Type := 6, _Desc := ""
-            }
-            else if InStr(_Path, "DESIGN PROJECTS")                     ; Check if the path contain "DESIGN PROJECTS"
-            {
-                _Type := 7, _Desc := ""
-            }
+        if InStr(_Path, "PROPOSALS & TENDERS")                          ; Check if the path contain "PROPOSALS & TENDERS"
+        {
+            _Type := 6, _Desc := ""
         }
-        
-        if (fileExt = "lnk" && g_SendToGetLnk)
+        else if InStr(_Path, "DESIGN PROJECTS")                         ; Check if the path contain "DESIGN PROJECTS"
         {
-            FileGetShortcut, %_Path%, _Path, fileDir, targetArg, fileDesc
-
-            if (fileDesc = _Path)
-            {
-                fileDesc := ""
-            }
-
-            _Path .= " " targetArg
+            _Type := 7, _Desc := ""
         }
     }
-    else                                                                ; Normally this type is from ALTRun AddCommand
+    else                                                                ; From command "New Command" or GUI context menu "New Command"
     {
-        ;_Desc := _Desc
+       _Desc := Arg
+    }
+    
+    if (fileExt = "lnk" && g_SendToGetLnk)
+    {
+        FileGetShortcut, %_Path%, _Path, fileDir, fileArg, _Desc
+        _Path .= " " fileArg
     }
 
     _Path := StrReplace(_Path, OneDriveConsumer, "%OneDriveConsumer%")  ; Convert absolute path to relative path, but problem with FileExist()
@@ -1583,7 +1555,6 @@ CmdMgr(Arg1, Arg2)
 
     Gui, CmdMgr:New
     Gui, CmdMgr:Font, s8, Century Gothic, wRegular
-    Gui, CmdMgr:+AlwaysOnTop +LastFound +OwnDialogs
     Gui, CmdMgr:Margin, 5, 5
     Gui, CmdMgr:Add, GroupBox, w550 h220, Add Command
     Gui, CmdMgr:Add, Text, xp+20 yp+35, Command Type: 
@@ -1596,7 +1567,6 @@ CmdMgr(Arg1, Arg2)
     Gui, CmdMgr:Add, Button, Default x415 w65, OK
     Gui, CmdMgr:Add, Button, xp+75 yp w65, Cancel
 
-    Gui, Main:Hide                                                      ; 隐藏主窗口
     Gui, CmdMgr:Show, AutoSize, %g_CmdMgrWinName%
     Return
 }
@@ -1668,20 +1638,6 @@ CmdMgrGuiClose()
 
 AppControl()
 {
-    ;=============== Run Total Commander =================
-    /*
-    #z::
-        DetectHiddenWindows, on
-        IfWinNotExist ahk_class TTOTAL_CMD
-            Run, "%g_TCPath%"
-        Else
-            IfWinNotActive ahk_class TTOTAL_CMD
-            WinActivate
-        Else
-            WinMinimize
-    Return
-    */
-
     ;================================================
     ; Ctrl+D 自动添加日期 生效的应用程序
     ;================================================
@@ -1772,65 +1728,52 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     
     Gui, Setting:New
     Gui, Setting:Font, s8, Century Gothic, wRegular
-    Gui, Setting:+LastFound +OwnDialogs +AlwaysOnTop
     Gui, Setting:Margin, 5, 5
-
     Gui, Setting:Add, Tab3,xm ym vCurrTab Choose%ActTab% -Wrap, General|Index|GUI|Command|Hotkey|Plugins|Help
 
     Gui, Setting:Tab, 1                                                 ; Config Tab
     Gui, Setting:Add, GroupBox, w520 h420, General Settings
-
     Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_AutoStartup checked%g_AutoStartup%, Startup with Windows
     Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableSendTo checked%g_EnableSendTo%, Create SendTo menu
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_InStartMenu checked%g_InStartMenu%, Add into Start Menu
     Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowIcon checked%g_ShowIcon%, Show icon in file list
-
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Save command history
     Gui, Setting:Add, CheckBox, xp+250 yp vg_KeepInputText checked%g_KeepInputText%, Keep input text when close window
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_AutoRank checked%g_AutoRank%, Auto Rank as per frequency
     Gui, Setting:Add, CheckBox, xp+250 yp vg_RunIfOnlyOne checked%g_RunIfOnlyOne%, Run if only one result
-    
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SearchFullPath checked%g_SearchFullPath%, Search Full Path
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_HideOnDeactivate checked%g_HideOnDeactivate%, Close window when deactivate
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_HideOnDeactivate checked%g_HideOnDeactivate%, Close window when lose focus
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_AlwaysOnTop checked%g_AlwaysOnTop%, Window Always-On-Top
     Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableCapsLockIME checked%g_EnableCapsLockIME%, Enable CapsLock Switch IME
-
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SwitchToEngIME checked%g_SwitchToEngIME%, Switch To Eng IME
     Gui, Setting:Add, CheckBox, xp+250 yp vg_isLogging checked%g_isLogging%, Enable Logging
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_EscClearInput checked%g_EscClearInput%, Esc clear input then close window
-    Gui, Setting:Add, CheckBox, xp+250 yp, #SendTo Menu Simple Mode
-
+    Gui, Setting:Add, CheckBox, xp+250 yp, #
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SendToGetLnk checked%g_SendToGetLnk%, SendTo Menu Retrieves Lnk Target
     Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowFileExt checked%g_ShowFileExt%, Show file extension
-
     Gui, Setting:Add, Text, xp-250 yp+40, Text Editor (eg. Notepad2): 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Editor, %g_Editor%
-
     Gui, Setting:Add, Text, xp-150 yp+40, Everything.exe Path: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Everything, %g_Everything%
-
     Gui, Setting:Add, Text, xp-150 yp+40, Total Commander Path: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_TCPath, %g_TCPath%
     
     Gui, Setting:Tab, 2                                                 ; Index Tab
     Gui, Setting:Add, GroupBox, w520 h420, Index Options
-
     Gui, Setting:Add, Text, xp+10 yp+40, Index Locations: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_IndexDir, %g_IndexDir%
     Gui, Setting:Add, Text, xp-150 yp+40, Index File Type: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_IndexFileType, %g_IndexFileType%
     Gui, Setting:Add, Text, xp-150 yp+40, Index File Exclude: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_IndexExclude, %g_IndexExclude%
-
     Gui, Setting:Add, Text, xp-150 yp+40, HistorySize: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_HistorySize, %g_HistorySize%
 
     Gui, Setting:Tab, 3                                                 ; GUI Tab
     Gui, Setting:Add, GroupBox, w520 h420, GUI Details
-
     Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_HideTitle checked%g_HideTitle%, Hide Title Bar
     Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowTrayIcon checked%g_ShowTrayIcon%, Show Tray Icon
-    Gui, Setting:Add, CheckBox, xp-250 yp+30, #Show status bar
+    Gui, Setting:Add, CheckBox, xp-250 yp+30, #
     Gui, Setting:Add, CheckBox, xp+250 yp vg_HideCol2 checked%g_HideCol2%, Hide 2nd Column
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_LVGrid checked%g_LVGrid%, Show Grid in Command ListView
     Gui, Setting:Add, CheckBox, xp+250 yp, #
@@ -1852,7 +1795,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_EditHeight, %g_EditHeight%
     Gui, Setting:Add, Text, xp-400 yp+40, Command List Height: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_ListHeight, %g_ListHeight%
-    Gui, Setting:Add, Text, xp+100 yp+5, #Transparency (100-255):
+    Gui, Setting:Add, Text, xp+100 yp+5, #
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80,
     Gui, Setting:Add, Text, xp-400 yp+40, Controls' Color:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_CtrlColor, %g_CtrlColor%
@@ -1860,11 +1803,10 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_WinColor, %g_WinColor%
     Gui, Setting:Add, Text, xp-400 yp+40, Background Picture: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_BackgroundPicture, %g_BackgroundPicture%
-    Gui, Setting:Add, Text, xp+100 yp+5, #Border Size: 
+    Gui, Setting:Add, Text, xp+100 yp+5, #
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80,
 
     Gui, Setting:Tab, 5                                                 ; Hotkey Tab
-
     Gui, Setting:Add, GroupBox, w520 h85, Active ALTRun Global Hotkey:
     Gui, Setting:Add, Text, xp+10 yp+25 , Global Hotkey 1:
     Gui, Setting:Add, CheckBox, xp+150 yp w100 vg_GlobalHotkey1Win checked%g_GlobalHotkey1Win%, Win         +
@@ -1911,22 +1853,11 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
 
     AllFunctions := GetAllFunctions()
 
-    Gui, Setting:Add, Edit, xp+10 yp+20 w500 h380 ReadOnly -WantReturn vHelpText,
+    Gui, Setting:Add, Edit, xp+10 yp+20 w500 h380 ReadOnly -WantReturn -Wrap,
     (Ltrim
-    # ALTRun
-    ALTRun - An effective launcher for Windows, open source project
-    Similar to RunZ(AutoHotkey) and ALTRun(Pascal).
-    
-    1. Pure portable software, will not write anything into Registry.
-    2. Small size (< 2MB) and low resources usage (< 10MB RAM). 
-    3. Highly customizable with GUI (Main Window, Options, Command Manager)
-    2. Listary Quick Switch Dir function added
-    3. AppControl func added, eg. Press middle mouse button to open PT Tools
-
-    # GUI
-    ![GUI](https://github.com/zhugecaomao/ALTRun/releases)
-
-    # [Download](https://github.com/zhugecaomao/ALTRun/releases)
+    ALTRun
+    An effective launcher for Windows, open source project
+    https://github.com/zhugecaomao/ALTRun
 
     ------------------------------------------------------------------------
     Congraduations! You have run shortcut %g_RunCount% times by now! 
@@ -1966,17 +1897,14 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     No Result		搜索无结果,回车用 ahk 运行
     Space       	输入空格后,搜索内容锁定
     ------------------------------------------------------------------------
-    All other functions:-
+    All Commands:-
 
     %AllFunctions%
     )
 
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面那个选项卡控件
-    Gui, Setting:Add, Button, Default x320 w65, OK
-    Gui, Setting:Add, Button, xp+75 yp w65, Cancel
-    Gui, Setting:Add, Button, xp+75 yp w65, Help
-
-    Gui, Main:Hide                                                      ;隐藏主窗口
+    Gui, Setting:Add, Button, Default x370 w80, OK
+    Gui, Setting:Add, Button, xp+90 yp w80, Cancel
     Gui, Setting:Show, AutoSize, %g_OptionsWinName%
 }
 
@@ -1986,12 +1914,8 @@ GetAllFunctions()
     result := ""
     for index, element in g_Commands
     {
-        if (InStr(element, "function | ") && !InStr(result, element "`n"))
-        {
-            result .= element "`n"
-        }
+        result .= element "`n"
     }
-    result := StrReplace(result, "function | ", "")
     Return result
 }
 
@@ -2015,11 +1939,6 @@ SettingGuiClose()
 {
     RemoveToolTip()
     Gui, Setting:Destroy
-}
-
-SettingButtonHelp()
-{
-    GuiControl , Setting:Choose, CurrTab, 7
 }
 
 ;=============================================================
@@ -2077,7 +1996,7 @@ LoadConfig(Arg)
             Function | ALTRun_Log | ALTRun Log File=100
             Function | ALTRun_Reload | ALTRun Reload=100
             Function | ShowCmdHistory | History Commands=100
-            Function | AddCommand | Add new command=100
+            Function | CmdMgr | New Command=100
             Function | UserCommandList | ALTRun User-defined command (F4)=100
             Function | ReindexFiles | Reindex search database=100
             Function | Everything | Search by Everything=100
@@ -2196,7 +2115,7 @@ LoadConfig(Arg)
             ; Fallback Commands show when search result is empty
             ; Commands in order, Press Enter to run first command
             ;
-            Function | AddCommand | Add new command
+            Function | CmdMgr | New Command
             Function | Everything | Search by Everything
             Function | SearchOnGoogle | Search Clipboard or Input by Google
             Function | AhkRun | Run Command use AutoHotkey Run
@@ -2330,11 +2249,10 @@ GetInputState(WinTitle = "A")                                           ; 0：�
         return 1
     if (WinActive(WinTitle))
     {
-        ptrSize := !A_PtrSize ? 4 : A_PtrSize
-        VarSetCapacity(stGTI, cbSize := 4 + 4 + (PtrSize * 6) + 16, 0)
+        VarSetCapacity(stGTI, cbSize := 72, 0)
         NumPut(cbSize, stGTI, 0, "UInt")   ;   DWORD   cbSize;
         hwnd := DllCall("GetGUIThreadInfo", Uint, 0, Uint, &stGTI)
-                        ? NumGet(stGTI, 8 + PtrSize, "UInt") : hwnd
+                        ? NumGet(stGTI, 16, "UInt") : hwnd
     }
     return DllCall("SendMessage"
         , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint, hwnd)
