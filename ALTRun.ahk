@@ -297,10 +297,11 @@ Gui, Main:%HideTitle% %AlwaysOnTop%
 Gui, Main:Add, Picture, x0 y0 0x4000000, %g_BGPicture%                  ; If the picture cannot be loaded or displayed, the control is left empty and its W&H are set to zero. So FileExist() is not necessary.
 Gui, Main:Add, Edit, x10 y10 w%ListWidth% h%g_EditHeight% -WantReturn v%g_InputBox% gSearchCommand, Type anything here to search...
 Gui, Main:Add, ListView, Count15 y+10 w%ListWidth% h%g_ListHeight% v%g_ListView% gLVAction +LV0x00010000 %LVGrid% -Multi AltSubmit, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
-Gui, Main:Add, StatusBar, v%g_StatusBar%, Nice! You have run shortcut %g_RunCount% times by now!
+Gui, Main:Add, StatusBar, v%g_StatusBar%,
 Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
-Gui, Main:Default                                                       ; Set default GUI before any ListView update
+Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
 
+SB_SetParts(g_WinWidth-120)
 LV_ModifyCol(1, "40 Integer")                                           ; set ListView column width and format, Integer can use for sort
 LV_ModifyCol(2, Col2Width)
 LV_ModifyCol(3, Col3Width)
@@ -316,9 +317,8 @@ ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show i
          . "Function | Enter or ALT+No. | Run selected command`n"
          . "Function | UP or DOWN | Select previous or next command`n"
          . "Function | CTRL+D | Open cmd dir with TC or File Explorer"
-         , False, False, True)
-SB_SetParts(g_WinWidth-120)
-
+         , False, False)
+SetStatusBar("Nice! You have run shortcut " g_RunCount " times by now!")
 ;=============================================================
 ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
 ;=============================================================
@@ -416,7 +416,6 @@ Listary(), AppControl(), TaskScheduler(g_EnableScheduler)
 ActivateALTRun()
 {
     Gui, Main:Show,, %g_WinName%
-    Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
     SetStatusBar("Hint")                                                ; Show hint in StatusBar
 
     WinWaitActive, %g_WinName%,, 3                                      ; Use WinWaitActive 3s instead of previous Loop method
@@ -454,7 +453,7 @@ ToggleWindow()
     }
 }
 
-SearchCommand(command := "", firstRun := false)
+SearchCommand(command := "")
 {
     Global
     GuiControlGet, g_CurrentInput, Main:,%g_InputBox%                   ; Get input text
@@ -583,7 +582,7 @@ SearchCommand(command := "", firstRun := false)
     ListResult(result, false, false)
 }
 
-ListResult(text := "", ActWin := false, UseDisplay := false, FirstRun := False) ; 用来显示控制界面 & 用来显示命令结果
+ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来显示控制界面 & 用来显示命令结果
 {
     if (ActWin)
     {
@@ -691,8 +690,7 @@ ListResult(text := "", ActWin := false, UseDisplay := false, FirstRun := False) 
         RunCommand(g_CurrentCommand)
     }
 
-    if (!FirstRun)
-        SetStatusBar("CurrentCmd")
+    SetStatusBar("CurrentCmd")
 }
 
 AbsPath(Path)                                                           ; Convert to absolute path
