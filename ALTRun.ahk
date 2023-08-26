@@ -25,7 +25,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
     ,  SEC_HISTORY  := "History"
     ,  SEC_INDEX    := "Index"
 
-, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,IndexDir,IndexFileType,IndexExclude,SearchFullPath,ShowFileExt,ShowIcon,KeepInputText,RunIfOnlyOne,HideOnDeactivate,AlwaysOnTop,SaveHistory,HistorySize,isLogging,AutoRank,SwitchToEngIME,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,EnableScheduler,ShutdownTime,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
+, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,IndexDir,IndexFileType,IndexExclude,SearchFullPath,ShowFileExt,ShowIcon,KeepInputText,HideOnDeactivate,AlwaysOnTop,SaveHistory,HistorySize,isLogging,AutoRank,SwitchToEngIME,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,EnableScheduler,ShutdownTime,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
 , KEYLIST_GUI    := "HideTitle,ShowTrayIcon,HideCol2,LVGrid,DisplayRows,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,BackgroundPicture"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey1Win,GlobalHotkey2,GlobalHotkey2Win,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,RunCmdAlt,EnableCapsLockIME,TotalCMDDir,ExplorerDir"
 
@@ -40,7 +40,6 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_ShowIcon := 1                           ; Show Icon in File ListView
 , g_KeepInputText := 1                      ; 窗口隐藏时不清空编辑框内容
 , g_TCPath := A_Space                       ; TotalCommander 路径,如果为空则使用资源管理器打开
-, g_RunIfOnlyOne := 0                       ; 如果结果中只有一个则直接运行
 , g_HideOnDeactivate := 1                   ; 窗口失去焦点后关闭窗口
 , g_AlwaysOnTop := 1                        ; 窗口置顶显示
 , g_SaveHistory := 1                        ; 记录历史
@@ -147,7 +146,6 @@ g_ShowIcon_TT := "Show icon in file ListView"
 g_KeepInputText_TT := "Do not clear the content of the edit box when the window is hidden"
 g_TCPath_TT := "TotalCommander path with parameters, eg: C:\OneDrive\Apps\TotalCMD64\Totalcmd64.exe /O /T /S, if empty, use explorer to open"
 g_SelectTCPath_TT := "Select Total Commander file path"
-g_RunIfOnlyOne_TT := "Run directly if there is only one result"
 g_HideOnDeactivate_TT := "The window closes after the window loses focus"
 g_AlwaysOnTop_TT := "Window on top most display"
 g_SaveHistory_TT := "Save command history"
@@ -177,18 +175,16 @@ g_CtrlColor_TT := "Set Color for Controls in Window"
 g_WinColor_TT := "Window background color, including border color, current command detail box color, value can be like: White, Default, EBFFEB, 0xEBFFEB"
 g_BackgroundPicture_TT := "Background picture, the background picture can only be displayed in the border part.`nIf there is a splash screen after using the picture, first adjust the size of the picture to solve the window size and improve the loading speed.`nIf the splash screen is still obvious, please Hollow and fill the position of the text box on the picture with a color similar to the text background, or modify it to the transparent color of png"
 
-g_Hotkey1_TT := "Shortcut key 1`nkey=Default can cancel the key mapping in the code`n Note that the priority is higher than the default Alt + alphanumeric series keys, do not modify the Alt mapping without special reasons"
+g_Hotkey1_TT := "Shortcut key 1`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
 g_Trigger1_TT := "Function to be triggered by Hotkey 1"
-g_Hotkey2_TT := "Shortcut key 2`nkey=Default can cancel the key mapping in the code`n Note that the priority is higher than the default Alt + alphanumeric series keys, if there is no special reason, do not modify the Alt mapping"
+g_Hotkey2_TT := "Shortcut key 2`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
 g_Trigger2_TT := "Function to be triggered by Hotkey 2"
-g_Hotkey3_TT := "Shortcut key 3`nkey=Default can cancel the key mapping in the code`n Note that the priority is higher than the default Alt + alphanumeric series keys, do not modify the Alt mapping without special reasons"
+g_Hotkey3_TT := "Shortcut key 3`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
 g_Trigger3_TT := "Function to be triggered by Hotkey 3"
 g_RunCmdAlt_TT := "Press Alt + command number to run the command, untick means Press command number to run the command"
 g_EnableCapsLockIME_TT := "Use CapsLock to switch input methods (similar to macOS)"
-g_GlobalHotkey1Win_TT := "Enable Win key"
-g_GlobalHotkey1_TT := "Activate ALTRun global hotkey"
-g_GlobalHotkey2Win_TT := "Enable Win key"
-g_GlobalHotkey2_TT := "Activate ALTRun global hotkey"
+g_GlobalHotkey1_TT := "Global hotkey 1 to activate ALTRun"
+g_GlobalHotkey2_TT := "Global hotkey 2 to activate ALTRun"
 
 g_AutoSwitchDir_TT := "Listary - Auto Switch Dir"
 g_FileManager_TT := "Win Title or Class name of the File Manager, separated by '|', default is: ahk_class CabinetWClass|ahk_class TTOTAL_CMD (Windows Explorer and Total Commander)"
@@ -219,7 +215,7 @@ Menu, LV_ContextMenu, Add, New Command, CmdMgr
 Menu, LV_ContextMenu, Add, Edit Command`tF3, EditCurrentCommand
 Menu, LV_ContextMenu, Add, User-defined Command`tF4, UserCommandList
 Menu, LV_ContextMenu, Add
-Menu, LV_ContextMenu, Add, History `tCtrl+H, ShowCmdHistory
+Menu, LV_ContextMenu, Add, History `tCtrl+H, History
 Menu, LV_ContextMenu, Add, Options `tF2, Options
 Menu, LV_ContextMenu, Add, Help `tF1, Help
 
@@ -364,7 +360,7 @@ Hotkey, F4, UserCommandList
 Hotkey, ^q, ALTRun_Reload
 Hotkey, ^d, OpenCurrentFileDir
 Hotkey, ^i, ReindexFiles
-Hotkey, ^H, ShowCmdHistory
+Hotkey, ^H, History
 Hotkey, ^NumpadAdd, IncreaseRank
 Hotkey, ^NumpadSub, DecreaseRank
 Hotkey, Down, NextCommand
@@ -426,14 +422,7 @@ ActivateALTRun()
         }
 
         GuiControl, Main:Focus, %g_InputBox%
-        if (g_KeepInputText)
-        {
-            ControlSend, %g_InputBox%, ^a, %g_WinName%                  ; 如设置为保留输入框内容,则全选
-        }
-        else
-        {
-            GuiControl, Main:Text, %g_InputBox%,                        ; 如设置为清空输入框内容
-        }
+        ControlSend, %g_InputBox%, ^a, %g_WinName%                      ; Select all content in Input Box
     }
     if ErrorLevel
     {
@@ -457,7 +446,8 @@ SearchCommand(command := "")
 {
     Global
     GuiControlGet, g_CurrentInput, Main:,%g_InputBox%                   ; Get input text
-    
+
+    StartTime := A_TickCount
     g_UseDisplay    := false
     result          := ""
     commandPrefix   := SubStr(g_CurrentInput, 1, 1)
@@ -490,44 +480,45 @@ SearchCommand(command := "")
 
     for index, element in g_Commands
     {
-        splitedElement := StrSplit(element, " | ")
-        _Type := splitedElement[1]
-        _Path := splitedElement[2]
-        _Desc := splitedElement[3]
+        _Type := StrSplit(element, " | ")[1]
+        _Path := StrSplit(element, " | ")[2]
+        _Desc := StrSplit(element, " | ")[3]
 
         if (_Type = "file")                                             ; Equal (=), case-sensitive-equal (==)
         {
-            SplitPath, _Path, fileName, fileDir, , nameNoExt
-
-            elementToShow   := _Type " | " _Path " | " _Desc            ; Use _Path to show file icons
-            elementToSearch := fileName " " _Desc                       ; search file name include extension & desc
-
+            elementToShow := _Type " | " _Path " | " _Desc              ; Use _Path to show file icons
             if (g_SearchFullPath)
             {
-                elementToSearch := StrReplace(fileDir, "\", " ") " " elementToSearch ; 搜索路径时强行将 \ 转成空格
+                elementToSearch := StrReplace(_Path, "\", " ") " " _Desc ; 搜索路径时强行将 \ 转成空格
+            }
+            else
+            {
+                SplitPath, _Path, fileName
+                elementToSearch := fileName " " _Desc                   ; search file name include extension & desc
             }
         }
         else if (_Type = "dir" or _Type = "tender" or _Type = "project")
         {
-            SplitPath, _Path, fileName, Dir, Ext, nameNoExt, Drive      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name) 
+            SplitPath, _Path, fileName                                  ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name) 
 
             elementToShow   := _Type " | " fileName " | " _Desc         ; Show folder name only
-            elementToSearch := fileName " " _Desc                       ; Search dir type + folder name + desc
-
             if (g_SearchFullPath)
             {
-                elementToSearch := StrReplace(_Path, "\", " ") " " elementToSearch ; 搜索路径时强行将 \ 转成空格
+                elementToSearch := StrReplace(_Path, "\", " ") " " _Desc ; 搜索路径时强行将 \ 转成空格
+            }
+            else
+            {
+                elementToSearch := fileName " " _Desc                       ; Search dir type + folder name + desc
             }
         }
         else
         {
             elementToShow   := _Type " | " _Path " | " _Desc
             elementToSearch := StrReplace(_Path, "/", " ")
-            elementToSearch := StrReplace(elementToSearch, "\", " ")
-            elementToSearch := elementToSearch " " _Desc
+            elementToSearch := StrReplace(elementToSearch, "\", " ") " " _Desc
         }
 
-        if (g_CurrentInput = "" or FuzzyMatch(elementToSearch, g_CurrentInput))
+        if (FuzzyMatch(elementToSearch, g_CurrentInput))
         {
             g_CurrentCommandList.Push(element)
 
@@ -541,11 +532,8 @@ SearchCommand(command := "")
             {
                 result .= "`n" elementToShow
                 order++
-                
                 if (order > g_DisplayRows)
-                {
                     break
-                }
             }
         }
     }
@@ -580,6 +568,7 @@ SearchCommand(command := "")
     }
 
     ListResult(result, false, false)
+    Log.Msg("Search command=" g_CurrentInput ", ElapsedTime=" A_TickCount - StartTime)
 }
 
 ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来显示控制界面 & 用来显示命令结果
@@ -684,13 +673,7 @@ ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来
     LV_Modify(0, "-Select")                                             ; De-select all.
     LV_Modify(1, "Select Focus Vis")                                    ; select 1st row
     GuiControl, Main:+Redraw, %g_ListView%                              ; 重新启用重绘 (上面把它禁用了)
-
-    if (g_CurrentCommandList.Length() = 1 and g_RunIfOnlyOne)
-    {
-        RunCommand(g_CurrentCommand)
-    }
-
-    SetStatusBar("CurrentCmd")
+    SetStatusBar()
 }
 
 AbsPath(Path)                                                           ; Convert to absolute path
@@ -750,7 +733,7 @@ RunCommand(originCmd)
         Run, %_Path%
     }
 
-    if (g_SaveHistory && _Path != "ShowCmdHistory")                     ; Save command history
+    if (g_SaveHistory && _Path != "History")                            ; Save command history
     {
         if (Arg != "")
         {
@@ -806,30 +789,21 @@ GotoCommand()
 
     if (g_CurrentCommand != "")
     {
-        ChangeCommand(index - 1, True)
+        ChangeCommand(index, True)
     }
 }
 
-ChangeCommand(Step = 1, ResetSelRow = false)
+ChangeCommand(Step = 1, ResetSelRow = False)
 {
     Gui, Main:Default                                                   ; Use it before any LV update
 
-    if (ResetSelRow)
-        SelRow := 1
-    else
-        SelRow := LV_GetNext()                                          ; Get selected row no.
-
-    SelRow += Step
-    if (SelRow > LV_GetCount())                                          ; Listview cycle selection
-        SelRow := 1
-    else if (SelRow < 1)
-        SelRow := LV_GetCount()
+    SelRow := ResetSelRow ? Step : LV_GetNext() + Step                  ; Get target row no. to be selected
+    SelRow := Mod(SelRow, LV_GetCount())                                ; Listview cycle selection
+    g_CurrentCommand := g_CurrentCommandList[SelRow]                    ; Get current command from selected row
 
     LV_Modify(0, "-Select")
     LV_Modify(SelRow, "Select Focus Vis")                               ; make new index row selected, Focused, and Visible
-
-    g_CurrentCommand := g_CurrentCommandList[SelRow]                    ; Get current command from selected row
-    SetStatusBar("CurrentCmd")
+    SetStatusBar()
 }
 
 ;=============================================================
@@ -873,7 +847,7 @@ LVAction()                                                              ; Double
     }
     else if (A_GuiEvent = "Normal")                                     ; left click behavior
     {
-        SetStatusBar("CurrentCmd")
+        SetStatusBar()
     }
 }
 
@@ -955,10 +929,10 @@ ClearInput()
     GuiControl, Main:Focus, %g_InputBox%
 }
 
-SetStatusBar(Mode := "CurrentCmd")                                      ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
+SetStatusBar(Mode := "Command")                                         ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
 {
     Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
-    if (Mode = "CurrentCmd")
+    if (Mode = "Command")
     {
         SBText :=StrSplit(g_CurrentCommand, " | ")[2]
     }
@@ -972,8 +946,7 @@ SetStatusBar(Mode := "CurrentCmd")                                      ; Set St
     {
         SBText := Mode
     }
-    SB_SetText(SBText, 1)                                               ; Omite SB_SetIcon for better performance
-    SB_SetText("RunCount: "g_RunCount, 2)
+    SB_SetText(SBText, 1), SB_SetText("RunCount: "g_RunCount, 2)        ; Omite SB_SetIcon for better performance
 }
 
 RunCurrentCommand()
@@ -1046,7 +1019,7 @@ ChangeRank(originCmd, showRank := false, inc := 1)
 
         if (showRank)
         {
-            SetStatusBar("Current command rank adjusted to : " Rank)
+            SetStatusBar("Rank for current command adjusted to : " Rank)
         }
     }
     LoadCommands()                                                      ; New rank will take effect in real-time by LoadCommands again
@@ -1054,15 +1027,6 @@ ChangeRank(originCmd, showRank := false, inc := 1)
 
 RunSelectedCommand()
 {
-    if (SubStr(A_ThisHotkey, 1, 1) = "~")
-    {
-        GuiControlGet, CurrCtrl, Main:FocusV
-        if (CurrCtrl = g_InputBox)
-        {
-            Return
-        }
-    }
-
     index := SubStr(A_ThisHotkey, 0, 1)
     RunCommand(g_CurrentCommandList[index])
 }
@@ -1130,31 +1094,17 @@ LoadHistoryCommands()
     }
 }
 
-ShowCmdHistory()
+History()
 {
     result := ""
-    g_CurrentCommandList := Object()
-
     for i, element in g_HistoryCommands
     {
-        if (i = 1)
-        {
-            g_CurrentCommand := element
-        }
-        else
-        {
-            result .= "`n"
-        }
-
-        _Type   := StrSplit(element, " | ")[1]
         _Path   := StrSplit(element, " | ")[2]
         _Desc   := StrSplit(element, " | ")[3]
         _Arg    := StrSplit(element, " | ")[4]
-        result  .= _Type " | " _Path " | " _Desc " #Arg： " _Arg
-
-        g_CurrentCommandList.Push(element)
+        result  .= i ". " _Path " | " _Desc " #Arg： " _Arg "`n"
     }
-    ListResult(result, true, true)
+    MsgBox, 64, %g_WinName%, Command History :-`n`n%result%
 }
 
 GetCmdOutput(command)
@@ -1347,14 +1297,7 @@ ReindexFiles()                                                          ; Re-cre
     IniDelete, %g_IniFile%, %SEC_INDEX%
     for dirIndex, dir in StrSplit(g_IndexDir, "|")
     {
-        if (InStr(dir, "A_"))
-        {
-            searchPath := %dir%
-        }
-        else
-        {
-            searchPath := dir
-        }
+        searchPath := AbsPath(dir)
 
         for extIndex, ext in StrSplit(g_IndexFileType, "|")
         {
@@ -1596,14 +1539,9 @@ CmdMgrGuiClose()
 }
 
 ;=========================================================
-; AppControl 功能代码 (可以独立成单独的AHK文件)
-;=========================================================
-
-AppControl()
+; AppControl (Ctrl+D 自动添加日期, 鼠标中间激活PT Tools)
+AppConTrol()
 {
-    ;================================================
-    ; Ctrl+D 自动添加日期 生效的应用程序
-    ;================================================
     GroupAdd, FileListMangr, ahk_class TTOTAL_CMD                       ; 针对TC文件列表重命名
     GroupAdd, FileListMangr, ahk_class CabinetWClass                    ; 针对Windows 资源管理器文件列表重命名
     GroupAdd, FileListMangr, ahk_class Progman                          ; 针对Windows 桌面文件重命名
@@ -1629,13 +1567,10 @@ AppControl()
 
 RunPTTools()                                                            ; 如果正在使用RAPT,鼠标中间激活PT Tools
 {
-    DetectHiddenWindows, on
     IfWinNotExist, PT Tools
         Run % A_ScriptDir "\PTTools.ahk"
     else IfWinNotActive, PT Tools
         WinActivate
-    else
-        WinMinimize
 }
 
 RenameWithDate()                                                        ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
@@ -1683,7 +1618,6 @@ NameAddDate(WinName, CurrCtrl, isFile:= True)                           ; 在文
 
 ;============================================================
 ; Options / Settings Library
-;============================================================
 Options(Arg := "", ActTab := 1)                                         ; 1st parameter is to avoid menu like [Option `tF2] disturb ActTab
 {
     Global                                                              ; Assume-global mode
@@ -1703,7 +1637,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Save command history
     Gui, Setting:Add, CheckBox, xp+250 yp vg_KeepInputText checked%g_KeepInputText%, Keep input text when close window
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_AutoRank checked%g_AutoRank%, Auto Rank as per frequency
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_RunIfOnlyOne checked%g_RunIfOnlyOne%, Run if only one result
+    Gui, Setting:Add, CheckBox, xp+250 yp , #Run if only one result
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SearchFullPath checked%g_SearchFullPath%, Search Full Path
     Gui, Setting:Add, CheckBox, xp+250 yp vg_HideOnDeactivate checked%g_HideOnDeactivate%, Close window when lose focus
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_AlwaysOnTop checked%g_AlwaysOnTop%, Window Always-On-Top
@@ -1934,19 +1868,12 @@ LoadConfig(Arg)
         {
             IniWrite, 
             (Ltrim
-            ;
             ; Build-in Commands (High Priority, DO NOT Edit)
-            ; Command type: File, Dir, Command, Function, URL, Project, Tender
-            ; Type | Command | Comments=Rank
-            ; 
-            ; File | notepad.exe | Notepad (File type will run with AHK's Run)=1
-            ; URL | www.google.com | Google=1
-            ; CMD | ipconfig | Check IP (CMD type will run with cmd.exe, auto pause after run)=1
             ;
             Function | Help | ALTRun Help Index (F1)=100
             Function | ALTRun_Log | ALTRun Log File=100
             Function | ALTRun_Reload | ALTRun Reload=100
-            Function | ShowCmdHistory | History Commands=100
+            Function | History | Command History=100
             Function | CmdMgr | New Command=100
             Function | UserCommandList | ALTRun User-defined command (F4)=100
             Function | ReindexFiles | Reindex search database=100
@@ -2024,20 +1951,15 @@ LoadConfig(Arg)
         {
             IniWrite, 
             (Ltrim
-            ;
             ; User-Defined Commands (High priority, edit command as desired)
             ; Command type: File, Dir, CMD, Function, URL, Project, Tender
             ; Type | Command | Comments=Rank
-            ; 
-            ; File | notepad.exe | Notepad (File type will run with AHK's Run)=1
-            ; URL | www.google.com | Google=1
-            ; CMD | ipconfig | Check IP (CMD type will run with cmd.exe, auto pause after run)=1
             ;
             Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=100
             Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=100
             Dir | `%OneDriveCommercial`% | OneDrive Business Dir=100
             File | C:\OneDrive\Apps\TotalCMD64\Tools\Notepad2.exe=100
-            CMD | ipconfig | Show IP Address=100
+            CMD | ipconfig | Show IP Address(CMD type will run with cmd.exe, auto pause after run)=100
             URL | www.google.com | Google=100
             Project | Q:\DESIGN PROJECTS | Design Folder=100
             Tender | Q:\PROPOSALS & TENDERS | Tender Folder=100
@@ -2061,9 +1983,8 @@ LoadConfig(Arg)
         {
             IniWrite, 
             (Ltrim
-            ;======================================================================
+            ;===========================================================
             ; Fallback Commands show when search result is empty
-            ; Commands in order, Press Enter to run first command
             ;
             Function | CmdMgr | New Command
             Function | Everything | Search by Everything
@@ -2249,11 +2170,11 @@ AhkRun()
 ShowArg()
 {
     args := StrSplit(Arg, " ")
-    result := "Function | Total " args.Length() " Args`n"
+    result := "Function | Total " args.Length() " Args"
 
     for index, argument in args
     {
-        result .= "Function | No. " index " argument is: | " argument "`n"
+        result .= "`nFunction | No. " index " argument is: | " argument
     }
 
     ListResult(result, true, false)
@@ -2290,10 +2211,7 @@ MuteVolume()
 
 ShowIp()
 {    
-    ListResult("IP 1 | " A_IPAddress1 
-            . "`r`n IP 2 | " . A_IPAddress2
-            . "`r`n IP 3 | " . A_IPAddress3
-            . "`r`n IP 4 | " . A_IPAddress4, true, true)
+    MsgBox, 64, %g_WinName%, IP 1 = %A_IPAddress1% `nIP 2 = %A_IPAddress2%`nIP 3 = %A_IPAddress3%
 }
 
 SearchOnGoogle()
