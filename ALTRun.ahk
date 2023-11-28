@@ -284,6 +284,7 @@ Col2Width    := g_HideCol2 ? 0 : 60                                     ; Check 
 Col3Width    := g_HideCol2 ? g_Col3Width+60 : g_Col3Width               ; Adjust column 3 width based on column 2 status
 LVGrid       := g_LVGrid ? "Grid" : ""                                  ; Check ListView Grid option
 WinHeight    := g_EditHeight + g_ListHeight + 30 + 23                   ; Original WinHeight
+WinY         := A_ScreenHeight / 2 - WinHeight / 1.2                    ; Set Win location
 ListWidth    := g_WinWidth - 20
 HideWin      := ""
 
@@ -314,7 +315,7 @@ ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show i
          . "Function | UP or DOWN | Select previous or next command`n"
          . "Function | CTRL+D | Open cmd dir with TC or File Explorer"
          , False, False)
-SetStatusBar("Nice! You have run shortcut " g_RunCount " times by now!")
+SetStatusBar("💡 You have run shortcut " g_RunCount " times by now!")
 ;=============================================================
 ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
 ;=============================================================
@@ -332,7 +333,7 @@ if (A_Args[1] = "-SendTo")
     HideWin := " Hide", CmdMgr(A_Args[2])
 }
 
-Gui, Main:Show, Center w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName%
+Gui, Main:Show, xCenter y%WinY% w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName%
 
 if (g_SwitchToEngIME)
 {
@@ -447,11 +448,13 @@ SearchCommand(command := "")
     Global
     GuiControlGet, g_CurrentInput, Main:,%g_InputBox%                   ; Get input text
 
-    StartTime := A_TickCount
+    ;StartTime       := A_TickCount
     g_UseDisplay    := false
     result          := ""
+    order           := 1
     commandPrefix   := SubStr(g_CurrentInput, 1, 1)
-    
+    g_CurrentCommandList := Object()
+
     if (commandPrefix = "+" or commandPrefix = " " or commandPrefix = ">")
     {
         g_PipeArg := ""
@@ -468,15 +471,11 @@ SearchCommand(command := "")
         {
             g_CurrentCommand := g_FallbackCommands[5]
         }
-        g_CurrentCommandList := Object()
-        g_CurrentCommandList.Push(g_CurrentCommand)
-        result .= g_CurrentCommand
-        ListResult(result, false, false)
-        Return result
-    }
 
-    g_CurrentCommandList := Object()
-    order := 1
+        g_CurrentCommandList.Push(g_CurrentCommand)
+        ListResult(g_CurrentCommand)
+        Return
+    }
 
     for index, element in g_Commands
     {
@@ -568,7 +567,7 @@ SearchCommand(command := "")
     }
 
     ListResult(result, false, false)
-    Log.Msg("Search command=" g_CurrentInput ", ElapsedTime=" A_TickCount - StartTime)
+    ;Log.Msg("Search command=" g_CurrentInput ", ElapsedTime=" A_TickCount - StartTime)
 }
 
 ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来显示控制界面 & 用来显示命令结果
@@ -676,9 +675,12 @@ ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来
     SetStatusBar()
 }
 
-AbsPath(Path)                                                           ; Convert to absolute path
+AbsPath(Path, KeepRunAs := 0)                                           ; Convert path to absolute path
 {
-    Path := StrReplace(Path,  "*RunAs ", "")                            ; Remove *RunAs (Admin Run) to get absolute path
+    if (!KeepRunAs)
+    {
+        Path := StrReplace(Path,  "*RunAs ", "")                        ; Remove *RunAs (Admin Run) to get absolute path
+    }
 
     if (InStr(Path, "A_"))                                              ; Resolve path like A_ScriptDir
     {
@@ -691,16 +693,23 @@ AbsPath(Path)                                                           ; Conver
     Return Path
 }
 
+RelativePath(Path)                                                      ; Convert path to relative path
+{
+    Path := StrReplace(Path, OneDriveConsumer, "%OneDriveConsumer%")
+    Path := StrReplace(Path, OneDriveCommercial, "%OneDriveCommercial%")
+    Return Path
+}
+
 RunCommand(originCmd)
 {
     MainGuiClose()                                                      ; 先隐藏或者关闭窗口,防止出现延迟的感觉
     ParseArg()
-    Log.Msg("Execute(" g_RunCount ")=" originCmd)
     g_UseDisplay := false
+    Log.Msg("Execute(" g_RunCount ")=" originCmd)
 
     _Type := StrSplit(originCmd, " | ")[1]
     _Path := StrSplit(originCmd, " | ")[2]
-    _Path := AbsPath(_Path)
+    _Path := AbsPath(_Path, 1)
 
     if (_Type = "file")
     {
@@ -863,7 +872,6 @@ TrayMenu()                                                              ;AutoHot
 
 MainGuiEscape()
 {
-    ToolTip
     if (g_EscClearInput and g_CurrentInput)
     {
         ClearInput()
@@ -934,13 +942,13 @@ SetStatusBar(Mode := "Command")                                         ; Set St
     Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
     if (Mode = "Command")
     {
-        SBText :=StrSplit(g_CurrentCommand, " | ")[2]
+        SBText := "✨ " StrSplit(g_CurrentCommand, " | ")[2]
     }
     else if (Mode = "Hint")
     {
         g_RunCount ++
         Random, HintIndex, 1, g_Hints.Length()                          ; 随机抽出一条提示信息
-        SBText := "Tip : " g_Hints[HintIndex]                           ; 每次有效激活窗口之后StatusBar展示提示信息
+        SBText := "💡 " g_Hints[HintIndex]                               ; 每次有效激活窗口之后StatusBar展示提示信息
     }
     else
     {
@@ -987,6 +995,9 @@ ParseArg()
 
 FuzzyMatch(Haystack, Needle)
 {
+    Needle := StrReplace(Needle, "+", "\+")                             ; for Eval (preceded by a backslash to be seen as literal)
+    Needle := StrReplace(Needle, "*", "\*")                             ; for Eval (preceded by a backslash to be seen as literal)
+    
     Needle := StrReplace(Needle, " ", ".*")                             ; RegExMatch should able to search with space as & separater, but do not know now, use this way first.
     Return RegExMatch(Haystack, "imS)" Needle)
 }
@@ -1043,10 +1054,9 @@ DecreaseRank()
 
 LoadCommands(LoadRank := True)
 {
-    Log.Msg("Loading commands list...")
-    g_Commands := Object()                                              ; Clear g_Commands list
-    g_FallbackCommands := Object()                                      ; Clear g_FallbackCommands list
-    RankString := ""
+    g_Commands          := Object()                                     ; Clear g_Commands list
+    g_FallbackCommands  := Object()                                     ; Clear g_FallbackCommands list
+    RankString          := ""
 
     RANKSEC := LoadConfig("commands")                                   ; Read built-in command & user commands and index commands whole sections
     Loop Parse, RANKSEC, `n                                             ; read each line, separate key and value
@@ -1059,20 +1069,13 @@ LoadCommands(LoadRank := True)
             RankString .= rank "`t" command "`n"
         }
     }
-
-    if (RankString != "")
+    Sort, RankString, R N
+    Loop Parse, RankString, `n
     {
-        Sort, RankString, R N
-        Loop Parse, RankString, `n
-        {
-            if (A_LoopField = "")
-            {
-                continue
-            }
-            g_Commands.Push(StrSplit(A_LoopField, "`t")[2])
-        }
+        command := StrSplit(A_LoopField, "`t")[2]
+        g_Commands.Push(command)
     }
-
+    
     FALLBACKCMDSEC := LoadConfig("fallbackcmd")                         ;read whole section, initialize it if section not exist
     Loop Parse, FALLBACKCMDSEC, `n                                      ;read each line, get each FBCommand (Rank not necessary)
     {
@@ -1082,15 +1085,16 @@ LoadCommands(LoadRank := True)
             g_FallbackCommands.Push(A_LoopField)
         }
     }
-    Return "Loaded"
+    Log.Msg("Commands list loaded...")
+    Return
 }
 
 LoadHistoryCommands()
 {
     Loop %g_HistorySize%
     {
-        IniRead, HistoryCommand, %g_IniFile%, %SEC_HISTORY%, %A_Index%
-        g_HistoryCommands.Push(HistoryCommand)
+        IniRead, History, %g_IniFile%, %SEC_HISTORY%, %A_Index%
+        g_HistoryCommands.Push(History)
     }
 }
 
@@ -1102,7 +1106,7 @@ History()
         _Path   := StrSplit(element, " | ")[2]
         _Desc   := StrSplit(element, " | ")[3]
         _Arg    := StrSplit(element, " | ")[4]
-        result  .= i ". " _Path " | " _Desc " #Arg： " _Arg "`n"
+        result  .= i "`t" _Path " | " _Desc " #Arg： " _Arg "`n"
     }
     MsgBox, 64, %g_WinName%, Command History :-`n`n%result%
 }
@@ -1180,6 +1184,8 @@ EditCurrentCommand()
     {
         Run, % g_IniFile
     }
+
+    ;CmdMgr(g_CurrentCommand, "EditCommand")
 }
 
 ;=============================================================
@@ -1326,7 +1332,7 @@ Help()
 
 ;===========================================================================================
 ; Library - Listary ( QuickSwitch Function )
-; 仿照Listary快速切换文件夹功能, 可以独立成单独的AHK文件
+; 仿照 Listary 快速切换文件夹功能
 ; 在保存/打开对话框中点击菜单项,可以更换对话框到相应路径, 增加自动切换路径功能
 ; Ctrl+G 将对话框路径切换到TC的路径, Ctrl+E 将对话框路径切换到资源管理器的路径
 ;===========================================================================================
@@ -1387,12 +1393,12 @@ LocateTC()
 GetTC()                                                                 ; 获取TC 当前文件夹路径
 {
     ClipSaved := ClipboardAll 
-    Clipboard =
+    Clipboard :=
     SendMessage 1075, 2029, 0, , ahk_class TTOTAL_CMD
     ClipWait, 200
     OutDir=%Clipboard%\                                                 ; 结尾添加\ 符号,变为路径,试图解决AutoCAD不识别路径问题
     Clipboard := ClipSaved 
-    ClipSaved = 
+    ClipSaved := 
     Return OutDir
 }
 
@@ -1407,8 +1413,7 @@ GetExplorer()                                                           ; 获取
     if (Dir="Computer")
         Dir:="C:\"
 
-    InitialAdd:=SubStr(Dir,2,2)
-    If (InitialAdd != ":\")                                             ; then Explorer lists it as one of the library directories such as Music or Pictures
+    If (SubStr(Dir,2,2) != ":\")                                             ; then Explorer lists it as one of the library directories such as Music or Pictures
         Dir:=% "C:\Users\" A_UserName "\" Dir
 
     Return Dir
@@ -1426,45 +1431,65 @@ ChangePath(Dir)
 }
 
 ;============================= 命令管理窗口 =============================
-CmdMgr(Param := "")
+CmdMgr(Path := "", Mode := "AddCommand")
 {
     Global
-    _Path := Param
-    Log.Msg("Starting Command Manager... Args=" _Path)
+    Log.Msg("Starting Command Manager... Args=" Path)
 
-    SplitPath _Path, _Desc, fileDir, fileExt, nameNoExt, fileDrive      ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name) 
-    
-    if InStr(FileExist(_Path), "D")                                     ; True only if the file exists and is a directory.
+    if (Mode = "EditCommand")
     {
-        _Type := 5                                                      ; It is a normal folder
+        _Type := StrSplit(Path, " | ")[1]
+        _Path := StrSplit(Path, " | ")[2]
+        _Desc := StrSplit(Path, " | ")[3]
+        IniRead, _Rank, %g_IniFile%, %SEC_USERCMD%, %Path%, 1
 
-        if InStr(_Path, "PROPOSALS & TENDERS")                          ; Check if the path contain "PROPOSALS & TENDERS"
+        Tabs := "Function|URL|Command|File|Dir|Tender|Project"
+
+        Loop, Parse, Tabs, |
         {
-            _Type := 6, _Desc := ""
+            if (A_LoopField = _Type)
+            {
+                _Type := A_Index
+                Break
+            }
         }
-        else if InStr(_Path, "DESIGN PROJECTS")                         ; Check if the path contain "DESIGN PROJECTS"
+    }
+    else
+    {
+        SplitPath Path, _Desc, fileDir, fileExt, nameNoExt, fileDrive   ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name) 
+        
+        if InStr(FileExist(Path), "D")                                  ; True only if the file exists and is a directory.
         {
-            _Type := 7, _Desc := ""
-        }
-    }
-    else                                                                ; From command "New Command" or GUI context menu "New Command"
-    {
-       _Desc := Arg
-    }
-    
-    if (fileExt = "lnk" && g_SendToGetLnk)
-    {
-        FileGetShortcut, %_Path%, _Path, fileDir, fileArg, _Desc
-        _Path .= " " fileArg
-    }
+            _Type := 5                                                  ; It is a normal folder
 
-    _Path := StrReplace(_Path, OneDriveConsumer, "%OneDriveConsumer%")  ; Convert absolute path to relative path, but problem with FileExist()
-    _Path := StrReplace(_Path, OneDriveCommercial, "%OneDriveCommercial%") ; Convert absolute path to relative path, but problem with FileExist()
+            if InStr(Path, "PROPOSALS & TENDERS")                       ; Check if the path contain "PROPOSALS & TENDERS"
+            {
+                _Type := 6, _Desc := ""
+            }
+            else if InStr(Path, "DESIGN PROJECTS")                      ; Check if the path contain "DESIGN PROJECTS"
+            {
+                _Type := 7, _Desc := ""
+            }
+        }
+        else                                                            ; From command "New Command" or GUI context menu "New Command"
+        {
+        _Desc := Arg
+        }
+        
+        if (fileExt = "lnk" && g_SendToGetLnk)
+        {
+            FileGetShortcut, %Path%, Path, fileDir, fileArg, _Desc
+            Path .= " " fileArg
+        }
+
+        _Path := RelativePath(Path)
+        _Rank := 1                                                      ; Assign initial Rank=1
+    }
 
     Gui, CmdMgr:New
     Gui, CmdMgr:Font, s8, Century Gothic, wRegular
     Gui, CmdMgr:Margin, 5, 5
-    Gui, CmdMgr:Add, GroupBox, w550 h220, Add Command
+    Gui, CmdMgr:Add, GroupBox, w550 h260, Add / Edit Command
     Gui, CmdMgr:Add, Text, xp+20 yp+35, Command Type: 
     Gui, CmdMgr:Add, DropDownList, xp+120 yp-5 w150 v_Type Choose%_Type%, Function|URL|Command|File||Dir|Tender|Project|
     Gui, CmdMgr:Add, Text, xp-120 yp+50, Command Path: 
@@ -1472,6 +1497,8 @@ CmdMgr(Param := "")
     Gui, CmdMgr:Add, Button, xp+355 yp w30 hp gSelectCmdPath, ...
     Gui, CmdMgr:Add, Text, xp-475 yp+100, Description: 
     Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 v_Desc, %_Desc%
+    Gui, CmdMgr:Add, Text, xp-120 yp+50, Rank (default is 1): 
+    Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 v_Rank, %_Rank%
     Gui, CmdMgr:Add, Button, Default x415 w65, OK
     Gui, CmdMgr:Add, Button, xp+75 yp w65, Cancel
 
@@ -1508,6 +1535,7 @@ CmdMgrButtonOK()
 {
     Global
     Gui, CmdMgr:Submit                                                  ; 保存每个控件的内容到其关联变量中
+    _Desc := _Desc ? "| " _Desc : _Desc
 
     if (_Path = "")
     {
@@ -1516,7 +1544,7 @@ CmdMgrButtonOK()
     }
     else
     {
-        IniWrite, 1, %g_IniFile%, %SEC_USERCMD%, %_Type% | %_Path% | %_Desc% ; Assign initial Rank=1
+        IniWrite, %_Rank%, %g_IniFile%, %SEC_USERCMD%, %_Type% | %_Path% %_Desc%
     }
 
     MsgBox,, %g_CmdMgrWinName%, Command added successfully!
