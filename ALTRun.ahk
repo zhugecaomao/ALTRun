@@ -25,9 +25,9 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
     ,  SEC_HISTORY  := "History"
     ,  SEC_INDEX    := "Index"
 
-, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,IndexDir,IndexFileType,IndexExclude,SearchFullPath,ShowFileExt,ShowIcon,KeepInputText,HideOnDeactivate,AlwaysOnTop,SaveHistory,HistorySize,isLogging,AutoRank,SwitchToEngIME,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,EnableScheduler,ShutdownTime,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
+, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,IndexDir,IndexFileType,IndexExclude,SearchFullPath,ShowIcon,KeepInputText,HideOnDeactivate,AlwaysOnTop,SaveHistory,HistorySize,isLogging,AutoRank,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,EnableScheduler,ShutdownTime,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
 , KEYLIST_GUI    := "HideTitle,ShowTrayIcon,HideCol2,LVGrid,DisplayRows,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,BackgroundPicture"
-, KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey1Win,GlobalHotkey2,GlobalHotkey2Win,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,RunCmdAlt,EnableCapsLockIME,TotalCMDDir,ExplorerDir"
+, KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,RunCmdAlt,EnableCapsLockIME,TotalCMDDir,ExplorerDir"
 
 , g_AutoStartup := 1                        ; 是否添加快捷方式到开机启动
 , g_EnableSendTo := 1                       ; 是否创建“发送到”菜单
@@ -36,7 +36,6 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_IndexFileType := "*.lnk|*.exe"          ; 搜索的文件类型, 以 "|" 分隔
 , g_IndexExclude := "Uninstall *"           ; 排除的文件,正则表达式
 , g_SearchFullPath := 0                     ; 搜索完整路径,否则只搜文件名
-, g_ShowFileExt := 1                        ; 在界面显示文件扩展名
 , g_ShowIcon := 1                           ; Show Icon in File ListView
 , g_KeepInputText := 1                      ; 窗口隐藏时不清空编辑框内容
 , g_TCPath := A_Space                       ; TotalCommander 路径,如果为空则使用资源管理器打开
@@ -47,7 +46,6 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_RunCount := 0                           ; Record command execution times
 , g_isLogging := 1                          ; Enable log record
 , g_AutoRank := 1                           ; 自动根据使用频率调节顺序
-, g_SwitchToEngIME := 0                     ; 每次激活窗口自动切换到英文输入法
 , g_EscClearInput := 1                      ; 输入 Esc 时,如果输入框有内容则清空,无内容才关闭窗口
 , g_Editor := A_Space                       ; 用来打开配置文件的编辑器,推荐Notepad2,默认为资源管理器关联的编辑器,可以右键->属性->打开方式修改
 , g_SendToGetLnk := 1                       ; 如果使用发送到菜单发送的文件是 .lnk 的快捷方式,从文件读取路径后添加目标文件
@@ -76,32 +74,25 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_BackgroundPicture := "Default"
 , g_BGPicture                               ; Real path of the BackgroundPicture
 , g_Hints := ["It's better to show me by press hotkey (Default is ALT + Space)"
-    , "ALT + Space = Show / Hide window"
-    , "Alt + F4 = Exit"
-    , "Esc = Clear Input / Close window"
-    , "Enter = Run current command"
-    , "Alt + No. = Run that specific command"
-    , "Ctrl + No. = Select that specific command"
-    , "F1 = Show Help"
-    , "F2 = Open Setting Config window"
+    , "ALT + Space = Show / Hide window", "Alt + F4 = Exit"
+    , "Esc = Clear Input / Close window", "Enter = Run current command"
+    , "Alt + No. = Run specific command", "Start with + = New Command"
+    , "Ctrl + No. = Select specific command"
+    , "F1 = Show Help", "F2 = Open Setting Config window"
     , "F3 = Edit config file (ALTRun.ini) directly"
     , "Arrow Up / Down = Move to Previous / Next command"
-    , "Ctrl+H = Show command history"
+    , "Ctrl+H = Show command history", "Ctrl+Q = Reload ALTRun"
     , "Ctrl+'+' = Increase rank of current command"
     , "Ctrl+'-' = Decrease rank of current command"
     , "Ctrl+I = Reindex file search database"
-    , "Ctrl+Q = Reload ALTRun"
     , "Ctrl+D = Open current command dir with TC / File Explorer"
     , "Command priority (rank) will auto adjust based on frequency"
-    , "Start with www or http = Open website"
-    , "Start with + = New Command"
     , "Start with space = Search by Everything"]
 
 , g_Hotkey1 := "^s", g_Trigger1 := "Everything"
 , g_Hotkey2 := "^p", g_Trigger2 := "RunPTTools"
 , g_Hotkey3 := "", g_Trigger3 := ""
-, g_GlobalHotkey1 := "!Space", g_GlobalHotkey1Win  := 0
-, g_GlobalHotkey2 := "!R"    , g_GlobalHotkey2Win  := 0
+, g_GlobalHotkey1 := "!Space", g_GlobalHotkey2 := "!R"
 , g_TotalCMDDir   := "^g"    , g_ExplorerDir       := "^e"              ; Hotkey for Listary quick-switch dir
 , g_RunCmdAlt := 0           , g_EnableCapsLockIME := 0
 , OneDrive, OneDriveConsumer , OneDriveCommercial                       ; Environment Variables (Due to #NoEnv, some need to get from EnvGet)
@@ -129,7 +120,6 @@ global Arg                                    ; 用来调用管道的完整参�
 , g_PipeArg                                   ; 用来调用管道的参数（结果第三列）
 , g_InputBox  := "Edit1"
 , g_ListView  := "MyListView"
-, g_StatusBar := "Edit2"
 
 ;=============================================================
 ; 显示各个控件的ToolTip
@@ -141,7 +131,6 @@ g_IndexDir_TT := "Index location, you can use full path or AHK variable starting
 g_IndexFileType_TT := "The index file types must be separated by '|'"
 g_IndexExclude_TT := "excluded files, regular expression"
 g_SearchFullPath_TT := "Search full path of the file or command, otherwise only search file name"
-g_ShowFileExt_TT := "Show file extension on interface"
 g_ShowIcon_TT := "Show icon in file ListView"
 g_KeepInputText_TT := "Do not clear the content of the edit box when the window is hidden"
 g_TCPath_TT := "TotalCommander path with parameters, eg: C:\OneDrive\Apps\TotalCMD64\Totalcmd64.exe /O /T /S, if empty, use explorer to open"
@@ -152,12 +141,10 @@ g_SaveHistory_TT := "Save command history"
 g_HistorySize_TT := "Number of recorded history"
 g_isLogging_TT := "Enable or Disable log record"
 g_AutoRank_TT := "Automatically adjust the command rank priority according to the frequency of use."
-g_SwitchToEngIME_TT := "Automatically switch to English input method every time the window is activated"
 g_EscClearInput_TT := "When inputting Esc, if there is content in the input box, it will be cleared, and if there is no content, the window will be closed"
 g_Editor_TT := "The editor used to open the configuration file, the default is the editor associated with the resource manager, you can right-click->properties->open method to modify"
 g_SendToGetLnk_TT := "If the file sent using the Send To menu is a .lnk shortcut, add the target file after reading the path from the file"
 g_Everything_TT := "Everything.exe file path"
-
 g_HideTitle_TT := "Hide Title Bar"
 g_ShowTrayIcon_TT := "Whether to show the tray icon"
 g_DisplayRows_TT := "The number of rows displayed in the list, if more than 9 rows, the shortcut key to locate this row will be invalid."
@@ -174,7 +161,6 @@ g_ListHeight_TT := "Command List Height"
 g_CtrlColor_TT := "Set Color for Controls in Window"
 g_WinColor_TT := "Window background color, including border color, current command detail box color, value can be like: White, Default, EBFFEB, 0xEBFFEB"
 g_BackgroundPicture_TT := "Background picture, the background picture can only be displayed in the border part.`nIf there is a splash screen after using the picture, first adjust the size of the picture to solve the window size and improve the loading speed.`nIf the splash screen is still obvious, please Hollow and fill the position of the text box on the picture with a color similar to the text background, or modify it to the transparent color of png"
-
 g_Hotkey1_TT := "Shortcut key 1`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
 g_Trigger1_TT := "Function to be triggered by Hotkey 1"
 g_Hotkey2_TT := "Shortcut key 2`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
@@ -185,14 +171,12 @@ g_RunCmdAlt_TT := "Press Alt + command number to run the command, untick means P
 g_EnableCapsLockIME_TT := "Use CapsLock to switch input methods (similar to macOS)"
 g_GlobalHotkey1_TT := "Global hotkey 1 to activate ALTRun"
 g_GlobalHotkey2_TT := "Global hotkey 2 to activate ALTRun"
-
 g_AutoSwitchDir_TT := "Listary - Auto Switch Dir"
 g_FileManager_TT := "Win Title or Class name of the File Manager, separated by '|', default is: ahk_class CabinetWClass|ahk_class TTOTAL_CMD (Windows Explorer and Total Commander)"
 g_DialogWin_TT := "Win Title or Class name of the Dialog Box which Listary Switch Dir will take effect, separated by '|', default is: ahk_class #32770"
 g_ExcludeWin_TT := "Exclude those windows that not want Listary Switch Dir take effect, separated by '|', default is: ahk_class SysListView32|ahk_exe Explorer.exe"
 g_EnableScheduler_TT := "Enable shutdown scheduled task"
 g_ShutdownTime_TT := "Set timing for PC auto shutdown"
-
 OK_TT := "Save and Apply the changes"
 Cancel_TT := "Discard the changes"
 
@@ -200,7 +184,7 @@ Cancel_TT := "Discard the changes"
 ; Load Config and Set Logger
 ;=============================================================
 Global Log := New Logger(g_LogFile)                                     ; Global Log so that can use in other Lib
-Log.Msg("====== ALTRun is starting ======")
+Log.Msg("●●●●● ALTRun is starting ●●●●●")
 
 LoadConfig("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
@@ -284,7 +268,6 @@ Col2Width    := g_HideCol2 ? 0 : 60                                     ; Check 
 Col3Width    := g_HideCol2 ? g_Col3Width+60 : g_Col3Width               ; Adjust column 3 width based on column 2 status
 LVGrid       := g_LVGrid ? "Grid" : ""                                  ; Check ListView Grid option
 WinHeight    := g_EditHeight + g_ListHeight + 30 + 23                   ; Original WinHeight
-WinY         := A_ScreenHeight / 2 - WinHeight / 1.2                    ; Set Win location
 ListWidth    := g_WinWidth - 20
 HideWin      := ""
 
@@ -294,7 +277,7 @@ Gui, Main:%HideTitle% %AlwaysOnTop%
 Gui, Main:Add, Picture, x0 y0 0x4000000, %g_BGPicture%                  ; If the picture cannot be loaded or displayed, the control is left empty and its W&H are set to zero. So FileExist() is not necessary.
 Gui, Main:Add, Edit, x10 y10 w%ListWidth% h%g_EditHeight% -WantReturn v%g_InputBox% gSearchCommand, Type anything here to search...
 Gui, Main:Add, ListView, Count15 y+10 w%ListWidth% h%g_ListHeight% v%g_ListView% gLVAction +LV0x00010000 %LVGrid% -Multi AltSubmit, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
-Gui, Main:Add, StatusBar, v%g_StatusBar%,
+Gui, Main:Add, StatusBar,,
 Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
 Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
 
@@ -315,7 +298,7 @@ ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show i
          . "Function | UP or DOWN | Select previous or next command`n"
          . "Function | CTRL+D | Open cmd dir with TC or File Explorer"
          , False, False)
-SetStatusBar("💡 You have run shortcut " g_RunCount " times by now!")
+SetStatusBar("✨ You have run shortcut " g_RunCount " times by now!")
 ;=============================================================
 ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
 ;=============================================================
@@ -333,12 +316,7 @@ if (A_Args[1] = "-SendTo")
     HideWin := " Hide", CmdMgr(A_Args[2])
 }
 
-Gui, Main:Show, xCenter y%WinY% w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName%
-
-if (g_SwitchToEngIME)
-{
-    SwitchToEngIME()
-}
+Gui, Main:Show, Center w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName%
 
 if (g_HideOnDeactivate)
 {
@@ -392,16 +370,9 @@ Loop, 3
 }
 
 Hotkey, IfWinActive                                                     ; Omit the parameters to turn off context sensitivity, to make subsequently-created hotkeys work in all windows
-if (g_GlobalHotkey1 != "")
+Loop, 2
 {
-    Win := g_GlobalHotkey1Win ? "#" : ""
-    Hotkey, %Win%%g_GlobalHotkey1%, ToggleWindow
-}
-
-if (g_GlobalHotkey2 != "")
-{
-    Win := g_GlobalHotkey2Win ? "#" : ""
-    Hotkey, %Win%%g_GlobalHotkey2%, ToggleWindow
+    Hotkey, % g_GlobalHotkey%A_Index%, ToggleWindow
 }
 
 ;=============================================================
@@ -412,22 +383,13 @@ Listary(), AppControl(), TaskScheduler(g_EnableScheduler)
 
 ActivateALTRun()
 {
-    Gui, Main:Show,, %g_WinName%
-    SetStatusBar("Hint")                                                ; Show hint in StatusBar
+    SetStatusBar("Hint")                                                ; Show hint in StatusBar (update SB before GUI show)
+    Gui, Main:Show,,%g_WinName%
 
     WinWaitActive, %g_WinName%,, 3                                      ; Use WinWaitActive 3s instead of previous Loop method
     {
-        if (g_SwitchToEngIME)
-        {
-            SwitchToEngIME()
-        }
-
         GuiControl, Main:Focus, %g_InputBox%
         ControlSend, %g_InputBox%, ^a, %g_WinName%                      ; Select all content in Input Box
-    }
-    if ErrorLevel
-    {
-        MsgBox, 48, %g_WinName%, WinWaitActive timed out.
     }
 }
 
@@ -445,10 +407,9 @@ ToggleWindow()
 
 SearchCommand(command := "")
 {
-    Global
+    ;Global
     GuiControlGet, g_CurrentInput, Main:,%g_InputBox%                   ; Get input text
 
-    ;StartTime       := A_TickCount
     g_UseDisplay    := false
     result          := ""
     order           := 1
@@ -488,7 +449,7 @@ SearchCommand(command := "")
             elementToShow := _Type " | " _Path " | " _Desc              ; Use _Path to show file icons
             if (g_SearchFullPath)
             {
-                elementToSearch := StrReplace(_Path, "\", " ") " " _Desc ; 搜索路径时强行将 \ 转成空格
+                elementToSearch := _Path " " _Desc
             }
             else
             {
@@ -503,18 +464,17 @@ SearchCommand(command := "")
             elementToShow   := _Type " | " fileName " | " _Desc         ; Show folder name only
             if (g_SearchFullPath)
             {
-                elementToSearch := StrReplace(_Path, "\", " ") " " _Desc ; 搜索路径时强行将 \ 转成空格
+                elementToSearch := _Path " " _Desc
             }
             else
             {
-                elementToSearch := fileName " " _Desc                       ; Search dir type + folder name + desc
+                elementToSearch := fileName " " _Desc                   ; Search dir type + folder name + desc
             }
         }
         else
         {
             elementToShow   := _Type " | " _Path " | " _Desc
-            elementToSearch := StrReplace(_Path, "/", " ")
-            elementToSearch := StrReplace(elementToSearch, "\", " ") " " _Desc
+            elementToSearch := _Path " " _Desc
         }
 
         if (FuzzyMatch(elementToSearch, g_CurrentInput))
@@ -567,7 +527,6 @@ SearchCommand(command := "")
     }
 
     ListResult(result, false, false)
-    ;Log.Msg("Search command=" g_CurrentInput ", ElapsedTime=" A_TickCount - StartTime)
 }
 
 ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来显示控制界面 & 用来显示命令结果
@@ -589,6 +548,7 @@ ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来
         IL_Add(ImageListID1, "shell32.dll", -25)                        ; Add app default icon for function type (IconNo=2)
         IL_Add(ImageListID1, "shell32.dll", -512)                       ; Add Browser icon for url type (IconNo=3)
         IL_Add(ImageListID1, "shell32.dll", -22)                        ; Add control panel icon for control type (IconNo=4)
+        IL_Add(ImageListID1, "Calc.exe", -1)                             ; Add calculator icon for Eval type (IconNo=5)
         LV_SetImageList(ImageListID1)                                   ; Attach the ImageLists to the ListView so that it can later display the icons
         IconNo  := ""
         VarSetCapacity(sfi, sfi_size := 698)                            ; 计算 SHFILEINFO 结构需要的缓存大小
@@ -631,6 +591,10 @@ ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来
             {
                 ExtID := "cpl", IconNo := 4
             }
+            else if _Type contains Eval
+            {
+                ExtID := "eval", IconNo := 5
+            }
             else if FileExt in EXE,ICO,ANI,CUR,LNK
             {
                 ExtID := FileExt, IconNo := 0                           ; ExtID 特殊 ID 作为占位符, IconNo 进行标记这样每种类型就含有唯一的图标.
@@ -664,9 +628,7 @@ ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来
             LV_Add("Icon"IconNo, A_Index, _Type, _Path, _Desc)
         }
         else
-        {
             LV_Add(, A_Index, _Type, _Path, _Desc)
-        }
     }
 
     LV_Modify(0, "-Select")                                             ; De-select all.
@@ -686,6 +648,9 @@ AbsPath(Path, KeepRunAs := 0)                                           ; Conver
     {
         Path := %Path%
     }
+
+    EnvGet, Temp, Temp
+    Path := StrReplace(Path, "%Temp%", Temp)
 
     Path := StrReplace(Path, "%OneDrive%", OneDrive)                    ; Convert OneDrive to absolute path due to #NoEnv
     Path := StrReplace(Path, "%OneDriveConsumer%", OneDriveConsumer)    ; Convert OneDrive to absolute path due to #NoEnv
@@ -744,14 +709,7 @@ RunCommand(originCmd)
 
     if (g_SaveHistory && _Path != "History")                            ; Save command history
     {
-        if (Arg != "")
-        {
-            g_HistoryCommands.InsertAt(1, originCmd " | " Arg)
-        }
-        else
-        {
-            g_HistoryCommands.InsertAt(1, originCmd)
-        }
+        g_HistoryCommands.InsertAt(1, originCmd " /arg=" Arg)
 
         if (g_HistoryCommands.Length() > g_HistorySize)
         {
@@ -807,7 +765,8 @@ ChangeCommand(Step = 1, ResetSelRow = False)
     Gui, Main:Default                                                   ; Use it before any LV update
 
     SelRow := ResetSelRow ? Step : LV_GetNext() + Step                  ; Get target row no. to be selected
-    SelRow := Mod(SelRow, LV_GetCount())                                ; Listview cycle selection
+    SelRow := SelRow > LV_GetCount() ? 1 : SelRow                       ; Listview cycle selection (Mod not suitable)
+    SelRow := SelRow < 1 ? LV_GetCount() : SelRow
     g_CurrentCommand := g_CurrentCommandList[SelRow]                    ; Get current command from selected row
 
     LV_Modify(0, "-Select")
@@ -907,18 +866,6 @@ ExitFunc(exitReason, exitCode)
     Log.Msg("Exiting ALTRun...Reason=" exitReason)
 }
 
-ALTRun_Log()
-{
-    if (g_Editor != "")
-    {
-        Run, % g_Editor " /m " A_Now " """ g_LogFile """"               ; /m Match text, /g Jump to specified position, /g -1 means end of file.
-    }
-    else
-    {
-        Run, % g_LogFile
-    }
-}
-
 UserCommandList()
 {
     if (g_Editor != "")
@@ -942,13 +889,13 @@ SetStatusBar(Mode := "Command")                                         ; Set St
     Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
     if (Mode = "Command")
     {
-        SBText := "✨ " StrSplit(g_CurrentCommand, " | ")[2]
+        SBText := "🎯 " StrSplit(g_CurrentCommand, " | ")[2]
     }
     else if (Mode = "Hint")
     {
         g_RunCount ++
         Random, HintIndex, 1, g_Hints.Length()                          ; 随机抽出一条提示信息
-        SBText := "💡 " g_Hints[HintIndex]                               ; 每次有效激活窗口之后StatusBar展示提示信息
+        SBText := "✨ " g_Hints[HintIndex]                               ; 每次有效激活窗口之后StatusBar展示提示信息
     }
     else
     {
@@ -1030,7 +977,7 @@ ChangeRank(originCmd, showRank := false, inc := 1)
 
         if (showRank)
         {
-            SetStatusBar("Rank for current command adjusted to : " Rank)
+            SetStatusBar("✨ Rank for current command adjusted to : " Rank)
         }
     }
     LoadCommands()                                                      ; New rank will take effect in real-time by LoadCommands again
@@ -1101,14 +1048,12 @@ LoadHistoryCommands()
 History()
 {
     result := ""
-    for i, element in g_HistoryCommands
+    Loop %g_HistorySize%
     {
-        _Path   := StrSplit(element, " | ")[2]
-        _Desc   := StrSplit(element, " | ")[3]
-        _Arg    := StrSplit(element, " | ")[4]
-        result  .= i "`t" _Path " | " _Desc " #Arg： " _Arg "`n"
+        result .= g_HistoryCommands[A_Index] "`n"
     }
-    MsgBox, 64, %g_WinName%, Command History :-`n`n%result%
+    
+    ListResult(result, true, false)
 }
 
 GetCmdOutput(command)
@@ -1651,7 +1596,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Global                                                              ; Assume-global mode
     Log.Msg("Loading options window...Arg=" Arg ", ActTab=" ActTab)
     
-    Gui, Setting:New,, %g_OptionsWinName%
+    Gui, Setting:New, -SysMenu, %g_OptionsWinName%                      ;-SysMenu: omit the system menu and icon in the window's upper left corner
     Gui, Setting:Font, s9, Segoe UI
     Gui, Setting:Margin, 5, 5
     Gui, Setting:Add, Tab3,xm ym vCurrTab Choose%ActTab% -Wrap, General|Index|GUI|Command|Hotkey|Plugins|Help
@@ -1659,23 +1604,23 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Tab, 1                                                 ; Config Tab
     Gui, Setting:Add, GroupBox, w500 h420, General Settings
     Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_AutoStartup checked%g_AutoStartup%, Startup with Windows
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableSendTo checked%g_EnableSendTo%, Create SendTo menu
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_InStartMenu checked%g_InStartMenu%, Add into Start Menu
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowIcon checked%g_ShowIcon%, Show icon in file list
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Save command history
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_KeepInputText checked%g_KeepInputText%, Keep input text when close window
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_AutoRank checked%g_AutoRank%, Auto Rank as per frequency
-    Gui, Setting:Add, CheckBox, xp+250 yp , #Run if only one result
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SearchFullPath checked%g_SearchFullPath%, Search Full Path
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_HideOnDeactivate checked%g_HideOnDeactivate%, Close window when lose focus
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_AlwaysOnTop checked%g_AlwaysOnTop%, Window Always-On-Top
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableCapsLockIME checked%g_EnableCapsLockIME%, Enable CapsLock Switch IME
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SwitchToEngIME checked%g_SwitchToEngIME%, Switch To Eng IME
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableSendTo checked%g_EnableSendTo%, Enable SendTo Menu
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_InStartMenu checked%g_InStartMenu%, Enable Start Menu
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_AutoRank checked%g_AutoRank%, Enable Auto-Ranking
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_HideOnDeactivate checked%g_HideOnDeactivate%, Close on Lose Focus
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_AlwaysOnTop checked%g_AlwaysOnTop%, Window Always-On-Top
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_EscClearInput checked%g_EscClearInput%, Esc to Clear Input
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_KeepInputText checked%g_KeepInputText%, Keep Input on Close
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ShowIcon checked%g_ShowIcon%, Show Icon in Command List
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_SendToGetLnk checked%g_SendToGetLnk%, SendTo Retrieves Lnk Target
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Enable Command History
     Gui, Setting:Add, CheckBox, xp+250 yp vg_isLogging checked%g_isLogging%, Enable Logging
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_EscClearInput checked%g_EscClearInput%, Esc clear input then close window
-    Gui, Setting:Add, CheckBox, xp+250 yp, #
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SendToGetLnk checked%g_SendToGetLnk%, SendTo Menu Retrieves Lnk Target
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowFileExt checked%g_ShowFileExt%, Show file extension
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SearchFullPath checked%g_SearchFullPath%, Search Full Path
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableCapsLockIME checked%g_EnableCapsLockIME%, Enable CapsLock Switch IME
+    Gui, Setting:Add, CheckBox, xp-250 yp+30, #Reserved
+    Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
+    Gui, Setting:Add, CheckBox, xp-250 yp+30, #Reserved
+    Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
     Gui, Setting:Add, Text, xp-250 yp+40, Text Editor (eg. Notepad2): 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Editor, %g_Editor%
     Gui, Setting:Add, Text, xp-150 yp+40, Everything.exe Path: 
@@ -1732,12 +1677,10 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Tab, 5                                                 ; Hotkey Tab
     Gui, Setting:Add, GroupBox, w500 h85, Activate Hotkey:
     Gui, Setting:Add, Text, xp+10 yp+25 , Global Hotkey:
-    Gui, Setting:Add, CheckBox, xp+150 yp w100 vg_GlobalHotkey1Win checked%g_GlobalHotkey1Win%, Win         +
-    Gui, Setting:Add, Hotkey, xp+100 yp-4 w230 vg_GlobalHotkey1, %g_GlobalHotkey1%
-    Gui, Setting:Add, Text, xp-250 yp+35 , Alt. Global Hotkey:
-    Gui, Setting:Add, CheckBox, xp+150 yp w100 vg_GlobalHotkey2Win checked%g_GlobalHotkey2Win%, Win         +
-    Gui, Setting:Add, Hotkey, xp+100 yp-4 w230 vg_GlobalHotkey2, %g_GlobalHotkey2%
-    Gui, Setting:Add, GroupBox, xp-260 yp+40 w500 h55, Command Hotkey:
+    Gui, Setting:Add, Hotkey, xp+150 yp-4 w330 vg_GlobalHotkey1, %g_GlobalHotkey1%
+    Gui, Setting:Add, Text, xp-150 yp+35 , Alt. Global Hotkey:
+    Gui, Setting:Add, Hotkey, xp+150 yp-4 w330 vg_GlobalHotkey2, %g_GlobalHotkey2%
+    Gui, Setting:Add, GroupBox, xp-160 yp+40 w500 h55, Command Hotkey:
     Gui, Setting:Add, Text, xp+10 yp+25 , Execute Command:
     Gui, Setting:Add, CheckBox, xp+150 yp vg_RunCmdAlt checked%g_RunCmdAlt%, ALT +
     Gui, Setting:Add, Text, xp+60 yp, No.
@@ -1747,15 +1690,15 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Add, Text, xp+10 yp+25 , Hotkey 1: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey1, %g_Hotkey1%
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Trigger1, %g_Trigger1%
-    Gui, Setting:Add, Text, xp-400 yp+40 , Hotkey 2: 
+    Gui, Setting:Add, Edit, xp+110 yp-5 r1 w120 vg_Trigger1, %g_Trigger1%
+    Gui, Setting:Add, Text, xp-360 yp+40 , Hotkey 2: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey2, %g_Hotkey2%
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Trigger2, %g_Trigger2%
-    Gui, Setting:Add, Text, xp-400 yp+40 , Hotkey 3: 
+    Gui, Setting:Add, Edit, xp+110 yp-5 r1 w120 vg_Trigger2, %g_Trigger2%
+    Gui, Setting:Add, Text, xp-360 yp+40 , Hotkey 3: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey3, %g_Hotkey3%
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Trigger3, %g_Trigger3%
+    Gui, Setting:Add, Edit, xp+110 yp-5 r1 w120 vg_Trigger3, %g_Trigger3%
 
     Gui, Setting:Tab, 6                                                 ; Plugins / Listary / Scheduler Tab
     Gui, Setting:Add, GroupBox, w500 h190, Listary Quick-Switch Options
@@ -1827,6 +1770,10 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     )
     
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面那个选项卡控件
+
+    Hotkey, %g_GlobalHotkey1%, Off
+    Hotkey, %g_GlobalHotkey2%, Off
+
     Gui, Setting:Add, Button, Default x350 w80, OK
     Gui, Setting:Add, Button, xp+90 yp w80, Cancel
     Gui, Setting:Show,, %g_OptionsWinName%
@@ -1851,6 +1798,8 @@ SettingButtonCancel()
 SettingGuiClose()
 {
     RemoveToolTip()
+    Hotkey, %g_GlobalHotkey1%, On
+    Hotkey, %g_GlobalHotkey2%, On
     Gui, Setting:Destroy
 }
 
@@ -1899,7 +1848,6 @@ LoadConfig(Arg)
             ; Build-in Commands (High Priority, DO NOT Edit)
             ;
             Function | Help | ALTRun Help Index (F1)=100
-            Function | ALTRun_Log | ALTRun Log File=100
             Function | ALTRun_Reload | ALTRun Reload=100
             Function | History | Command History=100
             Function | CmdMgr | New Command=100
@@ -1908,6 +1856,7 @@ LoadConfig(Arg)
             Function | Everything | Search by Everything=100
             Function | Options | ALTRun Options Preference Settings (F2)=100
             Function | RunPTTools | PT Tools (AHK)=100
+            File | %Temp%\ALTRun.log | ALTRun Log File=100
             Dir | A_ScriptDir | ALTRun Program Dir=100
             Dir | A_Startup | Current User Startup Dir=100
             Dir | A_StartupCommon | All User Startup Dir=100
@@ -2127,38 +2076,6 @@ CapsLock::
         switchCapsLockState()
     }
 Return
-
-SwitchIME(dwLayout)
-{
-    HKL := DllCall("LoadKeyboardLayout", Str, dwLayout, UInt, 1)
-    ControlGetFocus, ctl, A
-    SendMessage, 0x50, 0, HKL, %ctl%, A
-}
-
-SwitchToEngIME()
-{
-    SwitchIME(0x04090409) ; 英语(美国) 美式键盘
-    SwitchIME(0x08040804) ; 中文(中国) 简体中文-美式键盘 / 中文(简体,新加坡)
-}
-
-GetInputState(WinTitle = "A")                                           ; 0：英文 1：中文
-{
-    ControlGet, hwnd, HWND, , , %WinTitle%
-    if (A_Cursor = "IBeam")
-        return 1
-    if (WinActive(WinTitle))
-    {
-        VarSetCapacity(stGTI, cbSize := 72, 0)
-        NumPut(cbSize, stGTI, 0, "UInt")   ;   DWORD   cbSize;
-        hwnd := DllCall("GetGUIThreadInfo", Uint, 0, Uint, &stGTI)
-                        ? NumGet(stGTI, 16, "UInt") : hwnd
-    }
-    return DllCall("SendMessage"
-        , UInt, DllCall("imm32\ImmGetDefaultIMEWnd", Uint, hwnd)
-        , UInt, 0x0283  ;Message : WM_IME_CONTROL
-        , Int, 0x0005  ;wParam  : IMC_GETOPENSTATUS
-        , Int, 0)      ;lParam  : 0
-}
 
 ;=============================================================
 ; Resources File - Background picture
