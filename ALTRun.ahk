@@ -7,6 +7,7 @@
 #SingleInstance, Force
 #NoTrayIcon
 #Persistent
+#Warn All, OutputDebug
 
 FileEncoding, UTF-8
 SetWorkingDir %A_ScriptDir%                                             ; Ensures a consistent starting directory.
@@ -70,7 +71,7 @@ Global g_IniFile    := A_ScriptDir "\" A_ComputerName ".ini"
 , g_EditHeight := 24
 , g_ListHeight := 260                       ; Command List Height
 , g_CtrlColor := "Default"
-, g_WinColor := "Default"
+, g_WinColor := "ABB2B9"
 , g_BackgroundPicture := "Default"
 , g_BGPicture                               ; Real path of the BackgroundPicture
 , g_Hints := ["It's better to show me by press hotkey (Default is ALT + Space)"
@@ -207,7 +208,7 @@ Menu, LV_ContextMenu, Default, Run`tEnter                               ; 让 "R
 
 if (g_ShowTrayIcon)
 {
-    Menu, Tray, Add, Show, ActivateALTRun
+    Menu, Tray, Add, Show, Activate
     Menu, Tray, Add
     Menu, Tray, Add, Options `tF2, Options
     Menu, Tray, Add, ReIndex `tCtrl+I, ReindexFiles
@@ -246,9 +247,9 @@ if (g_SaveHistory)
     LoadHistoryCommands()
 }
 
-Log.Msg("Updating 'SendTo' setting...Re=" UpdateSendTo(g_EnableSendTo))
-Log.Msg("Updating 'Startup' setting...Re=" UpdateStartup(g_AutoStartup))
-Log.Msg("Updating 'StartMenu' setting...Re=" UpdateStartMenu(g_InStartMenu))
+Log.Msg("Updating 'SendTo' setting..." UpdateSendTo(g_EnableSendTo))
+Log.Msg("Updating 'Startup' setting..." UpdateStartup(g_AutoStartup))
+Log.Msg("Updating 'StartMenu' setting..." UpdateStartMenu(g_InStartMenu))
 
 ;=============================================================
 ; 主窗口配置代码
@@ -295,15 +296,13 @@ SetStatusBar("✨ You have run shortcut " g_RunCount " times by now!")
 ;=============================================================
 Log.Msg("Resolving command line args=" A_Args[1] " " A_Args[2])
 
-if (A_Args[1] = "-startup")
+if (A_Args[1] = "-Startup")
 {
-    Log.Msg("Starting from Startup lnk...")
     HideWin := " Hide"
 }
 
 if (A_Args[1] = "-SendTo")
 {
-    Log.Msg("Starting from SendTo Mode...")
     HideWin := " Hide", CmdMgr(A_Args[2])
 }
 
@@ -345,10 +344,7 @@ Loop, % Min(g_DisplayRows, 9)                                           ; Not se
     Hotkey, ^%A_Index%, GotoCommand                                     ; Ctrl + No. locate command
 }
 
-;=============================================================
-; Set Trigger <-> Hotkey and Global Hotkey
-;=============================================================
-Loop, 3
+Loop, 3                                                                 ; Set Trigger <-> Hotkey
 {
     Hotkey  := % g_Hotkey%A_Index%
     Trigger := % g_Trigger%A_Index%
@@ -358,18 +354,14 @@ Loop, 3
 }
 
 Hotkey, IfWinActive                                                     ; Omit the parameters to turn off context sensitivity, to make subsequently-created hotkeys work in all windows
-Loop, 2
+Loop, 2                                                                 ; Set Global Hotkeys
 {
     Hotkey, % g_GlobalHotkey%A_Index%, ToggleWindow
 }
 
-;=============================================================
-; 启动Listary快速切换文件夹功能, 启动AppControl功能
-; Set TaskScheduler to turn off computer
-;=============================================================
-Listary(), AppControl(), TaskScheduler(g_EnableScheduler)
+Listary(), AppControl(), TaskScheduler(g_EnableScheduler)               ; Set Listary Dir QuickSwitch, Set AppControl, Set TaskScheduler
 
-ActivateALTRun()
+Activate()
 {
     SetStatusBar("Hint")                                                ; Show hint in StatusBar (update SB before GUI show)
     Gui, Main:Show,,%g_WinName%
@@ -389,7 +381,7 @@ ToggleWindow()
     }
     else
     {
-        ActivateALTRun()
+        Activate()
     }
 }
 
@@ -521,7 +513,7 @@ ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来
 {
     if (ActWin)
     {
-        ActivateALTRun()                                                ; 会导致快捷计算器失效
+        Activate()                                                      ; 会导致快捷计算器失效
     }
     g_UseDisplay := UseDisplay
     
@@ -669,11 +661,11 @@ RunCommand(originCmd)
         SplitPath, _Path, , WorkingDir, ,
         if (Arg = "")
         {
-            Run, %_Path%, %WorkingDir%, UseErrorLevel
+            Run, %_Path%,, UseErrorLevel
         }
         else
         {
-            Run, %_Path% "%Arg%", %WorkingDir%, UseErrorLevel
+            Run, %_Path% "%Arg%",, UseErrorLevel
         }
         if ErrorLevel
             MsgBox Could not open "%_Path%"
@@ -1010,7 +1002,7 @@ LoadCommands(LoadRank := True)
         g_Commands.Push(command)
     }
     
-    FALLBACKCMDSEC := LOADCONFIG("fallbackcmd")                         ;read whole section, initialize it if section not exist
+    FALLBACKCMDSEC := LOADCONFIG("fallbackcmd")                         ;read FALLBACK section, initialize it if section not exist
     Loop Parse, FALLBACKCMDSEC, `n                                      ;read each line, get each FBCommand (Rank not necessary)
     {
         FBCommand  := StrSplit(A_LoopField, " | ")[2]
@@ -1019,8 +1011,7 @@ LoadCommands(LoadRank := True)
             g_FallbackCommands.Push(A_LoopField)
         }
     }
-    Log.Msg("Commands list loaded...")
-    Return
+    Return Log.Msg("Loading commands list...done")
 }
 
 LoadHistoryCommands()
@@ -1151,10 +1142,7 @@ RemoveToolTip()
     SetTimer, RemoveToolTip, Off
 }
 
-;=============================================================
-; 窗口失去焦点后隐藏
-;=============================================================
-WM_ACTIVATE(wParam, lParam)
+WM_ACTIVATE(wParam, lParam)                                             ; Close main window on lose focus
 {
     if (wParam > 0)                                                     ; wParam > 0: window being activated
     {
@@ -1182,7 +1170,7 @@ UpdateSendTo(create := true)                                            ; the ln
     else
         FileCreateShortcut, "%A_AhkPath%", %lnkPath%, , "%A_ScriptFullPath%" -SendTo
         , Send command to ALTRun User Command list, Shell32.dll, , -25
-    Return "updated"
+    Return "done"
 }
 
 UpdateStartup(create := true)
@@ -1197,7 +1185,7 @@ UpdateStartup(create := true)
 
     FileCreateShortcut, %A_ScriptFullPath%, %lnkPath%, %A_ScriptDir%
         , -startup, ALTRun - An effective launcher, Shell32.dll, , -25
-    Return "updated"
+    Return "done"
 }
 
 UpdateStartMenu(create := true)
@@ -1212,7 +1200,7 @@ UpdateStartMenu(create := true)
 
     FileCreateShortcut, %A_ScriptFullPath%, %lnkPath%, %A_ScriptDir%
         , -StartMenu, ALTRun, Shell32.dll, , -25
-    Return "updated"
+    Return "done"
 }
 
 TaskScheduler(SchEnable = False)
@@ -1260,17 +1248,11 @@ Help()
     Options(Arg, 7)                                                     ; Open Options window 7th tab (help tab)
 }
 
-;===========================================================================================
-; Library - Listary ( QuickSwitch Function )
-; 仿照 Listary 快速切换文件夹功能
-; 在保存/打开对话框中点击菜单项,可以更换对话框到相应路径, 增加自动切换路径功能
-; Ctrl+G 将对话框路径切换到TC的路径, Ctrl+E 将对话框路径切换到资源管理器的路径
-;===========================================================================================
-Listary()
+Listary()                                                               ; Listary Dir QuickSwitch Function (快速更换保存/打开对话框路径)
 {
     Log.Msg("Starting Listary Function...")
 
-    Loop Parse, g_FileManager, |                                        ; QuickSwitch File Manager Class, default is Windows Explorer & Total Commander
+    Loop Parse, g_FileManager, |                                        ; File Manager Class, default is Windows Explorer & Total Commander
     {
         GroupAdd, FileManager, %A_LoopField%
     }
@@ -1306,8 +1288,8 @@ Listary()
         }
     }
     Hotkey, IfWinActive, ahk_group DialogBox                            ; 设置对话框路径定位热键,为了不影响其他程序热键,设置只对打开/保存对话框生效
-    Hotkey, %g_TotalCMDDir%, LocateExplorer                                          ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
-    Hotkey, %g_TotalCMDDir%, LocateTC                                                ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
+    Hotkey, %g_ExplorerDir%, LocateExplorer                             ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
+    Hotkey, %g_TotalCMDDir%, LocateTC                                   ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
     Hotkey, IfWinActive
 }
 
@@ -1356,12 +1338,11 @@ ChangePath(Dir)
     ControlSetText, Edit1, %Dir%, A
     ControlSend, Edit1, {Enter}, A
     ;Sleep,100
-    ;ControlSetText, Edit1, %w_Edit1Text%, A                            ;还原之前的窗口 File Name 内容, 在选择文件的对话框时没有问题, 但是在选择文件夹的对话框有Bug,所以暂时注释掉
+    ;ControlSetText, Edit1, %w_Edit1Text%, A                            ; 还原之前的窗口 File Name 内容, 在选择文件的对话框时没有问题, 但是在选择文件夹的对话框有Bug,所以暂时注释掉
     Log.Msg("Listary Change Path=" Dir)
 }
 
-;============================= 命令管理窗口 =============================
-CmdMgr(Path := "", Mode := "AddCommand")
+CmdMgr(Path := "", Mode := "AddCommand")                                ; 命令管理窗口
 {
     Global
     Log.Msg("Starting Command Manager... Args=" Path)
@@ -1449,9 +1430,9 @@ CmdMgrButtonOK()
     else
     {
         IniWrite, 1, %g_IniFile%, %SEC_USERCMD%, %_Type% | %_Path% %_Desc% ; initial rank = 1
+        if !ErrorLevel
+            MsgBox,, Command Manager, Command added successfully!
     }
-
-    MsgBox,, Command Manager, Command added successfully!
     LoadCommands()
 }
 
@@ -1470,14 +1451,11 @@ CmdMgrGuiClose()
     Gui, CmdMgr:Destroy
 }
 
-;=========================================================
-; AppControl (Ctrl+D 自动添加日期, 鼠标中间激活PT Tools)
-AppConTrol()
+AppConTrol()                                                            ; AppControl (Ctrl+D 自动添加日期, 鼠标中间激活PT Tools)
 {
     GroupAdd, FileListMangr, ahk_class TTOTAL_CMD                       ; 针对TC文件列表重命名
     GroupAdd, FileListMangr, ahk_class CabinetWClass                    ; 针对Windows 资源管理器文件列表重命名
     GroupAdd, FileListMangr, ahk_class Progman                          ; 针对Windows 桌面文件重命名
-    ;GroupAdd, FileListMangr, ahk_class TCOMBOINPUT                     ; 针对TC F7创建新文件夹对话框（可单独出来用isFile:= True来控制不考虑后缀的影响）
     GroupAdd, FileListMangr, ahk_class TSTDTREEDLG                      ; 针对TC 新建其他格式文件如txt, rtf, docx...
     GroupAdd, FileListMangr, ahk_class #32770                           ; 针对资源管理器文件保存对话框
     
@@ -1516,9 +1494,7 @@ RenameWithDate()                                                        ; 针对
 
 LineEndAddDate()                                                        ; 针对TC File Comment对话框　按Ctrl+D自动在备注文字之后添加日期
 {
-    SendInput {End}
-    Sleep, 10
-    SendInput {Space}- %A_DD%.%A_MM%.%A_YYYY%
+    SendInput {End}{Space}- %A_DD%.%A_MM%.%A_YYYY%
     Log.Msg("AddDateAtEnd, Add= - " A_DD "." A_MM "." A_YYYY)
 }
 
@@ -1548,9 +1524,7 @@ NameAddDate(WinName, CurrCtrl, isFile:= True)                           ; 在文
     Log.Msg(WinName ", RenameWithDate=" NameWithDate)
 }
 
-;============================================================
-; Options / Settings Library
-Options(Arg := "", ActTab := 1)                                         ; 1st parameter is to avoid menu like [Option `tF2] disturb ActTab
+Options(Arg := "", ActTab := 1)                                         ; Options / Settings Library, 1st parameter is to avoid menu like [Option `tF2] disturb ActTab
 {
     Global                                                              ; Assume-global mode
     Log.Msg("Loading options window...Arg=" Arg ", ActTab=" ActTab)
@@ -1737,8 +1711,7 @@ Options(Arg := "", ActTab := 1)                                         ; 1st pa
     Gui, Setting:Show,, %g_OptionsWinName%
 }
 
-;=============== 设置选项窗口 - 按钮动作 =================
-SettingButtonOK()
+SettingButtonOK()                                                       ; 设置选项窗口 - 按钮动作
 {
     SAVECONFIG("main"), ALTRun_Reload()
 }
@@ -1782,14 +1755,14 @@ LOADCONFIG(Arg)                                                         ; 加载
             IniRead, g_%A_LoopField%, %g_IniFile%, %SEC_GUI%, %A_LoopField%, % g_%A_LoopField%
         }
         
-        if (FileExist(g_BackgroundPicture))
+        if (FileExist(g_BackgroundPicture) or g_BackgroundPicture != "Default")
         {
             g_BGPicture := g_BackgroundPicture
         }
         else
         {
-            Extract_BG(A_Temp "\ALTRunBG.jpg")
-            g_BGPicture := A_Temp "\ALTRunBG.jpg"
+            Extract_BG(A_Temp "\ALTRun.jpg")
+            g_BGPicture := A_Temp "\ALTRun.jpg"
         }
     }
 
@@ -1889,7 +1862,7 @@ LOADCONFIG(Arg)                                                         ; 加载
             Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=100
             Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=100
             Dir | `%OneDriveCommercial`% | OneDrive Business Dir=100
-            File | C:\OneDrive\Apps\TotalCMD64\Tools\Notepad2.exe=100
+            File | C:\OneDrive\Apps\TotalCMD64\Tools\Notepad2.exe /TestArg=100
             CMD | ipconfig | Show IP Address(CMD type will run with cmd.exe, auto pause after run)=100
             URL | www.google.com | Google=100
             Project | Q:\DESIGN PROJECTS | Design Folder=100
@@ -1901,7 +1874,7 @@ LOADCONFIG(Arg)                                                         ; 加载
         IniRead, INDEXSEC, %g_IniFile%, %SEC_INDEX%                     ; Read whole section SEC_INDEX (Index database)
         if (INDEXSEC = "")
         {
-            MsgBox, 4096, %g_WinName%, ALTRun initialize for first time running.`n`nAuto initialize in 30 seconds or click OK now., 30
+            MsgBox, 4096, %g_WinName%, ALTRun is initializing for the first time running.`n`nAuto initialize in 30 seconds or click OK now., 30
             ReindexFiles()
         }
         Return DFTCMDSEC "`n" USERCMDSEC "`n" INDEXSEC
@@ -2007,17 +1980,15 @@ CapsLock::
 
         if (ErrorLevel) {                                               ; long click
             ToggleAndShowTip()
-        } else {
+        }
+        else
+        {
             KeyWait, CapsLock, D T0.1
 
-            if (ErrorLevel) {                                           ; single click
+            if (ErrorLevel)                                             ; single click
                 SendInput #{Space} 
-                ; 切换为中文时经常是中文输入法的英文模式,因为调用Win同时会调用Ctrl,Win10中设置：输入法模式右键-Key Configuration-Chinese/English mode switch-untick Ctrl+Space
-                ; 对当前窗口激活下一输入法,会在中文（中文模式）,中文（英文模式）,英文循环切换
-                ;DllCall("SendMessage", UInt, WinActive("A"), UInt, 80, UInt, 1, UInt, DllCall("ActivateKeyboardLayout", UInt, 1, UInt, 256))
-            } else {                                                    ; double click
+            else                                                        ; double click
                 ToggleAndShowTip()
-            }
         }
 
         KeyWait, CapsLock
@@ -2034,17 +2005,17 @@ Return
 Extract_BG(_Filename)
 {
 	Static Out_Data
-    VarSetCapacity(TD, 13026)
-	TD := "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"
-
-    VarSetCapacity(Out_Data, Bytes := 4754, 0)
+    VarSetCapacity(TD, 4206 * 2)
+    TD :="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"
+    
+    VarSetCapacity(Out_Data, Bytes := 3070, 0)
     DllCall("Crypt32.dll\CryptStringToBinary" "W", "Ptr", &TD, "UInt", 0, "UInt", 1, "Ptr", &Out_Data, "UIntP", Bytes, "Int", 0, "Int", 0, "CDECL Int")
 	
-	IfExist, %_Filename%
+    FileExist(_Filename)
 		FileDelete, %_Filename%
 	
 	h := DllCall("CreateFile", "Ptr", &_Filename, "Uint", 0x40000000, "Uint", 0, "UInt", 0, "UInt", 4, "Uint", 0, "UInt", 0)
-	, DllCall("WriteFile", "Ptr", h, "Ptr", &Out_Data, "UInt", 4754, "UInt", 0, "UInt", 0)
+	, DllCall("WriteFile", "Ptr", h, "Ptr", &Out_Data, "UInt", 3070, "UInt", 0, "UInt", 0)
 	, DllCall("CloseHandle", "Ptr", h)
 }
 
