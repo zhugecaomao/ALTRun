@@ -22,8 +22,8 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; 声明
 , SEC_HOTKEY     := "Hotkey"
 , SEC_HISTORY    := "History"
 , SEC_INDEX      := "Index"
-, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,ShowTrayIcon,IndexDir,IndexType,IndexExclude,SearchFullPath,ShowIcon,KeepInput,HideOnLostFocus,AlwaysOnTop,SaveHistory,HistoryLen,Logging,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,LVGrid,EnableScheduler,ShutdownTime,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
-, KEYLIST_GUI    := "ListRows,Col2Width,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,BackgroundPicture"
+, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,ShowTrayIcon,IndexDir,IndexType,IndexExclude,SearchFullPath,ShowIcon,KeepInput,HideOnLostFocus,AlwaysOnTop,SaveHistory,HistoryLen,Logging,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,ListGrid,EnableScheduler,ShutdownTime,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
+, KEYLIST_GUI    := "ListRows,Col2Width,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,Background"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,CapsLockIME,TotalCMDDir,ExplorerDir"
 
 , g_AutoStartup     := 1                    ; 是否添加快捷方式到开机启动
@@ -57,7 +57,7 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; 声明
 , g_Col2Width       := 60                   ; 2nd column width, set 0 to hide 2nd column (即显示 文件、功能 的一列)
 , g_Col3Width       := 415                  ; 在列表中第三列的宽度
 , g_Col4Width       := 360                  ; 在列表中第四列的宽度
-, g_LVGrid          := 0                    ; Show Grid in ListView
+, g_ListGrid        := 0                    ; Show Grid in ListView
 , g_FontName        := "Segoe UI"           ; Font Name (eg. Default, Segoe UI, Microsoft Yahei)
 , g_FontSize        := 10                   ; Font Size, Default is 10
 , g_FontColor       := "Default"            ; Font Color, (eg. cRed, cFFFFAA, cDefault)
@@ -65,7 +65,7 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; 声明
 , g_EditHeight      := 25
 , g_ListHeight      := 260                  ; Command List Height
 , g_CtrlColor       := "Default"
-, g_WinColor        := "ABB2B9"
+, g_WinColor        := "Silver"
 , g_Background      := "Default"
 , g_BGPicture                               ; Real path of the BackgroundPicture
 , g_Hints := ["It's better to show me by press hotkey (Default is ALT + Space)"
@@ -84,14 +84,16 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; 声明
     , "Command priority (rank) will auto adjust based on frequency"
     , "Start with space = Search file by Everything"]
 
-, g_Hotkey1 := "^s" , g_Trigger1 := "Everything"
-, g_Hotkey2 := "^p" , g_Trigger2 := "RunPTTools"
-, g_Hotkey3 := ""   , g_Trigger3 := ""
-, g_GlobalHotkey1   := "!Space"  , g_GlobalHotkey2 := "!R"
-, g_TotalCMDDir     := "^g"      , g_ExplorerDir   := "^e"              ; Hotkey for Listary quick-switch dir
-, g_CapsLockIME     := 0
-, OneDrive, OneDriveConsumer , OneDriveCommercial                       ; Environment Variables (Due to #NoEnv, some need to get from EnvGet)
-EnvGet, OneDrive, OneDrive                                              ; OneDrive (Default)
+, g_GlobalHotkey1 := "!Space" , g_GlobalHotkey2 := "!R"
+, g_Hotkey1       := "^s"     , g_Trigger1      := "Everything"
+, g_Hotkey2       := "^p"     , g_Trigger2      := "RunPTTools"
+, g_Hotkey3       := ""       , g_Trigger3      := ""
+, g_TotalCMDDir   := "^g"     , g_ExplorerDir   := "^e"                 ; Hotkey for Listary quick-switch dir
+, g_CapsLockIME   := 0
+, OneDrive
+, OneDriveConsumer
+, OneDriveCommercial
+EnvGet, OneDrive, OneDrive                                              ; OneDrive Environment Variables (due to #NoEnv)
 EnvGet, OneDriveConsumer, OneDriveConsumer                              ; OneDrive for Personal
 EnvGet, OneDriveCommercial, OneDriveCommercial                          ; OneDrive for Business
 
@@ -99,7 +101,7 @@ EnvGet, OneDriveCommercial, OneDriveCommercial                          ; OneDri
 ; 声明全局变量
 ;=============================================================
 global Arg                              ; 用来调用管道的完整参数（所有列）
-, g_WinName := "ALTRun - Ver 2023.12"   ; 主窗口标题
+, g_WinName := "ALTRun - Ver 2024.01"   ; 主窗口标题
 , g_OptionsWinName := "Options"         ; 选项窗口标题
 , g_Commands                            ; 所有命令
 , g_Fallback                            ; 当搜索无结果时使用的命令
@@ -113,7 +115,6 @@ global Arg                              ; 用来调用管道的完整参数（�
 , g_InputBox  := "Edit1"
 , g_ListView  := "SysListView321"
 
-
 Log.Debug("●●●●● ALTRun is starting ●●●●●")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
@@ -121,7 +122,7 @@ LOADCONFIG("initialize")                                                ; Load i
 ; 显示各个控件的ToolTip
 ;=============================================================
 g_EnableSendTo_TT := "Whether to create a 'send to' menu"
-g_AutoStartup_TT := "Whether to add a shortcut to boot"
+g_AutoStartup_TT := "Start at boot"
 g_InStartMenu_TT := "Whether to add a shortcut to the start menu"
 g_IndexDir_TT := "Index location, can use full path or AHK variable starting with A_, must be separated by '|', the path can contain spaces, without quotation marks"
 g_IndexType_TT := "The index file types must be separated by '|'"
@@ -139,7 +140,7 @@ g_SendToGetLnk_TT := "If the file sent using the Send To menu is a .lnk shortcut
 g_Everything_TT := "Everything.exe file path"
 g_ListRows_TT := "The number of rows displayed in the list, if more than 9 rows, the shortcut key to locate this row will be invalid."
 g_Col2Width_TT := "Width of the second column, that is, display a column of file and function. Set 0 to hide 2nd column"
-g_LVGrid_TT := "Show Grid in command ListView"
+g_ListGrid_TT := "Show Grid in command ListView"
 g_FontName_TT := "Font Name, eg. Default, Segoe UI, Microsoft Yahei"
 g_FontSize_TT := "Font Size, Default is 10"
 g_FontColor_TT := "Font Color, eg. cRed, cFFFFAA, cDefault"
@@ -147,7 +148,7 @@ g_WinWidth_TT := "Width of ALTRun app window"
 g_ListHeight_TT := "Command List Height"
 g_CtrlColor_TT := "Set Color for Controls in Window"
 g_WinColor_TT := "Window background color, including border color, current command detail box color, value can be like: White, Default, EBFFEB, 0xEBFFEB"
-g_Background_TT := "Background picture, the background picture can only be displayed in the border part.`nIf there is a splash screen after using the picture, first adjust the size of the picture to solve the window size and improve the loading speed.`nIf the splash screen is still obvious, please Hollow and fill the position of the text box on the picture with a color similar to the text background, or modify it to the transparent color of png"
+g_Background_TT := "Background picture, the background picture can only be displayed in the border part. Set to 'Default' to use default background. `nIf there is a splash screen after using the picture, first adjust the size of the picture to solve the window size and improve the loading speed.`nIf the splash screen is still obvious, please Hollow and fill the position of the text box on the picture with a color similar to the text background, or modify it to the transparent color of png"
 g_Hotkey1_TT := "Shortcut key 1`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
 g_Trigger1_TT := "Function to be triggered by Hotkey 1"
 g_Hotkey2_TT := "Shortcut key 2`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
@@ -234,7 +235,7 @@ Log.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_InStartMenu))
 ; 主窗口配置代码
 ;=============================================================
 AlwaysOnTop  := g_AlwaysOnTop ? "+AlwaysOnTop" : ""                     ; Check Win AlwaysOnTop status
-LVGrid       := g_LVGrid ? "Grid" : ""                                  ; Check ListView Grid option
+ListGrid     := g_ListGrid ? "Grid" : ""                                ; Check ListView Grid option
 WinHeight    := g_EditHeight + g_ListHeight + 30 + 23                   ; Original WinHeight
 ListWidth    := g_WinWidth - 20
 HideWin      := ""
@@ -244,7 +245,7 @@ Gui, Main:Font, c%g_FontColor% s%g_FontSize%, %g_FontName%
 Gui, Main:%AlwaysOnTop%
 Gui, Main:Add, Picture, x0 y0 0x4000000, %g_BGPicture%                  ; If the picture cannot be loaded or displayed, the control is left empty and its W&H are set to zero. So FileExist() is not necessary.
 Gui, Main:Add, Edit, x10 y10 w%ListWidth% h%g_EditHeight% -WantReturn v%g_InputBox% gSearchCommand, Type anything here to search...
-Gui, Main:Add, ListView, Count15 y+10 w%ListWidth% h%g_ListHeight% v%g_ListView% gLVAction +LV0x00010000 %LVGrid% -Multi AltSubmit, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
+Gui, Main:Add, ListView, Count15 y+10 w%ListWidth% h%g_ListHeight% v%g_ListView% gLVAction +LV0x00010000 %ListGrid% -Multi AltSubmit, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
 Gui, Main:Add, StatusBar,,
 Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
 Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
@@ -358,7 +359,6 @@ ToggleWindow()
 SearchCommand(command := "")
 {
     GuiControlGet, g_Input, Main:,%g_InputBox%                          ; Get input text
-    Log.Debug("Search command = "g_Input)
     g_UseDisplay    := false
     result          := ""
     order           := 1
@@ -662,7 +662,8 @@ RunCommand(originCmd)
         }
     }
 
-    IniWrite, % g_RunCount++, %g_IniFile%, %SEC_CONFIG%, RunCount       ; Counting running number, record RunCount
+    g_RunCount++
+    IniWrite, %g_RunCount%, %g_IniFile%, %SEC_CONFIG%, RunCount         ; Counting running number, record RunCount
     ChangeRank(originCmd)
     Log.Debug("Execute(" g_RunCount ")=" originCmd)
 
@@ -983,7 +984,7 @@ LoadCommands()
             g_Fallback.Push(A_LoopField)
         }
     }
-    Return Log.Debug("Loading commands list...done")
+    Return Log.Debug("Loading commands list...OK")
 }
 
 LoadHistory()
@@ -1127,7 +1128,7 @@ UpdateSendTo(create := true)                                            ; the ln
     else
         FileCreateShortcut, "%A_AhkPath%", %lnkPath%, , "%A_ScriptFullPath%" -SendTo
         , Send command to ALTRun User Command list, Shell32.dll, , -25
-    Return "done"
+    Return "OK"
 }
 
 UpdateStartup(create := true)
@@ -1141,7 +1142,7 @@ UpdateStartup(create := true)
     lnkPath := A_Startup "\ALTRun.lnk"
     FileCreateShortcut, %A_ScriptFullPath%, %lnkPath%, %A_ScriptDir%
         , -startup, ALTRun - An effective launcher, Shell32.dll, , -25
-    Return "done"
+    Return "OK"
 }
 
 UpdateStartMenu(create := true)
@@ -1155,7 +1156,7 @@ UpdateStartMenu(create := true)
     lnkPath := A_Programs "\ALTRun.lnk"
     FileCreateShortcut, %A_ScriptFullPath%, %lnkPath%, %A_ScriptDir%
         , -StartMenu, ALTRun, Shell32.dll, , -25
-    Return "done"
+    Return "OK"
 }
 
 TaskScheduler(SchEnable := false)
@@ -1346,6 +1347,7 @@ CmdMgr(Path := "")                                                      ; 命令
 
 SelectCmdPath()
 {
+    Global
     Gui, CmdMgr:+OwnDialogs                                             ; Make open dialog Modal
     GuiControlGet, _Type, , _Type
     if(_Type = "Dir" or _Type = "Tender" or _Type = "Project")
@@ -1365,6 +1367,7 @@ SelectCmdPath()
 
 CmdMgrButtonOK()
 {
+    Global
     Gui, CmdMgr:Submit                                                  ; 保存每个控件的内容到其关联变量中
     _Desc := _Desc ? "| " _Desc : _Desc
 
@@ -1495,7 +1498,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, CheckBox, xp+250 yp vg_Logging checked%g_Logging%, Enable Log
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SearchFullPath checked%g_SearchFullPath%, Search Full Path
     Gui, Setting:Add, CheckBox, xp+250 yp vg_CapsLockIME checked%g_CapsLockIME%, CapsLock Switch IME
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_LVGrid checked%g_LVGrid%, Show grid in command list
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ListGrid checked%g_ListGrid%, Show grid in command list
     Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
     Gui, Setting:Add, CheckBox, xp-250 yp+30, #Reserved
     Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
@@ -1696,14 +1699,14 @@ LOADCONFIG(Arg)                                                         ; 加载
             IniRead, g_%A_LoopField%, %g_IniFile%, %SEC_GUI%, %A_LoopField%, % g_%A_LoopField%
         }
         
-        if (FileExist(g_Background) or g_Background != "Default")
-        {
-            g_BGPicture := g_Background
-        }
-        else
+        if (g_Background = "Default")
         {
             Extract_BG(A_Temp "\ALTRun.jpg")
             g_BGPicture := A_Temp "\ALTRun.jpg"
+        }
+        else
+        {
+            g_BGPicture := g_Background
         }
     }
 
