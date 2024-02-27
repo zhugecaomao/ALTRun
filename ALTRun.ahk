@@ -12,7 +12,7 @@
 FileEncoding, UTF-8
 SetWorkingDir %A_ScriptDir%                                             ; Ensures a consistent starting directory.
 
-Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; 声明全局变量,定义配置文件设置
+Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; Global config file
 , Log            := New Logger(A_Temp "\ALTRun.log")                    ; Global Log so that can use in other Lib
 , SEC_CONFIG     := "Config"
 , SEC_GUI        := "Gui"
@@ -107,7 +107,7 @@ global Arg                              ; 用来调用管道的完整参数（�
 , g_Fallback                            ; 当搜索无结果时使用的命令
 , g_History := Object()                 ; 历史命令
 , g_Input                               ; 编辑框当前内容
-, g_CurrentCommand                      ; 当前匹配到的第一条命令
+, g_CurrentCommand     := ""            ; 当前匹配到的第一条命令
 , g_CurrentCommandList := Object()      ; 当前匹配到的所有命令
 , g_UseDisplay                          ; 命令使用了显示框
 , g_UseFallback                         ; 使用备用的命令
@@ -718,12 +718,12 @@ ChangeCommand(Step = 1, ResetSelRow = False)
 }
 
 ;=============================================================
-; GuiContextMenu right click on GUI Control
+; GuiContextMenu right click / click Appskey on Main GUI Control
 ;=============================================================
-MainGuiContextMenu()                                                    ; 运行此标签来响应右键点击或按下 Appskey, 指定响应窗口为Main
+MainGuiContextMenu()
 {
-    if (A_GuiControl = g_ListView)                                      ; 仅在 ListView 中点击时才显示菜单
-        Menu, LV_ContextMenu, Show, %A_GuiX%, %A_GuiY%                  ; 在提供的坐标处显示菜单, 应该使用 A_GuiX & A_GuiY,因为即使用户按下 Appskey 它们也会提供正确的坐标
+    if (A_GuiControl = g_ListView)                                      ; Only show ContextMenu when click on ListView
+        Menu, LV_ContextMenu, Show, %A_GuiX%, %A_GuiY%                  ; A_GuiX & A_GuiY provide the correct location to show even for Appskey
 }
 
 ContextMenu()                                                           ; ListView ContextMenu actions
@@ -734,7 +734,7 @@ ContextMenu()                                                           ; ListVi
         Return
 
     g_CurrentCommand := g_CurrentCommandList[focusedRow]                ; Get current command from focused row
-    If (A_ThisMenuItem = "Run`tEnter")                                  ; 用户在上下文菜单中选择了 "Run`tEnter"
+    If (A_ThisMenuItem = "Run`tEnter")                                  ; User selected "Run`tEnter"
     {
         RunCommand(g_CurrentCommand)
     }
@@ -807,7 +807,7 @@ UserCommandList()
 {
     if (g_Editor != "")
     {
-        Run, % g_Editor " /m " SEC_USERCMD " """ g_IniFile """"         ; /m Match text
+        Run, % g_Editor " /m [" SEC_USERCMD "] """ g_IniFile """"         ; /m Match text
     }
     else
     {
@@ -1424,11 +1424,11 @@ AppConTrol()                                                            ; AppCon
     Hotkey, IfWinActive
 }
 
-RunPTTools()                                                            ; 如果正在使用RAPT,鼠标中间激活PT Tools
+RunPTTools()
 {
     IfWinNotExist, PT Tools
-        Run % A_ScriptDir "\PTTools.ahk"
-    else IfWinNotActive, PT Tools
+        Run, %A_ScriptDir%\PTTools.ahk
+    else
         WinActivate
 }
 
@@ -1453,18 +1453,15 @@ EvernoteDate()                                                          ; 针对
     Log.Debug("EvernoteDate, Add= - " A_DD "." A_MM "." A_YYYY)
 }
 
-NameAddDate(WinName, CurrCtrl, isFile:= True)                           ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit),isFile是可选参数,默认为真
-{
+NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit),isFile是可选参数,默认为真
     ControlGetText, EditCtrlText, %CurrCtrl%, A
-    SplitPath, % EditCtrlText, fileName, fileDir, fileExt, nameNoExt
+    SplitPath, EditCtrlText, fileName, fileDir, fileExt, nameNoExt
     
-    if (isFile && fileExt!="" && StrLen(fileExt)<5 && !RegExMatch(fileExt,"^\d+$")) ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前, another way is use if fileExt in %TrgExtList% but can not check isFile at the same time
-    {
-        NameWithDate = %nameNoExt% - %A_DD%.%A_MM%.%A_YYYY%.%fileExt%
+    if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) { ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前, another way is use if fileExt in %TrgExtList% but can not check isFile at the same time
+        NameWithDate := nameNoExt " - " A_DD "." A_MM "." A_YYYY "." fileExt
     }
-    else
-    {
-        NameWithDate = %EditCtrlText% - %A_DD%.%A_MM%.%A_YYYY%
+    else {
+        NameWithDate := EditCtrlText " - " A_DD "." A_MM "." A_YYYY
     }
     ControlClick, %CurrCtrl%, A
     ControlSetText, %CurrCtrl%, %NameWithDate%, A
@@ -1656,7 +1653,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
 SettingButtonOK()                                                       ; 设置选项窗口 - 按钮动作
 {
-    SAVECONFIG("main")
+    SAVECONFIG()
     Reload
 }
 
@@ -1825,29 +1822,19 @@ LOADCONFIG(Arg)                                                         ; 加载
     Return
 }
 
-SAVECONFIG(Arg)                                                         ; 保存主配置文件
-{
-    Log.Debug("Saving config...Arg=" Arg)
+SAVECONFIG() {                                                          ; Save config
+    Gui, Setting:Submit
 
-    if (Arg = "Main")
-    {
-        Gui, Setting:Submit                                             ; Submit and Hide, avoid delay feeling
-
-        Loop Parse, KEYLIST_CONFIG, `,                                  ; Save Config Section settings
-        {
-            IniWrite, % g_%A_LoopField%, %g_IniFile%, %SEC_CONFIG%, %A_LoopField%
-        }
-        
-        Loop Parse, KEYLIST_GUI, `,
-        {
-            IniWrite, % g_%A_LoopField%, %g_IniFile%, %SEC_GUI%, %A_LoopField%
-        }
-        
-        Loop Parse, KEYLIST_HOTKEY, `,
-        {
-            IniWrite, % g_%A_LoopField%, %g_IniFile%, %SEC_HOTKEY%, %A_LoopField%
-        }
-    }
+    Loop Parse, KEYLIST_CONFIG, `,
+        IniWrite, % g_%A_LoopField%, %g_IniFile%, %SEC_CONFIG%, %A_LoopField%
+    
+    Loop Parse, KEYLIST_GUI, `,
+        IniWrite, % g_%A_LoopField%, %g_IniFile%, %SEC_GUI%, %A_LoopField%
+    
+    Loop Parse, KEYLIST_HOTKEY, `,
+        IniWrite, % g_%A_LoopField%, %g_IniFile%, %SEC_HOTKEY%, %A_LoopField%
+    
+    Log.Debug("Saving config...")
     Return
 }
 
@@ -1998,13 +1985,8 @@ Everything()
 }
 
 ;=======================================================================
-; Library - Eval
+; Library - Eval (Math Expression)
 ;=======================================================================
-
-xe := 2.718281828459045, xpi := 3.141592653589793      ; referenced as "e", "pi"
-xinch := 2.54, xfoot := 30.48, xmile := 1.609344       ; [cm], [cm], [Km]
-xounce := 0.02841, xpint := 0.5682, xgallon := 4.54609 ; liters
-xoz := 28.35, xlb := 453.59237                         ; gramms
 
 /* -test cases
 MsgBox % Eval("1e1")                                               ; 10
