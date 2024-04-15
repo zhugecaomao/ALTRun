@@ -245,6 +245,16 @@ Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
 Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
 
 SB_SetParts(g_WinWidth-120)
+if (g_ShowIcon)
+{
+    Global ImageListID1 := IL_Create(10, 5)                             ; Create an ImageList so that the ListView can display some icons
+    IL_Add(ImageListID1, "shell32.dll", -4)                             ; Add folder icon for dir type (IconNo=1)
+    IL_Add(ImageListID1, "shell32.dll", -25)                            ; Add app default icon for function type (IconNo=2)
+    IL_Add(ImageListID1, "shell32.dll", -512)                           ; Add Browser icon for url type (IconNo=3)
+    IL_Add(ImageListID1, "shell32.dll", -22)                            ; Add control panel icon for control type (IconNo=4)
+    IL_Add(ImageListID1, "Calc.exe", -1)                                ; Add calculator icon for Eval type (IconNo=5)
+    LV_SetImageList(ImageListID1)                                       ; Attach the ImageLists to the ListView so that it can later display the icons
+}
 LV_ModifyCol(1, "40 Integer")                                           ; set ListView column width and format, Integer can use for sort
 LV_ModifyCol(2, g_Col2Width)
 LV_ModifyCol(3, g_Col3Width)
@@ -259,19 +269,7 @@ ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show i
     . "Function | Lose Focus or Hotkey or ESC | Close ALTRun`n"
     . "Function | ENTER or ALT+NO. | Run selected command`n"
     . "Function | UP or DOWN | Select previous or next command`n"
-    . "Function | CTRL+D | Open cmd dir with TC or File Explorer"
-    , False, False)
-
-if (g_ShowIcon)
-{
-    Global ImageListID1 := IL_Create(10, 5)                             ; Create an ImageList so that the ListView can display some icons
-    IL_Add(ImageListID1, "shell32.dll", -4)                             ; Add folder icon for dir type (IconNo=1)
-    IL_Add(ImageListID1, "shell32.dll", -25)                            ; Add app default icon for function type (IconNo=2)
-    IL_Add(ImageListID1, "shell32.dll", -512)                           ; Add Browser icon for url type (IconNo=3)
-    IL_Add(ImageListID1, "shell32.dll", -22)                            ; Add control panel icon for control type (IconNo=4)
-    IL_Add(ImageListID1, "Calc.exe", -1)                                ; Add calculator icon for Eval type (IconNo=5)
-    LV_SetImageList(ImageListID1)                                       ; Attach the ImageLists to the ListView so that it can later display the icons
-}
+    . "Function | CTRL+D | Open cmd dir with TC or File Explorer")
 
 Log.Debug("Resolving command line args=" A_Args[1] " " A_Args[2])       ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
 if (A_Args[1] = "-Startup")
@@ -435,7 +433,7 @@ SearchCommand(command := "")
 
     if (Result = "") {
         if (Eval(g_Input) != 0) {
-            ListResult("Eval | " Eval(g_Input), false, true)
+            ListResult("Eval | " Eval(g_Input), True)
             Return
         }
     
@@ -453,14 +451,11 @@ SearchCommand(command := "")
         g_UseFallback := false
     }
     
-    ListResult(Result, false, false)
+    ListResult(Result)
 }
 
-ListResult(text := "", ActWin := false, UseDisplay := false)            ; 显示结果
+ListResult(text := "", UseDisplay := false)                             ; 显示结果
 {
-    if (ActWin)
-        Activate()                                                      ; 会导致快捷计算器失效
-
     g_UseDisplay := UseDisplay
     IconNo  := ""
 
@@ -936,7 +931,6 @@ LoadCommands()
         Function | SearchOnGoogle | Search Clipboard or Input by Google
         Function | AhkRun | Run Command use AutoHotkey Run
         Function | CmdRun | Run Command use CMD
-        Function | RunAndDisplay | Run by CMD and display the result
         Function | SearchOnBing | Search Clipboard or Input by Bing
         ), %g_IniFile%, %SEC_FALLBACK%
         IniRead, FALLBACKCMDSEC, %g_IniFile%, %SEC_FALLBACK%
@@ -1670,11 +1664,8 @@ LOADCONFIG(Arg)                                                         ; 加载
             Function | RunPTTools | PT Tools (AHK)=100
             Function | AhkRun | Run Command use AutoHotkey Run=100
             Function | CmdRun | Run Command use CMD=100
-            Function | RunAndDisplay | Run by CMD and display the result=100
             Function | SearchOnGoogle | Search Clipboard or Input by Google=100
             Function | SearchOnBing | Search Clipboard or Input by Bing=100
-            Function | ShowIP | Show IP Address=100
-            Function | Clip | Show clipboard content=100
             Function | EmptyRecycle | Empty Recycle Bin=100
             Function | TurnMonitorOff | Turn off Monitor, Close Monitor=100
             Function | MuteVolume | Mute Volume=100
@@ -1816,16 +1807,6 @@ AhkRun()
     Run, %Arg%
 }
 
-RunAndDisplay()
-{
-    ListResult(GetCmdOutput(Arg), true, false)
-}
-
-Clip()
-{
-    ListResult(Clipboard, true, false)
-}
-
 TurnMonitorOff()                                                        ; 关闭显示器:
 {
     SendMessage, 0x112, 0xF170, 2,, Program Manager                     ; 0x112 is WM_SYSCOMMAND, 0xF170 is SC_MONITORPOWER, 使用 -1 代替 2 来打开显示器, 使用 1 代替 2 来激活显示器的节能模式.
@@ -1843,11 +1824,6 @@ EmptyRecycle()
 MuteVolume()
 {
     SoundSet, MUTE
-}
-
-ShowIP()
-{
-    ListResult(A_IPAddress1 "`n" A_IPAddress2 "`n" A_IPAddress3, True, False)
 }
 
 SearchOnGoogle()
