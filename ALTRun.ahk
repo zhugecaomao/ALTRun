@@ -3,16 +3,16 @@
 ; https://github.com/zhugecaomao/ALTRun
 ;==============================================================
 #Requires AutoHotkey v1.1
-#NoEnv                                                                  ; Recommended for performance and compatibility.
+#NoEnv ; Recommended for performance and compatibility.
 #SingleInstance, Force
 #NoTrayIcon
 #Persistent
 #Warn All, OutputDebug
 
 FileEncoding, UTF-8
-SetWorkingDir %A_ScriptDir%                                             ; Ensures a consistent starting directory.
+SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 
-Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; Global config file
+Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , Log            := New Logger(A_Temp "\ALTRun.log")                    ; Global Log so that can use in other Lib
 , SEC_CONFIG     := "Config"
 , SEC_GUI        := "Gui"
@@ -22,9 +22,9 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; Global
 , SEC_HOTKEY     := "Hotkey"
 , SEC_HISTORY    := "History"
 , SEC_INDEX      := "Index"
-, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,ShowTrayIcon,IndexDir,IndexType,IndexExclude,SearchFullPath,ShowIcon,KeepInput,HideOnLostFocus,AlwaysOnTop,SaveHistory,HistoryLen,Logging,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,ListGrid,EnableScheduler,ShutdownTime,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
+, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,ShowTrayIcon,IndexDir,IndexType,IndexExclude,SearchFullPath,ShowIcon,KeepInput,HideOnLostFocus,AlwaysOnTop,SaveHistory,HistoryLen,Logging,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,ListGrid,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
 , KEYLIST_GUI    := "ListRows,Col2Width,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,Background"
-, KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,CapsLockIME,TotalCMDDir,ExplorerDir"
+, KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,TotalCMDDir,ExplorerDir"
 
 , g_AutoStartup     := 1                    ; 是否添加快捷方式到开机启动
 , g_EnableSendTo    := 1                    ; 是否创建“发送到”菜单
@@ -46,8 +46,6 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; Global
 , g_Editor          := A_Space              ; 用来打开配置文件的编辑器,推荐Notepad2,默认为资源管理器关联的编辑器,可以右键->属性->打开方式修改
 , g_SendToGetLnk    := 1                    ; 如果使用发送到菜单发送的文件是 .lnk 的快捷方式,从文件读取路径后添加目标文件
 , g_Everything      := A_Space              ; Everything.exe 文件路径
-, g_EnableScheduler := 0                    ; Task Scheduler for PC auto shutdown
-, g_ShutdownTime    := "22:30"              ; Set timing for PC auto shutdown
 , g_AutoSwitchDir   := 0
 , g_FileManager     := "ahk_class CabinetWClass|ahk_class TTOTAL_CMD"
 , g_DialogWin       := "ahk_class #32770"   ; Class name of the Dialog Box which Listary Switch Dir will take effect
@@ -89,7 +87,6 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"               ; Global
 , g_Hotkey2       := "^p"     , g_Trigger2      := "RunPTTools"
 , g_Hotkey3       := ""       , g_Trigger3      := ""
 , g_TotalCMDDir   := "^g"     , g_ExplorerDir   := "^e"                 ; Hotkey for Listary quick-switch dir
-, g_CapsLockIME   := 0
 , OneDrive
 , OneDriveConsumer
 , OneDriveCommercial
@@ -155,15 +152,12 @@ g_Hotkey2_TT := "Shortcut key 2`nThe priority is higher than the default Alt + s
 g_Trigger2_TT := "Function to be triggered by Hotkey 2"
 g_Hotkey3_TT := "Shortcut key 3`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
 g_Trigger3_TT := "Function to be triggered by Hotkey 3"
-g_CapsLockIME_TT := "Use CapsLock to switch input methods (similar to macOS)"
 g_GlobalHotkey1_TT := "Global hotkey 1 to activate ALTRun"
 g_GlobalHotkey2_TT := "Global hotkey 2 to activate ALTRun"
 g_AutoSwitchDir_TT := "Listary - Auto Switch Dir"
 g_FileManager_TT := "Win Title or Class name of the File Manager, separated by '|', default is: ahk_class CabinetWClass|ahk_class TTOTAL_CMD (Windows Explorer and Total Commander)"
 g_DialogWin_TT := "Win Title or Class name of the Dialog Box which Listary Switch Dir will take effect, separated by '|', default is: ahk_class #32770"
 g_ExcludeWin_TT := "Exclude those windows that not want Listary Switch Dir take effect, separated by '|', default is: ahk_class SysListView32|ahk_exe Explorer.exe"
-g_EnableScheduler_TT := "Enable shutdown scheduled task"
-g_ShutdownTime_TT := "Set timing for PC auto shutdown"
 OK_TT := "Save and Apply the changes"
 Cancel_TT := "Discard the changes"
 
@@ -234,16 +228,16 @@ Log.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_InStartMenu))
 ;=============================================================
 ; 主窗口配置代码
 ;=============================================================
-AlwaysOnTop  := g_AlwaysOnTop ? "+AlwaysOnTop" : ""                     ; Check Win AlwaysOnTop status
-ListGrid     := g_ListGrid ? "Grid" : ""                                ; Check ListView Grid option
-WinHeight    := g_EditHeight + g_ListHeight + 30 + 23                   ; Original WinHeight
+AlwaysOnTop  := g_AlwaysOnTop ? "+AlwaysOnTop" : ""
+ListGrid     := g_ListGrid ? "Grid" : ""
+WinHeight    := g_EditHeight + g_ListHeight + 53
 ListWidth    := g_WinWidth - 20
 HideWin      := ""
 
 Gui, Main:Color, %g_WinColor%, %g_CtrlColor%
 Gui, Main:Font, c%g_FontColor% s%g_FontSize%, %g_FontName%
 Gui, Main:%AlwaysOnTop%
-Gui, Main:Add, Picture, x0 y0 0x4000000, %g_BGPicture%                  ; If the picture cannot be loaded or displayed, the control is left empty and its W&H are set to zero. So FileExist() is not necessary.
+Gui, Main:Add, Picture, x0 y0 0x4000000, %g_BGPicture%
 Gui, Main:Add, Edit, x10 y10 w%ListWidth% h%g_EditHeight% -WantReturn v%g_InputBox% gSearchCommand, Type anything here to search...
 Gui, Main:Add, ListView, Count15 y+10 w%ListWidth% h%g_ListHeight% v%g_ListView% gLVAction +LV0x00010000 %ListGrid% -Multi AltSubmit, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
 Gui, Main:Add, StatusBar,,
@@ -263,12 +257,23 @@ ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show i
     . "Function | F4 | ALTRun User-defined command`n"
     . "Function | ALT+SPACE or ALT+R | Activative ALTRun`n"
     . "Function | Lose Focus or Hotkey or ESC | Close ALTRun`n"
-    . "Function | Enter or ALT+No. | Run selected command`n"
+    . "Function | ENTER or ALT+NO. | Run selected command`n"
     . "Function | UP or DOWN | Select previous or next command`n"
     . "Function | CTRL+D | Open cmd dir with TC or File Explorer"
     , False, False)
 
-Log.Debug("Resolving command line args=" A_Args[1] " " A_Args[2])         ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
+if (g_ShowIcon)
+{
+    Global ImageListID1 := IL_Create(10, 5)                             ; Create an ImageList so that the ListView can display some icons
+    IL_Add(ImageListID1, "shell32.dll", -4)                             ; Add folder icon for dir type (IconNo=1)
+    IL_Add(ImageListID1, "shell32.dll", -25)                            ; Add app default icon for function type (IconNo=2)
+    IL_Add(ImageListID1, "shell32.dll", -512)                           ; Add Browser icon for url type (IconNo=3)
+    IL_Add(ImageListID1, "shell32.dll", -22)                            ; Add control panel icon for control type (IconNo=4)
+    IL_Add(ImageListID1, "Calc.exe", -1)                                ; Add calculator icon for Eval type (IconNo=5)
+    LV_SetImageList(ImageListID1)                                       ; Attach the ImageLists to the ListView so that it can later display the icons
+}
+
+Log.Debug("Resolving command line args=" A_Args[1] " " A_Args[2])       ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
 if (A_Args[1] = "-Startup")
 {
     HideWin := " Hide"
@@ -301,8 +306,8 @@ Hotkey, F4, UserCommandList
 Hotkey, ^q, Reload
 Hotkey, ^d, OpenCurrentFileDir
 Hotkey, ^i, Reindex
-Hotkey, ^NumpadAdd, IncreaseRank
-Hotkey, ^NumpadSub, DecreaseRank
+Hotkey, ^NumpadAdd, RankUp
+Hotkey, ^NumpadSub, RankDown
 Hotkey, Down, NextCommand
 Hotkey, Up, PrevCommand
 
@@ -330,7 +335,8 @@ Loop, 2                                                                 ; Set Gl
     Hotkey, % g_GlobalHotkey%A_Index%, ToggleWindow
 }
 
-Listary(), AppControl(), TaskScheduler(g_EnableScheduler)               ; Set Listary Dir QuickSwitch, Set AppControl, Set TaskScheduler
+Listary(), AppControl()                                                 ; Set Listary Dir QuickSwitch, Set AppControl
+Return
 
 Activate()
 {
@@ -349,39 +355,22 @@ ToggleWindow()
     if WinActive(g_WinName)
     {
         MainGuiClose()
-    }
-    else
-    {
+    } else {
         Activate()
     }
 }
 
 SearchCommand(command := "")
 {
-    GuiControlGet, g_Input, Main:,%g_InputBox%                          ; Get input text
-    g_UseDisplay    := false
-    result          := ""
-    order           := 1
-    commandPrefix   := SubStr(g_Input, 1, 1)
+    GuiControlGet, g_Input, Main:,%g_InputBox%
+    Result := ""
+    Order  := 1
+    Prefix := SubStr(g_Input, 1, 1)
     g_CurrentCommandList := Object()
 
-    if (commandPrefix = "+" or commandPrefix = " " or commandPrefix = ">")
-    {
+    if (Prefix = "+" or Prefix = " " or Prefix = ">") {
         g_PipeArg := ""
-
-        if (commandPrefix = "+")
-        {
-            g_CurrentCommand := g_Fallback[1]
-        }
-        else if (commandPrefix = " ")
-        {
-            g_CurrentCommand := g_Fallback[2]
-        }
-        else if (commandPrefix = ">")
-        {
-            g_CurrentCommand := g_Fallback[5]
-        }
-
+        g_CurrentCommand := g_Fallback[InStr("+ 34>", Prefix)]          ; Corresponding to fallback commands 1, 2, and 5.
         g_CurrentCommandList.Push(g_CurrentCommand)
         ListResult(g_CurrentCommand)
         Return
@@ -389,9 +378,11 @@ SearchCommand(command := "")
 
     for index, element in g_Commands
     {
-        _Type := StrSplit(element, " | ")[1]
-        _Path := StrSplit(element, " | ")[2]
-        _Desc := StrSplit(element, " | ")[3]
+        splitResult := StrSplit(element, " | ")
+        _Type := splitResult[1]
+        _Path := splitResult[2]
+        _Desc := splitResult[3]
+        SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
 
         if (_Type = "file")                                             ; Equal (=), case-sensitive-equal (==)
         {
@@ -402,14 +393,11 @@ SearchCommand(command := "")
             }
             else
             {
-                SplitPath, _Path, fileName
                 elementToSearch := fileName " " _Desc                   ; search file name include extension & desc
             }
         }
         else if (_Type = "dir" or _Type = "tender" or _Type = "project")
         {
-            SplitPath, _Path, fileName                                  ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name) 
-
             elementToShow   := _Type " | " fileName " | " _Desc         ; Show folder name only
             if (g_SearchFullPath)
             {
@@ -430,92 +418,70 @@ SearchCommand(command := "")
         {
             g_CurrentCommandList.Push(element)
 
-            if (order = 1)
+            if (Order = 1)
             {
                 g_CurrentCommand := element
-                result .= elementToShow
+                Result .= elementToShow
             }
             else
             {
-                result .= "`n" elementToShow
+                Result .= "`n" elementToShow
             }
-            order++
-            if (order > g_ListRows)
+            Order++
+            if (Order > g_ListRows)
                 break
         }
     }
 
-    if (result = "")
-    {
-        if (Eval(g_Input) != 0)
-        {
+    if (Result = "") {
+        if (Eval(g_Input) != 0) {
             ListResult("Eval | " Eval(g_Input), false, true)
             Return
         }
-
+    
         g_UseFallback        := true
         g_CurrentCommandList := g_Fallback
         g_CurrentCommand     := g_Fallback[1]
-
-        for index, element in g_Fallback
-        {
-            if (index = 1)
-            {
-                result .= element
-            }
-            else
-            {
-                result .= "`n" element
-            }
+        Result               := g_Fallback[1]
+    
+        Loop, % g_Fallback.MaxIndex() {
+            if (A_Index = 1)
+                continue
+            Result .= "`n" . g_Fallback[A_Index]
         }
-    }
-    else
-    {
+    } else {
         g_UseFallback := false
     }
-
-    ListResult(result, false, false)
+    
+    ListResult(Result, false, false)
 }
 
-ListResult(text := "", ActWin := false, UseDisplay := false)            ; 用来显示控制界面 & 用来显示命令结果
+ListResult(text := "", ActWin := false, UseDisplay := false)            ; 显示结果
 {
     if (ActWin)
-    {
         Activate()                                                      ; 会导致快捷计算器失效
-    }
+
     g_UseDisplay := UseDisplay
-    
+    IconNo  := ""
+
     Gui, Main:Default                                                   ; Set default GUI before update any listview or statusbar
     GuiControl, Main:-Redraw, %g_ListView%                              ; 在加载时禁用重绘来提升性能.
     LV_Delete()
-
-    if (g_ShowIcon)
-    {
-        ImageListID1 := IL_Create(10, 5)                                ; Create an ImageList so that the ListView can display some icons
-        IL_Add(ImageListID1, "shell32.dll", -4)                         ; Add folder icon for dir type (IconNo=1)
-        IL_Add(ImageListID1, "shell32.dll", -25)                        ; Add app default icon for function type (IconNo=2)
-        IL_Add(ImageListID1, "shell32.dll", -512)                       ; Add Browser icon for url type (IconNo=3)
-        IL_Add(ImageListID1, "shell32.dll", -22)                        ; Add control panel icon for control type (IconNo=4)
-        IL_Add(ImageListID1, "Calc.exe", -1)                            ; Add calculator icon for Eval type (IconNo=5)
-        LV_SetImageList(ImageListID1)                                   ; Attach the ImageLists to the ListView so that it can later display the icons
-        IconNo  := ""
-        VarSetCapacity(sfi, sfi_size := 698)                            ; 计算 SHFILEINFO 结构需要的缓存大小
-    }
+    VarSetCapacity(sfi, sfi_size := 698)                                ; 计算 SHFILEINFO 结构需要的缓存大小
     
     Loop Parse, text, `n, `r
     {
-        if (!InStr(A_LoopField, " | "))                                 ; If do not have " | " then Return result and next line
-        {
-            _Type := ""
-            _Path := A_LoopField
-            _Desc := ""
-        }        
-        else
+        if (InStr(A_LoopField, " | "))
         {
             _Type := Trim(StrSplit(A_LoopField, " | ")[1])
             _Path := Trim(StrSplit(A_LoopField, " | ")[2])              ; Must store in var for onward use, trim space
             _Desc := Trim(StrSplit(A_LoopField, " | ")[3])
+        } else {
+            _Type := ""
+            _Path := A_LoopField
+            _Desc := ""
         }
+
         _AbsPath := AbsPath(_Path)
 
         ; 建立唯一的扩展 ID 以避免变量名中的非法字符, 例如破折号. 这种使用唯一 ID 的方法也会执行地更好, 因为在数组中查找项目不需要进行搜索循环.
@@ -619,32 +585,25 @@ RunCommand(originCmd)
     ParseArg()
     g_UseDisplay := false
 
-    _Type := StrSplit(originCmd, " | ")[1]
-    _Path := StrSplit(originCmd, " | ")[2]
-    _Path := AbsPath(_Path, True)
+    cmdParts := StrSplit(originCmd, " | ")
+    _Type := cmdParts[1]
+    _Path := AbsPath(cmdParts[2], True)
 
-    if (_Type = "file")
+    switch (_Type)
     {
-        Run, %_Path%,, UseErrorLevel
-
-        if ErrorLevel
-            MsgBox Could not open "%_Path%"
-    }
-    else if _Type in dir,tender,project
-    {
-        OpenDir(_Path)
-    }
-    else if (_Type = "function" and IsFunc(_Path))
-    {
-        %_Path%()
-    }
-    else if (_Type = "cmd")
-    {
-        RunWithCmd(_Path)
-    }
-    else                                                                ; for type: url, control & all other un-defined type
-    {
-        Run, %_Path%
+        case "file":
+            Run, %_Path%,, UseErrorLevel
+            if ErrorLevel
+                MsgBox Could not open "%_Path%"
+        case "dir", "tender", "project":
+            OpenDir(_Path)
+        case "function":
+            if IsFunc(_Path)
+                %_Path%()
+        case "cmd":
+            RunWithCmd(_Path)
+        default:                                                        ; for type: url, control & all other un-defined type
+            Run, %_Path%
     }
 
     if (g_SaveHistory)
@@ -663,7 +622,7 @@ RunCommand(originCmd)
     }
 
     g_RunCount++
-    IniWrite, %g_RunCount%, %g_IniFile%, %SEC_CONFIG%, RunCount         ; Counting running number, record RunCount
+    IniWrite, %g_RunCount%, %g_IniFile%, %SEC_CONFIG%, RunCount         ; Count and record running number
     ChangeRank(originCmd)
     Log.Debug("Execute(" g_RunCount ")=" originCmd)
 
@@ -673,14 +632,7 @@ RunCommand(originCmd)
 TabFunc()
 {
     GuiControlGet, CurrCtrl, Main:FocusV                                ; Limit tab to switch between g_InputBox & ListView only
-    if (CurrCtrl = g_InputBox)
-    {
-        GuiControl, Main:Focus, %g_ListView%
-    }
-    else
-    {
-        GuiControl, Main:Focus, %g_InputBox%
-    }
+    GuiControl, Main:Focus, % (CurrCtrl = g_InputBox) ? g_ListView : g_InputBox
 }
 
 PrevCommand()
@@ -709,7 +661,7 @@ ChangeCommand(Step = 1, ResetSelRow = False)
     Gui, Main:Default                                                   ; Use it before any LV update
 
     SelRow := ResetSelRow ? Step : LV_GetNext() + Step                  ; Get target row no. to be selected
-    SelRow := SelRow > LV_GetCount() ? 1 : SelRow                       ; Listview cycle selection (Mod not suitable)
+    SelRow := SelRow > LV_GetCount() ? 1 : SelRow                       ; Listview cycle selection (Mod has bug on upward cycle)
     SelRow := SelRow < 1 ? LV_GetCount() : SelRow
     g_CurrentCommand := g_CurrentCommandList[SelRow]                    ; Get current command from selected row
 
@@ -787,9 +739,8 @@ MainGuiEscape()
 MainGuiClose()                                                          ; If GuiClose is a function, the GUI is hidden by default
 {
     if (!g_KeepInput)
-    {
         ClearInput()
-    }
+
     Gui, Main:Hide
 }
 
@@ -801,6 +752,20 @@ Exit()
 Reload()
 {
     Reload
+}
+
+Test()
+{
+    t := A_TickCount
+    GuiControl, Main:Text, %g_InputBox%, 2 ni r
+    Loop 500
+    {
+        SearchCommand()
+    }
+    t := A_TickCount - t
+    Log.Debug("Search '2 ni r' use Time = " t)
+    MsgBox Search '2 ni r' use Time =  %t%
+    Return
 }
 
 UserCommandList()
@@ -830,8 +795,8 @@ SetStatusBar(Mode := "Command")                                         ; Set St
     }
     else if (Mode = "Hint")
     {
-        Random, HintIndex, 1, g_Hints.Length()                          ; 随机抽出一条提示信息
-        SBText := "✨ " . g_Hints[HintIndex]                           ; 每次有效激活窗口之后StatusBar展示提示信息
+        Random, index, 1, g_Hints.Length()
+        SBText := "✨ " . g_Hints[index]
     }
     else
     {
@@ -880,7 +845,6 @@ FuzzyMatch(Haystack, Needle)
 {
     Needle := StrReplace(Needle, "+", "\+")                             ; for Eval (preceded by a backslash to be seen as literal)
     Needle := StrReplace(Needle, "*", "\*")                             ; for Eval (preceded by a backslash to be seen as literal)
-    
     Needle := StrReplace(Needle, " ", ".*")                             ; RegExMatch should able to search with space as & separater, but not sure, use this way for now
     Return RegExMatch(Haystack, "imS)" Needle)
 }
@@ -925,12 +889,12 @@ RunSelectedCommand()
     RunCommand(g_CurrentCommandList[index])
 }
 
-IncreaseRank()
+RankUp()
 {
     ChangeRank(g_CurrentCommand, true)
 }
 
-DecreaseRank()
+RankDown()
 {
     ChangeRank(g_CurrentCommand, true, -1)
 }
@@ -998,14 +962,13 @@ LoadHistory()
 
 GetCmdOutput(command)
 {
-    TempFileName := "ALTRun.stdout.log"
-    FullCommand = %ComSpec% /C "%command% > %TempFileName%"
+    TempFile   := A_Temp "\ALTRun.stdout"
+    FullCommand = %ComSpec% /C "%command% > %TempFile%"
 
     RunWait, %FullCommand%, %A_Temp%, Hide
-    FileRead, result, %A_Temp%\%TempFileName%
-    FileDelete, %A_Temp%\%TempFileName%
-    result := RTrim(result, "`r`n")                                     ; Remove result rightmost/last "`r`n"
-    Return result
+    FileRead, Result, %TempFile%
+    FileDelete, %TempFile%
+    Return RTrim(Result, "`r`n")                                        ; Remove result rightmost/last "`r`n"
 }
 
 GetRunResult(command)                                                   ;运行CMD并取返回结果方式2
@@ -1157,19 +1120,6 @@ UpdateStartMenu(create := true)
     FileCreateShortcut, %A_ScriptFullPath%, %lnkPath%, %A_ScriptDir%
         , -StartMenu, ALTRun, Shell32.dll, , -25
     Return "OK"
-}
-
-TaskScheduler(SchEnable := false)
-{
-
-    CleanTask = SchTasks /delete /TN AHK_Shutdown /F                    ; Clean old scheduler, /TN: TaskName
-    Log.Debug("Cleaning task scheduler...Re=" GetCmdOutput(CleanTask))  ; Run and get output, record into log
-    
-    if (SchEnable)                                                      ; If enable task scheduler
-    {
-        AddTask = SchTasks /create /TN AHK_Shutdown /ST %g_ShutdownTime% /SC once /TR "shutdown /s /t 60" /F
-        Log.Debug("Adding task scheduler(" g_ShutdownTime " shutdown)...Re=" GetCmdOutput(AddTask))
-    }
 }
 
 Reindex()                                                               ; Re-create Index section
@@ -1494,7 +1444,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Save Command History
     Gui, Setting:Add, CheckBox, xp+250 yp vg_Logging checked%g_Logging%, Enable Log
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SearchFullPath checked%g_SearchFullPath%, Search Full Path
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_CapsLockIME checked%g_CapsLockIME%, CapsLock Switch IME
+    Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ListGrid checked%g_ListGrid%, Show grid in command list
     Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
     Gui, Setting:Add, CheckBox, xp-250 yp+30, #Reserved
@@ -1518,12 +1468,8 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_HistoryLen, %g_HistoryLen%
 
     Gui, Setting:Tab, 3                                                 ; GUI Tab
-    Gui, Setting:Add, GroupBox, w500 h420, GUI Details
-    Gui, Setting:Add, CheckBox, xp+10 yp+25, #
-    Gui, Setting:Add, CheckBox, xp+250 yp, #
-    Gui, Setting:Add, CheckBox, xp-250 yp+30, #
-    Gui, Setting:Add, CheckBox, xp+250 yp, #
-    Gui, Setting:Add, Text, xp-250 yp+40 , Command list row number
+    Gui, Setting:Add, GroupBox, w500 h420, GUI
+    Gui, Setting:Add, Text, xp+10 yp+25 , Command list row number
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_ListRows, %g_ListRows%
     Gui, Setting:Add, Text, xp+100 yp+5, Column number 3 width
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Col3Width, %g_Col3Width%
@@ -1553,11 +1499,13 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80,
 
     Gui, Setting:Tab, 5                                                 ; Hotkey Tab
-    Gui, Setting:Add, GroupBox, w500 h85, Hotkey to Activate ALTRun:
+    Gui, Setting:Add, GroupBox, w500 h120, Activate
     Gui, Setting:Add, Text, xp+10 yp+25 , Global Hotkey (Primary):
     Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey1, %g_GlobalHotkey1%
-    Gui, Setting:Add, Text, xp-250 yp+35 , Global Hotkey (Secondary):
+    Gui, Setting:Add, Text, xp-250 yp+35 , Global Hotkey (2nd):
     Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey2, %g_GlobalHotkey2%
+    Gui, Setting:Add, Text, xp-250 yp+35 , Global Hotkey (3rd):
+    Gui, Setting:Add, Text, xp+250 yp w230, Double Click 'CTRL'
     Gui, Setting:Add, GroupBox, xp-260 yp+40 w500 h55, Command Hotkey:
     Gui, Setting:Add, Text, xp+10 yp+25 , Execute Command:
     Gui, Setting:Add, Text, xp+150 yp , ALT + No.
@@ -1577,7 +1525,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
     Gui, Setting:Add, Edit, xp+110 yp-5 r1 w120 vg_Trigger3, %g_Trigger3%
 
-    Gui, Setting:Tab, 6                                                 ; Plugins / Listary / Scheduler Tab
+    Gui, Setting:Tab, 6                                                 ; Plugins / Listary Tab
     Gui, Setting:Add, GroupBox, w500 h190, Listary Quick-Switch
     Gui, Setting:Add, Text, xp+10 yp+25 , File Manager Title: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_FileManager, %g_FileManager%
@@ -1590,10 +1538,6 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp+100 yp+5, Switch to Explorer Dir: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_ExplorerDir, %g_ExplorerDir%
     Gui, Setting:Add, CheckBox, xp-400 yp+40 vg_AutoSwitchDir checked%g_AutoSwitchDir%, Auto Switch Dir
-    Gui, Setting:Add, GroupBox, xp-10 yp+35 w500 h55, Scheduler
-    Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_EnableScheduler checked%g_EnableScheduler%, Shutdown Scheduler
-    Gui, Setting:Add, Text, xp+250 yp, Shutdown Time:
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_ShutdownTime, %g_ShutdownTime%
 
     Gui, Setting:Tab, 7                                                 ; Help Tab
     AllCommands := LOADCONFIG("commands")
@@ -1837,63 +1781,6 @@ SAVECONFIG() {                                                          ; Save c
     Log.Debug("Saving config...")
     Return
 }
-
-;=============================================================
-; Language Library (Switch ENG on Activate, CapsLock switch IME)
-; 为了让 Mac/Win 下的体验稍微一致些, 写了一个 ahk 脚本针对 CapsLock 键:
-; 单击 切换输入法(本质是调用 win + sapce), 双击/长按 切换 CapsLock 状态
-;=============================================================
-switchCapsLockState() 
-{
-    state := GetKeyState("CapsLock", "T")
-    nextState := !state
-    SetCapsLockState % nextState
-    
-    return nextState
-}
-
-showTip(isOn) 
-{
-    title := isOn ? "CapsLock: ON" : "CapsLock: OFF"
-    text := isOn ? "已打开" : "已关闭"
-
-    TrayTip, %title%, %text%, 1, 16
-    return 
-}
-
-ToggleAndShowTip()
-{
-    nextState :=switchCapsLockState()
-    showTip(nextState)
-
-    return
-}
-
-CapsLock::
-    if (g_CapsLockIME)
-    {
-        KeyWait, CapsLock, T0.3
-
-        if (ErrorLevel) {                                               ; long click
-            ToggleAndShowTip()
-        }
-        else
-        {
-            KeyWait, CapsLock, D T0.1
-
-            if (ErrorLevel)                                             ; single click
-                SendInput #{Space} 
-            else                                                        ; double click
-                ToggleAndShowTip()
-        }
-
-        KeyWait, CapsLock
-    }
-    else
-    {
-        switchCapsLockState()
-    }
-Return
 
 ;=============================================================
 ; Resources File - Background picture
