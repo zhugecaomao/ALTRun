@@ -10,6 +10,7 @@
 #Warn All, OutputDebug
 
 FileEncoding, UTF-8
+SendMode, Input
 SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
 
 Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
@@ -92,7 +93,6 @@ Global Arg                              ; 用来调用管道的完整参数（�
 , g_CurrentCommandList := Object()      ; 当前匹配到的所有命令
 , g_UseDisplay                          ; 命令使用了显示框
 , g_UseFallback                         ; 使用备用的命令
-, g_PipeArg                             ; 用来调用管道的参数（结果第三列）
 
 Log.Debug("●●●●● ALTRun is starting ●●●●●")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
@@ -169,9 +169,9 @@ if (g_ShowTrayIcon)
     Menu, Tray, Add, ReIndex `tCtrl+I, Reindex
     Menu, Tray, Add, Help `tF1, Help
     Menu, Tray, Add
-    Menu, SubTray, Add, Script Info, TrayMenu                           ; Create one menu destined to become a submenu of the above menu.
+    Menu, SubTray, Add, Script Info, TrayMenu
     Menu, SubTray, Add, Script Help, TrayMenu
-    Menu, Tray, Add, AutoHotkey, :SubTray                               ; Create a submenu in the first menu (a right-arrow indicator)
+    Menu, Tray, Add, AutoHotkey, :SubTray
     Menu, Tray, Add,
     Menu, Tray, Add, Reload `tCtrl+Q, Reload                            ; Call Reload function with Arg=Reload `tCtrl+Q
     Menu, Tray, Add, Exit `tAlt+F4, Exit
@@ -269,10 +269,12 @@ if (g_HideOnLostFocus)
 OnMessage(0x0200, "WM_MOUSEMOVE")
 
 ;=============================================================
-; Set Hotkey for %g_WinName% only
+; Set Hotkey
 ;=============================================================
-Hotkey, IfWinActive, %g_WinName%                                        ; Hotkey take effect only when ALTRun actived
+Hotkey, %g_GlobalHotkey1%, ToggleWindow                                 ; Set Global Hotkeys
+Hotkey, %g_GlobalHotkey2%, ToggleWindow
 
+Hotkey, IfWinActive, %g_WinName%                                        ; Hotkey take effect only when ALTRun actived
 Hotkey, !F4, Exit
 Hotkey, Tab, TabFunc
 Hotkey, F1, Help
@@ -305,13 +307,8 @@ Loop, 3                                                                 ; Set Tr
         Hotkey, %Hotkey%, %Trigger%
 }
 
-Hotkey, IfWinActive                                                     ; Omit the parameters to turn off context sensitivity, to make subsequently-created hotkeys work in all windows
-Loop, 2                                                                 ; Set Global Hotkeys
-{
-    Hotkey, % g_GlobalHotkey%A_Index%, ToggleWindow
-}
-
-Listary(), AppControl()                                                 ; Set Listary Dir QuickSwitch, Set AppControl
+Listary()
+AppControl()                                                            ; Set Listary Dir QuickSwitch, Set AppControl
 Return
 
 Activate()
@@ -344,7 +341,6 @@ SearchCommand(command := "")
     g_CurrentCommandList := Object()
 
     if (Prefix = "+" or Prefix = " " or Prefix = ">") {
-        g_PipeArg := ""
         g_CurrentCommand := g_Fallback[InStr("+ 34>", Prefix)]          ; Corresponding to fallback commands 1, 2, and 5.
         g_CurrentCommandList.Push(g_CurrentCommand)
         ListResult(g_CurrentCommand)
@@ -423,21 +419,13 @@ ListResult(text := "", UseDisplay := false)                             ; 显示
     
     Loop Parse, text, `n, `r
     {
-        if (InStr(A_LoopField, " | "))
-        {
-            splitResult := StrSplit(A_LoopField, " | ")
-            _Type := splitResult[1]
-            _Path := Trim(splitResult[2])                               ; Must store in var for afterward use, trim space
-            _Desc := splitResult[3]
-        } else {
-            _Type := ""
-            _Path := A_LoopField
-            _Desc := ""
-        }
+        splitResult := StrSplit(A_LoopField, " | ")
+        _Type := splitResult[1]
+        _Path := AbsPath(splitResult[2])                                ; Must store in var for afterward use, trim space (in AbsPath)
+        _Desc := splitResult[3]
 
-        _AbsPath := AbsPath(_Path)
         ; 建立唯一的扩展 ID 以避免变量名中的非法字符, 例如破折号. 这种使用唯一 ID 的方法也会执行地更好, 因为在数组中查找项目不需要进行搜索循环.
-        SplitPath, _AbsPath,,, FileExt                                  ; 获取文件扩展名.
+        SplitPath, _Path,,, FileExt                                     ; 获取文件扩展名.
 
         if (g_ShowIcon)
         {
@@ -481,7 +469,7 @@ ListResult(text := "", UseDisplay := false)                             ; 显示
 
             if (!IconIndex)                                             ; There is not yet any icon for this extension, so load it.
             {
-                if (!DllCall("Shell32\SHGetFileInfoW", "Str", _AbsPath, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 获取与此文件扩展名关联的高质量小图标 ; 0x101 为 SHGFI_ICON+SHGFI_SMALLICON
+                if (!DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 获取与此文件扩展名关联的高质量小图标 ; 0x101 为 SHGFI_ICON+SHGFI_SMALLICON
                     IconIndex = 9999999                                 ; Set it out of bounds to display a blank icon.
                 else                                                    ; Icon successfully loaded. Extract the hIcon member from the structure
                 {
@@ -504,6 +492,8 @@ ListResult(text := "", UseDisplay := false)                             ; 显示
 
 AbsPath(Path, KeepRunAs := False)                                       ; Convert path to absolute path
 {
+    Path := Trim(Path)
+    
     if (!KeepRunAs)
         Path := StrReplace(Path,  "*RunAs ", "")                        ; Remove *RunAs (Admin Run) to get absolute path
 
@@ -565,10 +555,8 @@ RunCommand(originCmd)
 
     g_RunCount++
     IniWrite, %g_RunCount%, %g_IniFile%, %SEC_CONFIG%, RunCount         ; Record running number
-    ChangeRank(originCmd)
+    UpdateRank(originCmd)
     Log.Debug("Execute(" g_RunCount ")=" originCmd)
-
-    g_PipeArg := ""
 }
 
 TabFunc()
@@ -646,7 +634,6 @@ LVContextMenu()                                                         ; ListVi
     {
         LV_GetText(Text, focusedRow, 3)                                 ; Get the text from the focusedRow's 3rd field.
         A_Clipboard := Text
-        SetStatusBar("Copied to Clipboard: " A_Clipboard)
     }
 }
 
@@ -667,7 +654,6 @@ SBActions()
 SBContextMenu()
 {
     StatusBarGetText, A_Clipboard, 1, %g_WinName%
-    SetStatusBar("Copied to Clipboard: " A_Clipboard)
 }
 
 TrayMenu()                                                              ;AutoHotkey标准托盘菜单
@@ -770,12 +756,6 @@ RunCurrentCommand()
 ParseArg()
 {
     Global
-    if (g_PipeArg != "")
-    {
-        Arg := g_PipeArg
-        Return
-    }
-
     commandPrefix := SubStr(g_Input, 1, 1)
 
     if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">")
@@ -806,7 +786,7 @@ FuzzyMatch(Haystack, Needle)
     Return RegExMatch(Haystack, "imS)" Needle)
 }
 
-ChangeRank(originCmd, showRank := false, inc := 1)
+UpdateRank(originCmd, showRank := false, inc := 1)
 {
     RANKSEC := SEC_DFTCMD "|" SEC_USERCMD "|" SEC_INDEX
     Loop Parse, RANKSEC, |                                              ; Update Rank for related sections
@@ -841,12 +821,12 @@ RunSelectedCommand()
 
 RankUp()
 {
-    ChangeRank(g_CurrentCommand, true)
+    UpdateRank(g_CurrentCommand, true)
 }
 
 RankDown()
 {
-    ChangeRank(g_CurrentCommand, true, -1)
+    UpdateRank(g_CurrentCommand, true, -1)
 }
 
 LoadCommands()
@@ -1275,25 +1255,22 @@ CmdMgrGuiClose()
     Gui, CmdMgr:Destroy
 }
 
-AppConTrol()                                                            ; AppControl (Ctrl+D 自动添加日期, 鼠标中间激活PT Tools)
+AppControl()                                                            ; AppControl (Ctrl+D 自动添加日期, 鼠标中间激活PT Tools)
 {
     GroupAdd, FileListMangr, ahk_class TTOTAL_CMD                       ; 针对TC文件列表重命名
     GroupAdd, FileListMangr, ahk_class CabinetWClass                    ; 针对Windows 资源管理器文件列表重命名
     GroupAdd, FileListMangr, ahk_class Progman                          ; 针对Windows 桌面文件重命名
     GroupAdd, FileListMangr, ahk_class TSTDTREEDLG                      ; 针对TC 新建其他格式文件如txt, rtf, docx...
     GroupAdd, FileListMangr, ahk_class #32770                           ; 针对资源管理器文件保存对话框
-    
+    GroupAdd, FileListMangr, ahk_class TCOMBOINPUT                      ; 针对 TC F7 创建新文件夹对话框（可单独出来用isFile:= True来控制不考虑后缀的影响）
+
+    GroupAdd, TextBox, ahk_class TCmtEditForm                           ; 针对 TC File Comment 对话框 按Ctrl+D自动在备注文字之后添加日期
+    GroupAdd, TextBox, ahk_class Notepad2                               ; 针对 Notepad2 (原Ctrl+D 为重复当前行)
+
     Hotkey, IfWinActive, ahk_group FileListMangr                        ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
     Hotkey, ^D, RenameWithDate
-    Hotkey, IfWinActive, ahk_class TCmtEditForm                         ; 针对TC File Comment对话框 按Ctrl+D自动在备注文字之后添加日期
+    Hotkey, IfWinActive, ahk_group TextBox
     Hotkey, ^D, LineEndAddDate
-    Hotkey, IfWinActive, ahk_class Notepad2                             ; 针对Notepad2 (原Ctrl+D 为重复当前行)
-    Hotkey, ^D, LineEndAddDate
-    Hotkey, IfWinActive, ahk_class TCOMBOINPUT                          ; 针对TC F7创建新文件夹对话框（可单独出来用isFile:= True来控制不考虑后缀的影响）
-    Hotkey, ^D, LineEndAddDate
-    Hotkey, IfWinActive, ahk_exe Evernote.exe                           ; 针对Evernote 按Ctrl+D自动在光标处添加日期
-    Hotkey, ^D, EvernoteDate
-    
     Hotkey, IfWinActive, ahk_exe RAPTW.exe                              ; 如果正在使用RAPT,鼠标中间激活PT Tools
     Hotkey, ~MButton, RunPTTools
     Hotkey, IfWinActive
@@ -1314,33 +1291,32 @@ RenameWithDate()                                                        ; 针对
         NameAddDate("FileListMangr", CurrCtrl)
     Else
         SendInput ^D
+    Return
 }
 
 LineEndAddDate()                                                        ; 针对TC File Comment对话框　按Ctrl+D自动在备注文字之后添加日期
 {
-    SendInput {End}{Space}- %A_DD%.%A_MM%.%A_YYYY%
-    Log.Debug("AddDateAtEnd, Add= - " A_DD "." A_MM "." A_YYYY)
-}
-
-EvernoteDate()                                                          ; 针对Evernote 按Ctrl+D自动在光标处添加日期
-{
-    SendInput {Space}- %A_DD%.%A_MM%.%A_YYYY%
-    Log.Debug("EvernoteDate, Add= - " A_DD "." A_MM "." A_YYYY)
+    FormatTime, CurrentDate,, dd.MM.yyyy
+    SendInput {End}
+    Sleep, 10
+    SendInput {Blind}{Text} - %CurrentDate%
+    Log.Debug("Add Date At End= - " CurrentDate)
 }
 
 NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit),isFile是可选参数,默认为真
     ControlGetText, EditCtrlText, %CurrCtrl%, A
     SplitPath, EditCtrlText, fileName, fileDir, fileExt, nameNoExt
-    
+    FormatTime, CurrentDate,, dd.MM.yyyy
+
     if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) { ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前, another way is use if fileExt in %TrgExtList% but can not check isFile at the same time
-        NameWithDate := nameNoExt " - " A_DD "." A_MM "." A_YYYY "." fileExt
+        NameWithDate := nameNoExt " - " CurrentDate "." fileExt
     }
     else {
-        NameWithDate := EditCtrlText " - " A_DD "." A_MM "." A_YYYY
+        NameWithDate := EditCtrlText " - " CurrentDate
     }
     ControlClick, %CurrCtrl%, A
     ControlSetText, %CurrCtrl%, %NameWithDate%, A
-    SendInput {End}
+    SendInput {Blind}{End}
     Log.Debug(WinName ", RenameWithDate=" NameWithDate)
 }
 
