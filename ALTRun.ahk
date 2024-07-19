@@ -1,4 +1,4 @@
-﻿;==============================================================
+;==============================================================
 ; ALTRun - An effective launcher for Windows.
 ; https://github.com/zhugecaomao/ALTRun
 ;==============================================================
@@ -24,7 +24,7 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , SEC_HISTORY    := "History"
 , SEC_INDEX      := "Index"
 , KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,ShowTrayIcon,IndexDir,IndexType,IndexExclude,IndexFullPath,ShowIcon,KeepInput,HideOnLostFocus,AlwaysOnTop,SaveHistory,HistoryLen,Logging,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,ListGrid,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
-, KEYLIST_GUI    := "ListRows,Col2Width,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,EditHeight,ListHeight,CtrlColor,WinColor,Background"
+, KEYLIST_GUI    := "ListRows,Col2Width,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,WinHeight,CtrlColor,WinColor,Background"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,TotalCMDDir,ExplorerDir"
 
 , g_AutoStartup   := 1 , g_IndexDir        := "A_ProgramsCommon|A_StartMenu"
@@ -44,12 +44,11 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , g_ListRows      := 9 , g_WinColor        := "Silver"
 , g_ListGrid      := 0 , g_Col2Width       := 60
 , g_Background    := "Default"
-, g_Col3Width     := 415
-, g_Col4Width     := 360
+, g_Col3Width     := 430
+, g_Col4Width     := 340
 , g_FontSize      := 10
 , g_WinWidth      := 900
-, g_EditHeight    := 25
-, g_ListHeight    := 260
+, g_WinHeight     := 330
 , g_BGPicture
 , g_Hints := ["It's better to show me by press hotkey (Default is ALT + Space)"
     , "ALT + Space = Show / Hide window", "Alt + F4 = Exit"
@@ -83,13 +82,13 @@ EnvGet, OneDriveCommercial, OneDriveCommercial                          ; OneDri
 ; 声明全局变量
 ;=============================================================
 Global Arg                              ; 用来调用管道的完整参数（所有列）
-, g_WinName := "ALTRun - Ver 2024.04"   ; 主窗口标题
+, g_WinName := "ALTRun - Ver 2024.07"   ; 主窗口标题
 , g_OptionsWinName := "Options"         ; 选项窗口标题
 , g_Commands                            ; 所有命令
 , g_Fallback                            ; 当搜索无结果时使用的命令
 , g_History := Object()                 ; 历史命令
 , g_Input                               ; 编辑框当前内容, 也作为 ControlID 使用
-, g_CurrentCommand     := ""            ; 当前匹配到的第一条命令
+, g_CurrentCommand := ""                ; 当前匹配到的第一条命令
 , g_CurrentCommandList := Object()      ; 当前匹配到的所有命令
 , g_UseDisplay                          ; 命令使用了显示框
 , g_UseFallback                         ; 使用备用的命令
@@ -101,18 +100,15 @@ LOADCONFIG("initialize")                                                ; Load i
 ; Tooltip for each GUI control
 ;=============================================================
 g_EnableSendTo_TT := "Whether to create a 'send to' menu"
-g_AutoStartup_TT := "Start at boot"
 g_InStartMenu_TT := "Whether to add a shortcut to the start menu"
-g_IndexDir_TT := "Index location, can use full path or AHK variable starting with A_, must be separated by '|', the path can contain spaces, without quotation marks"
+g_IndexDir_TT := "Index location, use full path or AHK variable starting with A_, must be separated by '|', the path can contain spaces, without quotation marks"
 g_IndexType_TT := "The index file types must be separated by '|'"
 g_IndexExclude_TT := "excluded files, regular expression"
 g_IndexFullPath_TT := "Search full path of the file or command, otherwise only search file name"
-g_ShowIcon_TT := "Show icon in file ListView"
 g_KeepInput_TT := "Do not clear the content of the edit box when the window is hidden"
 g_TCPath_TT := "Total Commander path with parameters, eg: C:\Apps\TotalCMD64\Totalcmd64.exe /O /T /S, use explorer instead if set to empty"
 g_SelectTCPath_TT := "Select Total Commander file path"
 g_HideOnLostFocus_TT := "The window closes after the window lost focus"
-g_Logging_TT := "Enable or disable log record"
 g_EscClearInput_TT := "When press Esc, if there is content in the input box, it will be cleared, and if there is no content, the window will be closed"
 g_Editor_TT := "The editor used to open the configuration file, the default is the editor associated with the resource manager"
 g_SendToGetLnk_TT := "If the file sent using the Send To menu is a .lnk shortcut, add the target file after reading the path from the file"
@@ -123,11 +119,9 @@ g_ListGrid_TT := "Show Grid in command ListView"
 g_FontName_TT := "Font Name, eg. Default, Segoe UI, Microsoft Yahei"
 g_FontSize_TT := "Font Size, Default is 10"
 g_FontColor_TT := "Font Color, eg. cRed, cFFFFAA, cDefault"
-g_WinWidth_TT := "Width of ALTRun app window"
-g_ListHeight_TT := "Command List Height"
 g_CtrlColor_TT := "Set Color for Controls in Window"
 g_WinColor_TT := "Window background color, including border color, current command detail box color, value can be like: White, Default, EBFFEB, 0xEBFFEB"
-g_Background_TT := "Background picture, the background picture can only be displayed in the border part. Set to 'Default' to use default background. `nIf there is a splash screen after using the picture, first adjust the size of the picture to solve the window size and improve the loading speed.`nIf the splash screen is still obvious, please Hollow and fill the position of the text box on the picture with a color similar to the text background, or modify it to the transparent color of png"
+g_Background_TT := "Background picture, the background picture can only be displayed in the border part. Set to 'Default' to use default background."
 g_Hotkey1_TT := "Shortcut key 1`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
 g_Trigger1_TT := "Function to be triggered by Hotkey 1"
 g_Hotkey2_TT := "Shortcut key 2`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
@@ -137,7 +131,7 @@ g_Trigger3_TT := "Function to be triggered by Hotkey 3"
 g_GlobalHotkey1_TT := "Global hotkey 1 to activate ALTRun"
 g_GlobalHotkey2_TT := "Global hotkey 2 to activate ALTRun"
 g_AutoSwitchDir_TT := "Listary - Auto Switch Dir"
-g_FileManager_TT := "Win Title or Class name of the File Manager, separated by '|', default is: ahk_class CabinetWClass|ahk_class TTOTAL_CMD (Windows Explorer and Total Commander)"
+g_FileManager_TT := "Win Title or Class name of the File Manager, separated by '|', default is: ahk_class CabinetWClass|ahk_class TTOTAL_CMD"
 g_DialogWin_TT := "Win Title or Class name of the Dialog Box which Listary Switch Dir will take effect, separated by '|', default is: ahk_class #32770"
 g_ExcludeWin_TT := "Exclude those windows that not want Listary Switch Dir take effect, separated by '|', default is: ahk_class SysListView32|ahk_exe Explorer.exe"
 
@@ -177,7 +171,7 @@ if (g_ShowTrayIcon)
     Menu, Tray, Add, Exit `tAlt+F4, Exit
 
     Menu, Tray, Icon
-    Menu, Tray, Icon, Shell32.dll, -25                                  ; if the index of an icon changes between Windows versions but the resource ID is consistent, refer to the icon by ID instead of index
+    Menu, Tray, Icon, Shell32.dll, -25                                  ; Index of icon changes between Windows versions, refer to the icon by resource ID for consistency
     Menu, Tray, Icon, Show, Shell32.dll, -25
     Menu, Tray, Icon, Options `tF2, Shell32.dll, -16826
     Menu, Tray, Icon, ReIndex `tCtrl+I, Shell32.dll, -16776
@@ -209,18 +203,18 @@ Log.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_InStartMenu))
 ;=============================================================
 AlwaysOnTop  := g_AlwaysOnTop ? "+AlwaysOnTop" : ""
 ListGrid     := g_ListGrid ? "Grid" : ""
-WinHeight    := g_EditHeight + g_ListHeight + 53
-ListWidth    := g_WinWidth - 20
+LV_H         := g_WinHeight - 70
+LV_W         := g_WinWidth - 24
 HideWin      := ""
 
 Gui, Main:Color, %g_WinColor%, %g_CtrlColor%
 Gui, Main:Font, c%g_FontColor% s%g_FontSize%, %g_FontName%
 Gui, Main:%AlwaysOnTop%
-Gui, Main:Add, Picture, x0 y0 0x4000000, %g_BGPicture%
-Gui, Main:Add, Edit, x10 y10 w%ListWidth% h%g_EditHeight% -WantReturn vg_Input gGetInput, Type anything here to search...
-Gui, Main:Add, ListView, Count15 y+10 w%ListWidth% h%g_ListHeight% vMyListView AltSubmit gLVActions +LV0x00010000 %ListGrid% -Multi, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
+Gui, Main:Add, Edit, W%LV_W% -WantReturn vg_Input gGetInput, Type anything here to search...
+Gui, Main:Add, ListView, WP h%LV_H% vMyListView AltSubmit gLVActions +LV0x00010000 %ListGrid% -Multi, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
+Gui, Main:Add, Picture, X0 Y0 0x4000000, %g_BGPicture%
 Gui, Main:Add, StatusBar,gSBActions,
-Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
+Gui, Main:Add, Button, Hidden Default gRunCurrentCommand
 Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
 
 SB_SetParts(g_WinWidth-120)
@@ -229,16 +223,15 @@ LV_ModifyCol(1, "40 Integer")                                           ; set Li
 LV_ModifyCol(2, g_Col2Width)
 LV_ModifyCol(3, g_Col3Width)
 LV_ModifyCol(4, g_Col4Width)
-LV_Modify(1, "Select Focus Vis")                                        ; Select 1st row
 ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show initial list (hints, help, statusbar) on firstRun
     . "Function | F2 | ALTRun Options Settings`n"
     . "Function | F3 | ALTRun Edit current command`n"
     . "Function | F4 | ALTRun User-defined command`n"
-    . "Function | ALT+SPACE or ALT+R | Activative ALTRun`n"
-    . "Function | Lose Focus or Hotkey or ESC | Close ALTRun`n"
-    . "Function | ENTER or ALT+NO. | Run selected command`n"
-    . "Function | UP or DOWN | Select previous or next command`n"
-    . "Function | CTRL+D | Open cmd dir with TC or File Explorer")
+    . "Function | ALT+SPACE / ALT+R | Activative ALTRun`n"
+    . "Function | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`n"
+    . "Function | ENTER / ALT+NO. | Run selected command`n"
+    . "Function | ARROW UP or DOWN | Select previous or next command`n"
+    . "Function | CTRL+D | Open selected cmd's dir with File Manager")
 if (g_ShowIcon)
 {
     Global ImageListID1 := IL_Create(10, 5)                             ; Create an ImageList so that the ListView can display some icons
@@ -260,7 +253,7 @@ if (A_Args[1] = "-SendTo")
     CmdMgr(A_Args[2])
 }
 
-Gui, Main:Show, Center w%g_WinWidth% h%WinHeight% %HideWin%, %g_WinName%
+Gui, Main:Show, Center w%g_WinWidth% h%g_WinHeight% %HideWin%, %g_WinName%
 
 if (g_HideOnLostFocus)
 {
@@ -337,11 +330,12 @@ SearchCommand(command := "")
 {
     Result := ""
     Order  := 1
-    Prefix := SubStr(command, 1, 1)
     g_CurrentCommandList := Object()
+    Prefix := SubStr(command, 1, 1)
 
-    if (Prefix = "+" or Prefix = " " or Prefix = ">") {
-        g_CurrentCommand := g_Fallback[InStr("+ 34>", Prefix)]          ; Corresponding to fallback commands 1, 2, and 5.
+    if (Prefix = "+" or Prefix = " " or Prefix = ">")
+    {
+        g_CurrentCommand := g_Fallback[InStr("+ >", Prefix)]            ; Corresponding to fallback commands position no. 1, 2 & 3
         g_CurrentCommandList.Push(g_CurrentCommand)
         ListResult(g_CurrentCommand)
         Return
@@ -355,7 +349,7 @@ SearchCommand(command := "")
         _Desc := splitResult[3]
         SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
 
-        if (InStr("dir,tender,project", _Type))
+        if (_Type = "dir")
         {
             elementToShow := _Type " | " fileName " | " _Desc           ; Show folder name only
         } 
@@ -429,7 +423,7 @@ ListResult(text := "", UseDisplay := false)                             ; 显示
 
         if (g_ShowIcon)
         {
-            if _Type contains Dir,Tender,Project
+            if (_Type = "Dir")
             {
                 IconIndex := 1
             }
@@ -531,7 +525,7 @@ RunCommand(originCmd)
             Run, %_Path%,, UseErrorLevel
             if ErrorLevel
                 MsgBox Could not open "%_Path%"
-        case "dir", "tender", "project":
+        case "dir":
             OpenDir(_Path)
         case "function":
             if IsFunc(_Path)
@@ -835,8 +829,7 @@ LoadCommands()
     g_Fallback  := Object()                                             ; Clear g_Fallback list
     RankString  := ""
 
-    RANKSEC := LOADCONFIG("commands")                                   ; Read built-in command & user commands and index commands whole sections
-    Loop Parse, RANKSEC, `n                                             ; read each line, separate key and value
+    Loop Parse, % LOADCONFIG("commands"), `n                            ; Read commands sections (built-in, user & index), read each line, separate key and value
     {
         command := StrSplit(A_LoopField, "=")[1]                        ; pass first string (key) to command
         rank    := StrSplit(A_LoopField, "=")[2]                        ; pass second string (value) to rank
@@ -861,9 +854,9 @@ LoadCommands()
         ;
         Function | CmdMgr | New Command
         Function | Everything | Search by Everything
+        Function | CmdRun | Run Command use CMD
         Function | SearchOnGoogle | Search Clipboard or Input by Google
         Function | AhkRun | Run Command use AutoHotkey Run
-        Function | CmdRun | Run Command use CMD
         Function | SearchOnBing | Search Clipboard or Input by Bing
         ), %g_IniFile%, %SEC_FALLBACK%
         IniRead, FALLBACKCMDSEC, %g_IniFile%, %SEC_FALLBACK%
@@ -1167,22 +1160,9 @@ CmdMgr(Path := "")                                                      ; 命令
     SplitPath Path, _Desc, fileDir, fileExt, nameNoExt, fileDrive       ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name) 
     
     if InStr(FileExist(Path), "D")                                      ; True only if the file exists and is a directory.
-    {
         _Type := 5                                                      ; It is a normal folder
-
-        if InStr(Path, "PROPOSALS & TENDERS")                           ; Check if the path contain "PROPOSALS & TENDERS"
-        {
-            _Type := 6, _Desc := ""
-        }
-        else if InStr(Path, "DESIGN PROJECTS")                          ; Check if the path contain "DESIGN PROJECTS"
-        {
-            _Type := 7, _Desc := ""
-        }
-    }
     else                                                                ; From command "New Command" or GUI context menu "New Command"
-    {
         _Desc := Arg
-    }
     
     if (fileExt = "lnk" && g_SendToGetLnk)
     {
@@ -1195,7 +1175,7 @@ CmdMgr(Path := "")                                                      ; 命令
     Gui, CmdMgr:Margin, 5, 5
     Gui, CmdMgr:Add, GroupBox, w550 h230, New Command
     Gui, CmdMgr:Add, Text, xp+20 yp+35, Command Type: 
-    Gui, CmdMgr:Add, DropDownList, xp+120 yp-5 w150 v_Type Choose%_Type%, Function|URL|Command|File||Dir|Tender|Project|
+    Gui, CmdMgr:Add, DropDownList, xp+120 yp-5 w150 v_Type Choose%_Type%, Function|URL|Command|File||Dir
     Gui, CmdMgr:Add, Text, xp-120 yp+50, Command Path: 
     Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 v_Path, % RelativePath(Path)
     Gui, CmdMgr:Add, Button, xp+355 yp w30 hp gSelectCmdPath, ...
@@ -1211,7 +1191,7 @@ SelectCmdPath()
     Global
     Gui, CmdMgr:+OwnDialogs                                             ; Make open dialog Modal
     Gui, CmdMgr:Submit, NoHide
-    if _Type in Dir,Tender,Project
+    if (_Type = "Dir")
         FileSelectFolder, _Path, , 3
     else
         FileSelectFile, _Path, 3, , Select, All File (*.*)
@@ -1308,10 +1288,12 @@ NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文
     SplitPath, EditCtrlText, fileName, fileDir, fileExt, nameNoExt
     FormatTime, CurrentDate,, dd.MM.yyyy
 
-    if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) { ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前, another way is use if fileExt in %TrgExtList% but can not check isFile at the same time
+    if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前, another way is use if fileExt in %TrgExtList% but can not check isFile at the same time
+    {
         NameWithDate := nameNoExt " - " CurrentDate "." fileExt
     }
-    else {
+    else
+    {
         NameWithDate := EditCtrlText " - " CurrentDate
     }
     ControlClick, %CurrCtrl%, A
@@ -1330,14 +1312,14 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Margin, 5, 5
     Gui, Setting:Add, Tab3,xm ym vCurrTab Choose%ActTab% -Wrap, GENERAL|INDEX|GUI|HOTKEY|LISTARY|HELP
 
-    Gui, Setting:Tab, 1                                                 ; Config Tab
+    Gui, Setting:Tab, 1 ; CONFIG Tab
     Gui, Setting:Add, GroupBox, w500 h420, General Settings
     Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_AutoStartup checked%g_AutoStartup%, Startup with Windows
     Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableSendTo checked%g_EnableSendTo%, Enable SendTo Menu
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_InStartMenu checked%g_InStartMenu%, Enable Start Menu
     Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowTrayIcon checked%g_ShowTrayIcon%, Show Tray Icon
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_HideOnLostFocus checked%g_HideOnLostFocus%, Close on Lost Focus
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_AlwaysOnTop checked%g_AlwaysOnTop%, Window Always-On-Top
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_AlwaysOnTop checked%g_AlwaysOnTop%, Always-On-Top
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_EscClearInput checked%g_EscClearInput%, Esc to Clear Input
     Gui, Setting:Add, CheckBox, xp+250 yp vg_KeepInput checked%g_KeepInput%, Keep Input on Close
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ShowIcon checked%g_ShowIcon%, Show Icon in Command List
@@ -1345,19 +1327,19 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Save Command History
     Gui, Setting:Add, CheckBox, xp+250 yp vg_Logging checked%g_Logging%, Enable Log
     Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_IndexFullPath checked%g_IndexFullPath%, Search Full Path
-    Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ListGrid checked%g_ListGrid%, Show grid in command list
-    Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
-    Gui, Setting:Add, CheckBox, xp-250 yp+30, #Reserved
-    Gui, Setting:Add, CheckBox, xp+250 yp, #Reserved
-    Gui, Setting:Add, Text, xp-250 yp+40, Text Editor (eg. Notepad2): 
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_ListGrid checked%g_ListGrid%, Show Grid in List
+    Gui, Setting:Add, CheckBox, xp-250 yp+30, * RESERVED
+    Gui, Setting:Add, CheckBox, xp+250 yp, * RESERVED
+    Gui, Setting:Add, CheckBox, xp-250 yp+30, * RESERVED
+    Gui, Setting:Add, CheckBox, xp+250 yp, * RESERVED
+    Gui, Setting:Add, Text, xp-250 yp+40, Text Editor:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Editor, %g_Editor%
-    Gui, Setting:Add, Text, xp-150 yp+40, Everything.exe Path: 
+    Gui, Setting:Add, Text, xp-150 yp+40, Everything.exe Path:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Everything, %g_Everything%
-    Gui, Setting:Add, Text, xp-150 yp+40, Default File Manager: 
+    Gui, Setting:Add, Text, xp-150 yp+40, File Manager:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_TCPath, %g_TCPath%
     
-    Gui, Setting:Tab, 2                                                 ; Index Tab
+    Gui, Setting:Tab, 2 ; INDEX Tab
     Gui, Setting:Add, GroupBox, w500 h420, Index Options
     Gui, Setting:Add, Text, xp+10 yp+40, Index Locations: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_IndexDir, %g_IndexDir%
@@ -1368,7 +1350,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp-150 yp+40, Command History Length: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_HistoryLen, %g_HistoryLen%
 
-    Gui, Setting:Tab, 3                                                 ; GUI Tab
+    Gui, Setting:Tab, 3 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, GUI
     Gui, Setting:Add, Text, xp+10 yp+25 , Command list row number
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_ListRows, %g_ListRows%
@@ -1384,19 +1366,19 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_FontColor, %g_FontColor%
     Gui, Setting:Add, Text, xp-400 yp+40, Window Width: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_WinWidth, %g_WinWidth%
-    Gui, Setting:Add, Text, xp+100 yp+5, Input box height
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_EditHeight, %g_EditHeight%
-    Gui, Setting:Add, Text, xp-400 yp+40, Command list height
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_ListHeight, %g_ListHeight%
+    Gui, Setting:Add, Text, xp+100 yp+5, * RESERVED
+    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80,
+    Gui, Setting:Add, Text, xp-400 yp+40, Window Height:
+    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_WinHeight, %g_WinHeight%
     Gui, Setting:Add, Text, xp+100 yp+5, Column number 2 width
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Col2Width, %g_Col2Width%
     Gui, Setting:Add, Text, xp-400 yp+40, Controls' Color:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_CtrlColor, %g_CtrlColor%
     Gui, Setting:Add, Text, xp+100 yp+5, Window's Color:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_WinColor, %g_WinColor%
-    Gui, Setting:Add, Text, xp-400 yp+40, Background Picture: 
+    Gui, Setting:Add, Text, xp-400 yp+40, Window Background: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Background, %g_Background%
-    Gui, Setting:Add, Text, xp+100 yp+5, #
+    Gui, Setting:Add, Text, xp+100 yp+5, * RESERVED
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80,
 
     Gui, Setting:Tab, 4 ; Hotkey Tab
@@ -1406,7 +1388,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp-250 yp+35 , Global Hotkey (2nd):
     Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey2, %g_GlobalHotkey2%
     Gui, Setting:Add, Text, xp-250 yp+35 , Global Hotkey (3rd):
-    Gui, Setting:Add, Text, xp+250 yp w230, Double Click 'CTRL'
+    Gui, Setting:Add, Text, xp+250 yp w230, Double-click 'CTRL' *RESERVED*
     Gui, Setting:Add, GroupBox, xp-260 yp+40 w500 h55, Command Hotkey:
     Gui, Setting:Add, Text, xp+10 yp+25 , Execute Command:
     Gui, Setting:Add, Text, xp+150 yp , ALT + No.
@@ -1476,10 +1458,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Ctrl + Q		重启
     Ctrl + D		用默认文件管理器打开当前命令所在目录
     Ctrl + S		显示并复制当前文件的完整路径
-    Input Web   	可直接输入 www 或 http 开头的网址
-    ;        		以分号开头命令,用 ahk 运行
-    :        		以冒号开头的命令,用 cmd 运行
-    No Result		搜索无结果,回车用 ahk 运行
+    Space		Command start by Space - Search with Everything
+    >        		Command start by ">" - Run with CMD
+    No Result		No result - Enter to add as a new command
     ------------------------------------------------------------------------
     All Commands:-
 
@@ -1638,7 +1619,7 @@ LOADCONFIG(Arg)                                                         ; 加载
             IniWrite, 
             (Ltrim
             ; User-Defined Commands (High priority, edit command as desired)
-            ; Command type: File, Dir, CMD, Function, URL, Project, Tender
+            ; Command type: File, Dir, CMD, Function, URL
             ; Type | Command | Comments=Rank
             ;
             Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=100
@@ -1647,8 +1628,6 @@ LOADCONFIG(Arg)                                                         ; 加载
             CMD | ipconfig | Show IP Address(CMD type will run with cmd.exe, auto pause after run)=100
             URL | www.google.com | Google=100
             File | C:\OneDrive\Apps\TotalCMD64\Tools\Notepad2.exe
-            Tender | Q:\PROPOSALS & TENDERS | Tender Folder=100
-            Project | Q:\DESIGN PROJECTS | Design Folder=100
             ), %g_IniFile%, %SEC_USERCMD%
             IniRead, USERCMDSEC, %g_IniFile%, %SEC_USERCMD%
         }
