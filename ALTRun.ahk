@@ -3,7 +3,7 @@
 ; https://github.com/zhugecaomao/ALTRun
 ;==============================================================
 #Requires AutoHotkey v1.1
-#NoEnv ; Recommended for performance and compatibility.
+#NoEnv
 #SingleInstance, Force
 #NoTrayIcon
 #Persistent
@@ -11,7 +11,7 @@
 
 FileEncoding, UTF-8
 SendMode, Input
-SetWorkingDir %A_ScriptDir% ; Ensures a consistent starting directory.
+SetWorkingDir %A_ScriptDir%
 
 Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , Log            := New Logger(A_Temp "\ALTRun.log")
@@ -34,7 +34,7 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , g_ShowIcon      := 1 , g_HideOnLostFocus := 1
 , g_KeepInput     := 1 , g_Editor          := A_Space
 , g_AlwaysOnTop   := 1 , g_HistoryLen      := 15
-, g_SaveHistory   := 1 , g_Everything      := A_Space
+, g_SaveHistory   := 0 , g_Everything      := A_Space
 , g_RunCount      := 0 , g_FileManager     := "ahk_class CabinetWClass|ahk_class TTOTAL_CMD"
 , g_Logging       := 1 , g_DialogWin       := "ahk_class #32770"
 , g_EscClearInput := 1 , g_ExcludeWin      := "ahk_class SysListView32|ahk_exe Explorer.exe|AutoCAD"
@@ -52,11 +52,12 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , g_BGPicture
 , g_Hints := ["It's better to show me by press hotkey (Default is ALT + Space)"
     , "ALT + Space = Show / Hide window", "Alt + F4 = Exit"
-    , "Esc = Clear Input / Close window", "Enter = Run current command"
+    , "Esc = Clear input / Close window", "Enter = Run current command"
     , "Alt + No. = Run specific command", "Start with + = New Command"
     , "Ctrl + No. = Select specific command"
-    , "F1 = Show Help", "F2 = Open Setting Config window"
-    , "F3 = Edit config file (.ini) directly"
+    , "F1 = ALTRun Help Index", "F2 = Open Setting Config window"
+    , "F3 = Edit current command (.ini) directly"
+    , "F4 = Edit user-defined commands (.ini) directly"
     , "Arrow Up / Down = Move to Previous / Next command"
     , "Ctrl+Q = Reload ALTRun"
     , "Ctrl+'+' = Increase rank of current command"
@@ -97,45 +98,6 @@ Log.Debug("●●●●● ALTRun is starting ●●●●●")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
 ;=============================================================
-; Tooltip for each GUI control
-;=============================================================
-g_EnableSendTo_TT := "Whether to create a 'send to' menu"
-g_InStartMenu_TT := "Whether to add a shortcut to the start menu"
-g_IndexDir_TT := "Index location, use full path or AHK variable starting with A_, must be separated by '|', the path can contain spaces, without quotation marks"
-g_IndexType_TT := "The index file types must be separated by '|'"
-g_IndexExclude_TT := "excluded files, regular expression"
-g_IndexFullPath_TT := "Search full path of the file or command, otherwise only search file name"
-g_KeepInput_TT := "Do not clear the content of the edit box when the window is hidden"
-g_TCPath_TT := "Total Commander path with parameters, eg: C:\Apps\TotalCMD64\Totalcmd64.exe /O /T /S, use explorer instead if set to empty"
-g_SelectTCPath_TT := "Select Total Commander file path"
-g_HideOnLostFocus_TT := "The window closes after the window lost focus"
-g_EscClearInput_TT := "When press Esc, if there is content in the input box, it will be cleared, and if there is no content, the window will be closed"
-g_Editor_TT := "The editor used to open the configuration file, the default is the editor associated with the resource manager"
-g_SendToGetLnk_TT := "If the file sent using the Send To menu is a .lnk shortcut, add the target file after reading the path from the file"
-g_Everything_TT := "Everything.exe file path"
-g_ListRows_TT := "The number of rows displayed in the list, if more than 9 rows, the shortcut key to locate this row will be invalid."
-g_Col2Width_TT := "Width of the second column, that is, display a column of file and function. Set 0 to hide 2nd column"
-g_ListGrid_TT := "Show Grid in command ListView"
-g_FontName_TT := "Font Name, eg. Default, Segoe UI, Microsoft Yahei"
-g_FontSize_TT := "Font Size, Default is 10"
-g_FontColor_TT := "Font Color, eg. cRed, cFFFFAA, cDefault"
-g_CtrlColor_TT := "Set Color for Controls in Window"
-g_WinColor_TT := "Window background color, including border color, current command detail box color, value can be like: White, Default, EBFFEB, 0xEBFFEB"
-g_Background_TT := "Background picture, the background picture can only be displayed in the border part. Set to 'Default' to use default background."
-g_Hotkey1_TT := "Shortcut key 1`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
-g_Trigger1_TT := "Function to be triggered by Hotkey 1"
-g_Hotkey2_TT := "Shortcut key 2`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
-g_Trigger2_TT := "Function to be triggered by Hotkey 2"
-g_Hotkey3_TT := "Shortcut key 3`nThe priority is higher than the default Alt + series keys, do not modify the Alt mapping unless necessary"
-g_Trigger3_TT := "Function to be triggered by Hotkey 3"
-g_GlobalHotkey1_TT := "Global hotkey 1 to activate ALTRun"
-g_GlobalHotkey2_TT := "Global hotkey 2 to activate ALTRun"
-g_AutoSwitchDir_TT := "Listary - Auto Switch Dir"
-g_FileManager_TT := "Win Title or Class name of the File Manager, separated by '|', default is: ahk_class CabinetWClass|ahk_class TTOTAL_CMD"
-g_DialogWin_TT := "Win Title or Class name of the Dialog Box which Listary Switch Dir will take effect, separated by '|', default is: ahk_class #32770"
-g_ExcludeWin_TT := "Exclude those windows that not want Listary Switch Dir take effect, separated by '|', default is: ahk_class SysListView32|ahk_exe Explorer.exe"
-
-;=============================================================
 ; Create ContextMenu and TrayMenu
 ;=============================================================
 Menu, LV_ContextMenu, Add, Run`tEnter, LVContextMenu                    ; ListView ContextMenu
@@ -163,20 +125,17 @@ if (g_ShowTrayIcon)
     Menu, Tray, Add, ReIndex `tCtrl+I, Reindex
     Menu, Tray, Add, Help `tF1, Help
     Menu, Tray, Add
-    Menu, SubTray, Add, Script Info, TrayMenu
-    Menu, SubTray, Add, Script Help, TrayMenu
-    Menu, Tray, Add, AutoHotkey, :SubTray
+    Menu, Tray, Add, Script Info, TrayMenu
+    Menu, Tray, Add, Script Help, TrayMenu
     Menu, Tray, Add,
     Menu, Tray, Add, Reload `tCtrl+Q, Reload                            ; Call Reload function with Arg=Reload `tCtrl+Q
     Menu, Tray, Add, Exit `tAlt+F4, Exit
-
     Menu, Tray, Icon
     Menu, Tray, Icon, Shell32.dll, -25                                  ; Index of icon changes between Windows versions, refer to the icon by resource ID for consistency
     Menu, Tray, Icon, Show, Shell32.dll, -25
     Menu, Tray, Icon, Options `tF2, Shell32.dll, -16826
     Menu, Tray, Icon, ReIndex `tCtrl+I, Shell32.dll, -16776
     Menu, Tray, Icon, Help `tF1, Shell32.dll, -24
-    Menu, Tray, Icon, AutoHotkey, Imageres.dll, -160
     Menu, Tray, Icon, Reload `tCtrl+Q, Shell32.dll, -16739
     Menu, Tray, Icon, Exit `tAlt+F4, Imageres.dll, -5102
     Menu, Tray, Tip, %g_WinName%
@@ -211,27 +170,24 @@ Gui, Main:Color, %g_WinColor%, %g_CtrlColor%
 Gui, Main:Font, c%g_FontColor% s%g_FontSize%, %g_FontName%
 Gui, Main:%AlwaysOnTop%
 Gui, Main:Add, Edit, W%LV_W% -WantReturn vg_Input gGetInput, Type anything here to search...
-Gui, Main:Add, ListView, WP h%LV_H% vMyListView AltSubmit gLVActions +LV0x00010000 %ListGrid% -Multi, No.|Type|Command|Description ; LVS_EX_DOUBLEBUFFER Avoids flickering.
+Gui, Main:Add, ListView, WP h%LV_H% vMyListView AltSubmit gLVActions +LV0x10000 %ListGrid% -Multi, No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, X0 Y0 0x4000000, %g_BGPicture%
 Gui, Main:Add, StatusBar,gSBActions,
-Gui, Main:Add, Button, Hidden Default gRunCurrentCommand
+Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
 Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
 
 SB_SetParts(g_WinWidth-120)
-SB_SetIcon("Shell32.dll", -25)
-LV_ModifyCol(1, "40 Integer")                                           ; set ListView column width and format, Integer can use for sort
+LV_ModifyCol(1, 40)
 LV_ModifyCol(2, g_Col2Width)
 LV_ModifyCol(3, g_Col3Width)
 LV_ModifyCol(4, g_Col4Width)
-ListResult("Function | F1 | ALTRun Help Index`n"                        ; Show initial list (hints, help, statusbar) on firstRun
-    . "Function | F2 | ALTRun Options Settings`n"
-    . "Function | F3 | ALTRun Edit current command`n"
-    . "Function | F4 | ALTRun User-defined command`n"
-    . "Function | ALT+SPACE / ALT+R | Activative ALTRun`n"
-    . "Function | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`n"
-    . "Function | ENTER / ALT+NO. | Run selected command`n"
-    . "Function | ARROW UP or DOWN | Select previous or next command`n"
-    . "Function | CTRL+D | Open selected cmd's dir with File Manager")
+ListResult("Tip | F1 | Help`nTip | F2 | Options and settings`n"         ; List initial tips
+    . "Tip | F3 | Edit current command`nTip | F4 | User-defined commands`n"
+    . "Tip | ALT+SPACE / ALT+R | Activative ALTRun`n"
+    . "Tip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`n"
+    . "Tip | ENTER / ALT+NO. | Run selected command`n"
+    . "Tip | ARROW UP or DOWN | Select previous or next command`n"
+    . "Tip | CTRL+D | Open selected cmd's dir with File Manager")
 if (g_ShowIcon)
 {
     Global ImageListID1 := IL_Create(10, 5)                             ; Create an ImageList so that the ListView can display some icons
@@ -259,7 +215,6 @@ if (g_HideOnLostFocus)
 {
     OnMessage(0x06, "WM_ACTIVATE")
 }
-OnMessage(0x0200, "WM_MOUSEMOVE")
 
 ;=============================================================
 ; Set Hotkey
@@ -400,16 +355,15 @@ SearchCommand(command := "")
     ListResult(Result)
 }
 
-ListResult(text := "", UseDisplay := false)                             ; 显示结果
+ListResult(text := "", UseDisplay := false)
 {
     g_UseDisplay := UseDisplay
-    ICON         := ""
     IconIndex    := ""
 
     Gui, Main:Default                                                   ; Set default GUI before update any listview or statusbar
-    GuiControl, Main:-Redraw, MyListView                                ; 在加载时禁用重绘来提升性能.
+    GuiControl, Main:-Redraw, MyListView                                ; Improve performance by disabling redrawing during load.
     LV_Delete()
-    VarSetCapacity(sfi, sfi_size := 698)                                ; 计算 SHFILEINFO 结构需要的缓存大小
+    VarSetCapacity(sfi, sfi_size := 698)                                ; Calculate buffer size required for SHFILEINFO structure.
     
     Loop Parse, text, `n, `r
     {
@@ -418,69 +372,68 @@ ListResult(text := "", UseDisplay := false)                             ; 显示
         _Path := AbsPath(splitResult[2])                                ; Must store in var for afterward use, trim space (in AbsPath)
         _Desc := splitResult[3]
 
-        ; 建立唯一的扩展 ID 以避免变量名中的非法字符, 例如破折号. 这种使用唯一 ID 的方法也会执行地更好, 因为在数组中查找项目不需要进行搜索循环.
-        SplitPath, _Path,,, FileExt                                     ; 获取文件扩展名.
-
         if (g_ShowIcon)
         {
+            ; Build a unique extension ID to avoid characters that are illegal in variable names, such as dashes. 
+            ; This unique ID method also performs better because finding an item, in the array does not require search-loop.
+            SplitPath, _Path,,, FileExt                                 ; Get the file's extension.
+
             if (_Type = "Dir")
             {
                 IconIndex := 1
             }
-            else if _Type contains Function,CMD
+            else if _Type contains Function,CMD,Tip
             {
                 IconIndex := 2
             }
-            else if _Type contains URL
+            else if (_Type = "URL")
             {
                 IconIndex := 3
             }
-            else if _Type contains Control
+            else if (_Type = "Control")
             {
                 IconIndex := 4
             }
-            else if _Type contains Eval
+            else if (_Type = "Eval")
             {
                 IconIndex := 5
             }
             else if FileExt in EXE,ICO,ANI,CUR,LNK
             {
                 ExtID := FileExt
-                IconIndex := 0                                          ; Flag it as not found so that these types can each have a unique icon.
+                IconIndex := 0                                          ; Flag it as not found so that these types can each have a unique icon
             }
-            else                                                        ; 其他的扩展名/文件类型, 计算它们的唯一 ID.
+            else                                                        ; Some other extension/file-type, so calculate its unique ID
             {
-                ExtID := 0                                              ; 进行初始化来处理比其他更短的扩展名.
-                Loop 4                                                  ; 限制扩展名为 4 个字符, 这样之后计算的结果才能存放到 64 位值 (use 4 due to some short folder name has dot)
+                ExtID := 0                                              ; Initialize to handle extensions that are shorter than others
+                Loop 4                                                  ; Limit the extension to 4 characters so that it fits in a 64-bit value / ome short folder name has dot
                 {
                     ExtChar := SubStr(FileExt, A_Index, 1)
-                    if (!ExtChar)                                       ; 没有更多字符了.
+                    if (!ExtChar)                                       ; No more characters
                         break
-                    ExtID := ExtID | (Ord(ExtChar) << (8 * (A_Index - 1))) ; 把每个字符与不同的位位置进行运算来得到唯一 ID
+                    ExtID := ExtID | (Ord(ExtChar) << (8 * (A_Index - 1))) ; Derive a Unique ID by assigning a different bit position to each character:
                 }
-                IconIndex := IconArray%ExtID%                           ; 检查此文件扩展名的图标是否已经在图像列表中. 如果是, 可以避免多次调用并极大提高性能, 尤其对于包含数以百计文件的文件夹而言
+                IconIndex := IconArray%ExtID%                           ; Check if this file extension already has an icon in the ImageLists. If it does, several calls can be avoided and loading performance is greatly improved, especially for a folder containing hundreds of files
             }
 
             if (!IconIndex)                                             ; There is not yet any icon for this extension, so load it.
             {
-                if (!DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 获取与此文件扩展名关联的高质量小图标 ; 0x101 为 SHGFI_ICON+SHGFI_SMALLICON
+                if (!DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
                     IconIndex = 9999999                                 ; Set it out of bounds to display a blank icon.
                 else                                                    ; Icon successfully loaded. Extract the hIcon member from the structure
                 {
-                    hIcon := NumGet(sfi, 0)                             ; 从结构中提取 hIcon 成员
-                    IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID1, "int", -1, "ptr", hIcon) + 1 ; 直接添加 HICON 到图标列表, 下面加上 1 来把返回的索引从基于零转换到基于1
+                    hIcon := NumGet(sfi, 0)                             ; Add the HICON directly to the small-icon and large-icon lists.
+                    IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID1, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
                     DllCall("DestroyIcon", "ptr", hIcon)                ; Now that it's been copied into the ImageLists, the original should be destroyed
                     IconArray%ExtID% := IconIndex                       ; Cache the icon to save memory and improve loading performance
                 }
             }
-
-            ICON := "Icon"IconIndex
         }
-        LV_Add(ICON, A_Index, _Type, _Path, _Desc)
+        LV_Add("Icon"IconIndex, A_Index, _Type, _Path, _Desc)
     }
 
     LV_Modify(1, "Select Focus Vis")                                    ; Select 1st row
-    GuiControl, Main:+Redraw, MyListView                                ; 重新启用重绘 (上面把它禁用了)
+    GuiControl, Main:+Redraw, MyListView
     SetStatusBar()
 }
 
@@ -511,13 +464,12 @@ RelativePath(Path)                                                      ; Conver
 
 RunCommand(originCmd)
 {
-    MainGuiClose()                                                      ; 先隐藏或者关闭窗口,防止出现延迟的感觉
+    MainGuiClose()                                                      ; 先关闭窗口,避免出现延迟的感觉
     ParseArg()
     g_UseDisplay := false
 
-    cmdParts := StrSplit(originCmd, " | ")
-    _Type := cmdParts[1]
-    _Path := AbsPath(cmdParts[2], True)
+    _Type := StrSplit(originCmd, " | ")[1]
+    _Path := AbsPath(StrSplit(originCmd, " | ")[2], True)
 
     switch (_Type)
     {
@@ -855,9 +807,9 @@ LoadCommands()
         Function | CmdMgr | New Command
         Function | Everything | Search by Everything
         Function | CmdRun | Run Command use CMD
-        Function | SearchOnGoogle | Search Clipboard or Input by Google
+        Function | Google | Search Clipboard or Input by Google
         Function | AhkRun | Run Command use AutoHotkey Run
-        Function | SearchOnBing | Search Clipboard or Input by Bing
+        Function | Bing | Search Clipboard or Input by Bing
         ), %g_IniFile%, %SEC_FALLBACK%
         IniRead, FALLBACKCMDSEC, %g_IniFile%, %SEC_FALLBACK%
     }
@@ -941,39 +893,6 @@ EditCurrentCommand()
     {
         Run, % g_IniFile
     }
-}
-
-;=============================================================
-; MouseMove Behavior
-;=============================================================
-WM_MOUSEMOVE(wParam, lParam)
-{
-    if (wParam = 1)                                                     ; LButton
-    {
-        PostMessage, 0xA1, 2, , , A                                     ; WM_NCLBUTTONDOWN
-    }
-
-    if WinActive(g_OptionsWinName)                                      ; to show tooltip for controls, limit to Options Win
-    {
-        static CurrControl := "", PrevControl := "", _TT := ""          ; _TT is kept blank for use by the ToolTip command below.
-        CurrControl := A_GuiControl
-        if (CurrControl != PrevControl)                                 ; ToolTip for each control
-        {
-            ToolTip                                                     ; Turn off any previous tooltip.
-            Try                                                         ; Using try will guard "CurrControl" against all possible errors
-                ToolTip, % %CurrControl%_TT                             ; The leading percent sign tell it to use an expression.
-            Catch
-                ToolTip
-            SetTimer, RemoveToolTip, -10000
-            PrevControl := CurrControl
-        }
-    }
-}
-
-RemoveToolTip()
-{
-    ToolTip
-    SetTimer, RemoveToolTip, Off
 }
 
 WM_ACTIVATE(wParam, lParam)                                             ; Close main window on lose focus
@@ -1310,7 +1229,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:New, -SysMenu, %g_OptionsWinName%                      ;-SysMenu: omit the system menu and icon in the window's upper left corner
     Gui, Setting:Font, s9, Segoe UI
     Gui, Setting:Margin, 5, 5
-    Gui, Setting:Add, Tab3,xm ym vCurrTab Choose%ActTab% -Wrap, GENERAL|INDEX|GUI|HOTKEY|LISTARY|HELP
+    Gui, Setting:Add, Tab3,xm ym vCurrTab Choose%ActTab% -Wrap, General|Index|GUI|Hotkey|Listary|About
 
     Gui, Setting:Tab, 1 ; CONFIG Tab
     Gui, Setting:Add, GroupBox, w500 h420, General Settings
@@ -1422,12 +1341,10 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_ExplorerDir, %g_ExplorerDir%
     Gui, Setting:Add, CheckBox, xp-400 yp+40 vg_AutoSwitchDir checked%g_AutoSwitchDir%, Auto Switch Dir
 
-    Gui, Setting:Tab, 6 ; HELP TAB
-    AllCommands := LOADCONFIG("commands")
+    Gui, Setting:Tab, 6 ; ABOUT TAB
     Gui, Setting:Add, Edit, w500 h420 ReadOnly -WantReturn -Wrap,
     (Ltrim
-    ALTRun
-    An effective launcher for Windows, open source project
+    ALTRun - An effective launcher for Windows, open source project
     https://github.com/zhugecaomao/ALTRun
 
     1. Pure portable software, not write anything into Registry.
@@ -1437,34 +1354,28 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     5. Listary Quick Switch Dir function
     6. AppControl function
     ------------------------------------------------------------------------
-    Congraduations! You have run shortcut %g_RunCount% times by now! 
-    
-    shortcut list:-
-
-    F1        		打开帮助页面
-    F2        		打开配置选项
-    F3        		编辑当前命令
-    F4        		用户命令列表
-    Enter   		执行当前命令
-    Esc     		清除输入/关闭窗口
-    Alt + F4		退出
-    Alt +    		加每列行首字符执行
-    Tab +    		再按每列行首字符执行
-    Tab +    		再按 Shift + 行首字符 定位
-    ALT + Space 	显示或隐藏窗口
-    Ctrl + +		提高当前命令的权重
-    Ctrl + -		降低当前命令的权重
-    Ctrl + R		重新创建索引列表
-    Ctrl + Q		重启
-    Ctrl + D		用默认文件管理器打开当前命令所在目录
-    Ctrl + S		显示并复制当前文件的完整路径
-    Space		Command start by Space - Search with Everything
+    F1        		ALTRun Help Index
+    F2        		Open Setting Config window
+    F3        		Edit current command (.ini) directly
+    F4        		Edit user-defined commands (.ini) directly
+    Enter   		Run current command
+    Esc     		Clear input / Close window
+    Up / Down   	Move to Previous / Next command
+    Alt + Space 	Show / Hide window
+    Alt + F4		Exit
+    Alt + No.  		Run specific command
+    Ctrl + No.   	Select specific command
+    Ctrl + +		Increase rank of current command
+    Ctrl + -		Decrease rank of current command
+    Ctrl + I		Reindex file search database
+    Ctrl + Q		Reload ALTRun
+    Ctrl + D		Open current command dir with TC / File Explorer
+    Space   		Command start by Space - Search with Everything
     >        		Command start by ">" - Run with CMD
-    No Result		No result - Enter to add as a new command
+    +        		Command start by "+" - Create new Command
+    No Result		Enter to add as a new command
     ------------------------------------------------------------------------
-    All Commands:-
-
-    %AllCommands%
+    Congraduations! You have run shortcut %g_RunCount% times by now!
     )
     
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面那个选项卡控件
@@ -1472,8 +1383,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Hotkey, %g_GlobalHotkey1%, Off
     Hotkey, %g_GlobalHotkey2%, Off
 
-    Gui, Setting:Add, Button, Default x350 w80, OK
+    Gui, Setting:Add, Button, Default x250 w80, OK
     Gui, Setting:Add, Button, xp+90 yp w80, Cancel
+    Gui, Setting:Add, Button, xp+90 yp w80, Help
     Gui, Setting:Show,, %g_OptionsWinName%
 }
 
@@ -1495,10 +1407,14 @@ SettingButtonCancel()
 
 SettingGuiClose()
 {
-    RemoveToolTip()
     Hotkey, %g_GlobalHotkey1%, On
     Hotkey, %g_GlobalHotkey2%, On
     Gui, Setting:Destroy
+}
+
+SettingButtonHelp()
+{
+    Run, https://github.com/zhugecaomao/ALTRun/wiki#notes-for-altrun-options
 }
 
 LOADCONFIG(Arg)                                                         ; 加载主配置文件
@@ -1552,8 +1468,8 @@ LOADCONFIG(Arg)                                                         ; 加载
             Function | RunPTTools | PT Tools (AHK)=100
             Function | AhkRun | Run Command use AutoHotkey Run=100
             Function | CmdRun | Run Command use CMD=100
-            Function | SearchOnGoogle | Search Clipboard or Input by Google=100
-            Function | SearchOnBing | Search Clipboard or Input by Bing=100
+            Function | Google | Search Clipboard or Input by Google=100
+            Function | Bing | Search Clipboard or Input by Bing=100
             Function | EmptyRecycle | Empty Recycle Bin=100
             Function | TurnMonitorOff | Turn off Monitor, Close Monitor=100
             Function | MuteVolume | Mute Volume=100
@@ -1712,14 +1628,14 @@ MuteVolume()
     SoundSet, MUTE
 }
 
-SearchOnGoogle()
+Google()
 {
     Global
     word := Arg == "" ? clipboard : Arg
     Run, https://www.google.com/search?q=%word%&newwindow=1
 }
 
-SearchOnBing()
+Bing()
 {
     Global
     word := Arg == "" ? clipboard : Arg
