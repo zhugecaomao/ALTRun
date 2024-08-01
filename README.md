@@ -16,7 +16,7 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ![Screenshot_1](https://github.com/zhugecaomao/ALTRun/assets/11486126/db441712-cc6e-4787-8115-164395843fa8)
 
 ### Dark Mode:
-![Dark Mode](https://github.com/user-attachments/assets/bffb1650-4f29-4c4e-86f5-8f3ad9ccd325)
+![Dark Mode](https://github.com/user-attachments/assets/2ce70d3f-f84c-4f0a-a7a3-d037642f3604)
 
 ![Screenshot_2](https://github.com/zhugecaomao/ALTRun/assets/11486126/bf5894a7-1223-405f-8ed4-c8f06bd2e6eb)
 
