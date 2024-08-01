@@ -20,6 +20,9 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 
 ![Screenshot_4](https://github.com/zhugecaomao/ALTRun/assets/11486126/24efb0d1-cd5f-4a31-8e81-6fe93624692a)
 
+### Dark Mode:
+![Dark Mode](https://github.com/user-attachments/assets/064ac129-85d5-468a-8b57-54c3002d0d69)
+
 # Release
 
 You may download the exe file if you do not have AutoHotkey installed on your PC.
