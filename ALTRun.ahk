@@ -23,14 +23,14 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , SEC_HOTKEY     := "Hotkey"
 , SEC_HISTORY    := "History"
 , SEC_INDEX      := "Index"
-, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,ShowTrayIcon,IndexDir,IndexType,IndexExclude,IndexFullPath,ShowIcon,KeepInput,HideOnLostFocus,AlwaysOnTop,SaveHistory,HistoryLen,Logging,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,ListGrid,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
+, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,ShowTrayIcon,IndexDir,IndexType,IndexExclude,MatchPath,ShowIcon,KeepInput,HideOnLostFocus,AlwaysOnTop,SaveHistory,HistoryLen,Logging,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,ListGrid,ListHdr,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
 , KEYLIST_GUI    := "ListRows,Col2Width,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,WinHeight,CtrlColor,WinColor,Background"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,TotalCMDDir,ExplorerDir"
 
 , g_AutoStartup   := 1 , g_IndexDir        := "A_ProgramsCommon|A_StartMenu"
 , g_EnableSendTo  := 1 , g_IndexType       := "*.lnk|*.exe"
 , g_InStartMenu   := 1 , g_IndexExclude    := "Uninstall *"
-, g_IndexFullPath := 0 , g_TCPath          := A_Space
+, g_MatchPath     := 0 , g_TCPath          := A_Space
 , g_ShowIcon      := 1 , g_HideOnLostFocus := 1
 , g_KeepInput     := 1 , g_Editor          := A_Space
 , g_AlwaysOnTop   := 1 , g_HistoryLen      := 15
@@ -43,6 +43,7 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , g_ShowTrayIcon  := 1 , g_CtrlColor       := "Default"
 , g_ListRows      := 9 , g_WinColor        := "Silver"
 , g_ListGrid      := 0 , g_Col2Width       := 60
+, g_ListHdr       := 1
 , g_Background    := "Default"
 , g_Col3Width     := 430
 , g_Col4Width     := 340
@@ -147,11 +148,7 @@ if (g_ShowTrayIcon)
 ; Update "SendTo", "Startup", "StartMenu" lnk
 ;=============================================================
 LoadCommands()
-
-if (g_SaveHistory)
-{
-    LoadHistory()
-}
+LoadHistory()
 
 Log.Debug("Updating 'SendTo' setting..." UpdateSendTo(g_EnableSendTo))
 Log.Debug("Updating 'Startup' setting..." UpdateStartup(g_AutoStartup))
@@ -162,7 +159,8 @@ Log.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_InStartMenu))
 ;=============================================================
 AlwaysOnTop  := g_AlwaysOnTop ? "+AlwaysOnTop" : ""
 ListGrid     := g_ListGrid ? "Grid" : ""
-LV_H         := g_WinHeight - 70
+ListHdr      := g_ListHdr ? "" : "-Hdr"
+LV_H         := g_WinHeight - 43 - 3 * g_FontSize
 LV_W         := g_WinWidth - 24
 HideWin      := ""
 
@@ -170,7 +168,7 @@ Gui, Main:Color, %g_WinColor%, %g_CtrlColor%
 Gui, Main:Font, c%g_FontColor% s%g_FontSize%, %g_FontName%
 Gui, Main:%AlwaysOnTop%
 Gui, Main:Add, Edit, W%LV_W% -WantReturn vg_Input gGetInput, Type anything here to search...
-Gui, Main:Add, ListView, WP h%LV_H% vMyListView AltSubmit gLVActions +LV0x10000 %ListGrid% -Multi, No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
+Gui, Main:Add, ListView, WP h%LV_H% vMyListView AltSubmit gLVActions %ListHdr% +LV0x10000 %ListGrid% -Multi, No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, X0 Y0 0x4000000, %g_BGPicture%
 Gui, Main:Add, StatusBar,gSBActions,
 Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
@@ -192,9 +190,9 @@ if (g_ShowIcon)
 {
     Global ImageListID1 := IL_Create(10, 5)                             ; Create an ImageList so that the ListView can display some icons
     IL_Add(ImageListID1, "shell32.dll", -4)                             ; Add folder icon for dir type (IconIndex=1)
-    IL_Add(ImageListID1, "shell32.dll", -25)                            ; Add app default icon for function type (IconIndex=2)
+    IL_Add(ImageListID1, "shell32.dll", -25)                            ; Add app default icon for Func type (IconIndex=2)
     IL_Add(ImageListID1, "shell32.dll", -512)                           ; Add Browser icon for url type (IconIndex=3)
-    IL_Add(ImageListID1, "shell32.dll", -22)                            ; Add control panel icon for control type (IconIndex=4)
+    IL_Add(ImageListID1, "shell32.dll", -22)                            ; Add control panel icon for ctrl type (IconIndex=4)
     IL_Add(ImageListID1, "Calc.exe", -1)                                ; Add calculator icon for Eval type (IconIndex=5)
     LV_SetImageList(ImageListID1)                                       ; Attach the ImageLists to the ListView so that it can later display the icons
 }
@@ -313,7 +311,7 @@ SearchCommand(command := "")
             elementToShow := _Type " | " _Path " | " _Desc              ; Use _Path to show file icons (file type), and all other types
         }
 
-        elementToSearch := g_IndexFullPath ? _Path " " _Desc : fileName " " _Desc ; search file name include extension & desc, search dir type + folder name + desc
+        elementToSearch := g_MatchPath ? _Path " " _Desc : fileName " " _Desc ; search file name include extension & desc, search dir type + folder name + desc
 
         if (FuzzyMatch(elementToSearch, command))
         {
@@ -336,7 +334,10 @@ SearchCommand(command := "")
 
     if (Result = "") {
         if Eval(command)
-            Return ListResult("Eval | " Eval(command), True)
+        {
+            Result := RegExReplace(Eval(command), "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",")
+            Return ListResult("Eval | " Result, True)
+        }
 
         g_UseFallback        := true
         g_CurrentCommandList := g_Fallback
@@ -382,7 +383,7 @@ ListResult(text := "", UseDisplay := false)
             {
                 IconIndex := 1
             }
-            else if _Type contains Function,CMD,Tip
+            else if _Type contains Func,CMD,Tip
             {
                 IconIndex := 2
             }
@@ -390,7 +391,7 @@ ListResult(text := "", UseDisplay := false)
             {
                 IconIndex := 3
             }
-            else if (_Type = "Control")
+            else if (_Type = "Ctrl")
             {
                 IconIndex := 4
             }
@@ -479,7 +480,7 @@ RunCommand(originCmd)
                 MsgBox Could not open "%_Path%"
         case "dir":
             OpenDir(_Path)
-        case "function":
+        case "func":
             if IsFunc(_Path)
                 %_Path%()
         case "cmd":
@@ -804,12 +805,12 @@ LoadCommands()
         ;===========================================================
         ; Fallback Commands show when search result is empty
         ;
-        Function | CmdMgr | New Command
-        Function | Everything | Search by Everything
-        Function | CmdRun | Run Command use CMD
-        Function | Google | Search Clipboard or Input by Google
-        Function | AhkRun | Run Command use AutoHotkey Run
-        Function | Bing | Search Clipboard or Input by Bing
+        Func | CmdMgr | New Command
+        Func | Everything | Search by Everything
+        Func | CmdRun | Run Command use CMD
+        Func | Google | Search Clipboard or Input by Google
+        Func | AhkRun | Run Command use AutoHotkey Run
+        Func | Bing | Search Clipboard or Input by Bing
         ), %g_IniFile%, %SEC_FALLBACK%
         IniRead, FALLBACKCMDSEC, %g_IniFile%, %SEC_FALLBACK%
     }
@@ -825,10 +826,17 @@ LoadCommands()
 
 LoadHistory()
 {
-    Loop %g_HistoryLen%
+    if (g_SaveHistory)
     {
-        IniRead, History, %g_IniFile%, %SEC_HISTORY%, %A_Index%
-        g_History.Push(History)
+        Loop %g_HistoryLen%
+        {
+            IniRead, History, %g_IniFile%, %SEC_HISTORY%, %A_Index%
+            g_History.Push(History)
+        }
+    }
+    else
+    {
+        IniDelete, %g_IniFile%, %SEC_HISTORY%
     }
 }
 
@@ -875,7 +883,7 @@ OpenDir(Path, OpenContainer := False)
     if ErrorLevel
         MsgBox, 4096, %g_WinName%, Error found, error code : %A_LastError%
 
-    Log.Debug("Open Dir="Path)
+    Log.Debug("Open dir="Path)
 }
 
 OpenCurrentFileDir()
@@ -895,7 +903,7 @@ EditCurrentCommand()
     }
 }
 
-WM_ACTIVATE(wParam, lParam)                                             ; Close main window on lose focus
+WM_ACTIVATE(wParam, lParam)                                             ; Close on lose focus
 {
     if (wParam > 0)                                                     ; wParam > 0: window being activated
         Return
@@ -1094,7 +1102,7 @@ CmdMgr(Path := "")                                                      ; 命令
     Gui, CmdMgr:Margin, 5, 5
     Gui, CmdMgr:Add, GroupBox, w550 h230, New Command
     Gui, CmdMgr:Add, Text, xp+20 yp+35, Command Type: 
-    Gui, CmdMgr:Add, DropDownList, xp+120 yp-5 w150 v_Type Choose%_Type%, Function|URL|Command|File||Dir
+    Gui, CmdMgr:Add, DropDownList, xp+120 yp-5 w150 v_Type Choose%_Type%, Func|URL|Command|File||Dir
     Gui, CmdMgr:Add, Text, xp-120 yp+50, Command Path: 
     Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 v_Path, % RelativePath(Path)
     Gui, CmdMgr:Add, Button, xp+355 yp w30 hp gSelectCmdPath, ...
@@ -1157,10 +1165,11 @@ CmdMgrGuiClose()
 AppControl()                                                            ; AppControl (Ctrl+D 自动添加日期, 鼠标中间激活PT Tools)
 {
     GroupAdd, FileListMangr, ahk_class TTOTAL_CMD                       ; 针对TC文件列表重命名
-    GroupAdd, FileListMangr, ahk_class CabinetWClass                    ; 针对Windows 资源管理器文件列表重命名
-    GroupAdd, FileListMangr, ahk_class Progman                          ; 针对Windows 桌面文件重命名
-    GroupAdd, FileListMangr, ahk_class TSTDTREEDLG                      ; 针对TC 新建其他格式文件如txt, rtf, docx...
-    GroupAdd, FileListMangr, ahk_class #32770                           ; 针对资源管理器文件保存对话框
+    GroupAdd, FileListMangr, ahk_class CabinetWClass                    ; 针对 Windows 资源管理器文件列表重命名
+    GroupAdd, FileListMangr, ahk_class Progman                          ; 针对 Windows 桌面文件重命名 (WinXP to Win10)
+    GroupAdd, FileListMangr, ahk_class WorkerW                          ; 针对 Windows 桌面文件重命名 (Win11)
+    GroupAdd, FileListMangr, ahk_class TSTDTREEDLG                      ; 针对 TC 新建其他格式文件如txt, rtf, docx...
+    GroupAdd, FileListMangr, ahk_class #32770                           ; 针对 资源管理器 文件保存对话框
     GroupAdd, FileListMangr, ahk_class TCOMBOINPUT                      ; 针对 TC F7 创建新文件夹对话框（可单独出来用isFile:= True来控制不考虑后缀的影响）
 
     GroupAdd, TextBox, ahk_class TCmtEditForm                           ; 针对 TC File Comment 对话框 按Ctrl+D自动在备注文字之后添加日期
@@ -1233,21 +1242,21 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     Gui, Setting:Tab, 1 ; CONFIG Tab
     Gui, Setting:Add, GroupBox, w500 h420, General Settings
-    Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_AutoStartup checked%g_AutoStartup%, Startup with Windows
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableSendTo checked%g_EnableSendTo%, Enable SendTo Menu
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_InStartMenu checked%g_InStartMenu%, Enable Start Menu
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowTrayIcon checked%g_ShowTrayIcon%, Show Tray Icon
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_HideOnLostFocus checked%g_HideOnLostFocus%, Close on Lost Focus
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_AlwaysOnTop checked%g_AlwaysOnTop%, Always-On-Top
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_EscClearInput checked%g_EscClearInput%, Esc to Clear Input
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_KeepInput checked%g_KeepInput%, Keep Input on Close
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ShowIcon checked%g_ShowIcon%, Show Icon in Command List
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_SendToGetLnk checked%g_SendToGetLnk%, SendTo Retrieves Lnk Target
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Save Command History
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_Logging checked%g_Logging%, Enable Log
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_IndexFullPath checked%g_IndexFullPath%, Search Full Path
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_ListGrid checked%g_ListGrid%, Show Grid in List
-    Gui, Setting:Add, CheckBox, xp-250 yp+30, * RESERVED
+    Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_AutoStartup checked%g_AutoStartup%, Launch on Windows startup
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableSendTo checked%g_EnableSendTo%, Enable the SendTo menu
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_InStartMenu checked%g_InStartMenu%, Enable the Start menu
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowTrayIcon checked%g_ShowTrayIcon%, Enable tray icon
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_HideOnLostFocus checked%g_HideOnLostFocus%, Auto-close on losing focus
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_AlwaysOnTop checked%g_AlwaysOnTop%, Always stay on top
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_EscClearInput checked%g_EscClearInput%, Use Esc to clear input
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_KeepInput checked%g_KeepInput%, Keep input on close
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ShowIcon checked%g_ShowIcon%, Display icon in command list
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_SendToGetLnk checked%g_SendToGetLnk%, Retrieve .lnk target on SendTo
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Save command history
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_Logging checked%g_Logging%, Enable log
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_MatchPath checked%g_MatchPath%, Match full path on search
+    Gui, Setting:Add, CheckBox, xp+250 yp vg_ListGrid checked%g_ListGrid%, Show grid in command list
+    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ListHdr checked%g_ListHdr%, Show header in command list
     Gui, Setting:Add, CheckBox, xp+250 yp, * RESERVED
     Gui, Setting:Add, CheckBox, xp-250 yp+30, * RESERVED
     Gui, Setting:Add, CheckBox, xp+250 yp, * RESERVED
@@ -1458,21 +1467,21 @@ LOADCONFIG(Arg)                                                         ; 加载
             (Ltrim
             ; Build-in Commands (High Priority, DO NOT Edit)
             ;
-            Function | Help   | ALTRun Help Index (F1)=100
-            Function | Options | ALTRun Options Preference Settings (F2)=100
-            Function | Reload | ALTRun Reload=100
-            Function | CmdMgr | New Command=100
-            Function | UserCommandList | ALTRun User-defined command (F4)=100
-            Function | Reindex | Reindex search database=100
-            Function | Everything | Search by Everything=100
-            Function | RunPTTools | PT Tools (AHK)=100
-            Function | AhkRun | Run Command use AutoHotkey Run=100
-            Function | CmdRun | Run Command use CMD=100
-            Function | Google | Search Clipboard or Input by Google=100
-            Function | Bing | Search Clipboard or Input by Bing=100
-            Function | EmptyRecycle | Empty Recycle Bin=100
-            Function | TurnMonitorOff | Turn off Monitor, Close Monitor=100
-            Function | MuteVolume | Mute Volume=100
+            Func | Help   | ALTRun Help Index (F1)=100
+            Func | Options | ALTRun Options Preference Settings (F2)=100
+            Func | Reload | ALTRun Reload=100
+            Func | CmdMgr | New Command=100
+            Func | UserCommandList | ALTRun User-defined command (F4)=100
+            Func | Reindex | Reindex search database=100
+            Func | Everything | Search by Everything=100
+            Func | RunPTTools | PT Tools (AHK)=100
+            Func | AhkRun | Run Command use AutoHotkey Run=100
+            Func | CmdRun | Run Command use CMD=100
+            Func | Google | Search Clipboard or Input by Google=100
+            Func | Bing | Search Clipboard or Input by Bing=100
+            Func | EmptyRecycle | Empty Recycle Bin=100
+            Func | TurnMonitorOff | Turn off Monitor, Close Monitor=100
+            Func | MuteVolume | Mute Volume=100
             Dir | A_ScriptDir | ALTRun Program Dir=100
             Dir | A_Startup | Current User Startup Dir=100
             Dir | A_StartupCommon | All User Startup Dir=100
@@ -1481,50 +1490,50 @@ LOADCONFIG(Arg)                                                         ; 加载
             ;
             ; Control Panel Commands
             ;
-            Control | Control | Control Panel=66
-            Control | wf.msc | Windows Defender Firewall with Advanced Security=66
-            Control | Control intl.cpl | Region and Language Options=66
-            Control | Control firewall.cpl | Windows Defender Firewall=66
-            Control | Control access.cpl | Ease of Access Centre=66
-            Control | Control appwiz.cpl | Programs and Features=66
-            Control | Control sticpl.cpl | Scanners and Cameras=66
-            Control | Control sysdm.cpl | System Properties=66
-            Control | Control joy.cpl | Game Controllers=66
-            Control | Control Mouse | Mouse Properties=66
-            Control | Control desk.cpl | Display=66
-            Control | Control mmsys.cpl | Sound=66
-            Control | Control ncpa.cpl | Network Connections=66
-            Control | Control powercfg.cpl | Power Options=66
-            Control | Control timedate.cpl | Date and Time=66
-            Control | Control admintools | Windows Tools=66
-            Control | Control desktop | Personalisation=66
-            Control | Control folders | File Explorer Options=66
-            Control | Control fonts | Fonts=66
-            Control | Control inetcpl.cpl,,4 | Internet Properties=66
-            Control | Control printers | Devices and Printers=66
-            Control | Control userpasswords | User Accounts=66
-            Control | taskschd.msc | Task Scheduler=66
-            Control | devmgmt.msc | Device Manager=66
-            Control | eventvwr.msc | Event Viewer=66
-            Control | compmgmt.msc | Computer Manager=66
-            Control | taskmgr.exe | Task Manager=66
-            Control | calc.exe | Calculator=66
-            Control | mspaint.exe | Paint=66
-            Control | cmd.exe | DOS / CMD=66
-            Control | regedit.exe | Registry Editor=66
-            Control | write.exe | Write=66
-            Control | cleanmgr.exe | Disk Space Clean-up Manager=66
-            Control | gpedit.msc | Group Policy=66
-            Control | comexp.msc | Component Services=66
-            Control | diskmgmt.msc | Disk Management=66
-            Control | dxdiag.exe | Directx Diagnostic Tool=66
-            Control | lusrmgr.msc | Local Users and Groups=66
-            Control | msconfig.exe | System Configuration=66
-            Control | perfmon.exe /Res | Resources Monitor=66
-            Control | perfmon.exe | Performance Monitor=66
-            Control | winver.exe | About Windows=66
-            Control | services.msc | Services=66
-            Control | netplwiz | User Accounts=66
+            Ctrl | Control | Control Panel=66
+            Ctrl | wf.msc | Windows Defender Firewall with Advanced Security=66
+            Ctrl | Control intl.cpl | Region and Language Options=66
+            Ctrl | Control firewall.cpl | Windows Defender Firewall=66
+            Ctrl | Control access.cpl | Ease of Access Centre=66
+            Ctrl | Control appwiz.cpl | Programs and Features=66
+            Ctrl | Control sticpl.cpl | Scanners and Cameras=66
+            Ctrl | Control sysdm.cpl | System Properties=66
+            Ctrl | Control joy.cpl | Game Controllers=66
+            Ctrl | Control Mouse | Mouse Properties=66
+            Ctrl | Control desk.cpl | Display=66
+            Ctrl | Control mmsys.cpl | Sound=66
+            Ctrl | Control ncpa.cpl | Network Connections=66
+            Ctrl | Control powercfg.cpl | Power Options=66
+            Ctrl | Control timedate.cpl | Date and Time=66
+            Ctrl | Control admintools | Windows Tools=66
+            Ctrl | Control desktop | Personalisation=66
+            Ctrl | Control folders | File Explorer Options=66
+            Ctrl | Control fonts | Fonts=66
+            Ctrl | Control inetcpl.cpl,,4 | Internet Properties=66
+            Ctrl | Control printers | Devices and Printers=66
+            Ctrl | Control userpasswords | User Accounts=66
+            Ctrl | taskschd.msc | Task Scheduler=66
+            Ctrl | devmgmt.msc | Device Manager=66
+            Ctrl | eventvwr.msc | Event Viewer=66
+            Ctrl | compmgmt.msc | Computer Manager=66
+            Ctrl | taskmgr.exe | Task Manager=66
+            Ctrl | calc.exe | Calculator=66
+            Ctrl | mspaint.exe | Paint=66
+            Ctrl | cmd.exe | DOS / CMD=66
+            Ctrl | regedit.exe | Registry Editor=66
+            Ctrl | write.exe | Write=66
+            Ctrl | cleanmgr.exe | Disk Space Clean-up Manager=66
+            Ctrl | gpedit.msc | Group Policy=66
+            Ctrl | comexp.msc | Component Services=66
+            Ctrl | diskmgmt.msc | Disk Management=66
+            Ctrl | dxdiag.exe | Directx Diagnostic Tool=66
+            Ctrl | lusrmgr.msc | Local Users and Groups=66
+            Ctrl | msconfig.exe | System Configuration=66
+            Ctrl | perfmon.exe /Res | Resources Monitor=66
+            Ctrl | perfmon.exe | Performance Monitor=66
+            Ctrl | winver.exe | About Windows=66
+            Ctrl | services.msc | Services=66
+            Ctrl | netplwiz | User Accounts=66
             ), %g_IniFile%, %SEC_DFTCMD%
             IniRead, DFTCMDSEC, %g_IniFile%, %SEC_DFTCMD%
         }
@@ -1534,8 +1543,8 @@ LOADCONFIG(Arg)                                                         ; 加载
         {
             IniWrite, 
             (Ltrim
-            ; User-Defined Commands (High priority, edit command as desired)
-            ; Command type: File, Dir, CMD, Function, URL
+            ; User-Defined Commands (High priority, edit as desired)
+            ; Command type: File, Dir, CMD, Func, URL
             ; Type | Command | Comments=Rank
             ;
             Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=100
@@ -1543,7 +1552,7 @@ LOADCONFIG(Arg)                                                         ; 加载
             Dir | `%OneDriveCommercial`% | OneDrive Business Dir=100
             CMD | ipconfig | Show IP Address(CMD type will run with cmd.exe, auto pause after run)=100
             URL | www.google.com | Google=100
-            File | C:\OneDrive\Apps\TotalCMD64\Tools\Notepad2.exe
+            File | C:\OneDrive\Apps\TotalCMD64\TOTALCMD64.exe
             ), %g_IniFile%, %SEC_USERCMD%
             IniRead, USERCMDSEC, %g_IniFile%, %SEC_USERCMD%
         }
