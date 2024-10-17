@@ -23,34 +23,47 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , SEC_HOTKEY     := "Hotkey"
 , SEC_HISTORY    := "History"
 , SEC_INDEX      := "Index"
-, KEYLIST_CONFIG := "AutoStartup,EnableSendTo,InStartMenu,ShowTrayIcon,IndexDir,IndexType,IndexExclude,MatchPath,ShowIcon,KeepInput,HideOnLostFocus,AlwaysOnTop,SaveHistory,HistoryLen,Logging,EscClearInput,SendToGetLnk,Editor,TCPath,Everything,RunCount,ListGrid,ListHdr,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
+, KEYLIST_CONFIG := "IndexDir,IndexType,IndexExclude,HistoryLen,Editor,TCPath,Everything,RunCount,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
+, KEYS_CONFIG    := {AutoStartup: "Launch on Windows startup", EnableSendTo: "Enable the SendTo menu", InStartMenu: "Enable the Start menu"
+                    , ShowTrayIcon: "Show software icon in the system tray", HideOnLostFocus: "Auto-close on losing focus", AlwaysOnTop: "Always stay on top"
+                    , EscClearInput: "Use ESC to clear input", KeepInput: "Keep last input and search result on close"
+                    , ShowIcon: "Show icon for file, folder or app in the command list", SendToGetLnk: "Retrieve .lnk target on SendTo"
+                    , SaveHistory: "Save command history", Logging: "Enable logging function", MatchPath: "Match full path on search"
+                    , ListGrid: "Show grid in command list", ListHdr: "Show header in command list", SmartRank: "Smart Rank - Auto adjust command priority (rank) based on use frequency"
+                    , SmartMatch: "Smart Match - Fuzzy and Smart matching and filtering result", MatchAny: "Match from any position of the string"
+                    , EnableTheme: "Enable software theme and skin", ShowHint: "Show hints in the status bar", ShowRunCount: "Show software running number count in the status bar"
+                    , ShowStatusBar: "Show status bar at bottom of the software window", ShowEnter: "Show 'Enter' button on software main window"
+                    , ShowOptions: "Show 'Options' button on software main window"}
 , KEYLIST_GUI    := "ListRows,Col2Width,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,WinHeight,CtrlColor,WinColor,Background"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,TotalCMDDir,ExplorerDir"
 
-, g_AutoStartup   := 1 , g_IndexDir        := "A_ProgramsCommon|A_StartMenu"
-, g_EnableSendTo  := 1 , g_IndexType       := "*.lnk|*.exe"
-, g_InStartMenu   := 1 , g_IndexExclude    := "Uninstall *"
-, g_MatchPath     := 0 , g_TCPath          := A_Space
-, g_ShowIcon      := 1 , g_HideOnLostFocus := 1
-, g_KeepInput     := 1 , g_Editor          := A_Space
-, g_AlwaysOnTop   := 1 , g_HistoryLen      := 15
-, g_SaveHistory   := 0 , g_Everything      := A_Space
-, g_RunCount      := 0 , g_FileManager     := "ahk_class CabinetWClass|ahk_class TTOTAL_CMD"
-, g_Logging       := 1 , g_DialogWin       := "ahk_class #32770"
-, g_EscClearInput := 1 , g_ExcludeWin      := "ahk_class SysListView32|ahk_exe Explorer.exe|AutoCAD"
-, g_SendToGetLnk  := 1 , g_FontName        := "Segoe UI"
-, g_AutoSwitchDir := 0 , g_FontColor       := "Default"
-, g_ShowTrayIcon  := 1 , g_CtrlColor       := "Default"
-, g_ListRows      := 9 , g_WinColor        := "Silver"
-, g_ListGrid      := 0 , g_Col2Width       := 60
-, g_ListHdr       := 1
-, g_Background    := "Default"
-, g_Col3Width     := 430
-, g_Col4Width     := 340
-, g_FontSize      := 10
-, g_WinWidth      := 900
-, g_WinHeight     := 330
-, g_BGPicture
+, g_AutoStartup   := 1   , g_IndexDir        := "A_ProgramsCommon|A_StartMenu"
+, g_EnableSendTo  := 1   , g_IndexType       := "*.lnk|*.exe"
+, g_InStartMenu   := 1   , g_IndexExclude    := "Uninstall *"
+, g_MatchPath     := 0   , g_TCPath          := A_Space
+, g_ShowIcon      := 1   , g_HideOnLostFocus := 1
+, g_ShowEnter     := 1   , g_ShowOptions     := 1
+, g_KeepInput     := 1   , g_Editor          := A_Space
+, g_AlwaysOnTop   := 1   , g_HistoryLen      := 15
+, g_SaveHistory   := 0   , g_Everything      := A_Space
+, g_RunCount      := 0   , g_FileManager     := "ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
+, g_Logging       := 1   , g_DialogWin       := "ahk_class #32770"
+, g_EscClearInput := 1   , g_ExcludeWin      := "ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"
+, g_SendToGetLnk  := 1   , g_FontName        := "Segoe UI"
+, g_AutoSwitchDir := 0   , g_FontColor       := "Default"
+, g_ShowTrayIcon  := 1   , g_CtrlColor       := "Default"
+, g_ListRows      := 9   , g_WinColor        := "Silver"
+, g_ListGrid      := 0   , g_Col2Width       := 60
+, g_ListHdr       := 1   , g_SmartMatch      := 1
+, g_Col3Width     := 430 , g_GlobalHotkey1   := "!Space"
+, g_Col4Width     := 340 , g_GlobalHotkey2   := "!R"
+, g_FontSize      := 10  , g_TotalCMDDir     := "^g" ; Hotkey for Listary quick-switch dir    
+, g_WinWidth      := 900 , g_ExplorerDir     := "^e"
+, g_WinHeight     := 330 , g_Background      := "Default"   
+, g_Hotkey1       := "^s", g_Trigger1        := "Everything"
+, g_Hotkey2       := "^p", g_Trigger2        := "RunPTTools"
+, g_Hotkey3       := ""  , g_Trigger3        := ""
+, g_BGPicture, OneDrive, OneDriveConsumer, OneDriveCommercial
 , g_Hints := ["It's better to show me by press hotkey (Default is ALT + Space)"
     , "ALT + Space = Show / Hide window", "Alt + F4 = Exit"
     , "Esc = Clear input / Close window", "Enter = Run current command"
@@ -68,14 +81,6 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
     , "Command priority (rank) will auto adjust based on frequency"
     , "Start with space = Search file by Everything"]
 
-, g_GlobalHotkey1 := "!Space" , g_GlobalHotkey2 := "!R"
-, g_Hotkey1       := "^s"     , g_Trigger1      := "Everything"
-, g_Hotkey2       := "^p"     , g_Trigger2      := "RunPTTools"
-, g_Hotkey3       := ""       , g_Trigger3      := ""
-, g_TotalCMDDir   := "^g"     , g_ExplorerDir   := "^e"                 ; Hotkey for Listary quick-switch dir
-, OneDrive
-, OneDriveConsumer
-, OneDriveCommercial
 EnvGet, OneDrive, OneDrive                                              ; OneDrive Environment Variables (due to #NoEnv)
 EnvGet, OneDriveConsumer, OneDriveConsumer                              ; OneDrive for Personal
 EnvGet, OneDriveCommercial, OneDriveCommercial                          ; OneDrive for Business
@@ -84,7 +89,7 @@ EnvGet, OneDriveCommercial, OneDriveCommercial                          ; OneDri
 ; 声明全局变量
 ;=============================================================
 Global Arg                              ; 用来调用管道的完整参数（所有列）
-, g_WinName := "ALTRun - Ver 2024.07"   ; 主窗口标题
+, g_WinName := "ALTRun - Ver 2024.10"   ; 主窗口标题
 , g_OptionsWinName := "Options"         ; 选项窗口标题
 , g_Commands                            ; 所有命令
 , g_Fallback                            ; 当搜索无结果时使用的命令
@@ -127,7 +132,7 @@ if (g_ShowTrayIcon)
     Menu, Tray, Add, Help `tF1, Help
     Menu, Tray, Add
     Menu, Tray, Add, Script Info, TrayMenu
-    Menu, Tray, Add, Script Help, TrayMenu
+    Menu, Tray, Add, AHK Help, TrayMenu
     Menu, Tray, Add,
     Menu, Tray, Add, Reload `tCtrl+Q, Reload                            ; Call Reload function with Arg=Reload `tCtrl+Q
     Menu, Tray, Add, Exit `tAlt+F4, Exit
@@ -163,18 +168,26 @@ ListHdr      := g_ListHdr ? "" : "-Hdr"
 LV_H         := g_WinHeight - 43 - 3 * g_FontSize
 LV_W         := g_WinWidth - 24
 HideWin      := ""
+Input_W      := LV_W - g_ShowEnter * 90 - g_ShowOptions * 90
+Enter_Hide   := g_ShowEnter ? "" : "Hidden"
+Enter_W      := g_ShowEnter * 80
+Enter_X      := g_ShowEnter * 10
+Options_Hide := g_ShowOptions ? "" : "Hidden"
+Options_W    := g_ShowOptions * 80
+Options_X    := g_ShowOptions * 10
 
 Gui, Main:Color, %g_WinColor%, %g_CtrlColor%
 Gui, Main:Font, c%g_FontColor% s%g_FontSize%, %g_FontName%
 Gui, Main:%AlwaysOnTop%
-Gui, Main:Add, Edit, W%LV_W% -WantReturn vg_Input gGetInput, Type anything here to search...
-Gui, Main:Add, ListView, WP h%LV_H% vMyListView AltSubmit gLVActions %ListHdr% +LV0x10000 %ListGrid% -Multi, No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
+Gui, Main:Add, Edit, xm W%Input_W% -WantReturn vg_Input gGetInput, Type anything here to search...
+Gui, Main:Add, Button, X+%Enter_X% yp W%Enter_W% hp Default %Enter_Hide% gRunCurrentCommand, Run
+Gui, Main:Add, Button, X+%Options_X% yp W%Options_W% hp %Options_Hide% gOptions, Options
+Gui, Main:Add, ListView, xm ys+35 W%LV_W% H%LV_H% vMyListView AltSubmit gLVActions %ListHdr% +LV0x10000 %ListGrid% -Multi, No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, X0 Y0 0x4000000, %g_BGPicture%
 Gui, Main:Add, StatusBar,gSBActions,
-Gui, Main:Add, Button, x0 y0 w0 h0 Hidden Default gRunCurrentCommand
 Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
 
-SB_SetParts(g_WinWidth-120)
+SB_SetParts(g_WinWidth-130)
 LV_ModifyCol(1, 40)
 LV_ModifyCol(2, g_Col2Width)
 LV_ModifyCol(3, g_Col3Width)
@@ -252,6 +265,7 @@ Loop, 3                                                                 ; Set Tr
     if (Hotkey != "" and IsFunc(Trigger))
         Hotkey, %Hotkey%, %Trigger%
 }
+Hotkey, IfWinActive
 
 Listary()
 AppControl()                                                            ; Set Listary Dir QuickSwitch, Set AppControl
@@ -335,8 +349,18 @@ SearchCommand(command := "")
     if (Result = "") {
         if Eval(command)
         {
-            Result := RegExReplace(Eval(command), "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",")
-            Return ListResult("Eval | " Result, True)
+            EvalResult := Eval(command)
+            RebarQty := Ceil((EvalResult-40*2) / 300) + 1
+
+            Result1 := "Eval | = " FormatThousand(EvalResult)
+            Result2 := "`n | ------------------------------------------------------"
+            Result3 := "`n | Beam width = " FormatThousand(EvalResult) " mm, main bar quantity:- | (spacing < 300mm, side cover = 40mm)"
+            Result4 := "`n | = " RebarQty " (" Round((EvalResult-40*2) / (RebarQty - 1)) " c/c) / " RebarQty + 1 " (" Round((EvalResult-40*2) / (RebarQty+1-1)) " c/c) / " RebarQty - 1 " (" Round((EvalResult-40*2) / (RebarQty-1-1)) " c/c)"
+            Result5 := "`n | ------------------------------------------------------"
+            Result6 := "`n | Rebar As = " FormatThousand(EvalResult) " mm2, Bar Qty:- | (H10-78.5 / H13-132.7 / H16-201.1 / H20-314.2)"
+            Result7 := "`n | = "Ceil(EvalResult/132.7) "H13 / " Ceil(EvalResult/201.1) "H16 / " Ceil(EvalResult/314.2) "H20 / " Ceil(EvalResult/490.9) "H25 / " Ceil(EvalResult/804.2) "H32 | (H25-490.9 / H32-804.2 / H40-1256.6)" 
+
+            Return ListResult(Result1 Result2 Result3 Result4 Result5 Result6 Result7, True)
         }
 
         g_UseFallback        := true
@@ -448,8 +472,8 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
     if (InStr(Path, "A_"))                                              ; Resolve path like A_ScriptDir
         Path := %Path%
 
-    EnvGet, Temp, Temp
-    Path := StrReplace(Path, "%Temp%", Temp)
+    Path := StrReplace(Path, "%Temp%", A_Temp)
+    Path := StrReplace(Path, "%Desktop%", A_Desktop)
     Path := StrReplace(Path, "%OneDrive%", OneDrive)                    ; Convert OneDrive to absolute path due to #NoEnv
     Path := StrReplace(Path, "%OneDriveConsumer%", OneDriveConsumer)    ; Convert OneDrive to absolute path due to #NoEnv
     Path := StrReplace(Path, "%OneDriveCommercial%", OneDriveCommercial) ; Convert OneDrive to absolute path due to #NoEnv
@@ -458,6 +482,9 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
 
 RelativePath(Path)                                                      ; Convert path to relative path
 {
+    Path := StrReplace(Path, A_Temp, "%Temp%")
+    Path := StrReplace(Path, A_Desktop, "%Desktop%")
+    Path := StrReplace(Path, OneDrive, "%OneDrive%")
     Path := StrReplace(Path, OneDriveConsumer, "%OneDriveConsumer%")
     Path := StrReplace(Path, OneDriveCommercial, "%OneDriveCommercial%")
     Return Path
@@ -607,8 +634,8 @@ TrayMenu()                                                              ;AutoHot
 {
     If ( A_ThisMenuItem = "Script Info" )
         ListLines
-    If ( A_ThisMenuItem = "Script Help" )
-        Run %A_AhkPath%
+    If ( A_ThisMenuItem = "AHK Help" )
+        Run, https://www.autohotkey.com/docs/v1/
 }
 
 MainGuiEscape()
@@ -996,13 +1023,13 @@ Listary()                                                               ; Listar
 {
     Log.Debug("Listary function starting...")
 
-    Loop Parse, g_FileManager, |                                        ; File Manager Class, default is Windows Explorer & Total Commander
+    Loop Parse, g_FileManager, `,                                       ; File Manager Class, default is Windows Explorer & Total Commander
         GroupAdd, FileManager, %A_LoopField%
 
-    Loop Parse, g_DialogWin, |                                          ; 需要QuickSwith的窗口, 包括打开/保存对话框等
+    Loop Parse, g_DialogWin, `,                                         ; 需要QuickSwith的窗口, 包括打开/保存对话框等
         GroupAdd, DialogBox, %A_LoopField%
 
-    Loop Parse, g_ExcludeWin, |                                         ; 排除特定窗口,避免被 Auto-QuickSwitch 影响
+    Loop Parse, g_ExcludeWin, `,                                        ; 排除特定窗口,避免被 Auto-QuickSwitch 影响
         GroupAdd, ExcludeWin, %A_LoopField%
 
     if (g_AutoSwitchDir)
@@ -1020,7 +1047,7 @@ Listary()                                                               ; Listar
                 WinGet, ActiveProcess, ProcessName, A
 
                 Log.Debug("Listary dialog detected, active window ahk_title=" Title ", ahk_exe=" ActiveProcess)
-                ChangePath(GetTC())                                     ; NO Return, as will terimate loop (AutoSwitchDir)
+                LocateTC()                                              ; NO Return, as will terimate loop (AutoSwitchDir)
             }
         }
     }
@@ -1030,16 +1057,7 @@ Listary()                                                               ; Listar
     Hotkey, IfWinActive
 }
 
-LocateExplorer()
-{
-    ChangePath(GetExplorer())
-}
-LocateTC()
-{
-    ChangePath(GetTC())
-}
-
-GetTC()                                                                 ; 获取TC 当前文件夹路径
+LocateTC()                                                              ; Get TC current dir path, and change dialog box path to it
 {
     ClipSaved := ClipboardAll 
     Clipboard :=
@@ -1048,10 +1066,11 @@ GetTC()                                                                 ; 获取
     OutDir=%Clipboard%\                                                 ; 结尾添加\ 符号,变为路径,试图解决AutoCAD不识别路径问题
     Clipboard := ClipSaved 
     ClipSaved := 
-    Return OutDir
+
+    ChangePath(OutDir)
 }
 
-GetExplorer()                                                           ; 获取Explorer路径
+LocateExplorer()                                                        ; Get Explorer current dir path, and change dialog box path to it
 {
     Loop,9
     {
@@ -1065,7 +1084,7 @@ GetExplorer()                                                           ; 获取
     If (SubStr(Dir,2,2) != ":\")                                             ; then Explorer lists it as one of the library directories such as Music or Pictures
         Dir:=% "C:\Users\" A_UserName "\" Dir
 
-    Return Dir
+    ChangePath(Dir)
 }
 
 ChangePath(Dir)
@@ -1075,8 +1094,8 @@ ChangePath(Dir)
     ControlSetText, Edit1, %Dir%, A
     ControlSend, Edit1, {Enter}, A
     ;Sleep,100
-    ;ControlSetText, Edit1, %w_Edit1Text%, A                            ; 还原之前的窗口 File Name 内容, 在选择文件的对话框时没有问题, 但是在选择文件夹的对话框有Bug,所以暂时注释掉
-    Log.Debug("Listary Change Path=" Dir)
+    ;ControlSetText, Edit1, %w_Edit1Text%, A                            ; 还原之前的窗口 File Name 内容, 在选择文件的对话框时没有问题, 但是在选择文件夹的对话框有Bug,暂时注释掉
+    Log.Debug("Listary change path=" Dir)
 }
 
 CmdMgr(Path := "")                                                      ; 命令管理窗口
@@ -1230,6 +1249,11 @@ NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文
     Log.Debug(WinName ", RenameWithDate=" NameWithDate)
 }
 
+FormatThousand(Number)                                                  ; Function to add thousand separator
+{
+    Return RegExReplace(Number, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",")
+}
+
 Options(Arg := "", ActTab := 1)                                         ; Options / Settings Library, 1st parameter is to avoid menu like [Option `tF2] disturb ActTab
 {
     Global                                                              ; Assume-global mode
@@ -1241,26 +1265,17 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Tab3,xm ym vCurrTab Choose%ActTab% -Wrap, General|Index|GUI|Hotkey|Listary|About
 
     Gui, Setting:Tab, 1 ; CONFIG Tab
-    Gui, Setting:Add, GroupBox, w500 h420, General Settings
-    Gui, Setting:Add, CheckBox, xp+10 yp+25 vg_AutoStartup checked%g_AutoStartup%, Launch on Windows startup
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_EnableSendTo checked%g_EnableSendTo%, Enable the SendTo menu
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_InStartMenu checked%g_InStartMenu%, Enable the Start menu
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_ShowTrayIcon checked%g_ShowTrayIcon%, Enable tray icon
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_HideOnLostFocus checked%g_HideOnLostFocus%, Auto-close on losing focus
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_AlwaysOnTop checked%g_AlwaysOnTop%, Always stay on top
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_EscClearInput checked%g_EscClearInput%, Use Esc to clear input
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_KeepInput checked%g_KeepInput%, Keep input on close
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ShowIcon checked%g_ShowIcon%, Display icon in command list
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_SendToGetLnk checked%g_SendToGetLnk%, Retrieve .lnk target on SendTo
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_SaveHistory checked%g_SaveHistory%, Save command history
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_Logging checked%g_Logging%, Enable log
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_MatchPath checked%g_MatchPath%, Match full path on search
-    Gui, Setting:Add, CheckBox, xp+250 yp vg_ListGrid checked%g_ListGrid%, Show grid in command list
-    Gui, Setting:Add, CheckBox, xp-250 yp+30 vg_ListHdr checked%g_ListHdr%, Show header in command list
-    Gui, Setting:Add, CheckBox, xp+250 yp, * RESERVED
-    Gui, Setting:Add, CheckBox, xp-250 yp+30, * RESERVED
-    Gui, Setting:Add, CheckBox, xp+250 yp, * RESERVED
-    Gui, Setting:Add, Text, xp-250 yp+40, Text Editor:
+    Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, Options
+
+    For key, description in KEYS_CONFIG
+    {
+        LV_Add("", description)
+        if (g_%key% = 1)
+            LV_Modify(A_Index, "Check")
+    }
+    LV_ModifyCol(1, 466)
+
+    Gui, Setting:Add, Text, xp+10 yp+320, Text Editor:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Editor, %g_Editor%
     Gui, Setting:Add, Text, xp-150 yp+40, Everything.exe Path:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Everything, %g_Everything%
@@ -1280,14 +1295,14 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     Gui, Setting:Tab, 3 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, GUI
-    Gui, Setting:Add, Text, xp+10 yp+25 , Command list row number
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_ListRows, %g_ListRows%
+    Gui, Setting:Add, Text, xp+10 yp+25 , Show command result
+    Gui, Setting:Add, DropDownList, xp+150 yp-5 w80 vg_ListRows, % StrReplace("3|4|5|6|7|8|9|", g_ListRows, g_ListRows . "|") ; Not Choose%g_ListRows% as list start from 3
     Gui, Setting:Add, Text, xp+100 yp+5, Column number 3 width
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Col3Width, %g_Col3Width%
     Gui, Setting:Add, Text, xp-400 yp+40, Column number 4 width
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Col4Width, %g_Col4Width%
-    Gui, Setting:Add, Text, xp+100 yp+5, Font Name: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_FontName, %g_FontName%
+    Gui, Setting:Add, Text, xp+100 yp+5, Font Name:
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w80 Sort vg_FontName, %g_FontName%||Red|Green|Blue|Black|White
     Gui, Setting:Add, Text, xp-400 yp+40, Font Size: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_FontSize, %g_FontSize%
     Gui, Setting:Add, Text, xp+100 yp+5, Font Color: 
@@ -1299,7 +1314,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp-400 yp+40, Window Height:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_WinHeight, %g_WinHeight%
     Gui, Setting:Add, Text, xp+100 yp+5, Column number 2 width
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_Col2Width, %g_Col2Width%
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w80 Sort vg_Col2Width, %g_Col2Width%||0|30|45|60
     Gui, Setting:Add, Text, xp-400 yp+40, Controls' Color:
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w80 vg_CtrlColor, %g_CtrlColor%
     Gui, Setting:Add, Text, xp+100 yp+5, Window's Color:
@@ -1311,13 +1326,12 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     Gui, Setting:Tab, 4 ; Hotkey Tab
     Gui, Setting:Add, GroupBox, w500 h120, Activate
-    Gui, Setting:Add, Text, xp+10 yp+25 , Global Hotkey (Primary):
-    Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey1, %g_GlobalHotkey1%
-    Gui, Setting:Add, Text, xp-250 yp+35 , Global Hotkey (2nd):
-    Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey2, %g_GlobalHotkey2%
-    Gui, Setting:Add, Text, xp-250 yp+35 , Global Hotkey (3rd):
-    Gui, Setting:Add, Text, xp+250 yp w230, Double-click 'CTRL' *RESERVED*
-    Gui, Setting:Add, GroupBox, xp-260 yp+40 w500 h55, Command Hotkey:
+    Gui, Setting:Add, Text, xp+10 yp+25 , Primary Hotkey :
+    Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey1,%g_GlobalHotkey1%
+    Gui, Setting:Add, Text, xp-250 yp+35 , Secondary Hotkey :
+    Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey2,%g_GlobalHotkey2%
+    Gui, Setting:Add, Link, xp-250 yp+35 gResetHotkey, You can set another hotkey as a secondary hotkey (<a id="Reset">Reset to Default</a>)
+    Gui, Setting:Add, GroupBox, xp-10 yp+40 w500 h55, Command Hotkey:
     Gui, Setting:Add, Text, xp+10 yp+25 , Execute Command:
     Gui, Setting:Add, Text, xp+150 yp , ALT + No.
     Gui, Setting:Add, Text, xp+105 yp, Select Command: 
@@ -1338,12 +1352,12 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h190, Listary Quick-Switch
-    Gui, Setting:Add, Text, xp+10 yp+25 , File Manager Title: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_FileManager, %g_FileManager%
+    Gui, Setting:Add, Text, xp+10 yp+25 , File Manager Title
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_FileManager, %g_FileManager%||ahk_class CabinetWClass|ahk_class CabinetWClass, ahk_class TTOTAL_CMD
     Gui, Setting:Add, Text, xp-150 yp+40, Open/Save Dialog Title: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_DialogWin, %g_DialogWin%
+    Gui, Setting:Add, Combobox, xp+150 yp-5 w330 Sort vg_DialogWin, %g_DialogWin%||ahk_class #32770
     Gui, Setting:Add, Text, xp-150 yp+40, Exclude Windows Title: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_ExcludeWin, %g_ExcludeWin%
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_ExcludeWin, %g_ExcludeWin%||ahk_class SysListView32|ahk_class SysListView32, ahk_exe Explorer.exe|ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe Totalcmd64.exe, AutoCAD LT Alert
     Gui, Setting:Add, Text, xp-150 yp+40, Switch to TC Dir: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_TotalCMDDir, %g_TotalCMDDir%
     Gui, Setting:Add, Text, xp+100 yp+5, Switch to Explorer Dir: 
@@ -1398,6 +1412,12 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Show,, %g_OptionsWinName%
 }
 
+ResetHotkey()
+{
+    GuiControl,, g_GlobalHotkey1, !Space
+    GuiControl,, g_GlobalHotkey2, !R
+}
+
 SettingButtonOK()                                                       ; 设置选项窗口 - 按钮动作
 {
     SAVECONFIG()
@@ -1432,6 +1452,11 @@ LOADCONFIG(Arg)                                                         ; 加载
     
     if (Arg = "config" or Arg = "initialize" or Arg = "all")
     {
+        For key, description in KEYS_CONFIG                              ; Read config section
+        {
+            IniRead, g_%key%, %g_IniFile%, %SEC_CONFIG%, %key%, % g_%key%
+        }
+    
         Loop Parse, KEYLIST_CONFIG, `,                                  ; Read config section
         {
             IniRead, g_%A_LoopField%, %g_IniFile%, %SEC_CONFIG%, %A_LoopField%, % g_%A_LoopField%
@@ -1560,7 +1585,7 @@ LOADCONFIG(Arg)                                                         ; 加载
         IniRead, INDEXSEC, %g_IniFile%, %SEC_INDEX%                     ; Read whole section SEC_INDEX (Index database)
         if (INDEXSEC = "")
         {
-            MsgBox, 4096, %g_WinName%, ALTRun is initializing for the first time running.`n`nAuto initialize in 10 seconds or click OK now., 10
+            MsgBox, 4160, %g_WinName%, ALTRun is going to initialize for the first time running...`n`nConfig software and build the index database for search.`n`nAuto initialize in 30 seconds or click OK now., 30
             Reindex()
         }
         Return DFTCMDSEC "`n" USERCMDSEC "`n" INDEXSEC
@@ -1570,6 +1595,16 @@ LOADCONFIG(Arg)                                                         ; 加载
 
 SAVECONFIG() {
     Gui, Setting:Submit
+
+    For key, description in KEYS_CONFIG
+    {
+        RowNumber := A_Index           ;get first selected row
+        RowChecked := LV_GetNext(RowNumber - 1 , "Checked" )
+        If ( RowNumber = RowChecked )
+            IniWrite, 1, %g_IniFile%, %SEC_CONFIG%, %key%
+        else
+            IniWrite, 0, %g_IniFile%, %SEC_CONFIG%, %key%
+    }
 
     Loop Parse, KEYLIST_CONFIG, `,
         IniWrite, % g_%A_LoopField%, %g_IniFile%, %SEC_CONFIG%, %A_LoopField%
