@@ -18,7 +18,8 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ### Dark Mode:
 ![Dark Mode](https://github.com/user-attachments/assets/2ce70d3f-f84c-4f0a-a7a3-d037642f3604)
 
-![Screenshot_2](https://github.com/zhugecaomao/ALTRun/assets/11486126/bf5894a7-1223-405f-8ed4-c8f06bd2e6eb)
+### Options / Settings:
+![Screenshot 2024-10-17 135931](https://github.com/user-attachments/assets/1ffb2774-9fff-4b89-9a93-cb8bdeda5fc3)
 
 ![Screenshot_3](https://github.com/zhugecaomao/ALTRun/assets/11486126/256c13d6-5f8a-44d0-8028-c854f8fc7a04)
 
