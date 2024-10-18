@@ -1,12 +1,17 @@
 # ALTRun
 ALTRun - An effective launcher for Windows, an AutoHotkey open-source project.
+It provides a streamlined and efficient way to find anything on your system and launch any application in your way. 
 
 1. Pure portable software, not write anything into Registry.
 2. Small size (< 100KB), low resource usage (< 5MB RAM), and high performance.
-3. Highly customizable with GUI (Main Window, Options, Command Manager)
-4. Automatically adjust the command rank priority according to the frequency of use.
-5. Listary Quick Switch Dir function
-6. AppControl function
+3. User-friendly interface, highly customizable from the Options menu
+4. SendTo Menu allows you to create commands quickly and easily.
+5. Multi-Hotkey setup allowed.
+6. Integrated with Total Commander and Everything
+7. Smart Rank - Atuo adjusts command priority (rank) based on frequency of use.
+8. Smart Match - Fuzzy and Smart matching and filtering result
+9. Listary Quick Switch Dir function
+10. Many more functions...
 
 Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and [RunZ by goreliu](https://github.com/goreliu/runz) (AutoHotkey).
 
