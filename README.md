@@ -19,7 +19,7 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ![Dark Mode](https://github.com/user-attachments/assets/2ce70d3f-f84c-4f0a-a7a3-d037642f3604)
 
 ### SendTo Menu
-![SendTo Menu](https://github.com/user-attachments/assets/1e1274e9-2c0c-4562-96c7-224e015e3f9f)
+![SendTo Menu](https://github.com/user-attachments/assets/7b718b25-3461-4b70-8b45-6b10e4489938)
 
 ### Command Manager
 ![Command Manager](https://github.com/user-attachments/assets/31a9d6ff-ae9a-4e81-9f66-fb62feb41cb5)
