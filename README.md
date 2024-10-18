@@ -18,6 +18,12 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ### Dark Mode:
 ![Dark Mode](https://github.com/user-attachments/assets/2ce70d3f-f84c-4f0a-a7a3-d037642f3604)
 
+### SendTo Menu
+![SendTo Menu](https://github.com/user-attachments/assets/1e1274e9-2c0c-4562-96c7-224e015e3f9f)
+
+### Command Manager
+![Command Manager](https://github.com/user-attachments/assets/31a9d6ff-ae9a-4e81-9f66-fb62feb41cb5)
+
 ### Options / Settings:
 ![Screenshot 2024-10-17 135931](https://github.com/user-attachments/assets/1ffb2774-9fff-4b89-9a93-cb8bdeda5fc3)
 
@@ -25,7 +31,7 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 
 ![Screenshot_4](https://github.com/zhugecaomao/ALTRun/assets/11486126/24efb0d1-cd5f-4a31-8e81-6fe93624692a)
 
-# Release
+# Release / Download
 
 You may download the exe file if you do not have AutoHotkey installed on your PC.
 
