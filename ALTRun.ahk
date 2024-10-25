@@ -23,30 +23,33 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , SEC_HOTKEY     := "Hotkey"
 , SEC_HISTORY    := "History"
 , SEC_INDEX      := "Index"
-, KEYLIST_CONFIG := "IndexDir,IndexType,IndexExclude,HistoryLen,Editor,TCPath,Everything,RunCount,AutoSwitchDir,FileManager,DialogWin,ExcludeWin"
+, KEYLIST_CONFIG := "IndexDir,IndexType,IndexExclude,HistoryLen,Editor,FileMgr,Everything,RunCount,AutoSwitchDir,FileMgrID,DialogWin,ExcludeWin"
 , KEYS_CONFIG    := {AutoStartup: "Launch on Windows startup", EnableSendTo: "Enable the SendTo menu", InStartMenu: "Enable the Start menu"
-                    , ShowTrayIcon: "Show software icon in the system tray", HideOnLostFocus: "Auto-close on losing focus", AlwaysOnTop: "Always stay on top"
-                    , EscClearInput: "Use ESC to clear input", KeepInput: "Keep last input and search result on close"
-                    , ShowIcon: "Show icon for file, folder or app in the command list", SendToGetLnk: "Retrieve .lnk target on SendTo"
-                    , SaveHistory: "Save command history", Logging: "Enable logging function", MatchPath: "Match full path on search"
-                    , ListGrid: "Show grid in command list", ListHdr: "Show header in command list", SmartRank: "Smart Rank - Auto adjust command priority (rank) based on use frequency"
+                    , ShowTrayIcon: "Show Tray Icon in the system taskbar", HideOnLostFocus: "Close window on losing focus", AlwaysOnTop: "Always stay on top"
+                    , EscClearInput: "Press [ESC] to clear input, press again to close window (untick: directly close)", KeepInput: "Keep last input and search result on close"
+                    , ShowIcon: "Show Icon of file, folder or apps in the command result list", SendToGetLnk: "Retrieve .lnk target on SendTo"
+                    , SaveHistory: "Save command history", Logging: "Enable Logging function", MatchPath: "Match full path on search"
+                    , ListGrid: "Show Grid in command list", ListHdr: "Show Header in command list", SmartRank: "Smart Rank - Auto adjust command priority (rank) based on use frequency"
                     , SmartMatch: "Smart Match - Fuzzy and Smart matching and filtering result", MatchAny: "Match from any position of the string"
-                    , EnableTheme: "Enable software theme and skin", ShowHint: "Show hints in the status bar", ShowRunCount: "Show software running number count in the status bar"
-                    , ShowStatusBar: "Show status bar at bottom of the software window", ShowEnter: "Show 'Enter' button on software main window"
-                    , ShowOptions: "Show 'Options' button on software main window"}
+                    , ShowTheme: "Show Theme - Software skin and background picture", ShowHint: "Show Hints and Tips in the bottom status bar"
+                    , ShowRunCount: "Show RunCount - Command running times in the status bar", ShowStatusBar: "Show Status Bar"
+                    , ShowBtnRun: "Show [Run] Button on main window", ShowBtnOpt: "Show [Options] Button on main window"}
 , KEYLIST_GUI    := "ListRows,Col2Width,Col3Width,Col4Width,FontName,FontSize,FontColor,WinWidth,WinHeight,CtrlColor,WinColor,Background"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,TotalCMDDir,ExplorerDir"
+, TRAYMENUS      := ["Show,ToggleWindow,Shell32.dll,-25","","Options `tF2,Options,Shell32.dll,-16826","ReIndex `tCtrl+I,Reindex,Shell32.dll,-16776"
+                    ,"Help `tF1,Help,Shell32.dll,-24","","Script Info,TrayMenu,imageres.dll,-150","AHK Manual,TrayMenu,Shell32.dll,-512",""
+                    ,"Reload `tCtrl+Q,Reload,imageres.dll,-5311","Exit `tAlt+F4,Exit,imageres.dll,-98"]
 
-, g_AutoStartup   := 1   , g_IndexDir        := "A_ProgramsCommon|A_StartMenu"
-, g_EnableSendTo  := 1   , g_IndexType       := "*.lnk|*.exe"
+, g_AutoStartup   := 1   , g_IndexDir        := "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location"
+, g_EnableSendTo  := 1   , g_IndexType       := "*.lnk,*.exe"
 , g_InStartMenu   := 1   , g_IndexExclude    := "Uninstall *"
-, g_MatchPath     := 0   , g_TCPath          := A_Space
+, g_MatchPath     := 0   , g_FileMgr         := "Explorer.exe"
 , g_ShowIcon      := 1   , g_HideOnLostFocus := 1
-, g_ShowEnter     := 1   , g_ShowOptions     := 1
-, g_KeepInput     := 1   , g_Editor          := A_Space
+, g_ShowBtnRun    := 1   , g_ShowBtnOpt      := 1
+, g_KeepInput     := 1   , g_Editor          := "Notepad.exe"
 , g_AlwaysOnTop   := 1   , g_HistoryLen      := 15
-, g_SaveHistory   := 0   , g_Everything      := A_Space
-, g_RunCount      := 0   , g_FileManager     := "ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
+, g_SaveHistory   := 1   , g_Everything      := "C:\Apps\Everything\Everything.exe"
+, g_RunCount      := 0   , g_FileMgrID       := "ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
 , g_Logging       := 1   , g_DialogWin       := "ahk_class #32770"
 , g_EscClearInput := 1   , g_ExcludeWin      := "ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"
 , g_SendToGetLnk  := 1   , g_FontName        := "Segoe UI"
@@ -55,11 +58,14 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , g_ListRows      := 9   , g_WinColor        := "Silver"
 , g_ListGrid      := 0   , g_Col2Width       := 60
 , g_ListHdr       := 1   , g_SmartMatch      := 1
+, g_SmartRank     := 1   , g_MatchAny        := 1
+, g_ShowTheme     := 1   , g_ShowHint        := 1
 , g_Col3Width     := 430 , g_GlobalHotkey1   := "!Space"
 , g_Col4Width     := 340 , g_GlobalHotkey2   := "!R"
 , g_FontSize      := 10  , g_TotalCMDDir     := "^g" ; Hotkey for Listary quick-switch dir    
 , g_WinWidth      := 900 , g_ExplorerDir     := "^e"
-, g_WinHeight     := 330 , g_Background      := "Default"   
+, g_WinHeight     := 330 , g_Background      := "Default"
+, g_ShowRunCount  := 1   , g_ShowStatusBar   := 1
 , g_Hotkey1       := "^s", g_Trigger1        := "Everything"
 , g_Hotkey2       := "^p", g_Trigger2        := "RunPTTools"
 , g_Hotkey3       := ""  , g_Trigger3        := ""
@@ -125,25 +131,15 @@ Menu, LV_ContextMenu, Default, Run`tEnter                               ; 让 "R
 if (g_ShowTrayIcon)
 {
     Menu, Tray, NoStandard
-    Menu, Tray, Add, Show, ToggleWindow
-    Menu, Tray, Add
-    Menu, Tray, Add, Options `tF2, Options
-    Menu, Tray, Add, ReIndex `tCtrl+I, Reindex
-    Menu, Tray, Add, Help `tF1, Help
-    Menu, Tray, Add
-    Menu, Tray, Add, Script Info, TrayMenu
-    Menu, Tray, Add, AHK Help, TrayMenu
-    Menu, Tray, Add,
-    Menu, Tray, Add, Reload `tCtrl+Q, Reload                            ; Call Reload function with Arg=Reload `tCtrl+Q
-    Menu, Tray, Add, Exit `tAlt+F4, Exit
     Menu, Tray, Icon
     Menu, Tray, Icon, Shell32.dll, -25                                  ; Index of icon changes between Windows versions, refer to the icon by resource ID for consistency
-    Menu, Tray, Icon, Show, Shell32.dll, -25
-    Menu, Tray, Icon, Options `tF2, Shell32.dll, -16826
-    Menu, Tray, Icon, ReIndex `tCtrl+I, Shell32.dll, -16776
-    Menu, Tray, Icon, Help `tF1, Shell32.dll, -24
-    Menu, Tray, Icon, Reload `tCtrl+Q, Shell32.dll, -16739
-    Menu, Tray, Icon, Exit `tAlt+F4, Imageres.dll, -5102
+    For Index, MenuItem in TRAYMENUS
+    {
+        Item := StrSplit(MenuItem, ",")
+        Name := Item[1], Func := Item[2], Icon := Item[3], IconNo := Item[4]
+        Menu, Tray, Add, %Name%, %Func%
+        Menu, Tray, Icon, %Name%, %Icon%, %IconNo%
+    }
     Menu, Tray, Tip, %g_WinName%
     Menu, Tray, Default, Show
     Menu, Tray, Click, 1
@@ -168,26 +164,24 @@ ListHdr      := g_ListHdr ? "" : "-Hdr"
 LV_H         := g_WinHeight - 43 - 3 * g_FontSize
 LV_W         := g_WinWidth - 24
 HideWin      := ""
-Input_W      := LV_W - g_ShowEnter * 90 - g_ShowOptions * 90
-Enter_Hide   := g_ShowEnter ? "" : "Hidden"
-Enter_W      := g_ShowEnter * 80
-Enter_X      := g_ShowEnter * 10
-Options_Hide := g_ShowOptions ? "" : "Hidden"
-Options_W    := g_ShowOptions * 80
-Options_X    := g_ShowOptions * 10
+Input_W      := LV_W - g_ShowBtnRun * 90 - g_ShowBtnOpt * 90
+Enter_W      := g_ShowBtnRun * 80
+Enter_X      := g_ShowBtnRun * 10
+Options_W    := g_ShowBtnOpt * 80
+Options_X    := g_ShowBtnOpt * 10
 
 Gui, Main:Color, %g_WinColor%, %g_CtrlColor%
 Gui, Main:Font, c%g_FontColor% s%g_FontSize%, %g_FontName%
 Gui, Main:%AlwaysOnTop%
 Gui, Main:Add, Edit, xm W%Input_W% -WantReturn vg_Input gGetInput, Type anything here to search...
-Gui, Main:Add, Button, X+%Enter_X% yp W%Enter_W% hp Default %Enter_Hide% gRunCurrentCommand, Run
-Gui, Main:Add, Button, X+%Options_X% yp W%Options_W% hp %Options_Hide% gOptions, Options
+Gui, Main:Add, Button, % "X+"Enter_X " yp W" Enter_W " hp Default Hidden" !g_ShowBtnRun " gRunCurrentCommand", Enter
+Gui, Main:Add, Button, % "X+"Options_X " yp W" Options_W " hp Hidden" !g_ShowBtnOpt " gOptions", Options
 Gui, Main:Add, ListView, xm ys+35 W%LV_W% H%LV_H% vMyListView AltSubmit gLVActions %ListHdr% +LV0x10000 %ListGrid% -Multi, No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, X0 Y0 0x4000000, %g_BGPicture%
-Gui, Main:Add, StatusBar,gSBActions,
+Gui, Main:Add, StatusBar, % "Hidden" !g_ShowStatusBar " gSBActions",
 Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
 
-SB_SetParts(g_WinWidth-130)
+SB_SetParts(g_WinWidth-90*g_ShowRunCount)
 LV_ModifyCol(1, 40)
 LV_ModifyCol(2, g_Col2Width)
 LV_ModifyCol(3, g_Col3Width)
@@ -251,7 +245,7 @@ Hotkey, Up, PrevCommand
 ;=============================================================
 ; Run or locate command shortcut: Ctrl Alt Shift + No.
 ;=============================================================
-Loop, % Min(g_ListRows, 9)                                              ; Not set hotkey for ListRows > 9
+Loop, %g_ListRows%                                                      ; ListRows limit <= 9
 {
     Hotkey, !%A_Index%, RunSelectedCommand                              ; ALT + No. run command
     Hotkey, ^%A_Index%, GotoCommand                                     ; Ctrl + No. locate command
@@ -630,11 +624,11 @@ SBContextMenu()
     StatusBarGetText, A_Clipboard, 1, %g_WinName%
 }
 
-TrayMenu()                                                              ;AutoHotkey标准托盘菜单
+TrayMenu()
 {
     If ( A_ThisMenuItem = "Script Info" )
         ListLines
-    If ( A_ThisMenuItem = "AHK Help" )
+    If ( A_ThisMenuItem = "AHK Manual" )
         Run, https://www.autohotkey.com/docs/v1/
 }
 
@@ -645,9 +639,7 @@ MainGuiEscape()
 
 MainGuiClose()                                                          ; If GuiClose is a function, the GUI is hidden by default
 {
-    if (!g_KeepInput)
-        ClearInput()
-
+    (!g_KeepInput) ? ClearInput()
     Gui, Main:Hide
     SetStatusBar("Hint")                                                ; Update StatusBar hint information after GUI hide (move code from Activate() to here for better performance)
 }
@@ -719,7 +711,7 @@ SetStatusBar(Mode := "Command")                                         ; Set St
         SBText := Mode
     }
     SB_SetText(SBText, 1)
-    SB_SetText("RunCount: "g_RunCount, 2)
+    SB_SetText("RC: "g_RunCount, 2)
 }
 
 RunCurrentCommand()
@@ -896,16 +888,13 @@ OpenDir(Path, OpenContainer := False)
 
     if (OpenContainer)
     {
-        if (g_TCPath)
-            Run, %g_TCPath% " /P " "%Path%",, UseErrorLevel             ; /P Parent folder
+        if (g_FileMgr = "Explorer.exe")
+            Run, %g_FileMgr% /select`, "%Path%",, UseErrorLevel
         else
-            Run, Explorer.exe /select`, "%Path%",, UseErrorLevel
+            Run, %g_FileMgr% " /P " "%Path%",, UseErrorLevel             ; /P Parent folder
     }
     else
-    {
-        FileManager := g_TCPath ? g_TCPath : "Explorer.exe"
-        Run, %FileManager% "%Path%",, UseErrorLevel
-    }
+        Run, %g_FileMgr% "%Path%",, UseErrorLevel
 
     if ErrorLevel
         MsgBox, 4096, %g_WinName%, Error found, error code : %A_LastError%
@@ -991,11 +980,11 @@ UpdateStartMenu(create := true)
 Reindex()                                                               ; Re-create Index section
 {
     IniDelete, %g_IniFile%, %SEC_INDEX%
-    for dirIndex, dir in StrSplit(g_IndexDir, "|")
+    for dirIndex, dir in StrSplit(g_IndexDir, ",")
     {
         searchPath := AbsPath(dir)
 
-        for extIndex, ext in StrSplit(g_IndexType, "|")
+        for extIndex, ext in StrSplit(g_IndexType, ",")
         {
             Loop Files, %searchPath%\%ext%, R
             {
@@ -1023,8 +1012,8 @@ Listary()                                                               ; Listar
 {
     Log.Debug("Listary function starting...")
 
-    Loop Parse, g_FileManager, `,                                       ; File Manager Class, default is Windows Explorer & Total Commander
-        GroupAdd, FileManager, %A_LoopField%
+    Loop Parse, g_FileMgrID, `,                                       ; File Manager Class, default is Windows Explorer & Total Commander
+        GroupAdd, FileMgrID, %A_LoopField%
 
     Loop Parse, g_DialogWin, `,                                         ; 需要QuickSwith的窗口, 包括打开/保存对话框等
         GroupAdd, DialogBox, %A_LoopField%
@@ -1117,7 +1106,7 @@ CmdMgr(Path := "")                                                      ; 命令
     }
 
     Gui, CmdMgr:New
-    Gui, CmdMgr:Font, s8, Century Gothic, wRegular
+    Gui, CmdMgr:Font, S8 W400, Century Gothic
     Gui, CmdMgr:Margin, 5, 5
     Gui, CmdMgr:Add, GroupBox, w550 h230, New Command
     Gui, CmdMgr:Add, Text, xp+20 yp+35, Command Type: 
@@ -1269,27 +1258,25 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     For key, description in KEYS_CONFIG
     {
-        LV_Add("", description)
-        if (g_%key% = 1)
-            LV_Modify(A_Index, "Check")
+        LV_Add("Check"g_%key%, description)
     }
-    LV_ModifyCol(1, 466)
+    LV_ModifyCol(1, "Auto")
 
-    Gui, Setting:Add, Text, xp+10 yp+320, Text Editor:
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Editor, %g_Editor%
-    Gui, Setting:Add, Text, xp-150 yp+40, Everything.exe Path:
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_Everything, %g_Everything%
-    Gui, Setting:Add, Text, xp-150 yp+40, File Manager:
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_TCPath, %g_TCPath%
+    Gui, Setting:Add, Text, yp+320, Text Editor:
+    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Editor, %g_Editor%||Notepad.exe|C:\Apps\Notepad4\Notepad4.exe
+    Gui, Setting:Add, Text, xp-100 yp+40, Everything.exe:
+    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Everything, %g_Everything%||C:\Apps\Everything\Everything.exe
+    Gui, Setting:Add, Text, xp-100 yp+40, File Manager:
+    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_FileMgr, %g_FileMgr%||Explorer.exe|C:\Apps\TotalCMD64\TotalCMD.exe /O /T /S
     
     Gui, Setting:Tab, 2 ; INDEX Tab
     Gui, Setting:Add, GroupBox, w500 h420, Index Options
     Gui, Setting:Add, Text, xp+10 yp+40, Index Locations: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_IndexDir, %g_IndexDir%
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_IndexDir, %g_IndexDir%||A_ProgramsCommon,A_StartMenu
     Gui, Setting:Add, Text, xp-150 yp+40, Index File Type: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_IndexType, %g_IndexType%
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_IndexType, %g_IndexType%||*.lnk,*.exe
     Gui, Setting:Add, Text, xp-150 yp+40, Index File Exclude: 
-    Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_IndexExclude, %g_IndexExclude%
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_IndexExclude, %g_IndexExclude%||Uninstall *
     Gui, Setting:Add, Text, xp-150 yp+40, Command History Length: 
     Gui, Setting:Add, Edit, xp+150 yp-5 r1 w330 vg_HistoryLen, %g_HistoryLen%
 
@@ -1352,30 +1339,41 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h190, Listary Quick-Switch
-    Gui, Setting:Add, Text, xp+10 yp+25 , File Manager Title
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_FileManager, %g_FileManager%||ahk_class CabinetWClass|ahk_class CabinetWClass, ahk_class TTOTAL_CMD
-    Gui, Setting:Add, Text, xp-150 yp+40, Open/Save Dialog Title: 
+    Gui, Setting:Add, Text, xp+10 yp+25 , File Manager Title:
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_FileMgrID, %g_FileMgrID%||ahk_class CabinetWClass|ahk_class CabinetWClass, ahk_class TTOTAL_CMD
+    Gui, Setting:Add, Text, xp-150 yp+40, Open/Save Dialog Title:
     Gui, Setting:Add, Combobox, xp+150 yp-5 w330 Sort vg_DialogWin, %g_DialogWin%||ahk_class #32770
     Gui, Setting:Add, Text, xp-150 yp+40, Exclude Windows Title: 
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_ExcludeWin, %g_ExcludeWin%||ahk_class SysListView32|ahk_class SysListView32, ahk_exe Explorer.exe|ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe Totalcmd64.exe, AutoCAD LT Alert
-    Gui, Setting:Add, Text, xp-150 yp+40, Switch to TC Dir: 
-    Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_TotalCMDDir, %g_TotalCMDDir%
-    Gui, Setting:Add, Text, xp+100 yp+5, Switch to Explorer Dir: 
-    Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_ExplorerDir, %g_ExplorerDir%
+    Gui, Setting:Add, Text, xp-150 yp+40, Hotkey of switch Open/Save dialog's path to Total Commander's directory:
+    Gui, Setting:Add, Hotkey, xp+400 yp-5 w80 vg_TotalCMDDir, %g_TotalCMDDir%
+    Gui, Setting:Add, Text, xp-400 yp+40, Hotkey of switch Open/Save dialog's path to Windows Explorer's directory:
+    Gui, Setting:Add, Hotkey, xp+400 yp-5 w80 vg_ExplorerDir, %g_ExplorerDir%
     Gui, Setting:Add, CheckBox, xp-400 yp+40 vg_AutoSwitchDir checked%g_AutoSwitchDir%, Auto Switch Dir
 
     Gui, Setting:Tab, 6 ; ABOUT TAB
+    Gui, Setting:Font, S10, Segoe UI Semibold
     Gui, Setting:Add, Edit, w500 h420 ReadOnly -WantReturn -Wrap,
     (Ltrim
-    ALTRun - An effective launcher for Windows, open source project
-    https://github.com/zhugecaomao/ALTRun
+    ALTRun
+    Website: https://github.com/zhugecaomao/ALTRun
+    Setting Notes: https://github.com/zhugecaomao/ALTRun/wiki#notes-for-altrun-options
+
+    An effective launcher for Windows, an AutoHotkey open-source project. 
+    It provides a streamlined and efficient way to find anything on your 
+    system and launch any application in your way.
 
     1. Pure portable software, not write anything into Registry.
     2. Small size (< 100KB), low resource usage (< 5MB RAM), and high performance.
-    3. Highly customizable with GUI (Main Window, Options, Command Manager)
-    4. Automatically adjust the command rank priority according to the frequency of use.
-    5. Listary Quick Switch Dir function
-    6. AppControl function
+    3. User-friendly interface, highly customizable from the Options menu
+    4. SendTo Menu allows you to create commands quickly and easily.
+    5. Multi-Hotkey setup allowed.
+    6. Integrated with Total Commander and Everything
+    7. Smart Rank - Atuo adjusts command priority (rank) based on frequency of use.
+    8. Smart Match - Fuzzy and Smart matching and filtering result
+    9. Listary Quick Switch Dir function
+    Many more functions...
+
     ------------------------------------------------------------------------
     F1        		ALTRun Help Index
     F2        		Open Setting Config window
@@ -1393,12 +1391,10 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Ctrl + I		Reindex file search database
     Ctrl + Q		Reload ALTRun
     Ctrl + D		Open current command dir with TC / File Explorer
-    Space   		Command start by Space - Search with Everything
-    >        		Command start by ">" - Run with CMD
-    +        		Command start by "+" - Create new Command
+    Space   		Start with Space - Search with Everything
+    >        		Start with ">" - Run with CMD
+    +        		Start with "+" - Create new Command
     No Result		Enter to add as a new command
-    ------------------------------------------------------------------------
-    Congraduations! You have run shortcut %g_RunCount% times by now!
     )
     
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面那个选项卡控件
@@ -1406,9 +1402,8 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Hotkey, %g_GlobalHotkey1%, Off
     Hotkey, %g_GlobalHotkey2%, Off
 
-    Gui, Setting:Add, Button, Default x250 w80, OK
+    Gui, Setting:Add, Button, Default x350 w80, OK
     Gui, Setting:Add, Button, xp+90 yp w80, Cancel
-    Gui, Setting:Add, Button, xp+90 yp w80, Help
     Gui, Setting:Show,, %g_OptionsWinName%
 }
 
@@ -1439,11 +1434,6 @@ SettingGuiClose()
     Hotkey, %g_GlobalHotkey1%, On
     Hotkey, %g_GlobalHotkey2%, On
     Gui, Setting:Destroy
-}
-
-SettingButtonHelp()
-{
-    Run, https://github.com/zhugecaomao/ALTRun/wiki#notes-for-altrun-options
 }
 
 LOADCONFIG(Arg)                                                         ; 加载主配置文件
@@ -1598,12 +1588,8 @@ SAVECONFIG() {
 
     For key, description in KEYS_CONFIG
     {
-        RowNumber := A_Index           ;get first selected row
-        RowChecked := LV_GetNext(RowNumber - 1 , "Checked" )
-        If ( RowNumber = RowChecked )
-            IniWrite, 1, %g_IniFile%, %SEC_CONFIG%, %key%
-        else
-            IniWrite, 0, %g_IniFile%, %SEC_CONFIG%, %key%
+        Checked := (A_Index = LV_GetNext(A_Index-1, "C")) ? 1 : 0
+        IniWrite, %Checked%, %g_IniFile%, %SEC_CONFIG%, %key%
     }
 
     Loop Parse, KEYLIST_CONFIG, `,
