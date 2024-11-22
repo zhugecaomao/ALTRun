@@ -59,10 +59,9 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , g_ListGrid      := 0   , g_ColWidth        := "40,60,430,340"
 , g_ListHdr       := 1   , g_SmartMatch      := 1
 , g_SmartRank     := 1   , g_MatchAny        := 1
-, g_ShowTheme     := 1   , g_ShowHint        := 1
-, g_GlobalHotkey1   := "!Space"
-, g_GlobalHotkey2   := "!R"
-, g_FontSize      := 10  , g_TotalCMDDir     := "^g" ; Hotkey for Listary quick-switch dir    
+, g_ShowTheme     := 1   , g_GlobalHotkey1 := "!Space"
+, g_ShowHint      := 1   , g_GlobalHotkey2 := "!R"
+, g_FontSize      := 10  , g_TotalCMDDir     := "^g"
 , g_WinWidth      := 900 , g_ExplorerDir     := "^e"
 , g_WinHeight     := 330 , g_Background      := "Default"
 , g_ShowRunCount  := 1   , g_ShowStatusBar   := 1
@@ -106,7 +105,7 @@ Global Arg                              ; 用来调用管道的完整参数（�
 , g_UseDisplay                          ; 命令使用了显示框
 , g_UseFallback                         ; 使用备用的命令
 
-Log.Debug("●●●●● ALTRun is starting ●●●●●")
+Log.Debug("///// ALTRun is starting /////")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
 ;=============================================================
@@ -198,11 +197,11 @@ ListResult("Tip | F1 | Help`nTip | F2 | Options and settings`n"         ; List i
 if (g_ShowIcon)
 {
     Global ImageListID1 := IL_Create(10, 5)                             ; Create an ImageList so that the ListView can display some icons
-    IL_Add(ImageListID1, "shell32.dll", -4)                             ; Add folder icon for dir type (IconIndex=1)
-    IL_Add(ImageListID1, "shell32.dll", -25)                            ; Add app default icon for Func type (IconIndex=2)
-    IL_Add(ImageListID1, "shell32.dll", -512)                           ; Add Browser icon for url type (IconIndex=3)
-    IL_Add(ImageListID1, "shell32.dll", -22)                            ; Add control panel icon for ctrl type (IconIndex=4)
-    IL_Add(ImageListID1, "Calc.exe", -1)                                ; Add calculator icon for Eval type (IconIndex=5)
+    Global IconMap      := {"dir":IL_Add(ImageListID1,"shell32.dll",-4) ; Icon cache index, IconIndex=1/2/3/4/5 for type dir/func/url/ctrl/eval
+                        ,"func":IL_Add(ImageListID1,"shell32.dll",-25)
+                        ,"url":IL_Add(ImageListID1,"shell32.dll",-512)
+                        ,"ctrl":IL_Add(ImageListID1,"shell32.dll",-22)
+                        ,"eval":IL_Add(ImageListID1,"Calc.exe",-1)}
     LV_SetImageList(ImageListID1)                                       ; Attach the ImageLists to the ListView so that it can later display the icons
 }
 
@@ -378,7 +377,7 @@ SearchCommand(command := "")
 ListResult(text := "", UseDisplay := false)
 {
     g_UseDisplay := UseDisplay
-    IconIndex    := ""
+    IconIndex    := 0
 
     Gui, Main:Default                                                   ; Set default GUI before update any listview or statusbar
     GuiControl, Main:-Redraw, MyListView                                ; Improve performance by disabling redrawing during load.
@@ -396,7 +395,6 @@ ListResult(text := "", UseDisplay := false)
         {
             ; Build a unique extension ID to avoid characters that are illegal in variable names, such as dashes. 
             ; This unique ID method also performs better because finding an item, in the array does not require search-loop.
-            SplitPath, _Path,,, FileExt                                 ; Get the file's extension.
 
             if (_Type = "Dir")
             {
@@ -418,34 +416,41 @@ ListResult(text := "", UseDisplay := false)
             {
                 IconIndex := 5
             }
-            else if FileExt in EXE,ICO,ANI,CUR,LNK
+            else if (_Type = "File")
             {
-                ExtID := FileExt
-                IconIndex := 0                                          ; Flag it as not found so that these types can each have a unique icon
-            }
-            else                                                        ; Some other extension/file-type, so calculate its unique ID
-            {
-                ExtID := 0                                              ; Initialize to handle extensions that are shorter than others
-                Loop Parse, FileExt
-                    ExtID .= Format("{:02X}", Asc(A_LoopField))         ; Derive a Unique ID by convert FileExt to HEX
-
-                IconIndex := IconArray%ExtID%                           ; Check if this file extension already has an icon in the ImageLists. If it does, several calls can be avoided and loading performance is greatly improved, especially for a folder containing hundreds of files
-            }
-
-            if (!IconIndex)                                             ; There is not yet any icon for this extension, so load it.
-            {
-                if (!DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
-                    IconIndex = 9999999                                 ; Set it out of bounds to display a blank icon.
-                else                                                    ; Icon successfully loaded. Extract the hIcon member from the structure
+                SplitPath, _Path,,, FileExt                             ; Get the file's extension.
+                if FileExt in EXE,ICO,ANI,CUR,LNK
                 {
-                    hIcon := NumGet(sfi, 0)                             ; Add the HICON directly to the small-icon and large-icon lists.
-                    IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID1, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
-                    DllCall("DestroyIcon", "ptr", hIcon)                ; Now that it's been copied into the ImageLists, the original should be destroyed
-                    IconArray%ExtID% := IconIndex                       ; Cache the icon to save memory and improve loading performance
+                    IconIndex := 0                                      ; Flag it as not found so that these types can each have a unique icon
+                }
+                else                                                    ; Some other extension/file-type
+                {
+                    IconIndex := 0
+                    if IconMap.HasKey(FileExt)
+                    {
+                        IconIndex := IconMap[FileExt]                   ; File type exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
+                        OutputDebug, % FileExt " extension type exist, index is " IconMap[FileExt]
+                    }
+                }
+    
+                if not IconIndex                                        ; There is not yet any icon for this extension, so load it.
+                {
+                    if (!DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
+                        IconIndex = 9999999                             ; Set it out of bounds to display a blank icon.
+                    else                                                ; Icon successfully loaded. Extract the hIcon member from the structure
+                    {
+                        hIcon := NumGet(sfi, 0)                         ; Add the HICON directly to the small-icon lists.
+                        IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID1, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
+                        DllCall("DestroyIcon", "ptr", hIcon)            ; Now that it's been copied into the ImageLists, the original should be destroyed
+                        IconMap[FileExt] := IconIndex                   ; Cache the icon to save memory and improve loading performance
+                    }
                 }
             }
         }
-        LV_Add("Icon"IconIndex, A_Index, _Type, _Path, _Desc)
+        For index, value in IconMap
+            msg .= index " = " value "`n"
+        OutputDebug, % "IconMap is `n" msg
+        LV_Add("Icon" . IconIndex, A_Index, _Type, _Path, _Desc)
     }
 
     LV_Modify(1, "Select Focus Vis")                                    ; Select 1st row
@@ -1670,189 +1675,142 @@ Everything()
 }
 
 ;=======================================================================
-; Library - Eval (Math Expression)
+; Eval - Calculate a math expression
 ;=======================================================================
-
-/* -test cases
-MsgBox % Eval("1e1")                                               ; 10
-MsgBox % Eval("0x1E")                                              ; 30
-MsgBox % Eval("ToBin(35)")                                         ; 100011
-MsgBox % Eval("$b 35")                                             ; 0100011
-MsgBox % Eval("'10010")                                            ; -14
-MsgBox % Eval("2>3 ? 9 : 7")                                       ; 7
-MsgBox % Eval("$2E 1e3 -50.0e+0 + 100.e-1")                        ; 9.60E+002
-MsgBox % Eval("fact(x) := x < 2 ? 1 : x*fact(x-1); fact(5)")       ; 120
-MsgBox % Eval("f(ab):=sqrt(ab)/ab; y:=f(2); ff(y):=y*(y-1)/2/x; x := 2; y+ff(3)/f(16)") ; 6.70711
-MsgBox % Eval("x := qq:1; x := 5*x; y := x+1")                     ; 6 [if y empty, x := 1...]
-MsgBox % Eval("x:=-!0; x<0 ? 2*x : sqrt(x)")                       ; -2
-MsgBox % Eval("tan(atan(atan(tan(1))))-exp(sqrt(1))")              ; -1.71828
-MsgBox % Eval("---2+++9 + ~-2 --1 -2*-3")                          ; 15
-MsgBox % Eval("x1:=1; f1:=sin(x1)/x1; y:=2; f2:=sin(y)/y; f1/f2")  ; 1.85082
-MsgBox % Eval("Round(fac(10)/fac(5)**2) - (10 choose 5) + Fib(8)") ; 21
-MsgBox % Eval("1 min-1 min-2 min 2")                               ; -2
-MsgBox % Eval("(-1>>1<=9 && 3>2)<<2>>1")                           ; 2
-MsgBox % Eval("(1 = 1) + (2<>3 || 2 < 1) + (9>=-1 && 3>2)")        ; 3
-MsgBox % Eval("$b6 -21/3")                                         ; 111001
-MsgBox % Eval("$b ('1001 << 5) | '01000")                          ; 100101000
-MsgBox % Eval("$0 194*lb/1000")                                    ; 88 [Kg]
-MsgBox % Eval("$x ~0xfffffff0 & 7 | 0x100 << 2")                   ; 0x407
-MsgBox % Eval("- 1 * (+pi -((3%5))) +pi+ 1-2 + e-ROUND(abs(sqrt(floor(2)))**2)-e+pi $9") ; 3.141592654
-t := A_TickCount
-Loop 1000
-   r := Eval("x:=" A_Index/1000 ";atan(x)-exp(sqrt(x))")           ; simulated plot
-t := A_TickCount - t
-MsgBox Result = %r%`nTime = %t%                                    ; -1.93288: ~400 ms [on Inspiron 9300]
-*/
-
 Eval(x) {                              ; non-recursive PRE/POST PROCESSING: I/O forms, numbers, ops, ";"
-   Local FORM, FormF, FormI, i, W, y, y1, y2, y3, y4
-   FormI := A_FormatInteger, FormF := A_FormatFloat
-
-   SetFormat Integer, D                ; decimal intermediate results!
-   RegExMatch(x, "\$(b|h|x|)(\d*[eEgG]?)", y)
-   FORM := y1, W := y2                 ; HeX, Bin, .{digits} output format
-   SetFormat FLOAT, 0.16e              ; Full intermediate float precision
-   StringReplace x, x, %y%             ; remove $..
-   Loop
-      If RegExMatch(x, "i)(.*)(0x[a-f\d]*)(.*)", y)
-         x := y1 . y2+0 . y3           ; convert hex numbers to decimal
-      Else Break
-   x := RegExReplace(x,"(^|[^.\d])(\d+)(e|E)","$1$2.$3")                ; add missing '.' before E (1e3 -> 1.e3)
-   x := RegExReplace(x,"(\d*\.\d*|\d)([eE][+-]?\d+)","‘$1$2’")          ; literal scientific numbers between ‘ and ’ chars
-
-   StringReplace x, x,`%, \, All            ; %  -> \ (= MOD)
-   StringReplace x, x, **,@, All            ; ** -> @ for easier process
-   StringReplace x, x, ^,@, All             ; ^ -> @ for easier process
-   StringReplace x, x, +, ±, All            ; ± is addition
-   x := RegExReplace(x,"(‘[^’]*)±","$1+")   ; ...not inside literal numbers
-   StringReplace x, x, -, ¬, All            ; ¬ is subtraction
-   x := RegExReplace(x,"(‘[^’]*)¬","$1-")   ; ...not inside literal numbers
-
-   Loop Parse, x, `;
-      y := Eval1(A_LoopField)          ; work on pre-processed sub expressions
-                                       ; return result of last sub-expression (numeric)
-   If FORM = b                         ; convert output to binary
-      y := W ? ToBinW(Round(y),W) : ToBin(Round(y))
-   Else If (FORM="h" or FORM="x") {
-      SetFormat Integer, Hex           ; convert output to hex
-      y := Round(y) + 0
-   }
-   Else {
-      W := W="" ? "0.6g" : "0." . W    ; Set output form, Default = 6 decimal places
-      SetFormat FLOAT, %W%
-      y += 0.0
-   }
-   SetFormat Integer, %FormI%          ; restore original formats
-   SetFormat FLOAT,   %FormF%
-   Return y
-}
-
-Eval1(x) {                             ; recursive PREPROCESSING of :=, vars, (..) [decimal, no ";"]
-   Local i, y, y1, y2, y3
-   If RegExMatch(x, "(\S*?)\((.*?)\)\s*:=\s*(.*)", y) {                 ; save function definition: f(x) := expr
-      f%y1%__X := y2, f%y1%__F := y3
-      Return
-   }
-                                       ; execute leftmost ":=" operator of a := b := ...
-   If RegExMatch(x, "(\S*?)\s*:=\s*(.*)", y) {
-      y := "x" . y1                    ; user vars internally start with x to avoid name conflicts
-      Return %y% := Eval1(y2)
-   }
-                                       ; here: no variable to the left of last ":="
-   x := RegExReplace(x,"([\)’.\w]\s+|[\)’])([a-z_A-Z]+)","$1«$2»")  ; op -> «op»
-
-   x := RegExReplace(x,"\s+")          ; remove spaces, tabs, newlines
-
-   x := RegExReplace(x,"([a-z_A-Z]\w*)\(","'$1'(") ; func( -> 'func'( to avoid atan|tan conflicts
-
-   x := RegExReplace(x,"([a-z_A-Z]\w*)([^\w'»’]|$)","%x$1%$2") ; VAR -> %xVAR%
-   x := RegExReplace(x,"(‘[^’]*)%x[eE]%","$1e") ; in numbers %xe% -> e
-   x := RegExReplace(x,"‘|’")          ; no more need for number markers
-   Transform x, Deref, %x%             ; dereference all right-hand-side %var%-s
-
-   Loop {                              ; find last innermost (..)
-      If RegExMatch(x, "(.*)\(([^\(\)]*)\)(.*)", y)
-         x := y1 . Eval@(y2) . y3      ; replace (x) with value of x
-      Else Break
-   }
-   Return Eval@(x)
-}
-
-Eval@(x) {                             ; EVALUATE PRE-PROCESSED EXPRESSIONS [decimal, NO space, vars, (..), ";", ":="]
-   Local i, y, y1, y2, y3, y4
-
-   If x is number                      ; no more operators left
-      Return x
-                                       ; execute rightmost ?,: operator
-   RegExMatch(x, "(.*)(\?|:)(.*)", y)
-   IfEqual y2,?,  Return Eval@(y1) ? Eval@(y3) : ""
-   IfEqual y2,:,  Return ((y := Eval@(y1)) = "" ? Eval@(y3) : y)
-
-   StringGetPos i, x, ||, R            ; execute rightmost || operator
-   IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) || Eval@(SubStr(x,3+i))
-   StringGetPos i, x, &&, R            ; execute rightmost && operator
-   IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) && Eval@(SubStr(x,3+i))
-                                       ; execute rightmost =, <> operator
-   RegExMatch(x, "(.*)(?<![\<\>])(\<\>|=)(.*)", y)
-   IfEqual y2,=,  Return Eval@(y1) =  Eval@(y3)
-   IfEqual y2,<>, Return Eval@(y1) <> Eval@(y3)
-                                       ; execute rightmost <,>,<=,>= operator
-   RegExMatch(x, "(.*)(?<![\<\>])(\<=?|\>=?)(?![\<\>])(.*)", y)
-   IfEqual y2,<,  Return Eval@(y1) <  Eval@(y3)
-   IfEqual y2,>,  Return Eval@(y1) >  Eval@(y3)
-   IfEqual y2,<=, Return Eval@(y1) <= Eval@(y3)
-   IfEqual y2,>=, Return Eval@(y1) >= Eval@(y3)
-                                       ; execute rightmost user operator (low precedence)
-   RegExMatch(x, "i)(.*)«(.*?)»(.*)", y)
-   If IsFunc(y2)
-      Return %y2%(Eval@(y1),Eval@(y3)) ; predefined relational ops
-
-   StringGetPos i, x, |, R             ; execute rightmost | operator
-   IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) | Eval@(SubStr(x,2+i))
-   StringGetPos i, x, ^, R             ; execute rightmost ^ operator
-   IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) ^ Eval@(SubStr(x,2+i))
-   StringGetPos i, x, &, R             ; execute rightmost & operator
-   IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) & Eval@(SubStr(x,2+i))
-                                       ; execute rightmost <<, >> operator
-   RegExMatch(x, "(.*)(\<\<|\>\>)(.*)", y)
-   IfEqual y2,<<, Return Eval@(y1) << Eval@(y3)
-   IfEqual y2,>>, Return Eval@(y1) >> Eval@(y3)
-                                       ; execute rightmost +- (not unary) operator
-   RegExMatch(x, "(.*[^!\~±¬\@\*/\\])(±|¬)(.*)", y) ; lower precedence ops already handled
-   IfEqual y2,±,  Return Eval@(y1) + Eval@(y3)
-   IfEqual y2,¬,  Return Eval@(y1) - Eval@(y3)
-                                       ; execute rightmost */% operator
-   RegExMatch(x, "(.*)(\*|/|\\)(.*)", y)
-   IfEqual y2,*,  Return Eval@(y1) * Eval@(y3)
-   IfEqual y2,/,  Return Eval@(y1) / Eval@(y3)
-   IfEqual y2,\,  Return Mod(Eval@(y1),Eval@(y3))
-                                       ; execute rightmost power
-   StringGetPos i, x, @, R
-   IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) ** Eval@(SubStr(x,2+i))
-                                       ; execute rightmost function, unary operator
-   If !RegExMatch(x,"(.*)(!|±|¬|~|'(.*)')(.*)", y)
-      Return x                         ; no more function (y1 <> "" only at multiple unaries: --+-)
-   IfEqual y2,!,Return Eval@(y1 . !y4) ; unary !
-   IfEqual y2,±,Return Eval@(y1 .  y4) ; unary +
-   IfEqual y2,¬,Return Eval@(y1 . -y4) ; unary - (they behave like functions)
-   IfEqual y2,~,Return Eval@(y1 . ~y4) ; unary ~
-   If IsFunc(y3)
-      Return Eval@(y1 . %y3%(y4))      ; built-in and predefined functions(y4)
-   Return Eval@(y1 . Eval1(RegExReplace(f%y3%__F, f%y3%__X, y4))) ; LAST: user defined functions
-}
-
-ToBin(n) {      ; Binary representation of n. 1st bit is SIGN: -8 -> 1000, -1 -> 1, 0 -> 0, 8 -> 01000
-   if (n == "")
-   {
-       return 0
-   }
-   Return n=0||n=-1 ? -n : ToBin(n>>1) . n&1
-}
-ToBinW(n,W=8) { ; LS W-bits of Binary representation of n
-   Loop %W%     ; Recursive (slower): Return W=1 ? n&1 : ToBinW(n>>1,W-1) . n&1
-      b := n&1 . b, n >>= 1
-   Return b
-}
+    Local FORM, FormF, FormI, i, W, y, y1, y2, y3, y4
+    FormI := A_FormatInteger, FormF := A_FormatFloat
+ 
+    SetFormat Integer, D                ; decimal intermediate results!
+    RegExMatch(x, "\$(b|h|x|)(\d*[eEgG]?)", y)
+    FORM := y1, W := y2                 ; HeX, Bin, .{digits} output format
+    SetFormat FLOAT, 0.16e              ; Full intermediate float precision
+    StringReplace x, x, %y%             ; remove $..
+    Loop
+       If RegExMatch(x, "i)(.*)(0x[a-f\d]*)(.*)", y)
+          x := y1 . y2+0 . y3           ; convert hex numbers to decimal
+       Else Break
+    x := RegExReplace(x,"(^|[^.\d])(\d+)(e|E)","$1$2.$3")                ; add missing '.' before E (1e3 -> 1.e3)
+    x := RegExReplace(x,"(\d*\.\d*|\d)([eE][+-]?\d+)","‘$1$2’")          ; literal scientific numbers between ‘ and ’ chars
+ 
+    StringReplace x, x,`%, \, All            ; %  -> \ (= MOD)
+    StringReplace x, x, **,@, All            ; ** -> @ for easier process
+    StringReplace x, x, ^,@, All             ; ^ -> @ for easier process
+    StringReplace x, x, +, ±, All            ; ± is addition
+    x := RegExReplace(x,"(‘[^’]*)±","$1+")   ; ...not inside literal numbers
+    StringReplace x, x, -, ¬, All            ; ¬ is subtraction
+    x := RegExReplace(x,"(‘[^’]*)¬","$1-")   ; ...not inside literal numbers
+ 
+    Loop Parse, x, `;
+       y := Eval1(A_LoopField)          ; work on pre-processed sub expressions
+                                        ; return result of last sub-expression (numeric)
+    If (FORM="h" or FORM="x") {
+       SetFormat Integer, Hex           ; convert output to hex
+       y := Round(y) + 0
+    }
+    Else {
+       W := W="" ? "0.6g" : "0." . W    ; Set output form, Default = 6 decimal places
+       SetFormat FLOAT, %W%
+       y += 0.0
+    }
+    SetFormat Integer, %FormI%          ; restore original formats
+    SetFormat FLOAT,   %FormF%
+    Return y
+ }
+ 
+ Eval1(x) {                             ; recursive PREPROCESSING of :=, vars, (..) [decimal, no ";"]
+    Local i, y, y1, y2, y3
+    If RegExMatch(x, "(\S*?)\((.*?)\)\s*:=\s*(.*)", y) {                 ; save function definition: f(x) := expr
+       f%y1%__X := y2, f%y1%__F := y3
+       Return
+    }
+                                        ; execute leftmost ":=" operator of a := b := ...
+    If RegExMatch(x, "(\S*?)\s*:=\s*(.*)", y) {
+       y := "x" . y1                    ; user vars internally start with x to avoid name conflicts
+       Return %y% := Eval1(y2)
+    }
+                                        ; here: no variable to the left of last ":="
+    x := RegExReplace(x,"([\)’.\w]\s+|[\)’])([a-z_A-Z]+)","$1«$2»")  ; op -> «op»
+ 
+    x := RegExReplace(x,"\s+")          ; remove spaces, tabs, newlines
+ 
+    x := RegExReplace(x,"([a-z_A-Z]\w*)\(","'$1'(") ; func( -> 'func'( to avoid atan|tan conflicts
+ 
+    x := RegExReplace(x,"([a-z_A-Z]\w*)([^\w'»’]|$)","%x$1%$2") ; VAR -> %xVAR%
+    x := RegExReplace(x,"(‘[^’]*)%x[eE]%","$1e") ; in numbers %xe% -> e
+    x := RegExReplace(x,"‘|’")          ; no more need for number markers
+    Transform x, Deref, %x%             ; dereference all right-hand-side %var%-s
+ 
+    Loop {                              ; find last innermost (..)
+       If RegExMatch(x, "(.*)\(([^\(\)]*)\)(.*)", y)
+          x := y1 . Eval@(y2) . y3      ; replace (x) with value of x
+       Else Break
+    }
+    Return Eval@(x)
+ }
+ 
+ Eval@(x) {                             ; EVALUATE PRE-PROCESSED EXPRESSIONS [decimal, NO space, vars, (..), ";", ":="]
+    Local i, y, y1, y2, y3, y4
+ 
+    If x is number                      ; no more operators left
+       Return x
+                                        ; execute rightmost ?,: operator
+    RegExMatch(x, "(.*)(\?|:)(.*)", y)
+    IfEqual y2,?,  Return Eval@(y1) ? Eval@(y3) : ""
+    IfEqual y2,:,  Return ((y := Eval@(y1)) = "" ? Eval@(y3) : y)
+ 
+    StringGetPos i, x, ||, R            ; execute rightmost || operator
+    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) || Eval@(SubStr(x,3+i))
+    StringGetPos i, x, &&, R            ; execute rightmost && operator
+    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) && Eval@(SubStr(x,3+i))
+                                        ; execute rightmost =, <> operator
+    RegExMatch(x, "(.*)(?<![\<\>])(\<\>|=)(.*)", y)
+    IfEqual y2,=,  Return Eval@(y1) =  Eval@(y3)
+    IfEqual y2,<>, Return Eval@(y1) <> Eval@(y3)
+                                        ; execute rightmost <,>,<=,>= operator
+    RegExMatch(x, "(.*)(?<![\<\>])(\<=?|\>=?)(?![\<\>])(.*)", y)
+    IfEqual y2,<,  Return Eval@(y1) <  Eval@(y3)
+    IfEqual y2,>,  Return Eval@(y1) >  Eval@(y3)
+    IfEqual y2,<=, Return Eval@(y1) <= Eval@(y3)
+    IfEqual y2,>=, Return Eval@(y1) >= Eval@(y3)
+                                        ; execute rightmost user operator (low precedence)
+    RegExMatch(x, "i)(.*)«(.*?)»(.*)", y)
+    If IsFunc(y2)
+       Return %y2%(Eval@(y1),Eval@(y3)) ; predefined relational ops
+ 
+    StringGetPos i, x, |, R             ; execute rightmost | operator
+    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) | Eval@(SubStr(x,2+i))
+    StringGetPos i, x, ^, R             ; execute rightmost ^ operator
+    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) ^ Eval@(SubStr(x,2+i))
+    StringGetPos i, x, &, R             ; execute rightmost & operator
+    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) & Eval@(SubStr(x,2+i))
+                                        ; execute rightmost <<, >> operator
+    RegExMatch(x, "(.*)(\<\<|\>\>)(.*)", y)
+    IfEqual y2,<<, Return Eval@(y1) << Eval@(y3)
+    IfEqual y2,>>, Return Eval@(y1) >> Eval@(y3)
+                                        ; execute rightmost +- (not unary) operator
+    RegExMatch(x, "(.*[^!\~±¬\@\*/\\])(±|¬)(.*)", y) ; lower precedence ops already handled
+    IfEqual y2,±,  Return Eval@(y1) + Eval@(y3)
+    IfEqual y2,¬,  Return Eval@(y1) - Eval@(y3)
+                                        ; execute rightmost */% operator
+    RegExMatch(x, "(.*)(\*|/|\\)(.*)", y)
+    IfEqual y2,*,  Return Eval@(y1) * Eval@(y3)
+    IfEqual y2,/,  Return Eval@(y1) / Eval@(y3)
+    IfEqual y2,\,  Return Mod(Eval@(y1),Eval@(y3))
+                                        ; execute rightmost power
+    StringGetPos i, x, @, R
+    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) ** Eval@(SubStr(x,2+i))
+                                        ; execute rightmost function, unary operator
+    If !RegExMatch(x,"(.*)(!|±|¬|~|'(.*)')(.*)", y)
+       Return x                         ; no more function (y1 <> "" only at multiple unaries: --+-)
+    IfEqual y2,!,Return Eval@(y1 . !y4) ; unary !
+    IfEqual y2,±,Return Eval@(y1 .  y4) ; unary +
+    IfEqual y2,¬,Return Eval@(y1 . -y4) ; unary - (they behave like functions)
+    IfEqual y2,~,Return Eval@(y1 . ~y4) ; unary ~
+    If IsFunc(y3)
+       Return Eval@(y1 . %y3%(y4))      ; built-in and predefined functions(y4)
+    Return Eval@(y1 . Eval1(RegExReplace(f%y3%__F, f%y3%__X, y4))) ; LAST: user defined functions
+ }
 
 Class Logger                                                            ; Logger library
 {
