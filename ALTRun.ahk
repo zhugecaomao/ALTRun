@@ -33,7 +33,8 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
                     , SmartMatch: "Smart Match - Fuzzy and Smart matching and filtering result", MatchAny: "Match from any position of the string"
                     , ShowTheme: "Show Theme - Software skin and background picture", ShowHint: "Show Hints and Tips in the bottom status bar"
                     , ShowRunCount: "Show RunCount - Command running times in the status bar", ShowStatusBar: "Show Status Bar"
-                    , ShowBtnRun: "Show [Run] Button on main window", ShowBtnOpt: "Show [Options] Button on main window"}
+                    , ShowBtnRun: "Show [Run] Button on main window", ShowBtnOpt: "Show [Options] Button on main window"
+                    , ShowDirName: "Show dir name only instead of dir full path in the result (shorten dir)"}
 , KEYLIST_GUI    := "ListRows,ColWidth,FontName,FontSize,FontColor,WinWidth,WinHeight,CtrlColor,WinColor,Background"
 , KEYLIST_HOTKEY := "GlobalHotkey1,GlobalHotkey2,Hotkey1,Trigger1,Hotkey2,Trigger2,Hotkey3,Trigger3,TotalCMDDir,ExplorerDir"
 , TRAYMENUS      := ["Show,ToggleWindow,Shell32.dll,-25","","Options `tF2,Options,Shell32.dll,-16826","ReIndex `tCtrl+I,Reindex,Shell32.dll,-16776"
@@ -65,6 +66,7 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , g_WinWidth      := 900 , g_ExplorerDir     := "^e"
 , g_WinHeight     := 330 , g_Background      := "Default"
 , g_ShowRunCount  := 1   , g_ShowStatusBar   := 1
+, g_ShowDirName   := 1
 , g_Hotkey1       := "^s", g_Trigger1        := "Everything"
 , g_Hotkey2       := "^p", g_Trigger2        := "RunPTTools"
 , g_Hotkey3       := ""  , g_Trigger3        := ""
@@ -295,12 +297,10 @@ SearchCommand(command := "")
     g_CurrentCommandList := Object()
     Prefix := SubStr(command, 1, 1)
 
-    if (Prefix = "+" or Prefix = " " or Prefix = ">")
-    {
+    if (Prefix = "+" or Prefix = " " or Prefix = ">") {
         g_CurrentCommand := g_Fallback[InStr("+ >", Prefix)]            ; Corresponding to fallback commands position no. 1, 2 & 3
         g_CurrentCommandList.Push(g_CurrentCommand)
-        ListResult(g_CurrentCommand)
-        Return
+        Return ListResult(g_CurrentCommand)
     }
 
     for index, element in g_Commands
@@ -311,28 +311,16 @@ SearchCommand(command := "")
         _Desc := splitResult[3]
         SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
 
-        if (_Type = "dir")
-        {
-            elementToShow := _Type " | " fileName " | " _Desc           ; Show folder name only
-        } 
-        else
-        {
-            elementToShow := _Type " | " _Path " | " _Desc              ; Use _Path to show file icons (file type), and all other types
-        }
-
+        elementToShow   := (_Type = "dir" and g_ShowDirName) ? _Type " | " fileName " | " _Desc : _Type " | " _Path " | " _Desc ; Use _Path to show file icons (file type), and all other types, Show folder name only for dir type
         elementToSearch := g_MatchPath ? _Path " " _Desc : fileName " " _Desc ; search file name include extension & desc, search dir type + folder name + desc
 
-        if (FuzzyMatch(elementToSearch, command))
-        {
+        if FuzzyMatch(elementToSearch, command) {
             g_CurrentCommandList.Push(element)
 
-            if (Order = 1)
-            {
+            if (Order = 1) {
                 g_CurrentCommand := element
                 Result .= elementToShow
-            }
-            else
-            {
+            } else {
                 Result .= "`n" elementToShow
             }
             Order++
@@ -360,13 +348,9 @@ SearchCommand(command := "")
         g_UseFallback        := true
         g_CurrentCommandList := g_Fallback
         g_CurrentCommand     := g_Fallback[1]
-        Result               := g_Fallback[1]
     
-        Loop, % g_Fallback.MaxIndex() {
-            if (A_Index = 1)
-                continue
-            Result .= "`n" g_Fallback[A_Index]
-        }
+        for i, cmd in g_Fallback
+            Result .= (i = 1) ? g_Fallback[i] : "`n" g_Fallback[i]
     } else {
         g_UseFallback := false
     }
@@ -376,86 +360,62 @@ SearchCommand(command := "")
 
 ListResult(text := "", UseDisplay := false)
 {
-    g_UseDisplay := UseDisplay
-    IconIndex    := 0
-
     Gui, Main:Default                                                   ; Set default GUI before update any listview or statusbar
     GuiControl, Main:-Redraw, MyListView                                ; Improve performance by disabling redrawing during load.
     LV_Delete()
-    VarSetCapacity(sfi, sfi_size := 698)                                ; Calculate buffer size required for SHFILEINFO structure.
-    
+    g_UseDisplay := UseDisplay
+
     Loop Parse, text, `n, `r
     {
         splitResult := StrSplit(A_LoopField, " | ")
-        _Type := splitResult[1]
-        _Path := AbsPath(splitResult[2])                                ; Must store in var for afterward use, trim space (in AbsPath)
-        _Desc := splitResult[3]
+        _Type       := splitResult[1]
+        _Path       := AbsPath(splitResult[2])                          ; Must store in var for afterward use, trim space (in AbsPath)
+        _Desc       := splitResult[3]
+        IconIndex   := g_ShowIcon ? GetIconIndex(_Path, _Type) : 0
 
-        if (g_ShowIcon)
-        {
-            ; Build a unique extension ID to avoid characters that are illegal in variable names, such as dashes. 
-            ; This unique ID method also performs better because finding an item, in the array does not require search-loop.
-
-            if (_Type = "Dir")
-            {
-                IconIndex := 1
-            }
-            else if _Type contains Func,CMD,Tip
-            {
-                IconIndex := 2
-            }
-            else if (_Type = "URL")
-            {
-                IconIndex := 3
-            }
-            else if (_Type = "Ctrl")
-            {
-                IconIndex := 4
-            }
-            else if (_Type = "Eval")
-            {
-                IconIndex := 5
-            }
-            else if (_Type = "File")
-            {
-                SplitPath, _Path,,, FileExt                             ; Get the file's extension.
-                if FileExt in EXE,ICO,ANI,CUR,LNK
-                {
-                    IconIndex := 0                                      ; Flag it as not found so that these types can each have a unique icon
-                }
-                else                                                    ; Some other extension/file-type
-                {
-                    IconIndex := 0
-                    if IconMap.HasKey(FileExt)
-                    {
-                        IconIndex := IconMap[FileExt]                   ; File type exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
-                        OutputDebug, % FileExt " extension type exist, index is " IconMap[FileExt]
-                    }
-                }
-    
-                if not IconIndex                                        ; There is not yet any icon for this extension, so load it.
-                {
-                    if (!DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
-                        IconIndex = 9999999                             ; Set it out of bounds to display a blank icon.
-                    else                                                ; Icon successfully loaded. Extract the hIcon member from the structure
-                    {
-                        hIcon := NumGet(sfi, 0)                         ; Add the HICON directly to the small-icon lists.
-                        IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID1, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
-                        DllCall("DestroyIcon", "ptr", hIcon)            ; Now that it's been copied into the ImageLists, the original should be destroyed
-                        IconMap[FileExt] := IconIndex                   ; Cache the icon to save memory and improve loading performance
-                    }
-                }
-            }
-        }
-        For index, value in IconMap
-            msg .= index " = " value "`n"
-        OutputDebug, % "IconMap is `n" msg
         LV_Add("Icon" . IconIndex, A_Index, _Type, _Path, _Desc)
     }
 
     LV_Modify(1, "Select Focus Vis")                                    ; Select 1st row
     GuiControl, Main:+Redraw, MyListView
     SetStatusBar()
+
+    ; For index, value in IconMap
+    ;     elements .= index " = " value "`n"
+    ; OutputDebug, % "IconMap length is " IconMap.Count() ", elements are `n" elements
+}
+
+GetIconIndex(_Path, _Type)                                              ; Get file's icon index
+{
+    Switch (_Type)
+    {
+        Case "Dir" : Return 1
+        Case "Func","CMD","Tip": Return 2
+        Case "URL" : Return 3
+        Case "Ctrl": Return 4
+        Case "Eval": Return 5
+        Case "File": {
+            SplitPath, _Path,,, FileExt                                 ; Get the file's extension.
+            if FileExt in EXE,ICO,ANI,CUR,LNK
+                IconIndex := IconMap.HasKey(_Path) ? IconMap[_Path] : GetIcon(_Path, _Path) ; File path exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
+            else                                                        ; Some other extension/file-type like pdf or xlsx
+                IconIndex := IconMap.HasKey(FileExt) ? IconMap[FileExt] : GetIcon(_Path, FileExt)
+            Return IconIndex
+        }
+    }
+}
+
+GetIcon(_Path, ExtOrPath) {                                             ; Get file's icon
+    VarSetCapacity(sfi, sfi_size := 698)                                ; Calculate buffer size required for SHFILEINFO structure.
+    if (!DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
+        IconIndex = 9999999                         ; Set it out of bounds to display a blank icon.
+    else {                                          ; Icon successfully loaded. Extract the hIcon member from the structure
+        hIcon := NumGet(sfi, 0)                     ; Add the HICON directly to the small-icon lists.
+        IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID1, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
+        DllCall("DestroyIcon", "ptr", hIcon)        ; Now that it's been copied into the ImageLists, the original should be destroyed
+        IconMap[ExtOrPath] := IconIndex             ; Cache the icon based on file type (xlsx, pdf) or path (exe, lnk) to save memory and improve loading performance
+    }
+    Return IconIndex
 }
 
 AbsPath(Path, KeepRunAs := False)                                       ; Convert path to absolute path
@@ -699,21 +659,15 @@ ClearInput()
 SetStatusBar(Mode := "Command")                                         ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
 {
     Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
-    if (Mode = "Command")
-    {
-        SBText := StrSplit(g_CurrentCommand, " | ")[2]
+    Switch (Mode) {
+        Case "Command": SBText := StrSplit(g_CurrentCommand, " | ")[2]
+        Case "Hint": {
+            Random, index, 1, g_Hints.Count()
+            SBText := g_Hints[index]
+        }
+        Default: SBText := Mode
     }
-    else if (Mode = "Hint")
-    {
-        Random, index, 1, g_Hints.Length()
-        SBText := g_Hints[index]
-    }
-    else
-    {
-        SBText := Mode
-    }
-    SB_SetText(SBText, 1)
-    SB_SetText("RC: "g_RunCount, 2)
+    SB_SetText(SBText, 1), SB_SetText("RC: "g_RunCount, 2)
 }
 
 RunCurrentCommand()
@@ -748,9 +702,9 @@ ParseArg()
 
 FuzzyMatch(Haystack, Needle)
 {
-    Needle := StrReplace(Needle, "+", "\+")                             ; for Eval (preceded by a backslash to be seen as literal)
-    Needle := StrReplace(Needle, "*", "\*")                             ; for Eval (preceded by a backslash to be seen as literal)
-    Needle := StrReplace(Needle, " ", ".*")                             ; RegExMatch should able to search with space as & separater, but not sure, use this way for now
+    Needle := StrReplace(Needle, "+", "\+")                             ; For Eval (preceded by a backslash to be seen as literal)
+    Needle := StrReplace(Needle, "*", "\*")                             ; For Eval (eg. 25+5 or 6*5 will show Eval result instead of match file with "30")
+    Needle := StrReplace(Needle, " ", ".*")                             ; 空格直接替换为匹配任意字符
     Return RegExMatch(Haystack, "imS)" Needle)
 }
 
@@ -1653,22 +1607,19 @@ MuteVolume()
     SoundSet, MUTE
 }
 
-Google()
-{
+Google() {
     Global
     word := Arg = "" ? clipboard : Arg
     Run, https://www.google.com/search?q=%word%&newwindow=1
 }
 
-Bing()
-{
+Bing() {
     Global
     word := Arg = "" ? clipboard : Arg
     Run, http://cn.bing.com/search?q=%word%
 }
 
-Everything()
-{
+Everything() {
     Run, %g_Everything% -s "%Arg%",, UseErrorLevel
     if ErrorLevel
         MsgBox, % "Everything software not found.`n`nPlease check ALTRun setting and Everything program file."
@@ -1676,153 +1627,60 @@ Everything()
 
 ;=======================================================================
 ; Eval - Calculate a math expression
+; 计算数学表达式，支持 +, -, *, /, ^ (或 **), 和括号 ()
+; 如果输入包含非法字符，返回 0
 ;=======================================================================
-Eval(x) {                              ; non-recursive PRE/POST PROCESSING: I/O forms, numbers, ops, ";"
-    Local FORM, FormF, FormI, i, W, y, y1, y2, y3, y4
-    FormI := A_FormatInteger, FormF := A_FormatFloat
- 
-    SetFormat Integer, D                ; decimal intermediate results!
-    RegExMatch(x, "\$(b|h|x|)(\d*[eEgG]?)", y)
-    FORM := y1, W := y2                 ; HeX, Bin, .{digits} output format
-    SetFormat FLOAT, 0.16e              ; Full intermediate float precision
-    StringReplace x, x, %y%             ; remove $..
-    Loop
-       If RegExMatch(x, "i)(.*)(0x[a-f\d]*)(.*)", y)
-          x := y1 . y2+0 . y3           ; convert hex numbers to decimal
-       Else Break
-    x := RegExReplace(x,"(^|[^.\d])(\d+)(e|E)","$1$2.$3")                ; add missing '.' before E (1e3 -> 1.e3)
-    x := RegExReplace(x,"(\d*\.\d*|\d)([eE][+-]?\d+)","‘$1$2’")          ; literal scientific numbers between ‘ and ’ chars
- 
-    StringReplace x, x,`%, \, All            ; %  -> \ (= MOD)
-    StringReplace x, x, **,@, All            ; ** -> @ for easier process
-    StringReplace x, x, ^,@, All             ; ^ -> @ for easier process
-    StringReplace x, x, +, ±, All            ; ± is addition
-    x := RegExReplace(x,"(‘[^’]*)±","$1+")   ; ...not inside literal numbers
-    StringReplace x, x, -, ¬, All            ; ¬ is subtraction
-    x := RegExReplace(x,"(‘[^’]*)¬","$1-")   ; ...not inside literal numbers
- 
-    Loop Parse, x, `;
-       y := Eval1(A_LoopField)          ; work on pre-processed sub expressions
-                                        ; return result of last sub-expression (numeric)
-    If (FORM="h" or FORM="x") {
-       SetFormat Integer, Hex           ; convert output to hex
-       y := Round(y) + 0
+Eval(expression) {
+    StringReplace, expression, expression, %A_Space%, , All             ; 移除所有空格
+
+    If !RegExMatch(expression, "^[\d+\-*/^().]*$") {                    ; 检查非法字符（只允许数字、运算符、括号、小数点）
+        Return 0
     }
-    Else {
-       W := W="" ? "0.6g" : "0." . W    ; Set output form, Default = 6 decimal places
-       SetFormat FLOAT, %W%
-       y += 0.0
+
+    While RegExMatch(expression, "\(([^()]*)\)", match) {               ; 递归处理括号
+        result := EvalSimple(match1) ; 计算括号内的内容
+        StringReplace, expression, expression, %match%, %result%, All
     }
-    SetFormat Integer, %FormI%          ; restore original formats
-    SetFormat FLOAT,   %FormF%
-    Return y
- }
- 
- Eval1(x) {                             ; recursive PREPROCESSING of :=, vars, (..) [decimal, no ";"]
-    Local i, y, y1, y2, y3
-    If RegExMatch(x, "(\S*?)\((.*?)\)\s*:=\s*(.*)", y) {                 ; save function definition: f(x) := expr
-       f%y1%__X := y2, f%y1%__F := y3
-       Return
+
+    Return EvalSimple(expression)    ; 计算最终无括号表达式
+}
+
+EvalSimple(expression) {                                                ; 计算不含括号的简单数学表达式
+    While RegExMatch(expression, "(-?\d+(\.\d+)?)([\^])(-?\d+(\.\d+)?)", match) { ; 处理幂运算
+        base := match1, exponent := match4
+        result := base ** exponent ; 执行幂运算
+        StringReplace, expression, expression, %match%, %result%, All
     }
-                                        ; execute leftmost ":=" operator of a := b := ...
-    If RegExMatch(x, "(\S*?)\s*:=\s*(.*)", y) {
-       y := "x" . y1                    ; user vars internally start with x to avoid name conflicts
-       Return %y% := Eval1(y2)
+
+    While RegExMatch(expression, "(-?\d+(\.\d+)?)([\*][\*])(-?\d+(\.\d+)?)", match) { ; 支持 ** 作为幂运算符的替代
+        base := match1, exponent := match4
+        result := base ** exponent
+        StringReplace, expression, expression, %match%, %result%, All
     }
-                                        ; here: no variable to the left of last ":="
-    x := RegExReplace(x,"([\)’.\w]\s+|[\)’])([a-z_A-Z]+)","$1«$2»")  ; op -> «op»
- 
-    x := RegExReplace(x,"\s+")          ; remove spaces, tabs, newlines
- 
-    x := RegExReplace(x,"([a-z_A-Z]\w*)\(","'$1'(") ; func( -> 'func'( to avoid atan|tan conflicts
- 
-    x := RegExReplace(x,"([a-z_A-Z]\w*)([^\w'»’]|$)","%x$1%$2") ; VAR -> %xVAR%
-    x := RegExReplace(x,"(‘[^’]*)%x[eE]%","$1e") ; in numbers %xe% -> e
-    x := RegExReplace(x,"‘|’")          ; no more need for number markers
-    Transform x, Deref, %x%             ; dereference all right-hand-side %var%-s
- 
-    Loop {                              ; find last innermost (..)
-       If RegExMatch(x, "(.*)\(([^\(\)]*)\)(.*)", y)
-          x := y1 . Eval@(y2) . y3      ; replace (x) with value of x
-       Else Break
+
+    While RegExMatch(expression, "(-?\d+(\.\d+)?)([*/])(-?\d+(\.\d+)?)", match) { ; 处理乘除运算
+        operand1 := match1, operator := match3, operand2 := match4
+        result := (operator = "*") ? operand1 * operand2 : operand1 / operand2
+        StringReplace, expression, expression, %match%, %result%, All
     }
-    Return Eval@(x)
- }
- 
- Eval@(x) {                             ; EVALUATE PRE-PROCESSED EXPRESSIONS [decimal, NO space, vars, (..), ";", ":="]
-    Local i, y, y1, y2, y3, y4
- 
-    If x is number                      ; no more operators left
-       Return x
-                                        ; execute rightmost ?,: operator
-    RegExMatch(x, "(.*)(\?|:)(.*)", y)
-    IfEqual y2,?,  Return Eval@(y1) ? Eval@(y3) : ""
-    IfEqual y2,:,  Return ((y := Eval@(y1)) = "" ? Eval@(y3) : y)
- 
-    StringGetPos i, x, ||, R            ; execute rightmost || operator
-    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) || Eval@(SubStr(x,3+i))
-    StringGetPos i, x, &&, R            ; execute rightmost && operator
-    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) && Eval@(SubStr(x,3+i))
-                                        ; execute rightmost =, <> operator
-    RegExMatch(x, "(.*)(?<![\<\>])(\<\>|=)(.*)", y)
-    IfEqual y2,=,  Return Eval@(y1) =  Eval@(y3)
-    IfEqual y2,<>, Return Eval@(y1) <> Eval@(y3)
-                                        ; execute rightmost <,>,<=,>= operator
-    RegExMatch(x, "(.*)(?<![\<\>])(\<=?|\>=?)(?![\<\>])(.*)", y)
-    IfEqual y2,<,  Return Eval@(y1) <  Eval@(y3)
-    IfEqual y2,>,  Return Eval@(y1) >  Eval@(y3)
-    IfEqual y2,<=, Return Eval@(y1) <= Eval@(y3)
-    IfEqual y2,>=, Return Eval@(y1) >= Eval@(y3)
-                                        ; execute rightmost user operator (low precedence)
-    RegExMatch(x, "i)(.*)«(.*?)»(.*)", y)
-    If IsFunc(y2)
-       Return %y2%(Eval@(y1),Eval@(y3)) ; predefined relational ops
- 
-    StringGetPos i, x, |, R             ; execute rightmost | operator
-    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) | Eval@(SubStr(x,2+i))
-    StringGetPos i, x, ^, R             ; execute rightmost ^ operator
-    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) ^ Eval@(SubStr(x,2+i))
-    StringGetPos i, x, &, R             ; execute rightmost & operator
-    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) & Eval@(SubStr(x,2+i))
-                                        ; execute rightmost <<, >> operator
-    RegExMatch(x, "(.*)(\<\<|\>\>)(.*)", y)
-    IfEqual y2,<<, Return Eval@(y1) << Eval@(y3)
-    IfEqual y2,>>, Return Eval@(y1) >> Eval@(y3)
-                                        ; execute rightmost +- (not unary) operator
-    RegExMatch(x, "(.*[^!\~±¬\@\*/\\])(±|¬)(.*)", y) ; lower precedence ops already handled
-    IfEqual y2,±,  Return Eval@(y1) + Eval@(y3)
-    IfEqual y2,¬,  Return Eval@(y1) - Eval@(y3)
-                                        ; execute rightmost */% operator
-    RegExMatch(x, "(.*)(\*|/|\\)(.*)", y)
-    IfEqual y2,*,  Return Eval@(y1) * Eval@(y3)
-    IfEqual y2,/,  Return Eval@(y1) / Eval@(y3)
-    IfEqual y2,\,  Return Mod(Eval@(y1),Eval@(y3))
-                                        ; execute rightmost power
-    StringGetPos i, x, @, R
-    IfGreaterOrEqual i,0, Return Eval@(SubStr(x,1,i)) ** Eval@(SubStr(x,2+i))
-                                        ; execute rightmost function, unary operator
-    If !RegExMatch(x,"(.*)(!|±|¬|~|'(.*)')(.*)", y)
-       Return x                         ; no more function (y1 <> "" only at multiple unaries: --+-)
-    IfEqual y2,!,Return Eval@(y1 . !y4) ; unary !
-    IfEqual y2,±,Return Eval@(y1 .  y4) ; unary +
-    IfEqual y2,¬,Return Eval@(y1 . -y4) ; unary - (they behave like functions)
-    IfEqual y2,~,Return Eval@(y1 . ~y4) ; unary ~
-    If IsFunc(y3)
-       Return Eval@(y1 . %y3%(y4))      ; built-in and predefined functions(y4)
-    Return Eval@(y1 . Eval1(RegExReplace(f%y3%__F, f%y3%__X, y4))) ; LAST: user defined functions
- }
+
+    While RegExMatch(expression, "(-?\d+(\.\d+)?)([+\-])(-?\d+(\.\d+)?)", match) { ; 处理加减运算
+        operand1 := match1, operator := match3, operand2 := match4
+        result := (operator = "+") ? operand1 + operand2 : operand1 - operand2
+        StringReplace, expression, expression, %match%, %result%, All
+    }
+
+    Return expression    ; 返回最终结果
+}
 
 Class Logger                                                            ; Logger library
 {
-    __New(filename)
-    {
+    __New(filename) {
         this.filename := filename
     }
 
-    Debug(Msg)
-    {
-        if (g_Logging) 
-        {
+    Debug(Msg) {
+        if (g_Logging) {
             FileAppend, % "[" A_Now "] " Msg "`n", % this.filename
         }
     }
