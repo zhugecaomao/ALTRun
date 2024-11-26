@@ -3,7 +3,7 @@ ALTRun - An effective launcher for Windows, an AutoHotkey open-source project.
 It provides a streamlined and efficient way to find anything on your system and launch any application in your way. 
 
 1. Pure portable software, not write anything into Registry.
-2. Small size (< 100KB), low resource usage (< 5MB RAM), and high performance.
+2. Small file size (< 100KB), low resource usage (< 10MB RAM), and high performance.
 3. User-friendly interface, highly customizable from the Options menu
 4. SendTo Menu allows you to create commands quickly and easily.
 5. Multi-Hotkey setup allowed.
