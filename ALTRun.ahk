@@ -64,7 +64,7 @@ Global g_IniFile := A_ScriptDir "\" A_ComputerName ".ini"
 , g_ShowHint      := 1   , g_GlobalHotkey2 := "!R"
 , g_FontSize      := 10  , g_TotalCMDDir     := "^g"
 , g_WinWidth      := 900 , g_ExplorerDir     := "^e"
-, g_WinHeight     := 330 , g_Background      := "Default"
+, g_WinHeight     := 330 , g_Background      := "DEFAULT"
 , g_ShowRunCount  := 1   , g_ShowStatusBar   := 1
 , g_ShowDirName   := 1
 , g_Hotkey1       := "^s", g_Trigger1        := "Everything"
@@ -183,6 +183,7 @@ Gui, Main:Add, StatusBar, % "Hidden" !g_ShowStatusBar " gSBActions",
 Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
 
 SB_SetParts(g_WinWidth-90*g_ShowRunCount)
+SB_SetIcon("shell32.dll",-16752, 2)
 Loop, 4
 {
     LV_ModifyCol(A_Index, StrSplit(g_ColWidth, ",")[A_Index])
@@ -567,57 +568,45 @@ LVContextMenu()                                                         ; ListVi
     }
 }
 
-SBActions()
-{
-    if (A_GuiEvent = "RightClick" and A_EventInfo = 1)
-    {
+SBActions() {
+    if (A_GuiEvent = "RightClick" and A_EventInfo = 1) {
         Menu, SB_ContextMenu, Add, Copy, SBContextMenu
         Menu, SB_ContextMenu, Icon, Copy, Shell32.dll, -243
         Menu, SB_ContextMenu, Show
-    }
-    else if (A_GuiEvent = "Normal" and A_EventInfo = 2)
-    {
+    } else if (A_EventInfo = 2) ; Apply for normal click and rightclick
         MsgBox, 64, %g_WinName%, Congraduations! You have run shortcut %g_RunCount% times by now!
-    }
 }
 
-SBContextMenu()
-{
+SBContextMenu() {
     StatusBarGetText, A_Clipboard, 1, %g_WinName%
 }
 
-TrayMenu()
-{
-    If ( A_ThisMenuItem = "Script Info" )
+TrayMenu() {
+    If (A_ThisMenuItem = "Script Info" )
         ListLines
-    If ( A_ThisMenuItem = "AHK Manual" )
+    If (A_ThisMenuItem = "AHK Manual" )
         Run, https://www.autohotkey.com/docs/v1/
 }
 
-MainGuiEscape()
-{
+MainGuiEscape() {
     (g_EscClearInput and g_Input) ? ClearInput() : MainGuiClose()
 }
 
-MainGuiClose()                                                          ; If GuiClose is a function, the GUI is hidden by default
-{
+MainGuiClose() {                                                        ; If GuiClose is a function, the GUI is hidden by default
     (!g_KeepInput) ? ClearInput()
     Gui, Main:Hide
-    SetStatusBar("Hint")                                                ; Update StatusBar hint information after GUI hide (move code from Activate() to here for better performance)
+    SetStatusBar("Hint")                                                ; Update StatusBar hint information after GUI hide
 }
 
-Exit()
-{
+Exit() {
     ExitApp
 }
 
-Reload()
-{
+Reload() {
     Reload
 }
 
-Test()
-{
+Test() {
     t := A_TickCount
     Loop 50
     {
@@ -635,29 +624,28 @@ Test()
     t := A_TickCount - t
     Log.Debug("mock test search ' " chr(chr1) " " chr(chr2) " " chr(chr3) " ' 50 times, use time = " t)
     MsgBox % "Search '" chr(chr1) " " chr(chr2) " " chr(chr3) "' use Time =  " t
-    Return
 }
 
-UserCommandList()
-{
-    if (g_Editor != "")
-    {
+UserCommandList() {
+    if (g_Editor = "notepad.exe")
+        Run, % g_Editor " " g_IniFile
+    Else
         Run, % g_Editor " /m [" SEC_USERCMD "] """ g_IniFile """"       ; /m Match text
-    }
-    else
-    {
-        Run, % g_IniFile
-    }
 }
 
-ClearInput()
-{
+EditCurrentCommand() {
+    if (g_Editor = "notepad.exe")
+        Run, % g_Editor " " g_IniFile
+    else
+        Run, % g_Editor " /m " """" g_CurrentCommand "=""" " """ g_IniFile """" ; /m Match text, locate to current command, add = at end to filter out [history] commands
+}
+
+ClearInput() {
     GuiControl, Main:Text, g_Input,
     GuiControl, Main:Focus, g_Input
 }
 
-SetStatusBar(Mode := "Command")                                         ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
-{
+SetStatusBar(Mode := "Command") {                                       ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
     Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
     Switch (Mode) {
         Case "Command": SBText := StrSplit(g_CurrentCommand, " | ")[2]
@@ -667,21 +655,18 @@ SetStatusBar(Mode := "Command")                                         ; Set St
         }
         Default: SBText := Mode
     }
-    SB_SetText(SBText, 1), SB_SetText("RC: "g_RunCount, 2)
+    SB_SetText(SBText, 1), SB_SetText(g_RunCount, 2)
 }
 
-RunCurrentCommand()
-{
+RunCurrentCommand() {
     RunCommand(g_CurrentCommand)
 }
 
-ParseArg()
-{
+ParseArg() {
     Global
     commandPrefix := SubStr(g_Input, 1, 1)
 
-    if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">")
-    {
+    if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">") {
         Arg := SubStr(g_Input, 2)                                       ; 直接取命令为参数
         Return
     }
@@ -700,16 +685,14 @@ ParseArg()
     }
 }
 
-FuzzyMatch(Haystack, Needle)
-{
+FuzzyMatch(Haystack, Needle) {
     Needle := StrReplace(Needle, "+", "\+")                             ; For Eval (preceded by a backslash to be seen as literal)
     Needle := StrReplace(Needle, "*", "\*")                             ; For Eval (eg. 25+5 or 6*5 will show Eval result instead of match file with "30")
     Needle := StrReplace(Needle, " ", ".*")                             ; 空格直接替换为匹配任意字符
     Return RegExMatch(Haystack, "imS)" Needle)
 }
 
-UpdateRank(originCmd, showRank := false, inc := 1)
-{
+UpdateRank(originCmd, showRank := false, inc := 1) {
     RANKSEC := SEC_DFTCMD "|" SEC_USERCMD "|" SEC_INDEX
     Loop Parse, RANKSEC, |                                              ; Update Rank for related sections
     {
@@ -727,32 +710,25 @@ UpdateRank(originCmd, showRank := false, inc := 1)
 
         IniWrite, %Rank%, %g_IniFile%, %A_LoopField%, %originCmd%       ; Update new Rank for originCmd
 
-        if (showRank)
-        {
-            SetStatusBar("Rank for current command : " Rank)
-        }
+        showRank ? SetStatusBar("Rank for current command : " Rank)
     }
     LoadCommands()                                                      ; New rank will take effect in real-time by LoadCommands again
 }
 
-RunSelectedCommand()
-{
+RunSelectedCommand() {
     index := SubStr(A_ThisHotkey, 0, 1)
     RunCommand(g_CurrentCommandList[index])
 }
 
-RankUp()
-{
+RankUp() {
     UpdateRank(g_CurrentCommand, true)
 }
 
-RankDown()
-{
+RankDown() {
     UpdateRank(g_CurrentCommand, true, -1)
 }
 
-LoadCommands()
-{
+LoadCommands() {
     g_Commands  := Object()                                             ; Clear g_Commands list
     g_Fallback  := Object()                                             ; Clear g_Fallback list
     RankString  := ""
@@ -773,8 +749,7 @@ LoadCommands()
     }
     
     IniRead, FALLBACKCMDSEC, %g_IniFile%, %SEC_FALLBACK%                ;read FALLBACK section, initialize it if section not exist
-    if (FALLBACKCMDSEC = "")
-    {
+    if (FALLBACKCMDSEC = "") {
         IniWrite, 
         (Ltrim
         ;===========================================================
@@ -789,34 +764,25 @@ LoadCommands()
         ), %g_IniFile%, %SEC_FALLBACK%
         IniRead, FALLBACKCMDSEC, %g_IniFile%, %SEC_FALLBACK%
     }
-    Loop Parse, FALLBACKCMDSEC, `n
+    Loop Parse, FALLBACKCMDSEC, `n                                      ; Get and verify each FBCommand (Rank not necessary) and push it to g_Fallback
     {
-        if (IsFunc(StrSplit(A_LoopField, " | ")[2]))                    ;read each line, get each FBCommand (Rank not necessary)
-        {
-            g_Fallback.Push(A_LoopField)
-        }
+        IsFunc(StrSplit(A_LoopField, " | ")[2]) ? g_Fallback.Push(A_LoopField)
     }
     Return Log.Debug("Loading commands list...OK")
 }
 
-LoadHistory()
-{
-    if (g_SaveHistory)
-    {
+LoadHistory() {
+    if (g_SaveHistory) {
         Loop %g_HistoryLen%
         {
             IniRead, History, %g_IniFile%, %SEC_HISTORY%, %A_Index%
             g_History.Push(History)
         }
-    }
-    else
-    {
+    } else
         IniDelete, %g_IniFile%, %SEC_HISTORY%
-    }
 }
 
-GetCmdOutput(command)
-{
+GetCmdOutput(command) {
     TempFile   := A_Temp "\ALTRun.stdout"
     FullCommand = %ComSpec% /C "%command% > %TempFile%"
 
@@ -826,30 +792,25 @@ GetCmdOutput(command)
     Return RTrim(Result, "`r`n")                                        ; Remove result rightmost/last "`r`n"
 }
 
-GetRunResult(command)                                                   ;运行CMD并取返回结果方式2
-{
+GetRunResult(command) {                                                 ;运行CMD并取返回结果方式2
     shell := ComObjCreate("WScript.Shell")                              ; WshShell object: http://msdn.microsoft.com/en-us/library/aew9yb99
     exec := shell.Exec(ComSpec " /C " command)                          ; Execute a single command via cmd.exe
     Return exec.StdOut.ReadAll()                                        ; Read and Return the command's output
 }
 
-RunWithCmd(command)
-{
+RunWithCmd(command) {
     Run, % ComSpec " /C " command " & pause"
 }
 
-OpenDir(Path, OpenContainer := False)
-{
+OpenDir(Path, OpenContainer := False) {
     Path := AbsPath(Path)
 
-    if (OpenContainer)
-    {
+    if (OpenContainer) {
         if (g_FileMgr = "Explorer.exe")
             Run, %g_FileMgr% /select`, "%Path%",, UseErrorLevel
         else
-            Run, %g_FileMgr% " /P " "%Path%",, UseErrorLevel             ; /P Parent folder
-    }
-    else
+            Run, %g_FileMgr% " /P " "%Path%",, UseErrorLevel            ; /P Parent folder
+    } else
         Run, %g_FileMgr% "%Path%",, UseErrorLevel
 
     if ErrorLevel
@@ -858,38 +819,21 @@ OpenDir(Path, OpenContainer := False)
     Log.Debug("Open dir="Path)
 }
 
-OpenCurrentFileDir()
-{
+OpenCurrentFileDir() {
     OpenDir(StrSplit(g_CurrentCommand, " | ")[2], True)
 }
 
-EditCurrentCommand()
-{
-    if (g_Editor != "")
-    {
-        Run, % g_Editor " /m " """" g_CurrentCommand "=""" " """ g_IniFile """" ; /m Match text, locate to current command, add = at end to filter out [history] commands
-    }
-    else
-    {
-        Run, % g_IniFile
-    }
-}
-
-WM_ACTIVATE(wParam, lParam)                                             ; Close on lose focus
-{
+WM_ACTIVATE(wParam, lParam) {                                           ; Close on lose focus
     if (wParam > 0)                                                     ; wParam > 0: window being activated
         Return
-
     else if (wParam <= 0 && WinExist(g_WinName) && !g_UseDisplay)       ; wParam <= 0: window being deactivated (lost focus)
         MainGuiClose()
 }
 
-UpdateSendTo(create := true)                                            ; the lnk in SendTo must point to a exe
-{
+UpdateSendTo(create := true) {                                          ; the lnk in SendTo must point to a exe
     lnkPath := StrReplace(A_StartMenu, "\Start Menu", "\SendTo\") "ALTRun.lnk"
 
-    if (!create)
-    {
+    if (!create) {
         FileDelete, %lnkPath%
         Return "Disabled"
     }
@@ -903,12 +847,10 @@ UpdateSendTo(create := true)                                            ; the ln
     Return "OK"
 }
 
-UpdateStartup(create := true)
-{
+UpdateStartup(create := true) {
     lnkPath := A_Startup "\ALTRun.lnk"
 
-    if (!create)
-    {
+    if (!create) {
         FileDelete, %lnkPath%
         Return "Disabled"
     }
@@ -918,12 +860,10 @@ UpdateStartup(create := true)
     Return "OK"
 }
 
-UpdateStartMenu(create := true)
-{
+UpdateStartMenu(create := true) {
     lnkPath := A_Programs "\ALTRun.lnk"
 
-    if (!create)
-    {
+    if (!create) {
         FileDelete, %lnkPath%
         Return "Disabled"
     }
@@ -933,8 +873,7 @@ UpdateStartMenu(create := true)
     Return "OK"
 }
 
-Reindex()                                                               ; Re-create Index section
-{
+Reindex() {                                                             ; Re-create Index section
     IniDelete, %g_IniFile%, %SEC_INDEX%
     for dirIndex, dir in StrSplit(g_IndexDir, ",")
     {
@@ -959,16 +898,14 @@ Reindex()                                                               ; Re-cre
     LoadCommands()
 }
 
-Help()
-{
+Help() {
     Options(Arg, 6)                                                     ; Open Options window 7th tab (help tab)
 }
 
-Listary()                                                               ; Listary Dir QuickSwitch Function (快速更换保存/打开对话框路径)
-{
+Listary() {                                                             ; Listary Dir QuickSwitch Function (快速更换保存/打开对话框路径)
     Log.Debug("Listary function starting...")
 
-    Loop Parse, g_FileMgrID, `,                                       ; File Manager Class, default is Windows Explorer & Total Commander
+    Loop Parse, g_FileMgrID, `,                                         ; File Manager Class, default is Windows Explorer & Total Commander
         GroupAdd, FileMgrID, %A_LoopField%
 
     Loop Parse, g_DialogWin, `,                                         ; 需要QuickSwith的窗口, 包括打开/保存对话框等
@@ -977,8 +914,7 @@ Listary()                                                               ; Listar
     Loop Parse, g_ExcludeWin, `,                                        ; 排除特定窗口,避免被 Auto-QuickSwitch 影响
         GroupAdd, ExcludeWin, %A_LoopField%
 
-    if (g_AutoSwitchDir)
-    {
+    if (g_AutoSwitchDir) {
         Log.Debug("Listary Auto-QuickSwitch Enabled.")
         Loop
         {
@@ -1002,8 +938,7 @@ Listary()                                                               ; Listar
     Hotkey, IfWinActive
 }
 
-LocateTC()                                                              ; Get TC current dir path, and change dialog box path to it
-{
+LocateTC() {                                                            ; Get TC current dir path, and change dialog box path to it
     ClipSaved := ClipboardAll 
     Clipboard :=
     SendMessage 1075, 2029, 0, , ahk_class TTOTAL_CMD
@@ -1015,8 +950,7 @@ LocateTC()                                                              ; Get TC
     ChangePath(OutDir)
 }
 
-LocateExplorer()                                                        ; Get Explorer current dir path, and change dialog box path to it
-{
+LocateExplorer() {                                                      ; Get Explorer current dir path, and change dialog box path to it
     Loop,9
     {
         ControlGetText, Dir, ToolbarWindow32%A_Index%, ahk_class CabinetWClass
@@ -1032,8 +966,7 @@ LocateExplorer()                                                        ; Get Ex
     ChangePath(Dir)
 }
 
-ChangePath(Dir)
-{
+ChangePath(Dir) {
     ControlGetText, w_Edit1Text, Edit1, A
     ControlClick, Edit1, A
     ControlSetText, Edit1, %Dir%, A
@@ -1043,8 +976,7 @@ ChangePath(Dir)
     Log.Debug("Listary change path=" Dir)
 }
 
-CmdMgr(Path := "")                                                      ; 命令管理窗口
-{
+CmdMgr(Path := "") {                                                    ; 命令管理窗口
     Global
     Log.Debug("Starting Command Manager... Args=" Path)
 
@@ -1055,8 +987,7 @@ CmdMgr(Path := "")                                                      ; 命令
     else                                                                ; From command "New Command" or GUI context menu "New Command"
         _Desc := Arg
     
-    if (fileExt = "lnk" && g_SendToGetLnk)
-    {
+    if (fileExt = "lnk" && g_SendToGetLnk) {
         FileGetShortcut, %Path%, Path, fileDir, fileArg, _Desc
         Path .= " " fileArg
     }
@@ -1077,8 +1008,7 @@ CmdMgr(Path := "")                                                      ; 命令
     Gui, CmdMgr:Show, AutoSize, Commander Manager
 }
 
-SelectCmdPath()
-{
+SelectCmdPath() {
     Global
     Gui, CmdMgr:+OwnDialogs                                             ; Make open dialog Modal
     Gui, CmdMgr:Submit, NoHide
@@ -1091,8 +1021,7 @@ SelectCmdPath()
         GuiControl,, _Path, %_Path%
 }
 
-CmdMgrButtonOK()
-{
+CmdMgrButtonOK() {
     Global
     Gui, CmdMgr:Submit
     _Desc := _Desc ? "| " _Desc : _Desc
@@ -1101,9 +1030,7 @@ CmdMgrButtonOK()
     {
         MsgBox, Please input correct command path!
         Return
-    }
-    else
-    {
+    } else {
         IniWrite, 1, %g_IniFile%, %SEC_USERCMD%, %_Type% | %_Path% %_Desc% ; initial rank = 1
         if (!ErrorLevel)
             MsgBox,, Command Manager, Command added successfully!
@@ -1111,18 +1038,15 @@ CmdMgrButtonOK()
     LoadCommands()
 }
 
-CmdMgrGuiEscape()
-{
+CmdMgrGuiEscape() {
     Gui, CmdMgr:Destroy
 }
 
-CmdMgrButtonCancel()
-{
+CmdMgrButtonCancel() {
     Gui, CmdMgr:Destroy
 }
 
-CmdMgrGuiClose()
-{
+CmdMgrGuiClose() {
     Gui, CmdMgr:Destroy
 }
 
@@ -1257,7 +1181,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp-150 yp+40, Background Color:
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_WinColor, %g_WinColor%||
     Gui, Setting:Add, Text, xp-150 yp+40, Background Picture:
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_Background, %g_Background%||NO PICTURE|DEFAULT PICTURE|C:\Path\ExamplePicture.jpg
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_Background, %g_Background%||NO PICTURE|DEFAULT|C:\Path\ExamplePicture.jpg
 
     Gui, Setting:Tab, 4 ; Hotkey Tab
     Gui, Setting:Add, GroupBox, w500 h120, Activate
@@ -1392,38 +1316,21 @@ LOADCONFIG(Arg)                                                         ; 加载
     if (Arg = "config" or Arg = "initialize" or Arg = "all")
     {
         For key, description in KEYS_CONFIG                              ; Read config section
-        {
             IniRead, g_%key%, %g_IniFile%, %SEC_CONFIG%, %key%, % g_%key%
-        }
     
         Loop Parse, KEYLIST_CONFIG, `,                                  ; Read config section
-        {
             IniRead, g_%A_LoopField%, %g_IniFile%, %SEC_CONFIG%, %A_LoopField%, % g_%A_LoopField%
-        }
 
         Loop Parse, KEYLIST_HOTKEY, `,                                  ; Read Hotkey section
-        {
             IniRead, g_%A_LoopField%, %g_IniFile%, %SEC_HOTKEY%, %A_LoopField%, % g_%A_LoopField%
-        }
 
         Loop Parse, KEYLIST_GUI, `,                                     ; Read GUI section
-        {
             IniRead, g_%A_LoopField%, %g_IniFile%, %SEC_GUI%, %A_LoopField%, % g_%A_LoopField%
-        }
         
-        if (g_Background = "Default")
-        {
-            Extract_BG(A_Temp "\ALTRun.jpg")
-            g_BGPicture := A_Temp "\ALTRun.jpg"
-        }
-        else
-        {
-            g_BGPicture := g_Background
-        }
+        g_BGPicture := (g_Background = "DEFAULT") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_Background
     }
 
-    if (Arg = "commands" or Arg = "initialize" or Arg = "all")          ; Built-in command initialize
-    {
+    if (Arg = "commands" or Arg = "initialize" or Arg = "all") {        ; Built-in command initialize
         IniRead, DFTCMDSEC, %g_IniFile%, %SEC_DFTCMD%
         if (DFTCMDSEC = "")
         {
@@ -1572,6 +1479,7 @@ Extract_BG(_Filename)
 	h := DllCall("CreateFile", "Ptr", &_Filename, "Uint", 0x40000000, "Uint", 0, "UInt", 0, "UInt", 4, "Uint", 0, "UInt", 0)
 	, DllCall("WriteFile", "Ptr", h, "Ptr", &Out_Data, "UInt", 3070, "UInt", 0, "UInt", 0)
 	, DllCall("CloseHandle", "Ptr", h)
+    Return _Filename
 }
 
 ;=============================================================
