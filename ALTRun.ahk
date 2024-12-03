@@ -21,40 +21,36 @@ Global Arg, Log:= New Logger(A_Temp "\ALTRun.log") ; Arg: 用来调用管道的�
 , g_Commands:= Object()                            ; 所有命令
 , g_Fallback:= Object()                            ; 当搜索无结果时使用的命令
 , g_History := Object()                            ; 历史命令
-, g_SEC     := {Config:"Config",Gui:"Gui",DftCMD:"DefaultCommand",UserCMD:"UserCommand",Fallback:"FallbackCommand",Hotkey:"Hotkey",History:"History",Index:"Index"}
+, g_SEC     := {Config:"Config",Gui:"Gui",DftCMD:"DefaultCommand",UserCMD:"UserCommand",Fallback:"FallbackCommand",Hotkey:"Hotkey",History:"History",Index:"Index",Usage:"Usage"}
 , CONFIG    := {AutoStartup:1,EnableSendTo:1,InStartMenu:1,ShowTrayIcon:1,HideOnLostFocus:1,AlwaysOnTop:1,EscClearInput:1,KeepInput:1,ShowIcon:1
             ,SendToGetLnk:1,SaveHistory:1,SaveLog:1,MatchPath:0,ShowGrid:0,ShowHdr:1,SmartRank:1,SmartMatch:1,MatchAny:1,ShowTheme:1,ShowHint:1
             ,ShowRunCount:1,ShowStatusBar:1,ShowBtnRun:1,ShowBtnOpt:1,ShowDirName:1,RunCount:0,HistoryLen:15,AutoSwitchDir:0,Editor:"Notepad.exe"
             ,FileMgr:"Explorer.exe",IndexDir:"A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location",IndexType:"*.lnk,*.exe",IndexExclude:"Uninstall *"
             ,Everything:"C:\Apps\Everything\Everything.exe",DialogWin:"ahk_class #32770",FileMgrID:"ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
             ,ExcludeWin:"ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"}
-, g_HOTKEY  := {GlobalHotkey1:"!Space",GlobalHotkey2:"!R",Hotkey1:"^o",Trigger1:"Options",Hotkey2:"",Trigger2:"",Hotkey3:"",Trigger3:"",TotalCMDDir:"^g",ExplorerDir:"^e"}
+, g_HOTKEY  := {GlobalHotkey1:"!Space",GlobalHotkey2:"!R",Hotkey1:"^o",Trigger1:"Options",Hotkey2:"",Trigger2:"---",Hotkey3:"",Trigger3:"---",TotalCMDDir:"^g",ExplorerDir:"^e"}
 , g_GUI     := {ListRows:9,ColWidth:"40,60,430,340",FontName:"Segoe UI",FontSize:10,FontColor:"Default",WinWidth:900,WinHeight:330,CtrlColor:"Default",WinColor:"Silver",Background:"DEFAULT"}
-, g_CHKLV   := {AutoStartup: "Launch on Windows startup", EnableSendTo: "Enable the SendTo menu", InStartMenu: "Enable the Start menu"
-            , ShowTrayIcon: "Show Tray Icon in the system taskbar", HideOnLostFocus: "Close window on losing focus", AlwaysOnTop: "Always stay on top"
-            , EscClearInput: "Press [ESC] to clear input, press again to close window (untick: close directly)", KeepInput: "Keep last input and search result on close"
-            , ShowIcon: "Show Icon of file, folder or apps in the command result list", SendToGetLnk: "Retrieve .lnk target on SendTo"
-            , SaveHistory: "Save History - Commands executed with arg", SaveLog: "Save Log - App running and debug information", MatchPath: "Match full path on search"
-            , ShowGrid: "Show Grid in command list", ShowHdr: "Show Header in command list", SmartRank: "Smart Rank - Auto adjust command priority (rank) based on use frequency"
-            , SmartMatch: "Smart Match - Fuzzy and Smart matching and filtering result", MatchAny: "Match from any position of the string"
-            , ShowTheme: "Show Theme - Software skin and background picture", ShowHint: "Show Hints and Tips in the bottom status bar"
-            , ShowRunCount: "Show RunCount - Command running times in the status bar", ShowStatusBar: "Show Status Bar"
-            , ShowBtnRun: "Show [Run] Button on main window", ShowBtnOpt: "Show [Options] Button on main window"
-            , ShowDirName: "Show Shorten Dir - Show dir name only instead of full path in the result"} ; Options - General - CheckedListview
-, g_RUNTIME := {Ini:A_ScriptDir "\" A_ComputerName ".ini",WinName:"ALTRun - Ver 2024.11",BGPic:"",WinHide:"",UseDisplay:"",UseFallback:""
-            ,CurrentCMD:"",Input:""} ;程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-, g_Hints   := ["It's better to show me by press hotkey (Default is ALT + Space)", "ALT + Space = Show / Hide window", "Alt + F4 = Exit"
-            , "Esc = Clear input / Close window", "Enter = Run current command", "Alt + No. = Run specific command", "Start with + = New Command"
-            , "Ctrl + No. = Select specific command", "F1 = ALTRun Help Index", "F2 = Open Setting Config window"
-            , "F3 = Edit current command (.ini) directly", "F4 = Edit user-defined commands (.ini) directly"
-            , "Arrow Up / Down = Move to Previous / Next command", "Ctrl+Q = Reload ALTRun", "Ctrl+'+' = Increase rank of current command"
-            , "Ctrl+'-' = Decrease rank of current command", "Ctrl+I = Reindex file search database", "Start with space = Search file by Everything"
-            , "Ctrl+D = Open current command dir with TC / File Explorer", "Command priority (rank) will auto adjust based on frequency"]
-
-, OneDrive, OneDriveConsumer, OneDriveCommercial                        ; OneDrive Personal/Business Environment Variables (due to #NoEnv)
-EnvGet, OneDrive, OneDrive
-EnvGet, OneDriveConsumer, OneDriveConsumer
-EnvGet, OneDriveCommercial, OneDriveCommercial
+, g_CHKLV   := {AutoStartup:"Launch on Windows startup",EnableSendTo:"Enable the SendTo menu",InStartMenu:"Enable the Start menu"
+            ,ShowTrayIcon:"Show Tray Icon in the system taskbar",HideOnLostFocus:"Close window on losing focus",AlwaysOnTop:"Always stay on top"
+            ,EscClearInput:"Press [ESC] to clear input, press again to close window (Untick:close directly)",KeepInput:"Keep last input and search result on close"
+            ,ShowIcon:"Show Icon of file, folder or apps in the command result list",SendToGetLnk:"Retrieve .lnk target on SendTo"
+            ,SaveHistory:"Save History - Commands executed with arg",SaveLog:"Save Log - App running and debug information",MatchPath:"Match full path on search"
+            ,ShowGrid:"Show Grid in command list",ShowHdr:"Show Header in command list",SmartRank:"Smart Rank - Auto adjust command priority (rank) based on use frequency"
+            ,SmartMatch:"Smart Match - Fuzzy and Smart matching and filtering result",MatchAny:"Match from any position of the string"
+            ,ShowTheme:"Show Theme - Software skin and background picture",ShowHint:"Show Hints and Tips in the bottom status bar"
+            ,ShowRunCount:"Show RunCount - Command running times in the status bar",ShowStatusBar:"Show Status Bar"
+            ,ShowBtnRun:"Show [Run] Button on main window",ShowBtnOpt:"Show [Options] Button on main window"
+            ,ShowDirName:"Show Shorten Dir - Show dir name only instead of full path in the result"} ; Options - General - CheckedListview
+, g_RUNTIME := {Ini:A_ScriptDir "\" A_ComputerName ".ini",WinName:"ALTRun - Ver 2024.12",BGPic:"",WinHide:"",UseDisplay:"",UseFallback:"" ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
+            ,CurrentCMD:"",Input:"",FuncList:"",OneDrive:EnvGet("OneDrive"),OneDriveConsumer:EnvGet("OneDriveConsumer")
+            ,OneDriveCommercial:EnvGet("OneDriveCommercial")} ; OneDrive Personal/Business Environment Variables (due to #NoEnv)
+, g_Hints   := ["It's better to show me by press hotkey (Default is ALT + Space)","ALT + Space = Show / Hide window","Alt + F4 = Exit"
+            ,"Esc = Clear input / Close window","Enter = Run current command","Alt + No. = Run specific command","Start with + = New Command"
+            ,"Ctrl + No. = Select specific command","F1 = ALTRun Help Index","F2 = Open Setting Config window"
+            ,"F3 = Edit current command (.ini) directly","F4 = Edit user-defined commands (.ini) directly"
+            ,"Arrow Up / Down = Move to Previous / Next command","Ctrl+Q = Reload ALTRun","Ctrl+'+' = Increase rank of current command"
+            ,"Ctrl+'-' = Decrease rank of current command","Ctrl+I = Reindex file search database","Start with space = Search file by Everything"
+            ,"Ctrl+D = Open current command dir with TC / File Explorer","Command priority (rank) will auto adjust based on frequency"]
 
 Log.Debug("///// ALTRun is starting /////")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
@@ -65,7 +61,7 @@ LOADCONFIG("initialize")                                                ; Load i
 ContextMenu := ["Run`tEnter,LVContextMenu,shell32.dll,-25","Locate`tCtrl+D,OpenCurrentFileDir,shell32.dll,-4","Copy,LVContextMenu,shell32.dll,-243"
     ,"","New,CmdMgr,shell32.dll,-1","Edit`tF3,EditCurrentCommand,shell32.dll,-16775","User Defined`tF4,UserCommandList,shell32.dll,-44"]
 
-For _, MenuItem in ContextMenu {
+For index, MenuItem in ContextMenu {
     If (MenuItem = "")
         Menu, LV_ContextMenu, Add
     Else {
@@ -367,9 +363,9 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
 
     Path := StrReplace(Path, "%Temp%", A_Temp)
     Path := StrReplace(Path, "%Desktop%", A_Desktop)
-    Path := StrReplace(Path, "%OneDrive%", OneDrive)                    ; Convert OneDrive to absolute path due to #NoEnv
-    Path := StrReplace(Path, "%OneDriveConsumer%", OneDriveConsumer)    ; Convert OneDrive to absolute path due to #NoEnv
-    Path := StrReplace(Path, "%OneDriveCommercial%", OneDriveCommercial) ; Convert OneDrive to absolute path due to #NoEnv
+    Path := StrReplace(Path, "%OneDrive%", g_RUNTIME.OneDrive)                     ; Convert OneDrive to absolute path due to #NoEnv
+    Path := StrReplace(Path, "%OneDriveConsumer%", g_RUNTIME.OneDriveConsumer)     ; Convert OneDrive to absolute path due to #NoEnv
+    Path := StrReplace(Path, "%OneDriveCommercial%", g_RUNTIME.OneDriveCommercial) ; Convert OneDrive to absolute path due to #NoEnv
     Return Path
 }
 
@@ -377,10 +373,16 @@ RelativePath(Path)                                                      ; Conver
 {
     Path := StrReplace(Path, A_Temp, "%Temp%")
     Path := StrReplace(Path, A_Desktop, "%Desktop%")
-    Path := StrReplace(Path, OneDrive, "%OneDrive%")
-    Path := StrReplace(Path, OneDriveConsumer, "%OneDriveConsumer%")
-    Path := StrReplace(Path, OneDriveCommercial, "%OneDriveCommercial%")
+    Path := StrReplace(Path, g_RUNTIME.OneDrive, "%OneDrive%")
+    Path := StrReplace(Path, g_RUNTIME.OneDriveConsumer, "%OneDriveConsumer%")
+    Path := StrReplace(Path, g_RUNTIME.OneDriveCommercial, "%OneDriveCommercial%")
     Return Path
+}
+
+EnvGet(EnvVar)
+{
+    EnvGet, OutputVar, %EnvVar%
+    Return OutputVar
 }
 
 RunCommand(originCmd)
@@ -406,7 +408,7 @@ RunCommand(originCmd)
         case "cmd":
             RunWithCmd(_Path)
         default:                                                        ; for type: url, control & all other un-defined type
-            Run, %_Path%
+            Run, %_Path%,, UseErrorLevel
     }
 
     if (CONFIG.SaveHistory) {
@@ -422,7 +424,7 @@ RunCommand(originCmd)
     CONFIG.RunCount++
     SetStatusBar()
     IniWrite, % CONFIG.RunCount, % g_RUNTIME.Ini, % g_SEC.Config, RunCount ; Record run counting
-    UpdateRank(originCmd)
+    (CONFIG.SmartRank) ? UpdateRank(originCmd)
     Log.Debug("Execute(" CONFIG.RunCount ")=" originCmd)
 }
 
@@ -498,7 +500,7 @@ LVContextMenu()                                                         ; ListVi
     g_RUNTIME.CurrentCMD := g_CurrentCommandList[focusedRow]            ; Get current command from focused row
     If (A_ThisMenuItem = "Run`tEnter")                                  ; User selected "Run`tEnter"
         RunCommand(g_RUNTIME.CurrentCMD)
-    else if (A_ThisMenuItem = "Copy Command")
+    else if (A_ThisMenuItem = "Copy")
         LV_GetText(Text, focusedRow, 3) ? (A_Clipboard := Text)         ; Get the text from the focusedRow's 3rd field.
 }
 
@@ -563,16 +565,16 @@ Test() {
 
 UserCommandList() {
     if (CONFIG.Editor = "notepad.exe")
-        Run, % CONFIG.Editor " " g_RUNTIME.Ini
+        Run, % CONFIG.Editor " " g_RUNTIME.Ini,, UseErrorLevel
     Else
-        Run, % CONFIG.Editor " /m [" g_SEC.UserCMD "] """ g_RUNTIME.Ini """" ; /m Match text
+        Run, % CONFIG.Editor " /m [" g_SEC.UserCMD "] """ g_RUNTIME.Ini """",, UseErrorLevel ; /m Match text
 }
 
 EditCurrentCommand() {
     if (CONFIG.Editor = "notepad.exe")
-        Run, % CONFIG.Editor " " g_RUNTIME.Ini
+        Run, % CONFIG.Editor " " g_RUNTIME.Ini,, UseErrorLevel
     else
-        Run, % CONFIG.Editor " /m " """" g_RUNTIME.CurrentCMD "=""" " """ g_RUNTIME.Ini """" ; /m Match text, locate to current command, add = at end to filter out [history] commands
+        Run, % CONFIG.Editor " /m " """" g_RUNTIME.CurrentCMD "=""" " """ g_RUNTIME.Ini """",, UseErrorLevel ; /m Match text, locate to current command, add = at end to filter out [history] commands
 }
 
 ClearInput() {
@@ -601,9 +603,9 @@ ParseArg() {
     Global
     commandPrefix := SubStr(g_RUNTIME.Input, 1, 1)
 
-    if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">") {
-        Arg := SubStr(g_RUNTIME.Input, 2)                               ; 直接取命令为参数
-        Return
+    if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">") 
+    {
+        Return Arg := SubStr(g_RUNTIME.Input, 2)                        ; 直接取命令为参数
     }
 
     if (InStr(g_RUNTIME.Input, " ") && !g_RUNTIME.UseFallback)          ; 用空格来判断参数
@@ -751,7 +753,7 @@ OpenDir(Path, OpenContainer := False) {
     if ErrorLevel
         MsgBox, 4096, % g_RUNTIME.WinName, Error found, error code : %A_LastError%
 
-    Log.Debug("Open dir="Path)
+    Log.Debug("Open Dir=" Path)
 }
 
 OpenCurrentFileDir() {
@@ -895,7 +897,7 @@ LocateExplorer() {                                                      ; Get Ex
     if (Dir="Computer")
         Dir:="C:\"
 
-    If (SubStr(Dir,2,2) != ":\")                                             ; then Explorer lists it as one of the library directories such as Music or Pictures
+    If (SubStr(Dir,2,2) != ":\")                                        ; then Explorer lists it as one of the library directories such as Music or Pictures
         Dir:=% "C:\Users\" A_UserName "\" Dir
 
     ChangePath(Dir)
@@ -963,12 +965,12 @@ CmdMgrButtonOK() {
 
     if (_Path = "")
     {
-        MsgBox, Please input correct command path!
+        MsgBox,64, Command Manager, Command Path is empty`, please input correct command path!
         Return
     } else {
         IniWrite, 1, % g_RUNTIME.Ini, % g_SEC.UserCMD, %_Type% | %_Path% %_Desc% ; initial rank = 1
         if (!ErrorLevel)
-            MsgBox,, Command Manager, Command added successfully!
+            MsgBox,64, Command Manager, %_Path% `n`nCommand added successfully!
     }
     LoadCommands()
 }
@@ -1010,7 +1012,7 @@ AppControl()                                                            ; AppCon
 RunPTTools()
 {
     IfWinNotExist, PT Tools
-        Run, %A_ScriptDir%\PTTools.ahk
+        Run, %A_ScriptDir%\PTTools.ahk,, UseErrorLevel
     else
         WinActivate
 }
@@ -1104,19 +1106,26 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp-150 yp+40, Font Name:
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_FontName, % g_GUI.FontName "||Default|Segoe UI Semibold|Microsoft Yahei"
     Gui, Setting:Add, Text, xp-150 yp+40, Font Size: 
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 r1 w330 vg_FontSize, % g_GUI.FontSize "||"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 r1 w330 vg_FontSize, % g_GUI.FontSize "||8|9|10|11|12"
     Gui, Setting:Add, Text, xp-150 yp+40, Font Color: 
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 r1 w330 vg_FontColor, % g_GUI.FontColor "||"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 r1 w330 vg_FontColor, % g_GUI.FontColor "||Default|Black|Blue|DCDCDC|000000"
     Gui, Setting:Add, Text, xp-150 yp+40, Window Width: 
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_WinWidth, % g_GUI.WinWidth "||"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_WinWidth, % g_GUI.WinWidth "||920"
     Gui, Setting:Add, Text, xp-150 yp+40, Window Height:
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_WinHeight, % g_GUI.WinHeight "||"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_WinHeight, % g_GUI.WinHeight "||313"
     Gui, Setting:Add, Text, xp-150 yp+40, Controls' Color:
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_CtrlColor, % g_GUI.CtrlColor "||"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_CtrlColor, % g_GUI.CtrlColor "||Default|White|Blue|202020|FFFFFF"
     Gui, Setting:Add, Text, xp-150 yp+40, Background Color:
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_WinColor, % g_GUI.WinColor "||"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_WinColor, % g_GUI.WinColor "||Default|White|Blue|202020|FFFFFF"
     Gui, Setting:Add, Text, xp-150 yp+40, Background Picture:
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_Background, % g_GUI.Background "||NO PICTURE|DEFAULT|C:\Path\ExamplePicture.jpg"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_Background, % g_GUI.Background "||NO PICTURE|DEFAULT|C:\Path\BackgroundPicture.jpg"
+
+    g_RUNTIME.FuncList := Object()
+    for index, element in g_Commands                                    ; Load all Func name, for Options window
+    {
+        splitResult := StrSplit(element, " | ")
+        g_RUNTIME.FuncList .= (splitResult[1] = "Func" and IsFunc(splitResult[2])) ? splitResult[2] "|" : ""
+    }
 
     Gui, Setting:Tab, 4 ; Hotkey Tab
     Gui, Setting:Add, GroupBox, w500 h120, Activate
@@ -1134,15 +1143,15 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp+10 yp+25 , Hotkey 1: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey1, % g_HOTKEY.Hotkey1
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, Edit, xp+110 yp-5 r1 w120 vg_Trigger1, % g_HOTKEY.Trigger1
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger1, % GetFuncList(g_HOTKEY.Trigger1)
     Gui, Setting:Add, Text, xp-360 yp+40 , Hotkey 2: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey2, % g_HOTKEY.Hotkey2
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, Edit, xp+110 yp-5 r1 w120 vg_Trigger2, % g_HOTKEY.Trigger2
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger2, % GetFuncList(g_HOTKEY.Trigger2)
     Gui, Setting:Add, Text, xp-360 yp+40 , Hotkey 3: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey3, % g_HOTKEY.Hotkey3
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, Edit, xp+110 yp-5 r1 w120 vg_Trigger3, % g_HOTKEY.Trigger3
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger3, % GetFuncList(g_HOTKEY.Trigger3)
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h125, Listary Quick-Switch
@@ -1212,9 +1221,20 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Log.Debug("Loading options window...Arg=" Arg ", ActTab=" ActTab)
 }
 
+GetFuncList(Trigger)
+{
+    g_RUNTIME.FuncList := ""
+    for index, element in g_Commands                                    ; Load all Func name, for Options window
+    {
+        splitResult := StrSplit(element, " | ")
+        g_RUNTIME.FuncList .= (splitResult[1] = "Func" and IsFunc(splitResult[2])) ? splitResult[2] "|" : ""
+    }
+    Return StrReplace("---|" g_RUNTIME.FuncList, Trigger, Trigger . "|")
+}
+
 ResetHotkey() {
-    GuiControl,, g_GlobalHotkey1, !Space
-    GuiControl,, g_GlobalHotkey2, !R
+    GuiControl, Setting:, g_GlobalHotkey1, !Space
+    GuiControl, Setting:, g_GlobalHotkey2, !R
 }
 
 SettingButtonOK() {
@@ -1411,24 +1431,19 @@ Extract_BG(_Filename)
 ;=============================================================
 ; Some Built-in Functions
 ;=============================================================
-CmdRun()
-{
+CmdRun() {
     RunWithCmd(Arg)
 }
 
-AhkRun()
-{
-    Global
-    Run, %Arg%
+AhkRun() {
+    Run, %Arg%,, UseErrorLevel
 }
 
-TurnMonitorOff()                                                        ; 关闭显示器:
-{
+TurnMonitorOff() {                                                      ; 关闭显示器:
     SendMessage, 0x112, 0xF170, 2,, Program Manager                     ; 0x112 is WM_SYSCOMMAND, 0xF170 is SC_MONITORPOWER, 使用 -1 代替 2 来打开显示器, 使用 1 代替 2 来激活显示器的节能模式.
 }
 
-EmptyRecycle()
-{
+EmptyRecycle() {
     MsgBox, 4, % g_RUNTIME.WinName, Do you really want to empty the Recycle Bin?
     IfMsgBox Yes
     {
@@ -1436,25 +1451,22 @@ EmptyRecycle()
     }
 }
 
-MuteVolume()
-{
+MuteVolume() {
     SoundSet, MUTE
 }
 
 Google() {
-    Global
     word := Arg = "" ? clipboard : Arg
     Run, https://www.google.com/search?q=%word%&newwindow=1
 }
 
 Bing() {
-    Global
     word := Arg = "" ? clipboard : Arg
     Run, http://cn.bing.com/search?q=%word%
 }
 
 Everything() {
-    Run, % CONFIG.Everything " -s " Arg,, UseErrorLevel
+    Run, % CONFIG.Everything " -s """ Arg """",, UseErrorLevel
     if ErrorLevel
         MsgBox, % "Everything software not found.`n`nPlease check ALTRun setting and Everything program file."
 }
@@ -1514,8 +1526,7 @@ Class Logger                                                            ; Logger
     }
 
     Debug(Msg) {
-        if (CONFIG.SaveLog) {
+        if (CONFIG.SaveLog)
             FileAppend, % "[" A_Now "] " Msg "`n", % this.filename
-        }
     }
 }
