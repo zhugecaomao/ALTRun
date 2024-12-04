@@ -35,7 +35,7 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ### Options / Settings:
 ![General](https://github.com/user-attachments/assets/9171b303-3e40-4bc5-a34e-d1a4c5134040)
 
-![Index](https://github.com/user-attachments/assets/05249eb9-1694-411d-adae-176af3269bd4)
+![Index](https://github.com/user-attachments/assets/8dbd6f9a-f761-493d-a0e9-c3e88c972a2a)
 
 ![GUI](https://github.com/user-attachments/assets/264ef125-f571-4235-b648-df2b70ff8e01)
 
