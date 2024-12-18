@@ -43,7 +43,7 @@ Global Arg, Log:= New Logger(A_Temp "\ALTRun.log") ; Arg: 用来调用管道的�
             ,ShowDirName:"Show Shorten Dir - Show dir name only instead of full path in the result"} ; Options - General - CheckedListview
 , g_RUNTIME := {Ini:A_ScriptDir "\" A_ComputerName ".ini",WinName:"ALTRun - Ver 2024.12",BGPic:"",WinHide:"",UseDisplay:"",UseFallback:"" ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
             ,CurrentCMD:"",Input:"",FuncList:"",OneDrive:EnvGet("OneDrive"),OneDriveConsumer:EnvGet("OneDriveConsumer"),UsageToday:0
-            ,CurrentDate:A_YYYY . A_MM . A_DD,OneDriveCommercial:EnvGet("OneDriveCommercial"),MaxVal:0} ; OneDrive Personal/Business Environment Variables (due to #NoEnv)
+            ,OneDriveCommercial:EnvGet("OneDriveCommercial"),MaxVal:0} ; OneDrive Personal/Business Environment Variables (due to #NoEnv)
 , g_Hints   := ["It's better to show me by press hotkey (Default is ALT + Space)","ALT + Space = Show / Hide window","Alt + F4 = Exit"
             ,"Esc = Clear input / Close window","Enter = Run current command","Alt + No. = Run specific command","Start with + = New Command"
             ,"Ctrl + No. = Select specific command","F1 = ALTRun Help Index","F2 = Open Setting Config window"
@@ -143,7 +143,7 @@ ListResult("Tip | F1 | Help`nTip | F2 | Options and settings`n"         ; List i
     . "Tip | CTRL+D | Open selected cmd's dir with File Manager")
 
 if (g_CONFIG.ShowIcon) {
-    Global ImageListID := IL_Create(10, 5)                              ; Create an ImageList so that the ListView can display some icons
+    Global ImageListID := IL_Create(10, 5, 0)                           ; Create an ImageList so that the ListView can display some icons
     , IconMap := {"dir":IL_Add(ImageListID,"shell32.dll",-4)            ; Icon cache index, IconIndex=1/2/3/4/5 for type dir/func/url/ctrl/eval
                 ,"func":IL_Add(ImageListID,"shell32.dll",-25)
                 ,"url":IL_Add(ImageListID,"shell32.dll",-512)
@@ -653,7 +653,7 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
 
 UpdateUsage() {
     g_RUNTIME.UsageToday++
-    IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SEC.Usage, % g_RUNTIME.CurrentDate
+    IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SEC.Usage, % A_YYYY . A_MM . A_DD
 }
 
 UpdateRunCount() {
@@ -1325,7 +1325,7 @@ LOADCONFIG(Arg)                                                         ; 加载
 
         g_RUNTIME.BGPic := (g_GUI.Background = "DEFAULT") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
 
-        IniRead, tempValue, % g_RUNTIME.Ini, % g_SEC.Usage, % g_RUNTIME.CurrentDate, 0
+        IniRead, tempValue, % g_RUNTIME.Ini, % g_SEC.Usage, % A_YYYY . A_MM . A_DD, 0
         g_RUNTIME.UsageToday := tempValue
 
         OffsetDate := A_Now
