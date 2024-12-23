@@ -2,7 +2,7 @@
 ; ALTRun - An effective launcher for Windows.
 ; https://github.com/zhugecaomao/ALTRun
 ;==============================================================
-#Requires AutoHotkey v1.1
+#Requires AutoHotkey v1.1+
 #NoEnv
 #SingleInstance, Force
 #NoTrayIcon
@@ -42,7 +42,7 @@ Global Arg, Log:= New Logger(A_Temp "\ALTRun.log") ; Arg: 用来调用管道的�
             ,ShowBtnRun:"Show [Run] Button on main window",ShowBtnOpt:"Show [Options] Button on main window"
             ,ShowDirName:"Show Shorten Dir - Show dir name only instead of full path in the result"} ; Options - General - CheckedListview
 , g_RUNTIME := {Ini:A_ScriptDir "\" A_ComputerName ".ini",WinName:"ALTRun - Ver 2024.12",BGPic:"",WinHide:"",UseDisplay:"",UseFallback:"" ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,CurrentCMD:"",Input:"",FuncList:"",OneDrive:EnvGet("OneDrive"),OneDriveConsumer:EnvGet("OneDriveConsumer"),UsageToday:0
+            ,CurrentCMD:"",Input:"",FuncList:"",OneDrive:EnvGet("OneDrive"),OneDriveConsumer:EnvGet("OneDriveConsumer"),UsageToday:0,AppStartDate: A_YYYY . A_MM . A_DD
             ,OneDriveCommercial:EnvGet("OneDriveCommercial"),MaxVal:0} ; OneDrive Personal/Business Environment Variables (due to #NoEnv)
 , g_Hints   := ["It's better to show me by press hotkey (Default is ALT + Space)","ALT + Space = Show / Hide window","Alt + F4 = Exit"
             ,"Esc = Clear input / Close window","Enter = Run current command","Alt + No. = Run specific command","Start with + = New Command"
@@ -55,6 +55,10 @@ Global Arg, Log:= New Logger(A_Temp "\ALTRun.log") ; Arg: 用来调用管道的�
 Log.Debug("///// ALTRun is starting /////")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
+; For key, value in g_RUNTIME
+;     {
+;         OutputDebug, % key " = " g_RUNTIME[key]
+;     }
 ;=============================================================
 ; Create ContextMenu and TrayMenu
 ;=============================================================
@@ -119,7 +123,7 @@ Options_X    := g_CONFIG.ShowBtnOpt * 10
 Gui, Main:Color, % g_GUI.WinColor, % g_GUI.CtrlColor
 Gui, Main:Font, % "c" g_GUI.FontColor " s" g_GUI.FontSize, % g_GUI.FontName
 Gui, Main:%AlwaysOnTop%
-Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gGetInput, Type anything here to search...
+Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, Type anything here to search...
 Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, Enter
 Gui, Main:Add, Button, % "x+"Options_X " yp W" Options_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, Options
 Gui, Main:Add, ListView, x12 ys+35 W%LV_W% H%LV_H% vMyListView AltSubmit gLVActions %ShowHdr% +LV0x10000 %ShowGrid% -Multi, No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
@@ -144,10 +148,9 @@ ListResult("Tip | F1 | Help`nTip | F2 | Options and settings`n"         ; List i
 
 if (g_CONFIG.ShowIcon) {
     Global ImageListID := IL_Create(10, 5, 0)                           ; Create an ImageList so that the ListView can display some icons
-    , IconMap := {"dir":IL_Add(ImageListID,"shell32.dll",-4)            ; Icon cache index, IconIndex=1/2/3/4/5 for type dir/func/url/ctrl/eval
+    , IconMap := {"dir":IL_Add(ImageListID,"shell32.dll",-4)            ; Icon cache index, IconIndex=1/2/3/4/5 for type dir/func/url/eval
                 ,"func":IL_Add(ImageListID,"shell32.dll",-25)
                 ,"url":IL_Add(ImageListID,"shell32.dll",-512)
-                ,"ctrl":IL_Add(ImageListID,"shell32.dll",-22)
                 ,"eval":IL_Add(ImageListID,"Calc.exe",-1)}
     LV_SetImageList(ImageListID)                                       ; Attach the ImageLists to the ListView so that it can later display the icons
 }
@@ -221,7 +224,7 @@ ToggleWindow() {
     WinActive(g_RUNTIME.WinName) ? MainGuiClose() : Activate()
 }
 
-GetInput() {
+OnSearchInput() {
     GuiControlGet, TempValue, Main:, MyInput
     SearchCommand(g_RUNTIME.Input := TempValue)                         ; Assign Input value to g_RUNTIME.Input and in the meantime, search it
 }
@@ -324,10 +327,9 @@ GetIconIndex(_Path, _Type)                                              ; Get fi
     Switch (_Type)
     {
         Case "Dir" : Return 1
-        Case "Func","CMD","Tip": Return 2
+        Case "Func","Cmd","Tip": Return 2
         Case "URL" : Return 3
-        Case "Ctrl": Return 4
-        Case "Eval": Return 5
+        Case "Eval": Return 4
         Case "File": {
             SplitPath, _Path,,, FileExt                                 ; Get the file's extension.
             if FileExt in EXE,ICO,ANI,CUR,LNK
@@ -397,19 +399,17 @@ RunCommand(originCmd)
 
     switch (_Type)
     {
-        case "file":
-            Run, %_Path%,, UseErrorLevel
+        case "FILE","URL","CMD":
+            Run % _Path,, UseErrorLevel
             if ErrorLevel
                 MsgBox Could not open "%_Path%"
-        case "dir":
+        case "DIR":
             OpenDir(_Path)
-        case "func":
+        case "FUNC":
             if IsFunc(_Path)
                 %_Path%()
-        case "cmd":
-            RunWithCmd(_Path)
-        default:                                                        ; for type: url, control & all other un-defined type
-            Run, %_Path%,, UseErrorLevel
+        Default:                                                        ; For all other un-defined type
+            Run % _Path,, UseErrorLevel
     }
 
     if (g_CONFIG.SaveHistory) {
@@ -652,6 +652,9 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
 }
 
 UpdateUsage() {
+    if (g_RUNTIME.AppStartDate != A_YYYY . A_MM . A_DD) {
+        g_RUNTIME.UsageToday := 0
+    }
     g_RUNTIME.UsageToday++
     IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SEC.Usage, % A_YYYY . A_MM . A_DD
 }
@@ -704,7 +707,6 @@ LoadCommands() {
         ;
         Func | CmdMgr | New Command
         Func | Everything | Search by Everything
-        Func | CmdRun | Run Command use CMD
         Func | Google | Search Clipboard or Input by Google
         Func | AhkRun | Run Command use AutoHotkey Run
         Func | Bing | Search Clipboard or Input by Bing
@@ -743,10 +745,6 @@ GetRunResult(command) {                                                 ;运行C
     shell := ComObjCreate("WScript.Shell")                              ; WshShell object: http://msdn.microsoft.com/en-us/library/aew9yb99
     exec := shell.Exec(ComSpec " /C " command)                          ; Execute a single command via cmd.exe
     Return exec.StdOut.ReadAll()                                        ; Read and Return the command's output
-}
-
-RunWithCmd(command) {
-    Run, % ComSpec " /C " command " & pause"
 }
 
 OpenDir(Path, OpenContainer := False) {
@@ -934,7 +932,7 @@ CmdMgr(Path := "") {                                                    ; 命令
     SplitPath Path, _Desc,, fileExt,,                                   ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name) 
     
     if InStr(FileExist(Path), "D")                                      ; True only if the file exists and is a directory.
-        _Type := 5                                                      ; It is a normal folder
+        _Type := 2                                                      ; It is a normal folder
     else                                                                ; From command "New Command" or GUI context menu "New Command"
         _Desc := Arg
     
@@ -944,15 +942,15 @@ CmdMgr(Path := "") {                                                    ; 命令
     }
 
     Gui, CmdMgr:New
-    Gui, CmdMgr:Font, S8 W400, Century Gothic
+    Gui, CmdMgr:Font, S10, Segoe UI
     Gui, CmdMgr:Margin, 5, 5
     Gui, CmdMgr:Add, GroupBox, w550 h230, New Command
     Gui, CmdMgr:Add, Text, xp+20 yp+35, Command Type: 
-    Gui, CmdMgr:Add, DropDownList, xp+120 yp-5 w150 v_Type Choose%_Type%, Func|URL|Command|File||Dir
+    Gui, CmdMgr:Add, DropDownList, xp+120 yp-5 w150 v_Type Choose%_Type%, File||Dir|Cmd|URL
     Gui, CmdMgr:Add, Text, xp-120 yp+50, Command Path: 
     Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 v_Path, % RelativePath(Path)
     Gui, CmdMgr:Add, Button, xp+355 yp w30 hp gSelectCmdPath, ...
-    Gui, CmdMgr:Add, Text, xp-475 yp+100, Description: 
+    Gui, CmdMgr:Add, Text, xp-475 yp+100, Name/Description: 
     Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 v_Desc, %_Desc%
     Gui, CmdMgr:Add, Button, Default x415 w65, OK
     Gui, CmdMgr:Add, Button, xp+75 yp w65, Cancel
@@ -1086,7 +1084,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     For key, description in g_CHKLV
         LV_Add("Check" g_CONFIG[key], description)
 
-    LV_ModifyCol(1, "Auto")
+    LV_ModifyCol(1, "AutoHdr")                                          ; AutoHdr: Automatically add a header to the column
 
     Gui, Setting:Add, Text, yp+320, Text Editor:
     Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Editor, % g_CONFIG.Editor "||Notepad.exe|C:\Apps\Notepad4\Notepad4.exe"
@@ -1206,7 +1204,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp yp+140, 0
     Gui, Setting:Add, Text, xp+35 yp+15, 30 days ago 
     Gui, Setting:Add, Text, xp+410 yp, Now
-    Gui, Setting:Add, Text, x66 yp+35, The total number of times the command was executed:
+    Gui, Setting:Add, Text, x66 yp+35, Total number of times the command was executed:
     Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled vg_RunCount, % g_CONFIG.RunCount
     Gui, Setting:Add, Text, x66 yp+35, Number of times the program was activated today:
     Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled, % g_RUNTIME.UsageToday
@@ -1344,98 +1342,97 @@ LOADCONFIG(Arg)                                                         ; 加载
     }
 
     if (Arg = "commands" or Arg = "initialize" or Arg = "all") {        ; Built-in command initialize
-        IniRead, DFTCMDSEC, % g_RUNTIME.Ini, % g_SEC.DftCMD
-        if (DFTCMDSEC = "") {
-            IniWrite,
-            (Ltrim
-            ; Build-in Commands (High Priority, DO NOT Edit)
-            ;
-            Func | Help | ALTRun Help Index (F1)=100
-            Func | Options | ALTRun Options Preference Settings (F2)=100
-            Func | Reload | ALTRun Reload=100
-            Func | CmdMgr | New Command=100
-            Func | UserCommandList | ALTRun User-defined command (F4)=100
-            Func | Usage | ALTRun Usage Status=100
-            Func | Reindex | Reindex search database=100
-            Func | Everything | Search by Everything=100
-            Func | RunPTTools | PT Tools (AHK)=100
-            Func | AhkRun | Run Command use AutoHotkey Run=100
-            Func | CmdRun | Run Command use CMD=100
-            Func | Google | Search Clipboard or Input by Google=100
-            Func | Bing | Search Clipboard or Input by Bing=100
-            Func | EmptyRecycle | Empty Recycle Bin=100
-            Func | TurnMonitorOff | Turn off Monitor, Close Monitor=100
-            Func | MuteVolume | Mute Volume=100
-            Dir | A_ScriptDir | ALTRun Program Dir=100
-            Dir | A_Startup | Current User Startup Dir=100
-            Dir | A_StartupCommon | All User Startup Dir=100
-            Dir | A_ProgramsCommon | Windowns Search.Index.Cortana Dir=100
-            File | %Temp%\ALTRun.log | ALTRun Log File=100
-            ;
-            ; Control Panel Commands
-            ;
-            Ctrl | Control | Control Panel=66
-            Ctrl | wf.msc | Windows Defender Firewall with Advanced Security=66
-            Ctrl | Control intl.cpl | Region and Language Options=66
-            Ctrl | Control firewall.cpl | Windows Defender Firewall=66
-            Ctrl | Control access.cpl | Ease of Access Centre=66
-            Ctrl | Control appwiz.cpl | Programs and Features=66
-            Ctrl | Control sticpl.cpl | Scanners and Cameras=66
-            Ctrl | Control sysdm.cpl | System Properties=66
-            Ctrl | Control joy.cpl | Game Controllers=66
-            Ctrl | Control Mouse | Mouse Properties=66
-            Ctrl | Control desk.cpl | Display=66
-            Ctrl | Control mmsys.cpl | Sound=66
-            Ctrl | Control ncpa.cpl | Network Connections=66
-            Ctrl | Control powercfg.cpl | Power Options=66
-            Ctrl | Control timedate.cpl | Date and Time=66
-            Ctrl | Control admintools | Windows Tools=66
-            Ctrl | Control desktop | Personalisation=66
-            Ctrl | Control folders | File Explorer Options=66
-            Ctrl | Control fonts | Fonts=66
-            Ctrl | Control inetcpl.cpl,,4 | Internet Properties=66
-            Ctrl | Control printers | Devices and Printers=66
-            Ctrl | Control userpasswords | User Accounts=66
-            Ctrl | taskschd.msc | Task Scheduler=66
-            Ctrl | devmgmt.msc | Device Manager=66
-            Ctrl | eventvwr.msc | Event Viewer=66
-            Ctrl | compmgmt.msc | Computer Manager=66
-            Ctrl | taskmgr.exe | Task Manager=66
-            Ctrl | calc.exe | Calculator=66
-            Ctrl | mspaint.exe | Paint=66
-            Ctrl | cmd.exe | DOS / CMD=66
-            Ctrl | regedit.exe | Registry Editor=66
-            Ctrl | write.exe | Write=66
-            Ctrl | cleanmgr.exe | Disk Space Clean-up Manager=66
-            Ctrl | gpedit.msc | Group Policy=66
-            Ctrl | comexp.msc | Component Services=66
-            Ctrl | diskmgmt.msc | Disk Management=66
-            Ctrl | dxdiag.exe | Directx Diagnostic Tool=66
-            Ctrl | lusrmgr.msc | Local Users and Groups=66
-            Ctrl | msconfig.exe | System Configuration=66
-            Ctrl | perfmon.exe /Res | Resources Monitor=66
-            Ctrl | perfmon.exe | Performance Monitor=66
-            Ctrl | winver.exe | About Windows=66
-            Ctrl | services.msc | Services=66
-            Ctrl | netplwiz | User Accounts=66
-            ), % g_RUNTIME.Ini, % g_SEC.DftCMD
-            IniRead, DFTCMDSEC, % g_RUNTIME.Ini, % g_SEC.DftCMD
-        }
+        DFTCMDSEC := "
+        (LTrim
+        ; Built-in commands, high priority, do not modify
+        ; Will be automatically overwritten by the program.
+        ;
+        Func | Help | ALTRun Help Index (F1)=99
+        Func | Options | ALTRun Options Preference Settings (F2)=99
+        Func | Reload | ALTRun Reload=99
+        Func | CmdMgr | New Command=99
+        Func | UserCommandList | ALTRun User-defined command (F4)=99
+        Func | Usage | ALTRun Usage Status=99
+        Func | Reindex | Reindex search database=99
+        Func | Everything | Search by Everything=99
+        Func | RunPTTools | PT Tools (AHK)=99
+        Func | AhkRun | Run Command use AutoHotkey Run=99
+        Func | Google | Search Clipboard or Input by Google=99
+        Func | Bing | Search Clipboard or Input by Bing=99
+        Func | EmptyRecycle | Empty Recycle Bin=99
+        Func | TurnMonitorOff | Turn off Monitor, Close Monitor=99
+        Func | MuteVolume | Mute Volume=99
+        File | `%Temp`%\ALTRun.log | ALTRun Log File=99
+        Dir | A_ScriptDir | ALTRun Program Dir=99
+        Dir | A_Startup | Current User Startup Dir=99
+        Dir | A_StartupCommon | All User Startup Dir=99
+        Dir | A_ProgramsCommon | Windowns Search.Index.Cortana Dir=99
+        Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
+        Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=99
+        Cmd | explorer.exe | Windows File Explorer=99
+        Cmd | cmd.exe | DOS / CMD=99
+        Cmd | cmd.exe /k ipconfig | Check IP Address=99
+        Cmd | Shell:AppsFolder | AppsFolder Applications=99
+        Cmd | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=99
+        Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=99
+        Cmd | WF.msc | Windows Defender Firewall with Advanced Security=99
+        Cmd | TaskSchd.msc | Task Scheduler=99
+        Cmd | DevMgmt.msc | Device Manager=99
+        Cmd | EventVwr.msc | Event Viewer=99
+        Cmd | CompMgmt.msc | Computer Manager=99
+        Cmd | TaskMgr.exe | Task Manager=99
+        Cmd | Calc.exe | Calculator=99
+        Cmd | MsPaint.exe | Paint=99
+        Cmd | Regedit.exe | Registry Editor=99
+        Cmd | Write.exe | Write=99
+        Cmd | CleanMgr.exe | Disk Space Clean-up Manager=99
+        Cmd | GpEdit.msc | Group Policy=99
+        Cmd | DiskMgmt.msc | Disk Management=99
+        Cmd | DxDiag.exe | Directx Diagnostic Tool=99
+        Cmd | LusrMgr.msc | Local Users and Groups=99
+        Cmd | MsConfig.exe | System Configuration=99
+        Cmd | PerfMon.exe /Res | Resources Monitor=99
+        Cmd | PerfMon.exe | Performance Monitor=99
+        Cmd | WinVer.exe | About Windows=99
+        Cmd | Services.msc | Services=99
+        Cmd | NetPlWiz | User Accounts=99
+        Cmd | Control | Control Panel=99
+        Cmd | Control Intl.cpl | Region and Language Options=99
+        Cmd | Control Firewall.cpl | Windows Defender Firewall=99
+        Cmd | Control Access.cpl | Ease of Access Centre=99
+        Cmd | Control AppWiz.cpl | Programs and Features=99
+        Cmd | Control Sticpl.cpl | Scanners and Cameras=99
+        Cmd | Control Sysdm.cpl | System Properties=99
+        Cmd | Control Mouse | Mouse Properties=99
+        Cmd | Control Desk.cpl | Display=99
+        Cmd | Control Mmsys.cpl | Sound=99
+        Cmd | Control Ncpa.cpl | Network Connections=99
+        Cmd | Control Powercfg.cpl | Power Options=99
+        Cmd | Control TimeDate.cpl | Date and Time=99
+        Cmd | Control AdminTools | Windows Tools=99
+        Cmd | Control Desktop | Personalisation=99
+        Cmd | Control Folders | File Explorer Options=99
+        Cmd | Control Fonts | Fonts=99
+        Cmd | Control Inetcpl.cpl,,4 | Internet Properties=99
+        Cmd | Control Printers | Devices and Printers=99
+        Cmd | Control UserPasswords | User Accounts=99
+        )"
+        IniWrite, % DFTCMDSEC, % g_RUNTIME.Ini, % g_SEC.DftCMD
 
         IniRead, USERCMDSEC, % g_RUNTIME.Ini, % g_SEC.UserCMD
         if (USERCMDSEC = "") {
             IniWrite,
             (Ltrim
-            ; User-Defined Commands (High priority, edit as desired)
-            ; Command type: File, Dir, CMD, Func, URL
-            ; Type | Command | Comments=Rank
+            ; User-Defined commands, high priority, edit as desired
+            ; Format: Command Type | Command | Description=Rank
+            ; Command type: File, Dir, CMD, URL
             ;
-            Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=100
-            Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=100
-            Dir | `%OneDriveCommercial`% | OneDrive Business Dir=100
-            CMD | ipconfig | Show IP Address(CMD type will run with cmd.exe, auto pause after run)=100
-            URL | www.google.com | Google=100
-            File | C:\OneDrive\Apps\TotalCMD64\TOTALCMD64.exe
+            Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
+            Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=99
+            Dir | `%OneDriveCommercial`% | OneDrive Business Dir=99
+            Cmd | ipconfig | Show IP Address(CMD type will run with cmd.exe, auto pause after run)=99
+            URL | www.google.com | Google=99
+            File | C:\OneDrive\Apps\TotalCMD64\TOTALCMD64.exe=99
             ), % g_RUNTIME.Ini, % g_SEC.UserCMD
             IniRead, USERCMDSEC, % g_RUNTIME.Ini, % g_SEC.UserCMD
         }
@@ -1492,10 +1489,6 @@ Extract_BG(_Filename)
 ;=============================================================
 ; Some Built-in Functions
 ;=============================================================
-CmdRun() {
-    RunWithCmd(Arg)
-}
-
 AhkRun() {
     Run, %Arg%,, UseErrorLevel
 }
