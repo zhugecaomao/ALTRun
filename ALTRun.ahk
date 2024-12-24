@@ -653,7 +653,8 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
 
 UpdateUsage() {
     if (g_RUNTIME.AppStartDate != A_YYYY . A_MM . A_DD) {
-        g_RUNTIME.UsageToday := 0
+        g_RUNTIME.AppStartDate := A_YYYY . A_MM . A_DD
+        g_RUNTIME.UsageToday   := 0
     }
     g_RUNTIME.UsageToday++
     IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SEC.Usage, % A_YYYY . A_MM . A_DD
@@ -702,8 +703,10 @@ LoadCommands() {
     if (FALLBACKCMDSEC = "") {
         IniWrite, 
         (Ltrim
-        ;===========================================================
         ; Fallback Commands show when search result is empty
+        ; Commands in order, modify as desired
+        ; Format: Command Type | Command | Description
+        ; Command type: File, Dir, CMD, URL
         ;
         Func | CmdMgr | New Command
         Func | Everything | Search by Everything
@@ -1344,8 +1347,8 @@ LOADCONFIG(Arg)                                                         ; 加载
     if (Arg = "commands" or Arg = "initialize" or Arg = "all") {        ; Built-in command initialize
         DFTCMDSEC := "
         (LTrim
-        ; Built-in commands, high priority, do not modify
-        ; Will be automatically overwritten by the program.
+        ; Built-in commands, high priority, do NOT modify
+        ; Will be automatically overwritten by the program
         ;
         Func | Help | ALTRun Help Index (F1)=99
         Func | Options | ALTRun Options Preference Settings (F2)=99
@@ -1367,6 +1370,7 @@ LOADCONFIG(Arg)                                                         ; 加载
         Dir | A_Startup | Current User Startup Dir=99
         Dir | A_StartupCommon | All User Startup Dir=99
         Dir | A_ProgramsCommon | Windowns Search.Index.Cortana Dir=99
+        Dir | `%Desktop`%=99
         Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
         Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=99
         Cmd | explorer.exe | Windows File Explorer=99
@@ -1423,7 +1427,7 @@ LOADCONFIG(Arg)                                                         ; 加载
         if (USERCMDSEC = "") {
             IniWrite,
             (Ltrim
-            ; User-Defined commands, high priority, edit as desired
+            ; User-Defined commands, high priority, modify as desired
             ; Format: Command Type | Command | Description=Rank
             ; Command type: File, Dir, CMD, URL
             ;
