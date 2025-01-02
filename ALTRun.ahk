@@ -1,7 +1,7 @@
-;==============================================================
-; ALTRun - An effective launcher for Windows.
+;===================================================
+; ALTRun - An effective launcher for Windows
 ; https://github.com/zhugecaomao/ALTRun
-;==============================================================
+;===================================================
 #Requires AutoHotkey v1.1+
 #NoEnv
 #SingleInstance, Force
@@ -14,78 +14,160 @@ SendMode, Input
 SetWorkingDir %A_ScriptDir%
 
 ;===================================================
-; 声明全局变量
+; Declare global variables
 ;===================================================
-Global Arg, Log:= New Logger(A_Temp "\ALTRun.log") ; Arg: 用来调用管道的完整参数（所有列）
-, g_CurrentCommandList := Object()                 ; 当前匹配到的所有命令
-, g_Commands:= Object()                            ; 所有命令
-, g_Fallback:= Object()                            ; 当搜索无结果时使用的命令
-, g_History := Object()                            ; 历史命令
-, g_SEC     := {Config:"Config",Gui:"Gui",DftCMD:"DefaultCommand",UserCMD:"UserCommand",Fallback:"FallbackCommand",Hotkey:"Hotkey",History:"History",Index:"Index",Usage:"Usage"}
-, g_CONFIG  := {AutoStartup:1,EnableSendTo:1,InStartMenu:1,ShowTrayIcon:1,HideOnLostFocus:1,AlwaysOnTop:1,EscClearInput:1,KeepInput:1,ShowIcon:1
-            ,SendToGetLnk:1,SaveHistory:1,SaveLog:1,MatchPath:0,ShowGrid:0,ShowHdr:1,SmartRank:1,SmartMatch:1,MatchAny:1,ShowTheme:1,ShowHint:1
-            ,ShowRunCount:1,ShowStatusBar:1,ShowBtnRun:1,ShowBtnOpt:1,ShowDirName:1,RunCount:0,HistoryLen:15,AutoSwitchDir:0,Editor:"Notepad.exe"
-            ,FileMgr:"Explorer.exe",IndexDir:"A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location",IndexType:"*.lnk,*.exe",IndexExclude:"Uninstall *"
-            ,Everything:"C:\Apps\Everything\Everything.exe",DialogWin:"ahk_class #32770",FileMgrID:"ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
-            ,ExcludeWin:"ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"}
-, g_HOTKEY  := {GlobalHotkey1:"!Space",GlobalHotkey2:"!R",Hotkey1:"^o",Trigger1:"Options",Hotkey2:"",Trigger2:"---",Hotkey3:"",Trigger3:"---",TotalCMDDir:"^g",ExplorerDir:"^e"}
-, g_GUI     := {ListRows:9,ColWidth:"40,60,430,340",FontName:"Segoe UI",FontSize:10,FontColor:"Default",WinWidth:900,WinHeight:330,CtrlColor:"Default",WinColor:"Silver",Background:"DEFAULT"}
-, g_CHKLV   := {AutoStartup:"Launch on Windows startup",EnableSendTo:"Enable the SendTo menu",InStartMenu:"Enable the Start menu"
-            ,ShowTrayIcon:"Show Tray Icon in the system taskbar",HideOnLostFocus:"Close window on losing focus",AlwaysOnTop:"Always stay on top"
-            ,EscClearInput:"Press [ESC] to clear input, press again to close window (Untick:close directly)",KeepInput:"Keep last input and search result on close"
-            ,ShowIcon:"Show Icon of file, folder or apps in the command result list",SendToGetLnk:"Retrieve .lnk target on SendTo"
-            ,SaveHistory:"Save History - Commands executed with arg",SaveLog:"Save Log - App running and debug information",MatchPath:"Match full path on search"
-            ,ShowGrid:"Show Grid in command list",ShowHdr:"Show Header in command list",SmartRank:"Smart Rank - Auto adjust command priority (rank) based on use frequency"
-            ,SmartMatch:"Smart Match - Fuzzy and Smart matching and filtering result",MatchAny:"Match from any position of the string"
-            ,ShowTheme:"Show Theme - Software skin and background picture",ShowHint:"Show Hints and Tips in the bottom status bar"
-            ,ShowRunCount:"Show RunCount - Command running times in the status bar",ShowStatusBar:"Show Status Bar"
-            ,ShowBtnRun:"Show [Run] Button on main window",ShowBtnOpt:"Show [Options] Button on main window"
-            ,ShowDirName:"Show Shorten Dir - Show dir name only instead of full path in the result"} ; Options - General - CheckedListview
-, g_RUNTIME := {Ini:A_ScriptDir "\" A_ComputerName ".ini",WinName:"ALTRun - Ver 2024.12",BGPic:"",WinHide:"",UseDisplay:"",UseFallback:"" ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,CurrentCMD:"",Input:"",FuncList:"",OneDrive:EnvGet("OneDrive"),OneDriveConsumer:EnvGet("OneDriveConsumer"),UsageToday:0,AppStartDate: A_YYYY . A_MM . A_DD
-            ,OneDriveCommercial:EnvGet("OneDriveCommercial"),MaxVal:0} ; OneDrive Personal/Business Environment Variables (due to #NoEnv)
-, g_Hints   := ["It's better to show me by press hotkey (Default is ALT + Space)","ALT + Space = Show / Hide window","Alt + F4 = Exit"
-            ,"Esc = Clear input / Close window","Enter = Run current command","Alt + No. = Run specific command","Start with + = New Command"
-            ,"Ctrl + No. = Select specific command","F1 = ALTRun Help Index","F2 = Open Setting Config window"
-            ,"F3 = Edit current command (.ini) directly","F4 = Edit user-defined commands (.ini) directly"
-            ,"Arrow Up / Down = Move to Previous / Next command","Ctrl+Q = Reload ALTRun","Ctrl+'+' = Increase rank of current command"
-            ,"Ctrl+'-' = Decrease rank of current command","Ctrl+I = Reindex file search database","Start with space = Search file by Everything"
-            ,"Ctrl+D = Open current command dir with TC / File Explorer","Command priority (rank) will auto adjust based on frequency"]
+Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
+, g_COMMANDS:= Object()     ; All commands
+, g_FALLBACK:= Object()     ; Fallback commands
+, g_HISTORYS:= Object()     ; Execution history
+, g_MATCHED := Object()     ; Matched commands
+, g_SECTION := {CONFIG      : "Config"
+            ,GUI            : "Gui"
+            ,DFTCMD         : "DefaultCommand"
+            ,USERCMD        : "UserCommand"
+            ,FALLBACK       : "FallbackCommand"
+            ,HOTKEY         : "Hotkey"
+            ,HISTORY        : "History"
+            ,INDEX          : "Index"
+            ,USAGE          : "Usage"}
+, g_CONFIG  := {AutoStartup : 1
+            ,EnableSendTo   : 1
+            ,InStartMenu    : 1
+            ,ShowTrayIcon   : 1
+            ,HideOnLostFocus: 1
+            ,AlwaysOnTop    : 1
+            ,EscClearInput  : 1
+            ,KeepInput      : 1
+            ,ShowIcon       : 1
+            ,SendToGetLnk   : 1
+            ,SaveHistory    : 1
+            ,SaveLog        : 1
+            ,MatchPath      : 0
+            ,ShowGrid       : 0
+            ,ShowHdr        : 1
+            ,SmartRank      : 1
+            ,SmartMatch     : 1
+            ,MatchAny       : 1
+            ,ShowTheme      : 1
+            ,ShowHint       : 1
+            ,ShowRunCount   : 1
+            ,ShowStatusBar  : 1
+            ,ShowBtnRun     : 1
+            ,ShowBtnOpt     : 1
+            ,ShowDirName    : 1
+            ,RunCount       : 0
+            ,HistoryLen     : 15
+            ,AutoSwitchDir  : 0
+            ,Editor         : "Notepad.exe"
+            ,FileMgr        : "Explorer.exe"
+            ,IndexDir       : "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location"
+            ,IndexType      : "*.lnk,*.exe"
+            ,IndexExclude   : "Uninstall *"
+            ,Everything     : "C:\Apps\Everything\Everything.exe"
+            ,DialogWin      : "ahk_class #32770"
+            ,FileMgrID      : "ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
+            ,ExcludeWin     : "ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"}
+, g_HOTKEY  := {Hotkey1     : "^o"
+            ,Trigger1       : "Options"
+            ,Hotkey2        : ""
+            ,Trigger2       : "---"
+            ,Hotkey3        : ""
+            ,Trigger3       : "---"
+            ,GlobalHotkey1  : "!Space"
+            ,GlobalHotkey2  : "!R"
+            ,TotalCMDDir    : "^g"
+            ,ExplorerDir    : "^e"}
+, g_GUI     := {ListRows    : 9
+            ,ColWidth       : "40,60,430,340"
+            ,FontName       : "Segoe UI"
+            ,FontSize       : 10
+            ,FontColor      : "Default"
+            ,WinWidth       : 900
+            ,WinHeight      : 330
+            ,CtrlColor      : "Default"
+            ,WinColor       : "Silver"
+            ,Background     : "DEFAULT"}
+, g_CHKLV   := {AutoStartup : "Launch on Windows startup"               ; Options - General - CheckedListview
+            ,EnableSendTo   : "Enable the SendTo menu"
+            ,InStartMenu    : "Enable the Start menu"
+            ,ShowTrayIcon   : "Show Tray Icon in the system taskbar"
+            ,HideOnLostFocus: "Close window on losing focus"
+            ,AlwaysOnTop    : "Always stay on top"
+            ,EscClearInput  : "Press [ESC] to clear input, press again to close window (Untick:close directly)"
+            ,KeepInput      : "Keep last input and search result on close"
+            ,ShowIcon       : "Show Icon of file, folder or apps in the command result list"
+            ,SendToGetLnk   : "Retrieve .lnk target on SendTo"
+            ,SaveHistory    : "Save History - Commands executed with arg"
+            ,SaveLog        : "Save Log - App running and debug information"
+            ,MatchPath      : "Match full path on search"
+            ,ShowGrid       : "Show Grid in command list"
+            ,ShowHdr        : "Show Header in command list"
+            ,SmartRank      : "Smart Rank - Auto adjust command priority (rank) based on use frequency"
+            ,SmartMatch     : "Smart Match - Fuzzy and Smart matching and filtering result"
+            ,MatchAny       : "Match from any position of the string"
+            ,ShowTheme      : "Show Theme - Software skin and background picture"
+            ,ShowHint       : "Show Hints and Tips in the bottom status bar"
+            ,ShowRunCount   : "Show RunCount - Command running times in the status bar"
+            ,ShowStatusBar  : "Show Status Bar"
+            ,ShowBtnRun     : "Show [Run] Button on main window"
+            ,ShowBtnOpt     : "Show [Options] Button on main window"
+            ,ShowDirName    : "Show Shorten Dir - Show dir name only instead of full path in the result"}
+, g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
+            ,WinName        : "ALTRun - Ver 2025.01"
+            ,BGPic          : ""
+            ,WinHide        : ""
+            ,UseDisplay     : 0
+            ,UseFallback    : 0
+            ,ActiveCommand  : ""
+            ,Input          : ""
+            ,Arg            : ""                                        ; Arg: 用来调用管道的完整参数
+            ,UsageToday     : 0
+            ,AppStartDate   : A_YYYY A_MM A_DD
+            ,OneDrive       : EnvGet("OneDrive")                        ; OneDrive var due to #NoEnv
+            ,OneDriveConsumer:EnvGet("OneDriveConsumer")
+            ,OneDriveCommercial:EnvGet("OneDriveCommercial")
+            ,LV_ContextMenu : []
+            ,TrayMenu       : []}
 
-Log.Debug("///// ALTRun is starting /////")
+g_LOG.Debug("///// ALTRun is starting /////")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
 ; For key, value in g_RUNTIME
-;     {
-;         OutputDebug, % key " = " g_RUNTIME[key]
-;     }
-;=============================================================
+;   OutputDebug, % key " = " g_RUNTIME[key]
+;===================================================
 ; Create ContextMenu and TrayMenu
-;=============================================================
-ContextMenu := ["Run`tEnter,LVContextMenu,shell32.dll,-25","Locate`tCtrl+D,OpenCurrentFileDir,shell32.dll,-4","Copy,LVContextMenu,shell32.dll,-243"
-    ,"","New,CmdMgr,shell32.dll,-1","Edit`tF3,EditCurrentCommand,shell32.dll,-16775","User Defined`tF4,UserCommandList,shell32.dll,-44"]
+;===================================================
+g_RUNTIME.LV_ContextMenu := ["Run`tEnter,LVContextMenu,shell32.dll,-25"
+    ,"Locate`tCtrl+D,OpenContainer,shell32.dll,-4"
+    ,"Copy,LVContextMenu,shell32.dll,-243",""
+    ,"New,CmdMgr,shell32.dll,-1"
+    ,"Edit`tF3,EditCommand,shell32.dll,-16775"
+    ,"User Command`tF4,UserCommand,shell32.dll,-44"]
+g_RUNTIME.TrayMenu := ["Show,ToggleWindow,Shell32.dll,-25"
+    ,"","Options `tF2,Options,Shell32.dll,-16826"
+    ,"ReIndex `tCtrl+I,Reindex,Shell32.dll,-16776"
+    ,"Help `tF1,Help,Shell32.dll,-24",""
+    ,"Script Info,ScriptInfo,imageres.dll,-150"
+    ,"AHK Manual,AHKManual,Shell32.dll,-512",""
+    ,"Reload `tCtrl+Q,Reload,imageres.dll,-5311"
+    ,"Exit `tAlt+F4,Exit,imageres.dll,-98"]
 
-For index, MenuItem in ContextMenu {
-    If (MenuItem = "")
+for index, MenuItem in g_RUNTIME.LV_ContextMenu {
+    if (MenuItem = "") {
         Menu, LV_ContextMenu, Add
-    Else {
-        Item := StrSplit(MenuItem, ",")
-        Menu, LV_ContextMenu, Add, % Item[1], % Item[2]
-        Menu, LV_ContextMenu, Icon, % Item[1], % Item[3], % Item[4]
+        continue
     }
+    Item := StrSplit(MenuItem, ",")
+    Menu, LV_ContextMenu, Add, % Item[1], % Item[2]
+    Menu, LV_ContextMenu, Icon, % Item[1], % Item[3], % Item[4]
 }
 
 if (g_CONFIG.ShowTrayIcon)
 {
-    TrayMenu := ["Show,ToggleWindow,Shell32.dll,-25","","Options `tF2,Options,Shell32.dll,-16826"
-    ,"ReIndex `tCtrl+I,Reindex,Shell32.dll,-16776","Help `tF1,Help,Shell32.dll,-24",""
-    ,"Script Info,ScriptInfo,imageres.dll,-150","AHK Manual,AHKManual,Shell32.dll,-512",""
-    ,"Reload `tCtrl+Q,Reload,imageres.dll,-5311","Exit `tAlt+F4,Exit,imageres.dll,-98"]
-
     Menu, Tray, NoStandard
     Menu, Tray, Icon
     Menu, Tray, Icon, Shell32.dll, -25                                  ; Index of icon changes between Windows versions, refer to the icon by resource ID for consistency
-    For Index, MenuItem in TrayMenu
+    For Index, MenuItem in g_RUNTIME.TrayMenu
     {
         Item := StrSplit(MenuItem, ",") ; Item[1,2,3,4] <-> Name,Func,Icon,IconNo
         Menu, Tray, Add, % Item[1], % Item[2]
@@ -95,20 +177,20 @@ if (g_CONFIG.ShowTrayIcon)
     Menu, Tray, Default, Show
     Menu, Tray, Click, 1
 }
-;=============================================================
+;===================================================
 ; Load commands database and command history
 ; Update "SendTo", "Startup", "StartMenu" lnk
-;=============================================================
+;===================================================
 LoadCommands()
 LoadHistory()
 
-Log.Debug("Updating 'SendTo' setting..." UpdateSendTo(g_CONFIG.EnableSendTo))
-Log.Debug("Updating 'Startup' setting..." UpdateStartup(g_CONFIG.AutoStartup))
-Log.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_CONFIG.InStartMenu))
+g_LOG.Debug("Updating 'SendTo' setting..." UpdateSendTo(g_CONFIG.EnableSendTo))
+g_LOG.Debug("Updating 'Startup' setting..." UpdateStartup(g_CONFIG.AutoStartup))
+g_LOG.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_CONFIG.InStartMenu))
 
-;=============================================================
+;===================================================
 ; 主窗口配置代码
-;=============================================================
+;===================================================
 AlwaysOnTop  := g_CONFIG.AlwaysOnTop ? "+AlwaysOnTop" : ""
 ShowGrid     := g_CONFIG.ShowGrid ? "Grid" : ""
 ShowHdr      := g_CONFIG.ShowHdr ? "" : "-Hdr"
@@ -148,14 +230,14 @@ ListResult("Tip | F1 | Help`nTip | F2 | Options and settings`n"         ; List i
 
 if (g_CONFIG.ShowIcon) {
     Global ImageListID := IL_Create(10, 5, 0)                           ; Create an ImageList so that the ListView can display some icons
-    , IconMap := {"dir":IL_Add(ImageListID,"shell32.dll",-4)            ; Icon cache index, IconIndex=1/2/3/4/5 for type dir/func/url/eval
-                ,"func":IL_Add(ImageListID,"shell32.dll",-25)
-                ,"url":IL_Add(ImageListID,"shell32.dll",-512)
-                ,"eval":IL_Add(ImageListID,"Calc.exe",-1)}
-    LV_SetImageList(ImageListID)                                       ; Attach the ImageLists to the ListView so that it can later display the icons
+    Global IconMap     := {"DIR":IL_Add(ImageListID,"shell32.dll",-4)   ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval
+                       ,"FUNC":IL_Add(ImageListID,"shell32.dll",-25)
+                       ,"URL":IL_Add(ImageListID,"shell32.dll",-512)
+                       ,"EVAL":IL_Add(ImageListID,"Calc.exe",-1)}
+    LV_SetImageList(ImageListID)                                        ; Attach the ImageLists to the ListView so that it can later display the icons
 }
 
-Log.Debug("Resolving command line args=" A_Args[1] " " A_Args[2])       ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
+g_LOG.Debug("Resolving command line args=" A_Args[1] " " A_Args[2])     ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
 if (A_Args[1] = "-Startup")
     g_RUNTIME.WinHide := " Hide"
 
@@ -169,9 +251,9 @@ Gui, Main:Show, % "w" g_GUI.WinWidth " h" g_GUI.WinHeight " Center " g_RUNTIME.W
 if (g_CONFIG.HideOnLostFocus)
     OnMessage(0x06, "WM_ACTIVATE")
 
-;=============================================================
+;===================================================
 ; Set Hotkey
-;=============================================================
+;===================================================
 Hotkey, % g_HOTKEY.GlobalHotkey1, ToggleWindow, UseErrorLevel
 Hotkey, % g_HOTKEY.GlobalHotkey2, ToggleWindow, UseErrorLevel
 
@@ -180,20 +262,20 @@ Hotkey, !F4, Exit
 Hotkey, Tab, TabFunc
 Hotkey, F1, Help
 Hotkey, F2, Options
-Hotkey, F3, EditCurrentCommand
-Hotkey, F4, UserCommandList
+Hotkey, F3, EditCommand
+Hotkey, F4, UserCommand
 Hotkey, ^q, Reload
-Hotkey, ^d, OpenCurrentFileDir
+Hotkey, ^d, OpenContainer
 Hotkey, ^i, Reindex
 Hotkey, ^NumpadAdd, RankUp
 Hotkey, ^NumpadSub, RankDown
 Hotkey, Down, NextCommand
 Hotkey, Up, PrevCommand
 
-;=============================================================
+;===================================================
 ; Run or locate command shortcut: Ctrl Alt Shift + No.
-;=============================================================
-Loop, % g_GUI.ListRows                      ; ListRows limit <= 9
+;===================================================
+Loop, % g_GUI.ListRows
 {
     Hotkey, !%A_Index%, RunSelectedCommand  ; ALT + No. run command
     Hotkey, ^%A_Index%, GotoCommand         ; Ctrl + No. locate command
@@ -208,8 +290,7 @@ Listary()
 AppControl()                                                            ; Set Listary Dir QuickSwitch, Set AppControl
 Return
 
-Activate()
-{
+Activate() {
     Gui, Main:Show,, % g_RUNTIME.WinName
 
     WinWaitActive, % g_RUNTIME.WinName,, 3                              ; Use WinWaitActive 3s instead of previous Loop method
@@ -230,18 +311,18 @@ OnSearchInput() {
 }
 
 SearchCommand(command := "") {
-    Result := ""
-    Order  := 1
-    g_CurrentCommandList := Object()
-    Prefix := SubStr(command, 1, 1)
+    Result    := ""
+    Order     := 1
+    g_MATCHED := Object()
+    Prefix    := SubStr(command, 1, 1)
 
     if (Prefix = "+" or Prefix = " " or Prefix = ">") {
-        g_RUNTIME.CurrentCMD := g_Fallback[InStr("+ >", Prefix)]        ; Corresponding to fallback commands position no. 1, 2 & 3
-        g_CurrentCommandList.Push(g_RUNTIME.CurrentCMD)
-        Return ListResult(g_RUNTIME.CurrentCMD)
+        g_RUNTIME.ActiveCommand := g_FALLBACK[InStr("+ >", Prefix)]     ; Corresponding to fallback commands position no. 1, 2 & 3
+        g_MATCHED.Push(g_RUNTIME.ActiveCommand)
+        Return ListResult(g_RUNTIME.ActiveCommand)
     }
 
-    for index, element in g_Commands
+    for index, element in g_COMMANDS
     {
         splitResult := StrSplit(element, " | ")
         _Type := splitResult[1]
@@ -253,10 +334,10 @@ SearchCommand(command := "") {
         elementToSearch := g_CONFIG.MatchPath ? _Type " " _Path " " _Desc : _Type " " fileName " " _Desc ; search file name include extension & desc, search dir type + folder name + desc
 
         if FuzzyMatch(elementToSearch, command) {
-            g_CurrentCommandList.Push(element)
+            g_MATCHED.Push(element)
 
             if (Order = 1) {
-                g_RUNTIME.CurrentCMD := element
+                g_RUNTIME.ActiveCommand := element
                 Result .= elementToShow
             } else {
                 Result .= "`n" elementToShow
@@ -283,12 +364,12 @@ SearchCommand(command := "") {
             Return ListResult(Result, True)
         }
 
-        g_RUNTIME.UseFallback:= true
-        g_CurrentCommandList := g_Fallback
-        g_RUNTIME.CurrentCMD := g_Fallback[1]
-    
-        for i, cmd in g_Fallback
-            Result .= (i = 1) ? g_Fallback[i] : "`n" g_Fallback[i]
+        g_RUNTIME.UseFallback   := true
+        g_MATCHED               := g_FALLBACK
+        g_RUNTIME.ActiveCommand := g_FALLBACK[1]
+
+        for i, cmd in g_FALLBACK
+            Result .= (i = 1) ? g_FALLBACK[i] : "`n" g_FALLBACK[i]
     } else {
         g_RUNTIME.UseFallback := false
     }
@@ -324,13 +405,12 @@ ListResult(text := "", UseDisplay := false)
 
 GetIconIndex(_Path, _Type)                                              ; Get file's icon index
 {
-    Switch (_Type)
-    {
-        Case "Dir" : Return 1
-        Case "Func","Cmd","Tip": Return 2
-        Case "URL" : Return 3
-        Case "Eval": Return 4
-        Case "File": {
+    Switch (_Type) {
+    Case "Dir" : Return 1
+    Case "Func","Cmd","Tip": Return 2
+    Case "URL" : Return 3
+    Case "Eval": Return 4
+    Case "File": {
             SplitPath, _Path,,, FileExt                                 ; Get the file's extension.
             if FileExt in EXE,ICO,ANI,CUR,LNK
                 IconIndex := IconMap.HasKey(_Path) ? IconMap[_Path] : GetIcon(_Path, _Path) ; File path exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
@@ -344,12 +424,12 @@ GetIconIndex(_Path, _Type)                                              ; Get fi
 GetIcon(_Path, ExtOrPath) {                                             ; Get file's icon
     VarSetCapacity(sfi, sfi_size := 698)                                ; Calculate buffer size required for SHFILEINFO structure.
     if (!DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", &sfi, "UInt", sfi_size, "UInt", 0x101)) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
-        IconIndex = 9999999                         ; Set it out of bounds to display a blank icon.
-    else {                                          ; Icon successfully loaded. Extract the hIcon member from the structure
-        hIcon := NumGet(sfi, 0)                     ; Add the HICON directly to the small-icon lists.
+        IconIndex = 9999999                                             ; Set it out of bounds to display a blank icon.
+    else {                                                              ; Icon successfully loaded. Extract the hIcon member from the structure
+        hIcon := NumGet(sfi, 0)                                         ; Add the HICON directly to the small-icon lists.
         IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", ImageListID, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
-        DllCall("DestroyIcon", "ptr", hIcon)        ; Now that it's been copied into the ImageLists, the original should be destroyed
-        IconMap[ExtOrPath] := IconIndex             ; Cache the icon based on file type (xlsx, pdf) or path (exe, lnk) to save memory and improve loading performance
+        DllCall("DestroyIcon", "ptr", hIcon)                            ; Now that it's been copied into the ImageLists, the original should be destroyed
+        IconMap[ExtOrPath] := IconIndex                                 ; Cache the icon based on file type (xlsx, pdf) or path (exe, lnk) to save memory and improve loading performance
     }
     Return IconIndex
 }
@@ -357,7 +437,7 @@ GetIcon(_Path, ExtOrPath) {                                             ; Get fi
 AbsPath(Path, KeepRunAs := False)                                       ; Convert path to absolute path
 {
     Path := Trim(Path)
-    
+
     if (!KeepRunAs)
         Path := StrReplace(Path,  "*RunAs ", "")                        ; Remove *RunAs (Admin Run) to get absolute path
 
@@ -366,9 +446,9 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
 
     Path := StrReplace(Path, "%Temp%", A_Temp)
     Path := StrReplace(Path, "%Desktop%", A_Desktop)
-    Path := StrReplace(Path, "%OneDrive%", g_RUNTIME.OneDrive)                     ; Convert OneDrive to absolute path due to #NoEnv
-    Path := StrReplace(Path, "%OneDriveConsumer%", g_RUNTIME.OneDriveConsumer)     ; Convert OneDrive to absolute path due to #NoEnv
-    Path := StrReplace(Path, "%OneDriveCommercial%", g_RUNTIME.OneDriveCommercial) ; Convert OneDrive to absolute path due to #NoEnv
+    Path := StrReplace(Path, "%OneDrive%", g_RUNTIME.OneDrive)          ; Convert OneDrive to absolute path due to #NoEnv
+    Path := StrReplace(Path, "%OneDriveConsumer%", g_RUNTIME.OneDriveConsumer)
+    Path := StrReplace(Path, "%OneDriveCommercial%", g_RUNTIME.OneDriveCommercial)
     Return Path
 }
 
@@ -397,8 +477,7 @@ RunCommand(originCmd)
     _Type := StrSplit(originCmd, " | ")[1]
     _Path := AbsPath(StrSplit(originCmd, " | ")[2], True)
 
-    switch (_Type)
-    {
+    switch (_Type) {
         case "FILE","URL","CMD":
             Run % _Path,, UseErrorLevel
             if ErrorLevel
@@ -406,25 +485,24 @@ RunCommand(originCmd)
         case "DIR":
             OpenDir(_Path)
         case "FUNC":
-            if IsFunc(_Path)
-                %_Path%()
+            IsFunc(_Path) ? %_Path%() : MsgBox Could not find function "%_Path%"
         Default:                                                        ; For all other un-defined type
             Run % _Path,, UseErrorLevel
     }
 
     if (g_CONFIG.SaveHistory) {
-        g_History.InsertAt(1, originCmd " /arg=" Arg)                   ; Adjust command history
+        g_HISTORYS.InsertAt(1, originCmd " /Arg=" g_RUNTIME.Arg)        ; Adjust command history
 
-        (g_History.Length() > g_CONFIG.HistoryLen) ? g_History.Pop()
+        (g_HISTORYS.Length() > g_CONFIG.HistoryLen) ? g_HISTORYS.Pop()
 
-        IniDelete, % g_RUNTIME.Ini, % g_SEC.History
-        for index, element in g_History
-            IniWrite, %element%, % g_RUNTIME.Ini, % g_SEC.History, %index% ; Save command history
+        IniDelete, % g_RUNTIME.Ini, % g_SECTION.HISTORY
+        for index, element in g_HISTORYS
+            IniWrite, %element%, % g_RUNTIME.Ini, % g_SECTION.HISTORY, %index% ; Save command history
     }
 
     UpdateRunCount()
     (g_CONFIG.SmartRank) ? UpdateRank(originCmd)
-    Log.Debug("Execute(" g_CONFIG.RunCount ")=" originCmd)
+    g_LOG.Debug("Execute:" g_CONFIG.RunCount " = " originCmd)
 }
 
 TabFunc()
@@ -433,34 +511,30 @@ TabFunc()
     GuiControl, Main:Focus, % (CurrCtrl = "MyInput") ? "MyListView" : "MyInput"
 }
 
-PrevCommand()
-{
+PrevCommand() {
     ChangeCommand(-1, False)
 }
 
-NextCommand()
-{
+NextCommand() {
     ChangeCommand(1, False)
 }
 
-GotoCommand()
-{
+GotoCommand() {
     index := SubStr(A_ThisHotkey, 0, 1)                                 ; Get index from hotkey (select specific command = Shift + index)
 
-    if (index <= g_CurrentCommandList.Count()) {
+    if (index <= g_MATCHED.Count()) {
         ChangeCommand(index, True)
-        g_RUNTIME.CurrentCMD := g_CurrentCommandList[index]
+        g_RUNTIME.ActiveCommand := g_MATCHED[index]
     }
 }
 
-ChangeCommand(Step = 1, ResetSelRow = False)
-{
+ChangeCommand(Step = 1, ResetSelRow = False) {
     Gui, Main:Default                                                   ; Use it before any LV update
 
     SelRow := ResetSelRow ? Step : LV_GetNext() + Step                  ; Get target row no. to be selected
     SelRow := SelRow > LV_GetCount() ? 1 : SelRow                       ; Listview cycle selection (Mod has bug on upward cycle)
     SelRow := SelRow < 1 ? LV_GetCount() : SelRow
-    g_RUNTIME.CurrentCMD := g_CurrentCommandList[SelRow]                ; Get current command from selected row
+    g_RUNTIME.ActiveCommand := g_MATCHED[SelRow]                        ; Get current command from selected row
 
     LV_Modify(SelRow, "Select Focus Vis")                               ; make new index row selected, Focused, and Visible
     SetStatusBar()
@@ -473,32 +547,29 @@ LVActions()                                                             ; ListVi
     if (!focusedRow)                                                    ; 没有焦点行
         Return
 
-    g_RUNTIME.CurrentCMD := g_CurrentCommandList[focusedRow]            ; Get current command from focused row
+    g_RUNTIME.ActiveCommand := g_MATCHED[focusedRow]                    ; Get current command from focused row
 
     if (A_GuiEvent = "RightClick")
-    {
         Menu, LV_ContextMenu, Show
-    }
-    else if (A_GuiEvent = "DoubleClick" and g_RUNTIME.CurrentCMD)       ; Double click behavior, if g_RUNTIME.CurrentCMD = "" eg. first tip page, run it will clear g_SEC.UserCMD, g_SEC.Index, g_SEC.DftCMD
-    {
-        RunCommand(g_RUNTIME.CurrentCMD)
-    }
-    else if (A_GuiEvent = "Normal")                                     ; left click behavior
-    {
+
+    else if (A_GuiEvent = "DoubleClick" and g_RUNTIME.ActiveCommand)    ; It will clear g_SECTION.USERCMD/Index/DftCMD when g_RUNTIME.ActiveCommand = "" eg. first tip page
+        RunCommand(g_RUNTIME.ActiveCommand)
+
+    else if (A_GuiEvent = "Normal")                                     ; Left click behavior
         SetStatusBar()
-    }
 }
 
-LVContextMenu()                                                         ; ListView ContextMenu (right click & its menu) actions
-{
+LVContextMenu() {                                                       ; ListView ContextMenu (right click & its menu) actions
     Gui, Main:Default                                                   ; Use it before any LV update
     focusedRow := LV_GetNext(0, "Focused")                              ; Check focused row, only operate focusd row instead of all selected rows
-    if (!focusedRow)                                                    ; if not found
+    if (!focusedRow)                                                    ; Return if no focused row is found
         Return
 
-    g_RUNTIME.CurrentCMD := g_CurrentCommandList[focusedRow]            ; Get current command from focused row
-    If (A_ThisMenuItem = "Run`tEnter")                                  ; User selected "Run`tEnter"
-        RunCommand(g_RUNTIME.CurrentCMD)
+    g_RUNTIME.ActiveCommand := g_MATCHED[focusedRow]                    ; Get current command from focused row
+
+    If (A_ThisMenuItem = "Run`tEnter")                                  ; Execute the command if the user selected "Run Enter"
+        RunCommand(g_RUNTIME.ActiveCommand)
+
     else if (A_ThisMenuItem = "Copy")
         LV_GetText(Text, focusedRow, 3) ? (A_Clipboard := Text)         ; Get the text from the focusedRow's 3rd field.
 }
@@ -558,22 +629,22 @@ Test() {
         GuiControl, Main:Text, MyInput, % chr(chr1) " " chr(chr2) " " chr(chr3)
     }
     t := A_TickCount - t
-    Log.Debug("mock test search ' " chr(chr1) " " chr(chr2) " " chr(chr3) " ' 50 times, use time = " t)
+    g_LOG.Debug("mock test search ' " chr(chr1) " " chr(chr2) " " chr(chr3) " ' 50 times, use time = " t)
     MsgBox % "Search '" chr(chr1) " " chr(chr2) " " chr(chr3) "' use Time =  " t
 }
 
-UserCommandList() {
+UserCommand() {
     if (g_CONFIG.Editor = "notepad.exe")
         Run, % g_CONFIG.Editor " " g_RUNTIME.Ini,, UseErrorLevel
     Else
-        Run, % g_CONFIG.Editor " /m [" g_SEC.UserCMD "] """ g_RUNTIME.Ini """",, UseErrorLevel ; /m Match text
+        Run, % g_CONFIG.Editor " /m [" g_SECTION.USERCMD "] """ g_RUNTIME.Ini """",, UseErrorLevel ; /m Match text
 }
 
-EditCurrentCommand() {
+EditCommand() {
     if (g_CONFIG.Editor = "notepad.exe")
         Run, % g_CONFIG.Editor " " g_RUNTIME.Ini,, UseErrorLevel
     else
-        Run, % g_CONFIG.Editor " /m " """" g_RUNTIME.CurrentCMD "=""" " """ g_RUNTIME.Ini """",, UseErrorLevel ; /m Match text, locate to current command, add = at end to filter out [history] commands
+        Run, % g_CONFIG.Editor " /m " """" g_RUNTIME.ActiveCommand "=""" " """ g_RUNTIME.Ini """",, UseErrorLevel ; /m Match text, locate to current command, add = at end to filter out [history] commands
 }
 
 ClearInput() {
@@ -583,11 +654,26 @@ ClearInput() {
 
 SetStatusBar(Mode := "Command") {                                       ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
     Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
+    static Hints := ["It's better to activate ALTRun by hotkey (ALT + Space)"
+        ,"Smart Rank - Atuo adjusts command priority (rank) based on frequency of use."
+        ,"Arrow Up = Move to previous command","Arrow Down = Move to next command"
+        ,"Esc = Clear input / close window","Enter = Run current command"
+        ,"Alt + No. = Run specific command","Start with + = New Command"
+        ,"F3 = Edit current command (.ini) directly","F2 = Options setting"
+        ,"Ctrl+I = Reindex file search database","F1 = ALTRun Help Index"
+        ,"ALT + Space = Show / Hide Window","Ctrl+Q = Reload ALTRun"
+        ,"Smart Match - Fuzzy and Smart matching and filtering result"
+        ,"Ctrl + No. = Select specific command","Alt + F4 = Exit"
+        ,"Ctrl+D = Open current command's dir with File Manager"
+        ,"F4 = Edit user-defined commands (.ini) directly"
+        ,"Start with space = Search file by Everything"
+        ,"Ctrl+'+' = Increase rank of current command"
+        ,"Ctrl+'-' = Decrease rank of current command"]
     Switch (Mode) {
-        Case "Command": SBText := StrSplit(g_RUNTIME.CurrentCMD, " | ")[2]
+        Case "Command": SBText := StrSplit(g_RUNTIME.ActiveCommand, " | ")[2]
         Case "Hint": {
-            Random, index, 1, g_Hints.Count()
-            SBText := g_Hints[index]
+            Random, index, 1, Hints.Count()
+            SBText := Hints[index]
         }
         Default: SBText := Mode
     }
@@ -595,7 +681,7 @@ SetStatusBar(Mode := "Command") {                                       ; Set St
 }
 
 RunCurrentCommand() {
-    RunCommand(g_RUNTIME.CurrentCMD)
+    RunCommand(g_RUNTIME.ActiveCommand)
 }
 
 ParseArg() {
@@ -604,20 +690,20 @@ ParseArg() {
 
     if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">") 
     {
-        Return Arg := SubStr(g_RUNTIME.Input, 2)                        ; 直接取命令为参数
+        Return g_RUNTIME.Arg := SubStr(g_RUNTIME.Input, 2)              ; 直接取命令为参数
     }
 
     if (InStr(g_RUNTIME.Input, " ") && !g_RUNTIME.UseFallback)          ; 用空格来判断参数
     {
-        Arg := SubStr(g_RUNTIME.Input, InStr(g_RUNTIME.Input, " ") + 1)
+        g_RUNTIME.Arg := SubStr(g_RUNTIME.Input, InStr(g_RUNTIME.Input, " ") + 1)
     }
     else if (g_RUNTIME.UseFallback)
     {
-        Arg := g_RUNTIME.Input
+        g_RUNTIME.Arg := g_RUNTIME.Input
     }
     else
     {
-        Arg := ""
+        g_RUNTIME.Arg := ""
     }
 }
 
@@ -629,7 +715,7 @@ FuzzyMatch(Haystack, Needle) {
 }
 
 UpdateRank(originCmd, showRank := false, inc := 1) {
-    RANKSEC := g_SEC.DftCMD "|" g_SEC.UserCMD "|" g_SEC.Index
+    RANKSEC := g_SECTION.DFTCMD "|" g_SECTION.USERCMD "|" g_SECTION.INDEX
     Loop Parse, RANKSEC, |                                              ; Update Rank for related sections
     {
         IniRead, Rank, % g_RUNTIME.Ini, %A_LoopField%, %originCmd%, KeyNotFound
@@ -657,31 +743,31 @@ UpdateUsage() {
         g_RUNTIME.UsageToday   := 0
     }
     g_RUNTIME.UsageToday++
-    IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SEC.Usage, % A_YYYY . A_MM . A_DD
+    IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SECTION.USAGE, % A_YYYY . A_MM . A_DD
 }
 
 UpdateRunCount() {
     g_CONFIG.RunCount++
-    IniWrite, % g_CONFIG.RunCount, % g_RUNTIME.Ini, % g_SEC.Config, RunCount ; Record run counting
+    IniWrite, % g_CONFIG.RunCount, % g_RUNTIME.Ini, % g_SECTION.CONFIG, RunCount ; Record run counting
     SetStatusBar()
 }
 
 RunSelectedCommand() {
     index := SubStr(A_ThisHotkey, 0, 1)
-    RunCommand(g_CurrentCommandList[index])
+    RunCommand(g_MATCHED[index])
 }
 
 RankUp() {
-    UpdateRank(g_RUNTIME.CurrentCMD, true)
+    UpdateRank(g_RUNTIME.ActiveCommand, true)
 }
 
 RankDown() {
-    UpdateRank(g_RUNTIME.CurrentCMD, true, -1)
+    UpdateRank(g_RUNTIME.ActiveCommand, true, -1)
 }
 
 LoadCommands() {
-    g_Commands  := Object()                                             ; Clear g_Commands list
-    g_Fallback  := Object()                                             ; Clear g_Fallback list
+    g_COMMANDS  := Object()                                             ; Clear g_COMMANDS and g_FALLBACK list
+    g_FALLBACK  := Object()
     RankString  := ""
 
     Loop Parse, % LOADCONFIG("commands"), `n                            ; Read commands sections (built-in, user & index), read each line, separate key and value
@@ -696,10 +782,10 @@ LoadCommands() {
     Loop Parse, RankString, `n
     {
         command := StrSplit(A_LoopField, "`t")[2]
-        g_Commands.Push(command)
+        g_COMMANDS.Push(command)
     }
     
-    IniRead, FALLBACKCMDSEC, % g_RUNTIME.Ini, % g_SEC.Fallback          ; Read FALLBACK section, initialize it if section not exist
+    IniRead, FALLBACKCMDSEC, % g_RUNTIME.Ini, % g_SECTION.FALLBACK      ; Read FALLBACK section, initialize it if section not exist
     if (FALLBACKCMDSEC = "") {
         IniWrite, 
         (Ltrim
@@ -713,25 +799,25 @@ LoadCommands() {
         Func | Google | Search Clipboard or Input by Google
         Func | AhkRun | Run Command use AutoHotkey Run
         Func | Bing | Search Clipboard or Input by Bing
-        ), % g_RUNTIME.Ini, % g_SEC.Fallback
-        IniRead, FALLBACKCMDSEC, % g_RUNTIME.Ini, % g_SEC.Fallback
+        ), % g_RUNTIME.Ini, % g_SECTION.FALLBACK
+        IniRead, FALLBACKCMDSEC, % g_RUNTIME.Ini, % g_SECTION.FALLBACK
     }
-    Loop Parse, FALLBACKCMDSEC, `n                                      ; Get and verify each FBCommand (Rank not necessary) and push it to g_Fallback
+    Loop Parse, FALLBACKCMDSEC, `n                                      ; Get and verify each FBCommand (Rank not necessary) and push it to g_FALLBACK
     {
-        IsFunc(StrSplit(A_LoopField, " | ")[2]) ? g_Fallback.Push(A_LoopField)
+        g_FALLBACK.Push(A_LoopField)
     }
-    Return Log.Debug("Loading commands list...OK")
+    Return g_LOG.Debug("Loading commands list...OK")
 }
 
 LoadHistory() {
     if (g_CONFIG.SaveHistory) {
         Loop % g_CONFIG.HistoryLen
         {
-            IniRead, History, % g_RUNTIME.Ini, % g_SEC.History, % A_Index, % A_Space
-            g_History.Push(History)
+            IniRead, History, % g_RUNTIME.Ini, % g_SECTION.HISTORY, % A_Index, % A_Space
+            g_HISTORYS.Push(History)
         }
     } else
-        IniDelete, % g_RUNTIME.Ini, % g_SEC.History
+        IniDelete, % g_RUNTIME.Ini, % g_SECTION.HISTORY
 }
 
 GetCmdOutput(command) {
@@ -744,31 +830,35 @@ GetCmdOutput(command) {
     Return RTrim(Result, "`r`n")                                        ; Remove result rightmost/last "`r`n"
 }
 
-GetRunResult(command) {                                                 ;运行CMD并取返回结果方式2
+GetRunResult(command) {                                                 ; 运行CMD并取返回结果方式2
     shell := ComObjCreate("WScript.Shell")                              ; WshShell object: http://msdn.microsoft.com/en-us/library/aew9yb99
     exec := shell.Exec(ComSpec " /C " command)                          ; Execute a single command via cmd.exe
     Return exec.StdOut.ReadAll()                                        ; Read and Return the command's output
 }
 
-OpenDir(Path, OpenContainer := False) {
+OpenDir(Path) {
     Path := AbsPath(Path)
 
-    if (OpenContainer) {
-        if (g_CONFIG.FileMgr = "Explorer.exe")
-            Run, % g_CONFIG.FileMgr " /Select`, """ Path """",, UseErrorLevel
-        else
-            Run, % g_CONFIG.FileMgr " /P """ Path """",, UseErrorLevel    ; /P Parent folder
-    } else
-        Run, % g_CONFIG.FileMgr " """ Path """",, UseErrorLevel
+    Run, % g_CONFIG.FileMgr " """ Path """",, UseErrorLevel
 
     if ErrorLevel
         MsgBox, 4096, % g_RUNTIME.WinName, Error found, error code : %A_LastError%
 
-    Log.Debug("Open Dir=" Path)
+    g_LOG.Debug("Open Dir=" Path)
 }
 
-OpenCurrentFileDir() {
-    OpenDir(StrSplit(g_RUNTIME.CurrentCMD, " | ")[2], True)
+OpenContainer() {
+    Path := AbsPath(StrSplit(g_RUNTIME.ActiveCommand, " | ")[2])
+
+    if (g_CONFIG.FileMgr = "Explorer.exe")
+        Run, % g_CONFIG.FileMgr " /Select`, """ Path """",, UseErrorLevel
+    else
+        Run, % g_CONFIG.FileMgr " /P """ Path """",, UseErrorLevel    ; /P Parent folder
+
+    if ErrorLevel
+        MsgBox, 4096, % g_RUNTIME.WinName, Error found, error code : %A_LastError%
+
+    g_LOG.Debug("Open Container=" Path)
 }
 
 WM_ACTIVATE(wParam, lParam) {                                           ; Close on lose focus
@@ -822,7 +912,7 @@ UpdateStartMenu(create := true) {
 }
 
 Reindex() {                                                             ; Re-create Index section
-    IniDelete, % g_RUNTIME.Ini, % g_SEC.Index
+    IniDelete, % g_RUNTIME.Ini, % g_SECTION.INDEX
     for dirIndex, dir in StrSplit(g_CONFIG.IndexDir, ",")
     {
         searchPath := AbsPath(dir)
@@ -834,14 +924,14 @@ Reindex() {                                                             ; Re-cre
                 if (g_CONFIG.IndexExclude != "" && RegExMatch(A_LoopFileLongPath, g_CONFIG.IndexExclude))
                     continue                                            ; Skip this file and move on to the next loop.
 
-                IniWrite, 1, % g_RUNTIME.Ini, % g_SEC.Index, File | %A_LoopFileLongPath% ; Assign initial rank to 1
+                IniWrite, 1, % g_RUNTIME.Ini, % g_SECTION.INDEX, File | %A_LoopFileLongPath% ; Assign initial rank to 1
                 Progress, %A_Index%, %A_LoopFileName%, ReIndexing..., Reindex
             }
         }
         Progress, Off
     }
 
-    Log.Debug("Indexing search database...")
+    g_LOG.Debug("Indexing search database...")
     TrayTip, % g_RUNTIME.WinName, ReIndex database finish successfully. , 8
     LoadCommands()
 }
@@ -855,7 +945,7 @@ Usage() {
 }
 
 Listary() {                                                             ; Listary Dir QuickSwitch Function (快速更换保存/打开对话框路径)
-    Log.Debug("Listary function starting...")
+    g_LOG.Debug("Listary function starting...")
 
     Loop Parse, % g_CONFIG.FileMgrID, `,                                ; File Manager Class, default is Windows Explorer & Total Commander
         GroupAdd, FileMgrID, %A_LoopField%
@@ -867,7 +957,7 @@ Listary() {                                                             ; Listar
         GroupAdd, ExcludeWin, %A_LoopField%
 
     if (g_CONFIG.AutoSwitchDir) {
-        Log.Debug("Listary Auto-QuickSwitch Enabled.")
+        g_LOG.Debug("Listary Auto-QuickSwitch Enabled.")
         Loop
         {
             WinWaitActive ahk_class TTOTAL_CMD
@@ -879,7 +969,7 @@ Listary() {                                                             ; Listar
                 WinGetActiveTitle, Title
                 WinGet, ActiveProcess, ProcessName, A
 
-                Log.Debug("Listary dialog detected, active window ahk_title=" Title ", ahk_exe=" ActiveProcess)
+                g_LOG.Debug("Listary dialog detected, active window ahk_title=" Title ", ahk_exe=" ActiveProcess)
                 LocateTC()                                              ; NO Return, as will terimate loop (AutoSwitchDir)
             }
         }
@@ -925,19 +1015,19 @@ ChangePath(Dir) {
     ControlSend, Edit1, {Enter}, A
     ;Sleep,100
     ;ControlSetText, Edit1, %w_Edit1Text%, A                            ; 还原之前的窗口 File Name 内容, 在选择文件的对话框时没有问题, 但是在选择文件夹的对话框有Bug,暂时注释掉
-    Log.Debug("Listary change path=" Dir)
+    g_LOG.Debug("Listary change path=" Dir)
 }
 
 CmdMgr(Path := "") {                                                    ; 命令管理窗口
     Global
-    Log.Debug("Starting Command Manager... Args=" Path)
+    g_LOG.Debug("Starting Command Manager... Args=" Path)
 
     SplitPath Path, _Desc,, fileExt,,                                   ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name) 
     
     if InStr(FileExist(Path), "D")                                      ; True only if the file exists and is a directory.
         _Type := 2                                                      ; It is a normal folder
     else                                                                ; From command "New Command" or GUI context menu "New Command"
-        _Desc := Arg
+        _Desc := g_RUNTIME.Arg
     
     if (fileExt = "lnk" && g_CONFIG.SendToGetLnk) {
         FileGetShortcut, %Path%, Path,, fileArg, _Desc
@@ -951,10 +1041,10 @@ CmdMgr(Path := "") {                                                    ; 命令
     Gui, CmdMgr:Add, Text, xp+20 yp+35, Command Type: 
     Gui, CmdMgr:Add, DropDownList, xp+120 yp-5 w150 v_Type Choose%_Type%, File||Dir|Cmd|URL
     Gui, CmdMgr:Add, Text, xp-120 yp+50, Command Path: 
-    Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 v_Path, % RelativePath(Path)
+    Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 -WantReturn v_Path, % RelativePath(Path)
     Gui, CmdMgr:Add, Button, xp+355 yp w30 hp gSelectCmdPath, ...
     Gui, CmdMgr:Add, Text, xp-475 yp+100, Name/Description: 
-    Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 v_Desc, %_Desc%
+    Gui, CmdMgr:Add, Edit, xp+120 yp-5 w350 -WantReturn v_Desc, %_Desc%
     Gui, CmdMgr:Add, Button, Default x415 w65, OK
     Gui, CmdMgr:Add, Button, xp+75 yp w65, Cancel
     Gui, CmdMgr:Show, AutoSize, Commander Manager
@@ -983,9 +1073,9 @@ CmdMgrButtonOK() {
         MsgBox,64, Command Manager, Command Path is empty`, please input correct command path!
         Return
     } else {
-        IniWrite, 1, % g_RUNTIME.Ini, % g_SEC.UserCMD, %_Type% | %_Path% %_Desc% ; initial rank = 1
+        IniWrite, 1, % g_RUNTIME.Ini, % g_SECTION.USERCMD, %_Type% | %_Path% %_Desc% ; initial rank = 1
         if (!ErrorLevel)
-            MsgBox,64, Command Manager, %_Path% `n`nCommand added successfully!
+            MsgBox,64, Command Manager, Command added successfully!`n`n%_Path%
     }
     LoadCommands()
 }
@@ -1048,15 +1138,15 @@ LineEndAddDate()                                                        ; 针对
     SendInput {End}
     Sleep, 10
     SendInput {Blind}{Text} - %CurrentDate%
-    Log.Debug("Add Date At End= - " CurrentDate)
+    g_LOG.Debug("Add Date At End= - " CurrentDate)
 }
 
-NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit),isFile是可选参数,默认为真
+NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit)
     ControlGetText, EditCtrlText, %CurrCtrl%, A
     SplitPath, EditCtrlText, fileName, fileDir, fileExt, nameNoExt
     FormatTime, CurrentDate,, dd.MM.yyyy
 
-    if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前, another way is use if fileExt in %TrgExtList% but can not check isFile at the same time
+    if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前
     {
         NameWithDate := nameNoExt " - " CurrentDate "." fileExt
     }
@@ -1067,7 +1157,7 @@ NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文
     ControlClick, %CurrCtrl%, A
     ControlSetText, %CurrCtrl%, %NameWithDate%, A
     SendInput {Blind}{End}
-    Log.Debug(WinName ", RenameWithDate=" NameWithDate)
+    g_LOG.Debug(WinName ", RenameWithDate=" NameWithDate)
 }
 
 FormatThousand(Number)                                                  ; Function to add thousand separator
@@ -1075,9 +1165,10 @@ FormatThousand(Number)                                                  ; Functi
     Return RegExReplace(Number, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",")
 }
 
-Options(Arg := "", ActTab := 1)                                         ; Options / Settings Library, 1st parameter is to avoid menu like [Option `tF2] disturb ActTab
+Options(Arg := "", ActTab := 1)                                         ; Options settings, 1st parameter is to avoid menu like [Option `tF2] disturb ActTab
 {
     Global                                                              ; Assume-global mode
+    MainGuiClose()
     Gui, Setting:New, -SysMenu +AlwaysOnTop, Options                    ;-SysMenu: omit the system menu icons, +OwnerMain: (omit due to lug options window)
     Gui, Setting:Font, s9, Segoe UI
     Gui, Setting:Add, Tab3,vCurrTab Choose%ActTab%, General|Index|GUI|Hotkey|Listary|Usage|About
@@ -1113,9 +1204,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Tab, 3 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, GUI
     Gui, Setting:Add, Text, xp+10 yp+25 , Command result limit
-    Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 vg_ListRows, % StrReplace("3|4|5|6|7|8|9|", g_GUI.ListRows, g_GUI.ListRows . "|") ; Not Choose%g_ListRows% as list start from 3
+    Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 vg_ListRows, % StrReplace("3|4|5|6|7|8|9|", g_GUI.ListRows, g_GUI.ListRows . "|") ; ListRows limit <= 9, not using Choose%g_ListRows% as list start from 3
     Gui, Setting:Add, Text, xp-150 yp+40, Width of each column:
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_ColWidth, % g_GUI.ColWidth "||40,45,430,340"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_ColWidth, % g_GUI.ColWidth "||33,46,460,AutoHdr|40,45,430,340|40,0,475,340"
     Gui, Setting:Add, Text, xp-150 yp+40, Font Name:
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_FontName, % g_GUI.FontName "||Default|Segoe UI Semibold|Microsoft Yahei"
     Gui, Setting:Add, Text, xp-150 yp+40, Font Size: 
@@ -1133,11 +1224,11 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp-150 yp+40, Background Picture:
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_Background, % g_GUI.Background "||NO PICTURE|DEFAULT|C:\Path\BackgroundPicture.jpg"
 
-    g_RUNTIME.FuncList := Object()
-    for index, element in g_Commands                                    ; Load all Func name, for Options window
+    FuncList := ""
+    for index, element in g_COMMANDS                                    ; Load all Func name, for Options window
     {
         splitResult := StrSplit(element, " | ")
-        g_RUNTIME.FuncList .= (splitResult[1] = "Func" and IsFunc(splitResult[2])) ? splitResult[2] "|" : ""
+        FuncList .= (splitResult[1] = "Func" and IsFunc(splitResult[2])) ? splitResult[2] "|" : ""
     }
 
     Gui, Setting:Tab, 4 ; Hotkey Tab
@@ -1156,15 +1247,15 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp+10 yp+25 , Hotkey 1: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey1, % g_HOTKEY.Hotkey1
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger1, % GetFuncList(g_HOTKEY.Trigger1)
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger1, % StrReplace("---|" FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|")
     Gui, Setting:Add, Text, xp-360 yp+40 , Hotkey 2: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey2, % g_HOTKEY.Hotkey2
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger2, % GetFuncList(g_HOTKEY.Trigger2)
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger2, % StrReplace("---|" FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|")
     Gui, Setting:Add, Text, xp-360 yp+40 , Hotkey 3: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey3, % g_HOTKEY.Hotkey3
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger3, % GetFuncList(g_HOTKEY.Trigger3)
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger3, % StrReplace("---|" FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|")
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h125, Listary Quick-Switch
@@ -1186,12 +1277,13 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, GroupBox, xp+40 yp+20 w445 h300,
 
     OffsetDate := A_Now
-    EnvAdd, OffsetDate, -30, Days                                       ; 减去 30 天
+    EnvAdd, OffsetDate, -30, Days                                       ; Subtract 30 days
 
-    IniRead, USAGE, % g_RUNTIME.Ini, % g_SEC.Usage                      ; read all key & value in whole section
+    IniRead, USAGE, % g_RUNTIME.Ini, % g_SECTION.USAGE                  ; read all key & value in whole section
+    static MaxValue := 0
     Loop, Parse, USAGE, `n                                              ; read each line to get each key and value
     {
-        g_RUNTIME.MaxVal := Max(g_RUNTIME.MaxVal, StrSplit(A_LoopField, "=")[2])
+        MaxValue := Max(MaxValue, StrSplit(A_LoopField, "=")[2])
     }
     
     Loop, 30
@@ -1199,18 +1291,18 @@ Options(Arg := "", ActTab := 1)                                         ; Option
         EnvAdd, OffsetDate, +1, Days
         FormatTime, OffsetDate, %OffsetDate%, yyyyMMdd
 
-        IniRead, OutputVar, % g_RUNTIME.Ini, % g_SEC.Usage, % OffsetDate, 0
-        Gui, Setting:Add, Progress, % "c94DD88 BackgroundF9F9F9 Vertical y90 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME.MaxVal+10, %OutputVar%
+        IniRead, OutputVar, % g_RUNTIME.Ini, % g_SECTION.USAGE, % OffsetDate, 0
+        Gui, Setting:Add, Progress, % "c94DD88 BackgroundF9F9F9 Vertical y90 w14 h280 xm+" 50+A_Index*14 " Range0-" MaxValue+10, %OutputVar%
     }
-    Gui, Setting:Add, Text, xp-450 yp-5, % g_RUNTIME.MaxVal+10
-    Gui, Setting:Add, Text, xp yp+140, % Round(g_RUNTIME.MaxVal/2)+5
-    Gui, Setting:Add, Text, xp yp+140, 0
-    Gui, Setting:Add, Text, xp+35 yp+15, 30 days ago 
-    Gui, Setting:Add, Text, xp+410 yp, Now
+    Gui, Setting:Add, Text, xp-450 yp-5 cGray, % MaxValue+10
+    Gui, Setting:Add, Text, xp yp+140 cGray, % Round(MaxValue/2)+5
+    Gui, Setting:Add, Text, xp yp+140 cGray, 0
+    Gui, Setting:Add, Text, xp+35 yp+15 cGray , 30 days ago 
+    Gui, Setting:Add, Text, xp+410 yp cGray, Now
     Gui, Setting:Add, Text, x66 yp+35, Total number of times the command was executed:
-    Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled vg_RunCount, % g_CONFIG.RunCount
+    Gui, Setting:Add, Edit, xp+343 yp-5 w100 ReadOnly vg_RunCount, % g_CONFIG.RunCount
     Gui, Setting:Add, Text, x66 yp+35, Number of times the program was activated today:
-    Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled, % g_RUNTIME.UsageToday
+    Gui, Setting:Add, Edit, xp+343 yp-5 w100 ReadOnly, % g_RUNTIME.UsageToday
 
     Gui, Setting:Tab, 7 ; ABOUT TAB
     Gui, Setting:Font, S12, Segoe UI Semibold
@@ -1262,18 +1354,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Show,, Options
     Hotkey, % g_HOTKEY.GlobalHotkey1, Off, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, Off, UseErrorLevel
-    Log.Debug("Loading options window...Arg=" Arg ", ActTab=" ActTab)
-}
-
-GetFuncList(Trigger)
-{
-    g_RUNTIME.FuncList := ""
-    for index, element in g_Commands                                    ; Load all Func name, for Options window
-    {
-        splitResult := StrSplit(element, " | ")
-        g_RUNTIME.FuncList .= (splitResult[1] = "Func" and IsFunc(splitResult[2])) ? splitResult[2] "|" : ""
-    }
-    Return StrReplace("---|" g_RUNTIME.FuncList, Trigger, Trigger . "|")
+    g_LOG.Debug("Loading options window...Arg=" Arg ", ActTab=" ActTab)
 }
 
 ResetHotkey() {
@@ -1302,128 +1383,128 @@ SettingGuiClose() {
 
 LOADCONFIG(Arg)                                                         ; 加载主配置文件
 {
-    Log.Debug("Loading configuration...Arg=" Arg)
+    g_LOG.Debug("Loading configuration...Arg=" Arg)
 
     if (Arg = "config" or Arg = "initialize" or Arg = "all") {
         For key, value in g_CONFIG                                      ; Read [Config] to Object
         {
-            IniRead, tempValue, % g_RUNTIME.Ini, % g_SEC.Config, %key%, %value%
+            IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.CONFIG, %key%, %value%
             g_CONFIG[key] := tempValue
             ; OutputDebug, % key " = " g_CONFIG[key]
         }
 
         For key, value in g_HOTKEY                                      ; Read Hotkey section
         {
-            IniRead, tempValue, % g_RUNTIME.Ini, % g_SEC.Hotkey, %key%, %value%
+            IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.HOTKEY, %key%, %value%
             g_HOTKEY[key] := tempValue
         }
 
         For key, value in g_GUI                                         ; Read GUI section
         {
-            IniRead, tempValue, % g_RUNTIME.Ini, % g_SEC.Gui, %key%, %value%
+            IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.GUI, %key%, %value%
             g_GUI[key] := tempValue
         }
 
         g_RUNTIME.BGPic := (g_GUI.Background = "DEFAULT") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
 
-        IniRead, tempValue, % g_RUNTIME.Ini, % g_SEC.Usage, % A_YYYY . A_MM . A_DD, 0
+        IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.USAGE, % A_YYYY . A_MM . A_DD, 0
         g_RUNTIME.UsageToday := tempValue
 
         OffsetDate := A_Now
         EnvAdd, OffsetDate, -30, Days                                   ; 减去 30 天
         FormatTime, OffsetDate, %OffsetDate%, yyyyMMdd
     
-        IniRead, USAGE, % g_RUNTIME.Ini, % g_SEC.Usage                  ; Clean up usage record before 30 days
+        IniRead, USAGE, % g_RUNTIME.Ini, % g_SECTION.USAGE              ; Clean up usage record before 30 days
         Loop, Parse, USAGE, `n
         {
             key := StrSplit(A_LoopField, "=")[1]
             if (key < OffsetDate)
             {
-                IniDelete, % g_RUNTIME.Ini, % g_SEC.Usage, %key%
+                IniDelete, % g_RUNTIME.Ini, % g_SECTION.USAGE, %key%
             }
         }
     }
 
     if (Arg = "commands" or Arg = "initialize" or Arg = "all") {        ; Built-in command initialize
-        DFTCMDSEC := "
-        (LTrim
-        ; Built-in commands, high priority, do NOT modify
-        ; Will be automatically overwritten by the program
-        ;
-        Func | Help | ALTRun Help Index (F1)=99
-        Func | Options | ALTRun Options Preference Settings (F2)=99
-        Func | Reload | ALTRun Reload=99
-        Func | CmdMgr | New Command=99
-        Func | UserCommandList | ALTRun User-defined command (F4)=99
-        Func | Usage | ALTRun Usage Status=99
-        Func | Reindex | Reindex search database=99
-        Func | Everything | Search by Everything=99
-        Func | RunPTTools | PT Tools (AHK)=99
-        Func | AhkRun | Run Command use AutoHotkey Run=99
-        Func | Google | Search Clipboard or Input by Google=99
-        Func | Bing | Search Clipboard or Input by Bing=99
-        Func | EmptyRecycle | Empty Recycle Bin=99
-        Func | TurnMonitorOff | Turn off Monitor, Close Monitor=99
-        Func | MuteVolume | Mute Volume=99
-        File | `%Temp`%\ALTRun.log | ALTRun Log File=99
-        Dir | A_ScriptDir | ALTRun Program Dir=99
-        Dir | A_Startup | Current User Startup Dir=99
-        Dir | A_StartupCommon | All User Startup Dir=99
-        Dir | A_ProgramsCommon | Windowns Search.Index.Cortana Dir=99
-        Dir | `%Desktop`%=99
-        Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
-        Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=99
-        Cmd | explorer.exe | Windows File Explorer=99
-        Cmd | cmd.exe | DOS / CMD=99
-        Cmd | cmd.exe /k ipconfig | Check IP Address=99
-        Cmd | Shell:AppsFolder | AppsFolder Applications=99
-        Cmd | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=99
-        Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=99
-        Cmd | WF.msc | Windows Defender Firewall with Advanced Security=99
-        Cmd | TaskSchd.msc | Task Scheduler=99
-        Cmd | DevMgmt.msc | Device Manager=99
-        Cmd | EventVwr.msc | Event Viewer=99
-        Cmd | CompMgmt.msc | Computer Manager=99
-        Cmd | TaskMgr.exe | Task Manager=99
-        Cmd | Calc.exe | Calculator=99
-        Cmd | MsPaint.exe | Paint=99
-        Cmd | Regedit.exe | Registry Editor=99
-        Cmd | Write.exe | Write=99
-        Cmd | CleanMgr.exe | Disk Space Clean-up Manager=99
-        Cmd | GpEdit.msc | Group Policy=99
-        Cmd | DiskMgmt.msc | Disk Management=99
-        Cmd | DxDiag.exe | Directx Diagnostic Tool=99
-        Cmd | LusrMgr.msc | Local Users and Groups=99
-        Cmd | MsConfig.exe | System Configuration=99
-        Cmd | PerfMon.exe /Res | Resources Monitor=99
-        Cmd | PerfMon.exe | Performance Monitor=99
-        Cmd | WinVer.exe | About Windows=99
-        Cmd | Services.msc | Services=99
-        Cmd | NetPlWiz | User Accounts=99
-        Cmd | Control | Control Panel=99
-        Cmd | Control Intl.cpl | Region and Language Options=99
-        Cmd | Control Firewall.cpl | Windows Defender Firewall=99
-        Cmd | Control Access.cpl | Ease of Access Centre=99
-        Cmd | Control AppWiz.cpl | Programs and Features=99
-        Cmd | Control Sticpl.cpl | Scanners and Cameras=99
-        Cmd | Control Sysdm.cpl | System Properties=99
-        Cmd | Control Mouse | Mouse Properties=99
-        Cmd | Control Desk.cpl | Display=99
-        Cmd | Control Mmsys.cpl | Sound=99
-        Cmd | Control Ncpa.cpl | Network Connections=99
-        Cmd | Control Powercfg.cpl | Power Options=99
-        Cmd | Control TimeDate.cpl | Date and Time=99
-        Cmd | Control AdminTools | Windows Tools=99
-        Cmd | Control Desktop | Personalisation=99
-        Cmd | Control Folders | File Explorer Options=99
-        Cmd | Control Fonts | Fonts=99
-        Cmd | Control Inetcpl.cpl,,4 | Internet Properties=99
-        Cmd | Control Printers | Devices and Printers=99
-        Cmd | Control UserPasswords | User Accounts=99
-        )"
-        IniWrite, % DFTCMDSEC, % g_RUNTIME.Ini, % g_SEC.DftCMD
+        IniRead, DFTCMDSEC, % g_RUNTIME.Ini, % g_SECTION.DFTCMD
+        if (DFTCMDSEC = "") {
+            IniWrite,
+            (Ltrim
+            ; Built-in commands, high priority, do NOT modify
+            ; Auto-generated when [DefaultCommnd] section is empty
+            ;
+            Func | Help | ALTRun Help Index (F1)=99
+            Func | Options | ALTRun Options Preference Settings (F2)=99
+            Func | Reload | ALTRun Reload=99
+            Func | CmdMgr | New Command=99
+            Func | UserCommand | ALTRun User-defined command (F4)=99
+            Func | Usage | ALTRun Usage Status=99
+            Func | Reindex | Reindex search database=99
+            Func | Everything | Search by Everything=99
+            Func | RunPTTools | PT Tools (AHK)=99
+            Func | AhkRun | Run Command use AutoHotkey Run=99
+            Func | Google | Search Clipboard or Input by Google=99
+            Func | Bing | Search Clipboard or Input by Bing=99
+            Func | EmptyRecycle | Empty Recycle Bin=99
+            Func | TurnMonitorOff | Turn off Monitor, Close Monitor=99
+            Func | MuteVolume | Mute Volume=99
+            File | `%Temp`%\ALTRun.log | ALTRun Log File=99
+            Dir | A_ScriptDir | ALTRun Program Dir=99
+            Dir | A_Startup | Current User Startup Dir=99
+            Dir | A_StartupCommon | All User Startup Dir=99
+            Dir | A_ProgramsCommon | Windowns Search.Index.Cortana Dir=99
+            Dir | `%Desktop`%=99
+            Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
+            Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=99
+            Cmd | explorer.exe | Windows File Explorer=99
+            Cmd | cmd.exe | DOS / CMD=99
+            Cmd | cmd.exe /k ipconfig | Check IP Address=99
+            Cmd | Shell:AppsFolder | AppsFolder Applications=66
+            Cmd | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=66
+            Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=66
+            Cmd | WF.msc | Windows Defender Firewall with Advanced Security=66
+            Cmd | TaskSchd.msc | Task Scheduler=66
+            Cmd | DevMgmt.msc | Device Manager=66
+            Cmd | EventVwr.msc | Event Viewer=66
+            Cmd | CompMgmt.msc | Computer Manager=66
+            Cmd | TaskMgr.exe | Task Manager=66
+            Cmd | Calc.exe | Calculator=66
+            Cmd | MsPaint.exe | Paint=66
+            Cmd | Regedit.exe | Registry Editor=66
+            Cmd | CleanMgr.exe | Disk Space Clean-up Manager=66
+            Cmd | GpEdit.msc | Group Policy=66
+            Cmd | DiskMgmt.msc | Disk Management=66
+            Cmd | DxDiag.exe | Directx Diagnostic Tool=66
+            Cmd | LusrMgr.msc | Local Users and Groups=66
+            Cmd | MsConfig.exe | System Configuration=66
+            Cmd | PerfMon.exe /Res | Resources Monitor=66
+            Cmd | PerfMon.exe | Performance Monitor=66
+            Cmd | WinVer.exe | About Windows=66
+            Cmd | Services.msc | Services=66
+            Cmd | NetPlWiz | User Accounts=66
+            Cmd | Control | Control Panel=66
+            Cmd | Control Intl.cpl | Region and Language Options=66
+            Cmd | Control Firewall.cpl | Windows Defender Firewall=66
+            Cmd | Control Access.cpl | Ease of Access Centre=66
+            Cmd | Control AppWiz.cpl | Programs and Features=66
+            Cmd | Control Sticpl.cpl | Scanners and Cameras=66
+            Cmd | Control Sysdm.cpl | System Properties=66
+            Cmd | Control Mouse | Mouse Properties=66
+            Cmd | Control Desk.cpl | Display=66
+            Cmd | Control Mmsys.cpl | Sound=66
+            Cmd | Control Ncpa.cpl | Network Connections=66
+            Cmd | Control Powercfg.cpl | Power Options=66
+            Cmd | Control TimeDate.cpl | Date and Time=66
+            Cmd | Control AdminTools | Windows Tools=66
+            Cmd | Control Desktop | Personalisation=66
+            Cmd | Control Inetcpl.cpl,,4 | Internet Properties=66
+            Cmd | Control Printers | Devices and Printers=66
+            Cmd | Control UserPasswords | User Accounts=66
+            ), % g_RUNTIME.Ini, % g_SECTION.DFTCMD
+            IniRead, DFTCMDSEC, % g_RUNTIME.Ini, % g_SECTION.DFTCMD
+        }
 
-        IniRead, USERCMDSEC, % g_RUNTIME.Ini, % g_SEC.UserCMD
+        IniRead, USERCMDSEC, % g_RUNTIME.Ini, % g_SECTION.USERCMD
         if (USERCMDSEC = "") {
             IniWrite,
             (Ltrim
@@ -1431,17 +1512,19 @@ LOADCONFIG(Arg)                                                         ; 加载
             ; Format: Command Type | Command | Description=Rank
             ; Command type: File, Dir, CMD, URL
             ;
-            Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
-            Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=99
-            Dir | `%OneDriveCommercial`% | OneDrive Business Dir=99
-            Cmd | ipconfig | Show IP Address(CMD type will run with cmd.exe, auto pause after run)=99
-            URL | www.google.com | Google=99
-            File | C:\OneDrive\Apps\TotalCMD64\TOTALCMD64.exe=99
-            ), % g_RUNTIME.Ini, % g_SEC.UserCMD
-            IniRead, USERCMDSEC, % g_RUNTIME.Ini, % g_SEC.UserCMD
+            Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=1
+            Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=1
+            Dir | A_ScriptDir | ALTRun Program Dir=99
+            Cmd | cmd.exe /k ipconfig | Check IP Address=1
+            Cmd | Control TimeDate.cpl | Date and Time=66
+            Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=66
+            URL | www.google.com | Google=1
+            File | C:\OneDrive\Apps\TotalCMD64\TOTALCMD64.exe=1
+            ), % g_RUNTIME.Ini, % g_SECTION.USERCMD
+            IniRead, USERCMDSEC, % g_RUNTIME.Ini, % g_SECTION.USERCMD
         }
 
-        IniRead, INDEXSEC, % g_RUNTIME.Ini, % g_SEC.Index               ; Read whole section g_SEC.Index (Index database)
+        IniRead, INDEXSEC, % g_RUNTIME.Ini, % g_SECTION.INDEX           ; Read whole section of Index database
         if (INDEXSEC = "") {
             MsgBox, 4160, % g_RUNTIME.WinName, ALTRun is going to initialize for the first time running...`n`nConfig software and build the index database for search.`n`nAuto initialize in 30 seconds or click OK now., 30
             Reindex()
@@ -1458,20 +1541,20 @@ SAVECONFIG() {
         g_%key% := (A_Index = LV_GetNext(A_Index-1, "C")) ? 1 : 0       ; for Options - General page - Check Listview
 
     For key, value in g_CONFIG
-        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SEC.Config, %key%     ; For all ini file - [Config] g_ 变量从控件v变量和上一步Check Listview取得
+        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SECTION.CONFIG, %key% ; For all ini file - [Config] g_ 变量从控件v变量和上一步Check Listview取得
 
     For key, value in g_GUI
-        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SEC.Gui, %key%
+        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SECTION.GUI, %key%
 
     For key, value in g_HOTKEY
-        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SEC.Hotkey, %key%
+        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SECTION.HOTKEY, %key%
 
-    Return Log.Debug("Saving config...")
+    Return g_LOG.Debug("Saving config...")
 }
 
-;=============================================================
+;===================================================
 ; Resources File - Background picture
-;=============================================================
+;===================================================
 Extract_BG(_Filename)
 {
 	Static Out_Data
@@ -1490,11 +1573,11 @@ Extract_BG(_Filename)
     Return _Filename
 }
 
-;=============================================================
+;===================================================
 ; Some Built-in Functions
-;=============================================================
+;===================================================
 AhkRun() {
-    Run, %Arg%,, UseErrorLevel
+    Run, % g_RUNTIME.Arg,, UseErrorLevel
 }
 
 TurnMonitorOff() {                                                      ; 关闭显示器:
@@ -1514,26 +1597,26 @@ MuteVolume() {
 }
 
 Google() {
-    word := Arg = "" ? clipboard : Arg
+    word := g_RUNTIME.Arg = "" ? clipboard : g_RUNTIME.Arg
     Run, https://www.google.com/search?q=%word%&newwindow=1
 }
 
 Bing() {
-    word := Arg = "" ? clipboard : Arg
+    word := g_RUNTIME.Arg = "" ? clipboard : g_RUNTIME.Arg
     Run, http://cn.bing.com/search?q=%word%
 }
 
 Everything() {
-    Run, % g_CONFIG.Everything " -s """ Arg """",, UseErrorLevel
+    Run, % g_CONFIG.Everything " -s """ g_RUNTIME.Arg """",, UseErrorLevel
     if ErrorLevel
         MsgBox, % "Everything software not found.`n`nPlease check ALTRun setting and Everything program file."
 }
 
-;=======================================================================
+;===================================================
 ; Eval - Calculate a math expression
-; 计算数学表达式，支持 +, -, *, /, ^ (或 **), 和括号 ()
-; 如果输入包含非法字符，返回 0
-;=======================================================================
+; Support +, -, *, /, ^ (or **), and ()
+; Return 0 if input contains illegal characters
+;===================================================
 Eval(expression) {
     StringReplace, expression, expression, %A_Space%, , All             ; 移除所有空格
 
@@ -1577,7 +1660,7 @@ EvalSimple(expression) {                                                ; 计算
     Return expression    ; 返回最终结果
 }
 
-Class Logger                                                            ; Logger library
+Class Logger
 {
     __New(filename) {
         this.filename := filename
