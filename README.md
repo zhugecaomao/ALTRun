@@ -54,6 +54,9 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ### Dark Mode:
 ![Dark Mode](https://github.com/user-attachments/assets/2ce70d3f-f84c-4f0a-a7a3-d037642f3604)
 
+### Customized Window:
+![Screenshot 2025-01-03 131048](https://github.com/user-attachments/assets/1c650c99-7dbb-40d5-b0d8-32c584166d7c)
+
 ### Context Menu:
 ![MainGUI](https://github.com/user-attachments/assets/30901d12-edb1-4780-9c23-2e4d91956898)
 
