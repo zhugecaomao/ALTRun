@@ -17,10 +17,10 @@ SetWorkingDir %A_ScriptDir%
 ; Declare global variables
 ;===================================================
 Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
-, g_COMMANDS:= Object()     ; All commands
-, g_FALLBACK:= Object()     ; Fallback commands
-, g_HISTORYS:= Object()     ; Execution history
-, g_MATCHED := Object()     ; Matched commands
+, g_COMMANDS:= {}           ; All commands
+, g_FALLBACK:= {}           ; Fallback commands
+, g_HISTORYS:= {}           ; Execution history
+, g_MATCHED := {}           ; Matched commands
 , g_SECTION := {CONFIG      : "Config"
             ,GUI            : "Gui"
             ,DFTCMD         : "DefaultCommand"
@@ -36,6 +36,8 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShowTrayIcon   : 1
             ,HideOnLostFocus: 1
             ,AlwaysOnTop    : 1
+            ,ShowCaption    : 1
+            ,EnableTheme    : 1
             ,EscClearInput  : 1
             ,KeepInput      : 1
             ,ShowIcon       : 1
@@ -45,18 +47,19 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,MatchPath      : 0
             ,ShowGrid       : 0
             ,ShowHdr        : 1
+            ,ShowSN         : 1
             ,SmartRank      : 1
             ,SmartMatch     : 1
             ,MatchAny       : 1
-            ,ShowTheme      : 1
             ,ShowHint       : 1
             ,ShowRunCount   : 1
             ,ShowStatusBar  : 1
             ,ShowBtnRun     : 1
             ,ShowBtnOpt     : 1
-            ,ShowDirName    : 1
+            ,ShowShortenPath: 1
             ,RunCount       : 0
             ,HistoryLen     : 15
+            ,DoubleBuffer   : 1
             ,AutoSwitchDir  : 0
             ,Editor         : "Notepad.exe"
             ,FileMgr        : "Explorer.exe"
@@ -88,30 +91,33 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,WinColor       : "Silver"
             ,Background     : "DEFAULT"}
 , g_CHKLV   := {AutoStartup : "Launch on Windows startup"               ; Options - General - CheckedListview
-            ,EnableSendTo   : "Enable the SendTo menu"
-            ,InStartMenu    : "Enable the Start menu"
+            ,EnableSendTo   : "Enable SendTo - Create commands conveniently using Windows SendTo"
+            ,InStartMenu    : "Enable ALTRun shortcut in the Windows Start menu"
             ,ShowTrayIcon   : "Show Tray Icon in the system taskbar"
             ,HideOnLostFocus: "Close window on losing focus"
             ,AlwaysOnTop    : "Always stay on top"
+            ,ShowCaption    : "Show Caption - Show window title bar"
+            ,EnableTheme    : "XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
             ,EscClearInput  : "Press [ESC] to clear input, press again to close window (Untick:close directly)"
             ,KeepInput      : "Keep last input and search result on close"
-            ,ShowIcon       : "Show Icon of file, folder or apps in the command result list"
+            ,ShowIcon       : "Show Icon - Show icon for command (file, folder, apps etc.) in the command list"
             ,SendToGetLnk   : "Retrieve .lnk target on SendTo"
             ,SaveHistory    : "Save History - Commands executed with arg"
             ,SaveLog        : "Save Log - App running and debug information"
             ,MatchPath      : "Match full path on search"
-            ,ShowGrid       : "Show Grid in command list"
-            ,ShowHdr        : "Show Header in command list"
+            ,ShowGrid       : "Show Grid - Provides boundary lines between rows and columns in command list"
+            ,ShowHdr        : "Show Header - Show header (top row contains column titles) in command list"
+            ,ShowSN         : "Show Serial Number in command list"
             ,SmartRank      : "Smart Rank - Auto adjust command priority (rank) based on use frequency"
             ,SmartMatch     : "Smart Match - Fuzzy and Smart matching and filtering result"
             ,MatchAny       : "Match from any position of the string"
-            ,ShowTheme      : "Show Theme - Software skin and background picture"
             ,ShowHint       : "Show Hints and Tips in the bottom status bar"
-            ,ShowRunCount   : "Show RunCount - Command running times in the status bar"
+            ,ShowRunCount   : "Show RunCount - Show command executed times in the status bar"
             ,ShowStatusBar  : "Show Status Bar"
-            ,ShowBtnRun     : "Show [Run] Button on main window"
-            ,ShowBtnOpt     : "Show [Options] Button on main window"
-            ,ShowDirName    : "Show Shorten Dir - Show dir name only instead of full path in the result"}
+            ,ShowBtnRun     : "Show [Run] button on main window"
+            ,ShowBtnOpt     : "Show [Options] button on main window"
+            ,DoubleBuffer   : "Double Buffer - Paints via double-buffering, reduces flicker in the list (WinXP+)"
+            ,ShowShortenPath: "Show Shorten Path - Show file/folder name only instead of full path in the result"}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
             ,WinName        : "ALTRun - Ver 2025.01"
             ,BGPic          : ""
@@ -191,9 +197,6 @@ g_LOG.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_CONFIG.InStartMe
 ;===================================================
 ; 主窗口配置代码
 ;===================================================
-AlwaysOnTop  := g_CONFIG.AlwaysOnTop ? "+AlwaysOnTop" : ""
-ShowGrid     := g_CONFIG.ShowGrid ? "Grid" : ""
-ShowHdr      := g_CONFIG.ShowHdr ? "" : "-Hdr"
 LV_H         := g_GUI.WinHeight - 43 - 3 * g_GUI.FontSize
 LV_W         := g_GUI.WinWidth - 24
 Input_W      := LV_W - g_CONFIG.ShowBtnRun * 90 - g_CONFIG.ShowBtnOpt * 90
@@ -204,21 +207,23 @@ Options_X    := g_CONFIG.ShowBtnOpt * 10
 
 Gui, Main:Color, % g_GUI.WinColor, % g_GUI.CtrlColor
 Gui, Main:Font, % "c" g_GUI.FontColor " s" g_GUI.FontSize, % g_GUI.FontName
-Gui, Main:%AlwaysOnTop%
+Gui, % "Main:" (g_CONFIG.AlwaysOnTop ? "+AlwaysOnTop" : "-AlwaysOnTop")
+Gui, % "Main:" (g_CONFIG.ShowCaption ? "+Caption" : "-Caption")
+Gui, % "Main:" (g_CONFIG.ShowTheme ? "+Theme" : "-Theme")
+Gui, Main:Default ; Set default GUI before any ListView / statusbar update
 Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, Type anything here to search...
-Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, Enter
+Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, Run
 Gui, Main:Add, Button, % "x+"Options_X " yp W" Options_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, Options
-Gui, Main:Add, ListView, x12 ys+35 W%LV_W% H%LV_H% vMyListView AltSubmit gLVActions %ShowHdr% +LV0x10000 %ShowGrid% -Multi, No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
+Gui, Main:Add, ListView, % "x12 ys+35 W" LV_W " H" LV_H " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") , No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, x0 y0 0x4000000, % g_RUNTIME.BGPic
-Gui, Main:Add, StatusBar, % "gSBActions Hidden" !g_CONFIG.ShowStatusBar,
-Gui, Main:Default                                                       ; Set default GUI before any ListView / statusbar update
+Gui, Main:Add, StatusBar, % "gOnClickStatusBar Hidden" !g_CONFIG.ShowStatusBar,
+
+Loop, 4 {
+    LV_ModifyCol(A_Index, StrSplit(g_GUI.ColWidth, ",")[A_Index])
+}
 
 SB_SetParts(g_GUI.WinWidth - 90 * g_CONFIG.ShowRunCount)
 SB_SetIcon("shell32.dll",-16752, 2)
-Loop, 4
-{
-    LV_ModifyCol(A_Index, StrSplit(g_GUI.ColWidth, ",")[A_Index])
-}
 
 ListResult("Tip | F1 | Help`nTip | F2 | Options and settings`n"         ; List initial tips
     . "Tip | F3 | Edit current command`nTip | F4 | User-defined commands`n"
@@ -226,7 +231,7 @@ ListResult("Tip | F1 | Help`nTip | F2 | Options and settings`n"         ; List i
     . "Tip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`n"
     . "Tip | ENTER / ALT+NO. | Run selected command`n"
     . "Tip | ARROW UP or DOWN | Select previous or next command`n"
-    . "Tip | CTRL+D | Open selected cmd's dir with File Manager")
+    . "Tip | CTRL+D | Locate cmd's dir with File Manager")
 
 if (g_CONFIG.ShowIcon) {
     Global ImageListID := IL_Create(10, 5, 0)                           ; Create an ImageList so that the ListView can display some icons
@@ -248,8 +253,7 @@ if (A_Args[1] = "-SendTo") {
 
 Gui, Main:Show, % "w" g_GUI.WinWidth " h" g_GUI.WinHeight " Center " g_RUNTIME.WinHide, % g_RUNTIME.WinName
 
-if (g_CONFIG.HideOnLostFocus)
-    OnMessage(0x06, "WM_ACTIVATE")
+(g_CONFIG.HideOnLostFocus) ? OnMessage(0x06, "WM_ACTIVATE")
 
 ;===================================================
 ; Set Hotkey
@@ -313,7 +317,7 @@ OnSearchInput() {
 SearchCommand(command := "") {
     Result    := ""
     Order     := 1
-    g_MATCHED := Object()
+    g_MATCHED := {}
     Prefix    := SubStr(command, 1, 1)
 
     if (Prefix = "+" or Prefix = " " or Prefix = ">") {
@@ -330,17 +334,16 @@ SearchCommand(command := "") {
         _Desc := splitResult[3]
         SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
 
-        elementToShow   := (_Type = "dir" and g_CONFIG.ShowDirName) ? _Type " | " fileName " | " _Desc : _Type " | " _Path " | " _Desc ; Use _Path to show file icons (file type), and all other types, Show folder name only for dir type
-        elementToSearch := g_CONFIG.MatchPath ? _Type " " _Path " " _Desc : _Type " " fileName " " _Desc ; search file name include extension & desc, search dir type + folder name + desc
+        elementToSearch := g_CONFIG.MatchPath ? element : _Type " " fileName " " _Desc ; search type, file name include extension, and desc
 
         if FuzzyMatch(elementToSearch, command) {
             g_MATCHED.Push(element)
 
             if (Order = 1) {
                 g_RUNTIME.ActiveCommand := element
-                Result .= elementToShow
+                Result .= element
             } else {
-                Result .= "`n" elementToShow
+                Result .= "`n" element
             }
             Order++
             if (Order > g_GUI.ListRows)
@@ -387,11 +390,14 @@ ListResult(text := "", UseDisplay := false)
     {
         splitResult := StrSplit(A_LoopField, " | ")
         _Type       := splitResult[1]
-        _Path       := AbsPath(splitResult[2])                          ; Must store in var for afterward use, trim space (in AbsPath)
+        _Path       := splitResult[2]
         _Desc       := splitResult[3]
         IconIndex   := g_CONFIG.ShowIcon ? GetIconIndex(_Path, _Type) : 0
 
-        LV_Add("Icon" . IconIndex, A_Index, _Type, _Path, _Desc)
+        SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
+        PathToShow  := (g_CONFIG.ShowShortenPath) ? fileName : _Path    ; Show Full path / Shorten path
+
+        LV_Add("Icon" IconIndex, (g_CONFIG.ShowSN ? A_Index : ""), _Type, PathToShow, _Desc)
     }
 
     LV_Modify(1, "Select Focus Vis")                                    ; Select 1st row
@@ -406,11 +412,12 @@ ListResult(text := "", UseDisplay := false)
 GetIconIndex(_Path, _Type)                                              ; Get file's icon index
 {
     Switch (_Type) {
-    Case "Dir" : Return 1
-    Case "Func","Cmd","Tip": Return 2
+    Case "DIR" : Return 1
+    Case "FUNC","CMD","TIP": Return 2
     Case "URL" : Return 3
-    Case "Eval": Return 4
-    Case "File": {
+    Case "EVAL": Return 4
+    Case "FILE": {
+            _Path := AbsPath(_Path)                                     ; Must store in var for afterward use, trim space (in AbsPath)
             SplitPath, _Path,,, FileExt                                 ; Get the file's extension.
             if FileExt in EXE,ICO,ANI,CUR,LNK
                 IconIndex := IconMap.HasKey(_Path) ? IconMap[_Path] : GetIcon(_Path, _Path) ; File path exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
@@ -540,7 +547,7 @@ ChangeCommand(Step = 1, ResetSelRow = False) {
     SetStatusBar()
 }
 
-LVActions()                                                             ; ListView g label actions (left / double click) behavior
+OnClickListview()                                                       ; ListView g label actions (left / double click) behavior
 {
     Gui, Main:Default                                                   ; Use it before any LV update
     focusedRow := LV_GetNext(0, "Focused")                              ; 查找焦点行, 仅对焦点行进行操作而不是所有选择的行:
@@ -574,7 +581,7 @@ LVContextMenu() {                                                       ; ListVi
         LV_GetText(Text, focusedRow, 3) ? (A_Clipboard := Text)         ; Get the text from the focusedRow's 3rd field.
 }
 
-SBActions() {
+OnClickStatusBar() {
     if (A_GuiEvent = "RightClick" and A_EventInfo = 1) {
         Menu, SB_ContextMenu, Add, Copy, SBContextMenu
         Menu, SB_ContextMenu, Icon, Copy, Shell32.dll, -243
@@ -602,7 +609,7 @@ MainGuiEscape() {
 MainGuiClose() {                                                        ; If GuiClose is a function, the GUI is hidden by default
     g_CONFIG.KeepInput ? "" : ClearInput()
     Gui, Main:Hide
-    SetStatusBar("Hint")                                                ; Update StatusBar hint information after GUI hide
+    SetStatusBar("TIP")                                                 ; Update StatusBar tip information after GUI hide
 }
 
 Exit() {
@@ -652,7 +659,7 @@ ClearInput() {
     GuiControl, Main:Focus, MyInput
 }
 
-SetStatusBar(Mode := "Command") {                                       ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
+SetStatusBar(Mode := "CMD") {                                           ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
     Gui, Main:Default                                                   ; Set default GUI window before any ListView / StatusBar operate
     static Hints := ["It's better to activate ALTRun by hotkey (ALT + Space)"
         ,"Smart Rank - Atuo adjusts command priority (rank) based on frequency of use."
@@ -670,12 +677,12 @@ SetStatusBar(Mode := "Command") {                                       ; Set St
         ,"Ctrl+'+' = Increase rank of current command"
         ,"Ctrl+'-' = Decrease rank of current command"]
     Switch (Mode) {
-        Case "Command": SBText := StrSplit(g_RUNTIME.ActiveCommand, " | ")[2]
-        Case "Hint": {
+        Case "CMD" : SBText := StrSplit(g_RUNTIME.ActiveCommand, " | ")[2]
+        Case "TIP" : {
             Random, index, 1, Hints.Count()
-            SBText := Hints[index]
+            SBText := "Tip: " Hints[index]
         }
-        Default: SBText := Mode
+        Default    : SBText := Mode
     }
     SB_SetText(SBText, 1), SB_SetText(g_CONFIG.RunCount, 2)
 }
@@ -766,8 +773,8 @@ RankDown() {
 }
 
 LoadCommands() {
-    g_COMMANDS  := Object()                                             ; Clear g_COMMANDS and g_FALLBACK list
-    g_FALLBACK  := Object()
+    g_COMMANDS  := {}                                                   ; Clear g_COMMANDS and g_FALLBACK list
+    g_FALLBACK  := {}
     RankString  := ""
 
     Loop Parse, % LOADCONFIG("commands"), `n                            ; Read commands sections (built-in, user & index), read each line, separate key and value
@@ -1169,7 +1176,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 {
     Global                                                              ; Assume-global mode
     MainGuiClose()
-    Gui, Setting:New, -SysMenu +AlwaysOnTop, Options                    ;-SysMenu: omit the system menu icons, +OwnerMain: (omit due to lug options window)
+    Gui, Setting:New, +OwnDialogs +AlwaysOnTop, Options                 ; +OwnerMain: (omit due to lug options window)
     Gui, Setting:Font, s9, Segoe UI
     Gui, Setting:Add, Tab3,vCurrTab Choose%ActTab%, General|Index|GUI|Hotkey|Listary|Usage|About
     Gui, Setting:Tab, 1 ; CONFIG Tab
@@ -1206,7 +1213,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp+10 yp+25 , Command result limit
     Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 vg_ListRows, % StrReplace("3|4|5|6|7|8|9|", g_GUI.ListRows, g_GUI.ListRows . "|") ; ListRows limit <= 9, not using Choose%g_ListRows% as list start from 3
     Gui, Setting:Add, Text, xp-150 yp+40, Width of each column:
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_ColWidth, % g_GUI.ColWidth "||33,46,460,AutoHdr|40,45,430,340|40,0,475,340"
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_ColWidth, % g_GUI.ColWidth "||33,46,460,AutoHdr|40,45,430,340|40,0,475,340|23,0,460,AutoHdr"
     Gui, Setting:Add, Text, xp-150 yp+40, Font Name:
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_FontName, % g_GUI.FontName "||Default|Segoe UI Semibold|Microsoft Yahei"
     Gui, Setting:Add, Text, xp-150 yp+40, Font Size: 
@@ -1300,9 +1307,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp+35 yp+15 cGray , 30 days ago 
     Gui, Setting:Add, Text, xp+410 yp cGray, Now
     Gui, Setting:Add, Text, x66 yp+35, Total number of times the command was executed:
-    Gui, Setting:Add, Edit, xp+343 yp-5 w100 ReadOnly vg_RunCount, % g_CONFIG.RunCount
+    Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled vg_RunCount, % g_CONFIG.RunCount
     Gui, Setting:Add, Text, x66 yp+35, Number of times the program was activated today:
-    Gui, Setting:Add, Edit, xp+343 yp-5 w100 ReadOnly, % g_RUNTIME.UsageToday
+    Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled, % g_RUNTIME.UsageToday
 
     Gui, Setting:Tab, 7 ; ABOUT TAB
     Gui, Setting:Font, S12, Segoe UI Semibold
