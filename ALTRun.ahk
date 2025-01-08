@@ -37,7 +37,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,HideOnLostFocus: 1
             ,AlwaysOnTop    : 1
             ,ShowCaption    : 1
-            ,EnableTheme    : 1
+            ,XPthemeBg      : 1
             ,EscClearInput  : 1
             ,KeepInput      : 1
             ,ShowIcon       : 1
@@ -48,6 +48,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShowGrid       : 0
             ,ShowHdr        : 1
             ,ShowSN         : 1
+            ,ShowBorder     : 1
             ,SmartRank      : 1
             ,SmartMatch     : 1
             ,MatchAny       : 1
@@ -56,7 +57,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShowStatusBar  : 1
             ,ShowBtnRun     : 1
             ,ShowBtnOpt     : 1
-            ,ShowShortenPath: 1
+            ,ShortenPath    : 1
             ,RunCount       : 0
             ,HistoryLen     : 15
             ,DoubleBuffer   : 1
@@ -97,7 +98,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,HideOnLostFocus: "Close window on losing focus"
             ,AlwaysOnTop    : "Always stay on top"
             ,ShowCaption    : "Show Caption - Show window title bar"
-            ,EnableTheme    : "XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
+            ,XPthemeBg      : "XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
             ,EscClearInput  : "Press [ESC] to clear input, press again to close window (Untick:close directly)"
             ,KeepInput      : "Keep last input and search result on close"
             ,ShowIcon       : "Show Icon - Show icon for command (file, folder, apps etc.) in the command list"
@@ -108,6 +109,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShowGrid       : "Show Grid - Provides boundary lines between rows and columns in command list"
             ,ShowHdr        : "Show Header - Show header (top row contains column titles) in command list"
             ,ShowSN         : "Show Serial Number in command list"
+            ,ShowBorder     : "Show Border - Show border line around the command list"
             ,SmartRank      : "Smart Rank - Auto adjust command priority (rank) based on use frequency"
             ,SmartMatch     : "Smart Match - Fuzzy and Smart matching and filtering result"
             ,MatchAny       : "Match from any position of the string"
@@ -117,7 +119,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShowBtnRun     : "Show [Run] button on main window"
             ,ShowBtnOpt     : "Show [Options] button on main window"
             ,DoubleBuffer   : "Double Buffer - Paints via double-buffering, reduces flicker in the list (WinXP+)"
-            ,ShowShortenPath: "Show Shorten Path - Show file/folder name only instead of full path in the result"}
+            ,ShortenPath    : "Shorten Path - Show file/folder/app name only instead of full path in result"}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
             ,WinName        : "ALTRun - Ver 2025.01"
             ,BGPic          : ""
@@ -209,12 +211,12 @@ Gui, Main:Color, % g_GUI.WinColor, % g_GUI.CtrlColor
 Gui, Main:Font, % "c" g_GUI.FontColor " s" g_GUI.FontSize, % g_GUI.FontName
 Gui, % "Main:" (g_CONFIG.AlwaysOnTop ? "+AlwaysOnTop" : "-AlwaysOnTop")
 Gui, % "Main:" (g_CONFIG.ShowCaption ? "+Caption" : "-Caption")
-Gui, % "Main:" (g_CONFIG.ShowTheme ? "+Theme" : "-Theme")
+Gui, % "Main:" (g_CONFIG.XPthemeBg ? "+Theme" : "-Theme")
 Gui, Main:Default ; Set default GUI before any ListView / statusbar update
 Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, Type anything here to search...
 Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, Run
 Gui, Main:Add, Button, % "x+"Options_X " yp W" Options_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, Options
-Gui, Main:Add, ListView, % "x12 ys+35 W" LV_W " H" LV_H " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") , No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
+Gui, Main:Add, ListView, % "x12 ys+35 W" LV_W " H" LV_H " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, x0 y0 0x4000000, % g_RUNTIME.BGPic
 Gui, Main:Add, StatusBar, % "gOnClickStatusBar Hidden" !g_CONFIG.ShowStatusBar,
 
@@ -395,7 +397,7 @@ ListResult(text := "", UseDisplay := false)
         IconIndex   := g_CONFIG.ShowIcon ? GetIconIndex(_Path, _Type) : 0
 
         SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
-        PathToShow  := (g_CONFIG.ShowShortenPath) ? fileName : _Path    ; Show Full path / Shorten path
+        PathToShow  := (g_CONFIG.ShortenPath) ? fileName : _Path        ; Show Full path / Shorten path
 
         LV_Add("Icon" IconIndex, (g_CONFIG.ShowSN ? A_Index : ""), _Type, PathToShow, _Desc)
     }
