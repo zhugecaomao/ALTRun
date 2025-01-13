@@ -1,35 +1,4 @@
 # ALTRun (AHK)
-ALTRun 是一款轻量级、功能强大的启动工具, 它以简洁、高效为设计理念, 能够大大提高你的电脑操作效率. 通过 ALTRun, 你只需输入快捷键或关键字, 即可快速找到并打开所需的资源.
-
-鉴于 ET民工 Delphi 版本的 ALTRun 已经不再更新, 这里使用 AutoHotkey 重写了一版新的 ALTRun, 不需要安装, 且文件体积小、资源占用少.
-
-## ALTRun 的主要特点
-1. 便携和轻量化
-ALTRun 不会修改系统注册表，文件小于 100 KB，占用内存少于 10MB，非常适合需要高效启动的用户。
-
-2. 智能搜索与模糊匹配
-通过智能匹配，ALTRun 支持模糊搜索，使得你能够更快速地找到应用程序、文件或目录。
-
-3. 多快捷键支持
-可以为不同的操作设置多个快捷键，大大提高了操作的效率。
-
-4. 优先级智能排序
-ALTRun 根据你使用的频率自动调整命令的优先级，让你最常用的程序更容易访问。
-
-5. 与常用工具集成
-支持与 Total Commander 和 Everything 等流行工具的集成，方便文件管理。
-
-6. SendTo 菜单
-通过 SendTo 菜单，快速创建命令，简化工作流程。
-
-7. 快速切换目录
-使用类似 Listary 快速切换功能，可以轻松切换不同的目录，提升工作效率。
-
-8. 深度自定义
-暗黑模式支持，提升视觉体验。
-提供上下文菜单和命令管理器，让操作更加便捷。
-
-# ALTRun (AHK)
 ALTRun - An effective launcher for Windows, an AutoHotkey open-source project.
 It provides a streamlined and efficient way to find anything on your system and launch any application in your way. 
 
@@ -86,3 +55,34 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 You may download the executable file if you prefer not to install AutoHotkey on your computer.
 
 [Download](https://github.com/zhugecaomao/ALTRun/releases)
+
+# ALTRun (AHK)
+ALTRun 是一款轻量级、功能强大的启动工具, 它以简洁、高效为设计理念, 能够大大提高你的电脑操作效率. 通过 ALTRun, 你只需输入快捷键或关键字, 即可快速找到并打开所需的资源.
+
+鉴于 ET民工 Delphi 版本的 ALTRun 已经不再更新, 这里使用 AutoHotkey 重写了一版新的 ALTRun, 不需要安装, 且文件体积小、资源占用少.
+
+## ALTRun 的主要特点
+1. 便携和轻量化
+ALTRun 不会修改系统注册表，文件小于 100 KB，占用内存少于 10MB，非常适合需要高效启动的用户。
+
+2. 智能搜索与模糊匹配
+通过智能匹配，ALTRun 支持模糊搜索，使得你能够更快速地找到应用程序、文件或目录。
+
+3. 多快捷键支持
+可以为不同的操作设置多个快捷键，大大提高了操作的效率。
+
+4. 优先级智能排序
+ALTRun 根据你使用的频率自动调整命令的优先级，让你最常用的程序更容易访问。
+
+5. 与常用工具集成
+支持与 Total Commander 和 Everything 等流行工具的集成，方便文件管理。
+
+6. SendTo 菜单
+通过 SendTo 菜单，快速创建命令，简化工作流程。
+
+7. 快速切换目录
+使用类似 Listary 快速切换功能，可以轻松切换不同的目录，提升工作效率。
+
+8. 深度自定义
+暗黑模式支持，提升视觉体验。
+提供上下文菜单和命令管理器，让操作更加便捷。
