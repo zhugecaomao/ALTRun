@@ -18,7 +18,7 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 # Screenshot
 
 ### Main Window:
-![Screenshot_1](https://github.com/zhugecaomao/ALTRun/assets/11486126/db441712-cc6e-4787-8115-164395843fa8)
+![Main GUI](https://github.com/user-attachments/assets/32333779-04fc-4e58-a00c-e41ae8e035b1)
 
 ### Dark Mode:
 ![Dark Mode](https://github.com/user-attachments/assets/2ce70d3f-f84c-4f0a-a7a3-d037642f3604)
