@@ -58,6 +58,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShowBtnRun     : 1
             ,ShowBtnOpt     : 1
             ,ShortenPath    : 1
+            ,StruCalc       : 0
             ,RunCount       : 0
             ,HistoryLen     : 15
             ,DoubleBuffer   : 1
@@ -82,7 +83,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,TotalCMDDir    : "^g"
             ,ExplorerDir    : "^e"}
 , g_GUI     := {ListRows    : 9
-            ,ColWidth       : "40,60,430,340"
+            ,ColWidth       : "40,60,430,AutoHdr"
             ,FontName       : "Segoe UI"
             ,FontSize       : 10
             ,FontColor      : "Default"
@@ -90,18 +91,19 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,WinHeight      : 330
             ,CtrlColor      : "Default"
             ,WinColor       : "Silver"
-            ,Background     : "DEFAULT"}
+            ,Background     : "DEFAULT"
+            ,Transparency   : 230}
 , g_CHKLV   := {AutoStartup : "Launch on Windows startup"               ; Options - General - CheckedListview
             ,EnableSendTo   : "Enable SendTo - Create commands conveniently using Windows SendTo"
             ,InStartMenu    : "Enable ALTRun shortcut in the Windows Start menu"
-            ,ShowTrayIcon   : "Show Tray Icon in the system taskbar"
+            ,ShowTrayIcon   : "Show tray icon in the system taskbar"
             ,HideOnLostFocus: "Close window on losing focus"
             ,AlwaysOnTop    : "Always stay on top"
             ,ShowCaption    : "Show Caption - Show window title bar"
             ,XPthemeBg      : "XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
             ,EscClearInput  : "Press [ESC] to clear input, press again to close window (Untick:close directly)"
             ,KeepInput      : "Keep last input and search result on close"
-            ,ShowIcon       : "Show Icon - Show icon for command (file, folder, apps etc.) in the command list"
+            ,ShowIcon       : "Show icon for command (file, folder, apps etc.) in the command list"
             ,SendToGetLnk   : "Retrieve .lnk target on SendTo"
             ,SaveHistory    : "Save History - Commands executed with arg"
             ,SaveLog        : "Save Log - App running and debug information"
@@ -109,16 +111,17 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShowGrid       : "Show Grid - Provides boundary lines between rows and columns in command list"
             ,ShowHdr        : "Show Header - Show header (top row contains column titles) in command list"
             ,ShowSN         : "Show Serial Number in command list"
-            ,ShowBorder     : "Show Border - Show border line around the command list"
+            ,ShowBorder     : "Show border line around the command list"
             ,SmartRank      : "Smart Rank - Auto adjust command priority (rank) based on use frequency"
             ,SmartMatch     : "Smart Match - Fuzzy and Smart matching and filtering result"
             ,MatchAny       : "Match from any position of the string"
-            ,ShowHint       : "Show Hints and Tips in the bottom status bar"
+            ,ShowHint       : "Show hints/tips in the bottom status bar"
             ,ShowRunCount   : "Show RunCount - Show command executed times in the status bar"
-            ,ShowStatusBar  : "Show Status Bar"
+            ,ShowStatusBar  : "Show status bar at the bottom of the window"
             ,ShowBtnRun     : "Show [Run] button on main window"
             ,ShowBtnOpt     : "Show [Options] button on main window"
             ,DoubleBuffer   : "Double Buffer - Paints via double-buffering, reduces flicker in the list (WinXP+)"
+            ,StruCalc       : "Structure Calculation - Express calculate beam width -> main bar no., As -> rebar no."
             ,ShortenPath    : "Shorten Path - Show file/folder/app name only instead of full path in result"}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
             ,WinName        : "ALTRun - Ver 2025.01"
@@ -212,6 +215,7 @@ Gui, Main:Font, % "c" g_GUI.FontColor " s" g_GUI.FontSize, % g_GUI.FontName
 Gui, % "Main:" (g_CONFIG.AlwaysOnTop ? "+AlwaysOnTop" : "-AlwaysOnTop")
 Gui, % "Main:" (g_CONFIG.ShowCaption ? "+Caption" : "-Caption")
 Gui, % "Main:" (g_CONFIG.XPthemeBg ? "+Theme" : "-Theme")
+Gui, Main:+HwndMainGuiHwnd
 Gui, Main:Default ; Set default GUI before any ListView / statusbar update
 Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, Type anything here to search...
 Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, Run
@@ -254,6 +258,9 @@ if (A_Args[1] = "-SendTo") {
 }
 
 Gui, Main:Show, % "w" g_GUI.WinWidth " h" g_GUI.WinHeight " Center " g_RUNTIME.WinHide, % g_RUNTIME.WinName
+
+if (g_GUI.Transparency != "OFF" or g_GUI.Transparency != "255")
+    WinSet, Transparent, % g_GUI.Transparency, % g_RUNTIME.WinName
 
 (g_CONFIG.HideOnLostFocus) ? OnMessage(0x06, "WM_ACTIVATE")
 
@@ -359,13 +366,16 @@ SearchCommand(command := "") {
             RebarQty := Ceil((EvalResult-40*2) / 300) + 1
             EvalResultTho := FormatThousand(EvalResult)
 
-            Result := "Eval | = " EvalResultTho
-            Result .= "`n | ------------------------------------------------------"
-            Result .= "`n | Beam width = " EvalResultTho " mm"
-            Result .= "`n | Main bar no. = " RebarQty " (" Round((EvalResult-40*2) / (RebarQty - 1)) " c/c), " RebarQty + 1 " (" Round((EvalResult-40*2) / (RebarQty+1-1)) " c/c), " RebarQty - 1 " (" Round((EvalResult-40*2) / (RebarQty-1-1)) " c/c)"
-            Result .= "`n | ------------------------------------------------------"
-            Result .= "`n | As = " EvalResultTho " mm2"
-            Result .= "`n | Rebar = " Ceil(EvalResult/132.7) "H13 / " Ceil(EvalResult/201.1) "H16 / " Ceil(EvalResult/314.2) "H20 / " Ceil(EvalResult/490.9) "H25 / " Ceil(EvalResult/804.2) "H32"
+            Result := "Eval | " EvalResultTho
+
+            if (g_CONFIG.StruCalc) {
+                Result .= "`n | ------------------------------------------------------"
+                Result .= "`n | Beam width = " EvalResultTho " mm"
+                Result .= "`nEval | Main bar no. = " RebarQty " (" Round((EvalResult-40*2) / (RebarQty - 1)) " c/c), " RebarQty + 1 " (" Round((EvalResult-40*2) / (RebarQty+1-1)) " c/c), " RebarQty - 1 " (" Round((EvalResult-40*2) / (RebarQty-1-1)) " c/c)"
+                Result .= "`n | ------------------------------------------------------"
+                Result .= "`n | As = " EvalResultTho " mm2"
+                Result .= "`nEval | Rebar = " Ceil(EvalResult/132.7) "H13 / " Ceil(EvalResult/201.1) "H16 / " Ceil(EvalResult/314.2) "H20 / " Ceil(EvalResult/490.9) "H25 / " Ceil(EvalResult/804.2) "H32"
+            }
             Return ListResult(Result, True)
         }
 
@@ -946,11 +956,11 @@ Reindex() {                                                             ; Re-cre
 }
 
 Help() {
-    Options(, 7)                                                        ; Open Options window 7th tab (help tab)
+    Options(, 8)                                                        ; Open Options window 8th tab (help tab)
 }
 
 Usage() {
-    Options(, 6)
+    Options(, 7)
 }
 
 Listary() {                                                             ; Listary Dir QuickSwitch Function (快速更换保存/打开对话框路径)
@@ -1179,8 +1189,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Global                                                              ; Assume-global mode
     MainGuiClose()
     Gui, Setting:New, +OwnDialogs +AlwaysOnTop, Options                 ; +OwnerMain: (omit due to lug options window)
-    Gui, Setting:Font, s9, Segoe UI
-    Gui, Setting:Add, Tab3,vCurrTab Choose%ActTab%, General|Index|GUI|Hotkey|Listary|Usage|About
+    Gui, Setting:Font, S10, Segoe UI Semibold
+    Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, General|Index|GUI|Hotkey|Listary|Plugins|Usage|About
+    Gui, Setting:Font, S9 Norm, Segoe UI
     Gui, Setting:Tab, 1 ; CONFIG Tab
     Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, Options
 
@@ -1207,8 +1218,6 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, GroupBox, xp-160 yp+45 w500 h270, Others
     Gui, Setting:Add, Text, xp+10 yp+25, Command history length: 
     Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 Sort vg_HistoryLen, % StrReplace("0|10|15|20|25|30|50|90|", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|")
-    Gui, Setting:Add, Text, xp-150 yp+40, Config (.ini) file location:
-    Gui, Setting:Add, Edit, xp+150 yp-5 w330 Disabled vg_Ini, % g_RUNTIME.Ini
 
     Gui, Setting:Tab, 3 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, GUI
@@ -1232,6 +1241,8 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_WinColor, % g_GUI.WinColor "||Default|White|Blue|202020|FFFFFF"
     Gui, Setting:Add, Text, xp-150 yp+40, Background Picture:
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_Background, % g_GUI.Background "||NO PICTURE|DEFAULT|C:\Path\BackgroundPicture.jpg"
+    Gui, Setting:Add, Text, xp-150 yp+40, Transparency (0-255):
+    Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 vg_Transparency, % StrReplace("OFF|50|75|100|125|150|175|200|210|220|230|240|250|255|", g_GUI.Transparency, g_GUI.Transparency . "|",, 1)
 
     FuncList := ""
     for index, element in g_COMMANDS                                    ; Load all Func name, for Options window
@@ -1241,18 +1252,21 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     }
 
     Gui, Setting:Tab, 4 ; Hotkey Tab
-    Gui, Setting:Add, GroupBox, w500 h120, Activate
+    Gui, Setting:Add, GroupBox, w500 h115, Activate
     Gui, Setting:Add, Text, xp+10 yp+25 , Primary Hotkey :
     Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey1, % g_HOTKEY.GlobalHotkey1
     Gui, Setting:Add, Text, xp-250 yp+35 , Secondary Hotkey :
     Gui, Setting:Add, Hotkey, xp+250 yp-4 w230 vg_GlobalHotkey2,% g_HOTKEY.GlobalHotkey2
-    Gui, Setting:Add, Link, xp-250 yp+35 gResetHotkey, You can set another hotkey as a secondary hotkey (<a id="Reset">Reset to Default</a>)
-    Gui, Setting:Add, GroupBox, xp-10 yp+40 w500 h55, Command Hotkey:
+    Gui, Setting:Add, Text, xp-250 yp+35, Two hotkeys can be set simultaneously
+    Gui, Setting:Add, Link, xp+250 yp w230 gResetHotkey, <a id="Reset">RESET HOTKEY HERE</a>
+
+    Gui, Setting:Add, GroupBox, xp-260 yp+35 w500 h55, Commands
     Gui, Setting:Add, Text, xp+10 yp+25 , Execute Command:
     Gui, Setting:Add, Text, xp+150 yp , ALT + No.
-    Gui, Setting:Add, Text, xp+105 yp, Select Command: 
+    Gui, Setting:Add, Text, xp+105 yp, Select Command:
     Gui, Setting:Add, Text, xp+130 yp, Ctrl + No.
-    Gui, Setting:Add, GroupBox, xp-395 yp+40 w500 h130, Action Hotkey:
+
+    Gui, Setting:Add, GroupBox, xp-395 yp+38 w500 h130, Actions
     Gui, Setting:Add, Text, xp+10 yp+25 , Hotkey 1: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey1, % g_HOTKEY.Hotkey1
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
@@ -1266,6 +1280,16 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
     Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger3, % StrReplace("---|" FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|")
 
+    Gui, Setting:Add, GroupBox, xp-370 yp+45 w500 h100, Conditional actions
+    Gui, Setting:Add, Text, xp+10 yp+25 , If window title contains:
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330, ahk_class win_condition||
+    ;Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
+    ;Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort,
+    Gui, Setting:Add, Text, xp-150 yp+40 , Hotkey (Win/MButton):
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w80,
+    Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort,
+
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h125, Listary Quick-Switch
     Gui, Setting:Add, Text, xp+10 yp+25 , File Manager Title:
@@ -1274,14 +1298,18 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Combobox, xp+150 yp-5 w330 Sort vg_DialogWin, % g_CONFIG.DialogWin "||ahk_class #32770"
     Gui, Setting:Add, Text, xp-150 yp+40, Exclude Windows Title: 
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_ExcludeWin, % g_CONFIG.ExcludeWin "||ahk_class SysListView32|ahk_class SysListView32, ahk_exe Explorer.exe|ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe Totalcmd64.exe, AutoCAD LT Alert"
-    Gui, Setting:Add, GroupBox, xp-160 yp+45 w500 h125, Hotkey for Switch Open/Save dialog path to
+    Gui, Setting:Add, GroupBox, xp-160 yp+45 w500 h125, Hotkey for switch Open/Save dialog path to
     Gui, Setting:Add, Text, xp+10 yp+30, Total Commander's dir:
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w330 vg_TotalCMDDir, % g_HOTKEY.TotalCMDDir
     Gui, Setting:Add, Text, xp-150 yp+40, Windows Explorer's dir:
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w330 vg_ExplorerDir, % g_HOTKEY.ExplorerDir
     Gui, Setting:Add, CheckBox, % "xp-150 yp+40 vg_AutoSwitchDir checked" g_CONFIG.AutoSwitchDir, Auto Switch Dir
 
-    Gui, Setting:Tab, 6 ; USAGE TAB
+    Gui, Setting:Tab, 6 ; Plugins TAB
+    Gui, Setting:Add, GroupBox, CBlack w500 h125, Auto-Date
+    Gui, Setting:Add, GroupBox, w500 h125, App Control
+
+    Gui, Setting:Tab, 7 ; USAGE TAB
     Gui, Setting:Add, GroupBox, w500 h420, Program usage status
     Gui, Setting:Add, GroupBox, xp+40 yp+20 w445 h300,
 
@@ -1313,23 +1341,23 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x66 yp+35, Number of times the program was activated today:
     Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled, % g_RUNTIME.UsageToday
 
-    Gui, Setting:Tab, 7 ; ABOUT TAB
-    Gui, Setting:Font, S12, Segoe UI Semibold
+    Gui, Setting:Tab, 8 ; ABOUT TAB
+    Gui, Setting:Font, S12 italic, Segoe UI Semibold
     Gui, Setting:Add, Text, W450 Center, ALTRun
-    Gui, Setting:Font, S10, Segoe UI Semibold
-    Gui, Setting:Add, Edit, yp+25 w500 h370 ReadOnly -WantReturn -Wrap,
+    Gui, Setting:Font, S10 Norm, Segoe UI Semibold
+    Gui, Setting:Add, Edit, yp+25 w500 h330 ReadOnly -WantReturn,
     (Ltrim
     An effective launcher for Windows, an AutoHotkey open-source project. 
     It provides a streamlined and efficient way to find anything on your 
     system and launch any application in your way.
 
     1. Pure portable software, not write anything into Registry.
-    2. Small file size (< 100KB), low resource usage (< 10MB RAM), and high performance.
+    2. Small size, low resource usage, and high performance.
     3. User-friendly interface, highly customizable from the Options menu
     4. SendTo Menu allows you to create commands quickly and easily.
     5. Multi-Hotkey setup allowed.
     6. Integrated with Total Commander and Everything
-    7. Smart Rank - Atuo adjusts command priority (rank) based on frequency of use.
+    7. Smart Rank - Auto-adjust command priority based on frequency of use.
     8. Smart Match - Fuzzy and Smart matching and filtering result
     9. Listary Quick Switch Dir function
     Many more functions...
@@ -1356,7 +1384,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     +        		Start with "+" - Create new Command
     No Result		Enter to add as a new command
     )
-    Gui, Setting:Add, Link, yp+375, Check more details from <a href="https://github.com/zhugecaomao/ALTRun">Github Homepage</a> and <a href="https://github.com/zhugecaomao/ALTRun/wiki#notes-for-altrun-options">App Setting Notes</a>
+    Gui, Setting:Add, Text, xp yp+350, Config (.ini) file:
+    Gui, Setting:Add, Edit, xp+100 yp-5 w400 Disabled vg_Ini, % g_RUNTIME.Ini
+    Gui, Setting:Add, Link, xp-100 yp+30, Check more details from <a href="https://github.com/zhugecaomao/ALTRun">Github</a> and <a href="https://github.com/zhugecaomao/ALTRun/wiki">Wiki</a>
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
     Gui, Setting:Add, Button, Default x365 w80, OK
     Gui, Setting:Add, Button, xp+90 yp w80, Cancel
