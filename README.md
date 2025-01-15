@@ -20,6 +20,9 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ### Main Window:
 ![Main GUI](https://github.com/user-attachments/assets/32333779-04fc-4e58-a00c-e41ae8e035b1)
 
+###简体中文
+![zh-CN](https://github.com/user-attachments/assets/156b71a8-44c7-436d-8bdb-c78b39c30b75)
+
 ### Dark Mode:
 ![Dark Mode](https://github.com/user-attachments/assets/2ce70d3f-f84c-4f0a-a7a3-d037642f3604)
 
