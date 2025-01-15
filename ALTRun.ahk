@@ -4,7 +4,7 @@
 ;===================================================
 #Requires AutoHotkey v1.1+
 #NoEnv
-#SingleInstance, Force
+#SingleInstance Force
 #NoTrayIcon
 #Persistent
 #Warn All, OutputDebug
@@ -68,61 +68,39 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,IndexDir       : "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location"
             ,IndexType      : "*.lnk,*.exe"
             ,IndexExclude   : "Uninstall *"
-            ,Everything     : "C:\Apps\Everything\Everything.exe"
+            ,Everything     : "C:\Apps\Everything.exe"
             ,DialogWin      : "ahk_class #32770"
             ,FileMgrID      : "ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
-            ,ExcludeWin     : "ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"}
+            ,ExcludeWin     : "ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"
+            ,Chinese        : 0}
 , g_HOTKEY  := {Hotkey1     : "^o"
             ,Trigger1       : "Options"
             ,Hotkey2        : ""
             ,Trigger2       : "---"
             ,Hotkey3        : ""
             ,Trigger3       : "---"
+            ,CondTitle      : "ahk_exe RAPTW.exe"
+            ,CondHotkey     : "~Mbutton"
+            ,CondAction     : "PTTools"
             ,GlobalHotkey1  : "!Space"
             ,GlobalHotkey2  : "!R"
             ,TotalCMDDir    : "^g"
-            ,ExplorerDir    : "^e"}
+            ,ExplorerDir    : "^e"
+            ,AutoDateAtEnd  : "ahk_class TCmtEditForm,ahk_class Notepad4" ; TC File Comment 对话框, Notepad4
+            ,AutoDateAEHKey : "^d"
+            ,AutoDateBefExt : "ahk_class TTOTAL_CMD,ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class TSTDTREEDLG,ahk_class #32770,ahk_class TCOMBOINPUT" ; TC 文件列表重命名, Windows 资源管理器文件列表重命名, Windows 桌面文件重命名 (WinXP to Win10, Win11), TC 新建其他格式文件如txt, rtf, docx..., 资源管理器 文件保存对话框, TC F7 创建新文件夹对话框
+            ,AutoDateBEHKey : "^d"}
 , g_GUI     := {ListRows    : 9
-            ,ColWidth       : "40,60,430,AutoHdr"
-            ,FontName       : "Segoe UI"
-            ,FontSize       : 10
+            ,ColWidth       : "36,40,300,AutoHdr"
+            ,FontName       : "Microsoft YaHei"
+            ,FontSize       : 9
             ,FontColor      : "Default"
-            ,WinWidth       : 900
-            ,WinHeight      : 330
+            ,WinWidth       : 660
+            ,WinHeight      : 300
             ,CtrlColor      : "Default"
             ,WinColor       : "Silver"
             ,Background     : "DEFAULT"
             ,Transparency   : 230}
-, g_CHKLV   := {AutoStartup : "Launch on Windows startup"               ; Options - General - CheckedListview
-            ,EnableSendTo   : "Enable SendTo - Create commands conveniently using Windows SendTo"
-            ,InStartMenu    : "Enable ALTRun shortcut in the Windows Start menu"
-            ,ShowTrayIcon   : "Show tray icon in the system taskbar"
-            ,HideOnLostFocus: "Close window on losing focus"
-            ,AlwaysOnTop    : "Always stay on top"
-            ,ShowCaption    : "Show Caption - Show window title bar"
-            ,XPthemeBg      : "XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
-            ,EscClearInput  : "Press [ESC] to clear input, press again to close window (Untick:close directly)"
-            ,KeepInput      : "Keep last input and search result on close"
-            ,ShowIcon       : "Show icon for command (file, folder, apps etc.) in the command list"
-            ,SendToGetLnk   : "Retrieve .lnk target on SendTo"
-            ,SaveHistory    : "Save History - Commands executed with arg"
-            ,SaveLog        : "Save Log - App running and debug information"
-            ,MatchPath      : "Match full path on search"
-            ,ShowGrid       : "Show Grid - Provides boundary lines between rows and columns in command list"
-            ,ShowHdr        : "Show Header - Show header (top row contains column titles) in command list"
-            ,ShowSN         : "Show Serial Number in command list"
-            ,ShowBorder     : "Show border line around the command list"
-            ,SmartRank      : "Smart Rank - Auto adjust command priority (rank) based on use frequency"
-            ,SmartMatch     : "Smart Match - Fuzzy and Smart matching and filtering result"
-            ,MatchAny       : "Match from any position of the string"
-            ,ShowHint       : "Show hints/tips in the bottom status bar"
-            ,ShowRunCount   : "Show RunCount - Show command executed times in the status bar"
-            ,ShowStatusBar  : "Show status bar at the bottom of the window"
-            ,ShowBtnRun     : "Show [Run] button on main window"
-            ,ShowBtnOpt     : "Show [Options] button on main window"
-            ,DoubleBuffer   : "Double Buffer - Paints via double-buffering, reduces flicker in the list (WinXP+)"
-            ,StruCalc       : "Structure Calculation - Express calculate beam width -> main bar no., As -> rebar no."
-            ,ShortenPath    : "Shorten Path - Show file/folder/app name only instead of full path in result"}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
             ,WinName        : "ALTRun - Ver 2025.01"
             ,BGPic          : ""
@@ -138,13 +116,143 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,OneDriveConsumer:EnvGet("OneDriveConsumer")
             ,OneDriveCommercial:EnvGet("OneDriveCommercial")
             ,LV_ContextMenu : []
-            ,TrayMenu       : []}
+            ,TrayMenu       : []
+            ,FuncList       : ""}
+, g_ENG     := {1:"Options"
+            ,2:"Run"
+            ,3:"Enter"
+            ,4:"Locate"
+            ,5:"Copy"
+            ,6:"New"
+            ,7:"Edit"
+            ,8:"User Command"
+            ,9:"Run selected command"
+            ,10:"Help"                                                  ; Initial tips
+            ,11:"Options and settings"
+            ,12:"Edit current command"
+            ,20:"No.|Type|Command|Description"                          ; GUI
+            ,21:"Run"
+            ,22:"Options"
+            ,23:"Type anything here to search..."
+            ,100:"General|Index|GUI|Hotkey|Listary|Plugins|Usage|About" ; Option window
+            ,101:"Launch on Windows startup"
+            ,102:"Enable SendTo - Create commands conveniently using Windows SendTo"
+            ,103:"Enable ALTRun shortcut in the Windows Start menu"
+            ,104:"Show tray icon in the system taskbar"
+            ,105:"Close window on losing focus"
+            ,106:"Always stay on top"
+            ,107:"Show Caption - Show window title bar"
+            ,108:"XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
+            ,109:"[ESC] to clear input, press again to close window (Untick: Close directly)"
+            ,110:"Keep last input and search result on close"
+            ,111:"Show Icon - Show file/folder/app icon in result"
+            ,112:"sendToGetLnk - Retrieve .lnk target on SendTo"
+            ,113:"Save History - Commands executed with arg"
+            ,114:"Save Log - App running and debug information"
+            ,115:"Match full path on search"
+            ,116:"Show Grid - Provides boundary lines between list's rows and columns"
+            ,117:"Show Header - Show list's header (top row contains column titles)"
+            ,118:"Show Serial Number in command list"
+            ,119:"Show border line around the command list"
+            ,120:"Smart Rank - Auto adjust command priority (rank) based on use frequency"
+            ,121:"Smart Match - Fuzzy and Smart matching and filtering result"
+            ,122:"Match from any position of the string"
+            ,123:"Show hints/tips in the bottom status bar"
+            ,124:"Show RunCount - Show command executed times in the status bar"
+            ,125:"Show status bar at the bottom of the window"
+            ,126:"Show [Run] button on main window"
+            ,127:"Show [Options] button on main window"
+            ,128:"Double Buffer - Paints via double-buffering, reduces flicker (WinXP+)"
+            ,129:"Enable express structure calculation"
+            ,130:"Shorten Path - Show file/folder/app name only instead of full path in result"
+            ,131:"Set language to Chinese Simplified (中文简体)"}
+, g_CHN     := {1:"选项"
+            ,2:"运行"
+            ,3:"输入"
+            ,4:"定位"
+            ,5:"复制"
+            ,6:"新建"
+            ,7:"编辑"
+            ,8:"用户命令"
+            ,9:"运行选中的命令"
+            ,10:"显示帮助"
+            ,11:"配置选项"
+            ,20:"序号|类型|命令|描述"
+            ,21:"运行"
+            ,22:"配置"
+            ,23:"在此输入搜索内容..."
+            ,100:"常规|索引|界面|热键|Listary|插件|使用|关于"
+            ,101:"随系统自动启动"
+            ,102:"添加到“发送到”菜单"
+            ,103:"在 Windows 开始菜单中启用 ALTRun 快捷方式"
+            ,104:"在系统任务栏中显示托盘图标"
+            ,105:"失去焦点时关闭窗口"
+            ,106:"窗口置顶"
+            ,107:"显示窗口标题栏"
+            ,108:"XP 主题 - 使用 Windows 主题 (WinXP+)"
+            ,109:"[ESC] 清除输入, 再次按下关闭窗口 (取消: 直接关闭)"
+            ,110:"保留上次输入和搜索结果关闭"
+            ,111:"显示图标 - 在结果中显示文件/文件夹/应用程序图标"
+            ,112:"使用“发送到”时, 追溯 .lnk 目标文件"
+            ,113:"保存历史记录 - 使用参数执行的命令"
+            ,114:"保存日志 - 应用程序运行和调试信息"
+            ,115:"搜索时匹配完整路径"
+            ,116:"显示网格 - 在列表的行和列之间提供边界线"
+            ,117:"显示标题 - 显示列表的标题 (顶部行包含列标题)"
+            ,118:"在命令列表中显示序号"
+            ,119:"在命令列表周围显示边框线"
+            ,120:"智能排序 - 根据使用频率自动调整命令优先级 (排序)"
+            ,121:"智能匹配 - 模糊和智能匹配和过滤结果"
+            ,122:"从字符串的任何位置匹配"
+            ,123:"在底部状态栏显示提示/提示"
+            ,124:"显示运行次数 - 在状态栏中显示命令执行次数"
+            ,125:"在窗口底部显示状态栏"
+            ,126:"在主窗口上显示 [运行] 按钮"
+            ,127:"在主窗口上显示 [选项] 按钮"
+            ,128:"双缓冲 - 通过双缓冲绘制, 减少闪烁 (WinXP+)"
+            ,129:"启用快速结构计算"
+            ,130:"缩短路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
+            ,131:"设置语言为简体中文 (中文简体)"}
 
 g_LOG.Debug("///// ALTRun is starting /////")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
 
 ; For key, value in g_RUNTIME
 ;   OutputDebug, % key " = " g_RUNTIME[key]
+Global g_LNG        := g_CONFIG.Chinese ? g_CHN : g_ENG
+
+Global g_CHKLV      := {AutoStartup : g_LNG.101       ; Options - General - CheckedListview
+    ,EnableSendTo   : g_LNG.102
+    ,InStartMenu    : g_LNG.103
+    ,ShowTrayIcon   : g_LNG.104
+    ,HideOnLostFocus: g_LNG.105
+    ,AlwaysOnTop    : g_LNG.106
+    ,ShowCaption    : g_LNG.107
+    ,XPthemeBg      : g_LNG.108
+    ,EscClearInput  : g_LNG.109
+    ,KeepInput      : g_LNG.110
+    ,ShowIcon       : g_LNG.111
+    ,SendToGetLnk   : g_LNG.112
+    ,SaveHistory    : g_LNG.113
+    ,SaveLog        : g_LNG.114
+    ,MatchPath      : g_LNG.115
+    ,ShowGrid       : g_LNG.116
+    ,ShowHdr        : g_LNG.117
+    ,ShowSN         : g_LNG.118
+    ,ShowBorder     : g_LNG.119
+    ,SmartRank      : g_LNG.120
+    ,SmartMatch     : g_LNG.121
+    ,MatchAny       : g_LNG.122
+    ,ShowHint       : g_LNG.123
+    ,ShowRunCount   : g_LNG.124
+    ,ShowStatusBar  : g_LNG.125
+    ,ShowBtnRun     : g_LNG.126
+    ,ShowBtnOpt     : g_LNG.127
+    ,DoubleBuffer   : g_LNG.128
+    ,StruCalc       : g_LNG.129
+    ,ShortenPath    : g_LNG.130
+    ,Chinese        : g_LNG.131}
+
 ;===================================================
 ; Create ContextMenu and TrayMenu
 ;===================================================
@@ -217,10 +325,10 @@ Gui, % "Main:" (g_CONFIG.ShowCaption ? "+Caption" : "-Caption")
 Gui, % "Main:" (g_CONFIG.XPthemeBg ? "+Theme" : "-Theme")
 Gui, Main:+HwndMainGuiHwnd
 Gui, Main:Default ; Set default GUI before any ListView / statusbar update
-Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, Type anything here to search...
-Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, Run
-Gui, Main:Add, Button, % "x+"Options_X " yp W" Options_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, Options
-Gui, Main:Add, ListView, % "x12 ys+35 W" LV_W " H" LV_H " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), No.|Type|Command|Description ; LV0x10000 Paints via double-buffering, which reduces flicker
+Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, % g_LNG.23
+Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, % g_LNG.21
+Gui, Main:Add, Button, % "x+"Options_X " yp W" Options_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, % g_LNG.22
+Gui, Main:Add, ListView, % "x12 ys+35 W" LV_W " H" LV_H " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), % g_LNG.20 ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, x0 y0 0x4000000, % g_RUNTIME.BGPic
 Gui, Main:Add, StatusBar, % "gOnClickStatusBar Hidden" !g_CONFIG.ShowStatusBar,
 
@@ -231,7 +339,7 @@ Loop, 4 {
 SB_SetParts(g_GUI.WinWidth - 90 * g_CONFIG.ShowRunCount)
 SB_SetIcon("shell32.dll",-16752, 2)
 
-ListResult("Tip | F1 | Help`nTip | F2 | Options and settings`n"         ; List initial tips
+ListResult("Tip | F1 | " g_LNG.10 "`nTip | F2 | " g_LNG.11 "`n"         ; List initial tips
     . "Tip | F3 | Edit current command`nTip | F4 | User-defined commands`n"
     . "Tip | ALT+SPACE / ALT+R | Activative ALTRun`n"
     . "Tip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`n"
@@ -271,33 +379,35 @@ Hotkey, % g_HOTKEY.GlobalHotkey1, ToggleWindow, UseErrorLevel
 Hotkey, % g_HOTKEY.GlobalHotkey2, ToggleWindow, UseErrorLevel
 
 Hotkey, IfWinActive, % g_RUNTIME.WinName                                ; Hotkey take effect only when ALTRun actived
-Hotkey, !F4, Exit
-Hotkey, Tab, TabFunc
-Hotkey, F1, Help
-Hotkey, F2, Options
-Hotkey, F3, EditCommand
-Hotkey, F4, UserCommand
-Hotkey, ^q, Reload
-Hotkey, ^d, OpenContainer
-Hotkey, ^i, Reindex
-Hotkey, ^NumpadAdd, RankUp
-Hotkey, ^NumpadSub, RankDown
-Hotkey, Down, NextCommand
-Hotkey, Up, PrevCommand
+Hotkey, !F4, Exit, UseErrorLevel
+Hotkey, Tab, TabFunc, UseErrorLevel
+Hotkey, F1, Help, UseErrorLevel
+Hotkey, F2, Options, UseErrorLevel
+Hotkey, F3, EditCommand, UseErrorLevel
+Hotkey, F4, UserCommand, UseErrorLevel
+Hotkey, ^q, Reload, UseErrorLevel
+Hotkey, ^d, OpenContainer, UseErrorLevel
+Hotkey, ^i, Reindex, UseErrorLevel
+Hotkey, ^NumpadAdd, RankUp, UseErrorLevel
+Hotkey, ^NumpadSub, RankDown, UseErrorLevel
+Hotkey, Down, NextCommand, UseErrorLevel
+Hotkey, Up, PrevCommand, UseErrorLevel
 
 ;===================================================
 ; Run or locate command shortcut: Ctrl Alt Shift + No.
 ;===================================================
 Loop, % g_GUI.ListRows
 {
-    Hotkey, !%A_Index%, RunSelectedCommand  ; ALT + No. run command
-    Hotkey, ^%A_Index%, GotoCommand         ; Ctrl + No. locate command
+    Hotkey, !%A_Index%, RunSelectedCommand, UseErrorLevel ; ALT + No. run command
+    Hotkey, ^%A_Index%, GotoCommand, UseErrorLevel        ; Ctrl + No. locate command
 }
 
 Loop, 3
-    Hotkey, % g_HOTKEY["Hotkey"A_Index], % g_HOTKEY["Trigger"A_Index], UseErrorLevel ; Set Trigger <-> Hotkey, UseErrorLevel to Skips any warning dialogs
+    Hotkey, % g_HOTKEY["Hotkey"A_Index], % g_HOTKEY["Trigger"A_Index], UseErrorLevel ; Set Hotkey <-> Trigger, UseErrorLevel to Skips any warning dialogs
 
-Hotkey, IfWinActive
+Hotkey, IfWinActive, % g_HOTKEY.CondTitle                 ; Conditional hotkey-action, mainly for workflow RAPT-MButton-PTTools
+Hotkey, % g_HOTKEY.CondHotkey, % g_HOTKEY.CondAction, UseErrorLevel
+Hotkey, IfWinActive                                       ; Reset hotkey condition
 
 Listary()
 AppControl()                                                            ; Set Listary Dir QuickSwitch, Set AppControl
@@ -629,7 +739,7 @@ Exit() {
 }
 
 Reload() {
-    Reload
+    Run "%A_ScriptFullPath%" /force                                     ; Reload 中文有乱码
 }
 
 Test() {
@@ -785,9 +895,10 @@ RankDown() {
 }
 
 LoadCommands() {
-    g_COMMANDS  := {}                                                   ; Clear g_COMMANDS and g_FALLBACK list
-    g_FALLBACK  := {}
-    RankString  := ""
+    g_COMMANDS          := {}                                           ; Clear g_COMMANDS and g_FALLBACK list
+    g_FALLBACK          := {}
+    RankString          := ""
+    g_RUNTIME.FuncList  := ""                                           ; Clear FuncList, FuncList is used to store all functions for Options window
 
     Loop Parse, % LOADCONFIG("commands"), `n                            ; Read commands sections (built-in, user & index), read each line, separate key and value
     {
@@ -795,7 +906,12 @@ LoadCommands() {
         rank    := StrSplit(A_LoopField, "=")[2]                        ; pass second string (value) to rank
 
         if (command != "" and rank > 0)
+        {
             RankString .= rank "`t" command "`n"
+
+            splitResult := StrSplit(command, " | ")
+            g_RUNTIME.FuncList .= (splitResult[1] = "Func" and IsFunc(splitResult[2])) ? splitResult[2] "|" : ""
+        }
     }
     Sort, RankString, R N
     Loop Parse, RankString, `n
@@ -1111,29 +1227,20 @@ CmdMgrGuiClose() {
     Gui, CmdMgr:Destroy
 }
 
-AppControl()                                                            ; AppControl (Ctrl+D 自动添加日期, 鼠标中间激活PT Tools)
-{
-    GroupAdd, FileListMangr, ahk_class TTOTAL_CMD                       ; TC 文件列表重命名
-    GroupAdd, FileListMangr, ahk_class CabinetWClass                    ; Windows 资源管理器文件列表重命名
-    GroupAdd, FileListMangr, ahk_class Progman                          ; Windows 桌面文件重命名 (WinXP to Win10)
-    GroupAdd, FileListMangr, ahk_class WorkerW                          ; Windows 桌面文件重命名 (Win11)
-    GroupAdd, FileListMangr, ahk_class TSTDTREEDLG                      ; TC 新建其他格式文件如txt, rtf, docx...
-    GroupAdd, FileListMangr, ahk_class #32770                           ; 资源管理器 文件保存对话框
-    GroupAdd, FileListMangr, ahk_class TCOMBOINPUT                      ; TC F7 创建新文件夹对话框（可单独出来用isFile:= True来控制不考虑后缀的影响）
-
-    GroupAdd, TextBox, ahk_class TCmtEditForm                           ; TC File Comment 对话框 按Ctrl+D自动在备注文字之后添加日期
-    GroupAdd, TextBox, ahk_class Notepad2                               ; Notepad2 (原Ctrl+D 为重复当前行)
-
+AppControl() {                                                          ; AppControl (Ctrl+D 自动添加日期)
+    Loop Parse, % g_HOTKEY.AutoDateBefExt, `,
+        GroupAdd, FileListMangr, %A_LoopField%
     Hotkey, IfWinActive, ahk_group FileListMangr                        ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-    Hotkey, ^D, RenameWithDate
+    Hotkey, % g_HOTKEY.AutoDateBEHKey, RenameWithDate, UseErrorLevel
+
+    Loop Parse, % g_HOTKEY.AutoDateAtEnd, `,
+        GroupAdd, TextBox, %A_LoopField%
     Hotkey, IfWinActive, ahk_group TextBox
-    Hotkey, ^D, LineEndAddDate
-    Hotkey, IfWinActive, ahk_exe RAPTW.exe                              ; 如果正在使用RAPT,鼠标中间激活PT Tools
-    Hotkey, ~MButton, RunPTTools
+    Hotkey, % g_HOTKEY.AutoDateAEHKey, LineEndAddDate, UseErrorLevel
     Hotkey, IfWinActive
 }
 
-RunPTTools()
+PTTools()
 {
     IfWinNotExist, PT Tools
         Run, %A_ScriptDir%\PTTools.ahk,, UseErrorLevel
@@ -1188,12 +1295,12 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 {
     Global                                                              ; Assume-global mode
     MainGuiClose()
-    Gui, Setting:New, +OwnDialogs +AlwaysOnTop, Options                 ; +OwnerMain: (omit due to lug options window)
+    Gui, Setting:New, +OwnDialogs +AlwaysOnTop, % g_LNG.1               ; +OwnerMain: (omit due to lug options window)
     Gui, Setting:Font, S10, Segoe UI Semibold
-    Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, General|Index|GUI|Hotkey|Listary|Plugins|Usage|About
-    Gui, Setting:Font, S9 Norm, Segoe UI
+    Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
+    Gui, Setting:Font, S9 Norm, Microsoft Yahei
     Gui, Setting:Tab, 1 ; CONFIG Tab
-    Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, Options
+    Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, % g_LNG.1
 
     For key, description in g_CHKLV
         LV_Add("Check" g_CONFIG[key], description)
@@ -1201,11 +1308,11 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     LV_ModifyCol(1, "AutoHdr")                                          ; AutoHdr: Automatically add a header to the column
 
     Gui, Setting:Add, Text, yp+320, Text Editor:
-    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Editor, % g_CONFIG.Editor "||Notepad.exe|C:\Apps\Notepad4\Notepad4.exe"
+    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Editor, % g_CONFIG.Editor "||Notepad.exe|C:\Apps\Notepad4.exe"
     Gui, Setting:Add, Text, xp-100 yp+40, Everything.exe:
-    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything\Everything.exe"
+    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
     Gui, Setting:Add, Text, xp-100 yp+40, File Manager:
-    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD64\TotalCMD.exe /O /T /S"
+    Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
     
     Gui, Setting:Tab, 2 ; INDEX Tab
     Gui, Setting:Add, GroupBox, w500 h130, Index
@@ -1217,12 +1324,12 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_IndexExclude, % g_CONFIG.IndexExclude "||Uninstall *"
     Gui, Setting:Add, GroupBox, xp-160 yp+45 w500 h270, Others
     Gui, Setting:Add, Text, xp+10 yp+25, Command history length: 
-    Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 Sort vg_HistoryLen, % StrReplace("0|10|15|20|25|30|50|90|", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|")
+    Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 Sort vg_HistoryLen, % StrReplace("0|10|15|20|25|30|50|90|", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|",, 1)
 
     Gui, Setting:Tab, 3 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, GUI
     Gui, Setting:Add, Text, xp+10 yp+25 , Command result limit
-    Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 vg_ListRows, % StrReplace("3|4|5|6|7|8|9|", g_GUI.ListRows, g_GUI.ListRows . "|") ; ListRows limit <= 9, not using Choose%g_ListRows% as list start from 3
+    Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 vg_ListRows, % StrReplace("3|4|5|6|7|8|9|", g_GUI.ListRows, g_GUI.ListRows . "|",, 1) ; ListRows limit <= 9, not using Choose%g_ListRows% as list start from 3
     Gui, Setting:Add, Text, xp-150 yp+40, Width of each column:
     Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 Sort vg_ColWidth, % g_GUI.ColWidth "||33,46,460,AutoHdr|40,45,430,340|40,0,475,340|23,0,460,AutoHdr"
     Gui, Setting:Add, Text, xp-150 yp+40, Font Name:
@@ -1244,13 +1351,6 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp-150 yp+40, Transparency (0-255):
     Gui, Setting:Add, DropDownList, xp+150 yp-5 w330 vg_Transparency, % StrReplace("OFF|50|75|100|125|150|175|200|210|220|230|240|250|255|", g_GUI.Transparency, g_GUI.Transparency . "|",, 1)
 
-    FuncList := ""
-    for index, element in g_COMMANDS                                    ; Load all Func name, for Options window
-    {
-        splitResult := StrSplit(element, " | ")
-        FuncList .= (splitResult[1] = "Func" and IsFunc(splitResult[2])) ? splitResult[2] "|" : ""
-    }
-
     Gui, Setting:Tab, 4 ; Hotkey Tab
     Gui, Setting:Add, GroupBox, w500 h115, Activate
     Gui, Setting:Add, Text, xp+10 yp+25 , Primary Hotkey :
@@ -1270,25 +1370,15 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, xp+10 yp+25 , Hotkey 1: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey1, % g_HOTKEY.Hotkey1
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger1, % StrReplace("---|" FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|")
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger1, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|",, 1)
     Gui, Setting:Add, Text, xp-360 yp+40 , Hotkey 2: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey2, % g_HOTKEY.Hotkey2
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger2, % StrReplace("---|" FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|")
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger2, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|",, 1)
     Gui, Setting:Add, Text, xp-360 yp+40 , Hotkey 3: 
     Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_Hotkey3, % g_HOTKEY.Hotkey3
     Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger3, % StrReplace("---|" FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|")
-
-    Gui, Setting:Add, GroupBox, xp-370 yp+45 w500 h100, Conditional actions
-    Gui, Setting:Add, Text, xp+10 yp+25 , If window title contains:
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330, ahk_class win_condition||
-    ;Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    ;Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort,
-    Gui, Setting:Add, Text, xp-150 yp+40 , Hotkey (Win/MButton):
-    Gui, Setting:Add, ComboBox, xp+150 yp-5 w80,
-    Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action: 
-    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort,
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_Trigger3, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|",, 1)
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h125, Listary Quick-Switch
@@ -1306,8 +1396,29 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, CheckBox, % "xp-150 yp+40 vg_AutoSwitchDir checked" g_CONFIG.AutoSwitchDir, Auto Switch Dir
 
     Gui, Setting:Tab, 6 ; Plugins TAB
-    Gui, Setting:Add, GroupBox, CBlack w500 h125, Auto-Date
-    Gui, Setting:Add, GroupBox, w500 h125, App Control
+    Gui, Setting:Add, GroupBox, w500 h125, Auto-date at end
+    Gui, Setting:Add, Text, xp+10 yp+25, Apply to:
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_class Notepad4|"
+    Gui, Setting:Add, Text, xp-150 yp+40 , Hotkey
+    Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_AutoDateAEHKey, % g_HOTKEY.AutoDateAEHKey
+    Gui, Setting:Add, Text, xp+100 yp+5, Date format
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120, - dd.MM.yyyy||
+
+    Gui, Setting:Add, GroupBox, xp-370 y+50 w500 h125, Auto-date before ext.
+    Gui, Setting:Add, Text, xp+10 yp+25, Apply to:
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_AutoDateBefExt, % g_HOTKEY.AutoDateBefExt "||ahk_class TTOTAL_CMD,ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770|"
+    Gui, Setting:Add, Text, xp-150 yp+40 , Hotkey
+    Gui, Setting:Add, Hotkey, xp+150 yp-5 w80 vg_AutoDateBEHKey, % g_HOTKEY.AutoDateBEHKey
+    Gui, Setting:Add, Text, xp+100 yp+5, Date format
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120, - dd.MM.yyyy||
+
+    Gui, Setting:Add, GroupBox, xp-370 y+50 w500 h100, Conditional actions
+    Gui, Setting:Add, Text, xp+10 yp+25 , If window title contains:
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w330 vg_CondTitle, % g_HOTKEY.CondTitle "||"
+    Gui, Setting:Add, Text, xp-150 yp+40 , Hotkey (Win/MButton):
+    Gui, Setting:Add, ComboBox, xp+150 yp-5 w80 vg_CondHotkey, % g_HOTKEY.CondHotkey "||"
+    Gui, Setting:Add, Text, xp+100 yp+5, Toggle Action:
+    Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_CondAction, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.CondAction, g_HOTKEY.CondAction . "|",, 1)
 
     Gui, Setting:Tab, 7 ; USAGE TAB
     Gui, Setting:Add, GroupBox, w500 h420, Program usage status
@@ -1329,17 +1440,17 @@ Options(Arg := "", ActTab := 1)                                         ; Option
         FormatTime, OffsetDate, %OffsetDate%, yyyyMMdd
 
         IniRead, OutputVar, % g_RUNTIME.Ini, % g_SECTION.USAGE, % OffsetDate, 0
-        Gui, Setting:Add, Progress, % "c94DD88 BackgroundF9F9F9 Vertical y90 w14 h280 xm+" 50+A_Index*14 " Range0-" MaxValue+10, %OutputVar%
+        Gui, Setting:Add, Progress, % "c94DD88 BackgroundF9F9F9 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" MaxValue+10, %OutputVar%
     }
     Gui, Setting:Add, Text, xp-450 yp-5 cGray, % MaxValue+10
     Gui, Setting:Add, Text, xp yp+140 cGray, % Round(MaxValue/2)+5
     Gui, Setting:Add, Text, xp yp+140 cGray, 0
     Gui, Setting:Add, Text, xp+35 yp+15 cGray , 30 days ago 
     Gui, Setting:Add, Text, xp+410 yp cGray, Now
-    Gui, Setting:Add, Text, x66 yp+35, Total number of times the command was executed:
-    Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled vg_RunCount, % g_CONFIG.RunCount
+    Gui, Setting:Add, Text, x66 yp+33, Total number of times the command was executed:
+    Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled Right vg_RunCount, % g_CONFIG.RunCount
     Gui, Setting:Add, Text, x66 yp+35, Number of times the program was activated today:
-    Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled, % g_RUNTIME.UsageToday
+    Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled Right, % g_RUNTIME.UsageToday
 
     Gui, Setting:Tab, 8 ; ABOUT TAB
     Gui, Setting:Font, S12 italic, Segoe UI Semibold
@@ -1390,7 +1501,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
     Gui, Setting:Add, Button, Default x365 w80, OK
     Gui, Setting:Add, Button, xp+90 yp w80, Cancel
-    Gui, Setting:Show,, Options
+    Gui, Setting:Show,, % g_LNG.1
     Hotkey, % g_HOTKEY.GlobalHotkey1, Off, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, Off, UseErrorLevel
     g_LOG.Debug("Loading options window...Arg=" Arg ", ActTab=" ActTab)
@@ -1403,7 +1514,7 @@ ResetHotkey() {
 
 SettingButtonOK() {
     SAVECONFIG()
-    Reload
+    Reload()
 }
 
 SettingGuiEscape() {
@@ -1480,7 +1591,7 @@ LOADCONFIG(Arg)                                                         ; 加载
             Func | Usage | ALTRun Usage Status=99
             Func | Reindex | Reindex search database=99
             Func | Everything | Search by Everything=99
-            Func | RunPTTools | PT Tools (AHK)=99
+            Func | PTTools | PT Tools (AHK)=99
             Func | AhkRun | Run Command use AutoHotkey Run=99
             Func | Google | Search Clipboard or Input by Google=99
             Func | Bing | Search Clipboard or Input by Bing=99
