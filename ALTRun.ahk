@@ -118,140 +118,30 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,LV_ContextMenu : []
             ,TrayMenu       : []
             ,FuncList       : ""}
-, g_ENG     := {1:"Options"
-            ,2:"Run"
-            ,3:"Enter"
-            ,4:"Locate"
-            ,5:"Copy"
-            ,6:"New"
-            ,7:"Edit"
-            ,8:"User Command"
-            ,9:"Run selected command"
-            ,10:"Help"                                                  ; Initial tips
-            ,11:"Options and settings"
-            ,12:"Edit current command"
-            ,20:"No.|Type|Command|Description"                          ; GUI
-            ,21:"Run"
-            ,22:"Options"
-            ,23:"Type anything here to search..."
-            ,100:"General|Index|GUI|Hotkey|Listary|Plugins|Usage|About" ; Option window
-            ,101:"Launch on Windows startup"
-            ,102:"Enable SendTo - Create commands conveniently using Windows SendTo"
-            ,103:"Enable ALTRun shortcut in the Windows Start menu"
-            ,104:"Show tray icon in the system taskbar"
-            ,105:"Close window on losing focus"
-            ,106:"Always stay on top"
-            ,107:"Show Caption - Show window title bar"
-            ,108:"XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
-            ,109:"[ESC] to clear input, press again to close window (Untick: Close directly)"
-            ,110:"Keep last input and search result on close"
-            ,111:"Show Icon - Show file/folder/app icon in result"
-            ,112:"sendToGetLnk - Retrieve .lnk target on SendTo"
-            ,113:"Save History - Commands executed with arg"
-            ,114:"Save Log - App running and debug information"
-            ,115:"Match full path on search"
-            ,116:"Show Grid - Provides boundary lines between list's rows and columns"
-            ,117:"Show Header - Show list's header (top row contains column titles)"
-            ,118:"Show Serial Number in command list"
-            ,119:"Show border line around the command list"
-            ,120:"Smart Rank - Auto adjust command priority (rank) based on use frequency"
-            ,121:"Smart Match - Fuzzy and Smart matching and filtering result"
-            ,122:"Match from any position of the string"
-            ,123:"Show hints/tips in the bottom status bar"
-            ,124:"Show RunCount - Show command executed times in the status bar"
-            ,125:"Show status bar at the bottom of the window"
-            ,126:"Show [Run] button on main window"
-            ,127:"Show [Options] button on main window"
-            ,128:"Double Buffer - Paints via double-buffering, reduces flicker (WinXP+)"
-            ,129:"Enable express structure calculation"
-            ,130:"Shorten Path - Show file/folder/app name only instead of full path in result"
-            ,131:"Set language to Chinese Simplified (中文简体)"}
-, g_CHN     := {1:"选项"
-            ,2:"运行"
-            ,3:"输入"
-            ,4:"定位"
-            ,5:"复制"
-            ,6:"新建"
-            ,7:"编辑"
-            ,8:"用户命令"
-            ,9:"运行选中的命令"
-            ,10:"显示帮助"
-            ,11:"配置选项"
-            ,20:"序号|类型|命令|描述"
-            ,21:"运行"
-            ,22:"配置"
-            ,23:"在此输入搜索内容..."
-            ,100:"常规|索引|界面|热键|Listary|插件|使用|关于"
-            ,101:"随系统自动启动"
-            ,102:"添加到“发送到”菜单"
-            ,103:"在 Windows 开始菜单中启用 ALTRun 快捷方式"
-            ,104:"在系统任务栏中显示托盘图标"
-            ,105:"失去焦点时关闭窗口"
-            ,106:"窗口置顶"
-            ,107:"显示窗口标题栏"
-            ,108:"XP 主题 - 使用 Windows 主题 (WinXP+)"
-            ,109:"[ESC] 清除输入, 再次按下关闭窗口 (取消: 直接关闭)"
-            ,110:"保留上次输入和搜索结果关闭"
-            ,111:"显示图标 - 在结果中显示文件/文件夹/应用程序图标"
-            ,112:"使用“发送到”时, 追溯 .lnk 目标文件"
-            ,113:"保存历史记录 - 使用参数执行的命令"
-            ,114:"保存日志 - 应用程序运行和调试信息"
-            ,115:"搜索时匹配完整路径"
-            ,116:"显示网格 - 在列表的行和列之间提供边界线"
-            ,117:"显示标题 - 显示列表的标题 (顶部行包含列标题)"
-            ,118:"在命令列表中显示序号"
-            ,119:"在命令列表周围显示边框线"
-            ,120:"智能排序 - 根据使用频率自动调整命令优先级 (排序)"
-            ,121:"智能匹配 - 模糊和智能匹配和过滤结果"
-            ,122:"从字符串的任何位置匹配"
-            ,123:"在底部状态栏显示提示/提示"
-            ,124:"显示运行次数 - 在状态栏中显示命令执行次数"
-            ,125:"在窗口底部显示状态栏"
-            ,126:"在主窗口上显示 [运行] 按钮"
-            ,127:"在主窗口上显示 [选项] 按钮"
-            ,128:"双缓冲 - 通过双缓冲绘制, 减少闪烁 (WinXP+)"
-            ,129:"启用快速结构计算"
-            ,130:"缩短路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
-            ,131:"设置语言为简体中文 (中文简体)"}
 
 g_LOG.Debug("///// ALTRun is starting /////")
 LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
+SETLANGUAGE()                                                           ; Set language
 
 ; For key, value in g_RUNTIME
 ;   OutputDebug, % key " = " g_RUNTIME[key]
-Global g_LNG        := g_CONFIG.Chinese ? g_CHN : g_ENG
 
-Global g_CHKLV      := {AutoStartup : g_LNG.101       ; Options - General - CheckedListview
-    ,EnableSendTo   : g_LNG.102
-    ,InStartMenu    : g_LNG.103
-    ,ShowTrayIcon   : g_LNG.104
-    ,HideOnLostFocus: g_LNG.105
-    ,AlwaysOnTop    : g_LNG.106
-    ,ShowCaption    : g_LNG.107
-    ,XPthemeBg      : g_LNG.108
-    ,EscClearInput  : g_LNG.109
-    ,KeepInput      : g_LNG.110
-    ,ShowIcon       : g_LNG.111
-    ,SendToGetLnk   : g_LNG.112
-    ,SaveHistory    : g_LNG.113
-    ,SaveLog        : g_LNG.114
-    ,MatchPath      : g_LNG.115
-    ,ShowGrid       : g_LNG.116
-    ,ShowHdr        : g_LNG.117
-    ,ShowSN         : g_LNG.118
-    ,ShowBorder     : g_LNG.119
-    ,SmartRank      : g_LNG.120
-    ,SmartMatch     : g_LNG.121
-    ,MatchAny       : g_LNG.122
-    ,ShowHint       : g_LNG.123
-    ,ShowRunCount   : g_LNG.124
-    ,ShowStatusBar  : g_LNG.125
-    ,ShowBtnRun     : g_LNG.126
-    ,ShowBtnOpt     : g_LNG.127
-    ,DoubleBuffer   : g_LNG.128
-    ,StruCalc       : g_LNG.129
-    ,ShortenPath    : g_LNG.130
-    ,Chinese        : g_LNG.131}
+Global g_CHKLV      := {AutoStartup : g_LNG.101                         ; Options - General - CheckedListview
+    ,EnableSendTo   : g_LNG.102 ,InStartMenu    : g_LNG.103
+    ,ShowTrayIcon   : g_LNG.104 ,HideOnLostFocus: g_LNG.105
+    ,AlwaysOnTop    : g_LNG.106 ,ShowCaption    : g_LNG.107
+    ,XPthemeBg      : g_LNG.108 ,EscClearInput  : g_LNG.109
+    ,KeepInput      : g_LNG.110 ,ShowIcon       : g_LNG.111
+    ,SendToGetLnk   : g_LNG.112 ,SaveHistory    : g_LNG.113
+    ,SaveLog        : g_LNG.114 ,MatchPath      : g_LNG.115
+    ,ShowGrid       : g_LNG.116 ,ShowHdr        : g_LNG.117
+    ,ShowSN         : g_LNG.118 ,ShowBorder     : g_LNG.119
+    ,SmartRank      : g_LNG.120 ,SmartMatch     : g_LNG.121
+    ,MatchAny       : g_LNG.122 ,ShowHint       : g_LNG.123
+    ,ShowRunCount   : g_LNG.124 ,ShowStatusBar  : g_LNG.125
+    ,ShowBtnRun     : g_LNG.126 ,ShowBtnOpt     : g_LNG.127
+    ,DoubleBuffer   : g_LNG.128 ,StruCalc       : g_LNG.129
+    ,ShortenPath    : g_LNG.130 ,Chinese        : g_LNG.131}
 
 ;===================================================
 ; Create ContextMenu and TrayMenu
@@ -339,13 +229,7 @@ Loop, 4 {
 SB_SetParts(g_GUI.WinWidth - 90 * g_CONFIG.ShowRunCount)
 SB_SetIcon("shell32.dll",-16752, 2)
 
-ListResult("Tip | F1 | " g_LNG.10 "`nTip | F2 | " g_LNG.11 "`n"         ; List initial tips
-    . "Tip | F3 | Edit current command`nTip | F4 | User-defined commands`n"
-    . "Tip | ALT+SPACE / ALT+R | Activative ALTRun`n"
-    . "Tip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`n"
-    . "Tip | ENTER / ALT+NO. | Run selected command`n"
-    . "Tip | ARROW UP or DOWN | Select previous or next command`n"
-    . "Tip | CTRL+D | Locate cmd's dir with File Manager")
+ListResult(g_LNG.10)
 
 if (g_CONFIG.ShowIcon) {
     Global ImageListID := IL_Create(10, 5, 0)                           ; Create an ImageList so that the ListView can display some icons
@@ -535,7 +419,7 @@ GetIconIndex(_Path, _Type)                                              ; Get fi
 {
     Switch (_Type) {
     Case "DIR" : Return 1
-    Case "FUNC","CMD","TIP": Return 2
+    Case "FUNC","CMD","TIP","提示": Return 2
     Case "URL" : Return 3
     Case "EVAL": Return 4
     Case "FILE": {
@@ -1760,6 +1644,105 @@ Everything() {
     Run, % g_CONFIG.Everything " -s """ g_RUNTIME.Arg """",, UseErrorLevel
     if ErrorLevel
         MsgBox, % "Everything software not found.`n`nPlease check ALTRun setting and Everything program file."
+}
+
+SETLANGUAGE() {
+    ENG := {1:"Options"
+        ,2:"Run"
+        ,3:"Enter"
+        ,4:"Locate"
+        ,5:"Copy"
+        ,6:"New"
+        ,7:"Edit"
+        ,8:"User Command"
+        ,9:"Run selected command"
+        ,10:"Tip | F1 | Help`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous or next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
+        ,11:"Options and settings"
+        ,12:"Edit current command"
+        ,20:"No.|Type|Command|Description"                              ; GUI
+        ,21:"Run"
+        ,22:"Options"
+        ,23:"Type anything here to search..."
+        ,100:"General|Index|GUI|Hotkey|Listary|Plugins|Usage|About"     ; Option window
+        ,101:"Launch on Windows startup"
+        ,102:"Enable SendTo - Create commands conveniently using Windows SendTo"
+        ,103:"Enable ALTRun shortcut in the Windows Start menu"
+        ,104:"Show tray icon in the system taskbar"
+        ,105:"Close window on losing focus"
+        ,106:"Always stay on top"
+        ,107:"Show Caption - Show window title bar"
+        ,108:"XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
+        ,109:"[ESC] to clear input, press again to close window (Untick: Close directly)"
+        ,110:"Keep last input and search result on close"
+        ,111:"Show Icon - Show file/folder/app icon in result"
+        ,112:"sendToGetLnk - Retrieve .lnk target on SendTo"
+        ,113:"Save History - Commands executed with arg"
+        ,114:"Save Log - App running and debug information"
+        ,115:"Match full path on search"
+        ,116:"Show Grid - Provides boundary lines between list's rows and columns"
+        ,117:"Show Header - Show list's header (top row contains column titles)"
+        ,118:"Show Serial Number in command list"
+        ,119:"Show border line around the command list"
+        ,120:"Smart Rank - Auto adjust command priority (rank) based on use frequency"
+        ,121:"Smart Match - Fuzzy and Smart matching and filtering result"
+        ,122:"Match from any position of the string"
+        ,123:"Show hints/tips in the bottom status bar"
+        ,124:"Show RunCount - Show command executed times in the status bar"
+        ,125:"Show status bar at the bottom of the window"
+        ,126:"Show [Run] button on main window"
+        ,127:"Show [Options] button on main window"
+        ,128:"Double Buffer - Paints via double-buffering, reduces flicker (WinXP+)"
+        ,129:"Enable express structure calculation"
+        ,130:"Shorten Path - Show file/folder/app name only instead of full path in result"
+        ,131:"Set language to Chinese Simplified (中文简体)"}
+    CHN := {1:"配置"
+        ,2:"运行"
+        ,3:"输入"
+        ,4:"定位"
+        ,5:"复制"
+        ,6:"新建"
+        ,7:"编辑"
+        ,8:"用户命令"
+        ,9:"运行选中的命令"
+        ,10:"提示 | F1 | 帮助`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
+        ,11:"配置选项"
+        ,20:"序号|类型|命令|描述"
+        ,21:"运行"
+        ,22:"配置"
+        ,23:"在此输入搜索内容..."
+        ,100:"常规|索引|界面|热键|Listary|插件|使用情况|关于"
+        ,101:"随系统自动启动"
+        ,102:"添加到“发送到”菜单"
+        ,103:"在 Windows 开始菜单中启用 ALTRun 快捷方式"
+        ,104:"在系统任务栏中显示托盘图标"
+        ,105:"失去焦点时关闭窗口"
+        ,106:"窗口置顶"
+        ,107:"显示窗口标题栏"
+        ,108:"XP 主题 - 使用 Windows 主题 (WinXP+)"
+        ,109:"[ESC] 清除输入, 再次按下关闭窗口 (取消: 直接关闭)"
+        ,110:"保留上次输入和搜索结果关闭"
+        ,111:"显示图标 - 在结果中显示文件/文件夹/应用程序图标"
+        ,112:"使用“发送到”时, 追溯 .lnk 目标文件"
+        ,113:"保存历史记录 - 使用参数执行的命令"
+        ,114:"保存日志 - 应用程序运行和调试信息"
+        ,115:"搜索时匹配完整路径"
+        ,116:"显示网格 - 在列表的行和列之间提供边界线"
+        ,117:"显示标题 - 显示列表的标题 (顶部行包含列标题)"
+        ,118:"在命令列表中显示序号"
+        ,119:"在命令列表周围显示边框线"
+        ,120:"智能排序 - 根据使用频率自动调整命令优先级 (排序)"
+        ,121:"智能匹配 - 模糊和智能匹配和过滤结果"
+        ,122:"从字符串的任何位置匹配"
+        ,123:"在底部状态栏显示提示/提示"
+        ,124:"显示运行次数 - 在状态栏中显示命令执行次数"
+        ,125:"在窗口底部显示状态栏"
+        ,126:"在主窗口上显示 [运行] 按钮"
+        ,127:"在主窗口上显示 [选项] 按钮"
+        ,128:"双缓冲 - 通过双缓冲绘制, 减少闪烁 (WinXP+)"
+        ,129:"启用快速结构计算"
+        ,130:"缩短路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
+        ,131:"设置语言为简体中文 (中文简体)"}
+        Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
 
 ;===================================================
