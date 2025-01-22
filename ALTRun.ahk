@@ -1500,6 +1500,7 @@ LOADCONFIG(Arg)                                                         ; 加载
             Cmd | Shell:AppsFolder | AppsFolder Applications=66
             Cmd | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=66
             Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=66
+            Cmd | Notepad.exe | Notepad=66
             Cmd | WF.msc | Windows Defender Firewall with Advanced Security=66
             Cmd | TaskSchd.msc | Task Scheduler=66
             Cmd | DevMgmt.msc | Device Manager=66
@@ -1564,7 +1565,7 @@ LOADCONFIG(Arg)                                                         ; 加载
 
         IniRead, INDEXSEC, % g_RUNTIME.Ini, % g_SECTION.INDEX           ; Read whole section of Index database
         if (INDEXSEC = "") {
-            MsgBox, 4160, % g_RUNTIME.WinName, % g_LNG.9, 30
+            MsgBox, 4160, % g_RUNTIME.WinName, % (g_CONFIG.Chinese ? "索引数据库为空，请点击确定重新建立索引?" : "Index database is empty, please click OK to rebuild index.")
             Reindex()
         }
         Return DFTCMDSEC "`n" USERCMDSEC "`n" INDEXSEC
@@ -1659,7 +1660,7 @@ SETLANGUAGE() {
         ,6:"New"
         ,7:"Edit"
         ,8:"User Command"
-        ,9:"ALTRun is going to initialize for the first time running...`n`nConfig software and build the index database for search.`n`nAuto initialize in 30 seconds or click OK now."
+        ,9:""
         ,10:"Tip | F1 | Help`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous or next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
         ,11:"Show"
         ,12:"Options"
@@ -1713,7 +1714,7 @@ SETLANGUAGE() {
         ,6:"新建"
         ,7:"编辑"
         ,8:"用户命令"
-        ,9:"ALTRun 首次运行, 即将初始化...`n`n配置程序并建立索引数据库.`n`n30 秒后将自动初始化或点击确定."
+        ,9:""
         ,10:"提示 | F1 | 帮助`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
         ,11:"显示"
         ,12:"配置"
