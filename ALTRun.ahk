@@ -72,7 +72,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,DialogWin      : "ahk_class #32770"
             ,FileMgrID      : "ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
             ,ExcludeWin     : "ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"
-            ,Chinese        : 0}
+            ,Chinese        : (A_Language = "7804" or A_Language = "0004" or A_Language = "0804" or A_Language = "1004") ? 1 : 0}
 , g_HOTKEY  := {Hotkey1     : "^o"
             ,Trigger1       : "Options"
             ,Hotkey2        : ""
@@ -146,14 +146,14 @@ Global g_CHKLV      := {AutoStartup : g_LNG.101                         ; Option
 ;===================================================
 ; Create ContextMenu and TrayMenu
 ;===================================================
-g_RUNTIME.LV_ContextMenu := ["Run`tEnter,LVContextMenu,shell32.dll,-25"
-    ,"Locate`tCtrl+D,OpenContainer,shell32.dll,-4"
-    ,"Copy,LVContextMenu,shell32.dll,-243",""
-    ,"New,CmdMgr,shell32.dll,-1"
-    ,"Edit`tF3,EditCommand,shell32.dll,-16775"
-    ,"User Command`tF4,UserCommand,shell32.dll,-44"]
-g_RUNTIME.TrayMenu := ["Show,ToggleWindow,Shell32.dll,-25"
-    ,"","Options `tF2,Options,Shell32.dll,-16826"
+g_RUNTIME.LV_ContextMenu := [g_LNG.200 ",LVRunCommand,shell32.dll,-25"
+    ,g_LNG.201 ",OpenContainer,shell32.dll,-4"
+    ,g_LNG.202 ",LVCopyCommand,shell32.dll,-243",""
+    ,g_LNG.203 ",CmdMgr,shell32.dll,-1"
+    ,g_LNG.204 ",EditCommand,shell32.dll,-16775"
+    ,g_LNG.205 ",UserCommand,shell32.dll,-44"]
+g_RUNTIME.TrayMenu := [g_LNG.11 ",ToggleWindow,Shell32.dll,-25",""
+    ,g_LNG.12 "`tF2,Options,Shell32.dll,-16826"
     ,"ReIndex `tCtrl+I,Reindex,Shell32.dll,-16776"
     ,"Help `tF1,Help,Shell32.dll,-24",""
     ,"Script Info,ScriptInfo,imageres.dll,-150"
@@ -171,8 +171,7 @@ for index, MenuItem in g_RUNTIME.LV_ContextMenu {
     Menu, LV_ContextMenu, Icon, % Item[1], % Item[3], % Item[4]
 }
 
-if (g_CONFIG.ShowTrayIcon)
-{
+if (g_CONFIG.ShowTrayIcon) {
     Menu, Tray, NoStandard
     Menu, Tray, Icon
     Menu, Tray, Icon, Shell32.dll, -25                                  ; Index of icon changes between Windows versions, refer to the icon by resource ID for consistency
@@ -183,7 +182,7 @@ if (g_CONFIG.ShowTrayIcon)
         Menu, Tray, Icon, % Item[1], % Item[3], % Item[4]
     }
     Menu, Tray, Tip, % g_RUNTIME.WinName
-    Menu, Tray, Default, Show
+    Menu, Tray, Default, % g_LNG.11
     Menu, Tray, Click, 1
 }
 ;===================================================
@@ -572,19 +571,24 @@ OnClickListview()                                                       ; ListVi
         SetStatusBar()
 }
 
-LVContextMenu() {                                                       ; ListView ContextMenu (right click & its menu) actions
+LVRunCommand() {                                                        ; ListView ContextMenu (right click & its menu) actions
     Gui, Main:Default                                                   ; Use it before any LV update
     focusedRow := LV_GetNext(0, "Focused")                              ; Check focused row, only operate focusd row instead of all selected rows
     if (!focusedRow)                                                    ; Return if no focused row is found
         Return
 
     g_RUNTIME.ActiveCommand := g_MATCHED[focusedRow]                    ; Get current command from focused row
+    RunCommand(g_RUNTIME.ActiveCommand)                                 ; Execute the command if the user selected "Run Enter"
+}
 
-    If (A_ThisMenuItem = "Run`tEnter")                                  ; Execute the command if the user selected "Run Enter"
-        RunCommand(g_RUNTIME.ActiveCommand)
+LVCopyCommand() {                                                       ; ListView ContextMenu (right click & its menu) actions
+    Gui, Main:Default                                                   ; Use it before any LV update
+    focusedRow := LV_GetNext(0, "Focused")                              ; Check focused row, only operate focusd row instead of all selected rows
+    if (!focusedRow)                                                    ; Return if no focused row is found
+        Return
 
-    else if (A_ThisMenuItem = "Copy")
-        LV_GetText(Text, focusedRow, 3) ? (A_Clipboard := Text)         ; Get the text from the focusedRow's 3rd field.
+    g_RUNTIME.ActiveCommand := g_MATCHED[focusedRow]                    ; Get current command from focused row
+    LV_GetText(Text, focusedRow, 3) ? (A_Clipboard := Text)         ; Get the text from the focusedRow's 3rd field.
 }
 
 OnClickStatusBar() {
@@ -1560,7 +1564,7 @@ LOADCONFIG(Arg)                                                         ; 加载
 
         IniRead, INDEXSEC, % g_RUNTIME.Ini, % g_SECTION.INDEX           ; Read whole section of Index database
         if (INDEXSEC = "") {
-            MsgBox, 4160, % g_RUNTIME.WinName, ALTRun is going to initialize for the first time running...`n`nConfig software and build the index database for search.`n`nAuto initialize in 30 seconds or click OK now., 30
+            MsgBox, 4160, % g_RUNTIME.WinName, % g_LNG.9, 30
             Reindex()
         }
         Return DFTCMDSEC "`n" USERCMDSEC "`n" INDEXSEC
@@ -1655,10 +1659,10 @@ SETLANGUAGE() {
         ,6:"New"
         ,7:"Edit"
         ,8:"User Command"
-        ,9:"Run selected command"
+        ,9:"ALTRun is going to initialize for the first time running...`n`nConfig software and build the index database for search.`n`nAuto initialize in 30 seconds or click OK now."
         ,10:"Tip | F1 | Help`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous or next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
-        ,11:"Options and settings"
-        ,12:"Edit current command"
+        ,11:"Show"
+        ,12:"Options"
         ,20:"No.|Type|Command|Description"                              ; GUI
         ,21:"Run"
         ,22:"Options"
@@ -1694,7 +1698,13 @@ SETLANGUAGE() {
         ,128:"Double Buffer - Paints via double-buffering, reduces flicker (WinXP+)"
         ,129:"Enable express structure calculation"
         ,130:"Shorten Path - Show file/folder/app name only instead of full path in result"
-        ,131:"Set language to Chinese Simplified (中文简体)"}
+        ,131:"Set language to Chinese Simplified (简体中文)"
+        ,200:"Run`tEnter"                                               ; 200+ LV_ContextMenu
+        ,201:"Locate`tCtrl+D"
+        ,202:"Copy"
+        ,203:"New"
+        ,204:"Edit`tF3"
+        ,205:"User Command`tF4"}
     CHN := {1:"配置"
         ,2:"运行"
         ,3:"输入"
@@ -1703,9 +1713,10 @@ SETLANGUAGE() {
         ,6:"新建"
         ,7:"编辑"
         ,8:"用户命令"
-        ,9:"运行选中的命令"
+        ,9:"ALTRun 首次运行, 即将初始化...`n`n配置程序并建立索引数据库.`n`n30 秒后将自动初始化或点击确定."
         ,10:"提示 | F1 | 帮助`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
-        ,11:"配置选项"
+        ,11:"显示"
+        ,12:"配置"
         ,20:"序号|类型|命令|描述"
         ,21:"运行"
         ,22:"配置"
@@ -1713,13 +1724,13 @@ SETLANGUAGE() {
         ,100:"常规|索引|界面|热键|Listary|插件|使用情况|关于"
         ,101:"随系统自动启动"
         ,102:"添加到“发送到”菜单"
-        ,103:"在 Windows 开始菜单中启用 ALTRun 快捷方式"
+        ,103:"添加到“开始”菜单中"
         ,104:"在系统任务栏中显示托盘图标"
         ,105:"失去焦点时关闭窗口"
         ,106:"窗口置顶"
         ,107:"显示窗口标题栏"
         ,108:"XP 主题 - 使用 Windows 主题 (WinXP+)"
-        ,109:"[ESC] 清除输入, 再次按下关闭窗口 (取消: 直接关闭)"
+        ,109:"[Esc] 清除输入, 再次按下关闭窗口 (取消勾选: 直接关闭窗口)"
         ,110:"保留上次输入和搜索结果关闭"
         ,111:"显示图标 - 在结果中显示文件/文件夹/应用程序图标"
         ,112:"使用“发送到”时, 追溯 .lnk 目标文件"
@@ -1738,10 +1749,16 @@ SETLANGUAGE() {
         ,125:"在窗口底部显示状态栏"
         ,126:"在主窗口上显示 [运行] 按钮"
         ,127:"在主窗口上显示 [选项] 按钮"
-        ,128:"双缓冲 - 通过双缓冲绘制, 减少闪烁 (WinXP+)"
+        ,128:"双缓冲绘图, 能减少闪烁 (WinXP+)"
         ,129:"启用快速结构计算"
         ,130:"缩短路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
-        ,131:"设置语言为简体中文 (中文简体)"}
+        ,131:"设置语言为简体中文(Simplified Chinese)"
+        ,200:"运行命令`tEnter"                                           ; 200+ 列表右键菜单
+        ,201:"定位命令`tCtrl+D"
+        ,202:"复制命令"
+        ,203:"新建命令"
+        ,204:"编辑命令`tF3"
+        ,205:"用户命令`tF4"}
         Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
 
