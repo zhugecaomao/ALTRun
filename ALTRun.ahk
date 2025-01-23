@@ -1,4 +1,4 @@
-;===================================================
+﻿;===================================================
 ; ALTRun - An effective launcher for Windows
 ; https://github.com/zhugecaomao/ALTRun
 ;===================================================
@@ -111,6 +111,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Input          : ""
             ,Arg            : ""                                        ; Arg: 用来调用管道的完整参数
             ,UsageToday     : 0
+            ,UsageCountMax  : 0
             ,AppStartDate   : A_YYYY A_MM A_DD
             ,OneDrive       : EnvGet("OneDrive")                        ; OneDrive var due to #NoEnv
             ,OneDriveConsumer:EnvGet("OneDriveConsumer")
@@ -120,8 +121,8 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,FuncList       : ""}
 
 g_LOG.Debug("///// ALTRun is starting /////")
-LOADCONFIG("initialize")                                                ; Load ini config, IniWrite will create it if not exist
-SETLANGUAGE()                                                           ; Set language
+LoadConfig("initialize")                                                ; Load ini config, IniWrite will create it if not exist
+SetLanguage()                                                           ; Set language
 
 ; For key, value in g_RUNTIME
 ;   OutputDebug, % key " = " g_RUNTIME[key]
@@ -152,14 +153,15 @@ g_RUNTIME.LV_ContextMenu := [g_LNG.200 ",LVRunCommand,shell32.dll,-25"
     ,g_LNG.203 ",CmdMgr,shell32.dll,-1"
     ,g_LNG.204 ",EditCommand,shell32.dll,-16775"
     ,g_LNG.205 ",UserCommand,shell32.dll,-44"]
-g_RUNTIME.TrayMenu := [g_LNG.11 ",ToggleWindow,Shell32.dll,-25",""
-    ,g_LNG.12 "`tF2,Options,Shell32.dll,-16826"
-    ,"ReIndex `tCtrl+I,Reindex,Shell32.dll,-16776"
-    ,"Help `tF1,Help,Shell32.dll,-24",""
-    ,"Script Info,ScriptInfo,imageres.dll,-150"
-    ,"AHK Manual,AHKManual,Shell32.dll,-512",""
-    ,"Reload `tCtrl+Q,Reload,imageres.dll,-5311"
-    ,"Exit `tAlt+F4,Exit,imageres.dll,-98"]
+g_RUNTIME.TrayMenu := [g_LNG.300 ",ToggleWindow,Shell32.dll,-25",""
+    ,g_LNG.301 ",Options,Shell32.dll,-16826"
+    ,g_LNG.302 ",Reindex,Shell32.dll,-16776"
+    ,g_LNG.303 ",Usage,Shell32.dll,-16752"
+    ,g_LNG.304 ",Help,Shell32.dll,-24",""
+    ,g_LNG.305 ",ScriptInfo,imageres.dll,-150"
+    ,g_LNG.306 ",AHKManual,Shell32.dll,-512",""
+    ,g_LNG.307 ",Reload,imageres.dll,-5311"
+    ,g_LNG.308 ",Exit,imageres.dll,-98"]
 
 for index, MenuItem in g_RUNTIME.LV_ContextMenu {
     if (MenuItem = "") {
@@ -474,8 +476,7 @@ RelativePath(Path)                                                      ; Conver
     Return Path
 }
 
-EnvGet(EnvVar)
-{
+EnvGet(EnvVar) {
     EnvGet, OutputVar, %EnvVar%
     Return OutputVar
 }
@@ -627,7 +628,7 @@ Exit() {
 }
 
 Reload() {
-    Run "%A_ScriptFullPath%" /force                                     ; Reload 中文有乱码
+    Reload
 }
 
 Test() {
@@ -788,7 +789,7 @@ LoadCommands() {
     RankString          := ""
     g_RUNTIME.FuncList  := ""                                           ; Clear FuncList, FuncList is used to store all functions for Options window
 
-    Loop Parse, % LOADCONFIG("commands"), `n                            ; Read commands sections (built-in, user & index), read each line, separate key and value
+    Loop Parse, % LoadConfig("commands"), `n                            ; Read commands sections (built-in, user & index), read each line, separate key and value
     {
         command := StrSplit(A_LoopField, "=")[1]                        ; pass first string (key) to command
         rank    := StrSplit(A_LoopField, "=")[2]                        ; pass second string (value) to rank
@@ -1182,7 +1183,6 @@ FormatThousand(Number)                                                  ; Functi
 Options(Arg := "", ActTab := 1)                                         ; Options settings, 1st parameter is to avoid menu like [Option `tF2] disturb ActTab
 {
     Global                                                              ; Assume-global mode
-    MainGuiClose()
     Gui, Setting:New, +OwnDialogs +AlwaysOnTop, % g_LNG.1               ; +OwnerMain: (omit due to lug options window)
     Gui, Setting:Font, S10, Segoe UI Semibold
     Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
@@ -1193,13 +1193,13 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     For key, description in g_CHKLV
         LV_Add("Check" g_CONFIG[key], description)
 
-    LV_ModifyCol(1, "AutoHdr")                                          ; AutoHdr: Automatically add a header to the column
+    LV_ModifyCol(1, "AutoHdr")
 
-    Gui, Setting:Add, Text, yp+320, Text Editor:
+    Gui, Setting:Add, Text, yp+320, % g_LNG.150
     Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Editor, % g_CONFIG.Editor "||Notepad.exe|C:\Apps\Notepad4.exe"
-    Gui, Setting:Add, Text, xp-100 yp+40, Everything.exe:
+    Gui, Setting:Add, Text, xp-100 yp+40, % g_LNG.151
     Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
-    Gui, Setting:Add, Text, xp-100 yp+40, File Manager:
+    Gui, Setting:Add, Text, xp-100 yp+40, % g_LNG.152
     Gui, Setting:Add, ComboBox, xp+100 yp-5 w400 Sort vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
     
     Gui, Setting:Tab, 2 ; INDEX Tab
@@ -1309,29 +1309,21 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, DropDownList, xp+110 yp-5 w120 Sort vg_CondAction, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.CondAction, g_HOTKEY.CondAction . "|",, 1)
 
     Gui, Setting:Tab, 7 ; USAGE TAB
-    Gui, Setting:Add, GroupBox, w500 h420, Program usage status
-    Gui, Setting:Add, GroupBox, xp+40 yp+20 w445 h300,
+    Gui, Setting:Add, GroupBox, x66 y80 w445 h300,
 
     OffsetDate := A_Now
     EnvAdd, OffsetDate, -30, Days                                       ; Subtract 30 days
 
-    IniRead, USAGE, % g_RUNTIME.Ini, % g_SECTION.USAGE                  ; read all key & value in whole section
-    static MaxValue := 0
-    Loop, Parse, USAGE, `n                                              ; read each line to get each key and value
-    {
-        MaxValue := Max(MaxValue, StrSplit(A_LoopField, "=")[2])
-    }
-    
     Loop, 30
     {
         EnvAdd, OffsetDate, +1, Days
         FormatTime, OffsetDate, %OffsetDate%, yyyyMMdd
 
         IniRead, OutputVar, % g_RUNTIME.Ini, % g_SECTION.USAGE, % OffsetDate, 0
-        Gui, Setting:Add, Progress, % "c94DD88 BackgroundF9F9F9 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" MaxValue+10, %OutputVar%
+        Gui, Setting:Add, Progress, % "c94DD88 BackgroundF9F9F9 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME.UsageCountMax+10, %OutputVar%
     }
-    Gui, Setting:Add, Text, xp-450 yp-5 cGray, % MaxValue+10
-    Gui, Setting:Add, Text, xp yp+140 cGray, % Round(MaxValue/2)+5
+    Gui, Setting:Add, Text, xp-450 yp-5 cGray, % g_RUNTIME.UsageCountMax+10
+    Gui, Setting:Add, Text, xp yp+140 cGray, % Round(g_RUNTIME.UsageCountMax/2)+5
     Gui, Setting:Add, Text, xp yp+140 cGray, 0
     Gui, Setting:Add, Text, xp+35 yp+15 cGray , 30 days ago 
     Gui, Setting:Add, Text, xp+410 yp cGray, Now
@@ -1341,9 +1333,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Edit, xp+343 yp-5 w100 Disabled Right, % g_RUNTIME.UsageToday
 
     Gui, Setting:Tab, 8 ; ABOUT TAB
-    Gui, Setting:Font, S12 italic, Segoe UI Semibold
+    ;Gui, Setting:Font, S12 italic, Segoe UI Semibold
     Gui, Setting:Add, Text, W450 Center, ALTRun
-    Gui, Setting:Font, S10 Norm, Segoe UI Semibold
+    ;Gui, Setting:Font, S10 Norm, Segoe UI Semibold
     Gui, Setting:Add, Edit, yp+25 w500 h330 ReadOnly -WantReturn,
     (Ltrim
     An effective launcher for Windows, an AutoHotkey open-source project. 
@@ -1371,7 +1363,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Up / Down   	Move to Previous / Next command
     Alt + Space 	Show / Hide window
     Alt + F4		Exit
-    Alt + No.  		Run specific command
+    Alt + No.		Run specific command
     Ctrl + No.   	Select specific command
     Ctrl + +		Increase rank of current command
     Ctrl + -		Decrease rank of current command
@@ -1381,10 +1373,10 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Space   		Start with Space - Search with Everything
     >        		Start with ">" - Run with CMD
     +        		Start with "+" - Create new Command
-    No Result		Enter to add as a new command
+    No result		Show fallback commands
     )
-    Gui, Setting:Add, Text, xp yp+350, Config (.ini) file:
-    Gui, Setting:Add, Edit, xp+100 yp-5 w400 Disabled vg_Ini, % g_RUNTIME.Ini
+    Gui, Setting:Add, Text, xp yp+350, Setting file:
+    Gui, Setting:Add, Text, xp+100 yp w400 vg_Ini, % g_RUNTIME.Ini
     Gui, Setting:Add, Link, xp-100 yp+30, Check more details from <a href="https://github.com/zhugecaomao/ALTRun">Github</a> and <a href="https://github.com/zhugecaomao/ALTRun/wiki">Wiki</a>
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
     Gui, Setting:Add, Button, Default x365 w80, OK
@@ -1419,8 +1411,7 @@ SettingGuiClose() {
     Gui, Setting:Destroy
 }
 
-LOADCONFIG(Arg)                                                         ; 加载主配置文件
-{
+LoadConfig(Arg) {                                                       ; 加载主配置文件
     g_LOG.Debug("Loading configuration...Arg=" Arg)
 
     if (Arg = "config" or Arg = "initialize" or Arg = "all") {
@@ -1428,7 +1419,6 @@ LOADCONFIG(Arg)                                                         ; 加载
         {
             IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.CONFIG, %key%, %value%
             g_CONFIG[key] := tempValue
-            ; OutputDebug, % key " = " g_CONFIG[key]
         }
 
         For key, value in g_HOTKEY                                      ; Read Hotkey section
@@ -1445,21 +1435,23 @@ LOADCONFIG(Arg)                                                         ; 加载
 
         g_RUNTIME.BGPic := (g_GUI.Background = "DEFAULT") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
 
-        IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.USAGE, % A_YYYY . A_MM . A_DD, 0
+        IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.USAGE, % A_YYYY . A_MM . A_DD, 0 ; For app usage
         g_RUNTIME.UsageToday := tempValue
 
         OffsetDate := A_Now
-        EnvAdd, OffsetDate, -30, Days                                   ; 减去 30 天
+        EnvAdd, OffsetDate, -30, Days                                   ; - 30 days
         FormatTime, OffsetDate, %OffsetDate%, yyyyMMdd
     
         IniRead, USAGE, % g_RUNTIME.Ini, % g_SECTION.USAGE              ; Clean up usage record before 30 days
         Loop, Parse, USAGE, `n
         {
-            key := StrSplit(A_LoopField, "=")[1]
-            if (key < OffsetDate)
-            {
-                IniDelete, % g_RUNTIME.Ini, % g_SECTION.USAGE, %key%
-            }
+            UsageDate  := StrSplit(A_LoopField, "=")[1]
+            UsageCount := StrSplit(A_LoopField, "=")[2]
+            
+            if (UsageDate < OffsetDate)
+                IniDelete, % g_RUNTIME.Ini, % g_SECTION.USAGE, %UsageDate%
+
+            g_RUNTIME.UsageCountMax := Max(g_RUNTIME.UsageCountMax, UsageCount)
         }
     }
 
@@ -1468,8 +1460,8 @@ LOADCONFIG(Arg)                                                         ; 加载
         if (DFTCMDSEC = "") {
             IniWrite,
             (Ltrim
-            ; Built-in commands, high priority, do NOT modify
-            ; Auto-generated when [DefaultCommnd] section is empty
+            ; Built-in commands, high priority, recommended to maintain as it is
+            ; App will auto generate [DefaultCommnd] section while it is empty
             ;
             Func | Help | ALTRun Help Index (F1)=99
             Func | Options | ALTRun Options Preference Settings (F2)=99
@@ -1651,7 +1643,7 @@ Everything() {
         MsgBox, % "Everything software not found.`n`nPlease check ALTRun setting and Everything program file."
 }
 
-SETLANGUAGE() {
+SetLanguage() {
     ENG := {1:"Options"
         ,2:"Run"
         ,3:"Enter"
@@ -1668,7 +1660,7 @@ SETLANGUAGE() {
         ,21:"Run"
         ,22:"Options"
         ,23:"Type anything here to search..."
-        ,100:"General|Index|GUI|Hotkey|Listary|Plugins|Usage|About"     ; Option window
+        ,100:"General|Index|GUI|Hotkey|Listary|Plugins|Usage|About"     ; 100+ Option window
         ,101:"Launch on Windows startup"
         ,102:"Enable SendTo - Create commands conveniently using Windows SendTo"
         ,103:"Enable ALTRun shortcut in the Windows Start menu"
@@ -1700,12 +1692,24 @@ SETLANGUAGE() {
         ,129:"Enable express structure calculation"
         ,130:"Shorten Path - Show file/folder/app name only instead of full path in result"
         ,131:"Set language to Chinese Simplified (简体中文)"
+        ,150:"Text Editor"                                              ; Reserve 100-149 for General - Checked Listview
+        ,151:"Everything"
+        ,152:"File Manager"
         ,200:"Run`tEnter"                                               ; 200+ LV_ContextMenu
         ,201:"Locate`tCtrl+D"
         ,202:"Copy"
         ,203:"New"
         ,204:"Edit`tF3"
-        ,205:"User Command`tF4"}
+        ,205:"User Command`tF4"
+        ,300:"Show"                                                     ; 300+ TrayMenu
+        ,301:"Options`tF2"
+        ,302:"ReIndex`tCtrl+I"
+        ,303:"Usage"
+        ,304:"Help`tF1"
+        ,305:"Script Info"
+        ,306:"AHK Manual"
+        ,307:"Reload`tCtrl+Q"
+        ,308:"Exit`tAlt+F4"}
     CHN := {1:"配置"
         ,2:"运行"
         ,3:"输入"
@@ -1722,7 +1726,7 @@ SETLANGUAGE() {
         ,21:"运行"
         ,22:"配置"
         ,23:"在此输入搜索内容..."
-        ,100:"常规|索引|界面|热键|Listary|插件|使用情况|关于"
+        ,100:"常规|索引|界面|热键|Listary|插件|使用统计|关于"
         ,101:"随系统自动启动"
         ,102:"添加到“发送到”菜单"
         ,103:"添加到“开始”菜单中"
@@ -1754,12 +1758,24 @@ SETLANGUAGE() {
         ,129:"启用快速结构计算"
         ,130:"缩短路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
         ,131:"设置语言为简体中文(Simplified Chinese)"
+        ,150:"文本编辑器"                                                ; 100-149 保留给常规 - 列表视图选项
+        ,151:"Everything"
+        ,152:"文件管理器"
         ,200:"运行命令`tEnter"                                           ; 200+ 列表右键菜单
         ,201:"定位命令`tCtrl+D"
         ,202:"复制命令"
         ,203:"新建命令"
         ,204:"编辑命令`tF3"
-        ,205:"用户命令`tF4"}
+        ,205:"用户命令`tF4"
+        ,300:"显示"                                                     ; 300+ 托盘菜单
+        ,301:"配置选项`tF2"
+        ,302:"重建索引`tCtrl+I"
+        ,303:"使用统计"
+        ,304:"帮助`tF1"
+        ,305:"脚本信息"
+        ,306:"AHK文档"
+        ,307:"重新加载`tCtrl+Q"
+        ,308:"退出`tAlt+F4"}
         Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
 
