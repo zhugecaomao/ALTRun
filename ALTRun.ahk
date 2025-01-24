@@ -147,19 +147,20 @@ Global g_CHKLV      := {AutoStartup : g_LNG.101                         ; Option
 ;===================================================
 ; Create ContextMenu and TrayMenu
 ;===================================================
-g_RUNTIME.LV_ContextMenu := [g_LNG.200 ",LVRunCommand,shell32.dll,-25"
-    ,g_LNG.201 ",OpenContainer,shell32.dll,-4"
-    ,g_LNG.202 ",LVCopyCommand,shell32.dll,-243",""
-    ,g_LNG.203 ",CmdMgr,shell32.dll,-1"
-    ,g_LNG.204 ",EditCommand,shell32.dll,-16775"
-    ,g_LNG.205 ",UserCommand,shell32.dll,-44"]
-g_RUNTIME.TrayMenu := [g_LNG.300 ",ToggleWindow,Shell32.dll,-25",""
-    ,g_LNG.301 ",Options,Shell32.dll,-16826"
-    ,g_LNG.302 ",Reindex,Shell32.dll,-16776"
-    ,g_LNG.303 ",Usage,Shell32.dll,-16752"
-    ,g_LNG.304 ",Help,Shell32.dll,-24",""
-    ,g_LNG.305 ",ScriptInfo,imageres.dll,-150"
-    ,g_LNG.306 ",AHKManual,Shell32.dll,-512",""
+g_RUNTIME.LV_ContextMenu := [g_LNG.200 ",LVRunCommand,imageres.dll,-100"
+    ,g_LNG.201 ",OpenContainer,imageres.dll,-3"
+    ,g_LNG.202 ",LVCopyCommand,imageres.dll,-5314",""
+    ,g_LNG.203 ",CmdMgr,imageres.dll,-2"
+    ,g_LNG.204 ",EditCommand,imageres.dll,-5306"
+    ,g_LNG.205 ",UserCommand,imageres.dll,-88"]
+g_RUNTIME.TrayMenu := [g_LNG.300 ",ToggleWindow,imageres.dll,-100",""
+    ,g_LNG.301 ",Options,imageres.dll,-114"
+    ,g_LNG.302 ",Reindex,imageres.dll,-8"
+    ,g_LNG.303 ",Usage,imageres.dll,-150"
+    ,g_LNG.309 ",Update,imageres.dll,-5338"
+    ,g_LNG.304 ",Help,imageres.dll,-99",""
+    ,g_LNG.305 ",ScriptInfo,imageres.dll,-165"
+    ,g_LNG.306 ",AHKManual,imageres.dll,-90",""
     ,g_LNG.307 ",Reload,imageres.dll,-5311"
     ,g_LNG.308 ",Exit,imageres.dll,-98"]
 
@@ -176,7 +177,7 @@ for index, MenuItem in g_RUNTIME.LV_ContextMenu {
 if (g_CONFIG.ShowTrayIcon) {
     Menu, Tray, NoStandard
     Menu, Tray, Icon
-    Menu, Tray, Icon, Shell32.dll, -25                                  ; Index of icon changes between Windows versions, refer to the icon by resource ID for consistency
+    Menu, Tray, Icon, imageres.dll, -100                                ; Index of icon changes between Windows versions, refer to the icon by resource ID for consistency
     For Index, MenuItem in g_RUNTIME.TrayMenu
     {
         Item := StrSplit(MenuItem, ",") ; Item[1,2,3,4] <-> Name,Func,Icon,IconNo
@@ -228,16 +229,16 @@ Loop, 4 {
 }
 
 SB_SetParts(g_GUI.WinWidth - 90 * g_CONFIG.ShowRunCount)
-SB_SetIcon("shell32.dll",-16752, 2)
+SB_SetIcon("imageres.dll",-150, 2)
 
 ListResult(g_LNG.10)
 
 if (g_CONFIG.ShowIcon) {
     Global ImageListID := IL_Create(10, 5, 0)                           ; Create an ImageList so that the ListView can display some icons
-    Global IconMap     := {"DIR":IL_Add(ImageListID,"shell32.dll",-4)   ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval
-                       ,"FUNC":IL_Add(ImageListID,"shell32.dll",-25)
-                       ,"URL":IL_Add(ImageListID,"shell32.dll",-512)
-                       ,"EVAL":IL_Add(ImageListID,"Calc.exe",-1)}
+    Global IconMap     := {"DIR":IL_Add(ImageListID,"imageres.dll",-3)  ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval
+                       ,"FUNC":IL_Add(ImageListID,"imageres.dll",-100)
+                       ,"URL":IL_Add(ImageListID,"imageres.dll",-144)
+                       ,"EVAL":IL_Add(ImageListID,"imageres.dll",-182)}
     LV_SetImageList(ImageListID)                                        ; Attach the ImageLists to the ListView so that it can later display the icons
 }
 
@@ -366,10 +367,10 @@ SearchCommand(command := "") {
             if (g_CONFIG.StruCalc) {
                 Result .= "`n | ------------------------------------------------------"
                 Result .= "`n | Beam width = " EvalResultTho " mm"
-                Result .= "`nEval | Main bar no. = " RebarQty " (" Round((EvalResult-40*2) / (RebarQty - 1)) " c/c), " RebarQty + 1 " (" Round((EvalResult-40*2) / (RebarQty+1-1)) " c/c), " RebarQty - 1 " (" Round((EvalResult-40*2) / (RebarQty-1-1)) " c/c)"
+                Result .= "`n | Main bar no. = " RebarQty " (" Round((EvalResult-40*2) / (RebarQty - 1)) " c/c), " RebarQty + 1 " (" Round((EvalResult-40*2) / (RebarQty+1-1)) " c/c), " RebarQty - 1 " (" Round((EvalResult-40*2) / (RebarQty-1-1)) " c/c)"
                 Result .= "`n | ------------------------------------------------------"
                 Result .= "`n | As = " EvalResultTho " mm2"
-                Result .= "`nEval | Rebar = " Ceil(EvalResult/132.7) "H13 / " Ceil(EvalResult/201.1) "H16 / " Ceil(EvalResult/314.2) "H20 / " Ceil(EvalResult/490.9) "H25 / " Ceil(EvalResult/804.2) "H32"
+                Result .= "`n | Rebar = " Ceil(EvalResult/132.7) "H13 / " Ceil(EvalResult/201.1) "H16 / " Ceil(EvalResult/314.2) "H20 / " Ceil(EvalResult/490.9) "H25 / " Ceil(EvalResult/804.2) "H32"
             }
             Return ListResult(Result, True)
         }
@@ -595,7 +596,7 @@ LVCopyCommand() {                                                       ; ListVi
 OnClickStatusBar() {
     if (A_GuiEvent = "RightClick" and A_EventInfo = 1) {
         Menu, SB_ContextMenu, Add, Copy, SBContextMenu
-        Menu, SB_ContextMenu, Icon, Copy, Shell32.dll, -243
+        Menu, SB_ContextMenu, Icon, Copy, imageres.dll, -5314
         Menu, SB_ContextMenu, Show
     } else if (A_EventInfo = 2) ; Apply for normal click and rightclick
         Usage()
@@ -902,10 +903,10 @@ UpdateSendTo(create := true) {                                          ; the ln
 
     if (A_IsCompiled)
         FileCreateShortcut, "%A_ScriptFullPath%", %lnkPath%, ,-SendTo
-        , Send command to ALTRun User Command list, Shell32.dll, , -25
+        , Send command to ALTRun User Command list, imageres.dll, , -100
     else
         FileCreateShortcut, "%A_AhkPath%", %lnkPath%, , "%A_ScriptFullPath%" -SendTo
-        , Send command to ALTRun User Command list, Shell32.dll, , -25
+        , Send command to ALTRun User Command list, imageres.dll, , -100
     Return "OK"
 }
 
@@ -918,7 +919,7 @@ UpdateStartup(create := true) {
     }
 
     FileCreateShortcut, %A_ScriptFullPath%, %lnkPath%, %A_ScriptDir%
-        , -startup, ALTRun - An effective launcher, Shell32.dll, , -25
+        , -startup, ALTRun - An effective launcher, imageres.dll, , -100
     Return "OK"
 }
 
@@ -931,7 +932,7 @@ UpdateStartMenu(create := true) {
     }
 
     FileCreateShortcut, %A_ScriptFullPath%, %lnkPath%, %A_ScriptDir%
-        , -StartMenu, ALTRun, Shell32.dll, , -25
+        , -StartMenu, ALTRun, imageres.dll, , -100
     Return "OK"
 }
 
@@ -966,6 +967,10 @@ Help() {
 
 Usage() {
     Options(, 7)
+}
+
+Update() {
+    Run, https://github.com/zhugecaomao/ALTRun/releases
 }
 
 Listary() {                                                             ; Listary Dir QuickSwitch Function (快速更换保存/打开对话框路径)
@@ -1709,7 +1714,8 @@ SetLanguage() {
         ,305:"Script Info"
         ,306:"AHK Manual"
         ,307:"Reload`tCtrl+Q"
-        ,308:"Exit`tAlt+F4"}
+        ,308:"Exit`tAlt+F4"
+        ,309:"Update"}
     CHN := {1:"配置"
         ,2:"运行"
         ,3:"输入"
@@ -1775,7 +1781,8 @@ SetLanguage() {
         ,305:"脚本信息"
         ,306:"AHK文档"
         ,307:"重新加载`tCtrl+Q"
-        ,308:"退出`tAlt+F4"}
+        ,308:"退出`tAlt+F4"
+        ,309:"检查更新"}
         Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
 
