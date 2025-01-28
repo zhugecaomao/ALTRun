@@ -1,70 +1,9 @@
-# ALTRun (AHK)
-ALTRun - An effective launcher for Windows, an AutoHotkey open-source project.
-It provides a streamlined and efficient way to find anything on your system and launch any application in your way. 
-
-1. Pure portable software, not write anything into Registry.
-2. Small file size (< 100KB), low resource usage (< 10MB RAM), and high performance.
-3. User-friendly interface, highly customizable from the Options menu
-4. SendTo Menu allows you to create commands quickly and easily.
-5. Multi-Hotkey setup allowed.
-6. Integrated with Total Commander and Everything
-7. Smart Rank - Atuo adjusts command priority (rank) based on frequency of use.
-8. Smart Match - Fuzzy and Smart matching and filtering result
-9. Quick Switch Dir function (like Listary)
-   Many more functions...
-
-Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and [RunZ by goreliu](https://github.com/goreliu/runz) (AutoHotkey).
-
-# Screenshot
-
-### Main Window:
-![Main GUI](https://github.com/user-attachments/assets/32333779-04fc-4e58-a00c-e41ae8e035b1)
-
-### 简体中文
-![zh-CN](https://github.com/user-attachments/assets/156b71a8-44c7-436d-8bdb-c78b39c30b75)
-
-### Dark Mode:
-![Dark Mode](https://github.com/user-attachments/assets/2ce70d3f-f84c-4f0a-a7a3-d037642f3604)
-
-### Customized Window:
-![Screenshot 2025-01-03 131048](https://github.com/user-attachments/assets/1c650c99-7dbb-40d5-b0d8-32c584166d7c)
-
-### Context Menu:
-![MainGUI](https://github.com/user-attachments/assets/30901d12-edb1-4780-9c23-2e4d91956898)
-
-### SendTo Menu
-![SendTo Menu](https://github.com/user-attachments/assets/7b718b25-3461-4b70-8b45-6b10e4489938)
-
-### Command Manager
-![Command Manager](https://github.com/user-attachments/assets/31a9d6ff-ae9a-4e81-9f66-fb62feb41cb5)
-
-### Options / Settings:
-![General](https://github.com/user-attachments/assets/9171b303-3e40-4bc5-a34e-d1a4c5134040)
-
-![Index](https://github.com/user-attachments/assets/8dbd6f9a-f761-493d-a0e9-c3e88c972a2a)
-
-![GUI](https://github.com/user-attachments/assets/264ef125-f571-4235-b648-df2b70ff8e01)
-
-![Hotkey](https://github.com/user-attachments/assets/7859bcfb-5496-4052-8506-1d83b3dcedf3)
-
-![Listary](https://github.com/user-attachments/assets/7b07a8b3-063a-4dfd-b40f-eac31946a3f5)
-
-![Usage](https://github.com/user-attachments/assets/1f71ac01-bb32-4901-a3df-15a94a765cc1)
-
-![About](https://github.com/user-attachments/assets/026d16e6-7dca-4b92-a6e0-069d93929c65)
-
-# Release / Download:
-
-You may download the executable file if you prefer not to install AutoHotkey on your computer.
-
-[Download](https://github.com/zhugecaomao/ALTRun/releases)
-
-# ALTRun (AHK)
+## ALTRun (AHK)
 ALTRun 是一款轻量级、功能强大的启动工具, 它以简洁、高效为设计理念, 能够大大提高你的电脑操作效率. 通过 ALTRun, 你只需输入快捷键或关键字, 即可快速找到并打开所需的资源.
 
 鉴于 ET民工 Delphi 版本的 ALTRun 已经不再更新, 这里使用 AutoHotkey 重写了一版新的 ALTRun, 不需要安装, 且文件体积小、资源占用少.
 
-## ALTRun 的主要特点
+### ALTRun 的主要特点
 1. 便携和轻量化
 ALTRun 不会修改系统注册表，文件小于 100 KB，占用内存少于 10MB，非常适合需要高效启动的用户。
 
@@ -89,3 +28,65 @@ ALTRun 根据你使用的频率自动调整命令的优先级，让你最常用�
 8. 深度自定义
 暗黑模式支持，提升视觉体验。
 提供上下文菜单和命令管理器，让操作更加便捷。
+
+## ALTRun (AHK)
+ALTRun - An effective launcher for Windows, an AutoHotkey open-source project.
+It provides a streamlined and efficient way to find anything on your system and launch any application in your way. 
+
+1. Pure portable software, not write anything into Registry.
+2. Small file size (< 100KB), low resource usage (< 10MB RAM), and high performance.
+3. User-friendly interface, highly customizable from the Options menu
+4. SendTo Menu allows you to create commands quickly and easily.
+5. Multi-Hotkey setup allowed.
+6. Integrated with Total Commander and Everything
+7. Smart Rank - Atuo adjusts command priority (rank) based on frequency of use.
+8. Smart Match - Fuzzy and Smart matching and filtering result
+9. Quick Switch Dir function (like Listary)
+   Many more functions...
+
+Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and [RunZ by goreliu](https://github.com/goreliu/runz) (AutoHotkey).
+
+## Screenshot
+
+### Main Window:
+![Screenshot 2025-01-28 131002](https://github.com/user-attachments/assets/f49ec678-7adf-4403-818c-7a55bd4e47cf)
+
+
+### 简体中文
+![Screenshot 2025-01-28 131216](https://github.com/user-attachments/assets/d3149895-3b69-4a3b-8276-f3feaf0ec1b5)
+
+
+### Customized Window (Simple & Dark Mode):
+![Screenshot 2025-01-03 131048](https://github.com/user-attachments/assets/1c650c99-7dbb-40d5-b0d8-32c584166d7c)
+
+### Context Menu:
+![Screenshot 2025-01-28 131522](https://github.com/user-attachments/assets/770bf3bb-853e-4a49-b324-b1b37c930510)
+
+### SendTo Menu
+![SendTo Menu](https://github.com/user-attachments/assets/7b718b25-3461-4b70-8b45-6b10e4489938)
+
+### Options / Settings:
+![General](https://github.com/user-attachments/assets/1246bfd1-5244-4dd7-ad9c-394cf30c91a7)
+
+![Index](https://github.com/user-attachments/assets/85d655ef-2b96-4b7a-96c8-810fbd470a05)
+
+![GUI](https://github.com/user-attachments/assets/66c938c6-7b3a-4f97-977b-10a76a1d34a5)
+
+![Hotkey](https://github.com/user-attachments/assets/f4e31c15-2100-4bd5-b5aa-06113f283446)
+
+![Listary](https://github.com/user-attachments/assets/ac6f68da-df96-4401-ac9d-6698c3d09bcc)
+
+![Plugin](https://github.com/user-attachments/assets/58333568-98a2-4331-be57-8a504b0551cb)
+
+![Usage](https://github.com/user-attachments/assets/1ec261e0-9bc9-45ac-9e53-26dd9e086951)
+
+![About](https://github.com/user-attachments/assets/f36e80a4-ba5e-4d3a-aa25-478dc62ef08a)
+
+### Command Manager
+![Command Manager](https://github.com/user-attachments/assets/31a9d6ff-ae9a-4e81-9f66-fb62feb41cb5)
+
+## Download:
+
+You may download the executable file if you prefer not to install AutoHotkey on your computer.
+
+[Download](https://github.com/zhugecaomao/ALTRun/releases)
