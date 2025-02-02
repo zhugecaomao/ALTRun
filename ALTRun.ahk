@@ -160,10 +160,11 @@ g_RUNTIME.TrayMenu := [g_LNG.300 ",ToggleWindow,imageres.dll,-100",""
     ,g_LNG.309 ",Update,imageres.dll,-5338"
     ,g_LNG.304 ",Help,imageres.dll,-99",""
     ,g_LNG.305 ",ScriptInfo,imageres.dll,-165"
-    ,g_LNG.306 ",AHKManual,imageres.dll,-90",""
+    ,""
     ,g_LNG.307 ",Reload,imageres.dll,-5311"
     ,g_LNG.308 ",Exit,imageres.dll,-98"]
 
+Menu, Tray, UseErrorLevel
 for index, MenuItem in g_RUNTIME.LV_ContextMenu {
     if (MenuItem = "") {
         Menu, LV_ContextMenu, Add
@@ -180,8 +181,8 @@ if (g_CONFIG.ShowTrayIcon) {
     Menu, Tray, Icon, imageres.dll, -100                                ; Index of icon changes between Windows versions, refer to the icon by resource ID for consistency
     For Index, MenuItem in g_RUNTIME.TrayMenu
     {
-        Item := StrSplit(MenuItem, ",") ; Item[1,2,3,4] <-> Name,Func,Icon,IconNo
-        Menu, Tray, Add, % Item[1], % Item[2]
+        Item := StrSplit(MenuItem, ",")                                 ; Item[1,2,3,4] <-> Name,Func,Icon,IconNo
+        Menu, Tray, Add , % Item[1], % Item[2]
         Menu, Tray, Icon, % Item[1], % Item[3], % Item[4]
     }
     Menu, Tray, Tip, % g_RUNTIME.WinName
@@ -554,8 +555,7 @@ ChangeCommand(Step = 1, ResetSelRow = False) {
     SetStatusBar()
 }
 
-OnClickListview()                                                       ; ListView g label actions (left / double click) behavior
-{
+OnClickListview() {                                                     ; ListView g label actions (left / double click) behavior
     Gui, Main:Default                                                   ; Use it before any LV update
     focusedRow := LV_GetNext(0, "Focused")                              ; 查找焦点行, 仅对焦点行进行操作而不是所有选择的行:
     if (!focusedRow)                                                    ; 没有焦点行
@@ -608,10 +608,6 @@ SBContextMenu() {
 
 ScriptInfo() {
     ListLines
-}
-
-AHKManual() {
-    Run, https://www.autohotkey.com/docs/v1/
 }
 
 MainGuiEscape() {
@@ -693,21 +689,17 @@ ParseArg() {
     Global
     commandPrefix := SubStr(g_RUNTIME.Input, 1, 1)
 
-    if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">") 
-    {
+    if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">") {
         Return g_RUNTIME.Arg := SubStr(g_RUNTIME.Input, 2)              ; 直接取命令为参数
     }
 
-    if (InStr(g_RUNTIME.Input, " ") && !g_RUNTIME.UseFallback)          ; 用空格来判断参数
-    {
+    if (InStr(g_RUNTIME.Input, " ") && !g_RUNTIME.UseFallback) {        ; 用空格来判断参数
         g_RUNTIME.Arg := SubStr(g_RUNTIME.Input, InStr(g_RUNTIME.Input, " ") + 1)
     }
-    else if (g_RUNTIME.UseFallback)
-    {
+    else if (g_RUNTIME.UseFallback) {
         g_RUNTIME.Arg := g_RUNTIME.Input
     }
-    else
-    {
+    else {
         g_RUNTIME.Arg := ""
     }
 }
@@ -948,11 +940,11 @@ Reindex() {                                                             ; Re-cre
 }
 
 Help() {
-    Options(, 8)                                                        ; Open Options window 8th tab (help tab)
+    Options("Help", 8)                                                  ; Open Options window 8th tab (help tab)
 }
 
 Usage() {
-    Options(, 7)
+    Options("Usage", 7)
 }
 
 Update() {
@@ -1170,7 +1162,7 @@ FormatThousand(Number)                                                  ; Functi
     Return RegExReplace(Number, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",")
 }
 
-Options(Arg := "", ActTab := 1)                                         ; Options settings, 1st parameter is to avoid menu like [Option `tF2] disturb ActTab
+Options(Arg := "", ActTab := 1)                                         ; Options settings, 1st parameter is to avoid menu like [Option`tF2] disturb ActTab
 {
     Global                                                              ; Assume-global mode
     Gui, Setting:New, +OwnDialogs +AlwaysOnTop, % g_LNG.1               ; +OwnerMain: (omit due to lug options window)
@@ -1326,15 +1318,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Font, S10,
     Gui, Setting:Add, Text, x96 yp+5, % g_RUNTIME.WinName
     Gui, Setting:Font, S9,
-    Gui, Setting:Add, Link, xp yp+30 w400, % "An effective launcher for Windows by ZhugeCaomao, an AutoHotkey open-source project."
-        . "`nIt provides a streamlined and efficient way to find anything on your system and launch any application in your way."
-        . "`n`nSetting file:`n" g_RUNTIME.Ini "`n`nProgram file:`n" A_ScriptFullPath
-        . "`n`nCheck for Updates"
-        . "`n<a href=""https://github.com/zhugecaomao/ALTRun/releases"">https://github.com/zhugecaomao/ALTRun/releases</a>"
-        . "`n`nSource code at GitHub"
-        . "`n<a href=""https://github.com/zhugecaomao/ALTRun"">https://github.com/zhugecaomao/ALTRun</a>"
-        . "`n`nSee Help and Wiki page for more details`n"
-        . "<a href=""https://github.com/zhugecaomao/ALTRun/wiki"">https://github.com/zhugecaomao/ALTRun/wiki</a>"
+    Gui, Setting:Add, Link, xp yp+30 w400, % g_LNG.601
 
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
     Gui, Setting:Add, Button, Default x355 w80 gSettingButtonOK, % g_LNG.8
@@ -1727,7 +1711,6 @@ SetLanguage() {                                                         ; Max st
         ,303:"Usage"
         ,304:"Help`tF1"
         ,305:"Script Info"
-        ,306:"AHK Manual"
         ,307:"Reload`tCtrl+Q"
         ,308:"Exit`tAlt+F4"
         ,309:"Update"}
@@ -1743,6 +1726,17 @@ SetLanguage() {                                                         ; Max st
     ENG.501 := "Now"
     ENG.502 := "Total number of times the command was executed"
     ENG.503 := "Number of times the program was activated today"
+
+    ENG.600 := "About"                                                  ; 600+ About
+    ENG.601 := "An effective launcher for Windows by ZhugeCaomao, an <a href=""https://www.autohotkey.com/docs/v1/"">AutoHotkey</a> open-source project. "
+        . "It provides a streamlined and efficient way to find anything on your system and launch any application in your way."
+        . "`n`nSetting file:`n" g_RUNTIME.Ini "`n`nProgram file:`n" A_ScriptFullPath
+        . "`n`nCheck for Updates"
+        . "`n<a href=""https://github.com/zhugecaomao/ALTRun/releases"">https://github.com/zhugecaomao/ALTRun/releases</a>"
+        . "`n`nSource code at GitHub"
+        . "`n<a href=""https://github.com/zhugecaomao/ALTRun"">https://github.com/zhugecaomao/ALTRun</a>"
+        . "`n`nSee Help and Wiki page for more details"
+        . "`n<a href=""https://github.com/zhugecaomao/ALTRun/wiki"">https://github.com/zhugecaomao/ALTRun/wiki</a>"
 
     CHN := {1:"配置"                                                    ; 1~10 Reserved
         ,8 :"确定"
@@ -1869,7 +1863,6 @@ SetLanguage() {                                                         ; Max st
         ,303:"状态统计"
         ,304:"帮助`tF1"
         ,305:"脚本信息"
-        ,306:"AHK文档"
         ,307:"重新加载`tCtrl+Q"
         ,308:"退出`tAlt+F4"
         ,309:"检查更新"}
@@ -1885,6 +1878,18 @@ SetLanguage() {                                                         ; Max st
     CHN.501 := "当前"
     CHN.502 := "运行过的命令总次数"
     CHN.503 := "今天激活程序的次数"
+
+    CHN.600 := "关于"                                                   ; 600+ 关于
+    CHN.601 := "ALTRun 是由诸葛草帽开发的一款高效 Windows 启动器，是一款基于 <a href=""https://www.autohotkey.com/docs/v1/"">AutoHotkey</a> 的开源项目。 "
+        . "它提供了一种简洁高效的方式，让你能够快速查找系统中的任何内容，并以自己的方式启动任意应用程序。"
+        . "`n`n设置文件:`n" g_RUNTIME.Ini "`n`n程序文件:`n" A_ScriptFullPath
+        . "`n`n检查更新"
+        . "`n<a href=""https://github.com/zhugecaomao/ALTRun/releases"">https://github.com/zhugecaomao/ALTRun/releases</a>"
+        . "`n`n源代码开源在 GitHub"
+        . "`n<a href=""https://github.com/zhugecaomao/ALTRun"">https://github.com/zhugecaomao/ALTRun</a>"
+        . "`n`n有关更多详细信息，请参阅帮助和 Wiki 页面"
+        . "`n<a href=""https://github.com/zhugecaomao/ALTRun/wiki"">https://github.com/zhugecaomao/ALTRun/wiki</a>"
+
 
     Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
