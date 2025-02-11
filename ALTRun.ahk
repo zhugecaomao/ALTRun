@@ -1042,18 +1042,18 @@ CmdMgr(Path := "") {                                                    ; 命令
     }
 
     Gui, CmdMgr:New
-    Gui, CmdMgr:Font, S10, Segoe UI
-    Gui, CmdMgr:Add, GroupBox, w550 h230, New Command
-    Gui, CmdMgr:Add, Text, x25 yp+35, Command Type: 
+    Gui, CmdMgr:Font, S9 Norm, Microsoft Yahei
+    Gui, CmdMgr:Add, GroupBox, w550 h230, % g_LNG.701
+    Gui, CmdMgr:Add, Text, x25 yp+35, % g_LNG.702
     Gui, CmdMgr:Add, DropDownList, x145 yp-5 w150 v_Type Choose%_Type%, File||Dir|Cmd|URL
-    Gui, CmdMgr:Add, Text, x25 yp+50, Command Path: 
+    Gui, CmdMgr:Add, Text, x25 yp+50, % g_LNG.703
     Gui, CmdMgr:Add, Edit, x145 yp-5 w350 -WantReturn v_Path, % RelativePath(Path)
     Gui, CmdMgr:Add, Button, x500 yp w30 hp gSelectCmdPath, ...
-    Gui, CmdMgr:Add, Text, x25 yp+100, Name/Description: 
+    Gui, CmdMgr:Add, Text, x25 yp+100, % g_LNG.704
     Gui, CmdMgr:Add, Edit, x145 yp-5 w350 -WantReturn v_Desc, %_Desc%
     Gui, CmdMgr:Add, Button, Default x415 w65 gCmdMgrButtonOK, % g_LNG.8
     Gui, CmdMgr:Add, Button, x497 yp w65 gCmdMgrButtonCancel, % g_LNG.9
-    Gui, CmdMgr:Show, AutoSize, Commander Manager
+    Gui, CmdMgr:Show, AutoSize, % g_LNG.700
 }
 
 SelectCmdPath() {
@@ -1390,8 +1390,10 @@ LoadConfig(Arg) {                                                       ; 加载
             UsageDate  := StrSplit(A_LoopField, "=")[1]
             UsageCount := StrSplit(A_LoopField, "=")[2]
             
-            if (UsageDate < OffsetDate)
+            if (UsageDate <= OffsetDate) {
                 IniDelete, % g_RUNTIME.Ini, % g_SECTION.USAGE, %UsageDate%
+                Continue
+            }
 
             g_RUNTIME.UsageCountMax := Max(g_RUNTIME.UsageCountMax, UsageCount)
         }
@@ -1737,6 +1739,12 @@ SetLanguage() {                                                         ; Max st
         . "`n<a href=""https://github.com/zhugecaomao/ALTRun"">https://github.com/zhugecaomao/ALTRun</a>"
         . "`n`nSee Help and Wiki page for more details"
         . "`n<a href=""https://github.com/zhugecaomao/ALTRun/wiki"">https://github.com/zhugecaomao/ALTRun/wiki</a>"
+    
+    ENG.700 := "Commander Manager"                                      ; 700+ Commander Manager
+    ENG.701 := "New command"
+    ENG.702 := "Command type"
+    ENG.703 := "Command path"
+    ENG.704 := "Command description"
 
     CHN := {1:"配置"                                                    ; 1~10 Reserved
         ,8 :"确定"
@@ -1890,6 +1898,11 @@ SetLanguage() {                                                         ; Max st
         . "`n`n有关更多详细信息，请参阅帮助和 Wiki 页面"
         . "`n<a href=""https://github.com/zhugecaomao/ALTRun/wiki"">https://github.com/zhugecaomao/ALTRun/wiki</a>"
 
+    CHN.700 := "命令管理器"                                              ; 700+ 命令管理器
+    CHN.701 := "新建命令"
+    CHN.702 := "命令类型"
+    CHN.703 := "命令路径"
+    CHN.704 := "命令描述"
 
     Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
