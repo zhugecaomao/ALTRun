@@ -457,7 +457,7 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
     if (!KeepRunAs)
         Path := StrReplace(Path,  "*RunAs ", "")                        ; Remove *RunAs (Admin Run) to get absolute path
 
-    if (InStr(Path, "A_"))                                              ; Resolve path like A_ScriptDir
+    if (InStr(Path, "A_") = 1)                                          ; Resolve path like A_ScriptDir, some server path has "Plot A_IGLS" in it, so InStr must be 1
         Path := %Path%
 
     Path := StrReplace(Path, "%Temp%", A_Temp)
