@@ -63,7 +63,7 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ![Screenshot 2025-01-28 131522](https://github.com/user-attachments/assets/770bf3bb-853e-4a49-b324-b1b37c930510)
 
 ### SendTo Menu
-![SendTo Menu](https://github.com/user-attachments/assets/7b718b25-3461-4b70-8b45-6b10e4489938)
+![SendToMenu](https://github.com/user-attachments/assets/0f972701-0719-4edc-a464-fbaff411c472)
 
 ### Options / Settings:
 ![General](https://github.com/user-attachments/assets/1246bfd1-5244-4dd7-ad9c-394cf30c91a7)
