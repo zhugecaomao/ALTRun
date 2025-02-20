@@ -51,7 +51,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShowBorder     : 1
             ,SmartRank      : 1
             ,SmartMatch     : 1
-            ,MatchAny       : 1
+            ,MatchBeginning : 0
             ,ShowHint       : 1
             ,ShowRunCount   : 1
             ,ShowStatusBar  : 1
@@ -102,7 +102,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "DEFAULT"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.01.28"
+            ,WinName        : "ALTRun - Ver 2025.02.20"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
@@ -138,7 +138,7 @@ Global g_CHKLV      := {AutoStartup : g_LNG.101                         ; Option
     ,ShowGrid       : g_LNG.116 ,ShowHdr        : g_LNG.117
     ,ShowSN         : g_LNG.118 ,ShowBorder     : g_LNG.119
     ,SmartRank      : g_LNG.120 ,SmartMatch     : g_LNG.121
-    ,MatchAny       : g_LNG.122 ,ShowHint       : g_LNG.123
+    ,MatchBeginning : g_LNG.122 ,ShowHint       : g_LNG.123
     ,ShowRunCount   : g_LNG.124 ,ShowStatusBar  : g_LNG.125
     ,ShowBtnRun     : g_LNG.126 ,ShowBtnOpt     : g_LNG.127
     ,DoubleBuffer   : g_LNG.128 ,StruCalc       : g_LNG.129
@@ -1641,7 +1641,7 @@ SetLanguage() {                                                         ; Max st
         ,119:"Show border line around the command list"
         ,120:"Smart Rank - Auto adjust command priority (rank) based on use frequency"
         ,121:"Smart Match - Fuzzy and Smart matching and filtering result"
-        ,122:"Match from any position of the string"
+        ,122:"Match beginning of the string (Untick: Match from any position)"
         ,123:"Show hints/tips in the bottom status bar"
         ,124:"Show RunCount - Show command executed times in the status bar"
         ,125:"Show status bar at the bottom of the window"
@@ -1744,7 +1744,7 @@ SetLanguage() {                                                         ; Max st
     ENG.701 := "New command"
     ENG.702 := "Command type"
     ENG.703 := "Command path"
-    ENG.704 := "Command description"
+    ENG.704 := "Description"
 
     CHN := {1:"配置"                                                    ; 1~10 Reserved
         ,8 :"确定"
@@ -1799,13 +1799,13 @@ SetLanguage() {                                                         ; Max st
         ,119:"在命令列表周围显示边框线"
         ,120:"智能排序 - 根据使用频率自动调整命令优先级 (排序)"
         ,121:"智能匹配 - 模糊和智能匹配和过滤结果"
-        ,122:"从字符串的任何位置匹配"
+        ,122:"匹配字符串开头 (取消勾选: 匹配字符串任意位置)"
         ,123:"在底部状态栏显示提示/提示"
         ,124:"显示运行次数 - 在状态栏中显示命令执行次数"
         ,125:"在窗口底部显示状态栏"
         ,126:"在主窗口上显示 [运行] 按钮"
         ,127:"在主窗口上显示 [选项] 按钮"
-        ,128:"双缓冲绘图, 能减少闪烁 (WinXP+)"
+        ,128:"双缓冲绘图, 改善窗口闪烁 (Win XP+)"
         ,129:"启用快速结构计算"
         ,130:"缩短路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
         ,131:"设置语言为简体中文(Simplified Chinese)"
