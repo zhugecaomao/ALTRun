@@ -1043,16 +1043,20 @@ CmdMgr(Path := "") {                                                    ; 命令
 
     Gui, CmdMgr:New
     Gui, CmdMgr:Font, S9 Norm, Microsoft Yahei
-    Gui, CmdMgr:Add, GroupBox, w550 h230, % g_LNG.701
-    Gui, CmdMgr:Add, Text, x25 yp+35, % g_LNG.702
-    Gui, CmdMgr:Add, DropDownList, x145 yp-5 w150 v_Type Choose%_Type%, File||Dir|Cmd|URL
-    Gui, CmdMgr:Add, Text, x25 yp+50, % g_LNG.703
-    Gui, CmdMgr:Add, Edit, x145 yp-5 w350 -WantReturn v_Path, % RelativePath(Path)
-    Gui, CmdMgr:Add, Button, x500 yp w30 hp gSelectCmdPath, ...
-    Gui, CmdMgr:Add, Text, x25 yp+100, % g_LNG.704
-    Gui, CmdMgr:Add, Edit, x145 yp-5 w350 -WantReturn v_Desc, %_Desc%
-    Gui, CmdMgr:Add, Button, Default x415 w65 gCmdMgrButtonOK, % g_LNG.8
-    Gui, CmdMgr:Add, Button, x497 yp w65 gCmdMgrButtonCancel, % g_LNG.9
+    Gui, CmdMgr:Add, GroupBox, w600 h260, % g_LNG.701
+    Gui, CmdMgr:Add, Text, x25 yp+30, % g_LNG.702
+    Gui, CmdMgr:Add, DropDownList, x145 yp-5 w130 v_Type Choose%_Type%, File||Dir|Cmd|URL
+    Gui, CmdMgr:Add, Text, x300 yp+5, Command Section
+    Gui, CmdMgr:Add, DropDownList, x420 yp-5 w130 v_Section, UserCommand||DefaultCommand|Index|FallbackCommand
+    Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.703
+    Gui, CmdMgr:Add, Edit, x145 yp-5 w405 -WantReturn v_Path, % RelativePath(Path)
+    Gui, CmdMgr:Add, Button, x560 yp w30 hp gSelectCmdPath, ...
+    Gui, CmdMgr:Add, Text, x25 yp+80, % g_LNG.704
+    Gui, CmdMgr:Add, Edit, x145 yp-5 w405 -WantReturn v_Desc, %_Desc%
+    Gui, CmdMgr:Add, Text, x25 yp+60, 命令权重
+    Gui, CmdMgr:Add, ComboBox, x145 yp-5 w405, 1||2|3|4|5|6|7|8|9|10
+    Gui, CmdMgr:Add, Button, Default x420 w90 gCmdMgrButtonOK, % g_LNG.8
+    Gui, CmdMgr:Add, Button, x521 yp w90 gCmdMgrButtonCancel, % g_LNG.9
     Gui, CmdMgr:Show, AutoSize, % g_LNG.700
 }
 
@@ -1631,7 +1635,7 @@ SetLanguage() {                                                         ; Max st
         ,109:"[ESC] to clear input, press again to close window (Untick: Close directly)"
         ,110:"Keep last input and search result on close"
         ,111:"Show Icon - Show file/folder/app icon in result"
-        ,112:"sendToGetLnk - Retrieve .lnk target on SendTo"
+        ,112:"SendToGetLnk - Retrieve .lnk target on SendTo"
         ,113:"Save History - Commands executed with arg"
         ,114:"Save Log - App running and debug information"
         ,115:"Match full path on search"
