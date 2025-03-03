@@ -649,17 +649,11 @@ Test() {
 }
 
 UserCommand() {
-    if (g_CONFIG.Editor = "notepad.exe")
-        Run, % g_CONFIG.Editor " " g_RUNTIME.Ini,, UseErrorLevel
-    Else
-        Run, % g_CONFIG.Editor " /m [" g_SECTION.USERCMD "] """ g_RUNTIME.Ini """",, UseErrorLevel ; /m Match text
+    Run, % "Notepad.exe " . g_RUNTIME["Ini"]                            ; TO-DO: To use build-in command manger to manage commands
 }
 
 EditCommand() {
-    if (g_CONFIG.Editor = "notepad.exe")
-        Run, % g_CONFIG.Editor " " g_RUNTIME.Ini,, UseErrorLevel
-    else
-        Run, % g_CONFIG.Editor " /m " """" g_RUNTIME.ActiveCommand "=""" " """ g_RUNTIME.Ini """",, UseErrorLevel ; /m Match text, locate to current command, add = at end to filter out [history] commands
+    Run, % "Notepad.exe " . g_RUNTIME["Ini"]                            ; TO-DO: To use build-in command manger to manage commands
 }
 
 ClearInput() {
