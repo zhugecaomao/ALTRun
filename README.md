@@ -83,7 +83,7 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ![About](https://github.com/user-attachments/assets/f36e80a4-ba5e-4d3a-aa25-478dc62ef08a)
 
 ### Command Manager
-![Command Manager](https://github.com/user-attachments/assets/31a9d6ff-ae9a-4e81-9f66-fb62feb41cb5)
+![CmdMgr](https://github.com/user-attachments/assets/224f601b-e4d7-430c-ac96-19df3e29f69d)
 
 ## Download:
 
