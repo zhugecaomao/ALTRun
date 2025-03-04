@@ -150,9 +150,10 @@ Global g_CHKLV      := {AutoStartup : g_LNG.101                         ; Option
 g_RUNTIME.LV_ContextMenu := [g_LNG.400 ",LVRunCommand,imageres.dll,-100"
     ,g_LNG.401 ",OpenContainer,imageres.dll,-3"
     ,g_LNG.402 ",LVCopyCommand,imageres.dll,-5314",""
-    ,g_LNG.403 ",CmdMgr,imageres.dll,-2"
+    ,g_LNG.403 ",NewCommand,imageres.dll,-2"
     ,g_LNG.404 ",EditCommand,imageres.dll,-5306"
-    ,g_LNG.405 ",UserCommand,imageres.dll,-88"]
+    ,g_LNG.405 ",DelCommand,imageres.dll,-5305"
+    ,g_LNG.406 ",UserCommand,imageres.dll,-88"]
 g_RUNTIME.TrayMenu := [g_LNG.300 ",ToggleWindow,imageres.dll,-100",""
     ,g_LNG.301 ",Options,imageres.dll,-114"
     ,g_LNG.302 ",Reindex,imageres.dll,-8"
@@ -243,13 +244,26 @@ if (g_CONFIG.ShowIcon) {
     LV_SetImageList(ImageListID)                                        ; Attach the ImageLists to the ListView so that it can later display the icons
 }
 
-g_LOG.Debug("Resolving command line args=" A_Args[1] " " A_Args[2])     ; Command line args, Args are %1% %2% or A_Args[1] A_Args[2]
+;===================================================
+; Resolve command line arguments, %1% %2% or A_Args[1] A_Args[2]
+;===================================================
+g_LOG.Debug("Resolving command line args=" A_Args[1] " " A_Args[2])
 if (A_Args[1] = "-Startup")
     g_RUNTIME.WinHide := " Hide"
 
 if (A_Args[1] = "-SendTo") {
     g_RUNTIME.WinHide := " Hide"
-    CmdMgr(A_Args[2])
+    Path := A_Args[2]
+
+    SplitPath Path, Desc,, fileExt,,                                   ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name)
+
+    Type := InStr(FileExist(Path), "D") ? "Dir" : "File"                ; Default Type is File, Set Type is Dir only if the file exists and is a directory
+    
+    if (fileExt = "lnk" && g_CONFIG.SendToGetLnk) {
+        FileGetShortcut, %Path%, Path,, fileArg, Desc
+        Path .= " " fileArg
+    }
+    CmdMgr(g_SECTION.USERCMD, Type, Path, Desc, 1, "")                  ; Add new command to database
 }
 
 Gui, Main:Show, % "w" g_GUI.WinWidth " h" g_GUI.WinHeight " Center " g_RUNTIME.WinHide, % g_RUNTIME.WinName
@@ -648,14 +662,6 @@ Test() {
     MsgBox % "Search '" chr(chr1) " " chr(chr2) " " chr(chr3) "' use Time =  " t
 }
 
-UserCommand() {
-    Run, % "Notepad.exe " . g_RUNTIME["Ini"]                            ; TO-DO: To use build-in command manger to manage commands
-}
-
-EditCommand() {
-    Run, % "Notepad.exe " . g_RUNTIME["Ini"]                            ; TO-DO: To use build-in command manger to manage commands
-}
-
 ClearInput() {
     GuiControl, Main:Text, MyInput,
     GuiControl, Main:Focus, MyInput
@@ -791,7 +797,7 @@ LoadCommands() {
         ; Format: Command Type | Command | Description
         ; Command type: File, Dir, CMD, URL
         ;
-        Func | CmdMgr | New Command
+        Func | NewCommand | New Command
         Func | Everything | Search by Everything
         Func | Google | Search Clipboard or Input by Google
         Func | AhkRun | Run Command use AutoHotkey Run
@@ -1019,36 +1025,86 @@ ChangePath(Dir) {
     g_LOG.Debug("Listary change path=" Dir)
 }
 
-CmdMgr(Path := "") {                                                    ; 命令管理窗口
-    Global
-    g_LOG.Debug("Starting Command Manager... Args=" Path)
+UserCommand() {
+    Run, % "Notepad.exe " . g_RUNTIME["Ini"]                            ; TO-DO: To use build-in command manger to manage commands
+}
 
-    SplitPath Path, _Desc,, fileExt,,                                   ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name) 
-    
-    if InStr(FileExist(Path), "D")                                      ; True only if the file exists and is a directory.
-        _Type := 2                                                      ; It is a normal folder
-    else                                                                ; From command "New Command" or GUI context menu "New Command"
-        _Desc := g_RUNTIME.Arg
-    
-    if (fileExt = "lnk" && g_CONFIG.SendToGetLnk) {
-        FileGetShortcut, %Path%, Path,, fileArg, _Desc
-        Path .= " " fileArg
+NewCommand() {                                                          ; From command "New Command" or GUI context menu "New Command"
+    CmdMgr(g_SECTION.USERCMD, "", "", g_RUNTIME.Arg, 1, "")
+}
+
+EditCommand() {
+    if (g_RUNTIME.ActiveCommand) {
+        RANKSEC := g_SECTION.DFTCMD "|" g_SECTION.USERCMD "|" g_SECTION.INDEX
+        Loop Parse, RANKSEC, |                                          ; Update Rank for related sections
+        {
+            IniRead, Rank, % g_RUNTIME.Ini, %A_LoopField%, % g_RUNTIME.ActiveCommand, KeyNotFound
+
+            if (Rank = "KeyNotFound" or Rank = "ERROR")                 ; If g_RUNTIME.ActiveCommand not exist in this section, then check next section
+                continue                                                ; Skips the rest of a loop and begins a new one.
+            else if Rank is integer                                     ; If g_RUNTIME.ActiveCommand exist in this section, then update it's rank.
+            {
+                Section := A_LoopField
+                Type    := StrSplit(g_RUNTIME.ActiveCommand, " | ")[1]
+                Path    := StrSplit(g_RUNTIME.ActiveCommand, " | ")[2]
+                Desc    := StrSplit(g_RUNTIME.ActiveCommand, " | ")[3]
+                CmdMgr(Section, Type, Path, Desc, Rank, g_RUNTIME.ActiveCommand)
+                Break
+            }
+        }
     }
+}
+
+DelCommand() {                                                          ; Delete current command
+    if (g_RUNTIME.ActiveCommand) {
+        RANKSEC := g_SECTION.DFTCMD "|" g_SECTION.USERCMD "|" g_SECTION.INDEX
+        Loop Parse, RANKSEC, |
+        {
+            IniRead, Rank, % g_RUNTIME.Ini, %A_LoopField%, % g_RUNTIME.ActiveCommand, KeyNotFound
+
+            if (Rank = "KeyNotFound" or Rank = "ERROR")                 ; If g_RUNTIME.ActiveCommand not exist in this section, then check next section
+                continue                                                ; Skips the rest of a loop and begins a new one.
+            else
+            {
+                MsgBox, 52, % g_RUNTIME.WinName, % "Do you really want to delete the following command?`n`n[" A_LoopField "]`n`n" g_RUNTIME.ActiveCommand
+                IfMsgBox Yes
+                {
+                    IniDelete, % g_RUNTIME.Ini, %A_LoopField%, % g_RUNTIME.ActiveCommand
+                    if (!ErrorLevel)
+                        MsgBox,64, % g_RUNTIME.WinName, % "The following command has been deleted successfully!`n`n[" A_LoopField "]`n`n" g_RUNTIME.ActiveCommand
+                    Break
+                }
+            }
+        }
+        LoadCommands()
+    }
+}
+
+CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank := 1, OriginCmd := "") { ; 命令管理窗口
+    Global
+    g_LOG.Debug("Starting Command Manager... Args=" Section "|" Type "|" Path "|" Desc "|" Rank)
+
+    _Section  := Section
+    _Type     := {"File":1, "Dir":2, "CMD":3, "URL":4}[Type]
+    _Path     := RelativePath(Path)
+    _Desc     := Desc
+    _Rank     := Rank
+    _OriginCmd:= OriginCmd
 
     Gui, CmdMgr:New
     Gui, CmdMgr:Font, S9 Norm, Microsoft Yahei
     Gui, CmdMgr:Add, GroupBox, w600 h260, % g_LNG.701
     Gui, CmdMgr:Add, Text, x25 yp+30, % g_LNG.702
     Gui, CmdMgr:Add, DropDownList, x145 yp-5 w130 v_Type Choose%_Type%, File||Dir|Cmd|URL
-    Gui, CmdMgr:Add, Text, x300 yp+5, Command Section
-    Gui, CmdMgr:Add, DropDownList, x420 yp-5 w130 v_Section, UserCommand||DefaultCommand|Index|FallbackCommand
+    Gui, CmdMgr:Add, Text, x300 yp+5, % g_LNG.705
+    Gui, CmdMgr:Add, Edit, x420 yp-5 w130 Disabled v_Section, %_Section%
     Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.703
-    Gui, CmdMgr:Add, Edit, x145 yp-5 w405 -WantReturn v_Path, % RelativePath(Path)
+    Gui, CmdMgr:Add, Edit, x145 yp-5 w405 -WantReturn v_Path, %_Path%
     Gui, CmdMgr:Add, Button, x560 yp w30 hp gSelectCmdPath, ...
     Gui, CmdMgr:Add, Text, x25 yp+80, % g_LNG.704
     Gui, CmdMgr:Add, Edit, x145 yp-5 w405 -WantReturn v_Desc, %_Desc%
-    Gui, CmdMgr:Add, Text, x25 yp+60, 命令权重
-    Gui, CmdMgr:Add, ComboBox, x145 yp-5 w405, 1||2|3|4|5|6|7|8|9|10
+    Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.706
+    Gui, CmdMgr:Add, Edit, x145 yp-5 w405 +Number v_Rank, %_Rank%
     Gui, CmdMgr:Add, Button, Default x420 w90 gCmdMgrButtonOK, % g_LNG.8
     Gui, CmdMgr:Add, Button, x521 yp w90 gCmdMgrButtonCancel, % g_LNG.9
     Gui, CmdMgr:Show, AutoSize, % g_LNG.700
@@ -1077,9 +1133,10 @@ CmdMgrButtonOK() {
         MsgBox,64, Command Manager, Command Path is empty`, please input correct command path!
         Return
     } else {
-        IniWrite, 1, % g_RUNTIME.Ini, % g_SECTION.USERCMD, %_Type% | %_Path% %_Desc% ; initial rank = 1
+        IniDelete, % g_RUNTIME.Ini, % _Section, % _OriginCmd
+        IniWrite, %_Rank%, % g_RUNTIME.Ini, %_Section%, %_Type% | %_Path% %_Desc%
         if (!ErrorLevel)
-            MsgBox,64, Command Manager, Command added successfully!`n`n%_Path%
+            MsgBox,64, Command Manager, The following command added / modified successfully!`n`n[ %_Section% ]`n`n%_Type% | %_Path% %_Desc% = %_Rank%
     }
     LoadCommands()
 }
@@ -1175,11 +1232,11 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     LV_ModifyCol(1, "AutoHdr")
 
     Gui, Setting:Add, Text, x24 yp+320, % g_LNG.150
-    Gui, Setting:Add, ComboBox, x130 yp-5 w394 Sort vg_Editor, % g_CONFIG.Editor "||Notepad.exe|C:\Apps\Notepad4.exe"
+    Gui, Setting:Add, ComboBox, x130 yp-5 w394 Sort vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.151
     Gui, Setting:Add, ComboBox, x130 yp-5 w394 Sort vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.152
-    Gui, Setting:Add, ComboBox, x130 yp-5 w394 Sort vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
+    Gui, Setting:Add, DropDownList, x130 yp-5 w394 Sort vg_HistoryLen, % StrReplace("0|10|15|20|25|30|50|90|", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|",, 1)
 
     Gui, Setting:Tab, 2 ; INDEX Tab
     Gui, Setting:Add, GroupBox, w500 h130, % g_LNG.160
@@ -1189,9 +1246,6 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexType, % g_CONFIG.IndexType "||*.lnk,*.exe"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.163
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexExclude, % g_CONFIG.IndexExclude "||Uninstall *"
-    Gui, Setting:Add, GroupBox, x24 yp+45 w500 h270, % g_LNG.164
-    Gui, Setting:Add, Text, x33 yp+25, % g_LNG.165
-    Gui, Setting:Add, DropDownList, x183 yp-5 w330 Sort vg_HistoryLen, % StrReplace("0|10|15|20|25|30|50|90|", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|",, 1)
 
     Gui, Setting:Tab, 3 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, % g_LNG.170
@@ -1408,7 +1462,7 @@ LoadConfig(Arg) {                                                       ; 加载
             Func | Help | ALTRun Help Index (F1)=99
             Func | Options | ALTRun Options Preference Settings (F2)=99
             Func | Reload | ALTRun Reload=99
-            Func | CmdMgr | New Command=99
+            Func | NewCommand | New Command=99
             Func | UserCommand | ALTRun User-defined command (F4)=99
             Func | Usage | ALTRun Usage Status=99
             Func | Reindex | Reindex search database=99
@@ -1649,15 +1703,13 @@ SetLanguage() {                                                         ; Max st
         ,129:"Enable express structure calculation"
         ,130:"Shorten Path - Show file/folder/app name only instead of full path in result"
         ,131:"Set language to Chinese Simplified (简体中文)"
-        ,150:"Text Editor"                                              ; 150~159 Options window (Other than Check Listview)
+        ,150:"File Manager"                                             ; 150~159 Options window (Other than Check Listview)
         ,151:"Everything"
-        ,152:"File Manager"
+        ,152:"Command history length"
         ,160:"Index"                                                    ; 160~169 Index
         ,161:"Index location"
         ,162:"Index file type"
         ,163:"Index exclude"
-        ,164:"Others"
-        ,165:"Command history length"
         ,170:"GUI"                                                      ; 170~189 GUI
         ,171:"Search result number"
         ,172:"Width of each column"
@@ -1720,7 +1772,8 @@ SetLanguage() {                                                         ; Max st
     ENG.402 := "Copy"
     ENG.403 := "New"
     ENG.404 := "Edit`tF3"
-    ENG.405 := "User Command`tF4"
+    ENG.405 := "Delete"
+    ENG.406 := "User Command`tF4"
 
     ENG.500 := "30 days ago"                                            ; 500+ Usage Status
     ENG.501 := "Now"
@@ -1739,10 +1792,12 @@ SetLanguage() {                                                         ; Max st
         . "`n<a href=""https://github.com/zhugecaomao/ALTRun/wiki"">https://github.com/zhugecaomao/ALTRun/wiki</a>"
     
     ENG.700 := "Commander Manager"                                      ; 700+ Commander Manager
-    ENG.701 := "New command"
+    ENG.701 := "Command"
     ENG.702 := "Command type"
     ENG.703 := "Command path"
     ENG.704 := "Description"
+    ENG.705 := "Command Section"
+    ENG.706 := "Command Rank"
 
     CHN := {1:"配置"                                                    ; 1~10 Reserved
         ,8 :"确定"
@@ -1807,15 +1862,13 @@ SetLanguage() {                                                         ; Max st
         ,129:"启用快速结构计算"
         ,130:"缩短路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
         ,131:"设置语言为简体中文(Simplified Chinese)"
-        ,150:"文本编辑器"                                                ; 150~159 Options window (Other than Check Listview)
+        ,150:"文件管理器"                                                ; 150~159 Options window (Other than Check Listview)
         ,151:"Everything"
-        ,152:"文件管理器"
+        ,152:"历史命令数量"
         ,160:"索引"                                                     ; 160~169 Index
         ,161:"索引位置"
         ,162:"索引文件类型"
         ,163:"索引排除项"
-        ,164:"其他"
-        ,165:"历史命令数量"
         ,170:"界面"                                                     ; 170~189 GUI
         ,171:"搜索结果数量"
         ,172:"每列宽度"
@@ -1878,7 +1931,8 @@ SetLanguage() {                                                         ; Max st
     CHN.402 := "复制命令"
     CHN.403 := "新建命令"
     CHN.404 := "编辑命令`tF3"
-    CHN.405 := "用户命令`tF4"
+    CHN.405 := "删除命令"
+    CHN.406 := "用户命令`tF4"
 
     CHN.500 := "30天前"                                                 ; 500+ 状态统计
     CHN.501 := "当前"
@@ -1897,10 +1951,12 @@ SetLanguage() {                                                         ; Max st
         . "`n<a href=""https://github.com/zhugecaomao/ALTRun/wiki"">https://github.com/zhugecaomao/ALTRun/wiki</a>"
 
     CHN.700 := "命令管理器"                                              ; 700+ 命令管理器
-    CHN.701 := "新建命令"
+    CHN.701 := "命令"
     CHN.702 := "命令类型"
     CHN.703 := "命令路径"
     CHN.704 := "命令描述"
+    CHN.705 := "命令节段"
+    CHN.706 := "命令权重"
 
     Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
