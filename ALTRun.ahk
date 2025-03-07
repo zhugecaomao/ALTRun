@@ -102,7 +102,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "DEFAULT"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.02.20"
+            ,WinName        : "ALTRun - Ver 2025.03.05"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
@@ -1085,7 +1085,7 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     g_LOG.Debug("Starting Command Manager... Args=" Section "|" Type "|" Path "|" Desc "|" Rank)
 
     _Section  := Section
-    _Type     := {"File":1, "Dir":2, "CMD":3, "URL":4}[Type]
+    _Type     := {"File":1, "Dir":2, "CMD":3, "URL":4, "Func":5}[Type]
     _Path     := RelativePath(Path)
     _Desc     := Desc
     _Rank     := Rank
@@ -1095,7 +1095,7 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     Gui, CmdMgr:Font, S9 Norm, Microsoft Yahei
     Gui, CmdMgr:Add, GroupBox, w600 h260, % g_LNG.701
     Gui, CmdMgr:Add, Text, x25 yp+30, % g_LNG.702
-    Gui, CmdMgr:Add, DropDownList, x145 yp-5 w130 v_Type Choose%_Type%, File||Dir|Cmd|URL
+    Gui, CmdMgr:Add, DropDownList, x145 yp-5 w130 v_Type Choose%_Type%, File||Dir|Cmd|URL|Func
     Gui, CmdMgr:Add, Text, x300 yp+5, % g_LNG.705
     Gui, CmdMgr:Add, Edit, x420 yp-5 w130 Disabled v_Section, %_Section%
     Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.703
@@ -1679,7 +1679,7 @@ SetLanguage() {                                                         ; Max st
         ,105:"Close window on losing focus"
         ,106:"Always stay on top"
         ,107:"Show Caption - Show window title bar"
-        ,108:"XP Theme - Use Windows Theme instead of Classic Theme (WinXP+)"
+        ,108:"Use Windows XP Theme instead of Classic Theme"
         ,109:"[ESC] to clear input, press again to close window (Untick: Close directly)"
         ,110:"Keep last input and search result on close"
         ,111:"Show Icon - Show file/folder/app icon in result"
@@ -1833,34 +1833,34 @@ SetLanguage() {                                                         ; Max st
         ,100:"常规|索引|界面|热键|Listary|插件|状态统计|关于"              ; 100~149 Options window (General - Check Listview)
         ,101:"随系统自动启动"
         ,102:"添加到“发送到”菜单"
-        ,103:"添加到“开始”菜单中"
-        ,104:"在系统任务栏中显示托盘图标"
+        ,103:"添加到“开始”菜单"
+        ,104:"显示托盘图标 (系统任务栏中)"
         ,105:"失去焦点时关闭窗口"
         ,106:"窗口置顶"
         ,107:"显示窗口标题栏"
-        ,108:"XP 主题 - 使用 Windows 主题 (WinXP+)"
+        ,108:"使用 Windows XP 主题"
         ,109:"[Esc] 清除输入, 再次按下关闭窗口 (取消勾选: 直接关闭窗口)"
-        ,110:"保留上次输入和搜索结果关闭"
+        ,110:"保留上次输入和搜索结果"
         ,111:"显示图标 - 在结果中显示文件/文件夹/应用程序图标"
         ,112:"使用“发送到”时, 追溯 .lnk 目标文件"
         ,113:"保存历史记录 - 使用参数执行的命令"
-        ,114:"保存日志 - 应用程序运行和调试信息"
+        ,114:"保存运行日志 - 应用程序运行和调试信息"
         ,115:"搜索时匹配完整路径"
         ,116:"显示网格 - 在列表的行和列之间提供边界线"
         ,117:"显示标题 - 显示列表的标题 (顶部行包含列标题)"
-        ,118:"在命令列表中显示序号"
-        ,119:"在命令列表周围显示边框线"
+        ,118:"显示命令列表序号"
+        ,119:"显示命令列表边框线"
         ,120:"智能排序 - 根据使用频率自动调整命令优先级 (排序)"
         ,121:"智能匹配 - 模糊和智能匹配和过滤结果"
         ,122:"匹配字符串开头 (取消勾选: 匹配字符串任意位置)"
-        ,123:"在底部状态栏显示提示/提示"
-        ,124:"显示运行次数 - 在状态栏中显示命令执行次数"
-        ,125:"在窗口底部显示状态栏"
-        ,126:"在主窗口上显示 [运行] 按钮"
-        ,127:"在主窗口上显示 [选项] 按钮"
+        ,123:"显示提示信息 - 在底部状态栏中显示技巧提示信息"
+        ,124:"显示运行次数 - 在底部状态栏中显示命令执行次数"
+        ,125:"显示状态栏 (窗口底部)"
+        ,126:"显示主窗口 [运行] 按钮"
+        ,127:"显示主窗口 [选项] 按钮"
         ,128:"双缓冲绘图, 改善窗口闪烁 (Win XP+)"
         ,129:"启用快速结构计算"
-        ,130:"缩短路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
+        ,130:"简化路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
         ,131:"设置语言为简体中文(Simplified Chinese)"
         ,150:"文件管理器"                                                ; 150~159 Options window (Other than Check Listview)
         ,151:"Everything"
