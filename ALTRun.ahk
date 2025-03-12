@@ -1200,7 +1200,15 @@ NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文
 
     if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前
     {
-        NameWithDate := nameNoExt " - " CurrentDate "." fileExt
+        if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$")
+            {
+                baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
+            }
+            else
+            {
+                baseName := nameNoExt
+            }
+            NameWithDate := baseName " - " CurrentDate "." fileExt
     }
     else
     {
@@ -1967,46 +1975,54 @@ SetLanguage() {                                                         ; Max st
 ; Return 0 if input contains illegal characters
 ;===================================================
 Eval(expression) {
-    StringReplace, expression, expression, %A_Space%, , All             ; 移除所有空格
+    ; 移除所有空格
+    expression := StrReplace(expression, " ")
+    
+    ; 检查非法字符（只允许数字、运算符、括号、小数点）
+    if (!RegExMatch(expression, "^[\d+\-*/^().]*$"))
+        return 0
 
-    If !RegExMatch(expression, "^[\d+\-*/^().]*$") {                    ; 检查非法字符（只允许数字、运算符、括号、小数点）
-        Return 0
+    ; 递归处理括号
+    while RegExMatch(expression, "\(([^()]*)\)", match) {
+        result := EvalSimple(match1)  ; 计算括号内的内容
+        expression := StrReplace(expression, match, result)
     }
 
-    While RegExMatch(expression, "\(([^()]*)\)", match) {               ; 递归处理括号
-        result := EvalSimple(match1) ; 计算括号内的内容
-        StringReplace, expression, expression, %match%, %result%, All
-    }
-
-    Return EvalSimple(expression)    ; 计算最终无括号表达式
+    ; 计算最终无括号表达式
+    Return EvalSimple(expression)
 }
 
-EvalSimple(expression) {                                                ; 计算不含括号的简单数学表达式
-    While RegExMatch(expression, "(-?\d+(\.\d+)?)([\^])(-?\d+(\.\d+)?)", match) { ; 处理幂运算
+EvalSimple(expression) {            ; 计算不含括号的简单数学表达式
+    ; 处理幂运算符 ^
+    while RegExMatch(expression, "(-?\d+(\.\d+)?)([\^])(-?\d+(\.\d+)?)", match) {
         base := match1, exponent := match4
-        result := base ** exponent ; 执行幂运算
-        StringReplace, expression, expression, %match%, %result%, All
+        result := base ** exponent  ; 执行幂运算
+        expression := StrReplace(expression, match, result)
     }
 
-    While RegExMatch(expression, "(-?\d+(\.\d+)?)([\*][\*])(-?\d+(\.\d+)?)", match) { ; 支持 ** 作为幂运算符的替代
+    ; 支持 ** 作为幂运算符替代
+    while RegExMatch(expression, "(-?\d+(\.\d+)?)(\*\*)(-?\d+(\.\d+)?)", match) {
         base := match1, exponent := match4
         result := base ** exponent
-        StringReplace, expression, expression, %match%, %result%, All
+        expression := StrReplace(expression, match, result)
     }
 
-    While RegExMatch(expression, "(-?\d+(\.\d+)?)([*/])(-?\d+(\.\d+)?)", match) { ; 处理乘除运算
+    ; 处理乘除法运算
+    while RegExMatch(expression, "(-?\d+(\.\d+)?)([*/])(-?\d+(\.\d+)?)", match) {
         operand1 := match1, operator := match3, operand2 := match4
         result := (operator = "*") ? operand1 * operand2 : operand1 / operand2
-        StringReplace, expression, expression, %match%, %result%, All
+        expression := StrReplace(expression, match, result)
     }
 
-    While RegExMatch(expression, "(-?\d+(\.\d+)?)([+\-])(-?\d+(\.\d+)?)", match) { ; 处理加减运算
+    ; 处理加减法运算
+    while RegExMatch(expression, "(-?\d+(\.\d+)?)([+\-])(-?\d+(\.\d+)?)", match) {
         operand1 := match1, operator := match3, operand2 := match4
         result := (operator = "+") ? operand1 + operand2 : operand1 - operand2
-        StringReplace, expression, expression, %match%, %result%, All
+        expression := StrReplace(expression, match, result)
     }
 
-    Return expression    ; 返回最终结果
+    ; 返回最终结果
+    Return expression
 }
 
 Class Logger
