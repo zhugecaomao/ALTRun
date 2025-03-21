@@ -63,7 +63,6 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,HistoryLen     : 15
             ,DoubleBuffer   : 1
             ,AutoSwitchDir  : 0
-            ,Editor         : "Notepad.exe"
             ,FileMgr        : "Explorer.exe"
             ,IndexDir       : "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location"
             ,IndexType      : "*.lnk,*.exe"
@@ -1056,6 +1055,7 @@ EditCommand() {
 }
 
 DelCommand() {                                                          ; Delete current command
+    Global
     if (g_RUNTIME.ActiveCommand) {
         RANKSEC := g_SECTION.DFTCMD "|" g_SECTION.USERCMD "|" g_SECTION.INDEX
         Loop Parse, RANKSEC, |
@@ -1066,12 +1066,12 @@ DelCommand() {                                                          ; Delete
                 continue                                                ; Skips the rest of a loop and begins a new one.
             else
             {
-                MsgBox, 52, % g_RUNTIME.WinName, % "Do you really want to delete the following command?`n`n[" A_LoopField "]`n`n" g_RUNTIME.ActiveCommand
+                MsgBox, 52, % g_RUNTIME.WinName, % g_LNG.800 "`n`n[" A_LoopField "]`n`n" g_RUNTIME.ActiveCommand
                 IfMsgBox Yes
                 {
                     IniDelete, % g_RUNTIME.Ini, %A_LoopField%, % g_RUNTIME.ActiveCommand
                     if (!ErrorLevel)
-                        MsgBox,64, % g_RUNTIME.WinName, % "The following command has been deleted successfully!`n`n[" A_LoopField "]`n`n" g_RUNTIME.ActiveCommand
+                        MsgBox,64, % g_RUNTIME.WinName, % g_LNG.801 "`n`n[" A_LoopField "]`n`n" g_RUNTIME.ActiveCommand
                     Break
                 }
             }
@@ -1648,16 +1648,17 @@ Everything() {
 }
 
 SetLanguage() {                                                         ; Max string length that can pass to the array initially is 8192
-    ENG := {1:"Options"                                                 ; 1~10 Reserved
+    ENG := {1:"Options"                                                 ; 1~9 Reserved
         ,8 :"OK"
         ,9 :"Cancel"
-        ,10:"No.|Type|Command|Description"                              ; 10~50 Main GUI
+
+        ,10:"No.|Type|Command|Description"                              ; 10~49 Main GUI
         ,11:"Run"
         ,12:"Options"
         ,13:"Type anything here to search..."
 
         ,50:"Tip | F1 | Help`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous or next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
-        ,51:"Tips: "                                                    ; 50~100 Tips
+        ,51:"Tips: "                                                    ; 50~99 Tips
         ,52:"It's better to activate ALTRun by hotkey (ALT + Space)"
         ,53:"Smart Rank - Atuo adjusts command priority (rank) based on frequency of use."
         ,54:"Arrow Up / Down = Move to previous / next command"
@@ -1807,16 +1808,20 @@ SetLanguage() {                                                         ; Max st
     ENG.705 := "Command Section"
     ENG.706 := "Command Rank"
 
-    CHN := {1:"配置"                                                    ; 1~10 Reserved
+    ENG.800 := "Do you really want to delete the following command?"    ; 800+ Msgbox
+    ENG.801 := "The following command has been deleted successfully!"
+
+    CHN := {1:"配置"                                                    ; 1~9 Reserved
         ,8 :"确定"
         ,9 :"取消"
-        ,10:"序号|类型|命令|描述"                                        ; 10~50 Main GUI
+
+        ,10:"序号|类型|命令|描述"                                        ; 10~49 Main GUI
         ,11:"运行"
         ,12:"配置"
         ,13:"在此输入搜索内容..."
 
         ,50:"提示 | F1 | 帮助`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
-        ,51:"提示: "                                                    ; 50~100 Tips
+        ,51:"提示: "                                                    ; 50~99 Tips
         ,52:"推荐使用热键激活 (ALT + 空格)"
         ,53:"智能排序 - 根据使用频率自动调整命令优先级 (排序)"
         ,54:"上/下箭头 = 上/下一个命令"
@@ -1965,6 +1970,9 @@ SetLanguage() {                                                         ; Max st
     CHN.704 := "命令描述"
     CHN.705 := "命令节段"
     CHN.706 := "命令权重"
+
+    CHN.800 := "您确定要删除以下命令吗?"                                  ; 800+ 消息内容
+    CHN.801 := "以下命令已成功删除!"
 
     Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
