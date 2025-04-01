@@ -101,7 +101,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "DEFAULT"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.03.05"
+            ,WinName        : "ALTRun - Ver 2025.04.01"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
