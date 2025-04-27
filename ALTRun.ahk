@@ -148,7 +148,7 @@ Global g_CHKLV      := {AutoStartup : g_LNG.101                         ; Option
 ;===================================================
 g_RUNTIME.LV_ContextMenu := [g_LNG.400 ",LVRunCommand,imageres.dll,-100"
     ,g_LNG.401 ",OpenContainer,imageres.dll,-3"
-    ,g_LNG.402 ",LVCopyCommand,imageres.dll,-5314",""
+    ,g_LNG.402 ",CopyCommand,imageres.dll,-5314",""
     ,g_LNG.403 ",NewCommand,imageres.dll,-2"
     ,g_LNG.404 ",EditCommand,imageres.dll,-5306"
     ,g_LNG.405 ",DelCommand,imageres.dll,-5305"
@@ -287,6 +287,7 @@ Hotkey, F3, EditCommand, UseErrorLevel
 Hotkey, F4, UserCommand, UseErrorLevel
 Hotkey, ^q, Reload, UseErrorLevel
 Hotkey, ^d, OpenContainer, UseErrorLevel
+Hotkey, ^c, CopyCommand, UseErrorLevel
 Hotkey, ^i, Reindex, UseErrorLevel
 Hotkey, ^NumpadAdd, RankUp, UseErrorLevel
 Hotkey, ^NumpadSub, RankDown, UseErrorLevel
@@ -596,7 +597,7 @@ LVRunCommand() {                                                        ; ListVi
     RunCommand(g_RUNTIME.ActiveCommand)                                 ; Execute the command if the user selected "Run Enter"
 }
 
-LVCopyCommand() {                                                       ; ListView ContextMenu (right click & its menu) actions
+CopyCommand() {                                                         ; ListView ContextMenu (right click & its menu) actions
     Gui, Main:Default                                                   ; Use it before any LV update
     focusedRow := LV_GetNext(0, "Focused")                              ; Check focused row, only operate focusd row instead of all selected rows
     if (!focusedRow)                                                    ; Return if no focused row is found
@@ -1233,18 +1234,20 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
     Gui, Setting:Tab, 1 ; CONFIG Tab
     Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, % g_LNG.1
+    GuiControl, Setting:-Redraw, OptListView
 
     For key, description in g_CHKLV
         LV_Add("Check" g_CONFIG[key], description)
 
     LV_ModifyCol(1, "AutoHdr")
+    GuiControl, Setting:+Redraw, OptListView
 
     Gui, Setting:Add, Text, x24 yp+320, % g_LNG.150
-    Gui, Setting:Add, ComboBox, x130 yp-5 w394 Sort vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
+    Gui, Setting:Add, ComboBox, x130 yp-5 w394 vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.151
-    Gui, Setting:Add, ComboBox, x130 yp-5 w394 Sort vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
+    Gui, Setting:Add, ComboBox, x130 yp-5 w394 vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.152
-    Gui, Setting:Add, DropDownList, x130 yp-5 w394 Sort vg_HistoryLen, % StrReplace("0|10|15|20|25|30|50|90|", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|",, 1)
+    Gui, Setting:Add, DropDownList, x130 yp-5 w394 Sort vg_HistoryLen, % StrReplace("10|15|20|25|30|50|90|", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|",, 1)
 
     Gui, Setting:Tab, 2 ; INDEX Tab
     Gui, Setting:Add, GroupBox, w500 h130, % g_LNG.160
@@ -1260,9 +1263,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.171
     Gui, Setting:Add, DropDownList, x183 yp-5 w330 vg_ListRows, % StrReplace("3|4|5|6|7|8|9|", g_GUI.ListRows, g_GUI.ListRows . "|",, 1) ; ListRows limit <= 9, not using Choose%g_ListRows% as list start from 3
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 Sort vg_ColWidth, % g_GUI.ColWidth "||33,46,460,AutoHdr|40,45,430,340|40,0,475,340|23,0,460,AutoHdr"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr|40,45,430,340|40,0,475,340"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.173
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 Sort vg_FontName, % g_GUI.FontName "||Default|Segoe UI Semibold|Microsoft Yahei"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontName, % g_GUI.FontName "||Default|Segoe UI Semibold|Microsoft Yahei"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.174
     Gui, Setting:Add, ComboBox, x183 yp-5 r1 w330 vg_FontSize, % g_GUI.FontSize "||8|9|10|11|12"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.175
@@ -1299,24 +1302,24 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+30 , % g_LNG.202
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey1, % g_HOTKEY.Hotkey1
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 Sort vg_Trigger1, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger1, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|",, 1)
     Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.204
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey2, % g_HOTKEY.Hotkey2
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 Sort vg_Trigger2, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger2, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|",, 1)
     Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.206
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey3, % g_HOTKEY.Hotkey3
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 Sort vg_Trigger3, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger3, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|",, 1)
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h145, % g_LNG.211
     Gui, Setting:Add, Text, x33 yp+30 , % g_LNG.212
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 Sort vg_FileMgrID, % g_CONFIG.FileMgrID "||ahk_class CabinetWClass|ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FileMgrID, % g_CONFIG.FileMgrID "||ahk_class CabinetWClass|ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.213
-    Gui, Setting:Add, Combobox, x183 yp-5 w330 Sort vg_DialogWin, % g_CONFIG.DialogWin "||ahk_class #32770"
+    Gui, Setting:Add, Combobox, x183 yp-5 w330 vg_DialogWin, % g_CONFIG.DialogWin "||ahk_class #32770"
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.214
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 Sort vg_ExcludeWin, % g_CONFIG.ExcludeWin "||ahk_class SysListView32|ahk_class SysListView32, ahk_exe Explorer.exe|ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe Totalcmd64.exe, AutoCAD LT Alert"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ExcludeWin, % g_CONFIG.ExcludeWin "||ahk_class SysListView32|ahk_class SysListView32, ahk_exe Explorer.exe|ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe Totalcmd64.exe, AutoCAD LT Alert"
     Gui, Setting:Add, GroupBox, x24 yp+50 w500 h145, % g_LNG.215
     Gui, Setting:Add, Text, x33 yp+30, % g_LNG.216
     Gui, Setting:Add, Hotkey, x183 yp-5 w330 vg_TotalCMDDir, % g_HOTKEY.TotalCMDDir
@@ -1347,7 +1350,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.231
     Gui, Setting:Add, ComboBox, x183 yp-5 w80 vg_CondHotkey, % g_HOTKEY.CondHotkey "||"
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.232
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 Sort vg_CondAction, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.CondAction, g_HOTKEY.CondAction . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_CondAction, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.CondAction, g_HOTKEY.CondAction . "|",, 1)
 
     Gui, Setting:Tab, 7 ; USAGE TAB
     Gui, Setting:Add, GroupBox, x66 y80 w445 h300,
@@ -1778,7 +1781,7 @@ SetLanguage() {                                                         ; Max st
 
     ENG.400 := "Run`tEnter"                                             ; 400+ LV_ContextMenu (Right-click)
     ENG.401 := "Locate`tCtrl+D"
-    ENG.402 := "Copy"
+    ENG.402 := "Copy`tCtrl+C"
     ENG.403 := "New"
     ENG.404 := "Edit`tF3"
     ENG.405 := "Delete"
@@ -1941,7 +1944,7 @@ SetLanguage() {                                                         ; Max st
 
     CHN.400 := "运行命令`tEnter"                                         ; 400+ 列表右键菜单
     CHN.401 := "定位命令`tCtrl+D"
-    CHN.402 := "复制命令"
+    CHN.402 := "复制命令`tCtrl+C"
     CHN.403 := "新建命令"
     CHN.404 := "编辑命令`tF3"
     CHN.405 := "删除命令"
