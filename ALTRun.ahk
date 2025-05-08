@@ -267,7 +267,7 @@ if (A_Args[1] = "-SendTo") {
 
 Gui, Main:Show, % "w" g_GUI.WinWidth " h" g_GUI.WinHeight " Center " g_RUNTIME.WinHide, % g_RUNTIME.WinName
 
-if (g_GUI.Transparency != "OFF" or g_GUI.Transparency != "255")
+if (g_GUI.Transparency != "OFF" and g_GUI.Transparency != "255")
     WinSet, Transparent, % g_GUI.Transparency, % g_RUNTIME.WinName
 
 (g_CONFIG.HideOnLostFocus) ? OnMessage(0x06, "WM_ACTIVATE")
@@ -335,17 +335,17 @@ OnSearchInput() {
 }
 
 SearchCommand(command := "") {
-    Result    := ""
-    Order     := 1
     g_MATCHED := {}
     Prefix    := SubStr(command, 1, 1)
 
+    ; Handle fallback commands
     if (Prefix = "+" or Prefix = " " or Prefix = ">") {
         g_RUNTIME.ActiveCommand := g_FALLBACK[InStr("+ >", Prefix)]     ; Corresponding to fallback commands position no. 1, 2 & 3
         g_MATCHED.Push(g_RUNTIME.ActiveCommand)
         Return ListResult(g_RUNTIME.ActiveCommand)
     }
 
+    ; Search commands
     for index, element in g_COMMANDS
     {
         splitResult := StrSplit(element, " | ")
@@ -358,48 +358,44 @@ SearchCommand(command := "") {
 
         if FuzzyMatch(elementToSearch, command) {
             g_MATCHED.Push(element)
-
-            if (Order = 1) {
+            If (g_MATCHED.Length() = 1) {
                 g_RUNTIME.ActiveCommand := element
-                Result .= element
-            } else {
-                Result .= "`n" element
-            }
-            Order++
-            if (Order > g_GUI.ListRows)
+            } else If (g_MATCHED.Length() >= g_GUI.ListRows)
                 Break
         }
     }
 
-    if (Result = "") {
-        if (EvalResult := Eval(command))
-        {
-            RebarQty := Ceil((EvalResult-40*2) / 300) + 1
-            EvalResultTho := FormatThousand(EvalResult)
-
-            Result := "Eval | " EvalResultTho
+    ; No matched command found
+    if (g_MATCHED.Length() = 0) {
+        if (EvalResult := Eval(command)) {
+            RebarQty   := Ceil((EvalResult-40*2) / 300) + 1
+            EvalResFmt := FormatThousand(EvalResult)
+            g_MATCHED.Push("Eval | " EvalResFmt)
 
             if (g_CONFIG.StruCalc) {
-                Result .= "`n | ------------------------------------------------------"
-                Result .= "`n | Beam width = " EvalResultTho " mm"
-                Result .= "`n | Main bar no. = " RebarQty " (" Round((EvalResult-40*2) / (RebarQty - 1)) " c/c), " RebarQty + 1 " (" Round((EvalResult-40*2) / (RebarQty+1-1)) " c/c), " RebarQty - 1 " (" Round((EvalResult-40*2) / (RebarQty-1-1)) " c/c)"
-                Result .= "`n | ------------------------------------------------------"
-                Result .= "`n | As = " EvalResultTho " mm2"
-                Result .= "`n | Rebar = " Ceil(EvalResult/132.7) "H13 / " Ceil(EvalResult/201.1) "H16 / " Ceil(EvalResult/314.2) "H20 / " Ceil(EvalResult/490.9) "H25 / " Ceil(EvalResult/804.2) "H32"
+                g_MATCHED.Push("`nEval | Beam width = " EvalResFmt " mm")
+                g_MATCHED.Push(" | Main bar no. = " RebarQty " (" Round((EvalResult-40*2) / (RebarQty - 1)) " c/c)")
+                g_MATCHED.Push("`nEval | As = " EvalResFmt " mm2")
+                g_MATCHED.Push(" | Rebar = " Ceil(EvalResult/132.7) "H13 / " Ceil(EvalResult/201.1) "H16 / " Ceil(EvalResult/314.2) "H20 / " Ceil(EvalResult/490.9) "H25 / " Ceil(EvalResult/804.2) "H32")
             }
-            Return ListResult(Result, True)
+            Return ListResult(JoinResult(g_MATCHED), True)
         }
 
-        g_RUNTIME.UseFallback   := true
+        g_RUNTIME.UseFallback   := True
         g_MATCHED               := g_FALLBACK
         g_RUNTIME.ActiveCommand := g_FALLBACK[1]
-
-        for i, cmd in g_FALLBACK
-            Result .= (i = 1) ? g_FALLBACK[i] : "`n" g_FALLBACK[i]
-    } else {
-        g_RUNTIME.UseFallback := false
+    } Else {
+        g_RUNTIME.UseFallback   := False
     }
-    ListResult(Result)
+    ListResult(JoinResult(g_MATCHED))
+}
+
+JoinResult(commands) {
+    Result := ""
+    For index, command in commands {
+        Result .= (index = 1 ? "" : "`n") command
+    }
+    Return Result
 }
 
 ListResult(text := "", UseDisplay := false)
@@ -499,7 +495,7 @@ EnvGet(EnvVar) {
 
 RunCommand(originCmd)
 {
-    MainGuiClose()                                                      ; 先关闭窗口,避免出现延迟的感觉
+    MainGuiClose()
     ParseArg()
     g_RUNTIME.UseDisplay := false
 
@@ -735,12 +731,14 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
 }
 
 UpdateUsage() {
-    if (g_RUNTIME.AppStartDate != A_YYYY . A_MM . A_DD) {
-        g_RUNTIME.AppStartDate := A_YYYY . A_MM . A_DD
-        g_RUNTIME.UsageToday   := 0
+    currDate := A_YYYY . A_MM . A_DD
+    if (g_RUNTIME.AppStartDate != currDate) {
+        g_RUNTIME.AppStartDate := currDate
+        g_RUNTIME.UsageToday := 1
+    } else {
+        g_RUNTIME.UsageToday++
     }
-    g_RUNTIME.UsageToday++
-    IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SECTION.USAGE, % A_YYYY . A_MM . A_DD
+    IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SECTION.USAGE, %currDate%
 }
 
 UpdateRunCount() {
@@ -1651,134 +1649,132 @@ Everything() {
 }
 
 SetLanguage() {                                                         ; Max string length that can pass to the array initially is 8192
-    ENG := {1:"Options"                                                 ; 1~9 Reserved
-        ,8 :"OK"
-        ,9 :"Cancel"
+    ENG := {}
 
-        ,10:"No.|Type|Command|Description"                              ; 10~49 Main GUI
-        ,11:"Run"
-        ,12:"Options"
-        ,13:"Type anything here to search..."
-
-        ,50:"Tip | F1 | Help`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous or next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
-        ,51:"Tips: "                                                    ; 50~99 Tips
-        ,52:"It's better to activate ALTRun by hotkey (ALT + Space)"
-        ,53:"Smart Rank - Atuo adjusts command priority (rank) based on frequency of use."
-        ,54:"Arrow Up / Down = Move to previous / next command"
-        ,55:"Esc = Clear input / close window"
-        ,56:"Enter = Run current command"
-        ,57:"Alt + No. = Run specific command"
-        ,58:"Start with + = New Command"
-        ,59:"F3 = Edit current command"
-        ,60:"F2 = Options setting"
-        ,61:"Ctrl+I = Reindex file search database"
-        ,62:"F1 = ALTRun Help Index"
-        ,63:"ALT + Space = Show / Hide Window"
-        ,64:"Ctrl+Q = Reload ALTRun"
-        ,65:"Ctrl + No. = Select specific command"
-        ,66:"Alt + F4 = Exit"
-        ,67:"Ctrl+D = Open current command's dir with File Manager"
-        ,68:"F4 = Edit user-defined commands (.ini) directly"
-        ,69:"Start with space = Search file by Everything"
-        ,70:"Ctrl+'+' = Increase rank of current command"
-        ,71:"Ctrl+'-' = Decrease rank of current command"
-
-        ,100:"General|Index|GUI|Hotkey|Listary|Plugins|Usage|About"     ; 100~149 Options window (General - Check Listview)
-        ,101:"Launch on Windows startup"
-        ,102:"Enable SendTo - Create commands conveniently using Windows SendTo"
-        ,103:"Enable ALTRun shortcut in the Windows Start menu"
-        ,104:"Show tray icon in the system taskbar"
-        ,105:"Close window on losing focus"
-        ,106:"Always stay on top"
-        ,107:"Show Caption - Show window title bar"
-        ,108:"Use Windows XP Theme instead of Classic Theme"
-        ,109:"[ESC] to clear input, press again to close window (Untick: Close directly)"
-        ,110:"Keep last input and search result on close"
-        ,111:"Show Icon - Show file/folder/app icon in result"
-        ,112:"SendToGetLnk - Retrieve .lnk target on SendTo"
-        ,113:"Save History - Commands executed with arg"
-        ,114:"Save Log - App running and debug information"
-        ,115:"Match full path on search"
-        ,116:"Show Grid - Provides boundary lines between list's rows and columns"
-        ,117:"Show Header - Show list's header (top row contains column titles)"
-        ,118:"Show Serial Number in command list"
-        ,119:"Show border line around the command list"
-        ,120:"Smart Rank - Auto adjust command priority (rank) based on use frequency"
-        ,121:"Smart Match - Fuzzy and Smart matching and filtering result"
-        ,122:"Match beginning of the string (Untick: Match from any position)"
-        ,123:"Show hints/tips in the bottom status bar"
-        ,124:"Show RunCount - Show command executed times in the status bar"
-        ,125:"Show status bar at the bottom of the window"
-        ,126:"Show [Run] button on main window"
-        ,127:"Show [Options] button on main window"
-        ,128:"Double Buffer - Paints via double-buffering, reduces flicker (WinXP+)"
-        ,129:"Enable express structure calculation"
-        ,130:"Shorten Path - Show file/folder/app name only instead of full path in result"
-        ,131:"Set language to Chinese Simplified (简体中文)"
-        ,150:"File Manager"                                             ; 150~159 Options window (Other than Check Listview)
-        ,151:"Everything"
-        ,152:"Command history length"
-        ,160:"Index"                                                    ; 160~169 Index
-        ,161:"Index location"
-        ,162:"Index file type"
-        ,163:"Index exclude"
-        ,170:"GUI"                                                      ; 170~189 GUI
-        ,171:"Search result number"
-        ,172:"Width of each column"
-        ,173:"Font name"
-        ,174:"Font size"
-        ,175:"Font color"
-        ,176:"Window width"
-        ,177:"Window height"
-        ,178:"Control color"
-        ,179:"Background color"
-        ,180:"Background picture"
-        ,181:"Transparency (0-255)"
-        ,190:"Hotkey"                                                   ; 190~209 Hotkey
-        ,191:"Activate"
-        ,192:"Primary Hotkey"
-        ,193:"Secondary Hotkey"
-        ,194:"Two hotkeys can be set simultaneously"
-        ,195:"Reset hotkey"
-        ,196:"Commands"
-        ,197:"Execute command"
-        ,198:"Alt + No."
-        ,199:"Select command"
-        ,200:"Ctrl + No."
-        ,201:"Actions and Hotkeys (non-global)"
-        ,202:"Hotkey 1"
-        ,203:"Trigger action"
-        ,204:"Hotkey 2"
-        ,206:"Hotkey 3"
-        ,210:"Listary"                                                  ; 210~219 Listary
-        ,211:"Dir Quick-Switch"
-        ,212:"File manager id"
-        ,213:"Open/Save dialog id"
-        ,214:"Exclude windows id"
-        ,215:"Hotkey for Swith open/save dialog path to"
-        ,216:"Total Commander's dir"
-        ,217:"Windows Explorer's dir"
-        ,218:"Auto switch dir on open/save dialog"
-        ,220:"Plugins"                                                  ; 220~299 Plugins
-        ,221:"Auto-date at end of text"
-        ,222:"Apply to window id"
-        ,223:"Hotkey"
-        ,224:"Date format"
-        ,225:"Auto-date before file extension"
-        ,229:"Conditional action"
-        ,230:"If window id contains"
-        ,231:"Hoktey (Editable)"
-        ,232:"Trigger action"
-        ,300:"Show"                                                     ; 300+ TrayMenu
-        ,301:"Options`tF2"
-        ,302:"ReIndex`tCtrl+I"
-        ,303:"Usage"
-        ,304:"Help`tF1"
-        ,305:"Script Info"
-        ,307:"Reload`tCtrl+Q"
-        ,308:"Exit`tAlt+F4"
-        ,309:"Update"}
-
+    ENG.1   := "Options"                                                ; 1~9 Reserved
+    ENG.8   := "OK"
+    ENG.9   := "Cancel"
+    ENG.10  := "No.|Type|Command|Description"                           ; 10~49 Main GUI
+    ENG.11  := "Run"
+    ENG.12  := "Options"
+    ENG.13  := "Type anything here to search..."
+    ENG.50  := "Tip | F1 | Help`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous / next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
+    ENG.51  := "Tips: "
+    ENG.52  := "It's better to activate ALTRun by hotkey (ALT + Space)" ; 50~99 Tips
+    ENG.53  := "Smart Rank - Auto adjusts command priority (rank) based on frequency of use."
+    ENG.54  := "Arrow Up / Down = Move to previous / next command"
+    ENG.55  := "Esc = Clear input / close window"
+    ENG.56  := "Enter = Run current command"
+    ENG.57  := "Alt + No. = Run specific command"
+    ENG.58  := "Start with + = New Command"
+    ENG.59  := "F3 = Edit current command"
+    ENG.60  := "F2 = Options setting"
+    ENG.61  := "Ctrl+I = Reindex file search database"
+    ENG.62  := "F1 = ALTRun Help Index"
+    ENG.63  := "ALT + Space = Show / Hide Window"
+    ENG.64  := "Ctrl+Q = Reload ALTRun"
+    ENG.65  := "Ctrl + No. = Select specific command"
+    ENG.66  := "Alt + F4 = Exit"
+    ENG.67  := "Ctrl+D = Open current command's dir with File Manager"
+    ENG.68  := "F4 = Edit user-defined commands (.ini) directly"
+    ENG.69  := "Start with space = Search file by Everything"
+    ENG.70  := "Ctrl+'+' = Increase rank of current command"
+    ENG.71  := "Ctrl+'-' = Decrease rank of current command"
+    ENG.100 := "General|Index|GUI|Hotkey|Listary|Plugins|Usage|About"     ; 100~149 Options window (General - Check Listview)
+    ENG.101 := "Launch on Windows startup"
+    ENG.102 := "Enable SendTo - Create commands conveniently using Windows SendTo"
+    ENG.103 := "Enable ALTRun shortcut in the Windows Start menu"
+    ENG.104 := "Show tray icon in the system taskbar"
+    ENG.105 := "Close window on losing focus"
+    ENG.106 := "Always stay on top"
+    ENG.107 := "Show Caption - Show window title bar"
+    ENG.108 := "Use Windows XP Theme instead of Classic Theme"
+    ENG.109 := "[ESC] to clear input, press again to close window (Untick: Close directly)"
+    ENG.110 := "Keep last input and search result on close"
+    ENG.111 := "Show Icon - Show file/folder/app icon in result"
+    ENG.112 := "SendToGetLnk - Retrieve .lnk target on SendTo"
+    ENG.113 := "Save History - Commands executed with arg"
+    ENG.114 := "Save Log - App running and debug information"
+    ENG.115 := "Match full path on search"
+    ENG.116 := "Show Grid - Provides boundary lines between list's rows and columns"
+    ENG.117 := "Show Header - Show list's header (top row contains column titles)"
+    ENG.118 := "Show Serial Number in command list"
+    ENG.119 := "Show border line around the command list"
+    ENG.120 := "Smart Rank - Auto adjust command priority (rank) based on use frequency"
+    ENG.121 := "Smart Match - Fuzzy and Smart matching and filtering result"
+    ENG.122 := "Match beginning of the string (Untick: Match from any position)"
+    ENG.123 := "Show hints/tips in the bottom status bar"
+    ENG.124 := "Show RunCount - Show command executed times in the status bar"
+    ENG.125 := "Show status bar at the bottom of the window"
+    ENG.126 := "Show [Run] button on main window"
+    ENG.127 := "Show [Options] button on main window"
+    ENG.128 := "Double Buffer - Paints via double-buffering, reduces flicker (WinXP+)"
+    ENG.129 := "Enable express structure calculation"
+    ENG.130 := "Shorten Path - Show file/folder/app name only instead of full path in result"
+    ENG.131 := "Set language to Chinese Simplified (简体中文)"
+    ENG.150 := "File Manager"                                           ; 150~159 Options window (Other than Check Listview)
+    ENG.151 := "Everything"
+    ENG.152 := "Command history length"
+    ENG.160 := "Index"                                                  ; 160~169 Index
+    ENG.161 := "Index location"
+    ENG.162 := "Index file type"
+    ENG.163 := "Index exclude"
+    ENG.170 := "GUI"                                                    ; 170~189 GUI
+    ENG.171 := "Search result number"
+    ENG.172 := "Width of each column"
+    ENG.173 := "Font name"
+    ENG.174 := "Font size"
+    ENG.175 := "Font color"
+    ENG.176 := "Window width"
+    ENG.177 := "Window height"
+    ENG.178 := "Control color"
+    ENG.179 := "Background color"
+    ENG.180 := "Background picture"
+    ENG.181 := "Transparency (0-255)"
+    ENG.190 := "Hotkey"                                                 ; 190~209 Hotkey
+    ENG.191 := "Activate"
+    ENG.192 := "Primary Hotkey"
+    ENG.193 := "Secondary Hotkey"
+    ENG.194 := "Two hotkeys can be set simultaneously"
+    ENG.195 := "Reset hotkey"
+    ENG.196 := "Commands"
+    ENG.197 := "Execute command"
+    ENG.198 := "Alt + No."
+    ENG.199 := "Select command"
+    ENG.200 := "Ctrl + No."
+    ENG.201 := "Actions and Hotkeys (non-global)"
+    ENG.202 := "Hotkey 1"
+    ENG.203 := "Trigger action"
+    ENG.204 := "Hotkey 2"
+    ENG.206 := "Hotkey 3"
+    ENG.210 := "Listary"                                                ; 210~219 Listary
+    ENG.211 := "Dir Quick-Switch"
+    ENG.212 := "File manager id"
+    ENG.213 := "Open/Save dialog id"
+    ENG.214 := "Exclude windows id"
+    ENG.215 := "Hotkey for Swith open/save dialog path to"
+    ENG.216 := "Total Commander's dir"
+    ENG.217 := "Windows Explorer's dir"
+    ENG.218 := "Auto switch dir on open/save dialog"
+    ENG.220 := "Plugins"                                                ; 220~299 Plugins
+    ENG.221 := "Auto-date at end of text"
+    ENG.222 := "Apply to window id"
+    ENG.223 := "Hotkey"
+    ENG.224 := "Date format"
+    ENG.225 := "Auto-date before file extension"
+    ENG.229 := "Conditional action"
+    ENG.230 := "If window id contains"
+    ENG.231 := "Hoktey (Editable)"
+    ENG.232 := "Trigger action"
+    ENG.300 := "Show"                                                   ; 300+ TrayMenu
+    ENG.301 := "Options`tF2"
+    ENG.302 := "ReIndex`tCtrl+I"
+    ENG.303 := "Usage"
+    ENG.304 := "Help`tF1"
+    ENG.305 := "Script Info"
+    ENG.307 := "Reload`tCtrl+Q"
+    ENG.308 := "Exit`tAlt+F4"
+    ENG.309 := "Update"
     ENG.400 := "Run`tEnter"                                             ; 400+ LV_ContextMenu (Right-click)
     ENG.401 := "Locate`tCtrl+D"
     ENG.402 := "Copy`tCtrl+C"
@@ -1786,12 +1782,10 @@ SetLanguage() {                                                         ; Max st
     ENG.404 := "Edit`tF3"
     ENG.405 := "Delete"
     ENG.406 := "User Command`tF4"
-
     ENG.500 := "30 days ago"                                            ; 500+ Usage Status
     ENG.501 := "Now"
     ENG.502 := "Total number of times the command was executed"
     ENG.503 := "Number of times the program was activated today"
-
     ENG.600 := "About"                                                  ; 600+ About
     ENG.601 := "An effective launcher for Windows by ZhugeCaomao, an <a href=""https://www.autohotkey.com/docs/v1/"">AutoHotkey</a> open-source project. "
         . "It provides a streamlined and efficient way to find anything on your system and launch any application in your way."
@@ -1810,151 +1804,145 @@ SetLanguage() {                                                         ; Max st
     ENG.704 := "Description"
     ENG.705 := "Command Section"
     ENG.706 := "Command Rank"
-
     ENG.800 := "Do you really want to delete the following command?"    ; 800+ Msgbox
     ENG.801 := "The following command has been deleted successfully!"
 
-    CHN := {1:"配置"                                                    ; 1~9 Reserved
-        ,8 :"确定"
-        ,9 :"取消"
-
-        ,10:"序号|类型|命令|描述"                                        ; 10~49 Main GUI
-        ,11:"运行"
-        ,12:"配置"
-        ,13:"在此输入搜索内容..."
-
-        ,50:"提示 | F1 | 帮助`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
-        ,51:"提示: "                                                    ; 50~99 Tips
-        ,52:"推荐使用热键激活 (ALT + 空格)"
-        ,53:"智能排序 - 根据使用频率自动调整命令优先级 (排序)"
-        ,54:"上/下箭头 = 上/下一个命令"
-        ,55:"Esc = 清除输入 / 关闭窗口"
-        ,56:"回车 = 运行当前命令"
-        ,57:"Alt + 序号 = 运行特定命令"
-        ,58:"以 + 开头 = 新建命令"
-        ,59:"F3 = 直接编辑当前命令 (.ini)"
-        ,60:"F2 = 配置选项设置"
-        ,61:"Ctrl+I = 重建文件搜索数据库"
-        ,62:"F1 = ALTRun 帮助索引"
-        ,63:"ALT + 空格 = 显示 / 隐藏窗口"
-        ,64:"Ctrl+Q = 重新加载 ALTRun"
-        ,65:"Ctrl + 序号 = 选择特定命令"
-        ,66:"Alt + F4 = 退出"
-        ,67:"Ctrl+D = 使用文件管理器定位当前命令所在目录"
-        ,68:"F4 = 直接编辑用户定义命令 (.ini)"
-        ,69:"以空格开头 = 使用 Everything 搜索文件"
-        ,70:"Ctrl+'+' = 增加当前命令的优先级"
-        ,71:"Ctrl+'-' = 减少当前命令的优先级"
-
-        ,100:"常规|索引|界面|热键|Listary|插件|状态统计|关于"              ; 100~149 Options window (General - Check Listview)
-        ,101:"随系统自动启动"
-        ,102:"添加到“发送到”菜单"
-        ,103:"添加到“开始”菜单"
-        ,104:"显示托盘图标 (系统任务栏中)"
-        ,105:"失去焦点时关闭窗口"
-        ,106:"窗口置顶"
-        ,107:"显示窗口标题栏"
-        ,108:"使用 Windows XP 主题"
-        ,109:"[Esc] 清除输入, 再次按下关闭窗口 (取消勾选: 直接关闭窗口)"
-        ,110:"保留上次输入和搜索结果"
-        ,111:"显示图标 - 在结果中显示文件/文件夹/应用程序图标"
-        ,112:"使用“发送到”时, 追溯 .lnk 目标文件"
-        ,113:"保存历史记录 - 使用参数执行的命令"
-        ,114:"保存运行日志 - 应用程序运行和调试信息"
-        ,115:"搜索时匹配完整路径"
-        ,116:"显示网格 - 在列表的行和列之间提供边界线"
-        ,117:"显示标题 - 显示列表的标题 (顶部行包含列标题)"
-        ,118:"显示命令列表序号"
-        ,119:"显示命令列表边框线"
-        ,120:"智能排序 - 根据使用频率自动调整命令优先级 (排序)"
-        ,121:"智能匹配 - 模糊和智能匹配和过滤结果"
-        ,122:"匹配字符串开头 (取消勾选: 匹配字符串任意位置)"
-        ,123:"显示提示信息 - 在底部状态栏中显示技巧提示信息"
-        ,124:"显示运行次数 - 在底部状态栏中显示命令执行次数"
-        ,125:"显示状态栏 (窗口底部)"
-        ,126:"显示主窗口 [运行] 按钮"
-        ,127:"显示主窗口 [选项] 按钮"
-        ,128:"双缓冲绘图, 改善窗口闪烁 (Win XP+)"
-        ,129:"启用快速结构计算"
-        ,130:"简化路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
-        ,131:"设置语言为简体中文(Simplified Chinese)"
-        ,150:"文件管理器"                                                ; 150~159 Options window (Other than Check Listview)
-        ,151:"Everything"
-        ,152:"历史命令数量"
-        ,160:"索引"                                                     ; 160~169 Index
-        ,161:"索引位置"
-        ,162:"索引文件类型"
-        ,163:"索引排除项"
-        ,170:"界面"                                                     ; 170~189 GUI
-        ,171:"搜索结果数量"
-        ,172:"每列宽度"
-        ,173:"字体名称"
-        ,174:"字体大小"
-        ,175:"字体颜色"
-        ,176:"窗口宽度"
-        ,177:"窗口高度"
-        ,178:"控件颜色"
-        ,179:"背景颜色"
-        ,180:"背景图片"
-        ,181:"透明度 (0-255)"
-        ,190:"热键"                                                     ; 190~209 Hotkey
-        ,191:"激活"
-        ,192:"主热键"
-        ,193:"辅热键"
-        ,194:"可以同时设置两个热键"
-        ,195:"重置热键"
-        ,196:"命令"
-        ,197:"执行命令"
-        ,198:"Alt + 序号"
-        ,199:"选择命令"
-        ,200:"Ctrl + 序号"
-        ,201:"快捷操作和热键 (非全局)"
-        ,202:"热键 1"
-        ,203:"触发操作"
-        ,204:"热键 2"
-        ,206:"热键 3"
-        ,210:"Listary"                                                  ; 210~219 Listary
-        ,211:"目录快速切换"
-        ,212:"文件管理器 ID"
-        ,213:"打开/保存对话框 ID"
-        ,214:"排除窗口 ID"
-        ,215:"切换打开/保存对话框路径的热键"
-        ,216:"Total Commander 路径"
-        ,217:"资源管理器路径"
-        ,218:"自动切换路径"
-        ,220:"插件"                                                     ; 220~299 Plugins
-        ,221:"文本末尾自动添加日期"
-        ,222:"应用到窗口 ID"
-        ,223:"热键"
-        ,224:"日期格式"
-        ,225:"扩展名前自动添加日期"
-        ,229:"条件触发快捷操作"
-        ,230:"如果窗口 ID 包含"
-        ,231:"热键 (可编辑)"
-        ,232:"触发操作"
-        ,300:"显示"                                                     ; 300+ 托盘菜单
-        ,301:"配置选项`tF2"
-        ,302:"重建索引`tCtrl+I"
-        ,303:"状态统计"
-        ,304:"帮助`tF1"
-        ,305:"脚本信息"
-        ,307:"重新加载`tCtrl+Q"
-        ,308:"退出`tAlt+F4"
-        ,309:"检查更新"}
-
-    CHN.400 := "运行命令`tEnter"                                         ; 400+ 列表右键菜单
+    CHN := {}
+    CHN.1   := "配置"                                                   ; 1~9 Reserved
+    CHN.8   := "确定"
+    CHN.9   := "取消"
+    CHN.10  := "序号|类型|命令|描述"                                     ; 10~49 Main GUI
+    CHN.11  := "运行"
+    CHN.12  := "配置"
+    CHN.13  := "在此输入搜索内容..."
+    CHN.50  := "提示 | F1 | 帮助`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
+    CHN.51  := "提示: "                                                 ; 50~99 Tips
+    CHN.52  := "推荐使用热键激活 (ALT + 空格)"
+    CHN.53  := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
+    CHN.54  := "上/下箭头 = 上/下一个命令"
+    CHN.55  := "Esc = 清除输入 / 关闭窗口"
+    CHN.56  := "回车 = 运行当前命令"
+    CHN.57  := "Alt + 序号 = 运行特定命令"
+    CHN.58  := "以 + 开头 = 新建命令"
+    CHN.59  := "F3 = 直接编辑当前命令 (.ini)"
+    CHN.60  := "F2 = 配置选项设置"
+    CHN.61  := "Ctrl+I = 重建文件搜索数据库"
+    CHN.62  := "F1 = ALTRun 帮助索引"
+    CHN.63  := "ALT + 空格 = 显示 / 隐藏窗口"
+    CHN.64  := "Ctrl+Q = 重新加载 ALTRun"
+    CHN.65  := "Ctrl + 序号 = 选择特定命令"
+    CHN.66  := "Alt + F4 = 退出"
+    CHN.67  := "Ctrl+D = 使用文件管理器定位当前命令所在目录"
+    CHN.68  := "F4 = 直接编辑用户定义命令 (.ini)"
+    CHN.69  := "以空格开头 = 使用 Everything 搜索文件"
+    CHN.70  := "Ctrl+'+' = 增加当前命令的优先级"
+    CHN.71  := "Ctrl+'-' = 减少当前命令的优先级"
+    CHN.100 := "常规|索引|界面|热键|Listary|插件|状态统计|关于"            ; 100~149 Options window (General - Check Listview)
+    CHN.101 := "随系统自动启动"
+    CHN.102 := "添加到“发送到”菜单"
+    CHN.103 := "添加到“开始”菜单"
+    CHN.104 := "显示托盘图标 (系统任务栏中)"
+    CHN.105 := "失去焦点时关闭窗口"
+    CHN.106 := "窗口置顶"
+    CHN.107 := "显示窗口标题栏"
+    CHN.108 := "使用 Windows XP 主题"
+    CHN.109 := "[Esc] 清除输入, 再次按下关闭窗口 (取消勾选: 直接关闭窗口)"
+    CHN.110 := "保留上次输入和搜索结果"
+    CHN.111 := "显示图标 - 在结果中显示文件/文件夹/应用程序图标"
+    CHN.112 := "使用“发送到”时, 追溯 .lnk 目标文件"
+    CHN.113 := "保存历史记录 - 使用参数执行的命令"
+    CHN.114 := "保存运行日志 - 应用程序运行和调试信息"
+    CHN.115 := "搜索时匹配完整路径"
+    CHN.116 := "显示网格 - 在列表的行和列之间提供边界线"
+    CHN.117 := "显示标题 - 显示列表的标题 (顶部行包含列标题)"
+    CHN.118 := "显示命令列表序号"
+    CHN.119 := "显示命令列表边框线"
+    CHN.120 := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
+    CHN.121 := "智能匹配 - 模糊和智能匹配和过滤结果"
+    CHN.122 := "匹配字符串开头 (取消勾选: 匹配字符串任意位置)"
+    CHN.123 := "显示提示信息 - 在底部状态栏中显示技巧提示信息"
+    CHN.124 := "显示运行次数 - 在底部状态栏中显示命令执行次数"
+    CHN.125 := "显示状态栏 (窗口底部)"
+    CHN.126 := "显示主窗口 [运行] 按钮"
+    CHN.127 := "显示主窗口 [选项] 按钮"
+    CHN.128 := "双缓冲绘图, 改善窗口闪烁 (Win XP+)"
+    CHN.129 := "启用快速结构计算"
+    CHN.130 := "简化路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
+    CHN.131 := "设置语言为简体中文(Simplified Chinese)"
+    CHN.150 := "文件管理器"                                              ; 150~159 Options window (Other than Check Listview)
+    CHN.151 := "Everything"
+    CHN.152 := "历史命令数量"
+    CHN.160 := "索引"                                                   ; 160~169 Index
+    CHN.161 := "索引位置"
+    CHN.162 := "索引文件类型"
+    CHN.163 := "索引排除项"
+    CHN.170 := "界面"                                                   ; 170~189 GUI
+    CHN.171 := "搜索结果数量"
+    CHN.172 := "每列宽度"
+    CHN.173 := "字体名称"
+    CHN.174 := "字体大小"
+    CHN.175 := "字体颜色"
+    CHN.176 := "窗口宽度"
+    CHN.177 := "窗口高度"
+    CHN.178 := "控件颜色"
+    CHN.179 := "背景颜色"
+    CHN.180 := "背景图片"
+    CHN.181 := "透明度 (0-255)"
+    CHN.190 := "热键"                                                   ; 190~209 Hotkey
+    CHN.191 := "激活"
+    CHN.192 := "主热键"
+    CHN.193 := "辅热键"
+    CHN.194 := "可以同时设置两个热键"
+    CHN.195 := "重置热键"
+    CHN.196 := "命令"
+    CHN.197 := "执行命令"
+    CHN.198 := "Alt + 序号"
+    CHN.199 := "选择命令"
+    CHN.200 := "Ctrl + 序号"
+    CHN.201 := "快捷操作和热键 (非全局)"
+    CHN.202 := "热键 1"
+    CHN.203 := "触发操作"
+    CHN.204 := "热键 2"
+    CHN.206 := "热键 3"
+    CHN.210 := "Listary"                                                ; 210~219 Listary
+    CHN.211 := "目录快速切换"
+    CHN.212 := "文件管理器 ID"
+    CHN.213 := "打开/保存对话框 ID"
+    CHN.214 := "排除窗口 ID"
+    CHN.215 := "切换打开/保存对话框路径的热键"
+    CHN.216 := "Total Commander 路径"
+    CHN.217 := "资源管理器路径"
+    CHN.218 := "自动切换路径"
+    CHN.220 := "插件"                                                   ; 220~299 Plugins
+    CHN.221 := "文本末尾自动添加日期"
+    CHN.222 := "应用到窗口 ID"
+    CHN.223 := "热键"
+    CHN.224 := "日期格式"
+    CHN.225 := "扩展名前自动添加日期"
+    CHN.229 := "条件触发快捷操作"
+    CHN.230 := "如果窗口 ID 包含"
+    CHN.231 := "热键 (可编辑)"
+    CHN.232 := "触发操作"
+    CHN.300 := "显示"                                                   ; 300+ 托盘菜单
+    CHN.301 := "配置选项`tF2"
+    CHN.302 := "重建索引`tCtrl+I"
+    CHN.303 := "状态统计"
+    CHN.304 := "帮助`tF1"
+    CHN.305 := "脚本信息"
+    CHN.307 := "重新加载`tCtrl+Q"
+    CHN.308 := "退出`tAlt+F4"
+    CHN.309 := "检查更新"
+    CHN.400 := "运行命令`tEnter"                                        ; 400+ 列表右键菜单
     CHN.401 := "定位命令`tCtrl+D"
     CHN.402 := "复制命令`tCtrl+C"
     CHN.403 := "新建命令"
     CHN.404 := "编辑命令`tF3"
     CHN.405 := "删除命令"
     CHN.406 := "用户命令`tF4"
-
     CHN.500 := "30天前"                                                 ; 500+ 状态统计
     CHN.501 := "当前"
     CHN.502 := "运行过的命令总次数"
     CHN.503 := "今天激活程序的次数"
-
     CHN.600 := "关于"                                                   ; 600+ 关于
     CHN.601 := "ALTRun 是由诸葛草帽开发的一款高效 Windows 启动器，是一款基于 <a href=""https://www.autohotkey.com/docs/v1/"">AutoHotkey</a> 的开源项目。 "
         . "它提供了一种简洁高效的方式，让你能够快速查找系统中的任何内容，并以自己的方式启动任意应用程序。"
@@ -1973,7 +1961,6 @@ SetLanguage() {                                                         ; Max st
     CHN.704 := "命令描述"
     CHN.705 := "命令节段"
     CHN.706 := "命令权重"
-
     CHN.800 := "您确定要删除以下命令吗?"                                  ; 800+ 消息内容
     CHN.801 := "以下命令已成功删除!"
 
