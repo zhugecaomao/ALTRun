@@ -90,7 +90,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,AutoDateBefExt : "ahk_class TTOTAL_CMD,ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class TSTDTREEDLG,ahk_class #32770,ahk_class TCOMBOINPUT" ; TC 文件列表重命名, Windows 资源管理器文件列表重命名, Windows 桌面文件重命名 (WinXP to Win10, Win11), TC 新建其他格式文件如txt, rtf, docx..., 资源管理器 文件保存对话框, TC F7 创建新文件夹对话框
             ,AutoDateBEHKey : "^d"}
 , g_GUI     := {ListRows    : 9
-            ,ColWidth       : "36,40,300,AutoHdr"
+            ,ColWidth       : "36,0,300,AutoHdr"
             ,FontName       : "Microsoft YaHei"
             ,FontSize       : 9
             ,FontColor      : "Default"
