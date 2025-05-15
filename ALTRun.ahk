@@ -101,7 +101,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "DEFAULT"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.04.01"
+            ,WinName        : "ALTRun - Ver 2025.05.15"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
@@ -1107,6 +1107,7 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     Gui, CmdMgr:Add, Button, Default x420 w90 gCmdMgrButtonOK, % g_LNG.8
     Gui, CmdMgr:Add, Button, x521 yp w90 gCmdMgrButtonCancel, % g_LNG.9
     Gui, CmdMgr:Show, AutoSize, % g_LNG.700
+    GuiControl, Focus, _Path
 }
 
 SelectCmdPath() {
@@ -1382,9 +1383,11 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Link, xp yp+30 w400, % g_LNG.601
 
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
-    Gui, Setting:Add, Button, Default x355 w80 gSettingButtonOK, % g_LNG.8
+    Gui, Setting:Add, Button, Default x355 w80 vSettingButtonOK gSettingButtonOK, % g_LNG.8
     Gui, Setting:Add, Button, x445 yp w80 gSettingButtonCancel, % g_LNG.9
     Gui, Setting:Show,, % g_LNG.1
+    GuiControl, Focus, SettingButtonOK
+
     Hotkey, % g_HOTKEY.GlobalHotkey1, Off, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, Off, UseErrorLevel
     g_LOG.Debug("Loading options window...Arg=" Arg ", ActTab=" ActTab)
@@ -1468,7 +1471,7 @@ LoadConfig(Arg) {                                                       ; 加载
             ; Built-in commands, high priority, recommended to maintain as it is
             ; App will auto generate [DefaultCommnd] section while it is empty
             ;
-            Func | Help | ALTRun Help Index (F1)=99
+            Func | Help | ALTRun Help & About (F1)=99
             Func | Options | ALTRun Options Preference Settings (F2)=99
             Func | Reload | ALTRun Reload=99
             Func | NewCommand | New Command=99
@@ -1658,7 +1661,7 @@ SetLanguage() {                                                         ; Max st
     ENG.11  := "Run"
     ENG.12  := "Options"
     ENG.13  := "Type anything here to search..."
-    ENG.50  := "Tip | F1 | Help`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous / next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
+    ENG.50  := "Tip | F1 | Help & About`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous / next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
     ENG.51  := "Tips: "
     ENG.52  := "It's better to activate ALTRun by hotkey (ALT + Space)" ; 50~99 Tips
     ENG.53  := "Smart Rank - Auto adjusts command priority (rank) based on frequency of use."
@@ -1670,7 +1673,7 @@ SetLanguage() {                                                         ; Max st
     ENG.59  := "F3 = Edit current command"
     ENG.60  := "F2 = Options setting"
     ENG.61  := "Ctrl+I = Reindex file search database"
-    ENG.62  := "F1 = ALTRun Help Index"
+    ENG.62  := "F1 = ALTRun Help & About"
     ENG.63  := "ALT + Space = Show / Hide Window"
     ENG.64  := "Ctrl+Q = Reload ALTRun"
     ENG.65  := "Ctrl + No. = Select specific command"
@@ -1770,7 +1773,7 @@ SetLanguage() {                                                         ; Max st
     ENG.301 := "Options`tF2"
     ENG.302 := "ReIndex`tCtrl+I"
     ENG.303 := "Usage"
-    ENG.304 := "Help`tF1"
+    ENG.304 := "About`tF1"
     ENG.305 := "Script Info"
     ENG.307 := "Reload`tCtrl+Q"
     ENG.308 := "Exit`tAlt+F4"
@@ -1815,7 +1818,7 @@ SetLanguage() {                                                         ; Max st
     CHN.11  := "运行"
     CHN.12  := "配置"
     CHN.13  := "在此输入搜索内容..."
-    CHN.50  := "提示 | F1 | 帮助`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
+    CHN.50  := "提示 | F1 | 帮助&关于`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
     CHN.51  := "提示: "                                                 ; 50~99 Tips
     CHN.52  := "推荐使用热键激活 (ALT + 空格)"
     CHN.53  := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
@@ -1827,7 +1830,7 @@ SetLanguage() {                                                         ; Max st
     CHN.59  := "F3 = 直接编辑当前命令 (.ini)"
     CHN.60  := "F2 = 配置选项设置"
     CHN.61  := "Ctrl+I = 重建文件搜索数据库"
-    CHN.62  := "F1 = ALTRun 帮助索引"
+    CHN.62  := "F1 = ALTRun 帮助&关于"
     CHN.63  := "ALT + 空格 = 显示 / 隐藏窗口"
     CHN.64  := "Ctrl+Q = 重新加载 ALTRun"
     CHN.65  := "Ctrl + 序号 = 选择特定命令"
@@ -1927,7 +1930,7 @@ SetLanguage() {                                                         ; Max st
     CHN.301 := "配置选项`tF2"
     CHN.302 := "重建索引`tCtrl+I"
     CHN.303 := "状态统计"
-    CHN.304 := "帮助`tF1"
+    CHN.304 := "关于`tF1"
     CHN.305 := "脚本信息"
     CHN.307 := "重新加载`tCtrl+Q"
     CHN.308 := "退出`tAlt+F4"
@@ -1946,8 +1949,8 @@ SetLanguage() {                                                         ; Max st
     CHN.600 := "关于"                                                   ; 600+ 关于
     CHN.601 := "ALTRun 是由诸葛草帽开发的一款高效 Windows 启动器，是一款基于 <a href=""https://www.autohotkey.com/docs/v1/"">AutoHotkey</a> 的开源项目。 "
         . "它提供了一种简洁高效的方式，让你能够快速查找系统中的任何内容，并以自己的方式启动任意应用程序。"
-        . "`n`n设置文件:`n" g_RUNTIME.Ini "`n`n程序文件:`n" A_ScriptFullPath
-        . "`n`n检查更新"
+        . "`n`n配置文件`n" g_RUNTIME.Ini "`n`n程序文件`n" A_ScriptFullPath
+        . "`n`n版本更新"
         . "`n<a href=""https://github.com/zhugecaomao/ALTRun/releases"">https://github.com/zhugecaomao/ALTRun/releases</a>"
         . "`n`n源代码开源在 GitHub"
         . "`n<a href=""https://github.com/zhugecaomao/ALTRun"">https://github.com/zhugecaomao/ALTRun</a>"
