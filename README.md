@@ -60,7 +60,7 @@ Thanks to [ALTRun by etworker](https://github.com/etworker/ALTRun) (Pascal) and 
 ![Screenshot 2025-01-03 131048](https://github.com/user-attachments/assets/1c650c99-7dbb-40d5-b0d8-32c584166d7c)
 
 ### Context Menu:
-![Context Menu](https://github.com/user-attachments/assets/84d3ddde-ccfa-4e8b-a4d5-a66b80b952e7)
+![Context Menu](https://github.com/user-attachments/assets/987d67c9-1352-4b99-b321-de0083f3ab48)
 
 ### SendTo Menu
 ![SendToMenu](https://github.com/user-attachments/assets/0f972701-0719-4edc-a464-fbaff411c472)
