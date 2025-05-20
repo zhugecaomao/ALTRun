@@ -288,6 +288,8 @@ Hotkey, F4, UserCommand, UseErrorLevel
 Hotkey, ^q, Reload, UseErrorLevel
 Hotkey, ^d, OpenContainer, UseErrorLevel
 Hotkey, ^c, CopyCommand, UseErrorLevel
+Hotkey, ^N, NewCommand, UseErrorLevel
+Hotkey, Del, DelCommand, UseErrorLevel
 Hotkey, ^i, Reindex, UseErrorLevel
 Hotkey, ^NumpadAdd, RankUp, UseErrorLevel
 Hotkey, ^NumpadSub, RankDown, UseErrorLevel
@@ -1266,11 +1268,11 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.173
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontName, % g_GUI.FontName "||Default|Segoe UI Semibold|Microsoft Yahei"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.174
-    Gui, Setting:Add, ComboBox, x183 yp-5 r1 w330 vg_FontSize, % g_GUI.FontSize "||8|9|10|11|12"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontSize, % g_GUI.FontSize "||8|9|10|11|12"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.175
-    Gui, Setting:Add, ComboBox, x183 yp-5 r1 w330 vg_FontColor, % g_GUI.FontColor "||Default|Black|Blue|DCDCDC|000000"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontColor, % g_GUI.FontColor "||Default|Black|Blue|DCDCDC|000000"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_WinWidth, % g_GUI.WinWidth "||920"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_WinWidth, % g_GUI.WinWidth "||660|800|920"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.177
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_WinHeight, % g_GUI.WinHeight "||313"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.178
@@ -1781,9 +1783,9 @@ SetLanguage() {                                                         ; Max st
     ENG.400 := "Run`tEnter"                                             ; 400+ LV_ContextMenu (Right-click)
     ENG.401 := "Locate`tCtrl+D"
     ENG.402 := "Copy`tCtrl+C"
-    ENG.403 := "New"
+    ENG.403 := "New`tCtrl+N"
     ENG.404 := "Edit`tF3"
-    ENG.405 := "Delete"
+    ENG.405 := "Delete`tDelete"
     ENG.406 := "User Command`tF4"
     ENG.500 := "30 days ago"                                            ; 500+ Usage Status
     ENG.501 := "Now"
@@ -1938,9 +1940,9 @@ SetLanguage() {                                                         ; Max st
     CHN.400 := "运行命令`tEnter"                                        ; 400+ 列表右键菜单
     CHN.401 := "定位命令`tCtrl+D"
     CHN.402 := "复制命令`tCtrl+C"
-    CHN.403 := "新建命令"
+    CHN.403 := "新建命令`tCtrl+N"
     CHN.404 := "编辑命令`tF3"
-    CHN.405 := "删除命令"
+    CHN.405 := "删除命令`tDelete"
     CHN.406 := "用户命令`tF4"
     CHN.500 := "30天前"                                                 ; 500+ 状态统计
     CHN.501 := "当前"
