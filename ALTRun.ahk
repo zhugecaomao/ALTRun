@@ -1067,12 +1067,12 @@ DelCommand() {                                                          ; Delete
                 continue                                                ; Skips the rest of a loop and begins a new one.
             else
             {
-                MsgBox, 52, % g_RUNTIME.WinName, % g_LNG.800 "`n`n[" A_LoopField "]`n`n" g_RUNTIME.ActiveCommand
+                MsgBox, 52, % g_RUNTIME.WinName, % g_LNG.800 " [" A_LoopField "] " g_LNG.801 "`n`n" g_RUNTIME.ActiveCommand
                 IfMsgBox Yes
                 {
                     IniDelete, % g_RUNTIME.Ini, %A_LoopField%, % g_RUNTIME.ActiveCommand
                     if (!ErrorLevel)
-                        MsgBox,64, % g_RUNTIME.WinName, % g_LNG.801 "`n`n[" A_LoopField "]`n`n" g_RUNTIME.ActiveCommand
+                        MsgBox,64, % g_RUNTIME.WinName, % g_LNG.802 "`n`n" g_RUNTIME.ActiveCommand
                     Break
                 }
             }
@@ -1809,8 +1809,9 @@ SetLanguage() {                                                         ; Max st
     ENG.704 := "Description"
     ENG.705 := "Command Section"
     ENG.706 := "Command Rank"
-    ENG.800 := "Do you really want to delete the following command?"    ; 800+ Msgbox
-    ENG.801 := "The following command has been deleted successfully!"
+    ENG.800 := "Do you really want to delete the following command from section" ; 800+ Msgbox
+    ENG.801 := "?"
+    ENG.802 := "Command has been deleted successfully!"
 
     CHN := {}
     CHN.1   := "配置"                                                   ; 1~9 Reserved
@@ -1966,8 +1967,9 @@ SetLanguage() {                                                         ; Max st
     CHN.704 := "命令描述"
     CHN.705 := "命令节段"
     CHN.706 := "命令权重"
-    CHN.800 := "您确定要删除以下命令吗?"                                  ; 800+ 消息内容
-    CHN.801 := "以下命令已成功删除!"
+    CHN.800 := "您确定要从命令节段"                                      ; 800+ 消息内容
+    CHN.801 := "中删除以下命令吗?"
+    CHN.802 := "命令已成功删除!"
 
     Global g_LNG := g_CONFIG.Chinese ? CHN : ENG
 }
