@@ -1,7 +1,13 @@
 ## ALTRun (AHK)
 ALTRun 是一款简洁、高效、功能强大的启动工具
 
-![Main GUI](https://github.com/user-attachments/assets/6a12bfce-197b-4209-b46e-116e31bc38e7)
+> 主界面
+
+![主界面](https://github.com/user-attachments/assets/f9364e61-85d6-41dd-8c9d-e3243cc4796f)
+
+> 主界面(简化+暗黑模式)
+
+![界面简化+暗黑模式](https://github.com/user-attachments/assets/8c490099-d408-4de9-a38c-78a91e661147)
 
 
 ### 特性
