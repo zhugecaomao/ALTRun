@@ -96,6 +96,8 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,FontColor      : "Default"
             ,WinWidth       : 660
             ,WinHeight      : 300
+            ,ListX          : 636
+            ,ListY          : 230
             ,CtrlColor      : "Default"
             ,WinColor       : "Silver"
             ,Background     : "DEFAULT"
@@ -203,9 +205,7 @@ g_LOG.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_CONFIG.InStartMe
 ;===================================================
 ; 主窗口配置代码
 ;===================================================
-LV_H         := g_GUI.WinHeight - 43 - 3 * g_GUI.FontSize
-LV_W         := g_GUI.WinWidth - 24
-Input_W      := LV_W - g_CONFIG.ShowBtnRun * 90 - g_CONFIG.ShowBtnOpt * 90
+Input_W      := g_GUI.ListX - g_CONFIG.ShowBtnRun * 90 - g_CONFIG.ShowBtnOpt * 90
 Enter_W      := g_CONFIG.ShowBtnRun * 80
 Enter_X      := g_CONFIG.ShowBtnRun * 10
 Options_W    := g_CONFIG.ShowBtnOpt * 80
@@ -221,7 +221,7 @@ Gui, Main:Default ; Set default GUI before any ListView / statusbar update
 Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, % g_LNG.13
 Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, % g_LNG.11
 Gui, Main:Add, Button, % "x+"Options_X " yp W" Options_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, % g_LNG.12
-Gui, Main:Add, ListView, % "x12 ys+35 W" LV_W " H" LV_H " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), % g_LNG.10 ; LV0x10000 Paints via double-buffering, which reduces flicker
+Gui, Main:Add, ListView, % "x12 ys+35 W" g_GUI.ListX " H" g_GUI.ListY " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), % g_LNG.10 ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, x0 y0 0x4000000, % g_RUNTIME.BGPic
 Gui, Main:Add, StatusBar, % "gOnClickStatusBar Hidden" !g_CONFIG.ShowStatusBar,
 
@@ -1067,7 +1067,7 @@ DelCommand() {                                                          ; Delete
                 continue                                                ; Skips the rest of a loop and begins a new one.
             else
             {
-                MsgBox, 52, % g_RUNTIME.WinName, % g_LNG.800 " [" A_LoopField "] " g_LNG.801 "`n`n" g_RUNTIME.ActiveCommand
+                MsgBox, 52, % g_RUNTIME.WinName, % g_LNG.800 " [ " A_LoopField " ] " g_LNG.801 "`n`n" g_RUNTIME.ActiveCommand
                 IfMsgBox Yes
                 {
                     IniDelete, % g_RUNTIME.Ini, %A_LoopField%, % g_RUNTIME.ActiveCommand
@@ -1262,7 +1262,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Tab, 3 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, % g_LNG.170
     Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.171
-    Gui, Setting:Add, DropDownList, x183 yp-5 w330 vg_ListRows, % StrReplace("3|4|5|6|7|8|9|", g_GUI.ListRows, g_GUI.ListRows . "|",, 1) ; ListRows limit <= 9, not using Choose%g_ListRows% as list start from 3
+    Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1|2|3|4|5|6|7|8|9| ; ListRows limit <= 9
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr|40,45,430,340|40,0,475,340"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.173
@@ -1272,15 +1272,20 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.175
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontColor, % g_GUI.FontColor "||Default|Black|Blue|DCDCDC|000000"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_WinWidth, % g_GUI.WinWidth "||660|800|920"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w120 vg_WinWidth, % g_GUI.WinWidth "||660|920"
+    Gui, Setting:Add, Text, x345 yp, x
+    Gui, Setting:Add, ComboBox, x393 yp w120 vg_WinHeight, % g_GUI.WinHeight "||300|400"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.177
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_WinHeight, % g_GUI.WinHeight "||313"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w120 vg_ListX, % g_GUI.ListX "||636|800"
+    Gui, Setting:Add, Text, x345 yp, x
+    Gui, Setting:Add, ComboBox, x393 yp w120 vg_ListY, % g_GUI.ListY "||230|300"
+
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.178
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_CtrlColor, % g_GUI.CtrlColor "||Default|White|Blue|202020|FFFFFF"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.179
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_WinColor, % g_GUI.WinColor "||Default|White|Blue|202020|FFFFFF"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.180
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||NO PICTURE|DEFAULT|C:\Path\BackgroundPicture.jpg"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||NO PICTURE|DEFAULT|C:\Path\BG.jpg"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.181
     Gui, Setting:Add, DropDownList, x183 yp-5 w330 vg_Transparency, % StrReplace("OFF|50|75|100|125|150|175|200|210|220|230|240|250|255|", g_GUI.Transparency, g_GUI.Transparency . "|",, 1)
 
@@ -1470,6 +1475,7 @@ LoadConfig(Arg) {                                                       ; 加载
         if (DFTCMDSEC = "") {
             IniWrite,
             (Ltrim
+            ; Please make sure ALTRun is not running before modifying this file.
             ; Built-in commands, high priority, recommended to maintain as it is
             ; App will auto generate [DefaultCommnd] section while it is empty
             ;
@@ -1730,8 +1736,8 @@ SetLanguage() {                                                         ; Max st
     ENG.173 := "Font name"
     ENG.174 := "Font size"
     ENG.175 := "Font color"
-    ENG.176 := "Window width"
-    ENG.177 := "Window height"
+    ENG.176 := "Window size (W x H)"
+    ENG.177 := "Cmd list size (W x H)"
     ENG.178 := "Control color"
     ENG.179 := "Background color"
     ENG.180 := "Background picture"
@@ -1888,8 +1894,8 @@ SetLanguage() {                                                         ; Max st
     CHN.173 := "字体名称"
     CHN.174 := "字体大小"
     CHN.175 := "字体颜色"
-    CHN.176 := "窗口宽度"
-    CHN.177 := "窗口高度"
+    CHN.176 := "主窗口尺寸 (宽 x 高)"
+    CHN.177 := "命令列表尺寸 (宽 x 高)"
     CHN.178 := "控件颜色"
     CHN.179 := "背景颜色"
     CHN.180 := "背景图片"
