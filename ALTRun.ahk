@@ -70,14 +70,14 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Everything     : "C:\Apps\Everything.exe"
             ,DialogWin      : "ahk_class #32770"
             ,FileMgrID      : "ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
-            ,ExcludeWin     : "ahk_class SysListView32, ahk_exe Explorer.exe, AutoCAD"
-            ,Chinese        : (A_Language = "7804" or A_Language = "0004" or A_Language = "0804" or A_Language = "1004") ? 1 : 0}
+            ,ExcludeWin     : "ahk_class SysListView32, ahk_exe Explorer.exe"
+            ,Chinese        : InStr("7804,0004,0804,1004", A_Language) ? 1 : 0}
 , g_HOTKEY  := {Hotkey1     : "^o"
             ,Trigger1       : "Options"
             ,Hotkey2        : ""
-            ,Trigger2       : "---"
+            ,Trigger2       : "None"
             ,Hotkey3        : ""
-            ,Trigger3       : "---"
+            ,Trigger3       : "None"
             ,CondTitle      : "ahk_exe RAPTW.exe"
             ,CondHotkey     : "~Mbutton"
             ,CondAction     : "PTTools"
@@ -85,48 +85,43 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,GlobalHotkey2  : "!R"
             ,TotalCMDDir    : "^g"
             ,ExplorerDir    : "^e"
-            ,AutoDateAtEnd  : "ahk_class TCmtEditForm,ahk_class Notepad4" ; TC File Comment 对话框, Notepad4
+            ,AutoDateAtEnd  : "ahk_class TCmtEditForm,ahk_class Notepad4U" ; TC file comment window, Notepad4
             ,AutoDateAEHKey : "^d"
-            ,AutoDateBefExt : "ahk_class TTOTAL_CMD,ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class TSTDTREEDLG,ahk_class #32770,ahk_class TCOMBOINPUT" ; TC 文件列表重命名, Windows 资源管理器文件列表重命名, Windows 桌面文件重命名 (WinXP to Win10, Win11), TC 新建其他格式文件如txt, rtf, docx..., 资源管理器 文件保存对话框, TC F7 创建新文件夹对话框
+            ,AutoDateBefExt : "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD" ; Windows 资源管理器文件列表, 桌面文件, 文件保存对话框,TC 文件列表
             ,AutoDateBEHKey : "^d"}
 , g_GUI     := {ListRows    : 9
             ,ColWidth       : "36,0,300,AutoHdr"
             ,FontName       : "Microsoft YaHei"
             ,FontSize       : 9
             ,FontColor      : "Default"
-            ,WinWidth       : 660
-            ,WinHeight      : 300
+            ,WinX           : 660
+            ,WinY           : 300
             ,ListX          : 636
             ,ListY          : 230
             ,CtrlColor      : "Default"
             ,WinColor       : "Silver"
-            ,Background     : "DEFAULT"
+            ,Background     : "Default"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.05.15"
+            ,WinName        : "ALTRun - Ver 2025.05.23"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
             ,UseFallback    : 0
             ,ActiveCommand  : ""
             ,Input          : ""
-            ,Arg            : ""                                        ; Arg: 用来调用管道的完整参数
+            ,Arg            : ""                                        ; 用来调用管道的完整参数
             ,UsageToday     : 0
             ,UsageCountMax  : 0
             ,AppStartDate   : A_YYYY A_MM A_DD
-            ,OneDrive       : EnvGet("OneDrive")                        ; OneDrive var due to #NoEnv
-            ,OneDriveConsumer:EnvGet("OneDriveConsumer")
-            ,OneDriveCommercial:EnvGet("OneDriveCommercial")
+            ,OneDrive       : EnvGet("OneDrive")                        ; Due to #NoEnv
             ,LV_ContextMenu : []
             ,TrayMenu       : []
             ,FuncList       : ""}
 
 g_LOG.Debug("///// ALTRun is starting /////")
-LoadConfig("initialize")                                                ; Load ini config, IniWrite will create it if not exist
-SetLanguage()                                                           ; Set language
-
-; For key, value in g_RUNTIME
-;   OutputDebug, % key " = " g_RUNTIME[key]
+LoadConfig("initialize")                                                ; Load ini config, iniWrite create ini whenever not exist
+SetLanguage()
 
 Global g_CHKLV      := {AutoStartup : g_LNG.101                         ; Options - General - CheckedListview
     ,EnableSendTo   : g_LNG.102 ,InStartMenu    : g_LNG.103
@@ -229,7 +224,7 @@ Loop, 4 {
     LV_ModifyCol(A_Index, StrSplit(g_GUI.ColWidth, ",")[A_Index])
 }
 
-SB_SetParts(g_GUI.WinWidth - 90 * g_CONFIG.ShowRunCount)
+SB_SetParts(g_GUI.WinX - 90 * g_CONFIG.ShowRunCount)
 SB_SetIcon("imageres.dll",-150, 2)
 
 ListResult(g_LNG.50)
@@ -265,7 +260,7 @@ if (A_Args[1] = "-SendTo") {
     CmdMgr(g_SECTION.USERCMD, Type, Path, Desc, 1, "")                  ; Add new command to database
 }
 
-Gui, Main:Show, % "w" g_GUI.WinWidth " h" g_GUI.WinHeight " Center " g_RUNTIME.WinHide, % g_RUNTIME.WinName
+Gui, Main:Show, % "w" g_GUI.WinX " h" g_GUI.WinY " Center " g_RUNTIME.WinHide, % g_RUNTIME.WinName
 
 if (g_GUI.Transparency != "OFF" and g_GUI.Transparency != "255")
     WinSet, Transparent, % g_GUI.Transparency, % g_RUNTIME.WinName
@@ -475,8 +470,6 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
     Path := StrReplace(Path, "%Temp%", A_Temp)
     Path := StrReplace(Path, "%Desktop%", A_Desktop)
     Path := StrReplace(Path, "%OneDrive%", g_RUNTIME.OneDrive)          ; Convert OneDrive to absolute path due to #NoEnv
-    Path := StrReplace(Path, "%OneDriveConsumer%", g_RUNTIME.OneDriveConsumer)
-    Path := StrReplace(Path, "%OneDriveCommercial%", g_RUNTIME.OneDriveCommercial)
     Return Path
 }
 
@@ -485,8 +478,6 @@ RelativePath(Path)                                                      ; Conver
     Path := StrReplace(Path, A_Temp, "%Temp%")
     Path := StrReplace(Path, A_Desktop, "%Desktop%")
     Path := StrReplace(Path, g_RUNTIME.OneDrive, "%OneDrive%")
-    Path := StrReplace(Path, g_RUNTIME.OneDriveConsumer, "%OneDriveConsumer%")
-    Path := StrReplace(Path, g_RUNTIME.OneDriveCommercial, "%OneDriveCommercial%")
     Return Path
 }
 
@@ -940,7 +931,7 @@ Reindex() {                                                             ; Re-cre
 }
 
 Help() {
-    Options("Help", 8)                                                  ; Open Options window 8th tab (help tab)
+    Options("Help", 8)                                                  ; Options window 8th (about) tab
 }
 
 Usage() {
@@ -951,7 +942,7 @@ Update() {
     Run, https://github.com/zhugecaomao/ALTRun/releases
 }
 
-Listary() {                                                             ; Listary Dir QuickSwitch Function (快速更换保存/打开对话框路径)
+Listary() {                                                             ; Listary 快速更换保存/打开对话框路径
     g_LOG.Debug("Listary function starting...")
 
     Loop Parse, % g_CONFIG.FileMgrID, `,                                ; File Manager Class, default is Windows Explorer & Total Commander
@@ -1272,20 +1263,20 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.175
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontColor, % g_GUI.FontColor "||Default|Black|Blue|DCDCDC|000000"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
-    Gui, Setting:Add, ComboBox, x183 yp-5 w120 vg_WinWidth, % g_GUI.WinWidth "||660|920"
+    Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
     Gui, Setting:Add, Text, x345 yp, x
-    Gui, Setting:Add, ComboBox, x393 yp w120 vg_WinHeight, % g_GUI.WinHeight "||300|400"
+    Gui, Setting:Add, Edit, x393 yp w120 +Number vg_WinY, % g_GUI.WinY
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.177
-    Gui, Setting:Add, ComboBox, x183 yp-5 w120 vg_ListX, % g_GUI.ListX "||636|800"
+    Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_ListX, % g_GUI.ListX
     Gui, Setting:Add, Text, x345 yp, x
-    Gui, Setting:Add, ComboBox, x393 yp w120 vg_ListY, % g_GUI.ListY "||230|300"
+    Gui, Setting:Add, Edit, x393 yp w120 +Number vg_ListY, % g_GUI.ListY
 
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.178
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_CtrlColor, % g_GUI.CtrlColor "||Default|White|Blue|202020|FFFFFF"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.179
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_WinColor, % g_GUI.WinColor "||Default|White|Blue|202020|FFFFFF"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.180
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||NO PICTURE|DEFAULT|C:\Path\BG.jpg"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||None|Default|C:\Path\BG.jpg"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.181
     Gui, Setting:Add, DropDownList, x183 yp-5 w330 vg_Transparency, % StrReplace("OFF|50|75|100|125|150|175|200|210|220|230|240|250|255|", g_GUI.Transparency, g_GUI.Transparency . "|",, 1)
 
@@ -1308,15 +1299,15 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+30 , % g_LNG.202
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey1, % g_HOTKEY.Hotkey1
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger1, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger1, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|",, 1)
     Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.204
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey2, % g_HOTKEY.Hotkey2
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger2, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger2, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|",, 1)
     Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.206
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey3, % g_HOTKEY.Hotkey3
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger3, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger3, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|",, 1)
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h145, % g_LNG.211
@@ -1356,7 +1347,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.231
     Gui, Setting:Add, ComboBox, x183 yp-5 w80 vg_CondHotkey, % g_HOTKEY.CondHotkey "||"
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.232
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_CondAction, % StrReplace("---|" g_RUNTIME.FuncList, g_HOTKEY.CondAction, g_HOTKEY.CondAction . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_CondAction, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.CondAction, g_HOTKEY.CondAction . "|",, 1)
 
     Gui, Setting:Tab, 7 ; USAGE TAB
     Gui, Setting:Add, GroupBox, x66 y80 w445 h300,
@@ -1370,7 +1361,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
         FormatTime, OffsetDate, %OffsetDate%, yyyyMMdd
 
         IniRead, OutputVar, % g_RUNTIME.Ini, % g_SECTION.USAGE, % OffsetDate, 0
-        Gui, Setting:Add, Progress, % "c94DD88 BackgroundF9F9F9 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME.UsageCountMax+10, %OutputVar%
+        Gui, Setting:Add, Progress, % "c94DD88 BackgroundDefault Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME.UsageCountMax+10, %OutputVar%
     }
     Gui, Setting:Add, Text, x24 yp-5 cGray, % g_RUNTIME.UsageCountMax+10
     Gui, Setting:Add, Text, x24 yp+140 cGray, % Round(g_RUNTIME.UsageCountMax/2)+5
@@ -1402,7 +1393,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
 ResetHotkey() {
     GuiControl, Setting:, g_GlobalHotkey1, !Space
-    GuiControl, Setting:, g_GlobalHotkey2, !R
+    GuiControl, Setting:, g_GlobalHotkey2, !r
 }
 
 SettingButtonOK() {
@@ -1446,7 +1437,7 @@ LoadConfig(Arg) {                                                       ; 加载
             g_GUI[key] := tempValue
         }
 
-        g_RUNTIME.BGPic := (g_GUI.Background = "DEFAULT") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
+        g_RUNTIME.BGPic := (g_GUI.Background = "Default") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
 
         IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.USAGE, % A_YYYY . A_MM . A_DD, 0 ; For app usage
         g_RUNTIME.UsageToday := tempValue
@@ -1501,7 +1492,7 @@ LoadConfig(Arg) {                                                       ; 加载
             Dir | A_ProgramsCommon | Windowns Search.Index.Cortana Dir=99
             Dir | `%Desktop`%=99
             Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
-            Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=99
+            Dir | `%OneDrive`% | OneDrive=99
             Cmd | explorer.exe | Windows File Explorer=99
             Cmd | cmd.exe | DOS / CMD=99
             Cmd | cmd.exe /k ipconfig | Check IP Address=99
@@ -1560,7 +1551,7 @@ LoadConfig(Arg) {                                                       ; 加载
             ; Command type: File, Dir, CMD, URL
             ;
             Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=1
-            Dir | `%OneDriveConsumer`% | OneDrive Personal Dir=1
+            Dir | `%OneDrive`% | OneDrive=1
             Dir | A_ScriptDir | ALTRun Program Dir=99
             Cmd | cmd.exe /k ipconfig | Check IP Address=1
             Cmd | Control TimeDate.cpl | Date and Time=66
@@ -1660,7 +1651,8 @@ Everything() {
 }
 
 SetLanguage() {                                                         ; Max string length that can pass to the array initially is 8192
-    ENG := {}
+    ENG     := {}
+    CHN     := {}
 
     ENG.1   := "Options"                                                ; 1~9 Reserved
     ENG.8   := "OK"
@@ -1819,7 +1811,6 @@ SetLanguage() {                                                         ; Max st
     ENG.801 := "?"
     ENG.802 := "Command has been deleted successfully!"
 
-    CHN := {}
     CHN.1   := "配置"                                                   ; 1~9 Reserved
     CHN.8   := "确定"
     CHN.9   := "取消"
