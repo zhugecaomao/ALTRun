@@ -45,6 +45,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,SaveHistory    : 1
             ,SaveLog        : 1
             ,MatchPath      : 0
+            ,MatchPinyin    : 1
             ,ShowGrid       : 0
             ,ShowHdr        : 1
             ,ShowSN         : 1
@@ -91,9 +92,9 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,AutoDateBEHKey : "^d"}
 , g_GUI     := {ListRows    : 9
             ,ColWidth       : "36,0,300,AutoHdr"
-            ,FontName       : "Microsoft YaHei"
-            ,FontSize       : 9
-            ,FontColor      : "Default"
+            ,Font           : "Microsoft YaHei,norm s9"
+            ,OptsFont       : "Microsoft YaHei,norm s9"
+            ,SBFont         : "Microsoft YaHei,norm s8"
             ,WinX           : 660
             ,WinY           : 300
             ,ListX          : 636
@@ -138,7 +139,8 @@ Global g_CHKLV      := {AutoStartup : g_LNG.101                         ; Option
     ,ShowRunCount   : g_LNG.124 ,ShowStatusBar  : g_LNG.125
     ,ShowBtnRun     : g_LNG.126 ,ShowBtnOpt     : g_LNG.127
     ,DoubleBuffer   : g_LNG.128 ,StruCalc       : g_LNG.129
-    ,ShortenPath    : g_LNG.130 ,Chinese        : g_LNG.131}
+    ,ShortenPath    : g_LNG.130 ,Chinese        : g_LNG.131
+    ,MatchPinyin    : g_LNG.132}
 
 ;===================================================
 ; Create ContextMenu and TrayMenu
@@ -207,7 +209,7 @@ Options_W    := g_CONFIG.ShowBtnOpt * 80
 Options_X    := g_CONFIG.ShowBtnOpt * 10
 
 Gui, Main:Color, % g_GUI.WinColor, % g_GUI.CtrlColor
-Gui, Main:Font, % "c" g_GUI.FontColor " s" g_GUI.FontSize, % g_GUI.FontName
+Gui, Main:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
 Gui, % "Main:" (g_CONFIG.AlwaysOnTop ? "+AlwaysOnTop" : "-AlwaysOnTop")
 Gui, % "Main:" (g_CONFIG.ShowCaption ? "+Caption" : "-Caption")
 Gui, % "Main:" (g_CONFIG.XPthemeBg ? "+Theme" : "-Theme")
@@ -218,6 +220,8 @@ Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCom
 Gui, Main:Add, Button, % "x+"Options_X " yp W" Options_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, % g_LNG.12
 Gui, Main:Add, ListView, % "x12 ys+35 W" g_GUI.ListX " H" g_GUI.ListY " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), % g_LNG.10 ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, x0 y0 0x4000000, % g_RUNTIME.BGPic
+Gui, Main:Font,,
+Gui, Main:Font, % StrSplit(g_GUI.SBFont, ",")[2], % StrSplit(g_GUI.SBFont, ",")[1]
 Gui, Main:Add, StatusBar, % "gOnClickStatusBar Hidden" !g_CONFIG.ShowStatusBar,
 
 Loop, 4 {
@@ -352,6 +356,9 @@ SearchCommand(command := "") {
         SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
 
         elementToSearch := g_CONFIG.MatchPath ? element : _Type " " fileName " " _Desc ; search type, file name include extension, and desc
+        if (g_CONFIG.MatchPinyin) {
+            elementToSearch := GetFirstChar(elementToSearch)            ; 中文转为拼音首字母 for search
+        }
 
         if FuzzyMatch(elementToSearch, command) {
             g_MATCHED.Push(element)
@@ -1221,8 +1228,8 @@ FormatThousand(Number)                                                  ; Functi
 Options(Arg := "", ActTab := 1)                                         ; Options settings, 1st parameter is to avoid menu like [Option`tF2] disturb ActTab
 {
     Global                                                              ; Assume-global mode
-    Gui, Setting:New, +OwnDialogs +AlwaysOnTop, % g_LNG.1               ; +OwnerMain: (omit due to lug options window)
-    Gui, Setting:Font, S9 Norm, Microsoft Yahei
+    Gui, Setting:New, +OwnDialogs +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1               ; +OwnerMain: (omit due to lug options window)
+    Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
     Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
     Gui, Setting:Tab, 1 ; CONFIG Tab
     Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, % g_LNG.1
@@ -1257,12 +1264,23 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr|40,45,430,340|40,0,475,340"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.173
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontName, % g_GUI.FontName "||Default|Segoe UI Semibold|Microsoft Yahei"
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.174
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontSize, % g_GUI.FontSize "||8|9|10|11|12"
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.175
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FontColor, % g_GUI.FontColor "||Default|Black|Blue|DCDCDC|000000"
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
+    Gui, Setting:Font,,
+    Gui, Setting:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
+    Gui, Setting:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_Font, % g_GUI.Font
+    Gui, Setting:Font,,
+    Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
+    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectFont gSelectFont, % g_LNG.182
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.174
+    Gui, Setting:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_OptsFont, % g_GUI.OptsFont
+    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectOptsFont gSelectOptsFont, % g_LNG.182
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.175
+    Gui, Setting:Font,,
+    Gui, Setting:Font, % StrSplit(g_GUI.SBFont, ",")[2], % StrSplit(g_GUI.SBFont, ",")[1]
+    Gui, Setting:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_SBFont, % g_GUI.SBFont
+    Gui, Setting:Font,,
+    Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
+    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectSBFont gSelectSBFont, % g_LNG.182
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.176
     Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
     Gui, Setting:Add, Text, x345 yp, x
     Gui, Setting:Add, Edit, x393 yp w120 +Number vg_WinY, % g_GUI.WinY
@@ -1375,10 +1393,8 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     Gui, Setting:Tab, 8 ; ABOUT TAB
     Gui, Setting:Add, Picture, x33 y+20 w48 h-1 Icon-100, imageres.dll
-    Gui, Setting:Font, S10,
     Gui, Setting:Add, Text, x96 yp+5, % g_RUNTIME.WinName
-    Gui, Setting:Font, S9,
-    Gui, Setting:Add, Link, xp yp+30 w400, % g_LNG.601
+    Gui, Setting:Add, Link, xp yp+45 w400, % g_LNG.601
 
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
     Gui, Setting:Add, Button, Default x355 w80 vSettingButtonOK gSettingButtonOK, % g_LNG.8
@@ -1394,6 +1410,49 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 ResetHotkey() {
     GuiControl, Setting:, g_GlobalHotkey1, !Space
     GuiControl, Setting:, g_GlobalHotkey2, !r
+}
+
+SelectFont() {
+    Global
+	; Set the fontObj (optional) - only set the ones you want to pre-select
+	; fontObj := Object("name","Terminal","size",14,"color",0xFF0000,"strike",1,"underline",1,"italic",1,"bold",1)
+	fontObj := Object("name", StrSplit(g_GUI.Font, ",")[1])
+	fontObj := FontSelect(fontObj,OptsHwnd) ; shows the font selection dialog
+	If (!fontObj)
+		return
+
+    Gui, Setting:Font,,
+    Gui, Setting:Font, % fontObj["str"], % fontObj["name"]
+	GuiControl, Setting:Font, g_Font
+    GuiControl, Setting:, g_Font, % fontObj["name"] "," fontObj["Str"] ; fontObj["str"] = AHK compatible string to set all options
+
+}
+
+SelectOptsFont() {
+    Global
+	fontObj := Object("name", StrSplit(g_GUI.OptsFont, ",")[1])
+	fontObj := FontSelect(fontObj,OptsHwnd)
+	If (!fontObj)
+		return
+
+    Gui, Setting:Font,,
+    Gui, Setting:Font, % fontObj["str"], % fontObj["name"]
+    GuiControl, Setting:Font, g_OptsFont
+    GuiControl, Setting:, g_OptsFont, % fontObj["name"] "," fontObj["Str"]
+}
+
+SelectSBFont() {
+    Global
+	fontObj := Object("name", StrSplit(g_GUI.SBFont, ",")[1])
+	fontObj := FontSelect(fontObj,OptsHwnd)
+	If (!fontObj)
+		return
+
+    Gui, Setting:Font,,
+    Gui, Setting:Font, % fontObj["str"], % fontObj["name"]
+    GuiControl, Setting:Font, g_SBFont
+    GuiControl, Setting:, g_SBFont, % fontObj["name"] "," fontObj["Str"]
+
 }
 
 SettingButtonOK() {
@@ -1715,6 +1774,7 @@ SetLanguage() {                                                         ; Max st
     ENG.129 := "Enable express structure calculation"
     ENG.130 := "Shorten Path - Show file/folder/app name only instead of full path in result"
     ENG.131 := "Set language to Chinese Simplified (简体中文)"
+    ENG.132 := "Match Chinese Pinyin first characters"
     ENG.150 := "File Manager"                                           ; 150~159 Options window (Other than Check Listview)
     ENG.151 := "Everything"
     ENG.152 := "Command history length"
@@ -1725,15 +1785,16 @@ SetLanguage() {                                                         ; Max st
     ENG.170 := "GUI"                                                    ; 170~189 GUI
     ENG.171 := "Search result number"
     ENG.172 := "Width of each column"
-    ENG.173 := "Font name"
-    ENG.174 := "Font size"
-    ENG.175 := "Font color"
+    ENG.173 := "Font (Main GUI)"
+    ENG.174 := "Font (Options)"
+    ENG.175 := "Font (Status Bar)"
     ENG.176 := "Window size (W x H)"
     ENG.177 := "Cmd list size (W x H)"
     ENG.178 := "Control color"
     ENG.179 := "Background color"
     ENG.180 := "Background picture"
     ENG.181 := "Transparency (0-255)"
+    ENG.182 := "Change font"
     ENG.190 := "Hotkey"                                                 ; 190~209 Hotkey
     ENG.191 := "Activate"
     ENG.192 := "Primary Hotkey"
@@ -1862,7 +1923,7 @@ SetLanguage() {                                                         ; Max st
     CHN.119 := "显示命令列表边框线"
     CHN.120 := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
     CHN.121 := "智能匹配 - 模糊和智能匹配和过滤结果"
-    CHN.122 := "匹配字符串开头 (取消勾选: 匹配字符串任意位置)"
+    CHN.122 := "搜索时匹配字符串开头 (取消勾选: 匹配字符串任意位置)"
     CHN.123 := "显示提示信息 - 在底部状态栏中显示技巧提示信息"
     CHN.124 := "显示运行次数 - 在底部状态栏中显示命令执行次数"
     CHN.125 := "显示状态栏 (窗口底部)"
@@ -1872,6 +1933,7 @@ SetLanguage() {                                                         ; Max st
     CHN.129 := "启用快速结构计算"
     CHN.130 := "简化路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
     CHN.131 := "设置语言为简体中文(Simplified Chinese)"
+    CHN.132 := "搜索时匹配中文拼音首字母"
     CHN.150 := "文件管理器"                                              ; 150~159 Options window (Other than Check Listview)
     CHN.151 := "Everything"
     CHN.152 := "历史命令数量"
@@ -1882,15 +1944,16 @@ SetLanguage() {                                                         ; Max st
     CHN.170 := "界面"                                                   ; 170~189 GUI
     CHN.171 := "搜索结果数量"
     CHN.172 := "每列宽度"
-    CHN.173 := "字体名称"
-    CHN.174 := "字体大小"
-    CHN.175 := "字体颜色"
+    CHN.173 := "字体 (主界面)"
+    CHN.174 := "字体 (选项页)"
+    CHN.175 := "字体 (状态栏)"
     CHN.176 := "主窗口尺寸 (宽 x 高)"
     CHN.177 := "命令列表尺寸 (宽 x 高)"
     CHN.178 := "控件颜色"
     CHN.179 := "背景颜色"
     CHN.180 := "背景图片"
     CHN.181 := "透明度 (0-255)"
+    CHN.182 := "更改字体"
     CHN.190 := "热键"                                                   ; 190~209 Hotkey
     CHN.191 := "激活"
     CHN.192 := "主热键"
@@ -2037,4 +2100,138 @@ Class Logger
         if (g_CONFIG.SaveLog)
             FileAppend, % "[" A_Now "] " Msg "`n", % this.filename
     }
+}
+
+; originally posted by maestrith 
+; https://autohotkey.com/board/topic/94083-ahk-11-font-and-color-dialogs/
+
+; to initialize fontObject object (not required):
+; ============================================
+; fontObject := Object("name","Tahoma","size",14,"color",0xFF0000,"strike",1,"underline",1,"italic",1,"bold",1)
+
+; ==================================================================
+; fntName		= name of var to store selected font
+; fontObject	= name of var to store fontObject
+; hwnd			= parent gui hwnd for modal, leave blank for not modal
+; effects		= allow selection of underline / strike out / italic
+; ==================================================================
+; fontObject output:
+;
+;	fontObject["str"]	= string to use with AutoHotkey to set GUI values - see examples
+;	fontObject["hwnd"]	= handle of the font object to use with SendMessage - see examples
+; ==================================================================
+FontSelect(fontObject:="",hwnd:=0,effects:=1) {
+	fontObject := (fontObject="") ? Object() : fontObject
+	VarSetCapacity(logfont,60)
+	uintVal := DllCall("GetDC","uint",0)
+	LogPixels := DllCall("GetDeviceCaps","uint",uintVal,"uint",90)
+	Effects := 0x041 + (Effects ? 0x100 : 0)
+	
+	fntName := fontObject.HasKey("name") ? fontObject["name"] : ""
+	fontBold := fontObject.HasKey("bold") ? fontObject["bold"] : 0
+	fontBold := fontBold ? 700 : 400
+	fontItalic := fontObject.HasKey("italic") ? fontObject["italic"] : 0
+	fontUnderline := fontObject.HasKey("underline") ? fontObject["underline"] : 0
+	fontStrikeout := fontObject.HasKey("strike") ? fontObject["strike"] : 0
+	fontSize := fontObject.HasKey("size") ? fontObject["size"] : 10
+	fontSize := fontSize ? Floor(fontSize*LogPixels/72) : 16
+	c := fontObject.HasKey("color") ? fontObject["color"] : 0
+	
+	c1 := Format("0x{:02X}",(c&255)<<16)	; convert RGB colors to BGR for input
+	c2 := Format("0x{:02X}",c&65280)
+	c3 := Format("0x{:02X}",c>>16)
+	fontColor := Format("0x{:06X}",c1|c2|c3)
+	
+	fontval := Object(16,fontBold,20,fontItalic,21,fontUnderline,22,fontStrikeout,0,fontSize)
+	
+	for a,b in fontval
+		NumPut(b,logfont,a)
+	
+	cap:=VarSetCapacity(choosefont,A_PtrSize=8?103:60,0)
+	NumPut(hwnd,choosefont,A_PtrSize)
+	offset1 := (A_PtrSize = 8) ? 24 : 12
+	offset2 := (A_PtrSize = 8) ? 36 : 20
+	offset3 := (A_PtrSize = 4) ? 6 * A_PtrSize : 5 * A_PtrSize
+	
+	fontArray := Array([cap,0,"Uint"],[&logfont,offset1,"Uptr"],[effects,offset2,"Uint"],[fontColor,offset3,"Uint"])
+	
+	for index,value in fontArray
+		NumPut(value[1],choosefont,value[2],value[3])
+	
+	if (A_PtrSize=8) {
+		strput(fntName,&logfont+28)
+		r := DllCall("comdlg32\ChooseFont","uptr",&CHOOSEFONT,"cdecl")
+		fntName := strget(&logfont+28)
+	} else {
+		strput(fntName,&logfont+28,32,"utf-8")
+		r := DllCall("comdlg32\ChooseFontA","uptr",&CHOOSEFONT,"cdecl")
+		fntName := strget(&logfont+28,32,"utf-8")
+	}
+	
+	if !r
+		return false
+	
+	fontObj := Object("bold",16,"italic",20,"underline",21,"strike",22)
+	for a,b in fontObj
+		fontObject[a] := NumGet(logfont,b,"UChar")
+	
+	fontObject["bold"] := (fontObject["bold"] < 188) ? 0 : 1
+	
+	c := NumGet(choosefont,A_PtrSize=4?6*A_PtrSize:5*A_PtrSize) ; convert from BGR to RBG for output
+	c1 := Format("0x{:02X}",(c&255)<<16)
+	c2 := Format("0x{:02X}",c&65280)
+	c3 := Format("0x{:02X}",c>>16)
+	c := Format("0x{:06X}",c1|c2|c3)
+	fontObject["color"] := c
+	
+	fontObject["size"] := NumGet(choosefont,A_PtrSize=8?32:16,"UInt")//10
+	fontHwnd := DllCall("CreateFontIndirect","uptr",&logfont) ; last param "cdecl"
+	fontObject["name"] := fntName
+	
+	If (!fontHwnd) {
+		fontObject := ""
+		return 0
+	} Else {
+		fontObject["hwnd"] := fontHwnd
+		b := fontObject["bold"] ? "bold" : ""
+		i := fontObject["italic"] ? "italic" : ""
+		s := fontObject["strike"] ? "strike" : ""
+		c := fontObject["color"] ? "c" fontObject["color"] : ""
+		z := fontObject["size"] ? "s" fontObject["size"] : ""
+		u := fontObject["underline"] ? "underline" : ""
+		fullStr := b "|" i "|" s "|" c "|" z "|" u
+		Loop Parse, fullStr, |
+			If (A_LoopField) 
+				str .= A_LoopField " "
+		fontObject["str"] := "norm " Trim(str)
+		
+		return fontObject
+	}
+}
+
+GetFirstChar(str)
+{
+	static nothing := VarSetCapacity(var, 2)
+	static array   := [ [-20319,-20284,"A"], [-20283,-19776,"B"], [-19775,-19219,"C"], [-19218,-18711,"D"], [-18710,-18527,"E"], [-18526,-18240,"F"], [-18239,-17923,"G"], [-17922,-17418,"H"], [-17417,-16475,"J"], [-16474,-16213,"K"], [-16212,-15641,"L"], [-15640,-15166,"M"], [-15165,-14923,"N"], [-14922,-14915,"O"], [-14914,-14631,"P"], [-14630,-14150,"Q"], [-14149,-14091,"R"], [-14090,-13319,"S"], [-13318,-12839,"T"], [-12838,-12557,"W"], [-12556,-11848,"X"], [-11847,-11056,"Y"], [-11055,-10247,"Z"] ]
+	
+	; 如果不包含中文字符，则直接返回原字符
+	if !RegExMatch(str, "[^\x{00}-\x{ff}]")
+		Return str
+	Loop, Parse, str
+	{
+		if ( Asc(A_LoopField) >= 0x2E80 and Asc(A_LoopField) <= 0x9FFF )
+		{
+			StrPut(A_LoopField, &var, "CP936")
+			nGBKCode := (NumGet(var, 0, "UChar") << 8) + NumGet(var, 1, "UChar") - 65536
+			For i, a in array
+				if nGBKCode between % a.1 and % a.2
+				{
+					out .= a.3
+					Break
+				}
+		}
+		else
+			out .= A_LoopField
+	}
+	Return out
 }
