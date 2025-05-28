@@ -5,9 +5,9 @@ ALTRun 是一款简洁、高效、功能强大的启动工具
 
 ![主界面](https://github.com/user-attachments/assets/f9364e61-85d6-41dd-8c9d-e3243cc4796f)
 
-> 主界面(简化+暗黑模式)
+> 主界面(去背景图片+简化+暗黑模式)
 
-![界面简化+暗黑模式](https://github.com/user-attachments/assets/8c490099-d408-4de9-a38c-78a91e661147)
+![Dark](https://github.com/user-attachments/assets/5bd76455-4eda-42e5-9934-c915b48994df)
 
 
 ### 特性
