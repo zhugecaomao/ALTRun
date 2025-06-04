@@ -88,7 +88,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ExplorerDir    : "^e"
             ,AutoDateAtEnd  : "ahk_class TCmtEditForm,ahk_class Notepad4U" ; TC file comment window, Notepad4
             ,AutoDateAEHKey : "^d"
-            ,AutoDateBefExt : "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD" ; Windows 资源管理器文件列表, 桌面文件, 文件保存对话框,TC 文件列表
+            ,AutoDateBefExt : "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770" ; Windows 资源管理器文件列表, 桌面文件, 文件保存对话框,TC 文件列表
             ,AutoDateBEHKey : "^d"}
 , g_GUI     := {ListRows    : 9
             ,ColWidth       : "36,0,300,AutoHdr"
@@ -654,8 +654,8 @@ Test() {
         GuiControl, Main:Text, MyInput, % chr(chr1) " " chr(chr2) " " chr(chr3)
     }
     t := A_TickCount - t
-    g_LOG.Debug("mock test search ' " chr(chr1) " " chr(chr2) " " chr(chr3) " ' 50 times, use time = " t)
-    MsgBox % "Search '" chr(chr1) " " chr(chr2) " " chr(chr3) "' use Time =  " t
+    g_LOG.Debug("mock test search ' " chr(chr1) " " chr(chr2) " " chr(chr3) " ' 50 times, elapsed time=" t)
+    MsgBox % "Search '" chr(chr1) " " chr(chr2) " " chr(chr3) "' elapsed time=" t
 }
 
 ClearInput() {
@@ -1228,7 +1228,8 @@ FormatThousand(Number)                                                  ; Functi
 Options(Arg := "", ActTab := 1)                                         ; Options settings, 1st parameter is to avoid menu like [Option`tF2] disturb ActTab
 {
     Global                                                              ; Assume-global mode
-    Gui, Setting:New, +OwnDialogs +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1               ; +OwnerMain: (omit due to lug options window)
+    t := A_TickCount
+    Gui, Setting:New, +OwnDialogs +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1             ; Omit +OwnerMain: due to lug options window
     Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
     Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
     Gui, Setting:Tab, 1 ; CONFIG Tab
@@ -1246,7 +1247,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.151
     Gui, Setting:Add, ComboBox, x130 yp-5 w394 vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.152
-    Gui, Setting:Add, DropDownList, x130 yp-5 w394 Sort vg_HistoryLen, % StrReplace("10|15|20|25|30|50|90|", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|",, 1)
+    Gui, Setting:Add, DropDownList, x130 yp-5 w394 Sort vg_HistoryLen, % StrReplace("10|15|20|25|30|50", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|",, 1)
 
     Gui, Setting:Tab, 2 ; INDEX Tab
     Gui, Setting:Add, GroupBox, w500 h130, % g_LNG.160
@@ -1263,6 +1264,15 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1|2|3|4|5|6|7|8|9| ; ListRows limit <= 9
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr|40,45,430,340|40,0,475,340"
+    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
+    Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
+    Gui, Setting:Add, Text, x345 yp, x
+    Gui, Setting:Add, Edit, x393 yp w120 +Number vg_WinY, % g_GUI.WinY
+    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.177
+    Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_ListX, % g_GUI.ListX
+    Gui, Setting:Add, Text, x345 yp, x
+    Gui, Setting:Add, Edit, x393 yp w120 +Number vg_ListY, % g_GUI.ListY
+
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.173
     Gui, Setting:Font,,
     Gui, Setting:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
@@ -1280,19 +1290,15 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Font,,
     Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
     Gui, Setting:Add, Button, x433 yp-5 w80 vSelectSBFont gSelectSBFont, % g_LNG.182
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.176
-    Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
-    Gui, Setting:Add, Text, x345 yp, x
-    Gui, Setting:Add, Edit, x393 yp w120 +Number vg_WinY, % g_GUI.WinY
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.177
-    Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_ListX, % g_GUI.ListX
-    Gui, Setting:Add, Text, x345 yp, x
-    Gui, Setting:Add, Edit, x393 yp w120 +Number vg_ListY, % g_GUI.ListY
 
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.178
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_CtrlColor, % g_GUI.CtrlColor "||Default|White|Blue|202020|FFFFFF"
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.178
+    Gui, Setting:Add, Edit, % "x183 yp w240 r1 -E0x200 +ReadOnly vg_CtrlColor c" g_GUI.CtrlColor, % g_GUI.CtrlColor
+    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectCtrlColor gSelectCtrlColor, % g_LNG.183
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.179
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_WinColor, % g_GUI.WinColor "||Default|White|Blue|202020|FFFFFF"
+    Gui, Setting:Add, Edit, % "x183 yp w240 r1 -E0x200 +ReadOnly vg_WinColor c" g_GUI.WinColor, % g_GUI.WinColor
+    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectWinColor gSelectWinColor, % g_LNG.183
+
+
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.180
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||None|Default|C:\Path\BG.jpg"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.181
@@ -1334,7 +1340,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.213
     Gui, Setting:Add, Combobox, x183 yp-5 w330 vg_DialogWin, % g_CONFIG.DialogWin "||ahk_class #32770"
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.214
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ExcludeWin, % g_CONFIG.ExcludeWin "||ahk_class SysListView32|ahk_class SysListView32, ahk_exe Explorer.exe|ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe Totalcmd64.exe, AutoCAD LT Alert"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ExcludeWin, % g_CONFIG.ExcludeWin "||ahk_class SysListView32|ahk_class SysListView32, ahk_exe Explorer.exe"
     Gui, Setting:Add, GroupBox, x24 yp+50 w500 h145, % g_LNG.215
     Gui, Setting:Add, Text, x33 yp+30, % g_LNG.216
     Gui, Setting:Add, Hotkey, x183 yp-5 w330 vg_TotalCMDDir, % g_HOTKEY.TotalCMDDir
@@ -1353,7 +1359,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     Gui, Setting:Add, GroupBox, x24 y+30 w500 h110, % g_LNG.225
     Gui, Setting:Add, Text, x33 yp+30, % g_LNG.222
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateBefExt, % g_HOTKEY.AutoDateBefExt "||ahk_class TTOTAL_CMD,ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770|"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateBefExt, % g_HOTKEY.AutoDateBefExt "||ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770|"
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.223
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_AutoDateBEHKey, % g_HOTKEY.AutoDateBEHKey
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.224
@@ -1371,7 +1377,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, GroupBox, x66 y80 w445 h300,
 
     OffsetDate := A_Now
-    EnvAdd, OffsetDate, -30, Days                                       ; Subtract 30 days
+    EnvAdd, OffsetDate, -30, Days
 
     Loop, 30
     {
@@ -1404,7 +1410,9 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     Hotkey, % g_HOTKEY.GlobalHotkey1, Off, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, Off, UseErrorLevel
-    g_LOG.Debug("Loading options window...Arg=" Arg ", ActTab=" ActTab)
+    t := A_TickCount - t
+    g_LOG.Debug("Loading options window...Arg=" Arg ", ActTab=" ActTab ", elapsed time=" t "ms")
+    OutputDebug, % "Loading options window...Arg=" Arg ", ActTab=" ActTab ", elapsed time=" t "ms"
 }
 
 ResetHotkey() {
@@ -1452,7 +1460,24 @@ SelectSBFont() {
     Gui, Setting:Font, % fontObj["str"], % fontObj["name"]
     GuiControl, Setting:Font, g_SBFont
     GuiControl, Setting:, g_SBFont, % fontObj["name"] "," fontObj["Str"]
+}
 
+SelectCtrlColor() {
+    Global
+    custColorObj := Array(g_GUI.CtrlColor,g_GUI.WinColor,0xFF0000)
+	color := ColorSelect(g_GUI.CtrlColor,OptsHwnd,custColorObj,"full")            ; hwnd and custColorObj are optional
+
+    GuiControl, Setting:, g_CtrlColor, % color
+    GuiControl, Setting:+c%color%, g_CtrlColor
+}
+
+SelectWinColor() {
+    Global
+    custColorObj := Array(g_GUI.CtrlColor,g_GUI.WinColor,0xFF0000)
+	color := ColorSelect(g_GUI.WinColor,OptsHwnd,custColorObj,"full")            ; hwnd and custColorObj are optional
+
+    GuiControl, Setting:, g_WinColor, % color
+    GuiControl, Setting:+c%color%, g_WinColor
 }
 
 SettingButtonOK() {
@@ -1793,8 +1818,9 @@ SetLanguage() {                                                         ; Max st
     ENG.178 := "Control color"
     ENG.179 := "Background color"
     ENG.180 := "Background picture"
-    ENG.181 := "Transparency (0-255)"
-    ENG.182 := "Change font"
+    ENG.181 := "Transparency"
+    ENG.182 := "Select font"
+    ENG.183 := "Select color"
     ENG.190 := "Hotkey"                                                 ; 190~209 Hotkey
     ENG.191 := "Activate"
     ENG.192 := "Primary Hotkey"
@@ -1948,12 +1974,13 @@ SetLanguage() {                                                         ; Max st
     CHN.174 := "字体 (选项页)"
     CHN.175 := "字体 (状态栏)"
     CHN.176 := "主窗口尺寸 (宽 x 高)"
-    CHN.177 := "命令列表尺寸 (宽 x 高)"
+    CHN.177 := "命令表尺寸 (宽 x 高)"
     CHN.178 := "控件颜色"
     CHN.179 := "背景颜色"
     CHN.180 := "背景图片"
-    CHN.181 := "透明度 (0-255)"
-    CHN.182 := "更改字体"
+    CHN.181 := "透明度"
+    CHN.182 := "选择字体"
+    CHN.183 := "选择颜色"
     CHN.190 := "热键"                                                   ; 190~209 Hotkey
     CHN.191 := "激活"
     CHN.192 := "主热键"
@@ -2207,6 +2234,74 @@ FontSelect(fontObject:="",hwnd:=0,effects:=1) {
 		
 		return fontObject
 	}
+}
+
+; =============================================================================================
+; Color			= Start color
+; hwnd			= Parent window
+; custColorObj	= Use for input to init custom colors, or output to save custom colors, or both.
+;                 ... custColorObj can be Array() or Object().
+; disp			= full / basic ... full displays custom colors panel, basic does not
+; =============================================================================================
+; All params are optional.  With no hwnd dialog will show at top left of screen.  User must
+; parse output custColorObj and decide how to save custom colors... no more automatic ini file.
+; =============================================================================================
+
+ColorSelect(Color := 0, hwnd := 0, ByRef custColorObj := "",disp:="full") {
+	disp := (disp = "basic" ? 0x1 : 0x3)
+	
+	c1 := Format("0x{:02X}",(Color&255)<<16)	; convert RGB colors to BGR for input
+	c2 := Format("0x{:02X}",Color&65280)		; init start Color
+	c3 := Format("0x{:02X}",Color>>16)
+	Color := Format("0x{:06X}",c1|c2|c3)
+	
+	VarSetCapacity(CUSTOM, 16 * A_PtrSize,0) ; init custom colors obj
+	size := VarSetCapacity(CHOOSECOLOR, 9 * A_PtrSize,0) ; init dialog
+	
+	If (IsObject(custColorObj)) {
+		Loop 16 {
+			If (custColorObj.HasKey(A_Index)) {
+				col := custColorObj[A_Index]
+				c4 := Format("0x{:02X}",(col&255)<<16)	; convert RGB colors to BGR for input
+				c5 := Format("0x{:02X}",col&65280)		; 
+				c6 := Format("0x{:02X}",col>>16)
+				custCol := Format("0x{:06X}",c4|c5|c6)
+				NumPut(custCol, CUSTOM, (A_Index-1) * 4, "UInt")
+			}
+		}
+	}
+	
+	NumPut(size, CHOOSECOLOR, 0, "UInt")
+	NumPut(hwnd, CHOOSECOLOR, A_PtrSize, "UPtr")
+	NumPut(Color, CHOOSECOLOR, 3 * A_PtrSize, "UInt")
+	NumPut(disp, CHOOSECOLOR, 5 * A_PtrSize, "UInt") ; flags? - original = 3 (0x1 and 0x2)
+	NumPut(&CUSTOM, CHOOSECOLOR, 4 * A_PtrSize, "UPtr")
+	
+	ret := DllCall("comdlg32\ChooseColor", "UPtr", &CHOOSECOLOR, "UInt")
+	
+	if !ret
+		Exit
+	
+	custColorObj := Array()
+	Loop 16 {
+		newCustCol := NumGet(custom, (A_Index-1) * 4, "UInt")
+		c7 := Format("0x{:02X}",(newCustCol&255)<<16)	; convert RGB colors to BGR for input
+		c8 := Format("0x{:02X}",newCustCol&65280)
+		c9 := Format("0x{:02X}",newCustCol>>16)
+		newCustCol := Format("0x{:06X}",c7|c8|c9)
+		custColorObj.InsertAt(A_Index, newCustCol)
+	}
+	
+	Color := NumGet(CHOOSECOLOR, 3 * A_PtrSize, "UInt")
+	
+	c1 := Format("0x{:02X}",(Color&255)<<16)	; convert RGB colors to BGR for input
+	c2 := Format("0x{:02X}",Color&65280)
+	c3 := Format("0x{:02X}",Color>>16)
+	Color := Format("0x{:06X}",c1|c2|c3)
+	
+	CUSTOM := "", CHOOSECOLOR := ""
+	
+	return Color
 }
 
 GetFirstChar(str)
