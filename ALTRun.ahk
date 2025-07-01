@@ -83,7 +83,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,CondHotkey     : "~Mbutton"
             ,CondAction     : "PTTools"
             ,GlobalHotkey1  : "!Space"
-            ,GlobalHotkey2  : "!R"
+            ,GlobalHotkey2  : "!r"
             ,TotalCMDDir    : "^g"
             ,ExplorerDir    : "^e"
             ,AutoDateAtEnd  : "ahk_class TCmtEditForm,ahk_class Notepad4U" ; TC file comment window, Notepad4
@@ -104,7 +104,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "Default"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.05.23"
+            ,WinName        : "ALTRun - Ver 2025.07.01"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
@@ -112,13 +112,13 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ActiveCommand  : ""
             ,Input          : ""
             ,Arg            : ""                                        ; 用来调用管道的完整参数
-            ,UsageToday     : 0
-            ,UsageCountMax  : 0
-            ,AppStartDate   : A_YYYY A_MM A_DD
             ,OneDrive       : EnvGet("OneDrive")                        ; Due to #NoEnv
             ,LV_ContextMenu : []
             ,TrayMenu       : []
             ,FuncList       : ""}
+, g_USAGE   := {Max         : 1
+            ,AppDate        : A_YYYY A_MM A_DD
+            ,A_YYYY A_MM A_DD : 1}
 
 g_LOG.Debug("///// ALTRun is starting /////")
 LoadConfig("initialize")                                                ; Load ini config, iniWrite create ini whenever not exist
@@ -516,7 +516,7 @@ RunCommand(originCmd)
     }
 
     if (g_CONFIG.SaveHistory) {
-        g_HISTORYS.InsertAt(1, originCmd " /Arg=" g_RUNTIME.Arg)        ; Adjust command history
+        g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME.Arg)        ; Adjust command history
 
         (g_HISTORYS.Length() > g_CONFIG.HistoryLen) ? g_HISTORYS.Pop()
 
@@ -732,13 +732,14 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
 
 UpdateUsage() {
     currDate := A_YYYY . A_MM . A_DD
-    if (g_RUNTIME.AppStartDate != currDate) {
-        g_RUNTIME.AppStartDate := currDate
-        g_RUNTIME.UsageToday := 1
+    if (g_USAGE.AppDate != currDate) {
+        g_USAGE.AppDate := currDate
+        g_USAGE[currDate] := 1
     } else {
-        g_RUNTIME.UsageToday++
+        g_USAGE[currDate]++
     }
-    IniWrite, % g_RUNTIME.UsageToday, % g_RUNTIME.Ini, % g_SECTION.USAGE, %currDate%
+    g_USAGE.Max := Max(g_USAGE.Max, g_USAGE[currDate])
+    IniWrite, % g_USAGE[currDate], % g_RUNTIME.Ini, % g_SECTION.USAGE, %currDate%
 }
 
 UpdateRunCount() {
@@ -786,7 +787,7 @@ LoadCommands() {
         g_COMMANDS.Push(command)
     }
     
-    IniRead, FALLBACKCMDSEC, % g_RUNTIME.Ini, % g_SECTION.FALLBACK      ; Read FALLBACK section, initialize it if section not exist
+    FALLBACKCMDSEC := IniRead(g_SECTION.FALLBACK)                       ; Read FALLBACK section, initialize it if section not exist
     if (FALLBACKCMDSEC = "") {
         IniWrite, 
         (Ltrim
@@ -801,7 +802,7 @@ LoadCommands() {
         Func | AhkRun | Run Command use AutoHotkey Run
         Func | Bing | Search Clipboard or Input by Bing
         ), % g_RUNTIME.Ini, % g_SECTION.FALLBACK
-        IniRead, FALLBACKCMDSEC, % g_RUNTIME.Ini, % g_SECTION.FALLBACK
+        FALLBACKCMDSEC := IniRead(g_SECTION.FALLBACK)
     }
     Loop Parse, FALLBACKCMDSEC, `n                                      ; Get and verify each FBCommand (Rank not necessary) and push it to g_FALLBACK
     {
@@ -814,8 +815,7 @@ LoadHistory() {
     if (g_CONFIG.SaveHistory) {
         Loop % g_CONFIG.HistoryLen
         {
-            IniRead, History, % g_RUNTIME.Ini, % g_SECTION.HISTORY, % A_Index, % A_Space
-            g_HISTORYS.Push(History)
+            g_HISTORYS.Push(IniRead(g_SECTION.HISTORY, A_Index, A_Space))
         }
     } else
         IniDelete, % g_RUNTIME.Ini, % g_SECTION.HISTORY
@@ -1229,16 +1229,15 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 {
     Global                                                              ; Assume-global mode
     t := A_TickCount
-    Gui, Setting:New, +OwnDialogs +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1             ; Omit +OwnerMain: due to lug options window
+    Gui, Setting:New, +OwnDialogs +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1 ; Omit +OwnerMain: due to lug options window
     Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
     Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
     Gui, Setting:Tab, 1 ; CONFIG Tab
     Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, % g_LNG.1
+    
     GuiControl, Setting:-Redraw, OptListView
-
     For key, description in g_CHKLV
         LV_Add("Check" g_CONFIG[key], description)
-
     LV_ModifyCol(1, "AutoHdr")
     GuiControl, Setting:+Redraw, OptListView
 
@@ -1263,7 +1262,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.171
     Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1|2|3|4|5|6|7|8|9| ; ListRows limit <= 9
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr|40,45,430,340|40,0,475,340"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr|40,45,430,340"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
     Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
     Gui, Setting:Add, Text, x345 yp, x
@@ -1378,24 +1377,23 @@ Options(Arg := "", ActTab := 1)                                         ; Option
 
     OffsetDate := A_Now
     EnvAdd, OffsetDate, -30, Days
+    Local UsageMax := g_USAGE.Max + 10
 
     Loop, 30
     {
         EnvAdd, OffsetDate, +1, Days
-        FormatTime, OffsetDate, %OffsetDate%, yyyyMMdd
-
-        IniRead, OutputVar, % g_RUNTIME.Ini, % g_SECTION.USAGE, % OffsetDate, 0
-        Gui, Setting:Add, Progress, % "c94DD88 BackgroundDefault Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME.UsageCountMax+10, %OutputVar%
+        Date := SubStr(OffsetDate, 1, 8)
+        Gui, Setting:Add, Progress, % "c94DD88 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" UsageMax, % g_USAGE[Date]
     }
-    Gui, Setting:Add, Text, x24 yp-5 cGray, % g_RUNTIME.UsageCountMax+10
-    Gui, Setting:Add, Text, x24 yp+140 cGray, % Round(g_RUNTIME.UsageCountMax/2)+5
+    Gui, Setting:Add, Text, x24 yp-5 cGray, % UsageMax
+    Gui, Setting:Add, Text, x24 yp+140 cGray, % Round(UsageMax/2)
     Gui, Setting:Add, Text, x24 yp+140 cGray, 0
     Gui, Setting:Add, Text, x66 yp+15 cGray, % g_LNG.500
     Gui, Setting:Add, Text, x476 yp cGray, % g_LNG.501
     Gui, Setting:Add, Text, x66 yp+33, % g_LNG.502
-    Gui, Setting:Add, Edit, x410 yp-5 w100 Disabled Right vg_RunCount, % g_CONFIG.RunCount
+    Gui, Setting:Add, Edit, x400 yp-5 w100 r1 -E0x200 +ReadOnly Right vg_RunCount, % g_CONFIG.RunCount
     Gui, Setting:Add, Text, x66 yp+35, % g_LNG.503
-    Gui, Setting:Add, Edit, x410 yp-5 w100 Disabled Right, % g_RUNTIME.UsageToday
+    Gui, Setting:Add, Edit, x400 yp-5 w100 r1 -E0x200 +ReadOnly Right, % g_USAGE[A_YYYY . A_MM . A_DD]
 
     Gui, Setting:Tab, 8 ; ABOUT TAB
     Gui, Setting:Add, Picture, x33 y+20 w48 h-1 Icon-100, imageres.dll
@@ -1503,50 +1501,39 @@ LoadConfig(Arg) {                                                       ; 加载
     g_LOG.Debug("Loading configuration...Arg=" Arg)
 
     if (Arg = "config" or Arg = "initialize" or Arg = "all") {
-        For key, value in g_CONFIG                                      ; Read [Config] to Object
-        {
-            IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.CONFIG, %key%, %value%
-            g_CONFIG[key] := tempValue
-        }
+        for key, value in g_CONFIG                                      ; Read [Config] to Object
+            g_CONFIG[key] := IniRead(g_SECTION.CONFIG, key, value)
 
-        For key, value in g_HOTKEY                                      ; Read Hotkey section
-        {
-            IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.HOTKEY, %key%, %value%
-            g_HOTKEY[key] := tempValue
-        }
+        for key, value in g_HOTKEY                                      ; Read [Hotkey] section
+            g_HOTKEY[key] := IniRead(g_SECTION.HOTKEY, key, value)
 
-        For key, value in g_GUI                                         ; Read GUI section
-        {
-            IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.GUI, %key%, %value%
-            g_GUI[key] := tempValue
-        }
+        for key, value in g_GUI                                         ; Read [GUI] section
+            g_GUI[key]    := IniRead(g_SECTION.GUI, key, value)
 
         g_RUNTIME.BGPic := (g_GUI.Background = "Default") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
 
-        IniRead, tempValue, % g_RUNTIME.Ini, % g_SECTION.USAGE, % A_YYYY . A_MM . A_DD, 0 ; For app usage
-        g_RUNTIME.UsageToday := tempValue
-
         OffsetDate := A_Now
-        EnvAdd, OffsetDate, -30, Days                                   ; - 30 days
-        FormatTime, OffsetDate, %OffsetDate%, yyyyMMdd
+        EnvAdd, OffsetDate, -30, Days
+        OffsetDate := SubStr(OffsetDate, 1, 8)
     
-        IniRead, USAGE, % g_RUNTIME.Ini, % g_SECTION.USAGE              ; Clean up usage record before 30 days
+        USAGE := IniRead(g_SECTION.USAGE)
         Loop, Parse, USAGE, `n
         {
-            UsageDate  := StrSplit(A_LoopField, "=")[1]
-            UsageCount := StrSplit(A_LoopField, "=")[2]
-            
-            if (UsageDate <= OffsetDate) {
-                IniDelete, % g_RUNTIME.Ini, % g_SECTION.USAGE, %UsageDate%
+            Date  := StrSplit(A_LoopField, "=")[1]
+            Count := StrSplit(A_LoopField, "=")[2]
+
+            if (Date <= OffsetDate) {
+                IniDelete, % g_RUNTIME.Ini, % g_SECTION.USAGE, %Date%   ; Clean up usage record before 30 days
                 Continue
             }
 
-            g_RUNTIME.UsageCountMax := Max(g_RUNTIME.UsageCountMax, UsageCount)
+            g_USAGE[Date] := Count
+            g_USAGE.Max   := Max(g_USAGE.Max, Count)
         }
     }
 
     if (Arg = "commands" or Arg = "initialize" or Arg = "all") {        ; Built-in command initialize
-        IniRead, DFTCMDSEC, % g_RUNTIME.Ini, % g_SECTION.DFTCMD
+        DFTCMDSEC := IniRead(g_SECTION.DFTCMD)
         if (DFTCMDSEC = "") {
             IniWrite,
             (Ltrim
@@ -1616,17 +1603,16 @@ LoadConfig(Arg) {                                                       ; 加载
             Cmd | Control Mmsys.cpl | Sound=66
             Cmd | Control Ncpa.cpl | Network Connections=66
             Cmd | Control Powercfg.cpl | Power Options=66
-            Cmd | Control TimeDate.cpl | Date and Time=66
             Cmd | Control AdminTools | Windows Tools=66
             Cmd | Control Desktop | Personalisation=66
             Cmd | Control Inetcpl.cpl,,4 | Internet Properties=66
             Cmd | Control Printers | Devices and Printers=66
             Cmd | Control UserPasswords | User Accounts=66
             ), % g_RUNTIME.Ini, % g_SECTION.DFTCMD
-            IniRead, DFTCMDSEC, % g_RUNTIME.Ini, % g_SECTION.DFTCMD
+            DFTCMDSEC := IniRead(g_SECTION.DFTCMD)
         }
 
-        IniRead, USERCMDSEC, % g_RUNTIME.Ini, % g_SECTION.USERCMD
+        USERCMDSEC := IniRead(g_SECTION.USERCMD)
         if (USERCMDSEC = "") {
             IniWrite,
             (Ltrim
@@ -1641,19 +1627,27 @@ LoadConfig(Arg) {                                                       ; 加载
             Cmd | Control TimeDate.cpl | Date and Time=66
             Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=66
             URL | www.google.com | Google=1
-            File | C:\OneDrive\Apps\TotalCMD64\TOTALCMD64.exe=1
+            File | C:\Apps\TotalCMD64\TOTALCMD64.exe=1
             ), % g_RUNTIME.Ini, % g_SECTION.USERCMD
-            IniRead, USERCMDSEC, % g_RUNTIME.Ini, % g_SECTION.USERCMD
+            USERCMDSEC := IniRead(g_SECTION.USERCMD)
         }
 
-        IniRead, INDEXSEC, % g_RUNTIME.Ini, % g_SECTION.INDEX           ; Read whole section of Index database
+        INDEXSEC := IniRead(g_SECTION.INDEX)                            ; Read whole section of Index database
         if (INDEXSEC = "") {
-            MsgBox, 4160, % g_RUNTIME.WinName, % (g_CONFIG.Chinese ? "索引数据库为空，请点击确定重新建立索引?" : "Index database is empty, please click OK to rebuild index.")
+            MsgBox, 4161, % g_RUNTIME.WinName, % (g_CONFIG.Chinese ? "索引数据库为空, 请点击`n`n'确定'重新建立索引`n`n'取消'退出程序`n`n(请确保程序目录有写入权限)" 
+                : "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to exit the program`n`n(Please ensure the program directory is writable)")
+            IfMsgBox, Cancel
+                Exit()
             Reindex()
         }
         Return DFTCMDSEC "`n" USERCMDSEC "`n" INDEXSEC
     }
     Return
+}
+
+IniRead(Section, Key := "", Default := ""){
+    IniRead, Value, % g_RUNTIME.Ini, % Section, % Key, % Default
+    Return Value
 }
 
 SAVECONFIG() {
@@ -1677,18 +1671,17 @@ SAVECONFIG() {
 ;===================================================
 ; Resources File - Background picture
 ;===================================================
-Extract_BG(_Filename)
-{
+Extract_BG(_Filename) {
 	Static Out_Data
     VarSetCapacity(TD, 4206 * 2)
     TD :="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"
-    
+
     VarSetCapacity(Out_Data, Bytes := 3070, 0)
     DllCall("Crypt32.dll\CryptStringToBinary" "W", "Ptr", &TD, "UInt", 0, "UInt", 1, "Ptr", &Out_Data, "UIntP", Bytes, "Int", 0, "Int", 0, "CDECL Int")
-	
+
     FileExist(_Filename)
 		FileDelete, %_Filename%
-	
+
 	h := DllCall("CreateFile", "Ptr", &_Filename, "Uint", 0x40000000, "Uint", 0, "UInt", 0, "UInt", 4, "Uint", 0, "UInt", 0)
 	, DllCall("WriteFile", "Ptr", h, "Ptr", &Out_Data, "UInt", 3070, "UInt", 0, "UInt", 0)
 	, DllCall("CloseHandle", "Ptr", h)
@@ -1854,7 +1847,7 @@ SetLanguage() {                                                         ; Max st
     ENG.225 := "Auto-date before file extension"
     ENG.229 := "Conditional action"
     ENG.230 := "If window id contains"
-    ENG.231 := "Hoktey (Editable)"
+    ENG.231 := "Hotkey (Editable)"
     ENG.232 := "Trigger action"
     ENG.300 := "Show"                                                   ; 300+ TrayMenu
     ENG.301 := "Options`tF2"
@@ -1959,7 +1952,7 @@ SetLanguage() {                                                         ; Max st
     CHN.129 := "启用快速结构计算"
     CHN.130 := "简化路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
     CHN.131 := "设置语言为简体中文(Simplified Chinese)"
-    CHN.132 := "搜索时匹配中文拼音首字母"
+    CHN.132 := "搜索时匹配汉语拼音首字母"
     CHN.150 := "文件管理器"                                              ; 150~159 Options window (Other than Check Listview)
     CHN.151 := "Everything"
     CHN.152 := "历史命令数量"
