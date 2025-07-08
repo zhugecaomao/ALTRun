@@ -86,7 +86,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,GlobalHotkey2  : "!r"
             ,TotalCMDDir    : "^g"
             ,ExplorerDir    : "^e"
-            ,AutoDateAtEnd  : "ahk_class TCmtEditForm,ahk_class Notepad4U" ; TC file comment window, Notepad4
+            ,AutoDateAtEnd  : "ahk_class TCmtEditForm,ahk_exe Notepad4.exe" ; TC file comment window, Notepad4
             ,AutoDateAEHKey : "^d"
             ,AutoDateBefExt : "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770" ; Windows 资源管理器文件列表, 桌面文件, 文件保存对话框,TC 文件列表
             ,AutoDateBEHKey : "^d"}
@@ -104,7 +104,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "Default"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.07.01"
+            ,WinName        : "ALTRun - Ver 2025.07.08"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
@@ -266,7 +266,7 @@ if (A_Args[1] = "-SendTo") {
 
 Gui, Main:Show, % "w" g_GUI.WinX " h" g_GUI.WinY " Center " g_RUNTIME.WinHide, % g_RUNTIME.WinName
 
-if (g_GUI.Transparency != "OFF" and g_GUI.Transparency != "255")
+if (g_GUI.Transparency < 250)
     WinSet, Transparent, % g_GUI.Transparency, % g_RUNTIME.WinName
 
 (g_CONFIG.HideOnLostFocus) ? OnMessage(0x06, "WM_ACTIVATE")
@@ -1104,8 +1104,8 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     Gui, CmdMgr:Add, Edit, x145 yp-5 w405 -WantReturn v_Desc, %_Desc%
     Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.706
     Gui, CmdMgr:Add, Edit, x145 yp-5 w405 +Number v_Rank, %_Rank%
-    Gui, CmdMgr:Add, Button, Default x420 w90 gCmdMgrButtonOK, % g_LNG.8
-    Gui, CmdMgr:Add, Button, x521 yp w90 gCmdMgrButtonCancel, % g_LNG.9
+    Gui, CmdMgr:Add, Button, Default x420 w90 gCmdMgrButtonOK, % g_LNG.7
+    Gui, CmdMgr:Add, Button, x521 yp w90 gCmdMgrButtonCancel, % g_LNG.8
     Gui, CmdMgr:Show, AutoSize, % g_LNG.700
     GuiControl, Focus, _Path
 }
@@ -1301,7 +1301,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.180
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||None|Default|C:\Path\BG.jpg"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.181
-    Gui, Setting:Add, DropDownList, x183 yp-5 w330 vg_Transparency, % StrReplace("OFF|50|75|100|125|150|175|200|210|220|230|240|250|255|", g_GUI.Transparency, g_GUI.Transparency . "|",, 1)
+    Gui, Setting:Add, Slider, x183 yp-5 w330 Range50-255 TickInterval5 Tooltip vg_Transparency, % g_GUI.Transparency
 
     Gui, Setting:Tab, 4 ; Hotkey Tab
     Gui, Setting:Add, GroupBox, w500 h115, % g_LNG.191
@@ -1350,7 +1350,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Tab, 6 ; Plugins TAB
     Gui, Setting:Add, GroupBox, w500 h110, % g_LNG.221
     Gui, Setting:Add, Text, x33 yp+30, % g_LNG.222
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_class Notepad4|"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_exe Notepad4.exe|"
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.223
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_AutoDateAEHKey, % g_HOTKEY.AutoDateAEHKey
     Gui, Setting:Add, Text, x285 yp+5, % g_LNG.224
@@ -1401,10 +1401,10 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Link, xp yp+45 w400, % g_LNG.601
 
     Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
-    Gui, Setting:Add, Button, Default x355 w80 vSettingButtonOK gSettingButtonOK, % g_LNG.8
-    Gui, Setting:Add, Button, x445 yp w80 gSettingButtonCancel, % g_LNG.9
+    Gui, Setting:Add, Button, Default x278 w80 vSettingButtonOK gSettingButtonOK, % g_LNG.7
+    Gui, Setting:Add, Button, x368 yp w80 gSettingButtonCancel, % g_LNG.8
+    Gui, Setting:Add, Button, x458 yp w80 gSettingButtonHelp, % g_LNG.9
     Gui, Setting:Show,, % g_LNG.1
-    GuiControl, Focus, SettingButtonOK
 
     Hotkey, % g_HOTKEY.GlobalHotkey1, Off, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, Off, UseErrorLevel
@@ -1489,6 +1489,10 @@ SettingGuiEscape() {
 
 SettingButtonCancel() {
     SettingGuiClose()
+}
+
+SettingButtonHelp() {
+    Run, https://github.com/zhugecaomao/ALTRun/wiki
 }
 
 SettingGuiClose() {
@@ -1732,8 +1736,9 @@ SetLanguage() {                                                         ; Max st
     CHN     := {}
 
     ENG.1   := "Options"                                                ; 1~9 Reserved
-    ENG.8   := "OK"
-    ENG.9   := "Cancel"
+    ENG.7   := "OK"
+    ENG.8   := "Cancel"
+    ENG.9   := "Help"
     ENG.10  := "No.|Type|Command|Description"                           ; 10~49 Main GUI
     ENG.11  := "Run"
     ENG.12  := "Options"
@@ -1892,8 +1897,9 @@ SetLanguage() {                                                         ; Max st
     ENG.802 := "Command has been deleted successfully!"
 
     CHN.1   := "配置"                                                   ; 1~9 Reserved
-    CHN.8   := "确定"
-    CHN.9   := "取消"
+    CHN.7   := "确定"
+    CHN.8   := "取消"
+    CHN.9   := "帮助"
     CHN.10  := "序号|类型|命令|描述"                                     ; 10~49 Main GUI
     CHN.11  := "运行"
     CHN.12  := "配置"
