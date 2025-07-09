@@ -115,7 +115,8 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,OneDrive       : EnvGet("OneDrive")                        ; Due to #NoEnv
             ,LV_ContextMenu : []
             ,TrayMenu       : []
-            ,FuncList       : ""}
+            ,FuncList       : ""
+            ,RegEx          : "imS)"}                                   ; 字符匹配的正则表达式
 , g_USAGE   := {Max         : 1
             ,AppDate        : A_YYYY A_MM A_DD
             ,A_YYYY A_MM A_DD : 1}
@@ -355,9 +356,9 @@ SearchCommand(command := "") {
         _Desc := splitResult[3]
         SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
 
-        elementToSearch := g_CONFIG.MatchPath ? element : _Type " " fileName " " _Desc ; search type, file name include extension, and desc
+        elementToSearch := g_CONFIG.MatchPath ? _Path " " _Desc : fileName " " _Desc ; search file name include extension, and desc (not search type for MatchBeginning option)
         if (g_CONFIG.MatchPinyin) {
-            elementToSearch := GetFirstChar(elementToSearch)            ; 中文转为拼音首字母 for search
+            elementToSearch := GetFirstChar(elementToSearch)            ; 中文转为拼音首字母
         }
 
         if FuzzyMatch(elementToSearch, command) {
@@ -704,7 +705,7 @@ FuzzyMatch(Haystack, Needle) {
     Needle := StrReplace(Needle, "+", "\+")                             ; For Eval (preceded by a backslash to be seen as literal)
     Needle := StrReplace(Needle, "*", "\*")                             ; For Eval (eg. 25+5 or 6*5 will show Eval result instead of match file with "30")
     Needle := StrReplace(Needle, " ", ".*")                             ; 空格直接替换为匹配任意字符
-    Return RegExMatch(Haystack, "imS)" Needle)
+    Return RegExMatch(Haystack, g_RUNTIME.RegEx . Needle)
 }
 
 UpdateRank(originCmd, showRank := false, inc := 1) {
@@ -1353,7 +1354,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_exe Notepad4.exe|"
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.223
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_AutoDateAEHKey, % g_HOTKEY.AutoDateAEHKey
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.224
+    Gui, Setting:Add, Text, x300 yp+5, % g_LNG.224
     Gui, Setting:Add, DropDownList, x395 yp-5 w120, - dd.MM.yyyy||
 
     Gui, Setting:Add, GroupBox, x24 y+30 w500 h110, % g_LNG.225
@@ -1361,7 +1362,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateBefExt, % g_HOTKEY.AutoDateBefExt "||ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770|"
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.223
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_AutoDateBEHKey, % g_HOTKEY.AutoDateBEHKey
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.224
+    Gui, Setting:Add, Text, x300 yp+5, % g_LNG.224
     Gui, Setting:Add, DropDownList, x395 yp-5 w120, - dd.MM.yyyy||
 
     Gui, Setting:Add, GroupBox, x24 y+30 w500 h110, % g_LNG.229
@@ -1369,7 +1370,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_CondTitle, % g_HOTKEY.CondTitle "||"
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.231
     Gui, Setting:Add, ComboBox, x183 yp-5 w80 vg_CondHotkey, % g_HOTKEY.CondHotkey "||"
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.232
+    Gui, Setting:Add, Text, x300 yp+5, % g_LNG.232
     Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_CondAction, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.CondAction, g_HOTKEY.CondAction . "|",, 1)
 
     Gui, Setting:Tab, 7 ; USAGE TAB
@@ -1515,6 +1516,7 @@ LoadConfig(Arg) {                                                       ; 加载
             g_GUI[key]    := IniRead(g_SECTION.GUI, key, value)
 
         g_RUNTIME.BGPic := (g_GUI.Background = "Default") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
+        g_RUNTIME.RegEx := g_CONFIG.MatchBeginning ? "imS)^" : "imS)"
 
         OffsetDate := A_Now
         EnvAdd, OffsetDate, -30, Days
@@ -1800,7 +1802,7 @@ SetLanguage() {                                                         ; Max st
     ENG.132 := "Match Chinese Pinyin first characters"
     ENG.150 := "File Manager"                                           ; 150~159 Options window (Other than Check Listview)
     ENG.151 := "Everything"
-    ENG.152 := "Command history length"
+    ENG.152 := "History length"
     ENG.160 := "Index"                                                  ; 160~169 Index
     ENG.161 := "Index location"
     ENG.162 := "Index file type"
@@ -1904,7 +1906,7 @@ SetLanguage() {                                                         ; Max st
     CHN.11  := "运行"
     CHN.12  := "配置"
     CHN.13  := "在此输入搜索内容..."
-    CHN.50  := "提示 | F1 | 帮助&关于`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / Esc / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
+    CHN.50  := "提示 | F1 | 帮助&关于`n提示 | F2 | 配置选项`n提示 | F3 | 编辑当前命令`n提示 | F4 | 用户定义命令`n提示 | ALT+空格 / ALT+R | 激活 ALTRun`n提示 | 热键 / ESC / 失去焦点 | 关闭 ALTRun`n提示 | 回车 / ALT+序号 | 运行命令`n提示 | 上下箭头键 | 选择上一个或下一个命令`n提示 | CTRL+D | 使用文件管理器定位命令所在目录"
     CHN.51  := "提示: "                                                 ; 50~99 Tips
     CHN.52  := "推荐使用热键激活 (ALT + 空格)"
     CHN.53  := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
@@ -1948,7 +1950,7 @@ SetLanguage() {                                                         ; Max st
     CHN.119 := "显示命令列表边框线"
     CHN.120 := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
     CHN.121 := "智能匹配 - 模糊和智能匹配和过滤结果"
-    CHN.122 := "搜索时匹配字符串开头 (取消勾选: 匹配字符串任意位置)"
+    CHN.122 := "搜索时匹配字符串开头 (取消勾选: 匹配任意位置)"
     CHN.123 := "显示提示信息 - 在底部状态栏中显示技巧提示信息"
     CHN.124 := "显示运行次数 - 在底部状态栏中显示命令执行次数"
     CHN.125 := "显示状态栏 (窗口底部)"
@@ -2303,29 +2305,28 @@ ColorSelect(Color := 0, hwnd := 0, ByRef custColorObj := "",disp:="full") {
 	return Color
 }
 
-GetFirstChar(str)
-{
-	static nothing := VarSetCapacity(var, 2)
-	static array   := [ [-20319,-20284,"A"], [-20283,-19776,"B"], [-19775,-19219,"C"], [-19218,-18711,"D"], [-18710,-18527,"E"], [-18526,-18240,"F"], [-18239,-17923,"G"], [-17922,-17418,"H"], [-17417,-16475,"J"], [-16474,-16213,"K"], [-16212,-15641,"L"], [-15640,-15166,"M"], [-15165,-14923,"N"], [-14922,-14915,"O"], [-14914,-14631,"P"], [-14630,-14150,"Q"], [-14149,-14091,"R"], [-14090,-13319,"S"], [-13318,-12839,"T"], [-12838,-12557,"W"], [-12556,-11848,"X"], [-11847,-11056,"Y"], [-11055,-10247,"Z"] ]
-	
-	; 如果不包含中文字符，则直接返回原字符
-	if !RegExMatch(str, "[^\x{00}-\x{ff}]")
-		Return str
-	Loop, Parse, str
-	{
-		if ( Asc(A_LoopField) >= 0x2E80 and Asc(A_LoopField) <= 0x9FFF )
-		{
-			StrPut(A_LoopField, &var, "CP936")
-			nGBKCode := (NumGet(var, 0, "UChar") << 8) + NumGet(var, 1, "UChar") - 65536
-			For i, a in array
-				if nGBKCode between % a.1 and % a.2
-				{
-					out .= a.3
-					Break
-				}
-		}
-		else
-			out .= A_LoopField
-	}
-	Return out
+GetFirstChar(str) {
+    static array := [ [-20319,-20284,"A"], [-20283,-19776,"B"], [-19775,-19219,"C"], [-19218,-18711,"D"], [-18710,-18527,"E"], [-18526,-18240,"F"], [-18239,-17923,"G"], [-17922,-17418,"H"], [-17417,-16475,"J"], [-16474,-16213,"K"], [-16212,-15641,"L"], [-15640,-15166,"M"], [-15165,-14923,"N"], [-14922,-14915,"O"], [-14914,-14631,"P"], [-14630,-14150,"Q"], [-14149,-14091,"R"], [-14090,-13319,"S"], [-13318,-12839,"T"], [-12838,-12557,"W"], [-12556,-11848,"X"], [-11847,-11056,"Y"], [-11055,-10247,"Z"] ]
+    out          := ""
+    ; 如果不包含中文字符，则直接返回原字符
+    if !RegExMatch(str, "[^\x{00}-\x{ff}]")
+        Return str
+    Loop, Parse, str
+    {
+        if ( Asc(A_LoopField) >= 0x2E80 and Asc(A_LoopField) <= 0x9FFF )
+        {
+            VarSetCapacity(var, 2)
+            StrPut(A_LoopField, &var, "CP936")
+            nGBKCode := (NumGet(var, 0, "UChar") << 8) + NumGet(var, 1, "UChar") - 65536
+            For i, a in array
+                if nGBKCode between % a.1 and % a.2
+                {
+                    out .= a.3
+                    Break
+                }
+        }
+        else
+            out .= A_LoopField
+    }
+    Return out
 }
