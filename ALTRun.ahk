@@ -1175,8 +1175,7 @@ PTTools()
         WinActivate
 }
 
-RenameWithDate()                                                        ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-{
+RenameWithDate() {                                                      ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
     ControlGetFocus, CurrCtrl, A                                        ; 获取当前激活的窗口中的聚焦的控件名称
     if (InStr(CurrCtrl, "Edit") or InStr(CurrCtrl, "Scintilla"))        ; 如果当前激活的控件为Edit类或者Scintilla1(Notepad2),则Ctrl+D功能生效
         NameAddDate("FileListMangr", CurrCtrl)
@@ -1185,8 +1184,7 @@ RenameWithDate()                                                        ; 针对
     Return
 }
 
-LineEndAddDate()                                                        ; 针对TC File Comment对话框　按Ctrl+D自动在备注文字之后添加日期
-{
+LineEndAddDate() {                                                      ; 针对TC File Comment对话框　按Ctrl+D自动在备注文字之后添加日期
     FormatTime, CurrentDate,, dd.MM.yyyy
     SendInput {End}
     Sleep, 10
@@ -1201,18 +1199,15 @@ NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文
 
     if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前
     {
-        if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$")
-            {
+        if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$") {
                 baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
             }
-            else
-            {
+            else {
                 baseName := nameNoExt
             }
             NameWithDate := baseName " - " CurrentDate "." fileExt
     }
-    else
-    {
+    else {
         NameWithDate := EditCtrlText " - " CurrentDate
     }
     ControlClick, %CurrCtrl%, A
@@ -1221,13 +1216,11 @@ NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文
     g_LOG.Debug(WinName ", RenameWithDate=" NameWithDate)
 }
 
-FormatThousand(Number)                                                  ; Function to add thousand separator
-{
+FormatThousand(Number) {                                                ; Function to add thousand separator
     Return RegExReplace(Number, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",")
 }
 
-Options(Arg := "", ActTab := 1)                                         ; Options settings, 1st parameter is to avoid menu like [Option`tF2] disturb ActTab
-{
+Options(Arg := "", ActTab := 1) {                                       ; Options settings, 1st parameter is to avoid menu like [Option`tF2] disturb ActTab
     Global                                                              ; Assume-global mode
     t := A_TickCount
     Gui, Setting:New, +OwnDialogs +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1 ; Omit +OwnerMain: due to lug options window
@@ -1263,7 +1256,7 @@ Options(Arg := "", ActTab := 1)                                         ; Option
     Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.171
     Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1|2|3|4|5|6|7|8|9| ; ListRows limit <= 9
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr|40,45,430,340"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
     Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
     Gui, Setting:Add, Text, x345 yp, x
@@ -1651,7 +1644,7 @@ LoadConfig(Arg) {                                                       ; 加载
     Return
 }
 
-IniRead(Section, Key := "", Default := ""){
+IniRead(Section, Key := "", Default := "") {
     IniRead, Value, % g_RUNTIME.Ini, % Section, % Key, % Default
     Return Value
 }
@@ -1777,11 +1770,11 @@ SetLanguage() {                                                         ; Max st
     ENG.107 := "Show Caption - Show window title bar"
     ENG.108 := "Use Windows XP Theme instead of Classic Theme"
     ENG.109 := "[ESC] to clear input, press again to close window (Untick: Close directly)"
-    ENG.110 := "Keep last input and search result on close"
+    ENG.110 := "Keep last input and matching result on close"
     ENG.111 := "Show Icon - Show file/folder/app icon in result"
     ENG.112 := "SendToGetLnk - Retrieve .lnk target on SendTo"
-    ENG.113 := "Save History - Commands executed with arg"
-    ENG.114 := "Save Log - App running and debug information"
+    ENG.113 := "Save commands execution history"
+    ENG.114 := "Save application log"
     ENG.115 := "Match full path on search"
     ENG.116 := "Show Grid - Provides boundary lines between list's rows and columns"
     ENG.117 := "Show Header - Show list's header (top row contains column titles)"
@@ -1938,11 +1931,11 @@ SetLanguage() {                                                         ; Max st
     CHN.107 := "显示窗口标题栏"
     CHN.108 := "使用 Windows XP 主题"
     CHN.109 := "[Esc] 清除输入, 再次按下关闭窗口 (取消勾选: 直接关闭窗口)"
-    CHN.110 := "保留上次输入和搜索结果"
+    CHN.110 := "保留最近一次输入和匹配结果"
     CHN.111 := "显示图标 - 在结果中显示文件/文件夹/应用程序图标"
     CHN.112 := "使用“发送到”时, 追溯 .lnk 目标文件"
-    CHN.113 := "保存历史记录 - 使用参数执行的命令"
-    CHN.114 := "保存运行日志 - 应用程序运行和调试信息"
+    CHN.113 := "保存历史记录"
+    CHN.114 := "保存运行日志"
     CHN.115 := "搜索时匹配完整路径"
     CHN.116 := "显示网格 - 在列表的行和列之间提供边界线"
     CHN.117 := "显示标题 - 显示列表的标题 (顶部行包含列标题)"
@@ -1959,8 +1952,8 @@ SetLanguage() {                                                         ; Max st
     CHN.128 := "双缓冲绘图, 改善窗口闪烁 (Win XP+)"
     CHN.129 := "启用快速结构计算"
     CHN.130 := "简化路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
-    CHN.131 := "设置语言为简体中文(Simplified Chinese)"
-    CHN.132 := "搜索时匹配汉语拼音首字母"
+    CHN.131 := "设置语言为简体中文 (Simplified Chinese)"
+    CHN.132 := "搜索时匹配拼音首字母"
     CHN.150 := "文件管理器"                                              ; 150~159 Options window (Other than Check Listview)
     CHN.151 := "Everything"
     CHN.152 := "历史命令数量"
