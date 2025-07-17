@@ -1085,7 +1085,7 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     g_LOG.Debug("Starting Command Manager... Args=" Section "|" Type "|" Path "|" Desc "|" Rank)
 
     _Section  := Section
-    _Type     := {"File":1, "Dir":2, "CMD":3, "URL":4, "Func":5}[Type]
+    _Type     := Type
     _Path     := RelativePath(Path)
     _Desc     := Desc
     _Rank     := Rank
@@ -1095,7 +1095,7 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     Gui, CmdMgr:Font, S9 Norm, Microsoft Yahei
     Gui, CmdMgr:Add, GroupBox, w600 h260, % g_LNG.701
     Gui, CmdMgr:Add, Text, x25 yp+30, % g_LNG.702
-    Gui, CmdMgr:Add, DropDownList, x145 yp-5 w130 v_Type Choose%_Type%, File||Dir|Cmd|URL|Func
+    Gui, CmdMgr:Add, DropDownList, x145 yp-5 w130 v_Type, % StrReplace("File|Dir|Cmd|URL|Func", _Type, _Type . "|",, 1)
     Gui, CmdMgr:Add, Text, x300 yp+5, % g_LNG.705
     Gui, CmdMgr:Add, Edit, x420 yp-5 w130 Disabled v_Section, %_Section%
     Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.703
@@ -1229,18 +1229,16 @@ Options(Arg := "", ActTab := 1) {                                       ; Option
     Gui, Setting:Tab, 1 ; CONFIG Tab
     Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, % g_LNG.1
     
-    GuiControl, Setting:-Redraw, OptListView
     For key, description in g_CHKLV
         LV_Add("Check" g_CONFIG[key], description)
     LV_ModifyCol(1, "AutoHdr")
-    GuiControl, Setting:+Redraw, OptListView
 
     Gui, Setting:Add, Text, x24 yp+320, % g_LNG.150
     Gui, Setting:Add, ComboBox, x130 yp-5 w394 vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.151
     Gui, Setting:Add, ComboBox, x130 yp-5 w394 vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.152
-    Gui, Setting:Add, DropDownList, x130 yp-5 w394 Sort vg_HistoryLen, % StrReplace("10|15|20|25|30|50", g_CONFIG.HistoryLen, g_CONFIG.HistoryLen . "|",, 1)
+    Gui, Setting:Add, DropDownList, % "x130 yp-5 w394 Sort vg_HistoryLen Choose" g_CONFIG.HistoryLen * 0.1, 10|20|30|40|50|60
 
     Gui, Setting:Tab, 2 ; INDEX Tab
     Gui, Setting:Add, GroupBox, w500 h130, % g_LNG.160
@@ -1538,7 +1536,7 @@ LoadConfig(Arg) {                                                       ; 加载
             (Ltrim
             ; Please make sure ALTRun is not running before modifying this file.
             ; Built-in commands, high priority, recommended to maintain as it is
-            ; App will auto generate [DefaultCommnd] section while it is empty
+            ; App will auto generate [DefaultCommand] section while it is empty
             ;
             Func | Help | ALTRun Help & About (F1)=99
             Func | Options | ALTRun Options Preference Settings (F2)=99
@@ -1738,7 +1736,7 @@ SetLanguage() {                                                         ; Max st
     ENG.11  := "Run"
     ENG.12  := "Options"
     ENG.13  := "Type anything here to search..."
-    ENG.50  := "Tip | F1 | Help & About`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activative ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous / next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
+    ENG.50  := "Tip | F1 | Help & About`nTip | F2 | Options and settings`nTip | F3 | Edit current command`nTip | F4 | User-defined commands`nTip | ALT+SPACE / ALT+R | Activate ALTRun`nTip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun`nTip | ENTER / ALT+NO. | Run selected command`nTip | ARROW UP or DOWN | Select previous / next command`nTip | CTRL+D | Locate cmd's dir with File Manager" ; Initial tips
     ENG.51  := "Tips: "
     ENG.52  := "It's better to activate ALTRun by hotkey (ALT + Space)" ; 50~99 Tips
     ENG.53  := "Smart Rank - Auto adjusts command priority (rank) based on frequency of use."
@@ -1835,7 +1833,7 @@ SetLanguage() {                                                         ; Max st
     ENG.212 := "File manager id"
     ENG.213 := "Open/Save dialog id"
     ENG.214 := "Exclude windows id"
-    ENG.215 := "Hotkey for Swith open/save dialog path to"
+    ENG.215 := "Hotkey for Switch Open/Save dialog path to"
     ENG.216 := "Total Commander's dir"
     ENG.217 := "Windows Explorer's dir"
     ENG.218 := "Auto switch dir on open/save dialog"
