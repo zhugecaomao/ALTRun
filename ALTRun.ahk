@@ -104,7 +104,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "Default"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.07.08"
+            ,WinName        : "ALTRun - Ver 2025.07.18"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
@@ -416,7 +416,7 @@ ListResult(text := "", UseDisplay := false)
         _Type       := splitResult[1]
         _Path       := splitResult[2]
         _Desc       := splitResult[3]
-        IconIndex   := g_CONFIG.ShowIcon ? GetIconIndex(_Path, _Type) : 0
+        IconIndex   := GetIconIndex(_Path, _Type)
 
         SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
         PathToShow  := (g_CONFIG.ShortenPath) ? fileName : _Path        ; Show Full path / Shorten path
@@ -435,6 +435,8 @@ ListResult(text := "", UseDisplay := false)
 
 GetIconIndex(_Path, _Type)                                              ; Get file's icon index
 {
+    if g_CONFIG.ShowIcon = 0
+        Return 0                                                        ; No icon to show, return 0
     Switch (_Type) {
     Case "DIR" : Return 1
     Case "FUNC","CMD","TIP","提示": Return 2
@@ -1029,7 +1031,7 @@ UserCommand() {
 }
 
 NewCommand() {                                                          ; From command "New Command" or GUI context menu "New Command"
-    CmdMgr(g_SECTION.USERCMD, "", "", g_RUNTIME.Arg, 1, "")
+    CmdMgr(g_SECTION.USERCMD, , , g_RUNTIME.Arg, 1, "")
 }
 
 EditCommand() {
@@ -1095,16 +1097,16 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     Gui, CmdMgr:Font, S9 Norm, Microsoft Yahei
     Gui, CmdMgr:Add, GroupBox, w600 h260, % g_LNG.701
     Gui, CmdMgr:Add, Text, x25 yp+30, % g_LNG.702
-    Gui, CmdMgr:Add, DropDownList, x145 yp-5 w130 v_Type, % StrReplace("File|Dir|Cmd|URL|Func", _Type, _Type . "|",, 1)
-    Gui, CmdMgr:Add, Text, x300 yp+5, % g_LNG.705
-    Gui, CmdMgr:Add, Edit, x420 yp-5 w130 Disabled v_Section, %_Section%
+    Gui, CmdMgr:Add, DropDownList, x160 yp-5 w130 v_Type, % StrReplace("File|Dir|Cmd|URL|Func", _Type, _Type . "|",, 1)
+    Gui, CmdMgr:Add, Text, x315 yp+5, % g_LNG.705
+    Gui, CmdMgr:Add, Edit, x435 yp-5 w130 Disabled v_Section, %_Section%
     Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.703
-    Gui, CmdMgr:Add, Edit, x145 yp-5 w405 -WantReturn v_Path, %_Path%
-    Gui, CmdMgr:Add, Button, x560 yp w30 hp gSelectCmdPath, ...
+    Gui, CmdMgr:Add, Edit, x160 yp-5 w405 -WantReturn v_Path, %_Path%
+    Gui, CmdMgr:Add, Button, x575 yp w30 hp gSelectCmdPath, ...
     Gui, CmdMgr:Add, Text, x25 yp+80, % g_LNG.704
-    Gui, CmdMgr:Add, Edit, x145 yp-5 w405 -WantReturn v_Desc, %_Desc%
+    Gui, CmdMgr:Add, Edit, x160 yp-5 w405 -WantReturn v_Desc, %_Desc%
     Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.706
-    Gui, CmdMgr:Add, Edit, x145 yp-5 w405 +Number v_Rank, %_Rank%
+    Gui, CmdMgr:Add, Edit, x160 yp-5 w405 +Number v_Rank, %_Rank%
     Gui, CmdMgr:Add, Button, Default x420 w90 gCmdMgrButtonOK, % g_LNG.7
     Gui, CmdMgr:Add, Button, x521 yp w90 gCmdMgrButtonCancel, % g_LNG.8
     Gui, CmdMgr:Show, AutoSize, % g_LNG.700
@@ -1254,7 +1256,7 @@ Options(Arg := "", ActTab := 1) {                                       ; Option
     Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.171
     Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1|2|3|4|5|6|7|8|9| ; ListRows limit <= 9
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||23,0,460,AutoHdr|33,46,460,AutoHdr"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||20,0,460,AutoHdr|30,46,460,AutoHdr"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
     Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
     Gui, Setting:Add, Text, x345 yp, x
@@ -1311,17 +1313,17 @@ Options(Arg := "", ActTab := 1) {                                       ; Option
     Gui, Setting:Add, Text, x395 yp, % g_LNG.200
 
     Gui, Setting:Add, GroupBox, x24 yp+38 w500 h140, % g_LNG.201
-    Gui, Setting:Add, Text, x33 yp+30 , % g_LNG.202
+    Gui, Setting:Add, Text, x33 yp+30 , % g_LNG.203
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey1, % g_HOTKEY.Hotkey1
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
+    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
     Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger1, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|",, 1)
     Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.204
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey2, % g_HOTKEY.Hotkey2
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
+    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
     Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger2, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|",, 1)
     Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.206
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey3, % g_HOTKEY.Hotkey3
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.203
+    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
     Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger3, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|",, 1)
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
@@ -1765,11 +1767,11 @@ SetLanguage() {                                                         ; Max st
     ENG.104 := "Show tray icon in the system taskbar"
     ENG.105 := "Close window on losing focus"
     ENG.106 := "Always stay on top"
-    ENG.107 := "Show Caption - Show window title bar"
+    ENG.107 := "Show window caption"
     ENG.108 := "Use Windows XP Theme instead of Classic Theme"
-    ENG.109 := "[ESC] to clear input, press again to close window (Untick: Close directly)"
+    ENG.109 := "Press [ESC] to clear input, press again to close window (Untick: Close directly)"
     ENG.110 := "Keep last input and matching result on close"
-    ENG.111 := "Show Icon - Show file/folder/app icon in result"
+    ENG.111 := "Show command icon in the result list"
     ENG.112 := "SendToGetLnk - Retrieve .lnk target on SendTo"
     ENG.113 := "Save commands execution history"
     ENG.114 := "Save application log"
@@ -1813,7 +1815,7 @@ SetLanguage() {                                                         ; Max st
     ENG.182 := "Select font"
     ENG.183 := "Select color"
     ENG.190 := "Hotkey"                                                 ; 190~209 Hotkey
-    ENG.191 := "Activate"
+    ENG.191 := "Activate Hotkey (Global)"
     ENG.192 := "Primary Hotkey"
     ENG.193 := "Secondary Hotkey"
     ENG.194 := "Two hotkeys can be set simultaneously"
@@ -1823,9 +1825,9 @@ SetLanguage() {                                                         ; Max st
     ENG.198 := "Alt + No."
     ENG.199 := "Select command"
     ENG.200 := "Ctrl + No."
-    ENG.201 := "Actions and Hotkeys (non-global)"
-    ENG.202 := "Hotkey 1"
-    ENG.203 := "Trigger action"
+    ENG.201 := "Actions and Hotkeys (Non-Global)"
+    ENG.202 := "Trigger Action"
+    ENG.203 := "Hotkey 1"
     ENG.204 := "Hotkey 2"
     ENG.206 := "Hotkey 3"
     ENG.210 := "Listary"                                                ; 210~219 Listary
@@ -1881,8 +1883,8 @@ SetLanguage() {                                                         ; Max st
     ENG.700 := "Commander Manager"                                      ; 700+ Commander Manager
     ENG.701 := "Command"
     ENG.702 := "Command type"
-    ENG.703 := "Command path"
-    ENG.704 := "Description"
+    ENG.703 := "Command line"
+    ENG.704 := "ShortCut/Description"
     ENG.705 := "Command Section"
     ENG.706 := "Command Rank"
     ENG.800 := "Do you really want to delete the following command from section" ; 800+ Msgbox
@@ -1928,9 +1930,9 @@ SetLanguage() {                                                         ; Max st
     CHN.106 := "窗口置顶"
     CHN.107 := "显示窗口标题栏"
     CHN.108 := "使用 Windows XP 主题"
-    CHN.109 := "[Esc] 清除输入, 再次按下关闭窗口 (取消勾选: 直接关闭窗口)"
+    CHN.109 := "按下 [ESC] 清除输入, 再次按下关闭窗口 (取消勾选: 直接关闭窗口)"
     CHN.110 := "保留最近一次输入和匹配结果"
-    CHN.111 := "显示图标 - 在结果中显示文件/文件夹/应用程序图标"
+    CHN.111 := "显示命令图标"
     CHN.112 := "使用“发送到”时, 追溯 .lnk 目标文件"
     CHN.113 := "保存历史记录"
     CHN.114 := "保存运行日志"
@@ -1974,19 +1976,19 @@ SetLanguage() {                                                         ; Max st
     CHN.182 := "选择字体"
     CHN.183 := "选择颜色"
     CHN.190 := "热键"                                                   ; 190~209 Hotkey
-    CHN.191 := "激活"
+    CHN.191 := "激活热键 (全局)"
     CHN.192 := "主热键"
     CHN.193 := "辅热键"
     CHN.194 := "可以同时设置两个热键"
-    CHN.195 := "重置热键"
+    CHN.195 := "重置激活热键"
     CHN.196 := "命令"
     CHN.197 := "执行命令"
     CHN.198 := "Alt + 序号"
     CHN.199 := "选择命令"
     CHN.200 := "Ctrl + 序号"
     CHN.201 := "快捷操作和热键 (非全局)"
-    CHN.202 := "热键 1"
-    CHN.203 := "触发操作"
+    CHN.202 := "触发操作"
+    CHN.203 := "热键 1"
     CHN.204 := "热键 2"
     CHN.206 := "热键 3"
     CHN.210 := "Listary"                                                ; 210~219 Listary
@@ -2042,9 +2044,9 @@ SetLanguage() {                                                         ; Max st
     CHN.700 := "命令管理器"                                              ; 700+ 命令管理器
     CHN.701 := "命令"
     CHN.702 := "命令类型"
-    CHN.703 := "命令路径"
-    CHN.704 := "命令描述"
-    CHN.705 := "命令节段"
+    CHN.703 := "命令行"
+    CHN.704 := "快捷项/描述 (可搜索)"
+    CHN.705 := "储存节段"
     CHN.706 := "命令权重"
     CHN.800 := "您确定要从命令节段"                                      ; 800+ 消息内容
     CHN.801 := "中删除以下命令吗?"
