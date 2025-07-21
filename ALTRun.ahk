@@ -73,12 +73,13 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,FileMgrID      : "ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
             ,ExcludeWin     : "ahk_class SysListView32, ahk_exe Explorer.exe"
             ,Chinese        : InStr("7804,0004,0804,1004", A_Language) ? 1 : 0}
-, g_HOTKEY  := {Hotkey1     : "^o"
-            ,Trigger1       : "Options"
-            ,Hotkey2        : ""
-            ,Trigger2       : "None"
-            ,Hotkey3        : ""
-            ,Trigger3       : "None"
+, g_HOTKEY  := {Hotkey1     : "F1"      ,Trigger1   : "Help"
+            ,Hotkey2        : "F2"      ,Trigger2   : "Options"
+            ,Hotkey3        : "F3"      ,Trigger3   : "EditCommand"
+            ,Hotkey4        : "F4"      ,Trigger4   : "UserCommand"
+            ,Hotkey5        : "^d"      ,Trigger5   : "OpenContainer"
+            ,Hotkey6        : "^n"      ,Trigger6   : "NewCommand"
+            ,Hotkey7        : ""        ,Trigger7   : "None"
             ,CondTitle      : "ahk_exe RAPTW.exe"
             ,CondHotkey     : "~Mbutton"
             ,CondAction     : "PTTools"
@@ -104,7 +105,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "Default"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.07.18"
+            ,WinName        : "ALTRun - Ver 2025.07.21"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
@@ -305,7 +306,7 @@ Loop, % g_GUI.ListRows
     Hotkey, ^%A_Index%, GotoCommand, UseErrorLevel        ; Ctrl + No. locate command
 }
 
-Loop, 3
+Loop, 7
     Hotkey, % g_HOTKEY["Hotkey"A_Index], % g_HOTKEY["Trigger"A_Index], UseErrorLevel ; Set Hotkey <-> Trigger, UseErrorLevel to Skips any warning dialogs
 
 Hotkey, IfWinActive, % g_HOTKEY.CondTitle                 ; Conditional hotkey-action, mainly for workflow RAPT-MButton-PTTools
@@ -1306,25 +1307,14 @@ Options(Arg := "", ActTab := 1) {                                       ; Option
     Gui, Setting:Add, Text, x33 yp+35, % g_LNG.194
     Gui, Setting:Add, Link, x285 yp w230 gResetHotkey, % "<a>" g_LNG.195 "</a>"
 
-    Gui, Setting:Add, GroupBox, x24 yp+35 w500 h55, % g_LNG.196
-    Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.197
-    Gui, Setting:Add, Text, x183 yp , % g_LNG.198
-    Gui, Setting:Add, Text, x285 yp, % g_LNG.199
-    Gui, Setting:Add, Text, x395 yp, % g_LNG.200
-
-    Gui, Setting:Add, GroupBox, x24 yp+38 w500 h140, % g_LNG.201
-    Gui, Setting:Add, Text, x33 yp+30 , % g_LNG.203
-    Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey1, % g_HOTKEY.Hotkey1
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger1, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger1, g_HOTKEY.Trigger1 . "|",, 1)
-    Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.204
-    Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey2, % g_HOTKEY.Hotkey2
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger2, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger2, g_HOTKEY.Trigger2 . "|",, 1)
-    Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.206
-    Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_Hotkey3, % g_HOTKEY.Hotkey3
-    Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger3, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.Trigger3, g_HOTKEY.Trigger3 . "|",, 1)
+    Gui, Setting:Add, GroupBox, x24 yp+38 w500 h290, % g_LNG.200
+    loop 7
+    {
+        Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.201
+        Gui, Setting:Add, Hotkey, x143 yp-5 w120 vg_Hotkey%A_Index%, % g_HOTKEY["Hotkey" A_Index]
+        Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
+        Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger%A_Index%, % SetFuncList(g_HOTKEY["Trigger" A_Index])
+    }
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h145, % g_LNG.211
@@ -1364,7 +1354,7 @@ Options(Arg := "", ActTab := 1) {                                       ; Option
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.231
     Gui, Setting:Add, ComboBox, x183 yp-5 w80 vg_CondHotkey, % g_HOTKEY.CondHotkey "||"
     Gui, Setting:Add, Text, x300 yp+5, % g_LNG.232
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_CondAction, % StrReplace("None|" g_RUNTIME.FuncList, g_HOTKEY.CondAction, g_HOTKEY.CondAction . "|",, 1)
+    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_CondAction, % SetFuncList(g_HOTKEY.CondAction)
 
     Gui, Setting:Tab, 7 ; USAGE TAB
     Gui, Setting:Add, GroupBox, x66 y80 w445 h300,
@@ -1410,6 +1400,11 @@ Options(Arg := "", ActTab := 1) {                                       ; Option
 ResetHotkey() {
     GuiControl, Setting:, g_GlobalHotkey1, !Space
     GuiControl, Setting:, g_GlobalHotkey2, !r
+}
+
+SetFuncList(FuncName) {                                                 ; Set the DropDownList items for FuncName
+    Global
+    return StrReplace("None|" g_RUNTIME.FuncList, FuncName, FuncName . "|",, 1)
 }
 
 SelectFont() {
@@ -1543,8 +1538,10 @@ LoadConfig(Arg) {                                                       ; 加载
             Func | Help | ALTRun Help & About (F1)=99
             Func | Options | ALTRun Options Preference Settings (F2)=99
             Func | Reload | ALTRun Reload=99
-            Func | NewCommand | New Command=99
+            Func | EditCommand | Edit current command (F3)=99
             Func | UserCommand | ALTRun User-defined command (F4)=99
+            Func | NewCommand | New Command=99
+            Func | OpenContainer | Locate cmd's dir with File Manager=99
             Func | Usage | ALTRun Usage Status=99
             Func | Reindex | Reindex search database=99
             Func | Everything | Search by Everything=99
@@ -1820,14 +1817,10 @@ SetLanguage() {                                                         ; Max st
     ENG.193 := "Secondary Hotkey"
     ENG.194 := "Two hotkeys can be set simultaneously"
     ENG.195 := "Reset hotkey"
-    ENG.196 := "Commands"
-    ENG.197 := "Execute command"
-    ENG.198 := "Alt + No."
-    ENG.199 := "Select command"
-    ENG.200 := "Ctrl + No."
-    ENG.201 := "Actions and Hotkeys (Non-Global)"
-    ENG.202 := "Trigger Action"
-    ENG.203 := "Hotkey 1"
+    ENG.200 := "Actions and Hotkeys (Non-Global)"
+    ENG.201 := "Hotkey"
+    ENG.202 := "Trigger action"
+    ENG.203 := "Hotkey"
     ENG.204 := "Hotkey 2"
     ENG.206 := "Hotkey 3"
     ENG.210 := "Listary"                                                ; 210~219 Listary
@@ -1906,7 +1899,7 @@ SetLanguage() {                                                         ; Max st
     CHN.54  := "上/下箭头 = 上/下一个命令"
     CHN.55  := "Esc = 清除输入 / 关闭窗口"
     CHN.56  := "回车 = 运行当前命令"
-    CHN.57  := "Alt + 序号 = 运行特定命令"
+    CHN.57  := "Alt + 序号 = 运行指定的命令"
     CHN.58  := "以 + 开头 = 新建命令"
     CHN.59  := "F3 = 直接编辑当前命令 (.ini)"
     CHN.60  := "F2 = 配置选项设置"
@@ -1914,7 +1907,7 @@ SetLanguage() {                                                         ; Max st
     CHN.62  := "F1 = ALTRun 帮助&关于"
     CHN.63  := "ALT + 空格 = 显示 / 隐藏窗口"
     CHN.64  := "Ctrl+Q = 重新加载 ALTRun"
-    CHN.65  := "Ctrl + 序号 = 选择特定命令"
+    CHN.65  := "Ctrl + 序号 = 选择指定的命令"
     CHN.66  := "Alt + F4 = 退出"
     CHN.67  := "Ctrl+D = 使用文件管理器定位当前命令所在目录"
     CHN.68  := "F4 = 直接编辑用户定义命令 (.ini)"
@@ -1981,12 +1974,8 @@ SetLanguage() {                                                         ; Max st
     CHN.193 := "辅热键"
     CHN.194 := "可以同时设置两个热键"
     CHN.195 := "重置激活热键"
-    CHN.196 := "命令"
-    CHN.197 := "执行命令"
-    CHN.198 := "Alt + 序号"
-    CHN.199 := "选择命令"
-    CHN.200 := "Ctrl + 序号"
-    CHN.201 := "快捷操作和热键 (非全局)"
+    CHN.200 := "快捷操作和热键 (非全局)"
+    CHN.201 := "快捷键"
     CHN.202 := "触发操作"
     CHN.203 := "热键 1"
     CHN.204 := "热键 2"
