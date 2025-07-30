@@ -942,11 +942,11 @@ Reindex() {                                                             ; Re-cre
 }
 
 Help() {
-    Options("Help", 8)                                                  ; Options window 8th (about) tab
+    Options(8)
 }
 
 Usage() {
-    Options("Usage", 7)
+    Options(7)
 }
 
 Update() {
@@ -1223,9 +1223,10 @@ FormatThousand(Number) {                                                ; Functi
     Return RegExReplace(Number, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",")
 }
 
-Options(Arg := "", ActTab := 1) {                                       ; Options settings, 1st parameter is to avoid menu like [Option`tF2] disturb ActTab
+Options(ActTab := 1) {
     Global                                                              ; Assume-global mode
     t := A_TickCount
+    ActTab := ActTab+0 ? ActTab : 1                                     ; Convert ActTab to number, default is 1 (for case like [Option`tF2])
     Gui, Setting:New, +OwnDialogs +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1 ; Omit +OwnerMain: due to lug options window
     Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
     Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
@@ -1393,8 +1394,8 @@ Options(Arg := "", ActTab := 1) {                                       ; Option
     Hotkey, % g_HOTKEY.GlobalHotkey1, Off, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, Off, UseErrorLevel
     t := A_TickCount - t
-    g_LOG.Debug("Loading options window...Arg=" Arg ", ActTab=" ActTab ", elapsed time=" t "ms")
-    OutputDebug, % "Loading options window...Arg=" Arg ", ActTab=" ActTab ", elapsed time=" t "ms"
+    g_LOG.Debug("Loading options window... ActTab=" ActTab ", elapsed time=" t "ms")
+    OutputDebug, % "Loading options window... ActTab=" ActTab ", elapsed time=" t "ms"
 }
 
 ResetHotkey() {
@@ -1616,14 +1617,15 @@ LoadConfig(Arg) {                                                       ; 加载
             ; Format: Command Type | Command | Description=Rank
             ; Command type: File, Dir, CMD, URL
             ;
-            Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=1
-            Dir | `%OneDrive`% | OneDrive=1
-            Dir | A_ScriptDir | ALTRun Program Dir=99
-            Cmd | cmd.exe /k ipconfig | Check IP Address=1
-            Cmd | Control TimeDate.cpl | Date and Time=66
-            Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=66
-            URL | www.google.com | Google=1
-            File | C:\Apps\TotalCMD64\TOTALCMD64.exe=1
+            Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=9
+            Dir | `%OneDrive`% | OneDrive=9
+            Dir | A_ScriptDir | ALTRun Program Dir=9
+            Cmd | cmd.exe /k ipconfig | Check IP Address=9
+            Cmd | explorer /select,C:\Program Files | Open C: and locate to Program Files=9
+            Cmd | Control TimeDate.cpl | Date and Time=9
+            Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
+            URL | www.google.com | Google=9
+            File | C:\Apps\TotalCMD64\TOTALCMD64.exe=9
             ), % g_RUNTIME.Ini, % g_SECTION.USERCMD
             USERCMDSEC := IniRead(g_SECTION.USERCMD)
         }
