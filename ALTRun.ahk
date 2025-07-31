@@ -117,10 +117,10 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,LV_ContextMenu : []
             ,TrayMenu       : []
             ,FuncList       : ""
-            ,RegEx          : "imS)"}                                   ; 字符匹配的正则表达式
-, g_USAGE   := {Max         : 1
-            ,AppDate        : A_YYYY A_MM A_DD
-            ,A_YYYY A_MM A_DD : 1}
+            ,RegEx          : "imS)"                                    ; 字符匹配的正则表达式
+            ,Max            : 1
+            ,AppDate        : A_YYYY A_MM A_DD}
+, g_USAGE   := {A_YYYY A_MM A_DD : 1}
 
 g_LOG.Debug("///// ALTRun is starting /////")
 LoadConfig("initialize")                                                ; Load ini config, iniWrite create ini whenever not exist
@@ -212,10 +212,7 @@ Options_X    := g_CONFIG.ShowBtnOpt * 10
 
 Gui, Main:Color, % g_GUI.WinColor, % g_GUI.CtrlColor
 Gui, Main:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
-Gui, % "Main:" (g_CONFIG.AlwaysOnTop ? "+AlwaysOnTop" : "-AlwaysOnTop")
-Gui, % "Main:" (g_CONFIG.ShowCaption ? "+Caption" : "-Caption")
-Gui, % "Main:" (g_CONFIG.XPthemeBg ? "+Theme" : "-Theme")
-Gui, Main:+HwndMainGuiHwnd
+Gui, % "Main:+HwndMainGuiHwnd " (g_CONFIG.AlwaysOnTop ? " +AlwaysOnTop" : " -AlwaysOnTop") (g_CONFIG.ShowCaption ? " +Caption" : " -Caption") (g_CONFIG.XPthemeBg ? " +Theme" : " -Theme")
 Gui, Main:Default ; Set default GUI before any ListView / statusbar update
 Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, % g_LNG.13
 Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, % g_LNG.11
@@ -266,7 +263,7 @@ if (A_Args[1] = "-SendTo") {
     CmdMgr(g_SECTION.USERCMD, Type, Path, Desc, 1, "")                  ; Add new command to database
 }
 
-Gui, Main:Show, % "w" g_GUI.WinX " h" g_GUI.WinY " Center " g_RUNTIME.WinHide, % g_RUNTIME.WinName
+Gui, Main:Show, % "w" g_GUI.WinX " h" g_GUI.WinY " Center AutoSize" g_RUNTIME.WinHide, % g_RUNTIME.WinName
 
 if (g_GUI.Transparency < 250)
     WinSet, Transparent, % g_GUI.Transparency, % g_RUNTIME.WinName
@@ -736,13 +733,13 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
 
 UpdateUsage() {
     currDate := A_YYYY . A_MM . A_DD
-    if (g_USAGE.AppDate != currDate) {
-        g_USAGE.AppDate := currDate
+    if (g_RUNTIME.AppDate != currDate) {
+        g_RUNTIME.AppDate := currDate
         g_USAGE[currDate] := 1
     } else {
         g_USAGE[currDate]++
     }
-    g_USAGE.Max := Max(g_USAGE.Max, g_USAGE[currDate])
+    g_RUNTIME.Max := Max(g_RUNTIME.Max, g_USAGE[currDate])
     IniWrite, % g_USAGE[currDate], % g_RUNTIME.Ini, % g_SECTION.USAGE, %currDate%
 }
 
@@ -1110,7 +1107,7 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     Gui, CmdMgr:Add, Edit, x160 yp-5 w405 +Number v_Rank, %_Rank%
     Gui, CmdMgr:Add, Button, Default x420 w90 gCmdMgrButtonOK, % g_LNG.7
     Gui, CmdMgr:Add, Button, x521 yp w90 gCmdMgrButtonCancel, % g_LNG.8
-    Gui, CmdMgr:Show, AutoSize, % g_LNG.700
+    Gui, CmdMgr:Show, Center, % g_LNG.700
     GuiControl, Focus, _Path
 }
 
@@ -1227,7 +1224,7 @@ Options(ActTab := 1) {
     Global                                                              ; Assume-global mode
     t := A_TickCount
     ActTab := ActTab+0 ? ActTab : 1                                     ; Convert ActTab to number, default is 1 (for case like [Option`tF2])
-    Gui, Setting:New, +OwnDialogs +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1 ; Omit +OwnerMain: due to lug options window
+    Gui, Setting:New, +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1 ; Omit +OwnerMain, +OwnDialogs, lagging window
     Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
     Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
     Gui, Setting:Tab, 1 ; CONFIG Tab
@@ -1256,7 +1253,7 @@ Options(ActTab := 1) {
     Gui, Setting:Tab, 3 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, % g_LNG.170
     Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.171
-    Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1|2|3|4|5|6|7|8|9| ; ListRows limit <= 9
+    Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1||2|3|4|5|6|7|8|9| ; ListRows limit <= 9
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||20,0,460,AutoHdr|30,46,460,AutoHdr"
     Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
@@ -1332,7 +1329,7 @@ Options(ActTab := 1) {
     Gui, Setting:Add, Hotkey, x183 yp-5 w330 vg_ExplorerDir, % g_HOTKEY.ExplorerDir
     Gui, Setting:Add, CheckBox, % "x33 yp+45 vg_AutoSwitchDir checked" g_CONFIG.AutoSwitchDir, % g_LNG.218
 
-    Gui, Setting:Tab, 6 ; Plugins TAB
+    Gui, Setting:Tab, 6 ; PLUGINS TAB
     Gui, Setting:Add, GroupBox, w500 h110, % g_LNG.221
     Gui, Setting:Add, Text, x33 yp+30, % g_LNG.222
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_exe Notepad4.exe|"
@@ -1360,18 +1357,12 @@ Options(ActTab := 1) {
     Gui, Setting:Tab, 7 ; USAGE TAB
     Gui, Setting:Add, GroupBox, x66 y80 w445 h300,
 
-    OffsetDate := A_Now
-    EnvAdd, OffsetDate, -30, Days
-    Local UsageMax := g_USAGE.Max + 10
-
-    Loop, 30
-    {
-        EnvAdd, OffsetDate, +1, Days
-        Date := SubStr(OffsetDate, 1, 8)
-        Gui, Setting:Add, Progress, % "c94DD88 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" UsageMax, % g_USAGE[Date]
+    for Date, Count in g_USAGE {
+        Gui, Setting:Add, Progress, % "c94DD88 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME.Max+10, % Count
     }
-    Gui, Setting:Add, Text, x24 yp-5 cGray, % UsageMax
-    Gui, Setting:Add, Text, x24 yp+140 cGray, % Round(UsageMax/2)
+
+    Gui, Setting:Add, Text, x24 yp-5 cGray, % g_RUNTIME.Max
+    Gui, Setting:Add, Text, x24 yp+140 cGray, % Round(g_RUNTIME.Max/2)
     Gui, Setting:Add, Text, x24 yp+140 cGray, 0
     Gui, Setting:Add, Text, x66 yp+15 cGray, % g_LNG.500
     Gui, Setting:Add, Text, x476 yp cGray, % g_LNG.501
@@ -1389,7 +1380,7 @@ Options(ActTab := 1) {
     Gui, Setting:Add, Button, Default x278 w80 vSettingButtonOK gSettingButtonOK, % g_LNG.7
     Gui, Setting:Add, Button, x368 yp w80 gSettingButtonCancel, % g_LNG.8
     Gui, Setting:Add, Button, x458 yp w80 gSettingButtonHelp, % g_LNG.9
-    Gui, Setting:Show,, % g_LNG.1
+    Gui, Setting:Show, Center, % g_LNG.1
 
     Hotkey, % g_HOTKEY.GlobalHotkey1, Off, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, Off, UseErrorLevel
@@ -1509,21 +1500,26 @@ LoadConfig(Arg) {                                                       ; 加载
 
         OffsetDate := A_Now
         EnvAdd, OffsetDate, -30, Days
-        OffsetDate := SubStr(OffsetDate, 1, 8)
-    
-        USAGE := IniRead(g_SECTION.USAGE)
-        Loop, Parse, USAGE, `n
+
+        Loop, Parse, % IniRead(g_SECTION.USAGE), `n
         {
             Date  := StrSplit(A_LoopField, "=")[1]
             Count := StrSplit(A_LoopField, "=")[2]
 
-            if (Date <= OffsetDate) {
-                IniDelete, % g_RUNTIME.Ini, % g_SECTION.USAGE, %Date%   ; Clean up usage record before 30 days
+            if (Date <= SubStr(OffsetDate, 1, 8)) {                     ; Clean up usage record before 30 days (YYYYMMDD format)
+                IniDelete, % g_RUNTIME.Ini, % g_SECTION.USAGE, %Date%
                 Continue
             }
 
             g_USAGE[Date] := Count
-            g_USAGE.Max   := Max(g_USAGE.Max, Count)
+            g_RUNTIME.Max := Max(g_RUNTIME.Max, Count)
+        }
+
+        Loop, 30
+        {
+            EnvAdd, OffsetDate, +1, Days
+            Date := SubStr(OffsetDate, 1, 8)
+            g_USAGE[Date] := g_USAGE.HasKey(Date) ? g_USAGE[Date] : 0
         }
     }
 
