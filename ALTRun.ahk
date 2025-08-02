@@ -61,7 +61,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ShortenPath    : 1
             ,StruCalc       : 0
             ,RunCount       : 0
-            ,HistoryLen     : 15
+            ,HistoryLen     : 10
             ,DoubleBuffer   : 1
             ,AutoSwitchDir  : 0
             ,FileMgr        : "Explorer.exe"
@@ -105,7 +105,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "Default"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.07.21"
+            ,WinName        : "ALTRun - Ver 2025.08.01"
             ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
@@ -204,20 +204,20 @@ g_LOG.Debug("Updating 'StartMenu' setting..." UpdateStartMenu(g_CONFIG.InStartMe
 ;===================================================
 ; 主窗口配置代码
 ;===================================================
-Input_W      := g_GUI.ListX - g_CONFIG.ShowBtnRun * 90 - g_CONFIG.ShowBtnOpt * 90
-Enter_W      := g_CONFIG.ShowBtnRun * 80
-Enter_X      := g_CONFIG.ShowBtnRun * 10
-Options_W    := g_CONFIG.ShowBtnOpt * 80
-Options_X    := g_CONFIG.ShowBtnOpt * 10
+Input_W := g_GUI.ListX - g_CONFIG.ShowBtnRun * 90 - g_CONFIG.ShowBtnOpt * 90
+Enter_W := g_CONFIG.ShowBtnRun * 80
+Enter_X := g_CONFIG.ShowBtnRun * 10
+Opt_W   := g_CONFIG.ShowBtnOpt * 80
+Opt_X   := g_CONFIG.ShowBtnOpt * 10
 
 Gui, Main:Color, % g_GUI.WinColor, % g_GUI.CtrlColor
 Gui, Main:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
-Gui, % "Main:+HwndMainGuiHwnd " (g_CONFIG.AlwaysOnTop ? " +AlwaysOnTop" : " -AlwaysOnTop") (g_CONFIG.ShowCaption ? " +Caption" : " -Caption") (g_CONFIG.XPthemeBg ? " +Theme" : " -Theme")
+Gui, % "Main:+HwndMainGuiHwnd" (g_CONFIG.AlwaysOnTop ? " +AlwaysOnTop" : " -AlwaysOnTop") (g_CONFIG.ShowCaption ? " +Caption" : " -Caption") (g_CONFIG.XPthemeBg ? " +Theme" : " -Theme")
 Gui, Main:Default ; Set default GUI before any ListView / statusbar update
 Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, % g_LNG.13
 Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, % g_LNG.11
-Gui, Main:Add, Button, % "x+"Options_X " yp W" Options_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, % g_LNG.12
-Gui, Main:Add, ListView, % "x12 ys+35 W" g_GUI.ListX " H" g_GUI.ListY " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), % g_LNG.10 ; LV0x10000 Paints via double-buffering, which reduces flicker
+Gui, Main:Add, Button, % "x+"Opt_X " yp W" Opt_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, % g_LNG.12
+Gui, Main:Add, ListView, % "x12 ys+36 W" g_GUI.ListX " H" g_GUI.ListY " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), % g_LNG.10 ; LV0x10000 Paints via double-buffering, which reduces flicker
 Gui, Main:Add, Picture, x0 y0 0x4000000, % g_RUNTIME.BGPic
 Gui, Main:Font,,
 Gui, Main:Font, % StrSplit(g_GUI.SBFont, ",")[2], % StrSplit(g_GUI.SBFont, ",")[1]
@@ -263,7 +263,7 @@ if (A_Args[1] = "-SendTo") {
     CmdMgr(g_SECTION.USERCMD, Type, Path, Desc, 1, "")                  ; Add new command to database
 }
 
-Gui, Main:Show, % "w" g_GUI.WinX " h" g_GUI.WinY " Center AutoSize" g_RUNTIME.WinHide, % g_RUNTIME.WinName
+Gui, Main:Show, % "w" g_GUI.WinX " h" g_GUI.WinY " Center" g_RUNTIME.WinHide, % g_RUNTIME.WinName
 
 if (g_GUI.Transparency < 250)
     WinSet, Transparent, % g_GUI.Transparency, % g_RUNTIME.WinName
@@ -523,7 +523,7 @@ RunCommand(originCmd)
 
         IniDelete, % g_RUNTIME.Ini, % g_SECTION.HISTORY
         for index, element in g_HISTORYS
-            IniWrite, %element%, % g_RUNTIME.Ini, % g_SECTION.HISTORY, %index% ; Save command history
+            IniWrite(g_SECTION.HISTORY, index, element)                 ; Save command history
     }
 
     UpdateRunCount()
@@ -724,7 +724,7 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
         if (Rank < 0)                                                   ; 如果降到负数,都设置成 -1,然后屏蔽/排除
             Rank := -1
 
-        IniWrite, %Rank%, % g_RUNTIME.Ini, %A_LoopField%, %originCmd% ; Update new Rank for originCmd
+        IniWrite(A_LoopField, originCmd, Rank)                          ; Update new Rank for originCmd
 
         showRank ? SetStatusBar("Rank for current command : " Rank)
     }
@@ -740,12 +740,12 @@ UpdateUsage() {
         g_USAGE[currDate]++
     }
     g_RUNTIME.Max := Max(g_RUNTIME.Max, g_USAGE[currDate])
-    IniWrite, % g_USAGE[currDate], % g_RUNTIME.Ini, % g_SECTION.USAGE, %currDate%
+    IniWrite(g_SECTION.USAGE, currDate, g_USAGE[currDate])
 }
 
 UpdateRunCount() {
     g_CONFIG.RunCount++
-    IniWrite, % g_CONFIG.RunCount, % g_RUNTIME.Ini, % g_SECTION.CONFIG, RunCount ; Record run counting
+    IniWrite(g_SECTION.CONFIG, "RunCount", g_CONFIG.RunCount)           ; Update RunCount in g_CONFIG
     SetStatusBar()
 }
 
@@ -926,7 +926,7 @@ Reindex() {                                                             ; Re-cre
                 if (g_CONFIG.IndexExclude != "" && RegExMatch(A_LoopFileLongPath, g_CONFIG.IndexExclude))
                     continue                                            ; Skip this file and move on to the next loop.
 
-                IniWrite, 1, % g_RUNTIME.Ini, % g_SECTION.INDEX, File | %A_LoopFileLongPath% ; Assign initial rank to 1
+                IniWrite(g_SECTION.INDEX, "File | " A_LoopFileLongPath, "1") ; Store file type for later use
                 Progress, %A_Index%, %A_LoopFileName%, ReIndexing..., Reindex
             }
         }
@@ -1127,7 +1127,7 @@ SelectCmdPath() {
 CmdMgrButtonOK() {
     Global
     Gui, CmdMgr:Submit
-    _Desc := _Desc ? "| " _Desc : _Desc
+    _Desc := _Desc ? " | " _Desc : _Desc
 
     if (_Path = "")
     {
@@ -1135,7 +1135,7 @@ CmdMgrButtonOK() {
         Return
     } else {
         IniDelete, % g_RUNTIME.Ini, % _Section, % _OriginCmd
-        IniWrite, %_Rank%, % g_RUNTIME.Ini, %_Section%, %_Type% | %_Path% %_Desc%
+        IniWrite(_Section, _Type " | " _Path _Desc, _Rank)
         if (!ErrorLevel)
             MsgBox,64, Command Manager, The following command added / modified successfully!`n`n[ %_Section% ]`n`n%_Type% | %_Path% %_Desc% = %_Rank%
     }
@@ -1241,31 +1241,18 @@ Options(ActTab := 1) {
     Gui, Setting:Add, Text, x24 yp+40, % g_LNG.152
     Gui, Setting:Add, DropDownList, % "x130 yp-5 w394 Sort vg_HistoryLen Choose" g_CONFIG.HistoryLen * 0.1, 10|20|30|40|50|60
 
-    Gui, Setting:Tab, 2 ; INDEX Tab
-    Gui, Setting:Add, GroupBox, w500 h130, % g_LNG.160
-    Gui, Setting:Add, Text, x33 yp+25, % g_LNG.161
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexDir, % g_CONFIG.IndexDir "||A_ProgramsCommon,A_StartMenu"
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.162
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexType, % g_CONFIG.IndexType "||*.lnk,*.exe"
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.163
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexExclude, % g_CONFIG.IndexExclude "||Uninstall *"
-
-    Gui, Setting:Tab, 3 ; GUI Tab
+    Gui, Setting:Tab, 2 ; GUI Tab
     Gui, Setting:Add, GroupBox, w500 h420, % g_LNG.170
     Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.171
     Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1||2|3|4|5|6|7|8|9| ; ListRows limit <= 9
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.172
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.172
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||20,0,460,AutoHdr|30,46,460,AutoHdr"
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.176
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.176
     Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
     Gui, Setting:Add, Text, x345 yp, x
     Gui, Setting:Add, Edit, x393 yp w120 +Number vg_WinY, % g_GUI.WinY
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.177
-    Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_ListX, % g_GUI.ListX
-    Gui, Setting:Add, Text, x345 yp, x
-    Gui, Setting:Add, Edit, x393 yp w120 +Number vg_ListY, % g_GUI.ListY
 
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.173
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.173
     Gui, Setting:Font,,
     Gui, Setting:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
     Gui, Setting:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_Font, % g_GUI.Font
@@ -1286,17 +1273,16 @@ Options(ActTab := 1) {
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.178
     Gui, Setting:Add, Edit, % "x183 yp w240 r1 -E0x200 +ReadOnly vg_CtrlColor c" g_GUI.CtrlColor, % g_GUI.CtrlColor
     Gui, Setting:Add, Button, x433 yp-5 w80 vSelectCtrlColor gSelectCtrlColor, % g_LNG.183
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.179
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.179
     Gui, Setting:Add, Edit, % "x183 yp w240 r1 -E0x200 +ReadOnly vg_WinColor c" g_GUI.WinColor, % g_GUI.WinColor
     Gui, Setting:Add, Button, x433 yp-5 w80 vSelectWinColor gSelectWinColor, % g_LNG.183
 
-
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.180
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.180
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||None|Default|C:\Path\BG.jpg"
-    Gui, Setting:Add, Text, x33 yp+40, % g_LNG.181
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.181
     Gui, Setting:Add, Slider, x183 yp-5 w330 Range50-255 TickInterval5 Tooltip vg_Transparency, % g_GUI.Transparency
 
-    Gui, Setting:Tab, 4 ; Hotkey Tab
+    Gui, Setting:Tab, 3 ; Hotkey Tab
     Gui, Setting:Add, GroupBox, w500 h115, % g_LNG.191
     Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.192
     Gui, Setting:Add, Hotkey, x285 yp-4 w230 vg_GlobalHotkey1, % g_HOTKEY.GlobalHotkey1
@@ -1313,6 +1299,15 @@ Options(ActTab := 1) {
         Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
         Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger%A_Index%, % SetFuncList(g_HOTKEY["Trigger" A_Index])
     }
+
+    Gui, Setting:Tab, 4 ; INDEX Tab
+    Gui, Setting:Add, GroupBox, w500 h140, % g_LNG.160
+    Gui, Setting:Add, Text, x33 yp+25, % g_LNG.161
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexDir, % g_CONFIG.IndexDir "||A_ProgramsCommon,A_StartMenu"
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.162
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexType, % g_CONFIG.IndexType "||*.lnk,*.exe"
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.163
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexExclude, % g_CONFIG.IndexExclude "||Uninstall *"
 
     Gui, Setting:Tab, 5 ; LISTARTY TAB
     Gui, Setting:Add, GroupBox, w500 h145, % g_LNG.211
@@ -1495,6 +1490,8 @@ LoadConfig(Arg) {                                                       ; 加载
         for key, value in g_GUI                                         ; Read [GUI] section
             g_GUI[key]    := IniRead(g_SECTION.GUI, key, value)
 
+        g_GUI.ListX     := g_GUI.WinX - 24
+        g_GUI.ListY     := g_GUI.WinY - 76
         g_RUNTIME.BGPic := (g_GUI.Background = "Default") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
         g_RUNTIME.RegEx := g_CONFIG.MatchBeginning ? "imS)^" : "imS)"
 
@@ -1644,6 +1641,10 @@ IniRead(Section, Key := "", Default := "") {
     Return Value
 }
 
+IniWrite(Section, Key := "", Value := "") {
+    IniWrite, % Value, % g_RUNTIME.Ini, % Section, % Key
+}
+
 SAVECONFIG() {
     Gui, Setting:Submit
 
@@ -1651,13 +1652,13 @@ SAVECONFIG() {
         g_%key% := (A_Index = LV_GetNext(A_Index-1, "C")) ? 1 : 0       ; for Options - General page - Check Listview
 
     For key, value in g_CONFIG
-        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SECTION.CONFIG, %key% ; For all ini file - [Config] g_ 变量从控件v变量和上一步Check Listview取得
+        IniWrite(g_SECTION.CONFIG, key, g_%key%)                        ; For all ini file - [Config] g_ 变量从控件v变量和上一步Check Listview取得
 
     For key, value in g_GUI
-        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SECTION.GUI, %key%
+        IniWrite(g_SECTION.GUI, key, g_%key%)
 
     For key, value in g_HOTKEY
-        IniWrite, % g_%key%, % g_RUNTIME.Ini, % g_SECTION.HOTKEY, %key%
+        IniWrite(g_SECTION.HOTKEY, key, g_%key%)
 
     Return g_LOG.Debug("Saving config...")
 }
@@ -1755,7 +1756,7 @@ SetLanguage() {                                                         ; Max st
     ENG.69  := "Start with space = Search file by Everything"
     ENG.70  := "Ctrl+'+' = Increase rank of current command"
     ENG.71  := "Ctrl+'-' = Decrease rank of current command"
-    ENG.100 := "General|Index|GUI|Hotkey|Listary|Plugins|Usage|About"     ; 100~149 Options window (General - Check Listview)
+    ENG.100 := "General||GUI|Hotkey|Index|Listary|Plugins|Usage|About"  ; 100~149 Options window (General - Check Listview)
     ENG.101 := "Launch on Windows startup"
     ENG.102 := "Enable SendTo - Create commands conveniently using Windows SendTo"
     ENG.103 := "Enable ALTRun shortcut in the Windows Start menu"
@@ -1912,7 +1913,7 @@ SetLanguage() {                                                         ; Max st
     CHN.69  := "以空格开头 = 使用 Everything 搜索文件"
     CHN.70  := "Ctrl+'+' = 增加当前命令的优先级"
     CHN.71  := "Ctrl+'-' = 减少当前命令的优先级"
-    CHN.100 := "常规|索引|界面|热键|Listary|插件|状态统计|关于"            ; 100~149 Options window (General - Check Listview)
+    CHN.100 := "常规||界面|热键|索引|Listary|插件|状态统计|关于"           ; 100~149 Options window (General - Check Listview)
     CHN.101 := "随系统自动启动"
     CHN.102 := "添加到“发送到”菜单"
     CHN.103 := "添加到“开始”菜单"
@@ -1959,7 +1960,7 @@ SetLanguage() {                                                         ; Max st
     CHN.174 := "字体 (选项页)"
     CHN.175 := "字体 (状态栏)"
     CHN.176 := "主窗口尺寸 (宽 x 高)"
-    CHN.177 := "命令表尺寸 (宽 x 高)"
+    CHN.177 := "命令列表尺寸 (宽 x 高)"
     CHN.178 := "控件颜色"
     CHN.179 := "背景颜色"
     CHN.180 := "背景图片"
