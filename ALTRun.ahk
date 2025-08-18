@@ -67,6 +67,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,FileMgr        : "Explorer.exe"
             ,IndexDir       : "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location"
             ,IndexType      : "*.lnk,*.exe"
+            ,IndexDepth     : 3
             ,IndexExclude   : "Uninstall *"
             ,Everything     : "C:\Apps\Everything.exe"
             ,DialogWin      : "ahk_class #32770"
@@ -918,11 +919,19 @@ Reindex() {                                                             ; Re-cre
     for dirIndex, dir in StrSplit(g_CONFIG.IndexDir, ",")
     {
         searchPath := AbsPath(dir)
+        searchPath := RegExReplace(searchPath, "\\+$")                  ; Remove trailing backslashes
 
         for extIndex, ext in StrSplit(g_CONFIG.IndexType, ",")
         {
             Loop Files, %searchPath%\%ext%, R
             {
+                ; Calculate path relative to searchPath and count subdir levels
+                rel := SubStr(A_LoopFileLongPath, StrLen(searchPath) + 2) ; +2 to skip the backslash
+                seps := (rel = "") ? 0 : StrLen(rel) - StrLen(StrReplace(rel, "\", "")) ; Count backslashes to determine depth
+
+                if (seps >= g_CONFIG.IndexDepth)                        ; If file is deeper than allowed depth, skip it.
+                    continue
+
                 if (g_CONFIG.IndexExclude != "" && RegExMatch(A_LoopFileLongPath, g_CONFIG.IndexExclude))
                     continue                                            ; Skip this file and move on to the next loop.
 
@@ -1095,7 +1104,7 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     Gui, CmdMgr:Font, S9 Norm, Microsoft Yahei
     Gui, CmdMgr:Add, GroupBox, w600 h260, % g_LNG.701
     Gui, CmdMgr:Add, Text, x25 yp+30, % g_LNG.702
-    Gui, CmdMgr:Add, DropDownList, x160 yp-5 w130 v_Type, % StrReplace("File|Dir|Cmd|URL|Func", _Type, _Type . "|",, 1)
+    Gui, CmdMgr:Add, DropDownList, x160 yp-5 w130 v_Type, % StrReplace("File|Dir|Cmd|URL|Func|", _Type, _Type . "|",, 1)
     Gui, CmdMgr:Add, Text, x315 yp+5, % g_LNG.705
     Gui, CmdMgr:Add, Edit, x435 yp-5 w130 Disabled v_Section, %_Section%
     Gui, CmdMgr:Add, Text, x25 yp+60, % g_LNG.703
@@ -1301,11 +1310,13 @@ Options(ActTab := 1) {
     }
 
     Gui, Setting:Tab, 4 ; INDEX Tab
-    Gui, Setting:Add, GroupBox, w500 h140, % g_LNG.160
+    Gui, Setting:Add, GroupBox, w500 h190, % g_LNG.160
     Gui, Setting:Add, Text, x33 yp+25, % g_LNG.161
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexDir, % g_CONFIG.IndexDir "||A_ProgramsCommon,A_StartMenu"
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.162
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexType, % g_CONFIG.IndexType "||*.lnk,*.exe"
+    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.164
+    Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_IndexDepth Choose" g_CONFIG.IndexDepth, 1|2|3||4|5|6|7|8|9|
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.163
     Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexExclude, % g_CONFIG.IndexExclude "||Uninstall *"
 
@@ -1327,7 +1338,7 @@ Options(ActTab := 1) {
     Gui, Setting:Tab, 6 ; PLUGINS TAB
     Gui, Setting:Add, GroupBox, w500 h110, % g_LNG.221
     Gui, Setting:Add, Text, x33 yp+30, % g_LNG.222
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_exe Notepad4.exe|"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_exe Notepad4.exe"
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.223
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_AutoDateAEHKey, % g_HOTKEY.AutoDateAEHKey
     Gui, Setting:Add, Text, x300 yp+5, % g_LNG.224
@@ -1335,7 +1346,7 @@ Options(ActTab := 1) {
 
     Gui, Setting:Add, GroupBox, x24 y+30 w500 h110, % g_LNG.225
     Gui, Setting:Add, Text, x33 yp+30, % g_LNG.222
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateBefExt, % g_HOTKEY.AutoDateBefExt "||ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770|"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateBefExt, % g_HOTKEY.AutoDateBefExt "||ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770"
     Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.223
     Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_AutoDateBEHKey, % g_HOTKEY.AutoDateBEHKey
     Gui, Setting:Add, Text, x300 yp+5, % g_LNG.224
@@ -1796,6 +1807,7 @@ SetLanguage() {                                                         ; Max st
     ENG.161 := "Index location"
     ENG.162 := "Index file type"
     ENG.163 := "Index exclude"
+    ENG.164 := "Index depth"
     ENG.170 := "GUI"                                                    ; 170~189 GUI
     ENG.171 := "Search result number"
     ENG.172 := "Width of each column"
@@ -1953,6 +1965,7 @@ SetLanguage() {                                                         ; Max st
     CHN.161 := "索引位置"
     CHN.162 := "索引文件类型"
     CHN.163 := "索引排除项"
+    CHN.164 := "索引目录深度"
     CHN.170 := "界面"                                                   ; 170~189 GUI
     CHN.171 := "搜索结果数量"
     CHN.172 := "每列宽度"
