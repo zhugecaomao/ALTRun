@@ -67,7 +67,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,FileMgr        : "Explorer.exe"
             ,IndexDir       : "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location"
             ,IndexType      : "*.lnk,*.exe"
-            ,IndexDepth     : 3
+            ,IndexDepth     : 2
             ,IndexExclude   : "Uninstall *"
             ,Everything     : "C:\Apps\Everything.exe"
             ,DialogWin      : "ahk_class #32770"
@@ -103,11 +103,10 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,ListY          : 230
             ,CtrlColor      : "Default"
             ,WinColor       : "Silver"
-            ,Background     : "Default"
+            ,Background     : "ALTRun.jpg"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
             ,WinName        : "ALTRun - Ver 2025.08.23"
-            ,BGPic          : ""
             ,WinHide        : ""
             ,UseDisplay     : 0
             ,UseFallback    : 0
@@ -215,11 +214,11 @@ Gui, Main:Color, % g_GUI.WinColor, % g_GUI.CtrlColor
 Gui, Main:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
 Gui, % "Main:+HwndMainGuiHwnd" (g_CONFIG.AlwaysOnTop ? " +AlwaysOnTop" : " -AlwaysOnTop") (g_CONFIG.ShowCaption ? " +Caption" : " -Caption") (g_CONFIG.XPthemeBg ? " +Theme" : " -Theme")
 Gui, Main:Default ; Set default GUI before any ListView / statusbar update
-Gui, Main:Add, Edit, x12 W%Input_W% -WantReturn vMyInput gOnSearchInput, % g_LNG.13
+Gui, Main:Add, Edit, x12 y10 W%Input_W% -WantReturn vMyInput gOnSearchInput, % g_LNG.13
 Gui, Main:Add, Button, % "x+"Enter_X " yp W" Enter_W " hp Default gRunCurrentCommand Hidden" !g_CONFIG.ShowBtnRun, % g_LNG.11
 Gui, Main:Add, Button, % "x+"Opt_X " yp W" Opt_W " hp gOptions Hidden" !g_CONFIG.ShowBtnOpt, % g_LNG.12
-Gui, Main:Add, ListView, % "x12 ys+36 W" g_GUI.ListX " H" g_GUI.ListY " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), % g_LNG.10 ; LV0x10000 Paints via double-buffering, which reduces flicker
-Gui, Main:Add, Picture, x0 y0 0x4000000, % g_RUNTIME.BGPic
+Gui, Main:Add, ListView, % "x12 yp+36 W" g_GUI.ListX " H" g_GUI.ListY " vMyListView AltSubmit gOnClickListview -Multi" (g_CONFIG.DoubleBuffer ? " +LV0x10000" : "") (g_CONFIG.ShowHdr ? "" : " -Hdr") (g_CONFIG.ShowGrid ? " Grid" : "") (g_CONFIG.ShowBorder ? "" : " -E0x200"), % g_LNG.10 ; LV0x10000 Paints via double-buffering, which reduces flicker
+Gui, Main:Add, Picture, x0 y0 0x4000000, % g_GUI.Background
 Gui, Main:Font,,
 Gui, Main:Font, % StrSplit(g_GUI.SBFont, ",")[2], % StrSplit(g_GUI.SBFont, ",")[1]
 Gui, Main:Add, StatusBar, % "gOnClickStatusBar Hidden" !g_CONFIG.ShowStatusBar,
@@ -477,7 +476,6 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
         Path := %Path%
 
     Path := StrReplace(Path, "%Temp%", A_Temp)
-    Path := StrReplace(Path, "%Desktop%", A_Desktop)
     Path := StrReplace(Path, "%OneDrive%", g_RUNTIME.OneDrive)          ; Convert OneDrive to absolute path due to #NoEnv
     Return Path
 }
@@ -485,7 +483,6 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
 RelativePath(Path)                                                      ; Convert path to relative path
 {
     Path := StrReplace(Path, A_Temp, "%Temp%")
-    Path := StrReplace(Path, A_Desktop, "%Desktop%")
     Path := StrReplace(Path, g_RUNTIME.OneDrive, "%OneDrive%")
     Return Path
 }
@@ -602,7 +599,7 @@ CopyCommand() {                                                         ; ListVi
         Return
 
     g_RUNTIME.ActiveCommand := g_MATCHED[focusedRow]                    ; Get current command from focused row
-    LV_GetText(Text, focusedRow, 3) ? (A_Clipboard := Text)         ; Get the text from the focusedRow's 3rd field.
+    LV_GetText(Text, focusedRow, 3) ? (A_Clipboard := Text)             ; Get the text from the focusedRow's 3rd field.
 }
 
 OnClickStatusBar() {
@@ -1287,7 +1284,7 @@ Options(ActTab := 1) {
     Gui, Setting:Add, Button, x433 yp-5 w80 vSelectWinColor gSelectWinColor, % g_LNG.183
 
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.180
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||None|Default|C:\Path\BG.jpg"
+    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||ALTRun.jpg|None|C:\Path\BG.jpg"
     Gui, Setting:Add, Text, x33 yp+45, % g_LNG.181
     Gui, Setting:Add, Slider, x183 yp-5 w330 Range50-255 TickInterval5 Tooltip vg_Transparency, % g_GUI.Transparency
 
@@ -1503,7 +1500,6 @@ LoadConfig(Arg) {                                                       ; 加载
 
         g_GUI.ListX     := g_GUI.WinX - 24
         g_GUI.ListY     := g_GUI.WinY - 76
-        g_RUNTIME.BGPic := (g_GUI.Background = "Default") ? Extract_BG(A_Temp "\ALTRun.jpg") : g_GUI.Background
         g_RUNTIME.RegEx := g_CONFIG.MatchBeginning ? "imS)^" : "imS)"
 
         OffsetDate := A_Now
@@ -1562,7 +1558,7 @@ LoadConfig(Arg) {                                                       ; 加载
             Dir | A_Startup | Current User Startup Dir=99
             Dir | A_StartupCommon | All User Startup Dir=99
             Dir | A_ProgramsCommon | Windowns Search.Index.Cortana Dir=99
-            Dir | `%Desktop`%=99
+            Dir | A_Desktop=99
             Dir | `%AppData`%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
             Dir | `%OneDrive`% | OneDrive=99
             Cmd | explorer.exe | Windows File Explorer=99
@@ -1672,27 +1668,6 @@ SAVECONFIG() {
         IniWrite(g_SECTION.HOTKEY, key, g_%key%)
 
     Return g_LOG.Debug("Saving config...")
-}
-
-;===================================================
-; Resources File - Background picture
-;===================================================
-Extract_BG(_Filename) {
-	Static Out_Data
-    VarSetCapacity(TD, 4206 * 2)
-    TD :="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"
-
-    VarSetCapacity(Out_Data, Bytes := 3070, 0)
-    DllCall("Crypt32.dll\CryptStringToBinaryW", "WStr", TD, "UInt", 0, "UInt", 1, "Ptr", &Out_Data, "UIntP", Bytes, "Int", 0, "Int", 0)
-
-    FileExist(_Filename)
-		FileDelete, %_Filename%
-
-    ; Use Unicode CreateFile and CREATE_ALWAYS (2)
-    h := DllCall("CreateFileW", "WStr", _Filename, "UInt", 0x40000000, "UInt", 0, "UInt", 0, "UInt", 2, "UInt", 0, "UInt", 0, "Ptr")
-    DllCall("WriteFile", "Ptr", h, "Ptr", &Out_Data, "UInt", Bytes, "UIntP", BytesWritten, "Ptr", 0)
-    DllCall("CloseHandle", "Ptr", h)
-    Return _Filename
 }
 
 ;===================================================
