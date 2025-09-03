@@ -299,25 +299,25 @@ Hotkey, Up, PrevCommand, UseErrorLevel
 ;===================================================
 Loop, % g_GUI.ListRows
 {
-    Hotkey, !%A_Index%, RunSelectedCommand, UseErrorLevel ; ALT + No. run command
-    Hotkey, ^%A_Index%, GotoCommand, UseErrorLevel        ; Ctrl + No. locate command
+    Hotkey, !%A_Index%, RunSelectedCommand, UseErrorLevel               ; ALT + No. run command
+    Hotkey, ^%A_Index%, GotoCommand, UseErrorLevel                      ; Ctrl + No. locate command
 }
 
 Loop, 7
     Hotkey, % g_HOTKEY["Hotkey"A_Index], % g_HOTKEY["Trigger"A_Index], UseErrorLevel ; Set Hotkey <-> Trigger, UseErrorLevel to Skips any warning dialogs
 
-Hotkey, IfWinActive, % g_HOTKEY.CondTitle                 ; Conditional hotkey-action, mainly for workflow RAPT-MButton-PTTools
+Hotkey, IfWinActive, % g_HOTKEY.CondTitle                               ; Conditional hotkey-action, mainly for workflow RAPT-MButton-PTTools
 Hotkey, % g_HOTKEY.CondHotkey, % g_HOTKEY.CondAction, UseErrorLevel
-Hotkey, IfWinActive                                       ; Reset hotkey condition
+Hotkey, IfWinActive                                                     ; Reset hotkey condition
 
 Listary()
-AppControl()                                                            ; Set Listary Dir QuickSwitch, Set AppControl
+AppControl()
 Return
 
 Activate() {
     Gui, Main:Show,, % g_RUNTIME.WinName
 
-    WinWaitActive, % g_RUNTIME.WinName,, 3                              ; Use WinWaitActive 3s instead of previous Loop method
+    WinWaitActive, % g_RUNTIME.WinName,, 3
     {
         GuiControl, Main:Focus, MyInput
         ControlSend, Edit1, ^a, % g_RUNTIME.WinName                     ; Select all content in Input Box
@@ -401,8 +401,7 @@ JoinResult(commands) {
     Return Result
 }
 
-ListResult(text := "", UseDisplay := false)
-{
+ListResult(text := "", UseDisplay := false) {
     Gui, Main:Default                                                   ; Set default GUI before update any listview or statusbar
     GuiControl, Main:-Redraw, MyListView                                ; Improve performance by disabling redrawing during load.
     LV_Delete()
@@ -431,8 +430,7 @@ ListResult(text := "", UseDisplay := false)
     ; OutputDebug, % "IconMap length is " IconMap.Count() ", elements are `n" elements
 }
 
-GetIconIndex(_Path, _Type)                                              ; Get file's icon index
-{
+GetIconIndex(_Path, _Type) {                                            ; Get file's icon index
     if g_CONFIG.ShowIcon = 0
         Return 0                                                        ; No icon to show, return 0
     Switch (_Type) {
@@ -465,8 +463,7 @@ GetIcon(_Path, ExtOrPath) {                                             ; Get fi
     Return IconIndex
 }
 
-AbsPath(Path, KeepRunAs := False)                                       ; Convert path to absolute path
-{
+AbsPath(Path, KeepRunAs := False) {                                     ; Convert path to absolute path
     Path := Trim(Path)
 
     if (!KeepRunAs)
@@ -480,8 +477,7 @@ AbsPath(Path, KeepRunAs := False)                                       ; Conver
     Return Path
 }
 
-RelativePath(Path)                                                      ; Convert path to relative path
-{
+RelativePath(Path) {                                                    ; Convert path to relative path
     Path := StrReplace(Path, A_Temp, "%Temp%")
     Path := StrReplace(Path, g_RUNTIME.OneDrive, "%OneDrive%")
     Return Path
@@ -492,8 +488,7 @@ EnvGet(EnvVar) {
     Return OutputVar
 }
 
-RunCommand(originCmd)
-{
+RunCommand(originCmd) {
     MainGuiClose()
     ParseArg()
     g_RUNTIME.UseDisplay := false
@@ -529,8 +524,7 @@ RunCommand(originCmd)
     g_LOG.Debug("Execute:" g_CONFIG.RunCount " = " originCmd)
 }
 
-TabFunc()
-{
+TabFunc() {
     GuiControlGet, CurrCtrl, Main:FocusV                                ; Limit tab to switch between Edit1 & ListView only
     GuiControl, Main:Focus, % (CurrCtrl = "MyInput") ? "MyListView" : "MyInput"
 }
@@ -566,7 +560,7 @@ ChangeCommand(Step = 1, ResetSelRow = False) {
 
 OnClickListview() {                                                     ; ListView g label actions (left / double click) behavior
     Gui, Main:Default                                                   ; Use it before any LV update
-    focusedRow := LV_GetNext(0, "Focused")                              ; 查找焦点行, 仅对焦点行进行操作而不是所有选择的行:
+    focusedRow := LV_GetNext(0, "Focused")                              ; 查找焦点行, 仅对焦点行进行操作而不是所有选择的行
     if (!focusedRow)                                                    ; 没有焦点行
         Return
 
@@ -764,7 +758,7 @@ LoadCommands() {
     g_COMMANDS          := {}                                           ; Clear g_COMMANDS and g_FALLBACK list
     g_FALLBACK          := {}
     RankString          := ""
-    g_RUNTIME.FuncList  := ""                                           ; Clear FuncList, FuncList is used to store all functions for Options window
+    g_RUNTIME.FuncList  := "None|"                                      ; FuncList is used to store all functions for Options window
 
     Loop Parse, % LoadConfig("commands"), `n                            ; Read commands sections (built-in, user & index), read each line, separate key and value
     {
@@ -1206,12 +1200,15 @@ NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文
     if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前
     {
         if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$") {
-                baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
-            }
-            else {
-                baseName := nameNoExt
-            }
-            NameWithDate := baseName " - " CurrentDate "." fileExt
+            baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
+        }
+        else if RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$") {
+            baseName := RegExReplace(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$", "")
+        }
+        else {
+            baseName := nameNoExt
+        }
+        NameWithDate := baseName " - " CurrentDate "." fileExt
     }
     else {
         NameWithDate := EditCtrlText " - " CurrentDate
@@ -1230,160 +1227,160 @@ Options(ActTab := 1) {
     Global                                                              ; Assume-global mode
     t := A_TickCount
     ActTab := ActTab+0 ? ActTab : 1                                     ; Convert ActTab to number, default is 1 (for case like [Option`tF2])
-    Gui, Setting:New, +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1 ; Omit +OwnerMain, +OwnDialogs, lagging window
-    Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
-    Gui, Setting:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
-    Gui, Setting:Tab, 1 ; CONFIG Tab
-    Gui, Setting:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, % g_LNG.1
-    
+    Gui, OPT:New, +AlwaysOnTop +HwndOptsHwnd, % g_LNG.1                 ; Omit +OwnerMain, +OwnDialogs, lagging window
+    Gui, OPT:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
+    Gui, OPT:Add, Tab3, vCurrTab Choose%ActTab%, % g_LNG.100
+    Gui, OPT:Tab, 1 ; CONFIG Tab
+    Gui, OPT:Add, ListView, w500 h300 Checked -Multi AltSubmit -Hdr vOptListView, % g_LNG.1
+
     For key, description in g_CHKLV
         LV_Add("Check" g_CONFIG[key], description)
     LV_ModifyCol(1, "AutoHdr")
 
-    Gui, Setting:Add, Text, x24 yp+320, % g_LNG.150
-    Gui, Setting:Add, ComboBox, x130 yp-5 w394 vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
-    Gui, Setting:Add, Text, x24 yp+40, % g_LNG.151
-    Gui, Setting:Add, ComboBox, x130 yp-5 w394 vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
-    Gui, Setting:Add, Text, x24 yp+40, % g_LNG.152
-    Gui, Setting:Add, DropDownList, % "x130 yp-5 w394 Sort vg_HistoryLen Choose" g_CONFIG.HistoryLen * 0.1, 10|20|30|40|50|60
+    Gui, OPT:Add, Text, x24 yp+320, % g_LNG.150
+    Gui, OPT:Add, ComboBox, x130 yp-5 w394 vg_FileMgr, % g_CONFIG.FileMgr "||Explorer.exe|C:\Apps\TotalCMD.exe /O /T /S"
+    Gui, OPT:Add, Text, x24 yp+40, % g_LNG.151
+    Gui, OPT:Add, ComboBox, x130 yp-5 w394 vg_Everything, % g_CONFIG.Everything "||C:\Apps\Everything.exe"
+    Gui, OPT:Add, Text, x24 yp+40, % g_LNG.152
+    Gui, OPT:Add, DropDownList, % "x130 yp-5 w394 Sort vg_HistoryLen Choose" g_CONFIG.HistoryLen * 0.1, 10|20|30|40|50|60
 
-    Gui, Setting:Tab, 2 ; GUI Tab
-    Gui, Setting:Add, GroupBox, w500 h420, % g_LNG.170
-    Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.171
-    Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1||2|3|4|5|6|7|8|9| ; ListRows limit <= 9
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.172
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||20,0,460,AutoHdr|30,46,460,AutoHdr"
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.176
-    Gui, Setting:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
-    Gui, Setting:Add, Text, x345 yp, x
-    Gui, Setting:Add, Edit, x393 yp w120 +Number vg_WinY, % g_GUI.WinY
+    Gui, OPT:Tab, 2 ; GUI Tab
+    Gui, OPT:Add, GroupBox, w500 h420, % g_LNG.170
+    Gui, OPT:Add, Text, x33 yp+25 , % g_LNG.171
+    Gui, OPT:Add, DropDownList, % "x183 yp-5 w330 vg_ListRows Choose" g_GUI.ListRows, 1||2|3|4|5|6|7|8|9| ; ListRows limit <= 9
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.172
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_ColWidth, % g_GUI.ColWidth "||20,0,460,AutoHdr|30,46,460,AutoHdr"
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.176
+    Gui, OPT:Add, Edit, x183 yp-5 w120 +Number vg_WinX, % g_GUI.WinX
+    Gui, OPT:Add, Text, x345 yp, x
+    Gui, OPT:Add, Edit, x393 yp w120 +Number vg_WinY, % g_GUI.WinY
 
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.173
-    Gui, Setting:Font,,
-    Gui, Setting:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
-    Gui, Setting:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_Font, % g_GUI.Font
-    Gui, Setting:Font,,
-    Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
-    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectFont gSelectFont, % g_LNG.182
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.174
-    Gui, Setting:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_OptsFont, % g_GUI.OptsFont
-    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectOptsFont gSelectOptsFont, % g_LNG.182
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.175
-    Gui, Setting:Font,,
-    Gui, Setting:Font, % StrSplit(g_GUI.SBFont, ",")[2], % StrSplit(g_GUI.SBFont, ",")[1]
-    Gui, Setting:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_SBFont, % g_GUI.SBFont
-    Gui, Setting:Font,,
-    Gui, Setting:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
-    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectSBFont gSelectSBFont, % g_LNG.182
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.173
+    Gui, OPT:Font,,
+    Gui, OPT:Font, % StrSplit(g_GUI.Font, ",")[2], % StrSplit(g_GUI.Font, ",")[1]
+    Gui, OPT:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_Font, % g_GUI.Font
+    Gui, OPT:Font,,
+    Gui, OPT:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
+    Gui, OPT:Add, Button, x433 yp-5 w80 vSelectMainFont gSelectMainFont, % g_LNG.182
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.174
+    Gui, OPT:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_OptsFont, % g_GUI.OptsFont
+    Gui, OPT:Add, Button, x433 yp-5 w80 vSelectOptsFont gSelectOptsFont, % g_LNG.182
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.175
+    Gui, OPT:Font,,
+    Gui, OPT:Font, % StrSplit(g_GUI.SBFont, ",")[2], % StrSplit(g_GUI.SBFont, ",")[1]
+    Gui, OPT:Add, Edit, x183 yp w240 r1 -E0x200 +ReadOnly vg_SBFont, % g_GUI.SBFont
+    Gui, OPT:Font,,
+    Gui, OPT:Font, % StrSplit(g_GUI.OptsFont, ",")[2], % StrSplit(g_GUI.OptsFont, ",")[1]
+    Gui, OPT:Add, Button, x433 yp-5 w80 vSelectSBFont gSelectSBFont, % g_LNG.182
 
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.178
-    Gui, Setting:Add, Edit, % "x183 yp w240 r1 -E0x200 +ReadOnly vg_CtrlColor c" g_GUI.CtrlColor, % g_GUI.CtrlColor
-    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectCtrlColor gSelectCtrlColor, % g_LNG.183
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.179
-    Gui, Setting:Add, Edit, % "x183 yp w240 r1 -E0x200 +ReadOnly vg_WinColor c" g_GUI.WinColor, % g_GUI.WinColor
-    Gui, Setting:Add, Button, x433 yp-5 w80 vSelectWinColor gSelectWinColor, % g_LNG.183
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.178
+    Gui, OPT:Add, Edit, % "x183 yp w240 r1 -E0x200 +ReadOnly vg_CtrlColor c" g_GUI.CtrlColor, % g_GUI.CtrlColor
+    Gui, OPT:Add, Button, x433 yp-5 w80 vSelectCtrlColor gSelectCtrlColor, % g_LNG.183
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.179
+    Gui, OPT:Add, Edit, % "x183 yp w240 r1 -E0x200 +ReadOnly vg_WinColor c" g_GUI.WinColor, % g_GUI.WinColor
+    Gui, OPT:Add, Button, x433 yp-5 w80 vSelectWinColor gSelectWinColor, % g_LNG.183
 
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.180
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||ALTRun.jpg|None|C:\Path\BG.jpg"
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.181
-    Gui, Setting:Add, Slider, x183 yp-5 w330 Range50-255 TickInterval5 Tooltip vg_Transparency, % g_GUI.Transparency
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.180
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_Background, % g_GUI.Background "||ALTRun.jpg|None|C:\Path\BG.jpg"
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.181
+    Gui, OPT:Add, Slider, x183 yp-5 w330 Range50-255 TickInterval5 Tooltip vg_Transparency, % g_GUI.Transparency
 
-    Gui, Setting:Tab, 3 ; Hotkey Tab
-    Gui, Setting:Add, GroupBox, w500 h115, % g_LNG.191
-    Gui, Setting:Add, Text, x33 yp+25 , % g_LNG.192
-    Gui, Setting:Add, Hotkey, x285 yp-4 w230 vg_GlobalHotkey1, % g_HOTKEY.GlobalHotkey1
-    Gui, Setting:Add, Text, x33 yp+35 , % g_LNG.193
-    Gui, Setting:Add, Hotkey, x285 yp-4 w230 vg_GlobalHotkey2,% g_HOTKEY.GlobalHotkey2
-    Gui, Setting:Add, Text, x33 yp+35, % g_LNG.194
-    Gui, Setting:Add, Link, x285 yp w230 gResetHotkey, % "<a>" g_LNG.195 "</a>"
+    Gui, OPT:Tab, 3 ; Hotkey Tab
+    Gui, OPT:Add, GroupBox, w500 h115, % g_LNG.191
+    Gui, OPT:Add, Text, x33 yp+25 , % g_LNG.192
+    Gui, OPT:Add, Hotkey, x285 yp-4 w230 vg_GlobalHotkey1, % g_HOTKEY.GlobalHotkey1
+    Gui, OPT:Add, Text, x33 yp+35 , % g_LNG.193
+    Gui, OPT:Add, Hotkey, x285 yp-4 w230 vg_GlobalHotkey2,% g_HOTKEY.GlobalHotkey2
+    Gui, OPT:Add, Text, x33 yp+35, % g_LNG.194
+    Gui, OPT:Add, Link, x285 yp w230 gResetHotkey, % "<a>" g_LNG.195 "</a>"
 
-    Gui, Setting:Add, GroupBox, x24 yp+38 w500 h290, % g_LNG.200
+    Gui, OPT:Add, GroupBox, x24 yp+38 w500 h290, % g_LNG.200
     loop 7
     {
-        Gui, Setting:Add, Text, x33 yp+40 , % g_LNG.201
-        Gui, Setting:Add, Hotkey, x143 yp-5 w120 vg_Hotkey%A_Index%, % g_HOTKEY["Hotkey" A_Index]
-        Gui, Setting:Add, Text, x285 yp+5, % g_LNG.202
-        Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_Trigger%A_Index%, % SetFuncList(g_HOTKEY["Trigger" A_Index])
+        Gui, OPT:Add, Text, x33 yp+40 , % g_LNG.201
+        Gui, OPT:Add, Hotkey, x143 yp-5 w120 vg_Hotkey%A_Index%, % g_HOTKEY["Hotkey" A_Index]
+        Gui, OPT:Add, Text, x285 yp+5, % g_LNG.202
+        Gui, OPT:Add, DropDownList, x395 yp-5 w120 vg_Trigger%A_Index%, % SetFuncList(g_HOTKEY["Trigger" A_Index])
     }
 
-    Gui, Setting:Tab, 4 ; INDEX Tab
-    Gui, Setting:Add, GroupBox, w500 h190, % g_LNG.160
-    Gui, Setting:Add, Text, x33 yp+25, % g_LNG.161
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexDir, % g_CONFIG.IndexDir "||A_ProgramsCommon,A_StartMenu"
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.162
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexType, % g_CONFIG.IndexType "||*.lnk,*.exe"
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.164
-    Gui, Setting:Add, DropDownList, % "x183 yp-5 w330 vg_IndexDepth Choose" g_CONFIG.IndexDepth, 1|2|3||4|5|6|7|8|9|
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.163
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_IndexExclude, % g_CONFIG.IndexExclude "||Uninstall *"
+    Gui, OPT:Tab, 4 ; INDEX Tab
+    Gui, OPT:Add, GroupBox, w500 h190, % g_LNG.160
+    Gui, OPT:Add, Text, x33 yp+25, % g_LNG.161
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_IndexDir, % g_CONFIG.IndexDir "||A_ProgramsCommon,A_StartMenu"
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.162
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_IndexType, % g_CONFIG.IndexType "||*.lnk,*.exe"
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.164
+    Gui, OPT:Add, DropDownList, % "x183 yp-5 w330 vg_IndexDepth Choose" g_CONFIG.IndexDepth, 1|2|3||4|5|6|7|8|9|
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.163
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_IndexExclude, % g_CONFIG.IndexExclude "||Uninstall *"
 
-    Gui, Setting:Tab, 5 ; LISTARTY TAB
-    Gui, Setting:Add, GroupBox, w500 h145, % g_LNG.211
-    Gui, Setting:Add, Text, x33 yp+30 , % g_LNG.212
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_FileMgrID, % g_CONFIG.FileMgrID "||ahk_class CabinetWClass|ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.213
-    Gui, Setting:Add, Combobox, x183 yp-5 w330 vg_DialogWin, % g_CONFIG.DialogWin "||ahk_class #32770"
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.214
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_ExcludeWin, % g_CONFIG.ExcludeWin "||ahk_class SysListView32|ahk_class SysListView32, ahk_exe Explorer.exe"
-    Gui, Setting:Add, GroupBox, x24 yp+50 w500 h145, % g_LNG.215
-    Gui, Setting:Add, Text, x33 yp+30, % g_LNG.216
-    Gui, Setting:Add, Hotkey, x183 yp-5 w330 vg_TotalCMDDir, % g_HOTKEY.TotalCMDDir
-    Gui, Setting:Add, Text, x33 yp+45, % g_LNG.217
-    Gui, Setting:Add, Hotkey, x183 yp-5 w330 vg_ExplorerDir, % g_HOTKEY.ExplorerDir
-    Gui, Setting:Add, CheckBox, % "x33 yp+45 vg_AutoSwitchDir checked" g_CONFIG.AutoSwitchDir, % g_LNG.218
+    Gui, OPT:Tab, 5 ; LISTARTY TAB
+    Gui, OPT:Add, GroupBox, w500 h145, % g_LNG.211
+    Gui, OPT:Add, Text, x33 yp+30 , % g_LNG.212
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_FileMgrID, % g_CONFIG.FileMgrID "||ahk_class CabinetWClass|ahk_class CabinetWClass, ahk_class TTOTAL_CMD"
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.213
+    Gui, OPT:Add, Combobox, x183 yp-5 w330 vg_DialogWin, % g_CONFIG.DialogWin "||ahk_class #32770"
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.214
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_ExcludeWin, % g_CONFIG.ExcludeWin "||ahk_class SysListView32, ahk_exe Explorer.exe"
+    Gui, OPT:Add, GroupBox, x24 yp+50 w500 h145, % g_LNG.215
+    Gui, OPT:Add, Text, x33 yp+30, % g_LNG.216
+    Gui, OPT:Add, Hotkey, x183 yp-5 w330 vg_TotalCMDDir, % g_HOTKEY.TotalCMDDir
+    Gui, OPT:Add, Text, x33 yp+45, % g_LNG.217
+    Gui, OPT:Add, Hotkey, x183 yp-5 w330 vg_ExplorerDir, % g_HOTKEY.ExplorerDir
+    Gui, OPT:Add, CheckBox, % "x33 yp+45 vg_AutoSwitchDir checked" g_CONFIG.AutoSwitchDir, % g_LNG.218
 
-    Gui, Setting:Tab, 6 ; PLUGINS TAB
-    Gui, Setting:Add, GroupBox, w500 h110, % g_LNG.221
-    Gui, Setting:Add, Text, x33 yp+30, % g_LNG.222
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_exe Notepad4.exe"
-    Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.223
-    Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_AutoDateAEHKey, % g_HOTKEY.AutoDateAEHKey
-    Gui, Setting:Add, Text, x300 yp+5, % g_LNG.224
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120, - dd.MM.yyyy||
+    Gui, OPT:Tab, 6 ; PLUGINS TAB
+    Gui, OPT:Add, GroupBox, w500 h110, % g_LNG.221
+    Gui, OPT:Add, Text, x33 yp+30, % g_LNG.222
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_AutoDateAtEnd, % g_HOTKEY.AutoDateAtEnd "||ahk_class TCmtEditForm,ahk_exe Notepad4.exe"
+    Gui, OPT:Add, Text, x33 yp+45 , % g_LNG.223
+    Gui, OPT:Add, Hotkey, x183 yp-5 w80 vg_AutoDateAEHKey, % g_HOTKEY.AutoDateAEHKey
+    Gui, OPT:Add, Text, x300 yp+5, % g_LNG.224
+    Gui, OPT:Add, DropDownList, x395 yp-5 w120, - dd.MM.yyyy||
 
-    Gui, Setting:Add, GroupBox, x24 y+30 w500 h110, % g_LNG.225
-    Gui, Setting:Add, Text, x33 yp+30, % g_LNG.222
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_AutoDateBefExt, % g_HOTKEY.AutoDateBefExt "||ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770"
-    Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.223
-    Gui, Setting:Add, Hotkey, x183 yp-5 w80 vg_AutoDateBEHKey, % g_HOTKEY.AutoDateBEHKey
-    Gui, Setting:Add, Text, x300 yp+5, % g_LNG.224
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120, - dd.MM.yyyy||
+    Gui, OPT:Add, GroupBox, x24 y+30 w500 h110, % g_LNG.225
+    Gui, OPT:Add, Text, x33 yp+30, % g_LNG.222
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_AutoDateBefExt, % g_HOTKEY.AutoDateBefExt "||ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770"
+    Gui, OPT:Add, Text, x33 yp+45 , % g_LNG.223
+    Gui, OPT:Add, Hotkey, x183 yp-5 w80 vg_AutoDateBEHKey, % g_HOTKEY.AutoDateBEHKey
+    Gui, OPT:Add, Text, x300 yp+5, % g_LNG.224
+    Gui, OPT:Add, DropDownList, x395 yp-5 w120, - dd.MM.yyyy||
 
-    Gui, Setting:Add, GroupBox, x24 y+30 w500 h110, % g_LNG.229
-    Gui, Setting:Add, Text, x33 yp+30 , % g_LNG.230
-    Gui, Setting:Add, ComboBox, x183 yp-5 w330 vg_CondTitle, % g_HOTKEY.CondTitle "||"
-    Gui, Setting:Add, Text, x33 yp+45 , % g_LNG.231
-    Gui, Setting:Add, ComboBox, x183 yp-5 w80 vg_CondHotkey, % g_HOTKEY.CondHotkey "||"
-    Gui, Setting:Add, Text, x300 yp+5, % g_LNG.232
-    Gui, Setting:Add, DropDownList, x395 yp-5 w120 vg_CondAction, % SetFuncList(g_HOTKEY.CondAction)
+    Gui, OPT:Add, GroupBox, x24 y+30 w500 h110, % g_LNG.229
+    Gui, OPT:Add, Text, x33 yp+30 , % g_LNG.230
+    Gui, OPT:Add, ComboBox, x183 yp-5 w330 vg_CondTitle, % g_HOTKEY.CondTitle "||"
+    Gui, OPT:Add, Text, x33 yp+45 , % g_LNG.231
+    Gui, OPT:Add, ComboBox, x183 yp-5 w80 vg_CondHotkey, % g_HOTKEY.CondHotkey "||"
+    Gui, OPT:Add, Text, x300 yp+5, % g_LNG.232
+    Gui, OPT:Add, DropDownList, x395 yp-5 w120 vg_CondAction, % SetFuncList(g_HOTKEY.CondAction)
 
-    Gui, Setting:Tab, 7 ; USAGE TAB
-    Gui, Setting:Add, GroupBox, x66 y80 w445 h300,
+    Gui, OPT:Tab, 7 ; USAGE TAB
+    Gui, OPT:Add, GroupBox, x66 y80 w445 h300,
 
     for Date, Count in g_USAGE {
-        Gui, Setting:Add, Progress, % "c94DD88 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME.Max+10, % Count
+        Gui, OPT:Add, Progress, % "c94DD88 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME.Max+10, % Count
     }
 
-    Gui, Setting:Add, Text, x24 yp-5 cGray, % g_RUNTIME.Max
-    Gui, Setting:Add, Text, x24 yp+140 cGray, % Round(g_RUNTIME.Max/2)
-    Gui, Setting:Add, Text, x24 yp+140 cGray, 0
-    Gui, Setting:Add, Text, x66 yp+15 cGray, % g_LNG.500
-    Gui, Setting:Add, Text, x476 yp cGray, % g_LNG.501
-    Gui, Setting:Add, Text, x66 yp+33, % g_LNG.502
-    Gui, Setting:Add, Edit, x400 yp-5 w100 r1 -E0x200 +ReadOnly Right vg_RunCount, % g_CONFIG.RunCount
-    Gui, Setting:Add, Text, x66 yp+35, % g_LNG.503
-    Gui, Setting:Add, Edit, x400 yp-5 w100 r1 -E0x200 +ReadOnly Right, % g_USAGE[A_YYYY . A_MM . A_DD]
+    Gui, OPT:Add, Text, x24 yp-5 cGray, % g_RUNTIME.Max
+    Gui, OPT:Add, Text, x24 yp+140 cGray, % Round(g_RUNTIME.Max/2)
+    Gui, OPT:Add, Text, x24 yp+140 cGray, 0
+    Gui, OPT:Add, Text, x66 yp+15 cGray, % g_LNG.500
+    Gui, OPT:Add, Text, x476 yp cGray, % g_LNG.501
+    Gui, OPT:Add, Text, x66 yp+33, % g_LNG.502
+    Gui, OPT:Add, Edit, x400 yp-5 w100 r1 -E0x200 +ReadOnly Right vg_RunCount, % g_CONFIG.RunCount
+    Gui, OPT:Add, Text, x66 yp+35, % g_LNG.503
+    Gui, OPT:Add, Edit, x400 yp-5 w100 r1 -E0x200 +ReadOnly Right, % g_USAGE[A_YYYY . A_MM . A_DD]
 
-    Gui, Setting:Tab, 8 ; ABOUT TAB
-    Gui, Setting:Add, Picture, x33 y+20 w48 h-1 Icon-100, imageres.dll
-    Gui, Setting:Add, Text, x96 yp+5, % g_RUNTIME.WinName
-    Gui, Setting:Add, Link, xp yp+45 w400, % g_LNG.601
+    Gui, OPT:Tab, 8 ; ABOUT TAB
+    Gui, OPT:Add, Picture, x33 y+20 w48 h-1 Icon-100, imageres.dll
+    Gui, OPT:Add, Text, x96 yp+5, % g_RUNTIME.WinName
+    Gui, OPT:Add, Link, xp yp+45 w400, % g_LNG.601
 
-    Gui, Setting:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
-    Gui, Setting:Add, Button, Default x278 w80 vSettingButtonOK gSettingButtonOK, % g_LNG.7
-    Gui, Setting:Add, Button, x368 yp w80 gSettingButtonCancel, % g_LNG.8
-    Gui, Setting:Add, Button, x458 yp w80 gSettingButtonHelp, % g_LNG.9
-    Gui, Setting:Show, Center, % g_LNG.1
+    Gui, OPT:Tab                                                    ; 后续添加的控件将不属于前面的选项卡控件
+    Gui, OPT:Add, Button, Default x278 w80 vOPTButtonOK gOPTButtonOK, % g_LNG.7
+    Gui, OPT:Add, Button, x368 yp w80 gOPTButtonCancel, % g_LNG.8
+    Gui, OPT:Add, Button, x458 yp w80 gOPTButtonHelp, % g_LNG.9
+    Gui, OPT:Show, Center, % g_LNG.1
 
     Hotkey, % g_HOTKEY.GlobalHotkey1, Off, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, Off, UseErrorLevel
@@ -1393,96 +1390,85 @@ Options(ActTab := 1) {
 }
 
 ResetHotkey() {
-    GuiControl, Setting:, g_GlobalHotkey1, !Space
-    GuiControl, Setting:, g_GlobalHotkey2, !r
+    GuiControl, OPT:, g_GlobalHotkey1, !Space
+    GuiControl, OPT:, g_GlobalHotkey2, !r
 }
 
-SetFuncList(FuncName) {                                                 ; Set the DropDownList items for FuncName
-    Global
-    return StrReplace("None|" g_RUNTIME.FuncList, FuncName, FuncName . "|",, 1)
+SetFuncList(Name) {                                                     ; Set the DropDownList items for FuncName
+    Return StrReplace(g_RUNTIME.FuncList, Name, Name . "|",, 1)
 }
 
-SelectFont() {
-    Global
-	; Set the fontObj (optional) - only set the ones you want to pre-select
-	; fontObj := Object("name","Terminal","size",14,"color",0xFF0000,"strike",1,"underline",1,"italic",1,"bold",1)
-	fontObj := Object("name", StrSplit(g_GUI.Font, ",")[1])
-	fontObj := FontSelect(fontObj,OptsHwnd) ; shows the font selection dialog
-	If (!fontObj)
-		return
-
-    Gui, Setting:Font,,
-    Gui, Setting:Font, % fontObj["str"], % fontObj["name"]
-	GuiControl, Setting:Font, g_Font
-    GuiControl, Setting:, g_Font, % fontObj["name"] "," fontObj["Str"] ; fontObj["str"] = AHK compatible string to set all options
-
+SelectMainFont() {
+    SelectFont("Font")
 }
 
 SelectOptsFont() {
-    Global
-	fontObj := Object("name", StrSplit(g_GUI.OptsFont, ",")[1])
-	fontObj := FontSelect(fontObj,OptsHwnd)
-	If (!fontObj)
-		return
-
-    Gui, Setting:Font,,
-    Gui, Setting:Font, % fontObj["str"], % fontObj["name"]
-    GuiControl, Setting:Font, g_OptsFont
-    GuiControl, Setting:, g_OptsFont, % fontObj["name"] "," fontObj["Str"]
+    SelectFont("OptsFont")
 }
 
 SelectSBFont() {
-    Global
-	fontObj := Object("name", StrSplit(g_GUI.SBFont, ",")[1])
-	fontObj := FontSelect(fontObj,OptsHwnd)
-	If (!fontObj)
-		return
+    SelectFont("SBFont")
+}
 
-    Gui, Setting:Font,,
-    Gui, Setting:Font, % fontObj["str"], % fontObj["name"]
-    GuiControl, Setting:Font, g_SBFont
-    GuiControl, Setting:, g_SBFont, % fontObj["name"] "," fontObj["Str"]
+SelectFont(TargetVar := "Font") {
+    Global
+    ; 从 g_GUI 读取当前字体名作为初始选择
+    ; Set the fontObj (optional) - only set the ones you want to pre-select
+	; fontObj := Object("name","Terminal","size",14,"color",0xFF0000,"strike",1,"underline",1,"italic",1,"bold",1)
+    initFont := StrSplit(g_GUI[TargetVar], ",")[1]
+    fontObj := Object("name", initFont)
+    fontObj := FontSelect(fontObj, OptsHwnd)
+    If (!fontObj)
+        return
+
+    ; 更新控件字体并设置显示文本
+    controlVar := "g_" . TargetVar
+    Gui, OPT:Font,,
+    Gui, OPT:Font, % fontObj["str"], % fontObj["name"]
+    GuiControl, OPT:Font, %controlVar%
+    GuiControl, OPT:, %controlVar%, % fontObj["name"] "," fontObj["str"]
 }
 
 SelectCtrlColor() {
-    Global
-    custColorObj := Array(g_GUI.CtrlColor,g_GUI.WinColor,0xFF0000)
-	color := ColorSelect(g_GUI.CtrlColor,OptsHwnd,custColorObj,"full")            ; hwnd and custColorObj are optional
-
-    GuiControl, Setting:, g_CtrlColor, % color
-    GuiControl, Setting:+c%color%, g_CtrlColor
+    SelectColor("Ctrl")
 }
 
 SelectWinColor() {
-    Global
-    custColorObj := Array(g_GUI.CtrlColor,g_GUI.WinColor,0xFF0000)
-	color := ColorSelect(g_GUI.WinColor,OptsHwnd,custColorObj,"full")            ; hwnd and custColorObj are optional
-
-    GuiControl, Setting:, g_WinColor, % color
-    GuiControl, Setting:+c%color%, g_WinColor
+    SelectColor("Win")
 }
 
-SettingButtonOK() {
+SelectColor(Target := "Ctrl") {
+    Global
+    startColor := (Target = "Win") ? g_GUI.WinColor : g_GUI.CtrlColor
+    custColorObj := Array(g_GUI.CtrlColor, g_GUI.WinColor, 0xFF0000)    ; 初始化 custom colors，使用当前两项作为初始值
+    color := ColorSelect(startColor, OptsHwnd, custColorObj, "full")    ; hwnd and custColorObj are optional
+
+    controlVar := (Target = "Win") ? "g_WinColor" : "g_CtrlColor"       ; 更新选项窗口控件并设置控件颜色
+    GuiControl, OPT:, %controlVar%, % color
+    GuiControl, OPT:+c%color%, %controlVar%
+}
+
+OPTButtonOK() {
     SAVECONFIG()
     Reload()
 }
 
-SettingGuiEscape() {
-    SettingGuiClose()
+OPTGuiEscape() {
+    OPTGuiClose()
 }
 
-SettingButtonCancel() {
-    SettingGuiClose()
+OPTButtonCancel() {
+    OPTGuiClose()
 }
 
-SettingButtonHelp() {
+OPTButtonHelp() {
     Run, https://github.com/zhugecaomao/ALTRun/wiki
 }
 
-SettingGuiClose() {
+OPTGuiClose() {
     Hotkey, % g_HOTKEY.GlobalHotkey1, On, UseErrorLevel
     Hotkey, % g_HOTKEY.GlobalHotkey2, On, UseErrorLevel
-    Gui, Setting:Destroy
+    Gui, OPT:Destroy
 }
 
 LoadConfig(Arg) {                                                       ; 加载主配置文件
@@ -1653,7 +1639,7 @@ IniWrite(Section, Key := "", Value := "") {
 }
 
 SAVECONFIG() {
-    Gui, Setting:Submit
+    Gui, OPT:Submit
 
     For key, description in g_CHKLV
         g_%key% := (A_Index = LV_GetNext(A_Index-1, "C")) ? 1 : 0       ; for Options - General page - Check Listview
@@ -1767,7 +1753,7 @@ SetLanguage() {                                                         ; Max st
     ENG.121 := "Smart Match - Fuzzy and Smart matching and filtering result"
     ENG.122 := "Match beginning of the string (Untick: Match from any position)"
     ENG.123 := "Show hints/tips in the bottom status bar"
-    ENG.124 := "Show RunCount - Show command executed times in the status bar"
+    ENG.124 := "Show command executed RunCount in the status bar"
     ENG.125 := "Show status bar at the bottom of the window"
     ENG.126 := "Show [Run] button on main window"
     ENG.127 := "Show [Options] button on main window"
@@ -1924,14 +1910,14 @@ SetLanguage() {                                                         ; Max st
     CHN.120 := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
     CHN.121 := "智能匹配 - 模糊和智能匹配和过滤结果"
     CHN.122 := "搜索时匹配字符串开头 (取消勾选: 匹配任意位置)"
-    CHN.123 := "显示提示信息 - 在底部状态栏中显示技巧提示信息"
-    CHN.124 := "显示运行次数 - 在底部状态栏中显示命令执行次数"
+    CHN.123 := "显示提示信息 (状态栏)"
+    CHN.124 := "显示命令执行次数 (状态栏)"
     CHN.125 := "显示状态栏 (窗口底部)"
     CHN.126 := "显示主窗口 [运行] 按钮"
     CHN.127 := "显示主窗口 [选项] 按钮"
     CHN.128 := "双缓冲绘图, 改善窗口闪烁 (Win XP+)"
     CHN.129 := "启用快速结构计算"
-    CHN.130 := "简化路径 - 仅显示文件/文件夹/应用程序名称, 而不是完整路径"
+    CHN.130 := "简化路径 - 仅显示文件/文件夹/应用程序名称, 而非完整路径"
     CHN.131 := "设置语言为简体中文 (Simplified Chinese)"
     CHN.132 := "搜索时匹配拼音首字母"
     CHN.150 := "文件管理器"                                              ; 150~159 Options window (Other than Check Listview)
@@ -1985,7 +1971,7 @@ SetLanguage() {                                                         ; Max st
     CHN.225 := "扩展名前自动添加日期"
     CHN.229 := "条件触发快捷操作"
     CHN.230 := "如果窗口 ID 包含"
-    CHN.231 := "热键 (可编辑)"
+    CHN.231 := "热键 (自由定制)"
     CHN.232 := "触发操作"
     CHN.300 := "显示"                                                   ; 300+ 托盘菜单
     CHN.301 := "配置选项`tF2"
