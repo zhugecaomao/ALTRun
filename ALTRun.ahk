@@ -106,7 +106,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "ALTRun.jpg"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.08.23"
+            ,WinName        : "ALTRun - Ver 2025.09.05"
             ,WinHide        : ""
             ,UseDisplay     : 0
             ,UseFallback    : 0
@@ -354,22 +354,21 @@ SearchCommand(command := "") {
         _Desc := splitResult[3]
         SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
 
-        elementToSearch := g_CONFIG.MatchPath ? _Path " " _Desc : fileName " " _Desc ; search file name include extension, and desc (not search type for MatchBeginning option)
+        elementToSearch := g_CONFIG.MatchPath ? _Path " " _Desc : fileName " " _Desc ; search file name include extension, and desc (For MatchBeginning option, exclude "type")
         if (g_CONFIG.MatchPinyin) {
             elementToSearch := GetFirstChar(elementToSearch)            ; 中文转为拼音首字母
         }
 
         if FuzzyMatch(elementToSearch, command) {
             g_MATCHED.Push(element)
-            If (g_MATCHED.Length() = 1) {
+            If (g_MATCHED.Length() = 1)
                 g_RUNTIME.ActiveCommand := element
-            } else If (g_MATCHED.Length() >= g_GUI.ListRows)
+            If (g_MATCHED.Length() >= g_GUI.ListRows)
                 Break
         }
     }
 
-    ; No matched command found
-    if (g_MATCHED.Length() = 0) {
+    if (g_MATCHED.Length() = 0) {                                       ; No matched command found
         if (EvalResult := Eval(command)) {
             RebarQty   := Ceil((EvalResult-40*2) / 300) + 1
             EvalResFmt := FormatThousand(EvalResult)
@@ -963,65 +962,70 @@ Listary() {                                                             ; Listar
         GroupAdd, ExcludeWin, %A_LoopField%
 
     if (g_CONFIG.AutoSwitchDir) {
-        g_LOG.Debug("Listary Auto-QuickSwitch Enabled.")
-        Loop
-        {
+        g_LOG.Debug("Listary Auto-QuickSwitch enabled")
+        Loop {
             WinWaitActive ahk_class TTOTAL_CMD
                 WinGet, ThisHWND, ID, A
             WinWaitNotActive
 
-            If(WinActive("ahk_group DialogBox") && !WinActive("ahk_group ExcludeWin")) ; 检测当前窗口是否符合打开保存对话框条件
-            {
+            If(WinActive("ahk_group DialogBox") && !WinActive("ahk_group ExcludeWin")) { ; 检测当前窗口是否符合打开保存对话框条件
                 WinGetActiveTitle, Title
                 WinGet, ActiveProcess, ProcessName, A
-
                 g_LOG.Debug("Listary dialog detected, active window ahk_title=" Title ", ahk_exe=" ActiveProcess)
-                LocateTC()                                              ; NO Return, as will terimate loop (AutoSwitchDir)
+                SyncTCPath()                                            ; NO Return, as will terimate loop (AutoSwitchDir)
             }
+            Sleep, 100  ; Reduce CPU usage
         }
     }
     Hotkey, IfWinActive, ahk_group DialogBox                            ; 设置对话框路径定位热键,为了不影响其他程序热键,设置只对打开/保存对话框生效
-    Hotkey, % g_HOTKEY.ExplorerDir, LocateExplorer, UseErrorLevel       ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
-    Hotkey, % g_HOTKEY.TotalCMDDir, LocateTC, UseErrorLevel             ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
+    Hotkey, % g_HOTKEY.ExplorerDir, SyncExplorerPath, UseErrorLevel     ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
+    Hotkey, % g_HOTKEY.TotalCMDDir, SyncTCPath, UseErrorLevel           ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
     Hotkey, IfWinActive
 }
 
-LocateTC() {                                                            ; Get TC current dir path, and change dialog box path to it
-    ClipSaved := ClipboardAll 
-    Clipboard :=
-    SendMessage 1075, 2029, 0, , ahk_class TTOTAL_CMD
-    ClipWait, 200
-    OutDir=%Clipboard%\                                                 ; 结尾添加\ 符号,变为路径,试图解决AutoCAD不识别路径问题
-    Clipboard := ClipSaved 
-    ClipSaved := 
-
+SyncTCPath() {                                                          ; Sync dialog box path to Total Commander current path
+    ClipSaved := ClipboardAll
+    Clipboard := ""
+    SendMessage, 1075, 2029, 0, , ahk_class TTOTAL_CMD
+    if (ErrorLevel = "FAIL") {
+        Clipboard := ClipSaved
+        return
+    }
+    ClipWait, 0.5
+    if (Clipboard = "") {
+        Clipboard := ClipSaved
+        return
+    }
+    OutDir := RTrim(Clipboard, "\") . "\"                               ; Normalize path with single trailing \ 解决AutoCAD不识别路径问题
+    Clipboard := ClipSaved
     ChangePath(OutDir)
 }
 
-LocateExplorer() {                                                      ; Get Explorer current dir path, and change dialog box path to it
-    Loop 9
-    {
-        ControlGetText, Dir, ToolbarWindow32%A_Index%, ahk_class CabinetWClass
-    } until (InStr(Dir,"Address"))
- 
-    Dir:=StrReplace(Dir,"Address: ","")
-    if (Dir="Computer")
-        Dir:="C:\"
-
-    If (SubStr(Dir,2,2) != ":\")                                        ; then Explorer lists it as one of the library directories such as Music or Pictures
-        Dir:=% "C:\Users\" A_UserName "\" Dir
-
-    ChangePath(Dir)
+SyncExplorerPath() {                                                    ; Sync dialog box path to Explorer current path (Win7~11 compatible)
+    WinGet, hWnd, ID, ahk_class CabinetWClass
+    if !hWnd
+        return
+    try {
+        for window in ComObjCreate("Shell.Application").Windows
+            if (window.HWND = hWnd) {
+                Dir := window.Document.Folder.Self.Path
+                ChangePath(Dir)
+                return
+            }
+    }
 }
 
-ChangePath(Dir) {
+ChangePath(Dir) {                                                       ; Set dialog box path to specified directory
+    if !Dir
+        return
+    ControlGet, hCtl, Hwnd, , Edit1, A
+    if !hCtl
+        return
     ControlGetText, w_Edit1Text, Edit1, A
     ControlClick, Edit1, A
     ControlSetText, Edit1, %Dir%, A
     ControlSend, Edit1, {Enter}, A
-    ;Sleep,100
-    ;ControlSetText, Edit1, %w_Edit1Text%, A                            ; 还原之前的窗口 File Name 内容, 在选择文件的对话框时没有问题, 但是在选择文件夹的对话框有Bug,暂时注释掉
-    g_LOG.Debug("Listary change path=" Dir)
+    g_LOG.Debug("Listary change path=" . Dir)
 }
 
 UserCommand() {
