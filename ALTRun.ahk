@@ -18,6 +18,7 @@ SetWorkingDir %A_ScriptDir%
 ;===================================================
 Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
 , g_COMMANDS:= {}           ; All commands
+, g_CMDINDEX:= {}           ; Searchable text for All commands
 , g_FALLBACK:= {}           ; Fallback commands
 , g_HISTORYS:= {}           ; Execution history
 , g_MATCHED := {}           ; Matched commands
@@ -345,26 +346,17 @@ SearchCommand(command := "") {
         Return ListResult(g_RUNTIME.ActiveCommand)
     }
 
-    ; Search commands
-    for index, element in g_COMMANDS
-    {
-        splitResult := StrSplit(element, " | ")
-        _Type := splitResult[1]
-        _Path := splitResult[2]
-        _Desc := splitResult[3]
-        SplitPath, _Path, fileName                                      ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
+    ; Search commands using precomputed searchable text
+    Loop, % g_COMMANDS.Length() {
+        element    := g_COMMANDS[A_Index]
+        searchText := g_CMDINDEX[A_Index]
 
-        elementToSearch := g_CONFIG.MatchPath ? _Path " " _Desc : fileName " " _Desc ; search file name include extension, and desc (For MatchBeginning option, exclude "type")
-        if (g_CONFIG.MatchPinyin) {
-            elementToSearch := GetFirstChar(elementToSearch)            ; 中文转为拼音首字母
-        }
-
-        if FuzzyMatch(elementToSearch, command) {
+        if FuzzyMatch(searchText, command) {
             g_MATCHED.Push(element)
-            If (g_MATCHED.Length() = 1)
+            if (g_MATCHED.Length() = 1)
                 g_RUNTIME.ActiveCommand := element
-            If (g_MATCHED.Length() >= g_GUI.ListRows)
-                Break
+            if (g_MATCHED.Length() >= g_GUI.ListRows)
+                break
         }
     }
 
@@ -754,9 +746,10 @@ RankDown() {
 }
 
 LoadCommands() {
-    g_COMMANDS          := {}                                           ; Clear g_COMMANDS and g_FALLBACK list
-    g_FALLBACK          := {}
-    RankString          := ""
+    g_COMMANDS := {}                                                    ; Clear g_COMMANDS, g_FALLBACK, g_CMDINDEX (searchable text for all commands)
+    g_CMDINDEX := {}
+    g_FALLBACK := {}
+    RankString := ""
     g_RUNTIME.FuncList  := "None|"                                      ; FuncList is used to store all functions for Options window
 
     Loop Parse, % LoadConfig("commands"), `n                            ; Read commands sections (built-in, user & index), read each line, separate key and value
@@ -764,19 +757,25 @@ LoadCommands() {
         command := StrSplit(A_LoopField, "=")[1]                        ; pass first string (key) to command
         rank    := StrSplit(A_LoopField, "=")[2]                        ; pass second string (value) to rank
 
-        if (command != "" and rank > 0)
-        {
-            RankString .= rank "`t" command "`n"
-
+        if (command != "" and rank > 0) {
             splitResult := StrSplit(command, " | ")
-            g_RUNTIME.FuncList .= (splitResult[1] = "Func" and IsFunc(splitResult[2])) ? splitResult[2] "|" : ""
+            type := splitResult[1], path := splitResult[2], desc := splitResult[3]
+            SplitPath, path, filename
+
+            g_RUNTIME.FuncList .= (type = "Func" and IsFunc(path)) ? path "|" : ""
+            searchText := g_CONFIG.MatchPath ? path " " desc : filename " " desc ; search file name include extension, and desc (For MatchBeginning option, exclude "type")
+            searchText := g_CONFIG.MatchPinyin ? GetFirstChar(searchText) : searchText ; 中文转为拼音首字母
+
+            RankString .= rank "`t" command "`t" searchText "`n"
         }
     }
     Sort, RankString, R N
     Loop Parse, RankString, `n
     {
-        command := StrSplit(A_LoopField, "`t")[2]
+        command    := StrSplit(A_LoopField, "`t")[2]
+        searchText := StrSplit(A_LoopField, "`t")[3]
         g_COMMANDS.Push(command)
+        g_CMDINDEX.Push(searchText)
     }
     
     FALLBACKCMDSEC := IniRead(g_SECTION.FALLBACK)                       ; Read FALLBACK section, initialize it if section not exist
@@ -991,7 +990,7 @@ SyncTCPath() {                                                          ; Sync d
         Clipboard := ClipSaved
         return
     }
-    ClipWait, 0.5
+    ClipWait, 0.1
     if (Clipboard = "") {
         Clipboard := ClipSaved
         return
@@ -1802,12 +1801,12 @@ SetLanguage() {                                                         ; Max st
     ENG.206 := "Hotkey 3"
     ENG.210 := "Listary"                                                ; 210~219 Listary
     ENG.211 := "Dir Quick-Switch"
-    ENG.212 := "File manager id"
-    ENG.213 := "Open/Save dialog id"
-    ENG.214 := "Exclude windows id"
-    ENG.215 := "Hotkey for Switch Open/Save dialog path to"
-    ENG.216 := "Total Commander's dir"
-    ENG.217 := "Windows Explorer's dir"
+    ENG.212 := "File Manager ID"
+    ENG.213 := "Open/Save Dialog ID"
+    ENG.214 := "Exclude Windows ID"
+    ENG.215 := "Hotkey"
+    ENG.216 := "QuickSwitch to TC's dir"
+    ENG.217 := "QuickSwitch to Explorer"
     ENG.218 := "Auto switch dir on open/save dialog"
     ENG.220 := "Plugins"                                                ; 220~299 Plugins
     ENG.221 := "Auto-date at end of text"
@@ -1963,9 +1962,9 @@ SetLanguage() {                                                         ; Max st
     CHN.212 := "文件管理器 ID"
     CHN.213 := "打开/保存对话框 ID"
     CHN.214 := "排除窗口 ID"
-    CHN.215 := "切换打开/保存对话框路径的热键"
-    CHN.216 := "Total Commander 路径"
-    CHN.217 := "资源管理器路径"
+    CHN.215 := "热键"
+    CHN.216 := "快速切换到 TC 目录"
+    CHN.217 := "快速切换到 资源管理器"
     CHN.218 := "自动切换路径"
     CHN.220 := "插件"                                                   ; 220~299 Plugins
     CHN.221 := "文本末尾自动添加日期"
