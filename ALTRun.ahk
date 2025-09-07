@@ -107,7 +107,7 @@ Global g_LOG:= New Logger(A_Temp "\ALTRun.log")
             ,Background     : "ALTRun.jpg"
             ,Transparency   : 230}
 , g_RUNTIME := {Ini         : A_ScriptDir "\" A_ComputerName ".ini"     ; 程序运行需要的临时全局变量, 不需要用户参与修改, 不读写入ini
-            ,WinName        : "ALTRun - Ver 2025.09.05"
+            ,WinName        : "ALTRun - Ver 2025.09.07"
             ,WinHide        : ""
             ,UseDisplay     : 0
             ,UseFallback    : 0
@@ -948,8 +948,9 @@ Update() {
     Run, https://github.com/zhugecaomao/ALTRun/releases
 }
 
-Listary() {                                                             ; Listary 快速更换保存/打开对话框路径
-    g_LOG.Debug("Listary function starting...")
+Listary() {
+    ; Listary 快速更换保存/打开对话框路径
+    g_LOG.Debug("Listary: Initializing...")
 
     Loop Parse, % g_CONFIG.FileMgrID, `,                                ; File Manager Class, default is Windows Explorer & Total Commander
         GroupAdd, FileMgrID, %A_LoopField%
@@ -961,16 +962,17 @@ Listary() {                                                             ; Listar
         GroupAdd, ExcludeWin, %A_LoopField%
 
     if (g_CONFIG.AutoSwitchDir) {
-        g_LOG.Debug("Listary Auto-QuickSwitch enabled")
+        g_LOG.Debug("Listary: Auto-QuickSwitch enabled, starting monitoring thread...")
         Loop {
             WinWaitActive ahk_class TTOTAL_CMD
                 WinGet, ThisHWND, ID, A
             WinWaitNotActive
 
-            If(WinActive("ahk_group DialogBox") && !WinActive("ahk_group ExcludeWin")) { ; 检测当前窗口是否符合打开保存对话框条件
+            ; 检测当前窗口是否符合打开保存对话框条件
+            If(WinActive("ahk_group DialogBox") && !WinActive("ahk_group ExcludeWin")) {
                 WinGetActiveTitle, Title
                 WinGet, ActiveProcess, ProcessName, A
-                g_LOG.Debug("Listary dialog detected, active window ahk_title=" Title ", ahk_exe=" ActiveProcess)
+                g_LOG.Debug("Listary: Dialog detected, active window ahk_title=" Title ", ahk_exe=" ActiveProcess)
                 SyncTCPath()                                            ; NO Return, as will terimate loop (AutoSwitchDir)
             }
             Sleep, 100  ; Reduce CPU usage
@@ -980,30 +982,35 @@ Listary() {                                                             ; Listar
     Hotkey, % g_HOTKEY.ExplorerDir, SyncExplorerPath, UseErrorLevel     ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
     Hotkey, % g_HOTKEY.TotalCMDDir, SyncTCPath, UseErrorLevel           ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
     Hotkey, IfWinActive
+    return
 }
 
-SyncTCPath() {                                                          ; Sync dialog box path to Total Commander current path
+SyncTCPath() {  ; Sync dialog box to Total Commander path
     ClipSaved := ClipboardAll
     Clipboard := ""
     SendMessage, 1075, 2029, 0, , ahk_class TTOTAL_CMD
     if (ErrorLevel = "FAIL") {
+        g_LOG.Debug("SyncTCPath: SendMessage failed")
         Clipboard := ClipSaved
         return
     }
-    ClipWait, 0.1
+    ClipWait, 0.1  ; Reduced timeout
     if (Clipboard = "") {
+        g_LOG.Debug("SyncTCPath: Clipboard empty")
         Clipboard := ClipSaved
         return
     }
-    OutDir := RTrim(Clipboard, "\") . "\"                               ; Normalize path with single trailing \ 解决AutoCAD不识别路径问题
+    OutDir := RTrim(Clipboard, "\") . "\" ; Normalize path with single trailing \ 解决AutoCAD不识别路径问题
     Clipboard := ClipSaved
     ChangePath(OutDir)
 }
 
-SyncExplorerPath() {                                                    ; Sync dialog box path to Explorer current path (Win7~11 compatible)
+SyncExplorerPath() {  ; Sync dialog box to Explorer path (Win7~11)
     WinGet, hWnd, ID, ahk_class CabinetWClass
-    if !hWnd
+    if (!hWnd) {
+        g_LOG.Debug("SyncExplorerPath: No Explorer window found")
         return
+    }
     try {
         for window in ComObjCreate("Shell.Application").Windows
             if (window.HWND = hWnd) {
@@ -1011,20 +1018,36 @@ SyncExplorerPath() {                                                    ; Sync d
                 ChangePath(Dir)
                 return
             }
+        g_LOG.Debug("SyncExplorerPath: No matching Explorer window")
+    } catch e {
+        g_LOG.Debug("SyncExplorerPath: COM error - " e.Message)
     }
 }
 
 ChangePath(Dir) {                                                       ; Set dialog box path to specified directory
-    if !Dir
+    if (!Dir || !FileExist(Dir)) {
+        g_LOG.Debug("ChangePath: Invalid directory - " Dir)
         return
-    ControlGet, hCtl, Hwnd, , Edit1, A
-    if !hCtl
-        return
-    ControlGetText, w_Edit1Text, Edit1, A
-    ControlClick, Edit1, A
-    ControlSetText, Edit1, %Dir%, A
-    ControlSend, Edit1, {Enter}, A
-    g_LOG.Debug("Listary change path=" . Dir)
+    }
+    WinGetClass, ActiveClass, A
+    if (ActiveClass = "Qt5QWindowIcon") {
+        ; WPS dialog: Its Edit control has no valid id, try simulate keyboard input (unreliable)
+        SendRaw %Dir%
+        SendInput {Enter}
+        g_LOG.Debug("ChangePath: Set WPS path to " Dir " (keyboard fallback)")
+    } else {
+        ; Standard dialog (#32770)
+        ControlGet, dialogControl, Hwnd, , Edit1, A
+        if (dialogControl) {
+            ControlGetText, currentText, Edit1, A
+            ControlClick, Edit1, A
+            ControlSetText, Edit1, %Dir%, A
+            ControlSend, Edit1, {Enter}, A
+            g_LOG.Debug("ChangePath: Set path to " Dir " (Edit1)")
+        } else {
+            g_LOG.Debug("ChangePath: No editable control found")
+        }
+    }
 }
 
 UserCommand() {
