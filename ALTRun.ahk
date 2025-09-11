@@ -1218,13 +1218,12 @@ LineEndAddDate() {                                                      ; 针对
     g_LOG.Debug("Add Date At End= - " CurrentDate)
 }
 
-NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit)
+NameAddDate(WinName, CurrCtrl) {                                        ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit)
     ControlGetText, EditCtrlText, %CurrCtrl%, A
     SplitPath, EditCtrlText, fileName, fileDir, fileExt, nameNoExt
     FormatTime, CurrentDate,, dd.MM.yyyy
 
-    if (isFile && fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) ; 如果是文件,而且有真实文件后缀名,才加日期在后缀名之前
-    {
+    if (StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) {          ; 如果有真实文件后缀名,才加日期在后缀名之前
         if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$") {
             baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
         }
@@ -1235,6 +1234,12 @@ NameAddDate(WinName, CurrCtrl, isFile:= True) {                         ; 在文
             baseName := nameNoExt
         }
         NameWithDate := baseName " - " CurrentDate "." fileExt
+    }
+    else if (RegExMatch(fileName, " - \d{2}\.\d{2}\.\d{4}$")) {         ; 如果无后缀, 文件(夹)名最后有日期,则更新为当前日期
+        NameWithDate := RegExReplace(fileName, " - \d{2}\.\d{2}\.\d{4}$", " - " CurrentDate)
+    }
+    else if (RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$")) {
+        NameWithDate := RegExReplace(fileName, "-\d{2}\.\d{2}\.\d{4}$", " - " CurrentDate)
     }
     else {
         NameWithDate := EditCtrlText " - " CurrentDate
