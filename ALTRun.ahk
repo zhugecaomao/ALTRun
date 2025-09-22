@@ -236,7 +236,6 @@ SetMainGUI() {
     Opt_X   := g_CONFIG["ShowBtnOpt"] * 10
 
     MainGUI := Gui("+Owner" (g_CONFIG["AlwaysOnTop"] ? " AlwaysOnTop" : ""), g_TITLE)
-    MainGUI.Hide()  ; 尝试解决屏幕左上角一闪而过的窗口
     MainGUI.OnEvent("Close", MainGuiClose)
     MainGUI.OnEvent("Escape", MainGuiEscape)
     MainGUI.BackColor := g_GUI["WinColor"]
@@ -682,8 +681,9 @@ ChangeCommand(Step := 1, ResetSelRow := False) {
     OutputDebug("ChangeCommand: Selecting Row=" selectedRow)
 }
 
-OnListviewClick(myListView, rowNumber) {                                ; On ListView left click
-    if (!rowNumber)                                                     ; 没有焦点行
+OnListviewClick(myListView, rowNumber) {
+    ; 如果用户左键点击了列表行以外的地方
+    if (!rowNumber)
         Return
 
     if (g_MATCHED.Length >= rowNumber) {
@@ -696,19 +696,23 @@ OnListviewClick(myListView, rowNumber) {                                ; On Lis
 
 OnListViewContextMenu(GuiCtrlObj, rowNumber, IsRightClick, X, Y) {      ; On ListView ContextMenu
     Global myListView, g_MATCHED, g_RUNTIME, g_LNG, g_LOG
-    if (!rowNumber)                                                     ; If the user clicked somewhere other than a row
+
+    ; 如果用户右键点击了列表行以外的地方
+    if (!rowNumber)
         Return
 
     if (g_MATCHED.Length >= rowNumber) {
         g_RUNTIME["CurrentCommand"] := g_MATCHED[rowNumber]
-        SetListViewContextMenu(X, Y)                                        ; Show ContextMenu on right click
-    } else {                                                            ; For cases like first hint page
+        SetListViewContextMenu(X, Y)
+    } else {
+        ; For cases like first hint page
         SetStatusBar(myListView.GetText(rowNumber, 3))
     }
 }
 
 SetListViewContextMenu(X, Y) {
-    static myListViewContextMenu := ""  ; 只在第一次调用时创建
+    ; 只在第一次调用右键菜单时创建
+    static myListViewContextMenu := ""
 
     if !IsObject(myListViewContextMenu) {
         myListViewContextMenu := Menu()
@@ -755,7 +759,12 @@ CopyCommand(*) {                                                        ; ListVi
 
     if (g_MATCHED.Length >= focusedRow) {
         g_RUNTIME["CurrentCommand"] := g_MATCHED[focusedRow]            ; Get current command from focused row
-        A_Clipboard := myListView.GetText(focusedRow, 3)                       ; Get the text from the focusedRow's 3rd field.
+    }
+
+    if (MainGUI.FocusedCtrl.ClassNN = "Edit1") {
+        SendInput("^c")                                                 ; If input box is focused, send Ctrl+C to copy input box content
+    } else {
+        A_Clipboard := myListView.GetText(focusedRow, 3)                ; Get the text from the focusedRow's 3rd field.
     }
 }
 
@@ -841,12 +850,19 @@ ParseArg() {
     }
 }
 
-FuzzyMatch(Haystack, Needle) {
-    Needle := StrReplace(Needle, "+", "\+")                             ; For Eval (preceded by a backslash to be seen as literal)
-    Needle := StrReplace(Needle, "*", "\*")                             ; For Eval (eg. 25+5 or 6*5 will show Eval result instead of match file with "30")
+FuzzyMatch(Haystack, Needle) { ; Haystack: 待搜索字符串 (命令的可搜索文本), Needle: 搜索关键词 (输入框内容)
+    ; 如果 Needle 为空，则直接返回 按照命令优先级排序显示所有命令
+    if (!Needle)
+        return true
+
+    ; 如果是数学表达式 (包含数字和运算符的字符串)，跳过模糊匹配
+    ; 例如: 25+5 或 6*5 会显示 Eval 结果而不是匹配文件中的 "30"
+    if RegExMatch(Needle, "^[\d+\-*/^(). ]+$") && RegExMatch(Needle, "[+\-*/^]")
+        return false
+
     Needle := StrReplace(Needle, "\", ".*")
     Needle := StrReplace(Needle, " ", ".*")                             ; 空格直接替换为匹配任意字符
-    Return RegExMatch(Haystack, g_RUNTIME["RegEx"] . Needle)
+    return RegExMatch(Haystack, g_RUNTIME["RegEx"] . Needle)
 }
 
 UpdateRank(originCmd, showRank := false, inc := 1) {
@@ -1491,16 +1507,13 @@ StruCalcResult(evalResult) {
     if !g_CONFIG["StruCalc"]
         return result
 
-    result.Push("")  ; 空行分隔
-
+    result.Push(" | -")  ; 空行分隔
     ; 主筋计算
     rebarNum := Ceil((evalResult - 80) / 300 + 1)
     spacing  := Max(Round((evalResult - 80) / (rebarNum - 0.999)), 0)   ; Use 0.999 to avoid division by zero error
     result.Push("Eval | With beam width = " formatVal " mm")
     result.Push(" | Main bar number = " rebarNum " (" spacing " C/C)")
-
-    result.Push("")  ; 空行分隔
-
+    result.Push(" | -")  ; 空行分隔
     ; 配筋面积计算
     result.Push("Eval | With As = " formatVal " mm2")
     result.Push(" | Rebar = " Ceil(evalResult / 132.7) "H13 / "
@@ -1524,7 +1537,6 @@ Options(ActTab := 1) {
     t := A_TickCount
     ActTab := IsNumber(ActTab) ? ActTab : 1                             ; Convert ActTab to number, default is 1 (for case like [Option`tF2])
     OptGUI := Gui("+Owner", g_LNG[2])
-    OptGUI.Hide()
     OptGUI.SetFont(StrSplit(g_GUI["OptGUIFont"], ",")[2], StrSplit(g_GUI["OptGUIFont"], ",")[1])
     OptTab := OptGUI.AddTab3("Choose" ActTab, g_LNG[100])
 
@@ -1891,7 +1903,7 @@ LoadConfig(Arg) {
             ; Command type: File, Dir, CMD, URL, some sample below
             ; Please make sure App is not running before modifying.
             ;
-            Dir | A_AppData "\Microsoft\Windows\SendTo" | Windows SendTo Dir=9
+            Dir | %AppData%\Microsoft\Windows\SendTo | Windows SendTo Dir=9
             Dir | %OneDrive% | OneDrive=9
             Dir | A_ScriptDir | ALTRun Program Dir=9
             Cmd | cmd.exe /k ipconfig | Check IP Address=9
@@ -1899,7 +1911,7 @@ LoadConfig(Arg) {
             Cmd | Control TimeDate.cpl | Date and Time=9
             Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
             URL | www.google.com | Google=9
-            File | C:\Apps\TotalCMD64\TOTALCMD64.exe=9
+            File | C:\Windows\notepad.exe=9
             )", g_INI, g_SECTION["USERCMD"])
             USERCMDSEC := IniRead(g_INI, g_SECTION["USERCMD"])
         }
@@ -2398,8 +2410,7 @@ EvalSimple(expression) {            ; 计算不含括号的简单数学表达式
 
 Test() {
     t := A_TickCount
-    Loop 50
-    {
+    Loop 50 {
         chr1 := Random(Ord("a"),Ord("z"))
         chr2 := Random(Ord("A"),Ord("Z")) ;65,90
         chr3 := Random(Ord("a"),Ord("z")) ;97,122
