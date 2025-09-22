@@ -24,7 +24,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir "\ALTRun.ini"
-Global g_VER   := "2025.09.17"
+Global g_VER   := "2025.09.22"
 Global g_TITLE := "ALTRun - Ver " g_VER
 
 Global g_COMMANDS := Array()         ; All commands
@@ -1392,24 +1392,32 @@ CmdMgrGuiClose(*) {
 Plugins() {                                                             ; Plugins (Ctrl+D 自动添加日期)
     Loop Parse, g_HOTKEY["AutoDateBefExt"], ","
         GroupAdd("FileListMangr", A_LoopField)
-    HotIfWinActive("ahk_group FileListMangr")                           ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-    Hotkey(g_HOTKEY["AutoDateBEHKey"], RenameWithDate)
 
     Loop Parse, g_HOTKEY["AutoDateAtEnd"], ","
         GroupAdd("TextBox", A_LoopField)
-    
+
+    HotIfWinActive("ahk_group FileListMangr")                           ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
+    Hotkey(g_HOTKEY["AutoDateBEHKey"], RenameWithDate)
+
+
     HotIfWinActive("ahk_group TextBox")
     Hotkey(g_HOTKEY["AutoDateAEHKey"], LineEndAddDate)
     HotIfWinActive
+
+    g_LOG.Debug("Plugins: Loaded AutoDate plugins...")
     return
 }
 
-RenameWithDate(*) {                                                      ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-    CurrCtrl := ControlGetFocus("A")                                    ; 获取当前激活的窗口中的聚焦的控件名称
-    if (InStr(CurrCtrl, "Edit") or InStr(CurrCtrl, "Scintilla"))        ; 如果当前激活的控件为Edit类或者Scintilla1(Notepad2),则Ctrl+D功能生效
-        NameAddDate("FileListMangr", CurrCtrl)
+RenameWithDate(*) {                                                     ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
+    FocusedHwnd  := ControlGetFocus("A")                                ; 获取当前激活的窗口中的聚焦的控件名称
+    FocusedClassNN := ControlGetClassNN(FocusedHwnd)
+
+    if (InStr(FocusedClassNN, "Edit") or InStr(FocusedClassNN, "Scintilla")) ; 如果当前激活的控件为Edit类或者Scintilla1(Notepad2),则Ctrl+D功能生效
+        NameAddDate("FileListMangr", FocusedClassNN)
     Else
         SendInput "^D"                                                  ; 如果不是,则发送原始的Ctrl+D
+
+    OutputDebug("RenameWithDate: Current control=" FocusedClassNN)
     Return
 }
 
@@ -1817,7 +1825,7 @@ LoadConfig(Arg) {
             Func | EmptyRecycle | Empty Recycle Bin=99
             Func | TurnMonitorOff | Turn off Monitor, Close Monitor=99
             Func | MuteVolume | Mute Volume=99
-            File | %A_Temp%\ALTRun.log | ALTRun Log File=99
+            File | %Temp%\ALTRun.log | ALTRun Log File=99
             Dir | A_ScriptDir | ALTRun Program Dir=99
             Dir | A_Startup | Current User Startup Dir=99
             Dir | A_StartupCommon | All User Startup Dir=99
@@ -2742,12 +2750,15 @@ ColorSelect(Color := 0, hwnd := 0, &custColorObj := "",disp:=1) {
 	return Color
 }
 
-;;==================== Get Chinese Pinyin First Char =========================
-; GetFirstChar(str) - Get the first letter of the pinyin for each Chinese character
-
-GetFirstChar(str)
-{
-	static array   := [ [-20319,-20284,"A"], [-20283,-19776,"B"], [-19775,-19219,"C"], [-19218,-18711,"D"], [-18710,-18527,"E"], [-18526,-18240,"F"], [-18239,-17923,"G"], [-17922,-17418,"H"], [-17417,-16475,"J"], [-16474,-16213,"K"], [-16212,-15641,"L"], [-15640,-15166,"M"], [-15165,-14923,"N"], [-14922,-14915,"O"], [-14914,-14631,"P"], [-14630,-14150,"Q"], [-14149,-14091,"R"], [-14090,-13319,"S"], [-13318,-12839,"T"], [-12838,-12557,"W"], [-12556,-11848,"X"], [-11847,-11056,"Y"], [-11055,-10247,"Z"] ]
+;; 获取拼音首字母
+GetFirstChar(str) {
+    ; GBK编码区间对应的拼音首字母
+	static array := [ [-20319,-20284,"A"], [-20283,-19776,"B"], [-19775,-19219,"C"]
+        , [-19218,-18711,"D"], [-18710,-18527,"E"], [-18526,-18240,"F"], [-18239,-17923,"G"]
+        , [-17922,-17418,"H"], [-17417,-16475,"J"], [-16474,-16213,"K"], [-16212,-15641,"L"]
+        , [-15640,-15166,"M"], [-15165,-14923,"N"], [-14922,-14915,"O"], [-14914,-14631,"P"]
+        , [-14630,-14150,"Q"], [-14149,-14091,"R"], [-14090,-13319,"S"], [-13318,-12839,"T"]
+        , [-12838,-12557,"W"], [-12556,-11848,"X"], [-11847,-11056,"Y"], [-11055,-10247,"Z"] ]
 	
 	; 如果不包含中文字符，则直接返回原字符
 	if !RegExMatch(str, "[^\x{00}-\x{ff}]")
