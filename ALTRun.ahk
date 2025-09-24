@@ -175,14 +175,14 @@ Global g_HOTKEY := Map(
 
 Global g_GUI := Map(
     "ListRows"      , 9,
-    "ColWidth"      , "36,0,300,AutoHdr",
+    "ColWidth"      , "40,40,300,AutoHdr",
     "MainGUIFont"   , "Microsoft YaHei,norm s9",
     "OptGUIFont"    , "Microsoft YaHei,norm s9",
     "MainSBFont"    , "Microsoft YaHei,norm s8",
     "WinX"          , 660,
     "WinY"          , 300,
     "CtrlColor"     , "Default",
-    "WinColor"      , "Silver",
+    "WinColor"      , "Default",
     "Background"    , "ALTRun.jpg",
     "Transparency"  , 230
 )
@@ -200,7 +200,8 @@ Global g_RUNTIME := Map(
 
 Global g_USAGE := Map(A_YYYY . A_MM . A_DD, 1)
 
-Global MainGUI                                                          ; Global variables which are only read by the function, not assigned or used with the reference operator (&).
+; Global variables which are only read by the function, not assigned or used with the reference operator (&).
+Global MainGUI
 Global myListView
 Global myInputBox
 Global OptGUI
@@ -212,14 +213,14 @@ Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon c
                         ,"URL",  IL_Add(myImageList,"imageres.dll",-144)
                         ,"EVAL", IL_Add(myImageList,"imageres.dll",-182))
 
-LoadConfig("initialize")                                                ; Load ini config, iniWrite create ini whenever not exist
+LoadConfig("initialize")    ; iniWrite create ini whenever not exist
 LoadCommands()
 LoadHistory()
 UpdateSendTo()
 UpdateStartup()
 UpdateStartMenu()
-SetTrayMenu()                                                           ; SetTrayMenu before SetMainGUI, GUI window uses the tray icon that was in effect at the time the window was created
-SetMainGUI()                                                            ; Create and set main GUI
+SetTrayMenu()               ; SetTrayMenu before SetMainGUI, GUI window uses the tray icon that was in effect at the time the window was created
+SetMainGUI()                ; Create and set main GUI
 RegisterHotkey()
 Listary()
 Plugins()
@@ -244,7 +245,7 @@ SetMainGUI() {
     myInputBox := MainGUI.AddEdit("x12 y10 -WantReturn W" Input_W, g_LNG[13])
     myInputBox.OnEvent("Change", OnSearchInput)
     MainGUI.AddButton("x+" Enter_X " yp W" Enter_W " hp Default Hidden" (!g_CONFIG["ShowBtnRun"]), g_LNG[11]).OnEvent("Click", RunCurrentCommand)
-    MainGUI.AddButton("x+" Opt_X " yp W" Opt_W " hp Hidden" (!g_CONFIG["ShowBtnOpt"]), g_LNG[12]).OnEvent("Click", (*) => Options(1))
+    MainGUI.AddButton("x+" Opt_X " yp W" Opt_W " hp Hidden" (!g_CONFIG["ShowBtnOpt"]), g_LNG[12]).OnEvent("Click", (*) => Options())
     myListView := MainGUI.AddListView("x12 yp+36 W" (g_GUI["WinX"] - 24) " H" (g_GUI["WinY"] - 76) " -Multi", g_LNG[10])
     myListView.Opt((g_CONFIG["DoubleBuffer"] ? " +LV0x10000" : "") (g_CONFIG["ShowHdr"] ? "" : " -Hdr") (g_CONFIG["ShowGrid"] ? " Grid" : "") (g_CONFIG["ShowBorder"] ? "" : " -E0x200"))
     myListView.OnEvent("Click", OnListviewClick)
@@ -320,7 +321,7 @@ SetTrayMenu() {
             
             myTrayMenu.Delete() ; 删除默认项
             myTrayMenu.Add(g_LNG[300], ToggleWindow)
-            myTrayMenu.Add(g_LNG[301], (*) => Options(1))
+            myTrayMenu.Add(g_LNG[301], (*) => Options())
             myTrayMenu.Add(g_LNG[302], Reindex)
             myTrayMenu.Add(g_LNG[303], Usage)
             myTrayMenu.Add(g_LNG[309], Update)
@@ -369,7 +370,7 @@ RegisterHotkey() {
         Hotkey("!F4"        , (*) => ExitApp())
         Hotkey("Tab"        , TabFunc)
         Hotkey("F1"         , Help)
-        Hotkey("F2"         , (*) => Options(1))
+        Hotkey("F2"         , (*) => Options())
         Hotkey("F3"         , EditCommand)
         Hotkey("F4"         , UserCommand)
         Hotkey("^q"         , ReStart)
@@ -577,7 +578,7 @@ AbsPath(Path, KeepRunAs := False) {                                     ; Conver
     }
 
     Path := StrReplace(Path, "%Temp%", A_Temp)
-    Path := StrReplace(Path, "%OneDrive%", g_RUNTIME["OneDrive"])       ; Convert OneDrive to absolute path due to #NoEnv
+    Path := StrReplace(Path, "%OneDrive%", g_RUNTIME["OneDrive"])
     Return Path
 }
 
@@ -850,8 +851,11 @@ ParseArg() {
     }
 }
 
-FuzzyMatch(Haystack, Needle) { ; Haystack: 待搜索字符串 (命令的可搜索文本), Needle: 搜索关键词 (输入框内容)
-    ; 如果 Needle 为空，则直接返回 按照命令优先级排序显示所有命令
+; 模糊匹配函数
+; Haystack: 待搜索字符串 (命令的可搜索文本)
+; Needle  : 搜索关键词 (输入框内容)
+FuzzyMatch(Haystack, Needle) {
+    ; 如果 Needle 为空，直接返回 按照命令优先级排序显示所有命令
     if (!Needle)
         return true
 
@@ -1150,10 +1154,12 @@ Reindex(*) {                                                            ; Re-cre
 }
 
 Help(*) {
+    UpdateUsage()
     Options(8)
 }
 
 Usage(*) {
+    UpdateUsage()
     Options(7)
 }
 
@@ -1176,15 +1182,12 @@ Listary() {                                                             ; Listar
     if (g_CONFIG["AutoSwitchDir"]) {
         g_LOG.Debug("Listary: Auto-QuickSwitch enabled, starting monitoring thread...")
         Loop {
-            ; WinWaitActive ahk_class TTOTAL_CMD
-            ;     ThisHWND := WinGetID("A")
-            ; WinWaitNotActive
             TcHwnd := WinWaitActive("ahk_class TTOTAL_CMD")
             WinWaitNotActive()
 
             ; 检测当前窗口是否符合打开保存对话框条件
             If(WinActive("ahk_group DialogBox") && !WinActive("ahk_group ExcludeWin")) {
-                Title := WinGetTitle("A")
+                Title       := WinGetTitle("A")
                 ProcessName := WinGetProcessName("A")
                 g_LOG.Debug("Listary: Dialog detected, active window ahk_title=" Title ", ahk_exe=" ProcessName)
                 SyncTCPath()                                            ; NO Return, as will terimate loop (AutoSwitchDir)
@@ -1204,11 +1207,14 @@ Listary() {                                                             ; Listar
     return
 }
 
-SyncTCPath(*) { ; Sync dialog box to Total Commander path
+; Sync dialog box to Total Commander path (TC 7.x ~ 10.x)
+SyncTCPath(*) {
     ClipSaved   := ClipboardAll()
     A_Clipboard := ""
-    hwnd := WinGetID("ahk_class TTOTAL_CMD")                            ; Get the HWND of the active TC
+    ; Get the HWND of TC (WinGetID may occur error if TC not found)
+    hwnd := WinExist("ahk_class TTOTAL_CMD")
     if (!hwnd) {
+        MsgBox("没有找到Total Commander窗口,请先打开Total Commander!", g_TITLE, 48)
         g_LOG.Debug("SyncTCPath: No Total Commander window found")
         OutputDebug("SyncTCPath: No Total Commander window found")
         return
@@ -1221,20 +1227,24 @@ SyncTCPath(*) { ; Sync dialog box to Total Commander path
         A_Clipboard := ClipSaved
         return
     }
-    ClipWait(0.1)                                                       ; Wait up to 0.1 seconds for the clipboard to contain data
-    if (A_Clipboard = "") {
+    ; Wait up to 0.1 seconds for the clipboard to contain data
+    if (ClipWait(0.1) = 0) {
         A_Clipboard := ClipSaved
-        g_LOG.Debug("SyncTCPath: A_Clipboard is empty")
+        g_LOG.Debug("SyncTCPath: Clipboard wait timed out")
         return
     }
-    OutDir := RTrim(A_Clipboard, "\") . "\" ; Normalize path with single trailing \ 解决AutoCAD不识别路径问题
+    ; 确保路径以反斜杠结尾, 解决AutoCAD不识别路径问题
+    OutDir      := RTrim(A_Clipboard, "\") . "\"
     A_Clipboard := ClipSaved
-    ChangePath(OutDir)
+    SetDialogPath(OutDir)
 }
 
-SyncExplorerPath(*) {  ; Sync dialog box to Explorer path (Win7~11)
-    hwnd := WinGetID("ahk_class CabinetWClass")                         ; Get the HWND of the active Explorer window
+; Sync dialog box to Explorer path (Win7 ~ Win11)
+SyncExplorerPath(*) {
+    ; Get the HWND of Explorer (WinGetID may occur error if Explorer not found)
+    hwnd := WinExist("ahk_class CabinetWClass")
     if (!hwnd) {
+        MsgBox("没有找到资源管理器窗口,请先打开一个资源管理器窗口!", g_TITLE, 48)
         g_LOG.Debug("SyncExplorerPath: No Explorer window found")
         OutputDebug("SyncExplorerPath: No Explorer window found")
         return
@@ -1243,7 +1253,7 @@ SyncExplorerPath(*) {  ; Sync dialog box to Explorer path (Win7~11)
         for window in ComObject("Shell.Application").Windows
             if (window.HWND = hwnd) {
                 Dir := window.Document.Folder.Self.Path
-                ChangePath(Dir)
+                SetDialogPath(Dir)
                 return
             }
         g_LOG.Debug("SyncExplorerPath: No matching Explorer window")
@@ -1254,28 +1264,31 @@ SyncExplorerPath(*) {  ; Sync dialog box to Explorer path (Win7~11)
     }
 }
 
-ChangePath(Dir) {                                                       ; Set dialog box path to specified directory
+; Set dialog box path to specified directory
+SetDialogPath(Dir) {
     if (!Dir || !FileExist(Dir)) {
-        g_LOG.Debug("ChangePath: Invalid directory :" Dir)
+        g_LOG.Debug("SetDialogPath: Invalid directory :" Dir)
         return
     }
     ActiveClass := WinGetClass("A")
     if (ActiveClass = "Qt5QWindowIcon") {
-        ; WPS dialog: Its Edit control has no valid id, try simulate keyboard input (unreliable)
-        Send "{Dir}"
+        ; WPS dialog: Its Edit control has no valid id, try simulate keyboard input (not fully reliable)
+        SendInput "{Dir}"
         SendInput "{Enter}"
-        g_LOG.Debug("ChangePath: Set WPS path to " Dir " (keyboard fallback)")
+        g_LOG.Debug("SetDialogPath: Set path to " Dir " (WPS dialog)")
+        OutputDebug("SetDialogPath: Set path to " Dir " (WPS dialog)")
     } else {
-        ; For standard dialog (#32770)
+        ; Windows Standard dialog: Edit1 is the path input box
         dialogControl := ControlGetHwnd("Edit1", "A")
         if (dialogControl) {
-            currentText := ControlGetText("Edit1", "A")
-            ControlClick("Edit1", "A")
+            ControlFocus("Edit1", "A")
             ControlSetText(Dir, "Edit1", "A")
             ControlSend("{Enter}", "Edit1", "A")
-            g_LOG.Debug("ChangePath: Set path to " Dir " (Edit1)")
+            g_LOG.Debug("SetDialogPath: Set dialog path to=" Dir)
+            OutputDebug("SetDialogPath: Set dialog path to=" Dir)
         } else {
-            g_LOG.Debug("ChangePath: No editable control found")
+            g_LOG.Debug("SetDialogPath: No Edit1 control found in dialog")
+            OutputDebug("SetDialogPath: No Edit1 control found in dialog")
         }
     }
 }
@@ -1284,7 +1297,8 @@ UserCommand(*) {
     Run("Notepad.exe " . g_INI)
 }
 
-NewCommand(*) {                                                         ; From command "New Command" or GUI context menu "New Command"
+; From command "New Command" or GUI context menu "New Command"
+NewCommand(*) {
     CmdMgr(g_SECTION["USERCMD"], , , g_RUNTIME["Arg"], 1, "")
 }
 
@@ -1534,6 +1548,11 @@ Options(ActTab := 1) {
         , "DelCommand", "CmdMgr", "Options", "TurnMonitorOff", "EmptyRecycle"
         , "MuteVolume", "ReStart", "Exit"]
 
+    if WinExist(g_LNG[2]) {
+        WinActivate(g_LNG[2])
+        return
+    }
+
     t := A_TickCount
     ActTab := IsNumber(ActTab) ? ActTab : 1                             ; Convert ActTab to number, default is 1 (for case like [Option`tF2])
     OptGUI := Gui("+Owner", g_LNG[2])
@@ -1604,8 +1623,8 @@ Options(ActTab := 1) {
         OptGUI.AddDDL("x395 yp-5 w120 vTrigger" A_Index " Choose" GetArrayIndex(g_HOTKEY["Trigger" A_Index], FuncList), FuncList)
     }
     try {
-        Hotkey(g_HOTKEY["GlobalHotkey1"], "Off")
-        Hotkey(g_HOTKEY["GlobalHotkey2"], "Off")
+        Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "Off")
+        Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "Off")
     } catch as e {
         g_LOG.Debug("Options: Set GlobalHotkey Off=" . e.Message)
     }
@@ -1696,8 +1715,8 @@ Options(ActTab := 1) {
 }
 
 ResetHotkey(*) {
-    OptGUI["g_GlobalHotkey1"].Value := "!Space"
-    OptGUI["g_GlobalHotkey2"].Value := "!r"
+    OptGUI["GlobalHotkey1"].Value := "!Space"
+    OptGUI["GlobalHotkey2"].Value := "!r"
     return
 }
 
@@ -1730,12 +1749,19 @@ SelectFont(TargetVar := "MainGUIFont") {
 
 SelectCtrlColor(*) {
     color := ColorSelect(, OptGUI.hwnd, , "full")                       ; hwnd and custColorObj are optional
+    OutputDebug("SelectCtrlColor: Color selected=" color)
+    If (color = -1)
+        return
+
     OptGUI["CtrlColor"].Value := color                                  ; 更新选项窗口控件并设置控件颜色
     OptGUI["CtrlColor"].Opt("c" . color)
 }
 
 SelectWinColor(*) {
     color := ColorSelect(, OptGUI.hwnd, , "full")
+    If (color = -1)
+        return
+
     OptGUI["WinColor"].Value := color
     OptGUI["WinColor"].Opt("c" . color)
 }
@@ -1747,8 +1773,8 @@ OPTButtonOK(*) {
 
 OPTGuiClose(*) {
     try {
-        Hotkey(g_HOTKEY["GlobalHotkey1"], "On")
-        Hotkey(g_HOTKEY["GlobalHotkey2"], "On")
+        Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "On")
+        Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "On")
 
         OutputDebug("OPTGuiClose: Set back on GlobalHotkey...OK")
         g_LOG.Debug("OPTGuiClose: Set back on GlobalHotkey...OK")
