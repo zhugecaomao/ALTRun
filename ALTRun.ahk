@@ -329,8 +329,8 @@ SetTrayMenu() {
             myTrayMenu.Add(g_LNG[304], Help)
             myTrayMenu.Add(g_LNG[305], (*) => ListLines())
             myTrayMenu.Add()
-            myTrayMenu.Add(g_LNG[307], (*) => Reload())
-            myTrayMenu.Add(g_LNG[308], (*) => ExitApp())
+            myTrayMenu.Add(g_LNG[307], ReStart)
+            myTrayMenu.Add(g_LNG[308], Exit)
 
             myTrayMenu.SetIcon(g_LNG[300], "imageres.dll", -100)
             myTrayMenu.SetIcon(g_LNG[301], "imageres.dll", -114)
@@ -367,10 +367,10 @@ RegisterHotkey() {
 
     HotIfWinActive(g_TITLE)                                             ; 窗口特定热键
     try {
-        Hotkey("!F4"        , (*) => ExitApp())
+        Hotkey("!F4"        , Exit)
         Hotkey("Tab"        , TabFunc)
         Hotkey("F1"         , Help)
-        Hotkey("F2"         , (*) => Options())
+        Hotkey("F2"         , Options)
         Hotkey("F3"         , EditCommand)
         Hotkey("F4"         , UserCommand)
         Hotkey("^q"         , ReStart)
@@ -426,9 +426,9 @@ RegisterHotkey() {
     return
 }
 
-ExecuteFunc(HotkeyName, TriggerName, Index) {
-    RunCommand("FUNC | " TriggerName)
-    OutputDebug("ExecutFunc: Through Hotkey execute function=" TriggerName)
+ExecuteFunc(Hotkey, FuncName, Index) {
+    RunCommand("FUNC | " FuncName)
+    OutputDebug("ExecutFunc: Execute function...=" FuncName)
 }
 
 Activate() {
@@ -507,7 +507,7 @@ ListResult(ArrayToList := "", UseDisplay := false) {
         myListView.Add("Icon" IconIndex, (g_CONFIG["ShowSN"] ? A_Index : ""), _Type, PathToShow, _Desc)
     }
 
-    statusBarText := myListView.GetText(1, 3)
+    statusBarText := (myListView.GetCount() > 0) ? myListView.GetText(1, 3) : ""
     if (g_RUNTIME["CurrentCommand"] != "") {
         statusBarText := StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2]
     }
@@ -1154,12 +1154,10 @@ Reindex(*) {                                                            ; Re-cre
 }
 
 Help(*) {
-    UpdateUsage()
     Options(8)
 }
 
 Usage(*) {
-    UpdateUsage()
     Options(7)
 }
 
@@ -1622,11 +1620,16 @@ Options(ActTab := 1) {
         OptGUI.AddText("x285 yp+5", g_LNG[202])
         OptGUI.AddDDL("x395 yp-5 w120 vTrigger" A_Index " Choose" GetArrayIndex(g_HOTKEY["Trigger" A_Index], FuncList), FuncList)
     }
-    try {
+
+    if (g_HOTKEY["GlobalHotkey1"] != "") {
+        HotIfWinActive  ; Turn off global hotkey when options() called by hotif hotkey F2
         Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "Off")
+        OutputDebug("Options: Turn Off GlobalHotkey1...OK")
+    }
+    if (g_HOTKEY["GlobalHotkey2"] != "") {
+        HotIfWinActive
         Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "Off")
-    } catch as e {
-        g_LOG.Debug("Options: Set GlobalHotkey Off=" . e.Message)
+        OutputDebug("Options: Turn Off GlobalHotkey2...OK")
     }
 
     OptTab.UseTab(4) ; INDEX Tab
@@ -1708,8 +1711,8 @@ Options(ActTab := 1) {
     OptGUI.OnEvent("Close", OPTGuiClose)
     OptGUI.OnEvent("Escape", OPTGuiClose)
 
-    g_LOG.Debug("Options: Loading options window... ActTab=" ActTab ", elapsed time=" A_TickCount - t "ms")
-    OutputDebug("Options: Loading options window... ActTab=" ActTab ", elapsed time=" A_TickCount - t "ms")
+    g_LOG.Debug("Options: Load options window...OK, elapsed time=" A_TickCount - t "ms")
+    OutputDebug("Options: Load options window...OK, elapsed time=" A_TickCount - t "ms")
     OptGUI.Show("Center")
     return
 }
@@ -1754,7 +1757,7 @@ SelectCtrlColor(*) {
         return
 
     OptGUI["CtrlColor"].Value := color                                  ; 更新选项窗口控件并设置控件颜色
-    OptGUI["CtrlColor"].Opt("c" . color)
+    OptGUI["CtrlColor"].Opt("c" color)
 }
 
 SelectWinColor(*) {
@@ -1763,7 +1766,7 @@ SelectWinColor(*) {
         return
 
     OptGUI["WinColor"].Value := color
-    OptGUI["WinColor"].Opt("c" . color)
+    OptGUI["WinColor"].Opt("c" color)
 }
 
 OPTButtonOK(*) {
@@ -1772,20 +1775,23 @@ OPTButtonOK(*) {
 }
 
 OPTGuiClose(*) {
-    try {
+    if (g_HOTKEY["GlobalHotkey1"] != "") {
+        HotIfWinActive
         Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "On")
-        Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "On")
-
-        OutputDebug("OPTGuiClose: Set back on GlobalHotkey...OK")
-        g_LOG.Debug("OPTGuiClose: Set back on GlobalHotkey...OK")
-    } catch as e {
-        OutputDebug("OPTGuiClose: Set back on GlobalHotkey error=" . e.Message)
-        g_LOG.Debug("OPTGuiClose: Set back on GlobalHotkey error=" . e.Message)
+        OutputDebug("OPTGuiClose: Turn On GlobalHotkey1...OK")
+        g_LOG.Debug("OPTGuiClose: Turn On GlobalHotkey1...OK")
     }
+    if (g_HOTKEY["GlobalHotkey2"] != "") {
+        HotIfWinActive
+        Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "On")
+        OutputDebug("OPTGuiClose: Turn On GlobalHotkey2...OK")
+        g_LOG.Debug("OPTGuiClose: Turn On GlobalHotkey2...OK")
+    }
+
     OptGUI.Destroy()
 
-    OutputDebug("OPTGuiClose: OptGUI.Destroy()...OK")
-    g_LOG.Debug("OPTGuiClose: OptGUI.Destroy()...OK")
+    OutputDebug("OPTGuiClose: OptGUI.Destroy...OK")
+    g_LOG.Debug("OPTGuiClose: OptGUI.Destroy...OK")
     return
 }
 
@@ -1933,7 +1939,7 @@ LoadConfig(Arg) {
             Dir | %OneDrive% | OneDrive=9
             Dir | A_ScriptDir | ALTRun Program Dir=9
             Cmd | cmd.exe /k ipconfig | Check IP Address=9
-            Cmd | explorer /select,C:\Program Files | Open C: and locate to Program Files=9
+            Cmd | Explorer /Select,C:\Program Files | Open and select C:\Program Files=9
             Cmd | Control TimeDate.cpl | Date and Time=9
             Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
             URL | www.google.com | Google=9
@@ -2040,7 +2046,7 @@ Bing() {
 
 Everything() {
     try {
-        Run(g_CONFIG["Everything"] . ' -s `"' g_RUNTIME["Arg"] '`"',,)
+        Run(g_CONFIG["Everything"] . ' -s `"' g_RUNTIME["Arg"] '`"')
     } catch as e {
         MsgBox("Everything software not found.`n`nPlease check ALTRun setting and Everything program file.`n`nError message=" . e.Message)
     }
@@ -2186,7 +2192,7 @@ SetLanguage() {
     ENG[404] := "Edit`tF3"
     ENG[405] := "Delete`tDelete"
     ENG[406] := "User Command`tF4"
-    ENG[407] := "Copy statusbar text"
+    ENG[407] := "Copied statusbar text"
     ENG[408] := "Show usage status"
     ENG[500] := "30 days ago"                                           ; 500+ Usage Status
     ENG[501] := "Now"
@@ -2347,7 +2353,7 @@ SetLanguage() {
     CHN[404] := "编辑命令`tF3"
     CHN[405] := "删除命令`tDelete"
     CHN[406] := "用户命令`tF4"
-    CHN[407] := "复制状态栏信息"
+    CHN[407] := "已复制状态栏信息"
     CHN[408] := "显示状态统计"
     CHN[500] := "30天前"
     CHN[501] := "当前"                                                  ; 500+ 状态统计
