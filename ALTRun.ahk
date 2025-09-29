@@ -24,7 +24,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir "\ALTRun.ini"
-Global g_VER   := "2025.09.22"
+Global g_VER   := "2025.09.29"
 Global g_TITLE := "ALTRun - Ver " g_VER
 
 Global g_COMMANDS := Array()         ; All commands
@@ -62,7 +62,7 @@ Global g_CONFIG := Map(
     "SaveLog"        , 1,
     "MatchPath"      , 0,
     "ShowGrid"       , 0,
-    "ShowHdr"        , 1,
+    "ShowHdr"        , 0,
     "ShowSN"         , 1,
     "ShowBorder"     , 1,
     "SmartRank"      , 1,
@@ -76,7 +76,7 @@ Global g_CONFIG := Map(
     "DoubleBuffer"   , 1,
     "StruCalc"       , 0,
     "ShortenPath"    , 1,
-    "Chinese"        , InStr("7804,0004,0804,1004", A_Language) ? 1 : 0,
+    "Chinese"        , InStr("7804,0004,0804,1004", A_Language),
     "MatchPinyin"    , 1,
     "RunCount"       , 0,
     "HistoryLen"     , 10,
@@ -175,16 +175,16 @@ Global g_HOTKEY := Map(
 
 Global g_GUI := Map(
     "ListRows"      , 9,
-    "ColWidth"      , "40,40,300,AutoHdr",
-    "MainGUIFont"   , "Microsoft YaHei,norm s9",
-    "OptGUIFont"    , "Microsoft YaHei,norm s9",
-    "MainSBFont"    , "Microsoft YaHei,norm s8",
+    "ColWidth"      , "40,0,330,AutoHdr",
+    "MainGUIFont"   , "Microsoft YaHei, norm s10.0",
+    "OptGUIFont"    , "Microsoft YaHei, norm s9.0",
+    "MainSBFont"    , "Microsoft YaHei, norm s9.0",
     "WinX"          , 660,
     "WinY"          , 300,
     "CtrlColor"     , "Default",
     "WinColor"      , "Default",
-    "Background"    , "ALTRun.jpg",
-    "Transparency"  , 230
+    "Background"    , "Default",
+    "Transparency"  , 255
 )
 
 Global g_RUNTIME := Map(
@@ -235,8 +235,9 @@ SetMainGUI() {
     Enter_X := g_CONFIG["ShowBtnRun"] * 10
     Opt_W   := g_CONFIG["ShowBtnOpt"] * 80
     Opt_X   := g_CONFIG["ShowBtnOpt"] * 10
+    TopMost := g_CONFIG["AlwaysOnTop"] ? "AlwaysOnTop" : ""
 
-    MainGUI := Gui("+Owner" (g_CONFIG["AlwaysOnTop"] ? " AlwaysOnTop" : ""), g_TITLE)
+    MainGUI := Gui(TopMost, g_TITLE)
     MainGUI.OnEvent("Close", MainGuiClose)
     MainGUI.OnEvent("Escape", MainGuiEscape)
     MainGUI.BackColor := g_GUI["WinColor"]
@@ -259,8 +260,11 @@ SetMainGUI() {
         }
     }
 
-    if FileExist(g_GUI["Background"])
-        try MainGUI.AddPic("x0 y0 0x4000000", g_GUI["Background"])
+    if FileExist(AbsPath(g_GUI["Background"])) {
+        try MainGUI.AddPic("x0 y0 0x4000000", AbsPath(g_GUI["Background"]))
+    } else if (g_GUI["Background"] = "Default") {
+        try MainGUI.AddPic("x0 y0 0x4000000", ExtractRes())
+    }
 
     myStatusBar := MainGUI.AddStatusBar("Hidden" (!g_CONFIG["ShowStatusBar"]))
     myStatusBar.OnEvent("Click", OnStatusBarClick)
@@ -457,7 +461,7 @@ SearchCommand(command := "") {
     ; Handle fallback commands
     if (Prefix = "+" or Prefix = " " or Prefix = ">") {
         idx := (Prefix = "+") ? 1 : (Prefix = " ") ? 2 : 3
-        g_RUNTIME["CurrentCommand"] := g_FALLBACK[idx]                  ; Corresponding to fallback commands position no. 1, 2 & 3
+        g_RUNTIME["CurrentCommand"] := g_FALLBACK[idx]
         g_MATCHED.Push(g_RUNTIME["CurrentCommand"])
         return ListResult(g_MATCHED)
     }
@@ -473,9 +477,11 @@ SearchCommand(command := "") {
         }
     }
 
-    if (g_MATCHED.Length = 0) {                                         ; No matched command found
+    ; If no matches found, evaluate as expression if enabled
+    if (g_MATCHED.Length = 0) {
         evalResult := Eval(command)
         if (IsNumber(evalResult) && evalResult != 0) {
+            evalResult := Round(evalResult, 6)                          ; To fix 5+0.3 = 5.300000000000001 issue
             g_MATCHED := StruCalcResult(evalResult)
             return ListResult(g_MATCHED, True)
         }
@@ -490,26 +496,30 @@ SearchCommand(command := "") {
 }
 
 ListResult(ArrayToList := "", UseDisplay := false) {
-    myListView.Opt("-Redraw")                                           ; Improve performance by disabling redrawing during load.
+    myListView.Opt("-Redraw")                           ; Improve performance by disabling redrawing during load.
     myListView.Delete()
     g_RUNTIME["UseDisplay"] := UseDisplay
 
     for index, command in ArrayToList {
-        splitResult := StrSplit(command, " | ")
-        _Type := splitResult.Length >= 1 ? splitResult[1] : ""          ; Ensure _Type has default
-        _Path := splitResult.Length >= 2 ? splitResult[2] : ""          ; Ensure _Path has default
-        _Desc := splitResult.Length >= 3 ? splitResult[3] : ""          ; Ensure _Desc has default (fix for missing 3rd element)
-        IconIndex := GetIconIndex(_Path, _Type)
-        
-        SplitPath(_Path, &fileName)                                     ; Extra name from _Path (if _Type is Dir and has "." in path, nameNoExt will not get full folder name)
-        PathToShow := (g_CONFIG["ShortenPath"]) ? fileName : _Path      ; Show Full path / Shorten path
+        parts := StrSplit(command, " | ")
+        type  := parts.Length >= 1  ? parts[1] : ""      ; Ensure type has default
+        path  := parts.Length >= 2  ? parts[2] : ""      ; Ensure path has default
+        desc  := parts.Length >= 3  ? parts[3] : ""      ; Ensure desc has default (fix for missing 3rd element)
+        index := g_CONFIG["ShowSN"] ? index    : ""
+        iconx := GetIconIndex(path, type)
 
-        myListView.Add("Icon" IconIndex, (g_CONFIG["ShowSN"] ? A_Index : ""), _Type, PathToShow, _Desc)
+        if g_CONFIG["ShortenPath"] {                    ; Show Full path / Shorten path
+            SplitPath(path, &fileName)                  ; Extra name from path (if type is Dir and has "." in path, fileName will not get full folder name)
+            path := fileName
+        }
+
+        myListView.Add("Icon" iconx, index, type, path, desc)
     }
 
-    statusBarText := (myListView.GetCount() > 0) ? myListView.GetText(1, 3) : ""
     if (g_RUNTIME["CurrentCommand"] != "") {
         statusBarText := StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2]
+    } else {
+        statusBarText := (myListView.GetCount() > 0) ? myListView.GetText(1, 3) : ""
     }
 
     myListView.Modify(1, "Select Focus Vis")                            ; Select 1st row
@@ -1600,7 +1610,8 @@ Options(ActTab := 1) {
     OptGUI.AddButton("x433 yp-5 w80 vSelectWinColor", g_LNG[183]).OnEvent("Click", SelectWinColor)
 
     OptGUI.AddText("x33 yp+45", g_LNG[180])
-    OptGUI.AddComboBox("x183 yp-5 w330 vBackground Choose1", [g_GUI["Background"], "ALTRun.jpg", "None", "C:\Path\BG.jpg"])
+    OptGUI.AddComboBox("x183 yp-5 w240 vBackground Choose1", [g_GUI["Background"], "Default", "None", "ALTRun.jpg", "C:\Path\Picture.jpg"])
+    OptGUI.AddButton("x433 yp-2 w80 vSelectBackground", g_LNG[184]).OnEvent("Click", SelectBackground)
     OptGUI.AddText("x33 yp+45", g_LNG[181])
     OptGUI.AddSlider("x183 yp-5 w330 Range50-255 TickInterval5 Tooltip vTransparency", g_GUI["Transparency"])
 
@@ -1701,7 +1712,7 @@ Options(ActTab := 1) {
 
     OptTab.UseTab(8) ; ABOUT Tab
     OptGUI.AddPic("x33 y+20 w48 h-1 Icon-100", "imageres.dll")
-    OptGUI.AddText("x96 yp+5", g_TITLE)
+    OptGUI.AddText("x96 yp+5 w400", g_TITLE).SetFont("S11")
     OptGUI.AddLink("xp yp+45 w400", g_LNG[601])
 
     OptTab.UseTab()  ; 后续添加的控件将不属于前面的选项卡控件
@@ -1769,6 +1780,17 @@ SelectWinColor(*) {
     OptGUI["WinColor"].Opt("c" color)
 }
 
+SelectBackground(*) {
+    OptGUI.Opt("+OwnDialogs")                                           ; Make open dialog Modal
+
+    file := FileSelect(3, , , 'Image Files (*.jpg; *.png; *.bmp; *.gif)')
+    If (file = "")
+        return
+
+    OptGUI["Background"].Text := file
+    OutputDebug("SelectBackground: Background image selected=" file)
+}
+
 OPTButtonOK(*) {
     SaveConfig()
     Reload
@@ -1813,9 +1835,8 @@ LoadConfig(Arg) {
 
         g_RUNTIME["RegEx"] := g_CONFIG["MatchBeginning"] ? "imS)^" : "imS)"
 
-        OffsetDate := DateAdd(A_Now, -30, "Days")
-
-        USAGESEC := ""
+        OffsetDate   := DateAdd(A_Now, -30, "Days")
+        USAGESEC     := ""
         Try USAGESEC := IniRead(g_INI, g_SECTION["USAGE"])
         if (USAGESEC != "") {
             for line in StrSplit(USAGESEC, "`n") {
@@ -1830,14 +1851,14 @@ LoadConfig(Arg) {
                     continue
                 }
 
-                g_USAGE[Date] := Count
+                g_USAGE[Date]    := Count
                 g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], Count)
             }
         }
 
         Loop 30 {
-            OffsetDate := DateAdd(OffsetDate, 1, "Days")
-            Date := SubStr(OffsetDate, 1, 8)
+            OffsetDate    := DateAdd(OffsetDate, 1, "Days")
+            Date          := SubStr(OffsetDate, 1, 8)
             g_USAGE[Date] := g_USAGE.Has(Date) ? g_USAGE[Date] : 0
         }
     }
@@ -1952,7 +1973,7 @@ LoadConfig(Arg) {
         Try INDEXSEC := IniRead(g_INI, g_SECTION["INDEX"])
         if (INDEXSEC = "") {
             msgText := g_CONFIG["Chinese"] ? "索引数据库为空, 请点击`n`n'确定'重新建立索引`n`n'取消'退出程序`n`n(请确保程序目录有写入权限)" 
-                                         : "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to exit the program`n`n(Please ensure the program directory is writable)"
+                : "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to exit the program`n`n(Please ensure the program directory is writable)"
             if (MsgBox(msgText, g_TITLE, 4161) = "Cancel") {
                 ExitApp()
             }
@@ -2082,7 +2103,7 @@ SetLanguage() {
     ENG[61] := "Ctrl+I = Reindex file search database"
     ENG[62] := "F1 = ALTRun Help & About"
     ENG[63] := "ALT + Space = Show / Hide Window"
-    ENG[64] := "Ctrl+Q = ReStart ALTRun"
+    ENG[64] := "Ctrl+Q = Reload ALTRun"
     ENG[65] := "Ctrl + No. = Select specific command"
     ENG[66] := "Alt + F4 = Exit"
     ENG[67] := "Ctrl+D = Open current command's dir with File Manager"
@@ -2106,21 +2127,21 @@ SetLanguage() {
     ENG[113] := "Save commands execution history"
     ENG[114] := "Save application log"
     ENG[115] := "Match full path on search"
-    ENG[116] := "Show Grid - Provides boundary lines between list's rows and columns"
-    ENG[117] := "Show Header - Show list's header (top row contains column titles)"
-    ENG[118] := "Show Serial Number in command list"
-    ENG[119] := "Show border line around the command list"
+    ENG[116] := "Show Command List Grid Lines"
+    ENG[117] := "Show Command List Header"
+    ENG[118] := "Show Command List Serial Number"
+    ENG[119] := "Show Command List Border Line"
     ENG[120] := "Smart Rank - Auto adjust command priority (rank) based on use frequency"
     ENG[121] := "Smart Match - Fuzzy and Smart matching and filtering result"
     ENG[122] := "Match beginning of the string (Untick: Match from any position)"
-    ENG[123] := "Show hints/tips in the bottom status bar"
-    ENG[124] := "Show command executed RunCount in the status bar"
-    ENG[125] := "Show status bar at the bottom of the window"
-    ENG[126] := "Show [Run] button on main window"
-    ENG[127] := "Show [Options] button on main window"
+    ENG[123] := "Show Status Bar Hints/Tips"
+    ENG[124] := "Show Command Executed RunCount in the Status Bar"
+    ENG[125] := "Show Status Bar"
+    ENG[126] := "Show [Run] Button on Main Window"
+    ENG[127] := "Show [Options] Button on Main Window"
     ENG[128] := "Double Buffer - Paints via double-buffering, reduces flicker (WinXP+)"
     ENG[129] := "Enable express structure calculation"
-    ENG[130] := "Shorten Path - Show file/folder/app name only instead of full path in result"
+    ENG[130] := "Show Shorten Path - Show file/folder/app name only instead of full path"
     ENG[131] := "Set language to Chinese Simplified (简体中文)"
     ENG[132] := "Match Chinese Pinyin first characters"
     ENG[150] := "File Manager"                                          ; 150~159 Options window (Other than Check Listview)
@@ -2145,6 +2166,7 @@ SetLanguage() {
     ENG[181] := "Transparency"
     ENG[182] := "Select font"
     ENG[183] := "Select color"
+    ENG[184] := "Select picture"
     ENG[190] := "Hotkey"                                                ; 190~209 Hotkey
     ENG[191] := "Activate Hotkey (Global)"
     ENG[192] := "Primary Hotkey"
@@ -2182,7 +2204,7 @@ SetLanguage() {
     ENG[303] := "Usage"
     ENG[304] := "About`tF1"
     ENG[305] := "Script Info"
-    ENG[307] := "ReStart`tCtrl+Q"
+    ENG[307] := "Reload`tCtrl+Q"
     ENG[308] := "Exit`tAlt+F4"
     ENG[309] := "Update"
     ENG[400] := "Run`tEnter"                                            ; 400+ LV_ContextMenu (Right-click)
@@ -2199,8 +2221,8 @@ SetLanguage() {
     ENG[502] := "Total number of times the command was executed"
     ENG[503] := "Number of times the program was activated today"
     ENG[600] := "About"
-    ENG[601] := "An effective launcher for Windows by ZhugeCaomao, an <a href=`"https://www.autohotkey.com/docs/v1/`">AutoHotkey</a> open-source project. "
-        . "It provides a streamlined and efficient way to find anything on your system and launch any application in your way."
+    ENG[601] := "An open-source, lightweight, efficient and powerful launcher"
+        . "`nIt provides a streamlined and efficient way to find anything on your system and launch any application in your way"
         . "`n`nSetting file:`n" g_INI "`n`nProgram file:`n" A_ScriptFullPath
         . "`n`nCheck for Updates"
         . "`n<a href=`"https://github.com/zhugecaomao/ALTRun/releases`">https://github.com/zhugecaomao/ALTRun/releases</a>"
@@ -2267,21 +2289,21 @@ SetLanguage() {
     CHN[113] := "保存历史记录"
     CHN[114] := "保存运行日志"
     CHN[115] := "搜索时匹配完整路径"
-    CHN[116] := "显示网格 - 在列表的行和列之间提供边界线"
-    CHN[117] := "显示标题 - 显示列表的标题 (顶部行包含列标题)"
+    CHN[116] := "显示命令列表网格线"
+    CHN[117] := "显示命令列表标题栏"
     CHN[118] := "显示命令列表序号"
     CHN[119] := "显示命令列表边框线"
     CHN[120] := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
     CHN[121] := "智能匹配 - 模糊和智能匹配和过滤结果"
     CHN[122] := "搜索时匹配字符串开头 (取消勾选: 匹配任意位置)"
-    CHN[123] := "显示提示信息 (状态栏)"
+    CHN[123] := "显示状态栏提示信息"
     CHN[124] := "显示命令执行次数 (状态栏)"
-    CHN[125] := "显示状态栏 (窗口底部)"
+    CHN[125] := "显示状态栏"
     CHN[126] := "显示主窗口 [运行] 按钮"
     CHN[127] := "显示主窗口 [选项] 按钮"
     CHN[128] := "双缓冲绘图, 改善窗口闪烁 (Win XP+)"
     CHN[129] := "启用快速结构计算"
-    CHN[130] := "简化路径 - 仅显示文件/文件夹/应用程序名称, 而非完整路径"
+    CHN[130] := "显示简化路径 - 仅显示文件/文件夹/应用程序名称, 而非完整路径"
     CHN[131] := "设置语言为简体中文 (Simplified Chinese)"
     CHN[132] := "搜索时匹配拼音首字母"
     CHN[150] := "文件管理器"                                            ; 150~159 Options window (Other than Check Listview)
@@ -2306,6 +2328,7 @@ SetLanguage() {
     CHN[181] := "透明度"
     CHN[182] := "选择字体"
     CHN[183] := "选择颜色"
+    CHN[184] := "选择图片"
     CHN[190] := "热键"                                                  ; 190~209 Hotkey
     CHN[191] := "激活热键 (全局)"
     CHN[192] := "主热键"
@@ -2360,8 +2383,8 @@ SetLanguage() {
     CHN[502] := "运行过的命令总次数"
     CHN[503] := "今天激活程序的次数"
     CHN[600] := "关于"
-    CHN[601] := "ALTRun 是由诸葛草帽开发的一款高效 Windows 启动器，是一款基于 <a href=`"https://www.autohotkey.com/docs/v1/`">AutoHotkey</a> 的开源项目。 "
-        . "它提供了一种简洁高效的方式，让你能够快速查找系统中的任何内容，并以自己的方式启动任意应用程序。"
+    CHN[601] := "一款开源、轻量、高效、功能强大的启动工具"
+        . "`n能够快速查找系统中的内容或者启动应用程序"
         . "`n`n配置文件`n" g_INI "`n`n程序文件`n" A_ScriptFullPath
         . "`n`n版本更新"
         . "`n<a href=`"https://github.com/zhugecaomao/ALTRun/releases`">https://github.com/zhugecaomao/ALTRun/releases</a>"
@@ -2420,10 +2443,20 @@ EvalSimple(expression) {            ; 计算不含括号的简单数学表达式
         expression := StrReplace(expression, (match&&match[0]), result)
     }
 
-    ; 处理乘除法运算
+    ; 处理乘除法运算（已加入除以零保护）
     while RegExMatch(expression, "(-?\d+(\.\d+)?)([*/])(-?\d+(\.\d+)?)", &match) {
         operand1 := match[1], operator := match[3], operand2 := match[4]
-        result := (operator = "*") ? operand1 * operand2 : operand1 / operand2
+        if (operator = "*")
+            result := operand1 * operand2
+        else {
+            ; 防止除以零，operand2 可能为 "0" 或 "0.0" 等
+            if (Abs(operand2) < 1e-12) {
+                ; 这里选择将除以零的子表达式替换为 0，避免抛出异常
+                result := 0
+            } else {
+                result := operand1 / operand2
+            }
+        }
         expression := StrReplace(expression, (match&&match[0]), result)
     }
 
@@ -2825,4 +2858,100 @@ GetFirstChar(str) {
         }
     }
     return out
+}
+
+ExtractRes() {
+    base64 := "
+    (
+    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"
+    )"
+    file := A_Temp "\ALTRun.jpg"
+    bin  := Buffer(StrLen(base64) * 3 // 4)
+
+    DllCall("Crypt32.dll\CryptStringToBinary", "Str", base64, "UInt", 0, "UInt", 1, "Ptr", bin, "UIntP", size := bin.Size, "Ptr", 0, "Ptr", 0)
+    f := FileOpen(file, "w", "CP0")
+    f.RawWrite(bin)
+    f.Close()
+    return file
 }
