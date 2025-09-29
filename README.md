@@ -2,14 +2,13 @@
 
 ALTRun (AHK) 是一款开源免费、简洁高效、功能强大的启动工具
 
-
 > 主界面
->
->![Main GUI](https://github.com/user-attachments/assets/9ecba2a1-65d0-4141-b058-dd9ae1129466)
+
+![Main GUI](https://github.com/user-attachments/assets/9ecba2a1-65d0-4141-b058-dd9ae1129466)
 
 > 主界面 (无背景图片+简化+暗黑模式)
->
->![Dark](https://github.com/user-attachments/assets/5bd76455-4eda-42e5-9934-c915b48994df)
+
+![Dark](https://github.com/user-attachments/assets/5bd76455-4eda-42e5-9934-c915b48994df)
 
 
 ### 特性
@@ -55,13 +54,14 @@ ALTRun (AHK) 是一款开源免费、简洁高效、功能强大的启动工具
 
 ### 配置说明
 所有配置、命令、历史记录均保存在程序目录下的 `ALTRun.ini` 文件中
+
 可通过主界面或托盘菜单进入“配置选项”进行详细设置
 
 
 ## 贡献
 欢迎提交 Issue 和 PR，或在 [Discussions](https://github.com/zhugecaomao/ALTRun/discussions) 交流建议
 
-如果你喜欢这个项目，请给它一个星标 ⭐ 来支持我的工作！这对继续改进项目非常重要！
+如果你喜欢这个项目，请给它一个星标 ⭐ 来支持我！这对继续改进项目非常重要！
 
 
 ### 其他说明
