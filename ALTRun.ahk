@@ -11,7 +11,7 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion g_TITLE
+;@Ahk2Exe-SetVersion 2025.09.30
 ;@Ahk2Exe-SetCopyright Copyright (c) 2025 zhugecaomao
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -24,7 +24,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir "\ALTRun.ini"
-Global g_VER   := "2025.09.29"
+Global g_VER   := "2025.09.30"
 Global g_TITLE := "ALTRun - Ver " g_VER
 
 Global g_COMMANDS := Array()         ; All commands
@@ -32,7 +32,7 @@ Global g_CMDINDEX := Array()         ; Searchable text for All commands
 Global g_FALLBACK := Array()         ; Fallback commands
 Global g_HISTORYS := Array()         ; Execution history
 Global g_MATCHED  := Array()         ; Matched commands
-Global g_TYPELST  := Array("File", "Dir", "Cmd", "URL", "Func")
+Global g_TYPELST  := Array("File", "Dir", "CMD", "URL", "Func")
 Global g_SECTION  := Map(
     "CONFIG"    , "Config",
     "GUI"       , "Gui",
@@ -236,12 +236,13 @@ SetMainGUI() {
     Opt_W   := g_CONFIG["ShowBtnOpt"] * 80
     Opt_X   := g_CONFIG["ShowBtnOpt"] * 10
     TopMost := g_CONFIG["AlwaysOnTop"] ? "AlwaysOnTop" : ""
+    Caption := g_CONFIG["ShowCaption"] ? "" : " -Caption"
+    Theme   := g_CONFIG["XPthemeBg"] ? "" : " -Theme"
 
-    MainGUI := Gui(TopMost, g_TITLE)
+    MainGUI := Gui(TopMost Caption Theme, g_TITLE)
     MainGUI.OnEvent("Close", MainGuiClose)
     MainGUI.OnEvent("Escape", MainGuiEscape)
     MainGUI.BackColor := g_GUI["WinColor"]
-    MainGUI.Opt((g_CONFIG["ShowCaption"] ? "" : "-Caption") (g_CONFIG["XPthemeBg"] ? "" : " -Theme"))
     MainGUI.SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
     myInputBox := MainGUI.AddEdit("x12 y10 -WantReturn W" Input_W, g_LNG[13])
     myInputBox.OnEvent("Change", OnSearchInput)
@@ -603,26 +604,25 @@ RunCommand(originCmd) {
     ParseArg()
     g_RUNTIME["UseDisplay"] := false
 
-    splitResult := StrSplit(originCmd, " | ")
+    split := StrSplit(originCmd, " | ")
+    type  := split.Length >= 1 ? split[1] : ""                ; Ensure type has default
+    path  := split.Length >= 2 ? AbsPath(split[2], True) : "" ; Ensure path has default
 
-    _Type := splitResult.Length >= 1 ? splitResult[1] : ""              ; Ensure _Type has default
-    _Path := splitResult.Length >= 2 ? AbsPath(splitResult[2], True) : "" ; Ensure _Path has default
-
-    if (_Type = "") {
+    if (type = "") {
         return
-    } else if (_Type = "DIR") {
-        OpenDir(_Path)
-    } else if (_Type = "FUNC") {
+    } else if (type = "DIR") {
+        OpenDir(path)
+    } else if (type = "FUNC") {
         try {
-            %_Path%()
+            %path%()
         } catch as e {
-            MsgBox("Could not find function: " _Path "`n`nError message: " e.Message, g_TITLE, 4096)
+            MsgBox("Could not find function: " path "`n`nError message: " e.Message, g_TITLE, 4096)
         }
-    } else {                                                            ; For _Type = "FILE","URL","CMD" and other Unknown type
+    } else { ; For type "FILE","URL","CMD" and other Unknown type
         try {
-            Run(_Path)
+            Run(path)
         } catch as e {
-            MsgBox("Could not run command: " _Path "`n`nError message: " e.Message, g_TITLE, 4096)
+            MsgBox("Could not run command: " path "`n`nError message: " e.Message, g_TITLE, 4096)
         }
     }
 
@@ -635,7 +635,7 @@ RunCommand(originCmd) {
 
         IniDelete(g_INI, g_SECTION["HISTORY"])
         for index, element in g_HISTORYS
-            IniWrite(element, g_INI, g_SECTION["HISTORY"], index) ; Save command history
+            IniWrite(element, g_INI, g_SECTION["HISTORY"], index)       ; Save command history
     }
 
     UpdateRunCount()
@@ -1472,7 +1472,8 @@ NameAddDate(WinName, CurrCtrl) {                                        ; 在文
     SplitPath(EditCtrlText, &fileName, &fileDir, &fileExt, &nameNoExt)
     CurrentDate := FormatTime(, "dd.MM.yyyy")
 
-    if (StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) {          ; 如果有真实文件后缀名,才加日期在后缀名之前
+    OutputDebug("fileExt: " fileExt)
+    if (fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) { ; 如果有真实文件后缀名,才加日期在后缀名之前
         if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$") {
             baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
         }
@@ -1898,50 +1899,49 @@ LoadConfig(Arg) {
             Dir | A_Desktop=99
             Dir | %AppData%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
             Dir | %OneDrive% | OneDrive=99
-            Cmd | explorer.exe | Windows File Explorer=99
-            Cmd | cmd.exe | DOS / CMD=99
-            Cmd | cmd.exe /k ipconfig | Check IP Address=99
-            Cmd | Shell:AppsFolder | AppsFolder Applications=66
-            Cmd | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=66
-            Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=66
-            Cmd | Notepad.exe | Notepad=66
-            Cmd | WF.msc | Windows Defender Firewall with Advanced Security=66
-            Cmd | TaskSchd.msc | Task Scheduler=66
-            Cmd | DevMgmt.msc | Device Manager=66
-            Cmd | EventVwr.msc | Event Viewer=66
-            Cmd | CompMgmt.msc | Computer Manager=66
-            Cmd | TaskMgr.exe | Task Manager=66
-            Cmd | Calc.exe | Calculator=66
-            Cmd | MsPaint.exe | Paint=66
-            Cmd | Regedit.exe | Registry Editor=66
-            Cmd | CleanMgr.exe | Disk Space Clean-up Manager=66
-            Cmd | GpEdit.msc | Group Policy=66
-            Cmd | DiskMgmt.msc | Disk Management=66
-            Cmd | DxDiag.exe | Directx Diagnostic Tool=66
-            Cmd | LusrMgr.msc | Local Users and Groups=66
-            Cmd | MsConfig.exe | System Configuration=66
-            Cmd | PerfMon.exe /Res | Resources Monitor=66
-            Cmd | PerfMon.exe | Performance Monitor=66
-            Cmd | WinVer.exe | About Windows=66
-            Cmd | Services.msc | Services=66
-            Cmd | NetPlWiz | User Accounts=66
-            Cmd | Control | Control Panel=66
-            Cmd | Control Intl.cpl | Region and Language Options=66
-            Cmd | Control Firewall.cpl | Windows Defender Firewall=66
-            Cmd | Control Access.cpl | Ease of Access Centre=66
-            Cmd | Control AppWiz.cpl | Programs and Features=66
-            Cmd | Control Sticpl.cpl | Scanners and Cameras=66
-            Cmd | Control Sysdm.cpl | System Properties=66
-            Cmd | Control Mouse | Mouse Properties=66
-            Cmd | Control Desk.cpl | Display=66
-            Cmd | Control Mmsys.cpl | Sound=66
-            Cmd | Control Ncpa.cpl | Network Connections=66
-            Cmd | Control Powercfg.cpl | Power Options=66
-            Cmd | Control AdminTools | Windows Tools=66
-            Cmd | Control Desktop | Personalisation=66
-            Cmd | Control Inetcpl.cpl,,4 | Internet Properties=66
-            Cmd | Control Printers | Devices and Printers=66
-            Cmd | Control UserPasswords | User Accounts=66
+            CMD | explorer.exe | Windows File Explorer=99
+            CMD | cmd.exe | DOS / CMD=99
+            CMD | Shell:AppsFolder | AppsFolder Applications=66
+            CMD | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=66
+            CMD | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=66
+            CMD | Notepad.exe | Notepad=66
+            CMD | WF.msc | Windows Defender Firewall with Advanced Security=66
+            CMD | TaskSchd.msc | Task Scheduler=66
+            CMD | DevMgmt.msc | Device Manager=66
+            CMD | EventVwr.msc | Event Viewer=66
+            CMD | CompMgmt.msc | Computer Manager=66
+            CMD | TaskMgr.exe | Task Manager=66
+            CMD | Calc.exe | Calculator=66
+            CMD | MsPaint.exe | Paint=66
+            CMD | Regedit.exe | Registry Editor=66
+            CMD | CleanMgr.exe | Disk Space Clean-up Manager=66
+            CMD | GpEdit.msc | Group Policy=66
+            CMD | DiskMgmt.msc | Disk Management=66
+            CMD | DxDiag.exe | Directx Diagnostic Tool=66
+            CMD | LusrMgr.msc | Local Users and Groups=66
+            CMD | MsConfig.exe | System Configuration=66
+            CMD | PerfMon.exe /Res | Resources Monitor=66
+            CMD | PerfMon.exe | Performance Monitor=66
+            CMD | WinVer.exe | About Windows=66
+            CMD | Services.msc | Services=66
+            CMD | NetPlWiz | User Accounts=66
+            CMD | Control | Control Panel=66
+            CMD | Control Intl.cpl | Region and Language Options=66
+            CMD | Control Firewall.cpl | Windows Defender Firewall=66
+            CMD | Control Access.cpl | Ease of Access Centre=66
+            CMD | Control AppWiz.cpl | Programs and Features=66
+            CMD | Control Sticpl.cpl | Scanners and Cameras=66
+            CMD | Control Sysdm.cpl | System Properties=66
+            CMD | Control Mouse | Mouse Properties=66
+            CMD | Control Desk.cpl | Display=66
+            CMD | Control Mmsys.cpl | Sound=66
+            CMD | Control Ncpa.cpl | Network Connections=66
+            CMD | Control Powercfg.cpl | Power Options=66
+            CMD | Control AdminTools | Windows Tools=66
+            CMD | Control Desktop | Personalisation=66
+            CMD | Control Inetcpl.cpl,,4 | Internet Properties=66
+            CMD | Control Printers | Devices and Printers=66
+            CMD | Control UserPasswords | User Accounts=66
             )", g_INI, g_SECTION["DFTCMD"])
             DFTCMDSEC := IniRead(g_INI, g_SECTION["DFTCMD"])
         }
@@ -1954,15 +1954,15 @@ LoadConfig(Arg) {
             ; This section is User-Defined commands, modify as desired
             ; Format: Command Type | Command | Description=Rank
             ; Command type: File, Dir, CMD, URL, some sample below
-            ; Please make sure App is not running before modifying.
+            ; Please make sure App is not running before modifying
             ;
             Dir | %AppData%\Microsoft\Windows\SendTo | Windows SendTo Dir=9
             Dir | %OneDrive% | OneDrive=9
             Dir | A_ScriptDir | ALTRun Program Dir=9
-            Cmd | cmd.exe /k ipconfig | Check IP Address=9
-            Cmd | Explorer /Select,C:\Program Files | Open and select C:\Program Files=9
-            Cmd | Control TimeDate.cpl | Date and Time=9
-            Cmd | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
+            CMD | cmd.exe /k ipconfig | Check IP Address=9
+            CMD | Explorer /Select,C:\Program Files | Open and select C:\Program Files=9
+            CMD | Control TimeDate.cpl | Date and Time=9
+            CMD | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
             URL | www.google.com | Google=9
             File | C:\Windows\notepad.exe=9
             )", g_INI, g_SECTION["USERCMD"])
@@ -2118,8 +2118,8 @@ SetLanguage() {
     ENG[104] := "Show tray icon in the system taskbar"
     ENG[105] := "Close window on losing focus"
     ENG[106] := "Always stay on top"
-    ENG[107] := "Show window caption"
-    ENG[108] := "Use Windows XP Theme instead of Classic Theme"
+    ENG[107] := "Show Main Window's Caption"
+    ENG[108] := "Use Windows Theme instead of Classic Theme"
     ENG[109] := "Press [ESC] to clear input, press again to close window (Untick: Close directly)"
     ENG[110] := "Keep last input and matching result on close"
     ENG[111] := "Show command icon in the result list"
@@ -2251,7 +2251,7 @@ SetLanguage() {
     CHN[11] := "运行"
     CHN[12] := "配置"
     CHN[13] := "在此输入搜索内容..."
-    CHN[50] := ["提示 | F1 | 帮助&关于", "提示 | F2 | 配置选项", "提示 | F3 | 编辑当前命令", "提示 | F4 | 用户定义命令", "提示 | ALT+空格 / ALT+R | 激活 ALTRun", "提示 | 热键 / ESC / 失去焦点 | 关闭 ALTRun", "提示 | 回车 / ALT+序号 | 运行命令", "提示 | 上下箭头键 | 选择上一个或下一个命令", "提示 | CTRL+D | 使用文件管理器定位命令所在目录"]
+    CHN[50] := ["提示 | F1 | 帮助&关于", "提示 | F2 | 配置选项", "提示 | F3 | 编辑当前命令", "提示 | F4 | 用户定义命令", "提示 | ALT+空格 / ALT+R | 激活 ALTRun", "提示 | 失去焦点 / ESC / 快捷键 | 关闭 ALTRun", "提示 | 回车 / ALT+序号 | 运行命令", "提示 | 上下箭头键 | 选择上一个或下一个命令", "提示 | CTRL+D | 使用文件管理器定位命令所在目录"]
     CHN[51] := "提示: "                                                 ; 50~99 Tips
     CHN[52] := "推荐使用热键激活 (ALT + 空格)"
     CHN[53] := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
@@ -2280,8 +2280,8 @@ SetLanguage() {
     CHN[104] := "显示托盘图标 (系统任务栏中)"
     CHN[105] := "失去焦点时关闭窗口"
     CHN[106] := "窗口置顶"
-    CHN[107] := "显示窗口标题栏"
-    CHN[108] := "使用 Windows XP 主题"
+    CHN[107] := "显示主窗口标题栏"
+    CHN[108] := "使用当前系统主题 (取消勾选: 使用经典主题)"
     CHN[109] := "按下 [ESC] 清除输入, 再次按下关闭窗口 (取消勾选: 直接关闭窗口)"
     CHN[110] := "保留最近一次输入和匹配结果"
     CHN[111] := "显示命令图标"
