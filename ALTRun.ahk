@@ -418,13 +418,13 @@ RegisterHotkey() {
         }
     }
 
-    HotIfWinActive g_HOTKEY["CondTitle"]                                ; 条件热键执行指定功能 = CondHotkey + CondAction
+    HotIfWinActive(g_HOTKEY["CondTitle"])                               ; 条件热键执行指定功能 = CondHotkey + CondAction
     if g_HOTKEY.Has("CondTitle") && g_HOTKEY.Has("CondHotkey") && g_HOTKEY.Has("CondAction") {
         try {
-            Hotkey g_HOTKEY["CondHotkey"], g_HOTKEY["CondAction"]
-            g_LOG.Debug("RegisterHotkey: Conditional hotkey " g_HOTKEY["CondHotkey"] " set for " g_HOTKEY["CondTitle"])
+            Hotkey(g_HOTKEY["CondHotkey"], ExecuteFunc.Bind(, g_HOTKEY["CondAction"], 1))
+            g_LOG.Debug("RegisterHotkey: Conditional hotkey " g_HOTKEY["CondHotkey"] " set for " g_HOTKEY["CondTitle"] "...OK")
         } catch as e {
-            g_LOG.Debug("RegisterHotkey: Failed to set conditional hotkey..." e.Message)
+            g_LOG.Debug("RegisterHotkey: Conditional hotkey set failed..." e.Message)
         }
     }
     HotIfWinActive                                                      ; Turn off context, make subsequent hotkeys global again
@@ -1510,11 +1510,16 @@ GetArrayIndex(searchValue, Array){
 
 PTTools() {
     if not WinExist("PT Tools"){
-        Try Run(A_ScriptDir "\PTTools.ahk")
-    }
-    else{
+        try {
+            Run(A_ScriptDir "\PTTools.ahk")
+        } catch as e {
+            MsgBox(e.Message, ,48)
+            return
+        }
+    } else {
         WinActivate("PT Tools")
-    }
+        }
+    return
 }
 
 FormatThousand(Number) {                                                ; Function to add thousand separator
@@ -1530,13 +1535,13 @@ StruCalcResult(evalResult) {
     if !g_CONFIG["StruCalc"]
         return result
 
-    result.Push(" | -")  ; 空行分隔
+    result.Push(" | ")  ; 空行分隔
     ; 主筋计算
     rebarNum := Ceil((evalResult - 80) / 300 + 1)
     spacing  := Max(Round((evalResult - 80) / (rebarNum - 0.999)), 0)   ; Use 0.999 to avoid division by zero error
     result.Push("Eval | With beam width = " formatVal " mm")
     result.Push(" | Main bar number = " rebarNum " (" spacing " C/C)")
-    result.Push(" | -")  ; 空行分隔
+    result.Push(" | ")  ; 空行分隔
     ; 配筋面积计算
     result.Push("Eval | With As = " formatVal " mm2")
     result.Push(" | Rebar = " Ceil(evalResult / 132.7) "H13 / "
@@ -1555,7 +1560,7 @@ Options(ActTab := 1) {
         , "ClearInput", "RunCurrentCommand", "RankUp", "RankDown", "Reindex"
         , "Help", "Usage", "Update", "UserCommand", "NewCommand", "EditCommand"
         , "DelCommand", "CmdMgr", "Options", "TurnMonitorOff", "EmptyRecycle"
-        , "MuteVolume", "ReStart", "Exit"]
+        , "MuteVolume", "ReStart", "Exit", "PTTools"]
 
     if WinExist(g_LNG[2]) {
         WinActivate(g_LNG[2])
@@ -2089,7 +2094,7 @@ SetLanguage() {
     ENG[11] := "Run"
     ENG[12] := "Options"
     ENG[13] := "Type anything here to search..."
-    ENG[50] := ["Tip | F1 | Help & About", "Tip | F2 | Options and settings", "Tip | F3 | Edit current command", "Tip | F4 | User-defined commands", "Tip | ALT+SPACE / ALT+R | Activate ALTRun", "Tip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun", "Tip | ENTER / ALT+NO. | Run selected command", "Tip | ARROW UP or DOWN | Select previous / next command", "Tip | CTRL+D | Locate cmd's dir with File Manager"]
+    ENG[50] := ["Tip | F1 | Help & About", "Tip | F2 | Options and settings", "Tip | F3 | Edit current command", "Tip | F4 | Change setting file directly", "Tip | ALT+SPACE / ALT+R | Activate ALTRun", "Tip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun", "Tip | ENTER / ALT+NO. | Run selected command", "Tip | ARROW UP or DOWN | Select previous / next command", "Tip | CTRL+D | Locate cmd's dir with File Manager"]
     ENG[51] := "Tips: "
     ENG[52] := "It's better to activate ALTRun by hotkey (ALT + Space)" ; 50~99 Tips
     ENG[53] := "Smart Rank - Auto adjusts command priority (rank) based on frequency of use."
@@ -2107,7 +2112,7 @@ SetLanguage() {
     ENG[65] := "Ctrl + No. = Select specific command"
     ENG[66] := "Alt + F4 = Exit"
     ENG[67] := "Ctrl+D = Open current command's dir with File Manager"
-    ENG[68] := "F4 = Edit user-defined commands (.ini) directly"
+    ENG[68] := "F4 = Change setting file directly (.ini)"
     ENG[69] := "Start with space = Search file by Everything"
     ENG[70] := "Ctrl+'+' = Increase rank of current command"
     ENG[71] := "Ctrl+'-' = Decrease rank of current command"
@@ -2251,7 +2256,7 @@ SetLanguage() {
     CHN[11] := "运行"
     CHN[12] := "配置"
     CHN[13] := "在此输入搜索内容..."
-    CHN[50] := ["提示 | F1 | 帮助&关于", "提示 | F2 | 配置选项", "提示 | F3 | 编辑当前命令", "提示 | F4 | 用户定义命令", "提示 | ALT+空格 / ALT+R | 激活 ALTRun", "提示 | 失去焦点 / ESC / 快捷键 | 关闭 ALTRun", "提示 | 回车 / ALT+序号 | 运行命令", "提示 | 上下箭头键 | 选择上一个或下一个命令", "提示 | CTRL+D | 使用文件管理器定位命令所在目录"]
+    CHN[50] := ["提示 | F1 | 帮助关于", "提示 | F2 | 配置选项", "提示 | F3 | 编辑当前命令", "提示 | F4 | 直接修改设置文件", "提示 | ALT+空格 / ALT+R | 激活 ALTRun", "提示 | 失去焦点 / ESC / 快捷键 | 关闭 ALTRun", "提示 | 回车 / ALT+序号 | 运行命令", "提示 | 上下箭头键 | 选择上一个或下一个命令", "提示 | CTRL+D | 使用文件管理器定位命令所在目录"]
     CHN[51] := "提示: "                                                 ; 50~99 Tips
     CHN[52] := "推荐使用热键激活 (ALT + 空格)"
     CHN[53] := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
@@ -2260,7 +2265,7 @@ SetLanguage() {
     CHN[56] := "回车 = 运行当前命令"
     CHN[57] := "Alt + 序号 = 运行指定的命令"
     CHN[58] := "以 + 开头 = 新建命令"
-    CHN[59] := "F3 = 直接编辑当前命令 (.ini)"
+    CHN[59] := "F3 = 编辑当前命令"
     CHN[60] := "F2 = 配置选项设置"
     CHN[61] := "Ctrl+I = 重建文件搜索数据库"
     CHN[62] := "F1 = ALTRun 帮助&关于"
@@ -2269,7 +2274,7 @@ SetLanguage() {
     CHN[65] := "Ctrl + 序号 = 选择指定的命令"
     CHN[66] := "Alt + F4 = 退出"
     CHN[67] := "Ctrl+D = 使用文件管理器定位当前命令所在目录"
-    CHN[68] := "F4 = 直接编辑用户定义命令 (.ini)"
+    CHN[68] := "F4 = 直接修改设置文件 (.ini)"
     CHN[69] := "以空格开头 = 使用 Everything 搜索文件"
     CHN[70] := "Ctrl+'+' = 增加当前命令的优先级"
     CHN[71] := "Ctrl+'-' = 减少当前命令的优先级"
