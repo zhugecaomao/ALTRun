@@ -11,7 +11,7 @@ ALTRun (AHK) 是一款开源免费、简洁高效、功能强大的启动工具
 ![Dark](https://github.com/user-attachments/assets/5bd76455-4eda-42e5-9934-c915b48994df)
 
 
-### 特性
+## 特性
 - 绿色便携和轻量化, 不修改系统注册表
 - 低资源占用, 单程序文件 < 1MB，内存占用 < 10MB
 - 支持模糊搜索, 智能匹配
@@ -32,19 +32,22 @@ ALTRun (AHK) 是一款开源免费、简洁高效、功能强大的启动工具
 - 支持类似 Listary 快速切换目录功能
 
 
-### 快速开始
+## 快速开始
 1. [下载程序](https://github.com/zhugecaomao/ALTRun/releases)
 2. 双击运行 `ALTRun.exe`
 3. 使用 `Alt+Space` 或自定义热键呼出主界面，输入关键词即可搜索和启动
 
 
-### 常用热键
+## 常用热键
 - `Alt+Space` / `Alt+R`：显示/隐藏主窗口
-- `F1`：帮助与关于
-- `F2`：选项设置
+- `Esc` / `失去焦点`：隐藏主窗口
+- `上下箭头`: 选择上一个或下一个命令
+- `回车` / `ALT+序号`: 运行命令
+- `F1`：帮助关于
+- `F2`：配置选项
 - `F3`：编辑当前命令
-- `F4`：编辑用户自定义命令
-- `Ctrl+D`：用文件管理器定位命令
+- `F4`：直接修改设置文件
+- `Ctrl+D`：用文件管理器定位命令所在目录
 - `Ctrl+I`：重建索引数据库
 - `Ctrl+Q`：重载脚本
 - `上下箭头`：切换命令
@@ -52,7 +55,7 @@ ALTRun (AHK) 是一款开源免费、简洁高效、功能强大的启动工具
 - `Ctrl+数字`：定位到对应序号命令
 
 
-### 配置说明
+## 配置说明
 所有配置、命令、历史记录均保存在程序目录下的 `ALTRun.ini` 文件中
 
 可通过主界面或托盘菜单进入“配置选项”进行详细设置
@@ -61,10 +64,10 @@ ALTRun (AHK) 是一款开源免费、简洁高效、功能强大的启动工具
 ## 贡献
 欢迎提交 Issue 和 PR，或在 [Discussions](https://github.com/zhugecaomao/ALTRun/discussions) 交流建议
 
-如果你喜欢这个项目，请给它一个星标 ⭐ 来支持我！这对继续改进项目非常重要！
+如果你喜欢这个项目，请给它一个星标 ⭐
 
 
-### 其他说明
-> 更多详细用法、FAQ、进阶技巧请见 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)
+## 其他说明
+更多详细用法、FAQ、进阶技巧请见 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)
 
-> 特别感谢 [ALTRun by etworker](https://github.com/etworker/ALTRun) (Delphi) 和 [RunZ by goreliu](https://github.com/goreliu/runz) (AutoHotkey)
+特别感谢 [ALTRun by etworker](https://github.com/etworker/ALTRun) (Delphi) 和 [RunZ by goreliu](https://github.com/goreliu/runz) (AutoHotkey)
