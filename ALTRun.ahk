@@ -361,8 +361,9 @@ SetTrayMenu() {
 }
 
 RegisterHotkey() {
+    HotIfWinActive                                                      ; 全局热键
     try {
-        Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow)                 ; 全局热键
+        Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow)
         Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow)
 
         g_LOG.Debug("RegisterHotkey: Set GlobalHotkeys...OK")
@@ -370,7 +371,7 @@ RegisterHotkey() {
         g_LOG.Debug("RegisterHotkey: Failed to set GlobalHotkeys..." e.Message)
     }
 
-    HotIfWinActive(g_TITLE)                                             ; 窗口特定热键
+    HotIfWinActive("ahk_id " MainGUI.Hwnd)                               ; 窗口特定热键
     try {
         Hotkey("!F4"        , Exit)
         Hotkey("Tab"        , TabFunc)
@@ -439,7 +440,7 @@ ExecuteFunc(Hotkey, FuncName, Index) {
 Activate() {
     MainGUI.Show()
 
-    if (WinWaitActive(g_TITLE, , 3)) {                                  ; Wait for the window to be active
+    if (WinWaitActive("ahk_id " MainGUI.Hwnd, , 3)) {                   ; Wait for the window to be active, ahk_id is more reliable than g_TITLE
         myInputBox.Focus()
         SendMessage(0xB1, 0, -1, myInputBox.Hwnd)                       ; EM_SETSEL (0xB1)
     }
@@ -447,7 +448,7 @@ Activate() {
 }
 
 ToggleWindow(*) {
-    WinActive(g_TITLE) ? MainGuiClose() : Activate()
+    WinActive("ahk_id " MainGUI.Hwnd) ? MainGuiClose() : Activate()
 }
 
 OnSearchInput(*) {
@@ -643,7 +644,6 @@ RunCommand(originCmd) {
         UpdateRank(originCmd)
     }
     g_LOG.Debug("RunCommand: Execute " g_CONFIG["RunCount"] " = " originCmd)
-    OutputDebug("RunCommand: Execute " g_CONFIG["RunCount"] " = " originCmd)
 }
 
 TabFunc(*) {                                                            ; Limit tab to switch focused control between myInputBox & ListView only
@@ -689,12 +689,10 @@ ChangeCommand(Step := 1, ResetSelRow := False) {
     }
 
     myListView.Modify(selectedRow, "Select Focus Vis")                  ; make new index row selected, Focused, and Visible
-    OutputDebug("ChangeCommand: Selecting Row=" selectedRow)
 }
 
 OnListviewClick(myListView, rowNumber) {
-    ; 如果用户左键点击了列表行以外的地方
-    if (!rowNumber)
+    if (!rowNumber)     ; 如果用户左键点击了列表行以外的地方
         Return
 
     if (g_MATCHED.Length >= rowNumber) {
@@ -708,22 +706,19 @@ OnListviewClick(myListView, rowNumber) {
 OnListViewContextMenu(GuiCtrlObj, rowNumber, IsRightClick, X, Y) {      ; On ListView ContextMenu
     Global myListView, g_MATCHED, g_RUNTIME, g_LNG, g_LOG
 
-    ; 如果用户右键点击了列表行以外的地方
-    if (!rowNumber)
+    if (!rowNumber)     ; 如果用户右键点击了列表行以外的地方
         Return
 
     if (g_MATCHED.Length >= rowNumber) {
         g_RUNTIME["CurrentCommand"] := g_MATCHED[rowNumber]
         SetListViewContextMenu(X, Y)
-    } else {
-        ; For cases like first hint page
+    } else {            ; For cases like first hint page
         SetStatusBar(myListView.GetText(rowNumber, 3))
     }
 }
 
 SetListViewContextMenu(X, Y) {
-    ; 只在第一次调用右键菜单时创建
-    static myListViewContextMenu := ""
+    static myListViewContextMenu := ""  ; 只在第一次调用右键菜单时创建
 
     if !IsObject(myListViewContextMenu) {
         myListViewContextMenu := Menu()
@@ -746,7 +741,6 @@ SetListViewContextMenu(X, Y) {
         myListViewContextMenu.Default := g_LNG[400]
 
         g_LOG.Debug("SetListViewContextMenu: Create myListViewContextMenu...OK")
-        OutputDebug("SetListViewContextMenu: Create myListViewContextMenu...OK")
     }
 
     myListViewContextMenu.Show(X, Y)
@@ -781,7 +775,7 @@ CopyCommand(*) {                                                        ; ListVi
 
 OnStatusBarClick(GuiCtrlObj, partNumber) {
     if (partNumber = 1) {
-        A_Clipboard := StatusBarGetText(1, g_TITLE) ; Get text from 1st part of StatusBar
+        A_Clipboard := StatusBarGetText(1, "ahk_id " MainGUI.Hwnd)      ; Get text from 1st part of StatusBar
         SetStatusBar(g_LNG[407] " : " A_Clipboard)
     } else if (partNumber = 2) {
         Usage()
@@ -791,7 +785,7 @@ OnStatusBarClick(GuiCtrlObj, partNumber) {
 OnStatusBarContextMenu(GuiCtrlObj, partNumber, RightClick, X, Y) {
     if (partNumber = 1) {
         SB_ContextMenu1 := Menu()
-        SB_ContextMenu1.Add(g_LNG[407], (*) => SetStatusBar(g_LNG[407] " : " A_Clipboard := StatusBarGetText(1, g_TITLE))) ; Get text from 1st part of StatusBar
+        SB_ContextMenu1.Add(g_LNG[407], (*) => SetStatusBar(g_LNG[407] " : " A_Clipboard := StatusBarGetText(1, "ahk_id " MainGUI.Hwnd))) ; Get text from 1st part of StatusBar
         SB_ContextMenu1.SetIcon(g_LNG[407], "imageres.dll", -5314)
         SB_ContextMenu1.Show()
     } else if (partNumber = 2) {
@@ -995,8 +989,7 @@ LoadCommands() {
             g_FALLBACK.Push(line)
     }
 
-    OutputDebug("LoadCommands: Loaded g_COMMANDS.Length=" g_COMMANDS.Length ", g_FALLBACK.Length=" g_FALLBACK.Length)
-    g_LOG.Debug("LoadCommands: Loaded g_COMMANDS.Length=" g_COMMANDS.Length ", g_FALLBACK.Length=" g_FALLBACK.Length)
+    g_LOG.Debug("LoadCommands: Loaded COMMANDS=" g_COMMANDS.Length ", FALLBACK=" g_FALLBACK.Length)
     return
 }
 
@@ -1009,7 +1002,7 @@ LoadHistory() {
     } else
         Try IniDelete(g_INI, g_SECTION["HISTORY"])
 
-    OutputDebug("LoadHistory: History length=" g_HISTORYS.Length)
+    g_LOG.Debug("LoadHistory: Loaded History=" g_HISTORYS.Length)
     return
 }
 
@@ -1055,7 +1048,7 @@ OpenContainer(*) {
 }
 
 WM_ACTIVATE(wParam, lParam, msg, hwnd){                                 ; Close on lose focus
-    Global MainGUI, g_RUNTIME, g_LOG, g_TITLE
+    Global MainGUI, g_RUNTIME, g_LOG
 
     if hwnd != MainGUI.Hwnd
         return 0  ; 忽略非主窗口的消息
@@ -1209,7 +1202,6 @@ Listary() {                                                             ; Listar
         Hotkey(g_HOTKEY["TotalCMDDir"], SyncTCPath)                     ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
     } catch as e {
         g_LOG.Debug("Listary: Failed to set hotkey with error:" e.Message)
-        OutputDebug("Listary: Failed to set hotkey with error:" e.Message)
     }
     HotIfWinActive                                                      ; Turn off context, make subsequent hotkeys global again
     return
@@ -1224,14 +1216,12 @@ SyncTCPath(*) {
     if (!hwnd) {
         MsgBox("没有找到Total Commander窗口,请先打开Total Commander!", g_TITLE, 48)
         g_LOG.Debug("SyncTCPath: No Total Commander window found")
-        OutputDebug("SyncTCPath: No Total Commander window found")
         return
     }
     try {
         SendMessage(1075, 2029, 0, , "ahk_class TTOTAL_CMD")            ; TC: WM_USER + 75, TC_GETCURRENTPATH = 2029
     } catch as e {
         g_LOG.Debug("SyncTCPath: SendMessage failed, exception - " . e.Message)
-        OutputDebug("SyncTCPath: SendMessage failed, exception - " . e.Message)
         A_Clipboard := ClipSaved
         return
     }
@@ -1254,7 +1244,6 @@ SyncExplorerPath(*) {
     if (!hwnd) {
         MsgBox("没有找到资源管理器窗口,请先打开一个资源管理器窗口!", g_TITLE, 48)
         g_LOG.Debug("SyncExplorerPath: No Explorer window found")
-        OutputDebug("SyncExplorerPath: No Explorer window found")
         return
     }
     try {
@@ -1265,10 +1254,8 @@ SyncExplorerPath(*) {
                 return
             }
         g_LOG.Debug("SyncExplorerPath: No matching Explorer window")
-        OutputDebug("SyncExplorerPath: No matching Explorer window")
     } catch as e {
         g_LOG.Debug("SyncExplorerPath: COM error - " e.Message)
-        OutputDebug("SyncExplorerPath: COM error - " e.Message)
     }
 }
 
@@ -1284,7 +1271,6 @@ SetDialogPath(Dir) {
         SendInput "{Dir}"
         SendInput "{Enter}"
         g_LOG.Debug("SetDialogPath: Set path to " Dir " (WPS dialog)")
-        OutputDebug("SetDialogPath: Set path to " Dir " (WPS dialog)")
     } else {
         ; Windows Standard dialog: Edit1 is the path input box
         dialogControl := ControlGetHwnd("Edit1", "A")
@@ -1293,10 +1279,8 @@ SetDialogPath(Dir) {
             ControlSetText(Dir, "Edit1", "A")
             ControlSend("{Enter}", "Edit1", "A")
             g_LOG.Debug("SetDialogPath: Set dialog path to=" Dir)
-            OutputDebug("SetDialogPath: Set dialog path to=" Dir)
         } else {
             g_LOG.Debug("SetDialogPath: No Edit1 control found in dialog")
-            OutputDebug("SetDialogPath: No Edit1 control found in dialog")
         }
     }
 }
@@ -1455,11 +1439,11 @@ RenameWithDate(*) {                                                     ; 针对
     Else
         SendInput "^D"                                                  ; 如果不是,则发送原始的Ctrl+D
 
-    OutputDebug("RenameWithDate: Current control=" FocusedClassNN)
+    g_LOG.Debug("RenameWithDate: Current control=" FocusedClassNN)
     Return
 }
 
-LineEndAddDate(*) {                                                      ; 针对TC File Comment对话框　按Ctrl+D自动在备注文字之后添加日期
+LineEndAddDate(*) {                                                     ; 针对TC File Comment对话框　按Ctrl+D自动在备注文字之后添加日期
     CurrentDate := FormatTime(, "dd.MM.yyyy")
     SendInput "{End}"
     Sleep 10
@@ -1472,7 +1456,6 @@ NameAddDate(WinName, CurrCtrl) {                                        ; 在文
     SplitPath(EditCtrlText, &fileName, &fileDir, &fileExt, &nameNoExt)
     CurrentDate := FormatTime(, "dd.MM.yyyy")
 
-    OutputDebug("fileExt: " fileExt)
     if (fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) { ; 如果有真实文件后缀名,才加日期在后缀名之前
         if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$") {
             baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
@@ -1638,15 +1621,14 @@ Options(ActTab := 1) {
         OptGUI.AddDDL("x395 yp-5 w120 vTrigger" A_Index " Choose" GetArrayIndex(g_HOTKEY["Trigger" A_Index], FuncList), FuncList)
     }
 
+    HotIfWinActive  ; Turn off global hotkey when options() called by hotif hotkey F2
     if (g_HOTKEY["GlobalHotkey1"] != "") {
-        HotIfWinActive  ; Turn off global hotkey when options() called by hotif hotkey F2
         Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "Off")
-        OutputDebug("Options: Turn Off GlobalHotkey1...OK")
+        g_LOG.Debug("Options: Turn Off GlobalHotkey1...OK")
     }
     if (g_HOTKEY["GlobalHotkey2"] != "") {
-        HotIfWinActive
         Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "Off")
-        OutputDebug("Options: Turn Off GlobalHotkey2...OK")
+        g_LOG.Debug("Options: Turn Off GlobalHotkey2...OK")
     }
 
     OptTab.UseTab(4) ; INDEX Tab
@@ -1764,12 +1746,11 @@ SelectFont(TargetVar := "MainGUIFont") {
 
     OptGUI[TargetVar].Text := fontObj["name"] ", " fontObj["str"]       ; 更新控件字体并设置显示文本
     OptGUI[TargetVar].SetFont(fontObj["str"], fontObj["name"])
-    OutputDebug("SelectFont: OptGUI[" TargetVar " font set to Option=" fontObj["str"] ", font name=" fontObj["name"])
+    g_LOG.Debug("SelectFont: OptGUI[" TargetVar " font set to=" fontObj["str"] ", " fontObj["name"])
 }
 
 SelectCtrlColor(*) {
     color := ColorSelect(, OptGUI.hwnd, , "full")                       ; hwnd and custColorObj are optional
-    OutputDebug("SelectCtrlColor: Color selected=" color)
     If (color = -1)
         return
 
@@ -1794,7 +1775,7 @@ SelectBackground(*) {
         return
 
     OptGUI["Background"].Text := file
-    OutputDebug("SelectBackground: Background image selected=" file)
+    g_LOG.Debug("SelectBackground: Background image selected=" file)
 }
 
 OPTButtonOK(*) {
@@ -1803,22 +1784,17 @@ OPTButtonOK(*) {
 }
 
 OPTGuiClose(*) {
+    HotIfWinActive      ; Turn on global hotkey
     if (g_HOTKEY["GlobalHotkey1"] != "") {
-        HotIfWinActive
         Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "On")
-        OutputDebug("OPTGuiClose: Turn On GlobalHotkey1...OK")
         g_LOG.Debug("OPTGuiClose: Turn On GlobalHotkey1...OK")
     }
     if (g_HOTKEY["GlobalHotkey2"] != "") {
-        HotIfWinActive
         Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "On")
-        OutputDebug("OPTGuiClose: Turn On GlobalHotkey2...OK")
         g_LOG.Debug("OPTGuiClose: Turn On GlobalHotkey2...OK")
     }
 
     OptGUI.Destroy()
-
-    OutputDebug("OPTGuiClose: OptGUI.Destroy...OK")
     g_LOG.Debug("OPTGuiClose: OptGUI.Destroy...OK")
     return
 }
@@ -1979,7 +1955,7 @@ LoadConfig(Arg) {
         if (INDEXSEC = "") {
             msgText := g_CONFIG["Chinese"] ? "索引数据库为空, 请点击`n`n'确定'重新建立索引`n`n'取消'退出程序`n`n(请确保程序目录有写入权限)" 
                 : "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to exit the program`n`n(Please ensure the program directory is writable)"
-            if (MsgBox(msgText, g_TITLE, 4161) = "Cancel") {
+            if (MsgBox(msgText, , 4161) = "Cancel") {
                 ExitApp()
             }
             Reindex()
@@ -2048,7 +2024,7 @@ TurnMonitorOff() {                                                      ; 关闭
 }
 
 EmptyRecycle() {
-    local Result := MsgBox("Do you really want to empty the Recycle Bin?", g_TITLE, "YesNo")
+    local Result := MsgBox("Do you really want to empty the Recycle Bin?", , "YesNo")
     if (Result = "Yes")
     {
         FileRecycleEmpty
@@ -2094,7 +2070,7 @@ SetLanguage() {
     ENG[11] := "Run"
     ENG[12] := "Options"
     ENG[13] := "Type anything here to search..."
-    ENG[50] := ["Tip | F1 | Help & About", "Tip | F2 | Options and settings", "Tip | F3 | Edit current command", "Tip | F4 | Change setting file directly", "Tip | ALT+SPACE / ALT+R | Activate ALTRun", "Tip | ALT+SPACE / ESC / LOSE FOCUS | Deactivate ALTRun", "Tip | ENTER / ALT+NO. | Run selected command", "Tip | ARROW UP or DOWN | Select previous / next command", "Tip | CTRL+D | Locate cmd's dir with File Manager"]
+    ENG[50] := ["Tip | F1 | Help & About", "Tip | F2 | Options and settings", "Tip | F3 | Edit current command", "Tip | F4 | Change setting file directly", "Tip | Alt+Space / Alt+R | Activate ALTRun", "Tip | Alt+Space / Esc / Lose Focus | Deactivate ALTRun", "Tip | Enter / Alt+No. | Run selected command", "Tip | Arrow Up or Down | Select previous / next command", "Tip | Ctrl+D | Locate cmd's dir with File Manager"]
     ENG[51] := "Tips: "
     ENG[52] := "It's better to activate ALTRun by hotkey (ALT + Space)" ; 50~99 Tips
     ENG[53] := "Smart Rank - Auto adjusts command priority (rank) based on frequency of use."
@@ -2256,7 +2232,7 @@ SetLanguage() {
     CHN[11] := "运行"
     CHN[12] := "配置"
     CHN[13] := "在此输入搜索内容..."
-    CHN[50] := ["提示 | F1 | 帮助关于", "提示 | F2 | 配置选项", "提示 | F3 | 编辑当前命令", "提示 | F4 | 直接修改设置文件", "提示 | ALT+空格 / ALT+R | 激活 ALTRun", "提示 | 失去焦点 / ESC / 快捷键 | 关闭 ALTRun", "提示 | 回车 / ALT+序号 | 运行命令", "提示 | 上下箭头键 | 选择上一个或下一个命令", "提示 | CTRL+D | 使用文件管理器定位命令所在目录"]
+    CHN[50] := ["提示 | F1 | 帮助关于", "提示 | F2 | 配置选项", "提示 | F3 | 编辑当前命令", "提示 | F4 | 直接修改设置文件", "提示 | Alt+空格 / Alt+R | 激活 ALTRun", "提示 | 失去焦点 / Esc / 快捷键 | 关闭 ALTRun", "提示 | 回车 / Alt+序号 | 运行命令", "提示 | 上下箭头键 | 选择上一个或下一个命令", "提示 | Ctrl+D | 使用文件管理器定位命令所在目录"]
     CHN[51] := "提示: "                                                 ; 50~99 Tips
     CHN[52] := "推荐使用热键激活 (ALT + 空格)"
     CHN[53] := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
@@ -2508,7 +2484,6 @@ class Logger {
     }
 
     Debug(Msg) {
-        ;OutputDebug(Msg)
         if (g_CONFIG["SaveLog"])
             FileAppend("[" . A_Now . "] " . Msg . "`n", this.filename)
     }
