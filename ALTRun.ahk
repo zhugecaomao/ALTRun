@@ -11,7 +11,7 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2025.09.30
+;@Ahk2Exe-SetVersion 2025.10.03
 ;@Ahk2Exe-SetCopyright Copyright (c) 2025 zhugecaomao
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -23,16 +23,14 @@ FileEncoding("UTF-8")
 ; Global variables which are only read by the function, not assigned or used with the reference operator (&).
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
-Global g_INI   := A_ScriptDir "\ALTRun.ini"
-Global g_VER   := "2025.09.30"
-Global g_TITLE := "ALTRun - Ver " g_VER
+Global g_INI   := A_ScriptDir . "\ALTRun.ini"
+Global g_TITLE := "ALTRun - 2025.10.03"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
 Global g_FALLBACK := Array()         ; Fallback commands
 Global g_HISTORYS := Array()         ; Execution history
 Global g_MATCHED  := Array()         ; Matched commands
-Global g_TYPELST  := Array("File", "Dir", "CMD", "URL", "Func")
 Global g_SECTION  := Map(
     "CONFIG"    , "Config",
     "GUI"       , "Gui",
@@ -92,6 +90,7 @@ Global g_CONFIG := Map(
     "ExcludeWin"     , "ahk_class SysListView32, ahk_exe Explorer.exe"
 )
 
+g_LOG.Debug("")
 g_LOG.Debug("///// ALTRun is starting /////")
 SetLanguage()
 
@@ -173,7 +172,7 @@ Global g_HOTKEY := Map(
     "AutoDateBEHKey", "^d"
 )
 
-Global g_GUI := Map(
+Global g_GUI := Map( ; GUI related variables
     "ListRows"      , 9,
     "ColWidth"      , "40,0,330,AutoHdr",
     "MainGUIFont"   , "Microsoft YaHei, norm s10.0",
@@ -181,21 +180,20 @@ Global g_GUI := Map(
     "MainSBFont"    , "Microsoft YaHei, norm s9.0",
     "WinX"          , 660,
     "WinY"          , 300,
-    "CtrlColor"     , "Default",
-    "WinColor"      , "Default",
+    "MainGUIColor"  , "Default",
+    "CMDListColor"  , "Default",
     "Background"    , "Default",
     "Transparency"  , 255
 )
 
-Global g_RUNTIME := Map(
+Global g_RUNTIME := Map( ; Runtime variables, not saved to ini
     "CurrentCommand", "",
     "UseDisplay"    , 0,
     "UseFallback"   , 0,
     "Arg"           , "",
     "OneDrive"      , EnvGet("OneDrive"),
     "RegEx"         , "imS)",
-    "Max"           , 1,
-    "AppDate"       , A_YYYY . A_MM . A_DD
+    "Max"           , 1
 )
 
 Global g_USAGE := Map(A_YYYY . A_MM . A_DD, 1)
@@ -238,18 +236,22 @@ SetMainGUI() {
     TopMost := g_CONFIG["AlwaysOnTop"] ? "AlwaysOnTop" : ""
     Caption := g_CONFIG["ShowCaption"] ? "" : " -Caption"
     Theme   := g_CONFIG["XPthemeBg"] ? "" : " -Theme"
+    DBuffer := g_CONFIG["DoubleBuffer"] ? " +LV0x10000" : ""
+    Header  := g_CONFIG["ShowHdr"] ? "" : " -Hdr"
+    Grid    := g_CONFIG["ShowGrid"] ? " Grid" : ""
+    Border  := g_CONFIG["ShowBorder"] ? "" : " -E0x200"
 
     MainGUI := Gui(TopMost Caption Theme, g_TITLE)
     MainGUI.OnEvent("Close", MainGuiClose)
     MainGUI.OnEvent("Escape", MainGuiEscape)
-    MainGUI.BackColor := g_GUI["WinColor"]
+    MainGUI.BackColor := g_GUI["MainGUIColor"]
     MainGUI.SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
     myInputBox := MainGUI.AddEdit("x12 y10 -WantReturn W" Input_W, g_LNG[13])
     myInputBox.OnEvent("Change", OnSearchInput)
     MainGUI.AddButton("x+" Enter_X " yp W" Enter_W " hp Default Hidden" (!g_CONFIG["ShowBtnRun"]), g_LNG[11]).OnEvent("Click", RunCurrentCommand)
     MainGUI.AddButton("x+" Opt_X " yp W" Opt_W " hp Hidden" (!g_CONFIG["ShowBtnOpt"]), g_LNG[12]).OnEvent("Click", (*) => Options())
     myListView := MainGUI.AddListView("x12 yp+36 W" (g_GUI["WinX"] - 24) " H" (g_GUI["WinY"] - 76) " -Multi", g_LNG[10])
-    myListView.Opt((g_CONFIG["DoubleBuffer"] ? " +LV0x10000" : "") (g_CONFIG["ShowHdr"] ? "" : " -Hdr") (g_CONFIG["ShowGrid"] ? " Grid" : "") (g_CONFIG["ShowBorder"] ? "" : " -E0x200"))
+    myListView.Opt(DBuffer Header Grid Border " Background" g_GUI["CMDListColor"])
     myListView.OnEvent("Click", OnListviewClick)
     myListView.OnEvent("ContextMenu", OnListViewContextMenu)
     myListView.OnEvent("DoubleClick", LVRunCommand)
@@ -310,7 +312,7 @@ SetMainGUI() {
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
 
     if g_CONFIG["HideOnLostFocus"]
-        OnMessage(0x06, WM_ACTIVATE)
+        OnMessage(0x0006, WM_ACTIVATE)
 
     return
 }
@@ -366,12 +368,12 @@ RegisterHotkey() {
         Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow)
         Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow)
 
-        g_LOG.Debug("RegisterHotkey: Set GlobalHotkeys...OK")
+        g_LOG.Debug("RegisterHotkey: Set global activate hotkeys...OK")
     } catch as e {
-        g_LOG.Debug("RegisterHotkey: Failed to set GlobalHotkeys..." e.Message)
+        g_LOG.Debug("RegisterHotkey: Failed to set global activate hotkeys..." e.Message)
     }
 
-    HotIfWinActive("ahk_id " MainGUI.Hwnd)                               ; 窗口特定热键
+    HotIfWinActive("ahk_id " MainGUI.Hwnd)                              ; 窗口特定热键
     try {
         Hotkey("!F4"        , Exit)
         Hotkey("Tab"        , TabFunc)
@@ -390,9 +392,9 @@ RegisterHotkey() {
         Hotkey("^NumpadAdd" , RankUp)
         Hotkey("^NumpadSub" , RankDown)
 
-        g_LOG.Debug("RegisterHotkey: Set ALTRun window Hotkey...OK")
+        g_LOG.Debug("RegisterHotkey: Set local hotkeys (F1-F4)...OK")
     } catch as e {
-        g_LOG.Debug("RegisterHotkey: Failed to set hotkey..." e.Message)
+        g_LOG.Debug("RegisterHotkey: Failed to set local hotkeys (F1-F4)..." e.Message)
     }
     
     Loop g_GUI["ListRows"] {
@@ -400,21 +402,21 @@ RegisterHotkey() {
             Hotkey("!" . A_Index, RunSelectedCommand)                   ; 通过热键选择并运行指定命令 = Alt + index (1-9)
             Hotkey("^" . A_Index, GotoCommand)                          ; 通过热键选择指定命令 = Ctrl + index (1-9)
 
-            g_LOG.Debug("RegisterHotkey: Set CommandList Hotkey" A_Index "  finish")
+            g_LOG.Debug("RegisterHotkey: Set command list local hotkey " A_Index "...OK")
         } catch as e {
-            g_LOG.Debug("RegisterHotkey: Failed to set CommandList hotkey " A_Index . e.Message)
+            g_LOG.Debug("RegisterHotkey: Failed to set command list local hotkey " A_Index . e.Message)
         }
     }
 
     Loop 7 {
         KeyName := "Hotkey"  . A_Index
         Trigger := "Trigger" . A_Index
-        if (g_HOTKEY.Has(KeyName) && g_HOTKEY[Trigger] != "") {         ; 自定义热键执行指定功能 = Hotkey + Trigger
+        if (g_HOTKEY.Has(KeyName) && g_HOTKEY[KeyName] != "" && g_HOTKEY[Trigger] != "") { ; 自定义热键执行指定功能 = Hotkey + Trigger
             try {
                 Hotkey(g_HOTKEY[KeyName], ExecuteFunc.Bind(, g_HOTKEY[Trigger], A_Index))
-                g_LOG.Debug("RegisterHotkey: Set MainGUI FuncList hotkey finish: " g_HOTKEY[KeyName] " <-> " g_HOTKEY[Trigger])
+                g_LOG.Debug("RegisterHotkey: Set customized function list local hotkey " A_Index " " g_HOTKEY[KeyName] " <-> " g_HOTKEY[Trigger] "...OK")
             } catch as e {
-                g_LOG.Debug("RegisterHotkey: Set MainGUI FuncList hotkey failed, error="  e.Message)
+                g_LOG.Debug("RegisterHotkey: Failed to set customized function list local hotkey..."  e.Message)
             }
         }
     }
@@ -423,9 +425,9 @@ RegisterHotkey() {
     if g_HOTKEY.Has("CondTitle") && g_HOTKEY.Has("CondHotkey") && g_HOTKEY.Has("CondAction") {
         try {
             Hotkey(g_HOTKEY["CondHotkey"], ExecuteFunc.Bind(, g_HOTKEY["CondAction"], 1))
-            g_LOG.Debug("RegisterHotkey: Conditional hotkey " g_HOTKEY["CondHotkey"] " set for " g_HOTKEY["CondTitle"] "...OK")
+            g_LOG.Debug("RegisterHotkey: Set conditional hotkey " g_HOTKEY["CondHotkey"] " <-> " g_HOTKEY["CondAction"] " for " g_HOTKEY["CondTitle"] "...OK")
         } catch as e {
-            g_LOG.Debug("RegisterHotkey: Conditional hotkey set failed..." e.Message)
+            g_LOG.Debug("RegisterHotkey: Failed to set conditional hotkey..." e.Message)
         }
     }
     HotIfWinActive                                                      ; Turn off context, make subsequent hotkeys global again
@@ -434,7 +436,7 @@ RegisterHotkey() {
 
 ExecuteFunc(Hotkey, FuncName, Index) {
     RunCommand("FUNC | " FuncName)
-    OutputDebug("ExecutFunc: Execute function...=" FuncName)
+    g_LOG.Debug("ExecutFunc: Execute function...=" FuncName)
 }
 
 Activate() {
@@ -444,7 +446,7 @@ Activate() {
         myInputBox.Focus()
         SendMessage(0xB1, 0, -1, myInputBox.Hwnd)                       ; EM_SETSEL (0xB1)
     }
-    UpdateUsage()
+    SyncUsage()
 }
 
 ToggleWindow(*) {
@@ -456,7 +458,8 @@ OnSearchInput(*) {
 }
 
 SearchCommand(command := "") {
-    Global g_MATCHED, g_RUNTIME, g_FALLBACK, g_COMMANDS, g_CMDINDEX, g_GUI, g_CONFIG
+    Global g_MATCHED, g_RUNTIME, g_FALLBACK, g_COMMANDS, g_CMDINDEX
+
     g_MATCHED := Array()
     Prefix    := SubStr(command, 1, 1)
 
@@ -617,15 +620,17 @@ RunCommand(originCmd) {
         try {
             %path%()
         } catch as e {
-            MsgBox("Could not find function: " path "`n`nError message: " e.Message, g_TITLE, 4096)
+            MsgBox("Could not find function: " path "`n`nError message: " e.Message, g_TITLE, 48)
         }
     } else { ; For type "FILE","URL","CMD" and other Unknown type
         try {
             Run(path)
         } catch as e {
-            MsgBox("Could not run command: " path "`n`nError message: " e.Message, g_TITLE, 4096)
+            MsgBox("Could not run command: " path "`n`nError message: " e.Message, g_TITLE, 48)
         }
     }
+
+    g_LOG.Debug("RunCommand: Execute " g_CONFIG["RunCount"] " = " originCmd)
 
     if (g_CONFIG["SaveHistory"]) {
         g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])      ; Adjust command history
@@ -640,10 +645,8 @@ RunCommand(originCmd) {
     }
 
     UpdateRunCount()
-    if (g_CONFIG["SmartRank"]) {
-        UpdateRank(originCmd)
-    }
-    g_LOG.Debug("RunCommand: Execute " g_CONFIG["RunCount"] " = " originCmd)
+    g_CONFIG["SmartRank"] ? UpdateRank(originCmd) : ""
+    return
 }
 
 TabFunc(*) {                                                            ; Limit tab to switch focused control between myInputBox & ListView only
@@ -895,24 +898,27 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
             SetStatusBar("UpdateRank: Rank for current command : " Rank)
         }
     }
+    g_LOG.Debug("UpdateRank: Rank updated for command...=" originCmd " New Rank=" Rank)
     LoadCommands()                                                      ; New rank will take effect in real-time by LoadCommands again
 }
 
-UpdateUsage() {
+SyncUsage() {
     currDate := A_YYYY . A_MM . A_DD
-    if (g_RUNTIME["AppDate"] != currDate) {
-        g_RUNTIME["AppDate"] := currDate
+
+    if (!g_USAGE.Has(currDate)) {
         g_USAGE[currDate] := 1
     } else {
-        g_USAGE[currDate]++
+        g_USAGE[currDate] += 1
     }
+
     g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], g_USAGE[currDate])
     IniWrite(g_USAGE[currDate], g_INI, g_SECTION["USAGE"], currDate)
 }
 
 UpdateRunCount() {
     g_CONFIG["RunCount"]++
-    IniWrite(g_CONFIG["RunCount"], g_INI, g_SECTION["CONFIG"], "RunCount") ; Update RunCount in g_CONFIG
+    IniWrite(g_CONFIG["RunCount"], g_INI, g_SECTION["CONFIG"], "RunCount")
+    g_LOG.Debug("UpdateRunCount: RunCount updated..." g_CONFIG["RunCount"])
 }
 
 RankUp(*) {
@@ -1027,13 +1033,17 @@ OpenDir(Path) {
 
     Try{
         Run(g_CONFIG["FileMgr"] ' `"' Path '`"')
+        g_LOG.Debug("OpenDir: Using=" g_CONFIG["FileMgr"] " to open dir=" Path "...OK")
     } catch as e {
-        MsgBox("Could not open dir: " Path "`n`nError message: " e.Message, g_TITLE, 4096)
+        g_LOG.Debug("OpenDir: Failed to open dir=" Path " Error=" e.Message)
+        MsgBox("Could not open dir: " Path "`n`nError message: " e.Message, g_TITLE, 48)
     }
-    g_LOG.Debug("OpenDir: Opening path=" Path " ,using FileMgr=" g_CONFIG["FileMgr"])
 }
 
 OpenContainer(*) {
+    if (StrSplit(g_RUNTIME["CurrentCommand"], " | ").Length < 2) {
+        return MsgBox("No valid file to open container folder.", g_TITLE, 48)
+    }
     Path := AbsPath(StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2])
 
     try {
@@ -1041,24 +1051,26 @@ OpenContainer(*) {
             Run(g_CONFIG["FileMgr"] ' /Select, `"' Path '`"')
         else
             Run(g_CONFIG["FileMgr"] ' /P `"' Path '`"')                 ; /P Parent folder
+
+    g_LOG.Debug("OpenContainer: Using=" g_CONFIG["FileMgr"] " to open container dir for file=" Path "...OK")
     } catch as e {
-        MsgBox("Error finding parent directory: " . e.Message, g_TITLE, 4096)
+        g_LOG.Debug("OpenContainer: Failed to open container dir for file=" Path " Error=" e.Message)
+        MsgBox("Failed to open container dir for file: " . Path "`n`nError message: " . e.Message, g_TITLE, 48)
     }
-    g_LOG.Debug("OpenContainer: Path=" . Path)
 }
 
-WM_ACTIVATE(wParam, lParam, msg, hwnd){                                 ; Close on lose focus
-    Global MainGUI, g_RUNTIME, g_LOG
+WM_ACTIVATE(wParam, lParam, msg, hwnd){                                 ; Close on lose focus, OnMessage is far more efficient than SetTimer + WinActive check
+    if (hwnd != MainGUI.Hwnd) {                                         ; Ignore messages from other windows
+        g_LOG.Debug("WM_ACTIVATE: Ignored message from hwnd (" hwnd ") != MainGUI.Hwnd (" MainGUI.Hwnd ")")
+        return 0
+    }
 
-    if hwnd != MainGUI.Hwnd
-        return 0  ; 忽略非主窗口的消息
-
-    isActivated := (wParam > 0)
-    g_LOG.Debug("WM_ACTIVATE: " (isActivated ? "Activated" : "Deactivated") ", hwnd=" hwnd)
+    isActivated := (wParam > 0)                                         ; wParam > 0 means the window is being activated
+    g_LOG.Debug("WM_ACTIVATE: Window is " (isActivated ? "activated..." : "de-activated..."))
 
     if (!isActivated && WinExist("ahk_id " MainGUI.Hwnd) && !g_RUNTIME["UseDisplay"]) {
-        g_LOG.Debug("WM_ACTIVATE: MainGUI lost focus, closing...")
         MainGuiClose()
+        g_LOG.Debug("WM_ACTIVATE: Window lose focus, auto closing...")
     }
     return 0
 }
@@ -1067,7 +1079,7 @@ UpdateSendTo() {                 ; the lnk in SendTo must point to a exe
     lnkPath := StrReplace(A_StartMenu, "\Start Menu", "\SendTo\") "ALTRun.lnk"
     if (!g_CONFIG["EnableSendTo"]) {
         FileDelete(lnkPath)
-        g_LOG.Debug("UpdateSendTo: Update SendTo shortcut=Disabled")
+        g_LOG.Debug("UpdateSendTo: Update SendTo shortcut...Disabled")
         return
     }
 
@@ -1076,7 +1088,7 @@ UpdateSendTo() {                 ; the lnk in SendTo must point to a exe
     else
         FileCreateShortcut(A_AhkPath, lnkPath, , A_ScriptFullPath " -SendTo", "Send command to ALTRun User Command list")
 
-    g_LOG.Debug("UpdateSendTo: Update SendTo shortcut=OK")
+    g_LOG.Debug("UpdateSendTo: Update SendTo shortcut...OK")
     return
 }
 
@@ -1085,13 +1097,13 @@ UpdateStartup() {
 
     if (!g_CONFIG["AutoStartup"]) {
         FileDelete(lnkPath)
-        g_LOG.Debug("UpdateStartup: Update Startup shortcut=Disabled")
+        g_LOG.Debug("UpdateStartup: Update Startup shortcut...Disabled")
         return
     }
 
     FileCreateShortcut(A_ScriptFullPath, lnkPath, A_ScriptDir, "-startup", "ALTRun - An effective launcher")
 
-    g_LOG.Debug("UpdateStartup: Update Startup shortcut=OK")
+    g_LOG.Debug("UpdateStartup: Update Startup shortcut...OK")
     return
 }
 
@@ -1100,12 +1112,12 @@ UpdateStartMenu() {
 
     if (!g_CONFIG["InStartMenu"]) {
         FileDelete(lnkPath)
-        g_LOG.Debug("UpdateStartMenu: Update StartMenu shortcut=Disabled")
+        g_LOG.Debug("UpdateStartMenu: Update StartMenu shortcut...Disabled")
         return
     }
 
     FileCreateShortcut(A_ScriptFullPath, lnkPath, A_ScriptDir, "-StartMenu", "ALTRun - An effective launcher")
-    g_LOG.Debug("UpdateStartMenu: Update StartMenu shortcut=OK")
+    g_LOG.Debug("UpdateStartMenu: Update StartMenu shortcut...OK")
     return
 }
 
@@ -1151,7 +1163,7 @@ Reindex(*) {                                                            ; Re-cre
         }
     }
 
-    g_LOG.Debug("Reindex: Indexing search database...")
+    g_LOG.Debug("Reindex: Indexing search database...OK")
     TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
     LoadCommands()
 }
@@ -1169,8 +1181,6 @@ Update(*) {
 }
 
 Listary() {                                                             ; Listary 快速更换保存/打开对话框路径
-    g_LOG.Debug("Listary: Initializing...")
-
     Loop Parse, g_CONFIG["FileMgrID"], ","                              ; File Manager Class, default is Windows Explorer & Total Commander
         GroupAdd("FileMgrID", A_LoopField)
 
@@ -1181,7 +1191,7 @@ Listary() {                                                             ; Listar
         GroupAdd("ExcludeWin", A_LoopField)
 
     if (g_CONFIG["AutoSwitchDir"]) {
-        g_LOG.Debug("Listary: Auto-QuickSwitch enabled, starting monitoring thread...")
+        g_LOG.Debug("Listary: Auto-QuickSwitch enabled, monitoring thread...")
         Loop {
             TcHwnd := WinWaitActive("ahk_class TTOTAL_CMD")
             WinWaitNotActive()
@@ -1196,12 +1206,14 @@ Listary() {                                                             ; Listar
             Sleep 100  ; Reduce CPU usage
         }
     }
+
     HotIfWinActive("ahk_group DialogBox")                               ; 设置对话框路径定位热键,为了不影响其他程序热键,设置只对打开/保存对话框生效
     try {
         Hotkey(g_HOTKEY["ExplorerDir"], SyncExplorerPath)               ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
         Hotkey(g_HOTKEY["TotalCMDDir"], SyncTCPath)                     ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
+        g_LOG.Debug("Listary: Set quickswitch hotkey " g_HOTKEY["ExplorerDir"] " for Explorer, " g_HOTKEY["TotalCMDDir"] " for Total Commander...OK")
     } catch as e {
-        g_LOG.Debug("Listary: Failed to set hotkey with error:" e.Message)
+        g_LOG.Debug("Listary: Failed to set quickswitch hotkey..." e.Message)
     }
     HotIfWinActive                                                      ; Turn off context, make subsequent hotkeys global again
     return
@@ -1214,7 +1226,7 @@ SyncTCPath(*) {
     ; Get the HWND of TC (WinGetID may occur error if TC not found)
     hwnd := WinExist("ahk_class TTOTAL_CMD")
     if (!hwnd) {
-        MsgBox("没有找到Total Commander窗口,请先打开Total Commander!", g_TITLE, 48)
+        MsgBox(g_LNG[219], g_TITLE, 48)
         g_LOG.Debug("SyncTCPath: No Total Commander window found")
         return
     }
@@ -1242,7 +1254,7 @@ SyncExplorerPath(*) {
     ; Get the HWND of Explorer (WinGetID may occur error if Explorer not found)
     hwnd := WinExist("ahk_class CabinetWClass")
     if (!hwnd) {
-        MsgBox("没有找到资源管理器窗口,请先打开一个资源管理器窗口!", g_TITLE, 48)
+        MsgBox(g_LNG[220], g_TITLE, 48)
         g_LOG.Debug("SyncExplorerPath: No Explorer window found")
         return
     }
@@ -1322,8 +1334,6 @@ EditCommand(*) {
 }
 
 DelCommand(*) {
-    Global g_RUNTIME, g_SECTION, g_INI, g_LNG, g_TITLE
-
     currentCmd := g_RUNTIME["CurrentCommand"]
     if !currentCmd
         return
@@ -1333,8 +1343,7 @@ DelCommand(*) {
         if (rank = "KeyNotFound" || rank = "ERROR")
             continue
 
-        prompt := g_LNG[800] " [ " section " ] " g_LNG[801] "`n`n" currentCmd
-        result := MsgBox(prompt, "Confirm want to delete?", 52)         ; 52 = Yes/No + Question icon
+        result := MsgBox(g_LNG[800] "`n`n[" section "]`n`n" currentCmd, g_LNG[801], 52) ; 52 = Yes/No + Question icon
 
         if result = "YES" {
             try {
@@ -1352,6 +1361,7 @@ DelCommand(*) {
 
 CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank := 1, OriginCmd := "") { ; 命令管理窗口
     Global CmdMgrGUI
+    Local  typeList := Array("File", "Dir", "CMD", "URL", "Func")
 
     g_LOG.Debug("Starting Command Manager... Args=" Section "|" Type "|" Path "|" Desc "|" Rank)
 
@@ -1359,7 +1369,7 @@ CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank :=
     CmdMgrGUI.SetFont("S9 Norm", "Microsoft Yahei")
     CmdMgrGUI.AddGroupBox("w600 h260", g_LNG[701])
     CmdMgrGUI.Add("Text", "x25 yp+30", g_LNG[702])
-    CmdMgrGUI.AddDropDownList("x160 yp-5 w130 vType Choose" GetArrayIndex(Type, g_TYPELST), g_TYPELST)
+    CmdMgrGUI.AddDropDownList("x160 yp-5 w130 vType Choose" GetArrayIndex(Type, typeList), typeList)
     CmdMgrGUI.Add("Text", "x315 yp+5", g_LNG[705])
     CmdMgrGUI.Add("Edit", "x435 yp-5 w130 Disabled vSection", Section)
     CmdMgrGUI.Add("Text", "x25 yp+60", g_LNG[703])
@@ -1426,7 +1436,7 @@ Plugins() {                                                             ; Plugin
     Hotkey(g_HOTKEY["AutoDateAEHKey"], LineEndAddDate)
     HotIfWinActive
 
-    g_LOG.Debug("Plugins: Loaded AutoDate plugins...")
+    g_LOG.Debug("Plugins: Load AutoDate plugins...OK")
     return
 }
 
@@ -1545,14 +1555,15 @@ Options(ActTab := 1) {
         , "DelCommand", "CmdMgr", "Options", "TurnMonitorOff", "EmptyRecycle"
         , "MuteVolume", "ReStart", "Exit", "PTTools"]
 
+    g_LOG.Debug("Options: Opening Options window... Tab=" ActTab)
+    MainGuiClose()
     if WinExist(g_LNG[2]) {
-        WinActivate(g_LNG[2])
-        return
+        return WinActivate(g_LNG[2])
     }
 
     t := A_TickCount
     ActTab := IsNumber(ActTab) ? ActTab : 1                             ; Convert ActTab to number, default is 1 (for case like [Option`tF2])
-    OptGUI := Gui("+Owner", g_LNG[2])
+    OptGUI := Gui("+Owner" MainGUI.hwnd, g_LNG[2])                      ; +Owner MainGUI.hwnd fix GUI flicking issue
     OptGUI.SetFont(StrSplit(g_GUI["OptGUIFont"], ",")[2], StrSplit(g_GUI["OptGUIFont"], ",")[1])
     OptTab := OptGUI.AddTab3("Choose" ActTab, g_LNG[100])
 
@@ -1591,12 +1602,12 @@ Options(ActTab := 1) {
     OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainSBFont", g_GUI["MainSBFont"]).SetFont(StrSplit(g_GUI["MainSBFont"], ",")[2], StrSplit(g_GUI["MainSBFont"], ",")[1])
     OptGUI.AddButton("x433 yp-5 w80 vSelectMainSBFont", g_LNG[182]).OnEvent("Click", SelectMainSBFont)
 
-    OptGUI.AddText("x33 yp+45", g_LNG[178])
-    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vCtrlColor c" g_GUI["CtrlColor"], g_GUI["CtrlColor"])
-    OptGUI.AddButton("x433 yp-5 w80 vSelectCtrlColor", g_LNG[183]).OnEvent("Click", SelectCtrlColor)
     OptGUI.AddText("x33 yp+45", g_LNG[179])
-    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vWinColor c" g_GUI["WinColor"], g_GUI["WinColor"])
-    OptGUI.AddButton("x433 yp-5 w80 vSelectWinColor", g_LNG[183]).OnEvent("Click", SelectWinColor)
+    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIColor c" g_GUI["MainGUIColor"], g_GUI["MainGUIColor"])
+    OptGUI.AddButton("x433 yp-5 w80", g_LNG[183]).OnEvent("Click", PickMainGUIColor)
+    OptGUI.AddText("x33 yp+45", g_LNG[178])
+    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vCMDListColor c" g_GUI["CMDListColor"], g_GUI["CMDListColor"])
+    OptGUI.AddButton("x433 yp-5 w80", g_LNG[183]).OnEvent("Click", PickCMDListColor)
 
     OptGUI.AddText("x33 yp+45", g_LNG[180])
     OptGUI.AddComboBox("x183 yp-5 w240 vBackground Choose1", [g_GUI["Background"], "Default", "None", "ALTRun.jpg", "C:\Path\Picture.jpg"])
@@ -1658,32 +1669,34 @@ Options(ActTab := 1) {
     OptGUI.AddCheckBox("x33 yp+45 vAutoSwitchDir Checked" g_CONFIG["AutoSwitchDir"], g_LNG[218])
 
     OptTab.UseTab(6) ; PLUGINS Tab
-    OptGUI.AddGroupBox("w500 h110", g_LNG[221])
-    OptGUI.AddText("x33 yp+30", g_LNG[222])
+    OptGUI.AddGroupBox("w500 h110", g_LNG[251])
+    OptGUI.AddText("x33 yp+30", g_LNG[252])
     OptGUI.AddComboBox("x183 yp-5 w330 vAutoDateAtEnd Choose1", [g_HOTKEY["AutoDateAtEnd"], "ahk_class TCmtEditForm,ahk_exe Notepad4.exe"])
-    OptGUI.AddText("x33 yp+45", g_LNG[223])
+    OptGUI.AddText("x33 yp+45", g_LNG[253])
     OptGUI.AddHotkey("x183 yp-5 w80 vAutoDateAEHKey", g_HOTKEY["AutoDateAEHKey"])
-    OptGUI.AddText("x300 yp+5", g_LNG[224])
+    OptGUI.AddText("x300 yp+5", g_LNG[254])
     OptGUI.AddDDL("x395 yp-5 w120 vAutoDateAEFormat Choose1", ["- dd.MM.yyyy"])
 
-    OptGUI.AddGroupBox("x24 y+30 w500 h110", g_LNG[225])
-    OptGUI.AddText("x33 yp+30", g_LNG[222])
+    OptGUI.AddGroupBox("x24 y+30 w500 h110", g_LNG[255])
+    OptGUI.AddText("x33 yp+30", g_LNG[252])
     OptGUI.AddComboBox("x183 yp-5 w330 vAutoDateBefExt Choose1", [g_HOTKEY["AutoDateBefExt"], "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770"])
-    OptGUI.AddText("x33 yp+45", g_LNG[223])
+    OptGUI.AddText("x33 yp+45", g_LNG[253])
     OptGUI.AddHotkey("x183 yp-5 w80 vAutoDateBEHKey", g_HOTKEY["AutoDateBEHKey"])
-    OptGUI.AddText("x300 yp+5", g_LNG[224])
+    OptGUI.AddText("x300 yp+5", g_LNG[254])
     OptGUI.AddDDL("x395 yp-5 w120 vAutoDateBEFormat Choose1", ["- dd.MM.yyyy"])
 
-    OptGUI.AddGroupBox("x24 y+30 w500 h110", g_LNG[229])
-    OptGUI.AddText("x33 yp+30", g_LNG[230])
+    OptGUI.AddGroupBox("x24 y+30 w500 h110", g_LNG[259])
+    OptGUI.AddText("x33 yp+30", g_LNG[260])
     OptGUI.AddComboBox("x183 yp-5 w330 vCondTitle Choose1", [g_HOTKEY["CondTitle"]])
-    OptGUI.AddText("x33 yp+45", g_LNG[231])
+    OptGUI.AddText("x33 yp+45", g_LNG[261])
     OptGUI.AddComboBox("x183 yp-5 w80 vCondHotkey Choose1", [g_HOTKEY["CondHotkey"]])
-    OptGUI.AddText("x300 yp+5", g_LNG[232])
+    OptGUI.AddText("x300 yp+5", g_LNG[262])
     OptGUI.AddDDL("x395 yp-5 w120 vCondAction Choose" GetArrayIndex(g_HOTKEY["CondAction"], FuncList), FuncList)
 
     OptTab.UseTab(7) ; USAGE Tab
     OptGUI.AddGroupBox("x66 y80 w445 h300", )
+
+    g_USAGE[A_YYYY . A_MM . A_DD] := g_USAGE.Has(A_YYYY . A_MM . A_DD) ? g_USAGE[A_YYYY . A_MM . A_DD] : 1
     for date, count in g_USAGE { ; Draw usage graph
         OptGUI.AddProgress("c94DD88 Vertical y96 w14 h280 xm+" 50+A_Index*14 " Range0-" g_RUNTIME["Max"]+10, count)
     }
@@ -1749,22 +1762,22 @@ SelectFont(TargetVar := "MainGUIFont") {
     g_LOG.Debug("SelectFont: OptGUI[" TargetVar " font set to=" fontObj["str"] ", " fontObj["name"])
 }
 
-SelectCtrlColor(*) {
+PickCMDListColor(*) {
     color := ColorSelect(, OptGUI.hwnd, , "full")                       ; hwnd and custColorObj are optional
     If (color = -1)
         return
 
-    OptGUI["CtrlColor"].Value := color                                  ; 更新选项窗口控件并设置控件颜色
-    OptGUI["CtrlColor"].Opt("c" color)
+    OptGUI["CMDListColor"].Value := color                               ; 更新选项窗口控件并设置控件颜色
+    OptGUI["CMDListColor"].Opt("c" color)
 }
 
-SelectWinColor(*) {
+PickMainGUIColor(*) {
     color := ColorSelect(, OptGUI.hwnd, , "full")
     If (color = -1)
         return
 
-    OptGUI["WinColor"].Value := color
-    OptGUI["WinColor"].Opt("c" color)
+    OptGUI["MainGUIColor"].Value := color
+    OptGUI["MainGUIColor"].Opt("c" color)
 }
 
 SelectBackground(*) {
@@ -1784,6 +1797,8 @@ OPTButtonOK(*) {
 }
 
 OPTGuiClose(*) {
+    g_LOG.Debug("OPTGuiClose: Closing Options window...")
+
     HotIfWinActive      ; Turn on global hotkey
     if (g_HOTKEY["GlobalHotkey1"] != "") {
         Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "On")
@@ -1794,13 +1809,14 @@ OPTGuiClose(*) {
         g_LOG.Debug("OPTGuiClose: Turn On GlobalHotkey2...OK")
     }
 
-    OptGUI.Destroy()
-    g_LOG.Debug("OPTGuiClose: OptGUI.Destroy...OK")
+    ;OptGUI.Destroy()
+    OptGUI.Hide()
+    g_LOG.Debug("OPTGuiClose: OptGUI.Hide...OK")
     return
 }
 
 LoadConfig(Arg) {
-    g_LOG.Debug("LoadConfig: Loading configuration...Arg=" . Arg)
+    g_LOG.Debug("LoadConfig: Loading configuration (" Arg ")...OK")
 
     if (Arg = "config" || Arg = "initialize" || Arg = "all") {
         for key, value in g_CONFIG {  ; Read [Config] to Map
@@ -1970,36 +1986,33 @@ SaveConfig() {
     Global OptListView
 
     OptGUI.Submit()
-    For key, description in g_CONFIG_P1 {
+    for key, description in g_CONFIG_P1 {
         g_CONFIG[key] := (A_Index = OptListView.GetNext(A_Index-1, "C")) ? 1 : 0 ; for Options - General page - Check Listview
         IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
     }
 
-    For key, value in g_CONFIG_P2 {
+    for key, value in g_CONFIG_P2 {
         if (OptGUI[key].Type = "CheckBox") {
             g_CONFIG[key] := OptGUI[key].Value
-        }
-        else {
+        } else {
             g_CONFIG[key] := OptGUI[key].Text
         }
         IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
     }
 
-    For key, value in g_GUI {
+    for key, value in g_GUI {
         if (OptGUI[key].Type = "Slider") {
             g_GUI[key] := OptGUI[key].Value
-        }
-        else {
+        } else {
             g_GUI[key] := OptGUI[key].Text
         }
         IniWrite(g_GUI[key], g_INI, g_SECTION["GUI"], key)
     }
 
-    For key, value in g_HOTKEY {
+    for key, value in g_HOTKEY {
         if (OptGUI[key].Type = "Hotkey") {
             g_HOTKEY[key] := OptGUI[key].Value
-        }
-        else {
+        } else {
             g_HOTKEY[key] := OptGUI[key].Text
         }
         IniWrite(g_HOTKEY[key], g_INI, g_SECTION["HOTKEY"], key)
@@ -2009,7 +2022,7 @@ SaveConfig() {
     return
 }
 
-;;==================== Built-in Functions =========================
+; ==================== Built-in Functions =========================
 AhkRun() {
     try {
         Run(g_RUNTIME["Arg"])
@@ -2055,8 +2068,7 @@ Everything() {
     return
 }
 
-;;==================== Language Setting =========================
-
+; ==================== Language Setting =========================
 SetLanguage() {
     ENG     := Map()
     CHN     := Map()
@@ -2141,8 +2153,8 @@ SetLanguage() {
     ENG[175] := "Font (Status Bar)"
     ENG[176] := "Window size (W x H)"
     ENG[177] := "Cmd list size (W x H)"
-    ENG[178] := "Control color"
-    ENG[179] := "Background color"
+    ENG[178] := "Color (Command List)"
+    ENG[179] := "Color (Main GUI)"
     ENG[180] := "Background picture"
     ENG[181] := "Transparency"
     ENG[182] := "Select font"
@@ -2160,7 +2172,7 @@ SetLanguage() {
     ENG[203] := "Hotkey"
     ENG[204] := "Hotkey 2"
     ENG[206] := "Hotkey 3"
-    ENG[210] := "Listary"                                               ; 210~219 Listary
+    ENG[210] := "Listary"                                               ; 210~249 Listary
     ENG[211] := "Dir Quick-Switch"
     ENG[212] := "File Manager ID"
     ENG[213] := "Open/Save Dialog ID"
@@ -2169,16 +2181,19 @@ SetLanguage() {
     ENG[216] := "QuickSwitch to TC's dir"
     ENG[217] := "QuickSwitch to Explorer"
     ENG[218] := "Auto switch dir on open/save dialog"
-    ENG[220] := "Plugins"                                               ; 220~299 Plugins
-    ENG[221] := "Auto-date at end of text"
-    ENG[222] := "Apply to window id"
-    ENG[223] := "Hotkey"
-    ENG[224] := "Date format"
-    ENG[225] := "Auto-date before file extension"
-    ENG[229] := "Conditional action"
-    ENG[230] := "If window id contains"
-    ENG[231] := "Hotkey (Editable)"
-    ENG[232] := "Trigger action"
+    ENG[219] := "No Total Commander window found, please open Total Commander first!"
+    ENG[220] := "No Explorer window found, please open Explorer first!"
+
+    ENG[250] := "Plugins"                                               ; 250~299 Plugins
+    ENG[251] := "Auto-date at end of text"
+    ENG[252] := "Apply to window id"
+    ENG[253] := "Hotkey"
+    ENG[254] := "Date format"
+    ENG[255] := "Auto-date before file extension"
+    ENG[259] := "Conditional action"
+    ENG[260] := "If window id/class contains"
+    ENG[261] := "Hotkey (Editable)"
+    ENG[262] := "Trigger action"
     ENG[300] := "Show"                                                  ; 300+ TrayMenu
     ENG[301] := "Options`tF2"
     ENG[302] := "ReIndex`tCtrl+I"
@@ -2218,8 +2233,8 @@ SetLanguage() {
     ENG[704] := "ShortCut/Description"
     ENG[705] := "Command Section"
     ENG[706] := "Command Rank"
-    ENG[800] := "Do you really want to delete the following command from section"
-    ENG[801] := "?"
+    ENG[800] := "Do you really want to delete the following command?"
+    ENG[801] := "Confirm Want to Delete?"
     ENG[802] := "Command has been deleted successfully!"
     ENG[803] := "Error occur when delete the command!"
 
@@ -2254,7 +2269,7 @@ SetLanguage() {
     CHN[69] := "以空格开头 = 使用 Everything 搜索文件"
     CHN[70] := "Ctrl+'+' = 增加当前命令的优先级"
     CHN[71] := "Ctrl+'-' = 减少当前命令的优先级"
-    CHN[100] := ["常规", "界面", "热键", "索引", "Listary", "插件", "状态统计", "关于"] ; 100~149 Options window (General - Check Listview)
+    CHN[100] := ["常规", "界面", "热键", "索引", "Listary", "插件", "状态统计", "关于"] ; 100~149 Options window (Listview)
     CHN[101] := "随系统自动启动"
     CHN[102] := "添加到“发送到”菜单"
     CHN[103] := "添加到“开始”菜单"
@@ -2287,7 +2302,7 @@ SetLanguage() {
     CHN[130] := "显示简化路径 - 仅显示文件/文件夹/应用程序名称, 而非完整路径"
     CHN[131] := "设置语言为简体中文 (Simplified Chinese)"
     CHN[132] := "搜索时匹配拼音首字母"
-    CHN[150] := "文件管理器"                                            ; 150~159 Options window (Other than Check Listview)
+    CHN[150] := "文件管理器"                                             ; 150~159 Options window (Other than Check Listview)
     CHN[151] := "Everything"
     CHN[152] := "历史命令数量"
     CHN[160] := "索引"                                                  ; 160~169 Index
@@ -2303,8 +2318,8 @@ SetLanguage() {
     CHN[175] := "字体 (状态栏)"
     CHN[176] := "主窗口尺寸 (宽 x 高)"
     CHN[177] := "命令列表尺寸 (宽 x 高)"
-    CHN[178] := "控件颜色"
-    CHN[179] := "背景颜色"
+    CHN[178] := "颜色 (命令列表)"
+    CHN[179] := "颜色 (主界面)"
     CHN[180] := "背景图片"
     CHN[181] := "透明度"
     CHN[182] := "选择字体"
@@ -2322,7 +2337,7 @@ SetLanguage() {
     CHN[203] := "热键 1"
     CHN[204] := "热键 2"
     CHN[206] := "热键 3"
-    CHN[210] := "Listary"                                               ; 210~219 Listary
+    CHN[210] := "Listary"                                               ; 210~249 Listary
     CHN[211] := "目录快速切换"
     CHN[212] := "文件管理器 ID"
     CHN[213] := "打开/保存对话框 ID"
@@ -2331,16 +2346,19 @@ SetLanguage() {
     CHN[216] := "快速切换到 TC 目录"
     CHN[217] := "快速切换到 资源管理器"
     CHN[218] := "自动切换路径"
-    CHN[220] := "插件"                                                  ; 220~299 Plugins
-    CHN[221] := "文本末尾自动添加日期"
-    CHN[222] := "应用到窗口 ID"
-    CHN[223] := "热键"
-    CHN[224] := "日期格式"
-    CHN[225] := "扩展名前自动添加日期"
-    CHN[229] := "条件触发快捷操作"
-    CHN[230] := "如果窗口 ID 包含"
-    CHN[231] := "热键 (自由定制)"
-    CHN[232] := "触发操作"
+    CHN[219] := "没有找到Total Commander窗口,请先打开Total Commander!"
+    CHN[220] := "没有找到资源管理器窗口,请先打开资源管理器!"
+
+    CHN[250] := "插件"                                                  ; 250~299 Plugins
+    CHN[251] := "文本末尾自动添加日期"
+    CHN[252] := "应用到窗口 ID"
+    CHN[253] := "热键"
+    CHN[254] := "日期格式"
+    CHN[255] := "扩展名前自动添加日期"
+    CHN[259] := "条件触发快捷操作"
+    CHN[260] := "如果窗口特征包含"
+    CHN[261] := "热键 (自由定制)"
+    CHN[262] := "触发操作"
     CHN[300] := "显示"                                                  ; 300+ 托盘菜单
     CHN[301] := "配置选项`tF2"
     CHN[302] := "重建索引`tCtrl+I"
@@ -2380,13 +2398,13 @@ SetLanguage() {
     CHN[704] := "快捷项/描述 (可搜索)"
     CHN[705] := "储存节段"
     CHN[706] := "命令权重"
-    CHN[800] := "您确定要从命令节段"
-    CHN[801] := "中删除以下命令吗?"
+    CHN[800] := "您确定要删除以下命令吗?"
+    CHN[801] := "确认删除?"
     CHN[802] := "命令已成功删除!"
     CHN[803] := "删除命令时发生错误!"
 
     Global g_LNG := IniRead(g_INI, "Config", "Chinese", 0) ? CHN : ENG
-    g_LOG.Debug("SetLanguage: Set language to=" g_LNG[1])
+    g_LOG.Debug("SetLanguage: Set language to " g_LNG[1] "...OK")
     return
 }
 
