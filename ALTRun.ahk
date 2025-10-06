@@ -385,7 +385,7 @@ RegisterHotkey() {
         Hotkey("^d"         , OpenContainer)
         Hotkey("^c"         , CopyCommand)
         Hotkey("^n"         , NewCommand)
-        Hotkey("Del"        , DelCommand)
+        Hotkey("^Del"       , DelCommand)
         Hotkey("^i"         , Reindex)
         Hotkey("Down"       , NextCommand)
         Hotkey("Up"         , PrevCommand)
@@ -1059,9 +1059,15 @@ OpenContainer(*) {
     }
 }
 
+; 监听窗口激活和失去焦点消息
 WM_ACTIVATE(wParam, lParam, msg, hwnd){                                 ; Close on lose focus, OnMessage is far more efficient than SetTimer + WinActive check
     if (hwnd != MainGUI.Hwnd) {                                         ; Ignore messages from other windows
         g_LOG.Debug("WM_ACTIVATE: Ignored message from hwnd (" hwnd ") != MainGUI.Hwnd (" MainGUI.Hwnd ")")
+        return 0
+    }
+
+    if (!WinExist("ahk_id " MainGUI.Hwnd)) {                            ; Ignore when MainGUI does not exist, to avoid flahshing issue
+        g_LOG.Debug("WM_ACTIVATE: Ignored message, MainGUI does not exist...")
         return 0
     }
 
@@ -2208,7 +2214,7 @@ SetLanguage() {
     ENG[402] := "Copy`tCtrl+C"
     ENG[403] := "New`tCtrl+N"
     ENG[404] := "Edit`tF3"
-    ENG[405] := "Delete`tDelete"
+    ENG[405] := "Delete`tCtrl+Del"
     ENG[406] := "User Command`tF4"
     ENG[407] := "Copied statusbar text"
     ENG[408] := "Show usage status"
@@ -2373,7 +2379,7 @@ SetLanguage() {
     CHN[402] := "复制命令`tCtrl+C"
     CHN[403] := "新建命令`tCtrl+N"
     CHN[404] := "编辑命令`tF3"
-    CHN[405] := "删除命令`tDelete"
+    CHN[405] := "删除命令`tCtrl+Del"
     CHN[406] := "用户命令`tF4"
     CHN[407] := "已复制状态栏信息"
     CHN[408] := "显示状态统计"
