@@ -11,8 +11,8 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2025.10.03
-;@Ahk2Exe-SetCopyright Copyright (c) 2025 zhugecaomao
+;@Ahk2Exe-SetVersion 2025.10.08
+;@Ahk2Exe-SetCopyright Copyright (c) since 2013
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
 
@@ -24,7 +24,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - 2025.10.03"
+Global g_TITLE := "ALTRun - 2025.10.08"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -90,8 +90,7 @@ Global g_CONFIG := Map(
     "ExcludeWin"     , "ahk_class SysListView32, ahk_exe Explorer.exe"
 )
 
-g_LOG.Debug("")
-g_LOG.Debug("///// ALTRun is starting /////")
+g_LOG.Debug("///// ALTRun is starting... /////`n")
 SetLanguage()
 
 Global g_CONFIG_P1 := Map(
@@ -127,21 +126,6 @@ Global g_CONFIG_P1 := Map(
     "ShortenPath"    , g_LNG[130],
     "Chinese"        , g_LNG[131],
     "MatchPinyin"    , g_LNG[132]
-)
-
-Global g_CONFIG_P2 :=Map(
-    "FileMgr"        , "Explorer.exe",
-    "Everything"     , "C:\Apps\Everything.exe",
-    "HistoryLen"     , 10,
-    "RunCount"       , 0,
-    "AutoSwitchDir"  , 0,
-    "IndexDir"       , "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location",
-    "IndexType"      , "*.lnk,*.exe",
-    "IndexDepth"     , 2,
-    "IndexExclude"   , "Uninstall *",
-    "DialogWin"      , "ahk_class #32770",
-    "FileMgrID"      , "ahk_class CabinetWClass, ahk_class TTOTAL_CMD",
-    "ExcludeWin"     , "ahk_class SysListView32, ahk_exe Explorer.exe",
 )
 
 Global g_HOTKEY := Map(
@@ -228,11 +212,15 @@ return
 SetMainGUI() {
     Global MainGUI, myInputBox, myListView, myStatusBar, myImageList
 
-    Input_W := g_GUI["WinX"] - 24 - g_CONFIG["ShowBtnRun"] * 90 - g_CONFIG["ShowBtnOpt"] * 90
-    Enter_W := g_CONFIG["ShowBtnRun"] * 80
-    Enter_X := g_CONFIG["ShowBtnRun"] * 10
+    Run_W   := g_CONFIG["ShowBtnRun"] * 80
+    Run_X   := g_CONFIG["ShowBtnRun"] * 10
+    Run_H   := !g_CONFIG["ShowBtnRun"]
     Opt_W   := g_CONFIG["ShowBtnOpt"] * 80
     Opt_X   := g_CONFIG["ShowBtnOpt"] * 10
+    Opt_H   := !g_CONFIG["ShowBtnOpt"]
+    List_W  := g_GUI["WinX"] - 24
+    List_H  := g_GUI["WinY"] - 76
+    Input_W := List_W - Run_X - Run_W - Opt_X - Opt_W
     TopMost := g_CONFIG["AlwaysOnTop"] ? "AlwaysOnTop" : ""
     Caption := g_CONFIG["ShowCaption"] ? "" : " -Caption"
     Theme   := g_CONFIG["XPthemeBg"] ? "" : " -Theme"
@@ -241,19 +229,22 @@ SetMainGUI() {
     Grid    := g_CONFIG["ShowGrid"] ? " Grid" : ""
     Border  := g_CONFIG["ShowBorder"] ? "" : " -E0x200"
 
-    MainGUI := Gui(TopMost Caption Theme, g_TITLE)
-    MainGUI.OnEvent("Close", MainGuiClose)
-    MainGUI.OnEvent("Escape", MainGuiEscape)
+    MainGUI := Gui(TopMost Caption Theme " +MinSize300x160", g_TITLE)
+    MainGUI.OnEvent("Close" , MainGUI_Close)
+    MainGUI.OnEvent("Escape", MainGUI_Escape)
+    MainGUI.OnEvent("Size"  , MainGUI_Size)
     MainGUI.BackColor := g_GUI["MainGUIColor"]
     MainGUI.SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
-    myInputBox := MainGUI.AddEdit("x12 y10 -WantReturn W" Input_W, g_LNG[13])
-    myInputBox.OnEvent("Change", OnSearchInput)
-    MainGUI.AddButton("x+" Enter_X " yp W" Enter_W " hp Default Hidden" (!g_CONFIG["ShowBtnRun"]), g_LNG[11]).OnEvent("Click", RunCurrentCommand)
-    MainGUI.AddButton("x+" Opt_X " yp W" Opt_W " hp Hidden" (!g_CONFIG["ShowBtnOpt"]), g_LNG[12]).OnEvent("Click", (*) => Options())
-    myListView := MainGUI.AddListView("x12 yp+36 W" (g_GUI["WinX"] - 24) " H" (g_GUI["WinY"] - 76) " -Multi", g_LNG[10])
+    myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn W" Input_W, g_LNG[13])
+    myInputBox.OnEvent("Change", Input_Change)
+    myRunBtn := MainGUI.AddButton("x+" Run_X " yp W" Run_W " hp Default Hidden" Run_H, g_LNG[11])
+    myRunBtn.OnEvent("Click", RunCurrentCommand)
+    myOptBtn := MainGUI.AddButton("x+" Opt_X " yp W" Opt_W " hp Hidden" Opt_H, g_LNG[12])
+    myOptBtn.OnEvent("Click", (*) => Options())
+    myListView := MainGUI.AddListView("x12 yp+36 W" List_W " H" List_H " -Multi", g_LNG[10])
     myListView.Opt(DBuffer Header Grid Border " Background" g_GUI["CMDListColor"])
-    myListView.OnEvent("Click", OnListviewClick)
-    myListView.OnEvent("ContextMenu", OnListViewContextMenu)
+    myListView.OnEvent("Click", LV_Click)
+    myListView.OnEvent("ContextMenu", LV_ContextMenu)
     myListView.OnEvent("DoubleClick", LVRunCommand)
     myListView.SetImageList(myImageList)                                ; Attach the ImageList to the ListView so that it can later display the icons
     Loop 4 {
@@ -311,9 +302,18 @@ SetMainGUI() {
 
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
 
-    if g_CONFIG["HideOnLostFocus"]
-        OnMessage(0x0006, WM_ACTIVATE)
-
+    if g_CONFIG["HideOnLostFocus"] {
+        ; 方案 1 - 事件驱动, 高效无延迟, 无资源占用, 但 OnMessage + Ahk Gui 某些情况下有窗口闪烁的问题, 中文输入法前几个字符自动输入为字母的问题, 和托盘菜单右键点击"显示"窗口闪退问题
+        ; OnMessage(0x0006, WM_ACTIVATE)
+        ; 方案 2 - Ahk原生方式, 代码简单可靠, 但有轻微性能开销, 有稍许延迟 30ms
+        ; SetTimer(MonitorFocus, 30)
+        ; 方案 3 - Ahk原生方式, 事件驱动, 高效无延迟, 无资源占用, 但是因为Gui没有 LoseFocus 事件, 需要注册主界面所有控件的 LoseFocus 事件
+        ; 修复某些情况下有窗口闪烁的问题和中文输入法前几个字符自动输入为字母的问题, 顺便修复托盘菜单右键点击"显示"窗口闪退问题
+        myInputBox.OnEvent("LoseFocus", MonitorFocus)
+        myListView.OnEvent("LoseFocus", MonitorFocus)
+        myRunBtn.OnEvent("LoseFocus", MonitorFocus)
+        myOptBtn.OnEvent("LoseFocus", MonitorFocus)
+    }
     return
 }
 
@@ -434,7 +434,7 @@ RegisterHotkey() {
     return
 }
 
-ExecuteFunc(Hotkey, FuncName, Index) {
+ExecuteFunc(HotkeyName, FuncName, Index) {
     RunCommand("FUNC | " FuncName)
     g_LOG.Debug("ExecutFunc: Execute function...=" FuncName)
 }
@@ -446,14 +446,13 @@ Activate() {
         myInputBox.Focus()
         SendMessage(0xB1, 0, -1, myInputBox.Hwnd)                       ; EM_SETSEL (0xB1)
     }
-    SyncUsage()
 }
 
 ToggleWindow(*) {
-    WinActive("ahk_id " MainGUI.Hwnd) ? MainGuiClose() : Activate()
+    WinActive("ahk_id " MainGUI.Hwnd) ? MainGUI_Close() : Activate()
 }
 
-OnSearchInput(*) {
+Input_Change(*) {
     SearchCommand(myInputBox.Value)
 }
 
@@ -486,8 +485,7 @@ SearchCommand(command := "") {
     if (g_MATCHED.Length = 0) {
         evalResult := Eval(command)
         if (IsNumber(evalResult) && evalResult != 0) {
-            evalResult := Round(evalResult, 6)                          ; To fix 5+0.3 = 5.300000000000001 issue
-            g_MATCHED := StruCalcResult(evalResult)
+            g_MATCHED := StruCalc(Round(evalResult, 6))                 ; Round is to fix 5+0.3 = 5.300000000000001 issue
             return ListResult(g_MATCHED, True)
         }
 
@@ -604,9 +602,11 @@ RelativePath(Path) {                                                    ; Conver
 }
 
 RunCommand(originCmd) {
-    MainGuiClose()
+    UpdateRunCount()
+    MainGUI_Close()
     ParseArg()
     g_RUNTIME["UseDisplay"] := false
+    g_LOG.Debug("RunCommand: Execute " g_CONFIG["RunCount"] "=" originCmd)
 
     split := StrSplit(originCmd, " | ")
     type  := split.Length >= 1 ? split[1] : ""                ; Ensure type has default
@@ -630,8 +630,6 @@ RunCommand(originCmd) {
         }
     }
 
-    g_LOG.Debug("RunCommand: Execute " g_CONFIG["RunCount"] " = " originCmd)
-
     if (g_CONFIG["SaveHistory"]) {
         g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])      ; Adjust command history
 
@@ -644,7 +642,6 @@ RunCommand(originCmd) {
             IniWrite(element, g_INI, g_SECTION["HISTORY"], index)       ; Save command history
     }
 
-    UpdateRunCount()
     g_CONFIG["SmartRank"] ? UpdateRank(originCmd) : ""
     return
 }
@@ -694,7 +691,7 @@ ChangeCommand(Step := 1, ResetSelRow := False) {
     myListView.Modify(selectedRow, "Select Focus Vis")                  ; make new index row selected, Focused, and Visible
 }
 
-OnListviewClick(myListView, rowNumber) {
+LV_Click(myListView, rowNumber) {
     if (!rowNumber)     ; 如果用户左键点击了列表行以外的地方
         Return
 
@@ -706,7 +703,7 @@ OnListviewClick(myListView, rowNumber) {
     }
 }
 
-OnListViewContextMenu(GuiCtrlObj, rowNumber, IsRightClick, X, Y) {      ; On ListView ContextMenu
+LV_ContextMenu(GuiCtrlObj, rowNumber, IsRightClick, X, Y) {             ; On ListView ContextMenu
     Global myListView, g_MATCHED, g_RUNTIME, g_LNG, g_LOG
 
     if (!rowNumber)     ; 如果用户右键点击了列表行以外的地方
@@ -799,22 +796,39 @@ OnStatusBarContextMenu(GuiCtrlObj, partNumber, RightClick, X, Y) {
     }
 }
 
-MainGuiEscape(*) {
-    (g_CONFIG["EscClearInput"] and myInputBox.Value) ? ClearInput() : MainGuiClose()
+MainGUI_Escape(*) {
+    (g_CONFIG["EscClearInput"] && myInputBox.Value) ? ClearInput() : MainGUI_Close()
 }
 
-MainGuiClose(*) {
+MainGUI_Close(*) {
     if (!g_CONFIG["KeepInput"]) {
         ClearInput()
     }
     MainGUI.Hide()
+    UpdateUsage()
     SetStatusBar("TIP")                                                 ; Update StatusBar tip information after GUI hide
+}
+
+MainGUI_Size(GuiObj, MinMax, Width, Height) {
+    OutputDebug("MainGUI_Size - " MinMax "-" Width "-" Height)
+
+    ; g_GUI["WinX"] := Width
+    ; g_GUI["WinY"] := Height
+
+    ; g_GUI.ListX := g_GUI.WinX - 24
+    ; g_GUI.ListY := g_GUI.WinY - 76
+    ; g_GUI.Input_W := g_GUI.ListX - g_CONFIG.ShowBtnRun * 90 - g_CONFIG.ShowBtnOpt * 90
+    ; GuiControl, Main:Move, MyListView, % "W" g_GUI.ListX " H" g_GUI.ListY ; Resize ListView to fit new window size
+    ; GuiControl, Main:Move, MyInput, % "W" g_GUI.Input_W                 ; Resize Input to fit new window size
+    ; LV_ModifyCol(4, "AutoHdr")                                          ; Auto adjust column width to fit new window size
+    ; SB_SetParts(g_GUI.WinX - 90 * g_CONFIG.ShowRunCount)
+    ; SetStatusBar("窗口大小已经改变, 如需保留窗口尺寸, 请进入选项设置页面进行保存")
 }
 
 ClearInput() {
     myInputBox.Focus()
-    myInputBox.Text := ""
-    OnSearchInput()                                                     ; v1 no need, v2 需要手动调用绑定的事件处理函数
+    myInputBox.Value := ""
+    Input_Change()                                                      ; v1 no need, v2 需要手动调用绑定的事件处理函数
 }
 
 Exit(*) {
@@ -902,7 +916,7 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
     LoadCommands()                                                      ; New rank will take effect in real-time by LoadCommands again
 }
 
-SyncUsage() {
+UpdateUsage() {
     currDate := A_YYYY . A_MM . A_DD
 
     if (!g_USAGE.Has(currDate)) {
@@ -918,7 +932,7 @@ SyncUsage() {
 UpdateRunCount() {
     g_CONFIG["RunCount"]++
     IniWrite(g_CONFIG["RunCount"], g_INI, g_SECTION["CONFIG"], "RunCount")
-    g_LOG.Debug("UpdateRunCount: RunCount updated..." g_CONFIG["RunCount"])
+    g_LOG.Debug("UpdateRunCount: RunCount update to..." g_CONFIG["RunCount"])
 }
 
 RankUp(*) {
@@ -1059,27 +1073,37 @@ OpenContainer(*) {
     }
 }
 
-; 监听窗口激活和失去焦点消息
-WM_ACTIVATE(wParam, lParam, msg, hwnd){                                 ; Close on lose focus, OnMessage is far more efficient than SetTimer + WinActive check
-    if (hwnd != MainGUI.Hwnd) {                                         ; Ignore messages from other windows
-        g_LOG.Debug("WM_ACTIVATE: Ignored message from hwnd (" hwnd ") != MainGUI.Hwnd (" MainGUI.Hwnd ")")
-        return 0
-    }
+; 监听窗口失去焦点时自动关闭
+MonitorFocus(*) {
+    if (!WinExist("ahk_id " MainGUI.Hwnd) || g_RUNTIME["UseDisplay"])
+        return
 
-    if (!WinExist("ahk_id " MainGUI.Hwnd)) {                            ; Ignore when MainGUI does not exist, to avoid flahshing issue
-        g_LOG.Debug("WM_ACTIVATE: Ignored message, MainGUI does not exist...")
-        return 0
+    if (!WinActive("ahk_id " MainGUI.Hwnd)) {
+        MainGUI_Close()
+        g_LOG.Debug("MonitorFocus: ALTRun lose focus, auto closing...")
     }
-
-    isActivated := (wParam > 0)                                         ; wParam > 0 means the window is being activated
-    g_LOG.Debug("WM_ACTIVATE: Window is " (isActivated ? "activated..." : "de-activated..."))
-
-    if (!isActivated && WinExist("ahk_id " MainGUI.Hwnd) && !g_RUNTIME["UseDisplay"]) {
-        MainGuiClose()
-        g_LOG.Debug("WM_ACTIVATE: Window lose focus, auto closing...")
-    }
-    return 0
 }
+
+; WM_ACTIVATE(wParam, lParam, msg, hwnd){                                 ; Close on lose focus, OnMessage is far more efficient than SetTimer + WinActive check
+;     if (hwnd != MainGUI.Hwnd) {                                         ; Ignore messages from other windows
+;         g_LOG.Debug("WM_ACTIVATE: Ignored message from hwnd (" hwnd ") != MainGUI.Hwnd (" MainGUI.Hwnd ")")
+;         return 0
+;     }
+
+;     if (!WinExist("ahk_id " MainGUI.Hwnd)) {                            ; Ignore when MainGUI does not exist, to avoid flahshing issue
+;         g_LOG.Debug("WM_ACTIVATE: Ignored message, MainGUI does not exist...")
+;         return 0
+;     }
+
+;     isActivated := (wParam > 0)                                         ; wParam > 0 means the window is being activated
+;     g_LOG.Debug("WM_ACTIVATE: Window is " (isActivated ? "activated..." : "de-activated..."))
+
+;     if (!isActivated && WinExist("ahk_id " MainGUI.Hwnd) && !g_RUNTIME["UseDisplay"]) {
+;         MainGUI_Close()
+;         g_LOG.Debug("WM_ACTIVATE: Window lose focus, auto closing...")
+;     }
+;     return 0
+; }
 
 UpdateSendTo() {                 ; the lnk in SendTo must point to a exe
     lnkPath := StrReplace(A_StartMenu, "\Start Menu", "\SendTo\") "ALTRun.lnk"
@@ -1128,16 +1152,14 @@ UpdateStartMenu() {
 }
 
 Reindex(*) {                                                            ; Re-create Index section
-    IniDelete(g_INI, g_SECTION["INDEX"])                     ; Clear old index section
+    IniDelete(g_INI, g_SECTION["INDEX"])                                ; Clear old index section
     for dirIndex, dir in StrSplit(g_CONFIG["IndexDir"], ",")
     {
         searchPath := AbsPath(dir)
         searchPath := RegExReplace(searchPath, "\\+$")                  ; Remove trailing backslashes
 
         for extIndex, ext in StrSplit(g_CONFIG["IndexType"], ",") {
-            Loop Files, searchPath "\" ext, "R"
-            {
-                ; Calculate path relative to searchPath and count subdir levels
+            Loop Files, searchPath "\" ext, "R" {                       ; Calculate path relative to searchPath and count subdir levels
                 rel := SubStr(A_LoopFileFullPath, StrLen(searchPath) + 2) ; +2 to skip the backslash
                 seps := (rel = "") ? 0 : StrLen(rel) - StrLen(StrReplace(rel, "\", "")) ; Count backslashes to determine depth
 
@@ -1159,7 +1181,7 @@ Reindex(*) {                                                            ; Re-cre
                 } else {                                                ; Update existing GUI
                     ProgressGui["MyProgress"].Value := A_Index
                     ProgressGui["MyFileName"].Text := A_LoopFileName
-                    Sleep 10
+                    Sleep 30
                 }
             }
         }
@@ -1521,14 +1543,9 @@ PTTools() {
     return
 }
 
-FormatThousand(Number) {                                                ; Function to add thousand separator
-    Return RegExReplace(Number, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",")
-}
-
-StruCalcResult(evalResult) {
-    result := []
-
-    formatVal := FormatThousand(evalResult)
+StruCalc(evalResult) {
+    result    := []
+    formatVal := RegExReplace(evalResult, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",") ; To add thousand separator
     result.Push("Eval | " formatVal)
 
     if !g_CONFIG["StruCalc"]
@@ -1562,7 +1579,7 @@ Options(ActTab := 1) {
         , "MuteVolume", "ReStart", "Exit", "PTTools"]
 
     g_LOG.Debug("Options: Opening Options window... Tab=" ActTab)
-    MainGuiClose()
+    MainGUI_Close()
     if WinExist(g_LNG[2]) {
         return WinActivate(g_LNG[2])
     }
@@ -1600,13 +1617,13 @@ Options(ActTab := 1) {
 
     OptGUI.AddText("x33 yp+45", g_LNG[173])
     OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIFont", g_GUI["MainGUIFont"]).SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
-    OptGUI.AddButton("x433 yp-5 w80 vSelectMainGUIFont", g_LNG[182]).OnEvent("Click", SelectMainGUIFont)
+    OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("MainGUIFont"))
     OptGUI.AddText("x33 yp+45", g_LNG[174])
     OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vOptGUIFont", g_GUI["OptGUIFont"])
-    OptGUI.AddButton("x433 yp-5 w80 vSelectOptGUIFont", g_LNG[182]).OnEvent("Click", SelectOptGUIFont)
+    OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("OptGUIFont"))
     OptGUI.AddText("x33 yp+45", g_LNG[175])
     OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainSBFont", g_GUI["MainSBFont"]).SetFont(StrSplit(g_GUI["MainSBFont"], ",")[2], StrSplit(g_GUI["MainSBFont"], ",")[1])
-    OptGUI.AddButton("x433 yp-5 w80 vSelectMainSBFont", g_LNG[182]).OnEvent("Click", SelectMainSBFont)
+    OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("MainSBFont"))
 
     OptGUI.AddText("x33 yp+45", g_LNG[179])
     OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIColor c" g_GUI["MainGUIColor"], g_GUI["MainGUIColor"])
@@ -1741,20 +1758,7 @@ ResetHotkey(*) {
     return
 }
 
-SelectMainGUIFont(*) {
-    SelectFont("MainGUIFont")
-}
-
-SelectOptGUIFont(*) {
-    SelectFont("OptGUIFont")
-}
-
-SelectMainSBFont(*) {
-    SelectFont("MainSBFont")
-}
-
 SelectFont(TargetVar := "MainGUIFont") {
-    ; 从 g_GUI 读取当前字体名作为初始选择
     ; Set the fontObj (optional) - only set the ones you want to pre-select
 	; fontObj := Map("name","Terminal","size",14,"color",0xFF0000,"strike",1,"underline",1,"italic",1,"bold",1)
     initFont := StrSplit(g_GUI[TargetVar], ",")[1]
@@ -1765,7 +1769,7 @@ SelectFont(TargetVar := "MainGUIFont") {
 
     OptGUI[TargetVar].Text := fontObj["name"] ", " fontObj["str"]       ; 更新控件字体并设置显示文本
     OptGUI[TargetVar].SetFont(fontObj["str"], fontObj["name"])
-    g_LOG.Debug("SelectFont: OptGUI[" TargetVar " font set to=" fontObj["str"] ", " fontObj["name"])
+    g_LOG.Debug("SelectFont: OptGUI[" TargetVar "] font set to=" fontObj["str"] ", " fontObj["name"])
 }
 
 PickCMDListColor(*) {
@@ -1815,7 +1819,6 @@ OPTGuiClose(*) {
         g_LOG.Debug("OPTGuiClose: Turn On GlobalHotkey2...OK")
     }
 
-    ;OptGUI.Destroy()
     OptGUI.Hide()
     g_LOG.Debug("OPTGuiClose: OptGUI.Hide...OK")
     return
@@ -1825,15 +1828,15 @@ LoadConfig(Arg) {
     g_LOG.Debug("LoadConfig: Loading configuration (" Arg ")...OK")
 
     if (Arg = "config" || Arg = "initialize" || Arg = "all") {
-        for key, value in g_CONFIG {  ; Read [Config] to Map
+        for key, value in g_CONFIG {    ; Read [Config] to Map
             g_CONFIG[key] := IniRead(g_INI, g_SECTION["CONFIG"], key, value)
         }
 
-        for key, value in g_HOTKEY {  ; Read [Hotkey] section
+        for key, value in g_HOTKEY {    ; Read [Hotkey] section
             g_HOTKEY[key] := IniRead(g_INI, g_SECTION["HOTKEY"], key, value)
         }
 
-        for key, value in g_GUI {  ; Read [GUI] section
+        for key, value in g_GUI {       ; Read [GUI] section
             g_GUI[key] := IniRead(g_INI, g_SECTION["GUI"], key, value)
         }
 
@@ -1975,9 +1978,7 @@ LoadConfig(Arg) {
         INDEXSEC := ""
         Try INDEXSEC := IniRead(g_INI, g_SECTION["INDEX"])
         if (INDEXSEC = "") {
-            msgText := g_CONFIG["Chinese"] ? "索引数据库为空, 请点击`n`n'确定'重新建立索引`n`n'取消'退出程序`n`n(请确保程序目录有写入权限)" 
-                : "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to exit the program`n`n(Please ensure the program directory is writable)"
-            if (MsgBox(msgText, , 4161) = "Cancel") {
+            if (MsgBox(g_LNG[804], g_TITLE, 4161) = "Cancel") {
                 ExitApp()
             }
             Reindex()
@@ -1997,7 +1998,11 @@ SaveConfig() {
         IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
     }
 
-    for key, value in g_CONFIG_P2 {
+    CONFIG_P2 := Array("FileMgr","Everything","HistoryLen","RunCount"
+        ,"AutoSwitchDir","IndexDir" ,"IndexType","IndexDepth"
+        ,"IndexExclude" ,"DialogWin","FileMgrID","ExcludeWin")
+
+    for index, key in CONFIG_P2 {
         if (OptGUI[key].Type = "CheckBox") {
             g_CONFIG[key] := OptGUI[key].Value
         } else {
@@ -2222,7 +2227,7 @@ SetLanguage() {
     ENG[501] := "Now"
     ENG[502] := "Total number of times the command was executed"
     ENG[503] := "Number of times the program was activated today"
-    ENG[600] := "About"
+    ENG[600] := "About"                                                 ; 600+ About
     ENG[601] := "An open-source, lightweight, efficient and powerful launcher"
         . "`nIt provides a streamlined and efficient way to find anything on your system and launch any application in your way"
         . "`n`nSetting file:`n" g_INI "`n`nProgram file:`n" A_ScriptFullPath
@@ -2232,17 +2237,18 @@ SetLanguage() {
         . "`n<a href=`"https://github.com/zhugecaomao/ALTRun`">https://github.com/zhugecaomao/ALTRun</a>"
         . "`n`nSee Help and Wiki page for more details"
         . "`n<a href=`"https://github.com/zhugecaomao/ALTRun/wiki`">https://github.com/zhugecaomao/ALTRun/wiki</a>"
-    ENG[700] := "Commander Manager"
+    ENG[700] := "Commander Manager"                                     ; 700+ Command Manager
     ENG[701] := "Command"
     ENG[702] := "Command type"
     ENG[703] := "Command line"
     ENG[704] := "ShortCut/Description"
     ENG[705] := "Command Section"
     ENG[706] := "Command Rank"
-    ENG[800] := "Do you really want to delete the following command?"
+    ENG[800] := "Do you really want to delete the following command?"   ; 800+ Message Info
     ENG[801] := "Confirm Want to Delete?"
     ENG[802] := "Command has been deleted successfully!"
     ENG[803] := "Error occur when delete the command!"
+    ENG[804] := "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to exit the program`n`n(Please ensure the program directory is writable)"
 
     CHN[1]  := "简体中文"                                               ; 1~9 Reserved
     CHN[2]  := "配置"
@@ -2387,7 +2393,7 @@ SetLanguage() {
     CHN[501] := "当前"                                                  ; 500+ 状态统计
     CHN[502] := "运行过的命令总次数"
     CHN[503] := "今天激活程序的次数"
-    CHN[600] := "关于"
+    CHN[600] := "关于"                                                  ; 600+ 关于
     CHN[601] := "一款开源、轻量、高效、功能强大的启动工具"
         . "`n能够快速查找系统中的内容或者启动应用程序"
         . "`n`n配置文件`n" g_INI "`n`n程序文件`n" A_ScriptFullPath
@@ -2397,17 +2403,18 @@ SetLanguage() {
         . "`n<a href=`"https://github.com/zhugecaomao/ALTRun`">https://github.com/zhugecaomao/ALTRun</a>"
         . "`n`n有关更多详细信息，请参阅帮助和 Wiki 页面"
         . "`n<a href=`"https://github.com/zhugecaomao/ALTRun/wiki`">https://github.com/zhugecaomao/ALTRun/wiki</a>"
-    CHN[700] := "命令管理器"
+    CHN[700] := "命令管理器"                                             ; 700+ 命令管理器
     CHN[701] := "命令"
     CHN[702] := "命令类型"
     CHN[703] := "命令行"
     CHN[704] := "快捷项/描述 (可搜索)"
     CHN[705] := "储存节段"
     CHN[706] := "命令权重"
-    CHN[800] := "您确定要删除以下命令吗?"
+    CHN[800] := "您确定要删除以下命令吗?"                                 ; 800+ 提示消息
     CHN[801] := "确认删除?"
     CHN[802] := "命令已成功删除!"
     CHN[803] := "删除命令时发生错误!"
+    CHN[804] := "检测到当前的索引数据库为空, 请点击:`n`n'确定' 重新建立索引`n`n'取消' 退出程序`n`n(请确保程序目录有写入权限)"
 
     Global g_LNG := IniRead(g_INI, "Config", "Chinese", 0) ? CHN : ENG
     g_LOG.Debug("SetLanguage: Set language to " g_LNG[1] "...OK")
@@ -2487,13 +2494,13 @@ Test() {
 
         Activate()
         myInputBox.Value := chr(chr1)
-        OnSearchInput()
+        Input_Change()
         Sleep 10
         myInputBox.Value := chr(chr1) " " chr(chr2)
-        OnSearchInput()
+        Input_Change()
         Sleep 10
         myInputBox.Value := chr(chr1) " " chr(chr2) " " chr(chr3)
-        OnSearchInput()
+        Input_Change()
     }
     t := A_TickCount - t
     g_LOG.Debug("mock test search ' " chr(chr1) " " chr(chr2) " " chr(chr3) " ' 50 times, elapsed time=" t)
