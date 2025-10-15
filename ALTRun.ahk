@@ -11,20 +11,21 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2025.10.08
+;@Ahk2Exe-SetVersion 2025.10.15
 ;@Ahk2Exe-SetCopyright Copyright (c) since 2013
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
 
 ;===================================================
-; Declare Global Variables
-; Built-in classes such as Object; they are predefined as global variables.
-; Variables accessed or created inside an assume-local function are local by default
-; Global variables which are only read by the function, not assigned or used with the reference operator (&).
+; 声明全局变量, 默认情况下, 函数是假定-局部的
+; 在函数内访问或创建的变量默认为局部的, 但以下情况除外:
+; - 全局变量只能被函数读取, 不能被赋值或使用引用运算符(&).
+; - 嵌套函数可以引用由闭合它的函数创建的局部或静态变量.
+; 内置类, 如 Object; 它们被预定义为全局变量
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - 2025.10.08"
+Global g_TITLE := "ALTRun - v2025.10.15"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -164,8 +165,8 @@ Global g_GUI := Map( ; GUI related variables
     "MainSBFont"    , "Microsoft YaHei, norm s9.0",
     "WinX"          , 660,
     "WinY"          , 300,
-    "MainGUIColor"  , "Default",
-    "CMDListColor"  , "Default",
+    "MainGUIColor"  , "0xFFFFFF",
+    "CMDListColor"  , "0xFFFFFF",
     "Background"    , "Default",
     "Transparency"  , 255
 )
@@ -303,12 +304,12 @@ SetMainGUI() {
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
 
     if g_CONFIG["HideOnLostFocus"] {
-        ; 方案 1 - 事件驱动, 高效无延迟, 无资源占用, 但 OnMessage + Ahk Gui 某些情况下有窗口闪烁的问题, 中文输入法前几个字符自动输入为字母的问题, 和托盘菜单右键点击"显示"窗口闪退问题
+        ; 方案 1 - 事件驱动, 高效无延迟, 无资源占用, 但 OnMessage + Ahk Gui 某些情况下有窗口闪烁的问题, 和托盘菜单右键点击"显示"窗口闪退问题
         ; OnMessage(0x0006, WM_ACTIVATE)
         ; 方案 2 - Ahk原生方式, 代码简单可靠, 但有轻微性能开销, 有稍许延迟 30ms
         ; SetTimer(MonitorFocus, 30)
         ; 方案 3 - Ahk原生方式, 事件驱动, 高效无延迟, 无资源占用, 但是因为Gui没有 LoseFocus 事件, 需要注册主界面所有控件的 LoseFocus 事件
-        ; 修复某些情况下有窗口闪烁的问题和中文输入法前几个字符自动输入为字母的问题, 顺便修复托盘菜单右键点击"显示"窗口闪退问题
+        ; 修复某些情况下有窗口闪烁的问题, 顺便修复托盘菜单右键点击"显示"窗口闪退问题
         myInputBox.OnEvent("LoseFocus", MonitorFocus)
         myListView.OnEvent("LoseFocus", MonitorFocus)
         myRunBtn.OnEvent("LoseFocus", MonitorFocus)
@@ -329,12 +330,13 @@ SetTrayMenu() {
             myTrayMenu.Delete() ; 删除默认项
             myTrayMenu.Add(g_LNG[300], ToggleWindow)
             myTrayMenu.Add(g_LNG[301], (*) => Options())
+            myTrayMenu.Add()  ; 分隔线
             myTrayMenu.Add(g_LNG[302], Reindex)
             myTrayMenu.Add(g_LNG[303], Usage)
-            myTrayMenu.Add(g_LNG[309], Update)
-            myTrayMenu.Add()  ; 分隔线
-            myTrayMenu.Add(g_LNG[304], Help)
             myTrayMenu.Add(g_LNG[305], (*) => ListLines())
+            myTrayMenu.Add()  ; 分隔线
+            myTrayMenu.Add(g_LNG[309], Update)
+            myTrayMenu.Add(g_LNG[304], Help)
             myTrayMenu.Add()
             myTrayMenu.Add(g_LNG[307], ReStart)
             myTrayMenu.Add(g_LNG[308], Exit)
@@ -343,9 +345,9 @@ SetTrayMenu() {
             myTrayMenu.SetIcon(g_LNG[301], "imageres.dll", -114)
             myTrayMenu.SetIcon(g_LNG[302], "imageres.dll", -8)
             myTrayMenu.SetIcon(g_LNG[303], "imageres.dll", -150)
+            myTrayMenu.SetIcon(g_LNG[305], "imageres.dll", -165)
             myTrayMenu.SetIcon(g_LNG[309], "imageres.dll", -5338)
             myTrayMenu.SetIcon(g_LNG[304], "imageres.dll", -99)
-            myTrayMenu.SetIcon(g_LNG[305], "imageres.dll", -165)
             myTrayMenu.SetIcon(g_LNG[307], "imageres.dll", -5311)
             myTrayMenu.SetIcon(g_LNG[308], "imageres.dll", -98)
 
@@ -498,12 +500,12 @@ SearchCommand(command := "") {
     return ListResult(g_MATCHED)
 }
 
-ListResult(ArrayToList := "", UseDisplay := false) {
+ListResult(arrayToShow := [], UseDisplay := false) {
     myListView.Opt("-Redraw")                           ; Improve performance by disabling redrawing during load.
     myListView.Delete()
     g_RUNTIME["UseDisplay"] := UseDisplay
 
-    for index, command in ArrayToList {
+    for index, command in arrayToShow {
         parts := StrSplit(command, " | ")
         type  := parts.Length >= 1  ? parts[1] : ""      ; Ensure type has default
         path  := parts.Length >= 2  ? parts[2] : ""      ; Ensure path has default
@@ -511,9 +513,8 @@ ListResult(ArrayToList := "", UseDisplay := false) {
         index := g_CONFIG["ShowSN"] ? index    : ""
         iconx := GetIconIndex(path, type)
 
-        if g_CONFIG["ShortenPath"] {                    ; Show Full path / Shorten path
-            SplitPath(path, &fileName)                  ; Extra name from path (if type is Dir and has "." in path, fileName will not get full folder name)
-            path := fileName
+        if (type != "URL" && g_CONFIG["ShortenPath"]) { ; Show Full path / Shorten path, except for URL
+            SplitPath(path, &path)                      ; Extra name from path (if type is Dir and has "." in path, fileName will not get full folder name)
         }
 
         myListView.Add("Icon" iconx, index, type, path, desc)
@@ -810,8 +811,6 @@ MainGUI_Close(*) {
 }
 
 MainGUI_Size(GuiObj, MinMax, Width, Height) {
-    OutputDebug("MainGUI_Size - " MinMax "-" Width "-" Height)
-
     ; g_GUI["WinX"] := Width
     ; g_GUI["WinY"] := Height
 
@@ -823,6 +822,7 @@ MainGUI_Size(GuiObj, MinMax, Width, Height) {
     ; LV_ModifyCol(4, "AutoHdr")                                          ; Auto adjust column width to fit new window size
     ; SB_SetParts(g_GUI.WinX - 90 * g_CONFIG.ShowRunCount)
     ; SetStatusBar("窗口大小已经改变, 如需保留窗口尺寸, 请进入选项设置页面进行保存")
+    ; OutputDebug("MainGUI_Size - " MinMax "-" Width "-" Height)
 }
 
 ClearInput() {
@@ -890,29 +890,26 @@ FuzzyMatch(Haystack, Needle) {
     return RegExMatch(Haystack, g_RUNTIME["RegEx"] . Needle)
 }
 
+; 更新命令权重函数
 UpdateRank(originCmd, showRank := false, inc := 1) {
-    RANKSEC := g_SECTION["DFTCMD"] "|" g_SECTION["USERCMD"] "|" g_SECTION["INDEX"]
-    Loop Parse, RANKSEC, "|"                                            ; Update Rank for related sections
-    {
-        Rank := IniRead(g_INI, A_LoopField, originCmd, "KeyNotFound")
+    Sections := Array(g_SECTION["DFTCMD"],g_SECTION["USERCMD"],g_SECTION["INDEX"])
+
+    for index, section in Sections {
+        Rank := IniRead(g_INI, section, originCmd, "KeyNotFound")
 
         if (Rank = "KeyNotFound" or Rank = "ERROR" or originCmd = "")   ; If originCmd not exist in this section, then check next section
-            continue                                                    ; Skips the rest of a loop and begins a new one.
-        else if IsInteger(Rank)                                         ; If originCmd exist in this section, then update it's rank.
-            Rank += inc
-        else
-            Rank := inc
+            continue                                                    ; Skips the rest of a loop and begins a new one
 
-        if (Rank < 0)                                                   ; 如果降到负数,都设置成 -1,然后屏蔽/排除
-            Rank := -1
+        Rank := IsInteger(Rank) ? Rank + inc : inc                      ; 如果成功定位到命令, 计算命令新权重
+        Rank := (Rank < 0) ? -1 : Rank                                  ; 如果权重降到负数, 统一设置为 -1, 然后屏蔽/排除
 
-        IniWrite(Rank, g_INI, A_LoopField, originCmd)                   ; Update new Rank for originCmd
-
-        if (showRank) {
+        IniWrite(Rank, g_INI, section, originCmd)                       ; 更新命令权重
+        if (showRank)
             SetStatusBar("UpdateRank: Rank for current command : " Rank)
-        }
+
+        g_LOG.Debug("UpdateRank: Rank updated for command..." originCmd "=" Rank)
+        break
     }
-    g_LOG.Debug("UpdateRank: Rank updated for command...=" originCmd " New Rank=" Rank)
     LoadCommands()                                                      ; New rank will take effect in real-time by LoadCommands again
 }
 
@@ -978,10 +975,9 @@ LoadCommands() {
         if !Trim(line)
             continue  ; 跳过空行
 
-        command     := StrSplit(line, "`t")[2]
-        strToSearch := StrSplit(line, "`t")[3]
-        g_COMMANDS.Push(command)
-        g_CMDINDEX.Push(strToSearch)
+        split := StrSplit(line, "`t") ; line format is "rank `t Command `t strToSearch"
+        g_COMMANDS.Push(split[2])
+        g_CMDINDEX.Push(split[3])
     }
 
     ; Read FALLBACK section
@@ -1019,11 +1015,11 @@ LoadHistory() {
             Try history := IniRead(g_INI, g_SECTION["HISTORY"], A_Index, "")
             g_HISTORYS.Push(history)
         }
-    } else
+        g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
+    } else {
         Try IniDelete(g_INI, g_SECTION["HISTORY"])
-
-    g_LOG.Debug("LoadHistory: Loaded History=" g_HISTORYS.Length)
-    return
+        g_LOG.Debug("LoadHistory: History section cleaned up...")
+    }
 }
 
 GetCmdOutput(command) {
@@ -1494,31 +1490,28 @@ NameAddDate(WinName, CurrCtrl) {                                        ; 在文
     SplitPath(EditCtrlText, &fileName, &fileDir, &fileExt, &nameNoExt)
     CurrentDate := FormatTime(, "dd.MM.yyyy")
 
-    if (fileExt != "" && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) { ; 如果有真实文件后缀名,才加日期在后缀名之前
+    ; 仅当扩展名不是空 & 最后是点后直接跟 1~4 个字母/数字时 & 字符 <5 & 不是纯数字, 才把后缀视为真实扩展名（避免像 "1. DWG" 这种点后有空格被误判）, 才加日期在后缀名之前
+    if (fileExt != "" && RegExMatch(EditCtrlText, "\.[A-Za-z0-9]{1,4}$") && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) {
         if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$") {
             baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
         }
         else if RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$") {
             baseName := RegExReplace(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$", "")
-        }
-        else {
+        } else {
             baseName := nameNoExt
         }
         NameWithDate := baseName " - " CurrentDate "." fileExt
-    }
-    else if (RegExMatch(fileName, " - \d{2}\.\d{2}\.\d{4}$")) {         ; 如果无后缀, 文件(夹)名最后有日期,则更新为当前日期
+    } else if (RegExMatch(fileName, " - \d{2}\.\d{2}\.\d{4}$")) {         ; 如果无后缀, 文件(夹)名最后有日期,则更新为当前日期
         NameWithDate := RegExReplace(fileName, " - \d{2}\.\d{2}\.\d{4}$", " - " CurrentDate)
-    }
-    else if (RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$")) {
+    } else if (RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$")) {
         NameWithDate := RegExReplace(fileName, "-\d{2}\.\d{2}\.\d{4}$", " - " CurrentDate)
-    }
-    else {
+    } else {
         NameWithDate := EditCtrlText " - " CurrentDate
     }
-    ControlClick(CurrCtrl, "A")
+    ControlFocus(CurrCtrl, "A")
     ControlSetText(NameWithDate, CurrCtrl, "A")
     SendInput "{Blind}{End}"
-    g_LOG.Debug("NameAddDate: Add date to name= " NameWithDate)
+    g_LOG.Debug("NameAddDate: Add date to filename= " NameWithDate)
 }
 
 GetArrayIndex(searchValue, Array){
@@ -1626,10 +1619,10 @@ Options(ActTab := 1) {
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("MainSBFont"))
 
     OptGUI.AddText("x33 yp+45", g_LNG[179])
-    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIColor c" g_GUI["MainGUIColor"], g_GUI["MainGUIColor"])
+    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIColor", g_GUI["MainGUIColor"])
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[183]).OnEvent("Click", PickMainGUIColor)
     OptGUI.AddText("x33 yp+45", g_LNG[178])
-    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vCMDListColor c" g_GUI["CMDListColor"], g_GUI["CMDListColor"])
+    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vCMDListColor", g_GUI["CMDListColor"])
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[183]).OnEvent("Click", PickCMDListColor)
 
     OptGUI.AddText("x33 yp+45", g_LNG[180])
@@ -1773,21 +1766,23 @@ SelectFont(TargetVar := "MainGUIFont") {
 }
 
 PickCMDListColor(*) {
-    color := ColorSelect(, OptGUI.hwnd, , "full")                       ; hwnd and custColorObj are optional
+    color := ColorSelect(g_GUI["CMDListColor"], OptGUI.hwnd, , "full")  ; hwnd and custColorObj are optional
     If (color = -1)
         return
 
+    g_GUI["CMDListColor"]        := color
     OptGUI["CMDListColor"].Value := color                               ; 更新选项窗口控件并设置控件颜色
-    OptGUI["CMDListColor"].Opt("c" color)
+    ;OptGUI["CMDListColor"].Opt("c" color)
 }
 
 PickMainGUIColor(*) {
-    color := ColorSelect(, OptGUI.hwnd, , "full")
+    color := ColorSelect(g_GUI["MainGUIColor"], OptGUI.hwnd, , "full")
     If (color = -1)
         return
 
+    g_GUI["MainGUIColor"]        := color
     OptGUI["MainGUIColor"].Value := color
-    OptGUI["MainGUIColor"].Opt("c" color)
+    ;OptGUI["MainGUIColor"].Opt("c" color)
 }
 
 SelectBackground(*) {
@@ -2135,17 +2130,17 @@ SetLanguage() {
     ENG[117] := "Show Command List Header"
     ENG[118] := "Show Command List Serial Number"
     ENG[119] := "Show Command List Border Line"
-    ENG[120] := "Smart Rank - Auto adjust command priority (rank) based on use frequency"
-    ENG[121] := "Smart Match - Fuzzy and Smart matching and filtering result"
+    ENG[120] := "Smart Sorting (Auto-adjust command priority based on usage habits)"
+    ENG[121] := "Smart Matching"
     ENG[122] := "Match beginning of the string (Untick: Match from any position)"
     ENG[123] := "Show Status Bar Hints/Tips"
     ENG[124] := "Show Command Executed RunCount in the Status Bar"
     ENG[125] := "Show Status Bar"
     ENG[126] := "Show [Run] Button on Main Window"
     ENG[127] := "Show [Options] Button on Main Window"
-    ENG[128] := "Double Buffer - Paints via double-buffering, reduces flicker (WinXP+)"
+    ENG[128] := "Double-Buffering to reduce flicker (WinXP+)"
     ENG[129] := "Enable express structure calculation"
-    ENG[130] := "Show Shorten Path - Show file/folder/app name only instead of full path"
+    ENG[130] := "Show Shorten Path (Show file/folder/app name only instead of full path)"
     ENG[131] := "Set language to Chinese Simplified (简体中文)"
     ENG[132] := "Match Chinese Pinyin first characters"
     ENG[150] := "File Manager"                                          ; 150~159 Options window (Other than Check Listview)
@@ -2301,17 +2296,17 @@ SetLanguage() {
     CHN[117] := "显示命令列表标题栏"
     CHN[118] := "显示命令列表序号"
     CHN[119] := "显示命令列表边框线"
-    CHN[120] := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
-    CHN[121] := "智能匹配 - 模糊和智能匹配和过滤结果"
+    CHN[120] := "智能排序 (根据使用习惯自动调整命令优先级)"
+    CHN[121] := "智能匹配"
     CHN[122] := "搜索时匹配字符串开头 (取消勾选: 匹配任意位置)"
     CHN[123] := "显示状态栏提示信息"
     CHN[124] := "显示命令执行次数 (状态栏)"
     CHN[125] := "显示状态栏"
     CHN[126] := "显示主窗口 [运行] 按钮"
     CHN[127] := "显示主窗口 [选项] 按钮"
-    CHN[128] := "双缓冲绘图, 改善窗口闪烁 (Win XP+)"
+    CHN[128] := "双缓冲绘图, 改善窗口闪烁"
     CHN[129] := "启用快速结构计算"
-    CHN[130] := "显示简化路径 - 仅显示文件/文件夹/应用程序名称, 而非完整路径"
+    CHN[130] := "显示简化路径 (仅显示文件/文件夹/应用程序名称, 而非完整路径)"
     CHN[131] := "设置语言为简体中文 (Simplified Chinese)"
     CHN[132] := "搜索时匹配拼音首字母"
     CHN[150] := "文件管理器"                                             ; 150~159 Options window (Other than Check Listview)
