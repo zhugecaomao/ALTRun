@@ -77,8 +77,10 @@ Global g_CONFIG := Map(
     "ShortenPath"    , 1,
     "Chinese"        , InStr("7804,0004,0804,1004", A_Language),
     "MatchPinyin"    , 1,
-    "RunCount"       , 0,
+    "MidScrollSwitch", 0,
+    "MidClickRun"    , 0,
     "HistoryLen"     , 10,
+    "RunCount"       , 0,
     "AutoSwitchDir"  , 0,
     "FileMgr"        , "Explorer.exe",
     "IndexDir"       , "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location",
@@ -126,7 +128,9 @@ Global g_CONFIG_P1 := Map(
     "StruCalc"       , g_LNG[129],
     "ShortenPath"    , g_LNG[130],
     "Chinese"        , g_LNG[131],
-    "MatchPinyin"    , g_LNG[132]
+    "MatchPinyin"    , g_LNG[132],
+    "MidScrollSwitch", g_LNG[133],
+    "MidClickRun"    , g_LNG[134]
 )
 
 Global g_HOTKEY := Map(
@@ -191,10 +195,11 @@ Global OptGUI
 Global OptListView
 Global CmdMgrGUI
 Global myImageList := IL_Create(10, 5, 0)                               ; Create an ImageList so that the ListView can display some icons
-Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval
+Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval/cmd
                         ,"FUNC", IL_Add(myImageList,"imageres.dll",-100)
-                        ,"URL",  IL_Add(myImageList,"imageres.dll",-144)
-                        ,"EVAL", IL_Add(myImageList,"imageres.dll",-182))
+                        ,"URL" , IL_Add(myImageList,"imageres.dll",-144)
+                        ,"EVAL", IL_Add(myImageList,"imageres.dll",-182)
+                        ,"CMD" , IL_Add(myImageList,"imageres.dll",-100)) ; "imageres.dll",-5323 is cmd.exe icon
 
 LoadConfig("initialize")    ; iniWrite create ini whenever not exist
 LoadCommands()
@@ -304,12 +309,14 @@ SetMainGUI() {
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
 
     if g_CONFIG["HideOnLostFocus"] {
-        ; 方案 1 - 事件驱动, 高效无延迟, 无资源占用, 但 OnMessage + Ahk Gui 某些情况下有窗口闪烁的问题, 和托盘菜单右键点击"显示"窗口闪退问题
+        ; 方案 1 - 事件驱动, 高效无延迟, 无资源占用
+        ; OnMessage + Gui 某些情况有窗口闪烁和托盘菜单右键点击"显示"窗口闪退问题
         ; OnMessage(0x0006, WM_ACTIVATE)
         ; 方案 2 - Ahk原生方式, 代码简单可靠, 但有轻微性能开销, 有稍许延迟 30ms
         ; SetTimer(MonitorFocus, 30)
-        ; 方案 3 - Ahk原生方式, 事件驱动, 高效无延迟, 无资源占用, 但是因为Gui没有 LoseFocus 事件, 需要注册主界面所有控件的 LoseFocus 事件
-        ; 修复某些情况下有窗口闪烁的问题, 顺便修复托盘菜单右键点击"显示"窗口闪退问题
+        ; 方案 3 - Ahk原生方式, 事件驱动, 高效无延迟, 无资源占用
+        ; 因 Gui 本身没有 LoseFocus 事件, 需要注册主界面所有控件的 LoseFocus 事件
+        ; 修复某些情况下有窗口闪烁的问题, 以及托盘菜单右键点击"显示"窗口闪退问题
         myInputBox.OnEvent("LoseFocus", MonitorFocus)
         myListView.OnEvent("LoseFocus", MonitorFocus)
         myRunBtn.OnEvent("LoseFocus", MonitorFocus)
@@ -347,7 +354,7 @@ SetTrayMenu() {
             myTrayMenu.SetIcon(g_LNG[303], "imageres.dll", -150)
             myTrayMenu.SetIcon(g_LNG[305], "imageres.dll", -165)
             myTrayMenu.SetIcon(g_LNG[309], "imageres.dll", -5338)
-            myTrayMenu.SetIcon(g_LNG[304], "imageres.dll", -99)
+            myTrayMenu.SetIcon(g_LNG[304], "imageres.dll", -81)
             myTrayMenu.SetIcon(g_LNG[307], "imageres.dll", -5311)
             myTrayMenu.SetIcon(g_LNG[308], "imageres.dll", -98)
 
@@ -365,7 +372,8 @@ SetTrayMenu() {
 }
 
 RegisterHotkey() {
-    HotIfWinActive                                                      ; 全局热键
+    ; 注册全局热键
+    HotIfWinActive
     try {
         Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow)
         Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow)
@@ -375,7 +383,8 @@ RegisterHotkey() {
         g_LOG.Debug("RegisterHotkey: Failed to set global activate hotkeys..." e.Message)
     }
 
-    HotIfWinActive("ahk_id " MainGUI.Hwnd)                              ; 窗口特定热键
+    ; 注册主窗口热键, 使用 ahk_id Hwnd 增强可靠性
+    HotIfWinActive("ahk_id " MainGUI.Hwnd)
     try {
         Hotkey("!F4"        , Exit)
         Hotkey("Tab"        , TabFunc)
@@ -393,6 +402,15 @@ RegisterHotkey() {
         Hotkey("Up"         , PrevCommand)
         Hotkey("^NumpadAdd" , RankUp)
         Hotkey("^NumpadSub" , RankDown)
+
+        if (g_CONFIG["MidScrollSwitch"]) {
+            Hotkey("WheelDown"  , NextCommand)
+            Hotkey("WheelUp"    , PrevCommand)
+        }
+
+        if (g_CONFIG["MidClickRun"]) {
+            Hotkey("MButton"    , RunCurrentCommand)
+        }
 
         g_LOG.Debug("RegisterHotkey: Set local hotkeys (F1-F4)...OK")
     } catch as e {
@@ -423,7 +441,8 @@ RegisterHotkey() {
         }
     }
 
-    HotIfWinActive(g_HOTKEY["CondTitle"])                               ; 条件热键执行指定功能 = CondHotkey + CondAction
+    ; 注册条件热键, 执行指定功能
+    HotIfWinActive(g_HOTKEY["CondTitle"])
     if g_HOTKEY.Has("CondTitle") && g_HOTKEY.Has("CondHotkey") && g_HOTKEY.Has("CondAction") {
         try {
             Hotkey(g_HOTKEY["CondHotkey"], ExecuteFunc.Bind(, g_HOTKEY["CondAction"], 1))
@@ -531,39 +550,39 @@ ListResult(arrayToShow := [], UseDisplay := false) {
     SetStatusBar(statusBarText)
 }
 
-GetIconIndex(_Path, _Type) {                                            ; Get file's icon index
+GetIconIndex(path, type) {                                              ; Get file's icon index (TO-DO: Prepare to omit the file type)
     Global myIconMap
-    if not g_CONFIG["ShowIcon"]
-        Return 0                                                        ; No icon to show, return 0
+    if not g_CONFIG["ShowIcon"]                                         ; ShowIcon disabled, return 0
+        Return 0
 
-    if (_Type = "") {
+    if (type = "") {
         return 0
-    } else if (_Type = "DIR") {
+    } else if (type = "DIR") {
         return 1
-    } else if InStr("FUNC,CMD,TIP,提示", _Type, 0) {
+    } else if InStr("FUNC,TIP,提示,CMD", type, 0) {
         return 2
-    } else if (_Type = "URL") {
+    } else if (type = "URL") {
         return 3
-    } else if (_Type = "EVAL") {
+    } else if (type = "EVAL") {
         return 4
-    } else if (_Type = "FILE") {
-        _Path := AbsPath(_Path)                                         ; Must store in var for afterward use, trim space (in AbsPath)
-        SplitPath(_Path, , , &fileExt)                                  ; Get the file's extension.
+    } else if (type = "FILE") {
+        path := AbsPath(path)                                           ; Must store in var for afterward use, trim space (in AbsPath)
+        SplitPath(path, , , &fileExt)                                   ; Get the file's extension.
         if (fileExt ~= "^(?i:EXE|ICO|ANI|CUR|LNK)$") {                  ; File types that have their own icon
-            IconIndex := myIconMap.Has(_Path) ? myIconMap[_Path] : GetIcon(_Path, _Path) ; File path exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
+            IconIndex := myIconMap.Has(path) ? myIconMap[path] : GetIcon(path, path) ; File path exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
         } else {                                                        ; Some other extension/file-type like pdf or xlsx
-            IconIndex := myIconMap.Has(fileExt) ? myIconMap[fileExt] : GetIcon(_Path, fileExt)
+            IconIndex := myIconMap.Has(fileExt) ? myIconMap[fileExt] : GetIcon(path, fileExt)
         }
         Return IconIndex
     }
 }
 
-GetIcon(_Path, ExtOrPath) {                                             ; Get file's icon
+GetIcon(path, ExtOrPath) {                                             ; Get file's icon
     Global myImageList, myIconMap
     sfi_size := A_PtrSize + 688
     sfi      := Buffer(sfi_size)                                        ; Calculate buffer size required for SHFILEINFO structure. VarSetStrCapacity change to Buffer
 
-    if not DllCall("Shell32\SHGetFileInfoW", "Str", _Path, "UInt", 0, "Ptr", sfi, "UInt", sfi_size, "UInt", 0x101) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
+    if not DllCall("Shell32\SHGetFileInfoW", "Str", path, "UInt", 0, "Ptr", sfi, "UInt", sfi_size, "UInt", 0x101) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
         IconIndex := 9999999                                            ; Set it out of bounds to display a blank icon.
     else {                                                              ; Icon successfully loaded. Extract the hIcon member from the structure
         hIcon := NumGet(sfi, 0, "Ptr")                                  ; Add the HICON directly to the small-icon lists.
@@ -589,6 +608,16 @@ AbsPath(Path, KeepRunAs := False) {                                     ; Conver
         }
     } else if (InStr(Path, "A_") = 1) {
         Path := %Path%
+    }
+
+    ; 如果只是可执行名（如 notepad.exe）且本地不存在，尝试在 PATH 中用 SearchPathW 查找完整路径
+    if (!FileExist(Path) && InStr(Path, "\") = 0) {
+        ; 准备缓冲区用于 SearchPathW 返回宽字符路径
+        buf := Buffer(260 * 2)
+        res := DllCall("kernel32\SearchPathW", "Ptr", 0, "WStr", Path, "WStr", "", "UInt", buf.Size // 2, "Ptr", buf, "Ptr", 0)
+        if (res && res > 0) {
+            Path := StrGet(buf, "UTF-16")
+        }
     }
 
     Path := StrReplace(Path, "%Temp%", A_Temp)
@@ -996,7 +1025,7 @@ LoadCommands() {
         Func | Google | Search Clipboard or Input by Google
         Func | AhkRun | Run Command use AutoHotkey Run
         Func | Bing | Search Clipboard or Input by Bing
-        Cmd | Calc.exe | Calculator
+        CMD | Calc.exe | Calculator
         )", g_INI, g_SECTION["FALLBACK"])
         FALLBACKCMDSEC := IniRead(g_INI, g_SECTION["FALLBACK"])
     }
@@ -1149,10 +1178,8 @@ UpdateStartMenu() {
 
 Reindex(*) {                                                            ; Re-create Index section
     IniDelete(g_INI, g_SECTION["INDEX"])                                ; Clear old index section
-    for dirIndex, dir in StrSplit(g_CONFIG["IndexDir"], ",")
-    {
-        searchPath := AbsPath(dir)
-        searchPath := RegExReplace(searchPath, "\\+$")                  ; Remove trailing backslashes
+    for dirIndex, dir in StrSplit(g_CONFIG["IndexDir"], ",") {
+        searchPath := RegExReplace(AbsPath(dir), "\\+$")                ; Remove trailing backslashes
 
         for extIndex, ext in StrSplit(g_CONFIG["IndexType"], ",") {
             Loop Files, searchPath "\" ext, "R" {                       ; Calculate path relative to searchPath and count subdir levels
@@ -1176,7 +1203,7 @@ Reindex(*) {                                                            ; Re-cre
                     ProgressGui.Show()
                 } else {                                                ; Update existing GUI
                     ProgressGui["MyProgress"].Value := A_Index
-                    ProgressGui["MyFileName"].Text := A_LoopFileName
+                    ProgressGui["MyFileName"].Text  := A_LoopFileName
                     Sleep 30
                 }
             }
@@ -1897,14 +1924,10 @@ LoadConfig(Arg) {
             Dir | A_Startup | Current User Startup Dir=99
             Dir | A_StartupCommon | All User Startup Dir=99
             Dir | A_ProgramsCommon | Windows Search.Index.Cortana Dir=99
-            Dir | A_Desktop=99
-            Dir | %AppData%\Microsoft\Windows\SendTo | Windows SendTo Dir=99
-            Dir | %OneDrive% | OneDrive=99
             CMD | explorer.exe | Windows File Explorer=99
-            CMD | cmd.exe | DOS / CMD=99
+            CMD | cmd.exe | Windows Command Processor=99
             CMD | Shell:AppsFolder | AppsFolder Applications=66
             CMD | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=66
-            CMD | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=66
             CMD | Notepad.exe | Notepad=66
             CMD | WF.msc | Windows Defender Firewall with Advanced Security=66
             CMD | TaskSchd.msc | Task Scheduler=66
@@ -1929,19 +1952,10 @@ LoadConfig(Arg) {
             CMD | Control | Control Panel=66
             CMD | Control Intl.cpl | Region and Language Options=66
             CMD | Control Firewall.cpl | Windows Defender Firewall=66
-            CMD | Control Access.cpl | Ease of Access Centre=66
             CMD | Control AppWiz.cpl | Programs and Features=66
-            CMD | Control Sticpl.cpl | Scanners and Cameras=66
             CMD | Control Sysdm.cpl | System Properties=66
-            CMD | Control Mouse | Mouse Properties=66
-            CMD | Control Desk.cpl | Display=66
-            CMD | Control Mmsys.cpl | Sound=66
-            CMD | Control Ncpa.cpl | Network Connections=66
-            CMD | Control Powercfg.cpl | Power Options=66
             CMD | Control AdminTools | Windows Tools=66
-            CMD | Control Desktop | Personalisation=66
             CMD | Control Inetcpl.cpl,,4 | Internet Properties=66
-            CMD | Control Printers | Devices and Printers=66
             CMD | Control UserPasswords | User Accounts=66
             )", g_INI, g_SECTION["DFTCMD"])
             DFTCMDSEC := IniRead(g_INI, g_SECTION["DFTCMD"])
@@ -1957,15 +1971,15 @@ LoadConfig(Arg) {
             ; Command type: File, Dir, CMD, URL, some sample below
             ; Please make sure App is not running before modifying
             ;
+            File | C:\Windows\Notepad.exe=9
             Dir | %AppData%\Microsoft\Windows\SendTo | Windows SendTo Dir=9
             Dir | %OneDrive% | OneDrive=9
-            Dir | A_ScriptDir | ALTRun Program Dir=9
+            Dir | A_Desktop | Desktop=99
             CMD | cmd.exe /k ipconfig | Check IP Address=9
-            CMD | Explorer /Select,C:\Program Files | Open and select C:\Program Files=9
-            CMD | Control TimeDate.cpl | Date and Time=9
+            CMD | explorer /Select,C:\Program Files | Open and select C:\Program Files=9
+            CMD | Control Printers | Devices and Printers=66
             CMD | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
             URL | www.google.com | Google=9
-            File | C:\Windows\notepad.exe=9
             )", g_INI, g_SECTION["USERCMD"])
             USERCMDSEC := IniRead(g_INI, g_SECTION["USERCMD"])
         }
@@ -2143,6 +2157,9 @@ SetLanguage() {
     ENG[130] := "Show Shorten Path (Show file/folder/app name only instead of full path)"
     ENG[131] := "Set language to Chinese Simplified (简体中文)"
     ENG[132] := "Match Chinese Pinyin first characters"
+    ENG[133] := "Use the mouse wheel scroll to select the command"
+    ENG[134] := "Click mouse middle button to run the selected command"
+
     ENG[150] := "File Manager"                                          ; 150~159 Options window (Other than Check Listview)
     ENG[151] := "Everything"
     ENG[152] := "History length"
@@ -2309,6 +2326,9 @@ SetLanguage() {
     CHN[130] := "显示简化路径 (仅显示文件/文件夹/应用程序名称, 而非完整路径)"
     CHN[131] := "设置语言为简体中文 (Simplified Chinese)"
     CHN[132] := "搜索时匹配拼音首字母"
+    CHN[133] := "使用鼠标滚轮滚动选择命令"
+    CHN[134] := "单击鼠标中键运行选定命令"
+
     CHN[150] := "文件管理器"                                             ; 150~159 Options window (Other than Check Listview)
     CHN[151] := "Everything"
     CHN[152] := "历史命令数量"
