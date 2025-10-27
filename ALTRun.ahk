@@ -163,11 +163,11 @@ Global g_HOTKEY := Map(
 
 Global g_GUI := Map( ; GUI related variables
     "ListRows"      , 9,
-    "ColWidth"      , "40,0,330,AutoHdr",
+    "ColWidth"      , "40,0,260,AutoHdr",
     "MainGUIFont"   , "Microsoft YaHei, norm s10.0",
     "OptGUIFont"    , "Microsoft YaHei, norm s9.0",
     "MainSBFont"    , "Microsoft YaHei, norm s9.0",
-    "WinX"          , 660,
+    "WinX"          , 600,
     "WinY"          , 300,
     "MainGUIColor"  , "0xFFFFFF",
     "CMDListColor"  , "0xFFFFFF",
@@ -327,6 +327,11 @@ SetMainGUI() {
 
 ; 创建任务栏托盘程序图标
 SetTrayMenu() {
+    if !g_CONFIG["ShowTrayIcon"] {
+        A_IconHidden := 1
+        return
+    }
+
     static myTrayMenu := ""  ; 只在第一次调用时创建
 
     if !IsObject(myTrayMenu) {
@@ -1902,8 +1907,8 @@ LoadConfig(Arg) {
             ; App will auto generate this section while it is empty
             ; Please make sure App is not running before modifying.
             ;
-            Func | Help | ALTRun Help & About (F1)=99
-            Func | Options | ALTRun Options Preference Settings (F2)=99
+            Func | Help | Help & About (F1)=99
+            Func | Options | Setting Options (F2)=99
             Func | Reload | Reload ALTRun=99
             Func | EditCommand | Edit current command (F3)=99
             Func | UserCommand | ALTRun User-defined command (F4)=99
@@ -2102,7 +2107,7 @@ SetLanguage() {
     ENG[11] := "Run"
     ENG[12] := "Options"
     ENG[13] := "Type anything here to search..."
-    ENG[50] := ["Tip | F1 | Help & About", "Tip | F2 | Options and settings", "Tip | F3 | Edit current command", "Tip | F4 | Change setting file directly", "Tip | Alt+Space / Alt+R | Activate ALTRun", "Tip | Alt+Space / Esc / Lose Focus | Deactivate ALTRun", "Tip | Enter / Alt+No. | Run selected command", "Tip | Arrow Up or Down | Select previous / next command", "Tip | Ctrl+D | Locate cmd's dir with File Manager"]
+    ENG[50] := ["Tip | F1 | Help & About", "Tip | F2 | Options and settings", "Tip | F3 | Edit current command", "Tip | F4 | Change setting file directly", "Tip | Alt+Space / Alt+R | Activate ALTRun", "Tip | Alt+Space / Esc / Lose Focus | Deactivate ALTRun", "Tip | Enter / Alt+No. | Run selected command", "Tip | Arrow Up or Down | Previous / next command", "Tip | Ctrl+D | Locate cmd's dir with File Manager"]
     ENG[51] := "Tips: "
     ENG[52] := "It's better to activate ALTRun by hotkey (ALT + Space)" ; 50~99 Tips
     ENG[53] := "Smart Rank - Auto adjusts command priority (rank) based on frequency of use."
@@ -2182,7 +2187,7 @@ SetLanguage() {
     ENG[181] := "Transparency"
     ENG[182] := "Select font"
     ENG[183] := "Select color"
-    ENG[184] := "Select picture"
+    ENG[184] := "Select image"
     ENG[190] := "Hotkey"                                                ; 190~209 Hotkey
     ENG[191] := "Activate Hotkey (Global)"
     ENG[192] := "Primary Hotkey"
