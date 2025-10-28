@@ -11,7 +11,7 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2025.10.15
+;@Ahk2Exe-SetVersion 2025.10.28
 ;@Ahk2Exe-SetCopyright Copyright (c) since 2013
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -25,7 +25,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - v2025.10.15"
+Global g_TITLE := "ALTRun - v2025.10.28"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -79,6 +79,7 @@ Global g_CONFIG := Map(
     "MatchPinyin"    , 1,
     "MidScrollSwitch", 0,
     "MidClickRun"    , 0,
+    "AutoUpdateCheck", 1,
     "HistoryLen"     , 10,
     "RunCount"       , 0,
     "AutoSwitchDir"  , 0,
@@ -130,7 +131,8 @@ Global g_CONFIG_P1 := Map(
     "Chinese"        , g_LNG[131],
     "MatchPinyin"    , g_LNG[132],
     "MidScrollSwitch", g_LNG[133],
-    "MidClickRun"    , g_LNG[134]
+    "MidClickRun"    , g_LNG[134],
+    "AutoUpdateCheck", g_LNG[135]
 )
 
 Global g_HOTKEY := Map(
@@ -212,6 +214,7 @@ SetMainGUI()                ; Create and set main GUI
 RegisterHotkey()
 Listary()
 Plugins()
+AutoCheckUpdate()
 return
 ;;==================== Autorun until here =========================
 
@@ -1062,7 +1065,7 @@ GetCmdOutput(command) {
 
     RunWait(FullCommand, A_Temp, "Hide")
     Result := FileRead(TempFile)
-    FileDelete(TempFile)
+    try FileDelete(TempFile)
     Return RTrim(Result, "`r`n")                                        ; Remove result rightmost/last "`r`n"
 }
 
@@ -1138,7 +1141,7 @@ MonitorFocus(*) {
 UpdateSendTo() {                 ; the lnk in SendTo must point to a exe
     lnkPath := StrReplace(A_StartMenu, "\Start Menu", "\SendTo\") "ALTRun.lnk"
     if (!g_CONFIG["EnableSendTo"]) {
-        FileDelete(lnkPath)
+        try FileDelete(lnkPath)
         g_LOG.Debug("UpdateSendTo: Update SendTo shortcut...Disabled")
         return
     }
@@ -1156,7 +1159,7 @@ UpdateStartup() {
     lnkPath := A_Startup "\ALTRun.lnk"
 
     if (!g_CONFIG["AutoStartup"]) {
-        FileDelete(lnkPath)
+        try FileDelete(lnkPath)
         g_LOG.Debug("UpdateStartup: Update Startup shortcut...Disabled")
         return
     }
@@ -1171,7 +1174,7 @@ UpdateStartMenu() {
     lnkPath := A_Programs "\ALTRun.lnk"
 
     if (!g_CONFIG["InStartMenu"]) {
-        FileDelete(lnkPath)
+        try FileDelete(lnkPath)
         g_LOG.Debug("UpdateStartMenu: Update StartMenu shortcut...Disabled")
         return
     }
@@ -1232,8 +1235,62 @@ Usage(*) {
     Options(7)
 }
 
+AutoCheckUpdate(*) {
+    if (!g_CONFIG["AutoUpdateCheck"])
+        return
+
+    ; One-time timer to check for updates
+    SetTimer(CheckUpdate, -1000)
+}
+
 Update(*) {
-    Run("https://github.com/zhugecaomao/ALTRun/releases")
+    ; Manual update check, show message box
+    CheckUpdate(False)
+}
+
+; Main update check function, called from tray menu (*) or with silent flag
+CheckUpdate(Silent := True) {
+    RepoAPI     := "https://api.github.com/repos/zhugecaomao/ALTRun/releases/latest"
+    ReleasePage := "https://github.com/zhugecaomao/ALTRun/releases"
+
+    try {
+        tmpFile := A_Temp "\ALTRun_latest.json"
+        Download(RepoAPI, tmpFile)
+        json := FileRead(tmpFile, "UTF-8")
+
+        ; Extract latest version from tag_name
+        if !RegExMatch(json, '"tag_name"\s*:\s*"([^"]+)"', &verMatch)
+            throw Error("Cannot find 'tag_name' in GitHub API response.")
+
+        latestVersion  := Trim(verMatch[1], "vV ")
+        currentVersion := Trim(g_TITLE, "ALTRun - v ")
+
+        ; Compare versions
+        if (CompareVersion(latestVersion, currentVersion) > 0) {
+            MsgBox("A new version (" latestVersion ") is available!`n`nOpening download page...", g_Title, 64)
+            Run ReleasePage
+        } else if (!Silent) {
+            ; Only show "up-to-date" message for manual checks
+            MsgBox("You are already using the latest version (" currentVersion ").", g_Title, 64)
+        }
+
+    } catch as e {
+        if (!Silent)
+            MsgBox("Update check failed:`n" e.Message, g_Title, 48)
+        else
+            g_LOG.Debug("CheckUpdate: Update check failed: " e.Message)
+    }
+}
+
+CompareVersion(v1, v2) {
+    v1Parts := StrSplit(v1, ".")
+    v2Parts := StrSplit(v2, ".")
+    Loop Max(v1Parts.Length, v2Parts.Length) {
+        diff := (v1Parts[A_Index] + 0) - (v2Parts[A_Index] + 0)
+        if diff
+            return diff
+    }
+    return 0
 }
 
 Listary() {                                                             ; Listary 快速更换保存/打开对话框路径
@@ -2164,6 +2221,7 @@ SetLanguage() {
     ENG[132] := "Match Chinese Pinyin first characters"
     ENG[133] := "Use the mouse wheel scroll to select the command"
     ENG[134] := "Click mouse middle button to run the selected command"
+    ENG[135] := "Auto check for updates"
 
     ENG[150] := "File Manager"                                          ; 150~159 Options window (Other than Check Listview)
     ENG[151] := "Everything"
@@ -2333,6 +2391,7 @@ SetLanguage() {
     CHN[132] := "搜索时匹配拼音首字母"
     CHN[133] := "使用鼠标滚轮滚动选择命令"
     CHN[134] := "单击鼠标中键运行选定命令"
+    CHN[135] := "自动检查更新"
 
     CHN[150] := "文件管理器"                                             ; 150~159 Options window (Other than Check Listview)
     CHN[151] := "Everything"
