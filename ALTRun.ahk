@@ -242,6 +242,7 @@ SetMainGUI() {
     MainGUI.OnEvent("Close" , MainGUI_Close)
     MainGUI.OnEvent("Escape", MainGUI_Escape)
     MainGUI.OnEvent("Size"  , MainGUI_Size)
+    MainGUI.OnEvent("ContextMenu", MainGUI_ContextMenu)
     MainGUI.BackColor := g_GUI["MainGUIColor"]
     MainGUI.SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
     myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn W" Input_W, g_LNG[13])
@@ -312,14 +313,15 @@ SetMainGUI() {
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
 
     if g_CONFIG["HideOnLostFocus"] {
-        ; 方案 1 - 事件驱动, 高效无延迟, 无资源占用
-        ; OnMessage + Gui 某些情况有窗口闪烁和托盘菜单右键点击"显示"窗口闪退问题
-        ; OnMessage(0x0006, WM_ACTIVATE)
-        ; 方案 2 - Ahk原生方式, 代码简单可靠, 但有轻微性能开销, 有稍许延迟 30ms
-        ; SetTimer(MonitorFocus, 30)
-        ; 方案 3 - Ahk原生方式, 事件驱动, 高效无延迟, 无资源占用
+        ; 方案 1 - OnMessage(0x0006, WM_ACTIVATE)
+        ; 事件驱动, 高效无延迟, 无资源占用
+        ; 某些情况有窗口闪烁和托盘菜单右键点击"显示"窗口闪退问题
+        ; 方案 2 - SetTimer(MonitorFocus, 30)
+        ; Ahk原生方式, 代码简单可靠, 但有轻微性能开销, 有稍许延迟 30ms
+        ; 方案 3 - Control.OnEvent("LoseFocus", MonitorFocus)
+        ; Ahk原生方式, 事件驱动, 高效无延迟, 无资源占用
         ; 因 Gui 本身没有 LoseFocus 事件, 需要注册主界面所有控件的 LoseFocus 事件
-        ; 修复某些情况下有窗口闪烁的问题, 以及托盘菜单右键点击"显示"窗口闪退问题
+        ; 修复托盘菜单右键点击"显示"窗口闪退问题
         myInputBox.OnEvent("LoseFocus", MonitorFocus)
         myListView.OnEvent("LoseFocus", MonitorFocus)
         myRunBtn.OnEvent("LoseFocus", MonitorFocus)
@@ -345,6 +347,7 @@ SetTrayMenu() {
             myTrayMenu.Delete() ; 删除默认项
             myTrayMenu.Add(g_LNG[300], ToggleWindow)
             myTrayMenu.Add(g_LNG[301], (*) => Options())
+            myTrayMenu.Add(g_LNG[310], UserCommand)
             myTrayMenu.Add()  ; 分隔线
             myTrayMenu.Add(g_LNG[302], Reindex)
             myTrayMenu.Add(g_LNG[303], Usage)
@@ -358,6 +361,7 @@ SetTrayMenu() {
 
             myTrayMenu.SetIcon(g_LNG[300], "imageres.dll", -100)
             myTrayMenu.SetIcon(g_LNG[301], "imageres.dll", -114)
+            myTrayMenu.SetIcon(g_LNG[310], "imageres.dll", -88)
             myTrayMenu.SetIcon(g_LNG[302], "imageres.dll", -8)
             myTrayMenu.SetIcon(g_LNG[303], "imageres.dll", -150)
             myTrayMenu.SetIcon(g_LNG[305], "imageres.dll", -165)
@@ -742,16 +746,19 @@ LV_Click(myListView, rowNumber) {
 }
 
 LV_ContextMenu(GuiCtrlObj, rowNumber, IsRightClick, X, Y) {             ; On ListView ContextMenu
-    Global myListView, g_MATCHED, g_RUNTIME, g_LNG, g_LOG
+    Global myListView, g_MATCHED, g_RUNTIME
 
-    if (!rowNumber)     ; 如果用户右键点击了列表行以外的地方
-        Return
+    if (rowNumber = 0) {    ; 如果用户右键点击了列表行以外的地方
+        SetMainGUIContextMenu("", GuiCtrlObj, rowNumber, IsRightClick, X, Y)
+        return
+    }
 
     if (g_MATCHED.Length >= rowNumber) {
         g_RUNTIME["CurrentCommand"] := g_MATCHED[rowNumber]
         SetListViewContextMenu(X, Y)
-    } else {            ; For cases like first hint page
+    } else {                ; For cases like first hint page
         SetStatusBar(myListView.GetText(rowNumber, 3))
+        SetMainGUIContextMenu("", GuiCtrlObj, rowNumber, IsRightClick, X, Y)
     }
 }
 
@@ -760,28 +767,30 @@ SetListViewContextMenu(X, Y) {
 
     if !IsObject(myListViewContextMenu) {
         myListViewContextMenu := Menu()
-        myListViewContextMenu.Add(g_LNG[400], LVRunCommand)
-        myListViewContextMenu.Add(g_LNG[401], OpenContainer)
-        myListViewContextMenu.Add(g_LNG[402], CopyCommand)
-        myListViewContextMenu.Add()
-        myListViewContextMenu.Add(g_LNG[403], NewCommand)
-        myListViewContextMenu.Add(g_LNG[404], EditCommand)
-        myListViewContextMenu.Add(g_LNG[405], DelCommand)
-        myListViewContextMenu.Add(g_LNG[406], UserCommand)
 
-        myListViewContextMenu.SetIcon(g_LNG[400], "imageres.dll", -100)
-        myListViewContextMenu.SetIcon(g_LNG[401], "imageres.dll", -3)
-        myListViewContextMenu.SetIcon(g_LNG[402], "imageres.dll", -5314)
-        myListViewContextMenu.SetIcon(g_LNG[403], "imageres.dll", -2)
-        myListViewContextMenu.SetIcon(g_LNG[404], "imageres.dll", -5306)
-        myListViewContextMenu.SetIcon(g_LNG[405], "imageres.dll", -5305)
-        myListViewContextMenu.SetIcon(g_LNG[406], "imageres.dll", -88)
-        myListViewContextMenu.Default := g_LNG[400]
+        try {
+            myListViewContextMenu.Add(g_LNG[400], LVRunCommand)
+            myListViewContextMenu.Add(g_LNG[401], OpenContainer)
+            myListViewContextMenu.Add(g_LNG[402], CopyCommand)
+            myListViewContextMenu.Add()
+            myListViewContextMenu.Add(g_LNG[403], NewCommand)
+            myListViewContextMenu.Add(g_LNG[404], EditCommand)
+            myListViewContextMenu.Add(g_LNG[405], DelCommand)
 
-        g_LOG.Debug("SetListViewContextMenu: Create myListViewContextMenu...OK")
+            myListViewContextMenu.SetIcon(g_LNG[400], "imageres.dll", -100)
+            myListViewContextMenu.SetIcon(g_LNG[401], "imageres.dll", -3)
+            myListViewContextMenu.SetIcon(g_LNG[402], "imageres.dll", -5314)
+            myListViewContextMenu.SetIcon(g_LNG[403], "imageres.dll", -2)
+            myListViewContextMenu.SetIcon(g_LNG[404], "imageres.dll", -5306)
+            myListViewContextMenu.SetIcon(g_LNG[405], "imageres.dll", -5305)
+
+            g_LOG.Debug("SetListViewContextMenu: Create myListViewContextMenu...OK")
+        } catch as e {
+            g_LOG.Debug("SetListViewContextMenu: Error creating myListViewContextMenu: " . e.Message)
+        }
     }
-
     myListViewContextMenu.Show(X, Y)
+    return
 }
 
 LVRunCommand(*) {                                                       ; On ListView double click action
@@ -813,8 +822,7 @@ CopyCommand(*) {                                                        ; ListVi
 
 OnStatusBarClick(GuiCtrlObj, partNumber) {
     if (partNumber = 1) {
-        A_Clipboard := StatusBarGetText(1, "ahk_id " MainGUI.Hwnd)      ; Get text from 1st part of StatusBar
-        SetStatusBar(g_LNG[407] " : " A_Clipboard)
+        CopyStatusBarText()
     } else if (partNumber = 2) {
         Usage()
     }
@@ -823,15 +831,22 @@ OnStatusBarClick(GuiCtrlObj, partNumber) {
 OnStatusBarContextMenu(GuiCtrlObj, partNumber, RightClick, X, Y) {
     if (partNumber = 1) {
         SB_ContextMenu1 := Menu()
-        SB_ContextMenu1.Add(g_LNG[407], (*) => SetStatusBar(g_LNG[407] " : " A_Clipboard := StatusBarGetText(1, "ahk_id " MainGUI.Hwnd))) ; Get text from 1st part of StatusBar
+        SB_ContextMenu1.Add(g_LNG[407], CopyStatusBarText)
         SB_ContextMenu1.SetIcon(g_LNG[407], "imageres.dll", -5314)
         SB_ContextMenu1.Show()
     } else if (partNumber = 2) {
         SB_ContextMenu2 := Menu()
-        SB_ContextMenu2.Add(g_LNG[408], Usage)
-        SB_ContextMenu2.SetIcon(g_LNG[408], "imageres.dll", -150)
+        SB_ContextMenu2.Add(g_LNG[410], Usage)
+        SB_ContextMenu2.SetIcon(g_LNG[410], "imageres.dll", -150)
         SB_ContextMenu2.Show()
     }
+}
+
+; Get text from 1st part of StatusBar
+CopyStatusBarText(*) {
+    textToCopy := StatusBarGetText(1, "ahk_id " MainGUI.Hwnd)
+    A_Clipboard := Trim(textToCopy, g_LNG[408])
+    SetStatusBar(g_LNG[408] A_Clipboard)
 }
 
 MainGUI_Escape(*) {
@@ -860,6 +875,56 @@ MainGUI_Size(GuiObj, MinMax, Width, Height) {
     ; SB_SetParts(g_GUI.WinX - 90 * g_CONFIG.ShowRunCount)
     ; SetStatusBar("窗口大小已经改变, 如需保留窗口尺寸, 请进入选项设置页面进行保存")
     ; OutputDebug("MainGUI_Size - " MinMax "-" Width "-" Height)
+}
+
+; 主界面右键菜
+MainGUI_ContextMenu(GuiObj, GuiCtrlObj, Item, IsRightClick, X, Y) {
+
+    GuiCtrlType := IsObject(GuiCtrlObj) ? GuiCtrlObj.Type : ""
+
+    if (GuiCtrlType = "ListView" || GuiCtrlType = "StatusBar")
+        return
+
+    SetMainGUIContextMenu(GuiObj, GuiCtrlObj, Item, IsRightClick, X, Y)
+    return
+}
+
+SetMainGUIContextMenu(GuiObj, GuiCtrlObj, Item, IsRightClick, X, Y) {
+    static myContextMenu := ""  ; 只在第一次调用时创建
+
+    if !IsObject(myContextMenu) {
+        myContextMenu := Menu()
+        try {
+            myContextMenu.Add(g_LNG[301], (*) => Options())
+            myContextMenu.Add(g_LNG[310], UserCommand)
+            myContextMenu.Add()  ; 分隔线
+            myContextMenu.Add(g_LNG[302], Reindex)
+            myContextMenu.Add(g_LNG[303], Usage)
+            myContextMenu.Add(g_LNG[305], (*) => ListLines())
+            myContextMenu.Add()  ; 分隔线
+            myContextMenu.Add(g_LNG[309], Update)
+            myContextMenu.Add(g_LNG[304], Help)
+            myContextMenu.Add()
+            myContextMenu.Add(g_LNG[307], ReStart)
+            myContextMenu.Add(g_LNG[308], Exit)
+
+            myContextMenu.SetIcon(g_LNG[301], "imageres.dll", -114)
+            myContextMenu.SetIcon(g_LNG[310], "imageres.dll", -88)
+            myContextMenu.SetIcon(g_LNG[302], "imageres.dll", -8)
+            myContextMenu.SetIcon(g_LNG[303], "imageres.dll", -150)
+            myContextMenu.SetIcon(g_LNG[305], "imageres.dll", -165)
+            myContextMenu.SetIcon(g_LNG[309], "imageres.dll", -5338)
+            myContextMenu.SetIcon(g_LNG[304], "imageres.dll", -81)
+            myContextMenu.SetIcon(g_LNG[307], "imageres.dll", -5311)
+            myContextMenu.SetIcon(g_LNG[308], "imageres.dll", -98)
+
+            g_LOG.Debug("SetMainGUIContextMenu: Create myContextMenu...OK")
+        } catch as e {
+            g_LOG.Debug("SetMainGUIContextMenu: Error creating myContextMenu: " . e.Message)
+        }
+    }
+    myContextMenu.Show(X, Y)
+    return
 }
 
 ClearInput() {
@@ -1267,16 +1332,16 @@ CheckUpdate(Silent := True) {
 
         ; Compare versions
         if (CompareVersion(latestVersion, currentVersion) > 0) {
-            MsgBox("A new version (" latestVersion ") is available!`n`nOpening download page...", g_Title, 64)
+            MsgBox(g_LNG[805] latestVersion g_LNG[806], g_Title, 64)
             Run ReleasePage
         } else if (!Silent) {
             ; Only show "up-to-date" message for manual checks
-            MsgBox("You are already using the latest version (" currentVersion ").", g_Title, 64)
+            MsgBox(g_LNG[807] currentVersion g_LNG[808], g_Title, 64)
         }
 
     } catch as e {
         if (!Silent)
-            MsgBox("Update check failed:`n" e.Message, g_Title, 48)
+            MsgBox(g_LNG[809] e.Message, g_Title, 48)
         else
             g_LOG.Debug("CheckUpdate: Update check failed: " e.Message)
     }
@@ -1456,7 +1521,7 @@ DelCommand(*) {
         if (rank = "KeyNotFound" || rank = "ERROR")
             continue
 
-        result := MsgBox(g_LNG[800] "`n`n[" section "]`n`n" currentCmd, g_LNG[801], 52) ; 52 = Yes/No + Question icon
+        result := MsgBox(g_LNG[800] section "]`n`n" currentCmd, g_LNG[801], 52) ; 52 = Yes/No + Question icon
 
         if result = "YES" {
             try {
@@ -1516,16 +1581,16 @@ CmdMgrButtonOK(Section, Type, Path, Desc, Rank, OriginCmd) {
     Desc := Desc ? " | " Desc : Desc
 
     if (Path = "") {
-        return MsgBox("Command Path is empty, please input correct command path!", "Command Manager", 64)
+        return MsgBox(g_LNG[821], g_LNG[820], 64)
     } else {
         try {
             IniDelete(g_INI, Section, OriginCmd)                       ; Delete old command if path or desc changed
             IniWrite(Rank, g_INI, Section, Type " | " Path Desc)
         } catch as e {
-            MsgBox("CmdMgr: Add command error occur, error info=" e.Message)
+            MsgBox(g_LNG[822] e.Message, g_LNG[820], 64)
             return
         }
-        MsgBox("The following command added / modified successfully!`n`n[ " Section " ]`n`n" Type " | " Path " " Desc " = " Rank, "Command Manager", 64)
+        MsgBox(g_LNG[823] Section " ]`n`n" Type " | " Path " " Desc " = " Rank, g_LNG[820], 64)
     }
     LoadCommands()
 }
@@ -1968,7 +2033,7 @@ LoadConfig(Arg) {
             Func | Options | Setting Options (F2)=99
             Func | Reload | Reload ALTRun=99
             Func | EditCommand | Edit current command (F3)=99
-            Func | UserCommand | ALTRun User-defined command (F4)=99
+            Func | UserCommand | Change setting file directly (F4)=99
             Func | NewCommand | New Command=99
             Func | OpenContainer | Locate cmd's dir with File Manager=99
             Func | Usage | ALTRun Usage Status=99
@@ -2165,7 +2230,7 @@ SetLanguage() {
     ENG[12] := "Options"
     ENG[13] := "Type anything here to search..."
     ENG[50] := ["Tip | F1 | Help & About", "Tip | F2 | Options and settings", "Tip | F3 | Edit current command", "Tip | F4 | Change setting file directly", "Tip | Alt+Space / Alt+R | Activate ALTRun", "Tip | Alt+Space / Esc / Lose Focus | Deactivate ALTRun", "Tip | Enter / Alt+No. | Run selected command", "Tip | Arrow Up or Down | Previous / next command", "Tip | Ctrl+D | Locate cmd's dir with File Manager"]
-    ENG[51] := "Tips: "
+    ENG[51] := "Tip: "
     ENG[52] := "It's better to activate ALTRun by hotkey (ALT + Space)" ; 50~99 Tips
     ENG[53] := "Smart Rank - Auto adjusts command priority (rank) based on frequency of use."
     ENG[54] := "Arrow Up / Down = Move to previous / next command"
@@ -2289,15 +2354,18 @@ SetLanguage() {
     ENG[307] := "Reload`tCtrl+Q"
     ENG[308] := "Exit`tAlt+F4"
     ENG[309] := "Update"
+    ENG[310] := "Settings File`tF4"
+
     ENG[400] := "Run`tEnter"                                            ; 400+ LV_ContextMenu (Right-click)
     ENG[401] := "Locate`tCtrl+D"
     ENG[402] := "Copy`tCtrl+C"
     ENG[403] := "New`tCtrl+N"
     ENG[404] := "Edit`tF3"
     ENG[405] := "Delete`tCtrl+Del"
-    ENG[406] := "User Command`tF4"
-    ENG[407] := "Copied statusbar text"
-    ENG[408] := "Show usage status"
+    ENG[406] := ""
+    ENG[407] := "Copy statusbar text"
+    ENG[408] := "Copied : "
+    ENG[410] := "Show usage status"
     ENG[500] := "30 days ago"                                           ; 500+ Usage Status
     ENG[501] := "Now"
     ENG[502] := "Total number of times the command was executed"
@@ -2319,11 +2387,20 @@ SetLanguage() {
     ENG[704] := "ShortCut/Description"
     ENG[705] := "Command Section"
     ENG[706] := "Command Rank"
-    ENG[800] := "Do you really want to delete the following command?"   ; 800+ Message Info
+    ENG[800] := "Do you really want to delete the following command?`n`n[" ; 800+ Message Info
     ENG[801] := "Confirm Want to Delete?"
     ENG[802] := "Command has been deleted successfully!"
     ENG[803] := "Error occur when delete the command!"
     ENG[804] := "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to exit the program`n`n(Please ensure the program directory is writable)"
+    ENG[805] := "A new version ("
+    ENG[806] := ") is available!`n`nClick OK to open the download page..."
+    ENG[807] := "You are already using the latest version ("
+    ENG[808] := ") !"
+    ENG[809] := "Failed to check for updates! Please check your network connection.`n`nError message: "
+    ENG[820] := "Command Manager"
+    ENG[821] := "Command Path is empty, please input correct command path!"
+    ENG[822] := "Error occur when add command, error message: "
+    ENG[823] := "The following command added / modified successfully!`n`n[ "
 
     CHN[1]  := "简体中文"                                               ; 1~9 Reserved
     CHN[2]  := "配置"
@@ -2459,15 +2536,18 @@ SetLanguage() {
     CHN[307] := "重新加载`tCtrl+Q"
     CHN[308] := "退出`tAlt+F4"
     CHN[309] := "检查更新"
+    CHN[310] := "配置文件`tF4"
+
     CHN[400] := "运行命令`tEnter"                                       ; 400+ 列表右键菜单
     CHN[401] := "定位命令`tCtrl+D"
     CHN[402] := "复制命令`tCtrl+C"
     CHN[403] := "新建命令`tCtrl+N"
     CHN[404] := "编辑命令`tF3"
     CHN[405] := "删除命令`tCtrl+Del"
-    CHN[406] := "用户命令`tF4"
-    CHN[407] := "已复制状态栏信息"
-    CHN[408] := "显示状态统计"
+    CHN[406] := ""
+    CHN[407] := "复制状态栏信息"
+    CHN[408] := "已复制 : "
+    CHN[410] := "显示状态统计"
     CHN[500] := "30天前"
     CHN[501] := "当前"                                                  ; 500+ 状态统计
     CHN[502] := "运行过的命令总次数"
@@ -2489,11 +2569,20 @@ SetLanguage() {
     CHN[704] := "快捷项/描述 (可搜索)"
     CHN[705] := "储存节段"
     CHN[706] := "命令权重"
-    CHN[800] := "您确定要删除以下命令吗?"                                 ; 800+ 提示消息
+    CHN[800] := "您确定要删除以下命令吗?`n`n["                            ; 800+ 提示消息
     CHN[801] := "确认删除?"
     CHN[802] := "命令已成功删除!"
     CHN[803] := "删除命令时发生错误!"
     CHN[804] := "检测到当前的索引数据库为空, 请点击:`n`n'确定' 重新建立索引`n`n'取消' 退出程序`n`n(请确保程序目录有写入权限)"
+    CHN[805] := "有新版本可用 ("
+    CHN[806] := ") !`n`n点击确定打开下载页面..."
+    CHN[807] := "您已经在使用最新版本 ("
+    CHN[808] := ") 了!"
+    CHN[809] := "检查更新失败! 请检查您的网络连接.`n`n错误信息: "
+    CHN[820] := "命令管理器"
+    CHN[821] := "命令路径为空, 请输入正确的命令路径!"
+    CHN[822] := "添加命令时发生错误, 错误信息: "
+    CHN[823] := "以下命令添加/修改成功!`n`n[ "
 
     Global g_LNG := IniRead(g_INI, "Config", "Chinese", 0) ? CHN : ENG
     g_LOG.Debug("SetLanguage: Set language to " g_LNG[1] "...OK")
