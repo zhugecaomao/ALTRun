@@ -56,6 +56,7 @@ Global g_CONFIG := Map(
     "EscClearInput"  , 1,
     "KeepInput"      , 1,
     "ShowIcon"       , 1,
+    "LargeIcons"     , 1,
     "SendToGetLnk"   , 1,
     "SaveHistory"    , 1,
     "SaveLog"        , 1,
@@ -75,7 +76,7 @@ Global g_CONFIG := Map(
     "DoubleBuffer"   , 1,
     "StruCalc"       , 0,
     "ShortenPath"    , 1,
-    "Chinese"        , InStr("7804,0004,0804,1004", A_Language),
+    "Chinese"        , 0, ; InStr("7804,0004,0804,1004", A_Language) cause IME problem?
     "MatchPinyin"    , 1,
     "MidScrollSwitch", 0,
     "MidClickRun"    , 0,
@@ -132,7 +133,8 @@ Global g_CONFIG_P1 := Map(
     "MatchPinyin"    , g_LNG[132],
     "MidScrollSwitch", g_LNG[133],
     "MidClickRun"    , g_LNG[134],
-    "AutoUpdateCheck", g_LNG[135]
+    "AutoUpdateCheck", g_LNG[135],
+    "LargeIcons"     , g_LNG[136]
 )
 
 Global g_HOTKEY := Map(
@@ -189,6 +191,8 @@ Global g_RUNTIME := Map( ; Runtime variables, not saved to ini
 
 Global g_USAGE := Map(A_YYYY . A_MM . A_DD, 1)
 
+LoadConfig("initialize")    ; iniWrite create ini whenever not exist
+
 ; Global variables which are only read by the function, not assigned or used with the reference operator (&).
 Global MainGUI
 Global myListView
@@ -196,14 +200,13 @@ Global myInputBox
 Global OptGUI
 Global OptListView
 Global CmdMgrGUI
-Global myImageList := IL_Create(10, 5, 0)                               ; Create an ImageList so that the ListView can display some icons
+Global myImageList := IL_Create(10, 5, g_CONFIG["LargeIcons"])          ; Create an ImageList so that the ListView can display some icons, 3rd param is 1: large icons, 0: small icons
 Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval/cmd
                         ,"FUNC", IL_Add(myImageList,"imageres.dll",-100)
                         ,"URL" , IL_Add(myImageList,"imageres.dll",-144)
                         ,"EVAL", IL_Add(myImageList,"imageres.dll",-182)
                         ,"CMD" , IL_Add(myImageList,"imageres.dll",-100)) ; "imageres.dll",-5323 is cmd.exe icon
 
-LoadConfig("initialize")    ; iniWrite create ini whenever not exist
 LoadCommands()
 LoadHistory()
 UpdateSendTo()
@@ -246,17 +249,23 @@ SetMainGUI() {
     MainGUI.BackColor := g_GUI["MainGUIColor"]
     MainGUI.SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
     myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn W" Input_W, g_LNG[13])
+    myInputBox.Opt("Background" g_GUI["CMDListColor"])
     myInputBox.OnEvent("Change", Input_Change)
     myRunBtn := MainGUI.AddButton("x+" Run_X " yp W" Run_W " hp Default Hidden" Run_H, g_LNG[11])
     myRunBtn.OnEvent("Click", RunCurrentCommand)
     myOptBtn := MainGUI.AddButton("x+" Opt_X " yp W" Opt_W " hp Hidden" Opt_H, g_LNG[12])
     myOptBtn.OnEvent("Click", (*) => Options())
     myListView := MainGUI.AddListView("x12 yp+36 W" List_W " H" List_H " -Multi", g_LNG[10])
-    myListView.Opt(DBuffer Header Grid Border " Background" g_GUI["CMDListColor"])
+    myListView.Opt(DBuffer Header Grid Border " Background" g_GUI["CMDListColor"] " +Report") ; ListView View Modes: Report, Icon, Tile, IconSmall, List
     myListView.OnEvent("Click", LV_Click)
     myListView.OnEvent("ContextMenu", LV_ContextMenu)
     myListView.OnEvent("DoubleClick", LVRunCommand)
-    myListView.SetImageList(myImageList)                                ; Attach the ImageList to the ListView so that it can later display the icons
+    if (g_CONFIG["LargeIcons"]) {
+        myListView.SetImageList(myImageList, 1)                         ; Attach the ImageList to the ListView, 2nd param is 1: large icons, 0: small icons, 2: state icons (AHK Doc incorrect)
+    } else {
+        myListView.SetImageList(myImageList)
+    }
+
     Loop 4 {
         if (StrSplit(g_GUI["ColWidth"], ",").Length >= A_Index) {
             if (StrSplit(g_GUI["ColWidth"], ",")[A_Index] != "")
@@ -593,8 +602,9 @@ GetIcon(path, ExtOrPath) {                                             ; Get fil
     Global myImageList, myIconMap
     sfi_size := A_PtrSize + 688
     sfi      := Buffer(sfi_size)                                        ; Calculate buffer size required for SHFILEINFO structure. VarSetStrCapacity change to Buffer
+    iconSize := g_CONFIG["LargeIcons"] ? 0x100 : 0x101                 ; 0x100 is SHGFI_ICON+SHGFI_LARGEICON, 0x101 is SHGFI_ICON+SHGFI_SMALLICON
 
-    if not DllCall("Shell32\SHGetFileInfoW", "Str", path, "UInt", 0, "Ptr", sfi, "UInt", sfi_size, "UInt", 0x101) ; 0x101 is SHGFI_ICON+SHGFI_SMALLICON
+    if not DllCall("Shell32\SHGetFileInfoW", "Str", path, "UInt", 0, "Ptr", sfi, "UInt", sfi_size, "UInt", iconSize)
         IconIndex := 9999999                                            ; Set it out of bounds to display a blank icon.
     else {                                                              ; Icon successfully loaded. Extract the hIcon member from the structure
         hIcon := NumGet(sfi, 0, "Ptr")                                  ; Add the HICON directly to the small-icon lists.
@@ -857,6 +867,10 @@ MainGUI_Close(*) {
     if (!g_CONFIG["KeepInput"]) {
         ClearInput()
     }
+
+    ; Animate hide if possible
+    ;try DllCall("AnimateWindow", "Ptr", MainGUI.Hwnd, "Int", 90, "UInt", 0x90000)
+
     MainGUI.Hide()
     UpdateUsage()
     SetStatusBar("TIP")                                                 ; Update StatusBar tip information after GUI hide
@@ -1924,7 +1938,7 @@ PickCMDListColor(*) {
     If (color = -1)
         return
 
-    g_GUI["CMDListColor"]        := color
+    ;g_GUI["CMDListColor"]        := color
     OptGUI["CMDListColor"].Value := color                               ; 更新选项窗口控件并设置控件颜色
     ;OptGUI["CMDListColor"].Opt("c" color)
 }
@@ -1934,7 +1948,7 @@ PickMainGUIColor(*) {
     If (color = -1)
         return
 
-    g_GUI["MainGUIColor"]        := color
+    ;g_GUI["MainGUIColor"]        := color
     OptGUI["MainGUIColor"].Value := color
     ;OptGUI["MainGUIColor"].Opt("c" color)
 }
@@ -2287,6 +2301,7 @@ SetLanguage() {
     ENG[133] := "Use the mouse wheel scroll to select the command"
     ENG[134] := "Click mouse middle button to run the selected command"
     ENG[135] := "Auto check for updates"
+    ENG[136] := "Show large icons"
 
     ENG[150] := "File Manager"                                          ; 150~159 Options window (Other than Check Listview)
     ENG[151] := "Everything"
@@ -2469,6 +2484,7 @@ SetLanguage() {
     CHN[133] := "使用鼠标滚轮滚动选择命令"
     CHN[134] := "单击鼠标中键运行选定命令"
     CHN[135] := "自动检查更新"
+    CHN[136] := "显示大图标"
 
     CHN[150] := "文件管理器"                                             ; 150~159 Options window (Other than Check Listview)
     CHN[151] := "Everything"
