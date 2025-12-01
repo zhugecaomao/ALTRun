@@ -11,7 +11,7 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2025.10.28
+;@Ahk2Exe-SetVersion 2025.12.01
 ;@Ahk2Exe-SetCopyright Copyright (c) since 2013
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -25,7 +25,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - v2025.10.28"
+Global g_TITLE := "ALTRun - v2025.12.01"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -51,7 +51,7 @@ Global g_CONFIG := Map(
     "ShowTrayIcon"   , 1,
     "HideOnLostFocus", 1,
     "AlwaysOnTop"    , 1,
-    "ShowCaption"    , 1,
+    "ShowCaption"    , 0,
     "XPthemeBg"      , 1,
     "EscClearInput"  , 1,
     "KeepInput"      , 1,
@@ -139,7 +139,7 @@ Global g_CONFIG_P1 := Map(
 
 Global g_HOTKEY := Map(
     "Hotkey1"       , "F1",
-    "Trigger1"      , "Help",
+    "Trigger1"      , "About",
     "Hotkey2"       , "F2",
     "Trigger2"      , "Options",
     "Hotkey3"       , "F3", 
@@ -167,12 +167,12 @@ Global g_HOTKEY := Map(
 
 Global g_GUI := Map( ; GUI related variables
     "ListRows"      , 9,
-    "ColWidth"      , "40,0,260,AutoHdr",
+    "ColWidth"      , "36,0,300,AutoHdr",
     "MainGUIFont"   , "Microsoft YaHei, norm s10.0",
     "OptGUIFont"    , "Microsoft YaHei, norm s9.0",
     "MainSBFont"    , "Microsoft YaHei, norm s9.0",
     "WinX"          , 600,
-    "WinY"          , 300,
+    "WinY"          , 400,
     "MainGUIColor"  , "0xFFFFFF",
     "CMDListColor"  , "0xFFFFFF",
     "Background"    , "Default",
@@ -222,7 +222,7 @@ return
 ;;==================== Autorun until here =========================
 
 SetMainGUI() {
-    Global MainGUI, myInputBox, myListView, myStatusBar, myImageList
+    Global MainGUI, myInputBox, myListView, myStatus, myImageList
 
     Run_W   := g_CONFIG["ShowBtnRun"] * 80
     Run_X   := g_CONFIG["ShowBtnRun"] * 10
@@ -231,7 +231,7 @@ SetMainGUI() {
     Opt_X   := g_CONFIG["ShowBtnOpt"] * 10
     Opt_H   := !g_CONFIG["ShowBtnOpt"]
     List_W  := g_GUI["WinX"] - 24
-    List_H  := g_GUI["WinY"] - 76
+    List_H  := g_GUI["WinY"] - 95
     Input_W := List_W - Run_X - Run_W - Opt_X - Opt_W
     TopMost := g_CONFIG["AlwaysOnTop"] ? "AlwaysOnTop" : ""
     Caption := g_CONFIG["ShowCaption"] ? "" : " -Caption"
@@ -248,7 +248,7 @@ SetMainGUI() {
     MainGUI.OnEvent("ContextMenu", MainGUI_ContextMenu)
     MainGUI.BackColor := g_GUI["MainGUIColor"]
     MainGUI.SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
-    myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn W" Input_W, g_LNG[13])
+    myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn border -E0x200 W" Input_W, g_LNG[13])
     myInputBox.Opt("Background" g_GUI["CMDListColor"])
     myInputBox.OnEvent("Change", Input_Change)
     myRunBtn := MainGUI.AddButton("x+" Run_X " yp W" Run_W " hp Default Hidden" Run_H, g_LNG[11])
@@ -273,18 +273,15 @@ SetMainGUI() {
         }
     }
 
+    myStatus := MainGUI.AddEdit("x12 y+10 r1 -WantReturn ReadOnly -E0x200 border W" List_W " Hidden" (!g_CONFIG["ShowStatusBar"]), )
+    myStatus.Opt("Background" g_GUI["CMDListColor"])
+    myStatus.SetFont(StrSplit(g_GUI["MainSBFont"], ",")[2], StrSplit(g_GUI["MainSBFont"], ",")[1])
+
     if FileExist(AbsPath(g_GUI["Background"])) {
         try MainGUI.AddPic("x0 y0 0x4000000", AbsPath(g_GUI["Background"]))
     } else if (g_GUI["Background"] = "Default") {
         try MainGUI.AddPic("x0 y0 0x4000000", ExtractRes())
     }
-
-    myStatusBar := MainGUI.AddStatusBar("Hidden" (!g_CONFIG["ShowStatusBar"]))
-    myStatusBar.OnEvent("Click", OnStatusBarClick)
-    myStatusBar.OnEvent("ContextMenu", OnStatusBarContextMenu)
-    myStatusBar.SetFont(StrSplit(g_GUI["MainSBFont"], ",")[2], StrSplit(g_GUI["MainSBFont"], ",")[1])
-    myStatusBar.SetParts(g_GUI["WinX"] - 90 * g_CONFIG["ShowRunCount"])
-    myStatusBar.SetIcon("imageres.dll",-150, 2)
 
     ListResult(g_LNG[50])
 
@@ -319,6 +316,8 @@ SetMainGUI() {
         WinSetTransparent(g_GUI["Transparency"], MainGUI.Hwnd)          ; By default, hidden windows are not detected. however, when using pure HWNDs, hidden windows are always detected regardless of DetectHiddenWindows.
     }
 
+    WinSetRegion("0-0" " w" g_GUI["WinX"] " h" g_GUI["WinY"] " R20-20", MainGUI.Hwnd) ; Set rounded corners
+
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
 
     if g_CONFIG["HideOnLostFocus"] {
@@ -335,8 +334,14 @@ SetMainGUI() {
         myListView.OnEvent("LoseFocus", MonitorFocus)
         myRunBtn.OnEvent("LoseFocus", MonitorFocus)
         myOptBtn.OnEvent("LoseFocus", MonitorFocus)
+        myStatus.OnEvent("LoseFocus", MonitorFocus)
     }
     return
+}
+
+MoveWindow(*) {                                                         ; Allow moving a captionless window by mouse-drag
+    DllCall("ReleaseCapture")
+    SendMessage(0xA1, 2, 0, MainGUI.Hwnd)  ; WM_NCLBUTTONDOWN, HTCAPTION
 }
 
 ; 创建任务栏托盘程序图标
@@ -363,7 +368,7 @@ SetTrayMenu() {
             myTrayMenu.Add(g_LNG[305], (*) => ListLines())
             myTrayMenu.Add()  ; 分隔线
             myTrayMenu.Add(g_LNG[309], Update)
-            myTrayMenu.Add(g_LNG[304], Help)
+            myTrayMenu.Add(g_LNG[304], About)
             myTrayMenu.Add()
             myTrayMenu.Add(g_LNG[307], ReStart)
             myTrayMenu.Add(g_LNG[308], Exit)
@@ -409,7 +414,7 @@ RegisterHotkey() {
     try {
         Hotkey("!F4"        , Exit)
         Hotkey("Tab"        , TabFunc)
-        Hotkey("F1"         , Help)
+        Hotkey("F1"         , About)
         Hotkey("F2"         , Options)
         Hotkey("F3"         , EditCommand)
         Hotkey("F4"         , UserCommand)
@@ -559,6 +564,19 @@ ListResult(arrayToShow := [], UseDisplay := false) {
 
         myListView.Add("Icon" iconx, index, type, path, desc)
     }
+
+    ; rowsShown := Min(g_GUI["ListRows"], myListView.GetCount())
+    ; RowH := g_CONFIG["LargeIcons"] ? 36 : 22
+    ; HdrH := g_CONFIG["ShowHdr"] ? 20 : 0
+    ; List_H := rowsShown * RowH + HdrH + 8   ; 8 = padding for margins
+    ; ; Compute overall window height to contain input/status/buttons
+    ; g_GUI["WinY"] := (List_H + 95)       ; keep a sensible minimum height
+    ; Try {
+    ;     myListView.Move( , , , List_H)
+    ;     WinMove( , , , g_GUI["WinY"], "ahk_id " MainGUI.Hwnd) ; Resize window without changing position
+    ; } catch {
+    ;     ; If WinMove fails for any reason, continue without hard failure
+    ; }
 
     if (g_RUNTIME["CurrentCommand"] != "") {
         statusBarText := StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2]
@@ -823,40 +841,18 @@ CopyCommand(*) {                                                        ; ListVi
         g_RUNTIME["CurrentCommand"] := g_MATCHED[focusedRow]            ; Get current command from focused row
     }
 
-    if (MainGUI.FocusedCtrl.ClassNN = "Edit1") {
-        SendInput("^c")                                                 ; If input box is focused, send Ctrl+C to copy input box content
-    } else {
+    if (MainGUI.FocusedCtrl.ClassNN = "SysListView321") {
         A_Clipboard := myListView.GetText(focusedRow, 3)                ; Get the text from the focusedRow's 3rd field.
-    }
-}
-
-OnStatusBarClick(GuiCtrlObj, partNumber) {
-    if (partNumber = 1) {
-        CopyStatusBarText()
-    } else if (partNumber = 2) {
-        Usage()
-    }
-}
-
-OnStatusBarContextMenu(GuiCtrlObj, partNumber, RightClick, X, Y) {
-    if (partNumber = 1) {
-        SB_ContextMenu1 := Menu()
-        SB_ContextMenu1.Add(g_LNG[407], CopyStatusBarText)
-        SB_ContextMenu1.SetIcon(g_LNG[407], "imageres.dll", -5314)
-        SB_ContextMenu1.Show()
-    } else if (partNumber = 2) {
-        SB_ContextMenu2 := Menu()
-        SB_ContextMenu2.Add(g_LNG[410], Usage)
-        SB_ContextMenu2.SetIcon(g_LNG[410], "imageres.dll", -150)
-        SB_ContextMenu2.Show()
+    } else {
+        SendInput("^c")                                                 ; If input box or status box is focused
     }
 }
 
 ; Get text from 1st part of StatusBar
 CopyStatusBarText(*) {
-    textToCopy := StatusBarGetText(1, "ahk_id " MainGUI.Hwnd)
-    A_Clipboard := Trim(textToCopy, g_LNG[408])
-    SetStatusBar(g_LNG[408] A_Clipboard)
+    A_Clipboard := StatusBarGetText(1, "ahk_id " MainGUI.Hwnd)
+    ToolTip(g_LNG[408] A_Clipboard)
+    SetTimer(() => ToolTip(""), -2000)    ; Hide tooltip after 2 seconds
 }
 
 MainGUI_Escape(*) {
@@ -917,7 +913,7 @@ SetMainGUIContextMenu(GuiObj, GuiCtrlObj, Item, IsRightClick, X, Y) {
             myContextMenu.Add(g_LNG[305], (*) => ListLines())
             myContextMenu.Add()  ; 分隔线
             myContextMenu.Add(g_LNG[309], Update)
-            myContextMenu.Add(g_LNG[304], Help)
+            myContextMenu.Add(g_LNG[304], About)
             myContextMenu.Add()
             myContextMenu.Add(g_LNG[307], ReStart)
             myContextMenu.Add(g_LNG[308], Exit)
@@ -957,13 +953,12 @@ ReStart(*) {
 
 SetStatusBar(strToShow) {                                               ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
     if (strToShow = "TIP") {
-        strToShow := g_LNG[51] g_LNG[Random(52, 71)]                   ; Randomly select a tip from hint list g_LNG 52~71
+        strToShow := g_LNG[51] g_LNG[Random(52, 71)]                    ; Randomly select a tip from hint list g_LNG 52~71
     } else {
         strToShow := strToShow
     }
 
-    myStatusBar.SetText(strToShow, 1)
-    myStatusBar.SetText(g_CONFIG["RunCount"], 2)
+    myStatus.value := strToShow
 }
 
 RunCurrentCommand(*) {
@@ -1306,7 +1301,7 @@ Reindex(*) {                                                            ; Re-cre
     LoadCommands()
 }
 
-Help(*) {
+About(*) {
     Options(8)
 }
 
@@ -1735,7 +1730,7 @@ Options(ActTab := 1) {
     Local FuncList := ["Unset", "Active", "ToggleWindow", "Google", "Bing"
         , "Everything", "TabFunc", "PrevCommand", "NextCommand", "CopyCommand"
         , "ClearInput", "RunCurrentCommand", "RankUp", "RankDown", "Reindex"
-        , "Help", "Usage", "Update", "UserCommand", "NewCommand", "EditCommand"
+        , "About", "Usage", "Update", "UserCommand", "NewCommand", "EditCommand"
         , "DelCommand", "CmdMgr", "Options", "TurnMonitorOff", "EmptyRecycle"
         , "MuteVolume", "ReStart", "Exit", "PTTools"]
 
@@ -2043,7 +2038,7 @@ LoadConfig(Arg) {
             ; App will auto generate this section while it is empty
             ; Please make sure App is not running before modifying.
             ;
-            Func | Help | Help & About (F1)=99
+            Func | About | Help & About (F1)=99
             Func | Options | Setting Options (F2)=99
             Func | Reload | Reload ALTRun=99
             Func | EditCommand | Edit current command (F3)=99
