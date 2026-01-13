@@ -89,6 +89,7 @@ Global g_CONFIG := Map(
     "IndexType"      , "*.lnk,*.exe",
     "IndexDepth"     , 2,
     "IndexExclude"   , "Uninstall *",
+    "IndexStoreApp"  , 1,
     "Everything"     , "C:\Apps\Everything.exe",
     "DialogWin"      , "ahk_class #32770",
     "FileMgrID"      , "ahk_class CabinetWClass, ahk_class TTOTAL_CMD",
@@ -316,9 +317,12 @@ SetMainGUI() {
         WinSetTransparent(g_GUI["Transparency"], MainGUI.Hwnd)          ; By default, hidden windows are not detected. however, when using pure HWNDs, hidden windows are always detected regardless of DetectHiddenWindows.
     }
 
-    WinSetRegion("0-0" " w" g_GUI["WinX"] " h" g_GUI["WinY"] " R20-20", MainGUI.Hwnd) ; Set rounded corners
+    ;WinSetRegion("0-0" " w" g_GUI["WinX"] " h" g_GUI["WinY"] " R20-20", MainGUI.Hwnd) ; Set rounded corners
 
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
+
+    ; Enable dragging for captionless window
+    OnMessage(0x201, MoveWindow)
 
     if g_CONFIG["HideOnLostFocus"] {
         ; 方案 1 - OnMessage(0x0006, WM_ACTIVATE)
@@ -339,7 +343,9 @@ SetMainGUI() {
     return
 }
 
-MoveWindow(*) {                                                         ; Allow moving a captionless window by mouse-drag
+MoveWindow(wParam, lParam, msg, hwnd) {                                                         ; Allow moving a captionless window by mouse-drag
+    if (hwnd != MainGUI.Hwnd)
+        return
     DllCall("ReleaseCapture")
     SendMessage(0xA1, 2, 0, MainGUI.Hwnd)  ; WM_NCLBUTTONDOWN, HTCAPTION
 }
@@ -613,6 +619,8 @@ GetIconIndex(path, type) {                                              ; Get fi
             IconIndex := myIconMap.Has(fileExt) ? myIconMap[fileExt] : GetIcon(path, fileExt)
         }
         Return IconIndex
+    } else if (type = "App") {
+        Return 2
     }
 }
 
@@ -1296,6 +1304,36 @@ Reindex(*) {                                                            ; Re-cre
         }
     }
 
+    ; Index Windows Store Apps
+    if (g_CONFIG["IndexStoreApp"]) {
+        try {
+            tempFile := A_Temp . "\ALTRun_StoreApps.csv"
+            RunWait('powershell -Command "Get-StartApps | Select-Object Name, AppID | ConvertTo-Csv -NoTypeInformation" > "' . tempFile . '"', , "Hide")
+            if FileExist(tempFile) {
+                output := FileRead(tempFile)
+                FileDelete(tempFile)
+                lines := StrSplit(output, "`n", "`r")
+                for line in lines {
+                    if (A_Index == 1)  ; Skip header
+                        continue
+                    if (Trim(line) == "")
+                        continue
+                    fields := StrSplit(line, '","')
+                    if (fields.Length >= 2) {
+                        name := StrReplace(fields[1], '"', '')
+                        appid := StrReplace(fields[2], '"', '')
+                        IniWrite("1", g_INI, g_SECTION["INDEX"], "App | shell:AppsFolder\" . appid . " | " . name)
+                    }
+                }
+                g_LOG.Debug("Reindex: Indexed Windows Store apps successfully")
+            } else {
+                g_LOG.Debug("Reindex: Temp file not found for Store apps")
+            }
+        } catch as e {
+            g_LOG.Debug("Reindex: Error indexing Store apps: " . e.Message)
+        }
+    }
+
     g_LOG.Debug("Reindex: Indexing search database...OK")
     TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
     LoadCommands()
@@ -1822,7 +1860,7 @@ Options(ActTab := 1) {
     }
 
     OptTab.UseTab(4) ; INDEX Tab
-    OptGUI.AddGroupBox("w500 h190", g_LNG[160])
+    OptGUI.AddGroupBox("w500 h220", g_LNG[160])
     OptGUI.AddText("x33 yp+25", g_LNG[161])
     OptGUI.AddComboBox("x183 yp-5 w330 vIndexDir Choose1", [g_CONFIG["IndexDir"], "A_ProgramsCommon,A_StartMenu"])
     OptGUI.AddText("x33 yp+45", g_LNG[162])
@@ -1831,6 +1869,7 @@ Options(ActTab := 1) {
     OptGUI.AddDropDownList("x183 yp-5 w330 vIndexDepth Choose" g_CONFIG["IndexDepth"], [1,2,3,4,5,6,7,8,9])
     OptGUI.AddText("x33 yp+45", g_LNG[163])
     OptGUI.AddComboBox("x183 yp-5 w330 vIndexExclude Choose1", [g_CONFIG["IndexExclude"], "Uninstall *"])
+    OptGUI.AddCheckBox("x33 yp+45 vIndexStoreApp Checked" g_CONFIG["IndexStoreApp"], g_LNG[165])
 
     OptTab.UseTab(5) ; LISTARY Tab
     OptGUI.AddGroupBox("w500 h145", g_LNG[211])
@@ -2145,7 +2184,7 @@ SaveConfig() {
 
     CONFIG_P2 := Array("FileMgr","Everything","HistoryLen","RunCount"
         ,"AutoSwitchDir","IndexDir" ,"IndexType","IndexDepth"
-        ,"IndexExclude" ,"DialogWin","FileMgrID","ExcludeWin")
+        ,"IndexExclude","IndexStoreApp","DialogWin","FileMgrID","ExcludeWin")
 
     for index, key in CONFIG_P2 {
         if (OptGUI[key].Type = "CheckBox") {
@@ -2306,6 +2345,7 @@ SetLanguage() {
     ENG[162] := "Index file type"
     ENG[163] := "Index exclude"
     ENG[164] := "Index depth"
+    ENG[165] := "Index Windows Store Apps"
     ENG[170] := "GUI"                                                   ; 170~189 GUI
     ENG[171] := "Search result number"
     ENG[172] := "Width of each column"
@@ -2489,6 +2529,7 @@ SetLanguage() {
     CHN[162] := "索引文件类型"
     CHN[163] := "索引排除项"
     CHN[164] := "索引目录深度"
+    CHN[165] := "索引 Windows Store 应用"
     CHN[170] := "界面"                                                  ; 170~189 GUI
     CHN[171] := "搜索结果数量"
     CHN[172] := "每列宽度"
