@@ -11,7 +11,7 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2025.12.01
+;@Ahk2Exe-SetVersion 2026.01.15
 ;@Ahk2Exe-SetCopyright Copyright (c) since 2013
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -25,7 +25,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - v2025.12.01"
+Global g_TITLE := "ALTRun - v2026.01.15"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -630,13 +630,18 @@ GetIcon(path, ExtOrPath) {                                             ; Get fil
     sfi      := Buffer(sfi_size)                                        ; Calculate buffer size required for SHFILEINFO structure. VarSetStrCapacity change to Buffer
     iconSize := g_CONFIG["LargeIcons"] ? 0x100 : 0x101                 ; 0x100 is SHGFI_ICON+SHGFI_LARGEICON, 0x101 is SHGFI_ICON+SHGFI_SMALLICON
 
-    if not DllCall("Shell32\SHGetFileInfoW", "Str", path, "UInt", 0, "Ptr", sfi, "UInt", sfi_size, "UInt", iconSize)
-        IconIndex := 9999999                                            ; Set it out of bounds to display a blank icon.
-    else {                                                              ; Icon successfully loaded. Extract the hIcon member from the structure
-        hIcon := NumGet(sfi, 0, "Ptr")                                  ; Add the HICON directly to the small-icon lists.
-        IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", myImageList, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
-        DllCall("DestroyIcon", "Ptr", hIcon)                            ; Now that it's been copied into the ImageLists, the original should be destroyed
-        myIconMap[ExtOrPath] := IconIndex                               ; Cache the icon based on file type (xlsx, pdf) or path (exe, lnk) to save memory and improve loading performance
+    try {
+        if not DllCall("Shell32\SHGetFileInfoW", "Str", path, "UInt", 0, "Ptr", sfi, "UInt", sfi_size, "UInt", iconSize)
+            IconIndex := 9999999                                            ; Set it out of bounds to display a blank icon.
+        else {                                                              ; Icon successfully loaded. Extract the hIcon member from the structure
+            hIcon := NumGet(sfi, 0, "Ptr")                                  ; Add the HICON directly to the small-icon lists.
+            IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", myImageList, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
+            DllCall("DestroyIcon", "Ptr", hIcon)                            ; Now that it's been copied into the ImageLists, the original should be destroyed
+            myIconMap[ExtOrPath] := IconIndex                               ; Cache the icon based on file type (xlsx, pdf) or path (exe, lnk) to save memory and improve loading performance
+        }
+    } catch as e {
+        IconIndex := 9999999
+        g_LOG.Debug("GetIcon: Error getting icon for " path ": " e.Message)
     }
     Return IconIndex
 }
@@ -2642,7 +2647,10 @@ SetLanguage() {
 }
 
 ;;==================== Expression Eval =========================
-Eval(expression) {
+Eval(expression, depth := 0) {
+    if (depth > 10)  ; 防止栈溢出
+        return 0
+
     ; 移除所有空格
     expression := StrReplace(expression, " ")
     
@@ -2652,7 +2660,7 @@ Eval(expression) {
 
     ; 递归处理括号
     while RegExMatch(expression, "\(([^()]*)\)", &match) {
-        result := EvalSimple(match[1])  ; 计算括号内的内容
+        result := Eval(match[1], depth + 1)  ; 计算括号内的内容
         expression := StrReplace(expression, (match&&match[0]), result)
     }
 
