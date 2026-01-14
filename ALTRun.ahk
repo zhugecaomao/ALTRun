@@ -686,6 +686,8 @@ RelativePath(Path) {                                                    ; Conver
 
 RunCommand(originCmd) {
     UpdateRunCount()
+    UpdateRank(originCmd)
+    UpdateHistory(originCmd)
     MainGUI_Close()
     ParseArg()
     g_RUNTIME["UseDisplay"] := false
@@ -712,20 +714,6 @@ RunCommand(originCmd) {
             MsgBox("Could not run command: " path "`n`nError message: " e.Message, g_TITLE, 48)
         }
     }
-
-    if (g_CONFIG["SaveHistory"]) {
-        g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])      ; Adjust command history
-
-        if (g_HISTORYS.Length > g_CONFIG["HistoryLen"]) {
-            g_HISTORYS.Pop()
-        }
-
-        IniDelete(g_INI, g_SECTION["HISTORY"])
-        for index, element in g_HISTORYS
-            IniWrite(element, g_INI, g_SECTION["HISTORY"], index)       ; Save command history
-    }
-
-    g_CONFIG["SmartRank"] ? UpdateRank(originCmd) : ""
     return
 }
 
@@ -1016,6 +1004,9 @@ FuzzyMatch(Haystack, Needle) {
 
 ; 更新命令权重函数
 UpdateRank(originCmd, showRank := false, inc := 1) {
+    if (g_CONFIG["SmartRank"] = false || originCmd = "")
+        return
+
     Sections := Array(g_SECTION["DFTCMD"],g_SECTION["USERCMD"],g_SECTION["INDEX"])
 
     for index, section in Sections {
@@ -1054,6 +1045,22 @@ UpdateRunCount() {
     g_CONFIG["RunCount"]++
     IniWrite(g_CONFIG["RunCount"], g_INI, g_SECTION["CONFIG"], "RunCount")
     g_LOG.Debug("UpdateRunCount: RunCount update to..." g_CONFIG["RunCount"])
+}
+
+UpdateHistory(originCmd) {
+    if (g_CONFIG["SaveHistory"]) {
+        g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])      ; Adjust command history
+
+        if (g_HISTORYS.Length > g_CONFIG["HistoryLen"]) {
+            g_HISTORYS.Pop()
+        }
+
+        IniDelete(g_INI, g_SECTION["HISTORY"])
+        for index, element in g_HISTORYS {
+            Section .= Index "=" element "`n"
+        }
+        IniWrite(Section, g_INI, g_SECTION["HISTORY"])                  ; Save command history
+    }
 }
 
 RankUp(*) {
@@ -1273,6 +1280,14 @@ UpdateStartMenu() {
 
 Reindex(*) {                                                            ; Re-create Index section
     IniDelete(g_INI, g_SECTION["INDEX"])                                ; Clear old index section
+
+    ; Create ProgressGui at the start
+    ProgressGui := Gui("-MinimizeBox +AlwaysOnTop", "Reindex")
+    ProgressGui.Add("Text", , "ReIndexing...")
+    ProgressGui.Add("Progress", "vMyProgress w200", 0)
+    ProgressGui.Add("Text", "vMyFileName w200", "Starting...")
+    ProgressGui.Show()
+
     for dirIndex, dir in StrSplit(g_CONFIG["IndexDir"], ",") {
         searchPath := RegExReplace(AbsPath(dir), "\\+$")                ; Remove trailing backslashes
 
@@ -1289,29 +1304,19 @@ Reindex(*) {                                                            ; Re-cre
 
                 IniWrite("1", g_INI, g_SECTION["INDEX"], "File | " A_LoopFileFullPath) ; Store file type for later use
 
-                static ProgressGui := ""                                ; Static to persist GUI across loop iterations
-                if (!ProgressGui) {                                     ; Create GUI only once
-                    ProgressGui := Gui("-MinimizeBox +AlwaysOnTop", "Reindex")
-                    ProgressGui.Add("Text", , "ReIndexing...")
-                    ProgressGui.Add("Progress", "vMyProgress w200", A_Index)
-                    ProgressGui.Add("Text", "vMyFileName w200", A_LoopFileName)
-                    ProgressGui.Show()
-                } else {                                                ; Update existing GUI
-                    ProgressGui["MyProgress"].Value := A_Index
-                    ProgressGui["MyFileName"].Text  := A_LoopFileName
-                    Sleep 30
-                }
+                ; Update ProgressGui
+                ProgressGui["MyProgress"].Value := Mod(A_Index, 100)    ; Simple progress animation
+                ProgressGui["MyFileName"].Text  := A_LoopFileName
+                Sleep 30
             }
-        }
-        if (ProgressGui) {                                              ; Destroy GUI after loop
-            ProgressGui.Destroy()
-            ProgressGui := ""
         }
     }
 
     ; Index Windows Store Apps
     if (g_CONFIG["IndexStoreApp"]) {
         try {
+            ProgressGui["MyProgress"].Value := 0
+            ProgressGui["MyFileName"].Text  := "Indexing Store Apps..."
             tempFile := A_Temp . "\ALTRun_StoreApps.csv"
             RunWait('powershell -Command "Get-StartApps | Select-Object Name, AppID | ConvertTo-Csv -NoTypeInformation" > "' . tempFile . '"', , "Hide")
             if FileExist(tempFile) {
@@ -1329,6 +1334,9 @@ Reindex(*) {                                                            ; Re-cre
                         appid := StrReplace(fields[2], '"', '')
                         IniWrite("1", g_INI, g_SECTION["INDEX"], "App | shell:AppsFolder\" . appid . " | " . name)
                     }
+                    ProgressGui["MyProgress"].Value := A_Index
+                    ProgressGui["MyFileName"].Text  := name ? name : "Unknown App"
+                    Sleep 10  ; Small delay to show progress
                 }
                 g_LOG.Debug("Reindex: Indexed Windows Store apps successfully")
             } else {
@@ -1338,6 +1346,9 @@ Reindex(*) {                                                            ; Re-cre
             g_LOG.Debug("Reindex: Error indexing Store apps: " . e.Message)
         }
     }
+
+    ; Destroy ProgressGui at the end
+    ProgressGui.Destroy()
 
     g_LOG.Debug("Reindex: Indexing search database...OK")
     TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
