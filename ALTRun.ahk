@@ -1048,19 +1048,19 @@ UpdateRunCount() {
 }
 
 UpdateHistory(originCmd) {
-    if (g_CONFIG["SaveHistory"]) {
-        g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])      ; Adjust command history
+    if (g_CONFIG["SaveHistory"] = false || originCmd = "")
+        return
 
-        if (g_HISTORYS.Length > g_CONFIG["HistoryLen"]) {
-            g_HISTORYS.Pop()
-        }
+    g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])          ; Adjust command history
 
-        IniDelete(g_INI, g_SECTION["HISTORY"])
-        for index, element in g_HISTORYS {
-            Section .= Index "=" element "`n"
-        }
-        IniWrite(Section, g_INI, g_SECTION["HISTORY"])                  ; Save command history
+    if (g_HISTORYS.Length > g_CONFIG["HistoryLen"]) {
+        g_HISTORYS.Pop()
     }
+
+    for index, element in g_HISTORYS {
+        Section .= Index "=" element "`n"
+    }
+    IniWrite(Section, g_INI, g_SECTION["HISTORY"])                      ; Save command history, IniDelete not needed as overwrite the whole section
 }
 
 RankUp(*) {
@@ -1279,7 +1279,8 @@ UpdateStartMenu() {
 }
 
 Reindex(*) {                                                            ; Re-create Index section
-    IniDelete(g_INI, g_SECTION["INDEX"])                                ; Clear old index section
+    ; Collect all key=value pairs into one string, then write once
+    pairs := ""
 
     ; Create ProgressGui at the start
     ProgressGui := Gui("-MinimizeBox +AlwaysOnTop", "Reindex")
@@ -1302,7 +1303,7 @@ Reindex(*) {                                                            ; Re-cre
                 if (g_CONFIG["IndexExclude"] != "" && RegExMatch(A_LoopFileFullPath, g_CONFIG["IndexExclude"]))
                     continue                                            ; Skip this file and move on to the next loop.
 
-                IniWrite("1", g_INI, g_SECTION["INDEX"], "File | " A_LoopFileFullPath) ; Store file type for later use
+                pairs .= "File | " . A_LoopFileFullPath . "=1`n" ; Collect file entry
 
                 ; Update ProgressGui
                 ProgressGui["MyProgress"].Value := Mod(A_Index, 100)    ; Simple progress animation
@@ -1315,7 +1316,6 @@ Reindex(*) {                                                            ; Re-cre
     ; Index Windows Store Apps
     if (g_CONFIG["IndexStoreApp"]) {
         try {
-            ProgressGui["MyProgress"].Value := 0
             ProgressGui["MyFileName"].Text  := "Indexing Store Apps..."
             tempFile := A_Temp . "\ALTRun_StoreApps.csv"
             RunWait('powershell -Command "Get-StartApps | Select-Object Name, AppID | ConvertTo-Csv -NoTypeInformation" > "' . tempFile . '"', , "Hide")
@@ -1324,15 +1324,13 @@ Reindex(*) {                                                            ; Re-cre
                 FileDelete(tempFile)
                 lines := StrSplit(output, "`n", "`r")
                 for line in lines {
-                    if (A_Index == 1)  ; Skip header
-                        continue
-                    if (Trim(line) == "")
+                    if (A_Index == 1 or Trim(line) == "")  ; Skip header
                         continue
                     fields := StrSplit(line, '","')
                     if (fields.Length >= 2) {
                         name := StrReplace(fields[1], '"', '')
                         appid := StrReplace(fields[2], '"', '')
-                        IniWrite("1", g_INI, g_SECTION["INDEX"], "App | shell:AppsFolder\" . appid . " | " . name)
+                        pairs .= "App | shell:AppsFolder\" . appid . " | " . name . "=1`n" ; Collect app entry
                     }
                     ProgressGui["MyProgress"].Value := A_Index
                     ProgressGui["MyFileName"].Text  := name ? name : "Unknown App"
@@ -1349,6 +1347,11 @@ Reindex(*) {                                                            ; Re-cre
 
     ; Destroy ProgressGui at the end
     ProgressGui.Destroy()
+
+    ; Write all collected pairs in one call
+    ; IniDelete(g_INI, g_SECTION["INDEX"]) not needed as IniWrite will overwrite existing section
+    ; Write too frequently slow down the process and cause "(380) The cloud operation is invalid"
+    IniWrite(pairs, g_INI, g_SECTION["INDEX"])
 
     g_LOG.Debug("Reindex: Indexing search database...OK")
     TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
@@ -1552,7 +1555,7 @@ EditCommand(*) {
 
     currentCmd := g_RUNTIME["CurrentCommand"]
     if !currentCmd
-        return
+        return MsgBox(g_LNG[810], g_TITLE, 64)                          ; 64 = Info icon
 
     for index, section in StrSplit(g_SECTION["DFTCMD"] "," g_SECTION["USERCMD"] "," g_SECTION["INDEX"], ",") {
         rank := IniRead(g_INI, section, currentCmd, "KeyNotFound")
@@ -2463,6 +2466,7 @@ SetLanguage() {
     ENG[807] := "You are already using the latest version ("
     ENG[808] := ") !"
     ENG[809] := "Failed to check for updates! Please check your network connection.`n`nError message: "
+    ENG[810] := "Current command not able to edit!"
     ENG[820] := "Command Manager"
     ENG[821] := "Command Path is empty, please input correct command path!"
     ENG[822] := "Error occur when add command, error message: "
@@ -2647,6 +2651,7 @@ SetLanguage() {
     CHN[807] := "您已经在使用最新版本 ("
     CHN[808] := ") 了!"
     CHN[809] := "检查更新失败! 请检查您的网络连接.`n`n错误信息: "
+    CHN[810] := "当前命令无法编辑!"
     CHN[820] := "命令管理器"
     CHN[821] := "命令路径为空, 请输入正确的命令路径!"
     CHN[822] := "添加命令时发生错误, 错误信息: "
