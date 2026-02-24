@@ -1437,11 +1437,11 @@ Listary() {                                                             ; Listar
     if (g_CONFIG["AutoSwitchDir"]) {
         g_LOG.Debug("Listary: Auto-QuickSwitch enabled, monitoring thread...")
         Loop {
-            TcHwnd := WinWaitActive("ahk_class TTOTAL_CMD")
+            WinWaitActive("ahk_class TTOTAL_CMD")
             WinWaitNotActive()
 
-            ; 检测当前窗口是否符合打开保存对话框条件
-            If(WinActive("ahk_group DialogBox") && !WinActive("ahk_group ExcludeWin")) {
+            ; 检测当前窗口是否符合打开/保存对话框条件
+            if (IsQuickSwitchDialog()) {
                 Title       := WinGetTitle("A")
                 ProcessName := WinGetProcessName("A")
                 g_LOG.Debug("Listary: Dialog detected, active window ahk_title=" Title ", ahk_exe=" ProcessName)
@@ -1451,7 +1451,7 @@ Listary() {                                                             ; Listar
         }
     }
 
-    HotIfWinActive("ahk_group DialogBox")                               ; 设置对话框路径定位热键,为了不影响其他程序热键,设置只对打开/保存对话框生效
+    HotIf(IsQuickSwitchDialog)                                          ; 仅在真正的打开/保存对话框启用路径定位热键
     try {
         Hotkey(g_HOTKEY["ExplorerDir"], SyncExplorerPath)               ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
         Hotkey(g_HOTKEY["TotalCMDDir"], SyncTCPath)                     ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
@@ -1459,8 +1459,76 @@ Listary() {                                                             ; Listar
     } catch as e {
         g_LOG.Debug("Listary: Failed to set quickswitch hotkey..." e.Message)
     }
-    HotIfWinActive                                                      ; Turn off context, make subsequent hotkeys global again
+    HotIf                                                                ; Turn off context, make subsequent hotkeys global again
+
+    ; 在打开/保存对话框底部显示快捷键信息
+    SetTimer(ShowListaryHint, 200)
     return
+}
+
+ShowListaryHint() {
+    static hintGui   := 0
+    static hintText  := 0
+    static lastHwnd  := 0
+    static marginX   := 8
+    static barH      := 24
+
+    if (!IsObject(hintGui)) {
+        hintGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
+        hintGui.BackColor := "F6F8FA"
+        hintGui.SetFont("s9 c4A5568", "Microsoft YaHei")
+        ; 初始化给一个正常宽度, 后续会按对话框宽度动态调整
+        hintText := hintGui.AddText("x" marginX " y1 w240 h" barH " Center +0x200", "")
+    }
+
+    if (IsQuickSwitchDialog()) {
+        hwnd := WinGetID("A")
+        WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+        hintText.Text := GetListaryHintText()
+        hintW := Max(220, w - marginX * 2)
+        hintText.Move(marginX, 1, hintW, barH)
+        hintGui.Show("NA x" (x + marginX) " y" (y + h + 1) " w" hintW " h" barH)
+        lastHwnd := hwnd
+    } else if (lastHwnd) {
+        hintGui.Hide()
+        lastHwnd := 0
+    }
+}
+
+GetListaryHintText() {
+    msg := StrReplace(g_LNG[221], "{1}", g_HOTKEY["TotalCMDDir"])
+    return StrReplace(msg, "{2}", g_HOTKEY["ExplorerDir"])
+}
+
+; 更严格地识别“打开/保存文件”对话框，避免普通 #32770 对话框误触发
+IsQuickSwitchDialog(*) {
+    if (!WinActive("ahk_group DialogBox") || WinActive("ahk_group ExcludeWin"))
+        return false
+
+    activeClass := WinGetClass("A")
+    if (activeClass != "#32770")
+        return true
+
+    hasEdit      := HasCtrl("Edit1")                                    ; 文件名输入框
+    hasMainBtn   := HasCtrl("Button1")                                  ; 打开/保存按钮
+    hasTypeBox   := HasAnyCtrl("ComboBox3", "ComboBox2")
+    hasPathBar   := HasAnyCtrl("ToolbarWindow323", "ToolbarWindow322", "ComboBoxEx321")
+
+    return hasEdit && hasMainBtn && (hasTypeBox || hasPathBar)
+}
+
+HasAnyCtrl(ctrlList*) {
+    for ctrlName in ctrlList
+        if HasCtrl(ctrlName)
+            return true
+    return false
+}
+
+; 安全检测控件是否存在: 控件不存在或窗口不支持时返回 false, 不抛异常
+HasCtrl(ctrlName) {
+    try return ControlGetHwnd(ctrlName, "A") != 0
+    catch
+        return false
 }
 
 ; Sync dialog box to Total Commander path (TC 7.x ~ 10.x)
@@ -2403,6 +2471,7 @@ SetLanguage() {
     ENG[218] := "Auto switch dir on open/save dialog"
     ENG[219] := "No Total Commander window found, please open Total Commander first!"
     ENG[220] := "No Explorer window found, please open Explorer first!"
+    ENG[221] := "ALTRun: {1} TC folder   |   {2} Explorer folder"
 
     ENG[250] := "Plugins"                                               ; 250~299 Plugins
     ENG[251] := "Auto-date at end of text"
@@ -2588,6 +2657,7 @@ SetLanguage() {
     CHN[218] := "自动切换路径"
     CHN[219] := "没有找到Total Commander窗口,请先打开Total Commander!"
     CHN[220] := "没有找到资源管理器窗口,请先打开资源管理器!"
+    CHN[221] := "ALTRun: {1} 跳转 TC 目录   |   {2} 跳转资源管理器目录"
 
     CHN[250] := "插件"                                                  ; 250~299 Plugins
     CHN[251] := "文本末尾自动添加日期"
