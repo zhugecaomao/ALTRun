@@ -81,6 +81,7 @@ Global g_CONFIG := Map(
     "MidScrollSwitch", 0,
     "MidClickRun"    , 0,
     "AutoUpdateCheck", 1,
+    "RoundCorner"    , 1,
     "HistoryLen"     , 10,
     "RunCount"       , 0,
     "AutoSwitchDir"  , 0,
@@ -135,7 +136,8 @@ Global g_CONFIG_P1 := Map(
     "MidScrollSwitch", g_LNG[133],
     "MidClickRun"    , g_LNG[134],
     "AutoUpdateCheck", g_LNG[135],
-    "LargeIcons"     , g_LNG[136]
+    "LargeIcons"     , g_LNG[136],
+    "RoundCorner"    , g_LNG[137]
 )
 
 Global g_HOTKEY := Map(
@@ -316,6 +318,8 @@ SetMainGUI() {
     if (g_GUI["Transparency"] < 250){
         WinSetTransparent(g_GUI["Transparency"], MainGUI.Hwnd)          ; By default, hidden windows are not detected. however, when using pure HWNDs, hidden windows are always detected regardless of DetectHiddenWindows.
     }
+
+    SetWindowCorner(MainGUI.Hwnd, g_CONFIG["RoundCorner"])
 
     ;WinSetRegion("0-0" " w" g_GUI["WinX"] " h" g_GUI["WinY"] " R20-20", MainGUI.Hwnd) ; Set rounded corners
 
@@ -1471,23 +1475,36 @@ ShowListaryHint() {
     static hintText  := 0
     static lastHwnd  := 0
     static marginX   := 8
-    static barH      := 24
+    static hintH     := 26
+    static padX      := 10
+    static themeDark := -1
 
     if (!IsObject(hintGui)) {
         hintGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
-        hintGui.BackColor := "F6F8FA"
-        hintGui.SetFont("s9 c4A5568", "Microsoft YaHei")
-        ; 初始化给一个正常宽度, 后续会按对话框宽度动态调整
-        hintText := hintGui.AddText("x" marginX " y1 w240 h" barH " Center +0x200", "")
+        hintGui.SetFont("s9", "Segoe UI")
+        hintText := hintGui.AddText("x" padX " y4 w240 h18 +0x200", "")
+        SetWindowCorner(hintGui.Hwnd, true)
     }
 
     if (IsQuickSwitchDialog()) {
         hwnd := WinGetID("A")
+        darkNow := IsAppsDarkMode()
+        if (darkNow != themeDark) {
+            if (darkNow) {
+                hintGui.BackColor := "202020"
+                hintText.SetFont("cF2F2F2", "Segoe UI")
+            } else {
+                hintGui.BackColor := "F7F7F7"
+                hintText.SetFont("c222222", "Segoe UI")
+            }
+            themeDark := darkNow
+        }
+
         WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+        hintW := Max(320, w - marginX * 2)
         hintText.Text := GetListaryHintText()
-        hintW := Max(220, w - marginX * 2)
-        hintText.Move(marginX, 1, hintW, barH)
-        hintGui.Show("NA x" (x + marginX) " y" (y + h + 1) " w" hintW " h" barH)
+        hintText.Move(padX, 4, hintW - padX * 2, hintH - 8)
+        hintGui.Show("NA x" (x + marginX) " y" (y + h - 1) " w" hintW " h" hintH)
         lastHwnd := hwnd
     } else if (lastHwnd) {
         hintGui.Hide()
@@ -1495,9 +1512,46 @@ ShowListaryHint() {
     }
 }
 
+IsAppsDarkMode() {
+    try return RegRead("HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1) = 0
+    catch
+        return false
+}
+
+SetWindowCorner(hwnd, enable := true) {
+    static DWMWA_WINDOW_CORNER_PREFERENCE := 33
+    static DWMCP_DONOTROUND := 1
+    static DWMCP_ROUND := 2
+    pref := enable ? DWMCP_ROUND : DWMCP_DONOTROUND
+    try DllCall("dwmapi\DwmSetWindowAttribute", "ptr", hwnd, "uint", DWMWA_WINDOW_CORNER_PREFERENCE, "int*", pref, "uint", 4)
+}
+
 GetListaryHintText() {
-    msg := StrReplace(g_LNG[221], "{1}", g_HOTKEY["TotalCMDDir"])
-    return StrReplace(msg, "{2}", g_HOTKEY["ExplorerDir"])
+    tcHotkey  := FormatHotkeyLabel(g_HOTKEY["TotalCMDDir"])
+    expHotkey := FormatHotkeyLabel(g_HOTKEY["ExplorerDir"])
+    msg := StrReplace(g_LNG[221], "{1}", tcHotkey)
+    return StrReplace(msg, "{2}", expHotkey)
+}
+
+FormatHotkeyLabel(hotkey) {
+    if (!hotkey)
+        return hotkey
+
+    label := hotkey
+    mods := ""
+    if InStr(label, "^")
+        mods .= "Ctrl + "
+    if InStr(label, "!")
+        mods .= "Alt + "
+    if InStr(label, "+")
+        mods .= "Shift + "
+    if InStr(label, "#")
+        mods .= "Win + "
+
+    key := RegExReplace(label, "[\^\!\+\#\<\>\*\~\$\s]")
+    if (StrLen(key) = 1)
+        key := StrUpper(key)
+    return mods key
 }
 
 ; 更严格地识别“打开/保存文件”对话框，避免普通 #32770 对话框误触发
@@ -2423,6 +2477,7 @@ SetLanguage() {
     ENG[134] := "Click mouse middle button to run the selected command"
     ENG[135] := "Auto check for updates"
     ENG[136] := "Show large icons"
+    ENG[137] := "Use rounded corners for Main Window"
 
     ENG[150] := "File Manager"                                          ; 150~159 Options window (Other than Check Listview)
     ENG[151] := "Everything"
@@ -2609,6 +2664,7 @@ SetLanguage() {
     CHN[134] := "单击鼠标中键运行选定命令"
     CHN[135] := "自动检查更新"
     CHN[136] := "显示大图标"
+    CHN[137] := "主窗口使用圆角"
 
     CHN[150] := "文件管理器"                                             ; 150~159 Options window (Other than Check Listview)
     CHN[151] := "Everything"
