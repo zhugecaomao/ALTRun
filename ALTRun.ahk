@@ -321,8 +321,6 @@ SetMainGUI() {
 
     SetWindowCorner(MainGUI.Hwnd, g_CONFIG["RoundCorner"])
 
-    ;WinSetRegion("0-0" " w" g_GUI["WinX"] " h" g_GUI["WinY"] " R20-20", MainGUI.Hwnd) ; Set rounded corners
-
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
 
     ; Enable dragging for captionless window
@@ -1466,7 +1464,7 @@ Listary() {                                                             ; Listar
     HotIf                                                                ; Turn off context, make subsequent hotkeys global again
 
     ; 在打开/保存对话框底部显示快捷键信息
-    SetTimer(ShowListaryHint, 200)
+    SetTimer(ShowListaryHint, 150)
     return
 }
 
@@ -1488,6 +1486,11 @@ ShowListaryHint() {
 
     if (IsQuickSwitchDialog()) {
         hwnd := WinGetID("A")
+        if (!hwnd || !WinExist("ahk_id " hwnd)) {
+            hintGui.Hide()
+            lastHwnd := 0
+            return
+        }
         darkNow := IsAppsDarkMode()
         if (darkNow != themeDark) {
             if (darkNow) {
@@ -1500,7 +1503,12 @@ ShowListaryHint() {
             themeDark := darkNow
         }
 
-        WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+        try WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+        catch {
+            hintGui.Hide()
+            lastHwnd := 0
+            return
+        }
         hintW := Max(320, w - marginX * 2)
         hintText.Text := GetListaryHintText()
         hintText.Move(padX, 4, hintW - padX * 2, hintH - 8)
@@ -1560,29 +1568,28 @@ IsQuickSwitchDialog(*) {
         return false
 
     activeClass := WinGetClass("A")
-    if (activeClass != "#32770")
-        return true
-
-    hasEdit      := HasCtrl("Edit1")                                    ; 文件名输入框
-    hasMainBtn   := HasCtrl("Button1")                                  ; 打开/保存按钮
-    hasTypeBox   := HasAnyCtrl("ComboBox3", "ComboBox2")
-    hasPathBar   := HasAnyCtrl("ToolbarWindow323", "ToolbarWindow322", "ComboBoxEx321")
-
-    return hasEdit && hasMainBtn && (hasTypeBox || hasPathBar)
-}
-
-HasAnyCtrl(ctrlList*) {
-    for ctrlName in ctrlList
-        if HasCtrl(ctrlName)
-            return true
-    return false
-}
-
-; 安全检测控件是否存在: 控件不存在或窗口不支持时返回 false, 不抛异常
-HasCtrl(ctrlName) {
-    try return ControlGetHwnd(ctrlName, "A") != 0
+    try ctrlList := WinGetControls("A")
     catch
         return false
+
+    hasEdit      := HasAnyCtrlMatch(ctrlList, "^Edit\d+$")              ; 文件名输入框
+    hasFileView  := HasAnyCtrlMatch(ctrlList, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
+    hasPathBar   := HasAnyCtrlMatch(ctrlList, "^ToolbarWindow32\d+$", "^ComboBoxEx32\d+$")
+    hasMainBtn   := HasAnyCtrlMatch(ctrlList, "^Button\d+$")
+
+    if (activeClass = "#32770")
+        return hasEdit && hasFileView && hasPathBar && hasMainBtn
+    return hasEdit && hasFileView && hasPathBar
+}
+
+HasAnyCtrlMatch(ctrlList, patternList*) {
+    for ctrlName in ctrlList {
+        for pattern in patternList {
+            if RegExMatch(ctrlName, "i)" pattern)
+                return true
+        }
+    }
+    return false
 }
 
 ; Sync dialog box to Total Commander path (TC 7.x ~ 10.x)
