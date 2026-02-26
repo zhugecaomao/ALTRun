@@ -269,10 +269,11 @@ SetMainGUI() {
         myListView.SetImageList(myImageList)
     }
 
+    colWidths := StrSplit(g_GUI["ColWidth"], ",")
     Loop 4 {
-        if (StrSplit(g_GUI["ColWidth"], ",").Length >= A_Index) {
-            if (StrSplit(g_GUI["ColWidth"], ",")[A_Index] != "")
-                myListView.ModifyCol(A_Index, StrSplit(g_GUI["ColWidth"], ",")[A_Index])
+        if (colWidths.Length >= A_Index) {
+            if (colWidths[A_Index] != "")
+                myListView.ModifyCol(A_Index, colWidths[A_Index])
         }
     }
 
@@ -547,7 +548,7 @@ SearchCommand(command := "") {
         g_RUNTIME["UseFallback"]    := True
         g_MATCHED                   := g_FALLBACK
         g_RUNTIME["CurrentCommand"] := g_FALLBACK[1]
-    } Else {
+    } else {
         g_RUNTIME["UseFallback"]    := False
     }
     return ListResult(g_MATCHED)
@@ -1819,7 +1820,7 @@ RenameWithDate(*) {                                                     ; 针对
 
     if (InStr(FocusedClassNN, "Edit") or InStr(FocusedClassNN, "Scintilla")) ; 如果当前激活的控件为Edit类或者Scintilla1(Notepad2),则Ctrl+D功能生效
         NameAddDate("FileListMangr", FocusedClassNN)
-    Else
+    else
         SendInput "^D"                                                  ; 如果不是,则发送原始的Ctrl+D
 
     g_LOG.Debug("RenameWithDate: Current control=" FocusedClassNN)
@@ -2107,7 +2108,7 @@ SelectFont(TargetVar := "MainGUIFont") {
     initFont := StrSplit(g_GUI[TargetVar], ",")[1]
     fontObj  := Map("name", initFont)
     fontObj  := FontSelect(fontObj, OptGUI.hwnd)
-    If (!fontObj)
+    if (!fontObj)
         return
 
     OptGUI[TargetVar].Text := fontObj["name"] ", " fontObj["str"]       ; 更新控件字体并设置显示文本
@@ -2117,7 +2118,7 @@ SelectFont(TargetVar := "MainGUIFont") {
 
 PickCMDListColor(*) {
     color := ColorSelect(g_GUI["CMDListColor"], OptGUI.hwnd, , "full")  ; hwnd and custColorObj are optional
-    If (color = -1)
+    if (color = -1)
         return
 
     ;g_GUI["CMDListColor"]        := color
@@ -2127,7 +2128,7 @@ PickCMDListColor(*) {
 
 PickMainGUIColor(*) {
     color := ColorSelect(g_GUI["MainGUIColor"], OptGUI.hwnd, , "full")
-    If (color = -1)
+    if (color = -1)
         return
 
     ;g_GUI["MainGUIColor"]        := color
@@ -2139,7 +2140,7 @@ SelectBackground(*) {
     OptGUI.Opt("+OwnDialogs")                                           ; Make open dialog Modal
 
     file := FileSelect(3, , , 'Image Files (*.jpg; *.png; *.bmp; *.gif)')
-    If (file = "")
+    if (file = "")
         return
 
     OptGUI["Background"].Text := file
@@ -2863,25 +2864,69 @@ EvalSimple(expression) {            ; 计算不含括号的简单数学表达式
 ;;==================== Performance Test Only =========================
 
 Test() {
-    t := A_TickCount
-    Loop 50 {
-        chr1 := Random(Ord("a"),Ord("z"))
-        chr2 := Random(Ord("A"),Ord("Z")) ;65,90
-        chr3 := Random(Ord("a"),Ord("z")) ;97,122
+    BenchmarkRun(60)
+}
 
-        Activate()
-        myInputBox.Value := chr(chr1)
-        Input_Change()
-        Sleep 10
-        myInputBox.Value := chr(chr1) " " chr(chr2)
-        Input_Change()
-        Sleep 10
-        myInputBox.Value := chr(chr1) " " chr(chr2) " " chr(chr3)
+BenchmarkRun(rounds := 60) {
+    Global myInputBox, g_LOG, g_INI
+    rounds := Max(10, rounds)
+    queries := ["n","no","not","note","np","core","kanji","a t","f o","wi ex","sys in","calc 12*8","2+3*5","abc","xyz_not_found","dir","plugin","open","update","help"]
+
+    Activate()
+
+    ; Warmup
+    Loop Min(5, queries.Length) {
+        myInputBox.Value := queries[A_Index]
         Input_Change()
     }
-    t := A_TickCount - t
-    g_LOG.Debug("mock test search ' " chr(chr1) " " chr(chr2) " " chr(chr3) " ' 50 times, elapsed time=" t)
-    MsgBox "Search '" chr(chr1) " " chr(chr2) " " chr(chr3) "' elapsed time=" t
+
+    started := A_TickCount
+    trial1 := 0, trial2 := 0
+
+    Loop 2 {
+        sumRoundCost := 0
+        Loop rounds {
+            tRound := A_TickCount
+            for _, q in queries {
+                myInputBox.Value := q
+                Input_Change()
+            }
+            sumRoundCost += A_TickCount - tRound
+        }
+        avgRoundCost := Round(sumRoundCost / rounds, 2)
+        (A_Index = 1) ? (trial1 := avgRoundCost) : (trial2 := avgRoundCost)
+    }
+
+    elapsedTotal := Round(A_TickCount - started, 2)
+    currBase := Round((trial1 + trial2) / 2, 2)
+
+    prevBase := IniRead(g_INI, "BENCHMARK", "Base", "")
+    if (prevBase = "") {
+        deltaText := "N/A (first run)"
+    } else {
+        d := Round(currBase - prevBase, 2)
+        p := (prevBase != 0) ? Round((d / prevBase) * 100, 2) : 0
+        deltaText := (d > 0 ? "+" : "") d " ms (" (p > 0 ? "+" : "") p "%) - " (d < 0 ? "Faster" : d > 0 ? "Slower" : "No change")
+    }
+
+    nowText := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
+    g_LOG.Debug("Benchmark: Time=" nowText
+        . ", Base=" currBase "ms"
+        . ", Rounds=" rounds
+        . ", QueriesPerRound=" queries.Length
+        . ", TrialBase=[" trial1 "," trial2 "]"
+        . ", ElapsedTotal=" elapsedTotal "ms")
+
+    IniWrite(currBase, g_INI, "BENCHMARK", "Base")
+
+    report := "ALTRun Benchmark`n`n"
+    report .= "Time: " nowText "`n"
+    report .= "Current Base (lower better): " currBase " ms`n"
+    report .= "Last Base: " (prevBase = "" ? "N/A" : prevBase " ms") "`n"
+    report .= "Change: " deltaText "`n`n"
+    report .= "Rounds=" rounds ", Queries/Round=" queries.Length ", Trials=2`n"
+    report .= "ElapsedTotal=" elapsedTotal "ms"
+    MsgBox(report, "ALTRun Benchmark")
 }
 
 ;;==================== Logger Class =========================
@@ -2898,68 +2943,36 @@ class Logger {
 }
 
 ;;==================== Font Select Dialog =========================
-; FontSelect() - Display the standard Windows font selection dialog
+; 功能:
+;   调用系统字体选择对话框(ChooseFont).
+; 参数:
+;   fontObject : 可选, 字体初始值对象, 支持 name/size/color/bold/italic/underline/strike.
+;   hwnd       : 可选, 父窗口句柄, 传入后对话框为模态.
+;   Effects    : 1=显示下划线/删除线等效果选项, 0=不显示.
+; 返回:
+;   false      : 用户取消.
+;   fontObject : 用户确认后返回, 并附加以下字段:
+;     ["str"]  : 可直接传给 SetFont 的样式字符串.
 
-; AHK v2
-; originally posted by maestrith 
-; https://autohotkey.com/board/topic/94083-ahk-11-font-and-color-dialogs/
+; 颜色工具函数:
+;   ColorSwapRGBBGR : RGB 与 BGR 互转(交换红蓝通道).
+;   ColorHex        : 输出格式统一为 "0xRRGGBB".
 
-; ======================================================================
-; Example
-; ======================================================================
+ColorSwapRGBBGR(color) {
+	color := color + 0
+	return ((color & 0xFF) << 16) | (color & 0xFF00) | ((color >> 16) & 0xFF)
+}
 
-; Global fontObj
+ColorHex(color) {
+	return Format("0x{:06X}", color & 0xFFFFFF)
+}
 
-; oGui := Gui.New("","Change Font Example")
-; oGui.OnEvent("close","gui_exit")
-; ctl := oGui.AddEdit("w500 h200 vMyEdit1","Sample Text")
-; ctl.SetFont("bold underline italic strike c0xFF0000")
-; oGui.AddEdit("w500 h200 vMyEdit2","Sample Text")
-; oGui.AddButton("Default","Change Font").OnEvent("click","button_click")
-; oGui.Show()
-
-; button_click(ctl,info) {
-	; If (!isSet(fontObj))
-		; fontObj := ""
-	; fontObj := Map("name","Terminal","size",14,"color",0xFF0000,"strike",1,"underline",1,"italic",1,"bold",1) ; init font obj (optional)
-	
-	; fontObj := FontSelect(fontObj,ctl.gui.hwnd) ; shows the user the font selection dialog
-	
-	; If (!fontObj)
-		; return ; to get info from fontObj use ... bold := fontObj["bold"], fontObj["name"], etc.
-	
-	; ctl.gui["MyEdit1"].SetFont(fontObj["str"],fontObj["name"]) ; apply font+style in one line, or...
-	; ctl.gui["MyEdit2"].SetFont(fontObj["str"],fontObj["name"])
-; }
-
-; gui_exit(oGui) {
-	; ExitApp
-; }
-
-; ======================================================================
-; END Example
-; ======================================================================
-
-; to initialize fontObj (not required):
-; ============================================
-; fontObj := Map("name","Tahoma","size",14,"color",0xFF0000,"strike",1,"underline",1,"italic",1,"bold",1)
-
-; ==================================================================
-; fntName		= name of var to store selected font
-; fontObj	    = name of var to store fontObj object
-; hwnd			= parent gui hwnd for modal, leave blank for not modal
-; effects		= allow selection of underline / strike out / italic
-; ==================================================================
-; fontObj output:
-;
-;	fontObj["str"]	= string to use with AutoHotkey to set GUI values - see examples
-;	fontObj["hwnd"]	= handle of the font object to use with SendMessage - see examples
-; ==================================================================
-FontSelect(fontObject:="",hwnd:=0,Effects:=1) {
-	fontObject := (fontObject="") ? Map() : fontObject
+FontSelect(fontObject := "", hwnd := 0, Effects := 1) {
+	fontObject := (fontObject = "") ? Map() : fontObject
 	logfont := Buffer((A_PtrSize = 4) ? 60 : 92, 0)
-	uintVal := DllCall("GetDC","uint",0)
-	LogPixels := DllCall("GetDeviceCaps","uint",uintVal,"uint",90)
+	uintVal := DllCall("GetDC", "Ptr", 0, "Ptr")
+	LogPixels := DllCall("GetDeviceCaps", "Ptr", uintVal, "UInt", 90, "Int")
+	DllCall("ReleaseDC", "Ptr", 0, "Ptr", uintVal)
 	Effects := 0x041 + (Effects ? 0x100 : 0)
 	
 	fntName := fontObject.Has("name") ? fontObject["name"] : ""
@@ -2971,212 +2984,87 @@ FontSelect(fontObject:="",hwnd:=0,Effects:=1) {
 	fontSize := fontObject.Has("size") ? fontObject["size"] : 10
 	fontSize := fontSize ? Floor(fontSize*LogPixels/72) : 16
 	c := fontObject.Has("color") ? fontObject["color"] : 0
+	fontColor := ColorSwapRGBBGR(c) ; 输入颜色转换, RGB -> BGR.
 	
-	c1 := Format("0x{:02X}",(c&255)<<16)	; convert RGB colors to BGR for input
-	c2 := Format("0x{:02X}",c&65280)
-	c3 := Format("0x{:02X}",c>>16)
-	fontColor := Format("0x{:06X}",c1|c2|c3)
+	NumPut "UInt", fontSize, logfont
+	NumPut "UInt", fontBold, "UChar", fontItalic, "UChar", fontUnderline, "UChar", fontStrikeout, logfont, 16
 	
-	NumPut "uint", fontSize, logfont
-	NumPut "uint", fontBold, "char", fontItalic, "char", fontUnderline, "char", fontStrikeout, logfont, 16
-	
-	choosefont := Buffer(A_PtrSize=8?104:60,0), cap := choosefont.size
+	choosefont := Buffer(A_PtrSize = 8 ? 104 : 60, 0), cap := choosefont.size
+	NumPut "UInt", cap, choosefont, 0
 	NumPut "UPtr", hwnd, choosefont, A_PtrSize
 	offset1 := (A_PtrSize = 8) ? 24 : 12
 	offset2 := (A_PtrSize = 8) ? 36 : 20
 	offset3 := (A_PtrSize = 4) ? 6 * A_PtrSize : 5 * A_PtrSize
-	
-	fontArray := Array([cap,0,"Uint"],[logfont.ptr,offset1,"UPtr"],[effects,offset2,"Uint"],[fontColor,offset3,"Uint"])
-	
-	for index,value in fontArray
-		NumPut value[3], value[1], choosefont, value[2]
-	
-	if (A_PtrSize=8) {
-		strput(fntName,logfont.ptr+28,"UTF-16")
-		r := DllCall("comdlg32\ChooseFont","UPtr",CHOOSEFONT.ptr) ; cdecl 
-		fntName := strget(logfont.ptr+28,"UTF-16")
-	} else {
-		strput(fntName,logfont.ptr+28,32,"UTF-8")
-		r := DllCall("comdlg32\ChooseFontA","UPtr",CHOOSEFONT.ptr) ; cdecl
-		fntName := strget(logfont.ptr+28,32,"UTF-8")
-	}
+	NumPut "UPtr", logfont.ptr, choosefont, offset1
+	NumPut "UInt", effects, choosefont, offset2
+	NumPut "UInt", fontColor, choosefont, offset3
+
+	StrPut(fntName, logfont.ptr + 28, "UTF-16")
+	r := DllCall("comdlg32\ChooseFont", "UPtr", choosefont.ptr)
+	fntName := StrGet(logfont.ptr + 28, "UTF-16")
 	
 	if !r
 		return false
 	
-	fontObj := Map("bold",16,"italic",20,"underline",21,"strike",22)
-	for a,b in fontObj
-		fontObject[a] := NumGet(logfont,b,"UChar")
+	fontObject["bold"] := NumGet(logfont, 16, "UChar")
+	fontObject["italic"] := NumGet(logfont, 20, "UChar")
+	fontObject["underline"] := NumGet(logfont, 21, "UChar")
+	fontObject["strike"] := NumGet(logfont, 22, "UChar")
 	
 	fontObject["bold"] := (fontObject["bold"] < 188) ? 0 : 1
 	
-	c := NumGet(choosefont,(A_PtrSize=4)?6*A_PtrSize:5*A_PtrSize,"UInt") ; convert from BGR to RBG for output
-	c1 := Format("0x{:02X}",(c&255)<<16), c2 := Format("0x{:02X}",c&65280), c3 := Format("0x{:02X}",c>>16)
-	c := Format("0x{:06X}",c1|c2|c3)
-	fontObject["color"] := c
+	c := NumGet(choosefont, (A_PtrSize = 4) ? 6 * A_PtrSize : 5 * A_PtrSize, "UInt")
+	fontObject["color"] := ColorHex(ColorSwapRGBBGR(c)) ; 输出颜色转换, BGR -> RGB.
 	
-	fontSize := NumGet(choosefont,A_PtrSize=8?32:16,"UInt") / 10 ; 32:16
+	fontSize := NumGet(choosefont, A_PtrSize = 8 ? 32 : 16, "UInt") / 10 ; iPointSize 的缩放值.
 	fontObject["size"] := fontSize
-	fontHwnd := DllCall("CreateFontIndirect","uptr",logfont.ptr) ; last param "cdecl"
 	fontObject["name"] := fntName
 	
-	logfont := "", choosefont := ""
-	
-	If (!fontHwnd) {
-		fontObject := ""
-		return 0
-	} Else {
-		fontObject["hwnd"] := fontHwnd
-		b := fontObject["bold"] ? "bold" : ""
-		i := fontObject["italic"] ? "italic" : ""
-		s := fontObject["strike"] ? "strike" : ""
-		c := fontObject["color"] ? "c" fontObject["color"] : ""
-		z := fontObject["size"] ? "s" fontObject["size"] : ""
-		u := fontObject["underline"] ? "underline" : ""
-		fullStr := b "|" i "|" s "|" c "|" z "|" u
-		str := ""
-		Loop Parse fullStr, "|"
-			If (A_LoopField)
-				str .= A_LoopField " "
-		fontObject["str"] := "norm " Trim(str)
-		
-		return fontObject
-	}
+	str := "norm"
+	if (fontObject["bold"])
+		str .= " bold"
+	if (fontObject["italic"])
+		str .= " italic"
+	if (fontObject["strike"])
+		str .= " strike"
+	if (fontObject["color"])
+		str .= " c" fontObject["color"]
+	if (fontObject["size"])
+		str .= " s" fontObject["size"]
+	if (fontObject["underline"])
+		str .= " underline"
+	fontObject["str"] := str
+	return fontObject
 }
 
-; typedef struct tagLOGFONTW {
-  ; LONG  lfHeight;                 |4        / 0
-  ; LONG  lfWidth;                  |4        / 4
-  ; LONG  lfEscapement;             |4        / 8
-  ; LONG  lfOrientation;            |4        / 12
-  ; LONG  lfWeight;                 |4        / 16
-  ; BYTE  lfItalic;                 |1        / 20
-  ; BYTE  lfUnderline;              |1        / 21
-  ; BYTE  lfStrikeOut;              |1        / 22
-  ; BYTE  lfCharSet;                |1        / 23
-  ; BYTE  lfOutPrecision;           |1        / 24
-  ; BYTE  lfClipPrecision;          |1        / 25
-  ; BYTE  lfQuality;                |1        / 26
-  ; BYTE  lfPitchAndFamily;         |1        / 27
-  ; WCHAR lfFaceName[LF_FACESIZE];  |[32|64]  / 28  ---> size [60|92] -- 32 TCHARs [UTF-8|UTF-16]
-; } LOGFONTW, *PLOGFONTW, *NPLOGFONTW, *LPLOGFONTW;
-
-
-; typedef struct tagCHOOSEFONTW {
-  ; DWORD        lStructSize;               |4        / 0
-  ; HWND         hwndOwner;                 |[4|8]    / [ 4| 8]  A_PtrSize * 1
-  ; HDC          hDC;                       |[4|8]    / [ 8|16]  A_PtrSize * 2
-  ; LPLOGFONTW   lpLogFont;                 |[4|8]    / [12|24]  A_PtrSize * 3
-  ; INT          iPointSize;                |4        / [16|32]  A_PtrSize * 4
-  ; DWORD        Flags;                     |4        / [20|36]
-  ; COLORREF     rgbColors;                 |4        / [24|40]
-  ; LPARAM       lCustData;                 |[4|8]    / [28|48]
-  ; LPCFHOOKPROC lpfnHook;                  |[4|8]    / [32|56]
-  ; LPCWSTR      lpTemplateName;            |[4|8]    / [36|64]
-  ; HINSTANCE    hInstance;                 |[4|8]    / [40|72]
-  ; LPWSTR       lpszStyle;                 |[4|8]    / [44|80]
-  ; WORD         nFontType;                 |2        / [48|88]
-  ; WORD         ___MISSING_ALIGNMENT__;    |2        / [50|92]
-  ; INT          nSizeMin;                  |4        / [52|96]
-  ; INT          nSizeMax;                  |4        / [56|100] -- len: 60 / 104
-; } CHOOSEFONTW;
-
 ;;==================== Color Select Dialog =========================
-; ColorSelect() - Display the standard Windows color selection dialog
+; 功能:
+;   调用系统颜色选择对话框(ChooseColor).
+; 参数:
+;   Color        : 初始颜色(RGB).
+;   hwnd         : 可选, 父窗口句柄.
+;   custColorObj : 可选, 自定义颜色数组/Map(1..16), 输入与输出共用.
+;   disp         : 1=完整面板(含自定义颜色), 0=基础面板.
+; 返回:
+;   -1           : 用户取消.
+;   "0xRRGGBB"   : 用户确认后返回所选颜色(RGB), 并更新 custColorObj.
 
-; AHK v2
-; originally posted by maestrith 
-; https://autohotkey.com/board/topic/94083-ahk-11-font-and-color-dialogs/
-
-; #SingleInstance,Force
-
-; Global defColor
-
-; === optional input color object, max 16 indexes number 1-16 ===
-; === can be Array(), [], or Map()
-; defColor := Array(0xFF0000,0,0x00FF00,0,0x0000FF)
-; ===============================================================
-; Example
-; ===============================================================
-
-; global cc, defColor
-; cc := 0x00FF00 ; green
-; defColor := [0xAA0000,0x00AA00,0x0000AA]
-
-; oGui := Gui.New("-MinimizeBox -MaximizeBox","Choose Color")
-; oGui.OnEvent("close","close_event")
-; oGui.OnEvent("escape","close_event")
-; oGui.AddButton("w150","Choose Color").OnEvent("click","choose_event")
-; oGui.BackColor := cc
-; oGui.Show("")
-; return
-
-
-; choose_event(ctl,info) {
-	; hwnd := ctl.gui.hwnd ; grab hwnd
-	; cc := "0x" ctl.gui.BackColor ; pre-select color from gui background (optional)
+ColorSelect(Color := 0, hwnd := 0, &custColorObj := "", disp := 1) {
+	Color := (Color = "") ? 0 : Color ; 空值兜底为黑色.
+	disp := disp ? 0x3 : 0x1 ; 0x3=完整面板, 0x1=基础面板.
+	Color := ColorSwapRGBBGR(Color) ; 输入颜色转换, RGB -> BGR.
 	
-	; cc := ColorSelect(cc,hwnd,defColor,0) ; hwnd and defColor are optional
+	CUSTOM := Buffer(16 * 4, 0) ; 自定义颜色缓冲区(16 色, 每色 4 字节).
 	
-	; If (cc = -1)
-		; return
-	
-	; colorList := ""
-	; For k, v in defColor {
-		; If v {
-			; colorList .= "Index: " k " / Color: " v "`r`n"
-		; }
-	; }
-		
-	; If cc
-		; msgbox "Output color: " cc "`r`n`r`nCustom colors saved:`r`n`r`n" Trim(colorList,"`r`n")
-	
-	; ctl.gui.BackColor := cc ; set gui background color
-; }
-
-; close_event(guiObj) {
-	; ExitApp
-; }
-
-; ===============================================================
-; END Example
-; ===============================================================
-
-; =============================================================================================
-; Color			= Start color
-; hwnd			= Parent window
-; custColorObj	= Use for input to init custom colors, or output to save custom colors, or both.
-;                 ... custColorObj can be Array() or Map().
-; disp			= full / basic ... full displays custom colors panel, basic does not
-; =============================================================================================
-; All params are optional.  With no hwnd dialog will show at top left of screen.  User must
-; parse output custColorObj and decide how to save custom colors... no more automatic ini file.
-; =============================================================================================
-
-ColorSelect(Color := 0, hwnd := 0, &custColorObj := "",disp:=1) {
-	Color := (Color = "") ? 0 : Color ; fix silly user "oops"
-	disp := disp ? 0x3 : 0x1 ; init disp / 0x3 = full panel / 0x1 = basic panel
-	
-	c1 := Format("0x{:02X}",(Color&255)<<16)	; convert RGB colors to BGR for input
-	c2 := Format("0x{:02X}",Color&65280)		; init start Color
-	c3 := Format("0x{:02X}",Color>>16)
-	Color := Format("0x{:06X}",c1|c2|c3)
-	
-	CUSTOM := Buffer(16 * A_PtrSize,0) ; init custom colors obj
-	
-	CHOOSECOLOR := Buffer(9 * A_PtrSize,0) ; init dialog
+	CHOOSECOLOR := Buffer(9 * A_PtrSize, 0) ; CHOOSECOLOR 结构缓冲区.
 	size := CHOOSECOLOR.size
 	
-	If (IsObject(custColorObj)) {
+	if (IsObject(custColorObj)) {
 		Loop 16 {
-			If (custColorObj.Has(A_Index)) {
-				col := custColorObj[A_Index] = "" ? 0 : custColorObj[A_Index] ; init "" to 0 (black)
-				
-				c4 := Format("0x{:02X}",(col&255)<<16)	; convert RGB colors to BGR for input
-				c5 := Format("0x{:02X}",col&65280)		; 
-				c6 := Format("0x{:02X}",col>>16)
-				custCol := Format("0x{:06X}",c4|c5|c6)
-				NumPut "UInt", custCol, CUSTOM, ((A_Index-1) * 4) ; type, number, target, offset
+			if (custColorObj.Has(A_Index)) {
+				col := custColorObj[A_Index] = "" ? 0 : custColorObj[A_Index] ; 空值按黑色处理.
+				custCol := ColorSwapRGBBGR(col) ; 输入颜色转换, RGB -> BGR.
+				NumPut "UInt", custCol, CUSTOM, ((A_Index-1) * 4)
 			}
 		}
 	}
@@ -3195,21 +3083,12 @@ ColorSelect(Color := 0, hwnd := 0, &custColorObj := "",disp:=1) {
 	custColorObj := Array()
 	Loop 16 {
 		newCustCol := NumGet(CUSTOM, (A_Index-1) * 4, "UInt")
-		c7 := Format("0x{:02X}",(newCustCol&255)<<16)	; convert RGB colors to BGR for input
-		c8 := Format("0x{:02X}",newCustCol&65280)
-		c9 := Format("0x{:02X}",newCustCol>>16)
-		newCustCol := Format("0x{:06X}",c7|c8|c9)
+		newCustCol := ColorHex(ColorSwapRGBBGR(newCustCol)) ; 输出颜色转换, BGR -> RGB.
 		custColorObj.InsertAt(A_Index, newCustCol)
 	}
 	
 	Color := NumGet(CHOOSECOLOR, 3 * A_PtrSize, "UInt")
-	
-	c1 := Format("0x{:02X}",(Color&255)<<16)	; convert RGB colors to BGR for input
-	c2 := Format("0x{:02X}",Color&65280)
-	c3 := Format("0x{:02X}",Color>>16)
-	Color := Format("0x{:06X}",c1|c2|c3)
-	
-	CUSTOM := "", CHOOSECOLOR := ""
+	Color := ColorHex(ColorSwapRGBBGR(Color)) ; 输出颜色转换, BGR -> RGB.
 	
 	return Color
 }
@@ -3249,6 +3128,10 @@ GetFirstChar(str) {
 }
 
 ExtractRes() {
+    static file := A_Temp "\ALTRun_" A_ScriptHwnd ".jpg"
+    if FileExist(file)
+        return file
+
     base64 := "
     (
     /9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAcHBwcIBwgJCQgMDAsMDBEQDg4QERoSFBIUEhonGB0YGB0YJyMqIiAiKiM+MSsrMT5IPDk8SFdOTldtaG2Pj8ABBwcHBwgHCAkJCAwMCwwMERAOD
@@ -3334,12 +3217,18 @@ ExtractRes() {
     1Z8WMl+Sogqqw64rrpmu0drz6FXcTbzreoVUBSLia42oCfly05sC62eq4BdCdCqiJWqwc5Lhpc+XLH6mx/jO7n3MHJzBdznk3SLhjqnZj1h9PbF5rCvvrpcL5lhSJcqre02dmSUeIxH+ehd7+
     kB1AwHEql8vQu96fKt5keEeaxs74p1a50e6A89800v9cfw8t80wv/IPfDy3zS//AKD3w8t3/wD/2Q=="
     )"
-    file := A_Temp "\ALTRun.jpg"
-    bin  := Buffer(StrLen(base64) * 3 // 4)
+    bin := Buffer(StrLen(base64) * 3 // 4)
+    size := bin.Size
+    ok := DllCall("Crypt32.dll\CryptStringToBinary", "Str", base64, "UInt", 0, "UInt", 1, "Ptr", bin, "UIntP", size, "Ptr", 0, "Ptr", 0, "Int")
+    if (!ok || size <= 0)
+        return ""
 
-    DllCall("Crypt32.dll\CryptStringToBinary", "Str", base64, "UInt", 0, "UInt", 1, "Ptr", bin, "UIntP", size := bin.Size, "Ptr", 0, "Ptr", 0)
     f := FileOpen(file, "w", "CP0")
-    f.RawWrite(bin)
+    if !f
+        return ""
+
+    f.RawWrite(bin, size)
     f.Close()
     return file
 }
+
