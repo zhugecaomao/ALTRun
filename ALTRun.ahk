@@ -516,20 +516,21 @@ SearchCommand(command := "") {
     Global g_MATCHED, g_RUNTIME, g_FALLBACK, g_COMMANDS, g_CMDINDEX
 
     g_MATCHED := Array()
-    Prefix    := SubStr(command, 1, 1)
+    g_RUNTIME["CurrentCommand"] := ""
+    prefix := SubStr(command, 1, 1)
 
-    ; Handle fallback commands
-    if (Prefix = "+" or Prefix = " " or Prefix = ">") {
-        idx := (Prefix = "+") ? 1 : (Prefix = " ") ? 2 : 3
-        g_RUNTIME["CurrentCommand"] := g_FALLBACK[idx]
+    ; Prefix-based fallback shortcuts: "+" / " " / ">"
+    if (prefix = "+" or prefix = " " or prefix = ">") {
+        fallbackIndex := (prefix = "+") ? 1 : (prefix = " ") ? 2 : 3
+        g_RUNTIME["CurrentCommand"] := g_FALLBACK[fallbackIndex]
         g_MATCHED.Push(g_RUNTIME["CurrentCommand"])
         return ListResult(g_MATCHED)
     }
 
-    ; Search commands using precomputed searchable text
-    for index, strToSearch in g_CMDINDEX {
-        if FuzzyMatch(strToSearch, command) {
-            g_MATCHED.Push(g_COMMANDS[index])
+    ; Search precomputed command index.
+    for cmdIndex, searchableText in g_CMDINDEX {
+        if FuzzyMatch(searchableText, command) {
+            g_MATCHED.Push(g_COMMANDS[cmdIndex])
             g_RUNTIME["CurrentCommand"] := g_MATCHED[1]
 
             if g_MATCHED.Length >= g_GUI["ListRows"]
@@ -537,64 +538,53 @@ SearchCommand(command := "") {
         }
     }
 
-    ; If no matches found, evaluate as expression if enabled
+    ; No command match: try expression evaluation, otherwise fallback list.
     if (g_MATCHED.Length = 0) {
         evalResult := Eval(command)
         if (IsNumber(evalResult) && evalResult != 0) {
-            g_MATCHED := StruCalc(Round(evalResult, 6))                 ; Round is to fix 5+0.3 = 5.300000000000001 issue
+            g_RUNTIME["UseFallback"] := False
+            g_RUNTIME["CurrentCommand"] := ""
+            g_MATCHED := StruCalc(Round(evalResult, 6)) ; normalize float precision
             return ListResult(g_MATCHED, True)
         }
 
-        g_RUNTIME["UseFallback"]    := True
-        g_MATCHED                   := g_FALLBACK
+        g_RUNTIME["UseFallback"] := True
+        g_MATCHED := g_FALLBACK
         g_RUNTIME["CurrentCommand"] := g_FALLBACK[1]
     } else {
-        g_RUNTIME["UseFallback"]    := False
+        g_RUNTIME["UseFallback"] := False
     }
+
     return ListResult(g_MATCHED)
 }
 
-ListResult(arrayToShow := [], UseDisplay := false) {
-    myListView.Opt("-Redraw")                           ; Improve performance by disabling redrawing during load.
+ListResult(rows := [], useDisplay := false) {
+    myListView.Opt("-Redraw")
     myListView.Delete()
-    g_RUNTIME["UseDisplay"] := UseDisplay
+    g_RUNTIME["UseDisplay"] := useDisplay
 
-    for index, command in arrayToShow {
-        parts := StrSplit(command, " | ")
-        type  := parts.Length >= 1  ? parts[1] : ""      ; Ensure type has default
-        path  := parts.Length >= 2  ? parts[2] : ""      ; Ensure path has default
-        desc  := parts.Length >= 3  ? parts[3] : ""      ; Ensure desc has default (fix for missing 3rd element)
-        index := g_CONFIG["ShowSN"] ? index    : ""
-        iconx := GetIconIndex(path, type)
+    for rowIndex, rowCommand in rows {
+        parts := StrSplit(rowCommand, " | ")
+        cmdType := parts.Length >= 1 ? parts[1] : ""
+        cmdPath := parts.Length >= 2 ? parts[2] : ""
+        cmdDesc := parts.Length >= 3 ? parts[3] : ""
+        displayNo := g_CONFIG["ShowSN"] ? rowIndex : ""
+        iconIndex := GetIconIndex(cmdPath, cmdType)
 
-        if (type != "URL" && g_CONFIG["ShortenPath"]) { ; Show Full path / Shorten path, except for URL
-            SplitPath(path, &path)                      ; Extra name from path (if type is Dir and has "." in path, fileName will not get full folder name)
+        if (cmdType != "URL" && g_CONFIG["ShortenPath"]) {
+            ; Keep URL full text, shorten other command paths for list readability.
+            SplitPath(cmdPath, &cmdPath)
         }
 
-        myListView.Add("Icon" iconx, index, type, path, desc)
+        myListView.Add("Icon" iconIndex, displayNo, cmdType, cmdPath, cmdDesc)
     }
 
-    ; rowsShown := Min(g_GUI["ListRows"], myListView.GetCount())
-    ; RowH := g_CONFIG["LargeIcons"] ? 36 : 22
-    ; HdrH := g_CONFIG["ShowHdr"] ? 20 : 0
-    ; List_H := rowsShown * RowH + HdrH + 8   ; 8 = padding for margins
-    ; ; Compute overall window height to contain input/status/buttons
-    ; g_GUI["WinY"] := (List_H + 95)       ; keep a sensible minimum height
-    ; Try {
-    ;     myListView.Move( , , , List_H)
-    ;     WinMove( , , , g_GUI["WinY"], "ahk_id " MainGUI.Hwnd) ; Resize window without changing position
-    ; } catch {
-    ;     ; If WinMove fails for any reason, continue without hard failure
-    ; }
+    statusBarText := (g_RUNTIME["CurrentCommand"] != "")
+        ? StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2]
+        : ((myListView.GetCount() > 0) ? myListView.GetText(1, 3) : "")
 
-    if (g_RUNTIME["CurrentCommand"] != "") {
-        statusBarText := StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2]
-    } else {
-        statusBarText := (myListView.GetCount() > 0) ? myListView.GetText(1, 3) : ""
-    }
-
-    myListView.Modify(1, "Select Focus Vis")                            ; Select 1st row
-    myListView.Opt("+Redraw")                                           ; Re-enable redrawing.
+    myListView.Modify(1, "Select Focus Vis")
+    myListView.Opt("+Redraw")
     SetStatusBar(statusBarText)
 }
 
@@ -688,34 +678,47 @@ RelativePath(Path) {                                                    ; Conver
 }
 
 RunCommand(originCmd) {
-    UpdateRunCount()
-    UpdateRank(originCmd)
-    UpdateHistory(originCmd)
+    if (g_RUNTIME["UseDisplay"]) {
+        g_LOG.Debug("RunCommand: blocked in display mode, cmd=" originCmd)
+        return
+    }
+
+    executed := false
     MainGUI_Close()
     ParseArg()
-    g_RUNTIME["UseDisplay"] := false
-    g_LOG.Debug("RunCommand: Execute " g_CONFIG["RunCount"] "=" originCmd)
+    g_LOG.Debug("RunCommand: Execute request=" originCmd)
 
-    split := StrSplit(originCmd, " | ")
-    type  := split.Length >= 1 ? split[1] : ""                ; Ensure type has default
-    path  := split.Length >= 2 ? AbsPath(split[2], True) : "" ; Ensure path has default
+    parts := StrSplit(originCmd, " | ")
+    cmdType := parts.Length >= 1 ? parts[1] : ""
+    cmdPath := parts.Length >= 2 ? AbsPath(parts[2], True) : ""
 
-    if (type = "") {
+    if (cmdType = "") {
         return
-    } else if (type = "DIR") {
-        OpenDir(path)
-    } else if (type = "FUNC") {
+    } else if (cmdType = "DIR") {
+        executed := OpenDir(cmdPath)
+    } else if (cmdType = "FUNC") {
         try {
-            %path%()
+            %cmdPath%()
+            executed := true
         } catch as e {
-            MsgBox("Could not find function: " path "`n`nError message: " e.Message, g_TITLE, 48)
+            MsgBox("Could not find function: " cmdPath "`n`nError message: " e.Message, g_TITLE, 48)
         }
-    } else { ; For type "FILE","URL","CMD" and other Unknown type
+    } else {
         try {
-            Run(path)
+            Run(cmdPath)
+            executed := true
         } catch as e {
-            MsgBox("Could not run command: " path "`n`nError message: " e.Message, g_TITLE, 48)
+            MsgBox("Could not run command: " cmdPath "`n`nError message: " e.Message, g_TITLE, 48)
         }
+    }
+
+    if (executed) {
+        UpdateRunCount()
+        UpdateRank(originCmd)
+        UpdateHistory(originCmd)
+        g_LOG.Debug("RunCommand: Execute success, RunCount=" g_CONFIG["RunCount"] ", cmd=" originCmd)
+    } else {
+        g_LOG.Debug("RunCommand: Execute failed, cmd=" originCmd)
     }
     return
 }
@@ -973,62 +976,78 @@ ParseArg() {
     commandPrefix := SubStr(myInputBox.Value, 1, 1)
 
     if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">") {
-        Return g_RUNTIME["Arg"] := SubStr(myInputBox.Value, 2)        ; 直接取命令为参数
+        return g_RUNTIME["Arg"] := SubStr(myInputBox.Value, 2)
     }
 
-    if (InStr(myInputBox.Value, " ") && !g_RUNTIME["UseFallback"]) {  ; 用空格来判断参数
+    if (InStr(myInputBox.Value, " ") && !g_RUNTIME["UseFallback"]) {
         g_RUNTIME["Arg"] := SubStr(myInputBox.Value, InStr(myInputBox.Value, " ") + 1)
-    }
-    else if (g_RUNTIME["UseFallback"]) {
+    } else if (g_RUNTIME["UseFallback"]) {
         g_RUNTIME["Arg"] := myInputBox.Value
-    }
-    else {
+    } else {
         g_RUNTIME["Arg"] := ""
     }
 }
 
-; 模糊匹配函数
-; Haystack: 待搜索字符串 (命令的可搜索文本)
-; Needle  : 搜索关键词 (输入框内容)
-FuzzyMatch(Haystack, Needle) {
-    ; 如果 Needle 为空，直接返回 按照命令优先级排序显示所有命令
-    if (!Needle)
+; Fuzzy match helper.
+; haystack: searchable command text.
+; needle  : text from input box.
+FuzzyMatch(haystack, needle) {
+    if (!needle)
         return true
 
-    ; 如果是数学表达式 (包含数字和运算符的字符串)，跳过模糊匹配
-    ; 例如: 25+5 或 6*5 会显示 Eval 结果而不是匹配文件中的 "30"
-    if RegExMatch(Needle, "^[\d+\-*/^(). ]+$") && RegExMatch(Needle, "[+\-*/^]")
+    ; Expression-like input is handled by Eval path, not command fuzzy match.
+    if RegExMatch(needle, "^[\d+\-*/^(). ]+$") && RegExMatch(needle, "[+\-*/^]")
         return false
 
-    Needle := StrReplace(Needle, "\", ".*")
-    Needle := StrReplace(Needle, " ", ".*")                             ; 空格直接替换为匹配任意字符
-    return RegExMatch(Haystack, g_RUNTIME["RegEx"] . Needle)
+    ; Split by space / "\" for fuzzy segments and escape regex metacharacters.
+    pattern := ""
+    for _, token in StrSplit(needle, " \") {
+        if (token = "")
+            continue
+        pattern .= (pattern = "" ? "" : ".*") . RegexEscape(token)
+    }
+
+    if (pattern = "")
+        return true
+
+    try {
+        return RegExMatch(haystack, g_RUNTIME["RegEx"] . pattern)
+    } catch as e {
+        g_LOG.Debug("FuzzyMatch: invalid pattern, needle=" needle ", error=" e.Message)
+        return false
+    }
 }
 
-; 更新命令权重函数
+RegexEscape(text) {
+    ; Escape regex metacharacters so user input is treated as literal text.
+    return RegExReplace(text, "([\\\^\$\.\|\?\*\+\(\)\[\]\{\}])", "\\$1")
+}
+
 UpdateRank(originCmd, showRank := false, inc := 1) {
     if (g_CONFIG["SmartRank"] = false || originCmd = "")
         return
 
-    Sections := Array(g_SECTION["DFTCMD"],g_SECTION["USERCMD"],g_SECTION["INDEX"])
+    sections := Array(g_SECTION["DFTCMD"], g_SECTION["USERCMD"], g_SECTION["INDEX"])
 
-    for index, section in Sections {
-        Rank := IniRead(g_INI, section, originCmd, "KeyNotFound")
+    for _, section in sections {
+        rankValue := IniRead(g_INI, section, originCmd, "KeyNotFound")
 
-        if (Rank = "KeyNotFound" or Rank = "ERROR" or originCmd = "")   ; If originCmd not exist in this section, then check next section
-            continue                                                    ; Skips the rest of a loop and begins a new one
+        if (rankValue = "KeyNotFound" or rankValue = "ERROR" or originCmd = "")
+            continue
 
-        Rank := IsInteger(Rank) ? Rank + inc : inc                      ; 如果成功定位到命令, 计算命令新权重
-        Rank := (Rank < 0) ? -1 : Rank                                  ; 如果权重降到负数, 统一设置为 -1, 然后屏蔽/排除
+        rankValue := IsInteger(rankValue) ? rankValue + inc : inc
+        rankValue := (rankValue < 0) ? -1 : rankValue
 
-        IniWrite(Rank, g_INI, section, originCmd)                       ; 更新命令权重
+        IniWrite(rankValue, g_INI, section, originCmd)
         if (showRank)
-            SetStatusBar("UpdateRank: Rank for current command : " Rank)
+            SetStatusBar("UpdateRank: Rank for current command : " rankValue)
 
-        g_LOG.Debug("UpdateRank: Rank updated for command..." originCmd "=" Rank)
+        g_LOG.Debug("UpdateRank: Rank updated for command..." originCmd "=" rankValue)
         break
     }
-    LoadCommands()                                                      ; New rank will take effect in real-time by LoadCommands again
+
+    ; Reload in-memory cache so the updated rank takes effect immediately.
+    LoadCommands()
 }
 
 UpdateUsage() {
@@ -1054,16 +1073,16 @@ UpdateHistory(originCmd) {
     if (g_CONFIG["SaveHistory"] = false || originCmd = "")
         return
 
-    g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])          ; Adjust command history
+    g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])
 
-    if (g_HISTORYS.Length > g_CONFIG["HistoryLen"]) {
+    if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
         g_HISTORYS.Pop()
-    }
 
-    for index, element in g_HISTORYS {
-        Section .= Index "=" element "`n"
+    historySection := ""
+    for idx, entry in g_HISTORYS {
+        historySection .= idx "=" entry "`n"
     }
-    IniWrite(Section, g_INI, g_SECTION["HISTORY"])                      ; Save command history, IniDelete not needed as overwrite the whole section
+    IniWrite(historySection, g_INI, g_SECTION["HISTORY"])
 }
 
 RankUp(*) {
@@ -1075,49 +1094,60 @@ RankDown(*) {
 }
 
 LoadCommands() {
-    Global g_COMMANDS := Array()                                        ; Clear g_COMMANDS, g_FALLBACK, g_CMDINDEX (searchable text for all commands)
+    ; Rebuild runtime command caches.
+    Global g_COMMANDS := Array()
     Global g_CMDINDEX := Array()
     Global g_FALLBACK := Array()
-    Local  RankString := ""
+    Local rankRows := ""
 
-    for index, line in StrSplit(LoadConfig("commands"), "`n", "`r")     ; Read commands sections (built-in, user & index), read each line, separate key and value
-    {
-        if (!Trim(line) || SubStr(line, 1, 1) = ";")                    ; Skip empty line or comment line
+    ; Parse all configured command lines from ini sections.
+    for _, line in StrSplit(LoadConfig("commands"), "`n", "`r") {
+        line := Trim(line)
+        if (!line || SubStr(line, 1, 1) = ";")
             continue
-    
-        command := StrSplit(line, "=")[1]
-        rank    := StrSplit(line, "=")[2]
 
-        if (command != "" and rank > 0) {
-            splitResult := StrSplit(command, " | ")
-            type := splitResult[1]
-            path := splitResult[2]
-            desc := splitResult.Has(3) ? splitResult[3] : ""
-            SplitPath(path, &filename)
+        sepPos := InStr(line, "=")
+        if (sepPos <= 1)
+            continue
 
-            strToSearch := g_CONFIG["MatchPath"] ? path " " desc : filename " " desc ; search file name include extension, and desc (For MatchBeginning option, exclude "type")
-            strToSearch := g_CONFIG["MatchPinyin"] ? GetFirstChar(strToSearch) : strToSearch ; 中文转为拼音首字母
+        commandText := Trim(SubStr(line, 1, sepPos - 1))
+        rankText := Trim(SubStr(line, sepPos + 1))
+        if (commandText = "" || rankText = "")
+            continue
 
-            RankString .= rank "`t" command "`t" strToSearch "`n"
-        }
+        rankValue := IsNumber(rankText) ? (rankText + 0) : 0
+        if (rankValue <= 0)
+            continue
+
+        parts := StrSplit(commandText, " | ")
+        cmdPath := parts.Has(2) ? parts[2] : ""
+        cmdDesc := parts.Has(3) ? parts[3] : ""
+        SplitPath(cmdPath, &fileName)
+
+        searchable := g_CONFIG["MatchPath"] ? (cmdPath " " cmdDesc) : (fileName " " cmdDesc)
+        if (g_CONFIG["MatchPinyin"])
+            searchable := GetFirstChar(searchable)
+
+        rankRows .= rankValue "`t" commandText "`t" searchable "`n"
     }
 
-    ; Sort commands by rank (reverse numerical)
-    RankString := Sort(RankString, "R N")
-    for index, line in StrSplit(RankString, "`n", "`r")
-    {
+    ; Sort by rank descending, then rebuild arrays.
+    rankRows := Sort(rankRows, "R N")
+    for _, line in StrSplit(rankRows, "`n", "`r") {
         if !Trim(line)
-            continue  ; 跳过空行
+            continue
 
-        split := StrSplit(line, "`t") ; line format is "rank `t Command `t strToSearch"
-        g_COMMANDS.Push(split[2])
-        g_CMDINDEX.Push(split[3])
+        rowParts := StrSplit(line, "`t") ; rank, command, searchable
+        if (rowParts.Length < 3)
+            continue
+        g_COMMANDS.Push(rowParts[2])
+        g_CMDINDEX.Push(rowParts[3])
     }
 
-    ; Read FALLBACK section
-    FALLBACKCMDSEC := ""
-    Try FALLBACKCMDSEC := IniRead(g_INI, g_SECTION["FALLBACK"])
-    if (FALLBACKCMDSEC = "") {
+    ; Read fallback section.
+    fallbackSection := ""
+    Try fallbackSection := IniRead(g_INI, g_SECTION["FALLBACK"])
+    if (fallbackSection = "") {
         IniWrite("
         (
         ; Fallback Commands show when search result is empty
@@ -1132,9 +1162,9 @@ LoadCommands() {
         Func | Bing | Search Clipboard or Input by Bing
         CMD | Calc.exe | Calculator
         )", g_INI, g_SECTION["FALLBACK"])
-        FALLBACKCMDSEC := IniRead(g_INI, g_SECTION["FALLBACK"])
+        fallbackSection := IniRead(g_INI, g_SECTION["FALLBACK"])
     }
-    for line in StrSplit(FALLBACKCMDSEC, "`n") {
+    for line in StrSplit(fallbackSection, "`n") {
         if (line != "")
             g_FALLBACK.Push(line)
     }
@@ -1146,8 +1176,8 @@ LoadCommands() {
 LoadHistory() {
     if (g_CONFIG["SaveHistory"]) {
         Loop g_CONFIG["HistoryLen"] {
-            Try history := IniRead(g_INI, g_SECTION["HISTORY"], A_Index, "")
-            g_HISTORYS.Push(history)
+            Try historyItem := IniRead(g_INI, g_SECTION["HISTORY"], A_Index, "")
+            g_HISTORYS.Push(historyItem)
         }
         g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
     } else {
@@ -1178,9 +1208,11 @@ OpenDir(Path) {
     Try{
         Run(g_CONFIG["FileMgr"] ' `"' Path '`"')
         g_LOG.Debug("OpenDir: Using=" g_CONFIG["FileMgr"] " to open dir=" Path "...OK")
+        return true
     } catch as e {
         g_LOG.Debug("OpenDir: Failed to open dir=" Path " Error=" e.Message)
         MsgBox("Could not open dir: " Path "`n`nError message: " e.Message, g_TITLE, 48)
+        return false
     }
 }
 
@@ -2170,56 +2202,58 @@ OPTGuiClose(*) {
     return
 }
 
-LoadConfig(Arg) {
-    g_LOG.Debug("LoadConfig: Loading configuration (" Arg ")...OK")
+LoadConfig(mode) {
+    g_LOG.Debug("LoadConfig: Loading configuration (" mode ")...OK")
 
-    if (Arg = "config" || Arg = "initialize" || Arg = "all") {
-        for key, value in g_CONFIG {    ; Read [Config] to Map
+    if (mode = "config" || mode = "initialize" || mode = "all") {
+        ; Read [Config], [Hotkey], [Gui] sections into runtime maps.
+        for key, value in g_CONFIG {
             g_CONFIG[key] := IniRead(g_INI, g_SECTION["CONFIG"], key, value)
         }
 
-        for key, value in g_HOTKEY {    ; Read [Hotkey] section
+        for key, value in g_HOTKEY {
             g_HOTKEY[key] := IniRead(g_INI, g_SECTION["HOTKEY"], key, value)
         }
 
-        for key, value in g_GUI {       ; Read [GUI] section
+        for key, value in g_GUI {
             g_GUI[key] := IniRead(g_INI, g_SECTION["GUI"], key, value)
         }
 
         g_RUNTIME["RegEx"] := g_CONFIG["MatchBeginning"] ? "imS)^" : "imS)"
 
-        OffsetDate   := DateAdd(A_Now, -30, "Days")
-        USAGESEC     := ""
-        Try USAGESEC := IniRead(g_INI, g_SECTION["USAGE"])
-        if (USAGESEC != "") {
-            for line in StrSplit(USAGESEC, "`n") {
-                if (!line)  ; Skip empty lines
+        offsetDate := DateAdd(A_Now, -30, "Days")
+        usageSection := ""
+        Try usageSection := IniRead(g_INI, g_SECTION["USAGE"])
+        if (usageSection != "") {
+            for line in StrSplit(usageSection, "`n") {
+                if (!line)
                     continue
                 split := StrSplit(line, "=")
-                Date  := split[1]
-                Count := split[2]
+                dateKey := split[1]
+                dayCount := split[2]
 
-                if (Date <= SubStr(OffsetDate, 1, 8)) {  ; Clean up usage record before 30 days
-                    IniDelete(g_INI, g_SECTION["USAGE"], Date)
+                ; Keep only last 30 days usage.
+                if (dateKey <= SubStr(offsetDate, 1, 8)) {
+                    IniDelete(g_INI, g_SECTION["USAGE"], dateKey)
                     continue
                 }
 
-                g_USAGE[Date]    := Count
-                g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], Count)
+                g_USAGE[dateKey] := dayCount
+                g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], dayCount)
             }
         }
 
         Loop 30 {
-            OffsetDate    := DateAdd(OffsetDate, 1, "Days")
-            Date          := SubStr(OffsetDate, 1, 8)
-            g_USAGE[Date] := g_USAGE.Has(Date) ? g_USAGE[Date] : 0
+            offsetDate := DateAdd(offsetDate, 1, "Days")
+            dateKey := SubStr(offsetDate, 1, 8)
+            g_USAGE[dateKey] := g_USAGE.Has(dateKey) ? g_USAGE[dateKey] : 0
         }
     }
 
-    if (Arg = "commands" || Arg = "initialize" || Arg = "all") {  ; Built-in command initialize
-        DFTCMDSEC := ""
-        Try DFTCMDSEC := IniRead(g_INI, g_SECTION["DFTCMD"])
-        if (DFTCMDSEC = "") {
+    if (mode = "commands" || mode = "initialize" || mode = "all") {
+        defaultCmdSection := ""
+        Try defaultCmdSection := IniRead(g_INI, g_SECTION["DFTCMD"])
+        if (defaultCmdSection = "") {
             IniWrite("
             (
             ; This section is Built-In commands with high priority
@@ -2282,12 +2316,12 @@ LoadConfig(Arg) {
             CMD | Control Inetcpl.cpl,,4 | Internet Properties=66
             CMD | Control UserPasswords | User Accounts=66
             )", g_INI, g_SECTION["DFTCMD"])
-            DFTCMDSEC := IniRead(g_INI, g_SECTION["DFTCMD"])
+            defaultCmdSection := IniRead(g_INI, g_SECTION["DFTCMD"])
         }
 
-        USERCMDSEC := ""
-        Try USERCMDSEC := IniRead(g_INI, g_SECTION["USERCMD"])
-        if (USERCMDSEC = "") {
+        userCmdSection := ""
+        Try userCmdSection := IniRead(g_INI, g_SECTION["USERCMD"])
+        if (userCmdSection = "") {
             IniWrite("
             (
             ; This section is User-Defined commands, modify as desired
@@ -2305,19 +2339,19 @@ LoadConfig(Arg) {
             CMD | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
             URL | www.google.com | Google=9
             )", g_INI, g_SECTION["USERCMD"])
-            USERCMDSEC := IniRead(g_INI, g_SECTION["USERCMD"])
+            userCmdSection := IniRead(g_INI, g_SECTION["USERCMD"])
         }
 
-        INDEXSEC := ""
-        Try INDEXSEC := IniRead(g_INI, g_SECTION["INDEX"])
-        if (INDEXSEC = "") {
+        indexSection := ""
+        Try indexSection := IniRead(g_INI, g_SECTION["INDEX"])
+        if (indexSection = "") {
             if (MsgBox(g_LNG[804], g_TITLE, 4161) = "Cancel") {
                 ExitApp()
             }
             Reindex()
         }
 
-        return DFTCMDSEC . "`n" . USERCMDSEC . "`n" . INDEXSEC
+        return defaultCmdSection . "`n" . userCmdSection . "`n" . indexSection
     }
     return
 }
@@ -2326,39 +2360,31 @@ SaveConfig() {
     Global OptListView
 
     OptGUI.Submit()
-    for key, description in g_CONFIG_P1 {
-        g_CONFIG[key] := (A_Index = OptListView.GetNext(A_Index-1, "C")) ? 1 : 0 ; for Options - General page - Check Listview
+    ; Tab1 checklist values.
+    for key, _ in g_CONFIG_P1 {
+        g_CONFIG[key] := (A_Index = OptListView.GetNext(A_Index - 1, "C")) ? 1 : 0
         IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
     }
 
-    CONFIG_P2 := Array("FileMgr","Everything","HistoryLen","RunCount"
-        ,"AutoSwitchDir","IndexDir" ,"IndexType","IndexDepth"
-        ,"IndexExclude","IndexStoreApp","DialogWin","FileMgrID","ExcludeWin")
+    configKeys := Array("FileMgr", "Everything", "HistoryLen", "RunCount"
+        , "AutoSwitchDir", "IndexDir", "IndexType", "IndexDepth"
+        , "IndexExclude", "IndexStoreApp", "DialogWin", "FileMgrID", "ExcludeWin")
 
-    for index, key in CONFIG_P2 {
-        if (OptGUI[key].Type = "CheckBox") {
-            g_CONFIG[key] := OptGUI[key].Value
-        } else {
-            g_CONFIG[key] := OptGUI[key].Text
-        }
+    for _, key in configKeys {
+        ctrl := OptGUI[key]
+        g_CONFIG[key] := (ctrl.Type = "CheckBox") ? ctrl.Value : ctrl.Text
         IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
     }
 
-    for key, value in g_GUI {
-        if (OptGUI[key].Type = "Slider") {
-            g_GUI[key] := OptGUI[key].Value
-        } else {
-            g_GUI[key] := OptGUI[key].Text
-        }
+    for key, _ in g_GUI {
+        ctrl := OptGUI[key]
+        g_GUI[key] := (ctrl.Type = "Slider") ? ctrl.Value : ctrl.Text
         IniWrite(g_GUI[key], g_INI, g_SECTION["GUI"], key)
     }
 
-    for key, value in g_HOTKEY {
-        if (OptGUI[key].Type = "Hotkey") {
-            g_HOTKEY[key] := OptGUI[key].Value
-        } else {
-            g_HOTKEY[key] := OptGUI[key].Text
-        }
+    for key, _ in g_HOTKEY {
+        ctrl := OptGUI[key]
+        g_HOTKEY[key] := (ctrl.Type = "Hotkey") ? ctrl.Value : ctrl.Text
         IniWrite(g_HOTKEY[key], g_INI, g_SECTION["HOTKEY"], key)
     }
 
@@ -2864,68 +2890,116 @@ EvalSimple(expression) {            ; 计算不含括号的简单数学表达式
 ;;==================== Performance Test Only =========================
 
 Test() {
-    BenchmarkRun(60)
+    BenchmarkRun(10)
 }
 
-BenchmarkRun(rounds := 60) {
-    Global myInputBox, g_LOG, g_INI
+BenchmarkRun(rounds := 10) {
+    Global g_LOG, g_INI, g_COMMANDS, myInputBox
     rounds := Max(10, rounds)
-    queries := ["n","no","not","note","np","core","kanji","a t","f o","wi ex","sys in","calc 12*8","2+3*5","abc","xyz_not_found","dir","plugin","open","update","help"]
+
+    static queries := [
+        "n", "no", "note", "core", "kanji", "a t", "wi ex", "sys in"
+        , "plugin", "open", "update", "help", "xyz_not_found"
+        , "2+3*5", "5+5", "12345*6789", "nir", "control panel"
+        , "new", "edit", "delete", "reload", "reindex", "history", "option", "usage"
+        , "google test", "bing test", "notepad", "explorer", "cmd", "powershell", "service"
+        , "disk", "device", "event", "task", "reg", "calc", "paint", "startup"
+    ]
 
     Activate()
+    myInputBox.Focus()
 
-    ; Warmup
-    Loop Min(5, queries.Length) {
-        myInputBox.Value := queries[A_Index]
-        Input_Change()
+    for _, q in queries
+    {
+        myInputBox.Value := q
+        Sleep(10)
+        SearchCommand(q)
     }
 
-    started := A_TickCount
-    trial1 := 0, trial2 := 0
-
-    Loop 2 {
-        sumRoundCost := 0
-        Loop rounds {
-            tRound := A_TickCount
-            for _, q in queries {
-                myInputBox.Value := q
-                Input_Change()
-            }
-            sumRoundCost += A_TickCount - tRound
+    sampleLines := ""
+    sampleCount := 0
+    sumMs := 0.0
+    minMs := 999999.0
+    maxMs := 0.0
+    totalStartMs := A_TickCount
+    Loop rounds {
+        for _, q in queries {
+            myInputBox.Value := q
+            Sleep(10)
+            t0 := A_TickCount
+            SearchCommand(q)
+            ms := A_TickCount - t0
+            sampleCount += 1
+            sumMs += ms
+            minMs := Min(minMs, ms)
+            maxMs := Max(maxMs, ms)
+            sampleLines .= ms "`n"
         }
-        avgRoundCost := Round(sumRoundCost / rounds, 2)
-        (A_Index = 1) ? (trial1 := avgRoundCost) : (trial2 := avgRoundCost)
     }
+    elapsedTotalMs := A_TickCount - totalStartMs
 
-    elapsedTotal := Round(A_TickCount - started, 2)
-    currBase := Round((trial1 + trial2) / 2, 2)
+    avgMs := Round(sumMs / sampleCount, 3)
+    minMs := Round(minMs, 3)
+    maxMs := Round(maxMs, 3)
 
-    prevBase := IniRead(g_INI, "BENCHMARK", "Base", "")
-    if (prevBase = "") {
+    sortedLines := Sort(sampleLines, "N")
+    p50Idx := Ceil(sampleCount * 0.50)
+    p95Idx := Ceil(sampleCount * 0.95)
+    p50Ms := 0.0
+    p95Ms := 0.0
+    i := 0
+    for _, line in StrSplit(sortedLines, "`n", "`r") {
+        if (line = "")
+            continue
+        i += 1
+        if (i = p50Idx)
+            p50Ms := line + 0
+        if (i = p95Idx) {
+            p95Ms := line + 0
+            break
+        }
+    }
+    p50Ms := Round(p50Ms, 3)
+    p95Ms := Round(p95Ms, 3)
+
+    prevAvgText := IniRead(g_INI, "BENCHMARK", "AvgMs", "")
+    if (prevAvgText = "") {
         deltaText := "N/A (first run)"
     } else {
-        d := Round(currBase - prevBase, 2)
-        p := (prevBase != 0) ? Round((d / prevBase) * 100, 2) : 0
+        prevAvg := prevAvgText + 0
+        d := Round(avgMs - prevAvg, 3)
+        p := (prevAvg != 0) ? Round((d / prevAvg) * 100, 2) : 0
         deltaText := (d > 0 ? "+" : "") d " ms (" (p > 0 ? "+" : "") p "%) - " (d < 0 ? "Faster" : d > 0 ? "Slower" : "No change")
     }
 
     nowText := FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss")
     g_LOG.Debug("Benchmark: Time=" nowText
-        . ", Base=" currBase "ms"
+        . ", AvgMs=" avgMs
+        . ", P50Ms=" p50Ms
+        . ", P95Ms=" p95Ms
+        . ", MinMs=" minMs
+        . ", MaxMs=" maxMs
+        . ", Ops=" sampleCount
         . ", Rounds=" rounds
         . ", QueriesPerRound=" queries.Length
-        . ", TrialBase=[" trial1 "," trial2 "]"
-        . ", ElapsedTotal=" elapsedTotal "ms")
+        . ", Commands=" g_COMMANDS.Length
+        . ", ElapsedTotalMs=" Round(elapsedTotalMs, 2))
 
-    IniWrite(currBase, g_INI, "BENCHMARK", "Base")
+    IniWrite(avgMs, g_INI, "BENCHMARK", "AvgMs")
+    IniWrite(p50Ms, g_INI, "BENCHMARK", "P50Ms")
+    IniWrite(p95Ms, g_INI, "BENCHMARK", "P95Ms")
+    IniWrite(nowText, g_INI, "BENCHMARK", "LastTime")
 
     report := "ALTRun Benchmark`n`n"
     report .= "Time: " nowText "`n"
-    report .= "Current Base (lower better): " currBase " ms`n"
-    report .= "Last Base: " (prevBase = "" ? "N/A" : prevBase " ms") "`n"
-    report .= "Change: " deltaText "`n`n"
-    report .= "Rounds=" rounds ", Queries/Round=" queries.Length ", Trials=2`n"
-    report .= "ElapsedTotal=" elapsedTotal "ms"
+    report .= "Commands: " g_COMMANDS.Length "`n"
+    report .= "Rounds: " rounds ", Queries/Round: " queries.Length ", Ops: " sampleCount "`n`n"
+    report .= "Avg: " avgMs " ms/query`n"
+    report .= "P50: " p50Ms " ms/query`n"
+    report .= "P95: " p95Ms " ms/query`n"
+    report .= "Min/Max: " minMs " / " maxMs " ms`n"
+    report .= "Total elapsed: " Round(elapsedTotalMs, 2) " ms`n`n"
+    report .= "Vs last Avg: " deltaText
     MsgBox(report, "ALTRun Benchmark")
 }
 
