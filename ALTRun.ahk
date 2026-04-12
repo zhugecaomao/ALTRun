@@ -11,7 +11,7 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2026.01.15
+;@Ahk2Exe-SetVersion 2026.04.12
 ;@Ahk2Exe-SetCopyright Copyright (c) since 2013
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -25,7 +25,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - v2026.01.15"
+Global g_TITLE := "ALTRun - v2026.04.12"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -202,7 +202,7 @@ Global myListView
 Global myInputBox
 Global OptGUI
 Global OptListView
-Global CmdMgrGUI
+Global g_CmdMgrGui
 Global myImageList := IL_Create(10, 5, g_CONFIG["LargeIcons"])          ; Create an ImageList so that the ListView can display some icons, 3rd param is 1: large icons, 0: small icons
 Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval/cmd
                         ,"FUNC", IL_Add(myImageList,"imageres.dll",-100)
@@ -250,7 +250,8 @@ SetMainGUI() {
     MainGUI.OnEvent("Size"  , MainGUI_Size)
     MainGUI.OnEvent("ContextMenu", MainGUI_ContextMenu)
     MainGUI.BackColor := g_GUI["MainGUIColor"]
-    MainGUI.SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
+    mainGuiFont := GetGuiFontSpec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
+    MainGUI.SetFont(mainGuiFont[2], mainGuiFont[1])
     myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn border -E0x200 W" Input_W, g_LNG[13])
     myInputBox.Opt("Background" g_GUI["CMDListColor"])
     myInputBox.OnEvent("Change", Input_Change)
@@ -279,7 +280,8 @@ SetMainGUI() {
 
     myStatus := MainGUI.AddEdit("x12 y+10 r1 -WantReturn ReadOnly -E0x200 border W" List_W " Hidden" (!g_CONFIG["ShowStatusBar"]), )
     myStatus.Opt("Background" g_GUI["CMDListColor"])
-    myStatus.SetFont(StrSplit(g_GUI["MainSBFont"], ",")[2], StrSplit(g_GUI["MainSBFont"], ",")[1])
+    mainSbFont := GetGuiFontSpec(g_GUI["MainSBFont"], "Microsoft YaHei", "norm s9.0")
+    myStatus.SetFont(mainSbFont[2], mainSbFont[1])
 
     if FileExist(AbsPath(g_GUI["Background"])) {
         try MainGUI.AddPic("x0 y0 0x4000000", AbsPath(g_GUI["Background"]))
@@ -311,7 +313,7 @@ SetMainGUI() {
                     FileGetShortcut(Path, Path, , &fileArg, &Desc)
                     Path .= " " fileArg
                 }
-                CmdMgr(g_SECTION["USERCMD"], fileType, Path, Desc, 1, "")              ; Add new command to database
+                OpenCommandManager(g_SECTION["USERCMD"], fileType, Path, Desc, 1, "")   ; Add new command to database
             }
         }
     }
@@ -379,7 +381,7 @@ SetTrayMenu() {
             myTrayMenu.Add(g_LNG[309], Update)
             myTrayMenu.Add(g_LNG[304], About)
             myTrayMenu.Add()
-            myTrayMenu.Add(g_LNG[307], ReStart)
+            myTrayMenu.Add(g_LNG[307], RestartApp)
             myTrayMenu.Add(g_LNG[308], Exit)
 
             myTrayMenu.SetIcon(g_LNG[300], "imageres.dll", -100)
@@ -427,7 +429,7 @@ RegisterHotkey() {
         Hotkey("F2"         , Options)
         Hotkey("F3"         , EditCommand)
         Hotkey("F4"         , UserCommand)
-        Hotkey("^q"         , ReStart)
+        Hotkey("^q"         , RestartApp)
         Hotkey("^d"         , OpenContainer)
         Hotkey("^c"         , CopyCommand)
         Hotkey("^n"         , NewCommand)
@@ -468,7 +470,7 @@ RegisterHotkey() {
         Trigger := "Trigger" . A_Index
         if (g_HOTKEY.Has(KeyName) && g_HOTKEY[KeyName] != "" && g_HOTKEY[Trigger] != "") { ; 自定义热键执行指定功能 = Hotkey + Trigger
             try {
-                Hotkey(g_HOTKEY[KeyName], ExecuteFunc.Bind(, g_HOTKEY[Trigger], A_Index))
+                Hotkey(g_HOTKEY[KeyName], RunFunctionCommand.Bind(, g_HOTKEY[Trigger], A_Index))
                 g_LOG.Debug("RegisterHotkey: Set customized function list local hotkey " A_Index " " g_HOTKEY[KeyName] " <-> " g_HOTKEY[Trigger] "...OK")
             } catch as e {
                 g_LOG.Debug("RegisterHotkey: Failed to set customized function list local hotkey..."  e.Message)
@@ -480,7 +482,7 @@ RegisterHotkey() {
     HotIfWinActive(g_HOTKEY["CondTitle"])
     if g_HOTKEY.Has("CondTitle") && g_HOTKEY.Has("CondHotkey") && g_HOTKEY.Has("CondAction") {
         try {
-            Hotkey(g_HOTKEY["CondHotkey"], ExecuteFunc.Bind(, g_HOTKEY["CondAction"], 1))
+            Hotkey(g_HOTKEY["CondHotkey"], RunFunctionCommand.Bind(, g_HOTKEY["CondAction"], 1))
             g_LOG.Debug("RegisterHotkey: Set conditional hotkey " g_HOTKEY["CondHotkey"] " <-> " g_HOTKEY["CondAction"] " for " g_HOTKEY["CondTitle"] "...OK")
         } catch as e {
             g_LOG.Debug("RegisterHotkey: Failed to set conditional hotkey..." e.Message)
@@ -490,9 +492,9 @@ RegisterHotkey() {
     return
 }
 
-ExecuteFunc(HotkeyName, FuncName, Index) {
+RunFunctionCommand(HotkeyName, FuncName, Index) {
     RunCommand("FUNC | " FuncName)
-    g_LOG.Debug("ExecutFunc: Execute function...=" FuncName)
+    g_LOG.Debug("RunFunctionCommand: Execute function...=" FuncName)
 }
 
 Activate() {
@@ -517,42 +519,57 @@ SearchCommand(command := "") {
 
     g_MATCHED := Array()
     g_RUNTIME["CurrentCommand"] := ""
+    listLimit := g_GUI["ListRows"]
     prefix := SubStr(command, 1, 1)
+    hasOp := InStr(command, "+") || InStr(command, "-") || InStr(command, "*") || InStr(command, "/") || InStr(command, "^")
+    isExpr := hasOp && RegExMatch(command, "^[\d+\-*/^(). ]+$")
 
     ; Prefix-based fallback shortcuts: "+" / " " / ">"
-    if (prefix = "+" or prefix = " " or prefix = ">") {
+    if IsFallbackPrefix(prefix) {
+        if (g_FALLBACK.Length = 0)
+            return ListResult(g_MATCHED)
         fallbackIndex := (prefix = "+") ? 1 : (prefix = " ") ? 2 : 3
-        g_RUNTIME["CurrentCommand"] := g_FALLBACK[fallbackIndex]
+        g_RUNTIME["CurrentCommand"] := g_FALLBACK[Min(fallbackIndex, g_FALLBACK.Length)]
         g_MATCHED.Push(g_RUNTIME["CurrentCommand"])
         return ListResult(g_MATCHED)
     }
 
     ; Search precomputed command index.
-    for cmdIndex, searchableText in g_CMDINDEX {
-        if FuzzyMatch(searchableText, command) {
-            g_MATCHED.Push(g_COMMANDS[cmdIndex])
-            g_RUNTIME["CurrentCommand"] := g_MATCHED[1]
-
-            if g_MATCHED.Length >= g_GUI["ListRows"]
-                break
+    if (!isExpr) {
+        pattern := BuildFuzzyPattern(command)
+        if (pattern = "") {
+            Loop Min(listLimit, g_COMMANDS.Length)
+                g_MATCHED.Push(g_COMMANDS[A_Index])
+        } else {
+            regexPattern := g_RUNTIME["RegEx"] . pattern
+            for cmdIndex, searchableText in g_CMDINDEX {
+                if RegExMatch(searchableText, regexPattern) {
+                    g_MATCHED.Push(g_COMMANDS[cmdIndex])
+                    if g_MATCHED.Length >= listLimit
+                        break
+                }
+            }
         }
     }
 
     ; No command match: try expression evaluation, otherwise fallback list.
-    if (g_MATCHED.Length = 0) {
-        evalResult := Eval(command)
-        if (IsNumber(evalResult) && evalResult != 0) {
-            g_RUNTIME["UseFallback"] := False
-            g_RUNTIME["CurrentCommand"] := ""
-            g_MATCHED := StruCalc(Round(evalResult, 6)) ; normalize float precision
-            return ListResult(g_MATCHED, True)
+    if (g_MATCHED.Length > 0) {
+        g_RUNTIME["CurrentCommand"] := g_MATCHED[1]
+        g_RUNTIME["UseFallback"] := False
+    } else {
+        if (isExpr) {
+            evalResult := Eval(command)
+            if (IsNumber(evalResult)) {
+                g_RUNTIME["UseFallback"] := False
+                g_RUNTIME["CurrentCommand"] := ""
+                g_MATCHED := StruCalc(Round(evalResult, 6)) ; normalize float precision
+                return ListResult(g_MATCHED, True)
+            }
         }
 
         g_RUNTIME["UseFallback"] := True
         g_MATCHED := g_FALLBACK
-        g_RUNTIME["CurrentCommand"] := g_FALLBACK[1]
-    } else {
-        g_RUNTIME["UseFallback"] := False
+        g_RUNTIME["CurrentCommand"] := g_FALLBACK.Length ? g_FALLBACK[1] : ""
     }
 
     return ListResult(g_MATCHED)
@@ -562,30 +579,53 @@ ListResult(rows := [], useDisplay := false) {
     myListView.Opt("-Redraw")
     myListView.Delete()
     g_RUNTIME["UseDisplay"] := useDisplay
+    showSN := g_CONFIG["ShowSN"], shortenPath := g_CONFIG["ShortenPath"]
 
     for rowIndex, rowCommand in rows {
         parts := StrSplit(rowCommand, " | ")
         cmdType := parts.Length >= 1 ? parts[1] : ""
         cmdPath := parts.Length >= 2 ? parts[2] : ""
         cmdDesc := parts.Length >= 3 ? parts[3] : ""
-        displayNo := g_CONFIG["ShowSN"] ? rowIndex : ""
+        displayNo := showSN ? rowIndex : ""
         iconIndex := GetIconIndex(cmdPath, cmdType)
 
-        if (cmdType != "URL" && g_CONFIG["ShortenPath"]) {
+        if (shortenPath && cmdType != "URL") {
             ; Keep URL full text, shorten other command paths for list readability.
             SplitPath(cmdPath, &cmdPath)
         }
 
         myListView.Add("Icon" iconIndex, displayNo, cmdType, cmdPath, cmdDesc)
     }
-
+    rowCount := myListView.GetCount()
     statusBarText := (g_RUNTIME["CurrentCommand"] != "")
-        ? StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2]
-        : ((myListView.GetCount() > 0) ? myListView.GetText(1, 3) : "")
+        ? GetCmdPart(g_RUNTIME["CurrentCommand"], 2)
+        : (rowCount ? myListView.GetText(1, 3) : "")
 
-    myListView.Modify(1, "Select Focus Vis")
+    if (rowCount) myListView.Modify(1, "Select Focus Vis")
     myListView.Opt("+Redraw")
     SetStatusBar(statusBarText)
+}
+
+GetCmdPart(command, fieldNo) {
+    static lastCmd := "", lastParts := ""
+    if (command != lastCmd) {
+        lastCmd := command
+        lastParts := StrSplit(command, " | ")
+    }
+    parts := lastParts
+    return parts.Length >= fieldNo ? parts[fieldNo] : ""
+}
+
+SyncCurrentCommandByRow(rowNumber, updateStatus := true) {
+    if (g_MATCHED.Length >= rowNumber) {
+        g_RUNTIME["CurrentCommand"] := g_MATCHED[rowNumber]
+        if updateStatus
+            SetStatusBar(GetCmdPart(g_RUNTIME["CurrentCommand"], 2))
+        return true
+    }
+    if updateStatus
+        SetStatusBar(myListView.GetText(rowNumber, 3))
+    return false
 }
 
 GetIconIndex(path, type) {                                              ; Get file's icon index (TO-DO: Prepare to omit the file type)
@@ -678,6 +718,9 @@ RelativePath(Path) {                                                    ; Conver
 }
 
 RunCommand(originCmd) {
+    if (originCmd = "")
+        return
+
     if (g_RUNTIME["UseDisplay"]) {
         g_LOG.Debug("RunCommand: blocked in display mode, cmd=" originCmd)
         return
@@ -742,28 +785,23 @@ NextCommand(*) {
 GotoCommand(*) {
     index := SubStr(A_ThisHotkey, 2, 1)                                 ; Get index from hotkey (select specific command = Shift + index)
 
-    if (index <= g_MATCHED.Length) {
+    if (index <= g_MATCHED.Length)
         ChangeCommand(index, True)
-        g_RUNTIME["CurrentCommand"] := g_MATCHED[index]
-    }
 }
 
 RunSelectedCommand(*) {
     GotoCommand()
     RunCommand(g_RUNTIME["CurrentCommand"])
 }
-
 ChangeCommand(Step := 1, ResetSelRow := False) {
+    rowCount := myListView.GetCount()
+    if (rowCount = 0)
+        return
     selectedRow := ResetSelRow ? Step : myListView.GetNext() + Step     ; Get target row no. to be selected
-    selectedRow := selectedRow > myListView.GetCount() ? 1 : selectedRow ; Listview cycle selection (Mod has bug on upward cycle)
-    selectedRow := selectedRow < 1 ? myListView.GetCount() : selectedRow
+    selectedRow := selectedRow > rowCount ? 1 : selectedRow              ; Listview cycle selection (Mod has bug on upward cycle)
+    selectedRow := selectedRow < 1 ? rowCount : selectedRow
 
-    if (g_MATCHED.Length >= selectedRow) {
-        g_RUNTIME["CurrentCommand"] := g_MATCHED[selectedRow]           ; Get current command from selected row
-        SetStatusBar(StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2])
-    } else {
-        SetStatusBar(myListView.GetText(selectedRow, 3))
-    }
+    SyncCurrentCommandByRow(selectedRow)                                ; Get current command from selected row
 
     myListView.Modify(selectedRow, "Select Focus Vis")                  ; make new index row selected, Focused, and Visible
 }
@@ -772,12 +810,7 @@ LV_Click(myListView, rowNumber) {
     if (!rowNumber)     ; 如果用户左键点击了列表行以外的地方
         Return
 
-    if (g_MATCHED.Length >= rowNumber) {
-        g_RUNTIME["CurrentCommand"] := g_MATCHED[rowNumber]             ; Get current command from focused row
-        SetStatusBar(StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2])
-    } else {
-        SetStatusBar(myListView.GetText(rowNumber, 3))
-    }
+    SyncCurrentCommandByRow(rowNumber)                                  ; Get current command from focused row
 }
 
 LV_ContextMenu(GuiCtrlObj, rowNumber, IsRightClick, X, Y) {             ; On ListView ContextMenu
@@ -788,11 +821,10 @@ LV_ContextMenu(GuiCtrlObj, rowNumber, IsRightClick, X, Y) {             ; On Lis
         return
     }
 
-    if (g_MATCHED.Length >= rowNumber) {
-        g_RUNTIME["CurrentCommand"] := g_MATCHED[rowNumber]
+    if SyncCurrentCommandByRow(rowNumber, false) {
         SetListViewContextMenu(X, Y)
     } else {                ; For cases like first hint page
-        SetStatusBar(myListView.GetText(rowNumber, 3))
+        SyncCurrentCommandByRow(rowNumber)
         SetMainGUIContextMenu("", GuiCtrlObj, rowNumber, IsRightClick, X, Y)
     }
 }
@@ -833,8 +865,7 @@ LVRunCommand(*) {                                                       ; On Lis
     if (!focusedRow)                                                    ; Return if no focused row is found
         Return
 
-    if (g_MATCHED.Length >= focusedRow) {
-        g_RUNTIME["CurrentCommand"] := g_MATCHED[focusedRow]            ; Get current command from focused row
+    if SyncCurrentCommandByRow(focusedRow, false) {                     ; Get current command from focused row
         RunCommand(g_RUNTIME["CurrentCommand"])                         ; Execute the command if the user selected "Run Enter"
     }
 }
@@ -844,9 +875,7 @@ CopyCommand(*) {                                                        ; ListVi
     if (!focusedRow)                                                    ; Return if no focused row is found
         Return
 
-    if (g_MATCHED.Length >= focusedRow) {
-        g_RUNTIME["CurrentCommand"] := g_MATCHED[focusedRow]            ; Get current command from focused row
-    }
+    SyncCurrentCommandByRow(focusedRow, false)                          ; Get current command from focused row
 
     if (MainGUI.FocusedCtrl.ClassNN = "SysListView321") {
         A_Clipboard := myListView.GetText(focusedRow, 3)                ; Get the text from the focusedRow's 3rd field.
@@ -922,7 +951,7 @@ SetMainGUIContextMenu(GuiObj, GuiCtrlObj, Item, IsRightClick, X, Y) {
             myContextMenu.Add(g_LNG[309], Update)
             myContextMenu.Add(g_LNG[304], About)
             myContextMenu.Add()
-            myContextMenu.Add(g_LNG[307], ReStart)
+            myContextMenu.Add(g_LNG[307], RestartApp)
             myContextMenu.Add(g_LNG[308], Exit)
 
             myContextMenu.SetIcon(g_LNG[301], "imageres.dll", -114)
@@ -954,16 +983,13 @@ Exit(*) {
     ExitApp()
 }
 
-ReStart(*) {
+RestartApp(*) {
     Reload()
 }
 
 SetStatusBar(strToShow) {                                               ; Set StatusBar text, Mode 1: Current command (default), 2: Hint, 3: Any text
-    if (strToShow = "TIP") {
+    if (strToShow = "TIP")
         strToShow := g_LNG[51] g_LNG[Random(52, 71)]                    ; Randomly select a tip from hint list g_LNG 52~71
-    } else {
-        strToShow := strToShow
-    }
 
     myStatus.value := strToShow
 }
@@ -973,54 +999,41 @@ RunCurrentCommand(*) {
 }
 
 ParseArg() {
-    commandPrefix := SubStr(myInputBox.Value, 1, 1)
+    inputVal := myInputBox.Value
+    commandPrefix := SubStr(inputVal, 1, 1)
+    spacePos := InStr(inputVal, " ")
 
-    if (commandPrefix = "+" || commandPrefix = " " || commandPrefix = ">") {
-        return g_RUNTIME["Arg"] := SubStr(myInputBox.Value, 2)
+    if IsFallbackPrefix(commandPrefix) {
+        return g_RUNTIME["Arg"] := SubStr(inputVal, 2)
     }
 
-    if (InStr(myInputBox.Value, " ") && !g_RUNTIME["UseFallback"]) {
-        g_RUNTIME["Arg"] := SubStr(myInputBox.Value, InStr(myInputBox.Value, " ") + 1)
+    if (spacePos && !g_RUNTIME["UseFallback"]) {
+        g_RUNTIME["Arg"] := SubStr(inputVal, spacePos + 1)
     } else if (g_RUNTIME["UseFallback"]) {
-        g_RUNTIME["Arg"] := myInputBox.Value
+        g_RUNTIME["Arg"] := inputVal
     } else {
         g_RUNTIME["Arg"] := ""
     }
 }
 
-; Fuzzy match helper.
-; haystack: searchable command text.
-; needle  : text from input box.
-FuzzyMatch(haystack, needle) {
-    if (!needle)
-        return true
+BuildFuzzyPattern(needle) {
+    needle := Trim(RegExReplace(needle, "[\s\\]+", " "))
+    if !InStr(needle, " ")
+        return RegExReplace(needle, "([\\\^\$\.\|\?\*\+\(\)\[\]\{\}])", "\\$1")
 
-    ; Expression-like input is handled by Eval path, not command fuzzy match.
-    if RegExMatch(needle, "^[\d+\-*/^(). ]+$") && RegExMatch(needle, "[+\-*/^]")
-        return false
-
-    ; Split by space / "\" for fuzzy segments and escape regex metacharacters.
     pattern := ""
-    for _, token in StrSplit(needle, " \") {
+    for _, token in StrSplit(needle, " ") {
         if (token = "")
             continue
-        pattern .= (pattern = "" ? "" : ".*") . RegexEscape(token)
+        pattern .= (pattern = "" ? "" : ".*") . RegExReplace(token, "([\\\^\$\.\|\?\*\+\(\)\[\]\{\}])", "\\$1")
     }
-
-    if (pattern = "")
-        return true
-
-    try {
-        return RegExMatch(haystack, g_RUNTIME["RegEx"] . pattern)
-    } catch as e {
-        g_LOG.Debug("FuzzyMatch: invalid pattern, needle=" needle ", error=" e.Message)
-        return false
-    }
+    return pattern
 }
 
-RegexEscape(text) {
-    ; Escape regex metacharacters so user input is treated as literal text.
-    return RegExReplace(text, "([\\\^\$\.\|\?\*\+\(\)\[\]\{\}])", "\\$1")
+IsFallbackPrefix(prefix) {
+    if (prefix = "")
+        return false
+    return InStr("+ >", prefix, 0)
 }
 
 UpdateRank(originCmd, showRank := false, inc := 1) {
@@ -1030,7 +1043,7 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
     sections := Array(g_SECTION["DFTCMD"], g_SECTION["USERCMD"], g_SECTION["INDEX"])
 
     for _, section in sections {
-        rankValue := IniRead(g_INI, section, originCmd, "KeyNotFound")
+        rankValue := IniRead(g_INI, section, EscapeCommandKey(originCmd), "KeyNotFound")   ; Escape when reading
 
         if (rankValue = "KeyNotFound" or rankValue = "ERROR" or originCmd = "")
             continue
@@ -1038,7 +1051,7 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
         rankValue := IsInteger(rankValue) ? rankValue + inc : inc
         rankValue := (rankValue < 0) ? -1 : rankValue
 
-        IniWrite(rankValue, g_INI, section, originCmd)
+        IniWrite(rankValue, g_INI, section, EscapeCommandKey(originCmd))  ; Escape when writing
         if (showRank)
             SetStatusBar("UpdateRank: Rank for current command : " rankValue)
 
@@ -1106,25 +1119,28 @@ LoadCommands() {
         if (!line || SubStr(line, 1, 1) = ";")
             continue
 
-        sepPos := InStr(line, "=")
-        if (sepPos <= 1)
-            continue
+        ; Unescape special characters in the line first (handles legacy commands with escaped = ; \)
+        line := UnescapeCommandKey(line)
 
-        commandText := Trim(SubStr(line, 1, sepPos - 1))
-        rankText := Trim(SubStr(line, sepPos + 1))
-        if (commandText = "" || rankText = "")
+        ; Split by the last '=' so commandText may contain '=' characters.
+        if !RegExMatch(line, "s)^(.*)=(\d+)\s*$", &m) {
             continue
-
-        rankValue := IsNumber(rankText) ? (rankText + 0) : 0
-        if (rankValue <= 0)
+        }
+        commandText := Trim(m.1)
+        rankValue := m.2 + 0
+        if (commandText = "" || rankValue <= 0)
             continue
 
         parts := StrSplit(commandText, " | ")
         cmdPath := parts.Has(2) ? parts[2] : ""
         cmdDesc := parts.Has(3) ? parts[3] : ""
-        SplitPath(cmdPath, &fileName)
 
-        searchable := g_CONFIG["MatchPath"] ? (cmdPath " " cmdDesc) : (fileName " " cmdDesc)
+        if (g_CONFIG["MatchPath"]) {
+            searchable := cmdPath " " cmdDesc
+        } else {
+            SplitPath(cmdPath, &fileName)
+            searchable := fileName " " cmdDesc
+        }
         if (g_CONFIG["MatchPinyin"])
             searchable := GetFirstChar(searchable)
 
@@ -1165,7 +1181,8 @@ LoadCommands() {
         fallbackSection := IniRead(g_INI, g_SECTION["FALLBACK"])
     }
     for line in StrSplit(fallbackSection, "`n") {
-        if (line != "")
+        line := Trim(line)
+        if (line != "" && SubStr(line, 1, 1) != ";")
             g_FALLBACK.Push(line)
     }
 
@@ -1174,13 +1191,17 @@ LoadCommands() {
 }
 
 LoadHistory() {
+    Global g_HISTORYS
     if (g_CONFIG["SaveHistory"]) {
+        g_HISTORYS := Array()
         Loop g_CONFIG["HistoryLen"] {
             Try historyItem := IniRead(g_INI, g_SECTION["HISTORY"], A_Index, "")
-            g_HISTORYS.Push(historyItem)
+            if (historyItem != "")
+                g_HISTORYS.Push(historyItem)
         }
         g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
     } else {
+        g_HISTORYS := Array()
         Try IniDelete(g_INI, g_SECTION["HISTORY"])
         g_LOG.Debug("LoadHistory: History section cleaned up...")
     }
@@ -1217,16 +1238,15 @@ OpenDir(Path) {
 }
 
 OpenContainer(*) {
-    if (StrSplit(g_RUNTIME["CurrentCommand"], " | ").Length < 2) {
+    cmdPath := GetCmdPart(g_RUNTIME["CurrentCommand"], 2)
+    if (cmdPath = "") {
         return MsgBox("No valid file to open container folder.", g_TITLE, 48)
     }
-    Path := AbsPath(StrSplit(g_RUNTIME["CurrentCommand"], " | ")[2])
+    Path := AbsPath(cmdPath)
 
     try {
-        if (g_CONFIG["FileMgr"] = "Explorer.exe")
-            Run(g_CONFIG["FileMgr"] ' /Select, `"' Path '`"')
-        else
-            Run(g_CONFIG["FileMgr"] ' /P `"' Path '`"')                 ; /P Parent folder
+        runArg := (g_CONFIG["FileMgr"] = "Explorer.exe") ? ' /Select, `"' Path '`"' : ' /P `"' Path '`"' ; /P Parent folder
+        Run(g_CONFIG["FileMgr"] runArg)
 
     g_LOG.Debug("OpenContainer: Using=" g_CONFIG["FileMgr"] " to open container dir for file=" Path "...OK")
     } catch as e {
@@ -1325,14 +1345,19 @@ Reindex(*) {                                                            ; Re-cre
     ProgressGui.Show()
 
     for dirIndex, dir in StrSplit(g_CONFIG["IndexDir"], ",") {
-        searchPath := RegExReplace(AbsPath(dir), "\\+$")                ; Remove trailing backslashes
+        searchPath := RegExReplace(AbsPath(Trim(dir)), "\\+$")          ; Remove trailing backslashes
+        if !DirExist(searchPath)
+            continue
 
         for extIndex, ext in StrSplit(g_CONFIG["IndexType"], ",") {
+            ext := Trim(ext)
+            if (ext = "")
+                continue
             Loop Files, searchPath "\" ext, "R" {                       ; Calculate path relative to searchPath and count subdir levels
                 rel := SubStr(A_LoopFileFullPath, StrLen(searchPath) + 2) ; +2 to skip the backslash
                 seps := (rel = "") ? 0 : StrLen(rel) - StrLen(StrReplace(rel, "\", "")) ; Count backslashes to determine depth
 
-                if (seps >= g_CONFIG["IndexDepth"])                     ; If file is deeper than allowed depth, skip it.
+                if (seps > g_CONFIG["IndexDepth"])                      ; If file is deeper than allowed depth, skip it.
                     continue
 
                 if (g_CONFIG["IndexExclude"] != "" && RegExMatch(A_LoopFileFullPath, g_CONFIG["IndexExclude"]))
@@ -1340,10 +1365,9 @@ Reindex(*) {                                                            ; Re-cre
 
                 pairs .= "File | " . A_LoopFileFullPath . "=1`n" ; Collect file entry
 
-                ; Update ProgressGui
-                ProgressGui["MyProgress"].Value := Mod(A_Index, 100)    ; Simple progress animation
-                ProgressGui["MyFileName"].Text  := A_LoopFileName
-                Sleep 30
+                ; Update ProgressGui (throttled to reduce UI overhead)
+                if (!Mod(A_Index, 20))
+                    ProgressGui["MyProgress"].Value := Mod(A_Index, 100), ProgressGui["MyFileName"].Text := A_LoopFileName
             }
         }
     }
@@ -1477,9 +1501,9 @@ Listary() {                                                             ; Listar
 
             ; 检测当前窗口是否符合打开/保存对话框条件
             if (IsQuickSwitchDialog()) {
-                Title       := WinGetTitle("A")
-                ProcessName := WinGetProcessName("A")
-                g_LOG.Debug("Listary: Dialog detected, active window ahk_title=" Title ", ahk_exe=" ProcessName)
+                winTitle := WinGetTitle("A")
+                procName := WinGetProcessName("A")
+                g_LOG.Debug("Listary: Dialog detected, active window ahk_title=" winTitle ", ahk_exe=" procName)
                 SyncTCPath()                                            ; NO Return, as will terimate loop (AutoSwitchDir)
             }
             Sleep 100  ; Reduce CPU usage
@@ -1502,54 +1526,54 @@ Listary() {                                                             ; Listar
 }
 
 ShowListaryHint() {
-    static hintGui   := 0
-    static hintText  := 0
-    static lastHwnd  := 0
-    static marginX   := 8
-    static hintH     := 26
-    static padX      := 10
-    static themeDark := -1
+    static qsHintGui    := 0
+    static qsHintText   := 0
+    static lastDlgHwnd  := 0
+    static hintMarginX  := 8
+    static hintHeight   := 26
+    static hintPadX     := 10
+    static darkThemeNow := -1
 
-    if (!IsObject(hintGui)) {
-        hintGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
-        hintGui.SetFont("s9", "Segoe UI")
-        hintText := hintGui.AddText("x" padX " y4 w240 h18 +0x200", "")
-        SetWindowCorner(hintGui.Hwnd, true)
+    if (!IsObject(qsHintGui)) {
+        qsHintGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
+        qsHintGui.SetFont("s9", "Segoe UI")
+        qsHintText := qsHintGui.AddText("x" hintPadX " y4 w240 h18 +0x200", "")
+        SetWindowCorner(qsHintGui.Hwnd, true)
     }
 
     if (IsQuickSwitchDialog()) {
-        hwnd := WinGetID("A")
-        if (!hwnd || !WinExist("ahk_id " hwnd)) {
-            hintGui.Hide()
-            lastHwnd := 0
+        dlgHwnd := WinGetID("A")
+        if (!dlgHwnd || !WinExist("ahk_id " dlgHwnd)) {
+            qsHintGui.Hide()
+            lastDlgHwnd := 0
             return
         }
-        darkNow := IsAppsDarkMode()
-        if (darkNow != themeDark) {
-            if (darkNow) {
-                hintGui.BackColor := "202020"
-                hintText.SetFont("cF2F2F2", "Segoe UI")
+        isDark := IsAppsDarkMode()
+        if (isDark != darkThemeNow) {
+            if (isDark) {
+                qsHintGui.BackColor := "202020"
+                qsHintText.SetFont("cF2F2F2", "Segoe UI")
             } else {
-                hintGui.BackColor := "F7F7F7"
-                hintText.SetFont("c222222", "Segoe UI")
+                qsHintGui.BackColor := "F7F7F7"
+                qsHintText.SetFont("c222222", "Segoe UI")
             }
-            themeDark := darkNow
+            darkThemeNow := isDark
         }
 
-        try WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+        try WinGetPos(&x, &y, &w, &h, "ahk_id " dlgHwnd)
         catch {
-            hintGui.Hide()
-            lastHwnd := 0
+            qsHintGui.Hide()
+            lastDlgHwnd := 0
             return
         }
-        hintW := Max(320, w - marginX * 2)
-        hintText.Text := GetListaryHintText()
-        hintText.Move(padX, 4, hintW - padX * 2, hintH - 8)
-        hintGui.Show("NA x" (x + marginX) " y" (y + h - 1) " w" hintW " h" hintH)
-        lastHwnd := hwnd
-    } else if (lastHwnd) {
-        hintGui.Hide()
-        lastHwnd := 0
+        hintW := Max(320, w - hintMarginX * 2)
+        qsHintText.Text := GetListaryHintText()
+        qsHintText.Move(hintPadX, 4, hintW - hintPadX * 2, hintHeight - 8)
+        qsHintGui.Show("NA x" (x + hintMarginX) " y" (y + h - 1) " w" hintW " h" hintHeight)
+        lastDlgHwnd := dlgHwnd
+    } else if (lastDlgHwnd) {
+        qsHintGui.Hide()
+        lastDlgHwnd := 0
     }
 }
 
@@ -1578,21 +1602,21 @@ FormatHotkeyLabel(hotkey) {
     if (!hotkey)
         return hotkey
 
-    label := hotkey
-    mods := ""
-    if InStr(label, "^")
-        mods .= "Ctrl + "
-    if InStr(label, "!")
-        mods .= "Alt + "
-    if InStr(label, "+")
-        mods .= "Shift + "
-    if InStr(label, "#")
-        mods .= "Win + "
+    rawHotkey := hotkey
+    modText := ""
+    if InStr(rawHotkey, "^")
+        modText .= "Ctrl + "
+    if InStr(rawHotkey, "!")
+        modText .= "Alt + "
+    if InStr(rawHotkey, "+")
+        modText .= "Shift + "
+    if InStr(rawHotkey, "#")
+        modText .= "Win + "
 
-    key := RegExReplace(label, "[\^\!\+\#\<\>\*\~\$\s]")
-    if (StrLen(key) = 1)
-        key := StrUpper(key)
-    return mods key
+    baseKey := RegExReplace(rawHotkey, "[\^\!\+\#\<\>\*\~\$\s]")
+    if (StrLen(baseKey) = 1)
+        baseKey := StrUpper(baseKey)
+    return modText baseKey
 }
 
 ; 更严格地识别“打开/保存文件”对话框，避免普通 #32770 对话框误触发
@@ -1600,23 +1624,32 @@ IsQuickSwitchDialog(*) {
     if (!WinActive("ahk_group DialogBox") || WinActive("ahk_group ExcludeWin"))
         return false
 
-    activeClass := WinGetClass("A")
-    try ctrlList := WinGetControls("A")
+    winTitle := ""
+    try winTitle := WinGetTitle("A")
+
+    ctrlNames := []
+    try ctrlNames := WinGetControls("A")
     catch
-        return false
+        ctrlNames := []
 
-    hasEdit      := HasAnyCtrlMatch(ctrlList, "^Edit\d+$")              ; 文件名输入框
-    hasFileView  := HasAnyCtrlMatch(ctrlList, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
-    hasPathBar   := HasAnyCtrlMatch(ctrlList, "^ToolbarWindow32\d+$", "^ComboBoxEx32\d+$")
-    hasMainBtn   := HasAnyCtrlMatch(ctrlList, "^Button\d+$")
+    hasNameEdit := HasAnyCtrlMatch(ctrlNames, "^Edit\d+$")              ; 文件名输入框
+    hasFileView := HasAnyCtrlMatch(ctrlNames, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
+    hasPathCtrl := HasAnyCtrlMatch(ctrlNames, "^ToolbarWindow32\d+$", "^ComboBoxEx32\d+$", "^ComboBox\d+$")
+    hasMainBtn  := HasAnyCtrlMatch(ctrlNames, "^Button\d+$")
 
-    if (activeClass = "#32770")
-        return hasEdit && hasFileView && hasPathBar && hasMainBtn
-    return hasEdit && hasFileView && hasPathBar
+    ; DialogBox group already limits window classes via config (e.g. #32770 / Qt5QWindowIcon),
+    ; so use a unified control rule here to avoid per-app special cases.
+    if (ctrlNames.Length > 0) {
+        ; Allow either main buttons or path bar to accommodate app-hosted dialog variations.
+        return hasNameEdit && hasFileView && (hasMainBtn || hasPathCtrl)
+    }
+
+    ; Fallback when control enumeration fails (e.g. privilege boundary / owner-drawn dialogs).
+    return IsLikelyFileDialogTitle(winTitle)
 }
 
-HasAnyCtrlMatch(ctrlList, patternList*) {
-    for ctrlName in ctrlList {
+HasAnyCtrlMatch(ctrlNames, patternList*) {
+    for ctrlName in ctrlNames {
         for pattern in patternList {
             if RegExMatch(ctrlName, "i)" pattern)
                 return true
@@ -1625,13 +1658,19 @@ HasAnyCtrlMatch(ctrlList, patternList*) {
     return false
 }
 
+IsLikelyFileDialogTitle(title) {
+    if (!title)
+        return false
+    return RegExMatch(title, "i)(open|save|select|attach|import|export|reference|file|browse|打开|另存|选择|导入|导出|引用)")
+}
+
 ; Sync dialog box to Total Commander path (TC 7.x ~ 10.x)
 SyncTCPath(*) {
-    ClipSaved   := ClipboardAll()
+    clipSaved   := ClipboardAll()
     A_Clipboard := ""
     ; Get the HWND of TC (WinGetID may occur error if TC not found)
-    hwnd := WinExist("ahk_class TTOTAL_CMD")
-    if (!hwnd) {
+    tcHwnd := WinExist("ahk_class TTOTAL_CMD")
+    if (!tcHwnd) {
         MsgBox(g_LNG[219], g_TITLE, 48)
         g_LOG.Debug("SyncTCPath: No Total Commander window found")
         return
@@ -1640,35 +1679,35 @@ SyncTCPath(*) {
         SendMessage(1075, 2029, 0, , "ahk_class TTOTAL_CMD")            ; TC: WM_USER + 75, TC_GETCURRENTPATH = 2029
     } catch as e {
         g_LOG.Debug("SyncTCPath: SendMessage failed, exception - " . e.Message)
-        A_Clipboard := ClipSaved
+        A_Clipboard := clipSaved
         return
     }
     ; Wait up to 0.1 seconds for the clipboard to contain data
     if (ClipWait(0.1) = 0) {
-        A_Clipboard := ClipSaved
+        A_Clipboard := clipSaved
         g_LOG.Debug("SyncTCPath: Clipboard wait timed out")
         return
     }
     ; 确保路径以反斜杠结尾, 解决AutoCAD不识别路径问题
-    OutDir      := RTrim(A_Clipboard, "\") . "\"
-    A_Clipboard := ClipSaved
-    SetDialogPath(OutDir)
+    targetDir   := RTrim(A_Clipboard, "\") . "\"
+    A_Clipboard := clipSaved
+    SetDialogPath(targetDir)
 }
 
 ; Sync dialog box to Explorer path (Win7 ~ Win11)
 SyncExplorerPath(*) {
     ; Get the HWND of Explorer (WinGetID may occur error if Explorer not found)
-    hwnd := WinExist("ahk_class CabinetWClass")
-    if (!hwnd) {
+    expHwnd := WinExist("ahk_class CabinetWClass")
+    if (!expHwnd) {
         MsgBox(g_LNG[220], g_TITLE, 48)
         g_LOG.Debug("SyncExplorerPath: No Explorer window found")
         return
     }
     try {
-        for window in ComObject("Shell.Application").Windows
-            if (window.HWND = hwnd) {
-                Dir := window.Document.Folder.Self.Path
-                SetDialogPath(Dir)
+        for shellWin in ComObject("Shell.Application").Windows
+            if (shellWin.HWND = expHwnd) {
+                targetDir := shellWin.Document.Folder.Self.Path
+                SetDialogPath(targetDir)
                 return
             }
         g_LOG.Debug("SyncExplorerPath: No matching Explorer window")
@@ -1678,27 +1717,32 @@ SyncExplorerPath(*) {
 }
 
 ; Set dialog box path to specified directory
-SetDialogPath(Dir) {
-    if (!Dir || !FileExist(Dir)) {
-        g_LOG.Debug("SetDialogPath: Invalid directory :" Dir)
+SetDialogPath(targetDir) {
+    if (!targetDir || !FileExist(targetDir)) {
+        g_LOG.Debug("SetDialogPath: Invalid directory :" targetDir)
         return
     }
-    ActiveClass := WinGetClass("A")
-    if (ActiveClass = "Qt5QWindowIcon") {
+    activeClass := WinGetClass("A")
+    if (activeClass = "Qt5QWindowIcon") {
         ; WPS dialog: Its Edit control has no valid id, try simulate keyboard input (not fully reliable)
-        SendInput "{Dir}"
+        SendText targetDir
         SendInput "{Enter}"
-        g_LOG.Debug("SetDialogPath: Set path to " Dir " (WPS dialog)")
+        g_LOG.Debug("SetDialogPath: Set path to " targetDir " (WPS dialog)")
     } else {
         ; Windows Standard dialog: Edit1 is the path input box
-        dialogControl := ControlGetHwnd("Edit1", "A")
-        if (dialogControl) {
+        editHwnd := ControlGetHwnd("Edit1", "A")
+        if (editHwnd) {
             ControlFocus("Edit1", "A")
-            ControlSetText(Dir, "Edit1", "A")
+            ControlSetText(targetDir, "Edit1", "A")
             ControlSend("{Enter}", "Edit1", "A")
-            g_LOG.Debug("SetDialogPath: Set dialog path to=" Dir)
+            g_LOG.Debug("SetDialogPath: Set dialog path to=" targetDir)
         } else {
-            g_LOG.Debug("SetDialogPath: No Edit1 control found in dialog")
+            ; Fallback for dialogs without Edit1 (some owner-drawn or app-customized file dialogs).
+            SendInput "!d"
+            Sleep 60
+            SendText targetDir
+            SendInput "{Enter}"
+            g_LOG.Debug("SetDialogPath: Edit1 not found, used address bar fallback path=" targetDir)
         }
     }
 }
@@ -1709,7 +1753,7 @@ UserCommand(*) {
 
 ; From command "New Command" or GUI context menu "New Command"
 NewCommand(*) {
-    CmdMgr(g_SECTION["USERCMD"], , , g_RUNTIME["Arg"], 1, "")
+    OpenCommandManager(g_SECTION["USERCMD"], , , g_RUNTIME["Arg"], 1, "")
 }
 
 EditCommand(*) {
@@ -1720,7 +1764,7 @@ EditCommand(*) {
         return MsgBox(g_LNG[810], g_TITLE, 64)                          ; 64 = Info icon
 
     for index, section in StrSplit(g_SECTION["DFTCMD"] "," g_SECTION["USERCMD"] "," g_SECTION["INDEX"], ",") {
-        rank := IniRead(g_INI, section, currentCmd, "KeyNotFound")
+        rank := IniRead(g_INI, section, EscapeCommandKey(currentCmd), "KeyNotFound")  ; Escape when reading
 
         ; If currentCmd not exist in this section, skips the rest of a loop and begin to check next section
         if (rank = "KeyNotFound" || rank = "ERROR")
@@ -1733,7 +1777,7 @@ EditCommand(*) {
             desc := parts.Length >= 3 ? parts[3] : ""
 
             g_Log.Debug("EditCommand: Editing command=" currentCmd)
-            CmdMgr(section, type, path, desc, rank, currentCmd)
+            OpenCommandManager(section, type, path, desc, rank, currentCmd)
             break
         }
     }
@@ -1745,7 +1789,7 @@ DelCommand(*) {
         return
 
     for index, section in StrSplit(g_SECTION["DFTCMD"] "," g_SECTION["USERCMD"] "," g_SECTION["INDEX"], ",") {
-        rank := IniRead(g_INI, section, currentCmd, "KeyNotFound")
+        rank := IniRead(g_INI, section, EscapeCommandKey(currentCmd), "KeyNotFound")  ; Escape when reading
         if (rank = "KeyNotFound" || rank = "ERROR")
             continue
 
@@ -1753,7 +1797,7 @@ DelCommand(*) {
 
         if result = "YES" {
             try {
-                IniDelete(g_INI, section, currentCmd)
+                IniDelete(g_INI, section, EscapeCommandKey(currentCmd))  ; Escape when deleting
                 MsgBox(g_LNG[802] "`n`n" currentCmd, g_TITLE, 64)       ; 64 = Info icon
             } catch as e {
                 MsgBox(g_LNG[803] "`n`n" currentCmd, g_TITLE, 48)       ; 48 = Error icon
@@ -1765,66 +1809,83 @@ DelCommand(*) {
 }
 
 
-CmdMgr(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank := 1, OriginCmd := "") { ; 命令管理窗口
-    Global CmdMgrGUI
+OpenCommandManager(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank := 1, OriginCmd := "") { ; 命令管理窗口
+    Global g_CmdMgrGui
     Local  typeList := Array("File", "Dir", "CMD", "URL", "Func")
+    chooseIndex := GetArrayIndex(Type, typeList)
+    chooseIndex := chooseIndex ? chooseIndex : 1
 
     g_LOG.Debug("Starting Command Manager... Args=" Section "|" Type "|" Path "|" Desc "|" Rank)
 
-    CmdMgrGUI := Gui(, g_LNG[700])
-    CmdMgrGUI.SetFont("S9 Norm", "Microsoft Yahei")
-    CmdMgrGUI.AddGroupBox("w600 h260", g_LNG[701])
-    CmdMgrGUI.Add("Text", "x25 yp+30", g_LNG[702])
-    CmdMgrGUI.AddDropDownList("x160 yp-5 w130 vType Choose" GetArrayIndex(Type, typeList), typeList)
-    CmdMgrGUI.Add("Text", "x315 yp+5", g_LNG[705])
-    CmdMgrGUI.Add("Edit", "x435 yp-5 w130 Disabled vSection", Section)
-    CmdMgrGUI.Add("Text", "x25 yp+60", g_LNG[703])
-    CmdMgrGUI.Add("Edit", "x160 yp-5 w405 -WantReturn vPath", Path).Focus()
-    CmdMgrGUI.AddButton("x575 yp w30 hp", "...").OnEvent("Click", (*) => SelectCmdPath(CmdMgrGUI["Type"].Text))
-    CmdMgrGUI.Add("Text", "x25 yp+80", g_LNG[704])
-    CmdMgrGUI.AddEdit("x160 yp-5 w405 -WantReturn vDesc", Desc)
-    CmdMgrGUI.AddText("x25 yp+60", g_LNG[706])
-    CmdMgrGUI.AddEdit("x160 yp-5 w405 +Number vRank", Rank)
-    CmdMgrGUI.AddButton("Default x420 w90", g_LNG[7]).OnEvent("Click", (*) => CmdMgrButtonOK(Section, CmdMgrGUI["Type"].Text, CmdMgrGUI["Path"].Text, CmdMgrGUI["Desc"].Text, CmdMgrGUI["Rank"].Text, OriginCmd))
-    CmdMgrGUI.AddButton("x521 yp w90", g_LNG[8]).OnEvent("Click", CmdMgrGuiClose)
-    CmdMgrGUI.OnEvent("Close", CmdMgrGUIClose)
-    CmdMgrGUI.OnEvent("Escape", CmdMgrGUIClose)
-    CmdMgrGUI.Show("Center")
+    g_CmdMgrGui := Gui(, g_LNG[700])
+    g_CmdMgrGui.SetFont("S9 Norm", "Microsoft Yahei")
+    g_CmdMgrGui.AddGroupBox("w600 h260", g_LNG[701])
+    g_CmdMgrGui.Add("Text", "x25 yp+30", g_LNG[702])
+    g_CmdMgrGui.AddDropDownList("x160 yp-5 w130 vType Choose" chooseIndex, typeList)
+    g_CmdMgrGui.Add("Text", "x315 yp+5", g_LNG[705])
+    g_CmdMgrGui.Add("Edit", "x435 yp-5 w130 Disabled vSection", Section)
+    g_CmdMgrGui.Add("Text", "x25 yp+60", g_LNG[703])
+    g_CmdMgrGui.Add("Edit", "x160 yp-5 w405 -WantReturn vPath", Path).Focus()
+    g_CmdMgrGui.AddButton("x575 yp w30 hp", "...").OnEvent("Click", (*) => PickCommandTarget(g_CmdMgrGui["Type"].Text))
+    g_CmdMgrGui.Add("Text", "x25 yp+80", g_LNG[704])
+    g_CmdMgrGui.AddEdit("x160 yp-5 w405 -WantReturn vDesc", Desc)
+    g_CmdMgrGui.AddText("x25 yp+60", g_LNG[706])
+    g_CmdMgrGui.AddEdit("x160 yp-5 w405 +Number vRank", Rank)
+    g_CmdMgrGui.AddButton("Default x420 w90", g_LNG[7]).OnEvent("Click", (*) => SaveCommandFromManager(Section, g_CmdMgrGui["Type"].Text, g_CmdMgrGui["Path"].Text, g_CmdMgrGui["Desc"].Text, g_CmdMgrGui["Rank"].Text, OriginCmd))
+    g_CmdMgrGui.AddButton("x521 yp w90", g_LNG[8]).OnEvent("Click", CloseCommandManager)
+    g_CmdMgrGui.OnEvent("Close", CloseCommandManager)
+    g_CmdMgrGui.OnEvent("Escape", CloseCommandManager)
+    g_CmdMgrGui.Show("Center")
 }
 
-SelectCmdPath(Type) {
-    CmdMgrGUI.Opt("+OwnDialogs")                                        ; Make open dialog Modal
+PickCommandTarget(cmdType) {
+    g_CmdMgrGui.Opt("+OwnDialogs")                                      ; Make open dialog Modal
 
-    if (Type = "Dir")
-        Path := DirSelect(, 3, 'Please select directory')
+    if (cmdType = "Dir")
+        cmdPath := DirSelect(, 3, 'Please select directory')
+    else if (cmdType = "File")
+        cmdPath := FileSelect(3, , , 'All Files (*.*)')
     else
-        Path := FileSelect(3, , , 'All Files (*.*)')
+        return MsgBox("Path picker only supports File/Dir type.", g_LNG[700], 64)
 
-    if (Path != "")
-        CmdMgrGUI["Path"].Value := Path
+    if (cmdPath != "")
+        g_CmdMgrGui["Path"].Value := cmdPath
 }
 
-CmdMgrButtonOK(Section, Type, Path, Desc, Rank, OriginCmd) {
-    CmdMgrGUI.Submit()
-    Desc := Desc ? " | " Desc : Desc
+SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
+    g_CmdMgrGui.Submit()
+    validType := Map("File", 1, "Dir", 1, "CMD", 1, "URL", 1, "Func", 1)
+    section := Trim(section)
+    cmdType := Trim(cmdType)
+    cmdPath := Trim(cmdPath)
+    cmdDesc := Trim(cmdDesc)
+    cmdRank := Trim(cmdRank)
 
-    if (Path = "") {
+    if !validType.Has(cmdType)
+        return MsgBox("Invalid command type: " cmdType, g_LNG[820], 48)
+
+    if (cmdPath = "") {
         return MsgBox(g_LNG[821], g_LNG[820], 64)
-    } else {
-        try {
-            IniDelete(g_INI, Section, OriginCmd)                       ; Delete old command if path or desc changed
-            IniWrite(Rank, g_INI, Section, Type " | " Path Desc)
-        } catch as e {
-            MsgBox(g_LNG[822] e.Message, g_LNG[820], 64)
-            return
-        }
-        MsgBox(g_LNG[823] Section " ]`n`n" Type " | " Path " " Desc " = " Rank, g_LNG[820], 64)
     }
+
+    if (!IsInteger(cmdRank) || cmdRank <= 0)
+        cmdRank := 1
+
+    cmdLine := cmdType " | " cmdPath (cmdDesc != "" ? " | " cmdDesc : "")
+    try {
+        if (originCmd != "" && originCmd != cmdLine)
+            IniDelete(g_INI, section, EscapeCommandKey(originCmd))      ; Delete old command only when editing changed command key
+        IniWrite(cmdRank, g_INI, section, EscapeCommandKey(cmdLine))    ; Escape special chars to prevent INI corruption
+    } catch as e {
+        MsgBox(g_LNG[822] e.Message, g_LNG[820], 64)
+        return
+    }
+    MsgBox(g_LNG[823] section " ]`n`n" cmdLine " = " cmdRank, g_LNG[820], 64)
     LoadCommands()
 }
 
-CmdMgrGuiClose(*) {
-    CmdMgrGUI.Destroy()
+CloseCommandManager(*) {
+    g_CmdMgrGui.Destroy()
 }
 
 Plugins() {                                                             ; Plugins (Ctrl+D 自动添加日期)
@@ -1902,6 +1963,32 @@ GetArrayIndex(searchValue, Array){
         if (element = searchValue)
             return index
     }
+    return 0
+}
+
+; === Command Key Escaping Functions (for handling special chars in INI keys) ===
+; These functions handle the bug where command lines containing '=' break INI read/write
+; by escaping special characters before using them as INI keys, and unescaping when reading
+
+EscapeCommandKey(cmdLine) {
+    ; Escape special INI characters to make the command line safe as an INI key
+    if (cmdLine = "")
+        return ""
+    
+    cmdLine := StrReplace(cmdLine, "=", "_Equal_")  ; equals sign
+    cmdLine := StrReplace(cmdLine, ";", "_Semicolon_")  ; semicolon
+    return cmdLine
+}
+
+UnescapeCommandKey(cmdLine) {
+    ; Unescape the encoded special characters
+    ; Order: reverse of escape - do = and ;
+    if (cmdLine = "")
+        return ""
+    
+    cmdLine := StrReplace(cmdLine, "_Equal_", "=")  ; equals sign
+    cmdLine := StrReplace(cmdLine, "_Semicolon_", ";")  ; semicolon
+    return cmdLine
 }
 
 PTTools() {
@@ -1946,12 +2033,12 @@ StruCalc(evalResult) {
 
 Options(ActTab := 1) {
     Global OptGUI, OptListView
-    Local FuncList := ["Unset", "Active", "ToggleWindow", "Google", "Bing"
+    static FuncList := ["Unset", "Active", "ToggleWindow", "Google", "Bing"
         , "Everything", "TabFunc", "PrevCommand", "NextCommand", "CopyCommand"
         , "ClearInput", "RunCurrentCommand", "RankUp", "RankDown", "Reindex"
         , "About", "Usage", "Update", "UserCommand", "NewCommand", "EditCommand"
-        , "DelCommand", "CmdMgr", "Options", "TurnMonitorOff", "EmptyRecycle"
-        , "MuteVolume", "ReStart", "Exit", "PTTools"]
+        , "DelCommand", "OpenCommandManager", "Options", "TurnMonitorOff", "EmptyRecycle"
+        , "MuteVolume", "RestartApp", "Exit", "PTTools"]
 
     g_LOG.Debug("Options: Opening Options window... Tab=" ActTab)
     MainGUI_Close()
@@ -1961,8 +2048,11 @@ Options(ActTab := 1) {
 
     t := A_TickCount
     ActTab := IsNumber(ActTab) ? ActTab : 1                             ; Convert ActTab to number, default is 1 (for case like [Option`tF2])
+    optFont := GetGuiFontSpec(g_GUI["OptGUIFont"], "Microsoft YaHei", "norm s9.0")
+    mainFont := GetGuiFontSpec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
+    sbFont := GetGuiFontSpec(g_GUI["MainSBFont"], "Microsoft YaHei", "norm s9.0")
     OptGUI := Gui("+Owner" MainGUI.hwnd, g_LNG[2])                      ; +Owner MainGUI.hwnd fix GUI flicking issue
-    OptGUI.SetFont(StrSplit(g_GUI["OptGUIFont"], ",")[2], StrSplit(g_GUI["OptGUIFont"], ",")[1])
+    OptGUI.SetFont(optFont[2], optFont[1])
     OptTab := OptGUI.AddTab3("Choose" ActTab, g_LNG[100])
 
     OptTab.UseTab(1) ; CONFIG Tab
@@ -1991,13 +2081,13 @@ Options(ActTab := 1) {
     OptGUI.AddEdit("x393 yp w120 +Number vWinY", g_GUI["WinY"])
 
     OptGUI.AddText("x33 yp+45", g_LNG[173])
-    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIFont", g_GUI["MainGUIFont"]).SetFont(StrSplit(g_GUI["MainGUIFont"], ",")[2], StrSplit(g_GUI["MainGUIFont"], ",")[1])
+    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIFont", g_GUI["MainGUIFont"]).SetFont(mainFont[2], mainFont[1])
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("MainGUIFont"))
     OptGUI.AddText("x33 yp+45", g_LNG[174])
     OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vOptGUIFont", g_GUI["OptGUIFont"])
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("OptGUIFont"))
     OptGUI.AddText("x33 yp+45", g_LNG[175])
-    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainSBFont", g_GUI["MainSBFont"]).SetFont(StrSplit(g_GUI["MainSBFont"], ",")[2], StrSplit(g_GUI["MainSBFont"], ",")[1])
+    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainSBFont", g_GUI["MainSBFont"]).SetFont(sbFont[2], sbFont[1])
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("MainSBFont"))
 
     OptGUI.AddText("x33 yp+45", g_LNG[179])
@@ -2030,15 +2120,7 @@ Options(ActTab := 1) {
         OptGUI.AddDDL("x395 yp-5 w120 vTrigger" A_Index " Choose" GetArrayIndex(g_HOTKEY["Trigger" A_Index], FuncList), FuncList)
     }
 
-    HotIfWinActive  ; Turn off global hotkey when options() called by hotif hotkey F2
-    if (g_HOTKEY["GlobalHotkey1"] != "") {
-        Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "Off")
-        g_LOG.Debug("Options: Turn Off GlobalHotkey1...OK")
-    }
-    if (g_HOTKEY["GlobalHotkey2"] != "") {
-        Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "Off")
-        g_LOG.Debug("Options: Turn Off GlobalHotkey2...OK")
-    }
+    ToggleGlobalHotkeys("Off", "Options")                                ; Turn off global hotkeys in options
 
     OptTab.UseTab(4) ; INDEX Tab
     OptGUI.AddGroupBox("w500 h220", g_LNG[160])
@@ -2187,19 +2269,36 @@ OPTButtonOK(*) {
 OPTGuiClose(*) {
     g_LOG.Debug("OPTGuiClose: Closing Options window...")
 
-    HotIfWinActive      ; Turn on global hotkey
-    if (g_HOTKEY["GlobalHotkey1"] != "") {
-        Hotkey(g_HOTKEY["GlobalHotkey1"], ToggleWindow, "On")
-        g_LOG.Debug("OPTGuiClose: Turn On GlobalHotkey1...OK")
-    }
-    if (g_HOTKEY["GlobalHotkey2"] != "") {
-        Hotkey(g_HOTKEY["GlobalHotkey2"], ToggleWindow, "On")
-        g_LOG.Debug("OPTGuiClose: Turn On GlobalHotkey2...OK")
-    }
+    ToggleGlobalHotkeys("On", "OPTGuiClose")                             ; Turn on global hotkeys
 
     OptGUI.Hide()
     g_LOG.Debug("OPTGuiClose: OptGUI.Hide...OK")
     return
+}
+
+GetGuiFontSpec(fontText, defaultName := "Microsoft YaHei", defaultOpt := "norm s9.0") {
+    parts := StrSplit(fontText, ",")
+    name := Trim(parts[1])
+    opt := parts.Length >= 2 ? Trim(parts[2]) : defaultOpt
+    if (name = "")
+        name := defaultName
+    if (opt = "")
+        opt := defaultOpt
+    return [name, opt]
+}
+
+ToggleGlobalHotkeys(mode, caller := "") {
+    HotIfWinActive
+    for _, hk in ["GlobalHotkey1", "GlobalHotkey2"] {
+        if (g_HOTKEY[hk] = "")
+            continue
+        try {
+            Hotkey(g_HOTKEY[hk], ToggleWindow, mode)
+            g_LOG.Debug(caller ": Turn " mode " " hk "...OK")
+        } catch as e {
+            g_LOG.Debug(caller ": Turn " mode " " hk "...Failed: " e.Message)
+        }
+    }
 }
 
 LoadConfig(mode) {
@@ -2360,36 +2459,41 @@ SaveConfig() {
     Global OptListView
 
     OptGUI.Submit()
+    checkedRows := Map(), row := 0
+    while (row := OptListView.GetNext(row, "C"))
+        checkedRows[row] := 1
+
     ; Tab1 checklist values.
     for key, _ in g_CONFIG_P1 {
-        g_CONFIG[key] := (A_Index = OptListView.GetNext(A_Index - 1, "C")) ? 1 : 0
+        g_CONFIG[key] := checkedRows.Has(A_Index) ? 1 : 0
         IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
     }
 
-    configKeys := Array("FileMgr", "Everything", "HistoryLen", "RunCount"
+    static configKeys := Array("FileMgr", "Everything", "HistoryLen", "RunCount"
         , "AutoSwitchDir", "IndexDir", "IndexType", "IndexDepth"
         , "IndexExclude", "IndexStoreApp", "DialogWin", "FileMgrID", "ExcludeWin")
 
     for _, key in configKeys {
-        ctrl := OptGUI[key]
-        g_CONFIG[key] := (ctrl.Type = "CheckBox") ? ctrl.Value : ctrl.Text
+        g_CONFIG[key] := GetOptCtrlValue(OptGUI[key])
         IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
     }
 
     for key, _ in g_GUI {
-        ctrl := OptGUI[key]
-        g_GUI[key] := (ctrl.Type = "Slider") ? ctrl.Value : ctrl.Text
+        g_GUI[key] := GetOptCtrlValue(OptGUI[key])
         IniWrite(g_GUI[key], g_INI, g_SECTION["GUI"], key)
     }
 
     for key, _ in g_HOTKEY {
-        ctrl := OptGUI[key]
-        g_HOTKEY[key] := (ctrl.Type = "Hotkey") ? ctrl.Value : ctrl.Text
+        g_HOTKEY[key] := GetOptCtrlValue(OptGUI[key])
         IniWrite(g_HOTKEY[key], g_INI, g_SECTION["HOTKEY"], key)
     }
 
     g_LOG.Debug("SaveConfig: Save config...OK")
     return
+}
+
+GetOptCtrlValue(ctrl) {
+    return InStr(",CheckBox,Slider,Hotkey,", "," ctrl.Type ",") ? ctrl.Value : ctrl.Text
 }
 
 ; ==================== Built-in Functions =========================
@@ -2821,18 +2925,17 @@ SetLanguage() {
     g_LOG.Debug("SetLanguage: Set language to " g_LNG[1] "...OK")
     return
 }
-
 ;;==================== Expression Eval =========================
 Eval(expression, depth := 0) {
     if (depth > 10)  ; 防止栈溢出
-        return 0
+        return ""
 
     ; 移除所有空格
     expression := StrReplace(expression, " ")
     
     ; 检查非法字符（只允许数字、运算符、括号、小数点）
     if (!RegExMatch(expression, "^[\d+\-*/^().]*$"))
-        return 0
+        return ""
 
     ; 递归处理括号
     while RegExMatch(expression, "\(([^()]*)\)", &match) {
@@ -2962,13 +3065,13 @@ BenchmarkRun(rounds := 10) {
     p50Ms := Round(p50Ms, 3)
     p95Ms := Round(p95Ms, 3)
 
-    prevAvgText := IniRead(g_INI, "BENCHMARK", "AvgMs", "")
-    if (prevAvgText = "") {
+    prevElapsedText := IniRead(g_INI, "BENCHMARK", "ElapsedTotalMs", "")
+    if (prevElapsedText = "") {
         deltaText := "N/A (first run)"
     } else {
-        prevAvg := prevAvgText + 0
-        d := Round(avgMs - prevAvg, 3)
-        p := (prevAvg != 0) ? Round((d / prevAvg) * 100, 2) : 0
+        prevElapsed := prevElapsedText + 0
+        d := Round(elapsedTotalMs - prevElapsed, 2)
+        p := (prevElapsed != 0) ? Round((d / prevElapsed) * 100, 2) : 0
         deltaText := (d > 0 ? "+" : "") d " ms (" (p > 0 ? "+" : "") p "%) - " (d < 0 ? "Faster" : d > 0 ? "Slower" : "No change")
     }
 
@@ -2988,6 +3091,7 @@ BenchmarkRun(rounds := 10) {
     IniWrite(avgMs, g_INI, "BENCHMARK", "AvgMs")
     IniWrite(p50Ms, g_INI, "BENCHMARK", "P50Ms")
     IniWrite(p95Ms, g_INI, "BENCHMARK", "P95Ms")
+    IniWrite(Round(elapsedTotalMs, 2), g_INI, "BENCHMARK", "ElapsedTotalMs")
     IniWrite(nowText, g_INI, "BENCHMARK", "LastTime")
 
     report := "ALTRun Benchmark`n`n"
@@ -2999,7 +3103,7 @@ BenchmarkRun(rounds := 10) {
     report .= "P95: " p95Ms " ms/query`n"
     report .= "Min/Max: " minMs " / " maxMs " ms`n"
     report .= "Total elapsed: " Round(elapsedTotalMs, 2) " ms`n`n"
-    report .= "Vs last Avg: " deltaText
+    report .= "Vs last Total elapsed: " deltaText
     MsgBox(report, "ALTRun Benchmark")
 }
 
