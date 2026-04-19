@@ -11,7 +11,7 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2026.04.12
+;@Ahk2Exe-SetVersion 2026.04.19
 ;@Ahk2Exe-SetCopyright Copyright (c) since 2013
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -25,7 +25,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - v2026.04.12"
+Global g_TITLE := "ALTRun - v2026.04.19"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -80,6 +80,7 @@ Global g_CONFIG := Map(
     "MatchPinyin"    , 1,
     "MidScrollSwitch", 0,
     "MidClickRun"    , 0,
+    "SpaceToRun"     , 0,
     "AutoUpdateCheck", 1,
     "RoundCorner"    , 1,
     "HistoryLen"     , 10,
@@ -135,6 +136,7 @@ Global g_CONFIG_P1 := Map(
     "MatchPinyin"    , g_LNG[132],
     "MidScrollSwitch", g_LNG[133],
     "MidClickRun"    , g_LNG[134],
+    "SpaceToRun"     , g_LNG[138],
     "AutoUpdateCheck", g_LNG[135],
     "LargeIcons"     , g_LNG[136],
     "RoundCorner"    , g_LNG[137]
@@ -452,6 +454,10 @@ RegisterHotkey() {
 
         if (g_CONFIG["MidClickRun"]) {
             Hotkey("MButton"    , RunCurrentCommand)
+        }
+
+        if (g_CONFIG["SpaceToRun"]) {
+            Hotkey("Space"      , RunCurrentCommand)
         }
 
         g_LOG.Debug("RegisterHotkey: Set local hotkeys (F1-F4)...OK")
@@ -2641,6 +2647,7 @@ SetLanguage() {
     ENG[135] := "Auto check for updates"
     ENG[136] := "Show large icons"
     ENG[137] := "Use rounded corners for Main Window"
+    ENG[138] := "Press Space key to run command"
 
     ENG[150] := "File Manager"                                          ; 150~159 Options window (Other than Check Listview)
     ENG[151] := "Everything"
@@ -2828,6 +2835,7 @@ SetLanguage() {
     CHN[135] := "自动检查更新"
     CHN[136] := "显示大图标"
     CHN[137] := "主窗口使用圆角"
+    CHN[138] := "按空格键执行命令"
 
     CHN[150] := "文件管理器"                                             ; 150~159 Options window (Other than Check Listview)
     CHN[151] := "Everything"
