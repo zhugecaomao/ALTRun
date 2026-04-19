@@ -81,6 +81,7 @@ Global g_CONFIG := Map(
     "MidScrollSwitch", 0,
     "MidClickRun"    , 0,
     "SpaceToRun"     , 0,
+    "AutoEngIME"     , 0,
     "AutoUpdateCheck", 1,
     "RoundCorner"    , 1,
     "HistoryLen"     , 10,
@@ -137,6 +138,7 @@ Global g_CONFIG_P1 := Map(
     "MidScrollSwitch", g_LNG[133],
     "MidClickRun"    , g_LNG[134],
     "SpaceToRun"     , g_LNG[138],
+    "AutoEngIME"     , g_LNG[139],
     "AutoUpdateCheck", g_LNG[135],
     "LargeIcons"     , g_LNG[136],
     "RoundCorner"    , g_LNG[137]
@@ -512,6 +514,9 @@ Activate() {
     MainGUI.Show()
 
     if (WinWaitActive("ahk_id " MainGUI.Hwnd, , 3)) {                   ; Wait for the window to be active, ahk_id is more reliable than g_TITLE
+        if (g_CONFIG["AutoEngIME"]) {
+            SwitchToEnglishIME()
+        }
         myInputBox.Focus()
         SendMessage(0xB1, 0, -1, myInputBox.Hwnd)                       ; EM_SETSEL (0xB1)
     }
@@ -519,6 +524,17 @@ Activate() {
 
 ToggleWindow(*) {
     WinActive("ahk_id " MainGUI.Hwnd) ? MainGUI_Close() : Activate()
+}
+
+SwitchToEnglishIME() {
+    ; Switch to English input method (US keyboard layout: 0x04090409)
+    ; Use ActivateKeyboardLayout to switch to English
+    try {
+        DllCall("ActivateKeyboardLayout", "UInt", 0x04090409, "UInt", 0)
+        g_LOG.Debug("SwitchToEnglishIME: Switched to English input method...OK")
+    } catch as e {
+        g_LOG.Debug("SwitchToEnglishIME: Failed to switch input method: " e.Message)
+    }
 }
 
 Input_Change(*) {
@@ -2648,6 +2664,7 @@ SetLanguage() {
     ENG[136] := "Show large icons"
     ENG[137] := "Use rounded corners for Main Window"
     ENG[138] := "Press Space key to run command"
+    ENG[139] := "Auto switch to English input method when activated"
 
     ENG[150] := "File Manager"                                          ; 150~159 Options window (Other than Check Listview)
     ENG[151] := "Everything"
@@ -2836,6 +2853,7 @@ SetLanguage() {
     CHN[136] := "显示大图标"
     CHN[137] := "主窗口使用圆角"
     CHN[138] := "按空格键执行命令"
+    CHN[139] := "激活时自动切换为英文输入法"
 
     CHN[150] := "文件管理器"                                             ; 150~159 Options window (Other than Check Listview)
     CHN[151] := "Everything"
