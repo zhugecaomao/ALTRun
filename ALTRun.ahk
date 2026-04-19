@@ -158,7 +158,7 @@ Global g_HOTKEY := Map(
     "CondTitle"     , "ahk_exe RAPTW.exe",
     "CondHotkey"    , "~Mbutton",
     "CondAction"    , "PTTools",
-    "GlobalHotkey1" , "!Space",
+    "GlobalHotkey1" , "~!Space",  ; ~ allows system to also process this hotkey
     "GlobalHotkey2" , "!r",
     "TotalCMDDir"   , "^g",
     "ExplorerDir"   , "^e",
@@ -384,16 +384,7 @@ SetTrayMenu() {
             myTrayMenu.Add(g_LNG[307], RestartApp)
             myTrayMenu.Add(g_LNG[308], Exit)
 
-            myTrayMenu.SetIcon(g_LNG[300], "imageres.dll", -100)
-            myTrayMenu.SetIcon(g_LNG[301], "imageres.dll", -114)
-            myTrayMenu.SetIcon(g_LNG[310], "imageres.dll", -88)
-            myTrayMenu.SetIcon(g_LNG[302], "imageres.dll", -8)
-            myTrayMenu.SetIcon(g_LNG[303], "imageres.dll", -150)
-            myTrayMenu.SetIcon(g_LNG[305], "imageres.dll", -165)
-            myTrayMenu.SetIcon(g_LNG[309], "imageres.dll", -5338)
-            myTrayMenu.SetIcon(g_LNG[304], "imageres.dll", -81)
-            myTrayMenu.SetIcon(g_LNG[307], "imageres.dll", -5311)
-            myTrayMenu.SetIcon(g_LNG[308], "imageres.dll", -98)
+            SetMenuItemIcons(myTrayMenu)
 
             myTrayMenu.Default    := g_LNG[300]
             myTrayMenu.ClickCount := 1
@@ -406,6 +397,23 @@ SetTrayMenu() {
         }
     }
     return
+}
+
+SetMenuItemIcons(menu, isContext := false) {
+    if !isContext {
+        menu.SetIcon(g_LNG[300], "imageres.dll", -100)
+        menu.SetIcon(g_LNG[301], "imageres.dll", -114)
+    } else {
+        menu.SetIcon(g_LNG[301], "imageres.dll", -114)
+    }
+    menu.SetIcon(g_LNG[310], "imageres.dll", -88)
+    menu.SetIcon(g_LNG[302], "imageres.dll", -8)
+    menu.SetIcon(g_LNG[303], "imageres.dll", -150)
+    menu.SetIcon(g_LNG[305], "imageres.dll", -165)
+    menu.SetIcon(g_LNG[309], "imageres.dll", -5338)
+    menu.SetIcon(g_LNG[304], "imageres.dll", -81)
+    menu.SetIcon(g_LNG[307], "imageres.dll", -5311)
+    menu.SetIcon(g_LNG[308], "imageres.dll", -98)
 }
 
 RegisterHotkey() {
@@ -423,18 +431,15 @@ RegisterHotkey() {
     ; 注册主窗口热键, 使用 ahk_id Hwnd 增强可靠性
     HotIfWinActive("ahk_id " MainGUI.Hwnd)
     try {
-        Hotkey("!F4"        , Exit)
         Hotkey("Tab"        , TabFunc)
         Hotkey("F1"         , About)
         Hotkey("F2"         , Options)
         Hotkey("F3"         , EditCommand)
         Hotkey("F4"         , UserCommand)
-        Hotkey("^q"         , RestartApp)
         Hotkey("^d"         , OpenContainer)
         Hotkey("^c"         , CopyCommand)
         Hotkey("^n"         , NewCommand)
         Hotkey("^Del"       , DelCommand)
-        Hotkey("^i"         , Reindex)
         Hotkey("Down"       , NextCommand)
         Hotkey("Up"         , PrevCommand)
         Hotkey("^NumpadAdd" , RankUp)
@@ -665,7 +670,7 @@ GetIcon(path, ExtOrPath) {                                             ; Get fil
 
     try {
         if not DllCall("Shell32\SHGetFileInfoW", "Str", path, "UInt", 0, "Ptr", sfi, "UInt", sfi_size, "UInt", iconSize)
-            IconIndex := 9999999                                            ; Set it out of bounds to display a blank icon.
+            IconIndex := 2                                                  ; Use default function icon instead of out-of-bounds index
         else {                                                              ; Icon successfully loaded. Extract the hIcon member from the structure
             hIcon := NumGet(sfi, 0, "Ptr")                                  ; Add the HICON directly to the small-icon lists.
             IconIndex := DllCall("ImageList_ReplaceIcon", "ptr", myImageList, "int", -1, "ptr", hIcon) + 1 ; Uses +1 to convert the returned index from zero-based to one-based:
@@ -673,27 +678,50 @@ GetIcon(path, ExtOrPath) {                                             ; Get fil
             myIconMap[ExtOrPath] := IconIndex                               ; Cache the icon based on file type (xlsx, pdf) or path (exe, lnk) to save memory and improve loading performance
         }
     } catch as e {
-        IconIndex := 9999999
+        IconIndex := 2                                                      ; Use default function icon for error cases
         g_LOG.Debug("GetIcon: Error getting icon for " path ": " e.Message)
     }
     Return IconIndex
 }
 
 AbsPath(Path, KeepRunAs := False) {                                     ; Convert path to absolute path
+    static varMap := ""  ; Cache the map
+    
+    if (varMap = "") {
+        varMap := Map()
+        ; Add variables safely - only add those we know exist
+        varMap["A_ScriptDir"] := A_ScriptDir
+        varMap["A_Temp"] := A_Temp
+        varMap["A_Startup"] := A_Startup
+        varMap["A_StartMenu"] := A_StartMenu
+        varMap["A_Programs"] := A_Programs
+        varMap["A_AppData"] := A_AppData
+        varMap["A_Desktop"] := A_Desktop
+        varMap["A_MyDocuments"] := A_MyDocuments
+        varMap["A_ProgramFiles"] := A_ProgramFiles
+        varMap["A_ProgramsCommon"] := A_ProgramsCommon
+        varMap["A_StartupCommon"] := A_StartupCommon
+        varMap["A_StartMenuCommon"] := A_StartMenuCommon
+        ; A_ProgramFilesX86 may not exist on 32-bit systems, skip it
+    }
+    
     Path := Trim(Path)
 
     if (!KeepRunAs)
         Path := StrReplace(Path,  "*RunAs ", "")                        ; Remove *RunAs (Admin Run) to get absolute path
 
+    ; Safely resolve A_ variables using Map instead of dynamic variable access
     if (InStr(Path, "A_") = 1 && InStr(Path, "\")) {                    ; Resolve path like A_ScriptDir, some server path has "Plot A_IGLS" in it, so InStr must be 1
         SubParts := StrSplit(Path, " ", " `t")
         if (SubParts.Length > 1 && InStr(SubParts[1], "A_") = 1) {
             VarName  := SubParts[1]
-            VarValue := %VarName%
-            Path := VarValue . StrReplace(SubParts[2], "`"", "")
+            if varMap.Has(VarName) {
+                VarValue := varMap[VarName]
+                Path := VarValue . StrReplace(SubParts[2], "`"", "")
+            }
         }
-    } else if (InStr(Path, "A_") = 1) {
-        Path := %Path%
+    } else if (InStr(Path, "A_") = 1 && varMap.Has(Path)) {
+        Path := varMap[Path]
     }
 
     ; 如果只是可执行名（如 notepad.exe）且本地不存在，尝试在 PATH 中用 SearchPathW 查找完整路径
@@ -954,15 +982,7 @@ SetMainGUIContextMenu(GuiObj, GuiCtrlObj, Item, IsRightClick, X, Y) {
             myContextMenu.Add(g_LNG[307], RestartApp)
             myContextMenu.Add(g_LNG[308], Exit)
 
-            myContextMenu.SetIcon(g_LNG[301], "imageres.dll", -114)
-            myContextMenu.SetIcon(g_LNG[310], "imageres.dll", -88)
-            myContextMenu.SetIcon(g_LNG[302], "imageres.dll", -8)
-            myContextMenu.SetIcon(g_LNG[303], "imageres.dll", -150)
-            myContextMenu.SetIcon(g_LNG[305], "imageres.dll", -165)
-            myContextMenu.SetIcon(g_LNG[309], "imageres.dll", -5338)
-            myContextMenu.SetIcon(g_LNG[304], "imageres.dll", -81)
-            myContextMenu.SetIcon(g_LNG[307], "imageres.dll", -5311)
-            myContextMenu.SetIcon(g_LNG[308], "imageres.dll", -98)
+            SetMenuItemIcons(myContextMenu, true)
 
             g_LOG.Debug("SetMainGUIContextMenu: Create myContextMenu...OK")
         } catch as e {
@@ -1108,9 +1128,10 @@ RankDown(*) {
 
 LoadCommands() {
     ; Rebuild runtime command caches.
-    Global g_COMMANDS := Array()
-    Global g_CMDINDEX := Array()
-    Global g_FALLBACK := Array()
+    Global g_COMMANDS, g_CMDINDEX, g_FALLBACK
+    g_COMMANDS := Array()
+    g_CMDINDEX := Array()
+    g_FALLBACK := Array()
     Local rankRows := ""
 
     ; Parse all configured command lines from ini sections.
@@ -1192,8 +1213,8 @@ LoadCommands() {
 
 LoadHistory() {
     Global g_HISTORYS
+    g_HISTORYS := Array()  ; Always clear first
     if (g_CONFIG["SaveHistory"]) {
-        g_HISTORYS := Array()
         Loop g_CONFIG["HistoryLen"] {
             Try historyItem := IniRead(g_INI, g_SECTION["HISTORY"], A_Index, "")
             if (historyItem != "")
@@ -1201,7 +1222,6 @@ LoadHistory() {
         }
         g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
     } else {
-        g_HISTORYS := Array()
         Try IniDelete(g_INI, g_SECTION["HISTORY"])
         g_LOG.Debug("LoadHistory: History section cleaned up...")
     }
@@ -1344,6 +1364,11 @@ Reindex(*) {                                                            ; Re-cre
     ProgressGui.Add("Text", "vMyFileName w200", "Starting...")
     ProgressGui.Show()
 
+    ; Move repeated config queries outside loop
+    maxDepth := g_CONFIG["IndexDepth"]
+    shouldCheckExclude := g_CONFIG["IndexExclude"] != ""
+    excludePattern := g_CONFIG["IndexExclude"]
+
     for dirIndex, dir in StrSplit(g_CONFIG["IndexDir"], ",") {
         searchPath := RegExReplace(AbsPath(Trim(dir)), "\\+$")          ; Remove trailing backslashes
         if !DirExist(searchPath)
@@ -1357,10 +1382,10 @@ Reindex(*) {                                                            ; Re-cre
                 rel := SubStr(A_LoopFileFullPath, StrLen(searchPath) + 2) ; +2 to skip the backslash
                 seps := (rel = "") ? 0 : StrLen(rel) - StrLen(StrReplace(rel, "\", "")) ; Count backslashes to determine depth
 
-                if (seps > g_CONFIG["IndexDepth"])                      ; If file is deeper than allowed depth, skip it.
+                if (seps > maxDepth)                                    ; If file is deeper than allowed depth, skip it.
                     continue
 
-                if (g_CONFIG["IndexExclude"] != "" && RegExMatch(A_LoopFileFullPath, g_CONFIG["IndexExclude"]))
+                if (shouldCheckExclude && RegExMatch(A_LoopFileFullPath, excludePattern))
                     continue                                            ; Skip this file and move on to the next loop.
 
                 pairs .= "File | " . A_LoopFileFullPath . "=1`n" ; Collect file entry
@@ -2211,7 +2236,7 @@ Options(ActTab := 1) {
 }
 
 ResetHotkey(*) {
-    OptGUI["GlobalHotkey1"].Value := "!Space"
+    OptGUI["GlobalHotkey1"].Value := "~!Space"
     OptGUI["GlobalHotkey2"].Value := "!r"
     return
 }
@@ -2567,12 +2592,12 @@ SetLanguage() {
     ENG[58] := "Start with + = New Command"
     ENG[59] := "F3 = Edit current command"
     ENG[60] := "F2 = Options setting"
-    ENG[61] := "Ctrl+I = Reindex file search database"
+    ENG[61] := "Reindex = Reindex file search database"
     ENG[62] := "F1 = ALTRun Help & About"
     ENG[63] := "ALT + Space = Show / Hide Window"
     ENG[64] := "Ctrl+Q = Reload ALTRun"
     ENG[65] := "Ctrl + No. = Select specific command"
-    ENG[66] := "Alt + F4 = Exit"
+    ENG[66] := "Alt + F4 = Close ALTRun Window"
     ENG[67] := "Ctrl+D = Open current command's dir with File Manager"
     ENG[68] := "F4 = Change setting file directly (.ini)"
     ENG[69] := "Start with space = Search file by Everything"
@@ -2678,12 +2703,12 @@ SetLanguage() {
     ENG[262] := "Trigger action"
     ENG[300] := "Show"                                                  ; 300+ TrayMenu
     ENG[301] := "Options`tF2"
-    ENG[302] := "ReIndex`tCtrl+I"
+    ENG[302] := "ReIndex"
     ENG[303] := "Usage"
     ENG[304] := "About`tF1"
     ENG[305] := "Script Info"
-    ENG[307] := "Reload`tCtrl+Q"
-    ENG[308] := "Exit`tAlt+F4"
+    ENG[307] := "Reload"
+    ENG[308] := "Exit"
     ENG[309] := "Update"
     ENG[310] := "Settings File`tF4"
 
@@ -2754,7 +2779,7 @@ SetLanguage() {
     CHN[58] := "以 + 开头 = 新建命令"
     CHN[59] := "F3 = 编辑当前命令"
     CHN[60] := "F2 = 配置选项设置"
-    CHN[61] := "Ctrl+I = 重建文件搜索数据库"
+    CHN[61] := "Reindex = 重建文件搜索数据库"
     CHN[62] := "F1 = ALTRun 帮助&关于"
     CHN[63] := "ALT + 空格 = 显示 / 隐藏窗口"
     CHN[64] := "Ctrl+Q = 重新加载 ALTRun"
@@ -2865,12 +2890,12 @@ SetLanguage() {
     CHN[262] := "触发操作"
     CHN[300] := "显示"                                                  ; 300+ 托盘菜单
     CHN[301] := "配置选项`tF2"
-    CHN[302] := "重建索引`tCtrl+I"
+    CHN[302] := "重建索引"
     CHN[303] := "状态统计"
     CHN[304] := "关于`tF1"
     CHN[305] := "脚本信息"
-    CHN[307] := "重新加载`tCtrl+Q"
-    CHN[308] := "退出`tAlt+F4"
+    CHN[307] := "重新加载"
+    CHN[308] := "退出"
     CHN[309] := "检查更新"
     CHN[310] := "配置文件`tF4"
 
