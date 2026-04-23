@@ -11,8 +11,8 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2026.04.19
-;@Ahk2Exe-SetCopyright Copyright (c) since 2013
+;@Ahk2Exe-SetVersion 2026.04.23
+;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
 
@@ -25,7 +25,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - v2026.04.19"
+Global g_TITLE := "ALTRun - v2026.04.23"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -76,7 +76,7 @@ Global g_CONFIG := Map(
     "DoubleBuffer"   , 1,
     "StruCalc"       , 0,
     "ShortenPath"    , 1,
-    "Chinese"        , 0, ; InStr("7804,0004,0804,1004", A_Language) cause IME problem?
+    "Chinese"        , 0,
     "MatchPinyin"    , 1,
     "MidScrollSwitch", 0,
     "MidClickRun"    , 0,
@@ -88,7 +88,7 @@ Global g_CONFIG := Map(
     "RunCount"       , 0,
     "AutoSwitchDir"  , 0,
     "FileMgr"        , "Explorer.exe",
-    "IndexDir"       , "A_ProgramsCommon,A_StartMenu,C:\Other\Index\Location",
+    "IndexDir"       , "A_ProgramsCommon,A_StartMenu,C:\Path\IndexLocation",
     "IndexType"      , "*.lnk,*.exe",
     "IndexDepth"     , 2,
     "IndexExclude"   , "Uninstall *",
@@ -2396,7 +2396,7 @@ LoadConfig(mode) {
         }
     }
 
-    if (mode = "commands" || mode = "initialize" || mode = "all") {
+    if (mode = "commands" || mode = "all") {
         defaultCmdSection := ""
         Try defaultCmdSection := IniRead(g_INI, g_SECTION["DFTCMD"])
         if (defaultCmdSection = "") {
@@ -2491,10 +2491,9 @@ LoadConfig(mode) {
         indexSection := ""
         Try indexSection := IniRead(g_INI, g_SECTION["INDEX"])
         if (indexSection = "") {
-            if (MsgBox(g_LNG[804], g_TITLE, 4161) = "Cancel") {
-                ExitApp()
+            if (MsgBox(g_LNG[804], g_TITLE, 4161) = "OK") {
+                Reindex()
             }
-            Reindex()
         }
 
         return defaultCmdSection . "`n" . userCmdSection . "`n" . indexSection
@@ -2771,7 +2770,7 @@ SetLanguage() {
     ENG[801] := "Confirm Want to Delete?"
     ENG[802] := "Command has been deleted successfully!"
     ENG[803] := "Error occur when delete the command!"
-    ENG[804] := "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to exit the program`n`n(Please ensure the program directory is writable)"
+    ENG[804] := "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to enter the program without index`n`n(Please ensure the program directory is writable)"
     ENG[805] := "A new version ("
     ENG[806] := ") is available!`n`nClick OK to open the download page..."
     ENG[807] := "You are already using the latest version ("
@@ -2960,7 +2959,7 @@ SetLanguage() {
     CHN[801] := "确认删除?"
     CHN[802] := "命令已成功删除!"
     CHN[803] := "删除命令时发生错误!"
-    CHN[804] := "检测到当前的索引数据库为空, 请点击:`n`n'确定' 重新建立索引`n`n'取消' 退出程序`n`n(请确保程序目录有写入权限)"
+    CHN[804] := "检测到当前的索引数据库为空, 请点击:`n`n'确定' 重新建立索引`n`n'取消' 忽略索引进入程序`n`n(请确保程序目录有写入权限)"
     CHN[805] := "有新版本可用 ("
     CHN[806] := ") !`n`n点击确定打开下载页面..."
     CHN[807] := "您已经在使用最新版本 ("
