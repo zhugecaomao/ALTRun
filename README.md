@@ -1,6 +1,6 @@
 <h1 align="Center"><img width="45" alt="ALTRun" src="https://github.com/user-attachments/assets/91f36c04-3dd3-4486-9e7e-f70c9fabd6b8" /> ALTRun </h1>
 
-ALTRun (AHK) 是一款开源免费、简洁高效、功能强大的启动工具
+ALTRun - 基于 AutoHotkey、开源免费、简洁高效、功能强大的启动工具
 
 > 主界面
 
