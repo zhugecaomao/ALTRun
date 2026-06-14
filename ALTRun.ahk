@@ -10,8 +10,8 @@ SetWorkingDir(A_ScriptDir)
 FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
-;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2026.04.23
+;@Ahk2Exe-SetDescription ALTRun - An effective launcher
+;@Ahk2Exe-SetVersion 2026.06.14
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -25,7 +25,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - v2026.04.23"
+Global g_TITLE := "ALTRun - v2026.06.14"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -2258,7 +2258,7 @@ Options(ActTab := 1) {
 }
 
 ResetHotkey(*) {
-    OptGUI["GlobalHotkey1"].Value := "~!Space"
+    OptGUI["GlobalHotkey1"].Value := "!Space"
     OptGUI["GlobalHotkey2"].Value := "!r"
     return
 }
