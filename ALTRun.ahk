@@ -1568,7 +1568,7 @@ Listary() {                                                             ; Listar
     HotIf                                                                ; Turn off context, make subsequent hotkeys global again
 
     ; 在打开/保存对话框底部显示快捷键信息
-    SetTimer(ShowListaryHint, 150)
+    SetTimer(ShowListaryHint, 50)
     return
 }
 
@@ -1580,18 +1580,32 @@ ShowListaryHint() {
     static hintHeight   := 26
     static hintPadX     := 10
     static darkThemeNow := -1
+    static hintVisible  := false
+    static lastHintText := ""
+    static lastHintW    := 0
+    static lastHintX    := 0
+    static lastHintY    := 0
+    static suppressHideUntil := 0
 
     if (!IsObject(qsHintGui)) {
-        qsHintGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20")
+        qsHintGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 +E0x08000000")
         qsHintGui.SetFont("s9", "Segoe UI")
         qsHintText := qsHintGui.AddText("x" hintPadX " y4 w240 h18 +0x200", "")
         SetWindowCorner(qsHintGui.Hwnd, true)
     }
 
-    if (IsQuickSwitchDialog()) {
+    if (hintVisible && qsHintGui.Hwnd && WinActive("ahk_id " qsHintGui.Hwnd) && lastDlgHwnd && WinExist("ahk_id " lastDlgHwnd)) {
+        dlgHwnd := lastDlgHwnd
+        if (A_TickCount < suppressHideUntil) {
+            return
+        }
+    } else if (IsQuickSwitchDialog()) {
         dlgHwnd := WinGetID("A")
         if (!dlgHwnd || !WinExist("ahk_id " dlgHwnd)) {
-            qsHintGui.Hide()
+            if (hintVisible) {
+                qsHintGui.Hide()
+                hintVisible := false
+            }
             lastDlgHwnd := 0
             return
         }
@@ -1609,17 +1623,44 @@ ShowListaryHint() {
 
         try WinGetPos(&x, &y, &w, &h, "ahk_id " dlgHwnd)
         catch {
-            qsHintGui.Hide()
+            if (hintVisible) {
+                qsHintGui.Hide()
+                hintVisible := false
+            }
             lastDlgHwnd := 0
             return
         }
+
         hintW := Max(320, w - hintMarginX * 2)
-        qsHintText.Text := GetListaryHintText()
-        qsHintText.Move(hintPadX, 4, hintW - hintPadX * 2, hintHeight - 8)
-        qsHintGui.Show("NA x" (x + hintMarginX) " y" (y + h - 1) " w" hintW " h" hintHeight)
+        hintText := GetListaryHintText()
+        xPos := x + hintMarginX
+        yPos := y + h - 1
+
+        if (hintText != lastHintText) {
+            qsHintText.Text := hintText
+            lastHintText := hintText
+        }
+
+        if (hintW != lastHintW) {
+            qsHintText.Move(hintPadX, 4, hintW - hintPadX * 2, hintHeight - 8)
+            lastHintW := hintW
+        }
+
+        if (!hintVisible || dlgHwnd != lastDlgHwnd || xPos != lastHintX || yPos != lastHintY) {
+            qsHintGui.Show("NA x" xPos " y" yPos " w" hintW " h" hintHeight)
+            hintVisible := true
+        }
+
         lastDlgHwnd := dlgHwnd
-    } else if (lastDlgHwnd) {
+        lastHintX := xPos
+        lastHintY := yPos
+        suppressHideUntil := A_TickCount + 120
+    } else if (hintVisible) {
+        if (A_TickCount < suppressHideUntil) {
+            return
+        }
         qsHintGui.Hide()
+        hintVisible := false
         lastDlgHwnd := 0
     }
 }
