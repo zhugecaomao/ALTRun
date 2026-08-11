@@ -1567,108 +1567,44 @@ Listary() {                                                             ; Listar
     }
     HotIf                                                                ; Turn off context, make subsequent hotkeys global again
 
-    ; 在打开/保存对话框底部显示快捷键信息
-    SetTimer(ShowListaryHint, 50)
+    ; 在打开/保存对话框标题中显示快捷键信息
+    SetTimer(ShowListaryHint, 250)
     return
 }
 
 ShowListaryHint() {
-    static qsHintGui    := 0
-    static qsHintText   := 0
-    static lastDlgHwnd  := 0
-    static hintMarginX  := 8
-    static hintHeight   := 26
-    static hintPadX     := 10
-    static darkThemeNow := -1
-    static hintVisible  := false
-    static lastHintText := ""
-    static lastHintW    := 0
-    static lastHintX    := 0
-    static lastHintY    := 0
-    static suppressHideUntil := 0
+    static originalTitles := Map()
+    static activeHwnd := 0
 
-    if (!IsObject(qsHintGui)) {
-        qsHintGui := Gui("+AlwaysOnTop -Caption +ToolWindow +E0x20 +E0x08000000")
-        qsHintGui.SetFont("s9", "Segoe UI")
-        qsHintText := qsHintGui.AddText("x" hintPadX " y4 w240 h18 +0x200", "")
-        SetWindowCorner(qsHintGui.Hwnd, true)
-    }
-
-    if (hintVisible && qsHintGui.Hwnd && WinActive("ahk_id " qsHintGui.Hwnd) && lastDlgHwnd && WinExist("ahk_id " lastDlgHwnd)) {
-        dlgHwnd := lastDlgHwnd
-        if (A_TickCount < suppressHideUntil) {
-            return
-        }
-    } else if (IsQuickSwitchDialog()) {
+    if (IsQuickSwitchDialog()) {
         dlgHwnd := WinGetID("A")
-        if (!dlgHwnd || !WinExist("ahk_id " dlgHwnd)) {
-            if (hintVisible) {
-                qsHintGui.Hide()
-                hintVisible := false
-            }
-            lastDlgHwnd := 0
+        if (!dlgHwnd || !WinExist("ahk_id " dlgHwnd))
             return
-        }
-        isDark := IsAppsDarkMode()
-        if (isDark != darkThemeNow) {
-            if (isDark) {
-                qsHintGui.BackColor := "202020"
-                qsHintText.SetFont("cF2F2F2", "Segoe UI")
-            } else {
-                qsHintGui.BackColor := "F7F7F7"
-                qsHintText.SetFont("c222222", "Segoe UI")
-            }
-            darkThemeNow := isDark
+
+        ; Restore the previous dialog before switching to another one.
+        if (activeHwnd && activeHwnd != dlgHwnd && originalTitles.Has(activeHwnd)) {
+            if WinExist("ahk_id " activeHwnd)
+                WinSetTitle(originalTitles[activeHwnd], "ahk_id " activeHwnd)
+            originalTitles.Delete(activeHwnd)
         }
 
-        try WinGetPos(&x, &y, &w, &h, "ahk_id " dlgHwnd)
-        catch {
-            if (hintVisible) {
-                qsHintGui.Hide()
-                hintVisible := false
-            }
-            lastDlgHwnd := 0
-            return
-        }
+        if (!originalTitles.Has(dlgHwnd))
+            originalTitles[dlgHwnd] := WinGetTitle("ahk_id " dlgHwnd)
 
-        hintW := Max(320, w - hintMarginX * 2)
-        hintText := GetListaryHintText()
-        xPos := x + hintMarginX
-        yPos := y + h - 1
-
-        if (hintText != lastHintText) {
-            qsHintText.Text := hintText
-            lastHintText := hintText
-        }
-
-        if (hintW != lastHintW) {
-            qsHintText.Move(hintPadX, 4, hintW - hintPadX * 2, hintHeight - 8)
-            lastHintW := hintW
-        }
-
-        if (!hintVisible || dlgHwnd != lastDlgHwnd || xPos != lastHintX || yPos != lastHintY) {
-            qsHintGui.Show("NA x" xPos " y" yPos " w" hintW " h" hintHeight)
-            hintVisible := true
-        }
-
-        lastDlgHwnd := dlgHwnd
-        lastHintX := xPos
-        lastHintY := yPos
-        suppressHideUntil := A_TickCount + 120
-    } else if (hintVisible) {
-        if (A_TickCount < suppressHideUntil) {
-            return
-        }
-        qsHintGui.Hide()
-        hintVisible := false
-        lastDlgHwnd := 0
+        title := originalTitles[dlgHwnd] " | " GetListaryHintText()
+        if (WinGetTitle("ahk_id " dlgHwnd) != title)
+            WinSetTitle(title, "ahk_id " dlgHwnd)
+        activeHwnd := dlgHwnd
+        return
     }
-}
 
-IsAppsDarkMode() {
-    try return RegRead("HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize", "AppsUseLightTheme", 1) = 0
-    catch
-        return false
+    ; Restore the native title after leaving the file dialog.
+    if (activeHwnd && originalTitles.Has(activeHwnd)) {
+        if WinExist("ahk_id " activeHwnd)
+            WinSetTitle(originalTitles[activeHwnd], "ahk_id " activeHwnd)
+        originalTitles.Delete(activeHwnd)
+        activeHwnd := 0
+    }
 }
 
 SetWindowCorner(hwnd, enable := true) {
@@ -1693,13 +1629,13 @@ FormatHotkeyLabel(hotkey) {
     rawHotkey := hotkey
     modText := ""
     if InStr(rawHotkey, "^")
-        modText .= "Ctrl + "
+        modText .= "Ctrl+"
     if InStr(rawHotkey, "!")
-        modText .= "Alt + "
+        modText .= "Alt+"
     if InStr(rawHotkey, "+")
-        modText .= "Shift + "
+        modText .= "Shift+"
     if InStr(rawHotkey, "#")
-        modText .= "Win + "
+        modText .= "Win+"
 
     baseKey := RegExReplace(rawHotkey, "[\^\!\+\#\<\>\*\~\$\s]")
     if (StrLen(baseKey) = 1)
@@ -2753,7 +2689,7 @@ SetLanguage() {
     ENG[218] := "Auto switch dir on open/save dialog"
     ENG[219] := "No Total Commander window found, please open Total Commander first!"
     ENG[220] := "No Explorer window found, please open Explorer first!"
-    ENG[221] := "ALTRun: {1} TC folder   |   {2} Explorer folder"
+    ENG[221] := "ALTRun - {1}: Redirect to TC path. {2}: Redirect to Explorer path"
 
     ENG[250] := "Plugins"                                               ; 250~299 Plugins
     ENG[251] := "Auto-date at end of text"
@@ -2942,7 +2878,7 @@ SetLanguage() {
     CHN[218] := "自动切换路径"
     CHN[219] := "没有找到Total Commander窗口,请先打开Total Commander!"
     CHN[220] := "没有找到资源管理器窗口,请先打开资源管理器!"
-    CHN[221] := "ALTRun: {1} 跳转 TC 目录   |   {2} 跳转资源管理器目录"
+    CHN[221] := "ALTRun - {1}: 定位到 TC 路径. {2}: 定位到资源管理器路径"
 
     CHN[250] := "插件"                                                  ; 250~299 Plugins
     CHN[251] := "文本末尾自动添加日期"
