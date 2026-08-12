@@ -11,7 +11,7 @@ FileEncoding("UTF-8")
 
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun - An effective launcher
-;@Ahk2Exe-SetVersion 2026.06.14
+;@Ahk2Exe-SetVersion 2026.08.12
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026
 ;@Ahk2Exe-SetOrigFilename ALTRun.ahk
 
@@ -25,7 +25,7 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
-Global g_TITLE := "ALTRun - v2026.06.14"
+Global g_TITLE := "ALTRun - v2026.08.12"
 
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
@@ -1643,7 +1643,7 @@ FormatHotkeyLabel(hotkey) {
     return modText baseKey
 }
 
-; 更严格地识别“打开/保存文件”对话框，避免普通 #32770 对话框误触发
+; 更严格地识别 "打开/保存文件" 对话框，避免普通 #32770 对话框误触发
 IsQuickSwitchDialog(*) {
     if (!WinActive("ahk_group DialogBox") || WinActive("ahk_group ExcludeWin"))
         return false
@@ -1688,7 +1688,7 @@ IsLikelyFileDialogTitle(title) {
     return RegExMatch(title, "i)(open|save|select|attach|import|export|reference|file|browse|打开|另存|选择|导入|导出|引用)")
 }
 
-; Sync dialog box to Total Commander path (TC 7.x ~ 10.x)
+; Sync dialog box to Total Commander path (TC 7.x ~ 11.x)
 SyncTCPath(*) {
     clipSaved   := ClipboardAll()
     A_Clipboard := ""
@@ -2581,24 +2581,24 @@ SetLanguage() {
     ENG[13] := "Type anything here to search..."
     ENG[50] := ["Tip | F1 | Help & About", "Tip | F2 | Options and settings", "Tip | F3 | Edit current command", "Tip | F4 | Change setting file directly", "Tip | Alt+Space / Alt+R | Activate ALTRun", "Tip | Alt+Space / Esc / Lose Focus | Deactivate ALTRun", "Tip | Enter / Alt+No. | Run selected command", "Tip | Arrow Up or Down | Previous / next command", "Tip | Ctrl+D | Locate cmd's dir with File Manager"]
     ENG[51] := "Tip: "
-    ENG[52] := "It's better to activate ALTRun by hotkey (ALT + Space)" ; 50~99 Tips
-    ENG[53] := "Smart Rank - Auto adjusts command priority (rank) based on frequency of use."
-    ENG[54] := "Arrow Up / Down = Move to previous / next command"
-    ENG[55] := "Esc = Clear input / close window"
-    ENG[56] := "Enter = Run current command"
-    ENG[57] := "Alt + No. = Run specific command"
-    ENG[58] := "Start with + = New Command"
+    ENG[52] := "Activate ALTRun with a hotkey (Alt+Space)"              ; 50~99 Tips
+    ENG[53] := "Smart Rank - Automatically adjusts command priority based on usage frequency."
+    ENG[54] := "Arrow Up / Down = Select the previous / next command"
+    ENG[55] := "Esc = Clear the input / close the window"
+    ENG[56] := "Enter = Run the current command"
+    ENG[57] := "Alt+Number = Run a specific command"
+    ENG[58] := "Start with + = Create a new command"
     ENG[59] := "F3 = Edit current command"
-    ENG[60] := "F2 = Options setting"
-    ENG[61] := "Reindex = Reindex file search database"
+    ENG[60] := "F2 = Open Options"
+    ENG[61] := "Reindex = Rebuild the file index"
     ENG[62] := "F1 = ALTRun Help & About"
-    ENG[63] := "ALT + Space = Show / Hide Window"
+    ENG[63] := "Alt+Space = Show / hide the window"
     ENG[64] := "Ctrl+Q = Reload ALTRun"
-    ENG[65] := "Ctrl + No. = Select specific command"
-    ENG[66] := "Alt + F4 = Close ALTRun Window"
-    ENG[67] := "Ctrl+D = Open current command's dir with File Manager"
-    ENG[68] := "F4 = Change setting file directly (.ini)"
-    ENG[69] := "Start with space = Search file by Everything"
+    ENG[65] := "Ctrl+Number = Select a specific command"
+    ENG[66] := "Alt+F4 = Close the ALTRun window"
+    ENG[67] := "Ctrl+D = Open the current command's folder in File Manager"
+    ENG[68] := "F4 = Edit the settings file directly (.ini)"
+    ENG[69] := "Start with a space = Search files with Everything"
     ENG[70] := "Ctrl+'+' = Increase rank of current command"
     ENG[71] := "Ctrl+'-' = Decrease rank of current command"
     ENG[100] := ["General", "GUI", "Hotkey", "Index", "Listary", "Plugins", "Usage", "About"] ; 100~149 Options window (General - Check Listview)
@@ -2608,7 +2608,7 @@ SetLanguage() {
     ENG[104] := "Show tray icon in the system taskbar"
     ENG[105] := "Close window on losing focus"
     ENG[106] := "Always stay on top"
-    ENG[107] := "Show Main Window's Caption"
+    ENG[107] := "Show the main window title bar"
     ENG[108] := "Use Windows Theme instead of Classic Theme"
     ENG[109] := "Press [ESC] to clear input, press again to close window (Untick: Close directly)"
     ENG[110] := "Keep last input and matching result on close"
@@ -2631,7 +2631,7 @@ SetLanguage() {
     ENG[127] := "Show [Options] Button on Main Window"
     ENG[128] := "Double-Buffering to reduce flicker (WinXP+)"
     ENG[129] := "Enable express structure calculation"
-    ENG[130] := "Show Shorten Path (Show file/folder/app name only instead of full path)"
+    ENG[130] := "Show shortened paths (show names instead of full paths)"
     ENG[131] := "Set language to Chinese Simplified (简体中文)"
     ENG[132] := "Match Chinese Pinyin first characters"
     ENG[133] := "Use the mouse wheel scroll to select the command"
@@ -2679,17 +2679,17 @@ SetLanguage() {
     ENG[204] := "Hotkey 2"
     ENG[206] := "Hotkey 3"
     ENG[210] := "Listary"                                               ; 210~249 Listary
-    ENG[211] := "Dir Quick-Switch"
+    ENG[211] := "Directory Quick Switch"
     ENG[212] := "File Manager ID"
     ENG[213] := "Open/Save Dialog ID"
     ENG[214] := "Exclude Windows ID"
     ENG[215] := "Hotkey"
-    ENG[216] := "QuickSwitch to TC's dir"
-    ENG[217] := "QuickSwitch to Explorer"
-    ENG[218] := "Auto switch dir on open/save dialog"
+    ENG[216] := "Jump to the Total Commander path"
+    ENG[217] := "Jump to the Explorer path"
+    ENG[218] := "Automatically switch paths in open/save dialogs"
     ENG[219] := "No Total Commander window found, please open Total Commander first!"
     ENG[220] := "No Explorer window found, please open Explorer first!"
-    ENG[221] := "ALTRun - {1}: Redirect to TC path. {2}: Redirect to Explorer path"
+    ENG[221] := "ALTRun - {1} Jump to Total Commander Path | {2} Jump to Explorer Path"
 
     ENG[250] := "Plugins"                                               ; 250~299 Plugins
     ENG[251] := "Auto-date at end of text"
@@ -2736,50 +2736,50 @@ SetLanguage() {
         . "`n<a href=`"https://github.com/zhugecaomao/ALTRun`">https://github.com/zhugecaomao/ALTRun</a>"
         . "`n`nSee Help and Wiki page for more details"
         . "`n<a href=`"https://github.com/zhugecaomao/ALTRun/wiki`">https://github.com/zhugecaomao/ALTRun/wiki</a>"
-    ENG[700] := "Commander Manager"                                     ; 700+ Command Manager
+    ENG[700] := "Command Manager"                                       ; 700+ Command Manager
     ENG[701] := "Command"
     ENG[702] := "Command type"
     ENG[703] := "Command line"
-    ENG[704] := "ShortCut/Description"
-    ENG[705] := "Command Section"
+    ENG[704] := "Shortcut / Description"
+    ENG[705] := "Configuration section"
     ENG[706] := "Command Rank"
     ENG[800] := "Do you really want to delete the following command?`n`n[" ; 800+ Message Info
     ENG[801] := "Confirm Want to Delete?"
     ENG[802] := "Command has been deleted successfully!"
-    ENG[803] := "Error occur when delete the command!"
+    ENG[803] := "An error occurred while deleting the command."
     ENG[804] := "Index database is empty, please click`n`n'OK' to rebuild the index`n`n'Cancel' to enter the program without index`n`n(Please ensure the program directory is writable)"
     ENG[805] := "A new version ("
     ENG[806] := ") is available!`n`nClick OK to open the download page..."
     ENG[807] := "You are already using the latest version ("
     ENG[808] := ") !"
     ENG[809] := "Failed to check for updates! Please check your network connection.`n`nError message: "
-    ENG[810] := "Current command not able to edit!"
+    ENG[810] := "The current command cannot be edited."
     ENG[820] := "Command Manager"
-    ENG[821] := "Command Path is empty, please input correct command path!"
-    ENG[822] := "Error occur when add command, error message: "
+    ENG[821] := "Command path cannot be empty. Please enter a valid path."
+    ENG[822] := "An error occurred while adding the command: "
     ENG[823] := "The following command added / modified successfully!`n`n[ "
 
     CHN[1]  := "简体中文"                                               ; 1~9 Reserved
-    CHN[2]  := "配置"
+    CHN[2]  := "选项"
     CHN[7]  := "确定"
     CHN[8]  := "取消"
     CHN[9]  := "帮助"
     CHN[10] := ["序号", "类型", "命令", "描述"]                          ; 10~49 Main GUI
     CHN[11] := "运行"
-    CHN[12] := "配置"
+    CHN[12] := "选项"
     CHN[13] := "在此输入搜索内容..."
     CHN[50] := ["提示 | F1 | 帮助关于", "提示 | F2 | 配置选项", "提示 | F3 | 编辑当前命令", "提示 | F4 | 直接修改设置文件", "提示 | Alt+空格 / Alt+R | 激活 ALTRun", "提示 | 失去焦点 / Esc / 快捷键 | 关闭 ALTRun", "提示 | 回车 / Alt+序号 | 运行命令", "提示 | 上下箭头键 | 选择上一个或下一个命令", "提示 | Ctrl+D | 使用文件管理器定位命令所在目录"]
     CHN[51] := "提示: "                                                 ; 50~99 Tips
     CHN[52] := "推荐使用热键激活 (ALT + 空格)"
-    CHN[53] := "智能排序 - 根据使用频率自动调整命令优先级 (排序)"
+    CHN[53] := "智能排序 - 根据使用频率自动调整命令优先级"
     CHN[54] := "上/下箭头 = 上/下一个命令"
     CHN[55] := "Esc = 清除输入 / 关闭窗口"
     CHN[56] := "回车 = 运行当前命令"
     CHN[57] := "Alt + 序号 = 运行指定的命令"
     CHN[58] := "以 + 开头 = 新建命令"
     CHN[59] := "F3 = 编辑当前命令"
-    CHN[60] := "F2 = 配置选项设置"
-    CHN[61] := "Reindex = 重建文件搜索数据库"
+    CHN[60] := "F2 = 打开选项"
+    CHN[61] := "Reindex = 重建文件索引"
     CHN[62] := "F1 = ALTRun 帮助&关于"
     CHN[63] := "ALT + 空格 = 显示 / 隐藏窗口"
     CHN[64] := "Ctrl+Q = 重新加载 ALTRun"
@@ -2873,12 +2873,12 @@ SetLanguage() {
     CHN[213] := "打开/保存对话框 ID"
     CHN[214] := "排除窗口 ID"
     CHN[215] := "热键"
-    CHN[216] := "快速切换到 TC 目录"
-    CHN[217] := "快速切换到 资源管理器"
-    CHN[218] := "自动切换路径"
-    CHN[219] := "没有找到Total Commander窗口,请先打开Total Commander!"
-    CHN[220] := "没有找到资源管理器窗口,请先打开资源管理器!"
-    CHN[221] := "ALTRun - {1}: 定位到 TC 路径. {2}: 定位到资源管理器路径"
+    CHN[216] := "跳转到 Total Commander 路径"
+    CHN[217] := "跳转到资源管理器路径"
+    CHN[218] := "在打开/保存对话框中自动跳转路径"
+    CHN[219] := "未找到 Total Commander 窗口，请先打开 Total Commander。"
+    CHN[220] := "未找到资源管理器窗口，请先打开资源管理器。"
+    CHN[221] := "ALTRun - {1} 跳转到 Total Commander 文件夹 | {2} 跳转到资源管理器文件夹"
 
     CHN[250] := "插件"                                                  ; 250~299 Plugins
     CHN[251] := "文本末尾自动添加日期"
@@ -2913,8 +2913,8 @@ SetLanguage() {
     CHN[410] := "显示状态统计"
     CHN[500] := "30天前"
     CHN[501] := "当前"                                                  ; 500+ 状态统计
-    CHN[502] := "运行过的命令总次数"
-    CHN[503] := "今天激活程序的次数"
+    CHN[502] := "执行命令次数统计"
+    CHN[503] := "今天激活程序次数"
     CHN[600] := "关于"                                                  ; 600+ 关于
     CHN[601] := "一款开源、轻量、高效、功能强大的启动工具"
         . "`n能够快速查找系统中的内容或者启动应用程序"
@@ -2929,8 +2929,8 @@ SetLanguage() {
     CHN[701] := "命令"
     CHN[702] := "命令类型"
     CHN[703] := "命令行"
-    CHN[704] := "快捷项/描述 (可搜索)"
-    CHN[705] := "储存节段"
+    CHN[704] := "快捷方式 / 描述"
+    CHN[705] := "配置节"
     CHN[706] := "命令权重"
     CHN[800] := "您确定要删除以下命令吗?`n`n["                            ; 800+ 提示消息
     CHN[801] := "确认删除?"
@@ -2942,10 +2942,10 @@ SetLanguage() {
     CHN[807] := "您已经在使用最新版本 ("
     CHN[808] := ") 了!"
     CHN[809] := "检查更新失败! 请检查您的网络连接.`n`n错误信息: "
-    CHN[810] := "当前命令无法编辑!"
+    CHN[810] := "当前命令无法编辑。"
     CHN[820] := "命令管理器"
-    CHN[821] := "命令路径为空, 请输入正确的命令路径!"
-    CHN[822] := "添加命令时发生错误, 错误信息: "
+    CHN[821] := "命令路径不能为空，请输入有效路径。"
+    CHN[822] := "添加命令时发生错误："
     CHN[823] := "以下命令添加/修改成功!`n`n[ "
 
     Global g_LNG := IniRead(g_INI, "Config", "Chinese", 0) ? CHN : ENG
