@@ -2,13 +2,15 @@
 
 ALTRun - 基于 AutoHotkey、开源免费、轻量高效、功能强大的启动工具
 
-> 主界面
+> 主界面 (深色模式)
 
 ![Main GUI](https://github.com/user-attachments/assets/143643a6-9ab1-44f1-ad1b-f9cb07c8c5fd)
 
+> 主界面 (浅色模式)
+
 ![GUI](https://github.com/user-attachments/assets/a9da445b-4386-4118-bfb7-5bd2c5972efa)
 
-> 主界面 (无背景图片+简化+暗黑模式)
+> 主界面 (简化模式)
 
 ![Dark](https://github.com/user-attachments/assets/5bd76455-4eda-42e5-9934-c915b48994df)
 
