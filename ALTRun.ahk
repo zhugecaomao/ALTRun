@@ -25,8 +25,10 @@ FileEncoding("UTF-8")
 ;===================================================
 Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
+Global g_JSON  := A_ScriptDir . "\ALTRun.json"    ; Commands live here, ini sections are capped at 64 KB by the Windows API
 Global g_TITLE := "ALTRun - v2026.08.12"
 
+Global g_CMDDATA  := Map()           ; Command store: section name -> Map(commandLine -> rank), FallbackCommand -> Array
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
 Global g_FALLBACK := Array()         ; Fallback commands
@@ -84,6 +86,8 @@ Global g_CONFIG := Map(
     "AutoEngIME"     , 0,
     "AutoUpdateCheck", 1,
     "RoundCorner"    , 1,
+    "ClipSendMode"   , 1,                                               ; Clip paste mode, 1 = Clipboard + Ctrl+V (default), 2 = SendInput raw keystrokes
+    "ClipPasteDelay" , 300,                                             ; ms to wait after Ctrl+V before restoring the old clipboard
     "HistoryLen"     , 10,
     "RunCount"       , 0,
     "AutoSwitchDir"  , 0,
@@ -193,7 +197,8 @@ Global g_RUNTIME := Map( ; Runtime variables, not saved to ini
     "Arg"           , "",
     "OneDrive"      , EnvGet("OneDrive"),
     "RegEx"         , "imS)",
-    "Max"           , 1
+    "Max"           , 1,
+    "LastWin"       , 0                                                 ; Hwnd of the window that was active before ALTRun popped up (used by Clip)
 )
 
 Global g_USAGE := Map(A_YYYY . A_MM . A_DD, 1)
@@ -207,12 +212,14 @@ Global myInputBox
 Global OptGUI
 Global OptListView
 Global g_CmdMgrGui
+Global g_ClipEditGui
 Global myImageList := IL_Create(10, 5, g_CONFIG["LargeIcons"])          ; Create an ImageList so that the ListView can display some icons, 3rd param is 1: large icons, 0: small icons
 Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval/cmd
                         ,"FUNC", IL_Add(myImageList,"imageres.dll",-100)
                         ,"URL" , IL_Add(myImageList,"imageres.dll",-144)
                         ,"EVAL", IL_Add(myImageList,"imageres.dll",-182)
-                        ,"CMD" , IL_Add(myImageList,"imageres.dll",-100)) ; "imageres.dll",-5323 is cmd.exe icon
+                        ,"CMD" , IL_Add(myImageList,"imageres.dll",-100)
+                        ,"CLIP", IL_Add(myImageList,"imageres.dll",-102)) ; "imageres.dll",-5323 is cmd.exe icon
 
 LoadCommands()
 LoadHistory()
@@ -511,6 +518,13 @@ RunFunctionCommand(HotkeyName, FuncName, Index) {
 }
 
 Activate() {
+    ; Remember the window that is active right now, so a Clip command knows where to paste.
+    try {
+        activeHwnd := WinExist("A")
+        if (activeHwnd && activeHwnd != MainGUI.Hwnd)
+            g_RUNTIME["LastWin"] := activeHwnd
+    }
+
     MainGUI.Show()
 
     if (WinWaitActive("ahk_id " MainGUI.Hwnd, , 3)) {                   ; Wait for the window to be active, ahk_id is more reliable than g_TITLE
@@ -616,7 +630,10 @@ ListResult(rows := [], useDisplay := false) {
         displayNo := showSN ? rowIndex : ""
         iconIndex := GetIconIndex(cmdPath, cmdType)
 
-        if (shortenPath && cmdType != "URL") {
+        if (cmdType = "Clip") {
+            ; Clip text is not a path, show a single-line preview instead.
+            cmdPath := ClipPreview(cmdPath)
+        } else if (shortenPath && cmdType != "URL") {
             ; Keep URL full text, shorten other command paths for list readability.
             SplitPath(cmdPath, &cmdPath)
         }
@@ -625,7 +642,7 @@ ListResult(rows := [], useDisplay := false) {
     }
     rowCount := myListView.GetCount()
     statusBarText := (g_RUNTIME["CurrentCommand"] != "")
-        ? GetCmdPart(g_RUNTIME["CurrentCommand"], 2)
+        ? GetCmdDisplayPath(g_RUNTIME["CurrentCommand"])
         : (rowCount ? myListView.GetText(1, 3) : "")
 
     if (rowCount) myListView.Modify(1, "Select Focus Vis")
@@ -643,11 +660,17 @@ GetCmdPart(command, fieldNo) {
     return parts.Length >= fieldNo ? parts[fieldNo] : ""
 }
 
+GetCmdDisplayPath(command) {                                            ; Field 2 of a command, made readable (Clip text gets a short preview)
+    return (GetCmdPart(command, 1) = "Clip")
+        ? ClipPreview(GetCmdPart(command, 2))
+        : GetCmdPart(command, 2)
+}
+
 SyncCurrentCommandByRow(rowNumber, updateStatus := true) {
     if (g_MATCHED.Length >= rowNumber) {
         g_RUNTIME["CurrentCommand"] := g_MATCHED[rowNumber]
         if updateStatus
-            SetStatusBar(GetCmdPart(g_RUNTIME["CurrentCommand"], 2))
+            SetStatusBar(GetCmdDisplayPath(g_RUNTIME["CurrentCommand"]))
         return true
     }
     if updateStatus
@@ -670,6 +693,8 @@ GetIconIndex(path, type) {                                              ; Get fi
         return 3
     } else if (type = "EVAL") {
         return 4
+    } else if (type = "Clip") {
+        return myIconMap.Has("CLIP") ? myIconMap["CLIP"] : 2
     } else if (type = "FILE") {
         path := AbsPath(path)                                           ; Must store in var for afterward use, trim space (in AbsPath)
         SplitPath(path, , , &fileExt)                                   ; Get the file's extension.
@@ -783,10 +808,14 @@ RunCommand(originCmd) {
 
     parts := StrSplit(originCmd, " | ")
     cmdType := parts.Length >= 1 ? parts[1] : ""
-    cmdPath := parts.Length >= 2 ? AbsPath(parts[2], True) : ""
+    rawPath := parts.Length >= 2 ? parts[2] : ""
+    ; Clip payload is plain text, never run it through AbsPath().
+    cmdPath := (rawPath != "" && cmdType != "Clip") ? AbsPath(rawPath, True) : rawPath
 
     if (cmdType = "") {
         return
+    } else if (cmdType = "Clip") {
+        executed := PasteClipText(rawPath)
     } else if (cmdType = "DIR") {
         executed := OpenDir(cmdPath)
     } else if (cmdType = "FUNC") {
@@ -1082,18 +1111,18 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
     if (g_CONFIG["SmartRank"] = false || originCmd = "")
         return
 
-    sections := Array(g_SECTION["DFTCMD"], g_SECTION["USERCMD"], g_SECTION["INDEX"])
+    LoadCommandData()
 
-    for _, section in sections {
-        rankValue := IniRead(g_INI, section, EscapeCommandKey(originCmd), "KeyNotFound")   ; Escape when reading
-
-        if (rankValue = "KeyNotFound" or rankValue = "ERROR" or originCmd = "")
+    for _, section in ["DefaultCommand", "UserCommand", "Index"] {
+        if !g_CMDDATA[section].Has(originCmd)
             continue
 
+        rankValue := g_CMDDATA[section][originCmd]
         rankValue := IsInteger(rankValue) ? rankValue + inc : inc
         rankValue := (rankValue < 0) ? -1 : rankValue
 
-        IniWrite(rankValue, g_INI, section, EscapeCommandKey(originCmd))  ; Escape when writing
+        g_CMDDATA[section][originCmd] := rankValue
+        SaveCommandData()
         if (showRank)
             SetStatusBar("UpdateRank: Rank for current command : " rankValue)
 
@@ -1149,36 +1178,29 @@ RankDown(*) {
 }
 
 LoadCommands() {
-    ; Rebuild runtime command caches.
+    ; Rebuild runtime command caches from the JSON command store.
     Global g_COMMANDS, g_CMDINDEX, g_FALLBACK
     g_COMMANDS := Array()
     g_CMDINDEX := Array()
     g_FALLBACK := Array()
     Local rankRows := ""
 
-    ; Parse all configured command lines from ini sections.
-    for _, line in StrSplit(LoadConfig("commands"), "`n", "`r") {
-        line := Trim(line)
-        if (!line || SubStr(line, 1, 1) = ";")
-            continue
+    LoadCommandData()                                                   ; Loads (and migrates/creates) ALTRun.json once per session
 
-        ; Unescape special characters in the line first (handles legacy commands with escaped = ; \)
-        line := UnescapeCommandKey(line)
-
-        ; Split by the last '=' so commandText may contain '=' characters.
-        if !RegExMatch(line, "s)^(.*)=(\d+)\s*$", &m) {
-            continue
-        }
-        commandText := Trim(m.1)
-        rankValue := m.2 + 0
-        if (commandText = "" || rankValue <= 0)
+    for _, sectionName in ["DefaultCommand", "UserCommand", "Index"] {
+    for commandText, rankValue in g_CMDDATA[sectionName] {
+        if (commandText = "" || !IsInteger(rankValue) || rankValue <= 0)
             continue
 
         parts := StrSplit(commandText, " | ")
         cmdPath := parts.Has(2) ? parts[2] : ""
         cmdDesc := parts.Has(3) ? parts[3] : ""
 
-        if (g_CONFIG["MatchPath"]) {
+        cmdType := parts.Has(1) ? parts[1] : ""
+        if (cmdType = "Clip") {
+            ; A Clip's field 2 is the snippet body, only its short name (desc) is searchable.
+            searchable := cmdDesc
+        } else if (g_CONFIG["MatchPath"]) {
             searchable := cmdPath " " cmdDesc
         } else {
             SplitPath(cmdPath, &fileName)
@@ -1188,6 +1210,7 @@ LoadCommands() {
             searchable := GetFirstChar(searchable)
 
         rankRows .= rankValue "`t" commandText "`t" searchable "`n"
+    }
     }
 
     ; Sort by rank descending, then rebuild arrays.
@@ -1203,27 +1226,8 @@ LoadCommands() {
         g_CMDINDEX.Push(rowParts[3])
     }
 
-    ; Read fallback section.
-    fallbackSection := ""
-    Try fallbackSection := IniRead(g_INI, g_SECTION["FALLBACK"])
-    if (fallbackSection = "") {
-        IniWrite("
-        (
-        ; Fallback Commands show when search result is empty
-        ; Commands in order, modify as desired
-        ; Format: Command Type | Command | Description
-        ; Command Type: File, Dir, CMD, URL
-        ;
-        Func | NewCommand | New Command
-        Func | Everything | Search by Everything
-        Func | Google | Search Clipboard or Input by Google
-        Func | AhkRun | Run Command use AutoHotkey Run
-        Func | Bing | Search Clipboard or Input by Bing
-        CMD | Calc.exe | Calculator
-        )", g_INI, g_SECTION["FALLBACK"])
-        fallbackSection := IniRead(g_INI, g_SECTION["FALLBACK"])
-    }
-    for line in StrSplit(fallbackSection, "`n") {
+    ; Fallback commands.
+    for _, line in g_CMDDATA["FallbackCommand"] {
         line := Trim(line)
         if (line != "" && SubStr(line, 1, 1) != ";")
             g_FALLBACK.Push(line)
@@ -1280,6 +1284,8 @@ OpenDir(Path) {
 }
 
 OpenContainer(*) {
+    if (GetCmdPart(g_RUNTIME["CurrentCommand"], 1) = "Clip")            ; Clip has no container folder
+        return
     cmdPath := GetCmdPart(g_RUNTIME["CurrentCommand"], 2)
     if (cmdPath = "") {
         return MsgBox("No valid file to open container folder.", g_TITLE, 48)
@@ -1376,8 +1382,9 @@ UpdateStartMenu() {
 }
 
 Reindex(*) {                                                            ; Re-create Index section
-    ; Collect all key=value pairs into one string, then write once
-    pairs := ""
+    ; Collect every indexed entry into a fresh map, then store it in one go
+    LoadCommandData()
+    indexMap := Map()
 
     ; Create ProgressGui at the start
     ProgressGui := Gui("-MinimizeBox +AlwaysOnTop", "Reindex")
@@ -1410,7 +1417,7 @@ Reindex(*) {                                                            ; Re-cre
                 if (shouldCheckExclude && RegExMatch(A_LoopFileFullPath, excludePattern))
                     continue                                            ; Skip this file and move on to the next loop.
 
-                pairs .= "File | " . A_LoopFileFullPath . "=1`n" ; Collect file entry
+                indexMap["File | " . A_LoopFileFullPath] := 1   ; Collect file entry
 
                 ; Update ProgressGui (throttled to reduce UI overhead)
                 if (!Mod(A_Index, 20))
@@ -1436,7 +1443,7 @@ Reindex(*) {                                                            ; Re-cre
                     if (fields.Length >= 2) {
                         name := StrReplace(fields[1], '"', '')
                         appid := StrReplace(fields[2], '"', '')
-                        pairs .= "App | shell:AppsFolder\" . appid . " | " . name . "=1`n" ; Collect app entry
+                        indexMap["App | shell:AppsFolder\" . appid . " | " . name] := 1 ; Collect app entry
                     }
                     ProgressGui["MyProgress"].Value := A_Index
                     ProgressGui["MyFileName"].Text  := name ? name : "Unknown App"
@@ -1454,10 +1461,13 @@ Reindex(*) {                                                            ; Re-cre
     ; Destroy ProgressGui at the end
     ProgressGui.Destroy()
 
-    ; Write all collected pairs in one call
-    ; IniDelete(g_INI, g_SECTION["INDEX"]) not needed as IniWrite will overwrite existing section
-    ; Write too frequently slow down the process and cause "(380) The cloud operation is invalid"
-    IniWrite(pairs, g_INI, g_SECTION["INDEX"])
+    ; Keep the rank a command already earned, so reindexing does not reset SmartRank
+    for cmdLine, _ in indexMap {
+        if (g_CMDDATA["Index"].Has(cmdLine) && IsInteger(g_CMDDATA["Index"][cmdLine]))
+            indexMap[cmdLine] := g_CMDDATA["Index"][cmdLine]
+    }
+    g_CMDDATA["Index"] := indexMap
+    SaveCommandData()
 
     g_LOG.Debug("Reindex: Indexing search database...OK")
     TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
@@ -1591,7 +1601,7 @@ ShowListaryHint() {
         if (!originalTitles.Has(dlgHwnd))
             originalTitles[dlgHwnd] := WinGetTitle("ahk_id " dlgHwnd)
 
-        title := originalTitles[dlgHwnd] " | " GetListaryHintText()
+        title := originalTitles[dlgHwnd] " / " GetListaryHintText()
         if (WinGetTitle("ahk_id " dlgHwnd) != title)
             WinSetTitle(title, "ahk_id " dlgHwnd)
         activeHwnd := dlgHwnd
@@ -1771,7 +1781,11 @@ SetDialogPath(targetDir) {
     }
 }
 
-UserCommand(*) {
+UserCommand(*) {                                                        ; F4 - edit the command database directly
+    Run("Notepad.exe " . g_JSON)
+}
+
+EditIniFile(*) {                                                        ; Edit ALTRun.ini (config / hotkeys / gui only)
     Run("Notepad.exe " . g_INI)
 }
 
@@ -1787,12 +1801,12 @@ EditCommand(*) {
     if !currentCmd
         return MsgBox(g_LNG[810], g_TITLE, 64)                          ; 64 = Info icon
 
-    for index, section in StrSplit(g_SECTION["DFTCMD"] "," g_SECTION["USERCMD"] "," g_SECTION["INDEX"], ",") {
-        rank := IniRead(g_INI, section, EscapeCommandKey(currentCmd), "KeyNotFound")  ; Escape when reading
+    LoadCommandData()
 
-        ; If currentCmd not exist in this section, skips the rest of a loop and begin to check next section
-        if (rank = "KeyNotFound" || rank = "ERROR")
+    for _, section in ["DefaultCommand", "UserCommand", "Index"] {
+        if !g_CMDDATA[section].Has(currentCmd)
             continue
+        rank := g_CMDDATA[section][currentCmd]
 
         if IsInteger(rank) {
             parts := StrSplit(currentCmd, " | ")
@@ -1812,16 +1826,18 @@ DelCommand(*) {
     if !currentCmd
         return
 
-    for index, section in StrSplit(g_SECTION["DFTCMD"] "," g_SECTION["USERCMD"] "," g_SECTION["INDEX"], ",") {
-        rank := IniRead(g_INI, section, EscapeCommandKey(currentCmd), "KeyNotFound")  ; Escape when reading
-        if (rank = "KeyNotFound" || rank = "ERROR")
+    LoadCommandData()
+
+    for _, section in ["DefaultCommand", "UserCommand", "Index"] {
+        if !g_CMDDATA[section].Has(currentCmd)
             continue
 
         result := MsgBox(g_LNG[800] section "]`n`n" currentCmd, g_LNG[801], 52) ; 52 = Yes/No + Question icon
 
         if result = "YES" {
             try {
-                IniDelete(g_INI, section, EscapeCommandKey(currentCmd))  ; Escape when deleting
+                g_CMDDATA[section].Delete(currentCmd)
+                SaveCommandData()
                 MsgBox(g_LNG[802] "`n`n" currentCmd, g_TITLE, 64)       ; 64 = Info icon
             } catch as e {
                 MsgBox(g_LNG[803] "`n`n" currentCmd, g_TITLE, 48)       ; 48 = Error icon
@@ -1835,7 +1851,7 @@ DelCommand(*) {
 
 OpenCommandManager(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank := 1, OriginCmd := "") { ; 命令管理窗口
     Global g_CmdMgrGui
-    Local  typeList := Array("File", "Dir", "CMD", "URL", "Func")
+    Local  typeList := Array("File", "Dir", "CMD", "URL", "Func", "Clip")
     chooseIndex := GetArrayIndex(Type, typeList)
     chooseIndex := chooseIndex ? chooseIndex : 1
 
@@ -1869,8 +1885,10 @@ PickCommandTarget(cmdType) {
         cmdPath := DirSelect(, 3, 'Please select directory')
     else if (cmdType = "File")
         cmdPath := FileSelect(3, , , 'All Files (*.*)')
+    else if (cmdType = "Clip")
+        return EditClipText()                                           ; Clip uses a multi-line text editor instead of a file picker
     else
-        return MsgBox("Path picker only supports File/Dir type.", g_LNG[700], 64)
+        return MsgBox("Path picker only supports File/Dir/Clip type.", g_LNG[700], 64)
 
     if (cmdPath != "")
         g_CmdMgrGui["Path"].Value := cmdPath
@@ -1878,7 +1896,7 @@ PickCommandTarget(cmdType) {
 
 SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
     g_CmdMgrGui.Submit()
-    validType := Map("File", 1, "Dir", 1, "CMD", 1, "URL", 1, "Func", 1)
+    validType := Map("File", 1, "Dir", 1, "CMD", 1, "URL", 1, "Func", 1, "Clip", 1)
     section := Trim(section)
     cmdType := Trim(cmdType)
     cmdPath := Trim(cmdPath)
@@ -1892,14 +1910,29 @@ SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
         return MsgBox(g_LNG[821], g_LNG[820], 64)
     }
 
+    if (cmdType = "Clip") {
+        ; The Path field already holds the escaped single-line form (EditClipText produced it),
+        ; so only guard against stray real line breaks - never re-escape, that would double the backslashes.
+        cmdPath := StrReplace(StrReplace(StrReplace(cmdPath, "`r`n", "\n"), "`n", "\n"), "`r", "\n")
+        if (cmdDesc = "")
+            return MsgBox("A Clip command needs a short name in the Description field, that is what you type to call it.", g_LNG[820], 48)
+    }
+
     if (!IsInteger(cmdRank) || cmdRank <= 0)
         cmdRank := 1
 
     cmdLine := cmdType " | " cmdPath (cmdDesc != "" ? " | " cmdDesc : "")
     try {
-        if (originCmd != "" && originCmd != cmdLine)
-            IniDelete(g_INI, section, EscapeCommandKey(originCmd))      ; Delete old command only when editing changed command key
-        IniWrite(cmdRank, g_INI, section, EscapeCommandKey(cmdLine))    ; Escape special chars to prevent INI corruption
+        LoadCommandData()
+        if !g_CMDDATA.Has(section)
+            section := "UserCommand"
+        if (originCmd != "" && originCmd != cmdLine) {                  ; Drop the old key only when editing changed the command line
+            for _, sec in ["DefaultCommand", "UserCommand", "Index"]
+                if g_CMDDATA[sec].Has(originCmd)
+                    g_CMDDATA[sec].Delete(originCmd)
+        }
+        g_CMDDATA[section][cmdLine] := cmdRank + 0
+        SaveCommandData()
     } catch as e {
         MsgBox(g_LNG[822] e.Message, g_LNG[820], 64)
         return
@@ -1988,6 +2021,599 @@ GetArrayIndex(searchValue, Array){
             return index
     }
     return 0
+}
+
+;===================================================
+; Command storage - ALTRun.json
+;
+; Why not ini: IniRead/IniWrite go through the Windows
+; profile API, which truncates a whole section at 64 KB.
+; Past that limit commands silently disappear from the
+; list. JSON also removes the need to escape "=" and ";"
+; in command lines, so EscapeCommandKey() is only kept
+; for reading legacy ini files during migration.
+;
+; File layout:
+; {
+;   "DefaultCommand" : { "<command line>": <rank>, ... },
+;   "UserCommand"    : { "<command line>": <rank>, ... },
+;   "Index"          : { "<command line>": <rank>, ... },
+;   "FallbackCommand": [ "<command line>", ... ]
+; }
+;===================================================
+
+LoadCommandData(forceReload := false) {
+    Global g_CMDDATA
+    if (!forceReload && g_CMDDATA.Count)
+        return g_CMDDATA
+
+    g_CMDDATA := Map("DefaultCommand", Map(), "UserCommand", Map(), "Index", Map(), "FallbackCommand", Array())
+
+    if (!FileExist(g_JSON))
+        MigrateIniToJson()                                              ; One-off import of the old [*Command] / [Index] sections
+
+    data := ""
+    if FileExist(g_JSON) {
+        try {
+            data := JsonParse(FileRead(g_JSON, "UTF-8"))
+        } catch as e {
+            g_LOG.Debug("LoadCommandData: Invalid JSON - " e.Message)
+            try FileMove(g_JSON, g_JSON ".bad", true)
+            MsgBox("ALTRun.json could not be parsed:`n`n" e.Message "`n`nIt was renamed to ALTRun.json.bad and the defaults will be rebuilt.", g_TITLE, 48)
+            data := ""
+        }
+    }
+
+    if (data is Map) {
+        for _, name in ["DefaultCommand", "UserCommand", "Index"] {
+            if !(data.Has(name) && data[name] is Map)
+                continue
+            for cmdLine, rank in data[name] {
+                cmdLine := Trim(cmdLine)
+                if (cmdLine = "")
+                    continue
+                g_CMDDATA[name][cmdLine] := IsInteger(rank) ? rank + 0 : 1
+            }
+        }
+        if (data.Has("FallbackCommand") && data["FallbackCommand"] is Array) {
+            for _, cmdLine in data["FallbackCommand"] {
+                if (Trim(cmdLine) != "")
+                    g_CMDDATA["FallbackCommand"].Push(Trim(cmdLine))
+            }
+        }
+    }
+
+    dirty := false
+    if (!g_CMDDATA["DefaultCommand"].Count) {
+        g_CMDDATA["DefaultCommand"] := ParseCommandBlock(DefaultCommandText())
+        dirty := true
+    }
+    if (!g_CMDDATA["UserCommand"].Count) {
+        g_CMDDATA["UserCommand"] := ParseCommandBlock(UserCommandText())
+        dirty := true
+    }
+    if (!g_CMDDATA["FallbackCommand"].Length) {
+        for _, line in StrSplit(FallbackCommandText(), "`n", "`r") {
+            line := Trim(line)
+            if (line != "" && SubStr(line, 1, 1) != ";")
+                g_CMDDATA["FallbackCommand"].Push(line)
+        }
+        dirty := true
+    }
+    if (dirty)
+        SaveCommandData()
+
+    g_LOG.Debug("LoadCommandData: Default=" g_CMDDATA["DefaultCommand"].Count
+        . ", User=" g_CMDDATA["UserCommand"].Count
+        . ", Index=" g_CMDDATA["Index"].Count
+        . ", Fallback=" g_CMDDATA["FallbackCommand"].Length)
+
+    if (!g_CMDDATA["Index"].Count) {
+        if (MsgBox(g_LNG[804], g_TITLE, 4161) = "OK")
+            Reindex()
+    }
+    return g_CMDDATA
+}
+
+SaveCommandData() {
+    out := "{`r`n"
+    for _, name in ["DefaultCommand", "UserCommand", "Index"] {
+        out .= '  "' name '": {`r`n'
+        first := true
+        for cmdLine, rank in g_CMDDATA[name] {
+            out .= (first ? "" : ",`r`n") . '    "' JsonEscape(cmdLine) '": ' (IsInteger(rank) ? rank : 1)
+            first := false
+        }
+        out .= (first ? "" : "`r`n") . "  },`r`n"
+    }
+    out .= '  "FallbackCommand": [`r`n'
+    first := true
+    for _, cmdLine in g_CMDDATA["FallbackCommand"] {
+        out .= (first ? "" : ",`r`n") . '    "' JsonEscape(cmdLine) '"'
+        first := false
+    }
+    out .= (first ? "" : "`r`n") . "  ]`r`n}`r`n"
+
+    tmpFile := g_JSON ".tmp"
+    try {
+        if FileExist(tmpFile)
+            FileDelete(tmpFile)
+        FileAppend(out, tmpFile, "UTF-8")                               ; Write a temp file first, so a crash can never truncate the real one
+        FileMove(tmpFile, g_JSON, true)
+    } catch as e {
+        g_LOG.Debug("SaveCommandData: Write failed - " e.Message)
+        MsgBox("Could not save ALTRun.json:`n`n" e.Message, g_TITLE, 48)
+        return false
+    }
+    return true
+}
+
+ParseCommandBlock(blockText, legacyUnescape := false) {                 ; "command line=rank" lines -> Map
+    result := Map()
+    for _, line in StrSplit(blockText, "`n", "`r") {
+        line := Trim(line)
+        if (!line || SubStr(line, 1, 1) = ";" || SubStr(line, 1, 1) = "[")
+            continue
+        if (legacyUnescape)
+            line := UnescapeCommandKey(line)
+        if !RegExMatch(line, "^(.*)=(\d+)\s*$", &m)                     ; Split on the LAST '=', so the command itself may contain '='
+            continue
+        cmdLine := Trim(m.1)
+        rank    := m.2 + 0
+        if (cmdLine != "" && rank > 0)
+            result[cmdLine] := rank
+    }
+    return result
+}
+
+MigrateIniToJson() {                                                    ; One-off: pull the command sections out of the old ini
+    Global g_CMDDATA
+    if (!FileExist(g_INI))
+        return false
+
+    iniText := ""
+    try iniText := FileRead(g_INI, "UTF-8")                             ; Read the raw file, NOT IniRead - that is what hits the 64 KB cap
+    if (InStr(iniText, Chr(0)))                                         ; Old ini saved as UTF-16 by Notepad
+        try iniText := FileRead(g_INI, "UTF-16")
+    if (iniText = "")
+        return false
+
+    moved := false
+    for _, pair in [["DefaultCommand", "DFTCMD"], ["UserCommand", "USERCMD"], ["Index", "INDEX"]] {
+        body := ReadIniSectionRaw(iniText, g_SECTION[pair[2]])
+        if (body = "")
+            continue
+        g_CMDDATA[pair[1]] := ParseCommandBlock(body, true)
+        moved := true
+    }
+
+    body := ReadIniSectionRaw(iniText, g_SECTION["FALLBACK"])
+    if (body != "") {
+        for _, line in StrSplit(body, "`n", "`r") {
+            line := Trim(UnescapeCommandKey(line))
+            if (line != "" && SubStr(line, 1, 1) != ";")
+                g_CMDDATA["FallbackCommand"].Push(line)
+        }
+        moved := true
+    }
+
+    if (!moved)
+        return false
+
+    if !SaveCommandData()
+        return false
+
+    try FileCopy(g_INI, g_INI ".bak", true)                             ; Keep the old ini before stripping the command sections
+    for _, key in ["DFTCMD", "USERCMD", "INDEX", "FALLBACK"]
+        Try IniDelete(g_INI, g_SECTION[key])
+
+    g_LOG.Debug("MigrateIniToJson: Migrated commands from ini to json")
+    MsgBox("Commands have been moved from ALTRun.ini into ALTRun.json.`n`n"
+         . "The old file was backed up as ALTRun.ini.bak.`n`n"
+         . "Run Reindex once to rebuild the file index.", g_TITLE, 64)
+    return true
+}
+
+DefaultCommandText() {
+    return "
+    (
+        ; This section is Built-In commands with high priority
+        ; App will auto generate this section while it is empty
+        ; Please make sure App is not running before modifying.
+        ;
+        Func | About | Help & About (F1)=99
+        Func | Options | Setting Options (F2)=99
+        Func | Reload | Reload ALTRun=99
+        Func | EditCommand | Edit current command (F3)=99
+        Func | UserCommand | Edit command database ALTRun.json (F4)=99
+        Func | EditIniFile | Edit config file ALTRun.ini=99
+        Func | NewCommand | New Command=99
+        Func | NewClip | New Clip (text snippet)=99
+        Func | OpenContainer | Locate cmd's dir with File Manager=99
+        Func | Usage | ALTRun Usage Status=99
+        Func | Reindex | Reindex search database=99
+        Func | Everything | Search by Everything=99
+        Func | PTTools | PT Tools (AHK)=99
+        Func | AhkRun | Run Command use AutoHotkey Run=99
+        Func | Google | Search Clipboard or Input by Google=99
+        Func | Bing | Search Clipboard or Input by Bing=99
+        Func | EmptyRecycle | Empty Recycle Bin=99
+        Func | TurnMonitorOff | Turn off Monitor, Close Monitor=99
+        Func | MuteVolume | Mute Volume=99
+        File | %Temp%\ALTRun.log | ALTRun Log File=99
+        Dir | A_ScriptDir | ALTRun Program Dir=99
+        Dir | A_Startup | Current User Startup Dir=99
+        Dir | A_StartupCommon | All User Startup Dir=99
+        Dir | A_ProgramsCommon | Windows Search.Index.Cortana Dir=99
+        CMD | explorer.exe | Windows File Explorer=99
+        CMD | cmd.exe | Windows Command Processor=99
+        CMD | Shell:AppsFolder | AppsFolder Applications=66
+        CMD | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=66
+        CMD | Notepad.exe | Notepad=66
+        CMD | WF.msc | Windows Defender Firewall with Advanced Security=66
+        CMD | TaskSchd.msc | Task Scheduler=66
+        CMD | DevMgmt.msc | Device Manager=66
+        CMD | EventVwr.msc | Event Viewer=66
+        CMD | CompMgmt.msc | Computer Manager=66
+        CMD | TaskMgr.exe | Task Manager=66
+        CMD | Calc.exe | Calculator=66
+        CMD | MsPaint.exe | Paint=66
+        CMD | Regedit.exe | Registry Editor=66
+        CMD | CleanMgr.exe | Disk Space Clean-up Manager=66
+        CMD | GpEdit.msc | Group Policy=66
+        CMD | DiskMgmt.msc | Disk Management=66
+        CMD | DxDiag.exe | Directx Diagnostic Tool=66
+        CMD | LusrMgr.msc | Local Users and Groups=66
+        CMD | MsConfig.exe | System Configuration=66
+        CMD | PerfMon.exe /Res | Resources Monitor=66
+        CMD | PerfMon.exe | Performance Monitor=66
+        CMD | WinVer.exe | About Windows=66
+        CMD | Services.msc | Services=66
+        CMD | NetPlWiz | User Accounts=66
+        CMD | Control | Control Panel=66
+        CMD | Control Intl.cpl | Region and Language Options=66
+        CMD | Control Firewall.cpl | Windows Defender Firewall=66
+        CMD | Control AppWiz.cpl | Programs and Features=66
+        CMD | Control Sysdm.cpl | System Properties=66
+        CMD | Control AdminTools | Windows Tools=66
+        CMD | Control Inetcpl.cpl,,4 | Internet Properties=66
+        CMD | Control UserPasswords | User Accounts=66
+    )"
+}
+
+UserCommandText() {
+    return "
+    (
+        ; This section is User-Defined commands, modify as desired
+        ; Format: Command Type | Command | Description=Rank
+        ; Command type: File, Dir, CMD, URL, some sample below
+        ; Please make sure App is not running before modifying
+        ;
+        File | C:\Windows\Notepad.exe=9
+        Dir | %AppData%\Microsoft\Windows\SendTo | Windows SendTo Dir=9
+        Dir | %OneDrive% | OneDrive=9
+        Dir | A_Desktop | Desktop=99
+        CMD | cmd.exe /k ipconfig | Check IP Address=9
+        CMD | explorer /Select,C:\Program Files | Open and select C:\Program Files=9
+        CMD | Control Printers | Devices and Printers=66
+        CMD | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
+        URL | www.google.com | Google=9
+        Clip | Dear Sir,\n\nThank you for your email.\n\nBest regards,\nLiming | sig=9
+        Clip | {date} | today=9
+    )"
+}
+
+FallbackCommandText() {
+    return "
+    (
+        ; Fallback Commands show when search result is empty
+        ; Commands in order, modify as desired
+        ; Format: Command Type | Command | Description
+        ; Command Type: File, Dir, CMD, URL
+        ;
+        Func | NewCommand | New Command
+        Func | Everything | Search by Everything
+        Func | Google | Search Clipboard or Input by Google
+        Func | AhkRun | Run Command use AutoHotkey Run
+        Func | Bing | Search Clipboard or Input by Bing
+        CMD | Calc.exe | Calculator
+    )"
+}
+
+ReadIniSectionRaw(iniText, sectionName) {                               ; Section body straight from the file text, no size limit
+    if !RegExMatch(iniText, "im)^\[" sectionName "\][ \t]*$", &m)
+        return ""
+    rest := SubStr(iniText, m.Pos + m.Len)
+    if RegExMatch(rest, "m)^\[[^\]\r\n]+\][ \t]*$", &nextSec)
+        rest := SubStr(rest, 1, nextSec.Pos - 1)
+    return Trim(rest, " `t`r`n")
+}
+
+;===================================================
+; Minimal JSON reader / writer (AutoHotkey v2)
+;===================================================
+
+JsonParse(text) {
+    pos   := 1
+    value := Json_Value(text, &pos)
+    Json_Ws(text, &pos)
+    return value
+}
+
+Json_Ws(text, &pos) {
+    ch := SubStr(text, pos, 1)                                          ; Fast path: most tokens are not preceded by whitespace
+    if (ch != " " && ch != "`t" && ch != "`r" && ch != "`n")
+        return
+    if RegExMatch(text, "\s*", &m, pos)
+        pos += m.Len
+}
+
+Json_Value(text, &pos) {
+    Json_Ws(text, &pos)
+    ch := SubStr(text, pos, 1)
+    switch ch, true {
+        case "{": return Json_Obj(text, &pos)
+        case "[": return Json_Arr(text, &pos)
+        case '"': return Json_Str(text, &pos)
+    }
+    if (SubStr(text, pos, 4) = "true") {
+        pos += 4
+        return true
+    }
+    if (SubStr(text, pos, 5) = "false") {
+        pos += 5
+        return false
+    }
+    if (SubStr(text, pos, 4) = "null") {
+        pos += 4
+        return ""
+    }
+    if (RegExMatch(text, "-?\d++(\.\d++)?([eE][-+]?\d++)?", &m, pos) && m.Pos = pos) {
+        pos += m.Len
+        return m[0] + 0
+    }
+    throw Error("Unexpected character at position " pos)
+}
+
+Json_Obj(text, &pos) {
+    obj := Map()
+    pos++                                                               ; skip {
+    Json_Ws(text, &pos)
+    if (SubStr(text, pos, 1) = "}") {
+        pos++
+        return obj
+    }
+    loop {
+        Json_Ws(text, &pos)
+        key := Json_Str(text, &pos)
+        Json_Ws(text, &pos)
+        if (SubStr(text, pos, 1) != ":")
+            throw Error("Expected ':' at position " pos)
+        pos++
+        obj[key] := Json_Value(text, &pos)
+        Json_Ws(text, &pos)
+        ch := SubStr(text, pos, 1)
+        pos++
+        if (ch = ",")
+            continue
+        if (ch = "}")
+            return obj
+        throw Error("Expected ',' or '}' at position " (pos - 1))
+    }
+}
+
+Json_Arr(text, &pos) {
+    arr := Array()
+    pos++                                                               ; skip [
+    Json_Ws(text, &pos)
+    if (SubStr(text, pos, 1) = "]") {
+        pos++
+        return arr
+    }
+    loop {
+        arr.Push(Json_Value(text, &pos))
+        Json_Ws(text, &pos)
+        ch := SubStr(text, pos, 1)
+        pos++
+        if (ch = ",")
+            continue
+        if (ch = "]")
+            return arr
+        throw Error("Expected ',' or ']' at position " (pos - 1))
+    }
+}
+
+Json_Str(text, &pos) {
+    static rx := '"((?:[^"\\]|\\.)*+)"'
+    if !(RegExMatch(text, rx, &m, pos) && m.Pos = pos)
+        throw Error("Invalid string at position " pos)
+    pos += m.Len
+    return Json_Unescape(m[1])
+}
+
+Json_Unescape(str) {
+    if !InStr(str, "\")
+        return str
+    out := "", i := 1, len := StrLen(str)
+    while (i <= len) {
+        ch := SubStr(str, i, 1)
+        if (ch != "\") {
+            out .= ch
+            i++
+            continue
+        }
+        esc := SubStr(str, i + 1, 1)
+        switch esc, true {
+            case '"': out .= '"'
+            case "\": out .= "\"
+            case "/": out .= "/"
+            case "b": out .= Chr(8)
+            case "f": out .= Chr(12)
+            case "n": out .= "`n"
+            case "r": out .= "`r"
+            case "t": out .= "`t"
+            case "u":
+                out .= Chr("0x" SubStr(str, i + 2, 4))
+                i += 4
+            default : out .= esc
+        }
+        i += 2
+    }
+    return out
+}
+
+JsonEscape(str) {
+    str := StrReplace(str, "\", "\\")
+    str := StrReplace(str, '"', '\"')
+    str := StrReplace(str, "`r", "\r")
+    str := StrReplace(str, "`n", "\n")
+    str := StrReplace(str, "`t", "\t")
+    return str
+}
+
+; =========================================================================
+; === Clip (Snippet) support ==============================================
+; Command format:  Clip | <snippet body> | <short name to type>=<rank>
+; The body is stored on ONE INI line, so real newlines/tabs are encoded:
+;     \n = new line      \t = tab      \\ = a literal backslash
+; Placeholders expanded at paste time:
+;     {date} {time} {datetime} {clipboard} {arg} {cursor}
+; =========================================================================
+
+EscapeClipText(text) {                                                  ; Real text  ->  single INI line
+    if (text = "")
+        return ""
+    text := StrReplace(text, "\", "\\")                                 ; backslash first
+    text := StrReplace(text, "`r`n", "\n")
+    text := StrReplace(text, "`n", "\n")
+    text := StrReplace(text, "`r", "\n")
+    text := StrReplace(text, "`t", "\t")
+    return text
+}
+
+UnescapeClipText(text) {                                                ; Single INI line  ->  real text
+    if (text = "")
+        return ""
+    ; Placeholder trick keeps an escaped backslash (\\) from eating the next token.
+    text := StrReplace(text, "\\", Chr(1))
+    text := StrReplace(text, "\n", "`r`n")
+    text := StrReplace(text, "\t", "`t")
+    text := StrReplace(text, Chr(1), "\")
+    return text
+}
+
+ClipPreview(text, maxLen := 70) {                                       ; One-line preview for ListView / StatusBar
+    preview := StrReplace(StrReplace(text, "\n", " "), "\t", " ")
+    preview := RegExReplace(preview, "\s{2,}", " ")
+    return (StrLen(preview) > maxLen) ? SubStr(preview, 1, maxLen) " ..." : preview
+}
+
+ExpandClipPlaceholders(text) {                                          ; {date} {time} {datetime} {clipboard} {arg}
+    if (InStr(text, "{") = 0)
+        return text
+    text := StrReplace(text, "{date}", FormatTime(, "dd.MM.yyyy"))
+    text := StrReplace(text, "{time}", FormatTime(, "HH:mm"))
+    text := StrReplace(text, "{datetime}", FormatTime(, "dd.MM.yyyy HH:mm"))
+    text := StrReplace(text, "{clipboard}", A_Clipboard)
+    text := StrReplace(text, "{arg}", g_RUNTIME["Arg"])
+    return text
+}
+
+WaitModifiersReleased(timeout := 0.5) {                                 ; Avoid Ctrl/Alt/Shift/Win leaking into the pasted keystrokes
+    for _, key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"]
+        KeyWait(key, "T" timeout)
+}
+
+FocusLastWindow() {                                                     ; Give focus back to the app the user came from
+    target := g_RUNTIME["LastWin"]
+    if (!target || !WinExist("ahk_id " target))
+        return false
+    if WinActive("ahk_id " target)
+        return true
+    try {
+        WinActivate("ahk_id " target)
+        WinWaitActive("ahk_id " target, , 1)
+    } catch as e {
+        g_LOG.Debug("FocusLastWindow: Failed to activate hwnd=" target ", " e.Message)
+        return false
+    }
+    return WinActive("ahk_id " target) ? true : false
+}
+
+PasteClipText(rawText) {                                                ; Main entry, called by RunCommand for type Clip
+    text := ExpandClipPlaceholders(UnescapeClipText(rawText))
+    if (text = "") {
+        g_LOG.Debug("PasteClipText: Empty clip text, nothing to paste")
+        return false
+    }
+
+    ; {cursor} marks where the caret should end up after pasting.
+    caretBack := 0
+    if (cursorPos := InStr(text, "{cursor}")) {
+        text := StrReplace(text, "{cursor}", "")
+        caretBack := StrLen(text) - cursorPos + 1                       ; how many chars sit after the caret
+    }
+
+    Sleep 80                                                            ; let the hidden GUI release focus
+    FocusLastWindow()
+    WaitModifiersReleased()
+
+    if (g_CONFIG["ClipSendMode"] = 2) {                                 ; Mode 2: type it out, for apps that block clipboard paste
+        SendInput("{Text}" text)
+    } else {                                                            ; Mode 1 (default): clipboard + Ctrl+V, fast and safe for long text
+        oldClip := ClipboardAll()
+        A_Clipboard := ""
+        A_Clipboard := text
+        if !ClipWait(1) {
+            A_Clipboard := oldClip
+            g_LOG.Debug("PasteClipText: ClipWait timeout, paste aborted")
+            return false
+        }
+        SendInput("^v")
+        Sleep g_CONFIG["ClipPasteDelay"]
+        A_Clipboard := oldClip                                          ; restore whatever the user had before
+        oldClip := ""
+    }
+
+    if (caretBack > 0)
+        SendInput("{Left " caretBack "}")
+
+    g_LOG.Debug("PasteClipText: Pasted " StrLen(text) " chars, mode=" g_CONFIG["ClipSendMode"])
+    return true
+}
+
+NewClip(*) {                                                            ; Command "New Clip", opens the manager pre-set to type Clip
+    OpenCommandManager(g_SECTION["USERCMD"], "Clip", EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
+}
+
+EditClipText(*) {                                                       ; Multi-line editor for the Clip body, opened by the "..." button
+    Global g_CmdMgrGui, g_ClipEditGui
+
+    g_ClipEditGui := Gui("+Owner" g_CmdMgrGui.Hwnd, "Clip Text  -  line breaks are stored as \n")
+    g_ClipEditGui.SetFont("S10 Norm", "Consolas")
+    clipEdit := g_ClipEditGui.AddEdit("w620 r18 +Multi +WantReturn +WantTab vClipBody", UnescapeClipText(g_CmdMgrGui["Path"].Text))
+    g_ClipEditGui.SetFont("S9 Norm", "Microsoft Yahei")
+    g_ClipEditGui.AddText("xm w440 cGray", "Placeholders: {date} {time} {datetime} {clipboard} {arg} {cursor}")
+    g_ClipEditGui.AddButton("Default x+10 yp-6 w80", "OK").OnEvent("Click", SaveClipText)
+    g_ClipEditGui.AddButton("x+8 yp w80", "Cancel").OnEvent("Click", CloseClipEditor)
+    g_ClipEditGui.OnEvent("Close", CloseClipEditor)
+    g_ClipEditGui.OnEvent("Escape", CloseClipEditor)
+
+    g_CmdMgrGui.Opt("+Disabled")
+    g_ClipEditGui.Show("Center")
+    clipEdit.Focus()
+
+    SaveClipText(*) {
+        g_CmdMgrGui["Path"].Value := EscapeClipText(clipEdit.Value)
+        CloseClipEditor()
+    }
+}
+
+CloseClipEditor(*) {
+    Global g_CmdMgrGui, g_ClipEditGui
+    try g_CmdMgrGui.Opt("-Disabled")
+    try g_ClipEditGui.Destroy()
+    try WinActivate("ahk_id " g_CmdMgrGui.Hwnd)
 }
 
 ; === Command Key Escaping Functions (for handling special chars in INI keys) ===
@@ -2373,108 +2999,6 @@ LoadConfig(mode) {
         }
     }
 
-    if (mode = "commands" || mode = "all") {
-        defaultCmdSection := ""
-        Try defaultCmdSection := IniRead(g_INI, g_SECTION["DFTCMD"])
-        if (defaultCmdSection = "") {
-            IniWrite("
-            (
-            ; This section is Built-In commands with high priority
-            ; App will auto generate this section while it is empty
-            ; Please make sure App is not running before modifying.
-            ;
-            Func | About | Help & About (F1)=99
-            Func | Options | Setting Options (F2)=99
-            Func | Reload | Reload ALTRun=99
-            Func | EditCommand | Edit current command (F3)=99
-            Func | UserCommand | Change setting file directly (F4)=99
-            Func | NewCommand | New Command=99
-            Func | OpenContainer | Locate cmd's dir with File Manager=99
-            Func | Usage | ALTRun Usage Status=99
-            Func | Reindex | Reindex search database=99
-            Func | Everything | Search by Everything=99
-            Func | PTTools | PT Tools (AHK)=99
-            Func | AhkRun | Run Command use AutoHotkey Run=99
-            Func | Google | Search Clipboard or Input by Google=99
-            Func | Bing | Search Clipboard or Input by Bing=99
-            Func | EmptyRecycle | Empty Recycle Bin=99
-            Func | TurnMonitorOff | Turn off Monitor, Close Monitor=99
-            Func | MuteVolume | Mute Volume=99
-            File | %Temp%\ALTRun.log | ALTRun Log File=99
-            Dir | A_ScriptDir | ALTRun Program Dir=99
-            Dir | A_Startup | Current User Startup Dir=99
-            Dir | A_StartupCommon | All User Startup Dir=99
-            Dir | A_ProgramsCommon | Windows Search.Index.Cortana Dir=99
-            CMD | explorer.exe | Windows File Explorer=99
-            CMD | cmd.exe | Windows Command Processor=99
-            CMD | Shell:AppsFolder | AppsFolder Applications=66
-            CMD | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=66
-            CMD | Notepad.exe | Notepad=66
-            CMD | WF.msc | Windows Defender Firewall with Advanced Security=66
-            CMD | TaskSchd.msc | Task Scheduler=66
-            CMD | DevMgmt.msc | Device Manager=66
-            CMD | EventVwr.msc | Event Viewer=66
-            CMD | CompMgmt.msc | Computer Manager=66
-            CMD | TaskMgr.exe | Task Manager=66
-            CMD | Calc.exe | Calculator=66
-            CMD | MsPaint.exe | Paint=66
-            CMD | Regedit.exe | Registry Editor=66
-            CMD | CleanMgr.exe | Disk Space Clean-up Manager=66
-            CMD | GpEdit.msc | Group Policy=66
-            CMD | DiskMgmt.msc | Disk Management=66
-            CMD | DxDiag.exe | Directx Diagnostic Tool=66
-            CMD | LusrMgr.msc | Local Users and Groups=66
-            CMD | MsConfig.exe | System Configuration=66
-            CMD | PerfMon.exe /Res | Resources Monitor=66
-            CMD | PerfMon.exe | Performance Monitor=66
-            CMD | WinVer.exe | About Windows=66
-            CMD | Services.msc | Services=66
-            CMD | NetPlWiz | User Accounts=66
-            CMD | Control | Control Panel=66
-            CMD | Control Intl.cpl | Region and Language Options=66
-            CMD | Control Firewall.cpl | Windows Defender Firewall=66
-            CMD | Control AppWiz.cpl | Programs and Features=66
-            CMD | Control Sysdm.cpl | System Properties=66
-            CMD | Control AdminTools | Windows Tools=66
-            CMD | Control Inetcpl.cpl,,4 | Internet Properties=66
-            CMD | Control UserPasswords | User Accounts=66
-            )", g_INI, g_SECTION["DFTCMD"])
-            defaultCmdSection := IniRead(g_INI, g_SECTION["DFTCMD"])
-        }
-
-        userCmdSection := ""
-        Try userCmdSection := IniRead(g_INI, g_SECTION["USERCMD"])
-        if (userCmdSection = "") {
-            IniWrite("
-            (
-            ; This section is User-Defined commands, modify as desired
-            ; Format: Command Type | Command | Description=Rank
-            ; Command type: File, Dir, CMD, URL, some sample below
-            ; Please make sure App is not running before modifying
-            ;
-            File | C:\Windows\Notepad.exe=9
-            Dir | %AppData%\Microsoft\Windows\SendTo | Windows SendTo Dir=9
-            Dir | %OneDrive% | OneDrive=9
-            Dir | A_Desktop | Desktop=99
-            CMD | cmd.exe /k ipconfig | Check IP Address=9
-            CMD | explorer /Select,C:\Program Files | Open and select C:\Program Files=9
-            CMD | Control Printers | Devices and Printers=66
-            CMD | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
-            URL | www.google.com | Google=9
-            )", g_INI, g_SECTION["USERCMD"])
-            userCmdSection := IniRead(g_INI, g_SECTION["USERCMD"])
-        }
-
-        indexSection := ""
-        Try indexSection := IniRead(g_INI, g_SECTION["INDEX"])
-        if (indexSection = "") {
-            if (MsgBox(g_LNG[804], g_TITLE, 4161) = "OK") {
-                Reindex()
-            }
-        }
-
-        return defaultCmdSection . "`n" . userCmdSection . "`n" . indexSection
-    }
     return
 }
 
@@ -2689,7 +3213,7 @@ SetLanguage() {
     ENG[218] := "Automatically switch paths in open/save dialogs"
     ENG[219] := "No Total Commander window found, please open Total Commander first!"
     ENG[220] := "No Explorer window found, please open Explorer first!"
-    ENG[221] := "ALTRun - {1} Jump to Total Commander Path | {2} Jump to Explorer Path"
+    ENG[221] := "{1} → TC / {2} → Explorer"
 
     ENG[250] := "Plugins"                                               ; 250~299 Plugins
     ENG[251] := "Auto-date at end of text"
@@ -2878,7 +3402,7 @@ SetLanguage() {
     CHN[218] := "在打开/保存对话框中自动跳转路径"
     CHN[219] := "未找到 Total Commander 窗口，请先打开 Total Commander。"
     CHN[220] := "未找到资源管理器窗口，请先打开资源管理器。"
-    CHN[221] := "ALTRun - {1} 跳转到 Total Commander 文件夹 | {2} 跳转到资源管理器文件夹"
+    CHN[221] := "{1} → TC / {2} → Explorer"
 
     CHN[250] := "插件"                                                  ; 250~299 Plugins
     CHN[251] := "文本末尾自动添加日期"
