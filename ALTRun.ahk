@@ -13,6 +13,7 @@
 #Include Lib\Language.ahk                                              ; Lang.Load()/Lang.IsChinese() - builds g_LNG (the UI text table) below.
 #Include Lib\Listary.ahk                                               ; Listary.Init() - open/save dialog path quick-switch, called in the autorun section below.
 #Include Lib\Plugins.ahk                                               ; Plugins.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
+#Include Lib\Clip.ahk                                                  ; Clip.PasteClipText()/ClipPreview()/EditClipText() - the "Clip" snippet command.
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -648,7 +649,7 @@ ListResult(rows := [], useDisplay := false) {
 
         if (cmdType = "Clip") {
             ; Clip text is not a path, show a single-line preview instead.
-            cmdPath := ClipPreview(cmdPath)
+            cmdPath := Clip.ClipPreview(cmdPath)
         } else if (shortenPath && cmdType != "URL") {
             ; Keep URL full text, shorten other command paths for list readability.
             SplitPath(cmdPath, &cmdPath)
@@ -678,7 +679,7 @@ GetCmdPart(command, fieldNo) {
 
 GetCmdDisplayPath(command) {                                            ; Field 2 of a command, made readable (Clip text gets a short preview)
     return (GetCmdPart(command, 1) = "Clip")
-        ? ClipPreview(GetCmdPart(command, 2))
+        ? Clip.ClipPreview(GetCmdPart(command, 2))
         : GetCmdPart(command, 2)
 }
 
@@ -777,7 +778,7 @@ RunCommand(originCmd) {
     if (cmdType = "") {
         return
     } else if (cmdType = "Clip") {
-        executed := PasteClipText(rawPath)
+        executed := Clip.PasteClipText(rawPath)
     } else if (cmdType = "DIR") {
         executed := OpenDir(cmdPath)
     } else if (cmdType = "FUNC") {
@@ -1607,7 +1608,7 @@ PickCommandTarget(cmdType) {
     else if (cmdType = "File")
         cmdPath := FileSelect(3, , , 'All Files (*.*)')
     else if (cmdType = "Clip")
-        return EditClipText()                                           ; Clip uses a multi-line text editor instead of a file picker
+        return Clip.EditClipText()                                           ; Clip uses a multi-line text editor instead of a file picker
     else
         return MsgBox("Path picker only supports File/Dir/Clip type.", g_LNG[700], 64)
 
@@ -2154,142 +2155,19 @@ ReadIniSectionRaw(iniText, sectionName) {                               ; Sectio
 
 ; =========================================================================
 ; === Clip (Snippet) support ==============================================
-; Command format:  Clip | <snippet body> | <short name to type>=<rank>
-; The body is stored on ONE INI line, so real newlines/tabs are encoded:
-;     \n = new line      \t = tab      \\ = a literal backslash
-; Placeholders expanded at paste time:
-;     {date} {time} {datetime} {clipboard} {arg} {cursor}
+; EscapeClipText()/UnescapeClipText()/ClipPreview()/ExpandClipPlaceholders()/
+; FocusLastWindow()/PasteClipText()/EditClipText()/CloseClipEditor() used to
+; live here; all moved into the Clip class in Lib\Clip.ahk (see the #Include
+; list at the top of this file and the comment block at the top of that file
+; for the command format / placeholder syntax).
 ; =========================================================================
 
-EscapeClipText(text) {                                                  ; Real text  ->  single INI line
-    if (text = "")
-        return ""
-    text := StrReplace(text, "\", "\\")                                 ; backslash first
-    text := StrReplace(text, "`r`n", "\n")
-    text := StrReplace(text, "`n", "\n")
-    text := StrReplace(text, "`r", "\n")
-    text := StrReplace(text, "`t", "\t")
-    return text
-}
-
-UnescapeClipText(text) {                                                ; Single INI line  ->  real text
-    if (text = "")
-        return ""
-    ; Placeholder trick keeps an escaped backslash (\\) from eating the next token.
-    text := StrReplace(text, "\\", Chr(1))
-    text := StrReplace(text, "\n", "`r`n")
-    text := StrReplace(text, "\t", "`t")
-    text := StrReplace(text, Chr(1), "\")
-    return text
-}
-
-ClipPreview(text, maxLen := 70) {                                       ; One-line preview for ListView / StatusBar
-    preview := StrReplace(StrReplace(text, "\n", " "), "\t", " ")
-    preview := RegExReplace(preview, "\s{2,}", " ")
-    return (StrLen(preview) > maxLen) ? SubStr(preview, 1, maxLen) " ..." : preview
-}
-
-ExpandClipPlaceholders(text) {                                          ; {date} {time} {datetime} {clipboard} {arg}
-    if (InStr(text, "{") = 0)
-        return text
-    text := StrReplace(text, "{date}", FormatTime(, "dd.MM.yyyy"))
-    text := StrReplace(text, "{time}", FormatTime(, "HH:mm"))
-    text := StrReplace(text, "{datetime}", FormatTime(, "dd.MM.yyyy HH:mm"))
-    text := StrReplace(text, "{clipboard}", A_Clipboard)
-    text := StrReplace(text, "{arg}", g_RUNTIME["Arg"])
-    return text
-}
-
-FocusLastWindow() {                                                     ; Give focus back to the app the user came from
-    target := g_RUNTIME["LastWin"]
-    if (!target || !WinExist("ahk_id " target))
-        return false
-    if WinActive("ahk_id " target)
-        return true
-    try {
-        WinActivate("ahk_id " target)
-        WinWaitActive("ahk_id " target, , 1)
-    } catch as e {
-        g_LOG.Debug("FocusLastWindow: Failed to activate hwnd=" target ", " e.Message)
-        return false
-    }
-    return WinActive("ahk_id " target) ? true : false
-}
-
-PasteClipText(rawText) {                                                ; Main entry, called by RunCommand for type Clip
-    text := ExpandClipPlaceholders(UnescapeClipText(rawText))
-    if (text = "") {
-        g_LOG.Debug("PasteClipText: Empty clip text, nothing to paste")
-        return false
-    }
-
-    ; {cursor} marks where the caret should end up after pasting.
-    caretBack := 0
-    if (cursorPos := InStr(text, "{cursor}")) {
-        text := StrReplace(text, "{cursor}", "")
-        caretBack := StrLen(text) - cursorPos + 1                       ; how many chars sit after the caret
-    }
-
-    Sleep 80                                                            ; let the hidden GUI release focus
-    FocusLastWindow()
-    Win.WaitModifiersUp()
-
-    if (g_CONFIG["ClipSendMode"] = 2) {                                 ; Mode 2: type it out, for apps that block clipboard paste
-        SendInput("{Text}" text)
-    } else {                                                            ; Mode 1 (default): clipboard + Ctrl+V, fast and safe for long text
-        oldClip := ClipboardAll()
-        A_Clipboard := ""
-        A_Clipboard := text
-        if !ClipWait(1) {
-            A_Clipboard := oldClip
-            g_LOG.Debug("PasteClipText: ClipWait timeout, paste aborted")
-            return false
-        }
-        SendInput("^v")
-        Sleep g_CONFIG["ClipPasteDelay"]
-        A_Clipboard := oldClip                                          ; restore whatever the user had before
-        oldClip := ""
-    }
-
-    if (caretBack > 0)
-        SendInput("{Left " caretBack "}")
-
-    g_LOG.Debug("PasteClipText: Pasted " StrLen(text) " chars, mode=" g_CONFIG["ClipSendMode"])
-    return true
-}
-
+; NewClip() must stay a bare global function (not a Clip class method): the
+; built-in "Func | NewClip | New Clip (text snippet)" command calls it by
+; name via %cmdPath%() in RunCommand(), which only resolves plain global
+; function names, not Class.Method - see FuncList in Options()/DefaultCommandText().
 NewClip(*) {                                                            ; Command "New Clip", opens the manager pre-set to type Clip
-    OpenCommandManager(g_SECTION["USERCMD"], "Clip", EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
-}
-
-EditClipText(*) {                                                       ; Multi-line editor for the Clip body, opened by the "..." button
-    Global g_CmdMgrGui, g_ClipEditGui
-
-    g_ClipEditGui := Gui("+Owner" g_CmdMgrGui.Hwnd, "Clip Text  -  line breaks are stored as \n")
-    g_ClipEditGui.SetFont("S10 Norm", "Consolas")
-    clipEdit := g_ClipEditGui.AddEdit("w620 r18 +Multi +WantReturn +WantTab vClipBody", UnescapeClipText(g_CmdMgrGui["Path"].Text))
-    g_ClipEditGui.SetFont("S9 Norm", "Microsoft Yahei")
-    g_ClipEditGui.AddText("xm w440 cGray", "Placeholders: {date} {time} {datetime} {clipboard} {arg} {cursor}")
-    g_ClipEditGui.AddButton("Default x+10 yp-6 w80", "OK").OnEvent("Click", SaveClipText)
-    g_ClipEditGui.AddButton("x+8 yp w80", "Cancel").OnEvent("Click", CloseClipEditor)
-    g_ClipEditGui.OnEvent("Close", CloseClipEditor)
-    g_ClipEditGui.OnEvent("Escape", CloseClipEditor)
-
-    g_CmdMgrGui.Opt("+Disabled")
-    g_ClipEditGui.Show("Center")
-    clipEdit.Focus()
-
-    SaveClipText(*) {
-        g_CmdMgrGui["Path"].Value := EscapeClipText(clipEdit.Value)
-        CloseClipEditor()
-    }
-}
-
-CloseClipEditor(*) {
-    Global g_CmdMgrGui, g_ClipEditGui
-    try g_CmdMgrGui.Opt("-Disabled")
-    try g_ClipEditGui.Destroy()
-    try WinActivate("ahk_id " g_CmdMgrGui.Hwnd)
+    OpenCommandManager(g_SECTION["USERCMD"], "Clip", Clip.EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
 }
 
 ; UnescapeCommandKey(): reverses the old "_Equal_"/"_Semicolon_" encoding that
