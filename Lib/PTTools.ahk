@@ -15,7 +15,7 @@
 ; Run.bat 引用的文件名 (DOSBox.exe SPF2M.exe) 保持一致。
 ;
 ; 设置改成存在 ALTRun.json 的 "PTTools" 节点里, 读写方式和 g_CONFIG/g_GUI 一样,
-; 都走 ALTRun.ahk 的 LoadAppData()/SaveAppData()。字段名比旧版本 (SpanWidth1/
+; 都走 Lib\AppData.ahk 的 AppData.LoadAppData()/AppData.SaveAppData()。字段名比旧版本 (SpanWidth1/
 ; RebarSize1/... 按 GroupBox 编号) 更语义化, 因为是这台机器唯一一份数据, 改名时
 ; 直接手动同步改了 ALTRun.json 里对应的 key, 没有另外写一遍迁移代码。
 ;
@@ -92,10 +92,10 @@ Class PTToolsWindow {
     static G := ""                                                        ; the Gui object, while the window is open
     static HotkeysReady := false
 
-    ; Called from ALTRun.ahk's LoadAppData(), same pattern as g_CONFIG/g_GUI.
+    ; Called from AppData.LoadAppData() (Lib\AppData.ahk), same pattern as g_CONFIG/g_GUI.
     static Load(saved) {
         PTToolsWindow.Settings := PTToolsWindow.Defaults.Clone()
-        MergeIntoDefaults(PTToolsWindow.Settings, saved)                   ; shared helper, defined in ALTRun.ahk
+        AppData.MergeIntoDefaults(PTToolsWindow.Settings, saved)            ; shared helper, in Lib\AppData.ahk
         return PTToolsWindow.Settings
     }
 
@@ -182,7 +182,7 @@ Class PTToolsWindow {
             S["WinLeft"] := x
             S["WinTop"] := y
         }
-        SaveAppData()                                                      ; ALTRun.ahk global - writes ALTRun.json right away
+        AppData.SaveAppData()                                               ; Lib\AppData.ahk - writes ALTRun.json right away
     }
 
     ; ===================================================================
