@@ -125,9 +125,9 @@ Class Clip {
         g_ClipEditGui.SetFont("S9 Norm", "Microsoft Yahei")
         g_ClipEditGui.AddText("xm w440 cGray", "Placeholders: {date} {time} {datetime} {clipboard} {arg} {cursor}")
         g_ClipEditGui.AddButton("Default x+10 yp-6 w80", "OK").OnEvent("Click", SaveClipText)
-        g_ClipEditGui.AddButton("x+8 yp w80", "Cancel").OnEvent("Click", Clip.CloseClipEditor)
-        g_ClipEditGui.OnEvent("Close", Clip.CloseClipEditor)
-        g_ClipEditGui.OnEvent("Escape", Clip.CloseClipEditor)
+        g_ClipEditGui.AddButton("x+8 yp w80", "Cancel").OnEvent("Click", (p*) => Clip.CloseClipEditor(p*))
+        g_ClipEditGui.OnEvent("Close", (p*) => Clip.CloseClipEditor(p*))
+        g_ClipEditGui.OnEvent("Escape", (p*) => Clip.CloseClipEditor(p*))
 
         g_CmdMgrGui.Opt("+Disabled")
         g_ClipEditGui.Show("Center")

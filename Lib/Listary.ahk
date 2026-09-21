@@ -44,10 +44,10 @@ Class Listary {
             }
         }
 
-        HotIf(Listary.IsQuickSwitchDialog)                                  ; 仅在真正的打开/保存对话框启用路径定位热键
+        HotIf((p*) => Listary.IsQuickSwitchDialog(p*))                      ; 仅在真正的打开/保存对话框启用路径定位热键
         try {
-            Hotkey(g_HOTKEY["ExplorerDir"], Listary.SyncExplorerPath)       ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
-            Hotkey(g_HOTKEY["TotalCMDDir"], Listary.SyncTCPath)             ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
+            Hotkey(g_HOTKEY["ExplorerDir"], (p*) => Listary.SyncExplorerPath(p*)) ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
+            Hotkey(g_HOTKEY["TotalCMDDir"], (p*) => Listary.SyncTCPath(p*)) ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
             g_LOG.Debug("Listary: Set quickswitch hotkey " g_HOTKEY["ExplorerDir"] " for Explorer, " g_HOTKEY["TotalCMDDir"] " for Total Commander...OK")
         } catch as e {
             g_LOG.Debug("Listary: Failed to set quickswitch hotkey..." e.Message)
@@ -55,7 +55,7 @@ Class Listary {
         HotIf                                                                ; Turn off context, make subsequent hotkeys global again
 
         ; 在打开/保存对话框标题中显示快捷键信息
-        SetTimer(Listary.ShowListaryHint, 250)
+        SetTimer(() => Listary.ShowListaryHint(), 250)
         return
     }
 
