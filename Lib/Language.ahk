@@ -30,7 +30,7 @@
 Class Lang {
 
     ; 构建中英文两张文字表, 并按 Lang.IsChinese() 的结果返回其中一张。
-    ; 依赖 g_INI / g_JSON (ALTRun.ahk 顶部已定义的全局路径常量) 和 g_LOG。
+    ; 依赖 g_JSON (ALTRun.ahk 顶部已定义的全局路径常量) 和 g_LOG。
     static Load() {
         ENG     := Map()
         CHN     := Map()
@@ -194,7 +194,7 @@ Class Lang {
         ENG[600] := "About"                                                 ; 600+ About
         ENG[601] := "An open-source, lightweight, efficient and powerful launcher"
             . "`nIt provides a streamlined and efficient way to find anything on your system and launch any application in your way"
-            . "`n`nSetting file:`n" g_INI "`n`nProgram file:`n" A_ScriptFullPath
+            . "`n`nSetting file:`n" g_JSON "`n`nProgram file:`n" A_ScriptFullPath
             . "`n`nCheck for Updates"
             . "`n<a href=`"https://github.com/zhugecaomao/ALTRun/releases`">https://github.com/zhugecaomao/ALTRun/releases</a>"
             . "`n`nSource code at GitHub"
@@ -383,7 +383,7 @@ Class Lang {
         CHN[600] := "关于"                                                  ; 600+ 关于
         CHN[601] := "一款开源、轻量、高效、功能强大的启动工具"
             . "`n能够快速查找系统中的内容或者启动应用程序"
-            . "`n`n配置文件`n" g_INI "`n`n程序文件`n" A_ScriptFullPath
+            . "`n`n配置文件`n" g_JSON "`n`n程序文件`n" A_ScriptFullPath
             . "`n`n版本更新"
             . "`n<a href=`"https://github.com/zhugecaomao/ALTRun/releases`">https://github.com/zhugecaomao/ALTRun/releases</a>"
             . "`n`n源代码开源在 GitHub"
@@ -419,8 +419,7 @@ Class Lang {
     }
 
     ; 启动早期(LoadAppData() 尚未把配置读进内存之前)就要知道当前是中文还是
-    ; 英文界面, 所以这里直接读一次 ALTRun.json (或迁移前的 ALTRun.ini),
-    ; 不依赖 g_CONFIG。
+    ; 英文界面, 所以这里直接读一次 ALTRun.json, 不依赖 g_CONFIG。
     static IsChinese() {
         if FileExist(g_JSON) {
             try {
@@ -429,8 +428,6 @@ Class Lang {
                     return data["Config"]["Chinese"] ? 1 : 0
             }
         }
-        if FileExist(g_INI)                                                 ; Pre-migration fallback: ALTRun.json has no Config section yet
-            return IniRead(g_INI, "Config", "Chinese", 0) ? 1 : 0
         return 0
     }
 }
