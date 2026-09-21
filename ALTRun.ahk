@@ -14,6 +14,8 @@
 #Include Lib\Listary.ahk                                               ; Listary.Init() - open/save dialog path quick-switch, called in the autorun section below.
 #Include Lib\Plugins.ahk                                               ; Plugins.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
 #Include Lib\Clip.ahk                                                  ; Clip.PasteClipText()/ClipPreview()/EditClipText() - the "Clip" snippet command.
+#Include Lib\AppData.ahk                                               ; AppData.LoadAppData()/AppData.SaveAppData() - reads/writes ALTRun.json.
+#Include Lib\CommandStore.ahk                                          ; CommandStore.LoadCommands() etc. - in-memory command cache/rank/usage/history.
 #Include Lib\PTTools.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
@@ -215,7 +217,7 @@ Global g_BENCH := Map(  ; Last Benchmark() result, purely informational
     "LastTime"       , ""
 )
 
-LoadAppData()    ; Loads (and migrates/creates) ALTRun.json; fills Config/Gui/Hotkey/Usage/History/Benchmark/commands
+AppData.LoadAppData()    ; Loads (and migrates/creates) ALTRun.json; fills Config/Gui/Hotkey/Usage/History/Benchmark/commands
 
 ; Global variables which are only read by the function, not assigned or used with the reference operator (&).
 Global MainGUI
@@ -233,10 +235,10 @@ Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon c
                         ,"CMD" , IL_Add(myImageList,"imageres.dll",-100)
                         ,"CLIP", IL_Add(myImageList,"imageres.dll",-102)) ; "imageres.dll",-5323 is cmd.exe icon
 
-OnExit(OnAppExit)                                                       ; Flush any Usage bump / buffered log lines on Reload()/ExitApp()
+OnExit(AppData.OnAppExit)                                                       ; Flush any Usage bump / buffered log lines on Reload()/ExitApp()
 
-LoadCommands()
-LoadHistory()
+CommandStore.LoadCommands()
+CommandStore.LoadHistory()
 UpdateSendTo()
 UpdateStartup()
 UpdateStartMenu()
@@ -786,10 +788,10 @@ RunCommand(originCmd) {
     }
 
     if (executed) {
-        UpdateRunCount()
-        UpdateRank(originCmd)                                          ; Saves by itself only when SmartRank is on
-        UpdateHistory(originCmd)
-        SaveAppData()                                                  ; Guarantees RunCount/History persist either way, in one write
+        CommandStore.UpdateRunCount()
+        CommandStore.UpdateRank(originCmd)                                          ; Saves by itself only when SmartRank is on
+        CommandStore.UpdateHistory(originCmd)
+        AppData.SaveAppData()                                                  ; Guarantees RunCount/History persist either way, in one write
         g_LOG.Debug("RunCommand: Execute success, RunCount=" g_CONFIG["RunCount"] ", cmd=" originCmd)
     } else {
         g_LOG.Debug("RunCommand: Execute failed, cmd=" originCmd)
@@ -935,12 +937,12 @@ MainGUI_Close(*) {
     ;try DllCall("AnimateWindow", "Ptr", MainGUI.Hwnd, "Int", 90, "UInt", 0x90000)
 
     MainGUI.Hide()
-    ; UpdateUsage() only mutates g_USAGE in memory. MainGUI_Close() fires on
+    ; CommandStore.UpdateUsage() only mutates g_USAGE in memory. MainGUI_Close() fires on
     ; every dismiss, including a plain Esc/Alt+Space with nothing run, so it
     ; must NOT trigger a full ALTRun.json save here. The bumped count rides
     ; along on the next real save instead (a command run, a settings change,
     ; or app exit - see the OnExit handler near the top of the script).
-    UpdateUsage()
+    CommandStore.UpdateUsage()
     SetStatusBar("TIP")                                                 ; Update StatusBar tip information after GUI hide
 }
 
@@ -1064,138 +1066,21 @@ IsFallbackPrefix(prefix) {
     return InStr("+ >", prefix, 0)
 }
 
-UpdateRank(originCmd, showRank := false, inc := 1) {
-    if (g_CONFIG["SmartRank"] = false || originCmd = "")
-        return
-
-    LoadAppData()
-
-    for _, section in ["DefaultCommand", "UserCommand", "Index"] {
-        if !g_CMDDATA[section].Has(originCmd)
-            continue
-
-        rankValue := g_CMDDATA[section][originCmd]
-        rankValue := IsInteger(rankValue) ? rankValue + inc : inc
-        rankValue := (rankValue < 0) ? -1 : rankValue
-
-        g_CMDDATA[section][originCmd] := rankValue
-        SaveAppData()
-        if (showRank)
-            SetStatusBar("UpdateRank: Rank for current command : " rankValue)
-
-        g_LOG.Debug("UpdateRank: Rank updated for command..." originCmd "=" rankValue)
-        break
-    }
-
-    ; Reload in-memory cache so the updated rank takes effect immediately.
-    LoadCommands()
-}
-
-; UpdateUsage/UpdateRunCount/UpdateHistory only mutate in-memory state; the
-; caller is responsible for calling SaveAppData() once all of them are done,
-; so one command execution costs a single ALTRun.json write, not three.
-
-UpdateUsage() {
-    currDate := A_YYYY . A_MM . A_DD
-    g_USAGE[currDate] := g_USAGE.Has(currDate) ? g_USAGE[currDate] + 1 : 1
-    g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], g_USAGE[currDate])
-}
-
-UpdateRunCount() {
-    g_CONFIG["RunCount"]++
-    g_LOG.Debug("UpdateRunCount: RunCount update to..." g_CONFIG["RunCount"])
-}
-
-UpdateHistory(originCmd) {
-    if (g_CONFIG["SaveHistory"] = false || originCmd = "")
-        return
-
-    g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])
-
-    if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
-        g_HISTORYS.Pop()
-}
-
+; UpdateRank()/UpdateUsage()/UpdateRunCount()/UpdateHistory()/LoadCommands()/
+; LoadHistory() used to live here; all moved into the CommandStore class in
+; Lib\CommandStore.ahk (see the #Include list at the top of this file).
+;
+; RankUp()/RankDown() stay bare global functions (not CommandStore methods):
+; the Options window's FuncList lets you bind them to a custom hotkey by
+; storing the function name as a string in g_HOTKEY[Trigger*], and RunCommand()
+; then calls it by name via %cmdPath%(), which only resolves plain global
+; function names, not Class.Method.
 RankUp(*) {
-    UpdateRank(g_RUNTIME["CurrentCommand"], true)
+    CommandStore.UpdateRank(g_RUNTIME["CurrentCommand"], true)
 }
 
 RankDown(*) {
-    UpdateRank(g_RUNTIME["CurrentCommand"], true, -1)
-}
-
-LoadCommands() {
-    ; Rebuild runtime command caches from the JSON command store.
-    Global g_COMMANDS, g_CMDINDEX, g_FALLBACK
-    g_COMMANDS := Array()
-    g_CMDINDEX := Array()
-    g_FALLBACK := Array()
-    Local rankRows := ""
-
-    LoadAppData()                                                   ; Loads (and migrates/creates) ALTRun.json once per session
-
-    for _, sectionName in ["DefaultCommand", "UserCommand", "Index"] {
-    for commandText, rankValue in g_CMDDATA[sectionName] {
-        if (commandText = "" || !IsInteger(rankValue) || rankValue <= 0)
-            continue
-
-        parts := StrSplit(commandText, " | ")
-        cmdPath := parts.Has(2) ? parts[2] : ""
-        cmdDesc := parts.Has(3) ? parts[3] : ""
-
-        cmdType := parts.Has(1) ? parts[1] : ""
-        if (cmdType = "Clip") {
-            ; A Clip's field 2 is the snippet body, only its short name (desc) is searchable.
-            searchable := cmdDesc
-        } else if (g_CONFIG["MatchPath"]) {
-            searchable := cmdPath " " cmdDesc
-        } else {
-            SplitPath(cmdPath, &fileName)
-            searchable := fileName " " cmdDesc
-        }
-        if (g_CONFIG["MatchPinyin"])
-            searchable := Pinyin.Initials(searchable)
-
-        rankRows .= rankValue "`t" commandText "`t" searchable "`n"
-    }
-    }
-
-    ; Sort by rank descending, then rebuild arrays.
-    rankRows := Sort(rankRows, "R N")
-    for _, line in StrSplit(rankRows, "`n", "`r") {
-        if !Trim(line)
-            continue
-
-        rowParts := StrSplit(line, "`t") ; rank, command, searchable
-        if (rowParts.Length < 3)
-            continue
-        g_COMMANDS.Push(rowParts[2])
-        g_CMDINDEX.Push(rowParts[3])
-    }
-
-    ; Fallback commands.
-    for _, line in g_CMDDATA["FallbackCommand"] {
-        line := Trim(line)
-        if (line != "" && SubStr(line, 1, 1) != ";")
-            g_FALLBACK.Push(line)
-    }
-
-    g_LOG.Debug("LoadCommands: Loaded COMMANDS=" g_COMMANDS.Length ", FALLBACK=" g_FALLBACK.Length)
-    return
-}
-
-LoadHistory() {                                                         ; g_HISTORYS is already populated by LoadAppData(); just apply policy
-    if (!g_CONFIG["SaveHistory"]) {
-        if (g_HISTORYS.Length) {
-            g_HISTORYS.Length := 0
-            SaveAppData()
-        }
-        g_LOG.Debug("LoadHistory: History disabled, cleared.")
-        return
-    }
-    if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
-        g_HISTORYS.Length := g_CONFIG["HistoryLen"]
-    g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
+    CommandStore.UpdateRank(g_RUNTIME["CurrentCommand"], true, -1)
 }
 
 GetCmdOutput(command) {
@@ -1328,7 +1213,7 @@ UpdateStartMenu() {
 
 Reindex(*) {                                                            ; Re-create Index section
     ; Collect every indexed entry into a fresh map, then store it in one go
-    LoadAppData()
+    AppData.LoadAppData()
     indexMap := Map()
 
     ; Create ProgressGui at the start
@@ -1412,11 +1297,11 @@ Reindex(*) {                                                            ; Re-cre
             indexMap[cmdLine] := g_CMDDATA["Index"][cmdLine]
     }
     g_CMDDATA["Index"] := indexMap
-    SaveAppData()
+    AppData.SaveAppData()
 
     g_LOG.Debug("Reindex: Indexing search database...OK")
     TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
-    LoadCommands()
+    CommandStore.LoadCommands()
 }
 
 About(*) {
@@ -1507,7 +1392,7 @@ EditCommand(*) {
     if !currentCmd
         return MsgBox(g_LNG[810], g_TITLE, 64)                          ; 64 = Info icon
 
-    LoadAppData()
+    AppData.LoadAppData()
 
     for _, section in ["DefaultCommand", "UserCommand", "Index"] {
         if !g_CMDDATA[section].Has(currentCmd)
@@ -1532,7 +1417,7 @@ DelCommand(*) {
     if !currentCmd
         return
 
-    LoadAppData()
+    AppData.LoadAppData()
 
     for _, section in ["DefaultCommand", "UserCommand", "Index"] {
         if !g_CMDDATA[section].Has(currentCmd)
@@ -1543,7 +1428,7 @@ DelCommand(*) {
         if result = "YES" {
             try {
                 g_CMDDATA[section].Delete(currentCmd)
-                SaveAppData()
+                AppData.SaveAppData()
                 MsgBox(g_LNG[802] "`n`n" currentCmd, g_TITLE, 64)       ; 64 = Info icon
             } catch as e {
                 MsgBox(g_LNG[803] "`n`n" currentCmd, g_TITLE, 48)       ; 48 = Error icon
@@ -1551,7 +1436,7 @@ DelCommand(*) {
             break
         }
     }
-    LoadCommands()
+    CommandStore.LoadCommands()
 }
 
 
@@ -1629,7 +1514,7 @@ SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
 
     cmdLine := cmdType " | " cmdPath (cmdDesc != "" ? " | " cmdDesc : "")
     try {
-        LoadAppData()
+        AppData.LoadAppData()
         if !g_CMDDATA.Has(section)
             section := "UserCommand"
         if (originCmd != "" && originCmd != cmdLine) {                  ; Drop the old key only when editing changed the command line
@@ -1638,13 +1523,13 @@ SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
                     g_CMDDATA[sec].Delete(originCmd)
         }
         g_CMDDATA[section][cmdLine] := cmdRank + 0
-        SaveAppData()
+        AppData.SaveAppData()
     } catch as e {
         MsgBox(g_LNG[822] e.Message, g_LNG[820], 64)
         return
     }
     MsgBox(g_LNG[823] section " ]`n`n" cmdLine " = " cmdRank, g_LNG[820], 64)
-    LoadCommands()
+    CommandStore.LoadCommands()
 }
 
 CloseCommandManager(*) {
@@ -1664,332 +1549,16 @@ GetArrayIndex(searchValue, Array){
     return 0
 }
 
-;===================================================
-; Command storage - ALTRun.json
-;
-; Why not ini: IniRead/IniWrite go through the Windows
-; profile API, which truncates a whole section at 64 KB.
-; Past that limit commands silently disappear from the
-; list. JSON also removes the need to escape "=" and ";"
-; in command lines.
-;
-; Parsing/serializing is done by the shared JSON class in
-; Lib\JSON.ahk - AutoHotkey v2 auto-includes it the first
-; time JSON.parse()/JSON.stringify() is referenced, because
-; the class name matches the file name in the Lib folder
-; (same convention already used for Logger, MD5, etc.).
-; No #Include line is needed.
-;
-; ALTRun.json is the single source of truth for everything, including PT
-; Tools' own settings (see "PTTools" below, owned by Lib\PTTools.ahk /
-; PTToolsWindow). ALTRun.ini is retired - this was always a single-machine,
-; single-user install, so once the one-off migration off the ini ran there
-; was no reason to keep the migration code (or the ini file's own copies of
-; the data) around for a scenario that will never come up again.
-;
-; File layout:
-; {
-;   "Config"         : { <setting name>: <value>, ... },
-;   "Gui"            : { <setting name>: <value>, ... },
-;   "Hotkey"         : { <setting name>: <value>, ... },
-;   "Usage"          : { "<yyyymmdd>": <run count>, ... },
-;   "History"        : [ "<command line> Arg=<arg>", ... ],
-;   "Benchmark"      : { <metric name>: <value>, ... },
-;   "PTTools"        : { <setting name>: <value>, ... },
-;   "DefaultCommand" : { "<command line>": <rank>, ... },
-;   "UserCommand"    : { "<command line>": <rank>, ... },
-;   "Index"          : { "<command line>": <rank>, ... },
-;   "FallbackCommand": [ "<command line>", ... ]
-; }
-;===================================================
-
-LoadAppData(forceReload := false) {
-    Global g_CMDDATA, g_HISTORYS
-
-    static loaded := false
-    if (!forceReload && loaded)
-        return g_CMDDATA
-    loaded := true
-
-    g_CMDDATA := Map("DefaultCommand", Map(), "UserCommand", Map(), "Index", Map(), "FallbackCommand", Array())
-
-    data := Map()
-    if FileExist(g_JSON) {
-        try {
-            parsed := JSON.parse(FileRead(g_JSON, "UTF-8"))              ; keepbooltype=false, as_map=true (both defaults)
-            if (parsed is Map)
-                data := parsed
-        } catch as e {
-            g_LOG.Debug("LoadAppData: Invalid JSON - " e.Message)
-            try FileMove(g_JSON, g_JSON ".bad", true)
-            MsgBox("ALTRun.json could not be parsed:`n`n" e.Message "`n`nIt was renamed to ALTRun.json.bad and the defaults will be rebuilt.", g_TITLE, 48)
-            data := Map()
-        }
-    }
-
-    ; --- Commands (DefaultCommand / UserCommand / Index / FallbackCommand) ---
-    for _, name in ["DefaultCommand", "UserCommand", "Index"] {
-        if !(data.Has(name) && data[name] is Map)
-            continue
-        for cmdLine, rank in data[name] {
-            cmdLine := Trim(cmdLine)
-            if (cmdLine = "")
-                continue
-            g_CMDDATA[name][cmdLine] := IsInteger(rank) ? rank + 0 : 1
-        }
-    }
-    if (data.Has("FallbackCommand") && data["FallbackCommand"] is Array) {
-        for _, cmdLine in data["FallbackCommand"] {
-            if (Trim(cmdLine) != "")
-                g_CMDDATA["FallbackCommand"].Push(Trim(cmdLine))
-        }
-    }
-
-    dirty := false
-    if (!g_CMDDATA["DefaultCommand"].Count) {
-        g_CMDDATA["DefaultCommand"] := ParseCommandBlock(DefaultCommandText())
-        dirty := true
-    }
-    if (!g_CMDDATA["UserCommand"].Count) {
-        g_CMDDATA["UserCommand"] := ParseCommandBlock(UserCommandText())
-        dirty := true
-    }
-    if (!g_CMDDATA["FallbackCommand"].Length) {
-        for _, line in StrSplit(FallbackCommandText(), "`n", "`r") {
-            line := Trim(line)
-            if (line != "" && SubStr(line, 1, 1) != ";")
-                g_CMDDATA["FallbackCommand"].Push(line)
-        }
-        dirty := true
-    }
-
-    ; --- Settings (Config / Gui / Hotkey) - overlay JSON values onto the hardcoded defaults ---
-    MergeIntoDefaults(g_CONFIG, data.Get("Config", ""))
-    MergeIntoDefaults(g_HOTKEY, data.Get("Hotkey", ""))
-    MergeIntoDefaults(g_GUI,    data.Get("Gui", ""))
-    MergeIntoDefaults(g_BENCH,  data.Get("Benchmark", ""))
-    PTToolsWindow.Load(data.Get("PTTools", ""))
-    g_RUNTIME["RegEx"] := g_CONFIG["MatchBeginning"] ? "imS)^" : "imS)"
-
-    ; --- Usage: keep only the last 30 days, same trimming rule as before ---
-    if (data.Has("Usage") && data["Usage"] is Map) {
-        for dateKey, dayCount in data["Usage"]
-            g_USAGE[dateKey] := dayCount
-    }
-    offsetDate := DateAdd(A_Now, -30, "Days")
-    for dateKey in g_USAGE.Clone()                                      ; Clone: we mutate g_USAGE while iterating it
-        if (dateKey <= SubStr(offsetDate, 1, 8))
-            g_USAGE.Delete(dateKey)
-    Loop 30 {
-        offsetDate := DateAdd(offsetDate, 1, "Days")
-        dateKey := SubStr(offsetDate, 1, 8)
-        g_USAGE[dateKey] := g_USAGE.Has(dateKey) ? g_USAGE[dateKey] : 0
-        g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], g_USAGE[dateKey])
-    }
-
-    ; --- History ---
-    g_HISTORYS.Length := 0
-    if (data.Has("History") && data["History"] is Array) {
-        for _, entry in data["History"]
-            if (Trim(entry) != "")
-                g_HISTORYS.Push(entry)
-    }
-
-    if (dirty)
-        SaveAppData()
-
-    g_LOG.Debug("LoadAppData: Default=" g_CMDDATA["DefaultCommand"].Count
-        . ", User=" g_CMDDATA["UserCommand"].Count
-        . ", Index=" g_CMDDATA["Index"].Count
-        . ", Fallback=" g_CMDDATA["FallbackCommand"].Length
-        . ", History=" g_HISTORYS.Length)
-
-    if (!g_CMDDATA["Index"].Count) {
-        if (MsgBox(g_LNG[804], g_TITLE, 4161) = "OK")
-            Reindex()
-    }
-    return g_CMDDATA
-}
-
-MergeIntoDefaults(defaultsMap, sourceMap) {                             ; Overlay JSON values onto a defaults Map, key by key
-    if !(sourceMap is Map)                                              ; Keeps default (and Map order) for any key the file doesn't have yet
-        return                                                          ; - e.g. a setting added in a newer version of ALTRun.
-    for key, _ in defaultsMap
-        if sourceMap.Has(key)
-            defaultsMap[key] := sourceMap[key]
-}
-
-SaveAppData() {
-    ordered := Map(
-        "Config",  g_CONFIG,
-        "Gui",     g_GUI,
-        "Hotkey",  g_HOTKEY,
-        "Usage",   g_USAGE,
-        "History", g_HISTORYS,
-        "Benchmark", g_BENCH,
-        "PTTools", PTToolsWindow.Settings,
-        "DefaultCommand", Map(),
-        "UserCommand",    Map(),
-        "Index",          Map(),
-        "FallbackCommand", Array()
-    )
-    ; Rebuild ranks as plain integers so JSON.stringify emits numbers, not strings.
-    for _, name in ["DefaultCommand", "UserCommand", "Index"] {
-        for cmdLine, rank in g_CMDDATA[name]
-            ordered[name][cmdLine] := IsInteger(rank) ? rank + 0 : 1
-    }
-    for _, cmdLine in g_CMDDATA["FallbackCommand"]
-        ordered["FallbackCommand"].Push(cmdLine)
-
-    out := JSON.stringify(ordered)                                     ; new JSON.ahk always indents 2 spaces, no separate "space" param
-
-    tmpFile := g_JSON ".tmp"
-    try {
-        if FileExist(tmpFile)
-            FileDelete(tmpFile)
-        FileAppend(out, tmpFile, "UTF-8")                               ; Write a temp file first, so a crash can never truncate the real one
-        FileMove(tmpFile, g_JSON, true)
-    } catch as e {
-        g_LOG.Debug("SaveAppData: Write failed - " e.Message)
-        MsgBox("Could not save ALTRun.json:`n`n" e.Message, g_TITLE, 48)
-        return false
-    }
-    return true
-}
-
-; An OnExit callback that RETURNS a nonzero/true value cancels the exit (this
-; is documented AutoHotkey v2 behavior, not a bug) - so this must NOT simply
-; forward a true/false result the way an inline `(*) => SaveAppData()` would.
-; No explicit `return` here means this always yields "" (falsy), so
-; Reload()/ExitApp() are never blocked, even if the save itself fails.
-OnAppExit(*) {
-    SaveAppData()
-    Logger.Flush()                                                     ; Buffered log lines are lost otherwise - see Lib/Logger.ahk
-}
-
-ParseCommandBlock(blockText) {                                          ; "command line=rank" lines -> Map
-    result := Map()
-    for _, line in StrSplit(blockText, "`n", "`r") {
-        line := Trim(line)
-        if (!line || SubStr(line, 1, 1) = ";" || SubStr(line, 1, 1) = "[")
-            continue
-        if !RegExMatch(line, "^(.*)=(\d+)\s*$", &m)                     ; Split on the LAST '=', so the command itself may contain '='
-            continue
-        cmdLine := Trim(m.1)
-        rank    := m.2 + 0
-        if (cmdLine != "" && rank > 0)
-            result[cmdLine] := rank
-    }
-    return result
-}
-
-DefaultCommandText() {
-    return "
-    (
-        ; This section is Built-In commands with high priority
-        ; App will auto generate this section while it is empty
-        ; Please make sure App is not running before modifying.
-        ;
-        Func | About | Help & About (F1)=99
-        Func | Options | Setting Options (F2)=99
-        Func | Reload | Reload ALTRun=99
-        Func | EditCommand | Edit current command (F3)=99
-        Func | UserCommand | Edit command database ALTRun.json (F4)=99
-        Func | NewCommand | New Command=99
-        Func | NewClip | New Clip (text snippet)=99
-        Func | OpenContainer | Locate cmd's dir with File Manager=99
-        Func | Usage | ALTRun Usage Status=99
-        Func | Reindex | Reindex search database=99
-        Func | Everything | Search by Everything=99
-        Func | PTTools | PT Tools (Rebar/BRC calculator + SPF2M)=99
-        Func | AhkRun | Run Command use AutoHotkey Run=99
-        Func | Google | Search Clipboard or Input by Google=99
-        Func | Bing | Search Clipboard or Input by Bing=99
-        Func | EmptyRecycle | Empty Recycle Bin=99
-        Func | TurnMonitorOff | Turn off Monitor, Close Monitor=99
-        Func | MuteVolume | Mute Volume=99
-        File | %Temp%\ALTRun.log | ALTRun Log File=99
-        Dir | A_ScriptDir | ALTRun Program Dir=99
-        Dir | A_Startup | Current User Startup Dir=99
-        Dir | A_StartupCommon | All User Startup Dir=99
-        Dir | A_ProgramsCommon | Windows Search.Index.Cortana Dir=99
-        CMD | explorer.exe | Windows File Explorer=99
-        CMD | cmd.exe | Windows Command Processor=99
-        CMD | Shell:AppsFolder | AppsFolder Applications=66
-        CMD | ::{645FF040-5081-101B-9F08-00AA002F954E} | Recycle Bin=66
-        CMD | Notepad.exe | Notepad=66
-        CMD | WF.msc | Windows Defender Firewall with Advanced Security=66
-        CMD | TaskSchd.msc | Task Scheduler=66
-        CMD | DevMgmt.msc | Device Manager=66
-        CMD | EventVwr.msc | Event Viewer=66
-        CMD | CompMgmt.msc | Computer Manager=66
-        CMD | TaskMgr.exe | Task Manager=66
-        CMD | Calc.exe | Calculator=66
-        CMD | MsPaint.exe | Paint=66
-        CMD | Regedit.exe | Registry Editor=66
-        CMD | CleanMgr.exe | Disk Space Clean-up Manager=66
-        CMD | GpEdit.msc | Group Policy=66
-        CMD | DiskMgmt.msc | Disk Management=66
-        CMD | DxDiag.exe | Directx Diagnostic Tool=66
-        CMD | LusrMgr.msc | Local Users and Groups=66
-        CMD | MsConfig.exe | System Configuration=66
-        CMD | PerfMon.exe /Res | Resources Monitor=66
-        CMD | PerfMon.exe | Performance Monitor=66
-        CMD | WinVer.exe | About Windows=66
-        CMD | Services.msc | Services=66
-        CMD | NetPlWiz | User Accounts=66
-        CMD | Control | Control Panel=66
-        CMD | Control Intl.cpl | Region and Language Options=66
-        CMD | Control Firewall.cpl | Windows Defender Firewall=66
-        CMD | Control AppWiz.cpl | Programs and Features=66
-        CMD | Control Sysdm.cpl | System Properties=66
-        CMD | Control AdminTools | Windows Tools=66
-        CMD | Control Inetcpl.cpl,,4 | Internet Properties=66
-        CMD | Control UserPasswords | User Accounts=66
-    )"
-}
-
-UserCommandText() {
-    return "
-    (
-        ; This section is User-Defined commands, modify as desired
-        ; Format: Command Type | Command | Description=Rank
-        ; Command type: File, Dir, CMD, URL, some sample below
-        ; Please make sure App is not running before modifying
-        ;
-        File | C:\Windows\Notepad.exe=9
-        Dir | %AppData%\Microsoft\Windows\SendTo | Windows SendTo Dir=9
-        Dir | %OneDrive% | OneDrive=9
-        Dir | A_Desktop | Desktop=99
-        CMD | cmd.exe /k ipconfig | Check IP Address=9
-        CMD | explorer /Select,C:\Program Files | Open and select C:\Program Files=9
-        CMD | Control Printers | Devices and Printers=66
-        CMD | ::{20D04FE0-3AEA-1069-A2D8-08002B30309D} | This PC=9
-        URL | www.google.com | Google=9
-        Clip | Dear Sir,\n\nThank you for your email.\n\nBest regards,\nLiming | sig=9
-        Clip | {date} | today=9
-    )"
-}
-
-FallbackCommandText() {
-    return "
-    (
-        ; Fallback Commands show when search result is empty
-        ; Commands in order, modify as desired
-        ; Format: Command Type | Command | Description
-        ; Command Type: File, Dir, CMD, URL
-        ;
-        Func | NewCommand | New Command
-        Func | Everything | Search by Everything
-        Func | Google | Search Clipboard or Input by Google
-        Func | AhkRun | Run Command use AutoHotkey Run
-        Func | Bing | Search Clipboard or Input by Bing
-        CMD | Calc.exe | Calculator
-    )"
-}
-
-; JSON parsing/serializing is handled by the shared JSON class in Lib\JSON.ahk
-; (auto-included by AutoHotkey v2 - see the note above SaveCommandData/LoadCommandData).
+; LoadAppData()/SaveAppData()/MergeIntoDefaults()/OnAppExit()/ParseCommandBlock()/
+; DefaultCommandText()/UserCommandText()/FallbackCommandText() used to live
+; here; all moved into the AppData class in Lib\AppData.ahk (called as
+; AppData.LoadAppData() etc. - see the #Include list at the top of this file
+; and the comment block at the top of that file for the ALTRun.json layout).
+; ALTRun.ini and its migration code (MigrateFromIni/ReadIniMapLikeDefaults/
+; FinishIniMigration/JoinArray/ReadIniSectionRaw/UnescapeCommandKey/g_SECTION/
+; g_INI) are retired - this was always a single-machine, single-user install,
+; so once the one-off migration off the ini ran there was no reason to keep
+; that code around for a scenario that will never come up again.
 
 ; =========================================================================
 ; === Clip (Snippet) support ==============================================
@@ -2005,37 +1574,7 @@ FallbackCommandText() {
 ; name via %cmdPath%() in RunCommand(), which only resolves plain global
 ; function names, not Class.Method - see FuncList in Options()/DefaultCommandText().
 NewClip(*) {                                                            ; Command "New Clip", opens the manager pre-set to type Clip
-    OpenCommandManager("UserCommand", "Clip", EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
-}
-
-EditClipText(*) {                                                       ; Multi-line editor for the Clip body, opened by the "..." button
-    Global g_CmdMgrGui, g_ClipEditGui
-
-    g_ClipEditGui := Gui("+Owner" g_CmdMgrGui.Hwnd, "Clip Text  -  line breaks are stored as \n")
-    g_ClipEditGui.SetFont("S10 Norm", "Consolas")
-    clipEdit := g_ClipEditGui.AddEdit("w620 r18 +Multi +WantReturn +WantTab vClipBody", UnescapeClipText(g_CmdMgrGui["Path"].Text))
-    g_ClipEditGui.SetFont("S9 Norm", "Microsoft Yahei")
-    g_ClipEditGui.AddText("xm w440 cGray", "Placeholders: {date} {time} {datetime} {clipboard} {arg} {cursor}")
-    g_ClipEditGui.AddButton("Default x+10 yp-6 w80", "OK").OnEvent("Click", SaveClipText)
-    g_ClipEditGui.AddButton("x+8 yp w80", "Cancel").OnEvent("Click", CloseClipEditor)
-    g_ClipEditGui.OnEvent("Close", CloseClipEditor)
-    g_ClipEditGui.OnEvent("Escape", CloseClipEditor)
-
-    g_CmdMgrGui.Opt("+Disabled")
-    g_ClipEditGui.Show("Center")
-    clipEdit.Focus()
-
-    SaveClipText(*) {
-        g_CmdMgrGui["Path"].Value := EscapeClipText(clipEdit.Value)
-        CloseClipEditor()
-    }
-}
-
-CloseClipEditor(*) {
-    Global g_CmdMgrGui, g_ClipEditGui
-    try g_CmdMgrGui.Opt("-Disabled")
-    try g_ClipEditGui.Destroy()
-    try WinActivate("ahk_id " g_CmdMgrGui.Hwnd)
+    OpenCommandManager("UserCommand", "Clip", Clip.EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
 }
 
 PTTools() {
@@ -2327,7 +1866,7 @@ ToggleGlobalHotkeys(mode, caller := "") {
     }
 }
 
-; NOTE: there is no more LoadConfig() - LoadAppData() (see the JSON command
+; NOTE: there is no more LoadConfig() - AppData.LoadAppData() (see the JSON command
 ; storage section) loads Config/Gui/Hotkey/Usage/History/Benchmark from
 ; ALTRun.json at startup, in one pass alongside the commands.
 
@@ -2356,7 +1895,7 @@ SaveConfig() {
     for key, _ in g_HOTKEY
         g_HOTKEY[key] := GetOptCtrlValue(OptGUI[key])                   ; Hotkeys/window titles are always text
 
-    SaveAppData()
+    AppData.SaveAppData()
 
     g_LOG.Debug("SaveConfig: Save config...OK")
     return
@@ -2521,7 +2060,7 @@ BenchmarkRun(rounds := 10) {
     g_BENCH["P95Ms"] := p95Ms
     g_BENCH["ElapsedTotalMs"] := Round(elapsedTotalMs, 2)
     g_BENCH["LastTime"] := nowText
-    SaveAppData()
+    AppData.SaveAppData()
 
     report := "ALTRun Benchmark`n`n"
     report .= "Time: " nowText "`n"
