@@ -6,6 +6,12 @@
 #SingleInstance Force
 #NoTrayIcon
 #Warn All, OutputDebug
+#Include Lib\JSON.ahk                                                  ; JSON.parse()/JSON.stringify() - used by the ALTRun.json store below.
+#Include Lib\Logger.ahk                                                ; g_LOG - see just below.
+                                                                         ; Both are explicit: auto-include only reliably covers ClassName(...)
+                                                                         ; construction calls, not ClassName.Method(...) static calls like
+                                                                         ; JSON.parse(), so relying on it for every Lib class is asking for
+                                                                         ; the same "unassigned variable" failure JSON.ahk hit without this.
 SetWorkingDir(A_ScriptDir)
 FileEncoding("UTF-8")
 
@@ -23,7 +29,10 @@ FileEncoding("UTF-8")
 ; - 嵌套函数可以引用由闭合它的函数创建的局部或静态变量.
 ; 内置类, 如 Object; 它们被预定义为全局变量
 ;===================================================
-Global g_LOG   := Logger(A_Temp . "\ALTRun.log")
+Global g_LOG   := Logger                                                ; Logger is a static class - this points g_LOG at the class
+                                                                         ; itself (no parens/instance), so every existing g_LOG.Debug(...)
+                                                                         ; call below still works unchanged, same as calling Logger.Debug(...).
+Logger.Rotate()                                                        ; Truncate ALTRun.log to a fresh .old copy if it's grown too big.
 Global g_INI   := A_ScriptDir . "\ALTRun.ini"
 Global g_JSON  := A_ScriptDir . "\ALTRun.json"    ; Commands live here, ini sections are capped at 64 KB by the Windows API
 Global g_TITLE := "ALTRun - v2026.08.12"
@@ -43,7 +52,8 @@ Global g_SECTION  := Map(
     "HOTKEY"    , "Hotkey",
     "HISTORY"   , "History",
     "INDEX"     , "Index",
-    "USAGE"     , "Usage"
+    "USAGE"     , "Usage",
+    "BENCHMARK" , "Benchmark"
 )
 
 Global g_CONFIG := Map(
@@ -203,7 +213,15 @@ Global g_RUNTIME := Map( ; Runtime variables, not saved to ini
 
 Global g_USAGE := Map(A_YYYY . A_MM . A_DD, 1)
 
-LoadConfig("initialize")    ; iniWrite create ini whenever not exist
+Global g_BENCH := Map(  ; Last Benchmark() result, purely informational
+    "AvgMs"          , 0,
+    "P50Ms"          , 0,
+    "P95Ms"          , 0,
+    "ElapsedTotalMs" , 0,
+    "LastTime"       , ""
+)
+
+LoadAppData()    ; Loads (and migrates/creates) ALTRun.json; fills Config/Gui/Hotkey/Usage/History/Benchmark/commands
 
 ; Global variables which are only read by the function, not assigned or used with the reference operator (&).
 Global MainGUI
@@ -220,6 +238,8 @@ Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon c
                         ,"EVAL", IL_Add(myImageList,"imageres.dll",-182)
                         ,"CMD" , IL_Add(myImageList,"imageres.dll",-100)
                         ,"CLIP", IL_Add(myImageList,"imageres.dll",-102)) ; "imageres.dll",-5323 is cmd.exe icon
+
+OnExit(OnAppExit)                                                       ; Flush any Usage bump / buffered log lines on Reload()/ExitApp()
 
 LoadCommands()
 LoadHistory()
@@ -836,8 +856,9 @@ RunCommand(originCmd) {
 
     if (executed) {
         UpdateRunCount()
-        UpdateRank(originCmd)
+        UpdateRank(originCmd)                                          ; Saves by itself only when SmartRank is on
         UpdateHistory(originCmd)
+        SaveAppData()                                                  ; Guarantees RunCount/History persist either way, in one write
         g_LOG.Debug("RunCommand: Execute success, RunCount=" g_CONFIG["RunCount"] ", cmd=" originCmd)
     } else {
         g_LOG.Debug("RunCommand: Execute failed, cmd=" originCmd)
@@ -983,6 +1004,11 @@ MainGUI_Close(*) {
     ;try DllCall("AnimateWindow", "Ptr", MainGUI.Hwnd, "Int", 90, "UInt", 0x90000)
 
     MainGUI.Hide()
+    ; UpdateUsage() only mutates g_USAGE in memory. MainGUI_Close() fires on
+    ; every dismiss, including a plain Esc/Alt+Space with nothing run, so it
+    ; must NOT trigger a full ALTRun.json save here. The bumped count rides
+    ; along on the next real save instead (a command run, a settings change,
+    ; or app exit - see the OnExit handler near the top of the script).
     UpdateUsage()
     SetStatusBar("TIP")                                                 ; Update StatusBar tip information after GUI hide
 }
@@ -1111,7 +1137,7 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
     if (g_CONFIG["SmartRank"] = false || originCmd = "")
         return
 
-    LoadCommandData()
+    LoadAppData()
 
     for _, section in ["DefaultCommand", "UserCommand", "Index"] {
         if !g_CMDDATA[section].Has(originCmd)
@@ -1122,7 +1148,7 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
         rankValue := (rankValue < 0) ? -1 : rankValue
 
         g_CMDDATA[section][originCmd] := rankValue
-        SaveCommandData()
+        SaveAppData()
         if (showRank)
             SetStatusBar("UpdateRank: Rank for current command : " rankValue)
 
@@ -1134,22 +1160,18 @@ UpdateRank(originCmd, showRank := false, inc := 1) {
     LoadCommands()
 }
 
+; UpdateUsage/UpdateRunCount/UpdateHistory only mutate in-memory state; the
+; caller is responsible for calling SaveAppData() once all of them are done,
+; so one command execution costs a single ALTRun.json write, not three.
+
 UpdateUsage() {
     currDate := A_YYYY . A_MM . A_DD
-
-    if (!g_USAGE.Has(currDate)) {
-        g_USAGE[currDate] := 1
-    } else {
-        g_USAGE[currDate] += 1
-    }
-
+    g_USAGE[currDate] := g_USAGE.Has(currDate) ? g_USAGE[currDate] + 1 : 1
     g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], g_USAGE[currDate])
-    IniWrite(g_USAGE[currDate], g_INI, g_SECTION["USAGE"], currDate)
 }
 
 UpdateRunCount() {
     g_CONFIG["RunCount"]++
-    IniWrite(g_CONFIG["RunCount"], g_INI, g_SECTION["CONFIG"], "RunCount")
     g_LOG.Debug("UpdateRunCount: RunCount update to..." g_CONFIG["RunCount"])
 }
 
@@ -1161,12 +1183,6 @@ UpdateHistory(originCmd) {
 
     if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
         g_HISTORYS.Pop()
-
-    historySection := ""
-    for idx, entry in g_HISTORYS {
-        historySection .= idx "=" entry "`n"
-    }
-    IniWrite(historySection, g_INI, g_SECTION["HISTORY"])
 }
 
 RankUp(*) {
@@ -1185,7 +1201,7 @@ LoadCommands() {
     g_FALLBACK := Array()
     Local rankRows := ""
 
-    LoadCommandData()                                                   ; Loads (and migrates/creates) ALTRun.json once per session
+    LoadAppData()                                                   ; Loads (and migrates/creates) ALTRun.json once per session
 
     for _, sectionName in ["DefaultCommand", "UserCommand", "Index"] {
     for commandText, rankValue in g_CMDDATA[sectionName] {
@@ -1237,20 +1253,18 @@ LoadCommands() {
     return
 }
 
-LoadHistory() {
-    Global g_HISTORYS
-    g_HISTORYS := Array()  ; Always clear first
-    if (g_CONFIG["SaveHistory"]) {
-        Loop g_CONFIG["HistoryLen"] {
-            Try historyItem := IniRead(g_INI, g_SECTION["HISTORY"], A_Index, "")
-            if (historyItem != "")
-                g_HISTORYS.Push(historyItem)
+LoadHistory() {                                                         ; g_HISTORYS is already populated by LoadAppData(); just apply policy
+    if (!g_CONFIG["SaveHistory"]) {
+        if (g_HISTORYS.Length) {
+            g_HISTORYS.Length := 0
+            SaveAppData()
         }
-        g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
-    } else {
-        Try IniDelete(g_INI, g_SECTION["HISTORY"])
-        g_LOG.Debug("LoadHistory: History section cleaned up...")
+        g_LOG.Debug("LoadHistory: History disabled, cleared.")
+        return
     }
+    if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
+        g_HISTORYS.Length := g_CONFIG["HistoryLen"]
+    g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
 }
 
 GetCmdOutput(command) {
@@ -1383,7 +1397,7 @@ UpdateStartMenu() {
 
 Reindex(*) {                                                            ; Re-create Index section
     ; Collect every indexed entry into a fresh map, then store it in one go
-    LoadCommandData()
+    LoadAppData()
     indexMap := Map()
 
     ; Create ProgressGui at the start
@@ -1467,7 +1481,7 @@ Reindex(*) {                                                            ; Re-cre
             indexMap[cmdLine] := g_CMDDATA["Index"][cmdLine]
     }
     g_CMDDATA["Index"] := indexMap
-    SaveCommandData()
+    SaveAppData()
 
     g_LOG.Debug("Reindex: Indexing search database...OK")
     TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
@@ -1785,8 +1799,8 @@ UserCommand(*) {                                                        ; F4 - e
     Run("Notepad.exe " . g_JSON)
 }
 
-EditIniFile(*) {                                                        ; Edit ALTRun.ini (config / hotkeys / gui only)
-    Run("Notepad.exe " . g_INI)
+EditIniFile(*) {                                                        ; ALTRun's own settings all live in ALTRun.json now; the only
+    Run("Notepad.exe " . g_INI)                                        ; thing left in ALTRun.ini is PT Tools' own [PT Tools] section.
 }
 
 ; From command "New Command" or GUI context menu "New Command"
@@ -1801,7 +1815,7 @@ EditCommand(*) {
     if !currentCmd
         return MsgBox(g_LNG[810], g_TITLE, 64)                          ; 64 = Info icon
 
-    LoadCommandData()
+    LoadAppData()
 
     for _, section in ["DefaultCommand", "UserCommand", "Index"] {
         if !g_CMDDATA[section].Has(currentCmd)
@@ -1826,7 +1840,7 @@ DelCommand(*) {
     if !currentCmd
         return
 
-    LoadCommandData()
+    LoadAppData()
 
     for _, section in ["DefaultCommand", "UserCommand", "Index"] {
         if !g_CMDDATA[section].Has(currentCmd)
@@ -1837,7 +1851,7 @@ DelCommand(*) {
         if result = "YES" {
             try {
                 g_CMDDATA[section].Delete(currentCmd)
-                SaveCommandData()
+                SaveAppData()
                 MsgBox(g_LNG[802] "`n`n" currentCmd, g_TITLE, 64)       ; 64 = Info icon
             } catch as e {
                 MsgBox(g_LNG[803] "`n`n" currentCmd, g_TITLE, 48)       ; 48 = Error icon
@@ -1923,7 +1937,7 @@ SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
 
     cmdLine := cmdType " | " cmdPath (cmdDesc != "" ? " | " cmdDesc : "")
     try {
-        LoadCommandData()
+        LoadAppData()
         if !g_CMDDATA.Has(section)
             section := "UserCommand"
         if (originCmd != "" && originCmd != cmdLine) {                  ; Drop the old key only when editing changed the command line
@@ -1932,7 +1946,7 @@ SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
                     g_CMDDATA[sec].Delete(originCmd)
         }
         g_CMDDATA[section][cmdLine] := cmdRank + 0
-        SaveCommandData()
+        SaveAppData()
     } catch as e {
         MsgBox(g_LNG[822] e.Message, g_LNG[820], 64)
         return
@@ -2030,11 +2044,30 @@ GetArrayIndex(searchValue, Array){
 ; profile API, which truncates a whole section at 64 KB.
 ; Past that limit commands silently disappear from the
 ; list. JSON also removes the need to escape "=" and ";"
-; in command lines, so EscapeCommandKey() is only kept
-; for reading legacy ini files during migration.
+; in command lines; UnescapeCommandKey() is only kept to
+; decode command lines still written the old way, while
+; reading a pre-migration ALTRun.ini.
+;
+; Parsing/serializing is done by the shared JSON class in
+; Lib\JSON.ahk - AutoHotkey v2 auto-includes it the first
+; time JSON.parse()/JSON.stringify() is referenced, because
+; the class name matches the file name in the Lib folder
+; (same convention already used for Logger, MD5, etc.).
+; No #Include line is needed.
+;
+; ALTRun.json is the single source of truth for everything
+; ALTRun itself owns - settings as well as commands. The only
+; thing ALTRun.ini is still used for is the legacy [PT Tools]
+; section, which belongs to the separate PTTools.ahk (v1) tool.
 ;
 ; File layout:
 ; {
+;   "Config"         : { <setting name>: <value>, ... },
+;   "Gui"            : { <setting name>: <value>, ... },
+;   "Hotkey"         : { <setting name>: <value>, ... },
+;   "Usage"          : { "<yyyymmdd>": <run count>, ... },
+;   "History"        : [ "<command line> Arg=<arg>", ... ],
+;   "Benchmark"      : { <metric name>: <value>, ... },
 ;   "DefaultCommand" : { "<command line>": <rank>, ... },
 ;   "UserCommand"    : { "<command line>": <rank>, ... },
 ;   "Index"          : { "<command line>": <rank>, ... },
@@ -2042,48 +2075,51 @@ GetArrayIndex(searchValue, Array){
 ; }
 ;===================================================
 
-LoadCommandData(forceReload := false) {
-    Global g_CMDDATA
-    if (!forceReload && g_CMDDATA.Count)
+LoadAppData(forceReload := false) {
+    Global g_CMDDATA, g_HISTORYS
+
+    static loaded := false
+    if (!forceReload && loaded)
         return g_CMDDATA
+    loaded := true
 
     g_CMDDATA := Map("DefaultCommand", Map(), "UserCommand", Map(), "Index", Map(), "FallbackCommand", Array())
 
-    if (!FileExist(g_JSON))
-        MigrateIniToJson()                                              ; One-off import of the old [*Command] / [Index] sections
-
-    data := ""
+    data := Map()
     if FileExist(g_JSON) {
         try {
-            data := JsonParse(FileRead(g_JSON, "UTF-8"))
+            parsed := JSON.parse(FileRead(g_JSON, "UTF-8"))              ; keepbooltype=false, as_map=true (both defaults)
+            if (parsed is Map)
+                data := parsed
         } catch as e {
-            g_LOG.Debug("LoadCommandData: Invalid JSON - " e.Message)
+            g_LOG.Debug("LoadAppData: Invalid JSON - " e.Message)
             try FileMove(g_JSON, g_JSON ".bad", true)
             MsgBox("ALTRun.json could not be parsed:`n`n" e.Message "`n`nIt was renamed to ALTRun.json.bad and the defaults will be rebuilt.", g_TITLE, 48)
-            data := ""
+            data := Map()
         }
     }
 
-    if (data is Map) {
-        for _, name in ["DefaultCommand", "UserCommand", "Index"] {
-            if !(data.Has(name) && data[name] is Map)
+    movedSections := MigrateFromIni(data)                               ; Fills in whatever ALTRun.ini still has that data[] is missing
+
+    ; --- Commands (DefaultCommand / UserCommand / Index / FallbackCommand) ---
+    for _, name in ["DefaultCommand", "UserCommand", "Index"] {
+        if !(data.Has(name) && data[name] is Map)
+            continue
+        for cmdLine, rank in data[name] {
+            cmdLine := Trim(cmdLine)
+            if (cmdLine = "")
                 continue
-            for cmdLine, rank in data[name] {
-                cmdLine := Trim(cmdLine)
-                if (cmdLine = "")
-                    continue
-                g_CMDDATA[name][cmdLine] := IsInteger(rank) ? rank + 0 : 1
-            }
+            g_CMDDATA[name][cmdLine] := IsInteger(rank) ? rank + 0 : 1
         }
-        if (data.Has("FallbackCommand") && data["FallbackCommand"] is Array) {
-            for _, cmdLine in data["FallbackCommand"] {
-                if (Trim(cmdLine) != "")
-                    g_CMDDATA["FallbackCommand"].Push(Trim(cmdLine))
-            }
+    }
+    if (data.Has("FallbackCommand") && data["FallbackCommand"] is Array) {
+        for _, cmdLine in data["FallbackCommand"] {
+            if (Trim(cmdLine) != "")
+                g_CMDDATA["FallbackCommand"].Push(Trim(cmdLine))
         }
     }
 
-    dirty := false
+    dirty := movedSections.Length > 0
     if (!g_CMDDATA["DefaultCommand"].Count) {
         g_CMDDATA["DefaultCommand"] := ParseCommandBlock(DefaultCommandText())
         dirty := true
@@ -2100,13 +2136,46 @@ LoadCommandData(forceReload := false) {
         }
         dirty := true
     }
-    if (dirty)
-        SaveCommandData()
 
-    g_LOG.Debug("LoadCommandData: Default=" g_CMDDATA["DefaultCommand"].Count
+    ; --- Settings (Config / Gui / Hotkey) - overlay JSON values onto the hardcoded defaults ---
+    MergeIntoDefaults(g_CONFIG, data.Get("Config", ""))
+    MergeIntoDefaults(g_HOTKEY, data.Get("Hotkey", ""))
+    MergeIntoDefaults(g_GUI,    data.Get("Gui", ""))
+    MergeIntoDefaults(g_BENCH,  data.Get("Benchmark", ""))
+    g_RUNTIME["RegEx"] := g_CONFIG["MatchBeginning"] ? "imS)^" : "imS)"
+
+    ; --- Usage: keep only the last 30 days, same trimming rule as before ---
+    if (data.Has("Usage") && data["Usage"] is Map) {
+        for dateKey, dayCount in data["Usage"]
+            g_USAGE[dateKey] := dayCount
+    }
+    offsetDate := DateAdd(A_Now, -30, "Days")
+    for dateKey in g_USAGE.Clone()                                      ; Clone: we mutate g_USAGE while iterating it
+        if (dateKey <= SubStr(offsetDate, 1, 8))
+            g_USAGE.Delete(dateKey)
+    Loop 30 {
+        offsetDate := DateAdd(offsetDate, 1, "Days")
+        dateKey := SubStr(offsetDate, 1, 8)
+        g_USAGE[dateKey] := g_USAGE.Has(dateKey) ? g_USAGE[dateKey] : 0
+        g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], g_USAGE[dateKey])
+    }
+
+    ; --- History ---
+    g_HISTORYS.Length := 0
+    if (data.Has("History") && data["History"] is Array) {
+        for _, entry in data["History"]
+            if (Trim(entry) != "")
+                g_HISTORYS.Push(entry)
+    }
+
+    if (dirty && SaveAppData() && movedSections.Length)
+        FinishIniMigration(movedSections)                               ; Backs up ALTRun.ini, then strips the now-migrated sections
+
+    g_LOG.Debug("LoadAppData: Default=" g_CMDDATA["DefaultCommand"].Count
         . ", User=" g_CMDDATA["UserCommand"].Count
         . ", Index=" g_CMDDATA["Index"].Count
-        . ", Fallback=" g_CMDDATA["FallbackCommand"].Length)
+        . ", Fallback=" g_CMDDATA["FallbackCommand"].Length
+        . ", History=" g_HISTORYS.Length)
 
     if (!g_CMDDATA["Index"].Count) {
         if (MsgBox(g_LNG[804], g_TITLE, 4161) = "OK")
@@ -2115,24 +2184,36 @@ LoadCommandData(forceReload := false) {
     return g_CMDDATA
 }
 
-SaveCommandData() {
-    out := "{`r`n"
+MergeIntoDefaults(defaultsMap, sourceMap) {                             ; Overlay JSON values onto a defaults Map, key by key
+    if !(sourceMap is Map)                                              ; Keeps default (and Map order) for any key the file doesn't have yet
+        return                                                          ; - e.g. a setting added in a newer version of ALTRun.
+    for key, _ in defaultsMap
+        if sourceMap.Has(key)
+            defaultsMap[key] := sourceMap[key]
+}
+
+SaveAppData() {
+    ordered := Map(
+        "Config",  g_CONFIG,
+        "Gui",     g_GUI,
+        "Hotkey",  g_HOTKEY,
+        "Usage",   g_USAGE,
+        "History", g_HISTORYS,
+        "Benchmark", g_BENCH,
+        "DefaultCommand", Map(),
+        "UserCommand",    Map(),
+        "Index",          Map(),
+        "FallbackCommand", Array()
+    )
+    ; Rebuild ranks as plain integers so JSON.stringify emits numbers, not strings.
     for _, name in ["DefaultCommand", "UserCommand", "Index"] {
-        out .= '  "' name '": {`r`n'
-        first := true
-        for cmdLine, rank in g_CMDDATA[name] {
-            out .= (first ? "" : ",`r`n") . '    "' JsonEscape(cmdLine) '": ' (IsInteger(rank) ? rank : 1)
-            first := false
-        }
-        out .= (first ? "" : "`r`n") . "  },`r`n"
+        for cmdLine, rank in g_CMDDATA[name]
+            ordered[name][cmdLine] := IsInteger(rank) ? rank + 0 : 1
     }
-    out .= '  "FallbackCommand": [`r`n'
-    first := true
-    for _, cmdLine in g_CMDDATA["FallbackCommand"] {
-        out .= (first ? "" : ",`r`n") . '    "' JsonEscape(cmdLine) '"'
-        first := false
-    }
-    out .= (first ? "" : "`r`n") . "  ]`r`n}`r`n"
+    for _, cmdLine in g_CMDDATA["FallbackCommand"]
+        ordered["FallbackCommand"].Push(cmdLine)
+
+    out := JSON.stringify(ordered)                                     ; new JSON.ahk always indents 2 spaces, no separate "space" param
 
     tmpFile := g_JSON ".tmp"
     try {
@@ -2141,11 +2222,21 @@ SaveCommandData() {
         FileAppend(out, tmpFile, "UTF-8")                               ; Write a temp file first, so a crash can never truncate the real one
         FileMove(tmpFile, g_JSON, true)
     } catch as e {
-        g_LOG.Debug("SaveCommandData: Write failed - " e.Message)
+        g_LOG.Debug("SaveAppData: Write failed - " e.Message)
         MsgBox("Could not save ALTRun.json:`n`n" e.Message, g_TITLE, 48)
         return false
     }
     return true
+}
+
+; An OnExit callback that RETURNS a nonzero/true value cancels the exit (this
+; is documented AutoHotkey v2 behavior, not a bug) - so this must NOT simply
+; forward a true/false result the way an inline `(*) => SaveAppData()` would.
+; No explicit `return` here means this always yields "" (falsy), so
+; Reload()/ExitApp() are never blocked, even if the save itself fails.
+OnAppExit(*) {
+    SaveAppData()
+    Logger.Flush()                                                     ; Buffered log lines are lost otherwise - see Lib/Logger.ahk
 }
 
 ParseCommandBlock(blockText, legacyUnescape := false) {                 ; "command line=rank" lines -> Map
@@ -2166,52 +2257,139 @@ ParseCommandBlock(blockText, legacyUnescape := false) {                 ; "comma
     return result
 }
 
-MigrateIniToJson() {                                                    ; One-off: pull the command sections out of the old ini
-    Global g_CMDDATA
+; One-off: pull whatever ALTRun.ini still has out into `data` (the in-memory
+; Map that LoadAppData() is about to fold into g_CMDDATA / g_CONFIG / etc).
+; Nothing is written to disk here - LoadAppData() saves ALTRun.json itself and
+; only then, via FinishIniMigration(), strips the sections that made it across.
+; Commands and settings migrate independently, so this is safe to call even
+; when only one half was ever pulled out of the ini before (as is the case for
+; anyone who already has an ALTRun.json containing just commands).
+MigrateFromIni(data) {
+    moved := Array()
     if (!FileExist(g_INI))
-        return false
+        return moved
 
     iniText := ""
     try iniText := FileRead(g_INI, "UTF-8")                             ; Read the raw file, NOT IniRead - that is what hits the 64 KB cap
     if (InStr(iniText, Chr(0)))                                         ; Old ini saved as UTF-16 by Notepad
         try iniText := FileRead(g_INI, "UTF-16")
     if (iniText = "")
-        return false
+        return moved
 
-    moved := false
-    for _, pair in [["DefaultCommand", "DFTCMD"], ["UserCommand", "USERCMD"], ["Index", "INDEX"]] {
-        body := ReadIniSectionRaw(iniText, g_SECTION[pair[2]])
-        if (body = "")
-            continue
-        g_CMDDATA[pair[1]] := ParseCommandBlock(body, true)
-        moved := true
-    }
-
-    body := ReadIniSectionRaw(iniText, g_SECTION["FALLBACK"])
-    if (body != "") {
-        for _, line in StrSplit(body, "`n", "`r") {
-            line := Trim(UnescapeCommandKey(line))
-            if (line != "" && SubStr(line, 1, 1) != ";")
-                g_CMDDATA["FallbackCommand"].Push(line)
+    ; --- Commands: DefaultCommand / UserCommand / Index / FallbackCommand ---
+    if (!data.Has("DefaultCommand")) {
+        for _, pair in [["DefaultCommand", "DFTCMD"], ["UserCommand", "USERCMD"], ["Index", "INDEX"]] {
+            body := ReadIniSectionRaw(iniText, g_SECTION[pair[2]])
+            if (body = "")
+                continue
+            data[pair[1]] := ParseCommandBlock(body, true)
+            moved.Push(pair[2])
         }
-        moved := true
+
+        body := ReadIniSectionRaw(iniText, g_SECTION["FALLBACK"])
+        if (body != "") {
+            list := Array()
+            for _, line in StrSplit(body, "`n", "`r") {
+                line := Trim(UnescapeCommandKey(line))
+                if (line != "" && SubStr(line, 1, 1) != ";")
+                    list.Push(line)
+            }
+            data["FallbackCommand"] := list
+            moved.Push("FALLBACK")
+        }
     }
 
-    if (!moved)
-        return false
+    ; --- Settings: Config / Hotkey / Gui / Usage / History / Benchmark ---
+    if (!data.Has("Config")) {
+        cfg := ReadIniMapLikeDefaults(g_CONFIG, g_SECTION["CONFIG"])
+        if (cfg.Count) {
+            data["Config"] := cfg
+            moved.Push("CONFIG")
+        }
 
-    if !SaveCommandData()
-        return false
+        hk := ReadIniMapLikeDefaults(g_HOTKEY, g_SECTION["HOTKEY"])
+        if (hk.Count) {
+            data["Hotkey"] := hk
+            moved.Push("HOTKEY")
+        }
 
-    try FileCopy(g_INI, g_INI ".bak", true)                             ; Keep the old ini before stripping the command sections
-    for _, key in ["DFTCMD", "USERCMD", "INDEX", "FALLBACK"]
+        gui := ReadIniMapLikeDefaults(g_GUI, g_SECTION["GUI"])
+        if (gui.Count) {
+            data["Gui"] := gui
+            moved.Push("GUI")
+        }
+
+        bench := ReadIniMapLikeDefaults(g_BENCH, g_SECTION["BENCHMARK"])
+        if (bench.Count) {
+            data["Benchmark"] := bench
+            moved.Push("BENCHMARK")
+        }
+
+        usageText := ""
+        Try usageText := IniRead(g_INI, g_SECTION["USAGE"])              ; Whole-section read throws if the section is missing
+        if (usageText != "") {
+            usage := Map()
+            for line in StrSplit(usageText, "`n") {
+                parts := StrSplit(Trim(line, "`r"), "=")
+                if (parts.Length >= 2 && parts[1] != "")
+                    usage[parts[1]] := parts[2] + 0
+            }
+            if (usage.Count) {
+                data["Usage"] := usage
+                moved.Push("USAGE")
+            }
+        }
+
+        history := Array()
+        Loop 50 {                                                       ; Generous: the ini's HistoryLen may differ from today's default
+            item := IniRead(g_INI, g_SECTION["HISTORY"], A_Index, "")
+            if (item = "")
+                continue
+            history.Push(item)
+        }
+        if (history.Length) {
+            data["History"] := history
+            moved.Push("HISTORY")
+        }
+    }
+
+    return moved
+}
+
+; Reads an ini section into a Map, coercing each value to the same type
+; (Integer/Float vs String) as the matching key in `defaultsMap` - e.g. so
+; "255" migrates as the number 255 but "0xFFFFFF" stays the color string it is.
+ReadIniMapLikeDefaults(defaultsMap, sectionName) {
+    result := Map()
+    for key, defVal in defaultsMap {
+        val := IniRead(g_INI, sectionName, key, "")
+        if (val = "")
+            continue
+        result[key] := (Type(defVal) = "Integer" || Type(defVal) = "Float") ? val + 0 : val
+    }
+    return result
+}
+
+; Runs once, right after LoadAppData() has successfully written the migrated
+; data into ALTRun.json: backs up the old ini, then removes just the sections
+; that were moved (leaving [PT Tools], which the separate PTTools.ahk owns).
+FinishIniMigration(movedSections) {
+    try FileCopy(g_INI, g_INI ".bak", true)
+    for _, key in movedSections
         Try IniDelete(g_INI, g_SECTION[key])
 
-    g_LOG.Debug("MigrateIniToJson: Migrated commands from ini to json")
-    MsgBox("Commands have been moved from ALTRun.ini into ALTRun.json.`n`n"
-         . "The old file was backed up as ALTRun.ini.bak.`n`n"
-         . "Run Reindex once to rebuild the file index.", g_TITLE, 64)
-    return true
+    g_LOG.Debug("FinishIniMigration: Moved sections [" . JoinArray(movedSections, ", ") . "] from ini to json")
+    MsgBox("The following ALTRun.ini section(s) have been moved into ALTRun.json:`n`n"
+         . JoinArray(movedSections, ", ") . "`n`n"
+         . "The old file was backed up as ALTRun.ini.bak.`n"
+         . "ALTRun.ini itself is kept for PT Tools' own settings.", g_TITLE, 64)
+}
+
+JoinArray(arr, sep) {
+    out := ""
+    for _, v in arr
+        out .= (out = "" ? "" : sep) . v
+    return out
 }
 
 DefaultCommandText() {
@@ -2226,7 +2404,7 @@ DefaultCommandText() {
         Func | Reload | Reload ALTRun=99
         Func | EditCommand | Edit current command (F3)=99
         Func | UserCommand | Edit command database ALTRun.json (F4)=99
-        Func | EditIniFile | Edit config file ALTRun.ini=99
+        Func | EditIniFile | Edit PT Tools settings file (legacy ini)=99
         Func | NewCommand | New Command=99
         Func | NewClip | New Clip (text snippet)=99
         Func | OpenContainer | Locate cmd's dir with File Manager=99
@@ -2329,147 +2507,8 @@ ReadIniSectionRaw(iniText, sectionName) {                               ; Sectio
     return Trim(rest, " `t`r`n")
 }
 
-;===================================================
-; Minimal JSON reader / writer (AutoHotkey v2)
-;===================================================
-
-JsonParse(text) {
-    pos   := 1
-    value := Json_Value(text, &pos)
-    Json_Ws(text, &pos)
-    return value
-}
-
-Json_Ws(text, &pos) {
-    ch := SubStr(text, pos, 1)                                          ; Fast path: most tokens are not preceded by whitespace
-    if (ch != " " && ch != "`t" && ch != "`r" && ch != "`n")
-        return
-    if RegExMatch(text, "\s*", &m, pos)
-        pos += m.Len
-}
-
-Json_Value(text, &pos) {
-    Json_Ws(text, &pos)
-    ch := SubStr(text, pos, 1)
-    switch ch, true {
-        case "{": return Json_Obj(text, &pos)
-        case "[": return Json_Arr(text, &pos)
-        case '"': return Json_Str(text, &pos)
-    }
-    if (SubStr(text, pos, 4) = "true") {
-        pos += 4
-        return true
-    }
-    if (SubStr(text, pos, 5) = "false") {
-        pos += 5
-        return false
-    }
-    if (SubStr(text, pos, 4) = "null") {
-        pos += 4
-        return ""
-    }
-    if (RegExMatch(text, "-?\d++(\.\d++)?([eE][-+]?\d++)?", &m, pos) && m.Pos = pos) {
-        pos += m.Len
-        return m[0] + 0
-    }
-    throw Error("Unexpected character at position " pos)
-}
-
-Json_Obj(text, &pos) {
-    obj := Map()
-    pos++                                                               ; skip {
-    Json_Ws(text, &pos)
-    if (SubStr(text, pos, 1) = "}") {
-        pos++
-        return obj
-    }
-    loop {
-        Json_Ws(text, &pos)
-        key := Json_Str(text, &pos)
-        Json_Ws(text, &pos)
-        if (SubStr(text, pos, 1) != ":")
-            throw Error("Expected ':' at position " pos)
-        pos++
-        obj[key] := Json_Value(text, &pos)
-        Json_Ws(text, &pos)
-        ch := SubStr(text, pos, 1)
-        pos++
-        if (ch = ",")
-            continue
-        if (ch = "}")
-            return obj
-        throw Error("Expected ',' or '}' at position " (pos - 1))
-    }
-}
-
-Json_Arr(text, &pos) {
-    arr := Array()
-    pos++                                                               ; skip [
-    Json_Ws(text, &pos)
-    if (SubStr(text, pos, 1) = "]") {
-        pos++
-        return arr
-    }
-    loop {
-        arr.Push(Json_Value(text, &pos))
-        Json_Ws(text, &pos)
-        ch := SubStr(text, pos, 1)
-        pos++
-        if (ch = ",")
-            continue
-        if (ch = "]")
-            return arr
-        throw Error("Expected ',' or ']' at position " (pos - 1))
-    }
-}
-
-Json_Str(text, &pos) {
-    static rx := '"((?:[^"\\]|\\.)*+)"'
-    if !(RegExMatch(text, rx, &m, pos) && m.Pos = pos)
-        throw Error("Invalid string at position " pos)
-    pos += m.Len
-    return Json_Unescape(m[1])
-}
-
-Json_Unescape(str) {
-    if !InStr(str, "\")
-        return str
-    out := "", i := 1, len := StrLen(str)
-    while (i <= len) {
-        ch := SubStr(str, i, 1)
-        if (ch != "\") {
-            out .= ch
-            i++
-            continue
-        }
-        esc := SubStr(str, i + 1, 1)
-        switch esc, true {
-            case '"': out .= '"'
-            case "\": out .= "\"
-            case "/": out .= "/"
-            case "b": out .= Chr(8)
-            case "f": out .= Chr(12)
-            case "n": out .= "`n"
-            case "r": out .= "`r"
-            case "t": out .= "`t"
-            case "u":
-                out .= Chr("0x" SubStr(str, i + 2, 4))
-                i += 4
-            default : out .= esc
-        }
-        i += 2
-    }
-    return out
-}
-
-JsonEscape(str) {
-    str := StrReplace(str, "\", "\\")
-    str := StrReplace(str, '"', '\"')
-    str := StrReplace(str, "`r", "\r")
-    str := StrReplace(str, "`n", "\n")
-    str := StrReplace(str, "`t", "\t")
-    return str
-}
+; JSON parsing/serializing is handled by the shared JSON class in Lib\JSON.ahk
+; (auto-included by AutoHotkey v2 - see the note above SaveCommandData/LoadCommandData).
 
 ; =========================================================================
 ; === Clip (Snippet) support ==============================================
@@ -2616,20 +2655,12 @@ CloseClipEditor(*) {
     try WinActivate("ahk_id " g_CmdMgrGui.Hwnd)
 }
 
-; === Command Key Escaping Functions (for handling special chars in INI keys) ===
-; These functions handle the bug where command lines containing '=' break INI read/write
-; by escaping special characters before using them as INI keys, and unescaping when reading
-
-EscapeCommandKey(cmdLine) {
-    ; Escape special INI characters to make the command line safe as an INI key
-    if (cmdLine = "")
-        return ""
-    
-    cmdLine := StrReplace(cmdLine, "=", "_Equal_")  ; equals sign
-    cmdLine := StrReplace(cmdLine, ";", "_Semicolon_")  ; semicolon
-    return cmdLine
-}
-
+; UnescapeCommandKey(): reverses the old "_Equal_"/"_Semicolon_" encoding that
+; used to be needed so a command line could survive being an ini key (ini keys
+; can't contain '=' or ';'). Commands live in JSON now so nothing encodes them
+; this way anymore, but MigrateFromIni()/ParseCommandBlock() still call this
+; when reading a pre-migration ALTRun.ini, since old command lines saved there
+; were encoded with it.
 UnescapeCommandKey(cmdLine) {
     ; Unescape the encoded special characters
     ; Order: reverse of escape - do = and ;
@@ -2951,56 +2982,9 @@ ToggleGlobalHotkeys(mode, caller := "") {
     }
 }
 
-LoadConfig(mode) {
-    g_LOG.Debug("LoadConfig: Loading configuration (" mode ")...OK")
-
-    if (mode = "config" || mode = "initialize" || mode = "all") {
-        ; Read [Config], [Hotkey], [Gui] sections into runtime maps.
-        for key, value in g_CONFIG {
-            g_CONFIG[key] := IniRead(g_INI, g_SECTION["CONFIG"], key, value)
-        }
-
-        for key, value in g_HOTKEY {
-            g_HOTKEY[key] := IniRead(g_INI, g_SECTION["HOTKEY"], key, value)
-        }
-
-        for key, value in g_GUI {
-            g_GUI[key] := IniRead(g_INI, g_SECTION["GUI"], key, value)
-        }
-
-        g_RUNTIME["RegEx"] := g_CONFIG["MatchBeginning"] ? "imS)^" : "imS)"
-
-        offsetDate := DateAdd(A_Now, -30, "Days")
-        usageSection := ""
-        Try usageSection := IniRead(g_INI, g_SECTION["USAGE"])
-        if (usageSection != "") {
-            for line in StrSplit(usageSection, "`n") {
-                if (!line)
-                    continue
-                split := StrSplit(line, "=")
-                dateKey := split[1]
-                dayCount := split[2]
-
-                ; Keep only last 30 days usage.
-                if (dateKey <= SubStr(offsetDate, 1, 8)) {
-                    IniDelete(g_INI, g_SECTION["USAGE"], dateKey)
-                    continue
-                }
-
-                g_USAGE[dateKey] := dayCount
-                g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], dayCount)
-            }
-        }
-
-        Loop 30 {
-            offsetDate := DateAdd(offsetDate, 1, "Days")
-            dateKey := SubStr(offsetDate, 1, 8)
-            g_USAGE[dateKey] := g_USAGE.Has(dateKey) ? g_USAGE[dateKey] : 0
-        }
-    }
-
-    return
-}
+; NOTE: there is no more LoadConfig() - LoadAppData() (see the JSON command
+; storage section) loads Config/Gui/Hotkey/Usage/History/Benchmark from
+; ALTRun.json at startup, in one pass alongside the commands.
 
 SaveConfig() {
     Global OptListView
@@ -3010,30 +2994,24 @@ SaveConfig() {
     while (row := OptListView.GetNext(row, "C"))
         checkedRows[row] := 1
 
-    ; Tab1 checklist values.
-    for key, _ in g_CONFIG_P1 {
+    ; Tab1 checklist values (plain booleans, no type coercion needed).
+    for key, _ in g_CONFIG_P1
         g_CONFIG[key] := checkedRows.Has(A_Index) ? 1 : 0
-        IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
-    }
 
     static configKeys := Array("FileMgr", "Everything", "HistoryLen", "RunCount"
         , "AutoSwitchDir", "IndexDir", "IndexType", "IndexDepth"
         , "IndexExclude", "IndexStoreApp", "DialogWin", "FileMgrID", "ExcludeWin")
 
-    for _, key in configKeys {
-        g_CONFIG[key] := GetOptCtrlValue(OptGUI[key])
-        IniWrite(g_CONFIG[key], g_INI, g_SECTION["CONFIG"], key)
-    }
+    for _, key in configKeys
+        g_CONFIG[key] := CoerceLikeCurrent(g_CONFIG[key], GetOptCtrlValue(OptGUI[key]))
 
-    for key, _ in g_GUI {
-        g_GUI[key] := GetOptCtrlValue(OptGUI[key])
-        IniWrite(g_GUI[key], g_INI, g_SECTION["GUI"], key)
-    }
+    for key, _ in g_GUI
+        g_GUI[key] := CoerceLikeCurrent(g_GUI[key], GetOptCtrlValue(OptGUI[key]))
 
-    for key, _ in g_HOTKEY {
-        g_HOTKEY[key] := GetOptCtrlValue(OptGUI[key])
-        IniWrite(g_HOTKEY[key], g_INI, g_SECTION["HOTKEY"], key)
-    }
+    for key, _ in g_HOTKEY
+        g_HOTKEY[key] := GetOptCtrlValue(OptGUI[key])                   ; Hotkeys/window titles are always text
+
+    SaveAppData()
 
     g_LOG.Debug("SaveConfig: Save config...OK")
     return
@@ -3041,6 +3019,11 @@ SaveConfig() {
 
 GetOptCtrlValue(ctrl) {
     return InStr(",CheckBox,Slider,Hotkey,", "," ctrl.Type ",") ? ctrl.Value : ctrl.Text
+}
+
+CoerceLikeCurrent(currentVal, newVal) {                                 ; Keep a setting's number-vs-text type stable across saves,
+    return (Type(currentVal) = "Integer" || Type(currentVal) = "Float") ; so JSON.stringify writes e.g. 300 instead of "300", while
+        && IsNumber(newVal) ? newVal + 0 : newVal                       ; a hex color string like "0xFFFFFF" is left alone.
 }
 
 ; ==================== Built-in Functions =========================
@@ -3472,9 +3455,22 @@ SetLanguage() {
     CHN[822] := "添加命令时发生错误："
     CHN[823] := "以下命令添加/修改成功!`n`n[ "
 
-    Global g_LNG := IniRead(g_INI, "Config", "Chinese", 0) ? CHN : ENG
+    Global g_LNG := ReadChineseFlag() ? CHN : ENG
     g_LOG.Debug("SetLanguage: Set language to " g_LNG[1] "...OK")
     return
+}
+
+ReadChineseFlag() {                                                     ; Bootstrap-only: runs before the full JSON store is loaded
+    if FileExist(g_JSON) {
+        try {
+            data := JSON.parse(FileRead(g_JSON, "UTF-8"))
+            if (data is Map && data.Has("Config") && data["Config"] is Map && data["Config"].Has("Chinese"))
+                return data["Config"]["Chinese"] ? 1 : 0
+        }
+    }
+    if FileExist(g_INI)                                                 ; Pre-migration fallback: ALTRun.json has no Config section yet
+        return IniRead(g_INI, "Config", "Chinese", 0) ? 1 : 0
+    return 0
 }
 ;;==================== Expression Eval =========================
 Eval(expression, depth := 0) {
@@ -3542,10 +3538,8 @@ EvalSimple(expression) {            ; 计算不含括号的简单数学表达式
 }
 
 ;;==================== Performance Test Only =========================
-
-Test() {
-    BenchmarkRun(10)
-}
+; Not wired to any hotkey/menu/command - run BenchmarkRun() manually from an
+; editor/debugger when you want a search-performance snapshot.
 
 BenchmarkRun(rounds := 10) {
     Global g_LOG, g_INI, g_COMMANDS, myInputBox
@@ -3616,11 +3610,10 @@ BenchmarkRun(rounds := 10) {
     p50Ms := Round(p50Ms, 3)
     p95Ms := Round(p95Ms, 3)
 
-    prevElapsedText := IniRead(g_INI, "BENCHMARK", "ElapsedTotalMs", "")
-    if (prevElapsedText = "") {
+    prevElapsed := g_BENCH["ElapsedTotalMs"]
+    if (prevElapsed = "" || prevElapsed = 0) {
         deltaText := "N/A (first run)"
     } else {
-        prevElapsed := prevElapsedText + 0
         d := Round(elapsedTotalMs - prevElapsed, 2)
         p := (prevElapsed != 0) ? Round((d / prevElapsed) * 100, 2) : 0
         deltaText := (d > 0 ? "+" : "") d " ms (" (p > 0 ? "+" : "") p "%) - " (d < 0 ? "Faster" : d > 0 ? "Slower" : "No change")
@@ -3639,11 +3632,12 @@ BenchmarkRun(rounds := 10) {
         . ", Commands=" g_COMMANDS.Length
         . ", ElapsedTotalMs=" Round(elapsedTotalMs, 2))
 
-    IniWrite(avgMs, g_INI, "BENCHMARK", "AvgMs")
-    IniWrite(p50Ms, g_INI, "BENCHMARK", "P50Ms")
-    IniWrite(p95Ms, g_INI, "BENCHMARK", "P95Ms")
-    IniWrite(Round(elapsedTotalMs, 2), g_INI, "BENCHMARK", "ElapsedTotalMs")
-    IniWrite(nowText, g_INI, "BENCHMARK", "LastTime")
+    g_BENCH["AvgMs"] := avgMs
+    g_BENCH["P50Ms"] := p50Ms
+    g_BENCH["P95Ms"] := p95Ms
+    g_BENCH["ElapsedTotalMs"] := Round(elapsedTotalMs, 2)
+    g_BENCH["LastTime"] := nowText
+    SaveAppData()
 
     report := "ALTRun Benchmark`n`n"
     report .= "Time: " nowText "`n"
@@ -3656,19 +3650,6 @@ BenchmarkRun(rounds := 10) {
     report .= "Total elapsed: " Round(elapsedTotalMs, 2) " ms`n`n"
     report .= "Vs last Total elapsed: " deltaText
     MsgBox(report, "ALTRun Benchmark")
-}
-
-;;==================== Logger Class =========================
-
-class Logger {
-    __New(filename) {
-        this.filename := filename
-    }
-
-    Debug(Msg) {
-        if (g_CONFIG["SaveLog"])
-            FileAppend("[" . A_Now . "] " . Msg . "`n", this.filename)
-    }
 }
 
 ;;==================== Font Select Dialog =========================
