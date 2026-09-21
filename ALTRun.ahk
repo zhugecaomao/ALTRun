@@ -12,6 +12,7 @@
 #Include Lib\Dialogs.ahk                                               ; FontDialog / ColorDialog - see the Options-window font/color pickers.
 #Include Lib\Language.ahk                                              ; Lang.Load()/Lang.IsChinese() - builds g_LNG (the UI text table) below.
 #Include Lib\Listary.ahk                                               ; Listary.Init() - open/save dialog path quick-switch, called in the autorun section below.
+#Include Lib\Plugins.ahk                                               ; Plugins.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -254,7 +255,7 @@ SetTrayMenu()               ; SetTrayMenu before SetMainGUI, GUI window uses the
 SetMainGUI()                ; Create and set main GUI
 RegisterHotkey()
 Listary.Init()
-Plugins()
+Plugins.Init()
 AutoCheckUpdate()
 return
 ;;==================== Autorun until here =========================
@@ -1665,74 +1666,9 @@ CloseCommandManager(*) {
     g_CmdMgrGui.Destroy()
 }
 
-Plugins() {                                                             ; Plugins (Ctrl+D 自动添加日期)
-    Loop Parse, g_HOTKEY["AutoDateBefExt"], ","
-        GroupAdd("FileListMangr", A_LoopField)
-
-    Loop Parse, g_HOTKEY["AutoDateAtEnd"], ","
-        GroupAdd("TextBox", A_LoopField)
-
-    HotIfWinActive("ahk_group FileListMangr")                           ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-    Hotkey(g_HOTKEY["AutoDateBEHKey"], RenameWithDate)
-
-
-    HotIfWinActive("ahk_group TextBox")
-    Hotkey(g_HOTKEY["AutoDateAEHKey"], LineEndAddDate)
-    HotIfWinActive
-
-    g_LOG.Debug("Plugins: Load AutoDate plugins...OK")
-    return
-}
-
-RenameWithDate(*) {                                                     ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-    FocusedHwnd  := ControlGetFocus("A")                                ; 获取当前激活的窗口中的聚焦的控件名称
-    FocusedClassNN := ControlGetClassNN(FocusedHwnd)
-
-    if (InStr(FocusedClassNN, "Edit") or InStr(FocusedClassNN, "Scintilla")) ; 如果当前激活的控件为Edit类或者Scintilla1(Notepad2),则Ctrl+D功能生效
-        NameAddDate("FileListMangr", FocusedClassNN)
-    else
-        SendInput "^D"                                                  ; 如果不是,则发送原始的Ctrl+D
-
-    g_LOG.Debug("RenameWithDate: Current control=" FocusedClassNN)
-    Return
-}
-
-LineEndAddDate(*) {                                                     ; 针对TC File Comment对话框　按Ctrl+D自动在备注文字之后添加日期
-    CurrentDate := FormatTime(, "dd.MM.yyyy")
-    SendInput "{End}"
-    Sleep 10
-    SendInput "{Blind}{Text} - " CurrentDate
-    g_LOG.Debug("LineEndAddDate: Add date at end= - " CurrentDate)
-}
-
-NameAddDate(WinName, CurrCtrl) {                                        ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit)
-    EditCtrlText := ControlGetText(CurrCtrl, "A")
-    SplitPath(EditCtrlText, &fileName, &fileDir, &fileExt, &nameNoExt)
-    CurrentDate := FormatTime(, "dd.MM.yyyy")
-
-    ; 仅当扩展名不是空 & 最后是点后直接跟 1~4 个字母/数字时 & 字符 <5 & 不是纯数字, 才把后缀视为真实扩展名（避免像 "1. DWG" 这种点后有空格被误判）, 才加日期在后缀名之前
-    if (fileExt != "" && RegExMatch(EditCtrlText, "\.[A-Za-z0-9]{1,4}$") && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) {
-        if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$") {
-            baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
-        }
-        else if RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$") {
-            baseName := RegExReplace(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$", "")
-        } else {
-            baseName := nameNoExt
-        }
-        NameWithDate := baseName " - " CurrentDate "." fileExt
-    } else if (RegExMatch(fileName, " - \d{2}\.\d{2}\.\d{4}$")) {         ; 如果无后缀, 文件(夹)名最后有日期,则更新为当前日期
-        NameWithDate := RegExReplace(fileName, " - \d{2}\.\d{2}\.\d{4}$", " - " CurrentDate)
-    } else if (RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$")) {
-        NameWithDate := RegExReplace(fileName, "-\d{2}\.\d{2}\.\d{4}$", " - " CurrentDate)
-    } else {
-        NameWithDate := EditCtrlText " - " CurrentDate
-    }
-    ControlFocus(CurrCtrl, "A")
-    ControlSetText(NameWithDate, CurrCtrl, "A")
-    SendInput "{Blind}{End}"
-    g_LOG.Debug("NameAddDate: Add date to filename= " NameWithDate)
-}
+; Plugins()/RenameWithDate()/LineEndAddDate()/NameAddDate() used to live here;
+; all moved into the Plugins class in Lib\Plugins.ahk (see the #Include list
+; at the top of this file and the "Plugins.Init()" call in the autorun section).
 
 GetArrayIndex(searchValue, Array){
     for index, element in Array
