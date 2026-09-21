@@ -11,6 +11,9 @@
 #Include Lib\Util.ahk                                                  ; Path / Fonts / Win / Pinyin / Calc - see each call site below.
 #Include Lib\Dialogs.ahk                                               ; FontDialog / ColorDialog - see the Options-window font/color pickers.
 #Include Lib\Language.ahk                                              ; Lang.Load()/Lang.IsChinese() - builds g_LNG (the UI text table) below.
+#Include Lib\Listary.ahk                                               ; Listary.Init() - open/save dialog path quick-switch, called in the autorun section below.
+#Include Lib\Plugins.ahk                                               ; Plugins.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
+#Include Lib\Clip.ahk                                                  ; Clip.PasteClipText()/ClipPreview()/EditClipText() - the "Clip" snippet command.
 #Include Lib\PTTools.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
@@ -240,8 +243,8 @@ UpdateStartMenu()
 SetTrayMenu()               ; SetTrayMenu before SetMainGUI, GUI window uses the tray icon that was in effect at the time the window was created
 SetMainGUI()                ; Create and set main GUI
 RegisterHotkey()
-Listary()
-Plugins()
+Listary.Init()
+Plugins.Init()
 AutoCheckUpdate()
 return
 ;;==================== Autorun until here =========================
@@ -634,7 +637,7 @@ ListResult(rows := [], useDisplay := false) {
 
         if (cmdType = "Clip") {
             ; Clip text is not a path, show a single-line preview instead.
-            cmdPath := ClipPreview(cmdPath)
+            cmdPath := Clip.ClipPreview(cmdPath)
         } else if (shortenPath && cmdType != "URL") {
             ; Keep URL full text, shorten other command paths for list readability.
             SplitPath(cmdPath, &cmdPath)
@@ -664,7 +667,7 @@ GetCmdPart(command, fieldNo) {
 
 GetCmdDisplayPath(command) {                                            ; Field 2 of a command, made readable (Clip text gets a short preview)
     return (GetCmdPart(command, 1) = "Clip")
-        ? ClipPreview(GetCmdPart(command, 2))
+        ? Clip.ClipPreview(GetCmdPart(command, 2))
         : GetCmdPart(command, 2)
 }
 
@@ -763,7 +766,7 @@ RunCommand(originCmd) {
     if (cmdType = "") {
         return
     } else if (cmdType = "Clip") {
-        executed := PasteClipText(rawPath)
+        executed := Clip.PasteClipText(rawPath)
     } else if (cmdType = "DIR") {
         executed := OpenDir(cmdPath)
     } else if (cmdType = "FUNC") {
@@ -1482,217 +1485,11 @@ CompareVersion(v1, v2) {
     return 0
 }
 
-Listary() {                                                             ; Listary 快速更换保存/打开对话框路径
-    Loop Parse, g_CONFIG["FileMgrID"], ","                              ; File Manager Class, default is Windows Explorer & Total Commander
-        GroupAdd("FileMgrID", A_LoopField)
-
-    Loop Parse, g_CONFIG["DialogWin"], ","                              ; 需要QuickSwith的窗口, 包括打开/保存对话框等
-        GroupAdd("DialogBox", A_LoopField)
-
-    Loop Parse, g_CONFIG["ExcludeWin"], ","                             ; 排除特定窗口,避免被 Auto-QuickSwitch 影响
-        GroupAdd("ExcludeWin", A_LoopField)
-
-    if (g_CONFIG["AutoSwitchDir"]) {
-        g_LOG.Debug("Listary: Auto-QuickSwitch enabled, monitoring thread...")
-        Loop {
-            WinWaitActive("ahk_class TTOTAL_CMD")
-            WinWaitNotActive()
-
-            ; 检测当前窗口是否符合打开/保存对话框条件
-            if (IsQuickSwitchDialog()) {
-                winTitle := WinGetTitle("A")
-                procName := WinGetProcessName("A")
-                g_LOG.Debug("Listary: Dialog detected, active window ahk_title=" winTitle ", ahk_exe=" procName)
-                SyncTCPath()                                            ; NO Return, as will terimate loop (AutoSwitchDir)
-            }
-            Sleep 100  ; Reduce CPU usage
-        }
-    }
-
-    HotIf(IsQuickSwitchDialog)                                          ; 仅在真正的打开/保存对话框启用路径定位热键
-    try {
-        Hotkey(g_HOTKEY["ExplorerDir"], SyncExplorerPath)               ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
-        Hotkey(g_HOTKEY["TotalCMDDir"], SyncTCPath)                     ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
-        g_LOG.Debug("Listary: Set quickswitch hotkey " g_HOTKEY["ExplorerDir"] " for Explorer, " g_HOTKEY["TotalCMDDir"] " for Total Commander...OK")
-    } catch as e {
-        g_LOG.Debug("Listary: Failed to set quickswitch hotkey..." e.Message)
-    }
-    HotIf                                                                ; Turn off context, make subsequent hotkeys global again
-
-    ; 在打开/保存对话框标题中显示快捷键信息
-    SetTimer(ShowListaryHint, 250)
-    return
-}
-
-ShowListaryHint() {
-    static originalTitles := Map()
-    static activeHwnd := 0
-
-    if (IsQuickSwitchDialog()) {
-        dlgHwnd := WinGetID("A")
-        if (!dlgHwnd || !WinExist("ahk_id " dlgHwnd))
-            return
-
-        ; Restore the previous dialog before switching to another one.
-        if (activeHwnd && activeHwnd != dlgHwnd && originalTitles.Has(activeHwnd)) {
-            if WinExist("ahk_id " activeHwnd)
-                WinSetTitle(originalTitles[activeHwnd], "ahk_id " activeHwnd)
-            originalTitles.Delete(activeHwnd)
-        }
-
-        if (!originalTitles.Has(dlgHwnd))
-            originalTitles[dlgHwnd] := WinGetTitle("ahk_id " dlgHwnd)
-
-        title := originalTitles[dlgHwnd] " / " GetListaryHintText()
-        if (WinGetTitle("ahk_id " dlgHwnd) != title)
-            WinSetTitle(title, "ahk_id " dlgHwnd)
-        activeHwnd := dlgHwnd
-        return
-    }
-
-    ; Restore the native title after leaving the file dialog.
-    if (activeHwnd && originalTitles.Has(activeHwnd)) {
-        if WinExist("ahk_id " activeHwnd)
-            WinSetTitle(originalTitles[activeHwnd], "ahk_id " activeHwnd)
-        originalTitles.Delete(activeHwnd)
-        activeHwnd := 0
-    }
-}
-
-GetListaryHintText() {
-    tcHotkey  := Win.HotkeyLabel(g_HOTKEY["TotalCMDDir"])
-    expHotkey := Win.HotkeyLabel(g_HOTKEY["ExplorerDir"])
-    msg := StrReplace(g_LNG[221], "{1}", tcHotkey)
-    return StrReplace(msg, "{2}", expHotkey)
-}
-
-; 更严格地识别 "打开/保存文件" 对话框，避免普通 #32770 对话框误触发
-IsQuickSwitchDialog(*) {
-    if (!WinActive("ahk_group DialogBox") || WinActive("ahk_group ExcludeWin"))
-        return false
-
-    winTitle := ""
-    try winTitle := WinGetTitle("A")
-
-    ctrlNames := []
-    try ctrlNames := WinGetControls("A")
-    catch
-        ctrlNames := []
-
-    hasNameEdit := HasAnyCtrlMatch(ctrlNames, "^Edit\d+$")              ; 文件名输入框
-    hasFileView := HasAnyCtrlMatch(ctrlNames, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
-    hasPathCtrl := HasAnyCtrlMatch(ctrlNames, "^ToolbarWindow32\d+$", "^ComboBoxEx32\d+$", "^ComboBox\d+$")
-    hasMainBtn  := HasAnyCtrlMatch(ctrlNames, "^Button\d+$")
-
-    ; DialogBox group already limits window classes via config (e.g. #32770 / Qt5QWindowIcon),
-    ; so use a unified control rule here to avoid per-app special cases.
-    if (ctrlNames.Length > 0) {
-        ; Allow either main buttons or path bar to accommodate app-hosted dialog variations.
-        return hasNameEdit && hasFileView && (hasMainBtn || hasPathCtrl)
-    }
-
-    ; Fallback when control enumeration fails (e.g. privilege boundary / owner-drawn dialogs).
-    return IsLikelyFileDialogTitle(winTitle)
-}
-
-HasAnyCtrlMatch(ctrlNames, patternList*) {
-    for ctrlName in ctrlNames {
-        for pattern in patternList {
-            if RegExMatch(ctrlName, "i)" pattern)
-                return true
-        }
-    }
-    return false
-}
-
-IsLikelyFileDialogTitle(title) {
-    if (!title)
-        return false
-    return RegExMatch(title, "i)(open|save|select|attach|import|export|reference|file|browse|打开|另存|选择|导入|导出|引用)")
-}
-
-; Sync dialog box to Total Commander path (TC 7.x ~ 11.x)
-SyncTCPath(*) {
-    clipSaved   := ClipboardAll()
-    A_Clipboard := ""
-    ; Get the HWND of TC (WinGetID may occur error if TC not found)
-    tcHwnd := WinExist("ahk_class TTOTAL_CMD")
-    if (!tcHwnd) {
-        MsgBox(g_LNG[219], g_TITLE, 48)
-        g_LOG.Debug("SyncTCPath: No Total Commander window found")
-        return
-    }
-    try {
-        SendMessage(1075, 2029, 0, , "ahk_class TTOTAL_CMD")            ; TC: WM_USER + 75, TC_GETCURRENTPATH = 2029
-    } catch as e {
-        g_LOG.Debug("SyncTCPath: SendMessage failed, exception - " . e.Message)
-        A_Clipboard := clipSaved
-        return
-    }
-    ; Wait up to 0.1 seconds for the clipboard to contain data
-    if (ClipWait(0.1) = 0) {
-        A_Clipboard := clipSaved
-        g_LOG.Debug("SyncTCPath: Clipboard wait timed out")
-        return
-    }
-    ; 确保路径以反斜杠结尾, 解决AutoCAD不识别路径问题
-    targetDir   := RTrim(A_Clipboard, "\") . "\"
-    A_Clipboard := clipSaved
-    SetDialogPath(targetDir)
-}
-
-; Sync dialog box to Explorer path (Win7 ~ Win11)
-SyncExplorerPath(*) {
-    ; Get the HWND of Explorer (WinGetID may occur error if Explorer not found)
-    expHwnd := WinExist("ahk_class CabinetWClass")
-    if (!expHwnd) {
-        MsgBox(g_LNG[220], g_TITLE, 48)
-        g_LOG.Debug("SyncExplorerPath: No Explorer window found")
-        return
-    }
-    try {
-        for shellWin in ComObject("Shell.Application").Windows
-            if (shellWin.HWND = expHwnd) {
-                targetDir := shellWin.Document.Folder.Self.Path
-                SetDialogPath(targetDir)
-                return
-            }
-        g_LOG.Debug("SyncExplorerPath: No matching Explorer window")
-    } catch as e {
-        g_LOG.Debug("SyncExplorerPath: COM error - " e.Message)
-    }
-}
-
-; Set dialog box path to specified directory
-SetDialogPath(targetDir) {
-    if (!targetDir || !FileExist(targetDir)) {
-        g_LOG.Debug("SetDialogPath: Invalid directory :" targetDir)
-        return
-    }
-    activeClass := WinGetClass("A")
-    if (activeClass = "Qt5QWindowIcon") {
-        ; WPS dialog: Its Edit control has no valid id, try simulate keyboard input (not fully reliable)
-        SendText targetDir
-        SendInput "{Enter}"
-        g_LOG.Debug("SetDialogPath: Set path to " targetDir " (WPS dialog)")
-    } else {
-        ; Windows Standard dialog: Edit1 is the path input box
-        editHwnd := ControlGetHwnd("Edit1", "A")
-        if (editHwnd) {
-            ControlFocus("Edit1", "A")
-            ControlSetText(targetDir, "Edit1", "A")
-            ControlSend("{Enter}", "Edit1", "A")
-            g_LOG.Debug("SetDialogPath: Set dialog path to=" targetDir)
-        } else {
-            ; Fallback for dialogs without Edit1 (some owner-drawn or app-customized file dialogs).
-            SendInput "!d"
-            Sleep 60
-            SendText targetDir
-            SendInput "{Enter}"
-            g_LOG.Debug("SetDialogPath: Edit1 not found, used address bar fallback path=" targetDir)
-        }
-    }
-}
+; Listary()/ShowListaryHint()/GetListaryHintText()/IsQuickSwitchDialog()/
+; HasAnyCtrlMatch()/IsLikelyFileDialogTitle()/SyncTCPath()/SyncExplorerPath()/
+; SetDialogPath() used to live here; all moved into the Listary class in
+; Lib\Listary.ahk (see the #Include list at the top of this file and the
+; "Listary.Init()" call in the autorun section).
 
 UserCommand(*) {                                                        ; F4 - edit the command database directly
     Run("Notepad.exe " . g_JSON)
@@ -1795,7 +1592,7 @@ PickCommandTarget(cmdType) {
     else if (cmdType = "File")
         cmdPath := FileSelect(3, , , 'All Files (*.*)')
     else if (cmdType = "Clip")
-        return EditClipText()                                           ; Clip uses a multi-line text editor instead of a file picker
+        return Clip.EditClipText()                                           ; Clip uses a multi-line text editor instead of a file picker
     else
         return MsgBox("Path picker only supports File/Dir/Clip type.", g_LNG[700], 64)
 
@@ -1854,74 +1651,9 @@ CloseCommandManager(*) {
     g_CmdMgrGui.Destroy()
 }
 
-Plugins() {                                                             ; Plugins (Ctrl+D 自动添加日期)
-    Loop Parse, g_HOTKEY["AutoDateBefExt"], ","
-        GroupAdd("FileListMangr", A_LoopField)
-
-    Loop Parse, g_HOTKEY["AutoDateAtEnd"], ","
-        GroupAdd("TextBox", A_LoopField)
-
-    HotIfWinActive("ahk_group FileListMangr")                           ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-    Hotkey(g_HOTKEY["AutoDateBEHKey"], RenameWithDate)
-
-
-    HotIfWinActive("ahk_group TextBox")
-    Hotkey(g_HOTKEY["AutoDateAEHKey"], LineEndAddDate)
-    HotIfWinActive
-
-    g_LOG.Debug("Plugins: Load AutoDate plugins...OK")
-    return
-}
-
-RenameWithDate(*) {                                                     ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-    FocusedHwnd  := ControlGetFocus("A")                                ; 获取当前激活的窗口中的聚焦的控件名称
-    FocusedClassNN := ControlGetClassNN(FocusedHwnd)
-
-    if (InStr(FocusedClassNN, "Edit") or InStr(FocusedClassNN, "Scintilla")) ; 如果当前激活的控件为Edit类或者Scintilla1(Notepad2),则Ctrl+D功能生效
-        NameAddDate("FileListMangr", FocusedClassNN)
-    else
-        SendInput "^D"                                                  ; 如果不是,则发送原始的Ctrl+D
-
-    g_LOG.Debug("RenameWithDate: Current control=" FocusedClassNN)
-    Return
-}
-
-LineEndAddDate(*) {                                                     ; 针对TC File Comment对话框　按Ctrl+D自动在备注文字之后添加日期
-    CurrentDate := FormatTime(, "dd.MM.yyyy")
-    SendInput "{End}"
-    Sleep 10
-    SendInput "{Blind}{Text} - " CurrentDate
-    g_LOG.Debug("LineEndAddDate: Add date at end= - " CurrentDate)
-}
-
-NameAddDate(WinName, CurrCtrl) {                                        ; 在文件（夹）名编辑框中添加日期,CurrCtrl为当前控件(名称编辑框Edit)
-    EditCtrlText := ControlGetText(CurrCtrl, "A")
-    SplitPath(EditCtrlText, &fileName, &fileDir, &fileExt, &nameNoExt)
-    CurrentDate := FormatTime(, "dd.MM.yyyy")
-
-    ; 仅当扩展名不是空 & 最后是点后直接跟 1~4 个字母/数字时 & 字符 <5 & 不是纯数字, 才把后缀视为真实扩展名（避免像 "1. DWG" 这种点后有空格被误判）, 才加日期在后缀名之前
-    if (fileExt != "" && RegExMatch(EditCtrlText, "\.[A-Za-z0-9]{1,4}$") && StrLen(fileExt) < 5 && !RegExMatch(fileExt,"^\d+$")) {
-        if RegExMatch(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$") {
-            baseName := RegExReplace(nameNoExt, " - \d{2}\.\d{2}\.\d{4}$", "")
-        }
-        else if RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$") {
-            baseName := RegExReplace(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$", "")
-        } else {
-            baseName := nameNoExt
-        }
-        NameWithDate := baseName " - " CurrentDate "." fileExt
-    } else if (RegExMatch(fileName, " - \d{2}\.\d{2}\.\d{4}$")) {         ; 如果无后缀, 文件(夹)名最后有日期,则更新为当前日期
-        NameWithDate := RegExReplace(fileName, " - \d{2}\.\d{2}\.\d{4}$", " - " CurrentDate)
-    } else if (RegExMatch(nameNoExt, "-\d{2}\.\d{2}\.\d{4}$")) {
-        NameWithDate := RegExReplace(fileName, "-\d{2}\.\d{2}\.\d{4}$", " - " CurrentDate)
-    } else {
-        NameWithDate := EditCtrlText " - " CurrentDate
-    }
-    ControlFocus(CurrCtrl, "A")
-    ControlSetText(NameWithDate, CurrCtrl, "A")
-    SendInput "{Blind}{End}"
-    g_LOG.Debug("NameAddDate: Add date to filename= " NameWithDate)
-}
+; Plugins()/RenameWithDate()/LineEndAddDate()/NameAddDate() used to live here;
+; all moved into the Plugins class in Lib\Plugins.ahk (see the #Include list
+; at the top of this file and the "Plugins.Init()" call in the autorun section).
 
 GetArrayIndex(searchValue, Array){
     for index, element in Array
@@ -2261,110 +1993,17 @@ FallbackCommandText() {
 
 ; =========================================================================
 ; === Clip (Snippet) support ==============================================
-; Command format:  Clip | <snippet body> | <short name to type>=<rank>
-; The body is stored on ONE INI line, so real newlines/tabs are encoded:
-;     \n = new line      \t = tab      \\ = a literal backslash
-; Placeholders expanded at paste time:
-;     {date} {time} {datetime} {clipboard} {arg} {cursor}
+; EscapeClipText()/UnescapeClipText()/ClipPreview()/ExpandClipPlaceholders()/
+; FocusLastWindow()/PasteClipText()/EditClipText()/CloseClipEditor() used to
+; live here; all moved into the Clip class in Lib\Clip.ahk (see the #Include
+; list at the top of this file and the comment block at the top of that file
+; for the command format / placeholder syntax).
 ; =========================================================================
 
-EscapeClipText(text) {                                                  ; Real text  ->  single INI line
-    if (text = "")
-        return ""
-    text := StrReplace(text, "\", "\\")                                 ; backslash first
-    text := StrReplace(text, "`r`n", "\n")
-    text := StrReplace(text, "`n", "\n")
-    text := StrReplace(text, "`r", "\n")
-    text := StrReplace(text, "`t", "\t")
-    return text
-}
-
-UnescapeClipText(text) {                                                ; Single INI line  ->  real text
-    if (text = "")
-        return ""
-    ; Placeholder trick keeps an escaped backslash (\\) from eating the next token.
-    text := StrReplace(text, "\\", Chr(1))
-    text := StrReplace(text, "\n", "`r`n")
-    text := StrReplace(text, "\t", "`t")
-    text := StrReplace(text, Chr(1), "\")
-    return text
-}
-
-ClipPreview(text, maxLen := 70) {                                       ; One-line preview for ListView / StatusBar
-    preview := StrReplace(StrReplace(text, "\n", " "), "\t", " ")
-    preview := RegExReplace(preview, "\s{2,}", " ")
-    return (StrLen(preview) > maxLen) ? SubStr(preview, 1, maxLen) " ..." : preview
-}
-
-ExpandClipPlaceholders(text) {                                          ; {date} {time} {datetime} {clipboard} {arg}
-    if (InStr(text, "{") = 0)
-        return text
-    text := StrReplace(text, "{date}", FormatTime(, "dd.MM.yyyy"))
-    text := StrReplace(text, "{time}", FormatTime(, "HH:mm"))
-    text := StrReplace(text, "{datetime}", FormatTime(, "dd.MM.yyyy HH:mm"))
-    text := StrReplace(text, "{clipboard}", A_Clipboard)
-    text := StrReplace(text, "{arg}", g_RUNTIME["Arg"])
-    return text
-}
-
-FocusLastWindow() {                                                     ; Give focus back to the app the user came from
-    target := g_RUNTIME["LastWin"]
-    if (!target || !WinExist("ahk_id " target))
-        return false
-    if WinActive("ahk_id " target)
-        return true
-    try {
-        WinActivate("ahk_id " target)
-        WinWaitActive("ahk_id " target, , 1)
-    } catch as e {
-        g_LOG.Debug("FocusLastWindow: Failed to activate hwnd=" target ", " e.Message)
-        return false
-    }
-    return WinActive("ahk_id " target) ? true : false
-}
-
-PasteClipText(rawText) {                                                ; Main entry, called by RunCommand for type Clip
-    text := ExpandClipPlaceholders(UnescapeClipText(rawText))
-    if (text = "") {
-        g_LOG.Debug("PasteClipText: Empty clip text, nothing to paste")
-        return false
-    }
-
-    ; {cursor} marks where the caret should end up after pasting.
-    caretBack := 0
-    if (cursorPos := InStr(text, "{cursor}")) {
-        text := StrReplace(text, "{cursor}", "")
-        caretBack := StrLen(text) - cursorPos + 1                       ; how many chars sit after the caret
-    }
-
-    Sleep 80                                                            ; let the hidden GUI release focus
-    FocusLastWindow()
-    Win.WaitModifiersUp()
-
-    if (g_CONFIG["ClipSendMode"] = 2) {                                 ; Mode 2: type it out, for apps that block clipboard paste
-        SendInput("{Text}" text)
-    } else {                                                            ; Mode 1 (default): clipboard + Ctrl+V, fast and safe for long text
-        oldClip := ClipboardAll()
-        A_Clipboard := ""
-        A_Clipboard := text
-        if !ClipWait(1) {
-            A_Clipboard := oldClip
-            g_LOG.Debug("PasteClipText: ClipWait timeout, paste aborted")
-            return false
-        }
-        SendInput("^v")
-        Sleep g_CONFIG["ClipPasteDelay"]
-        A_Clipboard := oldClip                                          ; restore whatever the user had before
-        oldClip := ""
-    }
-
-    if (caretBack > 0)
-        SendInput("{Left " caretBack "}")
-
-    g_LOG.Debug("PasteClipText: Pasted " StrLen(text) " chars, mode=" g_CONFIG["ClipSendMode"])
-    return true
-}
-
+; NewClip() must stay a bare global function (not a Clip class method): the
+; built-in "Func | NewClip | New Clip (text snippet)" command calls it by
+; name via %cmdPath%() in RunCommand(), which only resolves plain global
+; function names, not Class.Method - see FuncList in Options()/DefaultCommandText().
 NewClip(*) {                                                            ; Command "New Clip", opens the manager pre-set to type Clip
     OpenCommandManager("UserCommand", "Clip", EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
 }
