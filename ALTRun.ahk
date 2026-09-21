@@ -15,6 +15,7 @@
 #Include Lib\Plugins.ahk                                               ; Plugins.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
 #Include Lib\Clip.ahk                                                  ; Clip.PasteClipText()/ClipPreview()/EditClipText() - the "Clip" snippet command.
 #Include Lib\AppData.ahk                                               ; AppData.LoadAppData()/AppData.SaveAppData() - reads/writes ALTRun.json.
+#Include Lib\CommandStore.ahk                                          ; CommandStore.LoadCommands() etc. - in-memory command cache/rank/usage/history.
 #Include Lib\PTTools.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
@@ -236,8 +237,8 @@ Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon c
 
 OnExit(AppData.OnAppExit)                                                       ; Flush any Usage bump / buffered log lines on Reload()/ExitApp()
 
-LoadCommands()
-LoadHistory()
+CommandStore.LoadCommands()
+CommandStore.LoadHistory()
 UpdateSendTo()
 UpdateStartup()
 UpdateStartMenu()
@@ -787,9 +788,9 @@ RunCommand(originCmd) {
     }
 
     if (executed) {
-        UpdateRunCount()
-        UpdateRank(originCmd)                                          ; Saves by itself only when SmartRank is on
-        UpdateHistory(originCmd)
+        CommandStore.UpdateRunCount()
+        CommandStore.UpdateRank(originCmd)                                          ; Saves by itself only when SmartRank is on
+        CommandStore.UpdateHistory(originCmd)
         AppData.SaveAppData()                                                  ; Guarantees RunCount/History persist either way, in one write
         g_LOG.Debug("RunCommand: Execute success, RunCount=" g_CONFIG["RunCount"] ", cmd=" originCmd)
     } else {
@@ -936,12 +937,12 @@ MainGUI_Close(*) {
     ;try DllCall("AnimateWindow", "Ptr", MainGUI.Hwnd, "Int", 90, "UInt", 0x90000)
 
     MainGUI.Hide()
-    ; UpdateUsage() only mutates g_USAGE in memory. MainGUI_Close() fires on
+    ; CommandStore.UpdateUsage() only mutates g_USAGE in memory. MainGUI_Close() fires on
     ; every dismiss, including a plain Esc/Alt+Space with nothing run, so it
     ; must NOT trigger a full ALTRun.json save here. The bumped count rides
     ; along on the next real save instead (a command run, a settings change,
     ; or app exit - see the OnExit handler near the top of the script).
-    UpdateUsage()
+    CommandStore.UpdateUsage()
     SetStatusBar("TIP")                                                 ; Update StatusBar tip information after GUI hide
 }
 
@@ -1065,138 +1066,21 @@ IsFallbackPrefix(prefix) {
     return InStr("+ >", prefix, 0)
 }
 
-UpdateRank(originCmd, showRank := false, inc := 1) {
-    if (g_CONFIG["SmartRank"] = false || originCmd = "")
-        return
-
-    AppData.LoadAppData()
-
-    for _, section in ["DefaultCommand", "UserCommand", "Index"] {
-        if !g_CMDDATA[section].Has(originCmd)
-            continue
-
-        rankValue := g_CMDDATA[section][originCmd]
-        rankValue := IsInteger(rankValue) ? rankValue + inc : inc
-        rankValue := (rankValue < 0) ? -1 : rankValue
-
-        g_CMDDATA[section][originCmd] := rankValue
-        AppData.SaveAppData()
-        if (showRank)
-            SetStatusBar("UpdateRank: Rank for current command : " rankValue)
-
-        g_LOG.Debug("UpdateRank: Rank updated for command..." originCmd "=" rankValue)
-        break
-    }
-
-    ; Reload in-memory cache so the updated rank takes effect immediately.
-    LoadCommands()
-}
-
-; UpdateUsage/UpdateRunCount/UpdateHistory only mutate in-memory state; the
-; caller is responsible for calling AppData.SaveAppData() once all of them are done,
-; so one command execution costs a single ALTRun.json write, not three.
-
-UpdateUsage() {
-    currDate := A_YYYY . A_MM . A_DD
-    g_USAGE[currDate] := g_USAGE.Has(currDate) ? g_USAGE[currDate] + 1 : 1
-    g_RUNTIME["Max"] := Max(g_RUNTIME["Max"], g_USAGE[currDate])
-}
-
-UpdateRunCount() {
-    g_CONFIG["RunCount"]++
-    g_LOG.Debug("UpdateRunCount: RunCount update to..." g_CONFIG["RunCount"])
-}
-
-UpdateHistory(originCmd) {
-    if (g_CONFIG["SaveHistory"] = false || originCmd = "")
-        return
-
-    g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])
-
-    if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
-        g_HISTORYS.Pop()
-}
-
+; UpdateRank()/UpdateUsage()/UpdateRunCount()/UpdateHistory()/LoadCommands()/
+; LoadHistory() used to live here; all moved into the CommandStore class in
+; Lib\CommandStore.ahk (see the #Include list at the top of this file).
+;
+; RankUp()/RankDown() stay bare global functions (not CommandStore methods):
+; the Options window's FuncList lets you bind them to a custom hotkey by
+; storing the function name as a string in g_HOTKEY[Trigger*], and RunCommand()
+; then calls it by name via %cmdPath%(), which only resolves plain global
+; function names, not Class.Method.
 RankUp(*) {
-    UpdateRank(g_RUNTIME["CurrentCommand"], true)
+    CommandStore.UpdateRank(g_RUNTIME["CurrentCommand"], true)
 }
 
 RankDown(*) {
-    UpdateRank(g_RUNTIME["CurrentCommand"], true, -1)
-}
-
-LoadCommands() {
-    ; Rebuild runtime command caches from the JSON command store.
-    Global g_COMMANDS, g_CMDINDEX, g_FALLBACK
-    g_COMMANDS := Array()
-    g_CMDINDEX := Array()
-    g_FALLBACK := Array()
-    Local rankRows := ""
-
-    AppData.LoadAppData()                                                   ; Loads (and migrates/creates) ALTRun.json once per session
-
-    for _, sectionName in ["DefaultCommand", "UserCommand", "Index"] {
-    for commandText, rankValue in g_CMDDATA[sectionName] {
-        if (commandText = "" || !IsInteger(rankValue) || rankValue <= 0)
-            continue
-
-        parts := StrSplit(commandText, " | ")
-        cmdPath := parts.Has(2) ? parts[2] : ""
-        cmdDesc := parts.Has(3) ? parts[3] : ""
-
-        cmdType := parts.Has(1) ? parts[1] : ""
-        if (cmdType = "Clip") {
-            ; A Clip's field 2 is the snippet body, only its short name (desc) is searchable.
-            searchable := cmdDesc
-        } else if (g_CONFIG["MatchPath"]) {
-            searchable := cmdPath " " cmdDesc
-        } else {
-            SplitPath(cmdPath, &fileName)
-            searchable := fileName " " cmdDesc
-        }
-        if (g_CONFIG["MatchPinyin"])
-            searchable := Pinyin.Initials(searchable)
-
-        rankRows .= rankValue "`t" commandText "`t" searchable "`n"
-    }
-    }
-
-    ; Sort by rank descending, then rebuild arrays.
-    rankRows := Sort(rankRows, "R N")
-    for _, line in StrSplit(rankRows, "`n", "`r") {
-        if !Trim(line)
-            continue
-
-        rowParts := StrSplit(line, "`t") ; rank, command, searchable
-        if (rowParts.Length < 3)
-            continue
-        g_COMMANDS.Push(rowParts[2])
-        g_CMDINDEX.Push(rowParts[3])
-    }
-
-    ; Fallback commands.
-    for _, line in g_CMDDATA["FallbackCommand"] {
-        line := Trim(line)
-        if (line != "" && SubStr(line, 1, 1) != ";")
-            g_FALLBACK.Push(line)
-    }
-
-    g_LOG.Debug("LoadCommands: Loaded COMMANDS=" g_COMMANDS.Length ", FALLBACK=" g_FALLBACK.Length)
-    return
-}
-
-LoadHistory() {                                                         ; g_HISTORYS is already populated by AppData.LoadAppData(); just apply policy
-    if (!g_CONFIG["SaveHistory"]) {
-        if (g_HISTORYS.Length) {
-            g_HISTORYS.Length := 0
-            AppData.SaveAppData()
-        }
-        g_LOG.Debug("LoadHistory: History disabled, cleared.")
-        return
-    }
-    if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
-        g_HISTORYS.Length := g_CONFIG["HistoryLen"]
-    g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
+    CommandStore.UpdateRank(g_RUNTIME["CurrentCommand"], true, -1)
 }
 
 GetCmdOutput(command) {
@@ -1417,7 +1301,7 @@ Reindex(*) {                                                            ; Re-cre
 
     g_LOG.Debug("Reindex: Indexing search database...OK")
     TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
-    LoadCommands()
+    CommandStore.LoadCommands()
 }
 
 About(*) {
@@ -1552,7 +1436,7 @@ DelCommand(*) {
             break
         }
     }
-    LoadCommands()
+    CommandStore.LoadCommands()
 }
 
 
@@ -1645,7 +1529,7 @@ SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
         return
     }
     MsgBox(g_LNG[823] section " ]`n`n" cmdLine " = " cmdRank, g_LNG[820], 64)
-    LoadCommands()
+    CommandStore.LoadCommands()
 }
 
 CloseCommandManager(*) {
