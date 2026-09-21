@@ -235,7 +235,7 @@ Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon c
                         ,"CMD" , IL_Add(myImageList,"imageres.dll",-100)
                         ,"CLIP", IL_Add(myImageList,"imageres.dll",-102)) ; "imageres.dll",-5323 is cmd.exe icon
 
-OnExit(AppData.OnAppExit)                                                       ; Flush any Usage bump / buffered log lines on Reload()/ExitApp()
+OnExit((p*) => AppData.OnAppExit(p*))                                           ; Flush any Usage bump / buffered log lines on Reload()/ExitApp()
 
 CommandStore.LoadCommands()
 CommandStore.LoadHistory()

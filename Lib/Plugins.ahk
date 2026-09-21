@@ -22,11 +22,11 @@ Class Plugins {
             GroupAdd("TextBox", A_LoopField)
 
         HotIfWinActive("ahk_group FileListMangr")                           ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-        Hotkey(g_HOTKEY["AutoDateBEHKey"], Plugins.RenameWithDate)
+        Hotkey(g_HOTKEY["AutoDateBEHKey"], (p*) => Plugins.RenameWithDate(p*))
 
 
         HotIfWinActive("ahk_group TextBox")
-        Hotkey(g_HOTKEY["AutoDateAEHKey"], Plugins.LineEndAddDate)
+        Hotkey(g_HOTKEY["AutoDateAEHKey"], (p*) => Plugins.LineEndAddDate(p*))
         HotIfWinActive
 
         g_LOG.Debug("Plugins: Load AutoDate plugins...OK")
