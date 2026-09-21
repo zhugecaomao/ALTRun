@@ -8,7 +8,9 @@
 #Warn All, OutputDebug
 #Include Lib\JSON.ahk                                                  ; JSON.parse()/JSON.stringify() - used by the ALTRun.json store below.
 #Include Lib\Logger.ahk                                                ; g_LOG - see just below.
-                                                                         ; Both are explicit: auto-include only reliably covers ClassName(...)
+#Include Lib\Util.ahk                                                  ; Path / Fonts / Win / Pinyin / Calc - see each call site below.
+#Include Lib\Dialogs.ahk                                               ; FontDialog / ColorDialog - see the Options-window font/color pickers.
+                                                                         ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
                                                                          ; the same "unassigned variable" failure JSON.ahk hit without this.
@@ -281,8 +283,8 @@ SetMainGUI() {
     MainGUI.OnEvent("Size"  , MainGUI_Size)
     MainGUI.OnEvent("ContextMenu", MainGUI_ContextMenu)
     MainGUI.BackColor := g_GUI["MainGUIColor"]
-    mainGuiFont := GetGuiFontSpec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
-    MainGUI.SetFont(mainGuiFont[2], mainGuiFont[1])
+    mainGuiFont := Fonts.Spec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
+    MainGUI.SetFont(mainGuiFont.opt, mainGuiFont.name)
     myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn border -E0x200 W" Input_W, g_LNG[13])
     myInputBox.Opt("Background" g_GUI["CMDListColor"])
     myInputBox.OnEvent("Change", Input_Change)
@@ -311,11 +313,11 @@ SetMainGUI() {
 
     myStatus := MainGUI.AddEdit("x12 y+10 r1 -WantReturn ReadOnly -E0x200 border W" List_W " Hidden" (!g_CONFIG["ShowStatusBar"]), )
     myStatus.Opt("Background" g_GUI["CMDListColor"])
-    mainSbFont := GetGuiFontSpec(g_GUI["MainSBFont"], "Microsoft YaHei", "norm s9.0")
-    myStatus.SetFont(mainSbFont[2], mainSbFont[1])
+    mainSbFont := Fonts.Spec(g_GUI["MainSBFont"], "Microsoft YaHei", "norm s9.0")
+    myStatus.SetFont(mainSbFont.opt, mainSbFont.name)
 
-    if FileExist(AbsPath(g_GUI["Background"])) {
-        try MainGUI.AddPic("x0 y0 0x4000000", AbsPath(g_GUI["Background"]))
+    if FileExist(Path.Resolve(g_GUI["Background"])) {
+        try MainGUI.AddPic("x0 y0 0x4000000", Path.Resolve(g_GUI["Background"]))
     } else if (g_GUI["Background"] = "Default") {
         try MainGUI.AddPic("x0 y0 0x4000000", ExtractRes())
     }
@@ -334,17 +336,20 @@ SetMainGUI() {
 
             if (value = "-SendTo" && A_Args.Length >= 2) {
                 HideWin := "Hide "
-                Path := A_Args[2]
+                sendToPath := A_Args[2]                                 ; Not "Path" - that's the Util.ahk class now, and this whole
+                                                                         ; function also calls Path.Resolve() earlier (see below);
+                                                                         ; a local assigned anywhere in a function shadows the
+                                                                         ; global/class of the same name for the WHOLE function.
 
-                SplitPath(Path, &Desc, , &fileExt)                      ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name)
+                SplitPath(sendToPath, &Desc, , &fileExt)                ; Extra name from _Path (if _Type is dir and has "." in path, nameNoExt will not get full folder name)
 
-                fileType := InStr(FileExist(Path), "D") ? "Dir" : "File" ; Default Type is File, Set Type is Dir only if the file exists and is a directory
-                
+                fileType := InStr(FileExist(sendToPath), "D") ? "Dir" : "File" ; Default Type is File, Set Type is Dir only if the file exists and is a directory
+
                 if (fileExt = "lnk" && g_CONFIG["SendToGetLnk"]) {
-                    FileGetShortcut(Path, Path, , &fileArg, &Desc)
-                    Path .= " " fileArg
+                    FileGetShortcut(sendToPath, sendToPath, , &fileArg, &Desc)
+                    sendToPath .= " " fileArg
                 }
-                OpenCommandManager(g_SECTION["USERCMD"], fileType, Path, Desc, 1, "")   ; Add new command to database
+                OpenCommandManager(g_SECTION["USERCMD"], fileType, sendToPath, Desc, 1, "")   ; Add new command to database
             }
         }
     }
@@ -353,7 +358,7 @@ SetMainGUI() {
         WinSetTransparent(g_GUI["Transparency"], MainGUI.Hwnd)          ; By default, hidden windows are not detected. however, when using pure HWNDs, hidden windows are always detected regardless of DetectHiddenWindows.
     }
 
-    SetWindowCorner(MainGUI.Hwnd, g_CONFIG["RoundCorner"])
+    Win.SetCorner(MainGUI.Hwnd, g_CONFIG["RoundCorner"])
 
     MainGUI.Show(HideWin "w" g_GUI["WinX"] " h" g_GUI["WinY"] " Center")
 
@@ -549,7 +554,7 @@ Activate() {
 
     if (WinWaitActive("ahk_id " MainGUI.Hwnd, , 3)) {                   ; Wait for the window to be active, ahk_id is more reliable than g_TITLE
         if (g_CONFIG["AutoEngIME"]) {
-            SwitchToEnglishIME()
+            Win.SwitchToEnglishIME()
         }
         myInputBox.Focus()
         SendMessage(0xB1, 0, -1, myInputBox.Hwnd)                       ; EM_SETSEL (0xB1)
@@ -558,17 +563,6 @@ Activate() {
 
 ToggleWindow(*) {
     WinActive("ahk_id " MainGUI.Hwnd) ? MainGUI_Close() : Activate()
-}
-
-SwitchToEnglishIME() {
-    ; Switch to English input method (US keyboard layout: 0x04090409)
-    ; Use ActivateKeyboardLayout to switch to English
-    try {
-        DllCall("ActivateKeyboardLayout", "UInt", 0x04090409, "UInt", 0)
-        g_LOG.Debug("SwitchToEnglishIME: Switched to English input method...OK")
-    } catch as e {
-        g_LOG.Debug("SwitchToEnglishIME: Failed to switch input method: " e.Message)
-    }
 }
 
 Input_Change(*) {
@@ -582,8 +576,7 @@ SearchCommand(command := "") {
     g_RUNTIME["CurrentCommand"] := ""
     listLimit := g_GUI["ListRows"]
     prefix := SubStr(command, 1, 1)
-    hasOp := InStr(command, "+") || InStr(command, "-") || InStr(command, "*") || InStr(command, "/") || InStr(command, "^")
-    isExpr := hasOp && RegExMatch(command, "^[\d+\-*/^(). ]+$")
+    isExpr := Calc.Looks(command)
 
     ; Prefix-based fallback shortcuts: "+" / " " / ">"
     if IsFallbackPrefix(prefix) {
@@ -619,7 +612,7 @@ SearchCommand(command := "") {
         g_RUNTIME["UseFallback"] := False
     } else {
         if (isExpr) {
-            evalResult := Eval(command)
+            evalResult := Calc.Eval(command)
             if (IsNumber(evalResult)) {
                 g_RUNTIME["UseFallback"] := False
                 g_RUNTIME["CurrentCommand"] := ""
@@ -698,7 +691,9 @@ SyncCurrentCommandByRow(rowNumber, updateStatus := true) {
     return false
 }
 
-GetIconIndex(path, type) {                                              ; Get file's icon index (TO-DO: Prepare to omit the file type)
+GetIconIndex(filePath, type) {                                          ; Get file's icon index (TO-DO: Prepare to omit the file type)
+                                                                         ; Named filePath, not path - "path" and "Path" (the Util.ahk
+                                                                         ; class) are the same identifier to AHK, case-insensitive.
     Global myIconMap
     if not g_CONFIG["ShowIcon"]                                         ; ShowIcon disabled, return 0
         Return 0
@@ -716,12 +711,12 @@ GetIconIndex(path, type) {                                              ; Get fi
     } else if (type = "Clip") {
         return myIconMap.Has("CLIP") ? myIconMap["CLIP"] : 2
     } else if (type = "FILE") {
-        path := AbsPath(path)                                           ; Must store in var for afterward use, trim space (in AbsPath)
-        SplitPath(path, , , &fileExt)                                   ; Get the file's extension.
+        filePath := Path.Resolve(filePath)                              ; Must store in var for afterward use, trim space (in Path.Resolve)
+        SplitPath(filePath, , , &fileExt)                               ; Get the file's extension.
         if (fileExt ~= "^(?i:EXE|ICO|ANI|CUR|LNK)$") {                  ; File types that have their own icon
-            IconIndex := myIconMap.Has(path) ? myIconMap[path] : GetIcon(path, path) ; File path exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
+            IconIndex := myIconMap.Has(filePath) ? myIconMap[filePath] : GetIcon(filePath, filePath) ; File path exist in ImageList, get the index, several calls can be avoided and performance is greatly improved
         } else {                                                        ; Some other extension/file-type like pdf or xlsx
-            IconIndex := myIconMap.Has(fileExt) ? myIconMap[fileExt] : GetIcon(path, fileExt)
+            IconIndex := myIconMap.Has(fileExt) ? myIconMap[fileExt] : GetIcon(filePath, fileExt)
         }
         Return IconIndex
     } else if (type = "App") {
@@ -751,66 +746,10 @@ GetIcon(path, ExtOrPath) {                                             ; Get fil
     Return IconIndex
 }
 
-AbsPath(Path, KeepRunAs := False) {                                     ; Convert path to absolute path
-    static varMap := ""  ; Cache the map
-    
-    if (varMap = "") {
-        varMap := Map()
-        ; Add variables safely - only add those we know exist
-        varMap["A_ScriptDir"] := A_ScriptDir
-        varMap["A_Temp"] := A_Temp
-        varMap["A_Startup"] := A_Startup
-        varMap["A_StartMenu"] := A_StartMenu
-        varMap["A_Programs"] := A_Programs
-        varMap["A_AppData"] := A_AppData
-        varMap["A_Desktop"] := A_Desktop
-        varMap["A_MyDocuments"] := A_MyDocuments
-        varMap["A_ProgramFiles"] := A_ProgramFiles
-        varMap["A_ProgramsCommon"] := A_ProgramsCommon
-        varMap["A_StartupCommon"] := A_StartupCommon
-        varMap["A_StartMenuCommon"] := A_StartMenuCommon
-        ; A_ProgramFilesX86 may not exist on 32-bit systems, skip it
-    }
-    
-    Path := Trim(Path)
-
-    if (!KeepRunAs)
-        Path := StrReplace(Path,  "*RunAs ", "")                        ; Remove *RunAs (Admin Run) to get absolute path
-
-    ; Safely resolve A_ variables using Map instead of dynamic variable access
-    if (InStr(Path, "A_") = 1 && InStr(Path, "\")) {                    ; Resolve path like A_ScriptDir, some server path has "Plot A_IGLS" in it, so InStr must be 1
-        SubParts := StrSplit(Path, " ", " `t")
-        if (SubParts.Length > 1 && InStr(SubParts[1], "A_") = 1) {
-            VarName  := SubParts[1]
-            if varMap.Has(VarName) {
-                VarValue := varMap[VarName]
-                Path := VarValue . StrReplace(SubParts[2], "`"", "")
-            }
-        }
-    } else if (InStr(Path, "A_") = 1 && varMap.Has(Path)) {
-        Path := varMap[Path]
-    }
-
-    ; 如果只是可执行名（如 notepad.exe）且本地不存在，尝试在 PATH 中用 SearchPathW 查找完整路径
-    if (!FileExist(Path) && InStr(Path, "\") = 0) {
-        ; 准备缓冲区用于 SearchPathW 返回宽字符路径
-        buf := Buffer(260 * 2)
-        res := DllCall("kernel32\SearchPathW", "Ptr", 0, "WStr", Path, "WStr", "", "UInt", buf.Size // 2, "Ptr", buf, "Ptr", 0)
-        if (res && res > 0) {
-            Path := StrGet(buf, "UTF-16")
-        }
-    }
-
-    Path := StrReplace(Path, "%Temp%", A_Temp)
-    Path := StrReplace(Path, "%OneDrive%", g_RUNTIME["OneDrive"])
-    Return Path
-}
-
-RelativePath(Path) {                                                    ; Convert path to relative path
-    Path := StrReplace(Path, A_Temp, "%Temp%")
-    Path := StrReplace(Path, g_RUNTIME["OneDrive"], "%OneDrive%")
-    Return Path
-}
+; AbsPath()/RelativePath() used to live here; both are now Path.Resolve()/
+; Path.Shorten() in Lib/Util.ahk. RelativePath() had no callers left in this
+; file, so it's simply gone rather than moved - Path.Shorten() covers the
+; same job if something needs it again.
 
 RunCommand(originCmd) {
     if (originCmd = "")
@@ -829,8 +768,8 @@ RunCommand(originCmd) {
     parts := StrSplit(originCmd, " | ")
     cmdType := parts.Length >= 1 ? parts[1] : ""
     rawPath := parts.Length >= 2 ? parts[2] : ""
-    ; Clip payload is plain text, never run it through AbsPath().
-    cmdPath := (rawPath != "" && cmdType != "Clip") ? AbsPath(rawPath, True) : rawPath
+    ; Clip payload is plain text, never run it through Path.Resolve().
+    cmdPath := (rawPath != "" && cmdType != "Clip") ? Path.Resolve(rawPath, True) : rawPath
 
     if (cmdType = "") {
         return
@@ -1223,7 +1162,7 @@ LoadCommands() {
             searchable := fileName " " cmdDesc
         }
         if (g_CONFIG["MatchPinyin"])
-            searchable := GetFirstChar(searchable)
+            searchable := Pinyin.Initials(searchable)
 
         rankRows .= rankValue "`t" commandText "`t" searchable "`n"
     }
@@ -1283,16 +1222,16 @@ GetRunResult(command) {                                                 ; 运行
     Return exec.StdOut.ReadAll()                                        ; Read and Return the command's output
 }
 
-OpenDir(Path) {
-    Path := AbsPath(Path)
+OpenDir(dirPath) {                                                      ; Named dirPath, not Path - that's the Util.ahk class now
+    dirPath := Path.Resolve(dirPath)
 
     Try{
-        Run(g_CONFIG["FileMgr"] ' `"' Path '`"')
-        g_LOG.Debug("OpenDir: Using=" g_CONFIG["FileMgr"] " to open dir=" Path "...OK")
+        Run(g_CONFIG["FileMgr"] ' `"' dirPath '`"')
+        g_LOG.Debug("OpenDir: Using=" g_CONFIG["FileMgr"] " to open dir=" dirPath "...OK")
         return true
     } catch as e {
-        g_LOG.Debug("OpenDir: Failed to open dir=" Path " Error=" e.Message)
-        MsgBox("Could not open dir: " Path "`n`nError message: " e.Message, g_TITLE, 48)
+        g_LOG.Debug("OpenDir: Failed to open dir=" dirPath " Error=" e.Message)
+        MsgBox("Could not open dir: " dirPath "`n`nError message: " e.Message, g_TITLE, 48)
         return false
     }
 }
@@ -1304,16 +1243,16 @@ OpenContainer(*) {
     if (cmdPath = "") {
         return MsgBox("No valid file to open container folder.", g_TITLE, 48)
     }
-    Path := AbsPath(cmdPath)
+    containerPath := Path.Resolve(cmdPath)                             ; Named containerPath, not Path - that's the Util.ahk class now
 
     try {
-        runArg := (g_CONFIG["FileMgr"] = "Explorer.exe") ? ' /Select, `"' Path '`"' : ' /P `"' Path '`"' ; /P Parent folder
+        runArg := (g_CONFIG["FileMgr"] = "Explorer.exe") ? ' /Select, `"' containerPath '`"' : ' /P `"' containerPath '`"' ; /P Parent folder
         Run(g_CONFIG["FileMgr"] runArg)
 
-    g_LOG.Debug("OpenContainer: Using=" g_CONFIG["FileMgr"] " to open container dir for file=" Path "...OK")
+    g_LOG.Debug("OpenContainer: Using=" g_CONFIG["FileMgr"] " to open container dir for file=" containerPath "...OK")
     } catch as e {
-        g_LOG.Debug("OpenContainer: Failed to open container dir for file=" Path " Error=" e.Message)
-        MsgBox("Failed to open container dir for file: " . Path "`n`nError message: " . e.Message, g_TITLE, 48)
+        g_LOG.Debug("OpenContainer: Failed to open container dir for file=" containerPath " Error=" e.Message)
+        MsgBox("Failed to open container dir for file: " . containerPath "`n`nError message: " . e.Message, g_TITLE, 48)
     }
 }
 
@@ -1413,7 +1352,7 @@ Reindex(*) {                                                            ; Re-cre
     excludePattern := g_CONFIG["IndexExclude"]
 
     for dirIndex, dir in StrSplit(g_CONFIG["IndexDir"], ",") {
-        searchPath := RegExReplace(AbsPath(Trim(dir)), "\\+$")          ; Remove trailing backslashes
+        searchPath := RegExReplace(Path.Resolve(Trim(dir)), "\\+$")     ; Remove trailing backslashes
         if !DirExist(searchPath)
             continue
 
@@ -1631,40 +1570,11 @@ ShowListaryHint() {
     }
 }
 
-SetWindowCorner(hwnd, enable := true) {
-    static DWMWA_WINDOW_CORNER_PREFERENCE := 33
-    static DWMCP_DONOTROUND := 1
-    static DWMCP_ROUND := 2
-    pref := enable ? DWMCP_ROUND : DWMCP_DONOTROUND
-    try DllCall("dwmapi\DwmSetWindowAttribute", "ptr", hwnd, "uint", DWMWA_WINDOW_CORNER_PREFERENCE, "int*", pref, "uint", 4)
-}
-
 GetListaryHintText() {
-    tcHotkey  := FormatHotkeyLabel(g_HOTKEY["TotalCMDDir"])
-    expHotkey := FormatHotkeyLabel(g_HOTKEY["ExplorerDir"])
+    tcHotkey  := Win.HotkeyLabel(g_HOTKEY["TotalCMDDir"])
+    expHotkey := Win.HotkeyLabel(g_HOTKEY["ExplorerDir"])
     msg := StrReplace(g_LNG[221], "{1}", tcHotkey)
     return StrReplace(msg, "{2}", expHotkey)
-}
-
-FormatHotkeyLabel(hotkey) {
-    if (!hotkey)
-        return hotkey
-
-    rawHotkey := hotkey
-    modText := ""
-    if InStr(rawHotkey, "^")
-        modText .= "Ctrl+"
-    if InStr(rawHotkey, "!")
-        modText .= "Alt+"
-    if InStr(rawHotkey, "+")
-        modText .= "Shift+"
-    if InStr(rawHotkey, "#")
-        modText .= "Win+"
-
-    baseKey := RegExReplace(rawHotkey, "[\^\!\+\#\<\>\*\~\$\s]")
-    if (StrLen(baseKey) = 1)
-        baseKey := StrUpper(baseKey)
-    return modText baseKey
 }
 
 ; 更严格地识别 "打开/保存文件" 对话框，避免普通 #32770 对话框误触发
@@ -2558,11 +2468,6 @@ ExpandClipPlaceholders(text) {                                          ; {date}
     return text
 }
 
-WaitModifiersReleased(timeout := 0.5) {                                 ; Avoid Ctrl/Alt/Shift/Win leaking into the pasted keystrokes
-    for _, key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"]
-        KeyWait(key, "T" timeout)
-}
-
 FocusLastWindow() {                                                     ; Give focus back to the app the user came from
     target := g_RUNTIME["LastWin"]
     if (!target || !WinExist("ahk_id " target))
@@ -2595,7 +2500,7 @@ PasteClipText(rawText) {                                                ; Main e
 
     Sleep 80                                                            ; let the hidden GUI release focus
     FocusLastWindow()
-    WaitModifiersReleased()
+    Win.WaitModifiersUp()
 
     if (g_CONFIG["ClipSendMode"] = 2) {                                 ; Mode 2: type it out, for apps that block clipboard paste
         SendInput("{Text}" text)
@@ -2688,7 +2593,7 @@ PTTools() {
 
 StruCalc(evalResult) {
     result    := []
-    formatVal := RegExReplace(evalResult, "\G\d+?(?=(\d{3})+(?:\D|$))", "$0" ",") ; To add thousand separator
+    formatVal := Calc.Thousands(evalResult)
     result.Push("Eval | " formatVal)
 
     if !g_CONFIG["StruCalc"]
@@ -2729,11 +2634,11 @@ Options(ActTab := 1) {
 
     t := A_TickCount
     ActTab := IsNumber(ActTab) ? ActTab : 1                             ; Convert ActTab to number, default is 1 (for case like [Option`tF2])
-    optFont := GetGuiFontSpec(g_GUI["OptGUIFont"], "Microsoft YaHei", "norm s9.0")
-    mainFont := GetGuiFontSpec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
-    sbFont := GetGuiFontSpec(g_GUI["MainSBFont"], "Microsoft YaHei", "norm s9.0")
+    optFont := Fonts.Spec(g_GUI["OptGUIFont"], "Microsoft YaHei", "norm s9.0")
+    mainFont := Fonts.Spec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
+    sbFont := Fonts.Spec(g_GUI["MainSBFont"], "Microsoft YaHei", "norm s9.0")
     OptGUI := Gui("+Owner" MainGUI.hwnd, g_LNG[2])                      ; +Owner MainGUI.hwnd fix GUI flicking issue
-    OptGUI.SetFont(optFont[2], optFont[1])
+    OptGUI.SetFont(optFont.opt, optFont.name)
     OptTab := OptGUI.AddTab3("Choose" ActTab, g_LNG[100])
 
     OptTab.UseTab(1) ; CONFIG Tab
@@ -2762,13 +2667,13 @@ Options(ActTab := 1) {
     OptGUI.AddEdit("x393 yp w120 +Number vWinY", g_GUI["WinY"])
 
     OptGUI.AddText("x33 yp+45", g_LNG[173])
-    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIFont", g_GUI["MainGUIFont"]).SetFont(mainFont[2], mainFont[1])
+    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainGUIFont", g_GUI["MainGUIFont"]).SetFont(mainFont.opt, mainFont.name)
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("MainGUIFont"))
     OptGUI.AddText("x33 yp+45", g_LNG[174])
     OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vOptGUIFont", g_GUI["OptGUIFont"])
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("OptGUIFont"))
     OptGUI.AddText("x33 yp+45", g_LNG[175])
-    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainSBFont", g_GUI["MainSBFont"]).SetFont(sbFont[2], sbFont[1])
+    OptGUI.AddEdit("x183 yp w240 r1 -E0x200 +ReadOnly vMainSBFont", g_GUI["MainSBFont"]).SetFont(sbFont.opt, sbFont.name)
     OptGUI.AddButton("x433 yp-5 w80", g_LNG[182]).OnEvent("Click", (*) => SelectFont("MainSBFont"))
 
     OptGUI.AddText("x33 yp+45", g_LNG[179])
@@ -2902,7 +2807,7 @@ SelectFont(TargetVar := "MainGUIFont") {
 	; fontObj := Map("name","Terminal","size",14,"color",0xFF0000,"strike",1,"underline",1,"italic",1,"bold",1)
     initFont := StrSplit(g_GUI[TargetVar], ",")[1]
     fontObj  := Map("name", initFont)
-    fontObj  := FontSelect(fontObj, OptGUI.hwnd)
+    fontObj  := FontDialog.Choose(fontObj, OptGUI.hwnd)
     if (!fontObj)
         return
 
@@ -2912,7 +2817,7 @@ SelectFont(TargetVar := "MainGUIFont") {
 }
 
 PickCMDListColor(*) {
-    color := ColorSelect(g_GUI["CMDListColor"], OptGUI.hwnd, , "full")  ; hwnd and custColorObj are optional
+    color := ColorDialog.Choose(g_GUI["CMDListColor"], OptGUI.hwnd, , "full")  ; hwnd and custColorObj are optional
     if (color = -1)
         return
 
@@ -2922,7 +2827,7 @@ PickCMDListColor(*) {
 }
 
 PickMainGUIColor(*) {
-    color := ColorSelect(g_GUI["MainGUIColor"], OptGUI.hwnd, , "full")
+    color := ColorDialog.Choose(g_GUI["MainGUIColor"], OptGUI.hwnd, , "full")
     if (color = -1)
         return
 
@@ -2955,17 +2860,6 @@ OPTGuiClose(*) {
     OptGUI.Hide()
     g_LOG.Debug("OPTGuiClose: OptGUI.Hide...OK")
     return
-}
-
-GetGuiFontSpec(fontText, defaultName := "Microsoft YaHei", defaultOpt := "norm s9.0") {
-    parts := StrSplit(fontText, ",")
-    name := Trim(parts[1])
-    opt := parts.Length >= 2 ? Trim(parts[2]) : defaultOpt
-    if (name = "")
-        name := defaultName
-    if (opt = "")
-        opt := defaultOpt
-    return [name, opt]
 }
 
 ToggleGlobalHotkeys(mode, caller := "") {
@@ -3472,70 +3366,7 @@ ReadChineseFlag() {                                                     ; Bootst
         return IniRead(g_INI, "Config", "Chinese", 0) ? 1 : 0
     return 0
 }
-;;==================== Expression Eval =========================
-Eval(expression, depth := 0) {
-    if (depth > 10)  ; 防止栈溢出
-        return ""
-
-    ; 移除所有空格
-    expression := StrReplace(expression, " ")
-    
-    ; 检查非法字符（只允许数字、运算符、括号、小数点）
-    if (!RegExMatch(expression, "^[\d+\-*/^().]*$"))
-        return ""
-
-    ; 递归处理括号
-    while RegExMatch(expression, "\(([^()]*)\)", &match) {
-        result := Eval(match[1], depth + 1)  ; 计算括号内的内容
-        expression := StrReplace(expression, (match&&match[0]), result)
-    }
-
-    ; 计算最终无括号表达式
-    Return EvalSimple(expression)
-}
-
-EvalSimple(expression) {            ; 计算不含括号的简单数学表达式
-    ; 处理幂运算符 ^
-    while RegExMatch(expression, "(-?\d+(\.\d+)?)([\^])(-?\d+(\.\d+)?)", &match) {
-        base := match[1], exponent := match[4]
-        result := base ** exponent  ; 执行幂运算
-        expression := StrReplace(expression, (match&&match[0]), result)
-    }
-
-    ; 支持 ** 作为幂运算符替代
-    while RegExMatch(expression, "(-?\d+(\.\d+)?)(\*\*)(-?\d+(\.\d+)?)", &match) {
-        base := match[1], exponent := match[4]
-        result := base ** exponent
-        expression := StrReplace(expression, (match&&match[0]), result)
-    }
-
-    ; 处理乘除法运算（已加入除以零保护）
-    while RegExMatch(expression, "(-?\d+(\.\d+)?)([*/])(-?\d+(\.\d+)?)", &match) {
-        operand1 := match[1], operator := match[3], operand2 := match[4]
-        if (operator = "*")
-            result := operand1 * operand2
-        else {
-            ; 防止除以零，operand2 可能为 "0" 或 "0.0" 等
-            if (Abs(operand2) < 1e-12) {
-                ; 这里选择将除以零的子表达式替换为 0，避免抛出异常
-                result := 0
-            } else {
-                result := operand1 / operand2
-            }
-        }
-        expression := StrReplace(expression, (match&&match[0]), result)
-    }
-
-    ; 处理加减法运算
-    while RegExMatch(expression, "(-?\d+(\.\d+)?)([+\-])(-?\d+(\.\d+)?)", &match) {
-        operand1 := match[1], operator := match[3], operand2 := match[4]
-        result := (operator = "+") ? operand1 + operand2 : operand1 - operand2
-        expression := StrReplace(expression, (match&&match[0]), result)
-    }
-
-    ; 返回最终结果
-    Return expression
-}
+; Eval()/EvalSimple() used to live here; both are now Calc.Eval() in Lib/Util.ahk.
 
 ;;==================== Performance Test Only =========================
 ; Not wired to any hotkey/menu/command - run BenchmarkRun() manually from an
@@ -3652,190 +3483,11 @@ BenchmarkRun(rounds := 10) {
     MsgBox(report, "ALTRun Benchmark")
 }
 
-;;==================== Font Select Dialog =========================
-; 功能:
-;   调用系统字体选择对话框(ChooseFont).
-; 参数:
-;   fontObject : 可选, 字体初始值对象, 支持 name/size/color/bold/italic/underline/strike.
-;   hwnd       : 可选, 父窗口句柄, 传入后对话框为模态.
-;   Effects    : 1=显示下划线/删除线等效果选项, 0=不显示.
-; 返回:
-;   false      : 用户取消.
-;   fontObject : 用户确认后返回, 并附加以下字段:
-;     ["str"]  : 可直接传给 SetFont 的样式字符串.
+; FontSelect()/ColorSelect()/ColorSwapRGBBGR()/ColorHex() used to live here;
+; they're now FontDialog.Choose()/ColorDialog.Choose()/ColorDialog.RgbBgr()/
+; ColorDialog.Hex() in Lib/Dialogs.ahk.
 
-; 颜色工具函数:
-;   ColorSwapRGBBGR : RGB 与 BGR 互转(交换红蓝通道).
-;   ColorHex        : 输出格式统一为 "0xRRGGBB".
-
-ColorSwapRGBBGR(color) {
-	color := color + 0
-	return ((color & 0xFF) << 16) | (color & 0xFF00) | ((color >> 16) & 0xFF)
-}
-
-ColorHex(color) {
-	return Format("0x{:06X}", color & 0xFFFFFF)
-}
-
-FontSelect(fontObject := "", hwnd := 0, Effects := 1) {
-	fontObject := (fontObject = "") ? Map() : fontObject
-	logfont := Buffer((A_PtrSize = 4) ? 60 : 92, 0)
-	uintVal := DllCall("GetDC", "Ptr", 0, "Ptr")
-	LogPixels := DllCall("GetDeviceCaps", "Ptr", uintVal, "UInt", 90, "Int")
-	DllCall("ReleaseDC", "Ptr", 0, "Ptr", uintVal)
-	Effects := 0x041 + (Effects ? 0x100 : 0)
-	
-	fntName := fontObject.Has("name") ? fontObject["name"] : ""
-	fontBold := fontObject.Has("bold") ? fontObject["bold"] : 0
-	fontBold := fontBold ? 700 : 400
-	fontItalic := fontObject.Has("italic") ? fontObject["italic"] : 0
-	fontUnderline := fontObject.Has("underline") ? fontObject["underline"] : 0
-	fontStrikeout := fontObject.Has("strike") ? fontObject["strike"] : 0
-	fontSize := fontObject.Has("size") ? fontObject["size"] : 10
-	fontSize := fontSize ? Floor(fontSize*LogPixels/72) : 16
-	c := fontObject.Has("color") ? fontObject["color"] : 0
-	fontColor := ColorSwapRGBBGR(c) ; 输入颜色转换, RGB -> BGR.
-	
-	NumPut "UInt", fontSize, logfont
-	NumPut "UInt", fontBold, "UChar", fontItalic, "UChar", fontUnderline, "UChar", fontStrikeout, logfont, 16
-	
-	choosefont := Buffer(A_PtrSize = 8 ? 104 : 60, 0), cap := choosefont.size
-	NumPut "UInt", cap, choosefont, 0
-	NumPut "UPtr", hwnd, choosefont, A_PtrSize
-	offset1 := (A_PtrSize = 8) ? 24 : 12
-	offset2 := (A_PtrSize = 8) ? 36 : 20
-	offset3 := (A_PtrSize = 4) ? 6 * A_PtrSize : 5 * A_PtrSize
-	NumPut "UPtr", logfont.ptr, choosefont, offset1
-	NumPut "UInt", effects, choosefont, offset2
-	NumPut "UInt", fontColor, choosefont, offset3
-
-	StrPut(fntName, logfont.ptr + 28, "UTF-16")
-	r := DllCall("comdlg32\ChooseFont", "UPtr", choosefont.ptr)
-	fntName := StrGet(logfont.ptr + 28, "UTF-16")
-	
-	if !r
-		return false
-	
-	fontObject["bold"] := NumGet(logfont, 16, "UChar")
-	fontObject["italic"] := NumGet(logfont, 20, "UChar")
-	fontObject["underline"] := NumGet(logfont, 21, "UChar")
-	fontObject["strike"] := NumGet(logfont, 22, "UChar")
-	
-	fontObject["bold"] := (fontObject["bold"] < 188) ? 0 : 1
-	
-	c := NumGet(choosefont, (A_PtrSize = 4) ? 6 * A_PtrSize : 5 * A_PtrSize, "UInt")
-	fontObject["color"] := ColorHex(ColorSwapRGBBGR(c)) ; 输出颜色转换, BGR -> RGB.
-	
-	fontSize := NumGet(choosefont, A_PtrSize = 8 ? 32 : 16, "UInt") / 10 ; iPointSize 的缩放值.
-	fontObject["size"] := fontSize
-	fontObject["name"] := fntName
-	
-	str := "norm"
-	if (fontObject["bold"])
-		str .= " bold"
-	if (fontObject["italic"])
-		str .= " italic"
-	if (fontObject["strike"])
-		str .= " strike"
-	if (fontObject["color"])
-		str .= " c" fontObject["color"]
-	if (fontObject["size"])
-		str .= " s" fontObject["size"]
-	if (fontObject["underline"])
-		str .= " underline"
-	fontObject["str"] := str
-	return fontObject
-}
-
-;;==================== Color Select Dialog =========================
-; 功能:
-;   调用系统颜色选择对话框(ChooseColor).
-; 参数:
-;   Color        : 初始颜色(RGB).
-;   hwnd         : 可选, 父窗口句柄.
-;   custColorObj : 可选, 自定义颜色数组/Map(1..16), 输入与输出共用.
-;   disp         : 1=完整面板(含自定义颜色), 0=基础面板.
-; 返回:
-;   -1           : 用户取消.
-;   "0xRRGGBB"   : 用户确认后返回所选颜色(RGB), 并更新 custColorObj.
-
-ColorSelect(Color := 0, hwnd := 0, &custColorObj := "", disp := 1) {
-	Color := (Color = "") ? 0 : Color ; 空值兜底为黑色.
-	disp := disp ? 0x3 : 0x1 ; 0x3=完整面板, 0x1=基础面板.
-	Color := ColorSwapRGBBGR(Color) ; 输入颜色转换, RGB -> BGR.
-	
-	CUSTOM := Buffer(16 * 4, 0) ; 自定义颜色缓冲区(16 色, 每色 4 字节).
-	
-	CHOOSECOLOR := Buffer(9 * A_PtrSize, 0) ; CHOOSECOLOR 结构缓冲区.
-	size := CHOOSECOLOR.size
-	
-	if (IsObject(custColorObj)) {
-		Loop 16 {
-			if (custColorObj.Has(A_Index)) {
-				col := custColorObj[A_Index] = "" ? 0 : custColorObj[A_Index] ; 空值按黑色处理.
-				custCol := ColorSwapRGBBGR(col) ; 输入颜色转换, RGB -> BGR.
-				NumPut "UInt", custCol, CUSTOM, ((A_Index-1) * 4)
-			}
-		}
-	}
-	
-	NumPut "UInt", size, CHOOSECOLOR, 0
-	NumPut "UPtr", hwnd, CHOOSECOLOR, A_PtrSize
-	NumPut "UInt", Color, CHOOSECOLOR, 3 * A_PtrSize
-	NumPut "UInt", disp, CHOOSECOLOR, 5 * A_PtrSize
-	NumPut "UPtr", CUSTOM.ptr, CHOOSECOLOR, 4 * A_PtrSize
-	
-	ret := DllCall("comdlg32\ChooseColor", "UPtr", CHOOSECOLOR.ptr, "UInt")
-	
-	if !ret
-		return -1
-	
-	custColorObj := Array()
-	Loop 16 {
-		newCustCol := NumGet(CUSTOM, (A_Index-1) * 4, "UInt")
-		newCustCol := ColorHex(ColorSwapRGBBGR(newCustCol)) ; 输出颜色转换, BGR -> RGB.
-		custColorObj.InsertAt(A_Index, newCustCol)
-	}
-	
-	Color := NumGet(CHOOSECOLOR, 3 * A_PtrSize, "UInt")
-	Color := ColorHex(ColorSwapRGBBGR(Color)) ; 输出颜色转换, BGR -> RGB.
-	
-	return Color
-}
-
-;; 获取拼音首字母
-GetFirstChar(str) {
-    ; GBK编码区间对应的拼音首字母
-	static array := [ [-20319,-20284,"A"], [-20283,-19776,"B"], [-19775,-19219,"C"]
-        , [-19218,-18711,"D"], [-18710,-18527,"E"], [-18526,-18240,"F"], [-18239,-17923,"G"]
-        , [-17922,-17418,"H"], [-17417,-16475,"J"], [-16474,-16213,"K"], [-16212,-15641,"L"]
-        , [-15640,-15166,"M"], [-15165,-14923,"N"], [-14922,-14915,"O"], [-14914,-14631,"P"]
-        , [-14630,-14150,"Q"], [-14149,-14091,"R"], [-14090,-13319,"S"], [-13318,-12839,"T"]
-        , [-12838,-12557,"W"], [-12556,-11848,"X"], [-11847,-11056,"Y"], [-11055,-10247,"Z"] ]
-	
-	; 如果不包含中文字符，则直接返回原字符
-	if !RegExMatch(str, "[^\x{00}-\x{ff}]")
-		Return str
-
-    out := ""
-    for char in StrSplit(str) {
-        code := Ord(char)
-        if (code >= 0x2E80 && code <= 0x9FFF) {
-            buf := Buffer(4)
-            StrPut(char, buf, "CP936")
-            nGBKCode := (NumGet(buf, 0, "UChar") << 8) + NumGet(buf, 1, "UChar") - 65536
-            for i, a in array {
-                if (nGBKCode >= a[1] && nGBKCode <= a[2]) {
-                    out .= a[3]
-                    break
-                }
-            }
-        } else {
-            out .= char
-        }
-    }
-    return out
-}
+; GetFirstChar() used to live here; it's now Pinyin.Initials() in Lib/Util.ahk.
 
 ExtractRes() {
     static file := A_Temp "\ALTRun_" A_ScriptHwnd ".jpg"
