@@ -1,13 +1,11 @@
 ;===================================================
-; AppData.ahk - ALTRun.json 读写 + 从旧版 ALTRun.ini 迁移 (AutoHotkey v2)
+; AppData.ahk - ALTRun.json 读写 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Why not ini: IniRead/IniWrite go through the Windows
 ; profile API, which truncates a whole section at 64 KB.
 ; Past that limit commands silently disappear from the
 ; list. JSON also removes the need to escape "=" and ";"
-; in command lines; UnescapeCommandKey() is only kept to
-; decode command lines still written the old way, while
-; reading a pre-migration ALTRun.ini.
+; in command lines.
 ;
 ; Parsing/serializing is done by the shared JSON class in
 ; Lib\JSON.ahk - AutoHotkey v2 auto-includes it the first
@@ -16,10 +14,12 @@
 ; (same convention already used for Logger, MD5, etc.).
 ; No #Include line is needed.
 ;
-; ALTRun.json is the single source of truth for everything
-; ALTRun itself owns - settings as well as commands. The only
-; thing ALTRun.ini is still used for is the legacy [PT Tools]
-; section, which belongs to the separate PTTools.ahk (v1) tool.
+; ALTRun.json is the single source of truth for everything, including PT
+; Tools' own settings (see "PTTools" below, owned by Lib\PTTools.ahk /
+; PTToolsWindow). ALTRun.ini is retired - this was always a single-machine,
+; single-user install, so once the one-off migration off the ini ran there
+; was no reason to keep the migration code (or the ini file's own copies of
+; the data) around for a scenario that will never come up again.
 ;
 ; File layout:
 ; {
@@ -29,6 +29,7 @@
 ;   "Usage"          : { "<yyyymmdd>": <run count>, ... },
 ;   "History"        : [ "<command line> Arg=<arg>", ... ],
 ;   "Benchmark"      : { <metric name>: <value>, ... },
+;   "PTTools"        : { <setting name>: <value>, ... },
 ;   "DefaultCommand" : { "<command line>": <rank>, ... },
 ;   "UserCommand"    : { "<command line>": <rank>, ... },
 ;   "Index"          : { "<command line>": <rank>, ... },
@@ -65,8 +66,6 @@ Class AppData {
             }
         }
 
-        movedSections := AppData.MigrateFromIni(data)                       ; Fills in whatever ALTRun.ini still has that data[] is missing
-
         ; --- Commands (DefaultCommand / UserCommand / Index / FallbackCommand) ---
         for _, name in ["DefaultCommand", "UserCommand", "Index"] {
             if !(data.Has(name) && data[name] is Map)
@@ -85,7 +84,7 @@ Class AppData {
             }
         }
 
-        dirty := movedSections.Length > 0
+        dirty := false
         if (!g_CMDDATA["DefaultCommand"].Count) {
             g_CMDDATA["DefaultCommand"] := AppData.ParseCommandBlock(AppData.DefaultCommandText())
             dirty := true
@@ -108,6 +107,7 @@ Class AppData {
         AppData.MergeIntoDefaults(g_HOTKEY, data.Get("Hotkey", ""))
         AppData.MergeIntoDefaults(g_GUI,    data.Get("Gui", ""))
         AppData.MergeIntoDefaults(g_BENCH,  data.Get("Benchmark", ""))
+        PTToolsWindow.Load(data.Get("PTTools", ""))
         g_RUNTIME["RegEx"] := g_CONFIG["MatchBeginning"] ? "imS)^" : "imS)"
 
         ; --- Usage: keep only the last 30 days, same trimming rule as before ---
@@ -134,8 +134,8 @@ Class AppData {
                     g_HISTORYS.Push(entry)
         }
 
-        if (dirty && AppData.SaveAppData() && movedSections.Length)
-            AppData.FinishIniMigration(movedSections)                       ; Backs up ALTRun.ini, then strips the now-migrated sections
+        if (dirty)
+            AppData.SaveAppData()
 
         g_LOG.Debug("LoadAppData: Default=" g_CMDDATA["DefaultCommand"].Count
             . ", User=" g_CMDDATA["UserCommand"].Count
@@ -166,6 +166,7 @@ Class AppData {
             "Usage",   g_USAGE,
             "History", g_HISTORYS,
             "Benchmark", g_BENCH,
+            "PTTools", PTToolsWindow.Settings,
             "DefaultCommand", Map(),
             "UserCommand",    Map(),
             "Index",          Map(),
@@ -205,14 +206,12 @@ Class AppData {
         Logger.Flush()                                                     ; Buffered log lines are lost otherwise - see Lib/Logger.ahk
     }
 
-    static ParseCommandBlock(blockText, legacyUnescape := false) {         ; "command line=rank" lines -> Map
+    static ParseCommandBlock(blockText) {                                  ; "command line=rank" lines -> Map
         result := Map()
         for _, line in StrSplit(blockText, "`n", "`r") {
             line := Trim(line)
             if (!line || SubStr(line, 1, 1) = ";" || SubStr(line, 1, 1) = "[")
                 continue
-            if (legacyUnescape)
-                line := AppData.UnescapeCommandKey(line)
             if !RegExMatch(line, "^(.*)=(\d+)\s*$", &m)                     ; Split on the LAST '=', so the command itself may contain '='
                 continue
             cmdLine := Trim(m.1)
@@ -221,141 +220,6 @@ Class AppData {
                 result[cmdLine] := rank
         }
         return result
-    }
-
-    ; One-off: pull whatever ALTRun.ini still has out into `data` (the in-memory
-    ; Map that LoadAppData() is about to fold into g_CMDDATA / g_CONFIG / etc).
-    ; Nothing is written to disk here - LoadAppData() saves ALTRun.json itself and
-    ; only then, via FinishIniMigration(), strips the sections that made it across.
-    ; Commands and settings migrate independently, so this is safe to call even
-    ; when only one half was ever pulled out of the ini before (as is the case for
-    ; anyone who already has an ALTRun.json containing just commands).
-    static MigrateFromIni(data) {
-        moved := Array()
-        if (!FileExist(g_INI))
-            return moved
-
-        iniText := ""
-        try iniText := FileRead(g_INI, "UTF-8")                             ; Read the raw file, NOT IniRead - that is what hits the 64 KB cap
-        if (InStr(iniText, Chr(0)))                                         ; Old ini saved as UTF-16 by Notepad
-            try iniText := FileRead(g_INI, "UTF-16")
-        if (iniText = "")
-            return moved
-
-        ; --- Commands: DefaultCommand / UserCommand / Index / FallbackCommand ---
-        if (!data.Has("DefaultCommand")) {
-            for _, pair in [["DefaultCommand", "DFTCMD"], ["UserCommand", "USERCMD"], ["Index", "INDEX"]] {
-                body := AppData.ReadIniSectionRaw(iniText, g_SECTION[pair[2]])
-                if (body = "")
-                    continue
-                data[pair[1]] := AppData.ParseCommandBlock(body, true)
-                moved.Push(pair[2])
-            }
-
-            body := AppData.ReadIniSectionRaw(iniText, g_SECTION["FALLBACK"])
-            if (body != "") {
-                list := Array()
-                for _, line in StrSplit(body, "`n", "`r") {
-                    line := Trim(AppData.UnescapeCommandKey(line))
-                    if (line != "" && SubStr(line, 1, 1) != ";")
-                        list.Push(line)
-                }
-                data["FallbackCommand"] := list
-                moved.Push("FALLBACK")
-            }
-        }
-
-        ; --- Settings: Config / Hotkey / Gui / Usage / History / Benchmark ---
-        if (!data.Has("Config")) {
-            cfg := AppData.ReadIniMapLikeDefaults(g_CONFIG, g_SECTION["CONFIG"])
-            if (cfg.Count) {
-                data["Config"] := cfg
-                moved.Push("CONFIG")
-            }
-
-            hk := AppData.ReadIniMapLikeDefaults(g_HOTKEY, g_SECTION["HOTKEY"])
-            if (hk.Count) {
-                data["Hotkey"] := hk
-                moved.Push("HOTKEY")
-            }
-
-            gui := AppData.ReadIniMapLikeDefaults(g_GUI, g_SECTION["GUI"])
-            if (gui.Count) {
-                data["Gui"] := gui
-                moved.Push("GUI")
-            }
-
-            bench := AppData.ReadIniMapLikeDefaults(g_BENCH, g_SECTION["BENCHMARK"])
-            if (bench.Count) {
-                data["Benchmark"] := bench
-                moved.Push("BENCHMARK")
-            }
-
-            usageText := ""
-            Try usageText := IniRead(g_INI, g_SECTION["USAGE"])              ; Whole-section read throws if the section is missing
-            if (usageText != "") {
-                usage := Map()
-                for line in StrSplit(usageText, "`n") {
-                    parts := StrSplit(Trim(line, "`r"), "=")
-                    if (parts.Length >= 2 && parts[1] != "")
-                        usage[parts[1]] := parts[2] + 0
-                }
-                if (usage.Count) {
-                    data["Usage"] := usage
-                    moved.Push("USAGE")
-                }
-            }
-
-            history := Array()
-            Loop 50 {                                                       ; Generous: the ini's HistoryLen may differ from today's default
-                item := IniRead(g_INI, g_SECTION["HISTORY"], A_Index, "")
-                if (item = "")
-                    continue
-                history.Push(item)
-            }
-            if (history.Length) {
-                data["History"] := history
-                moved.Push("HISTORY")
-            }
-        }
-
-        return moved
-    }
-
-    ; Reads an ini section into a Map, coercing each value to the same type
-    ; (Integer/Float vs String) as the matching key in `defaultsMap` - e.g. so
-    ; "255" migrates as the number 255 but "0xFFFFFF" stays the color string it is.
-    static ReadIniMapLikeDefaults(defaultsMap, sectionName) {
-        result := Map()
-        for key, defVal in defaultsMap {
-            val := IniRead(g_INI, sectionName, key, "")
-            if (val = "")
-                continue
-            result[key] := (Type(defVal) = "Integer" || Type(defVal) = "Float") ? val + 0 : val
-        }
-        return result
-    }
-
-    ; Runs once, right after LoadAppData() has successfully written the migrated
-    ; data into ALTRun.json: backs up the old ini, then removes just the sections
-    ; that were moved (leaving [PT Tools], which the separate PTTools.ahk owns).
-    static FinishIniMigration(movedSections) {
-        try FileCopy(g_INI, g_INI ".bak", true)
-        for _, key in movedSections
-            Try IniDelete(g_INI, g_SECTION[key])
-
-        g_LOG.Debug("FinishIniMigration: Moved sections [" . AppData.JoinArray(movedSections, ", ") . "] from ini to json")
-        MsgBox("The following ALTRun.ini section(s) have been moved into ALTRun.json:`n`n"
-             . AppData.JoinArray(movedSections, ", ") . "`n`n"
-             . "The old file was backed up as ALTRun.ini.bak.`n"
-             . "ALTRun.ini itself is kept for PT Tools' own settings.", g_TITLE, 64)
-    }
-
-    static JoinArray(arr, sep) {
-        out := ""
-        for _, v in arr
-            out .= (out = "" ? "" : sep) . v
-        return out
     }
 
     static DefaultCommandText() {
@@ -370,14 +234,13 @@ Class AppData {
             Func | Reload | Reload ALTRun=99
             Func | EditCommand | Edit current command (F3)=99
             Func | UserCommand | Edit command database ALTRun.json (F4)=99
-            Func | EditIniFile | Edit PT Tools settings file (legacy ini)=99
             Func | NewCommand | New Command=99
             Func | NewClip | New Clip (text snippet)=99
             Func | OpenContainer | Locate cmd's dir with File Manager=99
             Func | Usage | ALTRun Usage Status=99
             Func | Reindex | Reindex search database=99
             Func | Everything | Search by Everything=99
-            Func | PTTools | PT Tools (AHK)=99
+            Func | PTTools | PT Tools (Rebar/BRC calculator + SPF2M)=99
             Func | AhkRun | Run Command use AutoHotkey Run=99
             Func | Google | Search Clipboard or Input by Google=99
             Func | Bing | Search Clipboard or Input by Bing=99
@@ -462,31 +325,5 @@ Class AppData {
             Func | Bing | Search Clipboard or Input by Bing
             CMD | Calc.exe | Calculator
         )"
-    }
-
-    static ReadIniSectionRaw(iniText, sectionName) {                       ; Section body straight from the file text, no size limit
-        if !RegExMatch(iniText, "im)^\[" sectionName "\][ \t]*$", &m)
-            return ""
-        rest := SubStr(iniText, m.Pos + m.Len)
-        if RegExMatch(rest, "m)^\[[^\]\r\n]+\][ \t]*$", &nextSec)
-            rest := SubStr(rest, 1, nextSec.Pos - 1)
-        return Trim(rest, " `t`r`n")
-    }
-
-    ; UnescapeCommandKey(): reverses the old "_Equal_"/"_Semicolon_" encoding that
-    ; used to be needed so a command line could survive being an ini key (ini keys
-    ; can't contain '=' or ';'). Commands live in JSON now so nothing encodes them
-    ; this way anymore, but MigrateFromIni()/ParseCommandBlock() still call this
-    ; when reading a pre-migration ALTRun.ini, since old command lines saved there
-    ; were encoded with it.
-    static UnescapeCommandKey(cmdLine) {
-        ; Unescape the encoded special characters
-        ; Order: reverse of escape - do = and ;
-        if (cmdLine = "")
-            return ""
-
-        cmdLine := StrReplace(cmdLine, "_Equal_", "=")  ; equals sign
-        cmdLine := StrReplace(cmdLine, "_Semicolon_", ";")  ; semicolon
-        return cmdLine
     }
 }

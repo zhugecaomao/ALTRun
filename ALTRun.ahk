@@ -14,7 +14,8 @@
 #Include Lib\Listary.ahk                                               ; Listary.Init() - open/save dialog path quick-switch, called in the autorun section below.
 #Include Lib\Plugins.ahk                                               ; Plugins.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
 #Include Lib\Clip.ahk                                                  ; Clip.PasteClipText()/ClipPreview()/EditClipText() - the "Clip" snippet command.
-#Include Lib\AppData.ahk                                               ; AppData.LoadAppData()/AppData.SaveAppData() - ALTRun.json read/write + ini migration.
+#Include Lib\AppData.ahk                                               ; AppData.LoadAppData()/AppData.SaveAppData() - reads/writes ALTRun.json.
+#Include Lib\PTTools.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -40,7 +41,6 @@ Global g_LOG   := Logger                                                ; Logger
                                                                          ; itself (no parens/instance), so every existing g_LOG.Debug(...)
                                                                          ; call below still works unchanged, same as calling Logger.Debug(...).
 Logger.Rotate()                                                        ; Truncate ALTRun.log to a fresh .old copy if it's grown too big.
-Global g_INI   := A_ScriptDir . "\ALTRun.ini"
 Global g_JSON  := A_ScriptDir . "\ALTRun.json"    ; Commands live here, ini sections are capped at 64 KB by the Windows API
 Global g_TITLE := "ALTRun - v2026.08.12"
 
@@ -50,18 +50,6 @@ Global g_CMDINDEX := Array()         ; Searchable text for All commands
 Global g_FALLBACK := Array()         ; Fallback commands
 Global g_HISTORYS := Array()         ; Execution history
 Global g_MATCHED  := Array()         ; Matched commands
-Global g_SECTION  := Map(
-    "CONFIG"    , "Config",
-    "GUI"       , "Gui",
-    "DFTCMD"    , "DefaultCommand",
-    "USERCMD"   , "UserCommand",
-    "FALLBACK"  , "FallbackCommand",
-    "HOTKEY"    , "Hotkey",
-    "HISTORY"   , "History",
-    "INDEX"     , "Index",
-    "USAGE"     , "Usage",
-    "BENCHMARK" , "Benchmark"
-)
 
 Global g_CONFIG := Map(
     "AutoStartup"    , 1,
@@ -354,7 +342,7 @@ SetMainGUI() {
                     FileGetShortcut(sendToPath, sendToPath, , &fileArg, &Desc)
                     sendToPath .= " " fileArg
                 }
-                OpenCommandManager(g_SECTION["USERCMD"], fileType, sendToPath, Desc, 1, "")   ; Add new command to database
+                OpenCommandManager("UserCommand", fileType, sendToPath, Desc, 1, "")   ; Add new command to database
             }
         }
     }
@@ -1508,17 +1496,13 @@ UserCommand(*) {                                                        ; F4 - e
     Run("Notepad.exe " . g_JSON)
 }
 
-EditIniFile(*) {                                                        ; ALTRun's own settings all live in ALTRun.json now; the only
-    Run("Notepad.exe " . g_INI)                                        ; thing left in ALTRun.ini is PT Tools' own [PT Tools] section.
-}
-
 ; From command "New Command" or GUI context menu "New Command"
 NewCommand(*) {
-    OpenCommandManager(g_SECTION["USERCMD"], , , g_RUNTIME["Arg"], 1, "")
+    OpenCommandManager("UserCommand", , , g_RUNTIME["Arg"], 1, "")
 }
 
 EditCommand(*) {
-    Global g_RUNTIME, g_SECTION, g_INI  ; 明确声明全局变量
+    Global g_RUNTIME  ; 明确声明全局变量
 
     currentCmd := g_RUNTIME["CurrentCommand"]
     if !currentCmd
@@ -1682,12 +1666,15 @@ GetArrayIndex(searchValue, Array){
 }
 
 ; LoadAppData()/SaveAppData()/MergeIntoDefaults()/OnAppExit()/ParseCommandBlock()/
-; MigrateFromIni()/ReadIniMapLikeDefaults()/FinishIniMigration()/JoinArray()/
-; DefaultCommandText()/UserCommandText()/FallbackCommandText()/ReadIniSectionRaw()
-; used to live here; all moved into the AppData class in Lib\AppData.ahk (called
-; as AppData.LoadAppData() etc. - see the #Include list at the top of this file
-; and the comment block at the top of that file for the ALTRun.json layout and
-; the ini-migration story).
+; DefaultCommandText()/UserCommandText()/FallbackCommandText() used to live
+; here; all moved into the AppData class in Lib\AppData.ahk (called as
+; AppData.LoadAppData() etc. - see the #Include list at the top of this file
+; and the comment block at the top of that file for the ALTRun.json layout).
+; ALTRun.ini and its migration code (MigrateFromIni/ReadIniMapLikeDefaults/
+; FinishIniMigration/JoinArray/ReadIniSectionRaw/UnescapeCommandKey/g_SECTION/
+; g_INI) are retired - this was always a single-machine, single-user install,
+; so once the one-off migration off the ini ran there was no reason to keep
+; that code around for a scenario that will never come up again.
 
 ; =========================================================================
 ; === Clip (Snippet) support ==============================================
@@ -1703,25 +1690,11 @@ GetArrayIndex(searchValue, Array){
 ; name via %cmdPath%() in RunCommand(), which only resolves plain global
 ; function names, not Class.Method - see FuncList in Options()/DefaultCommandText().
 NewClip(*) {                                                            ; Command "New Clip", opens the manager pre-set to type Clip
-    OpenCommandManager(g_SECTION["USERCMD"], "Clip", Clip.EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
+    OpenCommandManager("UserCommand", "Clip", Clip.EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
 }
 
-; UnescapeCommandKey() used to live here; moved into the AppData class in
-; Lib\AppData.ahk (it is only used internally by AppData.ParseCommandBlock()/
-; AppData.MigrateFromIni() when reading a pre-migration ALTRun.ini).
-
 PTTools() {
-    if not WinExist("PT Tools"){
-        try {
-            Run(A_ScriptDir "\PTTools.ahk")
-        } catch as e {
-            MsgBox(e.Message, ,48)
-            return
-        }
-    } else {
-        WinActivate("PT Tools")
-        }
-    return
+    PTToolsWindow.Show()                                                  ; Lib\PTTools.ahk - Rebar/BRC calculator + SPF2M automation
 }
 
 StruCalc(evalResult) {
@@ -2108,7 +2081,7 @@ Everything() {
 ; editor/debugger when you want a search-performance snapshot.
 
 BenchmarkRun(rounds := 10) {
-    Global g_LOG, g_INI, g_COMMANDS, myInputBox
+    Global g_LOG, g_COMMANDS, myInputBox
     rounds := Max(10, rounds)
 
     static queries := [
