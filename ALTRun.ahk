@@ -11,6 +11,7 @@
 #Include Lib\Util.ahk                                                  ; Path / Fonts / Win / Pinyin / Calc - see each call site below.
 #Include Lib\Dialogs.ahk                                               ; FontDialog / ColorDialog - see the Options-window font/color pickers.
 #Include Lib\Language.ahk                                              ; Lang.Load()/Lang.IsChinese() - builds g_LNG (the UI text table) below.
+#Include Lib\Listary.ahk                                               ; Listary.Init() - open/save dialog path quick-switch, called in the autorun section below.
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -252,7 +253,7 @@ UpdateStartMenu()
 SetTrayMenu()               ; SetTrayMenu before SetMainGUI, GUI window uses the tray icon that was in effect at the time the window was created
 SetMainGUI()                ; Create and set main GUI
 RegisterHotkey()
-Listary()
+Listary.Init()
 Plugins()
 AutoCheckUpdate()
 return
@@ -1494,217 +1495,11 @@ CompareVersion(v1, v2) {
     return 0
 }
 
-Listary() {                                                             ; Listary 快速更换保存/打开对话框路径
-    Loop Parse, g_CONFIG["FileMgrID"], ","                              ; File Manager Class, default is Windows Explorer & Total Commander
-        GroupAdd("FileMgrID", A_LoopField)
-
-    Loop Parse, g_CONFIG["DialogWin"], ","                              ; 需要QuickSwith的窗口, 包括打开/保存对话框等
-        GroupAdd("DialogBox", A_LoopField)
-
-    Loop Parse, g_CONFIG["ExcludeWin"], ","                             ; 排除特定窗口,避免被 Auto-QuickSwitch 影响
-        GroupAdd("ExcludeWin", A_LoopField)
-
-    if (g_CONFIG["AutoSwitchDir"]) {
-        g_LOG.Debug("Listary: Auto-QuickSwitch enabled, monitoring thread...")
-        Loop {
-            WinWaitActive("ahk_class TTOTAL_CMD")
-            WinWaitNotActive()
-
-            ; 检测当前窗口是否符合打开/保存对话框条件
-            if (IsQuickSwitchDialog()) {
-                winTitle := WinGetTitle("A")
-                procName := WinGetProcessName("A")
-                g_LOG.Debug("Listary: Dialog detected, active window ahk_title=" winTitle ", ahk_exe=" procName)
-                SyncTCPath()                                            ; NO Return, as will terimate loop (AutoSwitchDir)
-            }
-            Sleep 100  ; Reduce CPU usage
-        }
-    }
-
-    HotIf(IsQuickSwitchDialog)                                          ; 仅在真正的打开/保存对话框启用路径定位热键
-    try {
-        Hotkey(g_HOTKEY["ExplorerDir"], SyncExplorerPath)               ; Ctrl+E 把打开/保存对话框的路径定位到资源管理器当前浏览的目录
-        Hotkey(g_HOTKEY["TotalCMDDir"], SyncTCPath)                     ; Ctrl+G 把打开/保存对话框的路径定位到TC当前浏览的目录
-        g_LOG.Debug("Listary: Set quickswitch hotkey " g_HOTKEY["ExplorerDir"] " for Explorer, " g_HOTKEY["TotalCMDDir"] " for Total Commander...OK")
-    } catch as e {
-        g_LOG.Debug("Listary: Failed to set quickswitch hotkey..." e.Message)
-    }
-    HotIf                                                                ; Turn off context, make subsequent hotkeys global again
-
-    ; 在打开/保存对话框标题中显示快捷键信息
-    SetTimer(ShowListaryHint, 250)
-    return
-}
-
-ShowListaryHint() {
-    static originalTitles := Map()
-    static activeHwnd := 0
-
-    if (IsQuickSwitchDialog()) {
-        dlgHwnd := WinGetID("A")
-        if (!dlgHwnd || !WinExist("ahk_id " dlgHwnd))
-            return
-
-        ; Restore the previous dialog before switching to another one.
-        if (activeHwnd && activeHwnd != dlgHwnd && originalTitles.Has(activeHwnd)) {
-            if WinExist("ahk_id " activeHwnd)
-                WinSetTitle(originalTitles[activeHwnd], "ahk_id " activeHwnd)
-            originalTitles.Delete(activeHwnd)
-        }
-
-        if (!originalTitles.Has(dlgHwnd))
-            originalTitles[dlgHwnd] := WinGetTitle("ahk_id " dlgHwnd)
-
-        title := originalTitles[dlgHwnd] " / " GetListaryHintText()
-        if (WinGetTitle("ahk_id " dlgHwnd) != title)
-            WinSetTitle(title, "ahk_id " dlgHwnd)
-        activeHwnd := dlgHwnd
-        return
-    }
-
-    ; Restore the native title after leaving the file dialog.
-    if (activeHwnd && originalTitles.Has(activeHwnd)) {
-        if WinExist("ahk_id " activeHwnd)
-            WinSetTitle(originalTitles[activeHwnd], "ahk_id " activeHwnd)
-        originalTitles.Delete(activeHwnd)
-        activeHwnd := 0
-    }
-}
-
-GetListaryHintText() {
-    tcHotkey  := Win.HotkeyLabel(g_HOTKEY["TotalCMDDir"])
-    expHotkey := Win.HotkeyLabel(g_HOTKEY["ExplorerDir"])
-    msg := StrReplace(g_LNG[221], "{1}", tcHotkey)
-    return StrReplace(msg, "{2}", expHotkey)
-}
-
-; 更严格地识别 "打开/保存文件" 对话框，避免普通 #32770 对话框误触发
-IsQuickSwitchDialog(*) {
-    if (!WinActive("ahk_group DialogBox") || WinActive("ahk_group ExcludeWin"))
-        return false
-
-    winTitle := ""
-    try winTitle := WinGetTitle("A")
-
-    ctrlNames := []
-    try ctrlNames := WinGetControls("A")
-    catch
-        ctrlNames := []
-
-    hasNameEdit := HasAnyCtrlMatch(ctrlNames, "^Edit\d+$")              ; 文件名输入框
-    hasFileView := HasAnyCtrlMatch(ctrlNames, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
-    hasPathCtrl := HasAnyCtrlMatch(ctrlNames, "^ToolbarWindow32\d+$", "^ComboBoxEx32\d+$", "^ComboBox\d+$")
-    hasMainBtn  := HasAnyCtrlMatch(ctrlNames, "^Button\d+$")
-
-    ; DialogBox group already limits window classes via config (e.g. #32770 / Qt5QWindowIcon),
-    ; so use a unified control rule here to avoid per-app special cases.
-    if (ctrlNames.Length > 0) {
-        ; Allow either main buttons or path bar to accommodate app-hosted dialog variations.
-        return hasNameEdit && hasFileView && (hasMainBtn || hasPathCtrl)
-    }
-
-    ; Fallback when control enumeration fails (e.g. privilege boundary / owner-drawn dialogs).
-    return IsLikelyFileDialogTitle(winTitle)
-}
-
-HasAnyCtrlMatch(ctrlNames, patternList*) {
-    for ctrlName in ctrlNames {
-        for pattern in patternList {
-            if RegExMatch(ctrlName, "i)" pattern)
-                return true
-        }
-    }
-    return false
-}
-
-IsLikelyFileDialogTitle(title) {
-    if (!title)
-        return false
-    return RegExMatch(title, "i)(open|save|select|attach|import|export|reference|file|browse|打开|另存|选择|导入|导出|引用)")
-}
-
-; Sync dialog box to Total Commander path (TC 7.x ~ 11.x)
-SyncTCPath(*) {
-    clipSaved   := ClipboardAll()
-    A_Clipboard := ""
-    ; Get the HWND of TC (WinGetID may occur error if TC not found)
-    tcHwnd := WinExist("ahk_class TTOTAL_CMD")
-    if (!tcHwnd) {
-        MsgBox(g_LNG[219], g_TITLE, 48)
-        g_LOG.Debug("SyncTCPath: No Total Commander window found")
-        return
-    }
-    try {
-        SendMessage(1075, 2029, 0, , "ahk_class TTOTAL_CMD")            ; TC: WM_USER + 75, TC_GETCURRENTPATH = 2029
-    } catch as e {
-        g_LOG.Debug("SyncTCPath: SendMessage failed, exception - " . e.Message)
-        A_Clipboard := clipSaved
-        return
-    }
-    ; Wait up to 0.1 seconds for the clipboard to contain data
-    if (ClipWait(0.1) = 0) {
-        A_Clipboard := clipSaved
-        g_LOG.Debug("SyncTCPath: Clipboard wait timed out")
-        return
-    }
-    ; 确保路径以反斜杠结尾, 解决AutoCAD不识别路径问题
-    targetDir   := RTrim(A_Clipboard, "\") . "\"
-    A_Clipboard := clipSaved
-    SetDialogPath(targetDir)
-}
-
-; Sync dialog box to Explorer path (Win7 ~ Win11)
-SyncExplorerPath(*) {
-    ; Get the HWND of Explorer (WinGetID may occur error if Explorer not found)
-    expHwnd := WinExist("ahk_class CabinetWClass")
-    if (!expHwnd) {
-        MsgBox(g_LNG[220], g_TITLE, 48)
-        g_LOG.Debug("SyncExplorerPath: No Explorer window found")
-        return
-    }
-    try {
-        for shellWin in ComObject("Shell.Application").Windows
-            if (shellWin.HWND = expHwnd) {
-                targetDir := shellWin.Document.Folder.Self.Path
-                SetDialogPath(targetDir)
-                return
-            }
-        g_LOG.Debug("SyncExplorerPath: No matching Explorer window")
-    } catch as e {
-        g_LOG.Debug("SyncExplorerPath: COM error - " e.Message)
-    }
-}
-
-; Set dialog box path to specified directory
-SetDialogPath(targetDir) {
-    if (!targetDir || !FileExist(targetDir)) {
-        g_LOG.Debug("SetDialogPath: Invalid directory :" targetDir)
-        return
-    }
-    activeClass := WinGetClass("A")
-    if (activeClass = "Qt5QWindowIcon") {
-        ; WPS dialog: Its Edit control has no valid id, try simulate keyboard input (not fully reliable)
-        SendText targetDir
-        SendInput "{Enter}"
-        g_LOG.Debug("SetDialogPath: Set path to " targetDir " (WPS dialog)")
-    } else {
-        ; Windows Standard dialog: Edit1 is the path input box
-        editHwnd := ControlGetHwnd("Edit1", "A")
-        if (editHwnd) {
-            ControlFocus("Edit1", "A")
-            ControlSetText(targetDir, "Edit1", "A")
-            ControlSend("{Enter}", "Edit1", "A")
-            g_LOG.Debug("SetDialogPath: Set dialog path to=" targetDir)
-        } else {
-            ; Fallback for dialogs without Edit1 (some owner-drawn or app-customized file dialogs).
-            SendInput "!d"
-            Sleep 60
-            SendText targetDir
-            SendInput "{Enter}"
-            g_LOG.Debug("SetDialogPath: Edit1 not found, used address bar fallback path=" targetDir)
-        }
-    }
-}
+; Listary()/ShowListaryHint()/GetListaryHintText()/IsQuickSwitchDialog()/
+; HasAnyCtrlMatch()/IsLikelyFileDialogTitle()/SyncTCPath()/SyncExplorerPath()/
+; SetDialogPath() used to live here; all moved into the Listary class in
+; Lib\Listary.ahk (see the #Include list at the top of this file and the
+; "Listary.Init()" call in the autorun section).
 
 UserCommand(*) {                                                        ; F4 - edit the command database directly
     Run("Notepad.exe " . g_JSON)
