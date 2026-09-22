@@ -111,7 +111,7 @@ Class OptionsWindow {
             g.AddText("x33 yp+40", g_LNG[201])
             g.AddHotkey("x143 yp-5 w120 vHotkey" A_Index, g_HOTKEY["Hotkey" A_Index])
             g.AddText("x285 yp+5", g_LNG[202])
-            g.AddDDL("x395 yp-5 w120 vTrigger" A_Index " Choose" GetArrayIndex(g_HOTKEY["Trigger" A_Index], FuncList), FuncList)
+            g.AddDDL("x395 yp-5 w120 vTrigger" A_Index " Choose" Arr.IndexOf(g_HOTKEY["Trigger" A_Index], FuncList), FuncList)
         }
 
         OptionsWindow.ToggleGlobalHotkeys("Off", "Options")                 ; Turn off global hotkeys in options
@@ -166,7 +166,7 @@ Class OptionsWindow {
         g.AddText("x33 yp+45", g_LNG[261])
         g.AddComboBox("x183 yp-5 w80 vCondHotkey Choose1", [g_HOTKEY["CondHotkey"]])
         g.AddText("x300 yp+5", g_LNG[262])
-        g.AddDDL("x395 yp-5 w120 vCondAction Choose" GetArrayIndex(g_HOTKEY["CondAction"], FuncList), FuncList)
+        g.AddDDL("x395 yp-5 w120 vCondAction Choose" Arr.IndexOf(g_HOTKEY["CondAction"], FuncList), FuncList)
 
         OptTab.UseTab(7) ; USAGE Tab
         g.AddGroupBox("x66 y80 w445 h300", )

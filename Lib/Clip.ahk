@@ -116,34 +116,35 @@ Class Clip {
         return true
     }
 
+    static _EditGui := ""                                                   ; Multi-line Clip editor window (原 Global g_ClipEditGui)
+
     static EditClipText(*) {                                                ; Multi-line editor for the Clip body, opened by the "..." button
-        Global g_CmdMgrGui, g_ClipEditGui
+        mgr := CommandManager.G
 
-        g_ClipEditGui := Gui("+Owner" g_CmdMgrGui.Hwnd, "Clip Text  -  line breaks are stored as \n")
-        g_ClipEditGui.SetFont("S10 Norm", "Consolas")
-        clipEdit := g_ClipEditGui.AddEdit("w620 r18 +Multi +WantReturn +WantTab vClipBody", Clip.UnescapeClipText(g_CmdMgrGui["Path"].Text))
-        g_ClipEditGui.SetFont("S9 Norm", "Microsoft Yahei")
-        g_ClipEditGui.AddText("xm w440 cGray", "Placeholders: {date} {time} {datetime} {clipboard} {arg} {cursor}")
-        g_ClipEditGui.AddButton("Default x+10 yp-6 w80", "OK").OnEvent("Click", SaveClipText)
-        g_ClipEditGui.AddButton("x+8 yp w80", "Cancel").OnEvent("Click", (p*) => Clip.CloseClipEditor(p*))
-        g_ClipEditGui.OnEvent("Close", (p*) => Clip.CloseClipEditor(p*))
-        g_ClipEditGui.OnEvent("Escape", (p*) => Clip.CloseClipEditor(p*))
+        editGui := Clip._EditGui := Gui("+Owner" mgr.Hwnd, "Clip Text  -  line breaks are stored as \n")
+        editGui.SetFont("S10 Norm", "Consolas")
+        clipEdit := editGui.AddEdit("w620 r18 +Multi +WantReturn +WantTab vClipBody", Clip.UnescapeClipText(mgr["Path"].Text))
+        editGui.SetFont("S9 Norm", "Microsoft Yahei")
+        editGui.AddText("xm w440 cGray", "Placeholders: {date} {time} {datetime} {clipboard} {arg} {cursor}")
+        editGui.AddButton("Default x+10 yp-6 w80", "OK").OnEvent("Click", SaveClipText)
+        editGui.AddButton("x+8 yp w80", "Cancel").OnEvent("Click", (p*) => Clip.CloseClipEditor(p*))
+        editGui.OnEvent("Close", (p*) => Clip.CloseClipEditor(p*))
+        editGui.OnEvent("Escape", (p*) => Clip.CloseClipEditor(p*))
 
-        g_CmdMgrGui.Opt("+Disabled")
-        g_ClipEditGui.Show("Center")
+        mgr.Opt("+Disabled")
+        editGui.Show("Center")
         clipEdit.Focus()
 
         SaveClipText(*) {
-            g_CmdMgrGui["Path"].Value := Clip.EscapeClipText(clipEdit.Value)
+            mgr["Path"].Value := Clip.EscapeClipText(clipEdit.Value)
             Clip.CloseClipEditor()
         }
     }
 
     static CloseClipEditor(*) {
-        Global g_CmdMgrGui, g_ClipEditGui
-        try g_CmdMgrGui.Opt("-Disabled")
-        try g_ClipEditGui.Destroy()
-        try WinActivate("ahk_id " g_CmdMgrGui.Hwnd)
+        try CommandManager.G.Opt("-Disabled")
+        try Clip._EditGui.Destroy()
+        try WinActivate("ahk_id " CommandManager.G.Hwnd)
     }
 
     ;===========================================================================
