@@ -1579,7 +1579,11 @@ NewClip(*) {                                                            ; Comman
 }
 
 PTTools() {
-    PTToolsWindow.Show()                                                  ; Lib\PTTools.ahk - Rebar/BRC calculator + SPF2M automation
+    PTToolsWindow.Show()                                                  ; Lib\PTTools.ahk - Rebar/BRC calculator
+}
+
+SPF2M() {
+    PTToolsWindow.ShowSpf2m()                                             ; Lib\PTTools.ahk - SPF2M profile calculator automation
 }
 
 StruCalc(evalResult) {
@@ -1615,7 +1619,7 @@ Options(ActTab := 1) {
         , "ClearInput", "RunCurrentCommand", "RankUp", "RankDown", "Reindex"
         , "About", "Usage", "Update", "UserCommand", "NewCommand", "EditCommand"
         , "DelCommand", "OpenCommandManager", "Options", "TurnMonitorOff", "EmptyRecycle"
-        , "MuteVolume", "RestartApp", "Exit", "PTTools"]
+        , "MuteVolume", "RestartApp", "Exit", "PTTools", "SPF2M"]
 
     g_LOG.Debug("Options: Opening Options window... Tab=" ActTab)
     MainGUI_Close()
