@@ -1614,6 +1614,32 @@ ClipTrimLines()       { Clip.TrimLines() }
 ClipRemoveBlankLines(){ Clip.RemoveBlankLines() }
 ClipDedupeLines()     { Clip.DedupeLines() }
 
+; Opens a cmd.exe window at whatever folder Total Commander/Explorer was
+; browsing right before ALTRun was invoked - reuses the same read-only path
+; detection Listary.ahk already has for the dialog-box quick-switch feature.
+OpenTerminalHere() {
+    hwnd := g_RUNTIME["LastWin"]
+    if (!hwnd || !WinExist("ahk_id " hwnd))
+        return MsgBox(g_LNG[840], g_TITLE, 48)
+
+    winClass := WinGetClass("ahk_id " hwnd)
+    if (winClass = "TTOTAL_CMD")
+        path := Listary.TCCurrentPath()
+    else if (winClass = "CabinetWClass")
+        path := Listary.ExplorerCurrentPath()
+    else
+        path := ""
+
+    if (path = "" || !FileExist(path))
+        return MsgBox(g_LNG[840], g_TITLE, 48)
+
+    try {
+        Run(A_ComSpec, path)
+    } catch as e {
+        MsgBox("Could not open a terminal at: " path "`n`n" e.Message, g_TITLE, 48)
+    }
+}
+
 PTTools() {
     PTToolsWindow.Show()                                                  ; Lib\PTTools.ahk - Rebar/BRC calculator
 }

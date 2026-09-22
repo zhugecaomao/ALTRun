@@ -260,6 +260,7 @@ Class AppData {
             Func | ClipTrimLines | Clipboard: trim each line=66
             Func | ClipRemoveBlankLines | Clipboard: remove blank lines=66
             Func | ClipDedupeLines | Clipboard: remove duplicate lines=66
+            Func | OpenTerminalHere | Open terminal at Explorer/TC's current folder=66
             File | %Temp%\ALTRun.log | ALTRun Log File=99
             Dir | A_ScriptDir | ALTRun Program Dir=99
             Dir | A_Startup | Current User Startup Dir=99

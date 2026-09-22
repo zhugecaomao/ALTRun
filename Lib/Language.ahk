@@ -236,6 +236,7 @@ Class Lang {
         ENG[837] := "Clipboard: trimmed each line"
         ENG[838] := "Clipboard: blank lines removed"
         ENG[839] := "Clipboard: duplicate lines removed"
+        ENG[840] := "Could not detect a folder - switch to Explorer or Total Commander first, then run this again."
 
         CHN[1]  := "简体中文"                                               ; 1~9 Reserved
         CHN[2]  := "选项"
@@ -438,6 +439,7 @@ Class Lang {
         CHN[837] := "剪贴板: 已清除每行首尾空白"
         CHN[838] := "剪贴板: 已清除空行"
         CHN[839] := "剪贴板: 已去重"
+        CHN[840] := "没有探测到目录, 请先切换到资源管理器或 Total Commander 再试一次。"
 
         lng := Lang.IsChinese() ? CHN : ENG
         g_LOG.Debug("Lang.Load: Set language to " lng[1] "...OK")
