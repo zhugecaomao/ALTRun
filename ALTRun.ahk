@@ -277,6 +277,7 @@ SetMainGUI() {
     MainGUI.OnEvent("Escape", MainGUI_Escape)
     MainGUI.OnEvent("Size"  , MainGUI_Size)
     MainGUI.OnEvent("ContextMenu", MainGUI_ContextMenu)
+    MainGUI.OnEvent("DropFiles", MainGUI_DropFiles)
     MainGUI.BackColor := g_GUI["MainGUIColor"]
     mainGuiFont := Fonts.Spec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
     MainGUI.SetFont(mainGuiFont.opt, mainGuiFont.name)
@@ -1427,6 +1428,30 @@ UserCommand(*) {                                                        ; F4 - e
 ; From command "New Command" or GUI context menu "New Command"
 NewCommand(*) {
     OpenCommandManager("UserCommand", , , g_RUNTIME["Arg"], 1, "")
+}
+
+; Drag a file/folder/shortcut onto the main window: pre-fill the Command Manager
+; with it (File/Dir type + a guessed description) so the user can confirm/edit
+; before it's actually saved - dropping never adds a command by itself.
+MainGUI_DropFiles(GuiObj, GuiCtrlObj, FileArray, X, Y) {
+    if (!FileArray.Length)
+        return
+
+    droppedPath := FileArray[1]
+    targetPath  := droppedPath
+    if (SubStr(droppedPath, -3) = ".lnk") {
+        try {
+            FileGetShortcut(droppedPath, &target)
+            if (target != "")
+                targetPath := target
+        } catch as e {
+            g_LOG.Debug("MainGUI_DropFiles: FileGetShortcut failed on " droppedPath " - " e.Message)
+        }
+    }
+
+    cmdType := DirExist(targetPath) ? "Dir" : "File"
+    SplitPath(targetPath, , , , &nameNoExt)
+    OpenCommandManager("UserCommand", cmdType, targetPath, nameNoExt, 1, "")
 }
 
 EditCommand(*) {
