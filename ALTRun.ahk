@@ -56,7 +56,7 @@ Global g_CMDDATA  := Map()           ; Command store: section name -> Map(comman
 Global g_COMMANDS := Array()         ; All commands
 Global g_CMDINDEX := Array()         ; Searchable text for All commands
 Global g_FALLBACK := Array()         ; Fallback commands
-Global g_HISTORYS := Array()         ; Execution history
+Global g_HISTORY := Array()         ; Execution history
 Global g_MATCHED  := Array()         ; Matched commands
 Global g_DELUNDO  := Array()         ; Ctrl+Z undo stack for DelCommand: {Section, CmdLine, Rank}, most recent last
 

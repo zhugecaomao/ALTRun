@@ -42,7 +42,7 @@
 Class AppData {
 
     static LoadAppData(forceReload := false) {
-        Global g_CMDDATA, g_HISTORYS
+        Global g_CMDDATA, g_HISTORY
 
         static loaded := false
         if (!forceReload && loaded)
@@ -128,11 +128,11 @@ Class AppData {
         }
 
         ; --- History ---
-        g_HISTORYS.Length := 0
+        g_HISTORY.Length := 0
         if (data.Has("History") && data["History"] is Array) {
             for _, entry in data["History"]
                 if (Trim(entry) != "")
-                    g_HISTORYS.Push(entry)
+                    g_HISTORY.Push(entry)
         }
 
         if (dirty && AppData.SaveAppData() && movedSections.Length)
@@ -142,7 +142,7 @@ Class AppData {
             . ", User=" g_CMDDATA["UserCommand"].Count
             . ", Index=" g_CMDDATA["Index"].Count
             . ", Fallback=" g_CMDDATA["FallbackCommand"].Length
-            . ", History=" g_HISTORYS.Length)
+            . ", History=" g_HISTORY.Length)
 
         if (!g_CMDDATA["Index"].Count) {
             if (MsgBox(g_LNG[804], g_TITLE, 4161) = "OK")
@@ -165,7 +165,7 @@ Class AppData {
             "Gui",     g_GUI,
             "Hotkey",  g_HOTKEY,
             "Usage",   g_USAGE,
-            "History", g_HISTORYS,
+            "History", g_HISTORY,
             "Benchmark", g_BENCH,
             "PTTools", PTToolsWindow.Settings,
             "DefaultCommand", Map(),

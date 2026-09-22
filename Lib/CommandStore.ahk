@@ -69,10 +69,10 @@ Class CommandStore {
         if (g_CONFIG["SaveHistory"] = false || originCmd = "")
             return
 
-        g_HISTORYS.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])
+        g_HISTORY.InsertAt(1, originCmd " Arg=" g_RUNTIME["Arg"])
 
-        if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
-            g_HISTORYS.Pop()
+        if (g_HISTORY.Length > g_CONFIG["HistoryLen"])
+            g_HISTORY.Pop()
     }
 
     static LoadCommands() {
@@ -135,17 +135,17 @@ Class CommandStore {
         return
     }
 
-    static LoadHistory() {                                                     ; g_HISTORYS is already populated by AppData.LoadAppData(); just apply policy
+    static LoadHistory() {                                                     ; g_HISTORY is already populated by AppData.LoadAppData(); just apply policy
         if (!g_CONFIG["SaveHistory"]) {
-            if (g_HISTORYS.Length) {
-                g_HISTORYS.Length := 0
+            if (g_HISTORY.Length) {
+                g_HISTORY.Length := 0
                 AppData.SaveAppData()
             }
             g_LOG.Debug("LoadHistory: History disabled, cleared.")
             return
         }
-        if (g_HISTORYS.Length > g_CONFIG["HistoryLen"])
-            g_HISTORYS.Length := g_CONFIG["HistoryLen"]
-        g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORYS.Length)
+        if (g_HISTORY.Length > g_CONFIG["HistoryLen"])
+            g_HISTORY.Length := g_CONFIG["HistoryLen"]
+        g_LOG.Debug("LoadHistory: Loaded history..." g_HISTORY.Length)
     }
 }
