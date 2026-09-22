@@ -53,6 +53,7 @@ Global g_CMDINDEX := Array()         ; Searchable text for All commands
 Global g_FALLBACK := Array()         ; Fallback commands
 Global g_HISTORYS := Array()         ; Execution history
 Global g_MATCHED  := Array()         ; Matched commands
+Global g_DELUNDO  := Array()         ; Ctrl+Z undo stack for DelCommand: {Section, CmdLine, Rank}, most recent last
 
 Global g_CONFIG := Map(
     "AutoStartup"    , 1,
@@ -471,6 +472,7 @@ RegisterHotkey() {
         Hotkey("^c"         , CopyCommand)
         Hotkey("^n"         , NewCommand)
         Hotkey("^Del"       , DelCommand)
+        Hotkey("^z"         , UndoDelCommand)
         Hotkey("Down"       , NextCommand)
         Hotkey("Up"         , PrevCommand)
         Hotkey("^NumpadAdd" , RankUp)
@@ -1428,9 +1430,11 @@ DelCommand(*) {
 
         if result = "YES" {
             try {
+                rank := g_CMDDATA[section][currentCmd]
                 g_CMDDATA[section].Delete(currentCmd)
                 AppData.SaveAppData()
-                MsgBox(g_LNG[802] "`n`n" currentCmd, g_TITLE, 64)       ; 64 = Info icon
+                g_DELUNDO.Push(Map("Section", section, "CmdLine", currentCmd, "Rank", rank))  ; Ctrl+Z restores this
+                MsgBox(g_LNG[802] "`n`n" currentCmd "`n`n" g_LNG[811], g_TITLE, 64)  ; 64 = Info icon
             } catch as e {
                 MsgBox(g_LNG[803] "`n`n" currentCmd, g_TITLE, 48)       ; 48 = Error icon
             }
@@ -1438,6 +1442,25 @@ DelCommand(*) {
         }
     }
     CommandStore.LoadCommands()
+}
+
+; Ctrl+Z: restore the most recently deleted command (as many times in a row as things were deleted).
+; In-memory only - once ALTRun is closed/reloaded, deleted commands can no longer be undone.
+UndoDelCommand(*) {
+    if (MainGUI.FocusedCtrl.ClassNN = "Edit1") {                       ; Typing in the input box: let the native "undo last edit" through instead
+        SendInput("^z")
+        return
+    }
+
+    if !g_DELUNDO.Length
+        return SetStatusBar(g_LNG[812])
+
+    entry := g_DELUNDO.Pop()
+    AppData.LoadAppData()
+    g_CMDDATA[entry["Section"]][entry["CmdLine"]] := entry["Rank"]
+    AppData.SaveAppData()
+    CommandStore.LoadCommands()
+    SetStatusBar(g_LNG[813] " " entry["CmdLine"])
 }
 
 

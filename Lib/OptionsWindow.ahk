@@ -25,7 +25,7 @@ Class OptionsWindow {
             , "Everything", "TabFunc", "PrevCommand", "NextCommand", "CopyCommand"
             , "ClearInput", "RunCurrentCommand", "RankUp", "RankDown", "Reindex"
             , "About", "Usage", "Update", "UserCommand", "NewCommand", "EditCommand"
-            , "DelCommand", "OpenCommandManager", "Options", "TurnMonitorOff", "EmptyRecycle"
+            , "DelCommand", "UndoDelCommand", "OpenCommandManager", "Options", "TurnMonitorOff", "EmptyRecycle"
             , "MuteVolume", "RestartApp", "Exit", "PTTools", "SPF2M"]
 
         g_LOG.Debug("Options: Opening Options window... Tab=" ActTab)
