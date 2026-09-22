@@ -237,6 +237,15 @@ Class Lang {
         ENG[838] := "Clipboard: blank lines removed"
         ENG[839] := "Clipboard: duplicate lines removed"
         ENG[840] := "Could not detect a folder - switch to Explorer or Total Commander first, then run this again."
+        ENG[841] := "Clipboard: converted to Traditional Chinese"
+        ENG[842] := "Clipboard: converted to Simplified Chinese"
+        ENG[843] := "No active network IP address found."
+        ENG[844] := "IP Address (first one copied to clipboard)"
+        ENG[845] := "Clipboard: URL-encoded"
+        ENG[850] := "Log off Windows now?"                                  ; 850+ System action confirmations
+        ENG[851] := "Shut down the computer now?"
+        ENG[852] := "Restart the computer now?"
+        ENG[853] := "Hibernate the computer now?"
 
         CHN[1]  := "简体中文"                                               ; 1~9 Reserved
         CHN[2]  := "选项"
@@ -440,6 +449,15 @@ Class Lang {
         CHN[838] := "剪贴板: 已清除空行"
         CHN[839] := "剪贴板: 已去重"
         CHN[840] := "没有探测到目录, 请先切换到资源管理器或 Total Commander 再试一次。"
+        CHN[841] := "剪贴板: 已转换为繁体中文"
+        CHN[842] := "剪贴板: 已转换为简体中文"
+        CHN[843] := "未找到有效的网络 IP 地址。"
+        CHN[844] := "IP 地址(已复制第一个到剪贴板)"
+        CHN[845] := "剪贴板: 已完成 URL 编码"
+        CHN[850] := "确定要注销吗?"                                          ; 850+ 系统操作确认
+        CHN[851] := "确定要关机吗?"
+        CHN[852] := "确定要重启电脑吗?"
+        CHN[853] := "确定要让电脑休眠吗?"
 
         lng := Lang.IsChinese() ? CHN : ENG
         g_LOG.Debug("Lang.Load: Set language to " lng[1] "...OK")

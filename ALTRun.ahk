@@ -19,6 +19,7 @@
 #Include Lib\CommandStore.ahk                                          ; CommandStore.LoadCommands() etc. - in-memory command cache/rank/usage/history.
 #Include Lib\PTTools.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
 #Include Lib\OptionsWindow.ahk                                         ; OptionsWindow.Show() - the settings window (see Options() below).
+#Include Lib\Kanji.ahk                                                 ; Kanji.ToSimplified()/ToTraditional() - local lookup table, see ClipToSimplified() below.
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -1679,6 +1680,8 @@ ClipSortDesc()        { Clip.SortDesc() }
 ClipTrimLines()       { Clip.TrimLines() }
 ClipRemoveBlankLines(){ Clip.RemoveBlankLines() }
 ClipDedupeLines()     { Clip.DedupeLines() }
+ClipToTraditional()   { Clip.ToTraditional() }
+ClipToSimplified()    { Clip.ToSimplified() }
 
 ; Opens a cmd.exe window at whatever folder Total Commander/Explorer was
 ; browsing right before ALTRun was invoked - reuses the same read-only path
@@ -1800,6 +1803,105 @@ Everything() {
     }
     return
 }
+
+Baidu() {
+    word := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
+    Run("https://www.baidu.com/s?wd=" word)
+}
+
+Taobao() {
+    word := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
+    Run("https://s.taobao.com/search?q=" word)
+}
+
+JD() {
+    word := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
+    Run("http://search.jd.com/Search?keyword=" word "&enc=utf-8")
+}
+
+ShowIP() {
+    ips := []
+    for _, ip in [A_IPAddress1, A_IPAddress2, A_IPAddress3, A_IPAddress4]
+        if (ip != "0.0.0.0")
+            ips.Push(ip)
+    if (!ips.Length)
+        return MsgBox(g_LNG[843], g_TITLE, 48)
+
+    text := ""
+    for _, ip in ips
+        text .= (text = "" ? "" : "`n") . ip
+    A_Clipboard := ips[1]
+    MsgBox(text, g_LNG[844], 64)
+}
+
+; Percent-encodes the arg/clipboard and writes the result back to the clipboard
+; (byte-by-byte over its UTF-8 encoding, so non-ASCII text encodes correctly too).
+UrlEncode() {
+    text := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
+    if (text = "")
+        return
+
+    out := ""
+    for ch in StrSplit(text) {
+        if RegExMatch(ch, "^[0-9A-Za-z\-_.~]$") {
+            out .= ch
+            continue
+        }
+        buf := Buffer(8, 0)
+        len := StrPut(ch, buf, "UTF-8") - 1
+        Loop len
+            out .= Format("%{:02X}", NumGet(buf, A_Index - 1, "UChar"))
+    }
+    A_Clipboard := out
+    ToolTip(g_LNG[845])
+    SetTimer(() => ToolTip(""), -1500)
+}
+
+Logoff() {
+    if (MsgBox(g_LNG[850], g_TITLE, "YesNo") = "Yes")
+        Shutdown(0)
+}
+
+ShutdownMachine() {
+    if (MsgBox(g_LNG[851], g_TITLE, "YesNo") = "Yes")
+        Shutdown(1)
+}
+
+RestartMachine() {
+    if (MsgBox(g_LNG[852], g_TITLE, "YesNo") = "Yes")
+        Shutdown(2)
+}
+
+HibernateMachine() {
+    if (MsgBox(g_LNG[853], g_TITLE, "YesNo") = "Yes")
+        DllCall("PowrProf\SetSuspendState", "Int", 1, "Int", 0, "Int", 0)
+}
+
+IncreaseVolume() {
+    SoundSetVolume("+5")
+}
+
+DecreaseVolume() {
+    SoundSetVolume("-5")
+}
+
+; Runs a console command and shows its output in Notepad via a named temp file -
+; simplest way to browse a long list without building a dedicated GUI for it.
+ShowCmdOutputInNotepad(command, tempName) {
+    tempFile := A_Temp "\" tempName
+    try FileDelete(tempFile)
+    FileAppend(GetCmdOutput(command), tempFile, "UTF-8")
+    Run("Notepad.exe `"" tempFile "`"")
+}
+
+ListProcess() {
+    ShowCmdOutputInNotepad("tasklist", "ALTRun.Processes.txt")
+}
+
+ListService() {
+    ShowCmdOutputInNotepad("net start", "ALTRun.Services.txt")
+}
+
 ; SetLanguage()/ReadChineseFlag() used to live here; both are now Lang.Load()/
 ; Lang.IsChinese() in Lib\Language.ahk (see the #Include list at the top of
 ; this file and the "Global g_LNG := Lang.Load()" call near the top).
