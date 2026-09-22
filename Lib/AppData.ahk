@@ -16,10 +16,9 @@
 ;
 ; ALTRun.json is the single source of truth for everything, including PT
 ; Tools' own settings (see "PTTools" below, owned by Lib\PTTools.ahk /
-; PTToolsWindow). ALTRun.ini is retired - this was always a single-machine,
-; single-user install, so once the one-off migration off the ini ran there
-; was no reason to keep the migration code (or the ini file's own copies of
-; the data) around for a scenario that will never come up again.
+; PTToolsWindow). Anyone still on a pre-JSON ALTRun.ini gets migrated
+; automatically the next time they start ALTRun - see Lib\IniMigration.ahk
+; for that one-off detection/conversion, called from LoadAppData() below.
 ;
 ; File layout:
 ; {
@@ -66,6 +65,8 @@ Class AppData {
             }
         }
 
+        movedSections := IniMigration.MigrateFromIni(data)                  ; Fills in whatever a pre-JSON ALTRun.ini still has that data[] is missing
+
         ; --- Commands (DefaultCommand / UserCommand / Index / FallbackCommand) ---
         for _, name in ["DefaultCommand", "UserCommand", "Index"] {
             if !(data.Has(name) && data[name] is Map)
@@ -84,7 +85,7 @@ Class AppData {
             }
         }
 
-        dirty := false
+        dirty := movedSections.Length > 0
         if (!g_CMDDATA["DefaultCommand"].Count) {
             g_CMDDATA["DefaultCommand"] := AppData.ParseCommandBlock(AppData.DefaultCommandText())
             dirty := true
@@ -134,8 +135,8 @@ Class AppData {
                     g_HISTORYS.Push(entry)
         }
 
-        if (dirty)
-            AppData.SaveAppData()
+        if (dirty && AppData.SaveAppData() && movedSections.Length)
+            IniMigration.FinishIniMigration(movedSections)                  ; Backs up ALTRun.ini, then strips the now-migrated sections
 
         g_LOG.Debug("LoadAppData: Default=" g_CMDDATA["DefaultCommand"].Count
             . ", User=" g_CMDDATA["UserCommand"].Count
@@ -206,12 +207,14 @@ Class AppData {
         Logger.Flush()                                                     ; Buffered log lines are lost otherwise - see Lib/Logger.ahk
     }
 
-    static ParseCommandBlock(blockText) {                                  ; "command line=rank" lines -> Map
+    static ParseCommandBlock(blockText, legacyUnescape := false) {         ; "command line=rank" lines -> Map
         result := Map()
         for _, line in StrSplit(blockText, "`n", "`r") {
             line := Trim(line)
             if (!line || SubStr(line, 1, 1) = ";" || SubStr(line, 1, 1) = "[")
                 continue
+            if (legacyUnescape)
+                line := IniMigration.UnescapeCommandKey(line)
             if !RegExMatch(line, "^(.*)=(\d+)\s*$", &m)                     ; Split on the LAST '=', so the command itself may contain '='
                 continue
             cmdLine := Trim(m.1)
