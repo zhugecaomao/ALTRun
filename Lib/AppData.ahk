@@ -243,7 +243,8 @@ Class AppData {
             Func | Usage | ALTRun Usage Status=99
             Func | Reindex | Reindex search database=99
             Func | Everything | Search by Everything=99
-            Func | PTTools | PT Tools (Rebar/BRC calculator + SPF2M)=99
+            Func | PTTools | PT Tools (Rebar/BRC calculator)=99
+            Func | SPF2M | SPF2M Profile Calculator=99
             Func | AhkRun | Run Command use AutoHotkey Run=99
             Func | Google | Search Clipboard or Input by Google=99
             Func | Bing | Search Clipboard or Input by Bing=99

@@ -10,6 +10,13 @@
 ; Rebar/BRC 计算器、表达式求值、以及 SPF2M 束线型计算器自动化这几项正常的工程
 ; 小工具。
 ;
+; Rebar/BRC 计算器和 SPF2M 分成两个独立窗口(PTToolsWindow.Show() /
+; PTToolsWindow.ShowSpf2m()), 不再用 Tab 切换 - 各自可以单独开关、单独记住
+; 窗口位置, 互不影响。两边共用同一份 Settings(都存在 ALTRun.json 的
+; "PTTools" 节点里), 只是各自只读写自己关心的那部分字段(RebarFieldNames /
+; Spf2mFieldNames), 也各自有一份窗口位置(WinLeft/WinTop 给 PT Tools 窗口,
+; Spf2mWinLeft/Spf2mWinTop 给 SPF2M 窗口)。
+;
 ; SPF2M 需要的资源文件 (DOSBox.exe / SDL.dll / SDL_net.dll / SPF2M.exe) 已经从旧
 ; PTTools.ahk 里内嵌的 Base64 数据还原成真正的二进制文件, 放在 Res\ 目录下, 和
 ; Run.bat 引用的文件名 (DOSBox.exe SPF2M.exe) 保持一致。
@@ -20,7 +27,8 @@
 ; 直接手动同步改了 ALTRun.json 里对应的 key, 没有另外写一遍迁移代码。
 ;
 ; 用法 (ALTRun.ahk 里):
-;   PTTools() { PTToolsWindow.Show() }         ; 见 ALTRun.ahk 里的 PTTools()
+;   PTTools() { PTToolsWindow.Show() }             ; Rebar/BRC 计算器
+;   SPF2M()   { PTToolsWindow.ShowSpf2m() }        ; SPF2M 束线型计算器
 ;===============================================================================
 
 Class PTToolsWindow {
@@ -31,6 +39,7 @@ Class PTToolsWindow {
     ; ---------------------------------------------------------------------
     static Defaults := Map(
         "WinLeft", 500, "WinTop", 500,
+        "Spf2mWinLeft", 550, "Spf2mWinTop", 550,
 
         ; Total Rebar Area
         "RebarSpanWidth", 3000, "RebarBarDiameter", "20", "RebarBarSpacing", 200,
@@ -61,15 +70,17 @@ Class PTToolsWindow {
         "MinCurveRadius", "[DFT]", "ChangeSupportInterval", "N"
     )
 
-    ; The subset of Defaults' keys that live on a GUI control and round-trip
-    ; through Save()/Show() - i.e. everything except WinLeft/WinTop, which are
-    ; the window position and handled separately via WinGetPos.
-    static FieldNames := [
+    ; PT Tools (Rebar/BRC) window fields - round-trip through Show()/Save().
+    static RebarFieldNames := [
         "RebarSpanWidth", "RebarBarDiameter", "RebarBarSpacing", "RebarTotalArea", "RebarBarCount",
         "RequiredAreaExpression", "RequiredTotalArea", "RequiredBarDiameter",
         "SafetyFactorEnabled", "SafetyFactor", "RequiredBarCount",
         "BrcSpanWidth", "BrcTopMeshMark", "BrcTopArea", "BrcBotMeshMark", "BrcBotArea",
-        "ExprInput", "ExprResult",
+        "ExprInput", "ExprResult"
+    ]
+
+    ; SPF2M window fields - round-trip through ShowSpf2m()/SaveSpf2m().
+    static Spf2mFieldNames := [
         "ProfileType", "TendonType", "StartLevel", "StartAtCG",
         "EndLevel", "EndAtCG", "HorizontalDistance",
         "AutoInputEnabled", "CustomTimingEnabled", "InitDelayMs", "KeyIntervalMs",
@@ -89,8 +100,10 @@ Class PTToolsWindow {
     static BarDiameters := ["10", "13", "16", "20", "25", "32", "40"]
 
     static Settings := PTToolsWindow.Defaults.Clone()
-    static G := ""                                                        ; the Gui object, while the window is open
+    static G    := ""                                                     ; PT Tools (Rebar/BRC) Gui object, while open
+    static SpfG := ""                                                     ; SPF2M Gui object, while open
     static HotkeysReady := false
+    static Spf2mHotkeysReady := false
 
     ; Called from AppData.LoadAppData() (Lib\AppData.ahk), same pattern as g_CONFIG/g_GUI.
     static Load(saved) {
@@ -119,7 +132,7 @@ Class PTToolsWindow {
     }
 
     ; ===================================================================
-    ; Window
+    ; PT Tools window - Rebar Area / Rebar Qty Required / BRC Area / Expression
     ; ===================================================================
     static Show() {
         if WinExist("PT Tools") {
@@ -133,15 +146,17 @@ Class PTToolsWindow {
         g.SetFont("s9", "Microsoft YaHei")
         g.OnEvent("Close", (p*) => PTToolsWindow.OnClose(p*))
 
-        tab := g.AddTab3(, ["REBAR", "SPF2M"])
+        rebarRight    := PTToolsWindow.BuildRebarAreaGroup(g, S, 20)
+        requiredRight := PTToolsWindow.BuildRequiredQtyGroup(g, S, rebarRight + PTToolsWindow.RebarColGap)
+        PTToolsWindow.BuildBrcAreaGroup(g, S, requiredRight + PTToolsWindow.RebarColGap)
+        PTToolsWindow.BuildExpressionGroup(g, S, requiredRight)
 
-        tab.UseTab(1)
-        PTToolsWindow.BuildRebarTab(g, S)
-
-        tab.UseTab(2)
-        PTToolsWindow.BuildSpf2mTab(g, S)
-
-        tab.UseTab(0)
+        ; ComboBox initial text is set last, once every sibling control any of
+        ; this window's Change handlers touch already exists - defends against a
+        ; programmatic .Text write firing Change synchronously mid-construction
+        ; (see the note on ComboFields at the top of the class).
+        g["RebarBarDiameter"].Text := S["RebarBarDiameter"]
+        g["RequiredBarDiameter"].Text := S["RequiredBarDiameter"]
 
         PTToolsWindow.SetupHotkeys()
 
@@ -174,7 +189,7 @@ Class PTToolsWindow {
         if !(g)
             return
         S := PTToolsWindow.Settings
-        for _, name in PTToolsWindow.FieldNames {
+        for _, name in PTToolsWindow.RebarFieldNames {
             try S[name] := PTToolsWindow.ComboFields.Has(name) ? g[name].Text : g[name].Value
         }
         try {
@@ -185,9 +200,17 @@ Class PTToolsWindow {
         AppData.SaveAppData()                                               ; Lib\AppData.ahk - writes ALTRun.json right away
     }
 
-    ; ===================================================================
-    ; Tab 1 - REBAR
-    ; ===================================================================
+    ; ---------------------------------------------------------------------
+    ; Layout constants for the three side-by-side GroupBoxes below. Every
+    ; label sits labelGap px to the left of its edit control - wide enough
+    ; for the longest label in any of the three groups ("Top BRC Mark
+    ; A/B/D/E" et al) so the text can never visually run into the edit box
+    ; the way the old single labelGap=135 layout did.
+    ; ---------------------------------------------------------------------
+    static RebarLabelGap := 175
+    static RebarFieldW   := 80
+    static RebarColGap   := 10
+
     ; Adds a "Label:" + Edit control pair on one row (label at x, edit at
     ; editX) and returns the Edit control, so callers can still chain
     ; .OnEvent(...) - shared by every numeric/text field on this tab.
@@ -196,78 +219,88 @@ Class PTToolsWindow {
         return g.AddEdit("x" editX " y" y " w" w " r1 " opts " v" name, value)
     }
 
-    static BuildRebarTab(g, S) {
-        PTToolsWindow.BuildRebarAreaGroup(g, S)
-        PTToolsWindow.BuildRequiredQtyGroup(g, S)
-        PTToolsWindow.BuildBrcAreaGroup(g, S)
-        PTToolsWindow.BuildExpressionGroup(g, S)
+    static BuildRebarAreaGroup(g, S, x0) {
+        labelX := x0 + 15
+        editX  := labelX + PTToolsWindow.RebarLabelGap
+        w := (editX + PTToolsWindow.RebarFieldW + 15) - x0
 
-        ; ComboBox initial text is set last, once every sibling control any of
-        ; this tab's Change handlers touch already exists - defends against a
-        ; programmatic .Text write firing Change synchronously mid-construction
-        ; (see the note on ComboFields at the top of the class).
-        g["RebarBarDiameter"].Text := S["RebarBarDiameter"]
-        g["RequiredBarDiameter"].Text := S["RequiredBarDiameter"]
+        g.Add("GroupBox", "x" x0 " y15 w" w " h240", "Total Rebar Area")
+        PTToolsWindow.Field(g, labelX, editX, 42, PTToolsWindow.RebarFieldW, "Span Width (mm)", "RebarSpanWidth", S["RebarSpanWidth"], "+Number")
+            .OnEvent("Change", (p*) => PTToolsWindow.OnRebarFieldChanged(p*))
+
+        g.AddText("x" labelX " y85", "Rebar Diameter (mm)")
+        g.AddComboBox("x" editX " y82 w" PTToolsWindow.RebarFieldW " vRebarBarDiameter", PTToolsWindow.BarDiameters)
+            .OnEvent("Change", (p*) => PTToolsWindow.OnRebarFieldChanged(p*))
+
+        PTToolsWindow.Field(g, labelX, editX, 122, PTToolsWindow.RebarFieldW, "Rebar Spacing (mm)", "RebarBarSpacing", S["RebarBarSpacing"])
+            .OnEvent("Change", (p*) => PTToolsWindow.OnRebarFieldChanged(p*))
+        PTToolsWindow.Field(g, labelX, editX, 162, PTToolsWindow.RebarFieldW, "Rebar Area (mm2)", "RebarTotalArea", PTToolsWindow.Fmt2(S["RebarTotalArea"]), "ReadOnly")
+        PTToolsWindow.Field(g, labelX, editX, 202, PTToolsWindow.RebarFieldW, "Rebar Count (No.)", "RebarBarCount", PTToolsWindow.Fmt2(S["RebarBarCount"]), "ReadOnly")
+
+        return x0 + w
     }
 
-    static BuildRebarAreaGroup(g, S) {
-        g.Add("GroupBox", "x20 y15 w240 h240", "Total Rebar Area")
-        PTToolsWindow.Field(g, 35, 170, 42, 80, "Span Width (mm)", "RebarSpanWidth", S["RebarSpanWidth"], "+Number")
-            .OnEvent("Change", (p*) => PTToolsWindow.OnRebarFieldChanged(p*))
+    static BuildRequiredQtyGroup(g, S, x0) {
+        labelX := x0 + 15
+        editX  := labelX + PTToolsWindow.RebarLabelGap
+        w := (editX + PTToolsWindow.RebarFieldW + 15) - x0
 
-        g.AddText("x35 y85", "Rebar Diameter (mm)")
-        g.AddComboBox("x170 y82 w80 vRebarBarDiameter", PTToolsWindow.BarDiameters)
-            .OnEvent("Change", (p*) => PTToolsWindow.OnRebarFieldChanged(p*))
-
-        PTToolsWindow.Field(g, 35, 170, 122, 80, "Rebar Spacing (mm)", "RebarBarSpacing", S["RebarBarSpacing"])
-            .OnEvent("Change", (p*) => PTToolsWindow.OnRebarFieldChanged(p*))
-        PTToolsWindow.Field(g, 35, 170, 162, 80, "Rebar Area (mm2)", "RebarTotalArea", PTToolsWindow.Fmt2(S["RebarTotalArea"]), "ReadOnly")
-        PTToolsWindow.Field(g, 35, 170, 202, 80, "Rebar Count (No.)", "RebarBarCount", PTToolsWindow.Fmt2(S["RebarBarCount"]), "ReadOnly")
-    }
-
-    static BuildRequiredQtyGroup(g, S) {
-        g.Add("GroupBox", "x270 y15 w240 h240", "Rebar Qty Required")
-        PTToolsWindow.Field(g, 285, 420, 42, 80, "Area Expression", "RequiredAreaExpression", S["RequiredAreaExpression"])
+        g.Add("GroupBox", "x" x0 " y15 w" w " h240", "Rebar Qty Required")
+        PTToolsWindow.Field(g, labelX, editX, 42, PTToolsWindow.RebarFieldW, "Area Expression", "RequiredAreaExpression", S["RequiredAreaExpression"])
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredExpressionChanged(p*))
-        PTToolsWindow.Field(g, 285, 420, 82, 80, "Total Area (mm2)", "RequiredTotalArea", PTToolsWindow.Fmt2(S["RequiredTotalArea"]), "ReadOnly")
+        PTToolsWindow.Field(g, labelX, editX, 82, PTToolsWindow.RebarFieldW, "Total Area (mm2)", "RequiredTotalArea", PTToolsWindow.Fmt2(S["RequiredTotalArea"]), "ReadOnly")
 
-        g.AddText("x285 y125", "Rebar Diameter (mm)")
-        g.AddComboBox("x420 y122 w80 vRequiredBarDiameter", PTToolsWindow.BarDiameters)
+        g.AddText("x" labelX " y125", "Rebar Diameter (mm)")
+        g.AddComboBox("x" editX " y122 w" PTToolsWindow.RebarFieldW " vRequiredBarDiameter", PTToolsWindow.BarDiameters)
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredFieldChanged(p*))
 
         ; Safety factor: an optional multiplier on the required area before it's
         ; converted to a bar count, e.g. 1.20 for a 20% design margin. Disabled
         ; by default so it never silently changes a result the user didn't ask for.
-        g.AddCheckBox("x285 y164 w130 vSafetyFactorEnabled Checked" S["SafetyFactorEnabled"], "Safety Factor")
+        g.AddCheckBox("x" labelX " y164 w130 vSafetyFactorEnabled Checked" S["SafetyFactorEnabled"], "Safety Factor")
             .OnEvent("Click", (p*) => PTToolsWindow.OnSafetyFactorToggled(p*))
-        g.AddEdit("x420 y162 w80 r1 vSafetyFactor", S["SafetyFactor"])
+        g.AddEdit("x" editX " y162 w" PTToolsWindow.RebarFieldW " r1 vSafetyFactor", S["SafetyFactor"])
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredFieldChanged(p*))
 
-        PTToolsWindow.Field(g, 285, 420, 202, 80, "Rebar Count (No.)", "RequiredBarCount", S["RequiredBarCount"], "ReadOnly")
+        PTToolsWindow.Field(g, labelX, editX, 202, PTToolsWindow.RebarFieldW, "Rebar Count (No.)", "RequiredBarCount", S["RequiredBarCount"], "ReadOnly")
 
         g["SafetyFactor"].Enabled := S["SafetyFactorEnabled"]
+        return x0 + w
     }
 
-    static BuildBrcAreaGroup(g, S) {
-        g.Add("GroupBox", "x520 y15 w240 h320", "BRC Area")
-        PTToolsWindow.Field(g, 535, 670, 42, 80, "Span Width (mm)", "BrcSpanWidth", S["BrcSpanWidth"])
+    static BuildBrcAreaGroup(g, S, x0) {
+        labelX := x0 + 15
+        editX  := labelX + PTToolsWindow.RebarLabelGap
+        w := (editX + PTToolsWindow.RebarFieldW + 15) - x0
+
+        g.Add("GroupBox", "x" x0 " y15 w" w " h320", "BRC Area")
+        PTToolsWindow.Field(g, labelX, editX, 42, PTToolsWindow.RebarFieldW, "Span Width (mm)", "BrcSpanWidth", S["BrcSpanWidth"])
             .OnEvent("Change", (p*) => PTToolsWindow.OnBrcFieldChanged(p*))
-        PTToolsWindow.Field(g, 535, 670, 82, 80, "Top BRC Mark A/B/D/E", "BrcTopMeshMark", S["BrcTopMeshMark"], "Uppercase")
+        PTToolsWindow.Field(g, labelX, editX, 82, PTToolsWindow.RebarFieldW, "Top BRC Mark A/B/D/E", "BrcTopMeshMark", S["BrcTopMeshMark"], "Uppercase")
             .OnEvent("Change", (p*) => PTToolsWindow.OnBrcFieldChanged(p*))
-        PTToolsWindow.Field(g, 535, 670, 122, 80, "Top Mesh Area (mm2)", "BrcTopArea", PTToolsWindow.Fmt2(S["BrcTopArea"]), "ReadOnly")
-        PTToolsWindow.Field(g, 535, 670, 162, 80, "Top BRC + Rebar", "BrcTopCombinedArea", "0.00", "ReadOnly")
-        PTToolsWindow.Field(g, 535, 670, 202, 80, "Bot BRC Mark A/B/D/E", "BrcBotMeshMark", S["BrcBotMeshMark"], "Uppercase")
+        PTToolsWindow.Field(g, labelX, editX, 122, PTToolsWindow.RebarFieldW, "Top Mesh Area (mm2)", "BrcTopArea", PTToolsWindow.Fmt2(S["BrcTopArea"]), "ReadOnly")
+        PTToolsWindow.Field(g, labelX, editX, 162, PTToolsWindow.RebarFieldW, "Top BRC + Rebar", "BrcTopCombinedArea", "0.00", "ReadOnly")
+        PTToolsWindow.Field(g, labelX, editX, 202, PTToolsWindow.RebarFieldW, "Bot BRC Mark A/B/D/E", "BrcBotMeshMark", S["BrcBotMeshMark"], "Uppercase")
             .OnEvent("Change", (p*) => PTToolsWindow.OnBrcFieldChanged(p*))
-        PTToolsWindow.Field(g, 535, 670, 242, 80, "Bot Mesh Area (mm2)", "BrcBotArea", PTToolsWindow.Fmt2(S["BrcBotArea"]), "ReadOnly")
-        PTToolsWindow.Field(g, 535, 670, 282, 80, "Bot BRC + Rebar", "BrcBotCombinedArea", "0.00", "ReadOnly")
+        PTToolsWindow.Field(g, labelX, editX, 242, PTToolsWindow.RebarFieldW, "Bot Mesh Area (mm2)", "BrcBotArea", PTToolsWindow.Fmt2(S["BrcBotArea"]), "ReadOnly")
+        PTToolsWindow.Field(g, labelX, editX, 282, PTToolsWindow.RebarFieldW, "Bot BRC + Rebar", "BrcBotCombinedArea", "0.00", "ReadOnly")
     }
 
-    static BuildExpressionGroup(g, S) {
-        g.Add("GroupBox", "x20 y270 w490 h75", "Expression Evaluation")
-        g.AddEdit("x35 y300 w220 r1 vExprInput", S["ExprInput"])
+    static BuildExpressionGroup(g, S, requiredGroupRight) {
+        ; Sits under the Total Rebar Area + Rebar Qty Required columns only
+        ; (same as the taller BRC Area column standing beside it, not under it).
+        w := requiredGroupRight - 20
+        g.Add("GroupBox", "x20 y270 w" w " h75", "Expression Evaluation")
+
+        inputW  := (w - 65) // 2                                            ; 65 = margins (35+15) + "=" sign column (15)
+        eqX     := 35 + inputW + 8
+        resultX := eqX + 23
+        resultW := w - (resultX - 20) - 15
+
+        g.AddEdit("x35 y300 w" inputW " r1 vExprInput", S["ExprInput"])
             .OnEvent("Change", (p*) => PTToolsWindow.OnExpressionChanged(p*))
-        g.AddText("x262 y303 w15", "=")
-        g.AddEdit("x280 y300 w215 r1 ReadOnly vExprResult", PTToolsWindow.Fmt2(S["ExprResult"]))
+        g.AddText("x" eqX " y303 w15", "=")
+        g.AddEdit("x" resultX " y300 w" resultW " r1 ReadOnly vExprResult", PTToolsWindow.Fmt2(S["ExprResult"]))
     }
 
     static OnRebarFieldChanged(*) {
@@ -358,57 +391,132 @@ Class PTToolsWindow {
     }
 
     ; ===================================================================
-    ; Tab 2 - SPF2M (Post-Tension Profile Calculator automation)
+    ; SPF2M window - Post-Tension Profile Calculator automation
     ; ===================================================================
-    static BuildSpf2mTab(g, S) {
-        PTToolsWindow.BuildProfileGroup(g, S)
-        PTToolsWindow.BuildAutomationOptionsGroup(g, S)
+    static ShowSpf2m() {
+        if WinExist("SPF2M") {
+            WinActivate("SPF2M")
+            return
+        }
+
+        S := PTToolsWindow.Settings
+        g := Gui("+AlwaysOnTop", "SPF2M")
+        PTToolsWindow.SpfG := g
+        g.SetFont("s9", "Microsoft YaHei")
+        g.OnEvent("Close", (p*) => PTToolsWindow.OnCloseSpf2m(p*))
+
+        profileRight := PTToolsWindow.BuildProfileGroup(g, S, 20)
+        PTToolsWindow.BuildAutomationOptionsGroup(g, S, profileRight + 10)
         PTToolsWindow.ApplyFieldEnableState(S["AutoInputEnabled"], S["CustomTimingEnabled"])
+
+        PTToolsWindow.SetupSpf2mHotkeys()
+
+        g.Show("x" S["Spf2mWinLeft"] " y" S["Spf2mWinTop"] " AutoSize")
     }
 
-    static BuildProfileGroup(g, S) {
-        g.Add("GroupBox", "x20 y15 w380 h250", "SPF2M (Post-Tension Profile Calculator)")
-        g.AddText("x35 y45", "Profile Type")
-        g.AddDropDownList("x160 y42 w220 Choose" S["ProfileType"] " vProfileType", PTToolsWindow.ProfileTypes)
-        g.AddText("x35 y80", "Tendon Type")
-        g.AddDropDownList("x160 y77 w220 Choose" S["TendonType"] " vTendonType", PTToolsWindow.TendonTypes)
-
-        PTToolsWindow.Field(g, 35, 200, 112, 90, "Start Level (mm)", "StartLevel", S["StartLevel"])
-        g.AddCheckBox("x300 y114 w80 vStartAtCG Checked" S["StartAtCG"], "At C.G.")
-
-        PTToolsWindow.Field(g, 35, 200, 147, 90, "End Level (mm)", "EndLevel", S["EndLevel"])
-        g.AddCheckBox("x300 y149 w80 vEndAtCG Checked" S["EndAtCG"], "At C.G.")
-
-        PTToolsWindow.Field(g, 35, 200, 182, 90, "Horizontal Distance (mm)", "HorizontalDistance", S["HorizontalDistance"])
-
-        g.AddButton("x35 y220 w140 h30", "Run SPF2M").OnEvent("Click", (p*) => PTToolsWindow.OnRunSpf2mClicked(p*))
+    static SetupSpf2mHotkeys() {
+        if PTToolsWindow.Spf2mHotkeysReady
+            return
+        PTToolsWindow.Spf2mHotkeysReady := true
+        HotIfWinActive("SPF2M")                                            ; Enter / numpad Enter = move to next field, same as PT Tools
+        Hotkey("Enter", (*) => SendInput("{Tab}"))
+        Hotkey("NumpadEnter", (*) => SendInput("{Tab}"))
+        HotIfWinActive()
     }
 
-    static BuildAutomationOptionsGroup(g, S) {
-        g.Add("GroupBox", "x410 y15 w360 h280", "Automation Options")
-        cbAuto := g.AddCheckBox("x425 y45 w330 vAutoInputEnabled Checked" S["AutoInputEnabled"], "Automatically Input Data into SPF2M")
+    static OnCloseSpf2m(GuiObj) {
+        PTToolsWindow.SaveSpf2m()
+        GuiObj.Destroy()
+        PTToolsWindow.SpfG := ""
+    }
+
+    static SaveSpf2m() {
+        g := PTToolsWindow.SpfG
+        if !(g)
+            return
+        S := PTToolsWindow.Settings
+        for _, name in PTToolsWindow.Spf2mFieldNames {
+            try S[name] := g[name].Value
+        }
+        try {
+            WinGetPos(&x, &y, , , "ahk_id " g.Hwnd)
+            S["Spf2mWinLeft"] := x
+            S["Spf2mWinTop"] := y
+        }
+        AppData.SaveAppData()
+    }
+
+    ; ---------------------------------------------------------------------
+    ; Layout constants. The Profile group's labelGap is wide enough for its
+    ; longest label ("Horizontal Distance (mm)") without running into the
+    ; edit field or the "At C.G." checkbox that follows it; the Automation
+    ; Options group's two columns are each wide enough for their longest
+    ; label ("Startup Delay (ms)" / "Chg Support (Y/N)").
+    ; ---------------------------------------------------------------------
+    static ProfileLabelGap := 210
+    static ProfileFieldW   := 90
+    static ProfileCbGap    := 10
+    static ProfileCbW      := 80
+    static AutoLabelGap    := 160
+    static AutoFieldW      := 50
+    static AutoColInnerGap := 30
+
+    static BuildProfileGroup(g, S, x0) {
+        labelX := x0 + 15
+        editX  := labelX + PTToolsWindow.ProfileLabelGap
+        cbX    := editX + PTToolsWindow.ProfileFieldW + PTToolsWindow.ProfileCbGap
+        w := (cbX + PTToolsWindow.ProfileCbW + 15) - x0
+
+        g.Add("GroupBox", "x" x0 " y15 w" w " h250", "SPF2M (Post-Tension Profile Calculator)")
+        g.AddText("x" labelX " y45", "Profile Type")
+        g.AddDropDownList("x" editX " y42 w" (PTToolsWindow.ProfileFieldW + PTToolsWindow.ProfileCbGap + PTToolsWindow.ProfileCbW) " Choose" S["ProfileType"] " vProfileType", PTToolsWindow.ProfileTypes)
+        g.AddText("x" labelX " y80", "Tendon Type")
+        g.AddDropDownList("x" editX " y77 w" (PTToolsWindow.ProfileFieldW + PTToolsWindow.ProfileCbGap + PTToolsWindow.ProfileCbW) " Choose" S["TendonType"] " vTendonType", PTToolsWindow.TendonTypes)
+
+        PTToolsWindow.Field(g, labelX, editX, 112, PTToolsWindow.ProfileFieldW, "Start Level (mm)", "StartLevel", S["StartLevel"])
+        g.AddCheckBox("x" cbX " y114 w" PTToolsWindow.ProfileCbW " vStartAtCG Checked" S["StartAtCG"], "At C.G.")
+
+        PTToolsWindow.Field(g, labelX, editX, 147, PTToolsWindow.ProfileFieldW, "End Level (mm)", "EndLevel", S["EndLevel"])
+        g.AddCheckBox("x" cbX " y149 w" PTToolsWindow.ProfileCbW " vEndAtCG Checked" S["EndAtCG"], "At C.G.")
+
+        PTToolsWindow.Field(g, labelX, editX, 182, PTToolsWindow.ProfileFieldW, "Horizontal Distance (mm)", "HorizontalDistance", S["HorizontalDistance"])
+
+        g.AddButton("x" labelX " y220 w140 h30", "Run SPF2M").OnEvent("Click", (p*) => PTToolsWindow.OnRunSpf2mClicked(p*))
+
+        return x0 + w
+    }
+
+    static BuildAutomationOptionsGroup(g, S, x0) {
+        leftLabelX := x0 + 15
+        leftEditX  := leftLabelX + PTToolsWindow.AutoLabelGap
+        rightLabelX := leftEditX + PTToolsWindow.AutoFieldW + PTToolsWindow.AutoColInnerGap
+        rightEditX  := rightLabelX + PTToolsWindow.AutoLabelGap
+        w := (rightEditX + PTToolsWindow.AutoFieldW + 15) - x0
+
+        g.Add("GroupBox", "x" x0 " y15 w" w " h280", "Automation Options")
+        cbAuto := g.AddCheckBox("x" leftLabelX " y45 w" (w - 30) " vAutoInputEnabled Checked" S["AutoInputEnabled"], "Automatically Input Data into SPF2M")
         cbAuto.OnEvent("Click", (p*) => PTToolsWindow.OnAutoInputToggled(p*))
-        cbCustom := g.AddCheckBox("x425 y75 w330 vCustomTimingEnabled Checked" S["CustomTimingEnabled"], "Use Custom Timing && Duct Settings")
+        cbCustom := g.AddCheckBox("x" leftLabelX " y75 w" (w - 30) " vCustomTimingEnabled Checked" S["CustomTimingEnabled"], "Use Custom Timing && Duct Settings")
         cbCustom.OnEvent("Click", (p*) => PTToolsWindow.OnCustomTimingToggled(p*))
 
-        PTToolsWindow.Field(g, 425, 545, 109, 50, "Startup Delay (ms)", "InitDelayMs", S["InitDelayMs"])
-        PTToolsWindow.Field(g, 610, 710, 109, 50, "Interval (ms)", "KeyIntervalMs", S["KeyIntervalMs"])
+        PTToolsWindow.Field(g, leftLabelX, leftEditX, 109, PTToolsWindow.AutoFieldW, "Startup Delay (ms)", "InitDelayMs", S["InitDelayMs"])
+        PTToolsWindow.Field(g, rightLabelX, rightEditX, 109, PTToolsWindow.AutoFieldW, "Interval (ms)", "KeyIntervalMs", S["KeyIntervalMs"])
 
-        PTToolsWindow.Field(g, 425, 545, 139, 50, "Mono Duct Dia.", "DuctDiaMono", S["DuctDiaMono"])
-        PTToolsWindow.Field(g, 610, 710, 139, 50, "7s Duct Dia.", "DuctDia7s", S["DuctDia7s"])
+        PTToolsWindow.Field(g, leftLabelX, leftEditX, 139, PTToolsWindow.AutoFieldW, "Mono Duct Dia.", "DuctDiaMono", S["DuctDiaMono"])
+        PTToolsWindow.Field(g, rightLabelX, rightEditX, 139, PTToolsWindow.AutoFieldW, "7s Duct Dia.", "DuctDia7s", S["DuctDia7s"])
 
-        PTToolsWindow.Field(g, 425, 545, 169, 50, "12s Duct Dia.", "DuctDia12s", S["DuctDia12s"])
-        PTToolsWindow.Field(g, 610, 710, 169, 50, "19s Duct Dia.", "DuctDia19s", S["DuctDia19s"])
+        PTToolsWindow.Field(g, leftLabelX, leftEditX, 169, PTToolsWindow.AutoFieldW, "12s Duct Dia.", "DuctDia12s", S["DuctDia12s"])
+        PTToolsWindow.Field(g, rightLabelX, rightEditX, 169, PTToolsWindow.AutoFieldW, "19s Duct Dia.", "DuctDia19s", S["DuctDia19s"])
 
-        PTToolsWindow.Field(g, 425, 545, 199, 50, "22s Duct Dia.", "DuctDia22s", S["DuctDia22s"])
-        PTToolsWindow.Field(g, 610, 710, 199, 50, "31s Duct Dia.", "DuctDia31s", S["DuctDia31s"])
+        PTToolsWindow.Field(g, leftLabelX, leftEditX, 199, PTToolsWindow.AutoFieldW, "22s Duct Dia.", "DuctDia22s", S["DuctDia22s"])
+        PTToolsWindow.Field(g, rightLabelX, rightEditX, 199, PTToolsWindow.AutoFieldW, "31s Duct Dia.", "DuctDia31s", S["DuctDia31s"])
 
-        PTToolsWindow.Field(g, 425, 545, 229, 50, "Min. Curve Radius", "MinCurveRadius", S["MinCurveRadius"])
-        PTToolsWindow.Field(g, 610, 710, 229, 50, "Chg Support (Y/N)", "ChangeSupportInterval", S["ChangeSupportInterval"])
+        PTToolsWindow.Field(g, leftLabelX, leftEditX, 229, PTToolsWindow.AutoFieldW, "Min. Curve Radius", "MinCurveRadius", S["MinCurveRadius"])
+        PTToolsWindow.Field(g, rightLabelX, rightEditX, 229, PTToolsWindow.AutoFieldW, "Chg Support (Y/N)", "ChangeSupportInterval", S["ChangeSupportInterval"])
     }
 
     static OnAutoInputToggled(*) {
-        g := PTToolsWindow.G
+        g := PTToolsWindow.SpfG
         autoInput := g["AutoInputEnabled"].Value
         if (!autoInput)
             g["CustomTimingEnabled"].Value := 0
@@ -416,7 +524,7 @@ Class PTToolsWindow {
     }
 
     static OnCustomTimingToggled(*) {
-        g := PTToolsWindow.G
+        g := PTToolsWindow.SpfG
         PTToolsWindow.ApplyFieldEnableState(g["AutoInputEnabled"].Value, g["CustomTimingEnabled"].Value)
     }
 
@@ -424,7 +532,7 @@ Class PTToolsWindow {
     ; SPF2M, and the timing/duct-dia overrides only matter while that typing
     ; is happening - so both groups are gated behind "auto input" being on.
     static ApplyFieldEnableState(autoInputEnabled, customTimingEnabled) {
-        g := PTToolsWindow.G
+        g := PTToolsWindow.SpfG
         for _, name in ["ProfileType", "TendonType", "StartLevel", "StartAtCG", "EndLevel", "EndAtCG", "HorizontalDistance"]
             g[name].Enabled := autoInputEnabled
         g["CustomTimingEnabled"].Enabled := autoInputEnabled
@@ -435,7 +543,7 @@ Class PTToolsWindow {
     }
 
     static OnRunSpf2mClicked(*) {
-        g := PTToolsWindow.G
+        g := PTToolsWindow.SpfG
 
         resDir := A_ScriptDir "\Res"
         dosbox := resDir "\DOSBox.exe"
