@@ -279,7 +279,8 @@ SetMainGUI() {
     MainGUI.BackColor := g_GUI["MainGUIColor"]
     mainGuiFont := Fonts.Spec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
     MainGUI.SetFont(mainGuiFont.opt, mainGuiFont.name)
-    myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn border -E0x200 W" Input_W, g_LNG[13])
+    myInputBox := MainGUI.AddEdit("x12 y10 r1 -WantReturn border -E0x200 W" Input_W)
+    Win.SetCueBanner(myInputBox.Hwnd, g_LNG[13])                            ; "Type anything here to search..." as a real placeholder, not literal text
     myInputBox.Opt("Background" g_GUI["CMDListColor"])
     myInputBox.OnEvent("Change", Input_Change)
     myRunBtn := MainGUI.AddButton("x+" Run_X " yp W" Run_W " hp Default Hidden" Run_H, g_LNG[11])
