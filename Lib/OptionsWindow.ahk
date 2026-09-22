@@ -29,7 +29,10 @@ Class OptionsWindow {
             , "MuteVolume", "RestartApp", "Exit", "PTTools", "SPF2M"
             , "ClipUpper", "ClipLower", "ClipTitleCase", "ClipReverse", "ClipSortAsc"
             , "ClipSortDesc", "ClipTrimLines", "ClipRemoveBlankLines", "ClipDedupeLines"
-            , "OpenTerminalHere"]
+            , "ClipToTraditional", "ClipToSimplified"
+            , "OpenTerminalHere", "Baidu", "Taobao", "JD", "ShowIP", "UrlEncode"
+            , "Logoff", "ShutdownMachine", "RestartMachine", "HibernateMachine"
+            , "IncreaseVolume", "DecreaseVolume", "ListProcess", "ListService"]
 
         g_LOG.Debug("Options: Opening Options window... Tab=" ActTab)
         MainGUI_Close()

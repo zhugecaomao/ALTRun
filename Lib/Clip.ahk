@@ -174,6 +174,8 @@ Class Clip {
     static TrimLines()   => Clip._Transform((s) => Clip._TrimLines(s), g_LNG[837])
     static RemoveBlankLines() => Clip._Transform((s) => Clip._DropBlankLines(s), g_LNG[838])
     static DedupeLines() => Clip._Transform((s) => Clip._DedupeLines(s), g_LNG[839])
+    static ToTraditional() => Clip._Transform((s) => Kanji.ToTraditional(s), g_LNG[841])
+    static ToSimplified()  => Clip._Transform((s) => Kanji.ToSimplified(s), g_LNG[842])
 
     static _ReverseChars(text) {
         out := ""
