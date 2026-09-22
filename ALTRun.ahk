@@ -1671,17 +1671,39 @@ NewClip(*) {                                                            ; Comman
 ; One-shot clipboard text transforms (see Lib\Clip.ahk) - each is a bare wrapper
 ; for the same reason NewClip() above is: Func-type dispatch only resolves
 ; plain global function names, never Class.Method.
-ClipUpper()           { Clip.ToUpper() }
-ClipLower()           { Clip.ToLower() }
-ClipTitleCase()       { Clip.ToTitleCase() }
-ClipReverse()         { Clip.Reverse() }
-ClipSortAsc()         { Clip.SortAsc() }
-ClipSortDesc()        { Clip.SortDesc() }
-ClipTrimLines()       { Clip.TrimLines() }
-ClipRemoveBlankLines(){ Clip.RemoveBlankLines() }
-ClipDedupeLines()     { Clip.DedupeLines() }
-ClipToTraditional()   { Clip.ToTraditional() }
-ClipToSimplified()    { Clip.ToSimplified() }
+ClipUpper() {
+    Clip.ToUpper()
+}
+ClipLower() {
+    Clip.ToLower()
+}
+ClipTitleCase() {
+    Clip.ToTitleCase()
+}
+ClipReverse() {
+    Clip.Reverse()
+}
+ClipSortAsc() {
+    Clip.SortAsc()
+}
+ClipSortDesc() {
+    Clip.SortDesc()
+}
+ClipTrimLines() {
+    Clip.TrimLines()
+}
+ClipRemoveBlankLines() {
+    Clip.RemoveBlankLines()
+}
+ClipDedupeLines() {
+    Clip.DedupeLines()
+}
+ClipToTraditional() {
+    Clip.ToTraditional()
+}
+ClipToSimplified() {
+    Clip.ToSimplified()
+}
 
 ; Opens a cmd.exe window at whatever folder Total Commander/Explorer was
 ; browsing right before ALTRun was invoked - reuses the same read-only path
