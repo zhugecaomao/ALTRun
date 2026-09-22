@@ -145,4 +145,79 @@ Class Clip {
         try g_ClipEditGui.Destroy()
         try WinActivate("ahk_id " g_CmdMgrGui.Hwnd)
     }
+
+    ;===========================================================================
+    ; 一键文本转换: 直接在当前剪贴板内容上转换并写回, 配合 Ctrl+V 使用。
+    ; 每个转换都是 Func | ClipXxx | ... 内置命令, 见 ALTRun.ahk 里同名的裸全局
+    ; 函数外壳 (RunCommand 的 FUNC 类型只认裸函数名, 不认 Class.Method)。
+    ;===========================================================================
+
+    ; 转换前的公共检查 + 转换后的公共反馈, 每个具体转换只需要传一个处理函数。
+    static _Transform(fn, label) {
+        text := A_Clipboard
+        if (text = "") {
+            ToolTip(g_LNG[830])
+            SetTimer(() => ToolTip(""), -1500)
+            return
+        }
+        A_Clipboard := fn(text)
+        ToolTip(label)
+        SetTimer(() => ToolTip(""), -1500)
+    }
+
+    static ToUpper()     => Clip._Transform((s) => StrUpper(s), g_LNG[831])
+    static ToLower()     => Clip._Transform((s) => StrLower(s), g_LNG[832])
+    static ToTitleCase() => Clip._Transform((s) => StrTitle(s), g_LNG[833])
+    static Reverse()     => Clip._Transform((s) => Clip._ReverseChars(s), g_LNG[834])
+    static SortAsc()     => Clip._Transform((s) => Clip._Join(Clip._Lines(Sort(s))), g_LNG[835])
+    static SortDesc()    => Clip._Transform((s) => Clip._Join(Clip._Lines(Sort(s, "R"))), g_LNG[836])
+    static TrimLines()   => Clip._Transform((s) => Clip._TrimLines(s), g_LNG[837])
+    static RemoveBlankLines() => Clip._Transform((s) => Clip._DropBlankLines(s), g_LNG[838])
+    static DedupeLines() => Clip._Transform((s) => Clip._DedupeLines(s), g_LNG[839])
+
+    static _ReverseChars(text) {
+        out := ""
+        Loop Parse text
+            out := A_LoopField . out
+        return out
+    }
+
+    ; 拆行/合并行的公共小工具 - 统一按 `n`/`r` 拆, 统一用 `r`n` 合并回去,
+    ; 不管剪贴板原本是 LF 还是 CRLF, 结果都是规规矩矩的 Windows 换行。
+    static _Lines(text) => StrSplit(text, "`n", "`r")
+
+    static _Join(lines) {
+        out := ""
+        for _, line in lines
+            out .= (out = "" ? "" : "`r`n") . line
+        return out
+    }
+
+    ; 逐行去掉首尾空格/Tab, 保留空行本身(要连空行一起清掉用 RemoveBlankLines)。
+    static _TrimLines(text) {
+        trimmed := []
+        for _, line in Clip._Lines(text)
+            trimmed.Push(Trim(line, " `t"))
+        return Clip._Join(trimmed)
+    }
+
+    static _DropBlankLines(text) {
+        kept := []
+        for _, line in Clip._Lines(text)
+            if (Trim(line) != "")
+                kept.Push(line)
+        return Clip._Join(kept)
+    }
+
+    ; 按原顺序去重(不像 Sort 的 U 选项那样会顺带重新排序)。
+    static _DedupeLines(text) {
+        seen := Map(), kept := []
+        for _, line in Clip._Lines(text) {
+            if seen.Has(line)
+                continue
+            seen[line] := true
+            kept.Push(line)
+        }
+        return Clip._Join(kept)
+    }
 }

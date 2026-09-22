@@ -226,6 +226,16 @@ Class Lang {
         ENG[821] := "Command path cannot be empty. Please enter a valid path."
         ENG[822] := "An error occurred while adding the command: "
         ENG[823] := "The following command added / modified successfully!`n`n[ "
+        ENG[830] := "Clipboard is empty"                                    ; 830+ Clipboard text transforms
+        ENG[831] := "Clipboard: UPPERCASE"
+        ENG[832] := "Clipboard: lowercase"
+        ENG[833] := "Clipboard: Title Case"
+        ENG[834] := "Clipboard: reversed"
+        ENG[835] := "Clipboard: sorted A-Z"
+        ENG[836] := "Clipboard: sorted Z-A"
+        ENG[837] := "Clipboard: trimmed each line"
+        ENG[838] := "Clipboard: blank lines removed"
+        ENG[839] := "Clipboard: duplicate lines removed"
 
         CHN[1]  := "简体中文"                                               ; 1~9 Reserved
         CHN[2]  := "选项"
@@ -418,6 +428,16 @@ Class Lang {
         CHN[821] := "命令路径不能为空，请输入有效路径。"
         CHN[822] := "添加命令时发生错误："
         CHN[823] := "以下命令添加/修改成功!`n`n[ "
+        CHN[830] := "剪贴板为空"                                              ; 830+ 剪贴板文本转换
+        CHN[831] := "剪贴板: 已转大写"
+        CHN[832] := "剪贴板: 已转小写"
+        CHN[833] := "剪贴板: 已转标题格式"
+        CHN[834] := "剪贴板: 已反转"
+        CHN[835] := "剪贴板: 已按 A-Z 排序"
+        CHN[836] := "剪贴板: 已按 Z-A 排序"
+        CHN[837] := "剪贴板: 已清除每行首尾空白"
+        CHN[838] := "剪贴板: 已清除空行"
+        CHN[839] := "剪贴板: 已去重"
 
         lng := Lang.IsChinese() ? CHN : ENG
         g_LOG.Debug("Lang.Load: Set language to " lng[1] "...OK")

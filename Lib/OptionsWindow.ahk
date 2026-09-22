@@ -26,7 +26,9 @@ Class OptionsWindow {
             , "ClearInput", "RunCurrentCommand", "RankUp", "RankDown", "Reindex"
             , "About", "Usage", "Update", "UserCommand", "NewCommand", "EditCommand"
             , "DelCommand", "UndoDelCommand", "OpenCommandManager", "Options", "TurnMonitorOff", "EmptyRecycle"
-            , "MuteVolume", "RestartApp", "Exit", "PTTools", "SPF2M"]
+            , "MuteVolume", "RestartApp", "Exit", "PTTools", "SPF2M"
+            , "ClipUpper", "ClipLower", "ClipTitleCase", "ClipReverse", "ClipSortAsc"
+            , "ClipSortDesc", "ClipTrimLines", "ClipRemoveBlankLines", "ClipDedupeLines"]
 
         g_LOG.Debug("Options: Opening Options window... Tab=" ActTab)
         MainGUI_Close()

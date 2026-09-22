@@ -1601,6 +1601,19 @@ NewClip(*) {                                                            ; Comman
     OpenCommandManager("UserCommand", "Clip", Clip.EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
 }
 
+; One-shot clipboard text transforms (see Lib\Clip.ahk) - each is a bare wrapper
+; for the same reason NewClip() above is: Func-type dispatch only resolves
+; plain global function names, never Class.Method.
+ClipUpper()           { Clip.ToUpper() }
+ClipLower()           { Clip.ToLower() }
+ClipTitleCase()       { Clip.ToTitleCase() }
+ClipReverse()         { Clip.Reverse() }
+ClipSortAsc()         { Clip.SortAsc() }
+ClipSortDesc()        { Clip.SortDesc() }
+ClipTrimLines()       { Clip.TrimLines() }
+ClipRemoveBlankLines(){ Clip.RemoveBlankLines() }
+ClipDedupeLines()     { Clip.DedupeLines() }
+
 PTTools() {
     PTToolsWindow.Show()                                                  ; Lib\PTTools.ahk - Rebar/BRC calculator
 }
