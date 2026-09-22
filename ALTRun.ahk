@@ -22,6 +22,7 @@
 #Include Lib\Kanji.ahk                                                 ; Kanji.ToSimplified()/ToTraditional() - local lookup table, see ClipToSimplified() below.
 #Include Lib\SystemActions.ahk                                         ; SystemActions - shutdown/volume/process list/search engines/etc, see the built-in Func commands below.
 #Include Lib\UpdateChecker.ahk                                         ; UpdateChecker.Check() - GitHub release check, see AutoCheckUpdate()/Update()/CheckUpdate() below.
+#Include Lib\CommandManager.ahk                                        ; CommandManager.Open()/Edit()/Delete() - the command manager window, see OpenCommandManager() below.
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -229,8 +230,6 @@ AppData.LoadAppData()    ; Loads (and migrates/creates) ALTRun.json; fills Confi
 Global MainGUI
 Global myListView
 Global myInputBox
-Global g_CmdMgrGui
-Global g_ClipEditGui
 Global myImageList := IL_Create(10, 5, g_CONFIG["LargeIcons"])          ; Create an ImageList so that the ListView can display some icons, 3rd param is 1: large icons, 0: small icons
 Global myIconMap   := Map("DIR", IL_Add(myImageList,"imageres.dll",-3)  ; Icon cache index, IconIndex=1/2/3/4 for type dir/func/url/eval/cmd
                         ,"FUNC", IL_Add(myImageList,"imageres.dll",-100)
@@ -1378,7 +1377,7 @@ UserCommand(*) {                                                        ; F4 - e
 
 ; From command "New Command" or GUI context menu "New Command"
 NewCommand(*) {
-    OpenCommandManager("UserCommand", , , g_RUNTIME["Arg"], 1, "")
+    CommandManager.Open("UserCommand", , , g_RUNTIME["Arg"], 1, "")
 }
 
 ; Drag a file/folder/shortcut onto the main window: pre-fill the Command Manager
@@ -1402,193 +1401,37 @@ MainGUI_DropFiles(GuiObj, GuiCtrlObj, FileArray, X, Y) {
 
     cmdType := DirExist(targetPath) ? "Dir" : "File"
     SplitPath(targetPath, , , , &nameNoExt)
-    OpenCommandManager("UserCommand", cmdType, targetPath, nameNoExt, 1, "")
+    CommandManager.Open("UserCommand", cmdType, targetPath, nameNoExt, 1, "")
 }
 
+; OpenCommandManager()/PickCommandTarget()/SaveCommandFromManager()/
+; CloseCommandManager()/EditCommand()/DelCommand()/UndoDelCommand() used to
+; live here; all moved into the CommandManager class in Lib\CommandManager.ahk
+; (see the #Include list at the top of this file). The five below stay bare
+; wrappers - all of them are listed in FuncList for custom hotkeys, and
+; EditCommand/NewCommand/DelCommand are also built-in Func commands - Func-type
+; dispatch and FuncList only resolve plain global function names, never
+; Class.Method.
+OpenCommandManager(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank := 1, OriginCmd := "") {
+    CommandManager.Open(Section, Type, Path, Desc, Rank, OriginCmd)
+}
 EditCommand(*) {
-    Global g_RUNTIME  ; 明确声明全局变量
-
-    currentCmd := g_RUNTIME["CurrentCommand"]
-    if !currentCmd
-        return MsgBox(g_LNG[810], g_TITLE, 64)                          ; 64 = Info icon
-
-    AppData.LoadAppData()
-
-    for _, section in ["DefaultCommand", "UserCommand", "Index"] {
-        if !g_CMDDATA[section].Has(currentCmd)
-            continue
-        rank := g_CMDDATA[section][currentCmd]
-
-        if IsInteger(rank) {
-            parts := StrSplit(currentCmd, " | ")
-            type := parts.Length >= 1 ? parts[1] : ""
-            path := parts.Length >= 2 ? parts[2] : ""
-            desc := parts.Length >= 3 ? parts[3] : ""
-
-            g_Log.Debug("EditCommand: Editing command=" currentCmd)
-            OpenCommandManager(section, type, path, desc, rank, currentCmd)
-            break
-        }
-    }
+    CommandManager.Edit()
 }
-
 DelCommand(*) {
-    currentCmd := g_RUNTIME["CurrentCommand"]
-    if !currentCmd
-        return
-
-    AppData.LoadAppData()
-
-    for _, section in ["DefaultCommand", "UserCommand", "Index"] {
-        if !g_CMDDATA[section].Has(currentCmd)
-            continue
-
-        result := MsgBox(g_LNG[800] section "]`n`n" currentCmd, g_LNG[801], 52) ; 52 = Yes/No + Question icon
-
-        if result = "YES" {
-            try {
-                rank := g_CMDDATA[section][currentCmd]
-                g_CMDDATA[section].Delete(currentCmd)
-                AppData.SaveAppData()
-                g_DELUNDO.Push(Map("Section", section, "CmdLine", currentCmd, "Rank", rank))  ; Ctrl+Z restores this
-                MsgBox(g_LNG[802] "`n`n" currentCmd "`n`n" g_LNG[811], g_TITLE, 64)  ; 64 = Info icon
-            } catch as e {
-                MsgBox(g_LNG[803] "`n`n" currentCmd, g_TITLE, 48)       ; 48 = Error icon
-            }
-            break
-        }
-    }
-    CommandStore.LoadCommands()
+    CommandManager.Delete()
 }
-
-; Ctrl+Z: restore the most recently deleted command (as many times in a row as things were deleted).
-; In-memory only - once ALTRun is closed/reloaded, deleted commands can no longer be undone.
 UndoDelCommand(*) {
-    if (MainGUI.FocusedCtrl.ClassNN = "Edit1") {                       ; Typing in the input box: let the native "undo last edit" through instead
-        SendInput("^z")
-        return
-    }
-
-    if !g_DELUNDO.Length
-        return SetStatusBar(g_LNG[812])
-
-    entry := g_DELUNDO.Pop()
-    AppData.LoadAppData()
-    g_CMDDATA[entry["Section"]][entry["CmdLine"]] := entry["Rank"]
-    AppData.SaveAppData()
-    CommandStore.LoadCommands()
-    SetStatusBar(g_LNG[813] " " entry["CmdLine"])
-}
-
-
-OpenCommandManager(Section := "UserCommand", Type := "File", Path := "", Desc := "", Rank := 1, OriginCmd := "") { ; 命令管理窗口
-    Global g_CmdMgrGui
-    Local  typeList := Array("File", "Dir", "CMD", "URL", "Func", "Clip")
-    chooseIndex := GetArrayIndex(Type, typeList)
-    chooseIndex := chooseIndex ? chooseIndex : 1
-
-    g_LOG.Debug("Starting Command Manager... Args=" Section "|" Type "|" Path "|" Desc "|" Rank)
-
-    g_CmdMgrGui := Gui(, g_LNG[700])
-    g_CmdMgrGui.SetFont("S9 Norm", "Microsoft Yahei")
-    g_CmdMgrGui.AddGroupBox("w600 h260", g_LNG[701])
-    g_CmdMgrGui.Add("Text", "x25 yp+30", g_LNG[702])
-    g_CmdMgrGui.AddDropDownList("x160 yp-5 w130 vType Choose" chooseIndex, typeList)
-    g_CmdMgrGui.Add("Text", "x315 yp+5", g_LNG[705])
-    g_CmdMgrGui.Add("Edit", "x435 yp-5 w130 Disabled vSection", Section)
-    g_CmdMgrGui.Add("Text", "x25 yp+60", g_LNG[703])
-    g_CmdMgrGui.Add("Edit", "x160 yp-5 w405 -WantReturn vPath", Path).Focus()
-    g_CmdMgrGui.AddButton("x575 yp w30 hp", "...").OnEvent("Click", (*) => PickCommandTarget(g_CmdMgrGui["Type"].Text))
-    g_CmdMgrGui.Add("Text", "x25 yp+80", g_LNG[704])
-    g_CmdMgrGui.AddEdit("x160 yp-5 w405 -WantReturn vDesc", Desc)
-    g_CmdMgrGui.AddText("x25 yp+60", g_LNG[706])
-    g_CmdMgrGui.AddEdit("x160 yp-5 w405 +Number vRank", Rank)
-    g_CmdMgrGui.AddButton("Default x420 w90", g_LNG[7]).OnEvent("Click", (*) => SaveCommandFromManager(Section, g_CmdMgrGui["Type"].Text, g_CmdMgrGui["Path"].Text, g_CmdMgrGui["Desc"].Text, g_CmdMgrGui["Rank"].Text, OriginCmd))
-    g_CmdMgrGui.AddButton("x521 yp w90", g_LNG[8]).OnEvent("Click", CloseCommandManager)
-    g_CmdMgrGui.OnEvent("Close", CloseCommandManager)
-    g_CmdMgrGui.OnEvent("Escape", CloseCommandManager)
-    g_CmdMgrGui.Show("Center")
-}
-
-PickCommandTarget(cmdType) {
-    g_CmdMgrGui.Opt("+OwnDialogs")                                      ; Make open dialog Modal
-
-    if (cmdType = "Dir")
-        cmdPath := DirSelect(, 3, 'Please select directory')
-    else if (cmdType = "File")
-        cmdPath := FileSelect(3, , , 'All Files (*.*)')
-    else if (cmdType = "Clip")
-        return Clip.EditClipText()                                           ; Clip uses a multi-line text editor instead of a file picker
-    else
-        return MsgBox("Path picker only supports File/Dir/Clip type.", g_LNG[700], 64)
-
-    if (cmdPath != "")
-        g_CmdMgrGui["Path"].Value := cmdPath
-}
-
-SaveCommandFromManager(section, cmdType, cmdPath, cmdDesc, cmdRank, originCmd) {
-    g_CmdMgrGui.Submit()
-    validType := Map("File", 1, "Dir", 1, "CMD", 1, "URL", 1, "Func", 1, "Clip", 1)
-    section := Trim(section)
-    cmdType := Trim(cmdType)
-    cmdPath := Trim(cmdPath)
-    cmdDesc := Trim(cmdDesc)
-    cmdRank := Trim(cmdRank)
-
-    if !validType.Has(cmdType)
-        return MsgBox("Invalid command type: " cmdType, g_LNG[820], 48)
-
-    if (cmdPath = "") {
-        return MsgBox(g_LNG[821], g_LNG[820], 64)
-    }
-
-    if (cmdType = "Clip") {
-        ; The Path field already holds the escaped single-line form (EditClipText produced it),
-        ; so only guard against stray real line breaks - never re-escape, that would double the backslashes.
-        cmdPath := StrReplace(StrReplace(StrReplace(cmdPath, "`r`n", "\n"), "`n", "\n"), "`r", "\n")
-        if (cmdDesc = "")
-            return MsgBox("A Clip command needs a short name in the Description field, that is what you type to call it.", g_LNG[820], 48)
-    }
-
-    if (!IsInteger(cmdRank) || cmdRank <= 0)
-        cmdRank := 1
-
-    cmdLine := cmdType " | " cmdPath (cmdDesc != "" ? " | " cmdDesc : "")
-    try {
-        AppData.LoadAppData()
-        if !g_CMDDATA.Has(section)
-            section := "UserCommand"
-        if (originCmd != "" && originCmd != cmdLine) {                  ; Drop the old key only when editing changed the command line
-            for _, sec in ["DefaultCommand", "UserCommand", "Index"]
-                if g_CMDDATA[sec].Has(originCmd)
-                    g_CMDDATA[sec].Delete(originCmd)
-        }
-        g_CMDDATA[section][cmdLine] := cmdRank + 0
-        AppData.SaveAppData()
-    } catch as e {
-        MsgBox(g_LNG[822] e.Message, g_LNG[820], 64)
-        return
-    }
-    MsgBox(g_LNG[823] section " ]`n`n" cmdLine " = " cmdRank, g_LNG[820], 64)
-    CommandStore.LoadCommands()
-}
-
-CloseCommandManager(*) {
-    g_CmdMgrGui.Destroy()
+    CommandManager.UndoDelete()
 }
 
 ; Plugins()/RenameWithDate()/LineEndAddDate()/NameAddDate() used to live here;
 ; all moved into the Plugins class in Lib\Plugins.ahk (see the #Include list
 ; at the top of this file and the "Plugins.Init()" call in the autorun section).
 
-GetArrayIndex(searchValue, Array){
-    for index, element in Array
-    {
-        if (element = searchValue)
-            return index
-    }
-    return 0
-}
+; GetArrayIndex() used to live here; it's now Arr.IndexOf() in Lib\Util.ahk -
+; moved there instead of into CommandManager since it's also used by
+; Lib\OptionsWindow.ahk for the custom-hotkey trigger dropdowns.
 
 ; LoadAppData()/SaveAppData()/MergeIntoDefaults()/OnAppExit()/ParseCommandBlock()/
 ; DefaultCommandText()/UserCommandText()/FallbackCommandText() used to live
