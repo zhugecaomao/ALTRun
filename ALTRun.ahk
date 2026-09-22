@@ -53,6 +53,7 @@ Global g_CMDINDEX := Array()         ; Searchable text for All commands
 Global g_FALLBACK := Array()         ; Fallback commands
 Global g_HISTORYS := Array()         ; Execution history
 Global g_MATCHED  := Array()         ; Matched commands
+Global g_DELUNDO  := Array()         ; Ctrl+Z undo stack for DelCommand: {Section, CmdLine, Rank}, most recent last
 
 Global g_CONFIG := Map(
     "AutoStartup"    , 1,
@@ -276,6 +277,7 @@ SetMainGUI() {
     MainGUI.OnEvent("Escape", MainGUI_Escape)
     MainGUI.OnEvent("Size"  , MainGUI_Size)
     MainGUI.OnEvent("ContextMenu", MainGUI_ContextMenu)
+    MainGUI.OnEvent("DropFiles", MainGUI_DropFiles)
     MainGUI.BackColor := g_GUI["MainGUIColor"]
     mainGuiFont := Fonts.Spec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
     MainGUI.SetFont(mainGuiFont.opt, mainGuiFont.name)
@@ -471,6 +473,7 @@ RegisterHotkey() {
         Hotkey("^c"         , CopyCommand)
         Hotkey("^n"         , NewCommand)
         Hotkey("^Del"       , DelCommand)
+        Hotkey("^z"         , UndoDelCommand)
         Hotkey("Down"       , NextCommand)
         Hotkey("Up"         , PrevCommand)
         Hotkey("^NumpadAdd" , RankUp)
@@ -583,6 +586,12 @@ SearchCommand(command := "") {
         return ListResult(g_MATCHED)
     }
 
+    ; "/" (optionally followed by more text): command palette - lists every
+    ; built-in Func command with its description, live-filtered by whatever
+    ; comes after "/". A self-documenting "what can I even type" list.
+    if (prefix = "/")
+        return SearchFuncPalette(SubStr(command, 2), listLimit)
+
     ; Search precomputed command index.
     if (!isExpr) {
         pattern := BuildFuzzyPattern(command)
@@ -621,6 +630,41 @@ SearchCommand(command := "") {
         g_RUNTIME["CurrentCommand"] := g_FALLBACK.Length ? g_FALLBACK[1] : ""
     }
 
+    return ListResult(g_MATCHED)
+}
+
+; "/" command palette: filters g_COMMANDS (already rank-sorted) down to Func-type
+; entries only, then applies the same fuzzy matching SearchCommand() uses for
+; everything else against each one's function name + description.
+SearchFuncPalette(remainder, listLimit) {
+    Global g_MATCHED, g_RUNTIME, g_COMMANDS
+
+    funcCmds := []
+    for _, cmdLine in g_COMMANDS {
+        parts := StrSplit(cmdLine, " | ")
+        if (parts.Length >= 1 && parts[1] = "Func")
+            funcCmds.Push(cmdLine)
+    }
+
+    remainder := Trim(remainder)
+    if (remainder = "") {
+        Loop Min(listLimit, funcCmds.Length)
+            g_MATCHED.Push(funcCmds[A_Index])
+    } else {
+        regexPattern := g_RUNTIME["RegEx"] . BuildFuzzyPattern(remainder)
+        for _, cmdLine in funcCmds {
+            parts := StrSplit(cmdLine, " | ")
+            searchable := (parts.Length >= 2 ? parts[2] : "") " " (parts.Length >= 3 ? parts[3] : "")
+            if RegExMatch(searchable, regexPattern) {
+                g_MATCHED.Push(cmdLine)
+                if g_MATCHED.Length >= listLimit
+                    break
+            }
+        }
+    }
+
+    g_RUNTIME["CurrentCommand"] := g_MATCHED.Length ? g_MATCHED[1] : ""
+    g_RUNTIME["UseFallback"] := False
     return ListResult(g_MATCHED)
 }
 
@@ -1386,6 +1430,30 @@ NewCommand(*) {
     OpenCommandManager("UserCommand", , , g_RUNTIME["Arg"], 1, "")
 }
 
+; Drag a file/folder/shortcut onto the main window: pre-fill the Command Manager
+; with it (File/Dir type + a guessed description) so the user can confirm/edit
+; before it's actually saved - dropping never adds a command by itself.
+MainGUI_DropFiles(GuiObj, GuiCtrlObj, FileArray, X, Y) {
+    if (!FileArray.Length)
+        return
+
+    droppedPath := FileArray[1]
+    targetPath  := droppedPath
+    if (SubStr(droppedPath, -3) = ".lnk") {
+        try {
+            FileGetShortcut(droppedPath, &target)
+            if (target != "")
+                targetPath := target
+        } catch as e {
+            g_LOG.Debug("MainGUI_DropFiles: FileGetShortcut failed on " droppedPath " - " e.Message)
+        }
+    }
+
+    cmdType := DirExist(targetPath) ? "Dir" : "File"
+    SplitPath(targetPath, , , , &nameNoExt)
+    OpenCommandManager("UserCommand", cmdType, targetPath, nameNoExt, 1, "")
+}
+
 EditCommand(*) {
     Global g_RUNTIME  ; 明确声明全局变量
 
@@ -1428,9 +1496,11 @@ DelCommand(*) {
 
         if result = "YES" {
             try {
+                rank := g_CMDDATA[section][currentCmd]
                 g_CMDDATA[section].Delete(currentCmd)
                 AppData.SaveAppData()
-                MsgBox(g_LNG[802] "`n`n" currentCmd, g_TITLE, 64)       ; 64 = Info icon
+                g_DELUNDO.Push(Map("Section", section, "CmdLine", currentCmd, "Rank", rank))  ; Ctrl+Z restores this
+                MsgBox(g_LNG[802] "`n`n" currentCmd "`n`n" g_LNG[811], g_TITLE, 64)  ; 64 = Info icon
             } catch as e {
                 MsgBox(g_LNG[803] "`n`n" currentCmd, g_TITLE, 48)       ; 48 = Error icon
             }
@@ -1438,6 +1508,25 @@ DelCommand(*) {
         }
     }
     CommandStore.LoadCommands()
+}
+
+; Ctrl+Z: restore the most recently deleted command (as many times in a row as things were deleted).
+; In-memory only - once ALTRun is closed/reloaded, deleted commands can no longer be undone.
+UndoDelCommand(*) {
+    if (MainGUI.FocusedCtrl.ClassNN = "Edit1") {                       ; Typing in the input box: let the native "undo last edit" through instead
+        SendInput("^z")
+        return
+    }
+
+    if !g_DELUNDO.Length
+        return SetStatusBar(g_LNG[812])
+
+    entry := g_DELUNDO.Pop()
+    AppData.LoadAppData()
+    g_CMDDATA[entry["Section"]][entry["CmdLine"]] := entry["Rank"]
+    AppData.SaveAppData()
+    CommandStore.LoadCommands()
+    SetStatusBar(g_LNG[813] " " entry["CmdLine"])
 }
 
 
@@ -1576,6 +1665,45 @@ GetArrayIndex(searchValue, Array){
 ; function names, not Class.Method - see FuncList in Options()/DefaultCommandText().
 NewClip(*) {                                                            ; Command "New Clip", opens the manager pre-set to type Clip
     OpenCommandManager("UserCommand", "Clip", Clip.EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
+}
+
+; One-shot clipboard text transforms (see Lib\Clip.ahk) - each is a bare wrapper
+; for the same reason NewClip() above is: Func-type dispatch only resolves
+; plain global function names, never Class.Method.
+ClipUpper()           { Clip.ToUpper() }
+ClipLower()           { Clip.ToLower() }
+ClipTitleCase()       { Clip.ToTitleCase() }
+ClipReverse()         { Clip.Reverse() }
+ClipSortAsc()         { Clip.SortAsc() }
+ClipSortDesc()        { Clip.SortDesc() }
+ClipTrimLines()       { Clip.TrimLines() }
+ClipRemoveBlankLines(){ Clip.RemoveBlankLines() }
+ClipDedupeLines()     { Clip.DedupeLines() }
+
+; Opens a cmd.exe window at whatever folder Total Commander/Explorer was
+; browsing right before ALTRun was invoked - reuses the same read-only path
+; detection Listary.ahk already has for the dialog-box quick-switch feature.
+OpenTerminalHere() {
+    hwnd := g_RUNTIME["LastWin"]
+    if (!hwnd || !WinExist("ahk_id " hwnd))
+        return MsgBox(g_LNG[840], g_TITLE, 48)
+
+    winClass := WinGetClass("ahk_id " hwnd)
+    if (winClass = "TTOTAL_CMD")
+        path := Listary.TCCurrentPath()
+    else if (winClass = "CabinetWClass")
+        path := Listary.ExplorerCurrentPath()
+    else
+        path := ""
+
+    if (path = "" || !FileExist(path))
+        return MsgBox(g_LNG[840], g_TITLE, 48)
+
+    try {
+        Run(A_ComSpec, path)
+    } catch as e {
+        MsgBox("Could not open a terminal at: " path "`n`n" e.Message, g_TITLE, 48)
+    }
 }
 
 PTTools() {

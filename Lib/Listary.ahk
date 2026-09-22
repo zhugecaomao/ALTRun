@@ -198,6 +198,44 @@ Class Listary {
         }
     }
 
+    ; 只读取当前路径, 不做任何界面操作 - 给"在此路径打开终端"这类动作复用,
+    ; 取不到就返回空字符串, 调用方自行处理(不像 SyncTCPath 那样弹 MsgBox)。
+    static TCCurrentPath() {
+        if (!WinExist("ahk_class TTOTAL_CMD"))
+            return ""
+        clipSaved := ClipboardAll()
+        A_Clipboard := ""
+        try {
+            SendMessage(1075, 2029, 0, , "ahk_class TTOTAL_CMD")           ; TC: WM_USER + 75, TC_GETCURRENTPATH = 2029
+        } catch as e {
+            g_LOG.Debug("TCCurrentPath: SendMessage failed - " e.Message)
+            A_Clipboard := clipSaved
+            return ""
+        }
+        if (ClipWait(0.1) = 0) {
+            A_Clipboard := clipSaved
+            return ""
+        }
+        path := RTrim(A_Clipboard, "\")
+        A_Clipboard := clipSaved
+        return path
+    }
+
+    ; 同上, 只读版本的 Explorer 路径探测。
+    static ExplorerCurrentPath() {
+        expHwnd := WinExist("ahk_class CabinetWClass")
+        if (!expHwnd)
+            return ""
+        try {
+            for shellWin in ComObject("Shell.Application").Windows
+                if (shellWin.HWND = expHwnd)
+                    return shellWin.Document.Folder.Self.Path
+        } catch as e {
+            g_LOG.Debug("ExplorerCurrentPath: COM error - " e.Message)
+        }
+        return ""
+    }
+
     ; Set dialog box path to specified directory
     static SetDialogPath(targetDir) {
         if (!targetDir || !FileExist(targetDir)) {

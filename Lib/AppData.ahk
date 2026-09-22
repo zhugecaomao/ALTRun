@@ -251,6 +251,16 @@ Class AppData {
             Func | EmptyRecycle | Empty Recycle Bin=99
             Func | TurnMonitorOff | Turn off Monitor, Close Monitor=99
             Func | MuteVolume | Mute Volume=99
+            Func | ClipUpper | Clipboard: UPPERCASE=66
+            Func | ClipLower | Clipboard: lowercase=66
+            Func | ClipTitleCase | Clipboard: Title Case=66
+            Func | ClipReverse | Clipboard: reverse text=66
+            Func | ClipSortAsc | Clipboard: sort lines A-Z=66
+            Func | ClipSortDesc | Clipboard: sort lines Z-A=66
+            Func | ClipTrimLines | Clipboard: trim each line=66
+            Func | ClipRemoveBlankLines | Clipboard: remove blank lines=66
+            Func | ClipDedupeLines | Clipboard: remove duplicate lines=66
+            Func | OpenTerminalHere | Open terminal at Explorer/TC's current folder=66
             File | %Temp%\ALTRun.log | ALTRun Log File=99
             Dir | A_ScriptDir | ALTRun Program Dir=99
             Dir | A_Startup | Current User Startup Dir=99
