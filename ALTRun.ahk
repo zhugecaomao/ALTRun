@@ -20,6 +20,7 @@
 #Include Lib\PTTools.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
 #Include Lib\OptionsWindow.ahk                                         ; OptionsWindow.Show() - the settings window (see Options() below).
 #Include Lib\Kanji.ahk                                                 ; Kanji.ToSimplified()/ToTraditional() - local lookup table, see ClipToSimplified() below.
+#Include Lib\SystemActions.ahk                                         ; SystemActions - shutdown/volume/process list/search engines/etc, see the built-in Func commands below.
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -1129,21 +1130,11 @@ RankDown(*) {
     CommandStore.UpdateRank(g_RUNTIME["CurrentCommand"], true, -1)
 }
 
-GetCmdOutput(command) {
-    TempFile    := A_Temp . "\ALTRun.stdout"
-    FullCommand := A_ComSpec " /C " command " > " TempFile
-
-    RunWait(FullCommand, A_Temp, "Hide")
-    Result := FileRead(TempFile)
-    try FileDelete(TempFile)
-    Return RTrim(Result, "`r`n")                                        ; Remove result rightmost/last "`r`n"
-}
-
-GetRunResult(command) {                                                 ; 运行CMD并取返回结果方式2
-    shell := ComObject("WScript.Shell")                                 ; WshShell object: https://msdn.microsoft.com/en-us/library/aew9yb99
-    exec := shell.Exec(A_ComSpec " /C " command)                        ; Execute a single command via cmd.exe
-    Return exec.StdOut.ReadAll()                                        ; Read and Return the command's output
-}
+; GetCmdOutput()/GetRunResult() used to live here; GetCmdOutput() is now the
+; private SystemActions._GetCmdOutput() in Lib\SystemActions.ahk (its only
+; caller, _ShowCmdOutputInNotepad(), moved there with it). GetRunResult() was
+; an unused alternative implementation ("方式2") with no callers anywhere in
+; the codebase, so it was dropped rather than moved.
 
 OpenDir(dirPath) {                                                      ; Named dirPath, not Path - that's the Util.ahk class now
     dirPath := Path.Resolve(dirPath)
@@ -1781,147 +1772,73 @@ Options(ActTab := 1) {
 }
 
 ; ==================== Built-in Functions =========================
+; AhkRun()/TurnMonitorOff()/EmptyRecycle()/MuteVolume()/Google()/Bing()/
+; Everything()/Baidu()/Taobao()/JD()/ShowIP()/UrlEncode()/Logoff()/
+; ShutdownMachine()/RestartMachine()/HibernateMachine()/IncreaseVolume()/
+; DecreaseVolume()/ListProcess()/ListService() used to live here; all moved
+; into the SystemActions class in Lib\SystemActions.ahk (see the #Include
+; list at the top of this file). Each stays a bare wrapper below for the
+; same reason NewClip()/PTTools() etc. do - Func-type dispatch and FuncList
+; custom hotkeys only resolve plain global function names, never Class.Method.
 AhkRun() {
-    try {
-        Run(g_RUNTIME["Arg"])
-    } catch as e {
-        g_LOG.Debug("AhkRun: Error occur=" . e.Message)
-    }
-    return
+    SystemActions.AhkRun()
 }
-
-TurnMonitorOff() {                                                      ; 关闭显示器:
-    SendMessage(0x112, 0xF170, 2, , "Program Manager")                  ; 0x112 is WM_SYSCOMMAND, 0xF170 is SC_MONITORPOWER, 使用 -1 代替 2 来打开显示器, 使用 1 代替 2 来激活显示器的节能模式.
+TurnMonitorOff() {
+    SystemActions.TurnMonitorOff()
 }
-
 EmptyRecycle() {
-    local Result := MsgBox("Do you really want to empty the Recycle Bin?", , "YesNo")
-    if (Result = "Yes")
-    {
-        FileRecycleEmpty
-    }
-    return
+    SystemActions.EmptyRecycle()
 }
-
 MuteVolume() {
-    SoundSetMute(true)
+    SystemActions.MuteVolume()
 }
-
 Google() {
-    word := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
-    Run("https://www.google.com/search?q=" word "&newwindow=1")
+    SystemActions.Google()
 }
-
 Bing() {
-    word := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
-    Run("https://cn.bing.com/search?q=" word)
+    SystemActions.Bing()
 }
-
 Everything() {
-    try {
-        Run(g_CONFIG["Everything"] . ' -s `"' g_RUNTIME["Arg"] '`"')
-    } catch as e {
-        MsgBox("Everything software not found.`n`nPlease check ALTRun setting and Everything program file.`n`nError message=" . e.Message)
-    }
-    return
+    SystemActions.Everything()
 }
-
 Baidu() {
-    word := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
-    Run("https://www.baidu.com/s?wd=" word)
+    SystemActions.Baidu()
 }
-
 Taobao() {
-    word := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
-    Run("https://s.taobao.com/search?q=" word)
+    SystemActions.Taobao()
 }
-
 JD() {
-    word := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
-    Run("http://search.jd.com/Search?keyword=" word "&enc=utf-8")
+    SystemActions.JD()
 }
-
 ShowIP() {
-    ips := []
-    for _, ip in [A_IPAddress1, A_IPAddress2, A_IPAddress3, A_IPAddress4]
-        if (ip != "0.0.0.0")
-            ips.Push(ip)
-    if (!ips.Length)
-        return MsgBox(g_LNG[843], g_TITLE, 48)
-
-    text := ""
-    for _, ip in ips
-        text .= (text = "" ? "" : "`n") . ip
-    A_Clipboard := ips[1]
-    MsgBox(text, g_LNG[844], 64)
+    SystemActions.ShowIP()
 }
-
-; Percent-encodes the arg/clipboard and writes the result back to the clipboard
-; (byte-by-byte over its UTF-8 encoding, so non-ASCII text encodes correctly too).
 UrlEncode() {
-    text := g_RUNTIME["Arg"] = "" ? A_Clipboard : g_RUNTIME["Arg"]
-    if (text = "")
-        return
-
-    out := ""
-    for ch in StrSplit(text) {
-        if RegExMatch(ch, "^[0-9A-Za-z\-_.~]$") {
-            out .= ch
-            continue
-        }
-        buf := Buffer(8, 0)
-        len := StrPut(ch, buf, "UTF-8") - 1
-        Loop len
-            out .= Format("%{:02X}", NumGet(buf, A_Index - 1, "UChar"))
-    }
-    A_Clipboard := out
-    ToolTip(g_LNG[845])
-    SetTimer(() => ToolTip(""), -1500)
+    SystemActions.UrlEncode()
 }
-
 Logoff() {
-    if (MsgBox(g_LNG[850], g_TITLE, "YesNo") = "Yes")
-        Shutdown(0)
+    SystemActions.Logoff()
 }
-
 ShutdownMachine() {
-    if (MsgBox(g_LNG[851], g_TITLE, "YesNo") = "Yes")
-        Shutdown(1)
+    SystemActions.ShutdownMachine()
 }
-
 RestartMachine() {
-    if (MsgBox(g_LNG[852], g_TITLE, "YesNo") = "Yes")
-        Shutdown(2)
+    SystemActions.RestartMachine()
 }
-
 HibernateMachine() {
-    if (MsgBox(g_LNG[853], g_TITLE, "YesNo") = "Yes")
-        DllCall("PowrProf\SetSuspendState", "Int", 1, "Int", 0, "Int", 0)
+    SystemActions.HibernateMachine()
 }
-
 IncreaseVolume() {
-    SoundSetVolume("+5")
+    SystemActions.IncreaseVolume()
 }
-
 DecreaseVolume() {
-    SoundSetVolume("-5")
+    SystemActions.DecreaseVolume()
 }
-
-; Runs a console command and shows its output in Notepad via a named temp file -
-; simplest way to browse a long list without building a dedicated GUI for it.
-ShowCmdOutputInNotepad(command, tempName) {
-    tempFile := A_Temp "\" tempName
-    try FileDelete(tempFile)
-    FileAppend(GetCmdOutput(command), tempFile, "UTF-8")
-    Run("Notepad.exe `"" tempFile "`"")
-}
-
 ListProcess() {
-    ShowCmdOutputInNotepad("tasklist", "ALTRun.Processes.txt")
+    SystemActions.ListProcess()
 }
-
 ListService() {
-    ShowCmdOutputInNotepad("net start", "ALTRun.Services.txt")
+    SystemActions.ListService()
 }
 
 ; SetLanguage()/ReadChineseFlag() used to live here; both are now Lang.Load()/
