@@ -585,6 +585,12 @@ SearchCommand(command := "") {
         return ListResult(g_MATCHED)
     }
 
+    ; "/" (optionally followed by more text): command palette - lists every
+    ; built-in Func command with its description, live-filtered by whatever
+    ; comes after "/". A self-documenting "what can I even type" list.
+    if (prefix = "/")
+        return SearchFuncPalette(SubStr(command, 2), listLimit)
+
     ; Search precomputed command index.
     if (!isExpr) {
         pattern := BuildFuzzyPattern(command)
@@ -623,6 +629,41 @@ SearchCommand(command := "") {
         g_RUNTIME["CurrentCommand"] := g_FALLBACK.Length ? g_FALLBACK[1] : ""
     }
 
+    return ListResult(g_MATCHED)
+}
+
+; "/" command palette: filters g_COMMANDS (already rank-sorted) down to Func-type
+; entries only, then applies the same fuzzy matching SearchCommand() uses for
+; everything else against each one's function name + description.
+SearchFuncPalette(remainder, listLimit) {
+    Global g_MATCHED, g_RUNTIME, g_COMMANDS
+
+    funcCmds := []
+    for _, cmdLine in g_COMMANDS {
+        parts := StrSplit(cmdLine, " | ")
+        if (parts.Length >= 1 && parts[1] = "Func")
+            funcCmds.Push(cmdLine)
+    }
+
+    remainder := Trim(remainder)
+    if (remainder = "") {
+        Loop Min(listLimit, funcCmds.Length)
+            g_MATCHED.Push(funcCmds[A_Index])
+    } else {
+        regexPattern := g_RUNTIME["RegEx"] . BuildFuzzyPattern(remainder)
+        for _, cmdLine in funcCmds {
+            parts := StrSplit(cmdLine, " | ")
+            searchable := (parts.Length >= 2 ? parts[2] : "") " " (parts.Length >= 3 ? parts[3] : "")
+            if RegExMatch(searchable, regexPattern) {
+                g_MATCHED.Push(cmdLine)
+                if g_MATCHED.Length >= listLimit
+                    break
+            }
+        }
+    }
+
+    g_RUNTIME["CurrentCommand"] := g_MATCHED.Length ? g_MATCHED[1] : ""
+    g_RUNTIME["UseFallback"] := False
     return ListResult(g_MATCHED)
 }
 
