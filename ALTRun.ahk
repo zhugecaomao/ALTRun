@@ -23,6 +23,7 @@
 #Include Lib\SystemActions.ahk                                         ; SystemActions - shutdown/volume/process list/search engines/etc, see the built-in Func commands below.
 #Include Lib\UpdateChecker.ahk                                         ; UpdateChecker.Check() - GitHub release check, see AutoCheckUpdate()/Update()/CheckUpdate() below.
 #Include Lib\CommandManager.ahk                                        ; CommandManager.Open()/Edit()/Delete() - the command manager window, see OpenCommandManager() below.
+#Include Lib\Indexer.ahk                                               ; Indexer.UpdateSendTo()/UpdateStartup()/UpdateStartMenu()/Rebuild() - startup shortcuts + file indexing.
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -242,9 +243,9 @@ OnExit((p*) => AppData.OnAppExit(p*))                                           
 
 CommandStore.LoadCommands()
 CommandStore.LoadHistory()
-UpdateSendTo()
-UpdateStartup()
-UpdateStartMenu()
+Indexer.UpdateSendTo()
+Indexer.UpdateStartup()
+Indexer.UpdateStartMenu()
 SetTrayMenu()               ; SetTrayMenu before SetMainGUI, GUI window uses the tray icon that was in effect at the time the window was created
 SetMainGUI()                ; Create and set main GUI
 RegisterHotkey()
@@ -1202,143 +1203,14 @@ MonitorFocus(*) {
 ;     return 0
 ; }
 
-UpdateSendTo() {                 ; the lnk in SendTo must point to a exe
-    lnkPath := StrReplace(A_StartMenu, "\Start Menu", "\SendTo\") "ALTRun.lnk"
-    if (!g_CONFIG["EnableSendTo"]) {
-        try FileDelete(lnkPath)
-        g_LOG.Debug("UpdateSendTo: Update SendTo shortcut...Disabled")
-        return
-    }
-
-    if (A_IsCompiled)
-        FileCreateShortcut(A_ScriptFullPath, lnkPath, ,"-SendTo", "Send command to ALTRun User Command list")
-    else
-        FileCreateShortcut(A_AhkPath, lnkPath, , A_ScriptFullPath " -SendTo", "Send command to ALTRun User Command list")
-
-    g_LOG.Debug("UpdateSendTo: Update SendTo shortcut...OK")
-    return
-}
-
-UpdateStartup() {
-    lnkPath := A_Startup "\ALTRun.lnk"
-
-    if (!g_CONFIG["AutoStartup"]) {
-        try FileDelete(lnkPath)
-        g_LOG.Debug("UpdateStartup: Update Startup shortcut...Disabled")
-        return
-    }
-
-    FileCreateShortcut(A_ScriptFullPath, lnkPath, A_ScriptDir, "-startup", "ALTRun - An effective launcher")
-
-    g_LOG.Debug("UpdateStartup: Update Startup shortcut...OK")
-    return
-}
-
-UpdateStartMenu() {
-    lnkPath := A_Programs "\ALTRun.lnk"
-
-    if (!g_CONFIG["InStartMenu"]) {
-        try FileDelete(lnkPath)
-        g_LOG.Debug("UpdateStartMenu: Update StartMenu shortcut...Disabled")
-        return
-    }
-
-    FileCreateShortcut(A_ScriptFullPath, lnkPath, A_ScriptDir, "-StartMenu", "ALTRun - An effective launcher")
-    g_LOG.Debug("UpdateStartMenu: Update StartMenu shortcut...OK")
-    return
-}
-
-Reindex(*) {                                                            ; Re-create Index section
-    ; Collect every indexed entry into a fresh map, then store it in one go
-    AppData.LoadAppData()
-    indexMap := Map()
-
-    ; Create ProgressGui at the start
-    ProgressGui := Gui("-MinimizeBox +AlwaysOnTop", "Reindex")
-    ProgressGui.Add("Text", , "ReIndexing...")
-    ProgressGui.Add("Progress", "vMyProgress w200", 0)
-    ProgressGui.Add("Text", "vMyFileName w200", "Starting...")
-    ProgressGui.Show()
-
-    ; Move repeated config queries outside loop
-    maxDepth := g_CONFIG["IndexDepth"]
-    shouldCheckExclude := g_CONFIG["IndexExclude"] != ""
-    excludePattern := g_CONFIG["IndexExclude"]
-
-    for dirIndex, dir in StrSplit(g_CONFIG["IndexDir"], ",") {
-        searchPath := RegExReplace(Path.Resolve(Trim(dir)), "\\+$")     ; Remove trailing backslashes
-        if !DirExist(searchPath)
-            continue
-
-        for extIndex, ext in StrSplit(g_CONFIG["IndexType"], ",") {
-            ext := Trim(ext)
-            if (ext = "")
-                continue
-            Loop Files, searchPath "\" ext, "R" {                       ; Calculate path relative to searchPath and count subdir levels
-                rel := SubStr(A_LoopFileFullPath, StrLen(searchPath) + 2) ; +2 to skip the backslash
-                seps := (rel = "") ? 0 : StrLen(rel) - StrLen(StrReplace(rel, "\", "")) ; Count backslashes to determine depth
-
-                if (seps > maxDepth)                                    ; If file is deeper than allowed depth, skip it.
-                    continue
-
-                if (shouldCheckExclude && RegExMatch(A_LoopFileFullPath, excludePattern))
-                    continue                                            ; Skip this file and move on to the next loop.
-
-                indexMap["File | " . A_LoopFileFullPath] := 1   ; Collect file entry
-
-                ; Update ProgressGui (throttled to reduce UI overhead)
-                if (!Mod(A_Index, 20))
-                    ProgressGui["MyProgress"].Value := Mod(A_Index, 100), ProgressGui["MyFileName"].Text := A_LoopFileName
-            }
-        }
-    }
-
-    ; Index Windows Store Apps
-    if (g_CONFIG["IndexStoreApp"]) {
-        try {
-            ProgressGui["MyFileName"].Text  := "Indexing Store Apps..."
-            tempFile := A_Temp . "\ALTRun_StoreApps.csv"
-            RunWait('powershell -Command "Get-StartApps | Select-Object Name, AppID | ConvertTo-Csv -NoTypeInformation" > "' . tempFile . '"', , "Hide")
-            if FileExist(tempFile) {
-                output := FileRead(tempFile)
-                FileDelete(tempFile)
-                lines := StrSplit(output, "`n", "`r")
-                for line in lines {
-                    if (A_Index == 1 or Trim(line) == "")  ; Skip header
-                        continue
-                    fields := StrSplit(line, '","')
-                    if (fields.Length >= 2) {
-                        name := StrReplace(fields[1], '"', '')
-                        appid := StrReplace(fields[2], '"', '')
-                        indexMap["App | shell:AppsFolder\" . appid . " | " . name] := 1 ; Collect app entry
-                    }
-                    ProgressGui["MyProgress"].Value := A_Index
-                    ProgressGui["MyFileName"].Text  := name ? name : "Unknown App"
-                    Sleep 10  ; Small delay to show progress
-                }
-                g_LOG.Debug("Reindex: Indexed Windows Store apps successfully")
-            } else {
-                g_LOG.Debug("Reindex: Temp file not found for Store apps")
-            }
-        } catch as e {
-            g_LOG.Debug("Reindex: Error indexing Store apps: " . e.Message)
-        }
-    }
-
-    ; Destroy ProgressGui at the end
-    ProgressGui.Destroy()
-
-    ; Keep the rank a command already earned, so reindexing does not reset SmartRank
-    for cmdLine, _ in indexMap {
-        if (g_CMDDATA["Index"].Has(cmdLine) && IsInteger(g_CMDDATA["Index"][cmdLine]))
-            indexMap[cmdLine] := g_CMDDATA["Index"][cmdLine]
-    }
-    g_CMDDATA["Index"] := indexMap
-    AppData.SaveAppData()
-
-    g_LOG.Debug("Reindex: Indexing search database...OK")
-    TrayTip("ReIndex database finish successfully.", g_TITLE, 8)
-    CommandStore.LoadCommands()
+; UpdateSendTo()/UpdateStartup()/UpdateStartMenu()/Reindex() used to live
+; here; all moved into the Indexer class in Lib\Indexer.ahk (see the
+; #Include list at the top of this file, and Indexer.UpdateSendTo() etc.
+; called directly from the autorun section above - only Reindex() needs a
+; bare wrapper below, since it's the one of the four that's a built-in Func
+; command and listed in FuncList / bound to the tray and right-click menus.
+Reindex(*) {
+    Indexer.Rebuild()
 }
 
 About(*) {
