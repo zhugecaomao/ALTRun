@@ -21,6 +21,7 @@
 #Include Lib\OptionsWindow.ahk                                         ; OptionsWindow.Show() - the settings window (see Options() below).
 #Include Lib\Kanji.ahk                                                 ; Kanji.ToSimplified()/ToTraditional() - local lookup table, see ClipToSimplified() below.
 #Include Lib\SystemActions.ahk                                         ; SystemActions - shutdown/volume/process list/search engines/etc, see the built-in Func commands below.
+#Include Lib\UpdateChecker.ahk                                         ; UpdateChecker.Check() - GitHub release check, see AutoCheckUpdate()/Update()/CheckUpdate() below.
                                                                          ; All explicit: auto-include only reliably covers ClassName(...)
                                                                          ; construction calls, not ClassName.Method(...) static calls like
                                                                          ; JSON.parse(), so relying on it for every Lib class is asking for
@@ -1349,62 +1350,20 @@ Usage(*) {
     Options(7)
 }
 
+; AutoCheckUpdate()/Update()/CheckUpdate()/CompareVersion() used to live here;
+; all moved into the UpdateChecker class in Lib\UpdateChecker.ahk (see the
+; #Include list at the top of this file). These three stay bare wrappers -
+; Update() is bound directly as a Menu.Add() callback (tray/right-click menu)
+; and listed in FuncList for custom hotkeys, and CheckUpdate() is passed bare
+; to SetTimer() - none of that accepts Class.Method, only plain function names.
 AutoCheckUpdate(*) {
-    if (!g_CONFIG["AutoUpdateCheck"])
-        return
-
-    ; One-time timer to check for updates
-    SetTimer(CheckUpdate, -1000)
+    UpdateChecker.AutoCheck()
 }
-
 Update(*) {
-    ; Manual update check, show message box
     CheckUpdate(False)
 }
-
-; Main update check function, called from tray menu (*) or with silent flag
 CheckUpdate(Silent := True) {
-    RepoAPI     := "https://api.github.com/repos/zhugecaomao/ALTRun/releases/latest"
-    ReleasePage := "https://github.com/zhugecaomao/ALTRun/releases"
-
-    try {
-        tmpFile := A_Temp "\ALTRun_latest.json"
-        Download(RepoAPI, tmpFile)
-        json := FileRead(tmpFile, "UTF-8")
-
-        ; Extract latest version from tag_name
-        if !RegExMatch(json, '"tag_name"\s*:\s*"([^"]+)"', &verMatch)
-            throw Error("Cannot find 'tag_name' in GitHub API response.")
-
-        latestVersion  := Trim(verMatch[1], "vV ")
-        currentVersion := Trim(g_TITLE, "ALTRun - v ")
-
-        ; Compare versions
-        if (CompareVersion(latestVersion, currentVersion) > 0) {
-            MsgBox(g_LNG[805] latestVersion g_LNG[806], g_Title, 64)
-            Run ReleasePage
-        } else if (!Silent) {
-            ; Only show "up-to-date" message for manual checks
-            MsgBox(g_LNG[807] currentVersion g_LNG[808], g_Title, 64)
-        }
-
-    } catch as e {
-        if (!Silent)
-            MsgBox(g_LNG[809] e.Message, g_Title, 48)
-        else
-            g_LOG.Debug("CheckUpdate: Update check failed: " e.Message)
-    }
-}
-
-CompareVersion(v1, v2) {
-    v1Parts := StrSplit(v1, ".")
-    v2Parts := StrSplit(v2, ".")
-    Loop Max(v1Parts.Length, v2Parts.Length) {
-        diff := (v1Parts[A_Index] + 0) - (v2Parts[A_Index] + 0)
-        if diff
-            return diff
-    }
-    return 0
+    UpdateChecker.Check(Silent)
 }
 
 ; Listary()/ShowListaryHint()/GetListaryHintText()/IsQuickSwitchDialog()/
