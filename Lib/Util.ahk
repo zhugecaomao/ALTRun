@@ -166,6 +166,13 @@ class Win {
             KeyWait(key, "T" timeout)
     }
 
+    ; 输入框留空时显示系统原生的灰色提示文字(焦点在框里时也不消失, 不会被
+    ; 误当成一次真实输入), 一旦用户开始打字就自动让位, 清空后又自动回来。
+    static SetCueBanner(hwnd, text) {
+        static EM_SETCUEBANNER := 0x1501
+        try DllCall("User32\SendMessageW", "Ptr", hwnd, "UInt", EM_SETCUEBANNER, "Ptr", 1, "WStr", text)
+    }
+
     ; 热键字符串 -> 人类可读标签, 例如 "^g" -> "Ctrl+G"
     static HotkeyLabel(hk) {
         if (!hk || hk = "None")
