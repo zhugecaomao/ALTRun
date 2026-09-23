@@ -106,6 +106,21 @@ ALTRun - 基于 AutoHotkey、开源免费、轻量高效、功能强大的启动
 - `ALTRun.json` 如果被手动改坏导致无法解析, 程序会把它备份为 `ALTRun.json.bad` 并用默认配置重新启动, 不会静默覆盖数据
 
 
+## 项目结构
+从源码运行时直接运行 `ALTRun.ahk` (需要 AutoHotkey v2), 所有模块都在其开头用 `#Include` 显式列出:
+
+```
+ALTRun.ahk          主程序: 主窗口, 搜索, 运行命令, 热键, 以及供命令/热键调用的函数入口
+Lib\                通用库, 与 ALTRun 无关 (JSON, Logger, Util, Dialogs)
+Src\Core\           核心: 语言表, 配置读写 (AppData), 命令存储, 旧 ini 迁移
+Src\UI\             窗口: 配置选项, 命令管理器, PTTools
+Src\Features\       功能: 剪贴板, 简繁转换, Listary 式快速切换, 日期自动输入, 系统操作, 更新检查, 索引
+Res\                数据文件 (Kanji.txt 简繁对照表)
+```
+
+> 从旧版手动复制文件升级时, 可以删除旧 `Lib\` 下已经移走的 `.ahk` 文件和 `Lib\Kanji.txt`
+
+
 ## 贡献
 欢迎提交 Issue 和 PR，或在 [Discussions](https://github.com/zhugecaomao/ALTRun/discussions) 交流建议
 

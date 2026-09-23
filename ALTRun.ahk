@@ -6,28 +6,40 @@
 #SingleInstance Force
 #NoTrayIcon
 #Warn All, OutputDebug
-#Include Lib\JSON.ahk                                                  ; JSON.parse()/JSON.stringify() - used by the ALTRun.json store below.
-#Include Lib\Logger.ahk                                                ; g_LOG - see just below.
-#Include Lib\Util.ahk                                                  ; Path / Fonts / Win / Pinyin / Calc - see each call site below.
-#Include Lib\Dialogs.ahk                                               ; FontDialog / ColorDialog - see the Options-window font/color pickers.
-#Include Lib\Language.ahk                                              ; Language.Load()/Language.IsChinese() - builds g_LNG (the UI text table) below.
-#Include Lib\Listary.ahk                                               ; Listary.Init() - open/save dialog path quick-switch, called in the autorun section below.
-#Include Lib\AutoDate.ahk                                               ; AutoDate.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
-#Include Lib\Clip.ahk                                                  ; Clip.PasteClipText()/ClipPreview()/EditClipText() - the "Clip" snippet command.
-#Include Lib\IniMigration.ahk                                          ; IniMigration.MigrateFromIni() - one-off ALTRun.ini -> ALTRun.json conversion.
-#Include Lib\AppData.ahk                                               ; AppData.LoadAppData()/AppData.SaveAppData() - reads/writes ALTRun.json.
-#Include Lib\CommandStore.ahk                                          ; CommandStore.LoadCommands() etc. - in-memory command cache/rank/usage/history.
-#Include Lib\PTToolsWindow.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
-#Include Lib\OptionsWindow.ahk                                         ; OptionsWindow.Show() - the settings window (see Options() below).
-#Include Lib\Kanji.ahk                                                 ; Kanji.ToSimplified()/ToTraditional() - local lookup table, see ClipToSimplified() below.
-#Include Lib\SystemActions.ahk                                         ; SystemActions - shutdown/volume/process list/search engines/etc, see the built-in Func commands below.
-#Include Lib\UpdateChecker.ahk                                         ; UpdateChecker.Check() - GitHub release check, see AutoCheckUpdate()/Update()/CheckUpdate() below.
-#Include Lib\CommandManager.ahk                                        ; CommandManager.Open()/Edit()/Delete() - the command manager window, see OpenCommandManager() below.
-#Include Lib\Indexer.ahk                                               ; Indexer.UpdateSendTo()/UpdateStartup()/UpdateStartMenu()/Rebuild() - startup shortcuts + file indexing.
-                                                                         ; All explicit: auto-include only reliably covers ClassName(...)
-                                                                         ; construction calls, not ClassName.Method(...) static calls like
-                                                                         ; JSON.parse(), so relying on it for every Lib class is asking for
-                                                                         ; the same "unassigned variable" failure JSON.ahk hit without this.
+; Project layout (every #Include is explicit - auto-include only reliably covers
+; ClassName(...) construction calls, not ClassName.Method(...) static calls like
+; JSON.parse(), so relying on it is asking for an "unassigned variable" failure):
+;   Lib\            General-purpose libraries, nothing ALTRun-specific
+;   Src\Core\       Data and state: ALTRun.json, command store, UI text
+;   Src\UI\         Windows: settings, command manager, PT Tools / SPF2M
+;   Src\Features\   Self-contained features wired in as commands/hotkeys
+;   Res\            Data files and binaries (not code)
+
+; --- Lib: general-purpose libraries ---
+#Include Lib\JSON.ahk                    ; JSON.parse()/JSON.stringify()
+#Include Lib\Logger.ahk                  ; g_LOG - see just below
+#Include Lib\Util.ahk                    ; Path / Fonts / Win / Pinyin / Calc / Arr
+#Include Lib\Dialogs.ahk                 ; FontDialog / ColorDialog
+
+; --- Src\Core: data and state ---
+#Include Src\Core\Language.ahk           ; Language.Load() - builds g_LNG, the UI text table
+#Include Src\Core\IniMigration.ahk       ; IniMigration.MigrateFromIni() - one-off ALTRun.ini -> ALTRun.json
+#Include Src\Core\AppData.ahk            ; AppData.LoadAppData()/SaveAppData() - reads/writes ALTRun.json
+#Include Src\Core\CommandStore.ahk       ; CommandStore.LoadCommands() etc. - command cache/rank/usage/history
+
+; --- Src\UI: windows ---
+#Include Src\UI\OptionsWindow.ahk        ; OptionsWindow.Show() - settings window, see Options() below
+#Include Src\UI\CommandManager.ahk       ; CommandManager.Open()/Edit()/Delete() - see OpenCommandManager() below
+#Include Src\UI\PTToolsWindow.ahk        ; PTToolsWindow - Rebar/BRC calculator + SPF2M, see PTTools() below
+
+; --- Src\Features: self-contained features ---
+#Include Src\Features\Clip.ahk           ; Clip snippet command + clipboard text transforms
+#Include Src\Features\Kanji.ahk          ; Kanji.ToSimplified()/ToTraditional() - see ClipToSimplified() below
+#Include Src\Features\Listary.ahk        ; Listary.Init() - open/save dialog path quick-switch
+#Include Src\Features\AutoDate.ahk       ; AutoDate.Init() - Ctrl+D auto-date
+#Include Src\Features\SystemActions.ahk  ; shutdown/volume/process list/search engines/etc
+#Include Src\Features\UpdateChecker.ahk  ; UpdateChecker.Check() - see AutoCheckUpdate()/Update() below
+#Include Src\Features\Indexer.ahk        ; startup shortcuts + file index rebuild, see Reindex() below
 SetWorkingDir(A_ScriptDir)
 FileEncoding("UTF-8")
 
@@ -118,7 +130,7 @@ Global g_CONFIG := Map(
 )
 
 g_LOG.Debug("///// ALTRun is starting... /////`n")
-Global g_LNG := Language.Load()                                            ; UI text table (English/Chinese), see Lib\Language.ahk
+Global g_LNG := Language.Load()                                            ; UI text table (English/Chinese), see Src\Core\Language.ahk
 
 Global g_CONFIG_LABELS := Map(
     "AutoStartup"    , g_LNG[101],
@@ -1116,7 +1128,7 @@ IsFallbackPrefix(prefix) {
 
 ; UpdateRank()/UpdateUsage()/UpdateRunCount()/UpdateHistory()/LoadCommands()/
 ; LoadHistory() used to live here; all moved into the CommandStore class in
-; Lib\CommandStore.ahk (see the #Include list at the top of this file).
+; Src\Core\CommandStore.ahk (see the #Include list at the top of this file).
 ;
 ; RankUp()/RankDown() stay bare global functions (not CommandStore methods):
 ; the Options window's FuncList lets you bind them to a custom hotkey by
@@ -1132,7 +1144,7 @@ RankDown(*) {
 }
 
 ; GetCmdOutput()/GetRunResult() used to live here; GetCmdOutput() is now the
-; private SystemActions._GetCmdOutput() in Lib\SystemActions.ahk (its only
+; private SystemActions._GetCmdOutput() in Src\Features\SystemActions.ahk (its only
 ; caller, _ShowCmdOutputInNotepad(), moved there with it). GetRunResult() was
 ; an unused alternative implementation ("方式2") with no callers anywhere in
 ; the codebase, so it was dropped rather than moved.
@@ -1204,7 +1216,7 @@ MonitorFocus(*) {
 ; }
 
 ; UpdateSendTo()/UpdateStartup()/UpdateStartMenu()/Reindex() used to live
-; here; all moved into the Indexer class in Lib\Indexer.ahk (see the
+; here; all moved into the Indexer class in Src\Features\Indexer.ahk (see the
 ; #Include list at the top of this file, and Indexer.UpdateSendTo() etc.
 ; called directly from the autorun section above - only Reindex() needs a
 ; bare wrapper below, since it's the one of the four that's a built-in Func
@@ -1222,7 +1234,7 @@ Usage(*) {
 }
 
 ; AutoCheckUpdate()/Update()/CheckUpdate()/CompareVersion() used to live here;
-; all moved into the UpdateChecker class in Lib\UpdateChecker.ahk (see the
+; all moved into the UpdateChecker class in Src\Features\UpdateChecker.ahk (see the
 ; #Include list at the top of this file). These three stay bare wrappers -
 ; Update() is bound directly as a Menu.Add() callback (tray/right-click menu)
 ; and listed in FuncList for custom hotkeys, and CheckUpdate() is passed bare
@@ -1240,7 +1252,7 @@ CheckUpdate(Silent := True) {
 ; Listary()/ShowListaryHint()/GetListaryHintText()/IsQuickSwitchDialog()/
 ; HasAnyCtrlMatch()/IsLikelyFileDialogTitle()/SyncTCPath()/SyncExplorerPath()/
 ; SetDialogPath() used to live here; all moved into the Listary class in
-; Lib\Listary.ahk (see the #Include list at the top of this file and the
+; Src\Features\Listary.ahk (see the #Include list at the top of this file and the
 ; "Listary.Init()" call in the autorun section).
 
 UserCommand(*) {                                                        ; F4 - edit the command database directly
@@ -1278,7 +1290,7 @@ MainGUI_DropFiles(GuiObj, GuiCtrlObj, FileArray, X, Y) {
 
 ; OpenCommandManager()/PickCommandTarget()/SaveCommandFromManager()/
 ; CloseCommandManager()/EditCommand()/DelCommand()/UndoDelCommand() used to
-; live here; all moved into the CommandManager class in Lib\CommandManager.ahk
+; live here; all moved into the CommandManager class in Src\UI\CommandManager.ahk
 ; (see the #Include list at the top of this file). The five below stay bare
 ; wrappers - all of them are listed in FuncList for custom hotkeys, and
 ; EditCommand/NewCommand/DelCommand are also built-in Func commands - Func-type
@@ -1298,16 +1310,16 @@ UndoDelCommand(*) {
 }
 
 ; The old Plugins()/RenameWithDate()/LineEndAddDate()/NameAddDate() used to live here;
-; all moved into the AutoDate class in Lib\AutoDate.ahk (see the #Include list
+; all moved into the AutoDate class in Src\Features\AutoDate.ahk (see the #Include list
 ; at the top of this file and the "AutoDate.Init()" call in the autorun section).
 
 ; GetArrayIndex() used to live here; it's now Arr.IndexOf() in Lib\Util.ahk -
 ; moved there instead of into CommandManager since it's also used by
-; Lib\OptionsWindow.ahk for the custom-hotkey trigger dropdowns.
+; Src\UI\OptionsWindow.ahk for the custom-hotkey trigger dropdowns.
 
 ; LoadAppData()/SaveAppData()/MergeIntoDefaults()/OnAppExit()/ParseCommandBlock()/
 ; DefaultCommandText()/UserCommandText()/FallbackCommandText() used to live
-; here; all moved into the AppData class in Lib\AppData.ahk (called as
+; here; all moved into the AppData class in Src\Core\AppData.ahk (called as
 ; AppData.LoadAppData() etc. - see the #Include list at the top of this file
 ; and the comment block at the top of that file for the ALTRun.json layout).
 ; ALTRun.ini and its migration code (MigrateFromIni/ReadIniMapLikeDefaults/
@@ -1320,7 +1332,7 @@ UndoDelCommand(*) {
 ; === Clip (Snippet) support ==============================================
 ; EscapeClipText()/UnescapeClipText()/ClipPreview()/ExpandClipPlaceholders()/
 ; FocusLastWindow()/PasteClipText()/EditClipText()/CloseClipEditor() used to
-; live here; all moved into the Clip class in Lib\Clip.ahk (see the #Include
+; live here; all moved into the Clip class in Src\Features\Clip.ahk (see the #Include
 ; list at the top of this file and the comment block at the top of that file
 ; for the command format / placeholder syntax).
 ; =========================================================================
@@ -1333,7 +1345,7 @@ NewClip(*) {                                                            ; Comman
     OpenCommandManager("UserCommand", "Clip", Clip.EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
 }
 
-; One-shot clipboard text transforms (see Lib\Clip.ahk) - each is a bare wrapper
+; One-shot clipboard text transforms (see Src\Features\Clip.ahk) - each is a bare wrapper
 ; for the same reason NewClip() above is: Func-type dispatch only resolves
 ; plain global function names, never Class.Method.
 ClipUpper() {
@@ -1397,11 +1409,11 @@ OpenTerminalHere() {
 }
 
 PTTools() {
-    PTToolsWindow.Show()                                                  ; Lib\PTToolsWindow.ahk - Rebar/BRC calculator
+    PTToolsWindow.Show()                                                  ; Src\UI\PTToolsWindow.ahk - Rebar/BRC calculator
 }
 
 SPF2M() {
-    PTToolsWindow.ShowSpf2m()                                             ; Lib\PTToolsWindow.ahk - SPF2M profile calculator automation
+    PTToolsWindow.ShowSpf2m()                                             ; Src\UI\PTToolsWindow.ahk - SPF2M profile calculator automation
 }
 
 StruCalc(evalResult) {
@@ -1433,7 +1445,7 @@ StruCalc(evalResult) {
 ; Options()/ResetHotkey()/SelectFont()/PickCMDListColor()/PickMainGUIColor()/
 ; SelectBackground()/OPTButtonOK()/OPTGuiClose()/ToggleGlobalHotkeys()/
 ; SaveConfig()/GetOptCtrlValue()/CoerceLikeCurrent() used to live here; all
-; moved into the OptionsWindow class in Lib\OptionsWindow.ahk (see the
+; moved into the OptionsWindow class in Src\UI\OptionsWindow.ahk (see the
 ; #Include list at the top of this file).
 
 ; Options() must stay a bare global function (not an OptionsWindow class
@@ -1450,7 +1462,7 @@ Options(ActTab := 1) {
 ; Everything()/Baidu()/Taobao()/JD()/ShowIP()/UrlEncode()/Logoff()/
 ; ShutdownMachine()/RestartMachine()/HibernateMachine()/IncreaseVolume()/
 ; DecreaseVolume()/ListProcess()/ListService() used to live here; all moved
-; into the SystemActions class in Lib\SystemActions.ahk (see the #Include
+; into the SystemActions class in Src\Features\SystemActions.ahk (see the #Include
 ; list at the top of this file). Each stays a bare wrapper below for the
 ; same reason NewClip()/PTTools() etc. do - Func-type dispatch and FuncList
 ; custom hotkeys only resolve plain global function names, never Class.Method.
@@ -1516,7 +1528,7 @@ ListService() {
 }
 
 ; SetLanguage()/ReadChineseFlag() used to live here; both are now Language.Load()/
-; Language.IsChinese() in Lib\Language.ahk (see the #Include list at the top of
+; Language.IsChinese() in Src\Core\Language.ahk (see the #Include list at the top of
 ; this file and the "Global g_LNG := Language.Load()" call near the top).
 ; Eval()/EvalSimple() used to live here; both are now Calc.Eval() in Lib/Util.ahk.
 

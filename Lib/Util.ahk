@@ -197,7 +197,7 @@ class Win {
 ;===============================================================================
 class Arr {
     ; value 在 arr 里第一次出现的位置(下标从 1 开始), 找不到就返回 0。
-    ; 原来叫 GetArrayIndex(), 在 ALTRun.ahk/Lib\OptionsWindow.ahk 两处都用到,
+    ; 原来叫 GetArrayIndex(), 在 ALTRun.ahk/Src\UI\OptionsWindow.ahk 两处都用到,
     ; 挪到这个共用工具类里而不是随便挂在某一个模块下面。
     static IndexOf(value, arr) {
         for index, element in arr
