@@ -3,10 +3,19 @@
 本项目的主要变化记录在这里, 格式参照 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 版本号使用发布日期 (`YYYY.MM.DD`), 与 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases) 的标签一致。
 
-## [未发布] - 3.0
+## [2026.09.23] - 3.0
 
-3.0 参照 macOS 上的 Alfred 重新设计了搜索窗口和整体架构。第一次启动时旧的 `ALTRun.json`
-会自动升级到新格式, 原文件备份为 `ALTRun.v2.backup.json`。
+3.0 参照 macOS 上的 Alfred 重新设计了搜索窗口和整体架构。
+
+### 从旧版本升级
+1. 托盘图标 → 退出旧版本的 ALTRun
+2. 下载下面的 `ALTRun_v2026.09.23.zip`, 把里面的文件全部解压到原来的 ALTRun 文件夹 (覆盖 `ALTRun.exe`)
+3. 运行 `ALTRun.exe`
+
+第一次运行时会自动从旧版本的 `ALTRun.ini` 导入设置、自定义命令和热键, 保存到新的 `ALTRun.json`;
+`ALTRun.ini` 保持不变, 想退回旧版本时放回旧的 `ALTRun.exe` 即可。呼出热键、开机启动、"发送到" 菜单都会沿用。
+旧版本的内置命令由新的系统命令取代; SPF2M 的 `DOSBox.exe`、`SPF2M.exe`、`SDL.dll`、`SDL_net.dll` 请放到 `Resources\` 文件夹。
+新的快捷键和用法见 [README](https://github.com/zhugecaomao/ALTRun#快捷键) 和 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)。
 
 ### 新增
 - Alfred 式搜索窗口: 每行显示标题 + 路径 / 说明, 窗口高度随结果伸缩, `Ctrl+1~9` 直接执行
@@ -22,7 +31,7 @@
 - 系统命令: 电源、音量、Windows 工具、剪贴板文字转换 (大小写 / 排序 / 去重 / 简繁转换...)
 - 图形化的偏好设置窗口, 按分类修改所有设置
 - 9 套内置主题 (跟随系统、浅色、深色、经典、午夜、霜白、石墨、海洋、纸张), 支持自定义主题和 "复制为自定义主题"
-- 设置文件版本号 (`SchemaVersion`, 当前为 4) 和逐版本自动升级
+- 设置自动升级: 从旧版本的 `ALTRun.ini` 导入, 之后按设置文件版本号 (`SchemaVersion`, 当前为 4) 逐版本升级
 
 ### 变更
 - 代码按模块重新组织: `Lib\` 通用库, `Src\Core|UI|Providers|Extensions` 程序代码, `Resources\` 随程序发布的数据
@@ -40,4 +49,4 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.08.12...main
+[2026.09.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23

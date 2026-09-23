@@ -51,7 +51,9 @@ class App {
         App._UpdateShellShortcuts()
         OnExit((*) => App._OnExit())
 
-        if AppSettings.MigratedFrom
+        if (AppSettings.ImportedFrom != "")
+            App.Notify(I18n.T("Settings.ImportedIni", AppSettings.ImportedFrom), 6000)
+        else if AppSettings.MigratedFrom
             App.Notify(I18n.T("Settings.Migrated", AppSettings.MigratedFrom, SchemaMigration.BackupFile(AppSettings.File, AppSettings.MigratedFrom)), 5000)
         if AppSettings.General["CheckForUpdates"]
             SetTimer(() => UpdateChecker.Check(true), -10000)
