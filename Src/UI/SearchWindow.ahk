@@ -34,6 +34,7 @@ class SearchWindow {
     static ActionSource := "", SavedQuery := "", AllActions := []
     static HistoryIndex := 0
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
+    static SelectedRadius := 0
     static _gdi := Map()
     static _searchTimer := "", _hideTimer := ""
     static _posX := 0, _posY := 0
@@ -48,6 +49,7 @@ class SearchWindow {
         SearchWindow.Padding     := Win.Scale(ThemeManager.Get("Padding"))
         SearchWindow.RowHeight   := Win.Scale(ThemeManager.Get("RowHeight"))
         SearchWindow.IconSize    := Win.Scale(ThemeManager.Get("IconSize"))
+        SearchWindow.SelectedRadius := Win.Scale(ThemeManager.Get("SelectedRadius"))
         IconCache.Size := SearchWindow.IconSize
         IconCache.OnLoaded := () => SearchWindow._Repaint()
         SearchWindow._CreateGdiObjects()
@@ -92,6 +94,11 @@ class SearchWindow {
         g.Show("Hide w" w " h" SearchWindow._WindowHeight(0))
         Win.SetCorner(g.Hwnd)
         Win.SetBorderColor(g.Hwnd, ThemeManager.Get("Border"))
+        opacity := ThemeManager.Get("Opacity")
+        if (IsNumber(opacity) && opacity >= 1 && opacity < 255) {
+            DetectHiddenWindows(true)                                       ; 窗口此时还是隐藏的
+            WinSetTransparent(Round(opacity), g.Hwnd)
+        }
     }
 
     static _CreateGdiObjects() {
@@ -674,7 +681,17 @@ class SearchWindow {
         right := NumGet(rect, 8, "Int"), bottom := NumGet(rect, 12, "Int")
         pad := SearchWindow.Padding, iconSize := SearchWindow.IconSize, rowH := bottom - top
 
-        DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", selected ? gdi["Selected"] : gdi["Background"])
+        if (selected && SearchWindow.SelectedRadius > 0) {                 ; 圆角选中: 左右留一点边距, 画圆角矩形
+            DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", gdi["Background"])
+            inset := Win.Scale(6), gap := Win.Scale(2), diameter := SearchWindow.SelectedRadius * 2
+            oldBrush := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["Selected"], "Ptr")
+            oldPen := DllCall("SelectObject", "Ptr", hdc, "Ptr", DllCall("GetStockObject", "Int", 8, "Ptr"), "Ptr")   ; NULL_PEN
+            DllCall("RoundRect", "Ptr", hdc, "Int", left + inset, "Int", top + gap, "Int", right - inset + 1, "Int", bottom - gap + 1, "Int", diameter, "Int", diameter)
+            DllCall("SelectObject", "Ptr", hdc, "Ptr", oldPen)
+            DllCall("SelectObject", "Ptr", hdc, "Ptr", oldBrush)
+        } else {
+            DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", selected ? gdi["Selected"] : gdi["Background"])
+        }
         DllCall("SetBkMode", "Ptr", hdc, "Int", 1)                          ; TRANSPARENT
 
         if (hIcon := IconCache.Get(item.Icon))

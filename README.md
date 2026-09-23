@@ -16,11 +16,12 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 - **片段自动展开**: 在任何程序里输入 `;关键字` (例如 `;sig`) 自动替换成片段正文
 - **计算器**: 直接输入算式, 可选附带梁主筋 / 配筋面积的结构计算
 - **网页搜索**: `g 关键词` (Google)、`bd 关键词` (百度) 等, 引擎可自行添加; 没有结果时显示兜底搜索
-- **文件搜索**: `'报告` 或 `open 报告`, 通过 Everything 搜索文件
+- **文件 / 文件夹搜索**: 直接输入名称, 匹配的文件和文件夹显示在应用下面; `'报告` 或 `open 报告` 只搜文件。Everything 在运行时直接查询全盘, 否则使用内置索引 (桌面、文档、下载)
+- **在结果里直接编辑**: 选中一项按 `F3` 或右键 "编辑...", 修改自定义命令 / 片段 / 搜索引擎; 应用、文件、网址可一键加为自定义命令; `Ctrl+Del` 删除
 - **终端**: `>ipconfig /all` 在终端运行命令
 - **系统命令**: 锁屏、睡眠、关机、清空回收站、音量、Windows 工具 (设备管理器、服务、注册表...)、剪贴板文字转换
 - **大字显示**: `Ctrl+L` 全屏大字显示结果 (电话号码、计算结果...)
-- **主题**: 内置浅色 / 深色, 可以用 JSON 写自己的主题
+- **主题**: 9 套内置主题 (跟随系统、浅色、深色、经典、午夜、霜白、石墨、海洋、纸张), 也可以用 JSON 写自己的主题
 - **偏好设置窗口**: `Ctrl+,` 打开, 按分类修改设置, 列表式编辑自定义命令 / 片段 / 搜索引擎 / 自定义热键
 - **对话框快速跳转**: 打开/保存对话框里 `Ctrl+G` 跳到 Total Commander 目录, `Ctrl+E` 跳到资源管理器目录
 - **Ctrl+D 加日期**: 重命名文件时在扩展名前加上日期, 备注框里在末尾加日期
@@ -49,17 +50,21 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 | `→` (光标在末尾) | 打开操作面板, `←` / `Esc` 返回 |
 | `Ctrl+C` | 复制选中项 (输入框里选中了文字时照常复制文字) |
 | `Ctrl+L` | 大字显示 |
-| `Ctrl+,` | 偏好设置 |
+| `F3` | 编辑选中项 (自定义命令 / 片段 / 搜索引擎); 应用、文件、网址: 添加为自定义命令; 没有结果时用输入的文字新建命令 |
+| `Ctrl+Del` (光标在末尾) | 删除选中项 (自定义命令 / 片段 / 搜索引擎 / 剪贴板历史), 删除前确认 |
+| 鼠标右键 | 选中项的操作菜单 (和操作面板相同) |
+| `F2` / `Ctrl+,` | 偏好设置 |
+| `F4` | 用记事本编辑 ALTRun.json |
 | `Esc` / 切换到其它窗口 | 隐藏 |
 
 
 ## 搜索功能与关键字
 | 输入 | 功能 |
 |---|---|
-| 任意文字 | 应用、自定义命令、片段、系统命令、Windows 工具 |
+| 任意文字 | 应用、自定义命令、片段、系统命令、Windows 工具, 以及名称匹配的文件和文件夹 |
 | `12*(3+4)` 或 `=2^10` | 计算器 |
 | `g xxx` `bing xxx` `bd xxx` `gh xxx` `wiki xxx` `yt xxx` `tb xxx` `jd xxx` `tr xxx` | 网页搜索 (Google / Bing / 百度 / GitHub / 维基百科 / YouTube / 淘宝 / 京东 / 翻译) |
-| `'xxx` 或 `open xxx` / `find xxx` | 文件搜索 (Everything) |
+| `'xxx` 或 `open xxx` / `find xxx` | 只搜索文件和文件夹 |
 | `>命令` | 在终端运行 |
 | `clip` / `clip xxx` | 剪贴板历史 |
 | `snip xxx` | 只搜索片段 |
@@ -67,7 +72,11 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 
 关键字后面加了空格 (例如 `clip `、`g xxx`、`'xxx`、`>xxx`) 就进入该功能的专属模式, 只显示这个功能的结果。
 
-文件搜索需要安装 [Everything](https://www.voidtools.com/), 并把 `Everything64.dll` (Everything SDK) 或 `es.exe` (命令行版) 放在 ALTRun 目录; 都没有时会改为在 Everything 或 Windows 搜索里打开。
+文件搜索会自动选择数据来源:
+- [Everything](https://www.voidtools.com/) 在运行: 通过 Everything 的 IPC 接口直接查询全盘, 不需要 `Everything64.dll` 或 `es.exe`
+- 否则: 使用内置索引, 在后台扫描 `ScopeFolders` 里的文件夹 (默认: 桌面、文档、下载, 深度 4 层), 缓存在 `Data\FileIndex.json`, 每 30 分钟更新
+
+偏好设置的 "文件搜索" 页可以修改: 是否显示在默认结果里、显示几条、Everything 的排除条件、内置索引的文件夹和深度, 以及立即重建索引。
 
 
 ## 偏好设置
@@ -77,8 +86,9 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 |---|---|
 | 通用 | 呼出热键、界面语言、开机启动、失焦隐藏、文件管理器... |
 | 外观 | 主题、窗口宽度、显示行数 |
-| 功能 | 启用 / 关闭各项搜索功能, 结构计算、终端、文件搜索选项 |
+| 功能 | 启用 / 关闭各项搜索功能, 结构计算、终端选项 |
 | 应用搜索 | 索引的文件夹、文件类型、拼音首字母、应用商店应用, 重建索引 |
+| 文件搜索 | 默认结果里显示文件、Everything 状态和排除条件、内置索引的文件夹和深度, 重建文件索引 |
 | 自定义命令 / 文字片段 / 网页搜索 / 自定义热键 | 列表, 添加 / 编辑 (双击) / 删除 |
 | 剪贴板历史 | 热键、保存条数、不记录的程序、清空历史 |
 | 扩展功能 | 对话框快速跳转、Ctrl+D 加日期 |
@@ -115,8 +125,8 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 - **Snippets**: 占位符 `{date}` `{time}` `{datetime}` `{clipboard}` `{cursor}` (粘贴后光标停在这里)。有 `Keyword` 的片段可以在任何程序里输入 `;关键字` 自动展开 (前缀见 `Features.Snippets.ExpandPrefix`, 单个片段设 `"AutoExpand": 0` 可以关闭)。
 - **Clipboard**: `Features.Clipboard` 里可以修改热键、保存条数、是否保存到磁盘 (`Persist`)、不记录的程序 (`IgnoreApps`)。历史保存在 `Data\ClipboardHistory.json`。
 - **Hotkeys**: 自定义热键执行一条系统命令, `WinTitle` 不为空时只在该窗口里生效。可用的命令 Id 见 `Src\Providers\SystemProvider.ahk` (例如 `Lock`、`PTTools`、`TextUpper`、`ToggleWindow`)。
-- **主题**: 在 `Themes\<名称>.json` 里写出要修改的键 (颜色 `RRGGBB`、字号、行高...), 然后设置 `"Theme": "<名称>"`; 可用的键见 `Src\UI\ThemeManager.ahk`。
-- 运行时生成的数据放在 `Data\` 目录 (应用索引、学习记录、剪贴板历史), 删掉只会重新生成。
+- **主题**: 内置 `System` (跟随 Windows 浅色 / 深色, 系统切换时自动更新)、`Light`、`Dark`、`Classic`、`Midnight`、`Frost` (半透明)、`Graphite`、`Ocean`、`Paper`。自定义主题: 在 `Themes\<名称>.json` 里写出要修改的键, `"Base"` 指定从哪个内置主题开始, 例如 `{ "Base": "Dark", "SelectedBackground": "1D4ED8", "SelectedRadius": 8, "Opacity": 240 }`, 然后设置 `"Theme": "<名称>"`; 全部可用的键见 `Src\UI\ThemeManager.ahk`。
+- 运行时生成的数据放在 `Data\` 目录 (应用索引、文件索引、学习记录、剪贴板历史), 删掉只会重新生成。
 
 
 ## 从 2.x 升级
@@ -130,8 +140,8 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 ## 项目结构
 ```
 ALTRun.ahk          入口: 列出所有模块并调用 App.Start()
-Lib\                通用库, 与 ALTRun 无关 (JSON, Logger, Util, TextTools, Kanji, Dialogs)
-Src\Core\           启动流程 (App), 设置与版本升级, 搜索模型 (SearchQuery / ResultItem), 匹配打分, 学习排序, 操作
+Lib\                通用库, 与 ALTRun 无关 (JSON, Logger, Util, TextTools, Kanji, Dialogs, Everything IPC)
+Src\Core\           启动流程 (App), 设置与版本升级, 搜索模型 (SearchQuery / ResultItem), 匹配打分, 学习排序, 操作, 文件索引
 Src\UI\             搜索窗口, 偏好设置窗口, 通用编辑对话框, 大字显示, 主题, 图标缓存
 Src\Providers\      搜索功能: 剪贴板历史 / 应用 / 自定义命令 / 片段 / 系统命令 / 计算器 / 网页搜索 / 文件搜索 / 终端
 Src\Extensions\     搜索窗口以外的功能: 片段自动展开, 对话框快速跳转, Ctrl+D 加日期, PT 工具箱, 检查更新
@@ -139,7 +149,7 @@ Res\                数据文件 (Kanji.txt 简繁对照表)
 Tests\              单元测试
 ```
 
-新增一个搜索功能只需要在 `Src\Providers\` 里加一个类 (`Id` / `Init()` / `Search(query)` 返回 `ResultItem` 数组), 在 `ALTRun.ahk` 里 `#Include`, 并在 `App.Start()` 里注册。
+新增一个搜索功能只需要在 `Src\Providers\` 里加一个类 (`Id` / `Init()` / `Search(query)` 返回 `ResultItem` 数组), 在 `ALTRun.ahk` 里 `#Include`, 并在 `App.Start()` 里注册。结果可以在搜索窗口里编辑 / 删除时, 再实现可选的 `EditItem(item)` / `DeleteItem(item)` (结果的 `Source` 指向设置里对应的那一条)。
 
 
 ## 开发

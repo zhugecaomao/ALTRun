@@ -126,12 +126,10 @@ class PreferencesWindow {
 
     static _BuildAppearance() {
         PreferencesWindow._BeginPage("Prefs.Page.Appearance")
-        themes := ["Light", "Dark"]
-        Loop Files, A_ScriptDir "\Themes\*.json" {
-            SplitPath(A_LoopFileName, , , , &themeName)
-            themes.Push(themeName)
-        }
-        PreferencesWindow._Choice("Appearance.Theme", "Prefs.Theme", themes, themes)
+        themes := ThemeManager.Names(), labels := []
+        for themeName in themes
+            labels.Push(ThemeManager.IsBuiltin(themeName) ? I18n.T("Theme." themeName) : themeName)
+        PreferencesWindow._Choice("Appearance.Theme", "Prefs.Theme", themes, labels)
         PreferencesWindow._Hint("Prefs.ThemeHint")
         PreferencesWindow._Field("Appearance.Width", "Prefs.Width", 80, "number")
         PreferencesWindow._Field("Appearance.VisibleRows", "Prefs.VisibleRows", 80, "number")

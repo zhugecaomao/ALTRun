@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -356,6 +356,28 @@ class Tests {
             titles .= action.Title "|"
         TestRunner.True("EditActions.list has edit", InStr(titles, I18n.T("Action.Edit")) && InStr(titles, I18n.T("Action.Delete")))
         ProviderRegistry.Providers := saved
+    }
+
+    static Themes() {
+        fullKeys := ThemeManager.Builtin("Light")
+        for themeName in ThemeManager.BuiltinNames {
+            if (themeName = "System")
+                continue
+            ThemeManager.Load(themeName)
+            missing := ""
+            for key in fullKeys
+                if (ThemeManager.Get(key) = "")
+                    missing .= key " "
+            TestRunner.Equal("Themes." themeName " complete", missing, "")
+            for key in ["Background", "Title", "SelectedBackground", "SelectedTitle"]
+                TestRunner.True("Themes." themeName "." key " is RRGGBB", RegExMatch(ThemeManager.Get(key), "^[0-9A-Fa-f]{6}$"))
+        }
+        ThemeManager.Load("System")
+        TestRunner.True("Themes.System resolves", ThemeManager.Resolved = "Light" || ThemeManager.Resolved = "Dark")
+        ThemeManager.Load("No Such Theme")
+        TestRunner.Equal("Themes.missing file falls back", ThemeManager.Resolved, "Light")
+        TestRunner.True("Themes.names", ThemeManager.Names().Length >= ThemeManager.BuiltinNames.Length)
+        ThemeManager.Load("Light")
     }
 
     static Misc() {

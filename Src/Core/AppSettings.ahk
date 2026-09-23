@@ -147,7 +147,7 @@ class AppSettings {
                 "HistorySize"         , 30
             ),
             "Appearance", Map(
-                "Theme"      , "Light",                                     ; Light / Dark / 或 Themes\<名称>.json
+                "Theme"      , "Light",                                     ; 内置主题名 (见 ThemeManager) 或 Themes\<名称>.json
                 "Width"      , 700,
                 "VisibleRows", 8
             ),
