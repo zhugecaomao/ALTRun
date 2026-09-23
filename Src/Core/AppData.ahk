@@ -106,6 +106,14 @@ Class AppData {
         ; --- Settings (Config / Gui / Hotkey) - overlay JSON values onto the hardcoded defaults ---
         AppData.MergeIntoDefaults(g_CONFIG, data.Get("Config", ""))
         AppData.MergeIntoDefaults(g_HOTKEY, data.Get("Hotkey", ""))
+        ; FuncList used to offer "Active", which never existed as a function (the
+        ; hotkey failed with "Could not find function"). It is "Activate" now.
+        for _, key in ["Trigger1", "Trigger2", "Trigger3", "Trigger4", "Trigger5", "Trigger6", "Trigger7", "CondAction"] {
+            if (g_HOTKEY.Has(key) && g_HOTKEY[key] = "Active") {
+                g_HOTKEY[key] := "Activate"
+                dirty := true
+            }
+        }
         AppData.MergeIntoDefaults(g_GUI,    data.Get("Gui", ""))
         AppData.MergeIntoDefaults(g_BENCH,  data.Get("Benchmark", ""))
         PTToolsWindow.Load(data.Get("PTTools", ""))

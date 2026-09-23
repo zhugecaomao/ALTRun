@@ -265,10 +265,13 @@ return
 ; MainGUI/myInputBox/myListView/myImageList/myIconMap globals used to live here;
 ; all moved into the MainWindow class in Src\UI\MainWindow.ahk (see the #Include
 ; list at the top of this file and the MainWindow.Create() call in the autorun
-; section). The six below stay bare wrappers - all of them are listed in
+; section). The seven below stay bare wrappers - all of them are listed in
 ; FuncList for custom hotkeys (stored by name in ALTRun.json), and CommandRunner.Execute()
 ; calls those by name via %cmdPath%(), which only resolves plain global
 ; function names, not Class.Method.
+Activate(*) {                                                           ; Show the main window (not toggle)
+    MainWindow.Show()
+}
 ToggleWindow(*) {
     MainWindow.Toggle()
 }
