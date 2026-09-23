@@ -58,10 +58,11 @@ class Shots {
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
-        ; 预热: 第一次启动时 Windows 还在扫描新文件、载入图标, 比较慢, 这一次不截图
+        ; 预热: 刚建好的快捷方式第一次取图标很慢 (Windows 在扫描新文件), 这期间窗口画不出结果。
+        ; 等它第一次画出来, 这一次不截图
+        Shots.Log("== warm-up")
         Shots.Launch("Light")
-        Shots.Search("pt")
-        Sleep(8000)
+        Shots.WaitPainted(Shots.Search("pt"), 180)
         Shots.Close()
         for scene in Shots.Scenes() {
             if (wanted.Count && !wanted.Has(scene[1]))
@@ -259,18 +260,33 @@ class Shots {
     ;---------------------------------------------------------------------------
     ; 截图: 从屏幕复制窗口区域 (包括半透明效果), 用 GDI+ 存成 PNG
     ;---------------------------------------------------------------------------
-    ; 列表区域还是一片空白 (窗口忙, 还没画出结果) 时等一会儿重试
-    static Capture(hwnd, file) {
-        Loop 10 {
+    ; 等到列表区域不再是一片空白 (窗口忙, 还没画出结果), 最多等 seconds 秒
+    static WaitPainted(hwnd, seconds) {
+        start := A_TickCount
+        Loop {
             DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)    ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
             Sleep(500)
             hbm := Shots.CaptureBitmap(hwnd, &w, &h, &blank)
-            if (!blank || A_Index = 10)
-                break
             DllCall("DeleteObject", "Ptr", hbm)
-            Shots.Log("list not painted yet, retrying")
-            Sleep(2000)
+            elapsed := (A_TickCount - start) // 1000
+            if !blank {
+                if (elapsed > 1)
+                    Shots.Log("painted after " elapsed " s")
+                return true
+            }
+            if (elapsed >= seconds) {
+                Shots.Log("still blank after " elapsed " s")
+                return false
+            }
+            if (Mod(A_Index, 5) = 1)
+                Shots.Log("waiting for the list to paint (" elapsed " s, hung: " DllCall("IsHungAppWindow", "Ptr", hwnd) ")")
+            Sleep(1500)
         }
+    }
+
+    static Capture(hwnd, file) {
+        Shots.WaitPainted(hwnd, 60)
+        hbm := Shots.CaptureBitmap(hwnd, &w, &h, &blank)
         try {
             Shots.SavePng(hbm, file)
         } finally {
