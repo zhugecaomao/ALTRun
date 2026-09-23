@@ -40,7 +40,7 @@ Class CommandStore {
             g_CMDDATA[section][originCmd] := rankValue
             AppData.SaveAppData()
             if (showRank)
-                SetStatusBar("UpdateRank: Rank for current command : " rankValue)
+                MainWindow.SetStatus("UpdateRank: Rank for current command : " rankValue)
 
             g_LOG.Debug("UpdateRank: Rank updated for command..." originCmd "=" rankValue)
             break

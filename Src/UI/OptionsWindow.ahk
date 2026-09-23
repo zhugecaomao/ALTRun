@@ -35,7 +35,7 @@ Class OptionsWindow {
             , "IncreaseVolume", "DecreaseVolume", "ListProcess", "ListService"]
 
         g_LOG.Debug("Options: Opening Options window... Tab=" ActTab)
-        MainGUI_Close()
+        MainWindow.Hide()
         if WinExist(g_LNG[2]) {
             return WinActivate(g_LNG[2])
         }
@@ -45,7 +45,7 @@ Class OptionsWindow {
         optFont := Fonts.Spec(g_GUI["OptGUIFont"], "Microsoft YaHei", "norm s9.0")
         mainFont := Fonts.Spec(g_GUI["MainGUIFont"], "Microsoft YaHei", "norm s10.0")
         sbFont := Fonts.Spec(g_GUI["MainSBFont"], "Microsoft YaHei", "norm s9.0")
-        g := OptionsWindow.G := Gui("+Owner" MainGUI.hwnd, g_LNG[2])         ; +Owner MainGUI.hwnd fix GUI flicking issue
+        g := OptionsWindow.G := Gui("+Owner" MainWindow.Gui.Hwnd, g_LNG[2])  ; +Owner main window fixes GUI flicking issue
         g.SetFont(optFont.opt, optFont.name)
         OptTab := g.AddTab3("Choose" ActTab, g_LNG[100])
 

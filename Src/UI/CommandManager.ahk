@@ -171,19 +171,19 @@ Class CommandManager {
     ; Ctrl+Z: restore the most recently deleted command (as many times in a row as things were deleted).
     ; In-memory only - once ALTRun is closed/reloaded, deleted commands can no longer be undone.
     static UndoDelete() {
-        if (MainGUI.FocusedCtrl.ClassNN = "Edit1") {                       ; Typing in the input box: let the native "undo last edit" through instead
+        if (MainWindow.Gui.FocusedCtrl.ClassNN = "Edit1") {                       ; Typing in the input box: let the native "undo last edit" through instead
             SendInput("^z")
             return
         }
 
         if !g_DELUNDO.Length
-            return SetStatusBar(g_LNG[812])
+            return MainWindow.SetStatus(g_LNG[812])
 
         entry := g_DELUNDO.Pop()
         AppData.LoadAppData()
         g_CMDDATA[entry["Section"]][entry["CmdLine"]] := entry["Rank"]
         AppData.SaveAppData()
         CommandStore.LoadCommands()
-        SetStatusBar(g_LNG[813] " " entry["CmdLine"])
+        MainWindow.SetStatus(g_LNG[813] " " entry["CmdLine"])
     }
 }
