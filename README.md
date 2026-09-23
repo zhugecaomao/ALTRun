@@ -22,7 +22,9 @@
   <a href="#english">English</a>
 </p>
 
-> 3.0 重新设计了搜索窗口和整体架构。界面截图会在 Windows 上实测后更新。
+<p align="center">
+  <img src="docs/images/screenshots/search.png" width="700" alt="ALTRun 搜索窗口">
+</p>
 
 
 ## 快速开始
@@ -59,6 +61,31 @@
 - **Ctrl+D 加日期**: 重命名文件时在扩展名前加上日期
 - **自定义热键**: 任意热键执行一条系统命令, 可限定在某个程序里生效
 - **PT 工具箱**: 钢筋 / BRC 面积计算器、SPF2M 束线型计算器 (预应力设计)
+
+
+## 截图
+| 操作面板 (`→`) | 文件搜索 (`空格` + 名称) |
+|:---:|:---:|
+| <img src="docs/images/screenshots/actions.png" alt="操作面板"> | <img src="docs/images/screenshots/files.png" alt="文件搜索"> |
+| **计算器 (附带结构计算)** | **剪贴板历史 (`clip`)** |
+| <img src="docs/images/screenshots/calculator.png" alt="计算器"> | <img src="docs/images/screenshots/clipboard.png" alt="剪贴板历史"> |
+| **偏好设置** | **自定义命令** |
+| <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
+
+<details>
+<summary><b>内置主题</b> (Dark / Classic / Midnight / Frost / Graphite / Ocean / Paper)</summary>
+
+| Dark | Classic | Midnight |
+|:---:|:---:|:---:|
+| <img src="docs/images/screenshots/theme-dark.png" alt="Dark"> | <img src="docs/images/screenshots/theme-classic.png" alt="Classic"> | <img src="docs/images/screenshots/theme-midnight.png" alt="Midnight"> |
+| **Frost** | **Graphite** | **Ocean** |
+| <img src="docs/images/screenshots/theme-frost.png" alt="Frost"> | <img src="docs/images/screenshots/theme-graphite.png" alt="Graphite"> | <img src="docs/images/screenshots/theme-ocean.png" alt="Ocean"> |
+| **Paper** | | |
+| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | | |
+
+</details>
+
+截图由 [Tests/Screenshots](Tests/Screenshots/TakeScreenshots.ahk) 在 GitHub Actions 的 Windows 机器上自动生成。
 
 
 ## 快捷键
@@ -109,7 +136,7 @@ Src\UI\             搜索窗口, 偏好设置窗口, 编辑对话框, 大字显
 Src\Providers\      搜索功能: 应用 / 自定义命令 / 片段 / 剪贴板 / 系统命令 / 计算器 / 网页 / 文件 / 终端
 Src\Extensions\     搜索窗口以外的功能: 片段自动展开, 对话框跳转, 加日期, PT 工具箱, 检查更新
 Resources\          随程序发布的数据 (Kanji.txt 简繁对照表, Themes\ 内置主题, SPF2M 程序文件)
-Tests\              单元测试
+Tests\              单元测试, 自动截图 (Tests\Screenshots)
 ```
 
 运行后程序目录下还会出现 `ALTRun.json` (设置)、`Data\` (索引和历史, 可以删除)、`Themes\` (你自己的主题)。升级时把新版本复制覆盖到程序目录即可。

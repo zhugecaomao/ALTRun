@@ -12,6 +12,8 @@
 
 常用的文件夹更适合加为 [自定义命令](Commands-and-Snippets): 自定义命令也按目标的文件夹名匹配, 普通搜索就能找到。
 
+![文件搜索](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/files.png)
+
 `Enter` 打开, `Ctrl+Enter` 在文件管理器中显示, `Alt+Enter` 复制路径, `→` 更多操作 (在此处打开终端、属性...)。
 
 ## 数据来源

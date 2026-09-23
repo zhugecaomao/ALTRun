@@ -32,6 +32,8 @@
 | 多个关键词 | `st co` → Visual Studio Code |
 | 按顺序出现的字母 (至少 3 个, 首字母相同) | `ntpd` → Notepad |
 
+![拼音首字母: jsb → 记事本](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pinyin.png)
+
 自定义命令还会按目标的文件夹名 / 文件名匹配, 例如 Target 是 `Q:\Projects\PT1931 - 24 NIR` 时输入 `nir` 也能找到。
 
 ### 学习排序
@@ -64,6 +66,8 @@ ALTRun 记住 "输入了什么 → 最后选了哪一项": 输入 `no` 选过记
 
 ## 操作面板
 选中一项按 `→` (或鼠标右键) 列出它的全部操作, 可以继续输入文字过滤:
+
+![操作面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/actions.png)
 
 | 结果类型 | 操作 |
 |---|---|
