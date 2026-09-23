@@ -93,9 +93,9 @@ class SchemaMigration {
         data["Features"]["Snippets"]["PasteMode"]  := (pick(config, "ClipSendMode", 1) = 2) ? "Type" : "Clipboard"
         data["Features"]["Snippets"]["PasteDelay"] := pick(config, "ClipPasteDelay", 300)
 
-        everything := pick(config, "Everything", "")
-        if (everything != "" && everything != "C:\Apps\Everything.exe")
-            data["Features"]["FileSearch"]["EverythingPath"] := everything
+        everythingPath := pick(config, "Everything", "")
+        if (everythingPath != "" && everythingPath != "C:\Apps\Everything.exe")
+            data["Features"]["FileSearch"]["EverythingPath"] := everythingPath
 
         quick := data["Extensions"]["QuickSwitch"]
         quick["ExplorerHotkey"] := pick(oldHotkeys, "ExplorerDir", quick["ExplorerHotkey"])

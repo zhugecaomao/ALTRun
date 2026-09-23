@@ -10,14 +10,22 @@
 ;   "folder:"                    通用文件夹图标
 ; exe/lnk/ico 等每个文件图标不同, 按完整路径缓存; 其它文件按扩展名缓存。
 ;
+; 读取图标 (特别是 exe/lnk、网络路径) 可能要几毫秒到几十毫秒, 所以 Get() 遇到
+; 还没加载的图标先返回 0 并放进队列, 由定时器在后台加载, 加载完调用 OnLoaded
+; (SearchWindow 在那里重画列表)。这样打字时不会被图标卡住。
+;
 ; 用法:
 ;   IconCache.Size := 32                 (由 SearchWindow 按主题和 DPI 设置)
-;   hIcon := IconCache.Get(item.Icon)    0 = 没有图标
+;   IconCache.OnLoaded := () => ...      后台加载完一批图标后调用
+;   hIcon := IconCache.Get(item.Icon)    0 = 没有图标 / 还在加载
 ;===============================================================================
 
 class IconCache {
-    static Size   := 32
-    static _icons := Map()
+    static Size     := 32
+    static OnLoaded := ""
+    static _icons   := Map()
+    static _queue   := Map()              ; key -> spec, 等待后台加载
+    static _timer   := ""
 
     static Get(spec) {
         if (spec = "")
@@ -25,10 +33,45 @@ class IconCache {
         key := IconCache._CacheKey(spec)
         if IconCache._icons.Has(key)
             return IconCache._icons[key]
-        hIcon := 0
-        try hIcon := IconCache._Load(spec)
-        IconCache._icons[key] := hIcon
-        return hIcon
+        if !IconCache._queue.Has(key) {
+            IconCache._queue[key] := spec
+            if (IconCache._timer = "")
+                IconCache._timer := () => IconCache._LoadQueued()
+            SetTimer(IconCache._timer, -1)
+        }
+        return 0
+    }
+
+    ; 立即加载 (不经过队列), 测试或需要马上拿到图标时用
+    static GetNow(spec) {
+        if (spec = "")
+            return 0
+        key := IconCache._CacheKey(spec)
+        if !IconCache._icons.Has(key) {
+            hIcon := 0
+            try hIcon := IconCache._Load(spec)
+            IconCache._icons[key] := hIcon
+        }
+        return IconCache._icons[key]
+    }
+
+    ; 每次最多加载约 30 ms, 剩下的留到下一轮, 中间可以处理键盘输入
+    static _LoadQueued() {
+        start := A_TickCount
+        loaded := false
+        for key, spec in IconCache._queue.Clone() {
+            IconCache._queue.Delete(key)
+            hIcon := 0
+            try hIcon := IconCache._Load(spec)
+            IconCache._icons[key] := hIcon
+            loaded := true
+            if (A_TickCount - start > 30)
+                break
+        }
+        if IconCache._queue.Count
+            SetTimer(IconCache._timer, -1)
+        if (loaded && IsObject(IconCache.OnLoaded))
+            IconCache.OnLoaded.Call()
     }
 
     static Clear() {

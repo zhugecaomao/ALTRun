@@ -190,11 +190,21 @@ class AppSettings {
                     "Fallbacks", ["google", "files", "bing"]                ; 没有任何结果时显示的兜底项 (引擎 Id 或 "files")
                 ),
                 "FileSearch", Map(
-                    "Enabled"       , 1,
-                    "Keywords"      , ["open", "find"],
-                    "QuotePrefix"   , 1,                                    ; 以 ' 开头直接搜索文件, 和 Alfred 一样
-                    "EverythingPath", "",                                   ; 留空自动查找 Everything / es.exe / Everything64.dll
-                    "MaxResults"    , 30
+                    "Enabled"            , 1,
+                    "Keywords"           , ["open", "find"],
+                    "QuotePrefix"        , 1,                               ; 以 ' 开头直接搜索文件, 和 Alfred 一样
+                    "MaxResults"         , 30,
+                    "InDefaultResults"   , 1,                               ; 直接输入名称时也显示匹配的文件 / 文件夹
+                    "DefaultResultsLimit", 6,
+                    "MinQueryLength"     , 2,
+                    "UseEverything"      , 1,                               ; Everything 在运行时通过 IPC 查询全盘
+                    "EverythingFilter"   , "!C:\Windows\ !\AppData\ !\$Recycle.Bin\",
+                    "EverythingPath"     , "",                              ; Everything.exe 的位置, 留空自动查找 (只用于 "在 Everything 中搜索")
+                    "ScopeFolders"       , ["A_Desktop", "A_MyDocuments", "%UserProfile%\Downloads"],   ; 没有 Everything 时的内置索引范围
+                    "ScopeDepth"         , 4,
+                    "ScopeExclude"       , "i)\\(node_modules|\.git|__pycache__|\$RECYCLE\.BIN)(\\|$)",
+                    "MaxEntries"         , 30000,
+                    "RefreshMinutes"     , 30
                 ),
                 "Terminal", Map(
                     "Enabled", 1,

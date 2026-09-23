@@ -32,7 +32,7 @@ class SnippetProvider {
             preview := SnippetProvider._Preview(snippet["Text"])
             item := ResultItem((name != "") ? name : preview, I18n.T("Snippet.Subtitle", preview), {
                 Kind: "text", Arg: snippet["Text"], Icon: "res:imageres.dll,-102",
-                Uid: "snippet:" StrLower(keyword "|" name), Score: score + (onlySnippets ? 30 : 0),
+                Uid: "snippet:" StrLower(keyword "|" name), Score: score + (onlySnippets ? 30 : 0), Source: snippet,
                 Exclusive: onlySnippets && query.HasRest,
                 LargeText: SnippetProvider.Expand(snippet["Text"])
             })
@@ -40,6 +40,53 @@ class SnippetProvider {
             results.Push(item)
         }
         return results
+    }
+
+    static EditorFields() {
+        return [ItemEditor.Field("Name", "Prefs.Col.Name", "text", true)
+              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword")
+              , ItemEditor.Field("Text", "Prefs.Col.Text", "multiline", true, "", "{date} {time} {datetime} {clipboard} {cursor}")
+              , ItemEditor.Field("AutoExpand", "Prefs.Col.AutoExpand", "check")]
+    }
+
+    static NewSnippet() {
+        return Map("Name", "", "Keyword", "", "Text", "", "AutoExpand", 1)
+    }
+
+    ; snippet: AppSettings.Snippets 里的一条 (就地修改), 或 "" 新建 (prefill 预先填好的字段)
+    static Edit(snippet := "", prefill := "") {
+        isNew := !IsObject(snippet)
+        base := isNew ? SnippetProvider.NewSnippet() : ItemEditor.WithDefaults(snippet, SnippetProvider.NewSnippet())
+        if IsObject(prefill)
+            for key, value in prefill
+                base[key] := value
+        edited := ItemEditor.Edit(ItemEditor.Owner(), I18n.T("Prefs.Page.Snippets"), SnippetProvider.EditorFields(), base)
+        if !IsObject(edited)
+            return false
+        if isNew
+            AppSettings.Snippets.Push(edited)
+        else
+            for key, value in edited
+                snippet[key] := value
+        saved := AppSettings.Save()
+        SnippetExpander.Refresh()                                           ; 关键字可能变了, 重新注册自动展开
+        return saved
+    }
+
+    static EditItem(item) {
+        return SnippetProvider.Edit(item.Source)
+    }
+
+    static DeleteItem(item) {
+        for index, snippet in AppSettings.Snippets {
+            if (ObjPtr(snippet) = ObjPtr(item.Source)) {
+                AppSettings.Snippets.RemoveAt(index)
+                saved := AppSettings.Save()
+                SnippetExpander.Refresh()
+                return saved
+            }
+        }
+        return false
     }
 
     ; focusPrevious = false: 自动展开时直接粘贴到当前窗口

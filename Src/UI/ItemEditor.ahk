@@ -15,6 +15,8 @@
 ; 用法:
 ;   result := ItemEditor.Edit(ownerGui, "标题", fields, itemMap)
 ;   返回编辑后的新 Map (保留 itemMap 里没有列出的键), 取消返回 ""
+;   ItemEditor.WithDefaults(itemMap, defaultsMap)   缺少的键用默认值补上 (旧设置里可能没有新加的键)
+;   ItemEditor.Field("Title", "Prefs.Col.Title", "text", true)   生成一个字段描述 (标签用 I18n 键)
 ;===============================================================================
 
 class ItemEditor {
@@ -28,13 +30,13 @@ class ItemEditor {
         labelW := 110, inputW := 380
 
         for field in fields {
-            g.AddText("xm w" labelW " y+10 Section", field.Label)
+            g.AddText("xm w" labelW " y+10 Section", (field.Type = "check") ? "" : field.Label)   ; 复选框的文字写在框后面
             value := item.Has(field.Key) ? item[field.Key] : ""
             switch field.Type {
                 case "multiline":
                     ctrl := g.AddEdit("x+8 ys-3 w" inputW " r8 +Multi +WantTab", value)
                 case "check":
-                    ctrl := g.AddCheckbox("x+8 ys w" inputW, "")
+                    ctrl := g.AddCheckbox("x+8 ys w" inputW, field.Label)
                     ctrl.Value := value ? 1 : 0
                 case "choice":
                     labels := []
@@ -88,6 +90,33 @@ class ItemEditor {
             state.Result := edited
             g.Destroy()
         }
+    }
+
+    static WithDefaults(item, defaults) {
+        filled := item.Clone()
+        for key, value in defaults
+            if !filled.Has(key)
+                filled[key] := value
+        return filled
+    }
+
+    static Field(key, labelKey, type := "text", required := false, choices := "", hint := "") {
+        spec := {Key: key, Label: I18n.T(labelKey), Type: type, Required: required}
+        if IsObject(choices)
+            spec.Choices := choices
+        if (hint != "")
+            spec.Hint := hint
+        return spec
+    }
+
+    ; 编辑对话框的所属窗口: 偏好设置打开时用它, 否则用一个隐藏的窗口 (不在任务栏显示)
+    static Owner() {
+        static hiddenOwner := ""
+        if IsObject(PreferencesWindow.Gui)
+            return PreferencesWindow.Gui
+        if !IsObject(hiddenOwner)
+            hiddenOwner := Gui("+ToolWindow -Caption", App.Name)
+        return hiddenOwner
     }
 
     static _ChoiceIndex(choices, value) {

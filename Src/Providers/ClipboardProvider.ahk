@@ -72,10 +72,19 @@ class ClipboardProvider {
         text := entry["Text"]
         subtitle := I18n.T("Clipboard.Subtitle", ClipboardProvider._FormatTime(entry["Time"]), entry["App"] != "" ? entry["App"] : "?", StrLen(text))
         return ResultItem(ClipboardProvider._Preview(text), subtitle, {
-            Kind: "text", Arg: text, Icon: icon, Score: score, LargeText: text,
-            OnRun: (item) => ClipboardProvider.Paste(item.Arg),
-            Actions: [ResultItem(I18n.T("Clipboard.Delete"), "", {Icon: "res:shell32.dll,-32", OnRun: (item) => ClipboardProvider.Remove(item.Arg)})]
+            Kind: "text", Arg: text, Icon: icon, Score: score, LargeText: text, Source: entry,
+            OnRun: (item) => ClipboardProvider.Paste(item.Arg)
         })
+    }
+
+    ; F3 / 右键 "编辑": 把这条剪贴板历史保存为片段
+    static EditItem(item) {
+        return SnippetProvider.Edit("", Map("Name", SubStr(ClipboardProvider._Preview(item.Arg), 1, 40), "Text", item.Arg))
+    }
+
+    static DeleteItem(item) {
+        ClipboardProvider.Remove(item.Arg)
+        return true
     }
 
     ; 粘贴一条历史到前台窗口, 并把它移到最前面

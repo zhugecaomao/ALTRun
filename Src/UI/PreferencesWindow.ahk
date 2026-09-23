@@ -97,6 +97,7 @@ class PreferencesWindow {
         PreferencesWindow._BuildAppearance()
         PreferencesWindow._BuildFeatures()
         PreferencesWindow._BuildApplications()
+        PreferencesWindow._BuildFileSearch()
         PreferencesWindow._BuildCommands()
         PreferencesWindow._BuildSnippets()
         PreferencesWindow._BuildClipboard()
@@ -154,10 +155,6 @@ class PreferencesWindow {
         PreferencesWindow._Gap()
         PreferencesWindow._Field("Features.Terminal.Prefix", "Prefs.TerminalPrefix", 60)
         PreferencesWindow._Choice("Features.Terminal.Shell", "Prefs.TerminalShell", ["cmd", "powershell", "pwsh", "wt"], ["Command Prompt (cmd)", "Windows PowerShell", "PowerShell 7 (pwsh)", "Windows Terminal (wt)"])
-        PreferencesWindow._Gap()
-        PreferencesWindow._Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", 200)
-        PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
-        PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", 300, "folder")
     }
 
     static _BuildApplications() {
@@ -173,29 +170,37 @@ class PreferencesWindow {
         PreferencesWindow._Button("Tray.RebuildIndex", (*) => App.RebuildIndex())
     }
 
+    static _BuildFileSearch() {
+        PreferencesWindow._BeginPage("Prefs.Page.FileSearch")
+        status := I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning")
+        PreferencesWindow._Below(8, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW " cGray", I18n.T("Prefs.EverythingStatus", status)))
+        PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault")
+        PreferencesWindow._Field("Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", 60, "number")
+        PreferencesWindow._Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", 200)
+        PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
+        PreferencesWindow._Field("Features.FileSearch.MaxResults", "Prefs.FileMaxResults", 60, "number")
+        PreferencesWindow._Gap()
+        PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything")
+        PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", 300)
+        PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", 300, "folder")
+        PreferencesWindow._Gap()
+        PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 3)
+        PreferencesWindow._Field("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", 60, "number")
+        PreferencesWindow._Button("Prefs.RebuildFileIndex", (*) => FileIndex.Rebuild())
+    }
+
     static _BuildCommands() {
         PreferencesWindow._BeginPage("Prefs.Page.Commands")
-        types := [["File", I18n.T("Prefs.Type.File")], ["Folder", I18n.T("Prefs.Type.Folder")]
-                , ["Command", I18n.T("Prefs.Type.Command")], ["Url", I18n.T("Prefs.Type.Url")]]
         PreferencesWindow._List("CustomCommands", 440
             , [["Prefs.Col.Title", "Title", 150], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 230], ["Prefs.Col.Keyword", "Keyword", 90]]
-            , [PreferencesWindow._Spec("Title", "Prefs.Col.Title", "text", true)
-             , PreferencesWindow._Spec("Type", "Prefs.Col.Type", "choice", false, types)
-             , PreferencesWindow._Spec("Target", "Prefs.Col.Target", "file", true)
-             , PreferencesWindow._Spec("Arguments", "Prefs.Col.Arguments")
-             , PreferencesWindow._Spec("Keyword", "Prefs.Col.Keyword")]
-            , () => Map("Title", "", "Type", "File", "Target", "", "Arguments", "", "Keyword", ""))
+            , CustomCommandProvider.EditorFields(), () => CustomCommandProvider.NewCommand())
     }
 
     static _BuildSnippets() {
         PreferencesWindow._BeginPage("Prefs.Page.Snippets")
         PreferencesWindow._List("Snippets", 300
             , [["Prefs.Col.Name", "Name", 150], ["Prefs.Col.Keyword", "Keyword", 90], ["Prefs.Col.Text", "Text", 300]]
-            , [PreferencesWindow._Spec("Name", "Prefs.Col.Name", "text", true)
-             , PreferencesWindow._Spec("Keyword", "Prefs.Col.Keyword")
-             , PreferencesWindow._Spec("Text", "Prefs.Col.Text", "multiline", true, "", "{date} {time} {datetime} {clipboard} {cursor}")
-             , PreferencesWindow._Spec("AutoExpand", "Prefs.Col.AutoExpand", "check")]
-            , () => Map("Name", "", "Keyword", "", "Text", "", "AutoExpand", 1))
+            , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet())
         PreferencesWindow._Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand")
         PreferencesWindow._Field("Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", 60)
         PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", 100)
@@ -218,11 +223,7 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.WebSearch")
         PreferencesWindow._List("Features.WebSearch.Engines", 400
             , [["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Title", "Title", 130], ["Prefs.Col.Url", "Url", 340]]
-            , [PreferencesWindow._Spec("Title", "Prefs.Col.Title", "text", true)
-             , PreferencesWindow._Spec("Keyword", "Prefs.Col.Keyword", "text", true)
-             , PreferencesWindow._Spec("Url", "Prefs.Col.Url", "text", true)
-             , PreferencesWindow._Spec("Id", "Prefs.Col.Id", "text", true)]
-            , () => Map("Id", "", "Keyword", "", "Title", "", "Url", "https://"))
+            , WebSearchProvider.EditorFields(), () => WebSearchProvider.NewEngine())
         PreferencesWindow._Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", 300)
     }
 
@@ -233,9 +234,9 @@ class PreferencesWindow {
             actions.Push([command["Id"], command["Title"] " (" command["Id"] ")"])
         PreferencesWindow._List("Hotkeys", 400
             , [["Prefs.Col.Key", "Key", 110], ["Prefs.Col.Action", "Action", 160], ["Prefs.Col.WinTitle", "WinTitle", 270]]
-            , [PreferencesWindow._Spec("Key", "Prefs.Col.Key", "text", true, "", I18n.T("Prefs.HotkeyHint"))
-             , PreferencesWindow._Spec("Action", "Prefs.Col.Action", "choice", false, actions)
-             , PreferencesWindow._Spec("WinTitle", "Prefs.Col.WinTitle", "text", false, "", "ahk_exe RAPTW.exe")]
+            , [ItemEditor.Field("Key", "Prefs.Col.Key", "text", true, "", I18n.T("Prefs.HotkeyHint"))
+             , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)
+             , ItemEditor.Field("WinTitle", "Prefs.Col.WinTitle", "text", false, "", "ahk_exe RAPTW.exe")]
             , () => Map("Key", "", "Action", "ToggleWindow", "WinTitle", ""))
     }
 
@@ -257,19 +258,15 @@ class PreferencesWindow {
     static _BuildAdvanced() {
         PreferencesWindow._BeginPage("Prefs.Page.Advanced")
         PreferencesWindow._Section("Prefs.SettingsFile")
-        PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW " cGray", AppSettings.File)
-        PreferencesWindow._y += 24
+        PreferencesWindow._Below(8, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW " cGray", AppSettings.File))
         PreferencesWindow._Button("Prefs.EditJson", (*) => (PreferencesWindow.Close(), App.EditSettingsFile()))
         PreferencesWindow._Button("Prefs.OpenDataFolder", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir))
         PreferencesWindow._Button("Prefs.ResetLearning", (*) => PreferencesWindow._ResetLearning())
         PreferencesWindow._Gap()
         PreferencesWindow._Section("Sys.About")
-        PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, App.Name " - " I18n.T("App.Tagline"))
-        PreferencesWindow._y += 22
-        PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, I18n.T("Prefs.Version", App.Version))
-        PreferencesWindow._y += 22
-        link := PreferencesWindow._Add("Link", "w" PreferencesWindow.ContentW, '<a href="' App.RepoUrl '">' App.RepoUrl '</a>')
-        PreferencesWindow._y += 28
+        PreferencesWindow._Below(6, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, App.Name " - " I18n.T("App.Tagline")))
+        PreferencesWindow._Below(6, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, I18n.T("Prefs.Version", App.Version)))
+        PreferencesWindow._Below(10, PreferencesWindow._Add("Link", "w" PreferencesWindow.ContentW, '<a href="' App.RepoUrl '">' App.RepoUrl '</a>'))
         PreferencesWindow._Button("Tray.CheckUpdate", (*) => UpdateChecker.Check(false))
     }
 
@@ -303,24 +300,39 @@ class PreferencesWindow {
         PreferencesWindow.Binds.Push({Path: path, Read: readFn})
     }
 
+    ; 把 _y 移到这些控件最下面的位置之下 (控件的实际高度, 文字换行后也不会重叠)
+    static _Below(gap, controls*) {
+        bottom := PreferencesWindow._y
+        for ctrl in controls {
+            ctrl.GetPos(, &top, , &height)
+            bottom := Max(bottom, top + height)
+        }
+        PreferencesWindow._y := bottom + gap
+    }
+
     static _Section(labelKey) {
         PreferencesWindow.Gui.SetFont("bold")
-        PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, I18n.T(labelKey))
+        ctrl := PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, I18n.T(labelKey))
         PreferencesWindow.Gui.SetFont("norm")
-        PreferencesWindow._y += 24
+        PreferencesWindow._Below(8, ctrl)
     }
 
     static _Hint(textKey) {
-        PreferencesWindow._Add("Text", "x" (PreferencesWindow.ContentX + PreferencesWindow.LabelW) " w" (PreferencesWindow.ContentW - PreferencesWindow.LabelW) " cGray", I18n.T(textKey))
-        PreferencesWindow._y += 22
+        PreferencesWindow._y -= 2
+        ctrl := PreferencesWindow._Add("Text", "x" PreferencesWindow._InputX() " w" (PreferencesWindow.ContentW - PreferencesWindow.LabelW) " cGray", I18n.T(textKey))
+        PreferencesWindow._Below(8, ctrl)
     }
 
     static _Gap() {
         PreferencesWindow._y += 10
     }
 
+    ; 标签和输入框放在同一行: 标签往下挪 3 像素和输入框的文字对齐
     static _Label(labelKey) {
-        PreferencesWindow._Add("Text", "w" (PreferencesWindow.LabelW - 8) " Right", I18n.T(labelKey))
+        PreferencesWindow._y += 3
+        ctrl := PreferencesWindow._Add("Text", "w" (PreferencesWindow.LabelW - 8) " Right", I18n.T(labelKey))
+        PreferencesWindow._y -= 3
+        return ctrl
     }
 
     static _InputX() {
@@ -332,16 +344,14 @@ class PreferencesWindow {
         ctrl := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentW - (x - PreferencesWindow.ContentX)), I18n.T(labelKey))
         ctrl.Value := PreferencesWindow.GetPath(PreferencesWindow.Working, path) ? 1 : 0
         PreferencesWindow._Bind(path, () => ctrl.Value)
-        PreferencesWindow._y += 24
+        PreferencesWindow._Below(6, ctrl)
     }
 
     ; kind: text / number / file / folder
     static _Field(path, labelKey, width, kind := "text") {
-        PreferencesWindow._y += 3
-        PreferencesWindow._Label(labelKey)
-        PreferencesWindow._y -= 3
+        label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
-        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" width (kind = "number" ? " Number" : ""), value)
+        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" width " r1 -Multi" (kind = "number" ? " Number" : ""), value)
         if (kind = "file" || kind = "folder") {
             browse := PreferencesWindow._Add("Button", "x+4 yp-1 w30", I18n.T("Prefs.Browse"))
             browse.OnEvent("Click", ItemEditor._Browser(ctrl, kind, PreferencesWindow.Gui))
@@ -350,13 +360,11 @@ class PreferencesWindow {
             PreferencesWindow._Bind(path, () => IsInteger(ctrl.Value) ? Integer(ctrl.Value) : 0)
         else
             PreferencesWindow._Bind(path, () => ctrl.Value)
-        PreferencesWindow._y += 28
+        PreferencesWindow._Below(8, label, ctrl)
     }
 
     static _Choice(path, labelKey, values, labels) {
-        PreferencesWindow._y += 3
-        PreferencesWindow._Label(labelKey)
-        PreferencesWindow._y -= 3
+        label := PreferencesWindow._Label(labelKey)
         ctrl := PreferencesWindow._Add("DropDownList", "x" PreferencesWindow._InputX() " w240", labels)
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         ctrl.Value := 1
@@ -364,41 +372,30 @@ class PreferencesWindow {
             if (value = current)
                 ctrl.Value := index
         PreferencesWindow._Bind(path, () => values[ctrl.Value])
-        PreferencesWindow._y += 30
+        PreferencesWindow._Below(8, label, ctrl)
     }
 
     static _Lines(path, labelKey, rows) {
-        PreferencesWindow._Label(labelKey)
+        label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.JoinLines(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
         ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" (PreferencesWindow.ContentW - PreferencesWindow.LabelW) " r" rows " +Multi", value)
-        ctrl.GetPos(, , , &height)
         PreferencesWindow._Bind(path, () => PreferencesWindow.SplitLines(ctrl.Value))
-        PreferencesWindow._y += height + 4
+        PreferencesWindow._Below(4, label, ctrl)
         PreferencesWindow._Hint("Prefs.ListHint")
     }
 
     static _Csv(path, labelKey, width) {
-        PreferencesWindow._y += 3
-        PreferencesWindow._Label(labelKey)
-        PreferencesWindow._y -= 3
+        label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.JoinCsv(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
-        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" width, value)
+        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" width " r1 -Multi", value)
         PreferencesWindow._Bind(path, () => PreferencesWindow.SplitCsv(ctrl.Value))
-        PreferencesWindow._y += 28
+        PreferencesWindow._Below(8, label, ctrl)
     }
 
     static _Button(labelKey, fn) {
-        PreferencesWindow._Add("Button", "w220 h28", I18n.T(labelKey)).OnEvent("Click", fn)
-        PreferencesWindow._y += 34
-    }
-
-    static _Spec(key, labelKey, type := "text", required := false, choices := "", hint := "") {
-        spec := {Key: key, Label: I18n.T(labelKey), Type: type, Required: required}
-        if IsObject(choices)
-            spec.Choices := choices
-        if (hint != "")
-            spec.Hint := hint
-        return spec
+        ctrl := PreferencesWindow._Add("Button", "w220 h28", I18n.T(labelKey))
+        ctrl.OnEvent("Click", fn)
+        PreferencesWindow._Below(6, ctrl)
     }
 
     ; 列表页: ListView 显示 path 指向的数组, 添加 / 编辑 / 删除都用 ItemEditor
@@ -434,7 +431,7 @@ class PreferencesWindow {
             row := listView.GetNext()
             if !row
                 return
-            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, items[row])
+            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, ItemEditor.WithDefaults(items[row], newItem()))
             if IsObject(edited) {
                 items[row] := edited
                 Refresh(row)

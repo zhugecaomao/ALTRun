@@ -5,6 +5,8 @@
 ;   static Id            功能名, 同时也是 ALTRun.json 里 Features 下的设置键名
 ;   static Init()        启动时调用一次 (建立索引等)
 ;   static Search(query) 参数是 SearchQuery, 返回 [ResultItem...]
+;   static EditItem(item) / DeleteItem(item)   可选: 搜索结果里 F3 编辑 / Ctrl+Del 删除
+;                        (结果的 Source 指向设置里的那一条, 见 ActionCatalog.CanEdit)
 ; 没有启用 (Features.<Id>.Enabled = 0) 的功能不会被初始化, 也不参与搜索。
 ;
 ; Search() 把所有功能的结果合在一起, 加上 Knowledge 的学习加分后按分数排序,
@@ -23,6 +25,13 @@ class ProviderRegistry {
 
     static Register(provider) {
         ProviderRegistry.Providers.Push(provider)
+    }
+
+    static ById(id) {
+        for provider in ProviderRegistry.Providers
+            if (provider.Id = id)
+                return provider
+        return ""
     }
 
     static IsEnabled(provider) {

@@ -15,8 +15,12 @@
 ;   →  (光标在末尾时)                打开操作面板; ← / Esc 返回
 ;   Ctrl+C (输入框没有选中文字时)    复制当前项
 ;   Ctrl+L                           大字显示
-;   Ctrl+,                           偏好设置
+;   F3                               编辑当前项 (没有结果时: 用输入的文字新建自定义命令)
+;   Ctrl+Del (光标在末尾时)          删除当前项 (确认后)
+;   F2 / Ctrl+,                      偏好设置
+;   F4                               用记事本编辑 ALTRun.json
 ;   Esc                              关闭操作面板 / 隐藏窗口
+; 鼠标: 单击选择, 双击执行, 右键弹出这一项的操作菜单 (和操作面板相同)
 ;
 ; 用法:
 ;   SearchWindow.Create()             启动时调用一次
@@ -33,6 +37,7 @@ class SearchWindow {
     static _gdi := Map()
     static _searchTimer := "", _hideTimer := ""
     static _posX := 0, _posY := 0
+    static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
 
     ;---------------------------------------------------------------------------
     ; Create
@@ -44,6 +49,7 @@ class SearchWindow {
         SearchWindow.RowHeight   := Win.Scale(ThemeManager.Get("RowHeight"))
         SearchWindow.IconSize    := Win.Scale(ThemeManager.Get("IconSize"))
         IconCache.Size := SearchWindow.IconSize
+        IconCache.OnLoaded := () => SearchWindow._Repaint()
         SearchWindow._CreateGdiObjects()
 
         w := SearchWindow.Width, pad := SearchWindow.Padding
@@ -54,7 +60,7 @@ class SearchWindow {
         g.MarginX := 0, g.MarginY := 0
         g.SetFont("s" ThemeManager.Get("InputFontSize") " c" ThemeManager.Get("InputText"), ThemeManager.FontName())
 
-        searchBox := g.AddEdit("x" pad " y" pad " w" (w - 2 * pad) " r1 -E0x200 -VScroll -WantReturn Background" background)
+        searchBox := g.AddEdit("x" pad " y" pad " w" (w - 2 * pad) " r1 -Multi -E0x200 -VScroll -WantReturn Background" background)
         searchBox.GetPos(, , , &editH)
         SearchWindow.InputHeight := Max(editH, Win.Scale(40))
         searchBox.Move(pad, pad + (SearchWindow.InputHeight - editH) // 2)
@@ -72,6 +78,7 @@ class SearchWindow {
         list.OnNotify(-12, (ctrl, lParam) => SearchWindow._OnCustomDraw(lParam))    ; NM_CUSTOMDRAW
         list.OnEvent("Click", (ctrl, row) => SearchWindow._OnRowClick(row))
         list.OnEvent("DoubleClick", (ctrl, row) => SearchWindow._OnRowDoubleClick(row))
+        list.OnEvent("ContextMenu", (ctrl, row, isRightClick, x, y) => SearchWindow._OnRowContextMenu(row, x, y))
 
         g.OnEvent("Close", (*) => SearchWindow.Hide())
 
@@ -161,6 +168,12 @@ class SearchWindow {
     }
 
     static _OnInputChange() {
+        text := SearchWindow.Input.Value
+        if RegExMatch(text, "[`r`n`t]") {                                   ; 粘贴了多行文字: 合并成一行, 搜索框始终只有一行
+            SearchWindow.Input.Value := RegExReplace(text, "\s*[`r`n`t]+\s*", " ")
+            len := StrLen(SearchWindow.Input.Value)
+            SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)
+        }
         SearchWindow.HistoryIndex := 0
         if (SearchWindow._searchTimer = "")
             SearchWindow._searchTimer := () => SearchWindow._RunSearch()
@@ -310,6 +323,114 @@ class SearchWindow {
     }
 
     ;---------------------------------------------------------------------------
+    ; Edit / delete (F3, Ctrl+Del, 右键菜单, 操作面板)
+    ;---------------------------------------------------------------------------
+    ; 当前操作的是哪一项: 操作面板里是打开面板的那一项, 否则是选中的结果
+    static _TargetItem() {
+        return (SearchWindow.Mode = "actions") ? SearchWindow.ActionSource : SearchWindow.SelectedItem()
+    }
+
+    static _CurrentQuery() {
+        return (SearchWindow.Mode = "actions") ? SearchWindow.SavedQuery : SearchWindow.Input.Value
+    }
+
+    ; 按键消息处理完之后再弹对话框, 不在 OnMessage 回调里等待
+    static _Later(fn) {
+        SetTimer(fn, -1)
+    }
+
+    static _EditSelected() {
+        item := SearchWindow._TargetItem()
+        isFallback := IsObject(item) && item.Provider = ""                  ; 没有匹配时的兜底项 (网页搜索等)
+        if (IsObject(item) && !isFallback && ActionCatalog.CanEdit(item))
+            return SearchWindow._Later(() => SearchWindow.EditItem(item))
+        query := Trim(SearchWindow._CurrentQuery())
+        if (query != "" && (!IsObject(item) || isFallback))                 ; 没有结果: 用输入的文字新建一条命令
+            return SearchWindow._Later(() => SearchWindow.NewCommand(query))
+        App.Notify(I18n.T("Search.NotEditable"))
+    }
+
+    ; 编辑对话框关闭后回到原来的搜索, 马上能看到修改的结果
+    static EditItem(item) {
+        query := SearchWindow._CurrentQuery()
+        SearchWindow.Hide()
+        SearchWindow._SafeRun(() => ActionCatalog.EditItem(item))
+        SearchWindow._Reopen(query)
+    }
+
+    static NewCommand(title) {
+        SearchWindow.Hide()
+        SearchWindow._SafeRun(() => CustomCommandProvider.Edit("", Map("Title", title)))
+        SearchWindow._Reopen(title)
+    }
+
+    static DeleteItem(item) {
+        query := SearchWindow._CurrentQuery()
+        wasVisible := SearchWindow.IsVisible()
+        SearchWindow._keepOpen := true
+        answer := MsgBox(I18n.T("Search.ConfirmDelete", item.Title), App.Name, "YesNo Icon! Default2" (wasVisible ? " Owner" SearchWindow.Gui.Hwnd : ""))
+        SearchWindow._keepOpen := false
+        if (answer = "Yes")
+            SearchWindow._SafeRun(() => ActionCatalog.DeleteItem(item))
+        selected := SearchWindow.Selected
+        SearchWindow._Reopen(query)
+        if (answer = "Yes" && selected > 1)
+            SearchWindow.MoveSelection(selected - 2)                        ; 选中被删除那一行的上一行 (MoveSelection 相对第 1 行)
+    }
+
+    ; 重新显示搜索窗口, 不改变 "呼出前的窗口" (粘贴等操作还是回到那个窗口)
+    static _Reopen(query) {
+        previous := App.PreviousWindow
+        SearchWindow.Show(query)
+        App.PreviousWindow := previous
+    }
+
+    static _OnRowContextMenu(row, x, y) {
+        if (row < 1 || SearchWindow.Offset + row > SearchWindow.Results.Length)
+            return
+        if (SearchWindow.Mode = "results") {
+            SearchWindow.Selected := SearchWindow.Offset + row
+            SearchWindow._Repaint()
+        }
+        item := SearchWindow._TargetItem()
+        if (!IsObject(item) || !item.Valid && !ActionCatalog.CanEdit(item))
+            return
+        if (SearchWindow.Mode = "actions")                                  ; 操作面板里右键 = 执行这一项
+            return SearchWindow._Execute()
+        contextMenu := Menu()
+        for action in ActionCatalog.ListFor(item) {
+            label := StrReplace(action.Title, "&", "&&") (action.Subtitle != "" ? "`t" action.Subtitle : "")
+            contextMenu.Add(label, SearchWindow._MenuHandler(action, item))
+            if (A_Index = 1)
+                contextMenu.Default := label
+        }
+        ; 菜单显示期间 AHK 来不及处理 NM_CUSTOMDRAW, 列表会按默认样式画 (蓝色选中条):
+        ; 先去掉 ListView 自己的选中状态, 并在弹出菜单前按我们的样式画好
+        Critical("Off")
+        SearchWindow.List.Modify(0, "-Select -Focus")
+        SearchWindow._Repaint()
+        DllCall("UpdateWindow", "Ptr", SearchWindow.List.Hwnd)
+        SearchWindow._keepOpen := true
+        contextMenu.Show(x, y)
+        SearchWindow._keepOpen := false
+        if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
+            try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
+    }
+
+    ; 单独一个方法生成闭包, 每个菜单项记住自己的操作
+    static _MenuHandler(action, item) {
+        return (*) => SearchWindow._RunMenuAction(action, item)
+    }
+
+    static _RunMenuAction(action, item) {
+        SearchWindow._keepOpen := false
+        Knowledge.Record(SearchWindow.Input.Value, item.Uid)
+        SearchWindow.SavedQuery := SearchWindow.Input.Value
+        SearchWindow.Hide()
+        SearchWindow._SafeRun(() => action.OnRun.Call(item))
+    }
+
+    ;---------------------------------------------------------------------------
     ; Keyboard / mouse
     ;---------------------------------------------------------------------------
     static _IsOwnWindow(hwnd) {
@@ -360,6 +481,23 @@ class SearchWindow {
             case 0x25:                                                      ; ←
                 if (actions && SearchWindow.Input.Value = "") {
                     SearchWindow._CloseActions()
+                    return 0
+                }
+                return
+            case 0x72:                                                      ; F3
+                SearchWindow._EditSelected()
+                return 0
+            case 0x71:                                                      ; F2
+                SearchWindow.Hide()
+                App.OpenPreferences()
+                return 0
+            case 0x73:                                                      ; F4
+                SearchWindow.Hide()
+                App.EditSettingsFile()
+                return 0
+            case 0x2E:                                                      ; Ctrl+Del
+                if (ctrl && SearchWindow._CaretAtEnd() && IsObject(item := SearchWindow._TargetItem()) && ActionCatalog.CanDelete(item)) {
+                    SearchWindow._Later(() => SearchWindow.DeleteItem(item))
                     return 0
                 }
                 return
@@ -498,6 +636,8 @@ class SearchWindow {
     }
 
     static _HideIfInactive() {
+        if SearchWindow._keepOpen
+            return
         if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
             SearchWindow.Hide()
     }

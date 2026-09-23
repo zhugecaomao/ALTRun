@@ -28,6 +28,7 @@
 #Include Lib\Util.ahk
 #Include Lib\TextTools.ahk
 #Include Lib\Kanji.ahk
+#Include Lib\Everything.ahk
 #Include Lib\Dialogs.ahk
 
 ; --- Src\Core ---
@@ -41,6 +42,7 @@
 #Include Src\Core\Knowledge.ahk
 #Include Src\Core\ActionCatalog.ahk
 #Include Src\Core\ProviderRegistry.ahk
+#Include Src\Core\FileIndex.ahk
 
 ; --- Src\UI ---
 #Include Src\UI\ThemeManager.ahk
