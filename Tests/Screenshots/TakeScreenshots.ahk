@@ -57,6 +57,10 @@ class Shots {
         DirCreate(Shots.OutDir)
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
+        Shots.ShowBackdrop()
+        ; 预热: 第一次启动时 Windows 还在扫描新文件, 比较慢, 这一次不截图
+        Shots.Launch("Light")
+        Shots.Close()
         for scene in Shots.Scenes() {
             if (wanted.Count && !wanted.Has(scene[1]))
                 continue
@@ -149,6 +153,15 @@ class Shots {
         FileAppend(JSON.Stringify(settings, 4), path, "UTF-8")
         try DirDelete(Shots.AppDir "\Data", true)
     }
+
+    ; 纯色背景铺满屏幕, 挡住桌面上的其它窗口 (半透明主题会透出后面的内容)
+    static ShowBackdrop() {
+        backdrop := Gui("-Caption +ToolWindow -DPIScale")
+        backdrop.BackColor := "8A9BB0"
+        backdrop.Show("NA x0 y0 w" A_ScreenWidth " h" A_ScreenHeight)
+        Shots.Backdrop := backdrop
+    }
+    static Backdrop := ""
 
     ;---------------------------------------------------------------------------
     ; 启动 / 关闭
@@ -243,6 +256,8 @@ class Shots {
     ; 截图: 从屏幕复制窗口区域 (包括半透明效果), 用 GDI+ 存成 PNG
     ;---------------------------------------------------------------------------
     static Capture(hwnd, file) {
+        DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)    ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
+        Sleep(500)
         rect := Buffer(16, 0)
         if (DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16) = 0 && NumGet(rect, 8, "Int") > NumGet(rect, 0, "Int")) {
             x := NumGet(rect, 0, "Int"), y := NumGet(rect, 4, "Int")         ; DWMWA_EXTENDED_FRAME_BOUNDS: 不含看不见的边框
