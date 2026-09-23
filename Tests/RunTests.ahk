@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -405,6 +405,72 @@ class Tests {
         ThemeManager.Load("No Such Theme")
         eq("missing falls back", ThemeManager.Resolved, "Light")
         ThemeManager.Load("Light")
+    }
+
+    ; 命令很多时: 只为前 MaxResults 条生成结果 (算上学习加分), 继续输入时只在上次的结果里找
+    static CommandSearchScale() {
+        eq := (n, a, e) => TestRunner.Equal("CommandSearchScale." n, a, e)
+        saved := AppSettings.Data["CustomCommands"]
+        savedPicks := Knowledge.Picks, savedQueryPicks := Knowledge.QueryPicks, savedHistory := Knowledge.History
+        Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := []
+        commands := []
+        Loop 120
+            commands.Push(Map("Title", "Note " A_Index, "Type", "Folder", "Target", "C:\Work\Folder " A_Index, "Arguments", "", "Keyword", ""))
+        rare := Map("Title", "Annual Report", "Type", "File", "Target", "C:\Work\annual.pdf", "Arguments", "", "Keyword", "")
+        commands.Push(rare)
+        AppSettings.Data["CustomCommands"] := commands
+        titles(text) {
+            list := ""
+            for item in ProviderRegistry.SortByScore(CustomCommandProvider.Search(SearchQuery(text)))
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        results := CustomCommandProvider.Search(SearchQuery("n"))
+        eq("capped at MaxResults", results.Length, ProviderRegistry.MaxResults)
+        found := false
+        for item in results
+            found := found || (item.Title = "Annual Report")
+        eq("weak match not in top without learning", found, false)
+        ; 常选的命令: 学习加分让它进入前 MaxResults 条
+        Knowledge.Record("n", CustomCommandProvider._Uid(rare))
+        Knowledge.Record("n", CustomCommandProvider._Uid(rare))
+        found := false
+        for item in CustomCommandProvider.Search(SearchQuery("n"))
+            found := found || (item.Title = "Annual Report")
+        eq("learned pick kept", found, true)
+
+        ; 继续输入时只在上一次的结果里找, 结果和从头找一样
+        CustomCommandProvider._ResetNarrowing()
+        full := titles("note 11")
+        titles("not"), titles("note"), titles("note ")
+        eq("narrowed equals full search", titles("note 11"), full)
+        eq("narrowed result", full, "Note 11|Note 110|Note 111|Note 112|Note 113|Note 114|Note 115|Note 116|Note 117|Note 118|Note 119")
+        ; 命令被修改后重新从全部命令里找
+        titles("rep")
+        commands[5]["Title"] := "Report Folder"
+        CustomCommandProvider._ResetNarrowing()
+        eq("edited command found", InStr(titles("repo"), "Report Folder") > 0, true)
+        ; 增删命令 (数量变化) 也会重新找
+        titles("zzz")
+        commands.Push(Map("Title", "zzz top", "Type", "Folder", "Target", "C:\z", "Arguments", "", "Keyword", ""))
+        eq("added command found", titles("zzz t"), "zzz top")
+
+        AppSettings.Data["CustomCommands"] := saved
+        Knowledge.Picks := savedPicks, Knowledge.QueryPicks := savedQueryPicks, Knowledge.History := savedHistory
+        if (Knowledge._saveTimer != "")
+            SetTimer(Knowledge._saveTimer, 0)                               ; Record() 排好的写盘不要执行
+        CustomCommandProvider._ResetNarrowing()
+
+        ; 网络位置的图标不读磁盘: UNC 路径用文件夹 / 扩展名的通用图标
+        eq("remote unc", IconCache.IsRemote("\\server\share\PT1931"), true)
+        eq("remote local", IconCache.IsRemote("C:\Windows"), false)
+        eq("remote folder key", IconCache._CacheKey("\\server\share\PT1931 - 24 NIR"), "folder:")
+        eq("remote folder slash", IconCache._CacheKey("\\server\share\PT1931\"), "folder:")
+        eq("remote file key", IconCache._CacheKey("\\server\share\Report.PDF"), "ext:.pdf")
+        eq("remote exe key", IconCache._CacheKey("\\server\share\tool.exe"), "ext:.exe")
+        eq("remote load spec", IconCache._LoadSpec("\\server\share\Report.pdf", "ext:.pdf"), "ext:.pdf")
+        eq("local exe key", IconCache._CacheKey("C:\Tools\app.exe"), "c:\tools\app.exe")
+        eq("local load spec", IconCache._LoadSpec("C:\Tools\app.exe", "c:\tools\app.exe"), "C:\Tools\app.exe")
     }
 
     static CheckTargets() {

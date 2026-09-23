@@ -11,6 +11,11 @@
 - 每个 PR 自动在 Windows 上运行单元测试和语法检查; Dependabot 检查 GitHub Actions 更新; 安全策略 `SECURITY.md`
 - README 和 Wiki 加上界面截图, 由 `Tests\Screenshots\TakeScreenshots.ahk` 在 GitHub Actions 的 Windows 机器上自动生成
 
+### 改进
+- 输入更流畅: 自定义命令很多时 (例如从 2.x 导入的几百条), 输入第一个字母要 300~400 毫秒, 现在约 10~20 毫秒; 继续输入时只在上一次的结果里找, 每个字约 1~2 毫秒。常选的命令仍然靠前
+- 网络盘 (例如 `Q:\`) 和 `\\server\share` 上的文件 / 文件夹用通用图标, 不再逐个到网络上读取图标, 打字时不会被网络卡住
+- 结果行数没变时不再调整窗口大小, 减少闪烁
+
 ## [2026.09.23] - 3.0
 
 3.0 参照 macOS 上的 Alfred 重新设计了搜索窗口和整体架构。

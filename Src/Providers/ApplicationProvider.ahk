@@ -52,13 +52,15 @@ class ApplicationProvider {
                 if (score := FuzzyMatcher.BestKey(needle, entryKeys))
                     scores[index] := score
         }
-        matches := []
-        for index in scores
+        matches := [], ranks := Map()
+        for index, score in scores {
             matches.Push(index)
+            ranks[index] := score + Knowledge.Boost(query.Text, "app:" StrLower(apps[index]["Target"]))   ; 常选的应用不会被挤出前几名
+        }
         ApplicationProvider._lastNeedle := needle, ApplicationProvider._lastMatches := matches
 
         results := []
-        for index in FuzzyMatcher.TopIndexes(scores, ProviderRegistry.MaxResults) {
+        for index in FuzzyMatcher.TopIndexes(ranks, ProviderRegistry.MaxResults) {
             entry := apps[index]
             isStore := InStr(entry["Target"], "shell:AppsFolder\") = 1
             subtitle := isStore ? I18n.T("App.Subtitle.Store") : (entry["Detail"] != "") ? entry["Detail"] : entry["Target"]
