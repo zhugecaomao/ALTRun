@@ -128,13 +128,55 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.Appearance")
         themes := ThemeManager.Names(), labels := []
         for themeName in themes
-            labels.Push(ThemeManager.IsBuiltin(themeName) ? I18n.T("Theme." themeName) : themeName)
-        PreferencesWindow._Choice("Appearance.Theme", "Prefs.Theme", themes, labels)
+            labels.Push(PreferencesWindow._ThemeLabel(themeName))
+        themeChoice := PreferencesWindow._Choice("Appearance.Theme", "Prefs.Theme", themes, labels)
         PreferencesWindow._Hint("Prefs.ThemeHint")
         PreferencesWindow._Field("Appearance.Width", "Prefs.Width", 80, "number")
         PreferencesWindow._Field("Appearance.VisibleRows", "Prefs.VisibleRows", 80, "number")
         PreferencesWindow._Gap()
-        PreferencesWindow._Button("Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(A_ScriptDir "\Themes"))
+        PreferencesWindow._Button("Prefs.CopyTheme", (*) => PreferencesWindow._CopyTheme(themeChoice, themes))
+        PreferencesWindow._Button("Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir))
+    }
+
+    ; 内置主题显示翻译后的名称, 用户主题显示文件名
+    static _ThemeLabel(themeName) {
+        label := I18n.T("Theme." themeName)
+        return (label = "Theme." themeName) ? themeName : label
+    }
+
+    ; 把选中的主题 (展开成完整的键) 复制到 Themes\<新名称>.json, 用记事本打开, 并在列表里选中它
+    static _CopyTheme(themeChoice, themes) {
+        source := themes[themeChoice.Value]
+        if (source = "System")
+            source := ThemeManager.SystemUsesDark() ? "Dark" : "Light"
+        theme := ThemeManager.Resolve(source)
+        if !IsObject(theme)
+            return
+        PreferencesWindow.Gui.Opt("+OwnDialogs")
+        answer := InputBox(I18n.T("Prefs.CopyThemePrompt"), I18n.T("Prefs.CopyTheme"), "w340 h130", source " Custom")
+        themeName := Trim(RegExReplace(answer.Value, '[\\/:*?"<>|]'))
+        if (answer.Result != "OK" || themeName = "")
+            return
+        themeFile := ThemeManager.UserDir "\" themeName ".json"
+        if (FileExist(themeFile) && MsgBox(I18n.T("Prefs.ThemeExists", themeName), App.Name, "YesNo Icon! Default2") != "Yes")
+            return
+        try {
+            DirCreate(ThemeManager.UserDir)
+            FileOpen(themeFile, "w", "UTF-8").Write(JSON.Stringify(theme))
+        } catch as e {
+            return MsgBox(e.Message, App.Name, 48)
+        }
+        index := 0
+        for existing, value in themes
+            if (value = themeName)
+                index := existing
+        if !index {
+            themes.Push(themeName)
+            themeChoice.Add([themeName])
+            index := themes.Length
+        }
+        themeChoice.Choose(index)
+        Run('notepad.exe "' themeFile '"')
     }
 
     static _BuildFeatures() {
@@ -371,6 +413,7 @@ class PreferencesWindow {
                 ctrl.Value := index
         PreferencesWindow._Bind(path, () => values[ctrl.Value])
         PreferencesWindow._Below(8, label, ctrl)
+        return ctrl
     }
 
     static _Lines(path, labelKey, rows) {

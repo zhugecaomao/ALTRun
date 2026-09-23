@@ -28,6 +28,7 @@ class App {
 
     static Start() {
         Logger.Rotate()
+        App._MoveLegacyResources()
         AppSettings.Load()
         Logger.Enabled := AppSettings.General["SaveLog"] ? true : false
         Logger.Debug("===== " App.Name " " App.Version " starting =====")
@@ -107,6 +108,32 @@ class App {
         try {
             if (FileGetTime(AppSettings.File, "M") != App._settingsTime)
                 App.Restart()
+        }
+    }
+
+    ; 3.1 起 Res\ 改名为 Resources\: 旧文件夹里用户自己放的文件 (例如 SPF2M 的 DOSBox.exe)
+    ; 移到 Resources\, 新版本已经带有的文件 (Kanji.txt) 直接删掉旧的, 最后删除空的 Res\
+    static _MoveLegacyResources() {
+        legacyDir := A_ScriptDir "\Res", newDir := A_ScriptDir "\Resources"
+        if !DirExist(legacyDir)
+            return
+        try {
+            DirCreate(newDir)
+            Loop Files, legacyDir "\*", "FD" {
+                target := newDir "\" A_LoopFileName
+                if InStr(A_LoopFileAttrib, "D") {
+                    if !DirExist(target)
+                        DirMove(A_LoopFileFullPath, target)
+                } else if FileExist(target) {
+                    FileDelete(A_LoopFileFullPath)
+                } else {
+                    FileMove(A_LoopFileFullPath, target)
+                }
+            }
+            DirDelete(legacyDir)                                            ; 只删空文件夹, 还有内容时抛错保留
+            Logger.Debug("App: moved Res\ to Resources\")
+        } catch as e {
+            Logger.Error("App: cannot move Res\ to Resources\ - " e.Message)
         }
     }
 
