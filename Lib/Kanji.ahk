@@ -5,7 +5,7 @@
 ; 见 https://autohotkey.com/boards/viewtopic.php?t=9133 - 本地文本文件查表,
 ; 不依赖任何外部 API/网络请求。
 ;
-; Res/Kanji.txt: 一整行, 空格分隔的"简体+繁体"两字词, 例如 "锕錒 皑皚 嗳噯"
+; Resources/Kanji.txt: 一整行, 空格分隔的"简体+繁体"两字词, 例如 "锕錒 皑皚 嗳噯"
 ; - 每个词第 1 个字符是简体, 第 2 个字符是对应的繁体(逐字对照, 不是词典,
 ; 一简体只对应一个繁体, 少数一简对多繁的情况这份表没有收录, 够日常使用)。
 ;
@@ -22,9 +22,9 @@ Class Kanji {
         Kanji._s2t := Map()
         Kanji._t2s := Map()
 
-        dataFile := A_ScriptDir "\Res\Kanji.txt"
+        dataFile := A_ScriptDir "\Resources\Kanji.txt"
         if !FileExist(dataFile) {
-            Logger.Debug("Kanji: Res\Kanji.txt not found, simplified/traditional conversion disabled")
+            Logger.Debug("Kanji: Resources\Kanji.txt not found, simplified/traditional conversion disabled")
             return
         }
         for _, token in StrSplit(FileRead(dataFile, "UTF-8"), " ", "`r`n") {

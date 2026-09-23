@@ -18,7 +18,7 @@
 ; Spf2mWinLeft/Spf2mWinTop 给 SPF2M 窗口)。
 ;
 ; SPF2M 需要的资源文件 (DOSBox.exe / SDL.dll / SDL_net.dll / SPF2M.exe) 已经从旧
-; PTTools.ahk 里内嵌的 Base64 数据还原成真正的二进制文件, 放在 Res\ 目录下, 和
+; PTTools.ahk 里内嵌的 Base64 数据还原成真正的二进制文件, 放在 Resources\ 目录下, 和
 ; Run.bat 引用的文件名 (DOSBox.exe SPF2M.exe) 保持一致。
 ;
 ; 设置存在 ALTRun.json 的 Extensions.PTTools 节点里 (AppSettings.Extension("PTTools")),
@@ -548,10 +548,10 @@ Class PTToolsWindow {
     static OnRunSpf2mClicked(*) {
         g := PTToolsWindow.SpfG
 
-        resDir := A_ScriptDir "\Res"
+        resDir := A_ScriptDir "\Resources"
         dosbox := resDir "\DOSBox.exe"
         if !FileExist(dosbox) || !FileExist(resDir "\SPF2M.exe") {
-            MsgBox("SPF2M resource files not found under Res (need DOSBox.exe + SPF2M.exe + SDL.dll + SDL_net.dll).", "PT Tools", 48)
+            MsgBox("SPF2M resource files not found under Resources (need DOSBox.exe + SPF2M.exe + SDL.dll + SDL_net.dll).", "PT Tools", 48)
             return
         }
 

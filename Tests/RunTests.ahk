@@ -359,24 +359,44 @@ class Tests {
     }
 
     static Themes() {
-        fullKeys := ThemeManager.Builtin("Light")
-        for themeName in ThemeManager.BuiltinNames {
+        eq := (n, a, e) => TestRunner.Equal("Themes." n, a, e)
+        ThemeManager.BuiltinDir := A_ScriptDir "\..\Resources\Themes"
+        ThemeManager.UserDir := A_Temp "\ALTRunThemeTest"
+        try DirDelete(ThemeManager.UserDir, true)
+        fullKeys := ThemeManager.Defaults()
+        for themeName in ThemeManager.Names() {
             if (themeName = "System")
                 continue
             ThemeManager.Load(themeName)
+            eq(themeName " loaded", ThemeManager.Resolved, themeName)
             missing := ""
             for key in fullKeys
                 if (ThemeManager.Get(key) = "")
                     missing .= key " "
-            TestRunner.Equal("Themes." themeName " complete", missing, "")
+            eq(themeName " complete", missing, "")
             for key in ["Background", "Title", "SelectedBackground", "SelectedTitle"]
                 TestRunner.True("Themes." themeName "." key " is RRGGBB", RegExMatch(ThemeManager.Get(key), "^[0-9A-Fa-f]{6}$"))
         }
+        eq("builtin count", ThemeManager.Names().Length, 9)
+        TestRunner.True("Themes.Ocean is builtin", ThemeManager.IsBuiltin("Ocean"))
+
+        ; 用户主题: 同名覆盖内置主题 ("Base" 写自己 = 在内置那一套上改), 以及 Base 链
+        DirCreate(ThemeManager.UserDir)
+        FileAppend('{ "Base": "Ocean", "SelectedRadius": 12 }', ThemeManager.UserDir "\Mine.json", "UTF-8")
+        FileAppend('{ "Base": "Dark", "Title": "FF0000" }', ThemeManager.UserDir "\Dark.json", "UTF-8")
+        ThemeManager.Load("Mine")
+        eq("user base color", ThemeManager.Get("Background"), "2E3440")
+        eq("user override", ThemeManager.Get("SelectedRadius"), 12)
+        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 10 && !ThemeManager.IsBuiltin("Mine"))
+        ThemeManager.Load("Dark")
+        eq("user overrides builtin", ThemeManager.Get("Title"), "FF0000")
+        eq("user override keeps builtin", ThemeManager.Get("Background"), "1E1F22")
+        DirDelete(ThemeManager.UserDir, true)
+
         ThemeManager.Load("System")
         TestRunner.True("Themes.System resolves", ThemeManager.Resolved = "Light" || ThemeManager.Resolved = "Dark")
         ThemeManager.Load("No Such Theme")
-        TestRunner.Equal("Themes.missing file falls back", ThemeManager.Resolved, "Light")
-        TestRunner.True("Themes.names", ThemeManager.Names().Length >= ThemeManager.BuiltinNames.Length)
+        eq("missing falls back", ThemeManager.Resolved, "Light")
         ThemeManager.Load("Light")
     }
 

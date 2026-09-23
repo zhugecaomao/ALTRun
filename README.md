@@ -125,7 +125,7 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 - **Snippets**: 占位符 `{date}` `{time}` `{datetime}` `{clipboard}` `{cursor}` (粘贴后光标停在这里)。有 `Keyword` 的片段可以在任何程序里输入 `;关键字` 自动展开 (前缀见 `Features.Snippets.ExpandPrefix`, 单个片段设 `"AutoExpand": 0` 可以关闭)。
 - **Clipboard**: `Features.Clipboard` 里可以修改热键、保存条数、是否保存到磁盘 (`Persist`)、不记录的程序 (`IgnoreApps`)。历史保存在 `Data\ClipboardHistory.json`。
 - **Hotkeys**: 自定义热键执行一条系统命令, `WinTitle` 不为空时只在该窗口里生效。可用的命令 Id 见 `Src\Providers\SystemProvider.ahk` (例如 `Lock`、`PTTools`、`TextUpper`、`ToggleWindow`)。
-- **主题**: 内置 `System` (跟随 Windows 浅色 / 深色, 系统切换时自动更新)、`Light`、`Dark`、`Classic`、`Midnight`、`Frost` (半透明)、`Graphite`、`Ocean`、`Paper`。自定义主题: 在 `Themes\<名称>.json` 里写出要修改的键, `"Base"` 指定从哪个内置主题开始, 例如 `{ "Base": "Dark", "SelectedBackground": "1D4ED8", "SelectedRadius": 8, "Opacity": 240 }`, 然后设置 `"Theme": "<名称>"`; 全部可用的键见 `Src\UI\ThemeManager.ahk`。
+- **主题**: 内置 `System` (跟随 Windows 浅色 / 深色, 系统切换时自动更新)、`Light`、`Dark`、`Classic`、`Midnight`、`Frost` (半透明)、`Graphite`、`Ocean`、`Paper`, 配色文件在 `Resources\Themes\` (升级时会被替换, 不要直接修改)。自定义主题放在 `Themes\<名称>.json`: 在偏好设置 "外观" 里点 "复制为自定义主题" 会生成一份完整的文件, 改好后选中即可; 也可以只写要改的键, 用 `"Base"` 指定从哪个主题开始, 例如 `{ "Base": "Dark", "SelectedBackground": "1D4ED8", "SelectedRadius": 8, "Opacity": 240 }`。和内置主题同名的用户主题优先; 全部可用的键见 `Src\UI\ThemeManager.ahk`。
 - 运行时生成的数据放在 `Data\` 目录 (应用索引、文件索引、学习记录、剪贴板历史), 删掉只会重新生成。
 
 
@@ -136,6 +136,8 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 
 以后设置格式再有变化时, 同样会逐版本自动升级 (见 `Src\Core\SchemaMigration.ahk`)。
 
+旧版本的 `Res\` 文件夹已改名为 `Resources\`: 启动时会自动把 `Res\` 里你自己放的文件 (例如 SPF2M 用的 `DOSBox.exe`、`SPF2M.exe`) 移到 `Resources\`, 然后删除空的 `Res\`。
+
 
 ## 项目结构
 ```
@@ -145,9 +147,11 @@ Src\Core\           启动流程 (App), 设置与版本升级, 搜索模型 (Sea
 Src\UI\             搜索窗口, 偏好设置窗口, 通用编辑对话框, 大字显示, 主题, 图标缓存
 Src\Providers\      搜索功能: 剪贴板历史 / 应用 / 自定义命令 / 片段 / 系统命令 / 计算器 / 网页搜索 / 文件搜索 / 终端
 Src\Extensions\     搜索窗口以外的功能: 片段自动展开, 对话框快速跳转, Ctrl+D 加日期, PT 工具箱, 检查更新
-Res\                数据文件 (Kanji.txt 简繁对照表)
+Resources\          随程序发布的数据文件 (Kanji.txt 简繁对照表, Themes\ 内置主题)
 Tests\              单元测试
 ```
+
+运行后在程序目录下还会出现: `ALTRun.json` (设置)、`Data\` (索引、学习记录、剪贴板历史, 可以删除)、`Themes\` (你自己的主题)。升级时把新版本复制覆盖到程序目录即可, 不会影响这些文件 (不要先删除 `Resources\`, 里面可能有你自己放的 SPF2M 文件)。
 
 新增一个搜索功能只需要在 `Src\Providers\` 里加一个类 (`Id` / `Init()` / `Search(query)` 返回 `ResultItem` 数组), 在 `ALTRun.ahk` 里 `#Include`, 并在 `App.Start()` 里注册。结果可以在搜索窗口里编辑 / 删除时, 再实现可选的 `EditItem(item)` / `DeleteItem(item)` (结果的 `Source` 指向设置里对应的那一条)。
 
