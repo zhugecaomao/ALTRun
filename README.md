@@ -30,7 +30,9 @@
 2. 按 `Alt+Space` 呼出搜索窗口, 输入名称, `Enter` 打开
 3. `Ctrl+,` 打开偏好设置, 修改热键、主题、索引范围等
 
-绿色便携, 不写注册表: 设置保存在程序目录下的 `ALTRun.json`。从 2.x 升级时旧设置会自动转换 (见 [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation))。
+绿色便携, 不写注册表: 设置保存在程序目录下的 `ALTRun.json`。
+
+**从旧版本升级**: 退出旧版本, 把新版本解压到原来的文件夹覆盖 `ALTRun.exe`, 再运行即可。第一次运行时自动导入旧的 `ALTRun.ini` (设置、自定义命令、热键), 原文件保持不变 (见 [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation))。
 
 
 ## 特性

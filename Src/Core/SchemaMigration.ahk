@@ -3,6 +3,8 @@
 ;-------------------------------------------------------------------------------
 ; 每个版本的升级是一个独立的 _FromN(data) 方法, 负责把版本 N 的数据转换成
 ; 版本 N+1。Upgrade() 从文件当前的版本开始逐级调用, 直到 CurrentVersion:
+;   ALTRun.ini           已发布的 2.x (到 v2026.08.12) 的设置文件, ReadLegacyIni() 读成
+;                        版本 2 的结构, 再走下面的逐级升级 (见 AppSettings.Load)
 ;   2 -> 3   _From2()   ALTRun 2.x (Config/Gui/Hotkey/UserCommand...) -> 3.0
 ;   3 -> 4   _From3()   文件搜索默认不再混进普通结果 (InDefaultResults 1 -> 0)
 ;
@@ -40,6 +42,44 @@ class SchemaMigration {
             version++
             data["SchemaVersion"] := version
             Logger.Debug("SchemaMigration: upgraded settings to version " version)
+        }
+        return data
+    }
+
+    ;---------------------------------------------------------------------------
+    ; ALTRun.ini (2.x)
+    ;---------------------------------------------------------------------------
+    static LegacyIniFile(jsonFile) {
+        SplitPath(jsonFile, , &dir)
+        return dir "\ALTRun.ini"
+    }
+
+    ; 读 2.x 的 ALTRun.ini -> Map("Config", Map(...), "Gui", ..., "Hotkey", ..., "UserCommand", ...)
+    ; 和 _From2() 期望的版本 2 结构一样。只读需要转换的节; Index / History / Usage /
+    ; DefaultCommand / FallbackCommand 不再使用。
+    ;   普通节: "键=值", 按第一个 = 分开, 数字转成整数
+    ;   UserCommand: "类型 | 目标 | 说明=排名", 按最后一个 = 分开; 键里的 = 和 ; 在 2.x 里
+    ;                写成 _Equal_ / _Semicolon_, 这里还原
+    static ReadLegacyIni(iniFile) {
+        data := Map()
+        for section in ["Config", "Gui", "Hotkey", "UserCommand"] {
+            text := ""
+            try text := IniRead(iniFile, section)
+            entries := Map()
+            isCommands := (section = "UserCommand")
+            for line in StrSplit(text, "`n", "`r") {
+                line := Trim(line)
+                if (line = "" || SubStr(line, 1, 1) = ";")
+                    continue
+                pos := isCommands ? InStr(line, "=", , -1) : InStr(line, "=")
+                if (pos <= 1)
+                    continue
+                key := Trim(SubStr(line, 1, pos - 1)), value := Trim(SubStr(line, pos + 1))
+                if isCommands
+                    key := StrReplace(StrReplace(key, "_Equal_", "="), "_Semicolon_", ";")
+                entries[key] := IsInteger(value) ? Integer(value) : value
+            }
+            data[section] := entries
         }
         return data
     }

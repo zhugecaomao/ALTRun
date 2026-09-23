@@ -33,6 +33,7 @@ class AppSettings {
     static DataDir := A_ScriptDir "\Data"
     static Data := Map()
     static MigratedFrom := 0          ; 本次启动时从哪个版本升级过来的 (0 = 没有升级)
+    static ImportedFrom := ""         ; 本次启动时从旧版本的 ALTRun.ini 导入 ("" = 没有)
 
     static General        => AppSettings.Data["General"]
     static Appearance     => AppSettings.Data["Appearance"]
@@ -51,6 +52,16 @@ class AppSettings {
     static Load() {
         data := AppSettings._ReadFile()
         changed := false
+
+        ; 已发布的 2.x (到 v2026.08.12) 把设置存在 ALTRun.ini: 还没有 ALTRun.json 时从它导入。
+        ; ALTRun.ini 保持不变, 退回旧版本时仍然可以用
+        if (!data.Count && !FileExist(AppSettings.File)) {
+            iniFile := SchemaMigration.LegacyIniFile(AppSettings.File)
+            if FileExist(iniFile) {
+                data := SchemaMigration.ReadLegacyIni(iniFile)
+                AppSettings.ImportedFrom := iniFile
+            }
+        }
 
         if (data.Count) {
             fromVersion := SchemaMigration.DetectVersion(data)

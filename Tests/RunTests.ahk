@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -513,6 +513,104 @@ class Tests {
         TestRunner.True("FileSearchModes.quote still works", FileSearchProvider.Search(SearchQuery("'nir")).Length >= 2)
         options["InDefaultResults"] := saved[1], options["UseEverything"] := saved[2]
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+    }
+
+    ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入
+    static LegacyIni() {
+        eq := (n, a, e) => TestRunner.Equal("LegacyIni." n, a, e)
+        folder := A_Temp "\ALTRunLegacyTest"
+        try DirDelete(folder, true)
+        DirCreate(folder)
+        iniFile := folder "\ALTRun.ini"
+        ; 和 2.x 写出的文件一样: UTF-16, 注释行, 键里的 = 和 ; 被转义
+        FileAppend("
+        (
+[Config]
+AutoStartup=0
+Chinese=1
+FileMgr=C:\Apps\TotalCMD64.exe /O /T /S
+IndexDir=A_ProgramsCommon,A_StartMenu,C:\Path\IndexLocation
+IndexType=*.lnk,*.exe
+IndexDepth=2
+StruCalc=1
+AutoSwitchDir=1
+[Hotkey]
+GlobalHotkey1=~!Space
+GlobalHotkey2=!r
+TotalCMDDir=^g
+CondTitle=ahk_exe RAPTW.exe
+CondHotkey=~Mbutton
+CondAction=PTTools
+[UserCommand]
+; This section is User-Defined commands, modify as desired
+; Format: Command Type | Command | Description=Rank
+File | C:\Windows\Notepad.exe=9
+Dir | A_Desktop | Desktop=99
+CMD | cmd.exe /k ipconfig | Check IP Address=9
+URL | https://www.google.com/search?q_Equal_x_Semicolon_y | Google Query=5
+Dir | Q:\DESIGN PROJECTS\Design-2019\PT1931 - 24 NIR | CKR, EA, JIB=3
+Func | PTTools | PT Tools (AHK)=99
+[History]
+1=Dir | A_Desktop | Desktop
+        )", iniFile, "UTF-16")
+
+        data := SchemaMigration.ReadLegacyIni(iniFile)
+        eq("config number", data["Config"]["IndexDepth"], 2)
+        eq("config value with spaces", data["Config"]["FileMgr"], "C:\Apps\TotalCMD64.exe /O /T /S")
+        eq("comments skipped", data["UserCommand"].Count, 6)
+        TestRunner.True("LegacyIni.escaped key restored", data["UserCommand"].Has("URL | https://www.google.com/search?q=x;y | Google Query"))
+        eq("detected as 2.x", SchemaMigration.DetectVersion(data), 2)
+
+        ; 完整的启动流程: 没有 ALTRun.json, 只有 ALTRun.ini
+        savedFile := AppSettings.File, savedData := AppSettings.Data
+        AppSettings.File := folder "\ALTRun.json", AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0
+        AppSettings.Load()
+        settings := AppSettings.Data
+        eq("imported from", AppSettings.ImportedFrom, iniFile)
+        eq("version", settings["SchemaVersion"], AppSettings.CurrentVersion)
+        eq("json written", FileExist(folder "\ALTRun.json") != "", true)
+        eq("ini kept", FileExist(iniFile) != "", true)
+        eq("hotkey", settings["General"]["Hotkey"], "!Space")
+        eq("second hotkey", settings["General"]["SecondaryHotkey"], "!r")
+        eq("language", settings["General"]["Language"], "zh")
+        eq("startup", settings["General"]["LaunchAtLogin"], 0)
+        eq("file manager", settings["General"]["FileManager"], "C:\Apps\TotalCMD64.exe /O /T /S")
+        eq("index depth", settings["Features"]["Applications"]["Depth"], 2)
+        eq("index placeholder dropped", settings["Features"]["Applications"]["Folders"].Length, 2)
+        eq("structural calc", settings["Features"]["Calculator"]["StructuralCalc"], 1)
+        eq("quick switch", settings["Extensions"]["QuickSwitch"]["AutoSwitch"], 1)
+        eq("conditional hotkey", settings["Hotkeys"][1]["Action"], "PTTools")
+        eq("commands (Func skipped)", settings["CustomCommands"].Length, 5)
+        commands := Map()
+        for command in settings["CustomCommands"]
+            commands[command["Title"]] := command
+        eq("folder command", commands["CKR, EA, JIB"]["Target"], "Q:\DESIGN PROJECTS\Design-2019\PT1931 - 24 NIR")
+        eq("command args", commands["Check IP Address"]["Arguments"], "/k ipconfig")
+        eq("url unescaped", commands["Google Query"]["Target"], "https://www.google.com/search?q=x;y")
+        eq("file title", commands["Notepad"]["Type"], "File")
+
+        ; 真实的 v2026.08.12 生成的 ALTRun.ini (UTF-16, 带默认命令) + 用户加的一条命令和设置
+        fixture := SchemaMigration.Upgrade(SchemaMigration.ReadLegacyIni(A_ScriptDir "\Fixtures\ALTRun.v2026.08.12.ini"), 2)
+        eq("fixture commands", fixture["CustomCommands"].Length, 10)
+        eq("fixture language", fixture["General"]["Language"], "zh")
+        eq("fixture hotkey", fixture["Hotkeys"][1]["Key"], "~Mbutton")
+
+        ; 第二次启动: 已经有 ALTRun.json, 不再导入
+        AppSettings.ImportedFrom := ""
+        AppSettings.Load()
+        eq("no second import", AppSettings.ImportedFrom, "")
+
+        AppSettings.File := savedFile, AppSettings.Data := savedData
+        AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0
+        try DirDelete(folder, true)
+    }
+
+    ; 编译信息里的版本号 (ALTRun.ahk 的 ;@Ahk2Exe-SetVersion) 要和 App.Version 一致
+    static ReleaseVersion() {
+        main := FileRead(A_ScriptDir "\..\ALTRun.ahk", "UTF-8")
+        RegExMatch(main, "m);@Ahk2Exe-SetVersion\s+(\S+)", &m)
+        TestRunner.Equal("ReleaseVersion.exe version = App.Version", IsObject(m) ? m[1] : "", App.Version)
+        TestRunner.True("ReleaseVersion.date format", RegExMatch(App.Version, "^\d{4}\.\d{2}\.\d{2}$"))
     }
 
     static Misc() {

@@ -39,7 +39,7 @@
 ALTRun 是绿色软件, 整个文件夹可以放在 U 盘或同步盘里。路径尽量用 [路径变量](Commands-and-Snippets#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
 
 ### 从 2.x 升级后命令不见了
-2.x 的用户命令会转换成自定义命令和文字片段, 内置命令由 [系统命令](Extensions#系统命令) 取代。原设置备份在 `ALTRun.v2.backup.json`, 详见 [安装与升级](Installation#从-2x-升级到-30)。
+2.x 的用户命令会从 `ALTRun.ini` 导入为自定义命令, 内置命令由 [系统命令](Extensions#系统命令) 取代。导入只在还没有 `ALTRun.json` 时进行一次: 如果想重新导入, 退出 ALTRun, 把 `ALTRun.json` 改名, 再运行。`ALTRun.ini` 始终保持不变, 详见 [安装与升级](Installation#从-2x-v20260812-及更早-升级到-30)。
 
 ---
 没有找到答案? 请 [提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) 或在 [Discussions](https://github.com/zhugecaomao/ALTRun/discussions) 提问。

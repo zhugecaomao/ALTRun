@@ -40,6 +40,14 @@
 4. 涉及界面的改动请附上截图
 5. 用户可见的变化请更新 `README.md`、`CHANGELOG.md` 的 "未发布" 部分, 必要时更新 Wiki
 
+## 发布新版本
+版本号用发布日期 `YYYY.MM.DD`:
+1. 更新 `Src\Core\App.ahk` 的 `App.Version` 和 `ALTRun.ahk` 的 `;@Ahk2Exe-SetVersion` (有测试检查两者一致)
+2. 在 `CHANGELOG.md` 加一节 `## [YYYY.MM.DD] ...`, 这一节就是 Release 的说明
+3. 合并到 `main` 后, 在 Actions 里运行 **Release** (`.github/workflows/release.yml`): 先 `publish = false` 检查构建、测试和升级测试, 再 `publish = true` 创建 Release
+
+Release workflow 在 Windows 上编译 `ALTRun.exe`, 并用 `Tests\Fixtures\ALTRun.v2026.08.12.ini` 验证从旧版本升级。
+
 ## 文档 (Wiki)
 Wiki 的源文件在仓库的 [`docs/wiki/`](docs/wiki), 合并到 `main` 后由 GitHub Actions (`.github/workflows/wiki.yml`) 自动发布到 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)。请修改 `docs/wiki/` 里的文件, 直接在网页上修改的 Wiki 会在下次发布时被覆盖。页面之间的链接写页面名, 不带 `.md` (例如 `[主题](Themes)`)。
 

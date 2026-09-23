@@ -1,0 +1,144 @@
+# 打包发布 ALTRun: 在 Windows 上编译 ALTRun.exe, 跑单元测试, 用旧版本的 ALTRun.ini 验证升级,
+# 打包成 ALTRun_v<版本>.zip; publish = true 时再创建 GitHub Release (标签 = 版本号)。
+#
+# 发布步骤:
+#   1. 更新 Src\Core\App.ahk 的 App.Version 和 ALTRun.ahk 的 ;@Ahk2Exe-SetVersion (有测试检查两者一致)
+#   2. CHANGELOG.md 加一节 "## [<版本>] ...", 作为 Release 的说明
+#   3. 合并到 main 后, 在 Actions 页面运行 "Release": 先 publish = false 检查, 再 publish = true 发布
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Create the GitHub release (false = build and test only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Read version
+        id: version
+        shell: pwsh
+        run: |
+          $match = Select-String -Path Src/Core/App.ahk -Pattern 'static Version\s*:=\s*"([0-9.]+)"'
+          if (-not $match) { throw "App.Version not found in Src/Core/App.ahk" }
+          $version = $match.Matches[0].Groups[1].Value
+          Write-Host "Version: $version"
+          "version=$version" >> $env:GITHUB_OUTPUT
+          if ("${{ inputs.publish }}" -eq "true") {
+            gh release view $version --repo "${{ github.repository }}" 2>$null
+            if ($LASTEXITCODE -eq 0) { throw "Release $version already exists - bump App.Version first" }
+            $global:LASTEXITCODE = 0
+          }
+
+      - name: Download AutoHotkey v2 and Ahk2Exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
+          Write-Host "AutoHotkey $ahkTag"
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+          gh release download --repo AutoHotkey/Ahk2Exe --pattern "Ahk2Exe*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "Ahk2Exe*.zip")[0].FullName tools/ahk2exe
+          if (-not (Test-Path tools/ahk/AutoHotkey64.exe)) { throw "AutoHotkey64.exe missing" }
+          if (-not (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)) { throw "Ahk2Exe.exe missing" }
+
+      - name: Unit tests
+        shell: pwsh
+        run: |
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk' `
+                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput test.log -RedirectStandardError test.err
+          Get-Content test.log | Where-Object { $_ -notmatch '^PASS' }
+          Get-Content test.err
+          if ($proc.ExitCode -ne 0) { throw "Unit tests failed (exit code $($proc.ExitCode))" }
+
+      - name: Compile ALTRun.exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory build/ALTRun -Force | Out-Null
+          $ahk2exe = (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)[0].FullName
+          $proc = Start-Process $ahk2exe -Wait -PassThru -NoNewWindow -ArgumentList `
+                  '/in', "$PWD\ALTRun.ahk", '/out', "$PWD\build\ALTRun\ALTRun.exe", '/base', "$PWD\tools\ahk\AutoHotkey64.exe", '/silent', 'verbose'
+          if ($proc.ExitCode -ne 0 -or -not (Test-Path build/ALTRun/ALTRun.exe)) { throw "Compile failed (exit code $($proc.ExitCode))" }
+          Copy-Item -Recurse Resources build/ALTRun/Resources
+          Copy-Item LICENSE, README.md, CHANGELOG.md build/ALTRun/
+          (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
+
+      # 模拟用户从 v2026.08.12 升级: 文件夹里只有旧的 ALTRun.ini, 解压新版本后第一次运行
+      - name: Upgrade test (ALTRun.ini from v2026.08.12)
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "upgrade"
+          New-Item -ItemType Directory $dir -Force | Out-Null
+          Copy-Item build/ALTRun/* $dir -Recurse
+          Copy-Item Tests/Fixtures/ALTRun.v2026.08.12.ini (Join-Path $dir "ALTRun.ini")
+          $iniHash = (Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash
+          $proc = Start-Process (Join-Path $dir "ALTRun.exe") -WorkingDirectory $dir -PassThru
+          $json = Join-Path $dir "ALTRun.json"
+          for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
+          Start-Sleep -Seconds 3
+          $running = -not $proc.HasExited
+          Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          if (-not (Test-Path $json)) { throw "ALTRun.json was not created" }
+          $settings = Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json
+          Write-Host "Running: $running; SchemaVersion: $($settings.SchemaVersion); commands: $($settings.CustomCommands.Count); language: $($settings.General.Language)"
+          if (-not $running) { throw "ALTRun.exe exited on its own" }
+          if ($settings.SchemaVersion -lt 4) { throw "Settings were not upgraded" }
+          if ($settings.CustomCommands.Count -ne 10) { throw "Expected 10 imported commands" }
+          if ($settings.General.Language -ne "zh") { throw "Config section was not imported" }
+          if ((Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash -ne $iniHash) { throw "ALTRun.ini was modified" }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $zip = "build/ALTRun_v${{ steps.version.outputs.version }}.zip"
+          Compress-Archive -Path build/ALTRun/* -DestinationPath $zip
+          Get-Item $zip | Format-List Name, Length
+
+      - name: Release notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $lines = Get-Content CHANGELOG.md -Encoding UTF8
+          $start = ($lines | Select-String -Pattern "^## \[$([regex]::Escape($version))\]").LineNumber
+          if (-not $start) { throw "CHANGELOG.md has no section for $version" }
+          $notes = @()
+          foreach ($line in $lines[$start..($lines.Count - 1)]) {
+            if ($line -match '^## ') { break }
+            $notes += $line
+          }
+          $previous = gh release view --repo "${{ github.repository }}" --json tagName --jq .tagName 2>$null
+          $global:LASTEXITCODE = 0
+          if ($previous -and $previous -ne $version) {
+            $notes += ""
+            $notes += "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$previous...$version"
+          }
+          $notes | Set-Content build/notes.md -Encoding UTF8
+          Get-Content build/notes.md
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ALTRun_v${{ steps.version.outputs.version }}
+          path: |
+            build/ALTRun_v*.zip
+            build/notes.md
+
+      - name: Create GitHub release
+        if: inputs.publish
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          gh release create $version "build/ALTRun_v$version.zip" --repo "${{ github.repository }}" `
+            --title "ALTRun - v$version" --notes-file build/notes.md --target "${{ github.sha }}"

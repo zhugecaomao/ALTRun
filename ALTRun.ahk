@@ -17,6 +17,13 @@
 ;   Themes\         Optional custom themes (<Name>.json)
 ;   Data\           Generated at runtime: app index, learned ranking, clipboard history
 ;===============================================================================
+;@Ahk2Exe-SetName ALTRun
+;@Ahk2Exe-SetDescription ALTRun - An effective launcher for Windows
+;@Ahk2Exe-SetVersion 2026.09.23
+;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026 zhugecaomao
+;@Ahk2Exe-SetOrigFilename ALTRun.exe
+; (编译: 见 .github/workflows/release.yml; SetVersion 要和 App.Version 一致, 有测试检查)
+
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #NoTrayIcon
