@@ -86,14 +86,19 @@ class IconCache {
     static _CacheKey(spec) {
         if RegExMatch(spec, "i)^(res|ext|url|folder):")
             return StrLower(spec)
-        if IconCache.IsRemote(spec) {
-            SplitPath(RTrim(spec, "\/"), , , &ext)
+        ext := IconCache._Extension(spec)
+        if IconCache.IsRemote(spec)
             return (ext = "") ? "folder:" : "ext:." StrLower(ext)
-        }
-        SplitPath(spec, , , &ext)
         if (ext = "" || RegExMatch(ext, "i)^(exe|lnk|ico|url|appref-ms|msc|cpl|scr)$") || InStr(spec, "shell:") = 1)
             return StrLower(spec)                                           ; 每个文件自己的图标
         return "ext:." StrLower(ext)
+    }
+
+    ; 像扩展名的才算扩展名 (1~6 个字母数字, 至少一个字母, 如 pdf / docx / dwg / sldprt):
+    ; "26. 18 New Industrial Road (EA)"、"10.PT2310-29NIR"、"Design.2019" 这种名字里带点的文件夹没有扩展名
+    static _Extension(path) {
+        SplitPath(RTrim(path, "\/"), , , &ext)
+        return (RegExMatch(ext, "^(?=.*[A-Za-z])[A-Za-z0-9]{1,6}$") || ext = "appref-ms") ? ext : ""
     }
 
     ; 网络位置按通用图标加载 (缓存键就是 "folder:" / "ext:.pdf"), 其它按原来的路径
