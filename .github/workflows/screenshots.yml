@@ -1,0 +1,60 @@
+# 在 Windows 上自动生成 README / Wiki 用的界面截图 (Tests\Screenshots\TakeScreenshots.ahk),
+# 上传为 artifact; 在 main 以外的分支上运行时, 把截图提交回该分支。
+name: Screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - Tests/Screenshots/**
+      - .github/workflows/screenshots.yml
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
+          Write-Host "AutoHotkey $ahkTag"
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+
+      - name: Take screenshots
+        shell: pwsh
+        run: |
+          Write-Host "Microsoft YaHei: $(Test-Path C:\Windows\Fonts\msyh.ttc)"
+          Add-Type -AssemblyName System.Windows.Forms
+          Write-Host "Screen: $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds)"
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\Screenshots\TakeScreenshots.ahk' `
+                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput shots.log -RedirectStandardError shots.err
+          Get-Content shots.log, shots.err
+          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) screenshot(s) failed" }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: screenshots
+          path: docs/images/screenshots
+
+      - name: Commit screenshots to the branch
+        if: github.ref_name != 'main'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/images/screenshots
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { Write-Host "No changes"; exit 0 }
+          git commit -m "Update screenshots"
+          git push origin "HEAD:${{ github.ref_name }}"
