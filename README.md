@@ -110,10 +110,10 @@ ALTRun - 基于 AutoHotkey、开源免费、轻量高效、功能强大的启动
 从源码运行时直接运行 `ALTRun.ahk` (需要 AutoHotkey v2), 所有模块都在其开头用 `#Include` 显式列出:
 
 ```
-ALTRun.ahk          主程序: 主窗口, 搜索, 运行命令, 热键, 以及供命令/热键调用的函数入口
+ALTRun.ahk          主程序: 启动流程, 搜索, 运行命令, 以及供命令/热键调用的函数入口
 Lib\                通用库, 与 ALTRun 无关 (JSON, Logger, Util, Dialogs)
 Src\Core\           核心: 语言表, 配置读写 (AppData), 命令存储, 旧 ini 迁移
-Src\UI\             窗口: 配置选项, 命令管理器, PTTools
+Src\UI\             窗口: 主窗口 (输入框/结果列表/托盘和右键菜单/热键), 配置选项, 命令管理器, PTTools
 Src\Features\       功能: 剪贴板, 简繁转换, Listary 式快速切换, 日期自动输入, 系统操作, 更新检查, 索引
 Res\                数据文件 (Kanji.txt 简繁对照表)
 ```
