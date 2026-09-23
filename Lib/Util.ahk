@@ -69,7 +69,8 @@ class Path {
         raw := StrReplace(raw, "%UserProfile%", EnvGet("UserProfile"))
 
         ; 裸文件名: 去 PATH 里搜, 没写扩展名时按 .exe 找 ("notepad" -> notepad.exe)
-        if (!FileExist(raw) && !InStr(raw, "\")) {
+        ; 先判断有没有 "\": 完整路径不访问磁盘 (网络驱动器断开时 FileExist 会卡住)
+        if (!InStr(raw, "\") && !FileExist(raw)) {
             buf := Buffer(260 * 2)
             if DllCall("kernel32\SearchPathW", "Ptr", 0, "WStr", raw, "WStr", ".exe",
                        "UInt", buf.Size // 2, "Ptr", buf, "Ptr", 0)

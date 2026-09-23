@@ -121,7 +121,7 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 }
 ```
 
-- **CustomCommands**: `Type` 可以是 `File` / `Folder` / `Command` / `Url`; `Target` 支持 `A_Desktop`、`A_ScriptDir` 等内置变量开头和 `%AppData%` 等环境变量。也可以在资源管理器里右键 "发送到 → ALTRun" 添加, 或在操作面板里选 "添加到自定义命令"。
+- **CustomCommands**: `Type` 可以是 `File` / `Folder` / `Command` / `Url`; `Target` 支持 `A_Desktop`、`A_ScriptDir` 等内置变量开头和 `%AppData%` 等环境变量。 搜索时除了 `Title` 和 `Keyword`, `File` / `Folder` 类型还会匹配目标的文件名 (不含扩展名) 或文件夹名, 例如 Target 是 `Q:\Projects\PT1931 - 24 NIR` 时输入 `nir` 也能找到。也可以在资源管理器里右键 "发送到 → ALTRun" 添加, 或在操作面板里选 "添加到自定义命令"。
 - **Snippets**: 占位符 `{date}` `{time}` `{datetime}` `{clipboard}` `{cursor}` (粘贴后光标停在这里)。有 `Keyword` 的片段可以在任何程序里输入 `;关键字` 自动展开 (前缀见 `Features.Snippets.ExpandPrefix`, 单个片段设 `"AutoExpand": 0` 可以关闭)。
 - **Clipboard**: `Features.Clipboard` 里可以修改热键、保存条数、是否保存到磁盘 (`Persist`)、不记录的程序 (`IgnoreApps`)。历史保存在 `Data\ClipboardHistory.json`。
 - **Hotkeys**: 自定义热键执行一条系统命令, `WinTitle` 不为空时只在该窗口里生效。可用的命令 Id 见 `Src\Providers\SystemProvider.ahk` (例如 `Lock`、`PTTools`、`TextUpper`、`ToggleWindow`)。

@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -378,6 +378,29 @@ class Tests {
         TestRunner.Equal("Themes.missing file falls back", ThemeManager.Resolved, "Light")
         TestRunner.True("Themes.names", ThemeManager.Names().Length >= ThemeManager.BuiltinNames.Length)
         ThemeManager.Load("Light")
+    }
+
+    static CommandTargets() {
+        eq := (n, a, e) => TestRunner.Equal("CommandTargets." n, a, e)
+        saved := AppSettings.Data["CustomCommands"]
+        AppSettings.Data["CustomCommands"] := [
+            Map("Title", "CKR, EA, JIB", "Type", "Folder", "Target", "Q:\DESIGN PROJECTS\Design-2019\PT1931 - 24 NIR", "Arguments", "", "Keyword", ""),
+            Map("Title", "NIR Report", "Type", "File", "Target", "Q:\Docs\summary.pdf", "Arguments", "", "Keyword", ""),
+            Map("Title", "Check IP", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ipconfig", "Keyword", ""),
+            Map("Title", "Drive Q", "Type", "Folder", "Target", "Q:\", "Arguments", "", "Keyword", "")]
+        titles(text) {
+            list := ""
+            for item in ProviderRegistry.SortByScore(CustomCommandProvider.Search(SearchQuery(text)))
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("folder name", titles("1931"), "CKR, EA, JIB")
+        eq("title first", titles("nir"), "NIR Report|CKR, EA, JIB")
+        eq("file name without extension", titles("summary"), "NIR Report")
+        eq("extension not searched", titles("pdf"), "")
+        eq("command target not searched", titles("cmd"), "")
+        eq("drive root not a name", titles("q:"), "")
+        AppSettings.Data["CustomCommands"] := saved
     }
 
     static Misc() {
