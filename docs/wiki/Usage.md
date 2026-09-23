@@ -32,6 +32,8 @@
 | 多个关键词 | `st co` → Visual Studio Code |
 | 按顺序出现的字母 (至少 3 个, 首字母相同) | `ntpd` → Notepad |
 
+![拼音首字母: jsb → 记事本](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pinyin.png)
+
 自定义命令还会按目标的文件夹名 / 文件名匹配, 例如 Target 是 `Q:\Projects\PT1931 - 24 NIR` 时输入 `nir` 也能找到。
 
 ### 学习排序
