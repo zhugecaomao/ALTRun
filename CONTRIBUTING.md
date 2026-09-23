@@ -40,4 +40,7 @@
 4. 涉及界面的改动请附上截图
 5. 用户可见的变化请更新 `README.md`、`CHANGELOG.md` 的 "未发布" 部分, 必要时更新 Wiki
 
+## 文档 (Wiki)
+Wiki 的源文件在仓库的 [`docs/wiki/`](docs/wiki), 合并到 `main` 后由 GitHub Actions (`.github/workflows/wiki.yml`) 自动发布到 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)。请修改 `docs/wiki/` 里的文件, 直接在网页上修改的 Wiki 会在下次发布时被覆盖。页面之间的链接写页面名, 不带 `.md` (例如 `[主题](Themes)`)。
+
 提交代码即表示你同意以 [GPL-3.0](LICENSE) 许可发布你的贡献。

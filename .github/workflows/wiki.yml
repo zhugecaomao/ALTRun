@@ -1,0 +1,42 @@
+# 把 docs/wiki/ 发布到 GitHub Wiki。
+# Wiki 的内容以仓库里的 docs/wiki/ 为准 (可以通过 PR 修改和审阅); 合并到 main 后自动同步。
+# 直接在网页上修改的 Wiki 会在下次同步时被覆盖, 请改 docs/wiki/。
+name: Publish wiki
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/wiki/**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: wiki
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync docs/wiki to the wiki repository
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${REPO}.wiki.git" wiki
+          find wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +   # 页面以 docs/wiki/ 为准, 删掉的页面也同步删除
+          cp -r docs/wiki/. wiki/
+          cd wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Wiki is already up to date"
+            exit 0
+          fi
+          git commit -m "Sync wiki from ${GITHUB_SHA::7}"
+          git push
