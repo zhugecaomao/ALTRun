@@ -1,0 +1,23 @@
+name: 功能建议 / Feature request
+description: 建议一个新功能或改进
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 想解决什么问题 / Problem
+      description: 现在哪里不方便? 在什么场景下会用到?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议的做法 / Proposal
+      description: 希望 ALTRun 怎么做? 如果 Alfred 或其它启动器有类似功能, 可以附上链接或截图
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 其它方案 / Alternatives
+      description: 现在是怎么绕过这个问题的?
