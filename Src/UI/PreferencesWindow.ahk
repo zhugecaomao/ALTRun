@@ -116,6 +116,7 @@ class PreferencesWindow {
         PreferencesWindow._Gap()
         for pair in [["LaunchAtLogin", "Prefs.LaunchAtLogin"], ["ShowTrayIcon", "Prefs.ShowTrayIcon"]
                     , ["HideOnDeactivate", "Prefs.HideOnDeactivate"], ["SwitchToEnglishInput", "Prefs.EnglishInput"]
+                    , ["SpaceToRun", "Prefs.SpaceToRun"]
                     , ["SendToMenu", "Prefs.SendToMenu"], ["StartMenuShortcut", "Prefs.StartMenu"]
                     , ["CheckForUpdates", "Prefs.CheckUpdates"], ["SaveLog", "Prefs.SaveLog"]]
             PreferencesWindow._Check("General." pair[1], pair[2])

@@ -129,6 +129,7 @@ class SchemaMigration {
         general["ShowTrayIcon"]         := pick(config, "ShowTrayIcon", 1)
         general["HideOnDeactivate"]     := pick(config, "HideOnLostFocus", 1)
         general["SwitchToEnglishInput"] := pick(config, "AutoEngIME", 0)
+        general["SpaceToRun"]           := pick(config, "SpaceToRun", 0)
         general["FileManager"]          := pick(config, "FileMgr", "explorer.exe")
         general["SendToMenu"]           := pick(config, "EnableSendTo", 1)
         general["StartMenuShortcut"]    := pick(config, "InStartMenu", 1)

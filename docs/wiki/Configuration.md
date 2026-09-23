@@ -30,6 +30,7 @@
 | ShowTrayIcon | 1 | 显示托盘图标 |
 | HideOnDeactivate | 1 | 搜索窗口失去焦点时隐藏 |
 | SwitchToEnglishInput | 0 | 显示搜索窗口时切换到英文输入法 |
+| SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
 | FileManager | `explorer.exe` | 打开文件夹用的程序, 例如 `C:\Apps\TotalCMD64.exe` |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |

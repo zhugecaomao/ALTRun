@@ -14,6 +14,7 @@
 ;   Tab                              自动补全
 ;   →  (光标在末尾时)                打开操作面板; ← / Esc 返回
 ;   空格 (搜索框为空时)              进入文件搜索模式 (只搜文件, 提示 "搜索文件..."); Backspace 返回
+;   空格 (已输入文字, SpaceToRun)    执行选中项; Shift+空格输入空格
 ;   Ctrl+C (输入框没有选中文字时)    复制当前项
 ;   Ctrl+L                           大字显示
 ;   F3                               编辑当前项 (没有结果时: 用输入的文字新建自定义命令)
@@ -490,8 +491,15 @@ class SearchWindow {
                     SearchWindow.Hide()
                 return 0
             case 0x20:                                                      ; 空格: 空的搜索框里进入文件搜索模式
-                if (!ctrl && !alt && SearchWindow._CanEnterFileMode()) {
+                if (ctrl || alt)
+                    return
+                if (!shift && SearchWindow._CanEnterFileMode()) {
                     SearchWindow._SetFileMode(true)
+                    return 0
+                }
+                ; SpaceToRun (2.x 的同名选项): 已经输入了文字时空格执行选中项, Shift+空格照常输入空格
+                if (!shift && AppSettings.General["SpaceToRun"] && SearchWindow.Input.Value != "" && IsObject(SearchWindow.SelectedItem())) {
+                    SearchWindow._Execute()
                     return 0
                 }
                 return

@@ -150,6 +150,7 @@ class AppSettings {
                 "ShowTrayIcon"        , 1,
                 "HideOnDeactivate"    , 1,
                 "SwitchToEnglishInput", 0,
+                "SpaceToRun"          , 0,                                  ; 空格执行选中项 (Shift+空格输入空格)
                 "FileManager"         , "explorer.exe",
                 "SendToMenu"          , 1,
                 "StartMenuShortcut"   , 1,
