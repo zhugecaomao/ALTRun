@@ -21,14 +21,14 @@
 ; PTTools.ahk 里内嵌的 Base64 数据还原成真正的二进制文件, 放在 Res\ 目录下, 和
 ; Run.bat 引用的文件名 (DOSBox.exe SPF2M.exe) 保持一致。
 ;
-; 设置改成存在 ALTRun.json 的 "PTTools" 节点里, 读写方式和 g_CONFIG/g_GUI 一样,
-; 都走 Src\Core\AppData.ahk 的 AppData.LoadAppData()/AppData.SaveAppData()。字段名比旧版本 (SpanWidth1/
+; 设置存在 ALTRun.json 的 Extensions.PTTools 节点里 (AppSettings.Extension("PTTools")),
+; Settings 直接指向那个 Map, 保存时调用 AppSettings.Save()。字段名比旧版本 (SpanWidth1/
 ; RebarSize1/... 按 GroupBox 编号) 更语义化, 因为是这台机器唯一一份数据, 改名时
 ; 直接手动同步改了 ALTRun.json 里对应的 key, 没有另外写一遍迁移代码。
 ;
-; 用法 (ALTRun.ahk 里):
-;   PTTools() { PTToolsWindow.Show() }             ; Rebar/BRC 计算器
-;   SPF2M()   { PTToolsWindow.ShowSpf2m() }        ; SPF2M 束线型计算器
+; 用法: 系统命令 "PTTools" / "SPF2M" (见 SystemProvider), 或自定义热键里的同名 Action
+;   PTToolsWindow.Show()          ; Rebar/BRC 计算器
+;   PTToolsWindow.ShowSpf2m()     ; SPF2M 束线型计算器
 ;===============================================================================
 
 Class PTToolsWindow {
@@ -105,11 +105,14 @@ Class PTToolsWindow {
     static HotkeysReady := false
     static Spf2mHotkeysReady := false
 
-    ; Called from AppData.LoadAppData() (Src\Core\AppData.ahk), same pattern as g_CONFIG/g_GUI.
+    ; App.Start() 调用: saved 是 AppSettings 里的 Extensions.PTTools, 缺的字段用默认值补上,
+    ; 之后 Settings 和它是同一个 Map, 修改后 AppSettings.Save() 就会写进 ALTRun.json。
     static Load(saved) {
-        PTToolsWindow.Settings := PTToolsWindow.Defaults.Clone()
-        AppData.MergeIntoDefaults(PTToolsWindow.Settings, saved)            ; shared helper, in Src\Core\AppData.ahk
-        return PTToolsWindow.Settings
+        for key, value in PTToolsWindow.Defaults
+            if !saved.Has(key)
+                saved[key] := value
+        PTToolsWindow.Settings := saved
+        return saved
     }
 
     ; "" + 0 throws TypeError in v2 (unlike v1, which silently coerced) - and every
@@ -197,7 +200,7 @@ Class PTToolsWindow {
             S["WinLeft"] := x
             S["WinTop"] := y
         }
-        AppData.SaveAppData()                                               ; Src\Core\AppData.ahk - writes ALTRun.json right away
+        AppSettings.Save()                                                  ; writes ALTRun.json right away
     }
 
     ; ---------------------------------------------------------------------
@@ -443,7 +446,7 @@ Class PTToolsWindow {
             S["Spf2mWinLeft"] := x
             S["Spf2mWinTop"] := y
         }
-        AppData.SaveAppData()
+        AppSettings.Save()
     }
 
     ; ---------------------------------------------------------------------

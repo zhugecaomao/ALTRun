@@ -22,12 +22,12 @@ Class Kanji {
         Kanji._s2t := Map()
         Kanji._t2s := Map()
 
-        file := A_ScriptDir "\Res\Kanji.txt"
-        if !FileExist(file) {
-            g_LOG.Debug("Kanji: Res\Kanji.txt not found, simplified/traditional conversion disabled")
+        dataFile := A_ScriptDir "\Res\Kanji.txt"
+        if !FileExist(dataFile) {
+            Logger.Debug("Kanji: Res\Kanji.txt not found, simplified/traditional conversion disabled")
             return
         }
-        for _, token in StrSplit(FileRead(file, "UTF-8"), " ", "`r`n") {
+        for _, token in StrSplit(FileRead(dataFile, "UTF-8"), " ", "`r`n") {
             if (StrLen(token) != 2)
                 continue
             Kanji._s2t[SubStr(token, 1, 1)] := SubStr(token, 2, 1)
