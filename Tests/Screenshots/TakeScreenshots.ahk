@@ -58,13 +58,12 @@ class Shots {
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
-        Shots.PrimeIcons()
         for scene in Shots.Scenes() {
             if (wanted.Count && !wanted.Has(scene[1]))
                 continue
             Shots.Log("== " scene[1])
-            ; 在刚启动的 Windows 上, 前几分钟里读取图标可能卡住, ALTRun 画不出结果行;
-            ; 这时重新启动 ALTRun 再试
+            ; 在 GitHub 刚启动的 Windows 上, 最开始的几次启动 ALTRun 有时画不出结果行
+            ; (列表里有项目, 窗口没有卡住, 重画也没用; 原因未查明), 这时重新启动 ALTRun 再试
             Loop 4 {
                 try {
                     Shots.Launch(scene[2], scene[3])
@@ -120,18 +119,14 @@ class Shots {
             FileAppend("", Shots.DemoDir "\" relative)
         }
         ; 应用: 只索引这里的快捷方式, 结果和机器上装了什么无关
+        ; (记事本、命令提示符等 Windows 工具是 ALTRun 内置的系统命令, 不用再建)
         appDir := drive "\ALTRun Demo Apps"
         try DirDelete(appDir, true)
         DirCreate(appDir)
-        system := A_WinDir "\System32\"
-        for shortcut in [["记事本", "notepad.exe"], ["计算器", "calc.exe"], ["画图", "mspaint.exe"], ["命令提示符", "cmd.exe"],
-                         ["任务管理器", "taskmgr.exe"], ["控制面板", "control.exe"], ["注册表编辑器", "regedit.exe"],
-                         ["Windows PowerShell", "WindowsPowerShell\v1.0\powershell.exe"], ["远程桌面连接", "mstsc.exe"]] {
-            target := FileExist(system shortcut[2]) ? system shortcut[2] : A_WinDir "\" shortcut[2]
-            if !FileExist(target)
-                target := A_WinDir "\explorer.exe"
-            FileCreateShortcut(target, appDir "\" shortcut[1] ".lnk")
-        }
+        for shortcut in [["远程桌面连接", A_WinDir "\System32\mstsc.exe"],
+                         ["Microsoft Edge", A_ProgramFiles " (x86)\Microsoft\Edge\Application\msedge.exe"]]
+            if FileExist(shortcut[2])
+                FileCreateShortcut(shortcut[2], appDir "\" shortcut[1] ".lnk")
         Shots.AppsDir := appDir
     }
     static AppsDir := ""
@@ -161,25 +156,6 @@ class Shots {
         try FileDelete(path)
         FileAppend(JSON.Stringify(settings, 4), path, "UTF-8")
         try DirDelete(Shots.AppDir "\Data", true)
-    }
-
-    ; 先在这里把演示用到的图标都读一遍 (第一次读很慢), 记下耗时
-    static PrimeIcons() {
-        paths := []
-        Loop Files, Shots.AppsDir "\*.lnk"
-            paths.Push(A_LoopFileFullPath)
-        Loop Files, Shots.DemoDir "\*", "FDR"
-            paths.Push(A_LoopFileFullPath)
-        start := A_TickCount
-        info := Buffer(A_PtrSize + 688, 0)                                  ; SHFILEINFOW
-        for path in paths {
-            t := A_TickCount
-            if DllCall("shell32\SHGetFileInfoW", "WStr", path, "UInt", 0, "Ptr", info, "UInt", info.Size, "UInt", 0x100)   ; SHGFI_ICON
-                DllCall("DestroyIcon", "Ptr", NumGet(info, 0, "Ptr"))
-            if (A_TickCount - t > 1000)
-                Shots.Log("icon: " path " took " (A_TickCount - t) // 1000 " s")
-        }
-        Shots.Log("icons primed in " (A_TickCount - start) // 1000 " s")
     }
 
     ; 纯色背景铺满屏幕, 挡住桌面上的其它窗口 (半透明主题会透出后面的内容)。
