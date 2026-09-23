@@ -142,22 +142,22 @@ class JSON {
     }
 
     static _Array(text, &pos) {
-        arr := Array()
+        items := Array()
         pos++                                       ; 跳过 [
         JSON._Space(text, &pos)
         if (SubStr(text, pos, 1) = "]") {
             pos++
-            return arr
+            return items
         }
         loop {
-            arr.Push(JSON._Value(text, &pos))
+            items.Push(JSON._Value(text, &pos))
             JSON._Space(text, &pos)
             ch := SubStr(text, pos, 1)
             pos++
             if (ch = ",")
                 continue
             if (ch = "]")
-                return arr
+                return items
             throw Error("JSON: 位置 " (pos - 1) " 处缺少 ',' 或 ']'")
         }
     }

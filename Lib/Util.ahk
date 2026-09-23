@@ -68,10 +68,10 @@ class Path {
         raw := StrReplace(raw, "%AppData%" , A_AppData)
         raw := StrReplace(raw, "%UserProfile%", EnvGet("UserProfile"))
 
-        ; 裸文件名: 去 PATH 里搜
+        ; 裸文件名: 去 PATH 里搜, 没写扩展名时按 .exe 找 ("notepad" -> notepad.exe)
         if (!FileExist(raw) && !InStr(raw, "\")) {
             buf := Buffer(260 * 2)
-            if DllCall("kernel32\SearchPathW", "Ptr", 0, "WStr", raw, "WStr", "",
+            if DllCall("kernel32\SearchPathW", "Ptr", 0, "WStr", raw, "WStr", ".exe",
                        "UInt", buf.Size // 2, "Ptr", buf, "Ptr", 0)
                 raw := StrGet(buf, "UTF-16")
         }
@@ -148,6 +148,41 @@ class Win {
                     "Int*", rounded ? ROUND : SQUARE, "UInt", 4)
     }
 
+    ; Win11 窗口边框颜色, color 为 "RRGGBB"
+    static SetBorderColor(hwnd, color) {
+        static ATTR := 34
+        bgr := Win.ColorToBgr(color)
+        try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hwnd, "UInt", ATTR,
+                    "UInt*", bgr, "UInt", 4)
+    }
+
+    ; "RRGGBB" / "#RRGGBB" -> GDI 用的 0x00BBGGRR
+    static ColorToBgr(color) {
+        color := LTrim(color, "#")
+        rgb := Integer("0x" color)
+        return ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF)
+    }
+
+    ; 按系统 DPI 缩放像素值 (窗口用 -DPIScale 创建, 自己控制缩放)
+    static Scale(px) {
+        return Round(px * A_ScreenDPI / 96)
+    }
+
+    ; 鼠标所在显示器的工作区, 返回 {Left, Top, Right, Bottom}
+    static WorkAreaAtMouse() {
+        CoordMode("Mouse", "Screen")
+        MouseGetPos(&mouseX, &mouseY)
+        Loop MonitorGetCount() {
+            MonitorGet(A_Index, &left, &top, &right, &bottom)
+            if (mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom) {
+                MonitorGetWorkArea(A_Index, &left, &top, &right, &bottom)
+                return {Left: left, Top: top, Right: right, Bottom: bottom}
+            }
+        }
+        MonitorGetWorkArea(MonitorGetPrimary(), &left, &top, &right, &bottom)
+        return {Left: left, Top: top, Right: right, Bottom: bottom}
+    }
+
     ; Win10/11 深色标题栏
     static SetDarkTitleBar(hwnd, dark := true) {
         static ATTR := 20
@@ -197,8 +232,6 @@ class Win {
 ;===============================================================================
 class Arr {
     ; value 在 arr 里第一次出现的位置(下标从 1 开始), 找不到就返回 0。
-    ; 原来叫 GetArrayIndex(), 在 ALTRun.ahk/Src\UI\OptionsWindow.ahk 两处都用到,
-    ; 挪到这个共用工具类里而不是随便挂在某一个模块下面。
     static IndexOf(value, arr) {
         for index, element in arr
             if (element = value)
@@ -301,5 +334,27 @@ class Calc {
     ; 千分位
     static Thousands(num) {
         return RegExReplace(num "", "\G\d+?(?=(\d{3})+(?:\D|$))", "$0,")
+    }
+}
+
+
+;===============================================================================
+; Url - 网址工具
+;===============================================================================
+class Url {
+    ; 按 UTF-8 做百分号编码, 用于把搜索词拼进 {query} 网址
+    static Encode(text) {
+        out := ""
+        for ch in StrSplit(text) {
+            if RegExMatch(ch, "^[0-9A-Za-z\-_.~]$") {
+                out .= ch
+                continue
+            }
+            buf := Buffer(8, 0)
+            len := StrPut(ch, buf, "UTF-8") - 1
+            Loop len
+                out .= Format("%{:02X}", NumGet(buf, A_Index - 1, "UChar"))
+        }
+        return out
     }
 }
