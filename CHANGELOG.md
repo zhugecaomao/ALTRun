@@ -14,7 +14,7 @@
 
 第一次运行时会自动从旧版本的 `ALTRun.ini` 导入设置、自定义命令和热键, 保存到新的 `ALTRun.json`;
 `ALTRun.ini` 保持不变, 想退回旧版本时放回旧的 `ALTRun.exe` 即可。呼出热键、开机启动、"发送到" 菜单都会沿用。
-旧版本的内置命令由新的系统命令取代; SPF2M 的 `DOSBox.exe`、`SPF2M.exe`、`SDL.dll`、`SDL_net.dll` 请放到 `Resources\` 文件夹。
+旧版本的内置命令由新的系统命令取代; SPF2M 需要的 `DOSBox.exe` 等文件已经包含在 `Resources\` 里。
 新的快捷键和用法见 [README](https://github.com/zhugecaomao/ALTRun#快捷键) 和 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)。
 
 ### 新增

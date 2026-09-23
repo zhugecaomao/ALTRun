@@ -78,4 +78,4 @@
 ## PT 工具箱
 预应力设计用的小工具, 输入 `PTTools` / `SPF2M` 或用自定义热键打开:
 - **PT Tools**: 钢筋 / BRC 面积计算器, 以及算式计算
-- **SPF2M**: 在 DOSBox 里运行 SPF2M 束线型计算程序, 可以自动输入参数。需要把 `DOSBox.exe`、`SPF2M.exe`、`SDL.dll`、`SDL_net.dll` 放在 `Resources\` 文件夹里
+- **SPF2M**: 在 DOSBox 里运行 SPF2M 束线型计算程序, 可以自动输入参数。需要的 `DOSBox.exe`、`SPF2M.exe`、`SDL.dll`、`SDL_net.dll` 已经随程序发布在 `Resources\` 文件夹里
