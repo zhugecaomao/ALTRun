@@ -31,6 +31,7 @@
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
+#Include %A_ScriptDir%\..\Src\Providers\ClipboardProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ApplicationProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\CustomCommandProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\SnippetProvider.ahk
@@ -39,6 +40,7 @@
 #Include %A_ScriptDir%\..\Src\Providers\WebSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\FileSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\TerminalProvider.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
@@ -47,6 +49,7 @@
 Logger.Enabled := false
 I18n.Init("en")
 AppSettings.Data := AppSettings.Defaults()                                  ; 内存里的默认设置, 不读写文件
+AppSettings.Feature("Clipboard")["Persist"] := 0                           ; 剪贴板历史测试不写盘
 
 TestRunner.Run()
 
@@ -55,7 +58,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -116,6 +119,8 @@ class Tests {
         TestRunner.True("SearchQuery.prefix", q.MatchPrefix(">", &term) && term = "ipconfig /all")
         q := SearchQuery("g")
         TestRunner.True("SearchQuery.keyword only", q.MatchKeyword(["g"], &term) && term = "" && !q.HasRest)
+        q := SearchQuery("clip ")
+        TestRunner.True("SearchQuery.keyword + space", q.MatchKeyword(["clip"], &term) && term = "" && q.HasRest)
     }
 
     static SchemaMigration() {
@@ -238,6 +243,48 @@ class Tests {
         TestRunner.True("Knowledge.boost prefix", Knowledge.Boost("not", "app:notepad") > 20)
         TestRunner.Equal("Knowledge.history", Knowledge.History[1], "no")
         TestRunner.Equal("Knowledge.history dedupe", Knowledge.History.Length, 1)
+    }
+
+    static Clipboard() {
+        eq := (n, a, e) => TestRunner.Equal("Clipboard." n, a, e)
+        ClipboardProvider.Entries := []
+        eq("empty", ClipboardProvider.Search(SearchQuery("clip")).Length, 1)
+        eq("empty invalid", ClipboardProvider.Search(SearchQuery("clip"))[1].Valid, false)
+        ClipboardProvider.Add("first entry", "notepad.exe")
+        ClipboardProvider.Add("second entry", "code.exe")
+        ClipboardProvider.Add("first entry", "notepad.exe")                 ; 重复内容移到最前面
+        eq("dedupe", ClipboardProvider.Entries.Length, 2)
+        eq("newest first", ClipboardProvider.Entries[1]["Text"], "first entry")
+        eq("blank ignored", ClipboardProvider.Add("  `r`n ", ""), false)
+        items := ClipboardProvider.Search(SearchQuery("clip"))
+        eq("list + clear item", items.Length, 3)
+        eq("clear item last", items[3].Title, I18n.T("Clipboard.Clear"))
+        eq("filter", ClipboardProvider.Search(SearchQuery("clip second")).Length, 1)
+        eq("multi token filter", ClipboardProvider.Search(SearchQuery("clip ent sec")).Length, 1)
+        eq("keyword only", ClipboardProvider.Search(SearchQuery("second")).Length, 0)
+        TestRunner.True("Clipboard.exclusive after space", ClipboardProvider.Search(SearchQuery("clip "))[1].Exclusive)
+        TestRunner.True("Clipboard.not exclusive without space", !ClipboardProvider.Search(SearchQuery("clip"))[1].Exclusive)
+        mixed := [ResultItem("a", "", {Exclusive: true}), ResultItem("b")]
+        eq("registry keeps exclusive", ProviderRegistry._KeepExclusive(mixed).Length, 1)
+        AppSettings.Feature("Clipboard")["MaxItems"] := 2
+        ClipboardProvider.Add("third", "")
+        eq("max items", ClipboardProvider.Entries.Length, 2)
+        AppSettings.Feature("Clipboard")["MaxItems"] := 200
+        ClipboardProvider.Remove("third")
+        eq("remove", ClipboardProvider.Entries[1]["Text"], "first entry")
+        ClipboardProvider.PauseRecording(10000)
+        ClipboardProvider._OnChange(1)
+        eq("paused", ClipboardProvider.Entries.Length, 1)
+        ClipboardProvider.Entries := []
+    }
+
+    static SnippetExpander() {
+        eq := (n, a, e) => TestRunner.Equal("SnippetExpander." n, a, e)
+        eq("prefix", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x"), ";"), ";sig")
+        eq("no keyword", SnippetExpander.Abbreviation(Map("Keyword", "", "Text", "x"), ";"), "")
+        eq("disabled", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x", "AutoExpand", 0), ";"), "")
+        eq("space", SnippetExpander.Abbreviation(Map("Keyword", "a b", "Text", "x"), ";"), "")
+        eq("no prefix", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x"), ""), "sig")
     }
 
     static Misc() {

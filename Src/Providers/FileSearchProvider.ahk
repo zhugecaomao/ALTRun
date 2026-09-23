@@ -29,7 +29,7 @@ class FileSearchProvider {
         if !matched
             return []
         if (term = "")
-            return [ResultItem(I18n.T("Files.Keyword"), "'... / " options["Keywords"][1] " ...", {Icon: "folder:", Valid: false, Score: 150})]
+            return [ResultItem(I18n.T("Files.Keyword"), "'... / " options["Keywords"][1] " ...", {Icon: "folder:", Valid: false, Score: 150, Exclusive: true})]
 
         results := []
         for filePath in FileSearchProvider.Query(term, options["MaxResults"]) {
@@ -37,12 +37,13 @@ class FileSearchProvider {
             SplitPath(filePath, &name)
             results.Push(ResultItem(name, filePath, {
                 Kind: isFolder ? "folder" : "file", Arg: filePath, Icon: filePath,
-                Uid: "file:" StrLower(filePath), Score: 150 - A_Index * 0.01
+                Uid: "file:" StrLower(filePath), Score: 150 - A_Index * 0.01, Exclusive: true
             }))
         }
         if !results.Length {
             item := FileSearchProvider.FallbackItem(term)
             item.Score := 150
+            item.Exclusive := true
             results.Push(item)
         }
         return results

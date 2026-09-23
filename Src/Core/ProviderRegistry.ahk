@@ -9,6 +9,7 @@
 ;
 ; Search() 把所有功能的结果合在一起, 加上 Knowledge 的学习加分后按分数排序,
 ; 同一个 Uid 只保留分数最高的一条; 一条都没有时显示兜底项 (WebSearch 的 Fallbacks)。
+; 某个功能进入关键字模式时 (结果带 Exclusive, 例如 "clip "), 只显示这些结果。
 ;
 ; 用法:
 ;   ProviderRegistry.Register(ApplicationProvider)    启动时按顺序注册
@@ -64,6 +65,7 @@ class ProviderRegistry {
             }
         }
 
+        results := ProviderRegistry._KeepExclusive(results)
         results := ProviderRegistry._Dedupe(ProviderRegistry.SortByScore(results))
         if (results.Length > ProviderRegistry.MaxResults)
             results.Length := ProviderRegistry.MaxResults
@@ -83,6 +85,14 @@ class ProviderRegistry {
         for line in StrSplit(RTrim(Sort(lines, "N R"), "`n"), "`n")
             sorted.Push(items[Integer(StrSplit(line, "`t")[2])])
         return sorted
+    }
+
+    static _KeepExclusive(items) {
+        exclusive := []
+        for item in items
+            if item.Exclusive
+                exclusive.Push(item)
+        return exclusive.Length ? exclusive : items
     }
 
     static _Dedupe(items) {

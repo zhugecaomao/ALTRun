@@ -127,19 +127,22 @@ class ActionCatalog {
         App.Notify(I18n.T("Search.Copied", ActionCatalog._Preview(text)))
     }
 
-    ; 把文字粘贴到呼出 ALTRun 之前的那个窗口。
-    ; mode: "Clipboard" = 临时借用剪贴板 + Ctrl+V (之后还原); "Type" = 逐字输入
-    static PasteText(text, mode := "", delay := 0) {
+    ; 把文字粘贴到呼出 ALTRun 之前的那个窗口 (focusPrevious = false 时粘贴到当前窗口)。
+    ; 粘贴方式见 Features.Snippets.PasteMode: "Clipboard" = 临时借用剪贴板 + Ctrl+V
+    ; (之后还原, 这段时间剪贴板历史不记录); "Type" = 逐字输入
+    static PasteText(text, focusPrevious := true) {
         snippetSettings := AppSettings.Feature("Snippets")
-        mode  := (mode != "") ? mode : snippetSettings["PasteMode"]
-        delay := delay ? delay : snippetSettings["PasteDelay"]
+        mode  := snippetSettings["PasteMode"]
+        delay := snippetSettings["PasteDelay"]
 
-        App.FocusPreviousWindow()
+        if focusPrevious
+            App.FocusPreviousWindow()
         Win.WaitModifiersUp()
         if (mode = "Type") {
             SendInput("{Text}" text)
             return true
         }
+        ClipboardProvider.PauseRecording(delay + 1000)
         savedClipboard := ClipboardAll()
         A_Clipboard := ""
         A_Clipboard := text

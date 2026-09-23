@@ -21,9 +21,9 @@ class TerminalProvider {
             return []
         icon := "res:imageres.dll,-5323"
         if (command = "")
-            return [ResultItem(I18n.T("Terminal.Empty"), options["Prefix"] " ...", {Icon: icon, Valid: false, Score: 150})]
+            return [ResultItem(I18n.T("Terminal.Empty"), options["Prefix"] " ...", {Icon: icon, Valid: false, Score: 150, Exclusive: true})]
         return [ResultItem(I18n.T("Terminal.Run", command), options["Shell"], {
-            Icon: icon, Score: 150, Uid: "terminal:" StrLower(command), Arg: command,
+            Icon: icon, Score: 150, Uid: "terminal:" StrLower(command), Arg: command, Exclusive: true,
             OnRun: (*) => TerminalProvider.RunCommand(command),
             Actions: [ResultItem(I18n.T("Action.RunAsAdmin"), "", {Icon: "res:imageres.dll,-78", OnRun: (*) => TerminalProvider.RunCommand(command, true)})]
         })]

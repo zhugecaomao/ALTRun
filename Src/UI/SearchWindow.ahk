@@ -131,6 +131,8 @@ class SearchWindow {
         SearchWindow.Gui.Show("x" SearchWindow._posX " y" SearchWindow._posY " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
         try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
         SearchWindow.Input.Focus()
+        len := StrLen(SearchWindow.Input.Value)
+        SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)                ; 获得焦点时 Edit 会全选, 把光标放回末尾
         if AppSettings.General["SwitchToEnglishInput"]
             Win.SwitchToEnglishIME()
     }

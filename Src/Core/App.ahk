@@ -3,7 +3,7 @@
 ;-------------------------------------------------------------------------------
 ; ALTRun.ahk 只负责 #Include 和调用 App.Start(), 启动顺序都在这里:
 ;   设置 -> 语言 -> 学习记录 -> 主题 -> 搜索功能 -> 搜索窗口 -> 托盘 -> 热键
-;   -> 扩展 (QuickSwitch / AutoDate / 自定义热键) -> 开机启动等快捷方式 -> 命令行参数
+;   -> 扩展 (片段自动展开 / QuickSwitch / AutoDate) -> 开机启动等快捷方式 -> 命令行参数
 ;
 ; 命令行参数:
 ;   -Startup        开机自启动时使用, 不弹出搜索窗口
@@ -32,7 +32,7 @@ class App {
         Knowledge.Load()
         ThemeManager.Load(AppSettings.Appearance["Theme"])
 
-        for provider in [ApplicationProvider, CustomCommandProvider, SnippetProvider, SystemProvider
+        for provider in [ClipboardProvider, ApplicationProvider, CustomCommandProvider, SnippetProvider, SystemProvider
                         , CalculatorProvider, WebSearchProvider, FileSearchProvider, TerminalProvider]
             ProviderRegistry.Register(provider)
         ProviderRegistry.InitAll()
@@ -40,6 +40,7 @@ class App {
         SearchWindow.Create()
         App._CreateTrayMenu()
         App._RegisterHotkeys()
+        SnippetExpander.Init()
         QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))
         AutoDate.Init(AppSettings.Extension("AutoDate"))
         PTToolsWindow.Load(AppSettings.Extension("PTTools"))
@@ -165,6 +166,15 @@ class App {
             }
         }
 
+        clipboard := AppSettings.Feature("Clipboard")
+        if (clipboard["Enabled"] && clipboard["Hotkey"] != "") {
+            try {
+                Hotkey(clipboard["Hotkey"], (*) => SearchWindow.Show(AppSettings.Feature("Clipboard")["Keyword"] " "))
+            } catch as e {
+                Logger.Error("App: cannot register clipboard hotkey - " e.Message)
+            }
+        }
+
         ; 自定义热键: Key -> 系统命令 Action, WinTitle 非空时只在该窗口里生效
         for entry in AppSettings.Hotkeys {
             if !(entry is Map) || !entry.Has("Key") || !entry.Has("Action")
@@ -232,6 +242,7 @@ class App {
     ; OnExit 回调返回非零值会取消退出, 所以这里不返回任何值
     static _OnExit() {
         Knowledge.Save()
+        ClipboardProvider.Save()
         Logger.Flush()
     }
 }

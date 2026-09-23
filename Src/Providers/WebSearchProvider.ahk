@@ -27,6 +27,7 @@ class WebSearchProvider {
             if query.MatchKeyword([engine["Keyword"]], &term) {
                 item := WebSearchProvider.ItemFor(engine, term)
                 item.Score := 150
+                item.Exclusive := query.HasRest
                 results.Push(item)
             } else if (!query.HasRest && StrLen(query.Text) >= 2 && FuzzyMatcher.Score(query.Text, engine["Title"]) >= 80) {
                 item := WebSearchProvider.ItemFor(engine, "")                ; 输入引擎名称 -> 提示 "g " 补全

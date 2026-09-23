@@ -2,6 +2,7 @@
 ; SearchQuery.ahk - 解析搜索框里的文字 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; "g hello world" -> Keyword = "g", Rest = "hello world", HasRest = true
+; "clip "         -> Keyword = "clip", Rest = "", HasRest = true   (关键字后面有空格)
 ; "notepad"       -> Keyword = "notepad", Rest = "", HasRest = false
 ;
 ; 用法:
@@ -13,9 +14,10 @@ class SearchQuery {
     __New(raw) {
         this.Raw  := raw
         this.Text := Trim(raw)
-        spacePos := InStr(this.Text, " ")
-        this.Keyword := StrLower(spacePos ? SubStr(this.Text, 1, spacePos - 1) : this.Text)
-        this.Rest    := spacePos ? Trim(SubStr(this.Text, spacePos + 1)) : ""
+        leading := LTrim(raw)                                               ; 保留结尾空格: "clip " 表示已经进入关键字模式
+        spacePos := InStr(leading, " ")
+        this.Keyword := StrLower(spacePos ? SubStr(leading, 1, spacePos - 1) : this.Text)
+        this.Rest    := spacePos ? Trim(SubStr(leading, spacePos + 1)) : ""
         this.HasRest := spacePos > 0
     }
 
