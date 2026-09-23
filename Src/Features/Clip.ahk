@@ -8,7 +8,7 @@
 ;     {date} {time} {datetime} {clipboard} {arg} {cursor}
 ;
 ; 用法:
-;   Clip.PasteClipText(rawText)      ; RunCommand() 执行 Clip 类型命令时调用
+;   Clip.PasteClipText(rawText)      ; CommandRunner.Execute() 执行 Clip 类型命令时调用
 ;   Clip.ClipPreview(text)           ; 主列表/状态栏里显示的单行预览
 ;   Clip.EditClipText()              ; 命令管理器里 "..." 按钮打开的多行编辑器
 ;
@@ -74,7 +74,7 @@ Class Clip {
         return WinActive("ahk_id " target) ? true : false
     }
 
-    static PasteClipText(rawText) {                                         ; Main entry, called by RunCommand for type Clip
+    static PasteClipText(rawText) {                                         ; Main entry, called by CommandRunner.Execute() for type Clip
         text := Clip.ExpandClipPlaceholders(Clip.UnescapeClipText(rawText))
         if (text = "") {
             g_LOG.Debug("PasteClipText: Empty clip text, nothing to paste")
@@ -150,7 +150,7 @@ Class Clip {
     ;===========================================================================
     ; 一键文本转换: 直接在当前剪贴板内容上转换并写回, 配合 Ctrl+V 使用。
     ; 每个转换都是 Func | ClipXxx | ... 内置命令, 见 ALTRun.ahk 里同名的裸全局
-    ; 函数外壳 (RunCommand 的 FUNC 类型只认裸函数名, 不认 Class.Method)。
+    ; 函数外壳 (CommandRunner.Execute() 的 FUNC 类型只认裸函数名, 不认 Class.Method)。
     ;===========================================================================
 
     ; 转换前的公共检查 + 转换后的公共反馈, 每个具体转换只需要传一个处理函数。

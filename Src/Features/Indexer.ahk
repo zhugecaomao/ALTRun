@@ -8,7 +8,7 @@
 ;
 ; Rebuild() 不一样: 它就是内置命令 "Func | Reindex | ..." 本身, 还登记在
 ; FuncList 和托盘/右键菜单里, 所以 ALTRun.ahk 里仍然留了一个裸的 Reindex(*)
-; 外壳调用 Indexer.Rebuild() - 原因同其它已抽出的模块, RunCommand() 的
+; 外壳调用 Indexer.Rebuild() - 原因同其它已抽出的模块, CommandRunner.Execute() 的
 ; %cmdPath%() 和 Menu.Add() 的回调都只认裸的全局函数名, 不认 Class.Method。
 ;===============================================================================
 
