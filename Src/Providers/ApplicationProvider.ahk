@@ -9,8 +9,12 @@
 ; 才在后台重新扫描; 托盘菜单 "重建索引" 或系统命令 "Rebuild ALTRun Index"
 ; 会立即重建。
 ;
+; 不需要的应用: 在搜索结果里按 Ctrl+Del (或右键 "删除") 把它加入 Hidden 列表, 不再显示,
+; 重建索引后也不会回来 (不会卸载程序, 也不改 AppIndex.json)。偏好设置 -> 应用搜索里
+; 删掉 Hidden 的一行即可恢复。
+;
 ; 设置 (ALTRun.json -> Features.Applications):
-;   Folders / FileTypes / Depth / Exclude / StoreApps / MatchPinyin / RefreshMinutes
+;   Folders / FileTypes / Depth / Exclude / Hidden / StoreApps / MatchPinyin / RefreshMinutes
 ;===============================================================================
 
 class ApplicationProvider {
@@ -18,7 +22,7 @@ class ApplicationProvider {
     static IndexFile := A_ScriptDir "\Data\AppIndex.json"
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := ""
-    static _keys := [], _keysFor := 0, _lastNeedle := "", _lastMatches := []
+    static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []
 
     static Init() {
         if !ApplicationProvider._LoadCache() || ApplicationProvider._CacheExpired()
@@ -30,8 +34,8 @@ class ApplicationProvider {
         needle := StrLower(query.Text)
         if (needle = "")
             return []
-        apps := ApplicationProvider.Apps
         keys := ApplicationProvider._SearchKeys()
+        apps := ApplicationProvider._entries
 
         ; 继续输入 (新输入以上一次的输入开头) 时只需要在上一次匹配到的里面找。
         ; 3 个字母以下时 "按顺序出现的字母" 规则不生效, 那时的结果不能用来缩小范围。
@@ -59,26 +63,70 @@ class ApplicationProvider {
             isStore := InStr(entry["Target"], "shell:AppsFolder\") = 1
             subtitle := isStore ? I18n.T("App.Subtitle.Store") : (entry["Detail"] != "") ? entry["Detail"] : entry["Target"]
             results.Push(ResultItem(entry["Title"], subtitle, {
-                Kind: "file", Arg: entry["Target"],
+                Kind: "file", Arg: entry["Target"], Source: entry,
                 Icon: entry["Target"], Uid: "app:" StrLower(entry["Target"]), Score: scores[index] + 10
             }))
         }
         return results
     }
 
-    ; 每个应用的搜索 Key (名称 + 拼音首字母), Apps 换成新数组时重新计算
+    ; 没有隐藏的应用 (_entries) 和它们的搜索 Key (名称 + 拼音首字母);
+    ; Apps 换成新数组或隐藏列表变化时重新计算
     static _SearchKeys() {
-        if (ApplicationProvider._keysFor = ObjPtr(ApplicationProvider.Apps))
+        version := ObjPtr(ApplicationProvider.Apps) "|" ApplicationProvider._HiddenSignature()
+        if (ApplicationProvider._keysFor = version)
             return ApplicationProvider._keys
-        keys := []
+        hidden := ApplicationProvider._HiddenTargets()
+        entries := [], keys := []
         for entry in ApplicationProvider.Apps {
+            if hidden.Has(entry["Target"])
+                continue
             pinyinText := entry.Has("Search") ? entry["Search"] : ""
+            entries.Push(entry)
             keys.Push([FuzzyMatcher.Key(entry["Title"]), (pinyinText != "") ? FuzzyMatcher.Key(pinyinText) : ""])
         }
-        ApplicationProvider._keys := keys
-        ApplicationProvider._keysFor := ObjPtr(ApplicationProvider.Apps)
+        ApplicationProvider._entries := entries, ApplicationProvider._keys := keys
+        ApplicationProvider._keysFor := version
         ApplicationProvider._lastNeedle := "", ApplicationProvider._lastMatches := []
         return keys
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 隐藏不需要的应用 (搜索结果里 Ctrl+Del / 右键 "删除")
+    ;---------------------------------------------------------------------------
+    static DeleteItem(item) {
+        return ApplicationProvider.Hide(item.Arg)
+    }
+
+    static DeletePrompt(item) {
+        return I18n.T("App.ConfirmHide", item.Title)
+    }
+
+    static Hide(target) {
+        hidden := AppSettings.Feature("Applications")["Hidden"]
+        if ApplicationProvider._HiddenTargets().Has(target)
+            return true
+        hidden.Push(target)
+        return AppSettings.Save()
+    }
+
+    ; 隐藏列表 -> Map (不区分大小写), 列表变化 (换了数组或条数变了) 时重新生成
+    static _HiddenTargets() {
+        static cache := "", cacheFor := ""
+        signature := ApplicationProvider._HiddenSignature()
+        if (cacheFor != signature) {
+            cache := Map()
+            cache.CaseSense := "Off"
+            for target in AppSettings.Feature("Applications")["Hidden"]
+                cache[target] := true
+            cacheFor := signature
+        }
+        return cache
+    }
+
+    static _HiddenSignature() {
+        hidden := AppSettings.Feature("Applications")["Hidden"]
+        return ObjPtr(hidden) ":" hidden.Length
     }
 
     ; 重新扫描, 返回找到的应用数量

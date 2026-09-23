@@ -375,7 +375,7 @@ class SearchWindow {
         query := SearchWindow._CurrentQuery()
         wasVisible := SearchWindow.IsVisible()
         SearchWindow._keepOpen := true
-        answer := MsgBox(I18n.T("Search.ConfirmDelete", item.Title), App.Name, "YesNo Icon! Default2" (wasVisible ? " Owner" SearchWindow.Gui.Hwnd : ""))
+        answer := MsgBox(ActionCatalog.DeletePrompt(item), App.Name, "YesNo Icon! Default2" (wasVisible ? " Owner" SearchWindow.Gui.Hwnd : ""))
         SearchWindow._keepOpen := false
         if (answer = "Yes")
             SearchWindow._SafeRun(() => ActionCatalog.DeleteItem(item))
