@@ -6,11 +6,15 @@
 ;   Ctrl+Enter   文件/文件夹: 在文件管理器中显示;  文字: 粘贴到前台窗口
 ;   Alt+Enter    复制 (路径 / 网址 / 文字)
 ;   →            打开操作面板, 列出这一项全部可用的操作 (ListFor)
+;   F3           编辑这一项 (EditItem): 自定义命令 / 片段 / 搜索引擎 直接修改;
+;                应用 / 文件 / 文件夹 / 网址 新建一条自定义命令 (预先填好)
+;   Ctrl+Del     删除这一项 (DeleteItem): 自定义命令 / 片段 / 搜索引擎 / 剪贴板历史
 ;
 ; 用法:
 ;   ActionCatalog.RunDefault(item)
 ;   ActionCatalog.RunModifier(item, "ctrl" | "alt")
 ;   ActionCatalog.ListFor(item)           -> [ResultItem...] 操作面板的内容
+;   ActionCatalog.CanEdit(item) / EditItem(item) / CanDelete(item) / DeleteItem(item)
 ;   ActionCatalog.OpenFile(path) / OpenFolder(path) / Reveal(path) / CopyText(text) / PasteText(text) ...
 ;===============================================================================
 
@@ -75,10 +79,54 @@ class ActionCatalog {
         for extra in item.Actions
             list.Push(extra)
 
-        if ((item.Kind = "file" || item.Kind = "folder") && item.Provider != "CustomCommands")
-            add("Action.AddCommand", "res:imageres.dll,-2", (*) => CustomCommandProvider.AddFromPath(target, item.Title))
+        if ActionCatalog._ProviderCan(item, "EditItem")
+            add("Action.Edit", "res:imageres.dll,-5306", (*) => SearchWindow.EditItem(item), "F3")
+        else if ActionCatalog.CanEdit(item)
+            add("Action.AddCommand", "res:imageres.dll,-2", (*) => SearchWindow.EditItem(item), "F3")
+        if ActionCatalog.CanDelete(item)
+            add("Action.Delete", "res:shell32.dll,-240", (*) => SearchWindow.DeleteItem(item), "Ctrl+Del")
         add("Action.LargeType", "res:imageres.dll,-183", (*) => LargeType.Show(item.DisplayText()), "Ctrl+L")
         return list
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 编辑 / 删除 (交给结果所属的 Provider 的 EditItem / DeleteItem)
+    ;---------------------------------------------------------------------------
+    static CanEdit(item) {
+        return ActionCatalog._ProviderCan(item, "EditItem") || (item.Valid && item.Arg != "" && RegExMatch(item.Kind, "^(file|folder|url)$"))
+    }
+
+    static CanDelete(item) {
+        return ActionCatalog._ProviderCan(item, "DeleteItem")
+    }
+
+    ; 返回 true = 已保存修改
+    static EditItem(item) {
+        if ActionCatalog._ProviderCan(item, "EditItem")
+            return ProviderRegistry.ById(item.Provider).EditItem(item)
+        if ActionCatalog.CanEdit(item)
+            return ActionCatalog.AddAsCommand(item)
+        return false
+    }
+
+    static DeleteItem(item) {
+        if !ActionCatalog.CanDelete(item)
+            return false
+        return ProviderRegistry.ById(item.Provider).DeleteItem(item)
+    }
+
+    ; 应用 / 文件 / 文件夹 / 网址 -> 打开编辑对话框新建一条自定义命令 (可以再加关键字等)
+    static AddAsCommand(item) {
+        commandType := (item.Kind = "folder") ? "Folder" : (item.Kind = "url") ? "Url" : "File"
+        return CustomCommandProvider.Edit("", Map("Title", item.Title, "Type", commandType, "Target", item.Arg, "Arguments", item.Arguments))
+    }
+
+    ; 结果带着 Source (设置里对应的那一条), 且所属 Provider 实现了 method 时才能编辑 / 删除
+    static _ProviderCan(item, method) {
+        if (item.Provider = "" || !IsObject(item.Source))
+            return false
+        provider := ProviderRegistry.ById(item.Provider)
+        return IsObject(provider) && HasMethod(provider, method)
     }
 
     ;---------------------------------------------------------------------------

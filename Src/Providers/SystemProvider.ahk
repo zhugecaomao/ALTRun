@@ -35,8 +35,9 @@ class SystemProvider {
 
     static Search(query) {
         results := []
+        needle := StrLower(query.Text)
         for command in SystemProvider.Commands() {
-            score := FuzzyMatcher.Best(query.Text, [command["Title"], command["Id"], command["English"], command["Pinyin"]])
+            score := FuzzyMatcher.BestKey(needle, command["Keys"])
             if (score <= 0)
                 continue
             results.Push(ResultItem(command["Title"], command["Subtitle"], {
@@ -77,7 +78,9 @@ class SystemProvider {
         list := []
         add(id, titleKey, icon, fn, confirm := false, subtitleKey := "Sys.Subtitle") {
             title := I18n.T(titleKey)
-            list.Push(Map("Id", id, "Title", title, "English", I18n.Strings[titleKey][1], "Pinyin", Pinyin.Initials(title),
+            english := I18n.Strings[titleKey][1], pinyinText := Pinyin.Initials(title)
+            keys := [FuzzyMatcher.Key(title), FuzzyMatcher.Key(id), (english != title) ? FuzzyMatcher.Key(english) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]
+            list.Push(Map("Id", id, "Title", title, "English", english, "Keys", keys,
                 "Subtitle", I18n.T(subtitleKey), "Icon", icon, "Run", fn, "Confirm", confirm))
         }
         tool(id, titleKey, target, arguments := "", icon := "") {

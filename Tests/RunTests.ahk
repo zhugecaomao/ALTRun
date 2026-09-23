@@ -16,6 +16,7 @@
 #Include %A_ScriptDir%\..\Lib\Util.ahk
 #Include %A_ScriptDir%\..\Lib\TextTools.ahk
 #Include %A_ScriptDir%\..\Lib\Kanji.ahk
+#Include %A_ScriptDir%\..\Lib\Everything.ahk
 #Include %A_ScriptDir%\..\Lib\Dialogs.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
@@ -27,6 +28,7 @@
 #Include %A_ScriptDir%\..\Src\Core\Knowledge.ahk
 #Include %A_ScriptDir%\..\Src\Core\ActionCatalog.ahk
 #Include %A_ScriptDir%\..\Src\Core\ProviderRegistry.ahk
+#Include %A_ScriptDir%\..\Src\Core\FileIndex.ahk
 #Include %A_ScriptDir%\..\Src\UI\ThemeManager.ahk
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
@@ -48,6 +50,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
 
+OnError((err, mode) => TestRunner.OnUncaught(err, mode))                                             ; 运行错误时输出并退出, 不弹对话框卡住
 Logger.Enabled := false
 I18n.Init("en")
 AppSettings.Data := AppSettings.Defaults()                                  ; 内存里的默认设置, 不读写文件
@@ -60,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -69,6 +72,11 @@ class TestRunner {
         }
         FileAppend("`n" TestRunner.Passed " passed, " TestRunner.Failed " failed`n", "*")
         ExitApp(TestRunner.Failed)
+    }
+
+    static OnUncaught(err, mode) {
+        FileAppend("UNCAUGHT " err.Message " (" err.File ":" err.Line ")`n", "*")
+        ExitApp(99)
     }
 
     static Equal(name, actual, expected) {
@@ -227,6 +235,12 @@ class Tests {
         eq("url", Url.Encode("a b/中"), "a%20b%2F%E4%B8%AD")
     }
 
+    static TopIndexes() {
+        top := FuzzyMatcher.TopIndexes(Map(1, 10, 2, 90, 3, 50, 4, 90), 3)
+        TestRunner.Equal("TopIndexes.order", top[1] " " top[2] " " top[3], "2 4 3")
+        TestRunner.Equal("TopIndexes.few", FuzzyMatcher.TopIndexes(Map(5, 1, 7, 9), 10)[1], 7)
+    }
+
     static Sorting() {
         items := [ResultItem("low", "", {Score: 10}), ResultItem("high", "", {Score: 90}), ResultItem("mid1", "", {Score: 50}), ResultItem("mid2", "", {Score: 50})]
         sorted := ProviderRegistry.SortByScore(items)
@@ -306,6 +320,64 @@ class Tests {
         eq("join lines", PreferencesWindow.JoinLines(["a", "b"]), "a`r`nb")
         eq("csv", PreferencesWindow.SplitCsv("open, find ,, x")[3], "x")
         eq("join csv", PreferencesWindow.JoinCsv(["open", "find"]), "open, find")
+    }
+
+    static FileIndex() {
+        eq := (n, a, e) => TestRunner.Equal("FileIndex." n, a, e)
+        FileIndex.Paths := ["C:\Docs\Project Omega", "C:\Docs\Project Omega\Omega Plan.dwg", "C:\Docs\notes.txt", "C:\Docs\Tender Report.pdf"]
+        FileIndex.Names := ["project omega", "omega plan.dwg", "notes.txt", "tender report.pdf"]
+        FileIndex.Folders := [1, 0, 0, 0]
+        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        found := FileIndex.Search("omega", 10)
+        eq("count", found.Length, 2)
+        eq("prefix first", found[1].Path, "C:\Docs\Project Omega\Omega Plan.dwg")
+        eq("narrowed", FileIndex.Search("omega p", 10).Length, 1)
+        eq("new search", FileIndex.Search("rep", 10)[1].Path, "C:\Docs\Tender Report.pdf")
+        TestRunner.True("FileIndex.word start >= 70", FileIndex.ScoreName("omega", "project omega") >= 70)
+        eq("no match", FileIndex.ScoreName("xyz", "notes.txt"), 0)
+        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+    }
+
+    static EditActions() {
+        eq := (n, a, e) => TestRunner.Equal("EditActions." n, a, e)
+        saved := ProviderRegistry.Providers
+        ProviderRegistry.Providers := [CustomCommandProvider, FileSearchProvider, ClipboardProvider]
+        command := Map("Title", "Notes", "Type", "File", "Target", "C:\notes.txt", "Arguments", "", "Keyword", "")
+        custom := CustomCommandProvider._ToItem(command, 50), custom.Provider := "CustomCommands"
+        eq("custom edit", ActionCatalog.CanEdit(custom), true)
+        eq("custom delete", ActionCatalog.CanDelete(custom), true)
+        found := FileSearchProvider._ToItem({Path: "C:\Docs\a.pdf", IsFolder: false}, 10), found.Provider := "FileSearch"
+        eq("file edit (add command)", ActionCatalog.CanEdit(found), true)
+        eq("file delete", ActionCatalog.CanDelete(found), false)
+        system := ResultItem("Lock", "", {OnRun: (*) => 0}), system.Provider := "System"
+        eq("system edit", ActionCatalog.CanEdit(system), false)
+        titles := ""
+        for action in ActionCatalog.ListFor(custom)
+            titles .= action.Title "|"
+        TestRunner.True("EditActions.list has edit", InStr(titles, I18n.T("Action.Edit")) && InStr(titles, I18n.T("Action.Delete")))
+        ProviderRegistry.Providers := saved
+    }
+
+    static Themes() {
+        fullKeys := ThemeManager.Builtin("Light")
+        for themeName in ThemeManager.BuiltinNames {
+            if (themeName = "System")
+                continue
+            ThemeManager.Load(themeName)
+            missing := ""
+            for key in fullKeys
+                if (ThemeManager.Get(key) = "")
+                    missing .= key " "
+            TestRunner.Equal("Themes." themeName " complete", missing, "")
+            for key in ["Background", "Title", "SelectedBackground", "SelectedTitle"]
+                TestRunner.True("Themes." themeName "." key " is RRGGBB", RegExMatch(ThemeManager.Get(key), "^[0-9A-Fa-f]{6}$"))
+        }
+        ThemeManager.Load("System")
+        TestRunner.True("Themes.System resolves", ThemeManager.Resolved = "Light" || ThemeManager.Resolved = "Dark")
+        ThemeManager.Load("No Such Theme")
+        TestRunner.Equal("Themes.missing file falls back", ThemeManager.Resolved, "Light")
+        TestRunner.True("Themes.names", ThemeManager.Names().Length >= ThemeManager.BuiltinNames.Length)
+        ThemeManager.Load("Light")
     }
 
     static Misc() {

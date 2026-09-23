@@ -41,13 +41,48 @@ class WebSearchProvider {
     static ItemFor(engine, term) {
         if (term = "") {
             return ResultItem(I18n.T("Web.SearchEmpty", engine["Title"]), engine["Keyword"] " ...", {
-                Kind: "url", Icon: "url:", Valid: false, AutoComplete: engine["Keyword"] " "
+                Kind: "url", Icon: "url:", Valid: false, AutoComplete: engine["Keyword"] " ", Source: engine
             })
         }
         target := StrReplace(engine["Url"], "{query}", Url.Encode(term))
         return ResultItem(I18n.T("Web.SearchFor", engine["Title"], term), target, {
-            Kind: "url", Arg: target, Icon: "url:", AutoComplete: engine["Keyword"] " " term
+            Kind: "url", Arg: target, Icon: "url:", AutoComplete: engine["Keyword"] " " term, Source: engine
         })
+    }
+
+    static EditorFields() {
+        return [ItemEditor.Field("Title", "Prefs.Col.Title", "text", true)
+              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", true)
+              , ItemEditor.Field("Url", "Prefs.Col.Url", "text", true)
+              , ItemEditor.Field("Id", "Prefs.Col.Id", "text", true)]
+    }
+
+    static NewEngine() {
+        return Map("Id", "", "Keyword", "", "Title", "", "Url", "https://")
+    }
+
+    ; 搜索结果里 F3 / 右键 "编辑": 修改对应的搜索引擎
+    static EditItem(item) {
+        engine := item.Source
+        if !IsObject(engine)
+            return false
+        edited := ItemEditor.Edit(ItemEditor.Owner(), I18n.T("Prefs.Page.WebSearch"), WebSearchProvider.EditorFields(), engine)
+        if !IsObject(edited)
+            return false
+        for key, value in edited
+            engine[key] := value
+        return AppSettings.Save()
+    }
+
+    static DeleteItem(item) {
+        engines := WebSearchProvider.Engines()
+        for index, engine in engines {
+            if (ObjPtr(engine) = ObjPtr(item.Source)) {
+                engines.RemoveAt(index)
+                return AppSettings.Save()
+            }
+        }
+        return false
     }
 
     static Fallbacks(query) {

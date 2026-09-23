@@ -18,28 +18,67 @@ class ApplicationProvider {
     static IndexFile := A_ScriptDir "\Data\AppIndex.json"
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := ""
+    static _keys := [], _keysFor := 0, _lastNeedle := "", _lastMatches := []
 
     static Init() {
         if !ApplicationProvider._LoadCache() || ApplicationProvider._CacheExpired()
             SetTimer(() => ApplicationProvider.Rebuild(), -3000)            ; 先让窗口出来, 再在后台扫描
+        SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; 预先算好搜索 Key, 第一次搜索不用等
     }
 
     static Search(query) {
+        needle := StrLower(query.Text)
+        if (needle = "")
+            return []
+        apps := ApplicationProvider.Apps
+        keys := ApplicationProvider._SearchKeys()
+
+        ; 继续输入 (新输入以上一次的输入开头) 时只需要在上一次匹配到的里面找。
+        ; 3 个字母以下时 "按顺序出现的字母" 规则不生效, 那时的结果不能用来缩小范围。
+        candidates := ""
+        if (StrLen(ApplicationProvider._lastNeedle) >= 3 && InStr(needle, ApplicationProvider._lastNeedle) = 1)
+            candidates := ApplicationProvider._lastMatches
+        scores := Map()
+        if IsObject(candidates) {
+            for index in candidates
+                if (score := FuzzyMatcher.BestKey(needle, keys[index]))
+                    scores[index] := score
+        } else {
+            for index, entryKeys in keys
+                if (score := FuzzyMatcher.BestKey(needle, entryKeys))
+                    scores[index] := score
+        }
+        matches := []
+        for index in scores
+            matches.Push(index)
+        ApplicationProvider._lastNeedle := needle, ApplicationProvider._lastMatches := matches
+
         results := []
-        if (StrLen(query.Text) < 1)
-            return results
-        for entry in ApplicationProvider.Apps {
-            score := FuzzyMatcher.Best(query.Text, [entry["Title"], entry["Search"]])
-            if (score <= 0)
-                continue
+        for index in FuzzyMatcher.TopIndexes(scores, ProviderRegistry.MaxResults) {
+            entry := apps[index]
             isStore := InStr(entry["Target"], "shell:AppsFolder\") = 1
             subtitle := isStore ? I18n.T("App.Subtitle.Store") : (entry["Detail"] != "") ? entry["Detail"] : entry["Target"]
             results.Push(ResultItem(entry["Title"], subtitle, {
                 Kind: "file", Arg: entry["Target"],
-                Icon: entry["Target"], Uid: "app:" StrLower(entry["Target"]), Score: score + 10
+                Icon: entry["Target"], Uid: "app:" StrLower(entry["Target"]), Score: scores[index] + 10
             }))
         }
         return results
+    }
+
+    ; 每个应用的搜索 Key (名称 + 拼音首字母), Apps 换成新数组时重新计算
+    static _SearchKeys() {
+        if (ApplicationProvider._keysFor = ObjPtr(ApplicationProvider.Apps))
+            return ApplicationProvider._keys
+        keys := []
+        for entry in ApplicationProvider.Apps {
+            pinyinText := entry.Has("Search") ? entry["Search"] : ""
+            keys.Push([FuzzyMatcher.Key(entry["Title"]), (pinyinText != "") ? FuzzyMatcher.Key(pinyinText) : ""])
+        }
+        ApplicationProvider._keys := keys
+        ApplicationProvider._keysFor := ObjPtr(ApplicationProvider.Apps)
+        ApplicationProvider._lastNeedle := "", ApplicationProvider._lastMatches := []
+        return keys
     }
 
     ; 重新扫描, 返回找到的应用数量

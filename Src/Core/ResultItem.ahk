@@ -16,6 +16,7 @@
 ;   AutoComplete Tab 自动补全成的文字
 ;   LargeText    Ctrl+L 大字显示的文字, 留空用 Title
 ;   Score        排序分数, 越大越靠前
+;   Source       产生这条结果的设置项 (自定义命令 / 片段 / 搜索引擎的 Map), 编辑和删除时用
 ;   Exclusive    true = 关键字模式的结果 ("clip " / "g xxx" / ">cmd"), 有这种结果时只显示它们
 ;
 ; 用法:
@@ -38,6 +39,7 @@ class ResultItem {
         this.LargeText    := ""
         this.Score        := 0
         this.Exclusive    := false
+        this.Source       := ""
         this.Provider     := ""
         if IsObject(props) {
             for name, value in props.OwnProps()

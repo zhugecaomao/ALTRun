@@ -1,70 +1,121 @@
 ;===============================================================================
-; FileSearchProvider.ahk - 文件搜索 (Everything) (AutoHotkey v2)
+; FileSearchProvider.ahk - 文件 / 文件夹搜索 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 触发方式 (和 Alfred 一样):  'report   或   open report   或   find report
+; 两种用法 (和 Alfred 一样):
+;   1. 默认结果: 直接输入名称, 匹配的文件和文件夹显示在应用和命令下面
+;      (InDefaultResults, 最多 DefaultResultsLimit 条, 至少输入 MinQueryLength 个字)
+;   2. 专门搜索文件:  'report   或   open report   或   find report
 ;
-; 搜索引擎按以下顺序自动选择:
-;   1. Everything SDK (Everything64.dll / Everything32.dll), 需要 Everything 在运行
-;   2. Everything 命令行 es.exe
-;   3. 都没有时: 一条 "在 Everything 中搜索" (有 Everything.exe) 或
-;      "用 Windows 搜索" 的结果
-; DLL / es.exe / Everything.exe 放在 ALTRun 目录、Lib 目录、PATH 或 Everything 的
-; 安装目录都能找到; 也可以在 Features.FileSearch.EverythingPath 里指定目录或文件。
+; 数据来源 (自动选择):
+;   - Everything 在运行: 通过 IPC 直接查询 (Lib\Everything.ahk), 全盘, 不需要额外文件
+;   - 否则: 内置索引 (Src\Core\FileIndex.ahk), 只包括 ScopeFolders 里的文件夹
+;
+; 设置 (ALTRun.json -> Features.FileSearch):
+;   Keywords / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
+;   MinQueryLength / UseEverything / EverythingFilter / EverythingPath /
+;   ScopeFolders / ScopeDepth / ScopeExclude / MaxEntries / RefreshMinutes
 ;===============================================================================
 
 class FileSearchProvider {
     static Id := "FileSearch"
-    static _dll := "", _esExe := "", _everythingExe := "", _detected := false
 
     static Init() {
-        FileSearchProvider._Detect()
+        FileIndex.Start()
     }
 
     static Search(query) {
         options := AppSettings.Feature("FileSearch")
         term := ""
-        matched := (options["QuotePrefix"] && query.MatchPrefix("'", &term))
-        if !matched
-            matched := query.MatchKeyword(options["Keywords"], &term)
-        if !matched
-            return []
-        if (term = "")
-            return [ResultItem(I18n.T("Files.Keyword"), "'... / " options["Keywords"][1] " ...", {Icon: "folder:", Valid: false, Score: 150, Exclusive: true})]
-
-        results := []
-        for filePath in FileSearchProvider.Query(term, options["MaxResults"]) {
-            isFolder := InStr(FileExist(filePath), "D") ? true : false
-            SplitPath(filePath, &name)
-            results.Push(ResultItem(name, filePath, {
-                Kind: isFolder ? "folder" : "file", Arg: filePath, Icon: filePath,
-                Uid: "file:" StrLower(filePath), Score: 150 - A_Index * 0.01, Exclusive: true
-            }))
-        }
-        if !results.Length {
-            item := FileSearchProvider.FallbackItem(term)
-            item.Score := 150
-            item.Exclusive := true
-            results.Push(item)
-        }
-        return results
-    }
-
-    ; 返回匹配的完整路径数组; 没有可用的 Everything 时返回空数组
-    static Query(term, maxResults := 30) {
-        FileSearchProvider._Detect()
-        if (FileSearchProvider._dll != "")
-            return FileSearchProvider._QueryDll(term, maxResults)
-        if (FileSearchProvider._esExe != "")
-            return FileSearchProvider._QueryEs(term, maxResults)
+        keywordMode := (options["QuotePrefix"] && query.MatchPrefix("'", &term))
+        if !keywordMode
+            keywordMode := query.MatchKeyword(options["Keywords"], &term)
+        if keywordMode
+            return FileSearchProvider._KeywordResults(term, options)
+        if (options["InDefaultResults"] && StrLen(query.Text) >= options["MinQueryLength"] && !Calc.Looks(query.Text))
+            return FileSearchProvider._DefaultResults(query.Text, options)
         return []
     }
 
+    ; 'xxx / open xxx: 只显示文件搜索结果
+    static _KeywordResults(term, options) {
+        if (term = "")
+            return [ResultItem(I18n.T("Files.Keyword"), "'... / " options["Keywords"][1] " ...", {Icon: "folder:", Valid: false, Score: 150, Exclusive: true})]
+        results := []
+        for found in FileSearchProvider.Query(term, options["MaxResults"], false) {
+            item := FileSearchProvider._ToItem(found, 150 - A_Index * 0.01)
+            item.Exclusive := true
+            results.Push(item)
+        }
+        fallback := FileSearchProvider.FallbackItem(term)
+        fallback.Score := results.Length ? 0 : 150
+        fallback.Exclusive := true
+        results.Push(fallback)
+        return results
+    }
+
+    ; 默认结果: 分数压低 (最高约 40), 排在应用 / 命令后面
+    static _DefaultResults(text, options) {
+        results := []
+        for found in FileSearchProvider.Query(text, options["DefaultResultsLimit"], true)
+            results.Push(FileSearchProvider._ToItem(found, 5 + (found.Score + (found.IsFolder ? 1 : 0)) * 0.35))
+        return results
+    }
+
+    ; 返回 [{Path, IsFolder, Score}], 按匹配程度排序
+    ; preferPrefix: 默认结果只要名称开头 / 单词开头匹配的, 避免一大堆只是 "包含" 的文件
+    static Query(term, limit, preferPrefix) {
+        options := AppSettings.Feature("FileSearch")
+        needle := StrLower(Trim(term))
+        if (options["UseEverything"] && Everything.IsRunning()) {
+            found := []
+            search := (preferPrefix ? "startwith:" : "") FileSearchProvider._EverythingTerm(term) " " options["EverythingFilter"]
+            for item in Everything.Query(Trim(search), preferPrefix ? limit * 4 : limit, Everything.SORT_DATE_MODIFIED_DESC) {
+                SplitPath(item.Path, &name)
+                score := FileIndex.ScoreName(needle, StrLower(name))
+                found.Push({Path: item.Path, IsFolder: item.IsFolder, Score: score ? score : 50})
+            }
+            return FileSearchProvider._Best(found, limit)
+        }
+        found := FileIndex.Search(needle, preferPrefix ? limit * 4 : limit)
+        if preferPrefix {
+            kept := []
+            for item in found
+                if (item.Score >= 70)                                  ; 名称开头 (90) 或单词开头 (80, 长名称略低于 80)
+                    kept.Push(item)
+            found := kept
+        }
+        return FileSearchProvider._Best(found, limit)
+    }
+
+    ; 多个词的输入交给 Everything 时保持原样 (Everything 本身就按空格分词); 引号去掉避免语法错误
+    static _EverythingTerm(term) {
+        return StrReplace(Trim(term), '"')
+    }
+
+    static _Best(found, limit) {
+        scores := Map()
+        for index, item in found
+            scores[index] := item.Score + (item.IsFolder ? 1 : 0)            ; 同分时文件夹优先
+        best := []
+        for index in FuzzyMatcher.TopIndexes(scores, limit)
+            best.Push(found[index])
+        return best
+    }
+
+    static _ToItem(found, score) {
+        SplitPath(found.Path, &name, &parentDir)
+        return ResultItem(name, parentDir, {
+            Kind: found.IsFolder ? "folder" : "file", Arg: found.Path, Icon: found.IsFolder ? "folder:" : found.Path,
+            Uid: "file:" StrLower(found.Path), Score: score
+        })
+    }
+
+    ; 没有结果时: 在 Everything 里搜索 (装了 Everything) 或用 Windows 搜索
     static FallbackItem(term) {
-        FileSearchProvider._Detect()
-        if (FileSearchProvider._everythingExe != "") {
-            exe := FileSearchProvider._everythingExe
+        exe := FileSearchProvider._EverythingExe()
+        if (exe != "") {
             return ResultItem(I18n.T("Files.OpenEverything", term), exe, {
-                Icon: exe, OnRun: (*) => Run('"' exe '" -s "' term '"')
+                Icon: exe, OnRun: (*) => Run('"' exe '" -s "' StrReplace(term, '"') '"')
             })
         }
         return ResultItem(I18n.T("Files.WindowsSearch", term), "search-ms:", {
@@ -72,82 +123,23 @@ class FileSearchProvider {
         })
     }
 
-    ;---------------------------------------------------------------------------
-    ; Everything SDK
-    ;---------------------------------------------------------------------------
-    static _QueryDll(term, maxResults) {
-        dll := FileSearchProvider._dll
-        results := []
-        DllCall(dll "\Everything_SetSearchW", "WStr", term)
-        DllCall(dll "\Everything_SetMax", "UInt", maxResults)
-        DllCall(dll "\Everything_SetRequestFlags", "UInt", 0x4)             ; EVERYTHING_REQUEST_FULL_PATH_AND_FILE_NAME
-        if !DllCall(dll "\Everything_QueryW", "Int", 1)
-            return results                                                  ; Everything 没有运行
-        pathBuffer := Buffer(2048 * 2)
-        count := DllCall(dll "\Everything_GetNumResults", "UInt")
-        Loop count {
-            DllCall(dll "\Everything_GetResultFullPathNameW", "UInt", A_Index - 1, "Ptr", pathBuffer, "UInt", 2048)
-            results.Push(StrGet(pathBuffer, "UTF-16"))
-        }
-        return results
-    }
-
-    ;---------------------------------------------------------------------------
-    ; es.exe
-    ;---------------------------------------------------------------------------
-    static _QueryEs(term, maxResults) {
-        outFile := A_Temp "\ALTRun_es.txt"
-        try FileDelete(outFile)
-        try {
-            RunWait(A_ComSpec ' /c ""' FileSearchProvider._esExe '" -n ' maxResults ' "' StrReplace(term, '"') '" > "' outFile '""', , "Hide")
-        } catch {
-            return []
-        }
-        results := []
-        if FileExist(outFile) {
-            for line in StrSplit(FileRead(outFile), "`n", "`r")
-                if (Trim(line) != "")
-                    results.Push(line)
-            try FileDelete(outFile)
-        }
-        return results
-    }
-
-    ;---------------------------------------------------------------------------
-    ; Detection
-    ;---------------------------------------------------------------------------
-    static _Detect() {
-        if FileSearchProvider._detected
-            return
-        FileSearchProvider._detected := true
-        dllName := (A_PtrSize = 8) ? "Everything64.dll" : "Everything32.dll"
-        folders := []
+    static _EverythingExe() {
+        static cached := ""
+        if (cached != "")
+            return (cached = "-") ? "" : cached
         configured := Path.Resolve(AppSettings.Feature("FileSearch")["EverythingPath"])
+        candidates := []
         if (configured != "")
-            folders.Push(DirExist(configured) ? configured : FileSearchProvider._DirOf(configured))
-        for folder in [A_ScriptDir, A_ScriptDir "\Lib", A_ProgramFiles "\Everything", EnvGet("ProgramFiles(x86)") "\Everything", EnvGet("LocalAppData") "\Everything"]
-            folders.Push(folder)
-
-        for folder in folders {
-            if (FileSearchProvider._dll = "" && FileExist(folder "\" dllName) && DllCall("LoadLibrary", "Str", folder "\" dllName, "Ptr"))
-                FileSearchProvider._dll := folder "\" dllName
-            if (FileSearchProvider._esExe = "" && FileExist(folder "\es.exe"))
-                FileSearchProvider._esExe := folder "\es.exe"
-            if (FileSearchProvider._everythingExe = "" && FileExist(folder "\Everything.exe"))
-                FileSearchProvider._everythingExe := folder "\Everything.exe"
+            candidates.Push(DirExist(configured) ? configured "\Everything.exe" : configured)
+        for folder in [A_ScriptDir, A_ProgramFiles "\Everything", EnvGet("ProgramFiles(x86)") "\Everything", EnvGet("LocalAppData") "\Everything"]
+            candidates.Push(folder "\Everything.exe")
+        for candidate in candidates {
+            if FileExist(candidate) {
+                cached := candidate
+                return candidate
+            }
         }
-        if (configured != "" && FileExist(configured) && !DirExist(configured) && RegExMatch(configured, "i)everything\.exe$"))
-            FileSearchProvider._everythingExe := configured
-        if (FileSearchProvider._esExe = "") {
-            onPath := Path.Resolve("es.exe")
-            if (onPath != "es.exe" && FileExist(onPath))
-                FileSearchProvider._esExe := onPath
-        }
-        Logger.Debug("FileSearchProvider: dll=" FileSearchProvider._dll " es=" FileSearchProvider._esExe " everything=" FileSearchProvider._everythingExe)
-    }
-
-    static _DirOf(file) {
-        SplitPath(file, , &dir)
-        return dir
+        cached := "-"
+        return ""
     }
 }
