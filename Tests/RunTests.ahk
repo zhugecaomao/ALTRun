@@ -31,6 +31,8 @@
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
+#Include %A_ScriptDir%\..\Src\UI\ItemEditor.ahk
+#Include %A_ScriptDir%\..\Src\UI\PreferencesWindow.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ClipboardProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ApplicationProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\CustomCommandProvider.ahk
@@ -58,7 +60,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -285,6 +287,25 @@ class Tests {
         eq("disabled", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x", "AutoExpand", 0), ";"), "")
         eq("space", SnippetExpander.Abbreviation(Map("Keyword", "a b", "Text", "x"), ";"), "")
         eq("no prefix", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x"), ""), "sig")
+    }
+
+    static Preferences() {
+        eq := (n, a, e) => TestRunner.Equal("Preferences." n, a, e)
+        data := PreferencesWindow.DeepCopy(AppSettings.Defaults())
+        eq("get", PreferencesWindow.GetPath(data, "General.Hotkey"), "!Space")
+        eq("get missing", PreferencesWindow.GetPath(data, "General.NoSuchKey"), "")
+        PreferencesWindow.SetPath(data, "Features.Calculator.StructuralCalc", 1)
+        eq("set", data["Features"]["Calculator"]["StructuralCalc"], 1)
+        PreferencesWindow.SetPath(data, "New.Section.Value", "x")
+        eq("set creates", data["New"]["Section"]["Value"], "x")
+        original := AppSettings.Defaults()
+        copy := PreferencesWindow.DeepCopy(original)
+        copy["General"]["Hotkey"] := "^Space"
+        eq("deep copy independent", original["General"]["Hotkey"], "!Space")
+        eq("lines", PreferencesWindow.SplitLines(" a `r`n`r`nb ").Length, 2)
+        eq("join lines", PreferencesWindow.JoinLines(["a", "b"]), "a`r`nb")
+        eq("csv", PreferencesWindow.SplitCsv("open, find ,, x")[3], "x")
+        eq("join csv", PreferencesWindow.JoinCsv(["open", "find"]), "open, find")
     }
 
     static Misc() {

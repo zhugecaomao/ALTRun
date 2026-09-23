@@ -7,12 +7,15 @@
 ;
 ; 命令行参数:
 ;   -Startup        开机自启动时使用, 不弹出搜索窗口
+;   -Reloaded       重新载入后 (保存设置等), 不弹出搜索窗口
+;   -Preferences N  重新载入后打开偏好设置的第 N 页
 ;   -SendTo <path>  资源管理器 "发送到" 菜单: 把文件/文件夹添加为自定义命令
 ;
 ; 用法 (其它模块里):
 ;   App.Notify("...")              屏幕上方短暂提示
 ;   App.FocusPreviousWindow()      回到呼出 ALTRun 之前的窗口 (粘贴用)
-;   App.OpenPreferences() / App.Reload() / App.Quit() / App.RebuildIndex()
+;   App.OpenPreferences() / App.EditSettingsFile() / App.Reload() / App.Restart(args)
+;   App.Quit() / App.RebuildIndex()
 ;===============================================================================
 
 class App {
@@ -86,7 +89,12 @@ class App {
     ;---------------------------------------------------------------------------
     ; Commands (tray menu / system commands / hotkeys)
     ;---------------------------------------------------------------------------
-    static OpenPreferences() {
+    static OpenPreferences(pageIndex := 1) {
+        PreferencesWindow.Show(pageIndex)
+    }
+
+    ; 直接用记事本编辑 ALTRun.json, 保存后自动重新载入
+    static EditSettingsFile() {
         App.Notify(I18n.T("Settings.EditHint"), 4000)
         App._settingsTime := FileGetTime(AppSettings.File, "M")
         if (App._watchTimer = "")
@@ -98,7 +106,7 @@ class App {
     static _CheckSettingsChanged() {
         try {
             if (FileGetTime(AppSettings.File, "M") != App._settingsTime)
-                App.Reload()
+                App.Restart()
         }
     }
 
@@ -108,7 +116,16 @@ class App {
     }
 
     static Reload() {
-        Reload()
+        App.Restart()
+    }
+
+    ; 重新启动 ALTRun, 带上命令行参数 (默认 -Reloaded: 不弹出搜索窗口)
+    static Restart(arguments := "-Reloaded") {
+        if A_IsCompiled
+            Run('"' A_ScriptFullPath '" /restart ' arguments)
+        else
+            Run('"' A_AhkPath '" /restart "' A_ScriptFullPath '" ' arguments)
+        ExitApp()
     }
 
     static Quit() {
@@ -231,8 +248,12 @@ class App {
             CustomCommandProvider.AddFromPath(target)
             return
         }
-        if (A_Args.Length >= 1 && A_Args[1] = "-Startup")
+        if (A_Args.Length >= 1 && (A_Args[1] = "-Startup" || A_Args[1] = "-Reloaded"))
             return
+        if (A_Args.Length >= 1 && A_Args[1] = "-Preferences") {
+            PreferencesWindow.Show((A_Args.Length >= 2 && IsInteger(A_Args[2])) ? Integer(A_Args[2]) : 1)
+            return
+        }
         if AppSettings.MigratedFrom
             return                                                          ; 升级提示显示中, 不马上弹出窗口
         SearchWindow.Show()

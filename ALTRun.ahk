@@ -8,7 +8,7 @@
 ; Project layout:
 ;   Lib\            General-purpose libraries, nothing ALTRun-specific
 ;   Src\Core\       App startup, settings + migration, search model, ranking, actions
-;   Src\UI\         Search window, large type, themes, icons
+;   Src\UI\         Search window, preferences window, large type, themes, icons
 ;   Src\Providers\  Search features: clipboard history, applications, custom commands,
 ;                   snippets, system commands, calculator, web search, file search, terminal
 ;   Src\Extensions\ Features outside the search window: snippet auto-expansion,
@@ -47,6 +47,8 @@
 #Include Src\UI\IconCache.ahk
 #Include Src\UI\SearchWindow.ahk
 #Include Src\UI\LargeType.ahk
+#Include Src\UI\ItemEditor.ahk
+#Include Src\UI\PreferencesWindow.ahk
 
 ; --- Src\Providers ---
 #Include Src\Providers\ClipboardProvider.ahk
