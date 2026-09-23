@@ -6,6 +6,9 @@
 ;     "Target": "路径 / 程序 / 网址", "Arguments": "命令行参数", "Keyword": "可选关键字" }
 ; Target 可以用 A_Desktop / A_ScriptDir 等内置变量开头, 或 %AppData% 等环境变量。
 ; Keyword 完全相同时排在最前面。
+; 搜索范围: 名称、关键字、名称的拼音首字母; File / Folder 类型还包括目标的文件名
+; (不含扩展名) 或文件夹名, 例如 Target "Q:\Projects\PT1931 - 24 NIR" 输入 "nir" 也能找到。
+; 同样的匹配程度, 名称匹配排在文件名 / 文件夹名匹配前面。
 ;
 ; 用法:
 ;   CustomCommandProvider.AddFromPath(path [, title])   "发送到" 菜单添加 (不弹对话框)
@@ -26,7 +29,11 @@ class CustomCommandProvider {
             if !(command is Map) || !command.Has("Title") || !command.Has("Target")
                 continue
             keyword := command.Has("Keyword") ? command["Keyword"] : ""
+            commandType := command.Has("Type") ? command["Type"] : "File"
             score := FuzzyMatcher.BestKey(needle, CustomCommandProvider._KeysFor(command["Title"], keyword))
+            targetScore := FuzzyMatcher.BestKey(needle, CustomCommandProvider._TargetKeysFor(commandType, command["Target"]))
+            if (targetScore > 0)
+                score := Max(score, targetScore - 5)                        ; 名称优先
             if (keyword != "" && query.Keyword = keyword)
                 score := Max(score, 100)
             if (score <= 0)
@@ -45,6 +52,26 @@ class CustomCommandProvider {
             cache[cacheKey] := [FuzzyMatcher.Key(title), (keyword != "") ? FuzzyMatcher.Key(keyword) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]
         }
         return cache[cacheKey]
+    }
+
+    ; File / Folder 的目标文件名 (不含扩展名) 或文件夹名及其拼音首字母, 按 "类型|目标" 缓存
+    static _TargetKeysFor(commandType, target) {
+        static cache := Map()
+        cacheKey := commandType "|" target
+        if !cache.Has(cacheKey)
+            cache[cacheKey] := CustomCommandProvider._TargetKeys(commandType, target)
+        return cache[cacheKey]
+    }
+
+    static _TargetKeys(commandType, target) {
+        if !(commandType = "Folder" || commandType = "File")
+            return []
+        SplitPath(RTrim(Path.Resolve(target), "\/"), &fileName, , , &nameNoExt)
+        name := (commandType = "File") ? nameNoExt : fileName
+        if (name = "" || InStr(name, ":"))                                  ; 驱动器根目录 "Q:" 不算名称
+            return []
+        pinyinText := Pinyin.Initials(name)
+        return [FuzzyMatcher.Key(name), (pinyinText != name) ? FuzzyMatcher.Key(pinyinText) : ""]
     }
 
     static _ToItem(command, score) {
