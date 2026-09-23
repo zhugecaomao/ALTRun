@@ -9,7 +9,7 @@
 ; 已经在用 JSON 的用户不受任何影响 - 一旦 ALTRun.json 有了对应小节, 这里
 ; 所有函数都直接跳过, 不会覆盖已有数据。
 ;
-; 用法 (只有 Lib\AppData.ahk 的 LoadAppData() 调用, 不需要在别处调用):
+; 用法 (只有 Src\Core\AppData.ahk 的 LoadAppData() 调用, 不需要在别处调用):
 ;   movedSections := IniMigration.MigrateFromIni(data)   ; data 是从 ALTRun.json
 ;                                                          ; 解析出来的 Map, 迁移
 ;                                                          ; 结果直接写回 data 里

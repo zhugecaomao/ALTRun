@@ -5,7 +5,7 @@
 ; 只是包了一层 class, 方便以后单独维护翻译, 不用在 3000+ 行的主文件里翻找。
 ;
 ; 用法 (ALTRun.ahk 里):
-;   Global g_LNG := Lang.Load()   ; 启动时调用一次, 返回当前语言对应的 Map
+;   Global g_LNG := Language.Load()   ; 启动时调用一次, 返回当前语言对应的 Map
 ;
 ; 编号约定 (沿用原来的分区, 新增文字请按区间续写, 不要打乱已有编号 - 现有的
 ; g_LNG[123] 之类的调用点到处都是, 编号一旦挪动就要满仓库搜索改调用点):
@@ -27,9 +27,9 @@
 ;   800+    提示/确认/错误消息
 ;===============================================================================
 
-Class Lang {
+Class Language {
 
-    ; 构建中英文两张文字表, 并按 Lang.IsChinese() 的结果返回其中一张。
+    ; 构建中英文两张文字表, 并按 Language.IsChinese() 的结果返回其中一张。
     ; 依赖 g_JSON (ALTRun.ahk 顶部已定义的全局路径常量) 和 g_LOG。
     static Load() {
         ENG     := Map()
@@ -459,8 +459,8 @@ Class Lang {
         CHN[852] := "确定要重启电脑吗?"
         CHN[853] := "确定要让电脑休眠吗?"
 
-        lng := Lang.IsChinese() ? CHN : ENG
-        g_LOG.Debug("Lang.Load: Set language to " lng[1] "...OK")
+        lng := Language.IsChinese() ? CHN : ENG
+        g_LOG.Debug("Language.Load: Set language to " lng[1] "...OK")
         return lng
     }
 

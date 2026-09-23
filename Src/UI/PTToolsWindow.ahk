@@ -1,5 +1,5 @@
 ;===============================================================================
-; PTTools.ahk - PT 工具箱: 钢筋/BRC 计算器 + SPF2M 束线型计算器自动化 (AutoHotkey v2)
+; PTToolsWindow.ahk - PT 工具箱: 钢筋/BRC 计算器 + SPF2M 束线型计算器自动化 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 从仓库根目录旧的 PTTools.ahk (AutoHotkey v1, 独立进程运行) 移植并模块化而来。
 ;
@@ -22,7 +22,7 @@
 ; Run.bat 引用的文件名 (DOSBox.exe SPF2M.exe) 保持一致。
 ;
 ; 设置改成存在 ALTRun.json 的 "PTTools" 节点里, 读写方式和 g_CONFIG/g_GUI 一样,
-; 都走 Lib\AppData.ahk 的 AppData.LoadAppData()/AppData.SaveAppData()。字段名比旧版本 (SpanWidth1/
+; 都走 Src\Core\AppData.ahk 的 AppData.LoadAppData()/AppData.SaveAppData()。字段名比旧版本 (SpanWidth1/
 ; RebarSize1/... 按 GroupBox 编号) 更语义化, 因为是这台机器唯一一份数据, 改名时
 ; 直接手动同步改了 ALTRun.json 里对应的 key, 没有另外写一遍迁移代码。
 ;
@@ -105,10 +105,10 @@ Class PTToolsWindow {
     static HotkeysReady := false
     static Spf2mHotkeysReady := false
 
-    ; Called from AppData.LoadAppData() (Lib\AppData.ahk), same pattern as g_CONFIG/g_GUI.
+    ; Called from AppData.LoadAppData() (Src\Core\AppData.ahk), same pattern as g_CONFIG/g_GUI.
     static Load(saved) {
         PTToolsWindow.Settings := PTToolsWindow.Defaults.Clone()
-        AppData.MergeIntoDefaults(PTToolsWindow.Settings, saved)            ; shared helper, in Lib\AppData.ahk
+        AppData.MergeIntoDefaults(PTToolsWindow.Settings, saved)            ; shared helper, in Src\Core\AppData.ahk
         return PTToolsWindow.Settings
     }
 
@@ -197,7 +197,7 @@ Class PTToolsWindow {
             S["WinLeft"] := x
             S["WinTop"] := y
         }
-        AppData.SaveAppData()                                               ; Lib\AppData.ahk - writes ALTRun.json right away
+        AppData.SaveAppData()                                               ; Src\Core\AppData.ahk - writes ALTRun.json right away
     }
 
     ; ---------------------------------------------------------------------
