@@ -3,6 +3,8 @@
 ## 自定义命令
 把常用的文件、文件夹、程序或网址加进 ALTRun, 用名字或关键字打开。
 
+![偏好设置里的自定义命令](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-commands.png)
+
 ### 添加
 - 搜索结果里选中应用 / 文件 / 文件夹 / 网址, 按 `F3` (或 `→` → "添加到自定义命令...")
 - 没有搜到结果时按 `F3`, 用输入的文字新建一条
@@ -63,6 +65,8 @@
 
 ## 剪贴板历史
 按 `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字, `clip 关键词` 过滤, `Enter` 粘贴到前台窗口, `F3` 保存为片段, `Ctrl+Del` 从历史中删除。
+
+![剪贴板历史](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/clipboard.png)
 
 隐私:
 - 密码管理器 (KeePass、1Password、Bitwarden...) 复制的内容不会记录; 带 "不要加入剪贴板历史" 标记的内容也不会记录

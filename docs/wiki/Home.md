@@ -4,6 +4,8 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 
 > 本文档适用于 **3.0** 及以后的版本。3.0 重新设计了搜索窗口和设置文件, 2.x 的设置会在第一次启动时自动转换, 见 [安装与升级](Installation)。
 
+![ALTRun 搜索窗口](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/search.png)
+
 ## 从这里开始
 | 页面 | 内容 |
 |---|---|

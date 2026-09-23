@@ -65,6 +65,8 @@ ALTRun 记住 "输入了什么 → 最后选了哪一项": 输入 `no` 选过记
 ## 操作面板
 选中一项按 `→` (或鼠标右键) 列出它的全部操作, 可以继续输入文字过滤:
 
+![操作面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/actions.png)
+
 | 结果类型 | 操作 |
 |---|---|
 | 程序 / 文件 | 打开、以管理员身份运行 (exe / lnk / bat...)、在文件管理器中显示、复制路径、复制名称、在此处打开终端、属性 |

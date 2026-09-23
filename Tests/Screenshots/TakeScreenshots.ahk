@@ -58,8 +58,10 @@ class Shots {
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
-        ; 预热: 第一次启动时 Windows 还在扫描新文件, 比较慢, 这一次不截图
+        ; 预热: 第一次启动时 Windows 还在扫描新文件、载入图标, 比较慢, 这一次不截图
         Shots.Launch("Light")
+        Shots.Search("pt")
+        Sleep(8000)
         Shots.Close()
         for scene in Shots.Scenes() {
             if (wanted.Count && !wanted.Has(scene[1]))
@@ -154,9 +156,10 @@ class Shots {
         try DirDelete(Shots.AppDir "\Data", true)
     }
 
-    ; 纯色背景铺满屏幕, 挡住桌面上的其它窗口 (半透明主题会透出后面的内容)
+    ; 纯色背景铺满屏幕, 挡住桌面上的其它窗口 (半透明主题会透出后面的内容)。
+    ; 置顶才能盖住控制台窗口; 搜索窗口也是置顶的, 后显示的在上面
     static ShowBackdrop() {
-        backdrop := Gui("-Caption +ToolWindow -DPIScale")
+        backdrop := Gui("-Caption +ToolWindow +AlwaysOnTop -DPIScale")
         backdrop.BackColor := "8A9BB0"
         backdrop.Show("NA x0 y0 w" A_ScreenWidth " h" A_ScreenHeight)
         Shots.Backdrop := backdrop
@@ -247,6 +250,7 @@ class Shots {
         hwnd := WinWait("ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
         if !hwnd
             throw Error("preferences window not found")
+        WinSetAlwaysOnTop(1, hwnd)                                          ; 在背景之上
         WinActivate(hwnd)
         Sleep(1500)
         return hwnd
@@ -255,9 +259,27 @@ class Shots {
     ;---------------------------------------------------------------------------
     ; 截图: 从屏幕复制窗口区域 (包括半透明效果), 用 GDI+ 存成 PNG
     ;---------------------------------------------------------------------------
+    ; 列表区域还是一片空白 (窗口忙, 还没画出结果) 时等一会儿重试
     static Capture(hwnd, file) {
-        DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)    ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
-        Sleep(500)
+        Loop 10 {
+            DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)    ; INVALIDATE | ERASE | ALLCHILDREN | UPDATENOW
+            Sleep(500)
+            hbm := Shots.CaptureBitmap(hwnd, &w, &h, &blank)
+            if (!blank || A_Index = 10)
+                break
+            DllCall("DeleteObject", "Ptr", hbm)
+            Shots.Log("list not painted yet, retrying")
+            Sleep(2000)
+        }
+        try {
+            Shots.SavePng(hbm, file)
+        } finally {
+            DllCall("DeleteObject", "Ptr", hbm)
+        }
+        Shots.Log("saved " file " (" w "x" h ")")
+    }
+
+    static CaptureBitmap(hwnd, &w, &h, &blank) {
         rect := Buffer(16, 0)
         if (DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16) = 0 && NumGet(rect, 8, "Int") > NumGet(rect, 0, "Int")) {
             x := NumGet(rect, 0, "Int"), y := NumGet(rect, 4, "Int")         ; DWMWA_EXTENDED_FRAME_BOUNDS: 不含看不见的边框
@@ -270,15 +292,29 @@ class Shots {
         hbm := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", w, "Int", h, "Ptr")
         old := DllCall("SelectObject", "Ptr", hdcMem, "Ptr", hbm, "Ptr")
         DllCall("BitBlt", "Ptr", hdcMem, "Int", 0, "Int", 0, "Int", w, "Int", h, "Ptr", hdcScreen, "Int", x, "Int", y, "UInt", 0x40CC0020)
+        blank := Shots._ListIsBlank(hdcMem, w, h)
         DllCall("SelectObject", "Ptr", hdcMem, "Ptr", old)
         DllCall("DeleteDC", "Ptr", hdcMem)
         DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdcScreen)
-        try {
-            Shots.SavePng(hbm, file)
-        } finally {
-            DllCall("DeleteObject", "Ptr", hbm)
+        return hbm
+    }
+
+    ; 搜索窗口: 输入框以下 (约 80 像素起) 每隔几个像素取一个点, 全都一样 = 结果还没画出来
+    static _ListIsBlank(hdc, w, h) {
+        if (h < 120)
+            return false
+        first := DllCall("GetPixel", "Ptr", hdc, "Int", 60, "Int", 80, "UInt")
+        y := 80
+        while (y < h - 4) {
+            x := 20
+            while (x < w - 20) {
+                if (DllCall("GetPixel", "Ptr", hdc, "Int", x, "Int", y, "UInt") != first)
+                    return false
+                x += 7
+            }
+            y += 3
         }
-        Shots.Log("saved " file " (" w "x" h ")")
+        return true
     }
 
     static SavePng(hbm, file) {
