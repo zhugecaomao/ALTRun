@@ -21,7 +21,7 @@ Class OptionsWindow {
     static ListView := ""                                                  ; CONFIG Tab 里的设置勾选列表 (原 Global OptListView)
 
     static Show(ActTab := 1) {
-        static FuncList := ["Unset", "Active", "ToggleWindow", "Google", "Bing"
+        static FuncList := ["Unset", "Activate", "ToggleWindow", "Google", "Bing"
             , "Everything", "TabFunc", "PrevCommand", "NextCommand", "CopyCommand"
             , "ClearInput", "RunCurrentCommand", "RankUp", "RankDown", "Reindex"
             , "About", "Usage", "Update", "UserCommand", "NewCommand", "EditCommand"
