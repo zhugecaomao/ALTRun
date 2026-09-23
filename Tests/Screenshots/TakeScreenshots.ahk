@@ -62,7 +62,9 @@ class Shots {
         ; 等它第一次画出来, 这一次不截图
         Shots.Log("== warm-up")
         Shots.Launch("Light")
-        Shots.WaitPainted(Shots.Search("pt"), 180)
+        hwnd := Shots.Search("pt")
+        if !Shots.WaitPainted(hwnd, 30)
+            Shots.Diagnose(hwnd)
         Shots.Close()
         for scene in Shots.Scenes() {
             if (wanted.Count && !wanted.Has(scene[1]))
@@ -285,7 +287,8 @@ class Shots {
     }
 
     static Capture(hwnd, file) {
-        Shots.WaitPainted(hwnd, 60)
+        if !Shots.WaitPainted(hwnd, 20)
+            Shots.Diagnose(hwnd)
         hbm := Shots.CaptureBitmap(hwnd, &w, &h, &blank)
         try {
             Shots.SavePng(hbm, file)
@@ -293,6 +296,17 @@ class Shots {
             DllCall("DeleteObject", "Ptr", hbm)
         }
         Shots.Log("saved " file " (" w "x" h ")")
+    }
+
+    ; 列表画不出来时, 把 ALTRun 的所有窗口 (包括错误对话框的内容) 和列表状态写到日志
+    static Diagnose(hwnd) {
+        try Shots.Log("list: items=" SendMessage(0x1004, 0, 0, "SysListView321", hwnd) " visible=" ControlGetVisible("SysListView321", hwnd))
+        DetectHiddenWindows(false)
+        for window in WinGetList("ahk_pid " Shots.Pid) {
+            Shots.Log("window: [" WinGetClass(window) "] " WinGetTitle(window))
+            if (WinGetClass(window) = "#32770")
+                Shots.Log(WinGetText(window))
+        }
     }
 
     static CaptureBitmap(hwnd, &w, &h, &blank) {
