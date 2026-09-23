@@ -110,7 +110,7 @@ class CustomCommandProvider {
         arguments := command.Has("Arguments") ? command["Arguments"] : ""
         commandType := command.Has("Type") ? command["Type"] : "File"
         switch commandType, false {
-            case "Folder": kind := "folder", icon := CustomCommandProvider._Resolve(target)
+            case "Folder": kind := "folder", icon := CustomCommandProvider._FolderIcon(CustomCommandProvider._Resolve(target))
             case "Url"   : kind := "url",    icon := "url:"
             default      : kind := "file",   icon := CustomCommandProvider._Resolve(target)
         }
@@ -119,6 +119,11 @@ class CustomCommandProvider {
             Kind: kind, Arg: target, Arguments: arguments, Icon: icon, Score: score, Source: command,
             Uid: CustomCommandProvider._Uid(command)
         })
+    }
+
+    ; 网络位置上的文件夹直接用通用的文件夹图标 (不读网络, 也不会因为名字里带点被当成文件)
+    static _FolderIcon(folder) {
+        return IconCache.IsRemote(folder) ? "folder:" : folder
     }
 
     ; Path.Resolve 对只写程序名的目标 ("cmd.exe") 要查磁盘和 PATH, 结果缓存起来
