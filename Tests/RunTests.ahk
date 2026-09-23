@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -405,6 +405,41 @@ class Tests {
         ThemeManager.Load("No Such Theme")
         eq("missing falls back", ThemeManager.Resolved, "Light")
         ThemeManager.Load("Light")
+    }
+
+    static CheckTargets() {
+        eq := (n, a, e) => TestRunner.Equal("CheckTargets." n, a, e)
+        dir := A_Temp "\ALTRunTest_CheckTargets"
+        try DirDelete(dir, true)
+        DirCreate(dir "\PT1931 - 24 NIR")
+        FileAppend("", dir "\summary.pdf")
+        check(type, target, roots := "") => CustomCommandProvider.CheckTarget(Map("Title", "t", "Type", type, "Target", target), roots)
+        eq("folder ok", check("Folder", dir "\PT1931 - 24 NIR"), "OK")
+        eq("folder renamed", check("Folder", dir "\PT1931 - 24 NIR (old)"), "Missing")
+        eq("folder trailing slash", check("Folder", dir "\PT1931 - 24 NIR\"), "OK")
+        eq("file ok", check("File", dir "\summary.pdf"), "OK")
+        eq("quoted file", check("File", '"' dir '\summary.pdf"'), "OK")
+        eq("file moved", check("File", dir "\summary-old.pdf"), "Missing")
+        eq("file type pointing at folder", check("File", dir), "OK")
+        eq("folder type pointing at file", check("Folder", dir "\summary.pdf"), "Missing")
+        eq("runas prefix", check("File", "*RunAs " dir "\summary.pdf"), "OK")
+        eq("builtin variable", check("Folder", "A_WinDir"), "OK")
+        eq("program in PATH", check("Command", "cmd.exe"), "OK")
+        eq("program without extension", check("Command", "cmd"), "OK")
+        eq("unknown program", check("Command", "altrun-no-such-program-12345.exe"), "Missing")
+        eq("empty target", check("File", ""), "Missing")
+        eq("url skipped", check("Url", "https://github.com"), "Skipped")
+        eq("shell location skipped", check("Folder", "shell:Downloads"), "Skipped")
+        eq("clsid skipped", check("Folder", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"), "Skipped")
+        ; 断开的网络盘: 驱动器能否访问记在 roots 里, 不再逐条等待
+        offline := Map("Q:", false)
+        eq("drive offline", check("Folder", "Q:\DESIGN PROJECTS\PT1931", offline), "Unavailable")
+        eq("unc offline", check("File", "\\server\share\a.pdf", Map("\\server\share", false)), "Unavailable")
+        roots := Map()
+        check("Folder", dir, roots)
+        SplitPath(dir, , , , , &drive)
+        eq("root remembered", roots.Has(drive) && roots[drive], true)
+        try DirDelete(dir, true)
     }
 
     static CommandTargets() {

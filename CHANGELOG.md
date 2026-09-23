@@ -6,6 +6,7 @@
 ## [未发布]
 
 ### 新增
+- 偏好设置 → 自定义命令 → "检查路径": 找出目标文件 / 文件夹已经改名或移走的命令, 在 "状态" 列中标出; 网络盘没有连接时显示 "无法访问", 不会误报为找不到
 - 可选的 "按空格执行选中项" (`General.SpaceToRun`, 默认关闭, 和 2.x 的同名选项一样; 从 2.x 升级时沿用原来的设置), `Shift+空格` 输入空格 ([#21](https://github.com/zhugecaomao/ALTRun/issues/21))
 - 每个 PR 自动在 Windows 上运行单元测试和语法检查; Dependabot 检查 GitHub Actions 更新; 安全策略 `SECURITY.md`
 - README 和 Wiki 加上界面截图, 由 `Tests\Screenshots\TakeScreenshots.ahk` 在 GitHub Actions 的 Windows 机器上自动生成
