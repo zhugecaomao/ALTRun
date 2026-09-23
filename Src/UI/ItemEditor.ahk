@@ -29,6 +29,8 @@ class ItemEditor {
         controls := Map()
         labelW := 110, inputW := 380
 
+        ; 单行输入框一定要写 r1: 不写行数时, 初始文字比框宽 (例如很长的路径) AHK 会自动
+        ; 变成多行并加高, 盖住下面的控件
         for field in fields {
             g.AddText("xm w" labelW " y+10 Section", (field.Type = "check") ? "" : field.Label)   ; 复选框的文字写在框后面
             value := item.Has(field.Key) ? item[field.Key] : ""
@@ -45,13 +47,13 @@ class ItemEditor {
                     ctrl := g.AddDropDownList("x+8 ys-3 w" inputW, labels)
                     ctrl.Value := Max(1, ItemEditor._ChoiceIndex(field.Choices, value))
                 case "file", "folder":
-                    ctrl := g.AddEdit("x+8 ys-3 w" (inputW - 34), value)
+                    ctrl := g.AddEdit("x+8 ys-3 w" (inputW - 34) " r1 -Multi", value)
                     browse := g.AddButton("x+4 yp-1 w30", I18n.T("Prefs.Browse"))
                     browse.OnEvent("Click", ItemEditor._Browser(ctrl, field.Type, g))
                 case "number":
-                    ctrl := g.AddEdit("x+8 ys-3 w100 Number", value)
+                    ctrl := g.AddEdit("x+8 ys-3 w100 r1 -Multi Number", value)
                 default:
-                    ctrl := g.AddEdit("x+8 ys-3 w" inputW, value)
+                    ctrl := g.AddEdit("x+8 ys-3 w" inputW " r1 -Multi", value)
             }
             if field.HasOwnProp("Hint")
                 g.AddText("xs+" (labelW + 8) " y+2 w" inputW " cGray", field.Hint)
