@@ -100,6 +100,48 @@ class CustomCommandProvider {
               , ItemEditor.Field("Keyword", "Prefs.Col.Keyword")]
     }
 
+    ; 检查命令的目标是否还在 (文件夹改名、文件移走后命令会失效), 返回:
+    ;   "OK"          存在
+    ;   "Missing"     找不到
+    ;   "Unavailable" 所在的驱动器或网络位置现在无法访问 (例如网络盘没连上), 不能判断
+    ;   "Skipped"     网址、shell: 等不是文件的目标, 不检查
+    ; roots: 同一次检查共用的 Map, 记住每个驱动器 / 网络共享能否访问, 断开的网络盘只等一次
+    static CheckTarget(command, roots := "") {
+        commandType := command.Has("Type") ? command["Type"] : "File"
+        if (commandType = "Url")
+            return "Skipped"
+        raw := Trim(command.Has("Target") ? command["Target"] : "", "`" `t")
+        if (raw = "")
+            return "Missing"
+        target := Path.Resolve(raw)
+        if RegExMatch(target, "i)^([a-z][a-z0-9+.-]+:|::\{)")               ; shell:、ms-settings:、http: 等 (不是 "C:")
+            return "Skipped"
+        if !InStr(target, "\")                                              ; 裸文件名, PATH 里没有
+            return CustomCommandProvider._InAppPaths(target) ? "OK" : "Missing"
+        SplitPath(target, , , , , &drive)
+        if (drive != "") {
+            if !IsObject(roots)
+                roots := Map()
+            if !roots.Has(drive)
+                roots[drive] := DirExist(drive "\") != ""
+            if !roots[drive]
+                return "Unavailable"
+        }
+        found := (commandType = "Folder") ? DirExist(target) : FileExist(target)
+        return (found != "") ? "OK" : "Missing"
+    }
+
+    ; "App Paths" 里注册的程序 (winword、chrome...), Run 也能直接打开
+    static _InAppPaths(name) {
+        SplitPath(name, , , &ext)
+        if (ext = "")
+            name .= ".exe"
+        for root in ["HKCU", "HKLM"]
+            try if (RegRead(root "\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\" name, "") != "")
+                return true
+        return false
+    }
+
     static NewCommand() {
         return Map("Title", "", "Type", "File", "Target", "", "Arguments", "", "Keyword", "")
     }

@@ -235,8 +235,9 @@ class PreferencesWindow {
     static _BuildCommands() {
         PreferencesWindow._BeginPage("Prefs.Page.Commands")
         PreferencesWindow._List("CustomCommands", 440
-            , [["Prefs.Col.Title", "Title", 150], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 230], ["Prefs.Col.Keyword", "Keyword", 90]]
-            , CustomCommandProvider.EditorFields(), () => CustomCommandProvider.NewCommand())
+            , [["Prefs.Col.Title", "Title", 140], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 190], ["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Status", "Status", 70]]
+            , CustomCommandProvider.EditorFields(), () => CustomCommandProvider.NewCommand()
+            , (item, roots) => CustomCommandProvider.CheckTarget(item, roots))
     }
 
     static _BuildSnippets() {
@@ -443,7 +444,9 @@ class PreferencesWindow {
     }
 
     ; 列表页: ListView 显示 path 指向的数组, 添加 / 编辑 / 删除都用 ItemEditor
-    static _List(path, height, columns, fields, newItem) {
+    ; check: 可选, (item, roots) => "OK" / "Missing" / "Unavailable" / "Skipped"。
+    ; 提供时多一个 "检查路径" 按钮, 结果显示在 "Status" 列 (列表里的项目本身没有这个键)
+    static _List(path, height, columns, fields, newItem, check := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
         for column in columns
@@ -452,22 +455,32 @@ class PreferencesWindow {
         for index, column in columns
             listView.ModifyCol(index, column[3])
         pageName := PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Name
+        statuses := Map()                                                   ; ObjPtr(item) -> 检查结果, 检查过才有
 
         Refresh(selectRow := 0) {
             listView.Delete()
             for item in items {
                 cells := []
                 for column in columns
-                    cells.Push(PreferencesWindow._Cell(item, column[2]))
+                    cells.Push((column[2] = "Status") ? StatusText(item) : PreferencesWindow._Cell(item, column[2]))
                 listView.Add("", cells*)
             }
             if selectRow
                 listView.Modify(Min(selectRow, listView.GetCount()), "Select Focus Vis")
         }
+        StatusText(item) {
+            key := ObjPtr(item)
+            return statuses.Has(key) ? I18n.T("Prefs.Status." statuses[key]) : ""
+        }
+        Recheck(item) {                                                     ; 检查过之后, 新增 / 修改的项目也马上检查
+            if statuses.Count
+                statuses[ObjPtr(item)] := check(item, Map())
+        }
         AddItem(*) {
             edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, newItem())
             if IsObject(edited) {
                 items.Push(edited)
+                Recheck(edited)
                 Refresh(items.Length)
             }
         }
@@ -477,9 +490,35 @@ class PreferencesWindow {
                 return
             edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, ItemEditor.WithDefaults(items[row], newItem()))
             if IsObject(edited) {
+                if statuses.Has(ObjPtr(items[row]))
+                    statuses.Delete(ObjPtr(items[row]))
                 items[row] := edited
+                Recheck(edited)
                 Refresh(row)
             }
+        }
+        CheckItems(button, *) {
+            button.Enabled := false
+            statuses.Clear()
+            roots := Map()
+            counts := Map("OK", 0, "Missing", 0, "Unavailable", 0, "Skipped", 0)
+            firstProblem := 0
+            for index, item in items {
+                result := check(item, roots)
+                statuses[ObjPtr(item)] := result
+                counts[result] += 1
+                if (!firstProblem && (result = "Missing" || result = "Unavailable"))
+                    firstProblem := index
+            }
+            Refresh(firstProblem)
+            button.Enabled := true
+            if !firstProblem
+                message := I18n.T("Prefs.CheckAllOk", counts["OK"])
+            else
+                message := I18n.T("Prefs.CheckResult", counts["Missing"], counts["Unavailable"])
+            if counts["Skipped"]
+                message .= "`n`n" I18n.T("Prefs.CheckSkipped", counts["Skipped"])
+            MsgBox(message, pageName, (firstProblem ? "Icon!" : "Iconi") " Owner" PreferencesWindow.Gui.Hwnd)
         }
         DeleteItem(*) {
             row := listView.GetNext()
@@ -497,6 +536,8 @@ class PreferencesWindow {
         PreferencesWindow._Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Edit")).OnEvent("Click", EditItem)
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Delete")).OnEvent("Click", DeleteItem)
+        if IsObject(check)
+            PreferencesWindow._Add("Button", "x+24 yp w100", I18n.T("Prefs.CheckTargets")).OnEvent("Click", CheckItems)
         PreferencesWindow._y += 38
     }
 
