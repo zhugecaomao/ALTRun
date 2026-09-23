@@ -534,6 +534,8 @@ IndexType=*.lnk,*.exe
 IndexDepth=2
 StruCalc=1
 AutoSwitchDir=1
+SpaceToRun=1
+AutoEngIME=1
 [Hotkey]
 GlobalHotkey1=~!Space
 GlobalHotkey2=!r
@@ -579,6 +581,8 @@ Func | PTTools | PT Tools (AHK)=99
         eq("index placeholder dropped", settings["Features"]["Applications"]["Folders"].Length, 2)
         eq("structural calc", settings["Features"]["Calculator"]["StructuralCalc"], 1)
         eq("quick switch", settings["Extensions"]["QuickSwitch"]["AutoSwitch"], 1)
+        eq("space to run", settings["General"]["SpaceToRun"], 1)
+        eq("english input", settings["General"]["SwitchToEnglishInput"], 1)
         eq("conditional hotkey", settings["Hotkeys"][1]["Action"], "PTTools")
         eq("commands (Func skipped)", settings["CustomCommands"].Length, 5)
         commands := Map()

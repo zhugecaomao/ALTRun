@@ -228,6 +228,7 @@ class I18n {
         s["Prefs.ShowTrayIcon"]        := ["Show tray icon", "显示托盘图标"]
         s["Prefs.HideOnDeactivate"]    := ["Hide the window when it loses focus", "失去焦点时隐藏窗口"]
         s["Prefs.EnglishInput"]        := ["Switch to English input when shown", "显示窗口时切换到英文输入法"]
+        s["Prefs.SpaceToRun"]          := ["Space runs the selected result (Shift+Space types a space)", "按空格执行选中项 (Shift+空格输入空格)"]
         s["Prefs.SendToMenu"]          := ["Add to Explorer 'Send to' menu", "添加到资源管理器 '发送到' 菜单"]
         s["Prefs.StartMenu"]           := ["Add to Start menu", "添加到开始菜单"]
         s["Prefs.CheckUpdates"]        := ["Check for updates at startup", "启动时检查更新"]

@@ -1,0 +1,49 @@
+# 每个 PR 和 main 上的提交: 在 Windows 上跑单元测试和 /validate (语法检查 + #Warn 警告)
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
+          Write-Host "AutoHotkey $ahkTag"
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+
+      - name: Validate (syntax and warnings)
+        shell: pwsh
+        run: |
+          # #Warn 的警告改为输出到 stdout, 有任何输出都算失败
+          (Get-Content ALTRun.ahk -Raw) -replace '#Warn All, OutputDebug', '#Warn All, StdOut' | Set-Content _validate.ahk -Encoding utf8BOM
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', '/validate', '_validate.ahk' `
+                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput validate.log -RedirectStandardError validate.err
+          $output = (Get-Content validate.log, validate.err -Raw) -join ""
+          Write-Host $output
+          if ($proc.ExitCode -ne 0 -or $output.Trim()) { throw "Validation failed (exit code $($proc.ExitCode))" }
+
+      - name: Unit tests
+        shell: pwsh
+        run: |
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk' `
+                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput test.log -RedirectStandardError test.err
+          Get-Content test.log | Where-Object { $_ -notmatch '^PASS' }
+          Get-Content test.err
+          if ($proc.ExitCode -ne 0) { throw "Unit tests failed (exit code $($proc.ExitCode))" }
