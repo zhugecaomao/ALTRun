@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "HiddenApps", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -435,6 +435,43 @@ class Tests {
             }
         }
         TestRunner.Equal("EditRows.all edits set rows", missing, "")
+    }
+
+    static HiddenApps() {
+        eq := (n, a, e) => TestRunner.Equal("HiddenApps." n, a, e)
+        saved := ProviderRegistry.Providers
+        ProviderRegistry.Providers := [ApplicationProvider]
+        options := AppSettings.Feature("Applications")
+        options["Hidden"] := []
+        savedFile := AppSettings.File
+        AppSettings.File := A_Temp "\ALTRunTest.json"                     ; 删除时会保存设置, 写到临时文件
+        ApplicationProvider.Apps := [
+            Map("Title", "Notepad", "Target", "C:\Start Menu\Notepad.lnk", "Detail", "", "Search", ""),
+            Map("Title", "Notepad++", "Target", "C:\Start Menu\Notepad++.lnk", "Detail", "", "Search", "")]
+        titles() {
+            list := ""
+            for item in ApplicationProvider.Search(SearchQuery("notepad"))
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("before", titles(), "Notepad|Notepad++")
+        item := ApplicationProvider.Search(SearchQuery("notepad++"))[1]
+        item.Provider := "Applications"
+        TestRunner.True("HiddenApps.can delete", ActionCatalog.CanDelete(item))
+        TestRunner.True("HiddenApps.prompt", InStr(ActionCatalog.DeletePrompt(item), "Notepad++") && InStr(ActionCatalog.DeletePrompt(item), "uninstalled"))
+        ActionCatalog.DeleteItem(item)
+        eq("hidden", titles(), "Notepad")
+        eq("saved in settings", options["Hidden"][1], "C:\Start Menu\Notepad++.lnk")
+        ApplicationProvider.Apps := [
+            Map("Title", "Notepad", "Target", "C:\Start Menu\Notepad.lnk", "Detail", "", "Search", ""),
+            Map("Title", "Notepad++", "Target", "c:\start menu\NOTEPAD++.lnk", "Detail", "", "Search", "")]
+        eq("stays hidden after rebuild", titles(), "Notepad")
+        options["Hidden"] := []
+        eq("restored", titles(), "Notepad|Notepad++")
+        ApplicationProvider.Apps := []
+        ProviderRegistry.Providers := saved
+        AppSettings.File := savedFile
+        try FileDelete(A_Temp "\ALTRunTest.json")
     }
 
     static Misc() {

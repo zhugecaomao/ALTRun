@@ -8,7 +8,8 @@
 ;   →            打开操作面板, 列出这一项全部可用的操作 (ListFor)
 ;   F3           编辑这一项 (EditItem): 自定义命令 / 片段 / 搜索引擎 直接修改;
 ;                应用 / 文件 / 文件夹 / 网址 新建一条自定义命令 (预先填好)
-;   Ctrl+Del     删除这一项 (DeleteItem): 自定义命令 / 片段 / 搜索引擎 / 剪贴板历史
+;   Ctrl+Del     删除这一项 (DeleteItem): 自定义命令 / 片段 / 搜索引擎 / 剪贴板历史;
+;                应用: 从搜索结果中隐藏
 ;
 ; 用法:
 ;   ActionCatalog.RunDefault(item)
@@ -113,6 +114,14 @@ class ActionCatalog {
         if !ActionCatalog.CanDelete(item)
             return false
         return ProviderRegistry.ById(item.Provider).DeleteItem(item)
+    }
+
+    ; 删除前的确认文字; Provider 可以用 DeletePrompt(item) 说明删除的实际效果
+    static DeletePrompt(item) {
+        provider := ProviderRegistry.ById(item.Provider)
+        if (IsObject(provider) && HasMethod(provider, "DeletePrompt"))
+            return provider.DeletePrompt(item)
+        return I18n.T("Search.ConfirmDelete", item.Title)
     }
 
     ; 应用 / 文件 / 文件夹 / 网址 -> 打开编辑对话框新建一条自定义命令 (可以再加关键字等)

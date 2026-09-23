@@ -158,6 +158,7 @@ class AppSettings {
                     "FileTypes"     , ["*.lnk", "*.exe", "*.url", "*.appref-ms"],
                     "Depth"         , 3,
                     "Exclude"       , "i)(uninstall|卸载|readme|help|documentation)",
+                    "Hidden"        , [],                                   ; 在搜索结果里删除 (Ctrl+Del) 的应用的路径
                     "StoreApps"     , 1,
                     "MatchPinyin"   , 1,
                     "RefreshMinutes", 60

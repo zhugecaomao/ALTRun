@@ -199,10 +199,11 @@ class PreferencesWindow {
 
     static _BuildApplications() {
         PreferencesWindow._BeginPage("Prefs.Page.Applications")
-        PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 6)
+        PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 4)
         PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", 300)
         PreferencesWindow._Field("Features.Applications.Depth", "Prefs.AppDepth", 60, "number")
         PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", 300)
+        PreferencesWindow._Lines("Features.Applications.Hidden", "Prefs.AppHidden", 3, "Prefs.AppHiddenHint")
         PreferencesWindow._Field("Features.Applications.RefreshMinutes", "Prefs.RefreshMinutes", 60, "number")
         PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps")
         PreferencesWindow._Check("Features.Applications.MatchPinyin", "Prefs.MatchPinyin")
@@ -416,13 +417,13 @@ class PreferencesWindow {
         return ctrl
     }
 
-    static _Lines(path, labelKey, rows) {
+    static _Lines(path, labelKey, rows, hintKey := "Prefs.ListHint") {
         label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.JoinLines(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
-        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" (PreferencesWindow.ContentW - PreferencesWindow.LabelW) " r" rows " +Multi", value)
+        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" (PreferencesWindow.ContentW - PreferencesWindow.LabelW) " r" rows " +Multi -Wrap +HScroll", value)
         PreferencesWindow._Bind(path, () => PreferencesWindow.SplitLines(ctrl.Value))
         PreferencesWindow._Below(4, label, ctrl)
-        PreferencesWindow._Hint("Prefs.ListHint")
+        PreferencesWindow._Hint(hintKey)
     }
 
     static _Csv(path, labelKey, width) {
