@@ -51,7 +51,7 @@ Class OptionsWindow {
 
         OptTab.UseTab(1) ; CONFIG Tab
         OptionsWindow.ListView := g.AddListView("w500 h300 Checked -Hdr", ["Settings"])
-        for key, description in g_CONFIG_P1 {
+        for key, description in g_CONFIG_LABELS {
             OptionsWindow.ListView.Add("Check" g_CONFIG[key], description)
         }
         OptionsWindow.ListView.ModifyCol(1, "AutoHdr")
@@ -296,7 +296,7 @@ Class OptionsWindow {
             checkedRows[row] := 1
 
         ; Tab1 checklist values (plain booleans, no type coercion needed).
-        for key, _ in g_CONFIG_P1
+        for key, _ in g_CONFIG_LABELS
             g_CONFIG[key] := checkedRows.Has(A_Index) ? 1 : 0
 
         static configKeys := Array("FileMgr", "Everything", "HistoryLen", "RunCount"

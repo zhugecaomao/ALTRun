@@ -15,7 +15,7 @@
 ; No #Include line is needed.
 ;
 ; ALTRun.json is the single source of truth for everything, including PT
-; Tools' own settings (see "PTTools" below, owned by Lib\PTTools.ahk /
+; Tools' own settings (see "PTTools" below, owned by Lib\PTToolsWindow.ahk /
 ; PTToolsWindow). Anyone still on a pre-JSON ALTRun.ini gets migrated
 ; automatically the next time they start ALTRun - see Lib\IniMigration.ahk
 ; for that one-off detection/conversion, called from LoadAppData() below.

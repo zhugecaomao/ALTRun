@@ -1,5 +1,5 @@
 ;===============================================================================
-; Plugins.ahk - 自动日期插件 (AutoHotkey v2)
+; AutoDate.ahk - Ctrl+D 自动加日期 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 在设定好的窗口里按 Ctrl+D 自动追加/更新当前日期, 两个独立场景:
 ;   1. 文件/文件夹改名场景 (g_HOTKEY["AutoDateBefExt"] 指定的窗口, 如资源管理器/
@@ -8,10 +8,10 @@
 ;      Notepad2): 日期直接加在文本末尾。
 ;
 ; 用法 (ALTRun.ahk 启动时调用一次):
-;   Plugins.Init()
+;   AutoDate.Init()
 ;===============================================================================
 
-Class Plugins {
+Class AutoDate {
 
     ; 程序启动时调用一次: 按配置的窗口分组注册两个 Ctrl+D 场景的热键。
     static Init() {
@@ -22,14 +22,14 @@ Class Plugins {
             GroupAdd("TextBox", A_LoopField)
 
         HotIfWinActive("ahk_group FileListMangr")                           ; 针对所有设定好的程序 按Ctrl+D自动在文件(夹)名之后添加日期
-        Hotkey(g_HOTKEY["AutoDateBEHKey"], (p*) => Plugins.RenameWithDate(p*))
+        Hotkey(g_HOTKEY["AutoDateBEHKey"], (p*) => AutoDate.RenameWithDate(p*))
 
 
         HotIfWinActive("ahk_group TextBox")
-        Hotkey(g_HOTKEY["AutoDateAEHKey"], (p*) => Plugins.LineEndAddDate(p*))
+        Hotkey(g_HOTKEY["AutoDateAEHKey"], (p*) => AutoDate.LineEndAddDate(p*))
         HotIfWinActive
 
-        g_LOG.Debug("Plugins: Load AutoDate plugins...OK")
+        g_LOG.Debug("AutoDate: Load AutoDate hotkeys...OK")
         return
     }
 
@@ -38,7 +38,7 @@ Class Plugins {
         FocusedClassNN := ControlGetClassNN(FocusedHwnd)
 
         if (InStr(FocusedClassNN, "Edit") or InStr(FocusedClassNN, "Scintilla")) ; 如果当前激活的控件为Edit类或者Scintilla1(Notepad2),则Ctrl+D功能生效
-            Plugins.NameAddDate("FileListMangr", FocusedClassNN)
+            AutoDate.NameAddDate("FileListMangr", FocusedClassNN)
         else
             SendInput "^D"                                                  ; 如果不是,则发送原始的Ctrl+D
 

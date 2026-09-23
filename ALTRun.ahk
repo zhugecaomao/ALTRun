@@ -10,14 +10,14 @@
 #Include Lib\Logger.ahk                                                ; g_LOG - see just below.
 #Include Lib\Util.ahk                                                  ; Path / Fonts / Win / Pinyin / Calc - see each call site below.
 #Include Lib\Dialogs.ahk                                               ; FontDialog / ColorDialog - see the Options-window font/color pickers.
-#Include Lib\Language.ahk                                              ; Lang.Load()/Lang.IsChinese() - builds g_LNG (the UI text table) below.
+#Include Lib\Language.ahk                                              ; Language.Load()/Language.IsChinese() - builds g_LNG (the UI text table) below.
 #Include Lib\Listary.ahk                                               ; Listary.Init() - open/save dialog path quick-switch, called in the autorun section below.
-#Include Lib\Plugins.ahk                                               ; Plugins.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
+#Include Lib\AutoDate.ahk                                               ; AutoDate.Init() - Ctrl+D auto-date plugin, called in the autorun section below.
 #Include Lib\Clip.ahk                                                  ; Clip.PasteClipText()/ClipPreview()/EditClipText() - the "Clip" snippet command.
 #Include Lib\IniMigration.ahk                                          ; IniMigration.MigrateFromIni() - one-off ALTRun.ini -> ALTRun.json conversion.
 #Include Lib\AppData.ahk                                               ; AppData.LoadAppData()/AppData.SaveAppData() - reads/writes ALTRun.json.
 #Include Lib\CommandStore.ahk                                          ; CommandStore.LoadCommands() etc. - in-memory command cache/rank/usage/history.
-#Include Lib\PTTools.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
+#Include Lib\PTToolsWindow.ahk                                               ; PTToolsWindow - Rebar/BRC calculator + SPF2M automation (see PTTools() below).
 #Include Lib\OptionsWindow.ahk                                         ; OptionsWindow.Show() - the settings window (see Options() below).
 #Include Lib\Kanji.ahk                                                 ; Kanji.ToSimplified()/ToTraditional() - local lookup table, see ClipToSimplified() below.
 #Include Lib\SystemActions.ahk                                         ; SystemActions - shutdown/volume/process list/search engines/etc, see the built-in Func commands below.
@@ -118,9 +118,9 @@ Global g_CONFIG := Map(
 )
 
 g_LOG.Debug("///// ALTRun is starting... /////`n")
-Global g_LNG := Lang.Load()                                            ; UI text table (English/Chinese), see Lib\Language.ahk
+Global g_LNG := Language.Load()                                            ; UI text table (English/Chinese), see Lib\Language.ahk
 
-Global g_CONFIG_P1 := Map(
+Global g_CONFIG_LABELS := Map(
     "AutoStartup"    , g_LNG[101],
     "EnableSendTo"   , g_LNG[102],
     "InStartMenu"    , g_LNG[103],
@@ -250,7 +250,7 @@ SetTrayMenu()               ; SetTrayMenu before SetMainGUI, GUI window uses the
 SetMainGUI()                ; Create and set main GUI
 RegisterHotkey()
 Listary.Init()
-Plugins.Init()
+AutoDate.Init()
 AutoCheckUpdate()
 return
 ;;==================== Autorun until here =========================
@@ -1297,9 +1297,9 @@ UndoDelCommand(*) {
     CommandManager.UndoDelete()
 }
 
-; Plugins()/RenameWithDate()/LineEndAddDate()/NameAddDate() used to live here;
-; all moved into the Plugins class in Lib\Plugins.ahk (see the #Include list
-; at the top of this file and the "Plugins.Init()" call in the autorun section).
+; The old Plugins()/RenameWithDate()/LineEndAddDate()/NameAddDate() used to live here;
+; all moved into the AutoDate class in Lib\AutoDate.ahk (see the #Include list
+; at the top of this file and the "AutoDate.Init()" call in the autorun section).
 
 ; GetArrayIndex() used to live here; it's now Arr.IndexOf() in Lib\Util.ahk -
 ; moved there instead of into CommandManager since it's also used by
@@ -1397,11 +1397,11 @@ OpenTerminalHere() {
 }
 
 PTTools() {
-    PTToolsWindow.Show()                                                  ; Lib\PTTools.ahk - Rebar/BRC calculator
+    PTToolsWindow.Show()                                                  ; Lib\PTToolsWindow.ahk - Rebar/BRC calculator
 }
 
 SPF2M() {
-    PTToolsWindow.ShowSpf2m()                                             ; Lib\PTTools.ahk - SPF2M profile calculator automation
+    PTToolsWindow.ShowSpf2m()                                             ; Lib\PTToolsWindow.ahk - SPF2M profile calculator automation
 }
 
 StruCalc(evalResult) {
@@ -1515,9 +1515,9 @@ ListService() {
     SystemActions.ListService()
 }
 
-; SetLanguage()/ReadChineseFlag() used to live here; both are now Lang.Load()/
-; Lang.IsChinese() in Lib\Language.ahk (see the #Include list at the top of
-; this file and the "Global g_LNG := Lang.Load()" call near the top).
+; SetLanguage()/ReadChineseFlag() used to live here; both are now Language.Load()/
+; Language.IsChinese() in Lib\Language.ahk (see the #Include list at the top of
+; this file and the "Global g_LNG := Language.Load()" call near the top).
 ; Eval()/EvalSimple() used to live here; both are now Calc.Eval() in Lib/Util.ahk.
 
 ;;==================== Performance Test Only =========================
