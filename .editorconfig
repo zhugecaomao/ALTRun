@@ -1,0 +1,21 @@
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+# 入口文件保持 UTF-8 BOM + CRLF (AutoHotkey 在旧版 Windows 上按 BOM 识别编码)
+[ALTRun.ahk]
+charset = utf-8-bom
+end_of_line = crlf
+
+[*.{md,yml,json}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

@@ -1,0 +1,1 @@
+[ALTRun](https://github.com/zhugecaomao/ALTRun) · GPL-3.0 · 文档有误或不清楚? 欢迎 [提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) 或修改 [docs/wiki](https://github.com/zhugecaomao/ALTRun/tree/main/docs/wiki)

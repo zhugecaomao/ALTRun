@@ -28,6 +28,7 @@ class Path {
             "A_Programs"       , A_Programs,
             "A_AppData"        , A_AppData,
             "A_Desktop"        , A_Desktop,
+            "A_DesktopCommon"  , A_DesktopCommon,
             "A_MyDocuments"    , A_MyDocuments,
             "A_ProgramFiles"   , A_ProgramFiles,
             "A_ProgramsCommon" , A_ProgramsCommon,

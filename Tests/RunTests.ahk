@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "HiddenApps", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "HiddenApps", "DefaultFolders", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -472,6 +472,19 @@ class Tests {
         ProviderRegistry.Providers := saved
         AppSettings.File := savedFile
         try FileDelete(A_Temp "\ALTRunTest.json")
+    }
+
+    ; 默认设置里用 A_ 变量写的文件夹都要能解析成真实路径 (否则那个文件夹从来不会被索引)
+    static DefaultFolders() {
+        defaults := AppSettings.Defaults()
+        unresolved := ""
+        for folder in defaults["Features"]["Applications"]["Folders"]
+            if (InStr(Path.Resolve(folder), "A_") = 1)
+                unresolved .= folder " "
+        for folder in defaults["Features"]["FileSearch"]["ScopeFolders"]
+            if (InStr(Path.Resolve(folder), "A_") = 1 || InStr(Path.Resolve(folder), "%"))
+                unresolved .= folder " "
+        TestRunner.Equal("DefaultFolders.all resolve", unresolved, "")
     }
 
     static Misc() {
