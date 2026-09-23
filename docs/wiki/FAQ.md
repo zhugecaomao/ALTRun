@@ -13,7 +13,7 @@
 更简单的办法: 把它加为 [自定义命令](Commands-and-Snippets), 还可以设关键字。
 
 ### 搜不到文件
-Everything 没有运行时, ALTRun 只在 桌面、文档、下载 里找。安装并运行 [Everything](https://www.voidtools.com/) 就能搜全盘, 详见 [文件搜索](File-Search)。
+普通搜索默认不显示文件, 要先在空的搜索框里按 `空格` (或用 `'报告` / `open 报告`) 进入文件搜索。Everything 没有运行时, ALTRun 只在 桌面、文档、下载 里找; 安装并运行 [Everything](https://www.voidtools.com/) 就能搜全盘, 详见 [文件搜索](File-Search)。
 
 ### 常用的结果排不到第一个
 多选几次, ALTRun 会记住你的选择 ([学习排序](Usage#学习排序))。也可以把它加为自定义命令并设一个短关键字: 输入完全相同的关键字时一定排第一。

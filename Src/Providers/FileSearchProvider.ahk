@@ -2,16 +2,17 @@
 ; FileSearchProvider.ahk - 文件 / 文件夹搜索 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 两种用法 (和 Alfred 一样):
-;   1. 默认结果: 直接输入名称, 匹配的文件和文件夹显示在应用和命令下面
-;      (InDefaultResults, 最多 DefaultResultsLimit 条, 至少输入 MinQueryLength 个字)
-;   2. 专门搜索文件:  'report   或   open report   或   find report
+;   1. 默认结果 (InDefaultResults, 默认关闭): 直接输入名称, 匹配的文件和文件夹显示在
+;      应用和命令下面 (最多 DefaultResultsLimit 条, 至少输入 MinQueryLength 个字)
+;   2. 专门搜索文件:  空的搜索框里先按空格 (SpacePrefix, 见 SearchWindow) 再输入 report,
+;                     或  'report  /  open report  /  find report
 ;
 ; 数据来源 (自动选择):
 ;   - Everything 在运行: 通过 IPC 直接查询 (Lib\Everything.ahk), 全盘, 不需要额外文件
 ;   - 否则: 内置索引 (Src\Core\FileIndex.ahk), 只包括 ScopeFolders 里的文件夹
 ;
 ; 设置 (ALTRun.json -> Features.FileSearch):
-;   Keywords / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
+;   Keywords / SpacePrefix / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
 ;   MinQueryLength / UseEverything / EverythingFilter / EverythingPath /
 ;   ScopeFolders / ScopeDepth / ScopeExclude / MaxEntries / RefreshMinutes
 ;===============================================================================
@@ -34,6 +35,13 @@ class FileSearchProvider {
         if (options["InDefaultResults"] && StrLen(query.Text) >= options["MinQueryLength"] && !Calc.Looks(query.Text))
             return FileSearchProvider._DefaultResults(query.Text, options)
         return []
+    }
+
+    ; 搜索窗口的文件搜索模式 (空格开头) 调用: 只搜文件, 空文字不返回结果
+    static SearchFiles(term) {
+        if (Trim(term) = "")
+            return []
+        return FileSearchProvider._KeywordResults(Trim(term), AppSettings.Feature("FileSearch"))
     }
 
     ; 'xxx / open xxx: 只显示文件搜索结果

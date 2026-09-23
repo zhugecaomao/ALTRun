@@ -60,6 +60,7 @@ class I18n {
 
         ; --- Search window ---
         s["Search.Placeholder"]        := ["ALTRun Search", "ALTRun 搜索"]
+        s["Search.FilesPlaceholder"]   := ["Search files...", "搜索文件..."]
         s["Search.ActionsFor"]         := ["Actions for {1}", "{1} 的操作"]
         s["Search.Copied"]             := ["Copied: {1}", "已复制: {1}"]
         s["Search.NotEditable"]        := ["This result cannot be edited.", "这一项不能编辑。"]
@@ -199,9 +200,9 @@ class I18n {
         s["Prefs.Page.Features"]       := ["Features", "功能"]
         s["Prefs.Page.Applications"]   := ["Applications", "应用搜索"]
         s["Prefs.Page.FileSearch"]     := ["File Search", "文件搜索"]
-        s["Prefs.FileInDefault"]       := ["Show matching files and folders in normal results", "直接输入名称时也显示匹配的文件和文件夹"]
+        s["Prefs.FileInDefault"]       := ["Also show matching files and folders in normal results", "普通搜索时也显示匹配的文件和文件夹"]
         s["Prefs.FileDefaultLimit"]    := ["Files shown in normal results", "普通结果里显示的文件数"]
-        s["Prefs.FileMaxResults"]      := ["Results for ' / open search", "' / open 搜索的结果数"]
+        s["Prefs.FileMaxResults"]      := ["Results when searching files", "搜索文件时的结果数"]
         s["Prefs.UseEverything"]       := ["Use Everything when it is running (whole disk)", "Everything 运行时用它搜索 (全盘)"]
         s["Prefs.EverythingFilter"]    := ["Everything filter", "Everything 过滤条件"]
         s["Prefs.ScopeFolders"]        := ["Folders indexed without Everything", "没有 Everything 时索引的文件夹"]
@@ -267,6 +268,7 @@ class I18n {
         s["Prefs.TerminalShell"]       := ["Terminal shell", "终端程序"]
         s["Prefs.FileKeywords"]        := ["File search keywords", "文件搜索关键字"]
         s["Prefs.QuotePrefix"]         := ["' prefix searches files", "以 ' 开头搜索文件"]
+        s["Prefs.SpacePrefix"]         := ["Space in an empty search box searches files (like Alfred)", "以空格开头搜索文件 (和 Alfred 一样)"]
         s["Prefs.EverythingPath"]      := ["Everything folder", "Everything 目录"]
         s["Prefs.CommaHint"]           := ["Separate with commas", "用逗号分隔"]
         ; Applications

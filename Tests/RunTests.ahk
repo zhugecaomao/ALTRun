@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "HiddenApps", "DefaultFolders", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -158,7 +158,7 @@ class Tests {
         eq := (n, a, e) => TestRunner.Equal("Migration." n, a, e)
         eq("detect", SchemaMigration.DetectVersion(old), 2)
         data := SchemaMigration.Upgrade(old, 2)
-        eq("version", data["SchemaVersion"], 3)
+        eq("version", data["SchemaVersion"], AppSettings.CurrentVersion)
         eq("hotkey", data["General"]["Hotkey"], "!Space")
         eq("hotkey2", data["General"]["SecondaryHotkey"], "!r")
         eq("startup", data["General"]["LaunchAtLogin"], 0)
@@ -184,9 +184,16 @@ class Tests {
         eq("snippets", data["Snippets"].Length, 1)
         eq("snippet text", data["Snippets"][1]["Text"], "Dear Sir,`r`n`r`nThanks.`r`nLiming")
         eq("snippet keyword", data["Snippets"][1]["Keyword"], "sig")
-        eq("v3 detect", SchemaMigration.DetectVersion(data), 3)
+        eq("current detect", SchemaMigration.DetectVersion(data), AppSettings.CurrentVersion)
+        eq("files not in default results", data["Features"]["FileSearch"]["InDefaultResults"], 0)
+        v3 := Map("SchemaVersion", 3, "Features", Map("FileSearch", Map("InDefaultResults", 1, "MaxResults", 50)))
+        v4 := SchemaMigration.Upgrade(v3, 3)
+        eq("3->4 default results off", v4["Features"]["FileSearch"]["InDefaultResults"], 0)
+        eq("3->4 keeps other settings", v4["Features"]["FileSearch"]["MaxResults"], 50)
+        eq("3->4 version", v4["SchemaVersion"], 4)
+        eq("3->4 without section", SchemaMigration.Upgrade(Map("SchemaVersion", 3), 3)["SchemaVersion"], 4)
         TestRunner.True("Migration.defaults filled", !AppSettings._MergeDefaults(data, AppSettings.Defaults()))
-        TestRunner.True("Migration.no downgrade", SchemaMigration.Upgrade(Map("SchemaVersion", 3), 3)["SchemaVersion"] = 3)
+        TestRunner.True("Migration.no downgrade", SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4)["SchemaVersion"] = 4)
     }
 
     static Calculator() {
@@ -485,6 +492,27 @@ class Tests {
             if (InStr(Path.Resolve(folder), "A_") = 1 || InStr(Path.Resolve(folder), "%"))
                 unresolved .= folder " "
         TestRunner.Equal("DefaultFolders.all resolve", unresolved, "")
+    }
+
+    static FileSearchModes() {
+        eq := (n, a, e) => TestRunner.Equal("FileSearchModes." n, a, e)
+        options := AppSettings.Feature("FileSearch")
+        saved := [options["InDefaultResults"], options["UseEverything"]]
+        options["UseEverything"] := 0                                       ; 测试用内置索引
+        FileIndex.Paths := ["C:\Windows\Fonts\NIRMALA.TTF", "C:\Docs\Nir Report.pdf"]
+        FileIndex.Names := ["nirmala.ttf", "nir report.pdf"]
+        FileIndex.Folders := [0, 0]
+        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        eq("default off", AppSettings.Defaults()["Features"]["FileSearch"]["InDefaultResults"], 0)
+        eq("space prefix on", AppSettings.Defaults()["Features"]["FileSearch"]["SpacePrefix"], 1)
+        options["InDefaultResults"] := 0
+        eq("normal search has no files", FileSearchProvider.Search(SearchQuery("nir")).Length, 0)
+        files := ProviderRegistry.SearchFiles("nir")
+        TestRunner.True("FileSearchModes.file mode finds files", files.Length >= 2 && files[1].Provider = "FileSearch")
+        eq("file mode empty", ProviderRegistry.SearchFiles("  ").Length, 0)
+        TestRunner.True("FileSearchModes.quote still works", FileSearchProvider.Search(SearchQuery("'nir")).Length >= 2)
+        options["InDefaultResults"] := saved[1], options["UseEverything"] := saved[2]
+        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
     }
 
     static Misc() {

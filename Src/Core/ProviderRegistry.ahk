@@ -84,6 +84,16 @@ class ProviderRegistry {
         return results
     }
 
+    ; 搜索窗口的文件搜索模式: 只要文件搜索的结果 (已按匹配程度排好)
+    static SearchFiles(text) {
+        if !ProviderRegistry.IsEnabled(FileSearchProvider)
+            return []
+        results := FileSearchProvider.SearchFiles(text)
+        for item in results
+            item.Provider := FileSearchProvider.Id
+        return results
+    }
+
     ; 分数从高到低; 分数相同时保持原来的顺序 (功能注册的顺序)
     static SortByScore(items) {
         if (items.Length < 2)

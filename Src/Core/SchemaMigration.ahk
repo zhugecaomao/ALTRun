@@ -4,6 +4,7 @@
 ; 每个版本的升级是一个独立的 _FromN(data) 方法, 负责把版本 N 的数据转换成
 ; 版本 N+1。Upgrade() 从文件当前的版本开始逐级调用, 直到 CurrentVersion:
 ;   2 -> 3   _From2()   ALTRun 2.x (Config/Gui/Hotkey/UserCommand...) -> 3.0
+;   3 -> 4   _From3()   文件搜索默认不再混进普通结果 (InDefaultResults 1 -> 0)
 ;
 ; 以后改设置结构时: AppSettings.CurrentVersion + 1, 再在这里加一个 _FromN()。
 ; 升级前 Backup() 会把原文件复制成 ALTRun.v<N>.backup.json。
@@ -54,6 +55,20 @@ class SchemaMigration {
         backup := SchemaMigration.BackupFile(file, version)
         try FileCopy(file, backup, true)
         return backup
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 3 -> 4
+    ;---------------------------------------------------------------------------
+    ; 3.0 早期默认在普通结果里显示全盘匹配的文件, 会混进 NIRMALA.TTF 这类无关文件;
+    ; 现在默认关闭, 需要时用 空格 / ' / open / find 专门搜索文件。旧文件里的 1 只是当时
+    ; 自动写入的默认值, 这里改成新的默认值 (想要的话可以在偏好设置里重新打开)。
+    static _From3(data) {
+        features := SchemaMigration._Section(data, "Features")
+        fileSearch := SchemaMigration._Section(features, "FileSearch")
+        if fileSearch.Has("InDefaultResults")
+            fileSearch["InDefaultResults"] := 0
+        return data
     }
 
     ;---------------------------------------------------------------------------
