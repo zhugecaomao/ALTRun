@@ -9,7 +9,7 @@
 ;   TurnMonitorOff() { SystemActions.TurnMonitorOff() }   等等
 ;
 ; 这些外壳必须是裸的全局函数, 不能直接把 SystemActions.Xxx 登记成内置命令:
-; "Func | Xxx | ..." 命令和 FuncList 自定义热键都是靠 RunCommand() 里的
+; "Func | Xxx | ..." 命令和 FuncList 自定义热键都是靠 CommandRunner.Execute() 里的
 ; %cmdPath%() 按名字动态调用, 只认裸的全局函数名, 不认 Class.Method - 和
 ; NewClip()/PTTools() 等已有的外壳是同一个原因, 详见那边的注释。
 ;===============================================================================

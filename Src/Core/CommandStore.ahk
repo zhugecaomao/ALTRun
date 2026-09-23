@@ -17,7 +17,7 @@
 ;
 ; RankUp()/RankDown() 两个全局函数必须留在 ALTRun.ahk 里, 不能挪进这个类:
 ; Options 窗口的 FuncList 把它们的函数名当字符串存进 g_HOTKEY[Trigger*], 运行时
-; 靠 RunCommand() 里的 %cmdPath%() 按名字动态调用, 只认裸的全局函数名, 不认
+; 靠 CommandRunner.Execute() 里的 %cmdPath%() 按名字动态调用, 只认裸的全局函数名, 不认
 ; Class.Method - 这两个函数体本身只是薄薄一层, 直接调用 CommandStore.UpdateRank()。
 ;===============================================================================
 

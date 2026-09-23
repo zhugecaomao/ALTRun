@@ -10,7 +10,7 @@
 ; ClassName(...) construction calls, not ClassName.Method(...) static calls like
 ; JSON.parse(), so relying on it is asking for an "unassigned variable" failure):
 ;   Lib\            General-purpose libraries, nothing ALTRun-specific
-;   Src\Core\       Data and state: ALTRun.json, command store, UI text
+;   Src\Core\       Data and logic: ALTRun.json, command store, search/run, UI text
 ;   Src\UI\         Windows: main window, settings, command manager, PT Tools / SPF2M
 ;   Src\Features\   Self-contained features wired in as commands/hotkeys
 ;   Res\            Data files and binaries (not code)
@@ -26,6 +26,7 @@
 #Include Src\Core\IniMigration.ahk       ; IniMigration.MigrateFromIni() - one-off ALTRun.ini -> ALTRun.json
 #Include Src\Core\AppData.ahk            ; AppData.LoadAppData()/SaveAppData() - reads/writes ALTRun.json
 #Include Src\Core\CommandStore.ahk       ; CommandStore.LoadCommands() etc. - command cache/rank/usage/history
+#Include Src\Core\CommandRunner.ahk      ; CommandRunner.Search()/Execute() - search box matching and running commands
 
 ; --- Src\UI: windows ---
 #Include Src\UI\MainWindow.ahk           ; MainWindow - search box, result list, tray/right-click menus, hotkeys
@@ -265,7 +266,7 @@ return
 ; all moved into the MainWindow class in Src\UI\MainWindow.ahk (see the #Include
 ; list at the top of this file and the MainWindow.Create() call in the autorun
 ; section). The six below stay bare wrappers - all of them are listed in
-; FuncList for custom hotkeys (stored by name in ALTRun.json), and RunCommand()
+; FuncList for custom hotkeys (stored by name in ALTRun.json), and CommandRunner.Execute()
 ; calls those by name via %cmdPath%(), which only resolves plain global
 ; function names, not Class.Method.
 ToggleWindow(*) {
@@ -287,181 +288,20 @@ ClearInput(*) {
     MainWindow.ClearInput()
 }
 
-SearchCommand(command := "") {
-    Global g_MATCHED, g_RUNTIME, g_FALLBACK, g_COMMANDS, g_CMDINDEX
-
-    g_MATCHED := Array()
-    g_RUNTIME["CurrentCommand"] := ""
-    listLimit := g_GUI["ListRows"]
-    prefix := SubStr(command, 1, 1)
-    isExpr := Calc.Looks(command)
-
-    ; Prefix-based fallback shortcuts: "+" / " " / ">"
-    if IsFallbackPrefix(prefix) {
-        if (g_FALLBACK.Length = 0)
-            return MainWindow.ShowResults(g_MATCHED)
-        fallbackIndex := (prefix = "+") ? 1 : (prefix = " ") ? 2 : 3
-        g_RUNTIME["CurrentCommand"] := g_FALLBACK[Min(fallbackIndex, g_FALLBACK.Length)]
-        g_MATCHED.Push(g_RUNTIME["CurrentCommand"])
-        return MainWindow.ShowResults(g_MATCHED)
-    }
-
-    ; "/" (optionally followed by more text): command palette - lists every
-    ; built-in Func command with its description, live-filtered by whatever
-    ; comes after "/". A self-documenting "what can I even type" list.
-    if (prefix = "/")
-        return SearchFuncPalette(SubStr(command, 2), listLimit)
-
-    ; Search precomputed command index.
-    if (!isExpr) {
-        pattern := BuildFuzzyPattern(command)
-        if (pattern = "") {
-            Loop Min(listLimit, g_COMMANDS.Length)
-                g_MATCHED.Push(g_COMMANDS[A_Index])
-        } else {
-            regexPattern := g_RUNTIME["RegEx"] . pattern
-            for cmdIndex, searchableText in g_CMDINDEX {
-                if RegExMatch(searchableText, regexPattern) {
-                    g_MATCHED.Push(g_COMMANDS[cmdIndex])
-                    if g_MATCHED.Length >= listLimit
-                        break
-                }
-            }
-        }
-    }
-
-    ; No command match: try expression evaluation, otherwise fallback list.
-    if (g_MATCHED.Length > 0) {
-        g_RUNTIME["CurrentCommand"] := g_MATCHED[1]
-        g_RUNTIME["UseFallback"] := False
-    } else {
-        if (isExpr) {
-            evalResult := Calc.Eval(command)
-            if (IsNumber(evalResult)) {
-                g_RUNTIME["UseFallback"] := False
-                g_RUNTIME["CurrentCommand"] := ""
-                g_MATCHED := StruCalc(Round(evalResult, 6)) ; normalize float precision
-                return MainWindow.ShowResults(g_MATCHED, True)
-            }
-        }
-
-        g_RUNTIME["UseFallback"] := True
-        g_MATCHED := g_FALLBACK
-        g_RUNTIME["CurrentCommand"] := g_FALLBACK.Length ? g_FALLBACK[1] : ""
-    }
-
-    return MainWindow.ShowResults(g_MATCHED)
-}
-
-; "/" command palette: filters g_COMMANDS (already rank-sorted) down to Func-type
-; entries only, then applies the same fuzzy matching SearchCommand() uses for
-; everything else against each one's function name + description.
-SearchFuncPalette(remainder, listLimit) {
-    Global g_MATCHED, g_RUNTIME, g_COMMANDS
-
-    funcCmds := []
-    for _, cmdLine in g_COMMANDS {
-        parts := StrSplit(cmdLine, " | ")
-        if (parts.Length >= 1 && parts[1] = "Func")
-            funcCmds.Push(cmdLine)
-    }
-
-    remainder := Trim(remainder)
-    if (remainder = "") {
-        Loop Min(listLimit, funcCmds.Length)
-            g_MATCHED.Push(funcCmds[A_Index])
-    } else {
-        regexPattern := g_RUNTIME["RegEx"] . BuildFuzzyPattern(remainder)
-        for _, cmdLine in funcCmds {
-            parts := StrSplit(cmdLine, " | ")
-            searchable := (parts.Length >= 2 ? parts[2] : "") " " (parts.Length >= 3 ? parts[3] : "")
-            if RegExMatch(searchable, regexPattern) {
-                g_MATCHED.Push(cmdLine)
-                if g_MATCHED.Length >= listLimit
-                    break
-            }
-        }
-    }
-
-    g_RUNTIME["CurrentCommand"] := g_MATCHED.Length ? g_MATCHED[1] : ""
-    g_RUNTIME["UseFallback"] := False
-    return MainWindow.ShowResults(g_MATCHED)
-}
-
-GetCmdPart(command, fieldNo) {
-    static lastCmd := "", lastParts := ""
-    if (command != lastCmd) {
-        lastCmd := command
-        lastParts := StrSplit(command, " | ")
-    }
-    parts := lastParts
-    return parts.Length >= fieldNo ? parts[fieldNo] : ""
-}
-
-GetCmdDisplayPath(command) {                                            ; Field 2 of a command, made readable (Clip text gets a short preview)
-    return (GetCmdPart(command, 1) = "Clip")
-        ? Clip.ClipPreview(GetCmdPart(command, 2))
-        : GetCmdPart(command, 2)
-}
+; SearchCommand()/SearchFuncPalette()/GetCmdPart()/GetCmdDisplayPath()/RunCommand()/
+; ParseArg()/BuildFuzzyPattern()/IsFallbackPrefix()/OpenDir()/OpenContainer()/
+; StruCalc() used to live here; all moved into the CommandRunner class in
+; Src\Core\CommandRunner.ahk (Search()/Execute()/GetField()/DisplayPath() etc. -
+; see the #Include list at the top of this file). RunCurrentCommand() and
+; OpenContainer() below stay bare wrappers: RunCurrentCommand is listed in
+; FuncList for custom hotkeys and OpenContainer is a built-in Func command,
+; both stored by name in ALTRun.json and called via %cmdPath%(), which only
+; resolves plain global function names, not Class.Method.
 
 ; AbsPath()/RelativePath() used to live here; both are now Path.Resolve()/
 ; Path.Shorten() in Lib/Util.ahk. RelativePath() had no callers left in this
 ; file, so it's simply gone rather than moved - Path.Shorten() covers the
 ; same job if something needs it again.
-
-RunCommand(originCmd) {
-    if (originCmd = "")
-        return
-
-    if (g_RUNTIME["UseDisplay"]) {
-        g_LOG.Debug("RunCommand: blocked in display mode, cmd=" originCmd)
-        return
-    }
-
-    executed := false
-    MainWindow.Hide()
-    ParseArg()
-    g_LOG.Debug("RunCommand: Execute request=" originCmd)
-
-    parts := StrSplit(originCmd, " | ")
-    cmdType := parts.Length >= 1 ? parts[1] : ""
-    rawPath := parts.Length >= 2 ? parts[2] : ""
-    ; Clip payload is plain text, never run it through Path.Resolve().
-    cmdPath := (rawPath != "" && cmdType != "Clip") ? Path.Resolve(rawPath, True) : rawPath
-
-    if (cmdType = "") {
-        return
-    } else if (cmdType = "Clip") {
-        executed := Clip.PasteClipText(rawPath)
-    } else if (cmdType = "DIR") {
-        executed := OpenDir(cmdPath)
-    } else if (cmdType = "FUNC") {
-        try {
-            %cmdPath%()
-            executed := true
-        } catch as e {
-            MsgBox("Could not find function: " cmdPath "`n`nError message: " e.Message, g_TITLE, 48)
-        }
-    } else {
-        try {
-            Run(cmdPath)
-            executed := true
-        } catch as e {
-            MsgBox("Could not run command: " cmdPath "`n`nError message: " e.Message, g_TITLE, 48)
-        }
-    }
-
-    if (executed) {
-        CommandStore.UpdateRunCount()
-        CommandStore.UpdateRank(originCmd)                                          ; Saves by itself only when SmartRank is on
-        CommandStore.UpdateHistory(originCmd)
-        AppData.SaveAppData()                                                  ; Guarantees RunCount/History persist either way, in one write
-        g_LOG.Debug("RunCommand: Execute success, RunCount=" g_CONFIG["RunCount"] ", cmd=" originCmd)
-    } else {
-        g_LOG.Debug("RunCommand: Execute failed, cmd=" originCmd)
-    }
-    return
-}
 
 Exit(*) {
     ExitApp()
@@ -472,45 +312,7 @@ RestartApp(*) {
 }
 
 RunCurrentCommand(*) {
-    RunCommand(g_RUNTIME["CurrentCommand"])
-}
-
-ParseArg() {
-    inputVal := MainWindow.Input.Value
-    commandPrefix := SubStr(inputVal, 1, 1)
-    spacePos := InStr(inputVal, " ")
-
-    if IsFallbackPrefix(commandPrefix) {
-        return g_RUNTIME["Arg"] := SubStr(inputVal, 2)
-    }
-
-    if (spacePos && !g_RUNTIME["UseFallback"]) {
-        g_RUNTIME["Arg"] := SubStr(inputVal, spacePos + 1)
-    } else if (g_RUNTIME["UseFallback"]) {
-        g_RUNTIME["Arg"] := inputVal
-    } else {
-        g_RUNTIME["Arg"] := ""
-    }
-}
-
-BuildFuzzyPattern(needle) {
-    needle := Trim(RegExReplace(needle, "[\s\\]+", " "))
-    if !InStr(needle, " ")
-        return RegExReplace(needle, "([\\\^\$\.\|\?\*\+\(\)\[\]\{\}])", "\\$1")
-
-    pattern := ""
-    for _, token in StrSplit(needle, " ") {
-        if (token = "")
-            continue
-        pattern .= (pattern = "" ? "" : ".*") . RegExReplace(token, "([\\\^\$\.\|\?\*\+\(\)\[\]\{\}])", "\\$1")
-    }
-    return pattern
-}
-
-IsFallbackPrefix(prefix) {
-    if (prefix = "")
-        return false
-    return InStr("+ >", prefix, 0)
+    CommandRunner.Execute(g_RUNTIME["CurrentCommand"])
 }
 
 ; UpdateRank()/UpdateUsage()/UpdateRunCount()/UpdateHistory()/LoadCommands()/
@@ -519,7 +321,7 @@ IsFallbackPrefix(prefix) {
 ;
 ; RankUp()/RankDown() stay bare global functions (not CommandStore methods):
 ; the Options window's FuncList lets you bind them to a custom hotkey by
-; storing the function name as a string in g_HOTKEY[Trigger*], and RunCommand()
+; storing the function name as a string in g_HOTKEY[Trigger*], and CommandRunner.Execute()
 ; then calls it by name via %cmdPath%(), which only resolves plain global
 ; function names, not Class.Method.
 RankUp(*) {
@@ -536,38 +338,8 @@ RankDown(*) {
 ; an unused alternative implementation ("方式2") with no callers anywhere in
 ; the codebase, so it was dropped rather than moved.
 
-OpenDir(dirPath) {                                                      ; Named dirPath, not Path - that's the Util.ahk class now
-    dirPath := Path.Resolve(dirPath)
-
-    Try{
-        Run(g_CONFIG["FileMgr"] ' `"' dirPath '`"')
-        g_LOG.Debug("OpenDir: Using=" g_CONFIG["FileMgr"] " to open dir=" dirPath "...OK")
-        return true
-    } catch as e {
-        g_LOG.Debug("OpenDir: Failed to open dir=" dirPath " Error=" e.Message)
-        MsgBox("Could not open dir: " dirPath "`n`nError message: " e.Message, g_TITLE, 48)
-        return false
-    }
-}
-
 OpenContainer(*) {
-    if (GetCmdPart(g_RUNTIME["CurrentCommand"], 1) = "Clip")            ; Clip has no container folder
-        return
-    cmdPath := GetCmdPart(g_RUNTIME["CurrentCommand"], 2)
-    if (cmdPath = "") {
-        return MsgBox("No valid file to open container folder.", g_TITLE, 48)
-    }
-    containerPath := Path.Resolve(cmdPath)                             ; Named containerPath, not Path - that's the Util.ahk class now
-
-    try {
-        runArg := (g_CONFIG["FileMgr"] = "Explorer.exe") ? ' /Select, `"' containerPath '`"' : ' /P `"' containerPath '`"' ; /P Parent folder
-        Run(g_CONFIG["FileMgr"] runArg)
-
-    g_LOG.Debug("OpenContainer: Using=" g_CONFIG["FileMgr"] " to open container dir for file=" containerPath "...OK")
-    } catch as e {
-        g_LOG.Debug("OpenContainer: Failed to open container dir for file=" containerPath " Error=" e.Message)
-        MsgBox("Failed to open container dir for file: " . containerPath "`n`nError message: " . e.Message, g_TITLE, 48)
-    }
+    CommandRunner.OpenContainer()
 }
 
 ; UpdateSendTo()/UpdateStartup()/UpdateStartMenu()/Reindex() used to live
@@ -670,7 +442,7 @@ UndoDelCommand(*) {
 
 ; NewClip() must stay a bare global function (not a Clip class method): the
 ; built-in "Func | NewClip | New Clip (text snippet)" command calls it by
-; name via %cmdPath%() in RunCommand(), which only resolves plain global
+; name via %cmdPath%() in CommandRunner.Execute(), which only resolves plain global
 ; function names, not Class.Method - see FuncList in Options()/DefaultCommandText().
 NewClip(*) {                                                            ; Command "New Clip", opens the manager pre-set to type Clip
     OpenCommandManager("UserCommand", "Clip", Clip.EscapeClipText(g_RUNTIME["Arg"]), "", 1, "")
@@ -747,32 +519,6 @@ SPF2M() {
     PTToolsWindow.ShowSpf2m()                                             ; Src\UI\PTToolsWindow.ahk - SPF2M profile calculator automation
 }
 
-StruCalc(evalResult) {
-    result    := []
-    formatVal := Calc.Thousands(evalResult)
-    result.Push("Eval | " formatVal)
-
-    if !g_CONFIG["StruCalc"]
-        return result
-
-    result.Push(" | ")  ; 空行分隔
-    ; 主筋计算
-    rebarNum := Ceil((evalResult - 80) / 300 + 1)
-    spacing  := Max(Round((evalResult - 80) / (rebarNum - 0.999)), 0)   ; Use 0.999 to avoid division by zero error
-    result.Push("Eval | With beam width = " formatVal " mm")
-    result.Push(" | Main bar number = " rebarNum " (" spacing " C/C)")
-    result.Push(" | ")  ; 空行分隔
-    ; 配筋面积计算
-    result.Push("Eval | With As = " formatVal " mm2")
-    result.Push(" | Rebar = " Ceil(evalResult / 132.7) "H13 / "
-                        . Ceil(evalResult / 201.1) "H16 / "
-                        . Ceil(evalResult / 314.2) "H20 / "
-                        . Ceil(evalResult / 490.9) "H25 / "
-                        . Ceil(evalResult / 804.2) "H32")
-
-    return result
-}
-
 ; Options()/ResetHotkey()/SelectFont()/PickCMDListColor()/PickMainGUIColor()/
 ; SelectBackground()/OPTButtonOK()/OPTGuiClose()/ToggleGlobalHotkeys()/
 ; SaveConfig()/GetOptCtrlValue()/CoerceLikeCurrent() used to live here; all
@@ -782,7 +528,7 @@ StruCalc(evalResult) {
 ; Options() must stay a bare global function (not an OptionsWindow class
 ; method): F2 / the tray menu / the right-click menu all call it directly,
 ; and "Func | Options | ..." plus the custom-hotkey FuncList in
-; OptionsWindow.Show() call it by name via %cmdPath%() in RunCommand(),
+; OptionsWindow.Show() call it by name via %cmdPath%() in CommandRunner.Execute(),
 ; which only resolves plain global function names, not Class.Method.
 Options(ActTab := 1) {
     OptionsWindow.Show(ActTab)
@@ -887,7 +633,7 @@ BenchmarkRun(rounds := 10) {
     {
         MainWindow.Input.Value := q
         Sleep(10)
-        SearchCommand(q)
+        CommandRunner.Search(q)
     }
 
     sampleLines := ""
@@ -901,7 +647,7 @@ BenchmarkRun(rounds := 10) {
             MainWindow.Input.Value := q
             Sleep(10)
             t0 := A_TickCount
-            SearchCommand(q)
+            CommandRunner.Search(q)
             ms := A_TickCount - t0
             sampleCount += 1
             sumMs += ms

@@ -18,7 +18,7 @@
 ; 注意: ToggleWindow()/TabFunc()/PrevCommand()/NextCommand()/CopyCommand()/
 ; ClearInput() 仍以裸的全局函数外壳留在 ALTRun.ahk 里 - 它们登记在
 ; OptionsWindow 的 FuncList 数组里 (可绑定自定义热键, 函数名以字符串形式保存
-; 在 ALTRun.json 里), RunCommand() 靠 %cmdPath%() 按名字动态调用, 只认裸的
+; 在 ALTRun.json 里), CommandRunner.Execute() 靠 %cmdPath%() 按名字动态调用, 只认裸的
 ; 全局函数名, 不认 Class.Method。只在本类内部用到的事件回调 (Gui/控件事件、
 ; 菜单项、Alt/Ctrl+数字热键) 都是 _OnXxx 私有方法, 用 (p*) => 包一层再绑定。
 ;===============================================================================
@@ -397,14 +397,14 @@ Class MainWindow {
 
     ; Custom / conditional hotkey callback (the hotkey name is appended by Hotkey()).
     static _RunBoundFunction(funcName, *) {
-        RunCommand("FUNC | " funcName)
+        CommandRunner.Execute("FUNC | " funcName)
         g_LOG.Debug("_RunBoundFunction: Execute function...=" funcName)
     }
 
     ; Alt + index: select that row and run it
     static _OnRunRowHotkey() {
         MainWindow._OnSelectRowHotkey()
-        RunCommand(g_RUNTIME["CurrentCommand"])
+        CommandRunner.Execute(g_RUNTIME["CurrentCommand"])
     }
 
     ; Ctrl + index: select that row
@@ -506,7 +506,7 @@ Class MainWindow {
     ; Input box
     ;---------------------------------------------------------------------------
     static _OnInputChange() {
-        SearchCommand(MainWindow.Input.Value)
+        CommandRunner.Search(MainWindow.Input.Value)
     }
 
     static ClearInput() {
@@ -554,7 +554,7 @@ Class MainWindow {
         }
         rowCount := lv.GetCount()
         statusText := (g_RUNTIME["CurrentCommand"] != "")
-            ? GetCmdDisplayPath(g_RUNTIME["CurrentCommand"])
+            ? CommandRunner.DisplayPath(g_RUNTIME["CurrentCommand"])
             : (rowCount ? lv.GetText(1, 3) : "")
 
         if (rowCount)
@@ -569,7 +569,7 @@ Class MainWindow {
         if (g_MATCHED.Length >= rowNumber) {
             g_RUNTIME["CurrentCommand"] := g_MATCHED[rowNumber]
             if updateStatus
-                MainWindow.SetStatus(GetCmdDisplayPath(g_RUNTIME["CurrentCommand"]))
+                MainWindow.SetStatus(CommandRunner.DisplayPath(g_RUNTIME["CurrentCommand"]))
             return true
         }
         if updateStatus
@@ -605,7 +605,7 @@ Class MainWindow {
             return
 
         if MainWindow.SyncCurrentCommand(focusedRow, false) {
-            RunCommand(g_RUNTIME["CurrentCommand"])
+            CommandRunner.Execute(g_RUNTIME["CurrentCommand"])
         }
     }
 

@@ -10,7 +10,7 @@
 ; 注意: OpenCommandManager()/NewCommand()/EditCommand()/DelCommand()/
 ; UndoDelCommand() 仍以裸的全局函数外壳留在 ALTRun.ahk 里 - 它们全部登记在
 ; OptionsWindow 的 FuncList 数组里(可绑定自定义热键), 部分还是内置 Func 命令,
-; RunCommand() 靠 %cmdPath%() 按名字动态调用, 只认裸的全局函数名, 不认
+; CommandRunner.Execute() 靠 %cmdPath%() 按名字动态调用, 只认裸的全局函数名, 不认
 ; Class.Method, 详见那边的注释。
 ;===============================================================================
 
