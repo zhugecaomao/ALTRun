@@ -58,27 +58,31 @@ class Shots {
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
-        ; 预热: 刚建好的快捷方式第一次取图标很慢 (Windows 在扫描新文件), 这期间窗口画不出结果。
-        ; 等它第一次画出来, 这一次不截图
-        Shots.Log("== warm-up")
-        Shots.Launch("Light")
-        hwnd := Shots.Search("pt")
-        if !Shots.WaitPainted(hwnd, 30)
-            Shots.Diagnose(hwnd)
-        Shots.Close()
+        Shots.PrimeIcons()
         for scene in Shots.Scenes() {
             if (wanted.Count && !wanted.Has(scene[1]))
                 continue
             Shots.Log("== " scene[1])
-            try {
-                Shots.Launch(scene[2], scene[3])
-                hwnd := scene[4]()
-                Shots.Capture(hwnd, Shots.OutDir "\" scene[1] ".png")
-            } catch as e {
-                Shots.Failures += 1
-                Shots.Log("FAIL " scene[1] ": " e.Message " (line " e.Line ")")
+            ; 在刚启动的 Windows 上, 前几分钟里读取图标可能卡住, ALTRun 画不出结果行;
+            ; 这时重新启动 ALTRun 再试
+            Loop 4 {
+                try {
+                    Shots.Launch(scene[2], scene[3])
+                    hwnd := scene[4]()
+                    if (!Shots.WaitPainted(hwnd, 20) && A_Index < 4) {
+                        Shots.Diagnose(hwnd)
+                        Shots.Log("relaunching")
+                        Shots.Close()
+                        continue
+                    }
+                    Shots.Capture(hwnd, Shots.OutDir "\" scene[1] ".png")
+                } catch as e {
+                    Shots.Failures += 1
+                    Shots.Log("FAIL " scene[1] ": " e.Message " (line " e.Line ")")
+                }
+                Shots.Close()
+                break
             }
-            Shots.Close()
         }
         Shots.Log("done, " Shots.Failures " failure(s)")
     }
@@ -157,6 +161,25 @@ class Shots {
         try FileDelete(path)
         FileAppend(JSON.Stringify(settings, 4), path, "UTF-8")
         try DirDelete(Shots.AppDir "\Data", true)
+    }
+
+    ; 先在这里把演示用到的图标都读一遍 (第一次读很慢), 记下耗时
+    static PrimeIcons() {
+        paths := []
+        Loop Files, Shots.AppsDir "\*.lnk"
+            paths.Push(A_LoopFileFullPath)
+        Loop Files, Shots.DemoDir "\*", "FDR"
+            paths.Push(A_LoopFileFullPath)
+        start := A_TickCount
+        info := Buffer(A_PtrSize + 688, 0)                                  ; SHFILEINFOW
+        for path in paths {
+            t := A_TickCount
+            if DllCall("shell32\SHGetFileInfoW", "WStr", path, "UInt", 0, "Ptr", info, "UInt", info.Size, "UInt", 0x100)   ; SHGFI_ICON
+                DllCall("DestroyIcon", "Ptr", NumGet(info, 0, "Ptr"))
+            if (A_TickCount - t > 1000)
+                Shots.Log("icon: " path " took " (A_TickCount - t) // 1000 " s")
+        }
+        Shots.Log("icons primed in " (A_TickCount - start) // 1000 " s")
     }
 
     ; 纯色背景铺满屏幕, 挡住桌面上的其它窗口 (半透明主题会透出后面的内容)。
@@ -287,8 +310,6 @@ class Shots {
     }
 
     static Capture(hwnd, file) {
-        if !Shots.WaitPainted(hwnd, 20)
-            Shots.Diagnose(hwnd)
         hbm := Shots.CaptureBitmap(hwnd, &w, &h, &blank)
         try {
             Shots.SavePng(hbm, file)
