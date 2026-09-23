@@ -41,6 +41,7 @@ class SearchWindow {
     static _gdi := Map()
     static _searchTimer := "", _hideTimer := ""
     static _posX := 0, _posY := 0
+    static _shownRows := -1                                                 ; 窗口当前按几行结果的高度显示
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
 
     ;---------------------------------------------------------------------------
@@ -148,6 +149,7 @@ class SearchWindow {
         SearchWindow._posX := area.Left + (area.Right - area.Left - SearchWindow.Width) // 2
         SearchWindow._posY := area.Top + Round((area.Bottom - area.Top) * 0.2)
         SearchWindow.Gui.Show("x" SearchWindow._posX " y" SearchWindow._posY " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
+        SearchWindow._shownRows := SearchWindow._VisibleCount()
         try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
         SearchWindow.Input.Focus()
         len := StrLen(SearchWindow.Input.Value)
@@ -225,22 +227,27 @@ class SearchWindow {
         return pad + SearchWindow.InputHeight + pad // 2 + 1 + visibleCount * SearchWindow.RowHeight + pad // 2
     }
 
+    ; 每次按键都会调用: 行数没变时只重画列表, 不动窗口大小和控件 (调整窗口大小比重画慢得多)
     static _Layout() {
         visibleCount := SearchWindow._VisibleCount()
         list := SearchWindow.List
-        list.Opt("-Redraw")
         if (list.GetCount() != visibleCount) {
+            list.Opt("-Redraw")
             list.Delete()
             Loop visibleCount
                 list.Add("", "")
+            list.Move(, , , visibleCount * SearchWindow.RowHeight)
+            list.Opt("+Redraw")
         }
-        list.Move(, , , visibleCount * SearchWindow.RowHeight)
-        list.Visible := visibleCount > 0
-        SearchWindow.Separator.Visible := visibleCount > 0
-        list.Opt("+Redraw")
+        if (list.Visible != (visibleCount > 0)) {
+            list.Visible := visibleCount > 0
+            SearchWindow.Separator.Visible := visibleCount > 0
+        }
         SearchWindow._Repaint()
-        if SearchWindow.IsVisible()
+        if (SearchWindow.IsVisible() && SearchWindow._shownRows != visibleCount) {
             SearchWindow.Gui.Show("NA w" SearchWindow.Width " h" SearchWindow._WindowHeight(visibleCount))
+            SearchWindow._shownRows := visibleCount
+        }
     }
 
     static _Repaint() {

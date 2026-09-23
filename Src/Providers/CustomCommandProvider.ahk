@@ -18,14 +18,28 @@
 
 class CustomCommandProvider {
     static Id := "CustomCommands"
+    static _lastNeedle := "", _lastMatches := [], _lastList := ""
 
     static Init() {
     }
 
+    ; 先给所有命令打分, 只为排在前面的 MaxResults 条生成结果 (命令多时, 输入一个字母就能
+    ; 匹配上几百条, 每条都生成结果会让输入卡顿)。取前几条时算上学习加分, 常选的命令不会被挤掉。
+    ; 继续输入 (新输入以上一次的输入开头, 至少 3 个字母) 时只在上一次匹配到的命令里找,
+    ; 和 ApplicationProvider 一样; 命令有增删改时重新从全部命令里找
     static Search(query) {
-        results := []
         needle := StrLower(query.Text)
-        for command in AppSettings.CustomCommands {
+        commands := AppSettings.CustomCommands
+        list := ObjPtr(commands) "|" commands.Length
+        candidates := commands
+        if (list = CustomCommandProvider._lastList && StrLen(CustomCommandProvider._lastNeedle) >= 3
+            && InStr(needle, CustomCommandProvider._lastNeedle) = 1) {
+            candidates := Map()
+            for index in CustomCommandProvider._lastMatches
+                candidates[index] := commands[index]
+        }
+        scores := Map(), ranks := Map(), matches := []
+        for index, command in candidates {
             if !(command is Map) || !command.Has("Title") || !command.Has("Target")
                 continue
             keyword := command.Has("Keyword") ? command["Keyword"] : ""
@@ -38,9 +52,26 @@ class CustomCommandProvider {
                 score := Max(score, 100)
             if (score <= 0)
                 continue
-            results.Push(CustomCommandProvider._ToItem(command, score + 15))  ; 用户自己加的命令比索引出来的应用优先
+            scores[index] := score + 15                                     ; 用户自己加的命令比索引出来的应用优先
+            ranks[index] := scores[index] + Knowledge.Boost(query.Text, CustomCommandProvider._Uid(command))
+            matches.Push(index)
         }
+        CustomCommandProvider._lastNeedle := needle, CustomCommandProvider._lastMatches := matches, CustomCommandProvider._lastList := list
+        results := []
+        for index in FuzzyMatcher.TopIndexes(ranks, ProviderRegistry.MaxResults)
+            results.Push(CustomCommandProvider._ToItem(commands[index], scores[index]))
         return results
+    }
+
+    ; 命令被修改后, 下一次搜索从全部命令里找
+    static _ResetNarrowing() {
+        CustomCommandProvider._lastNeedle := ""
+    }
+
+    static _Uid(command) {
+        arguments := command.Has("Arguments") ? command["Arguments"] : ""
+        commandType := command.Has("Type") ? command["Type"] : "File"
+        return "custom:" StrLower(commandType "|" command["Target"] "|" arguments)
     }
 
     ; 名称 / 关键字 / 拼音首字母的搜索 Key, 按 "名称|关键字" 缓存 (修改命令后自然换成新的键)
@@ -79,15 +110,23 @@ class CustomCommandProvider {
         arguments := command.Has("Arguments") ? command["Arguments"] : ""
         commandType := command.Has("Type") ? command["Type"] : "File"
         switch commandType, false {
-            case "Folder": kind := "folder", icon := Path.Resolve(target)
+            case "Folder": kind := "folder", icon := CustomCommandProvider._Resolve(target)
             case "Url"   : kind := "url",    icon := "url:"
-            default      : kind := "file",   icon := Path.Resolve(target)
+            default      : kind := "file",   icon := CustomCommandProvider._Resolve(target)
         }
-        displayTarget := (kind = "url") ? target : Path.Resolve(target)
+        displayTarget := (kind = "url") ? target : CustomCommandProvider._Resolve(target)
         return ResultItem(command["Title"], Trim(displayTarget " " arguments), {
             Kind: kind, Arg: target, Arguments: arguments, Icon: icon, Score: score, Source: command,
-            Uid: "custom:" StrLower(commandType "|" target "|" arguments)
+            Uid: CustomCommandProvider._Uid(command)
         })
+    }
+
+    ; Path.Resolve 对只写程序名的目标 ("cmd.exe") 要查磁盘和 PATH, 结果缓存起来
+    static _Resolve(target) {
+        static cache := Map()
+        if !cache.Has(target)
+            cache[target] := Path.Resolve(target)
+        return cache[target]
     }
 
     static EditorFields() {
@@ -161,6 +200,7 @@ class CustomCommandProvider {
         else
             for key, value in edited
                 command[key] := value
+        CustomCommandProvider._ResetNarrowing()
         return AppSettings.Save()
     }
 
@@ -172,6 +212,7 @@ class CustomCommandProvider {
         for index, command in AppSettings.CustomCommands {
             if (ObjPtr(command) = ObjPtr(item.Source)) {
                 AppSettings.CustomCommands.RemoveAt(index)
+                CustomCommandProvider._ResetNarrowing()
                 return AppSettings.Save()
             }
         }
@@ -190,6 +231,7 @@ class CustomCommandProvider {
             "Arguments", "",
             "Keyword", ""
         ))
+        CustomCommandProvider._ResetNarrowing()
         AppSettings.Save()
         App.Notify(I18n.T("Custom.Added", title), 2500)
     }

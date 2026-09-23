@@ -9,6 +9,8 @@
 ;   "url:"                       默认浏览器 (网址) 图标
 ;   "folder:"                    通用文件夹图标
 ; exe/lnk/ico 等每个文件图标不同, 按完整路径缓存; 其它文件按扩展名缓存。
+; 网络位置 (\\server\share、映射的网络盘) 上的文件和文件夹不读磁盘, 用扩展名 / 文件夹的
+; 通用图标: 读一次网络上的图标可能要几百毫秒, 而加载图标和打字在同一个线程里。
 ;
 ; 读取图标 (特别是 exe/lnk、网络路径) 可能要几毫秒到几十毫秒, 所以 Get() 遇到
 ; 还没加载的图标先返回 0 并放进队列, 由定时器在后台加载, 加载完调用 OnLoaded
@@ -34,7 +36,7 @@ class IconCache {
         if IconCache._icons.Has(key)
             return IconCache._icons[key]
         if !IconCache._queue.Has(key) {
-            IconCache._queue[key] := spec
+            IconCache._queue[key] := IconCache._LoadSpec(spec, key)
             if (IconCache._timer = "")
                 IconCache._timer := () => IconCache._LoadQueued()
             SetTimer(IconCache._timer, -1)
@@ -49,7 +51,7 @@ class IconCache {
         key := IconCache._CacheKey(spec)
         if !IconCache._icons.Has(key) {
             hIcon := 0
-            try hIcon := IconCache._Load(spec)
+            try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
             IconCache._icons[key] := hIcon
         }
         return IconCache._icons[key]
@@ -84,10 +86,32 @@ class IconCache {
     static _CacheKey(spec) {
         if RegExMatch(spec, "i)^(res|ext|url|folder):")
             return StrLower(spec)
+        if IconCache.IsRemote(spec) {
+            SplitPath(RTrim(spec, "\/"), , , &ext)
+            return (ext = "") ? "folder:" : "ext:." StrLower(ext)
+        }
         SplitPath(spec, , , &ext)
         if (ext = "" || RegExMatch(ext, "i)^(exe|lnk|ico|url|appref-ms|msc|cpl|scr)$") || InStr(spec, "shell:") = 1)
             return StrLower(spec)                                           ; 每个文件自己的图标
         return "ext:." StrLower(ext)
+    }
+
+    ; 网络位置按通用图标加载 (缓存键就是 "folder:" / "ext:.pdf"), 其它按原来的路径
+    static _LoadSpec(spec, key) {
+        return (IconCache.IsRemote(spec) && RegExMatch(key, "^(folder|ext):")) ? key : spec
+    }
+
+    ; UNC 路径, 或者 Windows 认为是网络驱动器的盘符 (GetDriveType 不访问网络, 每个盘符只查一次)
+    static IsRemote(target) {
+        static drives := Map()
+        if (SubStr(target, 1, 2) = "\\")
+            return true
+        if !RegExMatch(target, "^([A-Za-z]):", &match)
+            return false
+        letter := StrUpper(match[1])
+        if !drives.Has(letter)
+            drives[letter] := DllCall("GetDriveTypeW", "WStr", letter ":\", "UInt") = 4      ; DRIVE_REMOTE
+        return drives[letter]
     }
 
     static _Load(spec) {
