@@ -9,13 +9,13 @@
 ;   Lib\            General-purpose libraries, nothing ALTRun-specific
 ;   Src\Core\       App startup, settings + migration, search model, ranking, actions
 ;   Src\UI\         Search window, large type, themes, icons
-;   Src\Providers\  Search features: applications, custom commands, snippets,
-;                   system commands, calculator, web search, file search, terminal
-;   Src\Extensions\ Features outside the search window: dialog quick switch,
-;                   Ctrl+D date, PT Tools, update checker
+;   Src\Providers\  Search features: clipboard history, applications, custom commands,
+;                   snippets, system commands, calculator, web search, file search, terminal
+;   Src\Extensions\ Features outside the search window: snippet auto-expansion,
+;                   dialog quick switch, Ctrl+D date, PT Tools, update checker
 ;   Res\            Data files (Kanji.txt)
 ;   Themes\         Optional custom themes (<Name>.json)
-;   Data\           Generated at runtime: app index, learned ranking (safe to delete)
+;   Data\           Generated at runtime: app index, learned ranking, clipboard history
 ;===============================================================================
 #Requires AutoHotkey v2.0
 #SingleInstance Force
@@ -49,6 +49,7 @@
 #Include Src\UI\LargeType.ahk
 
 ; --- Src\Providers ---
+#Include Src\Providers\ClipboardProvider.ahk
 #Include Src\Providers\ApplicationProvider.ahk
 #Include Src\Providers\CustomCommandProvider.ahk
 #Include Src\Providers\SnippetProvider.ahk
@@ -59,6 +60,7 @@
 #Include Src\Providers\TerminalProvider.ahk
 
 ; --- Src\Extensions ---
+#Include Src\Extensions\SnippetExpander.ahk
 #Include Src\Extensions\QuickSwitch.ahk
 #Include Src\Extensions\AutoDate.ahk
 #Include Src\Extensions\PTToolsWindow.ahk

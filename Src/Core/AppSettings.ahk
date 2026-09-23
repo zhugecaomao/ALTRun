@@ -14,7 +14,7 @@
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
 ;   "Hotkeys"       : [ { "Key", "Action", "WinTitle" } ],   自定义热键 -> 系统命令
 ;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword" } ],
-;   "Snippets"      : [ { "Name", "Keyword", "Text" } ]
+;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ]
 ; }
 ;
 ; 旧版本 (没有 SchemaVersion 的 2.x 格式) 由 SchemaMigration 自动升级, 升级前
@@ -164,10 +164,21 @@ class AppSettings {
                 ),
                 "CustomCommands", Map("Enabled", 1),
                 "Snippets", Map(
-                    "Enabled"   , 1,
-                    "Keyword"   , "snip",
-                    "PasteMode" , "Clipboard",                              ; Clipboard = 剪贴板 + Ctrl+V; Type = 逐字输入
-                    "PasteDelay", 300
+                    "Enabled"     , 1,
+                    "Keyword"     , "snip",
+                    "PasteMode"   , "Clipboard",                            ; Clipboard = 剪贴板 + Ctrl+V; Type = 逐字输入
+                    "PasteDelay"  , 300,
+                    "AutoExpand"  , 1,                                      ; 在任何程序里输入 前缀+关键字 自动展开
+                    "ExpandPrefix", ";"
+                ),
+                "Clipboard", Map(
+                    "Enabled"      , 1,
+                    "Keyword"      , "clip",
+                    "Hotkey"       , "^!c",                                 ; 直接打开剪贴板历史
+                    "MaxItems"     , 200,
+                    "MaxItemLength", 100000,                                ; 超过这么多字的内容不记录
+                    "Persist"      , 1,                                     ; 0 = 只在内存里, 退出即清空
+                    "IgnoreApps"   , ["KeePass.exe", "KeePassXC.exe", "1Password.exe", "Bitwarden.exe"]
                 ),
                 "Calculator", Map(
                     "Enabled"       , 1,

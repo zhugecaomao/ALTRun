@@ -11,7 +11,9 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 - **操作面板**: 选中一项按 `→` 列出全部操作 (打开 / 以管理员运行 / 显示位置 / 复制路径 / 在此打开终端 / 属性 / 大字显示...)
 - **修饰键**: `Ctrl+Enter` 在文件管理器中显示, `Alt+Enter` 复制路径, `Ctrl+1~9` 直接执行第 N 行
 - **应用搜索**: 自动索引开始菜单、桌面和应用商店应用, 中文名称支持拼音首字母 ("wx" → 微信)
+- **剪贴板历史**: `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字, `clip 关键词` 过滤, Enter 粘贴; 密码管理器复制的内容自动忽略
 - **自定义命令 / 文字片段**: 文件、文件夹、程序+参数、网址; 片段支持 `{date}` `{clipboard}` `{cursor}` 等占位符
+- **片段自动展开**: 在任何程序里输入 `;关键字` (例如 `;sig`) 自动替换成片段正文
 - **计算器**: 直接输入算式, 可选附带梁主筋 / 配筋面积的结构计算
 - **网页搜索**: `g 关键词` (Google)、`bd 关键词` (百度) 等, 引擎可自行添加; 没有结果时显示兜底搜索
 - **文件搜索**: `'报告` 或 `open 报告`, 通过 Everything 搜索文件
@@ -35,6 +37,7 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 | 按键 | 作用 |
 |---|---|
 | `Alt+Space` | 显示 / 隐藏搜索窗口 (可在设置里修改) |
+| `Ctrl+Alt+C` | 打开剪贴板历史 |
 | `Enter` | 执行选中项 (打开文件/程序/网址, 复制计算结果, 粘贴片段...) |
 | `Ctrl+Enter` | 文件/文件夹: 在文件管理器中显示; 文字: 粘贴到前台窗口 |
 | `Alt+Enter` | 复制路径 / 网址 / 文字 |
@@ -57,7 +60,11 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 | `g xxx` `bing xxx` `bd xxx` `gh xxx` `wiki xxx` `yt xxx` `tb xxx` `jd xxx` `tr xxx` | 网页搜索 (Google / Bing / 百度 / GitHub / 维基百科 / YouTube / 淘宝 / 京东 / 翻译) |
 | `'xxx` 或 `open xxx` / `find xxx` | 文件搜索 (Everything) |
 | `>命令` | 在终端运行 |
+| `clip` / `clip xxx` | 剪贴板历史 |
 | `snip xxx` | 只搜索片段 |
+| `;关键字` (在任何程序里) | 片段自动展开 |
+
+关键字后面加了空格 (例如 `clip `、`g xxx`、`'xxx`、`>xxx`) 就进入该功能的专属模式, 只显示这个功能的结果。
 
 文件搜索需要安装 [Everything](https://www.voidtools.com/), 并把 `Everything64.dll` (Everything SDK) 或 `es.exe` (命令行版) 放在 ALTRun 目录; 都没有时会改为在 Everything 或 Windows 搜索里打开。
 
@@ -89,10 +96,11 @@ ALTRun - 基于 AutoHotkey v2、开源免费、轻量高效的 Windows 启动器
 ```
 
 - **CustomCommands**: `Type` 可以是 `File` / `Folder` / `Command` / `Url`; `Target` 支持 `A_Desktop`、`A_ScriptDir` 等内置变量开头和 `%AppData%` 等环境变量。也可以在资源管理器里右键 "发送到 → ALTRun" 添加, 或在操作面板里选 "添加到自定义命令"。
-- **Snippets**: 占位符 `{date}` `{time}` `{datetime}` `{clipboard}` `{cursor}` (粘贴后光标停在这里)。
+- **Snippets**: 占位符 `{date}` `{time}` `{datetime}` `{clipboard}` `{cursor}` (粘贴后光标停在这里)。有 `Keyword` 的片段可以在任何程序里输入 `;关键字` 自动展开 (前缀见 `Features.Snippets.ExpandPrefix`, 单个片段设 `"AutoExpand": 0` 可以关闭)。
+- **Clipboard**: `Features.Clipboard` 里可以修改热键、保存条数、是否保存到磁盘 (`Persist`)、不记录的程序 (`IgnoreApps`)。历史保存在 `Data\ClipboardHistory.json`。
 - **Hotkeys**: 自定义热键执行一条系统命令, `WinTitle` 不为空时只在该窗口里生效。可用的命令 Id 见 `Src\Providers\SystemProvider.ahk` (例如 `Lock`、`PTTools`、`TextUpper`、`ToggleWindow`)。
 - **主题**: 在 `Themes\<名称>.json` 里写出要修改的键 (颜色 `RRGGBB`、字号、行高...), 然后设置 `"Theme": "<名称>"`; 可用的键见 `Src\UI\ThemeManager.ahk`。
-- 运行时生成的数据放在 `Data\` 目录 (应用索引、学习记录), 删掉只会重新生成。
+- 运行时生成的数据放在 `Data\` 目录 (应用索引、学习记录、剪贴板历史), 删掉只会重新生成。
 
 
 ## 从 2.x 升级
@@ -109,8 +117,8 @@ ALTRun.ahk          入口: 列出所有模块并调用 App.Start()
 Lib\                通用库, 与 ALTRun 无关 (JSON, Logger, Util, TextTools, Kanji, Dialogs)
 Src\Core\           启动流程 (App), 设置与版本升级, 搜索模型 (SearchQuery / ResultItem), 匹配打分, 学习排序, 操作
 Src\UI\             搜索窗口, 大字显示, 主题, 图标缓存
-Src\Providers\      搜索功能: 应用 / 自定义命令 / 片段 / 系统命令 / 计算器 / 网页搜索 / 文件搜索 / 终端
-Src\Extensions\     搜索窗口以外的功能: 对话框快速跳转, Ctrl+D 加日期, PT 工具箱, 检查更新
+Src\Providers\      搜索功能: 剪贴板历史 / 应用 / 自定义命令 / 片段 / 系统命令 / 计算器 / 网页搜索 / 文件搜索 / 终端
+Src\Extensions\     搜索窗口以外的功能: 片段自动展开, 对话框快速跳转, Ctrl+D 加日期, PT 工具箱, 检查更新
 Res\                数据文件 (Kanji.txt 简繁对照表)
 Tests\              单元测试
 ```

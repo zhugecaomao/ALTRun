@@ -7,6 +7,7 @@
 ;
 ; 正文里的占位符在粘贴时展开:
 ;   {date} {time} {datetime} {clipboard} {cursor} (粘贴后光标停在这里)
+; 自动展开 (输入 ";关键字") 见 Src\Extensions\SnippetExpander.ahk。
 ;===============================================================================
 
 class SnippetProvider {
@@ -32,6 +33,7 @@ class SnippetProvider {
             item := ResultItem((name != "") ? name : preview, I18n.T("Snippet.Subtitle", preview), {
                 Kind: "text", Arg: snippet["Text"], Icon: "res:imageres.dll,-102",
                 Uid: "snippet:" StrLower(keyword "|" name), Score: score + (onlySnippets ? 30 : 0),
+                Exclusive: onlySnippets && query.HasRest,
                 LargeText: SnippetProvider.Expand(snippet["Text"])
             })
             item.OnRun := (resultItem) => SnippetProvider.Paste(resultItem.Arg)
@@ -40,14 +42,15 @@ class SnippetProvider {
         return results
     }
 
-    static Paste(text) {
+    ; focusPrevious = false: 自动展开时直接粘贴到当前窗口
+    static Paste(text, focusPrevious := true) {
         text := SnippetProvider.Expand(text)
         caretBack := 0
         if (cursorPos := InStr(text, "{cursor}")) {
             text := StrReplace(text, "{cursor}")
             caretBack := StrLen(text) - cursorPos + 1
         }
-        if !ActionCatalog.PasteText(text)
+        if !ActionCatalog.PasteText(text, focusPrevious)
             return
         if (caretBack > 0)
             SendInput("{Left " caretBack "}")

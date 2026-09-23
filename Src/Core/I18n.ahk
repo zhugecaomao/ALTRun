@@ -88,6 +88,13 @@ class I18n {
         "Terminal.Run"           , ["Run '{1}' in terminal", "在终端运行 '{1}'"],
         "Terminal.Empty"         , ["Run a command in terminal", "在终端运行命令"],
         "Snippet.Subtitle"       , ["Paste snippet · {1}", "粘贴片段 · {1}"],
+        "Clipboard.Subtitle"     , ["{1} · {2} · {3} characters", "{1} · {2} · {3} 个字符"],
+        "Clipboard.Empty"        , ["Clipboard history is empty", "剪贴板历史为空"],
+        "Clipboard.EmptyHint"    , ["Copied text will appear here ({1})", "复制过的文字会出现在这里 ({1})"],
+        "Clipboard.Clear"        , ["Clear Clipboard History", "清空剪贴板历史"],
+        "Clipboard.ClearHint"    , ["{1} items", "{1} 条"],
+        "Clipboard.Cleared"      , ["Clipboard history cleared", "剪贴板历史已清空"],
+        "Clipboard.Delete"       , ["Delete from History", "从历史中删除"],
         "Custom.Added"           , ["Added '{1}' to Custom Commands.", "已将 '{1}' 添加到自定义命令。"],
         "Index.Done"             , ["Index rebuilt: {1} applications.", "索引已重建: {1} 个应用。"],
 
