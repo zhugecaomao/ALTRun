@@ -63,7 +63,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "EditRows", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -421,6 +421,20 @@ class Tests {
         eq("command target not searched", titles("cmd"), "")
         eq("drive root not a name", titles("q:"), "")
         AppSettings.Data["CustomCommands"] := saved
+    }
+
+    ; 所有 Edit 控件都要写明行数 (r1 / r8 ...): 不写时长文字会让 AHK 自动变成多行并加高, 盖住下面的控件
+    static EditRows() {
+        missing := ""
+        for folder in ["Src", "Lib"] {
+            Loop Files, A_ScriptDir "\..\" folder "\*.ahk", "R" {
+                Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r" {
+                    if (RegExMatch(A_LoopField, 'AddEdit\(|_Add\("Edit"') && !RegExMatch(A_LoopField, '[" ]r(\d|"\s)'))
+                        missing .= A_LoopFileName ":" A_Index " "
+                }
+            }
+        }
+        TestRunner.Equal("EditRows.all edits set rows", missing, "")
     }
 
     static Misc() {
