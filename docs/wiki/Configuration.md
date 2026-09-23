@@ -9,7 +9,7 @@
 ## 结构
 ```jsonc
 {
-  "SchemaVersion": 3,
+  "SchemaVersion": 4,
   "General":    { ... },          // 通用
   "Appearance": { ... },          // 外观
   "Features":   { ... },          // 各个搜索功能

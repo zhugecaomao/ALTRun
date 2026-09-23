@@ -28,7 +28,7 @@
 ;===============================================================================
 
 class AppSettings {
-    static CurrentVersion := 3
+    static CurrentVersion := 4
     static File := A_ScriptDir "\ALTRun.json"
     static DataDir := A_ScriptDir "\Data"
     static Data := Map()
@@ -193,9 +193,10 @@ class AppSettings {
                 "FileSearch", Map(
                     "Enabled"            , 1,
                     "Keywords"           , ["open", "find"],
+                    "SpacePrefix"        , 1,                               ; 空的搜索框里先按空格 = 只搜文件, 和 Alfred 一样
                     "QuotePrefix"        , 1,                               ; 以 ' 开头直接搜索文件, 和 Alfred 一样
                     "MaxResults"         , 30,
-                    "InDefaultResults"   , 1,                               ; 直接输入名称时也显示匹配的文件 / 文件夹
+                    "InDefaultResults"   , 0,                               ; 直接输入名称时也显示匹配的文件 / 文件夹 (默认关闭, 避免全盘的无关文件混进来)
                     "DefaultResultsLimit", 6,
                     "MinQueryLength"     , 2,
                     "UseEverything"      , 1,                               ; Everything 在运行时通过 IPC 查询全盘

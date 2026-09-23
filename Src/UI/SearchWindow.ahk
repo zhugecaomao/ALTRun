@@ -13,6 +13,7 @@
 ;   Ctrl+1 ~ Ctrl+9                  直接执行可见的第 N 行
 ;   Tab                              自动补全
 ;   →  (光标在末尾时)                打开操作面板; ← / Esc 返回
+;   空格 (搜索框为空时)              进入文件搜索模式 (只搜文件, 提示 "搜索文件..."); Backspace 返回
 ;   Ctrl+C (输入框没有选中文字时)    复制当前项
 ;   Ctrl+L                           大字显示
 ;   F3                               编辑当前项 (没有结果时: 用输入的文字新建自定义命令)
@@ -31,6 +32,7 @@ class SearchWindow {
     static Gui := "", Input := "", List := "", Separator := ""
     static Results := [], Selected := 0, Offset := 0
     static Mode := "results"                        ; results = 搜索结果; actions = 操作面板
+    static FileMode := false                        ; 文件搜索模式: 空的搜索框里按空格进入, 只搜文件
     static ActionSource := "", SavedQuery := "", AllActions := []
     static HistoryIndex := 0
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
@@ -136,6 +138,8 @@ class SearchWindow {
             return
         App.RememberActiveWindow()
         SearchWindow.Mode := "results"
+        SearchWindow.FileMode := false
+        SearchWindow._UpdateCueBanner()
         SearchWindow.HistoryIndex := 0
         SearchWindow._SetInput(text)
 
@@ -196,6 +200,8 @@ class SearchWindow {
                     filtered.Push(action)
             return SearchWindow.SetResults(filtered)
         }
+        if SearchWindow.FileMode
+            return SearchWindow.SetResults(ProviderRegistry.SearchFiles(text))
         SearchWindow.SetResults(ProviderRegistry.Search(text))
     }
 
@@ -325,8 +331,27 @@ class SearchWindow {
 
     static _CloseActions() {
         SearchWindow.Mode := "results"
-        Win.SetCueBanner(SearchWindow.Input.Hwnd, I18n.T("Search.Placeholder"))
+        SearchWindow._UpdateCueBanner()
         SearchWindow._SetInput(SearchWindow.SavedQuery)
+    }
+
+    ;---------------------------------------------------------------------------
+    ; File search mode (空的搜索框里按空格, 和 Alfred 一样)
+    ;---------------------------------------------------------------------------
+    static _CanEnterFileMode() {
+        return SearchWindow.Mode = "results" && !SearchWindow.FileMode && SearchWindow.Input.Value = ""
+            && AppSettings.Feature("FileSearch")["SpacePrefix"] && ProviderRegistry.IsEnabled(FileSearchProvider)
+    }
+
+    static _SetFileMode(enabled) {
+        SearchWindow.FileMode := enabled
+        SearchWindow._UpdateCueBanner()
+        SearchWindow._RunSearch()
+    }
+
+    ; 灰色提示文字: 普通搜索 / 文件搜索模式 (操作面板的提示在 _OpenActions 里设置)
+    static _UpdateCueBanner() {
+        Win.SetCueBanner(SearchWindow.Input.Hwnd, I18n.T(SearchWindow.FileMode ? "Search.FilesPlaceholder" : "Search.Placeholder"))
     }
 
     ;---------------------------------------------------------------------------
@@ -464,8 +489,14 @@ class SearchWindow {
                 else
                     SearchWindow.Hide()
                 return 0
+            case 0x20:                                                      ; 空格: 空的搜索框里进入文件搜索模式
+                if (!ctrl && !alt && SearchWindow._CanEnterFileMode()) {
+                    SearchWindow._SetFileMode(true)
+                    return 0
+                }
+                return
             case 0x26:                                                      ; ↑
-                if (!actions && SearchWindow._RecallHistory())
+                if (!actions && !SearchWindow.FileMode && SearchWindow._RecallHistory())
                     return 0
                 SearchWindow.MoveSelection(-1)
                 return 0
@@ -511,6 +542,10 @@ class SearchWindow {
             case 0x08:                                                      ; Backspace
                 if (actions && SearchWindow.Input.Value = "") {
                     SearchWindow._CloseActions()
+                    return 0
+                }
+                if (SearchWindow.FileMode && SearchWindow.Input.Value = "") {  ; 文件搜索模式下删空后再按: 回到普通搜索
+                    SearchWindow._SetFileMode(false)
                     return 0
                 }
                 if ctrl {                                                   ; Ctrl+Backspace: 删除前一个词 (普通 Edit 控件不支持)

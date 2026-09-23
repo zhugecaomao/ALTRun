@@ -208,6 +208,7 @@ class Win {
     static SetCueBanner(hwnd, text) {
         static EM_SETCUEBANNER := 0x1501
         try DllCall("User32\SendMessageW", "Ptr", hwnd, "UInt", EM_SETCUEBANNER, "Ptr", 1, "WStr", text)
+        DllCall("InvalidateRect", "Ptr", hwnd, "Ptr", 0, "Int", 1)          ; 输入框已经显示时换提示文字, 要重画才看得到
     }
 
     ; 热键字符串 -> 人类可读标签, 例如 "^g" -> "Ctrl+G"
