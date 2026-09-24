@@ -151,6 +151,7 @@ class AppSettings {
                 "HideOnDeactivate"    , 1,
                 "SwitchToEnglishInput", 0,
                 "SpaceToRun"          , 0,                                  ; 空格执行选中项 (Shift+空格输入空格)
+                "KeepLastQuery"       , 0,                                  ; 呼出窗口时恢复上一次的搜索 (文字全选)
                 "ShowTips"            , 1,                                  ; 空搜索框里轮换显示使用提示
                 "FileManager"         , "explorer.exe",
                 "SendToMenu"          , 1,

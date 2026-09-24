@@ -759,6 +759,7 @@ IndexDepth=2
 StruCalc=1
 AutoSwitchDir=1
 SpaceToRun=1
+KeepInput=0
 AutoEngIME=1
 [Hotkey]
 GlobalHotkey1=~!Space
@@ -806,6 +807,7 @@ Func | PTTools | PT Tools (AHK)=99
         eq("structural calc", settings["Features"]["Calculator"]["StructuralCalc"], 1)
         eq("quick switch", settings["Extensions"]["QuickSwitch"]["AutoSwitch"], 1)
         eq("space to run", settings["General"]["SpaceToRun"], 1)
+        eq("keep input off", settings["General"]["KeepLastQuery"], 0)
         eq("english input", settings["General"]["SwitchToEnglishInput"], 1)
         eq("conditional hotkey", settings["Hotkeys"][1]["Action"], "PTTools")
         eq("commands (Func skipped)", settings["CustomCommands"].Length, 5)
@@ -821,6 +823,8 @@ Func | PTTools | PT Tools (AHK)=99
         fixture := SchemaMigration.Upgrade(SchemaMigration.ReadLegacyIni(A_ScriptDir "\Fixtures\ALTRun.v2026.08.12.ini"), 2)
         eq("fixture commands", fixture["CustomCommands"].Length, 10)
         eq("fixture language", fixture["General"]["Language"], "zh")
+        eq("fixture keep input (2.x default on)", fixture["General"]["KeepLastQuery"], 1)
+        eq("keep last query default off", AppSettings.Defaults()["General"]["KeepLastQuery"], 0)
         eq("fixture hotkey", fixture["Hotkeys"][1]["Key"], "~Mbutton")
 
         ; 第二次启动: 已经有 ALTRun.json, 不再导入

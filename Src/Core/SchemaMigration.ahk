@@ -130,6 +130,7 @@ class SchemaMigration {
         general["HideOnDeactivate"]     := pick(config, "HideOnLostFocus", 1)
         general["SwitchToEnglishInput"] := pick(config, "AutoEngIME", 0)
         general["SpaceToRun"]           := pick(config, "SpaceToRun", 0)
+        general["KeepLastQuery"]        := pick(config, "KeepInput", 1)     ; 2.x 默认保留输入
         general["FileManager"]          := pick(config, "FileMgr", "explorer.exe")
         general["SendToMenu"]           := pick(config, "EnableSendTo", 1)
         general["StartMenuShortcut"]    := pick(config, "InStartMenu", 1)

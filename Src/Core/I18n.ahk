@@ -285,6 +285,7 @@ class I18n {
         s["Prefs.HideOnDeactivate"]    := ["Hide the window when it loses focus", "失去焦点时隐藏窗口"]
         s["Prefs.EnglishInput"]        := ["Switch to English input when shown", "显示窗口时切换到英文输入法"]
         s["Prefs.SpaceToRun"]          := ["Space runs the selected result (Shift+Space types a space)", "按空格执行选中项 (Shift+空格输入空格)"]
+        s["Prefs.KeepLastQuery"]       := ["Keep the last search when the window opens (selected: type to start over)", "呼出窗口时保留上一次的搜索 (文字全选, 直接输入开始新的搜索)"]
         s["Prefs.ShowTips"]            := ["Show usage tips in the empty search box (type ? for all)", "空搜索框里显示使用提示 (输入 ? 查看全部)"]
         s["Prefs.SendToMenu"]          := ["Add to Explorer 'Send to' menu", "添加到资源管理器 '发送到' 菜单"]
         s["Prefs.StartMenu"]           := ["Add to Start menu", "添加到开始菜单"]

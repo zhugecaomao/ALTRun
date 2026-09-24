@@ -41,8 +41,9 @@ class SearchWindow {
     static _gdi := Map()
     static _searchTimer := "", _hideTimer := ""
     static _posX := 0, _posY := 0
-    static _shownRows := -1
-    static _tip := ""                                                       ; 这次显示时的使用提示 (HelpProvider.NextTip)                                                 ; 窗口当前按几行结果的高度显示
+    static _shownRows := -1                                                 ; 窗口当前按几行结果的高度显示
+    static _tip := ""                                                       ; 这次显示时的使用提示 (HelpProvider.NextTip)
+    static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
 
     ;---------------------------------------------------------------------------
@@ -136,16 +137,24 @@ class SearchWindow {
         return IsObject(SearchWindow.Gui) && DllCall("IsWindowVisible", "Ptr", SearchWindow.Gui.Hwnd)
     }
 
+    ; text: 要搜索的文字; 不写时空白, 打开了 "保留上一次的搜索" (KeepLastQuery) 时恢复上次的
+    ; 输入、文件搜索模式和选中的行, 文字全选: 按 Enter 再执行一次, 直接输入就开始新的搜索
     static Show(text := "") {
         if !IsObject(SearchWindow.Gui)
             return
+        if (text = "" && SearchWindow.IsVisible())
+            SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
         App.RememberActiveWindow()
+        last := SearchWindow._last
+        restore := (text = "" && AppSettings.General["KeepLastQuery"] && IsObject(last) && last.Text != "")
         SearchWindow.Mode := "results"
-        SearchWindow.FileMode := false
+        SearchWindow.FileMode := restore ? last.FileMode : false
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
         SearchWindow.HistoryIndex := 0
-        SearchWindow._SetInput(text)
+        SearchWindow._SetInput(restore ? last.Text : text)
+        if restore
+            SearchWindow.MoveSelection(last.Selected - SearchWindow.Selected)
 
         area := Win.WorkAreaAtMouse()
         SearchWindow._posX := area.Left + (area.Right - area.Left - SearchWindow.Width) // 2
@@ -155,15 +164,27 @@ class SearchWindow {
         try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
         SearchWindow.Input.Focus()
         len := StrLen(SearchWindow.Input.Value)
-        SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)                ; 获得焦点时 Edit 会全选, 把光标放回末尾
+        if restore
+            SendMessage(0xB1, 0, -1, SearchWindow.Input.Hwnd)               ; 恢复的文字全选
+        else
+            SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
         if AppSettings.General["SwitchToEnglishInput"]
             Win.SwitchToEnglishIME()
     }
 
     static Hide() {
-        if IsObject(SearchWindow.Gui)
+        if SearchWindow.IsVisible() {
+            SearchWindow._RememberQuery()
             SearchWindow.Gui.Hide()
+        }
         LargeType.Close()
+    }
+
+    ; 记住隐藏时的搜索 (KeepLastQuery 用); 操作面板里记住打开面板之前的搜索
+    static _RememberQuery() {
+        actions := (SearchWindow.Mode = "actions")
+        SearchWindow._last := {Text: actions ? SearchWindow.SavedQuery : SearchWindow.Input.Value
+                             , FileMode: SearchWindow.FileMode, Selected: actions ? 1 : Max(1, SearchWindow.Selected)}
     }
 
     static Toggle() {
@@ -507,6 +528,15 @@ class SearchWindow {
             case 0x20:                                                      ; 空格: 空的搜索框里进入文件搜索模式
                 if (ctrl || alt)
                     return
+                ; 文字全选时 (恢复的上次搜索) 空格会替换掉它们, 当作空的搜索框处理
+                if (!shift && !actions && !SearchWindow.FileMode && SearchWindow._AllTextSelected()) {
+                    SearchWindow._SetInput("")
+                    if SearchWindow._CanEnterFileMode() {
+                        SearchWindow._SetFileMode(true)
+                        return 0
+                    }
+                    return
+                }
                 if (!shift && SearchWindow._CanEnterFileMode()) {
                     SearchWindow._SetFileMode(true)
                     return 0
@@ -649,6 +679,13 @@ class SearchWindow {
     static _CaretAtEnd() {
         selection := SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd)        ; EM_GETSEL
         return ((selection >> 16) & 0xFFFF) >= StrLen(SearchWindow.Input.Value)
+    }
+
+    ; 输入框里的文字全部选中 (恢复上次的搜索之后): 这时按键会替换掉它们
+    static _AllTextSelected() {
+        len := StrLen(SearchWindow.Input.Value)
+        selection := SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd)        ; EM_GETSEL
+        return len && (selection & 0xFFFF) = 0 && ((selection >> 16) & 0xFFFF) >= len
     }
 
     static _HasTextSelection() {
