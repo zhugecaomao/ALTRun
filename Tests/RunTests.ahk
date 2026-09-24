@@ -64,7 +64,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -718,6 +718,25 @@ class Tests {
         for item in items
             matched := matched || (tip = I18n.T("Help.TipFormat", item.Key, item.Text))
         eq("tip text", matched, true)
+    }
+
+    ; 偏好设置: 应用 之后用 "-Preferences 页码 x y" 重新打开; 帮助 打开每页对应的 Wiki
+    static PreferencesButtons() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencesButtons." n, a, e)
+        args := PreferencesWindow.ParseArgs(["-Preferences", "5", "120", "-8"])
+        eq("page", args.Page, 5)
+        eq("x", args.X, 120)
+        eq("y (negative, second monitor)", args.Y, -8)
+        args := PreferencesWindow.ParseArgs(["-Preferences", "3"])
+        eq("page only", args.Page "|" args.X "|" args.Y, "3||")
+        args := PreferencesWindow.ParseArgs(["-Preferences"])
+        eq("default page", args.Page, 1)
+        eq("wiki file search", PreferencesWindow.WikiPage("Prefs.Page.FileSearch"), "File-Search")
+        eq("wiki commands", PreferencesWindow.WikiPage("Prefs.Page.Commands"), "Commands-and-Snippets")
+        eq("wiki appearance", PreferencesWindow.WikiPage("Prefs.Page.Appearance"), "Themes")
+        eq("wiki default", PreferencesWindow.WikiPage("Prefs.Page.General"), "Configuration")
+        for key in ["Prefs.OK", "Prefs.Cancel", "Prefs.Apply", "Prefs.Help", "Prefs.DiscardChanges"]
+            eq("text " key, I18n.T(key) != key, true)
     }
 
     ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入

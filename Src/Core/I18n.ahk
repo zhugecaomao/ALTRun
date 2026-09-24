@@ -231,9 +231,11 @@ class I18n {
 
         ; --- Preferences window ---
         s["Prefs.Title"]               := ["ALTRun Preferences", "ALTRun 偏好设置"]
-        s["Prefs.Save"]                := ["Save", "保存"]
+        s["Prefs.OK"]                  := ["OK", "确定"]
         s["Prefs.Cancel"]              := ["Cancel", "取消"]
-        s["Prefs.SaveHint"]            := ["Saving applies the changes and reloads ALTRun.", "保存后立即生效 (ALTRun 会重新载入)。"]
+        s["Prefs.Apply"]               := ["Apply", "应用"]
+        s["Prefs.Help"]                := ["Help", "帮助"]
+        s["Prefs.DiscardChanges"]      := ["Discard your changes?", "放弃所做的修改吗?"]
         s["Prefs.Add"]                 := ["Add...", "添加..."]
         s["Prefs.Edit"]                := ["Edit...", "编辑..."]
         s["Prefs.Delete"]              := ["Delete", "删除"]
