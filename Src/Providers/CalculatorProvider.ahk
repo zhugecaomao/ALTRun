@@ -1,7 +1,7 @@
 ;===============================================================================
 ; CalculatorProvider.ahk - 计算器 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 输入算式直接显示结果 ("12*(3+4)" / "=2^10"), Enter 复制结果。
+; 输入算式直接显示结果 ("12*(3+4)" / "=2^10"), 最多两位小数, Enter 复制结果。
 ; 打开 Features.Calculator.StructuralCalc 后, 结果下方附带两行结构计算:
 ;   - 把结果当作梁宽 (mm): 主筋根数和间距 (保护层 40 mm, 最大间距 300 mm)
 ;   - 把结果当作配筋面积 As (mm²): H13 / H16 / H20 / H25 / H32 需要的根数
@@ -25,7 +25,6 @@ class CalculatorProvider {
         value := Calc.Eval(expression)
         if !IsNumber(value)
             return results
-        value := Round(value, 6) + 0
         text := CalculatorProvider.Format(value)
 
         results.Push(ResultItem(text, I18n.T("Calc.Subtitle") " · " Trim(expression), {
@@ -36,11 +35,18 @@ class CalculatorProvider {
         return results
     }
 
-    ; 去掉多余的 0, 整数部分加千分位: 1234567.500000 -> 1,234,567.5
+    ; 最多两位小数, 去掉多余的 0, 整数部分加千分位: 1234567.504 -> 1,234,567.5, 10/3 -> 3.33
+    ; (浮点数直接转文字会带出 774.39999999999998 这样的尾巴)。
+    ; 不到 0.005 的数按两位小数会变成 0, 改为保留到第一位有效数字后一位: 0.004, 0.000031
     static Format(value) {
-        text := value ""
+        decimals := 2
+        if (value != 0 && Abs(value) < 0.005)
+            decimals := Min(Ceil(-Log(Abs(value))) + 1, 10)
+        text := Format("{:." decimals "f}", value)
         if InStr(text, ".")
             text := RTrim(RTrim(text, "0"), ".")
+        if (text = "-0")
+            text := "0"
         return Calc.Thousands(text)
     }
 
