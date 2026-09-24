@@ -151,6 +151,7 @@ class AppSettings {
                 "HideOnDeactivate"    , 1,
                 "SwitchToEnglishInput", 0,
                 "SpaceToRun"          , 0,                                  ; 空格执行选中项 (Shift+空格输入空格)
+                "ShowTips"            , 1,                                  ; 空搜索框里轮换显示使用提示
                 "FileManager"         , "explorer.exe",
                 "SendToMenu"          , 1,
                 "StartMenuShortcut"   , 1,
@@ -205,6 +206,7 @@ class AppSettings {
                 "FileSearch", Map(
                     "Enabled"            , 1,
                     "Keywords"           , ["open", "find"],
+                    "FolderKeywords"     , ["folder"],                      ; "folder bk" 只搜文件夹
                     "SpacePrefix"        , 1,                               ; 空的搜索框里先按空格 = 只搜文件, 和 Alfred 一样
                     "QuotePrefix"        , 1,                               ; 以 ' 开头直接搜索文件, 和 Alfred 一样
                     "MaxResults"         , 30,
@@ -225,6 +227,7 @@ class AppSettings {
                     "Prefix" , ">",
                     "Shell"  , "cmd"                                        ; cmd / powershell / pwsh / wt
                 ),
+                "Help", Map("Enabled", 1),                                  ; 输入 ? 显示所有输入语法和快捷键
                 "System", Map(
                     "Enabled"       , 1,
                     "ConfirmActions", 1                                     ; 关机/重启/注销/清空回收站前确认
