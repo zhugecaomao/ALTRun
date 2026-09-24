@@ -41,7 +41,8 @@ class SearchWindow {
     static _gdi := Map()
     static _searchTimer := "", _hideTimer := ""
     static _posX := 0, _posY := 0
-    static _shownRows := -1                                                 ; 窗口当前按几行结果的高度显示
+    static _shownRows := -1
+    static _tip := ""                                                       ; 这次显示时的使用提示 (HelpProvider.NextTip)                                                 ; 窗口当前按几行结果的高度显示
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
 
     ;---------------------------------------------------------------------------
@@ -141,6 +142,7 @@ class SearchWindow {
         App.RememberActiveWindow()
         SearchWindow.Mode := "results"
         SearchWindow.FileMode := false
+        SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
         SearchWindow.HistoryIndex := 0
         SearchWindow._SetInput(text)
@@ -358,8 +360,13 @@ class SearchWindow {
     }
 
     ; 灰色提示文字: 普通搜索 / 文件搜索模式 (操作面板的提示在 _OpenActions 里设置)
+    ; 空搜索框里的灰色文字: 文件搜索模式 "搜索文件...", 否则是这次显示时轮到的使用提示 (关掉提示时 "ALTRun 搜索")
     static _UpdateCueBanner() {
-        Win.SetCueBanner(SearchWindow.Input.Hwnd, I18n.T(SearchWindow.FileMode ? "Search.FilesPlaceholder" : "Search.Placeholder"))
+        if SearchWindow.FileMode
+            text := I18n.T("Search.FilesPlaceholder")
+        else
+            text := (SearchWindow._tip != "") ? SearchWindow._tip : I18n.T("Search.Placeholder")
+        Win.SetCueBanner(SearchWindow.Input.Hwnd, text)
     }
 
     ;---------------------------------------------------------------------------

@@ -69,6 +69,7 @@
 #Include Src\Providers\WebSearchProvider.ahk
 #Include Src\Providers\FileSearchProvider.ahk
 #Include Src\Providers\TerminalProvider.ahk
+#Include Src\Providers\HelpProvider.ahk
 
 ; --- Src\Extensions ---
 #Include Src\Extensions\SnippetExpander.ahk

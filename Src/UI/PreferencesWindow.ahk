@@ -116,7 +116,7 @@ class PreferencesWindow {
         PreferencesWindow._Gap()
         for pair in [["LaunchAtLogin", "Prefs.LaunchAtLogin"], ["ShowTrayIcon", "Prefs.ShowTrayIcon"]
                     , ["HideOnDeactivate", "Prefs.HideOnDeactivate"], ["SwitchToEnglishInput", "Prefs.EnglishInput"]
-                    , ["SpaceToRun", "Prefs.SpaceToRun"]
+                    , ["SpaceToRun", "Prefs.SpaceToRun"], ["ShowTips", "Prefs.ShowTips"]
                     , ["SendToMenu", "Prefs.SendToMenu"], ["StartMenuShortcut", "Prefs.StartMenu"]
                     , ["CheckForUpdates", "Prefs.CheckUpdates"], ["SaveLog", "Prefs.SaveLog"]]
             PreferencesWindow._Check("General." pair[1], pair[2])
@@ -219,6 +219,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.SpacePrefix", "Prefs.SpacePrefix")
         PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
         PreferencesWindow._Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", 200)
+        PreferencesWindow._Csv("Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", 200)
         PreferencesWindow._Field("Features.FileSearch.MaxResults", "Prefs.FileMaxResults", 60, "number")
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault")
         PreferencesWindow._Field("Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", 60, "number")
@@ -228,8 +229,10 @@ class PreferencesWindow {
         PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", 300, "folder")
         PreferencesWindow._Gap()
         PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 3)
+        depthY := PreferencesWindow._y                                      ; 按钮和 "子文件夹深度" 放在同一行, 页面才放得下
         PreferencesWindow._Field("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", 60, "number")
-        PreferencesWindow._Button("Prefs.RebuildFileIndex", (*) => FileIndex.Rebuild())
+        rebuild := PreferencesWindow._Add("Button", "x" (PreferencesWindow._InputX() + 84) " y" (depthY - 2) " w220 h28", I18n.T("Prefs.RebuildFileIndex"))
+        rebuild.OnEvent("Click", (*) => FileIndex.Rebuild())
     }
 
     static _BuildCommands() {

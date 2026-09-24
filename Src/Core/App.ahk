@@ -37,7 +37,7 @@ class App {
         ThemeManager.Load(AppSettings.Appearance["Theme"])
 
         for provider in [ClipboardProvider, ApplicationProvider, CustomCommandProvider, SnippetProvider, SystemProvider
-                        , CalculatorProvider, WebSearchProvider, FileSearchProvider, TerminalProvider]
+                        , CalculatorProvider, WebSearchProvider, FileSearchProvider, TerminalProvider, HelpProvider]
             ProviderRegistry.Register(provider)
         ProviderRegistry.InitAll()
 

@@ -81,7 +81,8 @@ class FileIndex {
 
     ; 按文件名匹配: 完全相同 100 / 开头 90 / 单词开头 80 / 包含 60。
     ; 继续输入时只在上一次匹配到的里面找 (只用 "包含" 类规则, 范围只会缩小)。
-    static Search(needle, limit) {
+    ; foldersOnly: 只要文件夹 ("folder bk")
+    static Search(needle, limit, foldersOnly := false) {
         needle := StrLower(Trim(needle))
         if (needle = "")
             return []
@@ -98,6 +99,12 @@ class FileIndex {
                     scores[index] := score, matches.Push(index)
         }
         FileIndex._lastNeedle := needle, FileIndex._lastMatches := matches
+        if foldersOnly {
+            folders := FileIndex.Folders
+            for index in matches
+                if !folders[index]
+                    scores.Delete(index)
+        }
 
         results := []
         for index in FuzzyMatcher.TopIndexes(scores, limit)

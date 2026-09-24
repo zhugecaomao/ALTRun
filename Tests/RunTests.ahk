@@ -44,6 +44,7 @@
 #Include %A_ScriptDir%\..\Src\Providers\WebSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\FileSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\TerminalProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\HelpProvider.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
@@ -63,7 +64,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -626,6 +627,97 @@ class Tests {
         TestRunner.True("FileSearchModes.quote still works", FileSearchProvider.Search(SearchQuery("'nir")).Length >= 2)
         options["InDefaultResults"] := saved[1], options["UseEverything"] := saved[2]
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+    }
+
+    ; folder bk 只搜文件夹; 关键字后面还没输入空格时不挡住其它结果; 结果按名称匹配程度排序
+    static FolderSearch() {
+        eq := (n, a, e) => TestRunner.Equal("FolderSearch." n, a, e)
+        options := AppSettings.Feature("FileSearch")
+        savedEverything := options["UseEverything"]
+        options["UseEverything"] := 0                                       ; 测试用内置索引
+        FileIndex.Paths := ["C:\Docs\notebk.pdf", "C:\Projects\BK Tower", "C:\Docs\BK drawing.dwg", "C:\Projects\Old BK"]
+        FileIndex.Names := ["notebk.pdf", "bk tower", "bk drawing.dwg", "old bk"]
+        FileIndex.Folders := [0, 1, 0, 1]
+        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        titles(results) {
+            list := ""
+            for item in results
+                if (item.Kind = "file" || item.Kind = "folder")             ; 不算最后的 "用 Everything / Windows 搜索"
+                    list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("default keyword", AppSettings.Defaults()["Features"]["FileSearch"]["FolderKeywords"][1], "folder")
+        eq("folders only", titles(FileSearchProvider.Search(SearchQuery("folder bk"))), "BK Tower|Old BK")
+        eq("folders exclusive", FileSearchProvider.Search(SearchQuery("folder bk"))[1].Exclusive, true)
+        eq("files keyword", titles(FileSearchProvider.Search(SearchQuery("open bk"))), "BK Tower|BK drawing.dwg|Old BK|notebk.pdf")
+        eq("file mode folder keyword", titles(ProviderRegistry.SearchFiles("folder bk")), "BK Tower|Old BK")
+        eq("file mode plain", titles(ProviderRegistry.SearchFiles("bk")), "BK Tower|BK drawing.dwg|Old BK|notebk.pdf")
+        ; 只输入关键字 (还没有空格): 提示排在后面, 不挡住名字带 folder 的命令
+        hint := FileSearchProvider.Search(SearchQuery("folder"))
+        eq("keyword alone hint", hint.Length, 1)
+        eq("keyword alone not exclusive", hint[1].Exclusive, false)
+        eq("keyword alone low score", hint[1].Score < 10, true)
+        eq("open alone not exclusive", FileSearchProvider.Search(SearchQuery("open"))[1].Exclusive, false)
+        eq("keyword with space exclusive", FileSearchProvider.Search(SearchQuery("folder "))[1].Exclusive, true)
+        eq("quote alone exclusive", FileSearchProvider.Search(SearchQuery("'"))[1].Exclusive, true)
+        ; Everything 的结果按修改时间来: 名称开头 / 单词开头的排前面, 同分时文件夹在前
+        found := [{Path: "C:\a\notebk.pdf", IsFolder: 0, Score: FileIndex.ScoreName("bk", "notebk.pdf")}
+                , {Path: "C:\a\BK x.dwg", IsFolder: 0, Score: FileIndex.ScoreName("bk", "bk x.dwg")}
+                , {Path: "C:\a\BK x.pdf", IsFolder: 1, Score: FileIndex.ScoreName("bk", "bk x.pdf")}]
+        best := FileSearchProvider._Best(found, 3)
+        eq("best order", best[1].Path "|" best[2].Path "|" best[3].Path, "C:\a\BK x.pdf|C:\a\BK x.dwg|C:\a\notebk.pdf")
+        eq("everything fetches more", FileSearchProvider.EverythingFetch >= 300, true)
+        eq("score needle folder:", FileSearchProvider.ScoreNeedle("folder:bk"), "bk")
+        eq("score needle ext:", FileSearchProvider.ScoreNeedle("ext:pdf report"), "pdf report")
+        eq("score needle plain", FileSearchProvider.ScoreNeedle("bk tower"), "bk tower")
+        options["UseEverything"] := savedEverything
+        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+    }
+
+    ; 输入 ? 显示速查表; 空搜索框里轮换的使用提示
+    static HelpAndTips() {
+        eq := (n, a, e) => TestRunner.Equal("HelpAndTips." n, a, e)
+        eq("tips default on", AppSettings.Defaults()["General"]["ShowTips"], 1)
+        eq("help default on", AppSettings.Defaults()["Features"]["Help"]["Enabled"], 1)
+        items := HelpProvider.Items()
+        all := HelpProvider.Search(SearchQuery("?"))
+        eq("all entries", all.Length, items.Length)
+        eq("exclusive", all[1].Exclusive, true)
+        eq("no help without ?", HelpProvider.Search(SearchQuery("folder")).Length, 0)
+        ids := ""
+        for item in items
+            ids .= item.Id " "
+        eq("folder entry listed", InStr(ids, "Folders ") > 0, true)
+        ; 过滤: ? 后面的文字
+        keys := ""
+        for item in HelpProvider.Search(SearchQuery("? f3"))
+            keys .= item.Title "|"
+        eq("filter", keys, "F3|")
+        ; 占位符换成当前设置里的关键字
+        folderItem := ""
+        for item in items
+            if (item.Id = "Folders")
+                folderItem := item
+        eq("configured keyword", folderItem.Key, AppSettings.Feature("FileSearch")["FolderKeywords"][1] " bk")
+        eq("wiki page", folderItem.Url, "https://github.com/zhugecaomao/ALTRun/wiki/File-Search")
+        ; 关掉的功能不显示
+        clip := AppSettings.Feature("Clipboard"), savedClip := clip["Enabled"]
+        clip["Enabled"] := 0
+        ids := ""
+        for item in HelpProvider.Items()
+            ids .= item.Id " "
+        eq("disabled feature hidden", InStr(ids, "Clipboard "), 0)
+        clip["Enabled"] := savedClip
+        ; 提示按顺序轮换, 每条都会轮到
+        seen := Map()
+        Loop items.Length
+            seen[HelpProvider.NextTip()] := true
+        eq("tips rotate", seen.Count, items.Length)
+        tip := HelpProvider.NextTip(), matched := false
+        for item in items
+            matched := matched || (tip = I18n.T("Help.TipFormat", item.Key, item.Text))
+        eq("tip text", matched, true)
     }
 
     ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入

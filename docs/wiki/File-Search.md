@@ -5,6 +5,13 @@
 
 - **空格**: 在空的搜索框里先按 `空格`, 输入框出现灰色的 "搜索文件...", 再输入名称。输入框为空时按 `Backspace` 回到普通搜索。和 Alfred 的 Quick File Search 一样
 - **`'报告`**、**`open 报告`** 或 **`find 报告`**: 效果相同
+- **只搜文件夹**: **`folder bk`** (关键字可以在 偏好设置 → 文件搜索 → "文件夹搜索关键字" 修改); 文件搜索模式里也可以输入 `folder bk`。有 Everything 时相当于 Everything 的 `folder:bk`
+
+关键字后面要有空格才进入文件搜索: 只输入 `folder` 或 `open` 时, 名字里带这个词的命令、应用照常显示。
+
+结果按名称的匹配程度排序: 完全相同 > 名称开头 > 单词开头 (例如 `PT2310-BK`) > 包含 (例如 `notebk`); 同样的匹配程度, 文件夹排在文件前面, 再按修改时间 (新的在前)。用 Everything 时, ALTRun 先取 Everything 的前 300 条结果再排序, 所以名称最匹配的文件夹不会因为不是最近修改的而漏掉。
+
+Everything 的搜索语法可以直接用, 原样交给 Everything: 例如 `空格` + `folder:bk 2024`、`ext:pdf 报告`、`path:Tender 报告`。
 
 最多显示 30 条; 没有结果时可以一键在 Everything 或 Windows 搜索里继续找。普通搜索一条结果都没有时, 最后也会给出 "搜索文件" 的兜底项。
 
@@ -38,6 +45,7 @@ ALTRun 自动选择:
 | DefaultResultsLimit | 6 | 普通结果里最多显示几条文件 |
 | MinQueryLength | 2 | 至少输入几个字才搜文件 |
 | Keywords | `open, find` | 只搜文件的关键字 |
+| FolderKeywords | `folder` | 只搜文件夹的关键字 |
 | QuotePrefix | 1 | 以 `'` 开头只搜文件 |
 | MaxResults | 30 | 只搜文件时最多显示几条 |
 | UseEverything | 1 | Everything 在运行时用它搜索 |
