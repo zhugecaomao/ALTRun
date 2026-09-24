@@ -284,8 +284,9 @@ class Pinyin {
 
 
 ;===============================================================================
-; Calc - 四则运算表达式求值 (只认数字和 + - * / ^ ( ))
-; 故意不走 eval, 避免任意代码执行
+; Calc - 四则运算表达式求值 (只认数字和 + - * / ^ ** ( ))
+; 故意不走 eval, 避免任意代码执行。递归下降解析, 全程用浮点数计算 (大数不会溢出);
+; 优先级: 括号 > 乘方 (右结合, 2^3^2 = 2^(3^2)) > 正负号 (-2^2 = -4, 2^-2 = 0.25) > 乘除 > 加减
 ;===============================================================================
 class Calc {
     ; 看起来像不像一个算式
@@ -293,50 +294,83 @@ class Calc {
         return RegExMatch(expr, "[\+\-\*/\^]") && RegExMatch(expr, "^[\d\+\-\*/\^\(\)\.\s]+$")
     }
 
-    static Eval(expr, depth := 0) {
-        if (depth > 12)
+    ; 返回计算结果 (浮点数); 不是完整的算式、除以 0、结果超出范围时返回 ""
+    static Eval(expr) {
+        expr := RegExReplace(expr, "\s")
+        if !RegExMatch(expr, "^[\d\+\-\*/\^\(\)\.]+$")
             return ""
-        expr := StrReplace(expr, " ")
-        if (!RegExMatch(expr, "^[\d\+\-\*/\^\(\)\.]*$"))
-            return ""
-
-        ; 先递归消掉括号
-        while RegExMatch(expr, "\(([^()]*)\)", &m) {
-            inner := Calc.Eval(m[1], depth + 1)
-            if (inner = "")
+        state := {Text: expr, Pos: 1}
+        try {
+            value := Calc._Sum(state)
+            if (state.Pos <= StrLen(expr))                                  ; 后面还有没用上的字符, 例如 "(1+2))"
                 return ""
-            expr := StrReplace(expr, m[0], inner)
-        }
-        return Calc._Flat(expr)
+        } catch
+            return ""
+        return (Abs(value) <= 1.7976931348623157e308) ? value : ""          ; 溢出 (inf) / NaN 都不算结果
     }
 
-    ; 无括号表达式: 按 幂 -> 乘除 -> 加减 的优先级逐步归约
-    static _Flat(expr) {
-        ; 乘方从右往左结合(2^3^2 = 2^(3^2), 不是 (2^3)^2), 且底数不吃掉前面的负号
-        ; (-2^2 = -(2^2) = -4, 不是 (-2)^2 = 4) - 指数本身仍允许带负号(2^-2 合法)。
-        ; 用贪婪 ".*" 顶到字符串最右边再回溯, 天然找到"最靠右"的一组底数^指数。
-        while RegExMatch(expr, "(.*)(\d+(?:\.\d+)?)(\^|\*\*)(-?\d+(?:\.\d+)?)", &m)
-            expr := m[1] . (m[2] ** m[4]) . SubStr(expr, m.Pos + m.Len)
-
-        while RegExMatch(expr, "(-?\d+(?:\.\d+)?)([*/])(-?\d+(?:\.\d+)?)", &m) {
-            a := m[1] + 0, b := m[3] + 0
-            if (m[2] = "*")
-                r := a * b
-            else
-                r := (Abs(b) < 1e-12) ? 0 : a / b   ; 除零直接给 0, 不抛异常
-            expr := StrReplace(expr, m[0], r)
+    static _Sum(state) {                                                    ; 加减
+        value := Calc._Product(state)
+        while (op := Calc._Peek(state, "+-")) {
+            state.Pos += 1
+            operand := Calc._Product(state)
+            value := (op = "+") ? value + operand : value - operand
         }
-
-        while RegExMatch(expr, "(-?\d+(?:\.\d+)?)([+\-])(-?\d+(?:\.\d+)?)", &m) {
-            a := m[1] + 0, b := m[3] + 0
-            expr := StrReplace(expr, m[0], m[2] = "+" ? a + b : a - b)
-        }
-        return expr
+        return value
     }
 
-    ; 千分位
+    static _Product(state) {                                                ; 乘除
+        value := Calc._Signed(state)
+        while (op := Calc._Peek(state, "*/")) {
+            state.Pos += 1
+            operand := Calc._Signed(state)
+            value := (op = "*") ? value * operand : value / operand         ; 除以 0 抛异常, Eval 返回 ""
+        }
+        return value
+    }
+
+    static _Signed(state) {                                                 ; 正负号
+        if (op := Calc._Peek(state, "+-")) {
+            state.Pos += 1
+            return (op = "-") ? -Calc._Signed(state) : Calc._Signed(state)
+        }
+        return Calc._Power(state)
+    }
+
+    static _Power(state) {                                                  ; 乘方 ^ 或 **
+        base := Calc._Primary(state)
+        if (SubStr(state.Text, state.Pos, 1) = "^")
+            state.Pos += 1
+        else if (SubStr(state.Text, state.Pos, 2) = "**")
+            state.Pos += 2
+        else
+            return base
+        return base ** Calc._Signed(state)                                  ; 指数可以带正负号, 也可以再乘方
+    }
+
+    static _Primary(state) {                                                ; 数字或括号
+        if (SubStr(state.Text, state.Pos, 1) = "(") {
+            state.Pos += 1
+            value := Calc._Sum(state)
+            if (SubStr(state.Text, state.Pos, 1) != ")")
+                throw ValueError("Missing )")
+            state.Pos += 1
+            return value
+        }
+        if !RegExMatch(state.Text, "\G(\d+\.?\d*|\.\d+)", &m, state.Pos)
+            throw ValueError("Number expected")
+        state.Pos += m.Len
+        return Float(m[0])
+    }
+
+    static _Peek(state, chars) {
+        ch := SubStr(state.Text, state.Pos, 1)
+        return (ch != "" && InStr(chars, ch)) ? ch : ""
+    }
+
+    ; 千分位 (负数也加): -1234567.5 -> -1,234,567.5
     static Thousands(num) {
-        return RegExReplace(num "", "\G\d+?(?=(\d{3})+(?:\D|$))", "$0,")
+        return RegExReplace(num "", "\G-?\d+?(?=(\d{3})+(?:\D|$))", "$0,")
     }
 }
 

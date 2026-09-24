@@ -161,6 +161,9 @@ class SearchWindow {
         SearchWindow._posY := area.Top + Round((area.Bottom - area.Top) * 0.2)
         SearchWindow.Gui.Show("x" SearchWindow._posX " y" SearchWindow._posY " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
         SearchWindow._shownRows := SearchWindow._VisibleCount()
+        ; 窗口隐藏期间的重画请求会被丢掉: 失去焦点隐藏后再显示时, Windows 不一定重画列表,
+        ; 恢复的结果 (KeepLastQuery) 就是一片空白。显示之后立即重画一次
+        DllCall("RedrawWindow", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x105)   ; RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW
         try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
         SearchWindow.Input.Focus()
         len := StrLen(SearchWindow.Input.Value)
