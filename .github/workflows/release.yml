@@ -85,12 +85,24 @@ jobs:
           Copy-Item build/ALTRun/* $dir -Recurse
           Copy-Item Tests/Fixtures/ALTRun.v2026.08.12.ini (Join-Path $dir "ALTRun.ini")
           $iniHash = (Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash
+          $started = Get-Date
           $proc = Start-Process (Join-Path $dir "ALTRun.exe") -WorkingDirectory $dir -PassThru
           $json = Join-Path $dir "ALTRun.json"
           for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
           Start-Sleep -Seconds 3
           $running = -not $proc.HasExited
-          Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue
+          if (-not $running) {
+            # 2026.09.24 发布时出现过一次 ALTRun.exe 自己退出, 之后 12 次都没有复现; 再出现时留下线索
+            Write-Host "ALTRun.exe exited after $(((Get-Date) - $started).TotalSeconds.ToString('N1'))s, exit code $($proc.ExitCode)"
+            Get-Process -Name ALTRun -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Other ALTRun process: $($_.Id) started $($_.StartTime.ToString('HH:mm:ss.fff'))" }
+            Get-ChildItem $dir -Recurse -Name | ForEach-Object { Write-Host "  file: $_" }
+            Get-WinEvent -FilterHashtable @{LogName = 'Application'; StartTime = $started} -ErrorAction SilentlyContinue |
+              Where-Object { $_.Message -match 'ALTRun|AutoHotkey' } | Select-Object -First 5 |
+              ForEach-Object { Write-Host "  event $($_.Id) $($_.ProviderName): $($_.Message)" }
+            $log = Join-Path $env:TEMP "ALTRun.log"
+            if (Test-Path $log) { Get-Content $log -Tail 30 | ForEach-Object { Write-Host "  log: $_" } }
+          }
+          Get-Process -Name ALTRun -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
           if (-not (Test-Path $json)) { throw "ALTRun.json was not created" }
           $settings = Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json
           Write-Host "Running: $running; SchemaVersion: $($settings.SchemaVersion); commands: $($settings.CustomCommands.Count); language: $($settings.General.Language)"
