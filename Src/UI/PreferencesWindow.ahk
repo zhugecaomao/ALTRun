@@ -2,8 +2,12 @@
 ; PreferencesWindow.ahk - 偏好设置窗口 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 和 Alfred 的 Preferences 一样左边是分类, 右边是该分类的设置。
-; 所有修改先作用在设置的一份副本 (Working) 上: "保存" 写回 ALTRun.json 并重新
-; 载入 ALTRun (重新打开到同一页), "取消" 直接丢弃。
+; 所有修改先作用在设置的一份副本 (Working) 上, 按钮和一般的 Windows 设置窗口一样:
+;   确定   写回 ALTRun.json, 关闭窗口, ALTRun 在后台重新载入 (没有修改时直接关闭)
+;   取消   丢弃修改 (有修改时先确认); Esc 和右上角的关闭按钮相同
+;   应用   写回并重新载入, 偏好设置在同一页、同一位置重新打开; 没有修改时是灰色的
+;   帮助   (F1) 打开当前页对应的 Wiki 说明
+; 设置要在重新载入后才生效 (热键、主题、索引...), 所以 "应用" 时窗口会闪一下。
 ;
 ; 页面构建用几个小工具, 每个设置项只写一行:
 ;   _Check("General.LaunchAtLogin", "Prefs.LaunchAtLogin")      复选框
@@ -15,15 +19,16 @@
 ; 路径是 ALTRun.json 里的键, 用 "." 连接。
 ;
 ; 用法:
-;   PreferencesWindow.Show([页码])
+;   PreferencesWindow.Show([页码, x, y])
 ;===============================================================================
 
 class PreferencesWindow {
     static Gui := "", Working := "", Pages := [], Binds := [], PageList := ""
     static _page := 0, _y := 0
+    static _dirty := false, _ready := false, ApplyButton := ""
     static ContentX := 190, ContentW := 560, LabelW := 215
 
-    static Show(pageIndex := 1) {
+    static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
             WinActivate("ahk_id " PreferencesWindow.Gui.Hwnd)
             return
@@ -31,11 +36,12 @@ class PreferencesWindow {
         SearchWindow.Hide()
         PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
         PreferencesWindow.Pages := [], PreferencesWindow.Binds := []
+        PreferencesWindow._dirty := false, PreferencesWindow._ready := false
 
         g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
         g.SetFont("s9", ThemeManager.FontName())
-        g.OnEvent("Close", (*) => PreferencesWindow.Close())
-        g.OnEvent("Escape", (*) => PreferencesWindow.Close())
+        g.OnEvent("Close", (*) => PreferencesWindow.Cancel())                ; 返回 true = 不关闭 (选择了继续编辑)
+        g.OnEvent("Escape", (*) => PreferencesWindow.Cancel())
         PreferencesWindow.Gui := g
 
         PreferencesWindow._BuildPages()
@@ -48,14 +54,30 @@ class PreferencesWindow {
         SendMessage(0x1A0, 0, Round(26 * A_ScreenDPI / 96), pageList.Hwnd)  ; LB_SETITEMHEIGHT: 更宽松的侧边栏
         PreferencesWindow.PageList := pageList
 
-        g.AddText("x" PreferencesWindow.ContentX " y500 w360 cGray", I18n.T("Prefs.SaveHint"))
-        g.AddButton("x570 y494 w85 Default", I18n.T("Prefs.Save")).OnEvent("Click", (*) => PreferencesWindow.Save())
-        g.AddButton("x665 y494 w85", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => PreferencesWindow.Close())
+        g.AddButton("x12 y494 w85", I18n.T("Prefs.Help")).OnEvent("Click", (*) => PreferencesWindow.Help())
+        g.AddButton("x475 y494 w85 Default", I18n.T("Prefs.OK")).OnEvent("Click", (*) => PreferencesWindow.OK())
+        g.AddButton("x570 y494 w85", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => PreferencesWindow.Cancel())
+        apply := g.AddButton("x665 y494 w85 Disabled", I18n.T("Prefs.Apply"))
+        apply.OnEvent("Click", (*) => PreferencesWindow.Apply())
+        PreferencesWindow.ApplyButton := apply
+        HotIfWinActive("ahk_id " g.Hwnd)
+        Hotkey("F1", (*) => PreferencesWindow.Help())
+        HotIfWinActive()
 
         pageIndex := Max(1, Min(pageIndex, PreferencesWindow.Pages.Length))
         pageList.Value := pageIndex
         PreferencesWindow.SelectPage(pageIndex)
-        g.Show("w765 h535")
+        g.Show((IsInteger(x) && IsInteger(y) ? "x" x " y" y " " : "") "w765 h535")
+        ; 打开窗口时程序自己填的值不算修改, 等控件的通知都处理完再开始记录
+        SetTimer(() => (PreferencesWindow._ready := true), -300)
+    }
+
+    ; 有控件被用户修改过: "应用" 变为可用, 取消时要确认
+    static MarkDirty() {
+        if (!PreferencesWindow._ready || PreferencesWindow._dirty)
+            return
+        PreferencesWindow._dirty := true
+        try PreferencesWindow.ApplyButton.Enabled := true
     }
 
     static SelectPage(pageIndex) {
@@ -71,7 +93,49 @@ class PreferencesWindow {
         PreferencesWindow.Gui := ""
     }
 
-    static Save() {
+    static OK() {
+        if PreferencesWindow._dirty
+            PreferencesWindow.Save(false)
+        else
+            PreferencesWindow.Close()
+    }
+
+    static Apply() {
+        if PreferencesWindow._dirty
+            PreferencesWindow.Save(true)
+    }
+
+    ; 返回 true 表示没有关闭 (有修改, 选择了继续编辑)
+    static Cancel() {
+        if (PreferencesWindow._dirty && MsgBox(I18n.T("Prefs.DiscardChanges"), I18n.T("Prefs.Title"), "YesNo Icon? Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
+            return true
+        PreferencesWindow.Close()
+        return false
+    }
+
+    static Help() {
+        page := PreferencesWindow.Pages[Max(1, PreferencesWindow._page)]
+        ActionCatalog.OpenUrl(HelpProvider.WikiUrl page.Wiki)
+    }
+
+    ; 每一页对应的 Wiki 页面 (帮助按钮 / F1)
+    static WikiPage(nameKey) {
+        static pages := Map("Prefs.Page.Appearance", "Themes", "Prefs.Page.Features", "Usage", "Prefs.Page.FileSearch", "File-Search"
+                          , "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
+                          , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage"
+                          , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.Extensions", "Extensions")
+        return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
+    }
+
+    ; 命令行 "-Preferences 页码 [x y]" (应用 之后重新打开) -> {Page, X, Y}
+    static ParseArgs(args) {
+        value(i) => (args.Length >= i && IsInteger(args[i])) ? Integer(args[i]) : ""
+        page := value(2)
+        return {Page: (page = "") ? 1 : page, X: value(3), Y: value(4)}
+    }
+
+    ; reopen: 应用 = 重新载入后在同一页、同一位置重新打开; 确定 = 只在后台重新载入
+    static Save(reopen := true) {
         for bind in PreferencesWindow.Binds
             PreferencesWindow.SetPath(PreferencesWindow.Working, bind.Path, bind.Read.Call())
         general := PreferencesWindow.Working["General"]
@@ -85,8 +149,9 @@ class PreferencesWindow {
         if !AppSettings.Save()
             return
         page := PreferencesWindow._page
+        WinGetPos(&x, &y, , , PreferencesWindow.Gui.Hwnd)
         PreferencesWindow.Close()
-        App.Restart("-Preferences " page)
+        App.Restart(reopen ? "-Preferences " page " " x " " y : "-Reloaded")
     }
 
     ;---------------------------------------------------------------------------
@@ -306,7 +371,7 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.Advanced")
         PreferencesWindow._Section("Prefs.SettingsFile")
         PreferencesWindow._Below(8, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW " cGray", AppSettings.File))
-        PreferencesWindow._Button("Prefs.EditJson", (*) => (PreferencesWindow.Close(), App.EditSettingsFile()))
+        PreferencesWindow._Button("Prefs.EditJson", (*) => (PreferencesWindow.Cancel() || App.EditSettingsFile()))
         PreferencesWindow._Button("Prefs.OpenDataFolder", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir))
         PreferencesWindow._Button("Prefs.ResetLearning", (*) => PreferencesWindow._ResetLearning())
         PreferencesWindow._Gap()
@@ -332,7 +397,7 @@ class PreferencesWindow {
     ; Builders
     ;---------------------------------------------------------------------------
     static _BeginPage(nameKey) {
-        PreferencesWindow.Pages.Push({Name: I18n.T(nameKey), Controls: []})
+        PreferencesWindow.Pages.Push({Name: I18n.T(nameKey), Wiki: PreferencesWindow.WikiPage(nameKey), Controls: []})
         PreferencesWindow._y := 14
     }
 
@@ -340,6 +405,10 @@ class PreferencesWindow {
         pos := InStr(options, " x") || InStr(options, "x") = 1 ? "" : "x" PreferencesWindow.ContentX " "
         ctrl := PreferencesWindow.Gui.Add(type, pos "y" PreferencesWindow._y " " options " Hidden", text)
         PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls.Push(ctrl)
+        switch type, false {                                                ; 用户修改 -> "应用" 可用 (类型名不区分大小写)
+            case "Edit", "DropDownList", "ComboBox": ctrl.OnEvent("Change", (*) => PreferencesWindow.MarkDirty())
+            case "CheckBox", "Radio":                ctrl.OnEvent("Click", (*) => PreferencesWindow.MarkDirty())
+        }
         return ctrl
     }
 
@@ -401,7 +470,8 @@ class PreferencesWindow {
         ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" width " r1 -Multi" (kind = "number" ? " Number" : ""), value)
         if (kind = "file" || kind = "folder") {
             browse := PreferencesWindow._Add("Button", "x+4 yp-1 w30", I18n.T("Prefs.Browse"))
-            browse.OnEvent("Click", ItemEditor._Browser(ctrl, kind, PreferencesWindow.Gui))
+            browseFn := ItemEditor._Browser(ctrl, kind, PreferencesWindow.Gui)
+            browse.OnEvent("Click", (p*) => (browseFn(p*), PreferencesWindow.MarkDirty()))
         }
         if (kind = "number")
             PreferencesWindow._Bind(path, () => IsInteger(ctrl.Value) ? Integer(ctrl.Value) : 0)
@@ -483,6 +553,7 @@ class PreferencesWindow {
             edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, newItem())
             if IsObject(edited) {
                 items.Push(edited)
+                PreferencesWindow.MarkDirty()
                 Recheck(edited)
                 Refresh(items.Length)
             }
@@ -496,6 +567,7 @@ class PreferencesWindow {
                 if statuses.Has(ObjPtr(items[row]))
                     statuses.Delete(ObjPtr(items[row]))
                 items[row] := edited
+                PreferencesWindow.MarkDirty()
                 Recheck(edited)
                 Refresh(row)
             }
@@ -530,6 +602,7 @@ class PreferencesWindow {
             if (MsgBox(I18n.T("Prefs.ConfirmDelete", listView.GetText(row, 1)), pageName, "YesNo Icon? Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
                 return
             items.RemoveAt(row)
+            PreferencesWindow.MarkDirty()
             Refresh(row)
         }
 

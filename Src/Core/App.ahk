@@ -8,7 +8,7 @@
 ; 命令行参数:
 ;   -Startup        开机自启动时使用, 不弹出搜索窗口
 ;   -Reloaded       重新载入后 (保存设置等), 不弹出搜索窗口
-;   -Preferences N  重新载入后打开偏好设置的第 N 页
+;   -Preferences N [X Y]  重新载入后打开偏好设置的第 N 页 (在 X, Y 位置: 偏好设置里点了 "应用")
 ;   -SendTo <path>  资源管理器 "发送到" 菜单: 把文件/文件夹添加为自定义命令
 ;
 ; 用法 (其它模块里):
@@ -280,7 +280,8 @@ class App {
         if (A_Args.Length >= 1 && (A_Args[1] = "-Startup" || A_Args[1] = "-Reloaded"))
             return
         if (A_Args.Length >= 1 && A_Args[1] = "-Preferences") {
-            PreferencesWindow.Show((A_Args.Length >= 2 && IsInteger(A_Args[2])) ? Integer(A_Args[2]) : 1)
+            args := PreferencesWindow.ParseArgs(A_Args)
+            PreferencesWindow.Show(args.Page, args.X, args.Y)
             return
         }
         if AppSettings.MigratedFrom
