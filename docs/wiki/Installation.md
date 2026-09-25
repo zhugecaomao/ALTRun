@@ -14,6 +14,32 @@ ALTRun 是绿色软件, 不需要安装, 不写注册表。
 
 不要放在需要管理员权限才能写入的文件夹 (例如 `C:\Program Files`), ALTRun 需要在自己的目录里保存设置。
 
+### 用 Scoop 安装
+[Scoop](https://scoop.sh/) 是 Windows 的命令行软件管理工具。ALTRun 的仓库本身就是一个 Scoop bucket:
+
+```powershell
+scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
+scoop install altrun
+```
+
+- 安装后开始菜单里有 "Scoop Apps → ALTRun", 程序在 `scoop\apps\altrun\current`
+- 升级: 先退出 ALTRun, 再运行 `scoop update altrun`。设置 (`ALTRun.json`)、`Data\`、`Themes\` 都会保留
+- 卸载: `scoop uninstall altrun`, 设置留在 `scoop\persist\altrun`, 重新安装后自动恢复; 连设置一起删除用 `scoop uninstall altrun --purge`
+- 用 Scoop 安装时, "检查更新" 发现新版本会提示用 `scoop update altrun` 升级, 不要手动解压覆盖
+
+### 用 winget 安装
+winget 清单已经准备好 (`packaging\winget`), 等 [winget 官方仓库](https://github.com/microsoft/winget-pkgs) 收录后就可以:
+
+```powershell
+winget install zhugecaomao.ALTRun
+winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
+```
+
+- 程序在 `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`, 命令行里可以直接输入 `altrun` 启动
+- winget 不创建开始菜单快捷方式: 第一次运行后在 偏好设置 → 通用 里打开 "添加到开始菜单" 和 "开机自动启动"
+- 第一次运行时 Windows 可能提示 "无法验证发布者" (程序是从网上下载的), 选择 "运行" 即可
+- 升级和卸载都保留设置、`Data\`、`Themes\`; 卸载后想彻底删除, 手动删掉上面的文件夹
+
 ## 程序目录里的文件
 | 文件 / 文件夹 | 说明 | 升级时 |
 |---|---|---|

@@ -7,6 +7,8 @@
 
 ### 新增
 - **SPF2M 束线型直接计算**, 不再需要 DOSBox: PT 工具箱的 SPF2M 窗口输入参数后立即显示各支架处的高度, 可以一键复制到 Excel。结果和原来的 SPF2M.EXE 完全一致 (139 组、1100 多个数值逐个比对)。另外可以指定最小曲率半径、反弯点距离和支架间距; SPF2M 会直接退出或什么都不显示的情况, 这里会给出说明
+- **用 Scoop 安装**: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun`, 然后 `scoop install altrun`; 以后 `scoop update altrun` 升级, 设置、数据和自定义主题都保留。winget 清单也已准备好, 等官方仓库收录后可以 `winget install zhugecaomao.ALTRun`
+- 用 Scoop / winget 安装时, "检查更新" 发现新版本会给出对应的升级命令
 
 ### 改进
 - 右键 → 发送到 → ALTRun: 选中 1 个文件 / 文件夹时弹出编辑对话框 (名称、类型、目标已填好, 可以改名称、加关键字, 取消则不添加); 选中多个时全部直接添加, 已经有的命令不重复添加
