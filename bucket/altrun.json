@@ -1,0 +1,46 @@
+{
+    "version": "2026.09.25",
+    "description": "Lightweight, Alfred-style launcher for Windows, written in AutoHotkey v2",
+    "homepage": "https://github.com/zhugecaomao/ALTRun",
+    "license": "GPL-3.0-only",
+    "notes": [
+        "Start ALTRun from the Start menu, then press Alt+Space.",
+        "Settings (ALTRun.json), Data and custom Themes are kept across updates. Exit ALTRun before 'scoop update altrun'."
+    ],
+    "architecture": {
+        "64bit": {
+            "url": "https://github.com/zhugecaomao/ALTRun/releases/download/2026.09.25/ALTRun_v2026.09.25.zip",
+            "hash": "3779b0aedbd58a7bf235eab4c0cc52d3b4c9f3188cb98be38319837605cef017"
+        }
+    },
+    "pre_install": [
+        "# ALTRun.json is copied, not linked: ALTRun saves it by replacing the file, which would break a hard link",
+        "if (Test-Path \"$persist_dir\\ALTRun.json\") { Copy-Item \"$persist_dir\\ALTRun.json\" \"$dir\\ALTRun.json\" -Force }"
+    ],
+    "pre_uninstall": [
+        "if (Test-Path \"$dir\\ALTRun.json\") {",
+        "    New-Item -ItemType Directory \"$persist_dir\" -Force | Out-Null",
+        "    Copy-Item \"$dir\\ALTRun.json\" \"$persist_dir\\ALTRun.json\" -Force",
+        "}"
+    ],
+    "persist": [
+        "Data",
+        "Themes"
+    ],
+    "shortcuts": [
+        [
+            "ALTRun.exe",
+            "ALTRun"
+        ]
+    ],
+    "checkver": {
+        "github": "https://github.com/zhugecaomao/ALTRun"
+    },
+    "autoupdate": {
+        "architecture": {
+            "64bit": {
+                "url": "https://github.com/zhugecaomao/ALTRun/releases/download/$version/ALTRun_v$version.zip"
+            }
+        }
+    }
+}

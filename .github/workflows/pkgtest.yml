@@ -1,0 +1,139 @@
+# 临时: 在 Windows 上测试 Scoop / winget 安装、升级时设置是否保留 (完成后删除)
+name: Package test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - .github/workflows/pkgtest.yml
+      - bucket/**
+      - packaging/**
+
+jobs:
+  scoop:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install Scoop
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force
+          iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+          "$env:USERPROFILE\scoop\shims" | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+
+      - name: Install 2026.09.24, change settings, update to 2026.09.25
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $manifest = Join-Path $env:RUNNER_TEMP "altrun.json"
+          $new = Get-Content bucket/altrun.json -Raw
+          $old = $new.Replace('2026.09.25', '2026.09.24').Replace('3779b0aedbd58a7bf235eab4c0cc52d3b4c9f3188cb98be38319837605cef017', 'ee1d8e6cb99f99d3a72d3bdb7739cf4f71f8803167398d4625d8112db854037c')
+          Set-Content $manifest $old -Encoding utf8
+          scoop install $manifest
+          $current = "$env:USERPROFILE\scoop\apps\altrun\current"
+          $persist = "$env:USERPROFILE\scoop\persist\altrun"
+          Get-ChildItem $current -Name | ForEach-Object { "  installed: $_" }
+          Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Scoop Apps" -Name | ForEach-Object { "  shortcut: $_" }
+
+          # first run creates ALTRun.json
+          $proc = Start-Process "$current\ALTRun.exe" -WorkingDirectory $current -PassThru
+          for ($i = 0; $i -lt 30 -and -not (Test-Path "$current\ALTRun.json"); $i++) { Start-Sleep 1 }
+          Start-Sleep 3
+          "ALTRun running: $(-not $proc.HasExited)"
+          Stop-Process -Name ALTRun -Force -ErrorAction SilentlyContinue
+          Start-Sleep 1
+          if (-not (Test-Path "$current\ALTRun.json")) { throw "ALTRun.json was not created" }
+
+          # change a setting the way ALTRun saves it (write .tmp, then replace the file)
+          $json = Get-Content "$current\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+          $json.General.HistorySize = 77
+          $json | ConvertTo-Json -Depth 20 | Set-Content "$current\ALTRun.json.tmp" -Encoding UTF8
+          Move-Item "$current\ALTRun.json.tmp" "$current\ALTRun.json" -Force
+          "marker" | Set-Content "$current\Data\marker.txt"
+          "{}" | Set-Content "$current\Themes\Mine.json"
+
+          # update
+          Set-Content $manifest $new -Encoding utf8
+          scoop update altrun
+          scoop list altrun
+          $after = Get-Content "$current\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+          "after update: HistorySize=$($after.General.HistorySize) data=$(Test-Path "$current\Data\marker.txt") theme=$(Test-Path "$current\Themes\Mine.json") version=$((Get-Item "$current\ALTRun.exe").VersionInfo.FileVersion)"
+          if ($after.General.HistorySize -ne 77) { throw "settings lost on update" }
+          if (-not (Test-Path "$current\Data\marker.txt")) { throw "Data lost on update" }
+          if (-not (Test-Path "$current\Themes\Mine.json")) { throw "Themes lost on update" }
+
+          # the updated version starts
+          $proc = Start-Process "$current\ALTRun.exe" -WorkingDirectory $current -PassThru
+          Start-Sleep 6
+          "2026.09.25 running: $(-not $proc.HasExited)"
+          Stop-Process -Name ALTRun -Force -ErrorAction SilentlyContinue
+          Start-Sleep 1
+
+          # uninstall keeps settings in persist; reinstall brings them back
+          scoop uninstall altrun
+          "persist after uninstall:"; Get-ChildItem $persist -Recurse -Name | ForEach-Object { "  $_" }
+          scoop install $manifest
+          $again = Get-Content "$current\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+          "after reinstall: HistorySize=$($again.General.HistorySize) data=$(Test-Path "$current\Data\marker.txt")"
+          if ($again.General.HistorySize -ne 77) { throw "settings lost on reinstall" }
+
+  winget:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: winget
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            "winget missing - installing"
+            Install-PackageProvider -Name NuGet -Force | Out-Null
+            Install-Module Microsoft.WinGet.Client -Force -Repository PSGallery | Out-Null
+            Repair-WinGetPackageManager -AllUsers -Latest
+          }
+          winget --version
+          winget settings --enable LocalManifestFiles
+          winget validate --manifest packaging/winget
+          if ($LASTEXITCODE -ne 0) { throw "winget validate failed ($LASTEXITCODE)" }
+
+          $old = Join-Path $env:RUNNER_TEMP "winget-old"
+          New-Item -ItemType Directory $old -Force | Out-Null
+          foreach ($f in Get-ChildItem packaging/winget) {
+            (Get-Content $f.FullName -Raw).Replace('2026.09.25', '2026.09.24').Replace('2026-09-25', '2026-09-24').Replace('3779B0AEDBD58A7BF235EAB4C0CC52D3B4C9F3188CB98BE38319837605CEF017', 'EE1D8E6CB99F99D3A72D3BDB7739CF4F71F8803167398D4625D8112DB854037C') |
+              Set-Content (Join-Path $old $f.Name) -Encoding utf8
+          }
+          winget install --manifest $old --accept-package-agreements --accept-source-agreements --disable-interactivity
+          $dir = (Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Directory -Filter "zhugecaomao.ALTRun*" | Select-Object -First 1).FullName
+          "install dir: $dir"
+          Get-ChildItem $dir -Name | ForEach-Object { "  $_" }
+          Get-Command altrun -ErrorAction SilentlyContinue | Format-List Source
+
+          $proc = Start-Process "$dir\ALTRun.exe" -WorkingDirectory $dir -PassThru
+          for ($i = 0; $i -lt 30 -and -not (Test-Path "$dir\ALTRun.json"); $i++) { Start-Sleep 1 }
+          Start-Sleep 3
+          "ALTRun running: $(-not $proc.HasExited)"
+          Stop-Process -Name ALTRun -Force -ErrorAction SilentlyContinue
+          Start-Sleep 1
+          $json = Get-Content "$dir\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+          $json.General.HistorySize = 77
+          $json | ConvertTo-Json -Depth 20 | Set-Content "$dir\ALTRun.json" -Encoding UTF8
+          New-Item -ItemType Directory "$dir\Data" -Force | Out-Null
+          "marker" | Set-Content "$dir\Data\marker.txt"
+
+          winget upgrade --manifest packaging/winget --accept-package-agreements --accept-source-agreements --disable-interactivity
+          "upgrade exit code: $LASTEXITCODE"
+          $dir2 = (Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Directory -Filter "zhugecaomao.ALTRun*" | Select-Object -First 1).FullName
+          "install dir after upgrade: $dir2"
+          Get-ChildItem $dir2 -Recurse -Name | ForEach-Object { "  $_" }
+          if (Test-Path "$dir2\ALTRun.json") {
+            $after = Get-Content "$dir2\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+            "after upgrade: HistorySize=$($after.General.HistorySize) data=$(Test-Path "$dir2\Data\marker.txt") version=$((Get-Item "$dir2\ALTRun.exe").VersionInfo.FileVersion)"
+          } else { "after upgrade: ALTRun.json is gone" }
+
+          winget uninstall --id zhugecaomao.ALTRun --disable-interactivity
+          "uninstall exit code: $LASTEXITCODE"
+          "left after uninstall: $(Test-Path $dir2)"
+          if (Test-Path $dir2) { Get-ChildItem $dir2 -Recurse -Name | ForEach-Object { "  $_" } }
