@@ -452,7 +452,7 @@ Class PTToolsWindow {
     }
 
     static Spf2mTitle := "SPF2M Post-Tensioning Tendon Profile Calculator"
-    static GroupH := 440                                                   ; 两个 GroupBox 的高度
+    static GroupH := 420                                                   ; 两个 GroupBox 的高度
 
     static ProfileLabelGap := 190
     static ProfileFieldW   := 90
@@ -487,7 +487,7 @@ Class PTToolsWindow {
         Win.SetCueBanner(g["SupportIntervals"].Hwnd, "auto: max. 1000")
         PTToolsWindow.Field(g, labelX, editX, 340, PTToolsWindow.ProfileFieldW, "Duct Dia. for At C.G. (mm)", "DuctDia", "").OnEvent("Change", recalc)
         g.SetFont("s8 cGray")
-        g.AddText("x" labelX " y378 w" (w - 30) " h" (PTToolsWindow.GroupH - 378 + 5), "Empty fields use the SPF2M defaults (in gray). Intervals: e.g. 500, 1500, 800 ... must add up to the distance. Distances are from the high end.")
+        g.AddText("x" labelX " y378 w" (w - 30) " h" (PTToolsWindow.GroupH - 370), "Empty fields use the SPF2M defaults (in gray). Intervals: e.g. 500, 1500, 800 ... must add up to the distance. Distances are from the high end.")
         g.SetFont("s9 cDefault")
         return x0 + w
     }
@@ -495,15 +495,18 @@ Class PTToolsWindow {
     static BuildResultGroup(g, x0) {
         w := 480
         g.Add("GroupBox", "x" x0 " y15 w" w " h" PTToolsWindow.GroupH, "Tendon Profile - Support Heights (mm)")
-        list := g.AddListView("x" (x0 + 12) " y40 w" (w - 24) " h240 vResultList -Multi NoSort Grid"
+        ; 从下往上排: Copy Table 按钮贴着框底, 上面是两三行的摘要, 剩下的高度都给表格
+        buttonY  := PTToolsWindow.GroupH - 25
+        summaryY := buttonY - 53
+        list := g.AddListView("x" (x0 + 12) " y40 w" (w - 24) " h" (summaryY - 48) " vResultList -Multi NoSort Grid"
             , ["Distance", "Interval", "Actual", "Beam @ 5mm", "Slab @ 10mm"])
         for index, width in [80, 76, 82, 100, 100]
             list.ModifyCol(index, width " Right")
-        g.AddText("x" (x0 + 12) " y290 w" (w - 24) " h60 vResultSummary")
+        g.AddText("x" (x0 + 12) " y" summaryY " w" (w - 24) " h48 vResultSummary")
         g.SetFont("cRed")
-        g.AddText("x" (x0 + 12) " y290 w" (w - 24) " h60 vResultError Hidden")
+        g.AddText("x" (x0 + 12) " y" summaryY " w" (w - 24) " h48 vResultError Hidden")
         g.SetFont("cDefault")
-        g.AddButton("x" (x0 + 12) " y" (PTToolsWindow.GroupH - 30) " w140 h30", "Copy Table").OnEvent("Click", (*) => PTToolsWindow.CopyProfileTable())
+        g.AddButton("x" (x0 + 12) " y" buttonY " w140 h30", "Copy Table").OnEvent("Click", (*) => PTToolsWindow.CopyProfileTable())
     }
 
     ; 钢绞线类型变了: 最小半径的灰色提示换成这种类型的默认值, 管道直径换成这种类型记住的值
