@@ -75,6 +75,7 @@
 #Include Src\Extensions\SnippetExpander.ahk
 #Include Src\Extensions\QuickSwitch.ahk
 #Include Src\Extensions\AutoDate.ahk
+#Include Src\Extensions\TendonProfile.ahk
 #Include Src\Extensions\PTToolsWindow.ahk
 #Include Src\Extensions\UpdateChecker.ahk
 
