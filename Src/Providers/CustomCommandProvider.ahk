@@ -11,7 +11,7 @@
 ; 同样的匹配程度, 名称匹配排在文件名 / 文件夹名匹配前面。
 ;
 ; 用法:
-;   CustomCommandProvider.AddFromPath(path [, title])   "发送到" 菜单添加 (不弹对话框)
+;   CustomCommandProvider.AddFromPaths(paths)            "发送到" 菜单: 1 个弹出编辑对话框, 多个直接添加
 ;   CustomCommandProvider.Edit(command [, prefill])      打开编辑对话框; command 为 "" 时新建
 ;   搜索结果里 F3 / 右键 "编辑" 调用 EditItem(), Ctrl+Del 调用 DeleteItem()
 ;===============================================================================
@@ -137,11 +137,12 @@ class CustomCommandProvider {
     static EditorFields() {
         types := [["File", I18n.T("Prefs.Type.File")], ["Folder", I18n.T("Prefs.Type.Folder")]
                 , ["Command", I18n.T("Prefs.Type.Command")], ["Url", I18n.T("Prefs.Type.Url")]]
-        return [ItemEditor.Field("Title", "Prefs.Col.Title", "text", true)
-              , ItemEditor.Field("Type", "Prefs.Col.Type", "choice", false, types)
-              , ItemEditor.Field("Target", "Prefs.Col.Target", "file", true)
-              , ItemEditor.Field("Arguments", "Prefs.Col.Arguments")
-              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword")]
+        hint := (name) => I18n.T("Cmd.Field." name)                        ; 每个字段下面的灰色说明
+        return [ItemEditor.Field("Title", "Prefs.Col.Title", "text", true, "", hint("Title"))
+              , ItemEditor.Field("Type", "Prefs.Col.Type", "choice", false, types, hint("Type"))
+              , ItemEditor.Field("Target", "Prefs.Col.Target", "file", true, "", hint("Target"))
+              , ItemEditor.Field("Arguments", "Prefs.Col.Arguments", "text", false, "", hint("Arguments"))
+              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", false, "", hint("Keyword"))]
     }
 
     ; 检查命令的目标是否还在 (文件夹改名、文件移走后命令会失效), 返回:
@@ -224,20 +225,62 @@ class CustomCommandProvider {
         return false
     }
 
-    static AddFromPath(target, title := "") {
-        if (title = "") {
-            SplitPath(target, &fileName, , , &nameNoExt)
-            title := DirExist(target) ? fileName : nameNoExt
+    ; 资源管理器 "发送到 → ALTRun" (选中几个就一次传进来几个路径):
+    ;   1 个: 弹出编辑对话框, 名称 / 类型 / 目标已填好, 确定后才添加; 已经有这条命令时打开它修改
+    ;   多个: 全部直接添加 (一个个弹对话框太多), 已经有的跳过
+    static AddFromPaths(paths) {
+        if !paths.Length
+            return
+        if (paths.Length = 1) {
+            existing := CustomCommandProvider.FindByTarget(paths[1])
+            if IsObject(existing) {
+                App.Notify(I18n.T("Custom.Exists", existing["Title"]), 2500)
+                CustomCommandProvider.Edit(existing)
+            } else if CustomCommandProvider.Edit("", CustomCommandProvider.FromPath(paths[1])) {
+                App.Notify(I18n.T("Custom.Added", AppSettings.CustomCommands[-1]["Title"]), 2500)
+            }
+            return
         }
-        AppSettings.CustomCommands.Push(Map(
-            "Title", title,
-            "Type", DirExist(target) ? "Folder" : "File",
-            "Target", target,
-            "Arguments", "",
-            "Keyword", ""
-        ))
-        CustomCommandProvider._ResetNarrowing()
-        AppSettings.Save()
-        App.Notify(I18n.T("Custom.Added", title), 2500)
+        added := 0, skipped := 0
+        for target in paths {
+            if IsObject(CustomCommandProvider.FindByTarget(target)) {
+                skipped += 1
+                continue
+            }
+            AppSettings.CustomCommands.Push(CustomCommandProvider.FromPath(target))
+            added += 1
+        }
+        if added {
+            CustomCommandProvider._ResetNarrowing()
+            AppSettings.Save()
+        }
+        App.Notify(I18n.T("Custom.AddedMany", added) (skipped ? " " I18n.T("Custom.SkippedExisting", skipped) : ""), 3000)
+    }
+
+    ; 文件 / 文件夹路径 -> 一条新命令 (名称 = 文件名去掉扩展名, 或文件夹名)
+    static FromPath(target) {
+        target := RTrim(target, "\/")
+        if RegExMatch(target, "^[A-Za-z]:$")                                ; 整个驱动器 "D:"
+            target .= "\"
+        isFolder := DirExist(target) != ""
+        SplitPath(RTrim(target, "\"), &fileName, , , &nameNoExt)
+        title := isFolder ? fileName : nameNoExt
+        if (title = "")
+            title := target
+        return Map("Title", title, "Type", isFolder ? "Folder" : "File", "Target", target, "Arguments", "", "Keyword", "")
+    }
+
+    ; 目标指向同一个文件 / 文件夹的命令 (比较展开变量后的路径, 不分大小写), 没有返回 ""
+    static FindByTarget(target) {
+        wanted := StrLower(RTrim(Path.Resolve(target), "\/"))
+        for command in AppSettings.CustomCommands {
+            if !(command is Map) || !command.Has("Target")
+                continue
+            if (command.Has("Type") && command["Type"] = "Url")
+                continue
+            if (StrLower(RTrim(CustomCommandProvider._Resolve(command["Target"]), "\/")) = wanted)
+                return command
+        }
+        return ""
     }
 }

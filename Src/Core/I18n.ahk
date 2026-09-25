@@ -151,6 +151,14 @@ class I18n {
         s["Clipboard.ClearHint"]       := ["{1} items", "{1} 条"]
         s["Clipboard.Cleared"]         := ["Clipboard history cleared", "剪贴板历史已清空"]
         s["Custom.Added"]              := ["Added '{1}' to Custom Commands.", "已将 '{1}' 添加到自定义命令。"]
+        s["Custom.AddedMany"]          := ["Added {1} commands to Custom Commands.", "已添加 {1} 条自定义命令。"]
+        s["Custom.SkippedExisting"]    := ["{1} were already there.", "({1} 条已经有了, 没有重复添加)"]
+        s["Custom.Exists"]             := ["'{1}' is already a custom command - edit it here.", "已经有这条命令 '{1}', 可以在这里修改"]
+        s["Cmd.Field.Title"]           := ["Shown in results. Searching matches the title and its pinyin initials.", "搜索结果里显示的名称; 搜索时按名称和它的拼音首字母匹配"]
+        s["Cmd.Field.Type"]            := ["File: open a file or run a program. Folder: open in the file manager. Command line: a program plus arguments. Web address: open in the browser.", "文件 / 程序: 打开文件或运行程序; 文件夹: 用文件管理器打开; 命令行: 程序 + 参数; 网址: 用浏览器打开"]
+        s["Cmd.Field.Target"]          := ["Path, program or web address. Variables work, e.g. A_Desktop\Projects or %OneDrive%\PPIE. File and folder names are searched too.", "路径、程序或网址。可以用变量, 例如 A_Desktop\Projects、%OneDrive%\PPIE; 文件名和文件夹名也能搜到"]
+        s["Cmd.Field.Arguments"]       := ["Passed to the program, e.g. /k ipconfig /all. Usually empty for files, folders and web addresses.", "运行程序时附带的参数, 例如 /k ipconfig /all; 文件、文件夹和网址一般留空"]
+        s["Cmd.Field.Keyword"]         := ["Optional. Typing exactly this word puts the command first, e.g. ec2.", "可选。输入的文字和关键字完全一样时排在最前面, 例如 ec2"]
         s["Index.Done"]                := ["Index rebuilt: {1} applications.", "索引已重建: {1} 个应用。"]
 
         ; --- System commands ---
@@ -301,7 +309,7 @@ class I18n {
         s["Prefs.ShowTips"]            := ["Show usage tips in the empty search box", "空搜索框里显示使用提示"]
         s["Prefs.ShowTips.Desc"]       := ["A different tip each time the window opens. Type ? to see them all.", "每次呼出换一条; 输入 ? 查看全部"]
         s["Prefs.SendToMenu"]          := ["Add to Explorer 'Send to' menu", "添加到资源管理器 '发送到' 菜单"]
-        s["Prefs.SendToMenu.Desc"]     := ["Right-click a file or folder in Explorer → Send to → ALTRun to add it as a custom command.", "在资源管理器里右键文件或文件夹 → 发送到 → ALTRun, 添加为自定义命令"]
+        s["Prefs.SendToMenu.Desc"]     := ["Explorer → right-click → Send to → ALTRun adds custom commands: one item opens the editor, several are added at once.", "资源管理器里右键 → 发送到 → ALTRun 添加自定义命令: 选中 1 个时弹出编辑对话框, 选中多个时全部直接添加"]
         s["Prefs.StartMenu"]           := ["Add to Start menu", "添加到开始菜单"]
         s["Prefs.StartMenu.Desc"]      := ["Adds an ALTRun shortcut to the Start menu.", "在开始菜单里添加 ALTRun 的快捷方式"]
         s["Prefs.CheckUpdates"]        := ["Check for updates at startup", "启动时检查更新"]

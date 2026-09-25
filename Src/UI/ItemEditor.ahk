@@ -27,7 +27,7 @@ class ItemEditor {
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
         controls := Map()
-        labelW := 110, inputW := 380
+        labelW := 110, inputW := 540                                        ; 宽一些, 长路径和命令行参数才看得全
 
         ; 单行输入框一定要写 r1: 不写行数时, 初始文字比框宽 (例如很长的路径) AHK 会自动
         ; 变成多行并加高, 盖住下面的控件
@@ -55,8 +55,11 @@ class ItemEditor {
                 default:
                     ctrl := g.AddEdit("x+8 ys-3 w" inputW " r1 -Multi", value)
             }
-            if field.HasOwnProp("Hint")
-                g.AddText("xs+" (labelW + 8) " y+2 w" inputW " cGray", field.Hint)
+            if field.HasOwnProp("Hint") {                                   ; 灰色小字说明, 和偏好设置里的一样
+                g.SetFont("s8")
+                g.AddText("xs+" (labelW + 8) " y+3 w" inputW " cGray", field.Hint)
+                g.SetFont("s9")
+            }
             controls[field.Key] := ctrl
         }
 
