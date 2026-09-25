@@ -12,6 +12,7 @@ on:
 
 jobs:
   manifests:
+    if: false
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -105,7 +106,6 @@ jobs:
           if ($again.General.HistorySize -ne 77) { throw "settings lost on reinstall" }
 
   winget:
-    if: false
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -172,3 +172,11 @@ jobs:
           "uninstall exit code: $LASTEXITCODE"
           "left after uninstall: $(Test-Path $dir2)"
           if (Test-Path $dir2) { Get-ChildItem $dir2 -Recurse -Name | ForEach-Object { "  $_" } }
+
+          winget install --manifest packaging/winget --accept-package-agreements --accept-source-agreements --disable-interactivity
+          "reinstall exit code: $LASTEXITCODE"
+          $again = Get-Content "$dir2\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+          "after reinstall: HistorySize=$($again.General.HistorySize) data=$(Test-Path "$dir2\Data\marker.txt") exe=$(Test-Path "$dir2\ALTRun.exe")"
+          if ($again.General.HistorySize -ne 77) { throw "settings lost on reinstall" }
+          Get-Item "$env:LOCALAPPDATA\Microsoft\WinGet\Links\altrun.exe" | Format-List FullName, LinkType, Target
+          Get-ChildItem "$env:APPDATA\Microsoft\Windows\Start Menu\Programs" -Recurse -Filter *ALTRun* -Name
