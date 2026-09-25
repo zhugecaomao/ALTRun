@@ -1,1 +1,0 @@
-DOSBox.exe SPF2M.exe

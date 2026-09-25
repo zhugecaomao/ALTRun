@@ -963,6 +963,8 @@ class Tests {
         result := profileOf(1, 600, 100, 8000, Map("Contraflexure", 525))
         eq("contraflexure equal to default keeps radius", result.Radius "|" result.RadiusChanged, "4200|0")
         eq("default radius 22s", TendonProfile.DefaultRadius(5), 5700)
+        eq("default duct dia", TendonProfile.DefaultDuctDiameter(1) "|" TendonProfile.DefaultDuctDiameter(3) "|" TendonProfile.DefaultDuctDiameter(6), "25|90|130")
+        eq("default tendon 12S", PTToolsWindow.Defaults["TendonType"], 3)
     }
 
     ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入
