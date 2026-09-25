@@ -9,7 +9,7 @@
 ;   -Startup        开机自启动时使用, 不弹出搜索窗口
 ;   -Reloaded       重新载入后 (保存设置等), 不弹出搜索窗口
 ;   -Preferences N [X Y]  重新载入后打开偏好设置的第 N 页 (在 X, Y 位置: 偏好设置里点了 "应用")
-;   -SendTo <path>  资源管理器 "发送到" 菜单: 把文件/文件夹添加为自定义命令
+;   -SendTo <path...>  资源管理器 "发送到" 菜单: 把文件/文件夹添加为自定义命令 (1 个弹出编辑对话框)
 ;
 ; 用法 (其它模块里):
 ;   App.Notify("...")              屏幕上方短暂提示
@@ -266,15 +266,19 @@ class App {
 
     static _HandleCommandLine() {
         if (A_Args.Length >= 2 && A_Args[1] = "-SendTo") {
-            target := A_Args[2]
-            if (SubStr(target, -4) = ".lnk") {
-                try {
-                    FileGetShortcut(target, &linkTarget)
-                    if (linkTarget != "")
-                        target := linkTarget
+            paths := []                                                     ; 选中了几个文件, 就一次传进来几个路径
+            Loop A_Args.Length - 1 {
+                target := A_Args[A_Index + 1]
+                if (SubStr(target, -4) = ".lnk") {
+                    try {
+                        FileGetShortcut(target, &linkTarget)
+                        if (linkTarget != "")
+                            target := linkTarget
+                    }
                 }
+                paths.Push(target)
             }
-            CustomCommandProvider.AddFromPath(target)
+            CustomCommandProvider.AddFromPaths(paths)
             return
         }
         if (A_Args.Length >= 1 && (A_Args[1] = "-Startup" || A_Args[1] = "-Reloaded"))

@@ -64,7 +64,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -813,6 +813,37 @@ class Tests {
         TestRunner.True("PreferenceDescriptions.count " count, count >= 50)
         for key in ["Prefs.RememberPosition.Desc", "Prefs.ShowOn.Desc", "Prefs.HideOnDeactivate.Desc", "Prefs.Hotkey.Desc"]
             TestRunner.True("PreferenceDescriptions.has " key, I18n.Strings.Has(key))
+    }
+
+    ; 资源管理器 "发送到": 多个文件直接添加, 已经有的不重复添加 (1 个时弹对话框, 这里不测)
+    static SendTo() {
+        eq := (n, a, e) => TestRunner.Equal("SendTo." n, a, e)
+        folder := A_Temp "\ALTRunSendToTest"
+        try DirDelete(folder, true)
+        DirCreate(folder "\PT2415 - Riverside")
+        FileAppend("", folder "\Design Report.docx")
+        command := CustomCommandProvider.FromPath(folder "\PT2415 - Riverside\")
+        eq("folder title", command["Title"], "PT2415 - Riverside")
+        eq("folder type", command["Type"], "Folder")
+        eq("folder target (no trailing slash)", command["Target"], folder "\PT2415 - Riverside")
+        command := CustomCommandProvider.FromPath(folder "\Design Report.docx")
+        eq("file title", command["Title"], "Design Report")
+        eq("file type", command["Type"], "File")
+        eq("drive root", CustomCommandProvider.FromPath("C:")["Target"], "C:\")
+
+        savedFile := AppSettings.File, savedCommands := AppSettings.Data["CustomCommands"]
+        AppSettings.File := A_Temp "\ALTRunTest.json"
+        AppSettings.Data["CustomCommands"] := [Map("Title", "Old", "Type", "Folder", "Target", folder "\pt2415 - riverside\", "Arguments", "", "Keyword", "")]
+        eq("find existing (case, trailing slash)", CustomCommandProvider.FindByTarget(folder "\PT2415 - Riverside")["Title"], "Old")
+        eq("find missing", CustomCommandProvider.FindByTarget(folder "\Design Report.docx"), "")
+        CustomCommandProvider.AddFromPaths([folder "\PT2415 - Riverside", folder "\Design Report.docx", "C:\Windows"])
+        commands := AppSettings.CustomCommands
+        eq("several added, existing skipped", commands.Length, 3)
+        eq("added in order", commands[2]["Title"] "|" commands[3]["Title"], "Design Report|Windows")
+        ToolTip(, , , 20)
+        AppSettings.Data["CustomCommands"] := savedCommands, AppSettings.File := savedFile
+        try FileDelete(A_Temp "\ALTRunTest.json")
+        try DirDelete(folder, true)
     }
 
     ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入
