@@ -64,7 +64,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -760,6 +760,59 @@ class Tests {
         eq("wiki default", PreferencesWindow.WikiPage("Prefs.Page.General"), "Configuration")
         for key in ["Prefs.OK", "Prefs.Cancel", "Prefs.Apply", "Prefs.Help", "Prefs.DiscardChanges"]
             eq("text " key, I18n.T(key) != key, true)
+    }
+
+    ; 搜索窗口的位置: 默认居中、离顶部 20%; 记住的位置按屏幕里的千分比换算, 换一块屏幕也放在对应的地方
+    static WindowPosition() {
+        eq := (n, a, e) => TestRunner.Equal("WindowPosition." n, a, e)
+        area := {Left: 0, Top: 0, Right: 1920, Bottom: 1040}
+        pos := SearchWindow.Place(area, 700, 500)
+        eq("default", pos.X "," pos.Y, "610,208")
+        pos := SearchWindow.Place(area, 700, 500, Map("X", 500, "Y", 200))
+        eq("default map", pos.X "," pos.Y, "610,208")
+        pos := SearchWindow.Place(area, 700, 500, Map("X", 0, "Y", 0))
+        eq("top left", pos.X "," pos.Y, "0,0")
+        pos := SearchWindow.Place(area, 700, 500, Map("X", 1000, "Y", 1000))
+        eq("bottom right kept on screen", pos.X "," pos.Y, "1220,540")
+        pos := SearchWindow.Place(area, 700, 500, Map("X", 1500, "Y", -30))
+        eq("out of range clamped", pos.X "," pos.Y, "1220,0")
+        second := {Left: 1920, Top: 0, Right: 3200, Bottom: 1024}
+        pos := SearchWindow.Place(second, 700, 500)
+        eq("second screen", pos.X "," pos.Y, "2210,205")
+        left := {Left: -1280, Top: -200, Right: 0, Bottom: 824}
+        pos := SearchWindow.Place(left, 700, 500, Map("X", 250, "Y", 100))
+        eq("screen with negative coordinates", pos.X "," pos.Y, "-1135,-98")
+        for bad in ["", Map(), Map("X", "a", "Y", 1), 5]
+            eq("invalid position " A_Index, SearchWindow.Place(area, 700, 500, bad).X, 610)
+        relative := SearchWindow.RelativePosition(area, 700, 305, 312)
+        eq("relative", relative["X"] "," relative["Y"], "250,300")
+        pos := SearchWindow.Place(area, 700, 500, relative)
+        eq("round trip", pos.X "," pos.Y, "305,312")
+        pos := SearchWindow.Place(second, 700, 500, relative)
+        eq("same relative place on another screen", pos.X "," pos.Y, "2065,307")
+        relative := SearchWindow.RelativePosition(area, 700, -50, 5000)
+        eq("relative clamped", relative["X"] "," relative["Y"], "0,1000")
+        appearance := AppSettings.Defaults()["Appearance"]
+        eq("default show on", appearance["ShowOn"], "Mouse")
+        eq("default remember", appearance["RememberPosition"], 0)
+        eq("default position", appearance["Position"]["X"] "," appearance["Position"]["Y"], "500,200")
+        eq("wiki window page", PreferencesWindow.WikiPage("Prefs.Page.Window"), "Usage")
+    }
+
+    ; 偏好设置里的灰色说明: "<标签>.Desc" 要有对应的标签, 中英文都不能空
+    static PreferenceDescriptions() {
+        count := 0
+        for key, pair in I18n.Strings {
+            if !(SubStr(key, -5) = ".Desc")
+                continue
+            count += 1
+            base := SubStr(key, 1, -5)
+            TestRunner.True("PreferenceDescriptions.label " base, I18n.Strings.Has(base))
+            TestRunner.True("PreferenceDescriptions.text " key, Trim(pair[1]) != "" && Trim(pair[2]) != "")
+        }
+        TestRunner.True("PreferenceDescriptions.count " count, count >= 50)
+        for key in ["Prefs.RememberPosition.Desc", "Prefs.ShowOn.Desc", "Prefs.HideOnDeactivate.Desc", "Prefs.Hotkey.Desc"]
+            TestRunner.True("PreferenceDescriptions.has " key, I18n.Strings.Has(key))
     }
 
     ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入

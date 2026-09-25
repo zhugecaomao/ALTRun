@@ -22,7 +22,12 @@
 ;   F2 / Ctrl+,                      偏好设置
 ;   F4                               用记事本编辑 ALTRun.json
 ;   Esc                              关闭操作面板 / 隐藏窗口
-; 鼠标: 单击选择, 双击执行, 右键弹出这一项的操作菜单 (和操作面板相同)
+; 鼠标: 单击选择, 双击执行, 右键弹出这一项的操作菜单 (和操作面板相同);
+;       按住输入框四周的空白处可以拖动窗口
+;
+; 位置: 显示在哪块屏幕由 Appearance.ShowOn 决定 (Mouse 鼠标所在 / Primary 主屏幕 /
+; Active 当前窗口所在)。默认水平居中、离顶部 20%; 打开 Appearance.RememberPosition 后,
+; 拖动过的位置按在屏幕里的相对位置 (千分比, Appearance.Position) 保存, 换一块屏幕也放在对应的地方。
 ;
 ; 用法:
 ;   SearchWindow.Create()             启动时调用一次
@@ -40,7 +45,6 @@ class SearchWindow {
     static SelectedRadius := 0
     static _gdi := Map()
     static _searchTimer := "", _hideTimer := ""
-    static _posX := 0, _posY := 0
     static _shownRows := -1                                                 ; 窗口当前按几行结果的高度显示
     static _tip := ""                                                       ; 这次显示时的使用提示 (HelpProvider.NextTip)
     static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
@@ -96,6 +100,8 @@ class SearchWindow {
         OnMessage(0x104, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_SYSKEYDOWN (Alt+...)
         OnMessage(0x6,   (p*) => SearchWindow._OnActivate(p*))              ; WM_ACTIVATE
         OnMessage(0x20A, (p*) => SearchWindow._OnMouseWheel(p*))            ; WM_MOUSEWHEEL
+        OnMessage(0x201, (p*) => SearchWindow._OnLButtonDown(p*))           ; WM_LBUTTONDOWN: 拖动窗口
+        OnMessage(0x232, (p*) => SearchWindow._OnMoved(p*))                 ; WM_EXITSIZEMOVE: 拖动结束
 
         g.Show("Hide w" w " h" SearchWindow._WindowHeight(0))
         Win.SetCorner(g.Hwnd)
@@ -156,10 +162,10 @@ class SearchWindow {
         if restore
             SearchWindow.MoveSelection(last.Selected - SearchWindow.Selected)
 
-        area := Win.WorkAreaAtMouse()
-        SearchWindow._posX := area.Left + (area.Right - area.Left - SearchWindow.Width) // 2
-        SearchWindow._posY := area.Top + Round((area.Bottom - area.Top) * 0.2)
-        SearchWindow.Gui.Show("x" SearchWindow._posX " y" SearchWindow._posY " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
+        appearance := AppSettings.Appearance
+        pos := SearchWindow.Place(SearchWindow._ScreenArea(appearance["ShowOn"]), SearchWindow.Width
+            , SearchWindow._WindowHeight(SearchWindow.VisibleRows), appearance["RememberPosition"] ? appearance["Position"] : "")
+        SearchWindow.Gui.Show("x" pos.X " y" pos.Y " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
         SearchWindow._shownRows := SearchWindow._VisibleCount()
         ; 窗口隐藏期间的重画请求会被丢掉: 失去焦点隐藏后再显示时, Windows 不一定重画列表,
         ; 恢复的结果 (KeepLastQuery) 就是一片空白。显示之后立即重画一次
@@ -173,6 +179,59 @@ class SearchWindow {
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
         if AppSettings.General["SwitchToEnglishInput"]
             Win.SwitchToEnglishIME()
+    }
+
+    ; 窗口放在 area 里的位置 {X, Y}。position: {X, Y} 千分比 (0 = 最左 / 最上, 1000 = 最右 / 最下,
+    ; Y 是窗口上沿在工作区高度里的位置), "" = 默认 (水平居中, 离顶部 20%)。
+    ; maxHeight: 结果最多时的窗口高度, 位置再靠下也保证整个窗口留在屏幕里
+    static Place(area, width, maxHeight, position := "") {
+        fx := 500, fy := 200
+        if (position is Map && position.Has("X") && position.Has("Y") && IsNumber(position["X"]) && IsNumber(position["Y"]))
+            fx := position["X"], fy := position["Y"]
+        areaW := area.Right - area.Left, areaH := area.Bottom - area.Top
+        x := area.Left + Round((areaW - width) * Max(0, Min(fx, 1000)) / 1000)
+        y := area.Top + Round(areaH * Max(0, Min(fy, 1000)) / 1000)
+        x := Max(area.Left, Min(x, area.Right - width))
+        y := Max(area.Top, Min(y, area.Bottom - maxHeight))
+        return {X: x, Y: y}
+    }
+
+    ; Place 的反过来: 窗口左上角 (x, y) 在 area 里的千分比位置
+    static RelativePosition(area, width, x, y) {
+        areaW := area.Right - area.Left, areaH := area.Bottom - area.Top
+        fx := (areaW > width) ? Round((x - area.Left) * 1000 / (areaW - width)) : 500
+        fy := (areaH > 0) ? Round((y - area.Top) * 1000 / areaH) : 200
+        return Map("X", Max(0, Min(fx, 1000)), "Y", Max(0, Min(fy, 1000)))
+    }
+
+    ; showOn: Mouse 鼠标所在的屏幕 / Primary 主屏幕 / Active 呼出前的活动窗口所在的屏幕 (没有时用鼠标所在)
+    static _ScreenArea(showOn) {
+        switch showOn, false {
+            case "Primary": return Win.WorkArea(MonitorGetPrimary())
+            case "Active":
+                area := Win.WorkAreaOfWindow(App.PreviousWindow)
+                if IsObject(area)
+                    return area
+        }
+        return Win.WorkAreaAtMouse()
+    }
+
+    ; 按住窗口本身 (输入框四周的空白, 不是输入框和结果列表) 拖动: 当作按住标题栏
+    static _OnLButtonDown(wParam, lParam, msg, hwnd) {
+        if (!IsObject(SearchWindow.Gui) || hwnd != SearchWindow.Gui.Hwnd)
+            return
+        PostMessage(0xA1, 2, , , "ahk_id " hwnd)                            ; WM_NCLBUTTONDOWN, HTCAPTION
+        return 0
+    }
+
+    ; 拖动结束: 打开了 "记住位置" 时保存位置 (不保存时只在这一次显示期间有效)
+    static _OnMoved(wParam, lParam, msg, hwnd) {
+        if (!IsObject(SearchWindow.Gui) || hwnd != SearchWindow.Gui.Hwnd || !AppSettings.Appearance["RememberPosition"])
+            return
+        WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+        area := Win.WorkAreaAt(x + w // 2, y + SearchWindow.InputHeight // 2)
+        AppSettings.Appearance["Position"] := SearchWindow.RelativePosition(area, w, x, y)
+        AppSettings.Save()
     }
 
     static Hide() {
