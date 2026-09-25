@@ -5,6 +5,14 @@
 
 ## [未发布]
 
+## [2026.09.25]
+
+窗口位置可以自己定, 偏好设置更容易看懂, 以及计算器的几处修正。
+
+### 升级
+- **从 2026.09.24 或 2026.09.23 升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.09.25.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`。设置、自定义命令和学习记录都保留, 新增的选项自动使用默认值
+- **从 2.x (v2026.08.12 及更早) 升级**: 步骤相同, 第一次运行时自动导入旧的 `ALTRun.ini`, 见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+
 ### 新增
 - 搜索窗口可以拖动 (按住输入框四周的空白处)。偏好设置 → 外观 新增 "拖动窗口后记住位置" (默认关闭; 记住的是在屏幕里的相对位置, 换一块屏幕也适用) 和 "恢复默认位置"
 - 偏好设置 → 外观 → "窗口显示在": 鼠标所在的屏幕 (默认, 和以前一样) / 主屏幕 / 当前窗口所在的屏幕
@@ -92,5 +100,6 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
+[2026.09.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.25
 [2026.09.24]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.24
 [2026.09.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23
