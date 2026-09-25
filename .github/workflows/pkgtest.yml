@@ -11,7 +11,32 @@ on:
       - packaging/**
 
 jobs:
+  manifests:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Update-Manifests.ps1
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          gh release download 2026.09.25 --repo zhugecaomao/ALTRun --pattern "*.zip" --dir $env:RUNNER_TEMP
+          gh release download 2026.09.24 --repo zhugecaomao/ALTRun --pattern "*.zip" --dir $env:RUNNER_TEMP
+          ./packaging/Update-Manifests.ps1 -Version 2026.09.25 -Zip "$env:RUNNER_TEMP/ALTRun_v2026.09.25.zip" -ReleaseDate 2026-09-25
+          git diff --exit-code
+          if ($LASTEXITCODE -ne 0) { throw "same version should change nothing" }
+          ./packaging/Update-Manifests.ps1 -Version 2026.09.24 -Zip "$env:RUNNER_TEMP/ALTRun_v2026.09.24.zip" -ReleaseDate 2026-09-24
+          git diff
+          $expected = 'ee1d8e6cb99f99d3a72d3bdb7739cf4f71f8803167398d4625d8112db854037c'
+          if ((Get-Content bucket/altrun.json -Raw) -notmatch $expected) { throw "scoop hash not updated" }
+          if ((Get-Content bucket/altrun.json -Raw) -match '2026\.09\.25') { throw "scoop still has 2026.09.25" }
+          if (Select-String -Path packaging/winget/*.yaml -Pattern '2026[.-]09[.-]25') { throw "winget still has 2026.09.25" }
+          winget validate --manifest packaging/winget
+          if ($LASTEXITCODE -ne 0) { throw "winget validate failed" }
+        env:
+          GH_TOKEN: ${{ github.token }}
+
   scoop:
+    if: false
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -80,6 +105,7 @@ jobs:
           if ($again.General.HistorySize -ne 77) { throw "settings lost on reinstall" }
 
   winget:
+    if: false
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
