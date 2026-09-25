@@ -48,6 +48,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
 
@@ -64,7 +65,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -881,6 +882,87 @@ class Tests {
             SearchWindow.Input := savedInput, Knowledge.History := savedHistory
             g.Destroy()
         }
+    }
+
+    ; 束线型计算和原来的 SPF2M.EXE 逐个比对: Tests\Fixtures\SPF2M-Reference.json 是在 DOSBox 里运行
+    ; SPF2M 得到的结果 (4 种线型 x 6 种钢绞线, 上升 / 下降, 非整米跨度, 自定义半径 / 反弯点 /
+    ; 支架间距, 以及 SPF2M 报错或崩溃的情况)
+    static TendonProfileVsSpf2m() {
+        data := JSON.Parse(FileRead(A_ScriptDir "\Fixtures\SPF2M-Reference.json", "UTF-8"))
+        checked := 0, failed := 0
+        for ref in data["Cases"] {
+            input := Map()
+            for key in ["Profile", "Tendon", "Start", "End", "Distance", "Radius", "Contraflexure", "Intervals"]
+                if ref.Has(key)
+                    input[key] := ref[key]
+            result := TendonProfile.Calc(input)
+            name := "TendonProfile." ref["Profile"] "/" ref["Tendon"] " " ref["Start"] "->" ref["End"] " L" ref["Distance"]
+                . (ref.Has("Radius") ? " R" ref["Radius"] : "") . (ref.Has("Contraflexure") ? " C" ref["Contraflexure"] : "")
+            if ref.Has("Expect") {
+                TestRunner.True(name " error", result.Error != "")
+                continue
+            }
+            if (result.Error != "") {
+                TestRunner.Fail(name, "unexpected error: " result.Error)
+                continue
+            }
+            got := "", want := ""
+            for row in result.Rows
+                got .= row[1] "," row[2] "," row[3] "," row[4] "," row[5] ";"
+            for row in ref["Rows"]
+                want .= row[1] "," row[2] "," row[3] "," row[4] "," row[5] ";"
+            if (got != want) {
+                failed += 1
+                TestRunner.Equal(name " rows", got, want)
+            }
+            checked += ref["Rows"].Length
+            TestRunner.Equal(name " contraflexure", Integer(result.Contraflexure), ref["ShownContraflexure"])
+            if ref.Has("ShownRadius")
+                TestRunner.Equal(name " radius", Integer(result.Radius), ref["ShownRadius"])
+        }
+        TestRunner.True("TendonProfile.rows checked (" checked ")", checked > 1000 && !failed)
+    }
+
+    ; 输入检查、支架间距、SPF2M 没有处理好的情况 (崩溃 / 不显示任何东西)
+    static TendonProfileInputs() {
+        eq := (n, a, e) => TestRunner.Equal("TendonProfileInputs." n, a, e)
+        profileOf := (profile, start, finish, l, extra := "") => TendonProfile.Calc(TendonProfileInputsMap(profile, start, finish, l, extra))
+        TendonProfileInputsMap(profile, start, finish, l, extra) {
+            input := Map("Profile", profile, "Tendon", 3, "Start", start, "End", finish, "Distance", l)
+            if IsObject(extra)
+                for key, value in extra
+                    input[key] := value
+            return input
+        }
+        intervals := (l) => TendonProfileJoin(TendonProfile.DefaultIntervals(l))
+        TendonProfileJoin(list) {
+            text := ""
+            for v in list
+                text .= (text = "" ? "" : ",") v
+            return text
+        }
+        eq("intervals whole metres", intervals(8000), "1000,1000,1000,1000,1000,1000,1000,1000")
+        eq("intervals single split", intervals(9750), "750,1000,1000,1000,1000,1000,1000,1000,1000,1000")
+        eq("intervals double split", intervals(7350), "650,700,1000,1000,1000,1000,1000,1000")
+        eq("intervals double split 2", intervals(8420), "720,700,1000,1000,1000,1000,1000,1000,1000")
+        eq("intervals short span", intervals(450), "450")
+        eq("intervals 1300", intervals(1300), "600,700")
+        eq("parse intervals", TendonProfileJoin(TendonProfile.ParseIntervals("500, 1500 800;550")), "500,1500,800,550")
+        eq("parse empty = auto", TendonProfile.ParseIntervals("  "), "")
+        eq("intervals must add up", InStr(profileOf(1, 600, 100, 8000, Map("Intervals", [1000, 1000])).Error, "add up") > 0, true)
+        eq("interval not a number", profileOf(1, 600, 100, 8000, Map("Intervals", TendonProfile.ParseIntervals("1000 abc"))).Error != "", true)
+        eq("missing distance", profileOf(1, 600, 100, "").Error != "", true)
+        eq("missing level", profileOf(1, "", 100, 8000).Error != "", true)
+        ; SPF2M 崩溃的情况: 这里给出错误说明
+        eq("psp not achievable", InStr(profileOf(2, 900, 100, 3000, Map("Tendon", 6)).Error, "NOT ACHIEVABLE") > 0, true)
+        ; SPF2M 什么都不显示的情况: 反弯点超过半跨
+        eq("contraflexure beyond half span", InStr(profileOf(1, 600, 100, 9000, Map("Contraflexure", 5000)).Error, "half") > 0, true)
+        eq("contraflexure with equal levels", profileOf(1, 300, 300, 6000, Map("Contraflexure", 500)).Error != "", true)
+        result := profileOf(1, 600, 100, 9000, Map("Contraflexure", 1200))
+        eq("contraflexure -> radius", Integer(result.Radius) "|" result.RadiusChanged, "10800|1")
+        result := profileOf(1, 600, 100, 8000, Map("Contraflexure", 525))
+        eq("contraflexure equal to default keeps radius", result.Radius "|" result.RadiusChanged, "4200|0")
+        eq("default radius 22s", TendonProfile.DefaultRadius(5), 5700)
     }
 
     ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入

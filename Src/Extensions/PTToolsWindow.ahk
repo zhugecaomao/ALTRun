@@ -1,5 +1,5 @@
 ;===============================================================================
-; PTToolsWindow.ahk - PT 工具箱: 钢筋/BRC 计算器 + SPF2M 束线型计算器自动化 (AutoHotkey v2)
+; PTToolsWindow.ahk - PT 工具箱: 钢筋/BRC 计算器 + SPF2M 束线型计算器 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 从仓库根目录旧的 PTTools.ahk (AutoHotkey v1, 独立进程运行) 移植并模块化而来。
 ;
@@ -7,8 +7,7 @@
 ; (MultiKey/HASPHL), 在注册表里写入伪造的加密狗 (dongle) 数据, 让 RAPT 这款商业
 ; 结构工程软件误以为检测到了已授权的硬件加密狗 —— 这是绕过商业软件许可证保护的
 ; 工具, 不属于这个项目要维护的范围, 因此完全没有移植。这个 class 只保留了
-; Rebar/BRC 计算器、表达式求值、以及 SPF2M 束线型计算器自动化这几项正常的工程
-; 小工具。
+; Rebar/BRC 计算器、表达式求值、以及 SPF2M 束线型计算器这几项正常的工程小工具。
 ;
 ; Rebar/BRC 计算器和 SPF2M 分成两个独立窗口(PTToolsWindow.Show() /
 ; PTToolsWindow.ShowSpf2m()), 不再用 Tab 切换 - 各自可以单独开关、单独记住
@@ -17,9 +16,9 @@
 ; Spf2mFieldNames), 也各自有一份窗口位置(WinLeft/WinTop 给 PT Tools 窗口,
 ; Spf2mWinLeft/Spf2mWinTop 给 SPF2M 窗口)。
 ;
-; SPF2M 需要的资源文件 (DOSBox.exe / SDL.dll / SDL_net.dll / SPF2M.exe) 已经从旧
-; PTTools.ahk 里内嵌的 Base64 数据还原成真正的二进制文件, 放在 Resources\ 目录下, 和
-; Run.bat 引用的文件名 (DOSBox.exe SPF2M.exe) 保持一致。
+; SPF2M 束线型直接由 TendonProfile.ahk 计算, 结果和原来的 SPF2M.EXE 一致。Resources\ 里
+; 还有 DOSBox.exe / SPF2M.exe 时, 窗口里多一个 "Original SPF2M..." 按钮, 在 DOSBox 里打开
+; 原程序并输入同样的参数, 用来对照。
 ;
 ; 设置存在 ALTRun.json 的 Extensions.PTTools 节点里 (AppSettings.Extension("PTTools")),
 ; Settings 直接指向那个 Map, 保存时调用 AppSettings.Save()。字段名比旧版本 (SpanWidth1/
@@ -61,13 +60,12 @@ Class PTToolsWindow {
         "StartLevel", 450, "StartAtCG", 0,
         "EndLevel", 50, "EndAtCG", 0,
         "HorizontalDistance", 12000,
+        "MinRadius", "", "Contraflexure", "", "SupportIntervals", "",       ; 空 = SPF2M 的默认值
 
-        ; SPF2M automation options
-        "AutoInputEnabled", 1, "CustomTimingEnabled", 0,
+        ; Duct diameters (At C.G.) and the "Original SPF2M" automation timing
         "InitDelayMs", 1500, "KeyIntervalMs", 25,
         "DuctDiaMono", 25, "DuctDia7s", 70, "DuctDia12s", 90,
-        "DuctDia19s", 100, "DuctDia22s", 120, "DuctDia31s", 130,
-        "MinCurveRadius", "[DFT]", "ChangeSupportInterval", "N"
+        "DuctDia19s", 100, "DuctDia22s", 120, "DuctDia31s", 130
     )
 
     ; PT Tools (Rebar/BRC) window fields - round-trip through Show()/Save().
@@ -83,9 +81,7 @@ Class PTToolsWindow {
     static Spf2mFieldNames := [
         "ProfileType", "TendonType", "StartLevel", "StartAtCG",
         "EndLevel", "EndAtCG", "HorizontalDistance",
-        "AutoInputEnabled", "CustomTimingEnabled", "InitDelayMs", "KeyIntervalMs",
-        "DuctDiaMono", "DuctDia7s", "DuctDia12s", "DuctDia19s", "DuctDia22s", "DuctDia31s",
-        "MinCurveRadius", "ChangeSupportInterval"
+        "MinRadius", "Contraflexure", "SupportIntervals"
     ]
 
     ; ComboBox fields: .Value is the LIST INDEX when the current text happens to
@@ -102,6 +98,7 @@ Class PTToolsWindow {
     static Settings := PTToolsWindow.Defaults.Clone()
     static G    := ""                                                     ; PT Tools (Rebar/BRC) Gui object, while open
     static SpfG := ""                                                     ; SPF2M Gui object, while open
+    static LastResult := ""                                               ; 最近一次 TendonProfile.Calc 的结果 (复制表格用)
     static HotkeysReady := false
     static Spf2mHotkeysReady := false
 
@@ -394,11 +391,14 @@ Class PTToolsWindow {
     }
 
     ; ===================================================================
-    ; SPF2M window - Post-Tension Profile Calculator automation
+    ; SPF2M window - tendon profile calculator
     ; ===================================================================
+    ; 以前是把参数自动敲进 DOSBox 里的 SPF2M.EXE; 现在由 TendonProfile 直接计算 (结果和
+    ; SPF2M 完全一致, 见 TendonProfile.ahk), 修改任何输入都立即更新右边的表格。
+    ; Resources 里还有 DOSBox.exe / SPF2M.exe 时, 可以用 "Original SPF2M" 按钮打开原程序对照。
     static ShowSpf2m() {
-        if WinExist("SPF2M") {
-            WinActivate("SPF2M")
+        if WinExist("SPF2M ahk_class AutoHotkeyGUI") {
+            WinActivate()
             return
         }
 
@@ -408,12 +408,10 @@ Class PTToolsWindow {
         g.SetFont("s9", "Microsoft YaHei")
         g.OnEvent("Close", (p*) => PTToolsWindow.OnCloseSpf2m(p*))
 
-        profileRight := PTToolsWindow.BuildProfileGroup(g, S, 20)
-        PTToolsWindow.BuildAutomationOptionsGroup(g, S, profileRight + 10)
-        PTToolsWindow.ApplyFieldEnableState(S["AutoInputEnabled"], S["CustomTimingEnabled"])
-
+        right := PTToolsWindow.BuildProfileGroup(g, S, 20)
+        PTToolsWindow.BuildResultGroup(g, right + 10)
         PTToolsWindow.SetupSpf2mHotkeys()
-
+        PTToolsWindow.OnTendonChanged()                                    ; 最小半径 / 管道直径的提示跟着钢绞线类型
         g.Show("x" S["Spf2mWinLeft"] " y" S["Spf2mWinTop"] " AutoSize")
     }
 
@@ -421,7 +419,7 @@ Class PTToolsWindow {
         if PTToolsWindow.Spf2mHotkeysReady
             return
         PTToolsWindow.Spf2mHotkeysReady := true
-        HotIfWinActive("SPF2M")                                            ; Enter / numpad Enter = move to next field, same as PT Tools
+        HotIfWinActive("SPF2M ahk_class AutoHotkeyGUI")                    ; Enter / numpad Enter = move to next field, same as PT Tools
         Hotkey("Enter", (*) => SendInput("{Tab}"))
         Hotkey("NumpadEnter", (*) => SendInput("{Tab}"))
         HotIfWinActive()
@@ -441,6 +439,7 @@ Class PTToolsWindow {
         for _, name in PTToolsWindow.Spf2mFieldNames {
             try S[name] := g[name].Value
         }
+        S[PTToolsWindow.DuctDiaKey(g["TendonType"].Value)] := g["DuctDia"].Value
         try {
             WinGetPos(&x, &y, , , "ahk_id " g.Hwnd)
             S["Spf2mWinLeft"] := x
@@ -449,167 +448,185 @@ Class PTToolsWindow {
         AppSettings.Save()
     }
 
-    ; ---------------------------------------------------------------------
-    ; Layout constants. The Profile group's labelGap is wide enough for its
-    ; longest label ("Horizontal Distance (mm)") without running into the
-    ; edit field or the "At C.G." checkbox that follows it; the Automation
-    ; Options group's two columns are each wide enough for their longest
-    ; label ("Startup Delay (ms)" / "Chg Support (Y/N)").
-    ; ---------------------------------------------------------------------
-    static ProfileLabelGap := 210
+    ; 每种钢绞线类型各自记住管道直径 ("At C.G." 时标高减去半个直径)
+    static DuctDiaKey(tendon) {
+        static keys := ["DuctDiaMono", "DuctDia7s", "DuctDia12s", "DuctDia19s", "DuctDia22s", "DuctDia31s"]
+        return keys[Max(1, Min(tendon, keys.Length))]
+    }
+
+    static ProfileLabelGap := 190
     static ProfileFieldW   := 90
     static ProfileCbGap    := 10
-    static ProfileCbW      := 80
-    static AutoLabelGap    := 160
-    static AutoFieldW      := 50
-    static AutoColInnerGap := 30
+    static ProfileCbW      := 70
 
     static BuildProfileGroup(g, S, x0) {
         labelX := x0 + 15
         editX  := labelX + PTToolsWindow.ProfileLabelGap
         cbX    := editX + PTToolsWindow.ProfileFieldW + PTToolsWindow.ProfileCbGap
+        fullW  := PTToolsWindow.ProfileFieldW + PTToolsWindow.ProfileCbGap + PTToolsWindow.ProfileCbW
         w := (cbX + PTToolsWindow.ProfileCbW + 15) - x0
+        recalc := (*) => PTToolsWindow.Recalculate()
 
-        g.Add("GroupBox", "x" x0 " y15 w" w " h250", "SPF2M (Post-Tension Profile Calculator)")
+        g.Add("GroupBox", "x" x0 " y15 w" w " h400", "Tendon Profile")
         g.AddText("x" labelX " y45", "Profile Type")
-        g.AddDropDownList("x" editX " y42 w" (PTToolsWindow.ProfileFieldW + PTToolsWindow.ProfileCbGap + PTToolsWindow.ProfileCbW) " Choose" S["ProfileType"] " vProfileType", PTToolsWindow.ProfileTypes)
+        g.AddDropDownList("x" editX " y42 w" fullW " Choose" S["ProfileType"] " vProfileType AltSubmit", PTToolsWindow.ProfileTypes).OnEvent("Change", recalc)
         g.AddText("x" labelX " y80", "Tendon Type")
-        g.AddDropDownList("x" editX " y77 w" (PTToolsWindow.ProfileFieldW + PTToolsWindow.ProfileCbGap + PTToolsWindow.ProfileCbW) " Choose" S["TendonType"] " vTendonType", PTToolsWindow.TendonTypes)
+        g.AddDropDownList("x" editX " y77 w" fullW " Choose" S["TendonType"] " vTendonType AltSubmit", PTToolsWindow.TendonTypes)
+            .OnEvent("Change", (*) => PTToolsWindow.OnTendonChanged(true))
 
-        PTToolsWindow.Field(g, labelX, editX, 112, PTToolsWindow.ProfileFieldW, "Start Level (mm)", "StartLevel", S["StartLevel"])
-        g.AddCheckBox("x" cbX " y114 w" PTToolsWindow.ProfileCbW " vStartAtCG Checked" S["StartAtCG"], "At C.G.")
+        PTToolsWindow.Field(g, labelX, editX, 112, PTToolsWindow.ProfileFieldW, "Start Level (mm)", "StartLevel", S["StartLevel"]).OnEvent("Change", recalc)
+        g.AddCheckBox("x" cbX " y114 w" PTToolsWindow.ProfileCbW " vStartAtCG Checked" S["StartAtCG"], "At C.G.").OnEvent("Click", recalc)
+        PTToolsWindow.Field(g, labelX, editX, 147, PTToolsWindow.ProfileFieldW, "End Level (mm)", "EndLevel", S["EndLevel"]).OnEvent("Change", recalc)
+        g.AddCheckBox("x" cbX " y149 w" PTToolsWindow.ProfileCbW " vEndAtCG Checked" S["EndAtCG"], "At C.G.").OnEvent("Click", recalc)
+        PTToolsWindow.Field(g, labelX, editX, 182, PTToolsWindow.ProfileFieldW, "Horizontal Distance (mm)", "HorizontalDistance", S["HorizontalDistance"]).OnEvent("Change", recalc)
 
-        PTToolsWindow.Field(g, labelX, editX, 147, PTToolsWindow.ProfileFieldW, "End Level (mm)", "EndLevel", S["EndLevel"])
-        g.AddCheckBox("x" cbX " y149 w" PTToolsWindow.ProfileCbW " vEndAtCG Checked" S["EndAtCG"], "At C.G.")
-
-        PTToolsWindow.Field(g, labelX, editX, 182, PTToolsWindow.ProfileFieldW, "Horizontal Distance (mm)", "HorizontalDistance", S["HorizontalDistance"])
-
-        g.AddButton("x" labelX " y220 w140 h30", "Run SPF2M").OnEvent("Click", (p*) => PTToolsWindow.OnRunSpf2mClicked(p*))
-
+        g.AddText("x" labelX " y222 w" (w - 30) " h1 0x10")                ; 分隔线: 下面是可选项, 空着 = SPF2M 的默认值
+        PTToolsWindow.Field(g, labelX, editX, 235, PTToolsWindow.ProfileFieldW, "Min. Radius of Curvature (mm)", "MinRadius", S["MinRadius"]).OnEvent("Change", recalc)
+        PTToolsWindow.Field(g, labelX, editX, 270, PTToolsWindow.ProfileFieldW, "Point of Contraflexure (mm)", "Contraflexure", S["Contraflexure"]).OnEvent("Change", recalc)
+        PTToolsWindow.Field(g, labelX, editX, 305, fullW, "Support Intervals (mm)", "SupportIntervals", S["SupportIntervals"]).OnEvent("Change", recalc)
+        Win.SetCueBanner(g["SupportIntervals"].Hwnd, "auto: max. 1000")
+        PTToolsWindow.Field(g, labelX, editX, 340, PTToolsWindow.ProfileFieldW, "Duct Dia. for At C.G. (mm)", "DuctDia", "").OnEvent("Change", recalc)
+        g.SetFont("s8 cGray")
+        g.AddText("x" labelX " y375 w" (w - 30), "Empty fields use the SPF2M defaults (in gray). Intervals: e.g. 500, 1500, 800 ... must add up to the distance. Distances are from the high end.")
+        g.SetFont("s9 cDefault")
         return x0 + w
     }
 
-    static BuildAutomationOptionsGroup(g, S, x0) {
-        leftLabelX := x0 + 15
-        leftEditX  := leftLabelX + PTToolsWindow.AutoLabelGap
-        rightLabelX := leftEditX + PTToolsWindow.AutoFieldW + PTToolsWindow.AutoColInnerGap
-        rightEditX  := rightLabelX + PTToolsWindow.AutoLabelGap
-        w := (rightEditX + PTToolsWindow.AutoFieldW + 15) - x0
-
-        g.Add("GroupBox", "x" x0 " y15 w" w " h280", "Automation Options")
-        cbAuto := g.AddCheckBox("x" leftLabelX " y45 w" (w - 30) " vAutoInputEnabled Checked" S["AutoInputEnabled"], "Automatically Input Data into SPF2M")
-        cbAuto.OnEvent("Click", (p*) => PTToolsWindow.OnAutoInputToggled(p*))
-        cbCustom := g.AddCheckBox("x" leftLabelX " y75 w" (w - 30) " vCustomTimingEnabled Checked" S["CustomTimingEnabled"], "Use Custom Timing && Duct Settings")
-        cbCustom.OnEvent("Click", (p*) => PTToolsWindow.OnCustomTimingToggled(p*))
-
-        PTToolsWindow.Field(g, leftLabelX, leftEditX, 109, PTToolsWindow.AutoFieldW, "Startup Delay (ms)", "InitDelayMs", S["InitDelayMs"])
-        PTToolsWindow.Field(g, rightLabelX, rightEditX, 109, PTToolsWindow.AutoFieldW, "Interval (ms)", "KeyIntervalMs", S["KeyIntervalMs"])
-
-        PTToolsWindow.Field(g, leftLabelX, leftEditX, 139, PTToolsWindow.AutoFieldW, "Mono Duct Dia.", "DuctDiaMono", S["DuctDiaMono"])
-        PTToolsWindow.Field(g, rightLabelX, rightEditX, 139, PTToolsWindow.AutoFieldW, "7s Duct Dia.", "DuctDia7s", S["DuctDia7s"])
-
-        PTToolsWindow.Field(g, leftLabelX, leftEditX, 169, PTToolsWindow.AutoFieldW, "12s Duct Dia.", "DuctDia12s", S["DuctDia12s"])
-        PTToolsWindow.Field(g, rightLabelX, rightEditX, 169, PTToolsWindow.AutoFieldW, "19s Duct Dia.", "DuctDia19s", S["DuctDia19s"])
-
-        PTToolsWindow.Field(g, leftLabelX, leftEditX, 199, PTToolsWindow.AutoFieldW, "22s Duct Dia.", "DuctDia22s", S["DuctDia22s"])
-        PTToolsWindow.Field(g, rightLabelX, rightEditX, 199, PTToolsWindow.AutoFieldW, "31s Duct Dia.", "DuctDia31s", S["DuctDia31s"])
-
-        PTToolsWindow.Field(g, leftLabelX, leftEditX, 229, PTToolsWindow.AutoFieldW, "Min. Curve Radius", "MinCurveRadius", S["MinCurveRadius"])
-        PTToolsWindow.Field(g, rightLabelX, rightEditX, 229, PTToolsWindow.AutoFieldW, "Chg Support (Y/N)", "ChangeSupportInterval", S["ChangeSupportInterval"])
+    static BuildResultGroup(g, x0) {
+        w := 480
+        g.Add("GroupBox", "x" x0 " y15 w" w " h400", "Tendon Profile - Support Heights (mm)")
+        list := g.AddListView("x" (x0 + 12) " y40 w" (w - 24) " h240 vResultList -Multi NoSort Grid"
+            , ["Distance", "Interval", "Actual", "Beam @ 5mm", "Slab @ 10mm"])
+        for index, width in [80, 76, 82, 100, 100]
+            list.ModifyCol(index, width " Right")
+        g.AddText("x" (x0 + 12) " y290 w" (w - 24) " h60 vResultSummary")
+        g.SetFont("cRed")
+        g.AddText("x" (x0 + 12) " y290 w" (w - 24) " h60 vResultError Hidden")
+        g.SetFont("cDefault")
+        g.AddButton("x" (x0 + 12) " y365 w140 h30", "Copy Table").OnEvent("Click", (*) => PTToolsWindow.CopyProfileTable())
+        if FileExist(A_ScriptDir "\Resources\DOSBox.exe") && FileExist(A_ScriptDir "\Resources\SPF2M.exe")
+            g.AddButton("x+10 yp w160 h30", "Original SPF2M...").OnEvent("Click", (*) => PTToolsWindow.RunOriginalSpf2m())
     }
 
-    static OnAutoInputToggled(*) {
+    ; 钢绞线类型变了: 最小半径的灰色提示换成这种类型的默认值, 管道直径换成这种类型记住的值
+    static OnTendonChanged(saveOld := false) {
         g := PTToolsWindow.SpfG
-        autoInput := g["AutoInputEnabled"].Value
-        if (!autoInput)
-            g["CustomTimingEnabled"].Value := 0
-        PTToolsWindow.ApplyFieldEnableState(autoInput, g["CustomTimingEnabled"].Value)
+        S := PTToolsWindow.Settings
+        static lastTendon := 0
+        tendon := g["TendonType"].Value
+        if (saveOld && lastTendon)
+            S[PTToolsWindow.DuctDiaKey(lastTendon)] := g["DuctDia"].Value
+        lastTendon := tendon
+        g["DuctDia"].Value := S[PTToolsWindow.DuctDiaKey(tendon)]
+        Win.SetCueBanner(g["MinRadius"].Hwnd, TendonProfile.DefaultRadius(tendon))
+        PTToolsWindow.Recalculate()
     }
 
-    static OnCustomTimingToggled(*) {
+    ; 窗口里的输入 -> TendonProfile.Calc 的参数 ("At C.G." 的标高减去半个管道直径)
+    static ProfileInput() {
         g := PTToolsWindow.SpfG
-        PTToolsWindow.ApplyFieldEnableState(g["AutoInputEnabled"].Value, g["CustomTimingEnabled"].Value)
+        halfDuct := PTToolsWindow.Num(g["DuctDia"].Value) / 2
+        level(name, cgName) {
+            value := Trim(g[name].Value)
+            if !IsNumber(value)
+                return ""
+            return g[cgName].Value ? value - halfDuct : value + 0
+        }
+        input := Map("Profile", g["ProfileType"].Value, "Tendon", g["TendonType"].Value
+            , "Start", level("StartLevel", "StartAtCG"), "End", level("EndLevel", "EndAtCG")
+            , "Distance", Trim(g["HorizontalDistance"].Value))
+        for name, key in Map("MinRadius", "Radius", "Contraflexure", "Contraflexure") {
+            value := Trim(g[name].Value)
+            input[key] := IsNumber(value) ? value + 0 : ""
+        }
+        input["Intervals"] := TendonProfile.ParseIntervals(g["SupportIntervals"].Value)
+        if IsNumber(input["Distance"])
+            input["Distance"] += 0
+        return input
     }
 
-    ; Profile fields only matter when we're actually going to type them into
-    ; SPF2M, and the timing/duct-dia overrides only matter while that typing
-    ; is happening - so both groups are gated behind "auto input" being on.
-    static ApplyFieldEnableState(autoInputEnabled, customTimingEnabled) {
+    static Recalculate() {
         g := PTToolsWindow.SpfG
-        for _, name in ["ProfileType", "TendonType", "StartLevel", "StartAtCG", "EndLevel", "EndAtCG", "HorizontalDistance"]
-            g[name].Enabled := autoInputEnabled
-        g["CustomTimingEnabled"].Enabled := autoInputEnabled
-
-        customEnabled := autoInputEnabled && customTimingEnabled
-        for _, name in ["InitDelayMs", "KeyIntervalMs", "DuctDiaMono", "DuctDia7s", "DuctDia12s", "DuctDia19s", "DuctDia22s", "DuctDia31s", "MinCurveRadius", "ChangeSupportInterval"]
-            g[name].Enabled := customEnabled
+        if !(g)
+            return
+        result := TendonProfile.Calc(PTToolsWindow.ProfileInput())
+        PTToolsWindow.LastResult := result
+        list := g["ResultList"]
+        list.Opt("-Redraw")
+        list.Delete()
+        for row in result.Rows
+            list.Add("", PTToolsWindow.FmtLevel(row[1]), PTToolsWindow.FmtLevel(row[2]), PTToolsWindow.FmtLevel(row[3]), PTToolsWindow.FmtLevel(row[4]), PTToolsWindow.FmtLevel(row[5]))
+        list.Opt("+Redraw")
+        g["ResultError"].Visible := (result.Error != "")
+        g["ResultSummary"].Visible := (result.Error = "")
+        g["ResultError"].Value := result.Error
+        g["ResultSummary"].Value := PTToolsWindow.ProfileSummary(result)
+        Win.SetCueBanner(g["Contraflexure"].Hwnd, (result.Error = "" && !result.RadiusChanged) ? Integer(result.Contraflexure) : "")
     }
 
-    static OnRunSpf2mClicked(*) {
-        g := PTToolsWindow.SpfG
+    static ProfileSummary(result) {
+        if (result.Error != "")
+            return result.Error
+        text := "Min. Radius of Curvature = " Integer(result.MinRadius) " mm"
+        if (result.RadiusChanged || result.Radius != result.MinRadius)
+            text .= "`nRadius of Curvature = " Integer(result.Radius) " mm"
+        text .= "`nDist. to Point of Contraflexure = " Integer(result.Contraflexure) " mm (from the high end)"
+        return text
+    }
 
+    ; 标高可能带小数 ("At C.G." 减去半个管道直径): 整数照常显示, 否则保留一位小数
+    static FmtLevel(v) {
+        return (v = Integer(v)) ? Integer(v) : Round(v, 1)
+    }
+
+    ; 表格复制成制表符分隔的文字, 粘贴到 Excel 正好是一列一列的
+    static CopyProfileTable() {
+        result := PTToolsWindow.LastResult
+        if !IsObject(result) || result.Error != ""
+            return
+        g := PTToolsWindow.SpfG
+        text := PTToolsWindow.ProfileTypes[g["ProfileType"].Value] " / " PTToolsWindow.TendonTypes[g["TendonType"].Value] "`r`n"
+            . "Distance`tInterval`tActual`tBeam @ 5mm`tSlab @ 10mm`r`n"
+        for row in result.Rows
+            text .= PTToolsWindow.FmtLevel(row[1]) "`t" PTToolsWindow.FmtLevel(row[2]) "`t" PTToolsWindow.FmtLevel(row[3]) "`t" PTToolsWindow.FmtLevel(row[4]) "`t" PTToolsWindow.FmtLevel(row[5]) "`r`n"
+        text .= StrReplace(PTToolsWindow.ProfileSummary(result), "`n", "`r`n") "`r`n"
+        A_Clipboard := text
+        ToolTip("Table copied - paste it into Excel")
+        SetTimer(() => ToolTip(), -1500)
+    }
+
+    ; 在 DOSBox 里打开原来的 SPF2M.EXE 并输入同样的参数, 用来对照结果 (没有 DOSBox 时不显示这个按钮)
+    static RunOriginalSpf2m() {
         resDir := A_ScriptDir "\Resources"
         dosbox := resDir "\DOSBox.exe"
-        if !FileExist(dosbox) || !FileExist(resDir "\SPF2M.exe") {
-            MsgBox("SPF2M resource files not found under Resources (need DOSBox.exe + SPF2M.exe + SDL.dll + SDL_net.dll).", "PT Tools", 48)
-            return
-        }
-
-        autoInputEnabled := g["AutoInputEnabled"].Value
+        input := PTToolsWindow.ProfileInput()
+        S := PTToolsWindow.Settings
+        keyIntervalMs := PTToolsWindow.Num(S["KeyIntervalMs"], 25)
+        initDelayMs   := PTToolsWindow.Num(S["InitDelayMs"], 1500)
 
         DetectHiddenWindows(true)
-
-        if (!autoInputEnabled) {
-            if WinExist("ahk_class SDL_app")
-                WinActivate()                                              ; no title = the "last found window" WinExist just set
-            else
-                Run('"' dosbox '" SPF2M.exe -noconsole', resDir, "Hide")
-            return
-        }
-
-        ; Duct dia. lookup indexed the same way TendonType is (1=Slab/Mono..6=31s) -
-        ; the old v1 tool's dropdown list had a stray blank item here that shifted
-        ; this lookup by one; that bug is not reproduced.
-        ductDiameters := [PTToolsWindow.Num(g["DuctDiaMono"].Value), PTToolsWindow.Num(g["DuctDia7s"].Value), PTToolsWindow.Num(g["DuctDia12s"].Value),
-            PTToolsWindow.Num(g["DuctDia19s"].Value), PTToolsWindow.Num(g["DuctDia22s"].Value), PTToolsWindow.Num(g["DuctDia31s"].Value)]
-        tendonType := g["TendonType"].Value
-
-        startLevel := PTToolsWindow.Num(g["StartLevel"].Value)
-        if (g["StartAtCG"].Value)
-            startLevel -= ductDiameters[tendonType] / 2
-        endLevel := PTToolsWindow.Num(g["EndLevel"].Value)
-        if (g["EndAtCG"].Value)
-            endLevel -= ductDiameters[tendonType] / 2
-
-        keyIntervalMs := PTToolsWindow.Num(g["KeyIntervalMs"].Value, 25)
-        initDelayMs   := PTToolsWindow.Num(g["InitDelayMs"].Value, 1500)
-
         if WinExist("ahk_class SDL_app")                                   ; Clean up a leftover previous run first
             WinClose()
-
         Sleep(keyIntervalMs)
         Run('"' dosbox '" SPF2M.exe -noconsole', resDir, "Hide")
-
         if !WinWaitActive("ahk_class SDL_app", , 20) {
             MsgBox("WinWait timed out, SPF2M window not found. Please run again.", "PT Tools", 48)
             return
         }
-
         Sleep(initDelayMs)
         WinActivate("ahk_class SDL_app")
 
-        keystrokes := [g["ProfileType"].Value, "{Enter}"
-            , tendonType, "{Enter}"
-            , "{Enter}"                                                    ; Min. Radius of curvature - no change
-            , startLevel, "{Enter}"
-            , endLevel, "{Enter}"
-            , g["HorizontalDistance"].Value, "{Enter}"
-            , "{Enter}"                                                    ; Dist. to Point of Contraflexure - no change
-            , g["ChangeSupportInterval"].Value, "{Enter}"]
-
+        keystrokes := [input["Profile"], "{Enter}", input["Tendon"], "{Enter}"
+            , input["Radius"], "{Enter}"                                   ; 空 = 默认的最小半径
+            , input["Start"], "{Enter}", input["End"], "{Enter}", input["Distance"], "{Enter}"
+            , input["Contraflexure"], "{Enter}"]
+        if (input["Contraflexure"] != "")
+            keystrokes.Push("{Enter}")                                     ; 改了反弯点时 SPF2M 显示新的半径后再问一次
+        keystrokes.Push("N", "{Enter}")                                    ; 不改支架间距
         for _, keystroke in keystrokes {
             Sleep(keyIntervalMs)
-            SendInput(keystroke)
+            if (keystroke != "")
+                SendInput((SubStr(keystroke, 1, 1) = "{") ? keystroke : "{Text}" keystroke)
         }
     }
 }
