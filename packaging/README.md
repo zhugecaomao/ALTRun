@@ -17,10 +17,13 @@ Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 winget-pkgs 里还没有 ALTRun 时, 自动更新不起作用, 需要先手动提交一次 (在 Windows 上):
 
 ```powershell
-winget install Microsoft.WingetCreate
-git clone https://github.com/zhugecaomao/ALTRun; cd ALTRun
-wingetcreate submit packaging\winget
+winget install Microsoft.WingetCreate      # 装好后关闭并重新打开 PowerShell
+cd $env:TEMP
+Invoke-WebRequest https://github.com/zhugecaomao/ALTRun/archive/refs/heads/main.zip -OutFile ALTRun-main.zip
+Expand-Archive ALTRun-main.zip -DestinationPath . -Force
+wingetcreate submit .\ALTRun-main\packaging\winget
 ```
+(不需要安装 git: 直接下载仓库的 zip, 只用到里面 `packaging\winget` 的 4 个文件。)
 
 第一次运行会打开浏览器要求登录 GitHub 并授权 wingetcreate; 它会 fork winget-pkgs 并创建 PR。PR 里的自动检查 (清单验证、下载、杀毒扫描、安装测试) 全部通过后, 由微软的维护者合并。合并以后:
 - `winget install zhugecaomao.ALTRun` 就可以安装
