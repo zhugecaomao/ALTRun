@@ -467,6 +467,7 @@ class I18n {
 
         ; --- Update checker ---
         s["Update.Available"]          := ["A new version {1} is available. Open the download page?", "发现新版本 {1}, 是否打开下载页面?"]
+        s["Update.AvailableVia"]       := ["A new version {1} is available.`n`nALTRun was installed with a package manager - exit ALTRun, then run:`n`n    {2}`n`nOpen the release page to see what's new?", "发现新版本 {1}。`n`nALTRun 是用包管理器安装的, 请先退出 ALTRun, 再运行:`n`n    {2}`n`n是否打开发布页面查看更新内容?"]
         s["Update.Latest"]             := ["You are running the latest version ({1}).", "当前已是最新版本 ({1})。"]
         s["Update.Failed"]             := ["Could not check for updates:`n`n{1}", "检查更新失败:`n`n{1}"]
 

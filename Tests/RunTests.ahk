@@ -1076,6 +1076,11 @@ Func | PTTools | PT Tools (AHK)=99
     static Misc() {
         TestRunner.True("UpdateChecker.newer", UpdateChecker.Compare("2026.10.01", "2026.09.23") > 0)
         TestRunner.True("UpdateChecker.same", UpdateChecker.Compare("2026.09.23", "2026.09.23") = 0)
+        TestRunner.Equal("UpdateChecker.scoop", UpdateChecker.InstalledBy("C:\Users\me\scoop\apps\altrun\current"), "scoop")
+        TestRunner.Equal("UpdateChecker.scoop version dir", UpdateChecker.InstalledBy("D:\Scoop\apps\ALTRun\2026.09.25"), "scoop")
+        TestRunner.Equal("UpdateChecker.winget", UpdateChecker.InstalledBy("C:\Users\me\AppData\Local\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_Microsoft.Winget.Source_8wekyb3d8bbwe"), "winget")
+        TestRunner.Equal("UpdateChecker.by hand", UpdateChecker.InstalledBy("C:\Tools\ALTRun"), "")
+        TestRunner.Equal("UpdateChecker.other altrun folder", UpdateChecker.InstalledBy("C:\apps\altrun\sub\deeper"), "")
         TestRunner.Equal("I18n.args", I18n.T("Web.SearchFor", "Google", "x"), "Search Google for 'x'")
         TestRunner.Equal("I18n.missing", I18n.T("No.Such.Key"), "No.Such.Key")
         TestRunner.True("System commands", SystemProvider.Commands().Length > 40)
