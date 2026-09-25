@@ -3,7 +3,7 @@
 ;-------------------------------------------------------------------------------
 ; SPF2M.EXE 是公司内部 1993 年用 Turbo Basic 写的 16 位 DOS 程序, 以前要借助 DOSBox
 ; 运行。这里用同样的公式直接计算: 公式来自同一系列的 AutoCAD 工具 PT-Profile-VLX
-; (POBLIC.lsp), 再用 SPF2M 本身跑出来的 139 组结果逐个核对 (Tests\Data\SPF2M-Reference.json,
+; (POBLIC.lsp), 再用 SPF2M 本身跑出来的 139 组结果逐个核对 (Tests\Fixtures\SPF2M-Reference.json,
 ; 1100 多个数值全部一致)。
 ;
 ; 坐标: 距离从高的一端量起 (SPF2M 的表格总是从高点开始), 标高是束的高度 (mm)。
