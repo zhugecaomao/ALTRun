@@ -163,7 +163,10 @@ class AppSettings {
             "Appearance", Map(
                 "Theme"      , "Light",                                     ; 内置主题名 (见 ThemeManager) 或 Themes\<名称>.json
                 "Width"      , 700,
-                "VisibleRows", 8
+                "VisibleRows", 8,
+                "ShowOn"     , "Mouse",                                     ; 显示在哪块屏幕: Mouse 鼠标所在 / Primary 主屏幕 / Active 当前窗口所在
+                "RememberPosition", 0,                                      ; 拖动窗口后记住位置
+                "Position"   , Map("X", 500, "Y", 200)                      ; 记住的位置: 屏幕里的千分比 (见 SearchWindow.Place)
             ),
             "Features", Map(
                 "Applications", Map(

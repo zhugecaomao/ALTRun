@@ -174,14 +174,31 @@ class Win {
     static WorkAreaAtMouse() {
         CoordMode("Mouse", "Screen")
         MouseGetPos(&mouseX, &mouseY)
+        return Win.WorkAreaAt(mouseX, mouseY)
+    }
+
+    ; 包含屏幕坐标 (x, y) 的显示器的工作区; 不在任何显示器上时用主显示器
+    static WorkAreaAt(x, y) {
         Loop MonitorGetCount() {
             MonitorGet(A_Index, &left, &top, &right, &bottom)
-            if (mouseX >= left && mouseX < right && mouseY >= top && mouseY < bottom) {
-                MonitorGetWorkArea(A_Index, &left, &top, &right, &bottom)
-                return {Left: left, Top: top, Right: right, Bottom: bottom}
-            }
+            if (x >= left && x < right && y >= top && y < bottom)
+                return Win.WorkArea(A_Index)
         }
-        MonitorGetWorkArea(MonitorGetPrimary(), &left, &top, &right, &bottom)
+        return Win.WorkArea(MonitorGetPrimary())
+    }
+
+    ; 窗口中心所在显示器的工作区; 窗口不存在时返回 ""
+    static WorkAreaOfWindow(hwnd) {
+        if !hwnd
+            return ""
+        try WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+        catch
+            return ""
+        return Win.WorkAreaAt(x + w // 2, y + h // 2)
+    }
+
+    static WorkArea(monitor) {
+        MonitorGetWorkArea(monitor, &left, &top, &right, &bottom)
         return {Left: left, Top: top, Right: right, Bottom: bottom}
     }
 
