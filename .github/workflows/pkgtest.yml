@@ -111,29 +111,38 @@ jobs:
           Get-ChildItem $dir -Name | ForEach-Object { "  $_" }
           Get-Command altrun -ErrorAction SilentlyContinue | Format-List Source
 
-          $proc = Start-Process "$dir\ALTRun.exe" -WorkingDirectory $dir -PassThru
+          "Zone.Identifier on ALTRun.exe:"
+          Get-Content "$dir\ALTRun.exe" -Stream Zone.Identifier -ErrorAction SilentlyContinue
+          try { $proc = Start-Process "$dir\ALTRun.exe" -WorkingDirectory $dir -PassThru -ErrorAction Stop; "started without unblocking" }
+          catch { "start failed: $($_.Exception.Message)"; Unblock-File "$dir\ALTRun.exe"; $proc = Start-Process "$dir\ALTRun.exe" -WorkingDirectory $dir -PassThru; "started after Unblock-File" }
           for ($i = 0; $i -lt 30 -and -not (Test-Path "$dir\ALTRun.json"); $i++) { Start-Sleep 1 }
           Start-Sleep 3
-          "ALTRun running: $(-not $proc.HasExited)"
+          "ALTRun running: $($proc -and -not $proc.HasExited)"
           Stop-Process -Name ALTRun -Force -ErrorAction SilentlyContinue
           Start-Sleep 1
+          if (-not (Test-Path "$dir\ALTRun.json")) { throw "ALTRun.json was not created" }
           $json = Get-Content "$dir\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
-          $json.General.HistorySize = 77
-          $json | ConvertTo-Json -Depth 20 | Set-Content "$dir\ALTRun.json" -Encoding UTF8
-          New-Item -ItemType Directory "$dir\Data" -Force | Out-Null
+          $json.General | Add-Member -NotePropertyName HistorySize -NotePropertyValue 77 -Force
+          $json | ConvertTo-Json -Depth 20 | Set-Content "$dir\ALTRun.json.tmp" -Encoding UTF8
+          Move-Item "$dir\ALTRun.json.tmp" "$dir\ALTRun.json" -Force
+          New-Item -ItemType Directory "$dir\Data", "$dir\Themes" -Force | Out-Null
           "marker" | Set-Content "$dir\Data\marker.txt"
+          "{}" | Set-Content "$dir\Themes\Mine.json"
 
           winget upgrade --manifest packaging/winget --accept-package-agreements --accept-source-agreements --disable-interactivity
           "upgrade exit code: $LASTEXITCODE"
           $dir2 = (Get-ChildItem "$env:LOCALAPPDATA\Microsoft\WinGet\Packages" -Directory -Filter "zhugecaomao.ALTRun*" | Select-Object -First 1).FullName
           "install dir after upgrade: $dir2"
           Get-ChildItem $dir2 -Recurse -Name | ForEach-Object { "  $_" }
-          if (Test-Path "$dir2\ALTRun.json") {
-            $after = Get-Content "$dir2\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
-            "after upgrade: HistorySize=$($after.General.HistorySize) data=$(Test-Path "$dir2\Data\marker.txt") version=$((Get-Item "$dir2\ALTRun.exe").VersionInfo.FileVersion)"
-          } else { "after upgrade: ALTRun.json is gone" }
+          if (-not (Test-Path "$dir2\ALTRun.json")) { throw "ALTRun.json lost on upgrade" }
+          $after = Get-Content "$dir2\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+          "after upgrade: HistorySize=$($after.General.HistorySize) data=$(Test-Path "$dir2\Data\marker.txt") theme=$(Test-Path "$dir2\Themes\Mine.json") version=$((Get-Item "$dir2\ALTRun.exe").VersionInfo.FileVersion)"
+          if ($after.General.HistorySize -ne 77) { throw "settings lost on upgrade" }
+          "Zone.Identifier after upgrade:"
+          Get-Content "$dir2\ALTRun.exe" -Stream Zone.Identifier -ErrorAction SilentlyContinue
 
-          winget uninstall --id zhugecaomao.ALTRun --disable-interactivity
+          winget list zhugecaomao --disable-interactivity
+          winget uninstall --manifest packaging/winget --disable-interactivity
           "uninstall exit code: $LASTEXITCODE"
           "left after uninstall: $(Test-Path $dir2)"
           if (Test-Path $dir2) { Get-ChildItem $dir2 -Recurse -Name | ForEach-Object { "  $_" } }
