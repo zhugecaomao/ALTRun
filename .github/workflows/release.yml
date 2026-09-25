@@ -5,6 +5,8 @@
 #   1. 更新 Src\Core\App.ahk 的 App.Version 和 ALTRun.ahk 的 ;@Ahk2Exe-SetVersion (有测试检查两者一致)
 #   2. CHANGELOG.md 加一节 "## [<版本>] ...", 作为 Release 的说明
 #   3. 合并到 main 后, 在 Actions 页面运行 "Release": 先 publish = false 检查, 再 publish = true 发布
+# 发布之后自动把 Scoop (bucket/altrun.json) 和 winget (packaging/winget) 清单更新到新版本, 提交到 main;
+# 设置了 WINGET_TOKEN secret (有 public_repo 权限的 GitHub token) 时, 再用 wingetcreate 向 winget-pkgs 提交新版本。
 name: Release
 
 on:
@@ -23,6 +25,7 @@ jobs:
     runs-on: windows-latest
     env:
       GH_TOKEN: ${{ github.token }}
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
     steps:
       - uses: actions/checkout@v7
 
@@ -154,3 +157,32 @@ jobs:
           $version = "${{ steps.version.outputs.version }}"
           gh release create $version "build/ALTRun_v$version.zip" --repo "${{ github.repository }}" `
             --title "ALTRun - v$version" --notes-file build/notes.md --target "${{ github.sha }}"
+
+      - name: Update Scoop and winget manifests
+        if: inputs.publish
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          git fetch --quiet origin main
+          git checkout -B main origin/main
+          ./packaging/Update-Manifests.ps1 -Version $version -Zip "build/ALTRun_v$version.zip"
+          git add bucket packaging
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { Write-Host "Manifests are already up to date"; exit 0 }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --quiet -m "Packaging: Scoop / winget 清单更新到 $version"
+          git push origin main
+
+      # 只能更新 winget-pkgs 里已经有的包; 第一次提交见 packaging/README.md
+      - name: Submit the new version to winget-pkgs
+        if: inputs.publish && env.WINGET_TOKEN != ''
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe update zhugecaomao.ALTRun --version $version `
+            --urls "https://github.com/${{ github.repository }}/releases/download/$version/ALTRun_v$version.zip" `
+            --submit --token $env:WINGET_TOKEN
+          if ($LASTEXITCODE -ne 0) { throw "wingetcreate failed (exit code $LASTEXITCODE)" }

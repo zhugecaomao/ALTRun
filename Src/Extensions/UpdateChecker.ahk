@@ -6,6 +6,7 @@
 ; 用法:
 ;   UpdateChecker.Check(true)     启动后静默检查 (只在有新版本时提示)
 ;   UpdateChecker.Check(false)    手动检查 (托盘菜单 / 系统命令), 总会给出结果
+; 用 Scoop / winget 安装的, 提示里给出对应的升级命令。
 ;===============================================================================
 
 class UpdateChecker {
@@ -22,7 +23,9 @@ class UpdateChecker {
                 throw Error("Cannot find 'tag_name' in the GitHub response.")
             latest := Trim(m[1], "vV ")
             if (UpdateChecker.Compare(latest, App.Version) > 0) {
-                if (MsgBox(I18n.T("Update.Available", latest), App.Name, "YesNo Iconi") = "Yes")
+                manager := UpdateChecker.InstalledBy(A_ScriptDir)
+                text := (manager = "") ? I18n.T("Update.Available", latest) : I18n.T("Update.AvailableVia", latest, UpdateChecker.UpgradeCommands[manager])
+                if (MsgBox(text, App.Name, "YesNo Iconi") = "Yes")
                     Run(UpdateChecker.ReleasePage)
             } else if !silent {
                 MsgBox(I18n.T("Update.Latest", App.Version), App.Name, 64)
@@ -32,6 +35,19 @@ class UpdateChecker {
             if !silent
                 MsgBox(I18n.T("Update.Failed", e.Message), App.Name, 48)
         }
+    }
+
+    static UpgradeCommands := Map("scoop", "scoop update altrun", "winget", "winget upgrade zhugecaomao.ALTRun")
+
+    ; 用包管理器安装的, 提示用它升级 (覆盖解压会被包管理器的下一次更新覆盖掉):
+    ;   Scoop   ...\scoop\apps\altrun\current (或版本号文件夹)
+    ;   winget  %LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...
+    static InstalledBy(dir) {
+        if RegExMatch(dir, "i)\\apps\\altrun\\[^\\]+$")
+            return "scoop"
+        if RegExMatch(dir, "i)\\WinGet\\Packages\\zhugecaomao\.ALTRun")
+            return "winget"
+        return ""
     }
 
     ; 按点分隔逐段比较数字: > 0 表示 v1 更新

@@ -34,6 +34,13 @@
 
 绿色便携, 不写注册表: 设置保存在程序目录下的 `ALTRun.json`。
 
+**用 [Scoop](https://scoop.sh/) 安装** (自动创建开始菜单快捷方式, 升级时保留设置):
+```powershell
+scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
+scoop install altrun
+scoop update altrun    # 以后升级 (先退出 ALTRun)
+```
+
 **从旧版本升级**: 退出旧版本, 把新版本解压到原来的文件夹覆盖 `ALTRun.exe`, 再运行即可。第一次运行时自动导入旧的 `ALTRun.ini` (设置、自定义命令、热键), 原文件保持不变 (见 [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation))。
 
 
@@ -168,6 +175,7 @@ ALTRun is a keyboard launcher for Windows modelled on Alfred for macOS. Press `A
 - Action panel (`→` or right-click), in-place editing (`F3`), clipboard history, snippet auto-expansion, inline calculator, web search keywords, terminal commands, large type
 - Nine built-in themes, plus custom themes as JSON files
 - Portable: all settings live in `ALTRun.json` next to the program; older 2.x settings are converted automatically
+- Install with Scoop: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun`, then `scoop install altrun`
 
 The interface follows your Windows language (English or Chinese). Documentation is in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
 
