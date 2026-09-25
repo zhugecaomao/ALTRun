@@ -2,7 +2,7 @@
 ; TendonProfile.ahk - 后张预应力束线型计算, 和 SPF2M 的结果完全一致 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; SPF2M.EXE 是公司内部 1993 年用 Turbo Basic 写的 16 位 DOS 程序, 以前要借助 DOSBox
-; 运行。这里用同样的公式直接计算: 公式来自同一系列的 AutoCAD 工具 PT-Profile-VLX
+; 运行 (已经不再随程序发布)。这里用同样的公式直接计算: 公式来自同一系列的 AutoCAD 工具 PT-Profile-VLX
 ; (POBLIC.lsp), 再用 SPF2M 本身跑出来的 139 组结果逐个核对 (Tests\Fixtures\SPF2M-Reference.json,
 ; 1100 多个数值全部一致)。
 ;
@@ -27,10 +27,15 @@ class TendonProfile {
     static Profiles := ["Double Parabolic", "Parabolic-Straight-Parabolic", "Parabolic-Straight", "Straight-Parabolic"]
     static Tendons  := ["Slab", "7S", "12S", "19S", "22S", "31S"]
     static Radii    := [5000, 3200, 4200, 5300, 5700, 6700]                 ; 各钢绞线类型的最小曲率半径 (mm), 和 SPF2M 一致
+    static DuctDiameters := [25, 70, 90, 100, 120, 130]                     ; 管道直径 (mm), "At C.G." 时标高减去一半
     static MaxInterval := 1000
 
     static DefaultRadius(tendon) {
         return (IsInteger(tendon) && tendon >= 1 && tendon <= TendonProfile.Radii.Length) ? TendonProfile.Radii[tendon] : TendonProfile.Radii[1]
+    }
+
+    static DefaultDuctDiameter(tendon) {
+        return (IsInteger(tendon) && tendon >= 1 && tendon <= TendonProfile.DuctDiameters.Length) ? TendonProfile.DuctDiameters[tendon] : TendonProfile.DuctDiameters[1]
     }
 
     static Calc(input) {

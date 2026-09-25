@@ -185,7 +185,7 @@ class I18n {
         s["Sys.ListProcesses"]         := ["List Running Processes", "列出运行中的进程"]
         s["Sys.ListServices"]          := ["List Running Services", "列出运行中的服务"]
         s["Sys.PTTools"]               := ["PT Tools (Rebar / BRC Calculator)", "PT 工具箱 (钢筋 / BRC 计算)"]
-        s["Sys.SPF2M"]                 := ["SPF2M Profile Calculator", "SPF2M 束线型计算"]
+        s["Sys.SPF2M"]                 := ["SPF2M Post-Tensioning Tendon Profile Calculator", "SPF2M 后张预应力束线型计算"]
         s["Sys.Subtitle"]              := ["System command", "系统命令"]
         s["Sys.ConfirmTitle"]          := ["{1}?", "确定要{1}吗?"]
         s["Sys.NoIP"]                  := ["No IP address found.", "没有找到 IP 地址。"]

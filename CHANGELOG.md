@@ -13,6 +13,8 @@
 - 编辑自定义命令的对话框加宽, 长路径和长命令能显示完整; 每个字段 (名称、类型、目标、参数、关键字) 下面加上灰色说明
 
 ### 变更
+- 不再附带 DOSBox 和原来的 SPF2M.EXE (`DOSBox.exe`、`SDL.dll`、`SDL_net.dll`、`SPF2M.exe`、`Run.bat`), 发布包小约 4MB。升级后 `Resources\` 里这几个旧文件可以删掉
+- SPF2M 窗口改名为 "SPF2M Post-Tensioning Tendon Profile Calculator"; 钢绞线类型默认 12S; 管道直径留空时显示默认值 (Slab 25、7S 70、12S 90、19S 100、22S 120、31S 130)
 - 搜索记录改用 `Ctrl+↑` / `Ctrl+↓` 前后翻 (和 Alfred 一样), `↑` `↓` 只在结果里移动。以前翻出一条记录、用 `↓` 选到下面的结果后, 按 `↑` 会换成另一条记录, 而不是回到上一行
 
 ### 修复
