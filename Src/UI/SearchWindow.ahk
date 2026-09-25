@@ -9,7 +9,8 @@
 ;
 ; 键盘 (都在 _OnKeyDown 里处理, 通过 OnMessage 拦截 WM_KEYDOWN / WM_SYSKEYDOWN):
 ;   Enter / Ctrl+Enter / Alt+Enter   执行 / 显示位置或粘贴 / 复制   (见 ActionCatalog)
-;   ↑ ↓  PgUp PgDn  Ctrl+P Ctrl+N    移动选择; 搜索框为空时 ↑ 调出历史搜索
+;   ↑ ↓  PgUp PgDn  Ctrl+P Ctrl+N    只移动选择 (和 Alfred 一样, 不和翻历史混在一起)
+;   Ctrl+↑ / Ctrl+↓                  上一条 / 下一条搜索记录; 翻回最新之后恢复原来输入的文字
 ;   Ctrl+1 ~ Ctrl+9                  直接执行可见的第 N 行
 ;   Tab                              自动补全
 ;   →  (光标在末尾时)                打开操作面板; ← / Esc 返回
@@ -40,7 +41,8 @@ class SearchWindow {
     static Mode := "results"                        ; results = 搜索结果; actions = 操作面板
     static FileMode := false                        ; 文件搜索模式: 空的搜索框里按空格进入, 只搜文件
     static ActionSource := "", SavedQuery := "", AllActions := []
-    static HistoryIndex := 0
+    static HistoryIndex := 0                         ; 正在看第几条搜索记录 (Knowledge.History, 1 = 最近), 0 = 没有在翻
+    static _historyDraft := ""                       ; 开始翻记录之前输入框里的文字, Ctrl+↓ 翻回来时恢复
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
     static SelectedRadius := 0
     static _gdi := Map()
@@ -609,13 +611,17 @@ class SearchWindow {
                     return 0
                 }
                 return
-            case 0x26:                                                      ; ↑
-                if (!actions && !SearchWindow.FileMode && SearchWindow._RecallHistory())
-                    return 0
-                SearchWindow.MoveSelection(-1)
+            case 0x26:                                                      ; ↑ / Ctrl+↑ 上一条搜索记录
+                if ctrl
+                    SearchWindow.RecallHistory(1)
+                else
+                    SearchWindow.MoveSelection(-1)
                 return 0
-            case 0x28:                                                      ; ↓
-                SearchWindow.MoveSelection(1)
+            case 0x28:                                                      ; ↓ / Ctrl+↓ 下一条搜索记录
+                if ctrl
+                    SearchWindow.RecallHistory(-1)
+                else
+                    SearchWindow.MoveSelection(1)
                 return 0
             case 0x21:                                                      ; PgUp
                 SearchWindow.MoveSelection(-SearchWindow.VisibleRows)
@@ -697,22 +703,26 @@ class SearchWindow {
         }
     }
 
-    static _RecallHistory() {
+    ; step: 1 = 更早的一条 (Ctrl+↑), -1 = 更近的一条 (Ctrl+↓)。输入框里的文字一改就从最近的一条重新开始
+    ; (_OnInputChange 把 HistoryIndex 清零)。和现在的文字一样的记录跳过, 按一下总有变化
+    static RecallHistory(step) {
+        if (SearchWindow.Mode = "actions" || SearchWindow.FileMode)
+            return
         history := Knowledge.History
-        text := SearchWindow.Input.Value
-        if (!history.Length)
-            return false
-        if (SearchWindow.HistoryIndex = 0 && text != "")
-            return false
-        if (SearchWindow.HistoryIndex > 0 && (SearchWindow.HistoryIndex > history.Length || text != history[SearchWindow.HistoryIndex]))
-            return false
-        if (SearchWindow.HistoryIndex >= history.Length)
-            return true
-        SearchWindow.HistoryIndex += 1
+        current := SearchWindow.Input.Value
         index := SearchWindow.HistoryIndex
-        SearchWindow._SetInput(history[index])
+        if (index = 0)
+            SearchWindow._historyDraft := current
+        Loop {
+            index += step
+            if (index < 0 || index > history.Length)
+                return                                                      ; 已经是最早 / 最新的一条
+            text := index ? history[index] : SearchWindow._historyDraft
+            if (text != current || index = 0)
+                break
+        }
+        SearchWindow._SetInput(text)
         SearchWindow.HistoryIndex := index                                  ; _SetInput 不经过 Change 事件, 这里保持历史位置
-        return true
     }
 
     static _AutoComplete() {

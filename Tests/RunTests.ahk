@@ -64,7 +64,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "LegacyIni", "ReleaseVersion", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -844,6 +844,43 @@ class Tests {
         AppSettings.Data["CustomCommands"] := savedCommands, AppSettings.File := savedFile
         try FileDelete(A_Temp "\ALTRunTest.json")
         try DirDelete(folder, true)
+    }
+
+    ; Ctrl+↑ / Ctrl+↓ 翻搜索记录 (↑ ↓ 只移动选择); 用隐藏的输入框代替搜索窗口, 不真的搜索
+    static HistoryKeys() {
+        eq := (n, a, e) => TestRunner.Equal("HistoryKeys." n, a, e)
+        savedInput := SearchWindow.Input, savedHistory := Knowledge.History, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0})
+        g := Gui()
+        SearchWindow.Input := g.AddEdit("w200")
+        SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow.HistoryIndex := 0
+        Knowledge.History := ["nir", "wah", "pt tools"]
+        try {
+            SearchWindow.Input.Value := "typed"
+            SearchWindow.RecallHistory(1)
+            eq("ctrl+up newest", SearchWindow.Input.Value, "nir")
+            SearchWindow.RecallHistory(1)
+            eq("ctrl+up older", SearchWindow.Input.Value, "wah")
+            SearchWindow.RecallHistory(1), SearchWindow.RecallHistory(1)
+            eq("stops at oldest", SearchWindow.Input.Value "|" SearchWindow.HistoryIndex, "pt tools|3")
+            SearchWindow.RecallHistory(-1)
+            eq("ctrl+down newer", SearchWindow.Input.Value, "wah")
+            SearchWindow.RecallHistory(-1), SearchWindow.RecallHistory(-1)
+            eq("back to typed text", SearchWindow.Input.Value "|" SearchWindow.HistoryIndex, "typed|0")
+            SearchWindow.RecallHistory(-1)
+            eq("ctrl+down at the start does nothing", SearchWindow.Input.Value, "typed")
+            SearchWindow.Input.Value := "nir", SearchWindow.HistoryIndex := 0     ; 例如保留的上一次搜索
+            SearchWindow.RecallHistory(1)
+            eq("same text skipped", SearchWindow.Input.Value, "wah")
+            SearchWindow.HistoryIndex := 0, SearchWindow.FileMode := true
+            SearchWindow.RecallHistory(1)
+            eq("not in file mode", SearchWindow.Input.Value, "wah")
+        } finally {
+            SearchWindow.FileMode := false, SearchWindow.HistoryIndex := 0
+            SearchWindow.DefineProp("_RunSearch", savedSearch)
+            SearchWindow.Input := savedInput, Knowledge.History := savedHistory
+            g.Destroy()
+        }
     }
 
     ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入
