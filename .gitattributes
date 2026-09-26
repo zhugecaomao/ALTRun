@@ -1,0 +1,2 @@
+# DOS "type" needs CR LF, otherwise the lines step to the right and the glyphs are learned wrong
+Tests/Tools/SPF2M/CHARS.TXT -text

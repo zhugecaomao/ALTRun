@@ -886,7 +886,7 @@ class Tests {
 
     ; 束线型计算和原来的 SPF2M.EXE 逐个比对: Tests\Fixtures\SPF2M-Reference.json 是在 DOSBox 里运行
     ; SPF2M 得到的结果 (4 种线型 x 6 种钢绞线, 上升 / 下降, 非整米跨度, 自定义半径 / 反弯点 /
-    ; 支架间距, 以及 SPF2M 报错或崩溃的情况)
+    ; 支架间距, 以及 SPF2M 报错或崩溃的情况); 生成方法见 Tests\Tools\SPF2M
     static TendonProfileVsSpf2m() {
         data := JSON.Parse(FileRead(A_ScriptDir "\Fixtures\SPF2M-Reference.json", "UTF-8"))
         checked := 0, failed := 0

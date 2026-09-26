@@ -2,6 +2,8 @@
 
 在 偏好设置 → 外观 里选择主题, 点 **应用** 或 **确定** 后生效。
 
+![偏好设置 → 外观](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-appearance.png)
+
 ## 内置主题
 | 主题 | 名称 (设置里的值) | 风格 |
 |---|---|---|
