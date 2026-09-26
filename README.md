@@ -81,15 +81,15 @@ scoop update altrun    # 以后升级 (先退出 ALTRun)
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
 
 <details>
-<summary><b>内置主题</b> (Dark / Classic / Midnight / Frost / Graphite / Ocean / Paper)</summary>
+<summary><b>内置主题</b> (Dark / DarkCompact / Classic / Midnight / Frost / Graphite / Ocean / Paper)</summary>
 
 | Dark | Classic | Midnight |
 |:---:|:---:|:---:|
 | <img src="docs/images/screenshots/theme-dark.png" alt="Dark"> | <img src="docs/images/screenshots/theme-classic.png" alt="Classic"> | <img src="docs/images/screenshots/theme-midnight.png" alt="Midnight"> |
 | **Frost** | **Graphite** | **Ocean** |
 | <img src="docs/images/screenshots/theme-frost.png" alt="Frost"> | <img src="docs/images/screenshots/theme-graphite.png" alt="Graphite"> | <img src="docs/images/screenshots/theme-ocean.png" alt="Ocean"> |
-| **Paper** | | |
-| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | | |
+| **Paper** | **DarkCompact** | |
+| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | <img src="docs/images/screenshots/theme-darkcompact.png" alt="DarkCompact"> | |
 
 </details>
 

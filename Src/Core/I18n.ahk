@@ -357,6 +357,7 @@ class I18n {
         s["Theme.System"]              := ["System (Light / Dark)", "跟随系统 (浅色 / 深色)"]
         s["Theme.Light"]               := ["Light", "浅色"]
         s["Theme.Dark"]                := ["Dark", "深色"]
+        s["Theme.DarkCompact"]         := ["Dark Compact", "紧凑深色"]
         s["Theme.Classic"]             := ["Classic", "经典"]
         s["Theme.Midnight"]            := ["Midnight", "午夜"]
         s["Theme.Frost"]               := ["Frost", "霜白"]

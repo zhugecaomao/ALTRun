@@ -5,7 +5,7 @@
 ;   Light                     写在代码里 (Defaults), 所有主题都在它的基础上修改;
 ;                             主题文件全部丢失时也能正常显示
 ;   Resources\Themes\*.json   内置主题 (参照 Alfred 自带的几套), 随程序发布, 升级时整体替换:
-;                             Dark / Classic / Midnight / Frost / Graphite / Ocean / Paper
+;                             Dark / DarkCompact / Classic / Midnight / Frost / Graphite / Ocean / Paper
 ;   Themes\*.json             用户自己的主题, 升级不动; 和内置主题同名时用户的优先
 ;   System                    跟随 Windows 的浅色 / 深色设置 (Light 或 Dark), 系统切换时自动更新
 ;
@@ -36,7 +36,7 @@ class ThemeManager {
     static Resolved := "Light"                      ; 实际使用的主题 (System -> Light / Dark)
     static BuiltinDir := A_ScriptDir "\Resources\Themes"
     static UserDir    := A_ScriptDir "\Themes"
-    static BuiltinOrder := ["Dark", "Classic", "Midnight", "Frost", "Graphite", "Ocean", "Paper"]   ; 列表里的顺序
+    static BuiltinOrder := ["Dark", "DarkCompact", "Classic", "Midnight", "Frost", "Graphite", "Ocean", "Paper"]   ; 列表里的顺序
     static _listening := false
 
     static Load(themeName) {

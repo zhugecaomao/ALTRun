@@ -10,6 +10,7 @@
 | 跟随系统 | `System` | 跟随 Windows 的浅色 / 深色模式 (Light 或 Dark), 系统切换时自动更新 |
 | 浅色 | `Light` | 默认, 浅灰白底 + 淡蓝选中 |
 | 深色 | `Dark` | 深灰底 + 蓝灰选中 |
+| 紧凑深色 | `DarkCompact` | 和深色一样的配色, 字号和行高小一些, 一屏显示更多结果 |
 | 经典 | `Classic` | 浅灰底 + 醒目的蓝色整行选中条 |
 | 午夜 | `Midnight` | 接近纯黑, 圆角选中 |
 | 霜白 | `Frost` | 半透明的冷白色 |
@@ -22,8 +23,8 @@
 | ![Light](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/search.png) | ![Dark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dark.png) | ![Classic](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-classic.png) |
 | **Midnight** | **Frost** | **Graphite** |
 | ![Midnight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-midnight.png) | ![Frost](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-frost.png) | ![Graphite](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-graphite.png) |
-| **Ocean** | **Paper** | |
-| ![Ocean](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-ocean.png) | ![Paper](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-paper.png) | |
+| **Ocean** | **Paper** | **DarkCompact** |
+| ![Ocean](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-ocean.png) | ![Paper](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-paper.png) | ![DarkCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-darkcompact.png) |
 
 Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些文件升级时会被替换, 请不要直接修改, 改用下面的自定义主题。
 

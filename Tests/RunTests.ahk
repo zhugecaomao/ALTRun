@@ -411,7 +411,7 @@ class Tests {
             for key in ["Background", "Title", "SelectedBackground", "SelectedTitle"]
                 TestRunner.True("Themes." themeName "." key " is RRGGBB", RegExMatch(ThemeManager.Get(key), "^[0-9A-Fa-f]{6}$"))
         }
-        eq("builtin count", ThemeManager.Names().Length, 9)
+        eq("builtin count", ThemeManager.Names().Length, 10)
         TestRunner.True("Themes.Ocean is builtin", ThemeManager.IsBuiltin("Ocean"))
 
         ; 用户主题: 同名覆盖内置主题 ("Base" 写自己 = 在内置那一套上改), 以及 Base 链
@@ -421,7 +421,7 @@ class Tests {
         ThemeManager.Load("Mine")
         eq("user base color", ThemeManager.Get("Background"), "2E3440")
         eq("user override", ThemeManager.Get("SelectedRadius"), 12)
-        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 10 && !ThemeManager.IsBuiltin("Mine"))
+        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 11 && !ThemeManager.IsBuiltin("Mine"))
         ThemeManager.Load("Dark")
         eq("user overrides builtin", ThemeManager.Get("Title"), "FF0000")
         eq("user override keeps builtin", ThemeManager.Get("Background"), "1E1F22")
