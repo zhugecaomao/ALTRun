@@ -110,7 +110,12 @@ jobs:
           if (-not $running) {
             # 2026.09.24 发布时出现过一次 ALTRun.exe 自己退出, 之后 12 次都没有复现; 再出现时留下线索
             Write-Host "ALTRun.exe exited after $(((Get-Date) - $started).TotalSeconds.ToString('N1'))s, exit code $($proc.ExitCode)"
-            Get-Process -Name ALTRun -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Other ALTRun process: $($_.Id) started $($_.StartTime.ToString('HH:mm:ss.fff'))" }
+            # 另一个 ALTRun 进程是谁启动的: 命令行里有 /restart 是 ALTRun 自己重启, 否则看父进程
+            Get-CimInstance Win32_Process -Filter "Name = 'ALTRun.exe'" -ErrorAction SilentlyContinue | ForEach-Object {
+              $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $($_.ParentProcessId)" -ErrorAction SilentlyContinue
+              Write-Host "Other ALTRun process: $($_.ProcessId) started $($_.CreationDate.ToString('HH:mm:ss.fff')), command line: $($_.CommandLine)"
+              Write-Host "  parent: $($_.ParentProcessId) $($parent.Name) $($parent.CommandLine)"
+            }
             Get-ChildItem $dir -Recurse -Name | ForEach-Object { Write-Host "  file: $_" }
             Get-WinEvent -FilterHashtable @{LogName = 'Application'; StartTime = $started} -ErrorAction SilentlyContinue |
               Where-Object { $_.Message -match 'ALTRun|AutoHotkey' } | Select-Object -First 5 |
