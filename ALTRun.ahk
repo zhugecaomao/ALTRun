@@ -13,7 +13,7 @@
 ;                   snippets, system commands, calculator, web search, file search, terminal
 ;   Src\Extensions\ Features outside the search window: snippet auto-expansion,
 ;                   dialog quick switch, Ctrl+D date, PT Tools, update checker
-;   Resources\      Data files shipped with ALTRun (Kanji.txt, built-in themes)
+;   Resources\      Data files shipped with ALTRun (Kanji.txt, built-in themes, ALTRun.ico)
 ;   Themes\         Optional custom themes (<Name>.json)
 ;   Data\           Generated at runtime: app index, learned ranking, clipboard history
 ;===============================================================================
@@ -22,6 +22,7 @@
 ;@Ahk2Exe-SetVersion 2026.09.26
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026 zhugecaomao
 ;@Ahk2Exe-SetOrigFilename ALTRun.exe
+;@Ahk2Exe-SetMainIcon Resources\ALTRun.ico
 ; (编译: 见 .github/workflows/release.yml; SetVersion 要和 App.Version 一致, 有测试检查)
 
 #Requires AutoHotkey v2.0

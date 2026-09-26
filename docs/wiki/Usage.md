@@ -27,7 +27,7 @@
 
 关键字后面加了空格 (例如 `clip `、`g xxx`、`'xxx`、`>xxx`), 就只显示这个功能的结果。没有任何结果时, 显示兜底项: 用 Google 搜索、搜索文件、用 Bing 搜索 (可在 `Features.WebSearch.Fallbacks` 修改)。
 
-![网页搜索: g 后张预应力 楼板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch.png)
+![网页搜索: g autohotkey v2 hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch.png)
 
 ### 怎样匹配
 不区分大小写, 按下面的顺序打分:

@@ -24,6 +24,7 @@ class App {
     static Name    := "ALTRun"
     static Version := "2026.09.26"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
+    static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
     static PreviousWindow := 0
     static _settingsTime := ""
     static _watchTimer := ""
@@ -43,6 +44,7 @@ class App {
             ProviderRegistry.Register(provider)
         ProviderRegistry.InitAll()
 
+        App._SetIcon()                                                      ; 在创建窗口之前: 窗口的图标跟随托盘图标
         SearchWindow.Create()
         App._CreateTrayMenu()
         App._RegisterHotkeys()
@@ -182,7 +184,6 @@ class App {
             A_IconHidden := true
             return
         }
-        try TraySetIcon("imageres.dll", -100)
         tray := A_TrayMenu
         tray.Delete()
         tray.Add(I18n.T("Tray.Show"), (*) => SetTimer(() => SearchWindow.Show(), -100))
@@ -246,10 +247,16 @@ class App {
     }
 
     ; 开机启动 / 资源管理器 "发送到" / 开始菜单 三个快捷方式, 按设置创建或删除
+    static _SetIcon() {
+        if FileExist(App.IconFile)
+            try TraySetIcon(App.IconFile)
+    }
+
     static _UpdateShellShortcuts() {
         general := AppSettings.General
         target := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
         prefix := A_IsCompiled ? "" : '"' A_ScriptFullPath '" '
+        icon := (!A_IsCompiled && FileExist(App.IconFile)) ? App.IconFile : ""   ; 运行源码时快捷方式不用 AutoHotkey 的图标
         sendTo := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
         for shortcut in [
             [general["LaunchAtLogin"], A_Startup "\ALTRun.lnk", "-Startup"],
@@ -258,7 +265,7 @@ class App {
         ] {
             try {
                 if shortcut[1]
-                    FileCreateShortcut(target, shortcut[2], A_ScriptDir, Trim(prefix shortcut[3]), App.Name " - " I18n.T("App.Tagline"))
+                    FileCreateShortcut(target, shortcut[2], A_ScriptDir, Trim(prefix shortcut[3]), App.Name " - " I18n.T("App.Tagline"), icon)
                 else if FileExist(shortcut[2])
                     FileDelete(shortcut[2])
             } catch as e {
