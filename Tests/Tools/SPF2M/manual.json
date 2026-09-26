@@ -1,0 +1,45 @@
+[
+ {
+  "case": {
+   "profile": 1,
+   "tendon": 3,
+   "start": 650,
+   "end": 120,
+   "dist": 7350,
+   "intervals": [
+    500,
+    1500,
+    800,
+    800,
+    800,
+    800,
+    800,
+    800,
+    550
+   ]
+  },
+  "note": "Typed in by hand: answered Y to 'Change Support Interval' and entered the intervals one by one",
+  "screens": [],
+  "final": [
+   " Double Parabolic Profile",
+   " ------------------------",
+   " Tot. Hor.   Support           ----- Tendon  Profile -----",
+   " Distance    Interval      Actual      Beam @ 5mm    Slab @ 10mm",
+   " ---------   --------      -------     ----------    -----------",
+   "    0          0             650           650           650",
+   "    500        500           620           620           620",
+   "    2000       1500          426           425           430",
+   "    2800       800           341           340           340",
+   "    3600       800           270           270           270",
+   "    4400       800           213           215           210",
+   "    5200       800           169           170           170",
+   "    6000       800           139           140           140",
+   "    6800       800           123           125           120",
+   "    7350       550           120           120           120",
+   " MIN. RADIUS OF CURVATURE  =  4200",
+   " Dist. to Point of Contraflexure  =  605",
+   " CONTINUE ON FOR ANOTHER PROFILE , [Y/N]",
+   ""
+  ]
+ }
+]

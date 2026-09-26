@@ -20,9 +20,13 @@ Src\Core\           App (启动流程), AppSettings + SchemaMigration (设置和
                     Knowledge (学习排序), ActionCatalog (操作), ProviderRegistry, FileIndex
 Src\UI\             SearchWindow, PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      搜索功能, 每个功能一个类
-Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, PTToolsWindow, UpdateChecker)
+Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, TendonProfile + PTToolsWindow, UpdateChecker)
 Resources\          随程序发布的数据 (Kanji.txt, Themes\*.json)
 Tests\RunTests.ahk  单元测试
+Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据
+Tests\Screenshots\  自动截图
+Tests\Tools\SPF2M\  生成 SPF2M 对照数据的 Python 脚本 (在 DOSBox 里运行原来的 SPF2M.EXE, 见其中的 README)
+bucket\ packaging\  Scoop / winget 清单 (见 packaging\README.md)
 ```
 
 ## 一次搜索的流程
