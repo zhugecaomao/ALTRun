@@ -1144,6 +1144,27 @@ Func | PTTools | PT Tools (AHK)=99
             failed := true
         ok("package without exe throws", failed)
         eq("package without exe changes nothing", read(dest "\Launcher.exe") "|" read(dest "\Launcher.exe.old"), "new exe|<missing>")
+
+        ; 复制到一半失败 (目标文件被别的程序独占打开): 已经覆盖的改回去, 新增的文件和文件夹删掉, exe 不动
+        try DirDelete(root, true)
+        write(src "\ALTRun.exe", "new exe")
+        write(src "\README.md", "new readme")
+        write(src "\Resources\Kanji.txt", "new kanji")
+        write(src "\Resources\New.txt", "new file")
+        write(src "\Resources\Fonts\a.ttf", "font")
+        write(dest "\ALTRun.exe", "old exe")
+        write(dest "\README.md", "old readme")
+        write(dest "\Resources\Kanji.txt", "old kanji")
+        locked := FileOpen(dest "\Resources\Kanji.txt", "rw -rwd")
+        failed := false
+        try UpdateChecker.Apply(src, dest, "ALTRun.exe")
+        catch
+            failed := true
+        locked.Close()
+        ok("copy failure throws", failed)
+        eq("copy failure: files restored", read(dest "\README.md") "|" read(dest "\Resources\Kanji.txt") "|" read(dest "\ALTRun.exe"), "old readme|old kanji|old exe")
+        eq("copy failure: new files removed", read(dest "\Resources\New.txt") "|" read(dest "\Resources\Fonts\a.ttf") "|" (InStr(FileExist(dest "\Resources\Fonts"), "D") ? "dir" : "no dir"), "<missing>|<missing>|no dir")
+        eq("copy failure: no .old, no backup left", read(dest "\ALTRun.exe.old") "|" (FileExist(src ".backup") ? "backup" : "none"), "<missing>|none")
         try DirDelete(root, true)
     }
 

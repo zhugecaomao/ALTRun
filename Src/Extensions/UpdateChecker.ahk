@@ -13,7 +13,7 @@
 ;   1. 下载 Release 里的 ALTRun_v<版本>.zip, 核对 GitHub 给出的 SHA256
 ;   2. 解压到临时文件夹, 先复制 exe 以外的文件 (Resources\ 等), 再把正在运行的
 ;      ALTRun.exe 改名为 ALTRun.exe.old (运行中的 exe 不能覆盖, 但可以改名), 复制新的 exe;
-;      复制 exe 失败就把旧的改回来。ALTRun.json、Data\、Themes\ 不在 zip 里, 不会动
+;      被覆盖的文件先备份, 任何一步失败都全部还原。ALTRun.json、Data\、Themes\ 不在 zip 里, 不会动
 ;   3. 启动新版本 (-Updated), 新版本启动时删掉 ALTRun.exe.old
 ; 用 Scoop / winget 安装的, 提示对应的升级命令; 运行源码、程序目录不能写入、Release
 ; 没有 SHA256 时, 仍然打开下载页面。
@@ -151,39 +151,75 @@ class UpdateChecker {
             throw Error("Could not extract the downloaded package (exit code " exitCode ").")
     }
 
-    ; 把 src 里的新版本复制到 dest: 先复制其它文件, 最后替换 dest\exeName (改名为 .old 后复制新的)
+    ; 把 src 里的新版本复制到 dest: 先复制其它文件, 最后替换 dest\exeName (改名为 .old 后复制新的)。
+    ; 被覆盖的文件先备份到 src.backup; 任何一步失败都还原 (覆盖的改回去, 新增的删掉), 再抛出错误
     static Apply(src, dest, exeName) {
         newExe := src "\" UpdateChecker.PackageExe
         if !FileExist(newExe)
             throw Error(UpdateChecker.PackageExe " is missing from the update package.")
         exe := dest "\" exeName, old := exe UpdateChecker.OldSuffix
-        UpdateChecker._CopyTree(src, dest, UpdateChecker.PackageExe)
-        if FileExist(old)
-            FileDelete(old)                                                 ; 上次更新留下的, 删不掉就不要继续
-        if FileExist(exe)
-            FileMove(exe, old)
+        backup := src ".backup"
+        try DirDelete(backup, true)
+        changes := {Replaced: [], Created: [], Dirs: []}
+        movedExe := false
         try {
+            UpdateChecker._CopyTree(src, dest, backup, changes, UpdateChecker.PackageExe)
+            if FileExist(old)
+                FileDelete(old)                                             ; 上次更新留下的, 删不掉就不要继续
+            if FileExist(exe) {
+                FileMove(exe, old)
+                movedExe := true
+            }
             FileCopy(newExe, exe)
         } catch as e {
-            if FileExist(old) && !FileExist(exe)
+            if movedExe {
+                try FileDelete(exe)
                 try FileMove(old, exe)
+            }
+            UpdateChecker._Undo(changes)
+            try DirDelete(backup, true)
             throw e
         }
+        try DirDelete(backup, true)
         for rel in UpdateChecker.ObsoleteFiles
             if !FileExist(src "\" rel)                                    ; 新版本里还有的就留着
                 try FileDelete(dest "\" rel)
     }
 
     ; 逐层复制 (按文件名拼路径: A_Temp 和 Loop Files 给出的路径可能一个是长文件名、一个是 8.3 短文件名,
-    ; 不能按长度截取相对路径)
-    static _CopyTree(src, dest, skipFile := "") {
-        DirCreate(dest)
-        Loop Files src "\*", "FD" {
-            if InStr(A_LoopFileAttrib, "D")
-                UpdateChecker._CopyTree(src "\" A_LoopFileName, dest "\" A_LoopFileName)
-            else if (A_LoopFileName != skipFile)
-                FileCopy(src "\" A_LoopFileName, dest "\" A_LoopFileName, true)
+    ; 不能按长度截取相对路径)。已有的文件覆盖前先复制到 backup, 记在 changes 里以便还原
+    static _CopyTree(src, dest, backup, changes, skipFile := "") {
+        if !InStr(FileExist(dest), "D") {
+            DirCreate(dest)
+            changes.Dirs.Push(dest)
         }
+        Loop Files src "\*", "FD" {
+            name := A_LoopFileName
+            if InStr(A_LoopFileAttrib, "D") {
+                UpdateChecker._CopyTree(src "\" name, dest "\" name, backup "\" name, changes)
+                continue
+            }
+            if (name = skipFile)
+                continue
+            target := dest "\" name
+            if FileExist(target) {
+                DirCreate(backup)
+                FileCopy(target, backup "\" name, true)
+                changes.Replaced.Push([target, backup "\" name])
+            } else {
+                changes.Created.Push(target)
+            }
+            FileCopy(src "\" name, target, true)
+        }
+    }
+
+    static _Undo(changes) {
+        for pair in changes.Replaced
+            try FileCopy(pair[2], pair[1], true)
+        for created in changes.Created
+            try FileDelete(created)
+        Loop changes.Dirs.Length                                            ; 从里往外删新建的 (空) 文件夹
+            try DirDelete(changes.Dirs[changes.Dirs.Length - A_Index + 1])
     }
 
     ; 新版本启动时: 删掉改了名的旧程序 (旧进程可能还没退出, 过一会儿再试) 和下载的临时文件
