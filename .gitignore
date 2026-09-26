@@ -7,3 +7,6 @@ ALTRun.v*.backup.json
 
 # Validation scratch file
 _validate.ahk
+
+# Python
+__pycache__/
