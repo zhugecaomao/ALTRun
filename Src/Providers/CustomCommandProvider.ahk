@@ -77,7 +77,7 @@ class CustomCommandProvider {
             CustomCommandProvider._KeysFor(command["Title"], command.Has("Keyword") ? command["Keyword"] : "")
             CustomCommandProvider._TargetKeysFor(commandType, command["Target"])
             if (commandType = "Folder")
-                IconCache.FolderIcon(CustomCommandProvider._Resolve(command["Target"]))
+                IconCache.FolderIcon(CustomCommandProvider._Resolve(command["Target"]), true)
         }
         if (last < commands.Length)
             SetTimer(() => CustomCommandProvider.Warm(last + 1), -10)

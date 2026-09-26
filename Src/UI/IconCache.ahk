@@ -61,18 +61,42 @@ class IconCache {
     }
 
     ; 文件夹结果的图标: 普通文件夹都一样, 用通用图标 (不用逐个读, 几百个文件夹时明显更快);
-    ; 有自定义图标 (desktop.ini) 的文件夹和磁盘根目录用它自己的。按路径缓存, 每个文件夹只看一次
-    static FolderIcon(folder) {
-        static cache := Map()
-        if cache.Has(folder)
-            return cache[folder]
-        icon := "folder:"
-        if !IconCache.IsRemote(folder) {
-            trimmed := RTrim(folder, "\/")
-            if (RegExMatch(trimmed, "^[A-Za-z]:$") || RegExMatch(folder, "i)^(shell:|::\{)") || FileExist(trimmed "\desktop.ini"))
-                icon := folder
+    ; 有自定义图标 (desktop.ini) 的文件夹和磁盘根目录用它自己的。按路径缓存, 每个文件夹只看一次。
+    ; 看 desktop.ini 要访问磁盘, 搜索时不做: 先返回通用图标, 放进队列在后台看 (probeNow: 启动后
+    ; 预热时直接看)
+    static _folderIcons := Map(), _folderProbes := Map(), _probeTimer := ""
+    static FolderIcon(folder, probeNow := false) {
+        if IconCache._folderIcons.Has(folder)
+            return IconCache._folderIcons[folder]
+        trimmed := RTrim(folder, "\/")
+        if (RegExMatch(trimmed, "^[A-Za-z]:$") || RegExMatch(folder, "i)^(shell:|::\{)"))
+            return IconCache._folderIcons[folder] := folder
+        if IconCache.IsRemote(folder)
+            return IconCache._folderIcons[folder] := "folder:"
+        if probeNow
+            return IconCache._ProbeFolder(folder)
+        IconCache._folderProbes[folder] := true
+        if (IconCache._probeTimer = "")
+            IconCache._probeTimer := () => IconCache._ProbeQueued()
+        SetTimer(IconCache._probeTimer, -1)
+        return "folder:"
+    }
+
+    static _ProbeFolder(folder) {
+        return IconCache._folderIcons[folder] := FileExist(RTrim(folder, "\/") "\desktop.ini") ? folder : "folder:"
+    }
+
+    ; 和加载图标一样, 每轮最多 10 ms
+    static _ProbeQueued() {
+        start := IconCache._Ms()
+        for folder in IconCache._folderProbes.Clone() {
+            IconCache._folderProbes.Delete(folder)
+            IconCache._ProbeFolder(folder)
+            if (IconCache._Ms() - start > 10)
+                break
         }
-        return cache[folder] := icon
+        if IconCache._folderProbes.Count
+            SetTimer(IconCache._probeTimer, -1)
     }
 
     ; 每次最多加载约 10 ms, 剩下的留到下一轮, 中间可以处理键盘输入

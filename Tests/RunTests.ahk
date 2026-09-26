@@ -524,8 +524,12 @@ class Tests {
         DirCreate(iconRoot "\Custom")
         FileAppend("[.ShellClassInfo]`n", iconRoot "\Custom\desktop.ini")
         eq("folder command icon local", CustomCommandProvider._FolderIcon(iconRoot "\Plain 26. 18 Road"), "folder:")
-        eq("folder icon with desktop.ini", CustomCommandProvider._FolderIcon(iconRoot "\Custom"), iconRoot "\Custom")
         eq("folder icon drive root", CustomCommandProvider._FolderIcon("C:\"), "C:\")
+        ; 搜索时不访问磁盘: 先是通用图标, 后台看过 desktop.ini 后才是它自己的
+        eq("folder icon with desktop.ini, not probed yet", CustomCommandProvider._FolderIcon(iconRoot "\Custom"), "folder:")
+        IconCache._ProbeQueued()
+        eq("folder icon with desktop.ini, after probe", CustomCommandProvider._FolderIcon(iconRoot "\Custom"), iconRoot "\Custom")
+        eq("folder icon probe now (warm-up)", IconCache.FolderIcon(iconRoot "\Plain 26. 18 Road", true), "folder:")
         try DirDelete(iconRoot, true)
         eq("remote load spec", IconCache._LoadSpec("\\server\share\Report.pdf", "ext:.pdf"), "ext:.pdf")
         eq("local exe key", IconCache._CacheKey("C:\Tools\app.exe"), "c:\tools\app.exe")
