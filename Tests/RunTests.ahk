@@ -34,6 +34,7 @@
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
+#Include %A_ScriptDir%\..\Src\UI\Hud.ahk
 #Include %A_ScriptDir%\..\Src\UI\ItemEditor.ahk
 #Include %A_ScriptDir%\..\Src\UI\PreferencesWindow.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ClipboardProvider.ahk
@@ -66,7 +67,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UsageStats", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1295,6 +1296,31 @@ Func | PTTools | PT Tools (AHK)=99
             try FileDelete(Usage.File)
             Usage.File := saved.File, Usage.Days := saved.Days, Usage.Since := saved.Since
         }
+    }
+
+    ; 操作后的提示: 搜索窗口开着时在它下方居中, 否则在屏幕中间偏下; 不出屏幕
+    static HudPlacement() {
+        eq := (n, a, e) => TestRunner.Equal("HudPlacement." n, a, e)
+        gap := Win.Scale(12)
+        area := {Left: 0, Top: 0, Right: 1920, Bottom: 1040}
+        pos := Hud.Position(200, 40, {Window: "", Area: area})
+        eq("no window: centered", pos.X, 860)
+        eq("no window: lower middle", pos.Y, 673)
+        pos := Hud.Position(200, 40, {Window: {X: 610, Y: 200, W: 700, H: 400}, Area: area})
+        eq("below window", pos.X "," pos.Y, "860," (600 + gap))
+        pos := Hud.Position(200, 40, {Window: {X: 610, Y: 700, W: 700, H: 330}, Area: area})
+        eq("above window when no room below", pos.Y, 700 - gap - 40)
+        pos := Hud.Position(200, 40, {Window: {X: 1800, Y: 100, W: 700, H: 300}, Area: area})
+        eq("kept on screen", pos.X, 1720)
+        second := {Left: 1920, Top: 0, Right: 3840, Bottom: 1080}
+        eq("second monitor", Hud.Position(200, 40, {Window: "", Area: second}).X, 2780)
+
+        Hud.Show("Copied", 300)
+        eq("shown", IsObject(Hud.Gui), true)
+        Hud.Show("Second", 300)
+        eq("replaced, one window", WinExist("ALTRun HUD ahk_class AutoHotkeyGUI") = Hud.Gui.Hwnd, true)
+        Hud.Hide()
+        eq("hidden", Hud.Gui, "")
     }
 
     static Misc() {

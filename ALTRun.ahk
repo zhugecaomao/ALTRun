@@ -58,6 +58,7 @@
 #Include Src\UI\IconCache.ahk
 #Include Src\UI\SearchWindow.ahk
 #Include Src\UI\LargeType.ahk
+#Include Src\UI\Hud.ahk
 #Include Src\UI\ItemEditor.ahk
 #Include Src\UI\PreferencesWindow.ahk
 

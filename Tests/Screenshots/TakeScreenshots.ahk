@@ -37,6 +37,7 @@ class Shots {
             ["clipboard",   "Light", "", () => Shots.Clipboard()],
             ["websearch",   "Light", "", () => Shots.Search("g autohotkey v2 hotkeys")],
             ["system",      "Light", "", () => Shots.Search("lock")],
+            ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 7", () => Shots.Preferences()],
@@ -249,6 +250,17 @@ class Shots {
         WinActivate(hwnd)
         Shots.SetQuery(hwnd, "clip ")
         return hwnd
+    }
+
+    ; 操作后的提示 (HUD): 回车复制计算结果, 搜索窗口关闭, 提示显示在屏幕中间偏下
+    static Hud(text) {
+        hwnd := Shots.Search(text)
+        ControlSend("{Enter}", "Edit1", hwnd)
+        hud := WinWait("ALTRun HUD ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 3)
+        if !hud
+            throw Error("HUD not shown")
+        Sleep(300)                                                          ; 淡入
+        return hud
     }
 
     static Preferences() {
