@@ -30,8 +30,9 @@ class PreferencesWindow {
     static Gui := "", Working := "", Pages := [], Binds := [], PageList := ""
     static _page := 0, _y := 0
     static _dirty := false, _ready := false, ApplyButton := ""
-    ; 两列表单 (和 Alfred / Listary 一样): 左列是右对齐的标签, 所有控件从同一条竖线 (_InputX) 开始;
-    ; 输入框只用三种宽度, 复选框按组在左列加标签, 按钮统一尺寸, 灰色说明和控件左对齐
+    ; 两列表单 (和 Alfred / Listary 一样): 左列是右对齐的标签, 一页里的控件从同一条竖线 (_InputX) 开始,
+    ; 左列宽度每页按标签长短定 (_BeginPage); 输入框只用三种宽度, 复选框按组在左列加标签,
+    ; 按钮统一尺寸, 灰色说明和控件左对齐
     static ContentX := 190, ContentW := 560, LabelW := 190
     static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
     static ButtonY := 579                                                   ; 底部按钮的位置; 页面内容要在它上面 (y < ButtonY - 10)
@@ -189,7 +190,7 @@ class PreferencesWindow {
     }
 
     static _BuildGeneral() {
-        PreferencesWindow._BeginPage("Prefs.Page.General")
+        PreferencesWindow._BeginPage("Prefs.Page.General", 120)
         PreferencesWindow._Field("General.Hotkey", "Prefs.Hotkey", "M")
         PreferencesWindow._Field("General.SecondaryHotkey", "Prefs.SecondaryHotkey", "M")
         PreferencesWindow._Choice("General.Language", "Prefs.Language", ["auto", "en", "zh"], [I18n.T("Prefs.Language.auto"), "English", "中文"])
@@ -204,17 +205,21 @@ class PreferencesWindow {
 
     ; 搜索窗口的行为 (设置仍然在 General 里, 只是分到单独一页)
     static _BuildWindow() {
-        PreferencesWindow._BeginPage("Prefs.Page.Window")
-        for row in [["HideOnDeactivate", "Prefs.HideOnDeactivate", "Prefs.Group.Window"], ["KeepLastQuery", "Prefs.KeepLastQuery", ""]
-                   , ["SwitchToEnglishInput", "Prefs.EnglishInput", "Prefs.Group.Typing"], ["SpaceToRun", "Prefs.SpaceToRun", ""]
-                   , ["ShowTips", "Prefs.ShowTips", "Prefs.Group.Tips"]]
-            PreferencesWindow._Check("General." row[1], row[2], , , row[3])
+        PreferencesWindow._BeginPage("Prefs.Page.Window", 16)                ; 分节排列, 每节的内容缩进一点
+        PreferencesWindow._Section("Prefs.Group.Window")
+        PreferencesWindow._Check("General.HideOnDeactivate", "Prefs.HideOnDeactivate")
+        PreferencesWindow._Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
+        PreferencesWindow._Section("Prefs.Group.Typing")
+        PreferencesWindow._Check("General.SwitchToEnglishInput", "Prefs.EnglishInput")
+        PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
+        PreferencesWindow._Section("Prefs.Section.TipsHistory")
+        PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
         PreferencesWindow._Gap()
-        PreferencesWindow._Field("General.HistorySize", "Prefs.HistorySize", "S", "number")
+        PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")
     }
 
     static _BuildAppearance() {
-        PreferencesWindow._BeginPage("Prefs.Page.Appearance")
+        PreferencesWindow._BeginPage("Prefs.Page.Appearance", 150)
         themes := ThemeManager.Names(), labels := []
         for themeName in themes
             labels.Push(PreferencesWindow._ThemeLabel(themeName))
@@ -280,7 +285,7 @@ class PreferencesWindow {
     }
 
     static _BuildFeatures() {
-        PreferencesWindow._BeginPage("Prefs.Page.Features")
+        PreferencesWindow._BeginPage("Prefs.Page.Features", 140)
         PreferencesWindow._Section("Prefs.EnabledFeatures")
         features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "FileSearch", "Terminal", "System"]
         startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; 两列: 英文名称较长, 三列会换行
@@ -299,7 +304,7 @@ class PreferencesWindow {
     }
 
     static _BuildApplications() {
-        PreferencesWindow._BeginPage("Prefs.Page.Applications")
+        PreferencesWindow._BeginPage("Prefs.Page.Applications", 170)
         PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 3)
         PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", "L")
         PreferencesWindow._Field("Features.Applications.Depth", "Prefs.AppDepth", "S", "number")
@@ -352,7 +357,7 @@ class PreferencesWindow {
     }
 
     static _BuildClipboard() {
-        PreferencesWindow._BeginPage("Prefs.Page.Clipboard")
+        PreferencesWindow._BeginPage("Prefs.Page.Clipboard", 150)
         PreferencesWindow._Field("Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "M")
         PreferencesWindow._Field("Features.Clipboard.Keyword", "Prefs.ClipKeyword", "M")
         PreferencesWindow._Field("Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number")
@@ -398,18 +403,41 @@ class PreferencesWindow {
         PreferencesWindow._Field("Extensions.AutoDate.AppendHotkey", "Prefs.AppendHotkey", "M")
     }
 
+    ; 上面是 "关于" (图标、名称、版本、主页、检查更新), 下面是设置和数据文件的位置和操作
     static _BuildAdvanced() {
-        PreferencesWindow._BeginPage("Prefs.Page.Advanced")
-        PreferencesWindow._Section("Prefs.SettingsFile")
-        PreferencesWindow._Info("Prefs.Group.File", AppSettings.File, " cGray")
+        PreferencesWindow._BeginPage("Prefs.Page.Advanced", 110)
+        x := PreferencesWindow.ContentX, top := PreferencesWindow._y + 6
+        PreferencesWindow._y := top
+        PreferencesWindow._Add("Picture", "x" x " w64 h64", App.IconFile)
+        textX := x + 64 + 18, textW := PreferencesWindow.ContentW - 64 - 18
+        PreferencesWindow.Gui.SetFont("s15 bold")
+        PreferencesWindow._Add("Text", "x" textX " w" textW, App.Name)
+        PreferencesWindow.Gui.SetFont("s9 norm")
+        PreferencesWindow._y := top + 32
+        PreferencesWindow._Add("Text", "x" textX " w" textW, I18n.T("App.Tagline"))
+        PreferencesWindow._y := top + 52
+        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) "   ·   GPL-3.0")
+        PreferencesWindow._y := top + 74
+        PreferencesWindow._Add("Link", "x" textX " w" textW, '<a href="' App.RepoUrl '">' App.RepoUrl '</a>')
+        PreferencesWindow._y := top + 102
+        PreferencesWindow._Add("Button", "x" textX " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T("Tray.CheckUpdate"))
+            .OnEvent("Click", (*) => UpdateChecker.Check(false))
+        PreferencesWindow._y := top + 102 + PreferencesWindow.ButtonH + 22
+
+        PreferencesWindow._Section("Prefs.Section.Data")
+        PreferencesWindow._Info("Prefs.SettingsFile", AppSettings.File, " cGray")
+        PreferencesWindow._Info("Prefs.Group.DataFolder", AppSettings.DataDir, " cGray")
+        PreferencesWindow._y += 4
+        rowY := PreferencesWindow._y
         PreferencesWindow._Button("Prefs.EditJson", (*) => (PreferencesWindow.Cancel() || App.EditSettingsFile()))
-        PreferencesWindow._Button("Prefs.OpenDataFolder", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir))
+        afterEdit := PreferencesWindow._y
+        PreferencesWindow._y := rowY
+        PreferencesWindow._Add("Button", "x" (PreferencesWindow._InputX() + PreferencesWindow.ButtonW + 10) " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T("Prefs.OpenDataFolder"))
+            .OnEvent("Click", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir))
+        PreferencesWindow._y := afterEdit
+
+        PreferencesWindow._Section("Prefs.Section.Reset")
         PreferencesWindow._Button("Prefs.ResetLearning", (*) => PreferencesWindow._ResetLearning())
-        PreferencesWindow._Section("Sys.About")
-        PreferencesWindow._Info("Prefs.Group.Program", App.Name " - " I18n.T("App.Tagline"))
-        PreferencesWindow._Info("Prefs.Group.Version", App.Version)
-        PreferencesWindow._Info("Prefs.Group.Homepage", '<a href="' App.RepoUrl '">' App.RepoUrl '</a>', "", "Link")
-        PreferencesWindow._Button("Tray.CheckUpdate", (*) => UpdateChecker.Check(false))
     }
 
     ; 使用统计 (和 Alfred 的 Usage 一样): 合计, 最近 30 天每天的柱状图, 每个功能的次数
@@ -510,9 +538,11 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; Builders
     ;---------------------------------------------------------------------------
-    static _BeginPage(nameKey) {
+    ; labelW: 这一页左列标签的宽度 (按这一页最长的标签定, 内容不会整体偏右)
+    static _BeginPage(nameKey, labelW := 190) {
         PreferencesWindow.Pages.Push({Name: I18n.T(nameKey), Wiki: PreferencesWindow.WikiPage(nameKey), Controls: []})
         PreferencesWindow._y := 14
+        PreferencesWindow.LabelW := labelW
     }
 
     static _Add(type, options, text := "") {
@@ -632,6 +662,23 @@ class PreferencesWindow {
         label := PreferencesWindow._GroupLabel(labelKey)
         ctrl := PreferencesWindow._Add(type, "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() options, text)
         PreferencesWindow._Below(6, label, ctrl)
+    }
+
+    ; 标签后面紧跟输入框 (分节排列的页面用, 不用左列): "搜索历史条数 [30]"
+    static _InlineField(path, labelKey, size, kind := "text") {
+        x := PreferencesWindow._InputX()
+        PreferencesWindow._y += 3
+        label := PreferencesWindow._Add("Text", "x" x, I18n.T(labelKey))
+        PreferencesWindow._y -= 3
+        label.GetPos(, , &labelW)
+        value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
+        ctrl := PreferencesWindow._Add("Edit", "x" (x + labelW + 8) " w" PreferencesWindow._Width(size) " r1 -Multi" (kind = "number" ? " Number" : ""), value)
+        if (kind = "number")
+            PreferencesWindow._Bind(path, () => IsInteger(ctrl.Value) ? Integer(ctrl.Value) : 0)
+        else
+            PreferencesWindow._Bind(path, () => ctrl.Value)
+        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)
+        PreferencesWindow._Desc(labelKey, x)
     }
 
     ; kind: text / number / file / folder; size: "S" / "M" / "L" (见 _Width)

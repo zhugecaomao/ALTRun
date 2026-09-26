@@ -13,7 +13,7 @@
 ;   1. 下载 Release 里的 ALTRun_v<版本>.zip, 核对 GitHub 给出的 SHA256
 ;   2. 解压到临时文件夹, 先复制 exe 以外的文件 (Resources\ 等), 再把正在运行的
 ;      ALTRun.exe 改名为 ALTRun.exe.old (运行中的 exe 不能覆盖, 但可以改名), 复制新的 exe;
-;      被覆盖的文件先备份, 任何一步失败都全部还原。ALTRun.json、Data\、Themes\ 不在 zip 里, 不会动
+;      被覆盖的文件先备份, 任何一步失败都全部还原。Data\ (含 ALTRun.json)、Themes\ 不在 zip 里, 不会动
 ;   3. 启动新版本 (-Updated), 新版本启动时删掉 ALTRun.exe.old
 ; 用 Scoop / winget 安装的, 提示对应的升级命令; 运行源码、程序目录不能写入、Release
 ; 没有 SHA256 时, 仍然打开下载页面。

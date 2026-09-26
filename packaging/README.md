@@ -31,8 +31,8 @@ wingetcreate submit .\ALTRun-main\packaging\winget
   `wingetcreate update zhugecaomao.ALTRun --version <版本> --urls <zip 下载地址> --submit`
 
 ## 设置保存在哪里
-ALTRun 是便携软件, 设置 (`ALTRun.json`)、`Data\`、`Themes\` 都在程序目录里。
-- **Scoop**: 程序在 `scoop\apps\altrun\current`。`Data` 和 `Themes` 由 Scoop 保存在 `scoop\persist\altrun` (目录联接); `ALTRun.json` 在安装时从 persist 复制进来, 卸载前复制回去 (ALTRun 保存设置时替换整个文件, 不能用硬链接)。升级、卸载后重新安装, 设置都会保留。`scoop update altrun` 之前请先退出 ALTRun
-- **winget**: 程序在 `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`。升级只替换 zip 里的文件, 设置保留; 卸载时留下 `ALTRun.json`、`Data`、`Themes`, 重新安装后接着使用
+ALTRun 是便携软件, 设置和数据 (`Data\`, 设置文件是 `Data\ALTRun.json`)、`Themes\` 都在程序目录里。
+- **Scoop**: 程序在 `scoop\apps\altrun\current`。`Data` (包括设置) 和 `Themes` 由 Scoop 保存在 `scoop\persist\altrun` (目录联接)。2026.09.26 及更早的版本把 `ALTRun.json` 放在程序目录: 清单在安装时把它从 persist 复制进来、卸载前复制回去 (ALTRun 保存设置时替换整个文件, 不能用硬链接)。persist 的 `Data\` 里已经有 `ALTRun.json` 后就不再复制; 新版本第一次启动时自己把程序目录里的 `ALTRun.json` 移到 `Data\`, 所以同一份清单对新旧版本都适用。升级、卸载后重新安装, 设置都会保留。`scoop update altrun` 之前请先退出 ALTRun
+- **winget**: 程序在 `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`。升级只替换 zip 里的文件, 设置保留; 卸载时留下 `Data` (包括设置)、`Themes`, 重新安装后接着使用
 
 两种方式都在 Windows 上测试过: 安装旧版本 → 修改设置 → 升级 → 设置、Data、Themes 都在。

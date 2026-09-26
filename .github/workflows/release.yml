@@ -103,14 +103,19 @@ jobs:
           $iniHash = (Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash
           $started = Get-Date
           $proc = Start-Process (Join-Path $dir "ALTRun.exe") -WorkingDirectory $dir -PassThru
-          $json = Join-Path $dir "ALTRun.json"
+          $json = Join-Path $dir "Data\ALTRun.json"
           for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
           Start-Sleep -Seconds 3
           $running = -not $proc.HasExited
           if (-not $running) {
             # 2026.09.24 发布时出现过一次 ALTRun.exe 自己退出, 之后 12 次都没有复现; 再出现时留下线索
             Write-Host "ALTRun.exe exited after $(((Get-Date) - $started).TotalSeconds.ToString('N1'))s, exit code $($proc.ExitCode)"
-            Get-Process -Name ALTRun -ErrorAction SilentlyContinue | ForEach-Object { Write-Host "Other ALTRun process: $($_.Id) started $($_.StartTime.ToString('HH:mm:ss.fff'))" }
+            # 另一个 ALTRun 进程是谁启动的: 命令行里有 /restart 是 ALTRun 自己重启, 否则看父进程
+            Get-CimInstance Win32_Process -Filter "Name = 'ALTRun.exe'" -ErrorAction SilentlyContinue | ForEach-Object {
+              $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $($_.ParentProcessId)" -ErrorAction SilentlyContinue
+              Write-Host "Other ALTRun process: $($_.ProcessId) started $($_.CreationDate.ToString('HH:mm:ss.fff')), command line: $($_.CommandLine)"
+              Write-Host "  parent: $($_.ParentProcessId) $($parent.Name) $($parent.CommandLine)"
+            }
             Get-ChildItem $dir -Recurse -Name | ForEach-Object { Write-Host "  file: $_" }
             Get-WinEvent -FilterHashtable @{LogName = 'Application'; StartTime = $started} -ErrorAction SilentlyContinue |
               Where-Object { $_.Message -match 'ALTRun|AutoHotkey' } | Select-Object -First 5 |
@@ -119,7 +124,7 @@ jobs:
             if (Test-Path $log) { Get-Content $log -Tail 30 | ForEach-Object { Write-Host "  log: $_" } }
           }
           Get-Process -Name ALTRun -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          if (-not (Test-Path $json)) { throw "ALTRun.json was not created" }
+          if (-not (Test-Path $json)) { throw "Data\ALTRun.json was not created" }
           $settings = Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json
           Write-Host "Running: $running; SchemaVersion: $($settings.SchemaVersion); commands: $($settings.CustomCommands.Count); language: $($settings.General.Language)"
           if (-not $running) { throw "ALTRun.exe exited on its own" }

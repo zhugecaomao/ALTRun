@@ -56,6 +56,7 @@ class I18n {
         s["Settings.ParseError"]       := ["ALTRun.json could not be read:`n`n{1}`n`nIt was renamed to {2} and the default settings are used.", "ALTRun.json 无法解析:`n`n{1}`n`n已改名为 {2}, 现在使用默认设置。"]
         s["Settings.SaveError"]        := ["Could not save ALTRun.json:`n`n{1}", "无法保存 ALTRun.json:`n`n{1}"]
         s["Settings.ImportedIni"]      := ["Settings, commands and hotkeys were imported from the previous version ({1}). That file is kept unchanged.", "已从旧版本导入设置、命令和热键 ({1})。原文件保留不变。"]
+        s["Settings.Moved"]            := ["Settings now live in the Data folder: {1}", "设置文件已移到 Data 文件夹: {1}"]
         s["Settings.Migrated"]         := ["Settings were upgraded from version {1}. A backup was saved as {2}.", "设置已从版本 {1} 升级, 原文件备份为 {2}。"]
         s["Settings.EditHint"]         := ["ALTRun reloads when you save ALTRun.json.", "保存 ALTRun.json 后 ALTRun 会自动重新载入。"]
 
@@ -305,10 +306,10 @@ class I18n {
         s["Prefs.Group.AutoExpand"]       := ["Auto-expansion", "自动展开"]
         s["Prefs.Group.History"]          := ["History", "历史记录"]
         s["Prefs.Group.Status"]           := ["Status", "状态"]
-        s["Prefs.Group.File"]             := ["File", "文件"]
-        s["Prefs.Group.Program"]          := ["Program", "程序"]
-        s["Prefs.Group.Version"]          := ["Version", "版本"]
-        s["Prefs.Group.Homepage"]         := ["Homepage", "主页"]
+        s["Prefs.Group.DataFolder"]       := ["Data folder", "数据文件夹"]
+        s["Prefs.Section.TipsHistory"]    := ["Tips and history", "提示和搜索历史"]
+        s["Prefs.Section.Data"]           := ["Settings and data", "设置和数据"]
+        s["Prefs.Section.Reset"]          := ["Reset", "重置"]
         ; General
         s["Prefs.Hotkey"]              := ["ALTRun hotkey", "呼出热键"]
         s["Prefs.Hotkey.Desc"]         := ["Shows or hides the search window. ! Alt  ^ Ctrl  + Shift  # Win, e.g. !Space = Alt+Space", "显示 / 隐藏搜索窗口。! Alt  ^ Ctrl  + Shift  # Win, 例如 !Space = Alt+空格"]

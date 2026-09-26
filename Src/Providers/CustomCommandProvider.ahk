@@ -257,7 +257,7 @@ class CustomCommandProvider {
                 App.Notify(I18n.T("Custom.Exists", existing["Title"]), 2500)
                 CustomCommandProvider.Edit(existing)
             } else if CustomCommandProvider.Edit("", CustomCommandProvider.FromPath(paths[1])) {
-                App.Notify(I18n.T("Custom.Added", AppSettings.CustomCommands[-1]["Title"]), 2500)
+                App.Toast(I18n.T("Custom.Added", AppSettings.CustomCommands[-1]["Title"]), 2500)
             }
             return
         }
@@ -274,7 +274,7 @@ class CustomCommandProvider {
             CustomCommandProvider._ResetNarrowing()
             AppSettings.Save()
         }
-        App.Notify(I18n.T("Custom.AddedMany", added) (skipped ? " " I18n.T("Custom.SkippedExisting", skipped) : ""), 3000)
+        App.Toast(I18n.T("Custom.AddedMany", added) (skipped ? " " I18n.T("Custom.SkippedExisting", skipped) : ""), 3000)
     }
 
     ; 文件 / 文件夹路径 -> 一条新命令 (名称 = 文件名去掉扩展名, 或文件夹名)

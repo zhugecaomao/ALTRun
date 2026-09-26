@@ -5,7 +5,7 @@
     "license": "GPL-3.0-only",
     "notes": [
         "Start ALTRun from the Start menu, then press Alt+Space.",
-        "Settings (ALTRun.json), Data and custom Themes are kept across updates. Exit ALTRun before 'scoop update altrun'."
+        "Settings, indexes, history and custom Themes are kept across updates. Exit ALTRun before 'scoop update altrun'."
     ],
     "architecture": {
         "64bit": {
@@ -14,8 +14,9 @@
         }
     },
     "pre_install": [
-        "# ALTRun.json is copied, not linked: ALTRun saves it by replacing the file, which would break a hard link",
-        "if (Test-Path \"$persist_dir\\ALTRun.json\") { Copy-Item \"$persist_dir\\ALTRun.json\" \"$dir\\ALTRun.json\" -Force }"
+        "# Up to 2026.09.26 ALTRun.json was kept next to the program. Copy it in until Data\\ALTRun.json exists: newer versions move it into the persisted Data folder on first start, older ones keep using it",
+        "# (copied, not linked: ALTRun saves it by replacing the file, which would break a hard link)",
+        "if ((Test-Path \"$persist_dir\\ALTRun.json\") -and !(Test-Path \"$persist_dir\\Data\\ALTRun.json\")) { Copy-Item \"$persist_dir\\ALTRun.json\" \"$dir\\ALTRun.json\" -Force }"
     ],
     "pre_uninstall": [
         "if (Test-Path \"$dir\\ALTRun.json\") {",

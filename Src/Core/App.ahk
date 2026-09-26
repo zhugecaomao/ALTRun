@@ -14,7 +14,8 @@
 ;   -Updated <版本>  一键更新后启动的新版本: 提示已更新, 不弹出搜索窗口
 ;
 ; 用法 (其它模块里):
-;   App.Notify("...")              屏幕上方短暂提示
+;   App.Notify("...")              操作后的简短提示 (HUD)
+;   App.Toast("...")               后台事件的 Windows 通知 (隐藏托盘图标时用 HUD)
 ;   App.FocusPreviousWindow()      回到呼出 ALTRun 之前的窗口 (粘贴用)
 ;   App.OpenPreferences() / App.EditSettingsFile() / App.Reload() / App.Restart(args)
 ;   App.Quit() / App.RebuildIndex()
@@ -57,9 +58,11 @@ class App {
         OnExit((*) => App._OnExit())
 
         if (AppSettings.ImportedFrom != "")
-            App.Notify(I18n.T("Settings.ImportedIni", AppSettings.ImportedFrom), 6000)
+            App.Toast(I18n.T("Settings.ImportedIni", AppSettings.ImportedFrom), 6000)
         else if AppSettings.MigratedFrom
-            App.Notify(I18n.T("Settings.Migrated", AppSettings.MigratedFrom, SchemaMigration.BackupFile(AppSettings.File, AppSettings.MigratedFrom)), 5000)
+            App.Toast(I18n.T("Settings.Migrated", AppSettings.MigratedFrom, SchemaMigration.BackupFile(AppSettings.File, AppSettings.MigratedFrom)), 5000)
+        else if (AppSettings.MovedFrom != "")
+            App.Toast(I18n.T("Settings.Moved", AppSettings.File), 5000)
         UpdateChecker.CleanUp()
         SetTimer(() => ProviderRegistry.WarmUp(), -500)                    ; 第一次输入前算好搜索 Key 和图标
         if AppSettings.General["CheckForUpdates"]
@@ -88,12 +91,19 @@ class App {
         return WinActive("ahk_id " target) ? true : false
     }
 
-    ; 屏幕上方居中显示一条提示, duration 毫秒后消失
+    ; 操作后的简短提示 (已复制、已清空...): 跟随主题的 HUD, duration 毫秒后消失, 见 Hud.ahk
     static Notify(text, duration := 1500) {
-        area := Win.WorkAreaAtMouse()
-        CoordMode("ToolTip", "Screen")
-        ToolTip(text, area.Left + (area.Right - area.Left) // 2 - 150, area.Top + Round((area.Bottom - area.Top) * 0.12), 20)
-        SetTimer(() => ToolTip(, , , 20), -duration)
+        Hud.Show(text, duration)
+    }
+
+    ; 后台发生的事 (更新完成、导入设置、索引重建完成...): Windows 通知, 之后还能在通知中心看到。
+    ; 通知挂在托盘图标上, 隐藏了托盘图标时改用 HUD
+    static Toast(text, duration := 5000) {
+        if A_IconHidden
+            return Hud.Show(text, duration)
+        try TrayTip(text, App.Name, 0x34)                                   ; 4 = 托盘图标, 0x10 = 不响, 0x20 = 大图标
+        catch
+            Hud.Show(text, duration)
     }
 
     ;---------------------------------------------------------------------------
@@ -103,7 +113,7 @@ class App {
         PreferencesWindow.Show(pageIndex)
     }
 
-    ; 直接用记事本编辑 ALTRun.json, 保存后自动重新载入
+    ; 直接用记事本编辑 Data\ALTRun.json, 保存后自动重新载入
     static EditSettingsFile() {
         App.Notify(I18n.T("Settings.EditHint"), 4000)
         App._settingsTime := FileGetTime(AppSettings.File, "M")
@@ -148,7 +158,7 @@ class App {
 
     static RebuildIndex() {
         count := ApplicationProvider.Rebuild()
-        App.Notify(I18n.T("Index.Done", count))
+        App.Toast(I18n.T("Index.Done", count))
     }
 
     static Reload() {
@@ -296,7 +306,7 @@ class App {
         if (A_Args.Length >= 1 && (A_Args[1] = "-Startup" || A_Args[1] = "-Reloaded"))
             return
         if (A_Args.Length >= 1 && A_Args[1] = "-Updated") {
-            App.Notify(I18n.T("Update.Done", App.Version), 5000)
+            App.Toast(I18n.T("Update.Done", App.Version), 5000)
             return
         }
         if (A_Args.Length >= 1 && A_Args[1] = "-Update") {
@@ -311,7 +321,8 @@ class App {
         if AppSettings.MigratedFrom
             return                                                          ; 升级提示显示中, 不马上弹出窗口
         SearchWindow.Show()
-        App.Notify(I18n.T("App.Running", App._HotkeyText()), 3000)
+        if (AppSettings.MovedFrom = "")                                     ; 不盖掉 "设置文件已移到 Data" 的提示
+            App.Notify(I18n.T("App.Running", App._HotkeyText()), 3000)
     }
 
     ; OnExit 回调返回非零值会取消退出, 所以这里不返回任何值

@@ -593,7 +593,6 @@ Class PTToolsWindow {
             text .= PTToolsWindow.FmtLevel(row[1]) "`t" PTToolsWindow.FmtLevel(row[2]) "`t" PTToolsWindow.FmtLevel(row[3]) "`t" PTToolsWindow.FmtLevel(row[4]) "`t" PTToolsWindow.FmtLevel(row[5]) "`r`n"
         text .= StrReplace(PTToolsWindow.ProfileSummary(result), "`n", "`r`n") "`r`n"
         A_Clipboard := text
-        ToolTip("Table copied - paste it into Excel")
-        SetTimer(() => ToolTip(), -1500)
+        App.Notify("Table copied - paste it into Excel")
     }
 }
