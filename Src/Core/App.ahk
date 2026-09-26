@@ -37,6 +37,7 @@ class App {
         Logger.Debug("===== " App.Name " " App.Version " starting =====")
         I18n.Init(AppSettings.General["Language"])
         Knowledge.Load()
+        Usage.Load()
         ThemeManager.Load(AppSettings.Appearance["Theme"])
 
         for provider in [ClipboardProvider, ApplicationProvider, CustomCommandProvider, SnippetProvider, SystemProvider
@@ -315,6 +316,7 @@ class App {
     ; OnExit 回调返回非零值会取消退出, 所以这里不返回任何值
     static _OnExit() {
         Knowledge.Save()
+        Usage.Save()
         ClipboardProvider.Save()
         Logger.Flush()
     }

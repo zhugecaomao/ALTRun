@@ -26,6 +26,7 @@
 #Include %A_ScriptDir%\..\Src\Core\ResultItem.ahk
 #Include %A_ScriptDir%\..\Src\Core\FuzzyMatcher.ahk
 #Include %A_ScriptDir%\..\Src\Core\Knowledge.ahk
+#Include %A_ScriptDir%\..\Src\Core\Usage.ahk
 #Include %A_ScriptDir%\..\Src\Core\ActionCatalog.ahk
 #Include %A_ScriptDir%\..\Src\Core\ProviderRegistry.ahk
 #Include %A_ScriptDir%\..\Src\Core\FileIndex.ahk
@@ -65,7 +66,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "ReleaseVersion", "SelfUpdate", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "ReleaseVersion", "SelfUpdate", "UsageStats", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1166,6 +1167,53 @@ Func | PTTools | PT Tools (AHK)=99
         eq("copy failure: new files removed", read(dest "\Resources\New.txt") "|" read(dest "\Resources\Fonts\a.ttf") "|" (InStr(FileExist(dest "\Resources\Fonts"), "D") ? "dir" : "no dir"), "<missing>|<missing>|no dir")
         eq("copy failure: no .old, no backup left", read(dest "\ALTRun.exe.old") "|" (FileExist(src ".backup") ? "backup" : "none"), "<missing>|none")
         try DirDelete(root, true)
+    }
+
+    ; 使用统计: 按天、按功能计数, 合计 / 每天 / 保存和载入 (用临时文件, 不碰真正的 Data\Usage.json)
+    static UsageStats() {
+        eq := (n, a, e) => TestRunner.Equal("Usage." n, a, e)
+        saved := {File: Usage.File, Days: Usage.Days, Since: Usage.Since}
+        Usage.File := A_Temp "\ALTRun-usage-test.json"
+        try FileDelete(Usage.File)
+        Usage.Days := Map(), Usage.Since := ""
+        try {
+            Usage.Count("Show", "2026-09-20")
+            Usage.Count("Applications", "2026-09-20")
+            Usage.Count("Applications", "2026-09-26")
+            Usage.Count("Applications", "2026-09-26")
+            Usage.Count("Show", "2026-09-26")
+            Usage.Count("Calculator", "2026-09-25")
+            Usage.Count("Calculator", "2026-08-01")
+            eq("since", Usage.Since, "2026-09-20")
+            today := Usage.Summary(1, "2026-09-26")
+            eq("today", today["Applications"] "|" today["Show"] "|" Usage.Total(today), "2|1|2")
+            eq("7 days (from 09-20)", Usage.Total(Usage.Summary(7, "2026-09-26")), 4)
+            eq("6 days (not 09-20)", Usage.Total(Usage.Summary(6, "2026-09-26")), 3)
+            eq("all", Usage.Total(Usage.Summary(0)), 5)
+            daily := Usage.Daily(3, "2026-09-26")
+            eq("daily", daily.Length "|" daily[1][1] "|" daily[1][2] "|" daily[2][2] "|" daily[3][1] "|" daily[3][2], "3|2026-09-24|0|1|2026-09-26|2")
+            eq("daily across month end", Usage.Daily(2, "2026-10-01")[1][1], "2026-09-30")
+
+            Usage.Days := Map()
+            Usage.CountItem({Provider: "CustomCommands", Kind: "file"})
+            Usage.CountItem({Provider: "", Kind: "url"})                    ; 兜底的网页搜索
+            Usage.CountItem({Provider: "", Kind: ""})                       ; 兜底的文件搜索
+            Usage.CountItem({Provider: "Help", Kind: "url"})                ; 速查表不算
+            all := Usage.Summary(0)
+            eq("count item", all["CustomCommands"] "|" all["WebSearch"] "|" all["FileSearch"] "|" all.Has("Help"), "1|1|1|0")
+
+            Usage.Days := Map("2020-01-01", Map("Calculator", 9))           ; 太旧的保存时删掉
+            Usage.Count("Snippets")
+            Usage.Save()
+            Usage.Days := Map(), Usage.Since := ""
+            Usage.Load()
+            eq("save / load", Usage.Total(Usage.Summary(0)) "|" Usage.Days.Has("2020-01-01"), "1|0")
+            Usage.Clear()
+            eq("clear", Usage.Days.Count "|" Usage.Since, "0|")
+        } finally {
+            try FileDelete(Usage.File)
+            Usage.File := saved.File, Usage.Days := saved.Days, Usage.Since := saved.Since
+        }
     }
 
     static Misc() {

@@ -157,6 +157,7 @@ class QuickSwitch {
     static SetDialogPath(folder) {
         if (folder = "" || !FileExist(folder))
             return
+        Usage.Count("QuickSwitch")
         if (WinGetClass("A") = "Qt5QWindowIcon") {                          ; WPS 的对话框没有可用的 Edit 控件, 只能模拟输入
             SendText(folder)
             SendInput("{Enter}")

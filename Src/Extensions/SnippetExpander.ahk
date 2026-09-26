@@ -71,6 +71,6 @@ class SnippetExpander {
 
     ; 单独一个方法生成闭包; 正文在触发时再查, 这样修改片段后不必重新生成
     static _Expander(abbreviation) {
-        return (*) => SnippetProvider.Paste(SnippetExpander._texts[abbreviation], false)
+        return (*) => (Usage.Count("SnippetExpand"), SnippetProvider.Paste(SnippetExpander._texts[abbreviation], false))
     }
 }

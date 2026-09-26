@@ -17,7 +17,7 @@ Lib\                通用库, 与 ALTRun 无关, 可以直接拿到别的项目
                     (JSON, Logger, Util: Path/Win/Url..., TextTools, Kanji, Dialogs, Everything IPC)
 Src\Core\           App (启动流程), AppSettings + SchemaMigration (设置和版本升级),
                     SearchQuery / ResultItem (搜索模型), FuzzyMatcher (匹配打分),
-                    Knowledge (学习排序), ActionCatalog (操作), ProviderRegistry, FileIndex
+                    Knowledge (学习排序), Usage (使用统计), ActionCatalog (操作), ProviderRegistry, FileIndex
 Src\UI\             SearchWindow, PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, TendonProfile + PTToolsWindow, UpdateChecker)

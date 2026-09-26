@@ -49,6 +49,7 @@ class AutoDate {
             SendInput(AutoDate.Options["RenameHotkey"])
             return
         }
+        Usage.Count("AutoDate")
         newName := AutoDate.AddDateToName(ControlGetText(focused, "A"))
         ControlFocus(focused, "A")
         ControlSetText(newName, focused, "A")
@@ -56,6 +57,7 @@ class AutoDate {
     }
 
     static _OnAppend() {
+        Usage.Count("AutoDate")
         SendInput("{End}")
         Sleep(10)
         SendInput("{Blind}{Text} - " AutoDate.Today())
