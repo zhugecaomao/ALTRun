@@ -127,10 +127,16 @@ class Usage {
             Usage.Days.Delete(date)
     }
 
-    ; 连续计数时只写一次盘
+    ; 连续计数时只写一次盘; 搜索窗口开着 (正在输入) 时先不写, 免得打字时卡一下
     static _SaveLater() {
         if (Usage._saveTimer = "")
-            Usage._saveTimer := () => Usage.Save()
+            Usage._saveTimer := () => Usage._SaveWhenIdle()
         SetTimer(Usage._saveTimer, -5000)
+    }
+
+    static _SaveWhenIdle() {
+        if SearchWindow.IsVisible()
+            return SetTimer(Usage._saveTimer, -3000)
+        Usage.Save()
     }
 }

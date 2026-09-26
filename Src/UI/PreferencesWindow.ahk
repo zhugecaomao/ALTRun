@@ -10,13 +10,15 @@
 ; 设置要在重新载入后才生效 (热键、主题、索引...), 所以 "应用" 时窗口会闪一下。
 ;
 ; 页面构建用几个小工具, 每个设置项只写一行:
-;   _Check("General.LaunchAtLogin", "Prefs.LaunchAtLogin")      复选框
-;   _Field("General.Hotkey", "Prefs.Hotkey", 160)               文本框
+;   _Check("General.LaunchAtLogin", "Prefs.LaunchAtLogin", , , "Prefs.Group.Startup")  复选框 (最后是左列的分组标签)
+;   _Field("General.Hotkey", "Prefs.Hotkey", "M")               文本框, 宽度 "S" / "M" / "L"
 ;   _Choice("General.Language", "Prefs.Language", 值数组, 显示文字数组)
 ;   _Lines("Features.Applications.Folders", "Prefs.AppFolders", 行数)   数组 <-> 每行一项
-;   _Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords")        数组 <-> 逗号分隔
+;   _Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", "M")   数组 <-> 逗号分隔
+;   _Button("Prefs.ClipClear", fn) / _Section("Prefs.QuickSwitch") / _Info(标签, 文字)
 ;   _List(...)                                                  列表 + 添加/编辑/删除 (ItemEditor)
 ; 路径是 ALTRun.json 里的键, 用 "." 连接。
+; 布局是两列表单: 左列是右对齐的标签 (LabelW), 所有控件从 _InputX() 开始, 这样每一页都整齐。
 ; 和 Alfred 一样, 每个设置下面有一行灰色的说明: I18n 里有 "<标签的键>.Desc" (例如
 ; Prefs.LaunchAtLogin.Desc) 时自动显示, 不用在页面里另写。
 ;
@@ -28,7 +30,10 @@ class PreferencesWindow {
     static Gui := "", Working := "", Pages := [], Binds := [], PageList := ""
     static _page := 0, _y := 0
     static _dirty := false, _ready := false, ApplyButton := ""
-    static ContentX := 190, ContentW := 560, LabelW := 215
+    ; 两列表单 (和 Alfred / Listary 一样): 左列是右对齐的标签, 所有控件从同一条竖线 (_InputX) 开始;
+    ; 输入框只用三种宽度, 复选框按组在左列加标签, 按钮统一尺寸, 灰色说明和控件左对齐
+    static ContentX := 190, ContentW := 560, LabelW := 190
+    static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
     static ButtonY := 579                                                   ; 底部按钮的位置; 页面内容要在它上面 (y < ButtonY - 10)
     static _positionReset := false
 
@@ -185,26 +190,27 @@ class PreferencesWindow {
 
     static _BuildGeneral() {
         PreferencesWindow._BeginPage("Prefs.Page.General")
-        PreferencesWindow._Field("General.Hotkey", "Prefs.Hotkey", 160)
-        PreferencesWindow._Field("General.SecondaryHotkey", "Prefs.SecondaryHotkey", 160)
+        PreferencesWindow._Field("General.Hotkey", "Prefs.Hotkey", "M")
+        PreferencesWindow._Field("General.SecondaryHotkey", "Prefs.SecondaryHotkey", "M")
         PreferencesWindow._Choice("General.Language", "Prefs.Language", ["auto", "en", "zh"], [I18n.T("Prefs.Language.auto"), "English", "中文"])
         PreferencesWindow._Gap()
-        for pair in [["LaunchAtLogin", "Prefs.LaunchAtLogin"], ["ShowTrayIcon", "Prefs.ShowTrayIcon"]
-                    , ["SendToMenu", "Prefs.SendToMenu"], ["StartMenuShortcut", "Prefs.StartMenu"]
-                    , ["CheckForUpdates", "Prefs.CheckUpdates"], ["SaveLog", "Prefs.SaveLog"]]
-            PreferencesWindow._Check("General." pair[1], pair[2])
+        for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
+                   , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
+                   , ["CheckForUpdates", "Prefs.CheckUpdates", "Prefs.Group.Updates"], ["SaveLog", "Prefs.SaveLog", "Prefs.Group.Diagnostics"]]
+            PreferencesWindow._Check("General." row[1], row[2], , , row[3])
         PreferencesWindow._Gap()
-        PreferencesWindow._Field("General.FileManager", "Prefs.FileManager", 300, "file")
+        PreferencesWindow._Field("General.FileManager", "Prefs.FileManager", "L", "file")
     }
 
     ; 搜索窗口的行为 (设置仍然在 General 里, 只是分到单独一页)
     static _BuildWindow() {
         PreferencesWindow._BeginPage("Prefs.Page.Window")
-        for pair in [["HideOnDeactivate", "Prefs.HideOnDeactivate"], ["SwitchToEnglishInput", "Prefs.EnglishInput"]
-                    , ["SpaceToRun", "Prefs.SpaceToRun"], ["KeepLastQuery", "Prefs.KeepLastQuery"], ["ShowTips", "Prefs.ShowTips"]]
-            PreferencesWindow._Check("General." pair[1], pair[2])
+        for row in [["HideOnDeactivate", "Prefs.HideOnDeactivate", "Prefs.Group.Window"], ["KeepLastQuery", "Prefs.KeepLastQuery", ""]
+                   , ["SwitchToEnglishInput", "Prefs.EnglishInput", "Prefs.Group.Typing"], ["SpaceToRun", "Prefs.SpaceToRun", ""]
+                   , ["ShowTips", "Prefs.ShowTips", "Prefs.Group.Tips"]]
+            PreferencesWindow._Check("General." row[1], row[2], , , row[3])
         PreferencesWindow._Gap()
-        PreferencesWindow._Field("General.HistorySize", "Prefs.HistorySize", 60, "number")
+        PreferencesWindow._Field("General.HistorySize", "Prefs.HistorySize", "S", "number")
     }
 
     static _BuildAppearance() {
@@ -213,16 +219,14 @@ class PreferencesWindow {
         for themeName in themes
             labels.Push(PreferencesWindow._ThemeLabel(themeName))
         themeChoice := PreferencesWindow._Choice("Appearance.Theme", "Prefs.Theme", themes, labels)
-        PreferencesWindow._Field("Appearance.Width", "Prefs.Width", 80, "number")
-        PreferencesWindow._Field("Appearance.VisibleRows", "Prefs.VisibleRows", 80, "number")
-        PreferencesWindow._Gap()
-        PreferencesWindow._Button("Prefs.CopyTheme", (*) => PreferencesWindow._CopyTheme(themeChoice, themes))
+        PreferencesWindow._Field("Appearance.Width", "Prefs.Width", "S", "number")
+        PreferencesWindow._Field("Appearance.VisibleRows", "Prefs.VisibleRows", "S", "number")
+        PreferencesWindow._Button("Prefs.CopyTheme", (*) => PreferencesWindow._CopyTheme(themeChoice, themes), "Prefs.Group.CustomThemes")
         PreferencesWindow._Button("Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir))
-        PreferencesWindow._Gap()
         PreferencesWindow._Section("Prefs.WindowPosition")
         PreferencesWindow._Choice("Appearance.ShowOn", "Prefs.ShowOn", ["Mouse", "Primary", "Active"]
             , [I18n.T("Prefs.ShowOn.Mouse"), I18n.T("Prefs.ShowOn.Primary"), I18n.T("Prefs.ShowOn.Active")])
-        PreferencesWindow._Check("Appearance.RememberPosition", "Prefs.RememberPosition")
+        PreferencesWindow._Check("Appearance.RememberPosition", "Prefs.RememberPosition", , , "Prefs.Group.Dragging")
         PreferencesWindow._Button("Prefs.ResetPosition", (button, *) => PreferencesWindow._ResetPosition(button))
     }
 
@@ -279,53 +283,52 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.Features")
         PreferencesWindow._Section("Prefs.EnabledFeatures")
         features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "FileSearch", "Terminal", "System"]
-        startY := PreferencesWindow._y
+        startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; 两列: 英文名称较长, 三列会换行
         for index, feature in features {
-            column := Mod(index - 1, 3), row := (index - 1) // 3
-            PreferencesWindow._y := startY + row * 26
-            PreferencesWindow._Check("Features." feature ".Enabled", "Prefs.Feature." feature, PreferencesWindow.ContentX + column * 185)
+            column := Mod(index - 1, 2), row := (index - 1) // 2
+            PreferencesWindow._y := startY + row * 24
+            PreferencesWindow._Check("Features." feature ".Enabled", "Prefs.Feature." feature
+                , PreferencesWindow._InputX() + column * columnW, , (index = 1) ? "Prefs.Group.SearchFeatures" : "", columnW)
         }
-        PreferencesWindow._y := startY + 3 * 26 + 14
-        PreferencesWindow._Check("Features.Calculator.StructuralCalc", "Prefs.StructuralCalc")
-        PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions")
+        PreferencesWindow._y := startY + Ceil(features.Length / 2) * 24 + 12
+        PreferencesWindow._Check("Features.Calculator.StructuralCalc", "Prefs.StructuralCalc", , , "Prefs.Feature.Calculator")
+        PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
         PreferencesWindow._Gap()
-        PreferencesWindow._Field("Features.Terminal.Prefix", "Prefs.TerminalPrefix", 60)
+        PreferencesWindow._Field("Features.Terminal.Prefix", "Prefs.TerminalPrefix", "S")
         PreferencesWindow._Choice("Features.Terminal.Shell", "Prefs.TerminalShell", ["cmd", "powershell", "pwsh", "wt"], ["Command Prompt (cmd)", "Windows PowerShell", "PowerShell 7 (pwsh)", "Windows Terminal (wt)"])
     }
 
     static _BuildApplications() {
         PreferencesWindow._BeginPage("Prefs.Page.Applications")
         PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 3)
-        PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", 300)
-        PreferencesWindow._Field("Features.Applications.Depth", "Prefs.AppDepth", 60, "number")
-        PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", 300)
+        PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", "L")
+        PreferencesWindow._Field("Features.Applications.Depth", "Prefs.AppDepth", "S", "number")
+        PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", "L")
         PreferencesWindow._Lines("Features.Applications.Hidden", "Prefs.AppHidden", 3)
         refreshY := PreferencesWindow._y                                    ; 按钮和 "索引刷新间隔" 放在同一行, 页面才放得下
-        PreferencesWindow._Field("Features.Applications.RefreshMinutes", "Prefs.RefreshMinutes", 60, "number")
-        rebuild := PreferencesWindow._Add("Button", "x" (PreferencesWindow._InputX() + 84) " y" (refreshY - 2) " w220 h28", I18n.T("Prefs.RebuildIndex"))
-        rebuild.OnEvent("Click", (*) => App.RebuildIndex())
-        PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps")
+        PreferencesWindow._Field("Features.Applications.RefreshMinutes", "Prefs.RefreshMinutes", "S", "number")
+        PreferencesWindow._SideButton(refreshY, "Prefs.RebuildIndex", (*) => App.RebuildIndex())
+        PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps", , , "Prefs.Group.Options")
         PreferencesWindow._Check("Features.Applications.MatchPinyin", "Prefs.MatchPinyin")
     }
 
     static _BuildFileSearch() {
         PreferencesWindow._BeginPage("Prefs.Page.FileSearch")
-        PreferencesWindow._Check("Features.FileSearch.SpacePrefix", "Prefs.SpacePrefix")
+        PreferencesWindow._Check("Features.FileSearch.SpacePrefix", "Prefs.SpacePrefix", , , "Prefs.Group.StartFileSearch")
         PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
-        PreferencesWindow._Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", 200)
-        PreferencesWindow._Csv("Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", 200)
-        PreferencesWindow._Field("Features.FileSearch.MaxResults", "Prefs.FileMaxResults", 60, "number")
-        PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault")
-        PreferencesWindow._Field("Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", 60, "number")
+        PreferencesWindow._Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", "M")
+        PreferencesWindow._Csv("Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", "M")
+        PreferencesWindow._Field("Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number")
+        PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
+        PreferencesWindow._Field("Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number")
         status := I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning")
-        PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", 0, I18n.T("Prefs.EverythingStatus", status))
-        PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", 300)
-        PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", 300, "folder")
+        PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", , I18n.T("Prefs.EverythingStatus", status), "Prefs.Group.Everything")
+        PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", "L")
+        PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", "L", "folder")
         PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 2)
         depthY := PreferencesWindow._y                                      ; 按钮和 "子文件夹深度" 放在同一行, 页面才放得下
-        PreferencesWindow._Field("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", 60, "number")
-        rebuild := PreferencesWindow._Add("Button", "x" (PreferencesWindow._InputX() + 84) " y" (depthY - 2) " w220 h28", I18n.T("Prefs.RebuildFileIndex"))
-        rebuild.OnEvent("Click", (*) => FileIndex.Rebuild())
+        PreferencesWindow._Field("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", "S", "number")
+        PreferencesWindow._SideButton(depthY, "Prefs.RebuildFileIndex", (*) => FileIndex.Rebuild())
     }
 
     static _BuildCommands() {
@@ -339,24 +342,23 @@ class PreferencesWindow {
 
     static _BuildSnippets() {
         PreferencesWindow._BeginPage("Prefs.Page.Snippets")
-        PreferencesWindow._List("Snippets", 360
+        PreferencesWindow._List("Snippets", 330
             , [["Prefs.Col.Name", "Name", 150], ["Prefs.Col.Keyword", "Keyword", 90], ["Prefs.Col.Text", "Text", 300]]
             , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet())
-        PreferencesWindow._Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand")
-        PreferencesWindow._Field("Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", 60)
-        PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", 100)
+        PreferencesWindow._Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand", , , "Prefs.Group.AutoExpand")
+        PreferencesWindow._Field("Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", "S")
+        PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")
         PreferencesWindow._Choice("Features.Snippets.PasteMode", "Prefs.PasteMode", ["Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")])
     }
 
     static _BuildClipboard() {
         PreferencesWindow._BeginPage("Prefs.Page.Clipboard")
-        PreferencesWindow._Field("Features.Clipboard.Hotkey", "Prefs.ClipHotkey", 160)
-        PreferencesWindow._Field("Features.Clipboard.Keyword", "Prefs.ClipKeyword", 100)
-        PreferencesWindow._Field("Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", 80, "number")
-        PreferencesWindow._Check("Features.Clipboard.Persist", "Prefs.ClipPersist")
+        PreferencesWindow._Field("Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "M")
+        PreferencesWindow._Field("Features.Clipboard.Keyword", "Prefs.ClipKeyword", "M")
+        PreferencesWindow._Field("Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number")
+        PreferencesWindow._Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
         PreferencesWindow._Gap()
         PreferencesWindow._Lines("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps", 5)
-        PreferencesWindow._Gap()
         PreferencesWindow._Button("Prefs.ClipClear", (*) => ClipboardProvider.Clear())
     }
 
@@ -365,7 +367,7 @@ class PreferencesWindow {
         PreferencesWindow._List("Features.WebSearch.Engines", 420
             , [["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Title", "Title", 130], ["Prefs.Col.Url", "Url", 340]]
             , WebSearchProvider.EditorFields(), () => WebSearchProvider.NewEngine())
-        PreferencesWindow._Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", 300)
+        PreferencesWindow._Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", "L")
     }
 
     static _BuildHotkeys() {
@@ -385,30 +387,28 @@ class PreferencesWindow {
     static _BuildExtensions() {
         PreferencesWindow._BeginPage("Prefs.Page.Extensions")
         PreferencesWindow._Section("Prefs.QuickSwitch")
-        PreferencesWindow._Check("Extensions.QuickSwitch.Enabled", "Prefs.EnableExtension")
-        PreferencesWindow._Field("Extensions.QuickSwitch.TotalCmdHotkey", "Prefs.QSTotalCmd", 100)
-        PreferencesWindow._Field("Extensions.QuickSwitch.ExplorerHotkey", "Prefs.QSExplorer", 100)
-        PreferencesWindow._Check("Extensions.QuickSwitch.AutoSwitch", "Prefs.QSAuto")
-        PreferencesWindow._Gap()
+        PreferencesWindow._Check("Extensions.QuickSwitch.Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
+        PreferencesWindow._Field("Extensions.QuickSwitch.TotalCmdHotkey", "Prefs.QSTotalCmd", "M")
+        PreferencesWindow._Field("Extensions.QuickSwitch.ExplorerHotkey", "Prefs.QSExplorer", "M")
+        PreferencesWindow._Check("Extensions.QuickSwitch.AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
         PreferencesWindow._Section("Prefs.AutoDate")
-        PreferencesWindow._Check("Extensions.AutoDate.Enabled", "Prefs.EnableExtension")
-        PreferencesWindow._Field("Extensions.AutoDate.DateFormat", "Prefs.DateFormat", 120)
-        PreferencesWindow._Field("Extensions.AutoDate.RenameHotkey", "Prefs.RenameHotkey", 100)
-        PreferencesWindow._Field("Extensions.AutoDate.AppendHotkey", "Prefs.AppendHotkey", 100)
+        PreferencesWindow._Check("Extensions.AutoDate.Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
+        PreferencesWindow._Field("Extensions.AutoDate.DateFormat", "Prefs.DateFormat", "M")
+        PreferencesWindow._Field("Extensions.AutoDate.RenameHotkey", "Prefs.RenameHotkey", "M")
+        PreferencesWindow._Field("Extensions.AutoDate.AppendHotkey", "Prefs.AppendHotkey", "M")
     }
 
     static _BuildAdvanced() {
         PreferencesWindow._BeginPage("Prefs.Page.Advanced")
         PreferencesWindow._Section("Prefs.SettingsFile")
-        PreferencesWindow._Below(8, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW " cGray", AppSettings.File))
+        PreferencesWindow._Info("Prefs.Group.File", AppSettings.File, " cGray")
         PreferencesWindow._Button("Prefs.EditJson", (*) => (PreferencesWindow.Cancel() || App.EditSettingsFile()))
         PreferencesWindow._Button("Prefs.OpenDataFolder", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir))
         PreferencesWindow._Button("Prefs.ResetLearning", (*) => PreferencesWindow._ResetLearning())
-        PreferencesWindow._Gap()
         PreferencesWindow._Section("Sys.About")
-        PreferencesWindow._Below(6, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, App.Name " - " I18n.T("App.Tagline")))
-        PreferencesWindow._Below(6, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, I18n.T("Prefs.Version", App.Version)))
-        PreferencesWindow._Below(10, PreferencesWindow._Add("Link", "w" PreferencesWindow.ContentW, '<a href="' App.RepoUrl '">' App.RepoUrl '</a>'))
+        PreferencesWindow._Info("Prefs.Group.Program", App.Name " - " I18n.T("App.Tagline"))
+        PreferencesWindow._Info("Prefs.Group.Version", App.Version)
+        PreferencesWindow._Info("Prefs.Group.Homepage", '<a href="' App.RepoUrl '">' App.RepoUrl '</a>', "", "Link")
         PreferencesWindow._Button("Tray.CheckUpdate", (*) => UpdateChecker.Check(false))
     }
 
@@ -540,11 +540,16 @@ class PreferencesWindow {
         PreferencesWindow._y := bottom + gap
     }
 
+    ; 分节标题: 粗体 + 下面一条细线; 不是页面第一行时和上面隔开一点
     static _Section(labelKey) {
+        if (PreferencesWindow._y > 20)
+            PreferencesWindow._y += 8
         PreferencesWindow.Gui.SetFont("bold")
         ctrl := PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, I18n.T(labelKey))
         PreferencesWindow.Gui.SetFont("norm")
-        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 2 : 8, ctrl)
+        PreferencesWindow._Below(3, ctrl)
+        line := PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW " h1 0x10")   ; SS_ETCHEDHORZ
+        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 4 : 10, line)
         PreferencesWindow._Desc(labelKey, PreferencesWindow.ContentX)
     }
 
@@ -577,7 +582,7 @@ class PreferencesWindow {
     ; 标签和输入框放在同一行: 标签往下挪 3 像素和输入框的文字对齐
     static _Label(labelKey) {
         PreferencesWindow._y += 3
-        ctrl := PreferencesWindow._Add("Text", "w" (PreferencesWindow.LabelW - 8) " Right", I18n.T(labelKey))
+        ctrl := PreferencesWindow._Add("Text", "w" (PreferencesWindow.LabelW - 12) " Right", I18n.T(labelKey))
         PreferencesWindow._y -= 3
         return ctrl
     }
@@ -586,10 +591,27 @@ class PreferencesWindow {
         return PreferencesWindow.ContentX + PreferencesWindow.LabelW
     }
 
-    ; desc: 代替 "<labelKey>.Desc" 显示的说明 (例如随状态变化的文字)
-    static _Check(path, labelKey, x := 0, desc := "") {
-        x := x ? x : PreferencesWindow.ContentX
-        ctrl := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentW - (x - PreferencesWindow.ContentX)), I18n.T(labelKey))
+    ; 控件列的宽度 (长输入框 "L" 的宽度)
+    static _InputW() {
+        return PreferencesWindow.ContentW - PreferencesWindow.LabelW
+    }
+
+    ; 输入框宽度: "S" 数字 / "M" 热键、关键字 / "L" 路径、过滤条件 (整个控件列; 带浏览按钮时让出按钮的位置)
+    static _Width(size, withBrowse := false) {
+        switch size {
+            case "S": return PreferencesWindow.WidthS
+            case "M": return PreferencesWindow.WidthM
+        }
+        return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
+    }
+
+    ; 复选框放在控件列; group: 左列的分组标签 (一组里的第一个复选框才写)。
+    ; desc: 代替 "<labelKey>.Desc" 显示的说明 (例如随状态变化的文字); width: 默认到页面右边
+    static _Check(path, labelKey, x := 0, desc := "", group := "", width := 0) {
+        x := x ? x : PreferencesWindow._InputX()
+        if (group != "")
+            PreferencesWindow._GroupLabel(group)
+        ctrl := PreferencesWindow._Add("Checkbox", "x" x " w" (width ? width : PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T(labelKey))
         ctrl.Value := PreferencesWindow.GetPath(PreferencesWindow.Working, path) ? 1 : 0
         PreferencesWindow._Bind(path, () => ctrl.Value)
         hasDesc := (desc != "" || PreferencesWindow._HasDesc(labelKey))
@@ -597,12 +619,28 @@ class PreferencesWindow {
         PreferencesWindow._Desc(labelKey, x + 18, desc)                     ; 和复选框的文字对齐
     }
 
-    ; kind: text / number / file / folder
-    static _Field(path, labelKey, width, kind := "text") {
+    ; 左列的分组标签, 和右边第一个控件同一行
+    static _GroupLabel(labelKey, dy := 1) {
+        PreferencesWindow._y += dy
+        ctrl := PreferencesWindow._Add("Text", "x" PreferencesWindow.ContentX " w" (PreferencesWindow.LabelW - 12) " Right", I18n.T(labelKey))
+        PreferencesWindow._y -= dy
+        return ctrl
+    }
+
+    ; 左列标签 + 右边一段文字 (或链接), 例如 "版本: 2026.09.26"
+    static _Info(labelKey, text, options := "", type := "Text") {
+        label := PreferencesWindow._GroupLabel(labelKey)
+        ctrl := PreferencesWindow._Add(type, "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() options, text)
+        PreferencesWindow._Below(6, label, ctrl)
+    }
+
+    ; kind: text / number / file / folder; size: "S" / "M" / "L" (见 _Width)
+    static _Field(path, labelKey, size, kind := "text") {
         label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
-        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" width " r1 -Multi" (kind = "number" ? " Number" : ""), value)
-        if (kind = "file" || kind = "folder") {
+        browseKind := (kind = "file" || kind = "folder")
+        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._Width(size, browseKind) " r1 -Multi" (kind = "number" ? " Number" : ""), value)
+        if browseKind {
             browse := PreferencesWindow._Add("Button", "x+4 yp-1 w30", I18n.T("Prefs.Browse"))
             browseFn := ItemEditor._Browser(ctrl, kind, PreferencesWindow.Gui)
             browse.OnEvent("Click", (p*) => (browseFn(p*), PreferencesWindow.MarkDirty()))
@@ -623,7 +661,7 @@ class PreferencesWindow {
 
     static _Choice(path, labelKey, values, labels) {
         label := PreferencesWindow._Label(labelKey)
-        ctrl := PreferencesWindow._Add("DropDownList", "x" PreferencesWindow._InputX() " w240", labels)
+        ctrl := PreferencesWindow._Add("DropDownList", "x" PreferencesWindow._InputX() " w" PreferencesWindow.WidthM, labels)
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         ctrl.Value := 1
         for index, value in values
@@ -637,25 +675,37 @@ class PreferencesWindow {
     static _Lines(path, labelKey, rows) {
         label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.JoinLines(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
-        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" (PreferencesWindow.ContentW - PreferencesWindow.LabelW) " r" rows " +Multi -Wrap +HScroll", value)
+        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() " r" rows " +Multi -Wrap +HScroll", value)
         PreferencesWindow._Bind(path, () => PreferencesWindow.SplitLines(ctrl.Value))
         PreferencesWindow._Below(3, label, ctrl)
         PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
     }
 
-    static _Csv(path, labelKey, width) {
+    static _Csv(path, labelKey, size) {
         label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.JoinCsv(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
-        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" width " r1 -Multi", value)
+        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._Width(size) " r1 -Multi", value)
         PreferencesWindow._Bind(path, () => PreferencesWindow.SplitCsv(ctrl.Value))
         PreferencesWindow._BelowInput(labelKey, label, ctrl)
     }
 
-    static _Button(labelKey, fn) {
-        ctrl := PreferencesWindow._Add("Button", "w220 h28", I18n.T(labelKey))
+    ; 按钮放在控件列, 统一尺寸; group: 左列的分组标签
+    static _Button(labelKey, fn, group := "") {
+        if (group != "")
+            PreferencesWindow._GroupLabel(group, 5)                         ; 和按钮上的文字对齐
+        ctrl := PreferencesWindow._Add("Button", "x" PreferencesWindow._InputX() " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T(labelKey))
         ctrl.OnEvent("Click", fn)
         PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 2 : 6, ctrl)
-        PreferencesWindow._Desc(labelKey, PreferencesWindow.ContentX)
+        PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
+        return ctrl
+    }
+
+    ; 和上一行的短输入框 ("S") 同一行的按钮 (例如 "子文件夹深度 [4]  [重建文件索引]")
+    static _SideButton(rowY, labelKey, fn) {
+        x := PreferencesWindow._InputX() + PreferencesWindow.WidthS + 12
+        ctrl := PreferencesWindow._Add("Button", "x" x " y" (rowY - 2) " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T(labelKey))
+        ctrl.OnEvent("Click", fn)
+        return ctrl
     }
 
     ; 列表页: ListView 显示 path 指向的数组, 添加 / 编辑 / 删除都用 ItemEditor

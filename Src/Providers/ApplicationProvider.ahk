@@ -72,6 +72,11 @@ class ApplicationProvider {
         return results
     }
 
+    ; 启动后空闲时先算好搜索 Key, 第一次输入不用等
+    static Warm() {
+        ApplicationProvider._SearchKeys()
+    }
+
     ; 没有隐藏的应用 (_entries) 和它们的搜索 Key (名称 + 拼音首字母);
     ; Apps 换成新数组或隐藏列表变化时重新计算
     static _SearchKeys() {

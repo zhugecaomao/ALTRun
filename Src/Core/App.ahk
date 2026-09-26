@@ -61,6 +61,7 @@ class App {
         else if AppSettings.MigratedFrom
             App.Notify(I18n.T("Settings.Migrated", AppSettings.MigratedFrom, SchemaMigration.BackupFile(AppSettings.File, AppSettings.MigratedFrom)), 5000)
         UpdateChecker.CleanUp()
+        SetTimer(() => ProviderRegistry.WarmUp(), -500)                    ; 第一次输入前算好搜索 Key 和图标
         if AppSettings.General["CheckForUpdates"]
             SetTimer(() => UpdateChecker.Check(true), -10000)
 

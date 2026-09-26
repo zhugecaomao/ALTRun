@@ -109,10 +109,16 @@ class Knowledge {
         return boost
     }
 
-    ; 连续执行多个命令时只写一次盘
+    ; 连续执行多个命令时只写一次盘; 搜索窗口开着 (正在输入) 时先不写, 免得打字时卡一下
     static _SaveLater() {
         if (Knowledge._saveTimer = "")
-            Knowledge._saveTimer := () => Knowledge.Save()
+            Knowledge._saveTimer := () => Knowledge._SaveWhenIdle()
         SetTimer(Knowledge._saveTimer, -3000)
+    }
+
+    static _SaveWhenIdle() {
+        if SearchWindow.IsVisible()
+            return SetTimer(Knowledge._saveTimer, -2000)
+        Knowledge.Save()
     }
 }

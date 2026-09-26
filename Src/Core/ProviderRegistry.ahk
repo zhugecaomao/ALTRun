@@ -17,6 +17,7 @@
 ; 用法:
 ;   ProviderRegistry.Register(ApplicationProvider)    启动时按顺序注册
 ;   ProviderRegistry.InitAll()
+;   ProviderRegistry.WarmUp()                         启动后空闲时: 预先算好搜索用的数据 (可选的 Warm())
 ;   ProviderRegistry.Search("note")                   -> [ResultItem...]
 ;===============================================================================
 
@@ -48,6 +49,18 @@ class ProviderRegistry {
                 provider.Init()
             } catch as e {
                 Logger.Error("ProviderRegistry: " provider.Id ".Init failed - " e.Message)
+            }
+        }
+    }
+
+    static WarmUp() {
+        for provider in ProviderRegistry.Providers {
+            if !ProviderRegistry.IsEnabled(provider) || !HasMethod(provider, "Warm")
+                continue
+            try {
+                provider.Warm()
+            } catch as e {
+                Logger.Error("ProviderRegistry: " provider.Id ".Warm failed - " e.Message)
             }
         }
     }
