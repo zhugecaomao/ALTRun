@@ -148,4 +148,5 @@
 | `AppIndex.json` | 应用索引 |
 | `FileIndex.json` | 内置文件索引 (没有 Everything 时) |
 | `Knowledge.json` | 学习排序和最近的搜索 |
+| `Usage.json` | 使用统计 (每天每个功能用了几次) |
 | `ClipboardHistory.json` | 剪贴板历史 |

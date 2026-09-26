@@ -48,6 +48,7 @@
 #Include Src\Core\ResultItem.ahk
 #Include Src\Core\FuzzyMatcher.ahk
 #Include Src\Core\Knowledge.ahk
+#Include Src\Core\Usage.ahk
 #Include Src\Core\ActionCatalog.ahk
 #Include Src\Core\ProviderRegistry.ahk
 #Include Src\Core\FileIndex.ahk

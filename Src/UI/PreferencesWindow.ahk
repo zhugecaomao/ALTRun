@@ -130,7 +130,7 @@ class PreferencesWindow {
         static pages := Map("Prefs.Page.Window", "Usage", "Prefs.Page.Appearance", "Themes", "Prefs.Page.Features", "Usage", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
                           , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage"
-                          , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.Extensions", "Extensions")
+                          , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.Extensions", "Extensions", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
 
@@ -179,6 +179,7 @@ class PreferencesWindow {
         PreferencesWindow._BuildWebSearch()
         PreferencesWindow._BuildHotkeys()
         PreferencesWindow._BuildExtensions()
+        PreferencesWindow._BuildUsage()
         PreferencesWindow._BuildAdvanced()
     }
 
@@ -409,6 +410,90 @@ class PreferencesWindow {
         PreferencesWindow._Below(6, PreferencesWindow._Add("Text", "w" PreferencesWindow.ContentW, I18n.T("Prefs.Version", App.Version)))
         PreferencesWindow._Below(10, PreferencesWindow._Add("Link", "w" PreferencesWindow.ContentW, '<a href="' App.RepoUrl '">' App.RepoUrl '</a>'))
         PreferencesWindow._Button("Tray.CheckUpdate", (*) => UpdateChecker.Check(false))
+    }
+
+    ; 使用统计 (和 Alfred 的 Usage 一样): 合计, 最近 30 天每天的柱状图, 每个功能的次数
+    static _usage := ""
+    static _BuildUsage() {
+        PreferencesWindow._BeginPage("Prefs.Page.Usage")
+        PreferencesWindow._Section("Usage.Title")
+        w := PreferencesWindow.ContentW, x := PreferencesWindow.ContentX
+        totals := PreferencesWindow._Add("Text", "w" w)
+        PreferencesWindow._Below(4, totals)
+        since := PreferencesWindow._Add("Text", "w" w " cGray")
+        PreferencesWindow._Below(12, since)
+        top := PreferencesWindow._y, barW := 14, step := 18, chartH := 100
+        bars := []
+        Loop 30 {
+            PreferencesWindow._y := top
+            bars.Push(PreferencesWindow._Add("Progress", "x" (x + (A_Index - 1) * step) " w" barW " h" chartH " Vertical c3B82F6 BackgroundE6EBF2"))
+        }
+        PreferencesWindow._y := top + chartH + 4
+        PreferencesWindow.Gui.SetFont("s8")
+        first := PreferencesWindow._Add("Text", "x" x " w100 cGray")
+        chart := PreferencesWindow._Add("Text", "x" (x + 100) " w" (30 * step - barW - 200 + 10) " Center cGray")
+        PreferencesWindow._Add("Text", "x" (x + 30 * step - barW - 90) " w" (90 + barW - 4) " Right cGray", I18n.T("Usage.Today"))
+        PreferencesWindow.Gui.SetFont("s9")
+        PreferencesWindow._y += 22
+        headers := []
+        for key in ["Feature", "Today", "Week", "Month", "All", "Share"]
+            headers.Push(I18n.T("Usage.Col." key))
+        list := PreferencesWindow._Add("ListView", "w" w " h272 -Multi NoSort Grid ReadOnly", headers)
+        for index, width in [178, 66, 66, 66, 80, 80]
+            list.ModifyCol(index, width (index > 1 ? " Right" : ""))
+        PreferencesWindow._Below(8, list)
+        PreferencesWindow._Button("Usage.Clear", (*) => PreferencesWindow._ClearUsage())
+        PreferencesWindow._usage := {Totals: totals, Since: since, Bars: bars, First: first, Chart: chart, List: list}
+        PreferencesWindow._RefreshUsage()
+    }
+
+    static _RefreshUsage() {
+        ui := PreferencesWindow._usage
+        num := (n) => Calc.Thousands(n)
+        periods := [Usage.Summary(1), Usage.Summary(7), Usage.Summary(30), Usage.Summary(0)]
+        ui.Totals.Value := I18n.T("Usage.Totals", num(Usage.Total(periods[1])), num(Usage.Total(periods[2])), num(Usage.Total(periods[3])), num(Usage.Total(periods[4])))
+        all := periods[4]
+        ui.Since.Value := I18n.T("Usage.Since", (Usage.Since != "") ? Usage.Since : FormatTime(, "yyyy-MM-dd"), num(all.Has("Show") ? all["Show"] : 0))
+        daily := Usage.Daily(30)
+        most := 0
+        for day in daily
+            most := Max(most, day[2])
+        for index, bar in ui.Bars {
+            bar.Opt("Range0-" Max(most, 1))
+            bar.Value := daily[index][2]
+        }
+        ui.First.Value := SubStr(daily[1][1], 6)
+        ui.Chart.Value := I18n.T("Usage.Chart", num(most))
+
+        ; 次数多的在前 (相同时按 Usage.Features 的顺序), "呼出搜索窗口" 放最后
+        rows := []
+        for order, feature in Usage.Features
+            rows.Push({Id: feature, Order: order, All: all.Has(feature) ? all[feature] : 0})
+        Loop rows.Length - 1 {
+            Loop rows.Length - A_Index {
+                a := rows[A_Index], b := rows[A_Index + 1]
+                if (b.All > a.All || (b.All = a.All && b.Order < a.Order))
+                    rows[A_Index] := b, rows[A_Index + 1] := a
+            }
+        }
+        rows.Push({Id: "Show", Order: 0, All: all.Has("Show") ? all["Show"] : 0})
+        total := Usage.Total(all)
+        list := ui.List
+        list.Delete()
+        for row in rows {
+            counts := []
+            for period in periods
+                counts.Push(num(period.Has(row.Id) ? period[row.Id] : 0))
+            share := (row.Id = "Show") ? "-" : (total ? Format("{:.1f}%", row.All * 100 / total) : "0%")
+            list.Add("", I18n.T("Usage.F." row.Id), counts[1], counts[2], counts[3], counts[4], share)
+        }
+    }
+
+    static _ClearUsage() {
+        if (MsgBox(I18n.T("Usage.ClearConfirm"), App.Name, "YesNo Icon? Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
+            return
+        Usage.Clear()
+        PreferencesWindow._RefreshUsage()
     }
 
     static _ResetLearning() {

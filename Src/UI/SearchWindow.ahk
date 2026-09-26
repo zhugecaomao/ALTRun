@@ -153,6 +153,7 @@ class SearchWindow {
         if (text = "" && SearchWindow.IsVisible())
             SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
         App.RememberActiveWindow()
+        Usage.Count("Show")
         last := SearchWindow._last
         restore := (text = "" && AppSettings.General["KeepLastQuery"] && IsObject(last) && last.Text != "")
         SearchWindow.Mode := "results"
@@ -371,6 +372,7 @@ class SearchWindow {
         if (SearchWindow.Mode = "actions") {
             source := SearchWindow.ActionSource
             Knowledge.Record(SearchWindow.SavedQuery, source.Uid)
+            Usage.CountItem(source)
             SearchWindow.Hide()
             SearchWindow._SafeRun(() => item.OnRun.Call(source))
             return
@@ -382,6 +384,7 @@ class SearchWindow {
             return
         }
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
+        Usage.CountItem(item)
         SearchWindow.Hide()
         if (modifier = "")
             SearchWindow._SafeRun(() => ActionCatalog.RunDefault(item))
@@ -557,6 +560,7 @@ class SearchWindow {
     static _RunMenuAction(action, item) {
         SearchWindow._keepOpen := false
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
+        Usage.CountItem(item)
         SearchWindow.SavedQuery := SearchWindow.Input.Value
         SearchWindow.Hide()
         SearchWindow._SafeRun(() => action.OnRun.Call(item))
