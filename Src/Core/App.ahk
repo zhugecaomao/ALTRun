@@ -22,7 +22,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.09.25"
+    static Version := "2026.09.26"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static PreviousWindow := 0
     static _settingsTime := ""
