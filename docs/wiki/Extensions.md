@@ -3,7 +3,7 @@
 搜索窗口以外的功能, 在 偏好设置 → 扩展功能 里开关和设置。
 
 ## 对话框快速跳转
-在标准的 "打开 / 保存文件" 对话框里:
+做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。在标准的 "打开 / 保存文件" 对话框里:
 - `Ctrl+G`: 跳到 Total Commander 当前打开的文件夹
 - `Ctrl+E`: 跳到资源管理器当前打开的文件夹
 
