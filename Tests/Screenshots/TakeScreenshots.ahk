@@ -1,8 +1,9 @@
 ;===============================================================================
 ; TakeScreenshots.ahk - 自动生成 README / Wiki 用的界面截图 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 在一个临时文件夹里准备好演示用的 ALTRun (示例设置、自定义命令、应用快捷方式、项目文件),
+; 在一个临时文件夹里准备好演示用的 ALTRun (示例设置、自定义命令、应用快捷方式、示例文件),
 ; 逐个场景启动 ALTRun, 输入搜索内容, 把窗口截成 PNG。不改动你自己的 ALTRun.json。
+; 截图用英文界面, 演示数据都是虚构的通用内容 (不要放个人或工作相关的信息)。
 ;
 ;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名...]
 ;
@@ -28,24 +29,24 @@ class Shots {
     ; 场景名 -> [主题, 启动参数, 函数]
     static Scenes() {
         return [
-            ["search",      "Light", "", () => Shots.Search("pt")],
+            ["search",      "Light", "", () => Shots.Search("re")],
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
-            ["actions",     "Light", "", () => Shots.Actions("riverside")],
+            ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["calculator",  "Light", "", () => Shots.Search("(1200+350)*2.5")],
             ["clipboard",   "Light", "", () => Shots.Clipboard()],
-            ["websearch",   "Light", "", () => Shots.Search("g 后张预应力 楼板")],
-            ["system",      "Light", "", () => Shots.Search("锁")],
+            ["websearch",   "Light", "", () => Shots.Search("g autohotkey v2 hotkeys")],
+            ["system",      "Light", "", () => Shots.Search("lock")],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 7", () => Shots.Preferences()],
-            ["theme-dark",      "Dark",     "", () => Shots.Search("pt")],
-            ["theme-classic",   "Classic",  "", () => Shots.Search("pt")],
-            ["theme-midnight",  "Midnight", "", () => Shots.Search("pt")],
-            ["theme-frost",     "Frost",    "", () => Shots.Search("pt")],
-            ["theme-graphite",  "Graphite", "", () => Shots.Search("pt")],
-            ["theme-ocean",     "Ocean",    "", () => Shots.Search("pt")],
-            ["theme-paper",     "Paper",    "", () => Shots.Search("pt")]
+            ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
+            ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
+            ["theme-midnight",  "Midnight", "", () => Shots.Search("re")],
+            ["theme-frost",     "Frost",    "", () => Shots.Search("re")],
+            ["theme-graphite",  "Graphite", "", () => Shots.Search("re")],
+            ["theme-ocean",     "Ocean",    "", () => Shots.Search("re")],
+            ["theme-paper",     "Paper",    "", () => Shots.Search("re")]
         ]
     }
 
@@ -97,21 +98,21 @@ class Shots {
             DirCopy(Shots.RepoDir "\" folder, Shots.AppDir "\" folder)
     }
 
-    ; 结构设计项目的示例文件夹
+    ; 通用的示例文件夹
     static PrepareDemoFiles() {
         drive := "C:"
-        Shots.DemoDir := drive "\Design Projects"
+        Shots.DemoDir := drive "\Demo Projects"
         try DirDelete(Shots.DemoDir, true)
         files := [
-            "PT2415 - Riverside Tower\Drawings\PT2415-S-101 Level 3 PT Layout.dwg",
-            "PT2415 - Riverside Tower\Drawings\PT2415-S-102 Level 4 PT Layout.dwg",
-            "PT2415 - Riverside Tower\Calculations\PT2415 Transfer Beam Design.xlsx",
-            "PT2415 - Riverside Tower\Reports\PT2415 Design Report.docx",
-            "PT2415 - Riverside Tower\Reports\PT2415 Slab Deflection Report.pdf",
-            "PT2421 - Harbour Carpark\Reports\PT2421 Tender Report.pdf",
-            "PT2421 - Harbour Carpark\Reports\PT2421 Site Inspection Report.docx",
-            "PT2421 - Harbour Carpark\Drawings\PT2421-S-201 Ramp PT Layout.dwg",
-            "Standards\Eurocode 2 - Design of Concrete Structures.pdf"
+            "Website Redesign\Design\Homepage Mockup.png",
+            "Website Redesign\Design\Style Guide.pdf",
+            "Website Redesign\Notes\Kickoff Meeting Notes.docx",
+            "Website Redesign\Reports\Usability Test Report.pdf",
+            "Annual Report 2026\Annual Report 2026 Draft.docx",
+            "Annual Report 2026\Budget 2026.xlsx",
+            "Annual Report 2026\Report Charts.pptx",
+            "Annual Report 2026\Quarterly Report Q3.pdf",
+            "Travel\Tokyo Trip Itinerary.pdf"
         ]
         for relative in files {
             SplitPath(Shots.DemoDir "\" relative, , &dir)
@@ -123,7 +124,9 @@ class Shots {
         appDir := drive "\ALTRun Demo Apps"
         try DirDelete(appDir, true)
         DirCreate(appDir)
-        for shortcut in [["远程桌面连接", A_WinDir "\System32\mstsc.exe"],
+        ; 中文名称的记事本: 演示拼音首字母搜索 (jsb)
+        for shortcut in [["Remote Desktop Connection", A_WinDir "\System32\mstsc.exe"],
+                         ["记事本", A_WinDir "\System32\notepad.exe"],
                          ["Microsoft Edge", A_ProgramFiles " (x86)\Microsoft\Edge\Application\msedge.exe"]]
             if FileExist(shortcut[2])
                 FileCreateShortcut(shortcut[2], appDir "\" shortcut[1] ".lnk")
@@ -135,21 +138,21 @@ class Shots {
         demo := Shots.DemoDir
         settings := Map(
             "SchemaVersion", 4,
-            "General", Map("Language", "zh", "LaunchAtLogin", 0, "HideOnDeactivate", 0, "SendToMenu", 0,
+            "General", Map("Language", "en", "LaunchAtLogin", 0, "HideOnDeactivate", 0, "SendToMenu", 0,
                            "StartMenuShortcut", 0, "CheckForUpdates", 0, "Hotkey", "!Space"),
             "Appearance", Map("Theme", theme, "Width", 700, "VisibleRows", 8),
             "Features", Map(
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
-                "Calculator", Map("StructuralCalc", 1),
+                "Calculator", Map("StructuralCalc", 0),
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0)
             ),
             "CustomCommands", [
-                Map("Title", "PT2415 - Riverside Tower", "Type", "Folder", "Target", demo "\PT2415 - Riverside Tower", "Arguments", "", "Keyword", ""),
-                Map("Title", "PT2421 - Harbour Carpark", "Type", "Folder", "Target", demo "\PT2421 - Harbour Carpark", "Arguments", "", "Keyword", ""),
-                Map("Title", "项目资料", "Type", "Folder", "Target", demo, "Arguments", "", "Keyword", "proj"),
-                Map("Title", "Eurocode 2 设计规范", "Type", "File", "Target", demo "\Standards\Eurocode 2 - Design of Concrete Structures.pdf", "Arguments", "", "Keyword", "ec2"),
-                Map("Title", "IP 配置", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ipconfig /all", "Keyword", "ip"),
-                Map("Title", "ALTRun 项目主页", "Type", "Url", "Target", "https://github.com/zhugecaomao/ALTRun", "Arguments", "", "Keyword", "altrun")
+                Map("Title", "Website Redesign", "Type", "Folder", "Target", demo "\Website Redesign", "Arguments", "", "Keyword", ""),
+                Map("Title", "Annual Report 2026", "Type", "Folder", "Target", demo "\Annual Report 2026", "Arguments", "", "Keyword", ""),
+                Map("Title", "Demo Projects", "Type", "Folder", "Target", demo, "Arguments", "", "Keyword", "proj"),
+                Map("Title", "Budget 2026", "Type", "File", "Target", demo "\Annual Report 2026\Budget 2026.xlsx", "Arguments", "", "Keyword", "budget"),
+                Map("Title", "IP Configuration", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ipconfig /all", "Keyword", "ip"),
+                Map("Title", "ALTRun on GitHub", "Type", "Url", "Target", "https://github.com/zhugecaomao/ALTRun", "Arguments", "", "Keyword", "altrun")
             ]
         )
         path := Shots.AppDir "\ALTRun.json"
@@ -235,10 +238,10 @@ class Shots {
         WinActivate("ahk_pid " notepad)
         Sleep(500)
         for text in ["https://github.com/zhugecaomao/ALTRun",
-                     "PT2415 转换梁 TB-3: 1200 x 2000, 预应力 4 x 19 束",
-                     "C:\Design Projects\PT2415 - Riverside Tower\Calculations",
-                     "Please find attached the revised PT layout for Level 3.",
-                     "fck = 40 MPa, fpk = 1860 MPa"] {
+                     "The meeting is moved to Thursday at 3 pm.",
+                     "C:\Demo Projects\Annual Report 2026",
+                     "Thanks, the new homepage looks great!",
+                     "SELECT name, total FROM orders WHERE total > 100"] {
             A_Clipboard := text
             Sleep(1000)
         }

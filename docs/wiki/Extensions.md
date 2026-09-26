@@ -31,7 +31,7 @@
 ## 系统命令
 直接在搜索框里输入名称 (中文、英文或 Id 都可以), 也可以用在自定义热键里。
 
-![系统命令: 锁](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/system.png)
+![系统命令: lock](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/system.png)
 
 | Id | 命令 |
 |---|---|

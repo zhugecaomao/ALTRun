@@ -79,6 +79,19 @@ jobs:
           Copy-Item LICENSE, README.md, CHANGELOG.md build/ALTRun/
           (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
 
+      # exe 的图标要是 Resources\ALTRun.ico (;@Ahk2Exe-SetMainIcon), 而不是 AutoHotkey 默认的绿色 H
+      - name: Check program icon
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Drawing
+          $exe = [System.Drawing.Icon]::ExtractAssociatedIcon("$PWD\build\ALTRun\ALTRun.exe").ToBitmap()
+          $ico = (New-Object System.Drawing.Icon("$PWD\Resources\ALTRun.ico", $exe.Width, $exe.Height)).ToBitmap()
+          $diff = 0
+          for ($y = 0; $y -lt $exe.Height; $y++) { for ($x = 0; $x -lt $exe.Width; $x++) {
+            if ($exe.GetPixel($x, $y).ToArgb() -ne $ico.GetPixel($x, $y).ToArgb()) { $diff++ } } }
+          Write-Host "Icon $($exe.Width)x$($exe.Height): $diff different pixels"
+          if ($diff -gt 0) { throw "ALTRun.exe does not use Resources\ALTRun.ico" }
+
       # 模拟用户从 v2026.08.12 升级: 文件夹里只有旧的 ALTRun.ini, 解压新版本后第一次运行
       - name: Upgrade test (ALTRun.ini from v2026.08.12)
         shell: pwsh
