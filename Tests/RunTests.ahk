@@ -1108,6 +1108,7 @@ Func | PTTools | PT Tools (AHK)=99
         write(src "\Resources\Kanji.txt", "new kanji")
         write(src "\Resources\Themes\Dark.json", "{}")
         write(src "\Resources\SDL.dll", "still shipped")
+        write(src "\README.md", "readme")
         write(dest "\ALTRun.exe", "old exe")
         write(dest "\ALTRun.exe.old", "stale")
         write(dest "\ALTRun.json", "settings")
@@ -1122,6 +1123,12 @@ Func | PTTools | PT Tools (AHK)=99
         eq("settings untouched", read(dest "\ALTRun.json") "|" read(dest "\Data\Knowledge.json"), "settings|learned")
         eq("obsolete removed, user file kept", read(dest "\Resources\DOSBox.exe") "|" read(dest "\Resources\Mine.txt"), "<missing>|user file")
         eq("obsolete but still in the package: kept", read(dest "\Resources\SDL.dll"), "still shipped")
+        eq("top-level file copied", read(dest "\README.md"), "readme")
+        extra := ""
+        Loop Files dest "\*", "D"
+            if !(A_LoopFileName = "Resources" || A_LoopFileName = "Data")
+                extra .= A_LoopFileName " "
+        eq("no stray folders", extra, "")
 
         write(dest "\Launcher.exe", "renamed old")                          ; 用户把 ALTRun.exe 改过名
         FileDelete(dest "\ALTRun.exe")

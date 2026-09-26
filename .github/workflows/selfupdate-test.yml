@@ -93,6 +93,21 @@ jobs:
           if ((Get-FileHash "$dir\ALTRun.json").Hash -ne $settingsHash) { throw "ALTRun.json was changed" }
           if (-not (Test-Path "$dir\Data\marker.txt")) { throw "Data was changed" }
           if (-not (Test-Path "$dir\Resources\Mine.txt")) { throw "user file in Resources was removed" }
+          # every file of the release zip is in place, nothing else was added
+          $ref = Join-Path $env:RUNNER_TEMP "ref"
+          gh release download $latest --repo "${{ github.repository }}" --pattern "*.zip" --dir $env:RUNNER_TEMP
+          Expand-Archive (Join-Path $env:RUNNER_TEMP "ALTRun_v$latest.zip") $ref
+          $bad = 0
+          Get-ChildItem $ref -Recurse -File | ForEach-Object {
+            $rel = $_.FullName.Substring($ref.Length + 1)
+            $target = Join-Path $dir $rel
+            if (-not (Test-Path $target) -or (Get-FileHash $target).Hash -ne (Get-FileHash $_.FullName).Hash) { "  wrong: $rel"; $bad++ }
+          }
+          $expected = @('Data', 'Resources', 'ALTRun.exe', 'ALTRun.exe.old', 'ALTRun.json', 'CHANGELOG.md', 'LICENSE', 'README.md')
+          $extra = Get-ChildItem $dir -Name | Where-Object { $_ -notin $expected }
+          if ($extra) { "  unexpected: $extra"; $bad++ }
+          if ($bad) { throw "installed files do not match the release zip" }
+          "all $((Get-ChildItem $ref -Recurse -File).Count) files of the release zip are in place"
           if (Test-Path "$env:TEMP\ALTRun-update\ALTRun_v$latest.zip") { "downloaded zip is in %TEMP%\ALTRun-update (the new version removes it)" }
 
           # the next start of a version with this change deletes ALTRun.exe.old and the download

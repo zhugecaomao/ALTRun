@@ -157,14 +157,7 @@ class UpdateChecker {
         if !FileExist(newExe)
             throw Error(UpdateChecker.PackageExe " is missing from the update package.")
         exe := dest "\" exeName, old := exe UpdateChecker.OldSuffix
-        Loop Files src "\*", "FR" {
-            rel := SubStr(A_LoopFileFullPath, StrLen(src) + 2)
-            if (rel = UpdateChecker.PackageExe)
-                continue
-            SplitPath(dest "\" rel, , &parent)
-            DirCreate(parent)
-            FileCopy(A_LoopFileFullPath, dest "\" rel, true)
-        }
+        UpdateChecker._CopyTree(src, dest, UpdateChecker.PackageExe)
         if FileExist(old)
             FileDelete(old)                                                 ; 上次更新留下的, 删不掉就不要继续
         if FileExist(exe)
@@ -179,6 +172,18 @@ class UpdateChecker {
         for rel in UpdateChecker.ObsoleteFiles
             if !FileExist(src "\" rel)                                    ; 新版本里还有的就留着
                 try FileDelete(dest "\" rel)
+    }
+
+    ; 逐层复制 (按文件名拼路径: A_Temp 和 Loop Files 给出的路径可能一个是长文件名、一个是 8.3 短文件名,
+    ; 不能按长度截取相对路径)
+    static _CopyTree(src, dest, skipFile := "") {
+        DirCreate(dest)
+        Loop Files src "\*", "FD" {
+            if InStr(A_LoopFileAttrib, "D")
+                UpdateChecker._CopyTree(src "\" A_LoopFileName, dest "\" A_LoopFileName)
+            else if (A_LoopFileName != skipFile)
+                FileCopy(src "\" A_LoopFileName, dest "\" A_LoopFileName, true)
+        }
     }
 
     ; 新版本启动时: 删掉改了名的旧程序 (旧进程可能还没退出, 过一会儿再试) 和下载的临时文件
