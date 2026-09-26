@@ -10,6 +10,8 @@
 ;   -Reloaded       重新载入后 (保存设置等), 不弹出搜索窗口
 ;   -Preferences N [X Y]  重新载入后打开偏好设置的第 N 页 (在 X, Y 位置: 偏好设置里点了 "应用")
 ;   -SendTo <path...>  资源管理器 "发送到" 菜单: 把文件/文件夹添加为自定义命令 (1 个弹出编辑对话框)
+;   -Update         检查更新, 有新版本就直接下载安装 (不询问)
+;   -Updated <版本>  一键更新后启动的新版本: 提示已更新, 不弹出搜索窗口
 ;
 ; 用法 (其它模块里):
 ;   App.Notify("...")              屏幕上方短暂提示
@@ -55,6 +57,7 @@ class App {
             App.Notify(I18n.T("Settings.ImportedIni", AppSettings.ImportedFrom), 6000)
         else if AppSettings.MigratedFrom
             App.Notify(I18n.T("Settings.Migrated", AppSettings.MigratedFrom, SchemaMigration.BackupFile(AppSettings.File, AppSettings.MigratedFrom)), 5000)
+        UpdateChecker.CleanUp()
         if AppSettings.General["CheckForUpdates"]
             SetTimer(() => UpdateChecker.Check(true), -10000)
 
@@ -283,6 +286,14 @@ class App {
         }
         if (A_Args.Length >= 1 && (A_Args[1] = "-Startup" || A_Args[1] = "-Reloaded"))
             return
+        if (A_Args.Length >= 1 && A_Args[1] = "-Updated") {
+            App.Notify(I18n.T("Update.Done", App.Version), 5000)
+            return
+        }
+        if (A_Args.Length >= 1 && A_Args[1] = "-Update") {
+            UpdateChecker.Check(false, true)
+            return
+        }
         if (A_Args.Length >= 1 && A_Args[1] = "-Preferences") {
             args := PreferencesWindow.ParseArgs(A_Args)
             PreferencesWindow.Show(args.Page, args.X, args.Y)

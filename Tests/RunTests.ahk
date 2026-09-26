@@ -65,7 +65,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "ReleaseVersion", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "ReleaseVersion", "SelfUpdate", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1071,6 +1071,73 @@ Func | PTTools | PT Tools (AHK)=99
         RegExMatch(main, "m);@Ahk2Exe-SetVersion\s+(\S+)", &m)
         TestRunner.Equal("ReleaseVersion.exe version = App.Version", IsObject(m) ? m[1] : "", App.Version)
         TestRunner.True("ReleaseVersion.date format", RegExMatch(App.Version, "^\d{4}\.\d{2}\.\d{2}$"))
+    }
+
+    ; 一键更新: 解析 GitHub 的 Release、SHA256、替换文件 (用临时文件夹里的假程序, 不下载)
+    static SelfUpdate() {
+        eq := (n, a, e) => TestRunner.Equal("SelfUpdate." n, a, e)
+        ok := (n, c) => TestRunner.True("SelfUpdate." n, c)
+        digest := "3779b0aedbd58a7bf235eab4c0cc52d3b4c9f3188cb98be38319837605cef017"
+        response := '{"tag_name": "v2026.10.01", "html_url": "https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01", "assets": ['
+            . '{"name": "notes.txt", "browser_download_url": "https://x/notes.txt", "digest": null},'
+            . '{"name": "ALTRun_v2026.10.01.zip", "browser_download_url": "https://x/ALTRun_v2026.10.01.zip", "digest": "sha256:' StrUpper(digest) '"}]}'
+        release := UpdateChecker.ParseRelease(response)
+        eq("version", release.Version, "2026.10.01")
+        eq("page", release.Page, "https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01")
+        eq("zip", release.ZipUrl, "https://x/ALTRun_v2026.10.01.zip")
+        eq("sha256", release.Sha256, digest)
+        release := UpdateChecker.ParseRelease('{"tag_name": "2026.10.01", "assets": [{"name": "ALTRun_v2026.10.01.zip", "browser_download_url": "https://x/a.zip", "digest": null}]}')
+        eq("no digest", release.Sha256 "|" release.Page, "|" UpdateChecker.ReleasePage)
+        ok("no digest -> no install", !UpdateChecker.CanInstall(release))
+        failed := false
+        try UpdateChecker.ParseRelease('{"message": "API rate limit exceeded"}')
+        catch
+            failed := true
+        ok("no tag throws", failed)
+
+        root := A_Temp "\ALTRun-selfupdate-test"
+        try DirDelete(root, true)
+        src := root "\new", dest := root "\app"
+        write := (path, text) => (DirCreate(RegExReplace(path, "\\[^\\]+$")), FileAppend(text, path, "UTF-8-RAW"))
+        read := (path) => FileExist(path) ? FileRead(path, "UTF-8") : "<missing>"
+        write(root "\abc.txt", "abc")
+        eq("sha256 file", UpdateChecker.Sha256File(root "\abc.txt"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
+        ok("writable", UpdateChecker.IsWritable(root))
+
+        write(src "\ALTRun.exe", "new exe")
+        write(src "\Resources\Kanji.txt", "new kanji")
+        write(src "\Resources\Themes\Dark.json", "{}")
+        write(src "\Resources\SDL.dll", "still shipped")
+        write(dest "\ALTRun.exe", "old exe")
+        write(dest "\ALTRun.exe.old", "stale")
+        write(dest "\ALTRun.json", "settings")
+        write(dest "\Data\Knowledge.json", "learned")
+        write(dest "\Resources\Kanji.txt", "old kanji")
+        write(dest "\Resources\DOSBox.exe", "obsolete")
+        write(dest "\Resources\Mine.txt", "user file")
+        UpdateChecker.Apply(src, dest, "ALTRun.exe")
+        eq("exe replaced", read(dest "\ALTRun.exe"), "new exe")
+        eq("old exe kept as .old", read(dest "\ALTRun.exe.old"), "old exe")
+        eq("resources updated", read(dest "\Resources\Kanji.txt") "|" read(dest "\Resources\Themes\Dark.json"), "new kanji|{}")
+        eq("settings untouched", read(dest "\ALTRun.json") "|" read(dest "\Data\Knowledge.json"), "settings|learned")
+        eq("obsolete removed, user file kept", read(dest "\Resources\DOSBox.exe") "|" read(dest "\Resources\Mine.txt"), "<missing>|user file")
+        eq("obsolete but still in the package: kept", read(dest "\Resources\SDL.dll"), "still shipped")
+
+        write(dest "\Launcher.exe", "renamed old")                          ; 用户把 ALTRun.exe 改过名
+        FileDelete(dest "\ALTRun.exe")
+        UpdateChecker.Apply(src, dest, "Launcher.exe")
+        eq("renamed exe replaced", read(dest "\Launcher.exe") "|" read(dest "\Launcher.exe.old"), "new exe|renamed old")
+        eq("no extra ALTRun.exe", read(dest "\ALTRun.exe"), "<missing>")
+
+        FileDelete(src "\ALTRun.exe")
+        FileDelete(dest "\Launcher.exe.old")
+        failed := false
+        try UpdateChecker.Apply(src, dest, "Launcher.exe")
+        catch
+            failed := true
+        ok("package without exe throws", failed)
+        eq("package without exe changes nothing", read(dest "\Launcher.exe") "|" read(dest "\Launcher.exe.old"), "new exe|<missing>")
+        try DirDelete(root, true)
     }
 
     static Misc() {

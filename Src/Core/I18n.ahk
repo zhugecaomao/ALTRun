@@ -313,7 +313,7 @@ class I18n {
         s["Prefs.StartMenu"]           := ["Add to Start menu", "添加到开始菜单"]
         s["Prefs.StartMenu.Desc"]      := ["Adds an ALTRun shortcut to the Start menu.", "在开始菜单里添加 ALTRun 的快捷方式"]
         s["Prefs.CheckUpdates"]        := ["Check for updates at startup", "启动时检查更新"]
-        s["Prefs.CheckUpdates.Desc"]   := ["Checks GitHub once at startup and asks before opening the download page.", "每次启动时到 GitHub 检查一次, 有新版本时询问是否打开下载页面"]
+        s["Prefs.CheckUpdates.Desc"]   := ["Checks GitHub once at startup. When there is a new version, you can update with one click.", "每次启动时到 GitHub 检查一次, 有新版本时可以一键更新"]
         s["Prefs.SaveLog"]             := ["Write a debug log", "写入调试日志"]
         s["Prefs.SaveLog.Desc"]        := ["Writes %Temp%\ALTRun.log for troubleshooting. Normally leave it off.", "把运行记录写入 %Temp%\ALTRun.log, 排查问题时才需要打开"]
         s["Prefs.FileManager"]         := ["File manager", "文件管理器"]
@@ -467,6 +467,14 @@ class I18n {
 
         ; --- Update checker ---
         s["Update.Available"]          := ["A new version {1} is available. Open the download page?", "发现新版本 {1}, 是否打开下载页面?"]
+        s["Update.Prompt"]             := ["A new version {1} is available (you have {2}).`n`n'Update now' downloads it and restarts ALTRun. Your settings, commands, data and themes are kept.", "发现新版本 {1} (当前 {2})。`n`n“立即更新”会下载新版本并重新启动 ALTRun, 设置、自定义命令、数据和主题都会保留。"]
+        s["Update.InstallNow"]         := ["Update now", "立即更新"]
+        s["Update.ReleaseNotes"]       := ["What's new", "查看更新内容"]
+        s["Update.Later"]              := ["Later", "以后再说"]
+        s["Update.Downloading"]        := ["Downloading ALTRun {1}...", "正在下载 ALTRun {1}..."]
+        s["Update.Installing"]         := ["Installing ALTRun {1}...", "正在安装 ALTRun {1}..."]
+        s["Update.InstallFailed"]      := ["The update could not be installed:`n`n{1}`n`nALTRun was not changed. Open the download page to update by hand?", "自动更新失败:`n`n{1}`n`nALTRun 没有改动。是否打开下载页面手动更新?"]
+        s["Update.Done"]               := ["ALTRun has been updated to {1}", "ALTRun 已更新到 {1}"]
         s["Update.AvailableVia"]       := ["A new version {1} is available.`n`nALTRun was installed with a package manager - exit ALTRun, then run:`n`n    {2}`n`nOpen the release page to see what's new?", "发现新版本 {1}。`n`nALTRun 是用包管理器安装的, 请先退出 ALTRun, 再运行:`n`n    {2}`n`n是否打开发布页面查看更新内容?"]
         s["Update.Latest"]             := ["You are running the latest version ({1}).", "当前已是最新版本 ({1})。"]
         s["Update.Failed"]             := ["Could not check for updates:`n`n{1}", "检查更新失败:`n`n{1}"]

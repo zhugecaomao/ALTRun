@@ -1,0 +1,107 @@
+# 临时: 在 Windows 上测试一键更新 (完成后删除)
+# 编译一个版本号为 2026.01.01 的 ALTRun.exe, 运行 "ALTRun.exe -Update", 从真实的 GitHub Release 下载安装最新版本
+name: Self-update test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - .github/workflows/selfupdate-test.yml
+      - Src/Extensions/UpdateChecker.ahk
+
+jobs:
+  selfupdate:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download AutoHotkey v2 and Ahk2Exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+          gh release download --repo AutoHotkey/Ahk2Exe --pattern "Ahk2Exe*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "Ahk2Exe*.zip")[0].FullName tools/ahk2exe
+
+      - name: Compile ALTRun.exe (current code, and a copy that calls itself 2026.01.01)
+        shell: pwsh
+        run: |
+          $ahk2exe = (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)[0].FullName
+          function Compile($out) {
+            $p = Start-Process $ahk2exe -Wait -PassThru -NoNewWindow -ArgumentList '/in', "$PWD\ALTRun.ahk", '/out', $out, '/base', "$PWD\tools\ahk\AutoHotkey64.exe", '/silent', 'verbose'
+            if ($p.ExitCode -ne 0 -or -not (Test-Path $out)) { throw "compile failed" }
+          }
+          New-Item -ItemType Directory build -Force | Out-Null
+          Compile "$PWD\build\ALTRun-current.exe"
+          (Get-Content Src/Core/App.ahk -Raw) -replace 'static Version := "[0-9.]+"', 'static Version := "2026.01.01"' | Set-Content Src/Core/App.ahk -Encoding utf8
+          (Get-Content ALTRun.ahk -Raw) -replace ';@Ahk2Exe-SetVersion\s+\S+', ';@Ahk2Exe-SetVersion 2026.01.01' | Set-Content ALTRun.ahk -Encoding utf8
+          Compile "$PWD\build\ALTRun-old.exe"
+          git checkout -- Src/Core/App.ahk ALTRun.ahk
+          (Get-Item build/ALTRun-old.exe).VersionInfo.FileVersion
+
+      - name: Update 2026.01.01 -> latest release with "ALTRun.exe -Update"
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $dir = Join-Path $env:RUNNER_TEMP "app"
+          New-Item -ItemType Directory $dir -Force | Out-Null
+          Copy-Item build/ALTRun-old.exe "$dir\ALTRun.exe"
+          Copy-Item -Recurse Resources "$dir\Resources"
+          "user file" | Set-Content "$dir\Resources\Mine.txt"
+          New-Item -ItemType Directory "$dir\Data" -Force | Out-Null
+          "marker" | Set-Content "$dir\Data\marker.txt"
+
+          # first run creates ALTRun.json; then change a setting
+          $p = Start-Process "$dir\ALTRun.exe" -ArgumentList '-Startup' -WorkingDirectory $dir -PassThru
+          for ($i = 0; $i -lt 30 -and -not (Test-Path "$dir\ALTRun.json"); $i++) { Start-Sleep 1 }
+          Start-Sleep 3
+          Stop-Process -Name ALTRun -Force -ErrorAction SilentlyContinue
+          Start-Sleep 1
+          $json = Get-Content "$dir\ALTRun.json" -Raw -Encoding UTF8 | ConvertFrom-Json
+          $json.General | Add-Member -NotePropertyName HistorySize -NotePropertyValue 77 -Force
+          $json.General | Add-Member -NotePropertyName CheckForUpdates -NotePropertyValue 0 -Force
+          $json | ConvertTo-Json -Depth 20 | Set-Content "$dir\ALTRun.json" -Encoding UTF8
+          $settingsHash = (Get-FileHash "$dir\ALTRun.json").Hash
+
+          $latest = (gh release view --repo "${{ github.repository }}" --json tagName --jq .tagName)
+          "latest release: $latest"
+          $started = Get-Date
+          Start-Process "$dir\ALTRun.exe" -ArgumentList '-Update' -WorkingDirectory $dir
+          $done = $false
+          for ($i = 0; $i -lt 90; $i++) {
+            Start-Sleep 1
+            $v = (Get-Item "$dir\ALTRun.exe" -ErrorAction SilentlyContinue).VersionInfo.FileVersion
+            if ($v -eq $latest -and (Get-Process -Name ALTRun -ErrorAction SilentlyContinue)) { $done = $true; break }
+          }
+          Start-Sleep 3
+          "after $(((Get-Date) - $started).TotalSeconds.ToString('N0'))s:"
+          Get-Process -Name ALTRun -ErrorAction SilentlyContinue | ForEach-Object { "  process $($_.Id) $($_.Path) $($_.MainWindowTitle)" }
+          Get-ChildItem $dir -Recurse -Name | ForEach-Object { "  $_" }
+          Get-WmiObject Win32_Process -Filter "name='ALTRun.exe'" | ForEach-Object { "  cmd: $($_.CommandLine)" }
+          $log = Join-Path $env:TEMP "ALTRun.log"
+          if (Test-Path $log) { Get-Content $log -Tail 20 | ForEach-Object { "  log: $_" } }
+          if (-not $done) { throw "ALTRun.exe was not updated to $latest" }
+
+          $old = (Get-Item "$dir\ALTRun.exe.old").VersionInfo.FileVersion
+          "ALTRun.exe = $((Get-Item "$dir\ALTRun.exe").VersionInfo.FileVersion), ALTRun.exe.old = $old"
+          if ($old -ne '2026.01.01') { throw "ALTRun.exe.old should be the old version" }
+          if ((Get-FileHash "$dir\ALTRun.json").Hash -ne $settingsHash) { throw "ALTRun.json was changed" }
+          if (-not (Test-Path "$dir\Data\marker.txt")) { throw "Data was changed" }
+          if (-not (Test-Path "$dir\Resources\Mine.txt")) { throw "user file in Resources was removed" }
+          if (Test-Path "$env:TEMP\ALTRun-update\ALTRun_v$latest.zip") { "downloaded zip is in %TEMP%\ALTRun-update (the new version removes it)" }
+
+          # the next start of a version with this change deletes ALTRun.exe.old and the download
+          Stop-Process -Name ALTRun -Force -ErrorAction SilentlyContinue
+          Start-Sleep 1
+          Copy-Item build/ALTRun-current.exe "$dir\ALTRun.exe" -Force
+          Start-Process "$dir\ALTRun.exe" -ArgumentList '-Updated', 'x' -WorkingDirectory $dir
+          Start-Sleep 6
+          "after restart: .old=$(Test-Path "$dir\ALTRun.exe.old") download=$(Test-Path "$env:TEMP\ALTRun-update") running=$([bool](Get-Process -Name ALTRun -ErrorAction SilentlyContinue))"
+          Stop-Process -Name ALTRun -Force -ErrorAction SilentlyContinue
+          if (Test-Path "$dir\ALTRun.exe.old") { throw "ALTRun.exe.old was not removed" }
+          if (Test-Path "$env:TEMP\ALTRun-update") { throw "download folder was not removed" }

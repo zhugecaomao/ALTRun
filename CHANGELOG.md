@@ -6,6 +6,7 @@
 ## [未发布]
 
 ### 新增
+- **一键更新**: 发现新版本时可以选择 "立即更新", ALTRun 自己下载新版本、核对 SHA256、替换程序文件并重新启动, 设置和数据都保留; 出错时原来的程序保持不变。也可以用命令行 `ALTRun.exe -Update`。从这个版本开始生效 (升级到这个版本还需要手动一次)
 - **SPF2M 束线型直接计算**, 不再需要 DOSBox: PT 工具箱的 SPF2M 窗口输入参数后立即显示各支架处的高度, 可以一键复制到 Excel。结果和原来的 SPF2M.EXE 完全一致 (139 组、1100 多个数值逐个比对)。另外可以指定最小曲率半径、反弯点距离和支架间距; SPF2M 会直接退出或什么都不显示的情况, 这里会给出说明
 - **用 Scoop 安装**: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun`, 然后 `scoop install altrun`; 以后 `scoop update altrun` 升级, 设置、数据和自定义主题都保留。winget 清单也已准备好, 等官方仓库收录后可以 `winget install zhugecaomao.ALTRun`
 - 用 Scoop / winget 安装时, "检查更新" 发现新版本会给出对应的升级命令
