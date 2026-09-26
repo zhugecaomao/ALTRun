@@ -1,0 +1,10 @@
+{
+  "Base": "Dark",
+  "InputFontSize": 17,
+  "TitleFontSize": 11.5,
+  "SubtitleFontSize": 9,
+  "ShortcutFontSize": 8.5,
+  "Padding": 12,
+  "RowHeight": 48,
+  "IconSize": 28
+}

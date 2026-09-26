@@ -42,6 +42,7 @@ class Shots {
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 7", () => Shots.Preferences()],
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
+            ["theme-darkcompact", "DarkCompact", "", () => Shots.Search("re")],
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
             ["theme-midnight",  "Midnight", "", () => Shots.Search("re")],
             ["theme-frost",     "Frost",    "", () => Shots.Search("re")],
