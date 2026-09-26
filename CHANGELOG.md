@@ -17,7 +17,7 @@
 - 后台加载图标每次最多占用 10 ms (以前 30 ms), 打字时更不容易被打断; 搜索窗口开着时不写学习记录和使用统计, 等窗口关闭后再保存
 
 ### 变更
-- **设置文件移到 `Data\` 文件夹**: `ALTRun.json` 从程序目录移到 `Data\ALTRun.json`, 和索引、学习记录、剪贴板历史放在一起, 程序目录里只剩程序文件。升级后第一次启动时自动移动 (连同 `ALTRun.v*.backup.json` 升级备份), 并提示一次; 用 Scoop 安装的在 `scoop update altrun` 时自动移到 persist 里的 `Data\`。以后退回旧版本前, 请先把 `Data\ALTRun.json` 移回程序目录
+- **设置文件移到 `Data\` 文件夹**: `ALTRun.json` 从程序目录移到 `Data\ALTRun.json`, 和索引、学习记录、剪贴板历史放在一起, 程序目录里只剩程序文件。升级后第一次启动时自动移动 (连同 `ALTRun.v*.backup.json` 升级备份), 并提示一次; 用 Scoop 安装的也一样, 移到 persist 里的 `Data\`。以后退回旧版本前, 请先把 `Data\ALTRun.json` 移回程序目录
 - README 和 Wiki 的截图改为英文界面, 演示数据换成通用的示例内容
 
 ## [2026.09.26]
