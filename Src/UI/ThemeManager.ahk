@@ -63,7 +63,7 @@ class ThemeManager {
         name := ThemeManager.Get("FontName")
         if (name != "" && name != "auto")
             return name
-        return (I18n.Lang = "zh") ? "Microsoft YaHei UI" : "Segoe UI"
+        return (I18n.Lang = "zh") ? "Microsoft YaHei UI" : (I18n.Lang = "ja") ? "Yu Gothic UI" : "Segoe UI"
     }
 
     ; 主题名 -> 完整的键值 Map: 从 Light 开始, 沿 "Base" 逐层叠加。builtinOnly = 只找内置主题
