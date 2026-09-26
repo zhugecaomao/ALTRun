@@ -183,4 +183,4 @@ The interface follows your Windows language (English or Chinese). Documentation 
 ## 许可证与致谢
 [GPL-3.0](LICENSE) © zhugecaomao
 
-感谢 [ALTRun by etworker](https://github.com/etworker/ALTRun) (Delphi)、[RunZ by goreliu](https://github.com/goreliu/runz) (AutoHotkey), 以及 [Alfred](https://www.alfredapp.com/) 的设计。
+感谢 [ALTRun by etworker](https://github.com/etworker/ALTRun) (Delphi)、[RunZ by goreliu](https://github.com/goreliu/runz) (AutoHotkey), 以及 [Alfred](https://www.alfredapp.com/) 的设计; 对话框快速跳转借鉴了 [Listary](https://www.listary.com/) 的 Quick Switch。
