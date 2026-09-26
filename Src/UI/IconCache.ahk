@@ -11,6 +11,8 @@
 ; exe/lnk/ico 等每个文件图标不同, 按完整路径缓存; 其它文件按扩展名缓存。
 ; 网络位置 (\\server\share、映射的网络盘) 上的文件和文件夹不读磁盘, 用扩展名 / 文件夹的
 ; 通用图标: 读一次网络上的图标可能要几百毫秒, 而加载图标和打字在同一个线程里。
+; 普通文件夹也用通用的文件夹图标 (FolderIcon): 只有带 desktop.ini (自定义图标, 如 OneDrive、
+; 桌面、下载) 的文件夹和磁盘根目录才单独读取。
 ;
 ; 读取图标 (特别是 exe/lnk、网络路径) 可能要几毫秒到几十毫秒, 所以 Get() 遇到
 ; 还没加载的图标先返回 0 并放进队列, 由定时器在后台加载, 加载完调用 OnLoaded
@@ -20,6 +22,7 @@
 ;   IconCache.Size := 32                 (由 SearchWindow 按主题和 DPI 设置)
 ;   IconCache.OnLoaded := () => ...      后台加载完一批图标后调用
 ;   hIcon := IconCache.Get(item.Icon)    0 = 没有图标 / 还在加载
+;   item.Icon := IconCache.FolderIcon(path)   文件夹: 通用图标 "folder:" 或它自己的路径
 ;===============================================================================
 
 class IconCache {
@@ -57,9 +60,24 @@ class IconCache {
         return IconCache._icons[key]
     }
 
-    ; 每次最多加载约 30 ms, 剩下的留到下一轮, 中间可以处理键盘输入
+    ; 文件夹结果的图标: 普通文件夹都一样, 用通用图标 (不用逐个读, 几百个文件夹时明显更快);
+    ; 有自定义图标 (desktop.ini) 的文件夹和磁盘根目录用它自己的。按路径缓存, 每个文件夹只看一次
+    static FolderIcon(folder) {
+        static cache := Map()
+        if cache.Has(folder)
+            return cache[folder]
+        icon := "folder:"
+        if !IconCache.IsRemote(folder) {
+            trimmed := RTrim(folder, "\/")
+            if (RegExMatch(trimmed, "^[A-Za-z]:$") || RegExMatch(folder, "i)^(shell:|::\{)") || FileExist(trimmed "\desktop.ini"))
+                icon := folder
+        }
+        return cache[folder] := icon
+    }
+
+    ; 每次最多加载约 10 ms, 剩下的留到下一轮, 中间可以处理键盘输入
     static _LoadQueued() {
-        start := A_TickCount
+        start := IconCache._Ms()
         loaded := false
         for key, spec in IconCache._queue.Clone() {
             IconCache._queue.Delete(key)
@@ -67,13 +85,22 @@ class IconCache {
             try hIcon := IconCache._Load(spec)
             IconCache._icons[key] := hIcon
             loaded := true
-            if (A_TickCount - start > 30)
+            if (IconCache._Ms() - start > 10)
                 break
         }
         if IconCache._queue.Count
             SetTimer(IconCache._timer, -1)
         if (loaded && IsObject(IconCache.OnLoaded))
             IconCache.OnLoaded.Call()
+    }
+
+    ; 毫秒 (QueryPerformanceCounter; A_TickCount 的精度只有 10 ~ 16 ms)
+    static _Ms() {
+        static freq := 0
+        if !freq
+            DllCall("QueryPerformanceFrequency", "Int64*", &freq)
+        DllCall("QueryPerformanceCounter", "Int64*", &now := 0)
+        return now * 1000 / freq
     }
 
     static Clear() {

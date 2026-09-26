@@ -505,7 +505,28 @@ class Tests {
         eq("extension sldprt", IconCache._Extension("C:\a\Beam.SLDPRT"), "SLDPRT")
         eq("extension digits only", IconCache._Extension("C:\a\Design.2019"), "")
         eq("folder command icon remote", CustomCommandProvider._FolderIcon("\\server\share\26. 18 New Industrial Road (EA)"), "folder:")
-        eq("folder command icon local", CustomCommandProvider._FolderIcon("C:\Projects\26. 18 Road"), "C:\Projects\26. 18 Road")
+        ; 普通文件夹用通用图标, 带 desktop.ini (自定义图标) 的和磁盘根目录用自己的
+        iconRoot := A_Temp "\ALTRun-folder-icon-test"
+        try DirDelete(iconRoot, true)
+
+        ; 启动后预先算搜索 Key: 坏掉的条目跳过, 不影响后面的
+        saved := AppSettings.CustomCommands
+        AppSettings.Data["CustomCommands"] := ["not a map", Map("Title", "No target"), Map("Title", "Warm Test Folder", "Type", "Folder", "Target", "C:\"), Map("Title", "记事本", "Target", "notepad.exe")]
+        warmed := true
+        try CustomCommandProvider.Warm()
+        catch
+            warmed := false
+        eq("warm skips bad entries", warmed, true)
+        eq("warm then search", CustomCommandProvider.Search(SearchQuery("jsb")).Length, 1)
+        AppSettings.Data["CustomCommands"] := saved
+        CustomCommandProvider._ResetNarrowing()
+        DirCreate(iconRoot "\Plain 26. 18 Road")
+        DirCreate(iconRoot "\Custom")
+        FileAppend("[.ShellClassInfo]`n", iconRoot "\Custom\desktop.ini")
+        eq("folder command icon local", CustomCommandProvider._FolderIcon(iconRoot "\Plain 26. 18 Road"), "folder:")
+        eq("folder icon with desktop.ini", CustomCommandProvider._FolderIcon(iconRoot "\Custom"), iconRoot "\Custom")
+        eq("folder icon drive root", CustomCommandProvider._FolderIcon("C:\"), "C:\")
+        try DirDelete(iconRoot, true)
         eq("remote load spec", IconCache._LoadSpec("\\server\share\Report.pdf", "ext:.pdf"), "ext:.pdf")
         eq("local exe key", IconCache._CacheKey("C:\Tools\app.exe"), "c:\tools\app.exe")
         eq("local load spec", IconCache._LoadSpec("C:\Tools\app.exe", "c:\tools\app.exe"), "C:\Tools\app.exe")

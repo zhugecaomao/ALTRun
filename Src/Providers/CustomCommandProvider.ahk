@@ -63,6 +63,26 @@ class CustomCommandProvider {
         return results
     }
 
+    ; 启动后空闲时预先算好每条命令的搜索 Key (名称 / 关键字 / 拼音 / 目标名) 和目标路径,
+    ; 第一次输入时就不用等 (几百条命令第一次算要几百毫秒)。每次算 WarmBatch 条, 中间可以处理输入
+    static WarmBatch := 40
+    static Warm(start := 1) {
+        commands := AppSettings.CustomCommands
+        last := Min(commands.Length, start + CustomCommandProvider.WarmBatch - 1)
+        Loop Max(0, last - start + 1) {
+            command := commands[start + A_Index - 1]
+            if !(command is Map) || !command.Has("Title") || !command.Has("Target")
+                continue
+            commandType := command.Has("Type") ? command["Type"] : "File"
+            CustomCommandProvider._KeysFor(command["Title"], command.Has("Keyword") ? command["Keyword"] : "")
+            CustomCommandProvider._TargetKeysFor(commandType, command["Target"])
+            if (commandType = "Folder")
+                IconCache.FolderIcon(CustomCommandProvider._Resolve(command["Target"]))
+        }
+        if (last < commands.Length)
+            SetTimer(() => CustomCommandProvider.Warm(last + 1), -10)
+    }
+
     ; 命令被修改后, 下一次搜索从全部命令里找
     static _ResetNarrowing() {
         CustomCommandProvider._lastNeedle := ""
@@ -97,7 +117,7 @@ class CustomCommandProvider {
     static _TargetKeys(commandType, target) {
         if !(commandType = "Folder" || commandType = "File")
             return []
-        SplitPath(RTrim(Path.Resolve(target), "\/"), &fileName, , , &nameNoExt)
+        SplitPath(RTrim(CustomCommandProvider._Resolve(target), "\/"), &fileName, , , &nameNoExt)
         name := (commandType = "File") ? nameNoExt : fileName
         if (name = "" || InStr(name, ":"))                                  ; 驱动器根目录 "Q:" 不算名称
             return []
@@ -123,7 +143,7 @@ class CustomCommandProvider {
 
     ; 网络位置上的文件夹直接用通用的文件夹图标 (不读网络, 也不会因为名字里带点被当成文件)
     static _FolderIcon(folder) {
-        return IconCache.IsRemote(folder) ? "folder:" : folder
+        return IconCache.FolderIcon(folder)
     }
 
     ; Path.Resolve 对只写程序名的目标 ("cmd.exe") 要查磁盘和 PATH, 结果缓存起来
