@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.6.0.schema.json
 PackageIdentifier: zhugecaomao.ALTRun
-PackageVersion: 2026.09.25
+PackageVersion: 2026.09.26
 PackageLocale: zh-CN
 Publisher: zhugecaomao
 PackageName: ALTRun
