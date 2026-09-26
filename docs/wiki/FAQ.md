@@ -33,13 +33,13 @@
 - 有些程序 (游戏、远程桌面、以管理员身份运行的程序) 收不到模拟输入
 
 ### 设置改乱了, 怎么恢复默认
-退出 ALTRun, 把 `ALTRun.json` 改名备份, 重新运行会生成默认设置。只想重置学习排序: 偏好设置 → 高级 → 重置学习排序。
+退出 ALTRun, 把 `Data\ALTRun.json` 改名备份, 重新运行会生成默认设置。只想重置学习排序: 偏好设置 → 高级 → 重置学习排序。
 
 ### 在多台电脑上使用同一份设置
 ALTRun 是绿色软件, 整个文件夹可以放在 U 盘或同步盘里。路径尽量用 [路径变量](Commands-and-Snippets#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
 
 ### 从 2.x 升级后命令不见了
-2.x 的用户命令会从 `ALTRun.ini` 导入为自定义命令, 内置命令由 [系统命令](Extensions#系统命令) 取代。导入只在还没有 `ALTRun.json` 时进行一次: 如果想重新导入, 退出 ALTRun, 把 `ALTRun.json` 改名, 再运行。`ALTRun.ini` 始终保持不变, 详见 [安装与升级](Installation#从-2x-v20260812-及更早-升级到-30)。
+2.x 的用户命令会从 `ALTRun.ini` 导入为自定义命令, 内置命令由 [系统命令](Extensions#系统命令) 取代。导入只在还没有 `ALTRun.json` 时进行一次: 如果想重新导入, 退出 ALTRun, 把 `Data\ALTRun.json` 改名, 再运行。`ALTRun.ini` 始终保持不变, 详见 [安装与升级](Installation#从-2x-v20260812-及更早-升级到-30)。
 
 ---
 没有找到答案? 请 [提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) 或在 [Discussions](https://github.com/zhugecaomao/ALTRun/discussions) 提问。

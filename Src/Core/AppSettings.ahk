@@ -1,9 +1,10 @@
 ;===============================================================================
-; AppSettings.ahk - 用户设置 ALTRun.json 的读写和默认值 (AutoHotkey v2)
+; AppSettings.ahk - 用户设置 Data\ALTRun.json 的读写和默认值 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; ALTRun.json 只保存用户设置和用户数据 (自定义命令 / 片段 / 网页搜索引擎 /
-; 自定义热键)。运行时生成的数据 (应用索引、学习记录) 放在 Data\ 目录下的单独
-; 文件里, 删掉只会让它们重新生成, 不影响设置。
+; 自定义热键)。它和运行时生成的数据 (应用索引、学习记录、剪贴板历史) 都放在
+; Data\ 目录里, 各是一个单独的文件: 删掉索引等文件只会让它们重新生成, 不影响设置。
+; 3.x 到 v2026.09.26 把 ALTRun.json 放在程序目录, 启动时自动移到 Data\ (MoveLegacyFile)。
 ;
 ; 文件结构 (SchemaVersion 3):
 ; {
@@ -24,16 +25,18 @@
 ;   AppSettings.Load()                       启动时调用一次
 ;   AppSettings.General["Hotkey"]            读某一节的某个值
 ;   AppSettings.Feature("WebSearch")         某个功能的设置 (Map)
-;   AppSettings.Save()                       写回 ALTRun.json
+;   AppSettings.Save()                       写回 Data\ALTRun.json
 ;===============================================================================
 
 class AppSettings {
     static CurrentVersion := 4
-    static File := A_ScriptDir "\ALTRun.json"
     static DataDir := A_ScriptDir "\Data"
+    static File := A_ScriptDir "\Data\ALTRun.json"
+    static LegacyFile := A_ScriptDir "\ALTRun.json"      ; 旧版本的位置, 2.x 的 ALTRun.ini 也在这个目录
     static Data := Map()
     static MigratedFrom := 0          ; 本次启动时从哪个版本升级过来的 (0 = 没有升级)
     static ImportedFrom := ""         ; 本次启动时从旧版本的 ALTRun.ini 导入 ("" = 没有)
+    static MovedFrom := ""            ; 本次启动时从程序目录移到 Data\ ("" = 没有)
 
     static General        => AppSettings.Data["General"]
     static Appearance     => AppSettings.Data["Appearance"]
@@ -50,13 +53,14 @@ class AppSettings {
     }
 
     static Load() {
+        AppSettings.MoveLegacyFile()
         data := AppSettings._ReadFile()
         changed := false
 
         ; 已发布的 2.x (到 v2026.08.12) 把设置存在 ALTRun.ini: 还没有 ALTRun.json 时从它导入。
         ; ALTRun.ini 保持不变, 退回旧版本时仍然可以用
         if (!data.Count && !FileExist(AppSettings.File)) {
-            iniFile := SchemaMigration.LegacyIniFile(AppSettings.File)
+            iniFile := SchemaMigration.LegacyIniFile(AppSettings.LegacyFile)
             if FileExist(iniFile) {
                 data := SchemaMigration.ReadLegacyIni(iniFile)
                 AppSettings.ImportedFrom := iniFile
@@ -87,6 +91,8 @@ class AppSettings {
     static Save() {
         tmpFile := AppSettings.File ".tmp"
         try {
+            SplitPath(AppSettings.File, , &dir)
+            DirCreate(dir)
             if FileExist(tmpFile)
                 FileDelete(tmpFile)
             FileAppend(JSON.Stringify(AppSettings.Data), tmpFile, "UTF-8")  ; 先写临时文件, 写一半崩溃也不会弄坏正式文件
@@ -97,6 +103,32 @@ class AppSettings {
             MsgBox(I18n.T("Settings.SaveError", e.Message), App.Name, 48)
             return false
         }
+    }
+
+    ; 旧版本的 ALTRun.json 在程序目录: 还没有 Data\ALTRun.json 时连同升级备份 (ALTRun.v*.backup.json)
+    ; 和解析失败留下的 ALTRun.json.bad 一起移过去。两边都有时用 Data\ 里的, 旧文件不动。
+    ; 移不动 (例如文件被占用) 时这次继续用旧位置, 下次启动再试
+    static MoveLegacyFile() {
+        legacy := AppSettings.LegacyFile, target := AppSettings.File
+        if (legacy = target || !FileExist(legacy) || FileExist(target))
+            return
+        SplitPath(legacy, , &fromDir)
+        SplitPath(target, , &toDir)
+        try {
+            DirCreate(toDir)
+            FileMove(legacy, target)
+        } catch as e {
+            Logger.Error("AppSettings: cannot move " legacy " to " toDir " - " e.Message)
+            AppSettings.File := legacy
+            return
+        }
+        AppSettings.MovedFrom := legacy
+        Loop Files, fromDir "\ALTRun.*", "F" {
+            if (A_LoopFileName = "ALTRun.json.bad" || RegExMatch(A_LoopFileName, "i)^ALTRun\.v\d+\.backup\.json$"))
+                if !FileExist(toDir "\" A_LoopFileName)
+                    try FileMove(A_LoopFileFullPath, toDir "\" A_LoopFileName)
+        }
+        Logger.Debug("AppSettings: moved " legacy " to " target)
     }
 
     static _ReadFile() {

@@ -66,7 +66,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "ReleaseVersion", "SelfUpdate", "UsageStats", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UsageStats", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1042,14 +1042,16 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("LegacyIni.escaped key restored", data["UserCommand"].Has("URL | https://www.google.com/search?q=x;y | Google Query"))
         eq("detected as 2.x", SchemaMigration.DetectVersion(data), 2)
 
-        ; 完整的启动流程: 没有 ALTRun.json, 只有 ALTRun.ini
-        savedFile := AppSettings.File, savedData := AppSettings.Data
-        AppSettings.File := folder "\ALTRun.json", AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0
+        ; 完整的启动流程: 没有 ALTRun.json, 只有程序目录下的 ALTRun.ini
+        savedFile := AppSettings.File, savedLegacy := AppSettings.LegacyFile, savedData := AppSettings.Data
+        AppSettings.File := folder "\Data\ALTRun.json", AppSettings.LegacyFile := folder "\ALTRun.json"
+        AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0, AppSettings.MovedFrom := ""
         AppSettings.Load()
         settings := AppSettings.Data
         eq("imported from", AppSettings.ImportedFrom, iniFile)
         eq("version", settings["SchemaVersion"], AppSettings.CurrentVersion)
-        eq("json written", FileExist(folder "\ALTRun.json") != "", true)
+        eq("json written to Data", FileExist(folder "\Data\ALTRun.json") != "", true)
+        eq("nothing moved", AppSettings.MovedFrom, "")
         eq("ini kept", FileExist(iniFile) != "", true)
         eq("hotkey", settings["General"]["Hotkey"], "!Space")
         eq("second hotkey", settings["General"]["SecondaryHotkey"], "!r")
@@ -1086,9 +1088,63 @@ Func | PTTools | PT Tools (AHK)=99
         AppSettings.Load()
         eq("no second import", AppSettings.ImportedFrom, "")
 
-        AppSettings.File := savedFile, AppSettings.Data := savedData
+        AppSettings.File := savedFile, AppSettings.LegacyFile := savedLegacy, AppSettings.Data := savedData
         AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0
         try DirDelete(folder, true)
+    }
+
+    ; 旧版本的 ALTRun.json 在程序目录, 启动时移到 Data\
+    static SettingsLocation() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsLocation." n, a, e)
+        read := (f) => FileExist(f) ? FileRead(f, "UTF-8") : "<missing>"
+        write := (f, text) => (FileExist(f) && FileDelete(f), FileAppend(text, f, "UTF-8"))
+        eq("default file in Data", AppSettings.File, AppSettings.DataDir "\ALTRun.json")
+
+        root := A_Temp "\ALTRunSettingsTest"
+        try DirDelete(root, true)
+        DirCreate(root)
+        savedFile := AppSettings.File, savedLegacy := AppSettings.LegacyFile, savedData := AppSettings.Data
+        AppSettings.File := root "\Data\ALTRun.json", AppSettings.LegacyFile := root "\ALTRun.json"
+
+        ; 3.x 的布局: ALTRun.json、升级备份和 .bad 都在程序目录, 还没有 Data\
+        old := AppSettings.Defaults()
+        old["SchemaVersion"] := 3, old["General"]["Hotkey"] := "#Space"
+        write(root "\ALTRun.json", JSON.Stringify(old))
+        write(root "\ALTRun.v2.backup.json", "backup")
+        write(root "\ALTRun.json.bad", "bad")
+        write(root "\ALTRun.ini", "[Config]")
+        AppSettings.MovedFrom := "", AppSettings.MigratedFrom := 0, AppSettings.ImportedFrom := ""
+        AppSettings.Load()
+        eq("moved from", AppSettings.MovedFrom, root "\ALTRun.json")
+        eq("old file gone", FileExist(root "\ALTRun.json"), "")
+        eq("settings kept", AppSettings.General["Hotkey"], "#Space")
+        eq("not imported again", AppSettings.ImportedFrom, "")
+        eq("schema upgraded", AppSettings.MigratedFrom, 3)
+        eq("upgrade backup in Data", FileExist(root "\Data\ALTRun.v3.backup.json") != "", true)
+        eq("old backups moved", read(root "\Data\ALTRun.v2.backup.json") "|" read(root "\Data\ALTRun.json.bad"), "backup|bad")
+        eq("ini left alone", read(root "\ALTRun.ini"), "[Config]")
+
+        ; 下一次启动: 已经在 Data\ 里, 不再移动
+        AppSettings.MovedFrom := "", AppSettings.MigratedFrom := 0
+        AppSettings.Load()
+        eq("second start", AppSettings.MovedFrom "|" AppSettings.MigratedFrom, "|0")
+
+        ; 两边都有 (例如退回旧版本又生成了一份): 用 Data\ 里的, 旧文件不动
+        write(root "\ALTRun.json", "{}")
+        AppSettings.Load()
+        eq("both exist: Data wins", AppSettings.General["Hotkey"] "|" AppSettings.MovedFrom, "#Space|")
+        eq("both exist: old file kept", read(root "\ALTRun.json"), "{}")
+
+        ; 移不动 (文件被占用): 这次继续用旧位置
+        FileDelete(root "\Data\ALTRun.json")
+        lock := FileOpen(root "\ALTRun.json", "r -rwd")
+        AppSettings.MoveLegacyFile()
+        lock.Close()
+        eq("locked: keep using old file", AppSettings.File "|" AppSettings.MovedFrom, root "\ALTRun.json|")
+
+        AppSettings.File := savedFile, AppSettings.LegacyFile := savedLegacy, AppSettings.Data := savedData
+        AppSettings.MovedFrom := "", AppSettings.MigratedFrom := 0, AppSettings.ImportedFrom := ""
+        try DirDelete(root, true)
     }
 
     ; 编译信息里的版本号 (ALTRun.ahk 的 ;@Ahk2Exe-SetVersion) 要和 App.Version 一致
@@ -1137,7 +1193,7 @@ Func | PTTools | PT Tools (AHK)=99
         write(src "\README.md", "readme")
         write(dest "\ALTRun.exe", "old exe")
         write(dest "\ALTRun.exe.old", "stale")
-        write(dest "\ALTRun.json", "settings")
+        write(dest "\Data\ALTRun.json", "settings")
         write(dest "\Data\Knowledge.json", "learned")
         write(dest "\Resources\Kanji.txt", "old kanji")
         write(dest "\Resources\DOSBox.exe", "obsolete")
@@ -1146,7 +1202,7 @@ Func | PTTools | PT Tools (AHK)=99
         eq("exe replaced", read(dest "\ALTRun.exe"), "new exe")
         eq("old exe kept as .old", read(dest "\ALTRun.exe.old"), "old exe")
         eq("resources updated", read(dest "\Resources\Kanji.txt") "|" read(dest "\Resources\Themes\Dark.json"), "new kanji|{}")
-        eq("settings untouched", read(dest "\ALTRun.json") "|" read(dest "\Data\Knowledge.json"), "settings|learned")
+        eq("settings untouched", read(dest "\Data\ALTRun.json") "|" read(dest "\Data\Knowledge.json"), "settings|learned")
         eq("obsolete removed, user file kept", read(dest "\Resources\DOSBox.exe") "|" read(dest "\Resources\Mine.txt"), "<missing>|user file")
         eq("obsolete but still in the package: kept", read(dest "\Resources\SDL.dll"), "still shipped")
         eq("top-level file copied", read(dest "\README.md"), "readme")

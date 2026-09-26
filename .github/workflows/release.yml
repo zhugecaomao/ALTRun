@@ -103,7 +103,7 @@ jobs:
           $iniHash = (Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash
           $started = Get-Date
           $proc = Start-Process (Join-Path $dir "ALTRun.exe") -WorkingDirectory $dir -PassThru
-          $json = Join-Path $dir "ALTRun.json"
+          $json = Join-Path $dir "Data\ALTRun.json"
           for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
           Start-Sleep -Seconds 3
           $running = -not $proc.HasExited
@@ -119,7 +119,7 @@ jobs:
             if (Test-Path $log) { Get-Content $log -Tail 30 | ForEach-Object { Write-Host "  log: $_" } }
           }
           Get-Process -Name ALTRun -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          if (-not (Test-Path $json)) { throw "ALTRun.json was not created" }
+          if (-not (Test-Path $json)) { throw "Data\ALTRun.json was not created" }
           $settings = Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json
           Write-Host "Running: $running; SchemaVersion: $($settings.SchemaVersion); commands: $($settings.CustomCommands.Count); language: $($settings.General.Language)"
           if (-not $running) { throw "ALTRun.exe exited on its own" }

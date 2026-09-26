@@ -32,7 +32,7 @@
 2. 按 `Alt+Space` 呼出搜索窗口, 输入名称, `Enter` 打开
 3. `Ctrl+,` 打开偏好设置, 修改热键、主题、索引范围等
 
-绿色便携, 不写注册表: 设置保存在程序目录下的 `ALTRun.json`。
+绿色便携, 不写注册表: 设置保存在程序目录下的 `Data\ALTRun.json`。
 
 **用 [Scoop](https://scoop.sh/) 安装** (自动创建开始菜单快捷方式, 升级时保留设置):
 ```powershell
@@ -154,7 +154,7 @@ packaging\          winget 清单, 发布时更新清单的脚本
 .github\            GitHub Actions (测试、截图、发布、Wiki), Issue / PR 模板
 ```
 
-运行后程序目录下还会出现 `ALTRun.json` (设置)、`Data\` (索引和历史, 可以删除)、`Themes\` (你自己的主题)。升级时把新版本复制覆盖到程序目录即可。
+运行后程序目录下还会出现 `Data\` (设置 `ALTRun.json`, 以及可以删除的索引和历史)、`Themes\` (你自己的主题)。升级时把新版本复制覆盖到程序目录即可。
 
 
 ## 开发
@@ -179,7 +179,7 @@ ALTRun is a keyboard launcher for Windows modelled on Alfred for macOS. Press `A
 - Learns which result you pick for each query, and ranks it first next time
 - Action panel (`→` or right-click), in-place editing (`F3`), clipboard history, snippet auto-expansion, inline calculator, web search keywords, terminal commands, large type
 - Nine built-in themes, plus custom themes as JSON files
-- Portable: all settings live in `ALTRun.json` next to the program; older 2.x settings are converted automatically
+- Portable: all settings live in `Data\ALTRun.json` next to the program; older 2.x settings are converted automatically
 - Install with Scoop: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun`, then `scoop install altrun`
 
 The interface follows your Windows language (English or Chinese). Documentation is in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.

@@ -60,6 +60,8 @@ class App {
             App.Notify(I18n.T("Settings.ImportedIni", AppSettings.ImportedFrom), 6000)
         else if AppSettings.MigratedFrom
             App.Notify(I18n.T("Settings.Migrated", AppSettings.MigratedFrom, SchemaMigration.BackupFile(AppSettings.File, AppSettings.MigratedFrom)), 5000)
+        else if (AppSettings.MovedFrom != "")
+            App.Notify(I18n.T("Settings.Moved", AppSettings.File), 5000)
         UpdateChecker.CleanUp()
         SetTimer(() => ProviderRegistry.WarmUp(), -500)                    ; 第一次输入前算好搜索 Key 和图标
         if AppSettings.General["CheckForUpdates"]
@@ -103,7 +105,7 @@ class App {
         PreferencesWindow.Show(pageIndex)
     }
 
-    ; 直接用记事本编辑 ALTRun.json, 保存后自动重新载入
+    ; 直接用记事本编辑 Data\ALTRun.json, 保存后自动重新载入
     static EditSettingsFile() {
         App.Notify(I18n.T("Settings.EditHint"), 4000)
         App._settingsTime := FileGetTime(AppSettings.File, "M")
@@ -311,7 +313,8 @@ class App {
         if AppSettings.MigratedFrom
             return                                                          ; 升级提示显示中, 不马上弹出窗口
         SearchWindow.Show()
-        App.Notify(I18n.T("App.Running", App._HotkeyText()), 3000)
+        if (AppSettings.MovedFrom = "")                                     ; 不盖掉 "设置文件已移到 Data" 的提示
+            App.Notify(I18n.T("App.Running", App._HotkeyText()), 3000)
     }
 
     ; OnExit 回调返回非零值会取消退出, 所以这里不返回任何值

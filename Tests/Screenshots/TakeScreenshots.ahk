@@ -155,10 +155,10 @@ class Shots {
                 Map("Title", "ALTRun on GitHub", "Type", "Url", "Target", "https://github.com/zhugecaomao/ALTRun", "Arguments", "", "Keyword", "altrun")
             ]
         )
-        path := Shots.AppDir "\ALTRun.json"
-        try FileDelete(path)
-        FileAppend(JSON.Stringify(settings, 4), path, "UTF-8")
-        try DirDelete(Shots.AppDir "\Data", true)
+        try DirDelete(Shots.AppDir "\Data", true)                           ; 每个场景从空的索引和学习记录开始
+        try FileDelete(Shots.AppDir "\ALTRun.json")                         ; 旧版本的位置
+        DirCreate(Shots.AppDir "\Data")
+        FileAppend(JSON.Stringify(settings, 4), Shots.AppDir "\Data\ALTRun.json", "UTF-8")
     }
 
     ; 纯色背景铺满屏幕, 挡住桌面上的其它窗口 (半透明主题会透出后面的内容)。
