@@ -31,9 +31,9 @@ class LargeType {
         maxW := Round(areaW * 0.85) - 2 * pad
         label := g.AddText("Center", text)
         label.GetPos(, , &textW)
-        if (textW > maxW) {                                                 ; 太宽就按最大宽度自动换行
-            label.Destroy()
-            label := g.AddText("Center w" maxW, text)
+        if (textW > maxW) {                                                 ; 太宽就按最大宽度自动换行 (控件不能单独删除, 先藏起来)
+            label.Visible := false
+            label := g.AddText("xm ym Center w" maxW, text)
         }
         label.OnEvent("Click", (*) => LargeType.Close())
         g.OnEvent("Escape", (*) => LargeType.Close())

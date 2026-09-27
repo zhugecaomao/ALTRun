@@ -67,7 +67,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -95,6 +95,7 @@ class TestRunner {
             TestRunner.Passed++
         else
             TestRunner.Fail(name, "condition is false")
+        return condition ? true : false
     }
 
     static Fail(name, message) {
@@ -794,20 +795,47 @@ class Tests {
     ; 每一页的控件都在底部按钮上面 (中英文都检查, 文字长短不同)
     static PreferencesFit() {
         savedLang := I18n.Lang
-        for lang in ["en", "zh"] {
+        for lang in ["en", "zh", "ja"] {
             I18n.Init(lang)
             PreferencesWindow.Show(1, -3000, -3000)
             limit := PreferencesWindow.ButtonY - 6
-            for page in PreferencesWindow.Pages {
-                bottom := 0
+            rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
+            for index, page in PreferencesWindow.Pages {
+                bottom := 0, right := 0
                 for ctrl in page.Controls {
-                    ctrl.GetPos(, &y, , &h)
-                    bottom := Max(bottom, y + h)
+                    ctrl.GetPos(&x, &y, &w, &h)
+                    bottom := Max(bottom, y + h), right := Max(right, x + w)
                 }
-                TestRunner.True("PreferencesFit." lang " " page.Name " (bottom " bottom ", limit " limit ")", bottom <= limit)
+                TestRunner.True("PreferencesFit." lang " page " index " (bottom " bottom ", limit " limit ")", bottom <= limit)
+                TestRunner.True("PreferencesFit." lang " page " index " (right " right ", limit " rightLimit ")", right <= rightLimit)
             }
             PreferencesWindow.Close()
+            if (lang != "ja") {                                             ; 中英文的左列宽度是调好的, 不需要加宽
+                widened := ""
+                for key in PreferencesWindow._labelWidths
+                    if (SubStr(key, 1, 3) = lang " ")
+                        widened .= key "; "
+                TestRunner.Equal("PreferencesFit." lang " no widened pages", widened, "")
+            }
         }
+        I18n.Init(savedLang)
+    }
+
+    ; 每条界面文字都有英文 / 中文 / 日文, 参数占位符 {1} {2} ... 三种语言一样
+    static I18nLanguages() {
+        for key, texts in I18n.Strings {
+            if !TestRunner.True("I18nLanguages.three texts " key, texts is Array && texts.Length = 3)
+                continue
+            TestRunner.True("I18nLanguages.not empty " key, Trim(texts[1]) != "" && Trim(texts[2]) != "" && Trim(texts[3]) != "")
+            RegExReplace(texts[1], "\{\d\}", , &count1)
+            RegExReplace(texts[2], "\{\d\}", , &count2)
+            RegExReplace(texts[3], "\{\d\}", , &count3)
+            TestRunner.True("I18nLanguages.placeholders " key, count1 = count2 && count1 = count3)
+        }
+        savedLang := I18n.Lang
+        I18n.Init("ja")
+        TestRunner.Equal("I18nLanguages.ja text", I18n.T("Prefs.Page.General"), I18n.Strings["Prefs.Page.General"][3])
+        TestRunner.Equal("I18nLanguages.ja font", ThemeManager.FontName() != "", true)
         I18n.Init(savedLang)
     }
 
@@ -1335,6 +1363,15 @@ Func | PTTools | PT Tools (AHK)=99
         second := {Left: 1920, Top: 0, Right: 3840, Bottom: 1080}
         eq("second monitor", Hud.Position(200, 40, {Window: "", Area: second}).X, 2780)
 
+        long := ""
+        Loop 40
+            long .= "long text "
+        Hud.Show(long, 300)                                                 ; 超过最大宽度: 自动换行, 不报错
+        Hud.Gui.GetPos(, , &longW)
+        eq("long text wraps", longW <= Win.Scale(Hud.MaxWidth) + Win.Scale(60), true)
+        LargeType.Show(long long long)
+        eq("large type long text", IsObject(LargeType.Gui), true)
+        LargeType.Close()
         Hud.Show("Copied", 300)
         eq("shown", IsObject(Hud.Gui), true)
         Hud.Show("Second", 300)

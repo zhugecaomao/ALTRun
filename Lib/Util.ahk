@@ -150,6 +150,18 @@ class Win {
                     "Int*", rounded ? ROUND : SQUARE, "UInt", 4)
     }
 
+    ; 控件里一行文字的宽度 (像素, 用控件自己的字体)
+    static TextExtent(hwnd, text) {
+        hdc := DllCall("GetDC", "Ptr", hwnd, "Ptr")
+        font := SendMessage(0x31, 0, 0, hwnd)                               ; WM_GETFONT
+        old := DllCall("SelectObject", "Ptr", hdc, "Ptr", font, "Ptr")
+        size := Buffer(8, 0)
+        DllCall("GetTextExtentPoint32W", "Ptr", hdc, "WStr", text, "Int", StrLen(text), "Ptr", size)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", old)
+        DllCall("ReleaseDC", "Ptr", hwnd, "Ptr", hdc)
+        return NumGet(size, 0, "Int")
+    }
+
     ; Win11 窗口边框颜色, color 为 "RRGGBB"
     static SetBorderColor(hwnd, color) {
         static ATTR := 34

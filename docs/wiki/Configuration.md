@@ -27,7 +27,7 @@
 |---|---|---|
 | Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win) |
 | SecondaryHotkey | 空 | 第二个呼出热键 |
-| Language | `auto` | `auto` 跟随系统 / `en` / `zh` |
+| Language | `auto` | `auto` 跟随系统 / `en` / `zh` / `ja` |
 | LaunchAtLogin | 1 | 开机自动启动 |
 | ShowTrayIcon | 1 | 显示托盘图标 |
 | HideOnDeactivate | 1 | 搜索窗口失去焦点时隐藏 |

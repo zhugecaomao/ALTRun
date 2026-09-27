@@ -478,7 +478,7 @@ class I18n {
         s["Prefs.ClipMaxItems.Desc"]   := ["The oldest items are removed first.", "超过后先删除最早的记录", "件数を超えると古い項目から削除されます。"]
         s["Prefs.ClipPersist"]         := ["Keep history after ALTRun quits", "退出后保留历史", "ALTRun 終了後も履歴を保持"]
         s["Prefs.ClipPersist.Desc"]    := ["Saved in Data\ClipboardHistory.json. When off, history is kept in memory only.", "保存在 Data\ClipboardHistory.json; 关闭后只保存在内存里", "Data\ClipboardHistory.json に保存されます。オフの場合はメモリ内にのみ保持されます。"]
-        s["Prefs.ClipIgnoreApps"]      := ["Never record from (process names)", "不记录这些程序 (进程名)", "記録しないプログラム (プロセス名)"]
+        s["Prefs.ClipIgnoreApps"]      := ["Never record from", "不记录这些程序 (进程名)", "記録しないプログラム (プロセス名)"]
         s["Prefs.ClipIgnoreApps.Desc"] := ["One process name per line, e.g. KeePass.exe. Nothing copied there is recorded.", "每行一个进程名, 例如 KeePass.exe; 在这些程序里复制的内容不记录", "1 行に 1 プロセス名。例: KeePass.exe。これらのプログラムでのコピーは記録されません。"]
         s["Prefs.ClipClear"]           := ["Clear History Now", "立即清空历史", "今すぐ履歴を消去"]
         s["Prefs.Fallbacks"]            := ["Fallback searches", "兜底搜索", "代替検索"]

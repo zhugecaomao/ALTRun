@@ -182,7 +182,7 @@ ALTRun is a keyboard launcher for Windows modelled on Alfred for macOS. Press `A
 - Portable: all settings live in `Data\ALTRun.json` next to the program; older 2.x settings are converted automatically
 - Install with Scoop: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun`, then `scoop install altrun`
 
-The interface follows your Windows language (English or Chinese). Documentation is in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
+The interface follows your Windows language (English, Chinese or Japanese). Documentation is in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
 
 
 ## 许可证与致谢
