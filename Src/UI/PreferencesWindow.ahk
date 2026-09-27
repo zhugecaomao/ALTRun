@@ -193,7 +193,7 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.General", 120)
         PreferencesWindow._Field("General.Hotkey", "Prefs.Hotkey", "M")
         PreferencesWindow._Field("General.SecondaryHotkey", "Prefs.SecondaryHotkey", "M")
-        PreferencesWindow._Choice("General.Language", "Prefs.Language", ["auto", "en", "zh"], [I18n.T("Prefs.Language.auto"), "English", "中文"])
+        PreferencesWindow._Choice("General.Language", "Prefs.Language", ["auto", "en", "zh", "ja"], [I18n.T("Prefs.Language.auto"), "English", "中文", "日本語"])
         PreferencesWindow._Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
                    , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
