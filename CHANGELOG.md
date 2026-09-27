@@ -3,7 +3,14 @@
 本项目的主要变化记录在这里, 格式参照 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 版本号使用发布日期 (`YYYY.MM.DD`), 与 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases) 的标签一致。
 
-## [未发布]
+## [2026.09.27]
+
+日语界面、使用统计、ALTRun 自己的程序图标; 偏好设置重新排版, 设置文件移到 `Data\`, 打字更跟手。
+
+### 升级
+- **从 2026.09.26 升级**: 发现新版本时选 "立即更新" (或托盘图标 → 检查更新), ALTRun 会自己下载安装; 用 Scoop 安装的用 `scoop update altrun`。第一次启动时设置文件自动从程序目录移到 `Data\ALTRun.json`, 设置、自定义命令和学习记录都保留
+- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.09.27.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+- 以后要退回旧版本时, 请先把 `Data\ALTRun.json` 移回程序目录
 
 ### 新增
 - **使用统计** (和 Alfred 的 Usage 一样): 偏好设置 → 使用统计, 显示今天 / 最近 7 天 / 最近 30 天 / 总共的使用次数、最近 30 天每天的柱状图、每个功能的次数和占比。只记录次数, 不记录输入和打开的内容, 保存在 `Data\Usage.json`
@@ -157,6 +164,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
+[2026.09.27]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.27
+[2026.09.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.26
 [2026.09.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.25
 [2026.09.24]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.24
 [2026.09.23]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23
