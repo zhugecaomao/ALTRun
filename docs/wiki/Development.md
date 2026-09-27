@@ -57,7 +57,7 @@ bucket\ packaging\  Scoop / winget 清单 (见 packaging\README.md)
    ```
 2. 在 `ALTRun.ahk` 里 `#Include`, 在 `App.Start()` 里 `ProviderRegistry.Register(XxxProvider)`
 3. 在 `AppSettings.Defaults()` 的 `Features` 下加 `"Xxx", Map("Enabled", 1, ...)`
-4. 界面文字加到 `I18n.ahk` (英文 + 中文)
+4. 界面文字加到 `I18n.ahk` (英文 + 中文 + 日文; 测试会检查三种语言都有)
 5. 在 `Tests\RunTests.ahk` 里加测试
 
 可选:

@@ -49,7 +49,7 @@ Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些�
 
 | 键 | Light 默认值 | 说明 |
 |---|---|---|
-| FontName | `auto` | 字体; `auto` = 中文界面用 Microsoft YaHei UI, 英文界面用 Segoe UI |
+| FontName | `auto` | 字体; `auto` = 中文界面用 Microsoft YaHei UI, 日文界面用 Yu Gothic UI, 英文界面用 Segoe UI |
 | InputFontSize | 20 | 搜索框字号 |
 | TitleFontSize | 13 | 结果标题字号 |
 | SubtitleFontSize | 9.5 | 结果说明字号 |

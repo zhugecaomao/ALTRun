@@ -36,7 +36,10 @@ class PreferencesWindow {
     static ContentX := 190, ContentW := 560, LabelW := 190
     static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
     static ButtonY := 619                                                   ; 底部按钮的位置; 页面内容要在它上面 (y < ButtonY - 10)
+    static LabelMax := 250                                                  ; 左列最宽多少, 再长的标签换行
     static _positionReset := false
+    static _pageKey := "", _wider := Map()                                  ; 正在建的页; 标签放不下的页 -> 需要的左列宽度
+    static _labelWidths := Map()                                            ; "语言 页" -> 加宽后的左列宽度 (打开过一次就记住)
 
     static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
@@ -44,17 +47,26 @@ class PreferencesWindow {
             return
         }
         SearchWindow.Hide()
-        PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
-        PreferencesWindow.Pages := [], PreferencesWindow.Binds := []
-        PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false
+        ; 左列宽度每页写死了一个值 (按中英文的标签定); 别的语言的标签更长、放不下时,
+        ; 按实际的文字宽度加宽那一页的左列, 重新建一次窗口 (记住宽度, 下次打开不用再建两次)
+        Loop 2 {
+            PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
+            PreferencesWindow.Pages := [], PreferencesWindow.Binds := [], PreferencesWindow._wider := Map()
+            PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false
 
-        g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
-        g.SetFont("s9", ThemeManager.FontName())
-        g.OnEvent("Close", (*) => PreferencesWindow.Cancel())                ; 返回 true = 不关闭 (选择了继续编辑)
-        g.OnEvent("Escape", (*) => PreferencesWindow.Cancel())
-        PreferencesWindow.Gui := g
+            g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
+            g.SetFont("s9", ThemeManager.FontName())
+            g.OnEvent("Close", (*) => PreferencesWindow.Cancel())            ; 返回 true = 不关闭 (选择了继续编辑)
+            g.OnEvent("Escape", (*) => PreferencesWindow.Cancel())
+            PreferencesWindow.Gui := g
 
-        PreferencesWindow._BuildPages()
+            PreferencesWindow._BuildPages()
+            if (!PreferencesWindow._wider.Count || A_Index = 2)
+                break
+            for pageKey, width in PreferencesWindow._wider
+                PreferencesWindow._labelWidths[I18n.Lang " " pageKey] := width
+            g.Destroy()
+        }
 
         names := []
         for page in PreferencesWindow.Pages
@@ -544,7 +556,17 @@ class PreferencesWindow {
     static _BeginPage(nameKey, labelW := 190) {
         PreferencesWindow.Pages.Push({Name: I18n.T(nameKey), Wiki: PreferencesWindow.WikiPage(nameKey), Controls: []})
         PreferencesWindow._y := 14
-        PreferencesWindow.LabelW := labelW
+        PreferencesWindow._pageKey := nameKey
+        PreferencesWindow.LabelW := Max(labelW, PreferencesWindow._labelWidths.Get(I18n.Lang " " nameKey, 0))
+    }
+
+    ; 左列的标签放不下 (会换行) 时记下这一页需要的宽度, 见 Show
+    static _FitLabel(ctrl, text) {
+        need := Ceil(Win.TextExtent(ctrl.Hwnd, text) * 96 / A_ScreenDPI) + 12 + 2
+        if (need > PreferencesWindow.LabelW && PreferencesWindow.LabelW < PreferencesWindow.LabelMax) {
+            key := PreferencesWindow._pageKey
+            PreferencesWindow._wider[key] := Min(PreferencesWindow.LabelMax, Max(need, PreferencesWindow._wider.Get(key, 0)))
+        }
     }
 
     static _Add(type, options, text := "") {
@@ -616,6 +638,7 @@ class PreferencesWindow {
         PreferencesWindow._y += 3
         ctrl := PreferencesWindow._Add("Text", "w" (PreferencesWindow.LabelW - 12) " Right", I18n.T(labelKey))
         PreferencesWindow._y -= 3
+        PreferencesWindow._FitLabel(ctrl, I18n.T(labelKey))
         return ctrl
     }
 
@@ -656,6 +679,7 @@ class PreferencesWindow {
         PreferencesWindow._y += dy
         ctrl := PreferencesWindow._Add("Text", "x" PreferencesWindow.ContentX " w" (PreferencesWindow.LabelW - 12) " Right", I18n.T(labelKey))
         PreferencesWindow._y -= dy
+        PreferencesWindow._FitLabel(ctrl, I18n.T(labelKey))
         return ctrl
     }
 
@@ -754,11 +778,12 @@ class PreferencesWindow {
         if (group != "")
             PreferencesWindow._GroupLabel(group, 5)
         x := PreferencesWindow._InputX(), controls := []
+        buttonW := Min(PreferencesWindow.ButtonW, (PreferencesWindow._InputW() - 10 * (specs.Length - 1)) // specs.Length)   ; 左列加宽后放不下时按钮窄一点
         for spec in specs {
-            ctrl := PreferencesWindow._Add("Button", "x" x " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T(spec[1]))
+            ctrl := PreferencesWindow._Add("Button", "x" x " w" buttonW " h" PreferencesWindow.ButtonH, I18n.T(spec[1]))
             ctrl.OnEvent("Click", spec[2])
             controls.Push(ctrl)
-            x += PreferencesWindow.ButtonW + 10
+            x += buttonW + 10
         }
         PreferencesWindow._Below(PreferencesWindow._HasDesc(specs[1][1]) ? 2 : 6, controls*)
         PreferencesWindow._Desc(specs[1][1], PreferencesWindow._InputX())
@@ -775,6 +800,21 @@ class PreferencesWindow {
         label2 := PreferencesWindow._Add("Text", "x" (x + w + 18), I18n.T(right[2]))
         PreferencesWindow._y -= 3
         label2.GetPos(&x2, , &w2)
+        ; 左列加宽后控件列变窄, 放不下时把左边的输入框缩短 (最短 "S")
+        overflow := x2 + w2 + 8 + PreferencesWindow._Width(right[3]) - (PreferencesWindow.ContentX + PreferencesWindow.ContentW)
+        if (overflow > 0 && w > PreferencesWindow.WidthS) {
+            shrink := Min(overflow, w - PreferencesWindow.WidthS)
+            w -= shrink, overflow -= shrink
+            first.Move(, , w)
+            label2.Move(x + w + 18)
+            label2.GetPos(&x2)
+        }
+        if (overflow > 0) {                                                 ; 还是放不下: 右边这一项换到下一行
+            first.GetPos(, &firstY, , &firstH)
+            PreferencesWindow._y := firstY + firstH + 6
+            label2.Move(PreferencesWindow._InputX(), PreferencesWindow._y + 3)
+            label2.GetPos(&x2)
+        }
         second := PreferencesWindow._Input(x2 + w2 + 8, right*)
         PreferencesWindow._BelowInput(left[2], label, first, label2, second)
     }

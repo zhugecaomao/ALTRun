@@ -31,9 +31,9 @@ class Hud {
         maxW := Win.Scale(Hud.MaxWidth)
         label := g.AddText("Center", text)
         label.GetPos(, , &textW)
-        if (textW > maxW) {
-            label.Destroy()
-            label := g.AddText("Center w" maxW, text)
+        if (textW > maxW) {                                                 ; 太宽就按最大宽度自动换行 (控件不能单独删除, 先藏起来)
+            label.Visible := false
+            label := g.AddText("xm ym Center w" maxW, text)
         }
         g.Show("Hide AutoSize")
         g.GetPos(, , &w, &h)
