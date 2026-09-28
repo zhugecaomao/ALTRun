@@ -11,7 +11,8 @@
 ;
 ; 页面构建用几个小工具, 每个设置项只写一行:
 ;   _Check("General.LaunchAtLogin", "Prefs.LaunchAtLogin", , , "Prefs.Group.Startup")  复选框 (最后是左列的分组标签)
-;   _Field("General.Hotkey", "Prefs.Hotkey", "M")               文本框, 宽度 "S" / "M" / "L"
+;   _Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")   文本框, 宽度 "S" / "M" / "L"
+;   _Field("General.Hotkey", "Prefs.Hotkey", "K", "hotkey")     录制热键的框 (HotkeyBox): 显示 Alt+Space, 保存 !Space
 ;   _Choice("General.Language", "Prefs.Language", 值数组, 显示文字数组)
 ;   _Lines("Features.Applications.Folders", "Prefs.AppFolders", 行数)   数组 <-> 每行一项
 ;   _Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", "M")   数组 <-> 逗号分隔
@@ -35,6 +36,7 @@ class PreferencesWindow {
     ; 按钮统一尺寸, 灰色说明和控件左对齐
     static ContentX := 190, ContentW := 560, LabelW := 190
     static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
+    static WidthK := 150                                                    ; 热键框 ("K")
     static ButtonY := 619                                                   ; 底部按钮的位置; 页面内容要在它上面 (y < ButtonY - 10)
     static LabelMax := 250                                                  ; 左列最宽多少, 再长的标签换行
     static _positionReset := false
@@ -184,6 +186,10 @@ class PreferencesWindow {
         appearance["Width"] := Max(400, appearance["Width"])
         if (general["Hotkey"] = "")
             general["Hotkey"] := "!Space"
+        clash := PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(PreferencesWindow.Working))
+        if (IsObject(clash) && MsgBox(I18n.T("Prefs.HotkeyClash", HotkeyBox.Label(clash.Key), clash.First, clash.Second)
+                , I18n.T("Prefs.Title"), "YesNo Icon! Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
+            return
         if !PreferencesWindow._positionReset                                ; 打开偏好设置之后拖动过搜索窗口: 用新的位置
             appearance["Position"] := PreferencesWindow.DeepCopy(AppSettings.Appearance["Position"])
 
@@ -220,8 +226,8 @@ class PreferencesWindow {
 
     static _BuildGeneral() {
         PreferencesWindow._BeginPage("Prefs.Page.General", 120)
-        PreferencesWindow._Field("General.Hotkey", "Prefs.Hotkey", "M")
-        PreferencesWindow._Field("General.SecondaryHotkey", "Prefs.SecondaryHotkey", "M")
+        PreferencesWindow._Field("General.Hotkey", "Prefs.Hotkey", "K", "hotkey")
+        PreferencesWindow._Field("General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey")
         PreferencesWindow._Choice("General.Language", "Prefs.Language", ["auto", "en", "zh", "ja"], [I18n.T("Prefs.Language.auto"), "English", "中文", "日本語"])
         PreferencesWindow._Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
@@ -402,7 +408,7 @@ class PreferencesWindow {
 
     static _BuildClipboard() {
         PreferencesWindow._BeginPage("Prefs.Page.Clipboard", 150)
-        PreferencesWindow._Field("Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "M")
+        PreferencesWindow._Field("Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "K", "hotkey")
         PreferencesWindow._Field("Features.Clipboard.Keyword", "Prefs.ClipKeyword", "M")
         PreferencesWindow._Pair(["Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number"], ["Features.Clipboard.MaxItemLength", "Prefs.ClipMaxLength", "S", "number"])
         PreferencesWindow._Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
@@ -425,8 +431,8 @@ class PreferencesWindow {
         for command in SystemProvider.Commands()
             actions.Push([command["Id"], command["Title"] " (" command["Id"] ")"])
         PreferencesWindow._List("Hotkeys", 520
-            , [["Prefs.Col.Key", "Key", 110], ["Prefs.Col.Action", "Action", 160], ["Prefs.Col.WinTitle", "WinTitle", 270]]
-            , [ItemEditor.Field("Key", "Prefs.Col.Key", "text", true, "", I18n.T("Prefs.HotkeyHint"))
+            , [["Prefs.Col.Key", "Key", 160], ["Prefs.Col.Action", "Action", 150], ["Prefs.Col.WinTitle", "WinTitle", 230]]
+            , [ItemEditor.Field("Key", "Prefs.Col.Key", "hotkey", true, "", I18n.T("Prefs.HotkeyHint"))
              , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)
              , ItemEditor.Field("WinTitle", "Prefs.Col.WinTitle", "text", false, "", I18n.T("Prefs.WinTitleHint"))]
             , () => Map("Key", "", "Action", "ToggleWindow", "WinTitle", ""))
@@ -439,7 +445,8 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.QuickSwitch", 170)
         PreferencesWindow._Section("Prefs.QuickSwitch")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
-        PreferencesWindow._Pair([base "TotalCmdHotkey", "Prefs.QSTotalCmd", "S"], [base "ExplorerHotkey", "Prefs.QSExplorer", "S"])
+        PreferencesWindow._Field(base "TotalCmdHotkey", "Prefs.QSTotalCmd", "K", "hotkey")
+        PreferencesWindow._Field(base "ExplorerHotkey", "Prefs.QSExplorer", "K", "hotkey")
 
         ; DialogWindows 拆成 "标准对话框" 复选框 + 其它对话框的列表, 保存时再合成一个列表
         PreferencesWindow._Section("Prefs.Section.QSDialogs")
@@ -471,10 +478,10 @@ class PreferencesWindow {
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
         PreferencesWindow._Field(base "DateFormat", "Prefs.DateFormat", "M")
         PreferencesWindow._Section("Prefs.Section.DateRename")
-        PreferencesWindow._Field(base "RenameHotkey", "Prefs.RenameHotkey", "S")
+        PreferencesWindow._Field(base "RenameHotkey", "Prefs.RenameHotkey", "K", "hotkey")
         PreferencesWindow._WinList(base "RenameWindows", "Prefs.RenameWindows", 4)
         PreferencesWindow._Section("Prefs.Section.DateAppend")
-        PreferencesWindow._Field(base "AppendHotkey", "Prefs.AppendHotkey", "S")
+        PreferencesWindow._Field(base "AppendHotkey", "Prefs.AppendHotkey", "K", "hotkey")
         PreferencesWindow._WinList(base "AppendWindows", "Prefs.AppendWindows", 2)
     }
 
@@ -715,6 +722,7 @@ class PreferencesWindow {
         switch size {
             case "S": return PreferencesWindow.WidthS
             case "M": return PreferencesWindow.WidthM
+            case "K": return PreferencesWindow.WidthK
         }
         return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
     }
@@ -769,6 +777,8 @@ class PreferencesWindow {
     ; kind: text / number / file / folder; size: "S" / "M" / "L" (见 _Width)
     static _Field(path, labelKey, size, kind := "text") {
         label := PreferencesWindow._Label(labelKey)
+        if (kind = "hotkey")
+            return PreferencesWindow._BelowInput(labelKey, label, PreferencesWindow._HotkeyBox(PreferencesWindow._InputX(), path))
         value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         browseKind := (kind = "file" || kind = "folder")
         ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._Width(size, browseKind) " r1 -Multi" (kind = "number" ? " Number" : ""), value)
@@ -914,6 +924,15 @@ class PreferencesWindow {
         return ctrl
     }
 
+    ; 录制热键的框: 不经过 _Add (程序改框里的文字不算修改), 录到新热键时才标记 "有修改"
+    static _HotkeyBox(x, path) {
+        ctrl := HotkeyBox.Add(PreferencesWindow.Gui, "x" x " y" PreferencesWindow._y " w" PreferencesWindow.WidthK " Hidden"
+            , PreferencesWindow.GetPath(PreferencesWindow.Working, path), false, () => PreferencesWindow.MarkDirty())
+        PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls.Push(ctrl)
+        PreferencesWindow._Bind(path, () => HotkeyBox.Value(ctrl))
+        return ctrl
+    }
+
     ; 和上一行的短输入框 ("S") 同一行的按钮 (例如 "子文件夹深度 [4]  [重建文件索引]")
     static _SideButton(rowY, labelKey, fn) {
         x := PreferencesWindow._InputX() + PreferencesWindow.WidthS + 12
@@ -1028,6 +1047,8 @@ class PreferencesWindow {
             return ""
         if (key = "Target" && item.Has("Arguments") && Trim(item["Arguments"]) != "")   ; 自定义命令: 目标后面接着显示参数
             return RegExReplace(item["Target"] " " item["Arguments"], "\s+", " ")
+        if (key = "Key")                                                    ; 自定义热键: 显示 Ctrl+Alt+P、鼠标中键
+            return HotkeyBox.Label(item[key])
         if (key = "Type") {                                                 ; 自定义命令的类型显示翻译后的名称
             label := I18n.T("Prefs.TypeShort." item[key])
             if (label != "Prefs.TypeShort." item[key])
@@ -1039,6 +1060,38 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; Data helpers (纯函数, 有单元测试)
     ;---------------------------------------------------------------------------
+    ; 全局热键 (不限定窗口的) -> [{Key, Label}...]: 呼出热键、第二个呼出热键、剪贴板历史、没有填窗口的自定义热键。
+    ; 对话框跳转、一键加日期只在特定的窗口里生效 (两个 Ctrl+D 是正常的), 不算在内
+    static _GlobalHotkeys(data) {
+        list := []
+        add(key, label) => (Trim(key) != "") ? list.Push({Key: key, Label: label}) : ""
+        general := data["General"]
+        add(general["Hotkey"], I18n.T("Prefs.Hotkey"))
+        add(general["SecondaryHotkey"], I18n.T("Prefs.SecondaryHotkey"))
+        clipboard := PreferencesWindow.GetPath(data, "Features.Clipboard")
+        if (clipboard is Map && clipboard.Has("Enabled") && clipboard["Enabled"] && clipboard.Has("Hotkey"))
+            add(clipboard["Hotkey"], I18n.T("Prefs.Page.Clipboard"))
+        if (data.Has("Hotkeys") && data["Hotkeys"] is Array)
+            for entry in data["Hotkeys"]
+                if (entry is Map && entry.Has("Key") && (!entry.Has("WinTitle") || Trim(entry["WinTitle"]) = ""))
+                    add(entry["Key"], I18n.T("Prefs.Page.Hotkeys") " (" (entry.Has("Action") ? entry["Action"] : "") ")")
+        return list
+    }
+
+    ; 第一个重复的热键 -> {Key, First, Second} (两处的名称); 没有重复时 ""。~ * $ 不影响是不是同一个键
+    static DuplicateHotkey(list) {
+        seen := Map()
+        for entry in list {
+            key := StrLower(RegExReplace(Trim(entry.Key), "^[~*$]+"))
+            if RegExMatch(key, "^([\^!+#]+)(.+)$", &m)                     ; 修饰符的顺序不同也是同一个键 (!^c = ^!c)
+                key := StrReplace(Sort(RegExReplace(m[1], "(.)", "$1`n")), "`n") m[2]
+            if seen.Has(key)
+                return {Key: entry.Key, First: seen[key], Second: entry.Label}
+            seen[key] := entry.Label
+        }
+        return ""
+    }
+
     static DeepCopy(value) {
         return JSON.Parse(JSON.Stringify(value))
     }
