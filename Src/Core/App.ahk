@@ -23,7 +23,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.09.28"
+    static Version := "2026.09.29"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
     static PreviousWindow := 0
