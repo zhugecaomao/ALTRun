@@ -63,7 +63,7 @@
 
 | 占位符 | 替换为 |
 |---|---|
-| `{date}` | 今天的日期, 格式同 [Ctrl+D 加日期](Extensions#ctrld-加日期) 的 DateFormat (默认 `dd.MM.yyyy`) |
+| `{date}` | 今天的日期, 格式同 [一键加日期](Extensions#一键加日期) 的 DateFormat (默认 `dd.MM.yyyy`) |
 | `{time}` | 当前时间 `HH:mm` |
 | `{datetime}` | 日期 + 时间 |
 | `{clipboard}` | 剪贴板里的文字 |

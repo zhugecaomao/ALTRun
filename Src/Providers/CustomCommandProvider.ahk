@@ -7,7 +7,7 @@
 ; Target 可以用 A_Desktop / A_ScriptDir 等内置变量开头, 或 %AppData% 等环境变量。
 ; Keyword 完全相同时排在最前面。
 ; 搜索范围: 名称、关键字、名称的拼音首字母; File / Folder 类型还包括目标的文件名
-; (不含扩展名) 或文件夹名, 例如 Target "Q:\Projects\PT1931 - 24 NIR" 输入 "nir" 也能找到。
+; (不含扩展名) 或文件夹名, 例如 Target "D:\Projects\2026 - Annual Report" 输入 "annual" 也能找到。
 ; 同样的匹配程度, 名称匹配排在文件名 / 文件夹名匹配前面。
 ;
 ; 用法:

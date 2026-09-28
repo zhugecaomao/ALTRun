@@ -1,6 +1,6 @@
 # 扩展功能
 
-搜索窗口以外的功能, 在 偏好设置 → 扩展功能 里开关和设置。
+搜索窗口以外的功能。对话框快速跳转和一键加日期各有一页设置 (偏好设置 → 对话框跳转 / 一键加日期)。
 
 ## 对话框快速跳转
 做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。在标准的 "打开 / 保存文件" 对话框里:
@@ -9,11 +9,19 @@
 
 对话框标题上会提示这两个热键。打开 "自动跳转" (`AutoSwitch`) 后, 从 Total Commander 切换到对话框时会自动跳转。
 
-设置: `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows`。
+偏好设置 → 对话框跳转:
+- **生效的窗口**: "Windows 标准对话框" (`ahk_class #32770`, 默认勾选) 和 "其它对话框", 例如 WPS 的 `ahk_class Qt5QWindowIcon`, 每行一个
+- **不生效的窗口**: 在这些窗口里不跳转
+- **不自动跳转的对话框**: 这些对话框里不自动跳转, 仍然可以按热键
 
-## Ctrl+D 加日期
+设置文件里是 `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows` / `AutoSwitchExclude` (窗口条件用逗号分隔)。
+
+## 一键加日期
+按热键 (默认 `Ctrl+D`, 可以改):
 - **重命名文件时** (资源管理器、Total Commander、桌面、对话框): 在扩展名前加上 ` - 日期`, 已经有日期的更新为今天。例如 `Report.docx` → `Report - 23.09.2026.docx`
 - **文字备注框里** (例如 Total Commander 的文件备注): 在末尾加上 ` - 日期`
+
+偏好设置 → 一键加日期: 两种场景各有自己的热键和 "生效的窗口" 列表 (每行一个, 例如 `ahk_class CabinetWClass` 资源管理器、`ahk_class TTOTAL_CMD` Total Commander)。设置文件里是 `Extensions.AutoDate` → `RenameHotkey` / `RenameWindows` / `AppendHotkey` / `AppendWindows`。
 
 日期格式 `DateFormat` 默认 `dd.MM.yyyy` (写法见 [AutoHotkey FormatTime](https://www.autohotkey.com/docs/v2/lib/FormatTime.htm)), 片段里的 `{date}` 也用这个格式。
 
@@ -24,9 +32,9 @@
 |---|---|---|
 | 热键 (Key) | `^!p` | AutoHotkey 写法: `!` Alt, `^` Ctrl, `+` Shift, `#` Win; `~` 表示不拦截原来的按键 |
 | 操作 (Action) | `PTTools` | 系统命令的 Id, 或 `ToggleWindow` (显示 / 隐藏 ALTRun) |
-| 窗口 (WinTitle) | `ahk_exe RAPTW.exe` | 留空 = 全局; 否则只在匹配的窗口里生效 |
+| 窗口 (WinTitle) | `ahk_exe notepad.exe` | 留空 = 全局; 否则只在匹配的窗口里生效; `ALTRun` = 只在 ALTRun 的搜索窗口里 |
 
-默认的一条: 在 RAPT (`RAPTW.exe`) 里按鼠标中键打开 PT 工具箱。
+默认的两条: 在搜索窗口里按 `F1` 打开 "关于 ALTRun" (偏好设置的高级页); 在 RAPT (`RAPTW.exe`) 里按鼠标中键打开 PT 工具箱。
 
 ## 系统命令
 直接在搜索框里输入名称 (中文、英文或 Id 都可以), 也可以用在自定义热键里。
@@ -40,7 +48,7 @@
 | `Reload` | 重新载入 ALTRun |
 | `RebuildIndex` | 重建 ALTRun 索引 |
 | `CheckUpdate` | 检查更新 |
-| `About` | 关于 ALTRun |
+| `About` | 关于 ALTRun: 打开偏好设置的高级页 (版本、项目主页、检查更新) |
 | `Log` | 打开 ALTRun 日志 |
 | `Quit` | 退出 ALTRun |
 | **系统** | |

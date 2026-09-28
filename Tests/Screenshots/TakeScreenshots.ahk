@@ -40,7 +40,7 @@ class Shots {
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
-            ["prefs-commands",   "Light", "-Preferences 7", () => Shots.Preferences()],
+            ["prefs-commands",   "Light", "-Preferences 8", () => Shots.Preferences()],
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-darkcompact", "DarkCompact", "", () => Shots.Search("re")],
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],

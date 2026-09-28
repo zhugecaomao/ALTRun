@@ -6,7 +6,8 @@
 ; 对话框标题上会提示这两个热键。AutoSwitch = 1 时, 从 TC 切换到对话框会自动跳转。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
-;   Enabled / ExplorerHotkey / TotalCmdHotkey / AutoSwitch / DialogWindows / ExcludeWindows
+;   Enabled / ExplorerHotkey / TotalCmdHotkey / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
+;   DialogWindows 等是逗号分隔的窗口条件 (ahk_class / ahk_exe / 标题)
 ;
 ; 用法:
 ;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    启动时
@@ -25,6 +26,10 @@ class QuickSwitch {
             GroupAdd("ALTRunDialogs", Trim(A_LoopField))
         Loop Parse, options["ExcludeWindows"], ","
             GroupAdd("ALTRunDialogExclude", Trim(A_LoopField))
+        if options.Has("AutoSwitchExclude")
+            Loop Parse, options["AutoSwitchExclude"], ","
+                if (Trim(A_LoopField) != "")
+                    GroupAdd("ALTRunAutoSwitchExclude", Trim(A_LoopField))
 
         HotIf((*) => QuickSwitch.IsFileDialog())
         try {
@@ -43,7 +48,7 @@ class QuickSwitch {
     ; 每 250 ms: 在对话框标题上显示热键提示; AutoSwitch 时从 TC 切到对话框自动跳转
     static _Watch() {
         isDialog := QuickSwitch.IsFileDialog()
-        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasTC)
+        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasTC && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
             QuickSwitch.SyncTotalCmdPath(true)
         QuickSwitch._lastWasTC := WinActive("ahk_class TTOTAL_CMD") ? true : false
         QuickSwitch._UpdateHint(isDialog)

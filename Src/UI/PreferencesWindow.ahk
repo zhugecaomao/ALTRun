@@ -41,8 +41,13 @@ class PreferencesWindow {
     static _pageKey := "", _wider := Map()                                  ; 正在建的页; 标签放不下的页 -> 需要的左列宽度
     static _labelWidths := Map()                                            ; "语言 页" -> 加宽后的左列宽度 (打开过一次就记住)
 
+    ; pageIndex: 页码, 或页面的键 (例如 "Prefs.Page.Advanced")
     static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
+            if !IsInteger(pageIndex) && (index := PreferencesWindow._PageIndex(pageIndex)) {
+                PreferencesWindow.PageList.Value := index
+                PreferencesWindow.SelectPage(index)
+            }
             WinActivate("ahk_id " PreferencesWindow.Gui.Hwnd)
             return
         }
@@ -87,12 +92,21 @@ class PreferencesWindow {
         Hotkey("F1", (*) => PreferencesWindow.Help())
         HotIfWinActive()
 
+        if !IsInteger(pageIndex)
+            pageIndex := PreferencesWindow._PageIndex(pageIndex)
         pageIndex := Max(1, Min(pageIndex, PreferencesWindow.Pages.Length))
         pageList.Value := pageIndex
         PreferencesWindow.SelectPage(pageIndex)
         g.Show((IsInteger(x) && IsInteger(y) ? "x" x " y" y " " : "") "w765 h" (PreferencesWindow.ButtonY + 41))
         ; 打开窗口时程序自己填的值不算修改, 等控件的通知都处理完再开始记录
         SetTimer(() => (PreferencesWindow._ready := true), -300)
+    }
+
+    static _PageIndex(nameKey) {
+        for index, page in PreferencesWindow.Pages
+            if (page.Key = nameKey)
+                return index
+        return 1
     }
 
     ; 有控件被用户修改过: "应用" 变为可用, 取消时要确认
@@ -148,7 +162,8 @@ class PreferencesWindow {
         static pages := Map("Prefs.Page.Window", "Usage", "Prefs.Page.Appearance", "Themes", "Prefs.Page.Features", "Usage", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
                           , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage"
-                          , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.Extensions", "Extensions", "Prefs.Page.Usage", "Usage")
+                          , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.QuickSwitch", "Extensions", "Prefs.Page.DateStamp", "Extensions"
+                          , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
 
@@ -191,12 +206,14 @@ class PreferencesWindow {
         PreferencesWindow._BuildFeatures()
         PreferencesWindow._BuildApplications()
         PreferencesWindow._BuildFileSearch()
+        PreferencesWindow._BuildFileIndex()
         PreferencesWindow._BuildCommands()
         PreferencesWindow._BuildSnippets()
         PreferencesWindow._BuildClipboard()
         PreferencesWindow._BuildWebSearch()
         PreferencesWindow._BuildHotkeys()
-        PreferencesWindow._BuildExtensions()
+        PreferencesWindow._BuildQuickSwitch()
+        PreferencesWindow._BuildDateStamp()
         PreferencesWindow._BuildUsage()
         PreferencesWindow._BuildAdvanced()
     }
@@ -301,7 +318,7 @@ class PreferencesWindow {
     static _BuildFeatures() {
         PreferencesWindow._BeginPage("Prefs.Page.Features", 140)
         PreferencesWindow._Section("Prefs.EnabledFeatures")
-        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "FileSearch", "Terminal", "System"]
+        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "FileSearch", "Terminal", "System", "Help"]
         startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; 两列: 英文名称较长, 三列会换行
         for index, feature in features {
             column := Mod(index - 1, 2), row := (index - 1) // 2
@@ -341,16 +358,24 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.Section.FileResults")
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
+        PreferencesWindow._Field("Features.FileSearch.MinQueryLength", "Prefs.FileMinLength", "S", "number")
         PreferencesWindow._Section("Prefs.Section.Everything")
         status := I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning")
         PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", , I18n.T("Prefs.EverythingStatus", status))
         PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", "L")
         PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", "L", "folder")
+    }
+
+    ; Everything 没有运行时的内置文件索引
+    static _BuildFileIndex() {
+        PreferencesWindow._BeginPage("Prefs.Page.FileIndex", 130)
         PreferencesWindow._Section("Prefs.Section.BuiltinIndex")
-        PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 2)
+        PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 4)
         depthY := PreferencesWindow._y                                      ; 按钮和 "子文件夹深度" 放在同一行
         PreferencesWindow._Field("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", "S", "number")
         PreferencesWindow._SideButton(depthY, "Prefs.RebuildFileIndex", (*) => FileIndex.Rebuild())
+        PreferencesWindow._Field("Features.FileSearch.ScopeExclude", "Prefs.ScopeExclude", "L")
+        PreferencesWindow._Pair(["Features.FileSearch.MaxEntries", "Prefs.MaxEntries", "S", "number"], ["Features.FileSearch.RefreshMinutes", "Prefs.RefreshMinutes", "S", "number"])
     }
 
     static _BuildCommands() {
@@ -364,21 +389,22 @@ class PreferencesWindow {
 
     static _BuildSnippets() {
         PreferencesWindow._BeginPage("Prefs.Page.Snippets", 150)
-        PreferencesWindow._List("Snippets", 330
+        PreferencesWindow._List("Snippets", 300
             , [["Prefs.Col.Name", "Name", 150], ["Prefs.Col.Keyword", "Keyword", 90], ["Prefs.Col.Text", "Text", 300]]
             , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet())
         PreferencesWindow._Section("Prefs.Section.Options")
         PreferencesWindow._Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand", , , "Prefs.Group.AutoExpand")
         PreferencesWindow._Field("Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", "S")
         PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")
-        PreferencesWindow._Choice("Features.Snippets.PasteMode", "Prefs.PasteMode", ["Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")])
+        PreferencesWindow._Pair(["Features.Snippets.PasteMode", "Prefs.PasteMode", "M", "choice", ["Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")]]
+            , ["Features.Snippets.PasteDelay", "Prefs.PasteDelay", "S", "number"])
     }
 
     static _BuildClipboard() {
         PreferencesWindow._BeginPage("Prefs.Page.Clipboard", 150)
         PreferencesWindow._Field("Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "M")
         PreferencesWindow._Field("Features.Clipboard.Keyword", "Prefs.ClipKeyword", "M")
-        PreferencesWindow._Field("Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number")
+        PreferencesWindow._Pair(["Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number"], ["Features.Clipboard.MaxItemLength", "Prefs.ClipMaxLength", "S", "number"])
         PreferencesWindow._Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
         PreferencesWindow._Gap()
         PreferencesWindow._Lines("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps", 5)
@@ -402,21 +428,54 @@ class PreferencesWindow {
             , [["Prefs.Col.Key", "Key", 110], ["Prefs.Col.Action", "Action", 160], ["Prefs.Col.WinTitle", "WinTitle", 270]]
             , [ItemEditor.Field("Key", "Prefs.Col.Key", "text", true, "", I18n.T("Prefs.HotkeyHint"))
              , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)
-             , ItemEditor.Field("WinTitle", "Prefs.Col.WinTitle", "text", false, "", "ahk_exe RAPTW.exe")]
+             , ItemEditor.Field("WinTitle", "Prefs.Col.WinTitle", "text", false, "", I18n.T("Prefs.WinTitleHint"))]
             , () => Map("Key", "", "Action", "ToggleWindow", "WinTitle", ""))
         PreferencesWindow._Note("Prefs.HotkeysNote")
     }
 
-    static _BuildExtensions() {
-        PreferencesWindow._BeginPage("Prefs.Page.Extensions", 170)
+    ; 对话框快速跳转 (Listary 的 Quick Switch)
+    static _BuildQuickSwitch() {
+        base := "Extensions.QuickSwitch."
+        PreferencesWindow._BeginPage("Prefs.Page.QuickSwitch", 170)
         PreferencesWindow._Section("Prefs.QuickSwitch")
-        PreferencesWindow._Check("Extensions.QuickSwitch.Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
-        PreferencesWindow._Pair(["Extensions.QuickSwitch.TotalCmdHotkey", "Prefs.QSTotalCmd", "S"], ["Extensions.QuickSwitch.ExplorerHotkey", "Prefs.QSExplorer", "S"])
-        PreferencesWindow._Check("Extensions.QuickSwitch.AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
+        PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
+        PreferencesWindow._Pair([base "TotalCmdHotkey", "Prefs.QSTotalCmd", "S"], [base "ExplorerHotkey", "Prefs.QSExplorer", "S"])
+
+        ; DialogWindows 拆成 "标准对话框" 复选框 + 其它对话框的列表, 保存时再合成一个列表
+        PreferencesWindow._Section("Prefs.Section.QSDialogs")
+        windows := PreferencesWindow.SplitWindows(PreferencesWindow.GetPath(PreferencesWindow.Working, base "DialogWindows"))
+        standardClass := "ahk_class #32770", others := []
+        for window in windows
+            if (window != standardClass)
+                others.Push(window)
+        PreferencesWindow._GroupLabel("Prefs.Group.DialogWindows")
+        x := PreferencesWindow._InputX()
+        standard := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T("Prefs.QSStandard"))
+        standard.Value := (others.Length < windows.Length) ? 1 : 0
+        PreferencesWindow._Below(0, standard)
+        PreferencesWindow._Desc("Prefs.QSStandard", x + 18)
+        otherList := PreferencesWindow._WinList("", "Prefs.QSOtherDialogs", 2, others)
+        PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], PreferencesWindow.SplitLines(otherList.Value)))
+        PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 2)
+
+        PreferencesWindow._Section("Prefs.Section.QSAuto")
+        PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
+        PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 2)
+    }
+
+    ; 一键加日期 (AutoDate): 重命名文件 / 备注框里各自的热键和生效的窗口
+    static _BuildDateStamp() {
+        base := "Extensions.AutoDate."
+        PreferencesWindow._BeginPage("Prefs.Page.DateStamp", 150)
         PreferencesWindow._Section("Prefs.AutoDate")
-        PreferencesWindow._Check("Extensions.AutoDate.Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
-        PreferencesWindow._Field("Extensions.AutoDate.DateFormat", "Prefs.DateFormat", "M")
-        PreferencesWindow._Pair(["Extensions.AutoDate.RenameHotkey", "Prefs.RenameHotkey", "S"], ["Extensions.AutoDate.AppendHotkey", "Prefs.AppendHotkey", "S"])
+        PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
+        PreferencesWindow._Field(base "DateFormat", "Prefs.DateFormat", "M")
+        PreferencesWindow._Section("Prefs.Section.DateRename")
+        PreferencesWindow._Field(base "RenameHotkey", "Prefs.RenameHotkey", "S")
+        PreferencesWindow._WinList(base "RenameWindows", "Prefs.RenameWindows", 4)
+        PreferencesWindow._Section("Prefs.Section.DateAppend")
+        PreferencesWindow._Field(base "AppendHotkey", "Prefs.AppendHotkey", "S")
+        PreferencesWindow._WinList(base "AppendWindows", "Prefs.AppendWindows", 2)
     }
 
     ; 上面是 "关于" (图标、名称、版本、主页、检查更新), 下面是设置和数据文件的位置和操作
@@ -554,7 +613,7 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; labelW: 这一页左列标签的宽度 (按这一页最长的标签定, 内容不会整体偏右)
     static _BeginPage(nameKey, labelW := 190) {
-        PreferencesWindow.Pages.Push({Name: I18n.T(nameKey), Wiki: PreferencesWindow.WikiPage(nameKey), Controls: []})
+        PreferencesWindow.Pages.Push({Key: nameKey, Name: I18n.T(nameKey), Wiki: PreferencesWindow.WikiPage(nameKey), Controls: []})
         PreferencesWindow._y := 14
         PreferencesWindow._pageKey := nameKey
         PreferencesWindow.LabelW := Max(labelW, PreferencesWindow._labelWidths.Get(I18n.Lang " " nameKey, 0))
@@ -752,6 +811,20 @@ class PreferencesWindow {
         PreferencesWindow._Bind(path, () => PreferencesWindow.SplitLines(ctrl.Value))
         PreferencesWindow._Below(3, label, ctrl)
         PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
+    }
+
+    ; 窗口列表 (设置里是逗号分隔的 "ahk_class ..., ahk_exe ...") 每行显示一个。
+    ; path 为空时不绑定, value 直接给数组; 返回输入框
+    static _WinList(path, labelKey, rows, value := "") {
+        label := PreferencesWindow._Label(labelKey)
+        if (path != "")
+            value := PreferencesWindow.SplitWindows(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
+        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() " r" rows " +Multi -Wrap +HScroll", PreferencesWindow.JoinLines(value))
+        if (path != "")
+            PreferencesWindow._Bind(path, () => PreferencesWindow.JoinWindows(PreferencesWindow.SplitLines(ctrl.Value)))
+        PreferencesWindow._Below(3, label, ctrl)
+        PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
+        return ctrl
     }
 
     static _Csv(path, labelKey, size) {
@@ -1008,6 +1081,22 @@ class PreferencesWindow {
             if (Trim(part) != "")
                 items.Push(Trim(part))
         return items
+    }
+
+    ; 窗口条件列表 "ahk_class A, ahk_exe B" <-> 数组 (去掉空白和空项)
+    static SplitWindows(text) {
+        return PreferencesWindow.SplitCsv(text)
+    }
+
+    ; 几个数组合成 "ahk_class A, ahk_exe B", 去掉重复
+    static JoinWindows(lists*) {
+        all := [], seen := Map()
+        seen.CaseSense := false
+        for list in lists
+            for window in list
+                if (Trim(window) != "" && !seen.Has(Trim(window)))
+                    seen[Trim(window)] := true, all.Push(Trim(window))
+        return PreferencesWindow.JoinCsv(all)
     }
 
     static JoinCsv(items) {

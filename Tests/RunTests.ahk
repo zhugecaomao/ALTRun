@@ -67,7 +67,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -819,6 +819,35 @@ class Tests {
             }
         }
         I18n.Init(savedLang)
+    }
+
+    ; 新用户的默认示例: 自定义命令每种类型都有, 片段只用支持的占位符; 默认热键; 窗口列表
+    static DefaultExamples() {
+        eq := (n, a, e) => TestRunner.Equal("DefaultExamples." n, a, e)
+        defaults := AppSettings.Defaults()
+        types := Map()
+        for command in defaults["CustomCommands"]
+            types[command["Type"]] := true
+        for commandType in ["File", "Folder", "Command", "Url"]
+            eq("command type " commandType, types.Has(commandType), true)
+        keywords := Map()
+        for snippet in defaults["Snippets"] {
+            TestRunner.True("DefaultExamples.snippet keyword " snippet["Name"], snippet["Keyword"] != "" && !keywords.Has(snippet["Keyword"]))
+            keywords[snippet["Keyword"]] := true
+            unknown := RegExReplace(snippet["Text"], "\{(date|time|datetime|clipboard|cursor)\}")
+            eq("snippet placeholders " snippet["Name"], RegExMatch(unknown, "\{\w+\}"), 0)
+        }
+        TestRunner.True("DefaultExamples.snippets for email", keywords.Has("sig") && keywords.Has("thx"))
+        eq("second hotkey", defaults["General"]["SecondaryHotkey"], "!r")
+        eq("F1 about in ALTRun", defaults["Hotkeys"][1]["Key"] "|" defaults["Hotkeys"][1]["Action"] "|" defaults["Hotkeys"][1]["WinTitle"], "F1|About|ALTRun")
+        ids := Map()
+        for command in SystemProvider.Commands()
+            ids[command["Id"]] := true
+        eq("about command exists", ids.Has("About"), true)
+        eq("auto switch exclude default", defaults["Extensions"]["QuickSwitch"]["AutoSwitchExclude"], "")
+
+        eq("split windows", PreferencesWindow.JoinLines(PreferencesWindow.SplitWindows("ahk_class A,  ahk_exe b.exe ,,")), "ahk_class A`r`nahk_exe b.exe")
+        eq("join windows", PreferencesWindow.JoinWindows(["ahk_class #32770"], ["ahk_class Qt5QWindowIcon", " ", "ahk_class #32770"]), "ahk_class #32770, ahk_class Qt5QWindowIcon")
     }
 
     ; 每条界面文字都有英文 / 中文 / 日文, 参数占位符 {1} {2} ... 三种语言一样
