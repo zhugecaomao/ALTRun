@@ -1492,6 +1492,17 @@ Func | PTTools | PT Tools (AHK)=99
         eq("compose order", HotkeyBox.Compose("#+!^", "C"), "^!+#c")
         eq("compose name", HotkeyBox.Compose("!", "Space"), "!Space")
         eq("compose none", HotkeyBox.Compose("", "F5"), "F5")
+        ; 录制时的修饰键以 InputHook 收到的按下 / 松开为准 (远程桌面模拟的按键不算物理按下)
+        savedActive := HotkeyBox._active
+        HotkeyBox._active := {Hwnd: 0}
+        HotkeyBox._held := Map("RControl", true, "LAlt", true)
+        eq("held mods", HotkeyBox._Mods(), "^!")
+        HotkeyBox._held := Map("Control", true, "LWin", true, "RShift", true)
+        eq("held generic Control", HotkeyBox._Mods(), "^+#")
+        HotkeyBox._held := Map()
+        eq("nothing held", HotkeyBox._Mods(), "")
+        HotkeyBox._active := savedActive
+        ok("modifier names", HotkeyBox.IsModifier("LControl") && HotkeyBox.IsModifier("RWin") && HotkeyBox.IsModifier("Shift") && !HotkeyBox.IsModifier("k"))
         for hk in ["^!c", "!Space", "#e", "F5", "^Numpad1", "+F3", "Pause", "MButton", "!Enter"]
             ok("allowed " hk, HotkeyBox.IsAllowed(hk))
         for hk in ["a", "+a", "Space", "+Space", "Enter", "Tab", "Numpad5", "1", "Delete"]

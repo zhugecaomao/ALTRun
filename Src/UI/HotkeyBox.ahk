@@ -25,6 +25,7 @@
 class HotkeyBox {
     static Boxes := Map()                                                   ; 输入框 Hwnd -> {Ctrl, Gui, Value, Mouse, OnChange}
     static _active := "", _hook := "", _suspended := false, _mouseHooked := false, _watchTimer := ""
+    static _held := Map()                                                   ; 录制时按住的修饰键 (LControl, RAlt...) -> true
     static TipId := 20
 
     static Add(g, options, value, mouse := false, onChange := "") {
@@ -98,10 +99,14 @@ class HotkeyBox {
             Suspend(true)
             HotkeyBox._suspended := true
         }
+        HotkeyBox._held := Map()
+        for key in ["LControl", "RControl", "LAlt", "RAlt", "LShift", "RShift", "LWin", "RWin"]   ; 开始录制前已经按住的
+            if GetKeyState(key, "P")
+                HotkeyBox._held[key] := true
         ih := InputHook("L0")
         ih.KeyOpt("{All}", "NS")                                            ; 所有按键: 通知 + 拦下
         ih.OnKeyDown := (ih, vk, sc) => HotkeyBox._OnKeyDown(vk, sc)
-        ih.OnKeyUp := (ih, vk, sc) => HotkeyBox._OnModifiers()
+        ih.OnKeyUp := (ih, vk, sc) => HotkeyBox._OnKeyUp(vk, sc)
         ih.Start()
         HotkeyBox._hook := ih
         if !IsObject(HotkeyBox._watchTimer)
@@ -133,8 +138,10 @@ class HotkeyBox {
         if !DllCall("IsWindow", "Ptr", state.Hwnd)                          ; 窗口已经关掉
             return HotkeyBox.CancelActive()
         name := GetKeyName(Format("vk{:x}sc{:x}", vk, sc))
-        if RegExMatch(name, "i)^[LR]?(Control|Ctrl|Shift|Alt|Win)$")
+        if HotkeyBox.IsModifier(name) {
+            HotkeyBox._held[name] := true
             return HotkeyBox._OnModifiers()
+        }
         mods := HotkeyBox._Mods()
         if (name = "Tab" && (mods = "" || mods = "+"))
             return HotkeyBox._Finish(state, state.Value)
@@ -153,6 +160,19 @@ class HotkeyBox {
         HotkeyBox._Finish(state, hk)
     }
 
+    static _OnKeyUp(vk, sc) {
+        name := GetKeyName(Format("vk{:x}sc{:x}", vk, sc))
+        if HotkeyBox.IsModifier(name) {
+            if HotkeyBox._held.Has(name)
+                HotkeyBox._held.Delete(name)
+            HotkeyBox._OnModifiers()
+        }
+    }
+
+    static IsModifier(name) {
+        return RegExMatch(name, "i)^[LR]?(Control|Ctrl|Shift|Alt|Win)$") ? true : false
+    }
+
     ; 按住修饰键时先显示 "Ctrl+Alt+"
     static _OnModifiers() {
         state := HotkeyBox._active
@@ -166,11 +186,21 @@ class HotkeyBox {
             state.Ctrl.Value := SubStr(state.Ctrl.Value, 1, -1)             ; "Ctrl+Alt+X" -> "Ctrl+Alt+"
     }
 
+    ; 按住的修饰键 -> "^!+#" 的组合。录制时以 InputHook 收到的按下 / 松开为准 (_held): 远程桌面
+    ; (Chrome Remote Desktop、RDP...) 和其它程序模拟的按键不算 "物理按下", 被拦下后逻辑状态也不变,
+    ; 只看 GetKeyState 的话 Ctrl+Alt+K 会被当成单独的 K。不在录制时 (在框里点鼠标中键) 看按键状态
     static _Mods() {
         mods := ""
-        for pair in [["Ctrl", "^"], ["Alt", "!"], ["Shift", "+"], ["LWin", "#"], ["RWin", "#"]]
-            if (GetKeyState(pair[1], "P") && !InStr(mods, pair[2]))
+        for pair in [["Control", "^"], ["Alt", "!"], ["Shift", "+"], ["Win", "#"]] {
+            down := false
+            for side in ["L", "R", ""]                                     ; "" = 不分左右的 Control / Shift / Alt (有的程序这样模拟按键)
+                if (HotkeyBox._held.Has(side pair[1]) || (side != "" && !IsObject(HotkeyBox._active) && GetKeyState(side pair[1])))
+                    down := true
+            if (pair[1] = "Control" && HotkeyBox._held.Has("Ctrl"))
+                down := true
+            if down
                 mods .= pair[2]
+        }
         return mods
     }
 
@@ -204,7 +234,7 @@ class HotkeyBox {
             HotkeyBox._hook := ""
             try ih.Stop()
         }
-        HotkeyBox._active := ""
+        HotkeyBox._active := "", HotkeyBox._held := Map()
         if IsObject(HotkeyBox._watchTimer)
             SetTimer(HotkeyBox._watchTimer, 0)
         try TraySetIcon(, , false)
