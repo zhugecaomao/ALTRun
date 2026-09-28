@@ -839,7 +839,14 @@ class Tests {
         }
         TestRunner.True("DefaultExamples.snippets for email", keywords.Has("sig") && keywords.Has("thx"))
         eq("second hotkey", defaults["General"]["SecondaryHotkey"], "!r")
-        eq("F1 about in ALTRun", defaults["Hotkeys"][1]["Key"] "|" defaults["Hotkeys"][1]["Action"] "|" defaults["Hotkeys"][1]["WinTitle"], "F1|About|ALTRun")
+        for entry in defaults["Hotkeys"]                                    ; F1 ~ F4 内置在搜索窗口里, 不在自定义热键中
+            TestRunner.True("DefaultExamples.no F-key hotkey " entry["Key"], !RegExMatch(entry["Key"], "i)^F[1-4]$"))
+        help := ""
+        for item in HelpProvider.Items()
+            help .= item.Id " "
+        eq("help lists F1 and F4", (InStr(help, "About ") && InStr(help, "EditJson ")) ? 1 : 0, 1)
+        eq("command target shows arguments", PreferencesWindow._Cell(Map("Target", "cmd.exe", "Arguments", "/k ipconfig /all"), "Target"), "cmd.exe /k ipconfig /all")
+        eq("url type name", I18n.Strings["Prefs.Type.Url"][1], "Web address / link")
         ids := Map()
         for command in SystemProvider.Commands()
             ids[command["Id"]] := true

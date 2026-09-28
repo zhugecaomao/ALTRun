@@ -40,6 +40,8 @@ class HelpProvider {
             ["CheckPaths", "CustomCommands", "Commands-and-Snippets"],
             ["LargeType" , ""              , "Usage"],
             ["Prefs"     , ""              , "Configuration"],
+            ["EditJson"  , ""              , "Configuration"],
+            ["About"     , ""              , "Installation"],
             ["Help"      , ""              , "Usage"]
         ]
     }

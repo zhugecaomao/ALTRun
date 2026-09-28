@@ -1026,6 +1026,8 @@ class PreferencesWindow {
     static _Cell(item, key) {
         if !(item is Map) || !item.Has(key)
             return ""
+        if (key = "Target" && item.Has("Arguments") && Trim(item["Arguments"]) != "")   ; 自定义命令: 目标后面接着显示参数
+            return RegExReplace(item["Target"] " " item["Arguments"], "\s+", " ")
         if (key = "Type") {                                                 ; 自定义命令的类型显示翻译后的名称
             label := I18n.T("Prefs.TypeShort." item[key])
             if (label != "Prefs.TypeShort." item[key])

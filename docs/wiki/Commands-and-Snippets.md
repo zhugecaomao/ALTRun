@@ -31,7 +31,7 @@
 | 字段 | 说明 |
 |---|---|
 | 名称 (Title) | 显示的名称, 按它搜索 |
-| 类型 (Type) | `File` 文件 / 程序, `Folder` 文件夹, `Command` 程序 + 参数, `Url` 网址 |
+| 类型 (Type) | `File` 文件 / 程序, `Folder` 文件夹, `Command` 程序 + 参数, `Url` 网址 / 链接 (网页, 或 `ms-settings:windowsupdate`、`mailto:` 这样的链接) |
 | 目标 (Target) | 路径、程序或网址 |
 | 参数 (Arguments) | 运行程序时附带的命令行参数, 例如 `/k ipconfig /all` |
 | 关键字 (Keyword) | 可选。输入完全相同的关键字时排在最前面 |

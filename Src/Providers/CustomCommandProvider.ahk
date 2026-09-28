@@ -131,7 +131,7 @@ class CustomCommandProvider {
         commandType := command.Has("Type") ? command["Type"] : "File"
         switch commandType, false {
             case "Folder": kind := "folder", icon := CustomCommandProvider._FolderIcon(CustomCommandProvider._Resolve(target))
-            case "Url"   : kind := "url",    icon := "url:"
+            case "Url"   : kind := "url",    icon := RegExMatch(target, "i)^ms-settings:") ? "res:imageres.dll,-114" : "url:"   ; 系统设置链接用齿轮图标
             default      : kind := "file",   icon := CustomCommandProvider._Resolve(target)
         }
         displayTarget := (kind = "url") ? target : CustomCommandProvider._Resolve(target)
