@@ -129,6 +129,7 @@ class PreferencesWindow {
     }
 
     static Close() {
+        HotkeyBox.CancelActive()                                            ; 正在录制热键时关窗口: 先结束录制, 恢复 ALTRun 的热键
         if IsObject(PreferencesWindow.Gui)
             PreferencesWindow.Gui.Destroy()
         PreferencesWindow.Gui := ""
