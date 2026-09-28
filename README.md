@@ -2,7 +2,8 @@
 
 <p align="center">
   <b>轻量、高效、开源的 Windows 启动器, 操作习惯参照 macOS 上的 <a href="https://www.alfredapp.com/">Alfred</a></b><br>
-  A lightweight, Alfred-style launcher for Windows, written in AutoHotkey v2
+  按 <code>Alt+Space</code>, 输入几个字母, <code>Enter</code>: 程序、文件、网页、计算、剪贴板、系统命令, 一个窗口全搞定<br>
+  <sub>A lightweight, Alfred-style launcher for Windows, written in AutoHotkey v2</sub>
 </p>
 
 <p align="center">
@@ -14,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="#为什么选择-altrun">为什么选择</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#特性">特性</a> ·
   <a href="#快捷键">快捷键</a> ·
@@ -27,12 +29,23 @@
 </p>
 
 
-## 快速开始
-1. 下载 [最新版本](https://github.com/zhugecaomao/ALTRun/releases/latest) 解压到任意文件夹; 或者安装 [AutoHotkey v2](https://www.autohotkey.com/) 后直接运行源码里的 `ALTRun.ahk`
-2. 按 `Alt+Space` 呼出搜索窗口, 输入名称, `Enter` 打开
-3. `Ctrl+,` 打开偏好设置, 修改热键、主题、索引范围等
+## 为什么选择 ALTRun
+- **快, 而且跟手**: 输入即搜, 第一个字符就出结果; 装了 [Everything](https://www.voidtools.com/) 时毫秒级搜遍全盘文件, 没有 Everything 也有内置索引
+- **越用越懂你**: 记住 "输入了什么 → 选了哪一项", 常用的自动排第一; 支持单词首字母 (`vsc` → Visual Studio Code) 和中文拼音首字母 (`wx` → 微信)
+- **一个窗口处理日常小事**: 计算器、网页搜索、剪贴板历史、文字片段 (任何程序里 `;关键字` 自动展开)、锁屏关机等系统命令、终端命令, 不用再装一堆小工具
+- **全键盘操作**: `→` 打开操作面板 (以管理员运行、显示位置、复制路径...), `F3` 在结果里直接编辑, `Ctrl+1` ~ `Ctrl+9` 直接打开
+- **绿色便携, 数据只在本机**: 不需要安装, 不写注册表, 设置都在一个 `Data\` 文件夹里, 可以放在 U 盘或同步盘; 不收集、不上传任何数据 (联网只用于到 GitHub 检查和下载更新)
+- **省心的升级**: 发现新版本时点 "立即更新", 自动下载、核对 SHA256 并重启, 设置不变; 也可以用 Scoop 安装和升级
+- **合你的口味**: 中文 / English / 日本語 界面, 9 套内置主题 (也可以跟随 Windows 浅色 / 深色), 主题和设置都是可以直接编辑的 JSON 文件
+- **开源免费**: GPL-3.0, 代码完全公开; 每个 PR 都在 Windows 上自动运行两千多项单元测试和语法检查
 
-绿色便携, 不写注册表: 设置保存在程序目录下的 `Data\ALTRun.json`。
+
+## 快速开始
+1. 下载 [最新版本](https://github.com/zhugecaomao/ALTRun/releases/latest), 解压到任意文件夹, 运行 `ALTRun.exe` (不需要安装, 也不需要 AutoHotkey)
+2. 按 `Alt+Space` (或 `Alt+R`) 呼出搜索窗口, 输入名称, `Enter` 打开
+3. 输入 `?` 查看所有输入语法和快捷键; `Ctrl+,` 打开偏好设置, 修改热键、主题、索引范围等
+
+也可以安装 [AutoHotkey v2](https://www.autohotkey.com/) 后直接运行源码里的 `ALTRun.ahk`。
 
 **用 [Scoop](https://scoop.sh/) 安装** (自动创建开始菜单快捷方式, 升级时保留设置):
 ```powershell
@@ -40,13 +53,14 @@ scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
 scoop install altrun
 scoop update altrun    # 以后升级 (先退出 ALTRun)
 ```
+winget 清单已经准备好, 等官方仓库收录后可以 `winget install zhugecaomao.ALTRun`。
 
-**从旧版本升级**: 退出旧版本, 把新版本解压到原来的文件夹覆盖 `ALTRun.exe`, 再运行即可。第一次运行时自动导入旧的 `ALTRun.ini` (设置、自定义命令、热键), 原文件保持不变 (见 [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation))。
+**升级**: 2026.09.26 及以后的版本, 发现新版本时选 "立即更新" 即可 (或托盘图标 → 检查更新)。更早的版本: 退出旧版本, 把新版本解压到原来的文件夹覆盖, 再运行; 从 2.x 升级时自动导入旧的 `ALTRun.ini` (设置、自定义命令、热键), 原文件保持不变。详见 [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
 
 
 ## 特性
 **搜索**
-- **Alfred 式搜索窗口**: 输入即搜, 每行显示标题 + 路径/说明, 窗口高度随结果伸缩, 9 套内置主题
+- **Alfred 式搜索窗口**: 输入即搜, 每行显示标题 + 路径/说明, 窗口高度随结果伸缩; 可以拖到任意位置并记住, 多屏幕时显示在鼠标所在的屏幕
 - **应用**: 自动索引开始菜单、桌面和应用商店应用; 中文名称支持拼音首字母 ("wx" → 微信); 不需要的应用按 `Ctrl+Del` 从结果中删除
 - **文件和文件夹**: 和 Alfred 一样, 在空的搜索框里先按 `空格` 再输入名称 (或 `'报告` / `open 报告`); [Everything](https://www.voidtools.com/) 在运行时查询全盘, 否则使用内置索引 (桌面、文档、下载)
 - **自定义命令**: 文件、文件夹、程序+参数、网址, 可设关键字; 也按目标的文件夹名 / 文件名匹配; 文件夹改名后可一键检查哪些命令的路径失效
@@ -65,8 +79,8 @@ scoop update altrun    # 以后升级 (先退出 ALTRun)
 - **大字显示**: `Ctrl+L` 全屏显示结果 (电话号码、计算结果...)
 
 **扩展**
-- **对话框快速跳转**: 打开 / 保存对话框里 `Ctrl+G` 跳到 Total Commander 当前目录, `Ctrl+E` 跳到资源管理器当前目录
-- **一键加日期**: 重命名文件时按 Ctrl+D (可以改), 在扩展名前加上日期
+- **对话框快速跳转**: 打开 / 保存对话框里 `Ctrl+G` 跳到 Total Commander 当前目录, `Ctrl+E` 跳到资源管理器当前目录, 也可以自动跳转
+- **一键加日期**: 重命名文件时按 `Ctrl+D` (可以改), 在扩展名前加上或更新日期 (`Report.docx` → `Report - 28.09.2026.docx`)
 - **自定义热键**: 任意热键执行一条系统命令, 可限定在某个程序里生效
 - **PT 工具箱**: 钢筋 / BRC 面积计算器、SPF2M 后张预应力束线型计算器 (直接计算, 结果可复制到 Excel)
 
@@ -128,12 +142,12 @@ scoop update altrun    # 以后升级 (先退出 ALTRun)
 
 | 页面 | 内容 |
 |---|---|
-| [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation) | 下载、运行、开机启动、从 2.x 升级、卸载 |
-| [搜索与快捷键](https://github.com/zhugecaomao/ALTRun/wiki/Usage) | 所有输入语法、快捷键、操作面板 |
+| [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation) | 下载、Scoop / winget、开机启动、一键更新、从 2.x 升级、卸载 |
+| [搜索与快捷键](https://github.com/zhugecaomao/ALTRun/wiki/Usage) | 所有输入语法、快捷键、操作面板、学习排序、使用统计 |
 | [自定义命令与片段](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets) | 命令类型、路径变量、片段占位符、自动展开 |
 | [文件搜索](https://github.com/zhugecaomao/ALTRun/wiki/File-Search) | Everything 联动、内置索引、排除规则 |
-| [主题](https://github.com/zhugecaomao/ALTRun/wiki/Themes) | 内置主题、自定义主题、全部可用的键 |
-| [扩展功能](https://github.com/zhugecaomao/ALTRun/wiki/Extensions) | 对话框跳转、加日期、自定义热键、系统命令列表、PT 工具箱 |
+| [主题](https://github.com/zhugecaomao/ALTRun/wiki/Themes) | 9 套内置主题、自定义主题、全部可用的键 |
+| [扩展功能](https://github.com/zhugecaomao/ALTRun/wiki/Extensions) | 对话框快速跳转、一键加日期、自定义热键、系统命令列表、PT 工具箱 |
 | [设置文件参考](https://github.com/zhugecaomao/ALTRun/wiki/Configuration) | ALTRun.json 每一项的含义和默认值 |
 | [常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ) | 热键冲突、搜不到、杀毒误报... |
 | [开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development) | 架构、新增搜索功能、代码规范、测试 |
@@ -174,16 +188,17 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk
 
 
 ## English
-ALTRun is a keyboard launcher for Windows modelled on Alfred for macOS. Press `Alt+Space`, type, press `Enter`.
+ALTRun is a fast, keyboard-first launcher for Windows, modelled on Alfred for macOS. Press `Alt+Space`, type a few letters, press `Enter`.
 
-- Finds apps (Start menu, desktop, Microsoft Store; pinyin initials for Chinese names), files and folders (through Everything when it is running, otherwise a built-in index), custom commands, snippets and system commands
-- Learns which result you pick for each query, and ranks it first next time
-- Action panel (`→` or right-click), in-place editing (`F3`), clipboard history, snippet auto-expansion, inline calculator, web search keywords, terminal commands, large type
-- Nine built-in themes, plus custom themes as JSON files
-- Portable: all settings live in `Data\ALTRun.json` next to the program; older 2.x settings are converted automatically
-- Install with Scoop: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun`, then `scoop install altrun`
+- **Finds everything**: apps (Start menu, desktop, Microsoft Store), files and folders (instantly across all drives through [Everything](https://www.voidtools.com/) when it is running, otherwise a built-in index), custom commands, snippets and system commands
+- **Learns as you go**: remembers which result you pick for each query and ranks it first next time; matches word initials (`vsc` → Visual Studio Code) and pinyin initials for Chinese names
+- **Replaces a handful of small tools**: inline calculator, web search keywords (`g`, `bing`, `gh`, `yt`...), clipboard history, snippets with `;keyword` auto-expansion in any app, terminal commands (`>ipconfig /all`), lock / sleep / shutdown, large type
+- **Keyboard all the way**: action panel (`→` or right-click), in-place editing (`F3`), `Ctrl+1`–`Ctrl+9`, a built-in cheat sheet (`?`)
+- **Portable and private**: no installer, no registry; all settings live in `Data\ALTRun.json` next to the program. Nothing is collected or uploaded; the only network access is checking for and downloading updates from GitHub
+- **Painless updates**: one click downloads the new release, verifies its SHA256 and restarts; settings are kept. Or install with Scoop: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun`, then `scoop install altrun`
+- **Yours to shape**: English, Chinese and Japanese interface (follows your Windows language); nine built-in themes, or follow the Windows light / dark mode; custom themes are small JSON files
 
-The interface follows your Windows language (English, Chinese or Japanese). Documentation is in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
+The screenshots above show the English interface. Documentation is in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
 
 
 ## 许可证与致谢

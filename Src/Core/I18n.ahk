@@ -561,7 +561,7 @@ class I18n {
         s["Usage.F.Terminal"]          := ["Terminal commands", "终端命令", "ターミナルコマンド"]
         s["Usage.F.SnippetExpand"]     := ["Snippet auto-expansion", "片段自动展开", "スニペット自動展開"]
         s["Usage.F.QuickSwitch"]       := ["Dialog quick switch", "对话框快速跳转", "ダイアログのクイック切り替え"]
-        s["Usage.F.AutoDate"]          := ["Ctrl+D date", "Ctrl+D 加日期", "Ctrl+D による日付追加"]
+        s["Usage.F.AutoDate"]          := ["Date stamp", "一键加日期", "日付スタンプ"]
         s["Usage.F.Show"]              := ["Search window opened", "呼出搜索窗口", "検索ウィンドウの呼び出し"]
         s["Usage.Clear"]               := ["Clear Usage Statistics", "清除使用统计", "使用統計を消去"]
         s["Usage.ClearConfirm"]        := ["Clear all usage statistics?", "清除所有使用统计?", "使用統計をすべて消去しますか?"]

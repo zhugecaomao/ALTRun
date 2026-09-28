@@ -1,6 +1,6 @@
 # 参与贡献
 
-感谢你愿意改进 ALTRun! 提交之前请花几分钟看一下下面的约定。
+感谢你愿意改进 ALTRun! 反馈问题、改进文档、补充翻译、提交代码都非常欢迎。提交之前请花几分钟看一下下面的约定。
 
 ## 反馈问题
 - **Bug**: 用 [Bug 报告模板](https://github.com/zhugecaomao/ALTRun/issues/new?template=bug_report.yml), 写清 Windows 版本、ALTRun 版本、复现步骤, 最好附上截图
@@ -28,7 +28,7 @@
 - **注释**: 每个文件开头说明用途和用法; 代码里的注释说明 "为什么", 用中文
 - **单行输入框**: 所有 `Edit` 控件都要写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行 (有测试检查)
 - **设置**: 新的设置项加到 `AppSettings.Defaults()`; 改变已有设置的结构时 `AppSettings.CurrentVersion + 1`, 并在 `SchemaMigration` 里加一个 `_FromN()`
-- **界面文字**: 全部放在 `I18n.ahk`, 同时写英文和中文
+- **界面文字**: 全部放在 `I18n.ahk`, 每条同时写英文、中文和日文 (测试会检查三种语言都有、占位符一致); 偏好设置里的文字较长时, 注意英文和日文不要超出页面 (`PreferencesFit` 测试会检查)
 - **编码**: UTF-8; `ALTRun.ahk` 保持 UTF-8 BOM + CRLF, 其它文件 UTF-8 + LF
 
 新增一个搜索功能的步骤见 Wiki 的 [开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)。
@@ -37,7 +37,7 @@
 1. 从 `main` 新建分支, 一个 PR 只做一件事
 2. 提交前确认单元测试全部通过、`/validate` 没有警告
 3. 新功能或修复请附带测试 (`Tests\RunTests.ahk`)
-4. 涉及界面的改动请附上截图
+4. 涉及界面的改动请附上截图; README / Wiki 里的截图由 Screenshots workflow 生成, 用英文界面和虚构的示例数据, 不要放个人或工作相关的信息
 5. 用户可见的变化请更新 `README.md`、`CHANGELOG.md` 的 "未发布" 部分, 必要时更新 Wiki
 
 ## 发布新版本
