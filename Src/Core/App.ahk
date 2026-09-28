@@ -109,8 +109,9 @@ class App {
     ;---------------------------------------------------------------------------
     ; Commands (tray menu / system commands / hotkeys)
     ;---------------------------------------------------------------------------
-    static OpenPreferences(pageIndex := 1) {
-        PreferencesWindow.Show(pageIndex)
+    ; page: 页码, 或页面的键 (例如 "Prefs.Page.Advanced")
+    static OpenPreferences(page := 1) {
+        PreferencesWindow.Show(page)
     }
 
     ; 直接用记事本编辑 Data\ALTRun.json, 保存后自动重新载入
@@ -178,8 +179,9 @@ class App {
         ExitApp()
     }
 
+    ; 关于: 偏好设置的高级页 (图标、版本、项目主页、检查更新)
     static About() {
-        MsgBox(App.Name " " App.Version "`n" I18n.T("App.Tagline") "`n`n" App.RepoUrl, App.Name, 64)
+        App.OpenPreferences("Prefs.Page.Advanced")
     }
 
     static OpenLog() {
@@ -241,15 +243,17 @@ class App {
         for entry in AppSettings.Hotkeys {
             if !(entry is Map) || !entry.Has("Key") || !entry.Has("Action")
                 continue
-            winTitle := entry.Has("WinTitle") ? entry["WinTitle"] : ""
+            winTitle := entry.Has("WinTitle") ? Trim(entry["WinTitle"]) : ""
             try {
-                if (winTitle != "")
+                if (winTitle = "ALTRun")                                    ; 只在 ALTRun 的搜索窗口里 (标题匹配会连偏好设置窗口也算上)
+                    HotIf((*) => SearchWindow.IsActive())
+                else if (winTitle != "")
                     HotIfWinActive(winTitle)
                 Hotkey(entry["Key"], App._HotkeyAction(entry["Action"]))
             } catch as e {
                 Logger.Error("App: cannot register hotkey " entry["Key"] " - " e.Message)
             }
-            HotIfWinActive()
+            HotIf()
         }
     }
 

@@ -176,7 +176,7 @@ class AppSettings {
             "SchemaVersion", AppSettings.CurrentVersion,
             "General", Map(
                 "Hotkey"              , "!Space",
-                "SecondaryHotkey"     , "",
+                "SecondaryHotkey"     , "!r",                               ; Alt+R
                 "Language"            , "auto",                             ; auto / en / zh
                 "LaunchAtLogin"       , 1,
                 "ShowTrayIcon"        , 1,
@@ -275,8 +275,9 @@ class AppSettings {
                     "ExplorerHotkey"   , "^e",
                     "TotalCmdHotkey"   , "^g",
                     "AutoSwitch"       , 0,
-                    "DialogWindows"    , "ahk_class #32770",
-                    "ExcludeWindows"   , "ahk_class SysListView32, ahk_exe Explorer.exe"
+                    "DialogWindows"    , "ahk_class #32770",                ; 标准的 Windows 对话框, 另外可以加 "ahk_class Qt5QWindowIcon" (WPS) 等
+                    "ExcludeWindows"   , "ahk_class SysListView32, ahk_exe Explorer.exe",
+                    "AutoSwitchExclude", ""                                 ; 这些对话框不自动跳转 (仍然可以按热键)
                 ),
                 "AutoDate", Map(
                     "Enabled"      , 1,
@@ -289,17 +290,53 @@ class AppSettings {
                 "PTTools", Map()                                            ; 由 PTToolsWindow 自己补默认值
             ),
             "Hotkeys", [
+                Map("Key", "F1", "Action", "About", "WinTitle", "ALTRun"),          ; WinTitle "ALTRun" = 只在搜索窗口里
                 Map("Key", "~MButton", "Action", "PTTools", "WinTitle", "ahk_exe RAPTW.exe")
             ],
-            "CustomCommands", [
-                Map("Title", "Desktop", "Type", "Folder", "Target", "A_Desktop", "Arguments", "", "Keyword", ""),
-                Map("Title", "ALTRun Folder", "Type", "Folder", "Target", "A_ScriptDir", "Arguments", "", "Keyword", ""),
-                Map("Title", "IP Configuration", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ipconfig /all", "Keyword", "ipconfig")
-            ],
-            "Snippets", [
-                Map("Name", "Today's date", "Keyword", "today", "Text", "{date}")
-            ]
+            "CustomCommands", AppSettings._DefaultCommands(),
+            "Snippets", AppSettings._DefaultSnippets()
         )
+    }
+
+    ; 默认的自定义命令: 每种类型都有, 让新用户看到能做什么 (已有的用户不受影响)
+    static _DefaultCommands() {
+        commands := []
+        for row in [
+            ; 文件 / 程序: 运行程序, 或打开文件; Arguments 附带参数
+            ["Notepad"             , "File"   , "notepad.exe"            , ""                                       , "np"],
+            ["Edit hosts file"     , "File"   , "notepad.exe"            , "C:\Windows\System32\drivers\etc\hosts"  , "hosts"],
+            ["Paint"               , "File"   , "mspaint.exe"            , ""                                       , ""],
+            ; 文件夹: 用文件管理器打开; 可以用 A_Desktop 等内置变量或 %UserProfile% 等环境变量
+            ["Desktop"             , "Folder" , "A_Desktop"              , ""                                       , ""],
+            ["Downloads"           , "Folder" , "%UserProfile%\Downloads", ""                                       , "dl"],
+            ["ALTRun Folder"       , "Folder" , "A_ScriptDir"            , ""                                       , ""],
+            ; 命令行: 程序 + 参数
+            ["IP Configuration"    , "Command", "cmd.exe"                , "/k ipconfig /all"                       , "ipconfig"],
+            ["Ping google.com"     , "Command", "cmd.exe"                , "/k ping google.com"                     , "ping"],
+            ; 网址: 网页, 也可以是 ms-settings: 等系统链接
+            ["ALTRun on GitHub"    , "Url"    , "https://github.com/zhugecaomao/ALTRun", ""                     , "altrun"],
+            ["Google Maps"         , "Url"    , "https://www.google.com/maps", ""                                , "maps"],
+            ["Windows Update"      , "Url"    , "ms-settings:windowsupdate", ""                                  , ""]
+        ]
+            commands.Push(Map("Title", row[1], "Type", row[2], "Target", row[3], "Arguments", row[4], "Keyword", row[5]))
+        return commands
+    }
+
+    ; 默认的文字片段: 日期、剪贴板、写邮件常用的几段 (输入 ;关键字 自动展开, 或在搜索窗口里搜名称)
+    static _DefaultSnippets() {
+        snippets := []
+        for row in [
+            ["Today's date"             , "today", "{date}"],
+            ["Date and time"            , "now"  , "{datetime}"],
+            ["Paste as plain text"      , "plain", "{clipboard}"],
+            ["Email: thank you"         , "thx"  , "Hi {cursor},`r`n`r`nThank you for your email. I will look into it and get back to you shortly.`r`n`r`nBest regards,"],
+            ["Email: please find attached", "pfa", "Hi,`r`n`r`nPlease find attached {cursor} for your reference.`r`n`r`nBest regards,"],
+            ["Email: meeting request"   , "meet" , "Hi,`r`n`r`nWould you be available for a short meeting on {cursor}? Please let me know a time that suits you.`r`n`r`nThanks,"],
+            ["Email signature"          , "sig"  , "Best regards,`r`n`r`nYour Name`r`nJob Title | Company`r`nPhone: +1 234 567 890"],
+            ["My address"               , "addr" , "123 Example Street`r`nCity, Country 12345"]
+        ]
+            snippets.Push(Map("Name", row[1], "Keyword", row[2], "Text", row[3], "AutoExpand", 1))
+        return snippets
     }
 
     static _DefaultEngines() {

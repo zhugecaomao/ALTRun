@@ -14,7 +14,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [自定义命令与片段](Commands-and-Snippets) | 命令类型、路径变量、片段占位符、自动展开、剪贴板历史 |
 | [文件搜索](File-Search) | Everything 联动、内置索引、排除规则 |
 | [主题](Themes) | 9 套内置主题、自定义主题、全部可用的键 |
-| [扩展功能](Extensions) | 对话框快速跳转、Ctrl+D 加日期、自定义热键、系统命令列表、PT 工具箱 |
+| [扩展功能](Extensions) | 对话框快速跳转、一键加日期、自定义热键、系统命令列表、PT 工具箱 |
 | [设置文件参考](Configuration) | ALTRun.json 每一项的含义和默认值 |
 | [常见问题](FAQ) | 热键冲突、搜不到、杀毒软件误报... |
 | [开发指南](Development) | 架构、新增搜索功能、代码规范、测试 |

@@ -146,7 +146,7 @@ class IconCache {
     }
 
     ; 像扩展名的才算扩展名 (1~6 个字母数字, 至少一个字母, 如 pdf / docx / dwg / sldprt):
-    ; "26. 18 New Industrial Road (EA)"、"10.PT2310-29NIR"、"Design.2019" 这种名字里带点的文件夹没有扩展名
+    ; "26. Main Street (A)"、"10.Project-2310"、"Design.2019" 这种名字里带点的文件夹没有扩展名
     static _Extension(path) {
         SplitPath(RTrim(path, "\/"), , , &ext)
         return (RegExMatch(ext, "^(?=.*[A-Za-z])[A-Za-z0-9]{1,6}$") || ext = "appref-ms") ? ext : ""

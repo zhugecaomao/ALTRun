@@ -26,7 +26,7 @@
 | 键 | 默认 | 说明 |
 |---|---|---|
 | Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win) |
-| SecondaryHotkey | 空 | 第二个呼出热键 |
+| SecondaryHotkey | `!r` | 第二个呼出热键 (Alt+R), 留空 = 不用 |
 | Language | `auto` | `auto` 跟随系统 / `en` / `zh` / `ja` |
 | LaunchAtLogin | 1 | 开机自动启动 |
 | ShowTrayIcon | 1 | 显示托盘图标 |
@@ -35,7 +35,7 @@
 | SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
 | KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次, 直接输入开始新的搜索。从 2.x 升级时沿用 `KeepInput` |
 | ShowTips | 1 | 空搜索框里轮换显示使用提示 |
-| FileManager | `explorer.exe` | 打开文件夹用的程序, 例如 `C:\Apps\TotalCMD64.exe` |
+| FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号 |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |
 | CheckForUpdates | 1 | 启动时检查 GitHub 上的新版本 |
@@ -121,7 +121,7 @@
 
 | 节点 | 键 |
 |---|---|
-| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `AutoSwitch` `DialogWindows` `ExcludeWindows` |
+| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `AutoSwitch` `DialogWindows` (`ahk_class #32770`) `ExcludeWindows` `AutoSwitchExclude` |
 | AutoDate | `Enabled` `DateFormat` (`dd.MM.yyyy`) `RenameHotkey` (`^d`) `RenameWindows` `AppendHotkey` (`^d`) `AppendWindows` |
 | PTTools | PT 工具箱自己保存的输入和窗口位置 |
 
