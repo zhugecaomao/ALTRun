@@ -60,6 +60,7 @@
 #Include Src\UI\LargeType.ahk
 #Include Src\UI\Hud.ahk
 #Include Src\UI\ItemEditor.ahk
+#Include Src\UI\HotkeyBox.ahk
 #Include Src\UI\PreferencesWindow.ahk
 
 ; --- Src\Providers ---

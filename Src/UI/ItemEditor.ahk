@@ -10,7 +10,8 @@
 ;     {Key: "Text",   Label: "正文", Type: "multiline"},
 ;     {Key: "AutoExpand", Label: "自动展开", Type: "check"}
 ;   ]
-; Type 可以是: text / multiline / choice / check / file / folder / number
+; Type 可以是: text / multiline / choice / check / file / folder / number / hotkey
+; hotkey: 录制热键的框 (HotkeyBox, 可以录鼠标中键 / 侧键) + 复选框 "保留按键原来的功能" (写法前面的 ~)
 ;
 ; 用法:
 ;   result := ItemEditor.Edit(ownerGui, "标题", fields, itemMap)
@@ -26,7 +27,7 @@ class ItemEditor {
         g := Gui("+Owner" owner.Hwnd " -MinimizeBox", title)
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
-        controls := Map()
+        controls := Map(), passBoxes := Map()
         labelW := 110, inputW := 540                                        ; 宽一些, 长路径和命令行参数才看得全
 
         ; 单行输入框一定要写 r1: 不写行数时, 初始文字比框宽 (例如很长的路径) AHK 会自动
@@ -52,6 +53,10 @@ class ItemEditor {
                     browse.OnEvent("Click", ItemEditor._Browser(ctrl, field.Type, g))
                 case "number":
                     ctrl := g.AddEdit("x+8 ys-3 w100 r1 -Multi Number", value)
+                case "hotkey":
+                    ctrl := HotkeyBox.Add(g, "x+8 ys-3 w200", LTrim(value, "~"), true)
+                    passBoxes[field.Key] := g.AddCheckbox("x+14 yp+3", I18n.T("Hotkey.PassThrough"))
+                    passBoxes[field.Key].Value := (SubStr(value, 1, 1) = "~") ? 1 : 0
                 default:
                     ctrl := g.AddEdit("x+8 ys-3 w" inputW " r1 -Multi", value)
             }
@@ -83,6 +88,12 @@ class ItemEditor {
                     case "check" : newValue := input.Value
                     case "choice": newValue := spec.Choices[input.Value][1]
                     case "number": newValue := IsInteger(input.Value) ? Integer(input.Value) : 0
+                    case "hotkey":
+                        newValue := HotkeyBox.Value(input)
+                        if (newValue != "" && passBoxes[spec.Key].Value && SubStr(newValue, 1, 1) != "~")
+                            newValue := "~" newValue
+                        else if !passBoxes[spec.Key].Value
+                            newValue := LTrim(newValue, "~")
                     default      : newValue := input.Value
                 }
                 if (spec.HasOwnProp("Required") && spec.Required && Trim(newValue) = "") {

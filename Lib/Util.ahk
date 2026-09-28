@@ -240,21 +240,37 @@ class Win {
         DllCall("InvalidateRect", "Ptr", hwnd, "Ptr", 0, "Int", 1)          ; 输入框已经显示时换提示文字, 要重画才看得到
     }
 
-    ; 热键字符串 -> 人类可读标签, 例如 "^g" -> "Ctrl+G"
-    static HotkeyLabel(hk) {
-        if (!hk || hk = "None")
+    ; 热键字符串 -> 人类可读标签: "^!c" -> "Ctrl+Alt+C", "!Space" -> "Alt+Space", "~MButton" -> "MButton",
+    ; "CapsLock & j" -> "CapsLock+J"。只认开头的修饰符 (所以 "^+" 是 Ctrl + 加号键); ~ * $ 不显示。
+    ; names: 可选的 Map, 把按键名换成别的文字, 例如 Map("MButton", "鼠标中键")
+    static HotkeyLabel(hk, names := "") {
+        hk := Trim(hk)
+        if (hk = "" || hk = "None")
             return ""
-        label := ""
-        if InStr(hk, "^")
-            label .= "Ctrl+"
-        if InStr(hk, "!")
-            label .= "Alt+"
-        if InStr(hk, "+")
-            label .= "Shift+"
-        if InStr(hk, "#")
-            label .= "Win+"
-        base := RegExReplace(hk, "[\^\!\+\#\<\>\*\~\$\s]")
-        return label (StrLen(base) = 1 ? StrUpper(base) : base)
+        if InStr(hk, " & ") {                                               ; 两个键的组合 (CapsLock & j)
+            parts := StrSplit(hk, "&", " `t")
+            return Win.HotkeyLabel(parts[1], names) "+" Win.HotkeyLabel(parts[2], names)
+        }
+        mods := "", i := 1
+        while (i < StrLen(hk) && InStr("~*$<>^!+#", SubStr(hk, i, 1)))
+            mods .= SubStr(hk, i++, 1)
+        key := SubStr(hk, i), up := ""
+        if RegExMatch(key, "i)^(.+?)\s+up$", &m)
+            key := m[1], up := " Up"
+        label := (InStr(mods, "^") ? "Ctrl+" : "") (InStr(mods, "!") ? "Alt+" : "") (InStr(mods, "+") ? "Shift+" : "") (InStr(mods, "#") ? "Win+" : "")
+        return label Win.KeyLabel(key, names) up
+    }
+
+    ; 一个按键的显示名称: "space" -> "Space", "c" -> "C", "esc" -> "Escape"
+    static KeyLabel(key, names := "") {
+        if (StrLen(key) = 1)                                                ; 单个字符原样显示 (GetKeyName("+") 会给出同一个键上的 "=")
+            return StrUpper(key)
+        name := GetKeyName(key)
+        if (name = "")
+            name := key
+        if (IsObject(names) && names.Has(name))
+            return names[name]
+        return (StrLen(name) = 1) ? StrUpper(name) : name
     }
 }
 

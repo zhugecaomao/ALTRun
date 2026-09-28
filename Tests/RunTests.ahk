@@ -36,6 +36,7 @@
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
 #Include %A_ScriptDir%\..\Src\UI\Hud.ahk
 #Include %A_ScriptDir%\..\Src\UI\ItemEditor.ahk
+#Include %A_ScriptDir%\..\Src\UI\HotkeyBox.ahk
 #Include %A_ScriptDir%\..\Src\UI\PreferencesWindow.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ClipboardProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ApplicationProvider.ahk
@@ -67,7 +68,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1474,6 +1475,43 @@ Func | PTTools | PT Tools (AHK)=99
         UpdateChecker.StateFile := savedFile
         ProviderRegistry.Providers := savedProviders
         try DirDelete(root, true)
+    }
+
+    ; 热键的显示 (Alt+Space) 和录制框的规则; 偏好设置保存前检查重复的全局热键
+    static HotkeyText() {
+        eq := (n, a, e) => TestRunner.Equal("HotkeyText." n, a, e)
+        ok := (n, c) => TestRunner.True("HotkeyText." n, c)
+        for pair in [["!Space", "Alt+Space"], ["^!c", "Ctrl+Alt+C"], ["!^c", "Ctrl+Alt+C"], ["#e", "Win+E"], ["^+F12", "Ctrl+Shift+F12"]
+                   , ["~MButton", "MButton"], ["$*F5", "F5"], ["CapsLock & j", "CapsLock+J"], ["^+", "Ctrl++"], ["!r", "Alt+R"]
+                   , ["<^>!a", "Ctrl+Alt+A"], ["F1 up", "F1 Up"], ["", ""], ["None", ""]]
+            eq("label " pair[1], Win.HotkeyLabel(pair[1]), pair[2])
+        eq("names", Win.HotkeyLabel("~^MButton", Map("MButton", "Middle")), "Ctrl+Middle")
+        eq("box label", HotkeyBox.Label("~MButton"), "Middle mouse button")
+        eq("box label XButton1", HotkeyBox.Label("^XButton1"), "Ctrl+Mouse back button")
+
+        eq("compose order", HotkeyBox.Compose("#+!^", "C"), "^!+#c")
+        eq("compose name", HotkeyBox.Compose("!", "Space"), "!Space")
+        eq("compose none", HotkeyBox.Compose("", "F5"), "F5")
+        for hk in ["^!c", "!Space", "#e", "F5", "^Numpad1", "+F3", "Pause", "MButton", "!Enter"]
+            ok("allowed " hk, HotkeyBox.IsAllowed(hk))
+        for hk in ["a", "+a", "Space", "+Space", "Enter", "Tab", "Numpad5", "1", "Delete"]
+            ok("not allowed " hk, !HotkeyBox.IsAllowed(hk))
+
+        ; 偏好设置里重复的全局热键
+        list := [{Key: "!Space", Label: "A"}, {Key: "!r", Label: "B"}, {Key: "~!R", Label: "C"}]
+        clash := PreferencesWindow.DuplicateHotkey(list)
+        eq("duplicate", IsObject(clash) ? clash.First "|" clash.Second : "", "B|C")
+        eq("duplicate order", PreferencesWindow.DuplicateHotkey([{Key: "^!c", Label: "A"}, {Key: "!^c", Label: "B"}]).Second, "B")
+        eq("no duplicate", PreferencesWindow.DuplicateHotkey([{Key: "!Space", Label: "A"}, {Key: "!r", Label: "B"}]), "")
+        data := AppSettings.Defaults()
+        data["Hotkeys"] := [Map("Key", "^!c", "Action", "Lock", "WinTitle", ""), Map("Key", "!Space", "Action", "Lock", "WinTitle", "ahk_exe notepad.exe")]
+        keys := ""
+        for entry in PreferencesWindow._GlobalHotkeys(data)
+            keys .= entry.Key "|"
+        eq("global hotkeys (window-limited left out)", keys, "!Space|!r|^!c|^!c|")
+        ok("default clipboard hotkey clashes with a global ^!c", IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(data))))
+        ok("defaults have no clash", !IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(AppSettings.Defaults()))))
+        eq("list cell", PreferencesWindow._Cell(Map("Key", "~MButton"), "Key"), "Middle mouse button")
     }
 
     static Misc() {
