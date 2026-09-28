@@ -116,6 +116,7 @@ scoop update altrun    # 以后升级 (先退出 ALTRun)
 | `Ctrl+Del` | 删除选中项 (删除前确认); 应用: 从搜索结果中删除, 可在偏好设置里恢复 |
 | `Ctrl+C` / `Ctrl+L` | 复制选中项 / 大字显示 |
 | `F2` 或 `Ctrl+,` / `F4` | 偏好设置 / 用记事本编辑 ALTRun.json |
+| `F1` | 关于 ALTRun (版本、检查更新、项目主页) |
 | `Ctrl+Alt+C` | 剪贴板历史 |
 | `Esc` | 关闭操作面板 / 隐藏窗口 |
 

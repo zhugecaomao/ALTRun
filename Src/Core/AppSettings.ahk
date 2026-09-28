@@ -290,7 +290,6 @@ class AppSettings {
                 "PTTools", Map()                                            ; 由 PTToolsWindow 自己补默认值
             ),
             "Hotkeys", [
-                Map("Key", "F1", "Action", "About", "WinTitle", "ALTRun"),          ; WinTitle "ALTRun" = 只在搜索窗口里
                 Map("Key", "~MButton", "Action", "PTTools", "WinTitle", "ahk_exe RAPTW.exe")
             ],
             "CustomCommands", AppSettings._DefaultCommands(),

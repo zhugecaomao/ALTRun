@@ -20,6 +20,7 @@
 ;   Ctrl+L                           大字显示
 ;   F3                               编辑当前项 (没有结果时: 用输入的文字新建自定义命令)
 ;   Ctrl+Del (光标在末尾时)          删除当前项 (确认后)
+;   F1                               关于 ALTRun (偏好设置的高级页)
 ;   F2 / Ctrl+,                      偏好设置
 ;   F4                               用记事本编辑 Data\ALTRun.json
 ;   Esc                              关闭操作面板 / 隐藏窗口
@@ -650,6 +651,10 @@ class SearchWindow {
                     return 0
                 }
                 return
+            case 0x70:                                                      ; F1
+                SearchWindow.Hide()
+                App.About()
+                return 0
             case 0x72:                                                      ; F3
                 SearchWindow._EditSelected()
                 return 0

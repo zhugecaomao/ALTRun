@@ -34,7 +34,7 @@
 | 操作 (Action) | `PTTools` | 系统命令的 Id, 或 `ToggleWindow` (显示 / 隐藏 ALTRun) |
 | 窗口 (WinTitle) | `ahk_exe notepad.exe` | 留空 = 全局; 否则只在匹配的窗口里生效; `ALTRun` = 只在 ALTRun 的搜索窗口里 |
 
-默认的两条: 在搜索窗口里按 `F1` 打开 "关于 ALTRun" (偏好设置的高级页); 在 RAPT (`RAPTW.exe`) 里按鼠标中键打开 PT 工具箱。
+默认的一条: 在 RAPT (`RAPTW.exe`) 里按鼠标中键打开 PT 工具箱。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage#快捷键)。
 
 ## 系统命令
 直接在搜索框里输入名称 (中文、英文或 Id 都可以), 也可以用在自定义热键里。
