@@ -7,6 +7,7 @@
 ;   static Search(query) 参数是 SearchQuery, 返回 [ResultItem...]
 ;   static EditItem(item) / DeleteItem(item)   可选: 搜索结果里 F3 编辑 / Ctrl+Del 删除
 ;   static DeletePrompt(item)                  可选: 删除前的确认文字 (默认 "确定删除 ... 吗?")
+;   static EmptyResults()                      可选: 空搜索框里显示的结果 (例如有新版本时的更新提示)
 ;                        (结果的 Source 指向设置里的那一条, 见 ActionCatalog.CanEdit)
 ; 没有启用 (Features.<Id>.Enabled = 0) 的功能不会被初始化, 也不参与搜索。
 ;
@@ -68,7 +69,7 @@ class ProviderRegistry {
     static Search(rawText) {
         query := SearchQuery(rawText)
         if (query.Text = "")
-            return []
+            return ProviderRegistry.EmptyResults()
 
         results := []
         for provider in ProviderRegistry.Providers {
@@ -94,6 +95,24 @@ class ProviderRegistry {
             results.Length := ProviderRegistry.MaxResults
         if (!results.Length && ProviderRegistry.IsEnabled(WebSearchProvider))
             results := WebSearchProvider.Fallbacks(query)
+        return results
+    }
+
+    ; 空搜索框: 平时没有结果, 只有 Provider 的 EmptyResults() (例如后台发现了新版本)
+    static EmptyResults() {
+        results := []
+        for provider in ProviderRegistry.Providers {
+            if !ProviderRegistry.IsEnabled(provider) || !HasMethod(provider, "EmptyResults")
+                continue
+            try {
+                for item in provider.EmptyResults() {
+                    item.Provider := provider.Id
+                    results.Push(item)
+                }
+            } catch as e {
+                Logger.Error("ProviderRegistry: " provider.Id ".EmptyResults failed - " e.Message)
+            }
+        }
         return results
     }
 

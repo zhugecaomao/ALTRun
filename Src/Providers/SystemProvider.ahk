@@ -44,8 +44,18 @@ class SystemProvider {
                 Icon: command["Icon"], Uid: "system:" command["Id"], Score: score,
                 OnRun: SystemProvider._Runner(command["Id"])
             }))
+            if (command["Id"] = "CheckUpdate" && IsObject(update := UpdateChecker.PendingItem())) {
+                update.Score := score + 1                                   ; 有新版本时, 搜索 "更新" 排在 "检查更新" 前面
+                results.Push(update)
+            }
         }
         return results
+    }
+
+    ; 空搜索框里的结果: 后台发现了新版本时, 显示 "更新 ALTRun 到 x" (和 Alfred 一样, 不弹窗)
+    static EmptyResults() {
+        update := UpdateChecker.PendingItem()
+        return IsObject(update) ? [update] : []
     }
 
     static _Runner(id) {
@@ -93,7 +103,7 @@ class SystemProvider {
         add("Preferences" , "Sys.Preferences" , "res:imageres.dll,-114" , () => App.OpenPreferences())
         add("Reload"      , "Sys.Reload"      , "res:imageres.dll,-5311", () => App.Reload())
         add("RebuildIndex", "Sys.RebuildIndex", "res:imageres.dll,-8"   , () => App.RebuildIndex())
-        add("CheckUpdate" , "Sys.CheckUpdate" , "res:imageres.dll,-5338", () => UpdateChecker.Check(false))
+        add("CheckUpdate" , "Sys.CheckUpdate" , "res:imageres.dll,-5338", () => UpdateChecker.Check())
         add("About"       , "Sys.About"       , "res:imageres.dll,-81"  , () => App.About())
         add("Log"         , "Sys.Log"         , "res:imageres.dll,-102" , () => App.OpenLog())
         add("Quit"        , "Sys.Quit"        , "res:imageres.dll,-98"  , () => App.Quit())
