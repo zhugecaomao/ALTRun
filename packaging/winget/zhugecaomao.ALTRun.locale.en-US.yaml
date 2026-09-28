@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.6.0.schema.json
 PackageIdentifier: zhugecaomao.ALTRun
-PackageVersion: 2026.09.27
+PackageVersion: 2026.09.28
 PackageLocale: en-US
 Publisher: zhugecaomao
 PublisherUrl: https://github.com/zhugecaomao
@@ -24,7 +24,7 @@ Tags:
 - productivity
 - snippets
 - everything
-ReleaseNotesUrl: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.27
+ReleaseNotesUrl: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.28
 Documentations:
 - DocumentLabel: Wiki
   DocumentUrl: https://github.com/zhugecaomao/ALTRun/wiki
