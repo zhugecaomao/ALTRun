@@ -498,7 +498,7 @@ class PreferencesWindow {
         PreferencesWindow._Add("Link", "x" textX " w" textW, '<a href="' App.RepoUrl '">' App.RepoUrl '</a>')
         PreferencesWindow._y := top + 102
         PreferencesWindow._Add("Button", "x" textX " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T("Tray.CheckUpdate"))
-            .OnEvent("Click", (*) => UpdateChecker.Check(false))
+            .OnEvent("Click", (*) => UpdateChecker.Check())
         PreferencesWindow._y := top + 102 + PreferencesWindow.ButtonH + 22
 
         PreferencesWindow._Section("Prefs.Section.Data")

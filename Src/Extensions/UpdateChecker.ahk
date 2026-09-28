@@ -4,10 +4,16 @@
 ; 版本号是日期格式 (2026.09.23), 和 GitHub Release 的 tag 比较。
 ;
 ; 用法:
-;   UpdateChecker.Check(true)          启动后静默检查 (只在有新版本时提示)
-;   UpdateChecker.Check(false)         手动检查 (托盘菜单 / 系统命令), 总会给出结果
-;   UpdateChecker.Check(false, true)   有新版本就直接更新, 不询问 (命令行 -Update)
+;   UpdateChecker.Schedule()           启动时: 后台自动检查, 1 分钟后第一次, 之后每天一次 (见下)
+;   UpdateChecker.Check()              手动检查 (托盘菜单 / 系统命令 / 偏好设置), 总会给出结果
+;   UpdateChecker.Check(true)          有新版本就直接更新, 不询问 (命令行 -Update)
+;   UpdateChecker.PendingItem()        后台发现的新版本 -> 搜索窗口里的一条结果 (没有时 "")
 ;   UpdateChecker.CleanUp()            启动时删掉上次更新留下的旧程序和临时文件
+;
+; 自动检查 (General.CheckForUpdates) 和 Alfred 一样不弹窗: ALTRun 常常开机启动后一直运行,
+; 所以不只在启动时检查, 而是每小时看一下离上次检查是否满 24 小时 (时间记在 Data\Update.json,
+; 重启也不会重复检查; 检查失败时下一个小时再试)。发现新版本后, 空搜索框和搜索 "更新" 时显示一条
+; "更新 ALTRun 到 x": Enter 更新, → 查看更新内容 / 跳过这个版本 (跳过的版本记在 Update.json)。
 ;
 ; 一键更新 (发现新版本时选 "立即更新"):
 ;   1. 下载 Release 里的 ALTRun_v<版本>.zip, 核对 GitHub 给出的 SHA256
@@ -15,8 +21,8 @@
 ;      ALTRun.exe 改名为 ALTRun.exe.old (运行中的 exe 不能覆盖, 但可以改名), 复制新的 exe;
 ;      被覆盖的文件先备份, 任何一步失败都全部还原。Data\ (含 ALTRun.json)、Themes\ 不在 zip 里, 不会动
 ;   3. 启动新版本 (-Updated), 新版本启动时删掉 ALTRun.exe.old
-; 用 Scoop / winget 安装的, 提示对应的升级命令; 运行源码、程序目录不能写入、Release
-; 没有 SHA256 时, 仍然打开下载页面。
+; 用 Scoop / winget 安装的, 提示对应的升级命令 (搜索窗口里 Enter 复制命令); 运行源码时提示用
+; git pull 或下载新版本; 程序目录不能写入、Release 没有 SHA256 时, 打开下载页面。
 ;===============================================================================
 
 class UpdateChecker {
@@ -29,41 +35,174 @@ class UpdateChecker {
     static ObsoleteFiles := ["Resources\DOSBox.exe", "Resources\SDL.dll", "Resources\SDL_net.dll",
                              "Resources\SPF2M.exe", "Resources\Run.bat"]
     static UpgradeCommands := Map("scoop", "scoop update altrun", "winget", "winget upgrade zhugecaomao.ALTRun")
+    static StateFile   := A_ScriptDir "\Data\Update.json"                    ; {LastCheck, Skip}
+    static CheckHours  := 24
+    static Pending     := ""                                                ; 后台发现的新版本 (ParseRelease 的结果 + Mode)
+    static _timer      := ""
 
-    static Check(silent := true, install := false) {
+    static Check(install := false) {
         try {
-            tmpFile := A_Temp "\ALTRun_latest.json"
-            Download(UpdateChecker.ApiUrl, tmpFile)
-            response := FileRead(tmpFile, "UTF-8")
-            try FileDelete(tmpFile)
-            release := UpdateChecker.ParseRelease(response)
+            release := UpdateChecker.Fetch()
         } catch as e {
             Logger.Error("UpdateChecker: " e.Message)
-            if !silent
-                MsgBox(I18n.T("Update.Failed", e.Message), App.Name, 48)
+            MsgBox(I18n.T("Update.Failed", e.Message), App.Name, 48)
             return
         }
+        state := UpdateChecker.LoadState()
+        state["LastCheck"] := A_Now
+        UpdateChecker.SaveState(state)
         if (UpdateChecker.Compare(release.Version, App.Version) <= 0) {
-            if !silent
-                MsgBox(I18n.T("Update.Latest", App.Version), App.Name, 64)
+            UpdateChecker.Pending := ""
+            MsgBox(I18n.T("Update.Latest", App.Version), App.Name, 64)
             return
         }
+        UpdateChecker.SetPending(release)                                   ; 选 "以后再说" 时搜索窗口里仍然有这一条
+        switch release.Mode {
+            case "install":
+                choice := install ? "Install" : UpdateChecker._Ask(release)
+                if (choice = "Install")
+                    UpdateChecker.Install(release)
+                else if (choice = "Notes")
+                    Run(release.Page)
+            case "source":
+                if (MsgBox(I18n.T("Update.AvailableSource", release.Version), App.Name, "YesNo Iconi") = "Yes")
+                    Run(release.Page)
+            case "page":
+                if (MsgBox(I18n.T("Update.Available", release.Version), App.Name, "YesNo Iconi") = "Yes")
+                    Run(release.Page)
+            default:
+                if (MsgBox(I18n.T("Update.AvailableVia", release.Version, UpdateChecker.UpgradeCommands[release.Mode]), App.Name, "YesNo Iconi") = "Yes")
+                    Run(release.Page)
+        }
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 后台自动检查 + 搜索窗口里的更新提示
+    ;---------------------------------------------------------------------------
+    ; 启动时调用: 开机时网络可能还没连上, 1 分钟后再第一次检查
+    static Schedule() {
+        UpdateChecker._timer := () => UpdateChecker._Tick()
+        SetTimer(UpdateChecker._timer, -60000)
+    }
+
+    static _Tick() {
+        if UpdateChecker.IsDue(UpdateChecker.LoadState()["LastCheck"], A_Now)
+            UpdateChecker.CheckInBackground()
+        SetTimer(UpdateChecker._timer, -3600000)
+    }
+
+    ; 离上次检查 (yyyyMMddHHmmss) 满 CheckHours 小时了吗; 没检查过、时间不对 (改过系统时间) 时也检查
+    static IsDue(lastCheck, now) {
+        if (lastCheck = "")
+            return true
+        try {
+            hours := DateDiff(now, lastCheck, "Hours")
+            return hours >= UpdateChecker.CheckHours || hours < 0
+        }
+        return true
+    }
+
+    ; 静默检查: 出错只写日志 (不记检查时间, 下一个小时再试); 有新版本 (且不是跳过的版本) 时记在 Pending
+    static CheckInBackground() {
+        try {
+            release := UpdateChecker.Fetch()
+        } catch as e {
+            Logger.Error("UpdateChecker: " e.Message)
+            return
+        }
+        state := UpdateChecker.LoadState()
+        state["LastCheck"] := A_Now
+        UpdateChecker.SaveState(state)
+        if UpdateChecker.IsWanted(release.Version, App.Version, state["Skip"])
+            UpdateChecker.SetPending(release)
+        else
+            UpdateChecker.Pending := ""
+        Logger.Debug("UpdateChecker: latest " release.Version (IsObject(UpdateChecker.Pending) ? " (update available)" : ""))
+    }
+
+    static IsWanted(version, current, skip) {
+        return UpdateChecker.Compare(version, current) > 0 && version != skip
+    }
+
+    ; 记下新版本, 并决定怎么更新 (Mode): "scoop" / "winget" / "source" (运行源码) / "install" (一键更新) / "page" (打开下载页面)
+    static SetPending(release) {
         manager := UpdateChecker.InstalledBy(A_ScriptDir)
-        if (manager != "") {
-            if (MsgBox(I18n.T("Update.AvailableVia", release.Version, UpdateChecker.UpgradeCommands[manager]), App.Name, "YesNo Iconi") = "Yes")
-                Run(release.Page)
-            return
+        release.Mode := (manager != "") ? manager : !A_IsCompiled ? "source" : UpdateChecker.CanInstall(release) ? "install" : "page"
+        UpdateChecker.Pending := release
+    }
+
+    ; 搜索窗口里的一条 "更新 ALTRun 到 x" (空搜索框, 或搜索 "更新" 时由 SystemProvider 显示); 没有新版本时 ""
+    static PendingItem() {
+        release := UpdateChecker.Pending
+        if !IsObject(release)
+            return ""
+        switch release.Mode {
+            case "install": subtitle := I18n.T("Update.ItemInstall", App.Version)
+            case "source" : subtitle := I18n.T("Update.ItemSource")
+            case "page"   : subtitle := I18n.T("Update.ItemPage", App.Version)
+            default       : subtitle := I18n.T("Update.ItemVia", UpdateChecker.UpgradeCommands[release.Mode])
         }
-        if !UpdateChecker.CanInstall(release) {
-            if (MsgBox(I18n.T("Update.Available", release.Version), App.Name, "YesNo Iconi") = "Yes")
-                Run(release.Page)
+        actions := [ResultItem(I18n.T("Update.ReleaseNotes"), "", {Icon: "url:", OnRun: (*) => Run(release.Page)})
+                  , ResultItem(I18n.T("Update.Skip"), I18n.T("Update.SkipHint"), {Icon: "res:imageres.dll,-5338", OnRun: (*) => UpdateChecker.SkipVersion(release.Version)})]
+        icon := FileExist(App.IconFile) ? App.IconFile : A_ScriptFullPath
+        return ResultItem(I18n.T("Update.ItemTitle", release.Version), subtitle
+            , {Icon: icon, OnRun: (*) => UpdateChecker.RunPending(), Actions: actions})
+    }
+
+    ; 搜索窗口里按 Enter: 一键更新 / 打开下载页面 / 复制包管理器的升级命令
+    static RunPending() {
+        release := UpdateChecker.Pending
+        if !IsObject(release)
             return
+        switch release.Mode {
+            case "install"       : UpdateChecker.Install(release)
+            case "source", "page": Run(release.Page)
+            default:
+                command := UpdateChecker.UpgradeCommands[release.Mode]
+                A_Clipboard := command
+                App.Notify(I18n.T("Update.CommandCopied", command), 4000)
         }
-        choice := install ? "Install" : UpdateChecker._Ask(release)
-        if (choice = "Install")
-            UpdateChecker.Install(release)
-        else if (choice = "Notes")
-            Run(release.Page)
+    }
+
+    static SkipVersion(version) {
+        state := UpdateChecker.LoadState()
+        state["Skip"] := version
+        UpdateChecker.SaveState(state)
+        UpdateChecker.Pending := ""
+        App.Notify(I18n.T("Update.Skipped", version), 3000)
+    }
+
+    static LoadState() {
+        state := Map("LastCheck", "", "Skip", "")
+        try {
+            data := JSON.Parse(FileRead(UpdateChecker.StateFile, "UTF-8"))
+            for key in ["LastCheck", "Skip"]
+                if (data is Map && data.Has(key))
+                    state[key] := String(data[key])
+        }
+        return state
+    }
+
+    static SaveState(state) {
+        try {
+            SplitPath(UpdateChecker.StateFile, , &dir)
+            DirCreate(dir)
+            try FileDelete(UpdateChecker.StateFile)
+            FileAppend(JSON.Stringify(state), UpdateChecker.StateFile, "UTF-8")
+        } catch as e {
+            Logger.Error("UpdateChecker.SaveState: " e.Message)
+        }
+    }
+
+    ;---------------------------------------------------------------------------
+    ; GitHub Release
+    ;---------------------------------------------------------------------------
+    static Fetch() {
+        tmpFile := A_Temp "\ALTRun_latest.json"
+        Download(UpdateChecker.ApiUrl, tmpFile)
+        response := FileRead(tmpFile, "UTF-8")
+        try FileDelete(tmpFile)
+        return UpdateChecker.ParseRelease(response)
     }
 
     ; GitHub API 的 releases/latest -> {Version, Page, ZipUrl, Sha256} (没有 zip / SHA256 时为 "")

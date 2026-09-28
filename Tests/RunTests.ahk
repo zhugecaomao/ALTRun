@@ -67,7 +67,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1414,6 +1414,66 @@ Func | PTTools | PT Tools (AHK)=99
         eq("replaced, one window", WinExist("ALTRun HUD ahk_class AutoHotkeyGUI") = Hud.Gui.Hwnd, true)
         Hud.Hide()
         eq("hidden", Hud.Gui, "")
+    }
+
+    ; 后台检查更新: 每天一次、跳过的版本、搜索窗口里的更新提示 (不联网: 直接设置 Pending)
+    static UpdateNotice() {
+        eq := (n, a, e) => TestRunner.Equal("UpdateNotice." n, a, e)
+        ok := (n, c) => TestRunner.True("UpdateNotice." n, c)
+        ok("due: never checked", UpdateChecker.IsDue("", "20260928120000"))
+        ok("not due: 23 h", !UpdateChecker.IsDue("20260927130000", "20260928120000"))
+        ok("due: 24 h", UpdateChecker.IsDue("20260927120000", "20260928120000"))
+        ok("due: clock moved back", UpdateChecker.IsDue("20260929120000", "20260928120000"))
+        ok("due: bad value", UpdateChecker.IsDue("garbage", "20260928120000"))
+        ok("wanted: newer", UpdateChecker.IsWanted("2026.10.01", "2026.09.28", ""))
+        ok("not wanted: same", !UpdateChecker.IsWanted("2026.09.28", "2026.09.28", ""))
+        ok("not wanted: skipped", !UpdateChecker.IsWanted("2026.10.01", "2026.09.28", "2026.10.01"))
+        ok("wanted: newer than skipped", UpdateChecker.IsWanted("2026.10.02", "2026.09.28", "2026.10.01"))
+
+        ; 状态文件
+        savedFile := UpdateChecker.StateFile
+        root := A_Temp "\ALTRun-test-update-state"
+        try DirDelete(root, true)
+        UpdateChecker.StateFile := root "\Data\Update.json"
+        savedProviders := ProviderRegistry.Providers
+        ProviderRegistry.Providers := [SystemProvider]
+        eq("state: empty", UpdateChecker.LoadState()["LastCheck"] "|" UpdateChecker.LoadState()["Skip"], "|")
+        UpdateChecker.SaveState(Map("LastCheck", "20260928120000", "Skip", "2026.10.01"))
+        state := UpdateChecker.LoadState()
+        eq("state: saved", state["LastCheck"] "|" state["Skip"], "20260928120000|2026.10.01")
+
+        ; 没有新版本: 空搜索框没有结果
+        UpdateChecker.Pending := ""
+        eq("no update: empty query", ProviderRegistry.Search("").Length, 0)
+        eq("no update: item", UpdateChecker.PendingItem(), "")
+
+        ; 有新版本: 空搜索框和搜索 "update" 都显示, 排在 "检查更新" 前面
+        release := {Version: "2026.10.02", Page: "https://x/notes", ZipUrl: "https://x/a.zip", Sha256: "ab"}
+        UpdateChecker.SetPending(release)
+        eq("mode (tests run the source)", release.Mode, "source")
+        results := ProviderRegistry.Search("")
+        eq("empty query: one item", results.Length, 1)
+        eq("empty query: title", results[1].Title, "Update ALTRun to 2026.10.02")
+        eq("empty query: provider", results[1].Provider, "System")
+        ok("source hint", InStr(results[1].Subtitle, "git pull"))
+        eq("actions: notes + skip", results[1].Actions.Length, 2)
+        titles := ""
+        for action in ActionCatalog.ListFor(results[1])
+            titles .= action.Title "|"
+        ok("action panel", InStr(titles, "What's new|Skip this version|"))
+        results := ProviderRegistry.Search("update")
+        ok("search update: first", results.Length >= 2 && results[1].Title = "Update ALTRun to 2026.10.02")
+        for mode, text in Map("install", "update now", "page", "download page", "scoop", "scoop update altrun", "winget", "winget upgrade")
+            release.Mode := mode, ok("subtitle " mode, InStr(UpdateChecker.PendingItem().Subtitle, text))
+
+        ; 跳过这个版本: 不再显示, 记在状态文件里
+        UpdateChecker.SkipVersion("2026.10.02")
+        eq("skipped: no item", ProviderRegistry.Search("").Length, 0)
+        eq("skipped: saved", UpdateChecker.LoadState()["Skip"], "2026.10.02")
+        Hud.Hide()
+        UpdateChecker.StateFile := savedFile
+        ProviderRegistry.Providers := savedProviders
+        try DirDelete(root, true)
     }
 
     static Misc() {

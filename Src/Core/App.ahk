@@ -66,7 +66,7 @@ class App {
         UpdateChecker.CleanUp()
         SetTimer(() => ProviderRegistry.WarmUp(), -500)                    ; 第一次输入前算好搜索 Key 和图标
         if AppSettings.General["CheckForUpdates"]
-            SetTimer(() => UpdateChecker.Check(true), -10000)
+            UpdateChecker.Schedule()                                        ; 后台每天检查一次, 新版本显示在搜索窗口里
 
         App._HandleCommandLine()
     }
@@ -204,7 +204,7 @@ class App {
         tray.Add(I18n.T("Tray.Preferences"), (*) => App.OpenPreferences())
         tray.Add()
         tray.Add(I18n.T("Tray.RebuildIndex"), (*) => App.RebuildIndex())
-        tray.Add(I18n.T("Tray.CheckUpdate"), (*) => UpdateChecker.Check(false))
+        tray.Add(I18n.T("Tray.CheckUpdate"), (*) => UpdateChecker.Check())
         tray.Add()
         tray.Add(I18n.T("Tray.Reload"), (*) => App.Reload())
         tray.Add(I18n.T("Tray.Exit"), (*) => App.Quit())
@@ -314,7 +314,7 @@ class App {
             return
         }
         if (A_Args.Length >= 1 && A_Args[1] = "-Update") {
-            UpdateChecker.Check(false, true)
+            UpdateChecker.Check(true)
             return
         }
         if (A_Args.Length >= 1 && A_Args[1] = "-Preferences") {
