@@ -10,10 +10,13 @@
 ; ALTRun 自己的热键 (Suspend), 否则按呼出热键会弹出搜索窗口, 而不是被记录。
 ; 录完或取消后焦点移到下一个控件: 框里不能打字, 想重新录制就再点一下。
 ; 旧设置里的特殊写法 (~、*、CapsLock & J...) 在重新录制之前原样保留。
+; 录制期间每 200 ms 检查一次: 框不再有焦点、或窗口已经关掉时结束录制 (关窗口时不一定收到 LoseFocus,
+; 不结束的话 ALTRun 的热键会一直暂停、按键一直被拦下)。
 ;
 ; 用法:
 ;   box := HotkeyBox.Add(gui, "x10 y10 w150", "!Space", mouse := false, onChange := fn)
 ;   HotkeyBox.Value(box)                -> "!Space" (AutoHotkey 写法; 录到新热键时调用 onChange)
+;   HotkeyBox.CancelActive()            关闭窗口前调用: 正在录制时结束录制, 恢复 ALTRun 的热键
 ;   HotkeyBox.Label("~MButton")         -> "鼠标中键" (列表等处显示用)
 ;   HotkeyBox.Compose("^!", "c")        -> "^!c"
 ;   HotkeyBox.IsAllowed("a")            -> false (要加 Ctrl / Alt / Win)
@@ -21,12 +24,12 @@
 
 class HotkeyBox {
     static Boxes := Map()                                                   ; 输入框 Hwnd -> {Ctrl, Gui, Value, Mouse, OnChange}
-    static _active := "", _hook := "", _suspended := false, _mouseHooked := false
+    static _active := "", _hook := "", _suspended := false, _mouseHooked := false, _watchTimer := ""
     static TipId := 20
 
     static Add(g, options, value, mouse := false, onChange := "") {
         ctrl := g.AddEdit(options " r1 -Multi -TabStop", "")                ; 不接受 Tab 焦点: 打开窗口、按 Tab 经过时不会开始录制
-        state := {Ctrl: ctrl, Gui: g, Value: value, Mouse: mouse, OnChange: onChange}
+        state := {Ctrl: ctrl, Hwnd: ctrl.Hwnd, GuiHwnd: g.Hwnd, Value: value, Mouse: mouse, OnChange: onChange}
         HotkeyBox.Boxes[ctrl.Hwnd] := state
         HotkeyBox._Show(state)
         ctrl.OnEvent("Focus", (*) => HotkeyBox.Start(state))
@@ -37,6 +40,13 @@ class HotkeyBox {
             OnMessage(0x20B, (wParam, lParam, msg, hwnd) => HotkeyBox._OnMouse(wParam, msg, hwnd))   ; WM_XBUTTONDOWN
         }
         return ctrl
+    }
+
+    static CancelActive() {
+        state := HotkeyBox._active
+        HotkeyBox._End()                                                    ; 不管是否还在录制都执行一次: 被打断的 _End 可能没做完
+        if IsObject(state)
+            HotkeyBox._Show(state)
     }
 
     static Value(ctrl) {
@@ -81,7 +91,7 @@ class HotkeyBox {
         HotkeyBox._End()
         HotkeyBox._active := state
         state.Ctrl.Value := ""
-        Win.SetCueBanner(state.Ctrl.Hwnd, I18n.T("Hotkey.Press"))
+        Win.SetCueBanner(state.Hwnd, I18n.T("Hotkey.Press"))
         HotkeyBox._ShowTip(state, I18n.T("Hotkey.PressTip"))
         if !A_IsSuspended {
             try TraySetIcon(, , true)                                       ; 暂停热键时托盘图标不要变成 "S"
@@ -94,6 +104,18 @@ class HotkeyBox {
         ih.OnKeyUp := (ih, vk, sc) => HotkeyBox._OnModifiers()
         ih.Start()
         HotkeyBox._hook := ih
+        if !IsObject(HotkeyBox._watchTimer)
+            HotkeyBox._watchTimer := () => HotkeyBox._Watch()
+        SetTimer(HotkeyBox._watchTimer, 200)
+    }
+
+    ; 框没有焦点了 (点了别处、切换了窗口) 或窗口已经关掉: 结束录制
+    static _Watch() {
+        state := HotkeyBox._active
+        if !IsObject(state)
+            return SetTimer(HotkeyBox._watchTimer, 0)
+        if (!DllCall("IsWindow", "Ptr", state.Hwnd) || DllCall("GetFocus", "Ptr") != state.Hwnd)
+            HotkeyBox.CancelActive()
     }
 
     ; 失去焦点 (点了别处、切换了窗口): 取消录制, 保留原来的热键
@@ -108,6 +130,8 @@ class HotkeyBox {
         state := HotkeyBox._active
         if !IsObject(state)
             return
+        if !DllCall("IsWindow", "Ptr", state.Hwnd)                          ; 窗口已经关掉
+            return HotkeyBox.CancelActive()
         name := GetKeyName(Format("vk{:x}sc{:x}", vk, sc))
         if RegExMatch(name, "i)^[LR]?(Control|Ctrl|Shift|Alt|Win)$")
             return HotkeyBox._OnModifiers()
@@ -134,6 +158,8 @@ class HotkeyBox {
         state := HotkeyBox._active
         if !IsObject(state)
             return
+        if !DllCall("IsWindow", "Ptr", state.Hwnd)                          ; 窗口已经关掉
+            return HotkeyBox.CancelActive()
         mods := HotkeyBox._Mods()
         state.Ctrl.Value := (mods = "") ? "" : HotkeyBox.Label(mods "x")
         if (mods != "")
@@ -164,31 +190,37 @@ class HotkeyBox {
         HotkeyBox._Show(state)
         if (changed && IsObject(state.OnChange))
             state.OnChange.Call()
-        try PostMessage(0x28, 0, 0, , "ahk_id " state.Gui.Hwnd)          ; WM_NEXTDLGCTL: 焦点移到下一个控件
+        try PostMessage(0x28, 0, 0, , "ahk_id " state.GuiHwnd)           ; WM_NEXTDLGCTL: 焦点移到下一个控件
     }
 
+    ; 结束录制, 可以重复调用。先恢复 ALTRun 的热键、停掉拦截按键的 InputHook: 后面的 ToolTip 等会处理
+    ; 窗口消息, 这时正在关的窗口可能打断这个线程, 放在后面的话热键可能一直暂停
     static _End() {
-        if IsObject(HotkeyBox._hook) {
-            try HotkeyBox._hook.Stop()
+        if HotkeyBox._suspended {
+            HotkeyBox._suspended := false
+            Suspend(false)
+        }
+        if IsObject(ih := HotkeyBox._hook) {
             HotkeyBox._hook := ""
+            try ih.Stop()
         }
         HotkeyBox._active := ""
+        if IsObject(HotkeyBox._watchTimer)
+            SetTimer(HotkeyBox._watchTimer, 0)
+        try TraySetIcon(, , false)
         ToolTip(, , , HotkeyBox.TipId)
-        if HotkeyBox._suspended {
-            Suspend(false)
-            try TraySetIcon(, , false)
-            HotkeyBox._suspended := false
-        }
     }
 
     static _Show(state) {
-        Win.SetCueBanner(state.Ctrl.Hwnd, I18n.T("Hotkey.None"))
-        state.Ctrl.Value := HotkeyBox.Label(state.Value)
+        if !DllCall("IsWindow", "Ptr", state.Hwnd)                          ; 窗口已经关掉
+            return
+        Win.SetCueBanner(state.Hwnd, I18n.T("Hotkey.None"))
+        try state.Ctrl.Value := HotkeyBox.Label(state.Value)
     }
 
     static _ShowTip(state, text) {
         try {
-            WinGetPos(&x, &y, , &h, "ahk_id " state.Ctrl.Hwnd)
+            WinGetPos(&x, &y, , &h, "ahk_id " state.Hwnd)
             CoordMode("ToolTip", "Screen")
             ToolTip(text, x, y + h + 2, HotkeyBox.TipId)
         }

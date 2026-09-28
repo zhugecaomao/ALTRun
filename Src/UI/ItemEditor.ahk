@@ -76,6 +76,7 @@ class ItemEditor {
         owner.Opt("+Disabled")
         g.Show()
         WinWaitClose(g.Hwnd)
+        HotkeyBox.CancelActive()                                            ; 正在录制热键时关掉了对话框
         owner.Opt("-Disabled")
         try WinActivate("ahk_id " owner.Hwnd)
         return state.Result
