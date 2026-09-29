@@ -24,6 +24,8 @@
 
 打开 "自动跳转" (`AutoSwitch`) 后, 从 Total Commander 切换到对话框时会自动跳转。
 
+TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上), 不经过剪贴板, Windows 的剪贴板历史 (`Win+V`) 里不会多出路径。
+
 偏好设置 → 对话框跳转:
 - **生效的窗口**: "Windows 标准对话框" (`ahk_class #32770`, 默认勾选) 和 "其它对话框", 例如 WPS 的 `ahk_class Qt5QWindowIcon`, 每行一个
 - **不生效的窗口**: 在这些窗口里不跳转

@@ -454,22 +454,44 @@ class QuickSwitch {
         QuickSwitch.SetDialogPath(folder)
     }
 
-    ; Total Commander 面板的文件夹 (TC 7 ~ 11: WM_USER+75, 2029 / 2030 = 当前 / 另一个面板的路径放到剪贴板)
-    ; hwnd 为 0 时取最前面的 TC 窗口; 临时借用剪贴板, 这段时间剪贴板历史不记录
+    ; Total Commander 面板的文件夹: 用 TC 的 WM_COPYDATA 接口直接问 (TC 8.0 起支持), 不碰剪贴板。
+    ; hwnd 为 0 时取最前面的 TC 窗口; otherPanel = true 时取另一个面板
     static TotalCmdFolder(hwnd := 0, otherPanel := false) {
         if !(hwnd := hwnd ? hwnd : WinExist("ahk_class TTOTAL_CMD"))
             return ""
-        ClipboardProvider.PauseRecording(1000)
-        savedClipboard := ClipboardAll()
-        A_Clipboard := ""
-        folder := ""
-        try {
-            SendMessage(1075, otherPanel ? 2030 : 2029, 0, , "ahk_id " hwnd)
-            if ClipWait(0.2)
-                folder := RTrim(A_Clipboard, "\")
-        }
-        A_Clipboard := savedClipboard
+        folder := RTrim(QuickSwitch.TotalCmdAsk(hwnd, otherPanel ? "TP" : "SP"), "\")
         return (folder ~= "^([A-Za-z]:|\\\\)") ? folder : ""               ; 只要真正的路径 (不要 FTP、压缩包里面等)
+    }
+
+    ; 发 WM_COPYDATA (dwData = "GW", 内容是 ANSI 的命令) 问 TC, TC 马上用 WM_COPYDATA (dwData = "RW", UTF-16)
+    ; 回复给 wParam 里的窗口。命令: A = 当前是哪一边 (L / R); 两个字母: 第一个 L 左 / R 右 / S 当前 / T 另一个,
+    ; 第二个 P 路径 / C 文件数 / I 光标位置 / N 光标下的文件名。TC 没有回复时返回 ""
+    static _tcWaiting := false, _tcReply := "", _tcListening := false
+    static TotalCmdAsk(hwnd, command, timeoutMs := 500) {
+        if !QuickSwitch._tcListening {
+            OnMessage(0x4A, (p*) => QuickSwitch._OnTotalCmdReply(p*))         ; WM_COPYDATA
+            QuickSwitch._tcListening := true
+        }
+        request := Buffer(StrPut(command, "CP0"))
+        StrPut(command, request, "CP0")
+        copyData := Buffer(A_PtrSize * 3, 0)                                    ; COPYDATASTRUCT
+        NumPut("UPtr", Ord("G") + 256 * Ord("W"), copyData, 0)
+        NumPut("UInt", request.Size, copyData, A_PtrSize)
+        NumPut("Ptr", request.Ptr, copyData, A_PtrSize * 2)
+        QuickSwitch._tcReply := "", QuickSwitch._tcWaiting := true, accepted := 0
+        DllCall("SendMessageTimeoutW", "Ptr", hwnd, "UInt", 0x4A, "Ptr", A_ScriptHwnd, "Ptr", copyData.Ptr
+              , "UInt", 2, "UInt", timeoutMs, "UPtr*", &accepted)                 ; 2 = SMTO_ABORTIFHUNG: TC 卡住时不等
+        QuickSwitch._tcWaiting := false                                         ; TC 在处理这条消息时就回复了, 不用另外等
+        return QuickSwitch._tcReply
+    }
+
+    static _OnTotalCmdReply(wParam, lParam, msg, hwnd) {
+        if (!QuickSwitch._tcWaiting || NumGet(lParam, 0, "UPtr") != Ord("R") + 256 * Ord("W"))
+            return                                                              ; 不是在等的回复: 交给别的处理 (Everything)
+        size := NumGet(lParam, A_PtrSize, "UInt"), data := NumGet(lParam, A_PtrSize * 2, "Ptr")
+        reply := (data && size >= 2) ? StrGet(data, size // 2, "UTF-16") : ""  ; 到结尾的 0 为止
+        QuickSwitch._tcReply := reply, QuickSwitch._tcWaiting := false
+        return true
     }
 
     ;---------------------------------------------------------------------------
