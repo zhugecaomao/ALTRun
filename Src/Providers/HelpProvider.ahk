@@ -23,6 +23,7 @@ class HelpProvider {
             ["Files"     , "FileSearch"    , "File-Search"],
             ["Folders"   , "FileSearch"    , "File-Search"],
             ["FileKeyword", "FileSearch"   , "File-Search"],
+            ["FileTypes" , "FileSearch"    , "File-Search"],
             ["Actions"   , ""              , "Usage"],
             ["Selection" , ""              , "Usage"],
             ["Edit"      , ""              , "Commands-and-Snippets"],
@@ -58,6 +59,8 @@ class HelpProvider {
             if (entry[1] = "Expand" && !AppSettings.Feature("Snippets")["AutoExpand"])
                 continue
             if (entry[1] = "Selection" && AppSettings.General["SelectionHotkey"] = "")
+                continue
+            if (entry[1] = "FileTypes" && !FileSearchProvider.TypeFilters().Length)
                 continue
             items.Push({Id: entry[1], Key: I18n.T("Help." entry[1] ".Key", HelpProvider._Args(entry[1])*)
                       , Text: I18n.T("Help." entry[1] ".Text"), Url: HelpProvider.WikiUrl entry[3]})
@@ -103,6 +106,11 @@ class HelpProvider {
     static _Args(id) {
         switch id {
             case "Folders":     return [AppSettings.Feature("FileSearch")["FolderKeywords"].Length ? AppSettings.Feature("FileSearch")["FolderKeywords"][1] : "folder"]
+            case "FileTypes":
+                keywords := ""
+                for filter in FileSearchProvider.TypeFilters()
+                    keywords .= (keywords = "" ? "" : " / ") filter.Keyword
+                return [keywords]
             case "FileKeyword": return [AppSettings.Feature("FileSearch")["Keywords"].Length ? AppSettings.Feature("FileSearch")["Keywords"][1] : "open"]
             case "Clipboard":   return [AppSettings.Feature("Clipboard")["Keyword"], Win.HotkeyLabel(AppSettings.Feature("Clipboard")["Hotkey"])]
             case "Snippets":    return [AppSettings.Feature("Snippets")["Keyword"]]

@@ -104,7 +104,8 @@ class FileIndex {
     ; 按文件名匹配: 完全相同 100 / 开头 90 / 单词开头 80 / 包含 60。
     ; 继续输入时只在上一次匹配到的里面找 (只用 "包含" 类规则, 范围只会缩小)。
     ; foldersOnly: 只要文件夹 ("folder bk")
-    static Search(needle, limit, foldersOnly := false) {
+    ; extensions: Map("pdf", true, ...) 时只要这些扩展名的文件 (文件类型筛选, 例如 "doc 报告")
+    static Search(needle, limit, foldersOnly := false, extensions := "") {
         FileIndex.EnsureLoaded()
         needle := StrLower(Trim(needle))
         if (needle = "")
@@ -128,11 +129,23 @@ class FileIndex {
                 if !folders[index]
                     scores.Delete(index)
         }
+        if IsObject(extensions) {
+            folders := FileIndex.Folders, paths := FileIndex.Paths
+            for index in matches {
+                if folders[index] || !extensions.Has(StrLower(FileIndex._Ext(paths[index])))
+                    scores.Delete(index)
+            }
+        }
 
         results := []
         for index in FuzzyMatcher.TopIndexes(scores, limit)
             results.Push({Path: FileIndex.Paths[index], IsFolder: FileIndex.Folders[index], Score: scores[index]})
         return results
+    }
+
+    static _Ext(filePath) {
+        SplitPath(filePath, , , &ext)
+        return ext
     }
 
     static ScoreName(needle, name) {

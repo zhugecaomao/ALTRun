@@ -7,7 +7,10 @@
 - **`'报告`**、**`open 报告`** 或 **`find 报告`**: 效果相同
 - **只搜文件夹**: **`folder bk`** (关键字可以在 偏好设置 → 文件搜索 → "文件夹搜索关键字" 修改); 文件搜索模式里也可以输入 `folder bk`。有 Everything 时相当于 Everything 的 `folder:bk`
 
-关键字后面要有空格才进入文件搜索: 只输入 `folder` 或 `open` 时, 名字里带这个词的命令、应用照常显示。
+- **按类型搜索** (和 Listary 的筛选一样): **`doc 报告`** 只搜文档, 还有 `pic` 图片、`video` 视频、`audio` 音频、`zip` 压缩包、`exe` 程序、`cad` (dwg / dxf / dgn / rvt / ifc / skp...)。文件搜索模式里也可以输入 `doc 报告`。关键字和扩展名可以在 偏好设置 → 文件搜索 → "文件类型" 修改, 每行一个 `关键字 = 扩展名 扩展名 ...`。有 Everything 时相当于 `ext:doc;docx;...`
+- 按修改日期找可以直接写 Everything 的语法, 例如 `空格` + `dm:today 报告`、`dm:thisweek`
+
+关键字后面要有空格才进入文件搜索: 只输入 `folder`、`open`、`doc` 时, 名字里带这个词的命令、应用照常显示。
 
 结果按名称的匹配程度排序: 完全相同 > 名称开头 > 单词开头 (例如 `PT2310-BK`) > 包含 (例如 `notebk`); 同样的匹配程度, 文件夹排在文件前面, 再按修改时间 (新的在前)。用 Everything 时, ALTRun 先取 Everything 的前 300 条结果再排序, 所以名称最匹配的文件夹不会因为不是最近修改的而漏掉。
 
@@ -21,7 +24,7 @@ Everything 的搜索语法可以直接用, 原样交给 Everything: 例如 `空�
 
 ![文件搜索](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/files.png)
 
-`Enter` 打开, `Ctrl+Enter` 在文件管理器中显示, `Alt+Enter` 复制路径, `→` 更多操作 (在此处打开终端、属性...)。
+`Enter` 打开, `Ctrl+Enter` 在文件管理器中显示, `Alt+Enter` 复制路径, `→` 更多操作 (打开方式、复制 / 剪切文件、复制 / 移动到 TC 当前的文件夹、在此处打开终端、属性、移到回收站...), 见 [操作面板](Usage#操作面板)。
 
 ## 数据来源
 ALTRun 自动选择:
@@ -46,6 +49,7 @@ ALTRun 自动选择:
 | MinQueryLength | 2 | 至少输入几个字才搜文件 |
 | Keywords | `open, find` | 只搜文件的关键字 |
 | FolderKeywords | `folder` | 只搜文件夹的关键字 |
+| TypeFilters | doc / pic / video / audio / zip / exe / cad | 文件类型筛选, 每行 `关键字 = 扩展名 ...` |
 | QuotePrefix | 1 | 以 `'` 开头只搜文件 |
 | MaxResults | 30 | 只搜文件时最多显示几条 |
 | UseEverything | 1 | Everything 在运行时用它搜索 |

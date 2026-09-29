@@ -6,15 +6,21 @@
 做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。在标准的 "打开 / 保存文件" 对话框里:
 - `Ctrl+G`: 跳到 Total Commander 当前打开的文件夹
 - `Ctrl+E`: 跳到资源管理器当前打开的文件夹
+- `Ctrl+Shift+G`: **文件夹菜单** (和 Listary 的 Quick Switch 菜单一样), 列出:
+  - 每个 Total Commander 窗口的当前面板和另一侧面板;
+  - 打开的资源管理器窗口;
+  - 最近用过的文件夹 (Windows 的 "最近使用的项目", 打开过的文件取所在的文件夹; 默认 10 个, `RecentFolders` 可以改, 0 = 不列)。
 
-对话框标题上会提示这两个热键。打开 "自动跳转" (`AutoSwitch`) 后, 从 Total Commander 切换到对话框时会自动跳转。
+  菜单显示在文件名输入框下面, 按 `1` ~ `9` 或点击就跳过去。
+
+对话框标题上会提示这些热键。打开 "自动跳转" (`AutoSwitch`) 后, 从 Total Commander 切换到对话框时会自动跳转。
 
 偏好设置 → 对话框跳转:
 - **生效的窗口**: "Windows 标准对话框" (`ahk_class #32770`, 默认勾选) 和 "其它对话框", 例如 WPS 的 `ahk_class Qt5QWindowIcon`, 每行一个
 - **不生效的窗口**: 在这些窗口里不跳转
 - **不自动跳转的对话框**: 这些对话框里不自动跳转, 仍然可以按热键
 
-设置文件里是 `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows` / `AutoSwitchExclude` (窗口条件用逗号分隔)。
+设置文件里是 `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `MenuHotkey` / `RecentFolders` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows` / `AutoSwitchExclude` (窗口条件用逗号分隔)。
 
 ## 一键加日期
 按热键 (默认 `Ctrl+D`, 可以改):
