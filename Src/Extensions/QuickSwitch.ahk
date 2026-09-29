@@ -7,8 +7,7 @@
 ; 文件夹菜单 (MenuHotkey, 默认 Ctrl+Shift+G, 和 Listary 的 Quick Switch 菜单一样): 列出所有 TC 窗口的
 ; 两个面板、打开的资源管理器窗口和最近用过的文件夹 (Windows 的 "最近使用的项目"), 选一个对话框就跳过去。
 ; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 下面就贴一个搜索框 + 同样内容的
-; 列表, 点一下就跳过去, 不用记热键; 在搜索框里输入还能搜索文件夹和文件 (选中文件: 打开对话框直接打开,
-; 保存对话框填好文件名)。对话框不在前台时隐藏, 回到对话框时刷新
+; 列表, 点一下就跳过去, 不用记热键; 在搜索框里输入还能搜索文件夹和文件 (选中文件: 跳到它所在的文件夹)。对话框不在前台时隐藏, 回到对话框时刷新
 ; (TC 里换了目录也能马上看到)。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
@@ -523,36 +522,17 @@ class QuickSwitch {
         return ""
     }
 
-    ; 在对话框里选中一个文件: "打开" 对话框直接打开它; "保存" 对话框跳到它所在的文件夹并填好文件名,
-    ; 不按 Enter (会覆盖已有的文件, 由用户自己确认)
+    ; 在对话框里选中一个文件: 打开和保存对话框都一样, 跳到它所在的文件夹 (不替用户打开或保存)
     static PickFile(filePath) {
-        if !FileExist(filePath)
-            return
-        dialog := WinExist("A")
-        if !QuickSwitch.IsSaveDialog(dialog)
-            return QuickSwitch.SetDialogPath(filePath)                      ; 文件名框里填完整路径再按 Enter 就是打开
-        SplitPath(filePath, &name, &dir)
-        QuickSwitch.SetDialogPath(RTrim(dir, "\") "\")
-        Sleep(200)                                                          ; 等对话框切换文件夹 (切换后文件名框会清空)
-        if (WinGetClass("ahk_id " dialog) = "Qt5QWindowIcon")
-            return SendText(name)
-        try {
-            ControlFocus("Edit1", "ahk_id " dialog)
-            ControlSetText(name, "Edit1", "ahk_id " dialog)
-        }
+        SplitPath(filePath, , &dir)
+        if (dir != "")
+            QuickSwitch.SetDialogPath(RTrim(dir, "\") "\")
     }
 
-    ; 保存对话框: 确定按钮 (Id 1) 或标题里有 "保存 / Save / 另存" 等字样
-    static IsSaveDialog(hwnd) {
-        title := "", button := ""
-        try title := WinGetTitle("ahk_id " hwnd)
-        if (hwnd && (buttonHwnd := DllCall("GetDlgItem", "Ptr", hwnd, "Int", 1, "Ptr")))
-            try button := ControlGetText(buttonHwnd)
-        return QuickSwitch.LooksLikeSave(title, button)
-    }
-
-    static LooksLikeSave(title, button) {
-        return RegExMatch(button " " title, "i)save|保存|另存|名前を付けて|speichern|enregistrer|guardar") > 0
+    ; 文件名框里原来是普通的文件名时才填回去 (空的、路径、*.txt 这样的筛选条件不填)
+    static ShouldRestoreName(saved) {
+        saved := Trim(saved)
+        return saved != "" && !RegExMatch(saved, "[\\/:*?]")
     }
 
     static SetDialogPath(folder) {
@@ -565,9 +545,16 @@ class QuickSwitch {
             return
         }
         try {
-            ControlFocus("Edit1", "A")
-            ControlSetText(folder, "Edit1", "A")
-            ControlSend("{Enter}", "Edit1", "A")
+            dialog := WinExist("A")
+            saved := ""
+            try saved := ControlGetText("Edit1", "ahk_id " dialog)             ; 文件名框原来的内容 (例如另存为时程序预填的文件名)
+            ControlFocus("Edit1", "ahk_id " dialog)
+            ControlSetText(folder, "Edit1", "ahk_id " dialog)
+            ControlSend("{Enter}", "Edit1", "ahk_id " dialog)
+            if QuickSwitch.ShouldRestoreName(saved) {                       ; 跳过去之后填回去, 不丢掉预填的文件名
+                Sleep(150)
+                try ControlSetText(saved, "Edit1", "ahk_id " dialog)
+            }
         } catch {
             SendInput("!d")                                                 ; 没有 Edit1 的自绘对话框: 用地址栏
             Sleep(60)
