@@ -1,38 +1,55 @@
 ;===============================================================================
 ; ClipboardProvider.ahk - 剪贴板历史 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 Alfred 的 Clipboard History 一样: 记住复制过的文字, 输入 "clip" (Keyword)
-; 或按热键 (默认 Ctrl+Alt+C) 列出, "clip 关键词" 过滤, Enter 粘贴到前台窗口。
+; 和 Alfred 的 Clipboard History 一样: 记住复制过的文字、文件和图片, 输入 "clip" (Keyword)
+; 或按热键 (默认 Ctrl+Alt+C) 列出, "clip 关键词" 过滤, Enter 粘贴到前台窗口
+; (文件粘贴回去还是文件, 图片还是图片)。
 ;
 ; 隐私:
 ;   - 密码管理器等程序复制的内容 (带 ExcludeClipboardContentFromMonitorProcessing
 ;     或 CanIncludeInClipboardHistory = 0 标记) 不会被记录
 ;   - IgnoreApps 里的程序 (进程名) 复制的内容不会被记录
-;   - Persist = 0 时只保存在内存里, 退出即清空
+;   - Persist = 0 时只保存在内存里, 退出即清空 (这时不记录图片)
 ;
 ; 保存: Data\ClipboardHistory.json; 超过 LargeText 个字的条目单独存成 Data\Clipboard\*.txt,
-; JSON 里只记文件名。每次复制都会保存, 这样不用每次都把很长的文字重新写一遍 (最多 200 条 x 10 万字)。
+; 图片存成 Data\Clipboard\img-*.png, JSON 里只记文件名。每次复制都会保存, 这样不用每次都
+; 把很长的文字重新写一遍 (最多 200 条 x 10 万字)。
+;
+; 条目: Map("Text", "Time", "App") 是文字; 另外两种带 "Type":
+;   "files"  复制的文件: "Files" [路径...], "Text" 是每行一个路径 (用来搜索)
+;   "image"  图片: "Image" 文件名, "Width" / "Height"
 ;
 ; 设置 (ALTRun.json -> Features.Clipboard):
 ;   Enabled / Keyword / Hotkey / MaxItems / MaxItemLength / Persist / IgnoreApps
+;   Images / MaxImages     记录图片、最多保存几张
+;   MergeDoubleCopy        快速按两次 Ctrl+C: 把这次复制的文字接到上一条后面 (默认关闭)
 ;
 ; 用法:
 ;   ClipboardProvider.PauseRecording(ms)   ALTRun 自己临时借用剪贴板时调用, 这段时间不记录
 ;   ClipboardProvider.Add(text, source)    手动加入一条 (source = 来源程序的进程名)
+;   ClipboardProvider.AddFiles(paths, source) / AddImage(source)
+;   ClipboardProvider.TextAt(n)            第 n 条文字 (1 = 最新的), 片段的 {clipboard:N} 用
 ;===============================================================================
 
 class ClipboardProvider {
     static Id      := "Clipboard"
     static File    := A_ScriptDir "\Data\ClipboardHistory.json"
-    static Folder  := A_ScriptDir "\Data\Clipboard"                         ; 很长的条目
+    static Folder  := A_ScriptDir "\Data\Clipboard"                         ; 很长的条目和图片
     static LargeText := 4000
-    static Entries := []              ; [Map("Text", "Time", "App")], 最新的在前
-    static _pausedUntil := 0, _saveTimer := ""
+    static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
+    static Entries := []              ; 最新的在前, 见文件开头的说明
+    static _pausedUntil := 0, _saveTimer := "", _mergeUntil := 0
 
     static Init() {
-        if AppSettings.Feature("Clipboard")["Persist"]
+        options := AppSettings.Feature("Clipboard")
+        if options["Persist"]
             ClipboardProvider._Load()
         OnClipboardChange((dataType) => ClipboardProvider._OnChange(dataType))
+        if options["MergeDoubleCopy"] {
+            try Hotkey("~^c", (*) => ClipboardProvider._OnCopyKey())         ; ~ : Ctrl+C 照常复制
+            catch as e
+                Logger.Error("ClipboardProvider: cannot register Ctrl+C - " e.Message)
+        }
     }
 
     static PauseRecording(milliseconds) {
@@ -51,7 +68,7 @@ class ClipboardProvider {
         results := []
         tokens := StrSplit(Trim(term), " ")
         for index, entry in ClipboardProvider.Entries {
-            if !ClipboardProvider._Matches(entry["Text"], tokens)
+            if !ClipboardProvider._Matches(ClipboardProvider._SearchText(entry), tokens)
                 continue
             item := ClipboardProvider._ToItem(entry, icon, 300 - results.Length * 0.001)
             item.Exclusive := exclusive
@@ -73,22 +90,74 @@ class ClipboardProvider {
         return true
     }
 
-    static _ToItem(entry, icon, score) {
-        text := entry["Text"]
-        subtitle := I18n.T("Clipboard.Subtitle", ClipboardProvider._FormatTime(entry["Time"]), entry["App"] != "" ? entry["App"] : "?", StrLen(text))
-        return ResultItem(ClipboardProvider._Preview(text), subtitle, {
-            Kind: "text", Arg: text, Icon: icon, Score: score, LargeText: text, Source: entry,
-            OnRun: (item) => ClipboardProvider.Paste(item.Arg)
-        })
+    static TypeOf(entry) => entry.Has("Type") ? entry["Type"] : "text"
+
+    static _SearchText(entry) {
+        if (ClipboardProvider.TypeOf(entry) = "image")                      ; 图片: 按 "图片" / "image" 和尺寸找
+            return ClipboardProvider._ImageTitle(entry) " image png"
+        return entry["Text"]
     }
 
-    ; F3 / 右键 "编辑": 把这条剪贴板历史保存为片段
+    static _ToItem(entry, icon, score) {
+        when := ClipboardProvider._FormatTime(entry["Time"])
+        source := (entry.Has("App") && entry["App"] != "") ? entry["App"] : "?"
+        props := {Score: score, Source: entry, OnRun: (item) => ClipboardProvider.PasteEntry(item.Source)}
+        switch ClipboardProvider.TypeOf(entry) {
+            case "files":
+                files := entry["Files"]
+                if (files.Length = 1) {                                     ; 一个文件: 和文件搜索的结果一样, 有打开 / 显示位置等操作
+                    filePath := files[1], isFolder := InStr(FileExist(filePath), "D") ? true : false
+                    props.Kind := isFolder ? "folder" : "file", props.Arg := filePath
+                    props.Icon := isFolder ? IconCache.FolderIcon(filePath) : filePath
+                    title := Path.Leaf(RTrim(filePath, "\"))
+                    subtitle := I18n.T("Clipboard.FileSubtitle", when, source, filePath)
+                } else {
+                    props.Kind := "text", props.Arg := entry["Text"], props.Icon := "folder:"
+                    props.Actions := [ResultItem(I18n.T("Action.AddAllCommands"), "", {Icon: "res:imageres.dll,-2", OnRun: (*) => CustomCommandProvider.AddFromPaths(files)})]
+                    title := ClipboardProvider._Names(files)
+                    subtitle := I18n.T("Clipboard.FilesSubtitle", when, source, files.Length)
+                }
+                props.RunTitle := I18n.T("Clipboard.PasteFiles")
+            case "image":
+                imageFile := ClipboardProvider.Folder "\" entry["Image"]
+                props.Kind := "file", props.Arg := imageFile, props.Icon := "thumb:" imageFile
+                props.RunTitle := I18n.T("Clipboard.PasteImage")
+                title := ClipboardProvider._ImageTitle(entry)
+                subtitle := I18n.T("Clipboard.ImageSubtitle", when, source)
+            default:
+                text := entry["Text"]
+                props.Kind := "text", props.Arg := text, props.Icon := icon, props.LargeText := text
+                title := ClipboardProvider._Preview(text)
+                subtitle := I18n.T("Clipboard.Subtitle", when, source, StrLen(text))
+        }
+        return ResultItem(title, subtitle, props)
+    }
+
+    static _ImageTitle(entry) => I18n.T("Clipboard.Image", entry.Has("Width") ? entry["Width"] : "?", entry.Has("Height") ? entry["Height"] : "?")
+
+    static _Names(files) {
+        names := ""
+        for filePath in files {
+            names .= (names = "" ? "" : ", ") Path.Leaf(RTrim(filePath, "\"))
+            if (StrLen(names) > 100)
+                return SubStr(names, 1, 100) "..."
+        }
+        return names
+    }
+
+    ; F3 / 右键 "编辑": 文字保存为片段, 文件添加到自定义命令; 图片不能编辑
+    static CanEditItem(item) => ClipboardProvider.TypeOf(item.Source) != "image"
+
     static EditItem(item) {
+        switch ClipboardProvider.TypeOf(item.Source) {
+            case "files": return CustomCommandProvider.AddFromPaths(item.Source["Files"])
+            case "image": return false
+        }
         return SnippetProvider.Edit("", Map("Name", SubStr(ClipboardProvider._Preview(item.Arg), 1, 40), "Text", item.Arg))
     }
 
     static DeleteItem(item) {
-        ClipboardProvider.Remove(item.Arg)
+        ClipboardProvider.RemoveEntry(item.Source)
         return true
     }
 
@@ -98,6 +167,37 @@ class ClipboardProvider {
         ActionCatalog.PasteText(text)
     }
 
+    static PasteEntry(entry) {
+        switch ClipboardProvider.TypeOf(entry) {
+            case "files":
+                ClipboardProvider._MoveToTop(entry)
+                files := entry["Files"]
+                return ClipboardProvider._PasteWith(() => ClipboardData.SetFiles(files))
+            case "image":
+                ClipboardProvider._MoveToTop(entry)
+                imageFile := ClipboardProvider.Folder "\" entry["Image"]
+                return ClipboardProvider._PasteWith(() => ClipboardData.SetImage(imageFile))
+        }
+        return ClipboardProvider.Paste(entry["Text"])
+    }
+
+    ; 临时把文件 / 图片放进剪贴板, Ctrl+V, 再还原 (和 ActionCatalog.PasteText 一样, 这段时间不记录)
+    static _PasteWith(setter) {
+        delay := Max(AppSettings.Feature("Snippets")["PasteDelay"], 500)    ; 资源管理器粘贴文件时读剪贴板比较慢
+        App.FocusPreviousWindow()
+        Win.WaitModifiersUp()
+        ClipboardProvider.PauseRecording(delay + 1000)
+        saved := ClipboardAll()
+        if !setter() {
+            A_Clipboard := saved
+            return false
+        }
+        SendInput("^v")
+        Sleep(delay)
+        A_Clipboard := saved
+        return true
+    }
+
     ;---------------------------------------------------------------------------
     ; History
     ;---------------------------------------------------------------------------
@@ -105,16 +205,67 @@ class ClipboardProvider {
         options := AppSettings.Feature("Clipboard")
         if (Trim(text, " `t`r`n") = "" || StrLen(text) > options["MaxItemLength"])
             return false
-        ClipboardProvider._RemoveText(text)
+        ClipboardProvider._RemoveSame("text", text)
         ClipboardProvider.Entries.InsertAt(1, Map("Text", text, "Time", A_Now, "App", source))
-        while (ClipboardProvider.Entries.Length > options["MaxItems"])
-            ClipboardProvider.Entries.Pop()
+        ClipboardProvider._Trim()
+        ClipboardProvider._SaveLater()
+        return true
+    }
+
+    static AddFiles(files, source := "") {
+        if !files.Length
+            return false
+        joined := ""
+        for filePath in files
+            joined .= (joined = "" ? "" : "`r`n") filePath
+        ClipboardProvider._RemoveSame("files", joined)
+        ClipboardProvider.Entries.InsertAt(1, Map("Type", "files", "Files", files, "Text", joined, "Time", A_Now, "App", source))
+        ClipboardProvider._Trim()
+        ClipboardProvider._SaveLater()
+        return true
+    }
+
+    ; 把剪贴板里的图片存成 PNG 加入历史; 和已有的某张一模一样时只把那张移到最前面
+    static AddImage(source := "") {
+        try DirCreate(ClipboardProvider.Folder)
+        name := "img-" A_Now "-" Random(100000, 999999) ".png"
+        imageFile := ClipboardProvider.Folder "\" name
+        size := ClipboardData.SaveImage(imageFile)
+        if !IsObject(size)
+            return false
+        return ClipboardProvider.AddImageFile(name, size.Width, size.Height, source)
+    }
+
+    ; Data\Clipboard 里已经存好的 PNG 加入历史 (AddImage 和测试用)
+    static AddImageFile(name, width, height, source := "") {
+        imageFile := ClipboardProvider.Folder "\" name
+        for entry in ClipboardProvider.Entries {
+            if (ClipboardProvider.TypeOf(entry) = "image" && entry["Image"] != name && entry["Width"] = width && entry["Height"] = height
+                && ClipboardProvider._SameFile(ClipboardProvider.Folder "\" entry["Image"], imageFile)) {
+                try FileDelete(imageFile)
+                ClipboardProvider._MoveToTop(entry)
+                ClipboardProvider._SaveLater()
+                return true
+            }
+        }
+        ClipboardProvider.Entries.InsertAt(1, Map("Type", "image", "Image", name, "Width", width, "Height", height, "Text", "", "Time", A_Now, "App", source))
+        ClipboardProvider._Trim()
         ClipboardProvider._SaveLater()
         return true
     }
 
     static Remove(text) {
-        ClipboardProvider._RemoveText(text)
+        ClipboardProvider._RemoveSame("text", text)
+        ClipboardProvider._SaveLater()
+    }
+
+    static RemoveEntry(target) {
+        for index, entry in ClipboardProvider.Entries {
+            if (entry = target) {
+                ClipboardProvider.Entries.RemoveAt(index)
+                break
+            }
+        }
         ClipboardProvider._SaveLater()
     }
 
@@ -124,18 +275,63 @@ class ClipboardProvider {
         App.Notify(I18n.T("Clipboard.Cleared"))
     }
 
-    static _RemoveText(text) {
+    ; 第 n 条文字 (1 = 最新的), 跳过文件和图片; 没有时返回 ""
+    static TextAt(n) {
+        for entry in ClipboardProvider.Entries
+            if (ClipboardProvider.TypeOf(entry) = "text" && --n = 0)
+                return entry["Text"]
+        return ""
+    }
+
+    static _RemoveSame(type, text) {
         for index, entry in ClipboardProvider.Entries {
-            if (entry["Text"] == text) {
+            if (ClipboardProvider.TypeOf(entry) = type && entry["Text"] == text) {
                 ClipboardProvider.Entries.RemoveAt(index)
                 return
             }
         }
     }
 
+    static _MoveToTop(target) {
+        for index, entry in ClipboardProvider.Entries {
+            if (entry = target) {
+                ClipboardProvider.Entries.RemoveAt(index)
+                break
+            }
+        }
+        target["Time"] := A_Now
+        ClipboardProvider.Entries.InsertAt(1, target)
+        ClipboardProvider._SaveLater()
+    }
+
+    ; 超过条数时删掉最早的; 图片另有上限 (MaxImages); 删掉的图片文件在保存时清理
+    static _Trim() {
+        options := AppSettings.Feature("Clipboard"), entries := ClipboardProvider.Entries
+        while (entries.Length > options["MaxItems"])
+            entries.Pop()
+        images := 0, index := 1
+        while (index <= entries.Length) {
+            if (ClipboardProvider.TypeOf(entries[index]) = "image" && ++images > options["MaxImages"]) {
+                entries.RemoveAt(index)
+                continue
+            }
+            index++
+        }
+    }
+
+    static _SameFile(a, b) {
+        try {
+            if (FileGetSize(a) != FileGetSize(b))
+                return false
+            first := FileRead(a, "RAW"), second := FileRead(b, "RAW")
+            return DllCall("ntdll\RtlCompareMemory", "Ptr", first, "Ptr", second, "UPtr", first.Size, "UPtr") = first.Size
+        }
+        return false
+    }
+
     static _EntryApp(text) {
         for entry in ClipboardProvider.Entries
-            if (entry["Text"] == text)
+            if (ClipboardProvider.TypeOf(entry) = "text" && entry["Text"] == text)
                 return entry["App"]
         return ""
     }
@@ -144,18 +340,51 @@ class ClipboardProvider {
     ; Recording
     ;---------------------------------------------------------------------------
     static _OnChange(dataType) {
-        if (dataType != 1 || A_TickCount < ClipboardProvider._pausedUntil)  ; 1 = 文字 (包括复制的文件路径)
+        if (dataType = 0 || A_TickCount < ClipboardProvider._pausedUntil)  ; 0 = 剪贴板被清空
             return
         if ClipboardProvider._IsPrivate()
             return
         processName := ""
         try processName := WinGetProcessName("A")
-        for ignored in AppSettings.Feature("Clipboard")["IgnoreApps"]
+        options := AppSettings.Feature("Clipboard")
+        for ignored in options["IgnoreApps"]
             if (processName = ignored)
                 return
-        text := ""
-        try text := A_Clipboard
-        ClipboardProvider.Add(text, processName)
+        if (dataType = 1) {                                                 ; 1 = 文字 (复制文件时也是, 内容是路径)
+            if ClipboardData.HasFiles()
+                return ClipboardProvider.AddFiles(ClipboardData.Files(), processName)
+            text := ""
+            try text := A_Clipboard
+            if (A_TickCount < ClipboardProvider._mergeUntil && ClipboardProvider._Merge(text, processName))
+                return
+            return ClipboardProvider.Add(text, processName)
+        }
+        if (options["Images"] && options["Persist"] && ClipboardData.HasImage())   ; 2 = 其他格式; 图片只在保存历史时记录
+            ClipboardProvider.AddImage(processName)
+    }
+
+    ; 连按两次 Ctrl+C: 第一次复制的文字已经是最新的一条, 第二次复制到同样的文字时把它接到前一条后面,
+    ; 剪贴板里也换成合并后的文字
+    static _OnCopyKey() {
+        if (A_PriorHotkey = A_ThisHotkey && A_TimeSincePriorHotkey < ClipboardProvider.MergeWindow)
+            ClipboardProvider._mergeUntil := A_TickCount + 1500
+    }
+
+    static _Merge(text, source := "") {
+        entries := ClipboardProvider.Entries
+        if (entries.Length < 2 || ClipboardProvider.TypeOf(entries[1]) != "text" || !(entries[1]["Text"] == text)
+            || ClipboardProvider.TypeOf(entries[2]) != "text")
+            return false
+        merged := RTrim(entries[2]["Text"], "`r`n") "`r`n" text
+        if (StrLen(merged) > AppSettings.Feature("Clipboard")["MaxItemLength"])
+            return false
+        ClipboardProvider._mergeUntil := 0
+        entries.RemoveAt(1, 2)
+        ClipboardProvider.Add(merged, source)
+        ClipboardProvider.PauseRecording(500)
+        A_Clipboard := merged
+        App.Notify(I18n.T("Clipboard.Merged"))
+        return true
     }
 
     ; 密码管理器等会给剪贴板内容加上 "不要记录" 的标记 (Windows 剪贴板历史也遵守)
@@ -207,13 +436,30 @@ class ClipboardProvider {
             for entry in data["Entries"] {
                 if !(entry is Map)
                     continue
-                if entry.Has("File") {                                      ; 很长的条目: 正文在单独的文件里
-                    try entry["Text"] := FileRead(ClipboardProvider.Folder "\" entry["File"], "UTF-8")
-                    catch
-                        continue
+                switch ClipboardProvider.TypeOf(entry) {
+                    case "files":
+                        if !(entry.Has("Files") && entry["Files"] is Array && entry["Files"].Length)
+                            continue
+                        joined := ""
+                        for filePath in entry["Files"]
+                            joined .= (joined = "" ? "" : "`r`n") filePath
+                        entry["Text"] := joined
+                    case "image":
+                        if !(entry.Has("Image") && FileExist(ClipboardProvider.Folder "\" entry["Image"]))
+                            continue
+                        entry["Text"] := ""
+                    default:
+                        if entry.Has("File") {                              ; 很长的条目: 正文在单独的文件里
+                            try entry["Text"] := FileRead(ClipboardProvider.Folder "\" entry["File"], "UTF-8")
+                            catch
+                                continue
+                        }
+                        if !entry.Has("Text")
+                            continue
                 }
-                if entry.Has("Text")
-                    entries.Push(entry)
+                if !entry.Has("Time")
+                    entry["Time"] := A_Now
+                entries.Push(entry)
             }
             ClipboardProvider.Entries := entries
         } catch as e {
@@ -228,8 +474,17 @@ class ClipboardProvider {
             DirCreate(AppSettings.DataDir)
             list := [], keep := Map()
             for entry in ClipboardProvider.Entries {
-                text := entry["Text"]
                 stamp := entry.Has("Time") ? entry["Time"] : A_Now, source := entry.Has("App") ? entry["App"] : ""
+                switch ClipboardProvider.TypeOf(entry) {
+                    case "files":
+                        list.Push(Map("Type", "files", "Files", entry["Files"], "Time", stamp, "App", source))
+                        continue
+                    case "image":
+                        keep[StrLower(entry["Image"])] := true
+                        list.Push(Map("Type", "image", "Image", entry["Image"], "Width", entry["Width"], "Height", entry["Height"], "Time", stamp, "App", source))
+                        continue
+                }
+                text := entry["Text"]
                 if (StrLen(text) <= ClipboardProvider.LargeText) {
                     list.Push(Map("Text", text, "Time", stamp, "App", source))
                     continue
@@ -246,9 +501,10 @@ class ClipboardProvider {
             try FileDelete(tmpFile)
             FileAppend(JSON.Stringify(Map("Entries", list)), tmpFile, "UTF-8")
             FileMove(tmpFile, ClipboardProvider.File, true)
-            Loop Files, ClipboardProvider.Folder "\*.txt"                   ; 删掉已经不在历史里的
-                if !keep.Has(StrLower(A_LoopFileName))
+            Loop Files, ClipboardProvider.Folder "\*.*" {                  ; 删掉已经不在历史里的长条目和图片
+                if (RegExMatch(A_LoopFileName, "i)\.(txt|png)$") && !keep.Has(StrLower(A_LoopFileName)))
                     try FileDelete(A_LoopFileFullPath)
+            }
         } catch as e {
             Logger.Error("ClipboardProvider: cannot write history - " e.Message)
         }

@@ -50,10 +50,15 @@ class ActionCatalog {
         list := []
         add(titleKey, icon, fn, hint := "") => list.Push(ResultItem(I18n.T(titleKey), hint, {Icon: icon, OnRun: fn}))
         target := item.Arg
+        enter := "Enter"
+        if (item.RunTitle != "" && IsObject(item.OnRun)) {                   ; 结果自己的默认操作 (例如剪贴板历史里的图片: 粘贴)
+            list.Push(ResultItem(item.RunTitle, "Enter", {Icon: item.Icon, OnRun: (*) => item.OnRun.Call(item)}))
+            enter := ""
+        }
 
         switch item.Kind {
             case "file":
-                add("Action.Open", target, (*) => ActionCatalog.OpenFile(target, item.Arguments), "Enter")
+                add("Action.Open", target, (*) => ActionCatalog.OpenFile(target, item.Arguments), enter)
                 if RegExMatch(target, "i)\.(exe|lnk|bat|cmd|msc|ps1)$")
                     add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => ActionCatalog.RunAsAdmin(target, item.Arguments))
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
@@ -62,19 +67,19 @@ class ActionCatalog {
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(ActionCatalog._ParentDir(target)))
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
             case "folder":
-                add("Action.Open", target, (*) => ActionCatalog.OpenFolder(target), "Enter")
+                add("Action.Open", target, (*) => ActionCatalog.OpenFolder(target), enter)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(target))
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
             case "url":
-                add("Action.Open", "url:", (*) => ActionCatalog.OpenUrl(target), "Enter")
+                add("Action.Open", "url:", (*) => ActionCatalog.OpenUrl(target), enter)
                 add("Action.CopyUrl", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
             case "text":
-                add("Action.Copy", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Enter")
+                add("Action.Copy", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), enter)
                 add("Action.Paste", "res:imageres.dll,-5314", (*) => ActionCatalog.PasteText(target), "Ctrl+Enter")
             default:
-                add("Action.Run", item.Icon, (*) => ActionCatalog.RunDefault(item), "Enter")
+                add("Action.Run", item.Icon, (*) => ActionCatalog.RunDefault(item), enter)
         }
 
         for extra in item.Actions
@@ -94,7 +99,9 @@ class ActionCatalog {
     ; 编辑 / 删除 (交给结果所属的 Provider 的 EditItem / DeleteItem)
     ;---------------------------------------------------------------------------
     static CanEdit(item) {
-        return ActionCatalog._ProviderCan(item, "EditItem") || (item.Valid && item.Arg != "" && RegExMatch(item.Kind, "^(file|folder|url)$"))
+        if ActionCatalog._ProviderHas(item, "EditItem")                     ; 结果所属的 Provider 自己决定 (剪贴板历史里的图片不能编辑)
+            return ActionCatalog._ProviderCan(item, "EditItem")
+        return item.Valid && item.Arg != "" && RegExMatch(item.Kind, "^(file|folder|url)$")
     }
 
     static CanDelete(item) {
@@ -131,7 +138,15 @@ class ActionCatalog {
     }
 
     ; 结果带着 Source (设置里对应的那一条), 且所属 Provider 实现了 method 时才能编辑 / 删除
+    ; Provider 还可以用 CanEditItem(item) / CanDeleteItem(item) 只让其中一部分结果编辑 / 删除
     static _ProviderCan(item, method) {
+        if !ActionCatalog._ProviderHas(item, method)
+            return false
+        provider := ProviderRegistry.ById(item.Provider)
+        return HasMethod(provider, "Can" method) ? (provider.%"Can" method%(item) ? true : false) : true
+    }
+
+    static _ProviderHas(item, method) {
         if (item.Provider = "" || !IsObject(item.Source))
             return false
         provider := ProviderRegistry.ById(item.Provider)

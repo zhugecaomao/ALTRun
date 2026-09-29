@@ -8,6 +8,7 @@
 ;   "ext:.pdf"                   某种扩展名的默认图标
 ;   "url:"                       默认浏览器 (网址) 图标
 ;   "folder:"                    通用文件夹图标
+;   "thumb:C:\x.png"             图片本身的缩略图 (剪贴板历史里的图片)
 ; exe/lnk/ico 等每个文件图标不同, 按完整路径缓存; 其它文件按扩展名缓存。
 ; 网络位置 (\\server\share、映射的网络盘) 上的文件和文件夹不读磁盘, 用扩展名 / 文件夹的
 ; 通用图标: 读一次网络上的图标可能要几百毫秒, 而加载图标和打字在同一个线程里。
@@ -171,7 +172,7 @@ class IconCache {
     }
 
     static _CacheKey(spec) {
-        if RegExMatch(spec, "i)^(res|ext|url|folder):")
+        if RegExMatch(spec, "i)^(res|ext|url|folder|thumb):")
             return StrLower(spec)
         ext := IconCache._Extension(spec)
         if IconCache.IsRemote(spec)
@@ -218,6 +219,8 @@ class IconCache {
             return IconCache._FromShell(".html", FILE_ATTRIBUTE_NORMAL, true)
         if (spec = "folder:")
             return IconCache._FromShell("folder", FILE_ATTRIBUTE_DIRECTORY, true)
+        if (SubStr(spec, 1, 6) = "thumb:")
+            return IconCache._FromImage(SubStr(spec, 7))
 
         target := Path.Resolve(spec)
         if RegExMatch(target, "i)^(shell:|::\{)")
@@ -226,6 +229,29 @@ class IconCache {
             return IconCache._FromShell(target, 0, false)
         SplitPath(target, , , &ext)
         return IconCache._FromShell(ext != "" ? "." ext : ".exe", FILE_ATTRIBUTE_NORMAL, true)
+    }
+
+    ; 图片缩小后放在 Size x Size 的透明方块中间 (保持比例), 做成图标
+    static _FromImage(file) {
+        if (!FileExist(file) || !ClipboardData.StartGdiplus())
+            return 0
+        image := 0
+        if (DllCall("gdiplus\GdipLoadImageFromFile", "WStr", file, "Ptr*", &image) || !image)
+            return 0
+        width := 0, height := 0, canvas := 0, graphics := 0, hIcon := 0
+        DllCall("gdiplus\GdipGetImageWidth", "Ptr", image, "UInt*", &width)
+        DllCall("gdiplus\GdipGetImageHeight", "Ptr", image, "UInt*", &height)
+        size := IconCache.Size, scale := (width && height) ? Min(size / width, size / height) : 1
+        w := Max(1, Round(width * scale)), h := Max(1, Round(height * scale))
+        DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", size, "Int", size, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", &canvas)   ; 32bppARGB
+        DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", canvas, "Ptr*", &graphics)
+        DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", graphics, "Int", 7)                  ; HighQualityBicubic
+        DllCall("gdiplus\GdipDrawImageRectI", "Ptr", graphics, "Ptr", image, "Int", (size - w) // 2, "Int", (size - h) // 2, "Int", w, "Int", h)
+        DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
+        DllCall("gdiplus\GdipDisposeImage", "Ptr", image)
+        DllCall("gdiplus\GdipCreateHICONFromBitmap", "Ptr", canvas, "Ptr*", &hIcon)
+        DllCall("gdiplus\GdipDisposeImage", "Ptr", canvas)
+        return hIcon
     }
 
     ; SHGetFileInfo 取系统图标列表里的序号, 再从合适尺寸的图标列表里取图标

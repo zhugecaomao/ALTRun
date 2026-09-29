@@ -84,7 +84,10 @@
 | Hotkey | `^!c` | 直接打开剪贴板历史的热键 |
 | MaxItems | 200 | 保存多少条 |
 | MaxItemLength | 100000 | 超过这么多字的内容不记录 |
-| Persist | 1 | 保存到磁盘 (`Data\ClipboardHistory.json`, 超过 4000 字的条目单独存在 `Data\Clipboard\`); 0 = 只在内存里 |
+| Persist | 1 | 保存到磁盘 (`Data\ClipboardHistory.json`, 超过 4000 字的条目和图片单独存在 `Data\Clipboard\`); 0 = 只在内存里 |
+| Images | 1 | 也记录图片 (存成 PNG); 需要 `Persist = 1` |
+| MaxImages | 50 | 最多保存多少张图片, 超过时先删最早的 |
+| MergeDoubleCopy | 0 | 1 = 快速按两次 `Ctrl+C` 时把这次复制的文字接到上一条后面 |
 | IgnoreApps | KeePass、KeePassXC、1Password、Bitwarden | 不记录这些程序复制的内容 (进程名) |
 
 ### Calculator 计算器
@@ -159,6 +162,6 @@
 | `FileIndex.json` | 内置文件索引 (没有 Everything 时) |
 | `Knowledge.json` | 学习排序和最近的搜索 |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) |
-| `ClipboardHistory.json` `Clipboard\` | 剪贴板历史 (很长的条目单独存成文件) |
+| `ClipboardHistory.json` `Clipboard\` | 剪贴板历史 (很长的条目和图片单独存成文件) |
 | `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) |
 | `Update.json` | 上次检查更新的时间、跳过的版本 |

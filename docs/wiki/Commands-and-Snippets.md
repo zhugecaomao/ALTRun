@@ -69,7 +69,7 @@
 | `{clipboard}` | 剪贴板里的文字 |
 | `{date:yyyy-MM-dd}` `{time:HH:mm:ss}` | 自己指定格式 ([FormatTime](https://www.autohotkey.com/docs/v2/lib/FormatTime.htm) 的写法, 例如 `dddd` 星期几) |
 | `{date+7}` `{date-1:dd.MM}` | 往后 / 往前几天的日期, 也可以带格式 |
-| `{clipboard:1}` `{clipboard:2}` | 剪贴板历史里往前第 1、2 条 (和 Alfred 一样; `{clipboard}` 是现在的剪贴板) |
+| `{clipboard:1}` `{clipboard:2}` | 剪贴板历史里往前第 1、2 条文字 (和 Alfred 一样; `{clipboard}` 是现在的剪贴板; 跳过文件和图片) |
 | `{uuid}` | 随机生成的 UUID, 每个都不一样 |
 | `{cursor}` | 粘贴后光标停在这里 |
 
@@ -82,12 +82,22 @@
 - `Type`: 逐字输入, 适合不接受粘贴的程序
 
 ## 剪贴板历史
-按 `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字, `clip 关键词` 过滤, `Enter` 粘贴到前台窗口, `F3` 保存为片段, `Ctrl+Del` 从历史中删除。
+按 `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字、文件和图片, `clip 关键词` 过滤, `Enter` 粘贴到前台窗口, `Ctrl+Del` 从历史中删除。
 
 ![剪贴板历史](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/clipboard.png)
+
+| 复制的是 | 显示 | `Enter` | `F3` / `→` |
+|---|---|---|---|
+| 文字 | 文字的开头 | 粘贴文字 | 保存为片段 / 复制、粘贴、大字显示 |
+| 文件 | 文件名 (多个文件用逗号隔开) | 粘贴文件 (在资源管理器里就是复制过去) | 添加到自定义命令 / 一个文件时有打开、在文件管理器中显示、复制路径等操作 |
+| 图片 (截图、网页上的图片...) | "图片 1920 × 1080" 和缩略图 | 粘贴图片 | - / 用看图程序打开、在文件管理器中显示 |
+
+- 图片存成 PNG 放在 `Data\Clipboard\`, 默认最多 50 张 (`MaxImages`), 只在 "退出后保留历史" 打开时记录; 不想记录图片可以在 偏好设置 → 剪贴板历史 关掉 "也记录图片"
+- 输入 `clip 图片` 或 `clip image` 只看图片
+- **连续复制合并** (默认关闭, 偏好设置 → 剪贴板历史 → "快速按两次 Ctrl+C: 接到上一条后面"): 先复制一段, 再选中下一段快速按两次 `Ctrl+C`, 两段合成一条 (中间换行), 剪贴板里也是合并后的文字, 可以直接粘贴。和 Alfred 的 Merging 一样, 适合从几个地方摘抄。注意: DeepL 等翻译软件也用 "按两次 Ctrl+C" 呼出, 打开后两边会同时响应
 
 隐私:
 - 密码管理器 (KeePass、1Password、Bitwarden...) 复制的内容不会记录; 带 "不要加入剪贴板历史" 标记的内容也不会记录
 - `Features.Clipboard.IgnoreApps` 可以加上其它不想记录的程序
-- `Persist = 0` 时只保存在内存里, 退出即清空; 否则保存在 `Data\ClipboardHistory.json` (很长的条目单独存在 `Data\Clipboard\`)
+- `Persist = 0` 时只保存在内存里, 退出即清空 (也不记录图片); 否则保存在 `Data\ClipboardHistory.json` (很长的条目和图片单独存在 `Data\Clipboard\`)
 - 偏好设置 → 剪贴板历史 里可以清空历史

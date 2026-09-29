@@ -122,8 +122,8 @@ class SnippetProvider {
             text := StrReplace(text, "{uuid}", SnippetProvider.NewUuid(), , , 1)
         pos := 1                                                            ; {clipboard:N}: 剪贴板历史里往前第 N 条
         while (pos := RegExMatch(text, "\{clipboard:(\d+)\}", &m, pos)) {
-            index := Integer(m[1]) + 1, entries := ClipboardProvider.Entries
-            value := (index = 1) ? A_Clipboard : (index <= entries.Length) ? entries[index]["Text"] : ""
+            index := Integer(m[1]) + 1                                      ; 只数文字 (跳过复制的文件和图片)
+            value := (index = 1) ? A_Clipboard : ClipboardProvider.TextAt(index)
             text := SubStr(text, 1, pos - 1) value SubStr(text, pos + m.Len)
             pos += StrLen(value)
         }

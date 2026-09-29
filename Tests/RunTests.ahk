@@ -18,6 +18,7 @@
 #Include %A_ScriptDir%\..\Lib\Kanji.ahk
 #Include %A_ScriptDir%\..\Lib\Everything.ahk
 #Include %A_ScriptDir%\..\Lib\Units.ahk
+#Include %A_ScriptDir%\..\Lib\ClipboardData.ahk
 #Include %A_ScriptDir%\..\Lib\Dialogs.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
@@ -72,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -363,6 +364,134 @@ class Tests {
         ClipboardProvider._OnChange(1)
         eq("paused", ClipboardProvider.Entries.Length, 1)
         ClipboardProvider.Entries := []
+    }
+
+    ; 剪贴板历史里的文件和图片, 连按两次 Ctrl+C 合并
+    static ClipboardKinds() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardKinds." n, a, e)
+        ok := (n, v) => TestRunner.True("ClipboardKinds." n, v)
+        options := AppSettings.Feature("Clipboard")
+        saved := [ClipboardProvider.File, ClipboardProvider.Folder, ClipboardProvider.Entries, options["Persist"], options["MaxImages"], ProviderRegistry.Providers]
+        root := A_Temp "\ALTRun-test-clip-kinds"
+        try DirDelete(root, true)
+        DirCreate(root "\Clipboard")
+        ClipboardProvider.File := root "\ClipboardHistory.json", ClipboardProvider.Folder := root "\Clipboard"
+        options["Persist"] := 1
+        ProviderRegistry.Providers := [ClipboardProvider]
+        ClipboardProvider.Entries := []
+
+        ; 文件: 多个文件一条, 同样的文件再复制一次只移到最前面
+        ClipboardProvider.Add("some text", "notepad.exe")
+        ClipboardProvider.AddFiles(["C:\Reports\a.xlsx", "C:\Reports\b.docx"], "explorer.exe")
+        ClipboardProvider.Add("C:\Reports\a.xlsx`r`nC:\Reports\b.docx", "")  ; 同样的文字是另一条
+        ClipboardProvider.AddFiles(["C:\Reports\a.xlsx", "C:\Reports\b.docx"], "explorer.exe")
+        eq("files dedupe", ClipboardProvider.Entries.Length, 3)
+        eq("files newest", ClipboardProvider.TypeOf(ClipboardProvider.Entries[1]), "files")
+        items := ClipboardProvider.Search(SearchQuery("clip b.docx"))
+        eq("files search", items.Length, 2)
+        item := items[1], item.Provider := "Clipboard"
+        eq("files title", item.Title, "a.xlsx, b.docx")
+        eq("files subtitle", item.Subtitle, I18n.T("Clipboard.FilesSubtitle", ClipboardProvider._FormatTime(item.Source["Time"]), "explorer.exe", 2))
+        eq("files kind", item.Kind, "text")
+        actions := ActionCatalog.ListFor(item)
+        eq("files first action", actions[1].Title, I18n.T("Clipboard.PasteFiles"))
+        eq("files first hint", actions[1].Subtitle, "Enter")
+        eq("files copy no enter", actions[2].Subtitle, "")
+        ok("files add all", ActionCatalog.CanEdit(item))
+        ClipboardProvider.AddFiles([A_WinDir], "explorer.exe")               ; 一个文件夹: 和文件搜索的结果一样
+        single := ClipboardProvider.Search(SearchQuery("clip"))[1]
+        eq("single kind", single.Kind, "folder")
+        eq("single arg", single.Arg, A_WinDir)
+        eq("text at 1", ClipboardProvider.TextAt(1), "C:\Reports\a.xlsx`r`nC:\Reports\b.docx")
+        eq("text at 2", ClipboardProvider.TextAt(2), "some text")
+        eq("text at 3", ClipboardProvider.TextAt(3), "")
+
+        ; 图片: 一模一样的图片只保留一张; 超过 MaxImages 删掉最早的
+        FileAppend("image-one", root "\Clipboard\one.png")
+        FileAppend("image-two", root "\Clipboard\two.png")
+        FileAppend("image-one", root "\Clipboard\dup.png")
+        ClipboardProvider.AddImageFile("one.png", 800, 600, "mspaint.exe")
+        ClipboardProvider.AddImageFile("two.png", 800, 600, "mspaint.exe")
+        ClipboardProvider.AddImageFile("dup.png", 800, 600, "mspaint.exe")
+        ok("image dup deleted", !FileExist(root "\Clipboard\dup.png"))
+        eq("image dup moved", ClipboardProvider.Entries[1]["Image"], "one.png")
+        imageItem := ClipboardProvider.Search(SearchQuery("clip 800"))[1], imageItem.Provider := "Clipboard"
+        eq("image title", imageItem.Title, I18n.T("Clipboard.Image", 800, 600))
+        eq("image kind", imageItem.Kind, "file")
+        eq("image arg", imageItem.Arg, root "\Clipboard\one.png")
+        eq("image thumbnail", imageItem.Icon, "thumb:" root "\Clipboard\one.png")
+        eq("image search word", ClipboardProvider.Search(SearchQuery("clip image")).Length, 2)
+        ok("image not editable", !ActionCatalog.CanEdit(imageItem))
+        ok("image deletable", ActionCatalog.CanDelete(imageItem))
+        eq("image first action", ActionCatalog.ListFor(imageItem)[1].Title, I18n.T("Clipboard.PasteImage"))
+        options["MaxImages"] := 1
+        ClipboardProvider._Trim()
+        imageCount := 0
+        for entry in ClipboardProvider.Entries
+            imageCount += ClipboardProvider.TypeOf(entry) = "image"
+        eq("max images", imageCount, 1)
+
+        ; 保存和读回; 不在历史里的图片文件删掉
+        ClipboardProvider.Save()
+        ok("orphan png deleted", !FileExist(root "\Clipboard\two.png"))
+        ok("kept png", FileExist(root "\Clipboard\one.png"))
+        before := ClipboardProvider.Entries.Length
+        ClipboardProvider.Entries := []
+        ClipboardProvider._Load()
+        eq("reload count", ClipboardProvider.Entries.Length, before)
+        eq("reload image", ClipboardProvider.Entries[1]["Image"], "one.png")
+        eq("reload image width", ClipboardProvider.Entries[1]["Width"], 800)
+        eq("reload folder", ClipboardProvider.Entries[2]["Files"][1], A_WinDir)
+        eq("reload files text", ClipboardProvider.Entries[3]["Text"], "C:\Reports\a.xlsx`r`nC:\Reports\b.docx")
+        ClipboardProvider.DeleteItem(imageItem)                              ; 旧的对象已经不在了: 什么也不删
+        eq("delete stale", ClipboardProvider.Entries.Length, before)
+        ClipboardProvider.RemoveEntry(ClipboardProvider.Entries[1])
+        eq("delete image", ClipboardProvider.TypeOf(ClipboardProvider.Entries[1]), "files")
+        FileDelete(root "\Clipboard\one.png")                               ; 图片文件没了: 读回时跳过
+        ClipboardProvider.Entries.InsertAt(1, Map("Type", "image", "Image", "one.png", "Width", 1, "Height", 1, "Text", "", "Time", A_Now, "App", ""))
+        ClipboardProvider.Save(), ClipboardProvider._Load()
+        eq("missing image skipped", ClipboardProvider.TypeOf(ClipboardProvider.Entries[1]), "files")
+
+        ; 连按两次 Ctrl+C: 第二次复制同样的文字时接到前一条后面
+        ClipboardProvider.Entries := []
+        ClipboardProvider.Add("first part", "")
+        ClipboardProvider.Add("second part", "")
+        eq("merge different text", ClipboardProvider._Merge("other", ""), false)
+        ok("merge", ClipboardProvider._Merge("second part", ""))
+        eq("merge count", ClipboardProvider.Entries.Length, 1)
+        eq("merge text", ClipboardProvider.Entries[1]["Text"], "first part`r`nsecond part")
+        eq("merge clipboard", A_Clipboard, "first part`r`nsecond part")
+        ClipboardProvider.AddFiles(["C:\x.txt"], "")
+        eq("merge needs text", ClipboardProvider._Merge("C:\x.txt", ""), false)
+
+        ; 剪贴板里的文件 (CF_HDROP) 和图片 (位图) 放进去再读出来
+        ClipboardProvider.PauseRecording(3000)
+        ok("set files", ClipboardData.SetFiles([A_WinDir "\win.ini", A_WinDir "\System32"]))
+        ok("has files", ClipboardData.HasFiles())
+        clipFiles := ClipboardData.Files()
+        eq("files count", clipFiles.Length, 2)
+        eq("files path", clipFiles.Length ? clipFiles[1] : "", A_WinDir "\win.ini")
+        sample := A_ScriptDir "\..\docs\images\screenshots\clipboard.png"
+        if FileExist(sample) {
+            ok("set image", ClipboardData.SetImage(sample))
+            ok("has image", ClipboardData.HasImage())
+            size := ClipboardData.SaveImage(root "\out.png")
+            ok("save image", IsObject(size) && FileExist(root "\out.png"))
+            ok("thumbnail icon", IconCache._FromImage(root "\out.png"))
+            if IsObject(size) {
+                width := 0, height := 0, bitmap := 0
+                DllCall("gdiplus\GdipCreateBitmapFromFile", "WStr", sample, "Ptr*", &bitmap)
+                DllCall("gdiplus\GdipGetImageWidth", "Ptr", bitmap, "UInt*", &width)
+                DllCall("gdiplus\GdipGetImageHeight", "Ptr", bitmap, "UInt*", &height)
+                DllCall("gdiplus\GdipDisposeImage", "Ptr", bitmap)
+                eq("image size", size.Width "x" size.Height, width "x" height)
+            }
+        }
+        A_Clipboard := ""
+
+        ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2], ClipboardProvider.Entries := saved[3]
+        options["Persist"] := saved[4], options["MaxImages"] := saved[5], ProviderRegistry.Providers := saved[6]
+        try DirDelete(root, true)
     }
 
     static SnippetExpander() {
