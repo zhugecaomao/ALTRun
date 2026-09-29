@@ -177,6 +177,7 @@ class AppSettings {
             "General", Map(
                 "Hotkey"              , "!Space",
                 "SecondaryHotkey"     , "!r",                               ; Alt+R
+                "SelectionHotkey"     , "^!\",                              ; 选中文字 / 文件后按: 直接打开它们的操作 (Ctrl+Alt+\)
                 "Language"            , "auto",                             ; auto / en / zh
                 "LaunchAtLogin"       , 1,
                 "ShowTrayIcon"        , 1,

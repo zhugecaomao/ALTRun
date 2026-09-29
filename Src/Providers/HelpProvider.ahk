@@ -24,6 +24,7 @@ class HelpProvider {
             ["Folders"   , "FileSearch"    , "File-Search"],
             ["FileKeyword", "FileSearch"   , "File-Search"],
             ["Actions"   , ""              , "Usage"],
+            ["Selection" , ""              , "Usage"],
             ["Edit"      , ""              , "Commands-and-Snippets"],
             ["Delete"    , ""              , "Usage"],
             ["Reveal"    , ""              , "Usage"],
@@ -55,6 +56,8 @@ class HelpProvider {
             if (entry[2] != "" && !HelpProvider._FeatureEnabled(entry[2]))
                 continue
             if (entry[1] = "Expand" && !AppSettings.Feature("Snippets")["AutoExpand"])
+                continue
+            if (entry[1] = "Selection" && AppSettings.General["SelectionHotkey"] = "")
                 continue
             items.Push({Id: entry[1], Key: I18n.T("Help." entry[1] ".Key", HelpProvider._Args(entry[1])*)
                       , Text: I18n.T("Help." entry[1] ".Text"), Url: HelpProvider.WikiUrl entry[3]})
@@ -106,6 +109,7 @@ class HelpProvider {
             case "Expand":      return [AppSettings.Feature("Snippets")["ExpandPrefix"]]
             case "Terminal":    return [AppSettings.Feature("Terminal")["Prefix"]]
             case "Bookmarks":   return [AppSettings.Feature("Bookmarks")["Keyword"]]
+            case "Selection":   return [Win.HotkeyLabel(AppSettings.General["SelectionHotkey"])]
             case "WebSearch":
                 engines := AppSettings.Feature("WebSearch")["Engines"]
                 return [engines.Length ? engines[1]["Keyword"] : "g"]
