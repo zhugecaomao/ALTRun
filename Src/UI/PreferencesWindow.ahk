@@ -227,8 +227,8 @@ class PreferencesWindow {
 
     static _BuildGeneral() {
         PreferencesWindow._BeginPage("Prefs.Page.General", 120)
-        PreferencesWindow._Field("General.Hotkey", "Prefs.Hotkey", "K", "hotkey")
-        PreferencesWindow._Field("General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey")
+        PreferencesWindow._Pair(["General.Hotkey", "Prefs.Hotkey", "K", "hotkey"], ["General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey"])
+        PreferencesWindow._Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
         PreferencesWindow._Choice("General.Language", "Prefs.Language", ["auto", "en", "zh", "ja"], [I18n.T("Prefs.Language.auto"), "English", "中文", "日本語"])
         PreferencesWindow._Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
@@ -907,6 +907,8 @@ class PreferencesWindow {
     ; 单独一个输入控件 (不带标签), 并绑定 path; kind 见 _Pair
     static _Input(x, path, labelKey, size, kind := "text", values := "", labels := "") {
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
+        if (kind = "hotkey")
+            return PreferencesWindow._HotkeyBox(x, path)
         if (kind = "choice") {
             ctrl := PreferencesWindow._Add("DropDownList", "x" x " w" PreferencesWindow._Width(size), labels)
             ctrl.Value := 1
@@ -1070,6 +1072,7 @@ class PreferencesWindow {
         general := data["General"]
         add(general["Hotkey"], I18n.T("Prefs.Hotkey"))
         add(general["SecondaryHotkey"], I18n.T("Prefs.SecondaryHotkey"))
+        add(general.Has("SelectionHotkey") ? general["SelectionHotkey"] : "", I18n.T("Prefs.SelectionHotkey"))
         clipboard := PreferencesWindow.GetPath(data, "Features.Clipboard")
         if (clipboard is Map && clipboard.Has("Enabled") && clipboard["Enabled"] && clipboard.Has("Hotkey"))
             add(clipboard["Hotkey"], I18n.T("Prefs.Page.Clipboard"))

@@ -85,5 +85,6 @@
 #Include Src\Extensions\PTToolsWindow.ahk
 #Include Src\Extensions\UpdateChecker.ahk
 #Include Src\Extensions\CurrencyRates.ahk
+#Include Src\Extensions\SelectionActions.ahk
 
 App.Start()

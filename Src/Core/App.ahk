@@ -237,6 +237,14 @@ class App {
             }
         }
 
+        if (AppSettings.General["SelectionHotkey"] != "") {                ; 选中内容的操作
+            try {
+                Hotkey(AppSettings.General["SelectionHotkey"], (*) => SelectionActions.Run())
+            } catch as e {
+                Logger.Error("App: cannot register selection hotkey - " e.Message)
+            }
+        }
+
         clipboard := AppSettings.Feature("Clipboard")
         if (clipboard["Enabled"] && clipboard["Hotkey"] != "") {
             try {

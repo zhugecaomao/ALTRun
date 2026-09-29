@@ -42,6 +42,7 @@ class SearchWindow {
     static Mode := "results"                        ; results = 搜索结果; actions = 操作面板
     static FileMode := false                        ; 文件搜索模式: 空的搜索框里按空格进入, 只搜文件
     static ActionSource := "", SavedQuery := "", AllActions := []
+    static _actionsOnly := false                                            ; 直接打开的操作面板 (选中内容的操作): Esc / ← 关掉窗口
     static HistoryIndex := 0                         ; 正在看第几条搜索记录 (Knowledge.History, 1 = 最近), 0 = 没有在翻
     static _historyDraft := ""                       ; 开始翻记录之前输入框里的文字, Ctrl+↓ 翻回来时恢复
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
@@ -158,6 +159,7 @@ class SearchWindow {
         if (text = "" && SearchWindow.IsVisible())
             SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
         App.RememberActiveWindow()
+        SearchWindow._actionsOnly := false
         Usage.Count("Show")
         last := SearchWindow._last
         restore := (text = "" && AppSettings.General["KeepLastQuery"] && IsObject(last) && last.Text != "")
@@ -416,8 +418,18 @@ class SearchWindow {
     ;---------------------------------------------------------------------------
     ; Action panel
     ;---------------------------------------------------------------------------
+    ; 直接打开某一项的操作面板 (不在搜索结果里, 例如选中内容的操作): Esc / ← 关掉窗口
+    static ShowActions(item) {
+        SearchWindow.Show()
+        if SearchWindow._OpenActionsFor(item)
+            SearchWindow._actionsOnly := true
+    }
+
     static _OpenActions() {
-        item := SearchWindow.SelectedItem()
+        return SearchWindow._OpenActionsFor(SearchWindow.SelectedItem())
+    }
+
+    static _OpenActionsFor(item) {
         if (!IsObject(item) || !item.Valid || SearchWindow.Mode = "actions")
             return false
         actions := ActionCatalog.ListFor(item)
@@ -593,7 +605,9 @@ class SearchWindow {
                 SearchWindow._Execute(ctrl ? "ctrl" : alt ? "alt" : "")
                 return 0
             case 0x1B:                                                      ; Esc
-                if actions
+                if (actions && SearchWindow._actionsOnly)
+                    SearchWindow.Hide()
+                else if actions
                     SearchWindow._CloseActions()
                 else
                     SearchWindow.Hide()
@@ -647,7 +661,10 @@ class SearchWindow {
                 return
             case 0x25:                                                      ; ←
                 if (actions && SearchWindow.Input.Value = "") {
-                    SearchWindow._CloseActions()
+                    if SearchWindow._actionsOnly
+                        SearchWindow.Hide()
+                    else
+                        SearchWindow._CloseActions()
                     return 0
                 }
                 return
@@ -674,7 +691,10 @@ class SearchWindow {
                 return
             case 0x08:                                                      ; Backspace
                 if (actions && SearchWindow.Input.Value = "") {
-                    SearchWindow._CloseActions()
+                    if SearchWindow._actionsOnly
+                        SearchWindow.Hide()
+                    else
+                        SearchWindow._CloseActions()
                     return 0
                 }
                 if (SearchWindow.FileMode && SearchWindow.Input.Value = "") {  ; 文件搜索模式下删空后再按: 回到普通搜索

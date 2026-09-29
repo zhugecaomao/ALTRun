@@ -57,6 +57,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CurrencyRates.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\SelectionActions.ahk
 
 OnError((err, mode) => TestRunner.OnUncaught(err, mode))                                             ; 运行错误时输出并退出, 不弹对话框卡住
 Logger.Enabled := false
@@ -71,7 +72,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1563,7 +1564,7 @@ Func | PTTools | PT Tools (AHK)=99
         keys := ""
         for entry in PreferencesWindow._GlobalHotkeys(data)
             keys .= entry.Key "|"
-        eq("global hotkeys (window-limited left out)", keys, "!Space|!r|^!c|^!c|")
+        eq("global hotkeys (window-limited left out)", keys, "!Space|!r|^!\|^!c|^!c|")
         ok("default clipboard hotkey clashes with a global ^!c", IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(data))))
         ok("defaults have no clash", !IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(AppSettings.Defaults()))))
         eq("list cell", PreferencesWindow._Cell(Map("Key", "~MButton"), "Key"), "Middle mouse button")
@@ -1695,6 +1696,38 @@ Func | PTTools | PT Tools (AHK)=99
         for command in SystemProvider.Commands()
             ids .= command["Id"] "|"
         ok("media commands", InStr(ids, "MediaPlayPause|MediaNext|MediaPrev|MediaStop|"))
+    }
+
+    ; 选中内容的操作: 按内容类型生成操作面板的来源
+    static SelectionItems() {
+        eq := (n, a, e) => TestRunner.Equal("Selection." n, a, e)
+        ok := (n, c) => TestRunner.True("Selection." n, c)
+        titles(item) {
+            text := ""
+            for action in ActionCatalog.ListFor(item)
+                text .= action.Title "|"
+            return text
+        }
+        item := SelectionActions.ItemFor({Text: "hello world"})
+        eq("text kind", item.Kind "|" item.Arg "|" item.Provider, "text|hello world|Selection")
+        list := titles(item)
+        ok("text: copy first", InStr(list, "Copy to Clipboard|") = 1)
+        ok("text: search engines", InStr(list, "Search Google|") && InStr(list, "Search GitHub|"))
+        ok("text: save as snippet", InStr(list, "Save as Snippet...|"))
+        ok("text: replace with uppercase", InStr(list, "Replace with: UPPERCASE|"))
+        ok("text: no calculation", !InStr(list, "= "))
+        list := titles(SelectionActions.ItemFor({Text: "12*(3+4)"}))
+        ok("math: result first extra", InStr(list, "= 84|"))
+        item := SelectionActions.ItemFor({Text: "  https://github.com/zhugecaomao/ALTRun  "})
+        eq("link", item.Kind "|" item.Arg, "url|https://github.com/zhugecaomao/ALTRun")
+        item := SelectionActions.ItemFor({Text: A_WinDir})
+        eq("path text -> folder", item.Kind "|" item.Arg, "folder|" A_WinDir)
+        item := SelectionActions.ItemFor({Files: [A_WinDir "\notepad.exe"]})
+        eq("one file", item.Kind "|" item.Title, "file|notepad.exe")
+        item := SelectionActions.ItemFor({Files: ["C:\a\one.txt", "C:\b\two.txt"]})
+        eq("files", item.Title "|" item.Subtitle, "2 files|one.txt, two.txt")
+        ok("files: add all", InStr(titles(item), "Add All to Custom Commands|"))
+        eq("transform", SelectionActions.Transforms()[1][2].Call("abc"), "ABC")
     }
 
     static Misc() {
