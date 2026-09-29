@@ -8,7 +8,7 @@
 ; 文件夹列表 (所有 TC 窗口的两个面板、资源管理器窗口、最近用过的文件夹), 点一下就跳过去, 不用记热键;
 ; 搜索框还能搜索文件夹 (PanelSearch = all 时也搜文件, 选中文件跳到它所在的文件夹)。对话框不在前台时隐藏,
 ; 回到对话框时刷新 (TC 里换了目录也能马上看到)。颜色跟随 ALTRun 的主题。
-; 文件夹菜单 (MenuHotkey, 默认 Ctrl+Shift+G): 同样的文件夹做成菜单, 给键盘用。
+; 热键 (MenuHotkey, 默认 Ctrl+Shift+G): 光标跳到面板的搜索框, 用键盘选择; 没有打开自动显示时临时显示面板。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
 ;   Enabled / ExplorerHotkey / TotalCmdHotkey / MenuHotkey / RecentFolders / ShowPanel / PanelSearch / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
@@ -17,7 +17,7 @@
 ; 用法:
 ;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    启动时
 ;   QuickSwitch.FolderOfWindow(hwnd)     TC / 资源管理器窗口当前的文件夹 (只读, 给 "在此处打开终端" 用)
-;   QuickSwitch.MenuFolders()            文件夹菜单的内容 [{Path, Group, Tag}]
+;   QuickSwitch.MenuFolders()            面板里的文件夹 [{Path, Group, Tag}]
 ;   QuickSwitch.RecentFolders(n)         最近用过的 n 个文件夹 (打开过的文件取所在的文件夹)
 ;===============================================================================
 
@@ -46,7 +46,7 @@ class QuickSwitch {
             if (options["TotalCmdHotkey"] != "")
                 Hotkey(options["TotalCmdHotkey"], (*) => QuickSwitch.SyncTotalCmdPath())
             if (options["MenuHotkey"] != "")
-                Hotkey(options["MenuHotkey"], (*) => QuickSwitch.ShowMenu())
+                Hotkey(options["MenuHotkey"], (*) => QuickSwitch.FocusPanel())
         } catch as e {
             Logger.Error("QuickSwitch: cannot register hotkeys - " e.Message)
         }
@@ -56,8 +56,9 @@ class QuickSwitch {
     }
 
     ; 用 WM_KEYDOWN 而不是热键: 中文输入法正在输入 (还没上屏) 时按键是 VK_PROCESSKEY, 不会被当成 Enter / Esc
+    ; 只比较记下的窗口句柄: 面板关掉之后控件对象已经销毁, 不能再读它们的 Hwnd
     static _OnKeyDown(wParam, lParam, msg, hwnd) {
-        if !(IsObject(QuickSwitch._panelSearch) && (hwnd = QuickSwitch._panelSearch.Hwnd || hwnd = QuickSwitch._panelList.Hwnd))
+        if !(hwnd && (hwnd = QuickSwitch._searchHwnd || hwnd = QuickSwitch._listHwnd))
             return
         switch wParam {
             case 0x26: QuickSwitch.PanelKey("Up")
@@ -77,8 +78,27 @@ class QuickSwitch {
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasTC && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
             QuickSwitch.SyncTotalCmdPath(true)
         QuickSwitch._lastWasTC := WinActive("ahk_class TTOTAL_CMD") ? true : false
-        if (QuickSwitch.Options.Has("ShowPanel") && QuickSwitch.Options["ShowPanel"])
+        if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; 关掉了自动显示时, 按热键临时打开的面板也要跟着对话框
             QuickSwitch._UpdatePanel(isDialog)
+    }
+
+    static _SearchesFiles() => QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "all"
+
+    static _PanelEnabled() => QuickSwitch.Options.Has("ShowPanel") && QuickSwitch.Options["ShowPanel"]
+
+    ; 热键 (MenuHotkey, 默认 Ctrl+Shift+G): 光标跳到面板的搜索框, 用键盘选择; 没有打开自动显示时临时显示面板
+    static FocusPanel() {
+        dialog := WinExist("A")
+        if (!IsObject(QuickSwitch._panel) || QuickSwitch._panelFor != dialog) {
+            QuickSwitch._BuildPanel(dialog)
+            QuickSwitch._PlacePanel(dialog)
+        }
+        if !IsObject(QuickSwitch._panel)
+            return
+        try {
+            WinActivate("ahk_id " QuickSwitch._panel.Hwnd)
+            ControlFocus(QuickSwitch._panelSearch)
+        }
     }
 
     ;---------------------------------------------------------------------------
@@ -91,8 +111,11 @@ class QuickSwitch {
         try dialog := isDialog ? WinGetID("A") : 0
         if !dialog
             return QuickSwitch.HidePanel()
-        if (dialog != QuickSwitch._panelFor)                                ; 新的对话框, 或者从别的窗口切回来: 重新列出文件夹
+        if (dialog != QuickSwitch._panelFor) {                              ; 新的对话框, 或者从别的窗口切回来: 重新列出文件夹
+            if !QuickSwitch._PanelEnabled()
+                return QuickSwitch.HidePanel()
             QuickSwitch._BuildPanel(dialog)
+        }
         QuickSwitch._PlacePanel(dialog)
     }
 
@@ -103,6 +126,8 @@ class QuickSwitch {
         if IsObject(QuickSwitch._panel)
             try QuickSwitch._panel.Destroy()
         QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := ""
+        QuickSwitch._panelSearch := "", QuickSwitch._panelList := "", QuickSwitch._panelLine := ""   ; 控件已经销毁, 不再引用
+        QuickSwitch._searchHwnd := 0, QuickSwitch._listHwnd := 0
     }
 
     static PanelRows := 8
@@ -119,7 +144,7 @@ class QuickSwitch {
         panel.SetFont("s10 c" colors.Text, QuickSwitch._FontName())
         search := panel.AddEdit("x10 y8 w" (width - 20) " r1 -Multi -E0x200 Background" colors.Background)
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
-        DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T("QuickSwitch.SearchCue") hint)   ; EM_SETCUEBANNER: 灰色提示文字
+        DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: 灰色提示文字
         search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
         line := panel.AddText("x0 y+6 w" width " h1 Background" colors.Separator)   ; 搜索框和列表之间的分隔线
         panel.SetFont("s9 c" colors.Text)
@@ -136,13 +161,14 @@ class QuickSwitch {
         list.Delete()
         QuickSwitch._panel := panel, QuickSwitch._panelList := list, QuickSwitch._panelSearch := search, QuickSwitch._panelWidth := width
         QuickSwitch._panelLine := line, QuickSwitch._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitch._panelColors := colors
+        QuickSwitch._searchHwnd := search.Hwnd, QuickSwitch._listHwnd := list.Hwnd
         if colors.Dark
             try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; 深色主题: 滚动条和选中行也用深色
         try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: 小圆角
         QuickSwitch._ShowFolders(QuickSwitch._panelBase)
     }
 
-    static _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
+    static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
 
     ; 面板宽度 = 对话框宽度 (420 ~ 1000)
     static PanelWidthFor(dialogWidth) => Max(420, Min(dialogWidth, 1000))
@@ -262,7 +288,7 @@ class QuickSwitch {
         try {
             for item in FileSearchProvider.Query(term, 15, false, true)
                 found.Push({Path: item.Path, IsFolder: true}), seen[StrLower(item.Path)] := true
-            if (QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "folders")
+            if !QuickSwitch._SearchesFiles()
                 return found
             for item in FileSearchProvider.Query(term, 30, false)
                 if (!item.IsFolder && !seen.Has(StrLower(item.Path)))
@@ -444,37 +470,8 @@ class QuickSwitch {
     }
 
     ;---------------------------------------------------------------------------
-    ; 文件夹菜单
+    ; 面板里的文件夹
     ;---------------------------------------------------------------------------
-    static ShowMenu() {
-        folders := QuickSwitch.MenuFolders()
-        if !folders.Length
-            return App.Notify(I18n.T("QuickSwitch.NoFolders"), 2000)
-        folderMenu := Menu(), lastGroup := ""
-        for index, entry in folders {
-            if (index > 1 && entry.Group != lastGroup)
-                folderMenu.Add()                                            ; 分隔线: 打开的窗口 / 最近的文件夹
-            lastGroup := entry.Group
-            label := QuickSwitch.MenuLabel(index, entry)
-            folderMenu.Add(label, QuickSwitch._Jumper(entry.Path))
-            try folderMenu.SetIcon(label, "shell32.dll", 4)
-        }
-        try {                                                               ; 显示在文件名输入框下面
-            ControlGetPos(&x, &y, , &h, "Edit1", "A")
-            return folderMenu.Show(x, y + h)
-        }
-        folderMenu.Show()
-    }
-
-    ; "&1  D:\Projects<Tab>Total Commander": 前 9 项按数字键直接选; 路径里的 & 要写成 &&
-    static MenuLabel(index, entry) {
-        return (index <= 9 ? "&" index "  " : "     ") StrReplace(entry.Path, "&", "&&") "`t" entry.Tag
-    }
-
-    static _Jumper(folder) {
-        return (*) => QuickSwitch.SetDialogPath(RTrim(folder, "\") "\")
-    }
-
     ; [{Path, Group: "open" / "recent", Tag}]: 每个 TC 窗口的当前面板和另一个面板、每个资源管理器窗口、
     ; 最近的文件夹 (RecentFolders 个), 去掉重复的
     static MenuFolders() {

@@ -608,8 +608,6 @@ class Tests {
         eq("second", folders.Length > 1 ? folders[2] : "", root "\Projects\Tower")
         eq("limit", QuickSwitch.RecentFolders(1, root "\Recent").Length, 1)
         eq("zero", QuickSwitch.RecentFolders(0, root "\Recent").Length, 0)
-        eq("label", QuickSwitch.MenuLabel(1, {Path: "D:\R&D", Tag: "Total Commander"}), "&1  D:\R&&D`tTotal Commander")
-        eq("label 10", QuickSwitch.MenuLabel(10, {Path: "D:\X", Tag: "Recent"}), "     D:\X`tRecent")
         eq("default hotkey", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["MenuHotkey"], "^+g")
         eq("panel on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["ShowPanel"], 1)
         area := {Left: 0, Top: 0, Right: 1920, Bottom: 1040}
@@ -651,8 +649,12 @@ class Tests {
         eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
         eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitch._panelSearch.Hwnd), 0)
         eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; 输入法正在输入: 不拦截
+        searchHwnd := QuickSwitch._searchHwnd
         QuickSwitch.HidePanel()
         eq("panel hidden", QuickSwitch._panel, "")
+        eq("controls released", QuickSwitch._panelSearch "|" QuickSwitch._searchHwnd, "|0")
+        eq("key after hide", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, searchHwnd), "")   ; 面板关掉之后: 不报错, 也不处理
+        eq("key no panel", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, 0), "")
         eq("width min", QuickSwitch.PanelWidthFor(300), 420)
         eq("width max", QuickSwitch.PanelWidthFor(1600), 1000)
         eq("dark color", QuickSwitch.IsDarkColor("1E1E1E"), true)
