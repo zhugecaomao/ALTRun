@@ -73,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -704,6 +704,20 @@ class Tests {
         eq("cut", ClipboardData.IsCut(), true)
         A_Clipboard := ""
         try DirDelete(root, true)
+    }
+
+    ; 自定义命令编辑框: 类型选 "文件夹" 时浏览按钮选择文件夹
+    static BrowseKind() {
+        eq := (n, a, e) => TestRunner.Equal("BrowseKind." n, a, e)
+        fields := CustomCommandProvider.EditorFields()
+        eq("target has rule", fields[3].FolderWhen[2], "Folder")
+        controls := Map("Type", {Value: 2})                                  ; 第 2 项 = 文件夹
+        eq("folder type", ItemEditor.KindFor(fields[3].FolderWhen, fields, controls), "folder")
+        controls["Type"].Value := 1
+        eq("file type", ItemEditor.KindFor(fields[3].FolderWhen, fields, controls), "file")
+        controls["Type"].Value := 4
+        eq("url type", ItemEditor.KindFor(fields[3].FolderWhen, fields, controls), "file")
+        eq("no such field", ItemEditor.KindFor(["Nope", "Folder"], fields, controls), "file")
     }
 
     ; 双击 Ctrl / Shift: 只认两次单独的短按

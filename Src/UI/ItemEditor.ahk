@@ -11,6 +11,7 @@
 ;     {Key: "AutoExpand", Label: "自动展开", Type: "check"}
 ;   ]
 ; Type 可以是: text / multiline / choice / check / file / folder / number / hotkey
+; file 字段可以加 FolderWhen: ["Type", "Folder"] = 另一个字段 (Type) 选的是 Folder 时, "浏览" 改为选择文件夹
 ; hotkey: 录制热键的框 (HotkeyBox, 可以录鼠标中键 / 侧键) + 复选框 "保留按键原来的功能" (写法前面的 ~)
 ;
 ; 用法:
@@ -50,7 +51,8 @@ class ItemEditor {
                 case "file", "folder":
                     ctrl := g.AddEdit("x+8 ys-3 w" (inputW - 34) " r1 -Multi", value)
                     browse := g.AddButton("x+4 yp-1 w30", I18n.T("Prefs.Browse"))
-                    browse.OnEvent("Click", ItemEditor._Browser(ctrl, field.Type, g))
+                    kind := field.HasOwnProp("FolderWhen") ? ItemEditor._KindGetter(field.FolderWhen, fields, controls) : field.Type
+                    browse.OnEvent("Click", ItemEditor._Browser(ctrl, kind, g))
                 case "number":
                     ctrl := g.AddEdit("x+8 ys-3 w100 r1 -Multi Number", value)
                 case "hotkey":
@@ -147,7 +149,24 @@ class ItemEditor {
         return (*) => ItemEditor._Browse(ctrl, kind, owner)
     }
 
+    ; 点 "浏览" 时才看另一个字段现在选的是什么: 选的是 when[2] 就选文件夹, 否则选文件
+    static _KindGetter(when, fields, controls) {
+        return () => ItemEditor.KindFor(when, fields, controls)
+    }
+
+    static KindFor(when, fields, controls) {
+        for spec in fields {
+            if (spec.Key = when[1] && controls.Has(spec.Key) && spec.HasOwnProp("Choices")) {
+                index := controls[spec.Key].Value
+                return (index >= 1 && index <= spec.Choices.Length && spec.Choices[index][1] = when[2]) ? "folder" : "file"
+            }
+        }
+        return "file"
+    }
+
     static _Browse(ctrl, kind, owner) {
+        if HasMethod(kind)
+            kind := kind()
         owner.Opt("+OwnDialogs")
         current := Path.Resolve(ctrl.Value)
         selected := (kind = "folder") ? DirSelect("*" current, 3) : FileSelect(3, current)
