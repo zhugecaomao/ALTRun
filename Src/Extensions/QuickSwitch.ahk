@@ -3,15 +3,15 @@
 ;-------------------------------------------------------------------------------
 ; 和 Listary 的 "Quick Switch" 一样: 在标准的打开/保存文件对话框里按热键, 把对话框
 ; 跳到 Total Commander (默认 Ctrl+G) 或资源管理器 (默认 Ctrl+E) 当前打开的文件夹。
-; 对话框标题上会提示这两个热键。AutoSwitch = 1 时, 从 TC 切换到对话框会自动跳转。
-; 文件夹菜单 (MenuHotkey, 默认 Ctrl+Shift+G, 和 Listary 的 Quick Switch 菜单一样): 列出所有 TC 窗口的
-; 两个面板、打开的资源管理器窗口和最近用过的文件夹 (Windows 的 "最近使用的项目"), 选一个对话框就跳过去。
-; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 下面就贴一个搜索框 + 同样内容的
-; 列表, 点一下就跳过去, 不用记热键; 在搜索框里输入还能搜索文件夹和文件 (选中文件: 跳到它所在的文件夹)。对话框不在前台时隐藏, 回到对话框时刷新
-; (TC 里换了目录也能马上看到)。
+; AutoSwitch = 1 时, 从 TC 切换到对话框会自动跳转。
+; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 下面就贴一个搜索框 +
+; 文件夹列表 (所有 TC 窗口的两个面板、资源管理器窗口、最近用过的文件夹), 点一下就跳过去, 不用记热键;
+; 搜索框还能搜索文件夹 (PanelSearch = all 时也搜文件, 选中文件跳到它所在的文件夹)。对话框不在前台时隐藏,
+; 回到对话框时刷新 (TC 里换了目录也能马上看到)。颜色跟随 ALTRun 的主题。
+; 文件夹菜单 (MenuHotkey, 默认 Ctrl+Shift+G): 同样的文件夹做成菜单, 给键盘用。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
-;   Enabled / ExplorerHotkey / TotalCmdHotkey / MenuHotkey / RecentFolders / ShowPanel / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
+;   Enabled / ExplorerHotkey / TotalCmdHotkey / MenuHotkey / RecentFolders / ShowPanel / PanelSearch / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
 ;   DialogWindows 等是逗号分隔的窗口条件 (ahk_class / ahk_exe / 标题)
 ;
 ; 用法:
@@ -23,7 +23,7 @@
 
 class QuickSwitch {
     static Options := Map()
-    static _titles := Map(), _hintedHwnd := 0, _lastWasTC := false
+    static _lastWasTC := false
     static _panel := "", _panelFor := 0, _panelFolders := [], _panelPos := ""
 
     static Init(options) {
@@ -69,7 +69,7 @@ class QuickSwitch {
         return 0
     }
 
-    ; 每 250 ms: 在对话框标题上显示热键提示; AutoSwitch 时从 TC 切到对话框自动跳转
+    ; 每 250 ms: AutoSwitch 时从 TC 切到对话框自动跳转; 显示 / 隐藏 / 摆放文件夹面板
     static _Watch() {
         if QuickSwitch.PanelActive()                                        ; 正在面板的搜索框里输入: 对话框和面板都保持原样
             return
@@ -77,7 +77,6 @@ class QuickSwitch {
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasTC && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
             QuickSwitch.SyncTotalCmdPath(true)
         QuickSwitch._lastWasTC := WinActive("ahk_class TTOTAL_CMD") ? true : false
-        QuickSwitch._UpdateHint(isDialog)
         if (QuickSwitch.Options.Has("ShowPanel") && QuickSwitch.Options["ShowPanel"])
             QuickSwitch._UpdatePanel(isDialog)
     }
@@ -385,40 +384,6 @@ class QuickSwitch {
         if (y - panelH >= area.Top)
             return {X: left, Y: y - panelH}
         return {X: left, Y: Max(area.Top, area.Bottom - panelH)}
-    }
-
-    static _UpdateHint(isDialog) {
-        titles := QuickSwitch._titles
-        if isDialog {
-            hwnd := WinGetID("A")
-            if (QuickSwitch._hintedHwnd && QuickSwitch._hintedHwnd != hwnd)
-                QuickSwitch._RestoreTitle(QuickSwitch._hintedHwnd)
-            if !titles.Has(hwnd)
-                titles[hwnd] := WinGetTitle("ahk_id " hwnd)
-            title := titles[hwnd] " / " QuickSwitch.HintText()
-            if (WinGetTitle("ahk_id " hwnd) != title)
-                WinSetTitle(title, "ahk_id " hwnd)
-            QuickSwitch._hintedHwnd := hwnd
-        } else if QuickSwitch._hintedHwnd {
-            QuickSwitch._RestoreTitle(QuickSwitch._hintedHwnd)
-            QuickSwitch._hintedHwnd := 0
-        }
-    }
-
-    ; "Ctrl+G: 跳到 TC 目录  Ctrl+E: 跳到资源管理器目录  Ctrl+Shift+G: 文件夹菜单", 没设置的热键不显示
-    static HintText() {
-        hint := ""
-        for pair in [["TotalCmdHotkey", "QuickSwitch.HintTC"], ["ExplorerHotkey", "QuickSwitch.HintExplorer"], ["MenuHotkey", "QuickSwitch.HintMenu"]]
-            if (QuickSwitch.Options.Has(pair[1]) && QuickSwitch.Options[pair[1]] != "")
-                hint .= (hint = "" ? "" : "  ") Win.HotkeyLabel(QuickSwitch.Options[pair[1]]) ": " I18n.T(pair[2])
-        return hint
-    }
-
-    static _RestoreTitle(hwnd) {
-        if QuickSwitch._titles.Has(hwnd) {
-            try WinSetTitle(QuickSwitch._titles[hwnd], "ahk_id " hwnd)
-            QuickSwitch._titles.Delete(hwnd)
-        }
     }
 
     ; 只认真正的打开/保存文件对话框 (有文件名输入框 + 文件列表 + 按钮或路径栏)
