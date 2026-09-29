@@ -29,6 +29,7 @@ class HotkeyBox {
     static TipId := 20
 
     static Add(g, options, value, mouse := false, onChange := "") {
+        HotkeyBox.Prune()
         ctrl := g.AddEdit(options " r1 -Multi -TabStop", "")                ; 不接受 Tab 焦点: 打开窗口、按 Tab 经过时不会开始录制
         state := {Ctrl: ctrl, Hwnd: ctrl.Hwnd, GuiHwnd: g.Hwnd, Value: value, Mouse: mouse, OnChange: onChange}
         HotkeyBox.Boxes[ctrl.Hwnd] := state
@@ -41,6 +42,18 @@ class HotkeyBox {
             OnMessage(0x20B, (wParam, lParam, msg, hwnd) => HotkeyBox._OnMouse(wParam, msg, hwnd))   ; WM_XBUTTONDOWN
         }
         return ctrl
+    }
+
+    ; 去掉已经关掉的窗口里的框: 窗口句柄会被系统重新使用, 留着的话在别的控件上点中键会被当成录制
+    static Prune() {
+        for hwnd in [HotkeyBox.Boxes*]
+            if !HotkeyBox.IsAlive(HotkeyBox.Boxes[hwnd])
+                HotkeyBox.Boxes.Delete(hwnd)
+    }
+
+    static IsAlive(state) {
+        try return (state.Ctrl.Hwnd = state.Hwnd)
+        return false
     }
 
     static CancelActive() {
@@ -206,10 +219,14 @@ class HotkeyBox {
 
     ; 在框里点鼠标中键 / 侧键 (只在 mouse = true 的框里)
     static _OnMouse(wParam, msg, hwnd) {
-        if !HotkeyBox.Boxes.Has(hwnd) || !HotkeyBox.Boxes[hwnd].Mouse
+        if !HotkeyBox.Boxes.Has(hwnd)
+            return
+        if !HotkeyBox.IsAlive(state := HotkeyBox.Boxes[hwnd])
+            return HotkeyBox.Prune()
+        if !state.Mouse
             return
         key := (msg = 0x207) ? "MButton" : (((wParam >> 16) & 0xFFFF) = 1) ? "XButton1" : "XButton2"
-        HotkeyBox._Finish(HotkeyBox.Boxes[hwnd], HotkeyBox.Compose(HotkeyBox._Mods(), key))
+        HotkeyBox._Finish(state, HotkeyBox.Compose(HotkeyBox._Mods(), key))
         return 0
     }
 

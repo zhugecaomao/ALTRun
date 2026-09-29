@@ -633,6 +633,13 @@ class Tests {
         eq("no restore empty", QuickSwitch.ShouldRestoreName("  "), false)
         eq("no restore filter", QuickSwitch.ShouldRestoreName("*.txt"), false)
         eq("no restore path", QuickSwitch.ShouldRestoreName("C:\Docs\a.txt"), false)
+        closed := Gui(), closedHwnd := closed.Hwnd
+        closed.Destroy()
+        threw := false
+        try QuickSwitch.SetDialogPath(A_Temp "\", closedHwnd)               ; 对话框已经关掉: 什么也不做 (不往别的窗口里打字)
+        catch
+            threw := true
+        eq("closed dialog ignored", threw, false)
         QuickSwitch._BuildPanel(A_ScriptHwnd)                              ; 真的建一次面板 (Gui 选项写错时这里就会报错)
         TestRunner.True("FolderMenu.panel built", IsObject(QuickSwitch._panel) && IsObject(QuickSwitch._panelList))
         QuickSwitch._ShowFolders(base)
@@ -1874,6 +1881,22 @@ Func | PTTools | PT Tools (AHK)=99
             ok("allowed " hk, HotkeyBox.IsAllowed(hk))
         for hk in ["a", "+a", "Space", "+Space", "Enter", "Tab", "Numpad5", "1", "Delete"]
             ok("not allowed " hk, !HotkeyBox.IsAllowed(hk))
+        ; 关掉的窗口里的框要去掉: 句柄会被重新使用, 留着的话在别的控件上点中键会被当成录制
+        g := Gui()
+        box := HotkeyBox.Add(g, "w120", "^!k", true)
+        boxHwnd := box.Hwnd, state := HotkeyBox.Boxes[boxHwnd]
+        ok("box alive", HotkeyBox.IsAlive(state))
+        g.Destroy()
+        ok("box destroyed", !HotkeyBox.IsAlive(state))
+        eq("mouse on destroyed box", HotkeyBox._OnMouse(0, 0x207, boxHwnd), "")
+        ok("destroyed box pruned", !HotkeyBox.Boxes.Has(boxHwnd))
+        g := Gui()
+        HotkeyBox.Add(g, "w120", "", false)
+        HotkeyBox.Boxes[boxHwnd] := state                                   ; 下一次 Add 时也会清理
+        HotkeyBox.Add(g, "w120", "", false)
+        ok("pruned on add", !HotkeyBox.Boxes.Has(boxHwnd) || HotkeyBox.Boxes[boxHwnd] != state)
+        g.Destroy()
+        HotkeyBox.Prune()
 
         ; 偏好设置里重复的全局热键
         list := [{Key: "!Space", Label: "A"}, {Key: "!r", Label: "B"}, {Key: "~!R", Label: "C"}]
@@ -2013,7 +2036,25 @@ Func | PTTools | PT Tools (AHK)=99
         results := BookmarkProvider.Search(SearchQuery("bm tenders"))
         ok("keyword + host", results.Length = 1 && results[1].Exclusive)
         eq("too short", BookmarkProvider.Search(SearchQuery("g")).Length, 0)
-        BookmarkProvider.Items := savedItems, BookmarkProvider._checked := savedChecked
+        ; 书签文件读不了 (浏览器正在写) 时不记下修改时间, 下次搜索时再读
+        root := A_Temp "\ALTRun-test-bookmarks"
+        try DirDelete(root, true)
+        DirCreate(root "\Google\Chrome\User Data\Default")
+        bookmarkPath := root "\Google\Chrome\User Data\Default\Bookmarks"
+        FileAppend('{"roots": {"bookmark_bar": {"type": "folder", "children": [', bookmarkPath, "UTF-8")
+        savedLocal := EnvGet("LOCALAPPDATA"), savedStamp := BookmarkProvider._stamp
+        EnvSet("LOCALAPPDATA", root)
+        BookmarkProvider.Load()
+        eq("broken file not stamped", BookmarkProvider._stamp, "")
+        eq("broken file no items", BookmarkProvider.Items.Length, 0)
+        FileDelete(bookmarkPath)
+        FileAppend(sample, bookmarkPath, "UTF-8")
+        BookmarkProvider.Load()
+        ok("good file stamped", InStr(BookmarkProvider._stamp, "\Default\Bookmarks"))   ; A_Temp 可能是 8.3 短路径, 不比较整个路径
+        eq("good file items", BookmarkProvider.Items.Length, 3)
+        EnvSet("LOCALAPPDATA", savedLocal)
+        try DirDelete(root, true)
+        BookmarkProvider.Items := savedItems, BookmarkProvider._checked := savedChecked, BookmarkProvider._stamp := savedStamp
         ids := ""
         for command in SystemProvider.Commands()
             ids .= command["Id"] "|"
