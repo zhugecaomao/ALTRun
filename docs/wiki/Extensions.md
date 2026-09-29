@@ -10,6 +10,9 @@
 - 上面的搜索框: 输入文字先过滤列表, 再用 Everything (或内置索引) 找名字匹配的文件夹和文件 (文件夹在前); `↑` `↓` 选择, `Enter` 确定, `Esc` 回到对话框;
 - 选中的是文件时: 跳到它所在的文件夹 (打开和保存对话框都一样, 不替你打开或保存);
 - 跳转时文件名框里原来的文件名 (例如另存为时程序预填的名字) 会保留;
+- 面板的颜色跟随 ALTRun 的主题 (偏好设置 → 外观), 深色主题下面板也是深色; 对话框改变宽度时面板跟着变;
+- 搜索框里用中文输入法时, 按 `Enter` 是把拼音上屏, 不会跳转; 上屏之后再按 `Enter` 才跳转;
+- 面板搜索的范围: 偏好设置 → 对话框跳转 → "面板搜索": 文件夹和文件 (默认) / 只搜文件夹 (`PanelSearch`: `all` / `folders`)。文件夹单独搜, 同名的文件很多时也不会把文件夹挤掉;
 - 对话框不在前台时隐藏;
 - 切到 TC 换了目录再回到对话框, 列表会刷新;
 - 不想要的话: 偏好设置 → 对话框跳转 → "打开对话框时在下面显示文件夹面板" (`ShowPanel`)。
@@ -31,7 +34,7 @@
 - **不生效的窗口**: 在这些窗口里不跳转
 - **不自动跳转的对话框**: 这些对话框里不自动跳转, 仍然可以按热键
 
-设置文件里是 `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `MenuHotkey` / `RecentFolders` / `ShowPanel` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows` / `AutoSwitchExclude` (窗口条件用逗号分隔)。
+设置文件里是 `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `MenuHotkey` / `RecentFolders` / `ShowPanel` / `PanelSearch` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows` / `AutoSwitchExclude` (窗口条件用逗号分隔)。
 
 ## 一键加日期
 按热键 (默认 `Ctrl+D`, 可以改):

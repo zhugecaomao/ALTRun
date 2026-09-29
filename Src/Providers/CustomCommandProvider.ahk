@@ -158,9 +158,11 @@ class CustomCommandProvider {
         types := [["File", I18n.T("Prefs.Type.File")], ["Folder", I18n.T("Prefs.Type.Folder")]
                 , ["Command", I18n.T("Prefs.Type.Command")], ["Url", I18n.T("Prefs.Type.Url")]]
         hint := (name) => I18n.T("Cmd.Field." name)                        ; 每个字段下面的灰色说明
+        target := ItemEditor.Field("Target", "Prefs.Col.Target", "file", true, "", hint("Target"))
+        target.FolderWhen := ["Type", "Folder"]                             ; 类型选 "文件夹" 时, 浏览按钮选择文件夹
         return [ItemEditor.Field("Title", "Prefs.Col.Title", "text", true, "", hint("Title"))
               , ItemEditor.Field("Type", "Prefs.Col.Type", "choice", false, types, hint("Type"))
-              , ItemEditor.Field("Target", "Prefs.Col.Target", "file", true, "", hint("Target"))
+              , target
               , ItemEditor.Field("Arguments", "Prefs.Col.Arguments", "text", false, "", hint("Arguments"))
               , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", false, "", hint("Keyword"))]
     }

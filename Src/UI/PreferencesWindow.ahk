@@ -453,7 +453,7 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.QuickSwitch")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
         PreferencesWindow._Pair([base "TotalCmdHotkey", "Prefs.QSTotalCmd", "K", "hotkey"], [base "ExplorerHotkey", "Prefs.QSExplorer", "K", "hotkey"])
-        PreferencesWindow._Pair([base "MenuHotkey", "Prefs.QSMenu", "K", "hotkey"], [base "RecentFolders", "Prefs.QSRecent", "S", "number"])
+        PreferencesWindow._Field(base "MenuHotkey", "Prefs.QSMenu", "K", "hotkey")
 
         ; DialogWindows 拆成 "标准对话框" 复选框 + 其它对话框的列表, 保存时再合成一个列表
         PreferencesWindow._Section("Prefs.Section.QSDialogs")
@@ -474,6 +474,8 @@ class PreferencesWindow {
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
         PreferencesWindow._Check(base "ShowPanel", "Prefs.QSPanel", , , "Prefs.Group.Options")
+        PreferencesWindow._Pair([base "PanelSearch", "Prefs.QSPanelSearch", "M", "choice", ["all", "folders"], [I18n.T("Prefs.QSPanelSearch.All"), I18n.T("Prefs.QSPanelSearch.Folders")]]
+            , [base "RecentFolders", "Prefs.QSRecent", "S", "number"])
         PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto")
         PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 2)
     }

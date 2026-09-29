@@ -73,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -648,8 +648,28 @@ class Tests {
         QuickSwitch._panelBase := base
         QuickSwitch._SearchPanel()
         eq("panel search filters", QuickSwitch._panelList.GetText(1, 2), "C:\Docs")
+        eq("resize before", QuickSwitch._panelWidth, QuickSwitch.PanelWidthFor(QuickSwitch._panelDialogW ? QuickSwitch._panelDialogW : 600))
+        QuickSwitch._ResizePanel(900)                                      ; 对话框变宽: 面板跟着变宽
+        QuickSwitch._panelList.GetPos(, , &listW)
+        eq("resize width", QuickSwitch._panelWidth "|" listW, "900|900")
+        eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
+        eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitch._panelSearch.Hwnd), 0)
+        eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; 输入法正在输入: 不拦截
         QuickSwitch.HidePanel()
         eq("panel hidden", QuickSwitch._panel, "")
+        eq("width min", QuickSwitch.PanelWidthFor(300), 420)
+        eq("width max", QuickSwitch.PanelWidthFor(1600), 1000)
+        eq("dark color", QuickSwitch.IsDarkColor("1E1E1E"), true)
+        eq("light color", QuickSwitch.IsDarkColor("FAFAFA"), false)
+        eq("bad color", QuickSwitch.IsDarkColor("abc"), false)
+        savedTheme := ThemeManager.Current
+        ThemeManager.Current := Map("Background", "202020", "Title", "EEEEEE", "Separator", "333333")
+        colors := QuickSwitch.PanelColors()
+        eq("theme colors", colors.Background "|" colors.Text "|" colors.Dark, "202020|EEEEEE|1")
+        ThemeManager.Current := Map()
+        eq("no theme", QuickSwitch.PanelColors().Background, "FFFFFF")
+        ThemeManager.Current := savedTheme
+        eq("panel search default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["PanelSearch"], "all")
         try DirDelete(root, true)
     }
 
@@ -684,6 +704,20 @@ class Tests {
         eq("cut", ClipboardData.IsCut(), true)
         A_Clipboard := ""
         try DirDelete(root, true)
+    }
+
+    ; 自定义命令编辑框: 类型选 "文件夹" 时浏览按钮选择文件夹
+    static BrowseKind() {
+        eq := (n, a, e) => TestRunner.Equal("BrowseKind." n, a, e)
+        fields := CustomCommandProvider.EditorFields()
+        eq("target has rule", fields[3].FolderWhen[2], "Folder")
+        controls := Map("Type", {Value: 2})                                  ; 第 2 项 = 文件夹
+        eq("folder type", ItemEditor.KindFor(fields[3].FolderWhen, fields, controls), "folder")
+        controls["Type"].Value := 1
+        eq("file type", ItemEditor.KindFor(fields[3].FolderWhen, fields, controls), "file")
+        controls["Type"].Value := 4
+        eq("url type", ItemEditor.KindFor(fields[3].FolderWhen, fields, controls), "file")
+        eq("no such field", ItemEditor.KindFor(["Nope", "Folder"], fields, controls), "file")
     }
 
     ; 双击 Ctrl / Shift: 只认两次单独的短按
