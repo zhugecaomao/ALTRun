@@ -67,6 +67,10 @@
 | `{time}` | 当前时间 `HH:mm` |
 | `{datetime}` | 日期 + 时间 |
 | `{clipboard}` | 剪贴板里的文字 |
+| `{date:yyyy-MM-dd}` `{time:HH:mm:ss}` | 自己指定格式 ([FormatTime](https://www.autohotkey.com/docs/v2/lib/FormatTime.htm) 的写法, 例如 `dddd` 星期几) |
+| `{date+7}` `{date-1:dd.MM}` | 往后 / 往前几天的日期, 也可以带格式 |
+| `{clipboard:1}` `{clipboard:2}` | 剪贴板历史里往前第 1、2 条 (和 Alfred 一样; `{clipboard}` 是现在的剪贴板) |
+| `{uuid}` | 随机生成的 UUID, 每个都不一样 |
 | `{cursor}` | 粘贴后光标停在这里 |
 
 ### 自动展开

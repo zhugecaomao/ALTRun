@@ -7,6 +7,8 @@
 ;
 ; 正文里的占位符在粘贴时展开:
 ;   {date} {time} {datetime} {clipboard} {cursor} (粘贴后光标停在这里)
+;   {date:yyyy-MM-dd} {time:HH:mm:ss} 自己指定格式 (FormatTime 的写法); {date+7} {date-1:dddd} 前后几天
+;   {uuid} 随机的 UUID; {clipboard:1} {clipboard:2} 剪贴板历史里前一条、前两条 (和 Alfred 一样)
 ; 自动展开 (输入 ";关键字") 见 Src\Extensions\SnippetExpander.ahk。
 ;===============================================================================
 
@@ -45,7 +47,7 @@ class SnippetProvider {
     static EditorFields() {
         return [ItemEditor.Field("Name", "Prefs.Col.Name", "text", true)
               , ItemEditor.Field("Keyword", "Prefs.Col.Keyword")
-              , ItemEditor.Field("Text", "Prefs.Col.Text", "multiline", true, "", "{date} {time} {datetime} {clipboard} {cursor}")
+              , ItemEditor.Field("Text", "Prefs.Col.Text", "multiline", true, "", "{date} {date:yyyy-MM-dd} {date+7} {time} {time:HH:mm:ss} {datetime} {clipboard} {clipboard:1} {uuid} {cursor}")
               , ItemEditor.Field("AutoExpand", "Prefs.Col.AutoExpand", "check")]
     }
 
@@ -107,11 +109,35 @@ class SnippetProvider {
         if !InStr(text, "{")
             return text
         dateFormat := AppSettings.Extension("AutoDate")["DateFormat"]
-        text := StrReplace(text, "{datetime}", FormatTime(, dateFormat " HH:mm"))
-        text := StrReplace(text, "{date}", FormatTime(, dateFormat))
-        text := StrReplace(text, "{time}", FormatTime(, "HH:mm"))
+        ; {date} {time} {datetime}, 可以带 +N / -N 天和 :格式
+        pos := 1
+        while (pos := RegExMatch(text, "\{(datetime|date|time)([+-]\d+)?(?::([^{}]*))?\}", &m, pos)) {
+            stamp := (m[2] != "") ? DateAdd(A_Now, Integer(m[2]), "Days") : A_Now
+            fmt := (m[3] != "") ? m[3] : (m[1] = "date") ? dateFormat : (m[1] = "time") ? "HH:mm" : dateFormat " HH:mm"
+            value := FormatTime(stamp, fmt)
+            text := SubStr(text, 1, pos - 1) value SubStr(text, pos + m.Len)
+            pos += StrLen(value)
+        }
+        while InStr(text, "{uuid}")                                        ; 每个 {uuid} 各不相同
+            text := StrReplace(text, "{uuid}", SnippetProvider.NewUuid(), , , 1)
+        pos := 1                                                            ; {clipboard:N}: 剪贴板历史里往前第 N 条
+        while (pos := RegExMatch(text, "\{clipboard:(\d+)\}", &m, pos)) {
+            index := Integer(m[1]) + 1, entries := ClipboardProvider.Entries
+            value := (index = 1) ? A_Clipboard : (index <= entries.Length) ? entries[index]["Text"] : ""
+            text := SubStr(text, 1, pos - 1) value SubStr(text, pos + m.Len)
+            pos += StrLen(value)
+        }
         text := StrReplace(text, "{clipboard}", A_Clipboard)
         return text
+    }
+
+    ; 小写、不带大括号的 UUID, 例如 3f2b8c1e-...
+    static NewUuid() {
+        guid := Buffer(16)
+        DllCall("ole32\CoCreateGuid", "Ptr", guid)
+        text := Buffer(78)
+        DllCall("ole32\StringFromGUID2", "Ptr", guid, "Ptr", text, "Int", 39)
+        return StrLower(Trim(StrGet(text), "{}"))
     }
 
     static _Preview(text) {

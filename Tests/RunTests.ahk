@@ -17,6 +17,7 @@
 #Include %A_ScriptDir%\..\Lib\TextTools.ahk
 #Include %A_ScriptDir%\..\Lib\Kanji.ahk
 #Include %A_ScriptDir%\..\Lib\Everything.ahk
+#Include %A_ScriptDir%\..\Lib\Units.ahk
 #Include %A_ScriptDir%\..\Lib\Dialogs.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
@@ -45,6 +46,7 @@
 #Include %A_ScriptDir%\..\Src\Providers\SystemProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\CalculatorProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\WebSearchProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\BookmarkProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\FileSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\TerminalProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\HelpProvider.ahk
@@ -54,6 +56,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\CurrencyRates.ahk
 
 OnError((err, mode) => TestRunner.OnUncaught(err, mode))                                             ; 运行错误时输出并退出, 不弹对话框卡住
 Logger.Enabled := false
@@ -68,7 +71,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1594,6 +1597,104 @@ Func | PTTools | PT Tools (AHK)=99
         elapsed := A_TickCount - start
         eq("big file", parsed["Paths"].Length "|" parsed["Paths"][20000], "20000|" paths[20000])
         ok("big file is fast (" elapsed " ms)", elapsed < 3000)             ; 以前要好几分钟
+    }
+
+    ; 单位 / 货币换算 (计算器)
+    static UnitConversion() {
+        eq := (n, a, e) => TestRunner.Equal("Units." n, a, e)
+        ok := (n, c) => TestRunner.True("Units." n, c)
+        r := Units.Parse("10 km in mi")
+        eq("parse", r.Value "|" r.From "|" r.To, "10|km|mi")
+        r := Units.Parse("5ft to cm")
+        eq("parse no space", r.From "|" r.To, "ft|cm")
+        r := Units.Parse("1,500 kg->t")
+        eq("parse arrow + thousands", r.Value "|" r.From "|" r.To, "1500|kg|t")
+        r := Units.Parse("3亩转平方米")
+        eq("parse chinese", r.From "|" r.To, "亩|平方米")
+        eq("not a conversion", Units.Parse("notepad"), "")
+        eq("not a conversion 2", Units.Parse("12*3"), "")
+        fmt := (v) => CalculatorProvider.Format(v)
+        eq("km mi", fmt(Units.Convert(10, "km", "mi")), "6.21")
+        eq("f c", fmt(Units.Convert(212, "f", "c")), "100")
+        eq("c f", fmt(Units.Convert(-40, "°c", "f")), "-40")
+        eq("c k", fmt(Units.Convert(0, "C", "K")), "273.15")
+        eq("mpa psi", fmt(Units.Convert(1, "MPa", "psi")), "145.04")
+        eq("n/mm2 mpa", fmt(Units.Convert(30, "n/mm2", "mpa")), "30")
+        eq("kn kip", fmt(Units.Convert(100, "kN", "kip")), "22.48")
+        eq("mu m2", fmt(Units.Convert(1, "亩", "m²")), "666.67")
+        eq("gb mb", fmt(Units.Convert(1, "GB", "MB")), "1,024")
+        eq("mph km/h", fmt(Units.Convert(60, "mph", "km/h")), "96.56")
+        eq("lb kg", fmt(Units.Convert(1, "lb", "kg")), "0.45")
+        eq("different kinds", Units.Convert(1, "km", "kg"), "")
+        eq("unknown unit", Units.Convert(1, "km", "xyz"), "")
+        eq("label", Units.Label("m2"), "m²")
+
+        ; 计算器里的结果
+        results := CalculatorProvider.Search(SearchQuery("10 km in mi"))
+        eq("calc result", results.Length ? results[1].Title "|" results[1].Arg : "", "6.21 mi|6.21")
+        ok("calc subtitle", results.Length && InStr(results[1].Subtitle, "10 km = 6.21 mi"))
+        saved := Units.Rates
+        Units.Rates := Map()
+        results := CalculatorProvider.Search(SearchQuery("100 usd to sgd"))
+        ok("currency off hint", results.Length = 1 && !results[1].Valid && InStr(results[1].Subtitle, "Preferences"))
+        CurrencyRates.Apply(JSON.Parse('{"amount": 1.0, "base": "EUR", "date": "2026-09-26", "rates": {"USD": 1.10, "SGD": 1.43, "CNY": 7.8}}'))
+        eq("rates date", CurrencyRates.Date, "2026-09-26")
+        eq("usd sgd", fmt(Units.Convert(100, "usd", "sgd")), "130")
+        eq("eur base", fmt(Units.Convert(10, "EUR", "CNY")), "78")
+        eq("chinese currency name", fmt(Units.Convert(110, "美元", "人民币")), "780")
+        results := CalculatorProvider.Search(SearchQuery("100 usd to sgd"))
+        ok("currency result", results.Length && results[1].Title = "130 SGD" && InStr(results[1].Subtitle, "2026-09-26"))
+        Units.Rates := saved
+        ok("stale: never", CurrencyRates.IsStale("", "20260929120000"))
+        ok("stale: 13 h", CurrencyRates.IsStale("20260928230000", "20260929120000"))
+        ok("fresh: 2 h", !CurrencyRates.IsStale("20260929100000", "20260929120000"))
+    }
+
+    ; 片段的占位符
+    static SnippetPlaceholders() {
+        eq := (n, a, e) => TestRunner.Equal("Placeholders." n, a, e)
+        ok := (n, c) => TestRunner.True("Placeholders." n, c)
+        eq("date format", SnippetProvider.Expand("{date:yyyy}"), FormatTime(, "yyyy"))
+        eq("date plus", SnippetProvider.Expand("{date+7:yyyyMMdd}"), FormatTime(DateAdd(A_Now, 7, "Days"), "yyyyMMdd"))
+        eq("date minus", SnippetProvider.Expand("x {date-1:yyyyMMdd} y"), "x " FormatTime(DateAdd(A_Now, -1, "Days"), "yyyyMMdd") " y")
+        eq("default date", SnippetProvider.Expand("{date}"), FormatTime(, AppSettings.Extension("AutoDate")["DateFormat"]))
+        eq("time format", StrLen(SnippetProvider.Expand("{time:HH:mm:ss}")), 8)
+        eq("cursor untouched", SnippetProvider.Expand("a{cursor}b"), "a{cursor}b")
+        uuids := SnippetProvider.Expand("{uuid} {uuid}")
+        ok("uuid format", RegExMatch(uuids, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} [0-9a-f-]{36}$"))
+        ok("uuid different", StrSplit(uuids, " ")[1] != StrSplit(uuids, " ")[2])
+        saved := ClipboardProvider.Entries
+        ClipboardProvider.Entries := [Map("Text", "newest"), Map("Text", "previous"), Map("Text", "older")]
+        eq("clipboard:1", SnippetProvider.Expand("[{clipboard:1}] [{clipboard:2}] [{clipboard:9}]"), "[previous] [older] []")
+        ClipboardProvider.Entries := saved
+    }
+
+    ; 浏览器书签
+    static Bookmarks() {
+        eq := (n, a, e) => TestRunner.Equal("Bookmarks." n, a, e)
+        ok := (n, c) => TestRunner.True("Bookmarks." n, c)
+        sample := '{"roots": {"bookmark_bar": {"type": "folder", "children": ['
+            . '{"type": "url", "name": "GitHub", "url": "https://github.com/"},'
+            . '{"type": "folder", "name": "Work", "children": [{"type": "url", "name": "Tender Portal", "url": "https://www.tenders.example.com/login"}]},'
+            . '{"type": "url", "name": "Bookmarklet", "url": "javascript:alert(1)"}]},'
+            . '"other": {"type": "folder", "children": [{"type": "url", "name": "", "url": "http://intranet.local/"}]}}}'
+        items := BookmarkProvider.ParseFile(sample)
+        eq("count (http only)", items.Length, 3)
+        eq("nested", items[2].Title, "Tender Portal")
+        eq("empty name uses url", items[3].Title, "http://intranet.local/")
+        savedItems := BookmarkProvider.Items, savedChecked := BookmarkProvider._checked
+        BookmarkProvider.Items := items, BookmarkProvider._checked := A_TickCount   ; 不去读本机的书签文件
+        results := BookmarkProvider.Search(SearchQuery("tender"))
+        eq("default results", results.Length ? results[1].Arg : "", "https://www.tenders.example.com/login")
+        ok("default results rank below commands", results.Length && results[1].Score < 100 && !results[1].Exclusive)
+        results := BookmarkProvider.Search(SearchQuery("bm tenders"))
+        ok("keyword + host", results.Length = 1 && results[1].Exclusive)
+        eq("too short", BookmarkProvider.Search(SearchQuery("g")).Length, 0)
+        BookmarkProvider.Items := savedItems, BookmarkProvider._checked := savedChecked
+        ids := ""
+        for command in SystemProvider.Commands()
+            ids .= command["Id"] "|"
+        ok("media commands", InStr(ids, "MediaPlayPause|MediaNext|MediaPrev|MediaStop|"))
     }
 
     static Misc() {

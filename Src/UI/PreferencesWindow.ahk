@@ -325,7 +325,7 @@ class PreferencesWindow {
     static _BuildFeatures() {
         PreferencesWindow._BeginPage("Prefs.Page.Features", 140)
         PreferencesWindow._Section("Prefs.EnabledFeatures")
-        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "FileSearch", "Terminal", "System", "Help"]
+        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "FileSearch", "Terminal", "System", "Help"]
         startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; 两列: 英文名称较长, 三列会换行
         for index, feature in features {
             column := Mod(index - 1, 2), row := (index - 1) // 2
@@ -336,6 +336,7 @@ class PreferencesWindow {
         PreferencesWindow._y := startY + Ceil(features.Length / 2) * 24
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")
         PreferencesWindow._Check("Features.Calculator.StructuralCalc", "Prefs.StructuralCalc", , , "Prefs.Feature.Calculator")
+        PreferencesWindow._Check("Features.Calculator.Currency", "Prefs.Currency")
         PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
         PreferencesWindow._Gap()
         PreferencesWindow._Pair(["Features.Terminal.Prefix", "Prefs.TerminalPrefix", "S"]

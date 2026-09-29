@@ -36,7 +36,9 @@ class HelpProvider {
             ["Expand"    , "Snippets"      , "Commands-and-Snippets"],
             ["Terminal"  , "Terminal"      , "Usage"],
             ["Calculator", "Calculator"    , "Usage"],
+            ["Convert"   , "Calculator"    , "Usage"],
             ["WebSearch" , "WebSearch"     , "Usage"],
+            ["Bookmarks" , "Bookmarks"     , "Usage"],
             ["CheckPaths", "CustomCommands", "Commands-and-Snippets"],
             ["LargeType" , ""              , "Usage"],
             ["Prefs"     , ""              , "Configuration"],
@@ -103,6 +105,7 @@ class HelpProvider {
             case "Snippets":    return [AppSettings.Feature("Snippets")["Keyword"]]
             case "Expand":      return [AppSettings.Feature("Snippets")["ExpandPrefix"]]
             case "Terminal":    return [AppSettings.Feature("Terminal")["Prefix"]]
+            case "Bookmarks":   return [AppSettings.Feature("Bookmarks")["Keyword"]]
             case "WebSearch":
                 engines := AppSettings.Feature("WebSearch")["Engines"]
                 return [engines.Length ? engines[1]["Keyword"] : "g"]

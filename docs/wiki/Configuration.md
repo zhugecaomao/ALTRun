@@ -90,6 +90,15 @@
 | 键 | 默认 | 说明 |
 |---|---|---|
 | StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Extensions#计算器) |
+| Currency | 0 | 货币换算 (`100 usd to sgd`), 每天从 frankfurter.dev 下载汇率, 见 [单位和货币换算](Extensions#单位和货币换算) |
+
+### Bookmarks 浏览器书签
+| 键 | 默认 | 说明 |
+|---|---|---|
+| Keyword | `bm` | 只搜书签的关键字 |
+| InDefaultResults | 1 | 直接输入名称时也显示匹配的书签 (排在应用和命令后面, 最多 8 条) |
+
+读 Chrome、Edge、Brave、Vivaldi 所有用户配置的书签; Firefox 的书签存在 SQLite 数据库里, 暂不支持。
 
 ### WebSearch 网页搜索
 | 键 | 说明 |
@@ -150,4 +159,5 @@
 | `Knowledge.json` | 学习排序和最近的搜索 |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) |
 | `ClipboardHistory.json` `Clipboard\` | 剪贴板历史 (很长的条目单独存成文件) |
+| `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) |
 | `Update.json` | 上次检查更新的时间、跳过的版本 |

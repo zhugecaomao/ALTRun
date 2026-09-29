@@ -67,6 +67,7 @@
 | `EmptyRecycle` | 清空回收站 (执行前确认) |
 | `MonitorOff` | 关闭显示器 |
 | `Mute` `VolumeUp` `VolumeDown` | 静音 / 音量 +10 / 音量 -10 |
+| `MediaPlayPause` `MediaNext` `MediaPrev` `MediaStop` | 播放 / 暂停、下一首、上一首、停止播放 (音乐和视频播放器) |
 | `ShowIP` | 显示 IP 地址 |
 | `TerminalHere` | 在当前文件夹 (资源管理器 / Total Commander) 打开终端 |
 | `ListProcesses` `ListServices` | 列出运行中的进程 / 服务 |
@@ -94,6 +95,25 @@
 打开 `Features.Calculator.StructuralCalc` (偏好设置 → 功能) 后, 结果下方附带两行结构计算:
 - 把结果当作 **梁宽 (mm)**: 主筋根数和间距 (保护层 40 mm, 最大间距 300 mm)
 - 把结果当作 **配筋面积 As (mm²)**: H13 / H16 / H20 / H25 / H32 需要的根数
+
+### 单位和货币换算
+写法: 数值 + 单位 + `in` / `to` / `=` / `->` / `转` + 目标单位, 单位不区分大小写, `m²` 可以写成 `m2`。例如 `10 km in mi`、`5ft to cm`、`100 f to c`、`3 亩 in m2`、`1 GB to MB`、`300 kN to kip`、`20 MPa in psi`。`Enter` 复制数字。
+
+| 类别 | 单位 |
+|---|---|
+| 长度 | mm cm m km in ft yd mi nmi (毫米 厘米 米 公里 英寸 英尺 码 英里 海里) |
+| 质量 | mg g kg t lb oz 斤 两 |
+| 面积 | mm2 cm2 m2 km2 ha acre ft2 in2 亩 |
+| 体积 | ml cl l m3 cm3 ft3 gal qt pt cup floz |
+| 速度 | m/s km/h mph knot ft/s |
+| 时间 | ms s min h day week year |
+| 数据 | bit B KB MB GB TB (按 1024) |
+| 压强 / 应力 | Pa kPa MPa (N/mm2) bar psi ksi atm psf |
+| 力 | N kN lbf kip kgf tf |
+| 能量 / 功率 | J kJ cal kcal Wh kWh / W kW hp |
+| 温度 | C F K |
+
+**货币换算** (`100 usd to sgd`、`100 美元 to 人民币`) 默认关闭: 在 偏好设置 → 功能 勾选 "计算器: 货币换算" (`Features.Calculator.Currency`)。打开后每天从 [Frankfurter](https://frankfurter.dev) 下载一次欧洲央行等央行公布的参考汇率 (免费, 不需要注册), 保存在 `Data\Currency.json`; 这是 ALTRun 除 GitHub 之外唯一会访问的网站。结果里会显示汇率的日期。
 
 ## PT 工具箱
 预应力设计用的小工具, 输入 `PTTools` / `SPF2M` 或用自定义热键打开:

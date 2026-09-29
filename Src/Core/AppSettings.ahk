@@ -232,7 +232,8 @@ class AppSettings {
                 ),
                 "Calculator", Map(
                     "Enabled"       , 1,
-                    "StructuralCalc", 0                                     ; 结果下方附带梁主筋 / 配筋面积计算
+                    "StructuralCalc", 0,                                    ; 结果下方附带梁主筋 / 配筋面积计算
+                    "Currency"      , 0                                     ; 货币换算 (100 usd to sgd): 每天从 frankfurter.dev 下载汇率, 默认关闭
                 ),
                 "WebSearch", Map(
                     "Enabled"  , 1,
@@ -264,6 +265,11 @@ class AppSettings {
                     "Shell"  , "cmd"                                        ; cmd / powershell / pwsh / wt
                 ),
                 "Help", Map("Enabled", 1),                                  ; 输入 ? 显示所有输入语法和快捷键
+                "Bookmarks", Map(
+                    "Enabled"         , 1,
+                    "Keyword"         , "bm",                               ; "bm 关键词" 只搜书签
+                    "InDefaultResults", 1                                   ; 直接输入名称时也显示匹配的书签 (排在应用和命令后面)
+                ),
                 "System", Map(
                     "Enabled"       , 1,
                     "ConfirmActions", 1                                     ; 关机/重启/注销/清空回收站前确认
