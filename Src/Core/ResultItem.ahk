@@ -11,6 +11,7 @@
 ;   Arguments    运行程序时附带的命令行参数 (file 类型可选)
 ;   Uid          稳定的唯一 Id, 用来学习 "输入什么 -> 选了什么", 留空则不学习
 ;   OnRun        默认操作 (Enter) 的函数 fn(item); 留空按 Kind 执行默认操作
+;   RunTitle     OnRun 在操作面板里的名称 (例如 "粘贴图片"), 设置后它排在操作面板第一行
 ;   Actions      额外操作 [{Title, Subtitle, Icon, Run: fn(item)}], 出现在操作面板
 ;   Valid        false = 不能执行 (例如提示行), Enter 时改为自动补全
 ;   AutoComplete Tab 自动补全成的文字
@@ -33,6 +34,7 @@ class ResultItem {
         this.Arguments    := ""
         this.Uid          := ""
         this.OnRun        := ""
+        this.RunTitle     := ""
         this.Actions      := []
         this.Valid        := true
         this.AutoComplete := ""

@@ -25,6 +25,6 @@ ALTRun 完全在本机运行, 不收集、不上传任何数据, 没有统计或
 网页搜索、"查看更新内容" 等是用你的浏览器打开网页, ALTRun 本身不发送请求。Everything 联动通过本机的 IPC 接口, 不经过网络。
 
 本地保存的数据都在程序目录的 `Data\` 文件夹里:
-- 剪贴板历史: `Data\ClipboardHistory.json` 和 `Data\Clipboard\` (可以设为只保存在内存里); 密码管理器 (KeePass、1Password、Bitwarden...) 复制的内容和带 "不要加入剪贴板历史" 标记的内容不会记录
+- 剪贴板历史: `Data\ClipboardHistory.json` 和 `Data\Clipboard\` (很长的文字和复制过的图片; 可以设为只保存在内存里, 这时不记录图片); 密码管理器 (KeePass、1Password、Bitwarden...) 复制的内容和带 "不要加入剪贴板历史" 标记的内容不会记录
 - 使用统计: `Data\Usage.json`, 只记录每个功能用了几次, 不记录输入的文字和打开的内容
 - 学习排序: `Data\Knowledge.json`, 可以在 偏好设置 → 高级 里重置

@@ -414,8 +414,11 @@ class PreferencesWindow {
         PreferencesWindow._Field("Features.Clipboard.Keyword", "Prefs.ClipKeyword", "M")
         PreferencesWindow._Pair(["Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number"], ["Features.Clipboard.MaxItemLength", "Prefs.ClipMaxLength", "S", "number"])
         PreferencesWindow._Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
+        PreferencesWindow._Check("Features.Clipboard.Images", "Prefs.ClipImages")
+        PreferencesWindow._Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
+        PreferencesWindow._Check("Features.Clipboard.MergeDoubleCopy", "Prefs.ClipMerge", , , "Prefs.Group.Copy")
         PreferencesWindow._Gap()
-        PreferencesWindow._Lines("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps", 5)
+        PreferencesWindow._Lines("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps", 4)
         PreferencesWindow._Button("Prefs.ClipClear", (*) => ClipboardProvider.Clear())
     }
 
