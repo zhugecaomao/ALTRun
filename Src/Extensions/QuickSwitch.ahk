@@ -7,7 +7,8 @@
 ; 文件夹菜单 (MenuHotkey, 默认 Ctrl+Shift+G, 和 Listary 的 Quick Switch 菜单一样): 列出所有 TC 窗口的
 ; 两个面板、打开的资源管理器窗口和最近用过的文件夹 (Windows 的 "最近使用的项目"), 选一个对话框就跳过去。
 ; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 下面就贴一个搜索框 + 同样内容的
-; 列表, 点一下就跳过去, 不用记热键; 在搜索框里输入还能搜索其它文件夹。对话框不在前台时隐藏, 回到对话框时刷新
+; 列表, 点一下就跳过去, 不用记热键; 在搜索框里输入还能搜索文件夹和文件 (选中文件: 打开对话框直接打开,
+; 保存对话框填好文件名)。对话框不在前台时隐藏, 回到对话框时刷新
 ; (TC 里换了目录也能马上看到)。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
@@ -75,8 +76,8 @@ class QuickSwitch {
 
     ;---------------------------------------------------------------------------
     ; 文件夹面板 (和 Listary 的 Quick Switch 窗口一样): 贴在对话框下面, 和对话框一样宽;
-    ; 上面是搜索框 (输入文字搜索文件夹: 先过滤列表, 再用 Everything / 内置索引找文件夹), 下面是文件夹列表。
-    ; 点一个文件夹或在搜索框里按 Enter 就跳过去; Esc 回到对话框
+    ; 上面是搜索框 (先过滤列表, 再用 Everything / 内置索引找文件夹和文件), 下面是列表。
+    ; 点一项或在搜索框里按 Enter 就跳过去 (文件见 PickFile); Esc 回到对话框
     ;---------------------------------------------------------------------------
     static _UpdatePanel(isDialog) {
         dialog := 0
@@ -114,8 +115,9 @@ class QuickSwitch {
         search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
         panel.SetFont("s9")
         list := panel.AddListView("x0 y+6 w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 BackgroundFFFFFF", ["Name", "Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
-        icons := IL_Create(1)
-        IL_Add(icons, "shell32.dll", 4)
+        icons := IL_Create(2)
+        IL_Add(icons, "shell32.dll", 4)                                     ; 1 = 文件夹
+        IL_Add(icons, "shell32.dll", 1)                                     ; 2 = 文件
         list.SetImageList(icons)
         list.OnEvent("Click", (ctrl, row) => QuickSwitch._PanelJump(row))
         list.Add("Icon1", "X")                                              ; 先放一行才量得出行高 (LVM_APPROXIMATEVIEWRECT)
@@ -139,7 +141,7 @@ class QuickSwitch {
         list.Opt("-Redraw")
         list.Delete()
         for entry in folders
-            list.Add("Icon1", QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
+            list.Add(entry.HasOwnProp("IsFile") && entry.IsFile ? "Icon2" : "Icon1", QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
         list.ModifyCol(3, "Auto"), list.ModifyCol(1, "Auto")
         nameW := Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3)   ; LVM_GETCOLUMNWIDTH
         list.ModifyCol(1, Max(nameW, 120))
@@ -164,24 +166,27 @@ class QuickSwitch {
         return (name != "") ? name : folder
     }
 
-    ; 搜索框里的文字: 先过滤列表 (路径包含每个词), 再加上搜到的文件夹 (Everything 或内置索引, 最多 20 个)
+    ; 搜索框里的文字: 先过滤列表 (路径包含每个词), 再加上搜到的文件夹和文件 (Everything 或内置索引, 最多 30 个)
     static _SearchPanel() {
         if !IsObject(QuickSwitch._panelSearch)
             return
         term := Trim(QuickSwitch._panelSearch.Value)
-        QuickSwitch._ShowFolders(QuickSwitch.FilterFolders(QuickSwitch._panelBase, term, term = "" ? [] : QuickSwitch._FindFolders(term)))
+        QuickSwitch._ShowFolders(QuickSwitch.FilterFolders(QuickSwitch._panelBase, term, term = "" ? [] : QuickSwitch._FindItems(term)))
     }
 
-    static _FindFolders(term) {
-        found := []
+    ; [{Path, IsFolder}], 文件夹在前 (同一类里保持按名称匹配程度的顺序)
+    static _FindItems(term) {
+        folders := [], files := []
         try {
-            for item in FileSearchProvider.Query(term, 20, false, true)
-                found.Push(item.Path)
+            for item in FileSearchProvider.Query(term, 30, false)
+                (item.IsFolder ? folders : files).Push({Path: item.Path, IsFolder: item.IsFolder})
         }
-        return found
+        folders.Push(files*)
+        return folders
     }
 
-    ; 过滤 base (不区分大小写, 每个词都要出现在路径里), 再把 extra 里没有重复的路径加在后面 (来源标 "搜索")
+    ; 过滤 base (不区分大小写, 每个词都要出现在路径里), 再把 extra 里没有重复的加在后面:
+    ; extra 的每一项是路径 (文件夹) 或 {Path, IsFolder}; 文件夹的来源标 "搜索", 文件标 "文件"
     static FilterFolders(base, term, extra) {
         result := [], seen := Map(), words := StrSplit(Trim(term), " ")
         for entry in base {
@@ -194,11 +199,13 @@ class QuickSwitch {
                 seen[StrLower(RTrim(entry.Path, "\"))] := true
             }
         }
-        for folder in extra {
-            if seen.Has(StrLower(RTrim(folder, "\")))
+        for item in extra {
+            itemPath := IsObject(item) ? item.Path : item
+            isFile := IsObject(item) && !item.IsFolder
+            if seen.Has(StrLower(RTrim(itemPath, "\")))
                 continue
-            seen[StrLower(RTrim(folder, "\"))] := true
-            result.Push({Path: folder, Group: "search", Tag: I18n.T("QuickSwitch.TagSearch")})
+            seen[StrLower(RTrim(itemPath, "\"))] := true
+            result.Push({Path: itemPath, Group: "search", IsFile: isFile, Tag: I18n.T(isFile ? "QuickSwitch.TagFile" : "QuickSwitch.TagSearch")})
         }
         return result
     }
@@ -206,9 +213,12 @@ class QuickSwitch {
     static _PanelJump(row) {
         if (row < 1 || row > QuickSwitch._panelFolders.Length || !QuickSwitch._panelFor)
             return
-        folder := QuickSwitch._panelFolders[row].Path
+        entry := QuickSwitch._panelFolders[row]
         QuickSwitch._BackToDialog()
-        QuickSwitch.SetDialogPath(RTrim(folder, "\") "\")
+        if (entry.HasOwnProp("IsFile") && entry.IsFile)
+            QuickSwitch.PickFile(entry.Path)
+        else
+            QuickSwitch.SetDialogPath(RTrim(entry.Path, "\") "\")
         if (IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value != "") {   ; 跳过去之后清空搜索, 列表恢复原样
             QuickSwitch._panelSearch.Value := ""
             QuickSwitch._ShowFolders(QuickSwitch._panelBase)
@@ -511,6 +521,38 @@ class QuickSwitch {
             case "CabinetWClass": return QuickSwitch.ExplorerFolder(hwnd)
         }
         return ""
+    }
+
+    ; 在对话框里选中一个文件: "打开" 对话框直接打开它; "保存" 对话框跳到它所在的文件夹并填好文件名,
+    ; 不按 Enter (会覆盖已有的文件, 由用户自己确认)
+    static PickFile(filePath) {
+        if !FileExist(filePath)
+            return
+        dialog := WinExist("A")
+        if !QuickSwitch.IsSaveDialog(dialog)
+            return QuickSwitch.SetDialogPath(filePath)                      ; 文件名框里填完整路径再按 Enter 就是打开
+        SplitPath(filePath, &name, &dir)
+        QuickSwitch.SetDialogPath(RTrim(dir, "\") "\")
+        Sleep(200)                                                          ; 等对话框切换文件夹 (切换后文件名框会清空)
+        if (WinGetClass("ahk_id " dialog) = "Qt5QWindowIcon")
+            return SendText(name)
+        try {
+            ControlFocus("Edit1", "ahk_id " dialog)
+            ControlSetText(name, "Edit1", "ahk_id " dialog)
+        }
+    }
+
+    ; 保存对话框: 确定按钮 (Id 1) 或标题里有 "保存 / Save / 另存" 等字样
+    static IsSaveDialog(hwnd) {
+        title := "", button := ""
+        try title := WinGetTitle("ahk_id " hwnd)
+        if (hwnd && (buttonHwnd := DllCall("GetDlgItem", "Ptr", hwnd, "Int", 1, "Ptr")))
+            try button := ControlGetText(buttonHwnd)
+        return QuickSwitch.LooksLikeSave(title, button)
+    }
+
+    static LooksLikeSave(title, button) {
+        return RegExMatch(button " " title, "i)save|保存|另存|名前を付けて|speichern|enregistrer|guardar") > 0
     }
 
     static SetDialogPath(folder) {
