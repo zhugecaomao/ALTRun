@@ -10,6 +10,9 @@
 ;   - IgnoreApps 里的程序 (进程名) 复制的内容不会被记录
 ;   - Persist = 0 时只保存在内存里, 退出即清空
 ;
+; 保存: Data\ClipboardHistory.json; 超过 LargeText 个字的条目单独存成 Data\Clipboard\*.txt,
+; JSON 里只记文件名。每次复制都会保存, 这样不用每次都把很长的文字重新写一遍 (最多 200 条 x 10 万字)。
+;
 ; 设置 (ALTRun.json -> Features.Clipboard):
 ;   Enabled / Keyword / Hotkey / MaxItems / MaxItemLength / Persist / IgnoreApps
 ;
@@ -21,6 +24,8 @@
 class ClipboardProvider {
     static Id      := "Clipboard"
     static File    := A_ScriptDir "\Data\ClipboardHistory.json"
+    static Folder  := A_ScriptDir "\Data\Clipboard"                         ; 很长的条目
+    static LargeText := 4000
     static Entries := []              ; [Map("Text", "Time", "App")], 最新的在前
     static _pausedUntil := 0, _saveTimer := ""
 
@@ -196,8 +201,21 @@ class ClipboardProvider {
             return
         try {
             data := JSON.Parse(FileRead(ClipboardProvider.File, "UTF-8"))
-            if (data is Map && data.Has("Entries") && data["Entries"] is Array)
-                ClipboardProvider.Entries := data["Entries"]
+            if !(data is Map && data.Has("Entries") && data["Entries"] is Array)
+                return
+            entries := []
+            for entry in data["Entries"] {
+                if !(entry is Map)
+                    continue
+                if entry.Has("File") {                                      ; 很长的条目: 正文在单独的文件里
+                    try entry["Text"] := FileRead(ClipboardProvider.Folder "\" entry["File"], "UTF-8")
+                    catch
+                        continue
+                }
+                if entry.Has("Text")
+                    entries.Push(entry)
+            }
+            ClipboardProvider.Entries := entries
         } catch as e {
             Logger.Error("ClipboardProvider: cannot read history - " e.Message)
         }
@@ -208,10 +226,29 @@ class ClipboardProvider {
             return
         try {
             DirCreate(AppSettings.DataDir)
+            list := [], keep := Map()
+            for entry in ClipboardProvider.Entries {
+                text := entry["Text"]
+                stamp := entry.Has("Time") ? entry["Time"] : A_Now, source := entry.Has("App") ? entry["App"] : ""
+                if (StrLen(text) <= ClipboardProvider.LargeText) {
+                    list.Push(Map("Text", text, "Time", stamp, "App", source))
+                    continue
+                }
+                if (!entry.Has("File") || !FileExist(ClipboardProvider.Folder "\" entry["File"])) {   ; 新的长条目: 只写这一次
+                    DirCreate(ClipboardProvider.Folder)
+                    entry["File"] := stamp "-" Random(100000, 999999) ".txt"
+                    FileAppend(text, ClipboardProvider.Folder "\" entry["File"], "UTF-8")
+                }
+                keep[StrLower(entry["File"])] := true
+                list.Push(Map("File", entry["File"], "Time", stamp, "App", source))
+            }
             tmpFile := ClipboardProvider.File ".tmp"
             try FileDelete(tmpFile)
-            FileAppend(JSON.Stringify(Map("Entries", ClipboardProvider.Entries)), tmpFile, "UTF-8")
+            FileAppend(JSON.Stringify(Map("Entries", list)), tmpFile, "UTF-8")
             FileMove(tmpFile, ClipboardProvider.File, true)
+            Loop Files, ClipboardProvider.Folder "\*.txt"                   ; 删掉已经不在历史里的
+                if !keep.Has(StrLower(A_LoopFileName))
+                    try FileDelete(A_LoopFileFullPath)
         } catch as e {
             Logger.Error("ClipboardProvider: cannot write history - " e.Message)
         }

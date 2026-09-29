@@ -29,7 +29,7 @@ ALTRun 自动选择:
 | 情况 | 搜索范围 |
 |---|---|
 | [Everything](https://www.voidtools.com/) 正在运行 | 通过 Everything 的 IPC 接口直接查询**全盘**, 结果即时; 不需要 `Everything64.dll` 或 `es.exe` |
-| Everything 没有运行 | 内置索引: 在后台扫描 桌面、文档、下载 (深度 4 层, 最多 30000 项), 缓存在 `Data\FileIndex.json`, 每 30 分钟更新 |
+| Everything 没有运行 | 内置索引: 在后台扫描 桌面、文档、下载 (深度 4 层, 最多 30000 项), 缓存在 `Data\FileIndex.json`, 超过 30 分钟启动时重新扫描。ALTRun 启动时 Everything 正在运行的话, 内置索引不读也不扫描, 等 Everything 关掉、真的要用时再读 |
 
 偏好设置 → 文件搜索 页面顶部会显示 Everything 当前是否在运行。
 

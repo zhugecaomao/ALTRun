@@ -68,7 +68,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -299,6 +299,37 @@ class Tests {
 
     static Clipboard() {
         eq := (n, a, e) => TestRunner.Equal("Clipboard." n, a, e)
+        ; 保存: 很长的条目单独存成文件, 读回来和原来一样; 不在历史里的文件会删掉
+        saved := [ClipboardProvider.File, ClipboardProvider.Folder, ClipboardProvider.Entries, AppSettings.Feature("Clipboard")["Persist"]]
+        root := A_Temp "\ALTRun-test-clip-store"
+        try DirDelete(root, true)
+        DirCreate(root)
+        ClipboardProvider.File := root "\ClipboardHistory.json", ClipboardProvider.Folder := root "\Clipboard"
+        AppSettings.Feature("Clipboard")["Persist"] := 1
+        long := ""
+        Loop 500
+            long .= "line " A_Index " `"quoted`" \ tab`t end`r`n"
+        ClipboardProvider.Entries := [Map("Text", "short one", "Time", "20260929010101", "App", "a.exe"), Map("Text", long, "Time", "20260929010102", "App", "b.exe")]
+        ClipboardProvider.Save()
+        files := 0
+        Loop Files, root "\Clipboard\*.txt"
+            files++
+        eq("store: one file", files, 1)
+        eq("store: json has no long text", InStr(FileRead(ClipboardProvider.File, "UTF-8"), "line 250") ? 1 : 0, 0)
+        ClipboardProvider.Entries := []
+        ClipboardProvider._Load()
+        eq("store: reload count", ClipboardProvider.Entries.Length, 2)
+        eq("store: long text exact", ClipboardProvider.Entries[2]["Text"] == long ? 1 : 0, 1)
+        eq("store: short text", ClipboardProvider.Entries[1]["Text"], "short one")
+        ClipboardProvider.Entries.RemoveAt(2)
+        ClipboardProvider.Save()
+        files := 0
+        Loop Files, root "\Clipboard\*.txt"
+            files++
+        eq("store: orphan deleted", files, 0)
+        ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2], ClipboardProvider.Entries := saved[3]
+        AppSettings.Feature("Clipboard")["Persist"] := saved[4]
+        try DirDelete(root, true)
         ClipboardProvider.Entries := []
         eq("empty", ClipboardProvider.Search(SearchQuery("clip")).Length, 1)
         eq("empty invalid", ClipboardProvider.Search(SearchQuery("clip"))[1].Valid, false)
@@ -491,6 +522,16 @@ class Tests {
         CustomCommandProvider._ResetNarrowing()
 
         ; 网络位置的图标不读磁盘: UNC 路径用文件夹 / 扩展名的通用图标
+        ; 缓存上限: 只留最近用到的 (句柄为 0 的假图标, 不会调用 DestroyIcon)
+        savedIcons := IconCache._icons, savedUsed := IconCache._used
+        IconCache._icons := Map("a", 0, "b", 0, "c", 0, "d", 0), IconCache._used := Map("a", 5, "b", 1, "c", 9, "d", 3)
+        IconCache.Trim(2)
+        keys := ""
+        for key in IconCache._icons
+            keys .= key
+        eq("trim keeps newest", keys, "ac")
+        eq("trim used map", IconCache._used.Count, 2)
+        IconCache._icons := savedIcons, IconCache._used := savedUsed
         eq("remote unc", IconCache.IsRemote("\\server\share\PT1931"), true)
         eq("remote local", IconCache.IsRemote("C:\Windows"), false)
         eq("remote folder key", IconCache._CacheKey("\\server\share\PT1931 - 24 NIR"), "folder:")
@@ -1525,6 +1566,36 @@ Func | PTTools | PT Tools (AHK)=99
         eq("list cell", PreferencesWindow._Cell(Map("Key", "~MButton"), "Key"), "Middle mouse button")
     }
 
+    ; JSON: 转义、数字、嵌套、往返; 大文件读取是线性的 (以前按值传整段文本, 越大越慢)
+    static JsonReadWrite() {
+        eq := (n, a, e) => TestRunner.Equal("Json." n, a, e)
+        ok := (n, c) => TestRunner.True("Json." n, c)
+        data := JSON.Parse('{"a": "x\"y", "b": [1, -2.5, 3e2, true, false, null], "c": {"d": "\u4e2d\n\t\/\\"}, "e": "", "f": "C:\\Temp\\"}')
+        eq("escaped quote", data["a"], 'x"y')
+        eq("numbers", data["b"][1] "|" data["b"][2] "|" data["b"][3], "1|-2.5|300.0")
+        eq("true false null", data["b"][4] "|" data["b"][5] "|" data["b"][6], "1|0|")
+        eq("escapes", data["c"]["d"], "中`n`t/\")
+        eq("empty string", data["e"], "")
+        eq("backslash before quote", data["f"], "C:\Temp\")
+        eq("empty containers", JSON.Stringify(JSON.Parse('{"x": [], "y": {}}')), '{`r`n  "x": [],`r`n  "y": {}`r`n}')
+        original := Map("Text", 'line1`r`nline2 "quoted" \ back`ttab', "List", [1, "two", Map("k", "v")])
+        again := JSON.Parse(JSON.Stringify(original))
+        eq("round trip text", again["Text"], original["Text"])
+        eq("round trip nested", again["List"][3]["k"], "v")
+        for bad in ['{"a": 1', '{"a" 1}', '[1, 2', '"open', '{a: 1}', '[1 2]', '@']
+            ok("error: " bad, !JsonReadWrite_Parses(bad))
+
+        paths := []
+        Loop 20000
+            paths.Push("C:\Users\someone\Documents\Folder" A_Index "\Report " A_Index ".docx")
+        text := JSON.Stringify(Map("Paths", paths))
+        start := A_TickCount
+        parsed := JSON.Parse(text)
+        elapsed := A_TickCount - start
+        eq("big file", parsed["Paths"].Length "|" parsed["Paths"][20000], "20000|" paths[20000])
+        ok("big file is fast (" elapsed " ms)", elapsed < 3000)             ; 以前要好几分钟
+    }
+
     static Misc() {
         TestRunner.True("UpdateChecker.newer", UpdateChecker.Compare("2026.10.01", "2026.09.23") > 0)
         TestRunner.True("UpdateChecker.same", UpdateChecker.Compare("2026.09.23", "2026.09.23") = 0)
@@ -1539,4 +1610,12 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("System search", SystemProvider.Search(SearchQuery("lock")).Length >= 1)
         TestRunner.Equal("Color", Win.ColorToBgr("#112233"), 0x332211)
     }
+}
+
+JsonReadWrite_Parses(text) {
+    try {
+        JSON.Parse(text)
+        return true
+    }
+    return false
 }

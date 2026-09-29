@@ -7,6 +7,8 @@
 ; 扫描在后台分批进行 (每次定时器最多约 15 ms, 用一个待扫描文件夹的栈代替递归),
 ; 扫描期间界面照常响应; 结果缓存在 Data\FileIndex.json, 下次启动直接读,
 ; 超过 RefreshMinutes 分钟再重新扫描。
+; 启动时 Everything 正在运行 (并且 UseEverything) 就不读缓存也不扫描 (最多 3 万条, 用不上),
+; 等真的要用内置索引时 (Everything 关掉了) 再读。
 ;
 ; 用法:
 ;   FileIndex.Start()                      启动时 (读缓存, 需要时开始后台扫描)
@@ -18,16 +20,36 @@ class FileIndex {
     static Paths    := [], Names := [], Folders := []     ; 三个平行数组: 完整路径 / 小写文件名 / 是否文件夹
     static Scanning := false
     static _stack := [], _new := "", _timer := "", _lastNeedle := "", _lastMatches := ""
+    static Deferred := false                                               ; 启动时有 Everything, 还没读缓存
 
     static Start() {
+        options := AppSettings.Feature("FileSearch")
+        if (options["UseEverything"] && Everything.IsRunning()) {
+            FileIndex.Deferred := true
+            Logger.Debug("FileIndex: Everything is running, built-in index not loaded")
+            return
+        }
+        FileIndex._Load(5000)
+    }
+
+    ; 读缓存; 没有缓存或已经过期时 delay 毫秒后在后台重新扫描
+    static _Load(delay) {
+        FileIndex.Deferred := false
         if FileIndex._LoadCache() && !FileIndex._CacheExpired()
             return
-        SetTimer(() => FileIndex.Rebuild(), -5000)
+        SetTimer(() => FileIndex.Rebuild(), -delay)
+    }
+
+    ; 要用内置索引了 (Everything 没有运行): 启动时跳过的话现在读
+    static EnsureLoaded() {
+        if FileIndex.Deferred
+            FileIndex._Load(10)
     }
 
     static Rebuild() {
         if FileIndex.Scanning
             return
+        FileIndex.Deferred := false
         options := AppSettings.Feature("FileSearch")
         FileIndex._stack := []
         for folder in options["ScopeFolders"] {
@@ -83,6 +105,7 @@ class FileIndex {
     ; 继续输入时只在上一次匹配到的里面找 (只用 "包含" 类规则, 范围只会缩小)。
     ; foldersOnly: 只要文件夹 ("folder bk")
     static Search(needle, limit, foldersOnly := false) {
+        FileIndex.EnsureLoaded()
         needle := StrLower(Trim(needle))
         if (needle = "")
             return []

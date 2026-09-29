@@ -85,5 +85,5 @@
 隐私:
 - 密码管理器 (KeePass、1Password、Bitwarden...) 复制的内容不会记录; 带 "不要加入剪贴板历史" 标记的内容也不会记录
 - `Features.Clipboard.IgnoreApps` 可以加上其它不想记录的程序
-- `Persist = 0` 时只保存在内存里, 退出即清空; 否则保存在 `Data\ClipboardHistory.json`
+- `Persist = 0` 时只保存在内存里, 退出即清空; 否则保存在 `Data\ClipboardHistory.json` (很长的条目单独存在 `Data\Clipboard\`)
 - 偏好设置 → 剪贴板历史 里可以清空历史

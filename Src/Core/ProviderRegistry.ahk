@@ -25,6 +25,7 @@
 class ProviderRegistry {
     static Providers  := []
     static MaxResults := 50
+    static SlowSearchMs := 30                                               ; 超过这么多毫秒的搜索写进调试日志
 
     static Register(provider) {
         ProviderRegistry.Providers.Push(provider)
@@ -47,7 +48,9 @@ class ProviderRegistry {
             if !ProviderRegistry.IsEnabled(provider)
                 continue
             try {
+                start := Logger.Ms()
                 provider.Init()
+                Logger.Time("startup: " provider.Id ".Init", start)
             } catch as e {
                 Logger.Error("ProviderRegistry: " provider.Id ".Init failed - " e.Message)
             }
@@ -59,7 +62,9 @@ class ProviderRegistry {
             if !ProviderRegistry.IsEnabled(provider) || !HasMethod(provider, "Warm")
                 continue
             try {
+                start := Logger.Ms()
                 provider.Warm()
+                Logger.Time("warm-up: " provider.Id, start)
             } catch as e {
                 Logger.Error("ProviderRegistry: " provider.Id ".Warm failed - " e.Message)
             }
@@ -71,12 +76,15 @@ class ProviderRegistry {
         if (query.Text = "")
             return ProviderRegistry.EmptyResults()
 
-        results := []
+        results := [], started := Logger.Ms(), slow := ""
         for provider in ProviderRegistry.Providers {
             if !ProviderRegistry.IsEnabled(provider)
                 continue
             try {
+                start := Logger.Ms()
                 items := provider.Search(query)
+                if ((elapsed := Logger.Ms() - start) >= 10)
+                    slow .= " " provider.Id "=" Round(elapsed)
             } catch as e {
                 Logger.Error("ProviderRegistry: " provider.Id ".Search failed - " e.Message)
                 continue
@@ -95,6 +103,8 @@ class ProviderRegistry {
             results.Length := ProviderRegistry.MaxResults
         if (!results.Length && ProviderRegistry.IsEnabled(WebSearchProvider))
             results := WebSearchProvider.Fallbacks(query)
+        if (Logger.Enabled && (total := Logger.Ms() - started) >= ProviderRegistry.SlowSearchMs)   ; 慢的搜索记进日志 (不记输入的文字)
+            Logger.Debug("Perf: search (" StrLen(rawText) " chars) " Round(total) " ms," slow)
         return results
     }
 

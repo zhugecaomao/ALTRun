@@ -14,8 +14,8 @@ class JSON {
     ;--- 解析入口 ----------------------------------------------------------------
     static Parse(text) {
         pos := 1
-        value := JSON._Value(text, &pos)
-        JSON._Space(text, &pos)
+        value := JSON._Value(&text, &pos)
+        JSON._Space(&text, &pos)
         return value
     }
 
@@ -77,23 +77,24 @@ class JSON {
         return out
     }
 
-    ; 跳过空白。先做单字符快判, 绝大多数 token 前没有空白, 可省掉一次正则。
-    static _Space(text, &pos) {
-        ch := SubStr(text, pos, 1)
-        if (ch != " " && ch != "`t" && ch != "`r" && ch != "`n")
-            return
-        if RegExMatch(text, "\s*", &m, pos)
-            pos += m.Len
+    ; 整段文本一律按引用 (&text) 传给内部函数: AutoHotkey 按值传字符串时会复制一份, 每读一个值
+    ; 就复制一次整个文件, 总耗时随文件大小平方增长 (6000 条路径要 9 秒, 3 万条要几分钟)。
+    ; 读取时也只用 InStr / SubStr 按位置前进, 不对整段文本做正则。
+
+    ; 跳过空白 (空格、Tab、回车、换行)
+    static _Space(&text, &pos) {
+        while ((ch := Ord(SubStr(text, pos, 1))) = 32 || ch = 9 || ch = 13 || ch = 10)
+            pos++
     }
 
-    static _Value(text, &pos) {
-        JSON._Space(text, &pos)
+    static _Value(&text, &pos) {
+        JSON._Space(&text, &pos)
         ch := SubStr(text, pos, 1)
 
         switch ch, true {
-            case "{" : return JSON._Object(text, &pos)
-            case "[" : return JSON._Array(text, &pos)
-            case '"' : return JSON._String(text, &pos)
+            case "{" : return JSON._Object(&text, &pos)
+            case "[" : return JSON._Array(&text, &pos)
+            case '"' : return JSON._String(&text, &pos)
         }
         if (SubStr(text, pos, 4) = "true") {
             pos += 4
@@ -107,30 +108,36 @@ class JSON {
             pos += 4
             return ""
         }
-        if (RegExMatch(text, "-?\d++(\.\d++)?([eE][-+]?\d++)?", &m, pos) && m.Pos = pos) {
-            pos += m.Len
-            return m[0] + 0
+        stop := pos                                 ; 数字: 先取出连续的数字字符, 再只对这一小段用正则检查
+        while ((c := SubStr(text, stop, 1)) != "" && InStr("0123456789+-.eE", c, true))
+            stop++
+        numText := SubStr(text, pos, stop - pos)
+        if (numText != "" && RegExMatch(numText, "^-?\d+(\.\d+)?([eE][-+]?\d+)?$")) {
+            pos := stop
+            return numText + 0
         }
         throw Error("JSON: 位置 " pos " 处有无法识别的字符")
     }
 
-    static _Object(text, &pos) {
+    static _Object(&text, &pos) {
         obj := Map()
         pos++                                       ; 跳过 {
-        JSON._Space(text, &pos)
+        JSON._Space(&text, &pos)
         if (SubStr(text, pos, 1) = "}") {
             pos++
             return obj
         }
         loop {
-            JSON._Space(text, &pos)
-            key := JSON._String(text, &pos)
-            JSON._Space(text, &pos)
+            JSON._Space(&text, &pos)
+            if (SubStr(text, pos, 1) != '"')
+                throw Error("JSON: 位置 " pos " 处应该是键名")
+            key := JSON._String(&text, &pos)
+            JSON._Space(&text, &pos)
             if (SubStr(text, pos, 1) != ":")
                 throw Error("JSON: 位置 " pos " 处缺少 ':'")
             pos++
-            obj[key] := JSON._Value(text, &pos)
-            JSON._Space(text, &pos)
+            obj[key] := JSON._Value(&text, &pos)
+            JSON._Space(&text, &pos)
             ch := SubStr(text, pos, 1)
             pos++
             if (ch = ",")
@@ -141,17 +148,17 @@ class JSON {
         }
     }
 
-    static _Array(text, &pos) {
+    static _Array(&text, &pos) {
         items := Array()
         pos++                                       ; 跳过 [
-        JSON._Space(text, &pos)
+        JSON._Space(&text, &pos)
         if (SubStr(text, pos, 1) = "]") {
             pos++
             return items
         }
         loop {
-            items.Push(JSON._Value(text, &pos))
-            JSON._Space(text, &pos)
+            items.Push(JSON._Value(&text, &pos))
+            JSON._Space(&text, &pos)
             ch := SubStr(text, pos, 1)
             pos++
             if (ch = ",")
@@ -162,27 +169,33 @@ class JSON {
         }
     }
 
-    static _String(text, &pos) {
-        ; 一次正则吃掉整个字符串, 比逐字符扫描快很多
-        static rx := '"((?:[^"\\]|\\.)*+)"'
-        if !(RegExMatch(text, rx, &m, pos) && m.Pos = pos)
-            throw Error("JSON: 位置 " pos " 处字符串格式错误")
-        pos += m.Len
-        return JSON._Unescape(m[1])
+    ; pos 指向开头的引号: 用 InStr 找下一个引号, 前面有奇数个反斜杠的是转义的引号, 继续往后找
+    static _String(&text, &pos) {
+        from := pos + 1
+        loop {
+            quote := InStr(text, '"', true, from)
+            if !quote
+                throw Error("JSON: 位置 " pos " 处的字符串没有结束")
+            back := quote - 1
+            while (SubStr(text, back, 1) = "\")
+                back--
+            if Mod(quote - 1 - back, 2) = 0         ; 偶数个反斜杠: 这个引号就是结尾
+                break
+            from := quote + 1
+        }
+        raw := SubStr(text, pos + 1, quote - pos - 1)
+        pos := quote + 1
+        return JSON._Unescape(raw)
     }
 
+    ; 按反斜杠分段拼接 (不逐个字符处理)
     static _Unescape(str) {
-        if !InStr(str, "\")                         ; 没有转义符就直接返回
+        if !InStr(str, "\")                        ; 没有转义符就直接返回
             return str
-        out := "", i := 1, len := StrLen(str)
-        while (i <= len) {
-            ch := SubStr(str, i, 1)
-            if (ch != "\") {
-                out .= ch
-                i++
-                continue
-            }
-            esc := SubStr(str, i + 1, 1)
+        out := "", i := 1
+        while (j := InStr(str, "\", true, i)) {
+            out .= SubStr(str, i, j - i)
+            esc := SubStr(str, j + 1, 1)
             switch esc, true {
                 case '"': out .= '"'
                 case "\": out .= "\"
@@ -193,12 +206,12 @@ class JSON {
                 case "r": out .= "`r"
                 case "t": out .= "`t"
                 case "u":
-                    out .= Chr("0x" SubStr(str, i + 2, 4))
-                    i += 4
+                    out .= Chr("0x" SubStr(str, j + 2, 4))
+                    j += 4
                 default : out .= esc
             }
-            i += 2
+            i := j + 2
         }
-        return out
+        return out SubStr(str, i)
     }
 }
