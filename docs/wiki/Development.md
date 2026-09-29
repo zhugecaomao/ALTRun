@@ -95,6 +95,8 @@ AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景
 见仓库的 [CONTRIBUTING.md](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md)。几个 AutoHotkey v2 的坑:
 - 名字不区分大小写: 局部变量不要和类同名 (`pinyin` 会遮住 `Pinyin` 类), 同一个类里方法和属性不要只差大小写
 - 很大的 `static X := Map(...)` 会报 "Declaration too long", 改成在方法里构造
+- 字符串按值传给函数时会整段复制: 在循环里反复把一个大字符串 (整个文件) 传给函数, 耗时会随长度平方增长, 要按引用传 (`&text`), 见 `Lib\JSON.ahk`
+- 调试日志 (`General.SaveLog`) 里 `Perf:` 开头的行是启动各阶段和慢搜索的耗时; 用 `Logger.Ms()` / `Logger.Time(label, start)` 记录新的
 - 嵌套函数修改外层变量时, 通过对象传回结果 (`state := {Result: ""}`)
 - 所有 `Edit` 控件都写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行
 - `#Warn All` 的警告都当作错误处理

@@ -39,7 +39,7 @@
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |
 | CheckForUpdates | 1 | 在后台每天检查一次 GitHub 上的新版本, 有新版本时显示在搜索窗口里, 见 [一键更新](Installation#一键更新) |
-| SaveLog | 0 | 写入调试日志 (`%Temp%\ALTRun.log`) |
+| SaveLog | 0 | 写入调试日志 (`%Temp%\ALTRun.log`), 包括启动各阶段和超过 30 ms 的搜索用了多少毫秒 (`Perf:` 开头, 不记输入的文字) |
 | HistorySize | 30 | 记住多少条最近的搜索 |
 
 ## Appearance 外观
@@ -83,7 +83,7 @@
 | Hotkey | `^!c` | 直接打开剪贴板历史的热键 |
 | MaxItems | 200 | 保存多少条 |
 | MaxItemLength | 100000 | 超过这么多字的内容不记录 |
-| Persist | 1 | 保存到磁盘 (`Data\ClipboardHistory.json`); 0 = 只在内存里 |
+| Persist | 1 | 保存到磁盘 (`Data\ClipboardHistory.json`, 超过 4000 字的条目单独存在 `Data\Clipboard\`); 0 = 只在内存里 |
 | IgnoreApps | KeePass、KeePassXC、1Password、Bitwarden | 不记录这些程序复制的内容 (进程名) |
 
 ### Calculator 计算器
@@ -149,5 +149,5 @@
 | `FileIndex.json` | 内置文件索引 (没有 Everything 时) |
 | `Knowledge.json` | 学习排序和最近的搜索 |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) |
-| `ClipboardHistory.json` | 剪贴板历史 |
+| `ClipboardHistory.json` `Clipboard\` | 剪贴板历史 (很长的条目单独存成文件) |
 | `Update.json` | 上次检查更新的时间、跳过的版本 |

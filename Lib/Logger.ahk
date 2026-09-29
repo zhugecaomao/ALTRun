@@ -8,6 +8,7 @@
 ;   Logger.Debug("xxx")  /  Logger.Warn("xxx")  /  Logger.Error("xxx")
 ;   Logger.Flush()   ; 立即把缓冲区写盘, 一般不用手动调, 退出时会自动调用一次
 ;   Logger.Rotate()  ; 日志文件过大时截断保留一份 .old, 启动时自动调用一次
+;   start := Logger.Ms(), ..., Logger.Time("load index", start)   ; 记录耗时 "Perf: load index 12 ms"
 ;
 ; 是否写盘由 Logger.Enabled 决定, App 启动时按设置 General.SaveLog 赋值。
 ;===============================================================================
@@ -19,6 +20,23 @@ class Logger {
     static Enabled := true
 
     static Debug(msg) => Logger._Write("DBG", msg)
+
+    ; 高精度的毫秒数 (QueryPerformanceCounter; A_TickCount 的精度只有 10 ~ 16 ms)
+    static Ms() {
+        static freq := 0
+        if !freq
+            DllCall("QueryPerformanceFrequency", "Int64*", &freq)
+        DllCall("QueryPerformanceCounter", "Int64*", &now := 0)
+        return now * 1000 / freq
+    }
+
+    ; 从 start (Logger.Ms()) 到现在的耗时写进日志, 返回毫秒数
+    static Time(label, start) {
+        elapsed := Logger.Ms() - start
+        if Logger.Enabled
+            Logger._Write("DBG", "Perf: " label " " Round(elapsed) " ms")
+        return elapsed
+    }
     static Warn(msg)  => Logger._Write("WRN", msg)
     static Error(msg) => Logger._Write("ERR", msg)
 

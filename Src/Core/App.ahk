@@ -31,21 +31,26 @@ class App {
     static _watchTimer := ""
 
     static Start() {
+        started := Logger.Ms()
         Logger.Rotate()
         App._MoveLegacyResources()
         AppSettings.Load()
         Logger.Enabled := AppSettings.General["SaveLog"] ? true : false
         Logger.Debug("===== " App.Name " " App.Version " starting =====")
+        Logger.Time("startup: settings", started)                          ; 打开 "写入调试日志" 时记录启动各阶段的耗时
+        phase := Logger.Ms()
         I18n.Init(AppSettings.General["Language"])
         Knowledge.Load()
         Usage.Load()
         ThemeManager.Load(AppSettings.Appearance["Theme"])
+        Logger.Time("startup: learning, usage, theme", phase)
 
         for provider in [ClipboardProvider, ApplicationProvider, CustomCommandProvider, SnippetProvider, SystemProvider
                         , CalculatorProvider, WebSearchProvider, FileSearchProvider, TerminalProvider, HelpProvider]
             ProviderRegistry.Register(provider)
         ProviderRegistry.InitAll()
 
+        phase := Logger.Ms()
         App._SetIcon()                                                      ; 在创建窗口之前: 窗口的图标跟随托盘图标
         SearchWindow.Create()
         App._CreateTrayMenu()
@@ -56,6 +61,7 @@ class App {
         PTToolsWindow.Load(AppSettings.Extension("PTTools"))
         App._UpdateShellShortcuts()
         OnExit((*) => App._OnExit())
+        Logger.Time("startup: window, tray, hotkeys, extensions", phase)
 
         if (AppSettings.ImportedFrom != "")
             App.Toast(I18n.T("Settings.ImportedIni", AppSettings.ImportedFrom), 6000)
@@ -68,6 +74,7 @@ class App {
         if AppSettings.General["CheckForUpdates"]
             UpdateChecker.Schedule()                                        ; 后台每天检查一次, 新版本显示在搜索窗口里
 
+        Logger.Time("startup: total", started)
         App._HandleCommandLine()
     }
 

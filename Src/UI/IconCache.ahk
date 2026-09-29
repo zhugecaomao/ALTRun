@@ -14,6 +14,10 @@
 ; 普通文件夹也用通用的文件夹图标 (FolderIcon): 只有带 desktop.ini (自定义图标, 如 OneDrive、
 ; 桌面、下载) 的文件夹和磁盘根目录才单独读取。
 ;
+;
+; 缓存最多 MaxIcons 个: ALTRun 常常开机后连续运行几周, 图标句柄 (每个程序最多 1 万个) 不能只增不减。
+; 超过时去掉最久没用到的 (DestroyIcon), 剩 80%; 再用到时重新加载。
+;
 ; 读取图标 (特别是 exe/lnk、网络路径) 可能要几毫秒到几十毫秒, 所以 Get() 遇到
 ; 还没加载的图标先返回 0 并放进队列, 由定时器在后台加载, 加载完调用 OnLoaded
 ; (SearchWindow 在那里重画列表)。这样打字时不会被图标卡住。
@@ -31,13 +35,17 @@ class IconCache {
     static _icons   := Map()
     static _queue   := Map()              ; key -> spec, 等待后台加载
     static _timer   := ""
+    static MaxIcons := 1500
+    static _used    := Map(), _tick := 0  ; key -> 最后一次用到的序号 (越大越新)
 
     static Get(spec) {
         if (spec = "")
             return 0
         key := IconCache._CacheKey(spec)
-        if IconCache._icons.Has(key)
+        if IconCache._icons.Has(key) {
+            IconCache._used[key] := ++IconCache._tick
             return IconCache._icons[key]
+        }
         if !IconCache._queue.Has(key) {
             IconCache._queue[key] := IconCache._LoadSpec(spec, key)
             if (IconCache._timer = "")
@@ -55,8 +63,9 @@ class IconCache {
         if !IconCache._icons.Has(key) {
             hIcon := 0
             try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
-            IconCache._icons[key] := hIcon
+            IconCache._Store(key, hIcon)
         }
+        IconCache._used[key] := ++IconCache._tick
         return IconCache._icons[key]
     }
 
@@ -107,7 +116,7 @@ class IconCache {
             IconCache._queue.Delete(key)
             hIcon := 0
             try hIcon := IconCache._Load(spec)
-            IconCache._icons[key] := hIcon
+            IconCache._Store(key, hIcon)
             loaded := true
             if (IconCache._Ms() - start > 10)
                 break
@@ -131,7 +140,34 @@ class IconCache {
         for key, hIcon in IconCache._icons
             if hIcon
                 DllCall("DestroyIcon", "Ptr", hIcon)
-        IconCache._icons := Map()
+        IconCache._icons := Map(), IconCache._used := Map()
+    }
+
+    static _Store(key, hIcon) {
+        IconCache._icons[key] := hIcon
+        IconCache._used[key] := ++IconCache._tick
+        if (IconCache._icons.Count > IconCache.MaxIcons)
+            IconCache.Trim(Round(IconCache.MaxIcons * 0.8))
+    }
+
+    ; 只留 keep 个最近用到的图标
+    static Trim(keep) {
+        drop := IconCache._icons.Count - keep
+        if (drop <= 0)
+            return
+        lines := ""
+        for key in IconCache._icons
+            lines .= (IconCache._used.Has(key) ? IconCache._used[key] : 0) "`t" key "`n"
+        for line in StrSplit(RTrim(Sort(lines, "N"), "`n"), "`n") {
+            if (drop-- <= 0)
+                break
+            key := SubStr(line, InStr(line, "`t") + 1)
+            if (hIcon := IconCache._icons[key])
+                DllCall("DestroyIcon", "Ptr", hIcon)
+            IconCache._icons.Delete(key)
+            if IconCache._used.Has(key)
+                IconCache._used.Delete(key)
+        }
     }
 
     static _CacheKey(spec) {
