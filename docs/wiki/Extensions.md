@@ -3,7 +3,15 @@
 搜索窗口以外的功能。对话框快速跳转和一键加日期各有一页设置 (偏好设置 → 对话框跳转 / 一键加日期)。
 
 ## 对话框快速跳转
-做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。在标准的 "打开 / 保存文件" 对话框里:
+做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。
+
+**文件夹面板** (默认打开): 对话框一出现, 右边 (放不下时左边) 就自动贴一个 "跳到文件夹" 列表, 点一下对话框就跳过去, 不用记热键:
+- 列出每个 Total Commander 窗口的当前面板和另一侧面板、打开的资源管理器窗口、最近用过的文件夹;
+- 面板不抢焦点, 对话框不在前台时隐藏;
+- 切到 TC 换了目录再回到对话框, 列表会刷新;
+- 不想要的话: 偏好设置 → 对话框跳转 → "打开对话框时在旁边显示文件夹列表" (`ShowPanel`)。
+
+键盘操作, 在标准的 "打开 / 保存文件" 对话框里:
 - `Ctrl+G`: 跳到 Total Commander 当前打开的文件夹
 - `Ctrl+E`: 跳到资源管理器当前打开的文件夹
 - `Ctrl+Shift+G`: **文件夹菜单** (和 Listary 的 Quick Switch 菜单一样), 列出:
@@ -20,7 +28,7 @@
 - **不生效的窗口**: 在这些窗口里不跳转
 - **不自动跳转的对话框**: 这些对话框里不自动跳转, 仍然可以按热键
 
-设置文件里是 `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `MenuHotkey` / `RecentFolders` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows` / `AutoSwitchExclude` (窗口条件用逗号分隔)。
+设置文件里是 `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `MenuHotkey` / `RecentFolders` / `ShowPanel` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows` / `AutoSwitchExclude` (窗口条件用逗号分隔)。
 
 ## 一键加日期
 按热键 (默认 `Ctrl+D`, 可以改):

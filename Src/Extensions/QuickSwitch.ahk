@@ -6,9 +6,11 @@
 ; 对话框标题上会提示这两个热键。AutoSwitch = 1 时, 从 TC 切换到对话框会自动跳转。
 ; 文件夹菜单 (MenuHotkey, 默认 Ctrl+Shift+G, 和 Listary 的 Quick Switch 菜单一样): 列出所有 TC 窗口的
 ; 两个面板、打开的资源管理器窗口和最近用过的文件夹 (Windows 的 "最近使用的项目"), 选一个对话框就跳过去。
+; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 一样): 对话框一出现, 旁边自动贴一个同样内容的列表, 点一下就跳过去,
+; 不用记热键。面板不抢焦点, 对话框不在前台时隐藏, 回到对话框时刷新 (TC 里换了目录也能马上看到)。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
-;   Enabled / ExplorerHotkey / TotalCmdHotkey / MenuHotkey / RecentFolders / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
+;   Enabled / ExplorerHotkey / TotalCmdHotkey / MenuHotkey / RecentFolders / ShowPanel / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
 ;   DialogWindows 等是逗号分隔的窗口条件 (ahk_class / ahk_exe / 标题)
 ;
 ; 用法:
@@ -21,6 +23,7 @@
 class QuickSwitch {
     static Options := Map()
     static _titles := Map(), _hintedHwnd := 0, _lastWasTC := false
+    static _panel := "", _panelFor := 0, _panelFolders := [], _panelPos := ""
 
     static Init(options) {
         QuickSwitch.Options := options
@@ -58,6 +61,109 @@ class QuickSwitch {
             QuickSwitch.SyncTotalCmdPath(true)
         QuickSwitch._lastWasTC := WinActive("ahk_class TTOTAL_CMD") ? true : false
         QuickSwitch._UpdateHint(isDialog)
+        if (QuickSwitch.Options.Has("ShowPanel") && QuickSwitch.Options["ShowPanel"])
+            QuickSwitch._UpdatePanel(isDialog)
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 文件夹面板: 贴在对话框右边 (放不下时左边), 不抢焦点
+    ;---------------------------------------------------------------------------
+    static _UpdatePanel(isDialog) {
+        dialog := 0
+        try dialog := isDialog ? WinGetID("A") : 0
+        if !dialog
+            return QuickSwitch.HidePanel()
+        if (dialog != QuickSwitch._panelFor)                                ; 新的对话框, 或者从别的窗口切回来: 重新列出文件夹
+            QuickSwitch._BuildPanel(dialog)
+        QuickSwitch._PlacePanel(dialog)
+    }
+
+    static HidePanel() {
+        if IsObject(QuickSwitch._panel)
+            try QuickSwitch._panel.Destroy()
+        QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := ""
+    }
+
+    static _BuildPanel(dialog) {
+        QuickSwitch.HidePanel()
+        QuickSwitch._panelFor := dialog                                     ; 没有文件夹时也记下, 不用每 250 ms 重试
+        folders := QuickSwitch.MenuFolders()
+        QuickSwitch._panelFolders := folders
+        if !folders.Length
+            return
+        panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border +E0x08000000", "ALTRun Quick Switch")   ; WS_EX_NOACTIVATE: 点击不抢焦点
+        panel.MarginX := 0, panel.MarginY := 0
+        panel.SetFont("s9", "Segoe UI")
+        hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
+        panel.AddText("x8 y5 w" (QuickSwitch.PanelWidth - 16), I18n.T("QuickSwitch.PanelTitle") hint)
+        list := panel.AddListView("x0 y24 w" QuickSwitch.PanelWidth " h100 -Hdr -Multi -E0x200 +LV0x10400", ["Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
+        icons := IL_Create(1)
+        IL_Add(icons, "shell32.dll", 4)
+        list.SetImageList(icons)
+        for entry in folders
+            list.Add("Icon1", entry.Path, entry.Tag)
+        list.ModifyCol(2, "Auto")                                            ; 来源 (TC / 资源管理器 / 最近) 按内容宽度, 剩下的给路径
+        rows := Min(folders.Length, 12)
+        list.ModifyCol(1, QuickSwitch.PanelWidth - SendMessage(0x101D, 1, 0, list) - (folders.Length > rows ? 22 : 4))   ; LVM_GETCOLUMNWIDTH; 有滚动条时留出宽度
+        size := SendMessage(0x1040, rows, 0, list)                          ; LVM_APPROXIMATEVIEWRECT: rows 行需要的高度
+        list.Move(, , , (size >> 16) + 4)
+        list.OnEvent("Click", (ctrl, row) => QuickSwitch._PanelJump(row))
+        QuickSwitch._panel := panel
+    }
+
+    static PanelWidth := 380
+
+    static _PanelJump(row) {
+        if (row < 1 || row > QuickSwitch._panelFolders.Length || !QuickSwitch._panelFor)
+            return
+        if !WinActive("ahk_id " QuickSwitch._panelFor)
+            try WinActivate("ahk_id " QuickSwitch._panelFor)
+        QuickSwitch.SetDialogPath(RTrim(QuickSwitch._panelFolders[row].Path, "\") "\")
+    }
+
+    static _PlacePanel(dialog) {
+        if !IsObject(QuickSwitch._panel)
+            return
+        rect := QuickSwitch._FrameRect(dialog)
+        if !IsObject(rect)
+            return QuickSwitch.HidePanel()
+        x := rect.X, y := rect.Y, w := rect.W, h := rect.H
+        if !QuickSwitch._panelPos {
+            QuickSwitch._panel.Show("NA Hide AutoSize")
+        }
+        QuickSwitch._panel.GetPos(, , &panelW, &panelH)
+        area := Win.WorkAreaAt(x + w // 2, y + h // 2)
+        pos := QuickSwitch.PanelPosition(x, y, w, h, panelW, panelH, area)
+        key := pos.X "," pos.Y
+        if (key != QuickSwitch._panelPos) {                                 ; 对话框移动了才重新摆
+            QuickSwitch._panel.Show("NA x" pos.X " y" pos.Y)
+            QuickSwitch._panelPos := key
+        }
+    }
+
+    ; 窗口看得见的边框 (Win10/11 窗口外面还有一圈看不见的调整大小的边框, WinGetPos 包括它)
+    static _FrameRect(hwnd) {
+        rect := Buffer(16, 0)
+        if !DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16) {   ; DWMWA_EXTENDED_FRAME_BOUNDS
+            left := NumGet(rect, 0, "Int"), top := NumGet(rect, 4, "Int")
+            if (NumGet(rect, 8, "Int") > left)
+                return {X: left, Y: top, W: NumGet(rect, 8, "Int") - left, H: NumGet(rect, 12, "Int") - top}
+        }
+        try {
+            WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+            return {X: x, Y: y, W: w, H: h}
+        }
+        return ""
+    }
+
+    ; 面板的位置: 对话框右边, 顶端对齐; 右边放不下时放左边; 两边都放不下时放在对话框里面的右下角
+    static PanelPosition(x, y, w, h, panelW, panelH, area) {
+        top := Max(area.Top, Min(y, area.Bottom - panelH))
+        if (x + w + panelW <= area.Right)
+            return {X: x + w, Y: top}
+        if (x - panelW >= area.Left)
+            return {X: x - panelW, Y: top}
+        return {X: Max(area.Left, x + w - panelW - 8), Y: Max(area.Top, y + h - panelH - 60)}
     }
 
     static _UpdateHint(isDialog) {

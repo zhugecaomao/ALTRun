@@ -473,7 +473,8 @@ class PreferencesWindow {
         PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 2)
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
-        PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
+        PreferencesWindow._Check(base "ShowPanel", "Prefs.QSPanel", , , "Prefs.Group.Options")
+        PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto")
         PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 2)
     }
 

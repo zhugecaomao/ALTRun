@@ -615,6 +615,16 @@ class Tests {
         eq("hint", QuickSwitch.HintText(), "Ctrl+G: " I18n.T("QuickSwitch.HintTC") "  Ctrl+Shift+G: " I18n.T("QuickSwitch.HintMenu"))
         QuickSwitch.Options := saved
         eq("default hotkey", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["MenuHotkey"], "^+g")
+        eq("panel on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["ShowPanel"], 1)
+        area := {Left: 0, Top: 0, Right: 1920, Bottom: 1040}
+        pos := QuickSwitch.PanelPosition(400, 200, 800, 500, 380, 300, area)
+        eq("panel right", pos.X "," pos.Y, "1200,200")
+        pos := QuickSwitch.PanelPosition(1300, 200, 600, 500, 380, 300, area)
+        eq("panel left", pos.X "," pos.Y, "920,200")
+        pos := QuickSwitch.PanelPosition(100, 900, 800, 500, 380, 300, area)
+        eq("panel kept on screen", pos.Y, 740)
+        pos := QuickSwitch.PanelPosition(0, 0, 1900, 1000, 380, 300, area)
+        eq("panel inside", pos.X "," pos.Y, "1512,640")
         try DirDelete(root, true)
     }
 
