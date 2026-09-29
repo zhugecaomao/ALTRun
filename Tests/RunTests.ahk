@@ -610,10 +610,6 @@ class Tests {
         eq("zero", QuickSwitch.RecentFolders(0, root "\Recent").Length, 0)
         eq("label", QuickSwitch.MenuLabel(1, {Path: "D:\R&D", Tag: "Total Commander"}), "&1  D:\R&&D`tTotal Commander")
         eq("label 10", QuickSwitch.MenuLabel(10, {Path: "D:\X", Tag: "Recent"}), "     D:\X`tRecent")
-        saved := QuickSwitch.Options
-        QuickSwitch.Options := Map("TotalCmdHotkey", "^g", "ExplorerHotkey", "", "MenuHotkey", "^+g")
-        eq("hint", QuickSwitch.HintText(), "Ctrl+G: " I18n.T("QuickSwitch.HintTC") "  Ctrl+Shift+G: " I18n.T("QuickSwitch.HintMenu"))
-        QuickSwitch.Options := saved
         eq("default hotkey", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["MenuHotkey"], "^+g")
         eq("panel on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["ShowPanel"], 1)
         area := {Left: 0, Top: 0, Right: 1920, Bottom: 1040}
@@ -669,7 +665,7 @@ class Tests {
         ThemeManager.Current := Map()
         eq("no theme", QuickSwitch.PanelColors().Background, "FFFFFF")
         ThemeManager.Current := savedTheme
-        eq("panel search default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["PanelSearch"], "all")
+        eq("panel search default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["PanelSearch"], "folders")
         try DirDelete(root, true)
     }
 

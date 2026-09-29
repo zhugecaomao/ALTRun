@@ -37,6 +37,7 @@ class PreferencesWindow {
     static ContentX := 190, ContentW := 560, LabelW := 190
     static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
     static WidthK := 150                                                    ; 热键框 ("K")
+    static _pairX := 0, _pairFirstW := 0, _pairSecondW := 0, _pairSizes := ["", ""]
     static ButtonY := 619                                                   ; 底部按钮的位置; 页面内容要在它上面 (y < ButtonY - 10)
     static LabelMax := 250                                                  ; 左列最宽多少, 再长的标签换行
     static _positionReset := false
@@ -165,7 +166,7 @@ class PreferencesWindow {
         static pages := Map("Prefs.Page.Window", "Usage", "Prefs.Page.Appearance", "Themes", "Prefs.Page.Features", "Usage", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
                           , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage"
-                          , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.QuickSwitch", "Extensions", "Prefs.Page.DateStamp", "Extensions"
+                          , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.QuickSwitch", "Extensions", "Prefs.Page.QSPanel", "Extensions", "Prefs.Page.DateStamp", "Extensions"
                           , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
@@ -220,6 +221,7 @@ class PreferencesWindow {
         PreferencesWindow._BuildWebSearch()
         PreferencesWindow._BuildHotkeys()
         PreferencesWindow._BuildQuickSwitch()
+        PreferencesWindow._BuildQuickSwitchPanel()
         PreferencesWindow._BuildDateStamp()
         PreferencesWindow._BuildUsage()
         PreferencesWindow._BuildAdvanced()
@@ -229,8 +231,8 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.General", 120)
         PreferencesWindow._Pair(["General.Hotkey", "Prefs.Hotkey", "K", "hotkey"], ["General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey"])
         PreferencesWindow._Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
-        PreferencesWindow._Pair(["General.DoubleTap", "Prefs.DoubleTap", "M", "choice", ["", "Ctrl", "Shift"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")]]
-            , ["General.Language", "Prefs.Language", "M", "choice", ["auto", "en", "zh", "ja"], [I18n.T("Prefs.Language.auto"), "English", "中文", "日本語"]])
+        PreferencesWindow._Pair(["General.DoubleTap", "Prefs.DoubleTap", "K", "choice", ["", "Ctrl", "Shift"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")]]
+            , ["General.Language", "Prefs.Language", "K", "choice", ["auto", "en", "zh", "ja"], [I18n.T("Prefs.Language.auto"), "English", "中文", "日本語"]])
         PreferencesWindow._Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
                    , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
@@ -261,7 +263,7 @@ class PreferencesWindow {
         themes := ThemeManager.Names(), labels := []
         for themeName in themes
             labels.Push(PreferencesWindow._ThemeLabel(themeName))
-        themeChoice := PreferencesWindow._Choice("Appearance.Theme", "Prefs.Theme", themes, labels)
+        themeChoice := PreferencesWindow._Choice("Appearance.Theme", "Prefs.Theme", themes, labels, "B")
         PreferencesWindow._Buttons("Prefs.Group.CustomThemes"
             , ["Prefs.CopyTheme", (*) => PreferencesWindow._CopyTheme(themeChoice, themes)]
             , ["Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir)])
@@ -269,7 +271,7 @@ class PreferencesWindow {
         PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"], ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "number"])
         PreferencesWindow._Section("Prefs.WindowPosition")
         PreferencesWindow._Choice("Appearance.ShowOn", "Prefs.ShowOn", ["Mouse", "Primary", "Active"]
-            , [I18n.T("Prefs.ShowOn.Mouse"), I18n.T("Prefs.ShowOn.Primary"), I18n.T("Prefs.ShowOn.Active")])
+            , [I18n.T("Prefs.ShowOn.Mouse"), I18n.T("Prefs.ShowOn.Primary"), I18n.T("Prefs.ShowOn.Active")], "B")
         PreferencesWindow._Check("Appearance.RememberPosition", "Prefs.RememberPosition", , , "Prefs.Group.Dragging")
         PreferencesWindow._Button("Prefs.ResetPosition", (button, *) => PreferencesWindow._ResetPosition(button))
     }
@@ -369,16 +371,16 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
         PreferencesWindow._Field("Features.FileSearch.MinQueryLength", "Prefs.FileMinLength", "S", "number")
+    }
+
+    ; 搜索来源: Everything (在运行时用它搜全盘) 和 Everything 没有运行时的内置文件索引
+    static _BuildFileIndex() {
+        PreferencesWindow._BeginPage("Prefs.Page.FileIndex", 130)
         PreferencesWindow._Section("Prefs.Section.Everything")
         status := I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning")
         PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", , I18n.T("Prefs.EverythingStatus", status))
         PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", "L")
         PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", "L", "folder")
-    }
-
-    ; Everything 没有运行时的内置文件索引
-    static _BuildFileIndex() {
-        PreferencesWindow._BeginPage("Prefs.Page.FileIndex", 130)
         PreferencesWindow._Section("Prefs.Section.BuiltinIndex")
         PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 4)
         depthY := PreferencesWindow._y                                      ; 按钮和 "子文件夹深度" 放在同一行
@@ -453,7 +455,6 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.QuickSwitch")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
         PreferencesWindow._Pair([base "TotalCmdHotkey", "Prefs.QSTotalCmd", "K", "hotkey"], [base "ExplorerHotkey", "Prefs.QSExplorer", "K", "hotkey"])
-        PreferencesWindow._Field(base "MenuHotkey", "Prefs.QSMenu", "K", "hotkey")
 
         ; DialogWindows 拆成 "标准对话框" 复选框 + 其它对话框的列表, 保存时再合成一个列表
         PreferencesWindow._Section("Prefs.Section.QSDialogs")
@@ -473,11 +474,20 @@ class PreferencesWindow {
         PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 2)
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
-        PreferencesWindow._Check(base "ShowPanel", "Prefs.QSPanel", , , "Prefs.Group.Options")
-        PreferencesWindow._Pair([base "PanelSearch", "Prefs.QSPanelSearch", "M", "choice", ["all", "folders"], [I18n.T("Prefs.QSPanelSearch.All"), I18n.T("Prefs.QSPanelSearch.Folders")]]
-            , [base "RecentFolders", "Prefs.QSRecent", "S", "number"])
-        PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto")
+        PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
         PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 2)
+    }
+
+    ; 对话框面板 (QuickSwitch 的一部分): 打开 / 保存对话框下面的文件夹列表和搜索框, 以及键盘用的文件夹菜单
+    static _BuildQuickSwitchPanel() {
+        base := "Extensions.QuickSwitch."
+        PreferencesWindow._BeginPage("Prefs.Page.QSPanel", 150)
+        PreferencesWindow._Section("Prefs.QSPanelSection")
+        PreferencesWindow._Check(base "ShowPanel", "Prefs.QSPanel", , , "Prefs.Group.Status")
+        PreferencesWindow._Choice(base "PanelSearch", "Prefs.QSPanelSearch", ["folders", "all"], [I18n.T("Prefs.QSPanelSearch.Folders"), I18n.T("Prefs.QSPanelSearch.All")], "K")
+        PreferencesWindow._Field(base "RecentFolders", "Prefs.QSRecent", "S", "number")
+        PreferencesWindow._Section("Prefs.QSMenuSection")
+        PreferencesWindow._Field(base "MenuHotkey", "Prefs.QSMenu", "K", "hotkey")
     }
 
     ; 一键加日期 (AutoDate): 重命名文件 / 备注框里各自的热键和生效的窗口
@@ -633,6 +643,7 @@ class PreferencesWindow {
         PreferencesWindow.Pages.Push({Key: nameKey, Name: I18n.T(nameKey), Wiki: PreferencesWindow.WikiPage(nameKey), Controls: []})
         PreferencesWindow._y := 14
         PreferencesWindow._pageKey := nameKey
+        PreferencesWindow._pairX := 0                                       ; 这一页成对设置的右列位置, 见 _Pair
         PreferencesWindow.LabelW := Max(labelW, PreferencesWindow._labelWidths.Get(I18n.Lang " " nameKey, 0))
     }
 
@@ -733,6 +744,7 @@ class PreferencesWindow {
             case "S": return PreferencesWindow.WidthS
             case "M": return PreferencesWindow.WidthM
             case "K": return PreferencesWindow.WidthK
+            case "B": return PreferencesWindow.ButtonW                      ; 和按钮一样宽 (外观页: 主题下拉框和下面的按钮对齐)
         }
         return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
     }
@@ -811,9 +823,9 @@ class PreferencesWindow {
         PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
     }
 
-    static _Choice(path, labelKey, values, labels) {
+    static _Choice(path, labelKey, values, labels, size := "M") {
         label := PreferencesWindow._Label(labelKey)
-        ctrl := PreferencesWindow._Add("DropDownList", "x" PreferencesWindow._InputX() " w" PreferencesWindow.WidthM, labels)
+        ctrl := PreferencesWindow._Add("DropDownList", "x" PreferencesWindow._InputX() " w" PreferencesWindow._Width(size), labels)
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         ctrl.Value := 1
         for index, value in values
@@ -889,12 +901,25 @@ class PreferencesWindow {
         label := PreferencesWindow._Label(left[2])
         first := PreferencesWindow._Input(PreferencesWindow._InputX(), left*)
         first.GetPos(&x, , &w)
+        sameAsFirstRow := PreferencesWindow._pairX && left[3] = PreferencesWindow._pairSizes[1] && right[3] = PreferencesWindow._pairSizes[2]
+        if sameAsFirstRow {                                                 ; 和这一页第一行一样的输入框: 用同样的宽度, 右边对齐到同一列
+            w := PreferencesWindow._pairFirstW
+            first.Move(, , w)
+        }
         PreferencesWindow._y += 3
         label2 := PreferencesWindow._Add("Text", "x" (x + w + 18), I18n.T(right[2]))
         PreferencesWindow._y -= 3
         label2.GetPos(&x2, , &w2)
-        ; 左列加宽后控件列变窄, 放不下时把左边的输入框缩短 (最短 "S")
-        overflow := x2 + w2 + 8 + PreferencesWindow._Width(right[3]) - (PreferencesWindow.ContentX + PreferencesWindow.ContentW)
+        ; 左列加宽后控件列变窄, 放不下时把左边的输入框缩短 (最短 "S"); 两边是同一种输入框时一起缩短, 保持一样宽
+        secondW := sameAsFirstRow ? PreferencesWindow._pairSecondW : 0
+        overflow := x2 + w2 + 8 + (secondW ? secondW : PreferencesWindow._Width(right[3])) - (PreferencesWindow.ContentX + PreferencesWindow.ContentW)
+        if (!sameAsFirstRow && overflow > 0 && left[3] = right[3] && w > PreferencesWindow.WidthS) {
+            w := Max(PreferencesWindow.WidthS, (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x - 18 - w2 - 8) // 2)
+            first.Move(, , w)
+            label2.Move(x + w + 18)
+            label2.GetPos(&x2)
+            secondW := w, overflow := x2 + w2 + 8 + w - (PreferencesWindow.ContentX + PreferencesWindow.ContentW)
+        }
         if (overflow > 0 && w > PreferencesWindow.WidthS) {
             shrink := Min(overflow, w - PreferencesWindow.WidthS)
             w -= shrink, overflow -= shrink
@@ -908,7 +933,21 @@ class PreferencesWindow {
             label2.Move(PreferencesWindow._InputX(), PreferencesWindow._y + 3)
             label2.GetPos(&x2)
         }
-        second := PreferencesWindow._Input(x2 + w2 + 8, right*)
+        secondX := x2 + w2 + 8
+        ; 同一页的几行成对的设置, 左边输入框一样宽时: 右边的输入框对齐到第一行右边输入框的位置 (标签靠右贴着输入框)
+        if (overflow <= 0) {
+            target := PreferencesWindow._pairX
+            if !target
+                PreferencesWindow._pairX := secondX, PreferencesWindow._pairFirstW := w, PreferencesWindow._pairSizes := [left[3], right[3]]
+                , PreferencesWindow._pairSecondW := secondW ? secondW : PreferencesWindow._Width(right[3])
+            else if (w = PreferencesWindow._pairFirstW && target >= secondX && target + (secondW ? secondW : PreferencesWindow._Width(right[3])) <= PreferencesWindow.ContentX + PreferencesWindow.ContentW) {
+                label2.Move(target - 8 - w2)
+                secondX := target
+            }
+        }
+        second := PreferencesWindow._Input(secondX, right*)
+        if secondW
+            second.Move(, , secondW)
         PreferencesWindow._BelowInput(left[2], label, first, label2, second)
     }
 
