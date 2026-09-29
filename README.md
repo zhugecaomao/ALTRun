@@ -32,9 +32,9 @@
 ## 为什么选择 ALTRun
 - **快, 而且跟手**: 输入即搜, 第一个字符就出结果; 装了 [Everything](https://www.voidtools.com/) 时毫秒级搜遍全盘文件, 没有 Everything 也有内置索引
 - **越用越懂你**: 记住 "输入了什么 → 选了哪一项", 常用的自动排第一; 支持单词首字母 (`vsc` → Visual Studio Code) 和中文拼音首字母 (`wx` → 微信)
-- **一个窗口处理日常小事**: 计算器、网页搜索、剪贴板历史、文字片段 (任何程序里 `;关键字` 自动展开)、锁屏关机等系统命令、终端命令, 不用再装一堆小工具
+- **一个窗口处理日常小事**: 计算器和单位换算、网页搜索、浏览器书签、剪贴板历史、文字片段 (任何程序里 `;关键字` 自动展开)、锁屏关机等系统命令、终端命令, 不用再装一堆小工具
 - **全键盘操作**: `→` 打开操作面板 (以管理员运行、显示位置、复制路径...), `F3` 在结果里直接编辑, `Ctrl+1` ~ `Ctrl+9` 直接打开
-- **绿色便携, 数据只在本机**: 不需要安装, 不写注册表, 设置都在一个 `Data\` 文件夹里, 可以放在 U 盘或同步盘; 不收集、不上传任何数据 (联网只用于到 GitHub 检查和下载更新)
+- **绿色便携, 数据只在本机**: 不需要安装, 不写注册表, 设置都在一个 `Data\` 文件夹里, 可以放在 U 盘或同步盘; 不收集、不上传任何数据 (默认联网只用于到 GitHub 检查和下载更新)
 - **省心的升级**: 和 Alfred 一样不弹窗, 有新版本时搜索窗口里多一条 "更新 ALTRun", 按 `Enter` 自动下载、核对 SHA256 并重启, 设置不变; 也可以用 Scoop 安装和升级
 - **合你的口味**: 中文 / English / 日本語 界面, 9 套内置主题 (也可以跟随 Windows 浅色 / 深色), 主题和设置都是可以直接编辑的 JSON 文件
 - **开源免费**: GPL-3.0, 代码完全公开; 每个 PR 都在 Windows 上自动运行两千多项单元测试和语法检查
@@ -194,7 +194,7 @@ ALTRun is a fast, keyboard-first launcher for Windows, modelled on Alfred for ma
 - **Learns as you go**: remembers which result you pick for each query and ranks it first next time; matches word initials (`vsc` → Visual Studio Code) and pinyin initials for Chinese names
 - **Replaces a handful of small tools**: inline calculator, web search keywords (`g`, `bing`, `gh`, `yt`...), clipboard history, snippets with `;keyword` auto-expansion in any app, terminal commands (`>ipconfig /all`), lock / sleep / shutdown, large type
 - **Keyboard all the way**: action panel (`→` or right-click), in-place editing (`F3`), `Ctrl+1`–`Ctrl+9`, a built-in cheat sheet (`?`)
-- **Portable and private**: no installer, no registry; all settings live in `Data\ALTRun.json` next to the program. Nothing is collected or uploaded; the only network access is checking for and downloading updates from GitHub
+- **Portable and private**: no installer, no registry; all settings live in `Data\ALTRun.json` next to the program. Nothing is collected or uploaded; by default the only network access is checking for and downloading updates from GitHub
 - **Painless updates**: one click downloads the new release, verifies its SHA256 and restarts; settings are kept. Or install with Scoop: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun`, then `scoop install altrun`
 - **Yours to shape**: English, Chinese and Japanese interface (follows your Windows language); nine built-in themes, or follow the Windows light / dark mode; custom themes are small JSON files
 

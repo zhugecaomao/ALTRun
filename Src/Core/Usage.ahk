@@ -20,7 +20,7 @@ class Usage {
     static File     := A_ScriptDir "\Data\Usage.json"
     static KeepDays := 400
     ; 统计页上的顺序 (次数相同时); "Show" 单独显示, 不算在使用次数里
-    static Features := ["Applications", "CustomCommands", "FileSearch", "WebSearch", "Calculator", "Clipboard",
+    static Features := ["Applications", "CustomCommands", "FileSearch", "WebSearch", "Bookmarks", "Calculator", "Clipboard",
                         "Snippets", "System", "Terminal", "SnippetExpand", "QuickSwitch", "AutoDate"]
     static Days  := Map()        ; "yyyy-MM-dd" -> Map(功能 -> 次数)
     static Since := ""           ; 开始统计的日期

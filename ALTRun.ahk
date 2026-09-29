@@ -37,6 +37,7 @@
 #Include Lib\TextTools.ahk
 #Include Lib\Kanji.ahk
 #Include Lib\Everything.ahk
+#Include Lib\Units.ahk
 #Include Lib\Dialogs.ahk
 
 ; --- Src\Core ---
@@ -71,6 +72,7 @@
 #Include Src\Providers\SystemProvider.ahk
 #Include Src\Providers\CalculatorProvider.ahk
 #Include Src\Providers\WebSearchProvider.ahk
+#Include Src\Providers\BookmarkProvider.ahk
 #Include Src\Providers\FileSearchProvider.ahk
 #Include Src\Providers\TerminalProvider.ahk
 #Include Src\Providers\HelpProvider.ahk
@@ -82,5 +84,6 @@
 #Include Src\Extensions\TendonProfile.ahk
 #Include Src\Extensions\PTToolsWindow.ahk
 #Include Src\Extensions\UpdateChecker.ahk
+#Include Src\Extensions\CurrencyRates.ahk
 
 App.Start()
