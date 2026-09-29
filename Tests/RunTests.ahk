@@ -633,6 +633,17 @@ class Tests {
         eq("no restore empty", QuickSwitch.ShouldRestoreName("  "), false)
         eq("no restore filter", QuickSwitch.ShouldRestoreName("*.txt"), false)
         eq("no restore path", QuickSwitch.ShouldRestoreName("C:\Docs\a.txt"), false)
+        ; TC 的路径用 WM_COPYDATA 问 (另一个进程模拟 TC 的回复), 不碰剪贴板
+        A_Clipboard := "clipboard before"
+        Run('"' A_AhkPath '" "' A_ScriptDir '\Fixtures\FakeTotalCmd.ahk"', , , &fakePid)
+        fakeHwnd := WinWait("ALTRun Fake Total Commander ahk_pid " fakePid, , 5)
+        eq("tc source panel", QuickSwitch.TotalCmdFolder(fakeHwnd), "C:\Work\Current")
+        eq("tc other panel", QuickSwitch.TotalCmdFolder(fakeHwnd, true), "\\server\share\Other")
+        eq("tc active side", QuickSwitch.TotalCmdAsk(fakeHwnd, "A"), "L")
+        eq("tc not a folder", QuickSwitch.TotalCmdAsk(fakeHwnd, "LP"), "ftp://example.com/pub/")
+        eq("tc clipboard untouched", A_Clipboard, "clipboard before")
+        ProcessClose(fakePid), ProcessWaitClose(fakePid, 5)
+        eq("tc closed", QuickSwitch.TotalCmdFolder(fakeHwnd), "")
         closed := Gui(), closedHwnd := closed.Hwnd
         closed.Destroy()
         threw := false
