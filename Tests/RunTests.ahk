@@ -2050,7 +2050,7 @@ Func | PTTools | PT Tools (AHK)=99
         FileDelete(bookmarkPath)
         FileAppend(sample, bookmarkPath, "UTF-8")
         BookmarkProvider.Load()
-        ok("good file stamped", InStr(BookmarkProvider._stamp, bookmarkPath))
+        ok("good file stamped", InStr(BookmarkProvider._stamp, "\Default\Bookmarks"))   ; A_Temp 可能是 8.3 短路径, 不比较整个路径
         eq("good file items", BookmarkProvider.Items.Length, 3)
         EnvSet("LOCALAPPDATA", savedLocal)
         try DirDelete(root, true)
