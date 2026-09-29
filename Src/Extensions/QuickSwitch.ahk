@@ -6,8 +6,9 @@
 ; 对话框标题上会提示这两个热键。AutoSwitch = 1 时, 从 TC 切换到对话框会自动跳转。
 ; 文件夹菜单 (MenuHotkey, 默认 Ctrl+Shift+G, 和 Listary 的 Quick Switch 菜单一样): 列出所有 TC 窗口的
 ; 两个面板、打开的资源管理器窗口和最近用过的文件夹 (Windows 的 "最近使用的项目"), 选一个对话框就跳过去。
-; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 一样): 对话框一出现, 旁边自动贴一个同样内容的列表, 点一下就跳过去,
-; 不用记热键。面板不抢焦点, 对话框不在前台时隐藏, 回到对话框时刷新 (TC 里换了目录也能马上看到)。
+; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 下面就贴一个搜索框 + 同样内容的
+; 列表, 点一下就跳过去, 不用记热键; 在搜索框里输入还能搜索其它文件夹。对话框不在前台时隐藏, 回到对话框时刷新
+; (TC 里换了目录也能马上看到)。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
 ;   Enabled / ExplorerHotkey / TotalCmdHotkey / MenuHotkey / RecentFolders / ShowPanel / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
@@ -49,13 +50,20 @@ class QuickSwitch {
         } catch as e {
             Logger.Error("QuickSwitch: cannot register hotkeys - " e.Message)
         }
+        HotIf((*) => QuickSwitch.PanelActive())
+        for key in ["Up", "Down", "Enter", "NumpadEnter", "Escape"]
+            Hotkey(key, QuickSwitch._KeyHandler(key = "NumpadEnter" ? "Enter" : key))
         HotIf()
 
         SetTimer(() => QuickSwitch._Watch(), 250)
     }
 
+    static _KeyHandler(key) => (*) => QuickSwitch.PanelKey(key)
+
     ; 每 250 ms: 在对话框标题上显示热键提示; AutoSwitch 时从 TC 切到对话框自动跳转
     static _Watch() {
+        if QuickSwitch.PanelActive()                                        ; 正在面板的搜索框里输入: 对话框和面板都保持原样
+            return
         isDialog := QuickSwitch.IsFileDialog()
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasTC && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
             QuickSwitch.SyncTotalCmdPath(true)
@@ -66,7 +74,9 @@ class QuickSwitch {
     }
 
     ;---------------------------------------------------------------------------
-    ; 文件夹面板: 贴在对话框右边 (放不下时左边), 不抢焦点
+    ; 文件夹面板 (和 Listary 的 Quick Switch 窗口一样): 贴在对话框下面, 和对话框一样宽;
+    ; 上面是搜索框 (输入文字搜索文件夹: 先过滤列表, 再用 Everything / 内置索引找文件夹), 下面是文件夹列表。
+    ; 点一个文件夹或在搜索框里按 Enter 就跳过去; Esc 回到对话框
     ;---------------------------------------------------------------------------
     static _UpdatePanel(isDialog) {
         dialog := 0
@@ -78,47 +88,160 @@ class QuickSwitch {
         QuickSwitch._PlacePanel(dialog)
     }
 
+    ; 正在面板的搜索框里输入 (面板是前台窗口)
+    static PanelActive(*) => IsObject(QuickSwitch._panel) && WinActive("ahk_id " QuickSwitch._panel.Hwnd)
+
     static HidePanel() {
         if IsObject(QuickSwitch._panel)
             try QuickSwitch._panel.Destroy()
         QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := ""
     }
 
+    static PanelRows := 8
+
     static _BuildPanel(dialog) {
         QuickSwitch.HidePanel()
-        QuickSwitch._panelFor := dialog                                     ; 没有文件夹时也记下, 不用每 250 ms 重试
-        folders := QuickSwitch.MenuFolders()
-        QuickSwitch._panelFolders := folders
-        if !folders.Length
-            return
-        panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border +E0x08000000", "ALTRun Quick Switch")   ; WS_EX_NOACTIVATE: 点击不抢焦点
-        panel.MarginX := 0, panel.MarginY := 0
-        panel.SetFont("s9", "Segoe UI")
+        QuickSwitch._panelFor := dialog
+        QuickSwitch._panelBase := QuickSwitch.MenuFolders()
+        rect := QuickSwitch._FrameRect(dialog)
+        width := IsObject(rect) ? Max(420, Min(rect.W, 1000)) : 600
+        panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border", "ALTRun Quick Switch")
+        panel.MarginX := 0, panel.MarginY := 0, panel.BackColor := "FFFFFF"
+        panel.SetFont("s10", "Segoe UI")
+        search := panel.AddEdit("x8 y7 w" (width - 16) " r1 -Multi")
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
-        panel.AddText("x8 y5 w" (QuickSwitch.PanelWidth - 16), I18n.T("QuickSwitch.PanelTitle") hint)
-        list := panel.AddListView("x0 y24 w" QuickSwitch.PanelWidth " h100 -Hdr -Multi -E0x200 +LV0x10400", ["Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
+        DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T("QuickSwitch.SearchCue") hint)   ; EM_SETCUEBANNER: 灰色提示文字
+        search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
+        panel.SetFont("s9")
+        list := panel.AddListView("x0 y+6 w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 BackgroundFFFFFF", ["Name", "Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
         icons := IL_Create(1)
         IL_Add(icons, "shell32.dll", 4)
         list.SetImageList(icons)
-        for entry in folders
-            list.Add("Icon1", entry.Path, entry.Tag)
-        list.ModifyCol(2, "Auto")                                            ; 来源 (TC / 资源管理器 / 最近) 按内容宽度, 剩下的给路径
-        rows := Min(folders.Length, 12)
-        list.ModifyCol(1, QuickSwitch.PanelWidth - SendMessage(0x101D, 1, 0, list) - (folders.Length > rows ? 22 : 4))   ; LVM_GETCOLUMNWIDTH; 有滚动条时留出宽度
-        size := SendMessage(0x1040, rows, 0, list)                          ; LVM_APPROXIMATEVIEWRECT: rows 行需要的高度
-        list.Move(, , , (size >> 16) + 4)
         list.OnEvent("Click", (ctrl, row) => QuickSwitch._PanelJump(row))
-        QuickSwitch._panel := panel
+        list.Add("Icon1", "X")                                              ; 先放一行才量得出行高 (LVM_APPROXIMATEVIEWRECT)
+        QuickSwitch._rowTop := SendMessage(0x1040, 1, 0, list) >> 16
+        QuickSwitch._rowHeight := (SendMessage(0x1040, 2, 0, list) >> 16) - QuickSwitch._rowTop
+        list.Delete()
+        QuickSwitch._panel := panel, QuickSwitch._panelList := list, QuickSwitch._panelSearch := search, QuickSwitch._panelWidth := width
+        try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: 小圆角
+        QuickSwitch._ShowFolders(QuickSwitch._panelBase)
     }
 
-    static PanelWidth := 380
+    static _panelBase := [], _panelList := "", _panelSearch := "", _panelWidth := 600, _rowTop := 20, _rowHeight := 18
+    static _searchTimer := () => QuickSwitch._SearchPanel()
+
+    ; 列表: 文件夹名 | 完整路径 | 来源 (TC / 资源管理器 / 最近 / 搜索)
+    static _ShowFolders(folders) {
+        list := QuickSwitch._panelList
+        if !IsObject(list)
+            return
+        QuickSwitch._panelFolders := folders
+        list.Opt("-Redraw")
+        list.Delete()
+        for entry in folders
+            list.Add("Icon1", QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
+        list.ModifyCol(3, "Auto"), list.ModifyCol(1, "Auto")
+        nameW := Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3)   ; LVM_GETCOLUMNWIDTH
+        list.ModifyCol(1, Max(nameW, 120))
+        list.ModifyCol(2, QuickSwitch._panelWidth - Max(nameW, 120) - SendMessage(0x101D, 2, 0, list) - (folders.Length > QuickSwitch.PanelRows ? 22 : 4))
+        if folders.Length
+            list.Modify(1, "Select Focus")
+        list.Opt("+Redraw")
+        rows := Max(3, Min(folders.Length, QuickSwitch.PanelRows))           ; 高度跟着内容 (3 ~ PanelRows 行)
+        list.Move(, , , QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + 4)
+        if DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) {     ; 搜索结果变了: 重新调整大小和位置
+            QuickSwitch._panelPos := ""
+            QuickSwitch._PlacePanel(QuickSwitch._panelFor)
+        }
+    }
+
+    ; "D:\Projects\Tower" -> "Tower"; 磁盘根目录显示 "D:\"
+    static FolderName(folder) {
+        trimmed := RTrim(folder, "\")
+        if (trimmed ~= "^[A-Za-z]:$")
+            return trimmed "\"
+        SplitPath(trimmed, &name)
+        return (name != "") ? name : folder
+    }
+
+    ; 搜索框里的文字: 先过滤列表 (路径包含每个词), 再加上搜到的文件夹 (Everything 或内置索引, 最多 20 个)
+    static _SearchPanel() {
+        if !IsObject(QuickSwitch._panelSearch)
+            return
+        term := Trim(QuickSwitch._panelSearch.Value)
+        QuickSwitch._ShowFolders(QuickSwitch.FilterFolders(QuickSwitch._panelBase, term, term = "" ? [] : QuickSwitch._FindFolders(term)))
+    }
+
+    static _FindFolders(term) {
+        found := []
+        try {
+            for item in FileSearchProvider.Query(term, 20, false, true)
+                found.Push(item.Path)
+        }
+        return found
+    }
+
+    ; 过滤 base (不区分大小写, 每个词都要出现在路径里), 再把 extra 里没有重复的路径加在后面 (来源标 "搜索")
+    static FilterFolders(base, term, extra) {
+        result := [], seen := Map(), words := StrSplit(Trim(term), " ")
+        for entry in base {
+            matched := true
+            for word in words
+                if (word != "" && !InStr(entry.Path, word))
+                    matched := false
+            if matched {
+                result.Push(entry)
+                seen[StrLower(RTrim(entry.Path, "\"))] := true
+            }
+        }
+        for folder in extra {
+            if seen.Has(StrLower(RTrim(folder, "\")))
+                continue
+            seen[StrLower(RTrim(folder, "\"))] := true
+            result.Push({Path: folder, Group: "search", Tag: I18n.T("QuickSwitch.TagSearch")})
+        }
+        return result
+    }
 
     static _PanelJump(row) {
         if (row < 1 || row > QuickSwitch._panelFolders.Length || !QuickSwitch._panelFor)
             return
-        if !WinActive("ahk_id " QuickSwitch._panelFor)
-            try WinActivate("ahk_id " QuickSwitch._panelFor)
-        QuickSwitch.SetDialogPath(RTrim(QuickSwitch._panelFolders[row].Path, "\") "\")
+        folder := QuickSwitch._panelFolders[row].Path
+        QuickSwitch._BackToDialog()
+        QuickSwitch.SetDialogPath(RTrim(folder, "\") "\")
+        if (IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value != "") {   ; 跳过去之后清空搜索, 列表恢复原样
+            QuickSwitch._panelSearch.Value := ""
+            QuickSwitch._ShowFolders(QuickSwitch._panelBase)
+        }
+    }
+
+    static _BackToDialog() {
+        dialog := QuickSwitch._panelFor
+        if (!dialog || WinActive("ahk_id " dialog))
+            return
+        try {
+            WinActivate("ahk_id " dialog)
+            WinWaitActive("ahk_id " dialog, , 1)
+        }
+    }
+
+    ; 搜索框里的按键: ↑ ↓ 选择, Enter 跳转, Esc 回到对话框
+    static PanelKey(key) {
+        list := QuickSwitch._panelList
+        if !IsObject(list)
+            return
+        count := list.GetCount(), row := list.GetNext()
+        switch key {
+            case "Up", "Down":
+                if !count
+                    return
+                row := (key = "Down") ? Min(row + 1, count) : Max(row - 1, 1)
+                list.Modify(0, "-Select"), list.Modify(row, "Select Focus Vis")
+            case "Enter":
+                QuickSwitch._PanelJump(row ? row : 1)
+            case "Escape":
+                QuickSwitch._BackToDialog()
+        }
     }
 
     static _PlacePanel(dialog) {
@@ -127,13 +250,11 @@ class QuickSwitch {
         rect := QuickSwitch._FrameRect(dialog)
         if !IsObject(rect)
             return QuickSwitch.HidePanel()
-        x := rect.X, y := rect.Y, w := rect.W, h := rect.H
-        if !QuickSwitch._panelPos {
-            QuickSwitch._panel.Show("NA Hide AutoSize")
-        }
+        if !QuickSwitch._panelPos                                           ; 第一次显示或大小变了: 先按内容算出大小
+            QuickSwitch._panel.Show(DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) ? "NA AutoSize" : "NA Hide AutoSize")
         QuickSwitch._panel.GetPos(, , &panelW, &panelH)
-        area := Win.WorkAreaAt(x + w // 2, y + h // 2)
-        pos := QuickSwitch.PanelPosition(x, y, w, h, panelW, panelH, area)
+        area := Win.WorkAreaAt(rect.X + rect.W // 2, rect.Y + rect.H // 2)
+        pos := QuickSwitch.PanelPosition(rect.X, rect.Y, rect.W, rect.H, panelW, panelH, area)
         key := pos.X "," pos.Y
         if (key != QuickSwitch._panelPos) {                                 ; 对话框移动了才重新摆
             QuickSwitch._panel.Show("NA x" pos.X " y" pos.Y)
@@ -156,14 +277,15 @@ class QuickSwitch {
         return ""
     }
 
-    ; 面板的位置: 对话框右边, 顶端对齐; 右边放不下时放左边; 两边都放不下时放在对话框里面的右下角
+    ; 面板的位置 (和 Listary 一样): 对话框正下方, 左边对齐; 下面放不下时放在对话框上方;
+    ; 上下都放不下时贴在对话框里面的底部
     static PanelPosition(x, y, w, h, panelW, panelH, area) {
-        top := Max(area.Top, Min(y, area.Bottom - panelH))
-        if (x + w + panelW <= area.Right)
-            return {X: x + w, Y: top}
-        if (x - panelW >= area.Left)
-            return {X: x - panelW, Y: top}
-        return {X: Max(area.Left, x + w - panelW - 8), Y: Max(area.Top, y + h - panelH - 60)}
+        left := Max(area.Left, Min(x, area.Right - panelW))
+        if (y + h + panelH <= area.Bottom)
+            return {X: left, Y: y + h}
+        if (y - panelH >= area.Top)
+            return {X: left, Y: y - panelH}
+        return {X: left, Y: Max(area.Top, area.Bottom - panelH)}
     }
 
     static _UpdateHint(isDialog) {
