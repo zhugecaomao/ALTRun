@@ -590,6 +590,9 @@ class Tests {
         root := A_Temp "\ALTRun-test-recent"
         try DirDelete(root, true)
         DirCreate(root "\Recent"), DirCreate(root "\Projects\Tower"), DirCreate(root "\Docs")
+        longPath := Buffer(2048)                                            ; A_Temp 可能是 8.3 短路径 (C:\Users\RUNNER~1), 快捷方式读回来的是长路径
+        if DllCall("GetLongPathNameW", "Str", root, "Ptr", longPath, "UInt", 1024)
+            root := StrGet(longPath)
         FileAppend("x", root "\Docs\report.pdf")
         FileCreateShortcut(root "\Projects\Tower", root "\Recent\Tower.lnk")
         FileSetTime("20260101000000", root "\Recent\Tower.lnk")
