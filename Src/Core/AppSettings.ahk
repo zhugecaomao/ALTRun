@@ -177,6 +177,7 @@ class AppSettings {
             "General", Map(
                 "Hotkey"              , "!Space",
                 "SecondaryHotkey"     , "!r",                               ; Alt+R
+                "DoubleTap"           , "",                                ; 双击 Ctrl / Shift 呼出搜索窗口 (和 Listary 一样), "" = 不用
                 "SelectionHotkey"     , "^!\",                              ; 选中文字 / 文件后按: 直接打开它们的操作 (Ctrl+Alt+\)
                 "Language"            , "auto",                             ; auto / en / zh
                 "LaunchAtLogin"       , 1,
@@ -248,6 +249,15 @@ class AppSettings {
                     "Enabled"            , 1,
                     "Keywords"           , ["open", "find"],
                     "FolderKeywords"     , ["folder"],                      ; "folder bk" 只搜文件夹
+                    "TypeFilters"        , [                                ; "doc 报告" 只搜这些扩展名的文件, 每行 "关键字 = 扩展名 ..."
+                        "doc = doc docx xls xlsx xlsm csv ppt pptx pdf txt md rtf odt ods",
+                        "pic = jpg jpeg png gif bmp tif tiff webp svg ico heic",
+                        "video = mp4 mkv avi mov wmv flv webm m4v",
+                        "audio = mp3 wav flac aac m4a ogg wma",
+                        "zip = zip rar 7z tar gz tgz bz2 xz iso",
+                        "exe = exe msi bat cmd ps1 lnk",
+                        "cad = dwg dxf dgn dwf rvt ifc skp"
+                    ],
                     "SpacePrefix"        , 1,                               ; 空的搜索框里先按空格 = 只搜文件, 和 Alfred 一样
                     "QuotePrefix"        , 1,                               ; 以 ' 开头直接搜索文件, 和 Alfred 一样
                     "MaxResults"         , 30,
@@ -284,6 +294,9 @@ class AppSettings {
                     "Enabled"          , 1,
                     "ExplorerHotkey"   , "^e",
                     "TotalCmdHotkey"   , "^g",
+                    "MenuHotkey"       , "^+g",                             ; 文件夹菜单: 所有 TC 面板、资源管理器窗口、最近的文件夹
+                    "RecentFolders"    , 10,                                ; 菜单里列出几个最近的文件夹, 0 = 不列
+                    "ShowPanel"        , 1,                                 ; 对话框一出现就在下面显示文件夹面板 (和 Listary 一样), 点一下就跳过去
                     "AutoSwitch"       , 0,
                     "DialogWindows"    , "ahk_class #32770",                ; 标准的 Windows 对话框, 另外可以加 "ahk_class Qt5QWindowIcon" (WPS) 等
                     "ExcludeWindows"   , "ahk_class SysListView32, ahk_exe Explorer.exe",

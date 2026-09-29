@@ -10,6 +10,8 @@
 ;                应用 / 文件 / 文件夹 / 网址 新建一条自定义命令 (预先填好)
 ;   Ctrl+Del     删除这一项 (DeleteItem): 自定义命令 / 片段 / 搜索引擎 / 剪贴板历史;
 ;                应用: 从搜索结果中隐藏
+; 文件 / 文件夹的操作面板里还有 (和 Listary 一样): 复制 / 剪切文件 (到 TC、资源管理器里粘贴)、打开方式、
+; 复制 / 移动到 TC (或资源管理器) 当前打开的文件夹、移到回收站
 ;
 ; 用法:
 ;   ActionCatalog.RunDefault(item)
@@ -61,17 +63,25 @@ class ActionCatalog {
                 add("Action.Open", target, (*) => ActionCatalog.OpenFile(target, item.Arguments), enter)
                 if RegExMatch(target, "i)\.(exe|lnk|bat|cmd|msc|ps1)$")
                     add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => ActionCatalog.RunAsAdmin(target, item.Arguments))
+                if FileExist(target)
+                    add("Action.OpenWith", "res:shell32.dll,-16702", (*) => ActionCatalog.OpenWith(target))
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
                 add("Action.CopyName", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(Path.Leaf(target)))
+                ActionCatalog._FileActions(list, target)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(ActionCatalog._ParentDir(target)))
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
+                if FileExist(target)
+                    add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "folder":
                 add("Action.Open", target, (*) => ActionCatalog.OpenFolder(target), enter)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(target))
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
+                ActionCatalog._FileActions(list, target)
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
+                if (FileExist(target) && !RegExMatch(RTrim(target, "\"), "^[A-Za-z]:$"))       ; 磁盘根目录不能删
+                    add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "url":
                 add("Action.Open", "url:", (*) => ActionCatalog.OpenUrl(target), enter)
                 add("Action.CopyUrl", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
@@ -226,6 +236,57 @@ class ActionCatalog {
         Sleep(delay)
         A_Clipboard := savedClipboard
         return true
+    }
+
+    ; 复制 / 剪切文件, 复制 / 移动到文件管理器当前的文件夹 (真实存在的本地或网络路径才有)
+    static _FileActions(list, target) {
+        if (!RegExMatch(target, "^([A-Za-z]:\\|\\\\)") || !FileExist(target))
+            return
+        list.Push(ResultItem(I18n.T("Action.CopyFile"), I18n.T("Action.CopyFile.Hint"), {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target])}))
+        list.Push(ResultItem(I18n.T("Action.CutFile"), I18n.T("Action.CopyFile.Hint"), {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target], true)}))
+        manager := QuickSwitch.FileManagerFolder()
+        destination := IsObject(manager) ? manager.Path : ""
+        if (destination = "" || !DirExist(destination))
+            return
+        parent := RTrim(ActionCatalog._ParentDir(RTrim(target, "\")), "\")
+        inside := (InStr(RTrim(destination, "\") "\", RTrim(target, "\") "\") = 1)   ; 不能把文件夹复制到它自己里面
+        if (StrLower(RTrim(destination, "\")) = StrLower(parent) || inside)
+            return
+        list.Push(ResultItem(I18n.T("Action.CopyTo", manager.Tag), destination, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination)}))
+        list.Push(ResultItem(I18n.T("Action.MoveTo", manager.Tag), destination, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination, true)}))
+    }
+
+    ; 把文件放进剪贴板 (剪贴板历史照常记录), 在 TC / 资源管理器里 Ctrl+V 粘贴
+    static CopyFiles(paths, cut := false) {
+        if !ClipboardData.SetFiles(paths, cut)
+            return false
+        App.Notify(I18n.T(cut ? "Action.FileCut" : "Action.FileCopied", Path.Leaf(RTrim(paths[1], "\"))))
+        return true
+    }
+
+    static OpenWith(target) {
+        Run("rundll32.exe shell32.dll,OpenAs_RunDLL " Path.Resolve(target))    ; 路径不加引号 (OpenAs_RunDLL 取整个剩余的命令行)
+    }
+
+    ; 用 Windows 自己的复制 / 移动 (有进度窗口、重名时询问、可以撤销), 在后台进行, 不会卡住 ALTRun
+    static CopyTo(target, destination, move := false) {
+        folder := ComObject("Shell.Application").NameSpace(RTrim(destination, "\") (RegExMatch(destination, "^[A-Za-z]:\\?$") ? "\" : ""))
+        if !IsObject(folder)
+            return false
+        move ? folder.MoveHere(target, 0) : folder.CopyHere(target, 0)
+        App.Notify(I18n.T(move ? "Action.Moving" : "Action.Copying", Path.Leaf(RTrim(target, "\")), destination), 2000)
+        return true
+    }
+
+    ; 移到回收站: 用 Windows 的 "删除" (会先确认, 可以从回收站还原)
+    static Recycle(target) {
+        SplitPath(RTrim(target, "\"), &name, &dir)
+        try {
+            folderItem := ComObject("Shell.Application").NameSpace(RegExMatch(dir, "^[A-Za-z]:$") ? dir "\" : dir).ParseName(name)
+            folderItem.InvokeVerb("delete")
+            return true
+        }
+        return false
     }
 
     static _ParentDir(target) {

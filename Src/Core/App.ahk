@@ -237,6 +237,18 @@ class App {
             }
         }
 
+        tap := AppSettings.General.Has("DoubleTap") ? AppSettings.General["DoubleTap"] : ""
+        if (tap = "Ctrl" || tap = "Shift") {                                ; 双击 Ctrl / Shift 呼出
+            for side in ["L", "R"] {
+                try {
+                    Hotkey("~" side tap, (*) => App._TapDown())
+                    Hotkey("~" side tap " up", (*) => App._TapUp())
+                } catch as e {
+                    Logger.Error("App: cannot register double-tap - " e.Message)
+                }
+            }
+        }
+
         if (AppSettings.General["SelectionHotkey"] != "") {                ; 选中内容的操作
             try {
                 Hotkey(AppSettings.General["SelectionHotkey"], (*) => SelectionActions.Run())
@@ -273,6 +285,35 @@ class App {
     }
 
     ; 单独一个方法生成闭包, 每个热键各自记住自己的 Action
+    ; 双击 Ctrl / Shift: 两次单独的短按 (中间没有按别的键, 例如 Ctrl+C), 间隔不超过 DoubleTapMs
+    static DoubleTapMs := 400, TapHoldMs := 300
+    static _tapLast := 0, _tapDownAt := 0, _tapHeld := false
+
+    static _TapDown() {
+        if !App._tapHeld                                                    ; 按住不放时的自动重复不算
+            App._tapHeld := true, App._tapDownAt := A_TickCount
+    }
+
+    static _TapUp() {
+        App._tapHeld := false
+        key := RegExReplace(A_ThisHotkey, "i)^~|\s+up$")                  ; "LCtrl" / "RShift"
+        switch App.TapDecision(A_PriorKey, key, A_TickCount - App._tapDownAt, A_TickCount - App._tapLast) {
+            case "show":
+                App._tapLast := 0
+                SearchWindow.Toggle()
+            case "first": App._tapLast := A_TickCount
+            default:      App._tapLast := 0
+        }
+    }
+
+    ; priorKey: A_PriorKey (松开前最后按下的键); 返回 "show" (第二下) / "first" (第一下) / "reset" (是组合键或按太久)
+    static TapDecision(priorKey, key, heldMs, sinceLastMs) {
+        expected := (key = "LCtrl") ? "LControl" : (key = "RCtrl") ? "RControl" : key
+        if (!(priorKey = expected || priorKey = key) || heldMs > App.TapHoldMs)
+            return "reset"
+        return (sinceLastMs <= App.DoubleTapMs) ? "show" : "first"
+    }
+
     static _HotkeyAction(actionId) {
         return (*) => SystemProvider.RunCommand(actionId)
     }

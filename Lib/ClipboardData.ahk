@@ -9,6 +9,7 @@
 ;   ClipboardData.SetImage("C:\x.png")                 把 PNG 放到剪贴板 (CF_DIB), 成功返回 true
 ;   ClipboardData.Files()                               -> [路径...] (剪贴板里复制的文件)
 ;   ClipboardData.SetFiles(["C:\a.txt", "C:\b"])       把文件放到剪贴板 (在资源管理器里 Ctrl+V 就是粘贴文件)
+;   ClipboardData.SetFiles(paths, true)                剪切: 粘贴时移动文件
 ;   ClipboardData.StartGdiplus()                       启动 GDI+ (只启动一次)
 ;===============================================================================
 
@@ -118,8 +119,9 @@ class ClipboardData {
         return ok ? true : false
     }
 
-    ; DROPFILES 结构 (20 字节) + 以两个空字符结尾的 UTF-16 路径列表
-    static SetFiles(paths) {
+    ; DROPFILES 结构 (20 字节) + 以两个空字符结尾的 UTF-16 路径列表;
+    ; cut = true 时再放一个 "Preferred DropEffect" = 移动, 资源管理器 / TC 粘贴时就是移动文件
+    static SetFiles(paths, cut := false) {
         size := 20 + 2
         for filePath in paths
             size += (StrLen(filePath) + 1) * 2
@@ -141,10 +143,34 @@ class ClipboardData {
         }
         DllCall("EmptyClipboard")
         ok := DllCall("SetClipboardData", "UInt", ClipboardData.CF_HDROP, "Ptr", hMem, "Ptr")
+        if ok && (hEffect := DllCall("GlobalAlloc", "UInt", 0x42, "UPtr", 4, "Ptr")) {
+            NumPut("UInt", cut ? 2 : 5, DllCall("GlobalLock", "Ptr", hEffect, "Ptr"))   ; DROPEFFECT_MOVE / COPY | LINK
+            DllCall("GlobalUnlock", "Ptr", hEffect)
+            if !DllCall("SetClipboardData", "UInt", ClipboardData.DropEffectFormat(), "Ptr", hEffect, "Ptr")
+                DllCall("GlobalFree", "Ptr", hEffect)
+        }
         DllCall("CloseClipboard")
         if !ok
             DllCall("GlobalFree", "Ptr", hMem)
         return ok ? true : false
+    }
+
+    static DropEffectFormat() {
+        static format := DllCall("RegisterClipboardFormat", "Str", "Preferred DropEffect", "UInt")
+        return format
+    }
+
+    ; 剪贴板里的文件是剪切的 (粘贴时移动) 时返回 true
+    static IsCut() {
+        if !DllCall("IsClipboardFormatAvailable", "UInt", ClipboardData.DropEffectFormat()) || !ClipboardData._Open()
+            return false
+        effect := 0
+        if (hMem := DllCall("GetClipboardData", "UInt", ClipboardData.DropEffectFormat(), "Ptr")) && (pointer := DllCall("GlobalLock", "Ptr", hMem, "Ptr")) {
+            effect := NumGet(pointer, "UInt")
+            DllCall("GlobalUnlock", "Ptr", hMem)
+        }
+        DllCall("CloseClipboard")
+        return (effect & 2) && !(effect & 1)
     }
 
     ; 别的程序正占用剪贴板时稍等再试

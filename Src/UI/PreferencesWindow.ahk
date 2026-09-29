@@ -229,7 +229,8 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.General", 120)
         PreferencesWindow._Pair(["General.Hotkey", "Prefs.Hotkey", "K", "hotkey"], ["General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey"])
         PreferencesWindow._Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
-        PreferencesWindow._Choice("General.Language", "Prefs.Language", ["auto", "en", "zh", "ja"], [I18n.T("Prefs.Language.auto"), "English", "中文", "日本語"])
+        PreferencesWindow._Pair(["General.DoubleTap", "Prefs.DoubleTap", "M", "choice", ["", "Ctrl", "Shift"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")]]
+            , ["General.Language", "Prefs.Language", "M", "choice", ["auto", "en", "zh", "ja"], [I18n.T("Prefs.Language.auto"), "English", "中文", "日本語"]])
         PreferencesWindow._Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
                    , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
@@ -363,6 +364,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.SpacePrefix", "Prefs.SpacePrefix", , , "Prefs.Group.StartFileSearch")
         PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
         PreferencesWindow._Pair(["Features.FileSearch.Keywords", "Prefs.FileKeywords", "M", "csv"], ["Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", "S", "csv"])
+        PreferencesWindow._Lines("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", 3)
         PreferencesWindow._Section("Prefs.Section.FileResults")
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
@@ -450,8 +452,8 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.QuickSwitch", 170)
         PreferencesWindow._Section("Prefs.QuickSwitch")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
-        PreferencesWindow._Field(base "TotalCmdHotkey", "Prefs.QSTotalCmd", "K", "hotkey")
-        PreferencesWindow._Field(base "ExplorerHotkey", "Prefs.QSExplorer", "K", "hotkey")
+        PreferencesWindow._Pair([base "TotalCmdHotkey", "Prefs.QSTotalCmd", "K", "hotkey"], [base "ExplorerHotkey", "Prefs.QSExplorer", "K", "hotkey"])
+        PreferencesWindow._Pair([base "MenuHotkey", "Prefs.QSMenu", "K", "hotkey"], [base "RecentFolders", "Prefs.QSRecent", "S", "number"])
 
         ; DialogWindows 拆成 "标准对话框" 复选框 + 其它对话框的列表, 保存时再合成一个列表
         PreferencesWindow._Section("Prefs.Section.QSDialogs")
@@ -471,7 +473,8 @@ class PreferencesWindow {
         PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 2)
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
-        PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
+        PreferencesWindow._Check(base "ShowPanel", "Prefs.QSPanel", , , "Prefs.Group.Options")
+        PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto")
         PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 2)
     }
 

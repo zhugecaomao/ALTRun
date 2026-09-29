@@ -27,6 +27,7 @@
 |---|---|---|
 | Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Extensions#设置热键)) |
 | SecondaryHotkey | `!r` | 第二个呼出热键 (Alt+R), 留空 = 不用 |
+| DoubleTap | 空 | `Ctrl` / `Shift` = 快速按两下这个键也能呼出 (和 Listary 一样), 空 = 不用 |
 | SelectionHotkey | `^!\` | 选中文字 / 文件 / 网址后按下, 直接打开它们的操作 (Ctrl+Alt+\), 见 [选中内容的操作](Usage#选中内容的操作); 留空 = 不用 |
 | Language | `auto` | `auto` 跟随系统 / `en` / `zh` / `ja` |
 | LaunchAtLogin | 1 | 开机自动启动 |
@@ -134,7 +135,7 @@
 
 | 节点 | 键 |
 |---|---|
-| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `AutoSwitch` `DialogWindows` (`ahk_class #32770`) `ExcludeWindows` `AutoSwitchExclude` |
+| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `MenuHotkey` (`^+g`, 文件夹菜单) `RecentFolders` (10) `ShowPanel` (1, 对话框旁边的文件夹面板) `AutoSwitch` `DialogWindows` (`ahk_class #32770`) `ExcludeWindows` `AutoSwitchExclude` |
 | AutoDate | `Enabled` `DateFormat` (`dd.MM.yyyy`) `RenameHotkey` (`^d`) `RenameWindows` `AppendHotkey` (`^d`) `AppendWindows` |
 | PTTools | PT 工具箱自己保存的输入和窗口位置 |
 

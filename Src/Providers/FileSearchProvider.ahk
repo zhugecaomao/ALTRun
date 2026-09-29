@@ -7,6 +7,8 @@
 ;   2. 专门搜索文件:  空的搜索框里先按空格 (SpacePrefix, 见 SearchWindow) 再输入 report,
 ;                     或  'report  /  open report  /  find report
 ;   3. 只搜文件夹:    folder bk (FolderKeywords), 文件搜索模式里也可以写 "folder bk"
+;   4. 按类型搜索:    doc 报告 / pic logo / cad 平面图 ... (TypeFilters: "关键字 = 扩展名 扩展名 ..."),
+;                     和 Listary 的文件类型筛选一样; 文件搜索模式里也可以写 "doc 报告"
 ; 结果按名称匹配程度排序 (完全相同 > 名称开头 > 单词开头 > 包含), 同分时文件夹在前,
 ; 再按修改时间。Everything 的语法 (folder:、ext:、path:...) 原样传给 Everything。
 ;
@@ -15,7 +17,7 @@
 ;   - 否则: 内置索引 (Src\Core\FileIndex.ahk), 只包括 ScopeFolders 里的文件夹
 ;
 ; 设置 (ALTRun.json -> Features.FileSearch):
-;   Keywords / FolderKeywords / SpacePrefix / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
+;   Keywords / FolderKeywords / TypeFilters / SpacePrefix / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
 ;   MinQueryLength / UseEverything / EverythingFilter / EverythingPath /
 ;   ScopeFolders / ScopeDepth / ScopeExclude / MaxEntries / RefreshMinutes
 ;===============================================================================
@@ -37,12 +39,14 @@ class FileSearchProvider {
             return FileSearchProvider._KeywordResults(term, options, false, query.HasRest)
         if query.MatchKeyword(options["FolderKeywords"], &term)
             return FileSearchProvider._KeywordResults(term, options, true, query.HasRest)
+        if IsObject(filter := FileSearchProvider.MatchType(query, &term))
+            return FileSearchProvider._KeywordResults(term, options, filter, query.HasRest)
         if (options["InDefaultResults"] && StrLen(query.Text) >= options["MinQueryLength"] && !Calc.Looks(query.Text))
             return FileSearchProvider._DefaultResults(query.Text, options)
         return []
     }
 
-    ; 搜索窗口的文件搜索模式 (空格开头) 调用: 只搜文件, 空文字不返回结果; "folder bk" 只搜文件夹
+    ; 搜索窗口的文件搜索模式 (空格开头) 调用: 只搜文件, 空文字不返回结果; "folder bk" 只搜文件夹, "doc 报告" 只搜文档
     static SearchFiles(term) {
         term := Trim(term)
         if (term = "")
@@ -51,28 +55,75 @@ class FileSearchProvider {
         query := SearchQuery(term), rest := ""
         if (query.HasRest && query.MatchKeyword(options["FolderKeywords"], &rest) && rest != "")
             return FileSearchProvider._KeywordResults(rest, options, true, true)
+        if (query.HasRest && IsObject(filter := FileSearchProvider.MatchType(query, &rest)) && rest != "")
+            return FileSearchProvider._KeywordResults(rest, options, filter, true)
         return FileSearchProvider._KeywordResults(term, options, false, true)
     }
 
-    ; 'xxx / open xxx / folder xxx: 只显示文件 (或文件夹) 搜索结果
+    ; 文件类型筛选: 第一个词是 TypeFilters 里的关键字时返回 {Keyword, Extensions: Map, Everything: "ext:a;b"}
+    static MatchType(query, &term) {
+        term := ""
+        for filter in FileSearchProvider.TypeFilters()
+            if query.MatchKeyword([filter.Keyword], &term)
+                return filter
+        return ""
+    }
+
+    ; TypeFilters ("doc = doc docx pdf ...", 每行一个) 解析后的列表; 设置没变时不重新解析
+    static TypeFilters() {
+        static source := "", parsed := []
+        options := AppSettings.Feature("FileSearch")
+        lines := options.Has("TypeFilters") ? options["TypeFilters"] : []
+        key := ""
+        for line in lines
+            key .= line "`n"
+        if (key == source)
+            return parsed
+        source := key, parsed := []
+        for line in lines
+            if IsObject(filter := FileSearchProvider.ParseTypeFilter(line))
+                parsed.Push(filter)
+        return parsed
+    }
+
+    ; "doc = doc docx .pdf, xls" -> {Keyword: "doc", Extensions: Map, Everything: "ext:doc;docx;pdf;xls"}; 写错时返回 ""
+    static ParseTypeFilter(line) {
+        if !RegExMatch(line, "^\s*([^=\s]+)\s*=\s*(.+)$", &m)
+            return ""
+        extensions := Map(), list := ""
+        for ext in StrSplit(RegExReplace(m[2], "[\s,;]+", " "), " ") {
+            ext := StrLower(LTrim(Trim(ext), "*."))
+            if (ext = "" || extensions.Has(ext))
+                continue
+            extensions[ext] := true, list .= (list = "" ? "" : ";") ext
+        }
+        return extensions.Count ? {Keyword: StrLower(m[1]), Extensions: extensions, Everything: "ext:" list} : ""
+    }
+
+    ; 'xxx / open xxx / folder xxx / doc xxx: 只显示文件 (或文件夹、某类文件) 搜索结果
+    ; scope: false = 文件和文件夹, true = 只要文件夹, 或者 TypeFilters 里的一项
     ; exclusive: 已经输入了关键字后面的空格, 只显示这些结果
-    static _KeywordResults(term, options, foldersOnly, exclusive) {
+    static _KeywordResults(term, options, scope, exclusive) {
         if (term = "") {
-            keywords := options[foldersOnly ? "FolderKeywords" : "Keywords"]
-            keyword := keywords.Length ? keywords[1] : ""
-            hint := foldersOnly ? ResultItem(I18n.T("Folders.Keyword"), keyword " ...", {Icon: "folder:", Valid: false})
-                                : ResultItem(I18n.T("Files.Keyword"), "'..." (keyword != "" ? " / " keyword " ..." : ""), {Icon: "folder:", Valid: false})
+            if IsObject(scope)
+                hint := ResultItem(I18n.T("Files.TypeKeyword", StrReplace(SubStr(scope.Everything, 5), ";", " ")), scope.Keyword " ...", {Icon: "folder:", Valid: false})
+            else {
+                keywords := options[scope ? "FolderKeywords" : "Keywords"]
+                keyword := keywords.Length ? keywords[1] : ""
+                hint := scope ? ResultItem(I18n.T("Folders.Keyword"), keyword " ...", {Icon: "folder:", Valid: false})
+                              : ResultItem(I18n.T("Files.Keyword"), "'..." (keyword != "" ? " / " keyword " ..." : ""), {Icon: "folder:", Valid: false})
+            }
             hint.Score := exclusive ? 150 : 5                               ; 还没输入空格时排在后面, 不挡住其它结果
             hint.Exclusive := exclusive
             return [hint]
         }
         results := []
-        for found in FileSearchProvider.Query(term, options["MaxResults"], false, foldersOnly) {
+        for found in FileSearchProvider.Query(term, options["MaxResults"], false, scope) {
             item := FileSearchProvider._ToItem(found, 150 - A_Index * 0.01)
             item.Exclusive := exclusive
             results.Push(item)
         }
-        fallback := FileSearchProvider.FallbackItem(term, foldersOnly)
+        fallback := FileSearchProvider.FallbackItem(term, scope)
         fallback.Score := results.Length ? 0 : 150
         fallback.Exclusive := exclusive
         results.Push(fallback)
@@ -89,15 +140,16 @@ class FileSearchProvider {
 
     ; 返回 [{Path, IsFolder, Score}], 按匹配程度排序
     ; preferPrefix: 默认结果只要名称开头 / 单词开头匹配的, 避免一大堆只是 "包含" 的文件
-    ; foldersOnly:  只要文件夹 (folder bk)
+    ; scope:        true = 只要文件夹 (folder bk); TypeFilters 里的一项 = 只要这些扩展名的文件 (doc 报告)
     ; Everything 按修改时间返回; 只取前 limit 条的话, 名称最匹配但不是最近修改的文件夹 (例如
     ; "bk" 匹配到大量文件时) 就排不进来, 所以多取一些 (EverythingFetch 条), 再按名称匹配程度挑
-    static Query(term, limit, preferPrefix, foldersOnly := false) {
+    static Query(term, limit, preferPrefix, scope := false) {
         options := AppSettings.Feature("FileSearch")
         needle := StrLower(Trim(term))
+        filter := IsObject(scope) ? scope : "", foldersOnly := !IsObject(scope) && scope
         if (options["UseEverything"] && Everything.IsRunning()) {
             found := []
-            search := (preferPrefix ? "startwith:" : "") (foldersOnly ? "folder:" : "") FileSearchProvider._EverythingTerm(term) " " options["EverythingFilter"]
+            search := (preferPrefix ? "startwith:" : "") FileSearchProvider._ScopePrefix(scope) FileSearchProvider._EverythingTerm(term) " " options["EverythingFilter"]
             fetch := preferPrefix ? limit * 4 : Max(limit, FileSearchProvider.EverythingFetch)
             scoreNeedle := FileSearchProvider.ScoreNeedle(needle)
             for item in Everything.Query(Trim(search), fetch, Everything.SORT_DATE_MODIFIED_DESC) {
@@ -107,7 +159,7 @@ class FileSearchProvider {
             }
             return FileSearchProvider._Best(found, limit)
         }
-        found := FileIndex.Search(needle, preferPrefix ? limit * 4 : limit, foldersOnly)
+        found := FileIndex.Search(needle, preferPrefix ? limit * 4 : limit, foldersOnly, IsObject(filter) ? filter.Extensions : "")
         if preferPrefix {
             kept := []
             for item in found
@@ -119,6 +171,11 @@ class FileSearchProvider {
     }
 
     static EverythingFetch := 300
+
+    ; Everything 搜索的前缀: "folder:" 或 "ext:doc;docx " (后面还要接搜索的文字)
+    static _ScopePrefix(scope) {
+        return IsObject(scope) ? scope.Everything " " : scope ? "folder:" : ""
+    }
 
     ; 给结果打分用的文字: 去掉 Everything 的语法前缀 ("folder:bk" -> "bk", "ext:pdf report" -> "pdf report")
     static ScoreNeedle(needle) {
@@ -149,15 +206,15 @@ class FileSearchProvider {
     }
 
     ; 没有结果时: 在 Everything 里搜索 (装了 Everything) 或用 Windows 搜索
-    static FallbackItem(term, foldersOnly := false) {
+    static FallbackItem(term, scope := false) {
         exe := FileSearchProvider._EverythingExe()
         if (exe != "") {
-            search := (foldersOnly ? "folder:" : "") StrReplace(term, '"')
+            search := FileSearchProvider._ScopePrefix(scope) StrReplace(term, '"')
             return ResultItem(I18n.T("Files.OpenEverything", search), exe, {
                 Icon: exe, OnRun: (*) => Run('"' exe '" -s "' search '"')
             })
         }
-        search := (foldersOnly ? "kind:folder " : "") term
+        search := (IsObject(scope) ? "" : scope ? "kind:folder " : "") term
         return ResultItem(I18n.T("Files.WindowsSearch", search), "search-ms:", {
             Icon: "res:imageres.dll,-8", OnRun: (*) => Run("search-ms:query=" Url.Encode(search))
         })

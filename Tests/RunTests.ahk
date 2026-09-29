@@ -73,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -536,6 +536,167 @@ class Tests {
         TestRunner.True("FileIndex.word start >= 70", FileIndex.ScoreName("omega", "project omega") >= 70)
         eq("no match", FileIndex.ScoreName("xyz", "notes.txt"), 0)
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+    }
+
+    ; 文件类型筛选: doc 报告 / cad 平面图 (和 Listary 一样)
+    static FileTypes() {
+        eq := (n, a, e) => TestRunner.Equal("FileTypes." n, a, e)
+        options := AppSettings.Feature("FileSearch")
+        savedEverything := options["UseEverything"]
+        options["UseEverything"] := 0                                       ; 测试用内置索引
+        parsed := FileSearchProvider.ParseTypeFilter(" Doc = doc, .DOCX;pdf  *.doc ")
+        eq("parse keyword", parsed.Keyword, "doc")
+        eq("parse everything", parsed.Everything, "ext:doc;docx;pdf")
+        eq("parse invalid", FileSearchProvider.ParseTypeFilter("no equals sign"), "")
+        eq("parse empty list", FileSearchProvider.ParseTypeFilter("x = , `;"), "")
+        keywords := ""
+        for filter in FileSearchProvider.TypeFilters()
+            keywords .= filter.Keyword " "
+        eq("default keywords", keywords, "doc pic video audio zip exe cad ")
+        FileIndex.Paths := ["C:\P\Tower Plan.dwg", "C:\P\Tower Plan.pdf", "C:\P\Tower photo.jpg", "C:\P\Tower"]
+        FileIndex.Names := ["tower plan.dwg", "tower plan.pdf", "tower photo.jpg", "tower"]
+        FileIndex.Folders := [0, 0, 0, 1]
+        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        titles(results) {
+            list := ""
+            for item in results
+                if (item.Kind = "file" || item.Kind = "folder")
+                    list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("cad", titles(FileSearchProvider.Search(SearchQuery("cad tower"))), "Tower Plan.dwg")
+        eq("doc", titles(FileSearchProvider.Search(SearchQuery("doc tower"))), "Tower Plan.pdf")
+        eq("pic", titles(FileSearchProvider.Search(SearchQuery("pic tower"))), "Tower photo.jpg")
+        eq("exclusive", FileSearchProvider.Search(SearchQuery("cad tower"))[1].Exclusive, true)
+        eq("file mode", titles(ProviderRegistry.SearchFiles("cad tower")), "Tower Plan.dwg")
+        eq("file mode plain", titles(ProviderRegistry.SearchFiles("tower")), "Tower|Tower Plan.dwg|Tower Plan.pdf|Tower photo.jpg")
+        hint := FileSearchProvider.Search(SearchQuery("cad"))
+        eq("keyword alone hint", hint.Length, 1)
+        eq("keyword alone low score", hint[1].Score < 10 && !hint[1].Exclusive, true)
+        eq("hint lists extensions", InStr(hint[1].Title, "dwg dxf") ? 1 : 0, 1)
+        eq("not a keyword", FileSearchProvider.Search(SearchQuery("cadence")).Length, 0)
+        eq("everything prefix", FileSearchProvider._ScopePrefix(parsed), "ext:doc;docx;pdf ")
+        eq("everything folder prefix", FileSearchProvider._ScopePrefix(true), "folder:")
+        options["TypeFilters"].Push("dwgonly = dwg")                        ; 改了设置马上生效
+        eq("settings change", titles(FileSearchProvider.Search(SearchQuery("dwgonly tower"))), "Tower Plan.dwg")
+        options["TypeFilters"].Pop()
+        options["UseEverything"] := savedEverything
+        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+    }
+
+    ; 对话框的文件夹菜单: 最近的文件夹 (Windows 的 "最近使用的项目")、菜单文字
+    static FolderMenu() {
+        eq := (n, a, e) => TestRunner.Equal("FolderMenu." n, a, e)
+        root := A_Temp "\ALTRun-test-recent"
+        try DirDelete(root, true)
+        DirCreate(root "\Recent"), DirCreate(root "\Projects\Tower"), DirCreate(root "\Docs")
+        longPath := Buffer(2048)                                            ; A_Temp 可能是 8.3 短路径 (C:\Users\RUNNER~1), 快捷方式读回来的是长路径
+        if DllCall("GetLongPathNameW", "Str", root, "Ptr", longPath, "UInt", 1024)
+            root := StrGet(longPath)
+        FileAppend("x", root "\Docs\report.pdf")
+        FileCreateShortcut(root "\Projects\Tower", root "\Recent\Tower.lnk")
+        FileSetTime("20260101000000", root "\Recent\Tower.lnk")
+        FileCreateShortcut(root "\Docs\report.pdf", root "\Recent\report.pdf.lnk")    ; 文件: 取所在的文件夹
+        FileSetTime("20260201000000", root "\Recent\report.pdf.lnk")
+        FileCreateShortcut(root "\Docs", root "\Recent\Docs.lnk")                     ; 和上一条同一个文件夹: 只出现一次
+        FileSetTime("20260115000000", root "\Recent\Docs.lnk")
+        FileCreateShortcut(root "\Gone", root "\Recent\Gone.lnk")                     ; 已经不存在
+        FileSetTime("20260301000000", root "\Recent\Gone.lnk")
+        folders := QuickSwitch.RecentFolders(10, root "\Recent")
+        eq("count", folders.Length, 2)
+        eq("newest first", folders.Length ? folders[1] : "", root "\Docs")
+        eq("second", folders.Length > 1 ? folders[2] : "", root "\Projects\Tower")
+        eq("limit", QuickSwitch.RecentFolders(1, root "\Recent").Length, 1)
+        eq("zero", QuickSwitch.RecentFolders(0, root "\Recent").Length, 0)
+        eq("label", QuickSwitch.MenuLabel(1, {Path: "D:\R&D", Tag: "Total Commander"}), "&1  D:\R&&D`tTotal Commander")
+        eq("label 10", QuickSwitch.MenuLabel(10, {Path: "D:\X", Tag: "Recent"}), "     D:\X`tRecent")
+        saved := QuickSwitch.Options
+        QuickSwitch.Options := Map("TotalCmdHotkey", "^g", "ExplorerHotkey", "", "MenuHotkey", "^+g")
+        eq("hint", QuickSwitch.HintText(), "Ctrl+G: " I18n.T("QuickSwitch.HintTC") "  Ctrl+Shift+G: " I18n.T("QuickSwitch.HintMenu"))
+        QuickSwitch.Options := saved
+        eq("default hotkey", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["MenuHotkey"], "^+g")
+        eq("panel on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["ShowPanel"], 1)
+        area := {Left: 0, Top: 0, Right: 1920, Bottom: 1040}
+        pos := QuickSwitch.PanelPosition(400, 200, 800, 500, 800, 300, area)
+        eq("panel below", pos.X "," pos.Y, "400,700")
+        pos := QuickSwitch.PanelPosition(100, 600, 800, 500, 800, 300, area)
+        eq("panel above", pos.X "," pos.Y, "100,300")
+        pos := QuickSwitch.PanelPosition(1500, 100, 800, 900, 800, 300, area)
+        eq("panel kept on screen", pos.X "," pos.Y, "1120,740")
+        eq("folder name", QuickSwitch.FolderName("D:\Projects\Tower A\"), "Tower A")
+        eq("drive name", QuickSwitch.FolderName("D:\"), "D:\")
+        base := [{Path: "D:\Projects\Tower A", Tag: "TC"}, {Path: "C:\Docs", Tag: "Recent"}]
+        filtered := QuickSwitch.FilterFolders(base, "tower", ["D:\Projects\Tower A", "E:\Archive\Tower B"])
+        eq("filter count", filtered.Length, 2)
+        eq("filter keeps listed first", filtered[1].Tag, "TC")
+        eq("filter adds found", filtered[2].Path "|" filtered[2].Tag, "E:\Archive\Tower B|" I18n.T("QuickSwitch.TagSearch"))
+        eq("filter words", QuickSwitch.FilterFolders(base, "proj tow", []).Length, 1)
+        eq("filter empty", QuickSwitch.FilterFolders(base, "", []).Length, 2)
+        withFile := QuickSwitch.FilterFolders(base, "tower", [{Path: "E:\Tower", IsFolder: true}, {Path: "E:\Tower\plan.dwg", IsFolder: false}])
+        eq("file entry", withFile[3].IsFile "|" withFile[3].Tag, "1|" I18n.T("QuickSwitch.TagFile"))
+        eq("folder entry", withFile[2].IsFile, false)
+        eq("restore file name", QuickSwitch.ShouldRestoreName("Report 2026.docx"), true)
+        eq("no restore empty", QuickSwitch.ShouldRestoreName("  "), false)
+        eq("no restore filter", QuickSwitch.ShouldRestoreName("*.txt"), false)
+        eq("no restore path", QuickSwitch.ShouldRestoreName("C:\Docs\a.txt"), false)
+        QuickSwitch._BuildPanel(A_ScriptHwnd)                              ; 真的建一次面板 (Gui 选项写错时这里就会报错)
+        TestRunner.True("FolderMenu.panel built", IsObject(QuickSwitch._panel) && IsObject(QuickSwitch._panelList))
+        QuickSwitch._ShowFolders(base)
+        eq("panel rows", QuickSwitch._panelList.GetCount(), 2)
+        eq("panel name column", QuickSwitch._panelList.GetText(1, 1), "Tower A")
+        QuickSwitch._panelSearch.Value := "docs"
+        QuickSwitch._panelBase := base
+        QuickSwitch._SearchPanel()
+        eq("panel search filters", QuickSwitch._panelList.GetText(1, 2), "C:\Docs")
+        QuickSwitch.HidePanel()
+        eq("panel hidden", QuickSwitch._panel, "")
+        try DirDelete(root, true)
+    }
+
+    ; 文件的操作: 复制 / 剪切文件、打开方式、移到回收站
+    static FileActions() {
+        eq := (n, a, e) => TestRunner.Equal("FileActions." n, a, e)
+        root := A_Temp "\ALTRun-test-fileactions"
+        try DirDelete(root, true)
+        DirCreate(root)
+        FileAppend("x", root "\plan.dwg")
+        item := FileSearchProvider._ToItem({Path: root "\plan.dwg", IsFolder: false}, 10)
+        titles := "|"
+        for action in ActionCatalog.ListFor(item)
+            titles .= action.Title "|"
+        for key in ["Action.OpenWith", "Action.CopyFile", "Action.CutFile", "Action.Recycle"]
+            eq("has " key, InStr(titles, "|" I18n.T(key) "|") ? 1 : 0, 1)
+        missing := FileSearchProvider._ToItem({Path: root "\gone.dwg", IsFolder: false}, 10)
+        titles := "|"
+        for action in ActionCatalog.ListFor(missing)
+            titles .= action.Title "|"
+        eq("missing file: no copy", InStr(titles, "|" I18n.T("Action.CopyFile") "|") ? 1 : 0, 0)
+        drive := FileSearchProvider._ToItem({Path: "C:\", IsFolder: true}, 10)
+        titles := "|"
+        for action in ActionCatalog.ListFor(drive)
+            titles .= action.Title "|"
+        eq("drive: no recycle", InStr(titles, "|" I18n.T("Action.Recycle") "|") ? 1 : 0, 0)
+        ClipboardProvider.PauseRecording(3000)
+        TestRunner.True("FileActions.copy file", ActionCatalog.CopyFiles([root "\plan.dwg"]))
+        eq("copied path", ClipboardData.Files().Length ? ClipboardData.Files()[1] : "", root "\plan.dwg")
+        eq("copy is not cut", ClipboardData.IsCut(), false)
+        ActionCatalog.CopyFiles([root "\plan.dwg"], true)
+        eq("cut", ClipboardData.IsCut(), true)
+        A_Clipboard := ""
+        try DirDelete(root, true)
+    }
+
+    ; 双击 Ctrl / Shift: 只认两次单独的短按
+    static DoubleTap() {
+        eq := (n, a, e) => TestRunner.Equal("DoubleTap." n, a, e)
+        eq("first tap", App.TapDecision("LControl", "LCtrl", 80, 99999), "first")
+        eq("second tap", App.TapDecision("LControl", "LCtrl", 80, 250), "show")
+        eq("right ctrl", App.TapDecision("RControl", "RCtrl", 80, 250), "show")
+        eq("shift", App.TapDecision("LShift", "LShift", 80, 250), "show")
+        eq("too slow", App.TapDecision("LControl", "LCtrl", 80, 900), "first")
+        eq("ctrl+c", App.TapDecision("c", "LCtrl", 80, 250), "reset")
+        eq("held too long", App.TapDecision("LControl", "LCtrl", 800, 250), "reset")
+        eq("default off", AppSettings.Defaults()["General"]["DoubleTap"], "")
     }
 
     static EditActions() {
