@@ -72,8 +72,11 @@ class QuickSwitch {
 
     ; 每 250 ms: AutoSwitch 时从 TC 切到对话框自动跳转; 显示 / 隐藏 / 摆放文件夹面板
     static _Watch() {
-        if QuickSwitch.PanelActive()                                        ; 正在面板的搜索框里输入: 对话框和面板都保持原样
+        if QuickSwitch.PanelActive() {                                      ; 正在面板的搜索框里输入: 对话框和面板都保持原样
+            if !WinExist("ahk_id " QuickSwitch._panelFor)                   ; 对话框已经关掉 (程序自己关的): 面板也关掉
+                QuickSwitch.HidePanel()
             return
+        }
         isDialog := QuickSwitch.IsFileDialog()
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasTC && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
             QuickSwitch.SyncTotalCmdPath(true)
@@ -325,12 +328,12 @@ class QuickSwitch {
     static _PanelJump(row) {
         if (row < 1 || row > QuickSwitch._panelFolders.Length || !QuickSwitch._panelFor)
             return
-        entry := QuickSwitch._panelFolders[row]
+        entry := QuickSwitch._panelFolders[row], dialog := QuickSwitch._panelFor
         QuickSwitch._BackToDialog()
         if (entry.HasOwnProp("IsFile") && entry.IsFile)
-            QuickSwitch.PickFile(entry.Path)
+            QuickSwitch.PickFile(entry.Path, dialog)
         else
-            QuickSwitch.SetDialogPath(RTrim(entry.Path, "\") "\")
+            QuickSwitch.SetDialogPath(RTrim(entry.Path, "\") "\", dialog)
         if (IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value != "") {   ; 跳过去之后清空搜索, 列表恢复原样
             QuickSwitch._panelSearch.Value := ""
             QuickSwitch._ShowFolders(QuickSwitch._panelBase)
@@ -575,10 +578,10 @@ class QuickSwitch {
     }
 
     ; 在对话框里选中一个文件: 打开和保存对话框都一样, 跳到它所在的文件夹 (不替用户打开或保存)
-    static PickFile(filePath) {
+    static PickFile(filePath, dialog := 0) {
         SplitPath(filePath, , &dir)
         if (dir != "")
-            QuickSwitch.SetDialogPath(RTrim(dir, "\") "\")
+            QuickSwitch.SetDialogPath(RTrim(dir, "\") "\", dialog)
     }
 
     ; 文件名框里原来是普通的文件名时才填回去 (空的、路径、*.txt 这样的筛选条件不填)
@@ -587,17 +590,26 @@ class QuickSwitch {
         return saved != "" && !RegExMatch(saved, "[\\/:*?]")
     }
 
-    static SetDialogPath(folder) {
+    ; dialog: 要跳转的对话框 (默认是当前窗口)。模拟键盘输入之前确认它是前台窗口,
+    ; 否则文字会打到别的窗口里 (例如切回对话框失败、面板还在前台)
+    static SetDialogPath(folder, dialog := 0) {
         if (folder = "" || !FileExist(folder))
             return
+        if !dialog
+            dialog := WinExist("A")
+        if !(dialog && WinExist("ahk_id " dialog))
+            return
         Usage.Count("QuickSwitch")
-        if (WinGetClass("A") = "Qt5QWindowIcon") {                          ; WPS 的对话框没有可用的 Edit 控件, 只能模拟输入
+        className := ""
+        try className := WinGetClass("ahk_id " dialog)
+        if (className = "Qt5QWindowIcon") {                                 ; WPS 的对话框没有可用的 Edit 控件, 只能模拟输入
+            if !WinActive("ahk_id " dialog)
+                return
             SendText(folder)
             SendInput("{Enter}")
             return
         }
         try {
-            dialog := WinExist("A")
             saved := ""
             try saved := ControlGetText("Edit1", "ahk_id " dialog)             ; 文件名框原来的内容 (例如另存为时程序预填的文件名)
             ControlFocus("Edit1", "ahk_id " dialog)
@@ -608,6 +620,8 @@ class QuickSwitch {
                 try ControlSetText(saved, "Edit1", "ahk_id " dialog)
             }
         } catch {
+            if !WinActive("ahk_id " dialog)
+                return
             SendInput("!d")                                                 ; 没有 Edit1 的自绘对话框: 用地址栏
             Sleep(60)
             SendText(folder)

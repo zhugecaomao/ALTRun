@@ -68,13 +68,14 @@ class BookmarkProvider {
         items := [], seen := Map(), stamp := ""
         for bookmarkFile in BookmarkProvider.Files() {
             try {
-                stamp .= bookmarkFile[2] FileGetTime(bookmarkFile[2], "M") "|"
+                fileStamp := bookmarkFile[2] FileGetTime(bookmarkFile[2], "M") "|"
                 for bookmark in BookmarkProvider.ParseFile(FileRead(bookmarkFile[2], "UTF-8"))
                     if !seen.Has(bookmark.Url) {                            ; 几个浏览器都有的书签只留一条
                         seen[bookmark.Url] := true
                         bookmark.Browser := bookmarkFile[1]
                         items.Push(bookmark)
                     }
+                stamp .= fileStamp                                          ; 读成功了才记下: 浏览器正在写文件时读失败, 下次再读
             } catch as e {
                 Logger.Error("BookmarkProvider: " bookmarkFile[2] " - " e.Message)
             }
