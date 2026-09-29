@@ -296,6 +296,7 @@ class AppSettings {
                     "TotalCmdHotkey"   , "^g",
                     "MenuHotkey"       , "^+g",                             ; 文件夹菜单: 所有 TC 面板、资源管理器窗口、最近的文件夹
                     "RecentFolders"    , 10,                                ; 菜单里列出几个最近的文件夹, 0 = 不列
+                    "PanelSearch"      , "all",                             ; 面板搜索框: all = 文件夹和文件, folders = 只搜文件夹
                     "ShowPanel"        , 1,                                 ; 对话框一出现就在下面显示文件夹面板 (和 Listary 一样), 点一下就跳过去
                     "AutoSwitch"       , 0,
                     "DialogWindows"    , "ahk_class #32770",                ; 标准的 Windows 对话框, 另外可以加 "ahk_class Qt5QWindowIcon" (WPS) 等

@@ -152,10 +152,24 @@ class FileSearchProvider {
             search := (preferPrefix ? "startwith:" : "") FileSearchProvider._ScopePrefix(scope) FileSearchProvider._EverythingTerm(term) " " options["EverythingFilter"]
             fetch := preferPrefix ? limit * 4 : Max(limit, FileSearchProvider.EverythingFetch)
             scoreNeedle := FileSearchProvider.ScoreNeedle(needle)
+            seen := Map()
             for item in Everything.Query(Trim(search), fetch, Everything.SORT_DATE_MODIFIED_DESC) {
                 SplitPath(item.Path, &name)
                 score := FileIndex.ScoreName(scoreNeedle, StrLower(name))
                 found.Push({Path: item.Path, IsFolder: item.IsFolder, Score: score ? score : 50})
+                seen[StrLower(item.Path)] := true
+            }
+            ; 文件和文件夹一起搜时, 同名的文件很多 (例如 ppie 文件夹里有几百个 ppie_xxx.dwg) 的话, 按修改时间取的前 fetch 条
+            ; 可能全是文件, 名称完全相同的文件夹反而排不进来: 另外单独取一次文件夹
+            if (!IsObject(scope) && !scope && !RegExMatch(term, "i)(^|\s)(folder|file|files|ext):")) {   ; 已经写了 folder: / ext: 等就不另外取
+                folderSearch := (preferPrefix ? "startwith:" : "") "folder:" FileSearchProvider._EverythingTerm(term) " " options["EverythingFilter"]
+                for item in Everything.Query(Trim(folderSearch), 50, Everything.SORT_DATE_MODIFIED_DESC) {
+                    if seen.Has(StrLower(item.Path))
+                        continue
+                    SplitPath(item.Path, &name)
+                    score := FileIndex.ScoreName(scoreNeedle, StrLower(name))
+                    found.Push({Path: item.Path, IsFolder: true, Score: score ? score : 50})
+                }
             }
             return FileSearchProvider._Best(found, limit)
         }

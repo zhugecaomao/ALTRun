@@ -50,15 +50,24 @@ class QuickSwitch {
         } catch as e {
             Logger.Error("QuickSwitch: cannot register hotkeys - " e.Message)
         }
-        HotIf((*) => QuickSwitch.PanelActive())
-        for key in ["Up", "Down", "Enter", "NumpadEnter", "Escape"]
-            Hotkey(key, QuickSwitch._KeyHandler(key = "NumpadEnter" ? "Enter" : key))
-        HotIf()
+        OnMessage(0x100, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_KEYDOWN: 面板搜索框里的 ↑ ↓ Enter Esc
 
         SetTimer(() => QuickSwitch._Watch(), 250)
     }
 
-    static _KeyHandler(key) => (*) => QuickSwitch.PanelKey(key)
+    ; 用 WM_KEYDOWN 而不是热键: 中文输入法正在输入 (还没上屏) 时按键是 VK_PROCESSKEY, 不会被当成 Enter / Esc
+    static _OnKeyDown(wParam, lParam, msg, hwnd) {
+        if !(IsObject(QuickSwitch._panelSearch) && (hwnd = QuickSwitch._panelSearch.Hwnd || hwnd = QuickSwitch._panelList.Hwnd))
+            return
+        switch wParam {
+            case 0x26: QuickSwitch.PanelKey("Up")
+            case 0x28: QuickSwitch.PanelKey("Down")
+            case 0x0D: QuickSwitch.PanelKey("Enter")
+            case 0x1B: QuickSwitch.PanelKey("Escape")
+            default:   return
+        }
+        return 0
+    }
 
     ; 每 250 ms: 在对话框标题上显示热键提示; AutoSwitch 时从 TC 切到对话框自动跳转
     static _Watch() {
@@ -104,31 +113,105 @@ class QuickSwitch {
         QuickSwitch._panelFor := dialog
         QuickSwitch._panelBase := QuickSwitch.MenuFolders()
         rect := QuickSwitch._FrameRect(dialog)
-        width := IsObject(rect) ? Max(420, Min(rect.W, 1000)) : 600
+        width := QuickSwitch.PanelWidthFor(IsObject(rect) ? rect.W : 600)
+        colors := QuickSwitch.PanelColors()                                 ; 跟随 ALTRun 的主题 (浅色 / 深色...)
         panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border", "ALTRun Quick Switch")
-        panel.MarginX := 0, panel.MarginY := 0, panel.BackColor := "FFFFFF"
-        panel.SetFont("s10", "Segoe UI")
-        search := panel.AddEdit("x8 y7 w" (width - 16) " r1 -Multi")
+        panel.MarginX := 0, panel.MarginY := 0, panel.BackColor := colors.Background
+        panel.SetFont("s10 c" colors.Text, QuickSwitch._FontName())
+        search := panel.AddEdit("x10 y8 w" (width - 20) " r1 -Multi -E0x200 Background" colors.Background)
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
         DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T("QuickSwitch.SearchCue") hint)   ; EM_SETCUEBANNER: 灰色提示文字
         search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
-        panel.SetFont("s9")
-        list := panel.AddListView("x0 y+6 w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 BackgroundFFFFFF", ["Name", "Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
+        line := panel.AddText("x0 y+6 w" width " h1 Background" colors.Separator)   ; 搜索框和列表之间的分隔线
+        panel.SetFont("s9 c" colors.Text)
+        list := panel.AddListView("x0 y+2 w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 Background" colors.Background, ["Name", "Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
         icons := IL_Create(2)
         IL_Add(icons, "shell32.dll", 4)                                     ; 1 = 文件夹
         IL_Add(icons, "shell32.dll", 1)                                     ; 2 = 文件
         list.SetImageList(icons)
         list.OnEvent("Click", (ctrl, row) => QuickSwitch._PanelJump(row))
+        list.OnNotify(-12, (ctrl, lParam) => QuickSwitch._OnCustomDraw(lParam))   ; NM_CUSTOMDRAW: 选中行和灰色文字用主题的颜色
         list.Add("Icon1", "X")                                              ; 先放一行才量得出行高 (LVM_APPROXIMATEVIEWRECT)
         QuickSwitch._rowTop := SendMessage(0x1040, 1, 0, list) >> 16
         QuickSwitch._rowHeight := (SendMessage(0x1040, 2, 0, list) >> 16) - QuickSwitch._rowTop
         list.Delete()
         QuickSwitch._panel := panel, QuickSwitch._panelList := list, QuickSwitch._panelSearch := search, QuickSwitch._panelWidth := width
+        QuickSwitch._panelLine := line, QuickSwitch._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitch._panelColors := colors
+        if colors.Dark
+            try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; 深色主题: 滚动条和选中行也用深色
         try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: 小圆角
         QuickSwitch._ShowFolders(QuickSwitch._panelBase)
     }
 
-    static _panelBase := [], _panelList := "", _panelSearch := "", _panelWidth := 600, _rowTop := 20, _rowHeight := 18
+    static _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
+
+    ; 面板宽度 = 对话框宽度 (420 ~ 1000)
+    static PanelWidthFor(dialogWidth) => Max(420, Min(dialogWidth, 1000))
+
+    ; 面板的颜色: 用 ALTRun 当前主题的背景 / 文字 / 分隔线颜色; 主题还没载入时用浅色
+    static PanelColors() {
+        get(key, fallback) => ((value := ThemeManager.Get(key)) != "") ? value : fallback
+        background := get("Background", "FFFFFF")
+        return {Background: background, Text: get("Title", "1F1F1F"), Subtitle: get("Subtitle", "808080"), Separator: get("Separator", "E4E4E4")
+              , Selected: get("SelectedBackground", "DDE7F6"), SelectedText: get("SelectedTitle", "000000"), SelectedSubtitle: get("SelectedSubtitle", "4A5568")
+              , Dark: QuickSwitch.IsDarkColor(background)}
+    }
+
+    ; "RRGGBB" -> Windows 的 COLORREF (0x00BBGGRR)
+    static ColorRef(hex) {
+        value := Integer("0x" hex)
+        return ((value & 0xFF) << 16) | (value & 0xFF00) | ((value >> 16) & 0xFF)
+    }
+
+    ; 每个格子自己定颜色: 选中行用主题的选中色, 路径和来源用灰色 (NMLVCUSTOMDRAW)
+    static _OnCustomDraw(lParam) {
+        static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001, CDDS_SUBITEMPREPAINT := 0x30001
+        static CDRF_NEWFONT := 0x2, CDRF_NOTIFYITEMDRAW := 0x20, CDRF_NOTIFYSUBITEMDRAW := 0x20
+        x64 := (A_PtrSize = 8)
+        stage := NumGet(lParam, A_PtrSize * 3, "UInt")
+        if (stage = CDDS_PREPAINT)
+            return CDRF_NOTIFYITEMDRAW
+        if (stage = CDDS_ITEMPREPAINT)
+            return CDRF_NOTIFYSUBITEMDRAW
+        if (stage != CDDS_SUBITEMPREPAINT)
+            return 0
+        colors := QuickSwitch._panelColors
+        row := NumGet(lParam, x64 ? 56 : 36, "UPtr")
+        column := NumGet(lParam, x64 ? 88 : 56, "Int")
+        selected := SendMessage(0x102C, row, 0x2, QuickSwitch._panelList) & 0x2   ; LVM_GETITEMSTATE / LVIS_SELECTED
+        stateOffset := x64 ? 64 : 40
+        NumPut("UInt", NumGet(lParam, stateOffset, "UInt") & ~0x11, lParam, stateOffset)   ; 去掉 CDIS_SELECTED / CDIS_FOCUS, 不画系统的蓝色高亮
+        text := selected ? (column ? colors.SelectedSubtitle : colors.SelectedText) : (column ? colors.Subtitle : colors.Text)
+        NumPut("UInt", QuickSwitch.ColorRef(text), lParam, x64 ? 80 : 48)
+        NumPut("UInt", QuickSwitch.ColorRef(selected ? colors.Selected : colors.Background), lParam, x64 ? 84 : 52)
+        return CDRF_NEWFONT
+    }
+
+    ; "1E1E1E" 这种颜色是不是深色 (亮度低于一半)
+    static IsDarkColor(hex) {
+        if !RegExMatch(hex, "i)^[0-9a-f]{6}$")
+            return false
+        value := Integer("0x" hex)
+        return (((value >> 16) & 0xFF) * 299 + ((value >> 8) & 0xFF) * 587 + (value & 0xFF) * 114) / 1000 < 128
+    }
+
+    static _FontName() {
+        try return ThemeManager.FontName()
+        return "Segoe UI"
+    }
+
+    ; 对话框的宽度改了: 面板跟着改宽度
+    static _ResizePanel(dialogWidth) {
+        width := QuickSwitch.PanelWidthFor(dialogWidth)
+        QuickSwitch._panelDialogW := dialogWidth
+        if (width = QuickSwitch._panelWidth)
+            return
+        QuickSwitch._panelWidth := width
+        QuickSwitch._panelSearch.Move(, , width - 20)
+        QuickSwitch._panelLine.Move(, , width)
+        QuickSwitch._panelList.Move(, , width)
+        QuickSwitch._ShowFolders(QuickSwitch._panelFolders)                ; 重新算列宽, 并调整面板大小和位置
+    }
     static _searchTimer := () => QuickSwitch._SearchPanel()
 
     ; 列表: 文件夹名 | 完整路径 | 来源 (TC / 资源管理器 / 最近 / 搜索)
@@ -173,15 +256,20 @@ class QuickSwitch {
         QuickSwitch._ShowFolders(QuickSwitch.FilterFolders(QuickSwitch._panelBase, term, term = "" ? [] : QuickSwitch._FindItems(term)))
     }
 
-    ; [{Path, IsFolder}], 文件夹在前 (同一类里保持按名称匹配程度的顺序)
+    ; [{Path, IsFolder}], 文件夹在前。文件夹单独搜 (和文件一起搜时, 名称完全相同的文件夹可能因为不是最近修改的而排不进来);
+    ; PanelSearch = "folders" 时只搜文件夹
     static _FindItems(term) {
-        folders := [], files := []
+        found := [], seen := Map()
         try {
+            for item in FileSearchProvider.Query(term, 15, false, true)
+                found.Push({Path: item.Path, IsFolder: true}), seen[StrLower(item.Path)] := true
+            if (QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "folders")
+                return found
             for item in FileSearchProvider.Query(term, 30, false)
-                (item.IsFolder ? folders : files).Push({Path: item.Path, IsFolder: item.IsFolder})
+                if (!item.IsFolder && !seen.Has(StrLower(item.Path)))
+                    found.Push({Path: item.Path, IsFolder: false})
         }
-        folders.Push(files*)
-        return folders
+        return found
     }
 
     ; 过滤 base (不区分大小写, 每个词都要出现在路径里), 再把 extra 里没有重复的加在后面:
@@ -259,6 +347,8 @@ class QuickSwitch {
         rect := QuickSwitch._FrameRect(dialog)
         if !IsObject(rect)
             return QuickSwitch.HidePanel()
+        if (QuickSwitch._panelDialogW && rect.W != QuickSwitch._panelDialogW)
+            return QuickSwitch._ResizePanel(rect.W)
         if !QuickSwitch._panelPos                                           ; 第一次显示或大小变了: 先按内容算出大小
             QuickSwitch._panel.Show(DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) ? "NA AutoSize" : "NA Hide AutoSize")
         QuickSwitch._panel.GetPos(, , &panelW, &panelH)

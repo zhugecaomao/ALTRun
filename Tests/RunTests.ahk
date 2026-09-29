@@ -648,8 +648,28 @@ class Tests {
         QuickSwitch._panelBase := base
         QuickSwitch._SearchPanel()
         eq("panel search filters", QuickSwitch._panelList.GetText(1, 2), "C:\Docs")
+        eq("resize before", QuickSwitch._panelWidth, QuickSwitch.PanelWidthFor(QuickSwitch._panelDialogW ? QuickSwitch._panelDialogW : 600))
+        QuickSwitch._ResizePanel(900)                                      ; 对话框变宽: 面板跟着变宽
+        QuickSwitch._panelList.GetPos(, , &listW)
+        eq("resize width", QuickSwitch._panelWidth "|" listW, "900|900")
+        eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
+        eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitch._panelSearch.Hwnd), 0)
+        eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; 输入法正在输入: 不拦截
         QuickSwitch.HidePanel()
         eq("panel hidden", QuickSwitch._panel, "")
+        eq("width min", QuickSwitch.PanelWidthFor(300), 420)
+        eq("width max", QuickSwitch.PanelWidthFor(1600), 1000)
+        eq("dark color", QuickSwitch.IsDarkColor("1E1E1E"), true)
+        eq("light color", QuickSwitch.IsDarkColor("FAFAFA"), false)
+        eq("bad color", QuickSwitch.IsDarkColor("abc"), false)
+        savedTheme := ThemeManager.Current
+        ThemeManager.Current := Map("Background", "202020", "Title", "EEEEEE", "Separator", "333333")
+        colors := QuickSwitch.PanelColors()
+        eq("theme colors", colors.Background "|" colors.Text "|" colors.Dark, "202020|EEEEEE|1")
+        ThemeManager.Current := Map()
+        eq("no theme", QuickSwitch.PanelColors().Background, "FFFFFF")
+        ThemeManager.Current := savedTheme
+        eq("panel search default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["PanelSearch"], "all")
         try DirDelete(root, true)
     }
 

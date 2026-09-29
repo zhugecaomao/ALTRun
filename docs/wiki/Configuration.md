@@ -135,7 +135,7 @@
 
 | 节点 | 键 |
 |---|---|
-| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `MenuHotkey` (`^+g`, 文件夹菜单) `RecentFolders` (10) `ShowPanel` (1, 对话框旁边的文件夹面板) `AutoSwitch` `DialogWindows` (`ahk_class #32770`) `ExcludeWindows` `AutoSwitchExclude` |
+| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `MenuHotkey` (`^+g`, 文件夹菜单) `RecentFolders` (10) `ShowPanel` (1, 对话框下面的文件夹面板) `PanelSearch` (`all` = 文件夹和文件, `folders` = 只搜文件夹) `AutoSwitch` `DialogWindows` (`ahk_class #32770`) `ExcludeWindows` `AutoSwitchExclude` |
 | AutoDate | `Enabled` `DateFormat` (`dd.MM.yyyy`) `RenameHotkey` (`^d`) `RenameWindows` `AppendHotkey` (`^d`) `AppendWindows` |
 | PTTools | PT 工具箱自己保存的输入和窗口位置 |
 
