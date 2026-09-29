@@ -1,5 +1,5 @@
 {
-    "version": "2026.09.29",
+    "version": "2026.09.30",
     "description": "Lightweight, Alfred-style launcher for Windows, written in AutoHotkey v2",
     "homepage": "https://github.com/zhugecaomao/ALTRun",
     "license": "GPL-3.0-only",
@@ -9,8 +9,8 @@
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/zhugecaomao/ALTRun/releases/download/2026.09.29/ALTRun_v2026.09.29.zip",
-            "hash": "48e6f90c4d6d5d418146086205cd15796d1a61f03c24add120f30ee85795edc7"
+            "url": "https://github.com/zhugecaomao/ALTRun/releases/download/2026.09.30/ALTRun_v2026.09.30.zip",
+            "hash": "872bb98f4b4fd2df278d436cd6577cd6ac75231463a1a5232d1a90fd16a5a682"
         }
     },
     "pre_install": [
