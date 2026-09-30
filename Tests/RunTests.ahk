@@ -77,7 +77,9 @@ class TestRunner {
             try {
                 Tests.%name%()
             } catch as e {
-                TestRunner.Fail(name, "exception: " e.Message " (line " e.Line ")")
+                SplitPath(e.File, &fileName)                                ; 写出文件名和调用栈, 偶发的失败也能看出在哪里
+                stack := RegExReplace(Trim(e.Stack, "`r`n"), "\R", " <- ")
+                TestRunner.Fail(name, "exception: " e.Message " (" fileName ":" e.Line ") " SubStr(stack, 1, 600))
             }
         }
         FileAppend("`n" TestRunner.Passed " passed, " TestRunner.Failed " failed`n", "*")
