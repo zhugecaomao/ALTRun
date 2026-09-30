@@ -1623,7 +1623,8 @@ Func | PTTools | PT Tools (AHK)=99
         main := FileRead(A_ScriptDir "\..\ALTRun.ahk", "UTF-8")
         RegExMatch(main, "m);@Ahk2Exe-SetVersion\s+(\S+)", &m)
         TestRunner.Equal("ReleaseVersion.exe version = App.Version", IsObject(m) ? m[1] : "", App.Version)
-        TestRunner.True("ReleaseVersion.date format", RegExMatch(App.Version, "^\d{4}\.\d{2}\.\d{2}$"))
+        TestRunner.True("ReleaseVersion.date format", RegExMatch(App.Version, "^\d{4}\.\d{2}\.\d{2}(\.\d+)?$"))   ; 同一天再发布: 2026.09.30.1
+        TestRunner.True("ReleaseVersion.same-day release is newer", UpdateChecker.Compare("2026.09.30.1", "2026.09.30") > 0 && UpdateChecker.Compare("2026.10.01", "2026.09.30.2") > 0)
     }
 
     ; 一键更新: 解析 GitHub 的 Release、SHA256、替换文件 (用临时文件夹里的假程序, 不下载)
