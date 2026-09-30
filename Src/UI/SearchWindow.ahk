@@ -899,15 +899,24 @@ class SearchWindow {
         textLeft := left + pad + iconSize + Win.Scale(12)
         shortcutW := Win.Scale(56)
         oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["ShortcutFont"], "Ptr")
+        textRight := right - pad - shortcutW - Win.Scale(8)
 
         if (visibleRow <= 9 && SearchWindow.Mode = "results") {             ; 右侧 Ctrl+N 提示
             DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedShortcutColor"] : gdi["ShortcutColor"])
             SearchWindow._DrawText(hdc, "Ctrl+" visibleRow, right - pad - shortcutW, top, right - pad, bottom, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX)
-        } else if (item.Subtitle != "" && SearchWindow.Mode = "actions") {  ; 操作面板: 右侧显示快捷键
-            DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedShortcutColor"] : gdi["ShortcutColor"])
-            SearchWindow._DrawText(hdc, item.Subtitle, right - pad - Win.Scale(100), top, right - pad, bottom, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX)
+        } else if (SearchWindow.Mode = "actions") {                         ; 操作面板: 右侧显示快捷键或说明, 按实际宽度留位置
+            hintW := 0, gap := Win.Scale(12)
+            if (item.Subtitle != "") {
+                hintW := SearchWindow._TextWidth(hdc, item.Subtitle)
+                DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["TitleFont"])
+                titleW := SearchWindow._TextWidth(hdc, item.Title)
+                DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["ShortcutFont"])
+                hintW := SearchWindow.HintWidth(right - pad - textLeft, titleW, hintW, gap)
+                DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedShortcutColor"] : gdi["ShortcutColor"])
+                SearchWindow._DrawText(hdc, item.Subtitle, right - pad - hintW, top, right - pad, bottom, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS)
+            }
+            textRight := right - pad - (hintW ? hintW + gap : 0)
         }
-        textRight := right - pad - (SearchWindow.Mode = "actions" ? Win.Scale(108) : shortcutW + Win.Scale(8))
 
         DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["TitleFont"])
         DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedTitleColor"] : gdi["TitleColor"])
@@ -925,6 +934,18 @@ class SearchWindow {
             SearchWindow._DrawText(hdc, item.Subtitle, textLeft, middle + Win.Scale(2), textRight, bottom, DT_SINGLELINE | DT_NOPREFIX | ellipsis)
         }
         DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
+    }
+
+    ; 操作面板一行里右侧说明的宽度: 名称优先 (最多占一半), 说明用剩下的; 放得下时两者都完整显示
+    static HintWidth(available, titleW, hintW, gap) {
+        keep := Min(titleW, available // 2)
+        return Max(0, Min(hintW, available - keep - gap))
+    }
+
+    static _TextWidth(hdc, text) {
+        size := Buffer(8, 0)
+        DllCall("GetTextExtentPoint32W", "Ptr", hdc, "WStr", text, "Int", StrLen(text), "Ptr", size)
+        return NumGet(size, 0, "Int")
     }
 
     static _DrawText(hdc, text, left, top, right, bottom, flags) {

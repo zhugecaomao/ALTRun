@@ -52,7 +52,7 @@ class SystemProvider {
         return results
     }
 
-    ; 空搜索框里的结果: 后台发现了新版本时, 显示 "更新 ALTRun 到 x" (和 Alfred 一样, 不弹窗)
+    ; 空搜索框里的结果: 后台发现了新版本时, 显示 "发现新版本: ALTRun x" (和 Alfred 一样, 不弹窗)
     static EmptyResults() {
         update := UpdateChecker.PendingItem()
         return IsObject(update) ? [update] : []
