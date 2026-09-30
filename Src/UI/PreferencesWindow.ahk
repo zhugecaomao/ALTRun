@@ -401,13 +401,14 @@ class PreferencesWindow {
 
     static _BuildSnippets() {
         PreferencesWindow._BeginPage("Prefs.Page.Snippets", 150)
-        PreferencesWindow._List("Snippets", 300
+        PreferencesWindow._List("Snippets", 250
             , [["Prefs.Col.Name", "Name", 150], ["Prefs.Col.Keyword", "Keyword", 90], ["Prefs.Col.Text", "Text", 300]]
             , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet())
         PreferencesWindow._Section("Prefs.Section.Options")
+        PreferencesWindow._Check("Features.Snippets.SearchText", "Prefs.SnippetSearchText", , , "Prefs.Group.Search")
+        PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")
         PreferencesWindow._Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand", , , "Prefs.Group.AutoExpand")
         PreferencesWindow._Field("Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", "S")
-        PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")
         PreferencesWindow._Pair(["Features.Snippets.PasteMode", "Prefs.PasteMode", "M", "choice", ["Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")]]
             , ["Features.Snippets.PasteDelay", "Prefs.PasteDelay", "S", "number"])
     }

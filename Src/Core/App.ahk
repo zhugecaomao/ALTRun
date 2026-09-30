@@ -23,7 +23,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.09.30.3"
+    static Version := "2026.10.01"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
     static PreviousWindow := 0
@@ -53,15 +53,18 @@ class App {
         phase := Logger.Ms()
         App._SetIcon()                                                      ; 在创建窗口之前: 窗口的图标跟随托盘图标
         SearchWindow.Create()
+        Logger.Time("startup: search window", phase), phase := Logger.Ms()
         App._CreateTrayMenu()
         App._RegisterHotkeys()
+        Logger.Time("startup: tray, hotkeys", phase), phase := Logger.Ms()
         SnippetExpander.Init()
         QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))
         AutoDate.Init(AppSettings.Extension("AutoDate"))
         PTToolsWindow.Load(AppSettings.Extension("PTTools"))
+        Logger.Time("startup: snippets, extensions", phase), phase := Logger.Ms()
         App._UpdateShellShortcuts()
         OnExit((*) => App._OnExit())
-        Logger.Time("startup: window, tray, hotkeys, extensions", phase)
+        Logger.Time("startup: shortcuts", phase)
 
         if (AppSettings.ImportedFrom != "")
             App.Toast(I18n.T("Settings.ImportedIni", AppSettings.ImportedFrom), 6000)

@@ -2,7 +2,8 @@
 ; SnippetProvider.ahk - 文字片段 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; ALTRun.json -> Snippets, 每一条: { "Name": "名称", "Keyword": "关键字", "Text": "正文" }
-; 搜索名称或关键字, Enter 把正文粘贴到呼出 ALTRun 之前的窗口。输入 "snip xxx"
+; 搜索名称、关键字和正文 (Features.Snippets.SearchText, 正文至少输入 3 个字符, 每个词都要出现,
+; 只有正文匹配的排在后面), Enter 把正文粘贴到呼出 ALTRun 之前的窗口。输入 "snip xxx"
 ; (Features.Snippets.Keyword) 只在片段里搜索, "snip" 单独输入列出全部片段。
 ;
 ; 正文里的占位符在粘贴时展开:
@@ -14,6 +15,8 @@
 
 class SnippetProvider {
     static Id := "Snippets"
+    static TextMinChars := 3                                                ; 正文至少输入这么多字符才搜 (太短会命中一大堆)
+    static TextScore := 35                                                  ; 只有正文匹配时的分数: 排在名称 / 关键字匹配和应用、命令后面
 
     static Init() {
     }
@@ -23,15 +26,22 @@ class SnippetProvider {
         results := []
         onlySnippets := query.MatchKeyword([options["Keyword"]], &term)
         needle := onlySnippets ? term : query.Text
+        tokens := StrSplit(Trim(needle), " ")
+        searchText := options["SearchText"] && StrLen(Trim(needle)) >= SnippetProvider.TextMinChars
         for snippet in AppSettings.Snippets {
             if !(snippet is Map) || !snippet.Has("Text")
                 continue
             name    := snippet.Has("Name") ? snippet["Name"] : ""
             keyword := snippet.Has("Keyword") ? snippet["Keyword"] : ""
             score := (onlySnippets && needle = "") ? 50 : FuzzyMatcher.Best(needle, [keyword, name])
+            found := searchText ? SnippetProvider.TextMatch(snippet["Text"], tokens) : 0
+            if (found && score < SnippetProvider.TextScore)
+                score := SnippetProvider.TextScore
+            else
+                found := 0
             if (score <= 0)
                 continue
-            preview := SnippetProvider._Preview(snippet["Text"])
+            preview := SnippetProvider._Preview(snippet["Text"], found)
             item := ResultItem((name != "") ? name : preview, I18n.T("Snippet.Subtitle", preview), {
                 Kind: "text", Arg: snippet["Text"], Icon: "res:imageres.dll,-102",
                 Uid: "snippet:" StrLower(keyword "|" name), Score: score + (onlySnippets ? 30 : 0), Source: snippet,
@@ -45,10 +55,24 @@ class SnippetProvider {
     }
 
     static EditorFields() {
-        return [ItemEditor.Field("Name", "Prefs.Col.Name", "text", true)
-              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword")
-              , ItemEditor.Field("Text", "Prefs.Col.Text", "multiline", true, "", "{date} {date:yyyy-MM-dd} {date+7} {time} {time:HH:mm:ss} {datetime} {clipboard} {clipboard:1} {uuid} {cursor}")
-              , ItemEditor.Field("AutoExpand", "Prefs.Col.AutoExpand", "check")]
+        prefix := AppSettings.Feature("Snippets")["ExpandPrefix"]
+        maxKeyword := SnippetExpander.MaxAbbreviation - StrLen(prefix)
+        keyword := ItemEditor.Field("Keyword", "Prefs.Col.Keyword", , , , I18n.T("Snippet.Hint.Keyword", prefix, maxKeyword))
+        keyword.Check := (value, edited) => SnippetProvider.CheckKeyword(value, edited, prefix)
+        return [ItemEditor.Field("Name", "Prefs.Col.Name", "text", true, "", I18n.T("Snippet.Hint.Name"))
+              , keyword
+              , ItemEditor.Field("Text", "Prefs.Col.Text", "multiline", true, "", I18n.T("Snippet.Hint.Text") "`n{date} {date:yyyy-MM-dd} {date+7} {time} {datetime} {clipboard} {clipboard:1} {uuid} {cursor}")
+              , ItemEditor.Field("AutoExpand", "Prefs.Col.AutoExpand", "check", , , I18n.T("Snippet.Hint.AutoExpand", prefix))]
+    }
+
+    ; 编辑框点 OK 时: 要自动展开但关键字太长 / 有空格 -> 提示 (返回 "" = 没问题)
+    static CheckKeyword(keyword, edited, prefix) {
+        keyword := Trim(keyword)
+        if (keyword = "" || (edited.Has("AutoExpand") && !edited["AutoExpand"]))
+            return ""
+        if (StrLen(prefix keyword) > SnippetExpander.MaxAbbreviation || RegExMatch(keyword, "\s"))
+            return I18n.T("Snippet.KeywordTooLong", prefix, SnippetExpander.MaxAbbreviation)
+        return ""
     }
 
     static NewSnippet() {
@@ -140,7 +164,25 @@ class SnippetProvider {
         return StrLower(Trim(StrGet(text), "{}"))
     }
 
-    static _Preview(text) {
+    ; 正文里是否每个词都出现 (不区分大小写, 不做模糊匹配: 长正文用模糊匹配几乎什么都能命中)。
+    ; 返回第一个词在正文里的位置, 没有全部出现返回 0
+    static TextMatch(text, tokens) {
+        first := 0
+        for token in tokens {
+            if (token = "")
+                continue
+            if !(pos := InStr(text, token))
+                return 0
+            if !first
+                first := pos
+        }
+        return first
+    }
+
+    ; found: 正文匹配的位置; 太靠后 (60 个字以后) 时从匹配处前面一点开始显示, 否则预览里看不到
+    static _Preview(text, found := 0) {
+        if (found > 60)
+            text := "..." SubStr(text, found - 20)
         text := RegExReplace(text, "\s+", " ")
         return (StrLen(text) > 80) ? SubStr(text, 1, 80) "..." : text
     }

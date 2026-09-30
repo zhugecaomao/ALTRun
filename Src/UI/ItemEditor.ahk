@@ -13,6 +13,7 @@
 ; Type 可以是: text / multiline / choice / check / file / folder / number / hotkey
 ; file 字段可以加 FolderWhen: ["Type", "Folder"] = 另一个字段 (Type) 选的是 Folder 时, "浏览" 改为选择文件夹
 ; hotkey: 录制热键的框 (HotkeyBox, 可以录鼠标中键 / 侧键) + 复选框 "保留按键原来的功能" (写法前面的 ~)
+; Hint: 输入框下面的灰色说明; Check: (value, editedMap) => 提示文字, 点 OK 时有提示就问 "仍然保存吗?"
 ;
 ; 用法:
 ;   result := ItemEditor.Edit(ownerGui, "标题", fields, itemMap)
@@ -63,8 +64,9 @@ class ItemEditor {
                     ctrl := g.AddEdit("x+8 ys-3 w" inputW " r1 -Multi", value)
             }
             if field.HasOwnProp("Hint") {                                   ; 灰色小字说明, 和偏好设置里的一样
+                indent := (field.Type = "check") ? 18 : 0                   ; 复选框: 和框后面的文字对齐
                 g.SetFont("s8")
-                g.AddText("xs+" (labelW + 8) " y+3 w" inputW " cGray", field.Hint)
+                g.AddText("xs+" (labelW + 8 + indent) " y+3 w" (inputW - indent) " cGray", field.Hint)
                 g.SetFont("s9")
             }
             controls[field.Key] := ctrl
@@ -84,6 +86,7 @@ class ItemEditor {
         return state.Result
 
         OnOk(*) {
+            g.Opt("+OwnDialogs")                                            ; 提示框挡住编辑窗口, 关掉提示框之前不能操作
             edited := item.Clone()
             for spec in fields {
                 input := controls[spec.Key]
@@ -105,6 +108,14 @@ class ItemEditor {
                     return
                 }
                 edited[spec.Key] := newValue
+            }
+            for spec in fields {                                            ; Check: 全部字段读完后再检查, 可以看其它字段 (返回提示文字 = 有问题)
+                if !spec.HasOwnProp("Check") || (warning := spec.Check.Call(edited[spec.Key], edited)) = ""
+                    continue
+                if (MsgBox(warning "`n`n" I18n.T("Editor.SaveAnyway"), title, "YesNo Icon! Default2") != "Yes") {
+                    controls[spec.Key].Focus()
+                    return
+                }
             }
             state.Result := edited
             g.Destroy()

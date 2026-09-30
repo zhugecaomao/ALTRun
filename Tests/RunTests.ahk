@@ -73,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2063,6 +2063,79 @@ Func | PTTools | PT Tools (AHK)=99
         ClipboardProvider.Entries := saved
     }
 
+    ; 片段: 也搜索正文
+    static SnippetTextSearch() {
+        eq := (n, a, e) => TestRunner.Equal("SnippetText." n, a, e)
+        ok := (n, c) => TestRunner.True("SnippetText." n, c)
+        options := AppSettings.Feature("Snippets")
+        savedSnippets := AppSettings.Snippets, savedSearch := options["SearchText"]
+        long := "Dear Sir, " StrRepeat("please see the attached drawings. ", 4) "We offer a goodwill discount on the revised quotation."
+        AppSettings.Data["Snippets"] := [Map("Name", "Quote reply", "Keyword", "qr", "Text", long)
+                               , Map("Name", "Signature", "Keyword", "sig", "Text", "Best regards")
+                               , Map("Name", "Discount note", "Keyword", "dn", "Text", "No text match here")]
+        titles(text) {
+            list := ""
+            for item in SnippetProvider.Search(SearchQuery(text))
+                list .= item.Title "=" Round(item.Score) "|"
+            return list
+        }
+        options["SearchText"] := 1
+        list := titles("goodwill")
+        eq("text match", list, "Quote reply=" SnippetProvider.TextScore "|")
+        ok("case-insensitive", InStr(titles("GOODWILL"), "Quote reply="))
+        ok("every word", InStr(titles("revised goodwill"), "Quote reply="))
+        ok("missing word", !InStr(titles("revised tender"), "Quote reply="))
+        ok("too short", !InStr(titles("se"), "Quote reply="))
+        scores := Map()
+        for item in SnippetProvider.Search(SearchQuery("discount"))
+            scores[item.Title] := item.Score
+        ok("name match ranks higher", scores.Has("Discount note") && scores.Has("Quote reply") && scores["Discount note"] > scores["Quote reply"])
+        eq("text-only score", scores.Has("Quote reply") ? scores["Quote reply"] : "", SnippetProvider.TextScore)
+        ok("no fuzzy on text", !InStr(titles("dsgd"), "Quote reply="))
+        item := SnippetProvider.Search(SearchQuery("goodwill"))[1]
+        ok("preview shows match", InStr(item.Subtitle, "...") && InStr(item.Subtitle, "goodwill"))
+        item := SnippetProvider.Search(SearchQuery("Best reg"))[1]
+        eq("preview from start", item.Subtitle, I18n.T("Snippet.Subtitle", "Best regards"))
+        ok("snip keyword boosts", InStr(titles("snip goodwill"), "Quote reply=" (SnippetProvider.TextScore + 30) "|"))
+        options["SearchText"] := 0
+        eq("switched off", titles("goodwill"), "")
+        options["SearchText"] := savedSearch
+        AppSettings.Data["Snippets"] := savedSnippets
+        eq("match position", SnippetProvider.TextMatch("abc def", ["DEF", "abc"]), 5)
+        eq("no match", SnippetProvider.TextMatch("abc def", ["abc", "xyz"]), 0)
+    }
+
+    ; 片段编辑框: 每个字段都有灰色说明; 关键字太长 / 有空格时提示
+    static SnippetEditor() {
+        eq := (n, a, e) => TestRunner.Equal("SnippetEditor." n, a, e)
+        ok := (n, c) => TestRunner.True("SnippetEditor." n, c)
+        for field in SnippetProvider.EditorFields()
+            ok("hint: " field.Key, field.HasOwnProp("Hint") && field.Hint != "")
+        keyword := SnippetProvider.EditorFields()[2]
+        ok("keyword has check", keyword.HasOwnProp("Check"))
+        ok("check as ItemEditor calls it", keyword.Check.Call(StrRepeat("a", 40), Map("AutoExpand", 1)) != "")
+        eq("check short keyword", keyword.Check.Call("sig", Map("AutoExpand", 1)), "")
+        ok("hint shows limit", InStr(keyword.Hint, SnippetExpander.MaxAbbreviation - StrLen(AppSettings.Feature("Snippets")["ExpandPrefix"])))
+        longKeyword := StrRepeat("a", 40)
+        eq("short ok", SnippetProvider.CheckKeyword("sig", Map("AutoExpand", 1), ";"), "")
+        eq("empty ok", SnippetProvider.CheckKeyword("", Map("AutoExpand", 1), ";"), "")
+        ok("too long", SnippetProvider.CheckKeyword(longKeyword, Map("AutoExpand", 1), ";") != "")
+        eq("39 + prefix ok", SnippetProvider.CheckKeyword(StrRepeat("a", 39), Map("AutoExpand", 1), ";"), "")
+        ok("space", SnippetProvider.CheckKeyword("a b", Map("AutoExpand", 1), ";") != "")
+        eq("no auto-expand", SnippetProvider.CheckKeyword(longKeyword, Map("AutoExpand", 0), ";"), "")
+        eq("too long not registered", SnippetExpander.Abbreviation(Map("Keyword", longKeyword, "Text", "x"), ";"), "")
+        eq("longest registered", SnippetExpander.Abbreviation(Map("Keyword", StrRepeat("a", 39), "Text", "x"), ";"), ";" StrRepeat("a", 39))
+        store := ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"})
+        list := ""
+        for action in ActionCatalog.ListFor(store)
+            list .= action.Title "|"
+        ok("store app: no properties", !InStr(list, I18n.T("Action.Properties") "|"))
+        list := ""
+        for action in ActionCatalog.ListFor(ResultItem("Windows", "", {Kind: "folder", Arg: A_WinDir}))
+            list .= action.Title "|"
+        ok("folder: properties", InStr(list, I18n.T("Action.Properties") "|"))
+    }
+
     ; 浏览器书签
     static Bookmarks() {
         eq := (n, a, e) => TestRunner.Equal("Bookmarks." n, a, e)
@@ -2164,3 +2237,5 @@ JsonReadWrite_Parses(text) {
     }
     return false
 }
+
+StrRepeat(text, count) => StrReplace(Format("{:" count "}", ""), " ", text)

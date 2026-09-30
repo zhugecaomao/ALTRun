@@ -73,6 +73,7 @@
 | 键 | 默认 | 说明 |
 |---|---|---|
 | Keyword | `snip` | 只搜索片段的关键字 |
+| SearchText | 1 | 也搜索正文 (至少输入 3 个字符, 每个词都要出现; 只有正文匹配的排在后面) |
 | PasteMode | `Clipboard` | `Clipboard` = 剪贴板 + Ctrl+V; `Type` = 逐字输入 |
 | PasteDelay | 300 | 粘贴后等待多少毫秒再还原剪贴板 |
 | AutoExpand | 1 | 在任何程序里输入 前缀 + 关键字 自动展开 |
