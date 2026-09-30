@@ -14,7 +14,7 @@
 ; 所以不只在启动时检查: 启动 1 分钟后, 离上次检查满 1 小时就检查 (每天开机就能发现前一天晚上发布的
 ; 版本; 改设置后重新载入不会反复检查), 之后每小时看一下离上次检查是否满 6 小时 (时间记在
 ; Data\Update.json; 检查失败时下一个小时再试)。发现新版本后, 空搜索框和搜索 "更新" 时显示一条
-; "更新 ALTRun 到 x": Enter 更新, → 查看更新内容 / 跳过这个版本 (跳过的版本记在 Update.json)。
+; "发现新版本: ALTRun x": Enter 安装更新, → 更新说明 / 跳过此版本 (跳过的版本记在 Update.json)。
 ;
 ; 一键更新 (发现新版本时选 "立即更新"):
 ;   1. 下载 Release 里的 ALTRun_v<版本>.zip, 核对 GitHub 给出的 SHA256
@@ -135,7 +135,7 @@ class UpdateChecker {
         UpdateChecker.Pending := release
     }
 
-    ; 搜索窗口里的一条 "更新 ALTRun 到 x" (空搜索框, 或搜索 "更新" 时由 SystemProvider 显示); 没有新版本时 ""
+    ; 搜索窗口里的一条 "发现新版本: ALTRun x" (空搜索框, 或搜索 "更新" 时由 SystemProvider 显示); 没有新版本时 ""
     static PendingItem() {
         release := UpdateChecker.Pending
         if !IsObject(release)
@@ -409,14 +409,14 @@ class UpdateChecker {
     ; 发现新版本的对话框 -> "Install" / "Notes" / "" (以后再说)
     static _Ask(release) {
         choice := ""
-        dlg := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox", App.Name)
+        dlg := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox", I18n.T("Update.DialogTitle"))
         dlg.SetFont("s10")
         dlg.MarginX := 20, dlg.MarginY := 16
-        dlg.AddText("w420", I18n.T("Update.Prompt", release.Version, App.Version))
+        dlg.AddText("w470", I18n.T("Update.Prompt", release.Version, App.Version))
         close := (value) => (choice := value, dlg.Destroy())
-        dlg.AddButton("xm y+18 w130 Default", I18n.T("Update.InstallNow")).OnEvent("Click", (*) => close("Install"))
-        dlg.AddButton("x+10 w130", I18n.T("Update.ReleaseNotes")).OnEvent("Click", (*) => close("Notes"))
-        dlg.AddButton("x+10 w130", I18n.T("Update.Later")).OnEvent("Click", (*) => close(""))
+        dlg.AddButton("xm y+18 w150 Default", I18n.T("Update.InstallNow")).OnEvent("Click", (*) => close("Install"))
+        dlg.AddButton("x+10 w150", I18n.T("Update.ReleaseNotes")).OnEvent("Click", (*) => close("Notes"))
+        dlg.AddButton("x+10 w150", I18n.T("Update.Later")).OnEvent("Click", (*) => close(""))
         dlg.OnEvent("Close", (*) => close(""))
         dlg.OnEvent("Escape", (*) => close(""))
         dlg.Show()

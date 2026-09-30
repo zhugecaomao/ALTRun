@@ -55,7 +55,7 @@ scoop update altrun    # 以后升级 (先退出 ALTRun)
 ```
 winget 清单已经准备好, 等官方仓库收录后可以 `winget install zhugecaomao.ALTRun`。
 
-**升级**: ALTRun 每天在后台检查一次, 有新版本时搜索窗口里会显示 "更新 ALTRun 到 x", 按 `Enter` 即可 (2026.09.26 及以后的版本支持一键更新)。更早的版本: 退出旧版本, 把新版本解压到原来的文件夹覆盖, 再运行; 从 2.x 升级时自动导入旧的 `ALTRun.ini` (设置、自定义命令、热键), 原文件保持不变。详见 [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
+**升级**: ALTRun 每天在后台检查一次, 有新版本时搜索窗口里会显示 "发现新版本: ALTRun x", 按 `Enter` 即可 (2026.09.26 及以后的版本支持一键更新)。更早的版本: 退出旧版本, 把新版本解压到原来的文件夹覆盖, 再运行; 从 2.x 升级时自动导入旧的 `ALTRun.ini` (设置、自定义命令、热键), 原文件保持不变。详见 [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
 
 
 ## 特性

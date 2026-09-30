@@ -1871,17 +1871,22 @@ Func | PTTools | PT Tools (AHK)=99
         eq("mode (tests run the source)", release.Mode, "source")
         results := ProviderRegistry.Search("")
         eq("empty query: one item", results.Length, 1)
-        eq("empty query: title", results[1].Title, "Update ALTRun to 2026.10.02")
+        eq("empty query: title", results[1].Title, "Update Available: ALTRun 2026.10.02")
         eq("empty query: provider", results[1].Provider, "System")
         ok("source hint", InStr(results[1].Subtitle, "git pull"))
         eq("actions: notes + skip", results[1].Actions.Length, 2)
         titles := ""
         for action in ActionCatalog.ListFor(results[1])
             titles .= action.Title "|"
-        ok("action panel", InStr(titles, "What's new|Skip this version|"))
+        ok("action panel", InStr(titles, "Release Notes|Skip This Version|"))
         results := ProviderRegistry.Search("update")
-        ok("search update: first", results.Length >= 2 && results[1].Title = "Update ALTRun to 2026.10.02")
-        for mode, text in Map("install", "update now", "page", "download page", "scoop", "scoop update altrun", "winget", "winget upgrade")
+        ok("search update: first", results.Length >= 2 && results[1].Title = "Update Available: ALTRun 2026.10.02")
+        ; 操作面板右侧的说明: 放得下时完整显示, 放不下时名称优先 (最多一半), 说明用剩下的
+        eq("hint fits", SearchWindow.HintWidth(600, 120, 300, 12), 300)
+        eq("hint shares the row", SearchWindow.HintWidth(400, 120, 600, 12), 268)
+        eq("long title keeps half", SearchWindow.HintWidth(400, 500, 600, 12), 188)
+        eq("no room", SearchWindow.HintWidth(20, 100, 50, 12), 0)
+        for mode, text in Map("install", "Install Update", "page", "Download Page", "scoop", "scoop update altrun", "winget", "winget upgrade")
             release.Mode := mode, ok("subtitle " mode, InStr(UpdateChecker.PendingItem().Subtitle, text))
 
         ; 跳过这个版本: 不再显示, 记在状态文件里

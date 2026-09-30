@@ -39,7 +39,7 @@
 不收集、不上传任何数据。默认情况下联网只有检查更新 (启动时和每 6 小时一次) 和一键更新两种情况, 都只访问 GitHub (打开货币换算后, 每天还会从 frankfurter.dev 下载一次汇率); 一键更新下载后先核对 SHA256 再替换。剪贴板历史、使用统计、学习记录都只保存在本机的 `Data\` 文件夹里。详见 [安全策略](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md)。
 
 ### 怎样升级到新版本
-ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时呼出搜索窗口就能看到 "更新 ALTRun 到 x", 按 `Enter` 即可 (也可以托盘图标 → 检查更新), 设置和数据都保留; 用 Scoop 安装的用 `scoop update altrun`。详见 [安装与升级](Installation#升级)。
+ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时呼出搜索窗口就能看到 "发现新版本: ALTRun x", 按 `Enter` 即可 (也可以托盘图标 → 检查更新), 设置和数据都保留; 用 Scoop 安装的用 `scoop update altrun`。详见 [安装与升级](Installation#升级)。
 
 ### 在多台电脑上使用同一份设置
 ALTRun 是绿色软件, 整个文件夹可以放在 U 盘或同步盘里。路径尽量用 [路径变量](Commands-and-Snippets#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
