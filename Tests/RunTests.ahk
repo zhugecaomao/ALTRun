@@ -919,6 +919,16 @@ class Tests {
         eq("folder icon with desktop.ini, not probed yet", CustomCommandProvider._FolderIcon(iconRoot "\Custom"), "folder:")
         IconCache._ProbeQueued()
         eq("folder icon with desktop.ini, after probe", CustomCommandProvider._FolderIcon(iconRoot "\Custom"), iconRoot "\Custom")
+        ; 处理队列时被另一轮 (后台定时器) 打断、剩下的已经处理掉: 跳过, 不报 "Item has no value"
+        savedProbe := IconCache.GetOwnPropDesc("_ProbeFolder"), savedProbes := IconCache._folderProbes
+        IconCache._folderProbes := Map("X:\probe-a", true, "X:\probe-b", true, "X:\probe-c", true)
+        IconCache.DefineProp("_ProbeFolder", {Call: (this, folder) => (IconCache._folderProbes.Clear(), "folder:")})
+        interrupted := true
+        try IconCache._ProbeQueued()
+        catch
+            interrupted := false
+        IconCache.DefineProp("_ProbeFolder", savedProbe), IconCache._folderProbes := savedProbes
+        eq("probe queue emptied by another run", interrupted, true)
         eq("folder icon probe now (warm-up)", IconCache.FolderIcon(iconRoot "\Plain 26. 18 Road", true), "folder:")
         try DirDelete(iconRoot, true)
         eq("remote load spec", IconCache._LoadSpec("\\server\share\Report.pdf", "ext:.pdf"), "ext:.pdf")
