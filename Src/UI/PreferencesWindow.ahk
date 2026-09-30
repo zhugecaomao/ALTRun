@@ -349,13 +349,13 @@ class PreferencesWindow {
     static _BuildApplications() {
         PreferencesWindow._BeginPage("Prefs.Page.Applications", 130)
         PreferencesWindow._Section("Prefs.Section.AppIndex")
-        PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 3)
+        PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 4)
         PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", "L")
         PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", "L")
         PreferencesWindow._Pair(["Features.Applications.Depth", "Prefs.AppDepth", "S", "number"], ["Features.Applications.RefreshMinutes", "Prefs.RefreshMinutes", "S", "number"])
         PreferencesWindow._Button("Prefs.RebuildIndex", (*) => App.RebuildIndex())
         PreferencesWindow._Section("Prefs.Section.AppResults")
-        PreferencesWindow._Lines("Features.Applications.Hidden", "Prefs.AppHidden", 3)
+        PreferencesWindow._Lines("Features.Applications.Hidden", "Prefs.AppHidden", 4)
         PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps", , , "Prefs.Group.Options")
         PreferencesWindow._Check("Features.Applications.MatchPinyin", "Prefs.MatchPinyin")
     }
@@ -467,15 +467,14 @@ class PreferencesWindow {
         x := PreferencesWindow._InputX()
         standard := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T("Prefs.QSStandard"))
         standard.Value := (others.Length < windows.Length) ? 1 : 0
-        PreferencesWindow._Below(0, standard)
-        PreferencesWindow._Desc("Prefs.QSStandard", x + 18)
-        otherList := PreferencesWindow._WinList("", "Prefs.QSOtherDialogs", 2, others)
+        PreferencesWindow._Below(0, standard)                               ; 说明写在复选框的文字里 (这一页放了三个 4 行的列表)
+        otherList := PreferencesWindow._WinList("", "Prefs.QSOtherDialogs", 4, others)
         PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], PreferencesWindow.SplitLines(otherList.Value)))
-        PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 2)
+        PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 4)
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
         PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
-        PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 2)
+        PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 4)
     }
 
     ; 对话框面板 (QuickSwitch 的一部分): 打开 / 保存对话框下面的文件夹列表和搜索框, 以及键盘用的文件夹菜单
@@ -502,7 +501,7 @@ class PreferencesWindow {
         PreferencesWindow._WinList(base "RenameWindows", "Prefs.RenameWindows", 4)
         PreferencesWindow._Section("Prefs.Section.DateAppend")
         PreferencesWindow._Field(base "AppendHotkey", "Prefs.AppendHotkey", "K", "hotkey")
-        PreferencesWindow._WinList(base "AppendWindows", "Prefs.AppendWindows", 2)
+        PreferencesWindow._WinList(base "AppendWindows", "Prefs.AppendWindows", 4)
     }
 
     ; 上面是 "关于" (图标、名称、版本、主页、检查更新), 下面是设置和数据文件的位置和操作
