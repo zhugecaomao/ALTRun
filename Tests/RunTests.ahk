@@ -919,6 +919,16 @@ class Tests {
         eq("folder icon with desktop.ini, not probed yet", CustomCommandProvider._FolderIcon(iconRoot "\Custom"), "folder:")
         IconCache._ProbeQueued()
         eq("folder icon with desktop.ini, after probe", CustomCommandProvider._FolderIcon(iconRoot "\Custom"), iconRoot "\Custom")
+        ; 处理队列时被另一轮 (后台定时器) 打断、剩下的已经处理掉: 跳过, 不报 "Item has no value"
+        savedProbe := IconCache.GetOwnPropDesc("_ProbeFolder"), savedProbes := IconCache._folderProbes
+        IconCache._folderProbes := Map("X:\probe-a", true, "X:\probe-b", true, "X:\probe-c", true)
+        IconCache.DefineProp("_ProbeFolder", {Call: (this, folder) => (IconCache._folderProbes.Clear(), "folder:")})
+        interrupted := true
+        try IconCache._ProbeQueued()
+        catch
+            interrupted := false
+        IconCache.DefineProp("_ProbeFolder", savedProbe), IconCache._folderProbes := savedProbes
+        eq("probe queue emptied by another run", interrupted, true)
         eq("folder icon probe now (warm-up)", IconCache.FolderIcon(iconRoot "\Plain 26. 18 Road", true), "folder:")
         try DirDelete(iconRoot, true)
         eq("remote load spec", IconCache._LoadSpec("\\server\share\Report.pdf", "ext:.pdf"), "ext:.pdf")
@@ -1318,6 +1328,21 @@ class Tests {
     ; 资源管理器 "发送到": 多个文件直接添加, 已经有的不重复添加 (1 个时弹对话框, 这里不测)
     static SendTo() {
         eq := (n, a, e) => TestRunner.Equal("SendTo." n, a, e)
+        ; 关掉开机启动等设置时只删 ALTRun 自己建的快捷方式, 用户自己建的同名快捷方式保留 (#113)
+        eq("own by description", App.IsOwnShortcut("", "ALTRun - 高效的 Windows 启动器", ""), true)
+        eq("own by startup flag", App.IsOwnShortcut('"D:\ALTRun\ALTRun.ahk" -Startup', "", "-Startup"), true)
+        eq("user shortcut", App.IsOwnShortcut("", "", "-Startup"), false)
+        eq("user start menu shortcut", App.IsOwnShortcut("", "", ""), false)
+        eq("other flag", App.IsOwnShortcut("-SendTo", "", "-Startup"), false)
+        lnkDir := A_Temp "\ALTRunShortcutTest"
+        try DirDelete(lnkDir, true)
+        DirCreate(lnkDir)
+        FileCreateShortcut(A_AhkPath, lnkDir "\own.lnk", A_ScriptDir, "-Startup", "ALTRun - An effective launcher for Windows")
+        FileCreateShortcut(A_AhkPath, lnkDir "\user.lnk", A_ScriptDir)
+        eq("remove own", App.RemoveOwnShortcut(lnkDir "\own.lnk", "-Startup") && !FileExist(lnkDir "\own.lnk"), true)
+        eq("keep user", !App.RemoveOwnShortcut(lnkDir "\user.lnk", "-Startup") && FileExist(lnkDir "\user.lnk") != "", true)
+        eq("missing", App.RemoveOwnShortcut(lnkDir "\none.lnk", "-Startup"), false)
+        try DirDelete(lnkDir, true)
         folder := A_Temp "\ALTRunSendToTest"
         try DirDelete(folder, true)
         DirCreate(folder "\PT2415 - Riverside")
@@ -1625,6 +1650,8 @@ Func | PTTools | PT Tools (AHK)=99
         main := FileRead(A_ScriptDir "\..\ALTRun.ahk", "UTF-8")
         RegExMatch(main, "m);@Ahk2Exe-SetVersion\s+(\S+)", &m)
         TestRunner.Equal("ReleaseVersion.exe version = App.Version", IsObject(m) ? m[1] : "", App.Version)
+        RegExMatch(main, "m);@Ahk2Exe-SetDescription\s+(.+?)\s*$", &m)                ; Windows 用它当显示名 (通知、任务管理器), 只写软件名
+        TestRunner.Equal("ReleaseVersion.exe description = App.Name", IsObject(m) ? m[1] : "", App.Name)
         TestRunner.True("ReleaseVersion.date format", RegExMatch(App.Version, "^\d{4}\.\d{2}\.\d{2}(\.\d+)?$"))   ; 同一天再发布: 2026.09.30.1
         TestRunner.True("ReleaseVersion.same-day release is newer", UpdateChecker.Compare("2026.09.30.1", "2026.09.30") > 0 && UpdateChecker.Compare("2026.10.01", "2026.09.30.2") > 0)
     }

@@ -96,10 +96,13 @@ class IconCache {
         return IconCache._folderIcons[folder] := FileExist(RTrim(folder, "\/") "\desktop.ini") ? folder : "folder:"
     }
 
-    ; 和加载图标一样, 每轮最多 10 ms
+    ; 和加载图标一样, 每轮最多 10 ms。遍历的是副本: 中途另一轮 (定时器打断了这一轮) 可能已经处理掉
+    ; 后面的文件夹, 已经不在队列里的跳过 (直接 Delete 会报 "Item has no value")
     static _ProbeQueued() {
         start := IconCache._Ms()
         for folder in IconCache._folderProbes.Clone() {
+            if !IconCache._folderProbes.Has(folder)
+                continue
             IconCache._folderProbes.Delete(folder)
             IconCache._ProbeFolder(folder)
             if (IconCache._Ms() - start > 10)
@@ -114,6 +117,8 @@ class IconCache {
         start := IconCache._Ms()
         loaded := false
         for key, spec in IconCache._queue.Clone() {
+            if !IconCache._queue.Has(key)                                   ; 另一轮已经加载了 (同 _ProbeQueued)
+                continue
             IconCache._queue.Delete(key)
             hIcon := 0
             try hIcon := IconCache._Load(spec)

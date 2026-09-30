@@ -5,6 +5,12 @@
 
 ## [未发布]
 
+### 改进
+- Windows 通知顶部、任务管理器、启动应用列表里显示的名称改为 `ALTRun`: 以前 exe 的 "文件说明" 写成了 "ALTRun - An effective launcher for Windows", Windows 把它当成程序名显示 (宣传语移到 exe 的 "备注" 里)
+
+### 修复
+- 关掉 "开机自动启动" / "添加到开始菜单" / "添加到发送到菜单" 时, 以前会删掉那个位置上所有叫 `ALTRun.lnk` 的快捷方式, 包括用户自己建的; 现在只删 ALTRun 自己建的 ([#113](https://github.com/zhugecaomao/ALTRun/issues/113))
+
 ## [2026.09.30.2]
 
 偏好设置里内容较多的列表加高到 4 行, 竖向滚动条能显示滑块。

@@ -318,12 +318,13 @@ class App {
         return (*) => SystemProvider.RunCommand(actionId)
     }
 
-    ; 开机启动 / 资源管理器 "发送到" / 开始菜单 三个快捷方式, 按设置创建或删除
     static _SetIcon() {
         if FileExist(App.IconFile)
             try TraySetIcon(App.IconFile)
     }
 
+    ; 开机启动 / 资源管理器 "发送到" / 开始菜单 三个快捷方式, 按设置创建或删除。
+    ; 只删 ALTRun 自己建的 (见 IsOwnShortcut): 用户自己放在同一位置、同名的快捷方式不动
     static _UpdateShellShortcuts() {
         general := AppSettings.General
         target := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
@@ -338,12 +339,33 @@ class App {
             try {
                 if shortcut[1]
                     FileCreateShortcut(target, shortcut[2], A_ScriptDir, Trim(prefix shortcut[3]), App.Name " - " I18n.T("App.Tagline"), icon)
-                else if FileExist(shortcut[2])
-                    FileDelete(shortcut[2])
+                else
+                    App.RemoveOwnShortcut(shortcut[2], shortcut[3])
             } catch as e {
                 Logger.Error("App: shortcut " shortcut[2] " - " e.Message)
             }
         }
+    }
+
+    ; 删掉 ALTRun 建的快捷方式; 不是 ALTRun 建的 (用户自己建的) 保留。返回是否删了
+    static RemoveOwnShortcut(path, flag) {
+        if !FileExist(path)
+            return false
+        arguments := "", description := ""
+        try FileGetShortcut(path, , , &arguments, &description)
+        catch
+            return false
+        if !App.IsOwnShortcut(arguments, description, flag)
+            return false
+        FileDelete(path)
+        return true
+    }
+
+    ; ALTRun 建的快捷方式: 备注是 "ALTRun - 宣传语" (任何语言), 或者参数以 ALTRun 用的开关结尾 (-Startup / -SendTo)
+    static IsOwnShortcut(arguments, description, flag) {
+        if (SubStr(description, 1, StrLen(App.Name " - ")) = App.Name " - ")
+            return true
+        return (flag != "" && RegExMatch(arguments, "i)(^|\s)\Q" flag "\E$")) ? true : false
     }
 
     static _HandleCommandLine() {
