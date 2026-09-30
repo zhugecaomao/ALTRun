@@ -70,7 +70,8 @@ class ActionCatalog {
                 add("Action.CopyName", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(Path.Leaf(target)))
                 ActionCatalog._FileActions(list, target)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(ActionCatalog._ParentDir(target)))
-                add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
+                if !ActionCatalog.IsShellItem(target)                       ; 应用商店应用 (shell:AppsFolder\...) 没有属性窗口
+                    add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
                 if FileExist(target)
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "folder":
@@ -200,9 +201,14 @@ class ActionCatalog {
         Run(address)
     }
 
+    ; 和资源管理器里 "右键 -> 属性" 一样。Run 的 properties 动词对网络盘上的文件夹等会失败, 所以用 SHObjectProperties
     static ShowProperties(target) {
-        Run('properties "' Path.Resolve(target) '"')
+        target := Path.Resolve(target)
+        if !DllCall("shell32\SHObjectProperties", "Ptr", 0, "UInt", 0x2, "WStr", target, "Ptr", 0)   ; 0x2 = SHOP_FILEPATH
+            Run('properties "' target '"')
     }
+
+    static IsShellItem(target) => RegExMatch(target, "i)^shell:") ? true : false
 
     static CopyText(text) {
         A_Clipboard := text

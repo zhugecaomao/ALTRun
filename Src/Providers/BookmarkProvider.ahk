@@ -5,7 +5,7 @@
 ; "bm 关键词" (Keyword) 只搜书签。Enter 用默认浏览器打开, Alt+Enter 复制网址。
 ; 读 Chromium 系浏览器 (Chrome、Edge、Brave、Vivaldi) 每个用户配置 (Default、Profile 1...) 的
 ; Bookmarks 文件 (JSON)。Firefox 的书签存在 SQLite 数据库里, 读不了。
-; 启动时读一次; 搜索时最多每 30 秒看一下文件有没有变 (修改时间), 变了再重新读。
+; 启动时读一次; 之后每 30 秒在后台看一下文件有没有变 (修改时间), 变了再重新读 (不在打字时读, 读一次要 20 ~ 30 ms)。
 ;
 ; 设置 (ALTRun.json -> Features.Bookmarks): Enabled / Keyword / InDefaultResults
 ;===============================================================================
@@ -19,6 +19,7 @@ class BookmarkProvider {
 
     static Init() {
         BookmarkProvider.Load()
+        SetTimer(() => BookmarkProvider._RefreshIfChanged(), 30000)         ; 在后台看书签文件有没有变, 不占用打字时的搜索
     }
 
     static Search(query) {
@@ -31,7 +32,8 @@ class BookmarkProvider {
         } else if !options["InDefaultResults"] || StrLen(query.Text) < 2 {
             return []
         }
-        BookmarkProvider._RefreshIfChanged()
+        if !BookmarkProvider._checked                                       ; 启动时书签是关着的, 后来才打开
+            BookmarkProvider.Init()
         needle := StrLower(Trim(term))
         results := []
         if (needle = "")
@@ -110,7 +112,7 @@ class BookmarkProvider {
     }
 
     static _RefreshIfChanged() {
-        if (A_TickCount - BookmarkProvider._checked < 30000)
+        if (A_TickCount - BookmarkProvider._checked < 25000 || !ProviderRegistry.IsEnabled(BookmarkProvider))
             return
         BookmarkProvider._checked := A_TickCount
         stamp := ""

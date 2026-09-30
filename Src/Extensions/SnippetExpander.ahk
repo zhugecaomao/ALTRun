@@ -17,6 +17,7 @@
 
 class SnippetExpander {
     static Count := 0
+    static MaxAbbreviation := 40                                            ; AHK 热字串缩写 (前缀 + 关键字) 最长 40 个字符
     static _texts := Map()                                                  ; 已注册的缩写 -> 正文
 
     static Init() {
@@ -65,6 +66,8 @@ class SnippetExpander {
             return ""
         keyword := Trim(snippet["Keyword"])
         if (keyword = "" || RegExMatch(keyword, "[\s``]"))                  ; 空白和反引号不能用在缩写里
+            return ""
+        if (StrLen(prefix keyword) > SnippetExpander.MaxAbbreviation)       ; 太长的注册不了, 只能搜索 (编辑时已经提示过)
             return ""
         return prefix keyword
     }
