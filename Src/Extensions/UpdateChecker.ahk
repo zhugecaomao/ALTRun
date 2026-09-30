@@ -4,15 +4,16 @@
 ; 版本号是日期格式 (2026.09.23), 和 GitHub Release 的 tag 比较。
 ;
 ; 用法:
-;   UpdateChecker.Schedule()           启动时: 后台自动检查, 1 分钟后第一次, 之后每天一次 (见下)
+;   UpdateChecker.Schedule()           启动时: 后台自动检查, 1 分钟后第一次, 之后每 6 小时一次 (见下)
 ;   UpdateChecker.Check()              手动检查 (托盘菜单 / 系统命令 / 偏好设置), 总会给出结果
 ;   UpdateChecker.Check(true)          有新版本就直接更新, 不询问 (命令行 -Update)
 ;   UpdateChecker.PendingItem()        后台发现的新版本 -> 搜索窗口里的一条结果 (没有时 "")
 ;   UpdateChecker.CleanUp()            启动时删掉上次更新留下的旧程序和临时文件
 ;
 ; 自动检查 (General.CheckForUpdates) 和 Alfred 一样不弹窗: ALTRun 常常开机启动后一直运行,
-; 所以不只在启动时检查, 而是每小时看一下离上次检查是否满 24 小时 (时间记在 Data\Update.json,
-; 重启也不会重复检查; 检查失败时下一个小时再试)。发现新版本后, 空搜索框和搜索 "更新" 时显示一条
+; 所以不只在启动时检查: 启动 1 分钟后, 离上次检查满 1 小时就检查 (每天开机就能发现前一天晚上发布的
+; 版本; 改设置后重新载入不会反复检查), 之后每小时看一下离上次检查是否满 6 小时 (时间记在
+; Data\Update.json; 检查失败时下一个小时再试)。发现新版本后, 空搜索框和搜索 "更新" 时显示一条
 ; "更新 ALTRun 到 x": Enter 更新, → 查看更新内容 / 跳过这个版本 (跳过的版本记在 Update.json)。
 ;
 ; 一键更新 (发现新版本时选 "立即更新"):
@@ -36,7 +37,8 @@ class UpdateChecker {
                              "Resources\SPF2M.exe", "Resources\Run.bat"]
     static UpgradeCommands := Map("scoop", "scoop update altrun", "winget", "winget upgrade zhugecaomao.ALTRun")
     static StateFile   := A_ScriptDir "\Data\Update.json"                    ; {LastCheck, Skip}
-    static CheckHours  := 24
+    static CheckHours  := 6                                                 ; 一直开着时: 离上次检查满几小时再查
+    static StartupHours := 1                                                ; 启动时: 离上次检查满几小时就查
     static Pending     := ""                                                ; 后台发现的新版本 (ParseRelease 的结果 + Mode)
     static _timer      := ""
 
@@ -82,22 +84,24 @@ class UpdateChecker {
     ; 启动时调用: 开机时网络可能还没连上, 1 分钟后再第一次检查
     static Schedule() {
         UpdateChecker._timer := () => UpdateChecker._Tick()
-        SetTimer(UpdateChecker._timer, -60000)
+        SetTimer(() => UpdateChecker._Tick(UpdateChecker.StartupHours), -60000)
     }
 
-    static _Tick() {
-        if UpdateChecker.IsDue(UpdateChecker.LoadState()["LastCheck"], A_Now)
+    static _Tick(hours := "") {
+        if UpdateChecker.IsDue(UpdateChecker.LoadState()["LastCheck"], A_Now, hours)
             UpdateChecker.CheckInBackground()
         SetTimer(UpdateChecker._timer, -3600000)
     }
 
-    ; 离上次检查 (yyyyMMddHHmmss) 满 CheckHours 小时了吗; 没检查过、时间不对 (改过系统时间) 时也检查
-    static IsDue(lastCheck, now) {
+    ; 离上次检查 (yyyyMMddHHmmss) 满 hours 小时 (默认 CheckHours) 了吗; 没检查过、时间不对 (改过系统时间) 时也检查
+    static IsDue(lastCheck, now, hours := "") {
+        if (hours = "")
+            hours := UpdateChecker.CheckHours
         if (lastCheck = "")
             return true
         try {
-            hours := DateDiff(now, lastCheck, "Hours")
-            return hours >= UpdateChecker.CheckHours || hours < 0
+            elapsed := DateDiff(now, lastCheck, "Hours")
+            return elapsed >= hours || elapsed < 0
         }
         return true
     }

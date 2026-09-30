@@ -40,7 +40,7 @@
 | FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号 |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |
-| CheckForUpdates | 1 | 在后台每天检查一次 GitHub 上的新版本, 有新版本时显示在搜索窗口里, 见 [一键更新](Installation#一键更新) |
+| CheckForUpdates | 1 | 启动时和之后每 6 小时在后台检查一次 GitHub 上的新版本, 有新版本时显示在搜索窗口里, 见 [一键更新](Installation#一键更新) |
 | SaveLog | 0 | 写入调试日志 (`%Temp%\ALTRun.log`), 包括启动各阶段和超过 30 ms 的搜索用了多少毫秒 (`Perf:` 开头, 不记输入的文字) |
 | HistorySize | 30 | 记住多少条最近的搜索 |
 

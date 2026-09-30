@@ -437,7 +437,7 @@ class I18n {
         s["Prefs.StartMenu"]           := ["Add to Start menu", "添加到开始菜单", "スタートメニューに追加"]
         s["Prefs.StartMenu.Desc"]      := ["Adds an ALTRun shortcut to the Start menu.", "在开始菜单里添加 ALTRun 的快捷方式", "スタートメニューに ALTRun のショートカットを追加します。"]
         s["Prefs.CheckUpdates"]        := ["Check for updates automatically", "自动检查更新", "自動的に更新を確認"]
-        s["Prefs.CheckUpdates.Desc"]   := ["Checks GitHub once a day in the background. A new version shows up in the search window.", "每天在后台到 GitHub 检查一次; 有新版本时呼出搜索窗口就能看到, 按 Enter 更新", "1 日 1 回 GitHub を確認します。新しいバージョンは検索ウィンドウから更新できます。"]
+        s["Prefs.CheckUpdates.Desc"]   := ["Checks GitHub in the background at startup and every 6 hours. A new version shows up in the search window.", "启动时和之后每 6 小时在后台到 GitHub 检查一次; 有新版本时呼出搜索窗口就能看到, 按 Enter 更新", "起動時と 6 時間ごとにバックグラウンドで GitHub を確認します。新しいバージョンは検索ウィンドウから更新できます。"]
         s["Prefs.SaveLog"]             := ["Write a debug log", "写入调试日志", "デバッグログを記録"]
         s["Prefs.SaveLog.Desc"]        := ["Writes %Temp%\ALTRun.log for troubleshooting. Normally leave it off.", "把运行记录写入 %Temp%\ALTRun.log, 排查问题时才需要打开", "トラブルシューティング用に %Temp%\ALTRun.log に記録します。通常はオフのままにします。"]
         s["Prefs.FileManager"]         := ["File manager", "文件管理器", "ファイルマネージャー"]
