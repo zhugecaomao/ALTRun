@@ -50,7 +50,7 @@ ALTRun 自动选择:
 | Keywords | `open, find` | 只搜文件的关键字 |
 | FolderKeywords | `folder` | 只搜文件夹的关键字 |
 | TypeFilters | doc / pic / video / audio / zip / exe / cad | 文件类型筛选, 每行 `关键字 = 扩展名 ...` |
-| QuotePrefix | 1 | 以 `'` 开头只搜文件 |
+| QuotePrefix | 1 | 以 `'` 开头只搜文件和文件夹 |
 | MaxResults | 30 | 只搜文件时最多显示几条 |
 | UseEverything | 1 | Everything 在运行时用它搜索 |
 | EverythingFilter | `!C:\Windows\ !\AppData\ !\$Recycle.Bin\` | 追加在 Everything 搜索后面的条件, `!` 表示排除 (Everything 搜索语法) |
