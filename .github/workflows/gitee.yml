@@ -40,12 +40,32 @@ jobs:
 
       - name: Push main and tags to Gitee
         if: env.GITEE_SSH_KEY != ''
+        timeout-minutes: 30
         run: |
           mkdir -p ~/.ssh
           printf '%s\n' "$GITEE_SSH_KEY" > ~/.ssh/gitee
           chmod 600 ~/.ssh/gitee
           ssh-keyscan -t ed25519,rsa gitee.com >> ~/.ssh/known_hosts 2>/dev/null
-          export GIT_SSH_COMMAND="ssh -i ~/.ssh/gitee -o IdentitiesOnly=yes"
+          # 从 GitHub 的机器连 Gitee 偶尔会断开 (Connection reset): 保持连接, 每次推送失败重试几次
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/gitee -o IdentitiesOnly=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=8"
+          remote="git@gitee.com:${GITEE_REPO}.git"
+          retry() {
+            for attempt in 1 2 3 4; do
+              "$@" && return 0
+              echo "Attempt $attempt failed, retrying in $((attempt * 15)) s..."
+              sleep $((attempt * 15))
+            done
+            return 1
+          }
           git fetch --tags origin
-          git push --force "git@gitee.com:${GITEE_REPO}.git" "refs/remotes/origin/main:refs/heads/main"
-          git push --force "git@gitee.com:${GITEE_REPO}.git" "refs/tags/*:refs/tags/*"
+          retry git push --force "$remote" "refs/remotes/origin/main:refs/heads/main"
+          # 标签一个一个推, 只推 Gitee 上还没有或指向不同提交的; 一次推太多容易断开
+          retry git ls-remote --tags "$remote" > remote-tags.txt
+          failed=0
+          for tag in $(git tag --sort=creatordate); do
+            if ! grep -q "^$(git rev-parse "refs/tags/$tag")[[:space:]]refs/tags/$tag$" remote-tags.txt; then
+              echo "Pushing tag $tag"
+              retry git push --force "$remote" "refs/tags/$tag:refs/tags/$tag" || failed=1
+            fi
+          done
+          exit $failed
