@@ -48,6 +48,8 @@
 
 ![拼音首字母: jsb → 记事本](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pinyin.png)
 
+结果标题里和输入匹配的字会换颜色高亮 (连续的字、单词首字母、多个关键词、按顺序的字母、拼音首字母都会标出), 颜色由主题的 `Highlight` / `SelectedHighlight` 决定, 见 [主题](Themes)。靠关键字、路径、片段正文等标题以外的内容匹配到的结果, 标题不高亮。
+
 自定义命令还会按目标的文件夹名 / 文件名匹配, 例如 Target 是 `Q:\Projects\PT1931 - 24 NIR` 时输入 `nir` 也能找到。
 
 ### 学习排序
