@@ -40,6 +40,7 @@ class SearchWindow {
     static Gui := "", Input := "", List := "", Separator := ""
     static Results := [], Selected := 0, Offset := 0
     static Mode := "results"                        ; results = 搜索结果; actions = 操作面板
+    static HighlightText := ""                      ; 搜索结果标题里高亮和它匹配的字 (Highlight 颜色)
     static FileMode := false                        ; 文件搜索模式: 空的搜索框里按空格进入, 只搜文件
     static ActionSource := "", SavedQuery := "", AllActions := []
     static _actionsOnly := false                                            ; 直接打开的操作面板 (选中内容的操作): Esc / ← 关掉窗口
@@ -127,7 +128,7 @@ class SearchWindow {
         gdi["ShortcutFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("ShortcutFontSize"), 400)
         gdi["Background"]   := DllCall("CreateSolidBrush", "UInt", Win.ColorToBgr(ThemeManager.Get("Background")), "Ptr")
         gdi["Selected"]     := DllCall("CreateSolidBrush", "UInt", Win.ColorToBgr(ThemeManager.Get("SelectedBackground")), "Ptr")
-        for key in ["Title", "Subtitle", "Shortcut", "SelectedTitle", "SelectedSubtitle", "SelectedShortcut"]
+        for key in ["Title", "Subtitle", "Shortcut", "SelectedTitle", "SelectedSubtitle", "SelectedShortcut", "Highlight", "SelectedHighlight"]
             gdi[key "Color"] := Win.ColorToBgr(ThemeManager.Get(key))
     }
 
@@ -300,6 +301,7 @@ class SearchWindow {
                     filtered.Push(action)
             return SearchWindow.SetResults(filtered)
         }
+        SearchWindow.HighlightText := text
         if SearchWindow.FileMode
             return SearchWindow.SetResults(ProviderRegistry.SearchFiles(text))
         SearchWindow.SetResults(ProviderRegistry.Search(text))
@@ -924,10 +926,11 @@ class SearchWindow {
         DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedTitleColor"] : gdi["TitleColor"])
         hasSubtitle := (item.Subtitle != "" && SearchWindow.Mode = "results")
         middle := top + Round(rowH * 0.54)
+        ranges := (SearchWindow.Mode = "results") ? SearchWindow.HighlightRanges(item) : []
         if hasSubtitle
-            SearchWindow._DrawText(hdc, item.Title, textLeft, top, textRight, middle, DT_BOTTOM | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS)
+            SearchWindow._DrawTitle(hdc, item.Title, ranges, textLeft, top, textRight, middle, DT_BOTTOM | DT_SINGLELINE | DT_NOPREFIX, selected)
         else
-            SearchWindow._DrawText(hdc, item.Title, textLeft, top, textRight, bottom, DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS)
+            SearchWindow._DrawTitle(hdc, item.Title, ranges, textLeft, top, textRight, bottom, DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX, selected)
 
         if hasSubtitle {
             DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["SubtitleFont"])
@@ -942,6 +945,45 @@ class SearchWindow {
     static HintWidth(available, titleW, hintW, gap) {
         keep := Min(titleW, available // 2)
         return Max(0, Min(hintW, available - keep - gap))
+    }
+
+    ; 标题里要高亮的位置, 按搜索文字缓存在结果上 (重画、移动选中行时不重算)
+    static HighlightRanges(item) {
+        text := SearchWindow.HighlightText
+        if (Trim(text) = "" || item.Title = "")
+            return []
+        if (!item.HasOwnProp("HighlightFor") || item.HighlightFor !== text)
+            item.HighlightFor := text, item.HighlightRanges := FuzzyMatcher.MatchRanges(text, item.Title)
+        return item.HighlightRanges
+    }
+
+    ; 画标题: 没有要高亮的字时和以前一样 (DrawText 末尾省略); 有时分段画, 匹配的字用 Highlight 颜色,
+    ; 放不下时自己截断并加 "…"
+    static _DrawTitle(hdc, title, ranges, left, top, right, bottom, flags, selected) {
+        static DT_END_ELLIPSIS := 0x8000
+        if !ranges.Length
+            return SearchWindow._DrawText(hdc, title, left, top, right, bottom, flags | DT_END_ELLIPSIS)
+        gdi := SearchWindow._gdi
+        available := right - left
+        if (SearchWindow._TextWidth(hdc, title) > available)
+            title := SubStr(title, 1, SearchWindow._FitChars(hdc, title, available - SearchWindow._TextWidth(hdc, "…"))) "…"
+        normal := selected ? gdi["SelectedTitleColor"] : gdi["TitleColor"]
+        highlight := selected ? gdi["SelectedHighlightColor"] : gdi["HighlightColor"]
+        x := left
+        for segment in FuzzyMatcher.Segments(title, ranges) {
+            width := SearchWindow._TextWidth(hdc, segment[1])
+            DllCall("SetTextColor", "Ptr", hdc, "UInt", segment[2] ? highlight : normal)
+            SearchWindow._DrawText(hdc, segment[1], x, top, Min(x + width + 2, right), bottom, flags)
+            x += width
+        }
+        DllCall("SetTextColor", "Ptr", hdc, "UInt", normal)
+    }
+
+    ; 宽度 maxWidth 以内放得下几个字
+    static _FitChars(hdc, text, maxWidth) {
+        fit := 0, size := Buffer(8, 0)
+        DllCall("GetTextExtentExPointW", "Ptr", hdc, "WStr", text, "Int", StrLen(text), "Int", Max(0, maxWidth), "Int*", &fit, "Ptr", 0, "Ptr", size)
+        return fit
     }
 
     static _TextWidth(hdc, text) {

@@ -10,5 +10,7 @@
   "SelectedBackground": "2E2E2E",
   "SelectedTitle": "FFFFFF",
   "SelectedSubtitle": "ABABAB",
-  "SelectedShortcut": "ABABAB"
+  "SelectedShortcut": "ABABAB",
+  "Highlight": "5AA9FF",
+  "SelectedHighlight": "8EC5FF"
 }

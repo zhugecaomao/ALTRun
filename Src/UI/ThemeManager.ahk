@@ -20,6 +20,7 @@
 ;   Padding  RowHeight  IconSize
 ;   Background  Border  InputText  Separator  Title  Subtitle  Shortcut
 ;   SelectedBackground  SelectedTitle  SelectedSubtitle  SelectedShortcut
+;   Highlight  SelectedHighlight   搜索结果标题里和输入匹配的字的颜色 (普通行 / 选中行)
 ;   SelectedRadius   选中行的圆角半径, 0 = 整行直角选中条
 ;   Opacity          窗口不透明度 1~255, 255 = 不透明
 ;
@@ -177,7 +178,9 @@ class ThemeManager {
             "SelectedBackground", "DDE7F6",
             "SelectedTitle"     , "000000",
             "SelectedSubtitle"  , "4A5568",
-            "SelectedShortcut"  , "4A5568"
+            "SelectedShortcut"  , "4A5568",
+            "Highlight"         , "0F62D0",
+            "SelectedHighlight" , "0B4FAE"
         )
     }
 }

@@ -73,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "IconScaling", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "IconScaling", "MatchHighlight", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -769,6 +769,55 @@ class Tests {
             titles .= action.Title "|"
         TestRunner.True("EditActions.list has edit", InStr(titles, I18n.T("Action.Edit")) && InStr(titles, I18n.T("Action.Delete")))
         ProviderRegistry.Providers := saved
+    }
+
+    ; 搜索结果标题里高亮匹配的字
+    static MatchHighlight() {
+        eq := (n, a, e) => TestRunner.Equal("Highlight." n, a, e)
+        str(ranges) {
+            out := ""
+            for range in ranges
+                out .= range[1] "+" range[2] " "
+            return RTrim(out)
+        }
+        eq("substring", str(FuzzyMatcher.MatchRanges("stud", "Visual Studio Code")), "8+4")
+        eq("prefix", str(FuzzyMatcher.MatchRanges("VIS", "Visual Studio Code")), "1+3")
+        eq("word start preferred", str(FuzzyMatcher.MatchRanges("note", "Denote Notepad")), "8+4")
+        eq("initials", str(FuzzyMatcher.MatchRanges("vsc", "Visual Studio Code")), "1+1 8+1 15+1")
+        eq("camel initials", str(FuzzyMatcher.MatchRanges("ah", "AutoHotkey")), "1+1 5+1")
+        eq("tokens", str(FuzzyMatcher.MatchRanges("code vis", "Visual Studio Code")), "1+3 15+4")
+        eq("keyword prefix", str(FuzzyMatcher.MatchRanges("snip quote", "Quote reply")), "1+5")
+        eq("subsequence", str(FuzzyMatcher.MatchRanges("ntpd", "Notepad")), "1+1 3+1 5+1 7+1")
+        eq("adjacent merged", str(FuzzyMatcher.MatchRanges("vis ual", "Visual")), "1+6")
+        eq("pinyin", str(FuzzyMatcher.MatchRanges("jsb", "记事本")), "1+3")
+        eq("pinyin partial", str(FuzzyMatcher.MatchRanges("sb", "记事本 Notepad")), "2+2")
+        eq("pinyin merged", str(FuzzyMatcher._MergeRanges([[2, 1], [1, 1], [3, 1]])), "1+3")
+        eq("no match", str(FuzzyMatcher.MatchRanges("xyz", "Notepad")), "")
+        eq("empty needle", str(FuzzyMatcher.MatchRanges("  ", "Notepad")), "")
+        eq("word starts", str(FuzzyMatcher._MergeRanges([[1, 1]])), "1+1")
+        starts := ""
+        for start in FuzzyMatcher.WordStarts("my_file-Name AutoHotkey 记事本")
+            starts .= start " "
+        eq("word start list", RTrim(starts), "1 4 9 14 18 25")
+        segs(text, ranges) {
+            out := ""
+            for segment in FuzzyMatcher.Segments(text, ranges)
+                out .= (segment[2] ? "[" segment[1] "]" : segment[1])
+            return out
+        }
+        eq("segments", segs("Visual Studio Code", [[1, 1], [8, 1], [15, 1]]), "[V]isual [S]tudio [C]ode")
+        eq("segments whole", segs("Code", [[1, 4]]), "[Code]")
+        eq("segments clipped", segs("Visual St…", [[8, 6]]), "Visual [St…]")
+        eq("segments beyond", segs("Visual", [[8, 2]]), "Visual")
+        item := ResultItem("Visual Studio Code")
+        savedText := SearchWindow.HighlightText
+        SearchWindow.HighlightText := "vsc"
+        eq("item ranges", str(SearchWindow.HighlightRanges(item)), "1+1 8+1 15+1")
+        SearchWindow.HighlightText := "code"
+        eq("item ranges updated", str(SearchWindow.HighlightRanges(item)), "15+4")
+        SearchWindow.HighlightText := ""
+        eq("no query", str(SearchWindow.HighlightRanges(item)), "")
+        SearchWindow.HighlightText := savedText
     }
 
     ; 不是系统尺寸的图标 (紧凑主题 28 px 等) 平滑缩放成正好的尺寸
