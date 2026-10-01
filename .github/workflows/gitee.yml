@@ -1,0 +1,51 @@
+# 把 main 分支和所有标签同步到 Gitee 镜像仓库, 国内访问 / 克隆更快。
+# 需要先在仓库 Settings -> Secrets and variables -> Actions 里添加:
+#   GITEE_SSH_KEY   (Secret)   私钥; 对应的公钥加到 Gitee 的 个人设置 -> SSH 公钥 (https://gitee.com/profile/sshkeys)
+#                              (Gitee 的仓库部署公钥只能读, 不能推送)
+#   GITEE_REPO      (Variable) 可选, Gitee 上的 用户名/仓库名, 默认 zhugecaomao/ALTRun
+# 没有 GITEE_SSH_KEY 时什么也不做。
+# 发布工作流用 GITHUB_TOKEN 推送的提交和标签不会触发别的工作流, 所以另外每天定时同步一次。
+name: Sync to Gitee
+
+on:
+  push:
+    branches: [main]
+    tags: ["*"]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gitee-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      GITEE_SSH_KEY: ${{ secrets.GITEE_SSH_KEY }}
+      GITEE_REPO: ${{ vars.GITEE_REPO || 'zhugecaomao/ALTRun' }}
+    steps:
+      - name: Check secret
+        if: env.GITEE_SSH_KEY == ''
+        run: echo "GITEE_SSH_KEY is not set, skipping."
+
+      - uses: actions/checkout@v7
+        if: env.GITEE_SSH_KEY != ''
+        with:
+          fetch-depth: 0
+
+      - name: Push main and tags to Gitee
+        if: env.GITEE_SSH_KEY != ''
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$GITEE_SSH_KEY" > ~/.ssh/gitee
+          chmod 600 ~/.ssh/gitee
+          ssh-keyscan -t ed25519,rsa gitee.com >> ~/.ssh/known_hosts 2>/dev/null
+          export GIT_SSH_COMMAND="ssh -i ~/.ssh/gitee -o IdentitiesOnly=yes"
+          git fetch --tags origin
+          git push --force "git@gitee.com:${GITEE_REPO}.git" "refs/remotes/origin/main:refs/heads/main"
+          git push --force "git@gitee.com:${GITEE_REPO}.git" "refs/tags/*:refs/tags/*"

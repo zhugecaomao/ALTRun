@@ -17,6 +17,12 @@
 | 石墨 | `Graphite` | macOS 深色 + 系统蓝强调色 |
 | 海洋 | `Ocean` | 蓝灰色 ([Nord](https://www.nordtheme.com/) 配色) |
 | 纸张 | `Paper` | 米黄色, 适合长时间看 |
+| 紧凑浅色 | `LightCompact` | 和浅色一样的配色, 字号和行高小一些 (和紧凑深色对应) |
+| Tokyo Night | `TokyoNight` | 深蓝夜色 + 蓝色强调 ([Tokyo Night](https://github.com/folke/tokyonight.nvim) 配色) |
+| Dracula | `Dracula` | 深紫灰 + 紫色强调 ([Dracula](https://draculatheme.com/) 配色) |
+| Catppuccin Mocha | `CatppuccinMocha` | 柔和的深色 + 淡紫强调 ([Catppuccin](https://catppuccin.com/) 配色) |
+| Gruvbox 深色 | `GruvboxDark` | 暖色调深棕 + 黄色强调, 复古 ([Gruvbox](https://github.com/morhetz/gruvbox) 配色) |
+| Solarized 浅色 | `SolarizedLight` | 米黄底 + 蓝色强调, 对比柔和 ([Solarized](https://ethanschoonover.com/solarized/) 配色) |
 
 | Light | Dark | Classic |
 |:---:|:---:|:---:|
@@ -25,6 +31,10 @@
 | ![Midnight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-midnight.png) | ![Frost](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-frost.png) | ![Graphite](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-graphite.png) |
 | **Ocean** | **Paper** | **DarkCompact** |
 | ![Ocean](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-ocean.png) | ![Paper](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-paper.png) | ![DarkCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-darkcompact.png) |
+| **LightCompact** | **TokyoNight** | **Dracula** |
+| ![LightCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightcompact.png) | ![TokyoNight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-tokyonight.png) | ![Dracula](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dracula.png) |
+| **CatppuccinMocha** | **GruvboxDark** | **SolarizedLight** |
+| ![CatppuccinMocha](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-catppuccinmocha.png) | ![GruvboxDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-gruvboxdark.png) | ![SolarizedLight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-solarizedlight.png) |
 
 Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些文件升级时会被替换, 请不要直接修改, 改用下面的自定义主题。
 
