@@ -7,6 +7,7 @@
 
 ### 新增
 - 6 个内置主题: Tokyo Night、Dracula、Catppuccin Mocha、Gruvbox 深色、Solarized 浅色 (常见编辑器配色), 以及和紧凑深色对应的紧凑浅色 (`LightCompact`)
+- 搜索结果的标题里高亮和输入匹配的字 (类似 Listary): 连续出现的部分、单词首字母 (`vsc` → **V**isual **S**tudio **C**ode)、拼音首字母 (`jsb` → **记事本**) 都会标出。颜色由主题的 `Highlight` / `SelectedHighlight` 决定, 每个内置主题都配好了; 靠关键字、路径、片段正文匹配到的结果标题不变
 
 ### 改进
 - 图标不是 Windows 自带的尺寸时 (紧凑主题的 28 px、显示缩放 125% / 175% 等) 不再有锯齿: 先取不小于需要尺寸的图标, 再用高质量的平滑缩放缩到实际大小后缓存。以前是取 32 px 的图标交给 Windows 直接压缩, 斜线和圆边会出现锯齿。正好是 16 / 32 / 48 px 时和以前一样

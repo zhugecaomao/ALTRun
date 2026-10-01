@@ -10,5 +10,7 @@
   "SelectedBackground": "45475A",
   "SelectedTitle": "FFFFFF",
   "SelectedSubtitle": "CBA6F7",
-  "SelectedShortcut": "CBA6F7"
+  "SelectedShortcut": "CBA6F7",
+  "Highlight": "CBA6F7",
+  "SelectedHighlight": "F5C2E7"
 }
