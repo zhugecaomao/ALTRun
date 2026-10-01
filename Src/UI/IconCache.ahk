@@ -16,6 +16,9 @@
 ; 桌面、下载) 的文件夹和磁盘根目录才单独读取。
 ;
 ;
+; 图标按 Size 读取: 取不小于 Size 的系统尺寸 (16 / 32 / 48...), 不是正好的尺寸 (例如紧凑主题的 28 px、
+; 125% 缩放时的 40 px) 用 GDI+ 高质量双三次插值缩放成 Size x Size 再缓存 (FitSize), 边缘平滑没有锯齿。
+;
 ; 缓存最多 MaxIcons 个: ALTRun 常常开机后连续运行几周, 图标句柄 (每个程序最多 1 万个) 不能只增不减。
 ; 超过时去掉最久没用到的 (DestroyIcon), 剩 80%; 再用到时重新加载。
 ;
@@ -212,7 +215,12 @@ class IconCache {
         return drives[letter]
     }
 
+    ; 读出图标后缩放到正好 Size x Size (见 FitSize)
     static _Load(spec) {
+        return IconCache.FitSize(IconCache._LoadRaw(spec))
+    }
+
+    static _LoadRaw(spec) {
         static FILE_ATTRIBUTE_DIRECTORY := 0x10, FILE_ATTRIBUTE_NORMAL := 0x80
         if (SubStr(spec, 1, 4) = "res:") {
             parts := StrSplit(SubStr(spec, 5), ",")
@@ -280,29 +288,141 @@ class IconCache {
         return ok ? IconCache._FromSystemList(NumGet(info, A_PtrSize, "Int")) : 0
     }
 
-    ; 系统图标列表: SHIL_LARGE (32px) / SHIL_EXTRALARGE (48px), 按需要的尺寸选
+    ; 系统图标列表: SHIL_SMALL / SHIL_LARGE / SHIL_EXTRALARGE (96 DPI 下 16 / 32 / 48 px, 随系统 DPI 变大),
+    ; 取不小于 Size 的最小的一个 (都比 Size 小时取最大的), 不是正好的尺寸由 FitSize 平滑缩放
     static _FromSystemList(index) {
-        static IID_IImageList := "", lists := Map()
+        static IID_IImageList := "", lists := Map(), sizes := Map()
         if (IID_IImageList = "") {
             IID_IImageList := Buffer(16)
             DllCall("ole32\CLSIDFromString", "WStr", "{46EB5926-582E-4017-9FDF-E8998DAA0950}", "Ptr", IID_IImageList)
         }
-        listType := (IconCache.Size > 32) ? 2 : 0                           ; 2 = SHIL_EXTRALARGE, 0 = SHIL_LARGE
-        if !lists.Has(listType) {
-            imageList := 0
-            DllCall("shell32\SHGetImageList", "Int", listType, "Ptr", IID_IImageList, "Ptr*", &imageList)
-            lists[listType] := imageList
+        chosen := ""
+        for listType in [1, 0, 2] {                                         ; 1 = SHIL_SMALL, 0 = SHIL_LARGE, 2 = SHIL_EXTRALARGE
+            if !lists.Has(listType) {
+                imageList := 0, width := 0, height := 0
+                DllCall("shell32\SHGetImageList", "Int", listType, "Ptr", IID_IImageList, "Ptr*", &imageList)
+                if imageList
+                    DllCall("comctl32\ImageList_GetIconSize", "Ptr", imageList, "Int*", &width, "Int*", &height)
+                lists[listType] := imageList, sizes[listType] := width
+            }
+            if !lists[listType]
+                continue
+            chosen := listType
+            if (sizes[listType] >= IconCache.Size)
+                break
         }
-        if !lists[listType]
+        if (chosen = "")
             return 0
-        return DllCall("comctl32\ImageList_GetIcon", "Ptr", lists[listType], "Int", index, "UInt", 1, "Ptr")   ; 1 = ILD_TRANSPARENT
+        return DllCall("comctl32\ImageList_GetIcon", "Ptr", lists[chosen], "Int", index, "UInt", 1, "Ptr")   ; 1 = ILD_TRANSPARENT
     }
 
     static _FromResource(file, index) {
         hIcon := 0
-        size := IconCache.Size
-        ; PrivateExtractIcons 可以直接取指定尺寸; 负数序号表示资源 Id
+        size := IconCache.SourceSize(IconCache.Size)
+        ; PrivateExtractIcons 可以直接取指定尺寸; 负数序号表示资源 Id。取图标里一般都有的尺寸,
+        ; 让 Windows 不必自己缩放 (它的缩放有锯齿), 不是正好的尺寸由 FitSize 平滑缩放
         DllCall("user32\PrivateExtractIconsW", "WStr", file, "Int", index, "Int", size, "Int", size, "Ptr*", &hIcon, "Ptr", 0, "UInt", 1, "UInt", 0)
         return hIcon
+    }
+
+    ; 图标文件里一般都有的尺寸里, 不小于 size 的最小的一个
+    static SourceSize(size) {
+        for native in [16, 24, 32, 48, 256]
+            if (native >= size)
+                return native
+        return 256
+    }
+
+    ; 图标的宽度 (像素), 读不到返回 0
+    static IconWidth(hIcon) {
+        info := Buffer(8 + 3 * A_PtrSize, 0)                                ; ICONINFO
+        if (!hIcon || !DllCall("GetIconInfo", "Ptr", hIcon, "Ptr", info))
+            return 0
+        maskOffset := (A_PtrSize = 8) ? 16 : 12
+        hbmMask := NumGet(info, maskOffset, "Ptr"), hbmColor := NumGet(info, maskOffset + A_PtrSize, "Ptr")
+        bitmap := Buffer(16 + 2 * A_PtrSize, 0)                             ; BITMAP
+        width := DllCall("GetObject", "Ptr", hbmColor ? hbmColor : hbmMask, "Int", bitmap.Size, "Ptr", bitmap) ? NumGet(bitmap, 4, "Int") : 0
+        for handle in [hbmMask, hbmColor]
+            if handle
+                DllCall("DeleteObject", "Ptr", handle)
+        return width
+    }
+
+    ; 尺寸不是正好 Size 的图标 (例如紧凑主题的 28 px、125% 缩放时的 40 px) 用 GDI+ 高质量双三次插值
+    ; 缩放成 Size x Size, 换掉原来的图标。绘制时 DrawIconEx 不用再缩放: 它的缩放直接丢掉 / 重复像素, 边缘有锯齿
+    static FitSize(hIcon) {
+        size := IconCache.Size
+        if (!hIcon || size <= 0)
+            return hIcon
+        info := Buffer(8 + 3 * A_PtrSize, 0)                                ; ICONINFO: fIcon, xHotspot, yHotspot, hbmMask, hbmColor
+        if !DllCall("GetIconInfo", "Ptr", hIcon, "Ptr", info)
+            return hIcon
+        maskOffset := (A_PtrSize = 8) ? 16 : 12
+        hbmMask := NumGet(info, maskOffset, "Ptr"), hbmColor := NumGet(info, maskOffset + A_PtrSize, "Ptr")
+        bitmap := Buffer(16 + 2 * A_PtrSize, 0)                             ; BITMAP: bmType, bmWidth, bmHeight, ...
+        width := 0, height := 0
+        if (hbmColor && DllCall("GetObject", "Ptr", hbmColor, "Int", bitmap.Size, "Ptr", bitmap))
+            width := NumGet(bitmap, 4, "Int"), height := Abs(NumGet(bitmap, 8, "Int"))
+        resized := 0
+        if (width > 0 && height > 0 && (width != size || height != size) && ClipboardData.StartGdiplus())
+            resized := IconCache._Resample(hbmColor, hbmMask, width, height, size)
+        if hbmMask
+            DllCall("DeleteObject", "Ptr", hbmMask)
+        if hbmColor
+            DllCall("DeleteObject", "Ptr", hbmColor)
+        if !resized
+            return hIcon
+        DllCall("DestroyIcon", "Ptr", hIcon)
+        return resized
+    }
+
+    static _Resample(hbmColor, hbmMask, width, height, size) {
+        pixels := IconCache._Bits(hbmColor, width, height)
+        if !pixels
+            return 0
+        hasAlpha := false
+        Loop width * height
+            if (NumGet(pixels, A_Index * 4 - 1, "UChar")) {
+                hasAlpha := true
+                break
+            }
+        if !hasAlpha {                                                      ; 旧式图标没有 Alpha 通道: 按掩码 (白 = 透明) 补上
+            mask := hbmMask ? IconCache._Bits(hbmMask, width, height) : 0
+            Loop width * height {
+                offset := A_Index * 4 - 4
+                NumPut("UChar", (mask && NumGet(mask, offset, "UInt") & 0xFFFFFF) ? 0 : 255, pixels, offset + 3)
+            }
+        }
+        source := 0, canvas := 0, graphics := 0, attributes := 0, hIcon := 0
+        DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", width, "Int", height, "Int", width * 4, "Int", 0x26200A, "Ptr", pixels, "Ptr*", &source)   ; 32bppARGB
+        DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", size, "Int", size, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", &canvas)
+        if (source && canvas) {
+            DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", canvas, "Ptr*", &graphics)
+            DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", graphics, "Int", 7)              ; HighQualityBicubic
+            DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", graphics, "Int", 4)                ; HighQuality: 不偏半个像素
+            DllCall("gdiplus\GdipCreateImageAttributes", "Ptr*", &attributes)
+            DllCall("gdiplus\GdipSetImageAttributesWrapMode", "Ptr", attributes, "Int", 3, "UInt", 0, "Int", 0)   ; TileFlipXY: 边缘不混进透明的黑边
+            DllCall("gdiplus\GdipDrawImageRectRectI", "Ptr", graphics, "Ptr", source, "Int", 0, "Int", 0, "Int", size, "Int", size
+                , "Int", 0, "Int", 0, "Int", width, "Int", height, "Int", 2, "Ptr", attributes, "Ptr", 0, "Ptr", 0)   ; 2 = UnitPixel
+            DllCall("gdiplus\GdipDisposeImageAttributes", "Ptr", attributes)
+            DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
+            DllCall("gdiplus\GdipCreateHICONFromBitmap", "Ptr", canvas, "Ptr*", &hIcon)
+        }
+        if source
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", source)
+        if canvas
+            DllCall("gdiplus\GdipDisposeImage", "Ptr", canvas)
+        return hIcon
+    }
+
+    ; 位图 -> 自上而下的 32 位像素 (BGRA), 失败返回 0
+    static _Bits(hBitmap, width, height) {
+        header := Buffer(40, 0)                                             ; BITMAPINFOHEADER
+        NumPut("UInt", 40, "Int", width, "Int", -height, "UShort", 1, "UShort", 32, header)
+        pixels := Buffer(width * height * 4, 0)
+        hdc := DllCall("GetDC", "Ptr", 0, "Ptr")
+        lines := DllCall("GetDIBits", "Ptr", hdc, "Ptr", hBitmap, "UInt", 0, "UInt", height, "Ptr", pixels, "Ptr", header, "UInt", 0)
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdc)
+        return lines ? pixels : 0
     }
 }

@@ -48,7 +48,13 @@ class Shots {
             ["theme-frost",     "Frost",    "", () => Shots.Search("re")],
             ["theme-graphite",  "Graphite", "", () => Shots.Search("re")],
             ["theme-ocean",     "Ocean",    "", () => Shots.Search("re")],
-            ["theme-paper",     "Paper",    "", () => Shots.Search("re")]
+            ["theme-paper",     "Paper",    "", () => Shots.Search("re")],
+            ["theme-tokyonight", "TokyoNight", "", () => Shots.Search("re")],
+            ["theme-dracula", "Dracula", "", () => Shots.Search("re")],
+            ["theme-catppuccinmocha", "CatppuccinMocha", "", () => Shots.Search("re")],
+            ["theme-gruvboxdark", "GruvboxDark", "", () => Shots.Search("re")],
+            ["theme-solarizedlight", "SolarizedLight", "", () => Shots.Search("re")],
+            ["theme-lightcompact", "LightCompact", "", () => Shots.Search("re")]
         ]
     }
 

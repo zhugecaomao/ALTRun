@@ -96,15 +96,19 @@ winget 清单已经准备好, 等官方仓库收录后可以 `winget install zhu
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
 
 <details>
-<summary><b>内置主题</b> (Dark / DarkCompact / Classic / Midnight / Frost / Graphite / Ocean / Paper)</summary>
+<summary><b>内置主题</b> (Dark / DarkCompact / LightCompact / Classic / Midnight / Frost / Graphite / Ocean / Paper / TokyoNight / Dracula / CatppuccinMocha / GruvboxDark / SolarizedLight)</summary>
 
 | Dark | Classic | Midnight |
 |:---:|:---:|:---:|
 | <img src="docs/images/screenshots/theme-dark.png" alt="Dark"> | <img src="docs/images/screenshots/theme-classic.png" alt="Classic"> | <img src="docs/images/screenshots/theme-midnight.png" alt="Midnight"> |
 | **Frost** | **Graphite** | **Ocean** |
 | <img src="docs/images/screenshots/theme-frost.png" alt="Frost"> | <img src="docs/images/screenshots/theme-graphite.png" alt="Graphite"> | <img src="docs/images/screenshots/theme-ocean.png" alt="Ocean"> |
-| **Paper** | **DarkCompact** | |
-| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | <img src="docs/images/screenshots/theme-darkcompact.png" alt="DarkCompact"> | |
+| **Paper** | **DarkCompact** | **LightCompact** |
+| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | <img src="docs/images/screenshots/theme-darkcompact.png" alt="DarkCompact"> | <img src="docs/images/screenshots/theme-lightcompact.png" alt="LightCompact"> |
+| **TokyoNight** | **Dracula** | **CatppuccinMocha** |
+| <img src="docs/images/screenshots/theme-tokyonight.png" alt="TokyoNight"> | <img src="docs/images/screenshots/theme-dracula.png" alt="Dracula"> | <img src="docs/images/screenshots/theme-catppuccinmocha.png" alt="CatppuccinMocha"> |
+| **GruvboxDark** | **SolarizedLight** | |
+| <img src="docs/images/screenshots/theme-gruvboxdark.png" alt="GruvboxDark"> | <img src="docs/images/screenshots/theme-solarizedlight.png" alt="SolarizedLight"> | |
 
 </details>
 

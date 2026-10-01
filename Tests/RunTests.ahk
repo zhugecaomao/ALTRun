@@ -73,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "IconScaling", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -771,6 +771,33 @@ class Tests {
         ProviderRegistry.Providers := saved
     }
 
+    ; 不是系统尺寸的图标 (紧凑主题 28 px 等) 平滑缩放成正好的尺寸
+    static IconScaling() {
+        eq := (n, a, e) => TestRunner.Equal("IconScaling." n, a, e)
+        eq("source 16", IconCache.SourceSize(16), 16)
+        eq("source 20", IconCache.SourceSize(20), 24)
+        eq("source 28", IconCache.SourceSize(28), 32)
+        eq("source 32", IconCache.SourceSize(32), 32)
+        eq("source 40", IconCache.SourceSize(40), 48)
+        eq("source 56", IconCache.SourceSize(56), 256)
+        saved := IconCache.Size
+        for size in [28, 32, 40] {
+            IconCache.Size := size
+            for spec in ["folder:", "ext:.txt", "res:shell32.dll,-4"] {
+                hIcon := IconCache._Load(spec)
+                eq(spec " at " size, IconCache.IconWidth(hIcon), size)
+                if hIcon
+                    DllCall("DestroyIcon", "Ptr", hIcon)
+            }
+        }
+        IconCache.Size := 28                                                ; 没有 Alpha 通道的旧式图标 (按掩码透明)
+        hIcon := IconCache.FitSize(DllCall("CopyIcon", "Ptr", DllCall("LoadIcon", "Ptr", 0, "Ptr", 32512, "Ptr"), "Ptr"))
+        eq("legacy icon", IconCache.IconWidth(hIcon), 28)
+        DllCall("DestroyIcon", "Ptr", hIcon)
+        eq("no icon", IconCache.FitSize(0), 0)
+        IconCache.Size := saved
+    }
+
     static Themes() {
         eq := (n, a, e) => TestRunner.Equal("Themes." n, a, e)
         ThemeManager.BuiltinDir := A_ScriptDir "\..\Resources\Themes"
@@ -790,7 +817,7 @@ class Tests {
             for key in ["Background", "Title", "SelectedBackground", "SelectedTitle"]
                 TestRunner.True("Themes." themeName "." key " is RRGGBB", RegExMatch(ThemeManager.Get(key), "^[0-9A-Fa-f]{6}$"))
         }
-        eq("builtin count", ThemeManager.Names().Length, 10)
+        eq("builtin count", ThemeManager.Names().Length, 16)
         TestRunner.True("Themes.Ocean is builtin", ThemeManager.IsBuiltin("Ocean"))
 
         ; 用户主题: 同名覆盖内置主题 ("Base" 写自己 = 在内置那一套上改), 以及 Base 链
@@ -800,7 +827,7 @@ class Tests {
         ThemeManager.Load("Mine")
         eq("user base color", ThemeManager.Get("Background"), "2E3440")
         eq("user override", ThemeManager.Get("SelectedRadius"), 12)
-        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 11 && !ThemeManager.IsBuiltin("Mine"))
+        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 17 && !ThemeManager.IsBuiltin("Mine"))
         ThemeManager.Load("Dark")
         eq("user overrides builtin", ThemeManager.Get("Title"), "FF0000")
         eq("user override keeps builtin", ThemeManager.Get("Background"), "1E1F22")

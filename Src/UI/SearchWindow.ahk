@@ -64,6 +64,8 @@ class SearchWindow {
         SearchWindow.RowHeight   := Win.Scale(ThemeManager.Get("RowHeight"))
         SearchWindow.IconSize    := Win.Scale(ThemeManager.Get("IconSize"))
         SearchWindow.SelectedRadius := Win.Scale(ThemeManager.Get("SelectedRadius"))
+        if (IconCache.Size != SearchWindow.IconSize)                        ; 换了主题 / DPI: 缓存的图标是按原来的尺寸缩放的
+            IconCache.Clear()
         IconCache.Size := SearchWindow.IconSize
         IconCache.OnLoaded := () => SearchWindow._Repaint()
         SearchWindow._CreateGdiObjects()
