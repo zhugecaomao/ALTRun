@@ -962,13 +962,14 @@ class SearchWindow {
         return item.HighlightRanges
     }
 
-    ; 画标题: 没有要高亮的字时和以前一样 (DrawText 末尾省略); 有时匹配的字用 Highlight 颜色, 放不下时自己截断并加 "…"。
-    ; 每个字的位置都按整个标题一次量出来 (GetTextExtentExPoint), 分段画时用 ExtTextOut 按这些位置摆放:
-    ; 每段分开量再拼起来会有 1 像素左右的误差, 输入时高亮的边界移动, 字距就会跟着跳动
+    ; 画标题: 匹配的字用 Highlight 颜色, 放不下时自己截断并加 "…"。
+    ; 每个字的位置都按整个标题一次量出来 (GetTextExtentExPoint), 各段用 ExtTextOut 按这些位置摆放;
+    ; 没有高亮时也这样画。每段分开量再拼起来、或者有没有高亮用两种画法 (DrawText 会按字距调整),
+    ; 都会差 1 像素左右, 输入时高亮的边界移动, 字距就会跟着跳动
     static _DrawTitle(hdc, title, ranges, left, top, right, bottom, flags, selected) {
-        static DT_VCENTER := 0x4, DT_BOTTOM := 0x8, DT_END_ELLIPSIS := 0x8000, ETO_CLIPPED := 0x4
-        if !ranges.Length
-            return SearchWindow._DrawText(hdc, title, left, top, right, bottom, flags | DT_END_ELLIPSIS)
+        static DT_VCENTER := 0x4, DT_BOTTOM := 0x8, ETO_CLIPPED := 0x4
+        if (title = "")
+            return
         gdi := SearchWindow._gdi
         available := right - left
         extents := SearchWindow._Extents(hdc, title)

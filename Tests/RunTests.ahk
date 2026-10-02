@@ -858,7 +858,7 @@ class Tests {
             return columns
         }
         plainHighlight := ink("weima wave station")                         ; 整个标题都高亮: 和逐段画的位置比较
-        for query in ["w", "we", "wei", "weim", "wave", "ws"]
+        for query in ["", "w", "we", "wei", "weim", "wave", "ws", "zzz"]                ; "" / "ws" / "zzz": 没有高亮的字
             TestRunner.Equal("HighlightSpacing." query, ink(query), plainHighlight)
         for key, value in saved
             if (value != "")
