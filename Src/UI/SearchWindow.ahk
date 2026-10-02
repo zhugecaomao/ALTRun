@@ -166,7 +166,7 @@ class SearchWindow {
         Usage.Count("Show")
         last := SearchWindow._last
         restore := (text = "" && AppSettings.General["KeepLastQuery"] && IsObject(last) && last.Text != "")
-        ; 恢复上次的搜索, 而且输入框和结果还是隐藏时的样子: 先显示窗口、拿到焦点, 再重新搜索刷新结果。
+        ; 恢复上次的搜索, 而且输入框和结果还是隐藏时的样子: 原样显示, 不重新搜索 (输入新的文字时才搜索)。
         ; 搜索 (例如文件搜索) 要几十毫秒, 以前先搜索再显示, 这段时间里按下的第一个键还在原来的窗口里, 会丢失或延迟
         reuse := restore && SearchWindow.Mode = "results" && SearchWindow.Input.Value == last.Text && SearchWindow.FileMode = last.FileMode
         SearchWindow.Mode := "results"
@@ -197,21 +197,6 @@ class SearchWindow {
         ; 窗口隐藏期间的重画请求会被丢掉: 失去焦点隐藏后再显示时, Windows 不一定重画列表,
         ; 恢复的结果 (KeepLastQuery) 就是一片空白。显示之后立即重画一次
         DllCall("RedrawWindow", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x105)   ; RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW
-        if reuse
-            SetTimer(SearchWindow._Refresher(last.Text, last.Selected), -1)
-    }
-
-    ; 恢复上次的搜索时, 窗口显示以后再搜索一次 (结果可能变了: 剪贴板、学习排序...);
-    ; 这时已经开始输入新的文字就不用了 (输入时会自己搜索)
-    static _Refresher(text, selected) {
-        return () => SearchWindow.RefreshRestored(text, selected)
-    }
-
-    static RefreshRestored(text, selected) {
-        if (!SearchWindow.IsVisible() || SearchWindow.Mode != "results" || SearchWindow.Input.Value !== text)
-            return
-        SearchWindow._RunSearch()
-        SearchWindow.MoveSelection(selected - SearchWindow.Selected)
     }
 
     ; 窗口放在 area 里的位置 {X, Y}。position: {X, Y} 千分比 (0 = 最左 / 最上, 1000 = 最右 / 最下,
