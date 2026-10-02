@@ -1,0 +1,11 @@
+{
+  "Base": "Midnight",
+  "InputFontSize": 16,
+  "TitleFontSize": 11,
+  "SubtitleFontSize": 8.5,
+  "ShortcutFontSize": 8,
+  "Padding": 10,
+  "RowHeight": 44,
+  "IconSize": 24,
+  "SelectedRadius": 6
+}

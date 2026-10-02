@@ -13,6 +13,7 @@
 | 紧凑深色 | `DarkCompact` | 和深色一样的配色, 字号和行高小一些, 一屏显示更多结果 |
 | 经典 | `Classic` | 浅灰底 + 醒目的蓝色整行选中条 |
 | 午夜 | `Midnight` | 接近纯黑, 圆角选中 |
+| 紧凑午夜 | `MidnightCompact` | 和午夜一样的配色, 字号、行高小一些, 图标 24 px |
 | 霜白 | `Frost` | 半透明的冷白色 |
 | 石墨 | `Graphite` | macOS 深色 + 系统蓝强调色 |
 | 海洋 | `Ocean` | 蓝灰色 ([Nord](https://www.nordtheme.com/) 配色) |
@@ -35,6 +36,8 @@
 | ![LightCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightcompact.png) | ![TokyoNight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-tokyonight.png) | ![Dracula](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dracula.png) |
 | **CatppuccinMocha** | **GruvboxDark** | **SolarizedLight** |
 | ![CatppuccinMocha](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-catppuccinmocha.png) | ![GruvboxDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-gruvboxdark.png) | ![SolarizedLight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-solarizedlight.png) |
+| **MidnightCompact** | | |
+| ![MidnightCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-midnightcompact.png) | | |
 
 Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些文件升级时会被替换, 请不要直接修改, 改用下面的自定义主题。
 
