@@ -73,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "IconScaling", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -871,6 +871,25 @@ class Tests {
     }
 
     ; 不是系统尺寸的图标 (紧凑主题 28 px 等) 平滑缩放成正好的尺寸
+    ; 每条内置命令都要有图标 (Wine 里没有控制面板等 Shell 项目, 只在 Windows 上检查)
+    static BuiltinIcons() {
+        if DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
+            return
+        missing := ""
+        for command in SystemProvider.Commands() {
+            hIcon := IconCache._Load(command["Icon"])
+            if hIcon
+                DllCall("DestroyIcon", "Ptr", hIcon)
+            else
+                missing .= command["Id"] " "
+        }
+        TestRunner.Equal("BuiltinIcons.missing", Trim(missing), "")
+        hIcon := IconCache._Load("::{A8A91A66-3A7D-4424-8D24-04E180695C7A}")      ; 只写 CLSID 的控制面板项目
+        TestRunner.True("BuiltinIcons.control panel item", hIcon)
+        if hIcon
+            DllCall("DestroyIcon", "Ptr", hIcon)
+    }
+
     static IconScaling() {
         eq := (n, a, e) => TestRunner.Equal("IconScaling." n, a, e)
         eq("source 16", IconCache.SourceSize(16), 16)
@@ -916,7 +935,7 @@ class Tests {
             for key in ["Background", "Title", "SelectedBackground", "SelectedTitle"]
                 TestRunner.True("Themes." themeName "." key " is RRGGBB", RegExMatch(ThemeManager.Get(key), "^[0-9A-Fa-f]{6}$"))
         }
-        eq("builtin count", ThemeManager.Names().Length, 16)
+        eq("builtin count", ThemeManager.Names().Length, 17)
         TestRunner.True("Themes.Ocean is builtin", ThemeManager.IsBuiltin("Ocean"))
 
         ; 用户主题: 同名覆盖内置主题 ("Base" 写自己 = 在内置那一套上改), 以及 Base 链
@@ -926,7 +945,7 @@ class Tests {
         ThemeManager.Load("Mine")
         eq("user base color", ThemeManager.Get("Background"), "2E3440")
         eq("user override", ThemeManager.Get("SelectedRadius"), 12)
-        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 17 && !ThemeManager.IsBuiltin("Mine"))
+        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 18 && !ThemeManager.IsBuiltin("Mine"))
         ThemeManager.Load("Dark")
         eq("user overrides builtin", ThemeManager.Get("Title"), "FF0000")
         eq("user override keeps builtin", ThemeManager.Get("Background"), "1E1F22")
@@ -1169,6 +1188,83 @@ class Tests {
         ProviderRegistry.Providers := saved
         AppSettings.File := savedFile
         try FileDelete(A_Temp "\ALTRunTest.json")
+    }
+
+    static HiddenSystemCommands() {
+        eq := (n, a, e) => TestRunner.Equal("HiddenSystemCommands." n, a, e)
+        saved := ProviderRegistry.Providers
+        ProviderRegistry.Providers := [SystemProvider]
+        options := AppSettings.Feature("System")
+        savedHidden := options["Hidden"], options["Hidden"] := []
+        savedFile := AppSettings.File
+        AppSettings.File := A_Temp "\ALTRunTest.json"                     ; 删除时会保存设置, 写到临时文件
+        titles() {
+            list := ""
+            for item in SystemProvider.Search(SearchQuery("devices and printers"))
+                list .= item.Title "|"
+            return list
+        }
+        TestRunner.True("HiddenSystemCommands.found", InStr(titles(), I18n.T("Tool.Printers")))
+        item := SystemProvider.Search(SearchQuery("devices and printers"))[1]
+        item.Provider := "System"
+        TestRunner.True("HiddenSystemCommands.can delete", ActionCatalog.CanDelete(item))
+        TestRunner.True("HiddenSystemCommands.prompt", InStr(ActionCatalog.DeletePrompt(item), I18n.T("Tool.Printers")))
+        ActionCatalog.DeleteItem(item)
+        eq("saved in settings", options["Hidden"].Length ? options["Hidden"][1] : "", "Printers")
+        TestRunner.True("HiddenSystemCommands.hidden", !InStr(titles(), I18n.T("Tool.Printers")))
+        SystemProvider.Hide("Printers")
+        eq("added once", options["Hidden"].Length, 1)
+        options["Hidden"] := [" printers "]                                 ; 设置里手写的: 不分大小写, 去掉空格
+        TestRunner.True("HiddenSystemCommands.case-insensitive", !InStr(titles(), I18n.T("Tool.Printers")))
+        options["Hidden"] := []
+        TestRunner.True("HiddenSystemCommands.restored", InStr(titles(), I18n.T("Tool.Printers")))
+        eq("default", AppSettings.Defaults()["Features"]["System"]["Hidden"].Length, 0)
+        options["Hidden"] := savedHidden
+        ProviderRegistry.Providers := saved
+        AppSettings.File := savedFile
+        try FileDelete(A_Temp "\ALTRunTest.json")
+    }
+
+    static ListFilter() {
+        eq := (n, a, e) => TestRunner.Equal("ListFilter." n, a, e)
+        cells := ["Devices and Printers", "File", "C:\Windows\System32\control.exe printers", "dp"]
+        eq("empty", PreferencesWindow.FilterMatch("", cells), true)
+        eq("spaces only", PreferencesWindow.FilterMatch("   ", cells), true)
+        eq("title", PreferencesWindow.FilterMatch("printer", cells), true)
+        eq("case-insensitive", PreferencesWindow.FilterMatch("CONTROL", cells), true)
+        eq("all words, any column", PreferencesWindow.FilterMatch("devices  system32", cells), true)
+        eq("missing word", PreferencesWindow.FilterMatch("devices notepad", cells), false)
+        eq("not across columns", PreferencesWindow.FilterMatch("printersfile", cells), false)
+
+        ; 自定义命令页: 筛选框里输入后只显示匹配的行, 筛选不算修改设置
+        saved := AppSettings.Data["CustomCommands"]
+        AppSettings.Data["CustomCommands"] := [
+            Map("Title", "Devices and Printers", "Type", "Command", "Target", "control", "Arguments", "printers", "Keyword", ""),
+            Map("Title", "Notepad", "Type", "File", "Target", "C:\Windows\notepad.exe", "Arguments", "", "Keyword", "np"),
+            Map("Title", "Printer queue", "Type", "Command", "Target", "control", "Arguments", "printers", "Keyword", "")]
+        PreferencesWindow.Show(1, -3000, -3000)
+        page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Commands")]
+        listView := "", filterBox := ""
+        for ctrl in page.Controls {
+            if (ctrl.Type = "ListView")
+                listView := ctrl
+            else if (ctrl.Type = "Edit")
+                filterBox := ctrl
+        }
+        eq("all rows", listView.GetCount(), 3)
+        ControlSetText("print", filterBox)
+        Sleep(50)
+        eq("filtered rows", listView.GetCount(), 2)
+        eq("filtered second row", listView.GetText(2, 1), "Printer queue")
+        ControlSetText("NP", filterBox)
+        Sleep(50)
+        eq("keyword column", listView.GetCount() "|" listView.GetText(1, 1), "1|Notepad")
+        eq("not dirty", PreferencesWindow._dirty ? 1 : 0, 0)
+        ControlSetText("", filterBox)
+        Sleep(50)
+        eq("cleared", listView.GetCount(), 3)
+        PreferencesWindow.Close()
+        AppSettings.Data["CustomCommands"] := saved
     }
 
     ; 默认设置里用 A_ 变量写的文件夹都要能解析成真实路径 (否则那个文件夹从来不会被索引)

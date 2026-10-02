@@ -45,6 +45,7 @@ class Shots {
             ["theme-darkcompact", "DarkCompact", "", () => Shots.Search("re")],
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
             ["theme-midnight",  "Midnight", "", () => Shots.Search("re")],
+            ["theme-midnightcompact", "MidnightCompact", "", () => Shots.Search("re")],
             ["theme-frost",     "Frost",    "", () => Shots.Search("re")],
             ["theme-graphite",  "Graphite", "", () => Shots.Search("re")],
             ["theme-ocean",     "Ocean",    "", () => Shots.Search("re")],

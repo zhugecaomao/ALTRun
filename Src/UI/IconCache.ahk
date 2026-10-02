@@ -236,8 +236,12 @@ class IconCache {
             return IconCache._FromImage(SubStr(spec, 7))
 
         target := Path.Resolve(spec)
-        if RegExMatch(target, "i)^(shell:|::\{)")
-            return IconCache._FromPidl(target)
+        if RegExMatch(target, "i)^(shell:|::\{)") {
+            ; 控制面板里的项目 (设备和打印机等) 只写 ::{CLSID} 时在桌面下找不到, 再到控制面板下面找
+            if (!(hIcon := IconCache._FromPidl(target)) && RegExMatch(target, "^::\{[^\\]+\}$"))
+                hIcon := IconCache._FromPidl("::{21EC2020-3AEA-1069-A2DD-08002B30309D}\" target)
+            return hIcon
+        }
         if FileExist(target)
             return IconCache._FromShell(target, 0, false)
         SplitPath(target, , , &ext)

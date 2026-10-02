@@ -130,6 +130,7 @@
 | 键 | 默认 | 说明 |
 |---|---|---|
 | ConfirmActions | 1 | 关机、重启、注销、清空回收站前确认 |
+| Hidden | `[]` | 在搜索结果里按 `Ctrl+Del` 删除的内置命令的 Id (例如 `"Printers"`), 删掉一项即可恢复 |
 
 ## Extensions 扩展功能
 见 [扩展功能](Extensions)。
