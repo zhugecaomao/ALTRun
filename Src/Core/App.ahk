@@ -23,7 +23,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.02"
+    static Version := "2026.10.03"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
     static PreviousWindow := 0
@@ -230,44 +230,24 @@ class App {
 
     static _RegisterHotkeys() {
         for key in [AppSettings.General["Hotkey"], AppSettings.General["SecondaryHotkey"]] {
-            if (key = "")
-                continue
-            try {
-                Hotkey(key, (*) => SearchWindow.Toggle())
-            } catch as e {
-                Logger.Error("App: cannot register hotkey " key " - " e.Message)
-                MsgBox("Cannot register hotkey " key ":`n" e.Message, App.Name, 48)
-            }
+            if (key != "")
+                App._TryHotkey(key, (*) => SearchWindow.Toggle(), true)
         }
 
         tap := AppSettings.General.Has("DoubleTap") ? AppSettings.General["DoubleTap"] : ""
         if (tap = "Ctrl" || tap = "Shift") {                                ; 双击 Ctrl / Shift 呼出
             for side in ["L", "R"] {
-                try {
-                    Hotkey("~" side tap, (*) => App._TapDown())
-                    Hotkey("~" side tap " up", (*) => App._TapUp())
-                } catch as e {
-                    Logger.Error("App: cannot register double-tap - " e.Message)
-                }
+                App._TryHotkey("~" side tap, (*) => App._TapDown())
+                App._TryHotkey("~" side tap " up", (*) => App._TapUp())
             }
         }
 
-        if (AppSettings.General["SelectionHotkey"] != "") {                ; 选中内容的操作
-            try {
-                Hotkey(AppSettings.General["SelectionHotkey"], (*) => SelectionActions.Run())
-            } catch as e {
-                Logger.Error("App: cannot register selection hotkey - " e.Message)
-            }
-        }
+        if (AppSettings.General["SelectionHotkey"] != "")                  ; 选中内容的操作
+            App._TryHotkey(AppSettings.General["SelectionHotkey"], (*) => SelectionActions.Run())
 
         clipboard := AppSettings.Feature("Clipboard")
-        if (clipboard["Enabled"] && clipboard["Hotkey"] != "") {
-            try {
-                Hotkey(clipboard["Hotkey"], (*) => SearchWindow.Show(AppSettings.Feature("Clipboard")["Keyword"] " "))
-            } catch as e {
-                Logger.Error("App: cannot register clipboard hotkey - " e.Message)
-            }
-        }
+        if (clipboard["Enabled"] && clipboard["Hotkey"] != "")
+            App._TryHotkey(clipboard["Hotkey"], (*) => SearchWindow.Show(AppSettings.Feature("Clipboard")["Keyword"] " "))
 
         ; 自定义热键: Key -> 系统命令 Action, WinTitle 非空时只在该窗口里生效
         for entry in AppSettings.Hotkeys {
@@ -279,11 +259,24 @@ class App {
                     HotIf((*) => SearchWindow.IsActive())
                 else if (winTitle != "")
                     HotIfWinActive(winTitle)
-                Hotkey(entry["Key"], App._HotkeyAction(entry["Action"]))
-            } catch as e {
+                App._TryHotkey(entry["Key"], App._HotkeyAction(entry["Action"]))
+            } catch as e {                                                  ; WinTitle 写错时 HotIfWinActive 也会出错
                 Logger.Error("App: cannot register hotkey " entry["Key"] " - " e.Message)
             }
             HotIf()
+        }
+    }
+
+    ; 注册热键, 失败时写日志; notify: 同时弹窗提示 (呼出热键注册不上时程序基本没法用)
+    static _TryHotkey(key, fn, notify := false) {
+        try {
+            Hotkey(key, fn)
+            return true
+        } catch as e {
+            Logger.Error("App: cannot register hotkey " key " - " e.Message)
+            if notify
+                MsgBox("Cannot register hotkey " key ":`n" e.Message, App.Name, 48)
+            return false
         }
     }
 
