@@ -2,6 +2,7 @@
 
 ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计的 Windows 启动器, 基于 AutoHotkey v2, 开源免费、绿色便携。按 `Alt+Space` 呼出, 输入名称, `Enter` 打开。
 
+- **小**: 下载不到 1 MB, 解压后约 2 MB, 一个 exe 加少量资源文件, 不需要 .NET、Electron 等运行库
 - **快**: 输入即搜; [Everything](https://www.voidtools.com/) 在运行时毫秒级搜遍全盘文件
 - **越用越懂你**: 记住每次的选择, 常用的自动排第一; 支持单词首字母 (`vsc`) 和拼音首字母 (`wx` → 微信)
 - **一个窗口处理日常小事**: 计算器、网页搜索、剪贴板历史、文字片段自动展开、系统命令、终端

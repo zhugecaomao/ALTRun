@@ -3,6 +3,7 @@
 ## 系统要求
 - Windows 10 或 Windows 11 (64 位)
 - 用源码运行时需要 [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新版本; 发布的 exe 不需要
+- 不需要 .NET、Electron 或其他运行库; 下载的 zip 不到 1 MB, 解压后约 2 MB
 
 ## 安装
 ALTRun 是绿色软件, 不需要安装, 不写注册表。

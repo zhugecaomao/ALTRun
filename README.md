@@ -30,6 +30,7 @@
 
 
 ## 为什么选择 ALTRun
+- **小巧**：下载不到 1 MB，解压后约 2 MB，只有一个 `ALTRun.exe` 和少量资源文件，不需要安装 .NET、Electron 或其他运行库；同类启动器的安装包通常有几十 MB，安装后可达上百 MB。
 - **快速响应**：输入第一个字符即显示结果；配合 [Everything](https://www.voidtools.com/) 毫秒级搜索全盘文件，未安装时使用内置索引。
 - **智能排序**：根据使用习惯自动调整排名；支持单词首字母（`vsc` → Visual Studio Code）和拼音首字母（`wx` → 微信），并高亮匹配内容。
 - **多合一**：计算与单位换算、网页搜索、浏览器书签、剪贴板历史、文字片段、系统命令、终端，无需再装多个小工具。
@@ -196,6 +197,7 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk
 ## English
 ALTRun is a fast, keyboard-first launcher for Windows, inspired by Alfred for macOS. Press `Alt+Space`, type a few letters, press `Enter`.
 
+- **Tiny**: under 1 MB to download and about 2 MB unpacked — a single `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install.
 - **Search everything**: apps (Start menu, desktop, Microsoft Store), files and folders (via [Everything](https://www.voidtools.com/) or a built-in index), custom commands, snippets, bookmarks and system commands.
 - **Smart ranking**: learns which result you pick for each query; matches word initials (`vsc` → Visual Studio Code) and pinyin initials, and highlights the matched characters.
 - **All in one**: calculator with unit conversion, web search keywords, clipboard history, snippets with `;keyword` expansion, terminal commands, lock / sleep / shutdown, large type.
