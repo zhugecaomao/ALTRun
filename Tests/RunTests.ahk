@@ -73,7 +73,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "IconScaling", "MatchHighlight", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "IconScaling", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -818,6 +818,56 @@ class Tests {
         SearchWindow.HighlightText := ""
         eq("no query", str(SearchWindow.HighlightRanges(item)), "")
         SearchWindow.HighlightText := savedText
+    }
+
+    ; 高亮的字和其它字分段画, 字的位置不能随高亮边界移动 (输入时字距跳动)
+    static HighlightSpacing() {
+        title := "Weima Wave Station", width := 320, height := 40
+        hdc0 := DllCall("GetDC", "Ptr", 0, "Ptr")
+        hdc := DllCall("CreateCompatibleDC", "Ptr", hdc0, "Ptr")
+        hbm := DllCall("CreateCompatibleBitmap", "Ptr", hdc0, "Int", width, "Int", height, "Ptr")
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdc0)
+        oldBitmap := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbm, "Ptr")
+        font := SearchWindow._CreateFont("Segoe UI", 13, 400)
+        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", font, "Ptr")
+        DllCall("SetBkMode", "Ptr", hdc, "Int", 1)
+        gdi := SearchWindow._gdi, saved := Map()
+        for key in ["TitleColor", "HighlightColor", "SelectedTitleColor", "SelectedHighlightColor"]
+            saved[key] := gdi.Has(key) ? gdi[key] : ""
+        gdi["TitleColor"] := 0, gdi["HighlightColor"] := 0, gdi["SelectedTitleColor"] := 0, gdi["SelectedHighlightColor"] := 0   ; 同一种颜色: 只比较位置
+        ink(query) {                                                        ; 每一列有没有字 (不看颜色)
+            rect := Buffer(16), NumPut("Int", 0, "Int", 0, "Int", width, "Int", height, rect)
+            DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", DllCall("GetStockObject", "Int", 0, "Ptr"))
+            ranges := (query = "") ? [] : FuzzyMatcher.MatchRanges(query, title)
+            SearchWindow._DrawTitle(hdc, title, ranges, 4, 0, width - 4, height, 0x24 | 0x800, false)
+            header := Buffer(40, 0), NumPut("UInt", 40, "Int", width, "Int", -height, "UShort", 1, "UShort", 32, header)
+            pixels := Buffer(width * height * 4)
+            DllCall("GetDIBits", "Ptr", hdc, "Ptr", hbm, "UInt", 0, "UInt", height, "Ptr", pixels, "Ptr", header, "UInt", 0)
+            columns := ""
+            Loop width {
+                x := A_Index - 1, dark := false
+                Loop height {
+                    color := NumGet(pixels, ((A_Index - 1) * width + x) * 4, "UInt")
+                    if (Min(color & 0xFF, color >> 8 & 0xFF, color >> 16 & 0xFF) < 64) {   ; 只看笔画中心 (抗锯齿的边缘在分段交界处会叠加)
+                        dark := true
+                        break
+                    }
+                }
+                columns .= dark ? "1" : "0"
+            }
+            return columns
+        }
+        plainHighlight := ink("weima wave station")                         ; 整个标题都高亮: 和逐段画的位置比较
+        for query in ["", "w", "we", "wei", "weim", "wave", "ws", "zzz"]                ; "" / "ws" / "zzz": 没有高亮的字
+            TestRunner.Equal("HighlightSpacing." query, ink(query), plainHighlight)
+        for key, value in saved
+            if (value != "")
+                gdi[key] := value
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldBitmap)
+        DllCall("DeleteObject", "Ptr", font)
+        DllCall("DeleteObject", "Ptr", hbm)
+        DllCall("DeleteDC", "Ptr", hdc)
     }
 
     ; 不是系统尺寸的图标 (紧凑主题 28 px 等) 平滑缩放成正好的尺寸

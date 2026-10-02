@@ -962,33 +962,56 @@ class SearchWindow {
         return item.HighlightRanges
     }
 
-    ; 画标题: 没有要高亮的字时和以前一样 (DrawText 末尾省略); 有时分段画, 匹配的字用 Highlight 颜色,
-    ; 放不下时自己截断并加 "…"
+    ; 画标题: 匹配的字用 Highlight 颜色, 放不下时自己截断并加 "…"。
+    ; 每个字的位置都按整个标题一次量出来 (GetTextExtentExPoint), 各段用 ExtTextOut 按这些位置摆放;
+    ; 没有高亮时也这样画。每段分开量再拼起来、或者有没有高亮用两种画法 (DrawText 会按字距调整),
+    ; 都会差 1 像素左右, 输入时高亮的边界移动, 字距就会跟着跳动
     static _DrawTitle(hdc, title, ranges, left, top, right, bottom, flags, selected) {
-        static DT_END_ELLIPSIS := 0x8000
-        if !ranges.Length
-            return SearchWindow._DrawText(hdc, title, left, top, right, bottom, flags | DT_END_ELLIPSIS)
+        static DT_VCENTER := 0x4, DT_BOTTOM := 0x8, ETO_CLIPPED := 0x4
+        if (title = "")
+            return
         gdi := SearchWindow._gdi
         available := right - left
-        if (SearchWindow._TextWidth(hdc, title) > available)
-            title := SubStr(title, 1, SearchWindow._FitChars(hdc, title, available - SearchWindow._TextWidth(hdc, "…"))) "…"
+        extents := SearchWindow._Extents(hdc, title)
+        if (extents.Length && extents[extents.Length] > available) {
+            ellipsis := SearchWindow._TextWidth(hdc, "…"), fit := 0
+            while (fit < extents.Length && extents[fit + 1] <= available - ellipsis)
+                fit++
+            title := SubStr(title, 1, fit) "…"
+            extents := SearchWindow._Extents(hdc, title)
+        }
+        metrics := Buffer(60, 0)                                            ; TEXTMETRICW, tmHeight 在最前面
+        DllCall("GetTextMetricsW", "Ptr", hdc, "Ptr", metrics)
+        lineHeight := NumGet(metrics, 0, "Int")
+        y := (flags & DT_BOTTOM) ? bottom - lineHeight : (flags & DT_VCENTER) ? top + (bottom - top - lineHeight) // 2 : top
+        clip := Buffer(16)
+        NumPut("Int", left, "Int", top, "Int", right, "Int", bottom, clip)
         normal := selected ? gdi["SelectedTitleColor"] : gdi["TitleColor"]
         highlight := selected ? gdi["SelectedHighlightColor"] : gdi["HighlightColor"]
-        x := left
+        pos := 1
         for segment in FuzzyMatcher.Segments(title, ranges) {
-            width := SearchWindow._TextWidth(hdc, segment[1])
+            count := StrLen(segment[1])
+            advances := Buffer(count * 4)                                   ; 每个字的宽度 (相邻两个累计宽度之差)
+            Loop count
+                NumPut("Int", extents[pos + A_Index - 1] - (pos + A_Index - 2 >= 1 ? extents[pos + A_Index - 2] : 0), advances, (A_Index - 1) * 4)
+            x := left + (pos > 1 ? extents[pos - 1] : 0)
             DllCall("SetTextColor", "Ptr", hdc, "UInt", segment[2] ? highlight : normal)
-            SearchWindow._DrawText(hdc, segment[1], x, top, Min(x + width + 2, right), bottom, flags)
-            x += width
+            DllCall("ExtTextOutW", "Ptr", hdc, "Int", x, "Int", y, "UInt", ETO_CLIPPED, "Ptr", clip, "WStr", segment[1], "UInt", count, "Ptr", advances)
+            pos += count
         }
         DllCall("SetTextColor", "Ptr", hdc, "UInt", normal)
     }
 
-    ; 宽度 maxWidth 以内放得下几个字
-    static _FitChars(hdc, text, maxWidth) {
-        fit := 0, size := Buffer(8, 0)
-        DllCall("GetTextExtentExPointW", "Ptr", hdc, "WStr", text, "Int", StrLen(text), "Int", Max(0, maxWidth), "Int*", &fit, "Ptr", 0, "Ptr", size)
-        return fit
+    ; 每个字结束处到开头的宽度 (像素, 按整段文字一次量出): extents[i] = 前 i 个字的宽度
+    static _Extents(hdc, text) {
+        count := StrLen(text), extents := []
+        if !count
+            return extents
+        fit := 0, partial := Buffer(count * 4, 0), size := Buffer(8, 0)
+        DllCall("GetTextExtentExPointW", "Ptr", hdc, "WStr", text, "Int", count, "Int", 0x7FFFFFFF, "Int*", &fit, "Ptr", partial, "Ptr", size)
+        Loop count
+            extents.Push(NumGet(partial, (A_Index - 1) * 4, "Int"))
+        return extents
     }
 
     static _TextWidth(hdc, text) {

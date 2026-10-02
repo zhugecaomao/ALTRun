@@ -80,7 +80,7 @@ Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些�
 | SelectedTitle | `000000` | 选中行标题 |
 | SelectedSubtitle | `4A5568` | 选中行说明 |
 | SelectedShortcut | `4A5568` | 选中行快捷键提示 |
-| Highlight | `0F62D0` | 标题里和输入匹配的字 (类似 Listary 的高亮); 不想要高亮时设成和 Title 一样 |
-| SelectedHighlight | `0B4FAE` | 选中行标题里和输入匹配的字 |
+| Highlight | `005FE0` | 标题里和输入匹配的字 (类似 Listary 的高亮); 不想要高亮时设成和 Title 一样 |
+| SelectedHighlight | `0047B8` | 选中行标题里和输入匹配的字 |
 
 窗口宽度、显示几行结果和窗口位置不属于主题, 在 偏好设置 → 外观 里设置 (`Appearance.Width`、`Appearance.VisibleRows`、`Appearance.ShowOn`、`Appearance.RememberPosition`)。

@@ -179,8 +179,8 @@ class ThemeManager {
             "SelectedTitle"     , "000000",
             "SelectedSubtitle"  , "4A5568",
             "SelectedShortcut"  , "4A5568",
-            "Highlight"         , "0F62D0",
-            "SelectedHighlight" , "0B4FAE"
+            "Highlight"         , "005FE0",
+            "SelectedHighlight" , "0047B8"
         )
     }
 }
