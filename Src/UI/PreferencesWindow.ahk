@@ -341,6 +341,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.Calculator.StructuralCalc", "Prefs.StructuralCalc", , , "Prefs.Feature.Calculator")
         PreferencesWindow._Check("Features.Calculator.Currency", "Prefs.Currency")
         PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
+        PreferencesWindow._Lines("Features.System.Hidden", "Prefs.SysHidden", 2)
         PreferencesWindow._Gap()
         PreferencesWindow._Pair(["Features.Terminal.Prefix", "Prefs.TerminalPrefix", "S"]
             , ["Features.Terminal.Shell", "Prefs.TerminalShell", "M", "choice", ["cmd", "powershell", "pwsh", "wt"], ["Command Prompt (cmd)", "Windows PowerShell", "PowerShell 7 (pwsh)", "Windows Terminal (wt)"]])
@@ -995,6 +996,7 @@ class PreferencesWindow {
     ; 列表页: ListView 显示 path 指向的数组, 添加 / 编辑 / 删除都用 ItemEditor
     ; check: 可选, (item, roots) => "OK" / "Missing" / "Unavailable" / "Skipped"。
     ; 提供时多一个 "检查路径" 按钮, 结果显示在 "Status" 列 (列表里的项目本身没有这个键)
+    ; 按钮右边的筛选框: 只显示含有所有输入的词的项目 (在各列的文字里找, 不分大小写)
     static _List(path, height, columns, fields, newItem, check := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
@@ -1005,17 +1007,32 @@ class PreferencesWindow {
             listView.ModifyCol(index, column[3])
         pageName := PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Name
         statuses := Map()                                                   ; ObjPtr(item) -> 检查结果, 检查过才有
+        shown := []                                                         ; 每一行对应 items 里的第几项 (筛选时只显示一部分)
+        filterBox := ""
 
         Refresh(selectRow := 0) {
+            listView.Opt("-Redraw")
             listView.Delete()
-            for item in items {
+            shown.Length := 0
+            filter := IsObject(filterBox) ? filterBox.Value : ""
+            for index, item in items {
                 cells := []
                 for column in columns
                     cells.Push((column[2] = "Status") ? StatusText(item) : PreferencesWindow._Cell(item, column[2]))
+                if !PreferencesWindow.FilterMatch(filter, cells)
+                    continue
                 listView.Add("", cells*)
+                shown.Push(index)
             }
-            if selectRow
-                listView.Modify(Min(selectRow, listView.GetCount()), "Select Focus Vis")
+            if (selectRow && shown.Length)
+                listView.Modify(Min(selectRow, shown.Length), "Select Focus Vis")
+            listView.Opt("+Redraw")
+        }
+        RowOf(index) {                                                      ; items 里的第 index 项在第几行, 没有显示时 0
+            for row, shownIndex in shown
+                if (shownIndex = index)
+                    return row
+            return 0
         }
         StatusText(item) {
             key := ObjPtr(item)
@@ -1031,6 +1048,8 @@ class PreferencesWindow {
                 items.Push(edited)
                 PreferencesWindow.MarkDirty()
                 Recheck(edited)
+                if IsObject(filterBox)
+                    filterBox.Value := ""                                   ; 清掉筛选, 新加的一项一定看得到
                 Refresh(items.Length)
             }
         }
@@ -1038,11 +1057,12 @@ class PreferencesWindow {
             row := listView.GetNext()
             if !row
                 return
-            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, ItemEditor.WithDefaults(items[row], newItem()))
+            index := shown[row]
+            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, ItemEditor.WithDefaults(items[index], newItem()))
             if IsObject(edited) {
-                if statuses.Has(ObjPtr(items[row]))
-                    statuses.Delete(ObjPtr(items[row]))
-                items[row] := edited
+                if statuses.Has(ObjPtr(items[index]))
+                    statuses.Delete(ObjPtr(items[index]))
+                items[index] := edited
                 PreferencesWindow.MarkDirty()
                 Recheck(edited)
                 Refresh(row)
@@ -1061,7 +1081,7 @@ class PreferencesWindow {
                 if (!firstProblem && (result = "Missing" || result = "Unavailable"))
                     firstProblem := index
             }
-            Refresh(firstProblem)
+            Refresh(RowOf(firstProblem))
             button.Enabled := true
             if !firstProblem
                 message := I18n.T("Prefs.CheckAllOk", counts["OK"])
@@ -1077,7 +1097,7 @@ class PreferencesWindow {
                 return
             if (MsgBox(I18n.T("Prefs.ConfirmDelete", listView.GetText(row, 1)), pageName, "YesNo Icon? Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
                 return
-            items.RemoveAt(row)
+            items.RemoveAt(shown[row])
             PreferencesWindow.MarkDirty()
             Refresh(row)
         }
@@ -1090,7 +1110,26 @@ class PreferencesWindow {
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Delete")).OnEvent("Click", DeleteItem)
         if IsObject(check)
             PreferencesWindow._Add("Button", "x+24 yp w100", I18n.T("Prefs.CheckTargets")).OnEvent("Click", CheckItems)
+        listView.GetPos(&listX, , &listW)
+        filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; 不用 _Add: 筛选不算修改设置
+        PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls.Push(filterBox)
+        Win.SetCueBanner(filterBox.Hwnd, I18n.T("Prefs.Filter"))
+        filterBox.OnEvent("Change", (*) => Refresh())
         PreferencesWindow._y += 38
+    }
+
+    ; 筛选框: filter 里的每个词 (空格分开) 都出现在某一列里才显示, 不分大小写; 空白时全部显示
+    static FilterMatch(filter, cells) {
+        filter := Trim(filter)
+        if (filter = "")
+            return true
+        text := ""
+        for cell in cells
+            text .= cell "`n"
+        for word in StrSplit(filter, " ")
+            if (word != "" && !InStr(text, word))
+                return false
+        return true
     }
 
     static _Cell(item, key) {

@@ -183,8 +183,18 @@ class SearchWindow {
         appearance := AppSettings.Appearance
         pos := SearchWindow.Place(SearchWindow._ScreenArea(appearance["ShowOn"]), SearchWindow.Width
             , SearchWindow._WindowHeight(SearchWindow.VisibleRows), appearance["RememberPosition"] ? appearance["Position"] : "")
-        SearchWindow.Gui.Show("x" pos.X " y" pos.Y " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
-        SearchWindow._shownRows := SearchWindow._VisibleCount()
+        ; 窗口隐藏期间的重画请求会被丢掉, 显示出来后才重画的话, 结果列表会先白一下 / 闪一下。
+        ; 先让 DWM 把窗口藏起来 (cloak), 显示并立即画好整个窗口之后再露出来
+        hwnd := SearchWindow.Gui.Hwnd
+        cloaked := !SearchWindow.IsVisible() && SearchWindow._Cloak(hwnd, true)
+        try {
+            SearchWindow.Gui.Show("x" pos.X " y" pos.Y " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
+            SearchWindow._shownRows := SearchWindow._VisibleCount()
+            DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
+        } finally {
+            if cloaked
+                SearchWindow._Cloak(hwnd, false)
+        }
         try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)                    ; 先拿到焦点, 之后按下的键都进搜索框
         SearchWindow.Input.Focus()
         len := StrLen(SearchWindow.Input.Value)
@@ -194,9 +204,12 @@ class SearchWindow {
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
         if AppSettings.General["SwitchToEnglishInput"]
             Win.SwitchToEnglishIME()
-        ; 窗口隐藏期间的重画请求会被丢掉: 失去焦点隐藏后再显示时, Windows 不一定重画列表,
-        ; 恢复的结果 (KeepLastQuery) 就是一片空白。显示之后立即重画一次
-        DllCall("RedrawWindow", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x105)   ; RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW
+    }
+
+    ; DWMWA_CLOAK: 窗口照常显示、绘制, 只是 DWM 不把它画到屏幕上。返回 true = 成功 (Windows 8 起才有)
+    static _Cloak(hwnd, on) {
+        try return DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", hwnd, "UInt", 13, "Int*", on ? 1 : 0, "UInt", 4) = 0
+        return false
     }
 
     ; 窗口放在 area 里的位置 {X, Y}。position: {X, Y} 千分比 (0 = 最左 / 最上, 1000 = 最右 / 最下,

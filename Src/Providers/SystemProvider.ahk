@@ -36,12 +36,15 @@ class SystemProvider {
     static Search(query) {
         results := []
         needle := StrLower(query.Text)
+        hidden := SystemProvider._HiddenIds()
         for command in SystemProvider.Commands() {
+            if hidden.Has(command["Id"])
+                continue
             score := FuzzyMatcher.BestKey(needle, command["Keys"])
             if (score <= 0)
                 continue
             results.Push(ResultItem(command["Title"], command["Subtitle"], {
-                Icon: command["Icon"], Uid: "system:" command["Id"], Score: score,
+                Icon: command["Icon"], Uid: "system:" command["Id"], Score: score, Source: command,
                 OnRun: SystemProvider._Runner(command["Id"])
             }))
             if (command["Id"] = "CheckUpdate" && IsObject(update := UpdateChecker.PendingItem())) {
@@ -50,6 +53,39 @@ class SystemProvider {
             }
         }
         return results
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 隐藏用不到的命令 (搜索结果里 Ctrl+Del / 右键 "删除"); 热键和别的地方仍然可以用 Id 调用
+    ;---------------------------------------------------------------------------
+    static DeleteItem(item) {
+        return SystemProvider.Hide(item.Source["Id"])
+    }
+
+    static DeletePrompt(item) {
+        return I18n.T("Sys.ConfirmHide", item.Title)
+    }
+
+    static Hide(id) {
+        if SystemProvider._HiddenIds().Has(id)
+            return true
+        AppSettings.Feature("System")["Hidden"].Push(id)
+        return AppSettings.Save()
+    }
+
+    ; 隐藏列表 -> Map (不区分大小写), 列表变化 (换了数组或条数变了) 时重新生成
+    static _HiddenIds() {
+        static cache := "", cacheFor := ""
+        hidden := AppSettings.Feature("System")["Hidden"]
+        signature := ObjPtr(hidden) ":" hidden.Length
+        if (cacheFor != signature) {
+            cache := Map()
+            cache.CaseSense := "Off"
+            for id in hidden
+                cache[Trim(id)] := true
+            cacheFor := signature
+        }
+        return cache
     }
 
     ; 空搜索框里的结果: 后台发现了新版本时, 显示 "发现新版本: ALTRun x" (和 Alfred 一样, 不弹窗)
@@ -169,7 +205,7 @@ class SystemProvider {
         tool("Explorer"          , "Tool.Explorer"          , A_WinDir "\explorer.exe")
         tool("RecycleBin"        , "Tool.RecycleBin"        , "::{645FF040-5081-101B-9F08-00AA002F954E}")
         tool("ThisPC"            , "Tool.ThisPC"            , "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}")
-        tool("Printers"          , "Tool.Printers"          , system32 "control.exe", "printers", "::{A8A91A66-3A7D-4424-8D24-04E180695C7A}")
+        tool("Printers"          , "Tool.Printers"          , system32 "control.exe", "printers", "::{21EC2020-3AEA-1069-A2DD-08002B30309D}\::{A8A91A66-3A7D-4424-8D24-04E180695C7A}")
         tool("Notepad"           , "Tool.Notepad"           , system32 "notepad.exe")
         tool("Calculator"        , "Tool.Calculator"        , system32 "calc.exe")
         tool("Paint"             , "Tool.Paint"             , system32 "mspaint.exe")

@@ -287,7 +287,8 @@ class AppSettings {
                 ),
                 "System", Map(
                     "Enabled"       , 1,
-                    "ConfirmActions", 1                                     ; 关机/重启/注销/清空回收站前确认
+                    "ConfirmActions", 1,                                    ; 关机/重启/注销/清空回收站前确认
+                    "Hidden"        , []                                    ; 在搜索结果里删除 (Ctrl+Del) 的系统命令的 Id
                 )
             ),
             "Extensions", Map(
