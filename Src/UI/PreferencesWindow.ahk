@@ -249,7 +249,10 @@ class PreferencesWindow {
         PreferencesWindow._Check("General.HideOnDeactivate", "Prefs.HideOnDeactivate")
         PreferencesWindow._Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
         PreferencesWindow._Section("Prefs.Group.Typing")
-        PreferencesWindow._Check("General.SwitchToEnglishInput", "Prefs.EnglishInput")
+        english := PreferencesWindow._Check("General.SwitchToEnglishInput", "Prefs.EnglishInput")
+        restore := PreferencesWindow._Check("General.RestoreInput", "Prefs.RestoreInput", PreferencesWindow._InputX() + 18)   ; 子选项, 缩进
+        restore.Enabled := english.Value
+        english.OnEvent("Click", (*) => restore.Enabled := english.Value)
         PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
         PreferencesWindow._Section("Prefs.Section.TipsHistory")
         PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
@@ -762,6 +765,7 @@ class PreferencesWindow {
         hasDesc := (desc != "" || PreferencesWindow._HasDesc(labelKey))
         PreferencesWindow._Below(hasDesc ? 0 : 6, ctrl)
         PreferencesWindow._Desc(labelKey, x + 18, desc)                     ; 和复选框的文字对齐
+        return ctrl
     }
 
     ; 左列的分组标签, 和右边第一个控件同一行

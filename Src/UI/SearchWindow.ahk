@@ -215,7 +215,8 @@ class SearchWindow {
     ; 打开了 "为每个应用窗口使用不同的输入法" 时, 只有 ALTRun 自己切换了, 别的程序不受影响
     static _RestoreInputLanguage() {
         layout := SearchWindow._layoutBefore, SearchWindow._layoutBefore := 0
-        if (!layout || !AppSettings.General["SwitchToEnglishInput"] || Win.PerWindowInputMethod() || layout = Win.KeyboardLayout())
+        if (!layout || !AppSettings.General["SwitchToEnglishInput"] || !AppSettings.General["RestoreInput"]
+            || Win.PerWindowInputMethod() || layout = Win.KeyboardLayout())
             return
         if SearchWindow.IsActive() {                                        ; 还在前台: 自己切回去, 对所有程序生效
             try DllCall("ActivateKeyboardLayout", "Ptr", layout, "UInt", 0)
