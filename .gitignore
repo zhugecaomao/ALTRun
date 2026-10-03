@@ -10,3 +10,6 @@ _validate.ahk
 
 # Python
 __pycache__/
+
+# Website build output (site/build.py)
+_site/
