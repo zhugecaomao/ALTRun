@@ -523,7 +523,7 @@ class PreferencesWindow {
         PreferencesWindow._y := top + 52
         PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) "   ·   GPL-3.0")
         PreferencesWindow._y := top + 74
-        PreferencesWindow._Add("Link", "x" textX " w" textW, '<a href="' App.RepoUrl '">' App.RepoUrl '</a>')
+        PreferencesWindow._Add("Link", "x" textX " w" textW, '<a href="' App.Website '">' RTrim(StrReplace(App.Website, "https://"), "/") '</a>   ·   <a href="' App.RepoUrl '">GitHub</a>')
         PreferencesWindow._y := top + 102
         PreferencesWindow._Add("Button", "x" textX " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T("Tray.CheckUpdate"))
             .OnEvent("Click", (*) => UpdateChecker.Check())

@@ -226,6 +226,19 @@ class Win {
         try DllCall("ActivateKeyboardLayout", "UInt", 0x04090409, "UInt", 0)
     }
 
+    ; 窗口 (所在线程) 正在用的输入法 (HKL); hwnd = 0: 当前线程
+    static KeyboardLayout(hwnd := 0) {
+        threadId := hwnd ? DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt") : 0
+        return DllCall("GetKeyboardLayout", "UInt", threadId, "Ptr")
+    }
+
+    ; Windows 设置里打开了 "允许我为每个应用窗口使用不同的输入法" (SPI_GETTHREADLOCALINPUTSETTINGS)
+    static PerWindowInputMethod() {
+        on := 0
+        try DllCall("SystemParametersInfo", "UInt", 0x104E, "UInt", 0, "Int*", &on, "UInt", 0)
+        return on != 0
+    }
+
     ; 等所有修饰键松开, 防止 Ctrl/Alt 漏进后续 Send
     static WaitModifiersUp(timeout := 0.5) {
         for key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"]

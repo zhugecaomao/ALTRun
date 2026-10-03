@@ -33,7 +33,7 @@
 | LaunchAtLogin | 1 | 开机自动启动 |
 | ShowTrayIcon | 1 | 显示托盘图标 |
 | HideOnDeactivate | 1 | 搜索窗口失去焦点时隐藏 |
-| SwitchToEnglishInput | 0 | 显示搜索窗口时切换到英文输入法 |
+| SwitchToEnglishInput | 0 | 显示搜索窗口时切换到英文输入法 (英文 (美国) 键盘), 窗口隐藏后切回原来的输入法。只在已经装好的输入法之间切换, 不会添加新的键盘布局 |
 | SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
 | KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次, 直接输入开始新的搜索。从 2.x 升级时沿用 `KeepInput` |
 | ShowTips | 1 | 空搜索框里轮换显示使用提示 |
