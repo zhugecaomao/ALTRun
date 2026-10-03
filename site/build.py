@@ -151,7 +151,6 @@ def main():
             shutil.copy(os.path.join(SHOTS, name), os.path.join(OUT, "images", name))
     shutil.copy(os.path.join(ROOT, "docs", "images", "logo.png"), os.path.join(OUT, "images", "logo.png"))
     shutil.copy(os.path.join(ROOT, "Resources", "ALTRun.ico"), os.path.join(OUT, "favicon.ico"))
-    open(os.path.join(OUT, ".nojekyll"), "w").close()
     print(f"Built {OUT}: {info['version']} ({info['size'] or 'size unknown'}), {theme_count} themes, changes {changes_version}")
 
 
