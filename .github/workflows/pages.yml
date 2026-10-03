@@ -1,0 +1,58 @@
+# 生成官网 (site/build.py) 并发布到 gh-pages 分支, 由 GitHub Pages 提供: https://zhugecaomao.github.io/ALTRun/
+# 第一次运行后, 在仓库 Settings -> Pages 里把 Source 设为 "Deploy from a branch", 分支选 gh-pages / (root)。
+#
+# 什么时候更新:
+#   - main 上网站、截图、更新日志、主题列表有变化时
+#   - Release 工作流成功后 (新版本号、下载链接、文件大小、更新内容)
+#   - 每天一次 (下载次数)
+# gh-pages 每次都只有一个提交 (强制推送), 不会越来越大; 网站内容以 site/ 和仓库里的数据为准, 不要直接改 gh-pages。
+name: Publish site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - site/**
+      - docs/images/**
+      - CHANGELOG.md
+      - Src/Core/I18n.ahk
+      - Src/UI/ThemeManager.ahk
+      - .github/workflows/pages.yml
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  schedule:
+    - cron: "41 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build site
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 site/build.py
+
+      - name: Push to gh-pages
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          cd _site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publish site from ${GITHUB_SHA::7}"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${REPO}.git" gh-pages

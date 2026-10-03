@@ -1,6 +1,6 @@
 # ALTRun 使用文档
 
-ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计的 Windows 启动器, 基于 AutoHotkey v2, 开源免费、绿色便携。按 `Alt+Space` 呼出, 输入名称, `Enter` 打开。
+ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计的 Windows 启动器, 基于 AutoHotkey v2, 开源免费、绿色便携。按 `Alt+Space` 呼出, 输入名称, `Enter` 打开。官网: https://zhugecaomao.github.io/ALTRun/
 
 - **小**: 下载不到 1 MB, 解压后约 2 MB, 一个 exe 加少量资源文件, 不需要 .NET、Electron 等运行库
 - **快**: 输入即搜; [Everything](https://www.voidtools.com/) 在运行时毫秒级搜遍全盘文件

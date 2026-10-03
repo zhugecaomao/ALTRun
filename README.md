@@ -15,6 +15,7 @@
 </p>
 
 <p align="center">
+  <a href="https://zhugecaomao.github.io/ALTRun/">官网</a> ·
   <a href="#为什么选择-altrun">为什么选择</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#功能">功能</a> ·
@@ -173,7 +174,8 @@ Tests\              单元测试、对照数据（Fixtures）、自动截图（S
 docs\               Wiki 源文件（docs\wiki，合并后自动发布）、截图（docs\images）
 bucket\             Scoop 清单（仓库本身即 Scoop bucket）
 packaging\          winget 清单及发布时更新清单的脚本
-.github\            GitHub Actions（测试、截图、发布、Wiki、同步到 Gitee）、Issue / PR 模板
+site\               官网模板和生成脚本（发布到 GitHub Pages）
+.github\            GitHub Actions（测试、截图、发布、Wiki、官网、同步到 Gitee）、Issue / PR 模板
 ```
 
 运行后程序目录下会生成 `Data\`（设置文件 `ALTRun.json`，以及可删除的索引和历史）和 `Themes\`（自定义主题）。
