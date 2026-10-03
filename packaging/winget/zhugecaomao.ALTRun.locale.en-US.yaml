@@ -7,7 +7,7 @@ PublisherUrl: https://github.com/zhugecaomao
 PublisherSupportUrl: https://github.com/zhugecaomao/ALTRun/issues
 Author: zhugecaomao
 PackageName: ALTRun
-PackageUrl: https://github.com/zhugecaomao/ALTRun
+PackageUrl: https://zhugecaomao.github.io/ALTRun/
 License: GPL-3.0
 LicenseUrl: https://github.com/zhugecaomao/ALTRun/blob/main/LICENSE
 ShortDescription: Lightweight, Alfred-style launcher for Windows

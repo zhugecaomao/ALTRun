@@ -429,6 +429,8 @@ class I18n {
         s["Prefs.HideOnDeactivate.Desc"] := ["Hides when you click another window or switch programs. When off, press Esc or the hotkey to hide.", "点击别的窗口或切换程序时自动隐藏; 关闭后只能按 Esc 或热键隐藏", "他のウィンドウをクリックしたり、プログラムを切り替えたりすると自動的に隠れます。オフの場合は Esc またはホットキーで隠します。"]
         s["Prefs.EnglishInput"]        := ["Switch to English input when shown", "显示窗口时切换到英文输入法", "表示時に英語入力に切り替える"]
         s["Prefs.EnglishInput.Desc"]   := ["Uses the English (US) keyboard each time, so a Chinese input method does not catch your typing.", "每次呼出时切换到英文 (美国) 键盘, 输入的字母不会进到中文输入法里", "呼び出すたびに英語 (US) キーボードに切り替わるため、日本語入力などに入力が取られません。"]
+        s["Prefs.RestoreInput"]        := ["Switch back when the window hides", "窗口隐藏后切回原来的输入法", "ウィンドウを閉じたら元の入力方式に戻す"]
+        s["Prefs.RestoreInput.Desc"]   := ["Other programs get the input method you were using before. Not needed when Windows uses a different input method for each app window.", "回到别的程序时还是呼出前的输入法; Windows 设置了每个应用窗口各用各的输入法时不需要", "他のプログラムに戻ったとき、呼び出す前の入力方式のままになります。アプリごとに入力方式を使い分ける設定の場合は不要です。"]
         s["Prefs.SpaceToRun"]          := ["Space runs the selected result (Shift+Space types a space)", "按空格执行选中项 (Shift+空格输入空格)", "スペースで選択項目を実行 (Shift+スペースでスペースを入力)"]
         s["Prefs.SpaceToRun.Desc"]     := ["After you type something, Space works like Enter. Space in an empty box still searches files.", "输入文字后按空格等于按 Enter; 空搜索框里按空格仍然是搜索文件", "文字を入力した後は、スペースが Enter と同様に働きます。空欄でのスペースはファイル検索のままです。"]
         s["Prefs.KeepLastQuery"]       := ["Keep the last search when the window opens", "呼出窗口时保留上一次的搜索", "ウィンドウを開いたときに前回の検索を保持"]

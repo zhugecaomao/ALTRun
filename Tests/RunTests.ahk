@@ -2437,6 +2437,15 @@ Func | PTTools | PT Tools (AHK)=99
     }
 
     static Misc() {
+        TestRunner.True("Input.layout of this thread", Win.KeyboardLayout() != 0)
+        TestRunner.True("Input.per-window setting is a flag", Win.PerWindowInputMethod() = true || Win.PerWindowInputMethod() = false)
+        saved := AppSettings.General["SwitchToEnglishInput"]
+        AppSettings.General["SwitchToEnglishInput"] := 0
+        SearchWindow._layoutBefore := 0x08040804
+        SearchWindow._RestoreInputLanguage()                                 ; 没开这个选项: 什么也不做, 只清掉记录
+        TestRunner.Equal("Input.restore clears the saved layout", SearchWindow._layoutBefore, 0)
+        AppSettings.General["SwitchToEnglishInput"] := saved
+        TestRunner.True("App.Website", RegExMatch(App.Website, "^https://\S+/$") > 0)
         TestRunner.True("UpdateChecker.newer", UpdateChecker.Compare("2026.10.01", "2026.09.23") > 0)
         TestRunner.True("UpdateChecker.same", UpdateChecker.Compare("2026.09.23", "2026.09.23") = 0)
         TestRunner.Equal("UpdateChecker.scoop", UpdateChecker.InstalledBy("C:\Users\me\scoop\apps\altrun\current"), "scoop")

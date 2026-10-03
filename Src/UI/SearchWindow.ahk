@@ -53,6 +53,7 @@ class SearchWindow {
     static _shownRows := -1                                                 ; 窗口当前按几行结果的高度显示
     static _tip := ""                                                       ; 这次显示时的使用提示 (HelpProvider.NextTip)
     static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
+    static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput 时隐藏后切回)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
 
     ;---------------------------------------------------------------------------
@@ -159,7 +160,8 @@ class SearchWindow {
     static Show(text := "") {
         if !IsObject(SearchWindow.Gui)
             return
-        if (text = "" && SearchWindow.IsVisible())
+        wasVisible := SearchWindow.IsVisible()
+        if (text = "" && wasVisible)
             SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
         App.RememberActiveWindow()
         SearchWindow._actionsOnly := false
@@ -202,8 +204,25 @@ class SearchWindow {
             SendMessage(0xB1, 0, -1, SearchWindow.Input.Hwnd)               ; 恢复的文字全选: 直接输入就替换掉
         else
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
-        if AppSettings.General["SwitchToEnglishInput"]
+        if AppSettings.General["SwitchToEnglishInput"] {
+            if (!wasVisible || !SearchWindow._layoutBefore)                     ; 隐藏时切回呼出前的输入法
+                SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
             Win.SwitchToEnglishIME()
+        }
+    }
+
+    ; 呼出时切到了英文输入法: 隐藏时切回原来的。所有程序共用一个输入法时 (Windows 默认) 才需要;
+    ; 打开了 "为每个应用窗口使用不同的输入法" 时, 只有 ALTRun 自己切换了, 别的程序不受影响
+    static _RestoreInputLanguage() {
+        layout := SearchWindow._layoutBefore, SearchWindow._layoutBefore := 0
+        if (!layout || !AppSettings.General["SwitchToEnglishInput"] || !AppSettings.General["RestoreInput"]
+            || Win.PerWindowInputMethod() || layout = Win.KeyboardLayout())
+            return
+        if SearchWindow.IsActive() {                                        ; 还在前台: 自己切回去, 对所有程序生效
+            try DllCall("ActivateKeyboardLayout", "Ptr", layout, "UInt", 0)
+        } else if (hwnd := WinExist("A")) {                                 ; 已经失去焦点: 请前台的窗口切换
+            try PostMessage(0x50, 0, layout, , "ahk_id " hwnd)              ; WM_INPUTLANGCHANGEREQUEST
+        }
     }
 
     ; DWMWA_CLOAK: 窗口照常显示、绘制, 只是 DWM 不把它画到屏幕上。返回 true = 成功 (Windows 8 起才有)
@@ -268,6 +287,7 @@ class SearchWindow {
     static Hide() {
         if SearchWindow.IsVisible() {
             SearchWindow._RememberQuery()
+            SearchWindow._RestoreInputLanguage()
             SearchWindow.Gui.Hide()
         }
         LargeType.Close()
