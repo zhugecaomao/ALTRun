@@ -15,6 +15,7 @@ import json
 import os
 import re
 import shutil
+import struct
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -99,6 +100,12 @@ def latest_changes():
     return match.group(1), "\n".join(out)
 
 
+def png_size(path):
+    """PNG 的宽和高 (IHDR), 写进 <img> 让图片载入前就按正确的比例占位"""
+    with open(path, "rb") as f:
+        return struct.unpack(">II", f.read(24)[16:24])
+
+
 def theme_gallery():
     """theme-*.png (Light 用 search.png), 按主题列表里的顺序, 显示中英文名称"""
     names = {m.group(1).lower(): (m.group(2), m.group(3))
@@ -115,8 +122,9 @@ def theme_gallery():
         if key not in files:
             continue
         en, zh = names.get(key, (key, key))
+        width, height = png_size(os.path.join(SHOTS, files[key]))
         cards.append(
-            f'<figure class="theme"><img src="images/{files[key]}" alt="{html.escape(en)}" loading="lazy" width="700" height="506">'
+            f'<figure class="theme"><img src="images/{files[key]}" alt="{html.escape(en)}" loading="lazy" width="{width}" height="{height}">'
             f'<figcaption><span lang="zh">{html.escape(zh)}</span><span lang="en">{html.escape(en)}</span></figcaption></figure>')
     return len(cards), "\n".join(cards)
 
