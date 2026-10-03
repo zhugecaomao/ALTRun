@@ -5,14 +5,14 @@
     zh: "ALTRun — 轻量的 Windows 启动器",
     en: "ALTRun — A lightweight launcher for Windows"
   };
-  var captions = {
-    actions: ["选中结果按 → 打开操作面板: 以管理员身份运行、打开所在位置、复制路径…", "Press → on a result for actions: run as administrator, open location, copy path…"],
-    files: ["空白搜索框先按空格再输入名称, 搜索文件和文件夹 (Everything 或内置索引)", "Press Space first to search files and folders (Everything or the built-in index)"],
-    clipboard: ["Ctrl+Alt+C 或输入 clip: 复制过的文字、文件和图片", "Ctrl+Alt+C or type clip: text, files and images you copied"],
-    calculator: ["直接输入算式, 也支持单位换算 (10 km in mi)", "Type a formula; unit conversion works too (10 km in mi)"],
-    pinyin: ["拼音首字母: jsb → 记事本", "Pinyin initials: jsb → 记事本 (Notepad)"],
-    websearch: ["g 关键词 用 Google 搜索, 搜索引擎可以自定义", "g keywords searches Google; engines are customizable"],
-    "prefs-general": ["偏好设置: 每一项都有说明", "Preferences: every option is explained"]
+  var captions = {                                                   // 截图: [中文说明, 英文说明, 文件名]
+    actions: ["选中结果按 → 打开操作面板: 以管理员身份运行、打开所在位置、复制路径…", "Press → on a result for actions: run as administrator, open location, copy path…", "actions.png"],
+    files: ["空白搜索框先按空格再输入名称, 搜索文件和文件夹 (Everything 或内置索引)", "Press Space first to search files and folders (Everything or the built-in index)", "files.png"],
+    clipboard: ["Ctrl+Alt+C 或输入 clip: 复制过的文字、文件和图片", "Ctrl+Alt+C or type clip: text, files and images you copied", "clipboard.png"],
+    calculator: ["直接输入算式, 也支持单位换算 (10 km in mi)", "Type a formula; unit conversion works too (10 km in mi)", "calculator.png"],
+    pinyin: ["拼音首字母: jsb → 记事本", "Pinyin initials: jsb → 记事本 (Notepad)", "pinyin.png"],
+    websearch: ["g 关键词 用 Google 搜索, 搜索引擎可以自定义", "g keywords searches Google; engines are customizable", "websearch.png"],
+    "prefs-general": ["偏好设置: 每一项都有说明", "Preferences: every option is explained", "prefs-general.png"]
   };
 
   function current() { return root.getAttribute("data-lang"); }
@@ -44,8 +44,10 @@
   }
   tabs.forEach(function (tab) {
     tab.addEventListener("click", function () {
-      selected = tab.getAttribute("data-shot");
-      shot.src = "images/" + selected + ".png";
+      var key = tab.getAttribute("data-shot");
+      if (!Object.prototype.hasOwnProperty.call(captions, key)) return;   // 只认上面列出的截图
+      selected = key;
+      shot.src = "images/" + captions[key][2];
       tabs.forEach(function (t) { t.setAttribute("aria-selected", t === tab ? "true" : "false"); });
       updateCaption();
     });
@@ -56,9 +58,9 @@
     button.addEventListener("click", function () {
       var text = button.getAttribute("data-copy");
       var done = function () {
-        var old = button.innerHTML;
+        var label = Array.prototype.slice.call(button.childNodes);           // 原来的中英文标签, 之后原样放回
         button.textContent = current() === "zh" ? "已复制" : "Copied";
-        setTimeout(function () { button.innerHTML = old; }, 1500);
+        setTimeout(function () { button.replaceChildren.apply(button, label); }, 1500);
       };
       if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, function () {});
     });
