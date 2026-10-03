@@ -30,11 +30,12 @@
 
 
 ## 为什么选择 ALTRun
+- **小巧**：下载不到 1 MB，解压后约 2 MB，只有一个 `ALTRun.exe` 和少量资源文件，不需要安装 .NET、Electron 或其他运行库；同类启动器的安装包通常有几十 MB，安装后可达上百 MB。
 - **快速响应**：输入第一个字符即显示结果；配合 [Everything](https://www.voidtools.com/) 毫秒级搜索全盘文件，未安装时使用内置索引。
 - **智能排序**：根据使用习惯自动调整排名；支持单词首字母（`vsc` → Visual Studio Code）和拼音首字母（`wx` → 微信），并高亮匹配内容。
 - **多合一**：计算与单位换算、网页搜索、浏览器书签、剪贴板历史、文字片段、系统命令、终端，无需再装多个小工具。
 - **全键盘操作**：`→` 打开操作面板，`F3` 直接编辑，`Ctrl+1`～`Ctrl+9` 快速打开。
-- **便携与隐私**：免安装，不写注册表，所有数据保存在 `Data\` 文件夹；不收集任何数据，仅联网检查和下载更新。
+- **便携与隐私**：免安装，不写注册表，不需要管理员权限，没有后台服务或驱动；所有数据保存在 `Data\` 文件夹；不收集任何数据，仅联网检查和下载更新。
 - **自动更新**：有新版本时在搜索窗口中提示，按 `Enter` 即可安装（自动校验 SHA256），设置保留；也支持 Scoop。
 - **个性化**：中文、English、日本語界面；16 套内置主题，可跟随系统浅色 / 深色模式；主题和设置均为 JSON 文件。
 - **开源免费**：GPL-3.0 许可；每个 PR 都会在 Windows 上自动运行 3000 余项测试。
@@ -42,7 +43,7 @@
 
 ## 快速开始
 1. 下载[最新版本](https://github.com/zhugecaomao/ALTRun/releases/latest)，解压到任意文件夹，运行 `ALTRun.exe`（无需安装，也无需 AutoHotkey）。
-2. 按 `Alt+Space`（或 `Alt+R`）打开搜索窗口，输入名称，按 `Enter` 打开。
+2. 按 `Alt+Space`（或 `Alt+R`）打开搜索窗口，输入名称，按 `Enter` 打开；也可以在偏好设置中改为双击 `Ctrl` / `Shift` 呼出。
 3. 输入 `?` 查看全部语法和快捷键；按 `Ctrl+,` 打开偏好设置。
 
 已安装 [AutoHotkey v2](https://www.autohotkey.com/) 时，也可以直接运行源码中的 `ALTRun.ahk`。
@@ -55,16 +56,16 @@ scoop update altrun    # 升级（请先退出 ALTRun）
 ```
 winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 安装。
 
-**升级**：ALTRun 会在后台检查更新（启动时距上次检查满 1 小时，运行期间每 6 小时一次），有新版本时搜索窗口中显示“发现新版本”，按 `Enter` 安装。2026.09.26 之前的版本需手动升级：退出程序，将新版本解压覆盖到原文件夹后重新运行。从 2.x 升级时会自动导入原 `ALTRun.ini` 中的设置、命令和热键。详见[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
+**升级**：ALTRun 会在后台检查更新（启动时距上次检查满 1 小时，运行期间每 6 小时一次），有新版本时搜索窗口中显示“发现新版本”，按 `Enter` 安装。2026.09.26 之前的版本需手动升级：退出程序，将新版本解压覆盖到原文件夹后重新运行。从 2.x 升级时会自动导入原 `ALTRun.ini` 中的设置、命令和热键；设置文件格式变化时，升级前会自动备份原文件。详见[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
 
 
 ## 功能
 **搜索**
 - **搜索窗口**：输入即搜，显示标题和路径；窗口高度随结果变化，可拖动并记住位置，多显示器时显示在鼠标所在屏幕。
-- **应用**：自动索引开始菜单、桌面和 Microsoft Store 应用；不需要的应用可按 `Ctrl+Del` 隐藏。
+- **应用**：自动索引开始菜单、桌面和 Microsoft Store 应用；不需要的应用和内置命令可按 `Ctrl+Del` 隐藏，在偏好设置中恢复。
 - **匹配高亮**：标题中与输入匹配的部分（连续字符、单词首字母、拼音首字母）以高亮色显示。
 - **文件和文件夹**：在空白搜索框中先按 `空格` 再输入名称（或 `'报告`、`open 报告`）；Everything 运行时搜索全盘，否则使用内置索引。
-- **自定义命令**：文件、文件夹、程序（可带参数）、网址，可设置关键字；可检查路径已失效的命令。
+- **自定义命令**：文件、文件夹、程序（可带参数）、网址，可设置关键字；在资源管理器中右键 → 发送到 → ALTRun 即可添加（可多选）；可检查路径已失效的命令。
 - **学习排序**：记住每次输入所选的结果，常用项自动靠前。
 - **使用统计**：按天、按功能统计使用次数（仅记录次数）。
 - **计算器**：直接输入算式；支持单位换算（`10 km in mi`）、可选的货币换算（`100 usd to sgd`）和结构计算（梁主筋、配筋面积）。
@@ -196,11 +197,12 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk
 ## English
 ALTRun is a fast, keyboard-first launcher for Windows, inspired by Alfred for macOS. Press `Alt+Space`, type a few letters, press `Enter`.
 
+- **Tiny**: under 1 MB to download and about 2 MB unpacked — a single `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install.
 - **Search everything**: apps (Start menu, desktop, Microsoft Store), files and folders (via [Everything](https://www.voidtools.com/) or a built-in index), custom commands, snippets, bookmarks and system commands.
 - **Smart ranking**: learns which result you pick for each query; matches word initials (`vsc` → Visual Studio Code) and pinyin initials, and highlights the matched characters.
 - **All in one**: calculator with unit conversion, web search keywords, clipboard history, snippets with `;keyword` expansion, terminal commands, lock / sleep / shutdown, large type.
-- **Keyboard first**: action panel (`→`), in-place editing (`F3`), `Ctrl+1`–`Ctrl+9`, built-in cheat sheet (`?`).
-- **Portable and private**: no installer, no registry; settings stay in `Data\ALTRun.json`. No telemetry; network access is used only for updates.
+- **Keyboard first**: `Alt+Space` or a double tap of `Ctrl` / `Shift`; action panel (`→`), in-place editing (`F3`), `Ctrl+1`–`Ctrl+9`, built-in cheat sheet (`?`).
+- **Portable and private**: no installer, no registry, no admin rights, no background service; settings stay in `Data\ALTRun.json`. No telemetry; network access is used only for updates.
 - **Automatic updates**: install new versions from the search window (SHA256 verified, settings kept), or use Scoop.
 - **Customizable**: English, Chinese and Japanese interface; 16 built-in themes, or follow the Windows light / dark mode.
 
