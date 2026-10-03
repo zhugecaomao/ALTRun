@@ -117,14 +117,14 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
   border-radius: 999px; padding: 6px 16px; font: inherit; font-size: 0.92rem; cursor: pointer;
 }
 .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
-.shot-frame { display: flex; justify-content: center; min-height: 200px; }
+.shot-frame { display: flex; justify-content: center; align-items: center; min-height: 200px; }   /* 不拉伸矮的截图 (计算器等) */
 .shot-frame img { border-radius: 10px; box-shadow: var(--shadow); border: 1px solid var(--border); max-height: 560px; width: auto; }
 .caption { text-align: center; color: var(--muted); margin: 18px 0 0; }
 
 /* 主题 */
-.themes { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+.themes { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); align-items: start; }
 .theme { margin: 0; }
-.theme img { border-radius: 8px; border: 1px solid var(--border); aspect-ratio: 700 / 506; object-fit: cover; object-position: top; }
+.theme img { border-radius: 8px; border: 1px solid var(--border); }                 /* 按截图原来的比例, 紧凑主题矮一些 */
 .theme figcaption { margin-top: 8px; text-align: center; font-size: 0.92rem; color: var(--muted); }
 
 /* 安装 */
