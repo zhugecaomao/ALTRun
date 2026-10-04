@@ -33,8 +33,8 @@
 
 class ClipboardProvider {
     static Id      := "Clipboard"
-    static File    := A_ScriptDir "\Data\ClipboardHistory.json"
-    static Folder  := A_ScriptDir "\Data\Clipboard"                         ; 很长的条目和图片
+    static File    := AppSettings.DataDir "\ClipboardHistory.json"
+    static Folder  := AppSettings.DataDir "\Clipboard"                         ; 很长的条目和图片
     static LargeText := 4000
     static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
     static Entries := []              ; 最新的在前, 见文件开头的说明

@@ -585,7 +585,8 @@ class PreferencesWindow {
         PreferencesWindow._y += 4
         PreferencesWindow._Buttons(""
             , ["Prefs.EditJson", (*) => (PreferencesWindow.Cancel() || App.EditSettingsFile())]
-            , ["Prefs.OpenDataFolder", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir)])
+            , ["Prefs.OpenDataFolder", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir)]
+            , ["Prefs.ChangeDataFolder", (*) => PreferencesWindow._ChangeDataFolder()])
 
         PreferencesWindow._Section("Prefs.Section.Reset")
         PreferencesWindow._Button("Prefs.ResetLearning", (*) => PreferencesWindow._ResetLearning())
@@ -679,6 +680,42 @@ class PreferencesWindow {
         Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := []
         Knowledge.Save()
         MsgBox(I18n.T("Prefs.ResetDone"), App.Name, 64)
+    }
+
+    ; 换一个数据文件夹 (例如 OneDrive 里的, 几台电脑共用): 把现在的设置和数据复制过去 (那里已经有 ALTRun 的
+    ; 设置时可以直接用那里的), 写 DataLocation.txt, 重新载入。原来的文件夹不动, 相当于留了一份备份
+    static _ChangeDataFolder() {
+        current := AppSettings.DataDir
+        folder := DirSelect("*" current, 3, I18n.T("Prefs.DataFolderPrompt"))
+        if (folder = "")
+            return
+        folder := RTrim(folder, "\")
+        owner := " Owner" PreferencesWindow.Gui.Hwnd
+        if (folder = current)
+            return
+        if (InStr(folder "\", current "\") = 1 || InStr(current "\", folder "\") = 1)
+            return MsgBox(I18n.T("Prefs.DataFolderNested"), App.Name, "Icon!" owner)
+        useExisting := false
+        if FileExist(folder "\ALTRun.json") {
+            answer := MsgBox(I18n.T("Prefs.DataFolderExisting", folder), App.Name, "YesNoCancel Icon?" owner)
+            if (answer = "Cancel")
+                return
+            useExisting := (answer = "Yes")
+        } else if (MsgBox(I18n.T("Prefs.DataFolderCopy", folder), App.Name, "OKCancel Icon?" owner) != "OK") {
+            return
+        }
+        if PreferencesWindow.Cancel()                                       ; 有没保存的修改时先问要不要放弃
+            return
+        try {
+            if !useExisting {
+                AppSettings.Save(), Knowledge.Save(), Usage.Save(), ClipboardProvider.Save()
+                DirCopy(current, folder, true)
+            }
+            AppSettings.SetDataLocation(folder)
+        } catch as e {
+            return MsgBox(I18n.T("Prefs.DataFolderFailed", folder, e.Message), App.Name, "Icon!")
+        }
+        App.Reload()
     }
 
     static _OpenFolder(folder) {

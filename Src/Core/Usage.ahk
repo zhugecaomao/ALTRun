@@ -17,7 +17,7 @@
 ;===============================================================================
 
 class Usage {
-    static File     := A_ScriptDir "\Data\Usage.json"
+    static File     := AppSettings.DataDir "\Usage.json"
     static KeepDays := 400
     ; 统计页上的顺序 (次数相同时); "Show" 单独显示, 不算在使用次数里
     static Features := ["Applications", "CustomCommands", "FileSearch", "WebSearch", "Bookmarks", "Calculator", "Clipboard",

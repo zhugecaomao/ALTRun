@@ -36,7 +36,7 @@ class UpdateChecker {
     static ObsoleteFiles := ["Resources\DOSBox.exe", "Resources\SDL.dll", "Resources\SDL_net.dll",
                              "Resources\SPF2M.exe", "Resources\Run.bat"]
     static UpgradeCommands := Map("scoop", "scoop update altrun", "winget", "winget upgrade zhugecaomao.ALTRun")
-    static StateFile   := A_ScriptDir "\Data\Update.json"                    ; {LastCheck, Skip}
+    static StateFile   := AppSettings.DataDir "\Update.json"                    ; {LastCheck, Skip}
     static CheckHours  := 6                                                 ; 一直开着时: 离上次检查满几小时再查
     static StartupHours := 1                                                ; 启动时: 离上次检查满几小时就查
     static Pending     := ""                                                ; 后台发现的新版本 (ParseRelease 的结果 + Mode)
@@ -232,15 +232,7 @@ class UpdateChecker {
         return A_IsCompiled && release.ZipUrl != "" && release.Sha256 != "" && UpdateChecker.IsWritable(A_ScriptDir)
     }
 
-    static IsWritable(dir) {
-        probe := dir "\ALTRun.write-test.tmp"
-        try {
-            FileAppend("", probe)
-            FileDelete(probe)
-            return true
-        }
-        return false
-    }
+    static IsWritable(dir) => Path.IsWritable(dir)
 
     ; 用包管理器安装的, 提示用它升级 (程序自己替换文件会让包管理器的记录对不上):
     ;   Scoop   ...\scoop\apps\altrun\current (或版本号文件夹)

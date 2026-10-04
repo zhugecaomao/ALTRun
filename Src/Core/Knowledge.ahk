@@ -16,7 +16,7 @@
 ;===============================================================================
 
 class Knowledge {
-    static File        := A_ScriptDir "\Data\Knowledge.json"
+    static File        := AppSettings.DataDir "\Knowledge.json"
     static Picks       := Map()      ; uid -> Map("Count", n, "Last", "yyyyMMddHHmmss")
     static QueryPicks  := Map()      ; 小写输入 -> Map(uid -> 次数)
     static History     := []

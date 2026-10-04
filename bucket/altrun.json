@@ -26,7 +26,8 @@
     ],
     "persist": [
         "Data",
-        "Themes"
+        "Themes",
+        "DataLocation.txt"
     ],
     "shortcuts": [
         [

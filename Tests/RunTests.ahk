@@ -75,7 +75,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1655,6 +1655,39 @@ class Tests {
         TestRunner.Equal("ChangelogLinks.missing", missing, "")
         TestRunner.True("ChangelogLinks.unreleased compares " newest, InStr(text, "[未发布]: https://github.com/zhugecaomao/ALTRun/compare/" newest "...HEAD"))
         TestRunner.True("ChangelogLinks.newest is App.Version", newest = App.Version)
+    }
+
+    ; 数据文件夹: DataLocation.txt 指定的文件夹 (环境变量、相对路径), 空文件 = 默认位置; 写 / 恢复默认
+    static DataLocation() {
+        eq := (n, a, e) => TestRunner.Equal("DataLocation." n, a, e)
+        eq("full: absolute", Path.Full("C:\Sync\ALTRun\"), "C:\Sync\ALTRun")
+        eq("full: env", Path.Full("%SystemRoot%\Temp"), A_WinDir "\Temp")
+        eq("full: relative", Path.Full("..\Shared\Data", "C:\Apps\ALTRun"), "C:\Apps\Shared\Data")
+        eq("full: builtin", Path.Full("A_AppData\ALTRun"), A_AppData "\ALTRun")
+        root := A_Temp "\ALTRun-location-test"
+        try DirDelete(root, true)
+        DirCreate(root "\app"), DirCreate(root "\user")
+        dirs := [root "\app", root "\user"]
+        eq("no file", AppSettings.CustomDataDir(dirs), "")
+        FileAppend("", root "\app\DataLocation.txt")
+        eq("empty file", AppSettings.CustomDataDir(dirs), "")
+        FileAppend("  D:\OneDrive\ALTRun\  `r`n", root "\user\DataLocation.txt", "UTF-8")
+        eq("user folder", AppSettings.CustomDataDir(dirs), "D:\OneDrive\ALTRun")
+        FileOpen(root "\app\DataLocation.txt", "w").Write("..\Shared")
+        eq("program folder first, relative", AppSettings.CustomDataDir(dirs), Path.Full(A_ScriptDir "\..\Shared"))
+
+        saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir}
+        AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; 不能写程序目录时写在 %APPDATA%\ALTRun
+        AppSettings.SetDataLocation("E:\Sync\ALTRun")
+        eq("set", FileRead(root "\user\DataLocation.txt", "UTF-8"), "E:\Sync\ALTRun")
+        AppSettings.SetDataLocation("")
+        eq("reset keeps an empty file", FileExist(root "\user\DataLocation.txt") ? FileRead(root "\user\DataLocation.txt") : "missing", "")
+        AppSettings.SetDataLocation(AppSettings.DefaultDataDir())
+        eq("default location = reset", FileRead(root "\user\DataLocation.txt"), "")
+        eq("default when not portable", AppSettings.DefaultDataDir(), root "\user\Data")
+        AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
+        eq("default when portable", AppSettings.DefaultDataDir(), A_ScriptDir "\Data")
+        DirDelete(root, true)
     }
 
     static WindowPosition() {

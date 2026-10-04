@@ -39,6 +39,34 @@ class Path {
         return Path._varCache
     }
 
+    ; 用户写的文件夹路径 -> 完整路径: 展开 %环境变量% 和 A_ 开头的内置变量, 相对路径从 base 算起
+    static Full(raw, base := A_ScriptDir) {
+        raw := Trim(raw)
+        if (InStr(raw, "A_") = 1)
+            raw := Path.Resolve(raw)
+        size := DllCall("ExpandEnvironmentStringsW", "WStr", raw, "Ptr", 0, "UInt", 0, "UInt")
+        buf := Buffer(size * 2)
+        DllCall("ExpandEnvironmentStringsW", "WStr", raw, "Ptr", buf, "UInt", size, "UInt")
+        raw := StrGet(buf)
+        if !RegExMatch(raw, "^([A-Za-z]:|\\\\)")
+            raw := RTrim(base, "\") "\" raw
+        buf := Buffer(32767 * 2)
+        if DllCall("GetFullPathNameW", "WStr", raw, "UInt", 32767, "Ptr", buf, "Ptr", 0, "UInt")
+            raw := StrGet(buf)
+        return RTrim(raw, "\")
+    }
+
+    ; 能不能在这个文件夹里写文件 (试着建一个临时文件再删掉)
+    static IsWritable(dir) {
+        probe := dir "\ALTRun.write-test.tmp"
+        try {
+            FileAppend("", probe)
+            FileDelete(probe)
+            return true
+        }
+        return false
+    }
+
     ; 转成绝对路径。keepRunAs=true 时保留 "*RunAs " 前缀(用于实际执行)
     ; 注意: 参数不能叫 path —— AHK 变量名不区分大小写, "path" 和类名 "Path" 会
     ; 被当成同一个标识符, 方法体内所有 Path.xxx 的自引用都会失效(改成读参数)。

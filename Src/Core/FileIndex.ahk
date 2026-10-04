@@ -16,7 +16,7 @@
 ;===============================================================================
 
 class FileIndex {
-    static File     := A_ScriptDir "\Data\FileIndex.json"
+    static File     := AppSettings.DataDir "\FileIndex.json"
     static Paths    := [], Names := [], Folders := []     ; 三个平行数组: 完整路径 / 小写文件名 / 是否文件夹
     static Scanning := false
     static _stack := [], _new := "", _timer := "", _lastNeedle := "", _lastMatches := ""

@@ -30,8 +30,11 @@
 
 class AppSettings {
     static CurrentVersion := 4
-    static DataDir := A_ScriptDir "\Data"
-    static File := A_ScriptDir "\Data\ALTRun.json"
+    static Portable := Path.IsWritable(A_ScriptDir)                          ; 程序目录能写入: 数据放在程序目录 (便携)
+    static UserDir := A_AppData "\ALTRun"                                   ; 程序目录不能写入时 (例如装在 Program Files) 用这里
+    static LocationFileName := "DataLocation.txt"                           ; 指定数据文件夹, 见 ResolveDataDir
+    static DataDir := AppSettings.ResolveDataDir()
+    static File := AppSettings.DataDir "\ALTRun.json"
     static LegacyFile := A_ScriptDir "\ALTRun.json"      ; 旧版本的位置, 2.x 的 ALTRun.ini 也在这个目录
     static Data := Map()
     static MigratedFrom := 0          ; 本次启动时从哪个版本升级过来的 (0 = 没有升级)
@@ -43,6 +46,50 @@ class AppSettings {
     static Hotkeys        => AppSettings.Data["Hotkeys"]
     static CustomCommands => AppSettings.Data["CustomCommands"]
     static Snippets       => AppSettings.Data["Snippets"]
+
+    ; 数据文件夹 (设置、索引、学习记录、剪贴板历史...):
+    ;   1. 程序目录或 %APPDATA%\ALTRun 里有 DataLocation.txt (偏好设置 → 高级 → 更改): 用里面写的文件夹,
+    ;      例如 OneDrive 里的, 几台电脑共用一份设置 (可以写 %OneDrive%\ALTRun, 相对路径从程序目录算起)
+    ;   2. 程序目录能写入: 程序目录\Data (便携, 默认)
+    ;   3. 否则: %APPDATA%\ALTRun\Data
+    static ResolveDataDir() {
+        if ((location := AppSettings.CustomDataDir()) != "")
+            return location
+        return AppSettings.DefaultDataDir()
+    }
+
+    static DefaultDataDir() => AppSettings.Portable ? A_ScriptDir "\Data" : AppSettings.UserDir "\Data"
+
+    ; DataLocation.txt 里写的文件夹 (没有时 ""); dirs: 去哪些文件夹找 DataLocation.txt
+    static CustomDataDir(dirs := "") {
+        for dir in (IsObject(dirs) ? dirs : [A_ScriptDir, AppSettings.UserDir]) {
+            pointer := dir "\" AppSettings.LocationFileName
+            if !FileExist(pointer)
+                continue
+            try {
+                location := Trim(FileRead(pointer, "UTF-8"), " `t`r`n")
+                if (location != "")
+                    return Path.Full(location)
+            }
+        }
+        return ""
+    }
+
+    ; 把数据文件夹改成 folder ("" 或默认位置 = 恢复默认): 写 DataLocation.txt, 重新载入后生效。
+    ; 程序目录能写入时写在程序目录 (和程序一起带走), 否则写在 %APPDATA%\ALTRun。
+    ; 恢复默认时把文件清空而不是删掉: Scoop 用硬链接保留这个文件, 删掉就断了 (空文件 = 默认位置)
+    static SetDataLocation(folder) {
+        for dir in [A_ScriptDir, AppSettings.UserDir]
+            if FileExist(dir "\" AppSettings.LocationFileName)
+                FileOpen(dir "\" AppSettings.LocationFileName, "w", "UTF-8-RAW").Close()
+        if (folder = "" || folder = AppSettings.DefaultDataDir())
+            return
+        dir := AppSettings.Portable ? A_ScriptDir : AppSettings.UserDir
+        DirCreate(dir)
+        pointer := FileOpen(dir "\" AppSettings.LocationFileName, "w", "UTF-8-RAW")
+        pointer.Write(folder)
+        pointer.Close()
+    }
 
     static Feature(name) {
         return AppSettings.Data["Features"][name]

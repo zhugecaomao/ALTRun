@@ -721,6 +721,12 @@ class I18n {
         s["Prefs.EditJson"]            := "Edit ALTRun.json..."
         s["Prefs.EditJson.Desc"]       := "Every setting, including ones not shown here. ALTRun reloads when you save."
         s["Prefs.OpenDataFolder"]      := "Open Data Folder"
+        s["Prefs.ChangeDataFolder"]    := "Change Location..."
+        s["Prefs.DataFolderPrompt"]    := "Folder for ALTRun's settings and data (for example in OneDrive, to share them between computers)"
+        s["Prefs.DataFolderCopy"]      := "Copy the current settings and data to:`n{1}`n`nALTRun then reloads and uses that folder. The current folder is left as it is."
+        s["Prefs.DataFolderExisting"]  := "{1} already has ALTRun settings.`n`nYes: use the settings in that folder`nNo: replace them with the current settings`n`nALTRun then reloads. The current folder is left as it is."
+        s["Prefs.DataFolderNested"]    := "The new folder cannot be inside the current data folder, or the other way round."
+        s["Prefs.DataFolderFailed"]    := "Could not use {1}:`n`n{2}"
 
         ; --- Usage statistics ---
         s["Usage.Title"]               := "Usage"
