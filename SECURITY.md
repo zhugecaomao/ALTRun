@@ -21,11 +21,10 @@ Please include, if possible:
 - steps to reproduce, or a proof of concept
 - the impact you expect (for example: another program can make ALTRun run commands, clipboard history can be read by other users)
 
-What to expect:
-- **Acknowledgement** within 7 days
-- **Assessment** within 14 days, with a plan for a fix
-- **Fix** released as soon as possible; for critical issues the target is 30 days
-- **Coordinated disclosure**: a security advisory is published after the fixed version is available. Reporters are credited in the advisory and the release notes, unless they prefer to stay anonymous.
+What to expect: ALTRun is a free project maintained by one person in their spare time, so there are no guaranteed response times. Security reports are handled before other work:
+- you will get a reply as soon as possible, usually within a few weeks
+- confirmed issues are fixed in the next release, with priority given to serious ones
+- **Coordinated disclosure**: please keep the details private until a fixed version is available; a security advisory is then published, and reporters are credited in the advisory and the release notes unless they prefer to stay anonymous
 
 ### Scope
 
@@ -106,11 +105,10 @@ Changes to this policy are recorded in the [changelog](CHANGELOG.md) and the [hi
 - 复现步骤或概念验证
 - 可能的影响 (例如: 其它程序能让 ALTRun 执行命令、剪贴板历史能被其他用户读取)
 
-处理流程:
-- 7 天内 **确认收到**
-- 14 天内 **完成评估**, 给出修复计划
-- 尽快 **发布修复**; 严重问题的目标是 30 天内
-- **协调披露**: 修复版本发布后再公开安全公告, 在公告和 Release 说明里致谢报告者 (不希望署名的除外)
+处理方式: ALTRun 是一个人利用业余时间维护的免费项目, 不承诺固定的处理时限, 但安全问题会优先处理:
+- 会尽快回复, 一般在几周之内
+- 确认的问题在下一个版本里修复, 严重的优先
+- **协调披露**: 请在修复版本发布之前不要公开细节; 修复后发布安全公告, 在公告和 Release 说明里致谢报告者 (不希望署名的除外)
 
 ### 范围
 
