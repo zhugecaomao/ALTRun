@@ -38,7 +38,7 @@
 - **全键盘操作**：`→` 打开操作面板，`F3` 直接编辑，`Ctrl+1`～`Ctrl+9` 快速打开。
 - **便携与隐私**：免安装，不写注册表，不需要管理员权限，没有后台服务或驱动；所有数据保存在 `Data\` 文件夹；不收集任何数据，仅联网检查和下载更新。
 - **自动更新**：有新版本时在搜索窗口中提示，按 `Enter` 即可安装（自动校验 SHA256），设置保留；也支持 Scoop。
-- **个性化**：中文、English、日本語界面；16 套内置主题，可跟随系统浅色 / 深色模式；主题和设置均为 JSON 文件。
+- **个性化**：中文、English、日本語界面；20 套内置主题（偏好设置里看缩略图选择），可跟随系统浅色 / 深色模式；主题和设置均为 JSON 文件。
 - **开源免费**：GPL-3.0 许可；每个 PR 都会在 Windows 上自动运行 3000 余项测试。
 
 
@@ -100,7 +100,7 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
 
 <details>
-<summary><b>内置主题</b>（共 16 套，点击展开）</summary>
+<summary><b>内置主题</b>（共 20 套，点击展开）</summary>
 
 | Dark | Classic | Midnight |
 |:---:|:---:|:---:|
@@ -113,6 +113,10 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | <img src="docs/images/screenshots/theme-tokyonight.png" alt="TokyoNight"> | <img src="docs/images/screenshots/theme-dracula.png" alt="Dracula"> | <img src="docs/images/screenshots/theme-catppuccinmocha.png" alt="CatppuccinMocha"> |
 | **GruvboxDark** | **SolarizedLight** | **MidnightCompact** |
 | <img src="docs/images/screenshots/theme-gruvboxdark.png" alt="GruvboxDark"> | <img src="docs/images/screenshots/theme-solarizedlight.png" alt="SolarizedLight"> | <img src="docs/images/screenshots/theme-midnightcompact.png" alt="MidnightCompact"> |
+| **DarkModern** | **LightModern** | **Monokai** |
+| <img src="docs/images/screenshots/theme-darkmodern.png" alt="DarkModern"> | <img src="docs/images/screenshots/theme-lightmodern.png" alt="LightModern"> | <img src="docs/images/screenshots/theme-monokai.png" alt="Monokai"> |
+| **OneDark** | | |
+| <img src="docs/images/screenshots/theme-onedark.png" alt="OneDark"> | | |
 
 </details>
 
@@ -206,7 +210,7 @@ ALTRun is a fast, keyboard-first launcher for Windows, inspired by Alfred for ma
 - **Keyboard first**: `Alt+Space` or a double tap of `Ctrl` / `Shift`; action panel (`→`), in-place editing (`F3`), `Ctrl+1`–`Ctrl+9`, built-in cheat sheet (`?`).
 - **Portable and private**: no installer, no registry, no admin rights, no background service; settings stay in `Data\ALTRun.json`. No telemetry; network access is used only for updates.
 - **Automatic updates**: install new versions from the search window (SHA256 verified, settings kept), or use Scoop.
-- **Customizable**: English, Chinese and Japanese interface; 16 built-in themes, or follow the Windows light / dark mode.
+- **Customizable**: English, Chinese and Japanese interface; 20 built-in themes, or follow the Windows light / dark mode.
 
 The screenshots above show the English interface. Documentation is available in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
 

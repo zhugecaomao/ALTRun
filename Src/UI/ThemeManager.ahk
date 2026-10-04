@@ -6,7 +6,8 @@
 ;                             主题文件全部丢失时也能正常显示
 ;   Resources\Themes\*.json   内置主题 (参照 Alfred 自带的几套), 随程序发布, 升级时整体替换:
 ;                             Dark / DarkCompact / LightCompact / Classic / Midnight / MidnightCompact / Frost / Graphite / Ocean /
-;                             Paper / TokyoNight / Dracula / CatppuccinMocha / GruvboxDark / SolarizedLight (常见编辑器配色)
+;                             Paper / DarkModern / LightModern / Monokai / OneDark / TokyoNight / Dracula / CatppuccinMocha /
+;                             GruvboxDark / SolarizedLight (常见编辑器配色)
 ;   Themes\*.json             用户自己的主题, 升级不动; 和内置主题同名时用户的优先
 ;   System                    跟随 Windows 的浅色 / 深色设置 (Light 或 Dark), 系统切换时自动更新
 ;
@@ -39,7 +40,7 @@ class ThemeManager {
     static BuiltinDir := A_ScriptDir "\Resources\Themes"
     static UserDir    := A_ScriptDir "\Themes"
     static BuiltinOrder := ["Dark", "DarkCompact", "LightCompact", "Classic", "Midnight", "MidnightCompact", "Frost", "Graphite", "Ocean", "Paper"
-                          , "TokyoNight", "Dracula", "CatppuccinMocha", "GruvboxDark", "SolarizedLight"]   ; 列表里的顺序
+                          , "DarkModern", "LightModern", "Monokai", "OneDark", "TokyoNight", "Dracula", "CatppuccinMocha", "GruvboxDark", "SolarizedLight"]   ; 列表里的顺序
     static _listening := false
 
     static Load(themeName) {
@@ -63,7 +64,11 @@ class ThemeManager {
     }
 
     static FontName() {
-        name := ThemeManager.Get("FontName")
+        return ThemeManager.FontFrom(ThemeManager.Get("FontName"))
+    }
+
+    ; 主题的 FontName -> 实际字体: "auto" (或空) 按界面语言选
+    static FontFrom(name) {
         if (name != "" && name != "auto")
             return name
         return (I18n.Lang = "zh") ? "Microsoft YaHei UI" : (I18n.Lang = "ja") ? "Yu Gothic UI" : "Segoe UI"

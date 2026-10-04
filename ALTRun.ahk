@@ -58,6 +58,7 @@
 
 ; --- Src\UI ---
 #Include Src\UI\ThemeManager.ahk
+#Include Src\UI\ThemePreview.ahk
 #Include Src\UI\IconCache.ahk
 #Include Src\UI\SearchWindow.ahk
 #Include Src\UI\LargeType.ahk

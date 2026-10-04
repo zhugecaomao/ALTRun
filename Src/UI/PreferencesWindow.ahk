@@ -263,12 +263,10 @@ class PreferencesWindow {
     static _BuildAppearance() {
         PreferencesWindow._BeginPage("Prefs.Page.Appearance", 150)
         PreferencesWindow._Section("Prefs.Section.Theme")
-        themes := ThemeManager.Names(), labels := []
-        for themeName in themes
-            labels.Push(PreferencesWindow._ThemeLabel(themeName))
-        themeChoice := PreferencesWindow._Choice("Appearance.Theme", "Prefs.Theme", themes, labels, "B")
+        themes := ThemeManager.Names()
+        gallery := PreferencesWindow._ThemeGallery("Appearance.Theme", themes, 188)
         PreferencesWindow._Buttons("Prefs.Group.CustomThemes"
-            , ["Prefs.CopyTheme", (*) => PreferencesWindow._CopyTheme(themeChoice, themes)]
+            , ["Prefs.CopyTheme", (*) => PreferencesWindow._CopyTheme(gallery, themes)]
             , ["Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir)])
         PreferencesWindow._Section("Prefs.Section.Size")
         PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"], ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "number"])
@@ -293,9 +291,41 @@ class PreferencesWindow {
         return (label = "Theme." themeName) ? themeName : label
     }
 
+    ; 主题列表: 每个主题一张缩略图 (ThemePreview, 按主题的颜色画的迷你搜索窗口), 像 Alfred / Listary 一样点选。
+    ; 用 ListView 的大图标视图: 自带滚动条、方向键选择, 主题再多也放得下。返回 ListView (行号 = themes 里的序号)
+    static _ThemeGallery(path, themes, height) {
+        thumbW := Win.Scale(112), thumbH := Win.Scale(76)
+        list := PreferencesWindow._Add("ListView", "x" PreferencesWindow.ContentX " w" PreferencesWindow.ContentW " h" height
+            . " Icon -Multi -Hdr", ["Theme"])
+        DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "WStr", "Explorer", "Ptr", 0)   ; 选中项画浅色方框, 不把缩略图染成蓝色
+        list.SetImageList(ThemePreview.ImageList(themes, thumbW, thumbH), 0)   ; 0 = 大图标
+        SendMessage(0x1035, 0, (thumbW + Win.Scale(16)) | ((thumbH + Win.Scale(30)) << 16), list.Hwnd)   ; LVM_SETICONSPACING
+        current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
+        selected := 1
+        for index, themeName in themes {
+            list.Add("Icon" index, PreferencesWindow._ThemeLabel(themeName))
+            if (themeName = current)
+                selected := index
+        }
+        list.Modify(selected, "Select Focus Vis")
+        list.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnGalleryChange(lParam))   ; LVN_ITEMCHANGED (程序里选中的也算)
+        PreferencesWindow._Bind(path, () => themes[list.GetNext() || selected])
+        PreferencesWindow._Below(8, list)
+        return list
+    }
+
+    ; 主题列表里选中了另一个主题: "应用" 可用
+    static _OnGalleryChange(lParam) {
+        static LVIS_SELECTED := 0x2
+        offset := A_PtrSize * 3 + 4                                         ; NMLISTVIEW: hdr, iItem, iSubItem, uNewState
+        newState := NumGet(lParam, offset + 4, "UInt"), oldState := NumGet(lParam, offset + 8, "UInt")
+        if ((newState & LVIS_SELECTED) && !(oldState & LVIS_SELECTED))
+            PreferencesWindow.MarkDirty()
+    }
+
     ; 把选中的主题 (展开成完整的键) 复制到 Themes\<新名称>.json, 用记事本打开, 并在列表里选中它
-    static _CopyTheme(themeChoice, themes) {
-        source := themes[themeChoice.Value]
+    static _CopyTheme(gallery, themes) {
+        source := themes[gallery.GetNext() || 1]
         if (source = "System")
             source := ThemeManager.SystemUsesDark() ? "Dark" : "Light"
         theme := ThemeManager.Resolve(source)
@@ -321,10 +351,13 @@ class PreferencesWindow {
                 index := existing
         if !index {
             themes.Push(themeName)
-            themeChoice.Add([themeName])
+            imageList := SendMessage(0x1002, 0, 0, gallery.Hwnd)           ; LVM_GETIMAGELIST (LVSIL_NORMAL)
+            DllCall("comctl32\ImageList_GetIconSize", "Ptr", imageList, "Int*", &thumbW := 0, "Int*", &thumbH := 0)
+            gallery.Add("Icon" (ThemePreview.AddTo(imageList, themeName, thumbW, thumbH) + 1), themeName)
             index := themes.Length
         }
-        themeChoice.Choose(index)
+        gallery.Modify(0, "-Select")
+        gallery.Modify(index, "Select Focus Vis")
         Run('notepad.exe "' themeFile '"')
     }
 
