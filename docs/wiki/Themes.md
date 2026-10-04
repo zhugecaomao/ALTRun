@@ -1,6 +1,6 @@
 # 主题
 
-在 偏好设置 → 外观 里选择主题, 点 **应用** 或 **确定** 后生效。
+在 偏好设置 → 外观 里点主题的缩略图选择 (缩略图按主题自己的颜色画出, 自定义主题也有), 点 **应用** 或 **确定** 后生效。
 
 ![偏好设置 → 外观](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-appearance.png)
 
@@ -19,6 +19,10 @@
 | 海洋 | `Ocean` | 蓝灰色 ([Nord](https://www.nordtheme.com/) 配色) |
 | 纸张 | `Paper` | 米黄色, 适合长时间看 |
 | 紧凑浅色 | `LightCompact` | 和浅色一样的配色, 字号和行高小一些 (和紧凑深色对应) |
+| 现代深色 | `DarkModern` | VS Code 默认的 Dark Modern 配色: 深灰底 + 深蓝选中 + 亮蓝高亮, 图标 24 px |
+| 现代浅色 | `LightModern` | VS Code 默认的 Light Modern 配色: 浅灰白底 + 淡蓝选中, 图标 24 px |
+| Monokai | `Monokai` | 经典的 Monokai 配色: 橄榄深色底 + 绿色高亮 |
+| One Dark | `OneDark` | Atom / VS Code 的 One Dark 配色: 蓝灰深色底 + 蓝色高亮 |
 | Tokyo Night | `TokyoNight` | 深蓝夜色 + 蓝色强调 ([Tokyo Night](https://github.com/folke/tokyonight.nvim) 配色) |
 | Dracula | `Dracula` | 深紫灰 + 紫色强调 ([Dracula](https://draculatheme.com/) 配色) |
 | Catppuccin Mocha | `CatppuccinMocha` | 柔和的深色 + 淡紫强调 ([Catppuccin](https://catppuccin.com/) 配色) |
@@ -36,8 +40,10 @@
 | ![LightCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightcompact.png) | ![TokyoNight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-tokyonight.png) | ![Dracula](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dracula.png) |
 | **CatppuccinMocha** | **GruvboxDark** | **SolarizedLight** |
 | ![CatppuccinMocha](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-catppuccinmocha.png) | ![GruvboxDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-gruvboxdark.png) | ![SolarizedLight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-solarizedlight.png) |
-| **MidnightCompact** | | |
-| ![MidnightCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-midnightcompact.png) | | |
+| **MidnightCompact** | **DarkModern** | **LightModern** |
+| ![MidnightCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-midnightcompact.png) | ![DarkModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-darkmodern.png) | ![LightModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightmodern.png) |
+| **Monokai** | **OneDark** | |
+| ![Monokai](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-monokai.png) | ![OneDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-onedark.png) | |
 
 Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些文件升级时会被替换, 请不要直接修改, 改用下面的自定义主题。
 

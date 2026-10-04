@@ -1,0 +1,23 @@
+{
+  "InputFontSize": 18,
+  "TitleFontSize": 12,
+  "SubtitleFontSize": 9,
+  "ShortcutFontSize": 8.5,
+  "Padding": 12,
+  "RowHeight": 48,
+  "IconSize": 24,
+  "SelectedRadius": 4,
+  "Background": "F8F8F8",
+  "Border": "CECECE",
+  "InputText": "3B3B3B",
+  "Separator": "E5E5E5",
+  "Title": "3B3B3B",
+  "Subtitle": "767676",
+  "Shortcut": "8B8B8B",
+  "SelectedBackground": "E1EAF5",
+  "SelectedTitle": "1F1F1F",
+  "SelectedSubtitle": "505050",
+  "SelectedShortcut": "505050",
+  "Highlight": "005FB8",
+  "SelectedHighlight": "004E99"
+}

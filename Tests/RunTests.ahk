@@ -33,6 +33,7 @@
 #Include %A_ScriptDir%\..\Src\Core\ProviderRegistry.ahk
 #Include %A_ScriptDir%\..\Src\Core\FileIndex.ahk
 #Include %A_ScriptDir%\..\Src\UI\ThemeManager.ahk
+#Include %A_ScriptDir%\..\Src\UI\ThemePreview.ahk
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
@@ -73,7 +74,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -916,6 +917,59 @@ class Tests {
         IconCache.Size := saved
     }
 
+    ; 主题缩略图: 每个主题都画得出来, 背景、选中行用的是主题自己的颜色; 外观页点选缩略图就是选主题
+    static ThemeGallery() {
+        eq := (n, a, e) => TestRunner.Equal("ThemeGallery." n, a, e)
+        pixel(hbm, x, y) {
+            dc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
+            old := DllCall("SelectObject", "Ptr", dc, "Ptr", hbm, "Ptr")
+            value := DllCall("GetPixel", "Ptr", dc, "Int", x, "Int", y, "UInt")
+            DllCall("SelectObject", "Ptr", dc, "Ptr", old), DllCall("DeleteDC", "Ptr", dc)
+            return value
+        }
+        for themeName in ThemeManager.Names() {
+            hbm := ThemePreview.ForName(themeName, 112, 76)
+            TestRunner.True("ThemeGallery.bitmap " themeName, hbm != 0)
+            theme := ThemeManager.Resolve(themeName = "System" ? "Light" : themeName)
+            if (hbm && themeName != "System") {
+                eq("background " themeName, pixel(hbm, 56, 6), Win.ColorToBgr(theme["Background"]))
+                eq("selected row " themeName, pixel(hbm, 104, 26), Win.ColorToBgr(theme["SelectedBackground"]))
+            }
+            if hbm
+                DllCall("DeleteObject", "Ptr", hbm)
+        }
+        hbm := ThemePreview.ForName("System", 112, 76)                      ; 左半边 Light, 右半边 Dark
+        eq("system left", pixel(hbm, 20, 6), Win.ColorToBgr(ThemeManager.Defaults()["Background"]))
+        eq("system right", pixel(hbm, 100, 6), Win.ColorToBgr(ThemeManager.Resolve("Dark")["Background"]))
+        DllCall("DeleteObject", "Ptr", hbm)
+
+        PreferencesWindow.Show(1, -3000, -3000)
+        Sleep(400)                                                          ; 打开 300 ms 之后的修改才算 (见 PreferencesWindow.Show)
+        PreferencesWindow.SelectPage(PreferencesWindow._PageIndex("Prefs.Page.Appearance"))
+        page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Appearance")]
+        gallery := ""
+        for ctrl in page.Controls
+            if (ctrl.Type = "ListView")
+                gallery := ctrl
+        themes := ThemeManager.Names()
+        eq("one item per theme", gallery.GetCount(), themes.Length)
+        current := AppSettings.Appearance["Theme"]
+        eq("current theme selected", themes[gallery.GetNext()], current)
+        target := (current = "Dark") ? "Monokai" : "Dark"
+        for index, themeName in themes
+            if (themeName = target)
+                gallery.Modify(index, "Select Focus")
+        Sleep(50)
+        eq("dirty after picking", (PreferencesWindow._ready ? "ready " : "not ready ") (PreferencesWindow._dirty ? 1 : 0), "ready 1")
+        picked := ""
+        for bind in PreferencesWindow.Binds
+            if (bind.Path = "Appearance.Theme")
+                picked := bind.Read.Call()
+        eq("picked theme", picked, target)
+        PreferencesWindow._dirty := false
+        PreferencesWindow.Close()
+    }
+
     static Themes() {
         eq := (n, a, e) => TestRunner.Equal("Themes." n, a, e)
         ThemeManager.BuiltinDir := A_ScriptDir "\..\Resources\Themes"
@@ -935,7 +989,7 @@ class Tests {
             for key in ["Background", "Title", "SelectedBackground", "SelectedTitle"]
                 TestRunner.True("Themes." themeName "." key " is RRGGBB", RegExMatch(ThemeManager.Get(key), "^[0-9A-Fa-f]{6}$"))
         }
-        eq("builtin count", ThemeManager.Names().Length, 17)
+        eq("builtin count", ThemeManager.Names().Length, 21)
         TestRunner.True("Themes.Ocean is builtin", ThemeManager.IsBuiltin("Ocean"))
 
         ; 用户主题: 同名覆盖内置主题 ("Base" 写自己 = 在内置那一套上改), 以及 Base 链
@@ -945,7 +999,7 @@ class Tests {
         ThemeManager.Load("Mine")
         eq("user base color", ThemeManager.Get("Background"), "2E3440")
         eq("user override", ThemeManager.Get("SelectedRadius"), 12)
-        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 18 && !ThemeManager.IsBuiltin("Mine"))
+        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 22 && !ThemeManager.IsBuiltin("Mine"))
         ThemeManager.Load("Dark")
         eq("user overrides builtin", ThemeManager.Get("Title"), "FF0000")
         eq("user override keeps builtin", ThemeManager.Get("Background"), "1E1F22")
