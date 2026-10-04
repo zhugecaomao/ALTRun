@@ -16,6 +16,8 @@
 ## 隐私说明
 ALTRun 完全在本机运行, 不收集、不上传任何数据, 没有统计或遥测。
 
+**Privacy policy (English)**: ALTRun runs entirely on your computer and collects no data, analytics or telemetry. This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. It only connects to GitHub to check for and download new versions (can be turned off in Preferences → General), and to frankfurter.dev for daily exchange rates when currency conversion is turned on (off by default).
+
 默认情况下联网只有两种情况, 都只访问 GitHub:
 - **检查更新**: 在后台检查 (启动时离上次检查满 1 小时就检查, 运行期间每 6 小时一次; 偏好设置 → 通用 → "自动检查更新", 可以关闭) 或手动检查时, 读取 GitHub 上最新 Release 的版本号
 - **一键更新**: 你选择 "立即更新" 后, 从 GitHub Releases 下载新版本, 先核对 Release 给出的 SHA256, 一致才替换程序文件; 任何一步出错, 原来的程序保持不变
