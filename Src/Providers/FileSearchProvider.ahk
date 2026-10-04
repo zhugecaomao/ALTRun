@@ -9,6 +9,9 @@
 ;   3. 只搜文件夹:    folder bk (FolderKeywords), 文件搜索模式里也可以写 "folder bk"
 ;   4. 按类型搜索:    doc 报告 / pic logo / cad 平面图 ... (TypeFilters: "关键字 = 扩展名 扩展名 ..."),
 ;                     和 Listary 的文件类型筛选一样; 文件搜索模式里也可以写 "doc 报告"
+;   5. 浏览文件夹:    输入路径 C:\  D:\Projects\rep  \\server\share\  ~\  %OneDrive%\ ,
+;                     列出这个文件夹里的内容 (最后一段过滤), 文件夹在前; Tab 进入选中的文件夹, Backspace 回到上一级
+;                     (和 PowerToys Run / Flow Launcher 的文件夹浏览一样)。隐藏和系统文件不列出
 ; 结果按名称匹配程度排序 (完全相同 > 名称开头 > 单词开头 > 包含), 同分时文件夹在前,
 ; 再按修改时间。Everything 的语法 (folder:、ext:、path:...) 原样传给 Everything。
 ;
@@ -32,6 +35,8 @@ class FileSearchProvider {
     static Search(query) {
         options := AppSettings.Feature("FileSearch")
         term := ""
+        if IsObject(browse := FileSearchProvider.BrowsePath(query.Raw))
+            return FileSearchProvider.BrowseResults(browse)
         if (options["QuotePrefix"] && query.MatchPrefix("'", &term))
             return FileSearchProvider._KeywordResults(term, options, false, true)
         ; open / find / folder: 输入空格之后才只显示文件结果; 只输入 "folder" 时名字带 folder 的命令照常显示
@@ -51,6 +56,8 @@ class FileSearchProvider {
         term := Trim(term)
         if (term = "")
             return []
+        if IsObject(browse := FileSearchProvider.BrowsePath(term))
+            return FileSearchProvider.BrowseResults(browse)
         options := AppSettings.Feature("FileSearch")
         query := SearchQuery(term), rest := ""
         if (query.HasRest && query.MatchKeyword(options["FolderKeywords"], &rest) && rest != "")
@@ -58,6 +65,78 @@ class FileSearchProvider {
         if (query.HasRest && IsObject(filter := FileSearchProvider.MatchType(query, &rest)) && rest != "")
             return FileSearchProvider._KeywordResults(rest, options, filter, true)
         return FileSearchProvider._KeywordResults(term, options, false, true)
+    }
+
+    ; 输入的是文件夹路径时返回 {Dir: "C:\Projects\", Filter: "rep"}, 否则 ""
+    ;   C:\ / C:\Projects\rep / \\server\share\ / ~\ (用户文件夹) / %OneDrive%\ (环境变量)
+    static BrowsePath(text) {
+        text := LTrim(text)
+        if (text = "~")
+            text := EnvGet("UserProfile") "\"
+        else if RegExMatch(text, "^~\\")
+            text := EnvGet("UserProfile") SubStr(text, 2)
+        else if RegExMatch(text, "^%[^%\\]+%\\") {
+            size := DllCall("ExpandEnvironmentStringsW", "WStr", text, "Ptr", 0, "UInt", 0, "UInt")
+            buf := Buffer(size * 2)
+            DllCall("ExpandEnvironmentStringsW", "WStr", text, "Ptr", buf, "UInt", size, "UInt")
+            text := StrGet(buf)
+        }
+        if !RegExMatch(text, "^([A-Za-z]:\\|\\\\[^\\]+\\[^\\]+\\)")
+            return ""
+        pos := InStr(text, "\", , -1)
+        dir := SubStr(text, 1, pos), filter := SubStr(text, pos + 1)
+        if !DirExist(dir)
+            return ""
+        return {Dir: dir, Filter: filter}
+    }
+
+    ; 文件夹里的内容 (文件夹在前), 按最后一段过滤; 文件夹的 Tab 补全成 "路径\", 进入下一级
+    static BrowseResults(browse) {
+        entries := FileSearchProvider.ListFolder(browse.Dir)
+        needle := StrLower(browse.Filter), scores := Map()
+        for index, entry in entries {
+            score := (needle = "") ? 100 : FuzzyMatcher.Score(needle, entry.Name)
+            if (score > 0)
+                scores[index] := score + (entry.IsFolder ? 0.5 : 0) - index * 0.00001
+        }
+        results := []
+        for index in FuzzyMatcher.TopIndexes(scores, ProviderRegistry.MaxResults) {
+            entry := entries[index]
+            item := ResultItem(entry.Name, browse.Dir, {
+                Kind: entry.IsFolder ? "folder" : "file", Arg: entry.Path, Icon: entry.IsFolder ? "folder:" : entry.Path,
+                Uid: "file:" StrLower(entry.Path), Score: 150 + scores[index] / 1000, Exclusive: true,
+                AutoComplete: entry.IsFolder ? entry.Path "\" : ""
+            })
+            results.Push(item)
+        }
+        if !results.Length
+            results.Push(ResultItem(I18n.T("Files.EmptyFolder"), browse.Dir, {Icon: "folder:", Valid: false, Score: 150, Exclusive: true}))
+        return results
+    }
+
+    ; 文件夹的内容 [{Name, Path, IsFolder}], 文件夹在前; 3 秒内再次浏览同一个文件夹时直接用 (边打字边过滤)
+    static ListFolder(dir) {
+        static cache := Map()
+        key := StrLower(dir)
+        if (cache.Has(key) && A_TickCount - cache[key].Time < 3000)
+            return cache[key].Entries
+        folders := [], files := []
+        try {
+            Loop Files, dir "*", "FD" {
+                if InStr(A_LoopFileAttrib, "H") || InStr(A_LoopFileAttrib, "S")
+                    continue
+                entry := {Name: A_LoopFileName, Path: A_LoopFileFullPath, IsFolder: InStr(A_LoopFileAttrib, "D") ? true : false}
+                (entry.IsFolder ? folders : files).Push(entry)
+                if (folders.Length + files.Length >= 5000)                  ; 特别大的文件夹只列前 5000 项
+                    break
+            }
+        }
+        for entry in files
+            folders.Push(entry)
+        if (cache.Count > 20)
+            cache := Map()
+        cache[key] := {Time: A_TickCount, Entries: folders}
+        return folders
     }
 
     ; 文件类型筛选: 第一个词是 TypeFilters 里的关键字时返回 {Keyword, Extensions: Map, Everything: "ext:a;b"}

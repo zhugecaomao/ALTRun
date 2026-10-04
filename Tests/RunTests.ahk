@@ -77,7 +77,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1873,6 +1873,47 @@ class Tests {
         ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2], ClipboardProvider.Entries := saved[3]
         options["MaxItems"] := savedMax, options["Persist"] := savedPersist
         try DirDelete(root, true)
+    }
+
+    ; 输入路径浏览文件夹: 文件夹在前, 最后一段过滤, 隐藏文件不列出, Tab 进入下一级; Insert 标记多个一起操作
+    static FolderBrowse() {
+        eq := (n, a, e) => TestRunner.Equal("FolderBrowse." n, a, e)
+        root := A_Temp "\ALTRun-browse-test"
+        try DirDelete(root, true)
+        DirCreate(root "\Reports"), DirCreate(root "\Archive")
+        FileAppend("x", root "\readme.txt"), FileAppend("x", root "\report 2026.docx"), FileAppend("x", root "\secret.txt")
+        FileSetAttrib("+H", root "\secret.txt")
+        browse := FileSearchProvider.BrowsePath(root "\rep")
+        eq("parse", IsObject(browse) ? browse.Dir "|" browse.Filter : "", root "\|rep")
+        eq("not a path", FileSearchProvider.BrowsePath("report"), "")
+        eq("drive only", FileSearchProvider.BrowsePath("C:"), "")
+        eq("missing folder", FileSearchProvider.BrowsePath(root "\Nope\x"), "")
+        home := FileSearchProvider.BrowsePath("~")
+        eq("home", IsObject(home) ? home.Dir : "", EnvGet("UserProfile") "\")
+        titles(text) {
+            list := ""
+            for item in FileSearchProvider.Search(SearchQuery(text))
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("all, folders first, no hidden", titles(root "\"), "Archive|Reports|readme.txt|report 2026.docx")
+        eq("filter", titles(root "\rep"), "Reports|report 2026.docx")
+        items := FileSearchProvider.Search(SearchQuery(root "\Rep"))
+        eq("folder tab completes", items[1].AutoComplete "|" items[1].Exclusive "|" items[1].Kind, root "\Reports\|1|folder")
+        eq("file", items[2].Kind "|" items[2].Arg, "file|" root "\report 2026.docx")
+        eq("empty", titles(root "\Reports\"), I18n.T("Files.EmptyFolder"))
+        eq("file mode", FileSearchProvider.SearchFiles(root "\arc")[1].Title, "Archive")
+
+        SearchWindow.Marked := Map(StrLower(items[2].Arg), items[2].Arg)
+        eq("marked", SearchWindow.IsMarked(items[2]) "|" SearchWindow.IsMarked(items[1]), "1|0")
+        SearchWindow.Marked := Map()
+        actions := ""
+        for action in ActionCatalog.ListForMany([root "\readme.txt", root "\Archive"])
+            actions .= action.Title "|"
+        eq("many: open all", InStr(actions, I18n.T("Action.OpenAll", 2)) = 1, true)
+        eq("many: copy, recycle", InStr(actions, I18n.T("Action.CopyFiles", 2)) && InStr(actions, I18n.T("Action.RecycleAll", 2)) ? 1 : 0, 1)
+        FileSetAttrib("-H", root "\secret.txt")
+        DirDelete(root, true)
     }
 
     static WindowPosition() {
