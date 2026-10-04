@@ -51,6 +51,7 @@
 #Include %A_ScriptDir%\..\Src\Providers\BookmarkProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\FileSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\TerminalProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\WindowProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\HelpProvider.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
@@ -75,7 +76,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1742,6 +1743,48 @@ class Tests {
         eq("turned off", IsObject(find("bluetooth")), false)
         options["SettingsPages"] := 1
         eq("default on", AppSettings.Defaults()["Features"]["System"]["SettingsPages"], 1)
+    }
+
+    ; 切换窗口: 另开一个进程显示一个窗口, "w 标题" 找到它, 关闭; 自己的窗口不列出
+    static WindowSwitch() {
+        eq := (n, a, e) => TestRunner.Equal("WindowSwitch." n, a, e)
+        script := A_Temp "\ALTRun-window-test.ahk", title := "ALTRun Window Test " A_TickCount
+        try FileDelete(script)
+        FileAppend('#NoTrayIcon`ng := Gui(, "' title '")`ng.OnEvent("Close", (*) => ExitApp())`ng.Show("w300 h120")`nSetTimer(() => ExitApp(), -20000)', script, "UTF-8")
+        Run('"' A_AhkPath '" "' script '"', , , &pid)
+        found := WinWait(title, , 10)
+        eq("test window shown", found != 0, true)
+        WindowProvider._listTime := 0
+        items := WindowProvider.Search(SearchQuery("w " SubStr(title, 1, 18)))
+        item := ""
+        for candidate in items
+            if (candidate.Title = title)
+                item := candidate
+        eq("found by keyword", IsObject(item) ? item.Exclusive "|" InStr(item.Subtitle, "AutoHotkey") : "missing", "1|1")
+        all := WindowProvider.Search(SearchQuery("w "))
+        own := false
+        for candidate in all
+            if (candidate.Title = title)
+                own := true
+        eq("listed with empty keyword", own, true)
+        test := Gui(, "ALTRun own window " A_TickCount)
+        test.Show("w200 h80")
+        WindowProvider._listTime := 0
+        mine := false
+        for window in WindowProvider.List()
+            if (window.Hwnd = test.Hwnd)
+                mine := true
+        eq("own windows not listed", mine, false)
+        test.Destroy()
+        if IsObject(item) {
+            item.Actions[1].OnRun.Call()                                     ; 操作面板里的 "关闭窗口"
+            eq("closed", WinWaitClose(title, , 5), 1)
+        }
+        try ProcessClose(pid)
+        try FileDelete(script)
+        AppSettings.Feature("Windows")["InDefaultResults"] := 0
+        eq("default results off", WindowProvider.Search(SearchQuery("ALTRun Window")).Length, 0)
+        AppSettings.Feature("Windows")["InDefaultResults"] := 1
     }
 
     static WindowPosition() {

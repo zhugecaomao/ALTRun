@@ -41,6 +41,7 @@ class HelpProvider {
             ["Convert"   , "Calculator"    , "Usage"],
             ["WebSearch" , "WebSearch"     , "Usage"],
             ["Bookmarks" , "Bookmarks"     , "Usage"],
+            ["Windows"   , "Windows"       , "Usage"],
             ["CheckPaths", "CustomCommands", "Commands-and-Snippets"],
             ["LargeType" , ""              , "Usage"],
             ["Prefs"     , ""              , "Configuration"],
@@ -117,6 +118,7 @@ class HelpProvider {
             case "Expand":      return [AppSettings.Feature("Snippets")["ExpandPrefix"]]
             case "Terminal":    return [AppSettings.Feature("Terminal")["Prefix"]]
             case "Bookmarks":   return [AppSettings.Feature("Bookmarks")["Keyword"]]
+            case "Windows":     return [AppSettings.Feature("Windows")["Keyword"]]
             case "Selection":   return [Win.HotkeyLabel(AppSettings.General["SelectionHotkey"])]
             case "WebSearch":
                 engines := AppSettings.Feature("WebSearch")["Engines"]

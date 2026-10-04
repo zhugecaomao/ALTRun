@@ -378,17 +378,17 @@ class PreferencesWindow {
     static _BuildFeatures() {
         PreferencesWindow._BeginPage("Prefs.Page.Features", 140)
         PreferencesWindow._Section("Prefs.EnabledFeatures")
-        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "FileSearch", "Terminal", "System", "Help"]
+        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "Windows", "FileSearch", "Terminal", "System", "Help"]
         startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; 两列: 英文名称较长, 三列会换行
         for index, feature in features {
             column := Mod(index - 1, 2), row := (index - 1) // 2
-            PreferencesWindow._y := startY + row * 24
+            PreferencesWindow._y := startY + row * 23
             PreferencesWindow._Check("Features." feature ".Enabled", "Prefs.Feature." feature
                 , PreferencesWindow._InputX() + column * columnW, , (index = 1) ? "Prefs.Group.SearchFeatures" : "", columnW)
         }
-        PreferencesWindow._y := startY + (features.Length // 2) * 24          ; 最后一格: Windows 设置的页面 (系统命令的一部分)
+        PreferencesWindow._y := startY + (features.Length // 2) * 23          ; 最后一格: Windows 设置的页面 (系统命令的一部分)
         PreferencesWindow._Check("Features.System.SettingsPages", "Prefs.SettingsPages", PreferencesWindow._InputX() + columnW, , "", columnW)
-        PreferencesWindow._y := startY + Ceil(features.Length / 2) * 24
+        PreferencesWindow._y := startY + Ceil((features.Length + 1) / 2) * 23
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")
         PreferencesWindow._Check("Features.Calculator.StructuralCalc", "Prefs.StructuralCalc", , , "Prefs.Feature.Calculator")
         PreferencesWindow._Check("Features.Calculator.Currency", "Prefs.Currency")
