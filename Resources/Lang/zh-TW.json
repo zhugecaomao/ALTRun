@@ -58,7 +58,7 @@
   "Clipboard.PasteFiles": "貼上檔案",
   "Clipboard.PasteImage": "貼上圖片",
   "Clipboard.Subtitle": "{1} · {2} · {3} 個字元",
-  "Cmd.Field.Arguments": "執行程式時附帶的參數, 例如 /k ipconfig /all; 檔案、資料夾和網址一般留空",
+  "Cmd.Field.Arguments": "執行程式時附帶的參數, 例如 /k ipconfig /all; 檔案、資料夾和網址一般留空。目標或參數裡的 {query} 會換成關鍵字後面輸入的文字",
   "Cmd.Field.Keyword": "選用。輸入的文字和關鍵字完全一樣時排在最前面, 例如給記事本設 np",
   "Cmd.Field.Target": "路徑、程式或網址。可以用變數, 例如 A_Desktop\\Projects、%OneDrive%\\Documents; 檔名和資料夾名也能搜到",
   "Cmd.Field.Title": "搜尋結果裡顯示的名稱; 搜尋時按名稱和它的拼音首字母相符",

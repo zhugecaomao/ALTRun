@@ -57,7 +57,7 @@
   "Clipboard.PasteFiles": "粘贴文件",
   "Clipboard.PasteImage": "粘贴图片",
   "Clipboard.Subtitle": "{1} · {2} · {3} 个字符",
-  "Cmd.Field.Arguments": "运行程序时附带的参数, 例如 /k ipconfig /all; 文件、文件夹和网址一般留空",
+  "Cmd.Field.Arguments": "运行程序时附带的参数, 例如 /k ipconfig /all; 文件、文件夹和网址一般留空。目标或参数里的 {query} 会换成关键字后面输入的文字",
   "Cmd.Field.Keyword": "可选。输入的文字和关键字完全一样时排在最前面, 例如给记事本设 np",
   "Cmd.Field.Target": "路径、程序或网址。可以用变量, 例如 A_Desktop\\Projects、%OneDrive%\\Documents; 文件名和文件夹名也能搜到",
   "Cmd.Field.Title": "搜索结果里显示的名称; 搜索时按名称和它的拼音首字母匹配",

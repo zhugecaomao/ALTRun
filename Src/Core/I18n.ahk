@@ -290,7 +290,7 @@ class I18n {
         s["Cmd.Field.Title"]           := "Shown in results. Searching matches the title and its pinyin initials."
         s["Cmd.Field.Type"]            := "File: open a file or run a program. Folder: open in the file manager. Command line: a program plus arguments. Web address / link: a web page, or a link such as ms-settings:windowsupdate or mailto:."
         s["Cmd.Field.Target"]           := "Path, program or web address. Variables work, e.g. A_Desktop\Projects or %OneDrive%\Documents. File and folder names are searched too."
-        s["Cmd.Field.Arguments"]       := "Passed to the program, e.g. /k ipconfig /all. Usually empty for files, folders and web addresses."
+        s["Cmd.Field.Arguments"]       := "Passed to the program, e.g. /k ipconfig /all. Usually empty for files, folders and web addresses. {query} in the target or arguments is replaced by the text typed after the keyword."
         s["Cmd.Field.Keyword"]          := "Optional. Typing exactly this word puts the command first, e.g. np for Notepad."
         s["Index.Done"]                := "Index rebuilt: {1} applications."
 

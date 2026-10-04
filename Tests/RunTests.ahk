@@ -1207,7 +1207,31 @@ class Tests {
         eq("extension not searched", titles("pdf"), "")
         eq("command target not searched", titles("cmd"), "")
         eq("drive root not a name", titles("q:"), "")
+
+        ; {query}: "关键字 文字" 换掉目标 / 参数里的 {query} (网址里编码), 只显示这条
+        AppSettings.Data["CustomCommands"].Push(
+            Map("Title", "Jira", "Type", "Url", "Target", "https://jira.example.com/browse/{query}", "Arguments", "", "Keyword", "jira"),
+            Map("Title", "Ping Host", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping"),
+            Map("Title", "Notes Folder", "Type", "Folder", "Target", "D:\Notes\{query}", "Arguments", "", "Keyword", ""))
+        CustomCommandProvider._ResetNarrowing()
+        items := CustomCommandProvider.Search(SearchQuery("jira ABC 12"))
+        eq("query: only that command", items.Length, 1)
+        eq("query: url encoded", items[1].Title "|" items[1].Arg "|" items[1].Exclusive, "Jira: ABC 12|https://jira.example.com/browse/ABC%2012|1")
+        items := CustomCommandProvider.Search(SearchQuery("ping 10.0.0.1"))
+        eq("query: arguments", items[1].Arg "|" items[1].Arguments, "cmd.exe|/k ping 10.0.0.1")
+        items := CustomCommandProvider.Search(SearchQuery("ping 10.0.0.12"))   ; 继续输入: 不用上一次的结果缩小范围
+        eq("query: keep typing", items.Length "|" items[1].Arguments, "1|/k ping 10.0.0.12")
+        item := ""
+        for found in CustomCommandProvider.Search(SearchQuery("jir"))
+            if (found.Title = "Jira")
+                item := found
+        eq("query: not typed yet -> complete keyword", IsObject(item) ? item.Valid "|" item.AutoComplete : "none", "0|jira ")
+        for found in CustomCommandProvider.Search(SearchQuery("notes"))
+            item := found
+        eq("query: no keyword -> empty", item.Valid "|" item.Arg, "1|D:\Notes\")
+        eq("query: path not checked", CustomCommandProvider.CheckTarget(AppSettings.Data["CustomCommands"][7]), "Skipped")
         AppSettings.Data["CustomCommands"] := saved
+        CustomCommandProvider._ResetNarrowing()
     }
 
     ; 所有 Edit 控件都要写明行数 (r1 / r8 ...): 不写时长文字会让 AHK 自动变成多行并加高, 盖住下面的控件

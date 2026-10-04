@@ -57,7 +57,7 @@
   "Clipboard.PasteFiles": "ファイルを貼り付け",
   "Clipboard.PasteImage": "画像を貼り付け",
   "Clipboard.Subtitle": "{1} · {2} · {3} 文字",
-  "Cmd.Field.Arguments": "プログラムに渡す引数です (例: /k ipconfig /all)。ファイル・フォルダー・Web アドレスでは通常空欄にします。",
+  "Cmd.Field.Arguments": "プログラムに渡す引数です (例: /k ipconfig /all)。ファイル・フォルダー・Web アドレスでは通常空欄にします。対象や引数の {query} はキーワードの後に入力した文字に置き換わります。",
   "Cmd.Field.Keyword": "任意設定。この文字列を完全一致で入力すると、そのコマンドが最上位に表示されます (例: メモ帳に np)。",
   "Cmd.Field.Target": "パス、プログラム、または Web アドレスです。変数が使用できます (例: A_Desktop\\Projects や %OneDrive%\\Documents)。ファイル名やフォルダー名でも検索されます。",
   "Cmd.Field.Title": "検索結果に表示される名前です。検索時は名前とそのピンイン頭文字にも一致します。",
