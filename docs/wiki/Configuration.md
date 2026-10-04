@@ -79,6 +79,7 @@
 | PasteDelay | 300 | 粘贴后等待多少毫秒再还原剪贴板 |
 | AutoExpand | 1 | 在任何程序里输入 前缀 + 关键字 自动展开 |
 | ExpandPrefix | `;` | 自动展开的前缀 |
+| ExpandExclude | `ahk_exe mstsc.exe, ahk_exe KeePass.exe, ahk_exe KeePassXC.exe` | 这些窗口里不自动展开 (逗号分隔: `ahk_exe`、`ahk_class` 或标题的一部分); 密码输入框里总是不展开 |
 
 ### Clipboard 剪贴板历史
 | 键 | 默认 | 说明 |

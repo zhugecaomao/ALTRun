@@ -264,7 +264,8 @@ class AppSettings {
                     "PasteMode"   , "Clipboard",                            ; Clipboard = 剪贴板 + Ctrl+V; Type = 逐字输入
                     "PasteDelay"  , 300,
                     "AutoExpand"  , 1,                                      ; 在任何程序里输入 前缀+关键字 自动展开
-                    "ExpandPrefix", ";"
+                    "ExpandPrefix", ";",
+                    "ExpandExclude", "ahk_exe mstsc.exe, ahk_exe KeePass.exe, ahk_exe KeePassXC.exe"   ; 这些窗口里不自动展开
                 ),
                 "Clipboard", Map(
                     "Enabled"      , 1,

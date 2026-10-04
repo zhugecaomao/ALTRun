@@ -232,6 +232,8 @@
   "Prefs.EverythingPath": "安裝位置",
   "Prefs.EverythingPath.Desc": "只用於 '在 Everything 中搜尋'; 留空自動尋找",
   "Prefs.EverythingStatus": "Everything: {1}",
+  "Prefs.ExpandExclude": "不展開的視窗",
+  "Prefs.ExpandExclude.Desc": "用逗號分隔: ahk_exe 程式名稱.exe、ahk_class 類別名稱或標題的一部分。密碼輸入框裡一律不展開",
   "Prefs.ExpandPrefix": "關鍵字前綴",
   "Prefs.ExpandPrefix.Desc": "避免平時打字時誤觸發",
   "Prefs.Fallbacks": "備用搜尋",

@@ -231,6 +231,8 @@
   "Prefs.EverythingPath": "場所",
   "Prefs.EverythingPath.Desc": "「Everything で検索」でのみ使用します。空欄の場合は自動的に検出します。",
   "Prefs.EverythingStatus": "Everything: {1}",
+  "Prefs.ExpandExclude": "展開しないウィンドウ",
+  "Prefs.ExpandExclude.Desc": "カンマ区切り: ahk_exe プログラム.exe、ahk_class クラス名、またはタイトルの一部。パスワード入力欄では展開しません。",
   "Prefs.ExpandPrefix": "キーワードのプレフィックス",
   "Prefs.ExpandPrefix.Desc": "通常の入力中に誤って展開されるのを防ぎます。",
   "Prefs.Fallbacks": "代替検索",

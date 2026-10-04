@@ -643,6 +643,8 @@ class I18n {
         s["Prefs.CommandsNote"]        := "Double-click to edit. Check Paths finds commands whose file or folder was renamed or moved."
         s["Prefs.SnippetAutoExpand"]   := "Expand snippet keywords typed in any app"
         s["Prefs.SnippetAutoExpand.Desc"] := "Type the prefix and keyword in any program (e.g. `;sig) and it is replaced by the text."
+        s["Prefs.ExpandExclude"]       := "Don't expand in"
+        s["Prefs.ExpandExclude.Desc"]  := "Separated by commas: ahk_exe program.exe, ahk_class ... or part of a title. Never in password boxes."
         s["Prefs.ExpandPrefix"]        := "Keyword prefix"
         s["Prefs.ExpandPrefix.Desc"]   := "Keeps normal typing from expanding by accident."
         s["Prefs.PasteMode"]           := "Paste by"

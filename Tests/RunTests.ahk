@@ -514,6 +514,13 @@ class Tests {
         eq("disabled", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x", "AutoExpand", 0), ";"), "")
         eq("space", SnippetExpander.Abbreviation(Map("Keyword", "a b", "Text", "x"), ";"), "")
         eq("no prefix", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x"), ""), "sig")
+        options := AppSettings.Feature("Snippets"), saved := options["ExpandExclude"]
+        options["ExpandExclude"] := " ahk_exe mstsc.exe ,, ahk_class KeePass "
+        SnippetExpander.Refresh()
+        eq("exclude list", SnippetExpander._exclude.Length "|" SnippetExpander._exclude[2], "2|ahk_class KeePass")
+        eq("default exclude", AppSettings.Defaults()["Features"]["Snippets"]["ExpandExclude"] != "", true)
+        options["ExpandExclude"] := saved
+        SnippetExpander.Refresh()
     }
 
     static Preferences() {
