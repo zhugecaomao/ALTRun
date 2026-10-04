@@ -100,6 +100,16 @@ class SystemProvider {
         return (*) => SystemProvider.RunCommand(id)
     }
 
+    ; 剪贴板里的内容去掉格式 (字体、颜色、表格...) 粘贴, 剪贴板随后还原。可以在 自定义热键 里设成 Ctrl+Shift+V:
+    ; 用热键时贴到当前窗口; 在搜索窗口里运行时贴到呼出之前的窗口
+    static PastePlainText() {
+        text := A_Clipboard
+        if (text = "")
+            return App.Notify(I18n.T("Sys.PastePlainEmpty"))
+        active := WinExist("A")
+        ActionCatalog.PasteText(text, !active || (IsObject(SearchWindow.Gui) && active = SearchWindow.Gui.Hwnd))
+    }
+
     static RunCommand(id) {
         if SystemProvider.Aliases.Has(id)
             id := SystemProvider.Aliases[id]
@@ -163,6 +173,7 @@ class SystemProvider {
         add("MediaPrev"   , "Sys.MediaPrev"   , system32 "SndVol.exe" , () => Send("{Media_Prev}"))
         add("MediaStop"   , "Sys.MediaStop"   , system32 "SndVol.exe" , () => Send("{Media_Stop}"))
         add("ShowIP"      , "Sys.ShowIP"      , "res:imageres.dll,-25"  , () => SystemProvider.ShowIP())
+        add("PastePlain"  , "Sys.PastePlain"  , "res:imageres.dll,-5314", () => SystemProvider.PastePlainText())
         add("TerminalHere", "Sys.TerminalHere", "res:imageres.dll,-5323", () => TerminalProvider.OpenAtCurrentFolder())
         add("ListProcesses", "Sys.ListProcesses", system32 "taskmgr.exe", () => SystemProvider._ShowCommandOutput("tasklist", "ALTRun.Processes.txt"))
         add("ListServices", "Sys.ListServices", system32 "services.msc", () => SystemProvider._ShowCommandOutput("net start", "ALTRun.Services.txt"))

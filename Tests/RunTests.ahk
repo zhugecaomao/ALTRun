@@ -77,7 +77,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1832,6 +1832,47 @@ class Tests {
         options["Pinned"] := savedPinned, options["RecentCount"] := savedCount
         try FileDelete(A_Temp "\ALTRun-recent-test.json")
         try FileDelete(A_Temp "\ALTRun-recent-settings.json")
+    }
+
+    ; 剪贴板置顶: 排在最前面, 超过条数不删, 再复制仍然置顶, 清空时保留, 保存后还在
+    static ClipboardPin() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardPin." n, a, e)
+        root := A_Temp "\ALTRun-clip-pin-test"
+        try DirDelete(root, true)
+        DirCreate(root)
+        saved := [ClipboardProvider.File, ClipboardProvider.Folder, ClipboardProvider.Entries]
+        options := AppSettings.Feature("Clipboard"), savedMax := options["MaxItems"], savedPersist := options["Persist"]
+        ClipboardProvider.File := root "\ClipboardHistory.json", ClipboardProvider.Folder := root "\Clipboard", ClipboardProvider.Entries := []
+        options["MaxItems"] := 3, options["Persist"] := 1
+        ClipboardProvider.Add("one"), ClipboardProvider.Add("two")
+        ClipboardProvider.Entries[2]["Pinned"] := 1                          ; "one" 置顶
+        ClipboardProvider.Add("three"), ClipboardProvider.Add("four"), ClipboardProvider.Add("five")
+        texts() {
+            list := ""
+            for item in ClipboardProvider.Search(SearchQuery("clip "))
+                if (item.Kind = "text")
+                    list .= item.Arg "|"
+            return RTrim(list, "|")
+        }
+        eq("pinned first, kept when trimming", texts(), "one|five|four")
+        items := ClipboardProvider.Search(SearchQuery("clip one"))
+        eq("pinned tag", InStr(items[1].Subtitle, I18n.T("Clipboard.PinnedTag")) = 1, true)
+        actions := ""
+        for action in items[1].Actions
+            actions .= action.Title "|"
+        eq("unpin action", InStr(actions, I18n.T("Clipboard.Unpin")) > 0, true)
+        ClipboardProvider.Add("one")                                         ; 再复制一次: 还是置顶
+        eq("copy again keeps pin", ClipboardProvider.IsPinned(ClipboardProvider.Entries[1]), true)
+        ClipboardProvider.Save()
+        ClipboardProvider.Entries := [], ClipboardProvider._Load()
+        eq("saved", texts(), "one|five|four")
+        ClipboardProvider.Clear()
+        eq("clear keeps pinned", texts(), "one")
+        ClipboardProvider.Entries[1].Delete("Pinned"), ClipboardProvider.Clear()
+        eq("unpinned cleared", ClipboardProvider.Entries.Length, 0)
+        ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2], ClipboardProvider.Entries := saved[3]
+        options["MaxItems"] := savedMax, options["Persist"] := savedPersist
+        try DirDelete(root, true)
     }
 
     static WindowPosition() {
