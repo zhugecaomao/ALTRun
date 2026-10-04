@@ -497,10 +497,7 @@ class ClipboardProvider {
                 keep[StrLower(entry["File"])] := true
                 list.Push(Map("File", entry["File"], "Time", stamp, "App", source))
             }
-            tmpFile := ClipboardProvider.File ".tmp"
-            try FileDelete(tmpFile)
-            FileAppend(JSON.Stringify(Map("Entries", list)), tmpFile, "UTF-8")
-            FileMove(tmpFile, ClipboardProvider.File, true)
+            JSON.WriteFile(ClipboardProvider.File, Map("Entries", list))
             Loop Files, ClipboardProvider.Folder "\*.*" {                  ; 删掉已经不在历史里的长条目和图片
                 if (RegExMatch(A_LoopFileName, "i)\.(txt|png)$") && !keep.Has(StrLower(A_LoopFileName)))
                     try FileDelete(A_LoopFileFullPath)

@@ -44,7 +44,7 @@
 ## 发布新版本
 版本号用发布日期 `YYYY.MM.DD`:
 1. 更新 `Src\Core\App.ahk` 的 `App.Version` 和 `ALTRun.ahk` 的 `;@Ahk2Exe-SetVersion` (有测试检查两者一致)
-2. 在 `CHANGELOG.md` 加一节 `## [YYYY.MM.DD] ...`, 这一节就是 Release 的说明
+2. 在 `CHANGELOG.md` 把 "未发布" 改成 `## [YYYY.MM.DD]`, 这一节就是 Release 的说明; 文件末尾加上这个版本的链接, 并把 `[未发布]` 的比较链接改成从这个版本开始 (有测试检查)
 3. 合并到 `main` 后, 在 Actions 里运行 **Release** (`.github/workflows/release.yml`): 先 `publish = false` 检查构建、测试和升级测试, 再 `publish = true` 创建 Release
 
 Release workflow 在 Windows 上编译 `ALTRun.exe`, 并用 `Tests\Fixtures\ALTRun.v2026.08.12.ini` 验证从旧版本升级。

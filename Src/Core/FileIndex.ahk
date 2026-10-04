@@ -187,8 +187,7 @@ class FileIndex {
 
     static _SaveCache() {
         try {
-            DirCreate(AppSettings.DataDir)
-            FileOpen(FileIndex.File, "w", "UTF-8").Write(JSON.Stringify(Map("Paths", FileIndex.Paths, "Folders", FileIndex.Folders)))
+            JSON.WriteFile(FileIndex.File, Map("Paths", FileIndex.Paths, "Folders", FileIndex.Folders))
         } catch as e {
             Logger.Error("FileIndex: cannot write cache - " e.Message)
         }

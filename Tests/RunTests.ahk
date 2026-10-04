@@ -75,7 +75,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -267,6 +267,15 @@ class Tests {
         eq("folder update", AutoDate.AddDateToName("Project - 01.01.2020", today), "Project - 23.09.2026")
         eq("numeric ext", AutoDate.AddDateToName("Version 1.2", today), "Version 1.2 - 23.09.2026")
         eq("dot space", AutoDate.AddDateToName("1. DWG", today), "1. DWG - 23.09.2026")
+        ; 设置里换了日期格式: 末尾那种格式的日期照样更新, 不会再加一个
+        eq("iso update", AutoDate.AddDateToName("Report - 2020-01-01.docx", "2026-09-23", "yyyy-MM-dd"), "Report - 2026-09-23.docx")
+        eq("iso folder", AutoDate.AddDateToName("Project - 2020-01-01", "2026-09-23", "yyyy-MM-dd"), "Project - 2026-09-23")
+        eq("dotted iso folder", AutoDate.AddDateToName("Project - 2020.01.01", "2026.09.23", "yyyy.MM.dd"), "Project - 2026.09.23")
+        eq("compact", AutoDate.AddDateToName("Plan_20200101.pdf", "20260923", "yyyyMMdd"), "Plan_20200101 - 20260923.pdf")
+        eq("compact update", AutoDate.AddDateToName("Plan - 20200101.pdf", "20260923", "yyyyMMdd"), "Plan - 20260923.pdf")
+        eq("month name", AutoDate.AddDateToName("Memo - 1 Jan 2020", "23 Sep 2026", "d MMM yyyy"), "Memo - 23 Sep 2026")
+        eq("other format kept", AutoDate.AddDateToName("Report - 01.01.2020.docx", "2026-09-23", "yyyy-MM-dd"), "Report - 01.01.2020 - 2026-09-23.docx")
+        eq("pattern", AutoDate.DatePattern("dd.MM.yyyy"), "\d{2}\.\d{2}\.\d{4}")
     }
 
     static TextTools() {
@@ -1613,6 +1622,41 @@ class Tests {
         I18n.Init(savedLang)
     }
 
+    ; 每条界面文字都有代码用到: 键名原样出现在源码里, 或者属于按名称拼出来的那几组 (Theme.<主题名> 等)
+    static I18nUnused() {
+        source := ""
+        Loop Files, A_ScriptDir "\..\Src\*.ahk", "R"
+            if (A_LoopFileName != "I18n.ahk")
+                source .= FileRead(A_LoopFileFullPath, "UTF-8")
+        dynamic := ["Help.", "Theme.", "Usage.F.", "Usage.Col.", "Prefs.Feature.", "Prefs.Status.", "Prefs.TypeShort.", "Cmd.Field."]
+        unused := ""
+        for key in I18n.Strings {
+            if (InStr(source, '"' key '"', true) || SubStr(key, -5) = ".Desc")
+                continue
+            for prefix in dynamic
+                if (SubStr(key, 1, StrLen(prefix)) == prefix)
+                    continue 2
+            unused .= key " "
+        }
+        TestRunner.Equal("I18nUnused", unused, "")
+    }
+
+    ; CHANGELOG.md 的每个版本标题都有链接 (文件末尾的 [版本]: 网址), "未发布" 比较的是最新发布的版本
+    static ChangelogLinks() {
+        text := FileRead(A_ScriptDir "\..\CHANGELOG.md", "UTF-8")
+        missing := "", newest := "", pos := 1
+        while (pos := RegExMatch(text, "m)^## \[([^\]]+)\]", &m, pos)) {
+            pos += m.Len
+            if (newest = "" && m[1] != "未发布")
+                newest := m[1]
+            if !RegExMatch(text, "m)^\[\Q" m[1] "\E\]: https://github\.com/\S+$")
+                missing .= m[1] " "
+        }
+        TestRunner.Equal("ChangelogLinks.missing", missing, "")
+        TestRunner.True("ChangelogLinks.unreleased compares " newest, InStr(text, "[未发布]: https://github.com/zhugecaomao/ALTRun/compare/" newest "...HEAD"))
+        TestRunner.True("ChangelogLinks.newest is App.Version", newest = App.Version)
+    }
+
     static WindowPosition() {
         eq := (n, a, e) => TestRunner.Equal("WindowPosition." n, a, e)
         area := {Left: 0, Top: 0, Right: 1920, Bottom: 1040}
@@ -2321,6 +2365,21 @@ Func | PTTools | PT Tools (AHK)=99
         eq("round trip nested", again["List"][3]["k"], "v")
         for bad in ['{"a": 1', '{"a" 1}', '[1, 2', '"open', '{a: 1}', '[1 2]', '@']
             ok("error: " bad, !JsonReadWrite_Parses(bad))
+
+        ; 控制字符 (例如从终端复制的 ESC) 写成 \u001B, 文件里不出现原样的控制字符
+        control := "a" Chr(27) "[0m" Chr(8) Chr(12) Chr(1) "z"
+        written := JSON.Stringify(Map("Text", control))
+        ok("control chars escaped", !RegExMatch(written, "[\x00-\x08\x0B\x0C\x0E-\x1F]") && InStr(written, "\u001B[0m\u0008\u000C\u0001z"))
+        eq("control chars round trip", JSON.Parse(written)["Text"], control)
+        ; 写文件: 先写临时文件再替换, 不带 BOM, 不留下 .tmp
+        dir := A_Temp "\ALTRun-json-test"
+        try DirDelete(dir, true)
+        jsonFile := dir "\sub\data.json"
+        JSON.WriteFile(jsonFile, Map("k", "中文"))
+        JSON.WriteFile(jsonFile, Map("k", "v2"))
+        firstByte := FileOpen(jsonFile, "r").RawRead(bytes := Buffer(3), 3) ? NumGet(bytes, 0, "UChar") : 0
+        eq("write file", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (firstByte = 0xEF ? "bom" : "no bom") "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v2|no bom|")
+        DirDelete(dir, true)
 
         paths := []
         Loop 20000

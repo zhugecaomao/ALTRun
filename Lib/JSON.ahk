@@ -7,6 +7,7 @@
 ; 用法:
 ;   data := JSON.Parse(FileRead("x.json", "UTF-8"))
 ;   text := JSON.Stringify(data)
+;   JSON.WriteFile("x.json", data)      写文件: 先写临时文件再替换, UTF-8 不带 BOM
 ;===============================================================================
 
 class JSON {
@@ -51,6 +52,20 @@ class JSON {
         return '"' JSON.Escape(obj "") '"'
     }
 
+    ;--- 写文件 ------------------------------------------------------------------
+    ; 先写同一文件夹里的临时文件, 再替换原来的文件: 写到一半崩溃或断电也不会弄坏原来的文件。
+    ; 文件夹不在时自动创建; UTF-8 不带 BOM (JSON 标准 RFC 8259)。失败时抛出异常
+    static WriteFile(file, data, indent := 0) {
+        SplitPath(file, , &dir)
+        if (dir != "")
+            DirCreate(dir)
+        tmpFile := file ".tmp"
+        if FileExist(tmpFile)
+            FileDelete(tmpFile)
+        FileAppend(JSON.Stringify(data, indent), tmpFile, "UTF-8-RAW")
+        FileMove(tmpFile, file, true)
+    }
+
     ;--- 字符串转义 --------------------------------------------------------------
     static Escape(str) {
         str := StrReplace(str, "\", "\\")
@@ -58,6 +73,12 @@ class JSON {
         str := StrReplace(str, "`r", "\r")
         str := StrReplace(str, "`n", "\n")
         str := StrReplace(str, "`t", "\t")
+        if RegExMatch(str, "[\x00-\x1F]") {                                ; 其它控制字符 (少见, 例如从终端复制的 ESC): \u00XX
+            out := ""
+            Loop Parse, str
+                out .= (Ord(A_LoopField) < 32) ? Format("\u{:04X}", Ord(A_LoopField)) : A_LoopField
+            str := out
+        }
         return str
     }
 

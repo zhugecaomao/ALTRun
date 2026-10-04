@@ -89,14 +89,8 @@ class AppSettings {
     }
 
     static Save() {
-        tmpFile := AppSettings.File ".tmp"
         try {
-            SplitPath(AppSettings.File, , &dir)
-            DirCreate(dir)
-            if FileExist(tmpFile)
-                FileDelete(tmpFile)
-            FileAppend(JSON.Stringify(AppSettings.Data), tmpFile, "UTF-8")  ; 先写临时文件, 写一半崩溃也不会弄坏正式文件
-            FileMove(tmpFile, AppSettings.File, true)
+            JSON.WriteFile(AppSettings.File, AppSettings.Data)
             return true
         } catch as e {
             Logger.Error("AppSettings.Save: " e.Message)

@@ -38,7 +38,30 @@ class AutoDate {
     }
 
     static Today() {
-        return FormatTime(, AutoDate.Options.Has("DateFormat") ? AutoDate.Options["DateFormat"] : "dd.MM.yyyy")
+        return FormatTime(, AutoDate.Format())
+    }
+
+    static Format() {
+        return (AutoDate.Options is Map && AutoDate.Options.Has("DateFormat") && AutoDate.Options["DateFormat"] != "")
+            ? AutoDate.Options["DateFormat"] : "dd.MM.yyyy"
+    }
+
+    ; 日期格式 -> 匹配这种格式的日期的正则 ("dd.MM.yyyy" -> "\d{2}\.\d{2}\.\d{4}"), 用来找出名字末尾已有的日期
+    static DatePattern(format) {
+        static tokens := [["yyyy", "\d{4}"], ["dddd", "\p{L}+"], ["MMMM", "\p{L}+"], ["ddd", "\p{L}+"], ["MMM", "\p{L}+"]
+            , ["yy", "\d{2}"], ["MM", "\d{2}"], ["dd", "\d{2}"], ["M", "\d{1,2}"], ["d", "\d{1,2}"], ["y", "\d{1,2}"]]
+        pattern := "", i := 1
+        while (i <= StrLen(format)) {
+            for token in tokens {
+                if (SubStr(format, i, StrLen(token[1])) == token[1]) {
+                    pattern .= token[2], i += StrLen(token[1])
+                    continue 2
+                }
+            }
+            ch := SubStr(format, i, 1), i += 1
+            pattern .= InStr("\.*?+[](){}|^$", ch) ? "\" ch : ch
+        }
+        return pattern
     }
 
     ; 只在重命名的编辑框里生效, 其它时候照常发送原来的按键
@@ -64,9 +87,10 @@ class AutoDate {
     }
 
     ; 纯函数, 方便测试: 文件名 (可以带扩展名) -> 加上 / 更新日期后的文件名
-    static AddDateToName(fileName, today := "") {
+    ; format: 日期格式 (默认用设置里的 DateFormat); 名字末尾已经是这种格式的日期时换成今天
+    static AddDateToName(fileName, today := "", format := "") {
         today := (today != "") ? today : AutoDate.Today()
-        datePattern := "\s?-\s?\d{2}\.\d{2}\.\d{4}$"
+        datePattern := "\s?-\s?" AutoDate.DatePattern((format != "") ? format : AutoDate.Format()) "$"
         ; 只有 "点 + 1~4 个字母数字" 且不是纯数字时才算扩展名 ("1. DWG" 这种不算)
         if RegExMatch(fileName, "^(.*)\.([A-Za-z0-9]{1,4})$", &m) && !RegExMatch(m[2], "^\d+$")
             return RegExReplace(m[1], datePattern) " - " today "." m[2]

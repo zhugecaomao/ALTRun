@@ -36,10 +36,10 @@
 - **智能排序**：根据使用习惯自动调整排名；支持单词首字母（`vsc` → Visual Studio Code）和拼音首字母（`wx` → 微信），并高亮匹配内容。
 - **多合一**：计算与单位换算、网页搜索、浏览器书签、剪贴板历史、文字片段、系统命令、终端，无需再装多个小工具。
 - **全键盘操作**：`→` 打开操作面板，`F3` 直接编辑，`Ctrl+1`～`Ctrl+9` 快速打开。
-- **便携与隐私**：免安装，不写注册表，不需要管理员权限，没有后台服务或驱动；所有数据保存在 `Data\` 文件夹；不收集任何数据，仅联网检查和下载更新。
+- **便携与隐私**：免安装，不写注册表，不需要管理员权限，没有后台服务或驱动；所有数据保存在 `Data\` 文件夹；不收集任何数据，仅联网检查和下载更新（开启货币换算后每天下载一次汇率）。
 - **自动更新**：有新版本时在搜索窗口中提示，按 `Enter` 即可安装（自动校验 SHA256），设置保留；也支持 Scoop。
 - **个性化**：简体中文、繁體中文、English、日本語界面；20 套内置主题（偏好设置里看缩略图选择），可跟随系统浅色 / 深色模式；主题和设置均为 JSON 文件。
-- **开源免费**：GPL-3.0 许可；每个 PR 都会在 Windows 上自动运行 3000 余项测试。
+- **开源免费**：GPL-3.0 许可；每个 PR 都会在 Windows 上自动运行 6000 余项测试。
 
 
 ## 快速开始
@@ -208,7 +208,7 @@ ALTRun is a fast, keyboard-first launcher for Windows, inspired by Alfred for ma
 - **Smart ranking**: learns which result you pick for each query; matches word initials (`vsc` → Visual Studio Code) and pinyin initials, and highlights the matched characters.
 - **All in one**: calculator with unit conversion, web search keywords, clipboard history, snippets with `;keyword` expansion, terminal commands, lock / sleep / shutdown, large type.
 - **Keyboard first**: `Alt+Space` or a double tap of `Ctrl` / `Shift`; action panel (`→`), in-place editing (`F3`), `Ctrl+1`–`Ctrl+9`, built-in cheat sheet (`?`).
-- **Portable and private**: no installer, no registry, no admin rights, no background service; settings stay in `Data\ALTRun.json`. No telemetry; network access is used only for updates.
+- **Portable and private**: no installer, no registry, no admin rights, no background service; settings stay in `Data\ALTRun.json`. No telemetry; network access is used only for updates (and daily exchange rates if currency conversion is turned on).
 - **Automatic updates**: install new versions from the search window (SHA256 verified, settings kept), or use Scoop.
 - **Customizable**: English, Simplified / Traditional Chinese and Japanese interface; 20 built-in themes, or follow the Windows light / dark mode.
 
