@@ -225,7 +225,7 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 - Only `ALTRun.exe` built from this repository's source by the [Release workflow](.github/workflows/release.yml) is signed.
 - Committers and reviewers: [zhugecaomao](https://github.com/zhugecaomao)
 - Approvers: [zhugecaomao](https://github.com/zhugecaomao)
-- Privacy policy: [SECURITY.md](SECURITY.md#隐私说明)
+- Privacy policy: [SECURITY.md](SECURITY.md#privacy-policy)
 
 
 ## 许可证与致谢
