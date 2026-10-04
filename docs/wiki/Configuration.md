@@ -132,6 +132,7 @@
 | 键 | 默认 | 说明 |
 |---|---|---|
 | ConfirmActions | 1 | 关机、重启、注销、清空回收站前确认 |
+| SettingsPages | 1 | 也搜索 Windows 设置的页面 (显示、蓝牙、WLAN、默认应用、Windows 更新等 40 多个, 打开 `ms-settings:` 对应的页面) |
 | Hidden | `[]` | 在搜索结果里按 `Ctrl+Del` 删除的内置命令的 Id (例如 `"Printers"`), 删掉一项即可恢复 |
 
 ## Extensions 扩展功能

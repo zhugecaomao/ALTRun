@@ -386,6 +386,8 @@ class PreferencesWindow {
             PreferencesWindow._Check("Features." feature ".Enabled", "Prefs.Feature." feature
                 , PreferencesWindow._InputX() + column * columnW, , (index = 1) ? "Prefs.Group.SearchFeatures" : "", columnW)
         }
+        PreferencesWindow._y := startY + (features.Length // 2) * 24          ; 最后一格: Windows 设置的页面 (系统命令的一部分)
+        PreferencesWindow._Check("Features.System.SettingsPages", "Prefs.SettingsPages", PreferencesWindow._InputX() + columnW, , "", columnW)
         PreferencesWindow._y := startY + Ceil(features.Length / 2) * 24
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")
         PreferencesWindow._Check("Features.Calculator.StructuralCalc", "Prefs.StructuralCalc", , , "Prefs.Feature.Calculator")

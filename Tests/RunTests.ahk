@@ -75,7 +75,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1659,7 +1659,7 @@ class Tests {
         Loop Files, A_ScriptDir "\..\Src\*.ahk", "R"
             if (A_LoopFileName != "I18n.ahk")
                 source .= FileRead(A_LoopFileFullPath, "UTF-8")
-        dynamic := ["Help.", "Theme.", "Usage.F.", "Usage.Col.", "Prefs.Feature.", "Prefs.Status.", "Prefs.TypeShort.", "Cmd.Field."]
+        dynamic := ["Help.", "Theme.", "Setting.", "Usage.F.", "Usage.Col.", "Prefs.Feature.", "Prefs.Status.", "Prefs.TypeShort.", "Cmd.Field."]
         unused := ""
         for key in I18n.Strings {
             if (InStr(source, '"' key '"', true) || SubStr(key, -5) = ".Desc")
@@ -1719,6 +1719,29 @@ class Tests {
         AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
         eq("default when portable", AppSettings.DefaultDataDir(), A_ScriptDir "\Data")
         DirDelete(root, true)
+    }
+
+    ; Windows 设置的页面: 按名称 (和英文名称) 搜到, 可以整组关掉
+    static SettingsPages() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsPages." n, a, e)
+        find(text) {
+            for item in SystemProvider.Search(SearchQuery(text))
+                if (item.Source["Id"] = "SetBluetooth")
+                    return item
+            return ""
+        }
+        item := find("bluetooth")
+        eq("found", IsObject(item) ? item.Title "|" item.Subtitle : "", "Bluetooth & devices|Windows Settings")
+        pages := 0
+        for command in SystemProvider.Commands()
+            if command.Has("IsSetting")
+                pages += 1
+        TestRunner.True("SettingsPages.count " pages, pages >= 40)
+        options := AppSettings.Feature("System")
+        options["SettingsPages"] := 0
+        eq("turned off", IsObject(find("bluetooth")), false)
+        options["SettingsPages"] := 1
+        eq("default on", AppSettings.Defaults()["Features"]["System"]["SettingsPages"], 1)
     }
 
     static WindowPosition() {

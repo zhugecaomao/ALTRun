@@ -331,6 +331,7 @@ class AppSettings {
                 "System", Map(
                     "Enabled"       , 1,
                     "ConfirmActions", 1,                                    ; 关机/重启/注销/清空回收站前确认
+                    "SettingsPages" , 1,                                    ; 搜索 Windows 设置的页面 (显示、蓝牙、WLAN...)
                     "Hidden"        , []                                    ; 在搜索结果里删除 (Ctrl+Del) 的系统命令的 Id
                 )
             ),

@@ -37,8 +37,10 @@ class SystemProvider {
         results := []
         needle := StrLower(query.Text)
         hidden := SystemProvider._HiddenIds()
+        options := AppSettings.Feature("System")
+        settingsPages := !options.Has("SettingsPages") || options["SettingsPages"]
         for command in SystemProvider.Commands() {
-            if hidden.Has(command["Id"])
+            if (hidden.Has(command["Id"]) || !settingsPages && command.Has("IsSetting"))
                 continue
             score := FuzzyMatcher.BestKey(needle, command["Keys"])
             if (score <= 0)
@@ -210,6 +212,57 @@ class SystemProvider {
         tool("Calculator"        , "Tool.Calculator"        , system32 "calc.exe")
         tool("Paint"             , "Tool.Paint"             , system32 "mspaint.exe")
         tool("WinVer"            , "Tool.WinVer"            , system32 "winver.exe")
+
+        ; --- Windows 设置的页面 (ms-settings:, Windows 10 / 11 都有), 可以在偏好设置里关掉 (Features.System.SettingsPages) ---
+        setting(id, page) {
+            add("Set" id, "Setting." id, "shell:AppsFolder\windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel"
+                , () => Run("ms-settings:" page), false, "Setting.Subtitle")
+            list[list.Length]["IsSetting"] := true
+        }
+        setting("Display"          , "display")
+        setting("NightLight"       , "nightlight")
+        setting("Sound"            , "sound")
+        setting("Notifications"    , "notifications")
+        setting("Focus"            , "quiethours")
+        setting("Power"            , "powersleep")
+        setting("Battery"          , "batterysaver")
+        setting("Storage"          , "storagesense")
+        setting("Multitasking"     , "multitasking")
+        setting("Clipboard"        , "clipboard")
+        setting("About"            , "about")
+        setting("Bluetooth"        , "bluetooth")
+        setting("Printers"         , "printers")
+        setting("Mouse"            , "mousetouchpad")
+        setting("Touchpad"         , "devices-touchpad")
+        setting("Typing"           , "typing")
+        setting("Network"          , "network-status")
+        setting("Wifi"             , "network-wifi")
+        setting("Vpn"              , "network-vpn")
+        setting("Proxy"            , "network-proxy")
+        setting("Airplane"         , "network-airplanemode")
+        setting("Background"       , "personalization-background")
+        setting("Colors"           , "colors")
+        setting("LockScreen"       , "lockscreen")
+        setting("Themes"           , "themes")
+        setting("Taskbar"          , "taskbar")
+        setting("Start"            , "personalization-start")
+        setting("Fonts"            , "fonts")
+        setting("Apps"             , "appsfeatures")
+        setting("DefaultApps"      , "defaultapps")
+        setting("StartupApps"      , "startupapps")
+        setting("OptionalFeatures" , "optionalfeatures")
+        setting("Account"          , "yourinfo")
+        setting("SignIn"           , "signinoptions")
+        setting("DateTime"         , "dateandtime")
+        setting("Region"           , "regionformatting")
+        setting("Language"         , "regionlanguage")
+        setting("Update"           , "windowsupdate")
+        setting("Security"         , "windowsdefender")
+        setting("Privacy"          , "privacy")
+        setting("Recovery"         , "recovery")
+        setting("Activation"       , "activation")
+        setting("Developers"       , "developers")
+        setting("Backup"           , "backup")
 
         SystemProvider._commands := list
         return list
