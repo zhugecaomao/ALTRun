@@ -1,4 +1,4 @@
-;===============================================================================
+﻿;===============================================================================
 ; RunTests.ahk - ALTRun 单元测试 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 只测试不依赖界面的纯逻辑: 匹配打分、输入解析、设置升级、计算器、加日期、
@@ -63,6 +63,7 @@
 
 OnError((err, mode) => TestRunner.OnUncaught(err, mode))                                             ; 运行错误时输出并退出, 不弹对话框卡住
 Logger.Enabled := false
+I18n.LangDir := A_ScriptDir "\..\Resources\Lang"
 I18n.Init("en")
 AppSettings.Data := AppSettings.Defaults()                                  ; 内存里的默认设置, 不读写文件
 AppSettings.Feature("Clipboard")["Persist"] := 0                           ; 剪贴板历史测试不写盘
@@ -1469,7 +1470,7 @@ class Tests {
     ; 每一页的控件都在底部按钮上面 (中英文都检查, 文字长短不同)
     static PreferencesFit() {
         savedLang := I18n.Lang
-        for lang in ["en", "zh", "ja"] {
+        for lang in ["en", "zh", "ja", "zh-TW"] {                               ; ja 在 zh-TW 前: Wine 没有这两种字体, 先用过 JhengHei 后量出的日文宽度偏小
             I18n.Init(lang)
             PreferencesWindow.Show(1, -3000, -3000)
             limit := PreferencesWindow.ButtonY - 6
@@ -1484,7 +1485,7 @@ class Tests {
                 TestRunner.True("PreferencesFit." lang " page " index " (right " right ", limit " rightLimit ")", right <= rightLimit)
             }
             PreferencesWindow.Close()
-            if (lang != "ja") {                                             ; 中英文的左列宽度是调好的, 不需要加宽
+            if (lang = "en" || lang = "zh") {                               ; 中英文的左列宽度是调好的, 不需要加宽
                 widened := ""
                 for key in PreferencesWindow._labelWidths
                     if (SubStr(key, 1, 3) = lang " ")
@@ -1531,7 +1532,7 @@ class Tests {
         eq("join windows", PreferencesWindow.JoinWindows(["ahk_class #32770"], ["ahk_class Qt5QWindowIcon", " ", "ahk_class #32770"]), "ahk_class #32770, ahk_class Qt5QWindowIcon")
     }
 
-    ; 每条界面文字都有英文 / 中文 / 日文, 参数占位符 {1} {2} ... 三种语言一样
+    ; 每条界面文字都有英文 / 中文 / 日文 (和语言文件里的翻译), 参数占位符 {1} {2} ... 每种语言一样
     static I18nLanguages() {
         for key, texts in I18n.Strings {
             if !TestRunner.True("I18nLanguages.three texts " key, texts is Array && texts.Length = 3)
@@ -1546,6 +1547,44 @@ class Tests {
         I18n.Init("ja")
         TestRunner.Equal("I18nLanguages.ja text", I18n.T("Prefs.Page.General"), I18n.Strings["Prefs.Page.General"][3])
         TestRunner.Equal("I18nLanguages.ja font", ThemeManager.FontName() != "", true)
+
+        ; Resources\Lang\<代码>.json 的语言: 每个键都有翻译, 没有多余的键, 占位符和英文一样
+        for language in I18n.Languages {
+            code := language[1]
+            if (code = "en" || code = "zh" || code = "ja")
+                continue
+            texts := I18n.LoadFile(code)
+            missing := "", extra := ""
+            for key, pair in I18n.Strings {
+                if !texts.Has(key) {
+                    missing .= key " "
+                    continue
+                }
+                TestRunner.True("I18nLanguages." code " not empty " key, Trim(texts[key]) != "")
+                RegExReplace(pair[1], "\{\d\}", , &countEn)
+                RegExReplace(texts[key], "\{\d\}", , &count)
+                TestRunner.True("I18nLanguages." code " placeholders " key, count = countEn)
+            }
+            for key in texts
+                if !I18n.Strings.Has(key)
+                    extra .= key " "
+            TestRunner.Equal("I18nLanguages." code " missing keys", missing, "")
+            TestRunner.Equal("I18nLanguages." code " extra keys", extra, "")
+        }
+        I18n.Init("zh-TW")
+        TestRunner.Equal("I18nLanguages.zh-TW lang", I18n.Lang, "zh-TW")
+        TestRunner.Equal("I18nLanguages.zh-TW text", I18n.T("Prefs.Page.General"), "一般")
+        TestRunner.Equal("I18nLanguages.zh-TW args", I18n.T("Clipboard.ClearHint", 3), "3 筆")
+        TestRunner.Equal("I18nLanguages.zh-TW chinese", I18n.IsChinese(), true)
+        TestRunner.Equal("I18nLanguages.zh-TW font", ThemeManager.FontName(), "Microsoft JhengHei UI")
+        I18n.Extra.Delete("Prefs.Page.General")                             ; 文件里少了的键显示简体中文
+        TestRunner.Equal("I18nLanguages.zh-TW missing key", I18n.T("Prefs.Page.General"), I18n.Strings["Prefs.Page.General"][2])
+        savedDir := I18n.LangDir
+        I18n.LangDir := A_Temp "\ALTRun-no-such-folder"                    ; 文件不在: 退回简体中文
+        I18n.Init("zh-TW")
+        TestRunner.Equal("I18nLanguages.zh-TW no file", I18n.Lang "|" I18n.T("Prefs.Page.General"), "zh|" I18n.Strings["Prefs.Page.General"][2])
+        I18n.LangDir := savedDir
+        TestRunner.Equal("I18nLanguages.unknown setting", (I18n.Init("xx"), I18n.Lang != "xx"), true)
         I18n.Init(savedLang)
     }
 

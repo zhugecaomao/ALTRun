@@ -1,7 +1,10 @@
 ;===============================================================================
-; I18n.ahk - 界面文字 (英文 / 中文 / 日本語) (AutoHotkey v2)
+; I18n.ahk - 界面文字 (英文 / 简体中文 / 繁體中文 / 日本語) (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 每条文字用一个语义化的键名, 值是 [英文, 中文, 日本語]。{1} {2} ... 是参数占位符。
+; 每条文字用一个语义化的键名, 值是 [英文, 简体中文, 日本語], 编译在程序里。{1} {2} ... 是参数占位符。
+; 其它语言放在 Resources\Lang\<代码>.json ({"键名": "文字", ...}), 例如 zh-TW.json (繁體中文):
+; 文件里没有的键, 中文系的语言显示简体中文, 其它显示英文; 文件不在时也照常运行。
+; 加一种语言 = 加一个 JSON 文件 + 在 Languages 里登记 (测试会检查每个键都有翻译、占位符一致)。
 ;
 ; 用法:
 ;   I18n.Init("auto")                          启动时调用, "auto" 按系统语言选择
@@ -11,16 +14,36 @@
 
 class I18n {
     static Lang := "en"
+    static Extra := Map()                                                   ; 从 Resources\Lang\<代码>.json 读到的文字
+    static LangDir := A_ScriptDir "\Resources\Lang"
+    static Languages := [["en", "English"], ["zh", "简体中文"], ["zh-TW", "繁體中文"], ["ja", "日本語"]]   ; 偏好设置里的顺序
 
     static Init(setting := "auto") {
+        I18n.Extra := Map()
+        if !(setting = "en" || setting = "zh" || setting = "zh-TW" || setting = "ja")
+            setting := I18n.IsJapaneseSystem() ? "ja" : I18n.IsTraditionalChineseSystem() ? "zh-TW" : I18n.IsChineseSystem() ? "zh" : "en"
         if (setting = "en" || setting = "zh" || setting = "ja")
-            I18n.Lang := setting
-        else if I18n.IsJapaneseSystem()
-            I18n.Lang := "ja"
-        else if I18n.IsChineseSystem()
-            I18n.Lang := "zh"
-        else
-            I18n.Lang := "en"
+            return I18n.Lang := setting
+        I18n.Extra := I18n.LoadFile(setting)
+        I18n.Lang := I18n.Extra.Count ? setting : (SubStr(setting, 1, 2) = "zh") ? "zh" : "en"   ; 文件不在: 退回简体中文 / 英文
+    }
+
+    ; Resources\Lang\<代码>.json -> Map (读不了时为空, 以 "_" 开头的键是注释)
+    static LoadFile(code) {
+        texts := Map()
+        try {
+            data := JSON.Parse(FileRead(I18n.LangDir "\" code ".json", "UTF-8"))
+            if (data is Map)
+                for key, text in data
+                    if (SubStr(key, 1, 1) != "_" && Type(text) = "String")
+                        texts[key] := text
+        }
+        return texts
+    }
+
+    ; 中文 (简体或繁体): 字体、拼音等只看是不是中文时用
+    static IsChinese() {
+        return SubStr(I18n.Lang, 1, 2) = "zh"
     }
 
     static IsChineseSystem() {
@@ -31,6 +54,10 @@ class I18n {
         return false
     }
 
+    static IsTraditionalChineseSystem() {
+        return A_Language = "0404" || A_Language = "0C04" || A_Language = "1404"
+    }
+
     static IsJapaneseSystem() {
         ; 0411 日本語
         return A_Language = "0411"
@@ -39,8 +66,12 @@ class I18n {
     static T(key, args*) {
         if !I18n.Strings.Has(key)
             return key
-        pair := I18n.Strings[key]
-        text := (I18n.Lang = "zh") ? pair[2] : (I18n.Lang = "ja") ? pair[3] : pair[1]
+        if I18n.Extra.Has(key)
+            text := I18n.Extra[key]
+        else {
+            pair := I18n.Strings[key]
+            text := I18n.IsChinese() ? pair[2] : (I18n.Lang = "ja") ? pair[3] : pair[1]
+        }
         for index, arg in args
             text := StrReplace(text, "{" index "}", arg)
         return text

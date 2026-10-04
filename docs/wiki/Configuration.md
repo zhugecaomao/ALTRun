@@ -29,7 +29,7 @@
 | SecondaryHotkey | `!r` | 第二个呼出热键 (Alt+R), 留空 = 不用 |
 | DoubleTap | 空 | `Ctrl` / `Shift` = 快速按两下这个键也能呼出 (和 Listary 一样), 空 = 不用 |
 | SelectionHotkey | `^!\` | 选中文字 / 文件 / 网址后按下, 直接打开它们的操作 (Ctrl+Alt+\), 见 [选中内容的操作](Usage#选中内容的操作); 留空 = 不用 |
-| Language | `auto` | `auto` 跟随系统 / `en` / `zh` / `ja` |
+| Language | `auto` | `auto` 跟随系统 / `en` / `zh` (简体中文) / `zh-TW` (繁體中文) / `ja`; 繁體中文的文字在 `Resources\Lang\zh-TW.json` |
 | LaunchAtLogin | 1 | 开机自动启动 |
 | ShowTrayIcon | 1 | 显示托盘图标 |
 | HideOnDeactivate | 1 | 搜索窗口失去焦点时隐藏 |
