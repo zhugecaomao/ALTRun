@@ -26,6 +26,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
     steps:
       - uses: actions/checkout@v7
 
@@ -81,6 +82,38 @@ jobs:
           }
           Copy-Item LICENSE, README.md, CHANGELOG.md build/ALTRun/
           (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
+
+      # 代码签名 (SignPath Foundation 免费为开源项目签名, 见 packaging/README.md): 设置了 SIGNPATH_API_TOKEN secret
+      # 和 SIGNPATH_ORGANIZATION_ID 变量后自动签名 (publish = false 用测试证书), 没有设置时跳过, 照常发布未签名的版本
+      - name: Upload unsigned ALTRun.exe for signing
+        id: unsigned
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: ALTRun-unsigned
+          path: build/ALTRun/ALTRun.exe
+
+      - name: Sign ALTRun.exe (SignPath)
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ALTRun
+          signing-policy-slug: ${{ inputs.publish && 'release-signing' || 'test-signing' }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1800        # 正式签名要在 SignPath 网页上批准
+          output-artifact-directory: build/signed
+
+      - name: Use the signed ALTRun.exe
+        if: env.SIGNPATH_API_TOKEN != ''
+        shell: pwsh
+        run: |
+          Copy-Item build/signed/ALTRun.exe build/ALTRun/ALTRun.exe -Force
+          $sig = Get-AuthenticodeSignature build/ALTRun/ALTRun.exe
+          Write-Host "Signature: $($sig.Status) - $($sig.SignerCertificate.Subject)"
+          if ("${{ inputs.publish }}" -eq "true" -and $sig.Status -ne 'Valid') { throw "ALTRun.exe is not signed with a trusted certificate" }
 
       # exe 的图标要是 Resources\ALTRun.ico (;@Ahk2Exe-SetMainIcon), 而不是 AutoHotkey 默认的绿色 H
       - name: Check program icon

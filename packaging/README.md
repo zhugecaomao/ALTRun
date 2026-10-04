@@ -13,6 +13,28 @@ Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 
 `WINGET_TOKEN`: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), 勾选 `public_repo`; 然后在本仓库 Settings → Secrets and variables → Actions 里新建 `WINGET_TOKEN`。没有设置时跳过这一步, 也可以每次手动运行 `wingetcreate update` (见下文)。
 
+## 代码签名 (SignPath)
+ALTRun.exe 没有签名时, Windows SmartScreen 会提示 "无法识别的应用 / 未知发布者", 部分杀毒软件也更容易误报。
+[SignPath Foundation](https://signpath.org/) 免费为开源项目提供代码签名证书, Release 工作流已经准备好, 设置后自动签名:
+
+1. 在 https://signpath.org/apply 申请 (要求: 开源许可、项目在维护、源码和构建都在 GitHub 上)。申请前在 README 里加上下面的 "代码签名策略" 一节
+2. 通过后在 SignPath 里建项目 `ALTRun`, 签名策略 `test-signing` 和 `release-signing`, 产物配置选 "单个 PE 文件" (ALTRun.exe), 可信构建系统选 GitHub.com 并关联本仓库
+3. 本仓库 Settings → Secrets and variables → Actions:
+   - Secrets 新建 `SIGNPATH_API_TOKEN` (SignPath 里给 CI 用户生成的 API token)
+   - Variables 新建 `SIGNPATH_ORGANIZATION_ID`
+4. 之后运行 Release 时, 编译出的 ALTRun.exe 会先送到 SignPath 签名, 再做升级测试和打包。`publish = true` 用正式证书, 需要在 SignPath 网页上批准 (30 分钟内)
+
+README 里要加的代码签名策略 (SignPath Foundation 的要求):
+
+```markdown
+## 代码签名策略 / Code signing policy
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+- Committers and reviewers: [zhugecaomao](https://github.com/zhugecaomao)
+- Approvers: [zhugecaomao](https://github.com/zhugecaomao)
+
+隐私: ALTRun 不收集任何数据, 见 [SECURITY.md](SECURITY.md#隐私说明)。This program will not transfer any information to other networked systems unless specifically requested by the user (update checks and exchange rates, see SECURITY.md).
+```
+
 ## 第一次提交到 winget
 winget-pkgs 里还没有 ALTRun 时, 自动更新不起作用, 需要先手动提交一次 (在 Windows 上):
 
