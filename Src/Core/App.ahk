@@ -48,7 +48,7 @@ class App {
         Logger.Time("startup: learning, usage, theme", phase)
 
         for provider in [ClipboardProvider, ApplicationProvider, CustomCommandProvider, SnippetProvider, SystemProvider
-                        , CalculatorProvider, WebSearchProvider, BookmarkProvider, FileSearchProvider, TerminalProvider, HelpProvider]
+                        , CalculatorProvider, WebSearchProvider, BookmarkProvider, WindowProvider, ScriptProvider, FileSearchProvider, TerminalProvider, HelpProvider, RecentProvider]
             ProviderRegistry.Register(provider)
         ProviderRegistry.InitAll()
 

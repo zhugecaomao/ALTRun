@@ -51,6 +51,9 @@
 #Include %A_ScriptDir%\..\Src\Providers\BookmarkProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\FileSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\TerminalProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\WindowProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\RecentProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\ScriptProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\HelpProvider.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
@@ -73,9 +76,15 @@ TestRunner.Run()
 class TestRunner {
     static Passed := 0, Failed := 0
 
+    ; 8.3 短路径 (C:\Users\RUNNER~1\...) -> 长路径, 和 Loop Files 列出的路径一样
+    static LongPath(shortPath) {
+        buf := Buffer(32767 * 2)
+        return DllCall("GetLongPathNameW", "WStr", shortPath, "Ptr", buf, "UInt", 32767, "UInt") ? StrGet(buf) : shortPath
+    }
+
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -514,6 +523,13 @@ class Tests {
         eq("disabled", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x", "AutoExpand", 0), ";"), "")
         eq("space", SnippetExpander.Abbreviation(Map("Keyword", "a b", "Text", "x"), ";"), "")
         eq("no prefix", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x"), ""), "sig")
+        options := AppSettings.Feature("Snippets"), saved := options["ExpandExclude"]
+        options["ExpandExclude"] := " ahk_exe mstsc.exe ,, ahk_class KeePass "
+        SnippetExpander.Refresh()
+        eq("exclude list", SnippetExpander._exclude.Length "|" SnippetExpander._exclude[2], "2|ahk_class KeePass")
+        eq("default exclude", AppSettings.Defaults()["Features"]["Snippets"]["ExpandExclude"] != "", true)
+        options["ExpandExclude"] := saved
+        SnippetExpander.Refresh()
     }
 
     static Preferences() {
@@ -1200,7 +1216,31 @@ class Tests {
         eq("extension not searched", titles("pdf"), "")
         eq("command target not searched", titles("cmd"), "")
         eq("drive root not a name", titles("q:"), "")
+
+        ; {query}: "关键字 文字" 换掉目标 / 参数里的 {query} (网址里编码), 只显示这条
+        AppSettings.Data["CustomCommands"].Push(
+            Map("Title", "Jira", "Type", "Url", "Target", "https://jira.example.com/browse/{query}", "Arguments", "", "Keyword", "jira"),
+            Map("Title", "Ping Host", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping"),
+            Map("Title", "Notes Folder", "Type", "Folder", "Target", "D:\Notes\{query}", "Arguments", "", "Keyword", ""))
+        CustomCommandProvider._ResetNarrowing()
+        items := CustomCommandProvider.Search(SearchQuery("jira ABC 12"))
+        eq("query: only that command", items.Length, 1)
+        eq("query: url encoded", items[1].Title "|" items[1].Arg "|" items[1].Exclusive, "Jira: ABC 12|https://jira.example.com/browse/ABC%2012|1")
+        items := CustomCommandProvider.Search(SearchQuery("ping 10.0.0.1"))
+        eq("query: arguments", items[1].Arg "|" items[1].Arguments, "cmd.exe|/k ping 10.0.0.1")
+        items := CustomCommandProvider.Search(SearchQuery("ping 10.0.0.12"))   ; 继续输入: 不用上一次的结果缩小范围
+        eq("query: keep typing", items.Length "|" items[1].Arguments, "1|/k ping 10.0.0.12")
+        item := ""
+        for found in CustomCommandProvider.Search(SearchQuery("jir"))
+            if (found.Title = "Jira")
+                item := found
+        eq("query: not typed yet -> complete keyword", IsObject(item) ? item.Valid "|" item.AutoComplete : "none", "0|jira ")
+        for found in CustomCommandProvider.Search(SearchQuery("notes"))
+            item := found
+        eq("query: no keyword -> empty", item.Valid "|" item.Arg, "1|D:\Notes\")
+        eq("query: path not checked", CustomCommandProvider.CheckTarget(AppSettings.Data["CustomCommands"][7]), "Skipped")
         AppSettings.Data["CustomCommands"] := saved
+        CustomCommandProvider._ResetNarrowing()
     }
 
     ; 所有 Edit 控件都要写明行数 (r1 / r8 ...): 不写时长文字会让 AHK 自动变成多行并加高, 盖住下面的控件
@@ -1628,7 +1668,7 @@ class Tests {
         Loop Files, A_ScriptDir "\..\Src\*.ahk", "R"
             if (A_LoopFileName != "I18n.ahk")
                 source .= FileRead(A_LoopFileFullPath, "UTF-8")
-        dynamic := ["Help.", "Theme.", "Usage.F.", "Usage.Col.", "Prefs.Feature.", "Prefs.Status.", "Prefs.TypeShort.", "Cmd.Field."]
+        dynamic := ["Help.", "Theme.", "Setting.", "Usage.F.", "Usage.Col.", "Prefs.Feature.", "Prefs.Status.", "Prefs.TypeShort.", "Cmd.Field."]
         unused := ""
         for key in I18n.Strings {
             if (InStr(source, '"' key '"', true) || SubStr(key, -5) = ".Desc")
@@ -1655,6 +1695,311 @@ class Tests {
         TestRunner.Equal("ChangelogLinks.missing", missing, "")
         TestRunner.True("ChangelogLinks.unreleased compares " newest, InStr(text, "[未发布]: https://github.com/zhugecaomao/ALTRun/compare/" newest "...HEAD"))
         TestRunner.True("ChangelogLinks.newest is App.Version", newest = App.Version)
+    }
+
+    ; 数据文件夹: DataLocation.txt 指定的文件夹 (环境变量、相对路径), 空文件 = 默认位置; 写 / 恢复默认
+    static DataLocation() {
+        eq := (n, a, e) => TestRunner.Equal("DataLocation." n, a, e)
+        eq("full: absolute", Path.Full("C:\Sync\ALTRun\"), "C:\Sync\ALTRun")
+        eq("full: env", Path.Full("%SystemRoot%\Temp"), A_WinDir "\Temp")
+        eq("full: relative", Path.Full("..\Shared\Data", "C:\Apps\ALTRun"), "C:\Apps\Shared\Data")
+        eq("full: builtin", Path.Full("A_AppData\ALTRun"), A_AppData "\ALTRun")
+        root := A_Temp "\ALTRun-location-test"
+        try DirDelete(root, true)
+        DirCreate(root "\app"), DirCreate(root "\user")
+        dirs := [root "\app", root "\user"]
+        eq("no file", AppSettings.CustomDataDir(dirs), "")
+        FileAppend("", root "\app\DataLocation.txt")
+        eq("empty file", AppSettings.CustomDataDir(dirs), "")
+        FileAppend("  D:\OneDrive\ALTRun\  `r`n", root "\user\DataLocation.txt", "UTF-8")
+        eq("user folder", AppSettings.CustomDataDir(dirs), "D:\OneDrive\ALTRun")
+        FileOpen(root "\app\DataLocation.txt", "w").Write("..\Shared")
+        eq("program folder first, relative", AppSettings.CustomDataDir(dirs), Path.Full(A_ScriptDir "\..\Shared"))
+
+        saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir}
+        AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; 不能写程序目录时写在 %APPDATA%\ALTRun
+        AppSettings.SetDataLocation("E:\Sync\ALTRun")
+        eq("set", FileRead(root "\user\DataLocation.txt", "UTF-8"), "E:\Sync\ALTRun")
+        AppSettings.SetDataLocation("")
+        eq("reset keeps an empty file", FileExist(root "\user\DataLocation.txt") ? FileRead(root "\user\DataLocation.txt") : "missing", "")
+        AppSettings.SetDataLocation(AppSettings.DefaultDataDir())
+        eq("default location = reset", FileRead(root "\user\DataLocation.txt"), "")
+        eq("default when not portable", AppSettings.DefaultDataDir(), root "\user\Data")
+        AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
+        eq("default when portable", AppSettings.DefaultDataDir(), A_ScriptDir "\Data")
+        DirDelete(root, true)
+    }
+
+    ; Windows 设置的页面: 按名称 (和英文名称) 搜到, 可以整组关掉
+    static SettingsPages() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsPages." n, a, e)
+        find(text) {
+            for item in SystemProvider.Search(SearchQuery(text))
+                if (item.Source["Id"] = "SetBluetooth")
+                    return item
+            return ""
+        }
+        item := find("bluetooth")
+        eq("found", IsObject(item) ? item.Title "|" item.Subtitle : "", "Bluetooth & devices|Windows Settings")
+        pages := 0
+        for command in SystemProvider.Commands()
+            if command.Has("IsSetting")
+                pages += 1
+        TestRunner.True("SettingsPages.count " pages, pages >= 40)
+        options := AppSettings.Feature("System")
+        options["SettingsPages"] := 0
+        eq("turned off", IsObject(find("bluetooth")), false)
+        options["SettingsPages"] := 1
+        eq("default on", AppSettings.Defaults()["Features"]["System"]["SettingsPages"], 1)
+    }
+
+    ; 切换窗口: 另开一个进程显示一个窗口, "w 标题" 找到它, 关闭; 自己的窗口不列出
+    static WindowSwitch() {
+        eq := (n, a, e) => TestRunner.Equal("WindowSwitch." n, a, e)
+        script := A_Temp "\ALTRun-window-test.ahk", title := "ALTRun Window Test " A_TickCount
+        try FileDelete(script)
+        FileAppend('#NoTrayIcon`ng := Gui(, "' title '")`ng.OnEvent("Close", (*) => ExitApp())`ng.Show("w300 h120")`nSetTimer(() => ExitApp(), -20000)', script, "UTF-8")
+        Run('"' A_AhkPath '" "' script '"', , , &pid)
+        found := WinWait(title, , 10)
+        eq("test window shown", found != 0, true)
+        WindowProvider._listTime := 0
+        items := WindowProvider.Search(SearchQuery("w " SubStr(title, 1, 18)))
+        item := ""
+        for candidate in items
+            if (candidate.Title = title)
+                item := candidate
+        eq("found by keyword", IsObject(item) ? item.Exclusive "|" InStr(item.Subtitle, "AutoHotkey") : "missing", "1|1")
+        all := WindowProvider.Search(SearchQuery("w "))
+        own := false
+        for candidate in all
+            if (candidate.Title = title)
+                own := true
+        eq("listed with empty keyword", own, true)
+        test := Gui(, "ALTRun own window " A_TickCount)
+        test.Show("w200 h80")
+        WindowProvider._listTime := 0
+        mine := false
+        for window in WindowProvider.List()
+            if (window.Hwnd = test.Hwnd)
+                mine := true
+        eq("own windows not listed", mine, false)
+        test.Destroy()
+        if IsObject(item) {
+            item.Actions[1].OnRun.Call()                                     ; 操作面板里的 "关闭窗口"
+            eq("closed", WinWaitClose(title, , 5), 1)
+        }
+        try ProcessClose(pid)
+        try FileDelete(script)
+        AppSettings.Feature("Windows")["InDefaultResults"] := 0
+        eq("default results off", WindowProvider.Search(SearchQuery("ALTRun Window")).Length, 0)
+        AppSettings.Feature("Windows")["InDefaultResults"] := 1
+    }
+
+    ; 空搜索框: 置顶在前, 然后最近打开的 (去重、限制个数); 只记能重新打开的结果
+    static RecentItems() {
+        eq := (n, a, e) => TestRunner.Equal("RecentItems." n, a, e)
+        saved := {Recent: Knowledge.Recent, File: Knowledge.File, SettingsFile: AppSettings.File}
+        options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedCount := options["RecentCount"]
+        Knowledge.Recent := [], Knowledge.File := A_Temp "\ALTRun-recent-test.json", AppSettings.File := A_Temp "\ALTRun-recent-settings.json"
+        options["Pinned"] := [], options["RecentCount"] := 2
+        fileItem := (name) => ResultItem(name, "C:\Docs\" name, {Kind: "file", Arg: "C:\Docs\" name, Uid: "file:" name, Provider: "FileSearch", Icon: "C:\Docs\" name})
+        RecentProvider.Remember(fileItem("a.txt"))
+        RecentProvider.Remember(fileItem("b.txt"))
+        RecentProvider.Remember(fileItem("c.txt"))
+        RecentProvider.Remember(fileItem("a.txt"))                               ; 再打开一次: 移到最前面, 不重复
+        clip := ResultItem("secret", "", {Kind: "text", Arg: "secret", Uid: "clip:1", Provider: "Clipboard"})
+        RecentProvider.Remember(clip)                                        ; 剪贴板历史不记
+        sys := ResultItem("Lock", "", {Uid: "system:Lock", Provider: "System", OnRun: (*) => 0})
+        RecentProvider.Remember(sys)
+        eq("order", Knowledge.Recent.Length "|" Knowledge.Recent[1]["Uid"] "|" Knowledge.Recent[2]["Uid"] "|" Knowledge.Recent[3]["Uid"], "4|system:Lock|file:a.txt|file:c.txt")
+        titles(items) {
+            list := ""
+            for item in items
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("empty box: recent count", titles(RecentProvider.EmptyResults()), I18n.T("Sys.Lock") "|a.txt")
+        options["Pinned"].Push(RecentProvider.Snapshot(fileItem("c.txt")))
+        items := RecentProvider.EmptyResults()
+        eq("pinned first", titles(items), "c.txt|" I18n.T("Sys.Lock") "|a.txt")
+        eq("pinned flag", items[1].Pinned "|" items[2].Pinned "|" items[1].Provider, "1|0|Recent")
+        eq("is pinned", RecentProvider.IsPinned(fileItem("c.txt")) "|" RecentProvider.IsPinned(fileItem("b.txt")), "1|0")
+        eq("can pin", RecentProvider.CanPin(fileItem("b.txt")) "|" RecentProvider.CanPin(clip), "1|0")
+        actions := ""
+        for action in ActionCatalog.ListFor(items[2])
+            actions .= action.Title "|"
+        eq("pin action", InStr(actions, I18n.T("Action.Pin")) > 0, true)
+        RecentProvider.DeleteItem(items[3])                                  ; Ctrl+Del: 从最近使用里去掉
+        eq("forget", titles(RecentProvider.EmptyResults()), "c.txt|" I18n.T("Sys.Lock") "|b.txt")
+        RecentProvider.DeleteItem(items[1])                                  ; 置顶的: 取消置顶
+        eq("unpin", options["Pinned"].Length, 0)
+        options["RecentCount"] := 0
+        eq("count 0", RecentProvider.EmptyResults().Length, 0)
+        Knowledge.Recent := saved.Recent, Knowledge.File := saved.File, AppSettings.File := saved.SettingsFile
+        options["Pinned"] := savedPinned, options["RecentCount"] := savedCount
+        try FileDelete(A_Temp "\ALTRun-recent-test.json")
+        try FileDelete(A_Temp "\ALTRun-recent-settings.json")
+    }
+
+    ; 剪贴板置顶: 排在最前面, 超过条数不删, 再复制仍然置顶, 清空时保留, 保存后还在
+    static ClipboardPin() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardPin." n, a, e)
+        root := A_Temp "\ALTRun-clip-pin-test"
+        try DirDelete(root, true)
+        DirCreate(root)
+        saved := [ClipboardProvider.File, ClipboardProvider.Folder, ClipboardProvider.Entries]
+        options := AppSettings.Feature("Clipboard"), savedMax := options["MaxItems"], savedPersist := options["Persist"]
+        ClipboardProvider.File := root "\ClipboardHistory.json", ClipboardProvider.Folder := root "\Clipboard", ClipboardProvider.Entries := []
+        options["MaxItems"] := 3, options["Persist"] := 1
+        ClipboardProvider.Add("one"), ClipboardProvider.Add("two")
+        ClipboardProvider.Entries[2]["Pinned"] := 1                          ; "one" 置顶
+        ClipboardProvider.Add("three"), ClipboardProvider.Add("four"), ClipboardProvider.Add("five")
+        texts() {
+            list := ""
+            for item in ClipboardProvider.Search(SearchQuery("clip "))
+                if (item.Kind = "text")
+                    list .= item.Arg "|"
+            return RTrim(list, "|")
+        }
+        eq("pinned first, kept when trimming", texts(), "one|five|four")
+        items := ClipboardProvider.Search(SearchQuery("clip one"))
+        eq("pinned tag", InStr(items[1].Subtitle, I18n.T("Clipboard.PinnedTag")) = 1, true)
+        actions := ""
+        for action in items[1].Actions
+            actions .= action.Title "|"
+        eq("unpin action", InStr(actions, I18n.T("Clipboard.Unpin")) > 0, true)
+        ClipboardProvider.Add("one")                                         ; 再复制一次: 还是置顶
+        eq("copy again keeps pin", ClipboardProvider.IsPinned(ClipboardProvider.Entries[1]), true)
+        ClipboardProvider.Save()
+        ClipboardProvider.Entries := [], ClipboardProvider._Load()
+        eq("saved", texts(), "one|five|four")
+        ClipboardProvider.Clear()
+        eq("clear keeps pinned", texts(), "one")
+        ClipboardProvider.Entries[1].Delete("Pinned"), ClipboardProvider.Clear()
+        eq("unpinned cleared", ClipboardProvider.Entries.Length, 0)
+        ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2], ClipboardProvider.Entries := saved[3]
+        options["MaxItems"] := savedMax, options["Persist"] := savedPersist
+        try DirDelete(root, true)
+    }
+
+    ; 输入路径浏览文件夹: 文件夹在前, 最后一段过滤, 隐藏文件不列出, Tab 进入下一级; Insert 标记多个一起操作
+    static FolderBrowse() {
+        eq := (n, a, e) => TestRunner.Equal("FolderBrowse." n, a, e)
+        root := A_Temp "\ALTRun-browse-test"
+        try DirDelete(root, true)
+        DirCreate(root "\Reports"), DirCreate(root "\Archive")
+        root := TestRunner.LongPath(root)                                   ; %Temp% 可能是 8.3 短路径 (C:\Users\RUNNER~1), 列出的文件是长路径
+        FileAppend("x", root "\readme.txt"), FileAppend("x", root "\report 2026.docx"), FileAppend("x", root "\secret.txt")
+        FileSetAttrib("+H", root "\secret.txt")
+        browse := FileSearchProvider.BrowsePath(root "\rep")
+        eq("parse", IsObject(browse) ? browse.Dir "|" browse.Filter : "", root "\|rep")
+        eq("not a path", FileSearchProvider.BrowsePath("report"), "")
+        eq("drive only", FileSearchProvider.BrowsePath("C:"), "")
+        eq("missing folder", FileSearchProvider.BrowsePath(root "\Nope\x"), "")
+        home := FileSearchProvider.BrowsePath("~")
+        eq("home", IsObject(home) ? home.Dir : "", EnvGet("UserProfile") "\")
+        titles(text) {
+            list := ""
+            for item in FileSearchProvider.Search(SearchQuery(text))
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("all, folders first, no hidden", titles(root "\"), "Archive|Reports|readme.txt|report 2026.docx")
+        eq("filter", titles(root "\rep"), "Reports|report 2026.docx")
+        items := FileSearchProvider.Search(SearchQuery(root "\Rep"))
+        eq("folder tab completes", items[1].AutoComplete "|" items[1].Exclusive "|" items[1].Kind, root "\Reports\|1|folder")
+        eq("file", items[2].Kind "|" items[2].Arg, "file|" root "\report 2026.docx")
+        eq("empty", titles(root "\Reports\"), I18n.T("Files.EmptyFolder"))
+        eq("file mode", FileSearchProvider.SearchFiles(root "\arc")[1].Title, "Archive")
+
+        SearchWindow.Marked := Map(StrLower(items[2].Arg), items[2].Arg)
+        eq("marked", SearchWindow.IsMarked(items[2]) "|" SearchWindow.IsMarked(items[1]), "1|0")
+        SearchWindow.Marked := Map()
+        actions := ""
+        for action in ActionCatalog.ListForMany([root "\readme.txt", root "\Archive"])
+            actions .= action.Title "|"
+        eq("many: open all", InStr(actions, I18n.T("Action.OpenAll", 2)) = 1, true)
+        eq("many: copy, recycle", InStr(actions, I18n.T("Action.CopyFiles", 2)) && InStr(actions, I18n.T("Action.RecycleAll", 2)) ? 1 : 0, 1)
+        FileSetAttrib("-H", root "\secret.txt")
+        DirDelete(root, true)
+    }
+
+    ; 计算器: 进制换算和日期加减
+    static CalcBasesDates() {
+        eq := (n, a, e) => TestRunner.Equal("CalcBasesDates." n, a, e)
+        first(text) {
+            items := CalculatorProvider.Search(SearchQuery(text))
+            return items.Length ? items[1].Title : ""
+        }
+        eq("hex in", first("255 in hex"), "FF")
+        eq("to dec", first("0xff to dec"), "255")
+        eq("bin", first("10 in bin"), "1010")
+        eq("oct", first("0o17 in dec"), "15")
+        items := CalculatorProvider.Search(SearchQuery("0b1010"))
+        eq("prefixed alone: three forms", items.Length "|" items[1].Title "|" items[2].Title "|" items[3].Title, "3|10|0xA|0b1010")
+        eq("plain number not a base", first("255"), "")
+        eq("zero", CalculatorProvider.ToBase(0, 16), "0")
+        eq("big", CalculatorProvider.ParseInteger("0xFFFFFFFF"), 4294967295)
+        eq("too big", CalculatorProvider.ParseInteger("0x" "FFFFFFFFFFFFFFFFFF"), "")
+
+        date := (text) => (items := CalculatorProvider._Dates(text, "20261004")).Length ? SubStr(items[1].Title, 1, 10) : ""
+        eq("today + days", date("today + 30 days"), "2026-11-03")
+        eq("today - weeks", date("today - 2w"), "2026-09-20")
+        eq("chinese units", date("今天 + 1 年"), "2027-10-04")
+        eq("months clamp", date("2026-01-31 + 1 month"), "2026-02-28")
+        eq("leap year", date("2028-01-31 + 1m"), "2028-02-29")
+        eq("months back across year", date("2026-02-15 - 3 months"), "2025-11-15")
+        eq("date difference", CalculatorProvider._Dates("2026-12-25 - today", "20261004")[1].Title, I18n.T("Calc.Days", 82))
+        eq("invalid date", date("2026-02-30 + 1d"), "")
+        eq("normal math still works", first("12*(3+4)"), "84")
+    }
+
+    ; 脚本扩展: 读开头注释里的 @altrun.xxx, 按名称 / 关键字搜到, 带参数, 命令行, 后台运行的输出
+    static Scripts() {
+        eq := (n, a, e) => TestRunner.Equal("Scripts." n, a, e)
+        root := A_Temp "\ALTRun-scripts-test"
+        try DirDelete(root, true)
+        DirCreate(root)
+        root := TestRunner.LongPath(root)
+        FileAppend("; @altrun.title Restart Explorer`n; @altrun.keyword rex`n; @altrun.mode silent`nProcessClose(`"explorer.exe`")`n", root "\restart.ahk", "UTF-8")
+        FileAppend("# @altrun.title  Ping Host`n# @altrun.keyword ping`n# @altrun.argument Host name or IP`n# @altrun.mode output`nping $args[0]`n", root "\ping.ps1", "UTF-8")
+        FileAppend("@echo off`nREM @altrun.title Clean Temp`necho done`n", root "\clean.bat", "UTF-8")
+        FileAppend("not a script", root "\notes.txt")
+        saved := [ScriptProvider.Folder, ScriptProvider.Scripts]
+        ScriptProvider.Folder := root
+        ScriptProvider.Load()
+        eq("loaded", ScriptProvider.Scripts.Length, 3)
+        byTitle := Map()
+        for script in ScriptProvider.Scripts
+            byTitle[script.Title] := script
+        eq("meta", byTitle["Ping Host"].Keyword "|" byTitle["Ping Host"].Argument "|" byTitle["Ping Host"].Mode, "ping|Host name or IP|output")
+        eq("bat comment, default mode", byTitle["Clean Temp"].Mode, "window")
+        titles(text) {
+            list := ""
+            for item in ProviderRegistry.SortByScore(ScriptProvider.Search(SearchQuery(text)))
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("by title", titles("restart"), "Restart Explorer")
+        eq("by keyword", titles("rex"), "Restart Explorer")
+        items := ScriptProvider.Search(SearchQuery("ping 10.0.0.1"))
+        eq("argument", items.Length "|" items[1].Title "|" items[1].Exclusive, "1|Ping Host: 10.0.0.1|1")
+        item := ""
+        for found in ScriptProvider.Search(SearchQuery("pin"))
+            if (found.Source.Title = "Ping Host")
+                item := found
+        eq("needs argument: complete keyword", item.Valid "|" item.AutoComplete, "0|ping ")
+        eq("ps1 command", ScriptProvider.CommandLine(byTitle["Ping Host"], "a b"), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "a b"')
+        eq("bat command", ScriptProvider.CommandLine(byTitle["Clean Temp"]), A_ComSpec ' /c ""' root '\clean.bat""')
+        FileAppend("line one`r`n`r`nlast line  `r`n", root "\out.txt")
+        eq("silent: last line", ScriptProvider._Finished(byTitle["Restart Explorer"], root "\out.txt"), "last line")
+        FileAppend("", root "\empty.txt")
+        eq("silent: no output", ScriptProvider._Finished(byTitle["Restart Explorer"], root "\empty.txt"), I18n.T("Script.Done", "Restart Explorer"))
+        FileAppend("; @altrun.title New One`n", root "\new.ahk", "UTF-8")
+        ScriptProvider._checked := 0                                         ; 文件夹变了: 下一次搜索时重新读
+        eq("refresh", titles("new one"), "New One")
+        ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2]
+        DirDelete(root, true)
     }
 
     static WindowPosition() {
@@ -2070,6 +2415,13 @@ Func | PTTools | PT Tools (AHK)=99
         write(root "\abc.txt", "abc")
         eq("sha256 file", UpdateChecker.Sha256File(root "\abc.txt"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
         ok("writable", UpdateChecker.IsWritable(root))
+        tar := A_WinDir "\System32\tar.exe"                                ; 解压 (Windows 10 起自带 tar.exe; Wine 里没有就跳过)
+        if FileExist(tar) {
+            write(root "\pkg\ALTRun.exe", "exe"), write(root "\pkg\Resources\Lang\zh-CN.json", "{}")
+            RunWait('"' tar '" -a -cf "' root '\pkg.zip" -C "' root '\pkg" ALTRun.exe Resources', , "Hide")
+            UpdateChecker.Extract(root "\pkg.zip", root "\out")
+            eq("extract", read(root "\out\ALTRun.exe") "|" read(root "\out\Resources\Lang\zh-CN.json"), "exe|{}")
+        }
 
         write(src "\ALTRun.exe", "new exe")
         write(src "\Resources\Kanji.txt", "new kanji")

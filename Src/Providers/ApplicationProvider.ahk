@@ -19,7 +19,7 @@
 
 class ApplicationProvider {
     static Id        := "Applications"
-    static IndexFile := A_ScriptDir "\Data\AppIndex.json"
+    static IndexFile := AppSettings.DataDir "\AppIndex.json"
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := ""
     static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []

@@ -13,7 +13,7 @@ ALTRun 是绿色软件, 不需要安装, 不写注册表。
 2. 运行后托盘出现 ALTRun 图标, 按 `Alt+Space` 呼出搜索窗口
 3. 第一次运行会在后台建立应用索引, 几秒后就能搜到开始菜单里的程序
 
-不要放在需要管理员权限才能写入的文件夹 (例如 `C:\Program Files`), ALTRun 需要在自己的目录里保存设置。
+建议放在自己能写入的文件夹里 (例如 `D:\Apps\ALTRun`), 设置和数据保存在程序目录的 `Data\` 里, 整个文件夹可以直接带走。放在需要管理员权限才能写入的文件夹 (例如 `C:\Program Files`) 时, 设置和数据改为保存在 `%APPDATA%\ALTRun\`, 但一键更新不能替换程序文件, 要手动下载新版本。
 
 ### 用 Scoop 安装
 [Scoop](https://scoop.sh/) 是 Windows 的命令行软件管理工具。ALTRun 的仓库本身就是一个 Scoop bucket:
@@ -37,6 +37,7 @@ winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
 ```
 
 - 程序在 `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`, 命令行里可以直接输入 `altrun` 启动
+- 升级和卸载只删除 zip 里原有的文件, 设置和数据 (`Data\`、`Themes\`) 会保留; `winget uninstall --purge` 才会连同它们一起删除
 - winget 本身不创建开始菜单快捷方式: 第一次用 `altrun` 启动后, ALTRun 会自己添加到开始菜单 (偏好设置 → 通用 → "添加到开始菜单")
 - 卸载前先在 偏好设置 → 通用 里关闭 "开机自动启动"、"添加到开始菜单"、"添加到 '发送到' 菜单", 否则这些快捷方式会留下
 - 第一次运行时 Windows 可能提示 "无法验证发布者" (程序是从网上下载的), 选择 "运行" 即可

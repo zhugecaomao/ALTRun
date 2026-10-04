@@ -132,6 +132,32 @@ TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上),
 
 **货币换算** (`100 usd to sgd`、`100 美元 to 人民币`) 默认关闭: 在 偏好设置 → 功能 勾选 "计算器: 货币换算" (`Features.Calculator.Currency`)。打开后每天从 [Frankfurter](https://frankfurter.dev) 下载一次欧洲央行等央行公布的参考汇率 (免费, 不需要注册), 保存在 `Data\Currency.json`; 这是 ALTRun 除 GitHub 之外唯一会访问的网站。结果里会显示汇率的日期。
 
+## 脚本扩展
+把自己的脚本放进 `Scripts\` 文件夹 (程序目录里; 搜索 "打开脚本文件夹" 直接打开, 第一次打开时会建一个示例), 就能在搜索窗口里按名称或关键字找到并运行, 和 Raycast 的 Script Commands 一样。支持 `.ahk` (用 ALTRun 自带的 AutoHotkey 运行, 不用另外安装)、`.ps1`、`.bat` / `.cmd`、`.py` (需要装 Python)。
+
+脚本开头的注释里可以写这些设置 (注释符 `;` `#` `REM` `::` `//` 都行, 都可以不写):
+
+| 设置 | 说明 |
+|---|---|
+| `@altrun.title 名称` | 显示的名称, 默认用文件名 |
+| `@altrun.keyword 关键字` | 输入完全相同时排在最前面 |
+| `@altrun.argument 提示` | 需要参数: 输入 "关键字 文字", 文字作为第一个参数传给脚本; 只搜到名称时 `Enter` 补全成 "关键字 " |
+| `@altrun.mode window` | 默认: 正常运行 (有窗口) |
+| `@altrun.mode silent` | 在后台运行, 结束后把输出的最后一行显示成通知 |
+| `@altrun.mode output` | 在后台运行, 结束后用记事本打开全部输出 |
+
+例子 (`Scripts\Ping.ps1`):
+```powershell
+# @altrun.title    Ping
+# @altrun.keyword  ping
+# @altrun.argument 主机名或 IP
+# @altrun.mode     output
+ping $args[0]
+```
+输入 `ping 10.0.0.1` 后 `Enter`, 结果用记事本显示。
+
+`.ahk` 脚本里用 `FileAppend("文字", "*")` 输出。增删、修改脚本后马上生效, 不用重新载入; 选中脚本按 `F3` 用记事本编辑。后台运行的脚本最多等 2 分钟。
+
 ## PT 工具箱
 预应力设计用的小工具, 输入 `PTTools` / `SPF2M` 或用自定义热键打开:
 - **PT Tools**: 钢筋 / BRC 面积计算器, 以及算式计算

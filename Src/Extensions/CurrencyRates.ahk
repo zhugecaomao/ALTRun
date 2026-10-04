@@ -14,7 +14,7 @@
 
 class CurrencyRates {
     static Url   := "https://api.frankfurter.dev/v1/latest?base=EUR"
-    static File  := A_ScriptDir "\Data\Currency.json"
+    static File  := AppSettings.DataDir "\Currency.json"
     static Date  := "", Fetched := ""
     static StaleHours := 12
     static _timer := ""

@@ -6,6 +6,9 @@
 ;     "Target": "路径 / 程序 / 网址", "Arguments": "命令行参数", "Keyword": "可选关键字" }
 ; Target 可以用 A_Desktop / A_ScriptDir 等内置变量开头, 或 %AppData% 等环境变量。
 ; Keyword 完全相同时排在最前面。
+; Target / Arguments 里可以写 {query}: 输入 "关键字 文字" 时换成后面的文字 (网址里自动编码), 例如
+;   { "Title": "Jira", "Type": "Url", "Target": "https://jira.example.com/browse/{query}", "Keyword": "jira" }
+;   输入 "jira ABC-123" 打开 .../browse/ABC-123; 搜到这条命令但还没输入文字时, Enter 补全成 "jira "
 ; 搜索范围: 名称、关键字、名称的拼音首字母; File / Folder 类型还包括目标的文件名
 ; (不含扩展名) 或文件夹名, 例如 Target "D:\Projects\2026 - Annual Report" 输入 "annual" 也能找到。
 ; 同样的匹配程度, 名称匹配排在文件名 / 文件夹名匹配前面。
@@ -38,11 +41,17 @@ class CustomCommandProvider {
             for index in CustomCommandProvider._lastMatches
                 candidates[index] := commands[index]
         }
-        scores := Map(), ranks := Map(), matches := []
+        scores := Map(), ranks := Map(), matches := [], withQuery := []
         for index, command in candidates {
             if !(command is Map) || !command.Has("Title") || !command.Has("Target")
                 continue
             keyword := command.Has("Keyword") ? command["Keyword"] : ""
+            if (keyword != "" && query.HasRest && query.Keyword = keyword && CustomCommandProvider.TakesQuery(command)) {
+                item := CustomCommandProvider._ToItem(command, 150, query.Rest)  ; "jira ABC-123": 只显示带参数的命令
+                item.Exclusive := true
+                withQuery.Push(item)
+                continue
+            }
             commandType := command.Has("Type") ? command["Type"] : "File"
             score := FuzzyMatcher.BestKey(needle, CustomCommandProvider._KeysFor(command["Title"], keyword))
             targetScore := FuzzyMatcher.BestKey(needle, CustomCommandProvider._TargetKeysFor(commandType, command["Target"]))
@@ -57,6 +66,10 @@ class CustomCommandProvider {
             matches.Push(index)
         }
         CustomCommandProvider._lastNeedle := needle, CustomCommandProvider._lastMatches := matches, CustomCommandProvider._lastList := list
+        if withQuery.Length {
+            CustomCommandProvider._lastNeedle := ""                          ; 参数每次都不同, 不用上一次的匹配缩小范围
+            return withQuery
+        }
         results := []
         for index in FuzzyMatcher.TopIndexes(ranks, ProviderRegistry.MaxResults)
             results.Push(CustomCommandProvider._ToItem(commands[index], scores[index]))
@@ -125,20 +138,39 @@ class CustomCommandProvider {
         return [FuzzyMatcher.Key(name), (pinyinText != name) ? FuzzyMatcher.Key(pinyinText) : ""]
     }
 
-    static _ToItem(command, score) {
+    ; Target / Arguments 里有 {query}
+    static TakesQuery(command) {
+        return InStr(command["Target"], "{query}") || (command.Has("Arguments") && InStr(command["Arguments"], "{query}"))
+    }
+
+    ; term: 输入的参数, 换掉 {query} (网址里编码); 带 {query} 的命令还没有参数时: 有关键字就 Enter 补全 "关键字 ", 没有就换成空
+    static _ToItem(command, score, term := "") {
         target := command["Target"]
         arguments := command.Has("Arguments") ? command["Arguments"] : ""
         commandType := command.Has("Type") ? command["Type"] : "File"
+        keyword := command.Has("Keyword") ? command["Keyword"] : ""
+        title := command["Title"], extra := {}
+        if CustomCommandProvider.TakesQuery(command) {
+            if (term = "" && keyword != "")
+                extra := {Valid: false, AutoComplete: keyword " "}
+            else if (term != "")
+                title .= ": " term, extra := {AutoComplete: keyword " " term}
+            target := StrReplace(target, "{query}", (commandType = "Url") ? Url.Encode(term) : term)
+            arguments := StrReplace(arguments, "{query}", term)
+        }
         switch commandType, false {
             case "Folder": kind := "folder", icon := CustomCommandProvider._FolderIcon(CustomCommandProvider._Resolve(target))
             case "Url"   : kind := "url",    icon := RegExMatch(target, "i)^ms-settings:") ? "res:imageres.dll,-114" : "url:"   ; 系统设置链接用齿轮图标
             default      : kind := "file",   icon := CustomCommandProvider._Resolve(target)
         }
         displayTarget := (kind = "url") ? target : CustomCommandProvider._Resolve(target)
-        return ResultItem(command["Title"], Trim(displayTarget " " arguments), {
+        item := ResultItem(title, Trim(displayTarget " " arguments), {
             Kind: kind, Arg: target, Arguments: arguments, Icon: icon, Score: score, Source: command,
             Uid: CustomCommandProvider._Uid(command)
         })
+        for name, value in extra.OwnProps()
+            item.%name% := value
+        return item
     }
 
     ; 网络位置上的文件夹直接用通用的文件夹图标 (不读网络, 也不会因为名字里带点被当成文件)
@@ -180,6 +212,8 @@ class CustomCommandProvider {
         raw := Trim(command.Has("Target") ? command["Target"] : "", "`" `t")
         if (raw = "")
             return "Missing"
+        if InStr(raw, "{query}")                                            ; 路径里有参数, 要输入后才知道
+            return "Skipped"
         target := Path.Resolve(raw)
         if RegExMatch(target, "i)^([a-z][a-z0-9+.-]+:|::\{)")               ; shell:、ms-settings:、http: 等 (不是 "C:")
             return "Skipped"

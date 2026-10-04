@@ -15,6 +15,8 @@
 ; 图片存成 Data\Clipboard\img-*.png, JSON 里只记文件名。每次复制都会保存, 这样不用每次都
 ; 把很长的文字重新写一遍 (最多 200 条 x 10 万字)。
 ;
+; 置顶 (操作面板里 "置顶"): 条目带 "Pinned": 1, 列在最前面, 超过条数时不删, "清空" 时也保留。
+;
 ; 条目: Map("Text", "Time", "App") 是文字; 另外两种带 "Type":
 ;   "files"  复制的文件: "Files" [路径...], "Text" 是每行一个路径 (用来搜索)
 ;   "image"  图片: "Image" 文件名, "Width" / "Height"
@@ -33,8 +35,8 @@
 
 class ClipboardProvider {
     static Id      := "Clipboard"
-    static File    := A_ScriptDir "\Data\ClipboardHistory.json"
-    static Folder  := A_ScriptDir "\Data\Clipboard"                         ; 很长的条目和图片
+    static File    := AppSettings.DataDir "\ClipboardHistory.json"
+    static Folder  := AppSettings.DataDir "\Clipboard"                         ; 很长的条目和图片
     static LargeText := 4000
     static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
     static Entries := []              ; 最新的在前, 见文件开头的说明
@@ -67,14 +69,16 @@ class ClipboardProvider {
 
         results := []
         tokens := StrSplit(Trim(term), " ")
-        for index, entry in ClipboardProvider.Entries {
-            if !ClipboardProvider._Matches(ClipboardProvider._SearchText(entry), tokens)
-                continue
-            item := ClipboardProvider._ToItem(entry, icon, 300 - results.Length * 0.001)
-            item.Exclusive := exclusive
-            results.Push(item)
-            if (results.Length >= ProviderRegistry.MaxResults - 1)
-                break
+        for pass in [true, false] {                                         ; 置顶的在前, 其它按时间
+            for index, entry in ClipboardProvider.Entries {
+                if (ClipboardProvider.IsPinned(entry) != pass || !ClipboardProvider._Matches(ClipboardProvider._SearchText(entry), tokens))
+                    continue
+                item := ClipboardProvider._ToItem(entry, icon, 300 - results.Length * 0.001)
+                item.Exclusive := exclusive
+                results.Push(item)
+                if (results.Length >= ProviderRegistry.MaxResults - 1)
+                    break 2
+            }
         }
         if (term = "")
             results.Push(ResultItem(I18n.T("Clipboard.Clear"), I18n.T("Clipboard.ClearHint", ClipboardProvider.Entries.Length), {
@@ -92,6 +96,17 @@ class ClipboardProvider {
 
     static TypeOf(entry) => entry.Has("Type") ? entry["Type"] : "text"
 
+    static IsPinned(entry) => (entry.Has("Pinned") && entry["Pinned"]) ? true : false
+
+    static SetPinned(entry, pinned) {
+        if pinned
+            entry["Pinned"] := 1
+        else if entry.Has("Pinned")
+            entry.Delete("Pinned")
+        ClipboardProvider._SaveLater()
+        App.Notify(I18n.T(pinned ? "Clipboard.PinnedDone" : "Clipboard.UnpinnedDone"))
+    }
+
     static _SearchText(entry) {
         if (ClipboardProvider.TypeOf(entry) = "image")                      ; 图片: 按 "图片" / "image" 和尺寸找
             return ClipboardProvider._ImageTitle(entry) " image png"
@@ -101,7 +116,8 @@ class ClipboardProvider {
     static _ToItem(entry, icon, score) {
         when := ClipboardProvider._FormatTime(entry["Time"])
         source := (entry.Has("App") && entry["App"] != "") ? entry["App"] : "?"
-        props := {Score: score, Source: entry, OnRun: (item) => ClipboardProvider.PasteEntry(item.Source)}
+        pinned := ClipboardProvider.IsPinned(entry)
+        props := {Score: score, Source: entry, OnRun: (item) => ClipboardProvider.PasteEntry(item.Source), Actions: []}
         switch ClipboardProvider.TypeOf(entry) {
             case "files":
                 files := entry["Files"]
@@ -113,7 +129,7 @@ class ClipboardProvider {
                     subtitle := I18n.T("Clipboard.FileSubtitle", when, source, filePath)
                 } else {
                     props.Kind := "text", props.Arg := entry["Text"], props.Icon := "folder:"
-                    props.Actions := [ResultItem(I18n.T("Action.AddAllCommands"), "", {Icon: "res:imageres.dll,-2", OnRun: (*) => CustomCommandProvider.AddFromPaths(files)})]
+                    props.Actions.Push(ResultItem(I18n.T("Action.AddAllCommands"), "", {Icon: "res:imageres.dll,-2", OnRun: (*) => CustomCommandProvider.AddFromPaths(files)}))
                     title := ClipboardProvider._Names(files)
                     subtitle := I18n.T("Clipboard.FilesSubtitle", when, source, files.Length)
                 }
@@ -130,6 +146,10 @@ class ClipboardProvider {
                 title := ClipboardProvider._Preview(text)
                 subtitle := I18n.T("Clipboard.Subtitle", when, source, StrLen(text))
         }
+        props.Actions.Push(ResultItem(I18n.T(pinned ? "Clipboard.Unpin" : "Clipboard.Pin"), "", {Icon: "res:imageres.dll,-5303"
+            , OnRun: (*) => ClipboardProvider.SetPinned(entry, !pinned)}))
+        if pinned
+            subtitle := I18n.T("Clipboard.PinnedTag") " · " subtitle
         return ResultItem(title, subtitle, props)
     }
 
@@ -205,8 +225,10 @@ class ClipboardProvider {
         options := AppSettings.Feature("Clipboard")
         if (Trim(text, " `t`r`n") = "" || StrLen(text) > options["MaxItemLength"])
             return false
-        ClipboardProvider._RemoveSame("text", text)
-        ClipboardProvider.Entries.InsertAt(1, Map("Text", text, "Time", A_Now, "App", source))
+        entry := Map("Text", text, "Time", A_Now, "App", source)
+        if IsObject(previous := ClipboardProvider._RemoveSame("text", text)) && ClipboardProvider.IsPinned(previous)
+            entry["Pinned"] := 1                                            ; 再次复制 / 粘贴置顶的条目: 仍然置顶
+        ClipboardProvider.Entries.InsertAt(1, entry)
         ClipboardProvider._Trim()
         ClipboardProvider._SaveLater()
         return true
@@ -218,8 +240,10 @@ class ClipboardProvider {
         joined := ""
         for filePath in files
             joined .= (joined = "" ? "" : "`r`n") filePath
-        ClipboardProvider._RemoveSame("files", joined)
-        ClipboardProvider.Entries.InsertAt(1, Map("Type", "files", "Files", files, "Text", joined, "Time", A_Now, "App", source))
+        entry := Map("Type", "files", "Files", files, "Text", joined, "Time", A_Now, "App", source)
+        if IsObject(previous := ClipboardProvider._RemoveSame("files", joined)) && ClipboardProvider.IsPinned(previous)
+            entry["Pinned"] := 1
+        ClipboardProvider.Entries.InsertAt(1, entry)
         ClipboardProvider._Trim()
         ClipboardProvider._SaveLater()
         return true
@@ -269,8 +293,12 @@ class ClipboardProvider {
         ClipboardProvider._SaveLater()
     }
 
-    static Clear() {
-        ClipboardProvider.Entries := []
+    static Clear() {                                                        ; 置顶的条目保留
+        kept := []
+        for entry in ClipboardProvider.Entries
+            if ClipboardProvider.IsPinned(entry)
+                kept.Push(entry)
+        ClipboardProvider.Entries := kept
         ClipboardProvider._SaveLater()
         App.Notify(I18n.T("Clipboard.Cleared"))
     }
@@ -283,13 +311,13 @@ class ClipboardProvider {
         return ""
     }
 
+    ; 删掉同样内容的条目, 返回删掉的条目 (没有时 "")
     static _RemoveSame(type, text) {
         for index, entry in ClipboardProvider.Entries {
-            if (ClipboardProvider.TypeOf(entry) = type && entry["Text"] == text) {
-                ClipboardProvider.Entries.RemoveAt(index)
-                return
-            }
+            if (ClipboardProvider.TypeOf(entry) = type && entry["Text"] == text)
+                return ClipboardProvider.Entries.RemoveAt(index)
         }
+        return ""
     }
 
     static _MoveToTop(target) {
@@ -304,14 +332,18 @@ class ClipboardProvider {
         ClipboardProvider._SaveLater()
     }
 
-    ; 超过条数时删掉最早的; 图片另有上限 (MaxImages); 删掉的图片文件在保存时清理
+    ; 超过条数时删掉最早的 (置顶的不删); 图片另有上限 (MaxImages); 删掉的图片文件在保存时清理
     static _Trim() {
         options := AppSettings.Feature("Clipboard"), entries := ClipboardProvider.Entries
-        while (entries.Length > options["MaxItems"])
-            entries.Pop()
+        index := entries.Length
+        while (entries.Length > options["MaxItems"] && index >= 1) {
+            if !ClipboardProvider.IsPinned(entries[index])
+                entries.RemoveAt(index)
+            index--
+        }
         images := 0, index := 1
         while (index <= entries.Length) {
-            if (ClipboardProvider.TypeOf(entries[index]) = "image" && ++images > options["MaxImages"]) {
+            if (ClipboardProvider.TypeOf(entries[index]) = "image" && ++images > options["MaxImages"] && !ClipboardProvider.IsPinned(entries[index])) {
                 entries.RemoveAt(index)
                 continue
             }
@@ -477,16 +509,16 @@ class ClipboardProvider {
                 stamp := entry.Has("Time") ? entry["Time"] : A_Now, source := entry.Has("App") ? entry["App"] : ""
                 switch ClipboardProvider.TypeOf(entry) {
                     case "files":
-                        list.Push(Map("Type", "files", "Files", entry["Files"], "Time", stamp, "App", source))
+                        list.Push(ClipboardProvider._WithPin(entry, Map("Type", "files", "Files", entry["Files"], "Time", stamp, "App", source)))
                         continue
                     case "image":
                         keep[StrLower(entry["Image"])] := true
-                        list.Push(Map("Type", "image", "Image", entry["Image"], "Width", entry["Width"], "Height", entry["Height"], "Time", stamp, "App", source))
+                        list.Push(ClipboardProvider._WithPin(entry, Map("Type", "image", "Image", entry["Image"], "Width", entry["Width"], "Height", entry["Height"], "Time", stamp, "App", source)))
                         continue
                 }
                 text := entry["Text"]
                 if (StrLen(text) <= ClipboardProvider.LargeText) {
-                    list.Push(Map("Text", text, "Time", stamp, "App", source))
+                    list.Push(ClipboardProvider._WithPin(entry, Map("Text", text, "Time", stamp, "App", source)))
                     continue
                 }
                 if (!entry.Has("File") || !FileExist(ClipboardProvider.Folder "\" entry["File"])) {   ; 新的长条目: 只写这一次
@@ -495,7 +527,7 @@ class ClipboardProvider {
                     FileAppend(text, ClipboardProvider.Folder "\" entry["File"], "UTF-8")
                 }
                 keep[StrLower(entry["File"])] := true
-                list.Push(Map("File", entry["File"], "Time", stamp, "App", source))
+                list.Push(ClipboardProvider._WithPin(entry, Map("File", entry["File"], "Time", stamp, "App", source)))
             }
             JSON.WriteFile(ClipboardProvider.File, Map("Entries", list))
             Loop Files, ClipboardProvider.Folder "\*.*" {                  ; 删掉已经不在历史里的长条目和图片
@@ -505,6 +537,12 @@ class ClipboardProvider {
         } catch as e {
             Logger.Error("ClipboardProvider: cannot write history - " e.Message)
         }
+    }
+
+    static _WithPin(entry, saved) {
+        if ClipboardProvider.IsPinned(entry)
+            saved["Pinned"] := 1
+        return saved
     }
 
     static _SaveLater() {

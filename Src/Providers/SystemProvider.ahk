@@ -37,8 +37,10 @@ class SystemProvider {
         results := []
         needle := StrLower(query.Text)
         hidden := SystemProvider._HiddenIds()
+        options := AppSettings.Feature("System")
+        settingsPages := !options.Has("SettingsPages") || options["SettingsPages"]
         for command in SystemProvider.Commands() {
-            if hidden.Has(command["Id"])
+            if (hidden.Has(command["Id"]) || !settingsPages && command.Has("IsSetting"))
                 continue
             score := FuzzyMatcher.BestKey(needle, command["Keys"])
             if (score <= 0)
@@ -96,6 +98,16 @@ class SystemProvider {
 
     static _Runner(id) {
         return (*) => SystemProvider.RunCommand(id)
+    }
+
+    ; 剪贴板里的内容去掉格式 (字体、颜色、表格...) 粘贴, 剪贴板随后还原。可以在 自定义热键 里设成 Ctrl+Shift+V:
+    ; 用热键时贴到当前窗口; 在搜索窗口里运行时贴到呼出之前的窗口
+    static PastePlainText() {
+        text := A_Clipboard
+        if (text = "")
+            return App.Notify(I18n.T("Sys.PastePlainEmpty"))
+        active := WinExist("A")
+        ActionCatalog.PasteText(text, !active || (IsObject(SearchWindow.Gui) && active = SearchWindow.Gui.Hwnd))
     }
 
     static RunCommand(id) {
@@ -161,6 +173,8 @@ class SystemProvider {
         add("MediaPrev"   , "Sys.MediaPrev"   , system32 "SndVol.exe" , () => Send("{Media_Prev}"))
         add("MediaStop"   , "Sys.MediaStop"   , system32 "SndVol.exe" , () => Send("{Media_Stop}"))
         add("ShowIP"      , "Sys.ShowIP"      , "res:imageres.dll,-25"  , () => SystemProvider.ShowIP())
+        add("PastePlain"  , "Sys.PastePlain"  , "res:imageres.dll,-5314", () => SystemProvider.PastePlainText())
+        add("ScriptsFolder", "Sys.ScriptsFolder", "res:imageres.dll,-5323", () => ScriptProvider.OpenFolder())
         add("TerminalHere", "Sys.TerminalHere", "res:imageres.dll,-5323", () => TerminalProvider.OpenAtCurrentFolder())
         add("ListProcesses", "Sys.ListProcesses", system32 "taskmgr.exe", () => SystemProvider._ShowCommandOutput("tasklist", "ALTRun.Processes.txt"))
         add("ListServices", "Sys.ListServices", system32 "services.msc", () => SystemProvider._ShowCommandOutput("net start", "ALTRun.Services.txt"))
@@ -210,6 +224,57 @@ class SystemProvider {
         tool("Calculator"        , "Tool.Calculator"        , system32 "calc.exe")
         tool("Paint"             , "Tool.Paint"             , system32 "mspaint.exe")
         tool("WinVer"            , "Tool.WinVer"            , system32 "winver.exe")
+
+        ; --- Windows 设置的页面 (ms-settings:, Windows 10 / 11 都有), 可以在偏好设置里关掉 (Features.System.SettingsPages) ---
+        setting(id, page) {
+            add("Set" id, "Setting." id, "shell:AppsFolder\windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel"
+                , () => Run("ms-settings:" page), false, "Setting.Subtitle")
+            list[list.Length]["IsSetting"] := true
+        }
+        setting("Display"          , "display")
+        setting("NightLight"       , "nightlight")
+        setting("Sound"            , "sound")
+        setting("Notifications"    , "notifications")
+        setting("Focus"            , "quiethours")
+        setting("Power"            , "powersleep")
+        setting("Battery"          , "batterysaver")
+        setting("Storage"          , "storagesense")
+        setting("Multitasking"     , "multitasking")
+        setting("Clipboard"        , "clipboard")
+        setting("About"            , "about")
+        setting("Bluetooth"        , "bluetooth")
+        setting("Printers"         , "printers")
+        setting("Mouse"            , "mousetouchpad")
+        setting("Touchpad"         , "devices-touchpad")
+        setting("Typing"           , "typing")
+        setting("Network"          , "network-status")
+        setting("Wifi"             , "network-wifi")
+        setting("Vpn"              , "network-vpn")
+        setting("Proxy"            , "network-proxy")
+        setting("Airplane"         , "network-airplanemode")
+        setting("Background"       , "personalization-background")
+        setting("Colors"           , "colors")
+        setting("LockScreen"       , "lockscreen")
+        setting("Themes"           , "themes")
+        setting("Taskbar"          , "taskbar")
+        setting("Start"            , "personalization-start")
+        setting("Fonts"            , "fonts")
+        setting("Apps"             , "appsfeatures")
+        setting("DefaultApps"      , "defaultapps")
+        setting("StartupApps"      , "startupapps")
+        setting("OptionalFeatures" , "optionalfeatures")
+        setting("Account"          , "yourinfo")
+        setting("SignIn"           , "signinoptions")
+        setting("DateTime"         , "dateandtime")
+        setting("Region"           , "regionformatting")
+        setting("Language"         , "regionlanguage")
+        setting("Update"           , "windowsupdate")
+        setting("Security"         , "windowsdefender")
+        setting("Privacy"          , "privacy")
+        setting("Recovery"         , "recovery")
+        setting("Activation"       , "activation")
+        setting("Developers"       , "developers")
+        setting("Backup"           , "backup")
 
         SystemProvider._commands := list
         return list

@@ -12,7 +12,8 @@
 ;   ↑ ↓  PgUp PgDn  Ctrl+P Ctrl+N    只移动选择 (和 Alfred 一样, 不和翻历史混在一起)
 ;   Ctrl+↑ / Ctrl+↓                  上一条 / 下一条搜索记录; 翻回最新之后恢复原来输入的文字
 ;   Ctrl+1 ~ Ctrl+9                  直接执行可见的第 N 行
-;   Tab                              自动补全
+;   Tab                              自动补全; 文件夹: 进入文件夹浏览 (输入框变成 "路径\")
+;   Insert                           标记 / 取消标记文件和文件夹 (可以标记多个), → 对所有标记的一起操作
 ;   →  (光标在末尾时)                打开操作面板; ← / Esc 返回
 ;   空格 (搜索框为空时)              进入文件搜索模式 (只搜文件, 提示 "搜索文件..."); Backspace 返回
 ;   空格 (已输入文字, SpaceToRun)    执行选中项; Shift+空格输入空格
@@ -45,6 +46,7 @@ class SearchWindow {
     static ActionSource := "", SavedQuery := "", AllActions := []
     static _actionsOnly := false                                            ; 直接打开的操作面板 (选中内容的操作): Esc / ← 关掉窗口
     static HistoryIndex := 0                         ; 正在看第几条搜索记录 (Knowledge.History, 1 = 最近), 0 = 没有在翻
+    static Marked := Map()                           ; Insert 标记的文件 / 文件夹: 小写路径 -> 路径 (每次呼出时清空)
     static _historyDraft := ""                       ; 开始翻记录之前输入框里的文字, Ctrl+↓ 翻回来时恢复
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
     static SelectedRadius := 0
@@ -165,6 +167,7 @@ class SearchWindow {
             SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
         App.RememberActiveWindow()
         SearchWindow._actionsOnly := false
+        SearchWindow.Marked := Map()
         Usage.Count("Show")
         last := SearchWindow._last
         restore := (text = "" && AppSettings.General["KeepLastQuery"] && IsObject(last) && last.Text != "")
@@ -421,7 +424,9 @@ class SearchWindow {
         if (SearchWindow.Mode = "actions") {
             source := SearchWindow.ActionSource
             Knowledge.Record(SearchWindow.SavedQuery, source.Uid)
+            RecentProvider.Remember(source)
             Usage.CountItem(source)
+            SearchWindow.Marked := Map()
             SearchWindow.Hide()
             SearchWindow._SafeRun(() => item.OnRun.Call(source))
             return
@@ -433,6 +438,7 @@ class SearchWindow {
             return
         }
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
+        RecentProvider.Remember(item)
         Usage.CountItem(item)
         SearchWindow.Hide()
         if (modifier = "")
@@ -474,7 +480,14 @@ class SearchWindow {
     static _OpenActionsFor(item) {
         if (!IsObject(item) || !item.Valid || SearchWindow.Mode = "actions")
             return false
-        actions := ActionCatalog.ListFor(item)
+        if SearchWindow.Marked.Count {                                      ; 有标记的文件: 对所有标记的一起操作
+            paths := []
+            for key, markedPath in SearchWindow.Marked
+                paths.Push(markedPath)
+            item := ResultItem(I18n.T("Search.MarkedItems", paths.Length), "", {Icon: "folder:"})
+            actions := ActionCatalog.ListForMany(paths)
+        } else
+            actions := ActionCatalog.ListFor(item)
         if !actions.Length
             return false
         SearchWindow.SavedQuery := SearchWindow.Input.Value
@@ -619,6 +632,7 @@ class SearchWindow {
     static _RunMenuAction(action, item) {
         SearchWindow._keepOpen := false
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
+        RecentProvider.Remember(item)
         Usage.CountItem(item)
         SearchWindow.SavedQuery := SearchWindow.Input.Value
         SearchWindow.Hide()
@@ -694,6 +708,12 @@ class SearchWindow {
             case 0x22:                                                      ; PgDn
                 SearchWindow.MoveSelection(SearchWindow.VisibleRows)
                 return 0
+            case 0x2D:                                                      ; Insert: 标记 / 取消标记 (和 Total Commander 一样), 移到下一行
+                if (!actions && !ctrl && !shift && !alt) {
+                    SearchWindow.ToggleMark()
+                    return 0
+                }
+                return
             case 0x09:                                                      ; Tab
                 SearchWindow._AutoComplete()
                 return 0
@@ -800,11 +820,34 @@ class SearchWindow {
         SearchWindow.HistoryIndex := index                                  ; _SetInput 不经过 Change 事件, 这里保持历史位置
     }
 
+    ; 标记 / 取消标记选中的文件或文件夹, 然后移到下一行
+    static ToggleMark() {
+        item := SearchWindow.SelectedItem()
+        if !(IsObject(item) && (item.Kind = "file" || item.Kind = "folder") && item.Arg != "")
+            return false
+        key := StrLower(item.Arg)
+        if SearchWindow.Marked.Has(key)
+            SearchWindow.Marked.Delete(key)
+        else
+            SearchWindow.Marked[key] := item.Arg
+        if (SearchWindow.Selected < SearchWindow.Results.Length)
+            SearchWindow.MoveSelection(1)
+        else
+            SearchWindow._Repaint()
+        return true
+    }
+
+    static IsMarked(item) {
+        return SearchWindow.Marked.Count && IsObject(item) && (item.Kind = "file" || item.Kind = "folder") && SearchWindow.Marked.Has(StrLower(item.Arg))
+    }
+
     static _AutoComplete() {
         item := SearchWindow.SelectedItem()
         if (!IsObject(item) || SearchWindow.Mode = "actions")
             return
         text := (item.AutoComplete != "") ? item.AutoComplete : item.Title
+        if (item.AutoComplete = "" && item.Kind = "folder" && RegExMatch(item.Arg, "^([A-Za-z]:\\|\\\\)"))
+            text := RTrim(item.Arg, "\") "\"                                ; 文件夹: Tab 进入, 浏览里面的内容
         SearchWindow._SetInput(text)
     }
 
@@ -934,6 +977,13 @@ class SearchWindow {
             DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", selected ? gdi["Selected"] : gdi["Background"])
         }
         DllCall("SetBkMode", "Ptr", hdc, "Int", 1)                          ; TRANSPARENT
+        if (SearchWindow.Mode = "results" && SearchWindow.IsMarked(item)) {  ; 标记的: 左边一条高亮色的竖线
+            mark := Buffer(16)
+            NumPut("Int", left + Win.Scale(2), "Int", top + Win.Scale(4), "Int", left + Win.Scale(6), "Int", bottom - Win.Scale(4), mark)
+            brush := DllCall("CreateSolidBrush", "UInt", gdi["HighlightColor"], "Ptr")
+            DllCall("FillRect", "Ptr", hdc, "Ptr", mark, "Ptr", brush)
+            DllCall("DeleteObject", "Ptr", brush)
+        }
 
         if (hIcon := IconCache.Get(item.Icon))
             DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad, "Int", top + (rowH - iconSize) // 2, "Ptr", hIcon, "Int", iconSize, "Int", iconSize, "UInt", 0, "Ptr", 0, "UInt", 3)

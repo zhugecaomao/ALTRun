@@ -65,20 +65,22 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 - **搜索窗口**：输入即搜，显示标题和路径；窗口高度随结果变化，可拖动并记住位置，多显示器时显示在鼠标所在屏幕。
 - **应用**：自动索引开始菜单、桌面和 Microsoft Store 应用；不需要的应用和内置命令可按 `Ctrl+Del` 隐藏，在偏好设置中恢复。
 - **匹配高亮**：标题中与输入匹配的部分（连续字符、单词首字母、拼音首字母）以高亮色显示。
-- **文件和文件夹**：在空白搜索框中先按 `空格` 再输入名称（或 `'报告`、`open 报告`）；Everything 运行时搜索全盘，否则使用内置索引。
+- **文件和文件夹**：在空白搜索框中先按 `空格` 再输入名称（或 `'报告`、`open 报告`）；Everything 运行时搜索全盘，否则使用内置索引；输入 `D:\Projects\` 这样的路径可以逐级浏览文件夹。
 - **自定义命令**：文件、文件夹、程序（可带参数）、网址，可设置关键字；在资源管理器中右键 → 发送到 → ALTRun 即可添加（可多选）；可检查路径已失效的命令。
 - **学习排序**：记住每次输入所选的结果，常用项自动靠前。
+- **置顶和最近使用**：呼出窗口还没输入时，直接列出置顶的项目和最近打开的项目。
 - **使用统计**：按天、按功能统计使用次数（仅记录次数）。
-- **计算器**：直接输入算式；支持单位换算（`10 km in mi`）、可选的货币换算（`100 usd to sgd`）和结构计算（梁主筋、配筋面积）。
+- **计算器**：直接输入算式；支持单位换算（`10 km in mi`）、进制换算（`255 in hex`）、日期加减（`today + 30 days`）、可选的货币换算（`100 usd to sgd`）和结构计算（梁主筋、配筋面积）。
 - **网页搜索**：`g 关键词`（Google）、`bd 关键词`（百度）等，可自定义搜索引擎；无结果时提供网页搜索。
 - **浏览器书签**：搜索 Chrome、Edge、Brave、Vivaldi 的书签；`bm 关键词` 仅搜索书签。
-- **系统命令**：锁屏、睡眠、关机、清空回收站、音量和媒体控制、Windows 工具、文本转换（大小写、排序、简繁转换等）。
+- **切换窗口**：输入窗口标题或程序名切换到已打开的窗口；`w 关键词` 仅搜索窗口，`w ` 列出全部。
+- **系统命令**：锁屏、睡眠、关机、清空回收站、音量和媒体控制、Windows 工具、Windows 设置页面（显示、蓝牙、WLAN 等 40 多个）、文本转换（大小写、排序、简繁转换等）。
 
 **效率**
 - **操作面板**：选中结果后按 `→`（或右键）列出可用操作，如以管理员身份运行、打开所在位置、复制路径、在此处打开终端、属性。
 - **选中内容操作**：在任意程序中选中文字、文件或网址，按 `Ctrl+Alt+\` 调出操作，如网页搜索、保存为片段、转换后替换原文。
 - **直接编辑**：按 `F3` 编辑命令、片段或搜索引擎；应用和文件可一键添加为自定义命令。
-- **剪贴板历史**：按 `Ctrl+Alt+C` 或输入 `clip`；同时记录文字、文件和图片；自动忽略密码管理器复制的内容。
+- **剪贴板历史**：按 `Ctrl+Alt+C` 或输入 `clip`；同时记录文字、文件和图片；常用的可以置顶；可以粘贴为纯文本；自动忽略密码管理器复制的内容。
 - **文字片段**：可按名称、关键字或正文搜索；支持 `{date}`、`{clipboard}`、`{cursor}` 等占位符；在任意程序中输入 `;关键字` 自动展开。
 - **终端**：输入 `>ipconfig /all` 直接在终端中运行。
 - **大字显示**：按 `Ctrl+L` 全屏显示结果，便于查看电话号码、计算结果等。
@@ -87,6 +89,7 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 - **对话框快速跳转**：在打开 / 保存对话框中按 `Ctrl+G` 跳转到 Total Commander 当前目录，按 `Ctrl+E` 跳转到资源管理器当前目录；对话框旁的文件夹面板列出所有已打开和最近使用的文件夹。
 - **一键加日期**：重命名文件时按 `Ctrl+D`，在扩展名前添加或更新日期（`Report.docx` → `Report - 28.09.2026.docx`）。
 - **自定义热键**：为任意系统命令设置热键，可限定在指定程序中生效。
+- **脚本扩展**：把 `.ahk`、`.ps1`、`.bat`、`.py` 脚本放进 `Scripts\` 文件夹，就能在搜索窗口里运行，可以带参数、在后台运行并显示输出。
 - **PT 工具箱**：钢筋 / BRC 面积计算、SPF2M 后张预应力束线型计算，结果可复制到 Excel。
 
 
@@ -133,7 +136,8 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | `Ctrl+1`～`Ctrl+9` | 打开第 N 项 |
 | `↑` `↓` `PgUp` `PgDn` `Ctrl+P` `Ctrl+N` | 移动选择 |
 | `Ctrl+↑` / `Ctrl+↓` | 上一条 / 下一条搜索记录 |
-| `Tab` | 自动补全 |
+| `Tab` | 自动补全；文件夹：进入浏览 |
+| `Insert` | 标记多个文件 / 文件夹，再按 `→` 一起操作 |
 | `空格`（搜索框为空时） | 进入文件搜索模式；按 `Backspace` 返回 |
 | `folder 名称` | 仅搜索文件夹 |
 | `?` | 速查表：全部语法和快捷键 |
@@ -213,6 +217,17 @@ ALTRun is a fast, keyboard-first launcher for Windows, inspired by Alfred for ma
 - **Customizable**: English, Simplified / Traditional Chinese and Japanese interface; 20 built-in themes, or follow the Windows light / dark mode.
 
 The screenshots above show the English interface. Documentation is available in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
+
+
+## 代码签名策略 / Code signing policy
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+ALTRun 使用 SignPath Foundation 的免费代码签名。签名的只有本仓库的 GitHub Actions（[Release 工作流](.github/workflows/release.yml)）从公开源码编译出的 `ALTRun.exe`，不签名第三方的程序。
+
+- 提交者和审核者 / Committers and reviewers: [zhugecaomao](https://github.com/zhugecaomao)
+- 批准者 / Approvers: [zhugecaomao](https://github.com/zhugecaomao)
+
+**隐私 / Privacy**：ALTRun 不收集、不上传任何数据。This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it: it only checks GitHub for new versions (can be turned off) and, when currency conversion is turned on, downloads exchange rates. 详见 [SECURITY.md](SECURITY.md#隐私说明)。
 
 
 ## 许可证与致谢

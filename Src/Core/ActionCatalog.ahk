@@ -102,8 +102,70 @@ class ActionCatalog {
             add("Action.AddCommand", "res:imageres.dll,-2", (*) => SearchWindow.EditItem(item), "F3")
         if ActionCatalog.CanDelete(item)
             add("Action.Delete", "res:shell32.dll,-240", (*) => SearchWindow.DeleteItem(item), "Ctrl+Del")
+        if (item.Provider = RecentProvider.Id && item.HasOwnProp("Pinned") && item.Pinned)
+            add("Action.Unpin", "res:imageres.dll,-5303", (*) => RecentProvider.Unpin(item.Uid))
+        else if (RecentProvider.CanPin(item) && !RecentProvider.IsPinned(item))
+            add("Action.Pin", "res:imageres.dll,-5303", (*) => RecentProvider.Pin(item))
         add("Action.LargeType", "res:imageres.dll,-183", (*) => LargeType.Show(item.DisplayText()), "Ctrl+L")
         return list
+    }
+
+    ; 标记的多个文件 / 文件夹 (搜索窗口里 Insert 标记) 一起操作
+    static ListForMany(paths) {
+        list := []
+        add(title, icon, fn, hint := "") => list.Push(ResultItem(title, hint, {Icon: icon, OnRun: fn}))
+        count := paths.Length
+        add(I18n.T("Action.OpenAll", count), "res:imageres.dll,-5302", (*) => ActionCatalog.OpenMany(paths), "Enter")
+        add(I18n.T("Action.CopyFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths), I18n.T("Action.CopyFile.Hint"))
+        add(I18n.T("Action.CutFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths, true), I18n.T("Action.CopyFile.Hint"))
+        joined := ""
+        for markedPath in paths
+            joined .= (joined = "" ? "" : "`r`n") markedPath
+        add(I18n.T("Action.CopyPaths", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(joined))
+        manager := QuickSwitch.FileManagerFolder()
+        destination := IsObject(manager) ? manager.Path : ""
+        if (destination != "" && DirExist(destination)) {
+            add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), destination)
+            add(I18n.T("Action.MoveTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination, true), destination)
+        }
+        add(I18n.T("Action.AddAllCommands"), "res:imageres.dll,-2", (*) => CustomCommandProvider.AddFromPaths(paths))
+        add(I18n.T("Action.RecycleAll", count), "res:shell32.dll,-32", (*) => ActionCatalog.RecycleMany(paths))
+        return list
+    }
+
+    static OpenMany(paths) {
+        for markedPath in paths
+            InStr(FileExist(markedPath), "D") ? ActionCatalog.OpenFolder(markedPath) : ActionCatalog.OpenFile(markedPath)
+    }
+
+    ; 复制 / 移动到一个文件夹 (Windows 自己的复制, 有进度和重名提示); 不能复制到自己或自己的子文件夹里
+    static CopyMany(paths, destination, move := false) {
+        folder := ComObject("Shell.Application").NameSpace(RTrim(destination, "\") (RegExMatch(destination, "^[A-Za-z]:\\?$") ? "\" : ""))
+        if !IsObject(folder)
+            return false
+        done := 0
+        for markedPath in paths {
+            if (InStr(RTrim(destination, "\") "\", RTrim(markedPath, "\") "\") = 1)
+                continue
+            move ? folder.MoveHere(markedPath, 0) : folder.CopyHere(markedPath, 0)
+            done += 1
+        }
+        App.Notify(I18n.T(move ? "Action.MovingMany" : "Action.CopyingMany", done, destination), 2000)
+        return done > 0
+    }
+
+    ; 一起移到回收站: 先确认一次 (可以从回收站还原)
+    static RecycleMany(paths) {
+        if (MsgBox(I18n.T("Action.ConfirmRecycleAll", paths.Length), App.Name, "YesNo Icon? Default2") != "Yes")
+            return false
+        failed := 0
+        for markedPath in paths
+            try FileRecycle(markedPath)
+            catch
+                failed += 1
+        if failed
+            App.Notify(I18n.T("Action.RecycleFailed", failed))
+        return !failed
     }
 
     ;---------------------------------------------------------------------------

@@ -3,11 +3,13 @@
 ;-------------------------------------------------------------------------------
 ; 和 Alfred 的 Snippet 自动展开一样: 在任何程序里输入 "前缀 + 关键字" (默认前缀
 ; ";", 例如 ";sig"), 输入的文字自动删掉并换成片段正文 (占位符在展开时替换)。
-; 前缀是为了避免平时正常打字时误触发; 在 ALTRun 自己的搜索窗口里不展开。
+; 前缀是为了避免平时正常打字时误触发。不展开的地方: ALTRun 自己的搜索窗口、ExpandExclude 里的窗口
+; (例如远程桌面、密码管理器), 以及 Windows 的密码输入框。
 ;
 ; 设置:
 ;   Features.Snippets.AutoExpand      1 = 开启
 ;   Features.Snippets.ExpandPrefix    关键字前面要加的前缀, 默认 ";"
+;   Features.Snippets.ExpandExclude   不展开的窗口, 逗号分隔 (ahk_exe xxx.exe / ahk_class xxx / 标题)
 ;   Snippets[n].AutoExpand            单个片段设为 0 可以不自动展开 (仍可搜索)
 ; 修改片段后调用 Refresh(), 新的关键字随即生效。
 ;
@@ -19,6 +21,8 @@ class SnippetExpander {
     static Count := 0
     static MaxAbbreviation := 40                                            ; AHK 热字串缩写 (前缀 + 关键字) 最长 40 个字符
     static _texts := Map()                                                  ; 已注册的缩写 -> 正文
+    static _exclude := []                                                   ; 不展开的窗口
+    static _criterion := (*) => SnippetExpander.ShouldExpand()              ; 所有热字串共用同一个条件 (关闭时要用同一个)
 
     static Init() {
         SnippetExpander.Refresh()
@@ -37,7 +41,11 @@ class SnippetExpander {
                     wanted[abbreviation] := snippet["Text"]
             }
         }
-        HotIfWinNotActive("ahk_id " SearchWindow.Gui.Hwnd)
+        SnippetExpander._exclude := []
+        Loop Parse, options.Has("ExpandExclude") ? options["ExpandExclude"] : "", ","
+            if ((window := Trim(A_LoopField)) != "")
+                SnippetExpander._exclude.Push(window)
+        HotIf(SnippetExpander._criterion)
         for abbreviation in SnippetExpander._texts
             if !wanted.Has(abbreviation)
                 try Hotstring(":*?:" abbreviation, , "Off")
@@ -52,10 +60,25 @@ class SnippetExpander {
                 Logger.Error("SnippetExpander: cannot register " abbreviation " - " e.Message)
             }
         }
-        HotIfWinNotActive()
+        HotIf()
         SnippetExpander._texts := registered
         SnippetExpander.Count := registered.Count
         Logger.Debug("SnippetExpander: " SnippetExpander.Count " snippets")
+    }
+
+    ; 输入了缩写时才判断 (不是每个按键): 搜索窗口、ExpandExclude 里的窗口、密码框 (ES_PASSWORD) 里不展开
+    static ShouldExpand() {
+        if (IsObject(SearchWindow.Gui) && WinActive("ahk_id " SearchWindow.Gui.Hwnd))
+            return false
+        for window in SnippetExpander._exclude
+            try if WinActive(window)
+                return false
+        try {
+            focused := ControlGetFocus("A")
+            if (InStr(ControlGetClassNN(focused), "Edit") = 1 && (ControlGetStyle(focused) & 0x20))
+                return false
+        }
+        return true
     }
 
     ; 片段 -> 触发的缩写 ("" = 不自动展开)

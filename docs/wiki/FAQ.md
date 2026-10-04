@@ -42,7 +42,11 @@
 ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时呼出搜索窗口就能看到 "发现新版本: ALTRun x", 按 `Enter` 即可 (也可以托盘图标 → 检查更新), 设置和数据都保留; 用 Scoop 安装的用 `scoop update altrun`。详见 [安装与升级](Installation#升级)。
 
 ### 在多台电脑上使用同一份设置
-ALTRun 是绿色软件, 整个文件夹可以放在 U 盘或同步盘里。路径尽量用 [路径变量](Commands-and-Snippets#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
+两种做法:
+- **只同步设置和数据**: 偏好设置 → 高级 → 数据 → **更改位置...**, 选同步盘 (OneDrive、Dropbox...) 里的一个文件夹。现在的设置和数据会复制过去, ALTRun 重新载入后改用那里; 在另一台电脑上选同一个文件夹, 提示 "已经有 ALTRun 的设置" 时选 **是** 就会用那里的设置。选的位置记在程序目录的 `DataLocation.txt` 里 (只有一行路径, 可以写 `%OneDrive%\ALTRun` 这样的环境变量, 每台电脑的 OneDrive 路径不同也能用); 清空这个文件就回到默认的 `Data\`
+- **整个文件夹放在 U 盘或同步盘里**: ALTRun 是绿色软件, 程序和 `Data\` 一起带走
+
+同步盘里的数据最好不要在两台电脑上同时打开 ALTRun 修改, 否则同步盘可能生成冲突副本。路径尽量用 [路径变量](Commands-and-Snippets#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
 
 ### 从 2.x 升级后命令不见了
 2.x 的用户命令会从 `ALTRun.ini` 导入为自定义命令, 内置命令由 [系统命令](Extensions#系统命令) 取代。导入只在还没有 `ALTRun.json` 时进行一次: 如果想重新导入, 退出 ALTRun, 把 `Data\ALTRun.json` 改名, 再运行。`ALTRun.ini` 始终保持不变, 详见 [安装与升级](Installation#从-2x-v20260812-及更早-升级到-30)。

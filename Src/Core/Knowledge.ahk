@@ -16,15 +16,16 @@
 ;===============================================================================
 
 class Knowledge {
-    static File        := A_ScriptDir "\Data\Knowledge.json"
+    static File        := AppSettings.DataDir "\Knowledge.json"
     static Picks       := Map()      ; uid -> Map("Count", n, "Last", "yyyyMMddHHmmss")
     static QueryPicks  := Map()      ; 小写输入 -> Map(uid -> 次数)
     static History     := []
+    static Recent      := []         ; 最近打开的项目 (新的在前), 见 RecentProvider
     static MaxQueryLen := 20
     static _saveTimer  := ""
 
     static Load() {
-        Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := []
+        Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := [], Knowledge.Recent := []
         if !FileExist(Knowledge.File)
             return
         try {
@@ -35,6 +36,8 @@ class Knowledge {
                 Knowledge.QueryPicks := data["QueryPicks"]
             if (data.Has("History") && data["History"] is Array)
                 Knowledge.History := data["History"]
+            if (data.Has("Recent") && data["Recent"] is Array)
+                Knowledge.Recent := data["Recent"]
         } catch as e {
             Logger.Error("Knowledge.Load: " e.Message)
         }
@@ -42,7 +45,7 @@ class Knowledge {
 
     static Save() {
         try {
-            JSON.WriteFile(Knowledge.File, Map("Picks", Knowledge.Picks, "QueryPicks", Knowledge.QueryPicks, "History", Knowledge.History))
+            JSON.WriteFile(Knowledge.File, Map("Picks", Knowledge.Picks, "QueryPicks", Knowledge.QueryPicks, "History", Knowledge.History, "Recent", Knowledge.Recent))
         } catch as e {
             Logger.Error("Knowledge.Save: " e.Message)
         }

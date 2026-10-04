@@ -78,6 +78,9 @@
 #Include Src\Providers\BookmarkProvider.ahk
 #Include Src\Providers\FileSearchProvider.ahk
 #Include Src\Providers\TerminalProvider.ahk
+#Include Src\Providers\WindowProvider.ahk
+#Include Src\Providers\RecentProvider.ahk
+#Include Src\Providers\ScriptProvider.ahk
 #Include Src\Providers\HelpProvider.ahk
 
 ; --- Src\Extensions ---
