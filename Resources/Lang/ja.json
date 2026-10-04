@@ -52,6 +52,7 @@
   "Calc.BeamWidth": "梁幅 {1} mm: 主筋 {2} 本 @ {3} c/c",
   "Calc.Currency": "通貨換算",
   "Calc.CurrencyOff": "環境設定 → 機能 でオンにします (為替レートを 1 日 1 回ダウンロード)",
+  "Calc.Days": "{1} 日",
   "Calc.RatesNotYet": "為替レートはまだダウンロードされていません。しばらくしてからもう一度お試しください。",
   "Calc.RatesOf": "{1} のレート",
   "Calc.RebarArea": "As = {1} mm²: {2}",

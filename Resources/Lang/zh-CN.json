@@ -52,6 +52,7 @@
   "Calc.BeamWidth": "梁宽 {1} mm: 主筋 {2} 根 @ {3} c/c",
   "Calc.Currency": "货币换算",
   "Calc.CurrencyOff": "在 偏好设置 → 功能 里打开 (每天下载一次汇率)",
+  "Calc.Days": "{1} 天",
   "Calc.RatesNotYet": "还没有下载汇率, 请稍后再试",
   "Calc.RatesOf": "{1} 的汇率",
   "Calc.RebarArea": "As = {1} mm²: {2}",

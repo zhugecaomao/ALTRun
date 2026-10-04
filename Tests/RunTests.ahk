@@ -77,7 +77,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1914,6 +1914,36 @@ class Tests {
         eq("many: copy, recycle", InStr(actions, I18n.T("Action.CopyFiles", 2)) && InStr(actions, I18n.T("Action.RecycleAll", 2)) ? 1 : 0, 1)
         FileSetAttrib("-H", root "\secret.txt")
         DirDelete(root, true)
+    }
+
+    ; 计算器: 进制换算和日期加减
+    static CalcBasesDates() {
+        eq := (n, a, e) => TestRunner.Equal("CalcBasesDates." n, a, e)
+        first(text) {
+            items := CalculatorProvider.Search(SearchQuery(text))
+            return items.Length ? items[1].Title : ""
+        }
+        eq("hex in", first("255 in hex"), "FF")
+        eq("to dec", first("0xff to dec"), "255")
+        eq("bin", first("10 in bin"), "1010")
+        eq("oct", first("0o17 in dec"), "15")
+        items := CalculatorProvider.Search(SearchQuery("0b1010"))
+        eq("prefixed alone: three forms", items.Length "|" items[1].Title "|" items[2].Title "|" items[3].Title, "3|10|0xA|0b1010")
+        eq("plain number not a base", first("255"), "")
+        eq("zero", CalculatorProvider.ToBase(0, 16), "0")
+        eq("big", CalculatorProvider.ParseInteger("0xFFFFFFFF"), 4294967295)
+        eq("too big", CalculatorProvider.ParseInteger("0x" "FFFFFFFFFFFFFFFFFF"), "")
+
+        date := (text) => (items := CalculatorProvider._Dates(text, "20261004")).Length ? SubStr(items[1].Title, 1, 10) : ""
+        eq("today + days", date("today + 30 days"), "2026-11-03")
+        eq("today - weeks", date("today - 2w"), "2026-09-20")
+        eq("chinese units", date("今天 + 1 年"), "2027-10-04")
+        eq("months clamp", date("2026-01-31 + 1 month"), "2026-02-28")
+        eq("leap year", date("2028-01-31 + 1m"), "2028-02-29")
+        eq("months back across year", date("2026-02-15 - 3 months"), "2025-11-15")
+        eq("date difference", CalculatorProvider._Dates("2026-12-25 - today", "20261004")[1].Title, I18n.T("Calc.Days", 82))
+        eq("invalid date", date("2026-02-30 + 1d"), "")
+        eq("normal math still works", first("12*(3+4)"), "84")
     }
 
     static WindowPosition() {

@@ -208,6 +208,7 @@ class I18n {
         ; --- Providers ---
         s["App.Subtitle.Store"]        := "Microsoft Store app"
         s["Calc.Subtitle"]             := "Copy result to clipboard"
+        s["Calc.Days"]                 := "{1} days"
         s["Calc.RatesOf"]              := "rates of {1}"
         s["Calc.Currency"]             := "Currency conversion"
         s["Calc.CurrencyOff"]          := "Turn it on in Preferences → Features (downloads exchange rates once a day)"
