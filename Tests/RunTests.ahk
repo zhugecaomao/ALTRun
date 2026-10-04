@@ -76,6 +76,12 @@ TestRunner.Run()
 class TestRunner {
     static Passed := 0, Failed := 0
 
+    ; 8.3 短路径 (C:\Users\RUNNER~1\...) -> 长路径, 和 Loop Files 列出的路径一样
+    static LongPath(shortPath) {
+        buf := Buffer(32767 * 2)
+        return DllCall("GetLongPathNameW", "WStr", shortPath, "Ptr", buf, "UInt", 32767, "UInt") ? StrGet(buf) : shortPath
+    }
+
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
                     , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
@@ -1882,6 +1888,7 @@ class Tests {
         root := A_Temp "\ALTRun-browse-test"
         try DirDelete(root, true)
         DirCreate(root "\Reports"), DirCreate(root "\Archive")
+        root := TestRunner.LongPath(root)                                   ; %Temp% 可能是 8.3 短路径 (C:\Users\RUNNER~1), 列出的文件是长路径
         FileAppend("x", root "\readme.txt"), FileAppend("x", root "\report 2026.docx"), FileAppend("x", root "\secret.txt")
         FileSetAttrib("+H", root "\secret.txt")
         browse := FileSearchProvider.BrowsePath(root "\rep")
@@ -1953,6 +1960,7 @@ class Tests {
         root := A_Temp "\ALTRun-scripts-test"
         try DirDelete(root, true)
         DirCreate(root)
+        root := TestRunner.LongPath(root)
         FileAppend("; @altrun.title Restart Explorer`n; @altrun.keyword rex`n; @altrun.mode silent`nProcessClose(`"explorer.exe`")`n", root "\restart.ahk", "UTF-8")
         FileAppend("# @altrun.title  Ping Host`n# @altrun.keyword ping`n# @altrun.argument Host name or IP`n# @altrun.mode output`nping $args[0]`n", root "\ping.ps1", "UTF-8")
         FileAppend("@echo off`nREM @altrun.title Clean Temp`necho done`n", root "\clean.bat", "UTF-8")
