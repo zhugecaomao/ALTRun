@@ -42,6 +42,7 @@ class HelpProvider {
             ["WebSearch" , "WebSearch"     , "Usage"],
             ["Bookmarks" , "Bookmarks"     , "Usage"],
             ["Windows"   , "Windows"       , "Usage"],
+            ["Scripts"   , "Scripts"       , "Extensions"],
             ["CheckPaths", "CustomCommands", "Commands-and-Snippets"],
             ["LargeType" , ""              , "Usage"],
             ["Prefs"     , ""              , "Configuration"],

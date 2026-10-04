@@ -328,6 +328,9 @@ class AppSettings {
                     "Keyword"         , "bm",                               ; "bm 关键词" 只搜书签
                     "InDefaultResults", 1                                   ; 直接输入名称时也显示匹配的书签 (排在应用和命令后面)
                 ),
+                "Scripts", Map(
+                    "Enabled"    , 1                                        ; Scripts\ 文件夹里的脚本变成命令
+                ),
                 "Recent", Map(
                     "Enabled"    , 1,
                     "RecentCount", 5,                                       ; 空搜索框里显示几个最近打开的项目 (0 = 不显示)

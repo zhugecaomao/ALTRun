@@ -53,6 +53,7 @@
 #Include %A_ScriptDir%\..\Src\Providers\TerminalProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\WindowProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\RecentProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\ScriptProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\HelpProvider.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
@@ -77,7 +78,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1944,6 +1945,53 @@ class Tests {
         eq("date difference", CalculatorProvider._Dates("2026-12-25 - today", "20261004")[1].Title, I18n.T("Calc.Days", 82))
         eq("invalid date", date("2026-02-30 + 1d"), "")
         eq("normal math still works", first("12*(3+4)"), "84")
+    }
+
+    ; 脚本扩展: 读开头注释里的 @altrun.xxx, 按名称 / 关键字搜到, 带参数, 命令行, 后台运行的输出
+    static Scripts() {
+        eq := (n, a, e) => TestRunner.Equal("Scripts." n, a, e)
+        root := A_Temp "\ALTRun-scripts-test"
+        try DirDelete(root, true)
+        DirCreate(root)
+        FileAppend("; @altrun.title Restart Explorer`n; @altrun.keyword rex`n; @altrun.mode silent`nProcessClose(`"explorer.exe`")`n", root "\restart.ahk", "UTF-8")
+        FileAppend("# @altrun.title  Ping Host`n# @altrun.keyword ping`n# @altrun.argument Host name or IP`n# @altrun.mode output`nping $args[0]`n", root "\ping.ps1", "UTF-8")
+        FileAppend("@echo off`nREM @altrun.title Clean Temp`necho done`n", root "\clean.bat", "UTF-8")
+        FileAppend("not a script", root "\notes.txt")
+        saved := [ScriptProvider.Folder, ScriptProvider.Scripts]
+        ScriptProvider.Folder := root
+        ScriptProvider.Load()
+        eq("loaded", ScriptProvider.Scripts.Length, 3)
+        byTitle := Map()
+        for script in ScriptProvider.Scripts
+            byTitle[script.Title] := script
+        eq("meta", byTitle["Ping Host"].Keyword "|" byTitle["Ping Host"].Argument "|" byTitle["Ping Host"].Mode, "ping|Host name or IP|output")
+        eq("bat comment, default mode", byTitle["Clean Temp"].Mode, "window")
+        titles(text) {
+            list := ""
+            for item in ProviderRegistry.SortByScore(ScriptProvider.Search(SearchQuery(text)))
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("by title", titles("restart"), "Restart Explorer")
+        eq("by keyword", titles("rex"), "Restart Explorer")
+        items := ScriptProvider.Search(SearchQuery("ping 10.0.0.1"))
+        eq("argument", items.Length "|" items[1].Title "|" items[1].Exclusive, "1|Ping Host: 10.0.0.1|1")
+        item := ""
+        for found in ScriptProvider.Search(SearchQuery("pin"))
+            if (found.Source.Title = "Ping Host")
+                item := found
+        eq("needs argument: complete keyword", item.Valid "|" item.AutoComplete, "0|ping ")
+        eq("ps1 command", ScriptProvider.CommandLine(byTitle["Ping Host"], "a b"), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "a b"')
+        eq("bat command", ScriptProvider.CommandLine(byTitle["Clean Temp"]), A_ComSpec ' /c ""' root '\clean.bat""')
+        FileAppend("line one`r`n`r`nlast line  `r`n", root "\out.txt")
+        eq("silent: last line", ScriptProvider._Finished(byTitle["Restart Explorer"], root "\out.txt"), "last line")
+        FileAppend("", root "\empty.txt")
+        eq("silent: no output", ScriptProvider._Finished(byTitle["Restart Explorer"], root "\empty.txt"), I18n.T("Script.Done", "Restart Explorer"))
+        FileAppend("; @altrun.title New One`n", root "\new.ahk", "UTF-8")
+        ScriptProvider._checked := 0                                         ; 文件夹变了: 下一次搜索时重新读
+        eq("refresh", titles("new one"), "New One")
+        ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2]
+        DirDelete(root, true)
     }
 
     static WindowPosition() {

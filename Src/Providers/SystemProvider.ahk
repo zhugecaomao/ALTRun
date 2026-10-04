@@ -174,6 +174,7 @@ class SystemProvider {
         add("MediaStop"   , "Sys.MediaStop"   , system32 "SndVol.exe" , () => Send("{Media_Stop}"))
         add("ShowIP"      , "Sys.ShowIP"      , "res:imageres.dll,-25"  , () => SystemProvider.ShowIP())
         add("PastePlain"  , "Sys.PastePlain"  , "res:imageres.dll,-5314", () => SystemProvider.PastePlainText())
+        add("ScriptsFolder", "Sys.ScriptsFolder", "res:imageres.dll,-5323", () => ScriptProvider.OpenFolder())
         add("TerminalHere", "Sys.TerminalHere", "res:imageres.dll,-5323", () => TerminalProvider.OpenAtCurrentFolder())
         add("ListProcesses", "Sys.ListProcesses", system32 "taskmgr.exe", () => SystemProvider._ShowCommandOutput("tasklist", "ALTRun.Processes.txt"))
         add("ListServices", "Sys.ListServices", system32 "services.msc", () => SystemProvider._ShowCommandOutput("net start", "ALTRun.Services.txt"))

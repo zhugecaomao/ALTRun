@@ -108,6 +108,9 @@
 
 读 Chrome、Edge、Brave、Vivaldi 所有用户配置的书签; Firefox 的书签存在 SQLite 数据库里, 暂不支持。
 
+### Scripts 脚本扩展
+只有 `Enabled`。脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Extensions#脚本扩展)。
+
 ### Recent 置顶和最近使用
 | 键 | 默认 | 说明 |
 |---|---|---|

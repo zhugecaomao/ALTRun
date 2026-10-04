@@ -27,6 +27,7 @@
     "persist": [
         "Data",
         "Themes",
+        "Scripts",
         "DataLocation.txt"
     ],
     "shortcuts": [
