@@ -273,8 +273,17 @@ class UpdateChecker {
         App.Restart("-Updated " release.Version)
     }
 
-    ; zip -> 文件夹 (Windows PowerShell 自带 Expand-Archive)
+    ; zip -> 文件夹。先用 Windows 10 (1803) 起自带的 tar.exe (快, 不受 PowerShell 策略限制),
+    ; 没有或失败时用 PowerShell 的 Expand-Archive
     static Extract(zip, dest) {
+        DirCreate(dest)
+        tar := A_WinDir "\System32\tar.exe"
+        if FileExist(tar) {
+            try exitCode := RunWait('"' tar '" -xf "' zip '" -C "' dest '"', , "Hide")
+            if (IsSet(exitCode) && exitCode = 0 && FileExist(dest "\" UpdateChecker.PackageExe))
+                return
+            Logger.Debug("UpdateChecker: tar.exe could not extract the package, trying PowerShell")
+        }
         quote := (s) => "'" StrReplace(s, "'", "''") "'"
         cmd := 'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "'
              . "$ErrorActionPreference = 'Stop'; Expand-Archive -LiteralPath " quote(zip) " -DestinationPath " quote(dest) ' -Force"'

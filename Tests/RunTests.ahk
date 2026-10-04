@@ -2110,6 +2110,13 @@ Func | PTTools | PT Tools (AHK)=99
         write(root "\abc.txt", "abc")
         eq("sha256 file", UpdateChecker.Sha256File(root "\abc.txt"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
         ok("writable", UpdateChecker.IsWritable(root))
+        tar := A_WinDir "\System32\tar.exe"                                ; 解压 (Windows 10 起自带 tar.exe; Wine 里没有就跳过)
+        if FileExist(tar) {
+            write(root "\pkg\ALTRun.exe", "exe"), write(root "\pkg\Resources\Lang\zh-CN.json", "{}")
+            RunWait('"' tar '" -a -cf "' root '\pkg.zip" -C "' root '\pkg" ALTRun.exe Resources', , "Hide")
+            UpdateChecker.Extract(root "\pkg.zip", root "\out")
+            eq("extract", read(root "\out\ALTRun.exe") "|" read(root "\out\Resources\Lang\zh-CN.json"), "exe|{}")
+        }
 
         write(src "\ALTRun.exe", "new exe")
         write(src "\Resources\Kanji.txt", "new kanji")
