@@ -102,6 +102,10 @@ class ActionCatalog {
             add("Action.AddCommand", "res:imageres.dll,-2", (*) => SearchWindow.EditItem(item), "F3")
         if ActionCatalog.CanDelete(item)
             add("Action.Delete", "res:shell32.dll,-240", (*) => SearchWindow.DeleteItem(item), "Ctrl+Del")
+        if (item.Provider = RecentProvider.Id && item.HasOwnProp("Pinned") && item.Pinned)
+            add("Action.Unpin", "res:imageres.dll,-5303", (*) => RecentProvider.Unpin(item.Uid))
+        else if (RecentProvider.CanPin(item) && !RecentProvider.IsPinned(item))
+            add("Action.Pin", "res:imageres.dll,-5303", (*) => RecentProvider.Pin(item))
         add("Action.LargeType", "res:imageres.dll,-183", (*) => LargeType.Show(item.DisplayText()), "Ctrl+L")
         return list
     }

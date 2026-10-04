@@ -258,6 +258,8 @@ class PreferencesWindow {
         PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
         PreferencesWindow._Gap()
         PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")
+        PreferencesWindow._Gap()
+        PreferencesWindow._InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
     }
 
     static _BuildAppearance() {
@@ -378,7 +380,7 @@ class PreferencesWindow {
     static _BuildFeatures() {
         PreferencesWindow._BeginPage("Prefs.Page.Features", 140)
         PreferencesWindow._Section("Prefs.EnabledFeatures")
-        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "Windows", "FileSearch", "Terminal", "System", "Help"]
+        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "Windows", "Recent", "FileSearch", "Terminal", "System", "Help"]
         startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; 两列: 英文名称较长, 三列会换行
         for index, feature in features {
             column := Mod(index - 1, 2), row := (index - 1) // 2
@@ -680,7 +682,7 @@ class PreferencesWindow {
     }
 
     static _ResetLearning() {
-        Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := []
+        Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := [], Knowledge.Recent := []
         Knowledge.Save()
         MsgBox(I18n.T("Prefs.ResetDone"), App.Name, 64)
     }

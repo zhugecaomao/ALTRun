@@ -421,6 +421,7 @@ class SearchWindow {
         if (SearchWindow.Mode = "actions") {
             source := SearchWindow.ActionSource
             Knowledge.Record(SearchWindow.SavedQuery, source.Uid)
+            RecentProvider.Remember(source)
             Usage.CountItem(source)
             SearchWindow.Hide()
             SearchWindow._SafeRun(() => item.OnRun.Call(source))
@@ -433,6 +434,7 @@ class SearchWindow {
             return
         }
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
+        RecentProvider.Remember(item)
         Usage.CountItem(item)
         SearchWindow.Hide()
         if (modifier = "")
@@ -619,6 +621,7 @@ class SearchWindow {
     static _RunMenuAction(action, item) {
         SearchWindow._keepOpen := false
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
+        RecentProvider.Remember(item)
         Usage.CountItem(item)
         SearchWindow.SavedQuery := SearchWindow.Input.Value
         SearchWindow.Hide()

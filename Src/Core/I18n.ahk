@@ -172,6 +172,8 @@ class I18n {
         s["Action.Edit"]               := "Edit..."
         s["Action.Delete"]             := "Delete"
         s["Action.CloseWindow"]        := "Close Window"
+        s["Action.Pin"]                := "Pin to Empty Search Box"
+        s["Action.Unpin"]              := "Unpin"
         s["Action.SearchWith"]         := "Search {1}"
         s["Action.SaveSnippet"]        := "Save as Snippet..."
         s["Action.ReplaceWith"]        := "Replace with: {1}"
@@ -379,6 +381,9 @@ class I18n {
         s["Tool.Subtitle"]             := "Windows tool"
 
         ; --- Windows 设置的页面 ---
+        s["Recent.PinnedHint"]         := "Pinned: {1} is shown when the search box is empty"
+        s["Recent.ConfirmUnpin"]       := "Unpin '{1}'?"
+        s["Recent.ConfirmForget"]      := "Remove '{1}' from the recent items?"
         s["Win.Subtitle"]              := "{1} - switch to this window"
         s["Win.Gone"]                  := "That window has been closed"
         s["Setting.Subtitle"]          := "Windows Settings"
@@ -576,6 +581,8 @@ class I18n {
         s["Prefs.FileManager.Desc"]     := "Program that opens folders; parameters can follow, e.g. C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S (Total Commander: /O reuse window, /T new tab, /S active panel). Quote a path with spaces. Default: explorer.exe"
         s["Prefs.HistorySize"]         := "Search history size"
         s["Prefs.HistorySize.Desc"]    := "Ctrl+↑ / Ctrl+↓ bring back recent searches."
+        s["Prefs.RecentCount"]         := "Recent items in the empty search box"
+        s["Prefs.RecentCount.Desc"]    := "0 = none. Pinned items (→ Pin to Empty Search Box) are always shown first; Ctrl+Del removes one."
         ; Appearance
         s["Prefs.Width"]                := "Window width (px)"
         s["Prefs.Width.Desc"]           := "The width grows with the Windows display scale. More results scroll with ↑ ↓; the window grows with the results."
@@ -628,6 +635,7 @@ class I18n {
         s["Prefs.Feature.Terminal"]    := "Terminal"
         s["Prefs.Feature.System"]      := "System commands"
         s["Prefs.Feature.Windows"]     := "Window switching"
+        s["Prefs.Feature.Recent"]      := "Pinned & recent"
         s["Prefs.Feature.Help"]         := "Help (?)"
         s["Prefs.Feature.Bookmarks"]   := "Browser bookmarks"
         s["Prefs.StructuralCalc"]      := "Calculator: add structural results (main bars / rebar area)"
@@ -807,6 +815,7 @@ class I18n {
         s["Usage.F.Snippets"]          := "Snippets"
         s["Usage.F.System"]            := "System commands"
         s["Usage.F.Windows"]           := "Window switching"
+        s["Usage.F.Recent"]            := "Pinned & recent items"
         s["Usage.F.Terminal"]          := "Terminal commands"
         s["Usage.F.SnippetExpand"]     := "Snippet auto-expansion"
         s["Usage.F.QuickSwitch"]       := "Dialog quick switch"

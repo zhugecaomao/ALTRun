@@ -52,6 +52,7 @@
 #Include %A_ScriptDir%\..\Src\Providers\FileSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\TerminalProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\WindowProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\RecentProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\HelpProvider.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
@@ -76,7 +77,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1785,6 +1786,52 @@ class Tests {
         AppSettings.Feature("Windows")["InDefaultResults"] := 0
         eq("default results off", WindowProvider.Search(SearchQuery("ALTRun Window")).Length, 0)
         AppSettings.Feature("Windows")["InDefaultResults"] := 1
+    }
+
+    ; 空搜索框: 置顶在前, 然后最近打开的 (去重、限制个数); 只记能重新打开的结果
+    static RecentItems() {
+        eq := (n, a, e) => TestRunner.Equal("RecentItems." n, a, e)
+        saved := {Recent: Knowledge.Recent, File: Knowledge.File, SettingsFile: AppSettings.File}
+        options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedCount := options["RecentCount"]
+        Knowledge.Recent := [], Knowledge.File := A_Temp "\ALTRun-recent-test.json", AppSettings.File := A_Temp "\ALTRun-recent-settings.json"
+        options["Pinned"] := [], options["RecentCount"] := 2
+        fileItem := (name) => ResultItem(name, "C:\Docs\" name, {Kind: "file", Arg: "C:\Docs\" name, Uid: "file:" name, Provider: "FileSearch", Icon: "C:\Docs\" name})
+        RecentProvider.Remember(fileItem("a.txt"))
+        RecentProvider.Remember(fileItem("b.txt"))
+        RecentProvider.Remember(fileItem("c.txt"))
+        RecentProvider.Remember(fileItem("a.txt"))                               ; 再打开一次: 移到最前面, 不重复
+        clip := ResultItem("secret", "", {Kind: "text", Arg: "secret", Uid: "clip:1", Provider: "Clipboard"})
+        RecentProvider.Remember(clip)                                        ; 剪贴板历史不记
+        sys := ResultItem("Lock", "", {Uid: "system:Lock", Provider: "System", OnRun: (*) => 0})
+        RecentProvider.Remember(sys)
+        eq("order", Knowledge.Recent.Length "|" Knowledge.Recent[1]["Uid"] "|" Knowledge.Recent[2]["Uid"] "|" Knowledge.Recent[3]["Uid"], "4|system:Lock|file:a.txt|file:c.txt")
+        titles(items) {
+            list := ""
+            for item in items
+                list .= item.Title "|"
+            return RTrim(list, "|")
+        }
+        eq("empty box: recent count", titles(RecentProvider.EmptyResults()), I18n.T("Sys.Lock") "|a.txt")
+        options["Pinned"].Push(RecentProvider.Snapshot(fileItem("c.txt")))
+        items := RecentProvider.EmptyResults()
+        eq("pinned first", titles(items), "c.txt|" I18n.T("Sys.Lock") "|a.txt")
+        eq("pinned flag", items[1].Pinned "|" items[2].Pinned "|" items[1].Provider, "1|0|Recent")
+        eq("is pinned", RecentProvider.IsPinned(fileItem("c.txt")) "|" RecentProvider.IsPinned(fileItem("b.txt")), "1|0")
+        eq("can pin", RecentProvider.CanPin(fileItem("b.txt")) "|" RecentProvider.CanPin(clip), "1|0")
+        actions := ""
+        for action in ActionCatalog.ListFor(items[2])
+            actions .= action.Title "|"
+        eq("pin action", InStr(actions, I18n.T("Action.Pin")) > 0, true)
+        RecentProvider.DeleteItem(items[3])                                  ; Ctrl+Del: 从最近使用里去掉
+        eq("forget", titles(RecentProvider.EmptyResults()), "c.txt|" I18n.T("Sys.Lock") "|b.txt")
+        RecentProvider.DeleteItem(items[1])                                  ; 置顶的: 取消置顶
+        eq("unpin", options["Pinned"].Length, 0)
+        options["RecentCount"] := 0
+        eq("count 0", RecentProvider.EmptyResults().Length, 0)
+        Knowledge.Recent := saved.Recent, Knowledge.File := saved.File, AppSettings.File := saved.SettingsFile
+        options["Pinned"] := savedPinned, options["RecentCount"] := savedCount
+        try FileDelete(A_Temp "\ALTRun-recent-test.json")
+        try FileDelete(A_Temp "\ALTRun-recent-settings.json")
     }
 
     static WindowPosition() {

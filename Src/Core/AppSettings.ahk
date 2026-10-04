@@ -328,6 +328,11 @@ class AppSettings {
                     "Keyword"         , "bm",                               ; "bm 关键词" 只搜书签
                     "InDefaultResults", 1                                   ; 直接输入名称时也显示匹配的书签 (排在应用和命令后面)
                 ),
+                "Recent", Map(
+                    "Enabled"    , 1,
+                    "RecentCount", 5,                                       ; 空搜索框里显示几个最近打开的项目 (0 = 不显示)
+                    "Pinned"     , []                                       ; 置顶到空搜索框的项目 (操作面板里 "置顶")
+                ),
                 "Windows", Map(
                     "Enabled"         , 1,
                     "Keyword"         , "w",                                ; "w 标题" 只搜已打开的窗口, "w " 列出全部
