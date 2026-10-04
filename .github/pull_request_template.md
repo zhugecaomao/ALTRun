@@ -8,3 +8,4 @@
 
 ## 文档
 - [ ] 用户可见的变化已更新 `README.md` / `CHANGELOG.md` (或不需要)
+- [ ] 新的界面文字: 英文写在 `I18n.ahk`, 翻译加到 `Resources\Lang\` 的每个语言文件 (或不需要)

@@ -274,8 +274,7 @@ class ApplicationProvider {
 
     static _SaveCache() {
         try {
-            DirCreate(AppSettings.DataDir)
-            FileOpen(ApplicationProvider.IndexFile, "w", "UTF-8").Write(JSON.Stringify(Map("Apps", ApplicationProvider.Apps)))
+            JSON.WriteFile(ApplicationProvider.IndexFile, Map("Apps", ApplicationProvider.Apps))
         } catch as e {
             Logger.Error("ApplicationProvider: cannot write cache - " e.Message)
         }

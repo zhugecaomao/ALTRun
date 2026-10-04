@@ -13,6 +13,12 @@
 ### 改进
 - 界面语言改为语言文件: 英文编译在程序里, 简体中文、繁體中文、日本語是 `Resources\Lang\` 里的 `zh-CN.json`、`zh-TW.json`、`ja.json`。加一种语言只要放一个文件 (写上 `_name` 名称和 `_font` 字体), 偏好设置的语言列表会自动列出; 没翻译的条目显示英文 (繁体先用简体)。设置里以前的 `"zh"` 照常可用, 保存时写成 `"zh-CN"`
 
+### 修复
+- 一键加日期: 在设置里换了日期格式 (例如 `yyyy-MM-dd`) 后, 再按 `Ctrl+D` 会更新名字末尾的日期, 不再多加一个
+- 文件管理器设为 Directory Opus、XYplorer 等时, "打开所在位置" 打开文件所在的文件夹 (以前加了只有 Total Commander 认识的 `/P` 参数)
+- 设置和数据文件按 JSON 标准保存: 不带 BOM, 文字里的控制字符 (例如从终端复制的内容) 写成转义形式, 别的工具也能正常读取; 应用索引、文件索引、汇率和更新状态也改为先写临时文件再替换, 写到一半中断不会损坏
+- 官网分享链接时显示预览图
+
 ## [2026.10.04]
 
 窗口隐藏后自动切回原来的输入法; 偏好设置的 "关于" 加上官网链接。
@@ -399,6 +405,17 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.04...HEAD
+[2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
+[2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03
+[2026.10.02]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.02
+[2026.10.01]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01
+[2026.09.30.3]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.30.3
+[2026.09.30.2]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.30.2
+[2026.09.30.1]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.30.1
+[2026.09.30]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.30
+[2026.09.29]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.29
+[2026.09.28]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.28
 [2026.09.27]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.27
 [2026.09.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.26
 [2026.09.25]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.25

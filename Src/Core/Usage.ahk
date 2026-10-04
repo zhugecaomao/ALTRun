@@ -44,11 +44,7 @@ class Usage {
     static Save() {
         try {
             Usage._Prune()
-            DirCreate(AppSettings.DataDir)
-            tmpFile := Usage.File ".tmp"
-            try FileDelete(tmpFile)
-            FileAppend(JSON.Stringify(Map("Since", Usage.Since, "Days", Usage.Days)), tmpFile, "UTF-8")
-            FileMove(tmpFile, Usage.File, true)
+            JSON.WriteFile(Usage.File, Map("Since", Usage.Since, "Days", Usage.Days))
         } catch as e {
             Logger.Error("Usage.Save: " e.Message)
         }

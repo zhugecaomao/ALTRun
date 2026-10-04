@@ -70,9 +70,7 @@ class CurrencyRates {
             rates := Map()
             for code, rate in Units.Rates
                 rates[code] := rate
-            DirCreate(AppSettings.DataDir)
-            try FileDelete(CurrencyRates.File)
-            FileAppend(JSON.Stringify(Map("Date", CurrencyRates.Date, "Fetched", CurrencyRates.Fetched, "Rates", rates)), CurrencyRates.File, "UTF-8")
+            JSON.WriteFile(CurrencyRates.File, Map("Date", CurrencyRates.Date, "Fetched", CurrencyRates.Fetched, "Rates", rates))
             Logger.Debug("CurrencyRates: " Units.Rates.Count " rates of " CurrencyRates.Date)
         } catch as e {
             Logger.Error("CurrencyRates: " e.Message)

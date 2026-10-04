@@ -77,7 +77,7 @@ class App {
         UpdateChecker.CleanUp()
         SetTimer(() => ProviderRegistry.WarmUp(), -500)                    ; 第一次输入前算好搜索 Key 和图标
         if AppSettings.General["CheckForUpdates"]
-            UpdateChecker.Schedule()                                        ; 后台每天检查一次, 新版本显示在搜索窗口里
+            UpdateChecker.Schedule()                                        ; 后台定时检查 (见 UpdateChecker), 新版本显示在搜索窗口里
 
         Logger.Time("startup: total", started)
         App._HandleCommandLine()

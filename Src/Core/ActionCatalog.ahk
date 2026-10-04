@@ -192,7 +192,9 @@ class ActionCatalog {
         fileManager := AppSettings.General["FileManager"]
         if (fileManager = "" || InStr(fileManager, "explorer"))
             return Run('explorer.exe /select,"' resolved '"')
-        Run(fileManager ' /P "' resolved '"')                               ; Total Commander 等: /P 打开所在文件夹
+        if InStr(fileManager, "totalcmd")
+            return Run(fileManager ' /P "' resolved '"')                   ; Total Commander: 打开所在文件夹并选中这个文件
+        Run(fileManager ' "' ActionCatalog._ParentDir(resolved) '"')        ; 其它文件管理器的参数各不相同: 打开所在文件夹
     }
 
     static OpenUrl(address) {

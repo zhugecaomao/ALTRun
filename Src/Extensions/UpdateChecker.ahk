@@ -189,10 +189,7 @@ class UpdateChecker {
 
     static SaveState(state) {
         try {
-            SplitPath(UpdateChecker.StateFile, , &dir)
-            DirCreate(dir)
-            try FileDelete(UpdateChecker.StateFile)
-            FileAppend(JSON.Stringify(state), UpdateChecker.StateFile, "UTF-8")
+            JSON.WriteFile(UpdateChecker.StateFile, state)
         } catch as e {
             Logger.Error("UpdateChecker.SaveState: " e.Message)
         }

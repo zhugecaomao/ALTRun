@@ -42,12 +42,7 @@ class Knowledge {
 
     static Save() {
         try {
-            DirCreate(AppSettings.DataDir)
-            data := Map("Picks", Knowledge.Picks, "QueryPicks", Knowledge.QueryPicks, "History", Knowledge.History)
-            tmpFile := Knowledge.File ".tmp"
-            try FileDelete(tmpFile)
-            FileAppend(JSON.Stringify(data), tmpFile, "UTF-8")
-            FileMove(tmpFile, Knowledge.File, true)
+            JSON.WriteFile(Knowledge.File, Map("Picks", Knowledge.Picks, "QueryPicks", Knowledge.QueryPicks, "History", Knowledge.History))
         } catch as e {
             Logger.Error("Knowledge.Save: " e.Message)
         }

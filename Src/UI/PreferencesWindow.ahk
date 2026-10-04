@@ -355,8 +355,7 @@ class PreferencesWindow {
         if (FileExist(themeFile) && MsgBox(I18n.T("Prefs.ThemeExists", themeName), App.Name, "YesNo Icon! Default2") != "Yes")
             return
         try {
-            DirCreate(ThemeManager.UserDir)
-            FileOpen(themeFile, "w", "UTF-8").Write(JSON.Stringify(theme))
+            JSON.WriteFile(themeFile, theme)
         } catch as e {
             return MsgBox(e.Message, App.Name, 48)
         }

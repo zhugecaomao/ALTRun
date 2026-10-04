@@ -8,7 +8,8 @@
 
 只用 Python 标准库。本地预览:
   python3 site/build.py && python3 -m http.server -d _site
-环境变量: GITHUB_REPOSITORY (默认 zhugecaomao/ALTRun), GITHUB_TOKEN (可选, 避免 API 限流), SITE_OUT (默认 _site)
+环境变量: GITHUB_REPOSITORY (默认 zhugecaomao/ALTRun), GITHUB_TOKEN (可选, 避免 API 限流), SITE_OUT (默认 _site),
+          SITE_URL (网站地址, 分享预览图要用完整网址; 默认 https://zhugecaomao.github.io/ALTRun/)
 """
 import html
 import json
@@ -23,6 +24,7 @@ SITE = os.path.join(ROOT, "site")
 SHOTS = os.path.join(ROOT, "docs", "images", "screenshots")
 OUT = os.path.join(ROOT, os.environ.get("SITE_OUT", "_site"))
 REPO = os.environ.get("GITHUB_REPOSITORY", "zhugecaomao/ALTRun")
+SITE_URL = os.environ.get("SITE_URL", "https://zhugecaomao.github.io/ALTRun/").rstrip("/") + "/"
 
 
 def read(*parts):
@@ -147,6 +149,7 @@ def main():
         "CHANGES_VERSION": changes_version,
         "CHANGES": changes,
         "REPO": REPO,
+        "SITE_URL": SITE_URL,
     }
     page = read("site", "index.html")
     page = re.sub(r"\{\{(\w+)\}\}", lambda m: values[m.group(1)], page)
