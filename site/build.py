@@ -3,7 +3,7 @@
 
 自动更新的内容:
   - 最新版本号、发布日期、下载链接和 zip 大小、总下载次数 (GitHub API; 取不到时用 App.ahk 里的版本号)
-  - 主题截图 (docs/images/screenshots/theme-*.png, 顺序和名称取自 ThemeManager.ahk / I18n.ahk)
+  - 主题截图 (docs/images/screenshots/theme-*.png, 顺序和名称取自 ThemeManager.ahk / I18n.ahk / Resources/Lang/zh-CN.json)
   - 最新版本的更新内容 (CHANGELOG.md 里第一个已发布的版本)
 
 只用 Python 标准库。本地预览:
@@ -108,8 +108,11 @@ def png_size(path):
 
 def theme_gallery():
     """theme-*.png (Light 用 search.png), 按主题列表里的顺序, 显示中英文名称"""
-    names = {m.group(1).lower(): (m.group(2), m.group(3))
-             for m in re.finditer(r's\["Theme\.(\w+)"\]\s*:=\s*\["([^"]*)",\s*"([^"]*)"', read("Src", "Core", "I18n.ahk"))}
+    english = {m.group(1).lower(): m.group(2)
+               for m in re.finditer(r's\["Theme\.(\w+)"\]\s*:=\s*"([^"]*)"', read("Src", "Core", "I18n.ahk"))}
+    chinese = {key[6:].lower(): text for key, text in json.loads(read("Resources", "Lang", "zh-CN.json")).items()
+               if key.startswith("Theme.")}
+    names = {key: (en, chinese.get(key, en)) for key, en in english.items()}
     order = re.findall(r'"(\w+)"', re.search(r"BuiltinOrder\s*:=\s*\[(.*?)\]", read("Src", "UI", "ThemeManager.ahk"), re.S).group(1))
     files = {"light": "search.png"}
     for name in os.listdir(SHOTS):

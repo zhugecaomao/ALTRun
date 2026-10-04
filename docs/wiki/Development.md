@@ -21,7 +21,7 @@ Src\Core\           App (启动流程), AppSettings + SchemaMigration (设置和
 Src\UI\             SearchWindow, PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, TendonProfile + PTToolsWindow, UpdateChecker)
-Resources\          随程序发布的数据 (Kanji.txt, Themes\*.json)
+Resources\          随程序发布的数据 (Kanji.txt, Themes\*.json, Lang\*.json)
 Tests\RunTests.ahk  单元测试
 Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据
 Tests\Screenshots\  自动截图
@@ -57,7 +57,7 @@ bucket\ packaging\  Scoop / winget 清单 (见 packaging\README.md)
    ```
 2. 在 `ALTRun.ahk` 里 `#Include`, 在 `App.Start()` 里 `ProviderRegistry.Register(XxxProvider)`
 3. 在 `AppSettings.Defaults()` 的 `Features` 下加 `"Xxx", Map("Enabled", 1, ...)`
-4. 界面文字加到 `I18n.ahk` (英文 + 中文 + 日文; 测试会检查三种语言都有)
+4. 界面文字: 英文加到 `I18n.ahk`, 翻译加到 `Resources\Lang\` 的每个语言文件 (测试会检查每个文件都有)
 5. 在 `Tests\RunTests.ahk` 里加测试
 
 可选:

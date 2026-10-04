@@ -28,7 +28,8 @@
 - **注释**: 每个文件开头说明用途和用法; 代码里的注释说明 "为什么", 用中文
 - **单行输入框**: 所有 `Edit` 控件都要写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行 (有测试检查)
 - **设置**: 新的设置项加到 `AppSettings.Defaults()`; 改变已有设置的结构时 `AppSettings.CurrentVersion + 1`, 并在 `SchemaMigration` 里加一个 `_FromN()`
-- **界面文字**: 全部放在 `I18n.ahk`, 每条同时写英文、中文和日文 (测试会检查三种语言都有、占位符一致); 偏好设置里的文字较长时, 注意英文和日文不要超出页面 (`PreferencesFit` 测试会检查)
+- **界面文字**: 英文原文写在 `I18n.ahk`, 翻译写在 `Resources\Lang\` 的每个语言文件里 (`zh-CN.json`、`zh-TW.json`、`ja.json`; 测试会检查每个文件都有、占位符一致); 偏好设置里的文字较长时, 注意各种语言都不要超出页面 (`PreferencesFit` 测试会检查)
+- **翻译 / 新语言**: 复制一个语言文件, 改名为语言代码 (例如 `ko.json`、`de.json`), 改 `_name` (用这种语言写的名称) 和 `_font`, 再翻译每一条; 放进 `Resources\Lang\` 后偏好设置的语言列表会自动列出它。只翻译了一部分也可以用, 没翻译的显示英文 (或 `_fallback` 指定的语言)
 - **编码**: UTF-8; `ALTRun.ahk` 保持 UTF-8 BOM + CRLF, 其它文件 UTF-8 + LF
 
 新增一个搜索功能的步骤见 Wiki 的 [开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)。

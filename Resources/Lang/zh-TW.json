@@ -1,5 +1,8 @@
 {
-  "_comment": "ALTRun 繁體中文介面文字。鍵名見 Src/Core/I18n.ahk; 缺少的鍵顯示簡體中文。",
+  "_name": "繁體中文",
+  "_font": "Microsoft JhengHei UI",
+  "_fallback": "zh-CN",
+  "_comment": "ALTRun 繁體中文介面文字。鍵名和英文原文見 Src/Core/I18n.ahk; 檔案裡沒有的鍵顯示簡體中文 (_fallback)。",
   "Action.AddAllCommands": "全部新增到自訂指令",
   "Action.AddCommand": "新增到自訂指令...",
   "Action.Copy": "複製到剪貼簿",

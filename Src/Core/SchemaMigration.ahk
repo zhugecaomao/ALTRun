@@ -124,7 +124,7 @@ class SchemaMigration {
         general := data["General"]
         general["Hotkey"]               := SchemaMigration._CleanHotkey(pick(oldHotkeys, "GlobalHotkey1", "!Space"))
         general["SecondaryHotkey"]      := SchemaMigration._CleanHotkey(pick(oldHotkeys, "GlobalHotkey2", ""))
-        general["Language"]             := pick(config, "Chinese", 0) ? "zh" : "auto"
+        general["Language"]             := pick(config, "Chinese", 0) ? "zh-CN" : "auto"
         general["LaunchAtLogin"]        := pick(config, "AutoStartup", 1)
         general["ShowTrayIcon"]         := pick(config, "ShowTrayIcon", 1)
         general["HideOnDeactivate"]     := pick(config, "HideOnLostFocus", 1)

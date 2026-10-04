@@ -285,22 +285,22 @@ class PreferencesWindow {
         button.Enabled := false
     }
 
-    ; 内置主题显示翻译后的名称, 用户主题显示文件名
-    ; 界面语言的选项: 自动 + I18n.Languages (每种语言用它自己的文字显示)
+    ; 界面语言的选项: 自动 + Resources\Lang 里的语言 (每种语言用它自己的文字显示)
     static _LanguageValues() {
         values := ["auto"]
-        for language in I18n.Languages
+        for language in I18n.Languages()
             values.Push(language[1])
         return values
     }
 
     static _LanguageLabels() {
         labels := [I18n.T("Prefs.Language.auto")]
-        for language in I18n.Languages
+        for language in I18n.Languages()
             labels.Push(language[2])
         return labels
     }
 
+    ; 内置主题显示翻译后的名称, 用户主题显示文件名
     static _ThemeLabel(themeName) {
         label := I18n.T("Theme." themeName)
         return (label = "Theme." themeName) ? themeName : label
