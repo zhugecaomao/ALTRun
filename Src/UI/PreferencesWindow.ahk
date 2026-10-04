@@ -452,7 +452,7 @@ class PreferencesWindow {
 
     static _BuildSnippets() {
         PreferencesWindow._BeginPage("Prefs.Page.Snippets", 150)
-        PreferencesWindow._List("Snippets", 180
+        PreferencesWindow._List("Snippets", 220
             , [["Prefs.Col.Name", "Name", 150], ["Prefs.Col.Keyword", "Keyword", 90], ["Prefs.Col.Text", "Text", 300]]
             , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet())
         PreferencesWindow._Section("Prefs.Section.Options")
