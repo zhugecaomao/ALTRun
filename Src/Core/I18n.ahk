@@ -1,46 +1,124 @@
 ;===============================================================================
-; I18n.ahk - 界面文字 (英文 / 中文 / 日本語) (AutoHotkey v2)
+; I18n.ahk - 界面文字 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 每条文字用一个语义化的键名, 值是 [英文, 中文, 日本語]。{1} {2} ... 是参数占位符。
+; 英文原文编译在程序里 (下面的 _Build, 每条一个语义化的键名; {1} {2} ... 是参数占位符);
+; 其它语言是 Resources\Lang\<代码>.json 里的翻译 ({"键名": "文字", ...}), 代码用 BCP 47 写法:
+;   zh-CN.json 简体中文   zh-TW.json 繁體中文   ja.json 日本語
+; 文件开头以 "_" 开头的键是这种语言的信息:
+;   "_name"     偏好设置里显示的名称 (用这种语言自己的文字)
+;   "_font"     界面字体 (主题的 FontName 是 "auto" 时用), 不写用 Segoe UI
+;   "_fallback" 这个文件里没有的键先找哪种语言 (例如 zh-TW -> zh-CN), 最后都是英文
+; 加一种语言 = 放一个 JSON 文件, 偏好设置的语言列表会自动列出; 测试会检查每个键都有翻译、占位符一致。
+; 加一条界面文字 = 在 _Build 里加英文, 再在每个语言文件里加翻译。
 ;
 ; 用法:
-;   I18n.Init("auto")                          启动时调用, "auto" 按系统语言选择
+;   I18n.Init("auto")                          启动时调用, "auto" 按 Windows 的显示语言选择
 ;   I18n.T("Search.Placeholder")               取当前语言的文字
 ;   I18n.T("Web.SearchFor", "Google", "abc")   带参数
 ;===============================================================================
 
 class I18n {
-    static Lang := "en"
+    static Lang := "en"                                                     ; 当前语言的代码
+    static Font := ""                                                       ; 当前语言的界面字体 ("" = Segoe UI)
+    static Texts := Map()                                                   ; 当前语言的翻译 (已经合并了 _fallback 的语言)
+    static LangDir := A_ScriptDir "\Resources\Lang"
+    static Aliases := Map("zh", "zh-CN", "zh-SG", "zh-CN", "zh-HK", "zh-TW", "zh-MO", "zh-TW")   ; 以前的设置值 "zh"; 地区 -> 用哪个文件
 
+    ; setting: "auto" 或语言代码; 没有这种语言的文件时按 Resolve 找最接近的, 都没有就用英文
     static Init(setting := "auto") {
-        if (setting = "en" || setting = "zh" || setting = "ja")
-            I18n.Lang := setting
-        else if I18n.IsJapaneseSystem()
-            I18n.Lang := "ja"
-        else if I18n.IsChineseSystem()
-            I18n.Lang := "zh"
-        else
-            I18n.Lang := "en"
+        code := I18n.Normalize(setting)
+        code := I18n.Resolve(code = "auto" ? I18n.SystemLocale() : code)
+        chain := []                                                         ; 这种语言, 然后是它的 _fallback ...
+        while (code != "en" && chain.Length < 4) {
+            data := I18n.ReadFile(code)
+            if !data.Count
+                break
+            chain.Push(data)
+            code := I18n.Normalize(data.Get("_fallback", "en"))
+        }
+        I18n.Texts := Map(), I18n.Font := "", I18n.Lang := "en"
+        if !chain.Length
+            return I18n.Lang
+        Loop chain.Length {                                                 ; 从最后一个 _fallback 开始, 前面的语言覆盖后面的
+            for key, text in chain[chain.Length - A_Index + 1]
+                if (SubStr(key, 1, 1) != "_")
+                    I18n.Texts[key] := text
+        }
+        for data in chain
+            if (I18n.Font = "" && data.Get("_font", "") != "")
+                I18n.Font := data["_font"]
+        return I18n.Lang := I18n.Normalize(chain[1]["_code"])
     }
 
-    static IsChineseSystem() {
-        ; 0804 简体(中国大陆) 0404 繁体(台湾) 0C04 香港 1004 新加坡 1404 澳门
-        for code in ["0804", "0404", "0C04", "1004", "1404"]
-            if (A_Language = code)
-                return true
-        return false
+    ; "zh-tw" -> "zh-TW"; 以前的写法 (见 Aliases) 换成现在的代码; "" -> "auto"
+    static Normalize(code) {
+        code := Trim(code)
+        if (code = "" || code = "auto")
+            return "auto"
+        parts := StrSplit(StrReplace(code, "_", "-"), "-")
+        code := StrLower(parts[1])
+        Loop parts.Length - 1 {
+            part := parts[A_Index + 1]
+            code .= "-" (StrLen(part) = 2 ? StrUpper(part) : part)
+        }
+        return I18n.Aliases.Get(code, code)
     }
 
-    static IsJapaneseSystem() {
-        ; 0411 日本語
-        return A_Language = "0411"
+    ; 语言代码 -> 有文件的语言: 先找完全一样的, 再找只有语言部分的 ("ko-KR" -> "ko"), 都没有用 "en"
+    static Resolve(code) {
+        if (code = "en")
+            return "en"
+        base := StrSplit(code, "-")[1]
+        for candidate in [code, I18n.Aliases.Get(base, base)]
+            if (candidate = "en" || FileExist(I18n.LangDir "\" candidate ".json"))
+                return candidate
+        return "en"
+    }
+
+    ; Windows 的显示语言 -> 语言代码 (例如 "zh-SG" 用简体中文, "zh-HK" 用繁體中文)
+    static SystemLocale() {
+        name := Buffer(85 * 2, 0)
+        if !DllCall("LCIDToLocaleName", "UInt", Integer("0x" A_Language), "Ptr", name, "Int", 85, "UInt", 0)
+            return "en"
+        return I18n.Normalize(StrGet(name))
+    }
+
+    ; Resources\Lang\<代码>.json -> Map (读不了时为空); "_code" 是文件名里的代码
+    static ReadFile(code) {
+        data := Map()
+        try {
+            parsed := JSON.Parse(FileRead(I18n.LangDir "\" code ".json", "UTF-8"))
+            if (parsed is Map)
+                for key, text in parsed
+                    if (Type(text) = "String")
+                        data[key] := text
+        }
+        if data.Count
+            data["_code"] := code
+        return data
+    }
+
+    ; 偏好设置的语言列表: [[代码, 名称], ...], 英文在最前, 其它按代码排序
+    static Languages() {
+        found := Map()
+        Loop Files, I18n.LangDir "\*.json" {
+            code := I18n.Normalize(SubStr(A_LoopFileName, 1, -5))
+            name := code
+            try if RegExMatch(FileRead(A_LoopFileFullPath, "UTF-8"), '"_name"\s*:\s*"([^"]+)"', &m)
+                name := m[1]
+            found[code] := name                                             ; Map 按键排序
+        }
+        list := [["en", "English"]]
+        for code, name in found
+            if (code != "en")
+                list.Push([code, name])
+        return list
     }
 
     static T(key, args*) {
         if !I18n.Strings.Has(key)
             return key
-        pair := I18n.Strings[key]
-        text := (I18n.Lang = "zh") ? pair[2] : (I18n.Lang = "ja") ? pair[3] : pair[1]
+        text := I18n.Texts.Has(key) ? I18n.Texts[key] : I18n.Strings[key]
         for index, arg in args
             text := StrReplace(text, "{" index "}", arg)
         return text
@@ -48,678 +126,678 @@ class I18n {
 
     static Strings := I18n._Build()
 
-    ; 每条: 键名 -> [英文, 中文, 日本語]
+    ; 每条: 键名 -> 英文原文
     static _Build() {
         s := Map()
         ; --- App / tray ---
-        s["App.Tagline"]               := ["An effective launcher for Windows", "高效的 Windows 启动器", "Windows 用の高機能ランチャー"]
-        s["App.Running"]               := ["ALTRun is running. Press {1} to search.", "ALTRun 已在运行, 按 {1} 开始搜索。", "ALTRun は実行中です。{1} で検索を開始します。"]
-        s["Tray.Show"]                 := ["Show ALTRun", "显示 ALTRun", "ALTRun を表示"]
-        s["Tray.Preferences"]          := ["Preferences...", "偏好设置...", "環境設定..."]
-        s["Tray.RebuildIndex"]         := ["Rebuild Index", "重建索引", "インデックスを再構築"]
-        s["Tray.CheckUpdate"]          := ["Check for Updates", "检查更新", "更新を確認"]
-        s["Tray.Reload"]               := ["Reload", "重新载入", "再読み込み"]
-        s["Tray.Exit"]                 := ["Quit", "退出", "終了"]
+        s["App.Tagline"]               := "An effective launcher for Windows"
+        s["App.Running"]               := "ALTRun is running. Press {1} to search."
+        s["Tray.Show"]                 := "Show ALTRun"
+        s["Tray.Preferences"]          := "Preferences..."
+        s["Tray.RebuildIndex"]         := "Rebuild Index"
+        s["Tray.CheckUpdate"]          := "Check for Updates"
+        s["Tray.Reload"]               := "Reload"
+        s["Tray.Exit"]                 := "Quit"
 
         ; --- Settings / migration ---
-        s["Settings.ParseError"]       := ["ALTRun.json could not be read:`n`n{1}`n`nIt was renamed to {2} and the default settings are used.", "ALTRun.json 无法解析:`n`n{1}`n`n已改名为 {2}, 现在使用默认设置。", "ALTRun.json を読み込めませんでした:`n`n{1}`n`n{2} に改名し、既定の設定を使用します。"]
-        s["Settings.SaveError"]        := ["Could not save ALTRun.json:`n`n{1}", "无法保存 ALTRun.json:`n`n{1}", "ALTRun.json を保存できませんでした:`n`n{1}"]
-        s["Settings.ImportedIni"]      := ["Settings, commands and hotkeys were imported from the previous version ({1}). That file is kept unchanged.", "已从旧版本导入设置、命令和热键 ({1})。原文件保留不变。", "旧バージョン ({1}) から設定、コマンド、ホットキーをインポートしました。元のファイルは変更されていません。"]
-        s["Settings.Moved"]            := ["Settings now live in the Data folder: {1}", "设置文件已移到 Data 文件夹: {1}", "設定ファイルは Data フォルダーに移動しました: {1}"]
-        s["Settings.Migrated"]         := ["Settings were upgraded from version {1}. A backup was saved as {2}.", "设置已从版本 {1} 升级, 原文件备份为 {2}。", "設定をバージョン {1} からアップグレードしました。バックアップは {2} として保存されました。"]
-        s["Settings.EditHint"]         := ["ALTRun reloads when you save ALTRun.json.", "保存 ALTRun.json 后 ALTRun 会自动重新载入。", "ALTRun.json を保存すると ALTRun は自動的に再読み込みされます。"]
+        s["Settings.ParseError"]       := "ALTRun.json could not be read:`n`n{1}`n`nIt was renamed to {2} and the default settings are used."
+        s["Settings.SaveError"]        := "Could not save ALTRun.json:`n`n{1}"
+        s["Settings.ImportedIni"]      := "Settings, commands and hotkeys were imported from the previous version ({1}). That file is kept unchanged."
+        s["Settings.Moved"]            := "Settings now live in the Data folder: {1}"
+        s["Settings.Migrated"]         := "Settings were upgraded from version {1}. A backup was saved as {2}."
+        s["Settings.EditHint"]         := "ALTRun reloads when you save ALTRun.json."
 
         ; --- Search window ---
-        s["Search.Placeholder"]        := ["ALTRun Search", "ALTRun 搜索", "ALTRun 検索"]
-        s["Search.FilesPlaceholder"]   := ["Search files...", "搜索文件...", "ファイルを検索..."]
-        s["Search.ActionsFor"]         := ["Actions for {1}", "{1} 的操作", "{1} の操作"]
-        s["Search.Copied"]             := ["Copied: {1}", "已复制: {1}", "コピーしました: {1}"]
-        s["Search.NotEditable"]        := ["This result cannot be edited.", "这一项不能编辑。", "この項目は編集できません。"]
-        s["Search.ConfirmDelete"]      := ["Delete '{1}'?", "确定删除 '{1}' 吗?", "'{1}' を削除しますか?"]
+        s["Search.Placeholder"]        := "ALTRun Search"
+        s["Search.FilesPlaceholder"]   := "Search files..."
+        s["Search.ActionsFor"]         := "Actions for {1}"
+        s["Search.Copied"]             := "Copied: {1}"
+        s["Search.NotEditable"]        := "This result cannot be edited."
+        s["Search.ConfirmDelete"]      := "Delete '{1}'?"
 
         ; --- Actions ---
-        s["Action.Open"]               := ["Open", "打开", "開く"]
-        s["Action.Run"]                := ["Run", "运行", "実行"]
-        s["Action.RunAsAdmin"]         := ["Run as Administrator", "以管理员身份运行", "管理者として実行"]
-        s["Action.Reveal"]             := ["Reveal in File Manager", "在文件管理器中显示", "ファイルマネージャーで表示"]
-        s["Action.CopyPath"]           := ["Copy Path", "复制路径", "パスをコピー"]
-        s["Action.CopyName"]           := ["Copy Name", "复制名称", "名前をコピー"]
-        s["Action.CopyUrl"]            := ["Copy URL", "复制网址", "URL をコピー"]
-        s["Action.Copy"]               := ["Copy to Clipboard", "复制到剪贴板", "クリップボードにコピー"]
-        s["Action.Paste"]              := ["Paste to Front Window", "粘贴到前台窗口", "最前面のウィンドウに貼り付け"]
-        s["Action.LargeType"]          := ["Show in Large Type", "大字显示", "拡大表示"]
-        s["Action.OpenTerminal"]       := ["Open Terminal Here", "在此处打开终端", "ここでターミナルを開く"]
-        s["Action.Properties"]         := ["Properties", "属性", "プロパティ"]
-        s["Action.AddCommand"]         := ["Add to Custom Commands...", "添加到自定义命令...", "カスタムコマンドに追加..."]
-        s["Action.Edit"]               := ["Edit...", "编辑...", "編集..."]
-        s["Action.Delete"]             := ["Delete", "删除", "削除"]
-        s["Action.SearchWith"]         := ["Search {1}", "用 {1} 搜索", "{1} で検索"]
-        s["Action.SaveSnippet"]        := ["Save as Snippet...", "存为文字片段...", "スニペットとして保存..."]
-        s["Action.ReplaceWith"]        := ["Replace with: {1}", "替换为: {1}", "置き換え: {1}"]
-        s["Action.CopyResult"]         := ["Copy the result", "复制结果", "結果をコピー"]
-        s["Action.AddAllCommands"]     := ["Add All to Custom Commands", "全部添加到自定义命令", "すべてカスタムコマンドに追加"]
-        s["Action.OpenWith"]           := ["Open With...", "打开方式...", "プログラムから開く..."]
-        s["Action.CopyFile"]           := ["Copy File", "复制文件", "ファイルをコピー"]
-        s["Action.CutFile"]            := ["Cut File", "剪切文件", "ファイルを切り取り"]
-        s["Action.CopyFile.Hint"]      := ["Then paste in Total Commander / Explorer", "然后在 TC / 资源管理器里粘贴", "Total Commander / エクスプローラーで貼り付け"]
-        s["Action.FileCopied"]         := ["Copied {1} - paste it in a folder", "已复制 {1}, 可以粘贴到文件夹里", "{1} をコピーしました。フォルダーに貼り付けできます"]
-        s["Action.FileCut"]            := ["Cut {1} - paste it in a folder to move it", "已剪切 {1}, 粘贴到文件夹里就会移动过去", "{1} を切り取りました。フォルダーに貼り付けると移動します"]
-        s["Action.CopyTo"]             := ["Copy to Current Folder in {1}", "复制到 {1} 当前的文件夹", "{1} の現在のフォルダーにコピー"]
-        s["Action.MoveTo"]             := ["Move to Current Folder in {1}", "移动到 {1} 当前的文件夹", "{1} の現在のフォルダーに移動"]
-        s["Action.Copying"]            := ["Copying {1} to {2}", "正在复制 {1} 到 {2}", "{1} を {2} にコピーしています"]
-        s["Action.Moving"]             := ["Moving {1} to {2}", "正在移动 {1} 到 {2}", "{1} を {2} に移動しています"]
-        s["Action.Recycle"]            := ["Move to Recycle Bin", "移到回收站", "ごみ箱に移動"]
-        s["Selection.None"]            := ["Nothing is selected", "没有选中的内容", "何も選択されていません"]
-        s["Selection.Text"]            := ["Selected text · {1} characters", "选中的文字 · {1} 个字", "選択したテキスト · {1} 文字"]
-        s["Selection.Link"]            := ["Selected link", "选中的网址", "選択したリンク"]
-        s["Selection.Files"]           := ["{1} files", "{1} 个文件", "{1} 個のファイル"]
+        s["Action.Open"]               := "Open"
+        s["Action.Run"]                := "Run"
+        s["Action.RunAsAdmin"]         := "Run as Administrator"
+        s["Action.Reveal"]             := "Reveal in File Manager"
+        s["Action.CopyPath"]           := "Copy Path"
+        s["Action.CopyName"]           := "Copy Name"
+        s["Action.CopyUrl"]            := "Copy URL"
+        s["Action.Copy"]               := "Copy to Clipboard"
+        s["Action.Paste"]              := "Paste to Front Window"
+        s["Action.LargeType"]          := "Show in Large Type"
+        s["Action.OpenTerminal"]       := "Open Terminal Here"
+        s["Action.Properties"]         := "Properties"
+        s["Action.AddCommand"]         := "Add to Custom Commands..."
+        s["Action.Edit"]               := "Edit..."
+        s["Action.Delete"]             := "Delete"
+        s["Action.SearchWith"]         := "Search {1}"
+        s["Action.SaveSnippet"]        := "Save as Snippet..."
+        s["Action.ReplaceWith"]        := "Replace with: {1}"
+        s["Action.CopyResult"]         := "Copy the result"
+        s["Action.AddAllCommands"]     := "Add All to Custom Commands"
+        s["Action.OpenWith"]           := "Open With..."
+        s["Action.CopyFile"]           := "Copy File"
+        s["Action.CutFile"]            := "Cut File"
+        s["Action.CopyFile.Hint"]      := "Then paste in Total Commander / Explorer"
+        s["Action.FileCopied"]         := "Copied {1} - paste it in a folder"
+        s["Action.FileCut"]            := "Cut {1} - paste it in a folder to move it"
+        s["Action.CopyTo"]             := "Copy to Current Folder in {1}"
+        s["Action.MoveTo"]             := "Move to Current Folder in {1}"
+        s["Action.Copying"]            := "Copying {1} to {2}"
+        s["Action.Moving"]             := "Moving {1} to {2}"
+        s["Action.Recycle"]            := "Move to Recycle Bin"
+        s["Selection.None"]            := "Nothing is selected"
+        s["Selection.Text"]            := "Selected text · {1} characters"
+        s["Selection.Link"]            := "Selected link"
+        s["Selection.Files"]           := "{1} files"
 
         ; --- Providers ---
-        s["App.Subtitle.Store"]        := ["Microsoft Store app", "应用商店应用", "Microsoft Store アプリ"]
-        s["Calc.Subtitle"]             := ["Copy result to clipboard", "复制结果到剪贴板", "結果をクリップボードにコピー"]
-        s["Calc.RatesOf"]              := ["rates of {1}", "{1} 的汇率", "{1} のレート"]
-        s["Calc.Currency"]             := ["Currency conversion", "货币换算", "通貨換算"]
-        s["Calc.CurrencyOff"]          := ["Turn it on in Preferences → Features (downloads exchange rates once a day)", "在 偏好设置 → 功能 里打开 (每天下载一次汇率)", "環境設定 → 機能 でオンにします (為替レートを 1 日 1 回ダウンロード)"]
-        s["Calc.RatesNotYet"]          := ["Exchange rates have not been downloaded yet. Try again in a minute.", "还没有下载汇率, 请稍后再试", "為替レートはまだダウンロードされていません。しばらくしてからもう一度お試しください。"]
-        s["Calc.BeamWidth"]            := ["Beam width {1} mm: {2} main bars @ {3} c/c", "梁宽 {1} mm: 主筋 {2} 根 @ {3} c/c", "梁幅 {1} mm: 主筋 {2} 本 @ {3} c/c"]
-        s["Calc.RebarArea"]            := ["As = {1} mm²: {2}", "As = {1} mm²: {2}", "As = {1} mm²: {2}"]
-        s["Web.SearchFor"]             := ["Search {1} for '{2}'", "用 {1} 搜索 '{2}'", "{1} で '{2}' を検索"]
-        s["Web.SearchEmpty"]           := ["Search {1} for '...'", "用 {1} 搜索 '...'", "{1} で '...' を検索"]
-        s["Files.SearchFor"]           := ["Search files for '{1}'", "搜索文件 '{1}'", "ファイルを検索 '{1}'"]
-        s["Files.OpenEverything"]      := ["Search '{1}' in Everything", "在 Everything 中搜索 '{1}'", "Everything で '{1}' を検索"]
-        s["Files.WindowsSearch"]       := ["Search '{1}' with Windows Search", "用 Windows 搜索 '{1}'", "Windows 検索で '{1}' を検索"]
-        s["Files.Keyword"]             := ["Find files by name", "按文件名查找文件", "ファイル名でファイルを検索"]
-        s["Folders.Keyword"]           := ["Find folders by name", "按名称查找文件夹", "名前でフォルダーを検索"]
-        s["Files.TypeKeyword"]         := ["Find files of type: {1}", "按类型查找文件: {1}", "種類でファイルを検索: {1}"]
+        s["App.Subtitle.Store"]        := "Microsoft Store app"
+        s["Calc.Subtitle"]             := "Copy result to clipboard"
+        s["Calc.RatesOf"]              := "rates of {1}"
+        s["Calc.Currency"]             := "Currency conversion"
+        s["Calc.CurrencyOff"]          := "Turn it on in Preferences → Features (downloads exchange rates once a day)"
+        s["Calc.RatesNotYet"]          := "Exchange rates have not been downloaded yet. Try again in a minute."
+        s["Calc.BeamWidth"]            := "Beam width {1} mm: {2} main bars @ {3} c/c"
+        s["Calc.RebarArea"]            := "As = {1} mm²: {2}"
+        s["Web.SearchFor"]             := "Search {1} for '{2}'"
+        s["Web.SearchEmpty"]           := "Search {1} for '...'"
+        s["Files.SearchFor"]           := "Search files for '{1}'"
+        s["Files.OpenEverything"]      := "Search '{1}' in Everything"
+        s["Files.WindowsSearch"]       := "Search '{1}' with Windows Search"
+        s["Files.Keyword"]             := "Find files by name"
+        s["Folders.Keyword"]           := "Find folders by name"
+        s["Files.TypeKeyword"]         := "Find files of type: {1}"
 
         ; 速查表 (输入 ?) 和空搜索框里的使用提示, 见 HelpProvider。提示要放得进搜索框, 尽量短
-        s["Help.TipFormat"]            := ["Tip: {1}  {2}", "提示: {1}  {2}", "ヒント: {1}  {2}"]
-        s["Help.Files.Key"]            := ["Space + name", "空格 + 名称", "スペース + 名前"]
-        s["Help.Files.Text"]           := ["search files and folders", "只搜文件和文件夹", "ファイルとフォルダーを検索"]
-        s["Help.Folders.Key"]          := ["{1} bk", "{1} bk", "{1} bk"]
-        s["Help.Folders.Text"]         := ["search folders only", "只搜文件夹", "フォルダーのみ検索"]
-        s["Help.FileTypes.Key"]        := ["{1} report", "{1} 报告", "{1} 報告書"]
-        s["Help.FileTypes.Text"]       := ["search files of one type (documents, pictures, CAD...)", "只搜某类文件 (文档、图片、CAD...)", "特定の種類のファイルのみ検索 (文書、画像、CAD など)"]
-        s["Prefs.TypeFilters"]         := ["File types", "文件类型", "ファイルの種類"]
-        s["Prefs.TypeFilters.Desc"]    := ["One per line: keyword = extensions. e.g. doc report finds only documents (folders only: Folder keywords above).", "每行一个: 关键字 = 扩展名; 例如 doc 报告 只搜文档 (只搜文件夹用上面的 文件夹关键字)", "1 行に 1 つ: キーワード = 拡張子。例: doc 報告書 で文書のみ検索します (フォルダーのみは上のフォルダーキーワード)。"]
-        s["Help.FileKeyword.Key"]      := ["'report  /  {1} report", "'报告  /  {1} 报告", "'report  /  {1} report"]
-        s["Help.FileKeyword.Text"]     := ["search files, like Space", "搜文件, 和空格一样", "ファイルを検索 (スペースと同様)"]
-        s["Help.Actions.Key"]          := ["→  /  right-click", "→  /  右键", "→  /  右クリック"]
-        s["Help.Actions.Text"]         := ["all actions for a result", "选中项的全部操作", "選択項目の全操作を表示"]
-        s["Help.Edit.Key"]             := ["F3", "F3", "F3"]
-        s["Help.Edit.Text"]            := ["edit, or add as a custom command", "修改, 或添加为自定义命令", "編集、またはカスタムコマンドとして追加"]
-        s["Help.Delete.Key"]           := ["Ctrl+Del", "Ctrl+Del", "Ctrl+Del"]
-        s["Help.Delete.Text"]          := ["delete a result (apps: hide)", "删除选中项 (应用: 隐藏)", "項目を削除 (アプリの場合は非表示)"]
-        s["Help.Reveal.Key"]           := ["Ctrl+Enter", "Ctrl+Enter", "Ctrl+Enter"]
-        s["Help.Reveal.Text"]          := ["show in the file manager", "在文件管理器中显示", "ファイルマネージャーで表示"]
-        s["Help.Copy.Key"]             := ["Alt+Enter", "Alt+Enter", "Alt+Enter"]
-        s["Help.Copy.Text"]            := ["copy the path, URL or text", "复制路径 / 网址 / 文字", "パス / URL / テキストをコピー"]
-        s["Help.Number.Key"]           := ["Ctrl+1 ~ Ctrl+9", "Ctrl+1 ~ Ctrl+9", "Ctrl+1 ~ Ctrl+9"]
-        s["Help.Number.Text"]          := ["run row 1 ~ 9", "执行第 1 ~ 9 行", "1 ~ 9 行目を実行"]
-        s["Help.History.Key"]          := ["Ctrl+↑ / Ctrl+↓", "Ctrl+↑ / Ctrl+↓", "Ctrl+↑ / Ctrl+↓"]
-        s["Help.History.Text"]         := ["previous / next search", "上一条 / 下一条搜索记录", "前後の検索履歴"]
-        s["Help.Tab.Key"]              := ["Tab", "Tab", "Tab"]
-        s["Help.Tab.Text"]             := ["autocomplete", "自动补全", "自動補完"]
-        s["Help.Clipboard.Key"]        := ["{1}  /  {2}", "{1}  /  {2}", "{1}  /  {2}"]
-        s["Help.Clipboard.Text"]       := ["clipboard history", "剪贴板历史", "クリップボード履歴"]
-        s["Help.Snippets.Key"]         := ["{1}", "{1}", "{1}"]
-        s["Help.Snippets.Text"]        := ["text snippets", "文字片段", "テキストスニペット"]
-        s["Help.Expand.Key"]           := ["{1}keyword", "{1}关键字", "{1}キーワード"]
-        s["Help.Expand.Text"]          := ["expands a snippet in any app", "在任何程序里展开片段", "任意のアプリでスニペットを展開"]
-        s["Help.Terminal.Key"]         := ["{1}ipconfig", "{1}ipconfig", "{1}ipconfig"]
-        s["Help.Terminal.Text"]        := ["run in a terminal", "在终端里运行", "ターミナルで実行"]
-        s["Help.Calculator.Key"]       := ["12*(3+4)", "12*(3+4)", "12*(3+4)"]
-        s["Help.Calculator.Text"]      := ["calculate, Enter copies", "计算, Enter 复制结果", "計算, Enter で結果をコピー"]
-        s["Help.WebSearch.Key"]        := ["{1} words", "{1} 关键词", "{1} キーワード"]
-        s["Help.WebSearch.Text"]       := ["web search", "网页搜索", "Web 検索"]
-        s["Help.Convert.Key"]          := ["10 km in mi  /  100 f to c", "10 km in mi  /  100 f to c", "10 km in mi  /  100 f to c"]
-        s["Help.Convert.Text"]         := ["unit conversion (currency: 100 usd to sgd)", "单位换算 (货币: 100 usd to sgd)", "単位換算 (通貨: 100 usd to sgd)"]
-        s["Help.Bookmarks.Key"]        := ["{1} name", "{1} 名称", "{1} 名前"]
-        s["Help.Bookmarks.Text"]       := ["search browser bookmarks (Chrome, Edge...)", "搜索浏览器书签 (Chrome、Edge...)", "ブラウザのブックマークを検索 (Chrome、Edge...)"]
-        s["Help.Selection.Key"]        := ["{1} (with something selected)", "{1} (选中内容后)", "{1} (選択した状態で)"]
-        s["Help.Selection.Text"]       := ["actions for the selected text, files or link", "选中的文字、文件、网址的操作", "選択したテキスト・ファイル・リンクの操作"]
-        s["Help.CheckPaths.Key"]       := ["Preferences → Custom Commands", "偏好设置 → 自定义命令", "環境設定 → カスタムコマンド"]
-        s["Help.CheckPaths.Text"]      := ["Check Paths", "检查路径", "パスを確認"]
-        s["Help.LargeType.Key"]        := ["Ctrl+L", "Ctrl+L", "Ctrl+L"]
-        s["Help.LargeType.Text"]       := ["show in large type", "大字显示", "拡大表示"]
-        s["Help.Prefs.Key"]            := ["F2  /  Ctrl+,", "F2  /  Ctrl+,", "F2  /  Ctrl+,"]
-        s["Help.Prefs.Text"]           := ["preferences", "偏好设置", "環境設定"]
-        s["Help.EditJson.Key"]         := ["F4", "F4", "F4"]
-        s["Help.EditJson.Text"]        := ["edit the settings file (ALTRun.json)", "编辑设置文件 (ALTRun.json)", "設定ファイル (ALTRun.json) を編集"]
-        s["Help.About.Key"]            := ["F1", "F1", "F1"]
-        s["Help.About.Text"]           := ["about ALTRun: version, updates, project page", "关于 ALTRun: 版本、检查更新、项目主页", "ALTRun について: バージョン、更新の確認、プロジェクトページ"]
-        s["Help.Help.Key"]             := ["?", "?", "?"]
-        s["Help.Help.Text"]            := ["all syntax and shortcuts", "查看所有输入语法和快捷键", "すべての入力構文とショートカット"]
-        s["Terminal.Run"]              := ["Run '{1}' in terminal", "在终端运行 '{1}'", "ターミナルで '{1}' を実行"]
-        s["Terminal.Empty"]            := ["Run a command in terminal", "在终端运行命令", "ターミナルでコマンドを実行"]
-        s["Snippet.Subtitle"]          := ["Paste snippet · {1}", "粘贴片段 · {1}", "スニペットを貼り付け · {1}"]
-        s["Clipboard.Subtitle"]        := ["{1} · {2} · {3} characters", "{1} · {2} · {3} 个字符", "{1} · {2} · {3} 文字"]
-        s["Clipboard.Empty"]           := ["Clipboard history is empty", "剪贴板历史为空", "クリップボード履歴は空です"]
-        s["Clipboard.EmptyHint"]       := ["Copied text, files and images will appear here ({1})", "复制过的文字、文件和图片会出现在这里 ({1})", "コピーしたテキスト・ファイル・画像がここに表示されます ({1})"]
-        s["Clipboard.Clear"]           := ["Clear Clipboard History", "清空剪贴板历史", "クリップボード履歴を消去"]
-        s["Clipboard.ClearHint"]       := ["{1} items", "{1} 条", "{1} 件"]
-        s["Clipboard.Cleared"]         := ["Clipboard history cleared", "剪贴板历史已清空", "クリップボード履歴を消去しました"]
-        s["Clipboard.FileSubtitle"]    := ["{1} · {2} · {3}", "{1} · {2} · {3}", "{1} · {2} · {3}"]
-        s["Clipboard.FilesSubtitle"]   := ["{1} · {2} · {3} files", "{1} · {2} · {3} 个文件", "{1} · {2} · {3} 個のファイル"]
-        s["Clipboard.Image"]           := ["Image {1} × {2}", "图片 {1} × {2}", "画像 {1} × {2}"]
-        s["Clipboard.ImageSubtitle"]   := ["{1} · {2} · Enter pastes the image", "{1} · {2} · Enter 粘贴图片", "{1} · {2} · Enter で画像を貼り付け"]
-        s["Clipboard.PasteFiles"]      := ["Paste Files", "粘贴文件", "ファイルを貼り付け"]
-        s["Clipboard.PasteImage"]      := ["Paste Image", "粘贴图片", "画像を貼り付け"]
-        s["Clipboard.Merged"]          := ["Appended to the previous clipboard item", "已接到上一条剪贴板内容后面", "前のクリップボード項目に追加しました"]
-        s["Custom.Added"]              := ["Added '{1}' to Custom Commands.", "已将 '{1}' 添加到自定义命令。", "'{1}' をカスタムコマンドに追加しました。"]
-        s["Custom.AddedMany"]          := ["Added {1} commands to Custom Commands.", "已添加 {1} 条自定义命令。", "{1} 件のコマンドをカスタムコマンドに追加しました。"]
-        s["Custom.SkippedExisting"]    := ["{1} were already there.", "({1} 条已经有了, 没有重复添加)", "{1} 件は既に登録済みでした。"]
-        s["Custom.Exists"]             := ["'{1}' is already a custom command - edit it here.", "已经有这条命令 '{1}', 可以在这里修改", "'{1}' は既にカスタムコマンドに登録されています。ここで編集できます。"]
-        s["Cmd.Field.Title"]           := ["Shown in results. Searching matches the title and its pinyin initials.", "搜索结果里显示的名称; 搜索时按名称和它的拼音首字母匹配", "検索結果に表示される名前です。検索時は名前とそのピンイン頭文字にも一致します。"]
-        s["Cmd.Field.Type"]            := ["File: open a file or run a program. Folder: open in the file manager. Command line: a program plus arguments. Web address / link: a web page, or a link such as ms-settings:windowsupdate or mailto:.", "文件 / 程序: 打开文件或运行程序; 文件夹: 用文件管理器打开; 命令行: 程序 + 参数; 网址 / 链接: 网页, 或 ms-settings:windowsupdate、mailto: 这样的链接", "ファイル: ファイルを開く、またはプログラムを実行します。フォルダー: ファイルマネージャーで開きます。コマンドライン: プログラム + 引数です。Web アドレス / リンク: Web ページ、または ms-settings:windowsupdate や mailto: などのリンクです。"]
-        s["Cmd.Field.Target"]           := ["Path, program or web address. Variables work, e.g. A_Desktop\Projects or %OneDrive%\Documents. File and folder names are searched too.", "路径、程序或网址。可以用变量, 例如 A_Desktop\Projects、%OneDrive%\Documents; 文件名和文件夹名也能搜到", "パス、プログラム、または Web アドレスです。変数が使用できます (例: A_Desktop\Projects や %OneDrive%\Documents)。ファイル名やフォルダー名でも検索されます。"]
-        s["Cmd.Field.Arguments"]       := ["Passed to the program, e.g. /k ipconfig /all. Usually empty for files, folders and web addresses.", "运行程序时附带的参数, 例如 /k ipconfig /all; 文件、文件夹和网址一般留空", "プログラムに渡す引数です (例: /k ipconfig /all)。ファイル・フォルダー・Web アドレスでは通常空欄にします。"]
-        s["Cmd.Field.Keyword"]          := ["Optional. Typing exactly this word puts the command first, e.g. np for Notepad.", "可选。输入的文字和关键字完全一样时排在最前面, 例如给记事本设 np", "任意設定。この文字列を完全一致で入力すると、そのコマンドが最上位に表示されます (例: メモ帳に np)。"]
-        s["Index.Done"]                := ["Index rebuilt: {1} applications.", "索引已重建: {1} 个应用。", "インデックスを再構築しました: アプリ {1} 件。"]
+        s["Help.TipFormat"]            := "Tip: {1}  {2}"
+        s["Help.Files.Key"]            := "Space + name"
+        s["Help.Files.Text"]           := "search files and folders"
+        s["Help.Folders.Key"]          := "{1} bk"
+        s["Help.Folders.Text"]         := "search folders only"
+        s["Help.FileTypes.Key"]        := "{1} report"
+        s["Help.FileTypes.Text"]       := "search files of one type (documents, pictures, CAD...)"
+        s["Prefs.TypeFilters"]         := "File types"
+        s["Prefs.TypeFilters.Desc"]    := "One per line: keyword = extensions. e.g. doc report finds only documents (folders only: Folder keywords above)."
+        s["Help.FileKeyword.Key"]      := "'report  /  {1} report"
+        s["Help.FileKeyword.Text"]     := "search files, like Space"
+        s["Help.Actions.Key"]          := "→  /  right-click"
+        s["Help.Actions.Text"]         := "all actions for a result"
+        s["Help.Edit.Key"]             := "F3"
+        s["Help.Edit.Text"]            := "edit, or add as a custom command"
+        s["Help.Delete.Key"]           := "Ctrl+Del"
+        s["Help.Delete.Text"]          := "delete a result (apps: hide)"
+        s["Help.Reveal.Key"]           := "Ctrl+Enter"
+        s["Help.Reveal.Text"]          := "show in the file manager"
+        s["Help.Copy.Key"]             := "Alt+Enter"
+        s["Help.Copy.Text"]            := "copy the path, URL or text"
+        s["Help.Number.Key"]           := "Ctrl+1 ~ Ctrl+9"
+        s["Help.Number.Text"]          := "run row 1 ~ 9"
+        s["Help.History.Key"]          := "Ctrl+↑ / Ctrl+↓"
+        s["Help.History.Text"]         := "previous / next search"
+        s["Help.Tab.Key"]              := "Tab"
+        s["Help.Tab.Text"]             := "autocomplete"
+        s["Help.Clipboard.Key"]        := "{1}  /  {2}"
+        s["Help.Clipboard.Text"]       := "clipboard history"
+        s["Help.Snippets.Key"]         := "{1}"
+        s["Help.Snippets.Text"]        := "text snippets"
+        s["Help.Expand.Key"]           := "{1}keyword"
+        s["Help.Expand.Text"]          := "expands a snippet in any app"
+        s["Help.Terminal.Key"]         := "{1}ipconfig"
+        s["Help.Terminal.Text"]        := "run in a terminal"
+        s["Help.Calculator.Key"]       := "12*(3+4)"
+        s["Help.Calculator.Text"]      := "calculate, Enter copies"
+        s["Help.WebSearch.Key"]        := "{1} words"
+        s["Help.WebSearch.Text"]       := "web search"
+        s["Help.Convert.Key"]          := "10 km in mi  /  100 f to c"
+        s["Help.Convert.Text"]         := "unit conversion (currency: 100 usd to sgd)"
+        s["Help.Bookmarks.Key"]        := "{1} name"
+        s["Help.Bookmarks.Text"]       := "search browser bookmarks (Chrome, Edge...)"
+        s["Help.Selection.Key"]        := "{1} (with something selected)"
+        s["Help.Selection.Text"]       := "actions for the selected text, files or link"
+        s["Help.CheckPaths.Key"]       := "Preferences → Custom Commands"
+        s["Help.CheckPaths.Text"]      := "Check Paths"
+        s["Help.LargeType.Key"]        := "Ctrl+L"
+        s["Help.LargeType.Text"]       := "show in large type"
+        s["Help.Prefs.Key"]            := "F2  /  Ctrl+,"
+        s["Help.Prefs.Text"]           := "preferences"
+        s["Help.EditJson.Key"]         := "F4"
+        s["Help.EditJson.Text"]        := "edit the settings file (ALTRun.json)"
+        s["Help.About.Key"]            := "F1"
+        s["Help.About.Text"]           := "about ALTRun: version, updates, project page"
+        s["Help.Help.Key"]             := "?"
+        s["Help.Help.Text"]            := "all syntax and shortcuts"
+        s["Terminal.Run"]              := "Run '{1}' in terminal"
+        s["Terminal.Empty"]            := "Run a command in terminal"
+        s["Snippet.Subtitle"]          := "Paste snippet · {1}"
+        s["Clipboard.Subtitle"]        := "{1} · {2} · {3} characters"
+        s["Clipboard.Empty"]           := "Clipboard history is empty"
+        s["Clipboard.EmptyHint"]       := "Copied text, files and images will appear here ({1})"
+        s["Clipboard.Clear"]           := "Clear Clipboard History"
+        s["Clipboard.ClearHint"]       := "{1} items"
+        s["Clipboard.Cleared"]         := "Clipboard history cleared"
+        s["Clipboard.FileSubtitle"]    := "{1} · {2} · {3}"
+        s["Clipboard.FilesSubtitle"]   := "{1} · {2} · {3} files"
+        s["Clipboard.Image"]           := "Image {1} × {2}"
+        s["Clipboard.ImageSubtitle"]   := "{1} · {2} · Enter pastes the image"
+        s["Clipboard.PasteFiles"]      := "Paste Files"
+        s["Clipboard.PasteImage"]      := "Paste Image"
+        s["Clipboard.Merged"]          := "Appended to the previous clipboard item"
+        s["Custom.Added"]              := "Added '{1}' to Custom Commands."
+        s["Custom.AddedMany"]          := "Added {1} commands to Custom Commands."
+        s["Custom.SkippedExisting"]    := "{1} were already there."
+        s["Custom.Exists"]             := "'{1}' is already a custom command - edit it here."
+        s["Cmd.Field.Title"]           := "Shown in results. Searching matches the title and its pinyin initials."
+        s["Cmd.Field.Type"]            := "File: open a file or run a program. Folder: open in the file manager. Command line: a program plus arguments. Web address / link: a web page, or a link such as ms-settings:windowsupdate or mailto:."
+        s["Cmd.Field.Target"]           := "Path, program or web address. Variables work, e.g. A_Desktop\Projects or %OneDrive%\Documents. File and folder names are searched too."
+        s["Cmd.Field.Arguments"]       := "Passed to the program, e.g. /k ipconfig /all. Usually empty for files, folders and web addresses."
+        s["Cmd.Field.Keyword"]          := "Optional. Typing exactly this word puts the command first, e.g. np for Notepad."
+        s["Index.Done"]                := "Index rebuilt: {1} applications."
 
         ; --- System commands ---
-        s["Sys.Preferences"]           := ["ALTRun Preferences", "ALTRun 偏好设置", "ALTRun 環境設定"]
-        s["Sys.Reload"]                := ["Reload ALTRun", "重新载入 ALTRun", "ALTRun を再読み込み"]
-        s["Sys.RebuildIndex"]          := ["Rebuild ALTRun Index", "重建 ALTRun 索引", "ALTRun インデックスを再構築"]
-        s["Sys.Quit"]                  := ["Quit ALTRun", "退出 ALTRun", "ALTRun を終了"]
-        s["Sys.CheckUpdate"]           := ["Check for ALTRun Updates", "检查 ALTRun 更新", "ALTRun の更新を確認"]
-        s["Sys.About"]                 := ["About ALTRun", "关于 ALTRun", "ALTRun について"]
-        s["Sys.Log"]                   := ["Open ALTRun Log", "打开 ALTRun 日志", "ALTRun ログを開く"]
-        s["Sys.Lock"]                  := ["Lock Screen", "锁定屏幕", "画面をロック"]
-        s["Sys.Sleep"]                 := ["Sleep", "睡眠", "スリープ"]
-        s["Sys.Hibernate"]             := ["Hibernate", "休眠", "休止状態"]
-        s["Sys.Shutdown"]              := ["Shut Down", "关机", "シャットダウン"]
-        s["Sys.Restart"]               := ["Restart", "重启", "再起動"]
-        s["Sys.Logoff"]                := ["Log Off", "注销", "サインアウト"]
-        s["Sys.EmptyRecycle"]          := ["Empty Recycle Bin", "清空回收站", "ごみ箱を空にする"]
-        s["Sys.MonitorOff"]            := ["Turn Off Monitor", "关闭显示器", "ディスプレイの電源を切る"]
-        s["Sys.Mute"]                  := ["Toggle Mute", "静音 / 取消静音", "ミュート切り替え"]
-        s["Sys.VolumeUp"]              := ["Volume Up", "增大音量", "音量を上げる"]
-        s["Sys.VolumeDown"]            := ["Volume Down", "减小音量", "音量を下げる"]
-        s["Sys.MediaPlayPause"]        := ["Play / Pause", "播放 / 暂停", "再生 / 一時停止"]
-        s["Sys.MediaNext"]             := ["Next Track", "下一首", "次の曲"]
-        s["Sys.MediaPrev"]             := ["Previous Track", "上一首", "前の曲"]
-        s["Sys.MediaStop"]             := ["Stop Media", "停止播放", "再生を停止"]
-        s["Sys.ShowIP"]                := ["Show IP Address", "显示 IP 地址", "IP アドレスを表示"]
-        s["Sys.TerminalHere"]          := ["Open Terminal at Current Folder", "在当前文件夹打开终端", "現在のフォルダーでターミナルを開く"]
-        s["Sys.ListProcesses"]         := ["List Running Processes", "列出运行中的进程", "実行中のプロセス一覧"]
-        s["Sys.ListServices"]          := ["List Running Services", "列出运行中的服务", "実行中のサービス一覧"]
-        s["Sys.PTTools"]               := ["PT Tools (Rebar / BRC Calculator)", "PT 工具箱 (钢筋 / BRC 计算)", "PT ツール (鉄筋 / BRC 計算)"]
-        s["Sys.SPF2M"]                 := ["SPF2M Post-Tensioning Tendon Profile Calculator", "SPF2M 后张预应力束线型计算", "SPF2M ポストテンション PC 鋼材線形計算"]
-        s["Sys.Subtitle"]              := ["System command", "系统命令", "システムコマンド"]
-        s["Sys.ConfirmTitle"]          := ["{1}?", "确定要{1}吗?", "{1}しますか?"]
-        s["Sys.ConfirmHide"]           := ["Remove '{1}' from search results?`n`nYou can restore it in Preferences > Features.", "从搜索结果中删除 '{1}' 吗?`n`n可以在 偏好设置 → 功能 里恢复。", "'{1}' を検索結果から削除しますか?`n`n環境設定 → 機能 で復元できます。"]
-        s["Sys.NoIP"]                  := ["No IP address found.", "没有找到 IP 地址。", "IP アドレスが見つかりません。"]
-        s["Sys.IPCopied"]              := ["IP address (the first one is copied)", "IP 地址 (第一个已复制)", "IP アドレス (先頭のものをコピーしました)"]
-        s["Sys.NoFolder"]              := ["No Explorer or Total Commander folder found.", "没有找到资源管理器或 Total Commander 的当前文件夹。", "エクスプローラーまたは Total Commander のフォルダーが見つかりません。"]
-        s["Text.Upper"]                := ["Clipboard: UPPERCASE", "剪贴板: 转大写", "クリップボード: 大文字に変換"]
-        s["Text.Lower"]                := ["Clipboard: lowercase", "剪贴板: 转小写", "クリップボード: 小文字に変換"]
-        s["Text.Title"]                := ["Clipboard: Title Case", "剪贴板: 首字母大写", "クリップボード: 先頭文字を大文字に"]
-        s["Text.SortAsc"]              := ["Clipboard: Sort Lines A-Z", "剪贴板: 行排序 A-Z", "クリップボード: 行を昇順に並べ替え (A-Z)"]
-        s["Text.SortDesc"]             := ["Clipboard: Sort Lines Z-A", "剪贴板: 行排序 Z-A", "クリップボード: 行を降順に並べ替え (Z-A)"]
-        s["Text.TrimLines"]            := ["Clipboard: Trim Each Line", "剪贴板: 去除行首尾空白", "クリップボード: 各行の前後の空白を削除"]
-        s["Text.RemoveBlank"]          := ["Clipboard: Remove Blank Lines", "剪贴板: 删除空行", "クリップボード: 空行を削除"]
-        s["Text.Dedupe"]               := ["Clipboard: Remove Duplicate Lines", "剪贴板: 删除重复行", "クリップボード: 重複行を削除"]
-        s["Text.Reverse"]              := ["Clipboard: Reverse Text", "剪贴板: 反转文字", "クリップボード: テキストを反転"]
-        s["Text.ToTraditional"]        := ["Clipboard: Simplified → Traditional", "剪贴板: 简体转繁体", "クリップボード: 簡体字 → 繁体字"]
-        s["Text.ToSimplified"]         := ["Clipboard: Traditional → Simplified", "剪贴板: 繁体转简体", "クリップボード: 繁体字 → 簡体字"]
-        s["Text.UrlEncode"]            := ["Clipboard: URL Encode", "剪贴板: URL 编码", "クリップボード: URL エンコード"]
-        s["Text.Done"]                 := ["Clipboard converted", "剪贴板已转换", "クリップボードを変換しました"]
-        s["Text.Empty"]                := ["Clipboard is empty", "剪贴板为空", "クリップボードは空です"]
+        s["Sys.Preferences"]           := "ALTRun Preferences"
+        s["Sys.Reload"]                := "Reload ALTRun"
+        s["Sys.RebuildIndex"]          := "Rebuild ALTRun Index"
+        s["Sys.Quit"]                  := "Quit ALTRun"
+        s["Sys.CheckUpdate"]           := "Check for ALTRun Updates"
+        s["Sys.About"]                 := "About ALTRun"
+        s["Sys.Log"]                   := "Open ALTRun Log"
+        s["Sys.Lock"]                  := "Lock Screen"
+        s["Sys.Sleep"]                 := "Sleep"
+        s["Sys.Hibernate"]             := "Hibernate"
+        s["Sys.Shutdown"]              := "Shut Down"
+        s["Sys.Restart"]               := "Restart"
+        s["Sys.Logoff"]                := "Log Off"
+        s["Sys.EmptyRecycle"]          := "Empty Recycle Bin"
+        s["Sys.MonitorOff"]            := "Turn Off Monitor"
+        s["Sys.Mute"]                  := "Toggle Mute"
+        s["Sys.VolumeUp"]              := "Volume Up"
+        s["Sys.VolumeDown"]            := "Volume Down"
+        s["Sys.MediaPlayPause"]        := "Play / Pause"
+        s["Sys.MediaNext"]             := "Next Track"
+        s["Sys.MediaPrev"]             := "Previous Track"
+        s["Sys.MediaStop"]             := "Stop Media"
+        s["Sys.ShowIP"]                := "Show IP Address"
+        s["Sys.TerminalHere"]          := "Open Terminal at Current Folder"
+        s["Sys.ListProcesses"]         := "List Running Processes"
+        s["Sys.ListServices"]          := "List Running Services"
+        s["Sys.PTTools"]               := "PT Tools (Rebar / BRC Calculator)"
+        s["Sys.SPF2M"]                 := "SPF2M Post-Tensioning Tendon Profile Calculator"
+        s["Sys.Subtitle"]              := "System command"
+        s["Sys.ConfirmTitle"]          := "{1}?"
+        s["Sys.ConfirmHide"]           := "Remove '{1}' from search results?`n`nYou can restore it in Preferences > Features."
+        s["Sys.NoIP"]                  := "No IP address found."
+        s["Sys.IPCopied"]              := "IP address (the first one is copied)"
+        s["Sys.NoFolder"]              := "No Explorer or Total Commander folder found."
+        s["Text.Upper"]                := "Clipboard: UPPERCASE"
+        s["Text.Lower"]                := "Clipboard: lowercase"
+        s["Text.Title"]                := "Clipboard: Title Case"
+        s["Text.SortAsc"]              := "Clipboard: Sort Lines A-Z"
+        s["Text.SortDesc"]             := "Clipboard: Sort Lines Z-A"
+        s["Text.TrimLines"]            := "Clipboard: Trim Each Line"
+        s["Text.RemoveBlank"]          := "Clipboard: Remove Blank Lines"
+        s["Text.Dedupe"]               := "Clipboard: Remove Duplicate Lines"
+        s["Text.Reverse"]              := "Clipboard: Reverse Text"
+        s["Text.ToTraditional"]        := "Clipboard: Simplified → Traditional"
+        s["Text.ToSimplified"]         := "Clipboard: Traditional → Simplified"
+        s["Text.UrlEncode"]            := "Clipboard: URL Encode"
+        s["Text.Done"]                 := "Clipboard converted"
+        s["Text.Empty"]                := "Clipboard is empty"
 
         ; --- Windows tools ---
-        s["Tool.TaskManager"]          := ["Task Manager", "任务管理器", "タスク マネージャー"]
-        s["Tool.ControlPanel"]         := ["Control Panel", "控制面板", "コントロール パネル"]
-        s["Tool.Settings"]             := ["Windows Settings", "Windows 设置", "Windows の設定"]
-        s["Tool.DeviceManager"]        := ["Device Manager", "设备管理器", "デバイス マネージャー"]
-        s["Tool.Services"]             := ["Services", "服务", "サービス"]
-        s["Tool.Registry"]             := ["Registry Editor", "注册表编辑器", "レジストリ エディター"]
-        s["Tool.EventViewer"]          := ["Event Viewer", "事件查看器", "イベント ビューアー"]
-        s["Tool.DiskManagement"]       := ["Disk Management", "磁盘管理", "ディスクの管理"]
-        s["Tool.ComputerManagement"]   := ["Computer Management", "计算机管理", "コンピューターの管理"]
-        s["Tool.TaskScheduler"]        := ["Task Scheduler", "任务计划程序", "タスク スケジューラ"]
-        s["Tool.Programs"]             := ["Programs and Features", "程序和功能", "プログラムと機能"]
-        s["Tool.SystemProperties"]     := ["System Properties", "系统属性", "システムのプロパティ"]
-        s["Tool.Network"]              := ["Network Connections", "网络连接", "ネットワーク接続"]
-        s["Tool.Firewall"]             := ["Windows Defender Firewall", "Windows Defender 防火墙", "Windows Defender ファイアウォール"]
-        s["Tool.ResourceMonitor"]      := ["Resource Monitor", "资源监视器", "リソース モニター"]
-        s["Tool.DiskCleanup"]          := ["Disk Cleanup", "磁盘清理", "ディスク クリーンアップ"]
-        s["Tool.SystemConfig"]         := ["System Configuration", "系统配置", "システム構成"]
-        s["Tool.GroupPolicy"]          := ["Group Policy Editor", "组策略编辑器", "グループ ポリシー エディター"]
-        s["Tool.CommandPrompt"]        := ["Command Prompt", "命令提示符", "コマンド プロンプト"]
-        s["Tool.PowerShell"]           := ["PowerShell", "PowerShell", "PowerShell"]
-        s["Tool.Explorer"]             := ["File Explorer", "文件资源管理器", "エクスプローラー"]
-        s["Tool.RecycleBin"]           := ["Recycle Bin", "回收站", "ごみ箱"]
-        s["Tool.ThisPC"]               := ["This PC", "此电脑", "PC"]
-        s["Tool.Printers"]             := ["Devices and Printers", "设备和打印机", "デバイスとプリンター"]
-        s["Tool.Notepad"]              := ["Notepad", "记事本", "メモ帳"]
-        s["Tool.Calculator"]           := ["Calculator", "计算器", "電卓"]
-        s["Tool.Paint"]                := ["Paint", "画图", "ペイント"]
-        s["Tool.WinVer"]               := ["About Windows", "关于 Windows", "Windows について"]
-        s["Tool.Subtitle"]             := ["Windows tool", "Windows 工具", "Windows ツール"]
+        s["Tool.TaskManager"]          := "Task Manager"
+        s["Tool.ControlPanel"]         := "Control Panel"
+        s["Tool.Settings"]             := "Windows Settings"
+        s["Tool.DeviceManager"]        := "Device Manager"
+        s["Tool.Services"]             := "Services"
+        s["Tool.Registry"]             := "Registry Editor"
+        s["Tool.EventViewer"]          := "Event Viewer"
+        s["Tool.DiskManagement"]       := "Disk Management"
+        s["Tool.ComputerManagement"]   := "Computer Management"
+        s["Tool.TaskScheduler"]        := "Task Scheduler"
+        s["Tool.Programs"]             := "Programs and Features"
+        s["Tool.SystemProperties"]     := "System Properties"
+        s["Tool.Network"]              := "Network Connections"
+        s["Tool.Firewall"]             := "Windows Defender Firewall"
+        s["Tool.ResourceMonitor"]      := "Resource Monitor"
+        s["Tool.DiskCleanup"]          := "Disk Cleanup"
+        s["Tool.SystemConfig"]         := "System Configuration"
+        s["Tool.GroupPolicy"]          := "Group Policy Editor"
+        s["Tool.CommandPrompt"]        := "Command Prompt"
+        s["Tool.PowerShell"]           := "PowerShell"
+        s["Tool.Explorer"]             := "File Explorer"
+        s["Tool.RecycleBin"]           := "Recycle Bin"
+        s["Tool.ThisPC"]               := "This PC"
+        s["Tool.Printers"]             := "Devices and Printers"
+        s["Tool.Notepad"]              := "Notepad"
+        s["Tool.Calculator"]           := "Calculator"
+        s["Tool.Paint"]                := "Paint"
+        s["Tool.WinVer"]               := "About Windows"
+        s["Tool.Subtitle"]             := "Windows tool"
 
         ; --- Preferences window ---
-        s["Prefs.Title"]               := ["ALTRun Preferences", "ALTRun 偏好设置", "ALTRun 環境設定"]
-        s["Prefs.OK"]                  := ["OK", "确定", "OK"]
-        s["Prefs.Cancel"]              := ["Cancel", "取消", "キャンセル"]
-        s["Prefs.Apply"]               := ["Apply", "应用", "適用"]
-        s["Prefs.Help"]                := ["Help", "帮助", "ヘルプ"]
-        s["Prefs.DiscardChanges"]      := ["Discard your changes?", "放弃所做的修改吗?", "変更を破棄しますか?"]
-        s["Prefs.Add"]                 := ["Add...", "添加...", "追加..."]
-        s["Prefs.Edit"]                := ["Edit...", "编辑...", "編集..."]
-        s["Prefs.Delete"]              := ["Delete", "删除", "削除"]
-        s["Prefs.Filter"]              := ["Filter", "筛选", "絞り込み"]
-        s["Prefs.Browse"]              := ["...", "...", "..."]
-        s["Prefs.CheckTargets"]        := ["Check Paths", "检查路径", "パスを確認"]
-        s["Prefs.CheckAllOk"]          := ["All {1} paths exist.", "{1} 条命令的路径都有效。", "{1} 件すべてのパスが有効です。"]
-        s["Prefs.CheckResult"]         := ["Not found: {1}`nLocation not reachable (drive or network share not connected?): {2}`n`nThey are marked in the Status column. Double-click a command to fix its path.", "找不到: {1} 条`n所在位置无法访问 (驱动器或网络位置没有连接?): {2} 条`n`n已在 '状态' 列中标出, 双击命令可以修改路径。", "見つかりません: {1} 件`nアクセスできません (ドライブまたはネットワーク共有が未接続?): {2} 件`n`n「状態」列に表示されています。コマンドをダブルクリックするとパスを修正できます。"]
-        s["Prefs.CheckSkipped"]        := ["{1} web addresses and shell locations were not checked.", "网址和 shell: 位置不检查 ({1} 条)。", "URL と shell: の場所は確認していません ({1} 件)。"]
-        s["Prefs.Status.OK"]           := ["OK", "正常", "正常"]
-        s["Prefs.Status.Missing"]      := ["Not found", "找不到", "見つかりません"]
-        s["Prefs.Status.Unavailable"]  := ["Offline", "无法访问", "アクセス不可"]
-        s["Prefs.Status.Skipped"]      := ["-", "-", "-"]
-        s["Prefs.ConfirmDelete"]       := ["Delete '{1}'?", "确定删除 '{1}' 吗?", "'{1}' を削除しますか?"]
-        s["Prefs.Required"]            := ["'{1}' cannot be empty.", "'{1}' 不能为空。", "'{1}' は空にできません。"]
-        s["Prefs.HotkeyHint"]          := ["Click the box and press the keys. Mouse: click the middle or side button in the box.", "点一下框, 按下想要的组合键; 鼠标热键: 在框里点鼠标中键或侧键", "枠をクリックしてキーを押します。マウス: 枠の中で中ボタンまたはサイドボタンをクリックします。"]
-        s["Hotkey.None"]               := ["None", "未设置", "なし"]
-        s["Hotkey.Press"]              := ["Press a shortcut...", "请按下快捷键...", "キーを押してください..."]
-        s["Hotkey.PressTip"]           := ["Press the keys, e.g. Ctrl+Alt+C  ·  Esc: cancel  ·  Backspace: clear", "按下组合键, 例如 Ctrl+Alt+C  ·  Esc 取消  ·  Backspace 清除", "キーを押します (例: Ctrl+Alt+C)  ·  Esc: キャンセル  ·  Backspace: 消去"]
-        s["Hotkey.NeedModifier"]       := ["{1} would get in the way of typing. Add Ctrl, Alt or Win.", "{1} 会影响平时打字, 请加上 Ctrl、Alt 或 Win", "{1} は入力の妨げになります。Ctrl、Alt または Win と組み合わせてください。"]
-        s["Hotkey.PassThrough"]        := ["Keep the key's original function", "保留按键原来的功能", "キー本来の機能も残す"]
-        s["Hotkey.MButton"]            := ["Middle mouse button", "鼠标中键", "マウス中ボタン"]
-        s["Hotkey.XButton1"]           := ["Mouse back button", "鼠标后退键", "マウス戻るボタン"]
-        s["Hotkey.XButton2"]           := ["Mouse forward button", "鼠标前进键", "マウス進むボタン"]
-        s["Hotkey.LButton"]            := ["Left mouse button", "鼠标左键", "マウス左ボタン"]
-        s["Hotkey.RButton"]            := ["Right mouse button", "鼠标右键", "マウス右ボタン"]
-        s["Prefs.HotkeyClash"]         := ["{1} is used twice: {2} and {3}. Only one of them will work.`n`nSave anyway?", "{1} 用了两次: {2} 和 {3}, 只有一个会起作用。`n`n仍然保存吗?", "{1} が 2 か所で使われています: {2} と {3}。どちらか一方しか動作しません。`n`nこのまま保存しますか?"]
-        s["Prefs.Page.General"]        := ["General", "通用", "全般"]
-        s["Prefs.Page.Window"]         := ["Search Window", "搜索窗口", "検索ウィンドウ"]
-        s["Prefs.Page.Appearance"]     := ["Appearance", "外观", "外観"]
-        s["Prefs.Page.Features"]       := ["Features", "功能", "機能"]
-        s["Prefs.Page.Applications"]   := ["Applications", "应用搜索", "アプリ検索"]
-        s["Prefs.Page.FileSearch"]     := ["File Search", "文件搜索", "ファイル検索"]
-        s["Prefs.FileInDefault"]       := ["Also show matching files and folders in normal results", "普通搜索时也显示匹配的文件和文件夹", "通常の検索結果にも一致するファイルとフォルダーを表示"]
-        s["Prefs.FileDefaultLimit"]     := ["Files in normal results", "普通结果里的文件数", "通常結果に表示するファイル数"]
-        s["Prefs.FileMaxResults"]       := ["Max results", "最多结果数", "最大結果数"]
-        s["Prefs.UseEverything"]       := ["Use Everything when it is running (whole disk)", "Everything 运行时用它搜索 (全盘)", "Everything が実行中なら使用する (ドライブ全体)"]
-        s["Prefs.EverythingFilter"]     := ["Filter", "过滤条件", "フィルター"]
-        s["Prefs.EverythingFilter.Desc"] := ["Added to every Everything search. ! excludes, e.g. !C:\Windows\", "附加在每次 Everything 搜索后面; ! 表示排除, 例如 !C:\Windows\", "すべての Everything 検索に追加されます。! で除外、例: !C:\Windows\"]
-        s["Prefs.ScopeFolders"]         := ["Folders", "文件夹", "対象フォルダー"]
-        s["Prefs.ScopeFolders.Desc"]   := ["One folder per line. Variables such as A_Desktop or %UserProfile% work.", "每行一个文件夹; 可以用 A_Desktop、%UserProfile% 等变量", "1 行に 1 フォルダー。A_Desktop や %UserProfile% などの変数が使用できます。"]
-        s["Prefs.ScopeDepth"]          := ["Subfolder depth", "子文件夹深度", "サブフォルダーの深さ"]
-        s["Prefs.RebuildFileIndex"]    := ["Rebuild File Index", "重建文件索引", "ファイルインデックスを再構築"]
-        s["Prefs.FileMinLength"]        := ["Min. letters", "最少字数", "最小文字数"]
-        s["Prefs.FileMinLength.Desc"]   := ["Files are searched in normal results only after this many letters.", "普通搜索时输入这么多个字后才开始搜索文件", "通常の検索では、この文字数以上入力してからファイルを検索します。"]
-        s["Prefs.ScopeExclude"]         := ["Exclude (regex)", "排除 (正则)", "除外 (正規表現)"]
-        s["Prefs.ScopeExclude.Desc"]    := ["Folders whose path matches this regular expression are skipped, e.g. node_modules and .git.", "路径匹配这个正则表达式的文件夹不扫描, 例如 node_modules、.git", "パスがこの正規表現に一致するフォルダーはスキャンしません (例: node_modules、.git)。"]
-        s["Prefs.MaxEntries"]           := ["Max entries", "最多条数", "最大件数"]
-        s["Prefs.MaxEntries.Desc"]      := ["Scanning stops after this many files and folders. The index refreshes itself in the background at this interval.", "扫描到这么多个文件和文件夹后停止; 索引按这个间隔在后台自动更新", "この件数に達するとスキャンを停止します。インデックスはこの間隔でバックグラウンド更新されます。"]
-        s["Prefs.EverythingStatus"]    := ["Everything: {1}", "Everything: {1}", "Everything: {1}"]
-        s["Prefs.Running"]             := ["running - searching the whole disk", "正在运行 - 搜索全盘", "実行中 - ドライブ全体を検索"]
-        s["Prefs.NotRunning"]          := ["not running - using the built-in index", "没有运行 - 使用内置索引", "未実行 - 内蔵インデックスを使用"]
-        s["Prefs.Page.Commands"]       := ["Custom Commands", "自定义命令", "カスタムコマンド"]
-        s["Prefs.Page.Snippets"]       := ["Snippets", "文字片段", "スニペット"]
-        s["Prefs.Page.Clipboard"]      := ["Clipboard", "剪贴板历史", "クリップボード"]
-        s["Prefs.Page.WebSearch"]      := ["Web Search", "网页搜索", "Web 検索"]
-        s["Prefs.Page.Hotkeys"]        := ["Hotkeys", "自定义热键", "ホットキー"]
-        s["Prefs.Page.QuickSwitch"]     := ["Quick Switch", "对话框跳转", "クイック切り替え"]
-        s["Prefs.Page.QSPanel"]         := ["Dialog Panel", "对话框面板", "ダイアログパネル"]
-        s["Prefs.Page.DateStamp"]       := ["Date Stamp", "一键加日期", "日付スタンプ"]
-        s["Prefs.Page.FileIndex"]       := ["Search Sources", "搜索来源", "検索ソース"]
-        s["Prefs.Page.Advanced"]       := ["Advanced", "高级", "詳細設定"]
-        s["Prefs.Page.Usage"]          := ["Usage", "使用统计", "使用統計"]
+        s["Prefs.Title"]               := "ALTRun Preferences"
+        s["Prefs.OK"]                  := "OK"
+        s["Prefs.Cancel"]              := "Cancel"
+        s["Prefs.Apply"]               := "Apply"
+        s["Prefs.Help"]                := "Help"
+        s["Prefs.DiscardChanges"]      := "Discard your changes?"
+        s["Prefs.Add"]                 := "Add..."
+        s["Prefs.Edit"]                := "Edit..."
+        s["Prefs.Delete"]              := "Delete"
+        s["Prefs.Filter"]              := "Filter"
+        s["Prefs.Browse"]              := "..."
+        s["Prefs.CheckTargets"]        := "Check Paths"
+        s["Prefs.CheckAllOk"]          := "All {1} paths exist."
+        s["Prefs.CheckResult"]         := "Not found: {1}`nLocation not reachable (drive or network share not connected?): {2}`n`nThey are marked in the Status column. Double-click a command to fix its path."
+        s["Prefs.CheckSkipped"]        := "{1} web addresses and shell locations were not checked."
+        s["Prefs.Status.OK"]           := "OK"
+        s["Prefs.Status.Missing"]      := "Not found"
+        s["Prefs.Status.Unavailable"]  := "Offline"
+        s["Prefs.Status.Skipped"]      := "-"
+        s["Prefs.ConfirmDelete"]       := "Delete '{1}'?"
+        s["Prefs.Required"]            := "'{1}' cannot be empty."
+        s["Prefs.HotkeyHint"]          := "Click the box and press the keys. Mouse: click the middle or side button in the box."
+        s["Hotkey.None"]               := "None"
+        s["Hotkey.Press"]              := "Press a shortcut..."
+        s["Hotkey.PressTip"]           := "Press the keys, e.g. Ctrl+Alt+C  ·  Esc: cancel  ·  Backspace: clear"
+        s["Hotkey.NeedModifier"]       := "{1} would get in the way of typing. Add Ctrl, Alt or Win."
+        s["Hotkey.PassThrough"]        := "Keep the key's original function"
+        s["Hotkey.MButton"]            := "Middle mouse button"
+        s["Hotkey.XButton1"]           := "Mouse back button"
+        s["Hotkey.XButton2"]           := "Mouse forward button"
+        s["Hotkey.LButton"]            := "Left mouse button"
+        s["Hotkey.RButton"]            := "Right mouse button"
+        s["Prefs.HotkeyClash"]         := "{1} is used twice: {2} and {3}. Only one of them will work.`n`nSave anyway?"
+        s["Prefs.Page.General"]        := "General"
+        s["Prefs.Page.Window"]         := "Search Window"
+        s["Prefs.Page.Appearance"]     := "Appearance"
+        s["Prefs.Page.Features"]       := "Features"
+        s["Prefs.Page.Applications"]   := "Applications"
+        s["Prefs.Page.FileSearch"]     := "File Search"
+        s["Prefs.FileInDefault"]       := "Also show matching files and folders in normal results"
+        s["Prefs.FileDefaultLimit"]     := "Files in normal results"
+        s["Prefs.FileMaxResults"]       := "Max results"
+        s["Prefs.UseEverything"]       := "Use Everything when it is running (whole disk)"
+        s["Prefs.EverythingFilter"]     := "Filter"
+        s["Prefs.EverythingFilter.Desc"] := "Added to every Everything search. ! excludes, e.g. !C:\Windows\"
+        s["Prefs.ScopeFolders"]         := "Folders"
+        s["Prefs.ScopeFolders.Desc"]   := "One folder per line. Variables such as A_Desktop or %UserProfile% work."
+        s["Prefs.ScopeDepth"]          := "Subfolder depth"
+        s["Prefs.RebuildFileIndex"]    := "Rebuild File Index"
+        s["Prefs.FileMinLength"]        := "Min. letters"
+        s["Prefs.FileMinLength.Desc"]   := "Files are searched in normal results only after this many letters."
+        s["Prefs.ScopeExclude"]         := "Exclude (regex)"
+        s["Prefs.ScopeExclude.Desc"]    := "Folders whose path matches this regular expression are skipped, e.g. node_modules and .git."
+        s["Prefs.MaxEntries"]           := "Max entries"
+        s["Prefs.MaxEntries.Desc"]      := "Scanning stops after this many files and folders. The index refreshes itself in the background at this interval."
+        s["Prefs.EverythingStatus"]    := "Everything: {1}"
+        s["Prefs.Running"]             := "running - searching the whole disk"
+        s["Prefs.NotRunning"]          := "not running - using the built-in index"
+        s["Prefs.Page.Commands"]       := "Custom Commands"
+        s["Prefs.Page.Snippets"]       := "Snippets"
+        s["Prefs.Page.Clipboard"]      := "Clipboard"
+        s["Prefs.Page.WebSearch"]      := "Web Search"
+        s["Prefs.Page.Hotkeys"]        := "Hotkeys"
+        s["Prefs.Page.QuickSwitch"]     := "Quick Switch"
+        s["Prefs.Page.QSPanel"]         := "Dialog Panel"
+        s["Prefs.Page.DateStamp"]       := "Date Stamp"
+        s["Prefs.Page.FileIndex"]       := "Search Sources"
+        s["Prefs.Page.Advanced"]       := "Advanced"
+        s["Prefs.Page.Usage"]          := "Usage"
         ; 两列表单左列的分组标签
-        s["Prefs.Group.Startup"]          := ["Startup", "启动", "起動時の動作"]
-        s["Prefs.Group.Integration"]      := ["Windows", "系统集成", "Windows 連携"]
-        s["Prefs.Group.Updates"]          := ["Updates", "更新", "更新"]
-        s["Prefs.Group.Diagnostics"]      := ["Troubleshooting", "诊断", "トラブルシューティング"]
-        s["Prefs.Group.Window"]           := ["Window", "窗口", "ウィンドウ"]
-        s["Prefs.Group.Typing"]           := ["Typing", "输入", "入力"]
-        s["Prefs.Group.Tips"]             := ["Tips", "提示", "ヒント"]
-        s["Prefs.Group.CustomThemes"]     := ["Custom themes", "自定义主题", "カスタムテーマ"]
-        s["Prefs.Group.Dragging"]         := ["Dragging", "拖动", "ドラッグ"]
-        s["Prefs.Group.SearchFeatures"]   := ["Search features", "搜索功能", "検索機能"]
-        s["Prefs.Group.Options"]          := ["Options", "选项", "オプション"]
-        s["Prefs.Group.StartFileSearch"]  := ["Start with", "触发方式", "開始方法"]
-        s["Prefs.Group.NormalSearch"]     := ["Normal search", "普通搜索", "通常検索"]
-        s["Prefs.Group.Everything"]       := ["Everything", "Everything", "Everything"]
-        s["Prefs.Group.Search"]           := ["Search", "搜索", "検索"]
-        s["Prefs.Group.AutoExpand"]       := ["Auto-expansion", "自动展开", "自動展開"]
-        s["Prefs.Group.History"]          := ["History", "历史记录", "履歴"]
-        s["Prefs.Group.Copy"]             := ["Copy", "复制", "コピー"]
-        s["Prefs.Group.Status"]           := ["Status", "状态", "状態"]
-        s["Prefs.Group.DataFolder"]       := ["Data folder", "数据文件夹", "データフォルダー"]
-        s["Prefs.Section.TipsHistory"]    := ["Tips and history", "提示和搜索历史", "ヒントと検索履歴"]
-        s["Prefs.Section.Data"]           := ["Settings and data", "设置和数据", "設定とデータ"]
-        s["Prefs.Section.Reset"]          := ["Reset", "重置", "リセット"]
-        s["Prefs.Section.Theme"]          := ["Theme", "主题", "テーマ"]
-        s["Prefs.Section.Size"]           := ["Size", "大小", "サイズ"]
-        s["Prefs.Section.FeatureOptions"] := ["Feature options", "功能选项", "機能のオプション"]
-        s["Prefs.Section.AppIndex"]       := ["Index", "索引范围", "インデックス範囲"]
-        s["Prefs.Section.AppResults"]     := ["In search results", "搜索结果", "検索結果内での扱い"]
-        s["Prefs.Section.FileStart"]      := ["Starting a file search", "开始文件搜索", "ファイル検索の開始方法"]
-        s["Prefs.Section.FileResults"]    := ["Results", "搜索结果", "検索結果"]
-        s["Prefs.Section.Everything"]     := ["Everything (whole-disk search)", "Everything (全盘搜索)", "Everything (ドライブ全体を検索)"]
-        s["Prefs.Section.BuiltinIndex"]   := ["Built-in index (when Everything is not running)", "内置索引 (Everything 没有运行时)", "内蔵インデックス (Everything 未実行時)"]
-        s["Prefs.Section.Options"]        := ["Options", "选项", "オプション"]
-        s["Prefs.TypeShort.File"]         := ["File", "文件", "ファイル"]
-        s["Prefs.TypeShort.Folder"]       := ["Folder", "文件夹", "フォルダー"]
-        s["Prefs.TypeShort.Command"]      := ["Command", "命令行", "コマンド"]
-        s["Prefs.TypeShort.Url"]          := ["Link", "链接", "リンク"]
+        s["Prefs.Group.Startup"]          := "Startup"
+        s["Prefs.Group.Integration"]      := "Windows"
+        s["Prefs.Group.Updates"]          := "Updates"
+        s["Prefs.Group.Diagnostics"]      := "Troubleshooting"
+        s["Prefs.Group.Window"]           := "Window"
+        s["Prefs.Group.Typing"]           := "Typing"
+        s["Prefs.Group.Tips"]             := "Tips"
+        s["Prefs.Group.CustomThemes"]     := "Custom themes"
+        s["Prefs.Group.Dragging"]         := "Dragging"
+        s["Prefs.Group.SearchFeatures"]   := "Search features"
+        s["Prefs.Group.Options"]          := "Options"
+        s["Prefs.Group.StartFileSearch"]  := "Start with"
+        s["Prefs.Group.NormalSearch"]     := "Normal search"
+        s["Prefs.Group.Everything"]       := "Everything"
+        s["Prefs.Group.Search"]           := "Search"
+        s["Prefs.Group.AutoExpand"]       := "Auto-expansion"
+        s["Prefs.Group.History"]          := "History"
+        s["Prefs.Group.Copy"]             := "Copy"
+        s["Prefs.Group.Status"]           := "Status"
+        s["Prefs.Group.DataFolder"]       := "Data folder"
+        s["Prefs.Section.TipsHistory"]    := "Tips and history"
+        s["Prefs.Section.Data"]           := "Settings and data"
+        s["Prefs.Section.Reset"]          := "Reset"
+        s["Prefs.Section.Theme"]          := "Theme"
+        s["Prefs.Section.Size"]           := "Size"
+        s["Prefs.Section.FeatureOptions"] := "Feature options"
+        s["Prefs.Section.AppIndex"]       := "Index"
+        s["Prefs.Section.AppResults"]     := "In search results"
+        s["Prefs.Section.FileStart"]      := "Starting a file search"
+        s["Prefs.Section.FileResults"]    := "Results"
+        s["Prefs.Section.Everything"]     := "Everything (whole-disk search)"
+        s["Prefs.Section.BuiltinIndex"]   := "Built-in index (when Everything is not running)"
+        s["Prefs.Section.Options"]        := "Options"
+        s["Prefs.TypeShort.File"]         := "File"
+        s["Prefs.TypeShort.Folder"]       := "Folder"
+        s["Prefs.TypeShort.Command"]      := "Command"
+        s["Prefs.TypeShort.Url"]          := "Link"
         ; General
-        s["Prefs.Hotkey"]              := ["ALTRun hotkey", "呼出热键", "ALTRun 呼び出しキー"]
-        s["Prefs.Hotkey.Desc"]         := ["Shows or hides the search window. The second hotkey (default Alt+R) is optional. Click a box and press the keys.", "显示 / 隐藏搜索窗口; 第二个呼出热键 (默认 Alt+R) 可以不用。点一下框, 按下组合键", "検索ウィンドウの表示 / 非表示。2 つ目のキー (既定は Alt+R) は省略可。枠をクリックしてキーを押します。"]
-        s["Prefs.SecondaryHotkey"]     := ["Second hotkey", "第二个呼出热键", "2 つ目の呼び出しキー"]
-        s["Prefs.SecondaryHotkey.Desc"] := ["Default Alt+R, a second way to show ALTRun. Backspace in the box turns it off.", "默认 Alt+R, 另一个呼出 ALTRun 的热键; 不用时在框里按 Backspace 清除", "既定は Alt+R。ALTRun を呼び出すもう 1 つのキーです。不要なら枠で Backspace を押して消します。"]
-        s["Prefs.DoubleTap"]           := ["Double-tap", "双击呼出", "ダブルタップ"]
-        s["Prefs.DoubleTap.Desc"]      := ["Also open the search window by pressing a key twice quickly, like Listary.", "快速按两下某个键也能呼出搜索窗口 (和 Listary 一样)", "キーを素早く 2 回押しても検索ウィンドウを開きます (Listary と同じ)。"]
-        s["Prefs.DoubleTap.None"]      := ["Off", "不使用", "使用しない"]
-        s["Prefs.DoubleTap.Ctrl"]      := ["Double-tap Ctrl", "双击 Ctrl", "Ctrl を 2 回"]
-        s["Prefs.DoubleTap.Shift"]     := ["Double-tap Shift", "双击 Shift", "Shift を 2 回"]
-        s["Prefs.SelectionHotkey"]     := ["Selection hotkey", "选中内容的操作", "選択範囲の操作"]
-        s["Prefs.SelectionHotkey.Desc"] := ["Select text, files or a link in any program and press this to show its actions.", "在任何程序里选中文字、文件或网址后按下, 直接显示它的操作", "任意のプログラムでテキスト・ファイル・リンクを選択して押すと、操作を表示します。"]
-        s["Prefs.Language"]            := ["Language", "界面语言", "表示言語"]
-        s["Prefs.Language.auto"]       := ["Automatic", "自动", "自動"]
-        s["Prefs.Language.Desc"]       := ["Automatic follows the Windows display language.", "自动: 跟随 Windows 的显示语言", "「自動」は Windows の表示言語に従います。"]
-        s["Prefs.LaunchAtLogin"]       := ["Launch ALTRun at login", "开机自动启动", "ログイン時に ALTRun を起動"]
-        s["Prefs.LaunchAtLogin.Desc"]  := ["ALTRun starts in the background when you sign in to Windows.", "登录 Windows 后 ALTRun 在后台启动", "Windows へのサインイン後、ALTRun がバックグラウンドで起動します。"]
-        s["Prefs.ShowTrayIcon"]        := ["Show tray icon", "显示托盘图标", "タスクトレイアイコンを表示"]
-        s["Prefs.ShowTrayIcon.Desc"]   := ["Without the icon, press F2 in the search window to open Preferences.", "不显示图标时, 在搜索窗口里按 F2 打开偏好设置", "非表示のときは検索ウィンドウで F2 を押すと環境設定を開けます。"]
-        s["Prefs.HideOnDeactivate"]    := ["Hide the window when it loses focus", "失去焦点时隐藏窗口", "フォーカスが外れたらウィンドウを隠す"]
-        s["Prefs.HideOnDeactivate.Desc"] := ["Hides when you click another window or switch programs. When off, press Esc or the hotkey to hide.", "点击别的窗口或切换程序时自动隐藏; 关闭后只能按 Esc 或热键隐藏", "他のウィンドウをクリックしたり、プログラムを切り替えたりすると自動的に隠れます。オフの場合は Esc またはホットキーで隠します。"]
-        s["Prefs.EnglishInput"]        := ["Switch to English input when shown", "显示窗口时切换到英文输入法", "表示時に英語入力に切り替える"]
-        s["Prefs.EnglishInput.Desc"]   := ["Uses the English (US) keyboard each time, so a Chinese input method does not catch your typing.", "每次呼出时切换到英文 (美国) 键盘, 输入的字母不会进到中文输入法里", "呼び出すたびに英語 (US) キーボードに切り替わるため、日本語入力などに入力が取られません。"]
-        s["Prefs.RestoreInput"]        := ["Switch back when the window hides", "窗口隐藏后切回原来的输入法", "ウィンドウを閉じたら元の入力方式に戻す"]
-        s["Prefs.RestoreInput.Desc"]   := ["Other programs get the input method you were using before. Not needed when Windows uses a different input method for each app window.", "回到别的程序时还是呼出前的输入法; Windows 设置了每个应用窗口各用各的输入法时不需要", "他のプログラムに戻ったとき、呼び出す前の入力方式のままになります。アプリごとに入力方式を使い分ける設定の場合は不要です。"]
-        s["Prefs.SpaceToRun"]          := ["Space runs the selected result (Shift+Space types a space)", "按空格执行选中项 (Shift+空格输入空格)", "スペースで選択項目を実行 (Shift+スペースでスペースを入力)"]
-        s["Prefs.SpaceToRun.Desc"]     := ["After you type something, Space works like Enter. Space in an empty box still searches files.", "输入文字后按空格等于按 Enter; 空搜索框里按空格仍然是搜索文件", "文字を入力した後は、スペースが Enter と同様に働きます。空欄でのスペースはファイル検索のままです。"]
-        s["Prefs.KeepLastQuery"]       := ["Keep the last search when the window opens", "呼出窗口时保留上一次的搜索", "ウィンドウを開いたときに前回の検索を保持"]
-        s["Prefs.KeepLastQuery.Desc"]  := ["The text, results and selected row come back with the text selected: Enter runs it again, typing starts over.", "上一次的文字、结果和选中的行都保留, 文字全选: Enter 再执行一次, 直接输入开始新的搜索", "前回の文字列・結果・選択行が全選択状態で復元されます。Enter で再実行、入力するとやり直しになります。"]
-        s["Prefs.ShowTips"]            := ["Show usage tips in the empty search box", "空搜索框里显示使用提示", "空の検索欄に使い方のヒントを表示"]
-        s["Prefs.ShowTips.Desc"]       := ["A different tip each time the window opens. Type ? to see them all.", "每次呼出换一条; 输入 ? 查看全部", "ウィンドウを開くたびに違うヒントが表示されます。? と入力するとすべて表示されます。"]
-        s["Prefs.SendToMenu"]          := ["Add to Explorer 'Send to' menu", "添加到资源管理器 '发送到' 菜单", "エクスプローラーの「送る」メニューに追加"]
-        s["Prefs.SendToMenu.Desc"]     := ["Explorer → right-click → Send to → ALTRun adds custom commands: one item opens the editor, several are added at once.", "资源管理器里右键 → 发送到 → ALTRun 添加自定义命令: 选中 1 个时弹出编辑对话框, 选中多个时全部直接添加", "エクスプローラーで右クリック → 送る → ALTRun でカスタムコマンドに追加できます。1件選択時は編集画面が開き、複数選択時は一括で追加されます。"]
-        s["Prefs.StartMenu"]           := ["Add to Start menu", "添加到开始菜单", "スタートメニューに追加"]
-        s["Prefs.StartMenu.Desc"]      := ["Adds an ALTRun shortcut to the Start menu.", "在开始菜单里添加 ALTRun 的快捷方式", "スタートメニューに ALTRun のショートカットを追加します。"]
-        s["Prefs.CheckUpdates"]        := ["Check for updates automatically", "自动检查更新", "自動的に更新を確認"]
-        s["Prefs.CheckUpdates.Desc"]   := ["Checks GitHub in the background at startup and every 6 hours. A new version shows up in the search window.", "启动时和之后每 6 小时在后台到 GitHub 检查一次; 有新版本时呼出搜索窗口就能看到, 按 Enter 更新", "起動時と 6 時間ごとにバックグラウンドで GitHub を確認します。新しいバージョンは検索ウィンドウから更新できます。"]
-        s["Prefs.SaveLog"]             := ["Write a debug log", "写入调试日志", "デバッグログを記録"]
-        s["Prefs.SaveLog.Desc"]        := ["Writes %Temp%\ALTRun.log for troubleshooting. Normally leave it off.", "把运行记录写入 %Temp%\ALTRun.log, 排查问题时才需要打开", "トラブルシューティング用に %Temp%\ALTRun.log に記録します。通常はオフのままにします。"]
-        s["Prefs.FileManager"]         := ["File manager", "文件管理器", "ファイルマネージャー"]
-        s["Prefs.FileManager.Desc"]     := ["Program that opens folders; parameters can follow, e.g. C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S (Total Commander: /O reuse window, /T new tab, /S active panel). Quote a path with spaces. Default: explorer.exe", "打开文件夹用的程序, 后面可以带参数, 例如 C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S (Total Commander: /O 用已打开的窗口, /T 新标签页, /S 当前面板); 路径有空格时加引号。默认: explorer.exe", "フォルダーを開くプログラム。引数も指定可 (例: C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S。/O 既存ウィンドウ、/T 新しいタブ、/S アクティブパネル)。空白を含むパスは引用符で囲みます。"]
-        s["Prefs.HistorySize"]         := ["Search history size", "搜索历史条数", "検索履歴の件数"]
-        s["Prefs.HistorySize.Desc"]    := ["Ctrl+↑ / Ctrl+↓ bring back recent searches.", "Ctrl+↑ / Ctrl+↓ 调出最近的搜索", "Ctrl+↑ / Ctrl+↓ で最近の検索履歴を呼び出せます。"]
+        s["Prefs.Hotkey"]              := "ALTRun hotkey"
+        s["Prefs.Hotkey.Desc"]         := "Shows or hides the search window. The second hotkey (default Alt+R) is optional. Click a box and press the keys."
+        s["Prefs.SecondaryHotkey"]     := "Second hotkey"
+        s["Prefs.SecondaryHotkey.Desc"] := "Default Alt+R, a second way to show ALTRun. Backspace in the box turns it off."
+        s["Prefs.DoubleTap"]           := "Double-tap"
+        s["Prefs.DoubleTap.Desc"]      := "Also open the search window by pressing a key twice quickly, like Listary."
+        s["Prefs.DoubleTap.None"]      := "Off"
+        s["Prefs.DoubleTap.Ctrl"]      := "Double-tap Ctrl"
+        s["Prefs.DoubleTap.Shift"]     := "Double-tap Shift"
+        s["Prefs.SelectionHotkey"]     := "Selection hotkey"
+        s["Prefs.SelectionHotkey.Desc"] := "Select text, files or a link in any program and press this to show its actions."
+        s["Prefs.Language"]            := "Language"
+        s["Prefs.Language.auto"]       := "Automatic"
+        s["Prefs.Language.Desc"]       := "Automatic follows the Windows display language."
+        s["Prefs.LaunchAtLogin"]       := "Launch ALTRun at login"
+        s["Prefs.LaunchAtLogin.Desc"]  := "ALTRun starts in the background when you sign in to Windows."
+        s["Prefs.ShowTrayIcon"]        := "Show tray icon"
+        s["Prefs.ShowTrayIcon.Desc"]   := "Without the icon, press F2 in the search window to open Preferences."
+        s["Prefs.HideOnDeactivate"]    := "Hide the window when it loses focus"
+        s["Prefs.HideOnDeactivate.Desc"] := "Hides when you click another window or switch programs. When off, press Esc or the hotkey to hide."
+        s["Prefs.EnglishInput"]        := "Switch to English input when shown"
+        s["Prefs.EnglishInput.Desc"]   := "Uses the English (US) keyboard each time, so a Chinese input method does not catch your typing."
+        s["Prefs.RestoreInput"]        := "Switch back when the window hides"
+        s["Prefs.RestoreInput.Desc"]   := "Other programs get the input method you were using before. Not needed when Windows uses a different input method for each app window."
+        s["Prefs.SpaceToRun"]          := "Space runs the selected result (Shift+Space types a space)"
+        s["Prefs.SpaceToRun.Desc"]     := "After you type something, Space works like Enter. Space in an empty box still searches files."
+        s["Prefs.KeepLastQuery"]       := "Keep the last search when the window opens"
+        s["Prefs.KeepLastQuery.Desc"]  := "The text, results and selected row come back with the text selected: Enter runs it again, typing starts over."
+        s["Prefs.ShowTips"]            := "Show usage tips in the empty search box"
+        s["Prefs.ShowTips.Desc"]       := "A different tip each time the window opens. Type ? to see them all."
+        s["Prefs.SendToMenu"]          := "Add to Explorer 'Send to' menu"
+        s["Prefs.SendToMenu.Desc"]     := "Explorer → right-click → Send to → ALTRun adds custom commands: one item opens the editor, several are added at once."
+        s["Prefs.StartMenu"]           := "Add to Start menu"
+        s["Prefs.StartMenu.Desc"]      := "Adds an ALTRun shortcut to the Start menu."
+        s["Prefs.CheckUpdates"]        := "Check for updates automatically"
+        s["Prefs.CheckUpdates.Desc"]   := "Checks GitHub in the background at startup and every 6 hours. A new version shows up in the search window."
+        s["Prefs.SaveLog"]             := "Write a debug log"
+        s["Prefs.SaveLog.Desc"]        := "Writes %Temp%\ALTRun.log for troubleshooting. Normally leave it off."
+        s["Prefs.FileManager"]         := "File manager"
+        s["Prefs.FileManager.Desc"]     := "Program that opens folders; parameters can follow, e.g. C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S (Total Commander: /O reuse window, /T new tab, /S active panel). Quote a path with spaces. Default: explorer.exe"
+        s["Prefs.HistorySize"]         := "Search history size"
+        s["Prefs.HistorySize.Desc"]    := "Ctrl+↑ / Ctrl+↓ bring back recent searches."
         ; Appearance
-        s["Prefs.Theme"]               := ["Theme", "主题", "テーマ"]
-        s["Prefs.Theme.Desc"]          := ["Custom themes: Themes\<Name>.json. Copy a theme below to start from it.", "自定义主题: Themes\<名称>.json。可以先用下面的按钮复制一个主题再修改。", "カスタムテーマ: Themes\<名前>.json。下のボタンでテーマをコピーしてから編集できます。"]
-        s["Prefs.Width"]                := ["Window width (px)", "窗口宽度 (像素)", "ウィンドウ幅 (px)"]
-        s["Prefs.Width.Desc"]           := ["The width grows with the Windows display scale. More results scroll with ↑ ↓; the window grows with the results.", "宽度按 Windows 的缩放比例放大; 更多结果用 ↑ ↓ 滚动, 窗口高度随结果数量变化", "Windows の表示スケールに応じて幅が変わります。結果が多い場合は ↑ ↓ でスクロールし、ウィンドウは結果数に応じて縦に伸びます。"]
-        s["Prefs.VisibleRows"]          := ["Visible results (1-9)", "显示结果行数 (1-9)", "表示する結果行数 (1-9)"]
-        s["Prefs.CopyTheme"]           := ["Copy as Custom Theme...", "复制为自定义主题...", "カスタムテーマとしてコピー..."]
-        s["Prefs.CopyThemePrompt"]     := ["Name of the new theme (saved in the Themes folder):", "新主题的名称 (保存在 Themes 文件夹):", "新しいテーマの名前 (Themes フォルダーに保存されます):"]
-        s["Prefs.ThemeExists"]         := ["Theme '{1}' already exists. Replace it?", "主题 '{1}' 已经存在, 要覆盖吗?", "テーマ '{1}' は既に存在します。上書きしますか?"]
-        s["Theme.System"]              := ["System (Light / Dark)", "跟随系统 (浅色 / 深色)", "システムに合わせる (ライト / ダーク)"]
-        s["Theme.Light"]               := ["Light", "浅色", "ライト"]
-        s["Theme.Dark"]                := ["Dark", "深色", "ダーク"]
-        s["Theme.DarkCompact"]         := ["Dark Compact", "紧凑深色", "ダークコンパクト"]
-        s["Theme.Classic"]             := ["Classic", "经典", "クラシック"]
-        s["Theme.Midnight"]            := ["Midnight", "午夜", "ミッドナイト"]
-        s["Theme.MidnightCompact"]     := ["Midnight Compact", "紧凑午夜", "ミッドナイトコンパクト"]
-        s["Theme.Frost"]               := ["Frost", "霜白", "フロスト"]
-        s["Theme.Graphite"]            := ["Graphite", "石墨", "グラファイト"]
-        s["Theme.Ocean"]               := ["Ocean", "海洋", "オーシャン"]
-        s["Theme.Paper"]               := ["Paper", "纸张", "ペーパー"]
-        s["Theme.LightCompact"]        := ["Light Compact", "紧凑浅色", "ライトコンパクト"]
-        s["Theme.DarkModern"]          := ["Dark Modern", "现代深色", "ダークモダン"]
-        s["Theme.LightModern"]         := ["Light Modern", "现代浅色", "ライトモダン"]
-        s["Theme.Monokai"]             := ["Monokai", "Monokai", "Monokai"]
-        s["Theme.OneDark"]             := ["One Dark", "One Dark", "One Dark"]
-        s["Theme.TokyoNight"]          := ["Tokyo Night", "Tokyo Night", "Tokyo Night"]
-        s["Theme.Dracula"]             := ["Dracula", "Dracula", "Dracula"]
-        s["Theme.CatppuccinMocha"]     := ["Catppuccin Mocha", "Catppuccin Mocha", "Catppuccin Mocha"]
-        s["Theme.GruvboxDark"]         := ["Gruvbox Dark", "Gruvbox 深色", "Gruvbox ダーク"]
-        s["Theme.SolarizedLight"]      := ["Solarized Light", "Solarized 浅色", "Solarized ライト"]
-        s["Prefs.OpenThemes"]          := ["Open Themes Folder", "打开主题文件夹", "テーマフォルダーを開く"]
-        s["Prefs.WindowPosition"]      := ["Window position", "窗口位置", "ウィンドウの位置"]
-        s["Prefs.ShowOn"]              := ["Show the window on", "窗口显示在", "ウィンドウを表示する画面"]
-        s["Prefs.ShowOn.Mouse"]        := ["Screen with the mouse pointer", "鼠标所在的屏幕", "マウスポインターがある画面"]
-        s["Prefs.ShowOn.Primary"]      := ["Main screen", "主屏幕", "メイン画面"]
-        s["Prefs.ShowOn.Active"]       := ["Screen with the active window", "当前窗口所在的屏幕", "アクティブウィンドウがある画面"]
-        s["Prefs.ShowOn.Desc"]         := ["Only matters with more than one screen.", "只有多个屏幕时才有区别", "画面が 2 台以上の場合のみ関係します。"]
-        s["Prefs.RememberPosition"]    := ["Remember the position after dragging the window", "拖动窗口后记住位置", "ウィンドウをドラッグした後、位置を記憶する"]
-        s["Prefs.RememberPosition.Desc"] := ["Drag the empty space around the search box. The position is kept relative to the screen, so it fits other screens too.", "按住输入框四周的空白处拖动。记住的是在屏幕里的相对位置, 换一块屏幕也适用", "検索欄周囲の余白部分をドラッグします。位置は画面に対する相対位置で記憶されるため、他の画面でも適用されます。"]
-        s["Prefs.ResetPosition"]       := ["Reset Window Position", "恢复默认位置", "ウィンドウ位置をリセット"]
-        s["Prefs.ResetPosition.Desc"]  := ["Centered, 20% from the top of the screen. Takes effect when you click OK or Apply.", "水平居中, 离屏幕顶部 20%; 点 确定 或 应用 后生效", "画面上部から 20% の位置に水平方向中央揃えで配置されます。「OK」または「適用」で反映されます。"]
+        s["Prefs.Theme"]               := "Theme"
+        s["Prefs.Theme.Desc"]          := "Custom themes: Themes\<Name>.json. Copy a theme below to start from it."
+        s["Prefs.Width"]                := "Window width (px)"
+        s["Prefs.Width.Desc"]           := "The width grows with the Windows display scale. More results scroll with ↑ ↓; the window grows with the results."
+        s["Prefs.VisibleRows"]          := "Visible results (1-9)"
+        s["Prefs.CopyTheme"]           := "Copy as Custom Theme..."
+        s["Prefs.CopyThemePrompt"]     := "Name of the new theme (saved in the Themes folder):"
+        s["Prefs.ThemeExists"]         := "Theme '{1}' already exists. Replace it?"
+        s["Theme.System"]              := "System (Light / Dark)"
+        s["Theme.Light"]               := "Light"
+        s["Theme.Dark"]                := "Dark"
+        s["Theme.DarkCompact"]         := "Dark Compact"
+        s["Theme.Classic"]             := "Classic"
+        s["Theme.Midnight"]            := "Midnight"
+        s["Theme.MidnightCompact"]     := "Midnight Compact"
+        s["Theme.Frost"]               := "Frost"
+        s["Theme.Graphite"]            := "Graphite"
+        s["Theme.Ocean"]               := "Ocean"
+        s["Theme.Paper"]               := "Paper"
+        s["Theme.LightCompact"]        := "Light Compact"
+        s["Theme.DarkModern"]          := "Dark Modern"
+        s["Theme.LightModern"]         := "Light Modern"
+        s["Theme.Monokai"]             := "Monokai"
+        s["Theme.OneDark"]             := "One Dark"
+        s["Theme.TokyoNight"]          := "Tokyo Night"
+        s["Theme.Dracula"]             := "Dracula"
+        s["Theme.CatppuccinMocha"]     := "Catppuccin Mocha"
+        s["Theme.GruvboxDark"]         := "Gruvbox Dark"
+        s["Theme.SolarizedLight"]      := "Solarized Light"
+        s["Prefs.OpenThemes"]          := "Open Themes Folder"
+        s["Prefs.WindowPosition"]      := "Window position"
+        s["Prefs.ShowOn"]              := "Show the window on"
+        s["Prefs.ShowOn.Mouse"]        := "Screen with the mouse pointer"
+        s["Prefs.ShowOn.Primary"]      := "Main screen"
+        s["Prefs.ShowOn.Active"]       := "Screen with the active window"
+        s["Prefs.ShowOn.Desc"]         := "Only matters with more than one screen."
+        s["Prefs.RememberPosition"]    := "Remember the position after dragging the window"
+        s["Prefs.RememberPosition.Desc"] := "Drag the empty space around the search box. The position is kept relative to the screen, so it fits other screens too."
+        s["Prefs.ResetPosition"]       := "Reset Window Position"
+        s["Prefs.ResetPosition.Desc"]  := "Centered, 20% from the top of the screen. Takes effect when you click OK or Apply."
         ; Features
-        s["Prefs.EnabledFeatures"]     := ["Enabled features", "启用的功能", "有効な機能"]
-        s["Prefs.EnabledFeatures.Desc"] := ["Turned-off features are left out of search results.", "关闭的功能不出现在搜索结果里", "オフにした機能は検索結果に表示されません。"]
-        s["Prefs.Feature.Applications"] := ["Applications", "应用", "アプリ"]
-        s["Prefs.Feature.CustomCommands"] := ["Custom commands", "自定义命令", "カスタムコマンド"]
-        s["Prefs.Feature.Snippets"]    := ["Snippets", "文字片段", "スニペット"]
-        s["Prefs.Feature.Clipboard"]   := ["Clipboard history", "剪贴板历史", "クリップボード履歴"]
-        s["Prefs.Feature.Calculator"] := ["Calculator", "计算器", "電卓"]
-        s["Prefs.Feature.WebSearch"]   := ["Web search", "网页搜索", "Web 検索"]
-        s["Prefs.Feature.FileSearch"] := ["File search", "文件搜索", "ファイル検索"]
-        s["Prefs.Feature.Terminal"]    := ["Terminal", "终端", "ターミナル"]
-        s["Prefs.Feature.System"]      := ["System commands", "系统命令", "システムコマンド"]
-        s["Prefs.Feature.Help"]         := ["Help (?)", "帮助 (?)", "ヘルプ (?)"]
-        s["Prefs.Feature.Bookmarks"]   := ["Browser bookmarks", "浏览器书签", "ブックマーク"]
-        s["Prefs.StructuralCalc"]      := ["Calculator: add structural results (main bars / rebar area)", "计算器: 附带结构计算 (主筋 / 配筋面积)", "電卓: 構造計算結果を追加 (主筋 / 配筋面積)"]
-        s["Prefs.StructuralCalc.Desc"] := ["Two more rows: the result as beam width (main bars, spacing) and as rebar area As (bars needed).", "结果下方多两行: 把结果当作梁宽 (主筋根数和间距) 和配筋面积 As (需要的钢筋根数)", "結果の下に 2 行追加されます: 梁幅として (主筋本数・間隔)、配筋面積 As として (必要な鉄筋本数)。"]
-        s["Prefs.Currency"]            := ["Calculator: currency conversion", "计算器: 货币换算", "電卓: 通貨換算"]
-        s["Prefs.Currency.Desc"]       := ["100 usd to sgd. Downloads central bank rates from frankfurter.dev once a day, the only site besides GitHub.", "100 usd to sgd。每天从 frankfurter.dev 下载一次央行汇率, 这是 GitHub 之外唯一会访问的网站", "100 usd to sgd。frankfurter.dev から中央銀行のレートを 1 日 1 回取得します (GitHub 以外で唯一のアクセス先)。"]
-        s["Prefs.ConfirmActions"]      := ["Confirm system actions", "执行系统命令前确认", "システム操作の実行前に確認する"]
-        s["Prefs.SysHidden"]           := ["Hidden commands", "已删除的命令", "非表示のコマンド"]
-        s["Prefs.SysHidden.Desc"]      := ["Built-in commands removed by Ctrl+Del in search results, one ID per line. Delete a line to show the command again.", "在搜索结果里按 Ctrl+Del 删除的内置命令, 每行一个命令 Id; 删掉一行即可恢复显示", "検索結果で Ctrl+Del を押して削除した組み込みコマンド (1 行に 1 つの ID)。行を削除すると再び表示されます。"]
-        s["Prefs.ConfirmActions.Desc"] := ["Asks before shut down, restart, sign out and emptying the Recycle Bin.", "关机、重启、注销、清空回收站前先询问", "シャットダウン・再起動・サインアウト・ごみ箱を空にする、の前に確認します。"]
-        s["Prefs.TerminalPrefix"]       := ["Terminal prefix", "终端前缀", "ターミナル用プレフィックス"]
-        s["Prefs.TerminalPrefix.Desc"]  := ["Type >command to run it in the shell, e.g. >ipconfig /all. 'Open terminal here' uses the same shell.", "输入 >命令 在终端里运行, 例如 >ipconfig /all; '在此处打开终端' 也用这个程序", ">コマンド と入力するとシェルで実行します。例: >ipconfig /all。「ここでターミナルを開く」も同じシェルを使用します。"]
-        s["Prefs.TerminalShell"]        := ["Shell", "终端程序", "シェル"]
-        s["Prefs.FileKeywords"]         := ["File keywords", "文件关键字", "ファイルキーワード"]
-        s["Prefs.FileKeywords.Desc"]    := ["e.g. open report: files and folders; folder bk: folders only. Comma-separated.", "例如 open 报告 搜文件和文件夹, folder bk 只搜文件夹; 用逗号分隔", "例: open 報告書 はファイルとフォルダー、folder bk はフォルダーのみ検索します。カンマ区切りで指定します。"]
-        s["Prefs.FolderKeywords"]       := ["Folder keywords", "文件夹关键字", "フォルダーキーワード"]
-        s["Prefs.QuotePrefix"]         := ["Typing ' first searches files", "以 ' 开头搜索文件", "' で始めるとファイルを検索"]
-        s["Prefs.SpacePrefix"]         := ["Space in an empty search box searches files", "空搜索框里按空格搜索文件", "空の検索欄でスペースを押すとファイルを検索"]
-        s["Prefs.SpacePrefix.Desc"]    := ["Like Alfred. Backspace goes back to normal search.", "和 Alfred 一样; 按 Backspace 回到普通搜索", "Alfred と同様です。Backspace で通常の検索に戻ります。"]
-        s["Prefs.EverythingPath"]       := ["Location", "安装位置", "場所"]
-        s["Prefs.EverythingPath.Desc"] := ["Only for 'Search in Everything'. Leave empty to find it automatically.", "只用于 '在 Everything 中搜索'; 留空自动查找", "「Everything で検索」でのみ使用します。空欄の場合は自動的に検出します。"]
+        s["Prefs.EnabledFeatures"]     := "Enabled features"
+        s["Prefs.EnabledFeatures.Desc"] := "Turned-off features are left out of search results."
+        s["Prefs.Feature.Applications"] := "Applications"
+        s["Prefs.Feature.CustomCommands"] := "Custom commands"
+        s["Prefs.Feature.Snippets"]    := "Snippets"
+        s["Prefs.Feature.Clipboard"]   := "Clipboard history"
+        s["Prefs.Feature.Calculator"] := "Calculator"
+        s["Prefs.Feature.WebSearch"]   := "Web search"
+        s["Prefs.Feature.FileSearch"] := "File search"
+        s["Prefs.Feature.Terminal"]    := "Terminal"
+        s["Prefs.Feature.System"]      := "System commands"
+        s["Prefs.Feature.Help"]         := "Help (?)"
+        s["Prefs.Feature.Bookmarks"]   := "Browser bookmarks"
+        s["Prefs.StructuralCalc"]      := "Calculator: add structural results (main bars / rebar area)"
+        s["Prefs.StructuralCalc.Desc"] := "Two more rows: the result as beam width (main bars, spacing) and as rebar area As (bars needed)."
+        s["Prefs.Currency"]            := "Calculator: currency conversion"
+        s["Prefs.Currency.Desc"]       := "100 usd to sgd. Downloads central bank rates from frankfurter.dev once a day, the only site besides GitHub."
+        s["Prefs.ConfirmActions"]      := "Confirm system actions"
+        s["Prefs.SysHidden"]           := "Hidden commands"
+        s["Prefs.SysHidden.Desc"]      := "Built-in commands removed by Ctrl+Del in search results, one ID per line. Delete a line to show the command again."
+        s["Prefs.ConfirmActions.Desc"] := "Asks before shut down, restart, sign out and emptying the Recycle Bin."
+        s["Prefs.TerminalPrefix"]       := "Terminal prefix"
+        s["Prefs.TerminalPrefix.Desc"]  := "Type >command to run it in the shell, e.g. >ipconfig /all. 'Open terminal here' uses the same shell."
+        s["Prefs.TerminalShell"]        := "Shell"
+        s["Prefs.FileKeywords"]         := "File keywords"
+        s["Prefs.FileKeywords.Desc"]    := "e.g. open report: files and folders; folder bk: folders only. Comma-separated."
+        s["Prefs.FolderKeywords"]       := "Folder keywords"
+        s["Prefs.QuotePrefix"]         := "Typing ' first searches files"
+        s["Prefs.SpacePrefix"]         := "Space in an empty search box searches files"
+        s["Prefs.SpacePrefix.Desc"]    := "Like Alfred. Backspace goes back to normal search."
+        s["Prefs.EverythingPath"]       := "Location"
+        s["Prefs.EverythingPath.Desc"] := "Only for 'Search in Everything'. Leave empty to find it automatically."
         ; Applications
-        s["Prefs.AppFolders"]           := ["Folders", "文件夹", "フォルダー"]
-        s["Prefs.AppFolders.Desc"]     := ["One folder per line. Variables such as A_Desktop or %AppData% work.", "每行一个文件夹; 可以用 A_Desktop、%AppData% 等变量", "1 行に 1 フォルダー。A_Desktop や %AppData% などの変数が使用できます。"]
-        s["Prefs.AppFileTypes"]        := ["File types", "文件类型", "ファイルの種類"]
-        s["Prefs.AppFileTypes.Desc"]   := ["Separate with commas, e.g. *.lnk, *.exe", "用逗号分隔, 例如 *.lnk, *.exe", "カンマ区切りで指定します。例: *.lnk, *.exe"]
-        s["Prefs.AppDepth"]             := ["Subfolder depth", "子文件夹深度", "サブフォルダーの深さ"]
-        s["Prefs.AppDepth.Desc"]        := ["Subfolder levels to scan. The index also refreshes itself at this interval.", "往下扫描几层子文件夹; 索引还会按这个间隔在后台自动更新", "走査するサブフォルダーの階層数です。この間隔でバックグラウンド更新も行われます。"]
-        s["Prefs.AppExclude"]          := ["Exclude (regex)", "排除 (正则)", "除外 (正規表現)"]
-        s["Prefs.AppExclude.Desc"]     := ["Files whose names match this regular expression are skipped.", "名称匹配这个正则表达式的文件不收录", "この正規表現に一致する名前のファイルはインデックスされません。"]
-        s["Prefs.AppHidden"]           := ["Hidden apps", "已删除的应用", "非表示のアプリ"]
-        s["Prefs.AppHidden.Desc"]      := ["Added by Ctrl+Del in search results. Delete a line to show the app again.", "在搜索结果里按 Ctrl+Del 添加; 删掉一行即可恢复显示", "検索結果で Ctrl+Del を押すと追加されます。行を削除すると再び表示されます。"]
-        s["App.ConfirmHide"]           := ["Remove '{1}' from search results?`n`nThe program is not uninstalled. You can restore it in Preferences > Applications.", "从搜索结果中删除 '{1}' 吗?`n`n不会卸载程序, 可以在 偏好设置 → 应用搜索 里恢复。", "'{1}' を検索結果から削除しますか?`n`nプログラム自体はアンインストールされません。環境設定 → アプリ検索 で復元できます。"]
-        s["Prefs.StoreApps"]           := ["Include Microsoft Store apps", "包含应用商店应用", "Microsoft Store アプリを含める"]
-        s["Prefs.StoreApps.Desc"]      := ["Apps installed from the Microsoft Store, e.g. Calculator, Photos.", "从应用商店安装的应用, 例如计算器、照片", "Microsoft Store からインストールしたアプリです。例: 電卓、フォト。"]
-        s["Prefs.MatchPinyin"]         := ["Match Chinese names by pinyin initials", "中文名称按拼音首字母匹配", "中国語名をピンイン頭文字で照合"]
-        s["Prefs.MatchPinyin.Desc"]    := ["e.g. wx finds 微信 (WeChat).", "例如输入 wx 找到 微信", "例: wx と入力すると 微信 (WeChat) が見つかります。"]
-        s["Prefs.RefreshMinutes"]       := ["Refresh every (min)", "刷新间隔 (分钟)", "更新間隔 (分)"]
-        s["Prefs.RebuildIndex"]        := ["Rebuild Index", "重建索引", "インデックスを再構築"]
+        s["Prefs.AppFolders"]           := "Folders"
+        s["Prefs.AppFolders.Desc"]     := "One folder per line. Variables such as A_Desktop or %AppData% work."
+        s["Prefs.AppFileTypes"]        := "File types"
+        s["Prefs.AppFileTypes.Desc"]   := "Separate with commas, e.g. *.lnk, *.exe"
+        s["Prefs.AppDepth"]             := "Subfolder depth"
+        s["Prefs.AppDepth.Desc"]        := "Subfolder levels to scan. The index also refreshes itself at this interval."
+        s["Prefs.AppExclude"]          := "Exclude (regex)"
+        s["Prefs.AppExclude.Desc"]     := "Files whose names match this regular expression are skipped."
+        s["Prefs.AppHidden"]           := "Hidden apps"
+        s["Prefs.AppHidden.Desc"]      := "Added by Ctrl+Del in search results. Delete a line to show the app again."
+        s["App.ConfirmHide"]           := "Remove '{1}' from search results?`n`nThe program is not uninstalled. You can restore it in Preferences > Applications."
+        s["Prefs.StoreApps"]           := "Include Microsoft Store apps"
+        s["Prefs.StoreApps.Desc"]      := "Apps installed from the Microsoft Store, e.g. Calculator, Photos."
+        s["Prefs.MatchPinyin"]         := "Match Chinese names by pinyin initials"
+        s["Prefs.MatchPinyin.Desc"]    := "e.g. wx finds 微信 (WeChat)."
+        s["Prefs.RefreshMinutes"]       := "Refresh every (min)"
+        s["Prefs.RebuildIndex"]        := "Rebuild Index"
         ; Lists
-        s["Prefs.Col.Title"]           := ["Title", "名称", "名前"]
-        s["Prefs.Col.Type"]            := ["Type", "类型", "種類"]
-        s["Prefs.Col.Target"]          := ["Target", "目标", "対象"]
-        s["Prefs.Col.Status"]          := ["Status", "状态", "状態"]
-        s["Prefs.Col.Arguments"]       := ["Arguments", "参数", "引数"]
-        s["Prefs.Col.Keyword"]         := ["Keyword", "关键字", "キーワード"]
-        s["Prefs.Col.Name"]            := ["Name", "名称", "名前"]
-        s["Prefs.Col.Text"]            := ["Text", "正文", "本文"]
-        s["Prefs.Col.Url"]             := ["URL ({query} = search term)", "网址 ({query} = 搜索词)", "URL ({query} = 検索語)"]
-        s["Prefs.Col.Id"]              := ["Id", "Id", "Id"]
-        s["Prefs.Col.Key"]             := ["Hotkey", "热键", "ホットキー"]
-        s["Prefs.Col.Action"]          := ["Action", "执行的命令", "実行コマンド"]
-        s["Prefs.Col.WinTitle"]        := ["Only in window (optional)", "只在此窗口生效 (可选)", "対象ウィンドウのみ (任意)"]
-        s["Prefs.WinTitleHint"]         := ["e.g. ahk_exe notepad.exe. ALTRun = only in the ALTRun search window.", "例如 ahk_exe notepad.exe; 填 ALTRun 表示只在 ALTRun 搜索窗口里生效", "例: ahk_exe notepad.exe。ALTRun と入力すると ALTRun の検索ウィンドウ内でのみ有効です。"]
-        s["Prefs.Col.AutoExpand"]      := ["Expand automatically when typed", "输入关键字时自动展开", "入力時に自動展開"]
-        s["Snippet.Hint.Name"]         := ["Shown in search results and used for searching. Use words you would type to find it, e.g. PT quotation.", "显示在搜索结果里, 也用来搜索。写成你找它时会输入的几个词, 例如 PT quotation", "検索結果に表示され、検索にも使われます。探すときに入力しそうな語にします (例: PT quotation)。"]
-        s["Snippet.Hint.Keyword"]      := ["Optional short code, e.g. pq. An exact match ranks first; to auto-expand, type {1}pq in any app. Max {2} characters, no spaces.", "可选的短代号, 例如 pq。完全相同时排最前; 自动展开时在任何程序里输入 {1}pq。最多 {2} 个字符, 不能有空格", "任意の短い略語 (例: pq)。完全一致すると先頭に表示。自動展開は任意のアプリで {1}pq と入力。最大 {2} 文字、スペース不可。"]
-        s["Snippet.Hint.Text"]         := ["Enter pastes it into the window you were in. Words in the text are searchable too (3+ characters). Placeholders, filled in when pasting:", "按 Enter 粘贴到呼出 ALTRun 之前的窗口; 正文里的词也能搜到 (至少 3 个字)。占位符 (粘贴时替换):", "Enter で ALTRun を開く前のウィンドウに貼り付けます。本文の語でも検索できます (3 文字以上)。プレースホルダー (貼り付け時に置換):"]
-        s["Snippet.Hint.AutoExpand"]   := ["Type {1} + keyword in any app and it is replaced by the text right away. Turn off to paste it only from the search window.", "在任何程序里输入 {1} + 关键字, 立即替换成正文。关闭后只能从搜索窗口粘贴", "任意のアプリで {1} + キーワードを入力すると、すぐに本文に置き換わります。オフにすると検索ウィンドウからのみ貼り付けます。"]
-        s["Snippet.KeywordTooLong"]    := ["This keyword cannot auto-expand: the prefix {1} plus the keyword can be at most {2} characters, without spaces.`n`nShorten the keyword, or turn off auto-expansion (the snippet can still be found by name and text).", "这个关键字不能自动展开: 前缀 {1} 加关键字最多 {2} 个字符, 不能有空格。`n`n请缩短关键字, 或取消 `"自动展开`" (仍然可以按名称和正文搜到)。", "このキーワードは自動展開できません: プレフィックス {1} とキーワードの合計は最大 {2} 文字で、スペースは使えません。`n`nキーワードを短くするか、自動展開をオフにしてください (名前と本文での検索は引き続き可能です)。"]
-        s["Editor.SaveAnyway"]         := ["Save anyway?", "仍然保存吗?", "このまま保存しますか?"]
-        s["Prefs.Type.File"]           := ["File / Program", "文件 / 程序", "ファイル / プログラム"]
-        s["Prefs.Type.Folder"]         := ["Folder", "文件夹", "フォルダー"]
-        s["Prefs.Type.Command"]        := ["Command line", "命令行", "コマンドライン"]
-        s["Prefs.Type.Url"]            := ["Web address / link", "网址 / 链接", "Web アドレス / リンク"]
-        s["Prefs.CommandsNote"]        := ["Double-click to edit. Check Paths finds commands whose file or folder was renamed or moved.", "双击编辑。'检查路径' 可以找出文件或文件夹改名、移走后失效的命令", "ダブルクリックで編集します。「パスを確認」でファイルやフォルダーの名前変更・移動により無効になったコマンドを見つけられます。"]
-        s["Prefs.SnippetAutoExpand"]   := ["Expand snippet keywords typed in any app", "在任何程序里输入关键字时自动展开", "任意のアプリでスニペットのキーワード入力時に自動展開"]
-        s["Prefs.SnippetAutoExpand.Desc"] := ["Type the prefix and keyword in any program (e.g. `;sig) and it is replaced by the text.", "在任何程序里输入 前缀 + 关键字 (例如 `;sig), 自动替换成片段正文", "任意のプログラムで プレフィックス + キーワード (例: `;sig) と入力すると本文に置き換わります。"]
-        s["Prefs.ExpandPrefix"]        := ["Keyword prefix", "关键字前缀", "キーワードのプレフィックス"]
-        s["Prefs.ExpandPrefix.Desc"]   := ["Keeps normal typing from expanding by accident.", "避免平时打字时误触发", "通常の入力中に誤って展開されるのを防ぎます。"]
-        s["Prefs.PasteMode"]           := ["Paste by", "粘贴方式", "貼り付け方法"]
-        s["Prefs.PasteMode.Clipboard"] := ["Clipboard + Ctrl+V", "剪贴板 + Ctrl+V", "クリップボード + Ctrl+V"]
-        s["Prefs.PasteMode.Type"]      := ["Typing the text", "逐字输入", "文字入力"]
-        s["Prefs.PasteMode.Desc"]       := ["Typing is slower but works where pasting is blocked. Delay: wait before restoring the clipboard; raise it if the old clipboard gets pasted.", "逐字输入较慢, 但在不能粘贴的程序里也能用。等待: 粘贴后过多久还原剪贴板, 粘贴出旧内容时加大", "文字入力は低速ですが貼り付けできない環境でも使えます。待機: クリップボードを戻すまでの時間。古い内容が貼り付けられる場合は増やします。"]
-        s["Prefs.PasteDelay"]           := ["Delay (ms)", "等待 (毫秒)", "待機 (ミリ秒)"]
-        s["Prefs.SnippetKeyword"]      := ["Search keyword", "搜索关键字", "検索キーワード"]
-        s["Prefs.SnippetKeyword.Desc"] := ["e.g. snip sig searches only snippets; the keyword alone lists all.", "例如 snip sig 只搜片段; 只输入关键字列出全部片段", "例: snip sig でスニペットのみ検索します。キーワードのみの入力ですべて一覧表示します。"]
-        s["Prefs.SnippetSearchText"]   := ["Also search snippet text", "也搜索片段正文", "スニペットの本文も検索"]
-        s["Prefs.SnippetSearchText.Desc"] := ["With 3+ characters, text matches are listed too, after name and keyword matches.", "输入 3 个字以上时也搜正文, 只有正文匹配的排在后面", "3 文字以上で本文も検索します (本文のみの一致は後ろに表示)。"]
-        s["Prefs.ClipKeyword"]         := ["Keyword", "关键字", "キーワード"]
-        s["Prefs.ClipKeyword.Desc"]    := ["e.g. clip invoice searches the history.", "例如 clip 发票 在历史里搜索", "例: clip 請求書 で履歴を検索します。"]
-        s["Prefs.ClipHotkey"]          := ["Hotkey", "热键", "ホットキー"]
-        s["Prefs.ClipHotkey.Desc"]     := ["Opens clipboard history directly.", "直接打开剪贴板历史", "クリップボード履歴を直接開きます。"]
-        s["Prefs.ClipMaxItems"]        := ["Keep items", "保存条数", "保存件数"]
-        s["Prefs.ClipMaxItems.Desc"]    := ["The oldest items are removed first. Texts longer than the max length are not recorded.", "超过条数时先删除最早的记录; 比最长字数更长的内容不记录", "件数を超えると古い項目から削除されます。最大文字数より長いテキストは記録されません。"]
-        s["Prefs.ClipMaxLength"]        := ["Max length", "最长字数", "最大文字数"]
-        s["Prefs.ClipPersist"]         := ["Keep history after ALTRun quits", "退出后保留历史", "ALTRun 終了後も履歴を保持"]
-        s["Prefs.ClipPersist.Desc"]    := ["Saved in Data\ClipboardHistory.json. When off, history is kept in memory only.", "保存在 Data\ClipboardHistory.json; 关闭后只保存在内存里", "Data\ClipboardHistory.json に保存されます。オフの場合はメモリ内にのみ保持されます。"]
-        s["Prefs.ClipImages"]          := ["Also record images", "也记录图片", "画像も記録"]
-        s["Prefs.ClipImages.Desc"]     := ["Saved as PNG in Data\Clipboard. Only while history is kept after quitting.", "存成 PNG 放在 Data\Clipboard; 只在 退出后保留历史 时记录", "Data\Clipboard に PNG で保存されます。終了後も履歴を保持する場合のみ記録します。"]
-        s["Prefs.ClipMaxImages"]       := ["Keep images", "保存图片数", "保存する画像数"]
-        s["Prefs.ClipMaxImages.Desc"]  := ["The oldest images are removed first.", "超过时先删除最早的图片", "超えると古い画像から削除されます。"]
-        s["Prefs.ClipMerge"]           := ["Press Ctrl+C twice to append to the previous item", "快速按两次 Ctrl+C: 接到上一条后面", "Ctrl+C を 2 回押すと前の項目に追加"]
-        s["Prefs.ClipMerge.Desc"]      := ["Copy one piece, then select the next and press Ctrl+C twice quickly: both become one item, also on the clipboard.", "先复制一段, 再选中下一段快速按两次 Ctrl+C: 两段合成一条, 剪贴板里也是合并后的文字", "1 つ目をコピーし、次を選択して Ctrl+C を素早く 2 回押すと、両方が 1 つの項目 (クリップボードにも) になります。"]
-        s["Prefs.ClipIgnoreApps"]      := ["Never record from", "不记录这些程序 (进程名)", "記録しないプログラム (プロセス名)"]
-        s["Prefs.ClipIgnoreApps.Desc"] := ["One process name per line, e.g. KeePass.exe. Nothing copied there is recorded.", "每行一个进程名, 例如 KeePass.exe; 在这些程序里复制的内容不记录", "1 行に 1 プロセス名。例: KeePass.exe。これらのプログラムでのコピーは記録されません。"]
-        s["Prefs.ClipClear"]           := ["Clear History Now", "立即清空历史", "今すぐ履歴を消去"]
-        s["Prefs.Fallbacks"]            := ["Fallback searches", "兜底搜索", "代替検索"]
-        s["Prefs.Fallbacks.Desc"]       := ["Shown when nothing matches: engine Ids (google, bing, baidu...) or files. Separate with commas.", "没有任何结果时显示: 引擎的 Id (google、bing、baidu...) 或 files (文件搜索); 用逗号分隔", "一致しない場合に表示されます: 一覧のエンジン Id (google, bing, baidu など)、または files。カンマ区切りで指定します。"]
-        s["Prefs.HotkeysNote"]          := ["Global hotkeys for ALTRun commands. Fill in the window to limit a hotkey to one program; ALTRun means only in the ALTRun search window.", "为 ALTRun 的命令设置全局热键; 填写 '只在此窗口生效' 可以限定在某个程序里, 填 ALTRun 表示只在 ALTRun 的搜索窗口里", "ALTRun のコマンドにグローバルホットキーを割り当てます。「対象ウィンドウ」を指定すると特定のプログラム内だけで有効になり、ALTRun と入力すると ALTRun の検索ウィンドウ内だけで有効になります。"]
+        s["Prefs.Col.Title"]           := "Title"
+        s["Prefs.Col.Type"]            := "Type"
+        s["Prefs.Col.Target"]          := "Target"
+        s["Prefs.Col.Status"]          := "Status"
+        s["Prefs.Col.Arguments"]       := "Arguments"
+        s["Prefs.Col.Keyword"]         := "Keyword"
+        s["Prefs.Col.Name"]            := "Name"
+        s["Prefs.Col.Text"]            := "Text"
+        s["Prefs.Col.Url"]             := "URL ({query} = search term)"
+        s["Prefs.Col.Id"]              := "Id"
+        s["Prefs.Col.Key"]             := "Hotkey"
+        s["Prefs.Col.Action"]          := "Action"
+        s["Prefs.Col.WinTitle"]        := "Only in window (optional)"
+        s["Prefs.WinTitleHint"]         := "e.g. ahk_exe notepad.exe. ALTRun = only in the ALTRun search window."
+        s["Prefs.Col.AutoExpand"]      := "Expand automatically when typed"
+        s["Snippet.Hint.Name"]         := "Shown in search results and used for searching. Use words you would type to find it, e.g. PT quotation."
+        s["Snippet.Hint.Keyword"]      := "Optional short code, e.g. pq. An exact match ranks first; to auto-expand, type {1}pq in any app. Max {2} characters, no spaces."
+        s["Snippet.Hint.Text"]         := "Enter pastes it into the window you were in. Words in the text are searchable too (3+ characters). Placeholders, filled in when pasting:"
+        s["Snippet.Hint.AutoExpand"]   := "Type {1} + keyword in any app and it is replaced by the text right away. Turn off to paste it only from the search window."
+        s["Snippet.KeywordTooLong"]    := "This keyword cannot auto-expand: the prefix {1} plus the keyword can be at most {2} characters, without spaces.`n`nShorten the keyword, or turn off auto-expansion (the snippet can still be found by name and text)."
+        s["Editor.SaveAnyway"]         := "Save anyway?"
+        s["Prefs.Type.File"]           := "File / Program"
+        s["Prefs.Type.Folder"]         := "Folder"
+        s["Prefs.Type.Command"]        := "Command line"
+        s["Prefs.Type.Url"]            := "Web address / link"
+        s["Prefs.CommandsNote"]        := "Double-click to edit. Check Paths finds commands whose file or folder was renamed or moved."
+        s["Prefs.SnippetAutoExpand"]   := "Expand snippet keywords typed in any app"
+        s["Prefs.SnippetAutoExpand.Desc"] := "Type the prefix and keyword in any program (e.g. `;sig) and it is replaced by the text."
+        s["Prefs.ExpandPrefix"]        := "Keyword prefix"
+        s["Prefs.ExpandPrefix.Desc"]   := "Keeps normal typing from expanding by accident."
+        s["Prefs.PasteMode"]           := "Paste by"
+        s["Prefs.PasteMode.Clipboard"] := "Clipboard + Ctrl+V"
+        s["Prefs.PasteMode.Type"]      := "Typing the text"
+        s["Prefs.PasteMode.Desc"]       := "Typing is slower but works where pasting is blocked. Delay: wait before restoring the clipboard; raise it if the old clipboard gets pasted."
+        s["Prefs.PasteDelay"]           := "Delay (ms)"
+        s["Prefs.SnippetKeyword"]      := "Search keyword"
+        s["Prefs.SnippetKeyword.Desc"] := "e.g. snip sig searches only snippets; the keyword alone lists all."
+        s["Prefs.SnippetSearchText"]   := "Also search snippet text"
+        s["Prefs.SnippetSearchText.Desc"] := "With 3+ characters, text matches are listed too, after name and keyword matches."
+        s["Prefs.ClipKeyword"]         := "Keyword"
+        s["Prefs.ClipKeyword.Desc"]    := "e.g. clip invoice searches the history."
+        s["Prefs.ClipHotkey"]          := "Hotkey"
+        s["Prefs.ClipHotkey.Desc"]     := "Opens clipboard history directly."
+        s["Prefs.ClipMaxItems"]        := "Keep items"
+        s["Prefs.ClipMaxItems.Desc"]    := "The oldest items are removed first. Texts longer than the max length are not recorded."
+        s["Prefs.ClipMaxLength"]        := "Max length"
+        s["Prefs.ClipPersist"]         := "Keep history after ALTRun quits"
+        s["Prefs.ClipPersist.Desc"]    := "Saved in Data\ClipboardHistory.json. When off, history is kept in memory only."
+        s["Prefs.ClipImages"]          := "Also record images"
+        s["Prefs.ClipImages.Desc"]     := "Saved as PNG in Data\Clipboard. Only while history is kept after quitting."
+        s["Prefs.ClipMaxImages"]       := "Keep images"
+        s["Prefs.ClipMaxImages.Desc"]  := "The oldest images are removed first."
+        s["Prefs.ClipMerge"]           := "Press Ctrl+C twice to append to the previous item"
+        s["Prefs.ClipMerge.Desc"]      := "Copy one piece, then select the next and press Ctrl+C twice quickly: both become one item, also on the clipboard."
+        s["Prefs.ClipIgnoreApps"]      := "Never record from"
+        s["Prefs.ClipIgnoreApps.Desc"] := "One process name per line, e.g. KeePass.exe. Nothing copied there is recorded."
+        s["Prefs.ClipClear"]           := "Clear History Now"
+        s["Prefs.Fallbacks"]            := "Fallback searches"
+        s["Prefs.Fallbacks.Desc"]       := "Shown when nothing matches: engine Ids (google, bing, baidu...) or files. Separate with commas."
+        s["Prefs.HotkeysNote"]          := "Global hotkeys for ALTRun commands. Fill in the window to limit a hotkey to one program; ALTRun means only in the ALTRun search window."
         ; Extensions
-        s["Prefs.QuickSwitch"]         := ["File dialog quick switch", "对话框快速跳转", "ファイルダイアログのクイック切り替え"]
-        s["Prefs.QuickSwitch.Desc"]    := ["In Open / Save dialogs, jump to a folder open in Total Commander or Explorer.", "在 打开 / 保存 对话框里, 跳到 TC 或资源管理器打开的文件夹", "「開く」「保存」ダイアログで、TC やエクスプローラーのフォルダーに移動します。"]
-        s["Prefs.QSExplorer"]           := ["Explorer hotkey", "资源管理器热键", "エクスプローラー用ホットキー"]
-        s["Prefs.QSTotalCmd"]           := ["Total Commander hotkey", "Total Commander 热键", "Total Commander 用ホットキー"]
-        s["Prefs.QSMenu"]              := ["Hotkey", "热键", "ホットキー"]
-        s["Prefs.QSPanel"]             := ["Show the folder panel below dialogs", "打开对话框时在下面显示文件夹面板", "ダイアログの下にフォルダーパネルを表示"]
-        s["Prefs.QSPanelSection"]      := ["Folder panel", "文件夹面板", "フォルダーパネル"]
-        s["Prefs.QSPanelSection.Desc"] := ["Below Open / Save dialogs: both panels of every Total Commander window, Explorer windows, recent folders and a search box. Click a folder to jump there. Colors follow the ALTRun theme.", "打开 / 保存对话框下面的面板: 每个 TC 窗口的两个面板、资源管理器窗口、最近的文件夹, 上面还有搜索框; 点一个文件夹就跳过去。颜色跟随 ALTRun 的主题", "「開く」「保存」ダイアログの下のパネル: すべての TC の両パネル、エクスプローラー、最近のフォルダーと検索ボックス。クリックで移動します。色は ALTRun のテーマに従います。"]
-        s["Prefs.QSMenuSection"]       := ["Keyboard", "键盘操作", "キーボード操作"]
-        s["Prefs.QSMenuSection.Desc"]  := ["In a dialog, press the hotkey to jump into the panel's search box, then ↑ ↓ to pick, Enter to jump, Esc to go back. Also works when the panel is not shown automatically.", "在对话框里按热键, 光标跳到面板的搜索框; ↑ ↓ 选择, Enter 跳转, Esc 回到对话框。没有打开自动显示面板时也可以用", "ダイアログでホットキーを押すとパネルの検索ボックスに移動します。↑ ↓ で選択、Enter で移動、Esc でダイアログに戻ります。パネルを自動表示しない場合も使えます。"]
-        s["Prefs.QSPanelSearch"]       := ["Search box finds", "搜索框搜索", "検索ボックスの対象"]
-        s["Prefs.QSPanelSearch.Desc"]  := ["Uses Everything when it is running, otherwise the built-in index. Picking a file jumps to its folder.", "Everything 在运行时用它, 否则用内置索引; 选中文件时跳到它所在的文件夹", "Everything が起動していれば使い、そうでなければ内蔵インデックスを使います。ファイルを選ぶとそのフォルダーに移動します。"]
-        s["Prefs.QSRecent.Desc"]       := ["From Windows' Recent Items. 0 = none.", "来自 Windows 的“最近使用的项目”; 0 = 不列", "Windows の「最近使ったアイテム」から。0 = 表示しない"]
-        s["Prefs.QSPanelSearch.All"]   := ["Folders and files", "文件夹和文件", "フォルダーとファイル"]
-        s["Prefs.QSPanelSearch.Folders"] := ["Folders only", "只搜文件夹", "フォルダーのみ"]
-        s["Prefs.QSRecent"]            := ["Recent folders", "最近的文件夹", "最近のフォルダー"]
-        s["Prefs.QSAuto"]              := ["Jump automatically when switching from Total Commander", "从 Total Commander 切换过来时自动跳转", "Total Commander から切り替えたときに自動的に移動"]
-        s["Prefs.Section.QSDialogs"]    := ["Dialogs", "对话框", "ダイアログ"]
-        s["Prefs.Section.QSAuto"]       := ["When a dialog opens", "打开对话框时", "ダイアログを開いたとき"]
-        s["Prefs.Group.DialogWindows"]  := ["Works in", "生效的窗口", "対象ウィンドウ"]
-        s["Prefs.QSStandard"]           := ["Standard Open / Save dialogs (ahk_class #32770)", "标准的 打开 / 保存 对话框 (ahk_class #32770)", "標準の「開く」「保存」ダイアログ (ahk_class #32770)"]
-        s["Prefs.QSOtherDialogs"]       := ["Other dialogs", "其它对话框", "その他のダイアログ"]
-        s["Prefs.QSOtherDialogs.Desc"]  := ["One window per line, e.g. ahk_class Qt5QWindowIcon for WPS Office.", "每行一个窗口, 例如 WPS 的 ahk_class Qt5QWindowIcon", "1 行に 1 ウィンドウ。例: WPS Office の ahk_class Qt5QWindowIcon"]
-        s["Prefs.QSExclude"]            := ["Never in", "不生效的窗口", "除外するウィンドウ"]
-        s["Prefs.QSExclude.Desc"]       := ["Never switch in these. One per line: ahk_class, ahk_exe or a title.", "在这些窗口里不跳转; 每行一个: ahk_class、ahk_exe 或标题", "ここでは切り替えません。1 行に 1 つ: ahk_class、ahk_exe、タイトル"]
-        s["Prefs.QSAutoExclude"]        := ["No auto jump in", "不自动跳转的对话框", "自動移動しないダイアログ"]
-        s["Prefs.QSAutoExclude.Desc"]   := ["The hotkeys still work there. One window per line, e.g. ahk_exe acad.exe", "这些对话框里仍然可以按热键跳转; 每行一个窗口, 例如 ahk_exe acad.exe", "ホットキーは使えます。1 行に 1 つ (例: ahk_exe acad.exe)"]
-        s["Prefs.AutoDate"]             := ["Date stamp", "一键加日期", "日付スタンプ"]
-        s["Prefs.AutoDate.Desc"]        := ["Press the hotkey (Ctrl+D by default) while renaming a file to add or update ' - date' before the extension; in a note box it adds the date at the end.", "重命名文件时按热键 (默认 Ctrl+D), 在扩展名前加上或更新 ' - 日期'; 在备注框里按, 在末尾加上日期", "ファイル名の変更中にホットキー (既定は Ctrl+D) を押すと、拡張子の前に「 - 日付」を追加または更新します。備考欄では末尾に日付を追加します。"]
-        s["Prefs.DateFormat"]          := ["Date format", "日期格式", "日付の形式"]
-        s["Prefs.DateFormat.Desc"]     := ["e.g. dd.MM.yyyy or yyyy-MM-dd. Also used by {date} in snippets.", "例如 dd.MM.yyyy、yyyy-MM-dd; 片段里的 {date} 也用这个格式", "例: dd.MM.yyyy、yyyy-MM-dd。スニペット内の {date} でも使用されます。"]
-        s["Prefs.RenameHotkey"]         := ["Hotkey", "热键", "ホットキー"]
-        s["Prefs.AppendHotkey"]         := ["Hotkey", "热键", "ホットキー"]
-        s["Prefs.Section.DateRename"]   := ["Rename files", "重命名文件", "ファイル名の変更"]
-        s["Prefs.Section.DateAppend"]   := ["Note boxes", "备注框", "備考欄"]
-        s["Prefs.RenameWindows"]        := ["Works in", "生效的窗口", "対象ウィンドウ"]
-        s["Prefs.RenameWindows.Desc"]   := ["Windows where the hotkey renames, one per line, e.g. ahk_class CabinetWClass (Explorer), ahk_class TTOTAL_CMD (Total Commander).", "按热键时重命名的窗口, 每行一个, 例如 ahk_class CabinetWClass (资源管理器)、ahk_class TTOTAL_CMD (Total Commander)", "ホットキーで名前を変更するウィンドウ。1 行に 1 つ (例: ahk_class CabinetWClass (エクスプローラー)、ahk_class TTOTAL_CMD (Total Commander))。"]
-        s["Prefs.AppendWindows"]        := ["Works in", "生效的窗口", "対象ウィンドウ"]
-        s["Prefs.AppendWindows.Desc"]   := ["Windows where the hotkey adds the date at the end of the text, one per line, e.g. ahk_class TCmtEditForm (Total Commander comments).", "按热键时在文字末尾加日期的窗口, 每行一个, 例如 ahk_class TCmtEditForm (Total Commander 的备注)", "ホットキーでテキスト末尾に日付を追加するウィンドウ。1 行に 1 つ (例: ahk_class TCmtEditForm (Total Commander のコメント))。"]
-        s["Prefs.EnableExtension"]     := ["Enabled", "启用", "有効"]
+        s["Prefs.QuickSwitch"]         := "File dialog quick switch"
+        s["Prefs.QuickSwitch.Desc"]    := "In Open / Save dialogs, jump to a folder open in Total Commander or Explorer."
+        s["Prefs.QSExplorer"]           := "Explorer hotkey"
+        s["Prefs.QSTotalCmd"]           := "Total Commander hotkey"
+        s["Prefs.QSMenu"]              := "Hotkey"
+        s["Prefs.QSPanel"]             := "Show the folder panel below dialogs"
+        s["Prefs.QSPanelSection"]      := "Folder panel"
+        s["Prefs.QSPanelSection.Desc"] := "Below Open / Save dialogs: both panels of every Total Commander window, Explorer windows, recent folders and a search box. Click a folder to jump there. Colors follow the ALTRun theme."
+        s["Prefs.QSMenuSection"]       := "Keyboard"
+        s["Prefs.QSMenuSection.Desc"]  := "In a dialog, press the hotkey to jump into the panel's search box, then ↑ ↓ to pick, Enter to jump, Esc to go back. Also works when the panel is not shown automatically."
+        s["Prefs.QSPanelSearch"]       := "Search box finds"
+        s["Prefs.QSPanelSearch.Desc"]  := "Uses Everything when it is running, otherwise the built-in index. Picking a file jumps to its folder."
+        s["Prefs.QSRecent.Desc"]       := "From Windows' Recent Items. 0 = none."
+        s["Prefs.QSPanelSearch.All"]   := "Folders and files"
+        s["Prefs.QSPanelSearch.Folders"] := "Folders only"
+        s["Prefs.QSRecent"]            := "Recent folders"
+        s["Prefs.QSAuto"]              := "Jump automatically when switching from Total Commander"
+        s["Prefs.Section.QSDialogs"]    := "Dialogs"
+        s["Prefs.Section.QSAuto"]       := "When a dialog opens"
+        s["Prefs.Group.DialogWindows"]  := "Works in"
+        s["Prefs.QSStandard"]           := "Standard Open / Save dialogs (ahk_class #32770)"
+        s["Prefs.QSOtherDialogs"]       := "Other dialogs"
+        s["Prefs.QSOtherDialogs.Desc"]  := "One window per line, e.g. ahk_class Qt5QWindowIcon for WPS Office."
+        s["Prefs.QSExclude"]            := "Never in"
+        s["Prefs.QSExclude.Desc"]       := "Never switch in these. One per line: ahk_class, ahk_exe or a title."
+        s["Prefs.QSAutoExclude"]        := "No auto jump in"
+        s["Prefs.QSAutoExclude.Desc"]   := "The hotkeys still work there. One window per line, e.g. ahk_exe acad.exe"
+        s["Prefs.AutoDate"]             := "Date stamp"
+        s["Prefs.AutoDate.Desc"]        := "Press the hotkey (Ctrl+D by default) while renaming a file to add or update ' - date' before the extension; in a note box it adds the date at the end."
+        s["Prefs.DateFormat"]          := "Date format"
+        s["Prefs.DateFormat.Desc"]     := "e.g. dd.MM.yyyy or yyyy-MM-dd. Also used by {date} in snippets."
+        s["Prefs.RenameHotkey"]         := "Hotkey"
+        s["Prefs.AppendHotkey"]         := "Hotkey"
+        s["Prefs.Section.DateRename"]   := "Rename files"
+        s["Prefs.Section.DateAppend"]   := "Note boxes"
+        s["Prefs.RenameWindows"]        := "Works in"
+        s["Prefs.RenameWindows.Desc"]   := "Windows where the hotkey renames, one per line, e.g. ahk_class CabinetWClass (Explorer), ahk_class TTOTAL_CMD (Total Commander)."
+        s["Prefs.AppendWindows"]        := "Works in"
+        s["Prefs.AppendWindows.Desc"]   := "Windows where the hotkey adds the date at the end of the text, one per line, e.g. ahk_class TCmtEditForm (Total Commander comments)."
+        s["Prefs.EnableExtension"]     := "Enabled"
         ; Advanced
-        s["Prefs.SettingsFile"]        := ["Settings file", "设置文件", "設定ファイル"]
-        s["Prefs.EditJson"]            := ["Edit ALTRun.json...", "编辑 ALTRun.json...", "ALTRun.json を編集..."]
-        s["Prefs.EditJson.Desc"]       := ["Every setting, including ones not shown here. ALTRun reloads when you save.", "包括这里没有的设置; 保存后 ALTRun 自动重新载入", "ここに表示されない項目も含め、すべての設定です。保存すると ALTRun は自動的に再読み込みされます。"]
-        s["Prefs.OpenDataFolder"]      := ["Open Data Folder", "打开数据文件夹", "データフォルダーを開く"]
+        s["Prefs.SettingsFile"]        := "Settings file"
+        s["Prefs.EditJson"]            := "Edit ALTRun.json..."
+        s["Prefs.EditJson.Desc"]       := "Every setting, including ones not shown here. ALTRun reloads when you save."
+        s["Prefs.OpenDataFolder"]      := "Open Data Folder"
 
         ; --- Usage statistics ---
-        s["Usage.Title"]               := ["Usage", "使用统计", "使用統計"]
-        s["Usage.Title.Desc"]          := ["Only counts are kept - nothing you type or open is recorded. Stored in Data\Usage.json.", "只记录次数, 不记录输入和打开的内容; 保存在 Data\Usage.json", "記録されるのは回数のみです。入力内容や開いたものは記録されません。Data\Usage.json に保存されます。"]
-        s["Usage.Totals"]              := ["Today {1}   ·   Last 7 days {2}   ·   Last 30 days {3}   ·   All {4}", "今天 {1} 次   ·   最近 7 天 {2} 次   ·   最近 30 天 {3} 次   ·   总计 {4} 次", "今日 {1} 回 · 直近 7 日間 {2} 回 · 直近 30 日間 {3} 回 · 累計 {4} 回"]
-        s["Usage.Since"]               := ["Counting since {1}. The search window was opened {2} times.", "从 {1} 开始统计, 共呼出搜索窗口 {2} 次", "{1} から集計しています。検索ウィンドウは {2} 回開かれました。"]
-        s["Usage.Chart"]               := ["Uses per day, last 30 days (most: {1})", "最近 30 天每天的使用次数 (最多 {1} 次)", "1 日あたりの使用回数、直近 30 日間 (最多 {1} 回)"]
-        s["Usage.Today"]               := ["Today", "今天", "今日"]
-        s["Usage.Col.Feature"]         := ["Feature", "功能", "機能"]
-        s["Usage.Col.Today"]           := ["Today", "今天", "今日"]
-        s["Usage.Col.Week"]            := ["7 days", "7 天", "7 日間"]
-        s["Usage.Col.Month"]           := ["30 days", "30 天", "30 日間"]
-        s["Usage.Col.All"]             := ["All", "总计", "累計"]
-        s["Usage.Col.Share"]           := ["Share", "占比", "割合"]
-        s["Usage.F.Applications"]      := ["Applications", "应用", "アプリ"]
-        s["Usage.F.CustomCommands"]    := ["Custom commands", "自定义命令", "カスタムコマンド"]
-        s["Usage.F.FileSearch"]        := ["Files and folders", "文件和文件夹", "ファイルとフォルダー"]
-        s["Usage.F.WebSearch"]         := ["Web search", "网页搜索", "Web 検索"]
-        s["Usage.F.Bookmarks"]         := ["Bookmarks", "浏览器书签", "ブックマーク"]
-        s["Usage.F.Selection"]         := ["Selection actions", "选中内容的操作", "選択範囲の操作"]
-        s["Usage.F.Calculator"]        := ["Calculator", "计算器", "電卓"]
-        s["Usage.F.Clipboard"]         := ["Clipboard history", "剪贴板历史", "クリップボード履歴"]
-        s["Usage.F.Snippets"]          := ["Snippets", "文字片段", "スニペット"]
-        s["Usage.F.System"]            := ["System commands", "系统命令", "システムコマンド"]
-        s["Usage.F.Terminal"]          := ["Terminal commands", "终端命令", "ターミナルコマンド"]
-        s["Usage.F.SnippetExpand"]     := ["Snippet auto-expansion", "片段自动展开", "スニペット自動展開"]
-        s["Usage.F.QuickSwitch"]       := ["Dialog quick switch", "对话框快速跳转", "ダイアログのクイック切り替え"]
-        s["Usage.F.AutoDate"]          := ["Date stamp", "一键加日期", "日付スタンプ"]
-        s["Usage.F.Show"]              := ["Search window opened", "呼出搜索窗口", "検索ウィンドウの呼び出し"]
-        s["Usage.Clear"]               := ["Clear Usage Statistics", "清除使用统计", "使用統計を消去"]
-        s["Usage.ClearConfirm"]        := ["Clear all usage statistics?", "清除所有使用统计?", "使用統計をすべて消去しますか?"]
-        s["Prefs.ResetLearning"]       := ["Reset Learned Ranking", "重置学习排序", "学習した並び順をリセット"]
-        s["Prefs.ResetLearning.Desc"]  := ["Clears the learned result order and the search history.", "清空学习到的结果排序和搜索历史", "学習した結果の並び順と検索履歴を消去します。"]
-        s["Prefs.ResetDone"]           := ["Learned ranking and search history cleared.", "学习排序和搜索历史已清空。", "学習した並び順と検索履歴を消去しました。"]
-        s["Prefs.Version"]             := ["Version {1}", "版本 {1}", "バージョン {1}"]
+        s["Usage.Title"]               := "Usage"
+        s["Usage.Title.Desc"]          := "Only counts are kept - nothing you type or open is recorded. Stored in Data\Usage.json."
+        s["Usage.Totals"]              := "Today {1}   ·   Last 7 days {2}   ·   Last 30 days {3}   ·   All {4}"
+        s["Usage.Since"]               := "Counting since {1}. The search window was opened {2} times."
+        s["Usage.Chart"]               := "Uses per day, last 30 days (most: {1})"
+        s["Usage.Today"]               := "Today"
+        s["Usage.Col.Feature"]         := "Feature"
+        s["Usage.Col.Today"]           := "Today"
+        s["Usage.Col.Week"]            := "7 days"
+        s["Usage.Col.Month"]           := "30 days"
+        s["Usage.Col.All"]             := "All"
+        s["Usage.Col.Share"]           := "Share"
+        s["Usage.F.Applications"]      := "Applications"
+        s["Usage.F.CustomCommands"]    := "Custom commands"
+        s["Usage.F.FileSearch"]        := "Files and folders"
+        s["Usage.F.WebSearch"]         := "Web search"
+        s["Usage.F.Bookmarks"]         := "Bookmarks"
+        s["Usage.F.Selection"]         := "Selection actions"
+        s["Usage.F.Calculator"]        := "Calculator"
+        s["Usage.F.Clipboard"]         := "Clipboard history"
+        s["Usage.F.Snippets"]          := "Snippets"
+        s["Usage.F.System"]            := "System commands"
+        s["Usage.F.Terminal"]          := "Terminal commands"
+        s["Usage.F.SnippetExpand"]     := "Snippet auto-expansion"
+        s["Usage.F.QuickSwitch"]       := "Dialog quick switch"
+        s["Usage.F.AutoDate"]          := "Date stamp"
+        s["Usage.F.Show"]              := "Search window opened"
+        s["Usage.Clear"]               := "Clear Usage Statistics"
+        s["Usage.ClearConfirm"]        := "Clear all usage statistics?"
+        s["Prefs.ResetLearning"]       := "Reset Learned Ranking"
+        s["Prefs.ResetLearning.Desc"]  := "Clears the learned result order and the search history."
+        s["Prefs.ResetDone"]           := "Learned ranking and search history cleared."
+        s["Prefs.Version"]             := "Version {1}"
 
         ; --- Update checker ---
-        s["Update.Available"]          := ["A new version {1} is available. Open the download page?", "发现新版本 {1}, 是否打开下载页面?", "新しいバージョン {1} が利用できます。ダウンロードページを開きますか?"]
-        s["Update.Prompt"]             := ["ALTRun {1} is available. You have {2}.`n`nInstalling the update downloads it and restarts ALTRun. Your settings, commands, data and themes are kept.", "ALTRun {1} 已发布, 当前版本 {2}。`n`n安装更新会下载新版本并重新启动 ALTRun, 设置、自定义命令、数据和主题都会保留。", "ALTRun {1} が利用可能です。現在のバージョンは {2} です。`n`nアップデートをインストールすると、ダウンロードして ALTRun を再起動します。設定・コマンド・データ・テーマはそのまま保持されます。"]
-        s["Update.DialogTitle"]       := ["ALTRun Update Available", "ALTRun 有可用的更新", "ALTRun のアップデートがあります"]
-        s["Update.InstallNow"]         := ["Install Update", "安装更新", "インストール"]
-        s["Update.ReleaseNotes"]       := ["Release Notes", "更新说明", "リリースノート"]
-        s["Update.Later"]              := ["Later", "稍后", "後で"]
-        s["Update.Downloading"]        := ["Downloading ALTRun {1}...", "正在下载 ALTRun {1}...", "ALTRun {1} をダウンロード中..."]
-        s["Update.Installing"]         := ["Installing ALTRun {1}...", "正在安装 ALTRun {1}...", "ALTRun {1} をインストール中..."]
-        s["Update.InstallFailed"]      := ["The update could not be installed:`n`n{1}`n`nALTRun was not changed. Open the download page to update by hand?", "自动更新失败:`n`n{1}`n`nALTRun 没有改动。是否打开下载页面手动更新?", "更新をインストールできませんでした:`n`n{1}`n`nALTRun は変更されていません。ダウンロードページを開いて手動で更新しますか?"]
-        s["Update.Done"]               := ["ALTRun has been updated to {1}", "ALTRun 已更新到 {1}", "ALTRun を {1} に更新しました"]
-        s["Update.AvailableVia"]       := ["A new version {1} is available.`n`nALTRun was installed with a package manager - exit ALTRun, then run:`n`n    {2}`n`nOpen the release page to see what's new?", "发现新版本 {1}。`n`nALTRun 是用包管理器安装的, 请先退出 ALTRun, 再运行:`n`n    {2}`n`n是否打开发布页面查看更新内容?", "新しいバージョン {1} が利用できます。`n`nALTRun はパッケージマネージャーでインストールされています。ALTRun を終了してから、次を実行してください:`n`n    {2}`n`nリリースページを開いて更新内容を確認しますか?"]
-        s["Update.Latest"]             := ["You are running the latest version ({1}).", "当前已是最新版本 ({1})。", "最新バージョン ({1}) を使用しています。"]
-        s["Update.Failed"]             := ["Could not check for updates:`n`n{1}", "检查更新失败:`n`n{1}", "更新の確認に失敗しました:`n`n{1}"]
-        s["Update.AvailableSource"]    := ["A new version {1} is available.`n`nYou are running the source code (ALTRun.ahk): update it with git pull, or download the new version.`n`nOpen the download page?", "发现新版本 {1}。`n`n你运行的是源码 (ALTRun.ahk): 请用 git pull 更新, 或下载新版本。`n`n是否打开下载页面?", "新しいバージョン {1} が利用できます。`n`nソースコード (ALTRun.ahk) を実行しています。git pull で更新するか、新しいバージョンをダウンロードしてください。`n`nダウンロードページを開きますか?"]
-        s["Update.ItemTitle"]          := ["Update Available: ALTRun {1}", "发现新版本: ALTRun {1}", "アップデートがあります: ALTRun {1}"]
-        s["Update.ItemInstall"]        := ["Current version {1}  ·  Enter: Install Update  ·  →: Release Notes, Skip This Version", "当前版本 {1}  ·  Enter 安装更新  ·  → 更新说明、跳过此版本", "現在のバージョン {1}  ·  Enter: アップデートをインストール  ·  →: リリースノート、このバージョンをスキップ"]
-        s["Update.ItemPage"]           := ["Current version {1}  ·  Enter: Open Download Page  ·  →: Skip This Version", "当前版本 {1}  ·  Enter 打开下载页面  ·  → 跳过此版本", "現在のバージョン {1}  ·  Enter: ダウンロードページを開く  ·  →: このバージョンをスキップ"]
-        s["Update.ItemSource"]         := ["Running the source: update with git pull  ·  Enter: download page", "运行的是源码: 用 git pull 更新  ·  Enter 打开下载页面", "ソースを実行中: git pull で更新  ·  Enter: ダウンロードページ"]
-        s["Update.ItemVia"]            := ["Enter: copy '{1}' (exit ALTRun, then run it)", "Enter 复制 '{1}' (退出 ALTRun 后运行)", "Enter: '{1}' をコピー (ALTRun を終了してから実行)"]
-        s["Update.CommandCopied"]      := ["Copied: {1}`nExit ALTRun, then run it in a terminal", "已复制: {1}`n退出 ALTRun 后在终端里运行", "コピーしました: {1}`nALTRun を終了してからターミナルで実行してください"]
-        s["Update.Skip"]               := ["Skip This Version", "跳过此版本", "このバージョンをスキップ"]
-        s["Update.SkipHint"]           := ["You'll be notified when a newer version is available", "有更新的版本时再提醒", "さらに新しいバージョンが出たらお知らせします"]
-        s["Update.Skipped"]            := ["Skipped {1}", "已跳过 {1}", "{1} をスキップしました"]
+        s["Update.Available"]          := "A new version {1} is available. Open the download page?"
+        s["Update.Prompt"]             := "ALTRun {1} is available. You have {2}.`n`nInstalling the update downloads it and restarts ALTRun. Your settings, commands, data and themes are kept."
+        s["Update.DialogTitle"]       := "ALTRun Update Available"
+        s["Update.InstallNow"]         := "Install Update"
+        s["Update.ReleaseNotes"]       := "Release Notes"
+        s["Update.Later"]              := "Later"
+        s["Update.Downloading"]        := "Downloading ALTRun {1}..."
+        s["Update.Installing"]         := "Installing ALTRun {1}..."
+        s["Update.InstallFailed"]      := "The update could not be installed:`n`n{1}`n`nALTRun was not changed. Open the download page to update by hand?"
+        s["Update.Done"]               := "ALTRun has been updated to {1}"
+        s["Update.AvailableVia"]       := "A new version {1} is available.`n`nALTRun was installed with a package manager - exit ALTRun, then run:`n`n    {2}`n`nOpen the release page to see what's new?"
+        s["Update.Latest"]             := "You are running the latest version ({1})."
+        s["Update.Failed"]             := "Could not check for updates:`n`n{1}"
+        s["Update.AvailableSource"]    := "A new version {1} is available.`n`nYou are running the source code (ALTRun.ahk): update it with git pull, or download the new version.`n`nOpen the download page?"
+        s["Update.ItemTitle"]          := "Update Available: ALTRun {1}"
+        s["Update.ItemInstall"]        := "Current version {1}  ·  Enter: Install Update  ·  →: Release Notes, Skip This Version"
+        s["Update.ItemPage"]           := "Current version {1}  ·  Enter: Open Download Page  ·  →: Skip This Version"
+        s["Update.ItemSource"]         := "Running the source: update with git pull  ·  Enter: download page"
+        s["Update.ItemVia"]            := "Enter: copy '{1}' (exit ALTRun, then run it)"
+        s["Update.CommandCopied"]      := "Copied: {1}`nExit ALTRun, then run it in a terminal"
+        s["Update.Skip"]               := "Skip This Version"
+        s["Update.SkipHint"]           := "You'll be notified when a newer version is available"
+        s["Update.Skipped"]            := "Skipped {1}"
 
         ; --- QuickSwitch (file dialog path sync) ---
-        s["QuickSwitch.TagTC"]         := ["Total Commander", "Total Commander", "Total Commander"]
-        s["QuickSwitch.TagTCOther"]    := ["Total Commander (other panel)", "Total Commander (另一侧)", "Total Commander (反対側)"]
-        s["QuickSwitch.TagExplorer"]   := ["File Explorer", "资源管理器", "エクスプローラー"]
-        s["QuickSwitch.TagRecent"]     := ["Recent", "最近", "最近"]
-        s["QuickSwitch.SearchCue"]     := ["Search folders and files", "搜索文件夹和文件", "フォルダーとファイルを検索"]
-        s["QuickSwitch.SearchCueFolders"] := ["Search folders", "搜索文件夹", "フォルダーを検索"]
-        s["QuickSwitch.TagSearch"]     := ["Search", "搜索", "検索"]
-        s["QuickSwitch.TagFile"]       := ["File", "文件", "ファイル"]
-        s["QuickSwitch.NoTC"]          := ["Total Commander is not running.", "Total Commander 没有运行。", "Total Commander は実行されていません。"]
-        s["QuickSwitch.NoExplorer"]    := ["No File Explorer window is open.", "没有打开的资源管理器窗口。", "開いているエクスプローラーウィンドウがありません。"]
+        s["QuickSwitch.TagTC"]         := "Total Commander"
+        s["QuickSwitch.TagTCOther"]    := "Total Commander (other panel)"
+        s["QuickSwitch.TagExplorer"]   := "File Explorer"
+        s["QuickSwitch.TagRecent"]     := "Recent"
+        s["QuickSwitch.SearchCue"]     := "Search folders and files"
+        s["QuickSwitch.SearchCueFolders"] := "Search folders"
+        s["QuickSwitch.TagSearch"]     := "Search"
+        s["QuickSwitch.TagFile"]       := "File"
+        s["QuickSwitch.NoTC"]          := "Total Commander is not running."
+        s["QuickSwitch.NoExplorer"]    := "No File Explorer window is open."
         return s
     }
 }

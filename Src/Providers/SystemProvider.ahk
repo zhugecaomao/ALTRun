@@ -124,7 +124,7 @@ class SystemProvider {
         list := []
         add(id, titleKey, icon, fn, confirm := false, subtitleKey := "Sys.Subtitle") {
             title := I18n.T(titleKey)
-            english := I18n.Strings[titleKey][1], pinyinText := Pinyin.Initials(title)
+            english := I18n.Strings[titleKey], pinyinText := Pinyin.Initials(title)
             keys := [FuzzyMatcher.Key(title), FuzzyMatcher.Key(id), (english != title) ? FuzzyMatcher.Key(english) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]
             list.Push(Map("Id", id, "Title", title, "English", english, "Keys", keys,
                 "Subtitle", I18n.T(subtitleKey), "Icon", icon, "Run", fn, "Confirm", confirm))

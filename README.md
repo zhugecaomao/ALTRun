@@ -38,7 +38,7 @@
 - **全键盘操作**：`→` 打开操作面板，`F3` 直接编辑，`Ctrl+1`～`Ctrl+9` 快速打开。
 - **便携与隐私**：免安装，不写注册表，不需要管理员权限，没有后台服务或驱动；所有数据保存在 `Data\` 文件夹；不收集任何数据，仅联网检查和下载更新。
 - **自动更新**：有新版本时在搜索窗口中提示，按 `Enter` 即可安装（自动校验 SHA256），设置保留；也支持 Scoop。
-- **个性化**：中文、English、日本語界面；20 套内置主题（偏好设置里看缩略图选择），可跟随系统浅色 / 深色模式；主题和设置均为 JSON 文件。
+- **个性化**：简体中文、繁體中文、English、日本語界面；20 套内置主题（偏好设置里看缩略图选择），可跟随系统浅色 / 深色模式；主题和设置均为 JSON 文件。
 - **开源免费**：GPL-3.0 许可；每个 PR 都会在 Windows 上自动运行 3000 余项测试。
 
 
@@ -173,7 +173,7 @@ Src\Core\           启动流程、设置与迁移、搜索模型、匹配打分
 Src\UI\             搜索窗口、偏好设置、编辑对话框、大字显示、主题、图标缓存
 Src\Providers\      搜索功能：应用、自定义命令、片段、剪贴板、系统命令、计算器、网页、书签、文件、终端、速查表
 Src\Extensions\     搜索窗口以外的功能：片段自动展开、对话框跳转、加日期、PT 工具箱、检查更新
-Resources\          随程序发布的数据（Kanji.txt 简繁对照表、Themes\ 内置主题）
+Resources\          随程序发布的数据（Kanji.txt 简繁对照表、Themes\ 内置主题、Lang\ 界面语言）
 Tests\              单元测试、对照数据（Fixtures）、自动截图（Screenshots）、SPF2M 对照数据工具（Tools\SPF2M）
 docs\               Wiki 源文件（docs\wiki，合并后自动发布）、截图（docs\images）
 bucket\             Scoop 清单（仓库本身即 Scoop bucket）
@@ -210,7 +210,7 @@ ALTRun is a fast, keyboard-first launcher for Windows, inspired by Alfred for ma
 - **Keyboard first**: `Alt+Space` or a double tap of `Ctrl` / `Shift`; action panel (`→`), in-place editing (`F3`), `Ctrl+1`–`Ctrl+9`, built-in cheat sheet (`?`).
 - **Portable and private**: no installer, no registry, no admin rights, no background service; settings stay in `Data\ALTRun.json`. No telemetry; network access is used only for updates.
 - **Automatic updates**: install new versions from the search window (SHA256 verified, settings kept), or use Scoop.
-- **Customizable**: English, Chinese and Japanese interface; 20 built-in themes, or follow the Windows light / dark mode.
+- **Customizable**: English, Simplified / Traditional Chinese and Japanese interface; 20 built-in themes, or follow the Windows light / dark mode.
 
 The screenshots above show the English interface. Documentation is available in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
 

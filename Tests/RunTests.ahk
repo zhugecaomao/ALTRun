@@ -1,4 +1,4 @@
-;===============================================================================
+﻿;===============================================================================
 ; RunTests.ahk - ALTRun 单元测试 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 只测试不依赖界面的纯逻辑: 匹配打分、输入解析、设置升级、计算器、加日期、
@@ -63,6 +63,7 @@
 
 OnError((err, mode) => TestRunner.OnUncaught(err, mode))                                             ; 运行错误时输出并退出, 不弹对话框卡住
 Logger.Enabled := false
+I18n.LangDir := A_ScriptDir "\..\Resources\Lang"
 I18n.Init("en")
 AppSettings.Data := AppSettings.Defaults()                                  ; 内存里的默认设置, 不读写文件
 AppSettings.Feature("Clipboard")["Persist"] := 0                           ; 剪贴板历史测试不写盘
@@ -176,7 +177,7 @@ class Tests {
         eq("hotkey", data["General"]["Hotkey"], "!Space")
         eq("hotkey2", data["General"]["SecondaryHotkey"], "!r")
         eq("startup", data["General"]["LaunchAtLogin"], 0)
-        eq("language", data["General"]["Language"], "zh")
+        eq("language", data["General"]["Language"], "zh-CN")
         eq("filemanager", data["General"]["FileManager"], "D:\TC\TOTALCMD64.EXE")
         eq("strucalc", data["Features"]["Calculator"]["StructuralCalc"], 1)
         eq("folders", data["Features"]["Applications"]["Folders"].Length, 2)
@@ -1469,7 +1470,8 @@ class Tests {
     ; 每一页的控件都在底部按钮上面 (中英文都检查, 文字长短不同)
     static PreferencesFit() {
         savedLang := I18n.Lang
-        for lang in ["en", "zh", "ja"] {
+        for language in I18n.Languages() {                                   ; 按代码排序, ja 在 zh-TW 前 (Wine 没有这两种字体, 先用过 JhengHei 后量出的日文宽度偏小)
+            lang := language[1]
             I18n.Init(lang)
             PreferencesWindow.Show(1, -3000, -3000)
             limit := PreferencesWindow.ButtonY - 6
@@ -1484,10 +1486,10 @@ class Tests {
                 TestRunner.True("PreferencesFit." lang " page " index " (right " right ", limit " rightLimit ")", right <= rightLimit)
             }
             PreferencesWindow.Close()
-            if (lang != "ja") {                                             ; 中英文的左列宽度是调好的, 不需要加宽
+            if (lang = "en" || lang = "zh-CN") {                            ; 中英文的左列宽度是调好的, 不需要加宽
                 widened := ""
                 for key in PreferencesWindow._labelWidths
-                    if (SubStr(key, 1, 3) = lang " ")
+                    if (SubStr(key, 1, StrLen(lang) + 1) = lang " ")
                         widened .= key "; "
                 TestRunner.Equal("PreferencesFit." lang " no widened pages", widened, "")
             }
@@ -1520,7 +1522,7 @@ class Tests {
             help .= item.Id " "
         eq("help lists F1 and F4", (InStr(help, "About ") && InStr(help, "EditJson ")) ? 1 : 0, 1)
         eq("command target shows arguments", PreferencesWindow._Cell(Map("Target", "cmd.exe", "Arguments", "/k ipconfig /all"), "Target"), "cmd.exe /k ipconfig /all")
-        eq("url type name", I18n.Strings["Prefs.Type.Url"][1], "Web address / link")
+        eq("url type name", I18n.Strings["Prefs.Type.Url"], "Web address / link")
         ids := Map()
         for command in SystemProvider.Commands()
             ids[command["Id"]] := true
@@ -1531,21 +1533,83 @@ class Tests {
         eq("join windows", PreferencesWindow.JoinWindows(["ahk_class #32770"], ["ahk_class Qt5QWindowIcon", " ", "ahk_class #32770"]), "ahk_class #32770, ahk_class Qt5QWindowIcon")
     }
 
-    ; 每条界面文字都有英文 / 中文 / 日文, 参数占位符 {1} {2} ... 三种语言一样
+    ; 英文原文都不为空; 每个语言文件 (Resources\Lang\*.json) 每个键都有翻译、没有多余的键、占位符 {1} {2} ... 和英文一样;
+    ; 读语言文件: 代码的写法、_fallback、_font、文件不在或缺键时退回
     static I18nLanguages() {
-        for key, texts in I18n.Strings {
-            if !TestRunner.True("I18nLanguages.three texts " key, texts is Array && texts.Length = 3)
+        eq := (n, a, e) => TestRunner.Equal("I18nLanguages." n, a, e)
+        for key, text in I18n.Strings
+            TestRunner.True("I18nLanguages.english " key, Type(text) = "String" && Trim(text) != "")
+        languages := I18n.Languages()
+        codes := ""
+        for language in languages
+            codes .= language[1] "=" language[2] " "
+        eq("list", codes, "en=English ja=日本語 zh-CN=简体中文 zh-TW=繁體中文 ")
+        values := ""
+        for value in PreferencesWindow._LanguageValues()
+            values .= value " "
+        eq("preference values", values, "auto en ja zh-CN zh-TW ")
+        for language in languages {
+            code := language[1]
+            if (code = "en")
                 continue
-            TestRunner.True("I18nLanguages.not empty " key, Trim(texts[1]) != "" && Trim(texts[2]) != "" && Trim(texts[3]) != "")
-            RegExReplace(texts[1], "\{\d\}", , &count1)
-            RegExReplace(texts[2], "\{\d\}", , &count2)
-            RegExReplace(texts[3], "\{\d\}", , &count3)
-            TestRunner.True("I18nLanguages.placeholders " key, count1 = count2 && count1 = count3)
+            data := I18n.ReadFile(code)
+            missing := "", extra := ""
+            for key, english in I18n.Strings {
+                if !data.Has(key) {
+                    missing .= key " "
+                    continue
+                }
+                TestRunner.True("I18nLanguages." code " not empty " key, Trim(data[key]) != "")
+                RegExReplace(english, "\{\d\}", , &countEn)
+                RegExReplace(data[key], "\{\d\}", , &count)
+                TestRunner.True("I18nLanguages." code " placeholders " key, count = countEn)
+            }
+            for key in data
+                if (SubStr(key, 1, 1) != "_" && !I18n.Strings.Has(key))
+                    extra .= key " "
+            eq(code " missing keys", missing, "")
+            eq(code " extra keys", extra, "")
+            eq(code " font", data.Get("_font", "") != "", true)
         }
+
         savedLang := I18n.Lang
+        eq("normalize old zh", I18n.Normalize("zh"), "zh-CN")
+        eq("normalize case", I18n.Normalize(" ZH_tw "), "zh-TW")
+        eq("normalize region", I18n.Normalize("zh-HK"), "zh-TW")
+        eq("normalize empty", I18n.Normalize(""), "auto")
+        I18n.Init("zh")
+        eq("zh-CN", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" ThemeManager.FontName(), "zh-CN|通用|Microsoft YaHei UI")
         I18n.Init("ja")
-        TestRunner.Equal("I18nLanguages.ja text", I18n.T("Prefs.Page.General"), I18n.Strings["Prefs.Page.General"][3])
-        TestRunner.Equal("I18nLanguages.ja font", ThemeManager.FontName() != "", true)
+        eq("ja", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" ThemeManager.FontName(), "ja|全般|Yu Gothic UI")
+        I18n.Init("zh-TW")
+        eq("zh-TW", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" ThemeManager.FontName(), "zh-TW|一般|Microsoft JhengHei UI")
+        eq("zh-TW args", I18n.T("Clipboard.ClearHint", 3), "3 筆")
+        I18n.Init("en")
+        eq("en", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" ThemeManager.FontName(), "en|General|Segoe UI")
+        I18n.Init("ko-KR")                                                  ; 没有的语言: 英文
+        eq("unknown", I18n.Lang "|" I18n.T("Prefs.Page.General"), "en|General")
+
+        savedDir := I18n.LangDir
+        dir := A_Temp "\ALTRun-lang-test"
+        try DirDelete(dir, true)
+        DirCreate(dir)
+        I18n.LangDir := dir
+        FileCopy(savedDir "\zh-CN.json", dir "\zh-CN.json")
+        I18n.Init("zh-TW")                                                  ; 繁体的文件不在: 简体中文
+        eq("no zh-TW file", I18n.Lang "|" I18n.T("Prefs.Page.General"), "zh-CN|通用")
+        FileAppend('{"_name": "繁體中文", "_font": "Test Font", "_fallback": "zh-CN", "Prefs.Page.General": "一般"}', dir "\zh-TW.json", "UTF-8")
+        I18n.Init("zh-TW")                                                  ; 缺的键: 先找 _fallback, 再用英文
+        eq("fallback", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" I18n.T("Prefs.Page.Appearance") "|" ThemeManager.FontName(), "zh-TW|一般|外观|Test Font")
+        FileAppend('{"_name": "Test", "_fallback": "xx", "Prefs.Page.General": "Allgemein"}', dir "\de.json", "UTF-8")
+        I18n.Init("de-DE")                                                  ; 只有语言部分的文件; _fallback 的文件不在: 英文
+        eq("base language", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" I18n.T("Prefs.Page.Appearance") "|" ThemeManager.FontName(), "de|Allgemein|Appearance|Segoe UI")
+        eq("list from folder", I18n.Languages().Length, 4)
+        FileDelete(dir "\zh-CN.json")
+        FileAppend("{broken", dir "\zh-CN.json", "UTF-8")
+        I18n.Init("zh-CN")                                                  ; 读不了: 英文
+        eq("broken file", I18n.Lang "|" I18n.T("Prefs.Page.General"), "en|General")
+        I18n.LangDir := savedDir
+        DirDelete(dir, true)
         I18n.Init(savedLang)
     }
 
@@ -1588,13 +1652,13 @@ class Tests {
     ; 偏好设置里的灰色说明: "<标签>.Desc" 要有对应的标签, 中英文都不能空
     static PreferenceDescriptions() {
         count := 0
-        for key, pair in I18n.Strings {
+        for key, english in I18n.Strings {
             if !(SubStr(key, -5) = ".Desc")
                 continue
             count += 1
             base := SubStr(key, 1, -5)
             TestRunner.True("PreferenceDescriptions.label " base, I18n.Strings.Has(base))
-            TestRunner.True("PreferenceDescriptions.text " key, Trim(pair[1]) != "" && Trim(pair[2]) != "")
+            TestRunner.True("PreferenceDescriptions.text " key, Trim(english) != "")
         }
         TestRunner.True("PreferenceDescriptions.count " count, count >= 50)
         for key in ["Prefs.RememberPosition.Desc", "Prefs.ShowOn.Desc", "Prefs.HideOnDeactivate.Desc", "Prefs.Hotkey.Desc"]
@@ -1829,7 +1893,7 @@ Func | PTTools | PT Tools (AHK)=99
         eq("ini kept", FileExist(iniFile) != "", true)
         eq("hotkey", settings["General"]["Hotkey"], "!Space")
         eq("second hotkey", settings["General"]["SecondaryHotkey"], "!r")
-        eq("language", settings["General"]["Language"], "zh")
+        eq("language", settings["General"]["Language"], "zh-CN")
         eq("startup", settings["General"]["LaunchAtLogin"], 0)
         eq("file manager", settings["General"]["FileManager"], "C:\Apps\TotalCMD64.exe /O /T /S")
         eq("index depth", settings["Features"]["Applications"]["Depth"], 2)
@@ -1852,7 +1916,7 @@ Func | PTTools | PT Tools (AHK)=99
         ; 真实的 v2026.08.12 生成的 ALTRun.ini (UTF-16, 带默认命令) + 用户加的一条命令和设置
         fixture := SchemaMigration.Upgrade(SchemaMigration.ReadLegacyIni(A_ScriptDir "\Fixtures\ALTRun.v2026.08.12.ini"), 2)
         eq("fixture commands", fixture["CustomCommands"].Length, 10)
-        eq("fixture language", fixture["General"]["Language"], "zh")
+        eq("fixture language", fixture["General"]["Language"], "zh-CN")
         eq("fixture keep input (2.x default on)", fixture["General"]["KeepLastQuery"], 1)
         eq("keep last query default off", AppSettings.Defaults()["General"]["KeepLastQuery"], 0)
         eq("fixture hotkey", fixture["Hotkeys"][1]["Key"], "~Mbutton")

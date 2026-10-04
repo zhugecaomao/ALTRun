@@ -179,7 +179,7 @@ class AppSettings {
                 "SecondaryHotkey"     , "!r",                               ; Alt+R
                 "DoubleTap"           , "",                                ; 双击 Ctrl / Shift 呼出搜索窗口 (和 Listary 一样), "" = 不用
                 "SelectionHotkey"     , "^!\",                              ; 选中文字 / 文件后按: 直接打开它们的操作 (Ctrl+Alt+\)
-                "Language"            , "auto",                             ; auto / en / zh
+                "Language"            , "auto",                             ; auto 或 Resources\Lang 里的语言代码 (zh-CN / zh-TW / ja), en
                 "LaunchAtLogin"       , 1,
                 "ShowTrayIcon"        , 1,
                 "HideOnDeactivate"    , 1,

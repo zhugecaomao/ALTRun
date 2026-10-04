@@ -40,6 +40,7 @@ class App {
         Logger.Debug("===== " App.Name " " App.Version " starting =====")
         Logger.Time("startup: settings", started)                          ; 打开 "写入调试日志" 时记录启动各阶段的耗时
         phase := Logger.Ms()
+        AppSettings.General["Language"] := I18n.Normalize(AppSettings.General["Language"])   ; 以前的 "zh" -> "zh-CN"
         I18n.Init(AppSettings.General["Language"])
         Knowledge.Load()
         Usage.Load()

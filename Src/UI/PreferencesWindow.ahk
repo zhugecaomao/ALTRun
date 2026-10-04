@@ -232,7 +232,7 @@ class PreferencesWindow {
         PreferencesWindow._Pair(["General.Hotkey", "Prefs.Hotkey", "K", "hotkey"], ["General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey"])
         PreferencesWindow._Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
         PreferencesWindow._Pair(["General.DoubleTap", "Prefs.DoubleTap", "K", "choice", ["", "Ctrl", "Shift"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")]]
-            , ["General.Language", "Prefs.Language", "K", "choice", ["auto", "en", "zh", "ja"], [I18n.T("Prefs.Language.auto"), "English", "中文", "日本語"]])
+            , ["General.Language", "Prefs.Language", "K", "choice", PreferencesWindow._LanguageValues(), PreferencesWindow._LanguageLabels()])
         PreferencesWindow._Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
                    , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
@@ -283,6 +283,21 @@ class PreferencesWindow {
         PreferencesWindow._positionReset := true
         PreferencesWindow.MarkDirty()
         button.Enabled := false
+    }
+
+    ; 界面语言的选项: 自动 + Resources\Lang 里的语言 (每种语言用它自己的文字显示)
+    static _LanguageValues() {
+        values := ["auto"]
+        for language in I18n.Languages()
+            values.Push(language[1])
+        return values
+    }
+
+    static _LanguageLabels() {
+        labels := [I18n.T("Prefs.Language.auto")]
+        for language in I18n.Languages()
+            labels.Push(language[2])
+        return labels
     }
 
     ; 内置主题显示翻译后的名称, 用户主题显示文件名

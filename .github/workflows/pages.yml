@@ -16,6 +16,7 @@ on:
       - docs/images/**
       - CHANGELOG.md
       - Src/Core/I18n.ahk
+      - Resources/Lang/zh-CN.json
       - Src/UI/ThemeManager.ahk
       - .github/workflows/pages.yml
   workflow_run:
