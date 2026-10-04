@@ -167,3 +167,7 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
   .stats-inner { grid-template-columns: repeat(2, 1fr); }
   .section { padding: 56px 0; }
 }
+
+/* 下载区下面的代码签名说明 */
+.signing { margin-top: 28px; color: var(--muted); font-size: 0.9rem; }
+.signing p { margin: 4px 0; }

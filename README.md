@@ -219,6 +219,17 @@ ALTRun is a fast, keyboard-first launcher for Windows, inspired by Alfred for ma
 The screenshots above show the English interface. Documentation is available in the [Wiki](https://github.com/zhugecaomao/ALTRun/wiki) (Chinese). Issues and pull requests in English are welcome.
 
 
+## 代码签名策略 / Code signing policy
+Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
+
+ALTRun 使用 SignPath Foundation 的免费代码签名。签名的只有本仓库的 GitHub Actions（[Release 工作流](.github/workflows/release.yml)）从公开源码编译出的 `ALTRun.exe`，不签名第三方的程序。
+
+- 提交者和审核者 / Committers and reviewers: [zhugecaomao](https://github.com/zhugecaomao)
+- 批准者 / Approvers: [zhugecaomao](https://github.com/zhugecaomao)
+
+**隐私 / Privacy**：ALTRun 不收集、不上传任何数据。This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it: it only checks GitHub for new versions (can be turned off) and, when currency conversion is turned on, downloads exchange rates. 详见 [SECURITY.md](SECURITY.md#隐私说明)。
+
+
 ## 许可证与致谢
 [GPL-3.0](LICENSE) © zhugecaomao
 

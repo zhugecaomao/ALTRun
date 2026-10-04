@@ -24,16 +24,7 @@ ALTRun.exe 没有签名时, Windows SmartScreen 会提示 "无法识别的应用
    - Variables 新建 `SIGNPATH_ORGANIZATION_ID`
 4. 之后运行 Release 时, 编译出的 ALTRun.exe 会先送到 SignPath 签名, 再做升级测试和打包。`publish = true` 用正式证书, 需要在 SignPath 网页上批准 (30 分钟内)
 
-README 里要加的代码签名策略 (SignPath Foundation 的要求):
-
-```markdown
-## 代码签名策略 / Code signing policy
-Free code signing provided by [SignPath.io](https://about.signpath.io/), certificate by [SignPath Foundation](https://signpath.org/).
-- Committers and reviewers: [zhugecaomao](https://github.com/zhugecaomao)
-- Approvers: [zhugecaomao](https://github.com/zhugecaomao)
-
-隐私: ALTRun 不收集任何数据, 见 [SECURITY.md](SECURITY.md#隐私说明)。This program will not transfer any information to other networked systems unless specifically requested by the user (update checks and exchange rates, see SECURITY.md).
-```
+README 的 "代码签名策略 / Code signing policy" 一节和官网下载区 (https://zhugecaomao.github.io/ALTRun/#download) 的说明已经写好 (SignPath Foundation 要求下载页写明使用他们的代码签名), 申请表里的 Download URL 填官网的这个地址。
 
 ## 第一次提交到 winget
 winget-pkgs 里还没有 ALTRun 时, 自动更新不起作用, 需要先手动提交一次 (在 Windows 上):
