@@ -185,6 +185,6 @@ class ScriptProvider {
                 . '; 在后台运行, 输出的最后一行显示成通知。把 mode 改成 output 用记事本看全部输出, window 正常运行。`n'
                 . 'FileAppend(FormatTime(, "dddd, d MMMM yyyy"), "*")`n', dir "\Example.ahk", "UTF-8")
         }
-        Run('explorer.exe "' dir '"')
+        ActionCatalog.OpenFolder(dir)                                       ; 设置的文件管理器 (例如 Total Commander)
     }
 }

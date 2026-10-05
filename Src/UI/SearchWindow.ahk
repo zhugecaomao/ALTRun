@@ -957,6 +957,14 @@ class SearchWindow {
         return CDRF_SKIPDEFAULT
     }
 
+    ; 置顶标记 Resources\Icons\Pinned.ico, 按尺寸读取一次 (0 = 没有这个文件)
+    static _PinBadge(size) {
+        static icons := Map(), file := A_ScriptDir "\Resources\Icons\Pinned.ico"
+        if !icons.Has(size)
+            icons[size] := FileExist(file) ? DllCall("LoadImageW", "Ptr", 0, "WStr", file, "UInt", 1, "Int", size, "Int", size, "UInt", 0x10, "Ptr") : 0   ; IMAGE_ICON, LR_LOADFROMFILE
+        return icons[size]
+    }
+
     static _PaintRow(hdc, rect, item, selected, visibleRow) {
         static DT_RIGHT := 0x2, DT_VCENTER := 0x4, DT_BOTTOM := 0x8, DT_SINGLELINE := 0x20
         static DT_NOPREFIX := 0x800, DT_PATH_ELLIPSIS := 0x4000, DT_END_ELLIPSIS := 0x8000
@@ -985,8 +993,13 @@ class SearchWindow {
             DllCall("DeleteObject", "Ptr", brush)
         }
 
+        iconY := top + (rowH - iconSize) // 2
         if (hIcon := IconCache.Get(item.Icon))
-            DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad, "Int", top + (rowH - iconSize) // 2, "Ptr", hIcon, "Int", iconSize, "Int", iconSize, "UInt", 0, "Ptr", 0, "UInt", 3)
+            DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad, "Int", iconY, "Ptr", hIcon, "Int", iconSize, "Int", iconSize, "UInt", 0, "Ptr", 0, "UInt", 3)
+        if (item.Pinned && (hBadge := SearchWindow._PinBadge(badge := Max(Win.Scale(13), Round(iconSize * 0.55))))) {   ; 置顶的: 右下角一个图钉
+            offset := iconSize - badge + Win.Scale(3)
+            DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad + offset, "Int", iconY + offset, "Ptr", hBadge, "Int", badge, "Int", badge, "UInt", 0, "Ptr", 0, "UInt", 3)
+        }
 
         textLeft := left + pad + iconSize + Win.Scale(12)
         shortcutW := Win.Scale(56)

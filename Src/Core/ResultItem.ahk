@@ -19,6 +19,7 @@
 ;   Score        排序分数, 越大越靠前
 ;   Source       产生这条结果的设置项 (自定义命令 / 片段 / 搜索引擎的 Map), 编辑和删除时用
 ;   Exclusive    true = 关键字模式的结果 ("clip " / "g xxx" / ">cmd"), 有这种结果时只显示它们
+;   Pinned       true = 置顶的结果 (剪贴板、空搜索框), 图标右下角画一个图钉
 ;
 ; 用法:
 ;   ResultItem("Notepad", "C:\Windows\notepad.exe", {Kind: "file", Arg: path, Uid: "app:" path})
@@ -41,6 +42,7 @@ class ResultItem {
         this.LargeText    := ""
         this.Score        := 0
         this.Exclusive    := false
+        this.Pinned       := false
         this.Source       := ""
         this.Provider     := ""
         if IsObject(props) {

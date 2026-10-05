@@ -13,14 +13,14 @@
 ;                   snippets, system commands, calculator, web search, file search, terminal
 ;   Src\Extensions\ Features outside the search window: snippet auto-expansion,
 ;                   dialog quick switch, Ctrl+D date, PT Tools, update checker
-;   Resources\      Data files shipped with ALTRun (Kanji.txt, built-in themes, Lang\ translations, ALTRun.ico)
+;   Resources\      Data files shipped with ALTRun (Kanji.txt, built-in themes, Lang\ translations, Icons\, ALTRun.ico)
 ;   Themes\         Optional custom themes (<Name>.json)
 ;   Data\           Generated at runtime: app index, learned ranking, clipboard history
 ;===============================================================================
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun
 ;@Ahk2Exe-Set Comments, An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2026.10.09
+;@Ahk2Exe-SetVersion 2026.10.06
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026 zhugecaomao
 ;@Ahk2Exe-SetOrigFilename ALTRun.exe
 ;@Ahk2Exe-SetMainIcon Resources\ALTRun.ico

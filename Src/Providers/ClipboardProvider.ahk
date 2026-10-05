@@ -38,6 +38,8 @@ class ClipboardProvider {
     static File    := AppSettings.DataDir "\ClipboardHistory.json"
     static Folder  := AppSettings.DataDir "\Clipboard"                         ; 很长的条目和图片
     static LargeText := 4000
+    static IconFile := A_ScriptDir "\Resources\Icons\Clipboard.ico"
+    static Icon => FileExist(ClipboardProvider.IconFile) ? ClipboardProvider.IconFile : "res:imageres.dll,-5314"   ; 文字条目的图标
     static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
     static Entries := []              ; 最新的在前, 见文件开头的说明
     static _pausedUntil := 0, _saveTimer := "", _mergeUntil := 0
@@ -62,7 +64,7 @@ class ClipboardProvider {
         options := AppSettings.Feature("Clipboard")
         if !query.MatchKeyword([options["Keyword"]], &term)
             return []
-        icon := "res:imageres.dll,-5314"
+        icon := ClipboardProvider.Icon
         exclusive := query.HasRest                                          ; "clip " 之后只显示剪贴板历史
         if !ClipboardProvider.Entries.Length
             return [ResultItem(I18n.T("Clipboard.Empty"), I18n.T("Clipboard.EmptyHint", Win.HotkeyLabel(options["Hotkey"])), {Icon: icon, Valid: false, Score: 300, Exclusive: exclusive})]
@@ -148,8 +150,7 @@ class ClipboardProvider {
         }
         props.Actions.Push(ResultItem(I18n.T(pinned ? "Clipboard.Unpin" : "Clipboard.Pin"), "", {Icon: "res:imageres.dll,-5303"
             , OnRun: (*) => ClipboardProvider.SetPinned(entry, !pinned)}))
-        if pinned
-            subtitle := I18n.T("Clipboard.PinnedTag") " · " subtitle
+        props.Pinned := pinned                                              ; 置顶的: 图标上画一个图钉 (SearchWindow)
         return ResultItem(title, subtitle, props)
     }
 

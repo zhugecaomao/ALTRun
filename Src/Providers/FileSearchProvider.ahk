@@ -67,10 +67,13 @@ class FileSearchProvider {
         return FileSearchProvider._KeywordResults(term, options, false, true)
     }
 
-    ; 输入的是文件夹路径时返回 {Dir: "C:\Projects\", Filter: "rep"}, 否则 ""
+    ; 输入的是文件夹路径时返回 {Dir: "C:\Projects\", Filter: "rep"}, 否则 ""; 文件夹不存在时 {Dir, Filter, Missing: true}
     ;   C:\ / C:\Projects\rep / \\server\share\ / ~\ (用户文件夹) / %OneDrive%\ (环境变量)
+    ;   中文输入法打出的 "D：、" (全角冒号、顿号) 也当作 "D:\"
     static BrowsePath(text) {
         text := LTrim(text)
+        if RegExMatch(text, "^[A-Za-z][:：][\\、]")
+            text := SubStr(text, 1, 1) ":\" StrReplace(SubStr(text, 4), "、", "\")
         if (text = "~")
             text := EnvGet("UserProfile") "\"
         else if RegExMatch(text, "^~\\")
@@ -86,12 +89,14 @@ class FileSearchProvider {
         pos := InStr(text, "\", , -1)
         dir := SubStr(text, 1, pos), filter := SubStr(text, pos + 1)
         if !DirExist(dir)
-            return ""
+            return {Dir: dir, Filter: filter, Missing: true}
         return {Dir: dir, Filter: filter}
     }
 
     ; 文件夹里的内容 (文件夹在前), 按最后一段过滤; 文件夹的 Tab 补全成 "路径\", 进入下一级
     static BrowseResults(browse) {
+        if browse.HasOwnProp("Missing")                                     ; 例如没有 D 盘: 提示, 而不是什么都不显示
+            return [ResultItem(I18n.T("Files.FolderNotFound"), browse.Dir, {Icon: "folder:", Valid: false, Score: 150, Exclusive: true})]
         entries := FileSearchProvider.ListFolder(browse.Dir)
         needle := StrLower(browse.Filter), scores := Map()
         for index, entry in entries {

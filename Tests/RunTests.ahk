@@ -1863,7 +1863,8 @@ class Tests {
         }
         eq("pinned first, kept when trimming", texts(), "one|five|four")
         items := ClipboardProvider.Search(SearchQuery("clip one"))
-        eq("pinned tag", InStr(items[1].Subtitle, I18n.T("Clipboard.PinnedTag")) = 1, true)
+        eq("pinned badge", items[1].Pinned, true)
+        eq("unpinned: no badge", ClipboardProvider.Search(SearchQuery("clip five"))[1].Pinned, false)
         actions := ""
         for action in items[1].Actions
             actions .= action.Title "|"
@@ -1895,7 +1896,11 @@ class Tests {
         eq("parse", IsObject(browse) ? browse.Dir "|" browse.Filter : "", root "\|rep")
         eq("not a path", FileSearchProvider.BrowsePath("report"), "")
         eq("drive only", FileSearchProvider.BrowsePath("C:"), "")
-        eq("missing folder", FileSearchProvider.BrowsePath(root "\Nope\x"), "")
+        missing := FileSearchProvider.BrowsePath(root "\Nope\x")
+        eq("missing folder", IsObject(missing) && missing.HasOwnProp("Missing") ? missing.Dir : "", root "\Nope\")
+        eq("missing folder: hint", titles(root "\Nope\x"), I18n.T("Files.FolderNotFound"))
+        wide := FileSearchProvider.BrowsePath(SubStr(root, 1, 1) "：、" StrReplace(SubStr(root, 4), "\", "、") "、rep")   ; 中文输入法的全角冒号和顿号
+        eq("chinese punctuation", IsObject(wide) ? wide.Dir "|" wide.Filter : "", root "\|rep")
         home := FileSearchProvider.BrowsePath("~")
         eq("home", IsObject(home) ? home.Dir : "", EnvGet("UserProfile") "\")
         titles(text) {

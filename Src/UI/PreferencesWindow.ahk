@@ -165,7 +165,7 @@ class PreferencesWindow {
     static WikiPage(nameKey) {
         static pages := Map("Prefs.Page.Window", "Usage", "Prefs.Page.Appearance", "Themes", "Prefs.Page.Features", "Usage", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
-                          , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage"
+                          , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage", "Prefs.Page.Scripts", "Extensions"
                           , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.QuickSwitch", "Extensions", "Prefs.Page.QSPanel", "Extensions", "Prefs.Page.DateStamp", "Extensions"
                           , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
@@ -219,6 +219,7 @@ class PreferencesWindow {
         PreferencesWindow._BuildSnippets()
         PreferencesWindow._BuildClipboard()
         PreferencesWindow._BuildWebSearch()
+        PreferencesWindow._BuildScripts()
         PreferencesWindow._BuildHotkeys()
         PreferencesWindow._BuildQuickSwitch()
         PreferencesWindow._BuildQuickSwitchPanel()
@@ -491,6 +492,39 @@ class PreferencesWindow {
         PreferencesWindow._Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", "L")
     }
 
+    ; 脚本扩展: 说明、Scripts 文件夹、找到的脚本 (双击用记事本编辑); 开关在 "功能" 页
+    static _BuildScripts() {
+        PreferencesWindow._BeginPage("Prefs.Page.Scripts", 110)
+        PreferencesWindow._Section("Prefs.Section.Scripts")
+        PreferencesWindow._Info("Prefs.Group.ScriptsFolder", ScriptProvider.Dir, " cGray")
+        PreferencesWindow._y += 4
+        PreferencesWindow._Button("Prefs.ScriptsFolder", (*) => (ScriptProvider.OpenFolder(), PreferencesWindow._FillScripts()))
+        PreferencesWindow._Section("Prefs.Section.ScriptList")
+        listView := PreferencesWindow._Add("ListView", "w" PreferencesWindow.ContentW " h170 -Multi NoSort Grid ReadOnly"
+            , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])
+        for index, width in [145, 70, 95, 135, 100]
+            listView.ModifyCol(index, width)
+        listView.OnEvent("DoubleClick", (ctrl, row) => (row && row <= ScriptProvider.Scripts.Length) ? Run('notepad.exe "' ScriptProvider.Scripts[row].Path '"') : "")
+        PreferencesWindow._scriptList := listView
+        PreferencesWindow._FillScripts()
+        PreferencesWindow._Below(6, listView)
+        PreferencesWindow._Note("Prefs.ScriptsNote")
+    }
+
+    static _scriptList := ""
+    static _FillScripts() {
+        static modes := Map("window", "Script.Mode.Window", "silent", "Script.Mode.Silent", "output", "Script.Mode.Output")
+        listView := PreferencesWindow._scriptList
+        if !IsObject(listView)
+            return
+        ScriptProvider.Load()
+        listView.Delete()
+        for script in ScriptProvider.Scripts
+            listView.Add(, script.Title, script.Keyword, script.Argument, I18n.T(modes[script.Mode]), script.Name)
+        if !ScriptProvider.Scripts.Length
+            listView.Add(, I18n.T("Prefs.NoScripts"))
+    }
+
     static _BuildHotkeys() {
         PreferencesWindow._BeginPage("Prefs.Page.Hotkeys")
         actions := [["ToggleWindow", "Show / hide ALTRun (ToggleWindow)"]]
@@ -725,7 +759,7 @@ class PreferencesWindow {
 
     static _OpenFolder(folder) {
         DirCreate(folder)
-        Run('explorer.exe "' folder '"')
+        ActionCatalog.OpenFolder(folder)                                    ; 设置的文件管理器 (例如 Total Commander)
     }
 
     ;---------------------------------------------------------------------------

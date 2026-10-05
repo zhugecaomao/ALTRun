@@ -242,9 +242,15 @@ class IconCache {
                 hIcon := IconCache._FromPidl("::{21EC2020-3AEA-1069-A2DD-08002B30309D}\" target)
             return hIcon
         }
-        if FileExist(target)
-            return IconCache._FromShell(target, 0, false)
         SplitPath(target, , , &ext)
+        if FileExist(target) {
+            if (ext = "ico") {                                              ; .ico 直接读里面的图片 (Resources\Icons 的图标), 不依赖资源管理器的缩略图
+                size := IconCache.SourceSize(IconCache.Size)
+                if (hIcon := DllCall("LoadImageW", "Ptr", 0, "WStr", target, "UInt", 1, "Int", size, "Int", size, "UInt", 0x10, "Ptr"))   ; IMAGE_ICON, LR_LOADFROMFILE
+                    return hIcon
+            }
+            return IconCache._FromShell(target, 0, false)
+        }
         return IconCache._FromShell(ext != "" ? "." ext : ".exe", FILE_ATTRIBUTE_NORMAL, true)
     }
 
