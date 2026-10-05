@@ -388,9 +388,9 @@ class SearchWindow {
         SearchWindow._Layout()
         Critical("Off")
         SearchWindow._Repaint()                                             ; Critical 期间画的 (自绘回调不能运行) 重画一次
-        if (SearchWindow._repaintLater = "")
-            SearchWindow._repaintLater := () => SearchWindow._Repaint()
-        SetTimer(SearchWindow._repaintLater, -30)                           ; 等这次输入处理完再画一次: 万一那一刻没画出结果行 (空白行), 也会马上补上
+        if (SearchWindow._repaintLater = "")                                ; 等这次输入处理完再画一次: 万一那一刻没画出结果行 (空白行), 也会马上补上。
+            SearchWindow._repaintLater := () => DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 0)   ; 不擦背景: 每行自己涂满整行, 内容一样时看不出重画, 不会闪
+        SetTimer(SearchWindow._repaintLater, -30)
     }
     static _repaintLater := ""
 
