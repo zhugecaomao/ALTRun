@@ -21,6 +21,7 @@ class Logger {
     static _maxBuf := 60                        ; 攒够这么多条才写一次盘
     static Enabled := true
     static Immediate := false                   ; true = 每条马上写盘 (App 启动完成后打开)
+    static TraceUntil := 0                      ; A_TickCount 在这之前时 Trace() 才写 (启动后的一小段时间)
 
     static Debug(msg) => Logger._Write("DBG", msg)
 
@@ -39,6 +40,11 @@ class Logger {
         if Logger.Enabled
             Logger._Write("DBG", "Perf: " label " " Round(elapsed) " ms")
         return elapsed
+    }
+    ; 更细的步骤 (呼出窗口的每一步、加载的图标...), 只在启动后的一小段时间里记, 平时不占日志
+    static Trace(msg) {
+        if (Logger.Enabled && A_TickCount < Logger.TraceUntil)
+            Logger._Write("DBG", msg)
     }
     static Warn(msg)  => Logger._Write("WRN", msg)
     static Error(msg) => Logger._Write("ERR", msg)

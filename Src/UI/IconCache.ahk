@@ -124,6 +124,7 @@ class IconCache {
                 continue
             IconCache._queue.Delete(key)
             hIcon := 0
+            Logger.Trace("icon: " spec)
             try hIcon := IconCache._Load(spec)
             IconCache._Store(key, hIcon)
             loaded := true

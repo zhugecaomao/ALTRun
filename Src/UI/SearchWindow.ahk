@@ -160,9 +160,20 @@ class SearchWindow {
 
     ; text: 要搜索的文字; 不写时空白, 打开了 "保留上一次的搜索" (KeepLastQuery) 时恢复上次的
     ; 输入、文件搜索模式和选中的行, 文字全选: 按 Enter 再执行一次, 直接输入就开始新的搜索
+    static _showing := false
     static Show(text := "") {
         if !IsObject(SearchWindow.Gui)
             return
+        if SearchWindow._showing {                                          ; 上一次还没显示完 (例如显示过程中又按了热键): 不重入
+            Logger.Debug("SearchWindow: show skipped, still showing")
+            return
+        }
+        SearchWindow._showing := true
+        try SearchWindow._Show(text)
+        finally SearchWindow._showing := false
+    }
+
+    static _Show(text) {
         started := Logger.Ms()
         if Logger.Enabled
             Logger.Debug("SearchWindow: show")                              ; 和下面的 "Perf: show" 配对: 卡住时看得出卡在显示窗口里
@@ -183,6 +194,7 @@ class SearchWindow {
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
         SearchWindow.HistoryIndex := 0
+        Logger.Trace("show: results")
         if !reuse {
             SearchWindow._SetInput(restore ? last.Text : text)
             if restore
@@ -195,6 +207,7 @@ class SearchWindow {
         ; 窗口隐藏期间的重画请求会被丢掉, 显示出来后才重画的话, 结果列表会先白一下 / 闪一下。
         ; 先让 DWM 把窗口藏起来 (cloak), 显示并立即画好整个窗口之后再露出来
         hwnd := SearchWindow.Gui.Hwnd
+        Logger.Trace("show: window")
         cloaked := !SearchWindow.IsVisible() && SearchWindow._Cloak(hwnd, true)
         try {
             SearchWindow.Gui.Show("x" pos.X " y" pos.Y " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
@@ -204,6 +217,7 @@ class SearchWindow {
             if cloaked
                 SearchWindow._Cloak(hwnd, false)
         }
+        Logger.Trace("show: activate")
         try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)                    ; 先拿到焦点, 之后按下的键都进搜索框
         SearchWindow.Input.Focus()
         len := StrLen(SearchWindow.Input.Value)
@@ -212,6 +226,7 @@ class SearchWindow {
         else
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
         if AppSettings.General["SwitchToEnglishInput"] {
+            Logger.Trace("show: input language")
             if (!wasVisible || !SearchWindow._layoutBefore)                     ; 隐藏时切回呼出前的输入法
                 SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
             Win.SwitchToEnglishIME()

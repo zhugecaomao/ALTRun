@@ -116,6 +116,7 @@ class ProviderRegistry {
                 continue
             try {
                 start := Logger.Ms()
+                Logger.Trace("empty results: " provider.Id)
                 for item in provider.EmptyResults() {
                     item.Provider := provider.Id
                     results.Push(item)
