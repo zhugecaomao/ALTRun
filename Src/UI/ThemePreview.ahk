@@ -2,7 +2,7 @@
 ; ThemePreview.ahk - 主题缩略图 (偏好设置 -> 外观 的主题列表) (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 按主题自己的颜色和圆角画一个简化的迷你搜索窗口 (不写字, 只用色块): 输入框里一段输入文字色,
-; 分隔线, 三行结果 (图标 + 一条标题); 第一行是选中行, 标题前一段是高亮色。
+; 分隔线, 三行结果 (彩色图标 + 一条标题); 第一行是选中行, 标题前一段是高亮色。
 ; 不用图片文件, 自定义主题也有缩略图;
 ; System (跟随系统) 左半边是 Light, 右半边是 Dark。
 ;
@@ -13,6 +13,7 @@
 
 class ThemePreview {
     static TitleWidths := [0.52, 0.40, 0.46]                                    ; 三行标题的长度 (占宽度的比例)
+    static IconColors := ["3B82F6", "F59E0B", "10B981"]                        ; 结果行左边的 "图标" (蓝 / 橙 / 绿, 每个主题都一样)
 
     ; 一个主题 (完整的键值 Map) 的缩略图, w x h 像素
     static Bitmap(theme, w, h) {
@@ -119,8 +120,8 @@ class ThemePreview {
                 roundRect(inset, top + (radius ? 1 : 0), w - 1 - inset, bottom - (radius ? 1 : 0), radius, color("SelectedBackground"))
             }
             back := selected ? "SelectedBackground" : "Background"
-            iconSize := Round(rowH * 0.36), iconTop := top + Round((rowH - iconSize) / 2)
-            roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 3), soft(selected ? "SelectedSubtitle" : "Subtitle", back, 0.45))
+            iconSize := Round(rowH * 0.4), iconTop := top + Round((rowH - iconSize) / 2)
+            roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 4), Win.ColorToBgr(ThemePreview.IconColors[index]))
             x := pad + iconSize + Max(3, Round(w * 0.05))
             titleY := top + Round((rowH - titleH) / 2), titleLen := Round(w * titleW)
             if selected {                                                   ; 选中行: 前一段是和输入匹配的高亮色
