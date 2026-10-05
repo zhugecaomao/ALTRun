@@ -357,7 +357,11 @@ class SearchWindow {
         SetTimer(SearchWindow._searchTimer, -1)                             ; 连续输入时只搜索最后一次
     }
 
+    ; 每输入一个字就搜索一次 (输入框的 Change 事件, 各自是一个 AHK 线程)。搜索慢一点时, 下一个字的搜索会
+    ; 插进来先做完; 这时前一次的结果已经过时, 不再显示 (否则会盖掉新的结果, 窗口高度和列表也对不上)
+    static _searchGen := 0
     static _RunSearch() {
+        gen := ++SearchWindow._searchGen
         text := SearchWindow.Input.Value
         if (SearchWindow.Mode = "actions") {
             filtered := []
@@ -368,17 +372,27 @@ class SearchWindow {
         }
         browse := FileSearchProvider.BrowsePath(text)                       ; 浏览文件夹: 只按最后一段 (过滤的文字) 高亮, 路径里的词不算
         SearchWindow.HighlightText := IsObject(browse) ? browse.Filter : text
-        if SearchWindow.FileMode
-            return SearchWindow.SetResults(ProviderRegistry.SearchFiles(text))
-        SearchWindow.SetResults(ProviderRegistry.Search(text))
+        results := SearchWindow.FileMode ? ProviderRegistry.SearchFiles(text) : ProviderRegistry.Search(text)
+        if (gen != SearchWindow._searchGen)                                 ; 搜索期间又输入了字: 用新的那次的结果
+            return
+        SearchWindow.SetResults(results)
     }
 
+    ; 换上新的结果并调整列表和窗口高度。不可打断 (Critical): 做到一半时如果另一次搜索插进来,
+    ; 两边的行数会混在一起 (窗口很高, 列表却是空的)。这里只改控件, 重画在之后照常进行
     static SetResults(results) {
+        Critical("On")
         SearchWindow.Results  := results
         SearchWindow.Selected := results.Length ? 1 : 0
         SearchWindow.Offset   := 0
         SearchWindow._Layout()
+        Critical("Off")
+        SearchWindow._Repaint()                                             ; Critical 期间画的 (自绘回调不能运行) 重画一次
+        if (SearchWindow._repaintLater = "")
+            SearchWindow._repaintLater := () => SearchWindow._Repaint()
+        SetTimer(SearchWindow._repaintLater, -30)                           ; 等这次输入处理完再画一次: 万一那一刻没画出结果行 (空白行), 也会马上补上
     }
+    static _repaintLater := ""
 
     static _VisibleCount() {
         return Min(SearchWindow.Results.Length, SearchWindow.VisibleRows)
