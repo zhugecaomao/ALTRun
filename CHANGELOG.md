@@ -5,15 +5,15 @@
 
 ## [未发布]
 
-## [2026.10.07.12]
+## [2026.10.07.13]
 
 选主题改为看缩略图, 新增 4 个主题和繁體中文界面; 新增切换窗口、浏览文件夹、标记多个文件、带参数的自定义命令、Windows 设置页面、脚本扩展、置顶和最近使用; 数据文件夹可以放到同步盘。
 
 ### 升级
-- **从 2026.10.01 ~ 2026.10.04 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.07.12", 按 `Enter` 安装
-- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.07.12", 按 `Enter` 更新
+- **从 2026.10.01 ~ 2026.10.04 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.07.13", 按 `Enter` 安装
+- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.07.13", 按 `Enter` 更新
 - **从 2026.09.26 ~ 2026.09.30 升级**: 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`
-- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.07.12.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.07.13.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
 - 设置和数据都保留, 设置文件的格式没有变化: 新的选项 (`Features.Windows`、`Features.Recent`、`Features.Scripts`、`Features.System.SettingsPages`、`Features.Snippets.ExpandExclude`、`Features.Calculator` 的结构计算参数) 启动时自动补上, 默认打开; 界面语言 `"zh"` 照常可用, 保存时写成 `"zh-CN"`
 - 一键更新会带上新的 `Resources\Lang\` 语言文件; 手动解压升级时请把整个压缩包解压覆盖, 否则中文和日文界面会显示英文
 
@@ -24,7 +24,7 @@
 - **带参数的自定义命令**: 目标或参数里写 `{query}`, 输入 "关键字 文字" 时换成后面的文字 (网址里自动编码), 例如 `jira ABC-123` 打开对应的页面、`ping 10.0.0.1` 运行 ping。新安装的默认命令里有 3 个例子 (`ping 10.0.0.1`、`maps 地名`、`docs 文件夹名`); 已有的设置不变, 可以照着 [说明](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets) 自己加
 - **搜索 Windows 设置的页面**: 输入 "蓝牙"、"显示"、"默认应用"、"Windows 更新" 等直接打开对应的设置页 (40 多个, 中英文名称都能搜); 偏好设置 → 功能 里可以关掉
 - **切换窗口**: 输入窗口标题或程序名, `Enter` 切换到已打开的窗口 (最小化的先还原), `→` 可以关闭窗口; `w 关键词` 只搜窗口, `w ` 列出全部 (和 PowerToys 的 Window Walker 一样)
-- **置顶和最近使用**: 呼出搜索窗口还没输入时, 列出置顶的项目 (操作面板里 "置顶到空搜索框") 和最近打开的 5 个项目 (偏好设置 → 搜索窗口 可以改个数或关掉); `Ctrl+Del` 取消置顶 / 从最近使用里去掉
+- **置顶和最近使用**: 呼出搜索窗口还没输入时, 列出置顶的项目 (操作面板里 "置顶到空搜索框") 和最近打开的项目 (默认不列, 在 偏好设置 → 搜索窗口 设个数, 例如 5); `Ctrl+Del` 取消置顶 / 从最近使用里去掉
 - **剪贴板置顶**: 剪贴板历史里的条目可以置顶 (操作面板里 "置顶"), 一直排在最前面, 不会被新的挤掉, 清空历史时也保留; 置顶的条目图标右下角有一个图钉 (空搜索框里置顶的项目也是)
 - **粘贴为纯文本**: 新的系统命令, 把剪贴板内容去掉格式粘贴; 可以在自定义热键里设成 `Ctrl+Shift+V`
 - **浏览文件夹**: 输入 `D:\Projects\`、`~\`、`\\server\share\` 这样的路径, 列出文件夹里的内容并按最后一段过滤; `Tab` 进入文件夹 (任何结果里的文件夹都可以), `Backspace` 回到上一级。只高亮文件名里和最后一段匹配的字 (路径里的词不算); 文件夹不存在 (例如没有 D 盘) 时显示 "找不到这个文件夹"; 中文输入法打出的 `D：、` 也可以。偏好设置 → 文件搜索 和 `?` 速查表里有说明
@@ -440,8 +440,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.07.12...HEAD
-[2026.10.07.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.07.12
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.07.13...HEAD
+[2026.10.07.13]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.07.12
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03
 [2026.10.02]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.02

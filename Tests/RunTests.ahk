@@ -1850,6 +1850,7 @@ class Tests {
     ; 空搜索框: 置顶在前, 然后最近打开的 (去重、限制个数); 只记能重新打开的结果
     static RecentItems() {
         eq := (n, a, e) => TestRunner.Equal("RecentItems." n, a, e)
+        eq("default count", AppSettings.Defaults()["Features"]["Recent"]["RecentCount"], 0)   ; 默认只显示置顶的项目
         saved := {Recent: Knowledge.Recent, File: Knowledge.File, SettingsFile: AppSettings.File}
         options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedCount := options["RecentCount"]
         Knowledge.Recent := [], Knowledge.File := A_Temp "\ALTRun-recent-test.json", AppSettings.File := A_Temp "\ALTRun-recent-settings.json"

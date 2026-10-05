@@ -168,7 +168,7 @@ class Shots {
             "Features", Map(
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
                 "Calculator", Map("StructuralCalc", 1),
-                "Recent", Map("Pinned", Shots.Pinned),
+                "Recent", Map("Pinned", Shots.Pinned, "RecentCount", 5),
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0)
             ),
             "CustomCommands", [

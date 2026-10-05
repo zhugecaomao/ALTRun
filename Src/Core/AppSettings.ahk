@@ -347,7 +347,7 @@ class AppSettings {
                 ),
                 "Recent", Map(
                     "Enabled"    , 1,
-                    "RecentCount", 5,                                       ; 空搜索框里显示几个最近打开的项目 (0 = 不显示)
+                    "RecentCount", 0,                                       ; 空搜索框里显示几个最近打开的项目 (0 = 不显示, 默认只显示置顶的)
                     "Pinned"     , []                                       ; 置顶到空搜索框的项目 (操作面板里 "置顶")
                 ),
                 "Windows", Map(
