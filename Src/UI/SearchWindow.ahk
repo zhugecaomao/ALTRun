@@ -366,7 +366,8 @@ class SearchWindow {
                     filtered.Push(action)
             return SearchWindow.SetResults(filtered)
         }
-        SearchWindow.HighlightText := text
+        browse := FileSearchProvider.BrowsePath(text)                       ; 浏览文件夹: 只按最后一段 (过滤的文字) 高亮, 路径里的词不算
+        SearchWindow.HighlightText := IsObject(browse) ? browse.Filter : text
         if SearchWindow.FileMode
             return SearchWindow.SetResults(ProviderRegistry.SearchFiles(text))
         SearchWindow.SetResults(ProviderRegistry.Search(text))
