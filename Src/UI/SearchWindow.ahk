@@ -54,6 +54,7 @@ class SearchWindow {
     static _searchTimer := "", _hideTimer := ""
     static _shownRows := -1                                                 ; 窗口当前按几行结果的高度显示
     static _tip := ""                                                       ; 这次显示时的使用提示 (HelpProvider.NextTip)
+    static LastArea := "", HiddenAt := 0                                    ; 上次隐藏时所在屏幕的工作区和时间 (Hud 用)
     static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
     static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput 时隐藏后切回)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
@@ -289,6 +290,10 @@ class SearchWindow {
 
     static Hide() {
         if SearchWindow.IsVisible() {
+            try {                                                           ; 刚隐藏后的提示 (例如 "已置顶") 显示在同一块屏幕上, 见 Hud
+                WinGetPos(&x, &y, &w, &h, "ahk_id " SearchWindow.Gui.Hwnd)
+                SearchWindow.LastArea := Win.WorkAreaAt(x + w // 2, y + SearchWindow.InputHeight // 2), SearchWindow.HiddenAt := A_TickCount
+            }
             SearchWindow._RememberQuery()
             SearchWindow._RestoreInputLanguage()
             SearchWindow.Gui.Hide()

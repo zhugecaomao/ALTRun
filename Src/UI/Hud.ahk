@@ -3,8 +3,9 @@
 ;-------------------------------------------------------------------------------
 ; 和 Alfred 的 "Copied to clipboard" 一样: 一块跟随当前主题颜色和字体的圆角小窗,
 ; 淡入, 停留 duration 毫秒后淡出。不抢焦点, 鼠标可以点穿。
-; 位置固定: 搜索窗口开着时在它下方居中 (下面放不下就放上面), 否则在鼠标所在
-; 屏幕的中间偏下。
+; 位置固定: 搜索窗口开着时在它下方居中 (下面放不下就放上面); 否则在一块屏幕的中间偏下:
+;   - 搜索窗口刚隐藏 (例如执行了 "置顶" 等操作, RecentWindowMs 之内): 窗口所在的屏幕
+;   - 其它时候 (片段展开、后台的提示): 和搜索窗口一样按 Appearance.ShowOn 选 (主屏幕 / 鼠标所在 / 活动窗口所在)
 ;
 ; 用法:
 ;   Hud.Show("已复制")                    一般通过 App.Notify(text, duration) 调用
@@ -78,6 +79,8 @@ class Hud {
         return {X: x, Y: y}
     }
 
+    static RecentWindowMs := 3000
+
     static _Anchor() {
         if SearchWindow.IsVisible() {
             try {
@@ -85,7 +88,22 @@ class Hud {
                 return {Window: {X: x, Y: y, W: w, H: h}, Area: Win.WorkAreaAt(x + w // 2, y + h // 2)}
             }
         }
-        return {Window: "", Area: Win.WorkAreaAtMouse()}
+        if (IsObject(SearchWindow.LastArea) && A_TickCount - SearchWindow.HiddenAt < Hud.RecentWindowMs)
+            return {Window: "", Area: SearchWindow.LastArea}
+        return {Window: "", Area: Hud.ScreenArea(AppSettings.Appearance["ShowOn"])}
+    }
+
+    ; 和搜索窗口的 Appearance.ShowOn 一样选屏幕; Active 用现在的活动窗口
+    static ScreenArea(showOn) {
+        switch showOn, false {
+            case "Primary": return Win.WorkArea(MonitorGetPrimary())
+            case "Active":
+                area := ""
+                try area := Win.WorkAreaOfWindow(WinExist("A"))
+                if IsObject(area)
+                    return area
+        }
+        return Win.WorkAreaAtMouse()
     }
 
     static _Color(key, fallback) {

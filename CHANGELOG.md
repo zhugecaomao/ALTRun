@@ -5,20 +5,20 @@
 
 ## [未发布]
 
-## [2026.10.07]
+## [2026.10.07.1]
 
 选主题改为看缩略图, 新增 4 个主题和繁體中文界面; 新增切换窗口、浏览文件夹、标记多个文件、带参数的自定义命令、Windows 设置页面、脚本扩展、置顶和最近使用; 数据文件夹可以放到同步盘。
 
 ### 升级
-- **从 2026.10.01 ~ 2026.10.04 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.07", 按 `Enter` 安装
-- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.07", 按 `Enter` 更新
+- **从 2026.10.01 ~ 2026.10.04 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.07.1", 按 `Enter` 安装
+- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.07.1", 按 `Enter` 更新
 - **从 2026.09.26 ~ 2026.09.30 升级**: 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`
-- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.07.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.07.1.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
 - 设置和数据都保留, 设置文件的格式没有变化: 新的选项 (`Features.Windows`、`Features.Recent`、`Features.Scripts`、`Features.System.SettingsPages`、`Features.Snippets.ExpandExclude`) 启动时自动补上, 默认打开; 界面语言 `"zh"` 照常可用, 保存时写成 `"zh-CN"`
 - 一键更新会带上新的 `Resources\Lang\` 语言文件; 手动解压升级时请把整个压缩包解压覆盖, 否则中文和日文界面会显示英文
 
 ### 新增
-- 偏好设置 → 外观 的主题改为看缩略图选择 (类似 Alfred / Listary): 每个主题按自己的颜色、圆角和字体画出一个迷你搜索窗口, 自定义主题也有; 列表可以滚动, 也可以用方向键选择
+- 偏好设置 → 外观 的主题改为看缩略图选择 (类似 Alfred / Listary): 每个主题按自己的颜色和圆角画出一个简化的迷你搜索窗口 (输入框、选中行、匹配的高亮色), 自定义主题也有; 列表可以滚动, 也可以用方向键选择
 - 4 个新的内置主题: 现代深色 (`DarkModern`) 和现代浅色 (`LightModern`, 都是 VS Code 的默认配色)、`Monokai`、`One Dark`
 - 繁體中文界面: 偏好设置 → 常规 → 界面语言 选 "繁體中文" (台湾用语, 字体用微软正黑体); 系统是繁体中文 (台湾、香港、澳门) 时 "自动" 也会选它。翻译在 `Resources\Lang\zh-TW.json`
 - **带参数的自定义命令**: 目标或参数里写 `{query}`, 输入 "关键字 文字" 时换成后面的文字 (网址里自动编码), 例如 `jira ABC-123` 打开对应的页面、`ping 10.0.0.1` 运行 ping。新安装的默认命令里有 3 个例子 (`ping 10.0.0.1`、`maps 地名`、`docs 文件夹名`); 已有的设置不变, 可以照着 [说明](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets) 自己加
@@ -47,6 +47,7 @@
 - 官网分享链接时显示预览图
 - 剪贴板历史的文字条目换成剪贴板图标 (以前是黑白的文件图标), 剪贴板文字工具和 "粘贴为纯文本" 也是
 - 偏好设置 → 搜索窗口: "空搜索框" 单独一节 (使用提示、显示几个最近使用的项目), 搜索历史另起一节; 功能页的 "置顶和最近使用" 英文标签显示正确 (以前 `&` 显示成了下划线)
+- 操作后的提示 (例如 "已置顶"、"已复制") 显示在搜索窗口所在的屏幕上; 没有打开搜索窗口时的提示 (片段展开等) 按 "窗口显示在" 的设置选屏幕。以前搜索窗口一隐藏, 提示就跑到鼠标所在的屏幕
 - 偏好设置里的 "打开数据文件夹" 用设置的文件管理器 (例如 Total Commander) 打开, 不再总是用资源管理器
 
 ## [2026.10.04]
@@ -435,8 +436,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.07...HEAD
-[2026.10.07]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.07
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.07.1...HEAD
+[2026.10.07.1]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.07.1
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03
 [2026.10.02]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.02

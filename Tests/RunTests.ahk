@@ -2555,6 +2555,14 @@ Func | PTTools | PT Tools (AHK)=99
         eq("kept on screen", pos.X, 1720)
         second := {Left: 1920, Top: 0, Right: 3840, Bottom: 1080}
         eq("second monitor", Hud.Position(200, 40, {Window: "", Area: second}).X, 2780)
+        savedArea := SearchWindow.LastArea, savedAt := SearchWindow.HiddenAt, savedShowOn := AppSettings.Appearance["ShowOn"]
+        SearchWindow.LastArea := second, SearchWindow.HiddenAt := A_TickCount                          ; 搜索窗口刚在第二块屏幕上隐藏
+        eq("just hidden: same screen", Hud._Anchor().Area.Left, 1920)
+        SearchWindow.HiddenAt := A_TickCount - Hud.RecentWindowMs - 1
+        AppSettings.Appearance["ShowOn"] := "Primary"
+        primary := Win.WorkArea(MonitorGetPrimary())
+        eq("later: ShowOn primary", Hud._Anchor().Area.Left "," Hud._Anchor().Area.Top, primary.Left "," primary.Top)
+        SearchWindow.LastArea := savedArea, SearchWindow.HiddenAt := savedAt, AppSettings.Appearance["ShowOn"] := savedShowOn
 
         long := ""
         Loop 40
