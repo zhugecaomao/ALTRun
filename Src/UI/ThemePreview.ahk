@@ -15,12 +15,16 @@ class ThemePreview {
     static TitleWidths := [0.52, 0.40, 0.46]                                    ; 三行标题的长度 (占宽度的比例)
     static IconColors := ["3B82F6", "F59E0B", "10B981"]                        ; 结果行左边的 "图标" (蓝 / 橙 / 绿, 每个主题都一样)
 
-    ; 一个主题 (完整的键值 Map) 的缩略图, w x h 像素
+    ; 一个主题 (完整的键值 Map) 的缩略图, w x h 像素。用 24 位 DIB (没有 Alpha): 圆角是 GDI+ 画的,
+    ; 在 32 位位图上会写 Alpha = 255, 而 GDI 画的背景 Alpha 是 0, 图像列表看到有 Alpha 就把背景当成透明
     static Bitmap(theme, w, h) {
         screen := DllCall("GetDC", "Ptr", 0, "Ptr")
         dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr")
-        hbm := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", w, "Int", h, "Ptr")
         DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+        info := Buffer(40, 0)                                               ; BITMAPINFOHEADER
+        NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 24, info)   ; 自上而下, 24 位
+        bits := 0
+        hbm := DllCall("CreateDIBSection", "Ptr", dc, "Ptr", info, "UInt", 0, "Ptr*", &bits, "Ptr", 0, "UInt", 0, "Ptr")
         old := DllCall("SelectObject", "Ptr", dc, "Ptr", hbm, "Ptr")
         ThemePreview._Paint(dc, theme, w, h)
         DllCall("SelectObject", "Ptr", dc, "Ptr", old)
@@ -53,11 +57,9 @@ class ThemePreview {
         return light
     }
 
-    ; 每个主题一张缩略图的图像列表 (ListView 的大图标); ListView 销毁时一起释放。
-    ; 用 24 位 (ILC_COLOR24): 圆角是 GDI+ 画的, 会写 Alpha = 255, 而 GDI 画的背景 Alpha 是 0;
-    ; 32 位的图像列表看到有 Alpha 就按 Alpha 透明显示, 背景色会变成透明 (只剩圆角部分)
+    ; 每个主题一张缩略图的图像列表 (ListView 的大图标); ListView 销毁时一起释放
     static ImageList(names, w, h) {
-        il := DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x18, "Int", names.Length, "Int", 4, "Ptr")   ; ILC_COLOR24
+        il := DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x20, "Int", names.Length, "Int", 4, "Ptr")   ; ILC_COLOR32
         for themeName in names
             ThemePreview.AddTo(il, themeName, w, h)
         return il
