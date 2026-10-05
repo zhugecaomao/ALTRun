@@ -1032,6 +1032,17 @@ class Tests {
             if hbm
                 DllCall("DeleteObject", "Ptr", hbm)
         }
+        il := ThemePreview.ImageList(["Dark"], 112, 76)                       ; 经过图像列表画出来: 背景不透明 (GDI+ 的圆角不能让背景变透明)
+        screen := DllCall("GetDC", "Ptr", 0, "Ptr")
+        dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr"), canvas := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", 112, "Int", 76, "Ptr")
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+        oldCanvas := DllCall("SelectObject", "Ptr", dc, "Ptr", canvas, "Ptr")
+        rect := Buffer(16), NumPut("Int", 0, "Int", 0, "Int", 112, "Int", 76, rect)
+        DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", DllCall("GetStockObject", "Int", 0, "Ptr"))   ; 白色
+        DllCall("comctl32\ImageList_Draw", "Ptr", il, "Int", 0, "Ptr", dc, "Int", 0, "Int", 0, "UInt", 0)   ; ILD_NORMAL
+        eq("image list background opaque", DllCall("GetPixel", "Ptr", dc, "Int", 56, "Int", 6, "UInt"), Win.ColorToBgr(ThemeManager.Resolve("Dark")["Background"]))
+        DllCall("SelectObject", "Ptr", dc, "Ptr", oldCanvas), DllCall("DeleteObject", "Ptr", canvas), DllCall("DeleteDC", "Ptr", dc)
+        DllCall("comctl32\ImageList_Destroy", "Ptr", il)
         hbm := ThemePreview.ForName("System", 112, 76)                      ; 左半边 Light, 右半边 Dark
         eq("system left", pixel(hbm, 20, 6), Win.ColorToBgr(ThemeManager.Defaults()["Background"]))
         eq("system right", pixel(hbm, 100, 6), Win.ColorToBgr(ThemeManager.Resolve("Dark")["Background"]))

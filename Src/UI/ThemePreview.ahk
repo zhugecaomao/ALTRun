@@ -53,9 +53,11 @@ class ThemePreview {
         return light
     }
 
-    ; 每个主题一张缩略图的图像列表 (ListView 的大图标); ListView 销毁时一起释放
+    ; 每个主题一张缩略图的图像列表 (ListView 的大图标); ListView 销毁时一起释放。
+    ; 用 24 位 (ILC_COLOR24): 圆角是 GDI+ 画的, 会写 Alpha = 255, 而 GDI 画的背景 Alpha 是 0;
+    ; 32 位的图像列表看到有 Alpha 就按 Alpha 透明显示, 背景色会变成透明 (只剩圆角部分)
     static ImageList(names, w, h) {
-        il := DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x20, "Int", names.Length, "Int", 4, "Ptr")   ; ILC_COLOR32
+        il := DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x18, "Int", names.Length, "Int", 4, "Ptr")   ; ILC_COLOR24
         for themeName in names
             ThemePreview.AddTo(il, themeName, w, h)
         return il
