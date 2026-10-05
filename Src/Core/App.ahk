@@ -278,7 +278,7 @@ class App {
         } catch as e {
             Logger.Error("App: cannot register hotkey " key " - " e.Message)
             if notify
-                MsgBox("Cannot register hotkey " key ":`n" e.Message, App.Name, 48)
+                MsgBox("Cannot register hotkey " key ":`n" e.Message, App.Name, "Icon! 0x40000")   ; 0x40000: 总在最前面
             return false
         }
     }

@@ -2776,6 +2776,18 @@ Func | PTTools | PT Tools (AHK)=99
         JSON.WriteFile(jsonFile, Map("k", "v2"))
         firstByte := FileOpen(jsonFile, "r").RawRead(bytes := Buffer(3), 3) ? NumGet(bytes, 0, "UChar") : 0
         eq("write file", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (firstByte = 0xEF ? "bom" : "no bom") "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v2|no bom|")
+        locked := FileOpen(jsonFile, "r -rwd")                              ; 同步盘 / 杀毒软件暂时占着文件: 等它放开后写入
+        SetTimer(() => locked.Close(), -300)
+        JSON.WriteFile(jsonFile, Map("k", "v3"))
+        eq("write file: retries while locked", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"], "v3")
+        locked := FileOpen(jsonFile, "r -rwd"), saved := JSON.MoveTries, JSON.MoveTries := 2
+        failed := false
+        try JSON.WriteFile(jsonFile, Map("k", "v4"))
+        catch
+            failed := true
+        locked.Close(), JSON.MoveTries := saved
+        if failed                                                           ; Wine 不一定支持独占打开, 这时直接写成功
+            eq("write file: gives up, original kept, no tmp left", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v3|")
         DirDelete(dir, true)
 
         paths := []

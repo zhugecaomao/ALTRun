@@ -151,7 +151,7 @@ class AppSettings {
             return true
         } catch as e {
             Logger.Error("AppSettings.Save: " e.Message)
-            MsgBox(I18n.T("Settings.SaveError", e.Message), App.Name, 48)
+            MsgBox(I18n.T("Settings.SaveError", e.Message), App.Name, "Icon! 0x40000")   ; 总在最前面: 启动时还没有窗口, 不能被别的窗口挡住像是卡死了
             return false
         }
     }
@@ -192,7 +192,7 @@ class AppSettings {
             badFile := AppSettings.File ".bad"
             try FileMove(AppSettings.File, badFile, true)
             Logger.Error("AppSettings: invalid JSON - " e.Message)
-            MsgBox(I18n.T("Settings.ParseError", e.Message, badFile), App.Name, 48)
+            MsgBox(I18n.T("Settings.ParseError", e.Message, badFile), App.Name, "Icon! 0x40000")
             return Map()
         }
     }
