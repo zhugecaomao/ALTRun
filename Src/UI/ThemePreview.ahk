@@ -2,7 +2,7 @@
 ; ThemePreview.ahk - 主题缩略图 (偏好设置 -> 外观 的主题列表) (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 按主题自己的颜色和圆角画一个简化的迷你搜索窗口 (不写字, 只用色块): 输入框里一段输入文字色,
-; 分隔线, 三行结果 (第一行是选中行; 标题前一段是匹配的高亮色, 下面一条副标题色)。
+; 分隔线, 三行结果 (图标 + 一条标题); 第一行是选中行, 标题前一段是高亮色。
 ; 不用图片文件, 自定义主题也有缩略图;
 ; System (跟随系统) 左半边是 Light, 右半边是 Dark。
 ;
@@ -12,8 +12,7 @@
 ;===============================================================================
 
 class ThemePreview {
-    static TitleWidths := [0.46, 0.38, 0.42]                                    ; 三行标题的长度 (占宽度的比例)
-    static IconColors := ["3B82F6", "F59E0B", "10B981"]                        ; 结果行左边的 "图标"
+    static TitleWidths := [0.52, 0.40, 0.46]                                    ; 三行标题的长度 (占宽度的比例)
 
     ; 一个主题 (完整的键值 Map) 的缩略图, w x h 像素
     static Bitmap(theme, w, h) {
@@ -94,16 +93,16 @@ class ThemePreview {
         fill(0, 0, w, 1, color("Border")), fill(0, h - 1, w, h, color("Border"))
         fill(0, 0, 1, h, color("Border")), fill(w - 1, 0, w, h, color("Border"))
 
-        pad := Max(4, Round(w * 0.06))
-        inputH := Round(h * 0.24)
-        inputBar := Max(3, Round(inputH * 0.28))
-        bar(pad, pad // 2 + (inputH - inputBar) // 2, Round(w * 0.3), inputBar, color("InputText"))
-        separatorY := pad // 2 + inputH
+        pad := Max(5, Round(w * 0.08))
+        inputH := Round(h * 0.26)
+        inputBar := Max(3, Round(inputH * 0.22))
+        bar(pad, (inputH - inputBar) // 2, Round(w * 0.24), inputBar, color("InputText"))
+        separatorY := inputH
         fill(0, separatorY, w, separatorY + 1, color("Separator"))
 
-        rowTop := separatorY + 2, rowH := (h - rowTop - 2) / 3
+        rowTop := separatorY + 3, rowH := (h - rowTop - 3) / 3
         radius := Min(Round((theme.Has("SelectedRadius") ? theme["SelectedRadius"] : 0) * w / 260), Round(rowH / 3))
-        titleH := Max(3, Round(rowH * 0.2)), subH := Max(2, Round(rowH * 0.12))
+        titleH := Max(3, Round(rowH * 0.22))
         for index, titleW in ThemePreview.TitleWidths {
             top := Round(rowTop + (index - 1) * rowH), bottom := Round(rowTop + index * rowH)
             selected := (index = 1)
@@ -111,16 +110,16 @@ class ThemePreview {
                 inset := radius ? Max(2, Round(w * 0.02)) : 0
                 roundRect(inset, top + (radius ? 1 : 0), w - 1 - inset, bottom - (radius ? 1 : 0), radius, color("SelectedBackground"))
             }
-            iconSize := Round(rowH * 0.5), iconTop := top + Round((rowH - iconSize) / 2)
-            roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 5), Win.ColorToBgr(ThemePreview.IconColors[index]))
-            x := pad + iconSize + Max(3, Round(w * 0.04))
-            titleY := top + Round(rowH * 0.26), matchW := Round(w * 0.1), gap := Max(1, Round(w * 0.01))
-            bar(x, titleY, matchW, titleH, color(selected ? "SelectedHighlight" : "Highlight"))       ; 和输入匹配的部分
-            bar(x + matchW + gap, titleY, Round(w * titleW) - matchW - gap, titleH, color(selected ? "SelectedTitle" : "Title"))
-            subTop := titleY + titleH + Max(2, Round(rowH * 0.12))
-            bar(x, subTop, Round(w * (titleW - 0.1)), subH, color(selected ? "SelectedSubtitle" : "Subtitle"))
-            shortcutY := top + Round(rowH / 2)
-            fill(w - pad - Round(w * 0.1), shortcutY, w - pad, shortcutY + Max(1, Round(rowH * 0.08)), color(selected ? "SelectedShortcut" : "Shortcut"))
+            iconSize := Round(rowH * 0.42), iconTop := top + Round((rowH - iconSize) / 2)
+            roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 4), color(selected ? "SelectedSubtitle" : "Subtitle"))
+            x := pad + iconSize + Max(3, Round(w * 0.05))
+            titleY := top + Round((rowH - titleH) / 2), titleLen := Round(w * titleW)
+            if selected {                                                   ; 选中行: 前一段是和输入匹配的高亮色
+                matchW := Round(w * 0.12), gap := Max(1, Round(w * 0.012))
+                bar(x, titleY, matchW, titleH, color("SelectedHighlight"))
+                bar(x + matchW + gap, titleY, titleLen - matchW - gap, titleH, color("SelectedTitle"))
+            } else
+                bar(x, titleY, titleLen, titleH, color("Title"))
         }
     }
 }
