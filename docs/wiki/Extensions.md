@@ -120,7 +120,9 @@ TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上),
 | 保护层 (Rebar cover) | `RebarCover` | `40` | 每边, mm |
 | 最大间距 | `MaxBarSpacing` | `300` | mm, 间距大于它时增加主筋 |
 | 钢筋直径 | `BarSizes` | `[13, 16, 20, 25, 32]` | 配筋面积那一行列出的直径 (mm) |
-| 前缀 | `BarPrefix` | `H` | 钢筋代号, 例如 `T`、`Y`、`Φ` |
+| 钢筋代号 | `BarPrefix` | `H` | 钢筋代号, 例如 `T`、`Y`、`Φ` |
+
+![偏好设置 → 计算器](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-calculator.png)
 
 ### 单位和货币换算
 写法: 数值 + 单位 + `in` / `to` / `=` / `->` / `转` + 目标单位, 单位不区分大小写, `m²` 可以写成 `m2`。例如 `10 km in mi`、`5ft to cm`、`100 f to c`、`3 亩 in m2`、`1 GB to MB`、`300 kN to kip`、`20 MPa in psi`。`Enter` 复制数字。
@@ -142,7 +144,9 @@ TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上),
 **货币换算** (`100 usd to sgd`、`100 美元 to 人民币`) 默认关闭: 在 偏好设置 → 计算器 勾选 "货币换算" (`Features.Calculator.Currency`)。打开后每天从 [Frankfurter](https://frankfurter.dev) 下载一次欧洲央行等央行公布的参考汇率 (免费, 不需要注册), 保存在 `Data\Currency.json`; 这是 ALTRun 除 GitHub 之外唯一会访问的网站。结果里会显示汇率的日期。
 
 ## 脚本扩展
-把自己的脚本放进 `Scripts\` 文件夹 (程序目录里; 偏好设置 → 脚本 → "打开脚本文件夹", 或者搜索 "打开脚本文件夹", 第一次打开时会建一个示例), 就能在搜索窗口里按名称或关键字找到并运行, 和 Raycast 的 Script Commands 一样。支持 `.ahk` (用 ALTRun 自带的 AutoHotkey 运行, 不用另外安装)、`.ps1`、`.bat` / `.cmd`、`.py` (需要装 Python)。
+把自己的脚本放进 `Scripts\` 文件夹 (程序目录里; 偏好设置 → 脚本 → "打开脚本文件夹", 或者搜索 "打开脚本文件夹", 第一次打开时会建一个示例), 就能在搜索窗口里按名称或关键字找到并运行, 和 Raycast 的 Script Commands 一样。支持 `.ahk` (用 ALTRun 自带的 AutoHotkey 运行, 不用另外安装)、`.ps1`、`.bat` / `.cmd`、`.py` (需要装 Python)。偏好设置 → 脚本 列出找到的脚本, 双击用记事本编辑:
+
+![偏好设置 → 脚本](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-scripts.png)
 
 脚本开头的注释里可以写这些设置 (注释符 `;` `#` `REM` `::` `//` 都行, 都可以不写):
 

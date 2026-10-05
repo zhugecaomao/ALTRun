@@ -99,8 +99,12 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | <img src="docs/images/screenshots/actions.png" alt="操作面板"> | <img src="docs/images/screenshots/files.png" alt="文件搜索"> |
 | **计算器（含结构计算）** | **剪贴板历史（`clip`）** |
 | <img src="docs/images/screenshots/calculator.png" alt="计算器"> | <img src="docs/images/screenshots/clipboard.png" alt="剪贴板历史"> |
+| **置顶和最近使用（空搜索框）** | **浏览文件夹（输入路径）** |
+| <img src="docs/images/screenshots/empty.png" alt="置顶和最近使用"> | <img src="docs/images/screenshots/browse.png" alt="浏览文件夹"> |
 | **偏好设置** | **自定义命令** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
+| **计算器设置（结构计算参数）** | **脚本扩展** |
+| <img src="docs/images/screenshots/prefs-calculator.png" alt="计算器设置"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> |
 
 <details>
 <summary><b>内置主题</b>（共 20 套，点击展开）</summary>

@@ -26,7 +26,7 @@ class Shots {
     static Pid      := 0
     static Failures := 0
 
-    ; 场景名 -> [主题, 启动参数, 函数]
+    ; 场景名 -> [主题, 启动参数, 函数, 启动前准备数据的函数 (可选)]
     static Scenes() {
         return [
             ["search",      "Light", "", () => Shots.Search("re")],
@@ -34,13 +34,17 @@ class Shots {
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["calculator",  "Light", "", () => Shots.Search("(1200+350)*2.5")],
-            ["clipboard",   "Light", "", () => Shots.Clipboard()],
+            ["clipboard",   "Light", "", () => Shots.Search("clip "), () => Shots.WriteClipboard()],
+            ["empty",       "Light", "", () => Shots.EmptyBox(), () => Shots.WritePinnedAndRecent()],
+            ["browse",      "Light", "", () => Shots.Search(Shots.DemoDir "\")],
             ["websearch",   "Light", "", () => Shots.Search("g autohotkey v2 hotkeys")],
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 8", () => Shots.Preferences()],
+            ["prefs-calculator", "Light", "-Preferences 12", () => Shots.Preferences()],
+            ["prefs-scripts",    "Light", "-Preferences 13", () => Shots.Preferences()],
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-darkcompact", "DarkCompact", "", () => Shots.Search("re")],
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
@@ -80,7 +84,7 @@ class Shots {
             ; (列表里有项目, 窗口没有卡住, 重画也没用; 原因未查明), 这时重新启动 ALTRun 再试
             Loop 4 {
                 try {
-                    Shots.Launch(scene[2], scene[3])
+                    Shots.Launch(scene[2], scene[3], (scene.Length >= 5) ? scene[5] : "")
                     hwnd := scene[4]()
                     if (!Shots.WaitPainted(hwnd, 20) && A_Index < 4) {
                         Shots.Diagnose(hwnd)
@@ -109,6 +113,12 @@ class Shots {
         FileCopy(Shots.RepoDir "\ALTRun.ahk", Shots.AppDir "\ALTRun.ahk")
         for folder in ["Lib", "Src", "Resources"]
             DirCopy(Shots.RepoDir "\" folder, Shots.AppDir "\" folder)
+        ; 脚本扩展的示例 (偏好设置 → 脚本 的列表)
+        DirCreate(Shots.AppDir "\Scripts")
+        FileAppend("; @altrun.title    Ping host`n; @altrun.keyword  ping`n; @altrun.argument host name`n; @altrun.mode     output`n"
+            . "RunWait('ping ' A_Args[1])`n", Shots.AppDir "\Scripts\Ping.ahk", "UTF-8")
+        FileAppend("# @altrun.title    Today's date`n# @altrun.keyword  today`n# @altrun.mode     silent`nGet-Date -Format 'dddd, d MMMM yyyy'`n"
+            , Shots.AppDir "\Scripts\Today.ps1", "UTF-8")
     }
 
     ; 通用的示例文件夹
@@ -152,11 +162,12 @@ class Shots {
         settings := Map(
             "SchemaVersion", 4,
             "General", Map("Language", "en", "LaunchAtLogin", 0, "HideOnDeactivate", 0, "SendToMenu", 0,
-                           "StartMenuShortcut", 0, "CheckForUpdates", 0, "Hotkey", "!Space"),
+                           "StartMenuShortcut", 0, "CheckForUpdates", 0, "Hotkey", "!Space", "ShowTips", 0),
             "Appearance", Map("Theme", theme, "Width", 700, "VisibleRows", 8),
             "Features", Map(
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
                 "Calculator", Map("StructuralCalc", 0),
+                "Recent", Map("Pinned", Shots.Pinned),
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0)
             ),
             "CustomCommands", [
@@ -174,6 +185,44 @@ class Shots {
         FileAppend(JSON.Stringify(settings, 4), Shots.AppDir "\Data\ALTRun.json", "UTF-8")
     }
 
+    ; 空搜索框里置顶的项目 (只在 "empty" 场景里有, 见 WritePinnedAndRecent)
+    static Pinned := []
+
+    static Entry(title, kind, target) {
+        SplitPath(target, , &dir)
+        return Map("Title", title, "Subtitle", (kind = "folder") ? target : dir, "Kind", kind, "Arg", target, "Arguments", ""
+                 , "Icon", "", "Uid", kind ":" StrLower(target))
+    }
+
+    ; 置顶两项 + 最近打开的三项 (Knowledge.json), 空搜索框里显示
+    static WritePinnedAndRecent() {
+        demo := Shots.DemoDir
+        Shots.Pinned := [Shots.Entry("Annual Report 2026", "folder", demo "\Annual Report 2026")
+                       , Shots.Entry("Budget 2026.xlsx", "file", demo "\Annual Report 2026\Budget 2026.xlsx")]
+        recent := [Shots.Entry("Kickoff Meeting Notes.docx", "file", demo "\Website Redesign\Notes\Kickoff Meeting Notes.docx")
+                 , Shots.Entry("Website Redesign", "folder", demo "\Website Redesign")
+                 , Shots.Entry("Tokyo Trip Itinerary.pdf", "file", demo "\Travel\Tokyo Trip Itinerary.pdf")]
+        Shots.WriteSettings("Light")
+        Shots.Pinned := []
+        FileAppend(JSON.Stringify(Map("Picks", Map(), "QueryPicks", Map(), "History", [], "Recent", recent)), Shots.AppDir "\Data\Knowledge.json", "UTF-8")
+    }
+
+    ; 剪贴板历史: 几条常见的文字, 其中一条置顶
+    static WriteClipboard() {
+        entries := [], stamp := A_Now
+        for item in [["SELECT name, total FROM orders WHERE total > 100", 0],
+                     ["Thanks, the new homepage looks great!", 0],
+                     ["C:\Demo Projects\Annual Report 2026", 0],
+                     ["The meeting is moved to Thursday at 3 pm.", 0],
+                     ["https://github.com/zhugecaomao/ALTRun", 1]] {
+            entry := Map("Text", item[1], "Time", stamp := DateAdd(stamp, -3, "Minutes"), "App", "notepad.exe")
+            if item[2]
+                entry["Pinned"] := 1
+            entries.Push(entry)
+        }
+        FileAppend(JSON.Stringify(Map("Entries", entries)), Shots.AppDir "\Data\ClipboardHistory.json", "UTF-8")
+    }
+
     ; 纯色背景铺满屏幕, 挡住桌面上的其它窗口 (半透明主题会透出后面的内容)。
     ; 置顶才能盖住控制台窗口; 搜索窗口也是置顶的, 后显示的在上面
     static ShowBackdrop() {
@@ -187,8 +236,10 @@ class Shots {
     ;---------------------------------------------------------------------------
     ; 启动 / 关闭
     ;---------------------------------------------------------------------------
-    static Launch(theme, args := "") {
+    static Launch(theme, args := "", prepare := "") {
         Shots.WriteSettings(theme)
+        if IsObject(prepare)
+            prepare()
         Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" ' args, Shots.AppDir, , &pid)
         Shots.Pid := pid
         ; 启动时屏幕上方的 "ALTRun 已在运行" 提示 3 秒后消失
@@ -244,23 +295,10 @@ class Shots {
     }
 
     ; 剪贴板历史记录复制时的前台程序: 从记事本复制, 而不是截图脚本自己
-    static Clipboard() {
+    ; 空搜索框: 启动时打开的窗口, 等图标载入
+    static EmptyBox() {
         hwnd := Shots.SearchWindow()
-        Run("notepad.exe", , , &notepad)
-        WinWait("ahk_pid " notepad, , 10)
-        WinActivate("ahk_pid " notepad)
-        Sleep(500)
-        for text in ["https://github.com/zhugecaomao/ALTRun",
-                     "The meeting is moved to Thursday at 3 pm.",
-                     "C:\Demo Projects\Annual Report 2026",
-                     "Thanks, the new homepage looks great!",
-                     "SELECT name, total FROM orders WHERE total > 100"] {
-            A_Clipboard := text
-            Sleep(1000)
-        }
-        ProcessClose(notepad)
-        WinActivate(hwnd)
-        Shots.SetQuery(hwnd, "clip ")
+        Sleep(2500)
         return hwnd
     }
 

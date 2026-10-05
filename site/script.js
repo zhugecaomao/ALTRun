@@ -12,6 +12,8 @@
     calculator: ["直接输入算式, 也支持单位换算 (10 km in mi)", "Type a formula; unit conversion works too (10 km in mi)", "calculator.png"],
     pinyin: ["拼音首字母: jsb → 记事本", "Pinyin initials: jsb → 记事本 (Notepad)", "pinyin.png"],
     websearch: ["g 关键词 用 Google 搜索, 搜索引擎可以自定义", "g keywords searches Google; engines are customizable", "websearch.png"],
+    empty: ["还没输入时列出置顶的项目 (带图钉) 和最近打开的项目", "Before you type: pinned items (with a pin) and recently opened items", "empty.png"],
+    browse: ["输入路径浏览文件夹, Tab 进入, Backspace 返回上一级", "Type a path to browse a folder; Tab goes in, Backspace goes up", "browse.png"],
     "prefs-general": ["偏好设置: 每一项都有说明", "Preferences: every option is explained", "prefs-general.png"]
   };
 

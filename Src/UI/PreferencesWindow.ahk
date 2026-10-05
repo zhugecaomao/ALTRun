@@ -500,8 +500,10 @@ class PreferencesWindow {
         PreferencesWindow._Check(base "Currency", "Prefs.Currency")
         PreferencesWindow._Section("Prefs.Section.Structural")
         PreferencesWindow._Check(base "StructuralCalc", "Prefs.StructuralCalc")
-        PreferencesWindow._Pair([base "RebarCover", "Prefs.RebarCover", "S", "number"], [base "MaxBarSpacing", "Prefs.MaxBarSpacing", "S", "number"])
-        PreferencesWindow._Pair([base "BarSizes", "Prefs.BarSizes", "M", "csv"], [base "BarPrefix", "Prefs.BarPrefix", "S"])
+        PreferencesWindow._Field(base "RebarCover", "Prefs.RebarCover", "S", "number")      ; 每项一行: 标签和输入框各自对齐
+        PreferencesWindow._Field(base "MaxBarSpacing", "Prefs.MaxBarSpacing", "S", "number")
+        PreferencesWindow._Csv(base "BarSizes", "Prefs.BarSizes", "M")
+        PreferencesWindow._Field(base "BarPrefix", "Prefs.BarPrefix", "S")
     }
 
     ; 脚本扩展: 说明、Scripts 文件夹、找到的脚本 (双击用记事本编辑); 开关在 "功能" 页
