@@ -23,7 +23,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.04"
+    static Version := "2026.10.05"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -33,6 +33,9 @@ class App {
 
     static Start() {
         started := Logger.Ms()
+        ; 窗口命令 (WinActivate 等) 之后不再默认等 100 ms: 等待期间 AHK 会嵌套处理消息,
+        ; 呼出窗口时在这里遇到重画消息不断的情况会一直等下去 (界面卡住)。需要等的地方用 WinWaitActive
+        SetWinDelay(-1)
         Logger.Rotate()
         App._MoveLegacyResources()
         AppSettings.Load()
@@ -80,6 +83,8 @@ class App {
             UpdateChecker.Schedule()                                        ; 后台定时检查 (见 UpdateChecker), 新版本显示在搜索窗口里
 
         Logger.Time("startup: total", started)
+        Logger.Flush(), Logger.Immediate := true                            ; 之后每条日志马上写入 (卡住被强制结束时也留得下)
+        Logger.TraceUntil := A_TickCount + 60000                            ; 启动后 1 分钟内记下更细的步骤 (Logger.Trace)
         App._HandleCommandLine()
     }
 
@@ -277,7 +282,7 @@ class App {
         } catch as e {
             Logger.Error("App: cannot register hotkey " key " - " e.Message)
             if notify
-                MsgBox("Cannot register hotkey " key ":`n" e.Message, App.Name, 48)
+                MsgBox("Cannot register hotkey " key ":`n" e.Message, App.Name, "Icon! 0x40000")   ; 0x40000: 总在最前面
             return false
         }
     }

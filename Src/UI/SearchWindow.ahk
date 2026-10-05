@@ -9,7 +9,8 @@
 ;
 ; 键盘 (都在 _OnKeyDown 里处理, 通过 OnMessage 拦截 WM_KEYDOWN / WM_SYSKEYDOWN):
 ;   Enter / Ctrl+Enter / Alt+Enter   执行 / 显示位置或粘贴 / 复制   (见 ActionCatalog)
-;   ↑ ↓  PgUp PgDn  Ctrl+P Ctrl+N    只移动选择 (和 Alfred 一样, 不和翻历史混在一起)
+;   ↑ ↓  Ctrl+P Ctrl+N               上移 / 下移一行 (只移动选择, 和 Alfred 一样, 不和翻历史混在一起)
+;   PgUp PgDn                        上翻 / 下翻一页 (VisibleRows 行)
 ;   Ctrl+↑ / Ctrl+↓                  上一条 / 下一条搜索记录; 翻回最新之后恢复原来输入的文字
 ;   Ctrl+1 ~ Ctrl+9                  直接执行可见的第 N 行
 ;   Tab                              自动补全; 文件夹: 进入文件夹浏览 (输入框变成 "路径\")
@@ -54,6 +55,7 @@ class SearchWindow {
     static _searchTimer := "", _hideTimer := ""
     static _shownRows := -1                                                 ; 窗口当前按几行结果的高度显示
     static _tip := ""                                                       ; 这次显示时的使用提示 (HelpProvider.NextTip)
+    static LastArea := "", HiddenAt := 0                                    ; 上次隐藏时所在屏幕的工作区和时间 (Hud 用)
     static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
     static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput 时隐藏后切回)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
@@ -159,9 +161,23 @@ class SearchWindow {
 
     ; text: 要搜索的文字; 不写时空白, 打开了 "保留上一次的搜索" (KeepLastQuery) 时恢复上次的
     ; 输入、文件搜索模式和选中的行, 文字全选: 按 Enter 再执行一次, 直接输入就开始新的搜索
+    static _showing := false
     static Show(text := "") {
         if !IsObject(SearchWindow.Gui)
             return
+        if SearchWindow._showing {                                          ; 上一次还没显示完 (例如显示过程中又按了热键): 不重入
+            Logger.Debug("SearchWindow: show skipped, still showing")
+            return
+        }
+        SearchWindow._showing := true
+        try SearchWindow._Show(text)
+        finally SearchWindow._showing := false
+    }
+
+    static _Show(text) {
+        started := Logger.Ms()
+        if Logger.Enabled
+            Logger.Debug("SearchWindow: show")                              ; 和下面的 "Perf: show" 配对: 卡住时看得出卡在显示窗口里
         wasVisible := SearchWindow.IsVisible()
         if (text = "" && wasVisible)
             SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
@@ -179,6 +195,7 @@ class SearchWindow {
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
         SearchWindow.HistoryIndex := 0
+        Logger.Trace("show: results")
         if !reuse {
             SearchWindow._SetInput(restore ? last.Text : text)
             if restore
@@ -191,6 +208,7 @@ class SearchWindow {
         ; 窗口隐藏期间的重画请求会被丢掉, 显示出来后才重画的话, 结果列表会先白一下 / 闪一下。
         ; 先让 DWM 把窗口藏起来 (cloak), 显示并立即画好整个窗口之后再露出来
         hwnd := SearchWindow.Gui.Hwnd
+        Logger.Trace("show: window")
         cloaked := !SearchWindow.IsVisible() && SearchWindow._Cloak(hwnd, true)
         try {
             SearchWindow.Gui.Show("x" pos.X " y" pos.Y " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
@@ -200,6 +218,7 @@ class SearchWindow {
             if cloaked
                 SearchWindow._Cloak(hwnd, false)
         }
+        Logger.Trace("show: activate")
         try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)                    ; 先拿到焦点, 之后按下的键都进搜索框
         SearchWindow.Input.Focus()
         len := StrLen(SearchWindow.Input.Value)
@@ -208,10 +227,12 @@ class SearchWindow {
         else
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
         if AppSettings.General["SwitchToEnglishInput"] {
+            Logger.Trace("show: input language")
             if (!wasVisible || !SearchWindow._layoutBefore)                     ; 隐藏时切回呼出前的输入法
                 SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
             Win.SwitchToEnglishIME()
         }
+        Logger.Time("show", started)
     }
 
     ; 呼出时切到了英文输入法: 隐藏时切回原来的。所有程序共用一个输入法时 (Windows 默认) 才需要;
@@ -289,6 +310,10 @@ class SearchWindow {
 
     static Hide() {
         if SearchWindow.IsVisible() {
+            try {                                                           ; 刚隐藏后的提示 (例如 "已置顶") 显示在同一块屏幕上, 见 Hud
+                WinGetPos(&x, &y, &w, &h, "ahk_id " SearchWindow.Gui.Hwnd)
+                SearchWindow.LastArea := Win.WorkAreaAt(x + w // 2, y + SearchWindow.InputHeight // 2), SearchWindow.HiddenAt := A_TickCount
+            }
             SearchWindow._RememberQuery()
             SearchWindow._RestoreInputLanguage()
             SearchWindow.Gui.Hide()
@@ -333,7 +358,11 @@ class SearchWindow {
         SetTimer(SearchWindow._searchTimer, -1)                             ; 连续输入时只搜索最后一次
     }
 
+    ; 每输入一个字就搜索一次 (输入框的 Change 事件, 各自是一个 AHK 线程)。搜索慢一点时, 下一个字的搜索会
+    ; 插进来先做完; 这时前一次的结果已经过时, 不再显示 (否则会盖掉新的结果, 窗口高度和列表也对不上)
+    static _searchGen := 0
     static _RunSearch() {
+        gen := ++SearchWindow._searchGen
         text := SearchWindow.Input.Value
         if (SearchWindow.Mode = "actions") {
             filtered := []
@@ -342,18 +371,29 @@ class SearchWindow {
                     filtered.Push(action)
             return SearchWindow.SetResults(filtered)
         }
-        SearchWindow.HighlightText := text
-        if SearchWindow.FileMode
-            return SearchWindow.SetResults(ProviderRegistry.SearchFiles(text))
-        SearchWindow.SetResults(ProviderRegistry.Search(text))
+        browse := FileSearchProvider.BrowsePath(text)                       ; 浏览文件夹: 只按最后一段 (过滤的文字) 高亮, 路径里的词不算
+        SearchWindow.HighlightText := IsObject(browse) ? browse.Filter : text
+        results := SearchWindow.FileMode ? ProviderRegistry.SearchFiles(text) : ProviderRegistry.Search(text)
+        if (gen != SearchWindow._searchGen)                                 ; 搜索期间又输入了字: 用新的那次的结果
+            return
+        SearchWindow.SetResults(results)
     }
 
+    ; 换上新的结果并调整列表和窗口高度。不可打断 (Critical): 做到一半时如果另一次搜索插进来,
+    ; 两边的行数会混在一起 (窗口很高, 列表却是空的)。这里只改控件, 重画在之后照常进行
     static SetResults(results) {
+        Critical("On")
         SearchWindow.Results  := results
         SearchWindow.Selected := results.Length ? 1 : 0
         SearchWindow.Offset   := 0
         SearchWindow._Layout()
+        Critical("Off")
+        SearchWindow._Repaint()                                             ; Critical 期间画的 (自绘回调不能运行) 重画一次
+        if (SearchWindow._repaintLater = "")                                ; 等这次输入处理完再画一次: 万一那一刻没画出结果行 (空白行), 也会马上补上。
+            SearchWindow._repaintLater := () => DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 0)   ; 不擦背景: 每行自己涂满整行, 内容一样时看不出重画, 不会闪
+        SetTimer(SearchWindow._repaintLater, -30)
     }
+    static _repaintLater := ""
 
     static _VisibleCount() {
         return Min(SearchWindow.Results.Length, SearchWindow.VisibleRows)
@@ -957,6 +997,14 @@ class SearchWindow {
         return CDRF_SKIPDEFAULT
     }
 
+    ; 置顶标记 Resources\Icons\Pinned.ico, 按尺寸读取一次 (0 = 没有这个文件)
+    static _PinBadge(size) {
+        static icons := Map(), file := A_ScriptDir "\Resources\Icons\Pinned.ico"
+        if !icons.Has(size)
+            icons[size] := FileExist(file) ? DllCall("LoadImageW", "Ptr", 0, "WStr", file, "UInt", 1, "Int", size, "Int", size, "UInt", 0x10, "Ptr") : 0   ; IMAGE_ICON, LR_LOADFROMFILE
+        return icons[size]
+    }
+
     static _PaintRow(hdc, rect, item, selected, visibleRow) {
         static DT_RIGHT := 0x2, DT_VCENTER := 0x4, DT_BOTTOM := 0x8, DT_SINGLELINE := 0x20
         static DT_NOPREFIX := 0x800, DT_PATH_ELLIPSIS := 0x4000, DT_END_ELLIPSIS := 0x8000
@@ -985,8 +1033,13 @@ class SearchWindow {
             DllCall("DeleteObject", "Ptr", brush)
         }
 
+        iconY := top + (rowH - iconSize) // 2
         if (hIcon := IconCache.Get(item.Icon))
-            DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad, "Int", top + (rowH - iconSize) // 2, "Ptr", hIcon, "Int", iconSize, "Int", iconSize, "UInt", 0, "Ptr", 0, "UInt", 3)
+            DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad, "Int", iconY, "Ptr", hIcon, "Int", iconSize, "Int", iconSize, "UInt", 0, "Ptr", 0, "UInt", 3)
+        if (item.Pinned && (hBadge := SearchWindow._PinBadge(badge := Max(Win.Scale(13), Round(iconSize * 0.55))))) {   ; 置顶的: 右下角一个图钉
+            offset := iconSize - badge + Win.Scale(3)
+            DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad + offset, "Int", iconY + offset, "Ptr", hBadge, "Int", badge, "Int", badge, "UInt", 0, "Ptr", 0, "UInt", 3)
+        }
 
         textLeft := left + pad + iconSize + Win.Scale(12)
         shortcutW := Win.Scale(56)

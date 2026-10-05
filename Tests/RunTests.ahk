@@ -84,7 +84,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -249,9 +249,24 @@ class Tests {
         eq("extra )", title("(1+2))"), "(none)")
         eq("two dots", title("1..2+1"), "(none)")
         TestRunner.True("Calculator.eval full precision", Abs(Calc.Eval("10/3") - 3.3333333333333335) < 1e-12)
-        AppSettings.Feature("Calculator")["StructuralCalc"] := 1
-        eq("structural rows", CalculatorProvider.Search(SearchQuery("300*2")).Length, 3)
-        AppSettings.Feature("Calculator")["StructuralCalc"] := 0
+        options := AppSettings.Feature("Calculator"), saved := Map()
+        for key in ["StructuralCalc", "RebarCover", "MaxBarSpacing", "BarSizes", "BarPrefix"]
+            saved[key] := options[key]
+        options["StructuralCalc"] := 1
+        rows := CalculatorProvider.Search(SearchQuery("300*2"))
+        eq("structural rows", rows.Length, 3)
+        eq("structural: beam (defaults)", rows[2].Title, I18n.T("Calc.BeamWidth", "600", 3, 260))
+        eq("structural: As (defaults)", rows[3].Title, I18n.T("Calc.RebarArea", "600", "5H13  3H16  2H20  2H25  1H32"))
+        options["RebarCover"] := 50, options["MaxBarSpacing"] := 150, options["BarSizes"] := ["10", "12"], options["BarPrefix"] := "T"
+        rows := CalculatorProvider.Search(SearchQuery("300*2"))
+        eq("structural: beam (settings)", rows[2].Title, I18n.T("Calc.BeamWidth", "600", 5, 125))
+        eq("structural: As (settings)", rows[3].Title, I18n.T("Calc.RebarArea", "600", "8T10  6T12"))
+        eq("structural: below 2 x edge", CalculatorProvider.Search(SearchQuery("50*2")).Length, 1)
+        options["RebarCover"] := "abc", options["MaxBarSpacing"] := 0, options["BarSizes"] := ["x", 16]
+        rows := CalculatorProvider.Search(SearchQuery("300*2"))
+        eq("structural: invalid values use defaults", rows[2].Title "|" rows[3].Title, I18n.T("Calc.BeamWidth", "600", 3, 260) "|" I18n.T("Calc.RebarArea", "600", "3T16"))
+        for key, value in saved
+            options[key] := value
     }
 
     static WebSearch() {
@@ -915,6 +930,26 @@ class Tests {
         TestRunner.True("BuiltinIcons.control panel item", hIcon)
         if hIcon
             DllCall("DestroyIcon", "Ptr", hIcon)
+    }
+
+    ; Resources\Icons 里 ALTRun 自己的图标: 每个都在, 各种尺寸都能读出正好的大小; 文件不在时用系统图标
+    static OwnIcons() {
+        eq := (n, a, e) => TestRunner.Equal("OwnIcons." n, a, e)
+        saved := IconCache.Size
+        for name in ["Clipboard", "Snippet", "Help", "Calculator", "Pinned"] {
+            iconFile := A_ScriptDir "\..\Resources\Icons\" name ".ico"
+            if !TestRunner.True("OwnIcons." name " exists", FileExist(iconFile))
+                continue
+            for size in [16, 32, 40, 64] {
+                IconCache.Size := size
+                hIcon := IconCache._Load(iconFile)
+                eq(name " at " size, IconCache.IconWidth(hIcon), size)
+                if hIcon
+                    DllCall("DestroyIcon", "Ptr", hIcon)
+            }
+        }
+        IconCache.Size := saved
+        eq("fallback", IconCache.Own("NoSuchIcon", "res:shell32.dll,-24"), "res:shell32.dll,-24")
     }
 
     static IconScaling() {
@@ -1697,7 +1732,7 @@ class Tests {
         TestRunner.True("ChangelogLinks.newest is App.Version", newest = App.Version)
     }
 
-    ; 数据文件夹: DataLocation.txt 指定的文件夹 (环境变量、相对路径), 空文件 = 默认位置; 写 / 恢复默认
+    ; 数据文件夹: 默认位置的 ALTRun.json 里的 "DataLocation" (环境变量、相对路径); 写 / 恢复默认
     static DataLocation() {
         eq := (n, a, e) => TestRunner.Equal("DataLocation." n, a, e)
         eq("full: absolute", Path.Full("C:\Sync\ALTRun\"), "C:\Sync\ALTRun")
@@ -1706,26 +1741,43 @@ class Tests {
         eq("full: builtin", Path.Full("A_AppData\ALTRun"), A_AppData "\ALTRun")
         root := A_Temp "\ALTRun-location-test"
         try DirDelete(root, true)
-        DirCreate(root "\app"), DirCreate(root "\user")
-        dirs := [root "\app", root "\user"]
-        eq("no file", AppSettings.CustomDataDir(dirs), "")
-        FileAppend("", root "\app\DataLocation.txt")
-        eq("empty file", AppSettings.CustomDataDir(dirs), "")
-        FileAppend("  D:\OneDrive\ALTRun\  `r`n", root "\user\DataLocation.txt", "UTF-8")
-        eq("user folder", AppSettings.CustomDataDir(dirs), "D:\OneDrive\ALTRun")
-        FileOpen(root "\app\DataLocation.txt", "w").Write("..\Shared")
-        eq("program folder first, relative", AppSettings.CustomDataDir(dirs), Path.Full(A_ScriptDir "\..\Shared"))
-
-        saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir}
-        AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; 不能写程序目录时写在 %APPDATA%\ALTRun
-        AppSettings.SetDataLocation("E:\Sync\ALTRun")
-        eq("set", FileRead(root "\user\DataLocation.txt", "UTF-8"), "E:\Sync\ALTRun")
-        AppSettings.SetDataLocation("")
-        eq("reset keeps an empty file", FileExist(root "\user\DataLocation.txt") ? FileRead(root "\user\DataLocation.txt") : "missing", "")
-        AppSettings.SetDataLocation(AppSettings.DefaultDataDir())
-        eq("default location = reset", FileRead(root "\user\DataLocation.txt"), "")
+        DirCreate(root "\user\Data")
+        saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir, DataDir: AppSettings.DataDir}
+        AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; 默认位置 = root\user\Data
+        settingsFile := root "\user\Data\ALTRun.json"
         eq("default when not portable", AppSettings.DefaultDataDir(), root "\user\Data")
-        AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
+        eq("no settings settingsFile", AppSettings.ResolveDataDir(), root "\user\Data")
+        FileAppend('{"General": {"Hotkey": "!Space"}, "Snippets": [{"Text": "\"DataLocation\": \"X:\\\\fake\""}]}', settingsFile, "UTF-8")
+        eq("no key (text in a snippet does not count)", AppSettings.ResolveDataDir(), root "\user\Data")
+        FileDelete(settingsFile)
+        FileAppend('{"General": {}, "DataLocation": "D:\\OneDrive\\ALTRun\\"}', settingsFile, "UTF-8")
+        eq("key", AppSettings.ResolveDataDir(), "D:\OneDrive\ALTRun")
+        FileDelete(settingsFile)
+        FileAppend('{"DataLocation": "%SystemRoot%\\Temp"}', settingsFile, "UTF-8")
+        eq("environment variable", AppSettings.ResolveDataDir(), A_WinDir "\Temp")
+        FileDelete(settingsFile)
+        FileAppend('{"DataLocation": ""}', settingsFile, "UTF-8")
+        eq("empty = default", AppSettings.ResolveDataDir(), root "\user\Data")
+        FileDelete(settingsFile)
+
+        AppSettings.DataDir := "E:\Elsewhere"                                ; 正在用别处的设置: 只改默认位置的文件
+        FileAppend('{"General": {"Hotkey": "!r"}}', settingsFile, "UTF-8")
+        AppSettings.SetDataLocation("E:\Sync\ALTRun")
+        data := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        eq("set: key added, other settings kept", data["DataLocation"] "|" data["General"]["Hotkey"], "E:\Sync\ALTRun|!r")
+        eq("set: resolves", AppSettings.ResolveDataDir(), "E:\Sync\ALTRun")
+        AppSettings.SetDataLocation("")
+        data := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        eq("reset: key removed", data.Has("DataLocation") "|" data["General"]["Hotkey"], "0|!r")
+        AppSettings.SetDataLocation("E:\Sync\ALTRun"), AppSettings.SetDataLocation(AppSettings.DefaultDataDir())
+        eq("default folder = reset", JSON.Parse(FileRead(settingsFile, "UTF-8")).Has("DataLocation"), 0)
+        FileDelete(settingsFile)
+        AppSettings.SetDataLocation("")
+        eq("reset without a settingsFile: nothing written", FileExist(settingsFile) ? "exists" : "missing", "missing")
+        AppSettings.SetDataLocation("E:\Sync\ALTRun")
+        eq("set without a settingsFile: creates it", AppSettings.ResolveDataDir(), "E:\Sync\ALTRun")
+
+        AppSettings.DataDir := saved.DataDir, AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
         eq("default when portable", AppSettings.DefaultDataDir(), A_ScriptDir "\Data")
         DirDelete(root, true)
     }
@@ -1798,6 +1850,7 @@ class Tests {
     ; 空搜索框: 置顶在前, 然后最近打开的 (去重、限制个数); 只记能重新打开的结果
     static RecentItems() {
         eq := (n, a, e) => TestRunner.Equal("RecentItems." n, a, e)
+        eq("default count", AppSettings.Defaults()["Features"]["Recent"]["RecentCount"], 0)   ; 默认只显示置顶的项目
         saved := {Recent: Knowledge.Recent, File: Knowledge.File, SettingsFile: AppSettings.File}
         options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedCount := options["RecentCount"]
         Knowledge.Recent := [], Knowledge.File := A_Temp "\ALTRun-recent-test.json", AppSettings.File := A_Temp "\ALTRun-recent-settings.json"
@@ -1863,7 +1916,8 @@ class Tests {
         }
         eq("pinned first, kept when trimming", texts(), "one|five|four")
         items := ClipboardProvider.Search(SearchQuery("clip one"))
-        eq("pinned tag", InStr(items[1].Subtitle, I18n.T("Clipboard.PinnedTag")) = 1, true)
+        eq("pinned badge", items[1].Pinned, true)
+        eq("unpinned: no badge", ClipboardProvider.Search(SearchQuery("clip five"))[1].Pinned, false)
         actions := ""
         for action in items[1].Actions
             actions .= action.Title "|"
@@ -1895,7 +1949,11 @@ class Tests {
         eq("parse", IsObject(browse) ? browse.Dir "|" browse.Filter : "", root "\|rep")
         eq("not a path", FileSearchProvider.BrowsePath("report"), "")
         eq("drive only", FileSearchProvider.BrowsePath("C:"), "")
-        eq("missing folder", FileSearchProvider.BrowsePath(root "\Nope\x"), "")
+        missing := FileSearchProvider.BrowsePath(root "\Nope\x")
+        eq("missing folder", IsObject(missing) && missing.HasOwnProp("Missing") ? missing.Dir : "", root "\Nope\")
+        eq("missing folder: hint", titles(root "\Nope\x"), I18n.T("Files.FolderNotFound"))
+        wide := FileSearchProvider.BrowsePath(SubStr(root, 1, 1) "：、" StrReplace(SubStr(root, 4), "\", "、") "、rep")   ; 中文输入法的全角冒号和顿号
+        eq("chinese punctuation", IsObject(wide) ? wide.Dir "|" wide.Filter : "", root "\|rep")
         home := FileSearchProvider.BrowsePath("~")
         eq("home", IsObject(home) ? home.Dir : "", EnvGet("UserProfile") "\")
         titles(text) {
@@ -2550,6 +2608,14 @@ Func | PTTools | PT Tools (AHK)=99
         eq("kept on screen", pos.X, 1720)
         second := {Left: 1920, Top: 0, Right: 3840, Bottom: 1080}
         eq("second monitor", Hud.Position(200, 40, {Window: "", Area: second}).X, 2780)
+        savedArea := SearchWindow.LastArea, savedAt := SearchWindow.HiddenAt, savedShowOn := AppSettings.Appearance["ShowOn"]
+        SearchWindow.LastArea := second, SearchWindow.HiddenAt := A_TickCount                          ; 搜索窗口刚在第二块屏幕上隐藏
+        eq("just hidden: same screen", Hud._Anchor().Area.Left, 1920)
+        SearchWindow.HiddenAt := A_TickCount - Hud.RecentWindowMs - 1
+        AppSettings.Appearance["ShowOn"] := "Primary"
+        primary := Win.WorkArea(MonitorGetPrimary())
+        eq("later: ShowOn primary", Hud._Anchor().Area.Left "," Hud._Anchor().Area.Top, primary.Left "," primary.Top)
+        SearchWindow.LastArea := savedArea, SearchWindow.HiddenAt := savedAt, AppSettings.Appearance["ShowOn"] := savedShowOn
 
         long := ""
         Loop 40
@@ -2731,6 +2797,18 @@ Func | PTTools | PT Tools (AHK)=99
         JSON.WriteFile(jsonFile, Map("k", "v2"))
         firstByte := FileOpen(jsonFile, "r").RawRead(bytes := Buffer(3), 3) ? NumGet(bytes, 0, "UChar") : 0
         eq("write file", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (firstByte = 0xEF ? "bom" : "no bom") "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v2|no bom|")
+        locked := FileOpen(jsonFile, "r -rwd")                              ; 同步盘 / 杀毒软件暂时占着文件: 等它放开后写入
+        SetTimer(() => locked.Close(), -300)
+        JSON.WriteFile(jsonFile, Map("k", "v3"))
+        eq("write file: retries while locked", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"], "v3")
+        locked := FileOpen(jsonFile, "r -rwd"), saved := JSON.MoveTries, JSON.MoveTries := 2
+        failed := false
+        try JSON.WriteFile(jsonFile, Map("k", "v4"))
+        catch
+            failed := true
+        locked.Close(), JSON.MoveTries := saved
+        if failed                                                           ; Wine 不一定支持独占打开, 这时直接写成功
+            eq("write file: gives up, original kept, no tmp left", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v3|")
         DirDelete(dir, true)
 
         paths := []

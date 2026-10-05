@@ -3,8 +3,8 @@
 ;-------------------------------------------------------------------------------
 ; 输入算式直接显示结果 ("12*(3+4)" / "=2^10"), 最多两位小数, Enter 复制结果。
 ; 打开 Features.Calculator.StructuralCalc 后, 结果下方附带两行结构计算:
-;   - 把结果当作梁宽 (mm): 主筋根数和间距 (保护层 40 mm, 最大间距 300 mm)
-;   - 把结果当作配筋面积 As (mm²): H13 / H16 / H20 / H25 / H32 需要的根数
+;   - 把结果当作梁宽 (mm): 主筋根数和间距 (保护层 RebarCover, 默认 40 mm; 最大间距 MaxBarSpacing, 默认 300 mm)
+;   - 把结果当作配筋面积 As (mm²): BarSizes 里每种直径需要的根数 (默认 H13 / H16 / H20 / H25 / H32, 前缀 BarPrefix)
 ; 单位换算 (Lib\Units.ahk): "10 km in mi"、"100 f to c"、"20 mpa in psi"...; 货币换算 "100 usd to sgd"
 ; 要打开 Features.Calculator.Currency (默认关闭, 汇率每天从 frankfurter.dev 下载, 见 CurrencyRates)。
 ; 进制: "0xFF" / "0b1010" / "0o17" 显示十进制、十六进制、二进制; "255 in hex" / "0xff to dec" / "10 in bin" / "8 in oct"。
@@ -41,7 +41,7 @@ class CalculatorProvider {
         text := CalculatorProvider.Format(value)
 
         results.Push(ResultItem(text, I18n.T("Calc.Subtitle") " · " Trim(expression), {
-            Kind: "text", Arg: text, Icon: "res:imageres.dll,-182", Score: 200, LargeText: text
+            Kind: "text", Arg: text, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 200, LargeText: text
         }))
         if AppSettings.Feature("Calculator")["StructuralCalc"]
             CalculatorProvider._AddStructural(results, value)
@@ -65,7 +65,7 @@ class CalculatorProvider {
 
     ; "10 km in mi" -> 一条结果 "6.21 mi" (Enter 复制数字); 货币还没有汇率时给出提示
     static _Convert(conversion) {
-        icon := "res:imageres.dll,-182"
+        icon := IconCache.Own("Calculator", "res:imageres.dll,-182")
         value := Units.Convert(conversion.Value, conversion.From, conversion.To)
         if IsNumber(value) {
             text := CalculatorProvider.Format(value)
@@ -85,7 +85,7 @@ class CalculatorProvider {
     }
 
     static _Item(text, subtitle, score := 200) {
-        return ResultItem(text, subtitle, {Kind: "text", Arg: text, Icon: "res:imageres.dll,-182", Score: score, LargeText: text})
+        return ResultItem(text, subtitle, {Kind: "text", Arg: text, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: score, LargeText: text})
     }
 
     ; 进制换算: 带前缀的数 (0x / 0b / 0o) 单独输入时列出三种写法; "数 in hex|bin|oct|dec" 换成指定的进制
@@ -185,17 +185,32 @@ class CalculatorProvider {
     }
 
     static _AddStructural(results, value) {
-        if (value <= 80)
+        options := AppSettings.Feature("Calculator")
+        number(key, fallback, minimum) {                                    ; 设置里的数字, 写错时用默认值
+            raw := options.Has(key) ? options[key] : fallback
+            return (IsNumber(raw) && raw >= minimum) ? raw + 0 : fallback
+        }
+        cover := number("RebarCover", 40, 0), maxSpacing := number("MaxBarSpacing", 300, 1)
+        inner := value - 2 * cover                                          ; 扣掉两边的保护层
+        if (inner <= 0)
             return
-        barCount := Ceil((value - 80) / 300 + 1)
-        spacing  := Max(Round((value - 80) / (barCount - 0.999)), 0)
+        barCount := Ceil(inner / maxSpacing + 1)
+        spacing  := Max(Round(inner / (barCount - 0.999)), 0)
         beamText := I18n.T("Calc.BeamWidth", CalculatorProvider.Format(value), barCount, spacing)
-        results.Push(ResultItem(beamText, "", {Kind: "text", Arg: beamText, Icon: "res:imageres.dll,-182", Score: 199}))
+        results.Push(ResultItem(beamText, "", {Kind: "text", Arg: beamText, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 199}))
 
+        prefix := options.Has("BarPrefix") ? Trim(options["BarPrefix"]) : "H"
+        sizes := (options.Has("BarSizes") && options["BarSizes"] is Array) ? options["BarSizes"] : [13, 16, 20, 25, 32]
         bars := ""
-        for bar in [[13, 132.7], [16, 201.1], [20, 314.2], [25, 490.9], [32, 804.2]]
-            bars .= (bars = "" ? "" : "  ") Ceil(value / bar[2]) "H" bar[1]
+        for size in sizes {
+            if !(IsNumber(size) && size > 0)
+                continue
+            area := 3.141592653589793 * size * size / 4                     ; 一根的面积 (mm²)
+            bars .= (bars = "" ? "" : "  ") Ceil(Round(value / area, 6)) prefix CalculatorProvider.Format(size + 0)
+        }
+        if (bars = "")
+            return
         areaText := I18n.T("Calc.RebarArea", CalculatorProvider.Format(value), bars)
-        results.Push(ResultItem(areaText, "", {Kind: "text", Arg: areaText, Icon: "res:imageres.dll,-182", Score: 198}))
+        results.Push(ResultItem(areaText, "", {Kind: "text", Arg: areaText, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 198}))
     }
 }

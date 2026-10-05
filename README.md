@@ -39,7 +39,7 @@
 - **便携与隐私**：免安装，不写注册表，不需要管理员权限，没有后台服务或驱动；所有数据保存在 `Data\` 文件夹；不收集任何数据，仅联网检查和下载更新（开启货币换算后每天下载一次汇率）。
 - **自动更新**：有新版本时在搜索窗口中提示，按 `Enter` 即可安装（自动校验 SHA256），设置保留；也支持 Scoop。
 - **个性化**：简体中文、繁體中文、English、日本語界面；20 套内置主题（偏好设置里看缩略图选择），可跟随系统浅色 / 深色模式；主题和设置均为 JSON 文件。
-- **开源免费**：GPL-3.0 许可；每个 PR 都会在 Windows 上自动运行 6000 余项测试。
+- **开源免费**：GPL-3.0 许可；每个 PR 都会在 Windows 上自动运行 7000 余项测试。
 
 
 ## 快速开始
@@ -99,8 +99,12 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | <img src="docs/images/screenshots/actions.png" alt="操作面板"> | <img src="docs/images/screenshots/files.png" alt="文件搜索"> |
 | **计算器（含结构计算）** | **剪贴板历史（`clip`）** |
 | <img src="docs/images/screenshots/calculator.png" alt="计算器"> | <img src="docs/images/screenshots/clipboard.png" alt="剪贴板历史"> |
+| **置顶和最近使用（空搜索框）** | **浏览文件夹（输入路径）** |
+| <img src="docs/images/screenshots/empty.png" alt="置顶和最近使用"> | <img src="docs/images/screenshots/browse.png" alt="浏览文件夹"> |
 | **偏好设置** | **自定义命令** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
+| **计算器设置（结构计算参数）** | **脚本扩展** |
+| <img src="docs/images/screenshots/prefs-calculator.png" alt="计算器设置"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> |
 
 <details>
 <summary><b>内置主题</b>（共 20 套，点击展开）</summary>
@@ -134,7 +138,8 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | `Ctrl+Enter` | 文件 / 文件夹：打开所在位置；文字：粘贴到当前窗口 |
 | `Alt+Enter` | 复制路径、网址或文字 |
 | `Ctrl+1`～`Ctrl+9` | 打开第 N 项 |
-| `↑` `↓` `PgUp` `PgDn` `Ctrl+P` `Ctrl+N` | 移动选择 |
+| `↑` `↓` / `Ctrl+P` `Ctrl+N` | 上移 / 下移一行 |
+| `PgUp` `PgDn` | 上翻 / 下翻一页 |
 | `Ctrl+↑` / `Ctrl+↓` | 上一条 / 下一条搜索记录 |
 | `Tab` | 自动补全；文件夹：进入浏览 |
 | `Insert` | 标记多个文件 / 文件夹，再按 `→` 一起操作 |
@@ -177,7 +182,7 @@ Src\Core\           启动流程、设置与迁移、搜索模型、匹配打分
 Src\UI\             搜索窗口、偏好设置、编辑对话框、大字显示、主题、图标缓存
 Src\Providers\      搜索功能：应用、自定义命令、片段、剪贴板、系统命令、计算器、网页、书签、文件、终端、速查表
 Src\Extensions\     搜索窗口以外的功能：片段自动展开、对话框跳转、加日期、PT 工具箱、检查更新
-Resources\          随程序发布的数据（Kanji.txt 简繁对照表、Themes\ 内置主题、Lang\ 界面语言）
+Resources\          随程序发布的数据（Kanji.txt 简繁对照表、Themes\ 内置主题、Lang\ 界面语言、Icons\ 图标）
 Tests\              单元测试、对照数据（Fixtures）、自动截图（Screenshots）、SPF2M 对照数据工具（Tools\SPF2M）
 docs\               Wiki 源文件（docs\wiki，合并后自动发布）、截图（docs\images）
 bucket\             Scoop 清单（仓库本身即 Scoop bucket）

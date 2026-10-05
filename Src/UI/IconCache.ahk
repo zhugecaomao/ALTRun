@@ -124,6 +124,7 @@ class IconCache {
                 continue
             IconCache._queue.Delete(key)
             hIcon := 0
+            Logger.Trace("icon: " spec)
             try hIcon := IconCache._Load(spec)
             IconCache._Store(key, hIcon)
             loaded := true
@@ -242,9 +243,15 @@ class IconCache {
                 hIcon := IconCache._FromPidl("::{21EC2020-3AEA-1069-A2DD-08002B30309D}\" target)
             return hIcon
         }
-        if FileExist(target)
-            return IconCache._FromShell(target, 0, false)
         SplitPath(target, , , &ext)
+        if FileExist(target) {
+            if (ext = "ico") {                                              ; .ico 直接读里面的图片 (Resources\Icons 的图标), 不依赖资源管理器的缩略图
+                size := IconCache.SourceSize(IconCache.Size)
+                if (hIcon := DllCall("LoadImageW", "Ptr", 0, "WStr", target, "UInt", 1, "Int", size, "Int", size, "UInt", 0x10, "Ptr"))   ; IMAGE_ICON, LR_LOADFROMFILE
+                    return hIcon
+            }
+            return IconCache._FromShell(target, 0, false)
+        }
         return IconCache._FromShell(ext != "" ? "." ext : ".exe", FILE_ATTRIBUTE_NORMAL, true)
     }
 
@@ -327,6 +334,17 @@ class IconCache {
         ; 让 Windows 不必自己缩放 (它的缩放有锯齿), 不是正好的尺寸由 FitSize 平滑缩放
         DllCall("user32\PrivateExtractIconsW", "WStr", file, "Int", index, "Int", size, "Int", size, "Ptr*", &hIcon, "Ptr", 0, "UInt", 1, "UInt", 0)
         return hIcon
+    }
+
+    ; ALTRun 自己的图标 Resources\Icons\<name>.ico (片段、计算器、帮助、置顶...), 和 Clipboard.ico 同一套画法;
+    ; 文件不在时 (例如只复制了 exe) 用 fallback 的系统图标。每个名字只看一次文件在不在
+    static Own(name, fallback) {
+        static found := Map()
+        if !found.Has(name) {
+            iconFile := A_ScriptDir "\Resources\Icons\" name ".ico"
+            found[name] := FileExist(iconFile) ? iconFile : fallback
+        }
+        return found[name]
     }
 
     ; 图标文件里一般都有的尺寸里, 不小于 size 的最小的一个

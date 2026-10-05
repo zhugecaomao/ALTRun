@@ -145,14 +145,15 @@ class SystemProvider {
             add(id, titleKey, (icon != "") ? icon : target, () => Run(Trim(target " " arguments)), false, "Tool.Subtitle")
         }
         system32 := A_WinDir "\System32\"
-        text(id, titleKey, fn) => add(id, titleKey, "res:imageres.dll,-5314", () => SystemProvider.TransformClipboard(fn))
+        text(id, titleKey, fn) => add(id, titleKey, ClipboardProvider.Icon, () => SystemProvider.TransformClipboard(fn))
 
         ; --- ALTRun ---
         add("Preferences" , "Sys.Preferences" , "res:imageres.dll,-114" , () => App.OpenPreferences())
         add("Reload"      , "Sys.Reload"      , "res:imageres.dll,-5311", () => App.Reload())
         add("RebuildIndex", "Sys.RebuildIndex", "res:imageres.dll,-8"   , () => App.RebuildIndex())
-        add("CheckUpdate" , "Sys.CheckUpdate" , "res:imageres.dll,-5338", () => UpdateChecker.Check())
-        add("About"       , "Sys.About"       , "res:imageres.dll,-81"  , () => App.About())
+        appIcon := FileExist(App.IconFile) ? App.IconFile : "res:imageres.dll,-81"      ; ALTRun 自己的事用程序图标
+        add("CheckUpdate" , "Sys.CheckUpdate" , appIcon                 , () => UpdateChecker.Check())
+        add("About"       , "Sys.About"       , appIcon                 , () => App.About())
         add("Log"         , "Sys.Log"         , "res:imageres.dll,-102" , () => App.OpenLog())
         add("Quit"        , "Sys.Quit"        , "res:imageres.dll,-98"  , () => App.Quit())
 
@@ -173,13 +174,13 @@ class SystemProvider {
         add("MediaPrev"   , "Sys.MediaPrev"   , system32 "SndVol.exe" , () => Send("{Media_Prev}"))
         add("MediaStop"   , "Sys.MediaStop"   , system32 "SndVol.exe" , () => Send("{Media_Stop}"))
         add("ShowIP"      , "Sys.ShowIP"      , "res:imageres.dll,-25"  , () => SystemProvider.ShowIP())
-        add("PastePlain"  , "Sys.PastePlain"  , "res:imageres.dll,-5314", () => SystemProvider.PastePlainText())
+        add("PastePlain"  , "Sys.PastePlain"  , ClipboardProvider.Icon, () => SystemProvider.PastePlainText())
         add("ScriptsFolder", "Sys.ScriptsFolder", "res:imageres.dll,-5323", () => ScriptProvider.OpenFolder())
         add("TerminalHere", "Sys.TerminalHere", "res:imageres.dll,-5323", () => TerminalProvider.OpenAtCurrentFolder())
         add("ListProcesses", "Sys.ListProcesses", system32 "taskmgr.exe", () => SystemProvider._ShowCommandOutput("tasklist", "ALTRun.Processes.txt"))
         add("ListServices", "Sys.ListServices", system32 "services.msc", () => SystemProvider._ShowCommandOutput("net start", "ALTRun.Services.txt"))
-        add("PTTools"     , "Sys.PTTools"     , "res:imageres.dll,-182" , () => PTToolsWindow.Show())
-        add("SPF2M"       , "Sys.SPF2M"       , "res:imageres.dll,-182" , () => PTToolsWindow.ShowSpf2m())
+        add("PTTools"     , "Sys.PTTools"     , IconCache.Own("Calculator", "res:imageres.dll,-182"), () => PTToolsWindow.Show())
+        add("SPF2M"       , "Sys.SPF2M"       , IconCache.Own("Calculator", "res:imageres.dll,-182"), () => PTToolsWindow.ShowSpf2m())
 
         ; --- Clipboard text tools ---
         text("TextUpper"        , "Text.Upper"        , (s) => TextTools.Upper(s))
@@ -243,7 +244,6 @@ class SystemProvider {
         setting("Clipboard"        , "clipboard")
         setting("About"            , "about")
         setting("Bluetooth"        , "bluetooth")
-        setting("Printers"         , "printers")
         setting("Mouse"            , "mousetouchpad")
         setting("Touchpad"         , "devices-touchpad")
         setting("Typing"           , "typing")

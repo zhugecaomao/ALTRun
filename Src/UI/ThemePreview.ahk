@@ -1,8 +1,9 @@
 ;===============================================================================
 ; ThemePreview.ahk - 主题缩略图 (偏好设置 -> 外观 的主题列表) (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 按主题自己的颜色、圆角和字体画一个迷你搜索窗口: 输入框、分隔线、三行结果
-; (第一行是选中行, 标题里和输入匹配的字用高亮色)。不用图片文件, 自定义主题也有缩略图;
+; 按主题自己的颜色和圆角画一个简化的迷你搜索窗口 (不写字, 只用色块): 输入框里一段输入文字色,
+; 分隔线, 三行结果 (彩色图标 + 一条标题); 第一行是选中行, 标题前一段是高亮色。
+; 不用图片文件, 自定义主题也有缩略图;
 ; System (跟随系统) 左半边是 Light, 右半边是 Dark。
 ;
 ; 用法:
@@ -11,8 +12,8 @@
 ;===============================================================================
 
 class ThemePreview {
-    static Rows := ["Remote Desktop", "Report 2026.docx", "Registry Editor"]   ; 都以输入的 "re" 开头
-    static IconColors := ["3B82F6", "F59E0B", "10B981"]                        ; 结果行左边的 "图标"
+    static TitleWidths := [0.52, 0.40, 0.46]                                    ; 三行标题的长度 (占宽度的比例)
+    static IconColors := ["3B82F6", "F59E0B", "10B981"]                        ; 结果行左边的 "图标" (蓝 / 橙 / 绿, 每个主题都一样)
 
     ; 一个主题 (完整的键值 Map) 的缩略图, w x h 像素
     static Bitmap(theme, w, h) {
@@ -87,57 +88,48 @@ class ThemePreview {
             DllCall("SelectObject", "Ptr", dc, "Ptr", oldBrush)
             DllCall("DeleteObject", "Ptr", brush)
         }
-        text(x, y, str, bgr) {
-            DllCall("SetTextColor", "Ptr", dc, "UInt", bgr)
-            DllCall("TextOutW", "Ptr", dc, "Int", x, "Int", y, "WStr", str, "Int", StrLen(str))
-            size := Buffer(8, 0)
-            DllCall("GetTextExtentPoint32W", "Ptr", dc, "WStr", str, "Int", StrLen(str), "Ptr", size)
-            return x + NumGet(size, 0, "Int")
+        bar(left, top, width, height, bgr) => roundRect(left, top, left + width, top + height, height // 2, bgr)   ; 代表一段文字
+        soft(key, backKey, t) {                                             ; 颜色往背景色靠 t (0~1): 细线条不那么刺眼
+            a := color(key), b := color(backKey), mixed := 0
+            Loop 3 {
+                shift := (A_Index - 1) * 8
+                mixed |= Round(((a >> shift) & 0xFF) * (1 - t) + ((b >> shift) & 0xFF) * t) << shift
+            }
+            return mixed
         }
 
         fill(0, 0, w, h, color("Background"))
         fill(0, 0, w, 1, color("Border")), fill(0, h - 1, w, h, color("Border"))
         fill(0, 0, 1, h, color("Border")), fill(w - 1, 0, w, h, color("Border"))
-        DllCall("SetBkMode", "Ptr", dc, "Int", 1)                                       ; TRANSPARENT
 
-        pad := Max(4, Round(w * 0.06))
-        fontName := ThemeManager.FontFrom(theme.Has("FontName") ? theme["FontName"] : "auto")
-        inputH := Round(h * 0.24)
-        inputFont := ThemePreview._Font(fontName, Round(inputH * 0.62))
-        oldFont := DllCall("SelectObject", "Ptr", dc, "Ptr", inputFont, "Ptr")
-        caret := text(pad, pad // 2 + (inputH - Round(inputH * 0.62)) // 2 - 1, "re", color("InputText"))
-        fill(caret + 1, pad // 2 + Round(inputH * 0.2), caret + 2, pad // 2 + Round(inputH * 0.85), color("InputText"))
-        separatorY := pad // 2 + inputH
+        pad := Max(5, Round(w * 0.08))
+        inputH := Round(h * 0.26)
+        inputBar := Max(2, Round(inputH * 0.14))
+        bar(pad, (inputH - inputBar) // 2, Round(w * 0.22), inputBar, soft("InputText", "Background", 0.35))
+        separatorY := inputH
         fill(0, separatorY, w, separatorY + 1, color("Separator"))
 
-        rowTop := separatorY + 2, rowH := (h - rowTop - 2) / 3
+        rowTop := separatorY + 3, rowH := (h - rowTop - 3) / 3
         radius := Min(Round((theme.Has("SelectedRadius") ? theme["SelectedRadius"] : 0) * w / 260), Round(rowH / 3))
-        titleFont := ThemePreview._Font(fontName, Max(7, Round(rowH * 0.34)))
-        DllCall("SelectObject", "Ptr", dc, "Ptr", titleFont)
-        for index, title in ThemePreview.Rows {
+        titleH := Max(2, Round(rowH * 0.14))
+        for index, titleW in ThemePreview.TitleWidths {
             top := Round(rowTop + (index - 1) * rowH), bottom := Round(rowTop + index * rowH)
             selected := (index = 1)
             if selected {
                 inset := radius ? Max(2, Round(w * 0.02)) : 0
                 roundRect(inset, top + (radius ? 1 : 0), w - 1 - inset, bottom - (radius ? 1 : 0), radius, color("SelectedBackground"))
             }
-            iconSize := Round(rowH * 0.5), iconTop := top + Round((rowH - iconSize) / 2)
-            roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 5), Win.ColorToBgr(ThemePreview.IconColors[index]))
-            x := pad + iconSize + Max(3, Round(w * 0.04))
-            titleY := top + Round(rowH * 0.06)
-            x := text(x, titleY, SubStr(title, 1, 2), color(selected ? "SelectedHighlight" : "Highlight"))
-            text(x, titleY, SubStr(title, 3), color(selected ? "SelectedTitle" : "Title"))
-            subTop := top + Round(rowH * 0.76), subLeft := pad + iconSize + Max(3, Round(w * 0.04))
-            fill(subLeft, subTop, subLeft + Round(w * (0.42 - index * 0.04)), subTop + Max(1, Round(rowH * 0.1)), color(selected ? "SelectedSubtitle" : "Subtitle"))
-            shortcutY := top + Round(rowH / 2)
-            fill(w - pad - Round(w * 0.1), shortcutY, w - pad, shortcutY + Max(1, Round(rowH * 0.08)), color(selected ? "SelectedShortcut" : "Shortcut"))
+            back := selected ? "SelectedBackground" : "Background"
+            iconSize := Round(rowH * 0.4), iconTop := top + Round((rowH - iconSize) / 2)
+            roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 4), Win.ColorToBgr(ThemePreview.IconColors[index]))
+            x := pad + iconSize + Max(3, Round(w * 0.05))
+            titleY := top + Round((rowH - titleH) / 2), titleLen := Round(w * titleW)
+            if selected {                                                   ; 选中行: 前一段是和输入匹配的高亮色
+                matchW := Round(w * 0.12), gap := Max(1, Round(w * 0.012))
+                bar(x, titleY, matchW, titleH, color("SelectedHighlight"))
+                bar(x + matchW + gap, titleY, titleLen - matchW - gap, titleH, soft("SelectedTitle", back, 0.3))
+            } else
+                bar(x, titleY, titleLen, titleH, soft("Title", back, 0.45))
         }
-        DllCall("SelectObject", "Ptr", dc, "Ptr", oldFont)
-        DllCall("DeleteObject", "Ptr", inputFont), DllCall("DeleteObject", "Ptr", titleFont)
-    }
-
-    static _Font(name, pixels) {
-        return DllCall("CreateFontW", "Int", -pixels, "Int", 0, "Int", 0, "Int", 0, "Int", 400
-            , "UInt", 0, "UInt", 0, "UInt", 0, "UInt", 1, "UInt", 0, "UInt", 0, "UInt", 5, "UInt", 0, "WStr", name, "Ptr")   ; CLEARTYPE_QUALITY
     }
 }

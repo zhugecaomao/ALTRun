@@ -43,7 +43,7 @@ class SnippetProvider {
                 continue
             preview := SnippetProvider._Preview(snippet["Text"], found)
             item := ResultItem((name != "") ? name : preview, I18n.T("Snippet.Subtitle", preview), {
-                Kind: "text", Arg: snippet["Text"], Icon: "res:imageres.dll,-102",
+                Kind: "text", Arg: snippet["Text"], Icon: IconCache.Own("Snippet", "res:imageres.dll,-102"),
                 Uid: "snippet:" StrLower(keyword "|" name), Score: score + (onlySnippets ? 30 : 0), Source: snippet,
                 Exclusive: onlySnippets && query.HasRest,
                 LargeText: SnippetProvider.Expand(snippet["Text"])

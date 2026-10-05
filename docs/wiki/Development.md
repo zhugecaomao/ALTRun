@@ -21,7 +21,7 @@ Src\Core\           App (启动流程), AppSettings + SchemaMigration (设置和
 Src\UI\             SearchWindow, PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, TendonProfile + PTToolsWindow, UpdateChecker)
-Resources\          随程序发布的数据 (Kanji.txt, Themes\*.json, Lang\*.json)
+Resources\          随程序发布的数据 (Kanji.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  单元测试
 Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据
 Tests\Screenshots\  自动截图

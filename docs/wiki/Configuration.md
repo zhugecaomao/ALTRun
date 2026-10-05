@@ -16,9 +16,12 @@
   "Extensions": { ... },          // 扩展功能
   "Hotkeys":        [ ... ],      // 自定义热键
   "CustomCommands": [ ... ],      // 自定义命令
-  "Snippets":       [ ... ]       // 文字片段
+  "Snippets":       [ ... ],      // 文字片段
+  "DataLocation":   "%OneDrive%\\ALTRun"   // 可选: 改用这个数据文件夹
 }
 ```
+
+`DataLocation` 只在默认位置 (`Data\ALTRun.json`, 或 `%APPDATA%\ALTRun\Data\ALTRun.json`) 的文件里起作用: 有这一项时, ALTRun 改用那个文件夹里的设置和数据, 默认位置的文件只用来指路。一般在 偏好设置 → 高级 → 数据 → 更改位置 里设置, 不用手动写; 可以用环境变量, 相对路径从程序目录算起。
 
 ## General 通用
 偏好设置里分在 "通用" 和 "搜索窗口" 两页。
@@ -98,6 +101,10 @@
 | 键 | 默认 | 说明 |
 |---|---|---|
 | StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Extensions#计算器) |
+| RebarCover | 40 | 结构计算: 保护层 (mm, 每边) |
+| MaxBarSpacing | 300 | 结构计算: 主筋最大间距 (mm) |
+| BarSizes | `[13, 16, 20, 25, 32]` | 结构计算: 配筋面积那一行列出的钢筋直径 (mm) |
+| BarPrefix | `H` | 结构计算: 钢筋代号前缀 (`T`、`Y`、`Φ`...) |
 | Currency | 0 | 货币换算 (`100 usd to sgd`), 每天从 frankfurter.dev 下载汇率, 见 [单位和货币换算](Extensions#单位和货币换算) |
 
 ### Bookmarks 浏览器书签
@@ -114,7 +121,7 @@
 ### Recent 置顶和最近使用
 | 键 | 默认 | 说明 |
 |---|---|---|
-| RecentCount | 5 | 空搜索框里显示几个最近打开的项目, 0 = 不显示 |
+| RecentCount | 0 | 空搜索框里显示几个最近打开的项目, 0 = 不显示 (默认只显示置顶的项目) |
 | Pinned | `[]` | 置顶到空搜索框的项目 (在操作面板里置顶 / 取消, 不用手动改) |
 
 最近打开的项目记在 `Data\Knowledge.json` 里, 见 [置顶和最近使用](Usage#置顶和最近使用)。
