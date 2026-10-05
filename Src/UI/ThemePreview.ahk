@@ -88,6 +88,14 @@ class ThemePreview {
             DllCall("DeleteObject", "Ptr", brush)
         }
         bar(left, top, width, height, bgr) => roundRect(left, top, left + width, top + height, height // 2, bgr)   ; 代表一段文字
+        soft(key, backKey, t) {                                             ; 颜色往背景色靠 t (0~1): 细线条不那么刺眼
+            a := color(key), b := color(backKey), mixed := 0
+            Loop 3 {
+                shift := (A_Index - 1) * 8
+                mixed |= Round(((a >> shift) & 0xFF) * (1 - t) + ((b >> shift) & 0xFF) * t) << shift
+            }
+            return mixed
+        }
 
         fill(0, 0, w, h, color("Background"))
         fill(0, 0, w, 1, color("Border")), fill(0, h - 1, w, h, color("Border"))
@@ -95,14 +103,14 @@ class ThemePreview {
 
         pad := Max(5, Round(w * 0.08))
         inputH := Round(h * 0.26)
-        inputBar := Max(3, Round(inputH * 0.22))
-        bar(pad, (inputH - inputBar) // 2, Round(w * 0.24), inputBar, color("InputText"))
+        inputBar := Max(2, Round(inputH * 0.14))
+        bar(pad, (inputH - inputBar) // 2, Round(w * 0.22), inputBar, soft("InputText", "Background", 0.35))
         separatorY := inputH
         fill(0, separatorY, w, separatorY + 1, color("Separator"))
 
         rowTop := separatorY + 3, rowH := (h - rowTop - 3) / 3
         radius := Min(Round((theme.Has("SelectedRadius") ? theme["SelectedRadius"] : 0) * w / 260), Round(rowH / 3))
-        titleH := Max(3, Round(rowH * 0.22))
+        titleH := Max(2, Round(rowH * 0.14))
         for index, titleW in ThemePreview.TitleWidths {
             top := Round(rowTop + (index - 1) * rowH), bottom := Round(rowTop + index * rowH)
             selected := (index = 1)
@@ -110,16 +118,17 @@ class ThemePreview {
                 inset := radius ? Max(2, Round(w * 0.02)) : 0
                 roundRect(inset, top + (radius ? 1 : 0), w - 1 - inset, bottom - (radius ? 1 : 0), radius, color("SelectedBackground"))
             }
-            iconSize := Round(rowH * 0.42), iconTop := top + Round((rowH - iconSize) / 2)
-            roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 4), color(selected ? "SelectedSubtitle" : "Subtitle"))
+            back := selected ? "SelectedBackground" : "Background"
+            iconSize := Round(rowH * 0.36), iconTop := top + Round((rowH - iconSize) / 2)
+            roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 3), soft(selected ? "SelectedSubtitle" : "Subtitle", back, 0.45))
             x := pad + iconSize + Max(3, Round(w * 0.05))
             titleY := top + Round((rowH - titleH) / 2), titleLen := Round(w * titleW)
             if selected {                                                   ; 选中行: 前一段是和输入匹配的高亮色
                 matchW := Round(w * 0.12), gap := Max(1, Round(w * 0.012))
                 bar(x, titleY, matchW, titleH, color("SelectedHighlight"))
-                bar(x + matchW + gap, titleY, titleLen - matchW - gap, titleH, color("SelectedTitle"))
+                bar(x + matchW + gap, titleY, titleLen - matchW - gap, titleH, soft("SelectedTitle", back, 0.3))
             } else
-                bar(x, titleY, titleLen, titleH, color("Title"))
+                bar(x, titleY, titleLen, titleH, soft("Title", back, 0.45))
         }
     }
 }
