@@ -2,7 +2,9 @@
 ; Logger.ahk - 轻量日志 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 日志文件默认写到 %Temp%\ALTRun.log。
-; 缓冲后批量落盘, 避免每条日志都开关一次文件 (启动时会写几百条)。
+; 启动时缓冲后批量落盘 (启动时一下子写几十条), 启动完成后 (Logger.Immediate) 每条马上写入:
+; 程序卡住被强制结束时, 日志里也能看到最后做到哪一步。警告和错误总是马上写入。
+; 每条日志一行 (CRLF), 消息里的换行换成 " | "。
 ;
 ; 用法:
 ;   Logger.Debug("xxx")  /  Logger.Warn("xxx")  /  Logger.Error("xxx")
@@ -18,6 +20,7 @@ class Logger {
     static _buffer := []
     static _maxBuf := 60                        ; 攒够这么多条才写一次盘
     static Enabled := true
+    static Immediate := false                   ; true = 每条马上写盘 (App 启动完成后打开)
 
     static Debug(msg) => Logger._Write("DBG", msg)
 
@@ -43,8 +46,9 @@ class Logger {
     static _Write(level, msg) {
         if !Logger.Enabled
             return
+        msg := RegExReplace(msg, "\R+", " | ")                               ; 一条一行, 行尾统一 CRLF
         Logger._buffer.Push(FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss") " [" level "] " msg "`r`n")
-        if (Logger._buffer.Length >= Logger._maxBuf)
+        if (Logger.Immediate || level != "DBG" || Logger._buffer.Length >= Logger._maxBuf)
             Logger.Flush()
     }
 

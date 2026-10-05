@@ -33,6 +33,7 @@ class AppSettings {
     static Portable := Path.IsWritable(A_ScriptDir)                          ; 程序目录能写入: 数据放在程序目录 (便携)
     static UserDir := A_AppData "\ALTRun"                                   ; 程序目录不能写入时 (例如装在 Program Files) 用这里
     static LocationFileName := "DataLocation.txt"                           ; 指定数据文件夹, 见 ResolveDataDir
+    static ScoopInstall := InStr(A_ScriptDir, "\scoop\apps\") > 0          ; Scoop 用硬链接保留 DataLocation.txt, 不能删 (只能清空)
     static DataDir := AppSettings.ResolveDataDir()
     static File := AppSettings.DataDir "\ALTRun.json"
     static LegacyFile := A_ScriptDir "\ALTRun.json"      ; 旧版本的位置, 2.x 的 ALTRun.ini 也在这个目录
@@ -77,11 +78,9 @@ class AppSettings {
 
     ; 把数据文件夹改成 folder ("" 或默认位置 = 恢复默认): 写 DataLocation.txt, 重新载入后生效。
     ; 程序目录能写入时写在程序目录 (和程序一起带走), 否则写在 %APPDATA%\ALTRun。
-    ; 恢复默认时把文件清空而不是删掉: Scoop 用硬链接保留这个文件, 删掉就断了 (空文件 = 默认位置)
+    ; 恢复默认时删掉这个文件; Scoop 安装的只清空: Scoop 用硬链接保留它, 删掉就断了 (空文件 = 默认位置)
     static SetDataLocation(folder) {
-        for dir in [A_ScriptDir, AppSettings.UserDir]
-            if FileExist(dir "\" AppSettings.LocationFileName)
-                FileOpen(dir "\" AppSettings.LocationFileName, "w", "UTF-8-RAW").Close()
+        AppSettings.RemoveLocationFiles()
         if (folder = "" || folder = AppSettings.DefaultDataDir())
             return
         dir := AppSettings.Portable ? A_ScriptDir : AppSettings.UserDir
@@ -89,6 +88,23 @@ class AppSettings {
         pointer := FileOpen(dir "\" AppSettings.LocationFileName, "w", "UTF-8-RAW")
         pointer.Write(folder)
         pointer.Close()
+    }
+
+    ; 删掉 DataLocation.txt (Scoop 安装的清空); onlyEmpty: 只处理空文件 (以前恢复默认时留下的), 启动时调用
+    static RemoveLocationFiles(onlyEmpty := false) {
+        for dir in [A_ScriptDir, AppSettings.UserDir] {
+            pointer := dir "\" AppSettings.LocationFileName
+            if !FileExist(pointer)
+                continue
+            try {
+                if (onlyEmpty && (AppSettings.ScoopInstall || Trim(FileRead(pointer, "UTF-8"), " `t`r`n") != ""))
+                    continue
+                if AppSettings.ScoopInstall
+                    FileOpen(pointer, "w", "UTF-8-RAW").Close()
+                else
+                    FileDelete(pointer)
+            }
+        }
     }
 
     static Feature(name) {

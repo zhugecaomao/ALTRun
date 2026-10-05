@@ -115,10 +115,13 @@ class ProviderRegistry {
             if !ProviderRegistry.IsEnabled(provider) || !HasMethod(provider, "EmptyResults")
                 continue
             try {
+                start := Logger.Ms()
                 for item in provider.EmptyResults() {
                     item.Provider := provider.Id
                     results.Push(item)
                 }
+                if (Logger.Enabled && Logger.Ms() - start >= 30)              ; 慢的记进日志 (置顶 / 最近使用的图标、路径)
+                    Logger.Time("empty results: " provider.Id, start)
             } catch as e {
                 Logger.Error("ProviderRegistry: " provider.Id ".EmptyResults failed - " e.Message)
             }

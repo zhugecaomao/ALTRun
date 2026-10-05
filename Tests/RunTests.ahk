@@ -1721,9 +1721,20 @@ class Tests {
         AppSettings.SetDataLocation("E:\Sync\ALTRun")
         eq("set", FileRead(root "\user\DataLocation.txt", "UTF-8"), "E:\Sync\ALTRun")
         AppSettings.SetDataLocation("")
-        eq("reset keeps an empty file", FileExist(root "\user\DataLocation.txt") ? FileRead(root "\user\DataLocation.txt") : "missing", "")
+        eq("reset deletes the file", FileExist(root "\user\DataLocation.txt") ? "exists" : "missing", "missing")
+        AppSettings.ScoopInstall := true                                    ; Scoop: 硬链接的文件只清空
+        AppSettings.SetDataLocation("E:\Sync\ALTRun"), AppSettings.SetDataLocation("")
+        eq("scoop: reset keeps an empty file", FileExist(root "\user\DataLocation.txt") ? FileRead(root "\user\DataLocation.txt") : "missing", "")
+        AppSettings.RemoveLocationFiles(true)
+        eq("scoop: startup keeps the empty file", FileExist(root "\user\DataLocation.txt") ? "exists" : "missing", "exists")
+        AppSettings.ScoopInstall := false
+        AppSettings.RemoveLocationFiles(true)
+        eq("startup removes an empty file", FileExist(root "\user\DataLocation.txt") ? "exists" : "missing", "missing")
+        AppSettings.SetDataLocation("E:\Sync\ALTRun"), AppSettings.RemoveLocationFiles(true)
+        eq("startup keeps a real location", AppSettings.CustomDataDir([root "\user"]), "E:\Sync\ALTRun")
+        AppSettings.SetDataLocation("")
         AppSettings.SetDataLocation(AppSettings.DefaultDataDir())
-        eq("default location = reset", FileRead(root "\user\DataLocation.txt"), "")
+        eq("default location = reset", FileExist(root "\user\DataLocation.txt") ? "exists" : "missing", "missing")
         eq("default when not portable", AppSettings.DefaultDataDir(), root "\user\Data")
         AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
         eq("default when portable", AppSettings.DefaultDataDir(), A_ScriptDir "\Data")

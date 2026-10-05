@@ -163,6 +163,9 @@ class SearchWindow {
     static Show(text := "") {
         if !IsObject(SearchWindow.Gui)
             return
+        started := Logger.Ms()
+        if Logger.Enabled
+            Logger.Debug("SearchWindow: show")                              ; 和下面的 "Perf: show" 配对: 卡住时看得出卡在显示窗口里
         wasVisible := SearchWindow.IsVisible()
         if (text = "" && wasVisible)
             SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
@@ -213,6 +216,7 @@ class SearchWindow {
                 SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
             Win.SwitchToEnglishIME()
         }
+        Logger.Time("show", started)
     }
 
     ; 呼出时切到了英文输入法: 隐藏时切回原来的。所有程序共用一个输入法时 (Windows 默认) 才需要;

@@ -23,7 +23,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.07.3"
+    static Version := "2026.10.07.4"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -36,6 +36,7 @@ class App {
         Logger.Rotate()
         App._MoveLegacyResources()
         AppSettings.Load()
+        AppSettings.RemoveLocationFiles(true)                               ; 以前 "恢复默认位置" 留下的空 DataLocation.txt
         Logger.Enabled := AppSettings.General["SaveLog"] ? true : false
         Logger.Debug("===== " App.Name " " App.Version " starting =====")
         Logger.Time("startup: settings", started)                          ; 打开 "写入调试日志" 时记录启动各阶段的耗时
@@ -80,6 +81,7 @@ class App {
             UpdateChecker.Schedule()                                        ; 后台定时检查 (见 UpdateChecker), 新版本显示在搜索窗口里
 
         Logger.Time("startup: total", started)
+        Logger.Flush(), Logger.Immediate := true                            ; 之后每条日志马上写入 (卡住被强制结束时也留得下)
         App._HandleCommandLine()
     }
 
