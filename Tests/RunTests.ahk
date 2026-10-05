@@ -1697,7 +1697,7 @@ class Tests {
         TestRunner.True("ChangelogLinks.newest is App.Version", newest = App.Version)
     }
 
-    ; 数据文件夹: DataLocation.txt 指定的文件夹 (环境变量、相对路径), 空文件 = 默认位置; 写 / 恢复默认
+    ; 数据文件夹: 默认位置的 ALTRun.json 里的 "DataLocation" (环境变量、相对路径); 写 / 恢复默认
     static DataLocation() {
         eq := (n, a, e) => TestRunner.Equal("DataLocation." n, a, e)
         eq("full: absolute", Path.Full("C:\Sync\ALTRun\"), "C:\Sync\ALTRun")
@@ -1706,37 +1706,43 @@ class Tests {
         eq("full: builtin", Path.Full("A_AppData\ALTRun"), A_AppData "\ALTRun")
         root := A_Temp "\ALTRun-location-test"
         try DirDelete(root, true)
-        DirCreate(root "\app"), DirCreate(root "\user")
-        dirs := [root "\app", root "\user"]
-        eq("no file", AppSettings.CustomDataDir(dirs), "")
-        FileAppend("", root "\app\DataLocation.txt")
-        eq("empty file", AppSettings.CustomDataDir(dirs), "")
-        FileAppend("  D:\OneDrive\ALTRun\  `r`n", root "\user\DataLocation.txt", "UTF-8")
-        eq("user folder", AppSettings.CustomDataDir(dirs), "D:\OneDrive\ALTRun")
-        FileOpen(root "\app\DataLocation.txt", "w").Write("..\Shared")
-        eq("program folder first, relative", AppSettings.CustomDataDir(dirs), Path.Full(A_ScriptDir "\..\Shared"))
-
-        saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir}
-        AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; 不能写程序目录时写在 %APPDATA%\ALTRun
-        AppSettings.SetDataLocation("E:\Sync\ALTRun")
-        eq("set", FileRead(root "\user\DataLocation.txt", "UTF-8"), "E:\Sync\ALTRun")
-        AppSettings.SetDataLocation("")
-        eq("reset deletes the file", FileExist(root "\user\DataLocation.txt") ? "exists" : "missing", "missing")
-        AppSettings.ScoopInstall := true                                    ; Scoop: 硬链接的文件只清空
-        AppSettings.SetDataLocation("E:\Sync\ALTRun"), AppSettings.SetDataLocation("")
-        eq("scoop: reset keeps an empty file", FileExist(root "\user\DataLocation.txt") ? FileRead(root "\user\DataLocation.txt") : "missing", "")
-        AppSettings.RemoveLocationFiles(true)
-        eq("scoop: startup keeps the empty file", FileExist(root "\user\DataLocation.txt") ? "exists" : "missing", "exists")
-        AppSettings.ScoopInstall := false
-        AppSettings.RemoveLocationFiles(true)
-        eq("startup removes an empty file", FileExist(root "\user\DataLocation.txt") ? "exists" : "missing", "missing")
-        AppSettings.SetDataLocation("E:\Sync\ALTRun"), AppSettings.RemoveLocationFiles(true)
-        eq("startup keeps a real location", AppSettings.CustomDataDir([root "\user"]), "E:\Sync\ALTRun")
-        AppSettings.SetDataLocation("")
-        AppSettings.SetDataLocation(AppSettings.DefaultDataDir())
-        eq("default location = reset", FileExist(root "\user\DataLocation.txt") ? "exists" : "missing", "missing")
+        DirCreate(root "\user\Data")
+        saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir, DataDir: AppSettings.DataDir}
+        AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; 默认位置 = root\user\Data
+        settingsFile := root "\user\Data\ALTRun.json"
         eq("default when not portable", AppSettings.DefaultDataDir(), root "\user\Data")
-        AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
+        eq("no settings settingsFile", AppSettings.ResolveDataDir(), root "\user\Data")
+        FileAppend('{"General": {"Hotkey": "!Space"}, "Snippets": [{"Text": "\"DataLocation\": \"X:\\\\fake\""}]}', settingsFile, "UTF-8")
+        eq("no key (text in a snippet does not count)", AppSettings.ResolveDataDir(), root "\user\Data")
+        FileDelete(settingsFile)
+        FileAppend('{"General": {}, "DataLocation": "D:\\OneDrive\\ALTRun\\"}', settingsFile, "UTF-8")
+        eq("key", AppSettings.ResolveDataDir(), "D:\OneDrive\ALTRun")
+        FileDelete(settingsFile)
+        FileAppend('{"DataLocation": "%SystemRoot%\\Temp"}', settingsFile, "UTF-8")
+        eq("environment variable", AppSettings.ResolveDataDir(), A_WinDir "\Temp")
+        FileDelete(settingsFile)
+        FileAppend('{"DataLocation": ""}', settingsFile, "UTF-8")
+        eq("empty = default", AppSettings.ResolveDataDir(), root "\user\Data")
+        FileDelete(settingsFile)
+
+        AppSettings.DataDir := "E:\Elsewhere"                                ; 正在用别处的设置: 只改默认位置的文件
+        FileAppend('{"General": {"Hotkey": "!r"}}', settingsFile, "UTF-8")
+        AppSettings.SetDataLocation("E:\Sync\ALTRun")
+        data := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        eq("set: key added, other settings kept", data["DataLocation"] "|" data["General"]["Hotkey"], "E:\Sync\ALTRun|!r")
+        eq("set: resolves", AppSettings.ResolveDataDir(), "E:\Sync\ALTRun")
+        AppSettings.SetDataLocation("")
+        data := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        eq("reset: key removed", data.Has("DataLocation") "|" data["General"]["Hotkey"], "0|!r")
+        AppSettings.SetDataLocation("E:\Sync\ALTRun"), AppSettings.SetDataLocation(AppSettings.DefaultDataDir())
+        eq("default folder = reset", JSON.Parse(FileRead(settingsFile, "UTF-8")).Has("DataLocation"), 0)
+        FileDelete(settingsFile)
+        AppSettings.SetDataLocation("")
+        eq("reset without a settingsFile: nothing written", FileExist(settingsFile) ? "exists" : "missing", "missing")
+        AppSettings.SetDataLocation("E:\Sync\ALTRun")
+        eq("set without a settingsFile: creates it", AppSettings.ResolveDataDir(), "E:\Sync\ALTRun")
+
+        AppSettings.DataDir := saved.DataDir, AppSettings.Portable := saved.Portable, AppSettings.UserDir := saved.UserDir
         eq("default when portable", AppSettings.DefaultDataDir(), A_ScriptDir "\Data")
         DirDelete(root, true)
     }

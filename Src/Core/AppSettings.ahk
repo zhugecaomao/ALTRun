@@ -15,7 +15,8 @@
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
 ;   "Hotkeys"       : [ { "Key", "Action", "WinTitle" } ],   自定义热键 -> 系统命令
 ;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword" } ],
-;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ]
+;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ],
+;   "DataLocation"  : "D:\\OneDrive\\ALTRun"   可选, 只在默认位置的文件里有: 改用这个数据文件夹 (见 ResolveDataDir)
 ; }
 ;
 ; 旧版本 (没有 SchemaVersion 的 2.x 格式) 由 SchemaMigration 自动升级, 升级前
@@ -32,8 +33,6 @@ class AppSettings {
     static CurrentVersion := 4
     static Portable := Path.IsWritable(A_ScriptDir)                          ; 程序目录能写入: 数据放在程序目录 (便携)
     static UserDir := A_AppData "\ALTRun"                                   ; 程序目录不能写入时 (例如装在 Program Files) 用这里
-    static LocationFileName := "DataLocation.txt"                           ; 指定数据文件夹, 见 ResolveDataDir
-    static ScoopInstall := InStr(A_ScriptDir, "\scoop\apps\") > 0          ; Scoop 用硬链接保留 DataLocation.txt, 不能删 (只能清空)
     static DataDir := AppSettings.ResolveDataDir()
     static File := AppSettings.DataDir "\ALTRun.json"
     static LegacyFile := A_ScriptDir "\ALTRun.json"      ; 旧版本的位置, 2.x 的 ALTRun.ini 也在这个目录
@@ -49,61 +48,54 @@ class AppSettings {
     static Snippets       => AppSettings.Data["Snippets"]
 
     ; 数据文件夹 (设置、索引、学习记录、剪贴板历史...):
-    ;   1. 程序目录或 %APPDATA%\ALTRun 里有 DataLocation.txt (偏好设置 → 高级 → 更改): 用里面写的文件夹,
-    ;      例如 OneDrive 里的, 几台电脑共用一份设置 (可以写 %OneDrive%\ALTRun, 相对路径从程序目录算起)
+    ;   1. 默认位置的 ALTRun.json 里有 "DataLocation" (偏好设置 → 高级 → 更改位置): 改用那个文件夹,
+    ;      例如 OneDrive 里的, 几台电脑共用一份设置 (可以写 %OneDrive%\ALTRun, 相对路径从程序目录算起)。
+    ;      只看默认位置的这一项, 那个文件夹里的 ALTRun.json 不再跳转
     ;   2. 程序目录能写入: 程序目录\Data (便携, 默认)
     ;   3. 否则: %APPDATA%\ALTRun\Data
     static ResolveDataDir() {
-        if ((location := AppSettings.CustomDataDir()) != "")
+        if ((location := AppSettings.DataLocationIn(AppSettings.DefaultDataDir() "\ALTRun.json")) != "")
             return location
         return AppSettings.DefaultDataDir()
     }
 
     static DefaultDataDir() => AppSettings.Portable ? A_ScriptDir "\Data" : AppSettings.UserDir "\Data"
 
-    ; DataLocation.txt 里写的文件夹 (没有时 ""); dirs: 去哪些文件夹找 DataLocation.txt
-    static CustomDataDir(dirs := "") {
-        for dir in (IsObject(dirs) ? dirs : [A_ScriptDir, AppSettings.UserDir]) {
-            pointer := dir "\" AppSettings.LocationFileName
-            if !FileExist(pointer)
-                continue
-            try {
-                location := Trim(FileRead(pointer, "UTF-8"), " `t`r`n")
-                if (location != "")
-                    return Path.Full(location)
-            }
+    ; 设置文件里 "DataLocation" 指定的文件夹 (没有、为空或就是默认位置时 "")。启动时调用:
+    ; 只找这一项, 不解析整个文件 (不跳转时同一个文件马上还要完整读一次)
+    static DataLocationIn(settingsFile) {
+        if !FileExist(settingsFile)
+            return ""
+        try {
+            if !RegExMatch(FileRead(settingsFile, "UTF-8"), '"DataLocation"\s*:\s*("(?:[^"\\]|\\.)*")', &m)
+                return ""
+            location := Trim(JSON.Parse("[" m[1] "]")[1])
+            if (location != "" && (location := Path.Full(location)) != AppSettings.DefaultDataDir())
+                return location
         }
         return ""
     }
 
-    ; 把数据文件夹改成 folder ("" 或默认位置 = 恢复默认): 写 DataLocation.txt, 重新载入后生效。
-    ; 程序目录能写入时写在程序目录 (和程序一起带走), 否则写在 %APPDATA%\ALTRun。
-    ; 恢复默认时删掉这个文件; Scoop 安装的只清空: Scoop 用硬链接保留它, 删掉就断了 (空文件 = 默认位置)
+    ; 把数据文件夹改成 folder ("" 或默认位置 = 恢复默认): 写进默认位置的 ALTRun.json ("DataLocation"), 重新载入后生效
     static SetDataLocation(folder) {
-        AppSettings.RemoveLocationFiles()
-        if (folder = "" || folder = AppSettings.DefaultDataDir())
+        settingsFile := AppSettings.DefaultDataDir() "\ALTRun.json"
+        reset := (folder = "" || Path.Full(folder) = AppSettings.DefaultDataDir())
+        data := Map()
+        if FileExist(settingsFile)
+            data := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        else if reset
             return
-        dir := AppSettings.Portable ? A_ScriptDir : AppSettings.UserDir
-        DirCreate(dir)
-        pointer := FileOpen(dir "\" AppSettings.LocationFileName, "w", "UTF-8-RAW")
-        pointer.Write(folder)
-        pointer.Close()
-    }
-
-    ; 删掉 DataLocation.txt (Scoop 安装的清空); onlyEmpty: 只处理空文件 (以前恢复默认时留下的), 启动时调用
-    static RemoveLocationFiles(onlyEmpty := false) {
-        for dir in [A_ScriptDir, AppSettings.UserDir] {
-            pointer := dir "\" AppSettings.LocationFileName
-            if !FileExist(pointer)
-                continue
-            try {
-                if (onlyEmpty && (AppSettings.ScoopInstall || Trim(FileRead(pointer, "UTF-8"), " `t`r`n") != ""))
-                    continue
-                if AppSettings.ScoopInstall
-                    FileOpen(pointer, "w", "UTF-8-RAW").Close()
-                else
-                    FileDelete(pointer)
-            }
+        if !reset
+            data["DataLocation"] := folder
+        else if data.Has("DataLocation")
+            data.Delete("DataLocation")
+        DirCreate(AppSettings.DefaultDataDir())
+        JSON.WriteFile(settingsFile, data)
+        if (AppSettings.DataDir = AppSettings.DefaultDataDir()) {           ; 正在用默认位置的设置: 之后保存时也要留着这一项
+            if !reset
+                AppSettings.Data["DataLocation"] := folder
+            else if AppSettings.Data.Has("DataLocation")
+                AppSettings.Data.Delete("DataLocation")
         }
     }
 
@@ -144,6 +136,8 @@ class AppSettings {
 
         if AppSettings._MergeDefaults(data, AppSettings.Defaults())
             changed := true
+        if (AppSettings.DataDir != AppSettings.DefaultDataDir() && data.Has("DataLocation"))
+            data.Delete("DataLocation")                                     ; 跳转到的文件夹里的这一项没有作用, 去掉免得混淆
         data["SchemaVersion"] := AppSettings.CurrentVersion
         AppSettings.Data := data
 

@@ -723,7 +723,7 @@ class PreferencesWindow {
     }
 
     ; 换一个数据文件夹 (例如 OneDrive 里的, 几台电脑共用): 把现在的设置和数据复制过去 (那里已经有 ALTRun 的
-    ; 设置时可以直接用那里的), 写 DataLocation.txt, 重新载入。原来的文件夹不动, 相当于留了一份备份
+    ; 设置时可以直接用那里的), 位置记在默认位置的 ALTRun.json ("DataLocation"), 重新载入。原来的文件夹不动, 相当于留了一份备份
     static _ChangeDataFolder() {
         current := AppSettings.DataDir
         folder := DirSelect("*" current, 3, I18n.T("Prefs.DataFolderPrompt"))

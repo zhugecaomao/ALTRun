@@ -16,9 +16,12 @@
   "Extensions": { ... },          // 扩展功能
   "Hotkeys":        [ ... ],      // 自定义热键
   "CustomCommands": [ ... ],      // 自定义命令
-  "Snippets":       [ ... ]       // 文字片段
+  "Snippets":       [ ... ],      // 文字片段
+  "DataLocation":   "%OneDrive%\\ALTRun"   // 可选: 改用这个数据文件夹
 }
 ```
+
+`DataLocation` 只在默认位置 (`Data\ALTRun.json`, 或 `%APPDATA%\ALTRun\Data\ALTRun.json`) 的文件里起作用: 有这一项时, ALTRun 改用那个文件夹里的设置和数据, 默认位置的文件只用来指路。一般在 偏好设置 → 高级 → 数据 → 更改位置 里设置, 不用手动写; 可以用环境变量, 相对路径从程序目录算起。
 
 ## General 通用
 偏好设置里分在 "通用" 和 "搜索窗口" 两页。
