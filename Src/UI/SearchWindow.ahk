@@ -9,7 +9,8 @@
 ;
 ; 键盘 (都在 _OnKeyDown 里处理, 通过 OnMessage 拦截 WM_KEYDOWN / WM_SYSKEYDOWN):
 ;   Enter / Ctrl+Enter / Alt+Enter   执行 / 显示位置或粘贴 / 复制   (见 ActionCatalog)
-;   ↑ ↓  PgUp PgDn  Ctrl+P Ctrl+N    只移动选择 (和 Alfred 一样, 不和翻历史混在一起)
+;   ↑ ↓  Ctrl+P Ctrl+N               上移 / 下移一行 (只移动选择, 和 Alfred 一样, 不和翻历史混在一起)
+;   PgUp PgDn                        上翻 / 下翻一页 (VisibleRows 行)
 ;   Ctrl+↑ / Ctrl+↓                  上一条 / 下一条搜索记录; 翻回最新之后恢复原来输入的文字
 ;   Ctrl+1 ~ Ctrl+9                  直接执行可见的第 N 行
 ;   Tab                              自动补全; 文件夹: 进入文件夹浏览 (输入框变成 "路径\")

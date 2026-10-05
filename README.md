@@ -138,7 +138,8 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | `Ctrl+Enter` | 文件 / 文件夹：打开所在位置；文字：粘贴到当前窗口 |
 | `Alt+Enter` | 复制路径、网址或文字 |
 | `Ctrl+1`～`Ctrl+9` | 打开第 N 项 |
-| `↑` `↓` `PgUp` `PgDn` `Ctrl+P` `Ctrl+N` | 移动选择 |
+| `↑` `↓` / `Ctrl+P` `Ctrl+N` | 上移 / 下移一行 |
+| `PgUp` `PgDn` | 上翻 / 下翻一页 |
 | `Ctrl+↑` / `Ctrl+↓` | 上一条 / 下一条搜索记录 |
 | `Tab` | 自动补全；文件夹：进入浏览 |
 | `Insert` | 标记多个文件 / 文件夹，再按 `→` 一起操作 |
