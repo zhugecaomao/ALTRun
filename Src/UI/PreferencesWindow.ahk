@@ -500,7 +500,7 @@ class PreferencesWindow {
         PreferencesWindow._Check(base "Currency", "Prefs.Currency")
         PreferencesWindow._Section("Prefs.Section.Structural")
         PreferencesWindow._Check(base "StructuralCalc", "Prefs.StructuralCalc")
-        PreferencesWindow._Pair([base "BarEdge", "Prefs.BarEdge", "S", "number"], [base "MaxBarSpacing", "Prefs.MaxBarSpacing", "S", "number"])
+        PreferencesWindow._Pair([base "RebarCover", "Prefs.RebarCover", "S", "number"], [base "MaxBarSpacing", "Prefs.MaxBarSpacing", "S", "number"])
         PreferencesWindow._Pair([base "BarSizes", "Prefs.BarSizes", "M", "csv"], [base "BarPrefix", "Prefs.BarPrefix", "S"])
     }
 

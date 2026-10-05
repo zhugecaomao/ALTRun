@@ -3,7 +3,7 @@
 ;-------------------------------------------------------------------------------
 ; 输入算式直接显示结果 ("12*(3+4)" / "=2^10"), 最多两位小数, Enter 复制结果。
 ; 打开 Features.Calculator.StructuralCalc 后, 结果下方附带两行结构计算:
-;   - 把结果当作梁宽 (mm): 主筋根数和间距 (梁边到主筋中心 BarEdge, 默认 40 mm; 最大间距 MaxBarSpacing, 默认 300 mm)
+;   - 把结果当作梁宽 (mm): 主筋根数和间距 (保护层 RebarCover, 默认 40 mm; 最大间距 MaxBarSpacing, 默认 300 mm)
 ;   - 把结果当作配筋面积 As (mm²): BarSizes 里每种直径需要的根数 (默认 H13 / H16 / H20 / H25 / H32, 前缀 BarPrefix)
 ; 单位换算 (Lib\Units.ahk): "10 km in mi"、"100 f to c"、"20 mpa in psi"...; 货币换算 "100 usd to sgd"
 ; 要打开 Features.Calculator.Currency (默认关闭, 汇率每天从 frankfurter.dev 下载, 见 CurrencyRates)。
@@ -190,8 +190,8 @@ class CalculatorProvider {
             raw := options.Has(key) ? options[key] : fallback
             return (IsNumber(raw) && raw >= minimum) ? raw + 0 : fallback
         }
-        edge := number("BarEdge", 40, 0), maxSpacing := number("MaxBarSpacing", 300, 1)
-        inner := value - 2 * edge                                           ; 两边主筋中心之间的距离
+        cover := number("RebarCover", 40, 0), maxSpacing := number("MaxBarSpacing", 300, 1)
+        inner := value - 2 * cover                                          ; 扣掉两边的保护层
         if (inner <= 0)
             return
         barCount := Ceil(inner / maxSpacing + 1)

@@ -250,19 +250,19 @@ class Tests {
         eq("two dots", title("1..2+1"), "(none)")
         TestRunner.True("Calculator.eval full precision", Abs(Calc.Eval("10/3") - 3.3333333333333335) < 1e-12)
         options := AppSettings.Feature("Calculator"), saved := Map()
-        for key in ["StructuralCalc", "BarEdge", "MaxBarSpacing", "BarSizes", "BarPrefix"]
+        for key in ["StructuralCalc", "RebarCover", "MaxBarSpacing", "BarSizes", "BarPrefix"]
             saved[key] := options[key]
         options["StructuralCalc"] := 1
         rows := CalculatorProvider.Search(SearchQuery("300*2"))
         eq("structural rows", rows.Length, 3)
         eq("structural: beam (defaults)", rows[2].Title, I18n.T("Calc.BeamWidth", "600", 3, 260))
         eq("structural: As (defaults)", rows[3].Title, I18n.T("Calc.RebarArea", "600", "5H13  3H16  2H20  2H25  1H32"))
-        options["BarEdge"] := 50, options["MaxBarSpacing"] := 150, options["BarSizes"] := ["10", "12"], options["BarPrefix"] := "T"
+        options["RebarCover"] := 50, options["MaxBarSpacing"] := 150, options["BarSizes"] := ["10", "12"], options["BarPrefix"] := "T"
         rows := CalculatorProvider.Search(SearchQuery("300*2"))
         eq("structural: beam (settings)", rows[2].Title, I18n.T("Calc.BeamWidth", "600", 5, 125))
         eq("structural: As (settings)", rows[3].Title, I18n.T("Calc.RebarArea", "600", "8T10  6T12"))
         eq("structural: below 2 x edge", CalculatorProvider.Search(SearchQuery("50*2")).Length, 1)
-        options["BarEdge"] := "abc", options["MaxBarSpacing"] := 0, options["BarSizes"] := ["x", 16]
+        options["RebarCover"] := "abc", options["MaxBarSpacing"] := 0, options["BarSizes"] := ["x", 16]
         rows := CalculatorProvider.Search(SearchQuery("300*2"))
         eq("structural: invalid values use defaults", rows[2].Title "|" rows[3].Title, I18n.T("Calc.BeamWidth", "600", 3, 260) "|" I18n.T("Calc.RebarArea", "600", "3T16"))
         for key, value in saved
