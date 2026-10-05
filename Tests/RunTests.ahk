@@ -84,7 +84,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -950,6 +950,39 @@ class Tests {
         }
         IconCache.Size := saved
         eq("fallback", IconCache.Own("NoSuchIcon", "res:shell32.dll,-24"), "res:shell32.dll,-24")
+    }
+
+    ; 选中行和主题缩略图的圆角矩形: 里面和直边是实心的, 圆角外面不画; 圆角边缘抗锯齿 (Wine 的 GDI+ 不做抗锯齿, 跳过这一项)
+    static RoundedFill() {
+        eq := (n, a, e) => TestRunner.Equal("RoundedFill." n, a, e)
+        screen := DllCall("GetDC", "Ptr", 0, "Ptr")
+        dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr"), hbm := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", 40, "Int", 24, "Ptr")
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+        old := DllCall("SelectObject", "Ptr", dc, "Ptr", hbm, "Ptr")
+        rect := Buffer(16), NumPut("Int", 0, "Int", 0, "Int", 40, "Int", 24, rect)
+        white := DllCall("GetStockObject", "Int", 0, "Ptr")                   ; WHITE_BRUSH
+        DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", white)
+        Win.FillRoundRect(dc, 0, 0, 40, 24, 8, 0x000000)
+        px := (x, y) => DllCall("GetPixel", "Ptr", dc, "Int", x, "Int", y, "UInt") & 0xFFFFFF
+        eq("center", px(20, 12), 0)
+        eq("top edge", px(20, 0), 0)
+        eq("right edge", px(39, 12), 0)
+        eq("bottom edge", px(20, 23), 0)
+        eq("outside corner", px(0, 0), 0xFFFFFF)
+        eq("outside right of last column", px(39, 0), 0xFFFFFF)
+        if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
+            blended := 0
+            Loop 8 {
+                c := px(A_Index - 1, 8 - A_Index) & 0xFF
+                blended += (c > 0 && c < 0xFF)
+            }
+            TestRunner.True("RoundedFill.anti-aliased corner", blended > 0)
+        }
+        DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", white)
+        Win.FillRoundRect(dc, 0, 0, 40, 24, 0, 0x000000)                       ; 半径 0: 直角矩形
+        eq("square corner", px(0, 0), 0)
+        DllCall("SelectObject", "Ptr", dc, "Ptr", old)
+        DllCall("DeleteObject", "Ptr", hbm), DllCall("DeleteDC", "Ptr", dc)
     }
 
     static IconScaling() {

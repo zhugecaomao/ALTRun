@@ -205,6 +205,38 @@ class Win {
         return ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF)
     }
 
+    ; 抗锯齿的实心圆角矩形 (选中行、主题缩略图): GDI 的 RoundRect 按整像素画弧, 圆角有台阶,
+    ; 这里用 GDI+ 的 AntiAlias 填充路径, 边缘和背景平滑过渡。right / bottom 不含 (和 FillRect 一样);
+    ; PixelOffsetModeHalf 让整数坐标落在像素边界上, 直边不会发虚。GDI+ 用不了时退回 RoundRect
+    static FillRoundRect(hdc, left, top, right, bottom, radius, bgr) {
+        w := right - left, h := bottom - top
+        if (w <= 0 || h <= 0)
+            return
+        d := Min(radius * 2, w, h), graphics := 0, shape := 0, brush := 0
+        if (d > 0 && ClipboardData.StartGdiplus() && !DllCall("gdiplus\GdipCreateFromHDC", "Ptr", hdc, "Ptr*", &graphics) && graphics) {
+            DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", graphics, "Int", 4)        ; SmoothingModeAntiAlias
+            DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", graphics, "Int", 4)      ; PixelOffsetModeHalf
+            DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", &shape)
+            for arc in [[left, top, 180], [right - d, top, 270], [right - d, bottom - d, 0], [left, bottom - d, 90]]
+                DllCall("gdiplus\GdipAddPathArc", "Ptr", shape, "Float", arc[1], "Float", arc[2], "Float", d, "Float", d, "Float", arc[3], "Float", 90)
+            DllCall("gdiplus\GdipClosePathFigure", "Ptr", shape)
+            argb := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
+            DllCall("gdiplus\GdipCreateSolidFill", "UInt", argb, "Ptr*", &brush)
+            DllCall("gdiplus\GdipFillPath", "Ptr", graphics, "Ptr", brush, "Ptr", shape)
+            DllCall("gdiplus\GdipDeleteBrush", "Ptr", brush)
+            DllCall("gdiplus\GdipDeletePath", "Ptr", shape)
+            DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
+            return
+        }
+        brush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
+        oldBrush := DllCall("SelectObject", "Ptr", hdc, "Ptr", brush, "Ptr")
+        oldPen := DllCall("SelectObject", "Ptr", hdc, "Ptr", DllCall("GetStockObject", "Int", 8, "Ptr"), "Ptr")   ; NULL_PEN
+        DllCall("RoundRect", "Ptr", hdc, "Int", left, "Int", top, "Int", right + 1, "Int", bottom + 1, "Int", d, "Int", d)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldPen)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldBrush)
+        DllCall("DeleteObject", "Ptr", brush)
+    }
+
     ; 按系统 DPI 缩放像素值 (窗口用 -DPIScale 创建, 自己控制缩放)
     static Scale(px) {
         return Round(px * A_ScreenDPI / 96)

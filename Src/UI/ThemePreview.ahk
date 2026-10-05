@@ -80,13 +80,7 @@ class ThemePreview {
         roundRect(left, top, right, bottom, radius, bgr) {
             if (radius <= 0)
                 return fill(left, top, right, bottom, bgr)
-            brush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
-            oldBrush := DllCall("SelectObject", "Ptr", dc, "Ptr", brush, "Ptr")
-            oldPen := DllCall("SelectObject", "Ptr", dc, "Ptr", DllCall("GetStockObject", "Int", 8, "Ptr"), "Ptr")   ; NULL_PEN
-            DllCall("RoundRect", "Ptr", dc, "Int", left, "Int", top, "Int", right + 1, "Int", bottom + 1, "Int", radius * 2, "Int", radius * 2)
-            DllCall("SelectObject", "Ptr", dc, "Ptr", oldPen)
-            DllCall("SelectObject", "Ptr", dc, "Ptr", oldBrush)
-            DllCall("DeleteObject", "Ptr", brush)
+            Win.FillRoundRect(dc, left, top, right + 1, bottom + 1, radius, bgr)   ; 抗锯齿 (GDI+)
         }
         bar(left, top, width, height, bgr) => roundRect(left, top, left + width, top + height, height // 2, bgr)   ; 代表一段文字
         soft(key, backKey, t) {                                             ; 颜色往背景色靠 t (0~1): 细线条不那么刺眼

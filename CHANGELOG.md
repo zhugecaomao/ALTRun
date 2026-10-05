@@ -5,6 +5,13 @@
 
 ## [未发布]
 
+## [2026.10.05.1]
+
+测试版。
+
+### 改进
+- 搜索结果选中行的圆角和 偏好设置 → 外观 里主题缩略图的圆角改为抗锯齿 (GDI+), 边缘平滑, 不再有台阶; 半径为 0 的主题 (例如 Classic) 不变
+
 ## [2026.10.05]
 
 选主题改为看缩略图, 新增 4 个主题和繁體中文界面; 新增切换窗口、浏览文件夹、标记多个文件、带参数的自定义命令、Windows 设置页面、脚本扩展、置顶和最近使用; 数据文件夹可以放到同步盘。
@@ -440,7 +447,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.1...HEAD
+[2026.10.05.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.1
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

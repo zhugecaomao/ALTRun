@@ -132,7 +132,8 @@ class SearchWindow {
         gdi["SubtitleFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("SubtitleFontSize"), 400)
         gdi["ShortcutFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("ShortcutFontSize"), 400)
         gdi["Background"]   := DllCall("CreateSolidBrush", "UInt", Win.ColorToBgr(ThemeManager.Get("Background")), "Ptr")
-        gdi["Selected"]     := DllCall("CreateSolidBrush", "UInt", Win.ColorToBgr(ThemeManager.Get("SelectedBackground")), "Ptr")
+        gdi["SelectedBgr"]  := Win.ColorToBgr(ThemeManager.Get("SelectedBackground"))
+        gdi["Selected"]     := DllCall("CreateSolidBrush", "UInt", gdi["SelectedBgr"], "Ptr")
         for key in ["Title", "Subtitle", "Shortcut", "SelectedTitle", "SelectedSubtitle", "SelectedShortcut", "Highlight", "SelectedHighlight"]
             gdi[key "Color"] := Win.ColorToBgr(ThemeManager.Get(key))
     }
@@ -1013,14 +1014,10 @@ class SearchWindow {
         right := NumGet(rect, 8, "Int"), bottom := NumGet(rect, 12, "Int")
         pad := SearchWindow.Padding, iconSize := SearchWindow.IconSize, rowH := bottom - top
 
-        if (selected && SearchWindow.SelectedRadius > 0) {                 ; 圆角选中: 左右留一点边距, 画圆角矩形
+        if (selected && SearchWindow.SelectedRadius > 0) {                 ; 圆角选中: 左右留一点边距, 画抗锯齿的圆角矩形
             DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", gdi["Background"])
-            inset := Win.Scale(6), gap := Win.Scale(2), diameter := SearchWindow.SelectedRadius * 2
-            oldBrush := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["Selected"], "Ptr")
-            oldPen := DllCall("SelectObject", "Ptr", hdc, "Ptr", DllCall("GetStockObject", "Int", 8, "Ptr"), "Ptr")   ; NULL_PEN
-            DllCall("RoundRect", "Ptr", hdc, "Int", left + inset, "Int", top + gap, "Int", right - inset + 1, "Int", bottom - gap + 1, "Int", diameter, "Int", diameter)
-            DllCall("SelectObject", "Ptr", hdc, "Ptr", oldPen)
-            DllCall("SelectObject", "Ptr", hdc, "Ptr", oldBrush)
+            inset := Win.Scale(6), gap := Win.Scale(2)
+            Win.FillRoundRect(hdc, left + inset, top + gap, right - inset + 1, bottom - gap + 1, SearchWindow.SelectedRadius, gdi["SelectedBgr"])
         } else {
             DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", selected ? gdi["Selected"] : gdi["Background"])
         }
