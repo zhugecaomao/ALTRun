@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.05]
+
+选主题改为看缩略图, 新增 4 个主题和繁體中文界面; 新增切换窗口、浏览文件夹、标记多个文件、带参数的自定义命令、Windows 设置页面、脚本扩展、置顶和最近使用; 数据文件夹可以放到同步盘。
+
+### 升级
+- **从 2026.10.01 ~ 2026.10.04 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.05", 按 `Enter` 安装
+- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.05", 按 `Enter` 更新
+- **从 2026.09.26 ~ 2026.09.30 升级**: 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`
+- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.05.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+- 设置和数据都保留, 设置文件的格式没有变化: 新的选项 (`Features.Windows`、`Features.Recent`、`Features.Scripts`、`Features.System.SettingsPages`、`Features.Snippets.ExpandExclude`) 启动时自动补上, 默认打开; 界面语言 `"zh"` 照常可用, 保存时写成 `"zh-CN"`
+- 一键更新会带上新的 `Resources\Lang\` 语言文件; 手动解压升级时请把整个压缩包解压覆盖, 否则中文和日文界面会显示英文
+
 ### 新增
 - 偏好设置 → 外观 的主题改为看缩略图选择 (类似 Alfred / Listary): 每个主题按自己的颜色、圆角和字体画出一个迷你搜索窗口, 自定义主题也有; 列表可以滚动, 也可以用方向键选择
 - 4 个新的内置主题: 现代深色 (`DarkModern`) 和现代浅色 (`LightModern`, 都是 VS Code 的默认配色)、`Monokai`、`One Dark`
@@ -22,13 +34,11 @@
 
 ### 改进
 - 界面语言改为语言文件: 英文编译在程序里, 简体中文、繁體中文、日本語是 `Resources\Lang\` 里的 `zh-CN.json`、`zh-TW.json`、`ja.json`。加一种语言只要放一个文件 (写上 `_name` 名称和 `_font` 字体), 偏好设置的语言列表会自动列出; 没翻译的条目显示英文 (繁体先用简体)。设置里以前的 `"zh"` 照常可用, 保存时写成 `"zh-CN"`
-
-### 改进
 - **数据文件夹可以换位置**: 偏好设置 → 高级 → 数据 → 更改位置, 选同步盘 (OneDrive 等) 里的文件夹, 几台电脑共用一份设置; 现在的设置和数据会复制过去, 原来的文件夹保持不变。位置记在程序目录的 `DataLocation.txt` (可以写 `%OneDrive%\ALTRun` 这样的环境变量)
 - 程序放在不能写入的文件夹 (例如 `C:\Program Files`) 时, 设置和数据改为保存在 `%APPDATA%\ALTRun\`, 不再保存失败
 - 片段自动展开: 可以设置不展开的窗口 (偏好设置 → 片段, 默认是远程桌面、KeePass、KeePassXC), Windows 的密码输入框里也不展开
 - 一键更新改用 Windows 自带的 `tar.exe` 解压, 更快, 也不受 PowerShell 策略限制 (没有时仍用 PowerShell)
-- 发布流程支持 SignPath 代码签名 (设置后自动给 ALTRun.exe 签名)
+- 发布流程支持 SignPath 代码签名 (SignPath Foundation 审核通过后自动给 ALTRun.exe 签名)
 
 ### 修复
 - 一键加日期: 在设置里换了日期格式 (例如 `yyyy-MM-dd`) 后, 再按 `Ctrl+D` 会更新名字末尾的日期, 不再多加一个
@@ -422,7 +432,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.04...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...HEAD
+[2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03
 [2026.10.02]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.02
