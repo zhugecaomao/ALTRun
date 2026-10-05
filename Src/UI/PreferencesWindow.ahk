@@ -165,7 +165,7 @@ class PreferencesWindow {
     static WikiPage(nameKey) {
         static pages := Map("Prefs.Page.Window", "Usage", "Prefs.Page.Appearance", "Themes", "Prefs.Page.Features", "Usage", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
-                          , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage", "Prefs.Page.Scripts", "Extensions"
+                          , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage", "Prefs.Page.Calculator", "Extensions", "Prefs.Page.Scripts", "Extensions"
                           , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.QuickSwitch", "Extensions", "Prefs.Page.QSPanel", "Extensions", "Prefs.Page.DateStamp", "Extensions"
                           , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
@@ -219,6 +219,7 @@ class PreferencesWindow {
         PreferencesWindow._BuildSnippets()
         PreferencesWindow._BuildClipboard()
         PreferencesWindow._BuildWebSearch()
+        PreferencesWindow._BuildCalculator()
         PreferencesWindow._BuildScripts()
         PreferencesWindow._BuildHotkeys()
         PreferencesWindow._BuildQuickSwitch()
@@ -393,8 +394,6 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.System.SettingsPages", "Prefs.SettingsPages", PreferencesWindow._InputX() + columnW, , "", columnW)
         PreferencesWindow._y := startY + Ceil((features.Length + 1) / 2) * 20
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")
-        PreferencesWindow._Check("Features.Calculator.StructuralCalc", "Prefs.StructuralCalc", , , "Prefs.Feature.Calculator")
-        PreferencesWindow._Check("Features.Calculator.Currency", "Prefs.Currency")
         PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
         PreferencesWindow._Lines("Features.System.Hidden", "Prefs.SysHidden", 2)
         PreferencesWindow._Gap()
@@ -491,6 +490,18 @@ class PreferencesWindow {
             , [["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Title", "Title", 130], ["Prefs.Col.Url", "Url", 340]]
             , WebSearchProvider.EditorFields(), () => WebSearchProvider.NewEngine())
         PreferencesWindow._Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", "L")
+    }
+
+    ; 计算器: 货币换算, 结构计算 (梁主筋 / 配筋面积) 和它的参数
+    static _BuildCalculator() {
+        base := "Features.Calculator."
+        PreferencesWindow._BeginPage("Prefs.Page.Calculator", 180)
+        PreferencesWindow._Section("Prefs.Section.Calculator")
+        PreferencesWindow._Check(base "Currency", "Prefs.Currency")
+        PreferencesWindow._Section("Prefs.Section.Structural")
+        PreferencesWindow._Check(base "StructuralCalc", "Prefs.StructuralCalc")
+        PreferencesWindow._Pair([base "BarEdge", "Prefs.BarEdge", "S", "number"], [base "MaxBarSpacing", "Prefs.MaxBarSpacing", "S", "number"])
+        PreferencesWindow._Pair([base "BarSizes", "Prefs.BarSizes", "M", "csv"], [base "BarPrefix", "Prefs.BarPrefix", "S"])
     }
 
     ; 脚本扩展: 说明、Scripts 文件夹、找到的脚本 (双击用记事本编辑); 开关在 "功能" 页

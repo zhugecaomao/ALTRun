@@ -101,6 +101,10 @@
 | 键 | 默认 | 说明 |
 |---|---|---|
 | StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Extensions#计算器) |
+| BarEdge | 40 | 结构计算: 梁边到主筋中心的距离 (mm, 每边) |
+| MaxBarSpacing | 300 | 结构计算: 主筋最大间距 (mm) |
+| BarSizes | `[13, 16, 20, 25, 32]` | 结构计算: 配筋面积那一行列出的钢筋直径 (mm) |
+| BarPrefix | `H` | 结构计算: 钢筋代号前缀 (`T`、`Y`、`Φ`...) |
 | Currency | 0 | 货币换算 (`100 usd to sgd`), 每天从 frankfurter.dev 下载汇率, 见 [单位和货币换算](Extensions#单位和货币换算) |
 
 ### Bookmarks 浏览器书签

@@ -292,6 +292,10 @@ class AppSettings {
                 "Calculator", Map(
                     "Enabled"       , 1,
                     "StructuralCalc", 0,                                    ; 结果下方附带梁主筋 / 配筋面积计算
+                    "BarEdge"       , 40,                                   ; 梁边到主筋中心的距离 (mm, 每边)
+                    "MaxBarSpacing" , 300,                                  ; 主筋最大间距 (mm)
+                    "BarSizes"      , [13, 16, 20, 25, 32],                 ; 配筋面积那一行列出的钢筋直径 (mm)
+                    "BarPrefix"     , "H",                                  ; 钢筋代号前缀 (H / T / Y / Φ...)
                     "Currency"      , 0                                     ; 货币换算 (100 usd to sgd): 每天从 frankfurter.dev 下载汇率, 默认关闭
                 ),
                 "WebSearch", Map(

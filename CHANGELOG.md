@@ -5,16 +5,16 @@
 
 ## [未发布]
 
-## [2026.10.07.5]
+## [2026.10.07.6]
 
 选主题改为看缩略图, 新增 4 个主题和繁體中文界面; 新增切换窗口、浏览文件夹、标记多个文件、带参数的自定义命令、Windows 设置页面、脚本扩展、置顶和最近使用; 数据文件夹可以放到同步盘。
 
 ### 升级
-- **从 2026.10.01 ~ 2026.10.04 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.07.5", 按 `Enter` 安装
-- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.07.5", 按 `Enter` 更新
+- **从 2026.10.01 ~ 2026.10.04 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.07.6", 按 `Enter` 安装
+- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.07.6", 按 `Enter` 更新
 - **从 2026.09.26 ~ 2026.09.30 升级**: 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`
-- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.07.5.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
-- 设置和数据都保留, 设置文件的格式没有变化: 新的选项 (`Features.Windows`、`Features.Recent`、`Features.Scripts`、`Features.System.SettingsPages`、`Features.Snippets.ExpandExclude`) 启动时自动补上, 默认打开; 界面语言 `"zh"` 照常可用, 保存时写成 `"zh-CN"`
+- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.07.6.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+- 设置和数据都保留, 设置文件的格式没有变化: 新的选项 (`Features.Windows`、`Features.Recent`、`Features.Scripts`、`Features.System.SettingsPages`、`Features.Snippets.ExpandExclude`、`Features.Calculator` 的结构计算参数) 启动时自动补上, 默认打开; 界面语言 `"zh"` 照常可用, 保存时写成 `"zh-CN"`
 - 一键更新会带上新的 `Resources\Lang\` 语言文件; 手动解压升级时请把整个压缩包解压覆盖, 否则中文和日文界面会显示英文
 
 ### 新增
@@ -46,6 +46,7 @@
 - 设置和数据文件按 JSON 标准保存: 不带 BOM, 文字里的控制字符 (例如从终端复制的内容) 写成转义形式, 别的工具也能正常读取; 应用索引、文件索引、汇率和更新状态也改为先写临时文件再替换, 写到一半中断不会损坏
 - 官网分享链接时显示预览图
 - 剪贴板历史的文字条目换成剪贴板图标 (以前是黑白的文件图标), 剪贴板文字工具和 "粘贴为纯文本" 也是
+- 计算器的结构计算可以设置参数 (以前写死在程序里): 梁边到主筋中心 (默认 40 mm)、最大间距 (默认 300 mm)、钢筋直径 (默认 13 / 16 / 20 / 25 / 32) 和前缀 (默认 H)。新的 偏好设置 → 计算器 页面, 货币换算的开关也移到这里; 一根钢筋的面积改为按 π d² / 4 计算
 - 偏好设置 → 搜索窗口: "空搜索框" 单独一节 (使用提示、显示几个最近使用的项目), 搜索历史另起一节; 功能页的 "置顶和最近使用" 英文标签显示正确 (以前 `&` 显示成了下划线)
 - 操作后的提示 (例如 "已置顶"、"已复制") 显示在搜索窗口所在的屏幕上; 没有打开搜索窗口时的提示 (片段展开等) 按 "窗口显示在" 的设置选屏幕。以前搜索窗口一隐藏, 提示就跑到鼠标所在的屏幕
 - 调试日志: 启动完成后每条马上写入 (以前攒够 60 条才写, 程序卡住被强制结束时最后的记录会丢失); 每条一行, 行尾统一 CRLF; 呼出搜索窗口和空搜索框里较慢的部分也记录耗时
@@ -437,8 +438,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.07.5...HEAD
-[2026.10.07.5]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.07.5
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.07.6...HEAD
+[2026.10.07.6]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.07.6
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03
 [2026.10.02]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.02
