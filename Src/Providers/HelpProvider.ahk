@@ -82,7 +82,7 @@ class HelpProvider {
                 continue
             wikiPage := item.Url                                            ; 不能叫 url: 和 Url 类同名
             results.Push(ResultItem(item.Key, item.Text, {
-                Icon: "res:shell32.dll,-24", Score: 200 - results.Length * 0.01, Exclusive: true,
+                Icon: IconCache.Own("Help", "res:shell32.dll,-24"), Score: 200 - results.Length * 0.01, Exclusive: true,
                 OnRun: (*) => ActionCatalog.OpenUrl(wikiPage)
             }))
         }

@@ -41,7 +41,7 @@ class CalculatorProvider {
         text := CalculatorProvider.Format(value)
 
         results.Push(ResultItem(text, I18n.T("Calc.Subtitle") " · " Trim(expression), {
-            Kind: "text", Arg: text, Icon: "res:imageres.dll,-182", Score: 200, LargeText: text
+            Kind: "text", Arg: text, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 200, LargeText: text
         }))
         if AppSettings.Feature("Calculator")["StructuralCalc"]
             CalculatorProvider._AddStructural(results, value)
@@ -65,7 +65,7 @@ class CalculatorProvider {
 
     ; "10 km in mi" -> 一条结果 "6.21 mi" (Enter 复制数字); 货币还没有汇率时给出提示
     static _Convert(conversion) {
-        icon := "res:imageres.dll,-182"
+        icon := IconCache.Own("Calculator", "res:imageres.dll,-182")
         value := Units.Convert(conversion.Value, conversion.From, conversion.To)
         if IsNumber(value) {
             text := CalculatorProvider.Format(value)
@@ -85,7 +85,7 @@ class CalculatorProvider {
     }
 
     static _Item(text, subtitle, score := 200) {
-        return ResultItem(text, subtitle, {Kind: "text", Arg: text, Icon: "res:imageres.dll,-182", Score: score, LargeText: text})
+        return ResultItem(text, subtitle, {Kind: "text", Arg: text, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: score, LargeText: text})
     }
 
     ; 进制换算: 带前缀的数 (0x / 0b / 0o) 单独输入时列出三种写法; "数 in hex|bin|oct|dec" 换成指定的进制
@@ -197,7 +197,7 @@ class CalculatorProvider {
         barCount := Ceil(inner / maxSpacing + 1)
         spacing  := Max(Round(inner / (barCount - 0.999)), 0)
         beamText := I18n.T("Calc.BeamWidth", CalculatorProvider.Format(value), barCount, spacing)
-        results.Push(ResultItem(beamText, "", {Kind: "text", Arg: beamText, Icon: "res:imageres.dll,-182", Score: 199}))
+        results.Push(ResultItem(beamText, "", {Kind: "text", Arg: beamText, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 199}))
 
         prefix := options.Has("BarPrefix") ? Trim(options["BarPrefix"]) : "H"
         sizes := (options.Has("BarSizes") && options["BarSizes"] is Array) ? options["BarSizes"] : [13, 16, 20, 25, 32]
@@ -211,6 +211,6 @@ class CalculatorProvider {
         if (bars = "")
             return
         areaText := I18n.T("Calc.RebarArea", CalculatorProvider.Format(value), bars)
-        results.Push(ResultItem(areaText, "", {Kind: "text", Arg: areaText, Icon: "res:imageres.dll,-182", Score: 198}))
+        results.Push(ResultItem(areaText, "", {Kind: "text", Arg: areaText, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: 198}))
     }
 }

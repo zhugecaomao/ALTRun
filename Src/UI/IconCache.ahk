@@ -336,6 +336,17 @@ class IconCache {
         return hIcon
     }
 
+    ; ALTRun 自己的图标 Resources\Icons\<name>.ico (片段、计算器、帮助、置顶...), 和 Clipboard.ico 同一套画法;
+    ; 文件不在时 (例如只复制了 exe) 用 fallback 的系统图标。每个名字只看一次文件在不在
+    static Own(name, fallback) {
+        static found := Map()
+        if !found.Has(name) {
+            iconFile := A_ScriptDir "\Resources\Icons\" name ".ico"
+            found[name] := FileExist(iconFile) ? iconFile : fallback
+        }
+        return found[name]
+    }
+
     ; 图标文件里一般都有的尺寸里, 不小于 size 的最小的一个
     static SourceSize(size) {
         for native in [16, 24, 32, 48, 256]

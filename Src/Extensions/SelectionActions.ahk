@@ -99,7 +99,7 @@ class SelectionActions {
         expression := StrReplace(Trim(text), ",")
         if (Calc.Looks(expression) && IsNumber(value := Calc.Eval(expression))) {
             result := CalculatorProvider.Format(value)
-            actions.Push(ResultItem("= " result, I18n.T("Action.CopyResult"), {Icon: "res:imageres.dll,-182", OnRun: (*) => ActionCatalog.CopyText(result)}))
+            actions.Push(ResultItem("= " result, I18n.T("Action.CopyResult"), {Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), OnRun: (*) => ActionCatalog.CopyText(result)}))
         }
         ; 用每个搜索引擎搜索
         query := Trim(RegExReplace(text, "\s+", " "))
@@ -109,7 +109,7 @@ class SelectionActions {
                 actions.Push(ResultItem(I18n.T("Action.SearchWith", engine["Title"]), "", {Icon: "url:", OnRun: SelectionActions._Opener(searchUrl)}))
             }
         }
-        actions.Push(ResultItem(I18n.T("Action.SaveSnippet"), "", {Icon: "res:imageres.dll,-5314"
+        actions.Push(ResultItem(I18n.T("Action.SaveSnippet"), "", {Icon: IconCache.Own("Snippet", "res:imageres.dll,-102")
             , OnRun: (*) => SnippetProvider.Edit("", Map("Name", SubStr(preview, 1, 40), "Text", text))}))
         ; 替换为转换后的文字 (粘贴回原来的程序, 选中的文字还在那里)
         for transform in SelectionActions.Transforms() {
