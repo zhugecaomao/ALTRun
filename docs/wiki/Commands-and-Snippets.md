@@ -48,8 +48,9 @@
 | Jira | 网址 | `https://jira.example.com/browse/{query}` | | `jira` | `jira ABC-123` |
 | Ping | 命令行 | `cmd.exe` | `/k ping {query}` | `ping` | `ping 10.0.0.1` |
 | 项目文件夹 | 文件夹 | `D:\Projects\{query}` | | `pj` | `pj 2026-05` |
+| Google Maps | 网址 | `https://www.google.com/maps/search/{query}` | | `maps` | `maps Changi Airport` |
 
-只输入名称搜到这条命令时, 按 `Enter` 补全成 "关键字 ", 接着输入参数。没有关键字时 `{query}` 换成空。"检查路径" 不检查带 `{query}` 的路径。
+新安装时默认命令里已经有 Ping、Google Maps 和 Documents subfolder (`docs 文件夹名` 打开 "文档" 里的子文件夹) 三个例子。只输入名称搜到这条命令时, 按 `Enter` 补全成 "关键字 ", 接着输入参数。没有关键字时 `{query}` 换成空。"检查路径" 不检查带 `{query}` 的路径。
 
 ### 路径里可以用的变量
 | 写法 | 含义 |

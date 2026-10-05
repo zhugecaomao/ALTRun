@@ -392,12 +392,13 @@ class AppSettings {
             ["Desktop"             , "Folder" , "A_Desktop"              , ""                                       , ""],
             ["Downloads"           , "Folder" , "%UserProfile%\Downloads", ""                                       , "dl"],
             ["ALTRun Folder"       , "Folder" , "A_ScriptDir"            , ""                                       , ""],
+            ["Documents subfolder" , "Folder" , "%UserProfile%\Documents\{query}", ""                               , "docs"],   ; {query}: "docs 文件夹名"
             ; 命令行: 程序 + 参数
             ["IP Configuration"    , "Command", "cmd.exe"                , "/k ipconfig /all"                       , "ipconfig"],
-            ["Ping google.com"     , "Command", "cmd.exe"                , "/k ping google.com"                     , "ping"],
+            ["Ping"                , "Command", "cmd.exe"                , "/k ping {query}"                        , "ping"],     ; {query}: "ping 10.0.0.1"
             ; 网址: 网页, 也可以是 ms-settings: 等系统链接
             ["ALTRun on GitHub"    , "Url"    , "https://github.com/zhugecaomao/ALTRun", ""                     , "altrun"],
-            ["Google Maps"         , "Url"    , "https://www.google.com/maps", ""                                , "maps"],
+            ["Google Maps"         , "Url"    , "https://www.google.com/maps/search/{query}", ""                 , "maps"],     ; {query}: "maps Changi Airport"
             ["Windows Update"      , "Url"    , "ms-settings:windowsupdate", ""                                  , ""]
         ]
             commands.Push(Map("Title", row[1], "Type", row[2], "Target", row[3], "Arguments", row[4], "Keyword", row[5]))

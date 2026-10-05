@@ -255,12 +255,12 @@ class PreferencesWindow {
         restore.Enabled := english.Value
         english.OnEvent("Click", (*) => restore.Enabled := english.Value)
         PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
-        PreferencesWindow._Section("Prefs.Section.TipsHistory")
+        PreferencesWindow._Section("Prefs.Section.EmptyBox")
         PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
         PreferencesWindow._Gap()
-        PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")
-        PreferencesWindow._Gap()
         PreferencesWindow._InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
+        PreferencesWindow._Section("Prefs.Section.History")
+        PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")
     }
 
     static _BuildAppearance() {
@@ -427,6 +427,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
         PreferencesWindow._Field("Features.FileSearch.MinQueryLength", "Prefs.FileMinLength", "S", "number")
+        PreferencesWindow._Section("Prefs.Section.Browse")                  ; 浏览文件夹总是可用, 只有说明
     }
 
     ; 搜索来源: Everything (在运行时用它搜全盘) 和 Everything 没有运行时的内置文件索引
