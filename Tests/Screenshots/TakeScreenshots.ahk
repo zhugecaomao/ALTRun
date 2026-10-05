@@ -20,7 +20,7 @@ ExitApp(Shots.Failures)
 
 class Shots {
     static RepoDir  := Shots._FullPath(A_ScriptDir "\..\..")
-    static AppDir   := A_Temp "\ALTRunScreenshots"
+    static AppDir   := "C:\ALTRun"                                   ; 截图里显示的路径 (偏好设置 → 脚本) 简单好看
     static OutDir   := ""
     static DemoDir  := ""
     static Pid      := 0
@@ -33,10 +33,10 @@ class Shots {
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
-            ["calculator",  "Light", "", () => Shots.Search("(1200+350)*2.5")],
+            ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: 附带结构计算的两行
             ["clipboard",   "Light", "", () => Shots.Search("clip "), () => Shots.WriteClipboard()],
             ["empty",       "Light", "", () => Shots.EmptyBox(), () => Shots.WritePinnedAndRecent()],
-            ["browse",      "Light", "", () => Shots.Search(Shots.DemoDir "\")],
+            ["browse",      "Light", "", () => Shots.Search(Shots.DemoDir "\Annual Report 2026\")],
             ["websearch",   "Light", "", () => Shots.Search("g autohotkey v2 hotkeys")],
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
@@ -135,6 +135,7 @@ class Shots {
             "Annual Report 2026\Budget 2026.xlsx",
             "Annual Report 2026\Report Charts.pptx",
             "Annual Report 2026\Quarterly Report Q3.pdf",
+            "Annual Report 2026\Archive\Annual Report 2025.pdf",
             "Travel\Tokyo Trip Itinerary.pdf"
         ]
         for relative in files {
@@ -166,7 +167,7 @@ class Shots {
             "Appearance", Map("Theme", theme, "Width", 700, "VisibleRows", 8),
             "Features", Map(
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
-                "Calculator", Map("StructuralCalc", 0),
+                "Calculator", Map("StructuralCalc", 1),
                 "Recent", Map("Pinned", Shots.Pinned),
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0)
             ),
