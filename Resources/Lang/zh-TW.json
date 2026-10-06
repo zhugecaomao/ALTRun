@@ -215,7 +215,7 @@
   "Prefs.ClipMerge": "快速按兩次 Ctrl+C: 接到上一個後面",
   "Prefs.ClipMerge.Desc": "先複製一段, 再選取下一段快速按兩次 Ctrl+C: 兩段合成一筆, 剪貼簿裡也是合併後的文字",
   "Prefs.ClipPersist": "結束後保留歷史",
-  "Prefs.ClipPersist.Desc": "儲存在 Data\\ClipboardHistory.json; 關閉後只儲存在記憶體裡",
+  "Prefs.ClipPersist.Desc": "只儲存在這台電腦上 (%LOCALAPPDATA%\\ALTRun), 不放進會同步的 Data 資料夾; 關閉後只儲存在記憶體裡",
   "Prefs.Col.Action": "執行的指令",
   "Prefs.Col.Argument": "參數",
   "Prefs.Col.Arguments": "參數",

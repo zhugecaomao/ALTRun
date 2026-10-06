@@ -214,7 +214,7 @@
   "Prefs.ClipMerge": "Ctrl+C を 2 回押すと前の項目に追加",
   "Prefs.ClipMerge.Desc": "1 つ目をコピーし、次を選択して Ctrl+C を素早く 2 回押すと、両方が 1 つの項目 (クリップボードにも) になります。",
   "Prefs.ClipPersist": "ALTRun 終了後も履歴を保持",
-  "Prefs.ClipPersist.Desc": "Data\\ClipboardHistory.json に保存されます。オフの場合はメモリ内にのみ保持されます。",
+  "Prefs.ClipPersist.Desc": "このコンピューターにのみ保存されます (%LOCALAPPDATA%\\ALTRun)。同期される Data フォルダーには保存しません。オフの場合はメモリ内にのみ保持されます。",
   "Prefs.Col.Action": "実行コマンド",
   "Prefs.Col.Argument": "引数",
   "Prefs.Col.Arguments": "引数",

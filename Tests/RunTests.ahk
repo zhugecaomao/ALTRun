@@ -84,7 +84,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1977,6 +1977,27 @@ class Tests {
     }
 
     ; 剪贴板置顶: 排在最前面, 超过条数不删, 再复制仍然置顶, 清空时保留, 保存后还在
+    ; 剪贴板历史存在本机: 第一次把 Data 里的历史 (JSON + Clipboard 文件夹) 搬过去, 之后读写新位置
+    static ClipboardLocal() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardLocal." n, a, e)
+        root := A_Temp "\ALTRun-clip-local-test"
+        try DirDelete(root, true)
+        DirCreate(root "\Data\Clipboard")
+        FileAppend('{"Entries": []}', root "\Data\ClipboardHistory.json", "UTF-8")
+        FileAppend("long text", root "\Data\Clipboard\t-1.txt", "UTF-8")
+        saved := [ClipboardProvider.File, ClipboardProvider.Folder]
+        ClipboardProvider.File := root "\Data\ClipboardHistory.json", ClipboardProvider.Folder := root "\Data\Clipboard"
+        eq("moved", ClipboardProvider.UseLocalStorage(root "\Local"), true)
+        eq("file", ClipboardProvider.File, root "\Local\ClipboardHistory.json")
+        eq("folder", ClipboardProvider.Folder, root "\Local\Clipboard")
+        eq("json moved", (FileExist(root "\Local\ClipboardHistory.json") ? 1 : 0) (FileExist(root "\Data\ClipboardHistory.json") ? 1 : 0), "10")
+        eq("files moved", (FileExist(root "\Local\Clipboard\t-1.txt") ? 1 : 0) (DirExist(root "\Data\Clipboard") ? 1 : 0), "10")
+        eq("again", ClipboardProvider.UseLocalStorage(root "\Local"), true)    ; 已经在本机: 什么都不做
+        eq("default", AppSettings.Defaults()["Features"]["Clipboard"]["LocalHistory"], 1)
+        ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2]
+        try DirDelete(root, true)
+    }
+
     static ClipboardPin() {
         eq := (n, a, e) => TestRunner.Equal("ClipboardPin." n, a, e)
         root := A_Temp "\ALTRun-clip-pin-test"

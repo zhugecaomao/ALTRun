@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.05.9]
+## [2026.10.05.10]
 
 测试版。
 
@@ -20,6 +20,7 @@
 - 搜索窗口偶尔弹出错误 "Invalid index" (例如从搜索结果打开 SPF2M 时): 画结果行的过程中被同时进行的新搜索换掉了结果列表, 现在先取出这一行的结果再画
 - PT Tools: 改第一组的 Span Width 时, BRC Area 的 Span Width 会跟着变, 但钢筋网面积 (Top / Bottom Mesh Area) 没有重算; 现在钢筋网面积和 "+ Rebar" 一起更新
 - 关掉一台显示器后, 呼出搜索窗口卡在显示的过程中 (2 分多钟, 重新打开显示器才恢复), 之后热键和托盘图标都打不开: 现在上一次显示超过 3 秒还没完成时, 再按热键会直接重新显示; 调试日志记下卡了多久、卡在哪一步, 以及显示器数量的变化
+- 剪贴板历史 (包括图片和很长的文字) 改为只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun`), 不再放进 Data 文件夹: Data 在 OneDrive 等同步盘里时, 每次复制都会触发同步, 复制的内容也会上传到云端。第一次运行时自动把原来的历史搬过去; 想和以前一样放在 Data 里 (例如放在 U 盘随身带), 把 `Features.Clipboard.LocalHistory` 设为 0
 
 ## [2026.10.05]
 
@@ -456,8 +457,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.9...HEAD
-[2026.10.05.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.9
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.10...HEAD
+[2026.10.05.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.10
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

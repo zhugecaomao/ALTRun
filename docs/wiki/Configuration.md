@@ -91,7 +91,8 @@
 | Hotkey | `^!c` | 直接打开剪贴板历史的热键 |
 | MaxItems | 200 | 保存多少条 |
 | MaxItemLength | 100000 | 超过这么多字的内容不记录 |
-| Persist | 1 | 保存到磁盘 (`Data\ClipboardHistory.json`, 超过 4000 字的条目和图片单独存在 `Data\Clipboard\`); 0 = 只在内存里 |
+| Persist | 1 | 保存到磁盘 (`ClipboardHistory.json`, 超过 4000 字的条目和图片单独存在 `Clipboard\`); 0 = 只在内存里 |
+| LocalHistory | 1 | 1 = 剪贴板历史只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun`), 不放进 Data 文件夹: Data 在 OneDrive 等同步盘里时不会一直同步, 复制的内容也不上传; 第一次运行时自动把 Data 里原来的历史搬过去。0 = 和其他数据一起放在 Data 文件夹 (例如放在 U 盘里随身带) |
 | Images | 1 | 也记录图片 (存成 PNG); 需要 `Persist = 1` |
 | MaxImages | 50 | 最多保存多少张图片, 超过时先删最早的 |
 | MergeDoubleCopy | 0 | 1 = 快速按两次 `Ctrl+C` 时把这次复制的文字接到上一条后面 |
