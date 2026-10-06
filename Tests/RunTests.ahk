@@ -2343,14 +2343,20 @@ class Tests {
         start := 0, finish := 0
         DllCall("SendMessage", "Ptr", span.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
         eq("select all on focus", start "-" finish, "0-" StrLen(span.Value))
+        eq("right margin", (SendMessage(0xD4, 0, 0, span) >> 16) >= 4, true)   ; EM_GETMARGINS: 光标不紧贴数字
+        g["RebarSpanWidth"].Value := 5000                                   ; 第一组的 Span Width -> BRC 的 Span Width -> 钢筋网面积一起重算
+        PTToolsWindow.OnRebarFieldChanged()
+        eq("brc span follows", g["BrcSpanWidth"].Value, "5000")
+        eq("top mesh area recalculated", g["BrcTopArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcTopMeshMark"].Value)))
+        eq("bottom mesh area recalculated", g["BrcBotArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcBotMeshMark"].Value)))
         safety := g["SafetyFactorEnabled"]
         eq("safety factor checkbox skips tab", (ControlGetStyle(safety) & 0x10000) != 0, false)
         ; 钢筋直径下拉框里的数字右对齐: 第一个字的位置 (EM_POSFROMCHAR) 在输入框的右半边 (Wine 不支持建好后改对齐, 只在 Windows 上看位置)
-        edit := DllCall("FindWindowEx", "Ptr", g["RebarBarDiameter"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
-        eq("diameter edit has ES_RIGHT", (ControlGetStyle(edit) & 0x2) != 0, true)
+        diaEdit := DllCall("FindWindowEx", "Ptr", g["RebarBarDiameter"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+        eq("diameter diaEdit has ES_RIGHT", (ControlGetStyle(diaEdit) & 0x2) != 0, true)
         if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
-            WinGetClientPos(, , &ew, , edit)
-            firstX := SendMessage(0xD6, 0, 0, edit) & 0xFFFF                     ; EM_POSFROMCHAR: 第 0 个字的 x
+            WinGetClientPos(, , &ew, , diaEdit)
+            firstX := SendMessage(0xD6, 0, 0, diaEdit) & 0xFFFF                     ; EM_POSFROMCHAR: 第 0 个字的 x
             TestRunner.True("PTToolsWindowUi.diameter text on the right (first char at " firstX " of " ew ")", firstX > ew // 2)
         }
         g.Destroy(), PTToolsWindow.G := ""

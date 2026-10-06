@@ -141,7 +141,7 @@ Class PTToolsWindow {
         S := PTToolsWindow.Settings
         g := Gui("+AlwaysOnTop", "PT Tools")
         PTToolsWindow.G := g
-        g.SetFont("s9", "Segoe UI")                                         ; Windows 的界面字体, 英文和数字更清楚
+        g.SetFont("s10", "Segoe UI")                                        ; Windows 的界面字体, 英文和数字更清楚 (输入框里的数字半粗体, 见 SetupInputs)
         g.OnEvent("Close", (p*) => PTToolsWindow.OnClose(p*))
 
         rebarRight    := PTToolsWindow.BuildRebarAreaGroup(g, S, 20)
@@ -159,7 +159,7 @@ Class PTToolsWindow {
             try ControlSetStyle("+0x2", DllCall("FindWindowEx", "Ptr", g[name].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr"))
 
         PTToolsWindow.SetupHotkeys()
-        PTToolsWindow.SelectAllOnFocus(g)
+        PTToolsWindow.SetupInputs(g)
 
         g.Show("x" S["WinLeft"] " y" S["WinTop"] " AutoSize")
 
@@ -179,14 +179,22 @@ Class PTToolsWindow {
         HotIfWinActive()
     }
 
+    ; 输入框和结果框: 数字用半粗体 (更清楚); 左右各留一点边距, 右对齐时光标不会紧贴着数字;
     ; 用鼠标点进输入框时全选 (用 Tab / Enter 进来时 Windows 本来就会全选), 直接输入新数字就行。
-    ; 用 PostMessage: 等鼠标按下的处理 (把光标放到点击的位置) 做完之后再全选
-    static SelectAllOnFocus(g) {
+    ; 全选用 PostMessage: 等鼠标按下的处理 (把光标放到点击的位置) 做完之后再全选
+    static SetupInputs(g) {
+        margin := Round(4 * A_ScreenDPI / 96), margins := (margin << 16) | margin
         for ctrl in g {
-            if (ctrl.Type = "Edit" && !(ControlGetStyle(ctrl) & 0x800))       ; ES_READONLY 的结果框不用
-                ctrl.OnEvent("Focus", (c, *) => PostMessage(0xB1, 0, -1, c))   ; EM_SETSEL 0, -1
-            else if (ctrl.Type = "ComboBox")
+            if (ctrl.Type != "Edit" && ctrl.Type != "ComboBox")
+                continue
+            ctrl.SetFont("w600")
+            inner := (ctrl.Type = "Edit") ? ctrl.Hwnd : DllCall("FindWindowEx", "Ptr", ctrl.Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+            if inner
+                SendMessage(0xD3, 3, margins, inner)                         ; EM_SETMARGINS: EC_LEFTMARGIN | EC_RIGHTMARGIN
+            if (ctrl.Type = "ComboBox")
                 ctrl.OnEvent("Focus", (c, *) => PostMessage(0x142, 0, 0xFFFF0000, c))   ; CB_SETEDITSEL 0, -1
+            else if !(ControlGetStyle(ctrl) & 0x800)                        ; ES_READONLY 的结果框不用全选
+                ctrl.OnEvent("Focus", (c, *) => PostMessage(0xB1, 0, -1, c))   ; EM_SETSEL 0, -1
         }
     }
 
@@ -328,7 +336,7 @@ Class PTToolsWindow {
         g["RebarBarCount"].Value := PTToolsWindow.Fmt2(count)
         g["RebarTotalArea"].Value := PTToolsWindow.Fmt2(count * PTToolsWindow.CalculateRebarArea(diameter))
 
-        PTToolsWindow.RecalculateCombinedAreas()
+        PTToolsWindow.OnBrcFieldChanged()                                   ; BRC 的 Span Width 跟着变 (程序改的值不触发 Change): 钢筋网面积和 "+ Rebar" 一起重算
     }
 
     static OnRequiredExpressionChanged(*) {
@@ -424,7 +432,7 @@ Class PTToolsWindow {
         right := PTToolsWindow.BuildProfileGroup(g, S, 20)
         PTToolsWindow.BuildResultGroup(g, right + 10)
         PTToolsWindow.SetupSpf2mHotkeys()
-        PTToolsWindow.SelectAllOnFocus(g)
+        PTToolsWindow.SetupInputs(g)
         PTToolsWindow.OnTendonChanged()                                    ; 最小半径 / 管道直径的提示跟着钢绞线类型
         g.Show("x" S["Spf2mWinLeft"] " y" S["Spf2mWinTop"] " AutoSize")
     }
