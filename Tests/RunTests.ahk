@@ -2343,6 +2343,30 @@ class Tests {
         start := 0, finish := 0
         DllCall("SendMessage", "Ptr", span.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
         eq("select all on focus", start "-" finish, "0-" StrLen(span.Value))
+        safety := g["SafetyFactorEnabled"]
+        eq("safety factor checkbox skips tab", (ControlGetStyle(safety) & 0x10000) != 0, false)
+        ; 钢筋直径下拉框里的数字右对齐: 把输入框画到位图上, 文字的深色像素都在右半边 (Wine 不支持建好后改对齐, 只在 Windows 上看像素)
+        edit := DllCall("FindWindowEx", "Ptr", g["RebarBarDiameter"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+        eq("diameter edit has ES_RIGHT", (ControlGetStyle(edit) & 0x2) != 0, true)
+        if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
+            WinGetClientPos(, , &ew, &eh, edit)
+            screen := DllCall("GetDC", "Ptr", 0, "Ptr")
+            dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr"), hbm := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", ew, "Int", eh, "Ptr")
+            DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+            old := DllCall("SelectObject", "Ptr", dc, "Ptr", hbm, "Ptr")
+            DllCall("PrintWindow", "Ptr", edit, "Ptr", dc, "UInt", 0)
+            leftmost := ""
+            Loop ew {
+                x := A_Index - 1
+                Loop eh
+                    if ((DllCall("GetPixel", "Ptr", dc, "Int", x, "Int", A_Index - 1, "UInt") & 0xFF) < 0x80) {   ; 深色 = 文字
+                        leftmost := x
+                        break 2
+                    }
+            }
+            DllCall("SelectObject", "Ptr", dc, "Ptr", old), DllCall("DeleteObject", "Ptr", hbm), DllCall("DeleteDC", "Ptr", dc)
+            TestRunner.True("PTToolsWindowUi.diameter text drawn on the right (leftmost dark pixel " leftmost " of " ew ")", leftmost != "" && leftmost > ew // 2)
+        }
         g.Destroy(), PTToolsWindow.G := ""
         PTToolsWindow.Settings["WinLeft"] := saved[1], PTToolsWindow.Settings["WinTop"] := saved[2]
     }
