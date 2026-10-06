@@ -234,6 +234,10 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 
 
 ## 许可证与致谢
-[GPL-3.0](LICENSE) © zhugecaomao
+ALTRun 以 [GPL-3.0](LICENSE) 许可开源 © zhugecaomao
 
-感谢 [ALTRun by etworker](https://github.com/etworker/ALTRun)（Delphi）、[RunZ by goreliu](https://github.com/goreliu/runz)（AutoHotkey）和 [Alfred](https://www.alfredapp.com/) 的设计；对话框快速跳转参考了 [Listary](https://www.listary.com/) 的 Quick Switch。
+感谢这些项目带来的启发：
+- [ALTRun](https://github.com/etworker/ALTRun)（etworker，Delphi）：名字和最初的设计
+- [RunZ](https://github.com/goreliu/runz)（goreliu，AutoHotkey）：用 AutoHotkey 写启动器的思路
+- [Alfred](https://www.alfredapp.com/)：操作方式
+- [Listary](https://www.listary.com/)：对话框快速跳转参考了它的 Quick Switch
