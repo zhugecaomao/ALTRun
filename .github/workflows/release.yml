@@ -28,6 +28,11 @@ jobs:
       WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
       SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
     steps:
+      # Windows 上的 Git 默认把文本文件的 LF 转成 CRLF (core.autocrlf), 发布包里的 README、LICENSE、JSON
+      # 就和仓库 / 源码 ZIP 逐字节不同。关掉转换, 发布包里的文件和仓库完全一样
+      - name: Keep line endings as in the repository
+        run: git config --global core.autocrlf false
+
       - uses: actions/checkout@v7
 
       - name: Read version
@@ -81,6 +86,9 @@ jobs:
             if (-not (Test-Path "build/ALTRun/Resources/Lang/$lang.json")) { throw "Resources\Lang\$lang.json is missing" }
           }
           Copy-Item LICENSE, README.md, CHANGELOG.md build/ALTRun/
+          foreach ($file in @("LICENSE", "README.md", "CHANGELOG.md") + (git ls-files Resources)) {   # 和仓库逐字节相同 (换行符没被转换)
+            if ((git hash-object --no-filters "build/ALTRun/$file") -ne (git rev-parse "HEAD:$file")) { throw "$file in the package differs from the repository" }
+          }
           (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
 
       # 代码签名 (SignPath Foundation 免费为开源项目签名, 见 packaging/README.md): 设置了 SIGNPATH_API_TOKEN secret
