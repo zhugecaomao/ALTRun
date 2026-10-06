@@ -623,6 +623,7 @@
   "Sys.PastePlain": "貼上為純文字",
   "Sys.PastePlainEmpty": "剪貼簿裡沒有文字",
   "Sys.Preferences": "ALTRun 偏好設定",
+  "Sys.PreferencesPage": "ALTRun 偏好設定: {1}",
   "Sys.Quit": "結束 ALTRun",
   "Sys.RebuildIndex": "重建 ALTRun 索引",
   "Sys.Reload": "重新載入 ALTRun",

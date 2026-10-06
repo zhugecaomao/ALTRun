@@ -622,6 +622,7 @@
   "Sys.PastePlain": "粘贴为纯文本",
   "Sys.PastePlainEmpty": "剪贴板里没有文字",
   "Sys.Preferences": "ALTRun 偏好设置",
+  "Sys.PreferencesPage": "ALTRun 偏好设置: {1}",
   "Sys.Quit": "退出 ALTRun",
   "Sys.RebuildIndex": "重建 ALTRun 索引",
   "Sys.Reload": "重新载入 ALTRun",

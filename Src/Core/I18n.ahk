@@ -326,6 +326,7 @@ class I18n {
 
         ; --- System commands ---
         s["Sys.Preferences"]           := "ALTRun Preferences"
+        s["Sys.PreferencesPage"]       := "ALTRun Preferences: {1}"
         s["Sys.Reload"]                := "Reload ALTRun"
         s["Sys.RebuildIndex"]          := "Rebuild ALTRun Index"
         s["Sys.Quit"]                  := "Quit ALTRun"

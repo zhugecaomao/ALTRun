@@ -72,6 +72,7 @@ TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上),
 |---|---|
 | **ALTRun** | |
 | `Preferences` | ALTRun 偏好设置 |
+| `Preferences.Appearance` 等 | ALTRun 偏好设置: 外观 (每个设置页一条, 直接打开那一页; 输入页名就能找到, 例如 `外观`、`hotkeys`) |
 | `Reload` | 重新载入 ALTRun |
 | `RebuildIndex` | 重建 ALTRun 索引 |
 | `CheckUpdate` | 检查更新 |

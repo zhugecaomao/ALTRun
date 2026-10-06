@@ -84,7 +84,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1057,6 +1057,15 @@ class Tests {
         for ctrl in PreferencesWindow.Pages[1].Controls
             onPage := onPage || ctrl.Hwnd = nextTab
         eq("tab from page list goes into the page", onPage, true)
+        keys := ""                                                         ; PageKeys 和实际建的页面一致 (搜索里的子页面靠它)
+        for page in PreferencesWindow.Pages
+            keys .= page.Key " "
+        expected := ""
+        for pageKey in PreferencesWindow.PageKeys
+            expected .= pageKey " "
+        eq("page keys match the pages", keys, expected)
+        SystemProvider._PageOpener("Prefs.Page.Calculator")()               ; 窗口开着时跳到那一页
+        eq("open a page from search", PreferencesWindow._page, PreferencesWindow._PageIndex("Prefs.Page.Calculator"))
         PreferencesWindow.SelectPage(PreferencesWindow._PageIndex("Prefs.Page.Appearance"))
         page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Appearance")]
         gallery := ""
@@ -1834,6 +1843,28 @@ class Tests {
     }
 
     ; Windows 设置的页面: 按名称 (和英文名称) 搜到, 可以整组关掉
+    ; 搜索里的偏好设置子页面: 每页一条 ("ALTRun Preferences: Appearance"), 按页名找得到, 主项 "ALTRun Preferences" 排在子项前面
+    static PreferencePages() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencePages." n, a, e)
+        best(text) {
+            top := ""
+            for item in SystemProvider.Search(SearchQuery(text))
+                if (!IsObject(top) || item.Score > top.Score)
+                    top := item
+            return IsObject(top) ? top.Source["Id"] : ""
+        }
+        count := 0
+        for command in SystemProvider.Commands()
+            count += (SubStr(command["Id"], 1, 12) = "Preferences.")
+        eq("one per page", count, PreferencesWindow.PageKeys.Length)
+        eq("appearance", best("appearance"), "Preferences.Appearance")
+        eq("hotkeys page", best("preferences hotkeys"), "Preferences.Hotkeys")
+        eq("main item first", best("altrun pref"), "Preferences")
+        for command in SystemProvider.Commands()
+            if (command["Id"] = "Preferences.Calculator")
+                eq("title", command["Title"], "ALTRun Preferences: Calculator")
+    }
+
     static SettingsPages() {
         eq := (n, a, e) => TestRunner.Equal("SettingsPages." n, a, e)
         find(text) {

@@ -5,13 +5,14 @@
 
 ## [未发布]
 
-## [2026.10.05.3]
+## [2026.10.05.4]
 
 测试版。
 
 ### 改进
 - 搜索结果选中行的圆角和 偏好设置 → 外观 里主题缩略图的圆角改为抗锯齿 (GDI+), 边缘平滑, 不再有台阶; 半径为 0 的主题 (例如 Classic) 不变; 缩略图改用 24 位图像 (没有透明通道), 抗锯齿的圆角不会让缩略图背景变透明
 - 发布包里的 README、LICENSE、CHANGELOG 和 `Resources\` 里的文件和仓库 / 源码 ZIP 逐字节相同 (以前在 Windows 上打包时换行符被转成了 CRLF, 内容一样但文件对比显示不同)
+- 搜索里可以直接打开某个设置页: 每页一条 "ALTRun 偏好设置: 外观" 这样的命令, 输入页名 (例如 `外观`、`hotkeys`) 就能找到, 回车直接打开那一页; 主项 "ALTRun 偏好设置" 仍排在最前面
 
 ### 修复
 - 打开偏好设置时焦点在左边的页面列表, `↑` `↓` 切换页面 (以前焦点落在 "常规" 页的第一个选项, 按方向键会不小心改掉双击呼出的设置); `Tab` 的顺序改为 页面列表 → 页面里的选项 → 底部按钮
@@ -451,8 +452,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.3...HEAD
-[2026.10.05.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.3
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.4...HEAD
+[2026.10.05.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.4
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

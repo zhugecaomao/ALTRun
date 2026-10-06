@@ -100,6 +100,8 @@ class SystemProvider {
         return (*) => SystemProvider.RunCommand(id)
     }
 
+    static _PageOpener(pageKey) => () => App.OpenPreferences(pageKey)
+
     ; 剪贴板里的内容去掉格式 (字体、颜色、表格...) 粘贴, 剪贴板随后还原。可以在 自定义热键 里设成 Ctrl+Shift+V:
     ; 用热键时贴到当前窗口; 在搜索窗口里运行时贴到呼出之前的窗口
     static PastePlainText() {
@@ -134,9 +136,9 @@ class SystemProvider {
         if IsObject(SystemProvider._commands)
             return SystemProvider._commands
         list := []
-        add(id, titleKey, icon, fn, confirm := false, subtitleKey := "Sys.Subtitle") {
-            title := I18n.T(titleKey)
-            english := I18n.Strings[titleKey], pinyinText := Pinyin.Initials(title)
+        add(id, titleKey, icon, fn, confirm := false, subtitleKey := "Sys.Subtitle", title := "", english := "") {
+            title := (title != "") ? title : I18n.T(titleKey)
+            english := (english != "") ? english : I18n.Strings[titleKey], pinyinText := Pinyin.Initials(title)
             keys := [FuzzyMatcher.Key(title), FuzzyMatcher.Key(id), (english != title) ? FuzzyMatcher.Key(english) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]
             list.Push(Map("Id", id, "Title", title, "English", english, "Keys", keys,
                 "Subtitle", I18n.T(subtitleKey), "Icon", icon, "Run", fn, "Confirm", confirm))
@@ -149,6 +151,9 @@ class SystemProvider {
 
         ; --- ALTRun ---
         add("Preferences" , "Sys.Preferences" , "res:imageres.dll,-114" , () => App.OpenPreferences())
+        for pageKey in PreferencesWindow.PageKeys                          ; 每个设置页一条, 直接打开那一页 ("ALTRun 偏好设置: 外观");
+            add("Preferences." SubStr(pageKey, 12), "", "res:imageres.dll,-114", SystemProvider._PageOpener(pageKey), false, "Sys.Subtitle"   ; 标题比主项长, 同一档里排在它后面
+              , I18n.T("Sys.PreferencesPage", I18n.T(pageKey)), Format(I18n.Strings["Sys.PreferencesPage"], I18n.Strings[pageKey]))
         add("Reload"      , "Sys.Reload"      , "res:imageres.dll,-5311", () => App.Reload())
         add("RebuildIndex", "Sys.RebuildIndex", "res:imageres.dll,-8"   , () => App.RebuildIndex())
         appIcon := FileExist(App.IconFile) ? App.IconFile : "res:imageres.dll,-81"      ; ALTRun 自己的事用程序图标

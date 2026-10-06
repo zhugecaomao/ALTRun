@@ -622,6 +622,7 @@
   "Sys.PastePlain": "テキストのみ貼り付け",
   "Sys.PastePlainEmpty": "クリップボードにテキストがありません",
   "Sys.Preferences": "ALTRun 環境設定",
+  "Sys.PreferencesPage": "ALTRun 環境設定: {1}",
   "Sys.Quit": "ALTRun を終了",
   "Sys.RebuildIndex": "ALTRun インデックスを再構築",
   "Sys.Reload": "ALTRun を再読み込み",
