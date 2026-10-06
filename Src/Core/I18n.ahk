@@ -787,7 +787,7 @@ class I18n {
         s["Prefs.ClipMaxItems.Desc"]    := "The oldest items are removed first. Texts longer than the max length are not recorded."
         s["Prefs.ClipMaxLength"]        := "Max length"
         s["Prefs.ClipPersist"]         := "Keep history after ALTRun quits"
-        s["Prefs.ClipPersist.Desc"]    := "Saved in Data\ClipboardHistory.json; images and very long entries stay on this computer (%LOCALAPPDATA%\ALTRun\Clipboard). When off, history is kept in memory only."
+        s["Prefs.ClipPersist.Desc"]    := "Saved in Data\ClipboardHistory.json; images and long entries stay on this PC (%LOCALAPPDATA%\ALTRun\Clipboard). Off: memory only."
         s["Prefs.ClipImages"]          := "Also record images"
         s["Prefs.ClipImages.Desc"]     := "Saved as PNG in Data\Clipboard. Only while history is kept after quitting."
         s["Prefs.ClipMaxImages"]       := "Keep images"
