@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.05.7]
+## [2026.10.05.8]
 
 测试版。
 
@@ -13,7 +13,7 @@
 - 搜索结果选中行的圆角和 偏好设置 → 外观 里主题缩略图的圆角改为抗锯齿 (GDI+), 边缘平滑, 不再有台阶; 半径为 0 的主题 (例如 Classic) 不变; 缩略图改用 24 位图像 (没有透明通道), 抗锯齿的圆角不会让缩略图背景变透明
 - 发布包里的 README、LICENSE、CHANGELOG 和 `Resources\` 里的文件和仓库 / 源码 ZIP 逐字节相同 (以前在 Windows 上打包时换行符被转成了 CRLF, 内容一样但文件对比显示不同)
 - 搜索里可以直接打开某个设置页: 每页一条 "ALTRun 偏好设置: 外观" 这样的命令, 输入页名 (例如 `外观`、`hotkeys`) 就能找到, 回车直接打开那一页; 主项 "ALTRun 偏好设置" 仍排在最前面
-- PT Tools: 用鼠标点进输入框时全选, 直接输入新数字; 只读的结果框 (面积、根数、计算结果) 不再停留 `Tab` / `Enter` 焦点, 例如 Area Expression 之后直接到 Rebar Diameter; 面积单位写成 mm²; 标签和分组名称更清楚 (Rebar Area、Bars Required、Calculator、Number of Bars、Top / Bottom Mesh、Mesh + Rebar 加上单位); 输入框和结果框都右对齐 (包括钢筋直径下拉框); Safety Factor 复选框也不停留焦点; 各组整体上移, Calculator 和 BRC Area 底边对齐; 字体改为 Segoe UI 10 号, 输入框里的数字半粗体; 输入框左右留出边距, 光标不再紧贴数字。SPF2M 窗口的输入框也是点进去全选
+- PT Tools: 用鼠标点进输入框时全选, 直接输入新数字; 只读的结果框 (面积、根数、计算结果) 不再停留 `Tab` / `Enter` 焦点, 例如 Area Expression 之后直接到 Rebar Diameter; 面积单位写成 mm²; 标签和分组名称更清楚 (Rebar Area、Bars Required、Calculator、Number of Bars、Top / Bottom Mesh、Mesh + Rebar 加上单位); 输入框和结果框都右对齐 (包括钢筋直径下拉框); Safety Factor 复选框也不停留焦点; 各组整体上移, Calculator 和 BRC Area 底边对齐; 字体改为 Segoe UI 10 号; 输入框左右留出边距, 光标不再紧贴数字。SPF2M 窗口的输入框也是点进去全选
 
 ### 修复
 - 打开偏好设置时焦点在左边的页面列表, `↑` `↓` 切换页面 (以前焦点落在 "常规" 页的第一个选项, 按方向键会不小心改掉双击呼出的设置); `Tab` 的顺序改为 页面列表 → 页面里的选项 → 底部按钮
@@ -455,8 +455,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.7...HEAD
-[2026.10.05.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.7
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.8...HEAD
+[2026.10.05.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.8
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

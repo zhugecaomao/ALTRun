@@ -141,7 +141,7 @@ Class PTToolsWindow {
         S := PTToolsWindow.Settings
         g := Gui("+AlwaysOnTop", "PT Tools")
         PTToolsWindow.G := g
-        g.SetFont("s10", "Segoe UI")                                        ; Windows 的界面字体, 英文和数字更清楚 (输入框里的数字半粗体, 见 SetupInputs)
+        g.SetFont("s10", "Segoe UI")                                        ; Windows 的界面字体, 英文和数字更清楚
         g.OnEvent("Close", (p*) => PTToolsWindow.OnClose(p*))
 
         rebarRight    := PTToolsWindow.BuildRebarAreaGroup(g, S, 20)
@@ -179,7 +179,7 @@ Class PTToolsWindow {
         HotIfWinActive()
     }
 
-    ; 输入框和结果框: 数字用半粗体 (更清楚); 左右各留一点边距, 右对齐时光标不会紧贴着数字;
+    ; 输入框和结果框: 左右各留一点边距, 右对齐时光标不会紧贴着数字;
     ; 用鼠标点进输入框时全选 (用 Tab / Enter 进来时 Windows 本来就会全选), 直接输入新数字就行。
     ; 全选用 PostMessage: 等鼠标按下的处理 (把光标放到点击的位置) 做完之后再全选
     static SetupInputs(g) {
@@ -187,7 +187,6 @@ Class PTToolsWindow {
         for ctrl in g {
             if (ctrl.Type != "Edit" && ctrl.Type != "ComboBox")
                 continue
-            ctrl.SetFont("w600")
             inner := (ctrl.Type = "Edit") ? ctrl.Hwnd : DllCall("FindWindowEx", "Ptr", ctrl.Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
             if inner
                 SendMessage(0xD3, 3, margins, inner)                         ; EM_SETMARGINS: EC_LEFTMARGIN | EC_RIGHTMARGIN
