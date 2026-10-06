@@ -37,7 +37,7 @@ class ClipboardProvider {
     static Id      := "Clipboard"
     static File    := AppSettings.DataDir "\ClipboardHistory.json"
     static Folder  := AppSettings.DataDir "\Clipboard"                         ; 很长的条目和图片
-    static LocalDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun" : ""   ; LocalHistory = 1 时 (默认) 存在这里
+    static LocalDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun" : ""   ; LocalFiles = 1 时 (默认) 图片和长条目存在这里
     static LargeText := 4000
     static Icon => IconCache.Own("Clipboard", "res:imageres.dll,-5314")   ; 文字条目的图标
     static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
@@ -46,7 +46,7 @@ class ClipboardProvider {
 
     static Init() {
         options := AppSettings.Feature("Clipboard")
-        if (options["LocalHistory"] && ClipboardProvider.LocalDir != "")
+        if (options["LocalFiles"] && ClipboardProvider.LocalDir != "")
             ClipboardProvider.UseLocalStorage(ClipboardProvider.LocalDir)
         if options["Persist"]
             ClipboardProvider._Load()
@@ -58,27 +58,25 @@ class ClipboardProvider {
         }
     }
 
-    ; 剪贴板历史放在本机, 不跟着 Data 文件夹进 OneDrive 等同步盘: 每次复制都要保存, 放在同步盘里会一直同步,
-    ; 复制的内容也会上传到云端。第一次切换时把 Data 里原来的历史搬过来; 搬不动时这次仍用原来的位置, 下次再试
+    ; 图片和很长的条目 (Clipboard 文件夹) 放在本机, 不跟着 Data 文件夹进 OneDrive 等同步盘: 图片大, 放在同步盘里
+    ; 每复制一张都要上传。ClipboardHistory.json 仍在 Data 里 (文字历史照常同步); 另一台电脑上没有对应文件的
+    ; 图片 / 长条目读取时跳过。第一次切换时把 Data 里原来的文件夹搬过来; 搬不动时这次仍用原来的位置, 下次再试
     static UseLocalStorage(dir) {
-        newFile := dir "\ClipboardHistory.json", newFolder := dir "\Clipboard"
-        if (newFile = ClipboardProvider.File)
+        newFolder := dir "\Clipboard"
+        if (newFolder = ClipboardProvider.Folder)
             return true
         try {
-            DirCreate(dir)
-            if (FileExist(ClipboardProvider.File) && !FileExist(newFile)) {
-                if (InStr(FileExist(ClipboardProvider.Folder), "D") && !InStr(FileExist(newFolder), "D")) {
-                    DirCopy(ClipboardProvider.Folder, newFolder)
-                    DirDelete(ClipboardProvider.Folder, true)
-                }
-                FileMove(ClipboardProvider.File, newFile)
-                Logger.Debug("ClipboardProvider: history moved to " dir)
+            if (InStr(FileExist(ClipboardProvider.Folder), "D") && !InStr(FileExist(newFolder), "D")) {
+                DirCreate(dir)
+                DirCopy(ClipboardProvider.Folder, newFolder)
+                DirDelete(ClipboardProvider.Folder, true)
+                Logger.Debug("ClipboardProvider: images and long entries moved to " newFolder)
             }
         } catch as e {
-            Logger.Error("ClipboardProvider: cannot move history to " dir " - " e.Message)
+            Logger.Error("ClipboardProvider: cannot move " ClipboardProvider.Folder " to " newFolder " - " e.Message)
             return false
         }
-        ClipboardProvider.File := newFile, ClipboardProvider.Folder := newFolder
+        ClipboardProvider.Folder := newFolder
         return true
     }
 
