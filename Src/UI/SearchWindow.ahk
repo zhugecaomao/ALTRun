@@ -988,13 +988,16 @@ class SearchWindow {
 
         hdc := NumGet(lParam, A_PtrSize = 8 ? 32 : 16, "Ptr")
         row := NumGet(lParam, A_PtrSize = 8 ? 56 : 36, "UPtr")             ; dwItemSpec, 0 起
-        index := SearchWindow.Offset + row + 1
-        if (index > SearchWindow.Results.Length)
+        ; 先拿到这一行的结果再画: 画的过程中可能插进来别的线程 (例如运行命令后隐藏窗口、清空输入框触发的新搜索),
+        ; 用 SetResults 换上更少的结果, 再按下标去取 SearchWindow.Results 就会越界 ("Invalid index")
+        results := SearchWindow.Results, index := SearchWindow.Offset + row + 1
+        if (index > results.Length)
             return CDRF_SKIPDEFAULT
+        item := results[index]
 
         rect := Buffer(16, 0)                                               ; left = LVIR_BOUNDS (0)
         SendMessage(0x100E, row, rect.Ptr, SearchWindow.List.Hwnd)          ; LVM_GETITEMRECT
-        SearchWindow._PaintRow(hdc, rect, SearchWindow.Results[index], index = SearchWindow.Selected, row + 1)
+        SearchWindow._PaintRow(hdc, rect, item, index = SearchWindow.Selected, row + 1)
         return CDRF_SKIPDEFAULT
     }
 

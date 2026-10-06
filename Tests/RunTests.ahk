@@ -84,7 +84,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2317,6 +2317,36 @@ class Tests {
     }
 
     ; 输入检查、支架间距、SPF2M 没有处理好的情况 (崩溃 / 不显示任何东西)
+    ; PT Tools 窗口: 结果框不停留 Tab 焦点 (Area Expression 之后直接到 Rebar Diameter), 单位写成 mm², 点进输入框时全选
+    static PTToolsWindowUi() {
+        eq := (n, a, e) => TestRunner.Equal("PTToolsWindowUi." n, a, e)
+        saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"]]
+        PTToolsWindow.Settings["WinLeft"] := -3000, PTToolsWindow.Settings["WinTop"] := -3000
+        PTToolsWindow.Show()
+        g := PTToolsWindow.G
+        tabbed := "", oldUnit := ""
+        for ctrl in g {
+            style := ControlGetStyle(ctrl)
+            if (ctrl.Type = "Edit" && (style & 0x800) && (style & 0x10000))     ; ES_READONLY 还有 WS_TABSTOP
+                tabbed .= ctrl.Name " "
+            if InStr(ctrl.Text, "mm2")
+                oldUnit .= ctrl.Text " | "
+        }
+        eq("read-only fields skip tab", tabbed, "")
+        eq("units", oldUnit, "")
+        next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")
+        eq("expression -> diameter", next = g["RequiredBarDiameter"].Hwnd, true)
+        span := g["RebarSpanWidth"]
+        SendMessage(0xB1, 1, 1, span)                                       ; 光标放在中间
+        span.Focus()
+        Sleep(100)                                                          ; 处理 PostMessage 的全选
+        start := 0, finish := 0
+        DllCall("SendMessage", "Ptr", span.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
+        eq("select all on focus", start "-" finish, "0-" StrLen(span.Value))
+        g.Destroy(), PTToolsWindow.G := ""
+        PTToolsWindow.Settings["WinLeft"] := saved[1], PTToolsWindow.Settings["WinTop"] := saved[2]
+    }
+
     static TendonProfileInputs() {
         eq := (n, a, e) => TestRunner.Equal("TendonProfileInputs." n, a, e)
         profileOf := (profile, start, finish, l, extra := "") => TendonProfile.Calc(TendonProfileInputsMap(profile, start, finish, l, extra))
