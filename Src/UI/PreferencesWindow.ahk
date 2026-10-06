@@ -68,6 +68,8 @@ class PreferencesWindow {
             g.OnEvent("Escape", (*) => PreferencesWindow.Cancel())
             PreferencesWindow.Gui := g
 
+            ; 左边的页面列表最先建: Tab 键的顺序是 列表 -> 页面里的控件 -> 底部按钮 (页面名字建完页面再填)
+            pageList := g.AddListBox("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " AltSubmit")
             PreferencesWindow._BuildPages()
             if (!PreferencesWindow._wider.Count || A_Index = 2)
                 break
@@ -79,7 +81,7 @@ class PreferencesWindow {
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
-        pageList := g.AddListBox("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " AltSubmit", names)
+        pageList.Add(names)
         pageList.OnEvent("Change", (ctrl, *) => PreferencesWindow.SelectPage(ctrl.Value))
         SendMessage(0x1A0, 0, Round(26 * A_ScreenDPI / 96), pageList.Hwnd)  ; LB_SETITEMHEIGHT: 更宽松的侧边栏
         PreferencesWindow.PageList := pageList
@@ -101,6 +103,7 @@ class PreferencesWindow {
         pageList.Value := pageIndex
         PreferencesWindow.SelectPage(pageIndex)
         g.Show((IsInteger(x) && IsInteger(y) ? "x" x " y" y " " : "") "w765 h" (PreferencesWindow.ButtonY + 41))
+        pageList.Focus()                                                    ; 焦点在页面列表: ↑ ↓ 切换页面, 不会不小心改了第一页的设置
         ; 打开窗口时程序自己填的值不算修改, 等控件的通知都处理完再开始记录
         SetTimer(() => (PreferencesWindow._ready := true), -300)
     }

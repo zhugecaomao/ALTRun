@@ -1050,6 +1050,13 @@ class Tests {
 
         PreferencesWindow.Show(1, -3000, -3000)
         Sleep(400)                                                          ; 打开 300 ms 之后的修改才算 (见 PreferencesWindow.Show)
+        focused := DllCall("GetFocus", "Ptr")                               ; 打开时焦点在页面列表 (↑ ↓ 切换页面, 不改第一页的设置)
+        eq("focus on page list", focused = PreferencesWindow.PageList.Hwnd, true)
+        nextTab := DllCall("GetNextDlgTabItem", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", PreferencesWindow.PageList.Hwnd, "Int", 0, "Ptr")
+        onPage := false                                                     ; Tab: 列表之后是当前页面里的控件, 不是底部按钮
+        for ctrl in PreferencesWindow.Pages[1].Controls
+            onPage := onPage || ctrl.Hwnd = nextTab
+        eq("tab from page list goes into the page", onPage, true)
         PreferencesWindow.SelectPage(PreferencesWindow._PageIndex("Prefs.Page.Appearance"))
         page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Appearance")]
         gallery := ""
