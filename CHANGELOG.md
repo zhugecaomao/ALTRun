@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.05.8]
+## [2026.10.05.9]
 
 测试版。
 
@@ -19,6 +19,7 @@
 - 打开偏好设置时焦点在左边的页面列表, `↑` `↓` 切换页面 (以前焦点落在 "常规" 页的第一个选项, 按方向键会不小心改掉双击呼出的设置); `Tab` 的顺序改为 页面列表 → 页面里的选项 → 底部按钮
 - 搜索窗口偶尔弹出错误 "Invalid index" (例如从搜索结果打开 SPF2M 时): 画结果行的过程中被同时进行的新搜索换掉了结果列表, 现在先取出这一行的结果再画
 - PT Tools: 改第一组的 Span Width 时, BRC Area 的 Span Width 会跟着变, 但钢筋网面积 (Top / Bottom Mesh Area) 没有重算; 现在钢筋网面积和 "+ Rebar" 一起更新
+- 关掉一台显示器后, 呼出搜索窗口卡在显示的过程中 (2 分多钟, 重新打开显示器才恢复), 之后热键和托盘图标都打不开: 现在上一次显示超过 3 秒还没完成时, 再按热键会直接重新显示; 调试日志记下卡了多久、卡在哪一步, 以及显示器数量的变化
 
 ## [2026.10.05]
 
@@ -455,8 +456,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.8...HEAD
-[2026.10.05.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.8
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.9...HEAD
+[2026.10.05.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.9
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

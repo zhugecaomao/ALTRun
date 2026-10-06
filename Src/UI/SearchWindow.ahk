@@ -114,6 +114,7 @@ class SearchWindow {
         OnMessage(0x20A, (p*) => SearchWindow._OnMouseWheel(p*))            ; WM_MOUSEWHEEL
         OnMessage(0x201, (p*) => SearchWindow._OnLButtonDown(p*))           ; WM_LBUTTONDOWN: 拖动窗口
         OnMessage(0x232, (p*) => SearchWindow._OnMoved(p*))                 ; WM_EXITSIZEMOVE: 拖动结束
+        OnMessage(0x7E,  (*) => Logger.Debug("Display changed: " MonitorGetCount() " monitor(s)"))   ; WM_DISPLAYCHANGE: 卡住时对照日志
 
         g.Show("Hide w" w " h" SearchWindow._WindowHeight(0))
         Win.SetCorner(g.Hwnd)
@@ -162,17 +163,34 @@ class SearchWindow {
 
     ; text: 要搜索的文字; 不写时空白, 打开了 "保留上一次的搜索" (KeepLastQuery) 时恢复上次的
     ; 输入、文件搜索模式和选中的行, 文字全选: 按 Enter 再执行一次, 直接输入就开始新的搜索
-    static _showing := false
+    static _showing := false, _showStarted := 0, _showStep := ""
+    static StuckShowMs := 3000                                              ; 上一次显示超过这么久还没完成: 当作卡住, 不再挡住新的显示
     static Show(text := "") {
         if !IsObject(SearchWindow.Gui)
             return
-        if SearchWindow._showing {                                          ; 上一次还没显示完 (例如显示过程中又按了热键): 不重入
-            Logger.Debug("SearchWindow: show skipped, still showing")
+        if SearchWindow._ShouldSkipShow()
             return
-        }
-        SearchWindow._showing := true
+        SearchWindow._showing := true, SearchWindow._showStarted := A_TickCount, SearchWindow._showStep := "start"
         try SearchWindow._Show(text)
         finally SearchWindow._showing := false
+    }
+
+    ; 上一次还没显示完 (例如显示过程中又按了热键): 不重入。但上一次卡住太久 (2026-10 关掉一台显示器后卡了 2 分半,
+    ; 热键和托盘都打不开) 就不再等它, 直接再显示一次; 日志里记下卡了多久、卡在哪一步
+    static _ShouldSkipShow() {
+        if !SearchWindow._showing
+            return false
+        stuck := A_TickCount - SearchWindow._showStarted
+        Logger.Debug("SearchWindow: show skipped, still showing (" stuck " ms, at " SearchWindow._showStep ")")
+        if (stuck < SearchWindow.StuckShowMs)
+            return true
+        Logger.Warn("SearchWindow: previous show stuck for " stuck " ms at " SearchWindow._showStep ", showing again")
+        return false
+    }
+
+    static _Step(name) {
+        SearchWindow._showStep := name
+        Logger.Trace("show: " name)
     }
 
     static _Show(text) {
@@ -182,6 +200,7 @@ class SearchWindow {
         wasVisible := SearchWindow.IsVisible()
         if (text = "" && wasVisible)
             SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
+        SearchWindow._Step("previous window")
         App.RememberActiveWindow()
         SearchWindow._actionsOnly := false
         SearchWindow.Marked := Map()
@@ -196,31 +215,34 @@ class SearchWindow {
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
         SearchWindow.HistoryIndex := 0
-        Logger.Trace("show: results")
+        SearchWindow._Step("results")
         if !reuse {
             SearchWindow._SetInput(restore ? last.Text : text)
             if restore
                 SearchWindow.MoveSelection(last.Selected - SearchWindow.Selected)
         }
 
+        SearchWindow._Step("position")
         appearance := AppSettings.Appearance
         pos := SearchWindow.Place(SearchWindow._ScreenArea(appearance["ShowOn"]), SearchWindow.Width
             , SearchWindow._WindowHeight(SearchWindow.VisibleRows), appearance["RememberPosition"] ? appearance["Position"] : "")
         ; 窗口隐藏期间的重画请求会被丢掉, 显示出来后才重画的话, 结果列表会先白一下 / 闪一下。
         ; 先让 DWM 把窗口藏起来 (cloak), 显示并立即画好整个窗口之后再露出来
         hwnd := SearchWindow.Gui.Hwnd
-        Logger.Trace("show: window")
+        SearchWindow._Step("window")
         cloaked := !SearchWindow.IsVisible() && SearchWindow._Cloak(hwnd, true)
         try {
             SearchWindow.Gui.Show("x" pos.X " y" pos.Y " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
             SearchWindow._shownRows := SearchWindow._VisibleCount()
+            SearchWindow._Step("redraw")
             DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
         } finally {
             if cloaked
                 SearchWindow._Cloak(hwnd, false)
         }
-        Logger.Trace("show: activate")
+        SearchWindow._Step("activate")
         try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)                    ; 先拿到焦点, 之后按下的键都进搜索框
+        SearchWindow._Step("focus")
         SearchWindow.Input.Focus()
         len := StrLen(SearchWindow.Input.Value)
         if restore
@@ -228,7 +250,7 @@ class SearchWindow {
         else
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
         if AppSettings.General["SwitchToEnglishInput"] {
-            Logger.Trace("show: input language")
+            SearchWindow._Step("input language")
             if (!wasVisible || !SearchWindow._layoutBefore)                     ; 隐藏时切回呼出前的输入法
                 SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
             Win.SwitchToEnglishIME()
