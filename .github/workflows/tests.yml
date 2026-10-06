@@ -45,5 +45,6 @@ jobs:
           $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk' `
                   -Wait -PassThru -NoNewWindow -RedirectStandardOutput test.log -RedirectStandardError test.err
           Get-Content test.log | Where-Object { $_ -notmatch '^PASS' }
+          Get-Content test.log | Where-Object { $_ -match '^(FAIL|UNCAUGHT)' } | ForEach-Object { Write-Host "::error::$_" }   # 失败的测试显示在检查结果的注释里
           Get-Content test.err
           if ($proc.ExitCode -ne 0) { throw "Unit tests failed (exit code $($proc.ExitCode))" }
