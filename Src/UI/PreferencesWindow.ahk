@@ -25,10 +25,12 @@
 ;
 ; 用法:
 ;   PreferencesWindow.Show([页码, x, y])
+;   PreferencesWindow.AddCommands(paths)   "发送到" 时偏好设置开着: 加进 "命令" 页
 ;===============================================================================
 
 class PreferencesWindow {
     static Gui := "", Working := "", Pages := [], Binds := [], PageList := ""
+    static _lists := Map()                                                  ; 列表页的设置路径 (例如 "CustomCommands") -> 加入 / 编辑项目的方法
     ; 页面的顺序 (和 _BuildPages 一致, 有测试检查); 搜索里的 "ALTRun 偏好设置: 外观" 等由它生成, 不用打开窗口
     static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
         , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
@@ -64,7 +66,7 @@ class PreferencesWindow {
         ; 按实际的文字宽度加宽那一页的左列, 重新建一次窗口 (记住宽度, 下次打开不用再建两次)
         Loop 2 {
             PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
-            PreferencesWindow.Pages := [], PreferencesWindow.Binds := [], PreferencesWindow._wider := Map()
+            PreferencesWindow.Pages := [], PreferencesWindow.Binds := [], PreferencesWindow._wider := Map(), PreferencesWindow._lists := Map()
             PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false
 
             g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
@@ -120,9 +122,9 @@ class PreferencesWindow {
         return 1
     }
 
-    ; 有控件被用户修改过: "应用" 变为可用, 取消时要确认
-    static MarkDirty() {
-        if (!PreferencesWindow._ready || PreferencesWindow._dirty)
+    ; 有控件被用户修改过: "应用" 变为可用, 取消时要确认; force: 刚打开窗口时也算 ("发送到" 加进来的命令)
+    static MarkDirty(force := false) {
+        if ((!PreferencesWindow._ready && !force) || PreferencesWindow._dirty)
             return
         PreferencesWindow._dirty := true
         try PreferencesWindow.ApplyButton.Enabled := true
@@ -141,7 +143,35 @@ class PreferencesWindow {
         HotkeyBox.CancelActive()                                            ; 正在录制热键时关窗口: 先结束录制, 恢复 ALTRun 的热键
         if IsObject(PreferencesWindow.Gui)
             PreferencesWindow.Gui.Destroy()
-        PreferencesWindow.Gui := ""
+        PreferencesWindow.Gui := "", PreferencesWindow._lists := Map()
+    }
+
+    ; "发送到" 时偏好设置开着: 切到 "命令" 页, 把文件 / 文件夹加进列表, 按 确定 / 应用 才保存
+    ; (直接写进设置文件, 会被之后的保存盖掉)。和没开偏好设置时一样: 1 个打开编辑框
+    ; (已经有这个命令时编辑它), 多个直接加上, 跳过已有的
+    static AddCommands(paths) {
+        PreferencesWindow.Show("Prefs.Page.Commands")
+        list := PreferencesWindow._lists["CustomCommands"]
+        if (paths.Length = 1) {
+            existing := CustomCommandProvider.FindByTarget(paths[1], list.Items)
+            if IsObject(existing) {
+                App.Notify(I18n.T("Custom.Exists", existing["Title"]), 2500)
+                list.Edit.Call(existing)
+            } else {
+                list.Insert.Call(CustomCommandProvider.FromPath(paths[1]))
+            }
+            return
+        }
+        added := 0, skipped := 0
+        for target in paths {
+            if IsObject(CustomCommandProvider.FindByTarget(target, list.Items)) {
+                skipped += 1
+                continue
+            }
+            list.Append.Call(CustomCommandProvider.FromPath(target))
+            added += 1
+        }
+        App.Toast(I18n.T("Custom.AddedMany", added) (skipped ? " " I18n.T("Custom.SkippedExisting", skipped) : ""), 3000)
     }
 
     static OK() {
@@ -1191,15 +1221,28 @@ class PreferencesWindow {
             if statuses.Count
                 statuses[ObjPtr(item)] := check(item, Map())
         }
-        AddItem(*) {
-            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, newItem())
-            if IsObject(edited) {
-                items.Push(edited)
-                PreferencesWindow.MarkDirty()
-                Recheck(edited)
-                if IsObject(filterBox)
-                    filterBox.Value := ""                                   ; 清掉筛选, 新加的一项一定看得到
-                Refresh(items.Length)
+        AddItem(*) => Insert(newItem())
+        Insert(item) {                                                      ; 打开编辑框 (item 是预先填好的内容), 确定后加进列表
+            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, item)
+            if IsObject(edited)
+                Append(edited)
+        }
+        Append(item) {
+            items.Push(item)
+            PreferencesWindow.MarkDirty(true)
+            Recheck(item)
+            if IsObject(filterBox)
+                filterBox.Value := ""                                       ; 清掉筛选, 新加的一项一定看得到
+            Refresh(items.Length)
+        }
+        EditExisting(item) {                                                ; 选中列表里的这一项并打开编辑框
+            for index, existing in items {
+                if (existing = item) {
+                    if IsObject(filterBox)
+                        filterBox.Value := ""
+                    Refresh(index)
+                    return EditItem()
+                }
             }
         }
         EditItem(*) {
@@ -1253,6 +1296,7 @@ class PreferencesWindow {
 
         listView.OnEvent("DoubleClick", EditItem)
         Refresh()
+        PreferencesWindow._lists[path] := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting}   ; 外面加进来的项目 (AddCommands)
         PreferencesWindow._y += height - 34
         PreferencesWindow._Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Edit")).OnEvent("Click", EditItem)

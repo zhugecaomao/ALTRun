@@ -84,7 +84,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2255,10 +2255,60 @@ class Tests {
         commands := AppSettings.CustomCommands
         eq("several added, existing skipped", commands.Length, 3)
         eq("added in order", commands[2]["Title"] "|" commands[3]["Title"], "Design Report|Windows")
+
+        ; 偏好设置开着时: 加进 "命令" 页的列表 (算作修改, 按 确定 / 应用 才保存), 不直接写进设置
+        AppSettings.Data["CustomCommands"] := [Map("Title", "Old", "Type", "Folder", "Target", folder "\pt2415 - riverside\", "Arguments", "", "Keyword", "")]
+        PreferencesWindow.Show(1, -3000, -3000)                             ; 刚打开 (还没开始记录修改) 时加进来的也算修改
+        CustomCommandProvider.AddFromPaths([folder "\PT2415 - Riverside", folder "\Design Report.docx", folder "\design report.docx", "C:\Windows"])
+        working := PreferencesWindow.Working["CustomCommands"]
+        eq("prefs: added to the working list", working.Length "|" working[2]["Title"] "|" working[3]["Title"], "3|Design Report|Windows")
+        eq("prefs: settings not saved yet", AppSettings.CustomCommands.Length, 1)
+        eq("prefs: commands page shown, dirty", PreferencesWindow.Pages[PreferencesWindow._page].Key "|" PreferencesWindow._dirty, "Prefs.Page.Commands|1")
+        listView := ""
+        for ctrl in PreferencesWindow.Pages[PreferencesWindow._page].Controls
+            if (ctrl.Type = "ListView")
+                listView := ctrl
+        eq("prefs: list shows them, last selected", listView.GetCount() "|" listView.GetNext(), "3|3")
+        PreferencesWindow.Close()
+        eq("prefs: closed clears list hooks", PreferencesWindow._lists.Count, 0)
         ToolTip(, , , 20)
         AppSettings.Data["CustomCommands"] := savedCommands, AppSettings.File := savedFile
         try FileDelete(A_Temp "\ALTRunTest.json")
         try DirDelete(folder, true)
+    }
+
+    ; 只运行一个 ALTRun: 再启动时把命令行参数交给正在运行的 (WM_COPYDATA), 重新启动 (/restart) 时替换它
+    static SingleInstance() {
+        eq := (n, a, e) => TestRunner.Equal("SingleInstance." n, a, e)
+        eq("restart (compiled)", App.IsRestart('"C:\ALTRun\ALTRun.exe" /restart -Reloaded'), true)
+        eq("restart (script)", App.IsRestart('"C:\AHK\AutoHotkey64.exe" /restart "C:\ALTRun\ALTRun.ahk" -Preferences 3'), true)
+        eq("restart (no quotes)", App.IsRestart('ALTRun.exe /RESTART'), true)
+        eq("double-click", App.IsRestart('"C:\ALTRun\ALTRun.exe"'), false)
+        eq("send to", App.IsRestart('"C:\ALTRun\ALTRun.exe" -SendTo "D:\a /restart b"'), false)
+        eq("no other instance", App._RunningInstance(), 0)
+
+        received := []
+        saved := App.GetOwnPropDesc("_HandleCommandLine")
+        App.DefineProp("_HandleCommandLine", {Call: (self, args, forwarded := false) => received.Push([args, forwarded])})
+        OnMessage(0x4A, onCopyData := (p*) => App._OnCopyData(p*))
+        try {
+            eq("sent", App.SendArgs(A_ScriptHwnd, ["-SendTo", "D:\项目 A\Report.docx", "C:\Windows"]), true)
+            eq("no arguments sent", App.SendArgs(A_ScriptHwnd, []), true)
+            Sleep(50)
+            eq("handled after replying", received.Length, 2)
+            if (received.Length = 2) {
+                args := received[1][1]
+                eq("arguments", args.Length "|" args[1] "|" args[2] "|" args[3], "3|-SendTo|D:\项目 A\Report.docx|C:\Windows")
+                eq("forwarded", received[1][2], true)
+                eq("double-click: no arguments", received[2][1].Length, 0)
+            }
+            copyData := Buffer(A_PtrSize * 3, 0)                            ; 别的程序 (例如 Everything) 的 WM_COPYDATA 不处理
+            NumPut("UPtr", 0x1234, copyData, 0)
+            eq("other copydata ignored", App._OnCopyData(0, copyData.Ptr, 0x4A, A_ScriptHwnd), "")
+        } finally {
+            OnMessage(0x4A, onCopyData, 0)
+            App.DefineProp("_HandleCommandLine", saved)
+        }
     }
 
     ; Ctrl+↑ / Ctrl+↓ 翻搜索记录 (↑ ↓ 只移动选择); 用隐藏的输入框代替搜索窗口, 不真的搜索

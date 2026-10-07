@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.05.11]
+## [2026.10.05.12]
 
 测试版。
 
@@ -15,7 +15,10 @@
 - 搜索里可以直接打开某个设置页: 每页一条 "ALTRun 偏好设置: 外观" 这样的命令, 输入页名 (例如 `外观`、`hotkeys`) 就能找到, 回车直接打开那一页; 主项 "ALTRun 偏好设置" 仍排在最前面
 - PT Tools: 用鼠标点进输入框时全选, 直接输入新数字; 只读的结果框 (面积、根数、计算结果) 不再停留 `Tab` / `Enter` 焦点, 例如 Area Expression 之后直接到 Rebar Diameter; 面积单位写成 mm²; 标签和分组名称更清楚 (Rebar Area、Bars Required、Calculator、Number of Bars、Top / Bottom Mesh、Mesh + Rebar 加上单位); 输入框和结果框都右对齐 (包括钢筋直径下拉框); Safety Factor 复选框也不停留焦点; 各组整体上移, Calculator 和 BRC Area 底边对齐; 字体改为 Segoe UI 10 号; 输入框左右留出边距, 光标不再紧贴数字。SPF2M 窗口的输入框也是点进去全选
 
+- 已经在运行时再启动 ALTRun, 交给正在运行的处理, 不再把它关掉重开: 双击 `ALTRun.exe` 弹出搜索窗口; 开机启动的快捷方式什么都不做; 正在运行的没有回应 (卡住) 时才替换它。"应用" 设置、一键更新之后的重新启动不变
+
 ### 修复
+- 偏好设置开着时用 资源管理器 → 发送到 → ALTRun 添加命令, 偏好设置会被关掉, 没保存的修改也丢了: 现在偏好设置不关, 切到 "自定义命令" 页, 新命令加进列表 (1 个时打开编辑框), 按 确定 / 应用 保存
 - 打开偏好设置时焦点在左边的页面列表, `↑` `↓` 切换页面 (以前焦点落在 "常规" 页的第一个选项, 按方向键会不小心改掉双击呼出的设置); `Tab` 的顺序改为 页面列表 → 页面里的选项 → 底部按钮
 - 搜索窗口偶尔弹出错误 "Invalid index" (例如从搜索结果打开 SPF2M 时): 画结果行的过程中被同时进行的新搜索换掉了结果列表, 现在先取出这一行的结果再画
 - PT Tools: 改第一组的 Span Width 时, BRC Area 的 Span Width 会跟着变, 但钢筋网面积 (Top / Bottom Mesh Area) 没有重算; 现在钢筋网面积和 "+ Rebar" 一起更新
@@ -457,8 +460,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.11...HEAD
-[2026.10.05.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.11
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.12...HEAD
+[2026.10.05.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.12
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

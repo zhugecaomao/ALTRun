@@ -13,6 +13,9 @@
 ;   -Update         检查更新, 有新版本就直接下载安装 (不询问)
 ;   -Updated <版本>  一键更新后启动的新版本: 提示已更新, 不弹出搜索窗口
 ;
+; 只运行一个 ALTRun: 已经在运行时, 新启动的把命令行参数交给它处理 (双击 exe = 弹出搜索窗口,
+; 发送到 = 添加命令, 开机启动 = 什么都不做), 自己退出, 见 HandOff
+;
 ; 用法 (其它模块里):
 ;   App.Notify("...")              操作后的简短提示 (HUD)
 ;   App.Toast("...")               后台事件的 Windows 通知 (隐藏托盘图标时用 HUD)
@@ -23,15 +26,18 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.05.11"
+    static Version := "2026.10.05.12"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
     static PreviousWindow := 0
     static _settingsTime := ""
     static _watchTimer := ""
+    static _handOffNote := ""
 
     static Start() {
+        if App.HandOff()
+            ExitApp()
         started := Logger.Ms()
         ; 窗口命令 (WinActivate 等) 之后不再默认等 100 ms: 等待期间 AHK 会嵌套处理消息,
         ; 呼出窗口时在这里遇到重画消息不断的情况会一直等下去 (界面卡住)。需要等的地方用 WinWaitActive
@@ -41,6 +47,8 @@ class App {
         AppSettings.Load()
         Logger.Enabled := AppSettings.General["SaveLog"] ? true : false
         Logger.Debug("===== " App.Name " " App.Version " starting =====")
+        if (App._handOffNote != "")
+            Logger.Debug(App._handOffNote)
         Logger.Time("startup: settings", started)                          ; 打开 "写入调试日志" 时记录启动各阶段的耗时
         phase := Logger.Ms()
         AppSettings.General["Language"] := I18n.Normalize(AppSettings.General["Language"])   ; 以前的 "zh" -> "zh-CN"
@@ -85,7 +93,95 @@ class App {
         Logger.Time("startup: total", started)
         Logger.Flush(), Logger.Immediate := true                            ; 之后每条日志马上写入 (卡住被强制结束时也留得下)
         Logger.TraceUntil := A_TickCount + 60000                            ; 启动后 1 分钟内记下更细的步骤 (Logger.Trace)
-        App._HandleCommandLine()
+        OnMessage(0x4A, (p*) => App._OnCopyData(p*))                        ; 之后再启动的 ALTRun 交过来的命令行参数 (WM_COPYDATA)
+        App._HandleCommandLine(A_Args)
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Single instance
+    ;---------------------------------------------------------------------------
+    ; 已经有 ALTRun (同一个程序文件) 在运行时, 把命令行参数交给它 (WM_COPYDATA), 返回 true: 这个进程退出。
+    ; 不像 #SingleInstance Force 那样关掉它, 正在编辑的偏好设置、打开的编辑框都不会丢。
+    ; 重新启动 (/restart: 应用设置、一键更新) 或者它没有回应 (卡住、不认识这条消息的旧版本) 时才替换它
+    static CopyDataId := 0x414C5452                                         ; "ALTR": 和 Everything / TC 的 WM_COPYDATA 区分开
+
+    static HandOff() {
+        running := App._RunningInstance()
+        if !running
+            return false
+        if !App.IsRestart(DllCall("GetCommandLineW", "Str")) {
+            DllCall("GetWindowThreadProcessId", "Ptr", running, "UInt*", &pid := 0)
+            DllCall("AllowSetForegroundWindow", "UInt", pid)                ; 它弹出的窗口可以切到最前面 (这个进程是用户刚启动的, 有这个权限)
+            if App.SendArgs(running, A_Args)
+                return true
+            App._handOffNote := "App: running instance did not answer, replacing it"
+        }
+        App._CloseInstance(running)
+        return false
+    }
+
+    ; 同一个程序文件的另一个 ALTRun 的主窗口 (隐藏的, 标题是 "路径 - AutoHotkey v2..."), 没有返回 0
+    static _RunningInstance() {
+        saved := A_DetectHiddenWindows
+        DetectHiddenWindows(true)
+        found := 0
+        for hwnd in WinGetList(A_ScriptFullPath " - AutoHotkey ahk_class AutoHotkey") {
+            if (hwnd != A_ScriptHwnd) {
+                found := hwnd
+                break
+            }
+        }
+        DetectHiddenWindows(saved)
+        return found
+    }
+
+    ; App.Restart 启动的: 命令行是 "程序" /restart ...
+    static IsRestart(commandLine) {
+        return RegExMatch(commandLine, 'i)^\s*("[^"]*"|\S+)\s+/restart(\s|$)') ? true : false
+    }
+
+    ; 参数一行一个发过去; 对方回复 1 才算收到 (卡住 3 秒没回应、旧版本不认识时返回 false)
+    static SendArgs(hwnd, args) {
+        text := ""
+        for arg in args
+            text .= arg "`n"
+        data := Buffer(StrPut(text, "UTF-16"))
+        StrPut(text, data, "UTF-16")
+        copyData := Buffer(A_PtrSize * 3, 0)                                ; COPYDATASTRUCT
+        NumPut("UPtr", App.CopyDataId, copyData, 0)
+        NumPut("UInt", data.Size, copyData, A_PtrSize)
+        NumPut("Ptr", data.Ptr, copyData, A_PtrSize * 2)
+        reply := 0
+        sent := DllCall("SendMessageTimeoutW", "Ptr", hwnd, "UInt", 0x4A, "Ptr", A_ScriptHwnd, "Ptr", copyData.Ptr
+                      , "UInt", 2, "UInt", 3000, "UPtr*", &reply)            ; 2 = SMTO_ABORTIFHUNG
+        return (sent && reply = 1)
+    }
+
+    static _OnCopyData(wParam, lParam, msg, hwnd) {
+        if (NumGet(lParam, 0, "UPtr") != App.CopyDataId)
+            return                                                          ; 不是给我们的 (Everything、TC 的回复)
+        args := []
+        if NumGet(lParam, A_PtrSize, "UInt") {
+            for arg in StrSplit(StrGet(NumGet(lParam, A_PtrSize * 2, "Ptr"), "UTF-16"), "`n")
+                if (arg != "")
+                    args.Push(arg)
+        }
+        Logger.Debug("App: arguments from a new instance: " (args.Length ? args[1] " (" args.Length ")" : "none"))
+        SetTimer(() => App._HandleCommandLine(args, true), -1)              ; 先回复 (发送方在等), 再处理: 可能弹出编辑框
+        return 1
+    }
+
+    ; 关掉另一个 ALTRun (正常退出, 会保存学习记录等), 3 秒还没退出就强制结束
+    static _CloseInstance(hwnd) {
+        saved := A_DetectHiddenWindows
+        DetectHiddenWindows(true)
+        try {
+            pid := WinGetPID(hwnd)
+            WinClose(hwnd)
+            if !WinWaitClose(hwnd, , 3)
+                ProcessClose(pid)
+        }
+        DetectHiddenWindows(saved)
     }
 
     ;---------------------------------------------------------------------------
@@ -371,11 +467,12 @@ class App {
         return (flag != "" && RegExMatch(arguments, "i)(^|\s)\Q" flag "\E$")) ? true : false
     }
 
-    static _HandleCommandLine() {
-        if (A_Args.Length >= 2 && A_Args[1] = "-SendTo") {
+    ; forwarded: 之后再启动的 ALTRun 交过来的参数 (没有参数 = 双击了 exe: 弹出搜索窗口)
+    static _HandleCommandLine(args, forwarded := false) {
+        if (args.Length >= 2 && args[1] = "-SendTo") {
             paths := []                                                     ; 选中了几个文件, 就一次传进来几个路径
-            Loop A_Args.Length - 1 {
-                target := A_Args[A_Index + 1]
+            Loop args.Length - 1 {
+                target := args[A_Index + 1]
                 if (SubStr(target, -4) = ".lnk") {
                     try {
                         FileGetShortcut(target, &linkTarget)
@@ -388,25 +485,25 @@ class App {
             CustomCommandProvider.AddFromPaths(paths)
             return
         }
-        if (A_Args.Length >= 1 && (A_Args[1] = "-Startup" || A_Args[1] = "-Reloaded"))
+        if (args.Length >= 1 && (args[1] = "-Startup" || args[1] = "-Reloaded"))
             return
-        if (A_Args.Length >= 1 && A_Args[1] = "-Updated") {
+        if (args.Length >= 1 && args[1] = "-Updated") {
             App.Toast(I18n.T("Update.Done", App.Version), 5000)
             return
         }
-        if (A_Args.Length >= 1 && A_Args[1] = "-Update") {
+        if (args.Length >= 1 && args[1] = "-Update") {
             UpdateChecker.Check(true)
             return
         }
-        if (A_Args.Length >= 1 && A_Args[1] = "-Preferences") {
-            args := PreferencesWindow.ParseArgs(A_Args)
-            PreferencesWindow.Show(args.Page, args.X, args.Y)
+        if (args.Length >= 1 && args[1] = "-Preferences") {
+            opened := PreferencesWindow.ParseArgs(args)
+            PreferencesWindow.Show(opened.Page, opened.X, opened.Y)
             return
         }
-        if AppSettings.MigratedFrom
+        if (!forwarded && AppSettings.MigratedFrom)
             return                                                          ; 升级提示显示中, 不马上弹出窗口
         SearchWindow.Show()
-        if (AppSettings.MovedFrom = "")                                     ; 不盖掉 "设置文件已移到 Data" 的提示
+        if (!forwarded && AppSettings.MovedFrom = "")                       ; 不盖掉 "设置文件已移到 Data" 的提示
             App.Notify(I18n.T("App.Running", App._HotkeyText()), 3000)
     }
 
