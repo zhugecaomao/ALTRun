@@ -34,6 +34,7 @@
 #Include %A_ScriptDir%\..\Src\Core\FileIndex.ahk
 #Include %A_ScriptDir%\..\Src\UI\ThemeManager.ahk
 #Include %A_ScriptDir%\..\Src\UI\ThemePreview.ahk
+#Include %A_ScriptDir%\..\Src\UI\NavIcons.ahk
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
@@ -1066,6 +1067,23 @@ class Tests {
         eq("page keys match the pages", keys, expected)
         SystemProvider._PageOpener("Prefs.Page.Calculator")()               ; 窗口开着时跳到那一页
         eq("open a page from search", PreferencesWindow._page, PreferencesWindow._PageIndex("Prefs.Page.Calculator"))
+        eq("page list follows", PreferencesWindow.PageList.GetNext(), PreferencesWindow._page)
+        eq("page list rows", PreferencesWindow.PageList.GetCount(), PreferencesWindow.Pages.Length)
+        PreferencesWindow.Show(3)                                           ; 已经开着时按页码打开 ("-Preferences 3" 交过来的)
+        eq("open by number while open", PreferencesWindow._page "|" PreferencesWindow.PageList.GetNext(), "3|3")
+        PreferencesWindow.PageList.Modify(3, "-Select")                     ; 点了列表下面的空白处: 选回当前页
+        Sleep(50)
+        eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), 3)
+        PreferencesWindow.PageList.Modify(5, "Select Focus")                ; 用户在列表里选了一页 (点击或 ↑ ↓)
+        Sleep(50)
+        eq("selecting a row shows the page", PreferencesWindow._page, 5)
+        eq("every page has an icon", NavIcons.MissingPages(PreferencesWindow.PageKeys), "")
+        if (NavIcons.FontName() != "") {                                    ; Windows 上有图标字体 (Wine 没有)
+            il := NavIcons.ImageList(PreferencesWindow.PageKeys)
+            eq("one icon per page", DllCall("comctl32\ImageList_GetImageCount", "Ptr", il), PreferencesWindow.PageKeys.Length)
+            DllCall("comctl32\ImageList_Destroy", "Ptr", il)
+            eq("glyphs exist in " NavIcons.FontName(), NavIcons.MissingGlyphs(), "")
+        }
         PreferencesWindow.SelectPage(PreferencesWindow._PageIndex("Prefs.Page.Appearance"))
         page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Appearance")]
         gallery := ""

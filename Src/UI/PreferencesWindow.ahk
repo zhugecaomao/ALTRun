@@ -54,10 +54,9 @@ class PreferencesWindow {
     ; pageIndex: 页码, 或页面的键 (例如 "Prefs.Page.Advanced")
     static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
-            if !IsInteger(pageIndex) && (index := PreferencesWindow._PageIndex(pageIndex)) {
-                PreferencesWindow.PageList.Value := index
-                PreferencesWindow.SelectPage(index)
-            }
+            index := IsInteger(pageIndex) ? pageIndex : PreferencesWindow._PageIndex(pageIndex)
+            if (index >= 1 && index <= PreferencesWindow.Pages.Length)
+                PreferencesWindow._SelectRow(index)
             WinActivate("ahk_id " PreferencesWindow.Gui.Hwnd)
             return
         }
@@ -76,7 +75,8 @@ class PreferencesWindow {
             PreferencesWindow.Gui := g
 
             ; 左边的页面列表最先建: Tab 键的顺序是 列表 -> 页面里的控件 -> 底部按钮 (页面名字建完页面再填)
-            pageList := g.AddListBox("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " AltSubmit")
+            ; ListView 而不是 ListBox: 每页前面一个图标 (系统图标字体画的, 见 NavIcons); 0x20 整行选中, 0x10000 双缓冲
+            pageList := g.AddListView("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " -Hdr -Multi LV0x10020", [""])
             PreferencesWindow._BuildPages()
             if (!PreferencesWindow._wider.Count || A_Index = 2)
                 break
@@ -88,9 +88,14 @@ class PreferencesWindow {
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
-        pageList.Add(names)
-        pageList.OnEvent("Change", (ctrl, *) => PreferencesWindow.SelectPage(ctrl.Value))
-        SendMessage(0x1A0, 0, Round(26 * A_ScreenDPI / 96), pageList.Hwnd)  ; LB_SETITEMHEIGHT: 更宽松的侧边栏
+        icons := NavIcons.ImageList(PreferencesWindow.PageKeys)             ; 图像列表的高度就是行高 (更宽松的侧边栏)
+        if icons
+            pageList.SetImageList(icons, 1)
+        for index, name in names
+            pageList.Add("Icon" index, name)
+        pageList.ModifyCol(1, 150)
+        DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; 和资源管理器一样的悬停 / 选中效果
+        pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (ItemSelect 事件有时收不到)
         PreferencesWindow.PageList := pageList
 
         buttonY := " y" PreferencesWindow.ButtonY
@@ -107,12 +112,28 @@ class PreferencesWindow {
         if !IsInteger(pageIndex)
             pageIndex := PreferencesWindow._PageIndex(pageIndex)
         pageIndex := Max(1, Min(pageIndex, PreferencesWindow.Pages.Length))
-        pageList.Value := pageIndex
-        PreferencesWindow.SelectPage(pageIndex)
+        PreferencesWindow._SelectRow(pageIndex)
         g.Show((IsInteger(x) && IsInteger(y) ? "x" x " y" y " " : "") "w765 h" (PreferencesWindow.ButtonY + 41))
         pageList.Focus()                                                    ; 焦点在页面列表: ↑ ↓ 切换页面, 不会不小心改了第一页的设置
         ; 打开窗口时程序自己填的值不算修改, 等控件的通知都处理完再开始记录
         SetTimer(() => (PreferencesWindow._ready := true), -300)
+    }
+
+    static _SelectRow(index) {
+        PreferencesWindow.SelectPage(index)
+        PreferencesWindow.PageList.Modify(index, "Select Focus Vis")
+    }
+
+    ; 选中了一行: 显示那一页。点了列表下面的空白处, ListView 会取消选中: 选回当前页
+    static _OnPageRow(lParam) {
+        row := NumGet(lParam, 3 * A_PtrSize, "Int") + 1                     ; NMLISTVIEW: iItem (从 0 开始), uNewState, uOldState
+        newState := NumGet(lParam, 3 * A_PtrSize + 8, "UInt"), oldState := NumGet(lParam, 3 * A_PtrSize + 12, "UInt")
+        if !((newState ^ oldState) & 0x2)                                   ; LVIS_SELECTED 没变 (例如只是焦点变了)
+            return
+        if (newState & 0x2)
+            return (row != PreferencesWindow._page) ? PreferencesWindow.SelectPage(row) : ""
+        SetTimer(() => (IsObject(PreferencesWindow.Gui) && !PreferencesWindow.PageList.GetNext())
+            ? PreferencesWindow.PageList.Modify(PreferencesWindow._page, "Select Focus") : 0, -1)
     }
 
     static _PageIndex(nameKey) {
