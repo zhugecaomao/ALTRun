@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.05.12]
+## [2026.10.05.13]
 
 测试版。
 
@@ -460,8 +460,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.12...HEAD
-[2026.10.05.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.12
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.13...HEAD
+[2026.10.05.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.13
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

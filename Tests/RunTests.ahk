@@ -2286,6 +2286,11 @@ class Tests {
         eq("double-click", App.IsRestart('"C:\ALTRun\ALTRun.exe"'), false)
         eq("send to", App.IsRestart('"C:\ALTRun\ALTRun.exe" -SendTo "D:\a /restart b"'), false)
         eq("no other instance", App._RunningInstance(), 0)
+        eq("title: compiled exe", App.IsInstanceTitle("C:\ALTRun\ALTRun.exe", "C:\ALTRun\ALTRun.exe"), true)
+        eq("title: script", App.IsInstanceTitle("C:\ALTRun\ALTRun.ahk - AutoHotkey v2.0.19", "C:\ALTRun\ALTRun.ahk"), true)
+        eq("title: other case", App.IsInstanceTitle("c:\altrun\ALTRun.exe", "C:\ALTRun\ALTRun.exe"), true)
+        eq("title: other script", App.IsInstanceTitle("C:\ALTRun\ALTRun.ahk.bak - AutoHotkey v2.0.19", "C:\ALTRun\ALTRun.ahk"), false)
+        eq("title: other folder", App.IsInstanceTitle("D:\Test\ALTRun.exe", "C:\ALTRun\ALTRun.exe"), false)
 
         received := []
         saved := App.GetOwnPropDesc("_HandleCommandLine")

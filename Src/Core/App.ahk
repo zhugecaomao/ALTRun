@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.05.12"
+    static Version := "2026.10.05.13"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -120,19 +120,25 @@ class App {
         return false
     }
 
-    ; 同一个程序文件的另一个 ALTRun 的主窗口 (隐藏的, 标题是 "路径 - AutoHotkey v2..."), 没有返回 0
+    ; 同一个程序文件的另一个 ALTRun 的主窗口 (隐藏的), 没有返回 0
     static _RunningInstance() {
         saved := A_DetectHiddenWindows
         DetectHiddenWindows(true)
         found := 0
-        for hwnd in WinGetList(A_ScriptFullPath " - AutoHotkey ahk_class AutoHotkey") {
-            if (hwnd != A_ScriptHwnd) {
+        for hwnd in WinGetList("ahk_class AutoHotkey") {
+            if (hwnd != A_ScriptHwnd && App.IsInstanceTitle(WinGetTitle(hwnd), A_ScriptFullPath)) {
                 found := hwnd
                 break
             }
         }
         DetectHiddenWindows(saved)
         return found
+    }
+
+    ; 主窗口的标题: 运行源码时是 "路径 - AutoHotkey v2...", 编译后的 exe 只有路径;
+    ; 不分大小写 (从快捷方式启动时路径的大小写可能不同)
+    static IsInstanceTitle(title, scriptPath) {
+        return (title = scriptPath || InStr(title, scriptPath " - AutoHotkey") = 1) ? true : false
     }
 
     ; App.Restart 启动的: 命令行是 "程序" /restart ...
