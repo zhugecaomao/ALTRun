@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.05.17]
+## [2026.10.05.18]
 
 测试版。
 
@@ -17,7 +17,7 @@
 
 - 已经在运行时再启动 ALTRun, 交给正在运行的处理, 不再把它关掉重开: 双击 `ALTRun.exe` 弹出搜索窗口; 开机启动的快捷方式什么都不做; 正在运行的没有回应 (卡住) 时才替换它。"应用" 设置、一键更新之后的重新启动不变
 - 偏好设置 → 高级: 链接显示名称 "主页 · GitHub · 更新说明 · 报告问题" (以前显示网址), 版本后面加上版权 "© 2013–2026 zhugecaomao"; "设置文件" 一行去掉 (就是数据文件夹里的 `ALTRun.json`), 数据文件夹的路径太长时中间用省略号, 不再折成两行, 鼠标停在上面显示完整路径
-- 偏好设置左边的页面列表每页前面加了图标 (Windows 自带的图标字体: Windows 11 的 Segoe Fluent Icons、Windows 10 的 Segoe MDL2 Assets, 和 Windows 设置同一套线条图标, 不另带文件); 选中和悬停效果和资源管理器一样。按页码打开偏好设置 (例如 `-Preferences 3`) 时窗口已经开着, 也会切到那一页; 切换页面时只重画右边的页面区域 (只换掉上一页和这一页的控件), 页面列表不再闪一下; 连续点 (或右键点) 列表下面的空白处也不会变成没有选中的页; 列表右边不再有一条列分隔线
+- 偏好设置左边的页面列表每页前面加了图标 (Windows 自带的图标字体: Windows 11 的 Segoe Fluent Icons、Windows 10 的 Segoe MDL2 Assets, 和 Windows 设置同一套线条图标, 不另带文件); 选中和悬停效果和资源管理器一样。按页码打开偏好设置 (例如 `-Preferences 3`) 时窗口已经开着, 也会切到那一页; 切换页面时只重画右边的页面区域 (只换掉上一页和这一页的控件), 页面列表不再闪一下; 连续点 (或右键点) 列表下面的空白处也不会变成没有选中的页; 列表右边不再有一条列分隔线; 选中的页只用高亮表示, 不再有虚线焦点框 (以前第一次打开偏好设置或用 `Tab` 切回列表时会出现)
 
 ### 修复
 - 搜索时偶尔弹出错误 "Item has no value" (IconCache): 后台检查文件夹图标 / 加载图标的定时器正好在两行代码之间打断上一轮时, 会删除一个已经被处理掉的项; 现在已经处理掉的直接跳过
@@ -463,8 +463,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.17...HEAD
-[2026.10.05.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.17
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.18...HEAD
+[2026.10.05.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.18
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

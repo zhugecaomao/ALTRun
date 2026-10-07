@@ -96,6 +96,7 @@ class PreferencesWindow {
         pageList.ModifyCol(1, "AutoHdr")                                    ; 唯一的一列占满列表宽度 (列比列表窄时右边会多一条列分隔线)
         DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; 和资源管理器一样的悬停 / 选中效果
         pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (ItemSelect 事件有时收不到)
+        pageList.OnNotify(-12, (ctrl, lParam) => PreferencesWindow._OnPageListDraw(lParam))   ; NM_CUSTOMDRAW: 不画虚线焦点框
         for code in [-2, -3, -5, -6]                                        ; NM_CLICK / NM_DBLCLK / NM_RCLICK / NM_RDBLCLK (点得快时第二下算双击)
             pageList.OnNotify(code, (ctrl, lParam) => PreferencesWindow._OnPageClick(lParam))
         PreferencesWindow.PageList := pageList
@@ -134,6 +135,19 @@ class PreferencesWindow {
             return
         if ((newState & 0x2) && row != PreferencesWindow._page)
             PreferencesWindow.SelectPage(row)
+    }
+
+    ; 选中行只用高亮表示, 不画虚线焦点框 (和 Windows 设置的导航一样)。Windows 按 "最近是不是用了键盘"
+    ; 决定显示不显示焦点框, 所以有时第一次打开偏好设置会看到虚线、有时看不到; 这里在画每一行之前去掉 CDIS_FOCUS
+    static _OnPageListDraw(lParam) {
+        stage := NumGet(lParam, 3 * A_PtrSize, "UInt")                      ; NMCUSTOMDRAW.dwDrawStage
+        if (stage = 0x1)                                                    ; CDDS_PREPAINT
+            return 0x20                                                     ; CDRF_NOTIFYITEMDRAW
+        if (stage = 0x10001) {                                              ; CDDS_ITEMPREPAINT
+            offset := 6 * A_PtrSize + 16                                    ; NMCUSTOMDRAW.uItemState
+            NumPut("UInt", NumGet(lParam, offset, "UInt") & ~0x10, lParam, offset)   ; CDIS_FOCUS
+        }
+        return 0                                                            ; CDRF_DODEFAULT
     }
 
     ; 点了列表下面的空白处 (没有点到行), ListView 会取消选中: 松开鼠标后选回当前页。

@@ -1076,6 +1076,12 @@ class Tests {
         NumPut("Int", -1, click, 3 * A_PtrSize)
         PreferencesWindow._OnPageClick(click.Ptr)
         eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), 3)
+        draw := Buffer(6 * A_PtrSize + 40, 0)                               ; NMCUSTOMDRAW: 选中行不画虚线焦点框
+        NumPut("UInt", 0x1, draw, 3 * A_PtrSize)
+        eq("custom draw asks for each row", PreferencesWindow._OnPageListDraw(draw.Ptr), 0x20)
+        NumPut("UInt", 0x10001, draw, 3 * A_PtrSize), NumPut("UInt", 0x11, draw, 6 * A_PtrSize + 16)   ; CDIS_SELECTED | CDIS_FOCUS
+        PreferencesWindow._OnPageListDraw(draw.Ptr)
+        eq("row drawn without the focus rectangle", NumGet(draw, 6 * A_PtrSize + 16, "UInt"), 0x1)
         listRect := Buffer(16)                                              ; 唯一的一列占满列表宽度 (不留列分隔线)
         DllCall("GetClientRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", listRect)
         eq("column fills the list", SendMessage(0x101D, 0, 0, PreferencesWindow.PageList), NumGet(listRect, 8, "Int"))   ; LVM_GETCOLUMNWIDTH
