@@ -1076,6 +1076,9 @@ class Tests {
         NumPut("Int", -1, click, 3 * A_PtrSize)
         PreferencesWindow._OnPageClick(click.Ptr)
         eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), 3)
+        listRect := Buffer(16)                                              ; 唯一的一列占满列表宽度 (不留列分隔线)
+        DllCall("GetClientRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", listRect)
+        eq("column fills the list", SendMessage(0x101D, 0, 0, PreferencesWindow.PageList), NumGet(listRect, 8, "Int"))   ; LVM_GETCOLUMNWIDTH
         PreferencesWindow.PageList.Modify(5, "Select Focus")                ; 用户在列表里选了一页 (点击或 ↑ ↓)
         Sleep(50)
         eq("selecting a row shows the page", PreferencesWindow._page, 5)

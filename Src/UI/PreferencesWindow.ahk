@@ -93,10 +93,11 @@ class PreferencesWindow {
             pageList.SetImageList(icons, 1)
         for index, name in names
             pageList.Add("Icon" index, name)
-        pageList.ModifyCol(1, 150)
+        pageList.ModifyCol(1, "AutoHdr")                                    ; 唯一的一列占满列表宽度 (列比列表窄时右边会多一条列分隔线)
         DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; 和资源管理器一样的悬停 / 选中效果
         pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (ItemSelect 事件有时收不到)
-        pageList.OnNotify(-2, (ctrl, lParam) => PreferencesWindow._OnPageClick(lParam))   ; NM_CLICK
+        for code in [-2, -3, -5, -6]                                        ; NM_CLICK / NM_DBLCLK / NM_RCLICK / NM_RDBLCLK (点得快时第二下算双击)
+            pageList.OnNotify(code, (ctrl, lParam) => PreferencesWindow._OnPageClick(lParam))
         PreferencesWindow.PageList := pageList
 
         buttonY := " y" PreferencesWindow.ButtonY
