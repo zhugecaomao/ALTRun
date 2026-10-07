@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.05.15]
+## [2026.10.05.16]
 
 测试版。
 
@@ -17,7 +17,7 @@
 
 - 已经在运行时再启动 ALTRun, 交给正在运行的处理, 不再把它关掉重开: 双击 `ALTRun.exe` 弹出搜索窗口; 开机启动的快捷方式什么都不做; 正在运行的没有回应 (卡住) 时才替换它。"应用" 设置、一键更新之后的重新启动不变
 - 偏好设置 → 高级: 链接显示名称 "主页 · GitHub · 更新说明 · 报告问题" (以前显示网址), 版本后面加上版权 "© 2013–2026 zhugecaomao"; "设置文件" 一行去掉 (就是数据文件夹里的 `ALTRun.json`), 数据文件夹的路径太长时中间用省略号, 不再折成两行, 鼠标停在上面显示完整路径
-- 偏好设置左边的页面列表每页前面加了图标 (Windows 自带的图标字体: Windows 11 的 Segoe Fluent Icons、Windows 10 的 Segoe MDL2 Assets, 和 Windows 设置同一套线条图标, 不另带文件); 选中和悬停效果和资源管理器一样。按页码打开偏好设置 (例如 `-Preferences 3`) 时窗口已经开着, 也会切到那一页
+- 偏好设置左边的页面列表每页前面加了图标 (Windows 自带的图标字体: Windows 11 的 Segoe Fluent Icons、Windows 10 的 Segoe MDL2 Assets, 和 Windows 设置同一套线条图标, 不另带文件); 选中和悬停效果和资源管理器一样。按页码打开偏好设置 (例如 `-Preferences 3`) 时窗口已经开着, 也会切到那一页; 切换页面时只重画右边的页面区域 (只换掉上一页和这一页的控件), 页面列表不再闪一下
 
 ### 修复
 - 偏好设置开着时用 资源管理器 → 发送到 → ALTRun 添加命令, 偏好设置会被关掉, 没保存的修改也丢了: 现在偏好设置不关, 切到 "自定义命令" 页, 新命令加进列表 (1 个时打开编辑框), 按 确定 / 应用 保存
@@ -462,8 +462,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.15...HEAD
-[2026.10.05.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.15
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.16...HEAD
+[2026.10.05.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.16
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

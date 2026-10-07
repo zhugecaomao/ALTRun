@@ -66,7 +66,7 @@ class PreferencesWindow {
         Loop 2 {
             PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
             PreferencesWindow.Pages := [], PreferencesWindow.Binds := [], PreferencesWindow._wider := Map(), PreferencesWindow._lists := Map()
-            PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false
+            PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false, PreferencesWindow._page := 0
 
             g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
             g.SetFont("s9", ThemeManager.FontName())
@@ -96,6 +96,7 @@ class PreferencesWindow {
         pageList.ModifyCol(1, 150)
         DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; 和资源管理器一样的悬停 / 选中效果
         pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (ItemSelect 事件有时收不到)
+        pageList.OnNotify(-2, (ctrl, lParam) => PreferencesWindow._OnPageClick(lParam))   ; NM_CLICK
         PreferencesWindow.PageList := pageList
 
         buttonY := " y" PreferencesWindow.ButtonY
@@ -124,16 +125,21 @@ class PreferencesWindow {
         PreferencesWindow.PageList.Modify(index, "Select Focus Vis")
     }
 
-    ; 选中了一行: 显示那一页。点了列表下面的空白处, ListView 会取消选中: 选回当前页
+    ; 选中了一行: 显示那一页
     static _OnPageRow(lParam) {
         row := NumGet(lParam, 3 * A_PtrSize, "Int") + 1                     ; NMLISTVIEW: iItem (从 0 开始), uNewState, uOldState
         newState := NumGet(lParam, 3 * A_PtrSize + 8, "UInt"), oldState := NumGet(lParam, 3 * A_PtrSize + 12, "UInt")
         if !((newState ^ oldState) & 0x2)                                   ; LVIS_SELECTED 没变 (例如只是焦点变了)
             return
-        if (newState & 0x2)
-            return (row != PreferencesWindow._page) ? PreferencesWindow.SelectPage(row) : ""
-        SetTimer(() => (IsObject(PreferencesWindow.Gui) && !PreferencesWindow.PageList.GetNext())
-            ? PreferencesWindow.PageList.Modify(PreferencesWindow._page, "Select Focus") : 0, -1)
+        if ((newState & 0x2) && row != PreferencesWindow._page)
+            PreferencesWindow.SelectPage(row)
+    }
+
+    ; 点了列表下面的空白处 (没有点到行), ListView 会取消选中: 松开鼠标后选回当前页。
+    ; 不在取消选中时马上选回: 点另一行时也会先取消选中上一行, 那样上一行会闪一下
+    static _OnPageClick(lParam) {
+        if (NumGet(lParam, 3 * A_PtrSize, "Int") < 0 && !PreferencesWindow.PageList.GetNext())   ; NMITEMACTIVATE.iItem = -1
+            PreferencesWindow.PageList.Modify(PreferencesWindow._page, "Select Focus")
     }
 
     static _PageIndex(nameKey) {
@@ -151,13 +157,29 @@ class PreferencesWindow {
         try PreferencesWindow.ApplyButton.Enabled := true
     }
 
+    ; 换页时只隐藏上一页、显示这一页的控件, 再只重画右边的页面区域:
+    ; 不重画左边的页面列表和底部按钮, 切换时不闪 (不对整个窗口用 WM_SETREDRAW: 顶层窗口停止重画后子控件会画不出来)
     static SelectPage(pageIndex) {
+        hwnd := PreferencesWindow.Gui.Hwnd
+        previous := PreferencesWindow._page
         PreferencesWindow._page := pageIndex
-        for index, page in PreferencesWindow.Pages
-            for ctrl in page.Controls
-                ctrl.Visible := (index = pageIndex)
+        for index, page in PreferencesWindow.Pages {
+            if (index = pageIndex || index = previous || previous = 0)      ; 刚建好时所有页面都要隐藏一次
+                for ctrl in page.Controls
+                    ctrl.Visible := (index = pageIndex)
+        }
         ; 复选框和说明文字是透明背景: 不先擦掉背景就重画, 文字会叠两遍变成粗体
-        DllCall("RedrawWindow", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
+        DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", PreferencesWindow._PageArea(), "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
+    }
+
+    ; 页面区域 (窗口客户区里, 页面列表右边、底部按钮上面) 的 RECT
+    static _PageArea() {
+        list := Buffer(16), client := Buffer(16), area := Buffer(16)
+        DllCall("GetWindowRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", list)
+        DllCall("MapWindowPoints", "Ptr", 0, "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", list, "UInt", 2)   ; 屏幕坐标 -> 客户区坐标
+        DllCall("GetClientRect", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", client)
+        NumPut("Int", NumGet(list, 8, "Int"), "Int", 0, "Int", NumGet(client, 8, "Int"), "Int", NumGet(list, 12, "Int"), area)
+        return area
     }
 
     static Close() {

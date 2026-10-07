@@ -1071,12 +1071,19 @@ class Tests {
         eq("page list rows", PreferencesWindow.PageList.GetCount(), PreferencesWindow.Pages.Length)
         PreferencesWindow.Show(3)                                           ; 已经开着时按页码打开 ("-Preferences 3" 交过来的)
         eq("open by number while open", PreferencesWindow._page "|" PreferencesWindow.PageList.GetNext(), "3|3")
-        PreferencesWindow.PageList.Modify(3, "-Select")                     ; 点了列表下面的空白处: 选回当前页
-        Sleep(50)
+        PreferencesWindow.PageList.Modify(3, "-Select")                     ; 点了列表下面的空白处: 松开鼠标后选回当前页
+        click := Buffer(3 * A_PtrSize + 40, 0)                              ; NMITEMACTIVATE, iItem = -1 (没有点到行)
+        NumPut("Int", -1, click, 3 * A_PtrSize)
+        PreferencesWindow._OnPageClick(click.Ptr)
         eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), 3)
         PreferencesWindow.PageList.Modify(5, "Select Focus")                ; 用户在列表里选了一页 (点击或 ↑ ↓)
         Sleep(50)
         eq("selecting a row shows the page", PreferencesWindow._page, 5)
+        wrong := 0                                                          ; 换页只显示这一页的控件, 别的页都隐藏
+        for index, page in PreferencesWindow.Pages
+            for ctrl in page.Controls
+                wrong += (ctrl.Visible != (index = 5))
+        eq("only the current page is visible", wrong, 0)
         eq("every page has an icon", NavIcons.MissingPages(PreferencesWindow.PageKeys), "")
         if (NavIcons.FontName() != "") {                                    ; Windows 上有图标字体 (Wine 没有)
             il := NavIcons.ImageList(PreferencesWindow.PageKeys)
