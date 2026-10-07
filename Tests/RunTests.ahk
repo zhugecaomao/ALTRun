@@ -84,7 +84,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2275,6 +2275,36 @@ class Tests {
         AppSettings.Data["CustomCommands"] := savedCommands, AppSettings.File := savedFile
         try FileDelete(A_Temp "\ALTRunTest.json")
         try DirDelete(folder, true)
+    }
+
+    ; 偏好设置 → 高级: 链接显示名称 (主页 · GitHub · 更新说明 · 报告问题), 版权, 数据文件夹一行 (长路径用省略号, 鼠标停留显示完整路径)
+    static AdvancedPage() {
+        eq := (n, a, e) => TestRunner.Equal("AdvancedPage." n, a, e)
+        PreferencesWindow.Show("Prefs.Page.Advanced", -3000, -3000)
+        try {
+            texts := "", link := "", folder := ""
+            for ctrl in PreferencesWindow.Pages[PreferencesWindow._page].Controls {
+                if (ctrl.Type = "Link")
+                    link := ctrl
+                else if (ctrl.Type = "Text" && ctrl.Text = AppSettings.DataDir)
+                    folder := ctrl
+                if (ctrl.Type = "Text")
+                    texts .= ctrl.Text "`n"
+            }
+            eq("four links", StrSplit(link.Text, "<a ").Length - 1, 4)
+            eq("no bare website address", InStr(link.Text, ">zhugecaomao.github.io"), 0)
+            eq("issues link", InStr(link.Text, App.RepoUrl "/issues/new/choose") > 0, true)
+            eq("copyright", InStr(texts, "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao") > 0, true)
+            eq("settings file row removed", InStr(texts, AppSettings.File), 0)
+            eq("data folder: one line, path ellipsis", IsObject(folder) && (ControlGetStyle(folder) & 0x8100) = 0x8100, true)
+        } finally {
+            PreferencesWindow.Close()
+        }
+        g := Gui()
+        label := g.AddText("w100 0x100", "C:\A very long path\to a folder")
+        tip := Win.AddTooltip(label.Hwnd, "C:\A very long path\to a folder")
+        eq("tooltip added", DllCall("SendMessageW", "Ptr", tip, "UInt", 0x40D, "Ptr", 0, "Ptr", 0), 1)   ; TTM_GETTOOLCOUNT
+        g.Destroy()
     }
 
     ; 只运行一个 ALTRun: 再启动时把命令行参数交给正在运行的 (WM_COPYDATA), 重新启动 (/restart) 时替换它

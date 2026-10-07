@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.05.13]
+## [2026.10.05.14]
 
 测试版。
 
@@ -16,6 +16,7 @@
 - PT Tools: 用鼠标点进输入框时全选, 直接输入新数字; 只读的结果框 (面积、根数、计算结果) 不再停留 `Tab` / `Enter` 焦点, 例如 Area Expression 之后直接到 Rebar Diameter; 面积单位写成 mm²; 标签和分组名称更清楚 (Rebar Area、Bars Required、Calculator、Number of Bars、Top / Bottom Mesh、Mesh + Rebar 加上单位); 输入框和结果框都右对齐 (包括钢筋直径下拉框); Safety Factor 复选框也不停留焦点; 各组整体上移, Calculator 和 BRC Area 底边对齐; 字体改为 Segoe UI 10 号; 输入框左右留出边距, 光标不再紧贴数字。SPF2M 窗口的输入框也是点进去全选
 
 - 已经在运行时再启动 ALTRun, 交给正在运行的处理, 不再把它关掉重开: 双击 `ALTRun.exe` 弹出搜索窗口; 开机启动的快捷方式什么都不做; 正在运行的没有回应 (卡住) 时才替换它。"应用" 设置、一键更新之后的重新启动不变
+- 偏好设置 → 高级: 链接显示名称 "主页 · GitHub · 更新说明 · 报告问题" (以前显示网址), 版本后面加上版权 "© 2013–2026 zhugecaomao"; "设置文件" 一行去掉 (就是数据文件夹里的 `ALTRun.json`), 数据文件夹的路径太长时中间用省略号, 不再折成两行, 鼠标停在上面显示完整路径
 
 ### 修复
 - 偏好设置开着时用 资源管理器 → 发送到 → ALTRun 添加命令, 偏好设置会被关掉, 没保存的修改也丢了: 现在偏好设置不关, 切到 "自定义命令" 页, 新命令加进列表 (1 个时打开编辑框), 按 确定 / 应用 保存
@@ -460,8 +461,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.13...HEAD
-[2026.10.05.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.13
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.14...HEAD
+[2026.10.05.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.14
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

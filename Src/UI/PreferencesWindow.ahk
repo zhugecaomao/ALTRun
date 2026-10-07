@@ -662,17 +662,23 @@ class PreferencesWindow {
         PreferencesWindow._y := top + 32
         PreferencesWindow._Add("Text", "x" textX " w" textW, I18n.T("App.Tagline"))
         PreferencesWindow._y := top + 52
-        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) "   ·   GPL-3.0")
+        copyright := "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao"         ; 版本号以发布年份开头
+        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) "   ·   " copyright "   ·   GPL-3.0")
         PreferencesWindow._y := top + 74
-        PreferencesWindow._Add("Link", "x" textX " w" textW, '<a href="' App.Website '">' RTrim(StrReplace(App.Website, "https://"), "/") '</a>   ·   <a href="' App.RepoUrl '">GitHub</a>')
+        links := ""
+        for link in [[App.Website, I18n.T("Prefs.Homepage")], [App.RepoUrl, "GitHub"], [App.RepoUrl "/releases", I18n.T("Update.ReleaseNotes")]
+                   , [App.RepoUrl "/issues/new/choose", I18n.T("Prefs.ReportIssue")]]
+            links .= (links = "" ? "" : "   ·   ") '<a href="' link[1] '">' link[2] '</a>'
+        PreferencesWindow._Add("Link", "x" textX " w" textW, links)
         PreferencesWindow._y := top + 102
         PreferencesWindow._Add("Button", "x" textX " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T("Tray.CheckUpdate"))
             .OnEvent("Click", (*) => UpdateChecker.Check())
         PreferencesWindow._y := top + 102 + PreferencesWindow.ButtonH + 22
 
         PreferencesWindow._Section("Prefs.Section.Data")
-        PreferencesWindow._Info("Prefs.SettingsFile", AppSettings.File, " cGray")
-        PreferencesWindow._Info("Prefs.Group.DataFolder", AppSettings.DataDir, " cGray")
+        ; 设置文件就是数据文件夹里的 ALTRun.json, 不另写一行; 路径太长时中间用省略号 (SS_PATHELLIPSIS), 鼠标停留显示完整路径
+        folder := PreferencesWindow._Info("Prefs.Group.DataFolder", AppSettings.DataDir, " r1 cGray 0x8100")
+        Win.AddTooltip(folder.Hwnd, AppSettings.DataDir)
         PreferencesWindow._y += 4
         PreferencesWindow._Buttons(""
             , ["Prefs.EditJson", (*) => (PreferencesWindow.Cancel() || App.EditSettingsFile())]
@@ -957,6 +963,7 @@ class PreferencesWindow {
         label := PreferencesWindow._GroupLabel(labelKey)
         ctrl := PreferencesWindow._Add(type, "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() options, text)
         PreferencesWindow._Below(6, label, ctrl)
+        return ctrl
     }
 
     ; 标签后面紧跟输入框 (分节排列的页面用, 不用左列): "搜索历史条数 [30]"

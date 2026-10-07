@@ -307,6 +307,23 @@ class Win {
 
     ; 输入框留空时显示系统原生的灰色提示文字(焦点在框里时也不消失, 不会被
     ; 误当成一次真实输入), 一旦用户开始打字就自动让位, 清空后又自动回来。
+    ; 鼠标停在控件上时显示的提示 (例如被省略号截断的路径显示完整路径); 静态文本要有 SS_NOTIFY (0x100) 才收得到鼠标。
+    ; 提示窗口属于控件所在的窗口, 跟着一起销毁。返回提示窗口
+    static AddTooltip(ctrlHwnd, text) {
+        static TTS_ALWAYSTIP := 0x1, TTS_NOPREFIX := 0x2, TTF_IDISHWND := 0x1, TTF_SUBCLASS := 0x10
+        static TTM_ADDTOOLW := 0x432, TTM_SETMAXTIPWIDTH := 0x418
+        owner := DllCall("GetAncestor", "Ptr", ctrlHwnd, "UInt", 2, "Ptr")  ; GA_ROOT
+        tip := DllCall("CreateWindowExW", "UInt", 0x8, "Str", "tooltips_class32", "Ptr", 0, "UInt", 0x80000000 | TTS_ALWAYSTIP | TTS_NOPREFIX
+                     , "Int", 0x80000000, "Int", 0x80000000, "Int", 0x80000000, "Int", 0x80000000, "Ptr", owner, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr")
+        info := Buffer(24 + 6 * A_PtrSize, 0)                               ; TOOLINFOW
+        NumPut("UInt", info.Size, "UInt", TTF_IDISHWND | TTF_SUBCLASS, info)
+        NumPut("Ptr", owner, "Ptr", ctrlHwnd, info, 8)
+        NumPut("Ptr", StrPtr(text), info, 24 + 3 * A_PtrSize)               ; 提示窗口会复制一份文字
+        DllCall("SendMessageW", "Ptr", tip, "UInt", TTM_SETMAXTIPWIDTH, "Ptr", 0, "Ptr", Round(600 * A_ScreenDPI / 96))
+        DllCall("SendMessageW", "Ptr", tip, "UInt", TTM_ADDTOOLW, "Ptr", 0, "Ptr", info)
+        return tip
+    }
+
     static SetCueBanner(hwnd, text) {
         static EM_SETCUEBANNER := 0x1501
         try DllCall("User32\SendMessageW", "Ptr", hwnd, "UInt", EM_SETCUEBANNER, "Ptr", 1, "WStr", text)

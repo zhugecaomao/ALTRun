@@ -842,7 +842,6 @@ class I18n {
         s["Prefs.AppendWindows.Desc"]   := "Windows where the hotkey adds the date at the end of the text, one per line, e.g. ahk_class TCmtEditForm (Total Commander comments)."
         s["Prefs.EnableExtension"]     := "Enabled"
         ; Advanced
-        s["Prefs.SettingsFile"]        := "Settings file"
         s["Prefs.EditJson"]            := "Edit ALTRun.json..."
         s["Prefs.EditJson.Desc"]       := "Every setting, including ones not shown here. ALTRun reloads when you save."
         s["Prefs.OpenDataFolder"]      := "Open Data Folder"
@@ -890,6 +889,8 @@ class I18n {
         s["Prefs.ResetLearning.Desc"]  := "Clears the learned result order and the search history."
         s["Prefs.ResetDone"]           := "Learned ranking and search history cleared."
         s["Prefs.Version"]             := "Version {1}"
+        s["Prefs.Homepage"]            := "Homepage"
+        s["Prefs.ReportIssue"]         := "Report an Issue"
 
         ; --- Update checker ---
         s["Update.Available"]          := "A new version {1} is available. Open the download page?"
