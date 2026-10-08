@@ -5,21 +5,26 @@
 
 ## [未发布]
 
-## [2026.10.05.18]
+## [2026.10.05.19]
 
 测试版。
+
+Test build.
 
 ### 改进
 - 搜索结果选中行的圆角和 偏好设置 → 外观 里主题缩略图的圆角改为抗锯齿 (GDI+), 边缘平滑, 不再有台阶; 半径为 0 的主题 (例如 Classic) 不变; 缩略图改用 24 位图像 (没有透明通道), 抗锯齿的圆角不会让缩略图背景变透明
 - 发布包里的 README、LICENSE、CHANGELOG 和 `Resources\` 里的文件和仓库 / 源码 ZIP 逐字节相同 (以前在 Windows 上打包时换行符被转成了 CRLF, 内容一样但文件对比显示不同)
 - 搜索里可以直接打开某个设置页: 每页一条 "ALTRun 偏好设置: 外观" 这样的命令, 输入页名 (例如 `外观`、`hotkeys`) 就能找到, 回车直接打开那一页; 主项 "ALTRun 偏好设置" 仍排在最前面
 - PT Tools: 用鼠标点进输入框时全选, 直接输入新数字; 只读的结果框 (面积、根数、计算结果) 不再停留 `Tab` / `Enter` 焦点, 例如 Area Expression 之后直接到 Rebar Diameter; 面积单位写成 mm²; 标签和分组名称更清楚 (Rebar Area、Bars Required、Calculator、Number of Bars、Top / Bottom Mesh、Mesh + Rebar 加上单位); 输入框和结果框都右对齐 (包括钢筋直径下拉框); Safety Factor 复选框也不停留焦点; 各组整体上移, Calculator 和 BRC Area 底边对齐; 字体改为 Segoe UI 10 号; 输入框左右留出边距, 光标不再紧贴数字。SPF2M 窗口的输入框也是点进去全选
-
 - 已经在运行时再启动 ALTRun, 交给正在运行的处理, 不再把它关掉重开: 双击 `ALTRun.exe` 弹出搜索窗口; 开机启动的快捷方式什么都不做; 正在运行的没有回应 (卡住) 时才替换它。"应用" 设置、一键更新之后的重新启动不变
 - 偏好设置 → 高级: 链接显示名称 "主页 · GitHub · 更新说明 · 报告问题" (以前显示网址), 版本后面加上版权 "© 2013–2026 zhugecaomao"; "设置文件" 一行去掉 (就是数据文件夹里的 `ALTRun.json`), 数据文件夹的路径太长时中间用省略号, 不再折成两行, 鼠标停在上面显示完整路径
 - 偏好设置左边的页面列表每页前面加了图标 (Windows 自带的图标字体: Windows 11 的 Segoe Fluent Icons、Windows 10 的 Segoe MDL2 Assets, 和 Windows 设置同一套线条图标, 不另带文件); 选中和悬停效果和资源管理器一样。按页码打开偏好设置 (例如 `-Preferences 3`) 时窗口已经开着, 也会切到那一页; 切换页面时只重画右边的页面区域 (只换掉上一页和这一页的控件), 页面列表不再闪一下; 连续点 (或右键点) 列表下面的空白处也不会变成没有选中的页; 列表右边不再有一条列分隔线; 选中的页只用高亮表示, 不再有虚线焦点框 (以前第一次打开偏好设置或用 `Tab` 切回列表时会出现)
 
+- 文档中英双语: GitHub 首页的 README 改为英文 (中文版是 `README.zh-CN.md`, 发布包里两个都有); Wiki 每页都有英文版 (`en-` 开头的页面), 侧边栏分 English / 中文 两组, 每页开头可以切换语言; `SECURITY.md` 本来就有中英文; 更新日志每个版本的概要后面加了一句英文
+- 速查表 (`?`) 和偏好设置的帮助 (`F1`) 按界面语言打开 Wiki: 中文界面打开中文页, 其它语言打开英文页
+
 ### 修复
+- 偏好设置 → 剪贴板历史 里 "也记录图片" 的说明还写着图片存在 `Data\Clipboard`, 改为 "和长条目放在一起" (默认在本机的 `%LOCALAPPDATA%\ALTRun\Clipboard`)
 - 搜索时偶尔弹出错误 "Item has no value" (IconCache): 后台检查文件夹图标 / 加载图标的定时器正好在两行代码之间打断上一轮时, 会删除一个已经被处理掉的项; 现在已经处理掉的直接跳过
 - 偏好设置开着时用 资源管理器 → 发送到 → ALTRun 添加命令, 偏好设置会被关掉, 没保存的修改也丢了: 现在偏好设置不关, 切到 "自定义命令" 页, 新命令加进列表 (1 个时打开编辑框), 按 确定 / 应用 保存
 - 打开偏好设置时焦点在左边的页面列表, `↑` `↓` 切换页面 (以前焦点落在 "常规" 页的第一个选项, 按方向键会不小心改掉双击呼出的设置); `Tab` 的顺序改为 页面列表 → 页面里的选项 → 底部按钮
@@ -31,6 +36,8 @@
 ## [2026.10.05]
 
 选主题改为看缩略图, 新增 4 个主题和繁體中文界面; 新增切换窗口、浏览文件夹、标记多个文件、带参数的自定义命令、Windows 设置页面、脚本扩展、置顶和最近使用; 数据文件夹可以放到同步盘。
+
+Pick themes from thumbnails, 4 new themes and a Traditional Chinese interface; new window switcher, folder browsing, marking several files, custom commands with an argument, Windows Settings pages, scripts, and pinned / recent items; the data folder can live in a synced folder.
 
 ### 升级
 - **从 2026.10.01 ~ 2026.10.04 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.05", 按 `Enter` 安装
@@ -81,6 +88,8 @@
 
 窗口隐藏后自动切回原来的输入法; 偏好设置的 "关于" 加上官网链接。
 
+The previous input method comes back automatically when the window hides; the "About" section of Preferences links to the website.
+
 ### 升级
 - **从 2026.10.01 ~ 2026.10.03 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.04", 按 `Enter` 安装
 - **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.04", 按 `Enter` 更新
@@ -95,6 +104,8 @@
 ## [2026.10.03]
 
 内置命令可以从搜索结果里删除; 新增紧凑午夜主题; 自定义命令等列表加了筛选框; 匹配高亮的颜色跟着主题走; 修复呼出窗口后第一个字延迟、输入时字距跳动和结果区闪一下。
+
+Built-in commands can be removed from the search results; new Midnight Compact theme; filter boxes for custom commands and other lists; the match highlight color follows the theme; fixed the delay on the first character after opening the window, jumping letter spacing while typing, and a flash in the results.
 
 ### 升级
 - **从 2026.10.01 ~ 2026.10.02 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.03", 按 `Enter` 安装
@@ -121,6 +132,8 @@
 
 搜索结果高亮匹配的字; 新增 6 个内置主题; 紧凑主题和高 DPI 下的图标不再有锯齿。
 
+Matched characters are highlighted in the results; 6 new built-in themes; no more jagged icons in compact themes and at high DPI.
+
 ### 升级
 - **从 2026.10.01 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.02", 按 `Enter` 安装
 - **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.02", 按 `Enter` 更新
@@ -138,6 +151,8 @@
 ## [2026.10.01]
 
 文字片段也能按正文里的词搜到, 编辑片段的窗口加了说明; 更新提示改用常见软件的写法。
+
+Snippets can be found by words in their text, and the snippet editor explains each field; update notices use the wording common software uses.
 
 ### 升级
 - **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.01", 按 `Enter` 更新
@@ -164,6 +179,8 @@
 
 关掉开机自动启动等设置时不再删掉用户自己建的快捷方式 (#113); 通知和任务管理器里显示的程序名改为 `ALTRun`。
 
+Turning off "Launch at login" and similar settings no longer deletes shortcuts you created yourself (#113); notifications and Task Manager show the program name as `ALTRun`.
+
 ### 升级
 - **从 2026.09.30.1 / 2026.09.30.2 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.09.30.3", 按 `Enter` 更新
 - **从 2026.09.26 ~ 2026.09.30 升级**: 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`
@@ -180,6 +197,8 @@
 
 偏好设置里内容较多的列表加高到 4 行, 竖向滚动条能显示滑块。
 
+Longer lists in Preferences are 4 rows tall, so the vertical scroll bar shows its thumb.
+
 ### 升级
 - **从 2026.09.30.1 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.09.30.2", 按 `Enter` 更新
 - **从 2026.09.26 ~ 2026.09.30 升级**: 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`
@@ -192,6 +211,8 @@
 ## [2026.09.30.1]
 
 自动检查更新更及时 (启动时和之后每 6 小时检查), 偏好设置 → 文件搜索 的 "文件类型" 输入框加高。
+
+Update checks are more timely (at startup and every 6 hours after); the "File types" box in Preferences → File Search is taller.
 
 ### 升级
 - **从 2026.09.26 ~ 2026.09.30 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.09.30.1", 按 `Enter` 更新; 没有看到的话, 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`
@@ -206,6 +227,8 @@
 ## [2026.09.30]
 
 打开 / 保存对话框下面自动出现文件夹面板 (和 Listary 的 Quick Switch 一样), 选中内容直接调出操作 (和 Alfred 的 Universal Actions 一样), 剪贴板历史记录文件和图片, 浏览器书签、单位 / 货币换算, 读取设置和索引快了很多。
+
+A folder panel appears below Open / Save dialogs automatically (like Listary's Quick Switch), actions on selected content (like Alfred's Universal Actions), clipboard history records files and images, browser bookmarks, unit / currency conversion, and much faster loading of settings and indexes.
 
 ### 升级
 - **从 2026.09.29 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.09.30", 按 `Enter` 更新 (或托盘图标 → 检查更新)
@@ -258,6 +281,8 @@
 
 热键直接按键录制 (不用再写 `!Space`), 检查更新和 Alfred 一样不再弹窗, 新版本显示在搜索窗口里。
 
+Hotkeys are recorded by pressing the keys (no more writing `!Space`); like Alfred, update checks no longer pop up a window, and new versions appear in the search window.
+
 ### 升级
 - **从 2026.09.26 ~ 2026.09.28 升级**: 发现新版本时选 "立即更新" (或托盘图标 → 检查更新), ALTRun 会自己下载安装; 用 Scoop 安装的用 `scoop update altrun`。设置、自定义命令和学习记录都保留, 设置文件的格式没有变化
 - **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.09.29.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
@@ -276,6 +301,8 @@
 ## [2026.09.28]
 
 偏好设置补全 (对话框跳转、一键加日期、文件索引各有一页), 更多默认示例, `Alt+R` 第二热键, `F1` 关于; 自定义命令支持 `ms-settings:` 等链接。
+
+Preferences completed (dialog jump, date stamp and file index each have a page), more default examples, `Alt+R` second hotkey, `F1` for About; custom commands support links such as `ms-settings:`.
 
 ### 升级
 - **从 2026.09.26 / 2026.09.27 升级**: 发现新版本时选 "立即更新" (或托盘图标 → 检查更新), ALTRun 会自己下载安装; 用 Scoop 安装的用 `scoop update altrun`。设置、自定义命令和学习记录都保留, 设置文件的格式没有变化
@@ -305,6 +332,8 @@
 ## [2026.09.27]
 
 日语界面、使用统计、ALTRun 自己的程序图标; 偏好设置重新排版, 设置文件移到 `Data\`, 打字更跟手。
+
+Japanese interface, usage statistics, ALTRun's own program icon; Preferences redesigned, the settings file moved to `Data\`, and typing feels more responsive.
 
 ### 升级
 - **从 2026.09.26 升级**: 发现新版本时选 "立即更新" (或托盘图标 → 检查更新), ALTRun 会自己下载安装; 用 Scoop 安装的用 `scoop update altrun`。第一次启动时设置文件自动从程序目录移到 `Data\ALTRun.json`, 设置、自定义命令和学习记录都保留
@@ -345,6 +374,8 @@
 
 一键更新, SPF2M 束线型直接计算 (不再需要 DOSBox), 可以用 Scoop 安装。
 
+One-key updates, SPF2M tendon profiles calculated directly (no DOSBox needed), installation with Scoop.
+
 ### 升级
 - **从 2026.09.25 / 2026.09.24 / 2026.09.23 升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.09.26.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`。设置、自定义命令和学习记录都保留。`Resources\` 里旧的 `DOSBox.exe`、`SDL.dll`、`SDL_net.dll`、`SPF2M.exe`、`Run.bat` 已经不用了, 可以删掉
 - **这是最后一次需要手动升级**: 从这个版本开始, 发现新版本时选 "立即更新" 即可, ALTRun 会自己下载安装 (用 Scoop 安装的用 `scoop update altrun`)
@@ -372,6 +403,8 @@
 
 窗口位置可以自己定, 偏好设置更容易看懂, 以及计算器的几处修正。
 
+Choose where the window appears, easier-to-understand Preferences, and a few calculator fixes.
+
 ### 升级
 - **从 2026.09.24 或 2026.09.23 升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.09.25.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`。设置、自定义命令和学习记录都保留, 新增的选项自动使用默认值
 - **从 2.x (v2026.08.12 及更早) 升级**: 步骤相同, 第一次运行时自动导入旧的 `ALTRun.ini`, 见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
@@ -393,6 +426,8 @@
 ## [2026.09.24]
 
 输入更流畅、更容易上手, 以及几个常用的新功能。
+
+Smoother typing, easier to get started, and a few useful new features.
 
 ### 升级
 - **从 2026.09.23 升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.09.24.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`。设置、自定义命令和学习记录都保留, 新增的选项自动使用默认值
@@ -420,6 +455,8 @@
 ## [2026.09.23] - 3.0
 
 3.0 参照 macOS 上的 Alfred 重新设计了搜索窗口和整体架构。
+
+3.0 redesigns the search window and the whole architecture after Alfred for macOS.
 
 ### 从旧版本升级
 1. 托盘图标 → 退出旧版本的 ALTRun
@@ -463,8 +500,8 @@
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.18...HEAD
-[2026.10.05.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.18
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.19...HEAD
+[2026.10.05.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.19
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

@@ -204,7 +204,7 @@
   "Prefs.ClipIgnoreApps": "不記錄這些程式 (處理程序名)",
   "Prefs.ClipIgnoreApps.Desc": "每行一個處理程序名, 例如 KeePass.exe; 在這些程式裡複製的內容不記錄",
   "Prefs.ClipImages": "也記錄圖片",
-  "Prefs.ClipImages.Desc": "存成 PNG 放在 Data\\Clipboard; 只在 結束後保留歷史 時記錄",
+  "Prefs.ClipImages.Desc": "存成 PNG, 和長項目放在一起; 只在 結束後保留歷史 時記錄",
   "Prefs.ClipKeyword": "關鍵字",
   "Prefs.ClipKeyword.Desc": "例如 clip 發票 在歷史裡搜尋",
   "Prefs.ClipMaxImages": "儲存圖片數",

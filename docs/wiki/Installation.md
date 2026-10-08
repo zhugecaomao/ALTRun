@@ -1,3 +1,5 @@
+[English](en-Installation) · **中文**
+
 # 安装与升级
 
 ## 系统要求

@@ -254,7 +254,7 @@ class PreferencesWindow {
 
     static Help() {
         page := PreferencesWindow.Pages[Max(1, PreferencesWindow._page)]
-        ActionCatalog.OpenUrl(HelpProvider.WikiUrl page.Wiki)
+        ActionCatalog.OpenUrl(HelpProvider.WikiPage(page.Wiki))
     }
 
     ; 每一页对应的 Wiki 页面 (帮助按钮 / F1)

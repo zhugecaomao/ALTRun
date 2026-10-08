@@ -85,7 +85,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1605,7 +1605,11 @@ class Tests {
             if (item.Id = "Folders")
                 folderItem := item
         eq("configured keyword", folderItem.Key, AppSettings.Feature("FileSearch")["FolderKeywords"][1] " bk")
-        eq("wiki page", folderItem.Url, "https://github.com/zhugecaomao/ALTRun/wiki/File-Search")
+        eq("wiki page", folderItem.Url, HelpProvider.WikiPage("File-Search"))
+        eq("wiki page in English", HelpProvider.WikiPage("File-Search", "en"), "https://github.com/zhugecaomao/ALTRun/wiki/en-File-Search")
+        eq("wiki page in Japanese UI", HelpProvider.WikiPage("Usage", "ja"), "https://github.com/zhugecaomao/ALTRun/wiki/en-Usage")
+        eq("wiki page in Chinese", HelpProvider.WikiPage("File-Search", "zh-CN"), "https://github.com/zhugecaomao/ALTRun/wiki/File-Search")
+        eq("wiki page in Traditional Chinese", HelpProvider.WikiPage("Usage", "zh-TW"), "https://github.com/zhugecaomao/ALTRun/wiki/Usage")
         ; 关掉的功能不显示
         clip := AppSettings.Feature("Clipboard"), savedClip := clip["Enabled"]
         clip["Enabled"] := 0
@@ -1808,6 +1812,40 @@ class Tests {
             unused .= key " "
         }
         TestRunner.Equal("I18nUnused", unused, "")
+    }
+
+    ; Wiki 中英两套页面 (Usage / en-Usage): 每页都有英文页, 页面里的 Wiki 链接都指向存在的页面,
+    ; 程序里打开的帮助页 (速查表、偏好设置的 F1) 两种语言都有
+    static WikiPages() {
+        dir := A_ScriptDir "\..\docs\wiki\"
+        pages := Map()
+        Loop Files, dir "*.md"
+            pages[SubStr(A_LoopFileName, 1, -3)] := true
+        missing := ""
+        for page in pages
+            if (SubStr(page, 1, 1) != "_" && SubStr(page, 1, 3) != "en-" && page != "Home" && !pages.Has("en-" page))
+                missing .= page " "
+        TestRunner.Equal("WikiPages.english page for every page", missing, "")
+        broken := ""
+        for page in pages {
+            text := FileRead(dir page ".md", "UTF-8"), pos := 1
+            while (pos := RegExMatch(text, "\]\(([A-Za-z][\w-]*)(#[^)]*)?\)", &m, pos)) {   ; [文字](Page) 或 [文字](Page#标题)
+                pos += m.Len
+                if !pages.Has(m[1])
+                    broken .= page " -> " m[1] "; "
+            }
+        }
+        TestRunner.Equal("WikiPages.links point to existing pages", broken, "")
+        used := Map()
+        for entry in HelpProvider.Entries()
+            used[entry[3]] := true
+        for pageKey in PreferencesWindow.PageKeys
+            used[PreferencesWindow.WikiPage(pageKey)] := true
+        missing := ""
+        for page in used
+            if !pages.Has(page) || !pages.Has("en-" page)
+                missing .= page " "
+        TestRunner.Equal("WikiPages.help pages exist in both languages", missing, "")
     }
 
     ; CHANGELOG.md 的每个版本标题都有链接 (文件末尾的 [版本]: 网址), "未发布" 比较的是最新发布的版本

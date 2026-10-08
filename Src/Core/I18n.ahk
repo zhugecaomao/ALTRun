@@ -789,7 +789,7 @@ class I18n {
         s["Prefs.ClipPersist"]         := "Keep history after ALTRun quits"
         s["Prefs.ClipPersist.Desc"]    := "Saved in Data\ClipboardHistory.json; images and long entries stay on this PC (%LOCALAPPDATA%\ALTRun\Clipboard). Off: memory only."
         s["Prefs.ClipImages"]          := "Also record images"
-        s["Prefs.ClipImages.Desc"]     := "Saved as PNG in Data\Clipboard. Only while history is kept after quitting."
+        s["Prefs.ClipImages.Desc"]     := "Saved as PNG files with the long entries. Only while history is kept after quitting."
         s["Prefs.ClipMaxImages"]       := "Keep images"
         s["Prefs.ClipMaxImages.Desc"]  := "The oldest images are removed first."
         s["Prefs.ClipMerge"]           := "Press Ctrl+C twice to append to the previous item"

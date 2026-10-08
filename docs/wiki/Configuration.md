@@ -1,3 +1,5 @@
+[English](en-Configuration) · **中文**
+
 # 设置文件参考 (ALTRun.json)
 
 所有设置和用户数据都保存在程序目录下的 `Data\ALTRun.json` (UTF-8 文本; 2026.09.26 及更早的版本放在程序目录里, 升级后第一次启动时自动移到 `Data\`)。程序目录不能写入时 (例如放在 `C:\Program Files`) 改用 `%APPDATA%\ALTRun\Data\`; 在 偏好设置 → 高级 → 数据 → 更改位置 可以换到别的文件夹 (例如同步盘里的, 见 [多台电脑共用设置](FAQ#在多台电脑上使用同一份设置))。大部分设置可以在偏好设置窗口里修改 (每个设置下面有一行灰色的说明): **确定** 保存并关闭, **应用** 保存并留在当前页, **取消** 放弃修改, **帮助** (`F1`) 打开当前页的说明; 设置在 ALTRun 重新载入后生效, 由程序自动完成。也可以直接编辑这个文件 (搜索窗口里按 `F4`, 或 偏好设置 → 高级 → 编辑 ALTRun.json), **保存后 ALTRun 自动重新载入**。
@@ -91,7 +93,7 @@
 | Hotkey | `^!c` | 直接打开剪贴板历史的热键 |
 | MaxItems | 200 | 保存多少条 |
 | MaxItemLength | 100000 | 超过这么多字的内容不记录 |
-| Persist | 1 | 保存到磁盘 (`Data\ClipboardHistory.json`, 超过 4000 字的条目和图片单独存在 `Clipboard\` 文件夹); 0 = 只在内存里 |
+| Persist | 1 | 保存到磁盘 (`Data\ClipboardHistory.json`, 超过 4000 字的条目和图片单独存在 `Clipboard\` 文件夹, 默认在本机的 `%LOCALAPPDATA%\ALTRun\Clipboard`, 见 `LocalFiles`); 0 = 只在内存里 |
 | LocalFiles | 1 | 1 = 图片和很长的条目 (`Clipboard\` 文件夹) 只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun\Clipboard`), 不放进 Data 文件夹: Data 在 OneDrive 等同步盘里时, 复制图片不会触发上传; `ClipboardHistory.json` 仍在 Data 里照常同步, 另一台电脑上没有对应文件的图片 / 长条目不显示。第一次运行时自动把 Data 里原来的文件夹搬过去。0 = 都放在 Data 文件夹 (例如放在 U 盘里随身带) |
 | Images | 1 | 也记录图片 (存成 PNG); 需要 `Persist = 1` |
 | MaxImages | 50 | 最多保存多少张图片, 超过时先删最早的 |
@@ -195,6 +197,6 @@
 | `FileIndex.json` | 内置文件索引 (没有 Everything 时) |
 | `Knowledge.json` | 学习排序和最近的搜索 |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) |
-| `ClipboardHistory.json` `Clipboard\` | 剪贴板历史 (很长的条目和图片单独存成文件) |
+| `ClipboardHistory.json` | 剪贴板历史 (很长的条目和图片单独存成文件, 默认在本机的 `%LOCALAPPDATA%\ALTRun\Clipboard\`, `LocalFiles = 0` 时在 `Data\Clipboard\`) |
 | `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) |
 | `Update.json` | 上次检查更新的时间、跳过的版本 |

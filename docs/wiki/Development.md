@@ -1,3 +1,5 @@
+[English](en-Development) · **中文**
+
 # 开发指南
 
 ## 环境
@@ -85,6 +87,11 @@ bucket\ packaging\  Scoop / winget 清单 (见 packaging\README.md)
 
 ## 文档
 Wiki 的源文件在仓库的 `docs/wiki/`, 合并到 `main` 后自动发布到 Wiki (`.github/workflows/wiki.yml`)。请通过 PR 修改 `docs/wiki/`, 不要直接在网页上编辑。
+
+文档是中英双语的, 改一种语言时另一种也要一起改:
+- README: `README.md` (英文, GitHub 首页默认显示) 和 `README.zh-CN.md` (中文), 开头互相链接
+- Wiki: 每页两个文件, 中文 `Usage.md`, 英文 `en-Usage.md`; 每页开头链接到另一种语言, 英文页之间的链接写 `en-` 的页面名。侧边栏 `_Sidebar.md` 分中英两组。程序里的帮助 (速查表、偏好设置的 `F1`) 按界面语言打开: 中文界面打开中文页, 其它语言打开 `en-` 页 (`HelpProvider.WikiPage`)。`WikiPages` 测试检查每页都有英文页、链接指向存在的页面
+- CHANGELOG 用中文写, 每个版本开头的概要后面加一句英文 (Release 的说明就是这一节)
 
 官网 (https://zhugecaomao.github.io/ALTRun/) 的源文件在 `site/`: `index.html` 是中英文模板, `build.py` 填入最新版本号、下载链接和大小、下载次数、主题截图和最新版本的更新内容, 生成到 `_site/`。`.github/workflows/pages.yml` 在 main 上相关文件变化、Release 成功后和每天一次自动生成, 用 GitHub Pages 的官方 Actions 部署 (Settings → Pages → Source 选 "GitHub Actions")。本地预览: `python3 site/build.py && python3 -m http.server -d _site`。
 

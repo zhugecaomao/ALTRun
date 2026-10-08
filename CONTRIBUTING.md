@@ -39,7 +39,7 @@
 2. 提交前确认单元测试全部通过、`/validate` 没有警告
 3. 新功能或修复请附带测试 (`Tests\RunTests.ahk`)
 4. 涉及界面的改动请附上截图; README / Wiki 里的截图由 Screenshots workflow 生成, 用英文界面和虚构的示例数据, 不要放个人或工作相关的信息
-5. 用户可见的变化请更新 `README.md`、`CHANGELOG.md` 的 "未发布" 部分, 必要时更新 Wiki
+5. 用户可见的变化请更新 README (`README.md` 英文和 `README.zh-CN.md` 中文)、`CHANGELOG.md` 的 "未发布" 部分, 必要时更新 Wiki (中文页和 `en-` 英文页都要改)
 
 ## 发布新版本
 版本号用发布日期 `YYYY.MM.DD`:
@@ -50,6 +50,6 @@
 Release workflow 在 Windows 上编译 `ALTRun.exe`, 并用 `Tests\Fixtures\ALTRun.v2026.08.12.ini` 验证从旧版本升级。
 
 ## 文档 (Wiki)
-Wiki 的源文件在仓库的 [`docs/wiki/`](docs/wiki), 合并到 `main` 后由 GitHub Actions (`.github/workflows/wiki.yml`) 自动发布到 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)。请修改 `docs/wiki/` 里的文件, 直接在网页上修改的 Wiki 会在下次发布时被覆盖。页面之间的链接写页面名, 不带 `.md` (例如 `[主题](Themes)`)。
+Wiki 的源文件在仓库的 [`docs/wiki/`](docs/wiki), 合并到 `main` 后由 GitHub Actions (`.github/workflows/wiki.yml`) 自动发布到 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)。请修改 `docs/wiki/` 里的文件, 直接在网页上修改的 Wiki 会在下次发布时被覆盖。页面之间的链接写页面名, 不带 `.md` (例如 `[主题](Themes)`; 英文页写 `[Themes](en-Themes)`)。每页有中文 (`Themes.md`) 和英文 (`en-Themes.md`) 两个文件, 改一种语言时请一起改另一种; 英文不熟悉的话可以只改中文, 在 PR 里说明, 维护者会补上。
 
 提交代码即表示你同意以 [GPL-3.0](LICENSE) 许可发布你的贡献。

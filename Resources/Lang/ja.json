@@ -203,7 +203,7 @@
   "Prefs.ClipIgnoreApps": "記録しないプログラム (プロセス名)",
   "Prefs.ClipIgnoreApps.Desc": "1 行に 1 プロセス名。例: KeePass.exe。これらのプログラムでのコピーは記録されません。",
   "Prefs.ClipImages": "画像も記録",
-  "Prefs.ClipImages.Desc": "Data\\Clipboard に PNG で保存されます。終了後も履歴を保持する場合のみ記録します。",
+  "Prefs.ClipImages.Desc": "長い項目と一緒に PNG で保存されます。終了後も履歴を保持する場合のみ記録します。",
   "Prefs.ClipKeyword": "キーワード",
   "Prefs.ClipKeyword.Desc": "例: clip 請求書 で履歴を検索します。",
   "Prefs.ClipMaxImages": "保存する画像数",

@@ -1,3 +1,5 @@
+[English](en-FAQ) · **中文**
+
 # 常见问题
 
 ### 按 Alt+Space 没有反应

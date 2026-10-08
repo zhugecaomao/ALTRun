@@ -2,7 +2,7 @@
 ; HelpProvider.ahk - 速查表 (输入 ?) 和空搜索框里的使用提示 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; 一张表 (Entries) 两种用途:
-;   ?          列出所有输入语法和快捷键, ? 后面的文字用来过滤 (? 文件), Enter 打开 Wiki 对应的页面
+;   ?          列出所有输入语法和快捷键, ? 后面的文字用来过滤 (? 文件), Enter 打开 Wiki 对应的页面 (按界面语言, 见 WikiPage)
 ;   NextTip()  搜索窗口每次显示时, 空搜索框里的灰色提示文字按顺序换一条 (General.ShowTips)
 ; 每一条: [Id, 所属功能 (关闭时不显示, "" = 总是显示), Wiki 页面]
 ; 显示的文字在 I18n: Help.<Id>.Key (输入 / 按键) 和 Help.<Id>.Text (作用);
@@ -16,6 +16,11 @@ class HelpProvider {
     static _tipIndex := 0
 
     static Init() {
+    }
+
+    ; Wiki 页面的网址: 中文界面打开中文页 (Usage), 其他语言打开英文页 (en-Usage)
+    static WikiPage(page, lang := I18n.Lang) {
+        return HelpProvider.WikiUrl (SubStr(lang, 1, 2) = "zh" ? "" : "en-") page
     }
 
     static Entries() {
@@ -68,7 +73,7 @@ class HelpProvider {
             if (entry[1] = "FileTypes" && !FileSearchProvider.TypeFilters().Length)
                 continue
             items.Push({Id: entry[1], Key: I18n.T("Help." entry[1] ".Key", HelpProvider._Args(entry[1])*)
-                      , Text: I18n.T("Help." entry[1] ".Text"), Url: HelpProvider.WikiUrl entry[3]})
+                      , Text: I18n.T("Help." entry[1] ".Text"), Url: HelpProvider.WikiPage(entry[3])})
         }
         return items
     }

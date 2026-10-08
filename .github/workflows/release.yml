@@ -86,8 +86,8 @@ jobs:
           foreach ($lang in "zh-CN", "zh-TW", "ja") {
             if (-not (Test-Path "build/ALTRun/Resources/Lang/$lang.json")) { throw "Resources\Lang\$lang.json is missing" }
           }
-          Copy-Item LICENSE, README.md, CHANGELOG.md build/ALTRun/
-          foreach ($file in @("LICENSE", "README.md", "CHANGELOG.md") + (git ls-files Resources)) {   # 和仓库逐字节相同 (换行符没被转换)
+          Copy-Item LICENSE, README.md, README.zh-CN.md, CHANGELOG.md build/ALTRun/
+          foreach ($file in @("LICENSE", "README.md", "README.zh-CN.md", "CHANGELOG.md") + (git ls-files Resources)) {   # 和仓库逐字节相同 (换行符没被转换)
             if ((git hash-object --no-filters "build/ALTRun/$file") -ne (git rev-parse "HEAD:$file")) { throw "$file in the package differs from the repository" }
           }
           (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription

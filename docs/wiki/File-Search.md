@@ -1,3 +1,5 @@
+[English](en-File-Search) · **中文**
+
 # 文件搜索
 
 ## 怎样搜索文件
