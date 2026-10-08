@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.08.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偶尔出现窗口有好几行高、结果行却是空白: 换完结果 30 ms 后检查列表行数和窗口高度是否和结果对得上, 对不上时自动改正; 打开 "写入调试日志" 时记下当时的情况 (最近 10 次搜索的输入、结果数和列表行数), 方便找到原因
+
 ## [2026.10.08]
 
 文档改为中英双语 (英文 README 和 Wiki); 偏好设置的页面列表加了图标、换页不闪, 高级页重新整理; 再次启动 ALTRun 或用 "发送到" 时交给正在运行的处理, 不再关掉重开; 剪贴板的图片和长条目只存在本机; 搜索里可以直接打开某个设置页; PT Tools 更好用; 关掉显示器后卡住的搜索窗口能自己恢复。
@@ -508,7 +517,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08.1...HEAD
+[2026.10.08.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08...2026.10.08.1
 [2026.10.08]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.08
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04

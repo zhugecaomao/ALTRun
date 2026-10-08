@@ -17,12 +17,20 @@ Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 ALTRun.exe 没有签名时, Windows SmartScreen 会提示 "无法识别的应用 / 未知发布者", 部分杀毒软件也更容易误报。
 [SignPath Foundation](https://signpath.org/) 免费为开源项目提供代码签名证书, Release 工作流已经准备好, 设置后自动签名:
 
-1. 在 https://signpath.org/apply 申请 (要求: 开源许可、项目在维护、源码和构建都在 GitHub 上)。申请前在 README 里加上下面的 "代码签名策略" 一节
-2. 通过后在 SignPath 里建项目 `ALTRun`, 签名策略 `test-signing` 和 `release-signing`, 产物配置选 "单个 PE 文件" (ALTRun.exe), 可信构建系统选 GitHub.com 并关联本仓库
-3. 本仓库 Settings → Secrets and variables → Actions:
-   - Secrets 新建 `SIGNPATH_API_TOKEN` (SignPath 里给 CI 用户生成的 API token)
+1. 在 https://signpath.org/apply 申请 (要求: 开源许可、项目在维护、源码和构建都在 GitHub 上)。申请前在 README 里加上下面的 "代码签名策略" 一节 (已于 2026-10 通过)
+2. 通过后会收到两封邮件: 新 OSS 组织的邀请, 以及 CI 用户邮箱的确认。顺序是: 先注册 SignPath 账号 → 用它接受组织邀请 → 再确认 CI 用户邮箱 (没接受邀请之前确认不了)
+3. 在 SignPath 里 (https://app.signpath.io):
+   - **Projects → Add**: 名称和 slug 都写 `ALTRun` (工作流里的 `project-slug`), Repository URL 写 `https://github.com/zhugecaomao/ALTRun`
+   - **Artifact configuration**: 粘贴 [`signpath/artifact-configuration.xml`](signpath/artifact-configuration.xml) 并设为默认。GitHub Actions 上传的产物总是 zip, 所以配置是 "zip 里的 ALTRun.exe"
+   - **Trusted build systems**: 给项目关联 `GitHub.com`
+   - **Signing policies**: 先建 `test-signing` (测试证书, CI 用户可以提交, 不需要批准); 正式证书导入后再建 `release-signing` (正式证书, 需要批准人在网页上批准)
+   - **CI 用户 → API token**: 生成一个 token, CI 用户要是这两个签名策略的 Submitter
+   - 组织 ID 在 Organization settings 里
+4. 本仓库 Settings → Secrets and variables → Actions:
+   - Secrets 新建 `SIGNPATH_API_TOKEN` (上面 CI 用户的 API token)
    - Variables 新建 `SIGNPATH_ORGANIZATION_ID`
-4. 之后运行 Release 时, 编译出的 ALTRun.exe 会先送到 SignPath 签名, 再做升级测试和打包。`publish = true` 用正式证书, 需要在 SignPath 网页上批准 (30 分钟内)
+5. 之后运行 Release `publish = false`, 编译出的 ALTRun.exe 会先送到 SignPath 用测试证书签名 (自签名证书, Windows 显示为不受信任, 只用来验证流程), 再做升级测试和打包
+6. 测试签名成功后告诉 SignPath Foundation, 他们检查设置后订购正式证书并导入组织。建好 `release-signing` 后, Variables 再新建 `SIGNPATH_RELEASE_SIGNING` = `true`: 之后 `publish = true` 用正式证书签名, 需要在 SignPath 网页上批准 (30 分钟内)。在这之前正式发布照常发布未签名的版本
 
 README 的 "代码签名策略 / Code signing policy" 一节和官网下载区 (https://zhugecaomao.github.io/ALTRun/#download) 的说明已经写好 (SignPath Foundation 要求下载页写明使用他们的代码签名), 申请表里的 Download URL 填官网的这个地址。
 
