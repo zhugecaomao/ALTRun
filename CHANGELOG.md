@@ -5,11 +5,19 @@
 
 ## [未发布]
 
-## [2026.10.05.19]
+## [2026.10.08]
 
-测试版。
+文档改为中英双语 (英文 README 和 Wiki); 偏好设置的页面列表加了图标、换页不闪, 高级页重新整理; 再次启动 ALTRun 或用 "发送到" 时交给正在运行的处理, 不再关掉重开; 剪贴板的图片和长条目只存在本机; 搜索里可以直接打开某个设置页; PT Tools 更好用; 关掉显示器后卡住的搜索窗口能自己恢复。
 
-Test build.
+Bilingual documentation (English README and wiki); icons in the Preferences page list, flicker-free page switching and a tidier Advanced page; starting ALTRun again or using "Send to" hands over to the running instance instead of restarting it; clipboard images and long items stay on this PC; open a settings page straight from search; easier-to-use PT Tools; the search window recovers by itself after hanging when a monitor is turned off.
+
+### 升级
+- **从 2026.10.01 ~ 2026.10.05 (包括测试版) 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.08", 按 `Enter` 安装
+- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.08", 按 `Enter` 更新
+- **从 2026.09.26 ~ 2026.09.30 升级**: 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`
+- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.08.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+- 设置和数据都保留, 设置文件的格式没有变化; 新的选项 `Features.Clipboard.LocalFiles` 启动时自动补上 (默认 1): 第一次运行时把 `Data\Clipboard` 文件夹 (剪贴板的图片和长条目) 搬到本机的 `%LOCALAPPDATA%\ALTRun\Clipboard`
+- 手动解压升级时, 请先退出正在运行的 ALTRun (托盘图标 → 退出) 再覆盖文件
 
 ### 改进
 - 搜索结果选中行的圆角和 偏好设置 → 外观 里主题缩略图的圆角改为抗锯齿 (GDI+), 边缘平滑, 不再有台阶; 半径为 0 的主题 (例如 Classic) 不变; 缩略图改用 24 位图像 (没有透明通道), 抗锯齿的圆角不会让缩略图背景变透明
@@ -500,8 +508,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05.19...HEAD
-[2026.10.05.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.05...2026.10.05.19
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08...HEAD
+[2026.10.08]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.08
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
 [2026.10.04]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.04
 [2026.10.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.03

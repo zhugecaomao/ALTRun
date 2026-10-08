@@ -29,7 +29,7 @@ Issues and pull requests are welcome in English or Chinese.
 - **Folders**: `Lib\` holds general-purpose libraries with nothing ALTRun-specific that could be reused in other projects; ALTRun's own code goes in the matching subfolder of `Src\`
 - **Naming**: PascalCase for classes, methods and properties; camelCase for local variables; internal members start with `_` (`_Layout()`, `_cache`)
 - **Avoid name clashes**: AutoHotkey names are case-insensitive, so don't give a local variable the name of a class (for example, don't call a variable `pinyin`, it hides the `Pinyin` class); methods and properties in the same class shouldn't differ only in case either
-- **Comments**: every file starts with a description of what it's for and how to use it; comments in the code explain "why", and are written in Chinese
+- **Comments**: every file starts with a description of what it's for and how to use it; comments in the code explain "why", in English or Chinese
 - **Single-line input boxes**: give every `Edit` control a row count (`r1 -Multi`), otherwise long text turns it into a multi-line box (a test checks this)
 - **Settings**: add new settings to `AppSettings.Defaults()`; when you change the structure of existing settings, bump `AppSettings.CurrentVersion` and add a `_FromN()` to `SchemaMigration`
 - **UI text**: the English original goes in `I18n.ahk`, translations go in every language file in `Resources\Lang\` (`zh-CN.json`, `zh-TW.json`, `ja.json`; a test checks that every file has every string and the same placeholders); for longer text in Preferences, make sure no language overflows the page (the `PreferencesFit` test checks this)
