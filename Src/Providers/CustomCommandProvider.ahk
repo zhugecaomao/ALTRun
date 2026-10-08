@@ -287,6 +287,8 @@ class CustomCommandProvider {
     static AddFromPaths(paths) {
         if !paths.Length
             return
+        if IsObject(PreferencesWindow.Gui)                                  ; 偏好设置开着: 加进它的 "命令" 页, 不会被之后的保存盖掉
+            return PreferencesWindow.AddCommands(paths)
         if (paths.Length = 1) {
             existing := CustomCommandProvider.FindByTarget(paths[1])
             if IsObject(existing) {
@@ -326,10 +328,10 @@ class CustomCommandProvider {
         return Map("Title", title, "Type", isFolder ? "Folder" : "File", "Target", target, "Arguments", "", "Keyword", "")
     }
 
-    ; 目标指向同一个文件 / 文件夹的命令 (比较展开变量后的路径, 不分大小写), 没有返回 ""
-    static FindByTarget(target) {
+    ; 目标指向同一个文件 / 文件夹的命令 (比较展开变量后的路径, 不分大小写), 没有返回 ""; commands: 在哪个列表里找 (偏好设置里正在编辑的)
+    static FindByTarget(target, commands := AppSettings.CustomCommands) {
         wanted := StrLower(RTrim(Path.Resolve(target), "\/"))
-        for command in AppSettings.CustomCommands {
+        for command in commands {
             if !(command is Map) || !command.Has("Target")
                 continue
             if (command.Has("Type") && command["Type"] = "Url")

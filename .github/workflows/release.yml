@@ -28,6 +28,11 @@ jobs:
       WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
       SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
     steps:
+      # Windows 上的 Git 默认把文本文件的 LF 转成 CRLF (core.autocrlf), 发布包里的 README、LICENSE、JSON
+      # 就和仓库 / 源码 ZIP 逐字节不同。关掉转换, 发布包里的文件和仓库完全一样
+      - name: Keep line endings as in the repository
+        run: git config --global core.autocrlf false
+
       - uses: actions/checkout@v7
 
       - name: Read version
@@ -65,6 +70,7 @@ jobs:
           $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk' `
                   -Wait -PassThru -NoNewWindow -RedirectStandardOutput test.log -RedirectStandardError test.err
           Get-Content test.log | Where-Object { $_ -notmatch '^PASS' }
+          Get-Content test.log | Where-Object { $_ -match '^(FAIL|UNCAUGHT)' } | ForEach-Object { Write-Host "::error::$_" }   # 失败的测试显示在检查结果的注释里
           Get-Content test.err
           if ($proc.ExitCode -ne 0) { throw "Unit tests failed (exit code $($proc.ExitCode))" }
 
@@ -80,7 +86,10 @@ jobs:
           foreach ($lang in "zh-CN", "zh-TW", "ja") {
             if (-not (Test-Path "build/ALTRun/Resources/Lang/$lang.json")) { throw "Resources\Lang\$lang.json is missing" }
           }
-          Copy-Item LICENSE, README.md, CHANGELOG.md build/ALTRun/
+          Copy-Item LICENSE, README.md, README.zh-CN.md, CHANGELOG.md build/ALTRun/
+          foreach ($file in @("LICENSE", "README.md", "README.zh-CN.md", "CHANGELOG.md") + (git ls-files Resources)) {   # 和仓库逐字节相同 (换行符没被转换)
+            if ((git hash-object --no-filters "build/ALTRun/$file") -ne (git rev-parse "HEAD:$file")) { throw "$file in the package differs from the repository" }
+          }
           (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
 
       # 代码签名 (SignPath Foundation 免费为开源项目签名, 见 packaging/README.md): 设置了 SIGNPATH_API_TOKEN secret
@@ -168,6 +177,39 @@ jobs:
           if ($settings.CustomCommands.Count -ne 10) { throw "Expected 10 imported commands" }
           if ($settings.General.Language -ne "zh-CN") { throw "Config section was not imported" }
           if ((Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash -ne $iniHash) { throw "ALTRun.ini was modified" }
+
+      - name: Single instance test (compiled ALTRun.exe)
+        shell: pwsh
+        run: |
+          # 已经在运行时再启动 ALTRun.exe: 交给正在运行的处理 (双击 = 弹出搜索窗口, 发送到 = 添加命令), 不多开一个
+          $dir = Join-Path $env:RUNNER_TEMP "single"
+          New-Item -ItemType Directory $dir -Force | Out-Null
+          Copy-Item build/ALTRun/* $dir -Recurse
+          $exe = Join-Path $dir "ALTRun.exe"
+          $json = Join-Path $dir "Data\ALTRun.json"
+          $first = Start-Process $exe -ArgumentList '-Startup' -WorkingDirectory $dir -PassThru
+          for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
+          Start-Sleep -Seconds 3
+          # 主窗口的标题 (找正在运行的 ALTRun 靠它), 留在日志里
+          $probe = Join-Path $env:RUNNER_TEMP "titles.ahk"
+          'DetectHiddenWindows(true)', 'for hwnd in WinGetList("ahk_class AutoHotkey")', '    FileAppend(WinGetTitle(hwnd) "`n", "*")' | Set-Content $probe -Encoding UTF8
+          $out = Join-Path $env:RUNNER_TEMP "titles.txt"
+          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', $probe -Wait -NoNewWindow -RedirectStandardOutput $out
+          Get-Content $out | ForEach-Object { Write-Host "AutoHotkey window: $_" }
+          $before = (Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json).CustomCommands.Count
+          New-Item -ItemType Directory (Join-Path $dir "SendTo A") -Force | Out-Null
+          Set-Content (Join-Path $dir "SendTo B.txt") "x"
+          # 交出去之后马上退出; 没交出去时它会一直运行, 所以只等 10 秒
+          (Start-Process $exe -WorkingDirectory $dir -PassThru).WaitForExit(10000) | Out-Null
+          (Start-Process $exe -ArgumentList '-SendTo', "`"$(Join-Path $dir 'SendTo A')`"", "`"$(Join-Path $dir 'SendTo B.txt')`"" -WorkingDirectory $dir -PassThru).WaitForExit(10000) | Out-Null
+          Start-Sleep -Seconds 3
+          $processes = @(Get-Process -Name ALTRun -ErrorAction SilentlyContinue)
+          $alive = -not $first.HasExited
+          $after = (Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json).CustomCommands.Count
+          Get-Process -Name ALTRun -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Write-Host "ALTRun processes: $($processes.Count); first still running: $alive; commands: $before -> $after"
+          if ($processes.Count -ne 1 -or -not $alive) { throw "Starting ALTRun.exe again did not hand over to the running instance" }
+          if ($after -ne $before + 2) { throw "Send to did not add the commands in the running instance" }
 
       - name: Package
         shell: pwsh

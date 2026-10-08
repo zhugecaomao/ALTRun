@@ -326,6 +326,7 @@ class I18n {
 
         ; --- System commands ---
         s["Sys.Preferences"]           := "ALTRun Preferences"
+        s["Sys.PreferencesPage"]       := "ALTRun Preferences: {1}"
         s["Sys.Reload"]                := "Reload ALTRun"
         s["Sys.RebuildIndex"]          := "Rebuild ALTRun Index"
         s["Sys.Quit"]                  := "Quit ALTRun"
@@ -786,9 +787,9 @@ class I18n {
         s["Prefs.ClipMaxItems.Desc"]    := "The oldest items are removed first. Texts longer than the max length are not recorded."
         s["Prefs.ClipMaxLength"]        := "Max length"
         s["Prefs.ClipPersist"]         := "Keep history after ALTRun quits"
-        s["Prefs.ClipPersist.Desc"]    := "Saved in Data\ClipboardHistory.json. When off, history is kept in memory only."
+        s["Prefs.ClipPersist.Desc"]    := "Saved in Data\ClipboardHistory.json; images and long entries stay on this PC (%LOCALAPPDATA%\ALTRun\Clipboard). Off: memory only."
         s["Prefs.ClipImages"]          := "Also record images"
-        s["Prefs.ClipImages.Desc"]     := "Saved as PNG in Data\Clipboard. Only while history is kept after quitting."
+        s["Prefs.ClipImages.Desc"]     := "Saved as PNG files with the long entries. Only while history is kept after quitting."
         s["Prefs.ClipMaxImages"]       := "Keep images"
         s["Prefs.ClipMaxImages.Desc"]  := "The oldest images are removed first."
         s["Prefs.ClipMerge"]           := "Press Ctrl+C twice to append to the previous item"
@@ -841,7 +842,6 @@ class I18n {
         s["Prefs.AppendWindows.Desc"]   := "Windows where the hotkey adds the date at the end of the text, one per line, e.g. ahk_class TCmtEditForm (Total Commander comments)."
         s["Prefs.EnableExtension"]     := "Enabled"
         ; Advanced
-        s["Prefs.SettingsFile"]        := "Settings file"
         s["Prefs.EditJson"]            := "Edit ALTRun.json..."
         s["Prefs.EditJson.Desc"]       := "Every setting, including ones not shown here. ALTRun reloads when you save."
         s["Prefs.OpenDataFolder"]      := "Open Data Folder"
@@ -889,6 +889,8 @@ class I18n {
         s["Prefs.ResetLearning.Desc"]  := "Clears the learned result order and the search history."
         s["Prefs.ResetDone"]           := "Learned ranking and search history cleared."
         s["Prefs.Version"]             := "Version {1}"
+        s["Prefs.Homepage"]            := "Homepage"
+        s["Prefs.ReportIssue"]         := "Report an Issue"
 
         ; --- Update checker ---
         s["Update.Available"]          := "A new version {1} is available. Open the download page?"

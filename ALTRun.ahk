@@ -20,14 +20,14 @@
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun
 ;@Ahk2Exe-Set Comments, An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2026.10.05
+;@Ahk2Exe-SetVersion 2026.10.08
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026 zhugecaomao
 ;@Ahk2Exe-SetOrigFilename ALTRun.exe
 ;@Ahk2Exe-SetMainIcon Resources\ALTRun.ico
 ; (编译: 见 .github/workflows/release.yml; SetVersion 要和 App.Version 一致, 有测试检查)
 
 #Requires AutoHotkey v2.0
-#SingleInstance Force
+#SingleInstance Off                     ; 已经在运行时交给它处理 (见 App.HandOff)
 #NoTrayIcon
 #Warn All, OutputDebug
 
@@ -59,6 +59,7 @@
 ; --- Src\UI ---
 #Include Src\UI\ThemeManager.ahk
 #Include Src\UI\ThemePreview.ahk
+#Include Src\UI\NavIcons.ahk
 #Include Src\UI\IconCache.ahk
 #Include Src\UI\SearchWindow.ahk
 #Include Src\UI\LargeType.ahk

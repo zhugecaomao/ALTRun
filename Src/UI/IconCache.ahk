@@ -100,13 +100,14 @@ class IconCache {
     }
 
     ; 和加载图标一样, 每轮最多 10 ms。遍历的是副本: 中途另一轮 (定时器打断了这一轮) 可能已经处理掉
-    ; 后面的文件夹, 已经不在队列里的跳过 (直接 Delete 会报 "Item has no value")
+    ; 后面的文件夹, 已经不在队列里的跳过。用 try 删除, 不先 Has 再 Delete: 定时器也可能正好在两行之间
+    ; 打断, Delete 一个已经没有的项会报 "Item has no value"
     static _ProbeQueued() {
         start := IconCache._Ms()
         for folder in IconCache._folderProbes.Clone() {
-            if !IconCache._folderProbes.Has(folder)
+            try IconCache._folderProbes.Delete(folder)
+            catch
                 continue
-            IconCache._folderProbes.Delete(folder)
             IconCache._ProbeFolder(folder)
             if (IconCache._Ms() - start > 10)
                 break
@@ -120,9 +121,9 @@ class IconCache {
         start := IconCache._Ms()
         loaded := false
         for key, spec in IconCache._queue.Clone() {
-            if !IconCache._queue.Has(key)                                   ; 另一轮已经加载了 (同 _ProbeQueued)
+            try IconCache._queue.Delete(key)                                ; 另一轮已经加载了 (同 _ProbeQueued)
+            catch
                 continue
-            IconCache._queue.Delete(key)
             hIcon := 0
             Logger.Trace("icon: " spec)
             try hIcon := IconCache._Load(spec)

@@ -11,8 +11,8 @@
 ;   - IgnoreApps 里的程序 (进程名) 复制的内容不会被记录
 ;   - Persist = 0 时只保存在内存里, 退出即清空 (这时不记录图片)
 ;
-; 保存: Data\ClipboardHistory.json; 超过 LargeText 个字的条目单独存成 Data\Clipboard\*.txt,
-; 图片存成 Data\Clipboard\img-*.png, JSON 里只记文件名。每次复制都会保存, 这样不用每次都
+; 保存: ClipboardHistory.json; 超过 LargeText 个字的条目单独存成 Clipboard\*.txt,
+; 图片存成 Clipboard\img-*.png, JSON 里只记文件名。每次复制都会保存, 这样不用每次都
 ; 把很长的文字重新写一遍 (最多 200 条 x 10 万字)。
 ;
 ; 置顶 (操作面板里 "置顶"): 条目带 "Pinned": 1, 列在最前面, 超过条数时不删, "清空" 时也保留。
@@ -37,6 +37,7 @@ class ClipboardProvider {
     static Id      := "Clipboard"
     static File    := AppSettings.DataDir "\ClipboardHistory.json"
     static Folder  := AppSettings.DataDir "\Clipboard"                         ; 很长的条目和图片
+    static LocalDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun" : ""   ; LocalFiles = 1 时 (默认) 图片和长条目存在这里
     static LargeText := 4000
     static Icon => IconCache.Own("Clipboard", "res:imageres.dll,-5314")   ; 文字条目的图标
     static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
@@ -45,6 +46,8 @@ class ClipboardProvider {
 
     static Init() {
         options := AppSettings.Feature("Clipboard")
+        if (options["LocalFiles"] && ClipboardProvider.LocalDir != "")
+            ClipboardProvider.UseLocalStorage(ClipboardProvider.LocalDir)
         if options["Persist"]
             ClipboardProvider._Load()
         OnClipboardChange((dataType) => ClipboardProvider._OnChange(dataType))
@@ -53,6 +56,28 @@ class ClipboardProvider {
             catch as e
                 Logger.Error("ClipboardProvider: cannot register Ctrl+C - " e.Message)
         }
+    }
+
+    ; 图片和很长的条目 (Clipboard 文件夹) 放在本机, 不跟着 Data 文件夹进 OneDrive 等同步盘: 图片大, 放在同步盘里
+    ; 每复制一张都要上传。ClipboardHistory.json 仍在 Data 里 (文字历史照常同步); 另一台电脑上没有对应文件的
+    ; 图片 / 长条目读取时跳过。第一次切换时把 Data 里原来的文件夹搬过来; 搬不动时这次仍用原来的位置, 下次再试
+    static UseLocalStorage(dir) {
+        newFolder := dir "\Clipboard"
+        if (newFolder = ClipboardProvider.Folder)
+            return true
+        try {
+            if (InStr(FileExist(ClipboardProvider.Folder), "D") && !InStr(FileExist(newFolder), "D")) {
+                DirCreate(dir)
+                DirCopy(ClipboardProvider.Folder, newFolder)
+                DirDelete(ClipboardProvider.Folder, true)
+                Logger.Debug("ClipboardProvider: images and long entries moved to " newFolder)
+            }
+        } catch as e {
+            Logger.Error("ClipboardProvider: cannot move " ClipboardProvider.Folder " to " newFolder " - " e.Message)
+            return false
+        }
+        ClipboardProvider.Folder := newFolder
+        return true
     }
 
     static PauseRecording(milliseconds) {

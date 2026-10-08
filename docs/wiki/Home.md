@@ -1,3 +1,5 @@
+[English](en-Home) · **中文**
+
 # ALTRun 使用文档
 
 ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计的 Windows 启动器, 基于 AutoHotkey v2, 开源免费、绿色便携。按 `Alt+Space` 呼出, 输入名称, `Enter` 打开。官网: https://zhugecaomao.github.io/ALTRun/

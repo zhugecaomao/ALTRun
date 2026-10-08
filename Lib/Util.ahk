@@ -205,6 +205,38 @@ class Win {
         return ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF)
     }
 
+    ; 抗锯齿的实心圆角矩形 (选中行、主题缩略图): GDI 的 RoundRect 按整像素画弧, 圆角有台阶,
+    ; 这里用 GDI+ 的 AntiAlias 填充路径, 边缘和背景平滑过渡。right / bottom 不含 (和 FillRect 一样);
+    ; PixelOffsetModeHalf 让整数坐标落在像素边界上, 直边不会发虚。GDI+ 用不了时退回 RoundRect
+    static FillRoundRect(hdc, left, top, right, bottom, radius, bgr) {
+        w := right - left, h := bottom - top
+        if (w <= 0 || h <= 0)
+            return
+        d := Min(radius * 2, w, h), graphics := 0, shape := 0, brush := 0
+        if (d > 0 && ClipboardData.StartGdiplus() && !DllCall("gdiplus\GdipCreateFromHDC", "Ptr", hdc, "Ptr*", &graphics) && graphics) {
+            DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", graphics, "Int", 4)        ; SmoothingModeAntiAlias
+            DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", graphics, "Int", 4)      ; PixelOffsetModeHalf
+            DllCall("gdiplus\GdipCreatePath", "Int", 0, "Ptr*", &shape)
+            for arc in [[left, top, 180], [right - d, top, 270], [right - d, bottom - d, 0], [left, bottom - d, 90]]
+                DllCall("gdiplus\GdipAddPathArc", "Ptr", shape, "Float", arc[1], "Float", arc[2], "Float", d, "Float", d, "Float", arc[3], "Float", 90)
+            DllCall("gdiplus\GdipClosePathFigure", "Ptr", shape)
+            argb := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
+            DllCall("gdiplus\GdipCreateSolidFill", "UInt", argb, "Ptr*", &brush)
+            DllCall("gdiplus\GdipFillPath", "Ptr", graphics, "Ptr", brush, "Ptr", shape)
+            DllCall("gdiplus\GdipDeleteBrush", "Ptr", brush)
+            DllCall("gdiplus\GdipDeletePath", "Ptr", shape)
+            DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
+            return
+        }
+        brush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
+        oldBrush := DllCall("SelectObject", "Ptr", hdc, "Ptr", brush, "Ptr")
+        oldPen := DllCall("SelectObject", "Ptr", hdc, "Ptr", DllCall("GetStockObject", "Int", 8, "Ptr"), "Ptr")   ; NULL_PEN
+        DllCall("RoundRect", "Ptr", hdc, "Int", left, "Int", top, "Int", right + 1, "Int", bottom + 1, "Int", d, "Int", d)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldPen)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldBrush)
+        DllCall("DeleteObject", "Ptr", brush)
+    }
+
     ; 按系统 DPI 缩放像素值 (窗口用 -DPIScale 创建, 自己控制缩放)
     static Scale(px) {
         return Round(px * A_ScreenDPI / 96)
@@ -275,6 +307,23 @@ class Win {
 
     ; 输入框留空时显示系统原生的灰色提示文字(焦点在框里时也不消失, 不会被
     ; 误当成一次真实输入), 一旦用户开始打字就自动让位, 清空后又自动回来。
+    ; 鼠标停在控件上时显示的提示 (例如被省略号截断的路径显示完整路径); 静态文本要有 SS_NOTIFY (0x100) 才收得到鼠标。
+    ; 提示窗口属于控件所在的窗口, 跟着一起销毁。返回提示窗口
+    static AddTooltip(ctrlHwnd, text) {
+        static TTS_ALWAYSTIP := 0x1, TTS_NOPREFIX := 0x2, TTF_IDISHWND := 0x1, TTF_SUBCLASS := 0x10
+        static TTM_ADDTOOLW := 0x432, TTM_SETMAXTIPWIDTH := 0x418
+        owner := DllCall("GetAncestor", "Ptr", ctrlHwnd, "UInt", 2, "Ptr")  ; GA_ROOT
+        tip := DllCall("CreateWindowExW", "UInt", 0x8, "Str", "tooltips_class32", "Ptr", 0, "UInt", 0x80000000 | TTS_ALWAYSTIP | TTS_NOPREFIX
+                     , "Int", 0x80000000, "Int", 0x80000000, "Int", 0x80000000, "Int", 0x80000000, "Ptr", owner, "Ptr", 0, "Ptr", 0, "Ptr", 0, "Ptr")
+        info := Buffer(24 + 6 * A_PtrSize, 0)                               ; TOOLINFOW
+        NumPut("UInt", info.Size, "UInt", TTF_IDISHWND | TTF_SUBCLASS, info)
+        NumPut("Ptr", owner, "Ptr", ctrlHwnd, info, 8)
+        NumPut("Ptr", StrPtr(text), info, 24 + 3 * A_PtrSize)               ; 提示窗口会复制一份文字
+        DllCall("SendMessageW", "Ptr", tip, "UInt", TTM_SETMAXTIPWIDTH, "Ptr", 0, "Ptr", Round(600 * A_ScreenDPI / 96))
+        DllCall("SendMessageW", "Ptr", tip, "UInt", TTM_ADDTOOLW, "Ptr", 0, "Ptr", info)
+        return tip
+    }
+
     static SetCueBanner(hwnd, text) {
         static EM_SETCUEBANNER := 0x1501
         try DllCall("User32\SendMessageW", "Ptr", hwnd, "UInt", EM_SETCUEBANNER, "Ptr", 1, "WStr", text)

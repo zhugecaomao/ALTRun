@@ -15,12 +15,16 @@ class ThemePreview {
     static TitleWidths := [0.52, 0.40, 0.46]                                    ; 三行标题的长度 (占宽度的比例)
     static IconColors := ["3B82F6", "F59E0B", "10B981"]                        ; 结果行左边的 "图标" (蓝 / 橙 / 绿, 每个主题都一样)
 
-    ; 一个主题 (完整的键值 Map) 的缩略图, w x h 像素
+    ; 一个主题 (完整的键值 Map) 的缩略图, w x h 像素。用 24 位 DIB (没有 Alpha): 圆角是 GDI+ 画的,
+    ; 在 32 位位图上会写 Alpha = 255, 而 GDI 画的背景 Alpha 是 0, 图像列表看到有 Alpha 就把背景当成透明
     static Bitmap(theme, w, h) {
         screen := DllCall("GetDC", "Ptr", 0, "Ptr")
         dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr")
-        hbm := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", w, "Int", h, "Ptr")
         DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+        info := Buffer(40, 0)                                               ; BITMAPINFOHEADER
+        NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 24, info)   ; 自上而下, 24 位
+        bits := 0
+        hbm := DllCall("CreateDIBSection", "Ptr", dc, "Ptr", info, "UInt", 0, "Ptr*", &bits, "Ptr", 0, "UInt", 0, "Ptr")
         old := DllCall("SelectObject", "Ptr", dc, "Ptr", hbm, "Ptr")
         ThemePreview._Paint(dc, theme, w, h)
         DllCall("SelectObject", "Ptr", dc, "Ptr", old)
@@ -80,13 +84,7 @@ class ThemePreview {
         roundRect(left, top, right, bottom, radius, bgr) {
             if (radius <= 0)
                 return fill(left, top, right, bottom, bgr)
-            brush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
-            oldBrush := DllCall("SelectObject", "Ptr", dc, "Ptr", brush, "Ptr")
-            oldPen := DllCall("SelectObject", "Ptr", dc, "Ptr", DllCall("GetStockObject", "Int", 8, "Ptr"), "Ptr")   ; NULL_PEN
-            DllCall("RoundRect", "Ptr", dc, "Int", left, "Int", top, "Int", right + 1, "Int", bottom + 1, "Int", radius * 2, "Int", radius * 2)
-            DllCall("SelectObject", "Ptr", dc, "Ptr", oldPen)
-            DllCall("SelectObject", "Ptr", dc, "Ptr", oldBrush)
-            DllCall("DeleteObject", "Ptr", brush)
+            Win.FillRoundRect(dc, left, top, right + 1, bottom + 1, radius, bgr)   ; 抗锯齿 (GDI+)
         }
         bar(left, top, width, height, bgr) => roundRect(left, top, left + width, top + height, height // 2, bgr)   ; 代表一段文字
         soft(key, backKey, t) {                                             ; 颜色往背景色靠 t (0~1): 细线条不那么刺眼

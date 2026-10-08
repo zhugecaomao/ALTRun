@@ -284,7 +284,8 @@ class AppSettings {
                     "MaxItems"     , 200,
                     "MaxItemLength", 100000,                                ; 超过这么多字的内容不记录
                     "Persist"      , 1,                                     ; 0 = 只在内存里, 退出即清空
-                    "Images"       , 1,                                     ; 也记录图片 (存成 Data\Clipboard\*.png, 需要 Persist = 1)
+                    "Images"       , 1,                                     ; 也记录图片 (存成 Clipboard\*.png, 需要 Persist = 1)
+                    "LocalFiles"   , 1,                                     ; 图片和很长的条目存在本机 (%LOCALAPPDATA%\ALTRun\Clipboard), 不跟着 Data 文件夹进同步盘
                     "MaxImages"    , 50,
                     "MergeDoubleCopy", 0,                                   ; 快速按两次 Ctrl+C: 接到上一条后面
                     "IgnoreApps"   , ["KeePass.exe", "KeePassXC.exe", "1Password.exe", "Bitwarden.exe"]

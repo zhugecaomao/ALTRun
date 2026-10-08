@@ -34,6 +34,7 @@
 #Include %A_ScriptDir%\..\Src\Core\FileIndex.ahk
 #Include %A_ScriptDir%\..\Src\UI\ThemeManager.ahk
 #Include %A_ScriptDir%\..\Src\UI\ThemePreview.ahk
+#Include %A_ScriptDir%\..\Src\UI\NavIcons.ahk
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
@@ -84,7 +85,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -952,6 +953,39 @@ class Tests {
         eq("fallback", IconCache.Own("NoSuchIcon", "res:shell32.dll,-24"), "res:shell32.dll,-24")
     }
 
+    ; 选中行和主题缩略图的圆角矩形: 里面和直边是实心的, 圆角外面不画; 圆角边缘抗锯齿 (Wine 的 GDI+ 不做抗锯齿, 跳过这一项)
+    static RoundedFill() {
+        eq := (n, a, e) => TestRunner.Equal("RoundedFill." n, a, e)
+        screen := DllCall("GetDC", "Ptr", 0, "Ptr")
+        dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr"), hbm := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", 40, "Int", 24, "Ptr")
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+        old := DllCall("SelectObject", "Ptr", dc, "Ptr", hbm, "Ptr")
+        rect := Buffer(16), NumPut("Int", 0, "Int", 0, "Int", 40, "Int", 24, rect)
+        white := DllCall("GetStockObject", "Int", 0, "Ptr")                   ; WHITE_BRUSH
+        DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", white)
+        Win.FillRoundRect(dc, 0, 0, 40, 24, 8, 0x000000)
+        px := (x, y) => DllCall("GetPixel", "Ptr", dc, "Int", x, "Int", y, "UInt") & 0xFFFFFF
+        eq("center", px(20, 12), 0)
+        eq("top edge", px(20, 0), 0)
+        eq("right edge", px(39, 12), 0)
+        eq("bottom edge", px(20, 23), 0)
+        eq("outside corner", px(0, 0), 0xFFFFFF)
+        eq("outside right of last column", px(39, 0), 0xFFFFFF)
+        if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
+            blended := 0
+            Loop 8 {
+                c := px(A_Index - 1, 8 - A_Index) & 0xFF
+                blended += (c > 0 && c < 0xFF)
+            }
+            TestRunner.True("RoundedFill.anti-aliased corner", blended > 0)
+        }
+        DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", white)
+        Win.FillRoundRect(dc, 0, 0, 40, 24, 0, 0x000000)                       ; 半径 0: 直角矩形
+        eq("square corner", px(0, 0), 0)
+        DllCall("SelectObject", "Ptr", dc, "Ptr", old)
+        DllCall("DeleteObject", "Ptr", hbm), DllCall("DeleteDC", "Ptr", dc)
+    }
+
     static IconScaling() {
         eq := (n, a, e) => TestRunner.Equal("IconScaling." n, a, e)
         eq("source 16", IconCache.SourceSize(16), 16)
@@ -999,6 +1033,17 @@ class Tests {
             if hbm
                 DllCall("DeleteObject", "Ptr", hbm)
         }
+        il := ThemePreview.ImageList(["Dark"], 112, 76)                       ; 经过图像列表画出来: 背景不透明 (GDI+ 的圆角不能让背景变透明)
+        screen := DllCall("GetDC", "Ptr", 0, "Ptr")
+        dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr"), canvas := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", 112, "Int", 76, "Ptr")
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+        oldCanvas := DllCall("SelectObject", "Ptr", dc, "Ptr", canvas, "Ptr")
+        rect := Buffer(16), NumPut("Int", 0, "Int", 0, "Int", 112, "Int", 76, rect)
+        DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", DllCall("GetStockObject", "Int", 0, "Ptr"))   ; 白色
+        DllCall("comctl32\ImageList_Draw", "Ptr", il, "Int", 0, "Ptr", dc, "Int", 0, "Int", 0, "UInt", 0)   ; ILD_NORMAL
+        eq("image list background opaque", DllCall("GetPixel", "Ptr", dc, "Int", 56, "Int", 6, "UInt"), Win.ColorToBgr(ThemeManager.Resolve("Dark")["Background"]))
+        DllCall("SelectObject", "Ptr", dc, "Ptr", oldCanvas), DllCall("DeleteObject", "Ptr", canvas), DllCall("DeleteDC", "Ptr", dc)
+        DllCall("comctl32\ImageList_Destroy", "Ptr", il)
         hbm := ThemePreview.ForName("System", 112, 76)                      ; 左半边 Light, 右半边 Dark
         eq("system left", pixel(hbm, 20, 6), Win.ColorToBgr(ThemeManager.Defaults()["Background"]))
         eq("system right", pixel(hbm, 100, 6), Win.ColorToBgr(ThemeManager.Resolve("Dark")["Background"]))
@@ -1006,6 +1051,55 @@ class Tests {
 
         PreferencesWindow.Show(1, -3000, -3000)
         Sleep(400)                                                          ; 打开 300 ms 之后的修改才算 (见 PreferencesWindow.Show)
+        focused := DllCall("GetFocus", "Ptr")                               ; 打开时焦点在页面列表 (↑ ↓ 切换页面, 不改第一页的设置)
+        eq("focus on page list", focused = PreferencesWindow.PageList.Hwnd, true)
+        nextTab := DllCall("GetNextDlgTabItem", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", PreferencesWindow.PageList.Hwnd, "Int", 0, "Ptr")
+        onPage := false                                                     ; Tab: 列表之后是当前页面里的控件, 不是底部按钮
+        for ctrl in PreferencesWindow.Pages[1].Controls
+            onPage := onPage || ctrl.Hwnd = nextTab
+        eq("tab from page list goes into the page", onPage, true)
+        keys := ""                                                         ; PageKeys 和实际建的页面一致 (搜索里的子页面靠它)
+        for page in PreferencesWindow.Pages
+            keys .= page.Key " "
+        expected := ""
+        for pageKey in PreferencesWindow.PageKeys
+            expected .= pageKey " "
+        eq("page keys match the pages", keys, expected)
+        SystemProvider._PageOpener("Prefs.Page.Calculator")()               ; 窗口开着时跳到那一页
+        eq("open a page from search", PreferencesWindow._page, PreferencesWindow._PageIndex("Prefs.Page.Calculator"))
+        eq("page list follows", PreferencesWindow.PageList.GetNext(), PreferencesWindow._page)
+        eq("page list rows", PreferencesWindow.PageList.GetCount(), PreferencesWindow.Pages.Length)
+        PreferencesWindow.Show(3)                                           ; 已经开着时按页码打开 ("-Preferences 3" 交过来的)
+        eq("open by number while open", PreferencesWindow._page "|" PreferencesWindow.PageList.GetNext(), "3|3")
+        PreferencesWindow.PageList.Modify(3, "-Select")                     ; 点了列表下面的空白处: 松开鼠标后选回当前页
+        click := Buffer(3 * A_PtrSize + 40, 0)                              ; NMITEMACTIVATE, iItem = -1 (没有点到行)
+        NumPut("Int", -1, click, 3 * A_PtrSize)
+        PreferencesWindow._OnPageClick(click.Ptr)
+        eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), 3)
+        draw := Buffer(6 * A_PtrSize + 40, 0)                               ; NMCUSTOMDRAW: 选中行不画虚线焦点框
+        NumPut("UInt", 0x1, draw, 3 * A_PtrSize)
+        eq("custom draw asks for each row", PreferencesWindow._OnPageListDraw(draw.Ptr), 0x20)
+        NumPut("UInt", 0x10001, draw, 3 * A_PtrSize), NumPut("UInt", 0x11, draw, 6 * A_PtrSize + 16)   ; CDIS_SELECTED | CDIS_FOCUS
+        PreferencesWindow._OnPageListDraw(draw.Ptr)
+        eq("row drawn without the focus rectangle", NumGet(draw, 6 * A_PtrSize + 16, "UInt"), 0x1)
+        listRect := Buffer(16)                                              ; 唯一的一列占满列表宽度 (不留列分隔线)
+        DllCall("GetClientRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", listRect)
+        eq("column fills the list", SendMessage(0x101D, 0, 0, PreferencesWindow.PageList), NumGet(listRect, 8, "Int"))   ; LVM_GETCOLUMNWIDTH
+        PreferencesWindow.PageList.Modify(5, "Select Focus")                ; 用户在列表里选了一页 (点击或 ↑ ↓)
+        Sleep(50)
+        eq("selecting a row shows the page", PreferencesWindow._page, 5)
+        wrong := 0                                                          ; 换页只显示这一页的控件, 别的页都隐藏
+        for index, page in PreferencesWindow.Pages
+            for ctrl in page.Controls
+                wrong += (ctrl.Visible != (index = 5))
+        eq("only the current page is visible", wrong, 0)
+        eq("every page has an icon", NavIcons.MissingPages(PreferencesWindow.PageKeys), "")
+        if (NavIcons.FontName() != "") {                                    ; Windows 上有图标字体 (Wine 没有)
+            il := NavIcons.ImageList(PreferencesWindow.PageKeys)
+            eq("one icon per page", DllCall("comctl32\ImageList_GetImageCount", "Ptr", il), PreferencesWindow.PageKeys.Length)
+            DllCall("comctl32\ImageList_Destroy", "Ptr", il)
+            eq("glyphs exist in " NavIcons.FontName(), NavIcons.MissingGlyphs(), "")
+        }
         PreferencesWindow.SelectPage(PreferencesWindow._PageIndex("Prefs.Page.Appearance"))
         page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Appearance")]
         gallery := ""
@@ -1511,7 +1605,11 @@ class Tests {
             if (item.Id = "Folders")
                 folderItem := item
         eq("configured keyword", folderItem.Key, AppSettings.Feature("FileSearch")["FolderKeywords"][1] " bk")
-        eq("wiki page", folderItem.Url, "https://github.com/zhugecaomao/ALTRun/wiki/File-Search")
+        eq("wiki page", folderItem.Url, HelpProvider.WikiPage("File-Search"))
+        eq("wiki page in English", HelpProvider.WikiPage("File-Search", "en"), "https://github.com/zhugecaomao/ALTRun/wiki/en-File-Search")
+        eq("wiki page in Japanese UI", HelpProvider.WikiPage("Usage", "ja"), "https://github.com/zhugecaomao/ALTRun/wiki/en-Usage")
+        eq("wiki page in Chinese", HelpProvider.WikiPage("File-Search", "zh-CN"), "https://github.com/zhugecaomao/ALTRun/wiki/File-Search")
+        eq("wiki page in Traditional Chinese", HelpProvider.WikiPage("Usage", "zh-TW"), "https://github.com/zhugecaomao/ALTRun/wiki/Usage")
         ; 关掉的功能不显示
         clip := AppSettings.Feature("Clipboard"), savedClip := clip["Enabled"]
         clip["Enabled"] := 0
@@ -1716,6 +1814,40 @@ class Tests {
         TestRunner.Equal("I18nUnused", unused, "")
     }
 
+    ; Wiki 中英两套页面 (Usage / en-Usage): 每页都有英文页, 页面里的 Wiki 链接都指向存在的页面,
+    ; 程序里打开的帮助页 (速查表、偏好设置的 F1) 两种语言都有
+    static WikiPages() {
+        dir := A_ScriptDir "\..\docs\wiki\"
+        pages := Map()
+        Loop Files, dir "*.md"
+            pages[SubStr(A_LoopFileName, 1, -3)] := true
+        missing := ""
+        for page in pages
+            if (SubStr(page, 1, 1) != "_" && SubStr(page, 1, 3) != "en-" && page != "Home" && !pages.Has("en-" page))
+                missing .= page " "
+        TestRunner.Equal("WikiPages.english page for every page", missing, "")
+        broken := ""
+        for page in pages {
+            text := FileRead(dir page ".md", "UTF-8"), pos := 1
+            while (pos := RegExMatch(text, "\]\(([A-Za-z][\w-]*)(#[^)]*)?\)", &m, pos)) {   ; [文字](Page) 或 [文字](Page#标题)
+                pos += m.Len
+                if !pages.Has(m[1])
+                    broken .= page " -> " m[1] "; "
+            }
+        }
+        TestRunner.Equal("WikiPages.links point to existing pages", broken, "")
+        used := Map()
+        for entry in HelpProvider.Entries()
+            used[entry[3]] := true
+        for pageKey in PreferencesWindow.PageKeys
+            used[PreferencesWindow.WikiPage(pageKey)] := true
+        missing := ""
+        for page in used
+            if !pages.Has(page) || !pages.Has("en-" page)
+                missing .= page " "
+        TestRunner.Equal("WikiPages.help pages exist in both languages", missing, "")
+    }
+
     ; CHANGELOG.md 的每个版本标题都有链接 (文件末尾的 [版本]: 网址), "未发布" 比较的是最新发布的版本
     static ChangelogLinks() {
         text := FileRead(A_ScriptDir "\..\CHANGELOG.md", "UTF-8")
@@ -1783,6 +1915,28 @@ class Tests {
     }
 
     ; Windows 设置的页面: 按名称 (和英文名称) 搜到, 可以整组关掉
+    ; 搜索里的偏好设置子页面: 每页一条 ("ALTRun Preferences: Appearance"), 按页名找得到, 主项 "ALTRun Preferences" 排在子项前面
+    static PreferencePages() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencePages." n, a, e)
+        best(text) {
+            top := ""
+            for item in SystemProvider.Search(SearchQuery(text))
+                if (!IsObject(top) || item.Score > top.Score)
+                    top := item
+            return IsObject(top) ? top.Source["Id"] : ""
+        }
+        count := 0
+        for command in SystemProvider.Commands()
+            count += (SubStr(command["Id"], 1, 12) = "Preferences.")
+        eq("one per page", count, PreferencesWindow.PageKeys.Length)
+        eq("appearance", best("appearance"), "Preferences.Appearance")
+        eq("hotkeys page", best("preferences hotkeys"), "Preferences.Hotkeys")
+        eq("main item first", best("altrun pref"), "Preferences")
+        for command in SystemProvider.Commands()
+            if (command["Id"] = "Preferences.Calculator")
+                eq("title", command["Title"], "ALTRun Preferences: Calculator")
+    }
+
     static SettingsPages() {
         eq := (n, a, e) => TestRunner.Equal("SettingsPages." n, a, e)
         find(text) {
@@ -1895,6 +2049,27 @@ class Tests {
     }
 
     ; 剪贴板置顶: 排在最前面, 超过条数不删, 再复制仍然置顶, 清空时保留, 保存后还在
+    ; 剪贴板的图片和长条目存在本机: 第一次把 Data\Clipboard 搬过去; ClipboardHistory.json 留在 Data (照常同步)
+    static ClipboardLocal() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardLocal." n, a, e)
+        root := A_Temp "\ALTRun-clip-local-test"
+        try DirDelete(root, true)
+        DirCreate(root "\Data\Clipboard")
+        FileAppend('{"Entries": []}', root "\Data\ClipboardHistory.json", "UTF-8")
+        FileAppend("long text", root "\Data\Clipboard\t-1.txt", "UTF-8")
+        saved := [ClipboardProvider.File, ClipboardProvider.Folder]
+        ClipboardProvider.File := root "\Data\ClipboardHistory.json", ClipboardProvider.Folder := root "\Data\Clipboard"
+        eq("moved", ClipboardProvider.UseLocalStorage(root "\Local"), true)
+        eq("json stays in Data", ClipboardProvider.File, root "\Data\ClipboardHistory.json")
+        eq("folder", ClipboardProvider.Folder, root "\Local\Clipboard")
+        eq("files moved", (FileExist(root "\Local\Clipboard\t-1.txt") ? 1 : 0) (DirExist(root "\Data\Clipboard") ? 1 : 0), "10")
+        eq("json not moved", (FileExist(root "\Data\ClipboardHistory.json") ? 1 : 0) (FileExist(root "\Local\ClipboardHistory.json") ? 1 : 0), "10")
+        eq("again", ClipboardProvider.UseLocalStorage(root "\Local"), true)    ; 已经在本机: 什么都不做
+        eq("default", AppSettings.Defaults()["Features"]["Clipboard"]["LocalFiles"], 1)
+        ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2]
+        try DirDelete(root, true)
+    }
+
     static ClipboardPin() {
         eq := (n, a, e) => TestRunner.Equal("ClipboardPin." n, a, e)
         root := A_Temp "\ALTRun-clip-pin-test"
@@ -2152,10 +2327,95 @@ class Tests {
         commands := AppSettings.CustomCommands
         eq("several added, existing skipped", commands.Length, 3)
         eq("added in order", commands[2]["Title"] "|" commands[3]["Title"], "Design Report|Windows")
+
+        ; 偏好设置开着时: 加进 "命令" 页的列表 (算作修改, 按 确定 / 应用 才保存), 不直接写进设置
+        AppSettings.Data["CustomCommands"] := [Map("Title", "Old", "Type", "Folder", "Target", folder "\pt2415 - riverside\", "Arguments", "", "Keyword", "")]
+        PreferencesWindow.Show(1, -3000, -3000)                             ; 刚打开 (还没开始记录修改) 时加进来的也算修改
+        CustomCommandProvider.AddFromPaths([folder "\PT2415 - Riverside", folder "\Design Report.docx", folder "\design report.docx", "C:\Windows"])
+        working := PreferencesWindow.Working["CustomCommands"]
+        eq("prefs: added to the working list", working.Length "|" working[2]["Title"] "|" working[3]["Title"], "3|Design Report|Windows")
+        eq("prefs: settings not saved yet", AppSettings.CustomCommands.Length, 1)
+        eq("prefs: commands page shown, dirty", PreferencesWindow.Pages[PreferencesWindow._page].Key "|" PreferencesWindow._dirty, "Prefs.Page.Commands|1")
+        listView := ""
+        for ctrl in PreferencesWindow.Pages[PreferencesWindow._page].Controls
+            if (ctrl.Type = "ListView")
+                listView := ctrl
+        eq("prefs: list shows them, last selected", listView.GetCount() "|" listView.GetNext(), "3|3")
+        PreferencesWindow.Close()
+        eq("prefs: closed clears list hooks", PreferencesWindow._lists.Count, 0)
         ToolTip(, , , 20)
         AppSettings.Data["CustomCommands"] := savedCommands, AppSettings.File := savedFile
         try FileDelete(A_Temp "\ALTRunTest.json")
         try DirDelete(folder, true)
+    }
+
+    ; 偏好设置 → 高级: 链接显示名称 (主页 · GitHub · 更新说明 · 报告问题), 版权, 数据文件夹一行 (长路径用省略号, 鼠标停留显示完整路径)
+    static AdvancedPage() {
+        eq := (n, a, e) => TestRunner.Equal("AdvancedPage." n, a, e)
+        PreferencesWindow.Show("Prefs.Page.Advanced", -3000, -3000)
+        try {
+            texts := "", link := "", folder := ""
+            for ctrl in PreferencesWindow.Pages[PreferencesWindow._page].Controls {
+                if (ctrl.Type = "Link")
+                    link := ctrl
+                else if (ctrl.Type = "Text" && ctrl.Text = AppSettings.DataDir)
+                    folder := ctrl
+                if (ctrl.Type = "Text")
+                    texts .= ctrl.Text "`n"
+            }
+            eq("four links", StrSplit(link.Text, "<a ").Length - 1, 4)
+            eq("no bare website address", InStr(link.Text, ">zhugecaomao.github.io"), 0)
+            eq("issues link", InStr(link.Text, App.RepoUrl "/issues/new/choose") > 0, true)
+            eq("copyright", InStr(texts, "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao") > 0, true)
+            eq("settings file row removed", InStr(texts, AppSettings.File), 0)
+            eq("data folder: one line, path ellipsis", IsObject(folder) && (ControlGetStyle(folder) & 0x8100) = 0x8100, true)
+        } finally {
+            PreferencesWindow.Close()
+        }
+        g := Gui()
+        label := g.AddText("w100 0x100", "C:\A very long path\to a folder")
+        tip := Win.AddTooltip(label.Hwnd, "C:\A very long path\to a folder")
+        eq("tooltip added", DllCall("SendMessageW", "Ptr", tip, "UInt", 0x40D, "Ptr", 0, "Ptr", 0), 1)   ; TTM_GETTOOLCOUNT
+        g.Destroy()
+    }
+
+    ; 只运行一个 ALTRun: 再启动时把命令行参数交给正在运行的 (WM_COPYDATA), 重新启动 (/restart) 时替换它
+    static SingleInstance() {
+        eq := (n, a, e) => TestRunner.Equal("SingleInstance." n, a, e)
+        eq("restart (compiled)", App.IsRestart('"C:\ALTRun\ALTRun.exe" /restart -Reloaded'), true)
+        eq("restart (script)", App.IsRestart('"C:\AHK\AutoHotkey64.exe" /restart "C:\ALTRun\ALTRun.ahk" -Preferences 3'), true)
+        eq("restart (no quotes)", App.IsRestart('ALTRun.exe /RESTART'), true)
+        eq("double-click", App.IsRestart('"C:\ALTRun\ALTRun.exe"'), false)
+        eq("send to", App.IsRestart('"C:\ALTRun\ALTRun.exe" -SendTo "D:\a /restart b"'), false)
+        eq("no other instance", App._RunningInstance(), 0)
+        eq("title: compiled exe", App.IsInstanceTitle("C:\ALTRun\ALTRun.exe", "C:\ALTRun\ALTRun.exe"), true)
+        eq("title: script", App.IsInstanceTitle("C:\ALTRun\ALTRun.ahk - AutoHotkey v2.0.19", "C:\ALTRun\ALTRun.ahk"), true)
+        eq("title: other case", App.IsInstanceTitle("c:\altrun\ALTRun.exe", "C:\ALTRun\ALTRun.exe"), true)
+        eq("title: other script", App.IsInstanceTitle("C:\ALTRun\ALTRun.ahk.bak - AutoHotkey v2.0.19", "C:\ALTRun\ALTRun.ahk"), false)
+        eq("title: other folder", App.IsInstanceTitle("D:\Test\ALTRun.exe", "C:\ALTRun\ALTRun.exe"), false)
+
+        received := []
+        saved := App.GetOwnPropDesc("_HandleCommandLine")
+        App.DefineProp("_HandleCommandLine", {Call: (self, args, forwarded := false) => received.Push([args, forwarded])})
+        OnMessage(0x4A, onCopyData := (p*) => App._OnCopyData(p*))
+        try {
+            eq("sent", App.SendArgs(A_ScriptHwnd, ["-SendTo", "D:\项目 A\Report.docx", "C:\Windows"]), true)
+            eq("no arguments sent", App.SendArgs(A_ScriptHwnd, []), true)
+            Sleep(50)
+            eq("handled after replying", received.Length, 2)
+            if (received.Length = 2) {
+                args := received[1][1]
+                eq("arguments", args.Length "|" args[1] "|" args[2] "|" args[3], "3|-SendTo|D:\项目 A\Report.docx|C:\Windows")
+                eq("forwarded", received[1][2], true)
+                eq("double-click: no arguments", received[2][1].Length, 0)
+            }
+            copyData := Buffer(A_PtrSize * 3, 0)                            ; 别的程序 (例如 Everything) 的 WM_COPYDATA 不处理
+            NumPut("UPtr", 0x1234, copyData, 0)
+            eq("other copydata ignored", App._OnCopyData(0, copyData.Ptr, 0x4A, A_ScriptHwnd), "")
+        } finally {
+            OnMessage(0x4A, onCopyData, 0)
+            App.DefineProp("_HandleCommandLine", saved)
+        }
     }
 
     ; Ctrl+↑ / Ctrl+↓ 翻搜索记录 (↑ ↓ 只移动选择); 用隐藏的输入框代替搜索窗口, 不真的搜索
@@ -2235,6 +2495,52 @@ class Tests {
     }
 
     ; 输入检查、支架间距、SPF2M 没有处理好的情况 (崩溃 / 不显示任何东西)
+    ; PT Tools 窗口: 结果框不停留 Tab 焦点 (Area Expression 之后直接到 Rebar Diameter), 单位写成 mm², 点进输入框时全选
+    static PTToolsWindowUi() {
+        eq := (n, a, e) => TestRunner.Equal("PTToolsWindowUi." n, a, e)
+        saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"]]
+        PTToolsWindow.Settings["WinLeft"] := -3000, PTToolsWindow.Settings["WinTop"] := -3000
+        PTToolsWindow.Show()
+        g := PTToolsWindow.G
+        tabbed := "", oldUnit := ""
+        for ctrl in g {
+            style := ControlGetStyle(ctrl)
+            if (ctrl.Type = "Edit" && (style & 0x800) && (style & 0x10000))     ; ES_READONLY 还有 WS_TABSTOP
+                tabbed .= ctrl.Name " "
+            if InStr(ctrl.Text, "mm2")
+                oldUnit .= ctrl.Text " | "
+        }
+        eq("read-only fields skip tab", tabbed, "")
+        eq("units", oldUnit, "")
+        next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")
+        eq("expression -> diameter", next = g["RequiredBarDiameter"].Hwnd, true)
+        span := g["RebarSpanWidth"]
+        SendMessage(0xB1, 1, 1, span)                                       ; 光标放在中间
+        span.Focus()
+        Sleep(100)                                                          ; 处理 PostMessage 的全选
+        start := 0, finish := 0
+        DllCall("SendMessage", "Ptr", span.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
+        eq("select all on focus", start "-" finish, "0-" StrLen(span.Value))
+        eq("right margin", (SendMessage(0xD4, 0, 0, span) >> 16) >= 4, true)   ; EM_GETMARGINS: 光标不紧贴数字
+        g["RebarSpanWidth"].Value := 5000                                   ; 第一组的 Span Width -> BRC 的 Span Width -> 钢筋网面积一起重算
+        PTToolsWindow.OnRebarFieldChanged()
+        eq("brc span follows", g["BrcSpanWidth"].Value, "5000")
+        eq("top mesh area recalculated", g["BrcTopArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcTopMeshMark"].Value)))
+        eq("bottom mesh area recalculated", g["BrcBotArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcBotMeshMark"].Value)))
+        safety := g["SafetyFactorEnabled"]
+        eq("safety factor checkbox skips tab", (ControlGetStyle(safety) & 0x10000) != 0, false)
+        ; 钢筋直径下拉框里的数字右对齐: 第一个字的位置 (EM_POSFROMCHAR) 在输入框的右半边 (Wine 不支持建好后改对齐, 只在 Windows 上看位置)
+        diaEdit := DllCall("FindWindowEx", "Ptr", g["RebarBarDiameter"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+        eq("diameter diaEdit has ES_RIGHT", (ControlGetStyle(diaEdit) & 0x2) != 0, true)
+        if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
+            WinGetClientPos(, , &ew, , diaEdit)
+            firstX := SendMessage(0xD6, 0, 0, diaEdit) & 0xFFFF                     ; EM_POSFROMCHAR: 第 0 个字的 x
+            TestRunner.True("PTToolsWindowUi.diameter text on the right (first char at " firstX " of " ew ")", firstX > ew // 2)
+        }
+        g.Destroy(), PTToolsWindow.G := ""
+        PTToolsWindow.Settings["WinLeft"] := saved[1], PTToolsWindow.Settings["WinTop"] := saved[2]
+    }
+
     static TendonProfileInputs() {
         eq := (n, a, e) => TestRunner.Equal("TendonProfileInputs." n, a, e)
         profileOf := (profile, start, finish, l, extra := "") => TendonProfile.Calc(TendonProfileInputsMap(profile, start, finish, l, extra))
@@ -2593,6 +2899,19 @@ Func | PTTools | PT Tools (AHK)=99
     }
 
     ; 操作后的提示: 搜索窗口开着时在它下方居中, 否则在屏幕中间偏下; 不出屏幕
+    ; 显示搜索窗口时不重入, 但上一次卡住超过 StuckShowMs 就不再挡住新的显示 (关掉一台显示器后卡了 2 分半)
+    static StuckShow() {
+        eq := (n, a, e) => TestRunner.Equal("StuckShow." n, a, e)
+        saved := [SearchWindow._showing, SearchWindow._showStarted, SearchWindow._showStep]
+        SearchWindow._showing := false
+        eq("not showing", SearchWindow._ShouldSkipShow(), false)
+        SearchWindow._showing := true, SearchWindow._showStarted := A_TickCount, SearchWindow._showStep := "redraw"
+        eq("still showing", SearchWindow._ShouldSkipShow(), true)
+        SearchWindow._showStarted := A_TickCount - SearchWindow.StuckShowMs - 100
+        eq("stuck", SearchWindow._ShouldSkipShow(), false)
+        SearchWindow._showing := saved[1], SearchWindow._showStarted := saved[2], SearchWindow._showStep := saved[3]
+    }
+
     static HudPlacement() {
         eq := (n, a, e) => TestRunner.Equal("HudPlacement." n, a, e)
         gap := Win.Scale(12)

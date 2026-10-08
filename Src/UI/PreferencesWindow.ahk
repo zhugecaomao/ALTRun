@@ -25,10 +25,17 @@
 ;
 ; 用法:
 ;   PreferencesWindow.Show([页码, x, y])
+;   PreferencesWindow.AddCommands(paths)   "发送到" 时偏好设置开着: 加进 "命令" 页
 ;===============================================================================
 
 class PreferencesWindow {
     static Gui := "", Working := "", Pages := [], Binds := [], PageList := ""
+    static _lists := Map()                                                  ; 列表页的设置路径 (例如 "CustomCommands") -> 加入 / 编辑项目的方法
+    ; 页面的顺序 (和 _BuildPages 一致, 有测试检查); 搜索里的 "ALTRun 偏好设置: 外观" 等由它生成, 不用打开窗口
+    static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
+        , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
+        , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp"
+        , "Prefs.Page.Usage", "Prefs.Page.Advanced"]
     static _page := 0, _y := 0
     static _dirty := false, _ready := false, ApplyButton := ""
     ; 两列表单 (和 Alfred / Listary 一样): 左列是右对齐的标签, 一页里的控件从同一条竖线 (_InputX) 开始,
@@ -47,10 +54,9 @@ class PreferencesWindow {
     ; pageIndex: 页码, 或页面的键 (例如 "Prefs.Page.Advanced")
     static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
-            if !IsInteger(pageIndex) && (index := PreferencesWindow._PageIndex(pageIndex)) {
-                PreferencesWindow.PageList.Value := index
-                PreferencesWindow.SelectPage(index)
-            }
+            index := IsInteger(pageIndex) ? pageIndex : PreferencesWindow._PageIndex(pageIndex)
+            if (index >= 1 && index <= PreferencesWindow.Pages.Length)
+                PreferencesWindow._SelectRow(index)
             WinActivate("ahk_id " PreferencesWindow.Gui.Hwnd)
             return
         }
@@ -59,8 +65,8 @@ class PreferencesWindow {
         ; 按实际的文字宽度加宽那一页的左列, 重新建一次窗口 (记住宽度, 下次打开不用再建两次)
         Loop 2 {
             PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
-            PreferencesWindow.Pages := [], PreferencesWindow.Binds := [], PreferencesWindow._wider := Map()
-            PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false
+            PreferencesWindow.Pages := [], PreferencesWindow.Binds := [], PreferencesWindow._wider := Map(), PreferencesWindow._lists := Map()
+            PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false, PreferencesWindow._page := 0
 
             g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
             g.SetFont("s9", ThemeManager.FontName())
@@ -68,6 +74,9 @@ class PreferencesWindow {
             g.OnEvent("Escape", (*) => PreferencesWindow.Cancel())
             PreferencesWindow.Gui := g
 
+            ; 左边的页面列表最先建: Tab 键的顺序是 列表 -> 页面里的控件 -> 底部按钮 (页面名字建完页面再填)
+            ; ListView 而不是 ListBox: 每页前面一个图标 (系统图标字体画的, 见 NavIcons); 0x20 整行选中, 0x10000 双缓冲
+            pageList := g.AddListView("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " -Hdr -Multi LV0x10020", [""])
             PreferencesWindow._BuildPages()
             if (!PreferencesWindow._wider.Count || A_Index = 2)
                 break
@@ -79,9 +88,17 @@ class PreferencesWindow {
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
-        pageList := g.AddListBox("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " AltSubmit", names)
-        pageList.OnEvent("Change", (ctrl, *) => PreferencesWindow.SelectPage(ctrl.Value))
-        SendMessage(0x1A0, 0, Round(26 * A_ScreenDPI / 96), pageList.Hwnd)  ; LB_SETITEMHEIGHT: 更宽松的侧边栏
+        icons := NavIcons.ImageList(PreferencesWindow.PageKeys)             ; 图像列表的高度就是行高 (更宽松的侧边栏)
+        if icons
+            pageList.SetImageList(icons, 1)
+        for index, name in names
+            pageList.Add("Icon" index, name)
+        pageList.ModifyCol(1, "AutoHdr")                                    ; 唯一的一列占满列表宽度 (列比列表窄时右边会多一条列分隔线)
+        DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; 和资源管理器一样的悬停 / 选中效果
+        pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (ItemSelect 事件有时收不到)
+        pageList.OnNotify(-12, (ctrl, lParam) => PreferencesWindow._OnPageListDraw(lParam))   ; NM_CUSTOMDRAW: 不画虚线焦点框
+        for code in [-2, -3, -5, -6]                                        ; NM_CLICK / NM_DBLCLK / NM_RCLICK / NM_RDBLCLK (点得快时第二下算双击)
+            pageList.OnNotify(code, (ctrl, lParam) => PreferencesWindow._OnPageClick(lParam))
         PreferencesWindow.PageList := pageList
 
         buttonY := " y" PreferencesWindow.ButtonY
@@ -98,11 +115,46 @@ class PreferencesWindow {
         if !IsInteger(pageIndex)
             pageIndex := PreferencesWindow._PageIndex(pageIndex)
         pageIndex := Max(1, Min(pageIndex, PreferencesWindow.Pages.Length))
-        pageList.Value := pageIndex
-        PreferencesWindow.SelectPage(pageIndex)
+        PreferencesWindow._SelectRow(pageIndex)
         g.Show((IsInteger(x) && IsInteger(y) ? "x" x " y" y " " : "") "w765 h" (PreferencesWindow.ButtonY + 41))
+        pageList.Focus()                                                    ; 焦点在页面列表: ↑ ↓ 切换页面, 不会不小心改了第一页的设置
         ; 打开窗口时程序自己填的值不算修改, 等控件的通知都处理完再开始记录
         SetTimer(() => (PreferencesWindow._ready := true), -300)
+    }
+
+    static _SelectRow(index) {
+        PreferencesWindow.SelectPage(index)
+        PreferencesWindow.PageList.Modify(index, "Select Focus Vis")
+    }
+
+    ; 选中了一行: 显示那一页
+    static _OnPageRow(lParam) {
+        row := NumGet(lParam, 3 * A_PtrSize, "Int") + 1                     ; NMLISTVIEW: iItem (从 0 开始), uNewState, uOldState
+        newState := NumGet(lParam, 3 * A_PtrSize + 8, "UInt"), oldState := NumGet(lParam, 3 * A_PtrSize + 12, "UInt")
+        if !((newState ^ oldState) & 0x2)                                   ; LVIS_SELECTED 没变 (例如只是焦点变了)
+            return
+        if ((newState & 0x2) && row != PreferencesWindow._page)
+            PreferencesWindow.SelectPage(row)
+    }
+
+    ; 选中行只用高亮表示, 不画虚线焦点框 (和 Windows 设置的导航一样)。Windows 按 "最近是不是用了键盘"
+    ; 决定显示不显示焦点框, 所以有时第一次打开偏好设置会看到虚线、有时看不到; 这里在画每一行之前去掉 CDIS_FOCUS
+    static _OnPageListDraw(lParam) {
+        stage := NumGet(lParam, 3 * A_PtrSize, "UInt")                      ; NMCUSTOMDRAW.dwDrawStage
+        if (stage = 0x1)                                                    ; CDDS_PREPAINT
+            return 0x20                                                     ; CDRF_NOTIFYITEMDRAW
+        if (stage = 0x10001) {                                              ; CDDS_ITEMPREPAINT
+            offset := 6 * A_PtrSize + 16                                    ; NMCUSTOMDRAW.uItemState
+            NumPut("UInt", NumGet(lParam, offset, "UInt") & ~0x10, lParam, offset)   ; CDIS_FOCUS
+        }
+        return 0                                                            ; CDRF_DODEFAULT
+    }
+
+    ; 点了列表下面的空白处 (没有点到行), ListView 会取消选中: 松开鼠标后选回当前页。
+    ; 不在取消选中时马上选回: 点另一行时也会先取消选中上一行, 那样上一行会闪一下
+    static _OnPageClick(lParam) {
+        if (NumGet(lParam, 3 * A_PtrSize, "Int") < 0 && !PreferencesWindow.PageList.GetNext())   ; NMITEMACTIVATE.iItem = -1
+            PreferencesWindow.PageList.Modify(PreferencesWindow._page, "Select Focus")
     }
 
     static _PageIndex(nameKey) {
@@ -112,28 +164,72 @@ class PreferencesWindow {
         return 1
     }
 
-    ; 有控件被用户修改过: "应用" 变为可用, 取消时要确认
-    static MarkDirty() {
-        if (!PreferencesWindow._ready || PreferencesWindow._dirty)
+    ; 有控件被用户修改过: "应用" 变为可用, 取消时要确认; force: 刚打开窗口时也算 ("发送到" 加进来的命令)
+    static MarkDirty(force := false) {
+        if ((!PreferencesWindow._ready && !force) || PreferencesWindow._dirty)
             return
         PreferencesWindow._dirty := true
         try PreferencesWindow.ApplyButton.Enabled := true
     }
 
+    ; 换页时只隐藏上一页、显示这一页的控件, 再只重画右边的页面区域:
+    ; 不重画左边的页面列表和底部按钮, 切换时不闪 (不对整个窗口用 WM_SETREDRAW: 顶层窗口停止重画后子控件会画不出来)
     static SelectPage(pageIndex) {
+        hwnd := PreferencesWindow.Gui.Hwnd
+        previous := PreferencesWindow._page
         PreferencesWindow._page := pageIndex
-        for index, page in PreferencesWindow.Pages
-            for ctrl in page.Controls
-                ctrl.Visible := (index = pageIndex)
+        for index, page in PreferencesWindow.Pages {
+            if (index = pageIndex || index = previous || previous = 0)      ; 刚建好时所有页面都要隐藏一次
+                for ctrl in page.Controls
+                    ctrl.Visible := (index = pageIndex)
+        }
         ; 复选框和说明文字是透明背景: 不先擦掉背景就重画, 文字会叠两遍变成粗体
-        DllCall("RedrawWindow", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
+        DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", PreferencesWindow._PageArea(), "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
+    }
+
+    ; 页面区域 (窗口客户区里, 页面列表右边、底部按钮上面) 的 RECT
+    static _PageArea() {
+        list := Buffer(16), client := Buffer(16), area := Buffer(16)
+        DllCall("GetWindowRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", list)
+        DllCall("MapWindowPoints", "Ptr", 0, "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", list, "UInt", 2)   ; 屏幕坐标 -> 客户区坐标
+        DllCall("GetClientRect", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", client)
+        NumPut("Int", NumGet(list, 8, "Int"), "Int", 0, "Int", NumGet(client, 8, "Int"), "Int", NumGet(list, 12, "Int"), area)
+        return area
     }
 
     static Close() {
         HotkeyBox.CancelActive()                                            ; 正在录制热键时关窗口: 先结束录制, 恢复 ALTRun 的热键
         if IsObject(PreferencesWindow.Gui)
             PreferencesWindow.Gui.Destroy()
-        PreferencesWindow.Gui := ""
+        PreferencesWindow.Gui := "", PreferencesWindow._lists := Map()
+    }
+
+    ; "发送到" 时偏好设置开着: 切到 "命令" 页, 把文件 / 文件夹加进列表, 按 确定 / 应用 才保存
+    ; (直接写进设置文件, 会被之后的保存盖掉)。和没开偏好设置时一样: 1 个打开编辑框
+    ; (已经有这个命令时编辑它), 多个直接加上, 跳过已有的
+    static AddCommands(paths) {
+        PreferencesWindow.Show("Prefs.Page.Commands")
+        list := PreferencesWindow._lists["CustomCommands"]
+        if (paths.Length = 1) {
+            existing := CustomCommandProvider.FindByTarget(paths[1], list.Items)
+            if IsObject(existing) {
+                App.Notify(I18n.T("Custom.Exists", existing["Title"]), 2500)
+                list.Edit.Call(existing)
+            } else {
+                list.Insert.Call(CustomCommandProvider.FromPath(paths[1]))
+            }
+            return
+        }
+        added := 0, skipped := 0
+        for target in paths {
+            if IsObject(CustomCommandProvider.FindByTarget(target, list.Items)) {
+                skipped += 1
+                continue
+            }
+            list.Append.Call(CustomCommandProvider.FromPath(target))
+            added += 1
+        }
+        App.Toast(I18n.T("Custom.AddedMany", added) (skipped ? " " I18n.T("Custom.SkippedExisting", skipped) : ""), 3000)
     }
 
     static OK() {
@@ -158,7 +254,7 @@ class PreferencesWindow {
 
     static Help() {
         page := PreferencesWindow.Pages[Max(1, PreferencesWindow._page)]
-        ActionCatalog.OpenUrl(HelpProvider.WikiUrl page.Wiki)
+        ActionCatalog.OpenUrl(HelpProvider.WikiPage(page.Wiki))
     }
 
     ; 每一页对应的 Wiki 页面 (帮助按钮 / F1)
@@ -624,17 +720,23 @@ class PreferencesWindow {
         PreferencesWindow._y := top + 32
         PreferencesWindow._Add("Text", "x" textX " w" textW, I18n.T("App.Tagline"))
         PreferencesWindow._y := top + 52
-        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) "   ·   GPL-3.0")
+        copyright := "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao"         ; 版本号以发布年份开头
+        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) "   ·   " copyright "   ·   GPL-3.0")
         PreferencesWindow._y := top + 74
-        PreferencesWindow._Add("Link", "x" textX " w" textW, '<a href="' App.Website '">' RTrim(StrReplace(App.Website, "https://"), "/") '</a>   ·   <a href="' App.RepoUrl '">GitHub</a>')
+        links := ""
+        for link in [[App.Website, I18n.T("Prefs.Homepage")], [App.RepoUrl, "GitHub"], [App.RepoUrl "/releases", I18n.T("Update.ReleaseNotes")]
+                   , [App.RepoUrl "/issues/new/choose", I18n.T("Prefs.ReportIssue")]]
+            links .= (links = "" ? "" : "   ·   ") '<a href="' link[1] '">' link[2] '</a>'
+        PreferencesWindow._Add("Link", "x" textX " w" textW, links)
         PreferencesWindow._y := top + 102
         PreferencesWindow._Add("Button", "x" textX " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T("Tray.CheckUpdate"))
             .OnEvent("Click", (*) => UpdateChecker.Check())
         PreferencesWindow._y := top + 102 + PreferencesWindow.ButtonH + 22
 
         PreferencesWindow._Section("Prefs.Section.Data")
-        PreferencesWindow._Info("Prefs.SettingsFile", AppSettings.File, " cGray")
-        PreferencesWindow._Info("Prefs.Group.DataFolder", AppSettings.DataDir, " cGray")
+        ; 设置文件就是数据文件夹里的 ALTRun.json, 不另写一行; 路径太长时中间用省略号 (SS_PATHELLIPSIS), 鼠标停留显示完整路径
+        folder := PreferencesWindow._Info("Prefs.Group.DataFolder", AppSettings.DataDir, " r1 cGray 0x8100")
+        Win.AddTooltip(folder.Hwnd, AppSettings.DataDir)
         PreferencesWindow._y += 4
         PreferencesWindow._Buttons(""
             , ["Prefs.EditJson", (*) => (PreferencesWindow.Cancel() || App.EditSettingsFile())]
@@ -919,6 +1021,7 @@ class PreferencesWindow {
         label := PreferencesWindow._GroupLabel(labelKey)
         ctrl := PreferencesWindow._Add(type, "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() options, text)
         PreferencesWindow._Below(6, label, ctrl)
+        return ctrl
     }
 
     ; 标签后面紧跟输入框 (分节排列的页面用, 不用左列): "搜索历史条数 [30]"
@@ -1183,15 +1286,28 @@ class PreferencesWindow {
             if statuses.Count
                 statuses[ObjPtr(item)] := check(item, Map())
         }
-        AddItem(*) {
-            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, newItem())
-            if IsObject(edited) {
-                items.Push(edited)
-                PreferencesWindow.MarkDirty()
-                Recheck(edited)
-                if IsObject(filterBox)
-                    filterBox.Value := ""                                   ; 清掉筛选, 新加的一项一定看得到
-                Refresh(items.Length)
+        AddItem(*) => Insert(newItem())
+        Insert(item) {                                                      ; 打开编辑框 (item 是预先填好的内容), 确定后加进列表
+            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, item)
+            if IsObject(edited)
+                Append(edited)
+        }
+        Append(item) {
+            items.Push(item)
+            PreferencesWindow.MarkDirty(true)
+            Recheck(item)
+            if IsObject(filterBox)
+                filterBox.Value := ""                                       ; 清掉筛选, 新加的一项一定看得到
+            Refresh(items.Length)
+        }
+        EditExisting(item) {                                                ; 选中列表里的这一项并打开编辑框
+            for index, existing in items {
+                if (existing = item) {
+                    if IsObject(filterBox)
+                        filterBox.Value := ""
+                    Refresh(index)
+                    return EditItem()
+                }
             }
         }
         EditItem(*) {
@@ -1245,6 +1361,7 @@ class PreferencesWindow {
 
         listView.OnEvent("DoubleClick", EditItem)
         Refresh()
+        PreferencesWindow._lists[path] := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting}   ; 外面加进来的项目 (AddCommands)
         PreferencesWindow._y += height - 34
         PreferencesWindow._Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Edit")).OnEvent("Click", EditItem)
