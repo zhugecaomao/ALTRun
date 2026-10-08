@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SignPath 产物配置: GitHub Actions 上传的产物 (ALTRun-unsigned) 是一个 zip, 里面只有 ALTRun.exe,
+     对它做 Authenticode 签名。在 SignPath 项目 ALTRun → Artifact configurations 里粘贴这段并设为默认 -->
+<artifact-configuration xmlns="http://signpath.io/artifact-configuration/v1">
+  <zip-file>
+    <pe-file path="ALTRun.exe">
+      <authenticode-sign />
+    </pe-file>
+  </zip-file>
+</artifact-configuration>

@@ -19,6 +19,7 @@ on:
 
 permissions:
   contents: write
+  actions: read                   # SignPath 用 GITHUB_TOKEN 读取这次构建和下载要签名的产物
 
 jobs:
   build:
@@ -93,17 +94,19 @@ jobs:
           (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
 
       # 代码签名 (SignPath Foundation 免费为开源项目签名, 见 packaging/README.md): 设置了 SIGNPATH_API_TOKEN secret
-      # 和 SIGNPATH_ORGANIZATION_ID 变量后自动签名 (publish = false 用测试证书), 没有设置时跳过, 照常发布未签名的版本
+      # 和 SIGNPATH_ORGANIZATION_ID 变量后自动签名, 没有设置时跳过, 照常发布未签名的版本。
+      # publish = false 用测试证书 (test-signing); publish = true 用正式证书 (release-signing), 要等正式证书导入、
+      # 把变量 SIGNPATH_RELEASE_SIGNING 设为 true 之后才签, 在那之前正式发布照常发布未签名的版本
       - name: Upload unsigned ALTRun.exe for signing
         id: unsigned
-        if: env.SIGNPATH_API_TOKEN != ''
+        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
         uses: actions/upload-artifact@v7
         with:
           name: ALTRun-unsigned
           path: build/ALTRun/ALTRun.exe
 
       - name: Sign ALTRun.exe (SignPath)
-        if: env.SIGNPATH_API_TOKEN != ''
+        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
         uses: signpath/github-action-submit-signing-request@v3
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
@@ -116,7 +119,7 @@ jobs:
           output-artifact-directory: build/signed
 
       - name: Use the signed ALTRun.exe
-        if: env.SIGNPATH_API_TOKEN != ''
+        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
         shell: pwsh
         run: |
           Copy-Item build/signed/ALTRun.exe build/ALTRun/ALTRun.exe -Force
