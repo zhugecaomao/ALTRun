@@ -198,13 +198,13 @@ site\               官网模板和生成脚本（发布到 GitHub Pages）
 ```
 AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk
 ```
-单元测试不依赖界面，退出码为失败数量。新增功能、代码规范和提交流程见 [CONTRIBUTING.md](CONTRIBUTING.md) 和 Wiki 的[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)。
+单元测试不依赖界面，退出码为失败数量。新增功能、代码规范和提交流程见 [贡献指南](CONTRIBUTING.zh-CN.md) 和 Wiki 的[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)。
 
 
 ## 贡献与反馈
 - 报告问题：[提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose)（请附上 Windows 版本和复现步骤）
 - 建议与讨论：[Discussions](https://github.com/zhugecaomao/ALTRun/discussions)
-- 贡献代码：请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)
+- 贡献代码：请先阅读 [贡献指南](CONTRIBUTING.zh-CN.md)
 
 如果 ALTRun 对你有帮助，欢迎点亮星标 ⭐
 

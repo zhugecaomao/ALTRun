@@ -89,7 +89,7 @@ Optional:
 The wiki sources are in `docs/wiki/` in the repository and are published to the wiki automatically after merging to `main` (`.github/workflows/wiki.yml`). Change `docs/wiki/` through pull requests; don't edit the wiki on the web.
 
 The documentation is bilingual; when you change one language, change the other one too:
-- README: `README.md` (English, shown by default on GitHub) and `README.zh-CN.md` (Chinese), linking to each other at the top
+- README and contributing guide: `README.md` / `CONTRIBUTING.md` (English, shown by default on GitHub) and `README.zh-CN.md` / `CONTRIBUTING.zh-CN.md` (Chinese), linking to each other at the top
 - Wiki: two files per page, Chinese `Usage.md` and English `en-Usage.md`; each page links to the other language at the top, and links between English pages use the `en-` page names. The sidebar `_Sidebar.md` has an English and a Chinese group. Help opened from the program (cheat sheet, `F1` in Preferences) follows the UI language: the Chinese page for a Chinese UI, the `en-` page otherwise (`HelpProvider.WikiPage`). The `WikiPages` test checks that every page has an English page and that links point to existing pages
 - CHANGELOG is written in Chinese, with an English sentence after each version's summary (that section is the release notes)
 
