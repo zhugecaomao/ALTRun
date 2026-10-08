@@ -195,6 +195,7 @@ class SearchWindow {
 
     static _Show(text) {
         started := Logger.Ms()
+        SearchWindow._blankLogged := false
         if Logger.Enabled
             Logger.Debug("SearchWindow: show")                              ; 和下面的 "Perf: show" 配对: 卡住时看得出卡在显示窗口里
         wasVisible := SearchWindow.IsVisible()
@@ -406,17 +407,58 @@ class SearchWindow {
     ; 两边的行数会混在一起 (窗口很高, 列表却是空的)。这里只改控件, 重画在之后照常进行
     static SetResults(results) {
         Critical("On")
+        SearchWindow._NoteResults(results.Length)
         SearchWindow.Results  := results
         SearchWindow.Selected := results.Length ? 1 : 0
         SearchWindow.Offset   := 0
         SearchWindow._Layout()
         Critical("Off")
         SearchWindow._Repaint()                                             ; Critical 期间画的 (自绘回调不能运行) 重画一次
-        if (SearchWindow._repaintLater = "")                                ; 等这次输入处理完再画一次: 万一那一刻没画出结果行 (空白行), 也会马上补上。
-            SearchWindow._repaintLater := () => DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 0)   ; 不擦背景: 每行自己涂满整行, 内容一样时看不出重画, 不会闪
+        if (SearchWindow._repaintLater = "")                                ; 等这次输入处理完再画一次: 万一那一刻没画出结果行 (空白行), 也会马上补上
+            SearchWindow._repaintLater := () => SearchWindow._AfterResults()
         SetTimer(SearchWindow._repaintLater, -30)
     }
     static _repaintLater := ""
+
+    ; 换完结果 30 ms 后: 再画一次列表 (不擦背景: 每行自己涂满整行, 内容一样时看不出重画, 不会闪),
+    ; 并检查列表行数和窗口高度是否和结果对得上, 对不上时写日志并改正 (窗口很高、列表却是空的)
+    static _AfterResults() {
+        DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 0)
+        if !SearchWindow.IsVisible()
+            return
+        rows := SearchWindow._VisibleCount(), client := Buffer(16)
+        DllCall("GetClientRect", "Ptr", SearchWindow.Gui.Hwnd, "Ptr", client)
+        height := NumGet(client, 12, "Int")
+        if (SearchWindow.List.GetCount() = rows && height = SearchWindow._WindowHeight(rows))
+            return
+        if Logger.Enabled {
+            Logger.Warn("SearchWindow: layout out of date (results " SearchWindow.Results.Length ", visible rows " rows ", list rows " SearchWindow.List.GetCount()
+                . ", window height " height " instead of " SearchWindow._WindowHeight(rows) "), fixing it")
+            for entry in SearchWindow._recent
+                Logger.Debug("  recent results: " entry)
+        }
+        SearchWindow._shownRows := -1                                       ; 让 _Layout 重新设一次窗口高度
+        SearchWindow._Layout()
+    }
+
+    ; 诊断 "窗口有几行高, 结果行却是空白": 内存里记下最近 10 次换结果 (时间、输入、结果数、列表行数),
+    ; 画行时发现这一行没有对应的结果, 把它们写进调试日志 (每次显示窗口最多写一次)
+    static _recent := [], _blankLogged := false
+    static _NoteResults(count) {
+        SearchWindow._recent.Push(FormatTime(, "HH:mm:ss") "." Format("{:03}", A_MSec) " '" SubStr(SearchWindow.Input.Value, 1, 30) "' mode " SearchWindow.Mode
+            . (SearchWindow.FileMode ? " (files)" : "") " results " count " gen " SearchWindow._searchGen " list rows before " SearchWindow.List.GetCount())
+        if (SearchWindow._recent.Length > 10)
+            SearchWindow._recent.RemoveAt(1)
+    }
+    static _LogBlankRow(row, count) {
+        if (SearchWindow._blankLogged || !Logger.Enabled)
+            return
+        SearchWindow._blankLogged := true
+        Logger.Warn("SearchWindow: row " row " has no result (results " count ", offset " SearchWindow.Offset ", list rows " SearchWindow.List.GetCount()
+            . ", window rows " SearchWindow._shownRows ", mode " SearchWindow.Mode ", input '" SubStr(SearchWindow.Input.Value, 1, 30) "')")
+        for entry in SearchWindow._recent
+            Logger.Debug("  recent results: " entry)
+    }
 
     static _VisibleCount() {
         return Min(SearchWindow.Results.Length, SearchWindow.VisibleRows)
@@ -1013,8 +1055,10 @@ class SearchWindow {
         ; 先拿到这一行的结果再画: 画的过程中可能插进来别的线程 (例如运行命令后隐藏窗口、清空输入框触发的新搜索),
         ; 用 SetResults 换上更少的结果, 再按下标去取 SearchWindow.Results 就会越界 ("Invalid index")
         results := SearchWindow.Results, index := SearchWindow.Offset + row + 1
-        if (index > results.Length)
+        if (index > results.Length) {
+            SearchWindow._LogBlankRow(row + 1, results.Length)
             return CDRF_SKIPDEFAULT
+        }
         item := results[index]
 
         rect := Buffer(16, 0)                                               ; left = LVIR_BOUNDS (0)
