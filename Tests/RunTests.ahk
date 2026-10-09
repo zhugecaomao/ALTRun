@@ -2245,6 +2245,35 @@ class Tests {
         ScriptProvider._checked := 0                                         ; 文件夹变了: 下一次搜索时重新读
         eq("refresh", titles("new one"), "New One")
         ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2]
+        ; 第一次打开 Scripts 文件夹: 建三个示例 (各一种写法), 都读得出来; 文件夹已经有了就不动
+        examples := A_Temp "\ALTRunScriptExamples"
+        try DirDelete(examples, true)
+        savedOpen := ActionCatalog.GetOwnPropDesc("OpenFolder"), opened := ""
+        ActionCatalog.DefineProp("OpenFolder", {Call: (this, folder) => opened := folder})
+        ScriptProvider.Folder := examples
+        try {
+            ScriptProvider.OpenFolder()
+            eq("examples: folder opened", opened, examples)
+            ScriptProvider.Load()
+            found := Map()
+            for script in ScriptProvider.Scripts
+                found[script.Name] := script.Title "|" script.Mode "|" script.Keyword "|" script.Argument
+            eq("examples: count", found.Count, 3)
+            eq("example ahk", found.Get("Today.ahk", ""), "Example: Today's Date|silent||")
+            eq("example bat", found.Get("Ping.bat", ""), "Example: Ping|window|ping|Host name or IP address")
+            eq("example ps1", found.Get("IP Addresses.ps1", ""), "Example: IP Addresses|output||")
+            bom := FileOpen(examples "\Ping.bat", "r", "CP0"), first := bom.RawRead(head := Buffer(3), 3) ? NumGet(head, 0, "UChar") : 0, bom.Close()
+            eq("example bat has no BOM", first, Ord("@"))
+            for name, text in ScriptProvider.ExampleScripts()
+                TestRunner.True("Scripts.example ASCII only " name, !RegExMatch(text, "[^\x00-\x7F]"))
+            FileDelete(examples "\Today.ahk")
+            ScriptProvider.OpenFolder()
+            eq("examples: existing folder untouched", FileExist(examples "\Today.ahk"), "")
+        } finally {
+            ActionCatalog.DefineProp("OpenFolder", savedOpen)
+            ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2]
+            try DirDelete(examples, true)
+        }
         DirDelete(root, true)
     }
 

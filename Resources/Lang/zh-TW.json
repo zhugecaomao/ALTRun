@@ -424,7 +424,7 @@
   "Prefs.ScopeFolders": "資料夾",
   "Prefs.ScopeFolders.Desc": "每行一個資料夾; 可以用 A_Desktop、%UserProfile% 等變數",
   "Prefs.ScriptsFolder": "開啟腳本資料夾",
-  "Prefs.ScriptsFolder.Desc": "第一次開啟時建立資料夾和一個範例腳本。",
+  "Prefs.ScriptsFolder.Desc": "第一次開啟時建立資料夾和幾個範例腳本。",
   "Prefs.ScriptsNote": "腳本開頭可以寫這些註解 (; # REM :: // 都行, 都可以不寫): @altrun.title 名稱、@altrun.keyword 關鍵字、@altrun.argument 提示 (輸入「關鍵字 文字」傳給腳本)、@altrun.mode window | silent | output。按兩下腳本用記事本編輯; F1 查看說明和範例。",
   "Prefs.SecondaryHotkey": "第二個呼出熱鍵",
   "Prefs.SecondaryHotkey.Desc": "預設 Alt+R, 另一個呼出 ALTRun 的熱鍵; 不用時在框裡按 Backspace 清除",

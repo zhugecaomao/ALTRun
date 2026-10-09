@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.09.4]
+
+测试版。
+
+Test build.
+
+### 改进
+- 第一次打开脚本文件夹时建三个示例脚本 (原来一个), 各演示一种写法: `Today.ahk` 后台运行、把日期和周数显示成通知; `Ping.bat` 用关键字带参数 (`ping 8.8.8.8`), 在自己的窗口里运行; `IP Addresses.ps1` 后台运行, 用记事本打开全部输出
+
 ## [2026.10.09.3]
 
 测试版。
@@ -545,7 +554,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.4...HEAD
+[2026.10.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.3...2026.10.09.4
 [2026.10.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.2...2026.10.09.3
 [2026.10.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.1...2026.10.09.2
 [2026.10.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08.1...2026.10.09.1

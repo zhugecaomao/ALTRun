@@ -699,7 +699,7 @@ class I18n {
         s["Prefs.BarPrefix"]            := "Bar prefix"
         s["Prefs.BarPrefix.Desc"]       := "Written before the size, e.g. H, T, Y or Φ."
         s["Prefs.ScriptsFolder"]        := "Open Scripts Folder"
-        s["Prefs.ScriptsFolder.Desc"]   := "Creates the folder with an example script the first time."
+        s["Prefs.ScriptsFolder.Desc"]   := "Creates the folder with a few example scripts the first time."
         s["Prefs.Section.Scripts"]      := "Script commands"
         s["Prefs.Section.Scripts.Desc"] := "Put .ahk, .ps1, .bat, .cmd or .py files in the Scripts folder and they become commands: search for the name or keyword and press Enter to run (like Raycast Script Commands). .ahk scripts run with ALTRun itself, .py needs Python. Changes take effect right away; turn the feature on or off in Features."
         s["Prefs.Group.ScriptsFolder"]  := "Folder"
