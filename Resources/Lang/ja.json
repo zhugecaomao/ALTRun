@@ -539,6 +539,8 @@
   "Search.MarkedItems": "マークした {1} 項目",
   "Search.NotEditable": "この項目は編集できません。",
   "Search.Placeholder": "ALTRun 検索",
+  "Search.TypeAfter": "'{1} ' の後に入力して Enter",
+  "Search.TypeArgAfter": "'{1} ' の後に{2}を入力して Enter",
   "Selection.Files": "{1} 個のファイル",
   "Selection.Link": "選択したリンク",
   "Selection.None": "何も選択されていません",

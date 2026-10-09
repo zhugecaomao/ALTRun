@@ -539,6 +539,8 @@
   "Search.MarkedItems": "标记的 {1} 项",
   "Search.NotEditable": "这一项不能编辑。",
   "Search.Placeholder": "ALTRun 搜索",
+  "Search.TypeAfter": "在 '{1} ' 后面输入内容, 再按 Enter",
+  "Search.TypeArgAfter": "在 '{1} ' 后面输入{2}, 再按 Enter",
   "Selection.Files": "{1} 个文件",
   "Selection.Link": "选中的网址",
   "Selection.None": "没有选中的内容",

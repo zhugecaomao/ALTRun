@@ -40,7 +40,7 @@ class WebSearchProvider {
 
     static ItemFor(engine, term) {
         if (term = "") {
-            return ResultItem(I18n.T("Web.SearchEmpty", engine["Title"]), engine["Keyword"] " ...", {
+            return ResultItem(I18n.T("Web.SearchEmpty", engine["Title"]), I18n.T("Search.TypeAfter", engine["Keyword"]), {
                 Kind: "url", Icon: "url:", Valid: false, AutoComplete: engine["Keyword"] " ", Source: engine
             })
         }

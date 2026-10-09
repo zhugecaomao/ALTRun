@@ -182,6 +182,8 @@ class I18n {
         s["Action.CopyingMany"]        := "Copying {1} items to {2}"
         s["Action.MovingMany"]         := "Moving {1} items to {2}"
         s["Search.MarkedItems"]        := "{1} marked items"
+        s["Search.TypeAfter"]          := "Type after '{1} ', then press Enter"         ; 等待参数: 关键字已经补全或还没输入参数时
+        s["Search.TypeArgAfter"]       := "Type {2} after '{1} ', then press Enter"
         s["Action.Pin"]                := "Pin to Empty Search Box"
         s["Action.Unpin"]              := "Unpin"
         s["Action.SearchWith"]         := "Search {1}"

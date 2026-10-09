@@ -57,7 +57,7 @@ class ScriptProvider {
             if (argument = "") {
                 props.Valid := (script.Keyword = "")                        ; 有关键字: Enter 补全 "关键字 ", 接着输入参数
                 props.AutoComplete := (script.Keyword != "") ? script.Keyword " " : ""
-                subtitle := script.Argument " · " subtitle
+                subtitle := ((script.Keyword != "") ? I18n.T("Search.TypeArgAfter", script.Keyword, script.Argument) : script.Argument) " · " subtitle
             } else
                 title .= ": " argument
         }
@@ -176,7 +176,7 @@ class ScriptProvider {
             ScriptProvider.Load()
     }
 
-    ; 示例脚本, 各演示一种写法: 后台运行显示通知 (ahk, silent)、关键字后面带参数 (bat, window)、
+    ; 示例脚本, 各演示一种写法: 后台运行显示通知 (ahk, silent)、关键字后面带参数 (bat, window; 关键字不要和默认命令重复)、
     ; 用记事本看全部输出 (ps1, output)。只用 ASCII 字符: Windows PowerShell 5 按 ANSI 读不带 BOM 的文件
     static ExampleScripts() {
         return Map(
@@ -186,14 +186,14 @@ class ScriptProvider {
               . "; Runs in the background; the last line it prints is shown as a notification.`r`n"
               . "; Change the mode to output to read everything it prints in Notepad, or remove it to run normally.`r`n"
               . 'FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWeek"), 5), "*")' "`r`n",
-            "Ping.bat",
+            "Port.bat",
                 "@echo off`r`n"
-              . "rem @altrun.title     Example: Ping`r`n"
-              . "rem @altrun.keyword   ping`r`n"
-              . "rem @altrun.argument  Host name or IP address`r`n"
-              . 'rem Type "ping 8.8.8.8" in ALTRun: the text after the keyword is passed to the script as %1.' "`r`n"
+              . "rem @altrun.title     Example: Who Uses a Port`r`n"
+              . "rem @altrun.keyword   port`r`n"
+              . "rem @altrun.argument  a port number`r`n"
+              . 'rem Type "port 8080" in ALTRun: the text after the keyword is passed to the script as %1.' "`r`n"
               . "rem No mode line: it runs normally in its own window.`r`n"
-              . "ping %~1`r`n"
+              . 'netstat -ano | findstr /c:":%~1 "' "`r`n"
               . "pause`r`n",
             "IP Addresses.ps1",
                 "# @altrun.title  Example: IP Addresses`r`n"

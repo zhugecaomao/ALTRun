@@ -540,6 +540,8 @@
   "Search.MarkedItems": "標記的 {1} 項",
   "Search.NotEditable": "這一項不能編輯。",
   "Search.Placeholder": "ALTRun 搜尋",
+  "Search.TypeAfter": "在 '{1} ' 後面輸入內容, 再按 Enter",
+  "Search.TypeArgAfter": "在 '{1} ' 後面輸入{2}, 再按 Enter",
   "Selection.Files": "{1} 個檔案",
   "Selection.Link": "選取的網址",
   "Selection.None": "沒有選取的內容",

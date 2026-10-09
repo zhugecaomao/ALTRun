@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.09.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 带参数的命令还没输入参数时 (自定义命令的 `{query}`、带关键字和参数的脚本、网页搜索), 说明一行写清楚接着输入什么, 例如 "在 'ping ' 后面输入内容, 再按 Enter": 以前按 Enter 只是补全关键字, 看起来像没反应
+- 示例脚本 `Ping.bat` 换成 `Port.bat` (`port 8080` 列出占用这个端口的程序): 原来的和自带的 Ping 命令重复
+
 ## [2026.10.09.4]
 
 测试版。
@@ -554,7 +564,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.5...HEAD
+[2026.10.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.4...2026.10.09.5
 [2026.10.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.3...2026.10.09.4
 [2026.10.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.2...2026.10.09.3
 [2026.10.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.1...2026.10.09.2
