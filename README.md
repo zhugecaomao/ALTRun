@@ -86,7 +86,7 @@ The winget manifest has been submitted; once it is accepted you can install with
 - **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results.
 
 **Extensions**
-- **Dialog jump**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder.
+- **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder.
 - **Date stamp**: while renaming a file, press `Ctrl+D` to add or update a date before the extension (`Report.docx` → `Report - 28.09.2026.docx`).
 - **Custom hotkeys**: assign a hotkey to any system command, optionally only inside specific programs.
 - **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown.
@@ -168,7 +168,7 @@ The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wi
 | [Custom commands and snippets](https://github.com/zhugecaomao/ALTRun/wiki/en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion |
 | [File search](https://github.com/zhugecaomao/ALTRun/wiki/en-File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](https://github.com/zhugecaomao/ALTRun/wiki/en-Themes) | Built-in themes, custom themes, every available key |
-| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/en-Extensions) | Dialog jump, date stamp, custom hotkeys, system commands, PT Tools |
+| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/en-Extensions) | Quick Switch, date stamp, custom hotkeys, system commands, PT Tools |
 | [Settings reference](https://github.com/zhugecaomao/ALTRun/wiki/en-Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives and more |
 | [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/en-Development) | Architecture, adding a search feature, code style, tests |
@@ -181,7 +181,7 @@ Lib\                Shared libraries (JSON, Logger, Util, TextTools, Kanji, Dial
 Src\Core\           Startup, settings and migration, search model, match scoring, learned ranking, actions, file index
 Src\UI\             Search window, preferences, edit dialogs, large type, themes, icon cache
 Src\Providers\      Search features: apps, custom commands, snippets, clipboard, system commands, calculator, web, bookmarks, files, terminal, cheat sheet
-Src\Extensions\     Features outside the search window: snippet expansion, dialog jump, date stamp, PT Tools, update check
+Src\Extensions\     Features outside the search window: snippet expansion, Quick Switch, date stamp, PT Tools, update check
 Resources\          Data shipped with the program (Kanji.txt Simplified / Traditional table, Themes\ built-in themes, Lang\ UI languages, Icons\ icons)
 Tests\              Unit tests, reference data (Fixtures), automatic screenshots (Screenshots), SPF2M reference tool (Tools\SPF2M)
 docs\               Wiki sources (docs\wiki, published automatically after merging) and screenshots (docs\images)
@@ -225,4 +225,4 @@ Thanks to these projects for the inspiration:
 - [ALTRun](https://github.com/etworker/ALTRun) (etworker, Delphi): the name and the original design
 - [RunZ](https://github.com/goreliu/runz) (goreliu, AutoHotkey): the idea of writing a launcher in AutoHotkey
 - [Alfred](https://www.alfredapp.com/): the interaction model
-- [Listary](https://www.listary.com/): Quick Switch, the model for the dialog jump
+- [Listary](https://www.listary.com/): its Quick Switch is the model for ALTRun's

@@ -4,8 +4,8 @@
 
 搜索窗口以外的功能。对话框快速跳转和一键加日期各有一页设置 (偏好设置 → 对话框跳转 / 一键加日期)。
 
-## 对话框快速跳转
-做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。
+## 对话框快速跳转 (Quick Switch)
+在打开 / 保存对话框里一步跳到已经打开的文件夹。做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。
 
 **文件夹面板** (默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 正下方就自动贴一个和对话框一样宽的面板 (下面放不下时放在上面), 点一个文件夹对话框就跳过去, 不用记热键:
 - 列出每个 Total Commander 窗口的当前面板和另一侧面板、打开的资源管理器窗口、最近用过的文件夹;

@@ -23,7 +23,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Custom commands and snippets](en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion, clipboard history |
 | [File search](en-File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](en-Themes) | 20 built-in themes (or follow the Windows light / dark mode), custom themes, every available key |
-| [Extensions](en-Extensions) | Dialog jump, date stamp, custom hotkeys, list of system commands, PT Tools |
+| [Extensions](en-Extensions) | Quick Switch, date stamp, custom hotkeys, list of system commands, PT Tools |
 | [Settings reference](en-Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives, privacy... |
 | [Development guide](en-Development) | Architecture, adding a search feature, code style, tests |

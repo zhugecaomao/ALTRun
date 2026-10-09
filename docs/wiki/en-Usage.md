@@ -141,6 +141,6 @@ The selection is read by simulating a copy (`Ctrl+C`); the clipboard is restored
 Preferences → Usage (like Alfred's Usage):
 - How many times you used ALTRun today, in the last 7 days, the last 30 days and in total, and how often you opened the search window
 - Uses per day for the last 30 days (bar chart)
-- Count and share for each feature (apps, custom commands, files, web search, calculator, clipboard history, snippets, system commands, terminal commands, snippet expansion, dialog jump, date stamp)
+- Count and share for each feature (apps, custom commands, files, web search, calculator, clipboard history, snippets, system commands, terminal commands, snippet expansion, Quick Switch, date stamp)
 
 Only counts are kept, never what you typed or opened. They're saved in `Data\Usage.json` (the last 400 days). The "Clear Usage Statistics" button starts over.
