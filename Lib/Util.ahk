@@ -117,6 +117,17 @@ class Path {
     }
 
     ; 只取文件名, 用于列表显示
+    ; 用这种文件的默认程序打开文本文件 (例如把 .log 设成用 Notepad4 打开), 打不开时用记事本。
+    ; 只用于默认动作就是查看的类型 (.log .txt): 脚本 (.ahk .bat) 的默认动作是运行, .json 常常没有关联。
+    ; runner 只在测试时传入 (代替 Run)
+    static OpenText(file, runner := "") {
+        runner := IsObject(runner) ? runner : Run
+        try
+            runner('"' file '"')
+        catch
+            runner('notepad.exe "' file '"')
+    }
+
     static Leaf(path) {
         SplitPath(path, &name)
         return name != "" ? name : path

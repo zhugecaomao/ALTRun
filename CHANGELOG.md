@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.09.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 日志 (Open ALTRun Log)、脚本的输出 (output 模式)、进程 / 服务列表改用这种文件的默认程序打开 (例如 `.log` 设成 Notepad4), 没有关联时仍用记事本; 设置文件、主题和脚本还是用记事本编辑 (`.json` 常常没有关联, 脚本的默认动作是运行)
+
 ## [2026.10.09.5]
 
 测试版。
@@ -564,7 +573,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.6...HEAD
+[2026.10.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.5...2026.10.09.6
 [2026.10.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.4...2026.10.09.5
 [2026.10.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.3...2026.10.09.4
 [2026.10.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.2...2026.10.09.3

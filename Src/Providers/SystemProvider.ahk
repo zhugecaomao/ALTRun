@@ -306,11 +306,11 @@ class SystemProvider {
         MsgBox(addresses, I18n.T("Sys.IPCopied"), 64)
     }
 
-    ; 运行控制台命令, 结果写到临时文件后用记事本打开
+    ; 运行控制台命令, 结果写到临时文件后用 .txt 的默认程序 (一般是记事本) 打开
     static _ShowCommandOutput(command, fileName) {
         outFile := A_Temp "\" fileName
         try FileDelete(outFile)
         RunWait(A_ComSpec ' /c ' command ' > "' outFile '"', A_Temp, "Hide")
-        Run('notepad.exe "' outFile '"')
+        Path.OpenText(outFile)
     }
 }

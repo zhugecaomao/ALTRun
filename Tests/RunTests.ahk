@@ -1018,9 +1018,9 @@ class Tests {
         IconCache.Get("ext:.altrunslowtest"), IconCache._LoadQueued()
         IconCache.SlowLoadMs := 100000
         IconCache.Get("ext:.altrunfasttest"), IconCache._LoadQueued()
-        log := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
-        TestRunner.True("IconScaling.slow icon logged", RegExMatch(log, "Perf: icon \d+ ms: ext:\.altrunslowtest") > 0)
-        TestRunner.True("IconScaling.fast icon not logged", !InStr(log, "altrunfasttest"))
+        logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+        TestRunner.True("IconScaling.slow icon logged", RegExMatch(logText, "Perf: icon \d+ ms: ext:\.altrunslowtest") > 0)
+        TestRunner.True("IconScaling.fast icon not logged", !InStr(logText, "altrunfasttest"))
         try FileDelete(Logger.File)
         Logger.Enabled := savedLog[1], Logger.File := savedLog[2], Logger.Immediate := savedLog[3], IconCache.SlowLoadMs := savedLog[4]
     }
@@ -2582,14 +2582,14 @@ class Tests {
             DllCall("UpdateWindow", "Ptr", list.Hwnd)
             SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()  ; 画了, 回调没运行
             eq("skipped: repaint", (pending() ? 1 : 0) "|" SearchWindow._paintRetries, "1|1")
-            log := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
-            TestRunner.True("SkippedPaint.logged", InStr(log, "[WRN] SearchWindow: custom draw skipped") > 0)
+            logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            TestRunner.True("SkippedPaint.logged", InStr(logText, "[WRN] SearchWindow: custom draw skipped") > 0)
             DllCall("UpdateWindow", "Ptr", list.Hwnd)
             SearchWindow._paintRetries := 3, SearchWindow._CheckPaint()     ; 最多补画 3 次
             eq("gives up after 3 repaints", pending() ? 1 : 0, 0)
             SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()
-            log := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
-            StrReplace(log, "custom draw skipped", , , &count)
+            logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            StrReplace(logText, "custom draw skipped", , , &count)
             eq("logged once per show", count, 1)
         } finally {
             SetTimer(SearchWindow._paintCheck, 0)
@@ -3508,6 +3508,18 @@ Func | PTTools | PT Tools (AHK)=99
     }
 
     static Misc() {
+        ; 日志和 .txt 输出用默认程序打开, 打不开 (没有关联) 时用记事本
+        calls := []
+        Path.OpenText("C:\Temp\a.log", (cmd) => calls.Push(cmd))
+        TestRunner.Equal("Misc.open text: default program", calls.Length ? calls[1] : "", '"C:\Temp\a.log"')
+        calls := []
+        failFirst(cmd) {
+            calls.Push(cmd)
+            if (calls.Length = 1)
+                throw Error("no association")
+        }
+        Path.OpenText("C:\Temp\a.log", failFirst)
+        TestRunner.Equal("Misc.open text: falls back to Notepad", calls.Length = 2 ? calls[2] : "", 'notepad.exe "C:\Temp\a.log"')
         TestRunner.True("Input.layout of this thread", Win.KeyboardLayout() != 0)
         TestRunner.True("Input.per-window setting is a flag", Win.PerWindowInputMethod() = true || Win.PerWindowInputMethod() = false)
         saved := AppSettings.General["SwitchToEnglishInput"]

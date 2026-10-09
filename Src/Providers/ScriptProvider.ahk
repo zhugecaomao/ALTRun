@@ -9,7 +9,7 @@
 ;   @altrun.argument  提示文字          需要参数: 输入 "关键字 文字", 文字作为第一个参数传给脚本
 ;   @altrun.mode      window | silent | output
 ;                     window (默认) 正常运行, 有窗口; silent 在后台运行, 结束后把输出的最后一行显示成通知;
-;                     output 在后台运行, 结束后用记事本打开全部输出
+;                     output 在后台运行, 结束后用 .txt 的默认程序 (一般是记事本) 打开全部输出
 ; 文件夹有变化时 (修改时间) 重新读取, 不用重新载入 ALTRun。F3 用记事本编辑脚本。
 ;
 ; 设置 (ALTRun.json -> Features.Scripts): Enabled
@@ -104,7 +104,7 @@ class ScriptProvider {
         text := ""
         try text := FileRead(output)
         if (script.Mode = "output") {
-            Run('notepad.exe "' output '"')                                 ; 记事本打开后由用户关闭, 临时文件留在 %Temp%
+            Path.OpenText(output)                                           ; .txt 的默认程序 (一般是记事本), 临时文件留在 %Temp%
             return
         }
         try FileDelete(output)
@@ -184,7 +184,7 @@ class ScriptProvider {
                 "; @altrun.title  Example: Today's Date`r`n"
               . "; @altrun.mode   silent`r`n"
               . "; Runs in the background; the last line it prints is shown as a notification.`r`n"
-              . "; Change the mode to output to read everything it prints in Notepad, or remove it to run normally.`r`n"
+              . "; Change the mode to output to read everything it prints in your text editor, or remove it to run normally.`r`n"
               . 'FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWeek"), 5), "*")' "`r`n",
             "Port.bat",
                 "@echo off`r`n"
@@ -198,7 +198,7 @@ class ScriptProvider {
             "IP Addresses.ps1",
                 "# @altrun.title  Example: IP Addresses`r`n"
               . "# @altrun.mode   output`r`n"
-              . "# Runs in the background, then opens everything it prints in Notepad.`r`n"
+              . "# Runs in the background, then opens everything it prints in your text editor.`r`n"
               . "Get-NetIPAddress -AddressFamily IPv4 | Where-Object IPAddress -ne '127.0.0.1' | Format-Table InterfaceAlias, IPAddress -AutoSize`r`n")
     }
 

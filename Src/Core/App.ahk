@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.09.5"
+    static Version := "2026.10.09.6"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -306,7 +306,7 @@ class App {
     static OpenLog() {
         Logger.Flush()
         if FileExist(Logger.File)
-            Run('notepad.exe "' Logger.File '"')
+            Path.OpenText(Logger.File)                                      ; .log 的默认程序 (例如 Notepad4), 没有时用记事本
     }
 
     ;---------------------------------------------------------------------------
