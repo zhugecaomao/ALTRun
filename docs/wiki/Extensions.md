@@ -8,6 +8,9 @@
 在打开 / 保存对话框里一步跳到已经打开的文件夹。做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。
 
 **文件夹面板** (默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 正下方就自动贴一个和对话框一样宽的面板 (下面放不下时放在上面), 点一个文件夹对话框就跳过去, 不用记热键:
+
+![打开对话框下面的文件夹面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch.png)
+
 - 列出每个 Total Commander 窗口的当前面板和另一侧面板、打开的资源管理器窗口、最近用过的文件夹;
 - 上面的搜索框: 输入文字先过滤列表, 再用 Everything (或内置索引) 找名字匹配的文件夹和文件 (文件夹在前); `↑` `↓` 选择, `Enter` 确定, `Esc` 回到对话框;
 - 选中的是文件时: 跳到它所在的文件夹 (打开和保存对话框都一样, 不替你打开或保存);

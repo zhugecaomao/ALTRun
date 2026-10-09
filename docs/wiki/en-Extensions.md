@@ -8,6 +8,9 @@ Features outside the search window. Quick Switch and date stamp each have their 
 Jump an Open / Save dialog to a folder you already have open. The approach follows [Listary](https://www.listary.com/)'s Quick Switch.
 
 **Folder panel** (on by default, like Listary's Quick Switch window): as soon as a dialog appears, a panel as wide as the dialog attaches right below it (above it when there's no room below). Click a folder and the dialog jumps there, no hotkey to remember:
+
+![Quick Switch folder panel below an Open dialog](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch.png)
+
 - Lists the current panel and the other panel of every Total Commander window, open Explorer windows and recently used folders;
 - The search box at the top: typed text first filters the list, then Everything (or the built-in index) finds folders and files with matching names (folders first); `↑` `↓` select, `Enter` confirms, `Esc` returns to the dialog;
 - When a file is selected: jumps to the folder it's in (the same for Open and Save dialogs; it doesn't open or save for you);

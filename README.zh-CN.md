@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshots/search.png" width="700" alt="ALTRun 搜索窗口">
+  <img src="docs/images/screenshots/demo.gif" width="700" alt="ALTRun：输入即搜、操作面板、单位换算、文件搜索">
 </p>
 
 
@@ -99,8 +99,10 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 
 
 ## 截图
-| 操作面板（`→`） | 文件搜索（`空格` + 名称） |
+| 搜索窗口 | 对话框快速跳转（打开 / 保存对话框下面的文件夹面板） |
 |:---:|:---:|
+| <img src="docs/images/screenshots/search.png" alt="搜索窗口"> | <img src="docs/images/screenshots/quickswitch.png" alt="对话框快速跳转"> |
+| **操作面板（`→`）** | **文件搜索（`空格` + 名称）** |
 | <img src="docs/images/screenshots/actions.png" alt="操作面板"> | <img src="docs/images/screenshots/files.png" alt="文件搜索"> |
 | **计算器** | **剪贴板历史（`clip`）** |
 | <img src="docs/images/screenshots/calculator.png" alt="计算器"> | <img src="docs/images/screenshots/clipboard.png" alt="剪贴板历史"> |

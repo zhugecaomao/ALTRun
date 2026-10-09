@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshots/search.png" width="700" alt="ALTRun search window">
+  <img src="docs/images/screenshots/demo.gif" width="700" alt="ALTRun: type to search, open the action panel, convert units and search files">
 </p>
 
 
@@ -99,8 +99,10 @@ The winget manifest has been submitted; once it is accepted you can install with
 
 
 ## Screenshots
-| Action panel (`→`) | File search (`Space` + name) |
+| Search window | Quick Switch (folder panel below an Open / Save dialog) |
 |:---:|:---:|
+| <img src="docs/images/screenshots/search.png" alt="Search window"> | <img src="docs/images/screenshots/quickswitch.png" alt="Quick Switch"> |
+| **Action panel (`→`)** | **File search (`Space` + name)** |
 | <img src="docs/images/screenshots/actions.png" alt="Action panel"> | <img src="docs/images/screenshots/files.png" alt="File search"> |
 | **Calculator** | **Clipboard history (`clip`)** |
 | <img src="docs/images/screenshots/calculator.png" alt="Calculator"> | <img src="docs/images/screenshots/clipboard.png" alt="Clipboard history"> |
