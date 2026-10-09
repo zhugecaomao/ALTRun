@@ -5,7 +5,7 @@
 ## How to search for files
 Normal searches show apps, commands, snippets and so on, but **not** files from all over your disks (so unrelated files such as `NIRMALA.TTF` don't get mixed in). To search for files:
 
-- **Space**: in an empty search box, press `Space` first; the input box shows a gray "Search files...", then type the name. In an empty input box, `Backspace` goes back to a normal search. Like Alfred's Quick File Search
+- **Space**: in an empty search box, press `Space` first; the input box shows a gray "Search files...", then type the name. If you've already typed something, move the cursor to the start (`Home`) and press `Space` to search files for it. `Backspace` in an empty input box or at the start goes back to a normal search. Like Alfred's Quick File Search
 - **`'report`**, **`open report`** or **`find report`**: same effect
 - **Folders only**: **`folder bk`** (change the keyword in Preferences → File Search → "Folder keywords"); `folder bk` also works in file search mode. With Everything this is the same as Everything's `folder:bk`
 

@@ -85,7 +85,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2475,6 +2475,47 @@ class Tests {
             SearchWindow.FileMode := false, SearchWindow.HistoryIndex := 0
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, Knowledge.History := savedHistory
+            g.Destroy()
+        }
+    }
+
+    ; 光标在最前面按空格: 已经输入的文字改用文件搜索; 文件搜索模式下光标在最前面按 Backspace: 回到普通搜索, 文字都保留
+    static FileModeKeys() {
+        eq := (n, a, e) => TestRunner.Equal("FileModeKeys." n, a, e)
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
+        options := AppSettings.Feature("FileSearch"), savedOptions := [options["SpacePrefix"], options["Enabled"]]
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0})
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        hwnd := SearchWindow.Input.Hwnd
+        caret := (start, end := "") => SendMessage(0xB1, start, end = "" ? start : end, hwnd)   ; EM_SETSEL
+        key := (vk) => SearchWindow._OnKeyDown(vk, 0, 0x100, hwnd)
+        SearchWindow.Mode := "results", SearchWindow.FileMode := false
+        options["SpacePrefix"] := 1, options["Enabled"] := 1
+        try {
+            SearchWindow.Input.Value := "seismic", caret(7)
+            eq("space at the end types a space", key(0x20) "|" SearchWindow.FileMode, "|0")
+            caret(0, 3)
+            eq("space with a selection types a space", key(0x20) "|" SearchWindow.FileMode, "|0")
+            caret(0)
+            eq("space at the start enters file mode", key(0x20) "|" SearchWindow.FileMode "|" SearchWindow.Input.Value, "0|1|seismic")
+            caret(3)
+            eq("backspace inside the text deletes", key(0x08) "|" SearchWindow.FileMode, "|1")
+            caret(0)
+            eq("backspace at the start leaves file mode", key(0x08) "|" SearchWindow.FileMode "|" SearchWindow.Input.Value, "0|0|seismic")
+            caret(0)
+            eq("backspace at the start in normal search", key(0x08) "|" SearchWindow.FileMode, "|0")
+            options["SpacePrefix"] := 0
+            caret(0)
+            eq("space prefix off", key(0x20) "|" SearchWindow.FileMode, "|0")
+            options["SpacePrefix"] := 1, SearchWindow.Input.Value := ""
+            eq("empty box still enters file mode", key(0x20) "|" SearchWindow.FileMode, "0|1")
+            eq("backspace in the empty box leaves it", key(0x08) "|" SearchWindow.FileMode, "0|0")
+        } finally {
+            SearchWindow.FileMode := false
+            options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]
+            SearchWindow.DefineProp("_RunSearch", savedSearch)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
             g.Destroy()
         }
     }

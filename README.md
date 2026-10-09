@@ -143,7 +143,7 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history |
 | `Tab` | Autocomplete; folders: browse into them |
 | `Insert` | Mark several files / folders, then press `→` to act on all of them |
-| `Space` (in an empty search box) | Switch to file search; `Backspace` switches back |
+| `Space` (in an empty search box, or with the cursor at the start) | Switch to file search, keeping what you typed; `Backspace` in an empty box or at the start switches back |
 | `folder name` | Search folders only |
 | `?` | Cheat sheet: every syntax and shortcut |
 | `→` / right-click | Action panel / action menu |

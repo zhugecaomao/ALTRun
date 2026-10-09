@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.09.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 已经输入了文字时, 把光标移到最前面再按空格, 文字保留并改用文件搜索 (以前只有空的搜索框里按空格才行, 光标在前面时空格被当作普通字符, 结果显示的是网页搜索); 文件搜索模式下光标在最前面按 `Backspace` 回到普通搜索, 文字也保留
+
 ## [2026.10.09.1]
 
 测试版。
@@ -527,7 +536,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.2...HEAD
+[2026.10.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.1...2026.10.09.2
 [2026.10.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08.1...2026.10.09.1
 [2026.10.08.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08...2026.10.08.1
 [2026.10.08]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.08

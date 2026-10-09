@@ -612,9 +612,11 @@ class SearchWindow {
 
     ;---------------------------------------------------------------------------
     ; File search mode (空的搜索框里按空格, 和 Alfred 一样)
+    ; 已经输入了文字时, 光标移到最前面再按空格也进入 (文字保留, 改用文件搜索); 文件搜索模式下光标在最前面按
+    ; Backspace 回到普通搜索 (文字也保留), 就像删掉了开头那个空格
     ;---------------------------------------------------------------------------
     static _CanEnterFileMode() {
-        return SearchWindow.Mode = "results" && !SearchWindow.FileMode && SearchWindow.Input.Value = ""
+        return SearchWindow.Mode = "results" && !SearchWindow.FileMode && (SearchWindow.Input.Value = "" || SearchWindow._CaretAtStart())
             && AppSettings.Feature("FileSearch")["SpacePrefix"] && ProviderRegistry.IsEnabled(FileSearchProvider)
     }
 
@@ -773,7 +775,7 @@ class SearchWindow {
                 else
                     SearchWindow.Hide()
                 return 0
-            case 0x20:                                                      ; 空格: 空的搜索框里进入文件搜索模式
+            case 0x20:                                                      ; 空格: 空的搜索框里 (或光标在最前面时) 进入文件搜索模式
                 if (ctrl || alt)
                     return
                 ; 文字全选时 (恢复的上次搜索) 空格会替换掉它们, 当作空的搜索框处理
@@ -864,7 +866,8 @@ class SearchWindow {
                         SearchWindow._CloseActions()
                     return 0
                 }
-                if (SearchWindow.FileMode && SearchWindow.Input.Value = "") {  ; 文件搜索模式下删空后再按: 回到普通搜索
+                ; 文件搜索模式下删空后再按, 或者光标在最前面时按: 回到普通搜索
+                if (SearchWindow.FileMode && (SearchWindow.Input.Value = "" || !actions && SearchWindow._CaretAtStart())) {
                     SearchWindow._SetFileMode(false)
                     return 0
                 }
@@ -969,6 +972,11 @@ class SearchWindow {
         text := IsObject(item) ? item.DisplayText() : SearchWindow.Input.Value
         SearchWindow.Hide()
         LargeType.Show(text)
+    }
+
+    ; 光标在最前面, 没有选中文字
+    static _CaretAtStart() {
+        return SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd) = 0             ; EM_GETSEL: 开始和结束都是 0
     }
 
     static _CaretAtEnd() {
