@@ -81,7 +81,7 @@ ALTRun remembers "what you typed → which result you finally picked": if you ty
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history (like Alfred); going past the newest restores what you had typed |
 | `Tab` | Autocomplete; on a folder, go into it (the input becomes `path\`) and browse its contents |
 | `Insert` | Mark / unmark the selected file or folder and move to the next row (like Total Commander); marked rows have a bar on the left. Then press `→` to act on all marked items: open all, copy / cut (paste in TC or Explorer), copy paths, copy / move to the current folder in TC, add to custom commands, move to the Recycle Bin |
-| `Space` (empty search box) | Switch to file search; `Backspace` goes back |
+| `Space` (empty search box, or cursor at the start) | Switch to file search, keeping what you typed (typed `seismic` first? press `Home`, then `Space`); `Backspace` in an empty box or at the start goes back to a normal search |
 | `Space` (after typing) | With Preferences → Search Window → "Space runs the selected result" turned on: runs the selected result; `Shift+Space` types a space (for several keywords) |
 | `→` (cursor at the end) | Open the action panel; `←` / `Esc` go back |
 | `F3` | Edit the selected result, see below |
@@ -141,6 +141,6 @@ The selection is read by simulating a copy (`Ctrl+C`); the clipboard is restored
 Preferences → Usage (like Alfred's Usage):
 - How many times you used ALTRun today, in the last 7 days, the last 30 days and in total, and how often you opened the search window
 - Uses per day for the last 30 days (bar chart)
-- Count and share for each feature (apps, custom commands, files, web search, calculator, clipboard history, snippets, system commands, terminal commands, snippet expansion, dialog jump, date stamp)
+- Count and share for each feature (apps, custom commands, files, web search, calculator, clipboard history, snippets, system commands, terminal commands, snippet expansion, Quick Switch, date stamp)
 
 Only counts are kept, never what you typed or opened. They're saved in `Data\Usage.json` (the last 400 days). The "Clear Usage Statistics" button starts over.

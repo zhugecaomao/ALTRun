@@ -164,7 +164,10 @@ class CustomCommandProvider {
             default      : kind := "file",   icon := CustomCommandProvider._Resolve(target)
         }
         displayTarget := (kind = "url") ? target : CustomCommandProvider._Resolve(target)
-        item := ResultItem(title, Trim(displayTarget " " arguments), {
+        subtitle := Trim(displayTarget " " arguments)
+        if (extra.HasOwnProp("Valid") && !extra.Valid)                     ; 等待参数: 说明要接着输入什么
+            subtitle := I18n.T("Search.TypeAfter", keyword) " · " subtitle
+        item := ResultItem(title, subtitle, {
             Kind: kind, Arg: target, Arguments: arguments, Icon: icon, Score: score, Source: command,
             Uid: CustomCommandProvider._Uid(command)
         })

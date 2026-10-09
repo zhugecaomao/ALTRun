@@ -8,6 +8,8 @@
 ;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名...]
 ;
 ; 输出文件夹默认 docs\images\screenshots; 不写场景名 = 全部场景。
+; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 记下每帧停留的毫秒数),
+; 由 MakeDemoGif.py 合成 README 首页的 demo.gif。
 ; GitHub Actions 的 "Screenshots" 工作流在 Windows 上运行它, 并把截图提交回分支。
 ;===============================================================================
 #Requires AutoHotkey v2.0
@@ -40,6 +42,8 @@ class Shots {
             ["websearch",   "Light", "", () => Shots.Search("g autohotkey v2 hotkeys")],
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
+            ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
+            ["demo",        "Light", "", () => Shots.Demo()],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 8", () => Shots.Preferences()],
@@ -86,18 +90,24 @@ class Shots {
                 try {
                     Shots.Launch(scene[2], scene[3], (scene.Length >= 5) ? scene[5] : "")
                     hwnd := scene[4]()
-                    if (!Shots.WaitPainted(hwnd, 20) && A_Index < 4) {
-                        Shots.Diagnose(hwnd)
-                        Shots.Log("relaunching")
-                        Shots.Close()
-                        continue
+                    outFile := Shots.OutDir "\" scene[1] ".png"
+                    if (hwnd is Array)                                      ; 几个窗口 (对话框 + 文件夹面板) 截成一张
+                        Shots.CaptureWindows(hwnd, outFile)
+                    else if (hwnd != "") {                                  ; "" = demo: 每一帧已经存好
+                        if (!Shots.WaitPainted(hwnd, 20) && A_Index < 4) {
+                            Shots.Diagnose(hwnd)
+                            Shots.Log("relaunching")
+                            Shots.Close()
+                            continue
+                        }
+                        Shots.Capture(hwnd, outFile)
                     }
-                    Shots.Capture(hwnd, Shots.OutDir "\" scene[1] ".png")
                 } catch as e {
                     Shots.Failures += 1
                     Shots.Log("FAIL " scene[1] ": " e.Message " (line " e.Line ")")
                 }
                 Shots.Close()
+                Shots.CloseHelpers()
                 break
             }
         }
@@ -171,6 +181,7 @@ class Shots {
                 "Recent", Map("Pinned", Shots.Pinned, "RecentCount", 5),
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0)
             ),
+            "Extensions", Map("QuickSwitch", Map("RecentFolders", 3)),         ; 文件夹面板只列 WriteRecentFolders 建的最近项目
             "CustomCommands", [
                 Map("Title", "Website Redesign", "Type", "Folder", "Target", demo "\Website Redesign", "Arguments", "", "Keyword", ""),
                 Map("Title", "Annual Report 2026", "Type", "Folder", "Target", demo "\Annual Report 2026", "Arguments", "", "Keyword", ""),
@@ -206,6 +217,18 @@ class Shots {
         Shots.WriteSettings("Light")
         Shots.Pinned := []
         FileAppend(JSON.Stringify(Map("Picks", Map(), "QueryPicks", Map(), "History", [], "Recent", recent)), Shots.AppDir "\Data\Knowledge.json", "UTF-8")
+    }
+
+    ; Quick Switch 的 "最近用过的文件夹": 在 Windows 的最近使用的项目里放三个示例文件的快捷方式 (比别的都新)
+    static WriteRecentFolders() {
+        recent := A_AppData "\Microsoft\Windows\Recent"
+        DirCreate(recent)
+        stamp := DateAdd(A_Now, 10, "Minutes")
+        for relative in ["Travel\Tokyo Trip Itinerary.pdf", "Website Redesign\Design\Style Guide.pdf", "Annual Report 2026\Archive\Annual Report 2025.pdf"] {
+            SplitPath(relative, &name)
+            FileCreateShortcut(Shots.DemoDir "\" relative, recent "\" name ".lnk")
+            FileSetTime(stamp := DateAdd(stamp, -1, "Minutes"), recent "\" name ".lnk")
+        }
     }
 
     ; 剪贴板历史: 几条常见的文字, 其中一条置顶
@@ -314,6 +337,79 @@ class Shots {
         return hud
     }
 
+    ; Quick Switch: 打开两个资源管理器窗口, 另一个程序 (OpenDialog.ahk) 弹出 "打开" 对话框, 下面贴着文件夹面板。
+    ; 屏幕可能只有 1024 x 768: 对话框放在上面, 面板放得下
+    static QuickSwitch() {
+        try ControlSend("{Esc}", "Edit1", Shots.SearchWindow())            ; 启动时打开的搜索窗口先关掉
+        for folder in ["Website Redesign", "Annual Report 2026"]
+            Run('explorer.exe "' Shots.DemoDir "\" folder '"')
+        Sleep(3000)
+        helper := Shots.AppDir "\OpenDialog.ahk"
+        try FileDelete(helper)
+        FileAppend('#NoTrayIcon`nFileSelect(, "' Shots.DemoDir '\Travel", "Open")`n', helper, "UTF-8")
+        Run('"' A_AhkPath '" "' helper '"', , , &pid)
+        Shots.HelperPid := pid
+        dialog := WinWait("Open ahk_class #32770 ahk_pid " pid, , 10)
+        if !dialog
+            throw Error("Open dialog not shown")
+        WinSetAlwaysOnTop(1, dialog)                                        ; 在背景之上
+        WinMove(160, 20, 720, 440, dialog)
+        WinActivate(dialog)
+        panel := WinWait("ALTRun Quick Switch ahk_pid " Shots.Pid, , 5)
+        if !panel
+            throw Error("Quick Switch panel not shown")
+        Sleep(1500)                                                         ; 面板的图标和位置
+        return [dialog, panel]
+    }
+    static HelperPid := 0
+
+    ; 关掉 QuickSwitch 场景打开的对话框和资源管理器窗口
+    static CloseHelpers() {
+        if Shots.HelperPid
+            try ProcessClose(Shots.HelperPid)
+        Shots.HelperPid := 0
+        for window in WinGetList("ahk_class CabinetWClass")
+            try WinClose(window)
+    }
+
+    ; README 首页的动图: 依次输入, 每一步把同一块屏幕区域存成一帧 (MakeDemoGif.py 再裁掉四周的背景)。
+    ; 返回 "" (不另外截图)
+    static DemoFrames := A_Temp "\ALTRunDemoFrames"
+    static Demo() {
+        hwnd := Shots.SearchWindow()
+        Sleep(2500)
+        Shots.WaitPainted(hwnd, 10)
+        dir := Shots.DemoFrames
+        try DirDelete(dir, true)
+        DirCreate(dir)
+        r := Shots.FrameRect(hwnd)
+        region := {X: Max(0, r.X - 24), Y: Max(0, r.Y - 24), W: r.W + 48, H: Min(A_ScreenHeight - Max(0, r.Y - 24), 640)}
+        state := {Frames: "", Count: 0}                                     ; 内部函数改外面的变量: 通过对象传
+        frame(ms) {
+            name := Format("frame-{:02}.png", ++state.Count)
+            hbm := Shots.CaptureRect(region.X, region.Y, region.W, region.H)
+            try Shots.SavePng(hbm, dir "\" name)
+            finally DllCall("DeleteObject", "Ptr", hbm)
+            state.Frames .= name " " ms "`n"
+        }
+        type(text, ms) {
+            ControlSend("{Text}" text, "Edit1", hwnd)
+            Sleep(900)
+            frame(ms)
+        }
+        frame(900)                                                          ; 空的搜索框
+        type("r", 350), type("e", 350), type("p", 1800)                     ; 边输入边出结果
+        ControlSend("{Right}", "Edit1", hwnd), Sleep(1200), frame(1800)     ; 操作面板
+        ControlSend("{Esc}", "Edit1", hwnd), Sleep(300)
+        Shots.SetQuery(hwnd, "10 km in mi"), frame(1800)                    ; 计算 / 单位换算
+        ControlSetText("", "Edit1", hwnd), Sleep(300)
+        ControlSend("{Space}", "Edit1", hwnd), Sleep(300)                   ; 文件搜索
+        type("report", 2200)
+        FileAppend(state.Frames, dir "\frames.txt", "UTF-8-RAW")
+        Shots.Log("saved " state.Count " demo frames to " dir)
+        return ""
+    }
+
     static Preferences() {
         hwnd := WinWait("ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
         if !hwnd
@@ -372,14 +468,37 @@ class Shots {
         }
     }
 
-    static CaptureBitmap(hwnd, &w, &h, &blank) {
+    ; 窗口在屏幕上看得见的范围 {X, Y, W, H}
+    static FrameRect(hwnd) {
         rect := Buffer(16, 0)
         if (DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16) = 0 && NumGet(rect, 8, "Int") > NumGet(rect, 0, "Int")) {
             x := NumGet(rect, 0, "Int"), y := NumGet(rect, 4, "Int")         ; DWMWA_EXTENDED_FRAME_BOUNDS: 不含看不见的边框
-            w := NumGet(rect, 8, "Int") - x, h := NumGet(rect, 12, "Int") - y
-        } else {
-            WinGetPos(&x, &y, &w, &h, hwnd)
+            return {X: x, Y: y, W: NumGet(rect, 8, "Int") - x, H: NumGet(rect, 12, "Int") - y}
         }
+        WinGetPos(&x, &y, &w, &h, hwnd)
+        return {X: x, Y: y, W: w, H: h}
+    }
+
+    ; 几个窗口 (例如对话框和贴着它的面板) 合在一起截成一张: 取包住它们的矩形
+    static CaptureWindows(hwnds, file) {
+        left := 99999, top := 99999, right := -99999, bottom := -99999
+        for hwnd in hwnds {
+            r := Shots.FrameRect(hwnd)
+            left := Min(left, r.X), top := Min(top, r.Y), right := Max(right, r.X + r.W), bottom := Max(bottom, r.Y + r.H)
+        }
+        hbm := Shots.CaptureRect(left, top, right - left, bottom - top)
+        try Shots.SavePng(hbm, file)
+        finally DllCall("DeleteObject", "Ptr", hbm)
+        Shots.Log("saved " file " (" (right - left) "x" (bottom - top) ")")
+    }
+
+    static CaptureBitmap(hwnd, &w, &h, &blank) {
+        r := Shots.FrameRect(hwnd), w := r.W, h := r.H
+        return Shots.CaptureRect(r.X, r.Y, w, h, &blank)
+    }
+
+    ; 从屏幕复制一块区域, 返回 HBITMAP (调用的人 DeleteObject); blank: 搜索窗口的列表区域还是一片空白
+    static CaptureRect(x, y, w, h, &blank := false) {
         hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
         hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
         hbm := DllCall("CreateCompatibleBitmap", "Ptr", hdcScreen, "Int", w, "Int", h, "Ptr")

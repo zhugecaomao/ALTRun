@@ -88,7 +88,7 @@ Copy the new version over the program folder; your settings and data are not aff
 
 On the first run, the old `ALTRun.ini` is imported automatically (settings, custom commands, hotkeys) and saved as the new `Data\ALTRun.json`. `ALTRun.ini` is left unchanged: to go back to the old version, put the old `ALTRun.exe` back. The Startup, Start menu and "Send to" shortcuts keep pointing to the same `ALTRun.exe`, so nothing needs to be set up again.
 
-- **Kept**: the hotkey, start with Windows and other general settings; user commands (File / Dir / CMD / URL → custom commands, Clip → snippets); index folders, file types and depth; the structural calculation switch; dialog jump; date stamp (Ctrl+D); PT Tools settings; conditional hotkeys
+- **Kept**: the hotkey, start with Windows and other general settings; user commands (File / Dir / CMD / URL → custom commands, Clip → snippets); index folders, file types and depth; the structural calculation switch; Quick Switch; date stamp (Ctrl+D); PT Tools settings; conditional hotkeys
 - **No longer kept**: the built-in command list (replaced by [system commands](en-Extensions#system-commands)), the old index (rebuilt), run history, usage statistics, old list appearance options
 
 The old `Res\` folder has been renamed to `Resources\`; at startup, any files you put in `Res\` yourself are moved over automatically.

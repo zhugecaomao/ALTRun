@@ -195,7 +195,7 @@ class SearchWindow {
 
     static _Show(text) {
         started := Logger.Ms()
-        SearchWindow._blankLogged := false
+        SearchWindow._blankLogged := false, SearchWindow._skipLogged := false
         if Logger.Enabled
             Logger.Debug("SearchWindow: show")                              ; 和下面的 "Perf: show" 配对: 卡住时看得出卡在显示窗口里
         wasVisible := SearchWindow.IsVisible()
@@ -424,6 +424,7 @@ class SearchWindow {
     ; 并检查列表行数和窗口高度是否和结果对得上, 对不上时写日志并改正 (窗口很高、列表却是空的)
     static _AfterResults() {
         DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 0)
+        SearchWindow._WatchPaint()
         if !SearchWindow.IsVisible()
             return
         rows := SearchWindow._VisibleCount(), client := Buffer(16)
@@ -497,6 +498,42 @@ class SearchWindow {
 
     static _Repaint() {
         DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 1)
+        SearchWindow._WatchPaint()
+    }
+
+    ; 诊断 "窗口有几行高, 结果行却是空白" (行数和结果对得上时): 每次要求列表重画后约 100 ms 检查一次,
+    ; 列表已经画完 (没有待画的区域), 自绘回调却一次都没有运行 (_paints 没变), 说明这次是 ListView 按默认方式画的:
+    ; 行里的文字是空的, 画出来就是空白行。这时写日志 (每次显示最多一次) 并再画一次, 最多补画 3 次。
+    ; 可能的原因: AutoHotkey 线程不可打断的那一小段时间里 (例如读图标、等 Everything 时处理了 WM_PAINT),
+    ; 回调被跳过
+    static _paints := 0, _paintsBefore := 0, _paintCheck := "", _paintTries := 0, _paintRetries := 0, _skipLogged := false
+    static _WatchPaint() {
+        SearchWindow._paintsBefore := SearchWindow._paints, SearchWindow._paintTries := 0, SearchWindow._paintRetries := 0
+        if (SearchWindow._paintCheck = "")
+            SearchWindow._paintCheck := () => SearchWindow._CheckPaint()
+        SetTimer(SearchWindow._paintCheck, -100)
+    }
+    static _CheckPaint() {
+        list := SearchWindow.List
+        if (!SearchWindow.IsVisible() || !list.Visible || SearchWindow._paints != SearchWindow._paintsBefore)
+            return
+        if DllCall("GetUpdateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0) {   ; 还没画 (例如被别的窗口挡住): 过一会儿再看, 最多看 2 秒
+            if (++SearchWindow._paintTries < 20)
+                SetTimer(SearchWindow._paintCheck, -100)
+            return
+        }
+        if (Logger.Enabled && !SearchWindow._skipLogged) {
+            SearchWindow._skipLogged := true
+            Logger.Warn("SearchWindow: custom draw skipped (results " SearchWindow.Results.Length ", list rows " list.GetCount() ", mode " SearchWindow.Mode
+                . (SearchWindow.FileMode ? " (files)" : "") ", input '" SubStr(SearchWindow.Input.Value, 1, 30) "'), repainting")
+            for entry in SearchWindow._recent
+                Logger.Debug("  recent results: " entry)
+        }
+        if (++SearchWindow._paintRetries > 3)
+            return
+        DllCall("InvalidateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0)
+        SearchWindow._paintTries := 0
+        SetTimer(SearchWindow._paintCheck, -100)
     }
 
     static SelectedItem() {
@@ -612,9 +649,11 @@ class SearchWindow {
 
     ;---------------------------------------------------------------------------
     ; File search mode (空的搜索框里按空格, 和 Alfred 一样)
+    ; 已经输入了文字时, 光标移到最前面再按空格也进入 (文字保留, 改用文件搜索); 文件搜索模式下光标在最前面按
+    ; Backspace 回到普通搜索 (文字也保留), 就像删掉了开头那个空格
     ;---------------------------------------------------------------------------
     static _CanEnterFileMode() {
-        return SearchWindow.Mode = "results" && !SearchWindow.FileMode && SearchWindow.Input.Value = ""
+        return SearchWindow.Mode = "results" && !SearchWindow.FileMode && (SearchWindow.Input.Value = "" || SearchWindow._CaretAtStart())
             && AppSettings.Feature("FileSearch")["SpacePrefix"] && ProviderRegistry.IsEnabled(FileSearchProvider)
     }
 
@@ -773,7 +812,7 @@ class SearchWindow {
                 else
                     SearchWindow.Hide()
                 return 0
-            case 0x20:                                                      ; 空格: 空的搜索框里进入文件搜索模式
+            case 0x20:                                                      ; 空格: 空的搜索框里 (或光标在最前面时) 进入文件搜索模式
                 if (ctrl || alt)
                     return
                 ; 文字全选时 (恢复的上次搜索) 空格会替换掉它们, 当作空的搜索框处理
@@ -864,7 +903,8 @@ class SearchWindow {
                         SearchWindow._CloseActions()
                     return 0
                 }
-                if (SearchWindow.FileMode && SearchWindow.Input.Value = "") {  ; 文件搜索模式下删空后再按: 回到普通搜索
+                ; 文件搜索模式下删空后再按, 或者光标在最前面时按: 回到普通搜索
+                if (SearchWindow.FileMode && (SearchWindow.Input.Value = "" || !actions && SearchWindow._CaretAtStart())) {
                     SearchWindow._SetFileMode(false)
                     return 0
                 }
@@ -971,6 +1011,11 @@ class SearchWindow {
         LargeType.Show(text)
     }
 
+    ; 光标在最前面, 没有选中文字
+    static _CaretAtStart() {
+        return SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd) = 0             ; EM_GETSEL: 开始和结束都是 0
+    }
+
     static _CaretAtEnd() {
         selection := SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd)        ; EM_GETSEL
         return ((selection >> 16) & 0xFFFF) >= StrLen(SearchWindow.Input.Value)
@@ -1045,8 +1090,10 @@ class SearchWindow {
         static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001
         static CDRF_DODEFAULT := 0x0, CDRF_SKIPDEFAULT := 0x4, CDRF_NOTIFYITEMDRAW := 0x20
         stage := NumGet(lParam, A_PtrSize * 3, "UInt")
-        if (stage = CDDS_PREPAINT)
+        if (stage = CDDS_PREPAINT) {
+            SearchWindow._paints++                                          ; 自绘回调运行过 (见 _CheckPaint)
             return CDRF_NOTIFYITEMDRAW
+        }
         if (stage != CDDS_ITEMPREPAINT)
             return CDRF_DODEFAULT
 

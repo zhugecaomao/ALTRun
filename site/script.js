@@ -6,6 +6,7 @@
     en: "ALTRun — A lightweight launcher for Windows"
   };
   var captions = {                                                   // 截图: [中文说明, 英文说明, 文件名]
+    quickswitch: ["在打开 / 保存对话框下面列出已经打开和最近用过的文件夹, 点一下就跳过去 (Ctrl+G 跳到 Total Commander 当前的文件夹)", "Below an Open / Save dialog: the folders you have open or used recently; click one to jump there (Ctrl+G jumps to the current Total Commander folder)", "quickswitch.png"],
     actions: ["选中结果按 → 打开操作面板: 以管理员身份运行、打开所在位置、复制路径…", "Press → on a result for actions: run as administrator, open location, copy path…", "actions.png"],
     files: ["空白搜索框先按空格再输入名称, 搜索文件和文件夹 (Everything 或内置索引)", "Press Space first to search files and folders (Everything or the built-in index)", "files.png"],
     clipboard: ["Ctrl+Alt+C 或输入 clip: 复制过的文字、文件和图片", "Ctrl+Alt+C or type clip: text, files and images you copied", "clipboard.png"],

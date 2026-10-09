@@ -29,7 +29,12 @@ Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据
 Tests\Screenshots\  自动截图
 Tests\Tools\SPF2M\  生成 SPF2M 对照数据的 Python 脚本 (在 DOSBox 里运行原来的 SPF2M.EXE, 见其中的 README)
 bucket\ packaging\  Scoop / winget 清单 (见 packaging\README.md)
+docs\               Wiki 源文件 (docs\wiki, 合并后自动发布)、截图 (docs\images)
+site\               官网模板和生成脚本 (发布到 GitHub Pages)
+.github\            GitHub Actions (测试、截图、发布、Wiki、官网、同步到 Gitee)、Issue / PR 模板
 ```
+
+运行后程序目录下会生成 `Data\` (设置文件 `ALTRun.json`, 以及可以删除的索引和历史) 和 `Themes\` (自定义主题)。
 
 ## 一次搜索的流程
 1. `SearchWindow` 输入框变化 → `ProviderRegistry.Search(text)`

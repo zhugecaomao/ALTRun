@@ -10,6 +10,7 @@
 <p align="center">
   <a href="https://github.com/zhugecaomao/ALTRun/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/zhugecaomao/ALTRun?label=release"></a>
   <a href="https://github.com/zhugecaomao/ALTRun/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/zhugecaomao/ALTRun/total"></a>
+  <a href="https://github.com/zhugecaomao/ALTRun/actions/workflows/tests.yml"><img alt="Tests" src="https://github.com/zhugecaomao/ALTRun/actions/workflows/tests.yml/badge.svg?branch=main"></a>
   <a href="https://www.autohotkey.com/"><img alt="AutoHotkey v2" src="https://img.shields.io/badge/AutoHotkey-v2.0-334455?logo=autohotkey"></a>
   <img alt="Windows" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6">
   <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/github/license/zhugecaomao/ALTRun"></a>
@@ -26,14 +27,15 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshots/search.png" width="700" alt="ALTRun 搜索窗口">
+  <img src="docs/images/screenshots/demo.gif" width="700" alt="ALTRun：输入即搜、操作面板、单位换算、文件搜索">
 </p>
 
 
 ## 为什么选择 ALTRun
-- **小巧**：下载不到 1 MB，解压后约 2 MB，只有一个 `ALTRun.exe` 和少量资源文件，不需要安装 .NET、Electron 或其他运行库；同类启动器的安装包通常有几十 MB，安装后可达上百 MB。
+- **小巧**：下载不到 1 MB，解压后约 2 MB，只有一个 `ALTRun.exe` 和少量资源文件，不需要安装 .NET、Electron 或其他运行库。
 - **快速响应**：输入第一个字符即显示结果；配合 [Everything](https://www.voidtools.com/) 毫秒级搜索全盘文件，未安装时使用内置索引。
 - **智能排序**：根据使用习惯自动调整排名；支持单词首字母（`vsc` → Visual Studio Code）和拼音首字母（`wx` → 微信），并高亮匹配内容。
+- **不只是启动**：[对话框快速跳转（Quick Switch）](#功能)让打开 / 保存对话框一步跳到 Total Commander 或资源管理器中已打开的文件夹；在任意程序中选中文字、文件或网址，按 `Ctrl+Alt+\` 直接操作；在任何地方输入 `;关键字` 展开文字片段。
 - **多合一**：计算与单位换算、网页搜索、浏览器书签、剪贴板历史、文字片段、系统命令、终端，无需再装多个小工具。
 - **全键盘操作**：`→` 打开操作面板，`F3` 直接编辑，`Ctrl+1`～`Ctrl+9` 快速打开。
 - **便携与隐私**：免安装，不写注册表，不需要管理员权限，没有后台服务或驱动；所有数据保存在 `Data\` 文件夹；不收集任何数据，仅联网检查和下载更新（开启货币换算后每天下载一次汇率）。
@@ -43,7 +45,7 @@
 
 
 ## 快速开始
-1. 下载[最新版本](https://github.com/zhugecaomao/ALTRun/releases/latest)，解压到任意文件夹，运行 `ALTRun.exe`（无需安装，也无需 AutoHotkey）。
+1. 下载[最新版本](https://github.com/zhugecaomao/ALTRun/releases/latest)，解压到任意文件夹，运行 `ALTRun.exe`（无需安装，也无需 AutoHotkey）。如果 Windows SmartScreen 提示“Windows 已保护你的电脑”，点 **更多信息** → **仍要运行**；杀毒软件误报见[常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#杀毒软件报毒)。
 2. 按 `Alt+Space`（或 `Alt+R`）打开搜索窗口，输入名称，按 `Enter` 打开；也可以在偏好设置中改为双击 `Ctrl` / `Shift` 呼出。
 3. 输入 `?` 查看全部语法和快捷键；按 `Ctrl+,` 打开偏好设置。
 
@@ -57,7 +59,7 @@ scoop update altrun    # 升级（请先退出 ALTRun）
 ```
 winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 安装。
 
-**升级**：ALTRun 会在后台检查更新（启动时距上次检查满 1 小时，运行期间每 6 小时一次），有新版本时搜索窗口中显示“发现新版本”，按 `Enter` 安装。2026.09.26 之前的版本需手动升级：退出程序，将新版本解压覆盖到原文件夹后重新运行。从 2.x 升级时会自动导入原 `ALTRun.ini` 中的设置、命令和热键；设置文件格式变化时，升级前会自动备份原文件。详见[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
+**升级**：有新版本时搜索窗口中显示“发现新版本”，按 `Enter` 安装，设置保留。从较早的版本或 2.x 升级见[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
 
 
 ## 功能
@@ -70,7 +72,7 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 - **学习排序**：记住每次输入所选的结果，常用项自动靠前。
 - **置顶和最近使用**：呼出窗口还没输入时，直接列出置顶的项目和最近打开的项目。
 - **使用统计**：按天、按功能统计使用次数（仅记录次数）。
-- **计算器**：直接输入算式；支持单位换算（`10 km in mi`）、进制换算（`255 in hex`）、日期加减（`today + 30 days`）、可选的货币换算（`100 usd to sgd`）和结构计算（梁主筋、配筋面积）。
+- **计算器**：直接输入算式；支持单位换算（`10 km in mi`）、进制换算（`255 in hex`）、日期加减（`today + 30 days`）和可选的货币换算（`100 usd to sgd`）。
 - **网页搜索**：`g 关键词`（Google）、`bd 关键词`（百度）等，可自定义搜索引擎；无结果时提供网页搜索。
 - **浏览器书签**：搜索 Chrome、Edge、Brave、Vivaldi 的书签；`bm 关键词` 仅搜索书签。
 - **切换窗口**：输入窗口标题或程序名切换到已打开的窗口；`w 关键词` 仅搜索窗口，`w ` 列出全部。
@@ -86,25 +88,30 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 - **大字显示**：按 `Ctrl+L` 全屏显示结果，便于查看电话号码、计算结果等。
 
 **扩展**
-- **对话框快速跳转**：在打开 / 保存对话框中按 `Ctrl+G` 跳转到 Total Commander 当前目录，按 `Ctrl+E` 跳转到资源管理器当前目录；对话框旁的文件夹面板列出所有已打开和最近使用的文件夹。
+- **对话框快速跳转（Quick Switch）**：在打开 / 保存对话框中按 `Ctrl+G` 跳转到 Total Commander 当前目录，按 `Ctrl+E` 跳转到资源管理器当前目录；对话框旁的文件夹面板列出所有已打开和最近使用的文件夹。
 - **一键加日期**：重命名文件时按 `Ctrl+D`，在扩展名前添加或更新日期（`Report.docx` → `Report - 28.09.2026.docx`）。
 - **自定义热键**：为任意系统命令设置热键，可限定在指定程序中生效。
 - **脚本扩展**：把 `.ahk`、`.ps1`、`.bat`、`.py` 脚本放进 `Scripts\` 文件夹，就能在搜索窗口里运行，可以带参数、在后台运行并显示输出。
+
+**结构工程师专用**
+- **结构计算**（默认关闭）：计算器结果下方附带梁主筋和配筋面积计算。
 - **PT 工具箱**：钢筋 / BRC 面积计算、SPF2M 后张预应力束线型计算，结果可复制到 Excel。
 
 
 ## 截图
-| 操作面板（`→`） | 文件搜索（`空格` + 名称） |
+| 搜索窗口 | 对话框快速跳转（打开 / 保存对话框下面的文件夹面板） |
 |:---:|:---:|
+| <img src="docs/images/screenshots/search.png" alt="搜索窗口"> | <img src="docs/images/screenshots/quickswitch.png" alt="对话框快速跳转"> |
+| **操作面板（`→`）** | **文件搜索（`空格` + 名称）** |
 | <img src="docs/images/screenshots/actions.png" alt="操作面板"> | <img src="docs/images/screenshots/files.png" alt="文件搜索"> |
-| **计算器（含结构计算）** | **剪贴板历史（`clip`）** |
+| **计算器** | **剪贴板历史（`clip`）** |
 | <img src="docs/images/screenshots/calculator.png" alt="计算器"> | <img src="docs/images/screenshots/clipboard.png" alt="剪贴板历史"> |
 | **置顶和最近使用（空搜索框）** | **浏览文件夹（输入路径）** |
 | <img src="docs/images/screenshots/empty.png" alt="置顶和最近使用"> | <img src="docs/images/screenshots/browse.png" alt="浏览文件夹"> |
 | **偏好设置** | **自定义命令** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
-| **计算器设置（结构计算参数）** | **脚本扩展** |
-| <img src="docs/images/screenshots/prefs-calculator.png" alt="计算器设置"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> |
+| **脚本扩展** | **计算器设置（结构计算参数，工程师用）** |
+| <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> | <img src="docs/images/screenshots/prefs-calculator.png" alt="计算器设置"> |
 
 <details>
 <summary><b>内置主题</b>（共 20 套，点击展开）</summary>
@@ -143,7 +150,7 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | `Ctrl+↑` / `Ctrl+↓` | 上一条 / 下一条搜索记录 |
 | `Tab` | 自动补全；文件夹：进入浏览 |
 | `Insert` | 标记多个文件 / 文件夹，再按 `→` 一起操作 |
-| `空格`（搜索框为空时） | 进入文件搜索模式；按 `Backspace` 返回 |
+| `空格`（搜索框为空时，或光标在最前面时） | 进入文件搜索模式，已输入的文字保留；搜索框为空或光标在最前面时按 `Backspace` 返回 |
 | `folder 名称` | 仅搜索文件夹 |
 | `?` | 速查表：全部语法和快捷键 |
 | `→` / 右键 | 操作面板 / 操作菜单 |
@@ -174,37 +181,10 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | [开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development) | 架构、新增搜索功能、代码规范、测试 |
 
 
-## 项目结构
-```
-ALTRun.ahk          入口：列出所有模块并调用 App.Start()
-Lib\                通用库（JSON、Logger、Util、TextTools、Kanji、Dialogs、Everything IPC）
-Src\Core\           启动流程、设置与迁移、搜索模型、匹配打分、学习排序、操作、文件索引
-Src\UI\             搜索窗口、偏好设置、编辑对话框、大字显示、主题、图标缓存
-Src\Providers\      搜索功能：应用、自定义命令、片段、剪贴板、系统命令、计算器、网页、书签、文件、终端、速查表
-Src\Extensions\     搜索窗口以外的功能：片段自动展开、对话框跳转、加日期、PT 工具箱、检查更新
-Resources\          随程序发布的数据（Kanji.txt 简繁对照表、Themes\ 内置主题、Lang\ 界面语言、Icons\ 图标）
-Tests\              单元测试、对照数据（Fixtures）、自动截图（Screenshots）、SPF2M 对照数据工具（Tools\SPF2M）
-docs\               Wiki 源文件（docs\wiki，合并后自动发布）、截图（docs\images）
-bucket\             Scoop 清单（仓库本身即 Scoop bucket）
-packaging\          winget 清单及发布时更新清单的脚本
-site\               官网模板和生成脚本（发布到 GitHub Pages）
-.github\            GitHub Actions（测试、截图、发布、Wiki、官网、同步到 Gitee）、Issue / PR 模板
-```
-
-运行后程序目录下会生成 `Data\`（设置文件 `ALTRun.json`，以及可删除的索引和历史）和 `Themes\`（自定义主题）。
-
-
-## 开发
-```
-AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk
-```
-单元测试不依赖界面，退出码为失败数量。新增功能、代码规范和提交流程见 [贡献指南](CONTRIBUTING.zh-CN.md) 和 Wiki 的[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)。
-
-
 ## 贡献与反馈
 - 报告问题：[提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose)（请附上 Windows 版本和复现步骤）
 - 建议与讨论：[Discussions](https://github.com/zhugecaomao/ALTRun/discussions)
-- 贡献代码：请先阅读 [贡献指南](CONTRIBUTING.zh-CN.md)
+- 贡献代码：请先阅读 [贡献指南](CONTRIBUTING.zh-CN.md)；项目结构、运行测试、新增搜索功能见 Wiki 的[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)
 
 如果 ALTRun 对你有帮助，欢迎点亮星标 ⭐
 

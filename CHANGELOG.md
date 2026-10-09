@@ -5,6 +5,62 @@
 
 ## [未发布]
 
+## [2026.10.09.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 日志 (Open ALTRun Log)、脚本的输出 (output 模式)、进程 / 服务列表改用这种文件的默认程序打开 (例如 `.log` 设成 Notepad4), 没有关联时仍用记事本; 设置文件、主题和脚本还是用记事本编辑 (`.json` 常常没有关联, 脚本的默认动作是运行)
+
+## [2026.10.09.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 带参数的命令还没输入参数时 (自定义命令的 `{query}`、带关键字和参数的脚本、网页搜索), 说明一行写清楚接着输入什么, 例如 "在 'ping ' 后面输入内容, 再按 Enter": 以前按 Enter 只是补全关键字, 看起来像没反应
+- 示例脚本 `Ping.bat` 换成 `Port.bat` (`port 8080` 列出占用这个端口的程序): 原来的和自带的 Ping 命令重复
+
+## [2026.10.09.4]
+
+测试版。
+
+Test build.
+
+### 改进
+- 第一次打开脚本文件夹时建三个示例脚本 (原来一个), 各演示一种写法: `Today.ahk` 后台运行、把日期和周数显示成通知; `Ping.bat` 用关键字带参数 (`ping 8.8.8.8`), 在自己的窗口里运行; `IP Addresses.ps1` 后台运行, 用记事本打开全部输出
+
+## [2026.10.09.3]
+
+测试版。
+
+Test build.
+
+### 修复
+- 搜索结果偶尔显示成空白行 (行数和结果对得上, 只是没有画出来): 每次重画列表后检查自绘有没有运行, 列表已经画完自绘却没有运行时再画一次; 打开 "写入调试日志" 时记下当时的情况
+
+## [2026.10.09.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 已经输入了文字时, 把光标移到最前面再按空格, 文字保留并改用文件搜索 (以前只有空的搜索框里按空格才行, 光标在前面时空格被当作普通字符, 结果显示的是网页搜索); 文件搜索模式下光标在最前面按 `Backspace` 回到普通搜索, 文字也保留
+
+## [2026.10.09.1]
+
+测试版。
+
+Test build.
+
+### 改进
+- 启动时快捷方式 (开机启动、发送到、开始菜单) 没有变化就不重写: 开机时资源管理器 / OneDrive 很忙, 每次重写都要调用 Windows 外壳, 曾经让启动多花了 11 秒
+- 打开 "写入调试日志" 时, 读一个图标超过 200 ms 会记下耗时和是哪个图标: 开机时第一次读图标可能被资源管理器卡住很久, 这期间搜索窗口不响应输入
+
 ## [2026.10.08.1]
 
 测试版。
@@ -517,7 +573,13 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.6...HEAD
+[2026.10.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.5...2026.10.09.6
+[2026.10.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.4...2026.10.09.5
+[2026.10.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.3...2026.10.09.4
+[2026.10.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.2...2026.10.09.3
+[2026.10.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.1...2026.10.09.2
+[2026.10.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08.1...2026.10.09.1
 [2026.10.08.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08...2026.10.08.1
 [2026.10.08]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.08
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05

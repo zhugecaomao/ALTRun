@@ -4,10 +4,13 @@
 
 搜索窗口以外的功能。对话框快速跳转和一键加日期各有一页设置 (偏好设置 → 对话框跳转 / 一键加日期)。
 
-## 对话框快速跳转
-做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。
+## 对话框快速跳转 (Quick Switch)
+在打开 / 保存对话框里一步跳到已经打开的文件夹。做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。
 
 **文件夹面板** (默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 正下方就自动贴一个和对话框一样宽的面板 (下面放不下时放在上面), 点一个文件夹对话框就跳过去, 不用记热键:
+
+![打开对话框下面的文件夹面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch.png)
+
 - 列出每个 Total Commander 窗口的当前面板和另一侧面板、打开的资源管理器窗口、最近用过的文件夹;
 - 上面的搜索框: 输入文字先过滤列表, 再用 Everything (或内置索引) 找名字匹配的文件夹和文件 (文件夹在前); `↑` `↓` 选择, `Enter` 确定, `Esc` 回到对话框;
 - 选中的是文件时: 跳到它所在的文件夹 (打开和保存对话框都一样, 不替你打开或保存);
@@ -147,7 +150,7 @@ TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上),
 **货币换算** (`100 usd to sgd`、`100 美元 to 人民币`) 默认关闭: 在 偏好设置 → 计算器 勾选 "货币换算" (`Features.Calculator.Currency`)。打开后每天从 [Frankfurter](https://frankfurter.dev) 下载一次欧洲央行等央行公布的参考汇率 (免费, 不需要注册), 保存在 `Data\Currency.json`; 这是 ALTRun 除 GitHub 之外唯一会访问的网站。结果里会显示汇率的日期。
 
 ## 脚本扩展
-把自己的脚本放进 `Scripts\` 文件夹 (程序目录里; 偏好设置 → 脚本 → "打开脚本文件夹", 或者搜索 "打开脚本文件夹", 第一次打开时会建一个示例), 就能在搜索窗口里按名称或关键字找到并运行, 和 Raycast 的 Script Commands 一样。支持 `.ahk` (用 ALTRun 自带的 AutoHotkey 运行, 不用另外安装)、`.ps1`、`.bat` / `.cmd`、`.py` (需要装 Python)。偏好设置 → 脚本 列出找到的脚本, 双击用记事本编辑:
+把自己的脚本放进 `Scripts\` 文件夹 (程序目录里; 偏好设置 → 脚本 → "打开脚本文件夹", 或者搜索 "打开脚本文件夹", 第一次打开时会建几个示例: 后台运行显示通知的、关键字后面带参数的、用文本编辑器看输出的), 就能在搜索窗口里按名称或关键字找到并运行, 和 Raycast 的 Script Commands 一样。支持 `.ahk` (用 ALTRun 自带的 AutoHotkey 运行, 不用另外安装)、`.ps1`、`.bat` / `.cmd`、`.py` (需要装 Python)。偏好设置 → 脚本 列出找到的脚本, 双击用记事本编辑:
 
 ![偏好设置 → 脚本](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-scripts.png)
 
@@ -160,7 +163,7 @@ TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上),
 | `@altrun.argument 提示` | 需要参数: 输入 "关键字 文字", 文字作为第一个参数传给脚本; 只搜到名称时 `Enter` 补全成 "关键字 " |
 | `@altrun.mode window` | 默认: 正常运行 (有窗口) |
 | `@altrun.mode silent` | 在后台运行, 结束后把输出的最后一行显示成通知 |
-| `@altrun.mode output` | 在后台运行, 结束后用记事本打开全部输出 |
+| `@altrun.mode output` | 在后台运行, 结束后用 `.txt` 的默认程序 (一般是记事本) 打开全部输出 |
 
 例子 (`Scripts\Ping.ps1`):
 ```powershell

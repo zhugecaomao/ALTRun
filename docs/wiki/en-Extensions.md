@@ -2,12 +2,15 @@
 
 # Extensions
 
-Features outside the search window. Dialog jump and date stamp each have their own settings pages (Preferences → Quick Switch / Dialog Panel / Date Stamp).
+Features outside the search window. Quick Switch and date stamp each have their own settings pages (Preferences → Quick Switch / Dialog Panel / Date Stamp).
 
-## Dialog jump
-The approach follows [Listary](https://www.listary.com/)'s Quick Switch.
+## Quick Switch
+Jump an Open / Save dialog to a folder you already have open. The approach follows [Listary](https://www.listary.com/)'s Quick Switch.
 
 **Folder panel** (on by default, like Listary's Quick Switch window): as soon as a dialog appears, a panel as wide as the dialog attaches right below it (above it when there's no room below). Click a folder and the dialog jumps there, no hotkey to remember:
+
+![Quick Switch folder panel below an Open dialog](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch.png)
+
 - Lists the current panel and the other panel of every Total Commander window, open Explorer windows and recently used folders;
 - The search box at the top: typed text first filters the list, then Everything (or the built-in index) finds folders and files with matching names (folders first); `↑` `↓` select, `Enter` confirms, `Esc` returns to the dialog;
 - When a file is selected: jumps to the folder it's in (the same for Open and Save dialogs; it doesn't open or save for you);
@@ -56,12 +59,12 @@ Preferences → Hotkeys: assign a [system command](#system-commands) to any hotk
 The default one: the middle mouse button in RAPT (`RAPTW.exe`) opens PT Tools. `F1`–`F4` in the search window are built in, see [Shortcuts](en-Usage#shortcuts).
 
 ### Setting hotkeys
-Every hotkey in Preferences (the ALTRun hotkey, clipboard history, dialog jump, date stamp, custom hotkeys) uses the same kind of box, recording the keys directly like Alfred and PowerToys:
+Every hotkey in Preferences (the ALTRun hotkey, clipboard history, Quick Switch, date stamp, custom hotkeys) uses the same kind of box, recording the keys directly like Alfred and PowerToys:
 - The box shows `Alt+Space`, `Ctrl+Alt+C` and so on. Click the box, "Press a shortcut..." appears, and the keys you press are recorded
 - `Esc` cancels (keeps the old hotkey), `Backspace` / `Delete` clears it (no hotkey)
 - A single letter, digit, space, Enter and the like would get in the way of typing and need `Ctrl`, `Alt` or `Win`; `F1`–`F24`, `Pause` and similar keys work on their own
 - While recording, ALTRun's own hotkeys are paused, and combinations such as `Alt+Space` or `Win+E` don't trigger Windows or other programs
-- When saving, you're warned if two global hotkeys are the same (for example the ALTRun hotkey and clipboard history both `Ctrl+Alt+C`). Hotkeys that only work in some windows (dialog jump, date stamp, custom hotkeys with a window) can repeat
+- When saving, you're warned if two global hotkeys are the same (for example the ALTRun hotkey and clipboard history both `Ctrl+Alt+C`). Hotkeys that only work in some windows (Quick Switch, date stamp, custom hotkeys with a window) can repeat
 
 The settings file still uses AutoHotkey syntax (`!` Alt, `^` Ctrl, `+` Shift, `#` Win, for example `!Space`), and you can edit it directly; special forms such as `CapsLock & J` are kept as they are until you record the hotkey again in Preferences.
 
@@ -147,7 +150,7 @@ Syntax: number + unit + `in` / `to` / `=` / `->` / `转` + target unit; units ar
 **Currency conversion** (`100 usd to sgd`) is off by default: tick "Currency conversion" in Preferences → Calculator (`Features.Calculator.Currency`). Once on, the reference rates published by the European Central Bank and other central banks are downloaded once a day from [Frankfurter](https://frankfurter.dev) (free, no sign-up) and saved in `Data\Currency.json`; apart from GitHub, this is the only website ALTRun contacts. Results show the date of the rates.
 
 ## Scripts
-Put your own scripts into the `Scripts\` folder (in the program folder; Preferences → Scripts → "Open Scripts Folder", or search for "Open Scripts Folder"; an example is created the first time) and you can find and run them by name or keyword in the search window, like Raycast's Script Commands. Supported: `.ahk` (run with the AutoHotkey inside ALTRun, nothing else to install), `.ps1`, `.bat` / `.cmd`, `.py` (needs Python). Preferences → Scripts lists the scripts found; double-click one to edit it in Notepad:
+Put your own scripts into the `Scripts\` folder (in the program folder; Preferences → Scripts → "Open Scripts Folder", or search for "Open Scripts Folder"; a few examples are created the first time: a background script that shows a notification, one that takes an argument after its keyword, and one whose output opens in your text editor) and you can find and run them by name or keyword in the search window, like Raycast's Script Commands. Supported: `.ahk` (run with the AutoHotkey inside ALTRun, nothing else to install), `.ps1`, `.bat` / `.cmd`, `.py` (needs Python). Preferences → Scripts lists the scripts found; double-click one to edit it in Notepad:
 
 ![Preferences → Scripts](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-scripts.png)
 
@@ -160,7 +163,7 @@ Comments at the top of a script can hold these settings (the comment markers `;`
 | `@altrun.argument hint` | Needs an argument: type "keyword text" and the text is passed to the script as its first argument; when only the name is found, `Enter` completes it to "keyword " |
 | `@altrun.mode window` | Default: runs normally (with a window) |
 | `@altrun.mode silent` | Runs in the background and shows the last line of its output as a notification when done |
-| `@altrun.mode output` | Runs in the background and opens all of its output in Notepad when done |
+| `@altrun.mode output` | Runs in the background and opens all of its output with the default program for `.txt` files (usually Notepad) when done |
 
 Example (`Scripts\Ping.ps1`):
 ```powershell

@@ -4,7 +4,8 @@
 自动更新的内容:
   - 最新版本号、发布日期、下载链接和 zip 大小、总下载次数 (GitHub API; 取不到时用 App.ahk 里的版本号)
   - 主题截图 (docs/images/screenshots/theme-*.png, 顺序和名称取自 ThemeManager.ahk / I18n.ahk / Resources/Lang/zh-CN.json)
-  - 最新版本的更新内容 (CHANGELOG.md 里第一个已发布的版本)
+  - 最新版本的更新内容 (CHANGELOG.md 里正在下载的那个版本; 英文页面显示其中的英文概要, 中文明细可以展开)
+  - 首页动图 demo.gif 的宽高
 
 只用 Python 标准库。本地预览:
   python3 site/build.py && python3 -m http.server -d _site
@@ -76,14 +77,13 @@ def inline(text):
     return re.sub(r"\[([^\]]+)\]\((https?://[^)\s]+)\)", r'<a href="\2">\1</a>', text)
 
 
-def latest_changes():
-    """CHANGELOG.md 里第一个已发布的版本 -> (版本号, HTML)"""
-    match = re.search(r"^## \[(\d[^\]]*)\]\s*\n(.*?)(?=^## \[|\Z)", read("CHANGELOG.md"), re.M | re.S)
-    if not match:
-        return "", ""
+CJK = re.compile(r"[\u3400-\u9fff]")
+
+
+def changes_html(lines):
+    """CHANGELOG 的几行 -> HTML (段落、### 小标题、- 列表)"""
     out, in_list = [], False
-    for line in match.group(2).splitlines():
-        line = line.rstrip()
+    for line in lines:
         if line.startswith("- "):
             if not in_list:
                 out.append("<ul>")
@@ -99,7 +99,30 @@ def latest_changes():
             out.append(f"<p>{inline(line)}</p>")
     if in_list:
         out.append("</ul>")
-    return match.group(1), "\n".join(out)
+    return "\n".join(out)
+
+
+def latest_changes(version):
+    """CHANGELOG.md 里正在下载的版本 (没有这一节时用第一个三段的正式版本, 不用测试版 YYYY.MM.DD.N) -> (版本号, HTML)。
+    中文页面显示全部; 英文页面显示英文概要 (版本说明里不含中文的段落), 中文明细放在可以展开的 <details> 里"""
+    changelog = read("CHANGELOG.md")
+    match = re.search(r"^## \[(" + re.escape(version) + r")\]\s*\n(.*?)(?=^## \[|\Z)", changelog, re.M | re.S) \
+        or re.search(r"^## \[(\d{4}\.\d{2}\.\d{2})\]\s*\n(.*?)(?=^## \[|\Z)", changelog, re.M | re.S)
+    if not match:
+        return "", ""
+    lines = [line.rstrip() for line in match.group(2).splitlines()]
+    english = [line for line in lines if line and not line.startswith(("- ", "### ", "  ")) and not CJK.search(line)]
+    details = [line for line in lines if line not in english]
+    en = changes_html(english) or "<p>Release notes (in Chinese):</p>"
+    en += ('\n<details><summary>Details (in Chinese)</summary>\n<div lang="zh-CN">\n'   # lang="zh-CN": 不会被 [lang="zh"] 的规则藏起来
+           + changes_html(details) + "\n</div>\n</details>")
+    return match.group(1), f'<div lang="zh">\n{changes_html(lines)}\n</div>\n<div lang="en">\n{en}\n</div>'
+
+
+def gif_size(path):
+    """GIF 的宽和高 (逻辑屏幕描述符)"""
+    with open(path, "rb") as f:
+        return struct.unpack("<HH", f.read(10)[6:10])
 
 
 def png_size(path):
@@ -136,9 +159,12 @@ def theme_gallery():
 
 def main():
     info = release_info()
-    changes_version, changes = latest_changes()
+    changes_version, changes = latest_changes(info["version"])
     theme_count, themes = theme_gallery()
+    demo_w, demo_h = gif_size(os.path.join(SHOTS, "demo.gif"))
     values = {
+        "DEMO_W": str(demo_w),
+        "DEMO_H": str(demo_h),
         "VERSION": info["version"],
         "DATE": info["date"],
         "DOWNLOAD_URL": info["url"],
@@ -161,7 +187,7 @@ def main():
     for name in ("style.css", "script.js"):
         shutil.copy(os.path.join(SITE, name), OUT)
     for name in os.listdir(SHOTS):
-        if name.endswith(".png"):
+        if name.endswith((".png", ".gif")):
             shutil.copy(os.path.join(SHOTS, name), os.path.join(OUT, "images", name))
     shutil.copy(os.path.join(ROOT, "docs", "images", "logo.png"), os.path.join(OUT, "images", "logo.png"))
     shutil.copy(os.path.join(ROOT, "Resources", "ALTRun.ico"), os.path.join(OUT, "favicon.ico"))

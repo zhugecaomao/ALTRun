@@ -10,6 +10,7 @@
 <p align="center">
   <a href="https://github.com/zhugecaomao/ALTRun/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/zhugecaomao/ALTRun?label=release"></a>
   <a href="https://github.com/zhugecaomao/ALTRun/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/zhugecaomao/ALTRun/total"></a>
+  <a href="https://github.com/zhugecaomao/ALTRun/actions/workflows/tests.yml"><img alt="Tests" src="https://github.com/zhugecaomao/ALTRun/actions/workflows/tests.yml/badge.svg?branch=main"></a>
   <a href="https://www.autohotkey.com/"><img alt="AutoHotkey v2" src="https://img.shields.io/badge/AutoHotkey-v2.0-334455?logo=autohotkey"></a>
   <img alt="Windows" src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-0078D6">
   <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/github/license/zhugecaomao/ALTRun"></a>
@@ -26,14 +27,15 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshots/search.png" width="700" alt="ALTRun search window">
+  <img src="docs/images/screenshots/demo.gif" width="700" alt="ALTRun: type to search, open the action panel, convert units and search files">
 </p>
 
 
 ## Why ALTRun
-- **Tiny**: under 1 MB to download and about 2 MB unpacked: one `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install. Similar launchers usually ship installers of tens of MB and can take over 100 MB once installed.
+- **Tiny**: under 1 MB to download and about 2 MB unpacked: one `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install.
 - **Fast**: results appear from the first character you type. With [Everything](https://www.voidtools.com/) running, it searches every file on your disks in milliseconds; without it, a built-in index is used.
 - **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信), and highlights the matched characters.
+- **Beyond launching**: [Quick Switch](#features) jumps an Open / Save dialog to a folder you already have open in Total Commander or Explorer; select text, files or a URL in any program and press `Ctrl+Alt+\` to act on it; type `;keyword` anywhere to expand a snippet.
 - **All in one**: calculator and unit conversion, web search, browser bookmarks, clipboard history, text snippets, system commands and a terminal, so you don't need a handful of separate little tools.
 - **Keyboard first**: `→` opens the action panel, `F3` edits in place, `Ctrl+1`–`Ctrl+9` open a result directly.
 - **Portable and private**: no installer, no registry entries, no admin rights, no background service or driver; all data stays in the `Data\` folder. No telemetry: it only goes online to check for and download updates (plus one exchange-rate download a day if currency conversion is turned on).
@@ -43,7 +45,7 @@
 
 
 ## Getting started
-1. Download the [latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` (no installation, no AutoHotkey needed).
+1. Download the [latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` (no installation, no AutoHotkey needed). If Windows SmartScreen says "Windows protected your PC", click **More info** → **Run anyway**; if your antivirus complains, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ#my-antivirus-flags-it).
 2. Press `Alt+Space` (or `Alt+R`) to open the search window, type a name and press `Enter`. In Preferences you can switch to a double tap of `Ctrl` / `Shift` instead.
 3. Type `?` to see every syntax and shortcut; press `Ctrl+,` to open Preferences.
 
@@ -57,7 +59,7 @@ scoop update altrun    # upgrade (quit ALTRun first)
 ```
 The winget manifest has been submitted; once it is accepted you can install with `winget install zhugecaomao.ALTRun`.
 
-**Upgrading**: ALTRun checks for updates in the background (at startup if the last check was more than an hour ago, then every 6 hours). When a new version is available, the search window shows "Update Available"; press `Enter` to install it. Versions before 2026.09.26 must be upgraded by hand: quit ALTRun, unzip the new version over the old folder and run it again. When upgrading from 2.x, the settings, commands and hotkeys in your old `ALTRun.ini` are imported automatically; when the settings format changes, the old file is backed up first. See [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
+**Upgrading**: when a new version is available, the search window shows "Update Available"; press `Enter` to install it, and your settings are kept. Upgrading from an older version or from 2.x: see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
 
 
 ## Features
@@ -70,7 +72,7 @@ The winget manifest has been submitted; once it is accepted you can install with
 - **Learned ranking**: remembers which result you picked for each query and moves frequent picks up.
 - **Pinned and recent items**: before you type anything, the window lists your pinned items and recently opened ones.
 - **Usage statistics**: counts per day and per feature (only counts are recorded).
-- **Calculator**: type an expression directly; supports unit conversion (`10 km in mi`), number bases (`255 in hex`), date arithmetic (`today + 30 days`), optional currency conversion (`100 usd to sgd`) and structural calculations (beam main bars, rebar area).
+- **Calculator**: type an expression directly; supports unit conversion (`10 km in mi`), number bases (`255 in hex`), date arithmetic (`today + 30 days`) and optional currency conversion (`100 usd to sgd`).
 - **Web search**: `g keywords` (Google), `bd keywords` (Baidu) and more; search engines are customizable, and web search is offered when nothing else matches.
 - **Browser bookmarks**: searches Chrome, Edge, Brave and Vivaldi bookmarks; `bm keywords` searches bookmarks only.
 - **Window switcher**: type a window title or program name to switch to an open window; `w keywords` searches windows only, `w ` lists them all.
@@ -86,25 +88,30 @@ The winget manifest has been submitted; once it is accepted you can install with
 - **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results.
 
 **Extensions**
-- **Dialog jump**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder.
+- **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder.
 - **Date stamp**: while renaming a file, press `Ctrl+D` to add or update a date before the extension (`Report.docx` → `Report - 28.09.2026.docx`).
 - **Custom hotkeys**: assign a hotkey to any system command, optionally only inside specific programs.
 - **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown.
+
+**For structural engineers**
+- **Structural calculations** (off by default): the calculator can add beam main bars and rebar area below its result.
 - **PT Tools**: rebar / BRC mesh area calculations and SPF2M post-tensioning tendon profiles, with results you can copy to Excel.
 
 
 ## Screenshots
-| Action panel (`→`) | File search (`Space` + name) |
+| Search window | Quick Switch (folder panel below an Open / Save dialog) |
 |:---:|:---:|
+| <img src="docs/images/screenshots/search.png" alt="Search window"> | <img src="docs/images/screenshots/quickswitch.png" alt="Quick Switch"> |
+| **Action panel (`→`)** | **File search (`Space` + name)** |
 | <img src="docs/images/screenshots/actions.png" alt="Action panel"> | <img src="docs/images/screenshots/files.png" alt="File search"> |
-| **Calculator (with structural calculations)** | **Clipboard history (`clip`)** |
+| **Calculator** | **Clipboard history (`clip`)** |
 | <img src="docs/images/screenshots/calculator.png" alt="Calculator"> | <img src="docs/images/screenshots/clipboard.png" alt="Clipboard history"> |
 | **Pinned and recent items (empty search box)** | **Browse folders (type a path)** |
 | <img src="docs/images/screenshots/empty.png" alt="Pinned and recent items"> | <img src="docs/images/screenshots/browse.png" alt="Browse folders"> |
 | **Preferences** | **Custom commands** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="Preferences"> | <img src="docs/images/screenshots/prefs-commands.png" alt="Custom commands"> |
-| **Calculator settings (structural parameters)** | **Scripts** |
-| <img src="docs/images/screenshots/prefs-calculator.png" alt="Calculator settings"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> |
+| **Scripts** | **Calculator settings (structural parameters, for engineers)** |
+| <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> | <img src="docs/images/screenshots/prefs-calculator.png" alt="Calculator settings"> |
 
 <details>
 <summary><b>Built-in themes</b> (20 in total, click to expand)</summary>
@@ -143,7 +150,7 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history |
 | `Tab` | Autocomplete; folders: browse into them |
 | `Insert` | Mark several files / folders, then press `→` to act on all of them |
-| `Space` (in an empty search box) | Switch to file search; `Backspace` switches back |
+| `Space` (in an empty search box, or with the cursor at the start) | Switch to file search, keeping what you typed; `Backspace` in an empty box or at the start switches back |
 | `folder name` | Search folders only |
 | `?` | Cheat sheet: every syntax and shortcut |
 | `→` / right-click | Action panel / action menu |
@@ -168,43 +175,16 @@ The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wi
 | [Custom commands and snippets](https://github.com/zhugecaomao/ALTRun/wiki/en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion |
 | [File search](https://github.com/zhugecaomao/ALTRun/wiki/en-File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](https://github.com/zhugecaomao/ALTRun/wiki/en-Themes) | Built-in themes, custom themes, every available key |
-| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/en-Extensions) | Dialog jump, date stamp, custom hotkeys, system commands, PT Tools |
+| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/en-Extensions) | Quick Switch, date stamp, custom hotkeys, system commands, PT Tools |
 | [Settings reference](https://github.com/zhugecaomao/ALTRun/wiki/en-Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives and more |
 | [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/en-Development) | Architecture, adding a search feature, code style, tests |
 
 
-## Project structure
-```
-ALTRun.ahk          Entry point: lists every module and calls App.Start()
-Lib\                Shared libraries (JSON, Logger, Util, TextTools, Kanji, Dialogs, Everything IPC)
-Src\Core\           Startup, settings and migration, search model, match scoring, learned ranking, actions, file index
-Src\UI\             Search window, preferences, edit dialogs, large type, themes, icon cache
-Src\Providers\      Search features: apps, custom commands, snippets, clipboard, system commands, calculator, web, bookmarks, files, terminal, cheat sheet
-Src\Extensions\     Features outside the search window: snippet expansion, dialog jump, date stamp, PT Tools, update check
-Resources\          Data shipped with the program (Kanji.txt Simplified / Traditional table, Themes\ built-in themes, Lang\ UI languages, Icons\ icons)
-Tests\              Unit tests, reference data (Fixtures), automatic screenshots (Screenshots), SPF2M reference tool (Tools\SPF2M)
-docs\               Wiki sources (docs\wiki, published automatically after merging) and screenshots (docs\images)
-bucket\             Scoop manifest (the repository itself is a Scoop bucket)
-packaging\          winget manifests and the script that updates them on release
-site\               Website template and build script (published to GitHub Pages)
-.github\            GitHub Actions (tests, screenshots, release, wiki, website, Gitee sync), issue / PR templates
-```
-
-When it runs, ALTRun creates `Data\` in its folder (the settings file `ALTRun.json`, plus indexes and history that can be deleted) and `Themes\` (custom themes).
-
-
-## Development
-```
-AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk
-```
-The unit tests don't need a UI; the exit code is the number of failures. For adding features, code style and the contribution workflow, see [CONTRIBUTING.md](CONTRIBUTING.md) and the [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/en-Development) in the wiki.
-
-
 ## Feedback and contributing
 - Report a problem: [open an issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) (please include your Windows version and the steps to reproduce)
 - Ideas and discussion: [Discussions](https://github.com/zhugecaomao/ALTRun/discussions)
-- Code contributions: please read [CONTRIBUTING.md](CONTRIBUTING.md) first
+- Code contributions: please read [CONTRIBUTING.md](CONTRIBUTING.md) first; the [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/en-Development) covers the project structure, running the tests and adding a search feature
 
 Issues and pull requests are welcome in English or Chinese. If ALTRun is useful to you, a star ⭐ is much appreciated.
 
@@ -225,4 +205,4 @@ Thanks to these projects for the inspiration:
 - [ALTRun](https://github.com/etworker/ALTRun) (etworker, Delphi): the name and the original design
 - [RunZ](https://github.com/goreliu/runz) (goreliu, AutoHotkey): the idea of writing a launcher in AutoHotkey
 - [Alfred](https://www.alfredapp.com/): the interaction model
-- [Listary](https://www.listary.com/): Quick Switch, the model for the dialog jump
+- [Listary](https://www.listary.com/): its Quick Switch is the model for ALTRun's

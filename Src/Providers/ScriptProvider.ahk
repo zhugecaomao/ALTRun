@@ -9,7 +9,7 @@
 ;   @altrun.argument  提示文字          需要参数: 输入 "关键字 文字", 文字作为第一个参数传给脚本
 ;   @altrun.mode      window | silent | output
 ;                     window (默认) 正常运行, 有窗口; silent 在后台运行, 结束后把输出的最后一行显示成通知;
-;                     output 在后台运行, 结束后用记事本打开全部输出
+;                     output 在后台运行, 结束后用 .txt 的默认程序 (一般是记事本) 打开全部输出
 ; 文件夹有变化时 (修改时间) 重新读取, 不用重新载入 ALTRun。F3 用记事本编辑脚本。
 ;
 ; 设置 (ALTRun.json -> Features.Scripts): Enabled
@@ -57,7 +57,7 @@ class ScriptProvider {
             if (argument = "") {
                 props.Valid := (script.Keyword = "")                        ; 有关键字: Enter 补全 "关键字 ", 接着输入参数
                 props.AutoComplete := (script.Keyword != "") ? script.Keyword " " : ""
-                subtitle := script.Argument " · " subtitle
+                subtitle := ((script.Keyword != "") ? I18n.T("Search.TypeArgAfter", script.Keyword, script.Argument) : script.Argument) " · " subtitle
             } else
                 title .= ": " argument
         }
@@ -104,7 +104,7 @@ class ScriptProvider {
         text := ""
         try text := FileRead(output)
         if (script.Mode = "output") {
-            Run('notepad.exe "' output '"')                                 ; 记事本打开后由用户关闭, 临时文件留在 %Temp%
+            Path.OpenText(output)                                           ; .txt 的默认程序 (一般是记事本), 临时文件留在 %Temp%
             return
         }
         try FileDelete(output)
@@ -176,14 +176,39 @@ class ScriptProvider {
             ScriptProvider.Load()
     }
 
-    ; 打开 Scripts 文件夹; 还没有时先建一个示例脚本
+    ; 示例脚本, 各演示一种写法: 后台运行显示通知 (ahk, silent)、关键字后面带参数 (bat, window; 关键字不要和默认命令重复)、
+    ; 用记事本看全部输出 (ps1, output)。只用 ASCII 字符: Windows PowerShell 5 按 ANSI 读不带 BOM 的文件
+    static ExampleScripts() {
+        return Map(
+            "Today.ahk",
+                "; @altrun.title  Example: Today's Date`r`n"
+              . "; @altrun.mode   silent`r`n"
+              . "; Runs in the background; the last line it prints is shown as a notification.`r`n"
+              . "; Change the mode to output to read everything it prints in your text editor, or remove it to run normally.`r`n"
+              . 'FileAppend(FormatTime(, "dddd, d MMMM yyyy") ", week " SubStr(FormatTime(, "YWeek"), 5), "*")' "`r`n",
+            "Port.bat",
+                "@echo off`r`n"
+              . "rem @altrun.title     Example: Who Uses a Port`r`n"
+              . "rem @altrun.keyword   port`r`n"
+              . "rem @altrun.argument  a port number`r`n"
+              . 'rem Type "port 8080" in ALTRun: the text after the keyword is passed to the script as %1.' "`r`n"
+              . "rem No mode line: it runs normally in its own window.`r`n"
+              . 'netstat -ano | findstr /c:":%~1 "' "`r`n"
+              . "pause`r`n",
+            "IP Addresses.ps1",
+                "# @altrun.title  Example: IP Addresses`r`n"
+              . "# @altrun.mode   output`r`n"
+              . "# Runs in the background, then opens everything it prints in your text editor.`r`n"
+              . "Get-NetIPAddress -AddressFamily IPv4 | Where-Object IPAddress -ne '127.0.0.1' | Format-Table InterfaceAlias, IPAddress -AutoSize`r`n")
+    }
+
+    ; 打开 Scripts 文件夹; 还没有时先建几个示例脚本 (ExampleScripts)
     static OpenFolder() {
         dir := ScriptProvider.Dir
         if !DirExist(dir) {
             DirCreate(dir)
-            FileAppend('; @altrun.title    Example: show today`'s date`n; @altrun.keyword  example`n; @altrun.mode     silent`n'
-                . '; 在后台运行, 输出的最后一行显示成通知。把 mode 改成 output 用记事本看全部输出, window 正常运行。`n'
-                . 'FileAppend(FormatTime(, "dddd, d MMMM yyyy"), "*")`n', dir "\Example.ahk", "UTF-8")
+            for name, text in ScriptProvider.ExampleScripts()
+                FileAppend(text, dir "\" name, "UTF-8-RAW")                 ; 不带 BOM: cmd 读到 BOM 会把第一行当成命令报错
         }
         ActionCatalog.OpenFolder(dir)                                       ; 设置的文件管理器 (例如 Total Commander)
     }

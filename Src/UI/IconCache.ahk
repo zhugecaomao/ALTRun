@@ -40,6 +40,7 @@ class IconCache {
     static _queue   := Map()              ; key -> spec, 等待后台加载
     static _timer   := ""
     static MaxIcons := 1500
+    static SlowLoadMs := 200              ; 读一个图标超过这么多毫秒时写进调试日志 (见 _LoadQueued)
     static _used    := Map(), _tick := 0  ; key -> 最后一次用到的序号 (越大越新)
 
     static Get(spec) {
@@ -126,7 +127,12 @@ class IconCache {
                 continue
             hIcon := 0
             Logger.Trace("icon: " spec)
+            loadStart := IconCache._Ms()
             try hIcon := IconCache._Load(spec)
+            ; 开机时资源管理器 / OneDrive 很忙, 第一次读图标 (外壳初始化图标列表) 可能卡很久,
+            ; 这期间打字、失去焦点隐藏都在排队。慢的记下来, 看得出卡在哪个图标上
+            if ((took := IconCache._Ms() - loadStart) >= IconCache.SlowLoadMs)
+                Logger.Debug("Perf: icon " Round(took) " ms: " spec)
             IconCache._Store(key, hIcon)
             loaded := true
             if (IconCache._Ms() - start > 10)

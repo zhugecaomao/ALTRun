@@ -85,7 +85,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1010,6 +1010,19 @@ class Tests {
         DllCall("DestroyIcon", "Ptr", hIcon)
         eq("no icon", IconCache.FitSize(0), 0)
         IconCache.Size := saved
+        ; 读得慢的图标写进调试日志 (阈值设为 0 时每个都算慢)
+        savedLog := [Logger.Enabled, Logger.File, Logger.Immediate, IconCache.SlowLoadMs]
+        Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunIconLogTest.log"
+        try FileDelete(Logger.File)
+        IconCache.SlowLoadMs := 0
+        IconCache.Get("ext:.altrunslowtest"), IconCache._LoadQueued()
+        IconCache.SlowLoadMs := 100000
+        IconCache.Get("ext:.altrunfasttest"), IconCache._LoadQueued()
+        logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+        TestRunner.True("IconScaling.slow icon logged", RegExMatch(logText, "Perf: icon \d+ ms: ext:\.altrunslowtest") > 0)
+        TestRunner.True("IconScaling.fast icon not logged", !InStr(logText, "altrunfasttest"))
+        try FileDelete(Logger.File)
+        Logger.Enabled := savedLog[1], Logger.File := savedLog[2], Logger.Immediate := savedLog[3], IconCache.SlowLoadMs := savedLog[4]
     }
 
     ; 主题缩略图: 每个主题都画得出来, 背景、选中行用的是主题自己的颜色; 外观页点选缩略图就是选主题
@@ -2232,6 +2245,43 @@ class Tests {
         ScriptProvider._checked := 0                                         ; 文件夹变了: 下一次搜索时重新读
         eq("refresh", titles("new one"), "New One")
         ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2]
+        ; 第一次打开 Scripts 文件夹: 建三个示例 (各一种写法), 都读得出来; 文件夹已经有了就不动
+        examples := A_Temp "\ALTRunScriptExamples"
+        try DirDelete(examples, true)
+        savedOpen := ActionCatalog.GetOwnPropDesc("OpenFolder"), opened := ""
+        ActionCatalog.DefineProp("OpenFolder", {Call: (this, folder) => opened := folder})
+        ScriptProvider.Folder := examples
+        try {
+            ScriptProvider.OpenFolder()
+            eq("examples: folder opened", opened, examples)
+            ScriptProvider.Load()
+            found := Map()
+            for script in ScriptProvider.Scripts
+                found[script.Name] := script.Title "|" script.Mode "|" script.Keyword "|" script.Argument
+            eq("examples: count", found.Count, 3)
+            eq("example ahk", found.Get("Today.ahk", ""), "Example: Today's Date|silent||")
+            eq("example bat", found.Get("Port.bat", ""), "Example: Who Uses a Port|window|port|a port number")
+            eq("example ps1", found.Get("IP Addresses.ps1", ""), "Example: IP Addresses|output||")
+            bom := FileOpen(examples "\Port.bat", "r", "CP0"), first := bom.RawRead(head := Buffer(3), 3) ? NumGet(head, 0, "UChar") : 0, bom.Close()
+            eq("example bat has no BOM", first, Ord("@"))
+            for name, text in ScriptProvider.ExampleScripts()
+                TestRunner.True("Scripts.example ASCII only " name, !RegExMatch(text, "[^\x00-\x7F]"))
+            ; 等待参数时副标题说明要接着输入什么 (脚本、自定义命令、网页搜索)
+            port := ScriptProvider.Search(SearchQuery("port"))
+            eq("waiting hint: script", port.Length ? port[1].Subtitle : "", I18n.T("Search.TypeArgAfter", "port", "a port number") " · " I18n.T("Script.Subtitle", "Port.bat"))
+            eq("waiting: script autocompletes", port.Length ? port[1].Valid "|" port[1].AutoComplete : "", "0|port ")
+            ping := Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping")
+            TestRunner.True("Scripts.waiting hint: custom command", InStr(CustomCommandProvider._ToItem(ping, 100).Subtitle, I18n.T("Search.TypeAfter", "ping") " · ") = 1)
+            TestRunner.True("Scripts.with argument: no hint", !InStr(CustomCommandProvider._ToItem(ping, 100, "8.8.8.8").Subtitle, I18n.T("Search.TypeAfter", "ping")))
+            eq("waiting hint: web search", WebSearchProvider.ItemFor(Map("Title", "Google", "Keyword", "g", "Url", "https://example.com/?q={query}"), "").Subtitle, I18n.T("Search.TypeAfter", "g"))
+            FileDelete(examples "\Today.ahk")
+            ScriptProvider.OpenFolder()
+            eq("examples: existing folder untouched", FileExist(examples "\Today.ahk"), "")
+        } finally {
+            ActionCatalog.DefineProp("OpenFolder", savedOpen)
+            ScriptProvider.Folder := saved[1], ScriptProvider.Scripts := saved[2]
+            try DirDelete(examples, true)
+        }
         DirDelete(root, true)
     }
 
@@ -2304,6 +2354,17 @@ class Tests {
         eq("remove own", App.RemoveOwnShortcut(lnkDir "\own.lnk", "-Startup") && !FileExist(lnkDir "\own.lnk"), true)
         eq("keep user", !App.RemoveOwnShortcut(lnkDir "\user.lnk", "-Startup") && FileExist(lnkDir "\user.lnk") != "", true)
         eq("missing", App.RemoveOwnShortcut(lnkDir "\none.lnk", "-Startup"), false)
+        ; 启动时快捷方式没变就不重写
+        description := "ALTRun - An effective launcher for Windows", iconFile := Path.Full("..\Resources\ALTRun.ico")
+        FileCreateShortcut(A_AhkPath, lnkDir "\same.lnk", A_ScriptDir, "-SendTo", description, iconFile)
+        eq("matches", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-SendTo", description, iconFile), true)
+        eq("other arguments", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-Startup", description, iconFile), false)
+        eq("other description", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-SendTo", "ALTRun - 高效的 Windows 启动器", iconFile), false)
+        eq("other target", App.ShortcutMatches(lnkDir "\same.lnk", A_ScriptFullPath, A_ScriptDir, "-SendTo", description, iconFile), false)
+        eq("other icon", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-SendTo", description, ""), false)
+        FileCreateShortcut(A_AhkPath, lnkDir "\noicon.lnk", A_ScriptDir, "", description)
+        eq("matches without icon", App.ShortcutMatches(lnkDir "\noicon.lnk", A_AhkPath, A_ScriptDir, "", description), true)
+        eq("missing shortcut", App.ShortcutMatches(lnkDir "\none.lnk", A_AhkPath, A_ScriptDir, "", description), false)
         try DirDelete(lnkDir, true)
         folder := A_Temp "\ALTRunSendToTest"
         try DirDelete(folder, true)
@@ -2451,6 +2512,90 @@ class Tests {
             SearchWindow.FileMode := false, SearchWindow.HistoryIndex := 0
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, Knowledge.History := savedHistory
+            g.Destroy()
+        }
+    }
+
+    ; 光标在最前面按空格: 已经输入的文字改用文件搜索; 文件搜索模式下光标在最前面按 Backspace: 回到普通搜索, 文字都保留
+    static FileModeKeys() {
+        eq := (n, a, e) => TestRunner.Equal("FileModeKeys." n, a, e)
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
+        options := AppSettings.Feature("FileSearch"), savedOptions := [options["SpacePrefix"], options["Enabled"]]
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0})
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        hwnd := SearchWindow.Input.Hwnd
+        caret := (start, end := "") => SendMessage(0xB1, start, end = "" ? start : end, hwnd)   ; EM_SETSEL
+        key := (vk) => SearchWindow._OnKeyDown(vk, 0, 0x100, hwnd)
+        SearchWindow.Mode := "results", SearchWindow.FileMode := false
+        options["SpacePrefix"] := 1, options["Enabled"] := 1
+        try {
+            SearchWindow.Input.Value := "seismic", caret(7)
+            eq("space at the end types a space", key(0x20) "|" SearchWindow.FileMode, "|0")
+            caret(0, 3)
+            eq("space with a selection types a space", key(0x20) "|" SearchWindow.FileMode, "|0")
+            caret(0)
+            eq("space at the start enters file mode", key(0x20) "|" SearchWindow.FileMode "|" SearchWindow.Input.Value, "0|1|seismic")
+            caret(3)
+            eq("backspace inside the text deletes", key(0x08) "|" SearchWindow.FileMode, "|1")
+            caret(0)
+            eq("backspace at the start leaves file mode", key(0x08) "|" SearchWindow.FileMode "|" SearchWindow.Input.Value, "0|0|seismic")
+            caret(0)
+            eq("backspace at the start in normal search", key(0x08) "|" SearchWindow.FileMode, "|0")
+            options["SpacePrefix"] := 0
+            caret(0)
+            eq("space prefix off", key(0x20) "|" SearchWindow.FileMode, "|0")
+            options["SpacePrefix"] := 1, SearchWindow.Input.Value := ""
+            eq("empty box still enters file mode", key(0x20) "|" SearchWindow.FileMode, "0|1")
+            eq("backspace in the empty box leaves it", key(0x08) "|" SearchWindow.FileMode, "0|0")
+        } finally {
+            SearchWindow.FileMode := false
+            options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]
+            SearchWindow.DefineProp("_RunSearch", savedSearch)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
+    ; 列表画完了但自绘回调没有运行 (空白行): 写日志并再画一次; 回调运行过、还没画时不算
+    static SkippedPaint() {
+        eq := (n, a, e) => TestRunner.Equal("SkippedPaint." n, a, e)
+        saved := [SearchWindow.Gui, SearchWindow.List, SearchWindow.Input, SearchWindow.Results, Logger.Enabled, Logger.File, Logger.Immediate]
+        g := Gui("-Caption")
+        input := g.AddEdit("w200")
+        list := g.AddListView("w200 h100 -Hdr", [""])                       ; 没有接自绘回调: 每次画都相当于回调被跳过
+        list.Add("", "")
+        g.Show("NA x0 y0")
+        SearchWindow.Gui := g, SearchWindow.List := list, SearchWindow.Input := input, SearchWindow.Results := []
+        Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunPaintTest.log"
+        try FileDelete(Logger.File)
+        pending := () => DllCall("GetUpdateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0)
+        paint := () => (DllCall("InvalidateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0), DllCall("UpdateWindow", "Ptr", list.Hwnd))
+        try {
+            SearchWindow._skipLogged := false
+            SearchWindow._WatchPaint(), paint(), SearchWindow._paints++     ; 回调运行过
+            SearchWindow._CheckPaint()
+            eq("drawn: no repaint", pending() ? 1 : 0, 0)
+            DllCall("InvalidateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0)
+            SearchWindow._WatchPaint(), SearchWindow._CheckPaint()          ; 还没画
+            eq("not painted yet: wait", SearchWindow._paintTries "|" SearchWindow._paintRetries, "1|0")
+            DllCall("UpdateWindow", "Ptr", list.Hwnd)
+            SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()  ; 画了, 回调没运行
+            eq("skipped: repaint", (pending() ? 1 : 0) "|" SearchWindow._paintRetries, "1|1")
+            logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            TestRunner.True("SkippedPaint.logged", InStr(logText, "[WRN] SearchWindow: custom draw skipped") > 0)
+            DllCall("UpdateWindow", "Ptr", list.Hwnd)
+            SearchWindow._paintRetries := 3, SearchWindow._CheckPaint()     ; 最多补画 3 次
+            eq("gives up after 3 repaints", pending() ? 1 : 0, 0)
+            SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()
+            logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            StrReplace(logText, "custom draw skipped", , , &count)
+            eq("logged once per show", count, 1)
+        } finally {
+            SetTimer(SearchWindow._paintCheck, 0)
+            try FileDelete(Logger.File)
+            SearchWindow.Gui := saved[1], SearchWindow.List := saved[2], SearchWindow.Input := saved[3], SearchWindow.Results := saved[4]
+            Logger.Enabled := saved[5], Logger.File := saved[6], Logger.Immediate := saved[7]
             g.Destroy()
         }
     }
@@ -3363,6 +3508,18 @@ Func | PTTools | PT Tools (AHK)=99
     }
 
     static Misc() {
+        ; 日志和 .txt 输出用默认程序打开, 打不开 (没有关联) 时用记事本
+        calls := []
+        Path.OpenText("C:\Temp\a.log", (cmd) => calls.Push(cmd))
+        TestRunner.Equal("Misc.open text: default program", calls.Length ? calls[1] : "", '"C:\Temp\a.log"')
+        calls := []
+        failFirst(cmd) {
+            calls.Push(cmd)
+            if (calls.Length = 1)
+                throw Error("no association")
+        }
+        Path.OpenText("C:\Temp\a.log", failFirst)
+        TestRunner.Equal("Misc.open text: falls back to Notepad", calls.Length = 2 ? calls[2] : "", 'notepad.exe "C:\Temp\a.log"')
         TestRunner.True("Input.layout of this thread", Win.KeyboardLayout() != 0)
         TestRunner.True("Input.per-window setting is a flag", Win.PerWindowInputMethod() = true || Win.PerWindowInputMethod() = false)
         saved := AppSettings.General["SwitchToEnglishInput"]
