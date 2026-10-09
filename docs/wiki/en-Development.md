@@ -29,7 +29,12 @@ Tests\Fixtures\     Test data: an old ALTRun.ini, SPF2M reference data
 Tests\Screenshots\  Automatic screenshots
 Tests\Tools\SPF2M\  Python scripts that generate the SPF2M reference data (run the original SPF2M.EXE in DOSBox; see the README there)
 bucket\ packaging\  Scoop / winget manifests (see packaging\README.md)
+docs\               Wiki sources (docs\wiki, published after merging) and screenshots (docs\images)
+site\               Website template and build script (published to GitHub Pages)
+.github\            GitHub Actions (tests, screenshots, release, wiki, website, Gitee sync), issue / PR templates
 ```
+
+When it runs, ALTRun creates `Data\` in its folder (the settings file `ALTRun.json`, plus indexes and history that can be deleted) and `Themes\` (custom themes).
 
 ## How a search runs
 1. The `SearchWindow` input changes → `ProviderRegistry.Search(text)`
