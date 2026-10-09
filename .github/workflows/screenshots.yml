@@ -42,6 +42,16 @@ jobs:
           Get-Content shots.log, shots.err
           if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) screenshot(s) failed" }
 
+      # README 首页的动图: "demo" 场景存下的帧合成 demo.gif (Pillow)
+      - name: Demo GIF
+        shell: pwsh
+        run: |
+          $frames = Join-Path $env:TEMP "ALTRunDemoFrames"
+          if (-not (Test-Path (Join-Path $frames "frames.txt"))) { Write-Host "No demo frames"; exit 0 }
+          python -m pip install --quiet --disable-pip-version-check pillow
+          python Tests/Screenshots/MakeDemoGif.py $frames docs/images/screenshots/demo.gif
+          if ($LASTEXITCODE -ne 0) { throw "MakeDemoGif.py failed" }
+
       - uses: actions/upload-artifact@v7
         with:
           name: screenshots
