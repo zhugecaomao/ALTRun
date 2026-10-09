@@ -103,7 +103,7 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
 .section h2 + .grid, .section h2 + .tabs { margin-top: 32px; }
 .grid { display: grid; gap: 18px; }
 .grid > * { min-width: 0; }                     /* 长命令在 pre 里横向滚动, 不撑宽页面 */
-.features { grid-template-columns: repeat(4, 1fr); }
+.features { grid-template-columns: repeat(3, 1fr); }      /* 9 张卡片: 3 x 3 */
 .features article, .install article {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px;
 }
@@ -170,4 +170,7 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
 
 /* 下载区下面的代码签名说明 */
 .signing { margin-top: 28px; color: var(--muted); font-size: 0.9rem; }
+.note { margin: 12px 0 0; color: var(--muted); font-size: 0.88rem; }
+.changes details { margin: 10px 0 4px; }
+.changes summary { cursor: pointer; color: var(--accent); font-size: 0.92rem; }
 .signing p { margin: 4px 0; }

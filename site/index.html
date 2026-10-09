@@ -1,22 +1,38 @@
 <!doctype html>
-<html lang="zh-CN" data-lang="zh">
+<html lang="en" data-lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ALTRun — 轻量的 Windows 启动器</title>
-<meta name="description" content="ALTRun: 轻量、高效、开源的 Windows 启动器, 操作方式参照 macOS 上的 Alfred。下载不到 1 MB, 免安装。A lightweight, Alfred-style launcher for Windows.">
+<title>ALTRun — A lightweight launcher for Windows</title>
+<meta name="description" content="ALTRun: a lightweight, open-source, Alfred-style launcher for Windows. Apps, files, clipboard history, snippets and Quick Switch for Open / Save dialogs; under 1 MB, no installation. 轻量、开源的 Windows 启动器。">
 <link rel="canonical" href="{{SITE_URL}}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="ALTRun">
 <meta property="og:url" content="{{SITE_URL}}">
-<meta property="og:title" content="ALTRun — 轻量的 Windows 启动器">
-<meta property="og:description" content="按 Alt+Space, 输入几个字母, 按 Enter: 程序、文件、网页、计算、剪贴板、系统命令, 一个窗口完成。">
+<meta property="og:title" content="ALTRun — A lightweight launcher for Windows">
+<meta property="og:description" content="Press Alt+Space, type a few letters, press Enter: apps, files, web search, calculator, clipboard and system commands from one window.">
 <meta property="og:image" content="{{SITE_URL}}images/search.png">
 <meta property="og:image:alt" content="ALTRun 搜索窗口 / ALTRun search window">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="favicon.ico">
 <link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "ALTRun",
+  "description": "A lightweight, open-source, Alfred-style launcher for Windows.",
+  "url": "{{SITE_URL}}",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Windows 10, Windows 11",
+  "softwareVersion": "{{VERSION}}",
+  "downloadUrl": "{{DOWNLOAD_URL}}",
+  "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "image": "{{SITE_URL}}images/search.png",
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"}
+}
+</script>
 </head>
 <body>
 
@@ -28,7 +44,8 @@
       <a href="#screens"><span lang="zh">截图</span><span lang="en">Screenshots</span></a>
       <a href="#themes"><span lang="zh">主题</span><span lang="en">Themes</span></a>
       <a href="#download"><span lang="zh">下载</span><span lang="en">Download</span></a>
-      <a href="https://github.com/{{REPO}}/wiki"><span lang="zh">文档</span><span lang="en">Docs</span></a>
+      <a lang="zh" href="https://github.com/{{REPO}}/wiki">文档</a>
+      <a lang="en" href="https://github.com/{{REPO}}/wiki/en-Home">Docs</a>
       <a href="https://github.com/{{REPO}}">GitHub</a>
     </nav>
     <button class="lang" type="button" id="lang-toggle" aria-label="切换语言 / Switch language">EN</button>
@@ -62,7 +79,7 @@
       </p>
     </div>
     <div class="hero-shot">
-      <img src="images/search.png" alt="ALTRun search window" width="700" height="506">
+      <img src="images/demo.gif" alt="ALTRun: type to search, open the action panel, convert units and search files" width="{{DEMO_W}}" height="{{DEMO_H}}">
     </div>
   </div>
 </section>
@@ -95,6 +112,11 @@
         <h3><span lang="zh">越用越懂你</span><span lang="en">Smart ranking</span></h3>
         <p><span lang="zh">记住每次的选择，常用的自动排第一；支持单词首字母（<code>vsc</code> → Visual Studio Code）和拼音首字母（<code>wx</code> → 微信），并高亮匹配的字。</span>
            <span lang="en">Learns what you pick for each query. Matches word initials (<code>vsc</code> → Visual Studio Code) and pinyin initials, and highlights the matched characters.</span></p>
+      </article>
+      <article>
+        <h3><span lang="zh">不只是启动</span><span lang="en">Beyond launching</span></h3>
+        <p><span lang="zh">对话框快速跳转（Quick Switch）：打开 / 保存对话框一步跳到 Total Commander 或资源管理器里已经打开的文件夹；在任意程序里选中文字、文件或网址，按 <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>\</kbd> 直接操作。</span>
+           <span lang="en">Quick Switch jumps an Open / Save dialog to a folder you already have open in Total Commander or Explorer; select text, files or a URL in any program and press <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>\</kbd> to act on it.</span></p>
       </article>
       <article>
         <h3><span lang="zh">多合一</span><span lang="en">All in one</span></h3>
@@ -130,6 +152,7 @@
     <h2><span lang="zh">看看它能做什么</span><span lang="en">See it in action</span></h2>
     <div class="tabs" role="tablist">
       <button role="tab" aria-selected="true" data-shot="actions"><span lang="zh">操作面板</span><span lang="en">Action panel</span></button>
+      <button role="tab" aria-selected="false" data-shot="quickswitch"><span lang="zh">对话框快速跳转</span><span lang="en">Quick Switch</span></button>
       <button role="tab" aria-selected="false" data-shot="files"><span lang="zh">文件搜索</span><span lang="en">File search</span></button>
       <button role="tab" aria-selected="false" data-shot="clipboard"><span lang="zh">剪贴板历史</span><span lang="en">Clipboard</span></button>
       <button role="tab" aria-selected="false" data-shot="calculator"><span lang="zh">计算器</span><span lang="en">Calculator</span></button>
@@ -150,7 +173,7 @@
   <div class="wrap">
     <h2><span lang="zh">{{THEME_COUNT}} 套内置主题</span><span lang="en">{{THEME_COUNT}} built-in themes</span></h2>
     <p class="sub"><span lang="zh">也可以复制一套改成自己的配色，见 <a href="https://github.com/{{REPO}}/wiki/Themes">主题文档</a>。</span>
-       <span lang="en">Or copy one and make it your own — see the <a href="https://github.com/{{REPO}}/wiki/Themes">theme docs</a>.</span></p>
+       <span lang="en">Or copy one and make it your own — see the <a href="https://github.com/{{REPO}}/wiki/en-Themes">theme docs</a>.</span></p>
     <div class="grid themes">
 {{THEMES}}
     </div>
@@ -171,6 +194,8 @@
           <li><span lang="zh">输入 <code>?</code> 查看全部语法和快捷键</span>
               <span lang="en">Type <code>?</code> for every syntax and shortcut</span></li>
         </ol>
+        <p class="note"><span lang="zh">如果 Windows SmartScreen 提示“Windows 已保护你的电脑”，点 <b>更多信息</b> → <b>仍要运行</b>；杀毒软件误报见<a href="https://github.com/{{REPO}}/wiki/FAQ#杀毒软件报毒">常见问题</a>。</span>
+           <span lang="en">If Windows SmartScreen says “Windows protected your PC”, click <b>More info</b> → <b>Run anyway</b>; for antivirus warnings see the <a href="https://github.com/{{REPO}}/wiki/en-FAQ#my-antivirus-flags-it">FAQ</a>.</span></p>
       </article>
       <article>
         <h3>Scoop</h3>
@@ -182,7 +207,7 @@ scoop install altrun</code></pre>
         <h3><span lang="zh">从源码运行</span><span lang="en">From source</span></h3>
         <p><span lang="zh">装了 <a href="https://www.autohotkey.com/">AutoHotkey v2</a> 时，克隆仓库后直接运行 <code>ALTRun.ahk</code>。</span>
            <span lang="en">With <a href="https://www.autohotkey.com/">AutoHotkey v2</a> installed, clone the repository and run <code>ALTRun.ahk</code>.</span></p>
-        <p><a href="https://github.com/{{REPO}}/wiki/Installation"><span lang="zh">安装与升级说明 →</span><span lang="en">Installation guide →</span></a></p>
+        <p><a lang="zh" href="https://github.com/{{REPO}}/wiki/Installation">安装与升级说明 →</a><a lang="en" href="https://github.com/{{REPO}}/wiki/en-Installation">Installation guide →</a></p>
       </article>
     </div>
     <div class="signing" id="code-signing">
@@ -195,7 +220,6 @@ scoop install altrun</code></pre>
 <section id="changes" class="section">
   <div class="wrap narrow">
     <h2><span lang="zh">最新版本 {{CHANGES_VERSION}}</span><span lang="en">What's new in {{CHANGES_VERSION}}</span></h2>
-    <p class="sub" lang="en">The changelog is written in Chinese.</p>
     <div class="changes">
 {{CHANGES}}
     </div>
@@ -213,9 +237,13 @@ scoop install altrun</code></pre>
     </div>
     <nav>
       <a href="https://github.com/{{REPO}}">GitHub</a>
-      <a href="https://github.com/{{REPO}}/wiki"><span lang="zh">使用文档</span><span lang="en">Docs</span></a>
+      <a lang="zh" href="https://github.com/{{REPO}}/wiki">使用文档</a>
+      <a lang="en" href="https://github.com/{{REPO}}/wiki/en-Home">Docs</a>
       <a href="https://github.com/{{REPO}}/releases"><span lang="zh">所有版本</span><span lang="en">Releases</span></a>
       <a href="https://github.com/{{REPO}}/issues"><span lang="zh">反馈问题</span><span lang="en">Issues</span></a>
+      <a href="https://github.com/{{REPO}}/discussions"><span lang="zh">讨论区</span><span lang="en">Discussions</span></a>
+      <a lang="zh" href="https://github.com/{{REPO}}/blob/main/SECURITY.md#隐私说明">隐私说明</a>
+      <a lang="en" href="https://github.com/{{REPO}}/blob/main/SECURITY.md#privacy-policy">Privacy</a>
       <a href="https://gitee.com/zhugecaomao/ALTRun"><span lang="zh">Gitee 镜像</span><span lang="en">Gitee mirror</span></a>
     </nav>
   </div>
