@@ -85,7 +85,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2516,6 +2516,49 @@ class Tests {
             options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
+    ; 列表画完了但自绘回调没有运行 (空白行): 写日志并再画一次; 回调运行过、还没画时不算
+    static SkippedPaint() {
+        eq := (n, a, e) => TestRunner.Equal("SkippedPaint." n, a, e)
+        saved := [SearchWindow.Gui, SearchWindow.List, SearchWindow.Input, SearchWindow.Results, Logger.Enabled, Logger.File, Logger.Immediate]
+        g := Gui("-Caption")
+        input := g.AddEdit("w200")
+        list := g.AddListView("w200 h100 -Hdr", [""])                       ; 没有接自绘回调: 每次画都相当于回调被跳过
+        list.Add("", "")
+        g.Show("NA x0 y0")
+        SearchWindow.Gui := g, SearchWindow.List := list, SearchWindow.Input := input, SearchWindow.Results := []
+        Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunPaintTest.log"
+        try FileDelete(Logger.File)
+        pending := () => DllCall("GetUpdateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0)
+        paint := () => (DllCall("InvalidateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0), DllCall("UpdateWindow", "Ptr", list.Hwnd))
+        try {
+            SearchWindow._skipLogged := false
+            SearchWindow._WatchPaint(), paint(), SearchWindow._paints++     ; 回调运行过
+            SearchWindow._CheckPaint()
+            eq("drawn: no repaint", pending() ? 1 : 0, 0)
+            DllCall("InvalidateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0)
+            SearchWindow._WatchPaint(), SearchWindow._CheckPaint()          ; 还没画
+            eq("not painted yet: wait", SearchWindow._paintTries "|" SearchWindow._paintRetries, "1|0")
+            DllCall("UpdateWindow", "Ptr", list.Hwnd)
+            SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()  ; 画了, 回调没运行
+            eq("skipped: repaint", (pending() ? 1 : 0) "|" SearchWindow._paintRetries, "1|1")
+            log := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            TestRunner.True("SkippedPaint.logged", InStr(log, "[WRN] SearchWindow: custom draw skipped") > 0)
+            DllCall("UpdateWindow", "Ptr", list.Hwnd)
+            SearchWindow._paintRetries := 3, SearchWindow._CheckPaint()     ; 最多补画 3 次
+            eq("gives up after 3 repaints", pending() ? 1 : 0, 0)
+            SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()
+            log := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            StrReplace(log, "custom draw skipped", , , &count)
+            eq("logged once per show", count, 1)
+        } finally {
+            SetTimer(SearchWindow._paintCheck, 0)
+            try FileDelete(Logger.File)
+            SearchWindow.Gui := saved[1], SearchWindow.List := saved[2], SearchWindow.Input := saved[3], SearchWindow.Results := saved[4]
+            Logger.Enabled := saved[5], Logger.File := saved[6], Logger.Immediate := saved[7]
             g.Destroy()
         }
     }

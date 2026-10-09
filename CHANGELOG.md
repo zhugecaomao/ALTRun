@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.09.3]
+
+测试版。
+
+Test build.
+
+### 修复
+- 搜索结果偶尔显示成空白行 (行数和结果对得上, 只是没有画出来): 每次重画列表后检查自绘有没有运行, 列表已经画完自绘却没有运行时再画一次; 打开 "写入调试日志" 时记下当时的情况
+
 ## [2026.10.09.2]
 
 测试版。
@@ -536,7 +545,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.3...HEAD
+[2026.10.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.2...2026.10.09.3
 [2026.10.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.1...2026.10.09.2
 [2026.10.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08.1...2026.10.09.1
 [2026.10.08.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08...2026.10.08.1
