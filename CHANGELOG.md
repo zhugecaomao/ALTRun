@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.09.1]
+
+测试版。
+
+Test build.
+
+### 改进
+- 启动时快捷方式 (开机启动、发送到、开始菜单) 没有变化就不重写: 开机时资源管理器 / OneDrive 很忙, 每次重写都要调用 Windows 外壳, 曾经让启动多花了 11 秒
+- 打开 "写入调试日志" 时, 读一个图标超过 200 ms 会记下耗时和是哪个图标: 开机时第一次读图标可能被资源管理器卡住很久, 这期间搜索窗口不响应输入
+
 ## [2026.10.08.1]
 
 测试版。
@@ -517,7 +527,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.1...HEAD
+[2026.10.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08.1...2026.10.09.1
 [2026.10.08.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.08...2026.10.08.1
 [2026.10.08]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.08
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05

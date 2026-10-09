@@ -1010,6 +1010,19 @@ class Tests {
         DllCall("DestroyIcon", "Ptr", hIcon)
         eq("no icon", IconCache.FitSize(0), 0)
         IconCache.Size := saved
+        ; 读得慢的图标写进调试日志 (阈值设为 0 时每个都算慢)
+        savedLog := [Logger.Enabled, Logger.File, Logger.Immediate, IconCache.SlowLoadMs]
+        Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunIconLogTest.log"
+        try FileDelete(Logger.File)
+        IconCache.SlowLoadMs := 0
+        IconCache.Get("ext:.altrunslowtest"), IconCache._LoadQueued()
+        IconCache.SlowLoadMs := 100000
+        IconCache.Get("ext:.altrunfasttest"), IconCache._LoadQueued()
+        log := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+        TestRunner.True("IconScaling.slow icon logged", RegExMatch(log, "Perf: icon \d+ ms: ext:\.altrunslowtest") > 0)
+        TestRunner.True("IconScaling.fast icon not logged", !InStr(log, "altrunfasttest"))
+        try FileDelete(Logger.File)
+        Logger.Enabled := savedLog[1], Logger.File := savedLog[2], Logger.Immediate := savedLog[3], IconCache.SlowLoadMs := savedLog[4]
     }
 
     ; 主题缩略图: 每个主题都画得出来, 背景、选中行用的是主题自己的颜色; 外观页点选缩略图就是选主题
@@ -2304,6 +2317,17 @@ class Tests {
         eq("remove own", App.RemoveOwnShortcut(lnkDir "\own.lnk", "-Startup") && !FileExist(lnkDir "\own.lnk"), true)
         eq("keep user", !App.RemoveOwnShortcut(lnkDir "\user.lnk", "-Startup") && FileExist(lnkDir "\user.lnk") != "", true)
         eq("missing", App.RemoveOwnShortcut(lnkDir "\none.lnk", "-Startup"), false)
+        ; 启动时快捷方式没变就不重写
+        description := "ALTRun - An effective launcher for Windows", iconFile := Path.Full("..\Resources\ALTRun.ico")
+        FileCreateShortcut(A_AhkPath, lnkDir "\same.lnk", A_ScriptDir, "-SendTo", description, iconFile)
+        eq("matches", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-SendTo", description, iconFile), true)
+        eq("other arguments", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-Startup", description, iconFile), false)
+        eq("other description", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-SendTo", "ALTRun - 高效的 Windows 启动器", iconFile), false)
+        eq("other target", App.ShortcutMatches(lnkDir "\same.lnk", A_ScriptFullPath, A_ScriptDir, "-SendTo", description, iconFile), false)
+        eq("other icon", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-SendTo", description, ""), false)
+        FileCreateShortcut(A_AhkPath, lnkDir "\noicon.lnk", A_ScriptDir, "", description)
+        eq("matches without icon", App.ShortcutMatches(lnkDir "\noicon.lnk", A_AhkPath, A_ScriptDir, "", description), true)
+        eq("missing shortcut", App.ShortcutMatches(lnkDir "\none.lnk", A_AhkPath, A_ScriptDir, "", description), false)
         try DirDelete(lnkDir, true)
         folder := A_Temp "\ALTRunSendToTest"
         try DirDelete(folder, true)

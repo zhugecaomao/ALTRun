@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.08.1"
+    static Version := "2026.10.09.1"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -436,20 +436,34 @@ class App {
         prefix := A_IsCompiled ? "" : '"' A_ScriptFullPath '" '
         icon := (!A_IsCompiled && FileExist(App.IconFile)) ? App.IconFile : ""   ; 运行源码时快捷方式不用 AutoHotkey 的图标
         sendTo := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
+        description := App.Name " - " I18n.T("App.Tagline")
         for shortcut in [
             [general["LaunchAtLogin"], A_Startup "\ALTRun.lnk", "-Startup"],
             [general["SendToMenu"], sendTo, "-SendTo"],
             [general["StartMenuShortcut"], A_Programs "\ALTRun.lnk", ""]
         ] {
             try {
-                if shortcut[1]
-                    FileCreateShortcut(target, shortcut[2], A_ScriptDir, Trim(prefix shortcut[3]), App.Name " - " I18n.T("App.Tagline"), icon)
-                else
+                arguments := Trim(prefix shortcut[3])
+                if !shortcut[1]
                     App.RemoveOwnShortcut(shortcut[2], shortcut[3])
+                else if !App.ShortcutMatches(shortcut[2], target, A_ScriptDir, arguments, description, icon)
+                    FileCreateShortcut(target, shortcut[2], A_ScriptDir, arguments, description, icon)
             } catch as e {
                 Logger.Error("App: shortcut " shortcut[2] " - " e.Message)
             }
         }
+    }
+
+    ; 快捷方式已经是这样时不重写: 每次启动都重写 3 个快捷方式要调用 Windows 外壳, 资源管理器还要处理文件变化,
+    ; 开机时资源管理器 / OneDrive 很忙, 曾经花了 11 秒
+    static ShortcutMatches(path, target, dir, arguments, description, icon := "") {
+        if !FileExist(path)
+            return false
+        outTarget := "", outDir := "", outArgs := "", outDescription := "", outIcon := ""
+        try FileGetShortcut(path, &outTarget, &outDir, &outArgs, &outDescription, &outIcon)
+        catch
+            return false
+        return (outTarget = target && outDir = dir && outArgs == arguments && outDescription == description && outIcon = icon)
     }
 
     ; 删掉 ALTRun 建的快捷方式; 不是 ALTRun 建的 (用户自己建的) 保留。返回是否删了
