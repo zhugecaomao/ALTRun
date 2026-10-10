@@ -331,19 +331,24 @@ class Tests {
         eq("modes", (CapsLockSwitch.IsMode("Layout") ? 1 : 0) (CapsLockSwitch.IsMode("Mode") ? 1 : 0) (CapsLockSwitch.IsMode("") ? 1 : 0) (CapsLockSwitch.IsMode("x") ? 1 : 0), "1100")
         eq("hold time", CapsLockSwitch.HoldMs, 300)
         eq("notification text", CapsLockSwitch.StateText(true) "|" CapsLockSwitch.StateText(false), "Caps Lock On|Caps Lock Off")
-        eq("uses the keyboard hook", SubStr(CapsLockSwitch.Key, 1, 1), "$")    ; 不用钩子时拦不住大写切换, 按住时也会不停切换
-        registered := []
+        eq("uses the keyboard hook", InStr(CapsLockSwitch.Key, "$") ? 1 : 0, 1)    ; 不用钩子时拦不住大写切换, 按住时也会不停切换
+        eq("with any modifier", InStr(CapsLockSwitch.Key, "*") ? 1 : 0, 1)        ; 远程桌面补发的 Alt+CapsLock 等也要拦下
+        registered := [], savedInterval := A_HotkeyInterval
         CapsLockSwitch.Register((key, fn) => registered.Push(key))
-        eq("down and up hotkeys", registered.Length = 2 ? registered[1] "|" registered[2] : "", "$CapsLock|$CapsLock up")
+        eq("down and up hotkeys", registered.Length = 2 ? registered[1] "|" registered[2] : "", "*$CapsLock|*$CapsLock up")
+        eq("no too-many-hotkeys warning", A_HotkeyInterval, 0)
+        A_HotkeyInterval := savedInterval
 
         ; 按下 / 松开的顺序 (假的时钟, 定时器手动触发)
         saved := Map()
-        for name in ["Clock", "ToggleCapsLock", "Switch"]
+        for name in ["Clock", "ToggleCapsLock", "Switch", "ShiftDown"]
             saved[name] := CapsLockSwitch.GetOwnPropDesc(name)
         clock := {Now: 0}, calls := {Text: ""}
         CapsLockSwitch.Clock := () => clock.Now
         CapsLockSwitch.DefineProp("ToggleCapsLock", {Call: (*) => calls.Text .= "caps;"})
         CapsLockSwitch.DefineProp("Switch", {Call: (*) => calls.Text .= "switch;"})
+        shift := {Down: false}
+        CapsLockSwitch.DefineProp("ShiftDown", {Call: (*) => shift.Down})
         at := (ms) => clock.Now := ms
         try {
             CapsLockSwitch._down := false
@@ -372,6 +377,13 @@ class Tests {
             at(9000), CapsLockSwitch.Down(), at(9040), CapsLockSwitch.Up()
             eq("quick real tap still switches", calls.Text, "switch;")
             calls.Text := ""
+            shift.Down := true
+            at(10000), CapsLockSwitch.Down(), at(10080), CapsLockSwitch.Up()
+            eq("shift+caps lock: caps lock as usual", calls.Text, "caps;")
+            calls.Text := ""
+            at(11000), CapsLockSwitch.Down(), at(11000.3), CapsLockSwitch.Up()   ; 打 Shift+字母时远程桌面补发的
+            eq("remote sync tap with shift ignored", calls.Text, "")
+            shift.Down := false
             CapsLockSwitch.Clock := saved["Clock"].Value
             ; Sleep 按 15.6 ms 一档的 A_TickCount 判断, 实际可能少睡将近一档: 睡 100 ms, 只要求量到 50 ms 以上
             first := CapsLockSwitch.Clock.Call(), Sleep(100), second := CapsLockSwitch.Clock.Call()

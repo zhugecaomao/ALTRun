@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.10.7]
+
+测试版。
+
+Test build.
+
+### 修复
+- CapsLock 切换输入法 (Chrome 远程桌面): 呼出 ALTRun 后大写被锁定; 按住方向键时弹出 "A_MaxHotkeysPerInterval" 的警告, 之后大写也被锁定。远程桌面补发来对齐大写锁定的 CapsLock 常常带着别的键 (按 Alt+Space 时是 Alt+CapsLock, 还有 Ctrl+C、Shift+字母), 以前只拦单独的 CapsLock, 漏过去的那一次真的切换了大写锁定; 按住方向键时每次自动重复都补发一次, 超过了 AutoHotkey "2 秒内最多 70 次热键" 的限制。现在按着修饰键的 CapsLock 也拦下, 打开这个功能时关掉热键次数的检查
+- Shift+CapsLock 和原来一样直接开 / 关大写锁定 (也显示提示)
+
 ## [2026.10.10.6]
 
 测试版。
@@ -639,7 +649,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...HEAD
+[2026.10.10.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.6...2026.10.10.7
 [2026.10.10.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.5...2026.10.10.6
 [2026.10.10.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.4...2026.10.10.5
 [2026.10.10.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.3...2026.10.10.4

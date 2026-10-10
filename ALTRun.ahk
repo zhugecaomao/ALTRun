@@ -20,7 +20,7 @@
 ;@Ahk2Exe-SetName ALTRun
 ;@Ahk2Exe-SetDescription ALTRun
 ;@Ahk2Exe-Set Comments, An effective launcher for Windows
-;@Ahk2Exe-SetVersion 2026.10.10.6
+;@Ahk2Exe-SetVersion 2026.10.10.7
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026 zhugecaomao
 ;@Ahk2Exe-SetOrigFilename ALTRun.exe
 ;@Ahk2Exe-SetMainIcon Resources\ALTRun.ico
