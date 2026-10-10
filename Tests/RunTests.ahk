@@ -2732,8 +2732,8 @@ class Tests {
     static StatusBar() {
         eq := (n, a, e) => TestRunner.Equal("StatusBar." n, a, e)
         eq("on by default", AppSettings.Defaults()["Appearance"]["StatusBar"], 1)
-        file := ResultItem("Notepad", "", {Kind: "file", Arg: "C:\Windows\notepad.exe"})
-        eq("file: open", SearchWindow.EnterTitle(file), "Open")
+        fileItem := ResultItem("Notepad", "", {Kind: "file", Arg: "C:\Windows\notepad.exe"})
+        eq("file: open", SearchWindow.EnterTitle(fileItem), "Open")
         eq("folder: open", SearchWindow.EnterTitle(ResultItem("Docs", "", {Kind: "folder"})), "Open")
         eq("url: open", SearchWindow.EnterTitle(ResultItem("Web", "", {Kind: "url"})), "Open")
         eq("text: copy", SearchWindow.EnterTitle(ResultItem("42", "", {Kind: "text"})), "Copy")
@@ -2752,24 +2752,25 @@ class Tests {
             SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow._tip := "Tip: ? cheat sheet"
             SearchWindow.Input.Value := "", SearchWindow.Results := [], SearchWindow.Selected := 0
             texts := SearchWindow.StatusTexts()
-            eq("empty box: tip", texts.Left "|" texts.Right, "Tip: ? cheat sheet|")
-            SearchWindow.Input.Value := "note", SearchWindow.Results := [file, ResultItem("b")], SearchWindow.Selected := 1
+            eq("empty box: tip", texts.Left "|" texts.Enter "|" texts.Actions, "Tip: ? cheat sheet||0")
+            SearchWindow.Input.Value := "note", SearchWindow.Results := [fileItem, ResultItem("b")], SearchWindow.Selected := 1
             texts := SearchWindow.StatusTexts()
-            eq("results: count and actions", texts.Left "|" texts.Right, "2 results|Open  Enter      Actions  Ctrl+K")
-            SearchWindow.Results := [file]
-            eq("one result", SearchWindow.StatusTexts().Left, "1 result")
+            eq("results: tip, enter and actions", texts.Left "|" texts.Enter "|" texts.Actions, "Tip: ? cheat sheet|Open|1")
+            parts := SearchWindow.StatusParts(texts)
+            eq("parts like Raycast", parts.Length = 2 ? parts[1].Label " " parts[1].Keys[1] " | " parts[2].Label " " parts[2].Keys[1] "+" parts[2].Keys[2] : "", "Open ↵ | Actions Ctrl+K")
             SearchWindow.FileMode := true
-            eq("file mode", SearchWindow.StatusTexts().Left, I18n.T("Status.FileMode"))
+            eq("fileItem mode", SearchWindow.StatusTexts().Left, I18n.T("Status.FileMode"))
             SearchWindow.FileMode := false, SearchWindow.Mode := "actions"
             texts := SearchWindow.StatusTexts()
-            eq("action panel", texts.Left "|" texts.Right, "Esc  Back|Run  Enter")
+            eq("action panel", texts.Left "|" texts.Enter "|" texts.Actions, "Esc  Back|Run|0")
             SearchWindow.Mode := "results"
+            eq("mix colors", Format("{:06X}", SearchWindow.MixColor("FFFFFF", "000000", 0.5)), "808080")
 
             SearchWindow.StatusHeight := 0
             plain := SearchWindow._WindowHeight(3)
             SearchWindow.StatusHeight := 26
             eq("window height includes the status bar", SearchWindow._WindowHeight(3) - plain, 26)
-            eq("empty window too", SearchWindow._WindowHeight(0) - SearchWindow._ContentHeight(0), 26)
+            eq("no status bar without result rows", SearchWindow._WindowHeight(0) - SearchWindow._ContentHeight(0), 0)
 
             opened := {Count: 0}
             SearchWindow.DefineProp("_OpenActions", {Call: (*) => (opened.Count++, true)})

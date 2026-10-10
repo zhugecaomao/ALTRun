@@ -57,7 +57,7 @@ Split over the "General" and "Search Window" pages in Preferences.
 | Theme | `Light` | Theme name, see [Themes](en-Themes) |
 | Width | 700 | Search window width (pixels, scaled with the display) |
 | VisibleRows | 8 | Maximum number of result rows shown (1–9) |
-| StatusBar | 1 | Status bar at the bottom of the search window (usage tip, number of results, what `Enter` / `Ctrl+K` do); 0 = off, the usage tip shows in the empty search box |
+| StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: usage tip, what `Enter` / `Ctrl+K` do); 0 = off, the usage tip shows in the empty search box |
 | ShowOn | `Mouse` | Which screen the search window opens on: `Mouse` the one with the mouse pointer / `Primary` the main screen / `Active` the one with the active window |
 | RememberPosition | 0 | Remember the position after dragging the search window (drag the empty space around the input box) |
 | Position | `{"X": 500, "Y": 200}` | The remembered position, in thousandths of the screen's work area: X 0 = far left, 1000 = far right; Y is the window's top edge measured from the top. Default = centered horizontally, 20% from the top |

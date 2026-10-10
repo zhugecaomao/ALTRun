@@ -19,10 +19,10 @@ Before you type anything, the search window lists (pinned items have a pin at th
 Only results you can open again are remembered: apps, files, folders, URLs, custom commands and system commands; clipboard history, calculations, snippets, web searches and windows are not. Select an item and press `Ctrl+Del` to unpin it or remove it from the recent items; Preferences → Advanced → "Reset Learned Ranking" clears the recent items. The whole feature can be turned off in Preferences → Features.
 
 ## Usage tips
-Each time you open the search window, the status bar at the bottom shows another usage tip (for example "Tip: folder bk  search folders only"), in turn; once you type, it shows the number of results instead. Once you know them, turn off "Show a usage tip" under "Empty search box" in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
+Each time you open the search window, the status bar at the bottom shows another usage tip (for example "Tip: folder bk  search folders only"), in turn. Once you know them, turn off "Show a usage tip" under "Empty search box" in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
 
 ## Status bar
-The line at the bottom of the search window (like Listary and Raycast): on the left, the usage tip, "Searching files" in file search mode or the number of results; on the right, what `Enter` does for the selected result (Open, Copy, Paste, Run...) and `Ctrl+K` for its action panel. Turn it off in Preferences → Search Window → "Show the status bar" (`Appearance.StatusBar`); the usage tip then shows in the empty search box as before.
+The line at the bottom of the search window (like Listary and Raycast), shown when there are results: on the left, the usage tip ("Searching files" in file search mode); on the right, what `Enter` does for the selected result (Open, Copy, Paste, Run...) and `Ctrl+K` for its action panel, drawn as key caps. With no result rows (an empty search box without pinned items) only the search box shows. Turn it off in Preferences → Search Window → "Show the status bar" (`Appearance.StatusBar`); the usage tip then shows in the empty search box as before.
 
 ## Search syntax
 | Input | Result |

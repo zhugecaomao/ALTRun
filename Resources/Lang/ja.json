@@ -266,8 +266,6 @@
   "Status.Actions": "アクション",
   "Status.Back": "Esc  戻る",
   "Status.FileMode": "ファイルを検索中  ·  Backspace: すべての結果",
-  "Status.Result": "{1} 件",
-  "Status.Results": "{1} 件",
   "Prefs.CapsLock.Desc": "Mac と同じく、Caps Lock を押すと入力方式を切り替え、長押しで Caps Lock のオン / オフ (状態を表示)。Shift+Caps Lock は通常どおり",
   "Prefs.CapsLock.Off": "通常どおり",
   "Prefs.CapsLock.Layout": "押して入力方式を切り替え",

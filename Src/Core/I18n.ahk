@@ -600,8 +600,6 @@ class I18n {
         s["Status.Actions"]            := "Actions"
         s["Status.Back"]               := "Esc  Back"
         s["Status.FileMode"]           := "Searching files  ·  Backspace: all results"
-        s["Status.Result"]             := "{1} result"
-        s["Status.Results"]            := "{1} results"
         s["Caps.On"]                   := "Caps Lock On"
         s["Caps.Off"]                  := "Caps Lock Off"
         s["Prefs.CapsLock.Desc"]       := "Like on a Mac: press Caps Lock to switch the input method, hold it to turn caps lock on or off (a notice shows which). Shift+Caps Lock works as usual."

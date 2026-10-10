@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.10.9]
+
+测试版。
+
+Test build.
+
+### 改进
+- 状态栏的样子和 Listary、Raycast 一样: 底色比窗口稍深一点, 左边是 ALTRun 图标和使用提示, 右边是 "打开 [↵] | 操作 [Ctrl] [K]" 这样的圆角键帽; 不再显示结果数
+- 没有结果行时 (空搜索框又没有置顶项) 只显示搜索框, 不显示状态栏
+
 ## [2026.10.10.8]
 
 测试版。
@@ -662,7 +672,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.9...HEAD
+[2026.10.10.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.8...2026.10.10.9
 [2026.10.10.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...2026.10.10.8
 [2026.10.10.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.6...2026.10.10.7
 [2026.10.10.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.5...2026.10.10.6
