@@ -15,6 +15,8 @@ ALTRun is portable: there is nothing to install and nothing is written to the re
 2. The ALTRun icon appears in the notification area; press `Alt+Space` to open the search window
 3. The first run builds the app index in the background; after a few seconds your Start menu programs can be found
 
+If Windows SmartScreen says "Windows protected your PC" when you first run it, click **More info** → **Run anyway**; if your antivirus complains, see the [FAQ](en-FAQ#my-antivirus-flags-it).
+
 Put it in a folder you can write to (for example `D:\Apps\ALTRun`): settings and data are saved in the `Data\` folder next to the program, so you can take the whole folder with you. In a folder that needs admin rights to write to (such as `C:\Program Files`), settings and data are saved in `%APPDATA%\ALTRun\` instead, but one-key updates can't replace the program files and you have to download new versions by hand.
 
 ### Installing with Scoop
@@ -50,10 +52,11 @@ winget upgrade zhugecaomao.ALTRun     # later upgrades (quit ALTRun first)
 |---|---|---|
 | `ALTRun.ahk` or `ALTRun.exe` | The program | Replaced |
 | `Lib\` `Src\` | Program code (source version) | Replaced |
-| `Resources\` | Data shipped with the program: Simplified / Traditional table, built-in themes | Overwritten |
+| `Resources\` | Data shipped with the program: Simplified / Traditional table, built-in themes, interface languages, icons | Overwritten |
 | `Data\ALTRun.json` | All your settings, custom commands and snippets | Kept (format upgraded automatically) |
 | Other files in `Data\` | App index, file index, learned ranking, clipboard history, usage statistics | Kept (rebuilt if deleted) |
 | `Themes\` | Your own themes | Kept |
+| `Scripts\` | Your own [scripts](en-Extensions#scripts) | Kept |
 
 ## Start with Windows, Start menu, "Send to"
 In Preferences → General:

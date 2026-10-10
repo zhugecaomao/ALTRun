@@ -130,7 +130,7 @@ class I18n {
     static _Build() {
         s := Map()
         ; --- App / tray ---
-        s["App.Tagline"]               := "An effective launcher for Windows"
+        s["App.Tagline"]               := "A lightweight launcher for Windows"
         s["App.Running"]               := "ALTRun is running. Press {1} to search."
         s["Tray.Show"]                 := "Show ALTRun"
         s["Tray.Preferences"]          := "Preferences..."

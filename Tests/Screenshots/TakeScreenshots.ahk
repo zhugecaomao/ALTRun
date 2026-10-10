@@ -8,8 +8,10 @@
 ;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名...]
 ;
 ; 输出文件夹默认 docs\images\screenshots; 不写场景名 = 全部场景。
-; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 记下每帧停留的毫秒数),
-; 由 MakeDemoGif.py 合成 README 首页的 demo.gif。
+; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 每行: 文件名 Tab 停留的毫秒数
+; Tab 这一步按的键),
+; 由 MakeDemo.py 合成 README 首页的动图 demo.png。截图的圆角由 RoundCorners.py 加上; 截图前 SetDisplay.ps1 把屏幕调成
+; 1920 x 1080、150% 缩放 (见 screenshots.yml), 下面的坐标都按 Shots.Scale 放大。
 ; GitHub Actions 的 "Screenshots" 工作流在 Windows 上运行它, 并把截图提交回分支。
 ;===============================================================================
 #Requires AutoHotkey v2.0
@@ -27,6 +29,7 @@ class Shots {
     static DemoDir  := ""
     static Pid      := 0
     static Failures := 0
+    static Scale    := A_ScreenDPI / 96                             ; 屏幕缩放 (150% = 1.5)
 
     ; 场景名 -> [主题, 启动参数, 函数, 启动前准备数据的函数 (可选)]
     static Scenes() {
@@ -43,7 +46,7 @@ class Shots {
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
-            ["demo",        "Light", "", () => Shots.Demo()],
+            ["demo",        "Light", "", () => Shots.Demo(), () => Shots.PrepareDemo()],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 8", () => Shots.Preferences()],
@@ -77,6 +80,7 @@ class Shots {
         Loop args.Length - 1
             wanted[args[A_Index + 1]] := true
         DirCreate(Shots.OutDir)
+        Shots.Log("screen " A_ScreenWidth " x " A_ScreenHeight ", DPI " A_ScreenDPI)
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
@@ -231,6 +235,16 @@ class Shots {
         }
     }
 
+    ; 动图: 剪贴板历史里有几条记录; 关掉结构计算 (计算器只显示结果, 不附带梁主筋 / 配筋面积, 一般用户看不懂)
+    static PrepareDemo() {
+        Shots.WriteClipboard()
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["Features"]["Calculator"]["StructuralCalc"] := 0
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
     ; 剪贴板历史: 几条常见的文字, 其中一条置顶
     static WriteClipboard() {
         entries := [], stamp := A_Now
@@ -353,7 +367,8 @@ class Shots {
         if !dialog
             throw Error("Open dialog not shown")
         WinSetAlwaysOnTop(1, dialog)                                        ; 在背景之上
-        WinMove(160, 20, 720, 440, dialog)
+        k := Shots.Scale
+        WinMove(Round(160 * k), Round(20 * k), Round(720 * k), Round(440 * k), dialog)
         WinActivate(dialog)
         panel := WinWait("ALTRun Quick Switch ahk_pid " Shots.Pid, , 5)
         if !panel
@@ -365,46 +380,68 @@ class Shots {
 
     ; 关掉 QuickSwitch 场景打开的对话框和资源管理器窗口
     static CloseHelpers() {
-        if Shots.HelperPid
-            try ProcessClose(Shots.HelperPid)
-        Shots.HelperPid := 0
+        for pid in [Shots.HelperPid, Shots.NotepadPid]
+            if pid
+                try ProcessClose(pid)
+        Shots.HelperPid := 0, Shots.NotepadPid := 0
+        for window in Shots.HiddenWindows                                   ; Demo 藏起来的终端窗口
+            try WinShow(window)
+        Shots.HiddenWindows := []
         for window in WinGetList("ahk_class CabinetWClass")
             try WinClose(window)
     }
 
-    ; README 首页的动图: 依次输入, 每一步把同一块屏幕区域存成一帧 (MakeDemoGif.py 再裁掉四周的背景)。
-    ; 返回 "" (不另外截图)
+    ; README 首页的动图: 7 个场景 (应用、操作面板、文件、剪贴板历史、窗口切换、计算器、系统命令), 每一步把同一块屏幕区域
+    ; 存成一帧, 记下这一步按的键。MakeDemo.py 再取出窗口, 放到模糊的背景上, 右下角画出按键。返回 "" (不另外截图)
     static DemoFrames := A_Temp "\ALTRunDemoFrames"
+    static NotepadPid := 0, HiddenWindows := []
     static Demo() {
         hwnd := Shots.SearchWindow()
-        Sleep(2500)
+        for folder in ["Website Redesign", "Annual Report 2026"]           ; 窗口切换要有窗口可切 (都在背景后面)
+            Run('explorer.exe "' Shots.DemoDir "\" folder '"')
+        Run("notepad.exe", , , &pid)
+        Shots.NotepadPid := pid
+        ; GitHub 虚拟机上运行截图的终端窗口也在任务栏上, 窗口切换会列出它: 先藏起来, 截完再显示
+        for title in ["ahk_exe WindowsTerminal.exe", "ahk_class ConsoleWindowClass", "ahk_class CASCADIA_HOSTING_WINDOW_CLASS"]
+            for window in WinGetList(title)
+                try WinHide(window), Shots.HiddenWindows.Push(window)
+        Sleep(3000)
+        WinActivate(hwnd)
         Shots.WaitPainted(hwnd, 10)
         dir := Shots.DemoFrames
         try DirDelete(dir, true)
         DirCreate(dir)
         r := Shots.FrameRect(hwnd)
-        region := {X: Max(0, r.X - 24), Y: Max(0, r.Y - 24), W: r.W + 48, H: Min(A_ScreenHeight - Max(0, r.Y - 24), 640)}
+        pad := Round(24 * Shots.Scale)
+        region := {X: Max(0, r.X - pad), Y: Max(0, r.Y - pad), W: r.W + 2 * pad, H: Min(A_ScreenHeight - Max(0, r.Y - pad), Round(640 * Shots.Scale))}
         state := {Frames: "", Count: 0}                                     ; 内部函数改外面的变量: 通过对象传
-        frame(ms) {
+        frame(ms, keys := "") {
             name := Format("frame-{:02}.png", ++state.Count)
             hbm := Shots.CaptureRect(region.X, region.Y, region.W, region.H)
             try Shots.SavePng(hbm, dir "\" name)
             finally DllCall("DeleteObject", "Ptr", hbm)
-            state.Frames .= name " " ms "`n"
+            state.Frames .= name "`t" ms "`t" keys "`n"
         }
         type(text, ms) {
             ControlSend("{Text}" text, "Edit1", hwnd)
             Sleep(900)
             frame(ms)
         }
-        frame(900)                                                          ; 空的搜索框
-        type("r", 350), type("e", 350), type("p", 1800)                     ; 边输入边出结果
-        ControlSend("{Right}", "Edit1", hwnd), Sleep(1200), frame(1800)     ; 操作面板
-        ControlSend("{Esc}", "Edit1", hwnd), Sleep(300)
-        Shots.SetQuery(hwnd, "10 km in mi"), frame(1800)                    ; 计算 / 单位换算
-        ControlSetText("", "Edit1", hwnd), Sleep(300)
-        ControlSend("{Space}", "Edit1", hwnd), Sleep(300)                   ; 文件搜索
-        type("report", 2200)
+        clear() {
+            ControlSetText("", "Edit1", hwnd)
+            Sleep(400)
+        }
+        frame(900, "Alt+Space")                                             ; 刚呼出的空搜索框
+        type("r", 350), type("e", 350), type("p", 1500)
+        ControlSend("{Right}", "Edit1", hwnd), Sleep(1200), frame(1800, "→")
+        ControlSend("{Esc}", "Edit1", hwnd), Sleep(300), clear()
+        ControlSend("{Space}", "Edit1", hwnd), Sleep(300)
+        ControlSend("{Text}report", "Edit1", hwnd), Sleep(1200), frame(2000, "Space")
+        clear(), ControlSend("{Backspace}", "Edit1", hwnd), Sleep(300)      ; 回到普通搜索
+        WinActivate(hwnd), Send("^!c"), Sleep(1500), frame(2000, "Ctrl+Alt+C")   ; 剪贴板历史的快捷键
+        clear(), type("w ", 2000)
+        clear(), type("1200*1.09", 1800)
+        clear(), type("lock", 1800)
         FileAppend(state.Frames, dir "\frames.txt", "UTF-8-RAW")
         Shots.Log("saved " state.Count " demo frames to " dir)
         return ""
@@ -415,6 +452,9 @@ class Shots {
         if !hwnd
             throw Error("preferences window not found")
         WinSetAlwaysOnTop(1, hwnd)                                          ; 在背景之上
+        r := Shots.FrameRect(hwnd)
+        if (r.Y < 0)                                                        ; 150% 时窗口很高, 居中后标题栏会跑到屏幕上面
+            WinMove(, 0, , , hwnd)
         WinActivate(hwnd)
         Sleep(1500)
         return hwnd
@@ -513,10 +553,11 @@ class Shots {
 
     ; 搜索窗口: 输入框以下 (约 80 像素起) 每隔几个像素取一个点, 全都一样 = 结果还没画出来
     static _ListIsBlank(hdc, w, h) {
-        if (h < 120)
+        if (h < Round(120 * Shots.Scale))
             return false
-        first := DllCall("GetPixel", "Ptr", hdc, "Int", 60, "Int", 80, "UInt")
-        y := 80
+        top := Round(80 * Shots.Scale)
+        first := DllCall("GetPixel", "Ptr", hdc, "Int", Round(60 * Shots.Scale), "Int", top, "UInt")
+        y := top
         while (y < h - 4) {
             x := 20
             while (x < w - 20) {

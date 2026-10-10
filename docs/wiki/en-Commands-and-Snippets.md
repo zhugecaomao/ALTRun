@@ -52,7 +52,7 @@ Put `{query}` in the target or arguments and give the command a keyword; typing 
 | Project folder | Folder | `D:\Projects\{query}` | | `pj` | `pj 2026-05` |
 | Google Maps | Link | `https://www.google.com/maps/search/{query}` | | `maps` | `maps Changi Airport` |
 
-A new installation already has three examples among the default commands: Ping, Google Maps and Documents subfolder (`docs folder-name` opens a subfolder of Documents). When you find such a command by its name, `Enter` completes it to "keyword " so you can type the argument. Without a keyword, `{query}` is replaced by nothing. "Check Paths" skips paths containing `{query}`.
+A new installation already has three examples among the default commands: Ping, Google Maps and Documents subfolder (`docs folder-name` opens a subfolder of Documents). When you find such a command by its name, the line below it says what to type (for example "Type after 'ping ', then press Enter"), and `Enter` completes it to "keyword " so you can type the argument. Without a keyword, `{query}` is replaced by nothing. "Check Paths" skips paths containing `{query}`.
 
 ### Variables in paths
 | Write | Meaning |

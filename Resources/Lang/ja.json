@@ -48,7 +48,7 @@
   "App.ConfirmHide": "'{1}' を検索結果から削除しますか?\n\nプログラム自体はアンインストールされません。環境設定 → アプリ検索 で復元できます。",
   "App.Running": "ALTRun は実行中です。{1} で検索を開始します。",
   "App.Subtitle.Store": "Microsoft Store アプリ",
-  "App.Tagline": "Windows 用の高機能ランチャー",
+  "App.Tagline": "Windows 用の軽量ランチャー",
   "Calc.BeamWidth": "梁幅 {1} mm: 主筋 {2} 本 @ {3} c/c",
   "Calc.Currency": "通貨換算",
   "Calc.CurrencyOff": "環境設定 → 電卓 でオンにします (為替レートを 1 日 1 回ダウンロード)",
