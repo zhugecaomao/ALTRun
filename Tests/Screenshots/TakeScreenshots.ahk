@@ -9,7 +9,7 @@
 ;
 ; 输出文件夹默认 docs\images\screenshots; 不写场景名 = 全部场景。
 ; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 记下每帧停留的毫秒数),
-; 由 MakeDemoGif.py 合成 README 首页的 demo.gif。
+; 由 MakeDemoGif.py 合成 README 首页的 demo.gif。截图的圆角由 RoundCorners.py 加上 (见 screenshots.yml)。
 ; GitHub Actions 的 "Screenshots" 工作流在 Windows 上运行它, 并把截图提交回分支。
 ;===============================================================================
 #Requires AutoHotkey v2.0
