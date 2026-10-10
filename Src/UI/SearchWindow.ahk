@@ -257,12 +257,16 @@ class SearchWindow {
             keyIndex := part.Keys.Length
             while (keyIndex >= 1) {
                 keyText := part.Keys[keyIndex]
-                symbol := StrLen(keyText) = 1 && Ord(keyText) > 127              ; ↵ 这样的符号用 Segoe UI Symbol
-                DllCall("SelectObject", "Ptr", hdc, "Ptr", symbol ? gdi["KeySymbolFont"] : gdi["KeyFont"])
-                keyW := Max(keyH, SearchWindow._TextWidth(hdc, keyText) + 2 * keyPad)
+                DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"])
+                enterKey := (keyText = "↵")                                     ; 回车符号自己画 (字体里的箭头太小、位置偏低)
+                keyW := enterKey ? Round(keyH * 1.3) : Max(keyH, SearchWindow._TextWidth(hdc, keyText) + 2 * keyPad)
                 Win.FillRoundRect(hdc, x - keyW, top, x, top + keyH, Win.Scale(5), keyBgr)
-                DllCall("SetTextColor", "Ptr", hdc, "UInt", keyTextBgr)
-                SearchWindow._DrawText(hdc, keyText, x - keyW, top, x, top + keyH, 0x825)   ; DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX
+                if enterKey {
+                    SearchWindow.DrawEnterArrow(hdc, x - keyW / 2, top + keyH / 2, keyH * 0.5, keyTextBgr)
+                } else {
+                    DllCall("SetTextColor", "Ptr", hdc, "UInt", keyTextBgr)
+                    SearchWindow._DrawText(hdc, keyText, x - keyW, top, x, top + keyH, 0x825)   ; DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX
+                }
                 x -= keyW + keyGap
                 keyIndex--
             }
@@ -301,6 +305,29 @@ class SearchWindow {
             DllCall("DeleteObject", "Ptr", bitmap)
     }
 
+    ; 回车键的箭头 ↵ (抗锯齿线条): 右上往下, 再往左, 左端是箭头; (cx, cy) 是中心, size 是宽高
+    static DrawEnterArrow(hdc, cx, cy, size, bgr) {
+        graphics := 0, pen := 0
+        if (!ClipboardData.StartGdiplus() || DllCall("gdiplus\GdipCreateFromHDC", "Ptr", hdc, "Ptr*", &graphics) || !graphics)
+            return
+        DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", graphics, "Int", 4)    ; AntiAlias
+        argb := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
+        DllCall("gdiplus\GdipCreatePen1", "UInt", argb, "Float", Max(1.2, size * 0.13), "Int", 2, "Ptr*", &pen)   ; 2 = UnitPixel
+        DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pen, "Int", 2)             ; LineJoinRound
+        DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pen, "Int", 2), DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pen, "Int", 2)   ; LineCapRound
+        half := size / 2, baseY := cy + size * 0.18, head := size * 0.3
+        points := [[cx + half, cy - half], [cx + half, baseY], [cx - half, baseY]]          ; 竖线 + 横线
+        line := Buffer(8 * points.Length)
+        for index, point in points
+            NumPut("Float", point[1], "Float", point[2], line, (index - 1) * 8)
+        DllCall("gdiplus\GdipDrawLines", "Ptr", graphics, "Ptr", pen, "Ptr", line, "Int", points.Length)
+        arrow := Buffer(24)                                                 ; 箭头: 两条斜线汇到横线的左端
+        NumPut("Float", cx - half + head, "Float", baseY - head, "Float", cx - half, "Float", baseY, "Float", cx - half + head, "Float", baseY + head, arrow)
+        DllCall("gdiplus\GdipDrawLines", "Ptr", graphics, "Ptr", pen, "Ptr", arrow, "Int", 3)
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pen)
+        DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
+    }
+
     static _FillRect(hdc, left, top, right, bottom, bgr) {
         rect := Buffer(16)
         NumPut("Int", left, "Int", top, "Int", right, "Int", bottom, rect)
@@ -317,7 +344,6 @@ class SearchWindow {
         gdi["ShortcutFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("ShortcutFontSize"), 400)
         gdi["StatusFont"]   := gdi["SubtitleFont"]                          ; 状态栏的文字和说明文字一样
         gdi["KeyFont"]      := SearchWindow._CreateFont(font, Max(7, ThemeManager.Get("SubtitleFontSize") - 1), 400)   ; 状态栏键帽里的字 (Ctrl、K)
-        gdi["KeySymbolFont"] := SearchWindow._CreateFont("Segoe UI Symbol", ThemeManager.Get("SubtitleFontSize") + 3, 400)   ; 键帽里的符号 (↵): 这个字体里的箭头偏小, 大一点才看得清
         gdi["Background"]   := DllCall("CreateSolidBrush", "UInt", Win.ColorToBgr(ThemeManager.Get("Background")), "Ptr")
         gdi["SelectedBgr"]  := Win.ColorToBgr(ThemeManager.Get("SelectedBackground"))
         gdi["Selected"]     := DllCall("CreateSolidBrush", "UInt", gdi["SelectedBgr"], "Ptr")

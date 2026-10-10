@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.10.11]
+
+测试版。
+
+Test build.
+
+### 改进
+- 状态栏键帽里的 ↵ 改为直接画出来 (抗锯齿线条), 大小合适、居中; 以前用字体里的箭头, 太小而且偏低
+- 自动截图: 截图前把背景板排到窗口正下方, 半透明主题 (Frost) 的截图不再透出后面别的窗口
+
 ## [2026.10.10.10]
 
 测试版。
@@ -16,8 +26,6 @@ Test build.
 
 ### 改进
 - README 首页的动图不再在右下角画按键, 状态栏已经显示按键
-- 状态栏键帽里的 ↵ 画大一些 (Segoe UI Symbol 里的箭头偏小, 以前几乎看不清)
-- 自动截图: 截图前把背景板排到窗口正下方, 半透明主题 (Frost) 的截图不再透出后面别的窗口
 
 ## [2026.10.10.9]
 
@@ -686,7 +694,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.11...HEAD
+[2026.10.10.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.10...2026.10.10.11
 [2026.10.10.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.9...2026.10.10.10
 [2026.10.10.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.8...2026.10.10.9
 [2026.10.10.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...2026.10.10.8
