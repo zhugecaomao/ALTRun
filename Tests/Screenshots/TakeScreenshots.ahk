@@ -8,7 +8,8 @@
 ;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名...]
 ;
 ; 输出文件夹默认 docs\images\screenshots; 不写场景名 = 全部场景。
-; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 记下每帧停留的毫秒数),
+; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 每行: 文件名 Tab 停留的毫秒数
+; Tab 小标题 Tab 这一步按的键),
 ; 由 MakeDemo.py 合成 README 首页的动图 demo.png。截图的圆角由 RoundCorners.py 加上; 截图前 SetDisplay.ps1 把屏幕调成
 ; 1920 x 1080、150% 缩放 (见 screenshots.yml), 下面的坐标都按 Shots.Scale 放大。
 ; GitHub Actions 的 "Screenshots" 工作流在 Windows 上运行它, 并把截图提交回分支。
@@ -45,7 +46,7 @@ class Shots {
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
-            ["demo",        "Light", "", () => Shots.Demo()],
+            ["demo",        "Light", "", () => Shots.Demo(), () => Shots.WriteClipboard()],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 8", () => Shots.Preferences()],
@@ -369,19 +370,26 @@ class Shots {
 
     ; 关掉 QuickSwitch 场景打开的对话框和资源管理器窗口
     static CloseHelpers() {
-        if Shots.HelperPid
-            try ProcessClose(Shots.HelperPid)
-        Shots.HelperPid := 0
+        for pid in [Shots.HelperPid, Shots.NotepadPid]
+            if pid
+                try ProcessClose(pid)
+        Shots.HelperPid := 0, Shots.NotepadPid := 0
         for window in WinGetList("ahk_class CabinetWClass")
             try WinClose(window)
     }
 
-    ; README 首页的动图: 依次输入, 每一步把同一块屏幕区域存成一帧 (MakeDemo.py 再取出窗口, 放到模糊的背景上)。
-    ; 返回 "" (不另外截图)
+    ; README 首页的动图: 7 个场景, 每一步把同一块屏幕区域存成一帧, 记下小标题和这一步按的键 (显示在右下角)。
+    ; MakeDemo.py 再取出窗口, 放到模糊的背景上, 加上小标题和按键。返回 "" (不另外截图)
     static DemoFrames := A_Temp "\ALTRunDemoFrames"
+    static NotepadPid := 0
     static Demo() {
         hwnd := Shots.SearchWindow()
-        Sleep(2500)
+        for folder in ["Website Redesign", "Annual Report 2026"]           ; 窗口切换要有窗口可切 (都在背景后面)
+            Run('explorer.exe "' Shots.DemoDir "\" folder '"')
+        Run("notepad.exe", , , &pid)
+        Shots.NotepadPid := pid
+        Sleep(3000)
+        WinActivate(hwnd)
         Shots.WaitPainted(hwnd, 10)
         dir := Shots.DemoFrames
         try DirDelete(dir, true)
@@ -389,27 +397,41 @@ class Shots {
         r := Shots.FrameRect(hwnd)
         pad := Round(24 * Shots.Scale)
         region := {X: Max(0, r.X - pad), Y: Max(0, r.Y - pad), W: r.W + 2 * pad, H: Min(A_ScreenHeight - Max(0, r.Y - pad), Round(640 * Shots.Scale))}
-        state := {Frames: "", Count: 0}                                     ; 内部函数改外面的变量: 通过对象传
-        frame(ms) {
+        state := {Frames: "", Count: 0, Caption: ""}                        ; 内部函数改外面的变量: 通过对象传
+        frame(ms, keys := "") {
             name := Format("frame-{:02}.png", ++state.Count)
             hbm := Shots.CaptureRect(region.X, region.Y, region.W, region.H)
             try Shots.SavePng(hbm, dir "\" name)
             finally DllCall("DeleteObject", "Ptr", hbm)
-            state.Frames .= name " " ms "`n"
+            state.Frames .= name "`t" ms "`t" state.Caption "`t" keys "`n"
         }
         type(text, ms) {
             ControlSend("{Text}" text, "Edit1", hwnd)
             Sleep(900)
             frame(ms)
         }
-        frame(900)                                                          ; 空的搜索框
-        type("r", 350), type("e", 350), type("p", 1800)                     ; 边输入边出结果
-        ControlSend("{Right}", "Edit1", hwnd), Sleep(1200), frame(1800)     ; 操作面板
-        ControlSend("{Esc}", "Edit1", hwnd), Sleep(300)
-        Shots.SetQuery(hwnd, "10 km in mi"), frame(1800)                    ; 计算 / 单位换算
-        ControlSetText("", "Edit1", hwnd), Sleep(300)
-        ControlSend("{Space}", "Edit1", hwnd), Sleep(300)                   ; 文件搜索
-        type("report", 2200)
+        clear() {
+            ControlSetText("", "Edit1", hwnd)
+            Sleep(400)
+        }
+        state.Caption := "Find apps as you type"
+        frame(900, "Alt+Space")                                             ; 刚呼出的空搜索框
+        type("r", 350), type("e", 350), type("p", 1500)
+        state.Caption := "Act on any result"
+        ControlSend("{Right}", "Edit1", hwnd), Sleep(1200), frame(1800, "→")
+        state.Caption := "Search files"
+        ControlSend("{Esc}", "Edit1", hwnd), Sleep(300), clear()
+        ControlSend("{Space}", "Edit1", hwnd), Sleep(300)
+        ControlSend("{Text}report", "Edit1", hwnd), Sleep(1200), frame(2000, "Space")
+        state.Caption := "Clipboard history"
+        clear(), ControlSend("{Backspace}", "Edit1", hwnd), Sleep(300)      ; 回到普通搜索
+        WinActivate(hwnd), Send("^!c"), Sleep(1500), frame(2000, "Ctrl+Alt+C")   ; 剪贴板历史的快捷键
+        state.Caption := "Switch windows"
+        clear(), type("w ", 2000)
+        state.Caption := "Calculator"
+        clear(), type("1200*1.09", 1800)
+        state.Caption := "System commands"
+        clear(), type("lock", 1800)
         FileAppend(state.Frames, dir "\frames.txt", "UTF-8-RAW")
         Shots.Log("saved " state.Count " demo frames to " dir)
         return ""
