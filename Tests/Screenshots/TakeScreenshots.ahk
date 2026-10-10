@@ -238,11 +238,11 @@ class Shots {
     ; 动图: 剪贴板历史里有几条记录; 关掉结构计算 (计算器只显示结果, 不附带梁主筋 / 配筋面积, 一般用户看不懂)
     static PrepareDemo() {
         Shots.WriteClipboard()
-        file := Shots.AppDir "\Data\ALTRun.json"
-        settings := JSON.Parse(FileRead(file, "UTF-8"))
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
         settings["Features"]["Calculator"]["StructuralCalc"] := 0
-        FileDelete(file)
-        FileAppend(JSON.Stringify(settings, 4), file, "UTF-8")
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
 
     ; 剪贴板历史: 几条常见的文字, 其中一条置顶
