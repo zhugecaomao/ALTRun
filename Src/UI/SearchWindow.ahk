@@ -254,10 +254,11 @@ class SearchWindow {
         index := parts.Length
         while (index >= 1) {
             part := parts[index]
-            DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"])
             keyIndex := part.Keys.Length
             while (keyIndex >= 1) {
                 keyText := part.Keys[keyIndex]
+                symbol := StrLen(keyText) = 1 && Ord(keyText) > 127              ; ↵ 这样的符号用 Segoe UI Symbol
+                DllCall("SelectObject", "Ptr", hdc, "Ptr", symbol ? gdi["KeySymbolFont"] : gdi["KeyFont"])
                 keyW := Max(keyH, SearchWindow._TextWidth(hdc, keyText) + 2 * keyPad)
                 Win.FillRoundRect(hdc, x - keyW, top, x, top + keyH, Win.Scale(5), keyBgr)
                 DllCall("SetTextColor", "Ptr", hdc, "UInt", keyTextBgr)
@@ -315,7 +316,8 @@ class SearchWindow {
         gdi["SubtitleFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("SubtitleFontSize"), 400)
         gdi["ShortcutFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("ShortcutFontSize"), 400)
         gdi["StatusFont"]   := gdi["SubtitleFont"]                          ; 状态栏的文字和说明文字一样
-        gdi["KeyFont"]      := SearchWindow._CreateFont("Segoe UI Symbol", Max(7, ThemeManager.Get("SubtitleFontSize") - 1), 400)   ; 状态栏的键帽 (有 ↵ 这个符号)
+        gdi["KeyFont"]      := SearchWindow._CreateFont(font, Max(7, ThemeManager.Get("SubtitleFontSize") - 1), 400)   ; 状态栏键帽里的字 (Ctrl、K)
+        gdi["KeySymbolFont"] := SearchWindow._CreateFont("Segoe UI Symbol", ThemeManager.Get("SubtitleFontSize") + 3, 400)   ; 键帽里的符号 (↵): 这个字体里的箭头偏小, 大一点才看得清
         gdi["Background"]   := DllCall("CreateSolidBrush", "UInt", Win.ColorToBgr(ThemeManager.Get("Background")), "Ptr")
         gdi["SelectedBgr"]  := Win.ColorToBgr(ThemeManager.Get("SelectedBackground"))
         gdi["Selected"]     := DllCall("CreateSolidBrush", "UInt", gdi["SelectedBgr"], "Ptr")
