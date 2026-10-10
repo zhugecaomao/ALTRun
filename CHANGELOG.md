@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.10.8]
+
+测试版。
+
+Test build.
+
+### 新增
+- 搜索窗口底部的状态栏 (和 Listary、Raycast 一样, 默认打开, 偏好设置 → 搜索窗口 → "显示状态栏"): 左边是使用提示 (空搜索框时)、"正在搜索文件" 或结果数, 右边是选中项按 Enter 做什么 (打开 / 复制 / 粘贴 / 运行 / 补全) 和打开操作面板的 Ctrl+K。打开状态栏后, 空搜索框里只显示 "ALTRun 搜索", 使用提示挪到状态栏 (字小一号)
+- `Ctrl+K` 打开操作面板 (和 Raycast、PowerToys 命令面板一样), 不管光标在哪; 再按一次关掉
+
+### 改进
+- 按住 `→` 移动光标时, 到了末尾不再因为自动重复打开操作面板; 要打开就再按一下 `→`
+
 ## [2026.10.10.7]
 
 测试版。
@@ -649,7 +662,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.8...HEAD
+[2026.10.10.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...2026.10.10.8
 [2026.10.10.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.6...2026.10.10.7
 [2026.10.10.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.5...2026.10.10.6
 [2026.10.10.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.4...2026.10.10.5
