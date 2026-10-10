@@ -165,15 +165,15 @@ TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上),
 | `@altrun.mode silent` | 在后台运行, 结束后把输出的最后一行显示成通知 |
 | `@altrun.mode output` | 在后台运行, 结束后用 `.txt` 的默认程序 (一般是记事本) 打开全部输出 |
 
-例子 (`Scripts\Ping.ps1`):
+例子 (`Scripts\Hash.ps1`):
 ```powershell
-# @altrun.title    Ping
-# @altrun.keyword  ping
-# @altrun.argument 主机名或 IP
+# @altrun.title    文件哈希
+# @altrun.keyword  hash
+# @altrun.argument 文件路径
 # @altrun.mode     output
-ping $args[0]
+Get-FileHash -Algorithm SHA256 $args[0] | Format-List
 ```
-输入 `ping 10.0.0.1` 后 `Enter`, 结果用记事本显示。
+输入 `hash D:\Downloads\setup.exe` 后 `Enter`, SHA256 用文本编辑器显示。关键字不要和默认命令重复 (例如 `ping` 已经是自带的 Ping 命令)。
 
 `.ahk` 脚本里用 `FileAppend("文字", "*")` 输出。增删、修改脚本后马上生效, 不用重新载入; 选中脚本按 `F3` 用记事本编辑。后台运行的脚本最多等 2 分钟。
 

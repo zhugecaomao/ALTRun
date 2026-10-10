@@ -13,7 +13,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 
 > This documentation covers version **3.0** and later. 3.0 redesigned the search window and the settings file; 2.x settings are converted automatically the first time you start it, see [Installation and upgrades](en-Installation).
 
-![ALTRun search window](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/search.png)
+![ALTRun: type to search, open the action panel, convert units and search files](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo.gif)
 
 ## Start here
 | Page | Contents |
@@ -39,6 +39,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | Run a command | `>ipconfig /all` |
 | Lock / shut down | `lock` / `shutdown` |
 | Paste text you use often | type `;sig` in any program to expand your signature |
+| Jump an Open / Save dialog to a folder | click it in the [Quick Switch](en-Extensions#quick-switch) panel below the dialog, or `Ctrl+G` for the current Total Commander folder |
 | Edit the selected command | `F3` |
 | More actions | `→` or right-click |
 | Forgot the syntax | `?` lists every search syntax and shortcut |

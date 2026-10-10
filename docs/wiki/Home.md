@@ -13,7 +13,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 
 > 本文档适用于 **3.0** 及以后的版本。3.0 重新设计了搜索窗口和设置文件, 2.x 的设置会在第一次启动时自动转换, 见 [安装与升级](Installation)。
 
-![ALTRun 搜索窗口](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/search.png)
+![ALTRun: 输入即搜、操作面板、单位换算、文件搜索](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo.gif)
 
 ## 从这里开始
 | 页面 | 内容 |
@@ -39,6 +39,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | 运行命令 | `>ipconfig /all` |
 | 锁屏 / 关机 | `lock` / `shutdown` |
 | 粘贴常用文字 | 任何程序里输入 `;sig` 自动展开签名 |
+| 打开 / 保存对话框跳到某个文件夹 | 在对话框下面的[文件夹面板](Extensions#对话框快速跳转-quick-switch)里点一下, 或按 `Ctrl+G` 跳到 Total Commander 当前的文件夹 |
 | 修改选中的命令 | `F3` |
 | 更多操作 | `→` 或鼠标右键 |
 | 忘了怎么写 | `?` 查看所有输入语法和快捷键 |

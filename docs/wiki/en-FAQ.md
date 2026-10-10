@@ -26,6 +26,15 @@ Select one and press `Ctrl+Del`. The program isn't uninstalled, and you can rest
 ### My antivirus flags it
 Programs compiled with AutoHotkey are sometimes reported by mistake. Add the ALTRun folder to your antivirus' trusted list, or install AutoHotkey v2 and run the source `ALTRun.ahk` directly (the code is fully public).
 
+### How do I send a debug log?
+1. Preferences → General → "Write a debug log"
+2. Reproduce the problem
+3. Type `log` in the search box and run "Open ALTRun Log": `%Temp%\ALTRun.log` opens in the default program for `.log` files (Notepad unless you changed it)
+4. Copy the lines around the time of the problem into your [issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose). The log never contains what you type in the search box, but it does contain file paths and program names: remove anything private first
+
+### ALTRun is slow or doesn't respond right after Windows starts
+Just after Windows starts, Explorer and OneDrive (or another sync tool) are often busy for a while. ALTRun asks Windows for icons and shortcuts, so it has to wait for them too: the search window may open slowly, or ignore typing for a few seconds. It recovers by itself once Windows has settled down. To check, turn on the debug log: lines starting with `Perf: startup:` show how long each startup step took, and `Perf: icon ... ms` lines show icons that took a long time to load. If it happens every time, look in Task Manager at what is using the CPU or disk after startup (OneDrive syncing many files is a common cause).
+
 ### Searching is awkward with a Chinese input method
 Turn on "Switch to English input when shown" in Preferences → Search Window. Chinese names can also be searched by their pinyin initials ("wx" → 微信).
 
