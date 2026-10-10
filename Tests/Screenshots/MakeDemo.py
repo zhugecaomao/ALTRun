@@ -1,25 +1,30 @@
-"""MakeDemoGif.py - README 首页的动图 demo.gif
+"""MakeDemo.py - README 首页的动图 demo.png (APNG)
 
-把 TakeScreenshots.ahk 的 "demo" 场景存下的帧 (frames.txt: 每行 "文件名 毫秒") 合成循环播放的 GIF:
+把 TakeScreenshots.ahk 的 "demo" 场景存下的帧 (frames.txt: 每行 "文件名 毫秒") 合成循环播放的动画 PNG:
 每一帧里找出搜索窗口 (和截图时的纯色背景不同的范围), 加上圆角和阴影, 放在一张高斯模糊的背景图上。
 窗口的左上角固定, 窗口变高变矮时动图大小不变。
 
 背景: Tests/Screenshots/backdrop.jpg (或 .png) 存在时用它 (缩放裁剪后模糊), 否则生成一张蓝紫色调的抽象图
-(几团彩色光斑 + 高斯模糊, 和 Windows 11 的默认壁纸类似)。不加颗粒: GIF 只有 256 色, 颗粒会挤掉界面文字的颜色, 文件也大很多。
+(几团彩色光斑 + 高斯模糊, 和 Windows 11 的默认壁纸类似)。
+用 APNG 而不是 GIF: GIF 只有 256 色, 背景的渐变要抖动 (有颗粒), 窗口的圆角也不能半透明 (有锯齿)。
+浏览器和 GitHub 都直接播放 APNG; Pillow 只存每一帧变化的部分, 文件不大。
+截图按 150% 缩放截的时候 (环境变量 SHOT_SCALE=1.5), 边距、阴影、圆角也跟着放大。
 
-    python Tests/Screenshots/MakeDemoGif.py <帧所在的文件夹> <输出的 gif>
+    python Tests/Screenshots/MakeDemo.py <帧所在的文件夹> <输出的 png>
 """
+import os
 import sys
 from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
-from RoundCorners import rounded_mask
+from RoundCorners import RADIUS, round_image, rounded_mask
 
+SCALE = float(os.environ.get("SHOT_SCALE") or 1)
 BACKDROP = (0x8A, 0x9B, 0xB0)        # TakeScreenshots.ahk 里截图时背景的颜色
-MARGIN = 56                          # 窗口四周露出的背景
-SHADOW_BLUR, SHADOW_OFFSET, SHADOW_OPACITY = 18, 10, 110
-UI_COLORS = 176                      # 256 色里给窗口的颜色数
+MARGIN = round(56 * SCALE)           # 窗口四周露出的背景
+SHADOW_BLUR, SHADOW_OFFSET, SHADOW_OPACITY = round(18 * SCALE), round(10 * SCALE), 110
+CORNER = round(RADIUS * SCALE)
 HERE = Path(__file__).resolve().parent
 
 
@@ -60,30 +65,10 @@ def background(size):
 def with_shadow(canvas_bg, window_size):
     """背景 + 窗口的阴影 (窗口本身还没放上去)"""
     shadow = Image.new("RGBA", canvas_bg.size, (0, 0, 0, 0))
-    mask = rounded_mask(window_size).point(lambda v: v * SHADOW_OPACITY // 255)
+    mask = rounded_mask(window_size, CORNER).point(lambda v: v * SHADOW_OPACITY // 255)
     shadow.paste((0, 0, 0, 255), (MARGIN, MARGIN + SHADOW_OFFSET), mask)
     shadow = shadow.filter(ImageFilter.GaussianBlur(SHADOW_BLUR))
     return Image.alpha_composite(canvas_bg.convert("RGBA"), shadow).convert("RGB")
-
-
-def palette_of(images, colors):
-    """几张图共用的调色板: [r, g, b, ...] 正好 colors 种颜色 (不够时重复最后一种, 不补黑色)"""
-    sample = Image.new("RGB", (max(i.width for i in images), sum(i.height for i in images)))
-    y = 0
-    for image in images:
-        sample.paste(image, (0, y))
-        y += image.height
-    values = sample.quantize(colors=colors, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE).getpalette()[:colors * 3]
-    while len(values) < colors * 3:
-        values += values[-3:]
-    return values
-
-
-def indexed(image, values, dither):
-    """按给定的调色板转成颜色索引 (L 模式, 0 起)"""
-    palette = Image.new("P", (1, 1))
-    palette.putpalette(values + values[-3:] * (256 - len(values) // 3))
-    return Image.frombytes("L", image.size, image.quantize(palette=palette, dither=dither).tobytes())
 
 
 def main(frame_dir, output):
@@ -103,20 +88,13 @@ def main(frame_dir, output):
     width = max(w.width for w in windows) + 2 * MARGIN
     height = max(w.height for w in windows) + 2 * MARGIN
     canvas_bg = background((width, height))
-    shaded = [with_shadow(canvas_bg, window.size) for window in windows]
-
-    # GIF 只有 256 色: 窗口 (文字、图标) 用 UI_COLORS 种, 不抖动, 文字清楚; 背景和阴影用其余的颜色, 抖动, 渐变没有色带。
-    # 所有帧共用这套颜色: 背景没变的地方每一帧都一样, GIF 只存变化的部分
-    ui = palette_of(windows, UI_COLORS)
-    bg = palette_of(shaded, 256 - UI_COLORS)
     frames = []
-    for window, back in zip(windows, shaded):
-        index = indexed(back, bg, Image.Dither.FLOYDSTEINBERG).point(lambda i: i + UI_COLORS)
-        index.paste(indexed(window, ui, Image.Dither.NONE), (MARGIN, MARGIN), rounded_mask(window.size).point(lambda v: 255 if v >= 128 else 0))
-        frame = index.convert("P")
-        frame.putpalette(ui + bg)
-        frames.append(frame)
-    frames[0].save(output, save_all=True, append_images=frames[1:], duration=[ms for _, ms in entries], loop=0, optimize=True, disposal=1)
+    for window in windows:
+        frame = with_shadow(canvas_bg, window.size).convert("RGBA")
+        frame.alpha_composite(round_image(window, CORNER), (MARGIN, MARGIN))     # 圆角边缘半透明, 不会有锯齿
+        frames.append(frame.convert("RGB"))
+    frames[0].save(output, format="PNG", save_all=True, append_images=frames[1:], duration=[ms for _, ms in entries],
+                   loop=0, disposal=0, blend=0, optimize=True)
     print(f"{output}: {len(frames)} frames, {width}x{height}, {Path(output).stat().st_size // 1024} KB")
 
 

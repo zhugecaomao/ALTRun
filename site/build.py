@@ -5,7 +5,7 @@
   - 最新版本号、发布日期、下载链接和 zip 大小、总下载次数 (GitHub API; 取不到时用 App.ahk 里的版本号)
   - 主题截图 (docs/images/screenshots/theme-*.png, 顺序和名称取自 ThemeManager.ahk / I18n.ahk / Resources/Lang/zh-CN.json)
   - 最新版本的更新内容 (CHANGELOG.md 里正在下载的那个版本; 英文页面显示其中的英文概要, 中文明细可以展开)
-  - 首页动图 demo.gif 的宽高
+  - 首页动图 demo.png (APNG) 的宽高
 
 只用 Python 标准库。本地预览:
   python3 site/build.py && python3 -m http.server -d _site
@@ -119,12 +119,6 @@ def latest_changes(version):
     return match.group(1), f'<div lang="zh">\n{changes_html(lines)}\n</div>\n<div lang="en">\n{en}\n</div>'
 
 
-def gif_size(path):
-    """GIF 的宽和高 (逻辑屏幕描述符)"""
-    with open(path, "rb") as f:
-        return struct.unpack("<HH", f.read(10)[6:10])
-
-
 def png_size(path):
     """PNG 的宽和高 (IHDR), 写进 <img> 让图片载入前就按正确的比例占位"""
     with open(path, "rb") as f:
@@ -161,7 +155,7 @@ def main():
     info = release_info()
     changes_version, changes = latest_changes(info["version"])
     theme_count, themes = theme_gallery()
-    demo_w, demo_h = gif_size(os.path.join(SHOTS, "demo.gif"))
+    demo_w, demo_h = png_size(os.path.join(SHOTS, "demo.png"))
     values = {
         "DEMO_W": str(demo_w),
         "DEMO_H": str(demo_h),

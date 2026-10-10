@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshots/demo.gif" width="700" alt="ALTRun：输入即搜、操作面板、单位换算、文件搜索">
+  <img src="docs/images/screenshots/demo.png" width="700" alt="ALTRun：输入即搜、操作面板、单位换算、文件搜索">
 </p>
 
 

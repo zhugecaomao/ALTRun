@@ -27,7 +27,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/screenshots/demo.gif" width="700" alt="ALTRun: type to search, open the action panel, convert units and search files">
+  <img src="docs/images/screenshots/demo.png" width="700" alt="ALTRun: type to search, open the action panel, convert units and search files">
 </p>
 
 

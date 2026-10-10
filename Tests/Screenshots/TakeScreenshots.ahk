@@ -9,7 +9,8 @@
 ;
 ; 输出文件夹默认 docs\images\screenshots; 不写场景名 = 全部场景。
 ; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 记下每帧停留的毫秒数),
-; 由 MakeDemoGif.py 合成 README 首页的 demo.gif。截图的圆角由 RoundCorners.py 加上 (见 screenshots.yml)。
+; 由 MakeDemo.py 合成 README 首页的动图 demo.png。截图的圆角由 RoundCorners.py 加上; 截图前 SetDisplay.ps1 把屏幕调成
+; 1920 x 1080、150% 缩放 (见 screenshots.yml), 下面的坐标都按 Shots.Scale 放大。
 ; GitHub Actions 的 "Screenshots" 工作流在 Windows 上运行它, 并把截图提交回分支。
 ;===============================================================================
 #Requires AutoHotkey v2.0
@@ -27,6 +28,7 @@ class Shots {
     static DemoDir  := ""
     static Pid      := 0
     static Failures := 0
+    static Scale    := A_ScreenDPI / 96                             ; 屏幕缩放 (150% = 1.5)
 
     ; 场景名 -> [主题, 启动参数, 函数, 启动前准备数据的函数 (可选)]
     static Scenes() {
@@ -77,6 +79,7 @@ class Shots {
         Loop args.Length - 1
             wanted[args[A_Index + 1]] := true
         DirCreate(Shots.OutDir)
+        Shots.Log("screen " A_ScreenWidth " x " A_ScreenHeight ", DPI " A_ScreenDPI)
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
@@ -353,7 +356,8 @@ class Shots {
         if !dialog
             throw Error("Open dialog not shown")
         WinSetAlwaysOnTop(1, dialog)                                        ; 在背景之上
-        WinMove(160, 20, 720, 440, dialog)
+        k := Shots.Scale
+        WinMove(Round(160 * k), Round(20 * k), Round(720 * k), Round(440 * k), dialog)
         WinActivate(dialog)
         panel := WinWait("ALTRun Quick Switch ahk_pid " Shots.Pid, , 5)
         if !panel
@@ -372,7 +376,7 @@ class Shots {
             try WinClose(window)
     }
 
-    ; README 首页的动图: 依次输入, 每一步把同一块屏幕区域存成一帧 (MakeDemoGif.py 再裁掉四周的背景)。
+    ; README 首页的动图: 依次输入, 每一步把同一块屏幕区域存成一帧 (MakeDemo.py 再取出窗口, 放到模糊的背景上)。
     ; 返回 "" (不另外截图)
     static DemoFrames := A_Temp "\ALTRunDemoFrames"
     static Demo() {
@@ -383,7 +387,8 @@ class Shots {
         try DirDelete(dir, true)
         DirCreate(dir)
         r := Shots.FrameRect(hwnd)
-        region := {X: Max(0, r.X - 24), Y: Max(0, r.Y - 24), W: r.W + 48, H: Min(A_ScreenHeight - Max(0, r.Y - 24), 640)}
+        pad := Round(24 * Shots.Scale)
+        region := {X: Max(0, r.X - pad), Y: Max(0, r.Y - pad), W: r.W + 2 * pad, H: Min(A_ScreenHeight - Max(0, r.Y - pad), Round(640 * Shots.Scale))}
         state := {Frames: "", Count: 0}                                     ; 内部函数改外面的变量: 通过对象传
         frame(ms) {
             name := Format("frame-{:02}.png", ++state.Count)
@@ -513,10 +518,11 @@ class Shots {
 
     ; 搜索窗口: 输入框以下 (约 80 像素起) 每隔几个像素取一个点, 全都一样 = 结果还没画出来
     static _ListIsBlank(hdc, w, h) {
-        if (h < 120)
+        if (h < Round(120 * Shots.Scale))
             return false
-        first := DllCall("GetPixel", "Ptr", hdc, "Int", 60, "Int", 80, "UInt")
-        y := 80
+        top := Round(80 * Shots.Scale)
+        first := DllCall("GetPixel", "Ptr", hdc, "Int", Round(60 * Shots.Scale), "Int", top, "UInt")
+        y := top
         while (y < h - 4) {
             x := 20
             while (x < w - 20) {
