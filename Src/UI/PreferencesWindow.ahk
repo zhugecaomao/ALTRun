@@ -346,6 +346,7 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.Group.Window")
         PreferencesWindow._Check("General.HideOnDeactivate", "Prefs.HideOnDeactivate")
         PreferencesWindow._Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
+        PreferencesWindow._Check("Appearance.StatusBar", "Prefs.StatusBar")
         PreferencesWindow._Section("Prefs.Group.Typing")
         english := PreferencesWindow._Check("General.SwitchToEnglishInput", "Prefs.EnglishInput")
         restore := PreferencesWindow._Check("General.RestoreInput", "Prefs.RestoreInput", PreferencesWindow._InputX() + 18)   ; 子选项, 缩进

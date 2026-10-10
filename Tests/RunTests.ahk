@@ -86,7 +86,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TypeAhead", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2724,6 +2724,65 @@ class Tests {
             options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
+    ; 底部状态栏: 左边的提示 / 状态, 右边选中项的 Enter 操作; 窗口高度算上状态栏; → 不认自动重复
+    static StatusBar() {
+        eq := (n, a, e) => TestRunner.Equal("StatusBar." n, a, e)
+        eq("on by default", AppSettings.Defaults()["Appearance"]["StatusBar"], 1)
+        file := ResultItem("Notepad", "", {Kind: "file", Arg: "C:\Windows\notepad.exe"})
+        eq("file: open", SearchWindow.EnterTitle(file), "Open")
+        eq("folder: open", SearchWindow.EnterTitle(ResultItem("Docs", "", {Kind: "folder"})), "Open")
+        eq("url: open", SearchWindow.EnterTitle(ResultItem("Web", "", {Kind: "url"})), "Open")
+        eq("text: copy", SearchWindow.EnterTitle(ResultItem("42", "", {Kind: "text"})), "Copy")
+        eq("text with its own action: paste", SearchWindow.EnterTitle(ResultItem("snippet", "", {Kind: "text", OnRun: (*) => 0})), "Paste")
+        eq("command: run", SearchWindow.EnterTitle(ResultItem("Lock", "", {OnRun: (*) => 0})), "Run")
+        eq("own name", SearchWindow.EnterTitle(ResultItem("img", "", {Kind: "text", OnRun: (*) => 0, RunTitle: "Paste Image"})), "Paste Image")
+        eq("hint row: complete", SearchWindow.EnterTitle(ResultItem("g", "", {Valid: false, AutoComplete: "g "})), "Complete")
+        eq("hint row without completion", SearchWindow.EnterTitle(ResultItem("x", "", {Valid: false})), "")
+
+        saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Results, Selected: SearchWindow.Selected
+            , Mode: SearchWindow.Mode, FileMode: SearchWindow.FileMode, Tip: SearchWindow._tip, Status: SearchWindow.StatusHeight}
+        savedOpen := SearchWindow.GetOwnPropDesc("_OpenActions")
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        try {
+            SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow._tip := "Tip: ? cheat sheet"
+            SearchWindow.Input.Value := "", SearchWindow.Results := [], SearchWindow.Selected := 0
+            texts := SearchWindow.StatusTexts()
+            eq("empty box: tip", texts.Left "|" texts.Right, "Tip: ? cheat sheet|")
+            SearchWindow.Input.Value := "note", SearchWindow.Results := [file, ResultItem("b")], SearchWindow.Selected := 1
+            texts := SearchWindow.StatusTexts()
+            eq("results: count and actions", texts.Left "|" texts.Right, "2 results|Open  Enter      Actions  Ctrl+K")
+            SearchWindow.Results := [file]
+            eq("one result", SearchWindow.StatusTexts().Left, "1 result")
+            SearchWindow.FileMode := true
+            eq("file mode", SearchWindow.StatusTexts().Left, I18n.T("Status.FileMode"))
+            SearchWindow.FileMode := false, SearchWindow.Mode := "actions"
+            texts := SearchWindow.StatusTexts()
+            eq("action panel", texts.Left "|" texts.Right, "Esc  Back|Run  Enter")
+            SearchWindow.Mode := "results"
+
+            SearchWindow.StatusHeight := 0
+            plain := SearchWindow._WindowHeight(3)
+            SearchWindow.StatusHeight := 26
+            eq("window height includes the status bar", SearchWindow._WindowHeight(3) - plain, 26)
+            eq("empty window too", SearchWindow._WindowHeight(0) - SearchWindow._ContentHeight(0), 26)
+
+            opened := {Count: 0}
+            SearchWindow.DefineProp("_OpenActions", {Call: (*) => (opened.Count++, true)})
+            hwnd := SearchWindow.Input.Hwnd
+            SearchWindow.Input.Value := "note", SendMessage(0xB1, 4, 4, hwnd)   ; 光标在最后
+            SearchWindow._OnKeyDown(0x27, 0x40000000 | 1, 0x100, hwnd)       ; 按住 → 的自动重复
+            eq("held right arrow does not open actions", opened.Count, 0)
+            SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd)                    ; 新按下的 →
+            eq("fresh right arrow opens actions", opened.Count, 1)
+        } finally {
+            SearchWindow.DefineProp("_OpenActions", savedOpen)
+            SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results, SearchWindow.Selected := saved.Selected
+            SearchWindow.Mode := saved.Mode, SearchWindow.FileMode := saved.FileMode, SearchWindow._tip := saved.Tip, SearchWindow.StatusHeight := saved.Status
             g.Destroy()
         }
     }

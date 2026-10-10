@@ -59,6 +59,10 @@ class SearchWindow {
     static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
     static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput 时隐藏后切回)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
+    ; 底部状态栏 (Appearance.StatusBar, 和 Listary / Raycast 一样): 左边是使用提示或状态, 右边是选中项的 Enter 操作和打开操作面板的键。
+    ; 打开时空搜索框里只显示固定的 "ALTRun 搜索", 使用提示挪到状态栏 (字小一号, 不占搜索框)
+    static StatusHeight := 0, StatusSeparator := "", StatusLeft := "", StatusRight := ""
+    static _statusLeftText := "", _statusRightText := ""
 
     ;---------------------------------------------------------------------------
     ; Create
@@ -107,6 +111,7 @@ class SearchWindow {
         g.OnEvent("Close", (*) => SearchWindow.Hide())
 
         SearchWindow.Gui := g, SearchWindow.Input := searchBox, SearchWindow.List := list, SearchWindow.Separator := separator
+        SearchWindow._CreateStatusBar(g, w, pad)
 
         OnMessage(0x100, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_KEYDOWN
         OnMessage(0x104, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_SYSKEYDOWN (Alt+...)
@@ -124,6 +129,89 @@ class SearchWindow {
             DetectHiddenWindows(true)                                       ; 窗口此时还是隐藏的
             WinSetTransparent(Round(opacity), g.Hwnd)
         }
+    }
+
+    ; 状态栏: 一条分隔线 + 左右两段文字 (说明文字的字号和颜色), 位置在 _PlaceStatusBar 里按结果行数调整
+    static _CreateStatusBar(g, w, pad) {
+        SearchWindow.StatusHeight := 0, SearchWindow.StatusSeparator := "", SearchWindow.StatusLeft := "", SearchWindow.StatusRight := ""
+        SearchWindow._statusLeftText := "", SearchWindow._statusRightText := ""
+        if !SearchWindow.StatusBarEnabled()
+            return
+        fontSize := ThemeManager.Get("SubtitleFontSize")
+        SearchWindow.StatusHeight := Win.Scale(Round(fontSize * 2) + 8)
+        SearchWindow.StatusSeparator := g.AddText("x0 y0 w" w " h1 Background" ThemeManager.Get("Separator"))
+        g.SetFont("s" fontSize " c" ThemeManager.Get("Subtitle"), ThemeManager.FontName())
+        textH := SearchWindow.StatusHeight - 1, leftW := Round((w - 2 * pad) * 0.6)
+        ; 0x200 = SS_CENTERIMAGE (单行垂直居中), 0x4000 = SS_ENDELLIPSIS (放不下时末尾省略号), 0x80 = SS_NOPREFIX
+        SearchWindow.StatusLeft := g.AddText("x" pad " y1 w" leftW " h" textH " +0x4280")
+        SearchWindow.StatusRight := g.AddText("x" (pad + leftW) " y1 w" (w - 2 * pad - leftW) " h" textH " Right +0x4280")
+        g.SetFont("s" ThemeManager.Get("InputFontSize") " c" ThemeManager.Get("InputText"), ThemeManager.FontName())
+        SearchWindow._PlaceStatusBar(0)
+    }
+
+    static StatusBarEnabled() {
+        appearance := AppSettings.Appearance
+        return !appearance.Has("StatusBar") || appearance["StatusBar"]
+    }
+
+    ; 状态栏放到结果下面 (没有结果时在搜索框下面)
+    static _PlaceStatusBar(visibleCount) {
+        if !SearchWindow.StatusHeight
+            return
+        top := SearchWindow._ContentHeight(visibleCount)
+        w := SearchWindow.Width, pad := SearchWindow.Padding
+        leftW := Round((w - 2 * pad) * 0.6)
+        SearchWindow.StatusSeparator.Move(0, top, w, 1)
+        SearchWindow.StatusLeft.Move(pad, top + 1)
+        SearchWindow.StatusRight.Move(pad + leftW, top + 1)
+    }
+
+    ; 状态栏的文字: 只在变了时才改 (改文字会重画控件)
+    static _UpdateStatusBar() {
+        if !SearchWindow.StatusHeight
+            return
+        texts := SearchWindow.StatusTexts()
+        if (texts.Left != SearchWindow._statusLeftText)
+            SearchWindow.StatusLeft.Value := SearchWindow._statusLeftText := texts.Left
+        if (texts.Right != SearchWindow._statusRightText)
+            SearchWindow.StatusRight.Value := SearchWindow._statusRightText := texts.Right
+    }
+
+    ; {Left, Right}: 左边 = 空搜索框时的使用提示 / 文件搜索模式 / 操作面板的返回键 / 结果数, 右边 = 选中项的 Enter 操作和操作面板的键
+    static StatusTexts() {
+        actions := SearchWindow.Mode = "actions"
+        count := SearchWindow.Results.Length
+        if actions
+            left := I18n.T("Status.Back")
+        else if SearchWindow.FileMode
+            left := I18n.T("Status.FileMode")
+        else if (SearchWindow.Input.Value = "")
+            left := SearchWindow._tip
+        else
+            left := count ? I18n.T(count = 1 ? "Status.Result" : "Status.Results", count) : ""
+        item := SearchWindow.SelectedItem()
+        right := ""
+        if IsObject(item) {
+            enter := actions ? I18n.T("Status.Run") : SearchWindow.EnterTitle(item)
+            if (enter != "")
+                right := enter "  Enter"                                    ; 写 Enter, 不用 ↵: 系统字体里不一定有这个符号, 静态文字控件不会换字体显示
+            if (!actions && item.Valid)
+                right .= (right != "" ? "      " : "") I18n.T("Status.Actions") "  Ctrl+K"
+        }
+        return {Left: left, Right: right}
+    }
+
+    ; 选中项按 Enter 做什么 (短的名称): 结果自己写的 (RunTitle) > 按类型 (打开 / 复制 / 粘贴 / 运行); 不能执行的提示行: 补全
+    static EnterTitle(item) {
+        if !item.Valid
+            return (item.AutoComplete != "") ? I18n.T("Status.Complete") : ""
+        if (item.RunTitle != "")
+            return item.RunTitle
+        switch item.Kind {
+            case "file", "folder", "url": return I18n.T("Status.Open")
+            case "text": return IsObject(item.OnRun) ? I18n.T("Status.Paste") : I18n.T("Status.Copy")
+        }
+        return I18n.T("Status.Run")
     }
 
     static _CreateGdiObjects() {
@@ -278,6 +366,7 @@ class SearchWindow {
         SearchWindow.FileMode := restore ? last.FileMode : false
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
+        SearchWindow._UpdateStatusBar()
         SearchWindow.HistoryIndex := 0
         SearchWindow._Step("results")
         if !reuse {
@@ -529,6 +618,11 @@ class SearchWindow {
     }
 
     static _WindowHeight(visibleCount) {
+        return SearchWindow._ContentHeight(visibleCount) + SearchWindow.StatusHeight
+    }
+
+    ; 输入框和结果行的高度 (不含状态栏)
+    static _ContentHeight(visibleCount) {
         pad := SearchWindow.Padding
         if !visibleCount
             return pad + SearchWindow.InputHeight + pad
@@ -552,6 +646,7 @@ class SearchWindow {
             list.Visible := visibleCount > 0
             SearchWindow.Separator.Visible := visibleCount > 0
         }
+        SearchWindow._PlaceStatusBar(visibleCount)
         SearchWindow._Repaint()
         if (SearchWindow.IsVisible() && SearchWindow._shownRows != visibleCount) {
             SearchWindow.Gui.Show("NA w" SearchWindow.Width " h" SearchWindow._WindowHeight(visibleCount))
@@ -562,6 +657,7 @@ class SearchWindow {
     static _Repaint() {
         DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 1)
         SearchWindow._WatchPaint()
+        SearchWindow._UpdateStatusBar()                                     ; 换了结果 / 选中的行
     }
 
     ; 诊断 "窗口有几行高, 结果行却是空白" (行数和结果对得上时): 每次要求列表重画后约 100 ms 检查一次,
@@ -732,7 +828,7 @@ class SearchWindow {
         if SearchWindow.FileMode
             text := I18n.T("Search.FilesPlaceholder")
         else
-            text := (SearchWindow._tip != "") ? SearchWindow._tip : I18n.T("Search.Placeholder")
+            text := (SearchWindow._tip != "" && !SearchWindow.StatusHeight) ? SearchWindow._tip : I18n.T("Search.Placeholder")   ; 有状态栏时提示显示在状态栏
         Win.SetCueBanner(SearchWindow.Input.Hwnd, text)
     }
 
@@ -925,7 +1021,8 @@ class SearchWindow {
                 SearchWindow._AutoComplete()
                 return 0
             case 0x27:                                                      ; →
-                if (SearchWindow._CaretAtEnd() && SearchWindow._OpenActions())
+                ; 只认新按下的 →: 按住 → 移动光标时, 光标到了最后也不会因为自动重复打开操作面板 (lParam 第 30 位 = 之前已经按着)
+                if (!(lParam & 0x40000000) && SearchWindow._CaretAtEnd() && SearchWindow._OpenActions())
                     return 0
                 return
             case 0x25:                                                      ; ←
@@ -994,6 +1091,14 @@ class SearchWindow {
                 return 0
             case 0x4C:                                                      ; Ctrl+L
                 SearchWindow._ShowLargeType()
+                return 0
+            case 0x4B:                                                      ; Ctrl+K: 操作面板 (和 Raycast 一样), 不管光标在哪; 再按一次关掉
+                if !actions
+                    SearchWindow._OpenActions()
+                else if SearchWindow._actionsOnly
+                    SearchWindow.Hide()
+                else
+                    SearchWindow._CloseActions()
                 return 0
             case 0xBC:                                                      ; Ctrl+,
                 SearchWindow.Hide()
