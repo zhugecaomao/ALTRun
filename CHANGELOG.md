@@ -5,6 +5,62 @@
 
 ## [未发布]
 
+## [2026.10.10.7]
+
+测试版。
+
+Test build.
+
+### 修复
+- CapsLock 切换输入法 (Chrome 远程桌面): 呼出 ALTRun 后大写被锁定; 按住方向键时弹出 "A_MaxHotkeysPerInterval" 的警告, 之后大写也被锁定。远程桌面补发来对齐大写锁定的 CapsLock 常常带着别的键 (按 Alt+Space 时是 Alt+CapsLock, 还有 Ctrl+C、Shift+字母), 以前只拦单独的 CapsLock, 漏过去的那一次真的切换了大写锁定; 按住方向键时每次自动重复都补发一次, 超过了 AutoHotkey "2 秒内最多 70 次热键" 的限制。现在按着修饰键的 CapsLock 也拦下, 打开这个功能时关掉热键次数的检查
+- Shift+CapsLock 和原来一样直接开 / 关大写锁定 (也显示提示)
+
+## [2026.10.10.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- CapsLock 切换输入法: 按住开 / 关大写锁定时, 短暂提示 "大写锁定: 开" 或 "大写锁定: 关" (跟随主题的提示框, 1 秒后消失); 远程控制时看不到本机的指示灯, 也能知道现在的状态
+
+## [2026.10.10.5]
+
+测试版。
+
+Test build.
+
+### 修复
+- CapsLock 切换输入法在 Chrome 远程桌面等远程控制下也能用: 远程软件发下一个按键前会补发一次极短的 CapsLock (按下和松开连在一起) 来对齐两边的大写锁定, 以前每打一个字都会因此切换一次输入法。按下到松开不到 25 毫秒的 CapsLock 现在被拦下、不做任何事 (人按一下至少几十毫秒, 真实电脑上不受影响)
+
+## [2026.10.10.4]
+
+测试版。
+
+Test build.
+
+### 修复
+- CapsLock 切换输入法: 按住时还是不停地切换输入法 (用 Chrome 远程桌面等远程控制时更明显)。按下和松开分开处理, 只在松开时 (没有按住满 0.3 秒) 切换一次, 按住期间不切换; 按住时的自动重复不算新的一次
+
+## [2026.10.10.3]
+
+测试版。
+
+Test build.
+
+### 修复
+- CapsLock 切换输入法: 按住时不停地切换输入法, 而不是开 / 关大写锁定; 每按一下大写锁定也跟着变, 微软拼音在大写锁定时打出的都是英文。热键改用键盘钩子, CapsLock 原来的作用被完全拦住
+- 偏好设置 → 自定义热键 页的 CapsLock 选项靠左对齐
+
+## [2026.10.10.2]
+
+测试版。
+
+Test build.
+
+### 新增
+- 和 Mac 一样用 CapsLock 切换输入法 (偏好设置 → 自定义热键 最上面, 默认不开): 按一下切换到下一个输入法 (和 Win+Space 一样), 或者切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定, Shift+CapsLock 照常
+
 ## [2026.10.10.1]
 
 测试版。
@@ -593,7 +649,13 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...HEAD
+[2026.10.10.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.6...2026.10.10.7
+[2026.10.10.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.5...2026.10.10.6
+[2026.10.10.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.4...2026.10.10.5
+[2026.10.10.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.3...2026.10.10.4
+[2026.10.10.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.2...2026.10.10.3
+[2026.10.10.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.1...2026.10.10.2
 [2026.10.10.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.6...2026.10.10.1
 [2026.10.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.5...2026.10.09.6
 [2026.10.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.4...2026.10.09.5

@@ -58,6 +58,13 @@ Preferences → Hotkeys: assign a [system command](#system-commands) to any hotk
 
 The default one: the middle mouse button in RAPT (`RAPTW.exe`) opens PT Tools. `F1`–`F4` in the search window are built in, see [Shortcuts](en-Usage#shortcuts).
 
+### Caps Lock switches the input method
+Like on a Mac: at the top of Preferences → Hotkeys, set **Caps Lock** to one of:
+- **Press to switch input method**: switches to the next installed input method, like `Win+Space` (for example English (US) ↔ Microsoft Pinyin)
+- **Press to switch Chinese / English mode**: switches the mode of the current input method, like pressing `Shift` in Microsoft Pinyin; handy when only a Chinese input method is installed
+
+Holding Caps Lock for 0.3 s turns caps lock on or off (without waiting for you to let go) and briefly shows "Caps Lock On" / "Caps Lock Off"; `Shift+Caps Lock` turns caps lock on or off as usual. It's off by default (`General.CapsLock`). Custom hotkeys that use Caps Lock as a modifier (such as `CapsLock & J`) don't mix well with it. It also works over remote control such as Chrome Remote Desktop: the very short extra Caps Lock presses that the remote tool sends to sync the caps lock state are ignored.
+
 ### Setting hotkeys
 Every hotkey in Preferences (the ALTRun hotkey, clipboard history, Quick Switch, date stamp, custom hotkeys) uses the same kind of box, recording the keys directly like Alfred and PowerToys:
 - The box shows `Alt+Space`, `Ctrl+Alt+C` and so on. Click the box, "Press a shortcut..." appears, and the keys you press are recorded

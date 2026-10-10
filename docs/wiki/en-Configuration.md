@@ -33,6 +33,7 @@ Split over the "General" and "Search Window" pages in Preferences.
 | Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](en-Extensions#setting-hotkeys)) |
 | SecondaryHotkey | `!r` | Second hotkey (Alt+R); empty = none |
 | DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary); empty = off |
+| CapsLock | empty | Like on a Mac: `Layout` = pressing Caps Lock switches to the next input method (like `Win+Space`), `Mode` = it switches the Chinese / English mode of the input method; holding it for 0.3 s turns caps lock on or off. Empty = Caps Lock works as usual. See [Caps Lock switches the input method](en-Extensions#caps-lock-switches-the-input-method) |
 | SelectionHotkey | `^!\` | Press it after selecting text / files / a URL to open their actions directly (Ctrl+Alt+\), see [Actions on selected content](en-Usage#actions-on-selected-content); empty = off |
 | Language | `auto` | `auto` follows the Windows display language, or a language code: `en` / `zh-CN` (Simplified Chinese) / `zh-TW` (Traditional Chinese) / `ja`; apart from English, each language is a file in `Resources\Lang\` (the old `zh` means `zh-CN`) |
 | LaunchAtLogin | 1 | Launch ALTRun at login |

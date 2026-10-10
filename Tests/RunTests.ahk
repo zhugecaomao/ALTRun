@@ -59,6 +59,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\CapsLockSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
@@ -85,7 +86,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TypeAhead", "SiteIcon", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TypeAhead", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -321,6 +322,82 @@ class Tests {
         eq("custom engine: browser icon", WebSearchProvider.IconFor(Map("Id", "mysite", "Url", "x")), "url:")
         eq("odd id: browser icon", WebSearchProvider.IconFor(Map("Id", "..\x", "Url", "x")), "url:")
         WebSearchProvider.BuiltinIconDir := savedDir, WebSearchProvider._builtinIcons := Map()
+    }
+
+    ; 按 CapsLock 切换输入法: 设置的取值、下一个输入法的选择
+    static CapsLockSwitch() {
+        eq := (n, a, e) => TestRunner.Equal("CapsLockSwitch." n, a, e)
+        eq("off by default", AppSettings.Defaults()["General"]["CapsLock"], "")
+        eq("modes", (CapsLockSwitch.IsMode("Layout") ? 1 : 0) (CapsLockSwitch.IsMode("Mode") ? 1 : 0) (CapsLockSwitch.IsMode("") ? 1 : 0) (CapsLockSwitch.IsMode("x") ? 1 : 0), "1100")
+        eq("hold time", CapsLockSwitch.HoldMs, 300)
+        eq("notification text", CapsLockSwitch.StateText(true) "|" CapsLockSwitch.StateText(false), "Caps Lock On|Caps Lock Off")
+        eq("uses the keyboard hook", InStr(CapsLockSwitch.Key, "$") ? 1 : 0, 1)    ; 不用钩子时拦不住大写切换, 按住时也会不停切换
+        eq("with any modifier", InStr(CapsLockSwitch.Key, "*") ? 1 : 0, 1)        ; 远程桌面补发的 Alt+CapsLock 等也要拦下
+        registered := [], savedInterval := A_HotkeyInterval
+        CapsLockSwitch.Register((key, fn) => registered.Push(key))
+        eq("down and up hotkeys", registered.Length = 2 ? registered[1] "|" registered[2] : "", "*$CapsLock|*$CapsLock up")
+        eq("no too-many-hotkeys warning", A_HotkeyInterval, 0)
+        A_HotkeyInterval := savedInterval
+
+        ; 按下 / 松开的顺序 (假的时钟, 定时器手动触发)
+        saved := Map()
+        for name in ["Clock", "ToggleCapsLock", "Switch", "ShiftDown"]
+            saved[name] := CapsLockSwitch.GetOwnPropDesc(name)
+        clock := {Now: 0}, calls := {Text: ""}
+        CapsLockSwitch.Clock := () => clock.Now
+        CapsLockSwitch.DefineProp("ToggleCapsLock", {Call: (*) => calls.Text .= "caps;"})
+        CapsLockSwitch.DefineProp("Switch", {Call: (*) => calls.Text .= "switch;"})
+        shift := {Down: false}
+        CapsLockSwitch.DefineProp("ShiftDown", {Call: (*) => shift.Down})
+        at := (ms) => clock.Now := ms
+        try {
+            CapsLockSwitch._down := false
+            at(1000), CapsLockSwitch.Down(), at(1100), CapsLockSwitch.Up()
+            eq("tap: switch once", calls.Text, "switch;")
+            calls.Text := ""
+            at(2000), CapsLockSwitch.Down()
+            Loop 20                                                         ; 按住时的自动重复, 每 30 ms 一下
+                at(2000 + A_Index * 30), CapsLockSwitch.Down()
+            CapsLockSwitch.Hold()                                           ; 定时器: 按住满 0.3 秒
+            Loop 10
+                at(2600 + A_Index * 30), CapsLockSwitch.Down()
+            at(3000), CapsLockSwitch.Up()
+            eq("hold: caps lock once, never switches", calls.Text, "caps;")
+            calls.Text := ""
+            at(4000), CapsLockSwitch.Down(), at(4400), CapsLockSwitch.Up()  ; 定时器没来得及运行
+            eq("late timer: still a hold", calls.Text, "caps;")
+            calls.Text := ""
+            at(5000), CapsLockSwitch.Down(), at(7000), CapsLockSwitch.Down(), at(7050), CapsLockSwitch.Up()   ; 上一次的松开丢了
+            eq("lost key-up: new press", calls.Text, "switch;")
+            calls.Text := ""
+            CapsLockSwitch.Up()
+            eq("extra key-up ignored", calls.Text, "")
+            at(8000), CapsLockSwitch.Down(), at(8000.4), CapsLockSwitch.Up()  ; Chrome 远程桌面补发来对齐大写锁定的
+            eq("remote sync tap ignored", calls.Text, "")
+            at(9000), CapsLockSwitch.Down(), at(9040), CapsLockSwitch.Up()
+            eq("quick real tap still switches", calls.Text, "switch;")
+            calls.Text := ""
+            shift.Down := true
+            at(10000), CapsLockSwitch.Down(), at(10080), CapsLockSwitch.Up()
+            eq("shift+caps lock: caps lock as usual", calls.Text, "caps;")
+            calls.Text := ""
+            at(11000), CapsLockSwitch.Down(), at(11000.3), CapsLockSwitch.Up()   ; 打 Shift+字母时远程桌面补发的
+            eq("remote sync tap with shift ignored", calls.Text, "")
+            shift.Down := false
+            CapsLockSwitch.Clock := saved["Clock"].Value
+            ; Sleep 按 15.6 ms 一档的 A_TickCount 判断, 实际可能少睡将近一档: 睡 100 ms, 只要求量到 50 ms 以上
+            first := CapsLockSwitch.Clock.Call(), Sleep(100), second := CapsLockSwitch.Clock.Call()
+            TestRunner.True("CapsLockSwitch.precise clock", second - first >= 50 && second - first < 5000)
+        } finally {
+            SetTimer(CapsLockSwitch._holdTimer, 0)
+            CapsLockSwitch._down := false
+            for name, desc in saved
+                CapsLockSwitch.DefineProp(name, desc)
+        }
+        eq("next layout", Win.NextLayout([0x4090409, 0x8040804], 0x4090409), 0x8040804)
+        eq("wraps around", Win.NextLayout([0x4090409, 0x8040804], 0x8040804), 0x4090409)
+        eq("unknown current: first", Win.NextLayout([0x4090409, 0x8040804], 0x4110411), 0x4090409)
+        eq("no layouts", Win.NextLayout([], 0x4090409), 0)
     }
 
     ; 下载网站图标: 找网页里写的图标、检查文件头、存进 Data\Icons (联网用假的 fetch 代替)
