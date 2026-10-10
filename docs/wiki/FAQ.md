@@ -47,7 +47,7 @@ Windows 刚启动时, 资源管理器和 OneDrive (或别的同步软件) 往往
 退出 ALTRun, 把 `Data\ALTRun.json` 改名备份, 重新运行会生成默认设置。只想重置学习排序: 偏好设置 → 高级 → 重置学习排序。
 
 ### ALTRun 会联网或收集数据吗
-不收集、不上传任何数据。默认情况下联网只有检查更新 (启动时和每 6 小时一次) 和一键更新两种情况, 都只访问 GitHub (打开货币换算后, 每天还会从 frankfurter.dev 下载一次汇率); 一键更新下载后先核对 SHA256 再替换。剪贴板历史、使用统计、学习记录都只保存在本机的 `Data\` 文件夹里。详见 [安全策略](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md)。
+不收集、不上传任何数据。默认情况下联网只有检查更新 (启动时和每 6 小时一次) 和一键更新两种情况, 都只访问 GitHub (打开货币换算后, 每天还会从 frankfurter.dev 下载一次汇率; 编辑网页搜索时点 "下载网站图标" 才会访问那个网站一次); 一键更新下载后先核对 SHA256 再替换。剪贴板历史、使用统计、学习记录都只保存在本机的 `Data\` 文件夹里。详见 [安全策略](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md)。
 
 ### 怎样升级到新版本
 ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时呼出搜索窗口就能看到 "发现新版本: ALTRun x", 按 `Enter` 即可 (也可以托盘图标 → 检查更新), 设置和数据都保留; 用 Scoop 安装的用 `scoop update altrun`。详见 [安装与升级](Installation#升级)。

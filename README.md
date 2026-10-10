@@ -38,7 +38,7 @@
 - **Beyond launching**: [Quick Switch](#features) jumps an Open / Save dialog to a folder you already have open in Total Commander or Explorer; select text, files or a URL in any program and press `Ctrl+Alt+\` to act on it; type `;keyword` anywhere to expand a snippet.
 - **All in one**: calculator and unit conversion, web search, browser bookmarks, clipboard history, text snippets, system commands and a terminal, so you don't need a handful of separate little tools.
 - **Keyboard first**: `→` opens the action panel, `F3` edits in place, `Ctrl+1`–`Ctrl+9` open a result directly.
-- **Portable and private**: no installer, no registry entries, no admin rights, no background service or driver; all data stays in the `Data\` folder. No telemetry: it only goes online to check for and download updates (plus one exchange-rate download a day if currency conversion is turned on).
+- **Portable and private**: no installer, no registry entries, no admin rights, no background service or driver; all data stays in the `Data\` folder. No telemetry: it only goes online to check for and download updates (plus one exchange-rate download a day if currency conversion is turned on, and a site's icon only when you click "Download Site Icon").
 - **Automatic updates**: new versions are announced in the search window; press `Enter` to install (SHA256 verified, settings kept). Scoop is supported too.
 - **Customizable**: English, Simplified Chinese, Traditional Chinese and Japanese interface; 20 built-in themes (pick one from thumbnails in Preferences), or follow the Windows light / dark mode; themes and settings are plain JSON files.
 - **Free and open source**: GPL-3.0; more than 7,000 tests run automatically on Windows for every pull request.

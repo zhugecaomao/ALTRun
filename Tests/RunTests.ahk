@@ -85,7 +85,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TypeAhead", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TypeAhead", "SiteIcon", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -307,6 +307,73 @@ class Tests {
         engine["Icon"] := "Icons\site.png"
         eq("icon: relative to Data", WebSearchProvider.IconFor(engine), FileExist(AppSettings.DataDir "\Icons\site.png") ? "thumb:" AppSettings.DataDir "\Icons\site.png" : "url:")
         eq("item uses the icon", WebSearchProvider.ItemFor(Map("Keyword", "x", "Title", "X", "Url", "https://x/{query}", "Icon", "res:imageres.dll,-1"), "a").Icon, "res:imageres.dll,-1")
+
+        ; 自带的引擎有自己的图标 (Resources\Icons\Web\<Id>.png)
+        savedDir := WebSearchProvider.BuiltinIconDir
+        WebSearchProvider.BuiltinIconDir := A_ScriptDir "\..\Resources\Icons\Web", WebSearchProvider._builtinIcons := Map()
+        missing := ""
+        for engine in AppSettings._DefaultEngines()
+            if !FileExist(WebSearchProvider.BuiltinIconDir "\" engine["Id"] ".png")
+                missing .= engine["Id"] " "
+        eq("every default engine has an icon", missing, "")
+        eq("builtin icon", WebSearchProvider.IconFor(Map("Id", "google", "Url", "x")), "thumb:" WebSearchProvider.BuiltinIconDir "\google.png")
+        eq("builtin icon when the file is missing", WebSearchProvider.IconFor(Map("Id", "google", "Url", "x", "Icon", "C:\no\such.png")), "thumb:" WebSearchProvider.BuiltinIconDir "\google.png")
+        eq("custom engine: browser icon", WebSearchProvider.IconFor(Map("Id", "mysite", "Url", "x")), "url:")
+        eq("odd id: browser icon", WebSearchProvider.IconFor(Map("Id", "..\x", "Url", "x")), "url:")
+        WebSearchProvider.BuiltinIconDir := savedDir, WebSearchProvider._builtinIcons := Map()
+    }
+
+    ; 下载网站图标: 找网页里写的图标、检查文件头、存进 Data\Icons (联网用假的 fetch 代替)
+    static SiteIcon() {
+        eq := (n, a, e) => TestRunner.Equal("SiteIcon." n, a, e)
+        html := '<html><head><link rel="icon" href="/favicon-16.png" sizes="16x16"><link rel="shortcut icon" href="/favicon.ico">'
+            . '<LINK REL="icon" TYPE="image/svg+xml" HREF="/icon.svg"><link href="//cdn.example.com/touch.png?v=2&amp;x=1" rel="apple-touch-icon">'
+            . "<link rel='icon' href='img/icon-64.png' sizes='64x64'><link rel=stylesheet href=/a.css><link rel=icon href=data:image/png;base64,AAAA></head>"
+        urls := WebSearchProvider.IconCandidates(html, "https://www.example.com/sub/page.html?q=1")
+        eq("candidates", urls.Length, 4)
+        eq("apple-touch-icon first", urls[1], "https://cdn.example.com/touch.png?v=2&x=1")
+        eq("then the biggest size", urls[2], "https://www.example.com/sub/img/icon-64.png")
+        eq("unknown size before 16 px", urls[3], "https://www.example.com/favicon.ico")
+        eq("16 px last", urls[4], "https://www.example.com/favicon-16.png")
+        eq("relative to the site root", WebSearchProvider._Absolute("a.png", "https://x.com"), "https://x.com/a.png")
+
+        png := Buffer(16, 0), bytes := [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+        for b in bytes
+            NumPut("UChar", b, png, A_Index - 1)
+        ico := Buffer(16, 0), NumPut("UChar", 1, ico, 2)
+        text := Buffer(16, 0), StrPut("<html>", text, "UTF-8")
+        eq("png", WebSearchProvider.ImageType(png, 16), "png")
+        eq("ico", WebSearchProvider.ImageType(ico, 16), "ico")
+        eq("html is not an image", WebSearchProvider.ImageType(text, 16), "")
+
+        page := Buffer(StrPut(html, "UTF-8")), StrPut(html, page, "UTF-8")
+        responses := Map("https://www.example.com/", {Status: 200, Body: page, Size: page.Size - 1, Url: "https://www.example.com/sub/page.html"}
+            , "https://cdn.example.com/touch.png?v=2&x=1", {Status: 404, Body: Buffer(0), Size: 0, Url: ""}
+            , "https://www.example.com/sub/img/icon-64.png", {Status: 200, Body: text, Size: 16, Url: ""}          ; 不是图片
+            , "https://www.example.com/favicon.ico", {Status: 200, Body: ico, Size: 16, Url: ""})
+        asked := []
+        fetch := (target) => (asked.Push(target), responses.Has(target) ? responses[target] : {Status: 404, Body: Buffer(0), Size: 0, Url: ""})
+        savedData := AppSettings.DataDir
+        AppSettings.DataDir := A_Temp "\ALTRunIconTest"
+        try DirDelete(AppSettings.DataDir, true)
+        DirCreate(AppSettings.DataDir "\Icons")
+        FileAppend("old", AppSettings.DataDir "\Icons\ex.png")
+        try {
+            result := WebSearchProvider.DownloadIcon("https://www.example.com/search?q={query}", "ex", fetch)
+            eq("saved the first real image", result.HasOwnProp("File") ? result.File : result.Error, "Icons\ex.ico")
+            eq("file written", FileGetSize(AppSettings.DataDir "\Icons\ex.ico"), 16)
+            eq("old icon with the same name removed", FileExist(AppSettings.DataDir "\Icons\ex.png") ? 1 : 0, 0)
+            eq("visited only that site", asked[1], "https://www.example.com/")
+            result := WebSearchProvider.DownloadIcon("http://localhost:{query|8000}/x", "", (t) => (asked.Push(t), {Status: 404, Body: Buffer(0), Size: 0, Url: ""}))
+            eq("default value in the host", asked[asked.Length], "http://localhost:8000/favicon.ico")
+            eq("nothing found", result.HasOwnProp("Error") && InStr(result.Error, "localhost:8000") ? 1 : 0, 1)
+            eq("not a web address", WebSearchProvider.DownloadIcon("notes.txt", "x", fetch).HasOwnProp("Error"), true)
+            big := WebSearchProvider.DownloadIcon("https://big.example.com/", "big", (t) => {Status: 200, Body: png, Size: WebSearchProvider.MaxIconBytes + 1, Url: ""})
+            eq("too big", big.HasOwnProp("Error"), true)
+        } finally {
+            try DirDelete(AppSettings.DataDir, true)
+            AppSettings.DataDir := savedData
+        }
     }
 
     static AutoDate() {

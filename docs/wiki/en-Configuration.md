@@ -140,7 +140,7 @@ Only windows you can see on the taskbar are listed (no tool windows, dialogs, wi
 ### WebSearch
 | Key | Description |
 |---|---|
-| Engines | List of search engines, each `{ "Id", "Keyword", "Title", "Url", "Icon" }`; `{query}` in `Url` is replaced by what you typed. `{query|8000}` gives a default value: typing only the keyword opens the URL with 8000 (for example `http://localhost:{query|8000}`). `Icon` (optional): an `.ico`, `.png` or `.exe` file for the result icon, a relative path starts from the Data folder (for example `Icons\jira.png`); empty = the browser icon |
+| Engines | List of search engines, each `{ "Id", "Keyword", "Title", "Url", "Icon" }`; `{query}` in `Url` is replaced by what you typed. `{query|8000}` gives a default value: typing only the keyword opens the URL with 8000 (for example `http://localhost:{query|8000}`). `Icon` (optional): an `.ico`, `.png` or `.exe` file for the result icon, a relative path starts from the Data folder (for example `Icons\jira.png`). In the editor, **Download Site Icon** visits the website in the URL once, saves its icon in `Data\Icons` and fills this in. Empty = the built-in icon (the default engines have their own) or the browser icon |
 | Fallbacks | Fallback items shown when nothing matches: engine Ids, or `files` (file search). Default `["google", "files", "bing"]` |
 
 ### FileSearch
@@ -200,3 +200,4 @@ Created at runtime; deleting files only makes them be rebuilt (the learned ranki
 | `ClipboardHistory.json` | Clipboard history (very long items and images are stored as separate files, by default on this PC in `%LOCALAPPDATA%\ALTRun\Clipboard\`; in `Data\Clipboard\` with `LocalFiles = 0`) |
 | `Currency.json` | Exchange rates for currency conversion (only once currency conversion is on) |
 | `Update.json` | Time of the last update check, skipped versions |
+| `Icons\` | Web search icons saved by "Download Site Icon" |
