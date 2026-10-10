@@ -142,16 +142,18 @@ class QuickSwitch {
         rect := QuickSwitch._FrameRect(dialog)
         width := QuickSwitch.PanelWidthFor(IsObject(rect) ? rect.W : 600)
         colors := QuickSwitch.PanelColors()                                 ; 跟随 ALTRun 的主题 (浅色 / 深色...)
-        panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border", "ALTRun Quick Switch")
+        ; -DPIScale: 面板和对话框一样宽, 宽度是对话框的实际像素; 行高也是量出来的像素。让 AHK 再按 DPI 放大一次的话,
+        ; 150% 缩放时面板会比对话框宽一半, 下面多出一片空白。固定的边距用 Win.Scale 换算
+        panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border -DPIScale", "ALTRun Quick Switch")
         panel.MarginX := 0, panel.MarginY := 0, panel.BackColor := colors.Background
         panel.SetFont("s10 c" colors.Text, QuickSwitch._FontName())
-        search := panel.AddEdit("x10 y8 w" (width - 20) " r1 -Multi -E0x200 Background" colors.Background)
+        search := panel.AddEdit("x" Win.Scale(10) " y" Win.Scale(8) " w" (width - Win.Scale(20)) " r1 -Multi -E0x200 Background" colors.Background)
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
         DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: 灰色提示文字
         search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
-        line := panel.AddText("x0 y+6 w" width " h1 Background" colors.Separator)   ; 搜索框和列表之间的分隔线
+        line := panel.AddText("x0 y+" Win.Scale(6) " w" width " h1 Background" colors.Separator)   ; 搜索框和列表之间的分隔线
         panel.SetFont("s9 c" colors.Text)
-        list := panel.AddListView("x0 y+2 w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 Background" colors.Background, ["Name", "Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
+        list := panel.AddListView("x0 y+" Win.Scale(2) " w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 Background" colors.Background, ["Name", "Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
         icons := IL_Create(2)
         IL_Add(icons, "shell32.dll", 4)                                     ; 1 = 文件夹
         IL_Add(icons, "shell32.dll", 1)                                     ; 2 = 文件
@@ -173,8 +175,8 @@ class QuickSwitch {
 
     static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
 
-    ; 面板宽度 = 对话框宽度 (420 ~ 1000)
-    static PanelWidthFor(dialogWidth) => Max(420, Min(dialogWidth, 1000))
+    ; 面板宽度 = 对话框宽度 (420 ~ 1000, 按 DPI 换算; 都是实际像素)
+    static PanelWidthFor(dialogWidth) => Max(Win.Scale(420), Min(dialogWidth, Win.Scale(1000)))
 
     ; 面板的颜色: 用 ALTRun 当前主题的背景 / 文字 / 分隔线颜色; 主题还没载入时用浅色
     static PanelColors() {
@@ -235,7 +237,7 @@ class QuickSwitch {
         if (width = QuickSwitch._panelWidth)
             return
         QuickSwitch._panelWidth := width
-        QuickSwitch._panelSearch.Move(, , width - 20)
+        QuickSwitch._panelSearch.Move(, , width - Win.Scale(20))
         QuickSwitch._panelLine.Move(, , width)
         QuickSwitch._panelList.Move(, , width)
         QuickSwitch._ShowFolders(QuickSwitch._panelFolders)                ; 重新算列宽, 并调整面板大小和位置
@@ -253,14 +255,14 @@ class QuickSwitch {
         for entry in folders
             list.Add(entry.HasOwnProp("IsFile") && entry.IsFile ? "Icon2" : "Icon1", QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
         list.ModifyCol(3, "Auto"), list.ModifyCol(1, "Auto")
-        nameW := Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3)   ; LVM_GETCOLUMNWIDTH
-        list.ModifyCol(1, Max(nameW, 120))
-        list.ModifyCol(2, QuickSwitch._panelWidth - Max(nameW, 120) - SendMessage(0x101D, 2, 0, list) - (folders.Length > QuickSwitch.PanelRows ? 22 : 4))
+        nameW := Max(Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3), Win.Scale(120))   ; LVM_GETCOLUMNWIDTH
+        list.ModifyCol(1, nameW)
+        list.ModifyCol(2, QuickSwitch._panelWidth - nameW - SendMessage(0x101D, 2, 0, list) - Win.Scale(folders.Length > QuickSwitch.PanelRows ? 22 : 4))
         if folders.Length
             list.Modify(1, "Select Focus")
         list.Opt("+Redraw")
         rows := Max(3, Min(folders.Length, QuickSwitch.PanelRows))           ; 高度跟着内容 (3 ~ PanelRows 行)
-        list.Move(, , , QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + 4)
+        list.Move(, , , QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + Win.Scale(4))
         if DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) {     ; 搜索结果变了: 重新调整大小和位置
             QuickSwitch._panelPos := ""
             QuickSwitch._PlacePanel(QuickSwitch._panelFor)

@@ -420,6 +420,9 @@ class Shots {
         if !hwnd
             throw Error("preferences window not found")
         WinSetAlwaysOnTop(1, hwnd)                                          ; 在背景之上
+        r := Shots.FrameRect(hwnd)
+        if (r.Y < 0)                                                        ; 150% 时窗口很高, 居中后标题栏会跑到屏幕上面
+            WinMove(, 0, , , hwnd)
         WinActivate(hwnd)
         Sleep(1500)
         return hwnd
