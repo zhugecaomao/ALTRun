@@ -5,7 +5,7 @@
 ;   ""       不用 (默认), CapsLock 照常
 ;   "Layout" 切换到下一个输入法 (和 Win+Space 一样, 例如 英语(美国) <-> 微软拼音)
 ;   "Mode"   切换当前中文输入法的 中 / 英 模式 (和微软拼音里按 Shift 一样)
-; 按住超过 HoldMs 才开 / 关大写锁定 (不用等松开); Shift+CapsLock 等组合键照常。
+; 按住超过 HoldMs 才开 / 关大写锁定 (不用等松开), 并显示 "大写锁定: 开 / 关" 的提示; Shift+CapsLock 等组合键照常。
 ;
 ; 按下和松开分成两个热键, 只在松开时 (而且没有按住满 HoldMs) 切换输入法, 按住期间什么都不切换。
 ; 不用 KeyWait 等松开: 切换输入法时 (或者有的输入法) 会刷新按键状态, KeyWait 以为已经松开,
@@ -85,9 +85,15 @@ class CapsLockSwitch {
             CapsLockSwitch.Switch()
     }
 
+    ; 开 / 关大写锁定, 并用 HUD 提示现在是开还是关 (按住时看不到别的反馈, 远程控制时也看不到本机的指示灯)
     static ToggleCapsLock() {
-        SetCapsLockState(GetKeyState("CapsLock", "T") ? "Off" : "On")
+        on := !GetKeyState("CapsLock", "T")
+        SetCapsLockState(on ? "On" : "Off")
+        App.Notify(CapsLockSwitch.StateText(on), CapsLockSwitch.NotifyMs)
     }
+
+    static NotifyMs := 1000
+    static StateText(on) => I18n.T(on ? "Caps.On" : "Caps.Off")
 
     static Switch() {
         if (CapsLockSwitch.Mode = "Mode")

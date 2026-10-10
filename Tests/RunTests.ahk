@@ -330,6 +330,7 @@ class Tests {
         eq("off by default", AppSettings.Defaults()["General"]["CapsLock"], "")
         eq("modes", (CapsLockSwitch.IsMode("Layout") ? 1 : 0) (CapsLockSwitch.IsMode("Mode") ? 1 : 0) (CapsLockSwitch.IsMode("") ? 1 : 0) (CapsLockSwitch.IsMode("x") ? 1 : 0), "1100")
         eq("hold time", CapsLockSwitch.HoldMs, 300)
+        eq("notification text", CapsLockSwitch.StateText(true) "|" CapsLockSwitch.StateText(false), "Caps Lock On|Caps Lock Off")
         eq("uses the keyboard hook", SubStr(CapsLockSwitch.Key, 1, 1), "$")    ; 不用钩子时拦不住大写切换, 按住时也会不停切换
         registered := []
         CapsLockSwitch.Register((key, fn) => registered.Push(key))

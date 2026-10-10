@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.10.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- CapsLock 切换输入法: 按住开 / 关大写锁定时, 短暂提示 "大写锁定: 开" 或 "大写锁定: 关" (跟随主题的提示框, 1 秒后消失); 远程控制时看不到本机的指示灯, 也能知道现在的状态
+
 ## [2026.10.10.5]
 
 测试版。
@@ -630,7 +639,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.6...HEAD
+[2026.10.10.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.5...2026.10.10.6
 [2026.10.10.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.4...2026.10.10.5
 [2026.10.10.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.3...2026.10.10.4
 [2026.10.10.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.2...2026.10.10.3
