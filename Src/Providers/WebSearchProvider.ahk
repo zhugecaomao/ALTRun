@@ -86,7 +86,7 @@ class WebSearchProvider {
         return RegExMatch(iconFile, "i)\.(png|jpe?g|bmp|gif)$") ? "thumb:" iconFile : iconFile
     }
 
-    ; 自带的引擎 (Google、Bing、GitHub...) 的图标: Resources\Icons\Web\<Id>.png, 没有时用默认浏览器的图标
+    ; 自带的引擎 (Google、Bing、GitHub...) 的图标: Resources\Icons\Web\<Id>.png (各网站自己的图标), 没有时用默认浏览器的图标
     static BuiltinIconDir := A_ScriptDir "\Resources\Icons\Web", _builtinIcons := Map()
     static BuiltinIcon(engine) {
         id := (engine.Has("Id") && engine["Id"] != "") ? engine["Id"] : ""
