@@ -37,7 +37,7 @@
 - **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信), and highlights the matched characters.
 - **Beyond launching**: [Quick Switch](#features) jumps an Open / Save dialog to a folder you already have open in Total Commander or Explorer; select text, files or a URL in any program and press `Ctrl+Alt+\` to act on it; type `;keyword` anywhere to expand a snippet.
 - **All in one**: calculator and unit conversion, web search, browser bookmarks, clipboard history, text snippets, system commands and a terminal, so you don't need a handful of separate little tools.
-- **Keyboard first**: `→` opens the action panel, `F3` edits in place, `Ctrl+1`–`Ctrl+9` open a result directly.
+- **Keyboard first**: `→` or `Ctrl+K` opens the action panel, a status bar shows what `Enter` does, `F3` edits in place, `Ctrl+1`–`Ctrl+9` open a result directly.
 - **Portable and private**: no installer, no registry entries, no admin rights, no background service or driver; all data stays in the `Data\` folder. No telemetry: it only goes online to check for and download updates (plus one exchange-rate download a day if currency conversion is turned on, and a site's icon only when you click "Download Site Icon").
 - **Automatic updates**: new versions are announced in the search window; press `Enter` to install (SHA256 verified, settings kept). Scoop is supported too.
 - **Customizable**: English, Simplified Chinese, Traditional Chinese and Japanese interface; 20 built-in themes (pick one from thumbnails in Preferences), or follow the Windows light / dark mode; themes and settings are plain JSON files.
@@ -79,7 +79,7 @@ The winget manifest has been submitted; once it is accepted you can install with
 - **System commands**: lock, sleep, shut down, empty the Recycle Bin, volume and media control, Windows tools, more than 40 Windows Settings pages (Display, Bluetooth, Wi-Fi and so on), and text conversions (case, sorting, Simplified / Traditional Chinese and more).
 
 **Productivity**
-- **Action panel**: select a result and press `→` (or right-click) to list what you can do with it, such as run as administrator, open file location, copy path, open a terminal here or show properties.
+- **Action panel**: select a result and press `→` or `Ctrl+K` (or right-click) to list what you can do with it, such as run as administrator, open file location, copy path, open a terminal here or show properties.
 - **Actions on selected content**: select text, files or a URL in any program and press `Ctrl+Alt+\` for actions such as web search, save as a snippet, or convert and replace the original text.
 - **Edit in place**: press `F3` to edit a command, snippet or search engine; apps and files can be turned into custom commands in one step.
 - **Clipboard history**: press `Ctrl+Alt+C` or type `clip`. Records text, files and images; pin the ones you use often, paste as plain text, and ignore anything copied from password managers.
@@ -153,7 +153,7 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `Space` (in an empty search box, or with the cursor at the start) | Switch to file search, keeping what you typed; `Backspace` in an empty box or at the start switches back |
 | `folder name` | Search folders only |
 | `?` | Cheat sheet: every syntax and shortcut |
-| `→` / right-click | Action panel / action menu |
+| `→` / `Ctrl+K` / right-click | Action panel / action menu |
 | `F3` | Edit the selected result, or add an app, file or URL as a custom command |
 | `Ctrl+Del` | Delete the selected result (with confirmation); apps: hide from results |
 | `Ctrl+C` / `Ctrl+L` | Copy the selected result / large type |

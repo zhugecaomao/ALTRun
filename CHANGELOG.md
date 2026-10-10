@@ -5,6 +5,51 @@
 
 ## [未发布]
 
+## [2026.10.10.11]
+
+测试版。
+
+Test build.
+
+### 改进
+- 状态栏键帽里的 ↵ 改为直接画出来 (抗锯齿线条), 大小合适、居中; 以前用字体里的箭头, 太小而且偏低
+- 自动截图: 截图前把背景板排到窗口正下方, 半透明主题 (Frost) 的截图不再透出后面别的窗口
+
+## [2026.10.10.10]
+
+测试版。
+
+Test build.
+
+### 修复
+- 状态栏的文字和底色看不见 (只看得见键帽): 状态栏的位图改用 24 位 (没有透明通道); 以前 32 位位图里 GDI 画的文字和底色是全透明的
+
+### 改进
+- README 首页的动图不再在右下角画按键, 状态栏已经显示按键
+
+## [2026.10.10.9]
+
+测试版。
+
+Test build.
+
+### 改进
+- 状态栏的样子和 Listary、Raycast 一样: 底色比窗口稍深一点, 左边是 ALTRun 图标和使用提示, 右边是 "打开 [↵] | 操作 [Ctrl] [K]" 这样的圆角键帽; 不再显示结果数
+- 没有结果行时 (空搜索框又没有置顶项) 只显示搜索框, 不显示状态栏
+
+## [2026.10.10.8]
+
+测试版。
+
+Test build.
+
+### 新增
+- 搜索窗口底部的状态栏 (和 Listary、Raycast 一样, 默认打开, 偏好设置 → 搜索窗口 → "显示状态栏"): 左边是使用提示 (空搜索框时)、"正在搜索文件" 或结果数, 右边是选中项按 Enter 做什么 (打开 / 复制 / 粘贴 / 运行 / 补全) 和打开操作面板的 Ctrl+K。打开状态栏后, 空搜索框里只显示 "ALTRun 搜索", 使用提示挪到状态栏 (字小一号)
+- `Ctrl+K` 打开操作面板 (和 Raycast、PowerToys 命令面板一样), 不管光标在哪; 再按一次关掉
+
+### 改进
+- 按住 `→` 移动光标时, 到了末尾不再因为自动重复打开操作面板; 要打开就再按一下 `→`
+
 ## [2026.10.10.7]
 
 测试版。
@@ -649,7 +694,11 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.11...HEAD
+[2026.10.10.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.10...2026.10.10.11
+[2026.10.10.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.9...2026.10.10.10
+[2026.10.10.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.8...2026.10.10.9
+[2026.10.10.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...2026.10.10.8
 [2026.10.10.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.6...2026.10.10.7
 [2026.10.10.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.5...2026.10.10.6
 [2026.10.10.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.4...2026.10.10.5

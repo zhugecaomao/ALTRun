@@ -271,6 +271,15 @@ class Shots {
     }
     static Backdrop := ""
 
+    ; 截图前把背景板排到这个窗口正下方: 运行机上别的置顶窗口 (例如运行日志) 可能插在两者之间,
+    ; 半透明的主题 (Frost) 截图时会透出它的文字
+    static BackdropBehind(hwnd) {
+        if !IsObject(Shots.Backdrop)
+            return
+        DllCall("SetWindowPos", "Ptr", Shots.Backdrop.Hwnd, "Ptr", hwnd, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
+        Sleep(100)                                                          ; 等 DWM 重新合成
+    }
+
     ;---------------------------------------------------------------------------
     ; 启动 / 关闭
     ;---------------------------------------------------------------------------
@@ -533,6 +542,7 @@ class Shots {
     }
 
     static CaptureBitmap(hwnd, &w, &h, &blank) {
+        Shots.BackdropBehind(hwnd)
         r := Shots.FrameRect(hwnd), w := r.W, h := r.H
         return Shots.CaptureRect(r.X, r.Y, w, h, &blank)
     }

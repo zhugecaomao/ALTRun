@@ -19,7 +19,10 @@ Before you type anything, the search window lists (pinned items have a pin at th
 Only results you can open again are remembered: apps, files, folders, URLs, custom commands and system commands; clipboard history, calculations, snippets, web searches and windows are not. Select an item and press `Ctrl+Del` to unpin it or remove it from the recent items; Preferences → Advanced → "Reset Learned Ranking" clears the recent items. The whole feature can be turned off in Preferences → Features.
 
 ## Usage tips
-Each time you open the search window, the gray text in the empty search box shows another usage tip (for example "Tip: folder bk  search folders only"), in turn; it disappears as soon as you type. Once you know them, turn off "Show a usage tip" under "Empty search box" in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
+Each time you open the search window, the status bar at the bottom shows another usage tip (for example "Tip: folder bk  search folders only"), in turn. Once you know them, turn off "Show a usage tip" under "Empty search box" in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
+
+## Status bar
+The line at the bottom of the search window (like Listary and Raycast), shown when there are results: on the left, the usage tip ("Searching files" in file search mode); on the right, what `Enter` does for the selected result (Open, Copy, Paste, Run...) and `Ctrl+K` for its action panel, drawn as key caps. With no result rows (an empty search box without pinned items) only the search box shows. Turn it off in Preferences → Search Window → "Show the status bar" (`Appearance.StatusBar`); the usage tip then shows in the empty search box as before.
 
 ## Search syntax
 | Input | Result |
@@ -83,7 +86,7 @@ ALTRun remembers "what you typed → which result you finally picked": if you ty
 | `Insert` | Mark / unmark the selected file or folder and move to the next row (like Total Commander); marked rows have a bar on the left. Then press `→` to act on all marked items: open all, copy / cut (paste in TC or Explorer), copy paths, copy / move to the current folder in TC, add to custom commands, move to the Recycle Bin |
 | `Space` (empty search box, or cursor at the start) | Switch to file search, keeping what you typed (typed `seismic` first? press `Home`, then `Space`); `Backspace` in an empty box or at the start goes back to a normal search |
 | `Space` (after typing) | With Preferences → Search Window → "Space runs the selected result" turned on: runs the selected result; `Shift+Space` types a space (for several keywords) |
-| `→` (cursor at the end) | Open the action panel; `←` / `Esc` go back |
+| `→` (cursor at the end) / `Ctrl+K` | Open the action panel; `←` / `Esc` (or `Ctrl+K` again) go back. Holding `→` to move the cursor doesn't open it when the cursor reaches the end; press `→` once more |
 | `F3` | Edit the selected result, see below |
 | `Ctrl+Del` (cursor at the end) | Delete the selected result, see below |
 | `Ctrl+C` | Copy the selected result (copies text as usual when text is selected in the input box) |
