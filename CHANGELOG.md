@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.10.2]
+
+测试版。
+
+Test build.
+
+### 新增
+- 和 Mac 一样用 CapsLock 切换输入法 (偏好设置 → 自定义热键 最上面, 默认不开): 按一下切换到下一个输入法 (和 Win+Space 一样), 或者切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定, Shift+CapsLock 照常
+
 ## [2026.10.10.1]
 
 测试版。
@@ -593,7 +602,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.2...HEAD
+[2026.10.10.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.1...2026.10.10.2
 [2026.10.10.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.6...2026.10.10.1
 [2026.10.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.5...2026.10.09.6
 [2026.10.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.4...2026.10.09.5

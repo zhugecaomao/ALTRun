@@ -33,6 +33,7 @@
 | Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Extensions#设置热键)) |
 | SecondaryHotkey | `!r` | 第二个呼出热键 (Alt+R), 留空 = 不用 |
 | DoubleTap | 空 | `Ctrl` / `Shift` = 快速按两下这个键也能呼出 (和 Listary 一样), 空 = 不用 |
+| CapsLock | 空 | 和 Mac 一样: `Layout` = 按一下 CapsLock 切换到下一个输入法 (和 `Win+Space` 一样), `Mode` = 切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定。空 = CapsLock 照常。见 [CapsLock 切换输入法](Extensions#capslock-切换输入法) |
 | SelectionHotkey | `^!\` | 选中文字 / 文件 / 网址后按下, 直接打开它们的操作 (Ctrl+Alt+\), 见 [选中内容的操作](Usage#选中内容的操作); 留空 = 不用 |
 | Language | `auto` | `auto` 跟随 Windows 的显示语言, 或语言代码: `en` / `zh-CN` (简体中文) / `zh-TW` (繁體中文) / `ja`; 除了英文, 每种语言是 `Resources\Lang\` 里的一个文件 (以前的 `zh` 等于 `zh-CN`) |
 | LaunchAtLogin | 1 | 开机自动启动 |

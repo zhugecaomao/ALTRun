@@ -297,6 +297,58 @@ class Win {
         try DllCall("ActivateKeyboardLayout", "UInt", 0x04090409, "UInt", 0)
     }
 
+    ; 前台窗口切到下一个已安装的输入法 (和 Win+Space 一样); 返回切到的输入法 (HKL), 只有一个输入法时 0
+    static NextInputLanguage() {
+        if !(hwnd := WinExist("A"))
+            return 0
+        count := DllCall("GetKeyboardLayoutList", "Int", 0, "Ptr", 0, "Int")
+        if (count < 2)
+            return 0
+        buf := Buffer(count * A_PtrSize)
+        DllCall("GetKeyboardLayoutList", "Int", count, "Ptr", buf, "Int")
+        layouts := []
+        Loop count
+            layouts.Push(NumGet(buf, (A_Index - 1) * A_PtrSize, "Ptr"))
+        next := Win.NextLayout(layouts, Win.KeyboardLayout(hwnd))
+        try PostMessage(0x50, 0, next, , "ahk_id " hwnd)                   ; WM_INPUTLANGCHANGEREQUEST: 请前台窗口切换
+        return next
+    }
+
+    ; layouts 里 current 的下一个 (最后一个之后回到第一个); current 不在里面时第一个
+    static NextLayout(layouts, current) {
+        for index, layout in layouts
+            if (layout = current)
+                return layouts[Mod(index, layouts.Length) + 1]
+        return layouts.Length ? layouts[1] : 0
+    }
+
+    ; 切换前台窗口里输入法的 中 / 英 模式 (和微软拼音里按 Shift 一样); 输入法关着时打开并切到中文。
+    ; 返回 true = 发出了切换 (前台窗口没有输入法时 false)
+    static ToggleImeMode() {
+        static WM_IME_CONTROL := 0x283, IMC_GETCONVERSIONMODE := 1, IMC_SETCONVERSIONMODE := 2, IMC_GETOPENSTATUS := 5, IMC_SETOPENSTATUS := 6
+        if !(hwnd := WinExist("A"))
+            return false
+        info := Buffer(24 + 6 * A_PtrSize, 0)                                ; GUITHREADINFO: 找有焦点的控件
+        NumPut("UInt", info.Size, info)
+        threadId := DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt")
+        focus := DllCall("GetGUIThreadInfo", "UInt", threadId, "Ptr", info) ? NumGet(info, 8 + A_PtrSize, "Ptr") : 0
+        if !(imeWnd := DllCall("imm32\ImmGetDefaultIMEWnd", "Ptr", focus ? focus : hwnd, "Ptr"))
+            return false
+        if !Ime(IMC_GETOPENSTATUS) {
+            Ime(IMC_SETOPENSTATUS, 1)
+            Ime(IMC_SETCONVERSIONMODE, Ime(IMC_GETCONVERSIONMODE) | 1)
+        } else {
+            Ime(IMC_SETCONVERSIONMODE, Ime(IMC_GETCONVERSIONMODE) ^ 1)      ; IME_CMODE_NATIVE: 中文 / 英文
+        }
+        return true
+
+        Ime(command, value := 0) {                                          ; 2 = SMTO_ABORTIFHUNG: 前台程序卡住时不跟着卡
+            result := 0
+            DllCall("SendMessageTimeoutW", "Ptr", imeWnd, "UInt", WM_IME_CONTROL, "Ptr", command, "Ptr", value, "UInt", 2, "UInt", 300, "Ptr*", &result)
+            return result
+        }
+    }
+
     ; 窗口 (所在线程) 正在用的输入法 (HKL); hwnd = 0: 当前线程
     static KeyboardLayout(hwnd := 0) {
         threadId := hwnd ? DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt") : 0

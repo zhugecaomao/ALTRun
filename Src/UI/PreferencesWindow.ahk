@@ -637,10 +637,13 @@ class PreferencesWindow {
 
     static _BuildHotkeys() {
         PreferencesWindow._BeginPage("Prefs.Page.Hotkeys")
+        PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"]     ; 按 CapsLock 切换输入法 (CapsLockSwitch)
+            , [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")])
+        PreferencesWindow._Gap()
         actions := [["ToggleWindow", "Show / hide ALTRun (ToggleWindow)"]]
         for command in SystemProvider.Commands()
             actions.Push([command["Id"], command["Title"] " (" command["Id"] ")"])
-        PreferencesWindow._List("Hotkeys", 520
+        PreferencesWindow._List("Hotkeys", 430
             , [["Prefs.Col.Key", "Key", 160], ["Prefs.Col.Action", "Action", 150], ["Prefs.Col.WinTitle", "WinTitle", 230]]
             , [ItemEditor.Field("Key", "Prefs.Col.Key", "hotkey", true, "", I18n.T("Prefs.HotkeyHint"))
              , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)

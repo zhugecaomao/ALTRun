@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.10.1"
+    static Version := "2026.10.10.2"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -349,6 +349,12 @@ class App {
                 App._TryHotkey("~" side tap, (*) => App._TapDown())
                 App._TryHotkey("~" side tap " up", (*) => App._TapUp())
             }
+        }
+
+        capsLock := AppSettings.General.Has("CapsLock") ? AppSettings.General["CapsLock"] : ""
+        if CapsLockSwitch.IsMode(capsLock) {                                ; 按 CapsLock 切换输入法, 按住才是大写锁定
+            CapsLockSwitch.Mode := capsLock
+            App._TryHotkey("CapsLock", (*) => CapsLockSwitch.Press())
         }
 
         if (AppSettings.General["SelectionHotkey"] != "")                  ; 选中内容的操作

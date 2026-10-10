@@ -22,7 +22,7 @@ Src\Core\           App (startup), AppSettings + SchemaMigration (settings and v
                     Knowledge (learned ranking), Usage (usage statistics), ActionCatalog (actions), ProviderRegistry, FileIndex
 Src\UI\             SearchWindow, PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      Search features, one class per feature
-Src\Extensions\     Features outside the search window (SnippetExpander, QuickSwitch, AutoDate, TendonProfile + PTToolsWindow, UpdateChecker)
+Src\Extensions\     Features outside the search window (SnippetExpander, QuickSwitch, AutoDate, CapsLockSwitch, TendonProfile + PTToolsWindow, UpdateChecker)
 Resources\          Data shipped with the program (Kanji.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  Unit tests
 Tests\Fixtures\     Test data: an old ALTRun.ini, SPF2M reference data

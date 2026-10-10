@@ -59,6 +59,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\CapsLockSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
@@ -85,7 +86,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TypeAhead", "SiteIcon", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TypeAhead", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -321,6 +322,18 @@ class Tests {
         eq("custom engine: browser icon", WebSearchProvider.IconFor(Map("Id", "mysite", "Url", "x")), "url:")
         eq("odd id: browser icon", WebSearchProvider.IconFor(Map("Id", "..\x", "Url", "x")), "url:")
         WebSearchProvider.BuiltinIconDir := savedDir, WebSearchProvider._builtinIcons := Map()
+    }
+
+    ; 按 CapsLock 切换输入法: 设置的取值、下一个输入法的选择
+    static CapsLockSwitch() {
+        eq := (n, a, e) => TestRunner.Equal("CapsLockSwitch." n, a, e)
+        eq("off by default", AppSettings.Defaults()["General"]["CapsLock"], "")
+        eq("modes", (CapsLockSwitch.IsMode("Layout") ? 1 : 0) (CapsLockSwitch.IsMode("Mode") ? 1 : 0) (CapsLockSwitch.IsMode("") ? 1 : 0) (CapsLockSwitch.IsMode("x") ? 1 : 0), "1100")
+        eq("hold time", CapsLockSwitch.HoldMs, 300)
+        eq("next layout", Win.NextLayout([0x4090409, 0x8040804], 0x4090409), 0x8040804)
+        eq("wraps around", Win.NextLayout([0x4090409, 0x8040804], 0x8040804), 0x4090409)
+        eq("unknown current: first", Win.NextLayout([0x4090409, 0x8040804], 0x4110411), 0x4090409)
+        eq("no layouts", Win.NextLayout([], 0x4090409), 0)
     }
 
     ; 下载网站图标: 找网页里写的图标、检查文件头、存进 Data\Icons (联网用假的 fetch 代替)
