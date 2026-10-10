@@ -12,6 +12,11 @@
 ; 按住时自动重复的每一下都切换一次输入法。按住时的自动重复 (连续的按下) 不算新的一次。
 ; 热键用键盘钩子 ($): 单独的 CapsLock 会用系统的 RegisterHotkey 注册, 拦不住 CapsLock 本身的大写切换。
 ;
+; 远程控制 (Chrome 远程桌面等): 本机按 CapsLock 时本机的大写锁定也会变, 远程软件发下一个按键前会补发
+; 一次 CapsLock (按下和松开连在一起, 不到 1 ms) 把远程电脑的大写锁定对齐。按下到松开不到 MinTapMs 的
+; 当作这种补发, 拦下但什么都不做 (人按一下至少几十毫秒); 否则每打一个字都会切换一次输入法。
+; 计时用高精度的 QueryPerformanceCounter: A_TickCount 的精度只有 10 ~ 16 ms, 分不清。
+;
 ; 用法:
 ;   App 注册热键时: CapsLockSwitch.Mode := "Layout", CapsLockSwitch.Register(Hotkey)
 ;===============================================================================
@@ -20,10 +25,21 @@ class CapsLockSwitch {
     static Mode := "", HoldMs := 300
     static Key := "$CapsLock"                                               ; $ = 用键盘钩子, 见上面
     static RepeatGapMs := 1000                                              ; 上一次按下 (或自动重复) 过了这么久还没松开: 当作松开事件丢了, 是新的一次
-    static Clock := () => A_TickCount                                       ; 测试时换成假的时钟
+    static MinTapMs := 25                                                   ; 更短的按一下: 远程软件补发来对齐大写锁定的, 不算
+    static Clock := () => CapsLockSwitch.Now()                              ; 测试时换成假的时钟
     static _down := false, _held := false, _downAt := 0, _lastDown := 0, _holdTimer := ""
 
     static IsMode(value) => (value = "Layout" || value = "Mode")
+
+    ; 高精度的毫秒数 (小数)
+    static Now() {
+        static frequency := 0
+        if !frequency
+            DllCall("QueryPerformanceFrequency", "Int64*", &frequency)
+        counter := 0
+        DllCall("QueryPerformanceCounter", "Int64*", &counter)
+        return counter * 1000 / frequency
+    }
 
     ; register: 注册热键的函数 (key, callback), 一般是 Hotkey 或 App._TryHotkey
     static Register(register) {
@@ -60,7 +76,10 @@ class CapsLockSwitch {
             SetTimer(CapsLockSwitch._holdTimer, 0)
         if CapsLockSwitch._held
             return
-        if (CapsLockSwitch.Clock.Call() - CapsLockSwitch._downAt >= CapsLockSwitch.HoldMs)   ; 定时器还没来得及运行 (程序忙): 也算按住
+        pressed := CapsLockSwitch.Clock.Call() - CapsLockSwitch._downAt
+        if (pressed < CapsLockSwitch.MinTapMs)                              ; 远程软件补发的, 见上面
+            return
+        if (pressed >= CapsLockSwitch.HoldMs)                               ; 定时器还没来得及运行 (程序忙): 也算按住
             CapsLockSwitch.ToggleCapsLock()
         else
             CapsLockSwitch.Switch()

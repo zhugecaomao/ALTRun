@@ -366,6 +366,14 @@ class Tests {
             calls.Text := ""
             CapsLockSwitch.Up()
             eq("extra key-up ignored", calls.Text, "")
+            at(8000), CapsLockSwitch.Down(), at(8000.4), CapsLockSwitch.Up()  ; Chrome 远程桌面补发来对齐大写锁定的
+            eq("remote sync tap ignored", calls.Text, "")
+            at(9000), CapsLockSwitch.Down(), at(9040), CapsLockSwitch.Up()
+            eq("quick real tap still switches", calls.Text, "switch;")
+            calls.Text := ""
+            CapsLockSwitch.Clock := saved["Clock"].Value
+            first := CapsLockSwitch.Clock.Call(), Sleep(30), second := CapsLockSwitch.Clock.Call()
+            TestRunner.True("CapsLockSwitch.precise clock", second - first >= 25 && second - first < 1000)
         } finally {
             SetTimer(CapsLockSwitch._holdTimer, 0)
             CapsLockSwitch._down := false

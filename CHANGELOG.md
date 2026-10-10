@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.10.5]
+
+测试版。
+
+Test build.
+
+### 修复
+- CapsLock 切换输入法在 Chrome 远程桌面等远程控制下也能用: 远程软件发下一个按键前会补发一次极短的 CapsLock (按下和松开连在一起) 来对齐两边的大写锁定, 以前每打一个字都会因此切换一次输入法。按下到松开不到 25 毫秒的 CapsLock 现在被拦下、不做任何事 (人按一下至少几十毫秒, 真实电脑上不受影响)
+
 ## [2026.10.10.4]
 
 测试版。
@@ -621,7 +630,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.5...HEAD
+[2026.10.10.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.4...2026.10.10.5
 [2026.10.10.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.3...2026.10.10.4
 [2026.10.10.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.2...2026.10.10.3
 [2026.10.10.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.1...2026.10.10.2
