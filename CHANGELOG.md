@@ -5,11 +5,25 @@
 
 ## [未发布]
 
+## [2026.10.10.1]
+
+测试版。
+
+Test build.
+
+### 新增
+- 网页搜索的网址可以写默认值 `{query|默认值}`: 只输入关键字时用默认值, 直接按 Enter 打开, 例如 `http://localhost:{query|8000}`
+- 网页搜索可以设置自己的图标 (编辑框里的 "图标"): `.ico`、`.png` 或 `.exe` 文件, 相对路径从 Data 文件夹算起。旁边的 "下载网站图标" 按网址找到网站自己的图标 (优先 apple-touch-icon 这种清晰的 PNG), 存进 `Data\Icons` 并自动填好; 只在点按钮时访问那个网站一次, 不经过第三方图标服务, 只接受 PNG / ICO / JPG / GIF / BMP 图片, 最大 1 MB
+- 自带的网页搜索 (Google、Bing、Baidu、GitHub、Wikipedia、YouTube、淘宝、京东、Google 翻译) 有了各自的图标 (各网站自己的图标; 京东网站只有 48 px 的小图标, 用红色 "JD" 方块), 不再都是浏览器的图标
+
 ### 修复
+- 按热键呼出窗口后马上打字, 前几个字会丢失或打进原来的窗口: 不打开 "保留上一次的搜索" (默认) 时, 先搜索空的搜索框再显示窗口, 这几十毫秒里按的键还在原来的程序里 (刚开机时更久)。现在从按下热键到搜索框拿到焦点之间打的字先记下来, 显示后补进搜索框; 期间按的 Enter 在搜完后执行第一项 (Ctrl / Alt + Enter 也一样), Esc 关掉窗口。只记会打出字的键, Ctrl / Alt 组合键照常
 - Windows 缩放不是 100% (例如 150%) 时, 打开 / 保存对话框下面的文件夹面板比对话框宽, 下面还多出一片空白
 
 ### 改进
+- 没有打开货币换算时输入 `100 usd to eur`, 提示那一行按 Enter 直接打开 偏好设置 → 计算器 (以前按 Enter 没有反应)
 - 程序的标语 (偏好设置 → 高级, 以及开机启动、发送到、开始菜单快捷方式的备注) 改为 "轻量的 Windows 启动器" / "A lightweight launcher for Windows"; 快捷方式在下次启动时更新一次
+- Wiki 常见问题: 剪贴板历史会不会跟着 Data 文件夹走
 
 ## [2026.10.09.6]
 
@@ -579,7 +593,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.1...HEAD
+[2026.10.10.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.6...2026.10.10.1
 [2026.10.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.5...2026.10.09.6
 [2026.10.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.4...2026.10.09.5
 [2026.10.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.3...2026.10.09.4

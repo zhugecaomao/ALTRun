@@ -59,6 +59,7 @@ ALTRun itself connects to the internet only in these cases:
 | Check for updates | api.github.com | At startup (if the last check was more than an hour ago), every 6 hours while running, or when you check manually | Preferences → General → "Check for updates automatically" |
 | Download an update | github.com (GitHub Releases) | Only after you choose to install an update | Do not install updates from ALTRun |
 | Exchange rates | api.frankfurter.dev | Once a day, only when currency conversion is turned on (off by default) | Preferences → Calculator → "Currency conversion" |
+| Web search icon | The website in that web search's URL | Only when you click "Download Site Icon" while editing a web search | Do not click it |
 
 These are plain HTTPS requests that send no personal data; like any web request they reveal your IP address to the server. Web searches, release notes and links that you open from ALTRun are opened in your web browser and are subject to the privacy policy of those websites. The Everything integration uses local inter-process communication, not the network.
 
@@ -143,6 +144,7 @@ ALTRun 本身只在以下情况联网:
 | 检查更新 | api.github.com | 启动时 (距上次检查满 1 小时)、运行期间每 6 小时, 或手动检查时 | 偏好设置 → 通用 → "自动检查更新" |
 | 下载更新 | github.com (GitHub Releases) | 只在你选择安装更新之后 | 不在 ALTRun 里安装更新 |
 | 汇率 | api.frankfurter.dev | 打开货币换算后每天一次 (默认关闭) | 偏好设置 → 计算器 → "货币换算" |
+| 网页搜索的图标 | 这个网页搜索的网址所在的网站 | 只在编辑网页搜索时点了 "下载网站图标" | 不点这个按钮 |
 
 这些都是普通的 HTTPS 请求, 不发送任何个人数据; 和所有网络请求一样, 服务器能看到你的 IP 地址。从 ALTRun 打开的网页搜索、更新说明和链接都在你的浏览器里打开, 适用对应网站的隐私政策。Everything 联动通过本机的进程间通信, 不经过网络。
 

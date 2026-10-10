@@ -7,6 +7,7 @@
 ;     {Key: "Title",  Label: "名称", Type: "text", Required: true},
 ;     {Key: "Type",   Label: "类型", Type: "choice", Choices: [["File", "文件"], ["Folder", "文件夹"]]},
 ;     {Key: "Target", Label: "目标", Type: "file"},        ; 文本框 + "..." 选择文件
+;       file 字段可以加 Button: {Label, OnClick(controls, g)}, 在 "..." 后面多一个按钮
 ;     {Key: "Text",   Label: "正文", Type: "multiline"},
 ;     {Key: "AutoExpand", Label: "自动展开", Type: "check"}
 ;   ]
@@ -50,10 +51,13 @@ class ItemEditor {
                     ctrl := g.AddDropDownList("x+8 ys-3 w" inputW, labels)
                     ctrl.Value := Max(1, ItemEditor._ChoiceIndex(field.Choices, value))
                 case "file", "folder":
-                    ctrl := g.AddEdit("x+8 ys-3 w" (inputW - 34) " r1 -Multi", value)
+                    extraW := field.HasOwnProp("Button") ? 154 : 0           ; 字段自己的按钮 (例如 "下载网站图标")
+                    ctrl := g.AddEdit("x+8 ys-3 w" (inputW - 34 - extraW) " r1 -Multi", value)
                     browse := g.AddButton("x+4 yp-1 w30", I18n.T("Prefs.Browse"))
                     kind := field.HasOwnProp("FolderWhen") ? ItemEditor._KindGetter(field.FolderWhen, fields, controls) : field.Type
                     browse.OnEvent("Click", ItemEditor._Browser(ctrl, kind, g))
+                    if extraW
+                        g.AddButton("x+4 yp w" (extraW - 4), field.Button.Label).OnEvent("Click", ItemEditor._FieldButton(field.Button, controls, g))
                 case "number":
                     ctrl := g.AddEdit("x+8 ys-3 w100 r1 -Multi Number", value)
                 case "hotkey":
@@ -120,6 +124,11 @@ class ItemEditor {
             state.Result := edited
             g.Destroy()
         }
+    }
+
+    ; 字段自己的按钮: OnClick(controls, g), controls = 字段的 Key -> 控件
+    static _FieldButton(button, controls, g) {
+        return (*) => button.OnClick.Call(controls, g)
     }
 
     static WithDefaults(item, defaults) {

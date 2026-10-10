@@ -47,7 +47,7 @@ Turn on "Switch to English input when shown" in Preferences → Search Window. C
 Quit ALTRun, rename `Data\ALTRun.json` as a backup, and run it again to get the default settings. To reset only the learned ranking: Preferences → Advanced → Reset Learned Ranking.
 
 ### Does ALTRun go online or collect data?
-It doesn't collect or upload any data. By default it only goes online to check for updates (at startup and every 6 hours) and for one-key updates, both only to GitHub (with currency conversion on, it also downloads exchange rates from frankfurter.dev once a day); a one-key update checks the SHA256 checksum before replacing anything. Clipboard history, usage statistics and the learned ranking stay in the `Data\` folder on your PC. See the [security policy](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md).
+It doesn't collect or upload any data. By default it only goes online to check for updates (at startup and every 6 hours) and for one-key updates, both only to GitHub (with currency conversion on, it also downloads exchange rates from frankfurter.dev once a day; "Download Site Icon" in a web search's editor visits that site once, only when you click it); a one-key update checks the SHA256 checksum before replacing anything. Clipboard history, usage statistics and the learned ranking stay in the `Data\` folder on your PC. See the [security policy](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md).
 
 ### How do I upgrade to a new version?
 ALTRun checks in the background at startup and every 6 hours after. When there's a new version, open the search window to see "Update Available: ALTRun x" and press `Enter` (or tray icon → Check for Updates); settings and data are kept. With Scoop, use `scoop update altrun`. See [Installation and upgrades](en-Installation#upgrading).
@@ -58,6 +58,9 @@ Two ways:
 - **Keep the whole folder on a USB stick or a synced drive**: ALTRun is portable, so the program and `Data\` travel together
 
 Avoid running ALTRun and changing settings on two PCs at the same time with data in a synced folder, or the sync service may create conflicting copies. Use [path variables](en-Commands-and-Snippets#variables-in-paths) (for example `A_Desktop`, `%OneDrive%`) where you can, so paths work on every PC.
+
+### Does clipboard history travel with the Data folder?
+Partly. Text history is saved in `Data\ClipboardHistory.json`, so it goes along when you copy the folder to a USB stick or keep it in a synced drive. Images and very long items are kept on this PC by default (`%LOCALAPPDATA%\ALTRun\Clipboard`, see `LocalFiles` in [Clipboard settings](en-Configuration#clipboard)). To keep no history on disk at all, set `Persist` to 0: it stays in memory and is gone when ALTRun quits. Programs listed in `IgnoreApps` (password managers by default), and content that apps mark as private, are never recorded.
 
 ### My commands are gone after upgrading from 2.x
 User commands from 2.x are imported from `ALTRun.ini` as custom commands, and the built-in commands are replaced by [system commands](en-Extensions#system-commands). The import happens only once, when there's no `ALTRun.json` yet: to import again, quit ALTRun, rename `Data\ALTRun.json` and run it again. `ALTRun.ini` is never changed; see [Installation and upgrades](en-Installation#upgrading-from-2x-v20260812-and-earlier-to-30).

@@ -47,7 +47,7 @@ Windows 刚启动时, 资源管理器和 OneDrive (或别的同步软件) 往往
 退出 ALTRun, 把 `Data\ALTRun.json` 改名备份, 重新运行会生成默认设置。只想重置学习排序: 偏好设置 → 高级 → 重置学习排序。
 
 ### ALTRun 会联网或收集数据吗
-不收集、不上传任何数据。默认情况下联网只有检查更新 (启动时和每 6 小时一次) 和一键更新两种情况, 都只访问 GitHub (打开货币换算后, 每天还会从 frankfurter.dev 下载一次汇率); 一键更新下载后先核对 SHA256 再替换。剪贴板历史、使用统计、学习记录都只保存在本机的 `Data\` 文件夹里。详见 [安全策略](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md)。
+不收集、不上传任何数据。默认情况下联网只有检查更新 (启动时和每 6 小时一次) 和一键更新两种情况, 都只访问 GitHub (打开货币换算后, 每天还会从 frankfurter.dev 下载一次汇率; 编辑网页搜索时点 "下载网站图标" 才会访问那个网站一次); 一键更新下载后先核对 SHA256 再替换。剪贴板历史、使用统计、学习记录都只保存在本机的 `Data\` 文件夹里。详见 [安全策略](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md)。
 
 ### 怎样升级到新版本
 ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时呼出搜索窗口就能看到 "发现新版本: ALTRun x", 按 `Enter` 即可 (也可以托盘图标 → 检查更新), 设置和数据都保留; 用 Scoop 安装的用 `scoop update altrun`。详见 [安装与升级](Installation#升级)。
@@ -58,6 +58,9 @@ ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时�
 - **整个文件夹放在 U 盘或同步盘里**: ALTRun 是绿色软件, 程序和 `Data\` 一起带走
 
 同步盘里的数据最好不要在两台电脑上同时打开 ALTRun 修改, 否则同步盘可能生成冲突副本。路径尽量用 [路径变量](Commands-and-Snippets#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
+
+### 剪贴板历史会跟着 Data 文件夹走吗
+一部分会。文字历史保存在 `Data\ClipboardHistory.json`, 把文件夹复制到 U 盘或放在同步盘里时会一起带走; 图片和很长的条目默认只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun\Clipboard`, 见 [剪贴板设置](Configuration#clipboard-剪贴板历史) 的 `LocalFiles`)。完全不想在磁盘上留下历史, 把 `Persist` 设为 0: 只放在内存里, 退出 ALTRun 就清空。`IgnoreApps` 里的程序 (默认是几个密码管理器) 和程序标记为隐私的内容不会被记录。
 
 ### 从 2.x 升级后命令不见了
 2.x 的用户命令会从 `ALTRun.ini` 导入为自定义命令, 内置命令由 [系统命令](Extensions#系统命令) 取代。导入只在还没有 `ALTRun.json` 时进行一次: 如果想重新导入, 退出 ALTRun, 把 `Data\ALTRun.json` 改名, 再运行。`ALTRun.ini` 始终保持不变, 详见 [安装与升级](Installation#从-2x-v20260812-及更早-升级到-30)。
