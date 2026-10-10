@@ -7,27 +7,67 @@
 ;   "Mode"   切换当前中文输入法的 中 / 英 模式 (和微软拼音里按 Shift 一样)
 ; 按住超过 HoldMs 才开 / 关大写锁定 (不用等松开); Shift+CapsLock 等组合键照常。
 ;
-; 热键一定要用键盘钩子 ($CapsLock): 单独的 CapsLock 会用系统的 RegisterHotkey 注册, 这样拦不住
-; CapsLock 本身的大写切换 (每按一下大写锁定也跟着变, 微软拼音在大写锁定时打出英文), 也看不到
-; 按键是否还按着 (KeyWait 马上返回, 按住时自动重复不停地切换输入法)。
+; 按下和松开分成两个热键, 只在松开时 (而且没有按住满 HoldMs) 切换输入法, 按住期间什么都不切换。
+; 不用 KeyWait 等松开: 切换输入法时 (或者有的输入法) 会刷新按键状态, KeyWait 以为已经松开,
+; 按住时自动重复的每一下都切换一次输入法。按住时的自动重复 (连续的按下) 不算新的一次。
+; 热键用键盘钩子 ($): 单独的 CapsLock 会用系统的 RegisterHotkey 注册, 拦不住 CapsLock 本身的大写切换。
 ;
 ; 用法:
-;   App 注册热键时: CapsLockSwitch.Mode := "Layout", Hotkey(CapsLockSwitch.Key, (*) => CapsLockSwitch.Press())
+;   App 注册热键时: CapsLockSwitch.Mode := "Layout", CapsLockSwitch.Register(Hotkey)
 ;===============================================================================
 
 class CapsLockSwitch {
     static Mode := "", HoldMs := 300
     static Key := "$CapsLock"                                               ; $ = 用键盘钩子, 见上面
+    static RepeatGapMs := 1000                                              ; 上一次按下 (或自动重复) 过了这么久还没松开: 当作松开事件丢了, 是新的一次
+    static Clock := () => A_TickCount                                       ; 测试时换成假的时钟
+    static _down := false, _held := false, _downAt := 0, _lastDown := 0, _holdTimer := ""
 
     static IsMode(value) => (value = "Layout" || value = "Mode")
 
-    static Press() {
-        if KeyWait("CapsLock", "T" CapsLockSwitch.HoldMs / 1000) {         ; 很快松开: 切换输入法
-            CapsLockSwitch.Switch()
+    ; register: 注册热键的函数 (key, callback), 一般是 Hotkey 或 App._TryHotkey
+    static Register(register) {
+        register(CapsLockSwitch.Key, (*) => CapsLockSwitch.Down())
+        register(CapsLockSwitch.Key " up", (*) => CapsLockSwitch.Up())
+    }
+
+    static Down() {
+        now := CapsLockSwitch.Clock.Call()
+        if (CapsLockSwitch._down && now - CapsLockSwitch._lastDown < CapsLockSwitch.RepeatGapMs) {   ; 按住时的自动重复
+            CapsLockSwitch._lastDown := now
             return
         }
-        SetCapsLockState(GetKeyState("CapsLock", "T") ? "Off" : "On")       ; 按住: 原来的大写锁定
-        KeyWait("CapsLock")                                                 ; 等松开, 按住时的自动重复不再触发
+        CapsLockSwitch._down := true, CapsLockSwitch._held := false
+        CapsLockSwitch._downAt := now, CapsLockSwitch._lastDown := now
+        if (CapsLockSwitch._holdTimer = "")
+            CapsLockSwitch._holdTimer := () => CapsLockSwitch.Hold()
+        SetTimer(CapsLockSwitch._holdTimer, -CapsLockSwitch.HoldMs)
+    }
+
+    ; 按住满 HoldMs: 开 / 关大写锁定 (只一次)
+    static Hold() {
+        if (!CapsLockSwitch._down || CapsLockSwitch._held)
+            return
+        CapsLockSwitch._held := true
+        CapsLockSwitch.ToggleCapsLock()
+    }
+
+    static Up() {
+        if !CapsLockSwitch._down
+            return
+        CapsLockSwitch._down := false
+        if (CapsLockSwitch._holdTimer != "")
+            SetTimer(CapsLockSwitch._holdTimer, 0)
+        if CapsLockSwitch._held
+            return
+        if (CapsLockSwitch.Clock.Call() - CapsLockSwitch._downAt >= CapsLockSwitch.HoldMs)   ; 定时器还没来得及运行 (程序忙): 也算按住
+            CapsLockSwitch.ToggleCapsLock()
+        else
+            CapsLockSwitch.Switch()
+    }
+
+    static ToggleCapsLock() {
+        SetCapsLockState(GetKeyState("CapsLock", "T") ? "Off" : "On")
     }
 
     static Switch() {

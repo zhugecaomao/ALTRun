@@ -331,6 +331,47 @@ class Tests {
         eq("modes", (CapsLockSwitch.IsMode("Layout") ? 1 : 0) (CapsLockSwitch.IsMode("Mode") ? 1 : 0) (CapsLockSwitch.IsMode("") ? 1 : 0) (CapsLockSwitch.IsMode("x") ? 1 : 0), "1100")
         eq("hold time", CapsLockSwitch.HoldMs, 300)
         eq("uses the keyboard hook", SubStr(CapsLockSwitch.Key, 1, 1), "$")    ; 不用钩子时拦不住大写切换, 按住时也会不停切换
+        registered := []
+        CapsLockSwitch.Register((key, fn) => registered.Push(key))
+        eq("down and up hotkeys", registered.Length = 2 ? registered[1] "|" registered[2] : "", "$CapsLock|$CapsLock up")
+
+        ; 按下 / 松开的顺序 (假的时钟, 定时器手动触发)
+        saved := Map()
+        for name in ["Clock", "ToggleCapsLock", "Switch"]
+            saved[name] := CapsLockSwitch.GetOwnPropDesc(name)
+        clock := {Now: 0}, calls := {Text: ""}
+        CapsLockSwitch.Clock := () => clock.Now
+        CapsLockSwitch.DefineProp("ToggleCapsLock", {Call: (*) => calls.Text .= "caps;"})
+        CapsLockSwitch.DefineProp("Switch", {Call: (*) => calls.Text .= "switch;"})
+        at := (ms) => clock.Now := ms
+        try {
+            CapsLockSwitch._down := false
+            at(1000), CapsLockSwitch.Down(), at(1100), CapsLockSwitch.Up()
+            eq("tap: switch once", calls.Text, "switch;")
+            calls.Text := ""
+            at(2000), CapsLockSwitch.Down()
+            Loop 20                                                         ; 按住时的自动重复, 每 30 ms 一下
+                at(2000 + A_Index * 30), CapsLockSwitch.Down()
+            CapsLockSwitch.Hold()                                           ; 定时器: 按住满 0.3 秒
+            Loop 10
+                at(2600 + A_Index * 30), CapsLockSwitch.Down()
+            at(3000), CapsLockSwitch.Up()
+            eq("hold: caps lock once, never switches", calls.Text, "caps;")
+            calls.Text := ""
+            at(4000), CapsLockSwitch.Down(), at(4400), CapsLockSwitch.Up()  ; 定时器没来得及运行
+            eq("late timer: still a hold", calls.Text, "caps;")
+            calls.Text := ""
+            at(5000), CapsLockSwitch.Down(), at(7000), CapsLockSwitch.Down(), at(7050), CapsLockSwitch.Up()   ; 上一次的松开丢了
+            eq("lost key-up: new press", calls.Text, "switch;")
+            calls.Text := ""
+            CapsLockSwitch.Up()
+            eq("extra key-up ignored", calls.Text, "")
+        } finally {
+            SetTimer(CapsLockSwitch._holdTimer, 0)
+            CapsLockSwitch._down := false
+            for name, desc in saved
+                CapsLockSwitch.DefineProp(name, desc)
+        }
         eq("next layout", Win.NextLayout([0x4090409, 0x8040804], 0x4090409), 0x8040804)
         eq("wraps around", Win.NextLayout([0x4090409, 0x8040804], 0x8040804), 0x4090409)
         eq("unknown current: first", Win.NextLayout([0x4090409, 0x8040804], 0x4110411), 0x4090409)

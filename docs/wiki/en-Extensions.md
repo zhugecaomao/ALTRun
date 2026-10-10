@@ -63,7 +63,7 @@ Like on a Mac: at the top of Preferences → Hotkeys, set **Caps Lock** to one o
 - **Press to switch input method**: switches to the next installed input method, like `Win+Space` (for example English (US) ↔ Microsoft Pinyin)
 - **Press to switch Chinese / English mode**: switches the mode of the current input method, like pressing `Shift` in Microsoft Pinyin; handy when only a Chinese input method is installed
 
-Holding Caps Lock for 0.3 s turns caps lock on or off (without waiting for you to let go); `Shift+Caps Lock` works as usual. It's off by default (`General.CapsLock`). Custom hotkeys that use Caps Lock as a modifier (such as `CapsLock & J`) don't mix well with it.
+Holding Caps Lock for 0.3 s turns caps lock on or off (without waiting for you to let go); `Shift+Caps Lock` works as usual. It's off by default (`General.CapsLock`). Custom hotkeys that use Caps Lock as a modifier (such as `CapsLock & J`) don't mix well with it. Over remote control (such as Chrome Remote Desktop) it doesn't work reliably: the remote tool syncs the caps lock state by sending extra Caps Lock presses, which switch the input method too.
 
 ### Setting hotkeys
 Every hotkey in Preferences (the ALTRun hotkey, clipboard history, Quick Switch, date stamp, custom hotkeys) uses the same kind of box, recording the keys directly like Alfred and PowerToys:

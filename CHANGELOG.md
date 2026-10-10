@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.10.4]
+
+测试版。
+
+Test build.
+
+### 修复
+- CapsLock 切换输入法: 按住时还是不停地切换输入法 (用 Chrome 远程桌面等远程控制时更明显)。按下和松开分开处理, 只在松开时 (没有按住满 0.3 秒) 切换一次, 按住期间不切换; 按住时的自动重复不算新的一次
+
 ## [2026.10.10.3]
 
 测试版。
@@ -612,7 +621,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.4...HEAD
+[2026.10.10.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.3...2026.10.10.4
 [2026.10.10.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.2...2026.10.10.3
 [2026.10.10.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.1...2026.10.10.2
 [2026.10.10.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.6...2026.10.10.1
