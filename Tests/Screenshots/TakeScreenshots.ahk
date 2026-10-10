@@ -46,7 +46,7 @@ class Shots {
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
-            ["demo",        "Light", "", () => Shots.Demo(), () => Shots.WriteClipboard()],
+            ["demo",        "Light", "", () => Shots.Demo(), () => Shots.PrepareDemo()],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 8", () => Shots.Preferences()],
@@ -235,6 +235,16 @@ class Shots {
         }
     }
 
+    ; 动图: 剪贴板历史里有几条记录; 关掉结构计算 (计算器只显示结果, 不附带梁主筋 / 配筋面积, 一般用户看不懂)
+    static PrepareDemo() {
+        Shots.WriteClipboard()
+        file := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(file, "UTF-8"))
+        settings["Features"]["Calculator"]["StructuralCalc"] := 0
+        FileDelete(file)
+        FileAppend(JSON.Stringify(settings, 4), file, "UTF-8")
+    }
+
     ; 剪贴板历史: 几条常见的文字, 其中一条置顶
     static WriteClipboard() {
         entries := [], stamp := A_Now
@@ -374,6 +384,9 @@ class Shots {
             if pid
                 try ProcessClose(pid)
         Shots.HelperPid := 0, Shots.NotepadPid := 0
+        for window in Shots.HiddenWindows                                   ; Demo 藏起来的终端窗口
+            try WinShow(window)
+        Shots.HiddenWindows := []
         for window in WinGetList("ahk_class CabinetWClass")
             try WinClose(window)
     }
@@ -381,13 +394,17 @@ class Shots {
     ; README 首页的动图: 7 个场景 (应用、操作面板、文件、剪贴板历史、窗口切换、计算器、系统命令), 每一步把同一块屏幕区域
     ; 存成一帧, 记下这一步按的键。MakeDemo.py 再取出窗口, 放到模糊的背景上, 右下角画出按键。返回 "" (不另外截图)
     static DemoFrames := A_Temp "\ALTRunDemoFrames"
-    static NotepadPid := 0
+    static NotepadPid := 0, HiddenWindows := []
     static Demo() {
         hwnd := Shots.SearchWindow()
         for folder in ["Website Redesign", "Annual Report 2026"]           ; 窗口切换要有窗口可切 (都在背景后面)
             Run('explorer.exe "' Shots.DemoDir "\" folder '"')
         Run("notepad.exe", , , &pid)
         Shots.NotepadPid := pid
+        ; GitHub 虚拟机上运行截图的终端窗口也在任务栏上, 窗口切换会列出它: 先藏起来, 截完再显示
+        for title in ["ahk_exe WindowsTerminal.exe", "ahk_class ConsoleWindowClass", "ahk_class CASCADIA_HOSTING_WINDOW_CLASS"]
+            for window in WinGetList(title)
+                try WinHide(window), Shots.HiddenWindows.Push(window)
         Sleep(3000)
         WinActivate(hwnd)
         Shots.WaitPainted(hwnd, 10)
