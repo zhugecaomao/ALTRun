@@ -636,7 +636,7 @@ class PreferencesWindow {
     }
 
     static _BuildHotkeys() {
-        PreferencesWindow._BeginPage("Prefs.Page.Hotkeys")
+        PreferencesWindow._BeginPage("Prefs.Page.Hotkeys", 100)                ; 标签列窄一些: 下面的列表从最左边开始, 上面的选项也靠左
         PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"]     ; 按 CapsLock 切换输入法 (CapsLockSwitch)
             , [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")])
         PreferencesWindow._Gap()

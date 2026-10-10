@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.10.3]
+
+测试版。
+
+Test build.
+
+### 修复
+- CapsLock 切换输入法: 按住时不停地切换输入法, 而不是开 / 关大写锁定; 每按一下大写锁定也跟着变, 微软拼音在大写锁定时打出的都是英文。热键改用键盘钩子, CapsLock 原来的作用被完全拦住
+- 偏好设置 → 自定义热键 页的 CapsLock 选项靠左对齐
+
 ## [2026.10.10.2]
 
 测试版。
@@ -602,7 +612,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.3...HEAD
+[2026.10.10.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.2...2026.10.10.3
 [2026.10.10.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.1...2026.10.10.2
 [2026.10.10.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.6...2026.10.10.1
 [2026.10.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.09.5...2026.10.09.6

@@ -330,6 +330,7 @@ class Tests {
         eq("off by default", AppSettings.Defaults()["General"]["CapsLock"], "")
         eq("modes", (CapsLockSwitch.IsMode("Layout") ? 1 : 0) (CapsLockSwitch.IsMode("Mode") ? 1 : 0) (CapsLockSwitch.IsMode("") ? 1 : 0) (CapsLockSwitch.IsMode("x") ? 1 : 0), "1100")
         eq("hold time", CapsLockSwitch.HoldMs, 300)
+        eq("uses the keyboard hook", SubStr(CapsLockSwitch.Key, 1, 1), "$")    ; 不用钩子时拦不住大写切换, 按住时也会不停切换
         eq("next layout", Win.NextLayout([0x4090409, 0x8040804], 0x4090409), 0x8040804)
         eq("wraps around", Win.NextLayout([0x4090409, 0x8040804], 0x8040804), 0x4090409)
         eq("unknown current: first", Win.NextLayout([0x4090409, 0x8040804], 0x4110411), 0x4090409)
