@@ -49,7 +49,7 @@
   "App.ConfirmHide": "從搜尋結果中刪除 '{1}' 嗎?\n\n不會解除安裝程式, 可以在 偏好設定 → 應用程式搜尋 裡恢復。",
   "App.Running": "ALTRun 已在執行, 按 {1} 開始搜尋。",
   "App.Subtitle.Store": "Microsoft Store 應用程式",
-  "App.Tagline": "高效的 Windows 啟動器",
+  "App.Tagline": "輕量的 Windows 啟動器",
   "Calc.BeamWidth": "梁寬 {1} mm: 主筋 {2} 根 @ {3} c/c",
   "Calc.Currency": "貨幣換算",
   "Calc.CurrencyOff": "在 偏好設定 → 計算機 裡開啟 (每天下載一次匯率)",

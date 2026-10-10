@@ -3,7 +3,7 @@
 <p align="center"><a href="README.md">English</a> | <b>简体中文</b></p>
 
 <p align="center">
-  <b>轻量、高效、开源的 Windows 启动器，操作方式参照 macOS 上的 <a href="https://www.alfredapp.com/">Alfred</a></b><br>
+  <b>轻量、开源的 Windows 启动器，操作方式参照 macOS 上的 <a href="https://www.alfredapp.com/">Alfred</a></b><br>
   按 <code>Alt+Space</code>，输入几个字母，按 <code>Enter</code>：程序、文件、网页、计算、剪贴板、系统命令，一个窗口完成
 </p>
 

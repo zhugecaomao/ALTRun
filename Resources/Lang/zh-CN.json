@@ -48,7 +48,7 @@
   "App.ConfirmHide": "从搜索结果中删除 '{1}' 吗?\n\n不会卸载程序, 可以在 偏好设置 → 应用搜索 里恢复。",
   "App.Running": "ALTRun 已在运行, 按 {1} 开始搜索。",
   "App.Subtitle.Store": "应用商店应用",
-  "App.Tagline": "高效的 Windows 启动器",
+  "App.Tagline": "轻量的 Windows 启动器",
   "Calc.BeamWidth": "梁宽 {1} mm: 主筋 {2} 根 @ {3} c/c",
   "Calc.Currency": "货币换算",
   "Calc.CurrencyOff": "在 偏好设置 → 计算器 里打开 (每天下载一次汇率)",

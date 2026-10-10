@@ -1,6 +1,6 @@
 {
     "version": "2026.10.08",
-    "description": "Lightweight, Alfred-style launcher for Windows, written in AutoHotkey v2",
+    "description": "Lightweight, open-source Alfred-style launcher for Windows",
     "homepage": "https://zhugecaomao.github.io/ALTRun/",
     "license": "GPL-3.0-only",
     "notes": [

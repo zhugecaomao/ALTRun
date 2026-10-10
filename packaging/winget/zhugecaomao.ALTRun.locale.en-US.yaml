@@ -10,7 +10,7 @@ PackageName: ALTRun
 PackageUrl: https://zhugecaomao.github.io/ALTRun/
 License: GPL-3.0
 LicenseUrl: https://github.com/zhugecaomao/ALTRun/blob/main/LICENSE
-ShortDescription: Lightweight, Alfred-style launcher for Windows
+ShortDescription: Lightweight, open-source Alfred-style launcher for Windows
 Description: |-
   ALTRun is a small, fast launcher for Windows modelled on Alfred for macOS, written in AutoHotkey v2.
   Press Alt+Space and type to open programs, files, folders and web pages; search files with Everything;
