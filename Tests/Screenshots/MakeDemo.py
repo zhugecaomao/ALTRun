@@ -1,8 +1,8 @@
 """MakeDemo.py - README 首页的动图 demo.png (APNG)
 
 把 TakeScreenshots.ahk 的 "demo" 场景存下的帧 (frames.txt: 每行 "文件名 Tab 毫秒 Tab 按键") 合成循环播放的动画 PNG:
-每一帧里找出搜索窗口 (和截图时的纯色背景不同的范围), 加上圆角和阴影, 放在一张高斯模糊的背景图上;
-右下角是这一步按的键 (例如 "Ctrl+Alt+C" 画成三个圆润的键帽)。
+每一帧里找出搜索窗口 (和截图时的纯色背景不同的范围), 加上圆角和阴影, 放在一张高斯模糊的背景图上。
+不再在右下角画这一步按的键: 搜索窗口底部的状态栏已经显示 Enter / Ctrl+K 等按键 (frames.txt 的第三列不用了)。
 窗口的左上角固定, 窗口变高变矮时动图大小不变。
 
 背景: Tests/Screenshots/backdrop.jpg (或 .png) 存在时用它 (缩放裁剪后模糊), 否则生成一张蓝紫色调的抽象图
@@ -17,7 +17,7 @@ import os
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 from RoundCorners import RADIUS, round_image, rounded_mask
 
@@ -26,7 +26,6 @@ BACKDROP = (0x8A, 0x9B, 0xB0)        # TakeScreenshots.ahk 里截图时背景的
 MARGIN = round(56 * SCALE)           # 窗口四周露出的背景
 SHADOW_BLUR, SHADOW_OFFSET, SHADOW_OPACITY = round(18 * SCALE), round(10 * SCALE), 110
 CORNER = round(RADIUS * SCALE)
-KEY_SIZE = round(17 * SCALE)
 HERE = Path(__file__).resolve().parent
 
 
@@ -64,51 +63,6 @@ def background(size):
     return ImageChops.screen(image, glow)                               # 光斑叠在渐变上
 
 
-def font(names, size):
-    """Windows 的 Segoe UI (截图工作流在 Windows 上运行); 别的系统上用 DejaVu"""
-    for name in names + ["DejaVuSans.ttf"]:
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            continue
-    return ImageFont.load_default()
-
-
-def draw_keys(frame, keys):
-    """右下角的键帽: "Ctrl+Alt+C" -> (Ctrl) + (Alt) + (C); 大圆角、浅色、底下一层柔和的阴影"""
-    if not keys:
-        return
-    key_font = font(["segoeui.ttf", "DejaVuSans.ttf"], KEY_SIZE)
-    measure = ImageDraw.Draw(frame)
-    pad_x, pad_y, gap = round(12 * SCALE), round(7 * SCALE), round(8 * SCALE)
-    height = KEY_SIZE + 2 * pad_y
-    radius = round(height * 0.38)
-    parts = [part for part in keys.split("+") if part]
-    widths = [max(measure.textlength(part, font=key_font) + 2 * pad_x, height) for part in parts]
-    plus = measure.textlength("+", font=key_font)
-    x = frame.width - round(26 * SCALE) - sum(widths) - (len(parts) - 1) * (plus + 2 * gap)
-    y = frame.height - round(26 * SCALE) - height
-    boxes = []
-    for width in widths:
-        boxes.append((round(x), y, round(x + width), y + height))
-        x += width + plus + 2 * gap
-    shadow = Image.new("RGBA", frame.size, (0, 0, 0, 0))
-    for box in boxes:
-        ImageDraw.Draw(shadow).rounded_rectangle((box[0], box[1] + round(3 * SCALE), box[2], box[3] + round(3 * SCALE)), radius, fill=(20, 20, 50, 90))
-    frame.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(round(4 * SCALE))))
-    keycaps = Image.new("RGBA", (frame.width * 2, frame.height * 2), (0, 0, 0, 0))   # 按 2 倍画再缩小: 圆角边缘平滑
-    draw = ImageDraw.Draw(keycaps)
-    for box in boxes:
-        big = tuple(v * 2 for v in box)
-        draw.rounded_rectangle(big, radius * 2, fill=(252, 252, 254, 248), outline=(214, 218, 228, 255), width=max(2, round(2 * SCALE)))
-    frame.alpha_composite(keycaps.resize(frame.size, Image.LANCZOS))
-    draw = ImageDraw.Draw(frame)
-    for i, (part, box) in enumerate(zip(parts, boxes)):
-        draw.text(((box[0] + box[2]) / 2, (box[1] + box[3]) / 2), part, font=key_font, fill=(45, 50, 62), anchor="mm")
-        if i < len(parts) - 1:
-            draw.text((box[2] + gap, y + height / 2), "+", font=key_font, fill=(255, 255, 255, 235), anchor="lm")
-
-
 def with_shadow(canvas_bg, window_size):
     """背景 + 窗口的阴影 (窗口本身还没放上去)"""
     shadow = Image.new("RGBA", canvas_bg.size, (0, 0, 0, 0))
@@ -137,10 +91,9 @@ def main(frame_dir, output):
     height = max(w.height for w in windows) + 2 * MARGIN
     canvas_bg = background((width, height))
     frames = []
-    for window, (_, _, keys) in zip(windows, entries):
+    for window in windows:
         frame = with_shadow(canvas_bg, window.size).convert("RGBA")
         frame.alpha_composite(round_image(window, CORNER), (MARGIN, MARGIN))     # 圆角边缘半透明, 不会有锯齿
-        draw_keys(frame, keys)
         frames.append(frame.convert("RGB"))
     frames[0].save(output, format="PNG", save_all=True, append_images=frames[1:], duration=[entry[1] for entry in entries],
                    loop=0, disposal=0, blend=0, optimize=True)

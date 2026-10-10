@@ -225,15 +225,20 @@ class SearchWindow {
     }
 
     ; 画出状态栏的位图, 换掉图片控件里原来的那张。底色是背景色往文字颜色稍微偏一点 (浅色主题略深, 深色主题略浅),
-    ; 键帽再深一点; 键帽里的 ↵ 用 Segoe UI Symbol (普通字体里不一定有这个符号)
+    ; 键帽再深一点; 键帽里的 ↵ 用 Segoe UI Symbol (普通字体里不一定有这个符号)。
+    ; 用 24 位 DIB (没有 Alpha, 和 ThemePreview 一样): 32 位位图里 GDI 画的底色和文字 Alpha 是 0, 只有 GDI+ 画的键帽是 255,
+    ; 图片控件看到 32 位位图会按 Alpha 透明显示, 文字和底色就看不见了
     static _RenderStatusBar(texts) {
         w := SearchWindow.Width, h := SearchWindow.StatusHeight, pad := SearchWindow.Padding
         background := ThemeManager.Get("Background"), title := ThemeManager.Get("Title")
         gdi := SearchWindow._gdi
         screen := DllCall("GetDC", "Ptr", 0, "Ptr")
         hdc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr")
-        bitmap := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", w, "Int", h, "Ptr")
         DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+        info := Buffer(40, 0)                                               ; BITMAPINFOHEADER: 自上而下, 24 位
+        NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 24, info)
+        bits := 0
+        bitmap := DllCall("CreateDIBSection", "Ptr", hdc, "Ptr", info, "UInt", 0, "Ptr*", &bits, "Ptr", 0, "UInt", 0, "Ptr")
         oldBitmap := DllCall("SelectObject", "Ptr", hdc, "Ptr", bitmap, "Ptr")
         SearchWindow._FillRect(hdc, 0, 0, w, h, SearchWindow.MixColor(background, title, 0.045))
         SearchWindow._FillRect(hdc, 0, 0, w, 1, Win.ColorToBgr(ThemeManager.Get("Separator")))

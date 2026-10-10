@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.10.10]
+
+测试版。
+
+Test build.
+
+### 修复
+- 状态栏的文字和底色看不见 (只看得见键帽): 状态栏的位图改用 24 位 (没有透明通道); 以前 32 位位图里 GDI 画的文字和底色是全透明的
+
+### 改进
+- README 首页的动图不再在右下角画按键, 状态栏已经显示按键
+
 ## [2026.10.10.9]
 
 测试版。
@@ -672,7 +684,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.10...HEAD
+[2026.10.10.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.9...2026.10.10.10
 [2026.10.10.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.8...2026.10.10.9
 [2026.10.10.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.7...2026.10.10.8
 [2026.10.10.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.6...2026.10.10.7
