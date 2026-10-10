@@ -373,8 +373,9 @@ class Tests {
             eq("quick real tap still switches", calls.Text, "switch;")
             calls.Text := ""
             CapsLockSwitch.Clock := saved["Clock"].Value
-            first := CapsLockSwitch.Clock.Call(), Sleep(30), second := CapsLockSwitch.Clock.Call()
-            TestRunner.True("CapsLockSwitch.precise clock", second - first >= 25 && second - first < 1000)
+            ; Sleep 按 15.6 ms 一档的 A_TickCount 判断, 实际可能少睡将近一档: 睡 100 ms, 只要求量到 50 ms 以上
+            first := CapsLockSwitch.Clock.Call(), Sleep(100), second := CapsLockSwitch.Clock.Call()
+            TestRunner.True("CapsLockSwitch.precise clock", second - first >= 50 && second - first < 5000)
         } finally {
             SetTimer(CapsLockSwitch._holdTimer, 0)
             CapsLockSwitch._down := false
