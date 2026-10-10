@@ -140,7 +140,7 @@ Only windows you can see on the taskbar are listed (no tool windows, dialogs, wi
 ### WebSearch
 | Key | Description |
 |---|---|
-| Engines | List of search engines, each `{ "Id", "Keyword", "Title", "Url" }`; `{query}` in `Url` is replaced by what you typed |
+| Engines | List of search engines, each `{ "Id", "Keyword", "Title", "Url", "Icon" }`; `{query}` in `Url` is replaced by what you typed. `{query|8000}` gives a default value: typing only the keyword opens the URL with 8000 (for example `http://localhost:{query|8000}`). `Icon` (optional): an `.ico`, `.png` or `.exe` file for the result icon, a relative path starts from the Data folder (for example `Icons\jira.png`); empty = the browser icon |
 | Fallbacks | Fallback items shown when nothing matches: engine Ids, or `files` (file search). Default `["google", "files", "bing"]` |
 
 ### FileSearch

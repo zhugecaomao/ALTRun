@@ -78,8 +78,10 @@ class CalculatorProvider {
         ; 两边都像货币代码 (3 个字母) 又不是单位: 提示打开货币换算 / 还没有下载汇率
         if (RegExMatch(conversion.From, "^[a-z]{3}$") && RegExMatch(conversion.To, "^[a-z]{3}$")
                 && !IsObject(Units._Lookup(conversion.From)) && !IsObject(Units._Lookup(conversion.To))) {
-            hint := AppSettings.Feature("Calculator")["Currency"] ? "Calc.RatesNotYet" : "Calc.CurrencyOff"
-            return [ResultItem(I18n.T("Calc.Currency"), I18n.T(hint), {Icon: icon, Score: 150, Valid: false})]
+            if AppSettings.Feature("Calculator")["Currency"]
+                return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.RatesNotYet"), {Icon: icon, Score: 150, Valid: false})]
+            return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.CurrencyOff"), {Icon: icon, Score: 150   ; Enter: 打开计算器设置页
+                , OnRun: (*) => App.OpenPreferences("Prefs.Page.Calculator")})]
         }
         return []
     }

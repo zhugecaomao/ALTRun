@@ -59,6 +59,9 @@ Two ways:
 
 Avoid running ALTRun and changing settings on two PCs at the same time with data in a synced folder, or the sync service may create conflicting copies. Use [path variables](en-Commands-and-Snippets#variables-in-paths) (for example `A_Desktop`, `%OneDrive%`) where you can, so paths work on every PC.
 
+### Does clipboard history travel with the Data folder?
+Partly. Text history is saved in `Data\ClipboardHistory.json`, so it goes along when you copy the folder to a USB stick or keep it in a synced drive. Images and very long items are kept on this PC by default (`%LOCALAPPDATA%\ALTRun\Clipboard`, see `LocalFiles` in [Clipboard settings](en-Configuration#clipboard)). To keep no history on disk at all, set `Persist` to 0: it stays in memory and is gone when ALTRun quits. Programs listed in `IgnoreApps` (password managers by default), and content that apps mark as private, are never recorded.
+
 ### My commands are gone after upgrading from 2.x
 User commands from 2.x are imported from `ALTRun.ini` as custom commands, and the built-in commands are replaced by [system commands](en-Extensions#system-commands). The import happens only once, when there's no `ALTRun.json` yet: to import again, quit ALTRun, rename `Data\ALTRun.json` and run it again. `ALTRun.ini` is never changed; see [Installation and upgrades](en-Installation#upgrading-from-2x-v20260812-and-earlier-to-30).
 

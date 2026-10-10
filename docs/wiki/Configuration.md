@@ -140,7 +140,7 @@
 ### WebSearch 网页搜索
 | 键 | 说明 |
 |---|---|
-| Engines | 搜索引擎列表, 每一条 `{ "Id", "Keyword", "Title", "Url" }`, `Url` 里的 `{query}` 替换为输入的文字 |
+| Engines | 搜索引擎列表, 每一条 `{ "Id", "Keyword", "Title", "Url", "Icon" }`, `Url` 里的 `{query}` 替换为输入的文字。写成 `{query|8000}` 时有默认值: 只输入关键字就用 8000 打开 (例如 `http://localhost:{query|8000}`)。`Icon` (可选): 结果的图标, `.ico`、`.png` 或 `.exe` 文件, 相对路径从 Data 文件夹算起 (例如 `Icons\jira.png`); 留空 = 浏览器的图标 |
 | Fallbacks | 没有任何结果时显示的兜底项: 引擎的 Id, 或 `files` (文件搜索)。默认 `["google", "files", "bing"]` |
 
 ### FileSearch 文件搜索

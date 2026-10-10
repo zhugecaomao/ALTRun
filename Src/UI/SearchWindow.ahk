@@ -165,14 +165,77 @@ class SearchWindow {
     ; 输入、文件搜索模式和选中的行, 文字全选: 按 Enter 再执行一次, 直接输入就开始新的搜索
     static _showing := false, _showStarted := 0, _showStep := ""
     static StuckShowMs := 3000                                              ; 上一次显示超过这么久还没完成: 当作卡住, 不再挡住新的显示
-    static Show(text := "") {
+    ; typeAhead: 显示过程中打的字先记下来, 显示完补进搜索框 (见 _StartTypeAhead)
+    static Show(text := "", typeAhead := true) {
         if !IsObject(SearchWindow.Gui)
             return
         if SearchWindow._ShouldSkipShow()
             return
+        if typeAhead
+            SearchWindow._StartTypeAhead()
         SearchWindow._showing := true, SearchWindow._showStarted := A_TickCount, SearchWindow._showStep := "start"
         try SearchWindow._Show(text)
-        finally SearchWindow._showing := false
+        finally {
+            SearchWindow._showing := false
+            typed := SearchWindow._TakeTypeAhead()
+        }
+        SearchWindow._ApplyTypeAhead(typed)
+    }
+
+    ; 从按下热键到搜索框拿到焦点要几十毫秒 (先搜索空的搜索框, 再显示窗口; 刚开机时更久), 这段时间里打的字
+    ; 原来会进到前台的程序里, 丢掉或者打进别的窗口。现在这段时间用 InputHook 把会打出字的键拦下来记住
+    ; (Ctrl / Alt 组合键、方向键等照常), 拿到焦点后补进搜索框; 期间按的 Enter 在搜完后执行第一项, Esc 关掉窗口。
+    ; 最多拦 TypeAheadMs: 万一显示卡住, 打字也不会一直被拦着
+    static TypeAheadMs := 3000
+    static _typeAhead := ""
+    static _StartTypeAhead() {
+        if (IsObject(SearchWindow._typeAhead) || SearchWindow.IsActive())
+            return
+        try {
+            ih := InputHook("T" SearchWindow.TypeAheadMs / 1000)
+            ih.KeyOpt("{Enter}{NumpadEnter}{Esc}", "ES")
+            ih.Start()
+            SearchWindow._typeAhead := ih
+        }
+    }
+
+    ; 停止记录, 返回 {Text: 打的字, Key: "Enter" / "NumpadEnter" / "Escape" / "", Modifier: 按 Enter 时按着 Ctrl / Alt}
+    static _TakeTypeAhead() {
+        ih := SearchWindow._typeAhead, SearchWindow._typeAhead := ""
+        if !IsObject(ih)
+            return {Text: "", Key: "", Modifier: ""}
+        try ih.Stop()
+        key := (ih.EndReason = "EndKey") ? ih.EndKey : ""
+        modifier := (key = "") ? "" : InStr(ih.EndMods, "^") ? "ctrl" : InStr(ih.EndMods, "!") ? "alt" : ""
+        return {Text: RegExReplace(ih.Input, "[\x00-\x1F\x7F]"), Key: key, Modifier: modifier}   ; Tab 等控制字符不要
+    }
+
+    ; 把显示期间打的字当作在搜索框里打的: 文字全选时 (恢复的上次搜索) 替换掉它们; 开头的空格进入文件搜索模式
+    static _ApplyTypeAhead(typed) {
+        if (typed.Text = "" && typed.Key = "")
+            return
+        if Logger.Enabled
+            Logger.Debug("SearchWindow: typed while showing '" typed.Text "'" (typed.Key != "" ? " + " typed.Key : ""))
+        if (typed.Key = "Escape")
+            return SearchWindow.Hide()
+        text := typed.Text
+        if (text != "") {
+            if (SubStr(text, 1, 1) = " " && SearchWindow.Mode = "results" && !SearchWindow.FileMode) {
+                if SearchWindow._AllTextSelected()
+                    SearchWindow.Input.Value := ""
+                if SearchWindow._CanEnterFileMode() {
+                    SearchWindow.FileMode := true
+                    SearchWindow._UpdateCueBanner()
+                    text := SubStr(text, 2)
+                }
+            }
+            SendMessage(0xC2, 1, StrPtr(text), SearchWindow.Input.Hwnd)   ; EM_REPLACESEL: 替换选中的文字 / 插在光标处
+            if (SearchWindow._searchTimer != "")
+                SetTimer(SearchWindow._searchTimer, 0)
+            SearchWindow._RunSearch()                                       ; 马上搜索: 后面的 Enter 执行的是这些字的结果
+        }
+        if (typed.Key != "")
+            SearchWindow._Execute(typed.Modifier)
     }
 
     ; 上一次还没显示完 (例如显示过程中又按了热键): 不重入。但上一次卡住太久 (2026-10 关掉一台显示器后卡了 2 分半,
@@ -610,7 +673,7 @@ class SearchWindow {
     ;---------------------------------------------------------------------------
     ; 直接打开某一项的操作面板 (不在搜索结果里, 例如选中内容的操作): Esc / ← 关掉窗口
     static ShowActions(item) {
-        SearchWindow.Show()
+        SearchWindow.Show("", false)
         if SearchWindow._OpenActionsFor(item)
             SearchWindow._actionsOnly := true
     }

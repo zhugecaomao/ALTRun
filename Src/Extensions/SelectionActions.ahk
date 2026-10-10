@@ -105,8 +105,8 @@ class SelectionActions {
         query := Trim(RegExReplace(text, "\s+", " "))
         if ProviderRegistry.IsEnabled(WebSearchProvider) {
             for engine in AppSettings.Feature("WebSearch")["Engines"] {
-                searchUrl := StrReplace(engine["Url"], "{query}", Url.Encode(query))
-                actions.Push(ResultItem(I18n.T("Action.SearchWith", engine["Title"]), "", {Icon: "url:", OnRun: SelectionActions._Opener(searchUrl)}))
+                searchUrl := WebSearchProvider.Fill(engine["Url"], query)
+                actions.Push(ResultItem(I18n.T("Action.SearchWith", engine["Title"]), "", {Icon: WebSearchProvider.IconFor(engine), OnRun: SelectionActions._Opener(searchUrl)}))
             }
         }
         actions.Push(ResultItem(I18n.T("Action.SaveSnippet"), "", {Icon: IconCache.Own("Snippet", "res:imageres.dll,-102")
