@@ -309,8 +309,20 @@ class Win {
         layouts := []
         Loop count
             layouts.Push(NumGet(buf, (A_Index - 1) * A_PtrSize, "Ptr"))
-        next := Win.NextLayout(layouts, Win.KeyboardLayout(hwnd))
-        try PostMessage(0x50, 0, next, , "ahk_id " hwnd)                   ; WM_INPUTLANGCHANGEREQUEST: 请前台窗口切换
+        current := Win.KeyboardLayout(hwnd)
+        next := Win.NextLayout(layouts, current)
+        ; 前台是 ALTRun 自己的窗口 (例如搜索窗口) 时直接切换: 2026-10 反馈搜索窗口里按 CapsLock 切不到中文 (打开了 "呼出时切换到
+        ; 英文输入法", 搜索窗口已经用 ActivateKeyboardLayout 切到了英文), 发给自己窗口的消息没有生效。
+        ; 和隐藏时切回原来的输入法一样 (SearchWindow._RestoreInputLanguage) 用 ActivateKeyboardLayout
+        own := DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt") = DllCall("GetCurrentThreadId", "UInt")
+        if own {
+            try DllCall("ActivateKeyboardLayout", "Ptr", next, "UInt", 0)
+        } else {
+            try PostMessage(0x50, 0, next, , "ahk_id " hwnd)               ; WM_INPUTLANGCHANGEREQUEST: 请前台窗口切换
+        }
+        if Logger.Enabled
+            Logger.Debug(Format("Input language: {:08X} -> {:08X} ({}), now {:08X}", current & 0xFFFFFFFF, next & 0xFFFFFFFF
+                , own ? "ALTRun window" : "posted", Win.KeyboardLayout(hwnd) & 0xFFFFFFFF))   ; 发消息时 now 还是原来的 (对方稍后才切换)
         return next
     }
 

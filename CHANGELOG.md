@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.11.5]
+
+测试版。
+
+Test build.
+
+### 修复
+- 搜索窗口里按 CapsLock ("按一下切换输入法") 切不到中文输入法 (打开了 "呼出时切换到英文输入法" 时): 前台是 ALTRun 自己的窗口时改为直接切换, 以前是给自己的窗口发切换请求, 没有生效。调试日志里记下每次切换前后的输入法 (`Input language: ...`)
+
+### 改回
+- 去掉 2026.10.11.4 里 "Alt 没松开就打的字当作普通的字" 的处理 (呼出过程中把 Alt+字母记成文字并拦下、窗口里处理 WM_SYSCHAR): 测试时关掉窗口后 Windows 11 的开始按钮会被高亮选中, 不再改动 Alt 组合键的系统行为。"先准备好空搜索框、呼出时直接显示" 和 "关掉淡入淡出" 保留
+
 ## [2026.10.11.4]
 
 测试版。
@@ -747,7 +759,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.5...HEAD
+[2026.10.11.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.4...2026.10.11.5
 [2026.10.11.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.3...2026.10.11.4
 [2026.10.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.2...2026.10.11.3
 [2026.10.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.1...2026.10.11.2

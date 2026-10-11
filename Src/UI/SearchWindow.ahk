@@ -115,7 +115,6 @@ class SearchWindow {
 
         OnMessage(0x100, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_KEYDOWN
         OnMessage(0x104, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_SYSKEYDOWN (Alt+...)
-        OnMessage(0x106, (p*) => SearchWindow._OnSysChar(p*))               ; WM_SYSCHAR: 热键的 Alt 还没松开就打的字
         OnMessage(0x6,   (p*) => SearchWindow._OnActivate(p*))              ; WM_ACTIVATE
         OnMessage(0x20A, (p*) => SearchWindow._OnMouseWheel(p*))            ; WM_MOUSEWHEEL
         OnMessage(0x201, (p*) => SearchWindow._OnLButtonDown(p*))           ; WM_LBUTTONDOWN: 拖动窗口
@@ -427,7 +426,6 @@ class SearchWindow {
             return
         if SearchWindow._ShouldSkipShow()
             return
-        SearchWindow._hotkeyAlt := GetKeyState("Alt", "P")                  ; 用 Alt+Space 等呼出, Alt 还按着: 见 _OnSysChar
         if (SearchWindow._prepareTimer != "")
             SetTimer(SearchWindow._prepareTimer, 0)
         if typeAhead
@@ -445,41 +443,17 @@ class SearchWindow {
     ; 原来会进到前台的程序里, 丢掉或者打进别的窗口。现在这段时间用 InputHook 把会打出字的键拦下来记住
     ; (Ctrl / Alt 组合键、方向键等照常), 拿到焦点后补进搜索框; 期间按的 Enter 在搜完后执行第一项, Esc 关掉窗口。
     ; 最多拦 TypeAheadMs: 万一显示卡住, 打字也不会一直被拦着
-    ; 按 Alt+Space 后打字快时, Alt 还没松开就按了第一个字母: 这是 Alt+字母, InputHook 默认不当作文字 (按着 Alt 的键
-    ; 都不记), 第一个字就丢了。所以呼出时 Alt 还按着, 就用 M 选项: 带修饰键的键也记成文字 (Alt+n 记成 n, 也会被拦下,
-    ; 不会触发原来窗口的菜单); Ctrl+字母会记成控制字符, _TakeTypeAhead 里去掉。窗口拿到焦点后的见 _OnSysChar
     static TypeAheadMs := 3000
     static _typeAhead := ""
     static _StartTypeAhead() {
         if (IsObject(SearchWindow._typeAhead) || SearchWindow.IsActive())
             return
         try {
-            ih := SearchWindow.NewTypeAheadHook(GetKeyState("Alt", "P"))
+            ih := InputHook("T" SearchWindow.TypeAheadMs / 1000)
+            ih.KeyOpt("{Enter}{NumpadEnter}{Esc}", "ES")
             ih.Start()
             SearchWindow._typeAhead := ih
         }
-    }
-
-    static NewTypeAheadHook(altDown := false) {
-        ih := InputHook((altDown ? "M" : "") "T" SearchWindow.TypeAheadMs / 1000)
-        ih.KeyOpt("{Enter}{NumpadEnter}{Esc}", "ES")
-        return ih
-    }
-
-    ; 窗口已经拿到焦点, 呼出用的 Alt 还按着时打的字母 / 数字: 系统发来的是 WM_SYSCHAR (不会进输入框, 只会响一声),
-    ; 当作普通的字插进输入框。只在 Alt 从按热键起一直没松开时 (_hotkeyAlt, 按下任何不带 Alt 的键就清掉);
-    ; 搜索窗口没有 Alt+字母 的快捷键。空格不算: Alt+空格 是呼出的热键
-    static _hotkeyAlt := false
-    static _OnSysChar(wParam, lParam, msg, hwnd) {
-        if (!SearchWindow._hotkeyAlt || !SearchWindow._IsOwnWindow(hwnd) || GetKeyState("Ctrl"))
-            return
-        char := Chr(wParam)
-        if !RegExMatch(char, "^[\p{L}\p{N}]$")
-            return
-        if Logger.Enabled
-            Logger.Debug("SearchWindow: typed with Alt still down '" char "'")
-        SendMessage(0xC2, 1, StrPtr(char), SearchWindow.Input.Hwnd)        ; EM_REPLACESEL: 和打字一样, 输入框改变后照常搜索
-        return 0
     }
 
     ; 停止记录, 返回 {Text: 打的字, Key: "Enter" / "NumpadEnter" / "Escape" / "", Modifier: 按 Enter 时按着 Ctrl / Alt}
@@ -697,7 +671,6 @@ class SearchWindow {
             SearchWindow.Gui.Hide()
             SearchWindow._PrepareLater()
         }
-        SearchWindow._hotkeyAlt := false
         LargeType.Close()
     }
 
@@ -1205,8 +1178,6 @@ class SearchWindow {
         if !SearchWindow._IsOwnWindow(hwnd)
             return
         vk := wParam
-        if (msg = 0x100)                                                    ; 不带 Alt 的键: 呼出用的 Alt 已经松开了
-            SearchWindow._hotkeyAlt := false
         ctrl  := GetKeyState("Ctrl")
         shift := GetKeyState("Shift")
         alt   := (msg = 0x104) || GetKeyState("Alt")
