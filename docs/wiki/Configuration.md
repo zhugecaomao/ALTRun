@@ -26,7 +26,7 @@
 `DataLocation` 只在默认位置 (`Data\ALTRun.json`, 或 `%APPDATA%\ALTRun\Data\ALTRun.json`) 的文件里起作用: 有这一项时, ALTRun 改用那个文件夹里的设置和数据, 默认位置的文件只用来指路。一般在 偏好设置 → 高级 → 数据 → 更改位置 里设置, 不用手动写; 可以用环境变量, 相对路径从程序目录算起。
 
 ## General 通用
-偏好设置里分在 "通用" 和 "搜索窗口" 两页。
+偏好设置里分在 "通用"、"搜索窗口" 和 "热键" (CapsLock) 三页。
 
 | 键 | 默认 | 说明 |
 |---|---|---|
@@ -43,7 +43,7 @@
 | RestoreInput | 1 | 打开 `SwitchToEnglishInput` 时, 窗口隐藏后切回原来的输入法 (Windows 设置了每个应用窗口各用各的输入法时不需要, 也不会切换) |
 | SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
 | KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次, 直接输入开始新的搜索。从 2.x 升级时沿用 `KeepInput` |
-| ShowTips | 1 | 空搜索框里轮换显示使用提示 |
+| ShowTips | 1 | 轮换显示使用提示: 显示在状态栏, 关掉状态栏 (`Appearance.StatusBar = 0`) 时显示在空搜索框里 |
 | FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号 |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |
@@ -95,8 +95,8 @@
 | Hotkey | `^!c` | 直接打开剪贴板历史的热键 |
 | MaxItems | 200 | 保存多少条 |
 | MaxItemLength | 100000 | 超过这么多字的内容不记录 |
-| Persist | 1 | 保存到磁盘 (`Data\ClipboardHistory.json`, 超过 4000 字的条目和图片单独存在 `Clipboard\` 文件夹, 默认在本机的 `%LOCALAPPDATA%\ALTRun\Clipboard`, 见 `LocalFiles`); 0 = 只在内存里 |
-| LocalFiles | 1 | 1 = 图片和很长的条目 (`Clipboard\` 文件夹) 只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun\Clipboard`), 不放进 Data 文件夹: Data 在 OneDrive 等同步盘里时, 复制图片不会触发上传; `ClipboardHistory.json` 仍在 Data 里照常同步, 另一台电脑上没有对应文件的图片 / 长条目不显示。第一次运行时自动把 Data 里原来的文件夹搬过去。0 = 都放在 Data 文件夹 (例如放在 U 盘里随身带) |
+| Persist | 1 | 保存到磁盘 (`ClipboardHistory.json`, 超过 4000 字的条目和图片单独存在 `Clipboard\` 文件夹; 存在哪里见 `LocalFiles`); 0 = 只在内存里 |
+| LocalFiles | 1 | 剪贴板历史存在哪里 (偏好设置 → 剪贴板 → "保存位置"); 本机 = `%LOCALAPPDATA%\ALTRun`, 不跟着同步盘或 U 盘里的 Data 文件夹走。**1** = 图片和很长的条目 (`Clipboard\` 文件夹) 只存本机: Data 在 OneDrive 等同步盘里时, 复制图片不会触发上传; `ClipboardHistory.json` 仍在 Data 里照常同步, 另一台电脑上没有对应文件的图片 / 长条目不显示。**2** = `ClipboardHistory.json` 也只存本机, 剪贴板历史完全不离开这台电脑。**0** = 都放在 Data 文件夹 (例如放在 U 盘里随身带)。改了之后, 下次启动时自动把文件从原来的位置搬过去; 两边都有时 (例如同步盘里另一台电脑的历史) 不覆盖, 用新位置的 |
 | Images | 1 | 也记录图片 (存成 PNG); 需要 `Persist = 1` |
 | MaxImages | 50 | 最多保存多少张图片, 超过时先删最早的 |
 | MergeDoubleCopy | 0 | 1 = 快速按两次 `Ctrl+C` 时把这次复制的文字接到上一条后面 |
@@ -118,7 +118,7 @@
 | Keyword | `bm` | 只搜书签的关键字 |
 | InDefaultResults | 1 | 直接输入名称时也显示匹配的书签 (排在应用和命令后面, 最多 8 条) |
 
-读 Chrome、Edge、Brave、Vivaldi 所有用户配置的书签; Firefox 的书签存在 SQLite 数据库里, 暂不支持。
+偏好设置 → 功能 → 功能选项里也能改。读 Chrome、Edge、Brave、Vivaldi 所有用户配置的书签; Firefox 的书签存在 SQLite 数据库里, 暂不支持。
 
 ### Scripts 脚本扩展
 只有 `Enabled`。脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Extensions#脚本扩展)。
@@ -137,7 +137,7 @@
 | Keyword | `w` | 只搜已打开的窗口的关键字; 只输入 `w ` 列出全部窗口 |
 | InDefaultResults | 1 | 直接输入时也显示标题匹配得好的窗口 (排在应用和命令后面, 最多 3 个) |
 
-只列出任务栏上能看到的窗口 (不包括工具窗口、对话框、别的虚拟桌面上的窗口和 ALTRun 自己的窗口)。
+偏好设置 → 功能 → 功能选项里也能改。只列出任务栏上能看到的窗口 (不包括工具窗口、对话框、别的虚拟桌面上的窗口和 ALTRun 自己的窗口)。
 
 ### WebSearch 网页搜索
 | 键 | 说明 |
@@ -199,7 +199,7 @@
 | `FileIndex.json` | 内置文件索引 (没有 Everything 时) |
 | `Knowledge.json` | 学习排序和最近的搜索 |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) |
-| `ClipboardHistory.json` | 剪贴板历史 (很长的条目和图片单独存成文件, 默认在本机的 `%LOCALAPPDATA%\ALTRun\Clipboard\`, `LocalFiles = 0` 时在 `Data\Clipboard\`) |
+| `ClipboardHistory.json` | 剪贴板历史 (很长的条目和图片单独存成文件, 默认在本机的 `%LOCALAPPDATA%\ALTRun\Clipboard\`, `LocalFiles = 0` 时在 `Data\Clipboard\`; `LocalFiles = 2` 时这个文件也在本机, 不在 Data 里) |
 | `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) |
 | `Update.json` | 上次检查更新的时间、跳过的版本 |
 | `Icons\` | "下载网站图标" 保存的网页搜索图标 |

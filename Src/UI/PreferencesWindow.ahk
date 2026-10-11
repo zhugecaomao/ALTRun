@@ -346,7 +346,8 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.Group.Window")
         PreferencesWindow._Check("General.HideOnDeactivate", "Prefs.HideOnDeactivate")
         PreferencesWindow._Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
-        PreferencesWindow._Check("Appearance.StatusBar", "Prefs.StatusBar")
+        PreferencesWindow._Check("Appearance.StatusBar", "Prefs.StatusBar")       ; 使用提示在状态栏里 (关掉状态栏时在空搜索框里), 放在一起
+        PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
         PreferencesWindow._Section("Prefs.Group.Typing")
         english := PreferencesWindow._Check("General.SwitchToEnglishInput", "Prefs.EnglishInput")
         restore := PreferencesWindow._Check("General.RestoreInput", "Prefs.RestoreInput", PreferencesWindow._InputX() + 18)   ; 子选项, 缩进
@@ -354,8 +355,6 @@ class PreferencesWindow {
         english.OnEvent("Click", (*) => restore.Enabled := english.Value)
         PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
         PreferencesWindow._Section("Prefs.Section.EmptyBox")
-        PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
-        PreferencesWindow._Gap()
         PreferencesWindow._InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
         PreferencesWindow._Section("Prefs.Section.History")
         PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")
@@ -496,6 +495,12 @@ class PreferencesWindow {
         PreferencesWindow._Gap()
         PreferencesWindow._Pair(["Features.Terminal.Prefix", "Prefs.TerminalPrefix", "S"]
             , ["Features.Terminal.Shell", "Prefs.TerminalShell", "M", "choice", ["cmd", "powershell", "pwsh", "wt"], ["Command Prompt (cmd)", "Windows PowerShell", "PowerShell 7 (pwsh)", "Windows Terminal (wt)"]])
+        PreferencesWindow._Gap()
+        rowY := PreferencesWindow._y                                        ; 书签和窗口: 直接输入时也显示 (两列, 和上面的功能对齐) + 各自的关键字
+        PreferencesWindow._Check("Features.Bookmarks.InDefaultResults", "Prefs.BookmarksInDefault", , , "Prefs.Group.NormalSearch", columnW)
+        PreferencesWindow._y := rowY
+        PreferencesWindow._Check("Features.Windows.InDefaultResults", "Prefs.WindowsInDefault", PreferencesWindow._InputX() + columnW, , "", columnW)
+        PreferencesWindow._Pair(["Features.Bookmarks.Keyword", "Prefs.BookmarksKeyword", "S"], ["Features.Windows.Keyword", "Prefs.WindowsKeyword", "S"])
     }
 
     static _BuildApplications() {
@@ -569,12 +574,13 @@ class PreferencesWindow {
 
     static _BuildClipboard() {
         PreferencesWindow._BeginPage("Prefs.Page.Clipboard", 150)
-        PreferencesWindow._Field("Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "K", "hotkey")
-        PreferencesWindow._Field("Features.Clipboard.Keyword", "Prefs.ClipKeyword", "M")
+        PreferencesWindow._Pair(["Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "K", "hotkey"], ["Features.Clipboard.Keyword", "Prefs.ClipKeyword", "S"])
         PreferencesWindow._Pair(["Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number"], ["Features.Clipboard.MaxItemLength", "Prefs.ClipMaxLength", "S", "number"])
         PreferencesWindow._Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
         PreferencesWindow._Check("Features.Clipboard.Images", "Prefs.ClipImages")
         PreferencesWindow._Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
+        PreferencesWindow._Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]   ; 存在哪里 (ClipboardProvider.PlaceStorage)
+            , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "L")
         PreferencesWindow._Check("Features.Clipboard.MergeDoubleCopy", "Prefs.ClipMerge", , , "Prefs.Group.Copy")
         PreferencesWindow._Gap()
         PreferencesWindow._Lines("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps", 4)
@@ -607,7 +613,8 @@ class PreferencesWindow {
     static _BuildScripts() {
         PreferencesWindow._BeginPage("Prefs.Page.Scripts", 110)
         PreferencesWindow._Section("Prefs.Section.Scripts")
-        PreferencesWindow._Info("Prefs.Group.ScriptsFolder", ScriptProvider.Dir, " cGray")
+        folder := PreferencesWindow._Info("Prefs.Group.ScriptsFolder", ScriptProvider.Dir, " r1 cGray 0x8100")   ; 和高级页的数据文件夹一样: 太长时中间用省略号
+        Win.AddTooltip(folder.Hwnd, ScriptProvider.Dir)
         PreferencesWindow._y += 4
         PreferencesWindow._Button("Prefs.ScriptsFolder", (*) => (ScriptProvider.OpenFolder(), PreferencesWindow._FillScripts()))
         PreferencesWindow._Section("Prefs.Section.ScriptList")

@@ -2232,28 +2232,43 @@ class Tests {
         try FileDelete(A_Temp "\ALTRun-recent-settings.json")
     }
 
-    ; 剪贴板置顶: 排在最前面, 超过条数不删, 再复制仍然置顶, 清空时保留, 保存后还在
-    ; 剪贴板的图片和长条目存在本机: 第一次把 Data\Clipboard 搬过去; ClipboardHistory.json 留在 Data (照常同步)
+    ; 剪贴板存在哪里 (LocalFiles): 1 = Clipboard 文件夹搬到本机, ClipboardHistory.json 留在 Data (照常同步);
+    ; 2 = json 也搬到本机; 0 = 都搬回 Data; 两边都有时不覆盖; 没有本机文件夹时都在 Data
     static ClipboardLocal() {
         eq := (n, a, e) => TestRunner.Equal("ClipboardLocal." n, a, e)
         root := A_Temp "\ALTRun-clip-local-test"
+        data := root "\Data", localDir := root "\Local"
         try DirDelete(root, true)
-        DirCreate(root "\Data\Clipboard")
-        FileAppend('{"Entries": []}', root "\Data\ClipboardHistory.json", "UTF-8")
-        FileAppend("long text", root "\Data\Clipboard\t-1.txt", "UTF-8")
+        DirCreate(data "\Clipboard")
+        FileAppend('{"Entries": []}', data "\ClipboardHistory.json", "UTF-8")
+        FileAppend("long text", data "\Clipboard\t-1.txt", "UTF-8")
         saved := [ClipboardProvider.File, ClipboardProvider.Folder]
-        ClipboardProvider.File := root "\Data\ClipboardHistory.json", ClipboardProvider.Folder := root "\Data\Clipboard"
-        eq("moved", ClipboardProvider.UseLocalStorage(root "\Local"), true)
-        eq("json stays in Data", ClipboardProvider.File, root "\Data\ClipboardHistory.json")
-        eq("folder", ClipboardProvider.Folder, root "\Local\Clipboard")
-        eq("files moved", (FileExist(root "\Local\Clipboard\t-1.txt") ? 1 : 0) (DirExist(root "\Data\Clipboard") ? 1 : 0), "10")
-        eq("json not moved", (FileExist(root "\Data\ClipboardHistory.json") ? 1 : 0) (FileExist(root "\Local\ClipboardHistory.json") ? 1 : 0), "10")
-        eq("again", ClipboardProvider.UseLocalStorage(root "\Local"), true)    ; 已经在本机: 什么都不做
+        where := () => (FileExist(data "\ClipboardHistory.json") ? "D" : "-") (FileExist(localDir "\ClipboardHistory.json") ? "L" : "-")
+            . " " (FileExist(data "\Clipboard\t-1.txt") ? "D" : "-") (FileExist(localDir "\Clipboard\t-1.txt") ? "L" : "-")
+        ClipboardProvider.PlaceStorage(1, data, localDir)
+        eq("1 json stays in Data", ClipboardProvider.File, data "\ClipboardHistory.json")
+        eq("1 folder", ClipboardProvider.Folder, localDir "\Clipboard")
+        eq("1 files", where(), "D- -L")
+        ClipboardProvider.PlaceStorage(1, data, localDir)                      ; 已经在本机: 什么都不做
+        eq("1 again", where(), "D- -L")
+        ClipboardProvider.PlaceStorage(2, data, localDir)
+        eq("2 json", ClipboardProvider.File, localDir "\ClipboardHistory.json")
+        eq("2 files", where(), "-L -L")
+        ClipboardProvider.PlaceStorage(0, data, localDir)
+        eq("0 json", ClipboardProvider.File, data "\ClipboardHistory.json")
+        eq("0 folder", ClipboardProvider.Folder, data "\Clipboard")
+        eq("0 files", where(), "D- D-")
+        FileAppend('{"Entries": []}', localDir "\ClipboardHistory.json", "UTF-8")   ; 两边都有: 不覆盖, 用新位置的
+        ClipboardProvider.PlaceStorage(0, data, localDir)
+        eq("both kept", where(), "DL D-")
+        ClipboardProvider.PlaceStorage(2, data, "")                            ; 没有 %LOCALAPPDATA%: 都在 Data
+        eq("no local", ClipboardProvider.File "|" ClipboardProvider.Folder, data "\ClipboardHistory.json|" data "\Clipboard")
         eq("default", AppSettings.Defaults()["Features"]["Clipboard"]["LocalFiles"], 1)
         ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2]
         try DirDelete(root, true)
     }
 
+    ; 剪贴板置顶: 排在最前面, 超过条数不删, 再复制仍然置顶, 清空时保留, 保存后还在
     static ClipboardPin() {
         eq := (n, a, e) => TestRunner.Equal("ClipboardPin." n, a, e)
         root := A_Temp "\ALTRun-clip-pin-test"

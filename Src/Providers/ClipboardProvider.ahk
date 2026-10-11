@@ -25,6 +25,8 @@
 ;   Enabled / Keyword / Hotkey / MaxItems / MaxItemLength / Persist / IgnoreApps
 ;   Images / MaxImages     记录图片、最多保存几张
 ;   MergeDoubleCopy        快速按两次 Ctrl+C: 把这次复制的文字接到上一条后面 (默认关闭)
+;   LocalFiles             存在哪里: 0 = 都在 Data 文件夹; 1 = 图片和长条目 (Clipboard 文件夹) 只存本机 (默认);
+;                          2 = 历史 (ClipboardHistory.json) 也只存本机。本机 = %LOCALAPPDATA%\ALTRun, 见 PlaceStorage
 ;
 ; 用法:
 ;   ClipboardProvider.PauseRecording(ms)   ALTRun 自己临时借用剪贴板时调用, 这段时间不记录
@@ -37,7 +39,7 @@ class ClipboardProvider {
     static Id      := "Clipboard"
     static File    := AppSettings.DataDir "\ClipboardHistory.json"
     static Folder  := AppSettings.DataDir "\Clipboard"                         ; 很长的条目和图片
-    static LocalDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun" : ""   ; LocalFiles = 1 时 (默认) 图片和长条目存在这里
+    static LocalDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun" : ""   ; LocalFiles = 1 (默认) / 2 时存在这里
     static LargeText := 4000
     static Icon => IconCache.Own("Clipboard", "res:imageres.dll,-5314")   ; 文字条目的图标
     static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
@@ -46,8 +48,7 @@ class ClipboardProvider {
 
     static Init() {
         options := AppSettings.Feature("Clipboard")
-        if (options["LocalFiles"] && ClipboardProvider.LocalDir != "")
-            ClipboardProvider.UseLocalStorage(ClipboardProvider.LocalDir)
+        ClipboardProvider.PlaceStorage(options["LocalFiles"])
         if options["Persist"]
             ClipboardProvider._Load()
         OnClipboardChange((dataType) => ClipboardProvider._OnChange(dataType))
@@ -58,26 +59,48 @@ class ClipboardProvider {
         }
     }
 
-    ; 图片和很长的条目 (Clipboard 文件夹) 放在本机, 不跟着 Data 文件夹进 OneDrive 等同步盘: 图片大, 放在同步盘里
-    ; 每复制一张都要上传。ClipboardHistory.json 仍在 Data 里 (文字历史照常同步); 另一台电脑上没有对应文件的
-    ; 图片 / 长条目读取时跳过。第一次切换时把 Data 里原来的文件夹搬过来; 搬不动时这次仍用原来的位置, 下次再试
-    static UseLocalStorage(dir) {
-        newFolder := dir "\Clipboard"
-        if (newFolder = ClipboardProvider.Folder)
-            return true
-        try {
-            if (InStr(FileExist(ClipboardProvider.Folder), "D") && !InStr(FileExist(newFolder), "D")) {
-                DirCreate(dir)
-                DirCopy(ClipboardProvider.Folder, newFolder)
-                DirDelete(ClipboardProvider.Folder, true)
-                Logger.Debug("ClipboardProvider: images and long entries moved to " newFolder)
-            }
-        } catch as e {
-            Logger.Error("ClipboardProvider: cannot move " ClipboardProvider.Folder " to " newFolder " - " e.Message)
-            return false
+    ; 剪贴板历史存在哪里 (LocalFiles): 放在本机就不跟着 Data 文件夹进 OneDrive 等同步盘或 U 盘。
+    ;   1 (默认): 图片和很长的条目 (Clipboard 文件夹) 放在本机: 图片大, 放在同步盘里每复制一张都要上传。
+    ;      ClipboardHistory.json 仍在 Data 里 (文字历史照常同步); 另一台电脑上没有对应文件的图片 / 长条目读取时跳过
+    ;   2: ClipboardHistory.json 也放在本机, 剪贴板历史完全不离开这台电脑
+    ;   0: 都在 Data 里 (例如整个文件夹放在 U 盘里带着走)
+    ; 改了设置后, 第一次启动时把文件从另一个位置搬过来; 搬不动时这次仍用原来的位置, 下次再试。
+    ; 两边都有时 (例如同步盘里另一台电脑的历史) 不覆盖, 用新位置的
+    static PlaceStorage(level, dataDir := AppSettings.DataDir, localDir := ClipboardProvider.LocalDir) {
+        if (localDir = "" || localDir = dataDir)
+            level := 0
+        folderDir := (level >= 1) ? localDir : dataDir
+        fileDir := (level >= 2) ? localDir : dataDir
+        otherDir := (folderDir = dataDir) ? localDir : dataDir
+        ClipboardProvider.Folder := (otherDir = "") ? folderDir "\Clipboard" : ClipboardProvider._Relocate(otherDir "\Clipboard", folderDir "\Clipboard", true)
+        otherDir := (fileDir = dataDir) ? localDir : dataDir
+        ClipboardProvider.File := (otherDir = "") ? fileDir "\ClipboardHistory.json" : ClipboardProvider._Relocate(otherDir "\ClipboardHistory.json", fileDir "\ClipboardHistory.json", false)
+    }
+
+    ; 把 source (文件夹或文件) 搬到 target, 返回要用的位置: 已经在 target / source 不存在 / 两边都有时是 target, 搬不动时是 source
+    static _Relocate(source, target, isFolder) {
+        exists := (where) => isFolder ? InStr(FileExist(where), "D") : (FileExist(where) != "" && !InStr(FileExist(where), "D"))
+        if (source = target || !exists(source))
+            return target
+        if exists(target) {
+            Logger.Debug("ClipboardProvider: both " source " and " target " exist, using " target)
+            return target
         }
-        ClipboardProvider.Folder := newFolder
-        return true
+        try {
+            SplitPath(target, , &dir)
+            DirCreate(dir)
+            if isFolder {
+                DirCopy(source, target)
+                DirDelete(source, true)
+            } else {
+                FileMove(source, target)
+            }
+            Logger.Debug("ClipboardProvider: moved " source " to " target)
+            return target
+        } catch as e {
+            Logger.Error("ClipboardProvider: cannot move " source " to " target " - " e.Message)
+            return source
+        }
     }
 
     static PauseRecording(milliseconds) {

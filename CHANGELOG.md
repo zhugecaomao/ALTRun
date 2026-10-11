@@ -5,6 +5,22 @@
 
 ## [未发布]
 
+## [2026.10.11.2]
+
+测试版。
+
+Test build.
+
+### 新增
+- 剪贴板历史可以完全只存在本机: 偏好设置 → 剪贴板 → "保存位置" (`LocalFiles`): Data 文件夹 (0) / 图片和长条目只存本机 (1, 默认, 和以前一样) / 全部只存本机 (2, `ClipboardHistory.json` 也放到 `%LOCALAPPDATA%\ALTRun`, 不跟着同步盘或 U 盘走)。改了之后下次启动时自动搬文件, 两边都有时不覆盖; 以前改回 0 时不会把图片搬回 Data, 现在也会
+- 偏好设置 → 功能 → 功能选项: 书签和窗口切换的关键字 (`bm`、`w`), 以及普通搜索里是否也显示书签 / 已打开的窗口 (以前只能在 ALTRun.json 里改)
+
+### 改进
+- 偏好设置 → 搜索窗口: "显示使用提示" 移到 "显示状态栏" 下面, 两项都加了说明 (提示显示在状态栏, 关掉状态栏时在空搜索框); "空搜索框" 的说明不再提使用提示
+- 偏好设置 → 剪贴板: 热键和关键字放在同一行; 托盘图标的说明提到状态栏的菜单按钮
+- 偏好设置 → 脚本: 文件夹路径太长时中间用省略号, 鼠标停留显示完整路径 (和高级页一样)
+- Wiki (配置、使用方法、常见问题、命令和片段) 和 SECURITY 同步更新
+
 ## [2026.10.11.1]
 
 测试版。
@@ -706,7 +722,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.2...HEAD
+[2026.10.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.1...2026.10.11.2
 [2026.10.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.11...2026.10.11.1
 [2026.10.10.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.10...2026.10.10.11
 [2026.10.10.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.9...2026.10.10.10

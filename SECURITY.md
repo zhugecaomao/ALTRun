@@ -72,7 +72,7 @@ All data stays on your computer, in the `Data` folder next to `ALTRun.exe` (or `
 | Settings, custom commands, snippets, pinned items | `ALTRun.json` | |
 | Learned ranking, search history, recent items | `Knowledge.json` | Reset in Preferences → Advanced |
 | Usage statistics | `Usage.json` | Counts per feature only; no typed text or opened items |
-| Clipboard history | `ClipboardHistory.json`; images and very long entries in `%LOCALAPPDATA%\ALTRun\Clipboard` | Images and long entries stay on this computer even when the `Data` folder is synced; can be kept in memory only; can be cleared at any time |
+| Clipboard history | `ClipboardHistory.json`; images and very long entries in `%LOCALAPPDATA%\ALTRun\Clipboard` | Images and long entries stay on this computer even when the `Data` folder is synced; the whole history can be kept on this computer too (Preferences → Clipboard → Save in), or in memory only; can be cleared at any time |
 | Search indexes | `AppIndex.json`, `FileIndex.json` | Names and paths of applications and files, used for searching |
 | Exchange rates, update status | `Currency.json`, `Update.json` | |
 | Debug log (off by default) | `%TEMP%\ALTRun.log` | Timings and errors; no typed text |
@@ -157,7 +157,7 @@ ALTRun 本身只在以下情况联网:
 | 设置、自定义命令、片段、置顶的项目 | `ALTRun.json` | |
 | 学习排序、搜索历史、最近使用 | `Knowledge.json` | 可在 偏好设置 → 高级 里重置 |
 | 使用统计 | `Usage.json` | 只记录每个功能用了几次, 不记录输入的文字和打开的内容 |
-| 剪贴板历史 | `ClipboardHistory.json`; 图片和很长的条目在 `%LOCALAPPDATA%\ALTRun\Clipboard` | 图片和长条目只存在这台电脑上, Data 文件夹放在同步盘里也不会同步; 可以设为只保存在内存里; 随时可以清空 |
+| 剪贴板历史 | `ClipboardHistory.json`; 图片和很长的条目在 `%LOCALAPPDATA%\ALTRun\Clipboard` | 图片和长条目只存在这台电脑上, Data 文件夹放在同步盘里也不会同步; 整个历史也可以只存在这台电脑上 (偏好设置 → 剪贴板 → 保存位置), 或者只保存在内存里; 随时可以清空 |
 | 搜索索引 | `AppIndex.json`、`FileIndex.json` | 应用和文件的名称、路径, 用于搜索 |
 | 汇率、更新状态 | `Currency.json`、`Update.json` | |
 | 调试日志 (默认关闭) | `%TEMP%\ALTRun.log` | 耗时和错误信息, 不记录输入的文字 |
