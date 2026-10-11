@@ -2757,7 +2757,11 @@ class Tests {
             texts := SearchWindow.StatusTexts()
             eq("results: tip, enter and actions", texts.Left "|" texts.Enter "|" texts.Actions, "Tip: ? cheat sheet|Open|1")
             parts := SearchWindow.StatusParts(texts)
-            eq("parts like Raycast", parts.Length = 2 ? parts[1].Label " " parts[1].Keys[1] " | " parts[2].Label " " parts[2].Keys[1] "+" parts[2].Keys[2] : "", "Open ↵ | Actions Ctrl+K")
+            eq("parts like Raycast", parts.Length = 2 ? parts[1].Label " " parts[1].Keys[1] " | " parts[2].Label " " parts[2].Keys[1] : "", "Open ↵ | Actions →")
+            items := SearchWindow.MainMenuItems(), labels := ""
+            for entry in items
+                labels .= (IsObject(entry) ? StrSplit(entry[1], "`t")[1] : "-") ";"
+            eq("menu", labels, "Preferences...;Shortcuts and Syntax;-;Rebuild Index;Check for Updates;-;Reload;Quit;")
             SearchWindow.FileMode := true
             eq("fileItem mode", SearchWindow.StatusTexts().Left, I18n.T("Status.FileMode"))
             SearchWindow.FileMode := false, SearchWindow.Mode := "actions"

@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.11.1]
+
+测试版。
+
+Test build.
+
+### 新增
+- 状态栏左边的 ☰ 菜单按钮 (和 Listary 一样, 代替原来的 ALTRun 图标): 偏好设置、快捷键和语法 (`?`)、重建索引、检查更新、重新载入、退出
+
+### 改进
+- 去掉 `Ctrl+K`, 打开操作面板只用 `→`; 状态栏右边改为 "操作 [→]", 箭头也是直接画出来的
+
 ## [2026.10.10.11]
 
 测试版。
@@ -694,7 +706,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.1...HEAD
+[2026.10.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.11...2026.10.11.1
 [2026.10.10.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.10...2026.10.10.11
 [2026.10.10.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.9...2026.10.10.10
 [2026.10.10.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.8...2026.10.10.9

@@ -59,10 +59,10 @@ class SearchWindow {
     static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
     static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput 时隐藏后切回)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
-    ; 底部状态栏 (Appearance.StatusBar, 和 Listary / Raycast 一样): 有结果行时显示在最下面, 左边是使用提示 (或文件搜索模式、
-    ; 操作面板的状态), 右边是选中项的 Enter 操作和打开操作面板的键 (圆角键帽)。打开时空搜索框里只显示固定的 "ALTRun 搜索",
-    ; 使用提示挪到状态栏; 没有结果行时 (只有搜索框) 不显示状态栏
-    static StatusHeight := 0, StatusBar := "", _statusKey := "", _statusIcon := 0
+    ; 底部状态栏 (Appearance.StatusBar, 和 Listary / Raycast 一样): 有结果行时显示在最下面。左边是 ☰ 菜单按钮 (偏好设置、
+    ; 速查表、重建索引、检查更新、重新载入、退出) 和使用提示 (或文件搜索模式、操作面板的状态), 右边是选中项的 Enter 操作和
+    ; 打开操作面板的 → (圆角键帽)。打开时空搜索框里只显示固定的 "ALTRun 搜索", 使用提示挪到状态栏; 没有结果行时不显示
+    static StatusHeight := 0, StatusBar := "", _statusKey := ""
 
     ;---------------------------------------------------------------------------
     ; Create
@@ -138,10 +138,7 @@ class SearchWindow {
             return
         SearchWindow.StatusHeight := Win.Scale(38)
         SearchWindow.StatusBar := g.AddPicture("x0 y0 w" w " h" SearchWindow.StatusHeight " Hidden +0xE")   ; 0xE = SS_BITMAP
-        if !SearchWindow._statusIcon {
-            iconFile := A_ScriptDir "\Resources\ALTRun.ico", size := Win.Scale(16)
-            SearchWindow._statusIcon := FileExist(iconFile) ? DllCall("LoadImageW", "Ptr", 0, "Str", iconFile, "UInt", 1, "Int", size, "Int", size, "UInt", 0x10, "Ptr") : 0   ; IMAGE_ICON, LR_LOADFROMFILE
-        }
+        SearchWindow.StatusBar.OnEvent("Click", (*) => SearchWindow._OnStatusClick())   ; 点 ☰: 菜单 (状态栏别处点了不做什么)
         SearchWindow._PlaceStatusBar(0)
     }
 
@@ -177,7 +174,7 @@ class SearchWindow {
     }
 
     ; {Left, Enter, Actions}: 左边的文字 (空搜索框时的使用提示 / 文件搜索模式 / 操作面板的返回键; 正在输入时也显示这次的提示),
-    ; 选中项按 Enter 做什么 (没有时 ""), 是否显示 "操作 Ctrl+K"
+    ; 选中项按 Enter 做什么 (没有时 ""), 是否显示 "操作 →"
     static StatusTexts() {
         actions := SearchWindow.Mode = "actions"
         if actions
@@ -204,14 +201,53 @@ class SearchWindow {
         return I18n.T("Status.Run")
     }
 
-    ; 右边的几段: [{Label, Keys: [键帽...]}], 两段之间画一条竖线 (和 Raycast 一样: 打开 ↵ | 操作 Ctrl K)
+    ; 右边的几段: [{Label, Keys: [键帽...]}], 两段之间画一条竖线 (和 Raycast / Listary 一样: 打开 ↵ | 操作 →)
     static StatusParts(texts) {
         parts := []
         if (texts.Enter != "")
             parts.Push({Label: texts.Enter, Keys: ["↵"]})
         if texts.Actions
-            parts.Push({Label: I18n.T("Status.Actions"), Keys: ["Ctrl", "K"]})
+            parts.Push({Label: I18n.T("Status.Actions"), Keys: ["→"]})
         return parts
+    }
+
+    ; ☰ 按钮占的宽度 (从状态栏左边算起)
+    static StatusMenuWidth() => SearchWindow.Padding + Win.Scale(28)
+
+    ; 点了状态栏: 点在 ☰ 上时弹出菜单
+    static _OnStatusClick() {
+        point := Buffer(8)
+        DllCall("GetCursorPos", "Ptr", point)
+        DllCall("ScreenToClient", "Ptr", SearchWindow.StatusBar.Hwnd, "Ptr", point)
+        if (NumGet(point, 0, "Int") <= SearchWindow.StatusMenuWidth())
+            SearchWindow.ShowMainMenu()
+    }
+
+    ; ☰ 菜单的内容: [[名称, 函数], ...], "" = 分隔线
+    static MainMenuItems() {
+        later := (fn) => (*) => (SearchWindow.Hide(), SetTimer(fn, -1))     ; 先隐藏搜索窗口, 菜单关掉后再做
+        return [[I18n.T("Tray.Preferences") "`tCtrl+,", later(() => App.OpenPreferences())]
+              , [I18n.T("Menu.CheatSheet") "`t?", (*) => SearchWindow._SetInput("?")]
+              , ""
+              , [I18n.T("Tray.RebuildIndex"), later(() => App.RebuildIndex())]
+              , [I18n.T("Tray.CheckUpdate"), later(() => UpdateChecker.Check())]
+              , ""
+              , [I18n.T("Tray.Reload"), later(() => App.Reload())]
+              , [I18n.T("Tray.Exit"), later(() => App.Quit())]]
+    }
+
+    ; 在 ☰ 上方弹出菜单 (状态栏在窗口最下面, 系统会把菜单放在放得下的地方)
+    static ShowMainMenu() {
+        mainMenu := Menu()
+        for entry in SearchWindow.MainMenuItems()
+            IsObject(entry) ? mainMenu.Add(entry[1], entry[2]) : mainMenu.Add()
+        SearchWindow.StatusBar.GetPos(&x, &y)
+        SearchWindow._keepOpen := true
+        CoordMode("Menu", "Client")
+        mainMenu.Show(SearchWindow.Padding, y)
+        SearchWindow._keepOpen := false
+        if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
+            try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
     }
 
     ; 两个颜色 ("RRGGBB") 按 t (0 ~ 1) 混合, 返回 GDI 用的 BGR
@@ -258,11 +294,11 @@ class SearchWindow {
             while (keyIndex >= 1) {
                 keyText := part.Keys[keyIndex]
                 DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"])
-                enterKey := (keyText = "↵")                                     ; 回车符号自己画 (字体里的箭头太小、位置偏低)
-                keyW := enterKey ? Round(keyH * 1.3) : Max(keyH, SearchWindow._TextWidth(hdc, keyText) + 2 * keyPad)
+                arrowKey := (keyText = "↵" || keyText = "→")                    ; 箭头自己画 (字体里的箭头太小、位置偏低)
+                keyW := arrowKey ? Round(keyH * 1.3) : Max(keyH, SearchWindow._TextWidth(hdc, keyText) + 2 * keyPad)
                 Win.FillRoundRect(hdc, x - keyW, top, x, top + keyH, Win.Scale(5), keyBgr)
-                if enterKey {
-                    SearchWindow.DrawEnterArrow(hdc, x - keyW / 2, top + keyH / 2, keyH * 0.5, keyTextBgr)
+                if arrowKey {
+                    SearchWindow.DrawKeyArrow(hdc, keyText, x - keyW / 2, top + keyH / 2, keyH * 0.5, keyTextBgr)
                 } else {
                     DllCall("SetTextColor", "Ptr", hdc, "UInt", keyTextBgr)
                     SearchWindow._DrawText(hdc, keyText, x - keyW, top, x, top + keyH, 0x825)   ; DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX
@@ -284,13 +320,12 @@ class SearchWindow {
             index--
         }
 
-        ; 左边: 图标 + 提示 (放不下时末尾省略号)
-        left := pad
-        if SearchWindow._statusIcon {
-            size := Win.Scale(16)
-            DllCall("DrawIconEx", "Ptr", hdc, "Int", left, "Int", (h - size) // 2 + 1, "Ptr", SearchWindow._statusIcon, "Int", size, "Int", size, "UInt", 0, "Ptr", 0, "UInt", 3)
-            left += size + Win.Scale(8)
-        }
+        ; 左边: ☰ 菜单按钮 (三条横线) + 提示 (放不下时末尾省略号)
+        lineW := Win.Scale(14), lineH := Max(1, Round(Win.Scale(1) * 1.5)), lineGap := Win.Scale(4)
+        lineTop := (h - 3 * lineH - 2 * lineGap) // 2 + 1
+        Loop 3
+            SearchWindow._FillRect(hdc, pad, lineTop + (A_Index - 1) * (lineH + lineGap), pad + lineW, lineTop + (A_Index - 1) * (lineH + lineGap) + lineH, labelBgr)
+        left := SearchWindow.StatusMenuWidth()
         DllCall("SetTextColor", "Ptr", hdc, "UInt", gdi["SubtitleColor"])
         SearchWindow._DrawText(hdc, texts.Left, left, 1, x - Win.Scale(16), h, 0x8824)  ; DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS
 
@@ -305,8 +340,9 @@ class SearchWindow {
             DllCall("DeleteObject", "Ptr", bitmap)
     }
 
-    ; 回车键的箭头 ↵ (抗锯齿线条): 右上往下, 再往左, 左端是箭头; (cx, cy) 是中心, size 是宽高
-    static DrawEnterArrow(hdc, cx, cy, size, bgr) {
+    ; 键帽里的箭头 (抗锯齿线条), (cx, cy) 是中心, size 是宽高:
+    ;   ↵ 回车: 右上往下, 再往左, 左端是箭头;  → 右方向键: 一条横线, 右端是箭头
+    static DrawKeyArrow(hdc, key, cx, cy, size, bgr) {
         graphics := 0, pen := 0
         if (!ClipboardData.StartGdiplus() || DllCall("gdiplus\GdipCreateFromHDC", "Ptr", hdc, "Ptr*", &graphics) || !graphics)
             return
@@ -315,15 +351,21 @@ class SearchWindow {
         DllCall("gdiplus\GdipCreatePen1", "UInt", argb, "Float", Max(1.2, size * 0.13), "Int", 2, "Ptr*", &pen)   ; 2 = UnitPixel
         DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pen, "Int", 2)             ; LineJoinRound
         DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pen, "Int", 2), DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pen, "Int", 2)   ; LineCapRound
-        half := size / 2, baseY := cy + size * 0.18, head := size * 0.3
-        points := [[cx + half, cy - half], [cx + half, baseY], [cx - half, baseY]]          ; 竖线 + 横线
-        line := Buffer(8 * points.Length)
-        for index, point in points
-            NumPut("Float", point[1], "Float", point[2], line, (index - 1) * 8)
-        DllCall("gdiplus\GdipDrawLines", "Ptr", graphics, "Ptr", pen, "Ptr", line, "Int", points.Length)
-        arrow := Buffer(24)                                                 ; 箭头: 两条斜线汇到横线的左端
-        NumPut("Float", cx - half + head, "Float", baseY - head, "Float", cx - half, "Float", baseY, "Float", cx - half + head, "Float", baseY + head, arrow)
-        DllCall("gdiplus\GdipDrawLines", "Ptr", graphics, "Ptr", pen, "Ptr", arrow, "Int", 3)
+        half := size / 2, head := size * 0.3
+        if (key = "→") {
+            points := [[cx - half, cy], [cx + half, cy]]
+            tip := [[cx + half - head, cy - head], [cx + half, cy], [cx + half - head, cy + head]]
+        } else {
+            baseY := cy + size * 0.18
+            points := [[cx + half, cy - half], [cx + half, baseY], [cx - half, baseY]]      ; 竖线 + 横线
+            tip := [[cx - half + head, baseY - head], [cx - half, baseY], [cx - half + head, baseY + head]]
+        }
+        for lines in [points, tip] {                                        ; 线 + 箭头 (两条斜线汇到线的一端)
+            buf := Buffer(8 * lines.Length)
+            for index, point in lines
+                NumPut("Float", point[1], "Float", point[2], buf, (index - 1) * 8)
+            DllCall("gdiplus\GdipDrawLines", "Ptr", graphics, "Ptr", pen, "Ptr", buf, "Int", lines.Length)
+        }
         DllCall("gdiplus\GdipDeletePen", "Ptr", pen)
         DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
     }
@@ -1215,14 +1257,6 @@ class SearchWindow {
                 return 0
             case 0x4C:                                                      ; Ctrl+L
                 SearchWindow._ShowLargeType()
-                return 0
-            case 0x4B:                                                      ; Ctrl+K: 操作面板 (和 Raycast 一样), 不管光标在哪; 再按一次关掉
-                if !actions
-                    SearchWindow._OpenActions()
-                else if SearchWindow._actionsOnly
-                    SearchWindow.Hide()
-                else
-                    SearchWindow._CloseActions()
                 return 0
             case 0xBC:                                                      ; Ctrl+,
                 SearchWindow.Hide()
