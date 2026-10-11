@@ -86,7 +86,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "AltTypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2808,6 +2808,76 @@ class Tests {
     }
 
     ; 呼出窗口期间打的字: 显示完补进搜索框, Enter 搜完后执行, Esc 关掉
+    ; Alt+Space 后 Alt 还没松开就打字: 呼出时 Alt 按着就用 M 选项, Alt+n 也记成 n; 窗口拿到焦点后是 WM_SYSCHAR,
+    ; 只在呼出用的 Alt 一直没松开时当作普通的字, 空格不算, 按下不带 Alt 的键后不再算
+    static AltTypeAhead() {
+        eq := (n, a, e) => TestRunner.Equal("AltTypeAhead." n, a, e)
+        for altDown in [false, true] {
+            ih := SearchWindow.NewTypeAheadHook(altDown)
+            ih.Start()
+            SendEvent("{Alt down}n{Alt up}o")
+            ih.Stop()
+            eq("hook alt=" altDown, ih.Input, altDown ? "no" : "o")
+        }
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => ""})
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        hwnd := SearchWindow.Input.Hwnd
+        try {
+            SearchWindow.Input.Value := "a"
+            SendMessage(0xB1, 1, 1, hwnd)
+            SearchWindow._hotkeyAlt := true
+            eq("alt letter typed", SearchWindow._OnSysChar(Ord("b"), 0, 0x106, hwnd) "|" SearchWindow.Input.Value, "0|ab")
+            eq("alt digit typed", SearchWindow._OnSysChar(Ord("7"), 0, 0x106, hwnd) "|" SearchWindow.Input.Value, "0|ab7")
+            eq("alt space ignored", SearchWindow._OnSysChar(32, 0, 0x106, hwnd) "|" SearchWindow.Input.Value, "|ab7")
+            SearchWindow._OnKeyDown(0x43, 0, 0x100, hwnd)                   ; 不带 Alt 的键: Alt 已经松开
+            eq("released", SearchWindow._hotkeyAlt, false)
+            eq("later alt letter not typed", SearchWindow._OnSysChar(Ord("c"), 0, 0x106, hwnd) "|" SearchWindow.Input.Value, "|ab7")
+        } finally {
+            SearchWindow._hotkeyAlt := false
+            SearchWindow.DefineProp("_RunSearch", savedSearch)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
+    ; 隐藏后准备好空的搜索框: 呼出时不用先搜索; 输入框改过或用过一次就不算; 显示后的刷新只在结果变了时换上
+    static ShowPrepared() {
+        eq := (n, a, e) => TestRunner.Equal("ShowPrepared." n, a, e)
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
+        saved := [SearchWindow.Mode, SearchWindow.FileMode, SearchWindow._prepared]
+        searches := {Count: 0}
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => searches.Count++})
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        try {
+            SearchWindow.Input.Value := "abc", SearchWindow.Mode := "actions", SearchWindow.FileMode := true
+            SearchWindow.PrepareEmpty()                                     ; 窗口隐藏着: 清空输入框, 搜一次
+            eq("prepared", SearchWindow.IsPrepared() "|" SearchWindow.Input.Value "|" SearchWindow.Mode "|" SearchWindow.FileMode "|" searches.Count, "1||results|0|1")
+            SearchWindow.Input.Value := "x"
+            eq("input changed", SearchWindow.IsPrepared(), false)
+            SearchWindow.Input.Value := "", SearchWindow.FileMode := true
+            eq("file mode", SearchWindow.IsPrepared(), false)
+            SearchWindow.FileMode := false, SearchWindow._prepared := false
+            eq("used", SearchWindow.IsPrepared(), false)
+            g.Show("Hide"), g.Show("NoActivate")
+            searches.Count := 0, SearchWindow.PrepareEmpty()
+            eq("visible: not prepared", SearchWindow.IsPrepared() "|" searches.Count, "0|0")
+            a := [ResultItem("Notepad", "C:\Windows\notepad.exe"), ResultItem("Paint", "mspaint.exe")]
+            b := [ResultItem("Notepad", "C:\Windows\notepad.exe"), ResultItem("Paint", "mspaint.exe")]
+            eq("same results", SearchWindow.SameResults(a, b), true)
+            b[2] := ResultItem("Paint 3D", "mspaint.exe")
+            eq("changed title", SearchWindow.SameResults(a, b), false)
+            eq("changed count", SearchWindow.SameResults(a, [a[1]]), false)
+        } finally {
+            SearchWindow.Mode := saved[1], SearchWindow.FileMode := saved[2], SearchWindow._prepared := saved[3]
+            SearchWindow.DefineProp("_RunSearch", savedSearch)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
     static TypeAhead() {
         eq := (n, a, e) => TestRunner.Equal("TypeAhead." n, a, e)
         saved := Map()

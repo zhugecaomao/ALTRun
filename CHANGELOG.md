@@ -5,6 +5,20 @@
 
 ## [未发布]
 
+## [2026.10.11.4]
+
+测试版。
+
+Test build.
+
+### 修复
+- 按 Alt+Space 后打字快, Alt 还没松开就按了第一个字母, 这个字会丢: 按着 Alt 的键以前不算文字 (呼出过程中记下的字里没有它, 窗口拿到焦点后也不会进输入框, 只响一声)。现在呼出用的 Alt 一直没松开时打的字母和数字当作普通的字; 呼出过程中 Alt+字母也会被拦下, 不会触发原来窗口的菜单
+
+### 改进
+- 按热键后窗口出现得更快: 以前先搜索空的搜索框 (置顶、最近打开的项目) 再显示窗口; 现在窗口隐藏后就在后台把下一次的空搜索框准备好, 呼出时直接显示、拿到焦点, 显示后再刷新一次 (有变化才换上)。打开了 "保留上一次的搜索" 时和以前一样原样显示
+- 搜索窗口不再有系统的淡入淡出动画, 一按热键马上出现、一按 Esc 马上消失
+- 调试日志: 用准备好的空搜索框显示时记作 `Perf: show (prepared)`, 方便对照耗时
+
 ## [2026.10.11.3]
 
 测试版。
@@ -733,7 +747,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.4...HEAD
+[2026.10.11.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.3...2026.10.11.4
 [2026.10.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.2...2026.10.11.3
 [2026.10.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.1...2026.10.11.2
 [2026.10.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.11...2026.10.11.1

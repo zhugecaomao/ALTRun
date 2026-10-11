@@ -115,6 +115,7 @@ class SearchWindow {
 
         OnMessage(0x100, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_KEYDOWN
         OnMessage(0x104, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_SYSKEYDOWN (Alt+...)
+        OnMessage(0x106, (p*) => SearchWindow._OnSysChar(p*))               ; WM_SYSCHAR: 热键的 Alt 还没松开就打的字
         OnMessage(0x6,   (p*) => SearchWindow._OnActivate(p*))              ; WM_ACTIVATE
         OnMessage(0x20A, (p*) => SearchWindow._OnMouseWheel(p*))            ; WM_MOUSEWHEEL
         OnMessage(0x201, (p*) => SearchWindow._OnLButtonDown(p*))           ; WM_LBUTTONDOWN: 拖动窗口
@@ -122,6 +123,7 @@ class SearchWindow {
         OnMessage(0x7E,  (*) => Logger.Debug("Display changed: " MonitorGetCount() " monitor(s)"))   ; WM_DISPLAYCHANGE: 卡住时对照日志
 
         g.Show("Hide w" w " h" SearchWindow._WindowHeight(0))
+        try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", g.Hwnd, "UInt", 3, "Int*", 1, "UInt", 4)   ; DWMWA_TRANSITIONS_FORCEDISABLED: 不要淡入淡出, 一按热键马上出现
         Win.SetCorner(g.Hwnd)
         Win.SetBorderColor(g.Hwnd, ThemeManager.Get("Border"))
         opacity := ThemeManager.Get("Opacity")
@@ -425,6 +427,9 @@ class SearchWindow {
             return
         if SearchWindow._ShouldSkipShow()
             return
+        SearchWindow._hotkeyAlt := GetKeyState("Alt", "P")                  ; 用 Alt+Space 等呼出, Alt 还按着: 见 _OnSysChar
+        if (SearchWindow._prepareTimer != "")
+            SetTimer(SearchWindow._prepareTimer, 0)
         if typeAhead
             SearchWindow._StartTypeAhead()
         SearchWindow._showing := true, SearchWindow._showStarted := A_TickCount, SearchWindow._showStep := "start"
@@ -440,17 +445,41 @@ class SearchWindow {
     ; 原来会进到前台的程序里, 丢掉或者打进别的窗口。现在这段时间用 InputHook 把会打出字的键拦下来记住
     ; (Ctrl / Alt 组合键、方向键等照常), 拿到焦点后补进搜索框; 期间按的 Enter 在搜完后执行第一项, Esc 关掉窗口。
     ; 最多拦 TypeAheadMs: 万一显示卡住, 打字也不会一直被拦着
+    ; 按 Alt+Space 后打字快时, Alt 还没松开就按了第一个字母: 这是 Alt+字母, InputHook 默认不当作文字 (按着 Alt 的键
+    ; 都不记), 第一个字就丢了。所以呼出时 Alt 还按着, 就用 M 选项: 带修饰键的键也记成文字 (Alt+n 记成 n, 也会被拦下,
+    ; 不会触发原来窗口的菜单); Ctrl+字母会记成控制字符, _TakeTypeAhead 里去掉。窗口拿到焦点后的见 _OnSysChar
     static TypeAheadMs := 3000
     static _typeAhead := ""
     static _StartTypeAhead() {
         if (IsObject(SearchWindow._typeAhead) || SearchWindow.IsActive())
             return
         try {
-            ih := InputHook("T" SearchWindow.TypeAheadMs / 1000)
-            ih.KeyOpt("{Enter}{NumpadEnter}{Esc}", "ES")
+            ih := SearchWindow.NewTypeAheadHook(GetKeyState("Alt", "P"))
             ih.Start()
             SearchWindow._typeAhead := ih
         }
+    }
+
+    static NewTypeAheadHook(altDown := false) {
+        ih := InputHook((altDown ? "M" : "") "T" SearchWindow.TypeAheadMs / 1000)
+        ih.KeyOpt("{Enter}{NumpadEnter}{Esc}", "ES")
+        return ih
+    }
+
+    ; 窗口已经拿到焦点, 呼出用的 Alt 还按着时打的字母 / 数字: 系统发来的是 WM_SYSCHAR (不会进输入框, 只会响一声),
+    ; 当作普通的字插进输入框。只在 Alt 从按热键起一直没松开时 (_hotkeyAlt, 按下任何不带 Alt 的键就清掉);
+    ; 搜索窗口没有 Alt+字母 的快捷键。空格不算: Alt+空格 是呼出的热键
+    static _hotkeyAlt := false
+    static _OnSysChar(wParam, lParam, msg, hwnd) {
+        if (!SearchWindow._hotkeyAlt || !SearchWindow._IsOwnWindow(hwnd) || GetKeyState("Ctrl"))
+            return
+        char := Chr(wParam)
+        if !RegExMatch(char, "^[\p{L}\p{N}]$")
+            return
+        if Logger.Enabled
+            Logger.Debug("SearchWindow: typed with Alt still down '" char "'")
+        SendMessage(0xC2, 1, StrPtr(char), SearchWindow.Input.Hwnd)        ; EM_REPLACESEL: 和打字一样, 输入框改变后照常搜索
+        return 0
     }
 
     ; 停止记录, 返回 {Text: 打的字, Key: "Enter" / "NumpadEnter" / "Escape" / "", Modifier: 按 Enter 时按着 Ctrl / Alt}
@@ -528,6 +557,9 @@ class SearchWindow {
         ; 恢复上次的搜索, 而且输入框和结果还是隐藏时的样子: 原样显示, 不重新搜索 (输入新的文字时才搜索)。
         ; 搜索 (例如文件搜索) 要几十毫秒, 以前先搜索再显示, 这段时间里按下的第一个键还在原来的窗口里, 会丢失或延迟
         reuse := restore && SearchWindow.Mode = "results" && SearchWindow.Input.Value == last.Text && SearchWindow.FileMode = last.FileMode
+        ; 空的搜索框已经在隐藏后准备好了 (PrepareEmpty): 也不用先搜索, 显示后再刷新 (_RefreshShown)
+        prepared := !restore && text = "" && !wasVisible && SearchWindow.IsPrepared()
+        SearchWindow._prepared := false                                     ; 只用一次, 下次隐藏后再准备
         SearchWindow.Mode := "results"
         SearchWindow.FileMode := restore ? last.FileMode : false
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
@@ -535,7 +567,7 @@ class SearchWindow {
         SearchWindow._UpdateStatusBar()
         SearchWindow.HistoryIndex := 0
         SearchWindow._Step("results")
-        if !reuse {
+        if (!reuse && !prepared) {
             SearchWindow._SetInput(restore ? last.Text : text)
             if restore
                 SearchWindow.MoveSelection(last.Selected - SearchWindow.Selected)
@@ -574,7 +606,11 @@ class SearchWindow {
                 SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
             Win.SwitchToEnglishIME()
         }
-        Logger.Time("show", started)
+        if prepared {
+            gen := SearchWindow._searchGen
+            SetTimer(() => SearchWindow._RefreshShown(gen), -1)
+        }
+        Logger.Time(prepared ? "show (prepared)" : "show", started)
     }
 
     ; 呼出时切到了英文输入法: 隐藏时切回原来的。所有程序共用一个输入法时 (Windows 默认) 才需要;
@@ -659,8 +695,57 @@ class SearchWindow {
             SearchWindow._RememberQuery()
             SearchWindow._RestoreInputLanguage()
             SearchWindow.Gui.Hide()
+            SearchWindow._PrepareLater()
         }
+        SearchWindow._hotkeyAlt := false
         LargeType.Close()
+    }
+
+    ; 隐藏后在后台把下一次呼出时的样子准备好: 空的搜索框和它的结果 (置顶的、最近打开的项目、新版本提示)。
+    ; 呼出时不用先搜索, 直接显示、拿到焦点, 按热键马上就能打字; 显示后再搜一次 (_RefreshShown), 期间有变化才换上。
+    ; 等一会儿再准备: 隐藏后马上要用到当前结果的操作 (菜单、确认框...) 先做完。打开了 "保留上一次的搜索" 时
+    ; 输入框和结果原样留着 (见 _Show 的 reuse), 不用准备
+    static PrepareDelay := 200, _prepareTimer := "", _prepared := false
+    static _PrepareLater() {
+        if AppSettings.General["KeepLastQuery"]
+            return
+        if (SearchWindow._prepareTimer = "")
+            SearchWindow._prepareTimer := () => SearchWindow.PrepareEmpty()
+        SetTimer(SearchWindow._prepareTimer, -SearchWindow.PrepareDelay)
+    }
+
+    static PrepareEmpty() {
+        if (!IsObject(SearchWindow.Gui) || SearchWindow.IsVisible())
+            return
+        started := Logger.Ms()
+        SearchWindow.Mode := "results", SearchWindow.FileMode := false
+        SearchWindow._SetInput("")
+        SearchWindow._prepared := true
+        Logger.Time("prepare empty box", started)
+    }
+
+    ; 准备好的空搜索框还没用过、没被改过
+    static IsPrepared() {
+        return SearchWindow._prepared && SearchWindow.Mode = "results" && !SearchWindow.FileMode && SearchWindow.Input.Value == ""
+    }
+
+    ; 显示准备好的结果之后再搜一次: 隐藏期间有变化 (例如刚检查到新版本) 才换上; 已经开始打字了就不用
+    static _RefreshShown(gen) {
+        if (gen != SearchWindow._searchGen || !SearchWindow.IsVisible() || SearchWindow.Mode != "results" || SearchWindow.FileMode
+            || SearchWindow.Input.Value != "")
+            return
+        results := ProviderRegistry.Search("")
+        if (gen = SearchWindow._searchGen && !SearchWindow.SameResults(results, SearchWindow.Results))
+            SearchWindow.SetResults(results)
+    }
+
+    static SameResults(a, b) {
+        if (a.Length != b.Length)
+            return false
+        for index, item in a
+            if (item.Title !== b[index].Title || item.Subtitle !== b[index].Subtitle)
+                return false
+        return true
     }
 
     ; 记住隐藏时的搜索 (KeepLastQuery 用); 操作面板里记住打开面板之前的搜索
@@ -1120,6 +1205,8 @@ class SearchWindow {
         if !SearchWindow._IsOwnWindow(hwnd)
             return
         vk := wParam
+        if (msg = 0x100)                                                    ; 不带 Alt 的键: 呼出用的 Alt 已经松开了
+            SearchWindow._hotkeyAlt := false
         ctrl  := GetKeyState("Ctrl")
         shift := GetKeyState("Shift")
         alt   := (msg = 0x104) || GetKeyState("Alt")
