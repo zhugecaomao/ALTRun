@@ -491,16 +491,18 @@ class PreferencesWindow {
         PreferencesWindow._y := startY + Ceil((features.Length + 1) / 2) * 20
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")
         PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
-        PreferencesWindow._Lines("Features.System.Hidden", "Prefs.SysHidden", 2)
-        PreferencesWindow._Gap()
+        PreferencesWindow._Lines("Features.System.Hidden", "Prefs.SysHidden", 4)
+        PreferencesWindow._y += 4                                           ; 比 _Gap 小一点: 这一页放满了
         PreferencesWindow._Pair(["Features.Terminal.Prefix", "Prefs.TerminalPrefix", "S"]
             , ["Features.Terminal.Shell", "Prefs.TerminalShell", "M", "choice", ["cmd", "powershell", "pwsh", "wt"], ["Command Prompt (cmd)", "Windows PowerShell", "PowerShell 7 (pwsh)", "Windows Terminal (wt)"]])
-        PreferencesWindow._Gap()
-        rowY := PreferencesWindow._y                                        ; 书签和窗口: 直接输入时也显示 (两列, 和上面的功能对齐) + 各自的关键字
-        PreferencesWindow._Check("Features.Bookmarks.InDefaultResults", "Prefs.BookmarksInDefault", , , "Prefs.Group.NormalSearch", columnW)
-        PreferencesWindow._y := rowY
-        PreferencesWindow._Check("Features.Windows.InDefaultResults", "Prefs.WindowsInDefault", PreferencesWindow._InputX() + columnW, , "", columnW)
-        PreferencesWindow._Pair(["Features.Bookmarks.Keyword", "Prefs.BookmarksKeyword", "S"], ["Features.Windows.Keyword", "Prefs.WindowsKeyword", "S"])
+        for row in [["Bookmarks", "Prefs.Feature.Bookmarks"], ["Windows", "Prefs.Feature.Windows"]] {   ; 书签和窗口: 普通搜索里也显示 + 只搜它们的关键字
+            rowY := PreferencesWindow._y
+            PreferencesWindow._Check("Features." row[1] ".InDefaultResults", "Prefs.ShowInNormal", , , row[2], columnW)
+            PreferencesWindow._SideField(rowY, PreferencesWindow._InputX() + columnW, "Features." row[1] ".Keyword", "Prefs.FeatureKeyword")   ; 和上面功能的右列对齐
+            PreferencesWindow._y := rowY + 25
+        }
+        PreferencesWindow._y -= 3
+        PreferencesWindow._Desc("Prefs.FeatureKeyword", PreferencesWindow._InputX())
     }
 
     static _BuildApplications() {
@@ -573,7 +575,7 @@ class PreferencesWindow {
     }
 
     static _BuildClipboard() {
-        PreferencesWindow._BeginPage("Prefs.Page.Clipboard", 150)
+        PreferencesWindow._BeginPage("Prefs.Page.Clipboard", 120)
         PreferencesWindow._Pair(["Features.Clipboard.Hotkey", "Prefs.ClipHotkey", "K", "hotkey"], ["Features.Clipboard.Keyword", "Prefs.ClipKeyword", "S"])
         PreferencesWindow._Pair(["Features.Clipboard.MaxItems", "Prefs.ClipMaxItems", "S", "number"], ["Features.Clipboard.MaxItemLength", "Prefs.ClipMaxLength", "S", "number"])
         PreferencesWindow._Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
@@ -1190,13 +1192,13 @@ class PreferencesWindow {
             label2.GetPos(&x2)
         }
         secondX := x2 + w2 + 8
-        ; 同一页的几行成对的设置, 左边输入框一样宽时: 右边的输入框对齐到第一行右边输入框的位置 (标签靠右贴着输入框)
+        ; 同一页的几行成对的设置, 左边输入框一样宽或更窄时: 右边的输入框对齐到第一行右边输入框的位置 (标签靠右贴着输入框)
         if (overflow <= 0) {
             target := PreferencesWindow._pairX
             if !target
                 PreferencesWindow._pairX := secondX, PreferencesWindow._pairFirstW := w, PreferencesWindow._pairSizes := [left[3], right[3]]
                 , PreferencesWindow._pairSecondW := secondW ? secondW : PreferencesWindow._Width(right[3])
-            else if (w = PreferencesWindow._pairFirstW && target >= secondX && target + (secondW ? secondW : PreferencesWindow._Width(right[3])) <= PreferencesWindow.ContentX + PreferencesWindow.ContentW) {
+            else if (w <= PreferencesWindow._pairFirstW && target >= secondX && target + (secondW ? secondW : PreferencesWindow._Width(right[3])) <= PreferencesWindow.ContentX + PreferencesWindow.ContentW) {
                 label2.Move(target - 8 - w2)
                 secondX := target
             }
@@ -1241,6 +1243,14 @@ class PreferencesWindow {
     }
 
     ; 和上一行的短输入框 ("S") 同一行的按钮 (例如 "子文件夹深度 [4]  [重建文件索引]")
+    ; 复选框同一行右边的 "标签 [输入框]": 标签从 x 开始, 输入框紧跟在后面, 和复选框上下居中
+    static _SideField(rowY, x, path, labelKey, size := "S") {
+        label := PreferencesWindow._Add("Text", "x" x " y" (rowY + 1), I18n.T(labelKey))
+        label.GetPos(&labelX, , &labelW)
+        ctrl := PreferencesWindow._Input(labelX + labelW + 8, path, labelKey, size)
+        ctrl.Move(, rowY - 3)
+        return ctrl
+    }
     static _SideButton(rowY, labelKey, fn) {
         x := PreferencesWindow._InputX() + PreferencesWindow.WidthS + 12
         ctrl := PreferencesWindow._Add("Button", "x" x " y" (rowY - 2) " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T(labelKey))

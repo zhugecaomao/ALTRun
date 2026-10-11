@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.11.3]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 功能: "隐藏的命令" 改为 4 行高 (显示竖向滚动条); 书签和窗口切换各占一行: "普通搜索里也显示" 和 "关键字", 关键字和上面功能的右列对齐
+- 偏好设置 → 剪贴板: 左列变窄, 整页往左移; "关键字" 和 "最长字数" 上下对齐
+- 偏好设置: 同一页几行成对的设置, 左边输入框较窄的行, 右边的输入框也和第一行对齐 (剪贴板、文件搜索页)
+
 ## [2026.10.11.2]
 
 测试版。
@@ -722,7 +733,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.3...HEAD
+[2026.10.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.2...2026.10.11.3
 [2026.10.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.1...2026.10.11.2
 [2026.10.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.11...2026.10.11.1
 [2026.10.10.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.10.10...2026.10.10.11
