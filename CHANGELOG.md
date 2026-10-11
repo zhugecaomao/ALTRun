@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.11.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 弹出菜单跟着主题的深浅: 托盘图标的右键菜单、状态栏的 ☰ 菜单、搜索结果的右键菜单、Quick Switch 的文件夹菜单, 深色主题 (Dark、Midnight、Tokyo Night...) 用 Windows 的深色菜单, 浅色主题用浅色菜单; 主题选 "跟随系统" 时跟着 Windows 切换。需要 Windows 10 1903 或更新的版本, 更早的系统保持浅色
+
 ## [2026.10.11.5]
 
 测试版。
@@ -759,7 +768,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.6...HEAD
+[2026.10.11.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.5...2026.10.11.6
 [2026.10.11.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.4...2026.10.11.5
 [2026.10.11.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.3...2026.10.11.4
 [2026.10.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.11.2...2026.10.11.3

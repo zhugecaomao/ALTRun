@@ -2,7 +2,7 @@
 
 # Themes
 
-In Preferences → Appearance, click a theme's thumbnail to pick it (each thumbnail draws a simplified search window with the theme's own colors and corner radius; custom themes have one too), then click **Apply** or **OK**.
+In Preferences → Appearance, click a theme's thumbnail to pick it (each thumbnail draws a simplified search window with the theme's own colors and corner radius; custom themes have one too), then click **Apply** or **OK**. The tray icon's right-click menu, the status bar's ☰ menu, the right-click menu of results and the Quick Switch folder menu follow the theme: dark themes use Windows' dark menus, light themes light ones (Windows 10 version 1903 or later).
 
 ![Preferences → Appearance](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-appearance.png)
 

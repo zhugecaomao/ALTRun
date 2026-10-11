@@ -217,13 +217,7 @@ class QuickSwitch {
         return CDRF_NEWFONT
     }
 
-    ; "1E1E1E" 这种颜色是不是深色 (亮度低于一半)
-    static IsDarkColor(hex) {
-        if !RegExMatch(hex, "i)^[0-9a-f]{6}$")
-            return false
-        value := Integer("0x" hex)
-        return (((value >> 16) & 0xFF) * 299 + ((value >> 8) & 0xFF) * 587 + (value & 0xFF) * 114) / 1000 < 128
-    }
+    static IsDarkColor(hex) => ThemeManager.IsDarkColor(hex)
 
     static _FontName() {
         try return ThemeManager.FontName()
