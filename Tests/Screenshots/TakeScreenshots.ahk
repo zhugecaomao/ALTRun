@@ -39,7 +39,7 @@ class Shots {
     static Scenes() {
         return [
             ["search",      "Light", "", () => Shots.Search("re")],
-            ["pinyin",      "Light", "", () => Shots.Pinyin()],
+            ["pinyin",      "Light", "", () => Shots.Pinyin(), () => Shots.EnableLog()],
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: 附带结构计算的两行
@@ -322,7 +322,29 @@ class Shots {
         Shots.LogAppIndex()
         hwnd := Shots.Search("jsb")
         Shots.Diagnose(hwnd)
+        Shots.Log("ALTRun.log:`n" Shots.LogTail(40))
         return hwnd
+    }
+
+    ; 诊断用: 打开 ALTRun 的调试日志 (写在 %Temp%\ALTRun.log), 先删掉旧的
+    static EnableLog() {
+        try FileDelete(A_Temp "\ALTRun.log")
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["General"]["SaveLog"] := 1
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings), settingsFile, "UTF-8")
+    }
+
+    static LogTail(lines) {
+        try text := FileRead(A_Temp "\ALTRun.log", "UTF-8")
+        catch
+            return "(no log)"
+        all := StrSplit(RTrim(text, "`r`n"), "`n", "`r")
+        tail := ""
+        Loop Min(lines, all.Length)
+            tail .= all[all.Length - Min(lines, all.Length) + A_Index] "`n"
+        return tail
     }
 
     ; 诊断: 应用索引里有哪些应用和它们的拼音首字母 (拼音的截图曾经是空的)
