@@ -58,8 +58,25 @@ jobs:
           Invoke-WebRequest "https://www.voidtools.com/$zip" -OutFile "$dir.zip" -UseBasicParsing
           Expand-Archive "$dir.zip" $dir -Force
           Start-Process (Join-Path $dir "Everything.exe") -ArgumentList "-startup"
-          Start-Sleep -Seconds 15                                                 # 建立 NTFS 索引
-          Write-Host "$zip started: $([bool](Get-Process Everything -ErrorAction SilentlyContinue))"
+          # 等 Everything 建好索引 (EVERYTHING_IPC_IS_DB_LOADED), 最多 90 秒: 没建好时搜索返回空, 文件搜索的截图只剩一行
+          $wait = Join-Path $env:RUNNER_TEMP "EverythingWait.ahk"
+          Set-Content $wait -Encoding utf8 @'
+          #NoTrayIcon
+          DetectHiddenWindows(true)
+          start := A_TickCount
+          loop {
+              loaded := 0
+              if WinExist("ahk_class EVERYTHING_TASKBAR_NOTIFICATION")
+                  try loaded := SendMessage(0x400, 401, 0)                       ; WM_USER, EVERYTHING_IPC_IS_DB_LOADED
+              if (loaded || A_TickCount - start > 90000)
+                  break
+              Sleep(500)
+          }
+          FileAppend((loaded ? "loaded" : "not loaded") " after " Round((A_TickCount - start) / 1000) " s", "*")
+          '@
+          $out = Join-Path $env:RUNNER_TEMP "EverythingWait.txt"
+          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', "`"$wait`"" -Wait -NoNewWindow -RedirectStandardOutput $out
+          Write-Host "$zip database: $(Get-Content $out -Raw)"
 
       # 1920 x 1080、150% 缩放、灰度字体抗锯齿: 截图更清晰 (做不到时保持 100%)
       - name: Display settings for screenshots
