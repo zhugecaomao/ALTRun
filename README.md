@@ -99,19 +99,23 @@ The winget manifest has been submitted; once it is accepted you can install with
 
 
 ## Screenshots
-| Search window | Quick Switch (folder panel below an Open / Save dialog) |
+| Search window | Action panel (`→`) |
 |:---:|:---:|
-| <img src="docs/images/screenshots/search.png" alt="Search window"> | <img src="docs/images/screenshots/quickswitch.png" alt="Quick Switch"> |
-| **Action panel (`→`)** | **File search (`Space` + name)** |
-| <img src="docs/images/screenshots/actions.png" alt="Action panel"> | <img src="docs/images/screenshots/files.png" alt="File search"> |
-| **Calculator** | **Clipboard history (`clip`)** |
-| <img src="docs/images/screenshots/calculator.png" alt="Calculator"> | <img src="docs/images/screenshots/clipboard.png" alt="Clipboard history"> |
-| **Pinned and recent items (empty search box)** | **Browse folders (type a path)** |
-| <img src="docs/images/screenshots/empty.png" alt="Pinned and recent items"> | <img src="docs/images/screenshots/browse.png" alt="Browse folders"> |
+| <img src="docs/images/screenshots/search.png" alt="Search window"> | <img src="docs/images/screenshots/actions.png" alt="Action panel"> |
+| **File search (`Space` + name)** | **Search by file type (`doc` + name)** |
+| <img src="docs/images/screenshots/files.png" alt="File search"> | <img src="docs/images/screenshots/filetype.png" alt="Search by file type"> |
+| **Calculator** | **Pinyin initials (`jsb` finds 记事本, Notepad)** |
+| <img src="docs/images/screenshots/calculator.png" alt="Calculator"> | <img src="docs/images/screenshots/pinyin.png" alt="Pinyin initials"> |
+| **Clipboard history (`clip`)** | **Pinned and recent items (empty search box)** |
+| <img src="docs/images/screenshots/clipboard.png" alt="Clipboard history"> | <img src="docs/images/screenshots/empty.png" alt="Pinned and recent items"> |
+| **Browse folders (type a path)** | **Web search (`g` + keywords)** |
+| <img src="docs/images/screenshots/browse.png" alt="Browse folders"> | <img src="docs/images/screenshots/websearch.png" alt="Web search"> |
+| **Quick Switch (folder panel below an Open / Save dialog)** | **Themes (Preferences → Appearance)** |
+| <img src="docs/images/screenshots/quickswitch.png" alt="Quick Switch"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="Themes"> |
 | **Preferences** | **Custom commands** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="Preferences"> | <img src="docs/images/screenshots/prefs-commands.png" alt="Custom commands"> |
-| **Scripts** | **Calculator settings (structural parameters, for engineers)** |
-| <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> | <img src="docs/images/screenshots/prefs-calculator.png" alt="Calculator settings"> |
+| **Snippets** | **Scripts** |
+| <img src="docs/images/screenshots/prefs-snippets.png" alt="Snippets"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> |
 
 <details>
 <summary><b>Built-in themes</b> (20 in total, click to expand)</summary>

@@ -72,6 +72,8 @@
 ## 文字片段
 常用的文字 (签名、地址、模板...) 存成片段, 搜索名称、关键字或正文里的词, `Enter` 粘贴到呼出 ALTRun 之前的窗口。输入 `snip` 列出全部片段, `snip xxx` 只在片段里搜索。
 
+![偏好设置 → 文字片段](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-snippets.png)
+
 | 字段 | 说明 |
 |---|---|
 | 名称 (Name) | 必填, 显示在搜索结果里, 也用来搜索。写成容易想到的几个词, 例如 `PT quotation` |

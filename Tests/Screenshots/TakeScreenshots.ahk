@@ -33,7 +33,7 @@ class Shots {
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; 屏幕缩放 (150% = 1.5)
 
-    static NormalScale := ["quickswitch", "prefs-general", "prefs-appearance", "prefs-commands", "prefs-calculator", "prefs-scripts"]   ; 按 100% 截的场景 (见 screenshots.yml)
+    static NormalScale := ["quickswitch", "prefs-general", "prefs-appearance", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"]   ; 按 100% 截的场景 (见 screenshots.yml)
 
     ; 场景名 -> [主题, 启动参数, 函数, 启动前准备数据的函数 (可选)]
     static Scenes() {
@@ -42,6 +42,7 @@ class Shots {
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
+            ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; 按类型搜索: 只要文档 (TypeFilters 的 doc)
             ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: 附带结构计算的两行
             ["clipboard",   "Light", "", () => Shots.Search("clip "), () => Shots.WriteClipboard()],
             ["empty",       "Light", "", () => Shots.EmptyBox(), () => Shots.WritePinnedAndRecent()],
@@ -54,6 +55,7 @@ class Shots {
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 8", () => Shots.Preferences()],
+            ["prefs-snippets",   "Light", "-Preferences 9", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences 12", () => Shots.Preferences()],
             ["prefs-scripts",    "Light", "-Preferences 13", () => Shots.Preferences()],
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
@@ -348,6 +350,14 @@ class Shots {
         Sleep(300)
         ControlSend("{Text}" text, "Edit1", hwnd)
         Sleep(2000)
+        return hwnd
+    }
+
+    ; 按类型搜索 (doc report): 等内置文件索引建好再输入
+    static TypeSearch(text) {
+        hwnd := Shots.SearchWindow()
+        Sleep(4000)
+        Shots.SetQuery(hwnd, text)
         return hwnd
     }
 

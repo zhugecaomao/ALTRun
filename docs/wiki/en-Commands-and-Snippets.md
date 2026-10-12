@@ -72,6 +72,8 @@ A new installation already has three examples among the default commands: Ping, 
 ## Snippets
 Save text you use often (signatures, addresses, templates...) as snippets. Search by name, keyword or a word in the text, and `Enter` pastes it into the window you were in before opening ALTRun. Type `snip` to list all snippets, `snip xxx` to search snippets only.
 
+![Preferences → Snippets](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-snippets.png)
+
 | Field | Description |
 |---|---|
 | Name | Required. Shown in search results and used for searching. Use words you would type to find it, for example `PT quotation` |
