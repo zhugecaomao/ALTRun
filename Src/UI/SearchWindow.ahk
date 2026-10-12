@@ -392,6 +392,33 @@ class SearchWindow {
         gdi["Selected"]     := DllCall("CreateSolidBrush", "UInt", gdi["SelectedBgr"], "Ptr")
         for key in ["Title", "Subtitle", "Shortcut", "SelectedTitle", "SelectedSubtitle", "SelectedShortcut", "Highlight", "SelectedHighlight"]
             gdi[key "Color"] := Win.ColorToBgr(ThemeManager.Get(key))
+        SearchWindow._ScheduleFontWarmUp()
+    }
+
+    ; 预热后备字体: 英文界面的 Segoe UI 里没有中日韩的字, 第一次画这些字时 Windows 要载入后备字体 (微软雅黑等)。
+    ; 刚开机时这一步要几百毫秒, 而在结果列表的自绘回调 (WM_PAINT) 里遇到时会卡住很久: 结果行一直是空白,
+    ; 定时器和热键也都不运行 (2026-10 在 GitHub 刚启动的 Windows 上查到)。所以创建字体 1 秒后在内存 DC 上
+    ; 用结果行的字体各量一次中日韩文字, 先把后备字体载入; 之后再画就不用等了
+    static FontWarmUpText := "记事本 メモ帳 한글", FontWarmUpDelay := 1000, _fontWarmUp := ""
+    static _ScheduleFontWarmUp() {
+        if (SearchWindow._fontWarmUp = "")
+            SearchWindow._fontWarmUp := () => SearchWindow.WarmUpFonts()
+        SetTimer(SearchWindow._fontWarmUp, -SearchWindow.FontWarmUpDelay)
+    }
+
+    static WarmUpFonts() {
+        gdi := SearchWindow._gdi
+        if !(gdi.Has("TitleFont") && gdi.Has("SubtitleFont"))
+            return
+        start := Logger.Ms()
+        hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
+        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["TitleFont"], "Ptr")
+        SearchWindow._Extents(hdc, SearchWindow.FontWarmUpText)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["SubtitleFont"])
+        SearchWindow._Extents(hdc, SearchWindow.FontWarmUpText)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
+        DllCall("DeleteDC", "Ptr", hdc)
+        Logger.Time("font warm-up", start)
     }
 
     static _CreateFont(name, pointSize, weight) {
