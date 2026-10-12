@@ -5,7 +5,14 @@
 
 ## [未发布]
 
+## [2026.10.12.2]
+
+测试版。
+
+Test build.
+
 ### 修复
+- CapsLock 键选 "按一下切换中 / 英模式" 时, 在有的输入法上 (例如微信输入法) 只能从英文切到中文一次, 再按回不到英文 (#154): 以前只改输入法的转换模式, 这些输入法只认 "打开 / 关闭"。现在切到英文时同时关闭输入法, 切到中文时打开; 读出来的状态不跟着变的输入法按记下的上次状态来回切换。打开调试日志时记下每次的读数, 还切不了时方便查
 - 结果行偶尔一直是空白, 同时热键和托盘也没有反应 (窗口不算 "无响应"): 画结果行稍慢时 (机器很忙、第一次载入字体...), 后台载入图标的定时器会插进来要求列表重画, 而列表正在画, 重画请求一直挂着, ALTRun 一直忙着处理它。现在画结果行时不让别的任务插进来。以前 "关掉一台显示器后卡了几分钟" 很可能也是这个原因
 - 刚开机后第一次出现中文 (或日文、韩文) 的结果时, 结果行可能一直是空白, 热键和托盘也暂时没有反应: 英文界面的字体里没有这些字, Windows 第一次要载入后备字体 (微软雅黑等), 在画结果列表的过程中遇到这一步会卡住很久。现在启动 1 秒后 (换主题、改缩放后也一样) 先在后台把后备字体载入
 
@@ -557,7 +564,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.2...HEAD
+[2026.10.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12...2026.10.12.2
 [2026.10.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.12
 [2026.10.08]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.08
 [2026.10.05]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.05
