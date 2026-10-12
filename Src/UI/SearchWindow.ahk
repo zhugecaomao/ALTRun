@@ -57,7 +57,8 @@ class SearchWindow {
     static _tip := ""                                                       ; 这次显示时的使用提示 (HelpProvider.NextTip)
     static LastArea := "", HiddenAt := 0                                    ; 上次隐藏时所在屏幕的工作区和时间 (Hud 用)
     static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
-    static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput 时隐藏后切回)
+    static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput = 1 时隐藏后切回)
+    static _imeBefore := ""                                                 ; 呼出时输入法的 {Open, Conv} (SwitchToEnglishInput = 2 时隐藏后恢复)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
     ; 底部状态栏 (Appearance.StatusBar, 和 Listary / Raycast 一样): 有结果行时显示在最下面。左边是 ☰ 菜单按钮 (偏好设置、
     ; 速查表、重建索引、检查更新、重新载入、退出) 和使用提示 (或文件搜索模式、操作面板的状态), 右边是选中项的 Enter 操作和
@@ -601,11 +602,15 @@ class SearchWindow {
             SendMessage(0xB1, 0, -1, SearchWindow.Input.Hwnd)               ; 恢复的文字全选: 直接输入就替换掉
         else
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
-        if AppSettings.General["SwitchToEnglishInput"] {
-            SearchWindow._Step("input language")
-            if (!wasVisible || !SearchWindow._layoutBefore)                     ; 隐藏时切回呼出前的输入法
-                SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
-            Win.SwitchToEnglishIME()
+        switch AppSettings.General["SwitchToEnglishInput"] {
+            case 1:                                                         ; 换成英语 (美国) 键盘
+                SearchWindow._Step("input language")
+                if (!wasVisible || !SearchWindow._layoutBefore)                 ; 隐藏时切回呼出前的输入法
+                    SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
+                Win.SwitchToEnglishIME()
+            case 2:                                                         ; 不换输入法, 切到它的英文模式
+                SearchWindow._Step("input mode")
+                SearchWindow._SwitchImeToEnglish(wasVisible)
         }
         if prepared {
             gen := SearchWindow._searchGen
@@ -614,17 +619,50 @@ class SearchWindow {
         Logger.Time(prepared ? "show (prepared)" : "show", started)
     }
 
+    ; 搜索框的输入法切到英文模式 (和 CapsLock 切中 / 英一样设打开状态和转换模式), 记下原来的状态, 隐藏时恢复。
+    ; 不用另外装英语 (美国) 键盘, 输入法还是同一个, 只是切到英文 (2026-10 #154 里的建议)
+    static _SwitchImeToEnglish(wasVisible) {
+        if !(imeWnd := DllCall("imm32\ImmGetDefaultIMEWnd", "Ptr", SearchWindow.Input.Hwnd, "Ptr"))
+            return
+        before := Win.ImeState(imeWnd)
+        if (!wasVisible || !IsObject(SearchWindow._imeBefore))
+            SearchWindow._imeBefore := before
+        target := Win.ImeEnglish(before.Conv)
+        Win.SetImeState(imeWnd, target.Open, target.Conv)
+        if Logger.Enabled {
+            after := Win.ImeState(imeWnd)
+            Logger.Debug(Format("IME to English: open {} conv 0x{:X} -> now open {} conv 0x{:X}", before.Open, before.Conv, after.Open, after.Conv))
+        }
+    }
+
     ; 呼出时切到了英文输入法: 隐藏时切回原来的。所有程序共用一个输入法时 (Windows 默认) 才需要;
     ; 打开了 "为每个应用窗口使用不同的输入法" 时, 只有 ALTRun 自己切换了, 别的程序不受影响
     static _RestoreInputLanguage() {
+        SearchWindow._RestoreImeMode()
         layout := SearchWindow._layoutBefore, SearchWindow._layoutBefore := 0
-        if (!layout || !AppSettings.General["SwitchToEnglishInput"] || !AppSettings.General["RestoreInput"]
+        if (!layout || AppSettings.General["SwitchToEnglishInput"] != 1 || !AppSettings.General["RestoreInput"]
             || Win.PerWindowInputMethod() || layout = Win.KeyboardLayout())
             return
         if SearchWindow.IsActive() {                                        ; 还在前台: 自己切回去, 对所有程序生效
             try DllCall("ActivateKeyboardLayout", "Ptr", layout, "UInt", 0)
         } else if (hwnd := WinExist("A")) {                                 ; 已经失去焦点: 请前台的窗口切换
             try PostMessage(0x50, 0, layout, , "ahk_id " hwnd)              ; WM_INPUTLANGCHANGEREQUEST
+        }
+    }
+
+    ; 呼出时切到了输入法的英文模式: 隐藏时恢复原来的打开状态和转换模式。中文输入法大多所有程序共用一个中 / 英状态,
+    ; 不恢复的话回到别的程序也是英文。已经失去焦点时设给前台窗口 (和上面切回输入法一样)
+    static _RestoreImeMode() {
+        before := SearchWindow._imeBefore, SearchWindow._imeBefore := ""
+        if (!IsObject(before) || AppSettings.General["SwitchToEnglishInput"] != 2 || !AppSettings.General["RestoreInput"])
+            return
+        if !(hwnd := WinExist("A")) || !(imeWnd := Win.ImeWindow(hwnd))
+            return
+        Win.SetImeState(imeWnd, before.Open, before.Conv)
+        if Logger.Enabled {
+            after := Win.ImeState(imeWnd)
+            Logger.Debug(Format("IME restore: open {} conv 0x{:X}{} -> now open {} conv 0x{:X}", before.Open, before.Conv
+                , SearchWindow.IsActive() ? "" : " (other window)", after.Open, after.Conv))
         }
     }
 

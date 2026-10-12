@@ -2975,6 +2975,20 @@ class Tests {
         ; 读数不跟着变: 一直读到 "没打开 / 0", 上次切到了中文 -> 这次切回英文, 再下次又切到中文
         eq("stuck readings: back to english", Win.ImeTarget(0, 0, {Open: 0, Conv: 0, Chinese: true}), "en open 0 conv 0 remembered")
         eq("stuck readings: chinese again", Win.ImeTarget(0, 0, {Open: 0, Conv: 0, Chinese: false}), "zh open 1 conv 1 remembered")
+        ; 设置的顺序: 打开时先打开再设转换模式, 关闭时先设转换模式再关闭 (6 = IMC_SETOPENSTATUS, 2 = IMC_SETCONVERSIONMODE)
+        steps(open, conv) {
+            list := ""
+            for step in Win.ImeSteps(open, conv)
+                list .= " " step[1] ":" step[2]
+            return Trim(list)
+        }
+        TestRunner.Equal("ImeToggle.steps: open", steps(1, 0x401), "6:1 2:1025")
+        TestRunner.Equal("ImeToggle.steps: close", steps(0, 0x400), "2:1024 6:0")
+        ; 呼出时切到英文模式 (SwitchToEnglishInput = 2): 去掉中文位, 关闭输入法, 其它位不变
+        english := Win.ImeEnglish(0x409)
+        TestRunner.Equal("ImeToggle.english mode", english.Open " " english.Conv, "0 1032")
+        english := Win.ImeEnglish(0)
+        TestRunner.Equal("ImeToggle.english mode (already english)", english.Open " " english.Conv, "0 0")
     }
 
     static SkippedPaint() {
@@ -3946,6 +3960,14 @@ Func | PTTools | PT Tools (AHK)=99
         SearchWindow._layoutBefore := 0x08040804
         SearchWindow._RestoreInputLanguage()                                 ; 没开这个选项: 什么也不做, 只清掉记录
         TestRunner.Equal("Input.restore clears the saved layout", SearchWindow._layoutBefore, 0)
+        SearchWindow._imeBefore := {Open: 1, Conv: 0x401}
+        SearchWindow._RestoreInputLanguage()                                 ; 英文模式也一样: 没开时不恢复, 只清掉记录
+        TestRunner.Equal("Input.restore clears the saved IME mode", SearchWindow._imeBefore, "")
+        AppSettings.General["SwitchToEnglishInput"] := 1
+        SearchWindow._imeBefore := {Open: 1, Conv: 0x401}
+        SearchWindow._RestoreInputLanguage()                                 ; 选的是英语键盘: 不动中 / 英模式
+        TestRunner.Equal("Input.keyboard choice leaves the IME mode alone", SearchWindow._imeBefore, "")
+        TestRunner.Equal("Input.english choices", AppSettings.Defaults()["General"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
         AppSettings.General["SwitchToEnglishInput"] := saved
         TestRunner.True("App.Website", RegExMatch(App.Website, "^https://\S+/$") > 0)
         TestRunner.True("UpdateChecker.newer", UpdateChecker.Compare("2026.10.01", "2026.09.23") > 0)

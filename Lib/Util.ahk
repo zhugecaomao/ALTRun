@@ -340,26 +340,15 @@ class Win {
     ; 另外每次切换后记下读数和切到了哪边, 下次读数还和那时一样就按记下的来 (读数不跟着变的输入法), 见 ImeTarget
     static _imeLast := Map()                                                ; 窗口 -> {Open, Conv: 切换后的读数, Chinese: 切到了中文}
     static ToggleImeMode() {
-        static WM_IME_CONTROL := 0x283, IMC_GETCONVERSIONMODE := 1, IMC_SETCONVERSIONMODE := 2, IMC_GETOPENSTATUS := 5, IMC_SETOPENSTATUS := 6
-        if !(hwnd := WinExist("A"))
+        if !(hwnd := WinExist("A")) || !(imeWnd := Win.ImeWindow(hwnd))
             return false
-        info := Buffer(24 + 6 * A_PtrSize, 0)                                ; GUITHREADINFO: 找有焦点的控件
-        NumPut("UInt", info.Size, info)
-        threadId := DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt")
-        focus := DllCall("GetGUIThreadInfo", "UInt", threadId, "Ptr", info) ? NumGet(info, 8 + A_PtrSize, "Ptr") : 0
-        if !(imeWnd := DllCall("imm32\ImmGetDefaultIMEWnd", "Ptr", focus ? focus : hwnd, "Ptr"))
-            return false
-        open := Ime(IMC_GETOPENSTATUS), conv := Ime(IMC_GETCONVERSIONMODE)
+        before := Win.ImeState(imeWnd)
+        open := before.Open, conv := before.Conv
         last := Win._imeLast.Has(hwnd) ? Win._imeLast[hwnd] : ""
         plan := Win.ImeTarget(open, conv, last)
-        if plan.Chinese {                                                   ; 先打开再设转换模式 (打开时有的输入法会重设转换模式)
-            Ime(IMC_SETOPENSTATUS, 1)
-            Ime(IMC_SETCONVERSIONMODE, plan.Conv)
-        } else {                                                            ; 先设转换模式再关闭
-            Ime(IMC_SETCONVERSIONMODE, plan.Conv)
-            Ime(IMC_SETOPENSTATUS, 0)
-        }
-        after := {Open: Ime(IMC_GETOPENSTATUS), Conv: Ime(IMC_GETCONVERSIONMODE), Chinese: plan.Chinese}
+        Win.SetImeState(imeWnd, plan.Open, plan.Conv)
+        after := Win.ImeState(imeWnd)
+        after.Chinese := plan.Chinese
         if (Win._imeLast.Count > 50)                                        ; 只记最近用到的窗口
             Win._imeLast := Map()
         Win._imeLast[hwnd] := after
@@ -368,12 +357,45 @@ class Win {
                 , open, conv, plan.Remembered ? " (readings unchanged, using the last switch)" : "", plan.Chinese ? "Chinese" : "English"
                 , plan.Open, plan.Conv, after.Open, after.Conv))
         return true
+    }
 
-        Ime(command, value := 0) {                                          ; 2 = SMTO_ABORTIFHUNG: 前台程序卡住时不跟着卡
-            result := 0
-            DllCall("SendMessageTimeoutW", "Ptr", imeWnd, "UInt", WM_IME_CONTROL, "Ptr", command, "Ptr", value, "UInt", 2, "UInt", 300, "Ptr*", &result)
-            return result
-        }
+    ; 窗口里有焦点的控件 (没有时窗口本身) 的输入法窗口, 用来发 WM_IME_CONTROL; 找不到时 0
+    static ImeWindow(hwnd) {
+        info := Buffer(24 + 6 * A_PtrSize, 0)                                ; GUITHREADINFO: 找有焦点的控件
+        NumPut("UInt", info.Size, info)
+        threadId := DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt")
+        focus := DllCall("GetGUIThreadInfo", "UInt", threadId, "Ptr", info) ? NumGet(info, 8 + A_PtrSize, "Ptr") : 0
+        return DllCall("imm32\ImmGetDefaultIMEWnd", "Ptr", focus ? focus : hwnd, "Ptr")
+    }
+
+    ; 输入法现在的 {Open: 打开状态, Conv: 转换模式}
+    static ImeState(imeWnd) {
+        return {Open: Win._ImeControl(imeWnd, 5), Conv: Win._ImeControl(imeWnd, 1)}    ; IMC_GETOPENSTATUS, IMC_GETCONVERSIONMODE
+    }
+
+    ; 设置输入法的打开状态和转换模式, 顺序见 ImeSteps
+    static SetImeState(imeWnd, open, conv) {
+        for step in Win.ImeSteps(open, conv)
+            Win._ImeControl(imeWnd, step[1], step[2])
+    }
+
+    ; 要发的 [WM_IME_CONTROL 命令, 值]: 打开时先打开再设转换模式 (打开时有的输入法会重设转换模式), 关闭时先设转换模式再关闭
+    static ImeSteps(open, conv) {
+        static IMC_SETCONVERSIONMODE := 2, IMC_SETOPENSTATUS := 6
+        if open
+            return [[IMC_SETOPENSTATUS, 1], [IMC_SETCONVERSIONMODE, conv]]
+        return [[IMC_SETCONVERSIONMODE, conv], [IMC_SETOPENSTATUS, 0]]
+    }
+
+    ; 切到英文模式要设的 {Open, Conv}: 去掉中文位 (IME_CMODE_NATIVE = 1) 并关闭输入法
+    static ImeEnglish(conv) {
+        return {Open: 0, Conv: conv & ~1}
+    }
+
+    static _ImeControl(imeWnd, command, value := 0) {                        ; 2 = SMTO_ABORTIFHUNG: 前台程序卡住时不跟着卡
+        result := 0
+        DllCall("SendMessageTimeoutW", "Ptr", imeWnd, "UInt", 0x283, "Ptr", command, "Ptr", value, "UInt", 2, "UInt", 300, "Ptr*", &result)   ; WM_IME_CONTROL
+        return result
     }
 
     ; 切换中 / 英要做什么: {Chinese: 切到中文, Open: 要设的打开状态, Conv: 要设的转换模式, Remembered: 按记下的状态判断}
