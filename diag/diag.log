@@ -1,0 +1,66 @@
+﻿DPI 96
+s100-Light-en-sb1: window 700x73, edit x14 y16 w672 h45, cue 'ALTRun Search'
+  s100-Light-en-sb1-cue: ink rows 16..52 (center 34.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+  s100-Light-en-sb1-typed: ink rows 16..66 (center 41.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+  s100-Light-en-sb1-mixed: ink rows 16..66 (center 41.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+s100-Light-en-sb0: window 700x73, edit x14 y16 w672 h45, cue 'ALTRun Search'
+  s100-Light-en-sb0-cue: ink rows 16..52 (center 34.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+  s100-Light-en-sb0-typed: ink rows 16..66 (center 41.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+  s100-Light-en-sb0-mixed: ink rows 16..66 (center 41.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+s100-Light-zh-CN-sb1: window 700x71, edit x14 y18 w672 h43, cue 'ALTRun 搜索'
+  s100-Light-zh-CN-sb1-cue: ink rows 23..49 (center 36.0), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+  s100-Light-zh-CN-sb1-typed: ink rows 18..78 (center 48.0), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+  s100-Light-zh-CN-sb1-mixed: ink rows 23..78 (center 50.5), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+s100-Light-zh-CN-sb0: window 700x71, edit x14 y18 w672 h43, cue 'ALTRun 搜索'
+  s100-Light-zh-CN-sb0-cue: ink rows 23..49 (center 36.0), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+  s100-Light-zh-CN-sb0-typed: ink rows 18..78 (center 48.0), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+  s100-Light-zh-CN-sb0-mixed: ink rows 23..78 (center 50.5), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+s100-Dark-en-sb1: window 700x73, edit x14 y16 w672 h45, cue 'ALTRun Search'
+  s100-Dark-en-sb1-cue: ink rows 16..52 (center 34.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+  s100-Dark-en-sb1-typed: ink rows 16..76 (center 46.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+  s100-Dark-en-sb1-mixed: ink rows 16..76 (center 46.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+s100-Dark-en-sb0: window 700x73, edit x14 y16 w672 h45, cue 'ALTRun Search'
+  s100-Dark-en-sb0-cue: ink rows 16..52 (center 34.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+  s100-Dark-en-sb0-typed: ink rows 16..76 (center 46.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+  s100-Dark-en-sb0-mixed: ink rows 16..76 (center 46.0), edit rows 16..60 (center 38.0), input band 0..76 (center 38.0)
+s100-Dark-zh-CN-sb1: window 700x71, edit x14 y18 w672 h43, cue 'ALTRun 搜索'
+  s100-Dark-zh-CN-sb1-cue: ink rows 23..49 (center 36.0), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+  s100-Dark-zh-CN-sb1-typed: ink rows 18..78 (center 48.0), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+  s100-Dark-zh-CN-sb1-mixed: ink rows 23..78 (center 50.5), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+s100-Dark-zh-CN-sb0: window 700x71, edit x14 y18 w672 h43, cue 'ALTRun 搜索'
+  s100-Dark-zh-CN-sb0-cue: ink rows 23..49 (center 36.0), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+  s100-Dark-zh-CN-sb0-typed: ink rows 18..78 (center 48.0), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+  s100-Dark-zh-CN-sb0-mixed: ink rows 23..78 (center 50.5), edit rows 18..60 (center 39.0), input band 0..78 (center 39.0)
+DPI 144
+s150-Light-en-sb1: window 1050x108, edit x21 y25 w1008 h66, cue 'ALTRun Search'
+  s150-Light-en-sb1-cue: ink rows 25..78 (center 51.5), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+  s150-Light-en-sb1-typed: ink rows 25..115 (center 70.0), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+  s150-Light-en-sb1-mixed: ink rows 25..115 (center 70.0), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+s150-Light-en-sb0: window 1050x108, edit x21 y25 w1008 h66, cue 'ALTRun Search'
+  s150-Light-en-sb0-cue: ink rows 25..78 (center 51.5), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+  s150-Light-en-sb0-typed: ink rows 25..115 (center 70.0), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+  s150-Light-en-sb0-mixed: ink rows 25..115 (center 70.0), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+s150-Light-zh-CN-sb1: window 1050x106, edit x21 y27 w1008 h64, cue 'ALTRun 搜索'
+  s150-Light-zh-CN-sb1-cue: ink rows 34..73 (center 53.5), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+  s150-Light-zh-CN-sb1-typed: ink rows 27..117 (center 72.0), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+  s150-Light-zh-CN-sb1-mixed: ink rows 36..117 (center 76.5), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+s150-Light-zh-CN-sb0: window 1050x106, edit x21 y27 w1008 h64, cue 'ALTRun 搜索'
+  s150-Light-zh-CN-sb0-cue: ink rows 34..73 (center 53.5), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+  s150-Light-zh-CN-sb0-typed: ink rows 27..117 (center 72.0), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+  s150-Light-zh-CN-sb0-mixed: ink rows 36..117 (center 76.5), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+s150-Dark-en-sb1: window 1050x108, edit x21 y25 w1008 h66, cue 'ALTRun Search'
+  s150-Dark-en-sb1-cue: ink rows 25..78 (center 51.5), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+  s150-Dark-en-sb1-typed: ink rows 25..115 (center 70.0), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+  s150-Dark-en-sb1-mixed: ink rows 25..115 (center 70.0), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+s150-Dark-en-sb0: window 1050x108, edit x21 y25 w1008 h66, cue 'ALTRun Search'
+  s150-Dark-en-sb0-cue: ink rows 25..78 (center 51.5), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+  s150-Dark-en-sb0-typed: ink rows 25..115 (center 70.0), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+  s150-Dark-en-sb0-mixed: ink rows 25..115 (center 70.0), edit rows 25..90 (center 57.5), input band 0..115 (center 57.5)
+s150-Dark-zh-CN-sb1: window 1050x106, edit x21 y27 w1008 h64, cue 'ALTRun 搜索'
+  s150-Dark-zh-CN-sb1-cue: ink rows 34..73 (center 53.5), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+  s150-Dark-zh-CN-sb1-typed: ink rows 27..117 (center 72.0), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+  s150-Dark-zh-CN-sb1-mixed: ink rows 36..117 (center 76.5), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+s150-Dark-zh-CN-sb0: window 1050x106, edit x21 y27 w1008 h64, cue 'ALTRun 搜索'
+  s150-Dark-zh-CN-sb0-cue: ink rows 34..73 (center 53.5), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+  s150-Dark-zh-CN-sb0-typed: ink rows 27..117 (center 72.0), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
+  s150-Dark-zh-CN-sb0-mixed: ink rows 36..117 (center 76.5), edit rows 27..90 (center 58.5), input band 0..117 (center 58.5)
