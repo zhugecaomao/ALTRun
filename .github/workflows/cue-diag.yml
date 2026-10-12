@@ -5,7 +5,7 @@ on:
   push:
     branches: ["claude/**"]
     paths:
-      - Tests/Screenshots/CueDiag.ahk
+      - Tests/CueDiag.ahk
       - .github/workflows/cue-diag.yml
 
 permissions:
@@ -30,19 +30,22 @@ jobs:
         run: |
           pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Scale 100
           $out = Join-Path (Get-Location) 'diag'
-          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList @('/ErrorStdOut', 'Tests\Screenshots\CueDiag.ahk', $out, 's100') -Wait -NoNewWindow
+          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList @('/ErrorStdOut', 'Tests\CueDiag.ahk', $out, 's100') -NoNewWindow -PassThru | Wait-Process -Timeout 300 -ErrorAction SilentlyContinue; Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force
       - name: 150%
+        if: always()
         shell: pwsh
         run: |
           pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Scale 150
           $out = Join-Path (Get-Location) 'diag'
-          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList @('/ErrorStdOut', 'Tests\Screenshots\CueDiag.ahk', $out, 's150') -Wait -NoNewWindow
+          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList @('/ErrorStdOut', 'Tests\CueDiag.ahk', $out, 's150') -NoNewWindow -PassThru | Wait-Process -Timeout 300 -ErrorAction SilentlyContinue; Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force
           Get-Content diag/diag.log
       - name: Commit
+        if: always()
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          Get-Content diag/diag.log -ErrorAction SilentlyContinue; Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force
           git add diag
           git commit -m "Cue banner diagnostics"
           git push origin "HEAD:${{ github.ref_name }}"

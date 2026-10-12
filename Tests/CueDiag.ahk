@@ -1,11 +1,12 @@
 ; 临时诊断: 空搜索框的提示文字 (cue banner) 和输入同样文字时的上下位置
 #Requires AutoHotkey v2.0
 #SingleInstance Force
-#Include ..\..\Lib\JSON.ahk
+#Include ..\Lib\JSON.ahk
 
 out := A_Args[1], tag := A_Args[2]
 DirCreate(out)
-app := "C:\ALTRunDiag", repo := A_ScriptDir "\..\.."
+OnError((e, *) => (Log("ERROR " e.Message " (line " e.Line ") " e.Extra), ExitApp(1)))
+app := "C:\ALTRunDiag", repo := A_ScriptDir "\.."
 try DirDelete(app, true)
 DirCreate(app)
 FileCopy(repo "\ALTRun.ahk", app "\ALTRun.ahk")
@@ -25,6 +26,13 @@ for lang in ["en", "zh-CN"] {
         Run('"' A_AhkPath '" "' app '\ALTRun.ahk"', app, , &pid)
         Sleep(4500)
         hwnd := WinWait("ALTRun ahk_class AutoHotkeyGUI ahk_pid " pid, , 10)
+        if !hwnd {
+            Log(name ": no search window; windows of the process:")
+            for w in WinGetList("ahk_pid " pid)
+                Log("  " WinGetClass(w) " '" WinGetTitle(w) "' visible " ((WinGetStyle(w) & 0x10000000) ? 1 : 0))
+            ProcessClose(pid)
+            continue
+        }
         Sleep(2500)
         WinGetPos(&wx, &wy, &ww, &wh, hwnd)
         ControlGetPos(&ex, &ey, &ew, &eh, "Edit1", hwnd)
