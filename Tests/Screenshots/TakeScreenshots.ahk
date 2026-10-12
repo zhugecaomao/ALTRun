@@ -319,12 +319,12 @@ class Shots {
 
     ; 诊断: 应用索引里有哪些应用和它们的拼音首字母 (拼音的截图曾经是空的)
     static LogAppIndex() {
-        file := Shots.AppDir "\Data\AppIndex.json"
-        if !FileExist(file)
+        indexFile := Shots.AppDir "\Data\AppIndex.json"
+        if !FileExist(indexFile)
             return Shots.Log("app index: not found")
         try {
             text := ""
-            for app in JSON.Parse(FileRead(file, "UTF-8"))["Apps"]
+            for app in JSON.Parse(FileRead(indexFile, "UTF-8"))["Apps"]
                 text .= app["Title"] (app.Has("Search") && app["Search"] != "" ? " (" app["Search"] ")" : "") "; "
             Shots.Log("app index: " text)
         } catch as e {
