@@ -31,6 +31,21 @@ jobs:
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
 
+      # 文档图标和 Everything: LibreOffice 注册 .docx / .xlsx / .pptx 等的图标 (不然是白纸图标), Everything 让文件搜索走 Everything
+      # (截图的设置里只搜演示文件夹)。都是免费软件; 装不上时照常截图
+      - name: Install LibreOffice and Everything
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          choco install libreoffice-fresh --no-progress -y --ia "REGISTER_ALL_MSO_TYPES=1"
+          choco install everything --no-progress -y
+          $exe = @("$env:ProgramFiles\Everything\Everything.exe", "${env:ProgramFiles(x86)}\Everything\Everything.exe") | Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $exe) { Write-Host "Everything.exe not found"; exit 0 }
+          & $exe -install-service | Out-Null
+          Start-Process $exe -ArgumentList "-startup"
+          Start-Sleep -Seconds 20                                                 # 建立 NTFS 索引
+          Get-Process Everything -ErrorAction SilentlyContinue | Format-Table Id, ProcessName -AutoSize | Out-String | Write-Host
+
       # 1920 x 1080、150% 缩放、灰度字体抗锯齿: 截图更清晰 (做不到时保持 100%)
       - name: Display settings for screenshots
         shell: pwsh
