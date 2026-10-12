@@ -30,6 +30,7 @@ class Shots {
     static OutDir   := ""
     static DemoDir  := ""
     static Pid      := 0
+    static DebugScenes := Map("pinyin", true), Scene := ""      ; 临时诊断: 这些场景通过 DebugALTRun.ahk 启动并打印它的日志
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; 屏幕缩放 (150% = 1.5)
 
@@ -97,6 +98,7 @@ class Shots {
             if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]))
                 continue
             Shots.Log("== " scene[1])
+            Shots.Scene := scene[1]
             ; 在 GitHub 刚启动的 Windows 上, 最开始的几次启动 ALTRun 有时画不出结果行
             ; (列表里有项目, 窗口没有卡住, 重画也没用; 原因未查明), 这时重新启动 ALTRun 再试
             Loop 4 {
@@ -107,7 +109,9 @@ class Shots {
                     if (hwnd is Array)                                      ; 几个窗口 (对话框 + 文件夹面板) 截成一张
                         Shots.CaptureWindows(hwnd, outFile)
                     else if (hwnd != "") {                                  ; "" = demo: 每一帧已经存好
-                        if (!Shots.WaitPainted(hwnd, 20) && A_Index < 4) {
+                        painted := Shots.WaitPainted(hwnd, 20)
+                        Shots.PrintDebugLog()
+                        if (!painted && A_Index < 4) {
                             Shots.Diagnose(hwnd)
                             Shots.Log("relaunching")
                             Shots.Close()
@@ -134,6 +138,7 @@ class Shots {
         try DirDelete(Shots.AppDir, true)
         DirCreate(Shots.AppDir)
         FileCopy(Shots.RepoDir "\ALTRun.ahk", Shots.AppDir "\ALTRun.ahk")
+        FileCopy(A_ScriptDir "\DebugALTRun.ahk", Shots.AppDir "\ALTRunDebug.ahk")
         for folder in ["Lib", "Src", "Resources"]
             DirCopy(Shots.RepoDir "\" folder, Shots.AppDir "\" folder)
         ; 脚本扩展的示例 (偏好设置 → 脚本 的列表)
@@ -296,10 +301,19 @@ class Shots {
         Shots.WriteSettings(theme)
         if IsObject(prepare)
             prepare()
-        Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" ' args, Shots.AppDir, , &pid)
+        script := Shots.DebugScenes.Has(Shots.Scene) ? "ALTRunDebug.ahk" : "ALTRun.ahk"
+        Run('"' A_AhkPath '" "' Shots.AppDir '\' script '" ' args, Shots.AppDir, , &pid)
         Shots.Pid := pid
         ; 启动时屏幕上方的 "ALTRun 已在运行" 提示 3 秒后消失
         Sleep(4500)
+    }
+
+    static PrintDebugLog() {
+        if !Shots.DebugScenes.Has(Shots.Scene)
+            return
+        try Shots.Log("ALTRunDebug.log:`n" FileRead(A_Temp "\ALTRunDebug.log", "UTF-8"))
+        catch as e
+            Shots.Log("ALTRunDebug.log: " e.Message)
     }
 
     static Close() {
