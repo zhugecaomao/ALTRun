@@ -39,7 +39,7 @@ class Shots {
     static Scenes() {
         return [
             ["search",      "Light", "", () => Shots.Search("re")],
-            ["pinyin",      "Light", "", () => (Shots.LogAppIndex(), Shots.Search("jsb"))],
+            ["pinyin",      "Light", "", () => Shots.Pinyin()],
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: 附带结构计算的两行
@@ -315,6 +315,14 @@ class Shots {
         ProcessWaitClose(Shots.Pid, 5)
         Shots.Pid := 0
         Sleep(500)
+    }
+
+    ; 拼音首字母: 截图曾经只有空白的一行, 记下应用索引和 ALTRun 的窗口 (出错时的提示框) 方便查原因
+    static Pinyin() {
+        Shots.LogAppIndex()
+        hwnd := Shots.Search("jsb")
+        Shots.Diagnose(hwnd)
+        return hwnd
     }
 
     ; 诊断: 应用索引里有哪些应用和它们的拼音首字母 (拼音的截图曾经是空的)
@@ -602,9 +610,10 @@ class Shots {
         if (h < Round(120 * Shots.Scale))
             return false
         top := Round(80 * Shots.Scale)
+        bottom := h - 4 - Round(40 * Shots.Scale)                           ; 不看底部的状态栏 (颜色不同, 以前因此总当作已经画好)
         first := DllCall("GetPixel", "Ptr", hdc, "Int", Round(60 * Shots.Scale), "Int", top, "UInt")
         y := top
-        while (y < h - 4) {
+        while (y < bottom) {
             x := 20
             while (x < w - 20) {
                 if (DllCall("GetPixel", "Ptr", hdc, "Int", x, "Int", y, "UInt") != first)
