@@ -39,7 +39,7 @@ class Shots {
     static Scenes() {
         return [
             ["search",      "Light", "", () => Shots.Search("re")],
-            ["pinyin",      "Light", "", () => Shots.Pinyin(), () => Shots.EnableLog()],
+            ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: 附带结构计算的两行
@@ -171,16 +171,9 @@ class Shots {
         appDir := drive "\ALTRun Demo Apps"
         try DirDelete(appDir, true)
         DirCreate(appDir)
-        ; 中文名称的记事本: 演示拼音首字母搜索 (jsb)。GitHub 的 Windows Server 2025 上 System32 里没有 notepad.exe
-        ; (记事本是应用商店版), 以前因此没有建这个快捷方式, 拼音的截图是空的: 依次找能用的记事本
-        notepad := ""
-        for candidate in [A_WinDir "\System32\notepad.exe", A_WinDir "\notepad.exe", A_WinDir "\SysWOW64\notepad.exe"
-                        , EnvGet("LOCALAPPDATA") "\Microsoft\WindowsApps\notepad.exe"]
-            if (notepad = "" && FileExist(candidate))
-                notepad := candidate
-        Shots.Log("notepad for the pinyin demo: " (notepad != "" ? notepad : "not found, using " A_WinDir "\System32\cmd.exe"))
+        ; 中文名称的记事本: 演示拼音首字母搜索 (jsb)
         for shortcut in [["Remote Desktop Connection", A_WinDir "\System32\mstsc.exe"],
-                         ["记事本", notepad != "" ? notepad : A_WinDir "\System32\cmd.exe"],
+                         ["记事本", A_WinDir "\System32\notepad.exe"],
                          ["Microsoft Edge", A_ProgramFiles " (x86)\Microsoft\Edge\Application\msedge.exe"]]
             if FileExist(shortcut[2])
                 FileCreateShortcut(shortcut[2], appDir "\" shortcut[1] ".lnk")
@@ -315,51 +308,6 @@ class Shots {
         ProcessWaitClose(Shots.Pid, 5)
         Shots.Pid := 0
         Sleep(500)
-    }
-
-    ; 拼音首字母: 截图曾经只有空白的一行, 记下应用索引和 ALTRun 的窗口 (出错时的提示框) 方便查原因
-    static Pinyin() {
-        Shots.LogAppIndex()
-        hwnd := Shots.Search("jsb")
-        Shots.Diagnose(hwnd)
-        Shots.Log("ALTRun.log:`n" Shots.LogTail(40))
-        return hwnd
-    }
-
-    ; 诊断用: 打开 ALTRun 的调试日志 (写在 %Temp%\ALTRun.log), 先删掉旧的
-    static EnableLog() {
-        try FileDelete(A_Temp "\ALTRun.log")
-        settingsFile := Shots.AppDir "\Data\ALTRun.json"
-        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
-        settings["General"]["SaveLog"] := 1
-        FileDelete(settingsFile)
-        FileAppend(JSON.Stringify(settings), settingsFile, "UTF-8")
-    }
-
-    static LogTail(lines) {
-        try text := FileRead(A_Temp "\ALTRun.log", "UTF-8")
-        catch
-            return "(no log)"
-        all := StrSplit(RTrim(text, "`r`n"), "`n", "`r")
-        tail := ""
-        Loop Min(lines, all.Length)
-            tail .= all[all.Length - Min(lines, all.Length) + A_Index] "`n"
-        return tail
-    }
-
-    ; 诊断: 应用索引里有哪些应用和它们的拼音首字母 (拼音的截图曾经是空的)
-    static LogAppIndex() {
-        indexFile := Shots.AppDir "\Data\AppIndex.json"
-        if !FileExist(indexFile)
-            return Shots.Log("app index: not found")
-        try {
-            text := ""
-            for app in JSON.Parse(FileRead(indexFile, "UTF-8"))["Apps"]
-                text .= app["Title"] (app.Has("Search") && app["Search"] != "" ? " (" app["Search"] ")" : "") "; "
-            Shots.Log("app index: " text)
-        } catch as e {
-            Shots.Log("app index: " e.Message)
-        }
     }
 
     static SearchWindow() {
@@ -589,7 +537,6 @@ class Shots {
         return {X: x, Y: y, W: w, H: h}
     }
 
-    ; 几个窗口 (例如对话框和贴着它的面板) 合在一起截成一张: 取包住它们的矩形
     ; 几个窗口截成一张 (对话框 + 文件夹面板): 先按给的顺序放到最前面 (后面的在上面), 再把背景板放到第一个的正下方。
     ; 以前没有排: 上一个场景把背景板排到搜索窗口下面之后, 对话框被背景板挡住, 截出来只有面板
     static CaptureWindows(hwnds, file) {
