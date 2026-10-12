@@ -92,7 +92,8 @@ class SearchWindow {
         searchBox := g.AddEdit("x" pad " y" pad " w" (w - 2 * pad) " r1 -Multi -E0x200 -VScroll -WantReturn Background" background)
         searchBox.GetPos(, , , &editH)
         SearchWindow.InputHeight := Max(editH, Win.Scale(40))
-        searchBox.Move(pad, pad + (SearchWindow.InputHeight - editH) // 2)
+        metrics := Win.CapMetrics(searchBox.Hwnd)
+        searchBox.Move(pad, pad + SearchWindow.InputTop(SearchWindow.InputHeight, editH, pad, metrics.Ascent, metrics.Cap))
         searchBox.OnEvent("Change", (*) => SearchWindow._OnInputChange())
         Win.SetCueBanner(searchBox.Hwnd, SearchWindow.Placeholder())
 
@@ -1119,6 +1120,16 @@ class SearchWindow {
         else
             text := (SearchWindow._tip != "" && !SearchWindow.StatusHeight) ? SearchWindow._tip : SearchWindow.Placeholder()   ; 有状态栏时提示显示在状态栏
         Win.SetCueBanner(SearchWindow.Input.Hwnd, text)
+    }
+
+    ; 输入框在输入区 (高 bandH) 里的上边距: 按大写字母的高度居中 (ascent: 基线到字体顶部, cap: 大写字母高度)。
+    ; 按整个字体的高度居中时下面还算上了 g、y 等下伸笔画的空间, 字看起来偏上 (2026-10 #158; 150% 时上边空 7 像素、
+    ; 下边空 17 像素)。往下挪最多 pad / 2 (下面还有边距, 没有结果时窗口在输入区下面也留了 pad); 量不到字形时照常居中
+    static InputTop(bandH, editH, pad, ascent, cap) {
+        centered := (bandH - editH) // 2
+        if (ascent <= 0 || cap <= 0 || cap > ascent)
+            return centered
+        return Max(centered, Min(Round(bandH / 2 - (ascent - cap / 2)), bandH - editH + pad // 2))
     }
 
     ; 空搜索框里的灰色文字: 设置里写了 (Appearance.Placeholder) 就用它, 否则 "ALTRun 搜索"

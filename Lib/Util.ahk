@@ -190,6 +190,24 @@ class Win {
     }
 
     ; 控件里一行文字的宽度 (像素, 用控件自己的字体)
+    ; 控件字体的 {Ascent: 基线到顶部, Cap: 大写字母 H 的高度} (像素); 量不到时都是 0
+    static CapMetrics(hwnd) {
+        result := {Ascent: 0, Cap: 0}
+        hdc := DllCall("GetDC", "Ptr", hwnd, "Ptr")
+        font := SendMessage(0x31, 0, 0, hwnd)                               ; WM_GETFONT
+        old := DllCall("SelectObject", "Ptr", hdc, "Ptr", font, "Ptr")
+        tm := Buffer(60, 0)                                                 ; TEXTMETRICW
+        if DllCall("GetTextMetricsW", "Ptr", hdc, "Ptr", tm)
+            result.Ascent := NumGet(tm, 4, "Int")
+        gm := Buffer(20, 0), mat := Buffer(16, 0)                           ; GLYPHMETRICS, MAT2 (单位矩阵)
+        NumPut("Short", 1, mat, 2), NumPut("Short", 1, mat, 14)
+        if (DllCall("GetGlyphOutlineW", "Ptr", hdc, "UInt", Ord("H"), "UInt", 0, "Ptr", gm, "UInt", 0, "Ptr", 0, "Ptr", mat, "UInt") != 0xFFFFFFFF)
+            result.Cap := NumGet(gm, 12, "Int")                             ; gmptGlyphOrigin.y: 字形顶部在基线上面多高
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", old)
+        DllCall("ReleaseDC", "Ptr", hwnd, "Ptr", hdc)
+        return result
+    }
+
     static TextExtent(hwnd, text) {
         hdc := DllCall("GetDC", "Ptr", hwnd, "Ptr")
         font := SendMessage(0x31, 0, 0, hwnd)                               ; WM_GETFONT

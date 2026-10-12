@@ -1,4 +1,4 @@
-; 临时诊断: 空搜索框的提示文字 (cue banner) 和输入同样文字时的上下位置
+; 临时诊断: 空搜索框的提示文字 (cue banner) 和输入同样文字时的上下位置 (按大写字母高度居中后)
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include ..\Lib\JSON.ahk

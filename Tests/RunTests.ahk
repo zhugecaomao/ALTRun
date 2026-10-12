@@ -3973,6 +3973,16 @@ Func | PTTools | PT Tools (AHK)=99
         AppSettings.Appearance["Placeholder"] := " Type to search "
         TestRunner.Equal("Placeholder.custom (trimmed)", SearchWindow.Placeholder(), "Type to search")
         AppSettings.Appearance["Placeholder"] := savedPlaceholder
+        ; 输入框按大写字母的高度居中 (#158): 150% 时实测基线在 42、大写字母高 33, 往下挪 7 像素
+        TestRunner.Equal("InputTop.cap centered", SearchWindow.InputTop(64, 64, 21, 42, 33), 7)
+        TestRunner.Equal("InputTop.at most half the padding", SearchWindow.InputTop(64, 64, 8, 42, 33), 4)
+        TestRunner.Equal("InputTop.no metrics: centered", SearchWindow.InputTop(60, 40, 14, 0, 0), 10)
+        TestRunner.Equal("InputTop.never above centered", SearchWindow.InputTop(60, 40, 14, 42, 10), 10)
+        g := Gui()
+        g.SetFont("s20", "Segoe UI")
+        metrics := Win.CapMetrics(g.AddEdit("w200 r1").Hwnd)
+        g.Destroy()
+        TestRunner.True("InputTop.font metrics (ascent " metrics.Ascent ", cap " metrics.Cap ")", metrics.Ascent > metrics.Cap && metrics.Cap > 10)
         TestRunner.Equal("Input.english choices", AppSettings.Defaults()["General"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
         AppSettings.General["SwitchToEnglishInput"] := saved
         TestRunner.True("App.Website", RegExMatch(App.Website, "^https://\S+/$") > 0)
