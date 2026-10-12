@@ -57,7 +57,7 @@ $target = [int][Math]::Round(96 * $Scale / 100)
 $dpi = Get-Dpi
 Write-Host "DPI before: $dpi (target $target)"
 if ($dpi -ne $target) {
-    foreach ($step in 1, 2, 3, 4, -1, -2, 0) {
+    foreach ($step in 0, 1, 2, 3, 4, -1, -2) {                                 # 0 = 推荐缩放 (再调回 100% 时一般就是它)
         [void][ShotDisplay]::SystemParametersInfo(0x009F, [uint32]($step -band 0xFFFFFFFF), [IntPtr]::Zero, 1)   # SPI_SETLOGICALDPIOVERRIDE
         Start-Sleep -Seconds 2
         $dpi = Get-Dpi

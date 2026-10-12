@@ -38,14 +38,7 @@ jobs:
 
       - name: Take screenshots
         shell: pwsh
-        run: |
-          Write-Host "Microsoft YaHei: $(Test-Path C:\Windows\Fonts\msyh.ttc)"
-          Add-Type -AssemblyName System.Windows.Forms
-          Write-Host "Screen: $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds)"
-          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\Screenshots\TakeScreenshots.ahk' `
-                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput shots.log -RedirectStandardError shots.err
-          Get-Content shots.log, shots.err
-          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) screenshot(s) failed" }
+        run: pwsh -NoProfile -File Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Skip normal-scale
 
       # 截图加上 Windows 11 那样的圆角 (虚拟机没有显卡加速, 系统不画圆角), README 首页的动图 demo.png (APNG)
       # 由 "demo" 场景存下的帧合成 (圆角、阴影、模糊的背景); 都用 Pillow, 按 SHOT_SCALE 放大圆角和边距
@@ -59,6 +52,19 @@ jobs:
           if (-not (Test-Path (Join-Path $frames "frames.txt"))) { Write-Host "No demo frames"; exit 0 }
           python Tests/Screenshots/MakeDemo.py $frames docs/images/screenshots/demo.png
           if ($LASTEXITCODE -ne 0) { throw "MakeDemo.py failed" }
+
+      # 偏好设置和 Quick Switch (Shots.NormalScale) 在 150% 下太大: 缩放调回 100% 再截一次, 圆角按 100% 的半径
+      # (已经是圆角的图 RoundCorners.py 不再处理)
+      - name: Display at 100% for Preferences and Quick Switch
+        shell: pwsh
+        run: pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Scale 100
+
+      - name: Take screenshots at 100%
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only normal-scale
+          python Tests/Screenshots/RoundCorners.py docs/images/screenshots
+          if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
 
       - uses: actions/upload-artifact@v7
         with:

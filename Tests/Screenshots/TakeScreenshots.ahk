@@ -5,13 +5,15 @@
 ; 逐个场景启动 ALTRun, 输入搜索内容, 把窗口截成 PNG。不改动你自己的 ALTRun.json。
 ; 截图用英文界面, 演示数据都是虚构的通用内容 (不要放个人或工作相关的信息)。
 ;
-;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名...]
+;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名... | -场景名...]
 ;
-; 输出文件夹默认 docs\images\screenshots; 不写场景名 = 全部场景。
+; 输出文件夹默认 docs\images\screenshots; 不写场景名 = 全部场景; "-场景名" = 除了这些场景;
+; "normal-scale" / "-normal-scale" = Shots.NormalScale 里的场景 / 除了它们。
 ; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 每行: 文件名 Tab 停留的毫秒数
 ; Tab 这一步按的键),
 ; 由 MakeDemo.py 合成 README 首页的动图 demo.png。截图的圆角由 RoundCorners.py 加上; 截图前 SetDisplay.ps1 把屏幕调成
-; 1920 x 1080、150% 缩放 (见 screenshots.yml), 下面的坐标都按 Shots.Scale 放大。
+; 1920 x 1080、150% 缩放 (见 screenshots.yml), 下面的坐标都按 Shots.Scale 放大。偏好设置和 Quick Switch 的截图
+; (Shots.NormalScale) 在 150% 下太大, screenshots.yml 再把缩放调回 100% 单独截一次。
 ; GitHub Actions 的 "Screenshots" 工作流在 Windows 上运行它, 并把截图提交回分支。
 ;===============================================================================
 #Requires AutoHotkey v2.0
@@ -30,6 +32,8 @@ class Shots {
     static Pid      := 0
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; 屏幕缩放 (150% = 1.5)
+
+    static NormalScale := ["quickswitch", "prefs-general", "prefs-appearance", "prefs-commands", "prefs-calculator", "prefs-scripts"]   ; 按 100% 截的场景 (见 screenshots.yml)
 
     ; 场景名 -> [主题, 启动参数, 函数, 启动前准备数据的函数 (可选)]
     static Scenes() {
@@ -76,20 +80,26 @@ class Shots {
 
     static Run(args) {
         Shots.OutDir := (args.Length >= 1) ? Shots._FullPath(args[1]) : Shots.RepoDir "\docs\images\screenshots"
-        wanted := Map()
-        Loop args.Length - 1
-            wanted[args[A_Index + 1]] := true
+        wanted := Map(), skipped := Map()
+        Loop args.Length - 1 {
+            name := args[A_Index + 1]
+            target := (SubStr(name, 1, 1) = "-") ? skipped : wanted
+            name := LTrim(name, "-")
+            for scene in (name = "normal-scale") ? Shots.NormalScale : [name]
+                target[scene] := true
+        }
         DirCreate(Shots.OutDir)
         Shots.Log("screen " A_ScreenWidth " x " A_ScreenHeight ", DPI " A_ScreenDPI)
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
         for scene in Shots.Scenes() {
-            if (wanted.Count && !wanted.Has(scene[1]))
+            if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]))
                 continue
             Shots.Log("== " scene[1])
-            ; 在 GitHub 刚启动的 Windows 上, 最开始的几次启动 ALTRun 有时画不出结果行
-            ; (列表里有项目, 窗口没有卡住, 重画也没用; 原因未查明), 这时重新启动 ALTRun 再试
+            ; 在 GitHub 刚启动的 Windows 上, 第一次画中文 (拼音场景的 "记事本") 时 Windows 要载入中文的后备字体,
+            ; 在列表的自绘回调里量文字宽度 (GetTextExtentExPointW) 会卡住很久, 结果行一直是空白; 这时重新启动 ALTRun 再试
+            ; (字体已经载入, 马上就画好)
             Loop 4 {
                 try {
                     Shots.Launch(scene[2], scene[3], (scene.Length >= 5) ? scene[5] : "")
@@ -528,8 +538,12 @@ class Shots {
         return {X: x, Y: y, W: w, H: h}
     }
 
-    ; 几个窗口 (例如对话框和贴着它的面板) 合在一起截成一张: 取包住它们的矩形
+    ; 几个窗口截成一张 (对话框 + 文件夹面板): 先按给的顺序放到最前面 (后面的在上面), 再把背景板放到第一个的正下方。
+    ; 以前没有排: 上一个场景把背景板排到搜索窗口下面之后, 对话框被背景板挡住, 截出来只有面板
     static CaptureWindows(hwnds, file) {
+        for hwnd in hwnds
+            DllCall("SetWindowPos", "Ptr", hwnd, "Ptr", -1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; HWND_TOPMOST, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
+        Shots.BackdropBehind(hwnds[1])
         left := 99999, top := 99999, right := -99999, bottom := -99999
         for hwnd in hwnds {
             r := Shots.FrameRect(hwnd)
@@ -566,9 +580,10 @@ class Shots {
         if (h < Round(120 * Shots.Scale))
             return false
         top := Round(80 * Shots.Scale)
+        bottom := h - 4 - Round(40 * Shots.Scale)                           ; 不看底部的状态栏 (颜色不同, 以前因此总当作已经画好)
         first := DllCall("GetPixel", "Ptr", hdc, "Int", Round(60 * Shots.Scale), "Int", top, "UInt")
         y := top
-        while (y < h - 4) {
+        while (y < bottom) {
             x := 20
             while (x < w - 20) {
                 if (DllCall("GetPixel", "Ptr", hdc, "Int", x, "Int", y, "UInt") != first)
