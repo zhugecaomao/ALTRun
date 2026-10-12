@@ -1497,9 +1497,14 @@ class SearchWindow {
     ;---------------------------------------------------------------------------
     ; Painting (NM_CUSTOMDRAW)
     ;---------------------------------------------------------------------------
+    ; 不可打断 (Critical): 画一行超过约 15 ms 时 (第一次载入字体、机器很忙...), AutoHotkey 会让定时器在回调中间插进来运行。
+    ; 插进来的图标定时器载入图标后要求列表重画 (_Repaint), 可列表正在画, 不会重入, 重画请求一直挂着, Windows 不停地发 WM_PAINT:
+    ; AutoHotkey 一直在处理 WM_PAINT, 回不到画行的线程, 优先级更低的 WM_TIMER 也轮不到 —— 结果行一直空白, 定时器、热键和
+    ; 托盘都没有反应, 窗口却不算 "无响应" (2026-10 在 GitHub 的 Windows 上用对照实验确认)。不可打断时定时器等画完再运行
     static _OnCustomDraw(lParam) {
         static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001
         static CDRF_DODEFAULT := 0x0, CDRF_SKIPDEFAULT := 0x4, CDRF_NOTIFYITEMDRAW := 0x20
+        Critical("On")
         stage := NumGet(lParam, A_PtrSize * 3, "UInt")
         if (stage = CDDS_PREPAINT) {
             SearchWindow._paints++                                          ; 自绘回调运行过 (见 _CheckPaint)
