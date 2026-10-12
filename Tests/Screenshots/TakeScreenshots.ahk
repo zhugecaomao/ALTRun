@@ -311,9 +311,18 @@ class Shots {
     static PrintDebugLog() {
         if !Shots.DebugScenes.Has(Shots.Scene)
             return
-        try Shots.Log("ALTRunDebug.log:`n" FileRead(A_Temp "\ALTRunDebug.log", "UTF-8"))
-        catch as e
-            Shots.Log("ALTRunDebug.log: " e.Message)
+        try {
+            lines := StrSplit(RTrim(FileRead(A_Temp "\ALTRunDebug.log", "UTF-8"), "`r`n"), "`n", "`r")
+        } catch as e {
+            return Shots.Log("ALTRunDebug.log: " e.Message)
+        }
+        text := ""
+        for line in lines                                                   ; 前 60 行 + 最后 250 行
+            if (A_Index <= 60 || A_Index > lines.Length - 250)
+                text .= line "`n"
+            else if (A_Index = 61)
+                text .= "... (" (lines.Length - 310) " lines)`n"
+        Shots.Log("ALTRunDebug.log (" lines.Length " lines):`n" text)
     }
 
     static Close() {

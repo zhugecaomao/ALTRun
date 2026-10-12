@@ -6,6 +6,7 @@
 ;   - 每次读图标的开始、结束和耗时
 ;   - 画行时出的错
 ;   - 每秒一次心跳 (定时器还能不能运行) 和回调次数
+;   - 第一个图标读完以后, ALTRun 各个类的静态方法的进入 / 退出 (">" / "<", "C" = Critical)
 ;===============================================================================
 #Requires AutoHotkey v2.0
 
@@ -18,10 +19,18 @@ class Dbg {
     static Started := A_TickCount
     static Loading := ""                    ; 正在读的图标 (空 = 没有在读)
     static Prepaints := 0, ItemDraws := 0, Logged := 0
+    static Tracing := false, TraceLines := 0, Depth := 0
+    static TraceClasses := ["ActionCatalog", "App", "AppSettings", "ApplicationProvider", "AutoDate", "BookmarkProvider", "CalculatorProvider"
+        , "CapsLockSwitch", "ClipboardData", "ClipboardProvider", "CurrencyRates", "CustomCommandProvider", "Everything", "FileIndex"
+        , "FileSearchProvider", "HelpProvider", "Hud", "IconCache", "Knowledge", "NavIcons", "Path", "ProviderRegistry", "QuickSwitch"
+        , "RecentProvider", "ScriptProvider", "SearchWindow", "SelectionActions", "SnippetExpander", "SnippetProvider", "SystemProvider"
+        , "TerminalProvider", "ThemeManager", "UpdateChecker", "Usage", "WebSearchProvider", "Win", "WindowProvider"]
 
     static Install() {
         try FileDelete(Dbg.LogFile)
         Dbg.Log("debug wrapper started, pid " DllCall("GetCurrentProcessId"))
+        for name in Dbg.TraceClasses
+            Dbg.TraceClass(name)
         Dbg.Hook(SearchWindow, "_OnCustomDraw", (original, cls, params*) => Dbg.OnDraw(original, cls, params*))
         Dbg.Hook(SearchWindow, "_PaintRow", (original, cls, params*) => Dbg.OnPaintRow(original, cls, params*))
         Dbg.Hook(IconCache, "_Load", (original, cls, params*) => Dbg.OnLoad(original, cls, params*))
@@ -36,6 +45,46 @@ class Dbg {
     static Hook(cls, name, hook) {
         original := cls.GetOwnPropDesc(name).Call
         cls.DefineProp(name, {Call: (target, params*) => hook(original, target, params*)})
+    }
+
+    ; 给类的每个静态方法套一层: 开始跟踪以后记下进入和退出
+    static TraceClass(name) {
+        cls := %name%
+        for prop in cls.OwnProps() {
+            if (prop = "__Init" || prop = "__New" || prop = "Call" || prop = "Prototype")
+                continue
+            desc := cls.GetOwnPropDesc(prop)
+            if !desc.HasProp("Call")
+                continue
+            Dbg.HookTrace(cls, prop, name "." prop, desc.Call)
+        }
+    }
+
+    static HookTrace(cls, prop, label, original) {
+        cls.DefineProp(prop, {Call: (target, params*) => Dbg.Traced(label, original, target, params*)})
+    }
+
+    static Traced(label, original, target, params*) {
+        if !Dbg.Tracing
+            return original(target, params*)
+        Dbg.Trace("> " label (A_IsCritical ? " C" : ""))
+        Dbg.Depth++
+        try {
+            result := original(target, params*)
+        } catch as e {
+            Dbg.Depth--
+            Dbg.Trace("! " label ": " e.Message)
+            throw e
+        }
+        Dbg.Depth--
+        Dbg.Trace("< " label)
+        return result
+    }
+
+    static Trace(text) {
+        if (++Dbg.TraceLines > 4000)
+            return
+        Dbg.Log(Format("{:" Max(1, Dbg.Depth * 2) "}", "") text)
     }
 
     static OnDraw(original, cls, lParam) {
@@ -71,6 +120,7 @@ class Dbg {
         } finally {
             Dbg.Loading := ""
             Dbg.Log("icon load end (" (A_TickCount - start) " ms): " spec)
+            Dbg.Tracing := true
         }
         return result
     }
