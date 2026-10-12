@@ -91,8 +91,7 @@ class Shots {
                 target[scene] := true
         }
         DirCreate(Shots.OutDir)
-        Shots.Log("screen " A_ScreenWidth " x " A_ScreenHeight ", DPI " A_ScreenDPI
-            . ", Everything " (DllCall("FindWindowW", "Str", "EVERYTHING_TASKBAR_NOTIFICATION", "Ptr", 0, "Ptr") ? "running" : "not running"))
+        Shots.Log("screen " A_ScreenWidth " x " A_ScreenHeight ", DPI " A_ScreenDPI)
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
@@ -196,8 +195,7 @@ class Shots {
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
                 "Calculator", Map("StructuralCalc", 1),
                 "Recent", Map("Pinned", Shots.Pinned, "RecentCount", 5),
-                ; Everything 在运行时 (screenshots.yml 装好并启动) 用它搜索, 只搜演示文件夹, 不混进虚拟机上的其它文件
-                "FileSearch", Map("UseEverything", 1, "EverythingFilter", '"' demo '\"', "ScopeFolders", [demo], "InDefaultResults", 0)
+                "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0)
             ),
             "Extensions", Map("QuickSwitch", Map("RecentFolders", 3)),         ; 文件夹面板只列 WriteRecentFolders 建的最近项目
             "CustomCommands", [

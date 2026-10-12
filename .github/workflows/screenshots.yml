@@ -31,12 +31,9 @@ jobs:
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
 
-      # 文档图标和 Everything (截图里文件搜索的结果), 不用安装软件, 几秒钟:
-      #   - .docx / .xlsx / .pptx 等关联到 Tests/Screenshots/Icons 里的 LibreOffice 文档图标 (只写当前用户的注册表;
-      #     只在 GitHub 的虚拟机上做, 本地运行截图脚本时不会改你的文件关联)
-      #   - Everything 用便携版, 下载后直接运行 (截图的设置里只搜演示文件夹)
-      # 做不到时照常截图
-      - name: Document icons and Everything
+      # 文档图标: .docx / .xlsx / .pptx 等关联到 Tests/Screenshots/Icons 里的 LibreOffice 文档图标, 不用安装 Office
+      # (只写当前用户的注册表; 只在 GitHub 的虚拟机上做, 本地运行截图脚本时不会改你的文件关联)。做不到时照常截图
+      - name: Document icons
         continue-on-error: true
         shell: pwsh
         run: |
@@ -50,33 +47,6 @@ jobs:
           Add-Type -Namespace Shots -Name Shell -MemberDefinition '[DllImport("shell32.dll")] public static extern void SHChangeNotify(int e, uint f, IntPtr a, IntPtr b);'
           [Shots.Shell]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)   # SHCNE_ASSOCCHANGED: 刷新图标
           Write-Host "Document icons registered from $icons"
-
-          $page = (Invoke-WebRequest https://www.voidtools.com/downloads/ -UseBasicParsing).Content
-          $zip = [regex]::Match($page, 'Everything-[\d.]+\.x64\.zip').Value
-          if (-not $zip) { Write-Host "Everything download link not found"; exit 0 }
-          $dir = Join-Path $env:RUNNER_TEMP "Everything"
-          Invoke-WebRequest "https://www.voidtools.com/$zip" -OutFile "$dir.zip" -UseBasicParsing
-          Expand-Archive "$dir.zip" $dir -Force
-          Start-Process (Join-Path $dir "Everything.exe") -ArgumentList "-startup"
-          # 等 Everything 建好索引 (EVERYTHING_IPC_IS_DB_LOADED), 最多 90 秒: 没建好时搜索返回空, 文件搜索的截图只剩一行
-          $wait = Join-Path $env:RUNNER_TEMP "EverythingWait.ahk"
-          Set-Content $wait -Encoding utf8 @'
-          #NoTrayIcon
-          DetectHiddenWindows(true)
-          start := A_TickCount
-          loop {
-              loaded := 0
-              if WinExist("ahk_class EVERYTHING_TASKBAR_NOTIFICATION")
-                  try loaded := SendMessage(0x400, 401, 0)                       ; WM_USER, EVERYTHING_IPC_IS_DB_LOADED
-              if (loaded || A_TickCount - start > 90000)
-                  break
-              Sleep(500)
-          }
-          FileAppend((loaded ? "loaded" : "not loaded") " after " Round((A_TickCount - start) / 1000) " s", "*")
-          '@
-          $out = Join-Path $env:RUNNER_TEMP "EverythingWait.txt"
-          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', "`"$wait`"" -Wait -NoNewWindow -RedirectStandardOutput $out
-          Write-Host "$zip database: $(Get-Content $out -Raw)"
 
       # 1920 x 1080、150% 缩放、灰度字体抗锯齿: 截图更清晰 (做不到时保持 100%)
       - name: Display settings for screenshots
