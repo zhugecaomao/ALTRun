@@ -94,7 +94,7 @@ class SearchWindow {
         SearchWindow.InputHeight := Max(editH, Win.Scale(40))
         searchBox.Move(pad, pad + (SearchWindow.InputHeight - editH) // 2)
         searchBox.OnEvent("Change", (*) => SearchWindow._OnInputChange())
-        Win.SetCueBanner(searchBox.Hwnd, I18n.T("Search.Placeholder"))
+        Win.SetCueBanner(searchBox.Hwnd, SearchWindow.Placeholder())
 
         listTop := pad + SearchWindow.InputHeight + pad // 2
         separator := g.AddText("x0 y" listTop " w" w " h1 Hidden Background" ThemeManager.Get("Separator"))
@@ -1117,8 +1117,14 @@ class SearchWindow {
         if SearchWindow.FileMode
             text := I18n.T("Search.FilesPlaceholder")
         else
-            text := (SearchWindow._tip != "" && !SearchWindow.StatusHeight) ? SearchWindow._tip : I18n.T("Search.Placeholder")   ; 有状态栏时提示显示在状态栏
+            text := (SearchWindow._tip != "" && !SearchWindow.StatusHeight) ? SearchWindow._tip : SearchWindow.Placeholder()   ; 有状态栏时提示显示在状态栏
         Win.SetCueBanner(SearchWindow.Input.Hwnd, text)
+    }
+
+    ; 空搜索框里的灰色文字: 设置里写了 (Appearance.Placeholder) 就用它, 否则 "ALTRun 搜索"
+    static Placeholder() {
+        text := Trim(AppSettings.Appearance.Get("Placeholder", ""))
+        return (text != "") ? text : I18n.T("Search.Placeholder")
     }
 
     ;---------------------------------------------------------------------------

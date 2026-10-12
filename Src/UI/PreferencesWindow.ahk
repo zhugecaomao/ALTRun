@@ -355,10 +355,11 @@ class PreferencesWindow {
         restore.Enabled := english.Value > 1
         english.OnEvent("Change", (*) => restore.Enabled := english.Value > 1)
         PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
+        PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")   ; Ctrl+↑ / ↓ 调出搜索历史, 也是输入时用的
         PreferencesWindow._Section("Prefs.Section.EmptyBox")
+        placeholder := PreferencesWindow._InlineField("Appearance.Placeholder", "Prefs.Placeholder", "M")
+        Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; 留空时灰色显示默认的文字
         PreferencesWindow._InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
-        PreferencesWindow._Section("Prefs.Section.History")
-        PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")
     }
 
     static _BuildAppearance() {
@@ -1053,6 +1054,7 @@ class PreferencesWindow {
             PreferencesWindow._Bind(path, () => ctrl.Value)
         PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)
         PreferencesWindow._Desc(labelKey, x)
+        return ctrl
     }
 
     ; 标签后面紧跟下拉框 (分节排列的页面用): "呼出时切换到 [不切换 v]"。下拉框按最长的选项定宽

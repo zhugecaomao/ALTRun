@@ -3967,6 +3967,12 @@ Func | PTTools | PT Tools (AHK)=99
         SearchWindow._imeBefore := {Open: 1, Conv: 0x401}
         SearchWindow._RestoreInputLanguage()                                 ; 选的是英语键盘: 不动中 / 英模式
         TestRunner.Equal("Input.keyboard choice leaves the IME mode alone", SearchWindow._imeBefore, "")
+        savedPlaceholder := AppSettings.Appearance["Placeholder"]
+        AppSettings.Appearance["Placeholder"] := "  "
+        TestRunner.Equal("Placeholder.default", SearchWindow.Placeholder(), "ALTRun Search")
+        AppSettings.Appearance["Placeholder"] := " Type to search "
+        TestRunner.Equal("Placeholder.custom (trimmed)", SearchWindow.Placeholder(), "Type to search")
+        AppSettings.Appearance["Placeholder"] := savedPlaceholder
         TestRunner.Equal("Input.english choices", AppSettings.Defaults()["General"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
         AppSettings.General["SwitchToEnglishInput"] := saved
         TestRunner.True("App.Website", RegExMatch(App.Website, "^https://\S+/$") > 0)
