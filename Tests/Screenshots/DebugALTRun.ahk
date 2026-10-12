@@ -19,6 +19,13 @@ class Dbg {
     static Started := A_TickCount
     static Loading := ""                    ; 正在读的图标 (空 = 没有在读)
     static Prepaints := 0, ItemDraws := 0, Logged := 0
+    ; 对照实验 (%Temp%\ALTRunDebugMode.txt): "slow" = 前 3 次画行时忙等 100 ms, 让定时器在自绘回调中间插进来;
+    ; "slow critical" = 同样慢, 但自绘回调设为 Critical (不让别的线程插进来)
+    static Mode := Dbg._ReadMode(), SlowPaints := 0
+    static _ReadMode() {
+        try return Trim(FileRead(A_Temp "\ALTRunDebugMode.txt"))
+        return ""
+    }
     static Tracing := true, TraceLines := 0, Depth := 0, Muted := 0
     static Mute := Map("QuickSwitch._Watch", true)
     static TraceClasses := ["ActionCatalog", "App", "AppSettings", "ApplicationProvider", "AutoDate", "BookmarkProvider", "CalculatorProvider"
@@ -29,7 +36,7 @@ class Dbg {
 
     static Install() {
         try FileDelete(Dbg.LogFile)
-        Dbg.Log("debug wrapper started, pid " DllCall("GetCurrentProcessId"))
+        Dbg.Log("debug wrapper started, pid " DllCall("GetCurrentProcessId") ", mode '" Dbg.Mode "'")
         for name in Dbg.TraceClasses
             Dbg.TraceClass(name)
         Dbg.Hook(SearchWindow, "_OnCustomDraw", (original, cls, params*) => Dbg.OnDraw(original, cls, params*))
@@ -103,6 +110,8 @@ class Dbg {
     }
 
     static OnDraw(original, cls, lParam) {
+        if InStr(Dbg.Mode, "critical")
+            Critical("On")
         stage := NumGet(lParam, A_PtrSize * 3, "UInt")
         row := NumGet(lParam, A_PtrSize = 8 ? 56 : 36, "UPtr")
         if (stage = 0x1)
@@ -118,6 +127,14 @@ class Dbg {
     }
 
     static OnPaintRow(original, cls, params*) {
+        if (InStr(Dbg.Mode, "slow") && Dbg.SlowPaints < 3) {
+            Dbg.SlowPaints++
+            Dbg.Log("slow paint " Dbg.SlowPaints " (critical " A_IsCritical ")")
+            busyEnd := A_TickCount + 100
+            while (A_TickCount < busyEnd)                                   ; 忙等, 期间 AHK 照常检查消息
+                Dbg.SlowPaints := Dbg.SlowPaints
+            Dbg.Log("slow paint " Dbg.SlowPaints " done")
+        }
         try {
             return original(cls, params*)
         } catch as e {

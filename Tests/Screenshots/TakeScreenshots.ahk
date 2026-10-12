@@ -31,8 +31,9 @@ class Shots {
     static DemoDir  := ""
     static Pid      := 0
     ; 临时诊断 (结果行空白): 这些场景通过 DebugALTRun.ahk 启动, 结果行一直空白时打印它的日志
-    static DebugScenes := Map("search", 1, "pinyin", 1, "actions", 1, "files", 1, "filetype", 1, "calculator", 1, "clipboard", 1
-        , "empty", 1, "browse", 1, "websearch", 1, "system", 1), Scene := ""
+    ; 对照实验: "slow" 的场景画行时故意变慢, "slow critical" 同样慢但自绘回调是 Critical (见 DebugALTRun.ahk)
+    static DebugScenes := Map("search", "slow", "pinyin", "slow critical", "actions", "slow", "files", "", "filetype", "", "calculator", "slow critical"
+        , "clipboard", "slow", "empty", "", "browse", "", "websearch", "", "system", "slow critical"), Scene := ""
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; 屏幕缩放 (150% = 1.5)
 
@@ -115,8 +116,11 @@ class Shots {
                     if (hwnd is Array)                                      ; 几个窗口 (对话框 + 文件夹面板) 截成一张
                         Shots.CaptureWindows(hwnd, outFile)
                     else if (hwnd != "") {                                  ; "" = demo: 每一帧已经存好
-                        if (!Shots.WaitPainted(hwnd, 20) && A_Index < 4) {
+                        slow := Shots.DebugScenes.Has(scene[1]) && InStr(Shots.DebugScenes[scene[1]], "slow")
+                        painted := Shots.WaitPainted(hwnd, 20)
+                        if (slow || !painted)                               ; 对照实验的场景总是打印, 其它的空白时打印
                             Shots.PrintDebugLog()
+                        if (!painted && A_Index < (slow ? 2 : 4)) {
                             Shots.Diagnose(hwnd)
                             Shots.Log("relaunching")
                             Shots.Close()
@@ -308,6 +312,9 @@ class Shots {
         if IsObject(prepare)
             prepare()
         script := Shots.DebugScenes.Has(Shots.Scene) ? "ALTRunDebug.ahk" : "ALTRun.ahk"
+        try FileDelete(A_Temp "\ALTRunDebugMode.txt")
+        if Shots.DebugScenes.Has(Shots.Scene)
+            FileAppend(Shots.DebugScenes[Shots.Scene], A_Temp "\ALTRunDebugMode.txt")
         Run('"' A_AhkPath '" "' Shots.AppDir '\' script '" ' args, Shots.AppDir, , &pid)
         Shots.Pid := pid
         ; 启动时屏幕上方的 "ALTRun 已在运行" 提示 3 秒后消失
@@ -323,11 +330,11 @@ class Shots {
             return Shots.Log("ALTRunDebug.log: " e.Message)
         }
         text := ""
-        for line in lines                                                   ; 前 20 行 + 最后 700 行
-            if (A_Index <= 20 || A_Index > lines.Length - 700)
+        for line in lines                                                   ; 第 1 行 + 最后 150 行
+            if (A_Index <= 1 || A_Index > lines.Length - 150)
                 text .= line "`n"
-            else if (A_Index = 21)
-                text .= "... (" (lines.Length - 720) " lines)`n"
+            else if (A_Index = 2)
+                text .= "... (" (lines.Length - 151) " lines)`n"
         Shots.Log("ALTRunDebug.log (" lines.Length " lines):`n" text)
     }
 
