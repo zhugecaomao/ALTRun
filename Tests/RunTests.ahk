@@ -86,7 +86,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "FontWarmUp", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2919,6 +2919,33 @@ class Tests {
     }
 
     ; 列表画完了但自绘回调没有运行 (空白行): 写日志并再画一次; 回调运行过、还没画时不算
+    ; 后备字体预热: 在内存 DC 上用结果行的字体量一次中日韩文字 (见 SearchWindow.WarmUpFonts)
+    static FontWarmUp() {
+        eq := (n, a, e) => TestRunner.Equal("FontWarmUp." n, a, e)
+        saved := [SearchWindow._gdi, Logger.Enabled, Logger.File, Logger.Immediate]
+        Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunFontTest.log"
+        try FileDelete(Logger.File)
+        created := []
+        try {
+            SearchWindow._gdi := Map()
+            SearchWindow.WarmUpFonts()                                      ; 字体还没建好: 什么都不做
+            eq("no fonts yet: nothing done", FileExist(Logger.File) ? 1 : 0, 0)
+            for key in ["TitleFont", "SubtitleFont"]
+                created.Push(SearchWindow._gdi[key] := SearchWindow._CreateFont("Segoe UI", 12, 400))
+            SearchWindow.WarmUpFonts()
+            logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            TestRunner.True("FontWarmUp.logged", InStr(logText, "Perf: font warm-up") > 0)
+            text := SearchWindow.FontWarmUpText
+            eq("Chinese, Japanese and Korean", (RegExMatch(text, "[\x{4E00}-\x{9FFF}]") && RegExMatch(text, "[\x{3040}-\x{30FF}]")
+                && RegExMatch(text, "[\x{AC00}-\x{D7AF}]")) ? 1 : 0, 1)
+        } finally {
+            for font in created
+                DllCall("DeleteObject", "Ptr", font)
+            SearchWindow._gdi := saved[1], Logger.Enabled := saved[2], Logger.File := saved[3], Logger.Immediate := saved[4]
+            try FileDelete(A_Temp "\ALTRunFontTest.log")
+        }
+    }
+
     static SkippedPaint() {
         eq := (n, a, e) => TestRunner.Equal("SkippedPaint." n, a, e)
         saved := [SearchWindow.Gui, SearchWindow.List, SearchWindow.Input, SearchWindow.Results, Logger.Enabled, Logger.File, Logger.Immediate]
