@@ -235,7 +235,7 @@ class AppSettings {
                 "LaunchAtLogin"       , 1,
                 "ShowTrayIcon"        , 1,
                 "HideOnDeactivate"    , 1,
-                "SwitchToEnglishInput", 0,
+                "SwitchToEnglishInput", 0,                                 ; 呼出时切换到英文: 1 = 英语 (美国) 键盘, 2 = 当前输入法的英文模式
                 "RestoreInput"        , 1,                                 ; SwitchToEnglishInput 时: 窗口隐藏后切回原来的输入法
                 "SpaceToRun"          , 0,                                  ; 空格执行选中项 (Shift+空格输入空格)
                 "KeepLastQuery"       , 0,                                  ; 呼出窗口时恢复上一次的搜索 (文字全选)

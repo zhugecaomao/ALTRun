@@ -349,10 +349,11 @@ class PreferencesWindow {
         PreferencesWindow._Check("Appearance.StatusBar", "Prefs.StatusBar")       ; 使用提示在状态栏里 (关掉状态栏时在空搜索框里), 放在一起
         PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
         PreferencesWindow._Section("Prefs.Group.Typing")
-        english := PreferencesWindow._Check("General.SwitchToEnglishInput", "Prefs.EnglishInput")
+        english := PreferencesWindow._InlineChoice("General.SwitchToEnglishInput", "Prefs.EnglishInput", [0, 1, 2]   ; 呼出时切换到英文
+            , [I18n.T("Prefs.EnglishInput.Off"), I18n.T("Prefs.EnglishInput.Keyboard"), I18n.T("Prefs.EnglishInput.Mode")])
         restore := PreferencesWindow._Check("General.RestoreInput", "Prefs.RestoreInput", PreferencesWindow._InputX() + 18)   ; 子选项, 缩进
-        restore.Enabled := english.Value
-        english.OnEvent("Click", (*) => restore.Enabled := english.Value)
+        restore.Enabled := english.Value > 1
+        english.OnEvent("Change", (*) => restore.Enabled := english.Value > 1)
         PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
         PreferencesWindow._Section("Prefs.Section.EmptyBox")
         PreferencesWindow._InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
@@ -1052,6 +1053,29 @@ class PreferencesWindow {
             PreferencesWindow._Bind(path, () => ctrl.Value)
         PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)
         PreferencesWindow._Desc(labelKey, x)
+    }
+
+    ; 标签后面紧跟下拉框 (分节排列的页面用): "呼出时切换到 [不切换 v]"。下拉框按最长的选项定宽
+    static _InlineChoice(path, labelKey, values, labels) {
+        x := PreferencesWindow._InputX()
+        PreferencesWindow._y += 3
+        label := PreferencesWindow._Add("Text", "x" x, I18n.T(labelKey))
+        PreferencesWindow._y -= 3
+        label.GetPos(, , &labelW)
+        width := 0
+        for text in labels
+            width := Max(width, Ceil(Win.TextExtent(label.Hwnd, text) * 96 / A_ScreenDPI) + 32)   ; 加上箭头按钮和边框
+        width := Min(width, PreferencesWindow.ContentX + PreferencesWindow.ContentW - x - labelW - 8)
+        ctrl := PreferencesWindow._Add("DropDownList", "x" (x + labelW + 8) " w" width, labels)
+        current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
+        ctrl.Value := 1
+        for index, value in values
+            if (value = current)
+                ctrl.Value := index
+        PreferencesWindow._Bind(path, () => values[ctrl.Value])
+        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)
+        PreferencesWindow._Desc(labelKey, x)
+        return ctrl
     }
 
     ; kind: text / number / file / folder; size: "S" / "M" / "L" (见 _Width)

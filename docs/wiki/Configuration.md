@@ -39,8 +39,8 @@
 | LaunchAtLogin | 1 | 开机自动启动 |
 | ShowTrayIcon | 1 | 显示托盘图标 |
 | HideOnDeactivate | 1 | 搜索窗口失去焦点时隐藏 |
-| SwitchToEnglishInput | 0 | 显示搜索窗口时切换到英文输入法 (英文 (美国) 键盘)。只在已经装好的输入法之间切换, 不会添加新的键盘布局 |
-| RestoreInput | 1 | 打开 `SwitchToEnglishInput` 时, 窗口隐藏后切回原来的输入法 (Windows 设置了每个应用窗口各用各的输入法时不需要, 也不会切换) |
+| SwitchToEnglishInput | 0 | 显示搜索窗口时切换到英文: 0 = 不切换, 1 = 英语 (美国) 键盘 (只在已经装好的输入法之间切换, 不会添加新的键盘布局), 2 = 当前输入法的英文模式 (输入法不变, 关掉它的中文) |
+| RestoreInput | 1 | 打开 `SwitchToEnglishInput` 时, 窗口隐藏后切回原来的输入法或中 / 英模式 (1 时: Windows 设置了每个应用窗口各用各的输入法时不需要, 也不会切换) |
 | SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
 | KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次, 直接输入开始新的搜索。从 2.x 升级时沿用 `KeepInput` |
 | ShowTips | 1 | 轮换显示使用提示: 显示在状态栏, 关掉状态栏 (`Appearance.StatusBar = 0`) 时显示在空搜索框里 |

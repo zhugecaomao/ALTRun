@@ -39,8 +39,8 @@ Split over the "General", "Search Window" and "Hotkeys" (Caps Lock) pages in Pre
 | LaunchAtLogin | 1 | Launch ALTRun at login |
 | ShowTrayIcon | 1 | Show the tray icon |
 | HideOnDeactivate | 1 | Hide the search window when it loses focus |
-| SwitchToEnglishInput | 0 | Switch to an English input method (English (United States) keyboard) when the search window opens. Only switches between input methods that are already installed; no keyboard layout is added |
-| RestoreInput | 1 | With `SwitchToEnglishInput` on, switch back to the previous input method when the window hides (not needed, and not done, when Windows is set to use a separate input method for each app window) |
+| SwitchToEnglishInput | 0 | Switch to English when the search window opens: 0 = off, 1 = English (United States) keyboard (only switches between input methods that are already installed; no keyboard layout is added), 2 = English mode of the current input method (same input method, its Chinese mode turned off) |
+| RestoreInput | 1 | With `SwitchToEnglishInput` on, switch back to the previous input method or mode when the window hides (with 1: not needed, and not done, when Windows is set to use a separate input method for each app window) |
 | SpaceToRun | 0 | After typing, Space runs the selected result and `Shift+Space` types a space |
 | KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again, typing starts a new search. Taken over from `KeepInput` when upgrading from 2.x |
 | ShowTips | 1 | Show a usage tip, a different one each time: in the status bar, or in the empty search box when the status bar is off (`Appearance.StatusBar = 0`) |

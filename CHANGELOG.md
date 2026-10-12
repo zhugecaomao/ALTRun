@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.12.3]
+
+测试版。
+
+Test build.
+
+### 新增
+- **呼出时切换到当前输入法的英文模式** (#154 里的建议): 偏好设置 → 搜索窗口 的 "呼出时切换到英文" 改成下拉框: 不切换 / 英语 (美国) 键盘 / 当前输入法的英文模式。新加的英文模式不用在 Windows 里添加英语键盘, 还用原来的输入法 (例如微信、搜狗输入法), 只是关掉它的中文 (和 CapsLock 切中 / 英一样设置打开状态和转换模式); 打开 "窗口隐藏后切回" 时, 隐藏后恢复原来的中 / 英模式。打开调试日志时记下切换前后的读数 (`IME to English`、`IME restore`)
+- 设置文件里 `General.SwitchToEnglishInput` 多了一个值 2 (英文模式); 原来的 0 / 1 不变, 已经勾选的还是切换到英语 (美国) 键盘
+
 ## [2026.10.12.2]
 
 测试版。
@@ -564,7 +574,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.3...HEAD
+[2026.10.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.2...2026.10.12.3
 [2026.10.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12...2026.10.12.2
 [2026.10.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.12
 [2026.10.08]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.08
