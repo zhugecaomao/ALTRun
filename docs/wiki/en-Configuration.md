@@ -26,7 +26,7 @@ All settings and user data are saved in `Data\ALTRun.json` in the program folder
 `DataLocation` only works in the file at the default location (`Data\ALTRun.json`, or `%APPDATA%\ALTRun\Data\ALTRun.json`): when it's there, ALTRun uses the settings and data in that folder, and the file at the default location only points the way. Normally you set it in Preferences → Advanced → Settings and data → Change Location... rather than by hand; environment variables work, and relative paths start from the program folder.
 
 ## General
-Split over the "General" and "Search Window" pages in Preferences.
+Split over the "General", "Search Window" and "Hotkeys" (Caps Lock) pages in Preferences.
 
 | Key | Default | Description |
 |---|---|---|
@@ -43,7 +43,7 @@ Split over the "General" and "Search Window" pages in Preferences.
 | RestoreInput | 1 | With `SwitchToEnglishInput` on, switch back to the previous input method when the window hides (not needed, and not done, when Windows is set to use a separate input method for each app window) |
 | SpaceToRun | 0 | After typing, Space runs the selected result and `Shift+Space` types a space |
 | KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again, typing starts a new search. Taken over from `KeepInput` when upgrading from 2.x |
-| ShowTips | 1 | Show a usage tip in the empty search box, a different one each time |
+| ShowTips | 1 | Show a usage tip, a different one each time: in the status bar, or in the empty search box when the status bar is off (`Appearance.StatusBar = 0`) |
 | FileManager | `explorer.exe` | Program that opens folders, optionally with parameters, for example `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` reuse the open window, `/T` new tab, `/S` active panel); quote a path with spaces |
 | SendToMenu | 1 | Add to Explorer's "Send to" menu |
 | StartMenuShortcut | 1 | Add to the Start menu |
@@ -57,6 +57,7 @@ Split over the "General" and "Search Window" pages in Preferences.
 | Theme | `Light` | Theme name, see [Themes](en-Themes) |
 | Width | 700 | Search window width (pixels, scaled with the display) |
 | VisibleRows | 8 | Maximum number of result rows shown (1–9) |
+| StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: ☰ menu, usage tip, what `Enter` / `→` do); 0 = off, the usage tip shows in the empty search box |
 | ShowOn | `Mouse` | Which screen the search window opens on: `Mouse` the one with the mouse pointer / `Primary` the main screen / `Active` the one with the active window |
 | RememberPosition | 0 | Remember the position after dragging the search window (drag the empty space around the input box) |
 | Position | `{"X": 500, "Y": 200}` | The remembered position, in thousandths of the screen's work area: X 0 = far left, 1000 = far right; Y is the window's top edge measured from the top. Default = centered horizontally, 20% from the top |
@@ -94,8 +95,8 @@ Every feature has `Enabled` (1 = on).
 | Hotkey | `^!c` | Hotkey that opens clipboard history directly |
 | MaxItems | 200 | How many items to keep |
 | MaxItemLength | 100000 | Content longer than this many characters isn't recorded |
-| Persist | 1 | Save to disk (`Data\ClipboardHistory.json`; items over 4,000 characters and images are stored separately in a `Clipboard\` folder, by default on this PC in `%LOCALAPPDATA%\ALTRun\Clipboard`, see `LocalFiles`); 0 = memory only |
-| LocalFiles | 1 | 1 = images and very long items (the `Clipboard\` folder) stay on this PC only (`%LOCALAPPDATA%\ALTRun\Clipboard`) instead of the Data folder: with Data in OneDrive or another synced folder, copying an image doesn't trigger an upload. `ClipboardHistory.json` stays in Data and syncs as usual; images / long items whose files aren't on another PC aren't shown there. The first run moves the old folder out of Data automatically. 0 = keep everything in the Data folder (for example when you carry it on a USB stick) |
+| Persist | 1 | Save to disk (`ClipboardHistory.json`; items over 4,000 characters and images are stored separately in a `Clipboard\` folder; where they go: see `LocalFiles`); 0 = memory only |
+| LocalFiles | 1 | Where clipboard history is saved (Preferences → Clipboard → "Save in"); this PC = `%LOCALAPPDATA%\ALTRun`, not carried along with a synced or portable Data folder. **1** = images and very long items (the `Clipboard\` folder) stay on this PC only: with Data in OneDrive or another synced folder, copying an image doesn't trigger an upload. `ClipboardHistory.json` stays in Data and syncs as usual; images / long items whose files aren't on another PC aren't shown there. **2** = `ClipboardHistory.json` stays on this PC too, so clipboard history never leaves this computer. **0** = everything in the Data folder (for example when you carry it on a USB stick). After a change, the files are moved from the old location at the next start; when both locations have them (say, another PC's history in a synced folder), nothing is overwritten and the new location is used |
 | Images | 1 | Also record images (saved as PNG); needs `Persist = 1` |
 | MaxImages | 50 | Maximum number of images; the oldest are removed first |
 | MergeDoubleCopy | 0 | 1 = pressing `Ctrl+C` twice quickly appends the copied text to the previous item |
@@ -117,7 +118,7 @@ Every feature has `Enabled` (1 = on).
 | Keyword | `bm` | Keyword that searches bookmarks only |
 | InDefaultResults | 1 | Also show matching bookmarks when you type a name directly (after apps and commands, at most 8) |
 
-Reads the bookmarks of every profile of Chrome, Edge, Brave and Vivaldi; Firefox keeps its bookmarks in an SQLite database and isn't supported yet.
+Also in Preferences → Features → Feature options. Reads the bookmarks of every profile of Chrome, Edge, Brave and Vivaldi; Firefox keeps its bookmarks in an SQLite database and isn't supported yet.
 
 ### Scripts
 Only `Enabled`. Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](en-Extensions#scripts) for how to write them.
@@ -136,7 +137,7 @@ Recently opened items are kept in `Data\Knowledge.json`, see [Pinned and recent 
 | Keyword | `w` | Keyword that searches open windows only; `w ` alone lists all windows |
 | InDefaultResults | 1 | Also show windows whose title matches well when you type directly (after apps and commands, at most 3) |
 
-Only windows you can see on the taskbar are listed (no tool windows, dialogs, windows on other virtual desktops or ALTRun's own windows).
+Also in Preferences → Features → Feature options. Only windows you can see on the taskbar are listed (no tool windows, dialogs, windows on other virtual desktops or ALTRun's own windows).
 
 ### WebSearch
 | Key | Description |
@@ -198,7 +199,7 @@ Created at runtime; deleting files only makes them be rebuilt (the learned ranki
 | `FileIndex.json` | Built-in file index (without Everything) |
 | `Knowledge.json` | Learned ranking and recent searches |
 | `Usage.json` | Usage statistics (how often each feature was used each day) |
-| `ClipboardHistory.json` | Clipboard history (very long items and images are stored as separate files, by default on this PC in `%LOCALAPPDATA%\ALTRun\Clipboard\`; in `Data\Clipboard\` with `LocalFiles = 0`) |
+| `ClipboardHistory.json` | Clipboard history (very long items and images are stored as separate files, by default on this PC in `%LOCALAPPDATA%\ALTRun\Clipboard\`; in `Data\Clipboard\` with `LocalFiles = 0`; with `LocalFiles = 2` this file is on this PC too, not in Data) |
 | `Currency.json` | Exchange rates for currency conversion (only once currency conversion is on) |
 | `Update.json` | Time of the last update check, skipped versions |
 | `Icons\` | Web search icons saved by "Download Site Icon" |

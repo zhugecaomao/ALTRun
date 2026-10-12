@@ -122,5 +122,5 @@ Press `Ctrl+Alt+C` or type `clip` to list the text, files and images you copied;
 Privacy:
 - Content copied from password managers (KeePass, 1Password, Bitwarden...) is never recorded, nor is content marked "don't add to clipboard history"
 - Add other programs you don't want recorded to `Features.Clipboard.IgnoreApps`
-- With `Persist = 0` the history is kept in memory only and is gone when ALTRun quits (no images either); otherwise it's saved in `Data\ClipboardHistory.json` (very long items and images are stored separately in `%LOCALAPPDATA%\ALTRun\Clipboard\`; in `Data\Clipboard\` with `LocalFiles = 0`)
+- With `Persist = 0` the history is kept in memory only and is gone when ALTRun quits (no images either); otherwise it's saved in `Data\ClipboardHistory.json` (very long items and images are stored separately in `%LOCALAPPDATA%\ALTRun\Clipboard\`; in `Data\Clipboard\` with `LocalFiles = 0`; with Preferences → Clipboard → "Save in" set to "Everything on this PC only", the history stays on this PC too)
 - Preferences → Clipboard can clear the history

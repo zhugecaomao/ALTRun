@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.10.7"
+    static Version := "2026.10.11.6"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -86,7 +86,7 @@ class App {
         else if (AppSettings.MovedFrom != "")
             App.Toast(I18n.T("Settings.Moved", AppSettings.File), 5000)
         UpdateChecker.CleanUp()
-        SetTimer(() => ProviderRegistry.WarmUp(), -500)                    ; 第一次输入前算好搜索 Key 和图标
+        SetTimer(() => (ProviderRegistry.WarmUp(), SearchWindow._PrepareLater()), -500)   ; 第一次输入前算好搜索 Key 和图标, 准备好空的搜索框
         if AppSettings.General["CheckForUpdates"]
             UpdateChecker.Schedule()                                        ; 后台定时检查 (见 UpdateChecker), 新版本显示在搜索窗口里
 

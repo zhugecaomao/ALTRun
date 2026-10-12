@@ -86,7 +86,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TypeAhead", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "SkippedPaint", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1197,6 +1197,26 @@ class Tests {
     }
 
     ; 主题缩略图: 每个主题都画得出来, 背景、选中行用的是主题自己的颜色; 外观页点选缩略图就是选主题
+    ; 弹出菜单跟随主题的深浅: 按背景色判断深色; Windows 10 1903 (18362) 起才设置
+    static MenuMode() {
+        eq := (n, a, e) => TestRunner.Equal("MenuMode." n, a, e)
+        saved := [ThemeManager.Name, ThemeManager.Current, ThemeManager.Resolved, ThemeManager.MenuMode]
+        try {
+            for themeName, dark in Map("Light", false, "Paper", false, "SolarizedLight", false, "Dark", true, "Midnight", true, "TokyoNight", true) {
+                ThemeManager.Load(themeName)
+                eq(themeName, ThemeManager.IsDark(), dark)
+            }
+            eq("win11", ThemeManager.SupportsMenuMode("10.0.22631"), true)
+            eq("win10 1903", ThemeManager.SupportsMenuMode("10.0.18362"), true)
+            eq("win10 1809", ThemeManager.SupportsMenuMode("10.0.17763"), false)
+            eq("win7", ThemeManager.SupportsMenuMode("6.1.7601"), false)
+            ThemeManager.MenuMode := 2
+            eq("same mode: nothing to do", ThemeManager.ApplyMenuMode(true), false)
+        } finally {
+            ThemeManager.Name := saved[1], ThemeManager.Current := saved[2], ThemeManager.Resolved := saved[3], ThemeManager.MenuMode := saved[4]
+        }
+    }
+
     static ThemeGallery() {
         eq := (n, a, e) => TestRunner.Equal("ThemeGallery." n, a, e)
         pixel(hbm, x, y) {
@@ -2232,28 +2252,43 @@ class Tests {
         try FileDelete(A_Temp "\ALTRun-recent-settings.json")
     }
 
-    ; 剪贴板置顶: 排在最前面, 超过条数不删, 再复制仍然置顶, 清空时保留, 保存后还在
-    ; 剪贴板的图片和长条目存在本机: 第一次把 Data\Clipboard 搬过去; ClipboardHistory.json 留在 Data (照常同步)
+    ; 剪贴板存在哪里 (LocalFiles): 1 = Clipboard 文件夹搬到本机, ClipboardHistory.json 留在 Data (照常同步);
+    ; 2 = json 也搬到本机; 0 = 都搬回 Data; 两边都有时不覆盖; 没有本机文件夹时都在 Data
     static ClipboardLocal() {
         eq := (n, a, e) => TestRunner.Equal("ClipboardLocal." n, a, e)
         root := A_Temp "\ALTRun-clip-local-test"
+        data := root "\Data", localDir := root "\Local"
         try DirDelete(root, true)
-        DirCreate(root "\Data\Clipboard")
-        FileAppend('{"Entries": []}', root "\Data\ClipboardHistory.json", "UTF-8")
-        FileAppend("long text", root "\Data\Clipboard\t-1.txt", "UTF-8")
+        DirCreate(data "\Clipboard")
+        FileAppend('{"Entries": []}', data "\ClipboardHistory.json", "UTF-8")
+        FileAppend("long text", data "\Clipboard\t-1.txt", "UTF-8")
         saved := [ClipboardProvider.File, ClipboardProvider.Folder]
-        ClipboardProvider.File := root "\Data\ClipboardHistory.json", ClipboardProvider.Folder := root "\Data\Clipboard"
-        eq("moved", ClipboardProvider.UseLocalStorage(root "\Local"), true)
-        eq("json stays in Data", ClipboardProvider.File, root "\Data\ClipboardHistory.json")
-        eq("folder", ClipboardProvider.Folder, root "\Local\Clipboard")
-        eq("files moved", (FileExist(root "\Local\Clipboard\t-1.txt") ? 1 : 0) (DirExist(root "\Data\Clipboard") ? 1 : 0), "10")
-        eq("json not moved", (FileExist(root "\Data\ClipboardHistory.json") ? 1 : 0) (FileExist(root "\Local\ClipboardHistory.json") ? 1 : 0), "10")
-        eq("again", ClipboardProvider.UseLocalStorage(root "\Local"), true)    ; 已经在本机: 什么都不做
+        where := () => (FileExist(data "\ClipboardHistory.json") ? "D" : "-") (FileExist(localDir "\ClipboardHistory.json") ? "L" : "-")
+            . " " (FileExist(data "\Clipboard\t-1.txt") ? "D" : "-") (FileExist(localDir "\Clipboard\t-1.txt") ? "L" : "-")
+        ClipboardProvider.PlaceStorage(1, data, localDir)
+        eq("1 json stays in Data", ClipboardProvider.File, data "\ClipboardHistory.json")
+        eq("1 folder", ClipboardProvider.Folder, localDir "\Clipboard")
+        eq("1 files", where(), "D- -L")
+        ClipboardProvider.PlaceStorage(1, data, localDir)                      ; 已经在本机: 什么都不做
+        eq("1 again", where(), "D- -L")
+        ClipboardProvider.PlaceStorage(2, data, localDir)
+        eq("2 json", ClipboardProvider.File, localDir "\ClipboardHistory.json")
+        eq("2 files", where(), "-L -L")
+        ClipboardProvider.PlaceStorage(0, data, localDir)
+        eq("0 json", ClipboardProvider.File, data "\ClipboardHistory.json")
+        eq("0 folder", ClipboardProvider.Folder, data "\Clipboard")
+        eq("0 files", where(), "D- D-")
+        FileAppend('{"Entries": []}', localDir "\ClipboardHistory.json", "UTF-8")   ; 两边都有: 不覆盖, 用新位置的
+        ClipboardProvider.PlaceStorage(0, data, localDir)
+        eq("both kept", where(), "DL D-")
+        ClipboardProvider.PlaceStorage(2, data, "")                            ; 没有 %LOCALAPPDATA%: 都在 Data
+        eq("no local", ClipboardProvider.File "|" ClipboardProvider.Folder, data "\ClipboardHistory.json|" data "\Clipboard")
         eq("default", AppSettings.Defaults()["Features"]["Clipboard"]["LocalFiles"], 1)
         ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2]
         try DirDelete(root, true)
     }
 
+    ; 剪贴板置顶: 排在最前面, 超过条数不删, 再复制仍然置顶, 清空时保留, 保存后还在
     static ClipboardPin() {
         eq := (n, a, e) => TestRunner.Equal("ClipboardPin." n, a, e)
         root := A_Temp "\ALTRun-clip-pin-test"
@@ -2728,7 +2763,107 @@ class Tests {
         }
     }
 
+    ; 底部状态栏: 左边的提示 / 状态, 右边选中项的 Enter 操作; 窗口高度算上状态栏; → 不认自动重复
+    static StatusBar() {
+        eq := (n, a, e) => TestRunner.Equal("StatusBar." n, a, e)
+        eq("on by default", AppSettings.Defaults()["Appearance"]["StatusBar"], 1)
+        fileItem := ResultItem("Notepad", "", {Kind: "file", Arg: "C:\Windows\notepad.exe"})
+        eq("file: open", SearchWindow.EnterTitle(fileItem), "Open")
+        eq("folder: open", SearchWindow.EnterTitle(ResultItem("Docs", "", {Kind: "folder"})), "Open")
+        eq("url: open", SearchWindow.EnterTitle(ResultItem("Web", "", {Kind: "url"})), "Open")
+        eq("text: copy", SearchWindow.EnterTitle(ResultItem("42", "", {Kind: "text"})), "Copy")
+        eq("text with its own action: paste", SearchWindow.EnterTitle(ResultItem("snippet", "", {Kind: "text", OnRun: (*) => 0})), "Paste")
+        eq("command: run", SearchWindow.EnterTitle(ResultItem("Lock", "", {OnRun: (*) => 0})), "Run")
+        eq("own name", SearchWindow.EnterTitle(ResultItem("img", "", {Kind: "text", OnRun: (*) => 0, RunTitle: "Paste Image"})), "Paste Image")
+        eq("hint row: complete", SearchWindow.EnterTitle(ResultItem("g", "", {Valid: false, AutoComplete: "g "})), "Complete")
+        eq("hint row without completion", SearchWindow.EnterTitle(ResultItem("x", "", {Valid: false})), "")
+
+        saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Results, Selected: SearchWindow.Selected
+            , Mode: SearchWindow.Mode, FileMode: SearchWindow.FileMode, Tip: SearchWindow._tip, Status: SearchWindow.StatusHeight}
+        savedOpen := SearchWindow.GetOwnPropDesc("_OpenActions")
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        try {
+            SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow._tip := "Tip: ? cheat sheet"
+            SearchWindow.Input.Value := "", SearchWindow.Results := [], SearchWindow.Selected := 0
+            texts := SearchWindow.StatusTexts()
+            eq("empty box: tip", texts.Left "|" texts.Enter "|" texts.Actions, "Tip: ? cheat sheet||0")
+            SearchWindow.Input.Value := "note", SearchWindow.Results := [fileItem, ResultItem("b")], SearchWindow.Selected := 1
+            texts := SearchWindow.StatusTexts()
+            eq("results: tip, enter and actions", texts.Left "|" texts.Enter "|" texts.Actions, "Tip: ? cheat sheet|Open|1")
+            parts := SearchWindow.StatusParts(texts)
+            eq("parts like Raycast", parts.Length = 2 ? parts[1].Label " " parts[1].Keys[1] " | " parts[2].Label " " parts[2].Keys[1] : "", "Open ↵ | Actions →")
+            items := SearchWindow.MainMenuItems(), labels := ""
+            for entry in items
+                labels .= (IsObject(entry) ? StrSplit(entry[1], "`t")[1] : "-") ";"
+            eq("menu", labels, "Preferences...;Shortcuts and Syntax;-;Rebuild Index;Check for Updates;-;Reload;Quit;")
+            SearchWindow.FileMode := true
+            eq("fileItem mode", SearchWindow.StatusTexts().Left, I18n.T("Status.FileMode"))
+            SearchWindow.FileMode := false, SearchWindow.Mode := "actions"
+            texts := SearchWindow.StatusTexts()
+            eq("action panel", texts.Left "|" texts.Enter "|" texts.Actions, "Esc  Back|Run|0")
+            SearchWindow.Mode := "results"
+            eq("mix colors", Format("{:06X}", SearchWindow.MixColor("FFFFFF", "000000", 0.5)), "808080")
+
+            SearchWindow.StatusHeight := 0
+            plain := SearchWindow._WindowHeight(3)
+            SearchWindow.StatusHeight := 26
+            eq("window height includes the status bar", SearchWindow._WindowHeight(3) - plain, 26)
+            eq("no status bar without result rows", SearchWindow._WindowHeight(0) - SearchWindow._ContentHeight(0), 0)
+
+            opened := {Count: 0}
+            SearchWindow.DefineProp("_OpenActions", {Call: (*) => (opened.Count++, true)})
+            hwnd := SearchWindow.Input.Hwnd
+            SearchWindow.Input.Value := "note", SendMessage(0xB1, 4, 4, hwnd)   ; 光标在最后
+            SearchWindow._OnKeyDown(0x27, 0x40000000 | 1, 0x100, hwnd)       ; 按住 → 的自动重复
+            eq("held right arrow does not open actions", opened.Count, 0)
+            SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd)                    ; 新按下的 →
+            eq("fresh right arrow opens actions", opened.Count, 1)
+        } finally {
+            SearchWindow.DefineProp("_OpenActions", savedOpen)
+            SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results, SearchWindow.Selected := saved.Selected
+            SearchWindow.Mode := saved.Mode, SearchWindow.FileMode := saved.FileMode, SearchWindow._tip := saved.Tip, SearchWindow.StatusHeight := saved.Status
+            g.Destroy()
+        }
+    }
+
     ; 呼出窗口期间打的字: 显示完补进搜索框, Enter 搜完后执行, Esc 关掉
+    ; 隐藏后准备好空的搜索框: 呼出时不用先搜索; 输入框改过或用过一次就不算; 显示后的刷新只在结果变了时换上
+    static ShowPrepared() {
+        eq := (n, a, e) => TestRunner.Equal("ShowPrepared." n, a, e)
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
+        saved := [SearchWindow.Mode, SearchWindow.FileMode, SearchWindow._prepared]
+        searches := {Count: 0}
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => searches.Count++})
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        try {
+            SearchWindow.Input.Value := "abc", SearchWindow.Mode := "actions", SearchWindow.FileMode := true
+            SearchWindow.PrepareEmpty()                                     ; 窗口隐藏着: 清空输入框, 搜一次
+            eq("prepared", SearchWindow.IsPrepared() "|" SearchWindow.Input.Value "|" SearchWindow.Mode "|" SearchWindow.FileMode "|" searches.Count, "1||results|0|1")
+            SearchWindow.Input.Value := "x"
+            eq("input changed", SearchWindow.IsPrepared(), false)
+            SearchWindow.Input.Value := "", SearchWindow.FileMode := true
+            eq("file mode", SearchWindow.IsPrepared(), false)
+            SearchWindow.FileMode := false, SearchWindow._prepared := false
+            eq("used", SearchWindow.IsPrepared(), false)
+            g.Show("Hide"), g.Show("NoActivate")
+            searches.Count := 0, SearchWindow.PrepareEmpty()
+            eq("visible: not prepared", SearchWindow.IsPrepared() "|" searches.Count, "0|0")
+            a := [ResultItem("Notepad", "C:\Windows\notepad.exe"), ResultItem("Paint", "mspaint.exe")]
+            b := [ResultItem("Notepad", "C:\Windows\notepad.exe"), ResultItem("Paint", "mspaint.exe")]
+            eq("same results", SearchWindow.SameResults(a, b), true)
+            b[2] := ResultItem("Paint 3D", "mspaint.exe")
+            eq("changed title", SearchWindow.SameResults(a, b), false)
+            eq("changed count", SearchWindow.SameResults(a, [a[1]]), false)
+        } finally {
+            SearchWindow.Mode := saved[1], SearchWindow.FileMode := saved[2], SearchWindow._prepared := saved[3]
+            SearchWindow.DefineProp("_RunSearch", savedSearch)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
     static TypeAhead() {
         eq := (n, a, e) => TestRunner.Equal("TypeAhead." n, a, e)
         saved := Map()

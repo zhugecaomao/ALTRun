@@ -2,7 +2,7 @@
 
 # 主题
 
-在 偏好设置 → 外观 里点主题的缩略图选择 (缩略图按主题自己的颜色和圆角画出简化的搜索窗口, 自定义主题也有), 点 **应用** 或 **确定** 后生效。
+在 偏好设置 → 外观 里点主题的缩略图选择 (缩略图按主题自己的颜色和圆角画出简化的搜索窗口, 自定义主题也有), 点 **应用** 或 **确定** 后生效。托盘图标的右键菜单、状态栏的 ☰ 菜单、搜索结果的右键菜单和 Quick Switch 的文件夹菜单跟着主题的深浅: 深色主题用 Windows 的深色菜单, 浅色主题用浅色菜单 (需要 Windows 10 1903 或更新的版本)。
 
 ![偏好设置 → 外观](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-appearance.png)
 

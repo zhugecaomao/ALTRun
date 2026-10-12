@@ -10,6 +10,7 @@
 ;                             GruvboxDark / SolarizedLight (常见编辑器配色)
 ;   Themes\*.json             用户自己的主题, 升级不动; 和内置主题同名时用户的优先
 ;   System                    跟随 Windows 的浅色 / 深色设置 (Light 或 Dark), 系统切换时自动更新
+; 弹出菜单 (托盘、☰、结果的右键菜单、Quick Switch 的文件夹菜单) 跟随主题的深浅, 见 ApplyMenuMode
 ;
 ; 主题文件只写要改的键; "Base" 指定从哪个主题开始 (默认 Light), 例如 Themes\MyBlue.json:
 ;   { "Base": "Dark", "SelectedBackground": "1D4ED8", "Opacity": 240 }
@@ -57,6 +58,47 @@ class ThemeManager {
         }
         ThemeManager.Current := theme
         ThemeManager.Resolved := themeName
+        ThemeManager.ApplyMenuMode(ThemeManager.IsDark())
+    }
+
+    ; 当前主题是不是深色 (按搜索窗口的背景色)
+    static IsDark() => ThemeManager.IsDarkColor(ThemeManager.Get("Background"))
+
+    ; "1E1E1E" 这种颜色是不是深色 (亮度低于一半)
+    static IsDarkColor(hex) {
+        if !RegExMatch(hex, "i)^[0-9a-f]{6}$")
+            return false
+        value := Integer("0x" hex)
+        return (((value >> 16) & 0xFF) * 299 + ((value >> 8) & 0xFF) * 587 + (value & 0xFF) * 114) / 1000 < 128
+    }
+
+    ; 整个程序的弹出菜单用深色还是浅色: uxtheme 的 SetPreferredAppMode (序号 135; 2 = 深色, 3 = 浅色) 再 FlushMenuThemes (136)
+    ; 刷新。这两个函数没有公开文档, 资源管理器、Notepad++ 等都在用; Windows 10 1903 (18362) 起才有, 1809 的 135 号是
+    ; 另一个函数, 所以按版本号判断, 更早的系统菜单保持浅色。只能用系统自带的深色菜单, 不能用主题里的颜色。返回是否设置了
+    static MenuMode := 0                                                    ; 已经设置的: 0 = 没设置过, 2 = 深色, 3 = 浅色
+    static ApplyMenuMode(dark) {
+        mode := dark ? 2 : 3
+        if (mode = ThemeManager.MenuMode || !ThemeManager.SupportsMenuMode())
+            return false
+        try {
+            module := DllCall("GetModuleHandle", "Str", "uxtheme", "Ptr") || DllCall("LoadLibrary", "Str", "uxtheme", "Ptr")
+            setMode := DllCall("GetProcAddress", "Ptr", module, "Ptr", 135, "Ptr")
+            flush := DllCall("GetProcAddress", "Ptr", module, "Ptr", 136, "Ptr")
+            if (!setMode || !flush)
+                return false
+            DllCall(setMode, "Int", mode)
+            DllCall(flush)
+            ThemeManager.MenuMode := mode
+            return true
+        } catch as e {
+            Logger.Error("ThemeManager: cannot set menu mode - " e.Message)
+        }
+        return false
+    }
+
+    static SupportsMenuMode(version := A_OSVersion) {
+        parts := StrSplit(version, ".")
+        return parts.Length >= 3 && parts[1] >= 10 && IsInteger(parts[3]) && parts[3] >= 18362
     }
 
     static Get(key) {

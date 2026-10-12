@@ -59,6 +59,10 @@ class SearchWindow {
     static _last := ""                                                      ; 上次隐藏时的搜索 {Text, FileMode, Selected} (KeepLastQuery)
     static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput 时隐藏后切回)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
+    ; 底部状态栏 (Appearance.StatusBar, 和 Listary / Raycast 一样): 有结果行时显示在最下面。左边是 ☰ 菜单按钮 (偏好设置、
+    ; 速查表、重建索引、检查更新、重新载入、退出) 和使用提示 (或文件搜索模式、操作面板的状态), 右边是选中项的 Enter 操作和
+    ; 打开操作面板的 → (圆角键帽)。打开时空搜索框里只显示固定的 "ALTRun 搜索", 使用提示挪到状态栏; 没有结果行时不显示
+    static StatusHeight := 0, StatusBar := "", _statusKey := ""
 
     ;---------------------------------------------------------------------------
     ; Create
@@ -107,6 +111,7 @@ class SearchWindow {
         g.OnEvent("Close", (*) => SearchWindow.Hide())
 
         SearchWindow.Gui := g, SearchWindow.Input := searchBox, SearchWindow.List := list, SearchWindow.Separator := separator
+        SearchWindow._CreateStatusBar(g, w, pad)
 
         OnMessage(0x100, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_KEYDOWN
         OnMessage(0x104, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_SYSKEYDOWN (Alt+...)
@@ -117,6 +122,7 @@ class SearchWindow {
         OnMessage(0x7E,  (*) => Logger.Debug("Display changed: " MonitorGetCount() " monitor(s)"))   ; WM_DISPLAYCHANGE: 卡住时对照日志
 
         g.Show("Hide w" w " h" SearchWindow._WindowHeight(0))
+        try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", g.Hwnd, "UInt", 3, "Int*", 1, "UInt", 4)   ; DWMWA_TRANSITIONS_FORCEDISABLED: 不要淡入淡出, 一按热键马上出现
         Win.SetCorner(g.Hwnd)
         Win.SetBorderColor(g.Hwnd, ThemeManager.Get("Border"))
         opacity := ThemeManager.Get("Opacity")
@@ -126,12 +132,261 @@ class SearchWindow {
         }
     }
 
+    ; 状态栏: 一个图片控件, 内容 (底色、分隔线、图标、提示、键帽) 画成位图放进去, 见 _RenderStatusBar
+    static _CreateStatusBar(g, w, pad) {
+        SearchWindow.StatusHeight := 0, SearchWindow.StatusBar := "", SearchWindow._statusKey := ""
+        if !SearchWindow.StatusBarEnabled()
+            return
+        SearchWindow.StatusHeight := Win.Scale(38)
+        SearchWindow.StatusBar := g.AddPicture("x0 y0 w" w " h" SearchWindow.StatusHeight " Hidden +0xE")   ; 0xE = SS_BITMAP
+        SearchWindow.StatusBar.OnEvent("Click", (*) => SearchWindow._OnStatusClick())   ; 点 ☰: 菜单 (状态栏别处点了不做什么)
+        SearchWindow._PlaceStatusBar(0)
+    }
+
+    static StatusBarEnabled() {
+        appearance := AppSettings.Appearance
+        return !appearance.Has("StatusBar") || appearance["StatusBar"]
+    }
+
+    ; 状态栏的高度: 只在有结果行时显示
+    static _StatusShown(visibleCount) => (SearchWindow.StatusHeight && visibleCount > 0)
+
+    ; 状态栏放到结果下面; 没有结果行时隐藏
+    static _PlaceStatusBar(visibleCount) {
+        if !SearchWindow.StatusHeight
+            return
+        shown := SearchWindow._StatusShown(visibleCount)
+        if shown
+            SearchWindow.StatusBar.Move(0, SearchWindow._ContentHeight(visibleCount))
+        if (SearchWindow.StatusBar.Visible != shown)
+            SearchWindow.StatusBar.Visible := shown
+    }
+
+    ; 状态栏的内容变了才重画
+    static _UpdateStatusBar() {
+        if !SearchWindow.StatusHeight
+            return
+        texts := SearchWindow.StatusTexts()
+        key := texts.Left "`n" texts.Enter "`n" texts.Actions
+        if (key == SearchWindow._statusKey)
+            return
+        SearchWindow._statusKey := key
+        SearchWindow._RenderStatusBar(texts)
+    }
+
+    ; {Left, Enter, Actions}: 左边的文字 (空搜索框时的使用提示 / 文件搜索模式 / 操作面板的返回键; 正在输入时也显示这次的提示),
+    ; 选中项按 Enter 做什么 (没有时 ""), 是否显示 "操作 →"
+    static StatusTexts() {
+        actions := SearchWindow.Mode = "actions"
+        if actions
+            left := I18n.T("Status.Back")
+        else if SearchWindow.FileMode
+            left := I18n.T("Status.FileMode")
+        else
+            left := SearchWindow._tip
+        item := SearchWindow.SelectedItem()
+        enter := !IsObject(item) ? "" : actions ? I18n.T("Status.Run") : SearchWindow.EnterTitle(item)
+        return {Left: left, Enter: enter, Actions: (!actions && IsObject(item) && item.Valid) ? 1 : 0}
+    }
+
+    ; 选中项按 Enter 做什么 (短的名称): 结果自己写的 (RunTitle) > 按类型 (打开 / 复制 / 粘贴 / 运行); 不能执行的提示行: 补全
+    static EnterTitle(item) {
+        if !item.Valid
+            return (item.AutoComplete != "") ? I18n.T("Status.Complete") : ""
+        if (item.RunTitle != "")
+            return item.RunTitle
+        switch item.Kind {
+            case "file", "folder", "url": return I18n.T("Status.Open")
+            case "text": return IsObject(item.OnRun) ? I18n.T("Status.Paste") : I18n.T("Status.Copy")
+        }
+        return I18n.T("Status.Run")
+    }
+
+    ; 右边的几段: [{Label, Keys: [键帽...]}], 两段之间画一条竖线 (和 Raycast / Listary 一样: 打开 ↵ | 操作 →)
+    static StatusParts(texts) {
+        parts := []
+        if (texts.Enter != "")
+            parts.Push({Label: texts.Enter, Keys: ["↵"]})
+        if texts.Actions
+            parts.Push({Label: I18n.T("Status.Actions"), Keys: ["→"]})
+        return parts
+    }
+
+    ; ☰ 按钮占的宽度 (从状态栏左边算起)
+    static StatusMenuWidth() => SearchWindow.Padding + Win.Scale(28)
+
+    ; 点了状态栏: 点在 ☰ 上时弹出菜单
+    static _OnStatusClick() {
+        point := Buffer(8)
+        DllCall("GetCursorPos", "Ptr", point)
+        DllCall("ScreenToClient", "Ptr", SearchWindow.StatusBar.Hwnd, "Ptr", point)
+        if (NumGet(point, 0, "Int") <= SearchWindow.StatusMenuWidth())
+            SearchWindow.ShowMainMenu()
+    }
+
+    ; ☰ 菜单的内容: [[名称, 函数], ...], "" = 分隔线
+    static MainMenuItems() {
+        later := (fn) => (*) => (SearchWindow.Hide(), SetTimer(fn, -1))     ; 先隐藏搜索窗口, 菜单关掉后再做
+        return [[I18n.T("Tray.Preferences") "`tCtrl+,", later(() => App.OpenPreferences())]
+              , [I18n.T("Menu.CheatSheet") "`t?", (*) => SearchWindow._SetInput("?")]
+              , ""
+              , [I18n.T("Tray.RebuildIndex"), later(() => App.RebuildIndex())]
+              , [I18n.T("Tray.CheckUpdate"), later(() => UpdateChecker.Check())]
+              , ""
+              , [I18n.T("Tray.Reload"), later(() => App.Reload())]
+              , [I18n.T("Tray.Exit"), later(() => App.Quit())]]
+    }
+
+    ; 在 ☰ 上方弹出菜单 (状态栏在窗口最下面, 系统会把菜单放在放得下的地方)
+    static ShowMainMenu() {
+        mainMenu := Menu()
+        for entry in SearchWindow.MainMenuItems()
+            IsObject(entry) ? mainMenu.Add(entry[1], entry[2]) : mainMenu.Add()
+        SearchWindow.StatusBar.GetPos(&x, &y)
+        SearchWindow._keepOpen := true
+        CoordMode("Menu", "Client")
+        mainMenu.Show(SearchWindow.Padding, y)
+        SearchWindow._keepOpen := false
+        if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
+            try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
+    }
+
+    ; 两个颜色 ("RRGGBB") 按 t (0 ~ 1) 混合, 返回 GDI 用的 BGR
+    static MixColor(base, other, t) {
+        a := Win.ColorToBgr(base), b := Win.ColorToBgr(other), mixed := 0
+        for shift in [0, 8, 16] {
+            ca := (a >> shift) & 0xFF, cb := (b >> shift) & 0xFF
+            mixed |= Round(ca + (cb - ca) * t) << shift
+        }
+        return mixed
+    }
+
+    ; 画出状态栏的位图, 换掉图片控件里原来的那张。底色是背景色往文字颜色稍微偏一点 (浅色主题略深, 深色主题略浅),
+    ; 键帽再深一点; 键帽里的 ↵ 用 Segoe UI Symbol (普通字体里不一定有这个符号)。
+    ; 用 24 位 DIB (没有 Alpha, 和 ThemePreview 一样): 32 位位图里 GDI 画的底色和文字 Alpha 是 0, 只有 GDI+ 画的键帽是 255,
+    ; 图片控件看到 32 位位图会按 Alpha 透明显示, 文字和底色就看不见了
+    static _RenderStatusBar(texts) {
+        w := SearchWindow.Width, h := SearchWindow.StatusHeight, pad := SearchWindow.Padding
+        background := ThemeManager.Get("Background"), title := ThemeManager.Get("Title")
+        gdi := SearchWindow._gdi
+        screen := DllCall("GetDC", "Ptr", 0, "Ptr")
+        hdc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr")
+        DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
+        info := Buffer(40, 0)                                               ; BITMAPINFOHEADER: 自上而下, 24 位
+        NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 24, info)
+        bits := 0
+        bitmap := DllCall("CreateDIBSection", "Ptr", hdc, "Ptr", info, "UInt", 0, "Ptr*", &bits, "Ptr", 0, "UInt", 0, "Ptr")
+        oldBitmap := DllCall("SelectObject", "Ptr", hdc, "Ptr", bitmap, "Ptr")
+        SearchWindow._FillRect(hdc, 0, 0, w, h, SearchWindow.MixColor(background, title, 0.045))
+        SearchWindow._FillRect(hdc, 0, 0, w, 1, Win.ColorToBgr(ThemeManager.Get("Separator")))
+        DllCall("SetBkMode", "Ptr", hdc, "Int", 1)                         ; TRANSPARENT
+        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["StatusFont"], "Ptr")
+
+        ; 右边从右往左排: 标签 + 键帽, 两段之间一条竖线
+        keyH := Win.Scale(20), keyPad := Win.Scale(6), gap := Win.Scale(6), keyGap := Win.Scale(4), divider := Win.Scale(10)
+        top := (h - keyH) // 2 + 1, x := w - pad
+        parts := SearchWindow.StatusParts(texts)
+        labelBgr := SearchWindow.MixColor(title, background, 0.15), keyBgr := SearchWindow.MixColor(background, title, 0.11)
+        keyTextBgr := SearchWindow.MixColor(title, background, 0.3), lineBgr := SearchWindow.MixColor(background, title, 0.18)
+        index := parts.Length
+        while (index >= 1) {
+            part := parts[index]
+            keyIndex := part.Keys.Length
+            while (keyIndex >= 1) {
+                keyText := part.Keys[keyIndex]
+                DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"])
+                arrowKey := (keyText = "↵" || keyText = "→")                    ; 箭头自己画 (字体里的箭头太小、位置偏低)
+                keyW := arrowKey ? Round(keyH * 1.3) : Max(keyH, SearchWindow._TextWidth(hdc, keyText) + 2 * keyPad)
+                Win.FillRoundRect(hdc, x - keyW, top, x, top + keyH, Win.Scale(5), keyBgr)
+                if arrowKey {
+                    SearchWindow.DrawKeyArrow(hdc, keyText, x - keyW / 2, top + keyH / 2, keyH * 0.5, keyTextBgr)
+                } else {
+                    DllCall("SetTextColor", "Ptr", hdc, "UInt", keyTextBgr)
+                    SearchWindow._DrawText(hdc, keyText, x - keyW, top, x, top + keyH, 0x825)   ; DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX
+                }
+                x -= keyW + keyGap
+                keyIndex--
+            }
+            x -= gap - keyGap
+            DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["StatusFont"])
+            labelW := SearchWindow._TextWidth(hdc, part.Label)
+            DllCall("SetTextColor", "Ptr", hdc, "UInt", labelBgr)
+            SearchWindow._DrawText(hdc, part.Label, x - labelW, 1, x, h, 0x824)          ; DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX
+            x -= labelW
+            if (index > 1) {                                                ; 和前一段之间的竖线
+                x -= divider
+                SearchWindow._FillRect(hdc, x, top + Win.Scale(3), x + Max(1, Win.Scale(1)), top + keyH - Win.Scale(3), lineBgr)
+                x -= divider
+            }
+            index--
+        }
+
+        ; 左边: ☰ 菜单按钮 (三条横线) + 提示 (放不下时末尾省略号)
+        lineW := Win.Scale(14), lineH := Max(1, Round(Win.Scale(1) * 1.5)), lineGap := Win.Scale(4)
+        lineTop := (h - 3 * lineH - 2 * lineGap) // 2 + 1
+        Loop 3
+            SearchWindow._FillRect(hdc, pad, lineTop + (A_Index - 1) * (lineH + lineGap), pad + lineW, lineTop + (A_Index - 1) * (lineH + lineGap) + lineH, labelBgr)
+        left := SearchWindow.StatusMenuWidth()
+        DllCall("SetTextColor", "Ptr", hdc, "UInt", gdi["SubtitleColor"])
+        SearchWindow._DrawText(hdc, texts.Left, left, 1, x - Win.Scale(16), h, 0x8824)  ; DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS
+
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldBitmap)
+        DllCall("DeleteDC", "Ptr", hdc)
+        ctrl := SearchWindow.StatusBar.Hwnd
+        previous := SendMessage(0x172, 0, bitmap, ctrl)                     ; STM_SETIMAGE: 返回原来的位图
+        if previous
+            DllCall("DeleteObject", "Ptr", previous)
+        if (SendMessage(0x173, 0, 0, ctrl) != bitmap)                       ; STM_GETIMAGE: 控件自己复制了一份 (32 位位图) 时, 我们这份不用了
+            DllCall("DeleteObject", "Ptr", bitmap)
+    }
+
+    ; 键帽里的箭头 (抗锯齿线条), (cx, cy) 是中心, size 是宽高:
+    ;   ↵ 回车: 右上往下, 再往左, 左端是箭头;  → 右方向键: 一条横线, 右端是箭头
+    static DrawKeyArrow(hdc, key, cx, cy, size, bgr) {
+        graphics := 0, pen := 0
+        if (!ClipboardData.StartGdiplus() || DllCall("gdiplus\GdipCreateFromHDC", "Ptr", hdc, "Ptr*", &graphics) || !graphics)
+            return
+        DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", graphics, "Int", 4)    ; AntiAlias
+        argb := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
+        DllCall("gdiplus\GdipCreatePen1", "UInt", argb, "Float", Max(1.2, size * 0.13), "Int", 2, "Ptr*", &pen)   ; 2 = UnitPixel
+        DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pen, "Int", 2)             ; LineJoinRound
+        DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pen, "Int", 2), DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pen, "Int", 2)   ; LineCapRound
+        half := size / 2, head := size * 0.3
+        if (key = "→") {
+            points := [[cx - half, cy], [cx + half, cy]]
+            tip := [[cx + half - head, cy - head], [cx + half, cy], [cx + half - head, cy + head]]
+        } else {
+            baseY := cy + size * 0.18
+            points := [[cx + half, cy - half], [cx + half, baseY], [cx - half, baseY]]      ; 竖线 + 横线
+            tip := [[cx - half + head, baseY - head], [cx - half, baseY], [cx - half + head, baseY + head]]
+        }
+        for lines in [points, tip] {                                        ; 线 + 箭头 (两条斜线汇到线的一端)
+            buf := Buffer(8 * lines.Length)
+            for index, point in lines
+                NumPut("Float", point[1], "Float", point[2], buf, (index - 1) * 8)
+            DllCall("gdiplus\GdipDrawLines", "Ptr", graphics, "Ptr", pen, "Ptr", buf, "Int", lines.Length)
+        }
+        DllCall("gdiplus\GdipDeletePen", "Ptr", pen)
+        DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
+    }
+
+    static _FillRect(hdc, left, top, right, bottom, bgr) {
+        rect := Buffer(16)
+        NumPut("Int", left, "Int", top, "Int", right, "Int", bottom, rect)
+        brush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
+        DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", brush)
+        DllCall("DeleteObject", "Ptr", brush)
+    }
+
     static _CreateGdiObjects() {
         font := ThemeManager.FontName()
         gdi := SearchWindow._gdi
         gdi["TitleFont"]    := SearchWindow._CreateFont(font, ThemeManager.Get("TitleFontSize"), 400)
         gdi["SubtitleFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("SubtitleFontSize"), 400)
         gdi["ShortcutFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("ShortcutFontSize"), 400)
+        gdi["StatusFont"]   := gdi["SubtitleFont"]                          ; 状态栏的文字和说明文字一样
+        gdi["KeyFont"]      := SearchWindow._CreateFont(font, Max(7, ThemeManager.Get("SubtitleFontSize") - 1), 400)   ; 状态栏键帽里的字 (Ctrl、K)
         gdi["Background"]   := DllCall("CreateSolidBrush", "UInt", Win.ColorToBgr(ThemeManager.Get("Background")), "Ptr")
         gdi["SelectedBgr"]  := Win.ColorToBgr(ThemeManager.Get("SelectedBackground"))
         gdi["Selected"]     := DllCall("CreateSolidBrush", "UInt", gdi["SelectedBgr"], "Ptr")
@@ -171,6 +426,8 @@ class SearchWindow {
             return
         if SearchWindow._ShouldSkipShow()
             return
+        if (SearchWindow._prepareTimer != "")
+            SetTimer(SearchWindow._prepareTimer, 0)
         if typeAhead
             SearchWindow._StartTypeAhead()
         SearchWindow._showing := true, SearchWindow._showStarted := A_TickCount, SearchWindow._showStep := "start"
@@ -274,13 +531,17 @@ class SearchWindow {
         ; 恢复上次的搜索, 而且输入框和结果还是隐藏时的样子: 原样显示, 不重新搜索 (输入新的文字时才搜索)。
         ; 搜索 (例如文件搜索) 要几十毫秒, 以前先搜索再显示, 这段时间里按下的第一个键还在原来的窗口里, 会丢失或延迟
         reuse := restore && SearchWindow.Mode = "results" && SearchWindow.Input.Value == last.Text && SearchWindow.FileMode = last.FileMode
+        ; 空的搜索框已经在隐藏后准备好了 (PrepareEmpty): 也不用先搜索, 显示后再刷新 (_RefreshShown)
+        prepared := !restore && text = "" && !wasVisible && SearchWindow.IsPrepared()
+        SearchWindow._prepared := false                                     ; 只用一次, 下次隐藏后再准备
         SearchWindow.Mode := "results"
         SearchWindow.FileMode := restore ? last.FileMode : false
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
+        SearchWindow._UpdateStatusBar()
         SearchWindow.HistoryIndex := 0
         SearchWindow._Step("results")
-        if !reuse {
+        if (!reuse && !prepared) {
             SearchWindow._SetInput(restore ? last.Text : text)
             if restore
                 SearchWindow.MoveSelection(last.Selected - SearchWindow.Selected)
@@ -319,7 +580,11 @@ class SearchWindow {
                 SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
             Win.SwitchToEnglishIME()
         }
-        Logger.Time("show", started)
+        if prepared {
+            gen := SearchWindow._searchGen
+            SetTimer(() => SearchWindow._RefreshShown(gen), -1)
+        }
+        Logger.Time(prepared ? "show (prepared)" : "show", started)
     }
 
     ; 呼出时切到了英文输入法: 隐藏时切回原来的。所有程序共用一个输入法时 (Windows 默认) 才需要;
@@ -404,8 +669,56 @@ class SearchWindow {
             SearchWindow._RememberQuery()
             SearchWindow._RestoreInputLanguage()
             SearchWindow.Gui.Hide()
+            SearchWindow._PrepareLater()
         }
         LargeType.Close()
+    }
+
+    ; 隐藏后在后台把下一次呼出时的样子准备好: 空的搜索框和它的结果 (置顶的、最近打开的项目、新版本提示)。
+    ; 呼出时不用先搜索, 直接显示、拿到焦点, 按热键马上就能打字; 显示后再搜一次 (_RefreshShown), 期间有变化才换上。
+    ; 等一会儿再准备: 隐藏后马上要用到当前结果的操作 (菜单、确认框...) 先做完。打开了 "保留上一次的搜索" 时
+    ; 输入框和结果原样留着 (见 _Show 的 reuse), 不用准备
+    static PrepareDelay := 200, _prepareTimer := "", _prepared := false
+    static _PrepareLater() {
+        if AppSettings.General["KeepLastQuery"]
+            return
+        if (SearchWindow._prepareTimer = "")
+            SearchWindow._prepareTimer := () => SearchWindow.PrepareEmpty()
+        SetTimer(SearchWindow._prepareTimer, -SearchWindow.PrepareDelay)
+    }
+
+    static PrepareEmpty() {
+        if (!IsObject(SearchWindow.Gui) || SearchWindow.IsVisible())
+            return
+        started := Logger.Ms()
+        SearchWindow.Mode := "results", SearchWindow.FileMode := false
+        SearchWindow._SetInput("")
+        SearchWindow._prepared := true
+        Logger.Time("prepare empty box", started)
+    }
+
+    ; 准备好的空搜索框还没用过、没被改过
+    static IsPrepared() {
+        return SearchWindow._prepared && SearchWindow.Mode = "results" && !SearchWindow.FileMode && SearchWindow.Input.Value == ""
+    }
+
+    ; 显示准备好的结果之后再搜一次: 隐藏期间有变化 (例如刚检查到新版本) 才换上; 已经开始打字了就不用
+    static _RefreshShown(gen) {
+        if (gen != SearchWindow._searchGen || !SearchWindow.IsVisible() || SearchWindow.Mode != "results" || SearchWindow.FileMode
+            || SearchWindow.Input.Value != "")
+            return
+        results := ProviderRegistry.Search("")
+        if (gen = SearchWindow._searchGen && !SearchWindow.SameResults(results, SearchWindow.Results))
+            SearchWindow.SetResults(results)
+    }
+
+    static SameResults(a, b) {
+        if (a.Length != b.Length)
+            return false
+        for index, item in a
+            if (item.Title !== b[index].Title || item.Subtitle !== b[index].Subtitle)
+                return false
+        return true
     }
 
     ; 记住隐藏时的搜索 (KeepLastQuery 用); 操作面板里记住打开面板之前的搜索
@@ -529,6 +842,11 @@ class SearchWindow {
     }
 
     static _WindowHeight(visibleCount) {
+        return SearchWindow._ContentHeight(visibleCount) + (SearchWindow._StatusShown(visibleCount) ? SearchWindow.StatusHeight : 0)
+    }
+
+    ; 输入框和结果行的高度 (不含状态栏)
+    static _ContentHeight(visibleCount) {
         pad := SearchWindow.Padding
         if !visibleCount
             return pad + SearchWindow.InputHeight + pad
@@ -552,6 +870,7 @@ class SearchWindow {
             list.Visible := visibleCount > 0
             SearchWindow.Separator.Visible := visibleCount > 0
         }
+        SearchWindow._PlaceStatusBar(visibleCount)
         SearchWindow._Repaint()
         if (SearchWindow.IsVisible() && SearchWindow._shownRows != visibleCount) {
             SearchWindow.Gui.Show("NA w" SearchWindow.Width " h" SearchWindow._WindowHeight(visibleCount))
@@ -562,6 +881,7 @@ class SearchWindow {
     static _Repaint() {
         DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 1)
         SearchWindow._WatchPaint()
+        SearchWindow._UpdateStatusBar()                                     ; 换了结果 / 选中的行
     }
 
     ; 诊断 "窗口有几行高, 结果行却是空白" (行数和结果对得上时): 每次要求列表重画后约 100 ms 检查一次,
@@ -732,7 +1052,7 @@ class SearchWindow {
         if SearchWindow.FileMode
             text := I18n.T("Search.FilesPlaceholder")
         else
-            text := (SearchWindow._tip != "") ? SearchWindow._tip : I18n.T("Search.Placeholder")
+            text := (SearchWindow._tip != "" && !SearchWindow.StatusHeight) ? SearchWindow._tip : I18n.T("Search.Placeholder")   ; 有状态栏时提示显示在状态栏
         Win.SetCueBanner(SearchWindow.Input.Hwnd, text)
     }
 
@@ -925,7 +1245,8 @@ class SearchWindow {
                 SearchWindow._AutoComplete()
                 return 0
             case 0x27:                                                      ; →
-                if (SearchWindow._CaretAtEnd() && SearchWindow._OpenActions())
+                ; 只认新按下的 →: 按住 → 移动光标时, 光标到了最后也不会因为自动重复打开操作面板 (lParam 第 30 位 = 之前已经按着)
+                if (!(lParam & 0x40000000) && SearchWindow._CaretAtEnd() && SearchWindow._OpenActions())
                     return 0
                 return
             case 0x25:                                                      ; ←

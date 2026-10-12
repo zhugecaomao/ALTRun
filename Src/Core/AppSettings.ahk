@@ -251,6 +251,7 @@ class AppSettings {
                 "Theme"      , "Light",                                     ; 内置主题名 (见 ThemeManager) 或 Themes\<名称>.json
                 "Width"      , 700,
                 "VisibleRows", 8,
+                "StatusBar"  , 1,                                           ; 搜索窗口底部的状态栏 (☰ 菜单、使用提示、选中项的 Enter 操作和 →)
                 "ShowOn"     , "Mouse",                                     ; 显示在哪块屏幕: Mouse 鼠标所在 / Primary 主屏幕 / Active 当前窗口所在
                 "RememberPosition", 0,                                      ; 拖动窗口后记住位置
                 "Position"   , Map("X", 500, "Y", 200)                      ; 记住的位置: 屏幕里的千分比 (见 SearchWindow.Place)
@@ -286,7 +287,7 @@ class AppSettings {
                     "MaxItemLength", 100000,                                ; 超过这么多字的内容不记录
                     "Persist"      , 1,                                     ; 0 = 只在内存里, 退出即清空
                     "Images"       , 1,                                     ; 也记录图片 (存成 Clipboard\*.png, 需要 Persist = 1)
-                    "LocalFiles"   , 1,                                     ; 图片和很长的条目存在本机 (%LOCALAPPDATA%\ALTRun\Clipboard), 不跟着 Data 文件夹进同步盘
+                    "LocalFiles"   , 1,                                     ; 存在哪里: 0 = 都在 Data; 1 = 图片和很长的条目只存本机 (%LOCALAPPDATA%\ALTRun); 2 = 历史也只存本机 (见 ClipboardProvider.PlaceStorage)
                     "MaxImages"    , 50,
                     "MergeDoubleCopy", 0,                                   ; 快速按两次 Ctrl+C: 接到上一条后面
                     "IgnoreApps"   , ["KeePass.exe", "KeePassXC.exe", "1Password.exe", "Bitwarden.exe"]
