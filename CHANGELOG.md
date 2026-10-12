@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.12.4]
+
+测试版。
+
+Test build.
+
+### 新增
+- **空搜索框里的灰色文字可以自定义** (#158): 偏好设置 → 搜索窗口 → 空搜索框 → "提示文字" (`Appearance.Placeholder`), 留空还是 "ALTRun 搜索"。关掉状态栏时这里照旧显示使用提示
+- 偏好设置 → 搜索窗口: "搜索历史条数" 并到 "输入" 一节 (给提示文字腾出位置)
+
+### 修复
+- 搜索框里的文字 (输入的文字和灰色的提示) 看起来偏上 (#158): 以前按整个字体的高度居中, 下面还算上了 g、y 等下伸笔画的空间。现在按大写字母的高度居中, 150% 缩放时往下挪约 4 ~ 6 像素
+
 ## [2026.10.12.3]
 
 测试版。
@@ -574,7 +587,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.4...HEAD
+[2026.10.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.3...2026.10.12.4
 [2026.10.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.2...2026.10.12.3
 [2026.10.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12...2026.10.12.2
 [2026.10.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.12
