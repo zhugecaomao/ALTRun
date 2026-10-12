@@ -99,19 +99,23 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 
 
 ## 截图
-| 搜索窗口 | 对话框快速跳转（打开 / 保存对话框下面的文件夹面板） |
+| 搜索窗口 | 操作面板（`→`） |
 |:---:|:---:|
-| <img src="docs/images/screenshots/search.png" alt="搜索窗口"> | <img src="docs/images/screenshots/quickswitch.png" alt="对话框快速跳转"> |
-| **操作面板（`→`）** | **文件搜索（`空格` + 名称）** |
-| <img src="docs/images/screenshots/actions.png" alt="操作面板"> | <img src="docs/images/screenshots/files.png" alt="文件搜索"> |
-| **计算器** | **剪贴板历史（`clip`）** |
-| <img src="docs/images/screenshots/calculator.png" alt="计算器"> | <img src="docs/images/screenshots/clipboard.png" alt="剪贴板历史"> |
-| **置顶和最近使用（空搜索框）** | **浏览文件夹（输入路径）** |
-| <img src="docs/images/screenshots/empty.png" alt="置顶和最近使用"> | <img src="docs/images/screenshots/browse.png" alt="浏览文件夹"> |
+| <img src="docs/images/screenshots/search.png" alt="搜索窗口"> | <img src="docs/images/screenshots/actions.png" alt="操作面板"> |
+| **文件搜索（`空格` + 名称）** | **按类型搜索（`doc` + 名称）** |
+| <img src="docs/images/screenshots/files.png" alt="文件搜索"> | <img src="docs/images/screenshots/filetype.png" alt="按类型搜索"> |
+| **计算器** | **拼音首字母（`jsb` 找到记事本）** |
+| <img src="docs/images/screenshots/calculator.png" alt="计算器"> | <img src="docs/images/screenshots/pinyin.png" alt="拼音首字母"> |
+| **剪贴板历史（`clip`）** | **置顶和最近使用（空搜索框）** |
+| <img src="docs/images/screenshots/clipboard.png" alt="剪贴板历史"> | <img src="docs/images/screenshots/empty.png" alt="置顶和最近使用"> |
+| **浏览文件夹（输入路径）** | **网页搜索（`g` + 关键词）** |
+| <img src="docs/images/screenshots/browse.png" alt="浏览文件夹"> | <img src="docs/images/screenshots/websearch.png" alt="网页搜索"> |
+| **对话框快速跳转（打开 / 保存对话框下面的文件夹面板）** | **主题（偏好设置 → 外观）** |
+| <img src="docs/images/screenshots/quickswitch.png" alt="对话框快速跳转"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="主题"> |
 | **偏好设置** | **自定义命令** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
-| **脚本扩展** | **计算器设置（结构计算参数，工程师用）** |
-| <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> | <img src="docs/images/screenshots/prefs-calculator.png" alt="计算器设置"> |
+| **文字片段** | **脚本扩展** |
+| <img src="docs/images/screenshots/prefs-snippets.png" alt="文字片段"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> |
 
 <details>
 <summary><b>内置主题</b>（共 20 套，点击展开）</summary>

@@ -9,13 +9,15 @@
     quickswitch: ["在打开 / 保存对话框下面列出已经打开和最近用过的文件夹, 点一下就跳过去 (Ctrl+G 跳到 Total Commander 当前的文件夹)", "Below an Open / Save dialog: the folders you have open or used recently; click one to jump there (Ctrl+G jumps to the current Total Commander folder)", "quickswitch.png"],
     actions: ["选中结果按 → 打开操作面板: 以管理员身份运行、打开所在位置、复制路径…", "Press → on a result for actions: run as administrator, open location, copy path…", "actions.png"],
     files: ["空白搜索框先按空格再输入名称, 搜索文件和文件夹 (Everything 或内置索引)", "Press Space first to search files and folders (Everything or the built-in index)", "files.png"],
+    filetype: ["doc 报告 只搜文档, 还有 pic、video、audio、zip、exe、cad, 类型可以自定义", "doc report searches documents only; pic, video, audio, zip, exe and cad too, and you can add your own types", "filetype.png"],
     clipboard: ["Ctrl+Alt+C 或输入 clip: 复制过的文字、文件和图片", "Ctrl+Alt+C or type clip: text, files and images you copied", "clipboard.png"],
     calculator: ["直接输入算式, 也支持单位换算 (10 km in mi)", "Type a formula; unit conversion works too (10 km in mi)", "calculator.png"],
     pinyin: ["拼音首字母: jsb → 记事本", "Pinyin initials: jsb → 记事本 (Notepad)", "pinyin.png"],
     websearch: ["g 关键词 用 Google 搜索, 搜索引擎可以自定义", "g keywords searches Google; engines are customizable", "websearch.png"],
     empty: ["还没输入时列出置顶的项目 (带图钉) 和最近打开的项目", "Before you type: pinned items (with a pin) and recently opened items", "empty.png"],
     browse: ["输入路径浏览文件夹, Tab 进入, Backspace 返回上一级", "Type a path to browse a folder; Tab goes in, Backspace goes up", "browse.png"],
-    "prefs-general": ["偏好设置: 每一项都有说明", "Preferences: every option is explained", "prefs-general.png"]
+    "prefs-general": ["偏好设置: 每一项都有说明", "Preferences: every option is explained", "prefs-general.png"],
+    "prefs-snippets": ["文字片段: 搜索名称或正文粘贴, 也可以在任何程序里输入 ;关键字 自动展开", "Snippets: search by name or text to paste, or type ;keyword in any program to expand", "prefs-snippets.png"]
   };
 
   function current() { return root.getAttribute("data-lang"); }

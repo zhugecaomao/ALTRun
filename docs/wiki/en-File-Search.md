@@ -26,6 +26,8 @@ Folders you use often work better as [custom commands](en-Commands-and-Snippets)
 
 ![File search](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/files.png)
 
+![Search by file type: doc report](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/filetype.png)
+
 `Enter` opens, `Ctrl+Enter` reveals in the file manager, `Alt+Enter` copies the path, `→` shows more actions (Open With, copy / cut the file, copy / move to the current folder in TC, Open Terminal Here, Properties, Move to Recycle Bin...), see the [action panel](en-Usage#action-panel).
 
 ## Browsing folders

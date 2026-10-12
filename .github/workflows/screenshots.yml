@@ -31,6 +31,23 @@ jobs:
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
 
+      # 文档图标: .docx / .xlsx / .pptx 等关联到 Tests/Screenshots/Icons 里的 LibreOffice 文档图标, 不用安装 Office
+      # (只写当前用户的注册表; 只在 GitHub 的虚拟机上做, 本地运行截图脚本时不会改你的文件关联)。做不到时照常截图
+      - name: Document icons
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $icons = (Resolve-Path Tests/Screenshots/Icons).Path
+          $types = @{ text = "doc docx docm odt rtf"; spreadsheet = "xls xlsx xlsm csv ods"; presentation = "ppt pptx pptm odp" }
+          foreach ($kind in $types.Keys) {
+            $progId = "ALTRunShots.$kind"
+            New-Item "HKCU:\Software\Classes\$progId\DefaultIcon" -Value "$icons\$kind.ico" -Force | Out-Null
+            foreach ($ext in $types[$kind].Split(" ")) { New-Item "HKCU:\Software\Classes\.$ext" -Value $progId -Force | Out-Null }
+          }
+          Add-Type -Namespace Shots -Name Shell -MemberDefinition '[DllImport("shell32.dll")] public static extern void SHChangeNotify(int e, uint f, IntPtr a, IntPtr b);'
+          [Shots.Shell]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)   # SHCNE_ASSOCCHANGED: 刷新图标
+          Write-Host "Document icons registered from $icons"
+
       # 1920 x 1080、150% 缩放、灰度字体抗锯齿: 截图更清晰 (做不到时保持 100%)
       - name: Display settings for screenshots
         shell: pwsh
@@ -53,7 +70,7 @@ jobs:
           python Tests/Screenshots/MakeDemo.py $frames docs/images/screenshots/demo.png
           if ($LASTEXITCODE -ne 0) { throw "MakeDemo.py failed" }
 
-      # 偏好设置和 Quick Switch (Shots.NormalScale) 在 150% 下太大: 缩放调回 100% 再截一次, 圆角按 100% 的半径
+      # 偏好设置和 Quick Switch (Shots.NormalScale) 在 150% 下太大: 缩放调回 100% 再截一次 (字体用 ClearType), 圆角按 100% 的半径
       # (已经是圆角的图 RoundCorners.py 不再处理)
       - name: Display at 100% for Preferences and Quick Switch
         shell: pwsh
