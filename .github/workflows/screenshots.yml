@@ -68,7 +68,7 @@ jobs:
           python Tests/Screenshots/MakeDemo.py $frames docs/images/screenshots/demo.png
           if ($LASTEXITCODE -ne 0) { throw "MakeDemo.py failed" }
 
-      # 偏好设置和 Quick Switch (Shots.NormalScale) 在 150% 下太大: 缩放调回 100% 再截一次, 圆角按 100% 的半径
+      # 偏好设置和 Quick Switch (Shots.NormalScale) 在 150% 下太大: 缩放调回 100% 再截一次 (字体用 ClearType), 圆角按 100% 的半径
       # (已经是圆角的图 RoundCorners.py 不再处理)
       - name: Display at 100% for Preferences and Quick Switch
         shell: pwsh
