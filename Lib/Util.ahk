@@ -334,11 +334,10 @@ class Win {
         return layouts.Length ? layouts[1] : 0
     }
 
-    ; 切换前台窗口里输入法的 中 / 英 模式 (和微软拼音里按 Shift 一样); 输入法关着时打开并切到中文。
-    ; 返回 true = 发出了切换 (前台窗口没有输入法时 false)。
-    ; 有的输入法 (2026-10 反馈: Windows 11 上的新版输入法) 读出来的打开状态 / 转换模式不跟着变, 只按读数判断时
-    ; 每次都以为是英文, 只能切到中文一次 (#154)。所以每次切换后记下读数和切到了哪边, 下次读数还和那时一样
-    ; (读数没跟着变) 就按记下的来, 见 ImeTarget
+    ; 切换前台窗口里输入法的 中 / 英 模式 (和微软拼音里按 Shift 一样)。返回 true = 发出了切换 (前台窗口没有输入法时 false)。
+    ; 中文 = 打开输入法 + 转换模式加上中文位, 英文 = 去掉中文位 + 关闭输入法: 两个都设, 因为输入法认的不一样 ——
+    ; 微信输入法只认打开 / 关闭, 只改转换模式时界面上的中 / 英不变 (2026-10 #154 的日志)。
+    ; 另外每次切换后记下读数和切到了哪边, 下次读数还和那时一样就按记下的来 (读数不跟着变的输入法), 见 ImeTarget
     static _imeLast := Map()                                                ; 窗口 -> {Open, Conv: 切换后的读数, Chinese: 切到了中文}
     static ToggleImeMode() {
         static WM_IME_CONTROL := 0x283, IMC_GETCONVERSIONMODE := 1, IMC_SETCONVERSIONMODE := 2, IMC_GETOPENSTATUS := 5, IMC_SETOPENSTATUS := 6
@@ -353,9 +352,13 @@ class Win {
         open := Ime(IMC_GETOPENSTATUS), conv := Ime(IMC_GETCONVERSIONMODE)
         last := Win._imeLast.Has(hwnd) ? Win._imeLast[hwnd] : ""
         plan := Win.ImeTarget(open, conv, last)
-        if plan.SetOpen
+        if plan.Chinese {                                                   ; 先打开再设转换模式 (打开时有的输入法会重设转换模式)
             Ime(IMC_SETOPENSTATUS, 1)
-        Ime(IMC_SETCONVERSIONMODE, plan.Conv)
+            Ime(IMC_SETCONVERSIONMODE, plan.Conv)
+        } else {                                                            ; 先设转换模式再关闭
+            Ime(IMC_SETCONVERSIONMODE, plan.Conv)
+            Ime(IMC_SETOPENSTATUS, 0)
+        }
         after := {Open: Ime(IMC_GETOPENSTATUS), Conv: Ime(IMC_GETCONVERSIONMODE), Chinese: plan.Chinese}
         if (Win._imeLast.Count > 50)                                        ; 只记最近用到的窗口
             Win._imeLast := Map()
@@ -363,7 +366,7 @@ class Win {
         if Logger.Enabled
             Logger.Debug(Format("IME mode: open {} conv 0x{:X}{} -> {} (set open {}, conv 0x{:X}), now open {} conv 0x{:X}"
                 , open, conv, plan.Remembered ? " (readings unchanged, using the last switch)" : "", plan.Chinese ? "Chinese" : "English"
-                , plan.SetOpen ? 1 : 0, plan.Conv, after.Open, after.Conv))
+                , plan.Open, plan.Conv, after.Open, after.Conv))
         return true
 
         Ime(command, value := 0) {                                          ; 2 = SMTO_ABORTIFHUNG: 前台程序卡住时不跟着卡
@@ -373,7 +376,7 @@ class Win {
         }
     }
 
-    ; 切换中 / 英要做什么: {Chinese: 切到中文, SetOpen: 先打开输入法, Conv: 要设的转换模式, Remembered: 按记下的状态判断}
+    ; 切换中 / 英要做什么: {Chinese: 切到中文, Open: 要设的打开状态, Conv: 要设的转换模式, Remembered: 按记下的状态判断}
     ;   open / conv: 现在读到的打开状态和转换模式 (IME_CMODE_NATIVE = 1 是中文)
     ;   last:        上次切换后的 {Open, Conv, Chinese}, 没有时 ""。现在的读数和那时一样 = 读数没跟着变 (或者没有变过),
     ;                就当作还是上次切到的那边
@@ -381,8 +384,8 @@ class Win {
         remembered := IsObject(last) && last.Open = open && last.Conv = conv
         chinese := remembered ? last.Chinese : (open && (conv & 1))
         if chinese
-            return {Chinese: false, SetOpen: false, Conv: conv & ~1, Remembered: remembered}
-        return {Chinese: true, SetOpen: !open, Conv: conv | 1, Remembered: remembered}
+            return {Chinese: false, Open: 0, Conv: conv & ~1, Remembered: remembered}
+        return {Chinese: true, Open: 1, Conv: conv | 1, Remembered: remembered}
     }
 
     ; 窗口 (所在线程) 正在用的输入法 (HKL); hwnd = 0: 当前线程

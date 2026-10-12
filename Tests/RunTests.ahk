@@ -2962,20 +2962,19 @@ class Tests {
 
     ; CapsLock 切换中 / 英模式要做什么 (Win.ImeTarget), 包括读数不跟着变的输入法 (#154)
     static ImeToggle() {
-        show := (p) => (p.Chinese ? "zh" : "en") " open " (p.SetOpen ? 1 : 0) " conv " p.Conv (p.Remembered ? " remembered" : "")
+        show := (p) => (p.Chinese ? "zh" : "en") " open " p.Open " conv " p.Conv (p.Remembered ? " remembered" : "")
         eq := (n, p, e) => TestRunner.Equal("ImeToggle." n, show(p), e)
-        eq("english -> chinese", Win.ImeTarget(1, 0), "zh open 0 conv 1")
-        eq("chinese -> english", Win.ImeTarget(1, 1025), "en open 0 conv 1024")
+        eq("english -> chinese", Win.ImeTarget(1, 0), "zh open 1 conv 1")
+        eq("chinese -> english (also closes the IME)", Win.ImeTarget(1, 1025), "en open 0 conv 1024")
         eq("closed -> open chinese", Win.ImeTarget(0, 0), "zh open 1 conv 1")
-        eq("closed with native bit -> open chinese", Win.ImeTarget(0, 1), "zh open 1 conv 1")
+        eq("closed with native bit -> open chinese", Win.ImeTarget(0, 1025), "zh open 1 conv 1025")
         ; 读数可信: 切换后的读数和这次不同, 按读数
-        eq("reliable readings", Win.ImeTarget(1, 1, {Open: 1, Conv: 0, Chinese: false}), "en open 0 conv 0")
-        ; 读数不跟着变 (#154): 一直读到 "没打开 / 0", 上次切到了中文 -> 这次切回英文, 再下次又切到中文
-        stuck := {Open: 0, Conv: 0, Chinese: true}
-        eq("stuck readings: back to english", Win.ImeTarget(0, 0, stuck), "en open 0 conv 0 remembered")
+        eq("reliable readings", Win.ImeTarget(1, 1, {Open: 0, Conv: 0, Chinese: false}), "en open 0 conv 0")
+        ; 微信输入法 (#154 的日志): 读数跟着设置变, 一直是打开; 上次切到了中文 -> 这次英文 (关闭输入法)
+        eq("wechat ime: to english", Win.ImeTarget(1, 0x401, {Open: 1, Conv: 0x401, Chinese: true}), "en open 0 conv 1024 remembered")
+        ; 读数不跟着变: 一直读到 "没打开 / 0", 上次切到了中文 -> 这次切回英文, 再下次又切到中文
+        eq("stuck readings: back to english", Win.ImeTarget(0, 0, {Open: 0, Conv: 0, Chinese: true}), "en open 0 conv 0 remembered")
         eq("stuck readings: chinese again", Win.ImeTarget(0, 0, {Open: 0, Conv: 0, Chinese: false}), "zh open 1 conv 1 remembered")
-        ; 转换模式一直读到 0 (打开状态正常)
-        eq("stuck conversion mode", Win.ImeTarget(1, 0, {Open: 1, Conv: 0, Chinese: true}), "en open 0 conv 0 remembered")
     }
 
     static SkippedPaint() {
