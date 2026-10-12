@@ -1,0 +1,48 @@
+# 临时诊断 (不合并): 空搜索框提示文字的上下位置
+name: Cue banner diagnostics
+
+on:
+  push:
+    branches: ["claude/**"]
+    paths:
+      - Tests/Screenshots/CueDiag.ahk
+      - .github/workflows/cue-diag.yml
+
+permissions:
+  contents: write
+
+jobs:
+  diag:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+      - name: 100%
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Scale 100
+          $out = Join-Path (Get-Location) 'diag'
+          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList @('/ErrorStdOut', 'Tests\Screenshots\CueDiag.ahk', $out, 's100') -Wait -NoNewWindow
+      - name: 150%
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Scale 150
+          $out = Join-Path (Get-Location) 'diag'
+          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList @('/ErrorStdOut', 'Tests\Screenshots\CueDiag.ahk', $out, 's150') -Wait -NoNewWindow
+          Get-Content diag/diag.log
+      - name: Commit
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add diag
+          git commit -m "Cue banner diagnostics"
+          git push origin "HEAD:${{ github.ref_name }}"
