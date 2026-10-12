@@ -36,17 +36,6 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe
 
-      # 临时诊断: 第一次量中文文字要多久, 字体缓存服务的状态
-      - name: Probe CJK text measurement (temporary)
-        shell: pwsh
-        run: |
-          Get-Service FontCache, FontCache3.0.0.0 -ErrorAction SilentlyContinue | Format-Table Name, Status, StartType -AutoSize | Out-String | Write-Host
-          $out = Join-Path $env:RUNNER_TEMP "probe-font.txt"
-          $p = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList "Tests/Screenshots/ProbeFont.ahk", "`"$out`"" -PassThru
-          if (-not $p.WaitForExit(120000)) { Write-Host "probe still running after 120 s"; $p.Kill() }
-          if (Test-Path $out) { Get-Content $out -Encoding UTF8 | Write-Host } else { Write-Host "no probe output" }
-          Get-Service FontCache, FontCache3.0.0.0 -ErrorAction SilentlyContinue | Format-Table Name, Status, StartType -AutoSize | Out-String | Write-Host
-
       - name: Take screenshots
         shell: pwsh
         run: pwsh -NoProfile -File Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Skip normal-scale
