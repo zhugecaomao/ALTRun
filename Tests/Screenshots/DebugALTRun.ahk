@@ -6,7 +6,7 @@
 ;   - 每次读图标的开始、结束和耗时
 ;   - 画行时出的错
 ;   - 每秒一次心跳 (定时器还能不能运行) 和回调次数
-;   - 第一个图标读完以后, ALTRun 各个类的静态方法的进入 / 退出 (">" / "<", "C" = Critical)
+;   - ALTRun 各个类的静态方法和 InputHook 的 Start / Stop 的进入 / 退出 (">" / "<", "C" = Critical; QuickSwitch._Watch 太频繁, 不记)
 ;===============================================================================
 #Requires AutoHotkey v2.0
 
@@ -19,7 +19,8 @@ class Dbg {
     static Started := A_TickCount
     static Loading := ""                    ; 正在读的图标 (空 = 没有在读)
     static Prepaints := 0, ItemDraws := 0, Logged := 0
-    static Tracing := false, TraceLines := 0, Depth := 0
+    static Tracing := true, TraceLines := 0, Depth := 0, Muted := 0
+    static Mute := Map("QuickSwitch._Watch", true)
     static TraceClasses := ["ActionCatalog", "App", "AppSettings", "ApplicationProvider", "AutoDate", "BookmarkProvider", "CalculatorProvider"
         , "CapsLockSwitch", "ClipboardData", "ClipboardProvider", "CurrencyRates", "CustomCommandProvider", "Everything", "FileIndex"
         , "FileSearchProvider", "HelpProvider", "Hud", "IconCache", "Knowledge", "NavIcons", "Path", "ProviderRegistry", "QuickSwitch"
@@ -34,6 +35,8 @@ class Dbg {
         Dbg.Hook(SearchWindow, "_OnCustomDraw", (original, cls, params*) => Dbg.OnDraw(original, cls, params*))
         Dbg.Hook(SearchWindow, "_PaintRow", (original, cls, params*) => Dbg.OnPaintRow(original, cls, params*))
         Dbg.Hook(IconCache, "_Load", (original, cls, params*) => Dbg.OnLoad(original, cls, params*))
+        for method in ["Start", "Stop"]
+            Dbg.HookTrace(InputHook.Prototype, method, "InputHook." method, InputHook.Prototype.GetOwnPropDesc(method).Call)
         SetTimer(() => Dbg.Beat(), 1000)
     }
 
@@ -65,8 +68,13 @@ class Dbg {
     }
 
     static Traced(label, original, target, params*) {
-        if !Dbg.Tracing
+        if (!Dbg.Tracing || Dbg.Muted)
             return original(target, params*)
+        if Dbg.Mute.Has(label) {
+            Dbg.Muted++
+            try return original(target, params*)
+            finally Dbg.Muted--
+        }
         Dbg.Trace("> " label (A_IsCritical ? " C" : ""))
         Dbg.Depth++
         try {
@@ -82,7 +90,7 @@ class Dbg {
     }
 
     static Trace(text) {
-        if (++Dbg.TraceLines > 4000)
+        if (++Dbg.TraceLines > 20000)
             return
         Dbg.Log(Format("{:" Max(1, Dbg.Depth * 2) "}", "") text)
     }
@@ -120,7 +128,6 @@ class Dbg {
         } finally {
             Dbg.Loading := ""
             Dbg.Log("icon load end (" (A_TickCount - start) " ms): " spec)
-            Dbg.Tracing := true
         }
         return result
     }

@@ -317,11 +317,11 @@ class Shots {
             return Shots.Log("ALTRunDebug.log: " e.Message)
         }
         text := ""
-        for line in lines                                                   ; 前 60 行 + 最后 250 行
-            if (A_Index <= 60 || A_Index > lines.Length - 250)
+        for line in lines                                                   ; 前 20 行 + 最后 600 行
+            if (A_Index <= 20 || A_Index > lines.Length - 600)
                 text .= line "`n"
-            else if (A_Index = 61)
-                text .= "... (" (lines.Length - 310) " lines)`n"
+            else if (A_Index = 21)
+                text .= "... (" (lines.Length - 620) " lines)`n"
         Shots.Log("ALTRunDebug.log (" lines.Length " lines):`n" text)
     }
 
