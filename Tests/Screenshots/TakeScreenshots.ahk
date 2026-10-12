@@ -99,9 +99,8 @@ class Shots {
             if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]))
                 continue
             Shots.Log("== " scene[1])
-            ; 在 GitHub 刚启动的 Windows 上, 第一次画中文 (拼音场景的 "记事本") 时 Windows 要载入中文的后备字体,
-            ; 在列表的自绘回调里量文字宽度 (GetTextExtentExPointW) 会卡住很久, 结果行一直是空白; 这时重新启动 ALTRun 再试
-            ; (字体已经载入, 马上就画好)
+            ; 结果行一直空白时重新启动 ALTRun 再试 (保险)。以前的原因: 画行时定时器插进来要求重画, 列表一直等着重画
+            ; (见 SearchWindow._OnCustomDraw, 现在自绘回调不可打断)
             Loop 4 {
                 try {
                     Shots.Launch(scene[2], scene[3], (scene.Length >= 5) ? scene[5] : "")
