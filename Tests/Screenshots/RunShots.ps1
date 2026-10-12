@@ -8,7 +8,8 @@ param([Parameter(Mandatory)][string]$Ahk, [string[]]$Only = @(), [string[]]$Skip
 Write-Host "Microsoft YaHei: $(Test-Path C:\Windows\Fonts\msyh.ttc)"
 Add-Type -AssemblyName System.Windows.Forms
 Write-Host "Screen: $([System.Windows.Forms.Screen]::PrimaryScreen.Bounds)"
-$arguments = @('/ErrorStdOut', 'Tests\Screenshots\TakeScreenshots.ahk', 'docs\images\screenshots') + $Only + ($Skip | ForEach-Object { "-$_" })
+$outDir = Join-Path (Get-Location) 'docs\images\screenshots'                     # 绝对路径: 相对路径会按脚本所在的文件夹算
+$arguments = @('/ErrorStdOut', 'Tests\Screenshots\TakeScreenshots.ahk', $outDir) + $Only + ($Skip | ForEach-Object { "-$_" })
 $proc = Start-Process $Ahk -ArgumentList $arguments -Wait -PassThru -NoNewWindow -RedirectStandardOutput shots.log -RedirectStandardError shots.err
 Get-Content shots.log, shots.err
 if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) screenshot(s) failed" }

@@ -39,7 +39,7 @@ class Shots {
     static Scenes() {
         return [
             ["search",      "Light", "", () => Shots.Search("re")],
-            ["pinyin",      "Light", "", () => Shots.Search("jsb")],
+            ["pinyin",      "Light", "", () => (Shots.LogAppIndex(), Shots.Search("jsb"))],
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: 附带结构计算的两行
@@ -315,6 +315,21 @@ class Shots {
         ProcessWaitClose(Shots.Pid, 5)
         Shots.Pid := 0
         Sleep(500)
+    }
+
+    ; 诊断: 应用索引里有哪些应用和它们的拼音首字母 (拼音的截图曾经是空的)
+    static LogAppIndex() {
+        file := Shots.AppDir "\Data\AppIndex.json"
+        if !FileExist(file)
+            return Shots.Log("app index: not found")
+        try {
+            text := ""
+            for app in JSON.Parse(FileRead(file, "UTF-8"))["Apps"]
+                text .= app["Title"] (app.Has("Search") && app["Search"] != "" ? " (" app["Search"] ")" : "") "; "
+            Shots.Log("app index: " text)
+        } catch as e {
+            Shots.Log("app index: " e.Message)
+        }
     }
 
     static SearchWindow() {
