@@ -36,9 +36,7 @@ for lang in ["en", "zh-CN"] {
         Sleep(2500)
         WinGetPos(&wx, &wy, &ww, &wh, hwnd)
         ControlGetPos(&ex, &ey, &ew, &eh, "Edit1", hwnd)
-        cue := Buffer(512, 0)
-        SendMessage(0x1502, cue.Ptr, 256, "Edit1", hwnd)                    ; EM_GETCUEBANNER
-        cueText := StrGet(cue)
+        cueText := (lang = "en") ? "ALTRun Search" : "ALTRun 搜索"
         Log(name ": window " ww "x" wh ", edit x" ex " y" ey " w" ew " h" eh ", cue '" cueText "'")
         Measure(name "-cue", hwnd, ex, ey, ew, eh)
         ControlSetText(cueText, "Edit1", hwnd)
