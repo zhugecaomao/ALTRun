@@ -733,24 +733,23 @@ class PreferencesWindow {
         PreferencesWindow.Gui.SetFont("s15 bold")
         PreferencesWindow._Add("Text", "x" textX " w" textW, App.Name)
         PreferencesWindow.Gui.SetFont("s9 norm")
-        PreferencesWindow._y := top + 32
+        ; 宣传语、版本号 (报告问题时要找的, 单独一行)、版权和许可证: 同样的字号, 后两行灰色, 行距宽松一点
+        PreferencesWindow._y := top + 34
         PreferencesWindow._Add("Text", "x" textX " w" textW, I18n.T("App.Tagline"))
-        PreferencesWindow._y := top + 54                                    ; 版本号单独一行 (报告问题时要找的), 版权和许可证在下面一行灰色小字
-        PreferencesWindow._Add("Text", "x" textX " w" textW, I18n.T("Prefs.Version", App.Version) App.AdminSuffix())
-        PreferencesWindow._y := top + 72
-        PreferencesWindow.Gui.SetFont("s8")
+        PreferencesWindow._y := top + 58
+        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) App.AdminSuffix())
+        PreferencesWindow._y := top + 80
         PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao   ·   GPL-3.0")   ; 版本号以发布年份开头
-        PreferencesWindow.Gui.SetFont("s9")
-        PreferencesWindow._y := top + 92
+        PreferencesWindow._y := top + 108
         links := ""
         for link in [[App.Website, I18n.T("Prefs.Homepage")], [App.RepoUrl, "GitHub"], [App.RepoUrl "/releases", I18n.T("Update.ReleaseNotes")]
                    , [App.RepoUrl "/issues/new/choose", I18n.T("Prefs.ReportIssue")]]
             links .= (links = "" ? "" : "   ·   ") '<a href="' link[1] '">' link[2] '</a>'
         PreferencesWindow._Add("Link", "x" textX " w" textW, links)
-        PreferencesWindow._y := top + 118
+        PreferencesWindow._y := top + 140
         PreferencesWindow._Add("Button", "x" textX " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T("Tray.CheckUpdate"))
             .OnEvent("Click", (*) => UpdateChecker.Check())
-        PreferencesWindow._y := top + 118 + PreferencesWindow.ButtonH + 22
+        PreferencesWindow._y := top + 140 + PreferencesWindow.ButtonH + 24
 
         PreferencesWindow._Section("Prefs.Section.Data")
         ; 设置文件就是数据文件夹里的 ALTRun.json, 不另写一行; 路径太长时中间用省略号 (SS_PATHELLIPSIS), 鼠标停留显示完整路径

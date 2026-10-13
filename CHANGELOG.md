@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.11]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 高级 最上面: 宣传语、版本号、版权三行用同样的字号, 版本号和版权灰色, 行距宽松一点
+
 ## [2026.10.12.10]
 
 测试版。
@@ -651,7 +660,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.11...HEAD
+[2026.10.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.10...2026.10.12.11
 [2026.10.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.9...2026.10.12.10
 [2026.10.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.8...2026.10.12.9
 [2026.10.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.7...2026.10.12.8
