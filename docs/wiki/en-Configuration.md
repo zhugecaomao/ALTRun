@@ -57,7 +57,7 @@ Split over the "General", "Search Window" and "Hotkeys" (Caps Lock) pages in Pre
 | Theme | `Light` | Theme name, see [Themes](en-Themes) |
 | Width | 700 | Search window width (pixels, scaled with the display) |
 | VisibleRows | 8 | Maximum number of result rows shown (1–9) |
-| Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search" (usage tips show there when the status bar is off) |
+| Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (usage tips show there when the status bar is off) |
 | StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: ☰ menu, usage tip, what `Enter` / `→` do); 0 = off, the usage tip shows in the empty search box |
 | ShowOn | `Mouse` | Which screen the search window opens on: `Mouse` the one with the mouse pointer / `Primary` the main screen / `Active` the one with the active window |
 | RememberPosition | 0 | Remember the position after dragging the search window (drag the empty space around the input box) |

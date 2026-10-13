@@ -1132,10 +1132,11 @@ class SearchWindow {
         return Max(centered, Min(Round(bandH / 2 - (ascent - cap / 2)), bandH - editH + pad // 2))
     }
 
-    ; 空搜索框里的灰色文字: 设置里写了 (Appearance.Placeholder) 就用它, 否则 "ALTRun 搜索"
+    ; 空搜索框里的灰色文字: 设置里写了 (Appearance.Placeholder) 就用它, 没写 (空) 时 "ALTRun 搜索";
+    ; 只写了空格 = 什么都不显示
     static Placeholder() {
-        text := Trim(AppSettings.Appearance.Get("Placeholder", ""))
-        return (text != "") ? text : I18n.T("Search.Placeholder")
+        text := AppSettings.Appearance.Get("Placeholder", "")
+        return (text = "") ? I18n.T("Search.Placeholder") : Trim(text)
     }
 
     ;---------------------------------------------------------------------------

@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.12.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 提示文字只写空格 = 空搜索框里什么都不显示 (留空还是默认的 "ALTRun 搜索")
+- 偏好设置 → 搜索窗口 → 空搜索框: "提示文字" 和 "显示几个最近使用的项目" 的输入框左边对齐
+
 ## [2026.10.12.4]
 
 测试版。
@@ -587,7 +597,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.5...HEAD
+[2026.10.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.4...2026.10.12.5
 [2026.10.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.3...2026.10.12.4
 [2026.10.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.2...2026.10.12.3
 [2026.10.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12...2026.10.12.2

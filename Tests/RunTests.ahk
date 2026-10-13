@@ -1863,6 +1863,14 @@ class Tests {
             limit := PreferencesWindow.ButtonY - 6
             rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
             for index, page in PreferencesWindow.Pages {
+                if (page.Key = "Prefs.Page.Window") {                       ; 空搜索框: 提示文字和最近项目数的输入框左边对齐
+                    edits := []
+                    for ctrl in page.Controls
+                        if (ctrl.Type = "Edit")
+                            edits.Push(ctrl)
+                    edits[edits.Length - 1].GetPos(&x1), edits[edits.Length].GetPos(&x2)
+                    TestRunner.Equal("PreferencesFit." lang " empty box inputs aligned", x1, x2)
+                }
                 bottom := 0, right := 0
                 for ctrl in page.Controls {
                     ctrl.GetPos(&x, &y, &w, &h)
@@ -3968,8 +3976,10 @@ Func | PTTools | PT Tools (AHK)=99
         SearchWindow._RestoreInputLanguage()                                 ; 选的是英语键盘: 不动中 / 英模式
         TestRunner.Equal("Input.keyboard choice leaves the IME mode alone", SearchWindow._imeBefore, "")
         savedPlaceholder := AppSettings.Appearance["Placeholder"]
-        AppSettings.Appearance["Placeholder"] := "  "
+        AppSettings.Appearance["Placeholder"] := ""
         TestRunner.Equal("Placeholder.default", SearchWindow.Placeholder(), "ALTRun Search")
+        AppSettings.Appearance["Placeholder"] := " "
+        TestRunner.Equal("Placeholder.only spaces: nothing", SearchWindow.Placeholder(), "")
         AppSettings.Appearance["Placeholder"] := " Type to search "
         TestRunner.Equal("Placeholder.custom (trimmed)", SearchWindow.Placeholder(), "Type to search")
         AppSettings.Appearance["Placeholder"] := savedPlaceholder
