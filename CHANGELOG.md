@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.17]
+
+测试版。
+
+Test build.
+
+### 新增
+- **大写锁定提示可以关掉** (#158): 偏好设置 → 自定义热键 → "显示大写锁定开 / 关的提示" (`General.CapsLockNotify`, 默认开); 管理员窗口的小助手也一样
+
 ## [2026.10.12.16]
 
 测试版。
@@ -712,7 +721,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.17...HEAD
+[2026.10.12.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.16...2026.10.12.17
 [2026.10.12.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.15...2026.10.12.16
 [2026.10.12.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.14...2026.10.12.15
 [2026.10.12.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.13...2026.10.12.14

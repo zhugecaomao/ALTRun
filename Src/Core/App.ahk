@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.12.16"
+    static Version := "2026.10.12.17"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -160,6 +160,13 @@ class App {
     static _AllowNormalPrograms() {
         for msg in [0x4A, DllCall("RegisterWindowMessageW", "Str", "TaskbarCreated", "UInt")]
             DllCall("ChangeWindowMessageFilterEx", "Ptr", A_ScriptHwnd, "UInt", msg, "UInt", 1, "Ptr", 0)   ; MSGFLT_ALLOW
+    }
+
+    ; 大写锁定开 / 关的提示 (CapsLockSwitch 和管理员窗口的小助手); 关掉了 General.CapsLockNotify 时不显示
+    static CapsLockNotice(on) {
+        general := AppSettings.General
+        if (!general.Has("CapsLockNotify") || general["CapsLockNotify"])
+            App.Notify(CapsLockSwitch.StateText(on), CapsLockSwitch.NotifyMs)
     }
 
     ; 以管理员身份运行时显示在名称 / 版本号后面: " (管理员)"
@@ -570,7 +577,7 @@ class App {
             return
         }
         if (args.Length >= 2 && args[1] = "-CapsLockState") {               ; 管理员窗口里的小助手开 / 关了大写锁定: 这里显示提示
-            App.Notify(CapsLockSwitch.StateText(args[2] = "1"), CapsLockSwitch.NotifyMs)
+            App.CapsLockNotice(args[2] = "1")
             return
         }
         if (args.Length >= 1 && args[1] = "-Update") {

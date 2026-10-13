@@ -204,6 +204,7 @@
   "Prefs.CapsLockElevated.Desc": "Caps Lock だけを扱う小さなヘルパーを管理者権限で実行します (オンにするときに 1 回確認)。ALTRun 本体は通常の権限のままです。",
   "Prefs.CapsLockElevated.NeedsMode": "先に上で Caps Lock の切り替え方法を選んでください。",
   "Prefs.CapsLockElevatedFailed": "管理者ウィンドウ用の Caps Lock を設定できませんでした (確認がキャンセルされた可能性があります)。このオプションはオフのままです。",
+  "Prefs.CapsLockNotify": "Caps Lock のオン / オフを通知する",
   "Prefs.ChangeDataFolder": "場所を変更...",
   "Prefs.CheckAllOk": "{1} 件すべてのパスが有効です。",
   "Prefs.CheckResult": "見つかりません: {1} 件\nアクセスできません (ドライブまたはネットワーク共有が未接続?): {2} 件\n\n「状態」列に表示されています。コマンドをダブルクリックするとパスを修正できます。",

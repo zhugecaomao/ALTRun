@@ -34,6 +34,7 @@ Split over the "General", "Search Window" and "Hotkeys" (Caps Lock) pages in Pre
 | SecondaryHotkey | `!r` | Second hotkey (Alt+R); empty = none |
 | DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary); empty = off |
 | CapsLock | empty | Like on a Mac: `Layout` = pressing Caps Lock switches to the next input method (like `Win+Space`), `Mode` = it switches the Chinese / English mode of the input method; holding it for 0.3 s turns caps lock on or off. Empty = Caps Lock works as usual. See [Caps Lock switches the input method](en-Extensions#caps-lock-switches-the-input-method) |
+| CapsLockNotify | 1 | Show "Caps Lock On / Off" when caps lock is turned on or off; 0 = no notice |
 | CapsLockElevated | 0 | 1 = Caps Lock switching also works in windows running as administrator: a scheduled task runs a small helper with administrator rights that only handles Caps Lock, while ALTRun itself keeps normal rights. See [Caps Lock switches the input method](en-Extensions#caps-lock-switches-the-input-method) |
 | SelectionHotkey | `^!\` | Press it after selecting text / files / a URL to open their actions directly (Ctrl+Alt+\), see [Actions on selected content](en-Usage#actions-on-selected-content); empty = off |
 | Language | `auto` | `auto` follows the Windows display language, or a language code: `en` / `zh-CN` (Simplified Chinese) / `zh-TW` (Traditional Chinese) / `ja`; apart from English, each language is a file in `Resources\Lang\` (the old `zh` means `zh-CN`) |

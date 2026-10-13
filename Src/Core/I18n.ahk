@@ -608,6 +608,7 @@ class I18n {
         s["Prefs.CapsLock.Off"]        := "As usual"
         s["Prefs.CapsLock.Layout"]     := "Press to switch input method"
         s["Prefs.CapsLock.Mode"]       := "Press to switch Chinese / English mode"
+        s["Prefs.CapsLockNotify"]      := "Show a notice when caps lock turns on or off"
         s["Prefs.CapsLockElevated"]    := "Also in windows running as administrator"
         s["Prefs.CapsLockElevated.Desc"] := "Runs a small helper with administrator rights that only handles Caps Lock (confirm once when turning it on). ALTRun itself keeps normal rights."
         s["Prefs.CapsLockElevated.NeedsMode"] := "Choose how Caps Lock switches above first."

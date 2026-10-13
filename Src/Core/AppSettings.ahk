@@ -255,6 +255,7 @@ class AppSettings {
                 "SecondaryHotkey"     , "!r",                               ; Alt+R
                 "DoubleTap"           , "",                                ; 双击 Ctrl / Shift 呼出搜索窗口 (和 Listary 一样), "" = 不用
                 "CapsLock"            , "",                                 ; 按 CapsLock: Layout = 切换输入法, Mode = 切换中英模式, "" = 照常 (见 CapsLockSwitch)
+                "CapsLockNotify"      , 1,                                  ; 开 / 关大写锁定时显示 "大写锁定: 开 / 关" 的提示
                 "CapsLockElevated"    , 0,                                  ; 管理员窗口里也生效: 用计划任务以管理员身份运行一个只管 CapsLock 的小助手 (见 CapsLockHelper)
                 "SelectionHotkey"     , "^!\",                              ; 选中文字 / 文件后按: 直接打开它们的操作 (Ctrl+Alt+\)
                 "Language"            , "auto",                             ; auto 或 Resources\Lang 里的语言代码 (zh-CN / zh-TW / ja), en
