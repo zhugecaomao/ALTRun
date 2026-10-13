@@ -62,6 +62,7 @@ Split over the "General", "Search Window" and "Hotkeys" (Caps Lock) pages in Pre
 | Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (usage tips show there when the status bar is off) |
 | StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: ☰ menu, usage tip, what `Enter` / `→` do); 0 = off, the usage tip shows in the empty search box |
 | ShowOn | `Mouse` | Which screen the search window opens on: `Mouse` the one with the mouse pointer / `Primary` the main screen / `Active` the one with the active window |
+| Fade | 0 | Fade the search window in and out when showing and hiding (about 120 ms in, up to the theme opacity; about 100 ms out); the window still gets focus at once, so typing is never delayed |
 | RememberPosition | 0 | Remember the position after dragging the search window (drag the empty space around the input box) |
 | Position | `{"X": 500, "Y": 200}` | The remembered position, in thousandths of the screen's work area: X 0 = far left, 1000 = far right; Y is the window's top edge measured from the top. Default = centered horizontally, 20% from the top |
 

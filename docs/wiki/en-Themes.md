@@ -94,4 +94,4 @@ Colors are always `RRGGBB` (without `#`); font sizes are in pt; sizes are pixels
 | Highlight | `005FE0` | Characters in the title that match your input (similar to Listary's highlighting); set it to the same value as Title to turn highlighting off |
 | SelectedHighlight | `0047B8` | Matching characters in the selected row's title |
 
-The window width, the number of visible results and the window position aren't part of a theme; set them in Preferences → Appearance (`Appearance.Width`, `Appearance.VisibleRows`, `Appearance.ShowOn`, `Appearance.RememberPosition`).
+The window width, the number of visible results and the window position aren't part of a theme; set them in Preferences → Appearance (`Appearance.Width`, `Appearance.VisibleRows`, `Appearance.ShowOn`, `Appearance.RememberPosition`), and so is fading in and out when showing and hiding (`Appearance.Fade`).

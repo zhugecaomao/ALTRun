@@ -423,6 +423,7 @@ class PreferencesWindow {
             , ["Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir)])
         PreferencesWindow._Section("Prefs.Section.Size")
         PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"], ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "number"])
+        PreferencesWindow._Check("Appearance.Fade", "Prefs.Fade", , , "Prefs.Group.Animation")
         PreferencesWindow._Section("Prefs.WindowPosition")
         PreferencesWindow._Choice("Appearance.ShowOn", "Prefs.ShowOn", ["Mouse", "Primary", "Active"]
             , [I18n.T("Prefs.ShowOn.Mouse"), I18n.T("Prefs.ShowOn.Primary"), I18n.T("Prefs.ShowOn.Active")], "B")

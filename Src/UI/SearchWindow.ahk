@@ -130,11 +130,14 @@ class SearchWindow {
         try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", g.Hwnd, "UInt", 3, "Int*", 1, "UInt", 4)   ; DWMWA_TRANSITIONS_FORCEDISABLED: 不要淡入淡出, 一按热键马上出现
         Win.SetCorner(g.Hwnd)
         Win.SetBorderColor(g.Hwnd, ThemeManager.Get("Border"))
+        if (SearchWindow.Opacity() < 255)
+            WindowFade.SetAlpha(g.Hwnd, SearchWindow.Opacity())
+    }
+
+    ; 主题的窗口透明度 (Opacity, 1-254); 没有设时 255 = 不透明
+    static Opacity() {
         opacity := ThemeManager.Get("Opacity")
-        if (IsNumber(opacity) && opacity >= 1 && opacity < 255) {
-            DetectHiddenWindows(true)                                       ; 窗口此时还是隐藏的
-            WinSetTransparent(Round(opacity), g.Hwnd)
-        }
+        return (IsNumber(opacity) && opacity >= 1 && opacity < 255) ? Round(opacity) : 255
     }
 
     ; 状态栏: 一个图片控件, 内容 (底色、分隔线、图标、提示、键帽) 画成位图放进去, 见 _RenderStatusBar
@@ -587,8 +590,12 @@ class SearchWindow {
         ; 先让 DWM 把窗口藏起来 (cloak), 显示并立即画好整个窗口之后再露出来
         hwnd := SearchWindow.Gui.Hwnd
         SearchWindow._Step("window")
-        cloaked := !SearchWindow.IsVisible() && SearchWindow._Cloak(hwnd, true)
+        hidden := !SearchWindow.IsVisible()
+        WindowFade.Stop()                                                   ; 上一次隐藏的影子还在淡出: 马上去掉
+        cloaked := hidden && SearchWindow._Cloak(hwnd, true)
         try {
+            if (hidden && AppSettings.Appearance["Fade"])                   ; 淡入 (见 WindowFade)
+                WindowFade.In(hwnd, SearchWindow.Opacity())
             SearchWindow.Gui.Show("x" pos.X " y" pos.Y " w" SearchWindow.Width " h" SearchWindow._WindowHeight(SearchWindow._VisibleCount()))
             SearchWindow._shownRows := SearchWindow._VisibleCount()
             SearchWindow._Step("redraw")
@@ -737,6 +744,8 @@ class SearchWindow {
             }
             SearchWindow._RememberQuery()
             SearchWindow._RestoreInputLanguage()
+            if AppSettings.Appearance["Fade"]
+                WindowFade.Out(SearchWindow.Gui.Hwnd)                       ; 窗口照常马上隐藏, 留一个影子淡出
             SearchWindow.Gui.Hide()
             SearchWindow._PrepareLater()
         }
