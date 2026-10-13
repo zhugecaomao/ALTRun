@@ -355,12 +355,12 @@ class PreferencesWindow {
         restore.Enabled := english.Value > 1
         english.OnEvent("Change", (*) => restore.Enabled := english.Value > 1)
         PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
-        PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")   ; Ctrl+↑ / ↓ 调出搜索历史, 也是输入时用的
+        history := PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")   ; Ctrl+↑ / ↓ 调出搜索历史, 也是输入时用的
         PreferencesWindow._Section("Prefs.Section.EmptyBox")
         placeholder := PreferencesWindow._InlineField("Appearance.Placeholder", "Prefs.Placeholder", "M")
         Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; 留空时灰色显示默认的文字
         recent := PreferencesWindow._InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
-        PreferencesWindow._AlignLeft(placeholder, recent)                   ; 两个输入框左边对齐
+        PreferencesWindow._AlignLeft(history, placeholder, recent)          ; 这一页的几个输入框左边对齐
     }
 
     static _BuildAppearance() {

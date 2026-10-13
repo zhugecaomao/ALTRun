@@ -1863,13 +1863,13 @@ class Tests {
             limit := PreferencesWindow.ButtonY - 6
             rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
             for index, page in PreferencesWindow.Pages {
-                if (page.Key = "Prefs.Page.Window") {                       ; 空搜索框: 提示文字和最近项目数的输入框左边对齐
-                    edits := []
+                if (page.Key = "Prefs.Page.Window") {                       ; 搜索历史条数、提示文字、最近项目数的输入框左边对齐
+                    lefts := ""
                     for ctrl in page.Controls
                         if (ctrl.Type = "Edit")
-                            edits.Push(ctrl)
-                    edits[edits.Length - 1].GetPos(&x1), edits[edits.Length].GetPos(&x2)
-                    TestRunner.Equal("PreferencesFit." lang " empty box inputs aligned", x1, x2)
+                            ctrl.GetPos(&x), lefts .= (lefts = "" ? "" : " ") x
+                    first := StrSplit(lefts, " ")[1]
+                    TestRunner.Equal("PreferencesFit." lang " window page inputs aligned", lefts, Trim(first " " first " " first))
                 }
                 bottom := 0, right := 0
                 for ctrl in page.Controls {

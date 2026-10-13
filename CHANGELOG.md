@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.7]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 搜索窗口: "搜索历史条数" 的输入框也和 "提示文字"、"显示几个最近使用的项目" 左边对齐
+
 ## [2026.10.12.6]
 
 测试版。
@@ -606,7 +615,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.7...HEAD
+[2026.10.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.6...2026.10.12.7
 [2026.10.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.5...2026.10.12.6
 [2026.10.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.4...2026.10.12.5
 [2026.10.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.3...2026.10.12.4
