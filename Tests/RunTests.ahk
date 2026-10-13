@@ -1900,6 +1900,7 @@ class Tests {
                     for ctrl in page.Controls
                         hint := hint || (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.CapsLockElevated.NeedsMode"))
                     TestRunner.True("PreferencesFit." lang " caps lock helper hint", hint)
+                    TestRunner.Equal("PreferencesFit." lang " shield space", StrLen(PreferencesWindow.ShieldPad(4)) " " StrLen(PreferencesWindow.ShieldPad(3)), "5 7")
                 }
                 if (page.Key = "Prefs.Page.Window") {                       ; 搜索历史条数、提示文字、最近项目数的输入框左边对齐
                     lefts := ""

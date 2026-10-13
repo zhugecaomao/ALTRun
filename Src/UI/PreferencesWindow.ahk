@@ -267,21 +267,36 @@ class PreferencesWindow {
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
 
-    ; 复选框文字后面放 Windows 的 UAC 小盾牌 (imageres.dll 的资源 78, 和操作面板的 "以管理员身份运行" 一样; 取不到时用
-    ; 系统的 IDI_SHIELD): 改这个选项要确认 UAC。复选框里放不进图标 (BCM_SETSHIELD 只用于按钮), 所以单独一个图片控件
-    static _ShieldAfter(check) {
+    ; 复选框文字前面放 Windows 的 UAC 小盾牌 (imageres.dll 的资源 78, 和操作面板的 "以管理员身份运行" 一样; 取不到时用
+    ; 系统的 IDI_SHIELD): 改这个选项要确认 UAC。复选框里放不进图标 (BCM_SETSHIELD 只用于按钮), 所以文字前面空出图标的
+    ; 位置, 放一个图片控件压在上面 (没有 SS_NOTIFY, 点它等于点复选框)。后建的控件在 Z 序的下面, 所以把图片挪到最上面,
+    ; 复选框加 WS_CLIPSIBLINGS: 启用 / 禁用时复选框整片重画, 不然会把盾牌盖掉
+    static _ShieldBefore(check) {
         size := Win.Scale(16), hIcon := 0
         DllCall("user32\PrivateExtractIconsW", "WStr", "imageres.dll", "Int", -78, "Int", size, "Int", size, "Ptr*", &hIcon, "Ptr", 0, "UInt", 1, "UInt", 0)
         if !hIcon
             hIcon := DllCall("LoadImageW", "Ptr", 0, "Ptr", 32518, "UInt", 1, "Int", size, "Int", size, "UInt", 0x8000, "Ptr")   ; IDI_SHIELD, IMAGE_ICON, LR_SHARED
         if !hIcon
             return
+        spaceW := Max(1, Win.TextExtent(check.Hwnd, "    ") * 96 / A_ScreenDPI / 4)
+        check.Text := PreferencesWindow.ShieldPad(spaceW) check.Text
+        check.Opt("+0x4000000")                                             ; WS_CLIPSIBLINGS
         check.GetPos(&x, &y, , &h)
-        textW := Ceil(Win.TextExtent(check.Hwnd, check.Text) * 96 / A_ScreenDPI)
         saved := PreferencesWindow._y
         PreferencesWindow._y := y + (h - 16) // 2
-        try PreferencesWindow._Add("Picture", "x" (x + 18 + textW + 6) " w16 h16", "HICON:" hIcon)
+        try {
+            shield := PreferencesWindow._Add("Picture", "x" (x + 18) " w16 h16", "HICON:" hIcon)
+            DllCall("SetWindowPos", "Ptr", shield.Hwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; HWND_TOP; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
+        }
         PreferencesWindow._y := saved
+    }
+
+    ; 文字前面给 16 像素的盾牌和一点间距留出位置的空格 (spaceW: 一个空格的宽度)
+    static ShieldPad(spaceW) {
+        pad := ""
+        Loop Ceil(20 / spaceW)
+            pad .= " "
+        return pad
     }
 
     ; "管理员窗口里也生效" 打开时建计划任务、关掉时删掉 (各确认一次 UAC)。建不成 (取消了 UAC) 时说明并把选项关回去;
@@ -690,7 +705,7 @@ class PreferencesWindow {
         elevated := PreferencesWindow._Check("General.CapsLockElevated", "Prefs.CapsLockElevated")   ; 管理员窗口里也生效 (CapsLockHelper)
         controls := PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls
         elevatedDesc := controls[controls.Length]                           ; 刚加的说明 (按两行的长度建好, 换短的文字也放得下)
-        PreferencesWindow._ShieldAfter(elevated)                            ; 打开 / 关掉时要确认 UAC
+        PreferencesWindow._ShieldBefore(elevated)                           ; 打开 / 关掉时要确认 UAC
         update := (*) => (elevated.Enabled := capsLock.Value > 1
             , elevatedDesc.Text := I18n.T(elevated.Enabled ? "Prefs.CapsLockElevated.Desc" : "Prefs.CapsLockElevated.NeedsMode"))   ; 灰着时说明为什么
         update()

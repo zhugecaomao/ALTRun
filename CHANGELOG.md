@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.16]
+
+测试版。
+
+Test build.
+
+### 改进
+- UAC 小盾牌挪到 "在管理员窗口里也生效" 文字的前面; 修复切换 CapsLock 键的选项后盾牌消失
+
 ## [2026.10.12.15]
 
 测试版。
@@ -703,7 +712,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.16...HEAD
+[2026.10.12.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.15...2026.10.12.16
 [2026.10.12.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.14...2026.10.12.15
 [2026.10.12.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.13...2026.10.12.14
 [2026.10.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.12...2026.10.12.13
