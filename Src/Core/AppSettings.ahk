@@ -280,6 +280,7 @@ class AppSettings {
                 "VisibleRows", 8,
                 "Placeholder", "",                                          ; 空搜索框里的灰色文字, 空 = 默认 ("ALTRun 搜索")
                 "StatusBar"  , 1,                                           ; 搜索窗口底部的状态栏 (☰ 菜单、使用提示、选中项的 Enter 操作和 →)
+                "Fade"       , 0,                                           ; 显示 / 隐藏时淡入淡出 (见 WindowFade)
                 "ShowOn"     , "Mouse",                                     ; 显示在哪块屏幕: Mouse 鼠标所在 / Primary 主屏幕 / Active 当前窗口所在
                 "RememberPosition", 0,                                      ; 拖动窗口后记住位置
                 "Position"   , Map("X", 500, "Y", 200)                      ; 记住的位置: 屏幕里的千分比 (见 SearchWindow.Place)

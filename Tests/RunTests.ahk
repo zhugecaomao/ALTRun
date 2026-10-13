@@ -37,6 +37,7 @@
 #Include %A_ScriptDir%\..\Src\UI\NavIcons.ahk
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
+#Include %A_ScriptDir%\..\Src\UI\WindowFade.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
 #Include %A_ScriptDir%\..\Src\UI\Hud.ahk
 #Include %A_ScriptDir%\..\Src\UI\ItemEditor.ahk
@@ -87,7 +88,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -3019,6 +3020,45 @@ class Tests {
     }
 
     ; CapsLock 切换中 / 英模式要做什么 (Win.ImeTarget), 包括读数不跟着变的输入法 (#154)
+    ; 淡入淡出: 透明度曲线; 真的窗口淡入时先透明、结束后是主题的透明度; 淡出时留一个影子, 结束后消失
+    static WindowFade() {
+        eq := (n, a, e) => TestRunner.Equal("WindowFade." n, a, e)
+        eq("alpha start", WindowFade.Alpha(0, 120, 0, 255), 0)
+        eq("alpha end", WindowFade.Alpha(120, 120, 0, 255), 255)
+        eq("alpha after end", WindowFade.Alpha(500, 120, 0, 230), 230)
+        eq("alpha ease-out (half way is past half)", WindowFade.Alpha(60, 120, 0, 255) > 200, true)
+        eq("alpha fade out", WindowFade.Alpha(50, 100, 255, 0) < 64, true)
+        eq("alpha no duration", WindowFade.Alpha(0, 0, 255, 0), 0)
+        eq("alpha before start", WindowFade.Alpha(-5, 100, 0, 255), 0)
+        eq("setting off by default", AppSettings.Defaults()["Appearance"]["Fade"], 0)
+
+        g := Gui("-Caption +ToolWindow")
+        g.Add("Text", "w200 h60", "fade")
+        DetectHiddenWindows(true)
+        WindowFade.In(g.Hwnd, 230)
+        eq("in: transparent before showing", WinGetTransparent("ahk_id " g.Hwnd), 0)
+        eq("in: running", WindowFade.Running, true)
+        g.Show("NA x10 y10 w200 h60")
+        WindowFade.Stop()
+        eq("in: theme opacity after", WinGetTransparent("ahk_id " g.Hwnd), 230)
+        eq("in: stopped", WindowFade.Running, false)
+
+        WindowFade.In(g.Hwnd, 255)
+        WindowFade.Out(g.Hwnd)                                              ; 淡入还没完就隐藏: 窗口恢复不透明, 换成影子
+        eq("out: window opaque again", WinGetTransparent("ahk_id " g.Hwnd), 255)
+        eq("out: ghost shown", WindowFade.GhostVisible, true)
+        g.Hide()
+        start := A_TickCount
+        while (WindowFade.Running && A_TickCount - start < 2000)
+            Sleep(10)
+        eq("out: finished by itself", WindowFade.Running, false)
+        eq("out: ghost gone", WindowFade.GhostVisible, false)
+
+        WindowFade.Out(g.Hwnd)                                              ; 窗口不在屏幕上: 没有影子
+        eq("out: hidden window has no ghost", WindowFade.Running || WindowFade.GhostVisible, false)
+        g.Destroy()
+    }
+
     static ImeToggle() {
         show := (p) => (p.Chinese ? "zh" : "en") " open " p.Open " conv " p.Conv (p.Remembered ? " remembered" : "")
         eq := (n, p, e) => TestRunner.Equal("ImeToggle." n, show(p), e)

@@ -94,4 +94,4 @@ Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些�
 | Highlight | `005FE0` | 标题里和输入匹配的字 (类似 Listary 的高亮); 不想要高亮时设成和 Title 一样 |
 | SelectedHighlight | `0047B8` | 选中行标题里和输入匹配的字 |
 
-窗口宽度、显示几行结果和窗口位置不属于主题, 在 偏好设置 → 外观 里设置 (`Appearance.Width`、`Appearance.VisibleRows`、`Appearance.ShowOn`、`Appearance.RememberPosition`)。
+窗口宽度、显示几行结果和窗口位置不属于主题, 在 偏好设置 → 外观 里设置 (`Appearance.Width`、`Appearance.VisibleRows`、`Appearance.ShowOn`、`Appearance.RememberPosition`), 显示 / 隐藏时淡入淡出也在这里 (`Appearance.Fade`)。

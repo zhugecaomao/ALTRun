@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.18]
+
+测试版。
+
+Test build.
+
+### 新增
+- **搜索窗口淡入淡出** (#158): 偏好设置 → 外观 → 动画 → "显示和隐藏窗口时淡入淡出" (`Appearance.Fade`, 默认关)。淡入约 120 ms, 到主题的透明度为止; 窗口照样马上获得焦点, 不影响打字。隐藏时窗口照常马上隐藏 (焦点、接着运行的程序和粘贴都不受影响), 留一个影子淡出约 100 ms
+
 ## [2026.10.12.17]
 
 测试版。
@@ -721,7 +730,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.18...HEAD
+[2026.10.12.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.17...2026.10.12.18
 [2026.10.12.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.16...2026.10.12.17
 [2026.10.12.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.15...2026.10.12.16
 [2026.10.12.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.14...2026.10.12.15
