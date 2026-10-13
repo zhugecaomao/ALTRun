@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.8]
+
+测试版。
+
+Test build.
+
+### 修复
+- 搜索结果的最后一行下面被切掉一截 (选中最后一行时看不到下面的两个圆角): 列表实际每行比主题的行高高 1 像素, 列表和窗口却按主题的行高算, 8 行时最后一行少了 8 像素。现在按列表实际的行高排版
+
 ## [2026.10.12.7]
 
 测试版。
@@ -615,7 +624,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.8...HEAD
+[2026.10.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.7...2026.10.12.8
 [2026.10.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.6...2026.10.12.7
 [2026.10.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.5...2026.10.12.6
 [2026.10.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.4...2026.10.12.5

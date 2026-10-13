@@ -105,6 +105,9 @@ class SearchWindow {
         list.ModifyCol(1, w)
         rowImageList := DllCall("comctl32\ImageList_Create", "Int", 1, "Int", SearchWindow.RowHeight, "UInt", 0x21, "Int", 1, "Int", 1, "Ptr")
         list.SetImageList(rowImageList, 1)                                  ; 空白小图标列表只用来撑开行高
+        ; 实际的行高: ListView 比图标列表高 1 像素 (2026-10: 主题 48 像素的行实际 49), 列表和窗口按 48 算时
+        ; 每行差 1 像素, 8 行时最后一行下面被切掉 8 像素 (选中行的下面两个圆角看不到)。按量出来的行高排版
+        SearchWindow.RowHeight := Win.ListRowHeight(list, SearchWindow.RowHeight)
         list.OnNotify(-12, (ctrl, lParam) => SearchWindow._OnCustomDraw(lParam))    ; NM_CUSTOMDRAW
         list.OnEvent("Click", (ctrl, row) => SearchWindow._OnRowClick(row))
         list.OnEvent("DoubleClick", (ctrl, row) => SearchWindow._OnRowDoubleClick(row))

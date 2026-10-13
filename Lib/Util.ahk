@@ -190,6 +190,16 @@ class Win {
     }
 
     ; 控件里一行文字的宽度 (像素, 用控件自己的字体)
+    ; ListView 一行实际的高度 (像素): 临时加一行量出来 (LVM_GETITEMRECT); 量不到时 fallback
+    static ListRowHeight(list, fallback) {
+        added := !list.GetCount() && list.Add()
+        rect := Buffer(16, 0)                                               ; left = LVIR_BOUNDS (0)
+        height := SendMessage(0x100E, 0, rect.Ptr, list.Hwnd) ? NumGet(rect, 12, "Int") - NumGet(rect, 4, "Int") : 0   ; LVM_GETITEMRECT
+        if added
+            list.Delete()
+        return (height > 0) ? height : fallback
+    }
+
     ; 控件字体的 {Ascent: 基线到顶部, Cap: 大写字母 H 的高度} (像素); 量不到时都是 0
     static CapMetrics(hwnd) {
         result := {Ascent: 0, Cap: 0}
