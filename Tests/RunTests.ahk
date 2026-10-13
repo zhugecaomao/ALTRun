@@ -1863,6 +1863,14 @@ class Tests {
             limit := PreferencesWindow.ButtonY - 6
             rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
             for index, page in PreferencesWindow.Pages {
+                if (page.Key = "Prefs.Page.Window") {                       ; 搜索历史条数、提示文字、最近项目数的输入框左边对齐
+                    lefts := ""
+                    for ctrl in page.Controls
+                        if (ctrl.Type = "Edit")
+                            ctrl.GetPos(&x), lefts .= (lefts = "" ? "" : " ") x
+                    first := StrSplit(lefts, " ")[1]
+                    TestRunner.Equal("PreferencesFit." lang " window page inputs aligned", lefts, Trim(first " " first " " first))
+                }
                 bottom := 0, right := 0
                 for ctrl in page.Controls {
                     ctrl.GetPos(&x, &y, &w, &h)
@@ -3967,6 +3975,33 @@ Func | PTTools | PT Tools (AHK)=99
         SearchWindow._imeBefore := {Open: 1, Conv: 0x401}
         SearchWindow._RestoreInputLanguage()                                 ; 选的是英语键盘: 不动中 / 英模式
         TestRunner.Equal("Input.keyboard choice leaves the IME mode alone", SearchWindow._imeBefore, "")
+        savedPlaceholder := AppSettings.Appearance["Placeholder"]
+        AppSettings.Appearance["Placeholder"] := ""
+        TestRunner.Equal("Placeholder.default", SearchWindow.Placeholder(), "ALTRun Search")
+        AppSettings.Appearance["Placeholder"] := " "
+        TestRunner.Equal("Placeholder.only spaces: nothing", SearchWindow.Placeholder(), "")
+        AppSettings.Appearance["Placeholder"] := " Type to search "
+        TestRunner.Equal("Placeholder.custom (trimmed)", SearchWindow.Placeholder(), "Type to search")
+        AppSettings.Appearance["Placeholder"] := savedPlaceholder
+        ; 输入框按大写字母的高度居中 (#158): 150% 时实测基线在 42、大写字母高 33, 往下挪 7 像素
+        TestRunner.Equal("InputTop.cap centered", SearchWindow.InputTop(64, 64, 21, 42, 33), 7)
+        TestRunner.Equal("InputTop.at most half the padding", SearchWindow.InputTop(64, 64, 8, 42, 33), 4)
+        TestRunner.Equal("InputTop.no metrics: centered", SearchWindow.InputTop(60, 40, 14, 0, 0), 10)
+        TestRunner.Equal("InputTop.never above centered", SearchWindow.InputTop(60, 40, 14, 42, 10), 10)
+        g := Gui()
+        g.SetFont("s20", "Segoe UI")
+        metrics := Win.CapMetrics(g.AddEdit("w200 r1").Hwnd)
+        ; 搜索结果列表的实际行高 (最后一行不被切掉): 和 SearchWindow 一样用 48 像素高的图标列表撑开行高
+        list := g.AddListView("w300 h0 -Hdr +0x2000", ["Result"])
+        images := DllCall("comctl32\ImageList_Create", "Int", 1, "Int", 48, "UInt", 0x21, "Int", 1, "Int", 1, "Ptr")
+        list.SetImageList(images, 1)
+        rowH := Win.ListRowHeight(list, 0)
+        TestRunner.True("ListRowHeight.measured (" rowH ")", rowH >= 48 && rowH <= 50)
+        TestRunner.Equal("ListRowHeight.temporary row removed", list.GetCount(), 0)
+        list.Add(), list.Add()
+        TestRunner.Equal("ListRowHeight.existing rows kept", (Win.ListRowHeight(list, 0) = rowH) " " list.GetCount(), "1 2")
+        g.Destroy()
+        TestRunner.True("InputTop.font metrics (ascent " metrics.Ascent ", cap " metrics.Cap ")", metrics.Ascent > metrics.Cap && metrics.Cap > 10)
         TestRunner.Equal("Input.english choices", AppSettings.Defaults()["General"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
         AppSettings.General["SwitchToEnglishInput"] := saved
         TestRunner.True("App.Website", RegExMatch(App.Website, "^https://\S+/$") > 0)

@@ -190,6 +190,34 @@ class Win {
     }
 
     ; 控件里一行文字的宽度 (像素, 用控件自己的字体)
+    ; ListView 一行实际的高度 (像素): 临时加一行量出来 (LVM_GETITEMRECT); 量不到时 fallback
+    static ListRowHeight(list, fallback) {
+        added := !list.GetCount() && list.Add()
+        rect := Buffer(16, 0)                                               ; left = LVIR_BOUNDS (0)
+        height := SendMessage(0x100E, 0, rect.Ptr, list.Hwnd) ? NumGet(rect, 12, "Int") - NumGet(rect, 4, "Int") : 0   ; LVM_GETITEMRECT
+        if added
+            list.Delete()
+        return (height > 0) ? height : fallback
+    }
+
+    ; 控件字体的 {Ascent: 基线到顶部, Cap: 大写字母 H 的高度} (像素); 量不到时都是 0
+    static CapMetrics(hwnd) {
+        result := {Ascent: 0, Cap: 0}
+        hdc := DllCall("GetDC", "Ptr", hwnd, "Ptr")
+        font := SendMessage(0x31, 0, 0, hwnd)                               ; WM_GETFONT
+        old := DllCall("SelectObject", "Ptr", hdc, "Ptr", font, "Ptr")
+        tm := Buffer(60, 0)                                                 ; TEXTMETRICW
+        if DllCall("GetTextMetricsW", "Ptr", hdc, "Ptr", tm)
+            result.Ascent := NumGet(tm, 4, "Int")
+        gm := Buffer(20, 0), mat := Buffer(16, 0)                           ; GLYPHMETRICS, MAT2 (单位矩阵)
+        NumPut("Short", 1, mat, 2), NumPut("Short", 1, mat, 14)
+        if (DllCall("GetGlyphOutlineW", "Ptr", hdc, "UInt", Ord("H"), "UInt", 0, "Ptr", gm, "UInt", 0, "Ptr", 0, "Ptr", mat, "UInt") != 0xFFFFFFFF)
+            result.Cap := NumGet(gm, 12, "Int")                             ; gmptGlyphOrigin.y: 字形顶部在基线上面多高
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", old)
+        DllCall("ReleaseDC", "Ptr", hwnd, "Ptr", hdc)
+        return result
+    }
+
     static TextExtent(hwnd, text) {
         hdc := DllCall("GetDC", "Ptr", hwnd, "Ptr")
         font := SendMessage(0x31, 0, 0, hwnd)                               ; WM_GETFONT

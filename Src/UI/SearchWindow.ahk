@@ -92,9 +92,10 @@ class SearchWindow {
         searchBox := g.AddEdit("x" pad " y" pad " w" (w - 2 * pad) " r1 -Multi -E0x200 -VScroll -WantReturn Background" background)
         searchBox.GetPos(, , , &editH)
         SearchWindow.InputHeight := Max(editH, Win.Scale(40))
-        searchBox.Move(pad, pad + (SearchWindow.InputHeight - editH) // 2)
+        metrics := Win.CapMetrics(searchBox.Hwnd)
+        searchBox.Move(pad, pad + SearchWindow.InputTop(SearchWindow.InputHeight, editH, pad, metrics.Ascent, metrics.Cap))
         searchBox.OnEvent("Change", (*) => SearchWindow._OnInputChange())
-        Win.SetCueBanner(searchBox.Hwnd, I18n.T("Search.Placeholder"))
+        Win.SetCueBanner(searchBox.Hwnd, SearchWindow.Placeholder())
 
         listTop := pad + SearchWindow.InputHeight + pad // 2
         separator := g.AddText("x0 y" listTop " w" w " h1 Hidden Background" ThemeManager.Get("Separator"))
@@ -104,6 +105,9 @@ class SearchWindow {
         list.ModifyCol(1, w)
         rowImageList := DllCall("comctl32\ImageList_Create", "Int", 1, "Int", SearchWindow.RowHeight, "UInt", 0x21, "Int", 1, "Int", 1, "Ptr")
         list.SetImageList(rowImageList, 1)                                  ; 空白小图标列表只用来撑开行高
+        ; 实际的行高: ListView 比图标列表高 1 像素 (2026-10: 主题 48 像素的行实际 49), 列表和窗口按 48 算时
+        ; 每行差 1 像素, 8 行时最后一行下面被切掉 8 像素 (选中行的下面两个圆角看不到)。按量出来的行高排版
+        SearchWindow.RowHeight := Win.ListRowHeight(list, SearchWindow.RowHeight)
         list.OnNotify(-12, (ctrl, lParam) => SearchWindow._OnCustomDraw(lParam))    ; NM_CUSTOMDRAW
         list.OnEvent("Click", (ctrl, row) => SearchWindow._OnRowClick(row))
         list.OnEvent("DoubleClick", (ctrl, row) => SearchWindow._OnRowDoubleClick(row))
@@ -1117,8 +1121,25 @@ class SearchWindow {
         if SearchWindow.FileMode
             text := I18n.T("Search.FilesPlaceholder")
         else
-            text := (SearchWindow._tip != "" && !SearchWindow.StatusHeight) ? SearchWindow._tip : I18n.T("Search.Placeholder")   ; 有状态栏时提示显示在状态栏
+            text := (SearchWindow._tip != "" && !SearchWindow.StatusHeight) ? SearchWindow._tip : SearchWindow.Placeholder()   ; 有状态栏时提示显示在状态栏
         Win.SetCueBanner(SearchWindow.Input.Hwnd, text)
+    }
+
+    ; 输入框在输入区 (高 bandH) 里的上边距: 按大写字母的高度居中 (ascent: 基线到字体顶部, cap: 大写字母高度)。
+    ; 按整个字体的高度居中时下面还算上了 g、y 等下伸笔画的空间, 字看起来偏上 (2026-10 #158; 150% 时上边空 7 像素、
+    ; 下边空 17 像素)。往下挪最多 pad / 2 (下面还有边距, 没有结果时窗口在输入区下面也留了 pad); 量不到字形时照常居中
+    static InputTop(bandH, editH, pad, ascent, cap) {
+        centered := (bandH - editH) // 2
+        if (ascent <= 0 || cap <= 0 || cap > ascent)
+            return centered
+        return Max(centered, Min(Round(bandH / 2 - (ascent - cap / 2)), bandH - editH + pad // 2))
+    }
+
+    ; 空搜索框里的灰色文字: 设置里写了 (Appearance.Placeholder) 就用它, 没写 (空) 时 "ALTRun 搜索";
+    ; 只写了空格 = 什么都不显示
+    static Placeholder() {
+        text := AppSettings.Appearance.Get("Placeholder", "")
+        return (text = "") ? I18n.T("Search.Placeholder") : Trim(text)
     }
 
     ;---------------------------------------------------------------------------
