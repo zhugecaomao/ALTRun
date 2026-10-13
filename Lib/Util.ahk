@@ -444,6 +444,20 @@ class Win {
         return DllCall("GetKeyboardLayout", "UInt", threadId, "Ptr")
     }
 
+    ; 进程是否以管理员身份运行 (提升了权限的令牌); 打不开 (例如普通权限查管理员的进程) 时 false
+    static IsElevated(pid) {
+        elevated := 0
+        if !(process := DllCall("OpenProcess", "UInt", 0x1000, "Int", 0, "UInt", pid, "Ptr"))   ; PROCESS_QUERY_LIMITED_INFORMATION
+            return false
+        token := 0
+        if DllCall("advapi32\OpenProcessToken", "Ptr", process, "UInt", 0x8, "Ptr*", &token) {   ; TOKEN_QUERY
+            DllCall("advapi32\GetTokenInformation", "Ptr", token, "Int", 20, "UInt*", &elevated, "UInt", 4, "UInt*", &size := 0)   ; TokenElevation
+            DllCall("CloseHandle", "Ptr", token)
+        }
+        DllCall("CloseHandle", "Ptr", process)
+        return elevated != 0
+    }
+
     ; Windows 设置里打开了 "允许我为每个应用窗口使用不同的输入法" (SPI_GETTHREADLOCALINPUTSETTINGS)
     static PerWindowInputMethod() {
         on := 0

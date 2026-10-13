@@ -926,6 +926,7 @@ class I18n {
         s["Prefs.ResetLearning.Desc"]  := "Clears the learned result order and the search history."
         s["Prefs.ResetDone"]           := "Learned ranking and search history cleared."
         s["Prefs.Version"]             := "Version {1}"
+        s["App.Admin"]                 := "Administrator"
         s["Prefs.Homepage"]            := "Homepage"
         s["Prefs.ReportIssue"]         := "Report an Issue"
 

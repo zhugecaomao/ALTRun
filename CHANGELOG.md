@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.12.9]
+
+测试版。
+
+Test build.
+
+### 改进
+- **以管理员身份运行 ALTRun** (#158): 管理员权限的窗口在前台时, CapsLock 切换输入法、双击 Ctrl、片段自动展开、粘贴到这个窗口等不起作用 (Windows 不允许普通权限的程序控制它们)。经常需要的话可以让 ALTRun 也以管理员身份运行, Wiki 的常见问题里写了用计划任务开机自动运行 (不弹 UAC) 的步骤和要注意的地方。这次让以管理员身份运行时一切照常:
+  - Everything 文件搜索有结果、Quick Switch 能读到 Total Commander 的当前文件夹、资源管理器重启后托盘图标还在 (以前这些普通权限程序发来的消息被 Windows 挡掉)
+  - 再启动 ALTRun (双击、开始菜单、发送到) 交给正在运行的那个, 不会变成两个同时运行
+  - 右键 → 以管理员身份运行时替换掉正在运行的普通权限的 ALTRun (以前把参数交过去后自己退出, 还是普通权限)
+  - 托盘图标的提示和 偏好设置 → 高级 的版本号后面显示 "(管理员)"
+
 ## [2026.10.12.8]
 
 测试版。
@@ -624,7 +637,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.9...HEAD
+[2026.10.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.8...2026.10.12.9
 [2026.10.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.7...2026.10.12.8
 [2026.10.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.6...2026.10.12.7
 [2026.10.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.5...2026.10.12.6

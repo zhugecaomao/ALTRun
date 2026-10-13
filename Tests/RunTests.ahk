@@ -4004,6 +4004,11 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("InputTop.font metrics (ascent " metrics.Ascent ", cap " metrics.Cap ")", metrics.Ascent > metrics.Cap && metrics.Cap > 10)
         TestRunner.Equal("Input.english choices", AppSettings.Defaults()["General"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
         AppSettings.General["SwitchToEnglishInput"] := saved
+        ; 以管理员身份运行 (#158): 新启动的是管理员、正在运行的不是时替换它, 其它情况照常把参数交过去
+        TestRunner.Equal("Admin.takes over", (App.TakesOver(true, false) ? 1 : 0) (App.TakesOver(true, true) ? 1 : 0) (App.TakesOver(false, false) ? 1 : 0) (App.TakesOver(false, true) ? 1 : 0), "1000")
+        TestRunner.Equal("Admin.this process", Win.IsElevated(ProcessExist()) ? 1 : 0, A_IsAdmin ? 1 : 0)
+        TestRunner.Equal("Admin.no such process", Win.IsElevated(0) ? 1 : 0, 0)
+        TestRunner.Equal("Admin.suffix", App.AdminSuffix(), A_IsAdmin ? " (Administrator)" : "")
         TestRunner.True("App.Website", RegExMatch(App.Website, "^https://\S+/$") > 0)
         TestRunner.True("UpdateChecker.newer", UpdateChecker.Compare("2026.10.01", "2026.09.23") > 0)
         TestRunner.True("UpdateChecker.same", UpdateChecker.Compare("2026.09.23", "2026.09.23") = 0)

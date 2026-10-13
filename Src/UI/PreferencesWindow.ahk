@@ -737,7 +737,7 @@ class PreferencesWindow {
         PreferencesWindow._Add("Text", "x" textX " w" textW, I18n.T("App.Tagline"))
         PreferencesWindow._y := top + 52
         copyright := "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao"         ; 版本号以发布年份开头
-        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) "   ·   " copyright "   ·   GPL-3.0")
+        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) App.AdminSuffix() "   ·   " copyright "   ·   GPL-3.0")
         PreferencesWindow._y := top + 74
         links := ""
         for link in [[App.Website, I18n.T("Prefs.Homepage")], [App.RepoUrl, "GitHub"], [App.RepoUrl "/releases", I18n.T("Update.ReleaseNotes")]
