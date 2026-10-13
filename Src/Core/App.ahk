@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.12.8"
+    static Version := "2026.10.12.9"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -38,6 +38,8 @@ class App {
     static Start() {
         if App.HandOff()
             ExitApp()
+        if A_IsAdmin
+            App._AllowNormalPrograms()
         started := Logger.Ms()
         ; 窗口命令 (WinActivate 等) 之后不再默认等 100 ms: 等待期间 AHK 会嵌套处理消息,
         ; 呼出窗口时在这里遇到重画消息不断的情况会一直等下去 (界面卡住)。需要等的地方用 WinWaitActive
@@ -46,7 +48,7 @@ class App {
         App._MoveLegacyResources()
         AppSettings.Load()
         Logger.Enabled := AppSettings.General["SaveLog"] ? true : false
-        Logger.Debug("===== " App.Name " " App.Version " starting =====")
+        Logger.Debug("===== " App.Name " " App.Version (A_IsAdmin ? " (administrator)" : "") " starting =====")
         if (App._handOffNote != "")
             Logger.Debug(App._handOffNote)
         Logger.Time("startup: settings", started)                          ; 打开 "写入调试日志" 时记录启动各阶段的耗时
@@ -111,10 +113,14 @@ class App {
             return false
         if !App.IsRestart(DllCall("GetCommandLineW", "Str")) {
             DllCall("GetWindowThreadProcessId", "Ptr", running, "UInt*", &pid := 0)
-            DllCall("AllowSetForegroundWindow", "UInt", pid)                ; 它弹出的窗口可以切到最前面 (这个进程是用户刚启动的, 有这个权限)
-            if App.SendArgs(running, A_Args)
-                return true
-            App._handOffNote := "App: running instance did not answer, replacing it"
+            if App.TakesOver(A_IsAdmin, A_IsAdmin && Win.IsElevated(pid)) {
+                App._handOffNote := "App: started as administrator, replacing the instance without administrator rights"
+            } else {
+                DllCall("AllowSetForegroundWindow", "UInt", pid)            ; 它弹出的窗口可以切到最前面 (这个进程是用户刚启动的, 有这个权限)
+                if App.SendArgs(running, A_Args)
+                    return true
+                App._handOffNote := "App: running instance did not answer, replacing it"
+            }
         }
         App._CloseInstance(running)
         return false
@@ -142,6 +148,21 @@ class App {
     }
 
     ; App.Restart 启动的: 命令行是 "程序" /restart ...
+    ; 新启动的这个以管理员身份运行, 正在运行的却不是 (右键 → 以管理员身份运行, 或者计划任务比开机启动的快捷方式晚启动):
+    ; 替换掉它, 不然参数交过去后自己退出, 还是普通权限。反过来 (普通的交给管理员的) 照常交过去
+    static TakesOver(selfAdmin, runningElevated) => (selfAdmin && !runningElevated)
+
+    ; 以管理员身份运行时, Windows 挡掉普通权限的程序发来的消息 (UIPI)。放行 WM_COPYDATA: Everything 回传的搜索结果、
+    ; Total Commander 回复的当前文件夹 (QuickSwitch)、再启动的 ALTRun 交过来的参数; 还有资源管理器重启后重建托盘图标的
+    ; TaskbarCreated。收到 WM_COPYDATA 时各自先认标识, 只处理自己等的回复
+    static _AllowNormalPrograms() {
+        for msg in [0x4A, DllCall("RegisterWindowMessageW", "Str", "TaskbarCreated", "UInt")]
+            DllCall("ChangeWindowMessageFilterEx", "Ptr", A_ScriptHwnd, "UInt", msg, "UInt", 1, "Ptr", 0)   ; MSGFLT_ALLOW
+    }
+
+    ; 以管理员身份运行时显示在名称 / 版本号后面: " (管理员)"
+    static AdminSuffix() => A_IsAdmin ? " (" I18n.T("App.Admin") ")" : ""
+
     static IsRestart(commandLine) {
         return RegExMatch(commandLine, 'i)^\s*("[^"]*"|\S+)\s+/restart(\s|$)') ? true : false
     }
@@ -329,7 +350,7 @@ class App {
         tray.Add(I18n.T("Tray.Exit"), (*) => App.Quit())
         tray.Default := I18n.T("Tray.Show")
         tray.ClickCount := 1
-        A_IconTip := App.Name " - " App._HotkeyText()
+        A_IconTip := App.Name App.AdminSuffix() " - " App._HotkeyText()
         A_IconHidden := false
     }
 

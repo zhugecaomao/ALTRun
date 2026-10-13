@@ -45,6 +45,7 @@
   "Action.SaveSnippet": "存为文字片段...",
   "Action.SearchWith": "用 {1} 搜索",
   "Action.Unpin": "取消置顶",
+  "App.Admin": "管理员",
   "App.ConfirmHide": "从搜索结果中删除 '{1}' 吗?\n\n不会卸载程序, 可以在 偏好设置 → 应用搜索 里恢复。",
   "App.Running": "ALTRun 已在运行, 按 {1} 开始搜索。",
   "App.Subtitle.Store": "应用商店应用",

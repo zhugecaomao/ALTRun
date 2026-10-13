@@ -43,6 +43,22 @@ In Preferences → Search Window, set "Switch to English when shown" to "English
 - Type the prefix: `;keyword` by default
 - Some programs (games, Remote Desktop, programs running as administrator) don't receive simulated input
 
+### Caps Lock and other features don't work in windows running as administrator
+Windows doesn't let programs with normal rights control windows running as administrator. While such a window is in front, switching the input method with Caps Lock, double-tapping Ctrl, snippet expansion, pasting a result into that window and Quick Switch for its dialogs don't work; showing ALTRun, searching and opening programs work as usual.
+
+If you need them often, run ALTRun as administrator too:
+- **As administrator at sign-in** (no UAC prompt): turn off "Launch ALTRun at login" in Preferences → General, then open Task Scheduler → Create Task:
+  - General: tick "Run with highest privileges"
+  - Triggers: New → Begin the task "At log on"
+  - Actions: New → Start a program, program `ALTRun.exe`, arguments `-Startup`
+  - Conditions: untick "Start the task only if the computer is on AC power"
+  - Settings: untick "Stop the task if it runs longer than"
+- **Just this once**: right-click `ALTRun.exe` → Run as administrator (it replaces the ALTRun that's running)
+
+When ALTRun runs as administrator, the tray icon tooltip and the version in Preferences → Advanced show "(Administrator)". Keep in mind:
+- Programs opened from ALTRun run as administrator too: they don't see network drives mapped with normal rights (create the DWORD value `EnableLinkedConnections` = 1 under `HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System` and restart), and dragging files into them from Explorer is refused
+- Any program can edit ALTRun's settings file (for example add a custom command), and what you open from ALTRun then runs as administrator. Use normal rights when you don't need this
+
 ### I messed up my settings; how do I go back to the defaults?
 Quit ALTRun, rename `Data\ALTRun.json` as a backup, and run it again to get the default settings. To reset only the learned ranking: Preferences → Advanced → Reset Learned Ranking.
 
