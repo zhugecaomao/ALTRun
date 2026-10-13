@@ -3089,6 +3089,15 @@ class Tests {
             eq("other size ignored", IconCache._ParseDisk(IconCache._SerializeDisk(entries, 32, 9), 24).Count, 0)
             eq("bad header ignored", IconCache._ParseDisk(Buffer(40, 0), 32).Count, 0)
             eq("empty cache", IconCache._ParseDisk(IconCache._SerializeDisk(Map(), 32, 9), 32).Count, 0)
+            old := IconCache._SerializeDisk(entries, 32, 9)
+            NumPut("UShort", 1, old, 4)
+            eq("older format ignored", IconCache._ParseDisk(old, 32).Count, 0)
+            cut := IconCache._SerializeDisk(entries, 32, 9), cut.Size -= 100
+            rejected := false
+            try IconCache._ParseDisk(cut, 32)
+            catch
+                rejected := true
+            eq("truncated file rejected", rejected, true)
 
             file := dir "\Icons-32.bin"
             IconCache._disk := entries, IconCache._diskDirty := true

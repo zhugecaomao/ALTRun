@@ -136,12 +136,13 @@ class IconCache {
     }
 
     ;---------------------------------------------------------------------------
-    ; 磁盘缓存 (见文件开头)。文件格式: 头 24 字节 (标记 "ARIC"、版本、是否 LZNT1 压缩、图标尺寸、个数、
-    ; 解压后的大小、内容大小), 然后是内容: 每个图标 键 / 戳 (UTF-16, 前面是字数)、保存日期、最近用到的日期
-    ; (yyyyMMdd)、Size x Size 的 BGRA 像素
+    ; 磁盘缓存 (见文件开头)。文件格式: 头 16 字节 (标记 "ARIC"、版本、保留、图标尺寸、个数), 然后每个图标:
+    ; 键 / 戳 (UTF-16, 前面是字数)、保存日期、最近用到的日期 (yyyyMMdd)、Size x Size 的 BGRA 像素。
+    ; 不压缩: 在 Windows 上实测 830 个图标压缩后 1.2 MB / 不压缩 3.4 MB, 但读入 12 ms / 5 ms、保存 24 ms / 11 ms,
+    ; 性能比省下的两三 MB 重要
     ;---------------------------------------------------------------------------
     static DiskDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun\IconCache" : ""
-    static DiskMax := 1000, DiskRecheckDays := 7, DiskSaveDelay := 5000, DiskVersion := 1
+    static DiskMax := 1000, DiskRecheckDays := 7, DiskSaveDelay := 5000, DiskVersion := 2
     static _disk := Map()                 ; key -> {Stamp, Saved, Used, Data, Offset}: 像素在 Data 的 Offset 处
     static _diskDirty := false, _diskTouched := false, _saveTimer := ""
     static _verify := [], _verified := Map(), _verifyTimer := ""
@@ -360,85 +361,52 @@ class IconCache {
                 continue
             keys.Push(SubStr(line, InStr(line, "`t") + 1))
         }
-        pixelBytes := size * size * 4, total := 0
+        pixelBytes := size * size * 4, total := 16
         for key in keys
             total += 2 + StrLen(key) * 2 + 2 + StrLen(entries[key].Stamp) * 2 + 8 + pixelBytes
-        raw := Buffer(Max(total, 1)), pos := 0
+        out := Buffer(total)
+        NumPut("UInt", 0x43495241, "UShort", IconCache.DiskVersion, "UShort", 0, "UInt", size, "UInt", keys.Length, out)   ; "ARIC"
+        pos := 16
         for key in keys {
             entry := entries[key]
             for text in [key, entry.Stamp] {
-                NumPut("UShort", StrLen(text), raw, pos)
+                NumPut("UShort", StrLen(text), out, pos)
                 if (text != "")
-                    StrPut(text, raw.Ptr + pos + 2, StrLen(text), "UTF-16")
+                    StrPut(text, out.Ptr + pos + 2, StrLen(text), "UTF-16")
                 pos += 2 + StrLen(text) * 2
             }
-            NumPut("UInt", entry.Saved, "UInt", entry.Used, raw, pos)
-            DllCall("RtlMoveMemory", "Ptr", raw.Ptr + pos + 8, "Ptr", entry.Data.Ptr + entry.Offset, "UPtr", pixelBytes)
+            NumPut("UInt", entry.Saved, "UInt", entry.Used, out, pos)
+            DllCall("RtlMoveMemory", "Ptr", out.Ptr + pos + 8, "Ptr", entry.Data.Ptr + entry.Offset, "UPtr", pixelBytes)
             pos += 8 + pixelBytes
         }
-        packed := IconCache._Compress(raw, total), flags := IsObject(packed) ? 1 : 0
-        body := flags ? packed : raw, bodySize := flags ? packed.Size : total
-        out := Buffer(24 + bodySize)
-        NumPut("UInt", 0x43495241, "UShort", IconCache.DiskVersion, "UShort", flags, "UInt", size, "UInt", keys.Length, "UInt", total, "UInt", bodySize, out)   ; "ARIC"
-        if bodySize
-            DllCall("RtlMoveMemory", "Ptr", out.Ptr + 24, "Ptr", body.Ptr, "UPtr", bodySize)
         return out
     }
 
+    ; 像素不复制, 直接用读进来的 data (Offset 指到 data 里)
     static _ParseDisk(data, size) {
         entries := Map()
-        if (data.Size < 24 || NumGet(data, 0, "UInt") != 0x43495241 || NumGet(data, 4, "UShort") != IconCache.DiskVersion
+        if (data.Size < 16 || NumGet(data, 0, "UInt") != 0x43495241 || NumGet(data, 4, "UShort") != IconCache.DiskVersion
             || NumGet(data, 8, "UInt") != size)
             return entries
-        flags := NumGet(data, 6, "UShort"), count := NumGet(data, 12, "UInt"), total := NumGet(data, 16, "UInt"), bodySize := NumGet(data, 20, "UInt")
-        if (24 + bodySize > data.Size)
-            throw Error("truncated")
-        if (flags & 1) {
-            raw := IconCache._Decompress(data.Ptr + 24, bodySize, total)
-        } else {
-            raw := Buffer(total)
-            if total
-                DllCall("RtlMoveMemory", "Ptr", raw.Ptr, "Ptr", data.Ptr + 24, "UPtr", total)
-        }
-        pixelBytes := size * size * 4, pos := 0
+        count := NumGet(data, 12, "UInt"), end := data.Size
+        pixelBytes := size * size * 4, pos := 16
         Loop count {
             texts := []
             Loop 2 {
-                if (pos + 2 > total)
+                if (pos + 2 > end)
                     throw Error("bad entry")
-                length := NumGet(raw, pos, "UShort")
-                if (pos + 2 + length * 2 > total)
+                length := NumGet(data, pos, "UShort")
+                if (pos + 2 + length * 2 > end)
                     throw Error("bad entry")
-                texts.Push(StrGet(raw.Ptr + pos + 2, length, "UTF-16"))
+                texts.Push(length ? StrGet(data.Ptr + pos + 2, length, "UTF-16") : "")
                 pos += 2 + length * 2
             }
-            if (pos + 8 + pixelBytes > total)
+            if (pos + 8 + pixelBytes > end)
                 throw Error("bad entry")
-            entries[texts[1]] := {Stamp: texts[2], Saved: NumGet(raw, pos, "UInt"), Used: NumGet(raw, pos + 4, "UInt"), Data: raw, Offset: pos + 8}
+            entries[texts[1]] := {Stamp: texts[2], Saved: NumGet(data, pos, "UInt"), Used: NumGet(data, pos + 4, "UInt"), Data: data, Offset: pos + 8}
             pos += 8 + pixelBytes
         }
         return entries
-    }
-
-    ; LZNT1 (Windows 自带, ntdll); 压缩失败或没有变小时返回 ""
-    static _Compress(raw, size) {
-        workSize := 0, fragment := 0, outSize := 0
-        if (!size || DllCall("ntdll\RtlGetCompressionWorkSpaceSize", "UShort", 2, "UInt*", &workSize, "UInt*", &fragment, "UInt"))
-            return ""
-        work := Buffer(Max(workSize, 1)), out := Buffer(size + size // 8 + 4096)
-        if DllCall("ntdll\RtlCompressBuffer", "UShort", 2, "Ptr", raw, "UInt", size, "Ptr", out, "UInt", out.Size, "UInt", 4096, "UInt*", &outSize, "Ptr", work, "UInt")
-            return ""
-        if (outSize >= size)
-            return ""
-        out.Size := outSize
-        return out
-    }
-
-    static _Decompress(ptr, size, total) {
-        raw := Buffer(Max(total, 1)), got := 0
-        if (DllCall("ntdll\RtlDecompressBuffer", "UShort", 2, "Ptr", raw, "UInt", raw.Size, "Ptr", ptr, "UInt", size, "UInt*", &got, "UInt") || got != total)
-            throw Error("decompress failed")
-        return raw
     }
 
     ; 文件夹结果的图标: 普通文件夹都一样, 用通用图标 (不用逐个读, 几百个文件夹时明显更快);

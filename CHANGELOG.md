@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.21]
+
+测试版。
+
+Test build.
+
+### 改进
+- 图标的磁盘缓存不再压缩: 在 Windows 上实测压缩只省两三 MB, 读入和保存却慢一倍多 (830 个图标读入 12 ms → 5 ms); 读入时像素直接用读进来的数据, 不再复制。上一个测试版的缓存文件会被忽略并自动重建
+
 ## [2026.10.12.20]
 
 测试版。
@@ -748,7 +757,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.20...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.21...HEAD
+[2026.10.12.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.20...2026.10.12.21
 [2026.10.12.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.19...2026.10.12.20
 [2026.10.12.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.18...2026.10.12.19
 [2026.10.12.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.17...2026.10.12.18
