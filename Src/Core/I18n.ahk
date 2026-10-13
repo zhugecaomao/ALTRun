@@ -610,6 +610,7 @@ class I18n {
         s["Prefs.CapsLock.Mode"]       := "Press to switch Chinese / English mode"
         s["Prefs.CapsLockElevated"]    := "Also in windows running as administrator"
         s["Prefs.CapsLockElevated.Desc"] := "Runs a small helper with administrator rights that only handles Caps Lock (confirm once when turning it on). ALTRun itself keeps normal rights."
+        s["Prefs.CapsLockElevated.NeedsMode"] := "Choose how Caps Lock switches above first."
         s["Prefs.CapsLockElevatedFailed"] := "Caps Lock for administrator windows could not be set up (the confirmation may have been cancelled). The option stays off."
         s["Caps.HelperFailed"]         := "Caps Lock in administrator windows could not start. Turn the option off and on again in Preferences → Hotkeys."
         s["Prefs.SelectionHotkey"]     := "Selection hotkey"

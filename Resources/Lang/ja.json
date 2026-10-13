@@ -202,6 +202,7 @@
   "Prefs.CapsLock.Off": "通常どおり",
   "Prefs.CapsLockElevated": "管理者として実行中のウィンドウでも有効にする",
   "Prefs.CapsLockElevated.Desc": "Caps Lock だけを扱う小さなヘルパーを管理者権限で実行します (オンにするときに 1 回確認)。ALTRun 本体は通常の権限のままです。",
+  "Prefs.CapsLockElevated.NeedsMode": "先に上で Caps Lock の切り替え方法を選んでください。",
   "Prefs.CapsLockElevatedFailed": "管理者ウィンドウ用の Caps Lock を設定できませんでした (確認がキャンセルされた可能性があります)。このオプションはオフのままです。",
   "Prefs.ChangeDataFolder": "場所を変更...",
   "Prefs.CheckAllOk": "{1} 件すべてのパスが有効です。",

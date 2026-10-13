@@ -203,6 +203,7 @@
   "Prefs.CapsLock.Off": "照常",
   "Prefs.CapsLockElevated": "在系統管理員視窗裡也生效",
   "Prefs.CapsLockElevated.Desc": "用系統管理員權限執行一個只管 CapsLock 的小助手 (開啟時確認一次); ALTRun 本身還是一般權限",
+  "Prefs.CapsLockElevated.NeedsMode": "先在上面選擇 CapsLock 的切換方式",
   "Prefs.CapsLockElevatedFailed": "沒能設定系統管理員視窗裡的 CapsLock 切換 (可能取消了確認), 這個選項保持關閉。",
   "Prefs.ChangeDataFolder": "變更位置...",
   "Prefs.CheckAllOk": "{1} 個指令的路徑都有效。",

@@ -671,8 +671,12 @@ class PreferencesWindow {
         capsLock := PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"]     ; 按 CapsLock 切换输入法 (CapsLockSwitch)
             , [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")])
         elevated := PreferencesWindow._Check("General.CapsLockElevated", "Prefs.CapsLockElevated")   ; 管理员窗口里也生效 (CapsLockHelper)
-        elevated.Enabled := capsLock.Value > 1
-        capsLock.OnEvent("Change", (*) => elevated.Enabled := capsLock.Value > 1)
+        controls := PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls
+        elevatedDesc := controls[controls.Length]                           ; 刚加的说明 (按两行的长度建好, 换短的文字也放得下)
+        update := (*) => (elevated.Enabled := capsLock.Value > 1
+            , elevatedDesc.Text := I18n.T(elevated.Enabled ? "Prefs.CapsLockElevated.Desc" : "Prefs.CapsLockElevated.NeedsMode"))   ; 灰着时说明为什么
+        update()
+        capsLock.OnEvent("Change", update)
         PreferencesWindow._Gap()
         actions := [["ToggleWindow", "Show / hide ALTRun (ToggleWindow)"]]
         for command in SystemProvider.Commands()

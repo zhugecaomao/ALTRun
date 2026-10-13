@@ -202,6 +202,7 @@
   "Prefs.CapsLock.Off": "照常",
   "Prefs.CapsLockElevated": "在管理员窗口里也生效",
   "Prefs.CapsLockElevated.Desc": "用管理员权限运行一个只管 CapsLock 的小助手 (打开时确认一次); ALTRun 本身还是普通权限",
+  "Prefs.CapsLockElevated.NeedsMode": "先在上面选择 CapsLock 的切换方式",
   "Prefs.CapsLockElevatedFailed": "没能设置管理员窗口里的 CapsLock 切换 (可能取消了确认), 这个选项保持关闭。",
   "Prefs.ChangeDataFolder": "更改位置...",
   "Prefs.CheckAllOk": "{1} 条命令的路径都有效。",

@@ -1895,6 +1895,12 @@ class Tests {
             limit := PreferencesWindow.ButtonY - 6
             rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
             for index, page in PreferencesWindow.Pages {
+                if (page.Key = "Prefs.Page.Hotkeys" && !AppSettings.General["CapsLock"]) {   ; CapsLock 照常: "管理员窗口里也生效" 灰着, 说明为什么
+                    hint := 0
+                    for ctrl in page.Controls
+                        hint := hint || (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.CapsLockElevated.NeedsMode"))
+                    TestRunner.True("PreferencesFit." lang " caps lock helper hint", hint)
+                }
                 if (page.Key = "Prefs.Page.Window") {                       ; 搜索历史条数、提示文字、最近项目数的输入框左边对齐
                     lefts := ""
                     for ctrl in page.Controls

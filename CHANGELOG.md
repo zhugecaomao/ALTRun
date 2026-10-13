@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.14]
+
+测试版。
+
+Test build.
+
+### 改进
+- "在管理员窗口里也生效" 灰着时 (CapsLock 键还是 "照常"), 下面的说明改成 "先在上面选择 CapsLock 的切换方式"
+
 ## [2026.10.12.13]
 
 测试版。
@@ -685,7 +694,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.14...HEAD
+[2026.10.12.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.13...2026.10.12.14
 [2026.10.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.12...2026.10.12.13
 [2026.10.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.11...2026.10.12.12
 [2026.10.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.10...2026.10.12.11
