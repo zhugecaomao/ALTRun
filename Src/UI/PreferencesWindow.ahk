@@ -702,11 +702,12 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.Hotkeys", 100)                ; 标签列窄一些: 下面的列表从最左边开始, 上面的选项也靠左
         capsLock := PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"]     ; 按 CapsLock 切换输入法 (CapsLockSwitch)
             , [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")])
+        notice := PreferencesWindow._Check("General.CapsLockNotify", "Prefs.CapsLockNotify")   ; 大写锁定开 / 关的提示
         elevated := PreferencesWindow._Check("General.CapsLockElevated", "Prefs.CapsLockElevated")   ; 管理员窗口里也生效 (CapsLockHelper)
         controls := PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls
         elevatedDesc := controls[controls.Length]                           ; 刚加的说明 (按两行的长度建好, 换短的文字也放得下)
         PreferencesWindow._ShieldBefore(elevated)                           ; 打开 / 关掉时要确认 UAC
-        update := (*) => (elevated.Enabled := capsLock.Value > 1
+        update := (*) => (notice.Enabled := elevated.Enabled := capsLock.Value > 1
             , elevatedDesc.Text := I18n.T(elevated.Enabled ? "Prefs.CapsLockElevated.Desc" : "Prefs.CapsLockElevated.NeedsMode"))   ; 灰着时说明为什么
         update()
         capsLock.OnEvent("Change", update)
@@ -714,7 +715,7 @@ class PreferencesWindow {
         actions := [["ToggleWindow", "Show / hide ALTRun (ToggleWindow)"]]
         for command in SystemProvider.Commands()
             actions.Push([command["Id"], command["Title"] " (" command["Id"] ")"])
-        PreferencesWindow._List("Hotkeys", 422
+        PreferencesWindow._List("Hotkeys", 398
             , [["Prefs.Col.Key", "Key", 160], ["Prefs.Col.Action", "Action", 150], ["Prefs.Col.WinTitle", "WinTitle", 230]]
             , [ItemEditor.Field("Key", "Prefs.Col.Key", "hotkey", true, "", I18n.T("Prefs.HotkeyHint"))
              , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)

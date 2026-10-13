@@ -340,6 +340,17 @@ class Tests {
         eq("no too-many-hotkeys warning", A_HotkeyInterval, 0)
         A_HotkeyInterval := savedInterval
 
+        ; 大写锁定的提示可以关掉 (General.CapsLockNotify)
+        eq("notice on by default", AppSettings.Defaults()["General"]["CapsLockNotify"], 1)
+        notices := [], savedNotify := App.GetOwnPropDesc("Notify")
+        App.DefineProp("Notify", {Call: (this, text, *) => notices.Push(text)})
+        savedNotice := AppSettings.General.Has("CapsLockNotify") ? AppSettings.General["CapsLockNotify"] : 1
+        AppSettings.General["CapsLockNotify"] := 1, App.CapsLockNotice(true)
+        AppSettings.General["CapsLockNotify"] := 0, App.CapsLockNotice(false)
+        AppSettings.General["CapsLockNotify"] := savedNotice
+        App.DefineProp("Notify", savedNotify)
+        eq("notice shown only when on", notices.Length = 1 ? notices[1] : notices.Length, "Caps Lock On")
+
         ; 管理员窗口里的小助手 (CapsLockHelper, #158)
         eq("helper off by default", AppSettings.Defaults()["General"]["CapsLockElevated"], 0)
         eq("helper wanted", (CapsLockHelper.Wanted(Map("CapsLock", "Mode", "CapsLockElevated", 1)) ? 1 : 0)

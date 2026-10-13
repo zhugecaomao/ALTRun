@@ -103,7 +103,7 @@ class CapsLockSwitch {
     }
 
     static NotifyMs := 1000
-    static Notify := (on) => App.Notify(CapsLockSwitch.StateText(on), CapsLockSwitch.NotifyMs)   ; 管理员窗口的小助手里换成让 ALTRun 显示 (CapsLockHelper)
+    static Notify := (on) => App.CapsLockNotice(on)                        ; 管理员窗口的小助手里换成让 ALTRun 显示 (CapsLockHelper)
     static ShiftDown() => GetKeyState("Shift")
     static StateText(on) => I18n.T(on ? "Caps.On" : "Caps.Off")
 
