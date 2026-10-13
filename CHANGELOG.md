@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 搜索窗口 → "提示文字" 下面加上说明: 留空 = 显示默认的文字, 输入一个空格 = 什么都不显示。为了放得下, 同一页的几条说明缩短到一行
+
 ## [2026.10.12.5]
 
 测试版。
@@ -597,7 +606,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.6...HEAD
+[2026.10.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.5...2026.10.12.6
 [2026.10.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.4...2026.10.12.5
 [2026.10.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.3...2026.10.12.4
 [2026.10.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.2...2026.10.12.3
