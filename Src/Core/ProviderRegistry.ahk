@@ -19,6 +19,7 @@
 ;   ProviderRegistry.Register(ApplicationProvider)    启动时按顺序注册
 ;   ProviderRegistry.InitAll()
 ;   ProviderRegistry.WarmUp()                         启动后空闲时: 预先算好搜索用的数据 (可选的 Warm())
+;   ProviderRegistry.PrefetchIcons()                  启动后空闲时: 在后台预读常用项目的图标 (可选的 IconItems())
 ;   ProviderRegistry.Search("note")                   -> [ResultItem...]
 ;===============================================================================
 
@@ -69,6 +70,58 @@ class ProviderRegistry {
                 Logger.Error("ProviderRegistry: " provider.Id ".Warm failed - " e.Message)
             }
         }
+    }
+
+    ; 置顶 / 最近使用的项目在前, 然后是各功能的项目 (IconItems: [{Icon, Uid}...], 应用、自定义命令),
+    ; 选过的按选中次数排在前面, 交给 IconCache 在后台预读
+    static PrefetchIcons() {
+        specs := [], others := []
+        try {
+            for item in ProviderRegistry.EmptyResults()
+                specs.Push(item.Icon)
+        }
+        for provider in ProviderRegistry.Providers {
+            if !ProviderRegistry.IsEnabled(provider) || !HasMethod(provider, "IconItems")
+                continue
+            try {
+                for item in provider.IconItems()
+                    others.Push(item)
+            } catch as e {
+                Logger.Error("ProviderRegistry: " provider.Id ".IconItems failed - " e.Message)
+            }
+        }
+        for item in ProviderRegistry.ByPicks(others)
+            specs.Push(item.Icon)
+        IconCache.Prefetch(specs)
+    }
+
+    ; 按 Knowledge 里选中的次数从多到少排 (没选过的保持原来的顺序, 排在后面)
+    static ByPicks(items) {
+        picked := [], rest := []
+        for item in items {
+            count := Knowledge.Picks.Has(item.Uid) && Knowledge.Picks[item.Uid] is Map && Knowledge.Picks[item.Uid].Has("Count")
+                ? Knowledge.Picks[item.Uid]["Count"] : 0
+            if (IsNumber(count) && count > 0)
+                picked.Push({Item: item, Count: count, Order: picked.Length})
+            else
+                rest.Push(item)
+        }
+        sorted := []
+        for entry in ProviderRegistry._SortPicks(picked)
+            sorted.Push(entry.Item)
+        for item in rest
+            sorted.Push(item)
+        return sorted
+    }
+
+    static _SortPicks(entries) {                                            ; 次数多的在前, 一样多时保持原来的顺序 (插入排序, 选过的通常只有几十个)
+        Loop entries.Length - 1 {
+            i := A_Index + 1, entry := entries[i], j := i - 1
+            while (j >= 1 && entries[j].Count < entry.Count)
+                entries[j + 1] := entries[j], j -= 1
+            entries[j + 1] := entry
+        }
+        return entries
     }
 
     static Search(rawText) {

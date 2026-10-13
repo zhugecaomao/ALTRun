@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.19]
+
+测试版。
+
+Test build.
+
+### 改进
+- **图标不再晚一步出现**: 启动约 2 秒后在后台预读常用项目的图标 (置顶、最近使用, 然后是应用和自定义命令, 选得多的在前, 最多 300 个), 第一次搜到时图标和文字一起出来。只在搜索窗口隐藏时读, 每轮最多约 10 ms, 不影响打字和出结果的速度
+
 ## [2026.10.12.18]
 
 测试版。
@@ -730,7 +739,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.19...HEAD
+[2026.10.12.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.18...2026.10.12.19
 [2026.10.12.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.17...2026.10.12.18
 [2026.10.12.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.16...2026.10.12.17
 [2026.10.12.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.15...2026.10.12.16

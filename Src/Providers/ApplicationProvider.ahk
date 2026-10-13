@@ -77,6 +77,15 @@ class ApplicationProvider {
         ApplicationProvider._SearchKeys()
     }
 
+    ; 启动后在后台预读图标用 (见 ProviderRegistry.PrefetchIcons): 没有隐藏的应用
+    static IconItems() {
+        ApplicationProvider._SearchKeys()
+        items := []
+        for entry in ApplicationProvider._entries
+            items.Push({Icon: entry["Target"], Uid: "app:" StrLower(entry["Target"])})
+        return items
+    }
+
     ; 没有隐藏的应用 (_entries) 和它们的搜索 Key (名称 + 拼音首字母);
     ; Apps 换成新数组或隐藏列表变化时重新计算
     static _SearchKeys() {
