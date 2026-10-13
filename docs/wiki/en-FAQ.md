@@ -27,10 +27,10 @@ Select one and press `Ctrl+Del`. The program isn't uninstalled, and you can rest
 Programs compiled with AutoHotkey are sometimes reported by mistake. Add the ALTRun folder to your antivirus' trusted list, or install AutoHotkey v2 and run the source `ALTRun.ahk` directly (the code is fully public).
 
 ### How do I send a debug log?
-1. Preferences → General → "Write a debug log"
+1. Preferences → Advanced → Troubleshooting → tick "Write a debug log", click Apply
 2. Reproduce the problem
-3. Type `log` in the search box and run "Open ALTRun Log": `%Temp%\ALTRun.log` opens in the default program for `.log` files (Notepad unless you changed it)
-4. Copy the lines around the time of the problem into your [issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose). The log never contains what you type in the search box, but it does contain file paths and program names: remove anything private first
+3. Back in Preferences → Advanced, click "Open Log" (or type `log` in the search box and run "Open ALTRun Log"): `%Temp%\ALTRun.log` opens in the default program for `.log` files (Notepad unless you changed it)
+4. Copy the lines around the time of the problem into your [issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose), and paste "Copy System Info" with them (versions, Windows version, display scale, language, theme; no file paths). The log never contains what you type in the search box, but it does contain file paths and program names: remove anything private first
 
 ### ALTRun is slow or doesn't respond right after Windows starts
 Just after Windows starts, Explorer and OneDrive (or another sync tool) are often busy for a while. ALTRun asks Windows for icons and shortcuts, so it has to wait for them too: the search window may open slowly, or ignore typing for a few seconds. It recovers by itself once Windows has settled down. To check, turn on the debug log: lines starting with `Perf: startup:` show how long each startup step took, and `Perf: icon ... ms` lines show icons that took a long time to load. If it happens every time, look in Task Manager at what is using the CPU or disk after startup (OneDrive syncing many files is a common cause).
@@ -60,7 +60,7 @@ When ALTRun runs as administrator, the tray icon tooltip and the version in Pref
 - Any program can edit ALTRun's settings file (for example add a custom command), and what you open from ALTRun then runs as administrator. Use normal rights when you don't need this
 
 ### I messed up my settings; how do I go back to the defaults?
-Quit ALTRun, rename `Data\ALTRun.json` as a backup, and run it again to get the default settings. To reset only the learned ranking: Preferences → Advanced → Reset Learned Ranking.
+Preferences → Advanced → "Restore Defaults...": every option goes back to its default, while your custom commands, snippets, hotkeys, web searches and pinned items are kept; the old settings are saved as `Data\ALTRun.json.bak` first (to go back, quit ALTRun and rename it to `ALTRun.json`). To reset only the learned ranking: Preferences → Advanced → Reset Learned Ranking.
 
 ### Does ALTRun go online or collect data?
 It doesn't collect or upload any data. By default it only goes online to check for updates (at startup and every 6 hours) and for one-key updates, both only to GitHub (with currency conversion on, it also downloads exchange rates from frankfurter.dev once a day; "Download Site Icon" in a web search's editor visits that site once, only when you click it); a one-key update checks the SHA256 checksum before replacing anything. Clipboard history, usage statistics and the learned ranking stay in the `Data\` folder on your PC. See the [security policy](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md).

@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.12.9"
+    static Version := "2026.10.12.10"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -322,6 +322,34 @@ class App {
     ; 关于: 偏好设置的高级页 (图标、版本、项目主页、检查更新)
     static About() {
         App.OpenPreferences("Prefs.Page.Advanced")
+    }
+
+    ; 报告问题时附上的系统信息 (偏好设置 → 高级 → 复制系统信息)。不写文件路径和搜索的内容
+    static SystemInfo() {
+        general := AppSettings.General, appearance := AppSettings.Appearance
+        windows := A_OSVersion
+        try windows .= "." RegRead("HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "UBR")
+        try windows .= " (" RegRead("HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion", "DisplayVersion") ")"
+        layouts := DllCall("GetKeyboardLayoutList", "Int", 0, "Ptr", 0, "Int")
+        fileSearch := AppSettings.Feature("FileSearch")
+        everythingState := (fileSearch.Has("UseEverything") && fileSearch["UseEverything"]) ? (Everything.IsRunning() ? "on, running" : "on, not running") : "off"
+        dataDir := AppSettings.DataDir
+        location := (dataDir != AppSettings.DefaultDataDir()) ? "custom" : (AppSettings.Portable ? "portable" : "AppData")
+        lines := [
+            App.Name " " App.Version " (" (A_IsCompiled ? "exe" : "source") ", AutoHotkey " A_AhkVersion ", " (A_PtrSize * 8) "-bit)",
+            "Administrator: " (A_IsAdmin ? "yes" : "no"),
+            "Windows: " windows,
+            "Display: " MonitorGetCount() " monitor(s), " A_ScreenWidth "x" A_ScreenHeight ", scale " Round(A_ScreenDPI / 96 * 100) "%",
+            "Language: " I18n.Lang " (setting " general["Language"] "), Windows " A_Language,
+            Format("Input: {} keyboard layout(s), current {:08X}, CapsLock '{}', switch to English {}", layouts, Win.KeyboardLayout() & 0xFFFFFFFF, general["CapsLock"], general["SwitchToEnglishInput"]),
+            "Theme: " appearance["Theme"] ", status bar " (appearance["StatusBar"] ? "on" : "off"),
+            "Everything: " everythingState,
+            "Data folder: " location
+        ]
+        text := ""
+        for line in lines
+            text .= line "`n"
+        return text
     }
 
     static OpenLog() {

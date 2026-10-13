@@ -99,6 +99,31 @@ class AppSettings {
         }
     }
 
+    ; 恢复默认设置 (偏好设置 → 高级) 时保留的: 自己加的内容, 不是选项
+    static KeptOnReset := [["CustomCommands"], ["Snippets"], ["Hotkeys"], ["Features", "WebSearch", "Engines"]
+        , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["Extensions", "PTTools"], ["DataLocation"]]
+
+    ; current 恢复成默认设置后的样子: 默认值 + current 里 KeptOnReset 的部分
+    static ResetData(current) {
+        data := AppSettings.Defaults()
+        for keys in AppSettings.KeptOnReset {
+            source := current, target := data
+            for index, key in keys {
+                if !(source is Map && source.Has(key))
+                    break
+                if (index = keys.Length) {
+                    target[key] := source[key]
+                    break
+                }
+                source := source[key]
+                if !(target.Has(key) && target[key] is Map)
+                    target[key] := Map()
+                target := target[key]
+            }
+        }
+        return data
+    }
+
     static Feature(name) {
         return AppSettings.Data["Features"][name]
     }
