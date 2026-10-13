@@ -273,7 +273,7 @@ class AppSettings {
                 "HistorySize"         , 30
             ),
             "Appearance", Map(
-                "Theme"      , "Light",                                     ; 内置主题名 (见 ThemeManager) 或 Themes\<名称>.json
+                "Theme"      , "System",                                    ; 内置主题名 (见 ThemeManager; System = 跟随 Windows 的深 / 浅色) 或 Themes\<名称>.json
                 "Width"      , 700,
                 "VisibleRows", 8,
                 "Placeholder", "",                                          ; 空搜索框里的灰色文字, 空 = 默认 ("ALTRun 搜索")
@@ -334,7 +334,7 @@ class AppSettings {
                 ),
                 "FileSearch", Map(
                     "Enabled"            , 1,
-                    "Keywords"           , ["open", "find"],
+                    "Keywords"           , ["open", "find", "file"],
                     "FolderKeywords"     , ["folder"],                      ; "folder bk" 只搜文件夹
                     "TypeFilters"        , [                                ; "doc 报告" 只搜这些扩展名的文件, 每行 "关键字 = 扩展名 ..."
                         "doc = doc docx xls xlsx xlsm csv ppt pptx pdf txt md rtf odt ods",
@@ -402,16 +402,16 @@ class AppSettings {
                     "ShowPanel"        , 1,                                 ; 对话框一出现就在下面显示文件夹面板 (和 Listary 一样), 点一下就跳过去
                     "AutoSwitch"       , 0,
                     "DialogWindows"    , "ahk_class #32770",                ; 标准的 Windows 对话框, 另外可以加 "ahk_class Qt5QWindowIcon" (WPS) 等
-                    "ExcludeWindows"   , "ahk_class SysListView32, ahk_exe Explorer.exe",
+                    "ExcludeWindows"   , "ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe 7zG.exe, ahk_exe TOTALCMD64.exe",   ; 7-Zip 解压、Total Commander 的对话框不是要跳转的 "打开 / 保存"
                     "AutoSwitchExclude", ""                                 ; 这些对话框不自动跳转 (仍然可以按热键)
                 ),
                 "AutoDate", Map(
                     "Enabled"      , 1,
                     "DateFormat"   , "dd.MM.yyyy",
                     "RenameHotkey" , "^d",
-                    "RenameWindows", "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD",
+                    "RenameWindows", "ahk_class CabinetWClass, ahk_class Progman, ahk_class WorkerW, ahk_class #32770, ahk_class TTOTAL_CMD, ahk_class TSTDTREEDLG, ahk_class TCOMBOINPUT",   ; TC: 主窗口、对话框、改名输入框
                     "AppendHotkey" , "^d",
-                    "AppendWindows", "ahk_class TCmtEditForm,ahk_exe Notepad4.exe"
+                    "AppendWindows", "ahk_class TCmtEditForm, ahk_exe Notepad4.exe"
                 ),
                 "PTTools", Map()                                            ; 由 PTToolsWindow 自己补默认值
             ),

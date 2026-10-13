@@ -5,6 +5,22 @@
 
 ## [未发布]
 
+## [2026.10.12.12]
+
+测试版。
+
+Test build.
+
+### 改进
+- 新安装时的默认设置 (已有的设置不变):
+  - 主题: **跟随系统** (`System`, Windows 深色模式时用深色), 以前是浅色
+  - 文件搜索关键字多了 `file`: `file 报告` 只搜文件, 和 `open`、`find` 一样
+  - Quick Switch 不在 7-Zip 的解压窗口 (`7zG.exe`) 和 Total Commander 的对话框里弹出文件夹面板 (它们不是 "打开 / 保存" 对话框)
+  - 一键加日期 (Ctrl+D) 也认 Total Commander 的对话框和改名输入框 (`TSTDTREEDLG`、`TCOMBOINPUT`)
+
+### 修复
+- 偏好设置 → 计算器 改了钢筋直径后, 设置文件里存成了文字 (`"13"`), 现在存成数字
+
 ## [2026.10.12.11]
 
 测试版。
@@ -660,7 +676,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.12...HEAD
+[2026.10.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.11...2026.10.12.12
 [2026.10.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.10...2026.10.12.11
 [2026.10.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.9...2026.10.12.10
 [2026.10.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.8...2026.10.12.9

@@ -610,7 +610,7 @@ class PreferencesWindow {
         PreferencesWindow._Check(base "StructuralCalc", "Prefs.StructuralCalc")
         PreferencesWindow._Field(base "RebarCover", "Prefs.RebarCover", "S", "number")      ; 每项一行: 标签和输入框各自对齐
         PreferencesWindow._Field(base "MaxBarSpacing", "Prefs.MaxBarSpacing", "S", "number")
-        PreferencesWindow._Csv(base "BarSizes", "Prefs.BarSizes", "M")
+        PreferencesWindow._Csv(base "BarSizes", "Prefs.BarSizes", "M", true)
         PreferencesWindow._Field(base "BarPrefix", "Prefs.BarPrefix", "S")
     }
 
@@ -1194,11 +1194,12 @@ class PreferencesWindow {
         return ctrl
     }
 
-    static _Csv(path, labelKey, size) {
+    ; numeric: 数字列表 (例如钢筋直径), 存成数字而不是文字
+    static _Csv(path, labelKey, size, numeric := false) {
         label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.JoinCsv(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
         ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._Width(size) " r1 -Multi", value)
-        PreferencesWindow._Bind(path, () => PreferencesWindow.SplitCsv(ctrl.Value))
+        PreferencesWindow._Bind(path, () => PreferencesWindow.SplitCsv(ctrl.Value, numeric))
         PreferencesWindow._BelowInput(labelKey, label, ctrl)
     }
 
@@ -1577,11 +1578,11 @@ class PreferencesWindow {
         return (items is Array) ? TextTools.Join(items) : items
     }
 
-    static SplitCsv(text) {
+    static SplitCsv(text, numeric := false) {
         items := []
         for part in StrSplit(text, ",")
-            if (Trim(part) != "")
-                items.Push(Trim(part))
+            if ((part := Trim(part)) != "")
+                items.Push((numeric && IsNumber(part)) ? part + 0 : part)
         return items
     }
 

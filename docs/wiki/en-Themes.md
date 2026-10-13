@@ -9,8 +9,8 @@ In Preferences → Appearance, click a theme's thumbnail to pick it (each thumbn
 ## Built-in themes
 | Theme | Name (value in settings) | Style |
 |---|---|---|
-| System (Light / Dark) | `System` | Follows the Windows light / dark mode (Light or Dark) and switches when Windows does |
-| Light | `Light` | Default: off-white background, light blue selection |
+| System (Light / Dark) | `System` | Default: follows the Windows light / dark mode (Light or Dark) and switches when Windows does |
+| Light | `Light` | Off-white background, light blue selection |
 | Dark | `Dark` | Dark gray background, blue-gray selection |
 | Dark Compact | `DarkCompact` | Same colors as Dark with smaller text and rows, so more results fit |
 | Classic | `Classic` | Light gray background with a bold blue full-width selection bar |
