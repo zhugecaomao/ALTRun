@@ -100,3 +100,4 @@ The old `Res\` folder has been renamed to `Resources\`; at startup, any files yo
 1. Tray menu → Quit
 2. In Preferences → General, first turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" (or delete those shortcuts by hand)
 3. Delete the program folder
+4. To remove everything, also delete `%LOCALAPPDATA%\ALTRun` (clipboard images, icon cache; and `%APPDATA%\ALTRun` if the settings were stored there because the program folder was not writable)

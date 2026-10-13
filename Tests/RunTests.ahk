@@ -74,6 +74,7 @@ I18n.LangDir := A_ScriptDir "\..\Resources\Lang"
 I18n.Init("en")
 AppSettings.Data := AppSettings.Defaults()                                  ; 内存里的默认设置, 不读写文件
 AppSettings.Feature("Clipboard")["Persist"] := 0                           ; 剪贴板历史测试不写盘
+IconCache.DiskDir := ""                                                     ; 图标不写磁盘缓存 (IconDiskCache 测试里临时打开)
 
 TestRunner.Run()
 
@@ -88,7 +89,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -3052,6 +3053,97 @@ class Tests {
         IconCache.Prefetch([])
         eq("empty list", IconCache.PrefetchPending, 0)
         IconCache.PrefetchMax := savedMax, IconCache.PrefetchWhen := savedWhen
+    }
+
+    ; 图标的磁盘缓存: 像素来回转换、文件格式 (按最近用到的保留、损坏的文件不用)、从缓存直接显示、过期判断
+    static IconDiskCache() {
+        eq := (n, a, e) => TestRunner.Equal("IconDiskCache." n, a, e)
+        same := (a, b) => (a.Size = b.Size && DllCall("ntdll\RtlCompareMemory", "Ptr", a, "Ptr", b, "UPtr", a.Size, "UPtr") = a.Size)
+        savedSize := IconCache.Size, savedDir := IconCache.DiskDir, savedDisk := IconCache._disk
+        dir := A_Temp "\ALTRunIconDiskTest"
+        try DirDelete(dir, true)
+        IconCache.Size := 32, IconCache.DiskDir := dir, IconCache._disk := Map()
+        try {
+            hIcon := IconCache._Load("res:shell32.dll,-24")
+            pixels := IconCache.IconPixels(hIcon)
+            eq("pixels from icon", IsObject(pixels) ? pixels.Size : 0, 32 * 32 * 4)
+            remade := IconCache.MakeIcon(pixels)
+            eq("icon from pixels", IconCache.IconWidth(remade), 32)
+            again := IconCache.IconPixels(remade)
+            eq("round trip keeps pixels", IsObject(again) && same(pixels, again), true)
+            for handle in [hIcon, remade]
+                DllCall("DestroyIcon", "Ptr", handle)
+            eq("short data", IconCache.MakeIcon(Buffer(16)), 0)
+
+            entries := Map()
+            entries["c:\a.exe"] := {Stamp: "20260101|10", Saved: 20260101, Used: 20260105, Data: pixels, Offset: 0}
+            entries["ext:.pdf"] := {Stamp: "", Saved: 20260102, Used: 20260110, Data: pixels, Offset: 0}
+            entries["res:x.dll,-1"] := {Stamp: "", Saved: 20260103, Used: 20250101, Data: pixels, Offset: 0}
+            parsed := IconCache._ParseDisk(IconCache._SerializeDisk(entries, 32, 2), 32)
+            eq("keeps the most recently used", parsed.Count "|" parsed.Has("ext:.pdf") "|" parsed.Has("c:\a.exe") "|" parsed.Has("res:x.dll,-1"), "2|1|1|0")
+            e := parsed["c:\a.exe"]
+            eq("fields", e.Stamp "|" e.Saved "|" e.Used, "20260101|10|20260101|20260105")
+            stored := Buffer(32 * 32 * 4)
+            DllCall("RtlMoveMemory", "Ptr", stored, "Ptr", e.Data.Ptr + e.Offset, "UPtr", stored.Size)
+            eq("pixels kept", same(stored, pixels), true)
+            eq("other size ignored", IconCache._ParseDisk(IconCache._SerializeDisk(entries, 32, 9), 24).Count, 0)
+            eq("bad header ignored", IconCache._ParseDisk(Buffer(40, 0), 32).Count, 0)
+            eq("empty cache", IconCache._ParseDisk(IconCache._SerializeDisk(Map(), 32, 9), 32).Count, 0)
+
+            file := dir "\Icons-32.bin"
+            IconCache._disk := entries, IconCache._diskDirty := true
+            eq("save", IconCache.SaveDisk(file), true)
+            eq("nothing to save", IconCache.SaveDisk(file), false)
+            eq("load", IconCache.LoadDisk(file), 3)
+            f := FileOpen(file, "w"), f.RawWrite(Buffer(30, 0x41), 30), f.Close()
+            eq("broken file", IconCache.LoadDisk(file), 0)
+            eq("missing file", IconCache.LoadDisk(dir "\none.bin"), 0)
+
+            key := "ext:.diskcachetest"
+            IconCache._disk := Map(key, {Stamp: "", Saved: 20200101, Used: 20200101, Data: pixels, Offset: 0})
+            IconCache._verified := Map(), IconCache._verify := []
+            hIcon := IconCache.Get(key)
+            eq("shown from the disk cache at once", hIcon != 0 && !IconCache._queue.Has(key), true)
+            eq("queued for checking", IconCache._verify.Length, 1)
+            eq("used today", IconCache._disk[key].Used, IconCache._Today())
+            eq("old non-file entry is stale", IconCache.IsStale(key, IconCache._disk[key]), true)
+            eq("recent non-file entry is fresh", IconCache.IsStale(key, {Saved: IconCache._Today()}), false)
+            IconCache._verify := []
+            try IconCache._icons.Delete(key)
+
+            target := dir "\stamp.ico"
+            FileAppend("one", target)
+            stamp := IconCache.Stamp(target)
+            eq("file key", IconCache.IsFileKey(StrLower(target)) "|" IconCache.IsFileKey("shell:appsfolder\x") "|" IconCache.IsFileKey("::{abc}"), "1|0|0")
+            eq("same file is fresh", IconCache.IsStale(StrLower(target), {Stamp: stamp}), false)
+            FileAppend("two", target)
+            eq("changed file is stale", IconCache.IsStale(StrLower(target), {Stamp: stamp}), true)
+            eq("missing file stamp", IconCache.Stamp(dir "\none.exe"), "")
+
+            IconCache._disk := Map()
+            hIcon := IconCache._Load("folder:")
+            IconCache._Remember("thumb:c:\x.png", hIcon)
+            eq("thumbnails not kept", IconCache._disk.Count, 0)
+            IconCache._Remember("folder:", hIcon)
+            eq("new icon kept", IconCache._disk.Has("folder:") && IconCache._disk["folder:"].Saved = IconCache._Today(), true)
+            DllCall("DestroyIcon", "Ptr", hIcon)
+            IconCache._disk := Map()
+            Loop 5
+                IconCache._disk["k" A_Index] := {Stamp: "", Saved: 1, Used: 20260100 + A_Index, Data: pixels, Offset: 0}
+            IconCache._TrimDisk(3)
+            eq("trim keeps the most recently used", IconCache._disk.Count "|" IconCache._disk.Has("k5") "|" IconCache._disk.Has("k1"), "3|1|0")
+            IconCache._disk := Map("ext:.cleartest", {Stamp: "", Saved: 1, Used: 1, Data: pixels, Offset: 0})
+            IconCache.Clear()
+            eq("clear empties the disk cache", IconCache._disk.Count, 0)
+        } finally {
+            if (IconCache._saveTimer != "")
+                SetTimer(IconCache._saveTimer, 0)
+            if (IconCache._verifyTimer != "")
+                SetTimer(IconCache._verifyTimer, 0)
+            IconCache._diskDirty := false, IconCache._diskTouched := false
+            IconCache.Size := savedSize, IconCache.DiskDir := savedDir, IconCache._disk := savedDisk
+            try DirDelete(dir, true)
+        }
     }
 
     ; 淡入淡出: 透明度曲线; 真的窗口淡入时先透明、结束后是主题的透明度; 淡出时留一个影子, 结束后消失
