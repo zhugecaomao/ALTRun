@@ -60,6 +60,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CapsLockSwitch.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\CapsLockHelper.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
@@ -338,6 +339,34 @@ class Tests {
         eq("down and up hotkeys", registered.Length = 2 ? registered[1] "|" registered[2] : "", "*$CapsLock|*$CapsLock up")
         eq("no too-many-hotkeys warning", A_HotkeyInterval, 0)
         A_HotkeyInterval := savedInterval
+
+        ; 管理员窗口里的小助手 (CapsLockHelper, #158)
+        eq("helper off by default", AppSettings.Defaults()["General"]["CapsLockElevated"], 0)
+        eq("helper wanted", (CapsLockHelper.Wanted(Map("CapsLock", "Mode", "CapsLockElevated", 1)) ? 1 : 0)
+            . (CapsLockHelper.Wanted(Map("CapsLock", "", "CapsLockElevated", 1)) ? 1 : 0)
+            . (CapsLockHelper.Wanted(Map("CapsLock", "Layout", "CapsLockElevated", 0)) ? 1 : 0)
+            . (CapsLockHelper.Wanted(Map("CapsLock", "Layout")) ? 1 : 0), "1000")
+        settingsFile := A_Temp "\ALTRunHelperTest.json"
+        try FileDelete(settingsFile)
+        FileAppend('{"General": {"CapsLock": "Layout", "CapsLockElevated": 1}}', settingsFile, "UTF-8")
+        eq("helper reads the mode", CapsLockHelper.ModeFromSettings(settingsFile), "Layout")
+        FileDelete(settingsFile)
+        FileAppend('{"General": {"CapsLock": "Layout", "CapsLockElevated": 0}}', settingsFile, "UTF-8")
+        eq("helper: option off", CapsLockHelper.ModeFromSettings(settingsFile), "")
+        FileDelete(settingsFile)
+        eq("helper: no settings file", CapsLockHelper.ModeFromSettings(settingsFile), "")
+        xml := CapsLockHelper.TaskXml("C:\A & B\ALTRun.exe", "-CapsLockHelper", "C:\A & B", "PC\me")
+        eq("task: highest privileges", InStr(xml, "<RunLevel>HighestAvailable</RunLevel>") ? 1 : 0, 1)
+        eq("task: interactive user", InStr(xml, "<UserId>PC\me</UserId><LogonType>InteractiveToken</LogonType>") ? 1 : 0, 1)
+        eq("task: no time limit, runs on battery", (InStr(xml, "<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>") && InStr(xml, "<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>")) ? 1 : 0, 1)
+        eq("task: escaped path", InStr(xml, "<Command>C:\A &amp; B\ALTRun.exe</Command><Arguments>-CapsLockHelper</Arguments>") ? 1 : 0, 1)
+        eq("task: no trigger (started by ALTRun)", InStr(xml, "<Triggers>") ? 1 : 0, 0)
+        shown := []                                                         ; 大写锁定的提示交给 Notify (小助手里换成告诉 ALTRun)
+        savedNotify := CapsLockSwitch.Notify, CapsLockSwitch.Notify := (on) => shown.Push(on)
+        before := GetKeyState("CapsLock", "T")
+        CapsLockSwitch.ToggleCapsLock()
+        eq("notify on toggle", shown.Length = 1 && shown[1] = !before ? 1 : 0, 1)
+        SetCapsLockState(before ? "On" : "Off"), CapsLockSwitch.Notify := savedNotify
 
         ; 按下 / 松开的顺序 (假的时钟, 定时器手动触发)
         saved := Map()
@@ -1866,6 +1895,13 @@ class Tests {
             limit := PreferencesWindow.ButtonY - 6
             rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
             for index, page in PreferencesWindow.Pages {
+                if (page.Key = "Prefs.Page.Hotkeys" && !AppSettings.General["CapsLock"]) {   ; CapsLock 照常: "管理员窗口里也生效" 灰着, 说明为什么
+                    hint := 0
+                    for ctrl in page.Controls
+                        hint := hint || (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.CapsLockElevated.NeedsMode"))
+                    TestRunner.True("PreferencesFit." lang " caps lock helper hint", hint)
+                    TestRunner.Equal("PreferencesFit." lang " shield space", StrLen(PreferencesWindow.ShieldPad(4)) " " StrLen(PreferencesWindow.ShieldPad(3)), "5 7")
+                }
                 if (page.Key = "Prefs.Page.Window") {                       ; 搜索历史条数、提示文字、最近项目数的输入框左边对齐
                     lefts := ""
                     for ctrl in page.Controls
