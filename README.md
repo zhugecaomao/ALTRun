@@ -32,90 +32,56 @@
 
 
 ## Why ALTRun
-- **Tiny**: under 1 MB to download and about 2 MB unpacked: one `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install.
-- **Fast**: results appear from the first character you type. With [Everything](https://www.voidtools.com/) running, it searches every file on your disks in milliseconds; without it, a built-in index is used.
-- **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信), and highlights the matched characters.
-- **Beyond launching**: [Quick Switch](#features) jumps an Open / Save dialog to a folder you already have open in Total Commander or Explorer; select text, files or a URL in any program and press `Ctrl+Alt+\` to act on it; type `;keyword` anywhere to expand a snippet.
-- **All in one**: calculator and unit conversion, web search, browser bookmarks, clipboard history, text snippets, system commands and a terminal, so you don't need a handful of separate little tools.
-- **Keyboard first**: `→` opens the action panel, a status bar shows what `Enter` does, `F3` edits in place, `Ctrl+1`–`Ctrl+9` open a result directly.
-- **Portable and private**: no installer, no registry entries, no admin rights, no background service or driver; all data stays in the `Data\` folder. No telemetry: it only goes online to check for and download updates (plus one exchange-rate download a day if currency conversion is turned on, and a site's icon only when you click "Download Site Icon").
-- **Automatic updates**: new versions are announced in the search window; press `Enter` to install (SHA256 verified, settings kept). Scoop is supported too.
-- **Customizable**: English, Simplified Chinese, Traditional Chinese and Japanese interface; 20 built-in themes (pick one from thumbnails in Preferences), or follow the Windows light / dark mode; themes and settings are plain JSON files.
-- **Free and open source**: GPL-3.0; more than 7,000 tests run automatically on Windows for every pull request.
+- **Tiny and fast**: under 1 MB to download, no .NET, Electron or other runtime. Results appear from the first character; with [Everything](https://www.voidtools.com/) running it searches every file on your disks in milliseconds, otherwise a built-in index is used.
+- **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信).
+- **More than a launcher**: calculator and unit conversion, clipboard history, text snippets that expand anywhere, web search, bookmarks, window switching and system commands, so you don't need a handful of separate little tools.
+- **Keyboard first**: `→` opens the action panel for any result, `F3` edits in place, `Ctrl+1`–`Ctrl+9` open a result directly.
+- **Portable and private**: no installer, no registry entries, no admin rights, no background service; all data stays in the `Data\` folder. No telemetry: it only goes online for updates (announced in the search window, installed with `Enter`, settings kept).
+- **Yours to shape**: English, 简体中文, 繁體中文 and 日本語; 20 built-in themes or follow the Windows light / dark mode. Free and open source (GPL-3.0), with more than 7,000 tests run on Windows for every pull request.
 
 
 ## Getting started
-1. Download the [latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` (no installation, no AutoHotkey needed). If Windows SmartScreen says "Windows protected your PC", click **More info** → **Run anyway**; if your antivirus complains, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ#my-antivirus-flags-it).
-2. Press `Alt+Space` (or `Alt+R`) to open the search window, type a name and press `Enter`. In Preferences you can switch to a double tap of `Ctrl` / `Shift` instead.
+1. Download the [latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` (no installation, no AutoHotkey needed). If SmartScreen says "Windows protected your PC", click **More info** → **Run anyway**; for antivirus warnings see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ#my-antivirus-flags-it).
+2. Press `Alt+Space` (or `Alt+R`) to open the search window, type a name and press `Enter`.
 3. Type `?` to see every syntax and shortcut; press `Ctrl+,` to open Preferences.
 
-With [AutoHotkey v2](https://www.autohotkey.com/) installed, you can also run `ALTRun.ahk` from the source code directly.
-
-**Install with [Scoop](https://scoop.sh/)** (creates a Start menu shortcut and keeps your settings across upgrades):
-```powershell
-scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
-scoop install altrun
-scoop update altrun    # upgrade (quit ALTRun first)
-```
-The winget manifest has been submitted; once it is accepted you can install with `winget install zhugecaomao.ALTRun`.
-
-**Upgrading**: when a new version is available, the search window shows "Update Available"; press `Enter` to install it, and your settings are kept. Upgrading from an older version or from 2.x: see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
+Or install with [Scoop](https://scoop.sh/): `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun` then `scoop install altrun`. With [AutoHotkey v2](https://www.autohotkey.com/) installed, you can also run `ALTRun.ahk` from the source. Upgrading from 2.x, starting with Windows and more: [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
 
 
 ## Features
 **Search**
-- **Search window**: results update as you type, with a title and path for each; the window grows with the results, can be dragged and remembers its position, and opens on the screen with the mouse pointer when you have several monitors.
-- **Apps**: Start menu, desktop and Microsoft Store apps are indexed automatically; press `Ctrl+Del` to hide apps or built-in commands you don't want, and restore them in Preferences.
-- **Match highlighting**: the parts of a title that match what you typed (consecutive characters, word initials, pinyin initials) are highlighted.
-- **Files and folders**: in an empty search box, press `Space` first and then type a name (or use `'report` or `open report`). With Everything running it searches all disks, otherwise the built-in index; type a path such as `D:\Projects\` to browse folder by folder.
-- **Custom commands**: files, folders, programs (with arguments) and web addresses, each with an optional keyword. Add them from Explorer with right-click → Send to → ALTRun (several at once works too), and check for commands whose path no longer exists.
-- **Learned ranking**: remembers which result you picked for each query and moves frequent picks up.
-- **Pinned and recent items**: before you type anything, the window lists your pinned items and recently opened ones.
-- **Usage statistics**: counts per day and per feature (only counts are recorded).
-- **Calculator**: type an expression directly; supports unit conversion (`10 km in mi`), number bases (`255 in hex`), date arithmetic (`today + 30 days`) and optional currency conversion (`100 usd to sgd`).
-- **Web search**: `g keywords` (Google), `bd keywords` (Baidu) and more; search engines are customizable, and web search is offered when nothing else matches.
-- **Browser bookmarks**: searches Chrome, Edge, Brave and Vivaldi bookmarks; `bm keywords` searches bookmarks only.
-- **Window switcher**: type a window title or program name to switch to an open window; `w keywords` searches windows only, `w ` lists them all.
-- **System commands**: lock, sleep, shut down, empty the Recycle Bin, volume and media control, Windows tools, more than 40 Windows Settings pages (Display, Bluetooth, Wi-Fi and so on), and text conversions (case, sorting, Simplified / Traditional Chinese and more).
+- **Apps, files and folders**: Start menu, desktop and Microsoft Store apps are indexed automatically. Press `Space` in an empty search box to search files (Everything or the built-in index), `doc report` to search by type, or type a path such as `D:\Projects\` to browse.
+- **Custom commands**: files, folders, programs with arguments and web addresses, each with an optional keyword; add them from Explorer with right-click → Send to → ALTRun.
+- **Calculator**: unit conversion (`10 km in mi`), number bases (`255 in hex`), date arithmetic (`today + 30 days`) and optional currency conversion (`100 usd to sgd`).
+- **Web search and bookmarks**: `g keywords` (Google), `bd keywords` (Baidu) and your own engines; Chrome, Edge, Brave and Vivaldi bookmarks.
+- **Windows and system commands**: switch to an open window (`w keywords`); lock, sleep, shut down, volume and media control, 40+ Windows Settings pages, text conversions.
+- **Pinned and recent items** show before you type; usage statistics count what you use (counts only).
 
 **Productivity**
-- **Action panel**: select a result and press `→` (or right-click) to list what you can do with it, such as run as administrator, open file location, copy path, open a terminal here or show properties.
-- **Actions on selected content**: select text, files or a URL in any program and press `Ctrl+Alt+\` for actions such as web search, save as a snippet, or convert and replace the original text.
-- **Edit in place**: press `F3` to edit a command, snippet or search engine; apps and files can be turned into custom commands in one step.
-- **Clipboard history**: press `Ctrl+Alt+C` or type `clip`. Records text, files and images; pin the ones you use often, paste as plain text, and ignore anything copied from password managers.
-- **Text snippets**: search by name, keyword or content; placeholders such as `{date}`, `{clipboard}` and `{cursor}`; type `;keyword` in any program to expand a snippet.
-- **Terminal**: type `>ipconfig /all` to run it in a terminal.
-- **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results.
+- **Action panel** (`→` or right-click): run as administrator, open file location, copy path, open a terminal here, properties and more.
+- **Actions on selected content**: select text, files or a URL in any program and press `Ctrl+Alt+\` to search, save as a snippet, or convert and replace the text.
+- **Clipboard history** (`Ctrl+Alt+C`): text, files and images; pin items, paste as plain text, password managers ignored.
+- **Text snippets**: placeholders such as `{date}`, `{clipboard}` and `{cursor}`; type `;keyword` in any program to expand.
+- **Also**: run terminal commands (`>ipconfig /all`), show a result in large type (`Ctrl+L`).
 
 **Extensions**
-- **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder.
-- **Date stamp**: while renaming a file, press `Ctrl+D` to add or update a date before the extension (`Report.docx` → `Report - 28.09.2026.docx`).
-- **Custom hotkeys**: assign a hotkey to any system command, optionally only inside specific programs.
-- **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown.
-
-**For structural engineers**
-- **Structural calculations** (off by default): the calculator can add beam main bars and rebar area below its result.
-- **PT Tools**: rebar / BRC mesh area calculations and SPF2M post-tensioning tendon profiles, with results you can copy to Excel.
+- **Quick Switch**: in an Open / Save dialog, `Ctrl+G` / `Ctrl+E` jump to the folder open in Total Commander / Explorer; a folder panel lists every open and recent folder.
+- **Date stamp**: while renaming a file, `Ctrl+D` adds or updates a date before the extension.
+- **Custom hotkeys** for any system command, optionally only in specific programs.
+- **Scripts**: drop `.ahk`, `.ps1`, `.bat` or `.py` files into `Scripts\` to run them from the search window, with arguments and output.
+- **For structural engineers**: beam rebar calculations in the calculator (off by default) and PT Tools (rebar / BRC mesh areas, SPF2M tendon profiles).
 
 
 ## Screenshots
 | Search window | Action panel (`→`) |
 |:---:|:---:|
 | <img src="docs/images/screenshots/search.png" alt="Search window"> | <img src="docs/images/screenshots/actions.png" alt="Action panel"> |
-| **File search (`Space` + name)** | **Search by file type (`doc` + name)** |
-| <img src="docs/images/screenshots/files.png" alt="File search"> | <img src="docs/images/screenshots/filetype.png" alt="Search by file type"> |
-| **Calculator** | **Pinyin initials (`jsb` finds 记事本, Notepad)** |
-| <img src="docs/images/screenshots/calculator.png" alt="Calculator"> | <img src="docs/images/screenshots/pinyin.png" alt="Pinyin initials"> |
-| **Clipboard history (`clip`)** | **Pinned and recent items (empty search box)** |
-| <img src="docs/images/screenshots/clipboard.png" alt="Clipboard history"> | <img src="docs/images/screenshots/empty.png" alt="Pinned and recent items"> |
-| **Browse folders (type a path)** | **Web search (`g` + keywords)** |
-| <img src="docs/images/screenshots/browse.png" alt="Browse folders"> | <img src="docs/images/screenshots/websearch.png" alt="Web search"> |
+| **File search (`Space` + name)** | **Calculator** |
+| <img src="docs/images/screenshots/files.png" alt="File search"> | <img src="docs/images/screenshots/calculator.png" alt="Calculator"> |
+| **Pinyin initials (`jsb` finds 记事本, Notepad)** | **Clipboard history (`clip`)** |
+| <img src="docs/images/screenshots/pinyin.png" alt="Pinyin initials"> | <img src="docs/images/screenshots/clipboard.png" alt="Clipboard history"> |
 | **Quick Switch (folder panel below an Open / Save dialog)** | **Themes (Preferences → Appearance)** |
 | <img src="docs/images/screenshots/quickswitch.png" alt="Quick Switch"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="Themes"> |
-| **Preferences** | **Custom commands** |
-| <img src="docs/images/screenshots/prefs-general.png" alt="Preferences"> | <img src="docs/images/screenshots/prefs-commands.png" alt="Custom commands"> |
-| **Snippets** | **Scripts** |
-| <img src="docs/images/screenshots/prefs-snippets.png" alt="Snippets"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> |
 
 <details>
 <summary><b>Built-in themes</b> (20 in total, click to expand)</summary>
@@ -145,28 +111,17 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | Key | Action |
 |---|---|
 | `Alt+Space` | Show / hide the search window (configurable) |
-| `Enter` | Open the selected result |
-| `Ctrl+Enter` | Files / folders: open the containing folder; text: paste into the active window |
-| `Alt+Enter` | Copy the path, URL or text |
-| `Ctrl+1`–`Ctrl+9` | Open the Nth result |
-| `↑` `↓` / `Ctrl+P` `Ctrl+N` | Move up / down one row |
-| `PgUp` `PgDn` | Previous / next page |
-| `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history |
-| `Tab` | Autocomplete; folders: browse into them |
-| `Insert` | Mark several files / folders, then press `→` to act on all of them |
-| `Space` (in an empty search box, or with the cursor at the start) | Switch to file search, keeping what you typed; `Backspace` in an empty box or at the start switches back |
-| `folder name` | Search folders only |
-| `?` | Cheat sheet: every syntax and shortcut |
+| `Enter` / `Ctrl+1`–`Ctrl+9` | Open the selected / Nth result |
+| `Ctrl+Enter` | Files: open the containing folder; text: paste into the active window |
+| `Alt+Enter` / `Ctrl+C` | Copy the path, URL or text |
 | `→` / right-click | Action panel / action menu |
-| `F3` | Edit the selected result, or add an app, file or URL as a custom command |
-| `Ctrl+Del` | Delete the selected result (with confirmation); apps: hide from results |
-| `Ctrl+C` / `Ctrl+L` | Copy the selected result / large type |
-| `F2` or `Ctrl+,` / `F4` | Preferences / edit ALTRun.json in Notepad |
-| `F1` | About ALTRun (version, check for updates, project page) |
-| `Ctrl+Alt+C` | Clipboard history |
-| `Esc` | Close the action panel / hide the window |
+| `Space` (empty search box) | Switch to file search |
+| `Tab` | Autocomplete; folders: browse into them |
+| `F3` / `Ctrl+Del` | Edit / delete (apps: hide) the selected result |
+| `Ctrl+,` / `F1` | Preferences / About ALTRun |
+| `?` | Cheat sheet: every syntax and shortcut |
 
-For the full syntax (`'file`, `>command`, `clip`, `snip`, web search keywords and more), see [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/en-Usage) in the wiki.
+More in [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/en-Usage).
 
 
 ## Documentation
