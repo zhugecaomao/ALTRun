@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.15]
+
+测试版。
+
+Test build.
+
+### 改进
+- "在管理员窗口里也生效" 后面加上 Windows 的 UAC 小盾牌: 打开 / 关掉这个选项时要确认一次管理员权限
+
 ## [2026.10.12.14]
 
 测试版。
@@ -694,7 +703,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.15...HEAD
+[2026.10.12.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.14...2026.10.12.15
 [2026.10.12.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.13...2026.10.12.14
 [2026.10.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.12...2026.10.12.13
 [2026.10.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.11...2026.10.12.12
