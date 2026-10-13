@@ -267,6 +267,22 @@ class PreferencesWindow {
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
 
+    ; "管理员窗口里也生效" 打开时建计划任务、关掉时删掉 (各确认一次 UAC)。建不成 (取消了 UAC) 时说明并把选项关回去;
+    ; 返回 false = 不保存 (用户选择回去改)
+    static _ApplyCapsLockHelper(general) {
+        was := AppSettings.General.Has("CapsLockElevated") && AppSettings.General["CapsLockElevated"]
+        now := general.Has("CapsLockElevated") && general["CapsLockElevated"]
+        if (now && !CapsLockSwitch.IsMode(general["CapsLock"]))
+            general["CapsLockElevated"] := now := 0                         ; CapsLock 照常时这个选项没有作用
+        if (now && !was && !CapsLockHelper.Install()) {
+            MsgBox(I18n.T("Prefs.CapsLockElevatedFailed"), I18n.T("Prefs.Title"), "Icon! Owner" PreferencesWindow.Gui.Hwnd)
+            general["CapsLockElevated"] := 0
+        } else if (was && !now) {
+            CapsLockHelper.Uninstall()
+        }
+        return true
+    }
+
     ; 命令行 "-Preferences 页码 [x y]" (应用 之后重新打开) -> {Page, X, Y}
     static ParseArgs(args) {
         value(i) => (args.Length >= i && IsInteger(args[i])) ? Integer(args[i]) : ""
@@ -291,6 +307,8 @@ class PreferencesWindow {
         if !PreferencesWindow._positionReset                                ; 打开偏好设置之后拖动过搜索窗口: 用新的位置
             appearance["Position"] := PreferencesWindow.DeepCopy(AppSettings.Appearance["Position"])
 
+        if !PreferencesWindow._ApplyCapsLockHelper(general)
+            return
         AppSettings.Data := PreferencesWindow.Working
         if !AppSettings.Save()
             return
@@ -650,13 +668,16 @@ class PreferencesWindow {
 
     static _BuildHotkeys() {
         PreferencesWindow._BeginPage("Prefs.Page.Hotkeys", 100)                ; 标签列窄一些: 下面的列表从最左边开始, 上面的选项也靠左
-        PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"]     ; 按 CapsLock 切换输入法 (CapsLockSwitch)
+        capsLock := PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"]     ; 按 CapsLock 切换输入法 (CapsLockSwitch)
             , [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")])
+        elevated := PreferencesWindow._Check("General.CapsLockElevated", "Prefs.CapsLockElevated")   ; 管理员窗口里也生效 (CapsLockHelper)
+        elevated.Enabled := capsLock.Value > 1
+        capsLock.OnEvent("Change", (*) => elevated.Enabled := capsLock.Value > 1)
         PreferencesWindow._Gap()
         actions := [["ToggleWindow", "Show / hide ALTRun (ToggleWindow)"]]
         for command in SystemProvider.Commands()
             actions.Push([command["Id"], command["Title"] " (" command["Id"] ")"])
-        PreferencesWindow._List("Hotkeys", 430
+        PreferencesWindow._List("Hotkeys", 422
             , [["Prefs.Col.Key", "Key", 160], ["Prefs.Col.Action", "Action", 150], ["Prefs.Col.WinTitle", "WinTitle", 230]]
             , [ItemEditor.Field("Key", "Prefs.Col.Key", "hotkey", true, "", I18n.T("Prefs.HotkeyHint"))
              , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)

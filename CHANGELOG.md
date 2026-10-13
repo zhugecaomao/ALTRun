@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.13]
+
+测试版。
+
+Test build.
+
+### 新增
+- **CapsLock 切换在管理员窗口里也生效** (#158, 偏好设置 → 自定义热键 → "在管理员窗口里也生效", 默认关): 打开时建一个计划任务 (确认一次 UAC), 之后 ALTRun 每次启动都用它以管理员身份运行一个只管 CapsLock 的小助手 (不再弹 UAC), ALTRun 退出时一起退出。ALTRun 本身还是普通权限, 打开的程序、拖放文件、网络驱动器都不受影响; 大写锁定的开 / 关提示照常显示。关掉时删掉计划任务
+
 ## [2026.10.12.12]
 
 测试版。
@@ -676,7 +685,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.13...HEAD
+[2026.10.12.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.12...2026.10.12.13
 [2026.10.12.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.11...2026.10.12.12
 [2026.10.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.10...2026.10.12.11
 [2026.10.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.9...2026.10.12.10

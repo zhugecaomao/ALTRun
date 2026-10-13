@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.12.12"
+    static Version := "2026.10.12.13"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -36,6 +36,8 @@ class App {
     static _handOffNote := ""
 
     static Start() {
+        if (A_Args.Length && A_Args[1] = CapsLockHelper.Arg)                 ; 管理员窗口里切换输入法的小助手, 只做这一件事
+            return CapsLockHelper.Run()
         if App.HandOff()
             ExitApp()
         if A_IsAdmin
@@ -404,6 +406,7 @@ class App {
         if CapsLockSwitch.IsMode(capsLock) {                                ; 按 CapsLock 切换输入法, 按住才是大写锁定
             CapsLockSwitch.Mode := capsLock
             CapsLockSwitch.Register((key, fn) => App._TryHotkey(key, fn))
+            CapsLockHelper.Start()                                          ; 管理员窗口里也生效 (打开了这个选项时)
         }
 
         if (AppSettings.General["SelectionHotkey"] != "")                  ; 选中内容的操作
@@ -566,6 +569,10 @@ class App {
             App.Toast(I18n.T("Update.Done", App.Version), 5000)
             return
         }
+        if (args.Length >= 2 && args[1] = "-CapsLockState") {               ; 管理员窗口里的小助手开 / 关了大写锁定: 这里显示提示
+            App.Notify(CapsLockSwitch.StateText(args[2] = "1"), CapsLockSwitch.NotifyMs)
+            return
+        }
         if (args.Length >= 1 && args[1] = "-Update") {
             UpdateChecker.Check(true)
             return
@@ -584,6 +591,7 @@ class App {
 
     ; OnExit 回调返回非零值会取消退出, 所以这里不返回任何值
     static _OnExit() {
+        CapsLockHelper.Stop()
         Knowledge.Save()
         Usage.Save()
         ClipboardProvider.Save()

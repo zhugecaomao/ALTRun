@@ -99,10 +99,11 @@ class CapsLockSwitch {
     static ToggleCapsLock() {
         on := !GetKeyState("CapsLock", "T")
         SetCapsLockState(on ? "On" : "Off")
-        App.Notify(CapsLockSwitch.StateText(on), CapsLockSwitch.NotifyMs)
+        CapsLockSwitch.Notify.Call(on)
     }
 
     static NotifyMs := 1000
+    static Notify := (on) => App.Notify(CapsLockSwitch.StateText(on), CapsLockSwitch.NotifyMs)   ; 管理员窗口的小助手里换成让 ALTRun 显示 (CapsLockHelper)
     static ShiftDown() => GetKeyState("Shift")
     static StateText(on) => I18n.T(on ? "Caps.On" : "Caps.Off")
 
