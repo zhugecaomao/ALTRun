@@ -334,7 +334,7 @@ class PreferencesWindow {
         PreferencesWindow._Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
                    , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
-                   , ["CheckForUpdates", "Prefs.CheckUpdates", "Prefs.Group.Updates"], ["SaveLog", "Prefs.SaveLog", "Prefs.Group.Diagnostics"]]
+                   , ["CheckForUpdates", "Prefs.CheckUpdates", "Prefs.Group.Updates"]]   ; 写入调试日志在 高级 → 诊断
             PreferencesWindow._Check("General." row[1], row[2], , , row[3])
         PreferencesWindow._Gap()
         PreferencesWindow._Field("General.FileManager", "Prefs.FileManager", "L", "file")
@@ -733,21 +733,23 @@ class PreferencesWindow {
         PreferencesWindow.Gui.SetFont("s15 bold")
         PreferencesWindow._Add("Text", "x" textX " w" textW, App.Name)
         PreferencesWindow.Gui.SetFont("s9 norm")
-        PreferencesWindow._y := top + 32
+        ; 宣传语、版本号 (报告问题时要找的, 单独一行)、版权和许可证: 同样的字号, 后两行灰色, 行距宽松一点
+        PreferencesWindow._y := top + 33
         PreferencesWindow._Add("Text", "x" textX " w" textW, I18n.T("App.Tagline"))
-        PreferencesWindow._y := top + 52
-        copyright := "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao"         ; 版本号以发布年份开头
-        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) App.AdminSuffix() "   ·   " copyright "   ·   GPL-3.0")
-        PreferencesWindow._y := top + 74
+        PreferencesWindow._y := top + 56
+        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) App.AdminSuffix())
+        PreferencesWindow._y := top + 78
+        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao   ·   GPL-3.0")   ; 版本号以发布年份开头
+        PreferencesWindow._y := top + 105
         links := ""
         for link in [[App.Website, I18n.T("Prefs.Homepage")], [App.RepoUrl, "GitHub"], [App.RepoUrl "/releases", I18n.T("Update.ReleaseNotes")]
                    , [App.RepoUrl "/issues/new/choose", I18n.T("Prefs.ReportIssue")]]
             links .= (links = "" ? "" : "   ·   ") '<a href="' link[1] '">' link[2] '</a>'
         PreferencesWindow._Add("Link", "x" textX " w" textW, links)
-        PreferencesWindow._y := top + 102
+        PreferencesWindow._y := top + 134
         PreferencesWindow._Add("Button", "x" textX " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T("Tray.CheckUpdate"))
             .OnEvent("Click", (*) => UpdateChecker.Check())
-        PreferencesWindow._y := top + 102 + PreferencesWindow.ButtonH + 22
+        PreferencesWindow._y := top + 134 + PreferencesWindow.ButtonH + 22
 
         PreferencesWindow._Section("Prefs.Section.Data")
         ; 设置文件就是数据文件夹里的 ALTRun.json, 不另写一行; 路径太长时中间用省略号 (SS_PATHELLIPSIS), 鼠标停留显示完整路径
@@ -759,8 +761,42 @@ class PreferencesWindow {
             , ["Prefs.OpenDataFolder", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir)]
             , ["Prefs.ChangeDataFolder", (*) => PreferencesWindow._ChangeDataFolder()])
 
+        ; 报告问题时要的: 调试日志 (从常规页挪过来, 和打开日志放在一起) 和系统信息
+        PreferencesWindow._Section("Prefs.Group.Diagnostics")
+        PreferencesWindow._Check("General.SaveLog", "Prefs.SaveLog")
+        PreferencesWindow._y += 4
+        PreferencesWindow._Buttons(""
+            , ["Prefs.OpenLog", (*) => PreferencesWindow._OpenLog()]
+            , ["Prefs.CopySystemInfo", (*) => (A_Clipboard := App.SystemInfo(), App.Notify(I18n.T("Prefs.SystemInfoCopied")))])
+
         PreferencesWindow._Section("Prefs.Section.Reset")
-        PreferencesWindow._Button("Prefs.ResetLearning", (*) => PreferencesWindow._ResetLearning())
+        PreferencesWindow._Buttons(""
+            , ["Prefs.ResetLearning", (*) => PreferencesWindow._ResetLearning()]
+            , ["Prefs.RestoreDefaults", (*) => PreferencesWindow._RestoreDefaults()])
+    }
+
+    ; 还没有日志时 (没打开 "写入调试日志", 或者刚打开还没应用) 说明怎样才有
+    static _OpenLog() {
+        Logger.Flush()
+        if !FileExist(Logger.File)
+            return MsgBox(I18n.T("Prefs.NoLog"), App.Name, "Iconi Owner" PreferencesWindow.Gui.Hwnd)
+        App.OpenLog()
+    }
+
+    ; 恢复默认设置: 确认后备份 ALTRun.json, 保留自己加的内容 (见 AppSettings.KeptOnReset), 其余换成默认值, 重新载入。
+    ; 偏好设置里还没应用的修改不要了
+    static _RestoreDefaults() {
+        if (MsgBox(I18n.T("Prefs.RestoreDefaultsConfirm"), App.Name, "YesNo Icon! Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
+            return
+        backup := AppSettings.File ".bak"
+        try FileCopy(AppSettings.File, backup, true)
+        catch as e
+            return MsgBox(I18n.T("Settings.SaveError", e.Message), App.Name, "Icon! Owner" PreferencesWindow.Gui.Hwnd)
+        AppSettings.Data := AppSettings.ResetData(AppSettings.Data)
+        if !AppSettings.Save()
+            return
+        Logger.Debug("Preferences: settings restored to defaults, old file kept as " backup)
+        App.Reload()
     }
 
     ; 使用统计 (和 Alfred 的 Usage 一样): 合计, 最近 30 天每天的柱状图, 每个功能的次数

@@ -5,6 +5,29 @@
 
 ## [未发布]
 
+## [2026.10.12.11]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 高级 最上面: 宣传语、版本号、版权三行用同样的字号, 版本号和版权灰色, 行距宽松一点
+
+## [2026.10.12.10]
+
+测试版。
+
+Test build.
+
+### 新增
+- **恢复默认设置** (偏好设置 → 高级 → 重置): 所有选项恢复成默认值, 自定义命令、文字片段、热键、网页搜索和置顶的项目保留; 学习排序、剪贴板历史和使用统计不受影响。先确认, 原来的设置备份为 `ALTRun.json.bak`, 然后重新载入 (以前要退出 ALTRun 手动把设置文件改名)
+- **复制系统信息** (偏好设置 → 高级 → 诊断): 把版本、Windows 版本、显示缩放、语言、输入法、主题、Everything 状态等复制到剪贴板, 报告问题时贴上; 不含文件路径和搜索的内容
+- **打开日志** 按钮 (偏好设置 → 高级 → 诊断); 还没有日志时说明怎样打开
+
+### 改进
+- 偏好设置 → 高级 重新整理: 版本号单独一行 (版权和许可证在下面一行小字), "写入调试日志" 从常规页挪到这一页的 "诊断" 一节, 和打开日志、复制系统信息放在一起; "编辑 ALTRun.json" 下面的说明写清楚说的是哪个按钮
+
 ## [2026.10.12.9]
 
 测试版。
@@ -637,7 +660,9 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.11...HEAD
+[2026.10.12.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.10...2026.10.12.11
+[2026.10.12.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.9...2026.10.12.10
 [2026.10.12.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.8...2026.10.12.9
 [2026.10.12.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.7...2026.10.12.8
 [2026.10.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.6...2026.10.12.7

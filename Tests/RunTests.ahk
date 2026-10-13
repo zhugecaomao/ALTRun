@@ -4004,6 +4004,24 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("InputTop.font metrics (ascent " metrics.Ascent ", cap " metrics.Cap ")", metrics.Ascent > metrics.Cap && metrics.Cap > 10)
         TestRunner.Equal("Input.english choices", AppSettings.Defaults()["General"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
         AppSettings.General["SwitchToEnglishInput"] := saved
+        ; 恢复默认设置: 选项换成默认值, 自己加的内容 (命令、片段、热键、网页搜索、置顶、隐藏的系统命令) 保留
+        current := AppSettings.Defaults()
+        current["General"]["Hotkey"] := "^Space", current["Appearance"]["Theme"] := "Dark"
+        current["CustomCommands"] := [Map("Title", "Mine")], current["Snippets"] := [Map("Keyword", "sig")]
+        current["Features"]["WebSearch"]["Engines"] := [Map("Id", "mine")], current["Features"]["Recent"]["Pinned"] := ["x"]
+        current["Features"]["System"]["Hidden"] := ["Lock"], current["Features"]["WebSearch"]["Fallbacks"] := []
+        reset := AppSettings.ResetData(current)
+        TestRunner.Equal("RestoreDefaults.options reset", reset["General"]["Hotkey"] " " reset["Appearance"]["Theme"] " " reset["Features"]["WebSearch"]["Fallbacks"].Length
+            , AppSettings.Defaults()["General"]["Hotkey"] " " AppSettings.Defaults()["Appearance"]["Theme"] " " AppSettings.Defaults()["Features"]["WebSearch"]["Fallbacks"].Length)
+        TestRunner.Equal("RestoreDefaults.content kept", reset["CustomCommands"][1]["Title"] " " reset["Snippets"][1]["Keyword"] " " reset["Features"]["WebSearch"]["Engines"][1]["Id"]
+            " " reset["Features"]["Recent"]["Pinned"][1] " " reset["Features"]["System"]["Hidden"][1], "Mine sig mine x Lock")
+        TestRunner.Equal("RestoreDefaults.no data location", AppSettings.ResetData(Map()).Has("DataLocation") ? 1 : 0, 0)
+        TestRunner.Equal("RestoreDefaults.data location kept", AppSettings.ResetData(Map("DataLocation", "D:\Sync"))["DataLocation"], "D:\Sync")
+        ; 系统信息: 有版本号, 不含数据文件夹的路径
+        info := App.SystemInfo()
+        TestRunner.True("SystemInfo.version", InStr(info, App.Name " " App.Version " (") = 1)
+        TestRunner.True("SystemInfo.no paths", !InStr(info, AppSettings.DataDir) && !InStr(info, A_ScriptDir))
+        TestRunner.Equal("SystemInfo.lines", StrSplit(Trim(info, "`n"), "`n").Length, 9)
         ; 以管理员身份运行 (#158): 新启动的是管理员、正在运行的不是时替换它, 其它情况照常把参数交过去
         TestRunner.Equal("Admin.takes over", (App.TakesOver(true, false) ? 1 : 0) (App.TakesOver(true, true) ? 1 : 0) (App.TakesOver(false, false) ? 1 : 0) (App.TakesOver(false, true) ? 1 : 0), "1000")
         TestRunner.Equal("Admin.this process", Win.IsElevated(ProcessExist()) ? 1 : 0, A_IsAdmin ? 1 : 0)
