@@ -88,7 +88,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -3020,6 +3020,40 @@ class Tests {
     }
 
     ; CapsLock 切换中 / 英模式要做什么 (Win.ImeTarget), 包括读数不跟着变的输入法 (#154)
+    ; 启动后预读常用图标: 选过的按次数排在前面; 去重、跳过已缓存的、最多 PrefetchMax 个; 窗口显示时不读
+    static IconPrefetch() {
+        eq := (n, a, e) => TestRunner.Equal("IconPrefetch." n, a, e)
+        savedPicks := Knowledge.Picks
+        Knowledge.Picks := Map("app:b", Map("Count", 2), "app:c", Map("Count", 5), "app:d", Map("Count", 2), "app:e", Map("Count", 0))
+        order := ""
+        for item in ProviderRegistry.ByPicks([{Uid: "app:a"}, {Uid: "app:b"}, {Uid: "app:c"}, {Uid: "app:d"}, {Uid: "app:e"}, {Uid: "app:f"}])
+            order .= SubStr(item.Uid, 5)
+        eq("picked first, by count, ties keep order", order, "cbdaef")
+        Knowledge.Picks := Map("x", "not a map")
+        eq("bad pick data is ignored", ProviderRegistry.ByPicks([{Uid: "x"}]).Length, 1)
+        Knowledge.Picks := savedPicks
+
+        savedMax := IconCache.PrefetchMax, savedWhen := IconCache.PrefetchWhen
+        cached := "ext:.prefetchcached"
+        IconCache.GetNow(cached)
+        IconCache.PrefetchWhen := () => false                               ; 窗口显示中
+        IconCache.PrefetchMax := 3
+        IconCache.Prefetch(["ext:.pf1", "", "ext:.PF1", cached, "ext:.pf2", "ext:.pf3", "ext:.pf4"])
+        eq("dedupe, skip cached, limit", IconCache.PrefetchPending, 3)
+        IconCache._PrefetchStep()
+        eq("waits while the window is shown", IconCache.PrefetchPending, 3)
+        IconCache.PrefetchWhen := () => true
+        start := A_TickCount
+        while (IconCache.PrefetchPending && A_TickCount - start < 3000)
+            IconCache._PrefetchStep()
+        eq("all loaded", IconCache.PrefetchPending, 0)
+        eq("in the cache", IconCache._icons.Has(IconCache._CacheKey("ext:.pf3")), true)
+        eq("over the limit not loaded", IconCache._icons.Has(IconCache._CacheKey("ext:.pf4")), false)
+        IconCache.Prefetch([])
+        eq("empty list", IconCache.PrefetchPending, 0)
+        IconCache.PrefetchMax := savedMax, IconCache.PrefetchWhen := savedWhen
+    }
+
     ; 淡入淡出: 透明度曲线; 真的窗口淡入时先透明、结束后是主题的透明度; 淡出时留一个影子, 结束后消失
     static WindowFade() {
         eq := (n, a, e) => TestRunner.Equal("WindowFade." n, a, e)

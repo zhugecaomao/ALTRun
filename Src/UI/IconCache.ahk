@@ -30,6 +30,7 @@
 ;   IconCache.Size := 32                 (由 SearchWindow 按主题和 DPI 设置)
 ;   IconCache.OnLoaded := () => ...      后台加载完一批图标后调用
 ;   hIcon := IconCache.Get(item.Icon)    0 = 没有图标 / 还在加载
+;   IconCache.Prefetch(specs)            启动后在后台预读常用的图标 (见 Prefetch)
 ;   item.Icon := IconCache.FolderIcon(path)   文件夹: 通用图标 "folder:" 或它自己的路径
 ;===============================================================================
 
@@ -72,6 +73,54 @@ class IconCache {
         }
         IconCache._used[key] := ++IconCache._tick
         return IconCache._icons[key]
+    }
+
+    ; 启动后在后台预读常用项目的图标 (specs 按优先顺序, 最多 PrefetchMax 个): 第一次搜到时图标和文字一起出来,
+    ; 不再先空着、过一会儿才出现 (旧电脑上读一个程序的图标要几十毫秒)。和 Get 的队列一样每轮最多约 10 ms,
+    ; 但只在 PrefetchWhen 返回 true 时 (搜索窗口隐藏, 没有在打字) 读, 不和显示中的结果抢时间; 已经缓存的跳过。
+    ; 预读的图标不在屏幕上, 读完不重画
+    static PrefetchMax := 300, PrefetchGapMs := 30, PrefetchWhen := ""
+    static _prefetch := [], _prefetchTimer := "", _prefetchStats := ""
+    static Prefetch(specs) {
+        IconCache._prefetch := [], seen := Map()
+        for spec in specs {
+            if (spec = "" || IconCache._prefetch.Length >= IconCache.PrefetchMax)
+                continue
+            key := IconCache._CacheKey(spec)
+            if (seen.Has(key) || IconCache._icons.Has(key))
+                continue
+            seen[key] := true
+            IconCache._prefetch.Push(spec)
+        }
+        IconCache._prefetchStats := {Count: 0, Ms: 0, Total: IconCache._prefetch.Length}
+        if (IconCache._prefetchTimer = "")
+            IconCache._prefetchTimer := () => IconCache._PrefetchStep()
+        SetTimer(IconCache._prefetchTimer, IconCache._prefetch.Length ? IconCache.PrefetchGapMs : 0)
+    }
+
+    static PrefetchPending => IconCache._prefetch.Length
+
+    static _PrefetchStep() {
+        if (IconCache._queue.Count || (IsObject(IconCache.PrefetchWhen) && !IconCache.PrefetchWhen.Call()))
+            return                                                          ; 屏幕上的图标优先 / 窗口显示中: 下一轮再说
+        start := IconCache._Ms(), stats := IconCache._prefetchStats
+        while IconCache._prefetch.Length {
+            spec := IconCache._prefetch.RemoveAt(1)
+            key := IconCache._CacheKey(spec)
+            if IconCache._icons.Has(key)
+                continue
+            hIcon := 0
+            try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
+            IconCache._Store(key, hIcon)
+            stats.Count += 1
+            if (IconCache._Ms() - start > 10)
+                break
+        }
+        stats.Ms += IconCache._Ms() - start
+        if !IconCache._prefetch.Length {
+            SetTimer(IconCache._prefetchTimer, 0)
+            Logger.Debug(Format("Perf: icons prefetched {} of {} in {} ms", stats.Count, stats.Total, Round(stats.Ms)))
+        }
     }
 
     ; 文件夹结果的图标: 普通文件夹都一样, 用通用图标 (不用逐个读, 几百个文件夹时明显更快);
@@ -154,6 +203,7 @@ class IconCache {
     }
 
     static Clear() {
+        IconCache._prefetch := []
         for key, hIcon in IconCache._icons
             if hIcon
                 DllCall("DestroyIcon", "Ptr", hIcon)

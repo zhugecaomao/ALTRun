@@ -101,6 +101,18 @@ class CustomCommandProvider {
         CustomCommandProvider._lastNeedle := ""
     }
 
+    ; 启动后在后台预读图标用 (见 ProviderRegistry.PrefetchIcons)
+    static IconItems() {
+        items := []
+        for command in AppSettings.CustomCommands {
+            try {
+                item := CustomCommandProvider._ToItem(command, 0)
+                items.Push({Icon: item.Icon, Uid: item.Uid})
+            }
+        }
+        return items
+    }
+
     static _Uid(command) {
         arguments := command.Has("Arguments") ? command["Arguments"] : ""
         commandType := command.Has("Type") ? command["Type"] : "File"

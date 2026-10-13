@@ -68,6 +68,7 @@ class SearchWindow {
     ;---------------------------------------------------------------------------
     ; Create
     ;---------------------------------------------------------------------------
+    static IconPrefetchDelay := 2000                                        ; 启动后多久开始预读常用图标 (见 IconCache.Prefetch)
     static Create() {
         SearchWindow.Width       := Win.Scale(AppSettings.Appearance["Width"])
         SearchWindow.VisibleRows := Max(1, Min(AppSettings.Appearance["VisibleRows"], 9))
@@ -79,6 +80,7 @@ class SearchWindow {
             IconCache.Clear()
         IconCache.Size := SearchWindow.IconSize
         IconCache.OnLoaded := () => SearchWindow._Repaint()
+        IconCache.PrefetchWhen := () => !SearchWindow.IsVisible()            ; 预读图标只在窗口隐藏时进行, 不和打字抢时间
         SearchWindow._CreateGdiObjects()
 
         w := SearchWindow.Width, pad := SearchWindow.Padding
