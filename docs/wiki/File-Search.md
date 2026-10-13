@@ -66,7 +66,7 @@ ALTRun 自动选择:
 | InDefaultResults | 0 | 普通搜索时也显示匹配的文件和文件夹 |
 | DefaultResultsLimit | 6 | 普通结果里最多显示几条文件 |
 | MinQueryLength | 2 | 至少输入几个字才搜文件 |
-| Keywords | `open, find` | 只搜文件的关键字 |
+| Keywords | `open, find, file` | 只搜文件的关键字 |
 | FolderKeywords | `folder` | 只搜文件夹的关键字 |
 | TypeFilters | doc / pic / video / audio / zip / exe / cad | 文件类型筛选, 每行 `关键字 = 扩展名 ...` |
 | QuotePrefix | 1 | 以 `'` 开头只搜文件和文件夹 |

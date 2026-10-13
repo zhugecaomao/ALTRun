@@ -54,7 +54,7 @@ Split over the "General", "Search Window" and "Hotkeys" (Caps Lock) pages in Pre
 ## Appearance
 | Key | Default | Description |
 |---|---|---|
-| Theme | `Light` | Theme name, see [Themes](en-Themes) |
+| Theme | `System` | Theme name, see [Themes](en-Themes); `System` follows the Windows light / dark mode |
 | Width | 700 | Search window width (pixels, scaled with the display) |
 | VisibleRows | 8 | Maximum number of result rows shown (1–9) |
 | Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (usage tips show there when the status bar is off) |

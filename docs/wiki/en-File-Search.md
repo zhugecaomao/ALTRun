@@ -66,7 +66,7 @@ Preferences → File Search (how a search starts, file types, number of results)
 | InDefaultResults | 0 | Also show matching files and folders in normal searches |
 | DefaultResultsLimit | 6 | Maximum number of files in normal results |
 | MinQueryLength | 2 | Minimum number of letters before files are searched |
-| Keywords | `open, find` | Keywords that search files only |
+| Keywords | `open, find, file` | Keywords that search files only |
 | FolderKeywords | `folder` | Keywords that search folders only |
 | TypeFilters | doc / pic / video / audio / zip / exe / cad | File type filters, one `keyword = ext ...` per line |
 | QuotePrefix | 1 | Input starting with `'` searches files and folders only |

@@ -40,7 +40,7 @@ class FileSearchProvider {
             return FileSearchProvider.BrowseResults(browse)
         if (options["QuotePrefix"] && query.MatchPrefix("'", &term))
             return FileSearchProvider._KeywordResults(term, options, false, true)
-        ; open / find / folder: 输入空格之后才只显示文件结果; 只输入 "folder" 时名字带 folder 的命令照常显示
+        ; open / find / file / folder: 输入空格之后才只显示文件结果; 只输入 "folder" 时名字带 folder 的命令照常显示
         if query.MatchKeyword(options["Keywords"], &term)
             return FileSearchProvider._KeywordResults(term, options, false, query.HasRest)
         if query.MatchKeyword(options["FolderKeywords"], &term)

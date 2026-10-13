@@ -736,6 +736,9 @@ class Tests {
         eq("join lines", PreferencesWindow.JoinLines(["a", "b"]), "a`r`nb")
         eq("csv", PreferencesWindow.SplitCsv("open, find ,, x")[3], "x")
         eq("join csv", PreferencesWindow.JoinCsv(["open", "find"]), "open, find")
+        sizes := PreferencesWindow.SplitCsv("10, 12,16", true)             ; 数字列表 (钢筋直径) 存成数字
+        eq("numeric csv", (sizes[1] is Number) && sizes[3] = 16 ? 1 : 0, 1)
+        eq("text csv stays text", PreferencesWindow.SplitCsv("10")[1] is String ? 1 : 0, 1)
     }
 
     static FileIndex() {
