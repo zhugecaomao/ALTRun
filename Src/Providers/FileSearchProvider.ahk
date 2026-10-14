@@ -271,11 +271,11 @@ class FileSearchProvider {
 
     ; Everything 返回的结果按文件名重新打分 (排序用)。Everything 打开了拼音 (1.5 的 pinyin 选项、1.4 的 IbEverythingExt) 时,
     ; "cs" 找到的 "测试.bat" 文件名里没有 "cs": 再按拼音首字母打一次分, 比同一档的直接匹配低 5 分。
-    ; 名称都对不上 (路径匹配、全拼等) 时 50 分
+    ; 名称都对不上 (路径匹配、全拼、多个词等) 时 50 分。多个词 ("pt 2024") 时 ScoreName 本来就对不上, 不算拼音 (白算)
     static NameScore(needle, name) {
         if (score := FileIndex.ScoreName(needle, StrLower(name)))
             return score
-        if (RegExMatch(name, "[^\x{00}-\x{ff}]") && !RegExMatch(needle, "[^\x{00}-\x{7f}]")
+        if (!InStr(needle, " ") && RegExMatch(name, "[^\x{00}-\x{ff}]") && !RegExMatch(needle, "[^\x{00}-\x{7f}]")
                 && (score := FileIndex.ScoreName(needle, StrLower(Pinyin.Initials(name)))))
             return Max(score - 5, 50)
         return 50

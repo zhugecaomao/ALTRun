@@ -559,27 +559,31 @@ class Pinyin {
         [-12556,-11848,"X"], [-11847,-11056,"Y"], [-11055,-10247,"Z"] ]
 
     ; "记事本" -> "JSB"; 非中文字符原样保留
+    ; 每个汉字查过一次就记住 (_cache): 文件名、应用名里同一个字反复出现, 不用每次都转编码再查表
+    static _cache := Map(), _buf := Buffer(4)
     static Initials(str) {
         if !RegExMatch(str, "[^\x{00}-\x{ff}]")     ; 没有中文就直接返回
             return str
-        out := ""
+        out := "", cache := Pinyin._cache
         for ch in StrSplit(str) {
             code := Ord(ch)
-            if (code >= 0x2E80 && code <= 0x9FFF) {
-                buf := Buffer(4)
-                StrPut(ch, buf, "CP936")
-                gbk := (NumGet(buf, 0, "UChar") << 8) + NumGet(buf, 1, "UChar") - 65536
-                for r in Pinyin._ranges {
-                    if (gbk >= r[1] && gbk <= r[2]) {
-                        out .= r[3]
-                        break
-                    }
-                }
-            } else {
+            if (code >= 0x2E80 && code <= 0x9FFF)
+                out .= cache.Has(ch) ? cache[ch] : (cache[ch] := Pinyin._Initial(ch))
+            else
                 out .= ch
-            }
         }
         return out
+    }
+
+    ; 一个汉字的首字母 (GB2312 一级汉字按拼音排序, 按编码范围查); 查不到 (二级汉字、繁体字...) 时 ""
+    static _Initial(ch) {
+        buf := Pinyin._buf
+        StrPut(ch, buf, "CP936")
+        gbk := (NumGet(buf, 0, "UChar") << 8) + NumGet(buf, 1, "UChar") - 65536
+        for r in Pinyin._ranges
+            if (gbk >= r[1] && gbk <= r[2])
+                return r[3]
+        return ""
     }
 }
 

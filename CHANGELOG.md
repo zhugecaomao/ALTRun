@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.14.3]
+
+测试版。
+
+Test build.
+
+### 改进
+- 拼音首字母算得更快: 每个汉字查过一次就记住 (应用、命令、书签的拼音也受益); Everything 返回大量中文文件名时, 给结果排序的时间约为原来的四分之一
+- 文件搜索输入多个词时 (例如 `pt 2024`) 不再给每条结果算拼音 (多个词本来就不按拼音排序)
+
 ## [2026.10.14.2]
 
 测试版。
@@ -629,7 +639,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.3...HEAD
+[2026.10.14.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.2...2026.10.14.3
 [2026.10.14.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.1...2026.10.14.2
 [2026.10.14.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14...2026.10.14.1
 [2026.10.14]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.14

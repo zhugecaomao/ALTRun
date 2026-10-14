@@ -1863,6 +1863,9 @@ class Tests {
         eq("no match", score("report", "测试.bat"), 50)
         eq("no chinese in the name", score("cs", "report.bat"), 50)
         eq("chinese needle: no pinyin", score("测s", "测试.bat"), 50)
+        eq("several words: no pinyin", score("cs bat", "测 试.bat"), 50)
+        eq("initials cached", Pinyin.Initials("测试") Pinyin.Initials("试测") Pinyin._cache.Has("测"), "CSSC1")
+        eq("unknown character", Pinyin.Initials("A龘B"), "AB")
         ranges := FuzzyMatcher.MatchRanges("cs", "测试.bat")
         eq("highlight", ranges.Length = 1 ? ranges[1][1] "," ranges[1][2] : ranges.Length, "1,2")
     }
