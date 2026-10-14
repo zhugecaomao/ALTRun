@@ -240,8 +240,7 @@ class FileSearchProvider {
             seen := Map()
             for item in Everything.Query(Trim(search), fetch, Everything.SORT_DATE_MODIFIED_DESC) {
                 SplitPath(item.Path, &name)
-                score := FileIndex.ScoreName(scoreNeedle, StrLower(name))
-                found.Push({Path: item.Path, IsFolder: item.IsFolder, Score: score ? score : 50})
+                found.Push({Path: item.Path, IsFolder: item.IsFolder, Score: FileSearchProvider.NameScore(scoreNeedle, name)})
                 seen[StrLower(item.Path)] := true
             }
             ; 文件和文件夹一起搜时, 同名的文件很多 (例如 ppie 文件夹里有几百个 ppie_xxx.dwg) 的话, 按修改时间取的前 fetch 条
@@ -252,8 +251,7 @@ class FileSearchProvider {
                     if seen.Has(StrLower(item.Path))
                         continue
                     SplitPath(item.Path, &name)
-                    score := FileIndex.ScoreName(scoreNeedle, StrLower(name))
-                    found.Push({Path: item.Path, IsFolder: true, Score: score ? score : 50})
+                    found.Push({Path: item.Path, IsFolder: true, Score: FileSearchProvider.NameScore(scoreNeedle, name)})
                 }
             }
             return FileSearchProvider._Best(found, limit)
@@ -270,6 +268,18 @@ class FileSearchProvider {
     }
 
     static EverythingFetch := 300
+
+    ; Everything 返回的结果按文件名重新打分 (排序用)。Everything 打开了拼音 (1.5 的 pinyin 选项、1.4 的 IbEverythingExt) 时,
+    ; "cs" 找到的 "测试.bat" 文件名里没有 "cs": 再按拼音首字母打一次分, 比同一档的直接匹配低 5 分。
+    ; 名称都对不上 (路径匹配、全拼等) 时 50 分
+    static NameScore(needle, name) {
+        if (score := FileIndex.ScoreName(needle, StrLower(name)))
+            return score
+        if (RegExMatch(name, "[^\x{00}-\x{ff}]") && !RegExMatch(needle, "[^\x{00}-\x{7f}]")
+                && (score := FileIndex.ScoreName(needle, StrLower(Pinyin.Initials(name)))))
+            return Max(score - 5, 50)
+        return 50
+    }
 
     ; Everything 搜索的前缀: "folder:" 或 "ext:doc;docx " (后面还要接搜索的文字)
     static _ScopePrefix(scope) {

@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.14.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 用 Everything 搜文件时, Everything 按拼音找到的中文文件名 (Everything 1.5 beta 打开 `pinyin` 选项, 或 1.4 装了 IbEverythingExt; 例如 `cs` 找到 "测试.bat") 按拼音首字母的匹配程度排序, 不再排在直接匹配的文件后面 (#180)
+- Wiki 文件搜索的常见问题: 怎样让 Everything 支持拼音
+
 ## [2026.10.14.1]
 
 测试版。
@@ -619,7 +629,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.2...HEAD
+[2026.10.14.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.1...2026.10.14.2
 [2026.10.14.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14...2026.10.14.1
 [2026.10.14]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.14
 [2026.10.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.12
