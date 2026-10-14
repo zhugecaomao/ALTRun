@@ -89,7 +89,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -498,6 +498,12 @@ class Tests {
     static AutoDate() {
         eq := (n, a, e) => TestRunner.Equal("AutoDate." n, a, e)
         today := "23.09.2026"
+        ; Ctrl+D 只在改名的编辑框里接管 (其它时候按键原样交给程序, 不补发)
+        eq("edit box", AutoDate.IsEditControl("Edit1"), true)
+        eq("TC rename box", AutoDate.IsEditControl("TInEdit1"), true)
+        eq("scintilla", AutoDate.IsEditControl("Scintilla1"), true)
+        eq("file list", AutoDate.IsEditControl("DirectUIHWND3"), false)
+        eq("no focus", AutoDate.IsEditControl(""), false)
         eq("with ext", AutoDate.AddDateToName("Report.docx", today), "Report - 23.09.2026.docx")
         eq("update date", AutoDate.AddDateToName("Report - 01.01.2020.docx", today), "Report - 23.09.2026.docx")
         eq("update dash date", AutoDate.AddDateToName("Report-01.01.2020.docx", today), "Report - 23.09.2026.docx")
@@ -3153,6 +3159,39 @@ class Tests {
             IconCache.Size := savedSize, IconCache.DiskDir := savedDir, IconCache._disk := savedDisk
             try DirDelete(dir, true)
         }
+    }
+
+    ; 睡眠唤醒 / 解锁 / 显示器变化后重新装键盘钩子: 连着几个事件只装一次; 有鼠标热键时也装鼠标钩子
+    static WakeHooks() {
+        eq := (n, a, e) => TestRunner.Equal("WakeHooks." n, a, e)
+        eq("mouse hotkeys", App.UsesMouseHotkeys([Map("Key", "~MButton", "Action", "PTTools")]), true)
+        eq("wheel", App.UsesMouseHotkeys([Map("Key", "^WheelUp", "Action", "x")]), true)
+        eq("keyboard only", App.UsesMouseHotkeys([Map("Key", "^!t", "Action", "x"), "bad"]), false)
+        eq("none", App.UsesMouseHotkeys([]), false)
+        savedDelay := App.WakeDelay
+        App.WakeDelay := 50
+        App._AfterWake("resume"), App._AfterWake("unlock"), App._AfterWake("display change")
+        eq("last reason wins", App._wakeReason, "display change")
+        Sleep(150)                                                          ; 定时器运行 ReinstallHooks (不出错)
+        App.WakeDelay := savedDelay
+        App.ReinstallHooks("test")
+        eq("hook still works", A_IsSuspended, 0)
+    }
+
+    ; 正在读的图标: 界面又来要时不再排一次队 (以前慢的图标会读两遍)
+    static IconLoadingOnce() {
+        eq := (n, a, e) => TestRunner.Equal("IconLoadingOnce." n, a, e)
+        key := IconCache._CacheKey("ext:.loadingonce")
+        IconCache._loading[key] := true
+        try {
+            eq("not ready", IconCache.Get("ext:.loadingonce"), 0)
+            eq("not queued again", IconCache._queue.Has(key), false)
+        } finally {
+            IconCache._loading.Delete(key)
+        }
+        IconCache.Get("ext:.loadingonce")
+        eq("queued when not loading", IconCache._queue.Has(key), true)
+        try IconCache._queue.Delete(key)
     }
 
     ; 淡入淡出: 透明度曲线; 真的窗口淡入时先透明、结束后是主题的透明度; 淡出时留一个影子, 结束后消失

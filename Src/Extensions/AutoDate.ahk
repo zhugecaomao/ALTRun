@@ -26,16 +26,28 @@ class AutoDate {
             GroupAdd("ALTRunRenameWindows", Trim(A_LoopField))
         Loop Parse, options["AppendWindows"], ","
             GroupAdd("ALTRunAppendWindows", Trim(A_LoopField))
+        ; 重命名: 只在焦点是改名的编辑框时才接管热键, 其它时候 (例如资源管理器的文件列表里 Ctrl+D = 删除)
+        ; 按键原样交给程序, 不用再自己补发一次。以前是先接管再补发: 补发时如果已经松开了 Ctrl, 而 ALTRun
+        ; 记的按键状态还是按着 (电脑睡眠 / 锁屏一夜之后可能这样), 只发出一个 "d", 把选中的文件名换成了 "d"
         try {
-            HotIfWinActive("ahk_group ALTRunRenameWindows")
+            HotIf((*) => WinActive("ahk_group ALTRunRenameWindows") && AutoDate.IsEditControl(AutoDate.FocusedControl()))
             Hotkey(options["RenameHotkey"], (*) => AutoDate._OnRename())
             HotIfWinActive("ahk_group ALTRunAppendWindows")
             Hotkey(options["AppendHotkey"], (*) => AutoDate._OnAppend())
         } catch as e {
             Logger.Error("AutoDate: cannot register hotkeys - " e.Message)
         }
-        HotIfWinActive()
+        HotIf()
     }
+
+    ; 当前窗口里有焦点的控件的 ClassNN, 取不到时 ""
+    static FocusedControl() {
+        try return ControlGetClassNN(ControlGetFocus("A"))
+        return ""
+    }
+
+    ; 改名 / 输入用的编辑框 (资源管理器、对话框的 Edit, TC 的改名框 TInEdit, Scintilla)
+    static IsEditControl(classNN) => (classNN != "" && (InStr(classNN, "Edit") || InStr(classNN, "Scintilla"))) ? true : false
 
     static Today() {
         return FormatTime(, AutoDate.Format())
@@ -64,16 +76,17 @@ class AutoDate {
         return pattern
     }
 
-    ; 只在重命名的编辑框里生效, 其它时候照常发送原来的按键
+    ; 只在重命名的编辑框里触发 (见 Init 的 HotIf)。万一触发后焦点已经离开编辑框, 什么都不做, 不补发按键
     static _OnRename() {
-        focused := ""
-        try focused := ControlGetClassNN(ControlGetFocus("A"))
-        if !(InStr(focused, "Edit") || InStr(focused, "Scintilla")) {
-            SendInput(AutoDate.Options["RenameHotkey"])
+        focused := AutoDate.FocusedControl()
+        if !AutoDate.IsEditControl(focused) {
+            Logger.Debug("AutoDate: focus left the edit box (" focused "), nothing done")
             return
         }
         Usage.Count("AutoDate")
-        newName := AutoDate.AddDateToName(ControlGetText(focused, "A"))
+        oldName := ControlGetText(focused, "A")
+        newName := AutoDate.AddDateToName(oldName)
+        Logger.Debug("AutoDate: " focused " in " WinGetClass("A") ", " StrLen(oldName) " -> " StrLen(newName) " characters")
         ControlFocus(focused, "A")
         ControlSetText(newName, focused, "A")
         SendInput("{Blind}{End}")

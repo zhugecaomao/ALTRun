@@ -47,6 +47,7 @@ class IconCache {
     static OnLoaded := ""
     static _icons   := Map()
     static _queue   := Map()              ; key -> spec, 等待后台加载
+    static _loading := Map()              ; 正在读的 (读的时候界面可能又来要同一个图标, 不再排一次队)
     static _timer   := ""
     static MaxIcons := 1500
     static SlowLoadMs := 200              ; 读一个图标超过这么多毫秒时写进调试日志 (见 _LoadQueued)
@@ -64,7 +65,7 @@ class IconCache {
             IconCache._Store(key, hIcon)
             return hIcon
         }
-        if !IconCache._queue.Has(key) {
+        if !(IconCache._queue.Has(key) || IconCache._loading.Has(key)) {
             IconCache._queue[key] := IconCache._LoadSpec(spec, key)
             if (IconCache._timer = "")
                 IconCache._timer := () => IconCache._LoadQueued()
@@ -119,7 +120,7 @@ class IconCache {
         while IconCache._prefetch.Length {
             spec := IconCache._prefetch.RemoveAt(1)
             key := IconCache._CacheKey(spec)
-            if (IconCache._icons.Has(key) || IconCache._disk.Has(key))      ; 磁盘缓存里有的用到时直接做, 不用预读
+            if (IconCache._icons.Has(key) || IconCache._disk.Has(key) || IconCache._loading.Has(key))   ; 磁盘缓存里有的用到时直接做, 不用预读
                 continue
             hIcon := 0
             try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
@@ -463,7 +464,9 @@ class IconCache {
             hIcon := 0
             Logger.Trace("icon: " spec)
             loadStart := IconCache._Ms()
+            IconCache._loading[key] := true                                 ; 读外壳图标时可能处理消息、重画列表, 又来要这个图标
             try hIcon := IconCache._Load(spec)
+            IconCache._loading.Delete(key)
             ; 开机时资源管理器 / OneDrive 很忙, 第一次读图标 (外壳初始化图标列表) 可能卡很久,
             ; 这期间打字、失去焦点隐藏都在排队。慢的记下来, 看得出卡在哪个图标上
             if ((took := IconCache._Ms() - loadStart) >= IconCache.SlowLoadMs)
