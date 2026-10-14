@@ -290,7 +290,7 @@ class ActionCatalog {
         if focusPrevious
             App.FocusPreviousWindow()
         Win.WaitModifiersUp()
-        if (mode = "Type") {
+        if ActionCatalog.TypesText(text, mode) {
             SendInput("{Text}" text)
             return true
         }
@@ -306,6 +306,20 @@ class ActionCatalog {
         Sleep(delay)
         A_Clipboard := savedClipboard
         return true
+    }
+
+    ; 粘贴方式 (Features.Snippets.PasteMode) -> 这段文字是不是直接输入:
+    ;   Auto (默认)  不长 (AutoTypeMax 个字符以内) 的单行文字直接输入: 马上出来, 不动剪贴板, 也不用等着还原剪贴板;
+    ;                多行 (直接输入时换行是 Enter, 可能把聊天消息发出去)、带 Tab、很长、有 emoji 等补充平面字符的用剪贴板
+    ;   Clipboard    总是剪贴板 + Ctrl+V
+    ;   Type         总是逐字输入 (适合不接受粘贴的程序)
+    static AutoTypeMax := 100
+    static TypesText(text, mode) {
+        if (mode = "Type")
+            return true
+        if (mode != "Auto")
+            return false
+        return StrLen(text) <= ActionCatalog.AutoTypeMax && !RegExMatch(text, "[\r\n\t]|[^\x{0}-\x{FFFF}]")
     }
 
     ; 复制 / 剪切文件, 复制 / 移动到文件管理器当前的文件夹 (真实存在的本地或网络路径才有)

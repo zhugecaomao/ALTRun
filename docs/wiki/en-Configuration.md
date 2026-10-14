@@ -86,7 +86,7 @@ Every feature has `Enabled` (1 = on).
 |---|---|---|
 | Keyword | `snip` | Keyword that searches snippets only |
 | SearchText | 1 | Also search the text (at least 3 characters typed, every word must appear; matches only in the text come last) |
-| PasteMode | `Clipboard` | `Clipboard` = clipboard + Ctrl+V; `Type` = type character by character |
+| PasteMode | `Auto` | `Auto` = type single-line text of up to 100 characters, paste the rest via the clipboard; `Clipboard` = clipboard + Ctrl+V; `Type` = type character by character |
 | PasteDelay | 300 | Milliseconds to wait after pasting before restoring the clipboard |
 | AutoExpand | 1 | Typing prefix + keyword in any program expands the snippet |
 | ExpandPrefix | `;` | Prefix for snippet expansion |

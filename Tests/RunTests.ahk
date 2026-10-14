@@ -90,7 +90,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -220,10 +220,17 @@ class Tests {
         v4 := SchemaMigration.Upgrade(v3, 3)
         eq("3->4 default results off", v4["Features"]["FileSearch"]["InDefaultResults"], 0)
         eq("3->4 keeps other settings", v4["Features"]["FileSearch"]["MaxResults"], 50)
-        eq("3->4 version", v4["SchemaVersion"], 4)
-        eq("3->4 without section", SchemaMigration.Upgrade(Map("SchemaVersion", 3), 3)["SchemaVersion"], 4)
+        eq("3->4 upgraded to current", v4["SchemaVersion"], AppSettings.CurrentVersion)
+        eq("3->4 without section", SchemaMigration.Upgrade(Map("SchemaVersion", 3), 3)["SchemaVersion"], AppSettings.CurrentVersion)
+        ; 4 -> 5: 片段的粘贴方式 Clipboard (旧的默认值) -> Auto; Type 不变
+        v5 := SchemaMigration.Upgrade(Map("SchemaVersion", 4, "Features", Map("Snippets", Map("PasteMode", "Clipboard", "PasteDelay", 500))), 4)
+        eq("4->5 clipboard -> auto", v5["Features"]["Snippets"]["PasteMode"], "Auto")
+        eq("4->5 keeps other settings", v5["Features"]["Snippets"]["PasteDelay"], 500)
+        eq("4->5 version", v5["SchemaVersion"], 5)
+        eq("4->5 type stays", SchemaMigration.Upgrade(Map("SchemaVersion", 4, "Features", Map("Snippets", Map("PasteMode", "Type"))), 4)["Features"]["Snippets"]["PasteMode"], "Type")
+        eq("4->5 without section", InStr(JSON.Stringify(SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4)), "PasteMode"), 0)
         TestRunner.True("Migration.defaults filled", !AppSettings._MergeDefaults(data, AppSettings.Defaults()))
-        TestRunner.True("Migration.no downgrade", SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4)["SchemaVersion"] = 4)
+        TestRunner.True("Migration.no downgrade", SchemaMigration.Upgrade(Map("SchemaVersion", AppSettings.CurrentVersion), AppSettings.CurrentVersion)["SchemaVersion"] = AppSettings.CurrentVersion)
     }
 
     static Calculator() {
@@ -750,6 +757,50 @@ class Tests {
         ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2], ClipboardProvider.Entries := saved[3]
         options["Persist"] := saved[4], options["MaxImages"] := saved[5], ProviderRegistry.Providers := saved[6]
         try DirDelete(root, true)
+    }
+
+    ; 粘贴方式 Auto: 短的单行文字直接输入 (不动剪贴板), 多行 / Tab / 很长 / emoji 用剪贴板
+    static SnippetPasteMode() {
+        eq := (n, a, e) => TestRunner.Equal("SnippetPasteMode." n, a, e)
+        types := (text, mode) => ActionCatalog.TypesText(text, mode)
+        long := StrReplace(Format("{:" ActionCatalog.AutoTypeMax "}", ""), " ", "x")
+        eq("default", AppSettings.Defaults()["Features"]["Snippets"]["PasteMode"], "Auto")
+        eq("auto: short line typed", types("Best regards, Bench", "Auto"), true)
+        eq("auto: CJK typed", types("你好, 谢谢", "Auto"), true)
+        eq("auto: at the limit typed", types(long, "Auto"), true)
+        eq("auto: longer pasted", types(long "x", "Auto"), false)
+        eq("auto: several lines pasted", types("Dear Sir,`nThanks", "Auto"), false)
+        eq("auto: CR pasted", types("a`rb", "Auto"), false)
+        eq("auto: tab pasted", types("a`tb", "Auto"), false)
+        eq("auto: emoji pasted", types("ok " Chr(0x1F600), "Auto"), false)
+        eq("clipboard: never typed", types("hi", "Clipboard"), false)
+        eq("type: always typed", types("Dear Sir,`nThanks", "Type"), true)
+        eq("unknown mode: clipboard", types("hi", "Other"), false)
+
+        ; 真的输入到一个编辑框: 文字出来了, 剪贴板没动
+        snippets := AppSettings.Feature("Snippets")
+        savedMode := snippets["PasteMode"], savedClip := ClipboardAll()
+        g := Gui("+AlwaysOnTop", "ALTRun paste test")
+        box := g.Add("Edit", "w300 h40")
+        g.Show()
+        try {
+            WinActivate("ahk_id " g.Hwnd)
+            if WinWaitActive("ahk_id " g.Hwnd, , 2) {
+                ControlFocus(box)
+                A_Clipboard := "keep me"
+                snippets["PasteMode"] := "Auto"
+                eq("auto: pasted", ActionCatalog.PasteText("typed text", false), true)
+                Sleep(100)
+                eq("auto: text typed", box.Value, "typed text")
+                eq("auto: clipboard untouched", A_Clipboard, "keep me")
+            } else {
+                FileAppend("NOTE SnippetPasteMode: test window not active, typing test skipped`n", "*")
+            }
+        } finally {
+            snippets["PasteMode"] := savedMode
+            g.Destroy()
+            A_Clipboard := savedClip
+        }
     }
 
     static SnippetExpander() {

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.25]
+
+测试版。
+
+Test build.
+
+### 改进
+- **片段展开更快**: 新的粘贴方式 "自动" (默认): 100 个字符以内的单行文字直接输入, 马上出来, 不动剪贴板, ALTRun 也不用停下来等着还原剪贴板 (以前每次约 0.3 秒); 多行、带 Tab、更长或有 emoji 的仍用剪贴板。原来的 "剪贴板 + Ctrl+V" (旧的默认值) 升级时改成 "自动", 选了 "逐字输入" 的不变; 偏好设置 → 片段里可以改回去
+
 ## [2026.10.12.24]
 
 测试版。
@@ -791,7 +800,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.24...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.25...HEAD
+[2026.10.12.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.24...2026.10.12.25
 [2026.10.12.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.23...2026.10.12.24
 [2026.10.12.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.22...2026.10.12.23
 [2026.10.12.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.21...2026.10.12.22
