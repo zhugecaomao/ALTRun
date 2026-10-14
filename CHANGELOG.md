@@ -5,6 +5,21 @@
 
 ## [未发布]
 
+## [2026.10.12.28]
+
+测试版。
+
+Test build.
+
+### 改进
+- 设置升级 (版本 4 → 5) 时, 后来补进默认值的内容老用户也补上 (缺什么补什么, 自己加的保留, 清空了的列表不动):
+  - 文件搜索关键字加上 `file`
+  - 一键加日期: Total Commander 的对话框和改名输入框里也能用 Ctrl+D
+  - Quick Switch: 7-Zip 解压窗口、Total Commander 的对话框不再当成 "打开 / 保存" 对话框
+- 同时清理: 早期测试版留下的 "F1 → 关于" 热键 (F1 早已内置)、钢筋直径存成数字
+- 主题跟随系统、第二呼出热键 Alt+R 等看得见的默认值仍然只对新安装生效; 清单见 issue #176
+- 已经装了 2026.10.12.25 之后测试版的 (设置已是版本 5) 不会再升级一次: 想要这些补充的话, 把 ALTRun.json 里的 `"SchemaVersion": 5` 改成 `4` 后重新载入
+
 ## [2026.10.12.27]
 
 测试版。
@@ -823,7 +838,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.27...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.28...HEAD
+[2026.10.12.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.27...2026.10.12.28
 [2026.10.12.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.26...2026.10.12.27
 [2026.10.12.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.25...2026.10.12.26
 [2026.10.12.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.24...2026.10.12.25

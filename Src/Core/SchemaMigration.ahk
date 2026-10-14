@@ -7,7 +7,7 @@
 ;                        版本 2 的结构, 再走下面的逐级升级 (见 AppSettings.Load)
 ;   2 -> 3   _From2()   ALTRun 2.x (Config/Gui/Hotkey/UserCommand...) -> 3.0
 ;   3 -> 4   _From3()   文件搜索默认不再混进普通结果 (InDefaultResults 1 -> 0)
-;   4 -> 5   _From4()   片段的粘贴方式 Clipboard -> Auto (新的默认值)
+;   4 -> 5   _From4()   片段的粘贴方式 Clipboard -> Auto; 补上后来加进默认值的窗口 / 关键字; 小清理 (见 issue #176)
 ;
 ; 以后改设置结构时: AppSettings.CurrentVersion + 1, 再在这里加一个 _FromN()。
 ; 升级前 Backup() 会把原文件复制成 ALTRun.v<N>.backup.json。
@@ -101,14 +101,63 @@ class SchemaMigration {
     ;---------------------------------------------------------------------------
     ; 4 -> 5
     ;---------------------------------------------------------------------------
-    ; 新的粘贴方式 Auto (短的单行文字直接输入, 其它用剪贴板) 更快, 也不动剪贴板。旧文件里的 Clipboard
-    ; 几乎都是当时自动写入的默认值, 改成 Auto; 选了 Type 的保持不变 (想要的话可以在偏好设置里改回去)
+    ; 只改老用户不会觉得意外的地方 (看得见的改动, 例如主题跟随系统、Alt+R, 只对新安装生效; 清单见 GitHub issue #176):
+    ;   - 片段的粘贴方式: Clipboard (旧的默认值, 几乎都是当时自动写入的) -> Auto (更快, 不动剪贴板); Type 不变
+    ;   - 后来补进默认值的窗口 / 关键字, 老用户的列表里也补上 (缺什么补什么, 用户自己加的保留; 清空了的列表不动)
+    ;   - 残留的 "F1 -> 关于" 热键 (F1 已经内置) 删掉; 钢筋直径存成数字
     static _From4(data) {
         features := SchemaMigration._Section(data, "Features")
         snippets := SchemaMigration._Section(features, "Snippets")
         if (snippets.Has("PasteMode") && snippets["PasteMode"] = "Clipboard")
             snippets["PasteMode"] := "Auto"
+
+        fileSearch := SchemaMigration._Section(features, "FileSearch")
+        if (fileSearch.Has("Keywords") && fileSearch["Keywords"] is Array && fileSearch["Keywords"].Length) {
+            found := false
+            for keyword in fileSearch["Keywords"]
+                found := found || (keyword = "file")
+            if !found
+                fileSearch["Keywords"].Push("file")
+        }
+        calculator := SchemaMigration._Section(features, "Calculator")
+        if (calculator.Has("BarSizes") && calculator["BarSizes"] is Array)
+            for i, size in calculator["BarSizes"]
+                if (size is String && IsNumber(Trim(size)))
+                    calculator["BarSizes"][i] := Trim(size) + 0
+
+        extensions := SchemaMigration._Section(data, "Extensions")
+        dateStamp := SchemaMigration._Section(extensions, "AutoDate")
+        SchemaMigration._AddWindows(dateStamp, "RenameWindows", ["ahk_class TSTDTREEDLG", "ahk_class TCOMBOINPUT"])   ; Total Commander 的对话框 / 改名输入框
+        if (dateStamp.Has("AppendWindows") && dateStamp["AppendWindows"] = "ahk_class TCmtEditForm,ahk_exe Notepad4.exe")
+            dateStamp["AppendWindows"] := "ahk_class TCmtEditForm, ahk_exe Notepad4.exe"   ; 旧的默认值, 只是统一写法
+        switcher := SchemaMigration._Section(extensions, "QuickSwitch")
+        SchemaMigration._AddWindows(switcher, "ExcludeWindows", ["ahk_exe 7zG.exe", "ahk_exe TOTALCMD64.exe"])   ; 7-Zip 解压、TC 的对话框
+
+        if (data.Has("Hotkeys") && data["Hotkeys"] is Array) {
+            i := data["Hotkeys"].Length
+            while (i >= 1) {
+                entry := data["Hotkeys"][i]
+                if (entry is Map && entry.Has("Key") && entry["Key"] = "F1" && entry.Has("Action") && entry["Action"] = "About"
+                    && entry.Has("WinTitle") && entry["WinTitle"] = "ALTRun")
+                    data["Hotkeys"].RemoveAt(i)
+                i--
+            }
+        }
         return data
+    }
+
+    ; 逗号分隔的窗口列表 section[key] 里补上 windows 里还没有的 (不区分大小写); 没有这一项、或者用户清空了的不动
+    static _AddWindows(section, key, windows) {
+        if (!section.Has(key) || Trim(section[key]) = "")
+            return
+        have := Map(), have.CaseSense := "Off"
+        for item in SchemaMigration._SplitList(section[key])
+            have[item] := true
+        text := RTrim(Trim(section[key]), ",")
+        for window in windows
+            if !have.Has(window)
+                text .= ", " window
+        section[key] := text
     }
 
     ;---------------------------------------------------------------------------

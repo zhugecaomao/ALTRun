@@ -229,6 +229,33 @@ class Tests {
         eq("4->5 version", v5["SchemaVersion"], 5)
         eq("4->5 type stays", SchemaMigration.Upgrade(Map("SchemaVersion", 4, "Features", Map("Snippets", Map("PasteMode", "Type"))), 4)["Features"]["Snippets"]["PasteMode"], "Type")
         eq("4->5 without section", InStr(JSON.Stringify(SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4)), "PasteMode"), 0)
+        ; 4 -> 5: 后来补进默认值的窗口 / 关键字也补给老用户 (缺什么补什么, 用户自己加的保留, 清空了的不动); 小清理
+        defaults := AppSettings.Defaults()
+        old := Map("SchemaVersion", 4
+            , "Features", Map("FileSearch", Map("Keywords", ["open", "find"]), "Calculator", Map("BarSizes", ["13", "16", " 20 ", 25, "abc"]))
+            , "Extensions", Map("AutoDate", Map("RenameWindows", "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD"
+                                              , "AppendWindows", "ahk_class TCmtEditForm,ahk_exe Notepad4.exe")
+                              , "QuickSwitch", Map("ExcludeWindows", "ahk_class SysListView32, ahk_exe Explorer.exe"))
+            , "Hotkeys", [Map("Key", "~MButton", "Action", "PTTools", "WinTitle", "ahk_exe RAPTW.exe"), Map("Key", "F1", "Action", "About", "WinTitle", "ALTRun")])
+        v5 := SchemaMigration.Upgrade(old, 4)
+        eq("4->5 keywords: file added", Tests._Join(v5["Features"]["FileSearch"]["Keywords"]), "open,find,file")
+        eq("4->5 keywords = new default", Tests._Join(v5["Features"]["FileSearch"]["Keywords"]), Tests._Join(defaults["Features"]["FileSearch"]["Keywords"]))
+        eq("4->5 rename windows: TC dialogs added", v5["Extensions"]["AutoDate"]["RenameWindows"]
+            , "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD, ahk_class TSTDTREEDLG, ahk_class TCOMBOINPUT")
+        eq("4->5 append windows = new default", v5["Extensions"]["AutoDate"]["AppendWindows"], defaults["Extensions"]["AutoDate"]["AppendWindows"])
+        eq("4->5 exclude windows = new default", v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], defaults["Extensions"]["QuickSwitch"]["ExcludeWindows"])
+        eq("4->5 old F1 hotkey removed, others kept", v5["Hotkeys"].Length "|" v5["Hotkeys"][1]["Key"], "1|~MButton")
+        sizes := v5["Features"]["Calculator"]["BarSizes"]
+        eq("4->5 bar sizes as numbers", (sizes[1] is Integer) "|" sizes[1] "|" sizes[3] "|" (sizes[3] is Integer) "|" sizes[4] "|" sizes[5], "1|13|20|1|25|abc")
+        custom := Map("SchemaVersion", 4
+            , "Features", Map("FileSearch", Map("Keywords", ["open", "FILE"])), "Extensions", Map("AutoDate", Map("RenameWindows", "ahk_exe foo.exe, AHK_CLASS tstdtreedlg"
+                , "AppendWindows", "ahk_exe bar.exe"), "QuickSwitch", Map("ExcludeWindows", "")))
+        v5 := SchemaMigration.Upgrade(custom, 4)
+        eq("4->5 keywords: no duplicate file", Tests._Join(v5["Features"]["FileSearch"]["Keywords"]), "open,FILE")
+        eq("4->5 custom windows kept, only missing added", v5["Extensions"]["AutoDate"]["RenameWindows"], "ahk_exe foo.exe, AHK_CLASS tstdtreedlg, ahk_class TCOMBOINPUT")
+        eq("4->5 custom append windows untouched", v5["Extensions"]["AutoDate"]["AppendWindows"], "ahk_exe bar.exe")
+        eq("4->5 emptied list stays empty", v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], "")
+        eq("4->5 missing sections not created", SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4).Count, 1)
         TestRunner.True("Migration.defaults filled", !AppSettings._MergeDefaults(data, AppSettings.Defaults()))
         TestRunner.True("Migration.no downgrade", SchemaMigration.Upgrade(Map("SchemaVersion", AppSettings.CurrentVersion), AppSettings.CurrentVersion)["SchemaVersion"] = AppSettings.CurrentVersion)
     }
