@@ -8,10 +8,10 @@
 ;   mouse = true 时, 在框里点鼠标中键 / 侧键录成鼠标热键 (MButton / XButton1 / XButton2)
 ; 录制期间用 InputHook 拦下所有按键 (Alt+Space、Win+E 不会触发系统或其它程序的功能), 并暂停
 ; ALTRun 自己的热键 (Suspend), 否则按呼出热键会弹出搜索窗口, 而不是被记录。
-; 录完或取消后焦点移到下一个控件: 框里不能打字, 想重新录制就再点一下。
+; 录完或取消后焦点移到下一个控件 (不选中里面的文字): 框里不能打字, 想重新录制就再点一下。
 ; 旧设置里的特殊写法 (~、*、CapsLock & J...) 在重新录制之前原样保留。
 ; 录制期间每 200 ms 检查一次: 框不再有焦点、或窗口已经关掉时结束录制 (关窗口时不一定收到 LoseFocus,
-; 不结束的话 ALTRun 的热键会一直暂停、按键一直被拦下)。
+; 不结束的话 ALTRun 的热键会一直暂停、按键一直被拦下); 窗口移动了时, 框下面的提示跟着移过去。
 ;
 ; 用法:
 ;   box := HotkeyBox.Add(gui, "x10 y10 w150", "!Space", mouse := false, onChange := fn)
@@ -133,7 +133,9 @@ class HotkeyBox {
         if !IsObject(state)
             return SetTimer(HotkeyBox._watchTimer, 0)
         if (!DllCall("IsWindow", "Ptr", state.Hwnd) || DllCall("GetFocus", "Ptr") != state.Hwnd)
-            HotkeyBox.CancelActive()
+            return HotkeyBox.CancelActive()
+        if (state.HasOwnProp("Tip") && state.Tip != "")
+            HotkeyBox._ShowTip(state, state.Tip, true)
     }
 
     ; 失去焦点 (点了别处、切换了窗口): 取消录制, 保留原来的热键
@@ -237,7 +239,20 @@ class HotkeyBox {
         HotkeyBox._Show(state)
         if (changed && IsObject(state.OnChange))
             state.OnChange.Call()
-        try PostMessage(0x28, 0, 0, , "ahk_id " state.GuiHwnd)           ; WM_NEXTDLGCTL: 焦点移到下一个控件
+        HotkeyBox._FocusNext(state)
+    }
+
+    ; 焦点移到下一个能用 Tab 到达的控件, 是编辑框时不选中里面的文字 (光标放在最前面)。不用 WM_NEXTDLGCTL: 它会
+    ; 把文字全选 (像按 Tab 进去一样); 打开窗口时得到焦点的编辑框也一直留着全选。下面是 "生效的窗口" 这种列表时,
+    ; 接着打一个字整个列表就被换掉了
+    static _FocusNext(state) {
+        try {
+            if !(next := DllCall("GetNextDlgTabItem", "Ptr", state.GuiHwnd, "Ptr", state.Hwnd, "Int", false, "Ptr"))
+                return
+            DllCall("SetFocus", "Ptr", next)
+            if (WinGetClass("ahk_id " next) = "Edit")
+                SendMessage(0xB1, 0, 0, next)                               ; EM_SETSEL: 不选中
+        }
     }
 
     ; 结束录制, 可以重复调用。先恢复 ALTRun 的热键、停掉拦截按键的 InputHook: 后面的 ToolTip 等会处理
@@ -251,6 +266,8 @@ class HotkeyBox {
             HotkeyBox._hook := ""
             try ih.Stop()
         }
+        if IsObject(state := HotkeyBox._active)
+            state.Tip := ""
         HotkeyBox._active := "", HotkeyBox._held := Map()
         if IsObject(HotkeyBox._watchTimer)
             SetTimer(HotkeyBox._watchTimer, 0)
@@ -265,11 +282,16 @@ class HotkeyBox {
         try state.Ctrl.Value := HotkeyBox.Label(state.Value)
     }
 
-    static _ShowTip(state, text) {
+    ; 框下面的提示 (ToolTip 用屏幕坐标, 不会跟着窗口走)。onlyIfMoved: 框的位置没变时不重新显示 (不闪)
+    static _ShowTip(state, text, onlyIfMoved := false) {
         try {
             WinGetPos(&x, &y, , &h, "ahk_id " state.Hwnd)
+            at := x "," (y + h + 2)
+            if (onlyIfMoved && state.HasOwnProp("TipAt") && state.TipAt = at)
+                return
             CoordMode("ToolTip", "Screen")
             ToolTip(text, x, y + h + 2, HotkeyBox.TipId)
+            state.Tip := text, state.TipAt := at
         }
     }
 }

@@ -24,6 +24,23 @@
 ;===============================================================================
 
 class ItemEditor {
+    static RowGap := 14, HintGap := 4                                       ; 两行之间、输入框和下面的灰色说明之间的距离
+
+    ; 从 first 之后加的控件里最低的底边 (同一行的输入框、按钮、复选框)
+    static _RowBottom(g, first) {
+        bottom := 0, after := false
+        for ctrl in g {
+            if (ctrl.Hwnd = first.Hwnd) {
+                after := true
+                continue
+            }
+            if after {
+                ctrl.GetPos(, &y, , &h)
+                bottom := Max(bottom, y + h)
+            }
+        }
+        return bottom
+    }
 
     static Edit(owner, title, fields, item) {
         state := {Result: ""}                                               ; 嵌套函数 OnOk 通过它把结果交回来
@@ -36,7 +53,8 @@ class ItemEditor {
         ; 单行输入框一定要写 r1: 不写行数时, 初始文字比框宽 (例如很长的路径) AHK 会自动
         ; 变成多行并加高, 盖住下面的控件
         for field in fields {
-            g.AddText("xm w" labelW " y+10 Section", (field.Type = "check") ? "" : field.Label)   ; 复选框的文字写在框后面
+            g.AddText("xm w" labelW " y+" ItemEditor.RowGap " Section", (field.Type = "check") ? "" : field.Label)   ; 复选框的文字写在框后面
+            first := g.AddText("x+0 yp w0 h0")                              ; 记下这一行从哪个控件开始 (灰色说明放在这一行最低的控件下面)
             value := item.Has(field.Key) ? item[field.Key] : ""
             switch field.Type {
                 case "multiline":
@@ -69,8 +87,8 @@ class ItemEditor {
             }
             if field.HasOwnProp("Hint") {                                   ; 灰色小字说明, 和偏好设置里的一样
                 indent := (field.Type = "check") ? 18 : 0                   ; 复选框: 和框后面的文字对齐
-                g.SetFont("s8")
-                g.AddText("xs+" (labelW + 8 + indent) " y+3 w" (inputW - indent) " cGray", field.Hint)
+                g.SetFont("s8")                                             ; 放在这一行最低的控件下面 (热键框后面的复选框比框矮, 跟着它放会贴着框)
+                g.AddText("xs+" (labelW + 8 + indent) " y" (ItemEditor._RowBottom(g, first) + ItemEditor.HintGap) " w" (inputW - indent) " cGray", field.Hint)
                 g.SetFont("s9")
             }
             controls[field.Key] := ctrl

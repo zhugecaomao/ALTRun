@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.12.27]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置里录完热键后, 下面的编辑框不再被全选 (例如 "一键加日期" 的 "生效的窗口": 以前接着打一个字整个列表就被换掉了)
+- 录热键时框下面的提示跟着偏好设置窗口移动 (以前移动窗口后提示留在原处)
+
+### 改进
+- 编辑一条记录的窗口 (自定义热键 / 命令 / 片段 / 搜索引擎): 灰色说明和上面的输入框隔开一点 (热键那一行以前紧贴着框), 每行之间也宽松一些
+
 ## [2026.10.12.26]
 
 测试版。
@@ -810,7 +823,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.26...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.27...HEAD
+[2026.10.12.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.26...2026.10.12.27
 [2026.10.12.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.25...2026.10.12.26
 [2026.10.12.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.24...2026.10.12.25
 [2026.10.12.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.23...2026.10.12.24
