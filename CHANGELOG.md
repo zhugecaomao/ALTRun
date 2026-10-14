@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.12.23]
+
+测试版。
+
+Test build.
+
+### 改进
+- **偏好设置打开得更快**: 页面用到时才建, 打开时只建要显示的那一页 (以前每次 19 页全部建好, 在测试机上约 380 ms, 旧电脑上一两秒); 别的页第一次点到时再建
+
 ## [2026.10.12.22]
 
 测试版。
@@ -771,7 +780,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.22...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.23...HEAD
+[2026.10.12.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.22...2026.10.12.23
 [2026.10.12.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.21...2026.10.12.22
 [2026.10.12.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.20...2026.10.12.21
 [2026.10.12.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.19...2026.10.12.20
