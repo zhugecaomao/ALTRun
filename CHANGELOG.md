@@ -5,6 +5,20 @@
 
 ## [未发布]
 
+## [2026.10.12.22]
+
+测试版。
+
+Test build.
+
+### 修复
+- **Ctrl+D 有时把文件名换成 "d"** (电脑一夜不关机、睡眠唤醒或锁屏之后): Ctrl+D 现在只在改名的编辑框里接管, 其它时候按键原样交给程序, 不再自己补发一次 (补发时如果已经松开了 Ctrl, 而 ALTRun 记的按键状态还是按着, 只会发出一个 "d")
+- 睡眠唤醒、解锁、接上 / 拔掉显示器之后自动重新装一次键盘钩子 (和重新载入一样), 热键、片段展开、双击 Ctrl、CapsLock 不会因为一直开着不关机而失灵
+- 同一个图标不再读两遍: 读一个慢的图标时界面又来要同一个图标, 以前会再排一次队
+
+### 改进
+- Ctrl+D 写调试日志 (焦点所在的控件、改名前后的长度), 以后出问题时看得出原因
+
 ## [2026.10.12.21]
 
 测试版。
@@ -757,7 +771,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.21...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.22...HEAD
+[2026.10.12.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.21...2026.10.12.22
 [2026.10.12.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.20...2026.10.12.21
 [2026.10.12.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.19...2026.10.12.20
 [2026.10.12.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.18...2026.10.12.19
