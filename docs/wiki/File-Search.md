@@ -88,4 +88,4 @@ ALTRun 自动选择:
 - **用拼音搜中文文件名** (例如输入 `cs` 找到 "测试.bat"): ALTRun 的拼音首字母匹配目前只用在应用、命令、书签等上, 文件搜索 (包括内置索引) 暂时不支持, 已经列入待办 ([#180](https://github.com/zhugecaomao/ALTRun/issues/180))。用 Everything 时, 可以先让 Everything 支持拼音: ALTRun 把输入原样交给 Everything, 不用另外设置
   - **Everything 1.5 (beta)**: 工具 → 选项 → 高级, 搜索 `pinyin`, 设成 `true` (只支持首字母)。还在用 1.5 alpha 的, ALTRun 可能找不到它 (alpha 默认以 "1.5a" 命名实例运行), 请升级到 beta
   - **Everything 1.4**: 安装开源扩展 [IbEverythingExt](https://github.com/Chaoses-Ib/IbEverythingExt), 按它的说明放进 Everything 的文件夹后重启 Everything。支持简拼 (`cs`)、全拼 (`ceshi`)、双拼
-  - 拼音找到的文件在 ALTRun 里暂时不高亮, 排序也可能靠后一些
+  - 拼音找到的文件在 ALTRun 里同样高亮对应的字, 并按拼音首字母的匹配程度排序 (同样的匹配程度, 名称直接匹配的排在前面)
