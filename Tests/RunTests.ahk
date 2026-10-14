@@ -90,7 +90,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -3141,6 +3141,13 @@ class Tests {
         IconCache.Prefetch([])
         eq("empty list", IconCache.PrefetchPending, 0)
         IconCache.PrefetchMax := savedMax, IconCache.PrefetchWhen := savedWhen
+
+        savedShowing := SearchWindow._showing                               ; 显示到一半 (窗口还没出来) 时也不预读
+        SearchWindow._showing := true
+        eq("not while showing", SearchWindow._CanPrefetch(), false)
+        SearchWindow._showing := false
+        eq("hidden and not showing", SearchWindow._CanPrefetch(), !SearchWindow.IsVisible())
+        SearchWindow._showing := savedShowing
     }
 
     ; 图标的磁盘缓存: 像素来回转换、文件格式 (按最近用到的保留、损坏的文件不用)、从缓存直接显示、过期判断
@@ -3427,6 +3434,54 @@ class Tests {
                 eq("real request", result, "done GNU GENERAL PUBLIC LICENSE")
                 eq("real request: kept running while waiting", ticks > 1, true)
             }
+        }
+    }
+
+    ; 日志文件一直开着 (不是每条都打开、关闭一次): 写完马上能读到; 换文件、文件被删、截断后重新打开
+    static LoggerFile() {
+        eq := (n, a, e) => TestRunner.Equal("LoggerFile." n, a, e)
+        read := (file) => FileExist(file) ? FileRead(file, "UTF-8") : ""
+        lines := (file) => (text := read(file), StrSplit(Trim(text, "`r`n"), "`r`n").Length * (text != ""))
+        first := A_Temp "\ALTRunLoggerTest1.log", second := A_Temp "\ALTRunLoggerTest2.log"
+        saved := [Logger.Enabled, Logger.File, Logger.Immediate]
+        Logger.Close()
+        for logPath in [first, second, second ".old"]
+            try FileDelete(logPath)
+        Logger.Enabled := true, Logger.Immediate := true, Logger.File := first
+        try {
+            Logger.Debug("one 中文")
+            eq("kept open", Logger._file != "", true)
+            eq("written right away", InStr(read(first), "[DBG] one 中文") > 0, true)
+            Logger.Warn("two")
+            eq("appended", lines(first), 2)
+            Logger.File := second
+            Logger.Debug("three")
+            eq("new file", lines(second), 1)
+            eq("old file unchanged", lines(first), 2)
+            Logger.Close()
+            eq("closed", Logger._file, "")
+            FileDelete(second)
+            Logger.Debug("four")
+            eq("reopened after close", InStr(read(second), "four") > 0 && lines(second) = 1, true)
+            if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
+                FileDelete(second)                                          ; 开着的时候被删掉 (Wine 里删不掉开着的文件, 跳过)
+                Logger.Debug("five")
+                eq("recreated after delete", read(second) ~= "^\x{FEFF}?[^\r\n]*five\r\n$" ? 1 : 0, 1)
+            }
+            Logger.Rotate(1)
+            eq("rotated", FileExist(second ".old") != "", true)
+            Logger.Debug("six")
+            eq("new file after rotate", lines(second), 1)
+            Logger.Immediate := false
+            Logger.Debug("seven")
+            eq("buffered", lines(second), 1)
+            Logger.Flush()
+            eq("flushed", lines(second), 2)
+        } finally {
+            Logger.Close()
+            for logPath in [first, second, second ".old"]
+                try FileDelete(logPath)
+            Logger.Enabled := saved[1], Logger.File := saved[2], Logger.Immediate := saved[3]
         }
     }
 

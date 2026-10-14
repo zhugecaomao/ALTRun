@@ -9,6 +9,7 @@
 ; 用法:
 ;   Logger.Debug("xxx")  /  Logger.Warn("xxx")  /  Logger.Error("xxx")
 ;   Logger.Flush()   ; 立即把缓冲区写盘, 一般不用手动调, 退出时会自动调用一次
+;   Logger.Close()   ; 关闭日志文件 (平时一直开着, 下次写入时自动重新打开), 退出时会自动调用一次
 ;   Logger.Rotate()  ; 日志文件过大时截断保留一份 .old, 启动时自动调用一次
 ;   start := Logger.Ms(), ..., Logger.Time("load index", start)   ; 记录耗时 "Perf: load index 12 ms"
 ;   SetTimer(Logger.Watch("save usage", fn), ...)   ; 后台任务一次超过 SlowMs 时记 "Perf: slow save usage 80 ms"
@@ -19,6 +20,7 @@
 class Logger {
     static File    := A_Temp "\ALTRun.log"
     static _buffer := []
+    static _file := "", _filePath := ""         ; 一直开着的日志文件 (见 _Open)
     static _maxBuf := 60                        ; 攒够这么多条才写一次盘
     static Enabled := true
     static Immediate := false                   ; true = 每条马上写盘 (App 启动完成后打开)
@@ -83,11 +85,38 @@ class Logger {
         for line in Logger._buffer
             text .= line
         Logger._buffer := []
+        try {
+            out := Logger._Open()
+            out.Write(text)
+            handle := out.Handle                                               ; 读 Handle 时把写缓冲交给系统: 程序被强制结束也不丢
+            return
+        }
+        Logger.Close()
         try FileAppend(text, Logger.File, "UTF-8")
+    }
+
+    ; 日志文件一直开着: 每条都打开、关闭一次很慢 (旧电脑上杀毒软件每次关闭都要检查, 一条要 20 ~ 30 ms)。
+    ; 共享读写删除, 写着的时候也能用别的程序打开看; 换了 Logger.File 或文件被删掉时重新打开。
+    static _Open() {
+        if (Logger._file != "" && (Logger._filePath != Logger.File || !FileExist(Logger.File)))
+            Logger.Close()
+        if (Logger._file = "") {
+            if !(out := FileOpen(Logger.File, "a", "UTF-8"))
+                throw OSError()
+            Logger._file := out, Logger._filePath := Logger.File
+        }
+        return Logger._file
+    }
+
+    static Close() {
+        if (Logger._file != "")
+            try Logger._file.Close()
+        Logger._file := "", Logger._filePath := ""
     }
 
     ; 日志过大时截断, 防止无限增长。App 启动时调用一次。
     static Rotate(maxBytes := 1048576) {
+        Logger.Close()
         try {
             if (FileExist(Logger.File) && FileGetSize(Logger.File) > maxBytes)
                 FileMove(Logger.File, Logger.File ".old", true)
