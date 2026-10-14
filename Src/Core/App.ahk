@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.12.21"
+    static Version := "2026.10.12.22"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -99,6 +99,7 @@ class App {
         Logger.Flush(), Logger.Immediate := true                            ; 之后每条日志马上写入 (卡住被强制结束时也留得下)
         Logger.TraceUntil := A_TickCount + 60000                            ; 启动后 1 分钟内记下更细的步骤 (Logger.Trace)
         OnMessage(0x4A, (p*) => App._OnCopyData(p*))                        ; 之后再启动的 ALTRun 交过来的命令行参数 (WM_COPYDATA)
+        App._WatchWake()
         App._HandleCommandLine(A_Args)
     }
 
@@ -440,6 +441,40 @@ class App {
             }
             HotIf()
         }
+    }
+
+    ; 睡眠唤醒、解锁、接上 / 拔掉显示器之后重新装一次键盘钩子 (和重新载入的效果一样)。一直开着不关机时,
+    ; 钩子记的按键状态可能和实际不一致 (锁屏期间松开的键钩子收不到), Windows 也可能把响应慢的钩子悄悄去掉;
+    ; 之后热键、热字串 (片段展开)、双击 Ctrl、CapsLock 就会不灵或出错 (例如 Ctrl+D 把文件名换成 "d")
+    static WakeDelay := 1500, _wakeTimer := "", _wakeReason := ""
+    static _WatchWake() {
+        OnMessage(0x218, (wParam, *) => (wParam = 7 || wParam = 0x12) ? App._AfterWake("resume") : "")   ; WM_POWERBROADCAST: PBT_APMRESUMESUSPEND / AUTOMATIC
+        OnMessage(0x2B1, (wParam, *) => (wParam = 8) ? App._AfterWake("unlock") : "")                  ; WM_WTSSESSION_CHANGE: WTS_SESSION_UNLOCK
+        OnMessage(0x7E, (*) => App._AfterWake("display change"))                                        ; WM_DISPLAYCHANGE
+        try DllCall("wtsapi32\WTSRegisterSessionNotification", "Ptr", A_ScriptHwnd, "UInt", 0)          ; NOTIFY_FOR_THIS_SESSION
+    }
+
+    ; 几个事件常常连着来: 最后一个之后等一会儿再装, 只装一次
+    static _AfterWake(reason) {
+        App._wakeReason := reason
+        if (App._wakeTimer = "")
+            App._wakeTimer := () => App.ReinstallHooks(App._wakeReason)
+        SetTimer(App._wakeTimer, -App.WakeDelay)
+    }
+
+    static ReinstallHooks(reason := "") {
+        try InstallKeybdHook(true, true)
+        if App.UsesMouseHotkeys(AppSettings.Hotkeys)
+            try InstallMouseHook(true, true)
+        Logger.Debug("App: keyboard hook reinstalled (" reason ")")
+    }
+
+    ; 自定义热键里有鼠标按键 (例如 PT 工具的 ~MButton) 时也要重新装鼠标钩子
+    static UsesMouseHotkeys(hotkeys) {
+        for entry in hotkeys
+            if (entry is Map && entry.Has("Key") && RegExMatch(entry["Key"], "i)(Button|Wheel)"))
+                return true
+        return false
     }
 
     ; 注册热键, 失败时写日志; notify: 同时弹窗提示 (呼出热键注册不上时程序基本没法用)
