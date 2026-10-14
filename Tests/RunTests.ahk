@@ -3490,8 +3490,10 @@ class Tests {
             SearchWindow._WatchPaint(), SearchWindow._CheckPaint()          ; 还没画
             eq("not painted yet: wait", SearchWindow._paintTries "|" SearchWindow._paintRetries, "1|0")
             DllCall("UpdateWindow", "Ptr", list.Hwnd)
+            Critical(1000)                                                  ; 执行中不处理消息 (写日志慢时, 补画的请求会先被处理掉)
             SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()  ; 画了, 回调没运行
             eq("skipped: repaint", (pending() ? 1 : 0) "|" SearchWindow._paintRetries, "1|1")
+            Critical("Off")
             logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
             TestRunner.True("SkippedPaint.logged", InStr(logText, "[WRN] SearchWindow: custom draw skipped") > 0)
             DllCall("UpdateWindow", "Ptr", list.Hwnd)
@@ -3502,6 +3504,7 @@ class Tests {
             StrReplace(logText, "custom draw skipped", , , &count)
             eq("logged once per show", count, 1)
         } finally {
+            Critical("Off")
             SetTimer(SearchWindow._paintCheck, 0)
             try FileDelete(Logger.File)
             SearchWindow.Gui := saved[1], SearchWindow.List := saved[2], SearchWindow.Input := saved[3], SearchWindow.Results := saved[4]
