@@ -11,6 +11,7 @@ samples = collections.defaultdict(list)
 fails = collections.Counter()
 fail_examples = collections.defaultdict(list)
 res = collections.defaultdict(dict)
+notes = collections.defaultdict(list)                          # 版本 -> 日志里的说明 (例如保存图标缓存各步的耗时)
 background = collections.defaultdict(list)                     # (版本, 任务) -> 一次超过 50 ms 的耗时 (ALTRun 日志里的 "Perf: slow")
 versions = []
 for line in open(sys.argv[1], encoding="utf-8-sig"):
@@ -23,6 +24,8 @@ for line in open(sys.argv[1], encoding="utf-8-sig"):
         versions.append(version)
     if metric.startswith("res "):
         res[label][metric[4:]] = value
+    elif metric == "note":
+        notes[version].append(value)
     elif metric.startswith("bg "):
         background[(version, metric[3:])].append(float(value))
     elif metric.endswith(" fail") or metric in ("fatal", "log error") or metric.startswith("slow "):
@@ -61,6 +64,9 @@ if background:
     out.append("|---|---|---|---|---|")
     for (v, task), vals in sorted(background.items(), key=lambda kv: -max(kv[1])):
         out.append(f"| {v} | {task} | {len(vals)} | {statistics.median(vals):.0f} | {max(vals):.0f} |")
+    out.append("")
+for v, items in notes.items():
+    out.append(f"Notes ({v}): " + "; ".join(items[:12]))
     out.append("")
 keys = []
 for label in res:

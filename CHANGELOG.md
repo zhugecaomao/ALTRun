@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.12.26]
+
+测试版。
+
+Test build.
+
+### 改进
+- 保存图标缓存不再挡住热键: 性能测试里发现一次保存用了 0.56 秒 (磁盘忙或杀毒软件扫描时写文件很慢), 期间按热键要等它写完。现在只有整理数据的几毫秒不让打断, 写文件时按热键马上呼出窗口; 新图标攒 30 秒再存一次 (以前 5 秒), 少写几次
+- 调试日志记下保存图标缓存各步的耗时 (整理 / 写入 / 替换); 性能测试一起收集, 也收集启动后超过 200 ms 的步骤 (呼出窗口、搜索...), 偶尔慢一次时看得出原因
+
 ## [2026.10.12.25]
 
 测试版。
@@ -800,7 +810,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.25...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.26...HEAD
+[2026.10.12.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.25...2026.10.12.26
 [2026.10.12.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.24...2026.10.12.25
 [2026.10.12.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.23...2026.10.12.24
 [2026.10.12.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.22...2026.10.12.23

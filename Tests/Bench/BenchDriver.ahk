@@ -190,7 +190,7 @@ Round_(label, appDir, outFile, seed, searches, others) {
 }
 
 ; ALTRun 的日志里: 一次超过 50 ms 的后台任务 ("Perf: slow <任务> N ms", 有这种记录的版本) 记成 "bg <任务>",
-; 错误记成 "log error"
+; 错误记成 "log error", 保存图标缓存的耗时和启动后超过 200 ms 的步骤记成 "note"
 HarvestLog() {
     try text := FileRead(LogFile, "UTF-8")
     catch
@@ -200,6 +200,11 @@ HarvestLog() {
             Rec("bg " m[1], m[2])
         else if RegExMatch(A_LoopField, "\[ERR\] (.*)$", &m)
             Rec("log error", SubStr(StrReplace(m[1], "|", "/"), 1, 120))
+        else if RegExMatch(A_LoopField, "\[DBG\] Perf: (icon cache saved .*)$", &m)
+            Rec("note", m[1])
+        else if (RegExMatch(A_LoopField, "^\S+ (\S+) \[DBG\] Perf: (.+ (\d+) ms)$", &m) && m[3] >= 200
+              && !RegExMatch(m[2], "^(startup|warm-up|empty results|icons prefetched|icon cache loaded|font warm-up|prepare)"))
+            Rec("note", m[1] " " m[2])                                       ; 启动之后很慢的一步 (呼出窗口、搜索...): 对照时间找原因
     }
 }
 

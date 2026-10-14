@@ -3165,6 +3165,22 @@ class Tests {
             eq("save", IconCache.SaveDisk(cacheFile), true)
             eq("nothing to save", IconCache.SaveDisk(cacheFile), false)
             eq("load", IconCache.LoadDisk(cacheFile), 3)
+            ; 分块写 (每块很小时写很多块), 内容一样; 没有留下临时文件
+            savedChunk := IconCache.DiskChunk, IconCache.DiskChunk := 1000
+            try {
+                IconCache._disk := entries, IconCache._diskDirty := true
+                eq("save in chunks", IconCache.SaveDisk(cacheFile), true)
+            } finally {
+                IconCache.DiskChunk := savedChunk
+            }
+            eq("chunks: same size", FileGetSize(cacheFile), IconCache._SerializeDisk(entries, 32, IconCache.DiskMax).Size)
+            eq("chunks: no temp file", FileExist(cacheFile ".tmp") ? 1 : 0, 0)
+            eq("chunks: load", IconCache.LoadDisk(cacheFile), 3)
+            IconCache._disk := entries, IconCache._diskDirty := true, IconCache._saving := true
+            eq("not while saving", IconCache.SaveDisk(cacheFile), false)
+            IconCache._saving := false
+            eq("failed save stays dirty", IconCache.SaveDisk(dir "\bad<name>\Icons-32.bin") "|" IconCache._diskDirty "|" IconCache._saving, "0|1|0")
+            eq("save delay batches new icons", IconCache.DiskSaveDelay >= 30000, true)
             f := FileOpen(cacheFile, "w"), f.RawWrite(Buffer(30, 0x41), 30), f.Close()
             eq("broken file", IconCache.LoadDisk(cacheFile), 0)
             eq("missing file", IconCache.LoadDisk(dir "\none.bin"), 0)

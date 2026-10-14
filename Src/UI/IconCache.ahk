@@ -27,7 +27,7 @@
 ; 内存里没有、磁盘缓存里有的图标直接做成 HICON (不到 1 ms), 不用等后台读取; 重启后也是立刻显示。
 ; 先用缓存里的, 再在后台 (窗口隐藏时) 核对: 文件的修改时间和大小变了 (程序更新了图标) 就重新读;
 ; 不是文件的 (扩展名、资源、应用商店应用...) 存了超过 DiskRecheckDays 天的重新读一次。
-; 最多 DiskMax 个, 按最近用到的日期保留; 有新图标时窗口隐藏后保存, 退出时也保存。删掉这个文件夹没有影响。
+; 最多 DiskMax 个, 按最近用到的日期保留; 有新图标时攒一阵 (DiskSaveDelay), 窗口隐藏时保存, 退出时也保存。删掉这个文件夹没有影响。
 ;
 ; 读取图标 (特别是 exe/lnk、网络路径) 可能要几毫秒到几十毫秒, 所以 Get() 遇到
 ; 还没加载的图标先返回 0 并放进队列, 由定时器在后台加载, 加载完调用 OnLoaded
@@ -143,9 +143,9 @@ class IconCache {
     ; 性能比省下的两三 MB 重要
     ;---------------------------------------------------------------------------
     static DiskDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun\IconCache" : ""
-    static DiskMax := 1000, DiskRecheckDays := 7, DiskSaveDelay := 5000, DiskVersion := 2
+    static DiskMax := 1000, DiskRecheckDays := 7, DiskSaveDelay := 30000, DiskVersion := 2, DiskChunk := 262144
     static _disk := Map()                 ; key -> {Stamp, Saved, Used, Data, Offset}: 像素在 Data 的 Offset 处
-    static _diskDirty := false, _diskTouched := false, _saveTimer := ""
+    static _diskDirty := false, _diskTouched := false, _saveTimer := "", _saving := false
     static _verify := [], _verified := Map(), _verifyTimer := ""
 
     static DiskFile() => (IconCache.DiskDir = "") ? "" : IconCache.DiskDir "\Icons-" IconCache.Size ".bin"
@@ -166,27 +166,44 @@ class IconCache {
         return IconCache._disk.Count
     }
 
+    ; 只有整理数据时不让别的线程插进来 (几毫秒); 写文件 (磁盘忙、杀毒软件扫描时可能要几百毫秒) 分块写,
+    ; 期间按下热键照样马上呼出窗口。先写到临时文件再替换, 中途退出也不会留下写了一半的缓存
     static SaveDisk(file := "") {
         file := (file = "") ? IconCache.DiskFile() : file
-        if (file = "" || !(IconCache._diskDirty || IconCache._diskTouched))
+        if (file = "" || !(IconCache._diskDirty || IconCache._diskTouched) || IconCache._saving)
             return false
-        Critical("On")
+        temp := file ".tmp", f := "", IconCache._saving := true
         try {
+            start := IconCache._Ms()
+            Critical("On")
+            try data := IconCache._SerializeDisk(IconCache._disk, IconCache.Size, IconCache.DiskMax)
+            finally Critical("Off")
+            IconCache._diskDirty := false, IconCache._diskTouched := false   ; 写的时候又有新图标: 之后再存一次
+            built := IconCache._Ms()
             SplitPath(file, , &folder)
             DirCreate(folder)
-            data := IconCache._SerializeDisk(IconCache._disk, IconCache.Size, IconCache.DiskMax)
-            temp := file ".tmp"
             f := FileOpen(temp, "w")
-            f.RawWrite(data, data.Size)
-            f.Close()
+            pos := 0
+            while (pos < data.Size) {
+                n := Min(IconCache.DiskChunk, data.Size - pos)
+                f.RawWrite(data.Ptr + pos, n)
+                pos += n
+            }
+            f.Close(), f := ""
+            written := IconCache._Ms()
             FileMove(temp, file, true)
-            IconCache._diskDirty := false, IconCache._diskTouched := false
+            Logger.Debug(Format("Perf: icon cache saved {} KB: build {} ms, write {} ms, replace {} ms", data.Size // 1024
+                , Round(built - start), Round(written - built), Round(IconCache._Ms() - written)))
             return true
         } catch as e {
+            if IsObject(f)
+                try f.Close()
+            try FileDelete(temp)
+            IconCache._diskDirty := true
             Logger.Debug("IconCache: saving the disk cache failed - " e.Message)
             return false
         } finally {
-            Critical("Off")
+            IconCache._saving := false
         }
     }
 
