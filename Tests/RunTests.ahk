@@ -90,7 +90,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -4207,6 +4207,45 @@ Func | PTTools | PT Tools (AHK)=99
         ok("default clipboard hotkey clashes with a global ^!c", IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(data))))
         ok("defaults have no clash", !IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(AppSettings.Defaults()))))
         eq("list cell", PreferencesWindow._Cell(Map("Key", "~MButton"), "Key"), "Middle mouse button")
+    }
+
+    ; 录完热键: 焦点移到下一个控件但不全选里面的文字 (下面是窗口列表时, 接着打字会整个换掉);
+    ; 录制时框下面的提示跟着窗口移动
+    static HotkeyBoxFocus() {
+        eq := (n, a, e) => TestRunner.Equal("HotkeyBoxFocus." n, a, e)
+        g := Gui(, "ALTRun hotkey box test")
+        box := HotkeyBox.Add(g, "w160", "^!k")
+        list := g.AddEdit("w300 r3 +Multi", "ahk_exe a.exe`r`nahk_exe b.exe")
+        g.Show("x100 y100")
+        try {
+            WinActivate("ahk_id " g.Hwnd)
+            if !WinWaitActive("ahk_id " g.Hwnd, , 2) {
+                FileAppend("NOTE HotkeyBoxFocus: test window not active, skipped`n", "*")
+                return
+            }
+            state := HotkeyBox.Boxes[box.Hwnd]
+            box.Focus()                                                     ; 点进框里: 开始录制
+            Sleep(50)
+            eq("recording", HotkeyBox._active == state, true)
+            eq("tip shown", state.Tip != "", true)
+            before := state.TipAt
+            WinMove(300, 250, , , "ahk_id " g.Hwnd)
+            HotkeyBox._Watch()
+            eq("tip follows the window", state.TipAt != before, true)
+            HotkeyBox._Finish(state, "^d")
+            Sleep(50)
+            eq("value", HotkeyBox.Value(box), "^d")
+            eq("hotkeys back on", A_IsSuspended, 0)
+            eq("focus on the next control", DllCall("GetFocus", "Ptr") = list.Hwnd, true)
+            start := 0, end := 0
+            DllCall("SendMessage", "Ptr", list.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &end)   ; EM_GETSEL
+            eq("next control's text not selected", end - start, 0)
+            eq("tip cleared", state.Tip, "")
+        } finally {
+            HotkeyBox.CancelActive()
+            g.Destroy()
+            HotkeyBox.Prune()
+        }
     }
 
     ; JSON: 转义、数字、嵌套、往返; 大文件读取是线性的 (以前按值传整段文本, 越大越慢)
