@@ -26,7 +26,7 @@ class ApplicationProvider {
 
     static Init() {
         if !ApplicationProvider._LoadCache() || ApplicationProvider._CacheExpired()
-            SetTimer(() => ApplicationProvider.Rebuild(), -3000)            ; 先让窗口出来, 再在后台扫描
+            SetTimer(Logger.Watch("app scan", () => ApplicationProvider.Rebuild()), -3000)            ; 先让窗口出来, 再在后台扫描
         SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; 预先算好搜索 Key, 第一次搜索不用等
     }
 
@@ -218,7 +218,7 @@ class ApplicationProvider {
         ApplicationProvider._storePid := pid
         ApplicationProvider._storeFile := outFile
         if (ApplicationProvider._storeTimer = "")
-            ApplicationProvider._storeTimer := () => ApplicationProvider._CheckStoreScan()
+            ApplicationProvider._storeTimer := Logger.Watch("store apps scan", () => ApplicationProvider._CheckStoreScan())
         SetTimer(ApplicationProvider._storeTimer, 500)
     }
 

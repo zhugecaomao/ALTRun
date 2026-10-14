@@ -114,6 +114,7 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 - 运行程序 / 打开文件和文件夹、操作面板 (→)、计算器 (结果 + Enter 复制)、Quick Switch (文件夹面板 + Ctrl+E 跳转)、
   打开并保存偏好设置、片段展开
 - 每轮结束时 ALTRun 的 CPU 时间、内存、GDI / USER 对象和句柄数
+- ALTRun 日志里一次超过 50 ms 的后台任务 (`Perf: slow`, 有这种记录的版本) 和错误
 
 默认每轮 500 次搜索 + 每种操作 100 次 (约 50 分钟), 结果 (中位数 / p90 / p99 / 最慢) 在运行摘要里, 原始数据是 artifact。
 测试副本里多 #Include 一个 `Tests\Bench\BenchProbe.ahk`, 驱动程序 (`BenchDriver.ahk`) 通过它知道 "当前输入的结果画好了没有";
@@ -124,7 +125,8 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 - 名字不区分大小写: 局部变量不要和类同名 (`pinyin` 会遮住 `Pinyin` 类), 同一个类里方法和属性不要只差大小写
 - 很大的 `static X := Map(...)` 会报 "Declaration too long", 改成在方法里构造
 - 字符串按值传给函数时会整段复制: 在循环里反复把一个大字符串 (整个文件) 传给函数, 耗时会随长度平方增长, 要按引用传 (`&text`), 见 `Lib\JSON.ahk`
-- 调试日志 (`General.SaveLog`) 里 `Perf:` 开头的行是启动各阶段和慢搜索的耗时; 用 `Logger.Ms()` / `Logger.Time(label, start)` 记录新的
+- 调试日志 (`General.SaveLog`) 里 `Perf:` 开头的行是启动各阶段、慢搜索和慢的后台任务的耗时; 用 `Logger.Ms()` / `Logger.Time(label, start)` 记录新的, 计时器的回调用 `Logger.Watch(label, fn)` 包一层 (超过 50 ms 才记)
+- 不要在主线程里用 `Download()` 下载 (下载完之前整个程序都停着), 用 `HttpGet.Start(url, done, fail)` 在后台下载
 - 嵌套函数修改外层变量时, 通过对象传回结果 (`state := {Result: ""}`)
 - 所有 `Edit` 控件都写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行
 - `#Warn All` 的警告都当作错误处理

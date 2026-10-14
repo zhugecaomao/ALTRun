@@ -52,7 +52,7 @@ class QuickSwitch {
         }
         OnMessage(0x100, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_KEYDOWN: 面板搜索框里的 ↑ ↓ Enter Esc
 
-        SetTimer(() => QuickSwitch._Watch(), 250)
+        SetTimer(Logger.Watch("quick switch watch", () => QuickSwitch._Watch()), 250)
     }
 
     ; 用 WM_KEYDOWN 而不是热键: 中文输入法正在输入 (还没上屏) 时按键是 VK_PROCESSKEY, 不会被当成 Enter / Esc

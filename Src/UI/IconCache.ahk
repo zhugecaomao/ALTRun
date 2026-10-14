@@ -107,7 +107,7 @@ class IconCache {
         }
         IconCache._prefetchStats := {Count: 0, Ms: 0, Total: IconCache._prefetch.Length}
         if (IconCache._prefetchTimer = "")
-            IconCache._prefetchTimer := () => IconCache._PrefetchStep()
+            IconCache._prefetchTimer := Logger.Watch("icon prefetch", () => IconCache._PrefetchStep())
         SetTimer(IconCache._prefetchTimer, IconCache._prefetch.Length ? IconCache.PrefetchGapMs : 0)
     }
 
@@ -195,7 +195,7 @@ class IconCache {
         if (IconCache.DiskDir = "")
             return
         if (IconCache._saveTimer = "")
-            IconCache._saveTimer := () => IconCache._SaveWhenIdle()
+            IconCache._saveTimer := Logger.Watch("save icon cache", () => IconCache._SaveWhenIdle())
         SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)
     }
 
@@ -221,7 +221,7 @@ class IconCache {
             IconCache._verified[key] := true
             IconCache._verify.Push([key, spec])
             if (IconCache._verifyTimer = "")
-                IconCache._verifyTimer := () => IconCache._VerifyStep()
+                IconCache._verifyTimer := Logger.Watch("icon verify", () => IconCache._VerifyStep())
             SetTimer(IconCache._verifyTimer, IconCache.PrefetchGapMs)
         }
         return hIcon

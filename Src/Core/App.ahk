@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.12.23"
+    static Version := "2026.10.12.24"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -270,7 +270,7 @@ class App {
         App.Notify(I18n.T("Settings.EditHint"), 4000)
         App._settingsTime := FileGetTime(AppSettings.File, "M")
         if (App._watchTimer = "")
-            App._watchTimer := () => App._CheckSettingsChanged()
+            App._watchTimer := Logger.Watch("settings watch", () => App._CheckSettingsChanged())
         SetTimer(App._watchTimer, 1500)
         Run('notepad.exe "' AppSettings.File '"')
     }
@@ -458,7 +458,7 @@ class App {
     static _AfterWake(reason) {
         App._wakeReason := reason
         if (App._wakeTimer = "")
-            App._wakeTimer := () => App.ReinstallHooks(App._wakeReason)
+            App._wakeTimer := Logger.Watch("reinstall hooks", () => App.ReinstallHooks(App._wakeReason))
         SetTimer(App._wakeTimer, -App.WakeDelay)
     }
 

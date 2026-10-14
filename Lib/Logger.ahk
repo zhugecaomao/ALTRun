@@ -11,6 +11,7 @@
 ;   Logger.Flush()   ; 立即把缓冲区写盘, 一般不用手动调, 退出时会自动调用一次
 ;   Logger.Rotate()  ; 日志文件过大时截断保留一份 .old, 启动时自动调用一次
 ;   start := Logger.Ms(), ..., Logger.Time("load index", start)   ; 记录耗时 "Perf: load index 12 ms"
+;   SetTimer(Logger.Watch("save usage", fn), ...)   ; 后台任务一次超过 SlowMs 时记 "Perf: slow save usage 80 ms"
 ;
 ; 是否写盘由 Logger.Enabled 决定, App 启动时按设置 General.SaveLog 赋值。
 ;===============================================================================
@@ -41,6 +42,21 @@ class Logger {
             Logger._Write("DBG", "Perf: " label " " Round(elapsed) " ms")
         return elapsed
     }
+    ; 包一层计时 (给计时器用): 一次超过 SlowMs 时记一条 "Perf: slow <label> N ms", 找出偶尔卡一下的后台任务。
+    ; 期间被热键等打断时, 打断的时间也算在里面
+    static SlowMs := 50
+    static Watch(label, fn) => (params*) => Logger._Watched(label, fn, params)
+
+    static _Watched(label, fn, params) {
+        start := Logger.Ms()
+        try return fn(params*)
+        finally {
+            elapsed := Logger.Ms() - start
+            if (Logger.Enabled && elapsed >= Logger.SlowMs)
+                Logger._Write("DBG", "Perf: slow " label " " Round(elapsed) " ms")
+        }
+    }
+
     ; 更细的步骤 (呼出窗口的每一步、加载的图标...), 只在启动后的一小段时间里记, 平时不占日志
     static Trace(msg) {
         if (Logger.Enabled && A_TickCount < Logger.TraceUntil)

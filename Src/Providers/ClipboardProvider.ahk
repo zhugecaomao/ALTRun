@@ -51,7 +51,7 @@ class ClipboardProvider {
         ClipboardProvider.PlaceStorage(options["LocalFiles"])
         if options["Persist"]
             ClipboardProvider._Load()
-        OnClipboardChange((dataType) => ClipboardProvider._OnChange(dataType))
+        OnClipboardChange(Logger.Watch("clipboard change", (dataType) => ClipboardProvider._OnChange(dataType)))
         if options["MergeDoubleCopy"] {
             try Hotkey("~^c", (*) => ClipboardProvider._OnCopyKey())         ; ~ : Ctrl+C 照常复制
             catch as e
@@ -595,7 +595,7 @@ class ClipboardProvider {
 
     static _SaveLater() {
         if (ClipboardProvider._saveTimer = "")
-            ClipboardProvider._saveTimer := () => ClipboardProvider.Save()
+            ClipboardProvider._saveTimer := Logger.Watch("save clipboard", () => ClipboardProvider.Save())
         SetTimer(ClipboardProvider._saveTimer, -2000)
     }
 }

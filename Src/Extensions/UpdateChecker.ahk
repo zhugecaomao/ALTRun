@@ -40,16 +40,23 @@ class UpdateChecker {
     static CheckHours  := 6                                                 ; 一直开着时: 离上次检查满几小时再查
     static StartupHours := 1                                                ; 启动时: 离上次检查满几小时就查
     static Pending     := ""                                                ; 后台发现的新版本 (ParseRelease 的结果 + Mode)
-    static _timer      := ""
+    static _timer      := "", _checking := false
 
+    ; 在后台下载版本信息 (不卡住 ALTRun), 下载完再给出结果; 正在检查时再点一次不重复检查
     static Check(install := false) {
-        try {
-            release := UpdateChecker.Fetch()
-        } catch as e {
-            Logger.Error("UpdateChecker: " e.Message)
-            MsgBox(I18n.T("Update.Failed", e.Message), App.Name, 48)
+        if UpdateChecker._checking
             return
-        }
+        UpdateChecker._checking := true
+        UpdateChecker.FetchAsync((release) => (UpdateChecker._checking := false, UpdateChecker._Checked(release, install))
+            , (message) => (UpdateChecker._checking := false, UpdateChecker._CheckFailed(message)))
+    }
+
+    static _CheckFailed(message) {
+        Logger.Error("UpdateChecker: " message)
+        MsgBox(I18n.T("Update.Failed", message), App.Name, 48)
+    }
+
+    static _Checked(release, install) {
         state := UpdateChecker.LoadState()
         state["LastCheck"] := A_Now
         UpdateChecker.SaveState(state)
@@ -108,12 +115,10 @@ class UpdateChecker {
 
     ; 静默检查: 出错只写日志 (不记检查时间, 下一个小时再试); 有新版本 (且不是跳过的版本) 时记在 Pending
     static CheckInBackground() {
-        try {
-            release := UpdateChecker.Fetch()
-        } catch as e {
-            Logger.Error("UpdateChecker: " e.Message)
-            return
-        }
+        UpdateChecker.FetchAsync((release) => UpdateChecker._CheckedInBackground(release), (message) => Logger.Error("UpdateChecker: " message))
+    }
+
+    static _CheckedInBackground(release) {
         state := UpdateChecker.LoadState()
         state["LastCheck"] := A_Now
         UpdateChecker.SaveState(state)
@@ -198,12 +203,9 @@ class UpdateChecker {
     ;---------------------------------------------------------------------------
     ; GitHub Release
     ;---------------------------------------------------------------------------
-    static Fetch() {
-        tmpFile := A_Temp "\ALTRun_latest.json"
-        Download(UpdateChecker.ApiUrl, tmpFile)
-        response := FileRead(tmpFile, "UTF-8")
-        try FileDelete(tmpFile)
-        return UpdateChecker.ParseRelease(response)
+    ; 在后台下载最新版本的信息: done(release) (ParseRelease 的结果), 出错时 fail(message)
+    static FetchAsync(done, fail) {
+        HttpGet.Start(UpdateChecker.ApiUrl, (text) => done.Call(UpdateChecker.ParseRelease(text)), fail)
     }
 
     ; GitHub API 的 releases/latest -> {Version, Page, ZipUrl, Sha256} (没有 zip / SHA256 时为 "")

@@ -59,21 +59,18 @@ class CurrencyRates {
         CurrencyRates.Date := data.Has("date") ? data["date"] : data.Has("Date") ? data["Date"] : ""
     }
 
+    ; 在后台下载 (不卡住 ALTRun), 下载完再换上新的汇率
     static Refresh() {
-        tmpFile := A_Temp "\ALTRun_rates.json"
-        try {
-            Download(CurrencyRates.Url, tmpFile)
-            data := JSON.Parse(FileRead(tmpFile, "UTF-8"))
-            try FileDelete(tmpFile)
-            CurrencyRates.Apply(data)
-            CurrencyRates.Fetched := A_Now
-            rates := Map()
-            for code, rate in Units.Rates
-                rates[code] := rate
-            JSON.WriteFile(CurrencyRates.File, Map("Date", CurrencyRates.Date, "Fetched", CurrencyRates.Fetched, "Rates", rates))
-            Logger.Debug("CurrencyRates: " Units.Rates.Count " rates of " CurrencyRates.Date)
-        } catch as e {
-            Logger.Error("CurrencyRates: " e.Message)
-        }
+        HttpGet.Start(CurrencyRates.Url, (text) => CurrencyRates._Downloaded(text), (message) => Logger.Error("CurrencyRates: " message))
+    }
+
+    static _Downloaded(text) {
+        CurrencyRates.Apply(JSON.Parse(text))
+        CurrencyRates.Fetched := A_Now
+        rates := Map()
+        for code, rate in Units.Rates
+            rates[code] := rate
+        JSON.WriteFile(CurrencyRates.File, Map("Date", CurrencyRates.Date, "Fetched", CurrencyRates.Fetched, "Rates", rates))
+        Logger.Debug("CurrencyRates: " Units.Rates.Count " rates of " CurrencyRates.Date)
     }
 }

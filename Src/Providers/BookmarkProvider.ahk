@@ -19,7 +19,7 @@ class BookmarkProvider {
 
     static Init() {
         BookmarkProvider.Load()
-        SetTimer(() => BookmarkProvider._RefreshIfChanged(), 30000)         ; 在后台看书签文件有没有变, 不占用打字时的搜索
+        SetTimer(Logger.Watch("bookmarks refresh", () => BookmarkProvider._RefreshIfChanged()), 30000)         ; 在后台看书签文件有没有变, 不占用打字时的搜索
     }
 
     static Search(query) {

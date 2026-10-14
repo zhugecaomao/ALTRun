@@ -28,7 +28,7 @@ SetKeyDelay(0, 0)
 SetTitleMatchMode(3)
 DetectHiddenWindows(false)
 
-global Demo := "C:\BenchDemo", Ahk := A_AhkPath
+global Demo := "C:\BenchDemo", Ahk := A_AhkPath, LogFile := A_Temp "\ALTRun.log"   ; ALTRun 的日志 (Logger.File)
 switch A_Args[1] {
     case "prepare": Prepare(A_Args[2])
     case "demo":    MakeDemo()
@@ -75,7 +75,7 @@ Prepare(appDir) {
     settings := Map(
         "SchemaVersion", 4,
         "General", Map("Language", "en", "LaunchAtLogin", 0, "HideOnDeactivate", 1, "SendToMenu", 0, "StartMenuShortcut", 0,
-                       "CheckForUpdates", 0, "Hotkey", "!Space", "ShowTips", 0, "SaveLog", 0),
+                       "CheckForUpdates", 0, "Hotkey", "!Space", "ShowTips", 0, "SaveLog", 1),   ; 日志: 慢的后台任务、错误 (见 HarvestLog)
         "Features", Map("FileSearch", Map("UseEverything", 0, "ScopeFolders", [Demo])),
         "CustomCommands", commands,
         "Snippets", snippets
@@ -131,6 +131,8 @@ Visible() => DllCall("IsWindowVisible", "Ptr", B.Search)
 Round_(label, appDir, outFile, seed, searches, others) {
     B.Label := label, B.Out := outFile, B.Seed := seed
     CollectWords()
+    for f in [LogFile, LogFile ".old"]
+        try FileDelete(f)
     start := NowMs()
     Run('"' Ahk '" "' appDir '\ALTRun.ahk" -Startup', appDir, , &pid)
     B.Pid := pid
@@ -184,6 +186,21 @@ Round_(label, appDir, outFile, seed, searches, others) {
     WinClose("ahk_id " B.Main)                                              ; 正常退出 (保存学习记录、图标缓存)
     if !ProcessWaitClose(pid, 15)
         ProcessClose(pid)
+    HarvestLog()
+}
+
+; ALTRun 的日志里: 一次超过 50 ms 的后台任务 ("Perf: slow <任务> N ms", 有这种记录的版本) 记成 "bg <任务>",
+; 错误记成 "log error"
+HarvestLog() {
+    try text := FileRead(LogFile, "UTF-8")
+    catch
+        return
+    Loop Parse, text, "`n", "`r" {
+        if RegExMatch(A_LoopField, "\[DBG\] Perf: slow (.+) (\d+) ms$", &m)
+            Rec("bg " m[1], m[2])
+        else if RegExMatch(A_LoopField, "\[ERR\] (.*)$", &m)
+            Rec("log error", SubStr(StrReplace(m[1], "|", "/"), 1, 120))
+    }
 }
 
 CollectWords() {

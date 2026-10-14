@@ -115,6 +115,7 @@ alternating (A B B A), with ALTRun restarted for every round:
 - Running programs / opening files and folders, the action panel (→), the calculator (result + Enter to copy), Quick Switch (folder panel + Ctrl+E),
   opening and saving Preferences, snippet expansion
 - ALTRun's CPU time, memory, GDI / USER objects and handles at the end of each round
+- Background tasks over 50 ms (`Perf: slow`, in versions that log them) and errors from the ALTRun log
 
 By default each round has 500 searches + 100 of each other operation (about 50 minutes); the results (median / p90 / p99 / max) are in the run summary, and the raw data is an artifact.
 The test copies #Include one extra file, `Tests\Bench\BenchProbe.ahk`, which tells the driver (`BenchDriver.ahk`) whether the results for the current input have been drawn;
@@ -125,7 +126,8 @@ See [CONTRIBUTING.md](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTI
 - Names are case-insensitive: don't give a local variable the name of a class (`pinyin` hides the `Pinyin` class), and don't let a method and a property in the same class differ only in case
 - A very large `static X := Map(...)` fails with "Declaration too long"; build it inside a method instead
 - Strings passed to functions by value are copied whole: passing a big string (a whole file) to a function over and over in a loop makes the time grow with the square of its length; pass it by reference (`&text`), see `Lib\JSON.ahk`
-- Lines starting with `Perf:` in the debug log (`General.SaveLog`) are the timings of startup phases and slow searches; use `Logger.Ms()` / `Logger.Time(label, start)` to record new ones
+- Lines starting with `Perf:` in the debug log (`General.SaveLog`) are the timings of startup phases, slow searches and slow background tasks; use `Logger.Ms()` / `Logger.Time(label, start)` to record new ones, and wrap timer callbacks in `Logger.Watch(label, fn)` (logged only over 50 ms)
+- Don't download with `Download()` on the main thread (the whole program stops until it finishes); use `HttpGet.Start(url, done, fail)` to download in the background
 - When a nested function changes an outer variable, pass the result back through an object (`state := {Result: ""}`)
 - Give every `Edit` control a row count (`r1 -Multi`), otherwise long text turns it into a multi-line box
 - Treat every `#Warn All` warning as an error
