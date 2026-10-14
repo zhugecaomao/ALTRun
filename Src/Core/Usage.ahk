@@ -126,7 +126,7 @@ class Usage {
     ; 连续计数时只写一次盘; 搜索窗口开着 (正在输入) 时先不写, 免得打字时卡一下
     static _SaveLater() {
         if (Usage._saveTimer = "")
-            Usage._saveTimer := () => Usage._SaveWhenIdle()
+            Usage._saveTimer := Logger.Watch("save usage", () => Usage._SaveWhenIdle())
         SetTimer(Usage._saveTimer, -5000)
     }
 

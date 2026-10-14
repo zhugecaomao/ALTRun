@@ -60,7 +60,7 @@ class FileIndex {
         FileIndex._new := {Paths: [], Names: [], Folders: []}
         FileIndex.Scanning := true
         if (FileIndex._timer = "")
-            FileIndex._timer := () => FileIndex._ScanSome()
+            FileIndex._timer := Logger.Watch("file index scan", () => FileIndex._ScanSome())
         SetTimer(FileIndex._timer, 10)
     }
 

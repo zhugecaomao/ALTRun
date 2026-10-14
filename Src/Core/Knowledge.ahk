@@ -110,7 +110,7 @@ class Knowledge {
     ; 连续执行多个命令时只写一次盘; 搜索窗口开着 (正在输入) 时先不写, 免得打字时卡一下
     static _SaveLater() {
         if (Knowledge._saveTimer = "")
-            Knowledge._saveTimer := () => Knowledge._SaveWhenIdle()
+            Knowledge._saveTimer := Logger.Watch("save knowledge", () => Knowledge._SaveWhenIdle())
         SetTimer(Knowledge._saveTimer, -3000)
     }
 

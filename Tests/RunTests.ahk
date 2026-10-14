@@ -20,6 +20,7 @@
 #Include %A_ScriptDir%\..\Lib\Units.ahk
 #Include %A_ScriptDir%\..\Lib\ClipboardData.ahk
 #Include %A_ScriptDir%\..\Lib\Dialogs.ahk
+#Include %A_ScriptDir%\..\Lib\HttpGet.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
 #Include %A_ScriptDir%\..\Src\Core\AppSettings.ahk
@@ -89,7 +90,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -3108,13 +3109,13 @@ class Tests {
                 rejected := true
             eq("truncated file rejected", rejected, true)
 
-            file := dir "\Icons-32.bin"
+            cacheFile := dir "\Icons-32.bin"
             IconCache._disk := entries, IconCache._diskDirty := true
-            eq("save", IconCache.SaveDisk(file), true)
-            eq("nothing to save", IconCache.SaveDisk(file), false)
-            eq("load", IconCache.LoadDisk(file), 3)
-            f := FileOpen(file, "w"), f.RawWrite(Buffer(30, 0x41), 30), f.Close()
-            eq("broken file", IconCache.LoadDisk(file), 0)
+            eq("save", IconCache.SaveDisk(cacheFile), true)
+            eq("nothing to save", IconCache.SaveDisk(cacheFile), false)
+            eq("load", IconCache.LoadDisk(cacheFile), 3)
+            f := FileOpen(cacheFile, "w"), f.RawWrite(Buffer(30, 0x41), 30), f.Close()
+            eq("broken file", IconCache.LoadDisk(cacheFile), 0)
             eq("missing file", IconCache.LoadDisk(dir "\none.bin"), 0)
 
             key := "ext:.diskcachetest"
@@ -3225,6 +3226,164 @@ class Tests {
     }
 
     ; 正在读的图标: 界面又来要时不再排一次队 (以前慢的图标会读两遍)
+    ; 后台下载: 异步请求, 完成 / 出错 / 超时后在单独的线程里调用回调 (用假的请求, 不连网)
+    static HttpGet() {
+        eq := (n, a, e) => TestRunner.Equal("HttpGet." n, a, e)
+        saved := [HttpGet.NewRequest, HttpGet.PollMs]
+        fakes := []
+        HttpGet.NewRequest := () => (fakes.Push(r := FakeHttpRequest()), r)
+        HttpGet.PollMs := 10
+        got := []
+        try {
+            HttpGet.Start("https://example.test/ok", (t) => got.Push("done " t), (m) => got.Push("fail " m))
+            eq("async GET", fakes[1].Method " " fakes[1].Url " " fakes[1].Async, "GET https://example.test/ok 1")
+            eq("asks the server, not the cache", fakes[1].Header, "If-Modified-Since")
+            eq("pending", HttpGet.Pending, 1)
+            Sleep(60)
+            eq("waits until complete", got.Length, 0)
+            fakes[1].status := 200, fakes[1].responseText := "hello", fakes[1].readyState := 4
+            eq("done", Tests._WaitFor(() => got.Length) ? got[1] : "", "done hello")
+            eq("nothing pending", HttpGet.Pending, 0)
+
+            got.Length := 0
+            HttpGet.Start("https://example.test/missing", (t) => got.Push("done " t), (m) => got.Push("fail " m))
+            fakes[2].status := 404, fakes[2].statusText := "Not Found", fakes[2].readyState := 4
+            eq("http error", Tests._WaitFor(() => got.Length) ? got[1] : "", "fail HTTP 404 Not Found")
+
+            got.Length := 0
+            HttpGet.Start("https://example.test/offline", (t) => got.Push("done " t), (m) => got.Push("fail " m))
+            fakes[3].status := 12007, fakes[3].readyState := 4
+            eq("network error", Tests._WaitFor(() => got.Length) ? got[1] : "", "fail Network error 12007")
+
+            got.Length := 0
+            HttpGet.Start("https://example.test/bad", (t) => (got.Push("parsing"), JSON.Parse(t)), (m) => got.Push("fail"))
+            fakes[4].status := 200, fakes[4].responseText := "{not json", fakes[4].readyState := 4
+            Tests._WaitFor(() => got.Length >= 2)
+            eq("done throws -> fail", got.Length = 2 ? got[1] " " got[2] : got.Length, "parsing fail")
+
+            got.Length := 0
+            HttpGet.Start("https://example.test/slow", (t) => got.Push("done"), (m) => got.Push("fail " m), 50)
+            eq("timeout", Tests._WaitFor(() => got.Length) ? got[1] : "", "fail Timed out after 0 s")
+            eq("timeout aborts", fakes[5].Aborted, true)
+            eq("nothing pending after timeout", HttpGet.Pending, 0)
+
+            ; 一个请求的回调还在运行 (例如弹出了对话框) 时, 另一个照样完成
+            got.Length := 0, release := false
+            HttpGet.Start("https://example.test/b", (t) => (got.Push("b"), release := true))
+            HttpGet.Start("https://example.test/a", (t) => (got.Push("a start"), Tests._WaitFor(() => release, 2000), got.Push("a end")))
+            fakes[6].status := 200, fakes[6].readyState := 4
+            fakes[7].status := 200, fakes[7].readyState := 4
+            Tests._WaitFor(() => got.Length >= 3, 4000)
+            eq("callbacks do not block each other", got.Length = 3 ? got[3] : Tests._Join(got), "a end")
+
+            HttpGet.NewRequest := () => ComObject("ALTRun.NoSuchClass")
+            got.Length := 0
+            HttpGet.Start("https://example.test/x", (t) => got.Push("done"), (m) => got.Push("fail " m))
+            eq("cannot start -> fail", Tests._WaitFor(() => got.Length) ? SubStr(got[1], 1, 5) : "", "fail ")
+        } finally {
+            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2]
+        }
+
+        ; 检查更新 / 汇率不再用 Download() (下载期间整个程序都停着); 一键更新下载 zip 时有进度窗口, 仍用 Download()
+        for name in ["UpdateChecker", "CurrencyRates"] {
+            text := FileRead(A_ScriptDir "\..\Src\Extensions\" name ".ahk", "UTF-8")
+            pos := 1, count := 0
+            while (pos := RegExMatch(text, "\bDownload\(", , pos)) {
+                count++, pos++
+            }
+            eq(name ": synchronous downloads", count, name = "UpdateChecker" ? 1 : 0)
+        }
+
+        ; 检查更新: 版本信息下载完再处理 (假的回复)
+        savedState := [UpdateChecker.StateFile, UpdateChecker.Pending]
+        root := A_Temp "\ALTRun-test-update-async"
+        try DirDelete(root, true)
+        UpdateChecker.StateFile := root "\Update.json"
+        fakes := []
+        HttpGet.NewRequest := () => (fakes.Push(r := FakeHttpRequest()), r)
+        HttpGet.PollMs := 10
+        try {
+            UpdateChecker.Pending := ""
+            UpdateChecker.CheckInBackground()
+            eq("update: asks GitHub", fakes[1].Url, UpdateChecker.ApiUrl)
+            eq("update: not yet", UpdateChecker.Pending, "")
+            fakes[1].status := 200, fakes[1].responseText := '{"tag_name": "v2999.01.01", "html_url": "https://x/notes"}', fakes[1].readyState := 4
+            Tests._WaitFor(() => IsObject(UpdateChecker.Pending))
+            eq("update: found in background", IsObject(UpdateChecker.Pending) ? UpdateChecker.Pending.Version : "", "2999.01.01")
+            eq("update: check time saved", UpdateChecker.LoadState()["LastCheck"] != "", true)
+            eq("manual check: busy flag starts clear", UpdateChecker._checking, false)
+        } finally {
+            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2]
+            UpdateChecker.StateFile := savedState[1], UpdateChecker.Pending := savedState[2]
+            try DirDelete(root, true)
+        }
+
+        ; 真的请求 (Msxml2.XMLHTTP.6.0, 只在 GitHub Actions 的 Windows 上): 等待时程序照常运行, 内容正确。
+        ; 连不上网 / 超时不算失败 (和程序无关), 只写一行说明
+        if (EnvGet("GITHUB_ACTIONS") = "true") {
+            got := [], ticks := 0
+            HttpGet.Start("https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/LICENSE", (t) => got.Push("done " SubStr(Trim(t, " `t`r`n"), 1, 26)), (m) => got.Push("fail " m))
+            start := A_TickCount
+            while (!got.Length && A_TickCount - start < 35000)
+                Sleep(10), ticks++
+            result := got.Length ? got[1] : "fail no answer"
+            if RegExMatch(result, "^fail (Network error|Timed out|no answer)")
+                FileAppend("NOTE HttpGet.real request skipped: " result "`n", "*")
+            else {
+                eq("real request", result, "done GNU GENERAL PUBLIC LICENSE")
+                eq("real request: kept running while waiting", ticks > 1, true)
+            }
+        }
+    }
+
+    ; 后台任务一次超过 SlowMs 时记一条 "Perf: slow"; 快的不记; 返回值、参数照常
+    static SlowTaskLog() {
+        eq := (n, a, e) => TestRunner.Equal("SlowTaskLog." n, a, e)
+        saved := [Logger.Enabled, Logger.File, Logger.Immediate, Logger.SlowMs]
+        Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunSlowTaskTest.log", Logger.SlowMs := 30
+        try FileDelete(Logger.File)
+        try {
+            fast := Logger.Watch("fast task", (a, b) => a + b)
+            eq("returns the result", fast(2, 3), 5)
+            slow := Logger.Watch("slow task", () => (Sleep(60), "ok"))
+            eq("slow returns", slow(), "ok")
+            failing := Logger.Watch("failing task", () => (Sleep(60), JSON.Parse("{bad")))
+            try failing()
+            catch
+                threw := true
+            eq("errors still thrown", IsSet(threw), true)
+            Logger.Flush()
+            logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            eq("fast not logged", InStr(logText, "fast task") > 0, false)
+            eq("slow logged", RegExMatch(logText, "Perf: slow slow task \d+ ms") > 0, true)
+            eq("failing logged too", InStr(logText, "Perf: slow failing task") > 0, true)
+        } finally {
+            try FileDelete(Logger.File)
+            Logger.Enabled := saved[1], Logger.File := saved[2], Logger.Immediate := saved[3], Logger.SlowMs := saved[4]
+        }
+        eq("default threshold", Logger.SlowMs, 50)
+        for source, label in Map("Core\Usage", "save usage", "Core\Knowledge", "save knowledge", "Providers\ClipboardProvider", "save clipboard"
+                             , "Extensions\QuickSwitch", "quick switch watch", "Core\FileIndex", "file index scan", "UI\IconCache", "save icon cache")
+            eq("watched: " label, InStr(FileRead(A_ScriptDir "\..\Src\" source ".ahk", "UTF-8"), 'Logger.Watch("' label '"') > 0, true)
+    }
+
+    static _WaitFor(fn, ms := 2000) {
+        start := A_TickCount
+        while !fn() {
+            if (A_TickCount - start > ms)
+                return false
+            Sleep(10)
+        }
+        return true
+    }
+
+    static _Join(list) {
+        text := ""
+        for item in list
+            text .= (A_Index > 1 ? "," : "") item
+        return text
+    }
+
     static IconLoadingOnce() {
         eq := (n, a, e) => TestRunner.Equal("IconLoadingOnce." n, a, e)
         key := IconCache._CacheKey("ext:.loadingonce")
@@ -3331,8 +3490,10 @@ class Tests {
             SearchWindow._WatchPaint(), SearchWindow._CheckPaint()          ; 还没画
             eq("not painted yet: wait", SearchWindow._paintTries "|" SearchWindow._paintRetries, "1|0")
             DllCall("UpdateWindow", "Ptr", list.Hwnd)
+            Critical(1000)                                                  ; 执行中不处理消息 (写日志慢时, 补画的请求会先被处理掉)
             SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()  ; 画了, 回调没运行
             eq("skipped: repaint", (pending() ? 1 : 0) "|" SearchWindow._paintRetries, "1|1")
+            Critical("Off")
             logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
             TestRunner.True("SkippedPaint.logged", InStr(logText, "[WRN] SearchWindow: custom draw skipped") > 0)
             DllCall("UpdateWindow", "Ptr", list.Hwnd)
@@ -3343,6 +3504,7 @@ class Tests {
             StrReplace(logText, "custom draw skipped", , , &count)
             eq("logged once per show", count, 1)
         } finally {
+            Critical("Off")
             SetTimer(SearchWindow._paintCheck, 0)
             try FileDelete(Logger.File)
             SearchWindow.Gui := saved[1], SearchWindow.List := saved[2], SearchWindow.Input := saved[3], SearchWindow.Results := saved[4]
@@ -4351,6 +4513,15 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("System search", SystemProvider.Search(SearchQuery("lock")).Length >= 1)
         TestRunner.Equal("Color", Win.ColorToBgr("#112233"), 0x332211)
     }
+}
+
+class FakeHttpRequest {                                                    ; HttpGet 测试用的假请求 (Msxml2.XMLHTTP 用到的部分)
+    readyState := 1, status := 0, statusText := "", responseText := ""
+    Method := "", Url := "", Async := "", Header := "", Aborted := false
+    open(method, url, async) => (this.Method := method, this.Url := url, this.Async := async)
+    setRequestHeader(name, value) => (this.Header := name)
+    send() => ""
+    abort() => (this.Aborted := true)
 }
 
 JsonReadWrite_Parses(text) {

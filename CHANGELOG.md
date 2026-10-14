@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.12.24]
+
+测试版。
+
+Test build.
+
+### 改进
+- **检查更新、下载汇率不再让 ALTRun 卡住**: 以前在下载完之前整个程序都停着 (网络慢、代理或防火墙要等超时时, 热键和搜索窗口可能十几秒没反应), 现在在后台下载, 期间照常使用; 手动检查更新时下载完再显示结果
+- 调试日志记下一次超过 50 ms 的后台任务 ("Perf: slow ..."; 保存学习记录 / 剪贴板 / 图标缓存、扫描程序和文件、Quick Switch 等), 偶尔卡一下时看得出是哪一个
+- 性能测试 (Tests/Bench) 同时收集 ALTRun 日志里的慢后台任务和错误
+
 ## [2026.10.12.23]
 
 测试版。
@@ -780,7 +791,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.23...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.24...HEAD
+[2026.10.12.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.23...2026.10.12.24
 [2026.10.12.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.22...2026.10.12.23
 [2026.10.12.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.21...2026.10.12.22
 [2026.10.12.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.20...2026.10.12.21

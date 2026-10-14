@@ -11,6 +11,7 @@ samples = collections.defaultdict(list)
 fails = collections.Counter()
 fail_examples = collections.defaultdict(list)
 res = collections.defaultdict(dict)
+background = collections.defaultdict(list)                     # (版本, 任务) -> 一次超过 50 ms 的耗时 (ALTRun 日志里的 "Perf: slow")
 versions = []
 for line in open(sys.argv[1], encoding="utf-8-sig"):
     parts = line.rstrip("\n").split("|", 2)
@@ -22,7 +23,9 @@ for line in open(sys.argv[1], encoding="utf-8-sig"):
         versions.append(version)
     if metric.startswith("res "):
         res[label][metric[4:]] = value
-    elif metric.endswith(" fail") or metric == "fatal" or metric.startswith("slow "):
+    elif metric.startswith("bg "):
+        background[(version, metric[3:])].append(float(value))
+    elif metric.endswith(" fail") or metric in ("fatal", "log error") or metric.startswith("slow "):
         fails[(version, metric)] += 1
         if len(fail_examples[(version, metric)]) < 12:
             fail_examples[(version, metric)].append(value)
@@ -51,6 +54,14 @@ for m in sorted(metrics):
 out.append("")
 out.append("Failures: " + (", ".join(f"{v} {m}: {n} (e.g. {'; '.join(fail_examples[(v, m)])})" for (v, m), n in sorted(fails.items())) or "none"))
 out.append("")
+if background:
+    out.append("Background tasks over 50 ms (from the ALTRun log):")
+    out.append("")
+    out.append("| version | task | n | median | max |")
+    out.append("|---|---|---|---|---|")
+    for (v, task), vals in sorted(background.items(), key=lambda kv: -max(kv[1])):
+        out.append(f"| {v} | {task} | {len(vals)} | {statistics.median(vals):.0f} | {max(vals):.0f} |")
+    out.append("")
 keys = []
 for label in res:
     for k in res[label]:
