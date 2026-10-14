@@ -1,0 +1,115 @@
+# 在 Windows 上模拟日常操作, 比较两个版本的性能 (Tests/Bench/BenchDriver.ahk), 结果写进运行摘要, 原始数据是 artifact。
+#   手动运行 (Actions → Bench → Run workflow): baseline 默认最新正式版, candidate 默认运行的分支;
+#   每个版本 2 轮 x (searches 次搜索 + 每种操作 others 次), 默认 500 / 100 (每个版本 1000 次搜索 + 各 200 次, 约 50 分钟)
+#   claude/** 分支上改了测试脚本时: 自动用很少的次数跑一遍 (冒烟测试, 约 8 分钟)
+name: Bench
+
+on:
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: "Baseline: tag / branch / commit (empty = latest release)"
+        required: false
+        default: ""
+      candidate:
+        description: "Candidate: tag / branch / commit (empty = the branch this runs on)"
+        required: false
+        default: ""
+      searches:
+        description: "Searches per round (2 rounds per version)"
+        required: false
+        default: "500"
+      others:
+        description: "Each other operation per round"
+        required: false
+        default: "100"
+  push:
+    branches: ["claude/**"]
+    paths:
+      - Tests/Bench/**
+      - .github/workflows/bench.yml
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    runs-on: windows-latest
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BASELINE: ${{ inputs.baseline }}
+      CANDIDATE: ${{ inputs.candidate }}
+      SEARCHES: ${{ inputs.searches || '20' }}
+      OTHERS: ${{ inputs.others || '4' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+
+      - name: Prepare
+        shell: pwsh
+        run: |
+          $root = (Get-Location).Path
+          $baseline = if ($env:BASELINE) { $env:BASELINE } else { gh api repos/${{ github.repository }}/releases/latest --jq .tag_name }
+          git worktree add v-baseline $baseline | Out-Null
+          if ($env:CANDIDATE) { git worktree add v-candidate $env:CANDIDATE | Out-Null; $candidateDir = "$root\v-candidate" } else { $candidateDir = $root }
+          foreach ($v in @(@{name = "baseline"; src = "$root\v-baseline"}, @{name = "candidate"; src = $candidateDir})) {
+            $app = "C:\Bench\$($v.name)"
+            New-Item -ItemType Directory $app -Force | Out-Null
+            Copy-Item "$($v.src)\ALTRun.ahk" $app
+            foreach ($d in "Lib", "Src", "Resources") { Copy-Item "$($v.src)\$d" $app -Recurse }
+            Copy-Item "$root\Tests\Bench\BenchProbe.ahk" $app
+            $text = (Get-Content "$app\ALTRun.ahk" -Raw).TrimEnd() -replace 'App\.Start\(\)$', "#Include BenchProbe.ahk`r`nApp.Start()"
+            Set-Content "$app\ALTRun.ahk" $text -Encoding utf8BOM
+            if (-not (Select-String -Path "$app\ALTRun.ahk" -Pattern 'BenchProbe' -Quiet)) { throw "probe not included in $app" }
+            $version = (Select-String -Path "$app\Src\Core\App.ahk" -Pattern 'static Version := "([^"]+)"').Matches[0].Groups[1].Value
+            "$($v.name)=$version" | Add-Content versions.txt
+            Write-Host "$($v.name): $version"
+          }
+          Remove-Item "$env:LOCALAPPDATA\ALTRun" -Recurse -Force -ErrorAction SilentlyContinue
+          $ahk = "$root\tools\ahk\AutoHotkey64.exe"
+          & $ahk "$root\Tests\Bench\BenchDriver.ahk" demo | Out-Null
+          foreach ($n in "baseline", "candidate") { & $ahk "$root\Tests\Bench\BenchDriver.ahk" prepare "C:\Bench\$n" | Out-Null }
+
+      - name: Benchmark
+        shell: pwsh
+        run: |
+          $root = (Get-Location).Path
+          $ahk = "$root\tools\ahk\AutoHotkey64.exe"
+          $out = "$root\bench.txt"
+          # 两个版本轮流 (A B B A), 每轮重新启动 ALTRun, 同一对用同一个随机种子
+          $rounds = @(@("baseline", 1, 11), @("candidate", 1, 11), @("candidate", 2, 22), @("baseline", 2, 22))
+          foreach ($r in $rounds) {
+            $label = "$($r[0])-r$($r[1])"
+            Write-Host "== $label $(Get-Date -Format HH:mm:ss)"
+            $p = Start-Process $ahk -ArgumentList @("`"$root\Tests\Bench\BenchDriver.ahk`"", "round", $label, "`"C:\Bench\$($r[0])`"", "`"$out`"", $r[2], $env:SEARCHES, $env:OTHERS) -PassThru
+            if (-not $p.WaitForExit(55 * 60 * 1000)) { $p.Kill(); Add-Content $out "$label|fatal|timeout" }
+            Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force
+            Start-Sleep 5
+          }
+          if (Test-Path "$env:TEMP\BenchDriverErrors.txt") { Write-Host "driver errors:"; Get-Content "$env:TEMP\BenchDriverErrors.txt" | Select-Object -First 30 }
+          $summary = python "$root\Tests\Bench\bench_stats.py" $out
+          $summary
+          "## ALTRun benchmark`n" | Add-Content $env:GITHUB_STEP_SUMMARY
+          (Get-Content versions.txt) -join ", " | Add-Content $env:GITHUB_STEP_SUMMARY
+          "`nSearches / other operations per round: $env:SEARCHES / $env:OTHERS (2 rounds per version)`n" | Add-Content $env:GITHUB_STEP_SUMMARY
+          $summary | Add-Content $env:GITHUB_STEP_SUMMARY
+          "`nOS: $((Get-CimInstance Win32_OperatingSystem).Caption) $([Environment]::OSVersion.Version), CPU: $((Get-CimInstance Win32_Processor).Name)" | Tee-Object -Append $env:GITHUB_STEP_SUMMARY
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: bench
+          path: |
+            bench.txt
+            versions.txt
