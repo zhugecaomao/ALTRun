@@ -85,3 +85,7 @@ ALTRun 自动选择:
 ## 常见问题
 - **Everything 装了但不起作用**: Everything 必须正在运行 (托盘里有图标)。如果 Everything 以管理员身份运行而 ALTRun 不是, Windows 可能拦截两者之间的通信, 让两者以相同的权限运行即可 (推荐 Everything 安装为服务、普通权限运行)。
 - **网络驱动器上的文件**: Everything 默认不索引网络驱动器, 需要在 Everything 的 "选项 → 索引 → 文件夹" 里添加; 内置索引可以把网络文件夹加到 ScopeFolders, 但扫描会比较慢。常用的网络文件夹更适合加为 [自定义命令](Commands-and-Snippets)。
+- **用拼音搜中文文件名** (例如输入 `cs` 找到 "测试.bat"): ALTRun 的拼音首字母匹配目前只用在应用、命令、书签等上, 文件搜索 (包括内置索引) 暂时不支持, 已经列入待办 ([#180](https://github.com/zhugecaomao/ALTRun/issues/180))。用 Everything 时, 可以先让 Everything 支持拼音: ALTRun 把输入原样交给 Everything, 不用另外设置
+  - **Everything 1.5 (beta)**: 工具 → 选项 → 高级, 搜索 `pinyin`, 设成 `true` (只支持首字母)。还在用 1.5 alpha 的, ALTRun 可能找不到它 (alpha 默认以 "1.5a" 命名实例运行), 请升级到 beta
+  - **Everything 1.4**: 安装开源扩展 [IbEverythingExt](https://github.com/Chaoses-Ib/IbEverythingExt), 按它的说明放进 Everything 的文件夹后重启 Everything。支持简拼 (`cs`)、全拼 (`ceshi`)、双拼
+  - 拼音找到的文件在 ALTRun 里暂时不高亮, 排序也可能靠后一些
