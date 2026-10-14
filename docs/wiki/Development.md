@@ -27,6 +27,7 @@ Resources\          随程序发布的数据 (Kanji.txt, Themes\*.json, Lang\*.j
 Tests\RunTests.ahk  单元测试
 Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据
 Tests\Screenshots\  自动截图
+Tests\Bench\       性能测试: 在 Windows 上模拟日常操作, 比较两个版本 (见下面 "性能测试")
 Tests\Tools\SPF2M\  生成 SPF2M 对照数据的 Python 脚本 (在 DOSBox 里运行原来的 SPF2M.EXE, 见其中的 README)
 bucket\ packaging\  Scoop / winget 清单 (见 packaging\README.md)
 docs\               Wiki 源文件 (docs\wiki, 合并后自动发布)、截图 (docs\images)
@@ -104,6 +105,19 @@ Wiki 的源文件在仓库的 `docs/wiki/`, 合并到 `main` 后自动发布到 
 ```
 AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名...]
 ```
+
+## 性能测试
+GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟机上用真实的按键模拟日常操作, 比较两个版本
+(baseline 默认最新正式版, candidate 默认选中的分支)。每个版本两轮, 两个版本轮流 (A B B A), 每轮重新启动 ALTRun:
+
+- 随机搜索 (应用名称开头、单词首字母、随便几个字母、文件搜索、自定义命令): 呼出窗口的时间, 最后一个字到结果画好的时间
+- 运行程序 / 打开文件和文件夹、操作面板 (→)、计算器 (结果 + Enter 复制)、Quick Switch (文件夹面板 + Ctrl+E 跳转)、
+  打开并保存偏好设置、片段展开
+- 每轮结束时 ALTRun 的 CPU 时间、内存、GDI / USER 对象和句柄数
+
+默认每轮 500 次搜索 + 每种操作 100 次 (约 50 分钟), 结果 (中位数 / p90 / p99 / 最慢) 在运行摘要里, 原始数据是 artifact。
+测试副本里多 #Include 一个 `Tests\Bench\BenchProbe.ahk`, 驱动程序 (`BenchDriver.ahk`) 通过它知道 "当前输入的结果画好了没有";
+发布的程序里没有它。改了测试脚本推到 `claude/**` 分支时会自动用很少的次数跑一遍。
 
 ## 代码规范
 见仓库的 [贡献指南](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.zh-CN.md)。几个 AutoHotkey v2 的坑:
