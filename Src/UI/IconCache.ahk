@@ -22,6 +22,13 @@
 ; 缓存最多 MaxIcons 个: ALTRun 常常开机后连续运行几周, 图标句柄 (每个程序最多 1 万个) 不能只增不减。
 ; 超过时去掉最久没用到的 (DestroyIcon), 剩 80%; 再用到时重新加载。
 ;
+; 磁盘缓存: 读过的图标 (缩放好的 Size x Size 像素) 存在 %LOCALAPPDATA%\ALTRun\IconCache\Icons-<Size>.bin,
+; 每台电脑各一份 (同一个路径在别的电脑上可能是别的程序, 也不跟着 Data 同步)。启动后读入, Get 遇到
+; 内存里没有、磁盘缓存里有的图标直接做成 HICON (不到 1 ms), 不用等后台读取; 重启后也是立刻显示。
+; 先用缓存里的, 再在后台 (窗口隐藏时) 核对: 文件的修改时间和大小变了 (程序更新了图标) 就重新读;
+; 不是文件的 (扩展名、资源、应用商店应用...) 存了超过 DiskRecheckDays 天的重新读一次。
+; 最多 DiskMax 个, 按最近用到的日期保留; 有新图标时窗口隐藏后保存, 退出时也保存。删掉这个文件夹没有影响。
+;
 ; 读取图标 (特别是 exe/lnk、网络路径) 可能要几毫秒到几十毫秒, 所以 Get() 遇到
 ; 还没加载的图标先返回 0 并放进队列, 由定时器在后台加载, 加载完调用 OnLoaded
 ; (SearchWindow 在那里重画列表)。这样打字时不会被图标卡住。
@@ -31,6 +38,7 @@
 ;   IconCache.OnLoaded := () => ...      后台加载完一批图标后调用
 ;   hIcon := IconCache.Get(item.Icon)    0 = 没有图标 / 还在加载
 ;   IconCache.Prefetch(specs)            启动后在后台预读常用的图标 (见 Prefetch)
+;   IconCache.LoadDisk() / SaveDisk()    启动后读入 / 退出时保存磁盘缓存 (见下面 "磁盘缓存")
 ;   item.Icon := IconCache.FolderIcon(path)   文件夹: 通用图标 "folder:" 或它自己的路径
 ;===============================================================================
 
@@ -52,6 +60,10 @@ class IconCache {
             IconCache._used[key] := ++IconCache._tick
             return IconCache._icons[key]
         }
+        if (hIcon := IconCache._FromDisk(key, spec)) {                      ; 磁盘缓存里有: 马上显示, 之后在后台核对
+            IconCache._Store(key, hIcon)
+            return hIcon
+        }
         if !IconCache._queue.Has(key) {
             IconCache._queue[key] := IconCache._LoadSpec(spec, key)
             if (IconCache._timer = "")
@@ -69,7 +81,7 @@ class IconCache {
         if !IconCache._icons.Has(key) {
             hIcon := 0
             try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
-            IconCache._Store(key, hIcon)
+            IconCache._StoreLoaded(key, hIcon)
         }
         IconCache._used[key] := ++IconCache._tick
         return IconCache._icons[key]
@@ -87,7 +99,7 @@ class IconCache {
             if (spec = "" || IconCache._prefetch.Length >= IconCache.PrefetchMax)
                 continue
             key := IconCache._CacheKey(spec)
-            if (seen.Has(key) || IconCache._icons.Has(key))
+            if (seen.Has(key) || IconCache._icons.Has(key) || IconCache._disk.Has(key))
                 continue
             seen[key] := true
             IconCache._prefetch.Push(spec)
@@ -107,11 +119,11 @@ class IconCache {
         while IconCache._prefetch.Length {
             spec := IconCache._prefetch.RemoveAt(1)
             key := IconCache._CacheKey(spec)
-            if IconCache._icons.Has(key)
+            if (IconCache._icons.Has(key) || IconCache._disk.Has(key))      ; 磁盘缓存里有的用到时直接做, 不用预读
                 continue
             hIcon := 0
             try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
-            IconCache._Store(key, hIcon)
+            IconCache._StoreLoaded(key, hIcon)
             stats.Count += 1
             if (IconCache._Ms() - start > 10)
                 break
@@ -121,6 +133,280 @@ class IconCache {
             SetTimer(IconCache._prefetchTimer, 0)
             Logger.Debug(Format("Perf: icons prefetched {} of {} in {} ms", stats.Count, stats.Total, Round(stats.Ms)))
         }
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 磁盘缓存 (见文件开头)。文件格式: 头 16 字节 (标记 "ARIC"、版本、保留、图标尺寸、个数), 然后每个图标:
+    ; 键 / 戳 (UTF-16, 前面是字数)、保存日期、最近用到的日期 (yyyyMMdd)、Size x Size 的 BGRA 像素。
+    ; 不压缩: 在 Windows 上实测 830 个图标压缩后 1.2 MB / 不压缩 3.4 MB, 但读入 12 ms / 5 ms、保存 24 ms / 11 ms,
+    ; 性能比省下的两三 MB 重要
+    ;---------------------------------------------------------------------------
+    static DiskDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun\IconCache" : ""
+    static DiskMax := 1000, DiskRecheckDays := 7, DiskSaveDelay := 5000, DiskVersion := 2
+    static _disk := Map()                 ; key -> {Stamp, Saved, Used, Data, Offset}: 像素在 Data 的 Offset 处
+    static _diskDirty := false, _diskTouched := false, _saveTimer := ""
+    static _verify := [], _verified := Map(), _verifyTimer := ""
+
+    static DiskFile() => (IconCache.DiskDir = "") ? "" : IconCache.DiskDir "\Icons-" IconCache.Size ".bin"
+
+    static LoadDisk(file := "") {
+        file := (file = "") ? IconCache.DiskFile() : file
+        IconCache._disk := Map()
+        if (file = "" || !FileExist(file))
+            return 0
+        start := IconCache._Ms()
+        try {
+            IconCache._disk := IconCache._ParseDisk(FileRead(file, "RAW"), IconCache.Size)
+        } catch as e {
+            Logger.Debug("IconCache: disk cache ignored - " e.Message)
+            IconCache._disk := Map()
+        }
+        Logger.Debug(Format("Perf: icon cache loaded {} icons in {} ms", IconCache._disk.Count, Round(IconCache._Ms() - start)))
+        return IconCache._disk.Count
+    }
+
+    static SaveDisk(file := "") {
+        file := (file = "") ? IconCache.DiskFile() : file
+        if (file = "" || !(IconCache._diskDirty || IconCache._diskTouched))
+            return false
+        Critical("On")
+        try {
+            SplitPath(file, , &folder)
+            DirCreate(folder)
+            data := IconCache._SerializeDisk(IconCache._disk, IconCache.Size, IconCache.DiskMax)
+            temp := file ".tmp"
+            f := FileOpen(temp, "w")
+            f.RawWrite(data, data.Size)
+            f.Close()
+            FileMove(temp, file, true)
+            IconCache._diskDirty := false, IconCache._diskTouched := false
+            return true
+        } catch as e {
+            Logger.Debug("IconCache: saving the disk cache failed - " e.Message)
+            return false
+        } finally {
+            Critical("Off")
+        }
+    }
+
+    static _ScheduleSave() {
+        IconCache._diskDirty := true
+        if (IconCache.DiskDir = "")
+            return
+        if (IconCache._saveTimer = "")
+            IconCache._saveTimer := () => IconCache._SaveWhenIdle()
+        SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)
+    }
+
+    static _SaveWhenIdle() {
+        if (IsObject(IconCache.PrefetchWhen) && !IconCache.PrefetchWhen.Call())
+            return SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)  ; 窗口显示中: 隐藏后再存
+        IconCache.SaveDisk()
+    }
+
+    ; 磁盘缓存里有就做成 HICON, 并安排在后台核对 (每次运行每个图标核对一次)
+    static _FromDisk(key, spec) {
+        if !IconCache._disk.Has(key)
+            return 0
+        entry := IconCache._disk[key]
+        if !(hIcon := IconCache.MakeIcon(entry.Data, entry.Offset)) {
+            IconCache._disk.Delete(key)
+            return 0
+        }
+        today := IconCache._Today()
+        if (entry.Used != today)
+            entry.Used := today, IconCache._diskTouched := true
+        if !IconCache._verified.Has(key) {
+            IconCache._verified[key] := true
+            IconCache._verify.Push([key, spec])
+            if (IconCache._verifyTimer = "")
+                IconCache._verifyTimer := () => IconCache._VerifyStep()
+            SetTimer(IconCache._verifyTimer, IconCache.PrefetchGapMs)
+        }
+        return hIcon
+    }
+
+    ; 和预读一样只在窗口隐藏时做, 每轮最多约 10 ms
+    static _VerifyStep() {
+        if (IconCache._queue.Count || (IsObject(IconCache.PrefetchWhen) && !IconCache.PrefetchWhen.Call()))
+            return
+        start := IconCache._Ms(), changed := false
+        while IconCache._verify.Length {
+            item := IconCache._verify.RemoveAt(1), key := item[1], spec := item[2]
+            if (!IconCache._disk.Has(key) || !IconCache.IsStale(key, IconCache._disk[key]))
+                continue
+            hIcon := 0
+            try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
+            if hIcon {
+                IconCache._Remember(key, hIcon)
+                if IconCache._icons.Has(key) {                              ; 换上新的图标
+                    old := IconCache._icons[key], IconCache._icons[key] := hIcon, changed := true
+                    if old
+                        DllCall("DestroyIcon", "Ptr", old)
+                } else {
+                    DllCall("DestroyIcon", "Ptr", hIcon)
+                }
+            }
+            if (IconCache._Ms() - start > 10)
+                break
+        }
+        if !IconCache._verify.Length
+            SetTimer(IconCache._verifyTimer, 0)
+        if (changed && IsObject(IconCache.OnLoaded))
+            IconCache.OnLoaded.Call()
+    }
+
+    ; 文件: 修改时间或大小变了; 其它: 存了 DiskRecheckDays 天以上
+    static IsStale(key, entry) {
+        if IconCache.IsFileKey(key)
+            return IconCache.Stamp(key) != entry.Stamp
+        return IconCache.DaysSince(entry.Saved) >= IconCache.DiskRecheckDays
+    }
+
+    static IsFileKey(key) => !RegExMatch(key, "i)^(res|ext|url|folder|thumb|shell):|^::\{")
+
+    ; 文件的 "修改时间|大小" (文件夹的大小是 0); 不存在时 ""
+    static Stamp(key) {
+        try {
+            target := Path.Resolve(key)
+            if FileExist(target)
+                return FileGetTime(target, "M") "|" FileGetSize(target)
+        }
+        return ""
+    }
+
+    static DaysSince(day) {
+        try return DateDiff(A_Now, day "000000", "Days")
+        return 9999
+    }
+
+    static _Today() => Integer(A_YYYY A_MM A_DD)
+
+    ; 新读出来的图标记进磁盘缓存 (剪贴板图片的缩略图不存: 每张图片只用一阵子)
+    static _Remember(key, hIcon) {
+        if (!hIcon || IconCache.DiskDir = "" || SubStr(key, 1, 6) = "thumb:")
+            return
+        if !(pixels := IconCache.IconPixels(hIcon))
+            return
+        today := IconCache._Today()
+        IconCache._disk[key] := {Stamp: IconCache.IsFileKey(key) ? IconCache.Stamp(key) : "", Saved: today, Used: today, Data: pixels, Offset: 0}
+        IconCache._verified[key] := true
+        if (IconCache._disk.Count > IconCache.DiskMax + 200)               ; ALTRun 常常连续运行几周: 内存里的也不能只增不减
+            IconCache._TrimDisk(IconCache.DiskMax)
+        IconCache._ScheduleSave()
+    }
+
+    ; 只留 keep 个最近用到的
+    static _TrimDisk(keep) {
+        lines := ""
+        for key, entry in IconCache._disk
+            lines .= entry.Used "`t" key "`n"
+        for line in StrSplit(RTrim(Sort(lines, "N R"), "`n"), "`n")
+            if (A_Index > keep)
+                IconCache._disk.Delete(SubStr(line, InStr(line, "`t") + 1))
+    }
+
+    ; 图标 -> Size x Size 的 BGRA 像素 (带 Alpha); 尺寸不对或读不到时 0
+    static IconPixels(hIcon) {
+        size := IconCache.Size
+        info := Buffer(8 + 3 * A_PtrSize, 0)                                ; ICONINFO
+        if (!hIcon || !DllCall("GetIconInfo", "Ptr", hIcon, "Ptr", info))
+            return 0
+        maskOffset := (A_PtrSize = 8) ? 16 : 12
+        hbmMask := NumGet(info, maskOffset, "Ptr"), hbmColor := NumGet(info, maskOffset + A_PtrSize, "Ptr")
+        pixels := 0, bitmap := Buffer(16 + 2 * A_PtrSize, 0)
+        if (hbmColor && DllCall("GetObject", "Ptr", hbmColor, "Int", bitmap.Size, "Ptr", bitmap)
+            && NumGet(bitmap, 4, "Int") = size && Abs(NumGet(bitmap, 8, "Int")) = size
+            && (pixels := IconCache._Bits(hbmColor, size, size)))
+            IconCache._FixAlpha(pixels, hbmMask, size, size)
+        for handle in [hbmMask, hbmColor]
+            if handle
+                DllCall("DeleteObject", "Ptr", handle)
+        return pixels
+    }
+
+    ; data 的 offset 处 Size x Size 的 BGRA 像素 -> 图标。像素原样放进 32 位 DIB (CreateIconIndirect), 和读出来时
+    ; 一模一样; 不经过 GDI+ (它做图标时会把颜色乘上 Alpha, 来回几次半透明的边缘就越来越暗)。
+    ; 32 位带 Alpha 的图标画的时候用 Alpha, 掩码全 0 即可
+    static MakeIcon(data, offset := 0) {
+        size := IconCache.Size
+        if (size <= 0 || data.Size < offset + size * size * 4)
+            return 0
+        header := Buffer(40, 0)                                             ; BITMAPINFOHEADER: 自上而下的 32 位
+        NumPut("UInt", 40, "Int", size, "Int", -size, "UShort", 1, "UShort", 32, header)
+        bits := 0
+        if !(color := DllCall("CreateDIBSection", "Ptr", 0, "Ptr", header, "UInt", 0, "Ptr*", &bits, "Ptr", 0, "UInt", 0, "Ptr"))
+            return 0
+        DllCall("RtlMoveMemory", "Ptr", bits, "Ptr", data.Ptr + offset, "UPtr", size * size * 4)
+        mask := DllCall("CreateBitmap", "Int", size, "Int", size, "UInt", 1, "UInt", 1, "Ptr", Buffer((size + 15) // 16 * 2 * size, 0), "Ptr")
+        info := Buffer(8 + 3 * A_PtrSize, 0)                                ; ICONINFO: fIcon, xHotspot, yHotspot, hbmMask, hbmColor
+        maskOffset := (A_PtrSize = 8) ? 16 : 12
+        NumPut("Int", 1, info, 0)
+        NumPut("Ptr", mask, info, maskOffset)
+        NumPut("Ptr", color, info, maskOffset + A_PtrSize)
+        hIcon := DllCall("CreateIconIndirect", "Ptr", info, "Ptr")
+        DllCall("DeleteObject", "Ptr", mask)
+        DllCall("DeleteObject", "Ptr", color)
+        return hIcon
+    }
+
+    ; 最近用到的在前, 最多 limit 个
+    static _SerializeDisk(entries, size, limit) {
+        lines := ""
+        for key, entry in entries
+            lines .= entry.Used "`t" key "`n"
+        keys := []
+        for line in StrSplit(RTrim(Sort(lines, "N R"), "`n"), "`n") {
+            if (line = "" || keys.Length >= limit)
+                continue
+            keys.Push(SubStr(line, InStr(line, "`t") + 1))
+        }
+        pixelBytes := size * size * 4, total := 16
+        for key in keys
+            total += 2 + StrLen(key) * 2 + 2 + StrLen(entries[key].Stamp) * 2 + 8 + pixelBytes
+        out := Buffer(total)
+        NumPut("UInt", 0x43495241, "UShort", IconCache.DiskVersion, "UShort", 0, "UInt", size, "UInt", keys.Length, out)   ; "ARIC"
+        pos := 16
+        for key in keys {
+            entry := entries[key]
+            for text in [key, entry.Stamp] {
+                NumPut("UShort", StrLen(text), out, pos)
+                if (text != "")
+                    StrPut(text, out.Ptr + pos + 2, StrLen(text), "UTF-16")
+                pos += 2 + StrLen(text) * 2
+            }
+            NumPut("UInt", entry.Saved, "UInt", entry.Used, out, pos)
+            DllCall("RtlMoveMemory", "Ptr", out.Ptr + pos + 8, "Ptr", entry.Data.Ptr + entry.Offset, "UPtr", pixelBytes)
+            pos += 8 + pixelBytes
+        }
+        return out
+    }
+
+    ; 像素不复制, 直接用读进来的 data (Offset 指到 data 里)
+    static _ParseDisk(data, size) {
+        entries := Map()
+        if (data.Size < 16 || NumGet(data, 0, "UInt") != 0x43495241 || NumGet(data, 4, "UShort") != IconCache.DiskVersion
+            || NumGet(data, 8, "UInt") != size)
+            return entries
+        count := NumGet(data, 12, "UInt"), end := data.Size
+        pixelBytes := size * size * 4, pos := 16
+        Loop count {
+            texts := []
+            Loop 2 {
+                if (pos + 2 > end)
+                    throw Error("bad entry")
+                length := NumGet(data, pos, "UShort")
+                if (pos + 2 + length * 2 > end)
+                    throw Error("bad entry")
+                texts.Push(length ? StrGet(data.Ptr + pos + 2, length, "UTF-16") : "")
+                pos += 2 + length * 2
+            }
+            if (pos + 8 + pixelBytes > end)
+                throw Error("bad entry")
+            entries[texts[1]] := {Stamp: texts[2], Saved: NumGet(data, pos, "UInt"), Used: NumGet(data, pos + 4, "UInt"), Data: data, Offset: pos + 8}
+            pos += 8 + pixelBytes
+        }
+        return entries
     }
 
     ; 文件夹结果的图标: 普通文件夹都一样, 用通用图标 (不用逐个读, 几百个文件夹时明显更快);
@@ -182,7 +468,7 @@ class IconCache {
             ; 这期间打字、失去焦点隐藏都在排队。慢的记下来, 看得出卡在哪个图标上
             if ((took := IconCache._Ms() - loadStart) >= IconCache.SlowLoadMs)
                 Logger.Debug("Perf: icon " Round(took) " ms: " spec)
-            IconCache._Store(key, hIcon)
+            IconCache._StoreLoaded(key, hIcon)
             loaded := true
             if (IconCache._Ms() - start > 10)
                 break
@@ -202,12 +488,21 @@ class IconCache {
         return now * 1000 / freq
     }
 
+    ; 去掉所有图标, 磁盘缓存也一起清空 (换了尺寸, 或者同一个文件换了内容, 例如重新下载的网站图标)
     static Clear() {
-        IconCache._prefetch := []
+        IconCache._prefetch := [], IconCache._verify := [], IconCache._verified := Map()
         for key, hIcon in IconCache._icons
             if hIcon
                 DllCall("DestroyIcon", "Ptr", hIcon)
         IconCache._icons := Map(), IconCache._used := Map()
+        if IconCache._disk.Count
+            IconCache._disk := Map(), IconCache._ScheduleSave()
+    }
+
+    ; 新读出来的图标: 放进缓存, 也记进磁盘缓存
+    static _StoreLoaded(key, hIcon) {
+        IconCache._Store(key, hIcon)
+        IconCache._Remember(key, hIcon)
     }
 
     static _Store(key, hIcon) {
@@ -459,19 +754,7 @@ class IconCache {
         pixels := IconCache._Bits(hbmColor, width, height)
         if !pixels
             return 0
-        hasAlpha := false
-        Loop width * height
-            if (NumGet(pixels, A_Index * 4 - 1, "UChar")) {
-                hasAlpha := true
-                break
-            }
-        if !hasAlpha {                                                      ; 旧式图标没有 Alpha 通道: 按掩码 (白 = 透明) 补上
-            mask := hbmMask ? IconCache._Bits(hbmMask, width, height) : 0
-            Loop width * height {
-                offset := A_Index * 4 - 4
-                NumPut("UChar", (mask && NumGet(mask, offset, "UInt") & 0xFFFFFF) ? 0 : 255, pixels, offset + 3)
-            }
-        }
+        IconCache._FixAlpha(pixels, hbmMask, width, height)
         source := 0, canvas := 0, graphics := 0, attributes := 0, hIcon := 0
         DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", width, "Int", height, "Int", width * 4, "Int", 0x26200A, "Ptr", pixels, "Ptr*", &source)   ; 32bppARGB
         DllCall("gdiplus\GdipCreateBitmapFromScan0", "Int", size, "Int", size, "Int", 0, "Int", 0x26200A, "Ptr", 0, "Ptr*", &canvas)
@@ -492,6 +775,18 @@ class IconCache {
         if canvas
             DllCall("gdiplus\GdipDisposeImage", "Ptr", canvas)
         return hIcon
+    }
+
+    ; 旧式图标没有 Alpha 通道 (全是 0): 按掩码 (白 = 透明) 补上
+    static _FixAlpha(pixels, hbmMask, width, height) {
+        Loop width * height
+            if (NumGet(pixels, A_Index * 4 - 1, "UChar"))
+                return
+        mask := hbmMask ? IconCache._Bits(hbmMask, width, height) : 0
+        Loop width * height {
+            offset := A_Index * 4 - 4
+            NumPut("UChar", (mask && NumGet(mask, offset, "UInt") & 0xFFFFFF) ? 0 : 255, pixels, offset + 3)
+        }
     }
 
     ; 位图 -> 自上而下的 32 位像素 (BGRA), 失败返回 0

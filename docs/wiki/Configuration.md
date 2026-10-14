@@ -207,3 +207,5 @@
 | `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) |
 | `Update.json` | 上次检查更新的时间、跳过的版本 |
 | `Icons\` | "下载网站图标" 保存的网页搜索图标 |
+
+图标缓存不在 Data 里: 读过的结果图标存在本机的 `%LOCALAPPDATA%\ALTRun\IconCache\Icons-<尺寸>.bin`, 重启后图标马上显示; 每台电脑各一份, 删掉后自动重建。

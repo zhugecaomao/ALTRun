@@ -207,3 +207,5 @@ Created at runtime; deleting files only makes them be rebuilt (the learned ranki
 | `Currency.json` | Exchange rates for currency conversion (only once currency conversion is on) |
 | `Update.json` | Time of the last update check, skipped versions |
 | `Icons\` | Web search icons saved by "Download Site Icon" |
+
+The icon cache is not in Data: result icons that have been read are kept on this PC in `%LOCALAPPDATA%\ALTRun\IconCache\Icons-<size>.bin`, so icons show at once after a restart; each PC has its own, and it is rebuilt automatically if deleted.

@@ -5,6 +5,24 @@
 
 ## [未发布]
 
+## [2026.10.12.21]
+
+测试版。
+
+Test build.
+
+### 改进
+- 图标的磁盘缓存不再压缩: 在 Windows 上实测压缩只省两三 MB, 读入和保存却慢一倍多 (830 个图标读入 12 ms → 5 ms); 读入时像素直接用读进来的数据, 不再复制。上一个测试版的缓存文件会被忽略并自动重建
+
+## [2026.10.12.20]
+
+测试版。
+
+Test build.
+
+### 改进
+- **图标缓存存到磁盘**: 读过的结果图标存在本机的 `%LOCALAPPDATA%\ALTRun\IconCache` (每台电脑各一份, 不跟着 Data 同步), 重启后图标和文字一起出来, 不只是常用项目, 以前显示过的都是。先用缓存里的, 窗口隐藏时在后台核对: 程序更新了图标 (文件的修改时间或大小变了) 就换上新的; 最多 1000 个, 按最近用到的保留
+
 ## [2026.10.12.19]
 
 测试版。
@@ -739,7 +757,9 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.19...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.21...HEAD
+[2026.10.12.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.20...2026.10.12.21
+[2026.10.12.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.19...2026.10.12.20
 [2026.10.12.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.18...2026.10.12.19
 [2026.10.12.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.17...2026.10.12.18
 [2026.10.12.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.12.16...2026.10.12.17
