@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.14.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- 呼出搜索窗口时不再被后台预读图标耽误 (一台旧电脑上有一次多等了 2.3 秒): 窗口显示完之前不读图标
+
+### 改进
+- 日志文件一直开着, 不再每写一条都打开、关闭一次: 刚启动的一分钟里 (记得更细) 呼出窗口不再变慢 (旧电脑上杀毒软件每次关闭文件都要检查, 一条要 20 ~ 30 ms)
+- 日志里分开记下切换输入法 (英语键盘) 的两步各用了多久, 超过 100 ms 时记一条: 查刚开机时呼出窗口卡了 17 秒的原因
+
 ## [2026.10.14]
 
 更快: 偏好设置一打开就是、片段马上展开、图标和文字一起出来, 检查更新时不再卡住; CapsLock 切换输入法在管理员窗口里也能用, 以管理员身份运行 ALTRun 时一切照常; 窗口可以淡入淡出, 空搜索框的提示文字可以自定义; 恢复默认设置、复制系统信息; 修好了 Ctrl+D 偶尔把文件名换成 "d" 和结果行偶尔空白卡住的问题。
@@ -606,7 +619,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.1...HEAD
+[2026.10.14.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14...2026.10.14.1
 [2026.10.14]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.14
 [2026.10.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.12
 [2026.10.08]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.08

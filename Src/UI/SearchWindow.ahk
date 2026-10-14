@@ -80,7 +80,7 @@ class SearchWindow {
             IconCache.Clear()
         IconCache.Size := SearchWindow.IconSize
         IconCache.OnLoaded := () => SearchWindow._Repaint()
-        IconCache.PrefetchWhen := () => !SearchWindow.IsVisible()            ; 预读图标只在窗口隐藏时进行, 不和打字抢时间
+        IconCache.PrefetchWhen := () => SearchWindow._CanPrefetch()
         SearchWindow._CreateGdiObjects()
 
         w := SearchWindow.Width, pad := SearchWindow.Padding
@@ -550,6 +550,18 @@ class SearchWindow {
         Logger.Trace("show: " name)
     }
 
+    ; 预读图标只在窗口隐藏时进行, 不和打字抢时间。正在显示时也不读: 显示到一半时窗口还没出来 (算作隐藏),
+    ; 显示超过约 15 ms 后定时器能插进来, 读图标的 COM 调用一次可能要几秒, 显示就一直等着 (2026-10 一台旧电脑上等了 2.3 秒)
+    static _CanPrefetch() => !SearchWindow._showing && !SearchWindow.IsVisible()
+
+    ; 显示过程中某一步特别慢时记下来 (Trace 只在刚启动时写; 这里一直写)
+    static SlowStepMs := 100
+    static _LogSlowStep(name, start) {
+        elapsed := Logger.Ms() - start
+        if (Logger.Enabled && elapsed >= SearchWindow.SlowStepMs)
+            Logger.Debug("Perf: slow show step " name " " Round(elapsed) " ms")
+    }
+
     static _Show(text) {
         started := Logger.Ms()
         SearchWindow._blankLogged := false, SearchWindow._skipLogged := false
@@ -617,13 +629,20 @@ class SearchWindow {
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; 获得焦点时 Edit 会全选, 把光标放回末尾
         switch AppSettings.General["SwitchToEnglishInput"] {
             case 1:                                                         ; 换成英语 (美国) 键盘
-                SearchWindow._Step("input language")
+                SearchWindow._Step("input language: read")                  ; 分两步记: 刚开机时一次卡了 17 秒, 看是哪一步
+                step := Logger.Ms()
                 if (!wasVisible || !SearchWindow._layoutBefore)                 ; 隐藏时切回呼出前的输入法
                     SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
+                SearchWindow._LogSlowStep("input language: read", step)
+                SearchWindow._Step("input language: switch")
+                step := Logger.Ms()
                 Win.SwitchToEnglishIME()
+                SearchWindow._LogSlowStep("input language: switch", step)
             case 2:                                                         ; 不换输入法, 切到它的英文模式
                 SearchWindow._Step("input mode")
+                step := Logger.Ms()
                 SearchWindow._SwitchImeToEnglish(wasVisible)
+                SearchWindow._LogSlowStep("input mode", step)
         }
         if prepared {
             gen := SearchWindow._searchGen
