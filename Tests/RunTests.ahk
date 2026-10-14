@@ -89,7 +89,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1305,6 +1305,7 @@ class Tests {
         DllCall("DeleteObject", "Ptr", hbm)
 
         PreferencesWindow.Show(1, -3000, -3000)
+        PreferencesWindow.BuildAll()                                         ; 页面用到时才建: 检查每一页之前先全部建好
         Sleep(400)                                                          ; 打开 300 ms 之后的修改才算 (见 PreferencesWindow.Show)
         focused := DllCall("GetFocus", "Ptr")                               ; 打开时焦点在页面列表 (↑ ↓ 切换页面, 不改第一页的设置)
         eq("focus on page list", focused = PreferencesWindow.PageList.Hwnd, true)
@@ -1731,6 +1732,7 @@ class Tests {
             Map("Title", "Notepad", "Type", "File", "Target", "C:\Windows\notepad.exe", "Arguments", "", "Keyword", "np"),
             Map("Title", "Printer queue", "Type", "Command", "Target", "control", "Arguments", "printers", "Keyword", "")]
         PreferencesWindow.Show(1, -3000, -3000)
+        PreferencesWindow.BuildAll()                                         ; 页面用到时才建: 检查每一页之前先全部建好
         page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Commands")]
         listView := "", filterBox := ""
         for ctrl in page.Controls {
@@ -1911,6 +1913,7 @@ class Tests {
             lang := language[1]
             I18n.Init(lang)
             PreferencesWindow.Show(1, -3000, -3000)
+            PreferencesWindow.BuildAll()                                         ; 页面用到时才建: 检查每一页之前先全部建好
             limit := PreferencesWindow.ButtonY - 6
             rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
             for index, page in PreferencesWindow.Pages {
@@ -3158,6 +3161,49 @@ class Tests {
             IconCache._diskDirty := false, IconCache._diskTouched := false
             IconCache.Size := savedSize, IconCache.DiskDir := savedDir, IconCache._disk := savedDisk
             try DirDelete(dir, true)
+        }
+    }
+
+    ; 偏好设置的页面用到时才建: 打开时只有要显示的那一页; 换页时建, Tab 键顺序 列表 -> 页面 -> 底部按钮;
+    ; 建页面时程序自己填的值不算修改, 之后的修改照常记录
+    static PreferencesLazyPages() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencesLazyPages." n, a, e)
+        PreferencesWindow.Show("Prefs.Page.Appearance", -3000, -3000)
+        try {
+            built := ""
+            for page in PreferencesWindow.Pages
+                built .= page.Built ? page.Key " " : ""
+            eq("only the shown page", Trim(built), "Prefs.Page.Appearance")
+            eq("page list has every page", PreferencesWindow.PageList.GetCount(), PreferencesWindow.PageKeys.Length)
+            Sleep(400)
+            commands := PreferencesWindow._PageIndex("Prefs.Page.Commands")
+            PreferencesWindow._SelectRow(commands)
+            eq("built when selected", PreferencesWindow.Pages[commands].Built, true)
+            eq("building is not a change", PreferencesWindow._dirty, false)
+            eq("ready again", PreferencesWindow._ready, true)
+            first := ""
+            for ctrl in PreferencesWindow.Pages[commands].Controls
+                if (!first && ctrl.Visible && (DllCall("GetWindowLong", "Ptr", ctrl.Hwnd, "Int", -16, "Int") & 0x10000))   ; WS_TABSTOP
+                    first := ctrl.Hwnd
+            next := DllCall("GetNextDlgTabItem", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", PreferencesWindow.PageList.Hwnd, "Int", 0, "Ptr")
+            eq("tab from the list goes into the page", next = first && next != PreferencesWindow._helpButton.Hwnd, true)
+            general := PreferencesWindow._PageIndex("Prefs.Page.General")
+            PreferencesWindow._SelectRow(general)
+            for ctrl in PreferencesWindow.Pages[general].Controls
+                if (ctrl.Type = "CheckBox") {
+                    ctrl.Value := !ctrl.Value
+                    ControlClick(ctrl)                                      ; 用户点一下 (Click 事件)
+                    break
+                }
+            Sleep(100)
+            eq("user change after building is recorded", PreferencesWindow._dirty, true)
+            built := 0
+            for page in PreferencesWindow.Pages
+                built += page.Built
+            eq("unvisited pages still not built", built, 3)
+        } finally {
+            PreferencesWindow._dirty := false
+            PreferencesWindow.Close()
         }
     }
 

@@ -61,29 +61,29 @@ class PreferencesWindow {
             return
         }
         SearchWindow.Hide()
-        ; 左列宽度每页写死了一个值 (按中英文的标签定); 别的语言的标签更长、放不下时,
-        ; 按实际的文字宽度加宽那一页的左列, 重新建一次窗口 (记住宽度, 下次打开不用再建两次)
-        Loop 2 {
-            PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
-            PreferencesWindow.Pages := [], PreferencesWindow.Binds := [], PreferencesWindow._wider := Map(), PreferencesWindow._lists := Map()
-            PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false, PreferencesWindow._page := 0
+        PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
+        PreferencesWindow.Binds := [], PreferencesWindow._wider := Map(), PreferencesWindow._lists := Map(), PreferencesWindow._helpButton := ""
+        PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false, PreferencesWindow._page := 0
+        ; 页面用到时才建 (_BuildPage): 打开时只建要显示的那一页, 别的页第一次点到时再建。以前打开时 19 页全部建好,
+        ; 每次要 300 多毫秒 (旧电脑上一两秒), 大部分页根本不会看
+        PreferencesWindow.Pages := []
+        for index, key in PreferencesWindow.PageKeys
+            PreferencesWindow.Pages.Push({Key: key, Name: I18n.T(key), Wiki: PreferencesWindow.WikiPage(key), Controls: [], Built: false
+                , Builder: PreferencesWindow.PageBuilders[index]})
 
-            g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
-            g.SetFont("s9", ThemeManager.FontName())
-            g.OnEvent("Close", (*) => PreferencesWindow.Cancel())            ; 返回 true = 不关闭 (选择了继续编辑)
-            g.OnEvent("Escape", (*) => PreferencesWindow.Cancel())
-            PreferencesWindow.Gui := g
+        g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
+        g.SetFont("s9", ThemeManager.FontName())
+        g.OnEvent("Close", (*) => PreferencesWindow.Cancel())                ; 返回 true = 不关闭 (选择了继续编辑)
+        g.OnEvent("Escape", (*) => PreferencesWindow.Cancel())
+        PreferencesWindow.Gui := g
 
-            ; 左边的页面列表最先建: Tab 键的顺序是 列表 -> 页面里的控件 -> 底部按钮 (页面名字建完页面再填)
-            ; ListView 而不是 ListBox: 每页前面一个图标 (系统图标字体画的, 见 NavIcons); 0x20 整行选中, 0x10000 双缓冲
-            pageList := g.AddListView("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " -Hdr -Multi LV0x10020", [""])
-            PreferencesWindow._BuildPages()
-            if (!PreferencesWindow._wider.Count || A_Index = 2)
-                break
-            for pageKey, width in PreferencesWindow._wider
-                PreferencesWindow._labelWidths[I18n.Lang " " pageKey] := width
-            g.Destroy()
-        }
+        ; 左边的页面列表最先建: Tab 键的顺序是 列表 -> 页面里的控件 -> 底部按钮 (之后才建的页面, 控件挪到底部按钮前面, 见 _BuildPage)
+        ; ListView 而不是 ListBox: 每页前面一个图标 (系统图标字体画的, 见 NavIcons); 0x20 整行选中, 0x10000 双缓冲
+        pageList := g.AddListView("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " -Hdr -Multi LV0x10020", [""])
+        if !IsInteger(pageIndex)
+            pageIndex := PreferencesWindow._PageIndex(pageIndex)
+        pageIndex := Max(1, Min(pageIndex, PreferencesWindow.Pages.Length))
+        PreferencesWindow._BuildPage(pageIndex)
 
         names := []
         for page in PreferencesWindow.Pages
@@ -102,7 +102,9 @@ class PreferencesWindow {
         PreferencesWindow.PageList := pageList
 
         buttonY := " y" PreferencesWindow.ButtonY
-        g.AddButton("x12" buttonY " w85", I18n.T("Prefs.Help")).OnEvent("Click", (*) => PreferencesWindow.Help())
+        help := g.AddButton("x12" buttonY " w85", I18n.T("Prefs.Help"))
+        help.OnEvent("Click", (*) => PreferencesWindow.Help())
+        PreferencesWindow._helpButton := help
         g.AddButton("x475" buttonY " w85 Default", I18n.T("Prefs.OK")).OnEvent("Click", (*) => PreferencesWindow.OK())
         g.AddButton("x570" buttonY " w85", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => PreferencesWindow.Cancel())
         apply := g.AddButton("x665" buttonY " w85 Disabled", I18n.T("Prefs.Apply"))
@@ -112,9 +114,6 @@ class PreferencesWindow {
         Hotkey("F1", (*) => PreferencesWindow.Help())
         HotIfWinActive()
 
-        if !IsInteger(pageIndex)
-            pageIndex := PreferencesWindow._PageIndex(pageIndex)
-        pageIndex := Max(1, Min(pageIndex, PreferencesWindow.Pages.Length))
         PreferencesWindow._SelectRow(pageIndex)
         g.Show((IsInteger(x) && IsInteger(y) ? "x" x " y" y " " : "") "w765 h" (PreferencesWindow.ButtonY + 41))
         pageList.Focus()                                                    ; 焦点在页面列表: ↑ ↓ 切换页面, 不会不小心改了第一页的设置
@@ -175,6 +174,7 @@ class PreferencesWindow {
     ; 换页时只隐藏上一页、显示这一页的控件, 再只重画右边的页面区域:
     ; 不重画左边的页面列表和底部按钮, 切换时不闪 (不对整个窗口用 WM_SETREDRAW: 顶层窗口停止重画后子控件会画不出来)
     static SelectPage(pageIndex) {
+        PreferencesWindow._BuildPage(pageIndex)
         hwnd := PreferencesWindow.Gui.Hwnd
         previous := PreferencesWindow._page
         PreferencesWindow._page := pageIndex
@@ -353,26 +353,54 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; Pages
     ;---------------------------------------------------------------------------
-    static _BuildPages() {
-        PreferencesWindow._BuildGeneral()
-        PreferencesWindow._BuildWindow()
-        PreferencesWindow._BuildAppearance()
-        PreferencesWindow._BuildFeatures()
-        PreferencesWindow._BuildApplications()
-        PreferencesWindow._BuildFileSearch()
-        PreferencesWindow._BuildFileIndex()
-        PreferencesWindow._BuildCommands()
-        PreferencesWindow._BuildSnippets()
-        PreferencesWindow._BuildClipboard()
-        PreferencesWindow._BuildWebSearch()
-        PreferencesWindow._BuildCalculator()
-        PreferencesWindow._BuildScripts()
-        PreferencesWindow._BuildHotkeys()
-        PreferencesWindow._BuildQuickSwitch()
-        PreferencesWindow._BuildQuickSwitchPanel()
-        PreferencesWindow._BuildDateStamp()
-        PreferencesWindow._BuildUsage()
-        PreferencesWindow._BuildAdvanced()
+    ; 每一页的建法, 和 PageKeys 一一对应
+    static PageBuilders := ["_BuildGeneral", "_BuildWindow", "_BuildAppearance", "_BuildFeatures", "_BuildApplications"
+        , "_BuildFileSearch", "_BuildFileIndex", "_BuildCommands", "_BuildSnippets", "_BuildClipboard", "_BuildWebSearch"
+        , "_BuildCalculator", "_BuildScripts", "_BuildHotkeys", "_BuildQuickSwitch", "_BuildQuickSwitchPanel", "_BuildDateStamp"
+        , "_BuildUsage", "_BuildAdvanced"]
+    static _current := "", _helpButton := ""
+
+    ; 建好所有页 (测试检查每一页的布局时用)
+    static BuildAll() {
+        Loop PreferencesWindow.Pages.Length
+            PreferencesWindow._BuildPage(A_Index)
+    }
+
+    ; 建一页 (已经建过就什么都不做)。左列宽度每页写死了一个值 (按中英文的标签定); 别的语言的标签更长、放不下时,
+    ; 按实际的文字宽度加宽左列, 这一页重新建一次 (第一次建的控件藏起来不用; 记住宽度, 下次打开不用再建两次)
+    static _BuildPage(index) {
+        page := PreferencesWindow.Pages[index]
+        if page.Built
+            return false
+        wasReady := PreferencesWindow._ready
+        PreferencesWindow._ready := false                                   ; 程序自己填的值不算修改 (和刚打开窗口时一样)
+        Loop 2 {
+            PreferencesWindow._wider := Map(), binds := PreferencesWindow.Binds.Length
+            PreferencesWindow.%page.Builder%()
+            if (!PreferencesWindow._wider.Has(page.Key) || A_Index = 2)
+                break
+            PreferencesWindow._labelWidths[I18n.Lang " " page.Key] := PreferencesWindow._wider[page.Key]
+            for ctrl in page.Controls
+                ctrl.Visible := false, ctrl.Enabled := false
+            if (PreferencesWindow.Binds.Length > binds)
+                PreferencesWindow.Binds.RemoveAt(binds + 1, PreferencesWindow.Binds.Length - binds)
+        }
+        if IsObject(PreferencesWindow._helpButton)                          ; 窗口已经建好: 新的控件挪到底部按钮前面 (Tab 键的顺序)
+            PreferencesWindow._BeforeButtons(page.Controls)
+        if wasReady {                                                       ; 先处理掉建页面时控件发出的通知 (Change 事件), 再开始记录修改
+            Sleep(-1)
+            PreferencesWindow._ready := true
+        }
+        return true
+    }
+
+    ; 控件按顺序放到 "帮助" 按钮前面 (Tab 键按控件的 Z 顺序走: 列表 -> 页面 -> 底部按钮)
+    static _BeforeButtons(controls) {
+        after := DllCall("GetWindow", "Ptr", PreferencesWindow._helpButton.Hwnd, "UInt", 3, "Ptr")   ; GW_HWNDPREV
+        for ctrl in controls {
+            DllCall("SetWindowPos", "Ptr", ctrl.Hwnd, "Ptr", after, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; NOSIZE | NOMOVE | NOACTIVATE
+            after := ctrl.Hwnd
+        }
     }
 
     static _BuildGeneral() {
@@ -705,7 +733,7 @@ class PreferencesWindow {
             , [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")])
         notice := PreferencesWindow._Check("General.CapsLockNotify", "Prefs.CapsLockNotify")   ; 大写锁定开 / 关的提示
         elevated := PreferencesWindow._Check("General.CapsLockElevated", "Prefs.CapsLockElevated")   ; 管理员窗口里也生效 (CapsLockHelper)
-        controls := PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls
+        controls := PreferencesWindow._current.Controls
         elevatedDesc := controls[controls.Length]                           ; 刚加的说明 (按两行的长度建好, 换短的文字也放得下)
         PreferencesWindow._ShieldBefore(elevated)                           ; 打开 / 关掉时要确认 UAC
         update := (*) => (notice.Enabled := elevated.Enabled := capsLock.Value > 1
@@ -995,7 +1023,9 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; labelW: 这一页左列标签的宽度 (按这一页最长的标签定, 内容不会整体偏右)
     static _BeginPage(nameKey, labelW := 190) {
-        PreferencesWindow.Pages.Push({Key: nameKey, Name: I18n.T(nameKey), Wiki: PreferencesWindow.WikiPage(nameKey), Controls: []})
+        page := PreferencesWindow.Pages[PreferencesWindow._PageIndex(nameKey)]
+        page.Controls := [], page.Built := true
+        PreferencesWindow._current := page
         PreferencesWindow._y := 14
         PreferencesWindow._pageKey := nameKey
         PreferencesWindow._pairX := 0                                       ; 这一页成对设置的右列位置, 见 _Pair
@@ -1014,7 +1044,7 @@ class PreferencesWindow {
     static _Add(type, options, text := "") {
         pos := InStr(options, " x") || InStr(options, "x") = 1 ? "" : "x" PreferencesWindow.ContentX " "
         ctrl := PreferencesWindow.Gui.Add(type, pos "y" PreferencesWindow._y " " options " Hidden", text)
-        PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls.Push(ctrl)
+        PreferencesWindow._current.Controls.Push(ctrl)
         switch type, false {                                                ; 用户修改 -> "应用" 可用 (类型名不区分大小写)
             case "Edit", "DropDownList", "ComboBox": ctrl.OnEvent("Change", (*) => PreferencesWindow.MarkDirty())
             case "CheckBox", "Radio":                ctrl.OnEvent("Click", (*) => PreferencesWindow.MarkDirty())
@@ -1375,7 +1405,7 @@ class PreferencesWindow {
     static _HotkeyBox(x, path) {
         ctrl := HotkeyBox.Add(PreferencesWindow.Gui, "x" x " y" PreferencesWindow._y " w" PreferencesWindow.WidthK " Hidden"
             , PreferencesWindow.GetPath(PreferencesWindow.Working, path), false, () => PreferencesWindow.MarkDirty())
-        PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls.Push(ctrl)
+        PreferencesWindow._current.Controls.Push(ctrl)
         PreferencesWindow._Bind(path, () => HotkeyBox.Value(ctrl))
         return ctrl
     }
@@ -1408,7 +1438,7 @@ class PreferencesWindow {
         listView := PreferencesWindow._Add("ListView", "w" PreferencesWindow.ContentW " h" (height - 40) " -Multi NoSort Grid", headers)
         for index, column in columns
             listView.ModifyCol(index, column[3])
-        pageName := PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Name
+        pageName := PreferencesWindow._current.Name
         statuses := Map()                                                   ; ObjPtr(item) -> 检查结果, 检查过才有
         shown := []                                                         ; 每一行对应 items 里的第几项 (筛选时只显示一部分)
         filterBox := ""
@@ -1529,7 +1559,7 @@ class PreferencesWindow {
             PreferencesWindow._Add("Button", "x+24 yp w100", I18n.T("Prefs.CheckTargets")).OnEvent("Click", CheckItems)
         listView.GetPos(&listX, , &listW)
         filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; 不用 _Add: 筛选不算修改设置
-        PreferencesWindow.Pages[PreferencesWindow.Pages.Length].Controls.Push(filterBox)
+        PreferencesWindow._current.Controls.Push(filterBox)
         Win.SetCueBanner(filterBox.Hwnd, I18n.T("Prefs.Filter"))
         filterBox.OnEvent("Change", (*) => Refresh())
         PreferencesWindow._y += 38
