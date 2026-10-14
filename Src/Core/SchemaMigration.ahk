@@ -7,6 +7,7 @@
 ;                        版本 2 的结构, 再走下面的逐级升级 (见 AppSettings.Load)
 ;   2 -> 3   _From2()   ALTRun 2.x (Config/Gui/Hotkey/UserCommand...) -> 3.0
 ;   3 -> 4   _From3()   文件搜索默认不再混进普通结果 (InDefaultResults 1 -> 0)
+;   4 -> 5   _From4()   片段的粘贴方式 Clipboard -> Auto (新的默认值)
 ;
 ; 以后改设置结构时: AppSettings.CurrentVersion + 1, 再在这里加一个 _FromN()。
 ; 升级前 Backup() 会把原文件复制成 ALTRun.v<N>.backup.json。
@@ -95,6 +96,19 @@ class SchemaMigration {
         backup := SchemaMigration.BackupFile(file, version)
         try FileCopy(file, backup, true)
         return backup
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 4 -> 5
+    ;---------------------------------------------------------------------------
+    ; 新的粘贴方式 Auto (短的单行文字直接输入, 其它用剪贴板) 更快, 也不动剪贴板。旧文件里的 Clipboard
+    ; 几乎都是当时自动写入的默认值, 改成 Auto; 选了 Type 的保持不变 (想要的话可以在偏好设置里改回去)
+    static _From4(data) {
+        features := SchemaMigration._Section(data, "Features")
+        snippets := SchemaMigration._Section(features, "Snippets")
+        if (snippets.Has("PasteMode") && snippets["PasteMode"] = "Clipboard")
+            snippets["PasteMode"] := "Auto"
+        return data
     }
 
     ;---------------------------------------------------------------------------

@@ -101,7 +101,8 @@ Type `;keyword` (for example `;sig`) in any program and what you typed is delete
 
 ### Paste mode
 `Features.Snippets.PasteMode`:
-- `Clipboard` (default): borrows the clipboard + `Ctrl+V`, then restores the clipboard
+- `Auto` (default): types single-line text of up to 100 characters (instant, leaves the clipboard alone); text with several lines, tabs, more characters or emoji goes through the clipboard
+- `Clipboard`: borrows the clipboard + `Ctrl+V`, then restores the clipboard (the default before 2026.10.12.25; changed to `Auto` on upgrade)
 - `Type`: types the text character by character, for programs that don't accept pasting
 
 ## Clipboard history

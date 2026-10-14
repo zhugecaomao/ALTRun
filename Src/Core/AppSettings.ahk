@@ -30,7 +30,7 @@
 ;===============================================================================
 
 class AppSettings {
-    static CurrentVersion := 4
+    static CurrentVersion := 5
     static Portable := Path.IsWritable(A_ScriptDir)                          ; 程序目录能写入: 数据放在程序目录 (便携)
     static UserDir := A_AppData "\ALTRun"                                   ; 程序目录不能写入时 (例如装在 Program Files) 用这里
     static DataDir := AppSettings.ResolveDataDir()
@@ -302,7 +302,7 @@ class AppSettings {
                     "Enabled"     , 1,
                     "Keyword"     , "snip",
                     "SearchText"  , 1,                                      ; 也搜索正文 (至少 3 个字符)
-                    "PasteMode"   , "Clipboard",                            ; Clipboard = 剪贴板 + Ctrl+V; Type = 逐字输入
+                    "PasteMode"   , "Auto",                                 ; Auto = 短的单行文字直接输入, 其它用剪贴板; Clipboard = 剪贴板 + Ctrl+V; Type = 逐字输入
                     "PasteDelay"  , 300,
                     "AutoExpand"  , 1,                                      ; 在任何程序里输入 前缀+关键字 自动展开
                     "ExpandPrefix", ";",
