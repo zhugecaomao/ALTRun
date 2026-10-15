@@ -40,7 +40,7 @@ Out of scope:
 
 ## Security measures
 
-- **Builds**: every release is built from the public source code by [GitHub Actions](.github/workflows/release.yml); no binaries are built on personal computers. Each change runs 6,000+ automated tests on Windows, and the repository is scanned by CodeQL.
+- **Builds**: every release is built from the public source code by [GitHub Actions](.github/workflows/release.yml); no binaries are built on personal computers. Each change runs 8,000+ automated tests on Windows, and the repository is scanned by CodeQL.
 - **Updates**: one-click updates download only from GitHub Releases over HTTPS, verify the SHA256 checksum published by GitHub before replacing any file, and restore the previous version if any step fails.
 - **Code signing**: see the [code signing policy](README.md#code-signing-policy).
 - **Least privilege**: ALTRun runs as a normal user. It needs no administrator rights and installs no services or drivers.
@@ -76,7 +76,7 @@ All data stays on your computer, in the `Data` folder next to `ALTRun.exe` (or `
 | Search indexes | `AppIndex.json`, `FileIndex.json` | Names and paths of applications and files, used for searching |
 | Icon cache | `%LOCALAPPDATA%\ALTRun\IconCache` | Result icons and the paths they belong to, so icons show at once after a restart; kept on this computer only, safe to delete |
 | Exchange rates, update status | `Currency.json`, `Update.json` | |
-| Debug log (off by default) | `%TEMP%\ALTRun.log` | Timings and errors; no typed text |
+| Debug log (off by default) | `%TEMP%\ALTRun.log` | Timings and errors, plus recent search text to help diagnose problems |
 
 To remove all data, quit ALTRun and delete the `Data` folder and `%LOCALAPPDATA%\ALTRun`. No copies are kept anywhere else.
 
@@ -126,7 +126,7 @@ Changes to this policy are recorded in the [changelog](CHANGELOG.md) and the [hi
 
 ## 安全措施
 
-- **构建**: 每个发布版本都由 [GitHub Actions](.github/workflows/release.yml) 从公开源码编译, 不在个人电脑上构建。每次修改都在 Windows 上运行 6000 余项自动测试, 仓库开启了 CodeQL 扫描。
+- **构建**: 每个发布版本都由 [GitHub Actions](.github/workflows/release.yml) 从公开源码编译, 不在个人电脑上构建。每次修改都在 Windows 上运行 8000 余项自动测试, 仓库开启了 CodeQL 扫描。
 - **更新**: 一键更新只从 GitHub Releases 通过 HTTPS 下载, 替换文件前先核对 GitHub 给出的 SHA256, 任何一步出错都还原到原来的版本。
 - **代码签名**: 见 [代码签名策略](README.md#code-signing-policy)。
 - **最小权限**: ALTRun 以普通用户身份运行, 不需要管理员权限, 不安装服务或驱动。
@@ -162,7 +162,7 @@ ALTRun 本身只在以下情况联网:
 | 搜索索引 | `AppIndex.json`、`FileIndex.json` | 应用和文件的名称、路径, 用于搜索 |
 | 图标缓存 | `%LOCALAPPDATA%\ALTRun\IconCache` | 结果的图标和对应的路径, 重启后图标马上显示; 只存在这台电脑上, 可以随时删除 |
 | 汇率、更新状态 | `Currency.json`、`Update.json` | |
-| 调试日志 (默认关闭) | `%TEMP%\ALTRun.log` | 耗时和错误信息, 不记录输入的文字 |
+| 调试日志 (默认关闭) | `%TEMP%\ALTRun.log` | 耗时和错误信息, 以及最近几次搜索的文字 (用来排查问题) |
 
 要删除全部数据, 退出 ALTRun 后删除 `Data` 文件夹和 `%LOCALAPPDATA%\ALTRun` 即可, 其它地方没有副本。
 

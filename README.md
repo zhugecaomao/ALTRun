@@ -32,7 +32,7 @@
 
 
 ## Why ALTRun
-- **Tiny**: under 1 MB to download and about 2 MB unpacked: one `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install.
+- **Tiny**: about 2.5 MB: one `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install.
 - **Fast**: results appear from the first character you type. With [Everything](https://www.voidtools.com/) running, it searches every file on your disks in milliseconds; without it, a built-in index is used.
 - **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信; file names too: `cs` → 测试文件.zip), and highlights the matched characters.
 - **Beyond launching**: [Quick Switch](#features) jumps an Open / Save dialog to a folder you already have open in Total Commander or Explorer; select text, files or a URL in any program and press `Ctrl+Alt+\` to act on it; type `;keyword` anywhere to expand a snippet.
@@ -41,7 +41,7 @@
 - **Portable and private**: no installer, no registry entries, no admin rights, no background service or driver; all data stays in the `Data\` folder. No telemetry: it only goes online to check for and download updates (plus one exchange-rate download a day if currency conversion is turned on, and a site's icon only when you click "Download Site Icon").
 - **Automatic updates**: new versions are announced in the search window; press `Enter` to install (SHA256 verified, settings kept). Scoop is supported too.
 - **Customizable**: English, Simplified Chinese, Traditional Chinese and Japanese interface; 20 built-in themes (pick one from thumbnails in Preferences), or follow the Windows light / dark mode; themes and settings are plain JSON files.
-- **Free and open source**: GPL-3.0; more than 7,000 tests run automatically on Windows for every pull request.
+- **Free and open source**: GPL-3.0; more than 8,000 tests run automatically on Windows for every pull request.
 
 
 ## Getting started

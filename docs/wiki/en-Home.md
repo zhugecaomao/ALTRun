@@ -4,7 +4,7 @@
 
 ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/) for macOS. It is written in AutoHotkey v2, free, open source and portable. Press `Alt+Space`, type a name and press `Enter`. Website: https://zhugecaomao.github.io/ALTRun/
 
-- **Small**: under 1 MB to download and about 2 MB unpacked: one exe plus a few resource files, with no .NET, Electron or other runtime
+- **Small**: about 2.5 MB: one exe plus a few resource files, with no .NET, Electron or other runtime
 - **Fast**: results as you type; with [Everything](https://www.voidtools.com/) running, every file on your disks is searched in milliseconds
 - **Learns what you use**: remembers your picks and puts frequent ones first; matches word initials (`vsc`) and pinyin initials (`wx` → 微信)
 - **One window for everyday tasks**: calculator, web search, clipboard history, snippet expansion, system commands, terminal
