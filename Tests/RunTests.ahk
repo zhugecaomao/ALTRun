@@ -1992,6 +1992,17 @@ class Tests {
         for item in items
             ids .= item.Id " "
         eq("folder entry listed", InStr(ids, "Folders ") > 0, true)
+        savedLang := I18n.Lang                                              ; 拼音提示只给简体中文界面
+        hasPinyin(lang) {
+            I18n.Init(lang)
+            for item in HelpProvider.Items()
+                if (item.Id = "Pinyin")
+                    return item.Key " " item.Url
+            return ""
+        }
+        eq("pinyin tip in zh-CN", hasPinyin("zh-CN"), "cs " HelpProvider.WikiUrl "File-Search")
+        eq("no pinyin tip in zh-TW / en", hasPinyin("zh-TW") hasPinyin("en"), "")
+        I18n.Init(savedLang)
         ; 过滤: ? 后面的文字
         keys := ""
         for item in HelpProvider.Search(SearchQuery("? f3"))

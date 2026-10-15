@@ -34,7 +34,7 @@
 ## Why ALTRun
 - **Tiny**: under 1 MB to download and about 2 MB unpacked: one `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install.
 - **Fast**: results appear from the first character you type. With [Everything](https://www.voidtools.com/) running, it searches every file on your disks in milliseconds; without it, a built-in index is used.
-- **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信), and highlights the matched characters.
+- **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信; file names too: `cs` → 测试文件.zip), and highlights the matched characters.
 - **Beyond launching**: [Quick Switch](#features) jumps an Open / Save dialog to a folder you already have open in Total Commander or Explorer; select text, files or a URL in any program and press `Ctrl+Alt+\` to act on it; type `;keyword` anywhere to expand a snippet.
 - **All in one**: calculator and unit conversion, web search, browser bookmarks, clipboard history, text snippets, system commands and a terminal, so you don't need a handful of separate little tools.
 - **Keyboard first**: `→` opens the action panel, a status bar shows what `Enter` does, `F3` edits in place, `Ctrl+1`–`Ctrl+9` open a result directly.

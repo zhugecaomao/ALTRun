@@ -621,6 +621,8 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.Section.Everything")
         status := I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning")
         PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", , I18n.T("Prefs.EverythingStatus", status))
+        pinyinHelp := HelpProvider.WikiPage("File-Search") (SubStr(I18n.Lang, 1, 2) = "zh" ? "#常见问题" : "#troubleshooting")
+        PreferencesWindow._LinkNote(I18n.T("Prefs.EverythingPinyin", pinyinHelp), PreferencesWindow._InputX() + 18)   ; 怎样让 Everything 支持拼音 (和复选框的说明对齐)
         PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", "L")
         PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", "L", "folder")
         PreferencesWindow._Section("Prefs.Section.BuiltinIndex")
@@ -1092,6 +1094,15 @@ class PreferencesWindow {
         }
         PreferencesWindow.Gui.SetFont("s8")
         ctrl := PreferencesWindow._Add("Text", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x) " cGray", text)
+        PreferencesWindow.Gui.SetFont("s9")
+        PreferencesWindow._Below(10, ctrl)
+    }
+
+    ; 紧接在上一行说明下面的一行带链接的小字 (<a href="...">...</a>, 点了打开网页)
+    static _LinkNote(text, x) {
+        PreferencesWindow._y -= 10                                          ; 收回 _Desc 留的间距, 和上一行说明连在一起
+        PreferencesWindow.Gui.SetFont("s8")
+        ctrl := PreferencesWindow._Add("Link", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), text)
         PreferencesWindow.Gui.SetFont("s9")
         PreferencesWindow._Below(10, ctrl)
     }
