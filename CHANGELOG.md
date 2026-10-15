@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.14.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 让更多人知道文件名也能用拼音首字母找 (#180):
+  - 简体中文界面的使用提示 (状态栏轮换、输入 `?` 查看全部) 加上一条: `cs` 按拼音首字母找应用和文件, 例如 测试文件.zip
+  - 偏好设置 → 搜索来源: "Everything 运行时用它搜索" 下面加一行带链接的说明, 怎样让 Everything 支持拼音 (打开 wiki)
+  - 偏好设置 → 应用: "中文名称按拼音首字母匹配" 的说明写明只管应用, 文件名的拼音总是可用
+  - README 的功能列表写上文件名也能用拼音首字母
+
 ## [2026.10.14.4]
 
 测试版。
@@ -649,7 +662,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.5...HEAD
+[2026.10.14.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.4...2026.10.14.5
 [2026.10.14.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.3...2026.10.14.4
 [2026.10.14.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.2...2026.10.14.3
 [2026.10.14.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.1...2026.10.14.2

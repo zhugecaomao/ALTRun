@@ -26,6 +26,7 @@ class HelpProvider {
     static Entries() {
         return [
             ["Files"     , "FileSearch"    , "File-Search"],
+            ["Pinyin"    , ""              , "File-Search"],
             ["Folders"   , "FileSearch"    , "File-Search"],
             ["FileKeyword", "FileSearch"   , "File-Search"],
             ["FileTypes" , "FileSearch"    , "File-Search"],
@@ -71,6 +72,8 @@ class HelpProvider {
             if (entry[1] = "Selection" && AppSettings.General["SelectionHotkey"] = "")
                 continue
             if (entry[1] = "FileTypes" && !FileSearchProvider.TypeFilters().Length)
+                continue
+            if (entry[1] = "Pinyin" && I18n.Lang != "zh-CN")                ; 拼音首字母只认简体字: 只给简体中文界面看
                 continue
             items.Push({Id: entry[1], Key: I18n.T("Help." entry[1] ".Key", HelpProvider._Args(entry[1])*)
                       , Text: I18n.T("Help." entry[1] ".Text"), Url: HelpProvider.WikiPage(entry[3])})

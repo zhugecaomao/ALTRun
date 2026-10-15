@@ -236,6 +236,8 @@ class I18n {
         s["Help.TipFormat"]            := "Tip: {1}  {2}"
         s["Help.Files.Key"]            := "Space + name"
         s["Help.Files.Text"]           := "search files and folders"
+        s["Help.Pinyin.Key"]           := "cs"
+        s["Help.Pinyin.Text"]          := "pinyin initials find apps and files, e.g. 测试文件.zip"
         s["Help.Folders.Key"]          := "{1} bk"
         s["Help.Folders.Text"]         := "search folders only"
         s["Help.FileTypes.Key"]        := "{1} report"
@@ -526,6 +528,7 @@ class I18n {
         s["Prefs.MaxEntries"]           := "Max entries"
         s["Prefs.MaxEntries.Desc"]      := "Scanning stops after this many files and folders. The index refreshes itself in the background at this interval."
         s["Prefs.EverythingStatus"]    := "Everything: {1}"
+        s["Prefs.EverythingPinyin"]    := 'To find Chinese file names by pinyin, turn on pinyin in Everything first: <a href="{1}">how to</a>'
         s["Prefs.Running"]             := "running - searching the whole disk"
         s["Prefs.NotRunning"]          := "not running - using the built-in index"
         s["Prefs.Page.Commands"]       := "Custom Commands"
@@ -773,7 +776,7 @@ class I18n {
         s["Prefs.StoreApps"]           := "Include Microsoft Store apps"
         s["Prefs.StoreApps.Desc"]      := "Apps installed from the Microsoft Store, e.g. Calculator, Photos."
         s["Prefs.MatchPinyin"]         := "Match Chinese names by pinyin initials"
-        s["Prefs.MatchPinyin.Desc"]    := "e.g. wx finds 微信 (WeChat)."
+        s["Prefs.MatchPinyin.Desc"]    := "e.g. wx finds 微信 (WeChat). File names always match pinyin."
         s["Prefs.RefreshMinutes"]       := "Refresh every (min)"
         s["Prefs.RebuildIndex"]        := "Rebuild Index"
         ; Lists
