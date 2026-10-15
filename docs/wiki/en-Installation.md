@@ -5,7 +5,7 @@
 ## System requirements
 - Windows 10 or Windows 11 (64-bit)
 - Running from source needs [AutoHotkey v2](https://www.autohotkey.com/) 2.0 or later; the released exe doesn't
-- No .NET, Electron or other runtime; the zip is under 1 MB and about 2 MB unpacked
+- No .NET, Electron or other runtime; the program is about 2.5 MB
 
 ## Installing
 ALTRun is portable: there is nothing to install and nothing is written to the registry.
@@ -41,11 +41,10 @@ winget upgrade zhugecaomao.ALTRun     # later upgrades (quit ALTRun first)
 ```
 
 - The program is in `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`; type `altrun` on the command line to start it
-- Upgrading and uninstalling only remove the files that came in the zip; settings and data (`Data\`, `Themes\`) are kept. Only `winget uninstall --purge` deletes them as well
+- Upgrading and uninstalling only remove the files that came in the zip; settings and data (`Data\`, `Themes\`) are kept. Only `winget uninstall --purge` deletes them as well, or delete the folder above by hand after uninstalling
 - winget itself doesn't create a Start menu shortcut: after you start it once with `altrun`, ALTRun adds itself to the Start menu (Preferences → General → "Add to Start menu")
 - Before uninstalling, turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" in Preferences → General, otherwise those shortcuts are left behind
 - The first time it runs, Windows may say it "couldn't verify the publisher" (the program was downloaded from the internet); choose "Run"
-- Upgrading and uninstalling both keep your settings, `Data\` and `Themes\`; to remove everything after uninstalling, delete the folder above by hand
 
 ## Files in the program folder
 | File / folder | What it is | On upgrade |
@@ -65,7 +64,7 @@ In Preferences → General:
 - **Add to Explorer 'Send to' menu**: right-click a file in Explorer → Send to → ALTRun adds it as a custom command (one file opens the edit dialog; several are all added at once)
 
 ## Upgrading
-- **Upgrade**: tray icon → Check for Updates → Install Update
+- One-click upgrade: tray icon → Check for Updates → Install Update
 - Installed with Scoop: `scoop update altrun`
 - Installed with winget: `winget upgrade zhugecaomao.ALTRun`
 

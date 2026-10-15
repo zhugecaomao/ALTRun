@@ -51,7 +51,12 @@
 
 Release workflow 在 Windows 上编译 `ALTRun.exe`, 并用 `Tests\Fixtures\ALTRun.v2026.08.12.ini` 验证从旧版本升级。
 
+测试版用四段版本号 `YYYY.MM.DD.N` (例如 `2026.10.14.3`), 在 `CHANGELOG.md` 里单独一节, 用 `publish = false` 构建, 在 Actions 页面底部的 Artifacts 里下载; 发布正式版时把这一轮测试版的各节合并成一节。
+
 ## 文档 (Wiki)
 Wiki 的源文件在仓库的 [`docs/wiki/`](docs/wiki), 合并到 `main` 后由 GitHub Actions (`.github/workflows/wiki.yml`) 自动发布到 [Wiki](https://github.com/zhugecaomao/ALTRun/wiki)。请修改 `docs/wiki/` 里的文件, 直接在网页上修改的 Wiki 会在下次发布时被覆盖。页面之间的链接写页面名, 不带 `.md` (例如 `[主题](Themes)`; 英文页写 `[Themes](en-Themes)`)。每页有中文 (`Themes.md`) 和英文 (`en-Themes.md`) 两个文件, 改一种语言时请一起改另一种; 英文不熟悉的话可以只改中文, 在 PR 里说明, 维护者会补上。
+
+## 官网
+[官网](https://zhugecaomao.github.io/ALTRun/) 由 `site/build.py` 根据 `site/index.html` 生成 (版本号、下载大小、主题、最新版本的更新说明是自动填进去的), 合并到 `main` 后由 `.github/workflows/pages.yml` 发布。请修改 `site/index.html`, 本地预览运行 `python3 site/build.py`, 生成的页面在 `_site\`。
 
 提交代码即表示你同意以 [GPL-3.0](LICENSE) 许可发布你的贡献。

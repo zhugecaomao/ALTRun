@@ -77,7 +77,7 @@ Test build.
 Faster: Preferences opens instantly, snippets expand right away, icons appear together with the text, and checking for updates no longer freezes ALTRun; switching the input method with Caps Lock also works in administrator windows, and everything works when ALTRun itself runs as administrator; optional fade in / out for the window and your own placeholder text; reset to defaults and copy system info; fixed Ctrl+D sometimes renaming a file to "d" and result rows that occasionally stayed blank.
 
 ### 升级
-- **升级**: 托盘图标 → 检查更新 → 安装更新
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
 - 用 Scoop 安装的: `scoop update altrun`
 - 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
 - 2026.09.25 及更早的版本: 退出 ALTRun, 把 `ALTRun_v2026.10.14.zip` 解压覆盖到原来的文件夹; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)

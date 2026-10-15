@@ -81,9 +81,18 @@ CJK = re.compile(r"[\u3400-\u9fff]")
 
 
 def changes_html(lines):
-    """CHANGELOG 的几行 -> HTML (段落、### 小标题、- 列表)"""
-    out, in_list = [], False
+    """CHANGELOG 的几行 -> HTML (段落、### 小标题、- 列表, 缩进两格的 "  - " 是上一项下面的子列表)"""
+    out, in_list, in_sub = [], False, False
     for line in lines:
+        if line.startswith("  - ") and in_list:
+            if not in_sub:
+                out[-1] = out[-1].removesuffix("</li>") + "<ul>"            # 子列表放进上一个 <li> 里
+                in_sub = True
+            out.append(f"<li>{inline(line[4:])}</li>")
+            continue
+        if in_sub:
+            out.append("</ul></li>")
+            in_sub = False
         if line.startswith("- "):
             if not in_list:
                 out.append("<ul>")
@@ -97,6 +106,8 @@ def changes_html(lines):
             out.append(f"<h4>{inline(line[4:])}</h4>")
         elif line:
             out.append(f"<p>{inline(line)}</p>")
+    if in_sub:
+        out.append("</ul></li>")
     if in_list:
         out.append("</ul>")
     return "\n".join(out)

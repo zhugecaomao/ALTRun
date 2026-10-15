@@ -5,7 +5,7 @@
 ## 系统要求
 - Windows 10 或 Windows 11 (64 位)
 - 用源码运行时需要 [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新版本; 发布的 exe 不需要
-- 不需要 .NET、Electron 或其他运行库; 下载的 zip 不到 1 MB, 解压后约 2 MB
+- 不需要 .NET、Electron 或其他运行库; 程序约 2.5 MB
 
 ## 安装
 ALTRun 是绿色软件, 不需要安装, 不写注册表。
@@ -41,11 +41,10 @@ winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
 ```
 
 - 程序在 `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`, 命令行里可以直接输入 `altrun` 启动
-- 升级和卸载只删除 zip 里原有的文件, 设置和数据 (`Data\`、`Themes\`) 会保留; `winget uninstall --purge` 才会连同它们一起删除
+- 升级和卸载只删除 zip 里原有的文件, 设置和数据 (`Data\`、`Themes\`) 会保留; `winget uninstall --purge` 才会连同它们一起删除, 或者卸载后手动删掉上面的文件夹
 - winget 本身不创建开始菜单快捷方式: 第一次用 `altrun` 启动后, ALTRun 会自己添加到开始菜单 (偏好设置 → 通用 → "添加到开始菜单")
 - 卸载前先在 偏好设置 → 通用 里关闭 "开机自动启动"、"添加到开始菜单"、"添加到 '发送到' 菜单", 否则这些快捷方式会留下
 - 第一次运行时 Windows 可能提示 "无法验证发布者" (程序是从网上下载的), 选择 "运行" 即可
-- 升级和卸载都保留设置、`Data\`、`Themes\`; 卸载后想彻底删除, 手动删掉上面的文件夹
 
 ## 程序目录里的文件
 | 文件 / 文件夹 | 说明 | 升级时 |
@@ -65,7 +64,7 @@ winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
 - **添加到 "发送到" 菜单**: 在资源管理器里右键文件 → 发送到 → ALTRun, 把它加为自定义命令 (1 个时弹出编辑对话框, 多个时直接全部添加)
 
 ## 升级
-- **升级**: 托盘图标 → 检查更新 → 安装更新
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
 - 用 Scoop 安装的: `scoop update altrun`
 - 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
 
