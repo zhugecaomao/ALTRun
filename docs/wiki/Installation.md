@@ -65,6 +65,12 @@ winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
 - **添加到 "发送到" 菜单**: 在资源管理器里右键文件 → 发送到 → ALTRun, 把它加为自定义命令 (1 个时弹出编辑对话框, 多个时直接全部添加)
 
 ## 升级
+- **升级**: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+
+下面是详细说明。
+
 ### 一键更新
 ALTRun 在后台到 GitHub 检查新版本 (启动时和之后每 6 小时一次) (偏好设置 → 通用 → "自动检查更新")。和 Alfred 一样不弹窗: 发现新版本后, 呼出搜索窗口时空搜索框下面会显示一条 **"发现新版本: ALTRun x"** (下面一行是当前版本和按键说明) (输入 `更新` / `update` 也能找到):
 - `Enter`: **安装更新**。下载新版本, 核对 SHA256 校验值, 替换程序文件后自动重新启动。`Data\` (设置和数据)、`Themes\` 不会改动
