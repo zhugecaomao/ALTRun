@@ -65,6 +65,12 @@ In Preferences → General:
 - **Add to Explorer 'Send to' menu**: right-click a file in Explorer → Send to → ALTRun adds it as a custom command (one file opens the edit dialog; several are all added at once)
 
 ## Upgrading
+- **Upgrade**: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+
+Details below.
+
 ### One-key updates
 ALTRun checks GitHub for new versions in the background (at startup and then every 6 hours) (Preferences → General → "Check for updates automatically"). Like Alfred, it doesn't pop up a window: once a new version is found, the empty search box shows **"Update Available: ALTRun x"** when you open the search window, with the current version and the keys on the line below (typing `update` finds it too):
 - `Enter`: **Install Update**. Downloads the new version, checks its SHA256 checksum, replaces the program files and restarts automatically. `Data\` (settings and data) and `Themes\` are not touched

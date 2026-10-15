@@ -77,10 +77,10 @@ Test build.
 Faster: Preferences opens instantly, snippets expand right away, icons appear together with the text, and checking for updates no longer freezes ALTRun; switching the input method with Caps Lock also works in administrator windows, and everything works when ALTRun itself runs as administrator; optional fade in / out for the window and your own placeholder text; reset to defaults and copy system info; fixed Ctrl+D sometimes renaming a file to "d" and result rows that occasionally stayed blank.
 
 ### 升级
-- **从 2026.10.01 ~ 2026.10.12 升级**: 呼出搜索窗口, 空搜索框下面有一条 "发现新版本: ALTRun 2026.10.14", 按 `Enter` 安装
-- **从 2026.09.30.1 ~ 2026.09.30.3 升级**: 呼出搜索窗口, 空搜索框下面有一条 "更新 ALTRun 到 2026.10.14", 按 `Enter` 更新
-- **从 2026.09.26 ~ 2026.09.30 升级**: 托盘图标 → 检查更新 (2026.09.26 ~ 2026.09.28 是弹窗里选 "立即更新")。用 Scoop 安装的用 `scoop update altrun`, 用 winget 安装的用 `winget upgrade zhugecaomao.ALTRun`
-- **从 2026.09.25 及更早的版本升级**: 托盘图标 → 退出 ALTRun, 把 `ALTRun_v2026.10.14.zip` 里的文件解压到原来的文件夹 (覆盖), 再运行 `ALTRun.exe`; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+- **升级**: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 2026.09.25 及更早的版本: 退出 ALTRun, 把 `ALTRun_v2026.10.14.zip` 解压覆盖到原来的文件夹; 从 2.x 升级见 [2026.09.23 的说明](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
 - **设置文件升级到版本 5**: 第一次启动时原来的设置备份为 `Data\ALTRun.v4.backup.json`, 并提示一次 "设置已升级"。只改老用户不会觉得意外的地方:
   - 片段的粘贴方式还是旧的默认值 "剪贴板 + Ctrl+V" 的, 改成新的 "自动" (见下面 "改进"); 选了 "逐字输入" 的不变
   - 后来补进默认值的内容老用户也补上 (缺什么补什么, 自己加的保留, 清空了的列表不动): 文件搜索关键字 `file`; 一键加日期认 Total Commander 的对话框和改名输入框; Quick Switch 不在 7-Zip 解压窗口和 Total Commander 的对话框里弹出
