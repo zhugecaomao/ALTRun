@@ -1362,7 +1362,8 @@ class SearchWindow {
                 return 0
             case 0x27:                                                      ; →
                 ; 只认新按下的 →: 按住 → 移动光标时, 光标到了最后也不会因为自动重复打开操作面板 (lParam 第 30 位 = 之前已经按着)
-                if (!(lParam & 0x40000000) && SearchWindow._CaretAtEnd() && SearchWindow._OpenActions())
+                ; 有选中的文字时 (例如恢复上次的搜索全选了) 和普通输入框一样只取消选择、光标到末尾, 想改算式时不会打开操作面板
+                if (!(lParam & 0x40000000) && SearchWindow._CaretAtEnd() && !SearchWindow._HasTextSelection() && SearchWindow._OpenActions())
                     return 0
                 return
             case 0x25:                                                      ; ←

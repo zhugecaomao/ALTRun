@@ -3040,6 +3040,10 @@ class Tests {
             eq("held right arrow does not open actions", opened.Count, 0)
             SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd)                    ; 新按下的 →
             eq("fresh right arrow opens actions", opened.Count, 1)
+            SearchWindow.Input.Value := "1250+500", SendMessage(0xB1, 0, -1, hwnd)   ; 恢复上次的搜索: 全选
+            eq("right arrow on selected text: no actions", (SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 1)
+            SendMessage(0xB1, 8, 8, hwnd)                                     ; Edit 自己处理 →: 取消选择, 光标到末尾
+            eq("right arrow again opens actions", (SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 2)
         } finally {
             SearchWindow.DefineProp("_OpenActions", savedOpen)
             SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results, SearchWindow.Selected := saved.Selected

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.14.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 输入框里有选中的文字时 (例如 "保留上一次的搜索" 恢复的输入是全选的), 按 `→` 和普通输入框一样只取消选择、光标到末尾, 不再直接打开操作面板: 恢复的算式 (`1250+500`) 可以接着改; 再按一次 `→` 才打开操作面板
+
 ## [2026.10.14.5]
 
 测试版。
@@ -662,7 +671,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.6...HEAD
+[2026.10.14.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.5...2026.10.14.6
 [2026.10.14.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.4...2026.10.14.5
 [2026.10.14.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.3...2026.10.14.4
 [2026.10.14.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.2...2026.10.14.3
