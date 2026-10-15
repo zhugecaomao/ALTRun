@@ -275,9 +275,8 @@ class FileSearchProvider {
     static NameScore(needle, name) {
         if (score := FileIndex.ScoreName(needle, StrLower(name)))
             return score
-        if (!InStr(needle, " ") && RegExMatch(name, "[^\x{00}-\x{ff}]") && !RegExMatch(needle, "[^\x{00}-\x{7f}]")
-                && (score := FileIndex.ScoreName(needle, StrLower(Pinyin.Initials(name)))))
-            return Max(score - 5, 50)
+        if (FileIndex.UsePinyin(needle) && (initials := FileIndex.InitialsOf(name)) != "" && (score := FileIndex.PinyinScore(needle, initials)))
+            return score
         return 50
     }
 

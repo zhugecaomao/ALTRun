@@ -13,11 +13,15 @@
 ; 用法:
 ;   FileIndex.Start()                      启动时 (读缓存, 需要时开始后台扫描)
 ;   FileIndex.Search("report", 20)         -> [{Path, IsFolder, Score}] 按分数排序
+;   FileIndex.Search("cs", 20)             中文文件名也按拼音首字母匹配 ("测试.bat"), 比同一档的直接匹配低 5 分
 ;===============================================================================
 
 class FileIndex {
     static File     := AppSettings.DataDir "\FileIndex.json"
     static Paths    := [], Names := [], Folders := []     ; 三个平行数组: 完整路径 / 小写文件名 / 是否文件夹
+    ; 中文文件名的小写拼音首字母: Map(下标, "cs.bat") (只有含中文的; 搜索时只需要看这些)。_initialsFor = 对应的 Names
+    ; (换了索引、测试直接设 Names 时对不上, 不按拼音找)。读缓存后在后台分批算 (1 万个中文名约 0.25 秒), 不拖慢启动
+    static Initials := Map(), _initialsFor := "", _initialsTimer := "", _initialsJob := ""
     static Scanning := false
     static _stack := [], _new := "", _timer := "", _lastNeedle := "", _lastMatches := ""
     static Deferred := false                                               ; 启动时有 Everything, 还没读缓存
@@ -57,7 +61,7 @@ class FileIndex {
             if (resolved != "" && DirExist(resolved))
                 FileIndex._stack.Push([resolved, 0])
         }
-        FileIndex._new := {Paths: [], Names: [], Folders: []}
+        FileIndex._new := {Paths: [], Names: [], Folders: [], Initials: Map()}
         FileIndex.Scanning := true
         if (FileIndex._timer = "")
             FileIndex._timer := Logger.Watch("file index scan", () => FileIndex._ScanSome())
@@ -81,6 +85,8 @@ class FileIndex {
                     isFolder := InStr(A_LoopFileAttrib, "D") ? true : false
                     found.Paths.Push(A_LoopFileFullPath)
                     found.Names.Push(StrLower(A_LoopFileName))
+                    if ((initials := FileIndex.InitialsOf(A_LoopFileName)) != "")
+                        found.Initials[found.Paths.Length] := initials
                     found.Folders.Push(isFolder)
                     if (isFolder && depth + 1 < options["ScopeDepth"])
                         FileIndex._stack.Push([A_LoopFileFullPath, depth + 1])
@@ -95,6 +101,7 @@ class FileIndex {
             return
         SetTimer(FileIndex._timer, 0)
         FileIndex.Paths := found.Paths, FileIndex.Names := found.Names, FileIndex.Folders := found.Folders
+        FileIndex.Initials := found.Initials, FileIndex._initialsFor := found.Names
         FileIndex._new := "", FileIndex.Scanning := false
         FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
         FileIndex._SaveCache()
@@ -112,15 +119,21 @@ class FileIndex {
             return []
         candidates := (FileIndex._lastNeedle != "" && InStr(needle, FileIndex._lastNeedle) = 1) ? FileIndex._lastMatches : ""
         scores := Map(), matches := []
-        names := FileIndex.Names
+        names := FileIndex.Names, initials := FileIndex.Initials
+        usePinyin := IsObject(FileIndex._initialsFor) && FileIndex._initialsFor == names && FileIndex.UsePinyin(needle)   ; 拼音: 首字母算好了, 输入是一个英文词
         if IsObject(candidates) {
             for index in candidates
                 if (score := FileIndex.ScoreName(needle, names[index]))
+                        || (usePinyin && initials.Has(index) && (score := FileIndex.PinyinScore(needle, initials[index])))
                     scores[index] := score, matches.Push(index)
         } else {
             for index, name in names
                 if (score := FileIndex.ScoreName(needle, name))
                     scores[index] := score, matches.Push(index)
+            if usePinyin                                                    ; 只看中文文件名, 先用 InStr 粗筛 (绝大多数对不上)
+                for index, text in initials
+                    if (InStr(text, needle) && !scores.Has(index) && (score := FileIndex.PinyinScore(needle, text)))
+                        scores[index] := score, matches.Push(index)
         }
         FileIndex._lastNeedle := needle, FileIndex._lastMatches := matches
         if foldersOnly {
@@ -148,6 +161,15 @@ class FileIndex {
         return ext
     }
 
+    ; 拼音首字母匹配: 只在输入是一个英文词时 (多个词 ScoreName 本来就对不上; 输入有中文时直接按原文匹配)
+    static UsePinyin(needle) => !InStr(needle, " ") && !RegExMatch(needle, "[^\x{00}-\x{7f}]")
+
+    ; 文件名的小写拼音首字母 ("测试.bat" -> "cs.bat"); 没有中文时 "" (不用另外匹配)
+    static InitialsOf(name) => RegExMatch(name, "[^\x{00}-\x{ff}]") ? StrLower(Pinyin.Initials(name)) : ""
+
+    ; 按拼音首字母打分: 和 ScoreName 同样的规则, 低 5 分 (同一档里名称直接匹配的在前), 最低 50; 对不上时 0
+    static PinyinScore(needle, initials) => (score := FileIndex.ScoreName(needle, initials)) ? Max(score - 5, 50) : 0
+
     static ScoreName(needle, name) {
         if !(pos := InStr(name, needle))
             return 0
@@ -173,11 +195,40 @@ class FileIndex {
                 names.Push(StrLower(fileName))
             }
             FileIndex.Names := names
+            FileIndex.BuildInitials()
             return true
         } catch as e {
             Logger.Error("FileIndex: cannot read cache - " e.Message)
             return false
         }
+    }
+
+    ; 在后台分批算 Names 的拼音首字母 (每次定时器最多约 15 ms), 算完再换上; 期间换了索引 (重新扫描完) 就不要了
+    static BuildInitials() {
+        FileIndex._initialsJob := {Names: FileIndex.Names, Pos: 0, Initials: Map()}
+        if (FileIndex._initialsTimer = "")
+            FileIndex._initialsTimer := Logger.Watch("file index pinyin", () => FileIndex._InitialsSome())
+        SetTimer(FileIndex._initialsTimer, 10)
+    }
+
+    static _InitialsSome() {
+        job := FileIndex._initialsJob
+        if (!IsObject(job) || job.Names !== FileIndex.Names) {
+            FileIndex._initialsJob := ""
+            return SetTimer(FileIndex._initialsTimer, 0)
+        }
+        names := job.Names, count := names.Length, i := job.Pos, start := A_TickCount
+        while (i < count && A_TickCount - start < 15) {
+            i++
+            if ((initials := FileIndex.InitialsOf(names[i])) != "")
+                job.Initials[i] := initials
+        }
+        job.Pos := i
+        if (i < count)
+            return
+        SetTimer(FileIndex._initialsTimer, 0)
+        FileIndex.Initials := job.Initials, FileIndex._initialsFor := names, FileIndex._initialsJob := ""
+        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""            ; 之前缩小范围时还没有拼音的结果
     }
 
     static _CacheExpired() {

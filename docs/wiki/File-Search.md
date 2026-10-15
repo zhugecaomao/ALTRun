@@ -85,7 +85,10 @@ ALTRun 自动选择:
 ## 常见问题
 - **Everything 装了但不起作用**: Everything 必须正在运行 (托盘里有图标)。如果 Everything 以管理员身份运行而 ALTRun 不是, Windows 可能拦截两者之间的通信, 让两者以相同的权限运行即可 (推荐 Everything 安装为服务、普通权限运行)。
 - **网络驱动器上的文件**: Everything 默认不索引网络驱动器, 需要在 Everything 的 "选项 → 索引 → 文件夹" 里添加; 内置索引可以把网络文件夹加到 ScopeFolders, 但扫描会比较慢。常用的网络文件夹更适合加为 [自定义命令](Commands-and-Snippets)。
-- **用拼音搜中文文件名** (例如输入 `cs` 找到 "测试.bat"): ALTRun 的拼音首字母匹配目前只用在应用、命令、书签等上, 文件搜索 (包括内置索引) 暂时不支持, 已经列入待办 ([#180](https://github.com/zhugecaomao/ALTRun/issues/180))。用 Everything 时, 可以先让 Everything 支持拼音: ALTRun 把输入原样交给 Everything, 不用另外设置
-  - **Everything 1.5 (beta)**: 工具 → 选项 → 高级, 搜索 `pinyin`, 设成 `true` (只支持首字母)。还在用 1.5 alpha 的, ALTRun 可能找不到它 (alpha 默认以 "1.5a" 命名实例运行), 请升级到 beta
-  - **Everything 1.4**: 安装开源扩展 [IbEverythingExt](https://github.com/Chaoses-Ib/IbEverythingExt), 按它的说明放进 Everything 的文件夹后重启 Everything。支持简拼 (`cs`)、全拼 (`ceshi`)、双拼
-  - 拼音找到的文件在 ALTRun 里同样高亮对应的字, 并按拼音首字母的匹配程度排序 (同样的匹配程度, 名称直接匹配的排在前面); 输入多个词时 (例如 `cs 2024`) 不按拼音排序
+- **用拼音搜中文文件名** (例如输入 `cs` 找到 "测试.bat", `zjsm` 找到 "证件扫描文件.zip"): 支持拼音首字母, 找到的文件同样高亮对应的字, 按首字母的匹配程度排序 (同样的匹配程度, 名称直接匹配的排在前面)
+  - **没有 Everything (内置索引)**: 直接就能用。载入索引后在后台算好首字母 (1 万个中文文件名约零点几秒), 刚启动的这一小会儿里暂时不按拼音找。只按一个词找: `zj sm` 这样分开写的找不到
+  - **用 Everything 时**: 文件是 Everything 找的, 要先让 Everything 支持拼音 (ALTRun 把输入原样交给 Everything, 不用另外设置):
+    - **Everything 1.5 (beta)**: 工具 → 选项 → 高级, 搜索 `pinyin`, 设成 `true` (只支持首字母)。还在用 1.5 alpha 的, ALTRun 可能找不到它 (alpha 默认以 "1.5a" 命名实例运行), 请升级到 beta
+    - **Everything 1.4**: 安装开源扩展 [IbEverythingExt](https://github.com/Chaoses-Ib/IbEverythingExt), 按它的说明放进 Everything 的文件夹后重启 Everything。支持简拼 (`cs`)、全拼 (`ceshi`)、双拼
+    - 输入多个词时 (例如 `zj sm`), Everything 找到的文件照样高亮, 但不按拼音排序
+  - 只认常用汉字 (GB2312 一级汉字), 多音字只取一个读音; 全拼只有 Everything + IbEverythingExt 能找到, ALTRun 不按全拼排序和高亮
