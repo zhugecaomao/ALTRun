@@ -1866,6 +1866,47 @@ class Tests {
         eq("several words: no pinyin", score("cs bat", "测 试.bat"), 50)
         eq("initials cached", Pinyin.Initials("测试") Pinyin.Initials("试测") Pinyin._cache.Has("测"), "CSSC1")
         eq("unknown character", Pinyin.Initials("A龘B"), "AB")
+
+        ; 内置索引 (没有 Everything 时) 也按拼音首字母找
+        paths := ["C:\D\测试.bat", "C:\D\cs_report.bat", "C:\D\证件扫描文件.zip", "C:\D\项目测试报告.docx", "C:\D\notes.txt"]
+        FileIndex.Paths := paths, FileIndex.Names := [], FileIndex.Folders := [0, 0, 0, 0, 0]
+        for fullPath in paths {
+            SplitPath(fullPath, &fileName)
+            FileIndex.Names.Push(StrLower(fileName))
+        }
+        eq("index: before initials are ready", names("zjsm"), "")
+        FileIndex.BuildInitials()                                             ; 后台分批算
+        eq("index: initials built in the background", Tests._WaitFor(() => FileIndex._initialsFor == FileIndex.Names), true)
+        eq("index initials", FileIndex.Initials.Count "|" FileIndex.Initials[1] "|" FileIndex.Initials.Has(2) "|" FileIndex.Initials[3], "3|cs.bat|0|zjsmwj.zip")
+        names(needle, fresh := true) {
+            if fresh
+                FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+            list := ""
+            for item in FileIndex.Search(needle, 10) {
+                SplitPath(item.Path, &fileName)
+                list .= fileName "|"
+            }
+            return RTrim(list, "|")
+        }
+        eq("index: direct first, then pinyin", names("cs"), "cs_report.bat|测试.bat|项目测试报告.docx")
+        eq("index: initials", names("zjsm"), "证件扫描文件.zip")
+        eq("index: narrowing keeps pinyin", (names("c"), names("cs", false)), "cs_report.bat|测试.bat|项目测试报告.docx")
+        eq("index: chinese input", names("测试"), "测试.bat|项目测试报告.docx")
+        eq("index: several words", names("zj sm"), "")
+        FileIndex.Names := FileIndex.Names.Clone()                            ; 换了 Names (例如测试直接设的): 首字母对不上, 不按拼音
+        eq("index: initials for other names", names("zjsm"), "")
+        savedFile := FileIndex.File, FileIndex.File := A_Temp "\ALTRunPinyinIndex.json"
+        try {
+            JSON.WriteFile(FileIndex.File, Map("Paths", ["C:\D\证件扫描文件.zip", "C:\D\notes.txt"], "Folders", [0, 0]))
+            FileIndex._LoadCache()
+            Tests._WaitFor(() => FileIndex._initialsFor == FileIndex.Names)
+            eq("cache load builds initials", FileIndex.Initials.Count "|" FileIndex.Initials[1], "1|zjsmwj.zip")
+        } finally {
+            try FileDelete(FileIndex.File)
+            FileIndex.File := savedFile
+        }
+        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := [], FileIndex.Initials := Map(), FileIndex._initialsFor := ""
+        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
         ranges := FuzzyMatcher.MatchRanges("cs", "测试.bat")
         eq("highlight", ranges.Length = 1 ? ranges[1][1] "," ranges[1][2] : ranges.Length, "1,2")
     }

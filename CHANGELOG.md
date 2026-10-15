@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.14.4]
+
+测试版。
+
+Test build.
+
+### 新增
+- 没有 Everything 时 (内置索引) 文件搜索也支持拼音首字母: `cs` 找到 "测试.bat", `zjsm` 找到 "证件扫描文件.zip"; 同样高亮对应的字, 比名称直接匹配的排得靠后一点 (#180)
+  - 首字母在载入索引后于后台分批算好 (1 万个中文文件名约 0.25 秒), 不拖慢启动; 每次搜索只多看一遍中文文件名
+
 ## [2026.10.14.3]
 
 测试版。
@@ -639,7 +649,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.4...HEAD
+[2026.10.14.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.3...2026.10.14.4
 [2026.10.14.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.2...2026.10.14.3
 [2026.10.14.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.1...2026.10.14.2
 [2026.10.14.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14...2026.10.14.1
