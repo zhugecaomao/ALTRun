@@ -295,7 +295,7 @@ class AppSettings {
                     "Hidden"        , [],                                   ; 在搜索结果里删除 (Ctrl+Del) 的应用的路径
                     "StoreApps"     , 1,
                     "MatchPinyin"   , 1,
-                    "RefreshMinutes", 60
+                    "RefreshMinutes", 120
                 ),
                 "CustomCommands", Map("Enabled", 1),
                 "Snippets", Map(
@@ -361,7 +361,7 @@ class AppSettings {
                     "ScopeDepth"         , 4,
                     "ScopeExclude"       , "i)\\(node_modules|\.git|__pycache__|\$RECYCLE\.BIN)(\\|$)",
                     "MaxEntries"         , 30000,
-                    "RefreshMinutes"     , 30
+                    "RefreshMinutes"     , 60
                 ),
                 "Terminal", Map(
                     "Enabled", 1,

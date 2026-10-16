@@ -79,7 +79,7 @@ Every feature has `Enabled` (1 = on).
 | Hidden | `[]` | Paths of apps removed with `Ctrl+Del` in the search results; delete a line to restore one |
 | StoreApps | 1 | Include Microsoft Store apps |
 | MatchPinyin | 1 | Match Chinese names by their pinyin initials |
-| RefreshMinutes | 60 | How often the index is refreshed in the background (at least 5 minutes; checked at startup and then every minute, and rebuilt silently when due, without a notification; Microsoft Store apps at most once an hour) |
+| RefreshMinutes | 120 | How often the index is refreshed in the background (120 or more recommended, at least 5 minutes; checked at startup and then every minute, and rebuilt silently when due once the keyboard and mouse have been idle for 30 seconds and the search window is closed, without a notification; Microsoft Store apps at most once an hour) |
 
 ### Snippets
 | Key | Default | Description |

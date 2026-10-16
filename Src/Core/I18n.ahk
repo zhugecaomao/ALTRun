@@ -526,7 +526,7 @@ class I18n {
         s["Prefs.ScopeExclude"]         := "Exclude (regex)"
         s["Prefs.ScopeExclude.Desc"]    := "Folders whose path matches this regular expression are skipped, e.g. node_modules and .git."
         s["Prefs.MaxEntries"]           := "Max entries"
-        s["Prefs.MaxEntries.Desc"]      := "Scanning stops after this many files and folders. The index refreshes itself in the background at this interval."
+        s["Prefs.MaxEntries.Desc"]      := "Scanning stops after this many files and folders. The index refreshes itself in the background at this interval (60 min or more recommended)."
         s["Prefs.EverythingStatus"]    := "Everything: {1}"
         s["Prefs.EverythingPinyin"]    := 'To find Chinese file names by pinyin, turn on pinyin in Everything first: <a href="{1}">how to</a>'
         s["Prefs.Running"]             := "running - searching the whole disk"
@@ -767,7 +767,7 @@ class I18n {
         s["Prefs.AppFileTypes"]        := "File types"
         s["Prefs.AppFileTypes.Desc"]   := "Separate with commas, e.g. *.lnk, *.exe"
         s["Prefs.AppDepth"]             := "Subfolder depth"
-        s["Prefs.AppDepth.Desc"]        := "Subfolder levels to scan. The index also refreshes itself at this interval."
+        s["Prefs.AppDepth.Desc"]        := "Subfolder levels to scan. The index refreshes itself at this interval (120 min or more recommended; rebuild it by hand after installing apps)."
         s["Prefs.AppExclude"]          := "Exclude (regex)"
         s["Prefs.AppExclude.Desc"]     := "Files whose names match this regular expression are skipped."
         s["Prefs.AppHidden"]           := "Hidden apps"

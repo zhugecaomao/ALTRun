@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.16.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 后台重建索引不再和呼出、搜索抢时间 (#189): 定时重建要等键盘鼠标空闲 30 秒、搜索窗口没开才开始; 扫描中打开搜索窗口就暂停, 关了再继续 (包括最后写缓存, 3 万条的文件索引写入约 0.8 秒)
+- 偏好设置 → 应用搜索 / 文件搜索: 刷新间隔下面的说明写上推荐值 (应用 120 分钟以上, 文件 60 分钟以上)
+- 新安装的默认刷新间隔: 应用 60 → 120 分钟, 内置文件索引 30 → 60 分钟; 已有的设置不变
+
 ## [2026.10.16.1]
 
 测试版。
@@ -684,7 +695,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.2...HEAD
+[2026.10.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.1...2026.10.16.2
 [2026.10.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.6...2026.10.16.1
 [2026.10.14.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.5...2026.10.14.6
 [2026.10.14.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.4...2026.10.14.5
