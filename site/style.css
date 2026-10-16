@@ -77,7 +77,8 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
 .hero h1 { margin: 0 0 18px; font-size: clamp(2rem, 4.4vw, 3.1rem); line-height: 1.2; letter-spacing: -0.01em; }
 .hero h1 kbd { font-size: 0.6em; vertical-align: 0.25em; }
 .lead { margin: 0 0 28px; color: var(--muted); font-size: 1.1rem; }
-.cta { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.cta { display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 12px; margin-bottom: 16px; }   /* 两个按钮一样宽 (按宽的那个) */
+.cta .btn { justify-content: center; }
 .btn {
   display: inline-flex; align-items: center; gap: 10px; padding: 12px 20px; border-radius: 10px;
   border: 1px solid var(--border); background: var(--surface); color: var(--text); font-weight: 600;
@@ -86,7 +87,6 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
 .btn.primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: var(--accent-text); border-color: transparent; }
 .btn.primary:hover { filter: brightness(1.08); }
 .btn small { font-weight: 400; opacity: 0.85; }
-.btn.primary:has(small) { flex-direction: column; justify-content: center; gap: 0; padding-top: 7px; padding-bottom: 7px; line-height: 1.25; }   /* 大小放在第二行, 手机上和 "查看源码" 排得下一行 */
 .meta { margin: 0; color: var(--muted); font-size: 0.88rem; }
 .hero-shot img { border-radius: 10px; box-shadow: var(--shadow); border: 1px solid var(--border); }
 
@@ -164,6 +164,7 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
 }
 @media (max-width: 560px) {
   .hero { padding: 44px 0 36px; }
+  .cta .btn { padding-left: 12px; padding-right: 12px; white-space: nowrap; }   /* 320 px 宽的手机上两个按钮也排得下一行 */
   .features { grid-template-columns: 1fr; }
   .stats-inner { grid-template-columns: repeat(2, 1fr); }
   .section { padding: 56px 0; }
