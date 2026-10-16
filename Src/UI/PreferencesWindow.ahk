@@ -84,6 +84,8 @@ class PreferencesWindow {
             pageIndex := PreferencesWindow._PageIndex(pageIndex)
         pageIndex := Max(1, Min(pageIndex, PreferencesWindow.Pages.Length))
         PreferencesWindow._BuildPage(pageIndex)
+        if !IsObject(PreferencesWindow.Gui)                                 ; 建页面时窗口被关掉了 (见 _BuildPage)
+            return
 
         names := []
         for page in PreferencesWindow.Pages
@@ -123,7 +125,8 @@ class PreferencesWindow {
 
     static _SelectRow(index) {
         PreferencesWindow.SelectPage(index)
-        PreferencesWindow.PageList.Modify(index, "Select Focus Vis")
+        if IsObject(PreferencesWindow.Gui)
+            PreferencesWindow.PageList.Modify(index, "Select Focus Vis")
     }
 
     ; 选中了一行: 显示那一页
@@ -175,6 +178,8 @@ class PreferencesWindow {
     ; 不重画左边的页面列表和底部按钮, 切换时不闪 (不对整个窗口用 WM_SETREDRAW: 顶层窗口停止重画后子控件会画不出来)
     static SelectPage(pageIndex) {
         PreferencesWindow._BuildPage(pageIndex)
+        if !IsObject(PreferencesWindow.Gui)
+            return
         hwnd := PreferencesWindow.Gui.Hwnd
         previous := PreferencesWindow._page
         PreferencesWindow._page := pageIndex
@@ -367,8 +372,11 @@ class PreferencesWindow {
     }
 
     ; 建一页 (已经建过就什么都不做)。左列宽度每页写死了一个值 (按中英文的标签定); 别的语言的标签更长、放不下时,
-    ; 按实际的文字宽度加宽左列, 这一页重新建一次 (第一次建的控件藏起来不用; 记住宽度, 下次打开不用再建两次)
+    ; 按实际的文字宽度加宽左列, 这一页重新建一次 (第一次建的控件藏起来不用; 记住宽度, 下次打开不用再建两次)。
+    ; 建页面的中途可能被别的线程打断 (Sleep、托盘菜单、Esc / 关闭按钮), 窗口被关掉后 Gui 是 "": 不再往上加控件, 返回 false
     static _BuildPage(index) {
+        if !IsObject(PreferencesWindow.Gui)
+            return false
         page := PreferencesWindow.Pages[index]
         if page.Built
             return false
@@ -376,7 +384,13 @@ class PreferencesWindow {
         PreferencesWindow._ready := false                                   ; 程序自己填的值不算修改 (和刚打开窗口时一样)
         Loop 2 {
             PreferencesWindow._wider := Map(), binds := PreferencesWindow.Binds.Length
-            PreferencesWindow.%page.Builder%()
+            try PreferencesWindow.%page.Builder%()
+            catch as e {
+                if IsObject(PreferencesWindow.Gui)
+                    throw e
+                Logger.Debug("PreferencesWindow: closed while building " page.Key)
+                return false
+            }
             if (!PreferencesWindow._wider.Has(page.Key) || A_Index = 2)
                 break
             PreferencesWindow._labelWidths[I18n.Lang " " page.Key] := PreferencesWindow._wider[page.Key]
@@ -385,12 +399,16 @@ class PreferencesWindow {
             if (PreferencesWindow.Binds.Length > binds)
                 PreferencesWindow.Binds.RemoveAt(binds + 1, PreferencesWindow.Binds.Length - binds)
         }
+        if !IsObject(PreferencesWindow.Gui)
+            return false
         if IsObject(PreferencesWindow._helpButton)                          ; 窗口已经建好: 新的控件挪到底部按钮前面 (Tab 键的顺序)
             PreferencesWindow._BeforeButtons(page.Controls)
         if wasReady {                                                       ; 先处理掉建页面时控件发出的通知 (Change 事件), 再开始记录修改
             Sleep(-1)
             PreferencesWindow._ready := true
         }
+        if !IsObject(PreferencesWindow.Gui)                                 ; Sleep 时窗口被关掉了
+            return false
         return true
     }
 

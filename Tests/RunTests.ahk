@@ -3427,6 +3427,17 @@ class Tests {
             for page in PreferencesWindow.Pages
                 built += page.Built
             eq("unvisited pages still not built", built, 3)
+            ; 建页面的中途窗口被关掉 (别的线程打断了建页面): 不再往已经没有的窗口上加控件, 不报错
+            usagePage := PreferencesWindow._PageIndex("Prefs.Page.Usage")
+            PreferencesWindow.Pages[usagePage].Builder := "_TestCloseWhileBuilding"
+            PreferencesWindow.DefineProp("_TestCloseWhileBuilding", {Call: (this) => (PreferencesWindow.Close(), PreferencesWindow._Add("Text", "x200 w100", "x"))})
+            closedOk := true
+            try PreferencesWindow._SelectRow(usagePage)
+            catch
+                closedOk := false
+            PreferencesWindow.DeleteProp("_TestCloseWhileBuilding")
+            eq("closed while building: no error", closedOk, true)
+            eq("closed while building: window gone", IsObject(PreferencesWindow.Gui), false)
         } finally {
             PreferencesWindow._dirty := false
             PreferencesWindow.Close()

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.16.6]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置建页面的中途窗口被关掉时 (例如 ALTRun 正忙、点了托盘菜单或按了 Esc), 不再弹出 "This value of type "String" has no method named "Add"" 的错误
+
 ## [2026.10.16.5]
 
 测试版。
@@ -704,7 +713,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.6...HEAD
+[2026.10.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.5...2026.10.16.6
 [2026.10.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.2...2026.10.16.5
 [2026.10.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.1...2026.10.16.2
 [2026.10.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.6...2026.10.16.1
