@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.16.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 一键加日期: 两种场景改名为 "文件名 (加在扩展名前)" 和 "文字末尾" (以前是 "重命名文件" / "备注框"), 说明各带一个例子, 写清楚区别: 文件名里已有的日期换成今天, 文字末尾直接加上
+
 ## [2026.10.16.2]
 
 测试版。
@@ -695,7 +704,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.5...HEAD
+[2026.10.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.2...2026.10.16.5
 [2026.10.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.1...2026.10.16.2
 [2026.10.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.6...2026.10.16.1
 [2026.10.14.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.5...2026.10.14.6
