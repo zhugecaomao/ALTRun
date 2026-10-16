@@ -5,9 +5,10 @@
 ; 应用商店应用 (PowerShell Get-StartApps, 在后台运行不卡界面)。中文名称同时
 ; 按拼音首字母匹配 ("wx" -> 微信)。
 ;
-; 索引缓存在 Data\AppIndex.json, 启动时直接读缓存, 超过 RefreshMinutes 分钟
-; 才在后台重新扫描; 托盘菜单 "重建索引" 或系统命令 "Rebuild ALTRun Index"
-; 会立即重建。
+; 索引缓存在 Data\AppIndex.json, 启动时直接读缓存。缓存超过 RefreshMinutes 分钟 (最少 5 分钟)
+; 就在后台分批重新扫描 (每次定时器最多约 15 ms, 不挡热键), 启动时和之后每分钟检查一次
+; (搜索窗口打开时不换), 不弹通知; 商店应用 (PowerShell) 后台最多每小时扫一次。
+; 托盘菜单 "重建索引" 或系统命令 "Rebuild ALTRun Index" 立即重建 (一次做完, 显示结果)。
 ;
 ; 不需要的应用: 在搜索结果里按 Ctrl+Del (或右键 "删除") 把它加入 Hidden 列表, 不再显示,
 ; 重建索引后也不会回来 (不会卸载程序, 也不改 AppIndex.json)。偏好设置 -> 应用搜索里
@@ -21,13 +22,16 @@ class ApplicationProvider {
     static Id        := "Applications"
     static IndexFile := AppSettings.DataDir "\AppIndex.json"
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
-    static _storePid := 0, _storeFile := "", _storeTimer := ""
+    static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
+    static _job := "", _scanTimer := "", _refreshTimer := ""         ; 后台重建: 见 _NewJob
     static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []
 
     static Init() {
         if !ApplicationProvider._LoadCache() || ApplicationProvider._CacheExpired()
-            SetTimer(Logger.Watch("app scan", () => ApplicationProvider.Rebuild()), -3000)            ; 先让窗口出来, 再在后台扫描
+            SetTimer(() => ApplicationProvider.RefreshInBackground(), -3000)   ; 先让窗口出来, 再在后台扫描
         SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; 预先算好搜索 Key, 第一次搜索不用等
+        ApplicationProvider._refreshTimer := Logger.Watch("app refresh check", () => ApplicationProvider._CheckRefresh())
+        SetTimer(ApplicationProvider._refreshTimer, 60000)
     }
 
     static Search(query) {
@@ -145,37 +149,88 @@ class ApplicationProvider {
         return ObjPtr(hidden) ":" hidden.Length
     }
 
-    ; 重新扫描, 返回找到的应用数量
+    ; 立即重新扫描 (一次做完), 返回找到的应用数量。正在后台重建的话先停掉
     static Rebuild() {
-        options := AppSettings.Feature("Applications")
-        found := Map()
-        found.CaseSense := "Off"
-        for folder in options["Folders"]
-            ApplicationProvider._ScanFolder(Path.Resolve(folder), options, found)
-
-        apps := []
-        for key, entry in found
-            apps.Push(entry)
-        ApplicationProvider._MergeStoreApps(apps)                          ; 保留上一次的商店应用, 后台更新完成后再替换
-        ApplicationProvider.Apps := apps
-        ApplicationProvider._SaveCache()
-        if options["StoreApps"]
-            ApplicationProvider._StartStoreScan()
-        Logger.Debug("ApplicationProvider: indexed " apps.Length " apps")
-        return apps.Length
+        ApplicationProvider._StopJob()
+        job := ApplicationProvider._NewJob()
+        ApplicationProvider._Step(job, 0)
+        return ApplicationProvider._Finish(job, true)
     }
 
-    static _ScanFolder(folder, options, found) {
-        folder := RTrim(folder, "\")
-        if (folder = "" || !DirExist(folder))
+    ; 在后台分批重新扫描, 扫完再替换 Apps (中途搜索用的还是旧的); 已经在扫的话不重复
+    static RefreshInBackground() {
+        if IsObject(ApplicationProvider._job)
             return
-        exclude := options["Exclude"]
-        maxDepth := options["Depth"]
-        for pattern in options["FileTypes"] {
-            Loop Files, folder "\" pattern, "R" {
-                relative := SubStr(A_LoopFileFullPath, StrLen(folder) + 2)
-                depth := StrLen(relative) - StrLen(StrReplace(relative, "\"))
-                if (depth > maxDepth)
+        ApplicationProvider._job := ApplicationProvider._NewJob()
+        if (ApplicationProvider._scanTimer = "")
+            ApplicationProvider._scanTimer := Logger.Watch("app scan", () => ApplicationProvider._ScanSome())
+        SetTimer(ApplicationProvider._scanTimer, 10)
+    }
+
+    ; 每分钟: 缓存过期了就在后台重建 (搜索窗口打开时等下一次, 不在用户眼前换结果)
+    static _CheckRefresh() {
+        if (IsObject(ApplicationProvider._job) || SearchWindow.IsVisible())
+            return
+        if ApplicationProvider._CacheExpired()
+            ApplicationProvider.RefreshInBackground()
+    }
+
+    static _ScanSome() {
+        job := ApplicationProvider._job
+        if !IsObject(job)
+            return SetTimer(ApplicationProvider._scanTimer, 0)
+        if !ApplicationProvider._Step(job, 15)
+            return
+        SetTimer(ApplicationProvider._scanTimer, 0)
+        ApplicationProvider._job := ""
+        ApplicationProvider._Finish(job, false)
+        SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; 新的搜索 Key 也先算好
+    }
+
+    static _StopJob() {
+        if (ApplicationProvider._scanTimer != "")
+            SetTimer(ApplicationProvider._scanTimer, 0)
+        ApplicationProvider._job := ""
+    }
+
+    ; 一次扫描: 按 Folders 的顺序一个一个扫, 每个用一个待扫描文件夹的栈代替递归, 可以随时停下, 下次接着扫。
+    ; 每个文件夹只列一次, 文件名和 FileTypes (通配符) 自己比 (分别按每种类型列目录要慢好几倍)
+    static _NewJob() {
+        options := AppSettings.Feature("Applications")
+        roots := []
+        for folder in options["Folders"] {
+            folder := RTrim(Path.Resolve(folder), "\")
+            if (folder != "" && DirExist(folder))
+                roots.Push(folder)
+        }
+        types := ""
+        for pattern in options["FileTypes"]                                 ; "*.lnk" -> .*\.lnk 等, 合成一个正则
+            types .= (types = "" ? "" : "|") StrReplace(StrReplace(RegExReplace(pattern, "[\\.^$+()\[\]{}|]", "\$0"), "*", ".*"), "?", ".")
+        found := Map()
+        found.CaseSense := "Off"
+        return {Options: options, Roots: roots, Next: 1, Stack: [], Types: "i)^(?:" types ")$", Found: found}
+    }
+
+    ; 扫一部分: 用时超过 budget 毫秒就停 (0 = 一次扫完); 扫完返回 true
+    static _Step(job, budget) {
+        options := job.Options, exclude := options["Exclude"], maxDepth := options["Depth"]
+        start := A_TickCount
+        loop {
+            if !job.Stack.Length {
+                if (job.Next > job.Roots.Length)
+                    return true
+                job.Stack := [[job.Roots[job.Next++], 0]]
+            }
+            entry := job.Stack.Pop()
+            folder := entry[1], depth := entry[2]
+            subfolders := []
+            Loop Files, folder "\*", "FD" {
+                if InStr(A_LoopFileAttrib, "D") {
+                    if (depth < maxDepth)
+                        subfolders.Push(A_LoopFileFullPath)
+                    continue
+                }
+                if !RegExMatch(A_LoopFileName, job.Types)
                     continue
                 SplitPath(A_LoopFileName, , , &ext, &title)
                 if (exclude != "" && RegExMatch(title, exclude))
@@ -189,10 +244,29 @@ class ApplicationProvider {
                 } else {
                     key := StrLower(title "|" A_LoopFileFullPath)
                 }
-                if !found.Has(key)
-                    found[key] := ApplicationProvider._Entry(title, A_LoopFileFullPath, detail, options)
+                if !job.Found.Has(key)
+                    job.Found[key] := ApplicationProvider._Entry(title, A_LoopFileFullPath, detail, options)
             }
+            Loop subfolders.Length                                          ; 倒着压栈, 先扫前面的
+                job.Stack.Push([subfolders[subfolders.Length - A_Index + 1], depth + 1])
+            if (budget && A_TickCount - start >= budget)
+                return false
         }
+    }
+
+    ; 扫完: 换上新的 Apps, 写缓存; 商店应用手动重建时总是扫, 后台最多每小时一次
+    static _Finish(job, manual) {
+        apps := []
+        for key, entry in job.Found
+            apps.Push(entry)
+        ApplicationProvider._MergeStoreApps(apps)                          ; 保留上一次的商店应用, 后台更新完成后再替换
+        ApplicationProvider.Apps := apps
+        ApplicationProvider._SaveCache()
+        if (job.Options["StoreApps"] && (manual || !ApplicationProvider._storeScanned
+                || A_TickCount - ApplicationProvider._storeScanned >= 3600000))
+            ApplicationProvider._StartStoreScan()
+        Logger.Debug("ApplicationProvider: indexed " apps.Length " apps" (manual ? "" : " (background)"))
+        return apps.Length
     }
 
     static _Entry(title, target, detail, options) {
@@ -215,7 +289,7 @@ class ApplicationProvider {
             Logger.Error("ApplicationProvider: cannot start Get-StartApps - " e.Message)
             return
         }
-        ApplicationProvider._storePid := pid
+        ApplicationProvider._storePid := pid, ApplicationProvider._storeScanned := A_TickCount
         ApplicationProvider._storeFile := outFile
         if (ApplicationProvider._storeTimer = "")
             ApplicationProvider._storeTimer := Logger.Watch("store apps scan", () => ApplicationProvider._CheckStoreScan())
@@ -276,9 +350,11 @@ class ApplicationProvider {
         }
     }
 
+    ; 缓存超过 RefreshMinutes 分钟 (最少 5 分钟) 了吗; 没有缓存文件也算过期
     static _CacheExpired() {
-        minutes := AppSettings.Feature("Applications")["RefreshMinutes"]
-        return DateDiff(A_Now, FileGetTime(ApplicationProvider.IndexFile, "M"), "Minutes") >= minutes
+        minutes := Max(5, AppSettings.Feature("Applications")["RefreshMinutes"])
+        try return DateDiff(A_Now, FileGetTime(ApplicationProvider.IndexFile, "M"), "Minutes") >= minutes
+        return true
     }
 
     static _SaveCache() {

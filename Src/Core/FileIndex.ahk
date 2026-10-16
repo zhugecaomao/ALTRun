@@ -5,8 +5,8 @@
 ; 深度 ScopeDepth 层, 包括文件夹和文件, 最多 MaxEntries 项。
 ;
 ; 扫描在后台分批进行 (每次定时器最多约 15 ms, 用一个待扫描文件夹的栈代替递归),
-; 扫描期间界面照常响应; 结果缓存在 Data\FileIndex.json, 下次启动直接读,
-; 超过 RefreshMinutes 分钟再重新扫描。
+; 扫描期间界面照常响应; 结果缓存在 Data\FileIndex.json, 下次启动直接读。缓存超过
+; RefreshMinutes 分钟 (最少 5 分钟) 就在后台重新扫描: 启动时和之后每分钟检查一次 (搜索窗口打开时不换)。
 ; 启动时 Everything 正在运行 (并且 UseEverything) 就不读缓存也不扫描 (最多 3 万条, 用不上),
 ; 等真的要用内置索引时 (Everything 关掉了) 再读。
 ;
@@ -25,8 +25,11 @@ class FileIndex {
     static Scanning := false
     static _stack := [], _new := "", _timer := "", _lastNeedle := "", _lastMatches := ""
     static Deferred := false                                               ; 启动时有 Everything, 还没读缓存
+    static _refreshTimer := ""
 
     static Start() {
+        FileIndex._refreshTimer := Logger.Watch("file index refresh check", () => FileIndex._CheckRefresh())
+        SetTimer(FileIndex._refreshTimer, 60000)
         options := AppSettings.Feature("FileSearch")
         if (options["UseEverything"] && Everything.IsRunning()) {
             FileIndex.Deferred := true
@@ -48,6 +51,17 @@ class FileIndex {
     static EnsureLoaded() {
         if FileIndex.Deferred
             FileIndex._Load(10)
+    }
+
+    ; 每分钟: 在用内置索引 (已经读过、Everything 没在用) 并且缓存过期了, 就在后台重新扫描
+    static _CheckRefresh() {
+        if (FileIndex.Scanning || FileIndex.Deferred || SearchWindow.IsVisible())
+            return
+        options := AppSettings.Feature("FileSearch")
+        if (options["UseEverything"] && Everything.IsRunning())
+            return
+        if FileIndex._CacheExpired()
+            FileIndex.Rebuild()
     }
 
     static Rebuild() {
@@ -231,9 +245,11 @@ class FileIndex {
         FileIndex._lastNeedle := "", FileIndex._lastMatches := ""            ; 之前缩小范围时还没有拼音的结果
     }
 
+    ; 缓存超过 RefreshMinutes 分钟 (最少 5 分钟) 了吗; 没有缓存文件也算过期
     static _CacheExpired() {
-        minutes := AppSettings.Feature("FileSearch")["RefreshMinutes"]
-        return DateDiff(A_Now, FileGetTime(FileIndex.File, "M"), "Minutes") >= minutes
+        minutes := Max(5, AppSettings.Feature("FileSearch")["RefreshMinutes"])
+        try return DateDiff(A_Now, FileGetTime(FileIndex.File, "M"), "Minutes") >= minutes
+        return true
     }
 
     static _SaveCache() {

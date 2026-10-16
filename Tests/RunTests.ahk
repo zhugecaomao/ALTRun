@@ -90,7 +90,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "AppIndexRefresh", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1756,6 +1756,53 @@ class Tests {
         ProviderRegistry.Providers := saved
         AppSettings.File := savedFile
         try FileDelete(A_Temp "\ALTRunTest.json")
+    }
+
+    static AppIndexRefresh() {
+        eq := (n, a, e) => TestRunner.Equal("AppIndexRefresh." n, a, e)
+        root := A_Temp "\ALTRunAppIndexTest"
+        try DirDelete(root, true)
+        for dir in ["", "\Office", "\Office\Tools", "\Office\Tools\More", "\Office\Tools\More\TooDeep", "\Games"]
+            DirCreate(root dir)                                             ; 一层一层建 (Wine 里一次建多层会卡住)
+        for relative in ["\Editor.exe", "\Office\Writer.exe", "\Office\Uninstall Writer.exe", "\Office\Tools\Sheet.url"
+                , "\Office\Tools\More\Draw.exe", "\Office\Tools\More\TooDeep\Hidden.exe", "\Games\Chess.exe", "\Games\notes.txt"]
+            FileAppend("", root relative)
+        options := AppSettings.Feature("Applications")
+        saved := Map("Folders", options["Folders"], "StoreApps", options["StoreApps"], "RefreshMinutes", options["RefreshMinutes"])
+        savedFile := ApplicationProvider.IndexFile, savedApps := ApplicationProvider.Apps
+        options["Folders"] := [root], options["StoreApps"] := 0
+        ApplicationProvider.IndexFile := A_Temp "\ALTRunAppIndexTest.json"
+        try FileDelete(ApplicationProvider.IndexFile)
+        titles() {
+            list := ""
+            for entry in ApplicationProvider.Apps
+                list .= entry["Title"] "|"
+            return RTrim(list, "|")
+        }
+        expected := "Chess|Draw|Editor|Sheet|Writer"                       ; 深度 4 的 Hidden、Exclude 里的 Uninstall、txt 不要
+
+        eq("no cache = expired", ApplicationProvider._CacheExpired(), true)
+        eq("manual count", ApplicationProvider.Rebuild(), 5)
+        eq("manual", titles(), expected)
+        options["RefreshMinutes"] := 1
+        eq("fresh cache, at least 5 minutes", ApplicationProvider._CacheExpired(), false)
+        FileSetTime(DateAdd(A_Now, -6, "Minutes"), ApplicationProvider.IndexFile, "M")
+        eq("6 minutes old", ApplicationProvider._CacheExpired(), true)
+
+        ApplicationProvider.Apps := []
+        job := ApplicationProvider._NewJob(), steps := 1
+        while !ApplicationProvider._Step(job, -1)                          ; -1: 每扫一个文件夹就停一次, 下次接着扫
+            steps++
+        eq("background in steps", steps > 5, true)
+        eq("not replaced while scanning", titles(), "")
+        ApplicationProvider._Finish(job, false)
+        eq("background", titles(), expected)
+
+        for key, value in saved
+            options[key] := value
+        ApplicationProvider.IndexFile := savedFile, ApplicationProvider.Apps := savedApps
+        try FileDelete(A_Temp "\ALTRunAppIndexTest.json")
+        try DirDelete(root, true)
     }
 
     static HiddenSystemCommands() {
