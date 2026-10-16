@@ -79,7 +79,7 @@ Every feature has `Enabled` (1 = on).
 | Hidden | `[]` | Paths of apps removed with `Ctrl+Del` in the search results; delete a line to restore one |
 | StoreApps | 1 | Include Microsoft Store apps |
 | MatchPinyin | 1 | Match Chinese names by their pinyin initials |
-| RefreshMinutes | 120 | How often the index is refreshed in the background (120 or more recommended, at least 5 minutes; checked at startup and then every minute, and rebuilt silently when due once the keyboard and mouse have been idle for 30 seconds and the search window is closed, without a notification; Microsoft Store apps at most once an hour) |
+| RefreshMinutes | 120 | Fallback refresh interval (120 or more recommended, at least 5 minutes). Normally the `Folders` are watched: when a shortcut is added, removed or renamed, the index is rebuilt silently in the background a few seconds later (at most once a minute), without a notification, pausing while the search window is open. Microsoft Store apps aren't in those folders and are rescanned at most once an hour |
 
 ### Snippets
 | Key | Default | Description |

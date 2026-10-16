@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.16.7]
+
+测试版。
+
+Test build.
+
+### 改进
+- 新装的软件几秒后就能搜到 (#189): 监视应用搜索的索引范围 (默认: 桌面、公共桌面、开始菜单、公共开始菜单, 包括子文件夹), 有快捷方式新增、删除、改名时, 安静 5 秒后在后台重建 (两次至少隔 1 分钟), 不弹通知。用的是 Windows 的文件夹变化通知, 平时几乎不占资源; 刷新间隔留作兜底
+- 应用索引的后台重建不再等键盘鼠标空闲 30 秒: 扫描本来就是分段的, 搜索窗口打开时暂停; 最后写缓存 (一次 70–120 ms) 改到键盘鼠标空闲 2 秒后再写, 退出时还没写就马上写
+
 ## [2026.10.16.6]
 
 测试版。
@@ -713,7 +723,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.7...HEAD
+[2026.10.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.6...2026.10.16.7
 [2026.10.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.5...2026.10.16.6
 [2026.10.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.2...2026.10.16.5
 [2026.10.16.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.1...2026.10.16.2

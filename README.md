@@ -65,7 +65,7 @@ The winget manifest has been submitted; once it is accepted you can install with
 ## Features
 **Search**
 - **Search window**: results update as you type, with a title and path for each; the window grows with the results, can be dragged and remembers its position, and opens on the screen with the mouse pointer when you have several monitors.
-- **Apps**: Start menu, desktop and Microsoft Store apps are indexed automatically; press `Ctrl+Del` to hide apps or built-in commands you don't want, and restore them in Preferences.
+- **Apps**: Start menu, desktop and Microsoft Store apps are indexed automatically, and newly installed programs show up within seconds; press `Ctrl+Del` to hide apps or built-in commands you don't want, and restore them in Preferences.
 - **Match highlighting**: the parts of a title that match what you typed (consecutive characters, word initials, pinyin initials) are highlighted.
 - **Files and folders**: in an empty search box, press `Space` first and then type a name (or use `'report` or `open report`). With Everything running it searches all disks, otherwise the built-in index; type a path such as `D:\Projects\` to browse folder by folder.
 - **Custom commands**: files, folders, programs (with arguments) and web addresses, each with an optional keyword. Add them from Explorer with right-click → Send to → ALTRun (several at once works too), and check for commands whose path no longer exists.
