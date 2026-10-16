@@ -176,7 +176,7 @@
   "Menu.CheatSheet": "快捷键和语法",
   "Prefs.Add": "添加...",
   "Prefs.AppDepth": "子文件夹深度",
-  "Prefs.AppDepth.Desc": "往下扫描几层子文件夹; 索引按这个间隔在后台自动更新 (建议 120 分钟以上, 新装的软件可以手动重建索引)",
+  "Prefs.AppDepth.Desc": "往下扫描几层子文件夹; 索引按这个间隔在后台自动更新 (建议 120 分钟以上)",
   "Prefs.AppExclude": "排除 (正则)",
   "Prefs.AppExclude.Desc": "名称匹配这个正则表达式的文件不收录",
   "Prefs.AppFileTypes": "文件类型",

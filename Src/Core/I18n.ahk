@@ -767,7 +767,7 @@ class I18n {
         s["Prefs.AppFileTypes"]        := "File types"
         s["Prefs.AppFileTypes.Desc"]   := "Separate with commas, e.g. *.lnk, *.exe"
         s["Prefs.AppDepth"]             := "Subfolder depth"
-        s["Prefs.AppDepth.Desc"]        := "Subfolder levels to scan. The index refreshes itself at this interval (120 min or more recommended; rebuild it by hand after installing apps)."
+        s["Prefs.AppDepth.Desc"]        := "Subfolder levels to scan. The index refreshes itself at this interval (120 min or more recommended)."
         s["Prefs.AppExclude"]          := "Exclude (regex)"
         s["Prefs.AppExclude.Desc"]     := "Files whose names match this regular expression are skipped."
         s["Prefs.AppHidden"]           := "Hidden apps"
