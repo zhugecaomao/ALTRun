@@ -6,8 +6,9 @@
 ; 按拼音首字母匹配 ("wx" -> 微信)。
 ;
 ; 索引缓存在 Data\AppIndex.json, 启动时直接读缓存。缓存超过 RefreshMinutes 分钟 (最少 5 分钟)
-; 就在后台分批重新扫描 (每次定时器最多约 15 ms, 不挡热键), 启动时和之后每分钟检查一次
-; (搜索窗口打开时不换), 不弹通知; 商店应用 (PowerShell) 后台最多每小时扫一次。
+; 就在后台分批重新扫描 (每次定时器最多约 15 ms, 不挡热键), 不弹通知: 启动时检查一次, 之后每分钟
+; 检查, 但要等键盘鼠标空闲 RefreshIdleMs 并且搜索窗口没开才开始; 扫描中搜索窗口打开 (或正在呼出)
+; 就暂停 (已经有旧索引可用时), 关了再继续, 不和呼出、搜索抢时间。商店应用 (PowerShell) 后台最多每小时扫一次。
 ; 托盘菜单 "重建索引" 或系统命令 "Rebuild ALTRun Index" 立即重建 (一次做完, 显示结果)。
 ;
 ; 不需要的应用: 在搜索结果里按 Ctrl+Del (或右键 "删除") 把它加入 Hidden 列表, 不再显示,
@@ -24,6 +25,7 @@ class ApplicationProvider {
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
     static _job := "", _scanTimer := "", _refreshTimer := ""         ; 后台重建: 见 _NewJob
+    static RefreshIdleMs := 30000                                         ; 定时重建要等键盘鼠标空闲这么久
     static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []
 
     static Init() {
@@ -167,9 +169,9 @@ class ApplicationProvider {
         SetTimer(ApplicationProvider._scanTimer, 10)
     }
 
-    ; 每分钟: 缓存过期了就在后台重建 (搜索窗口打开时等下一次, 不在用户眼前换结果)
+    ; 每分钟: 缓存过期了就在后台重建。用户正在用电脑 (空闲不到 RefreshIdleMs) 或搜索窗口开着时等下一次
     static _CheckRefresh() {
-        if (IsObject(ApplicationProvider._job) || SearchWindow.IsVisible())
+        if (IsObject(ApplicationProvider._job) || !SearchWindow._CanPrefetch() || A_TimeIdlePhysical < ApplicationProvider.RefreshIdleMs)
             return
         if ApplicationProvider._CacheExpired()
             ApplicationProvider.RefreshInBackground()
@@ -179,6 +181,8 @@ class ApplicationProvider {
         job := ApplicationProvider._job
         if !IsObject(job)
             return SetTimer(ApplicationProvider._scanTimer, 0)
+        if (ApplicationProvider.Apps.Length && !SearchWindow._CanPrefetch())   ; 搜索窗口开着 / 正在呼出时先停, 关了再继续 (包括最后写缓存);
+            return                                                          ; 还没有索引 (第一次运行) 时照常扫
         if !ApplicationProvider._Step(job, 15)
             return
         SetTimer(ApplicationProvider._scanTimer, 0)

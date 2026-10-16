@@ -6,7 +6,9 @@
 ;
 ; 扫描在后台分批进行 (每次定时器最多约 15 ms, 用一个待扫描文件夹的栈代替递归),
 ; 扫描期间界面照常响应; 结果缓存在 Data\FileIndex.json, 下次启动直接读。缓存超过
-; RefreshMinutes 分钟 (最少 5 分钟) 就在后台重新扫描: 启动时和之后每分钟检查一次 (搜索窗口打开时不换)。
+; RefreshMinutes 分钟 (最少 5 分钟) 就在后台重新扫描: 启动时检查一次, 之后每分钟检查, 但要等键盘鼠标
+; 空闲 RefreshIdleMs 并且搜索窗口没开才开始; 扫描中搜索窗口打开 (或正在呼出) 就暂停 (已经有旧索引可用时),
+; 关了再继续。
 ; 启动时 Everything 正在运行 (并且 UseEverything) 就不读缓存也不扫描 (最多 3 万条, 用不上),
 ; 等真的要用内置索引时 (Everything 关掉了) 再读。
 ;
@@ -26,6 +28,7 @@ class FileIndex {
     static _stack := [], _new := "", _timer := "", _lastNeedle := "", _lastMatches := ""
     static Deferred := false                                               ; 启动时有 Everything, 还没读缓存
     static _refreshTimer := ""
+    static RefreshIdleMs := 30000                                          ; 定时重建要等键盘鼠标空闲这么久
 
     static Start() {
         FileIndex._refreshTimer := Logger.Watch("file index refresh check", () => FileIndex._CheckRefresh())
@@ -53,9 +56,10 @@ class FileIndex {
             FileIndex._Load(10)
     }
 
-    ; 每分钟: 在用内置索引 (已经读过、Everything 没在用) 并且缓存过期了, 就在后台重新扫描
+    ; 每分钟: 在用内置索引 (已经读过、Everything 没在用) 并且缓存过期了, 就在后台重新扫描。
+    ; 用户正在用电脑 (空闲不到 RefreshIdleMs) 或搜索窗口开着时等下一次
     static _CheckRefresh() {
-        if (FileIndex.Scanning || FileIndex.Deferred || SearchWindow.IsVisible())
+        if (FileIndex.Scanning || FileIndex.Deferred || !SearchWindow._CanPrefetch() || A_TimeIdlePhysical < FileIndex.RefreshIdleMs)
             return
         options := AppSettings.Feature("FileSearch")
         if (options["UseEverything"] && Everything.IsRunning())
@@ -83,6 +87,8 @@ class FileIndex {
     }
 
     static _ScanSome() {
+        if (FileIndex.Paths.Length && !SearchWindow._CanPrefetch())         ; 搜索窗口开着 / 正在呼出时先停, 关了再继续 (包括最后写缓存);
+            return                                                          ; 还没有索引 (第一次运行) 时照常扫
         options := AppSettings.Feature("FileSearch")
         exclude := options["ScopeExclude"]
         start := A_TickCount
