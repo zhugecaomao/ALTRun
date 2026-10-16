@@ -5,10 +5,13 @@
 ; 应用商店应用 (PowerShell Get-StartApps, 在后台运行不卡界面)。中文名称同时
 ; 按拼音首字母匹配 ("wx" -> 微信)。
 ;
-; 索引缓存在 Data\AppIndex.json, 启动时直接读缓存。缓存超过 RefreshMinutes 分钟 (最少 5 分钟)
-; 就在后台分批重新扫描 (每次定时器最多约 15 ms, 不挡热键), 不弹通知: 启动时检查一次, 之后每分钟
-; 检查, 但要等键盘鼠标空闲 RefreshIdleMs 并且搜索窗口没开才开始; 扫描中搜索窗口打开 (或正在呼出)
-; 就暂停 (已经有旧索引可用时), 关了再继续, 不和呼出、搜索抢时间。商店应用 (PowerShell) 后台最多每小时扫一次。
+; 索引缓存在 Data\AppIndex.json, 启动时直接读缓存。在后台分批重新扫描 (每次定时器最多约 15 ms, 不挡热键),
+; 不弹通知, 扫描中搜索窗口打开 (或正在呼出) 就暂停 (已经有旧索引可用时), 关了再继续, 不和呼出、搜索抢时间:
+;   - 监视 Folders (包括子文件夹, Windows 的文件夹变化通知): 有文件新增、删除、改名, 安静 WatchQuietMs 后重建
+;     (装软件时会连续建好几个快捷方式), 两次之间至少隔 WatchMinGapMs。新装的软件几秒后就能搜到
+;   - 兜底: 缓存超过 RefreshMinutes 分钟 (最少 5 分钟) 也重建, 每分钟检查一次
+;   - 后台重建后的写缓存等键盘鼠标空闲一会儿再写 (写 JSON 的那一下不分段), 退出时还没写就马上写
+; 商店应用 (PowerShell) 后台最多每小时扫一次。
 ; 托盘菜单 "重建索引" 或系统命令 "Rebuild ALTRun Index" 立即重建 (一次做完, 显示结果)。
 ;
 ; 不需要的应用: 在搜索结果里按 Ctrl+Del (或右键 "删除") 把它加入 Hidden 列表, 不再显示,
@@ -25,7 +28,8 @@ class ApplicationProvider {
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
     static _job := "", _scanTimer := "", _refreshTimer := ""         ; 后台重建: 见 _NewJob
-    static RefreshIdleMs := 30000                                         ; 定时重建要等键盘鼠标空闲这么久
+    static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000
+    static _watches := [], _watchTimer := "", _watchTypes := "", _changedAt := 0, _lastBackground := 0, _savePending := false, _saveTimer := ""
     static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []
 
     static Init() {
@@ -34,6 +38,122 @@ class ApplicationProvider {
         SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; 预先算好搜索 Key, 第一次搜索不用等
         ApplicationProvider._refreshTimer := Logger.Watch("app refresh check", () => ApplicationProvider._CheckRefresh())
         SetTimer(ApplicationProvider._refreshTimer, 60000)
+        ApplicationProvider.StartWatching()
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 监视索引的文件夹 (ReadDirectoryChangesW, 异步, 每 2 秒看一眼不等待): 应用类型的文件 (FileTypes) 或文件夹
+    ; 新增、删除、改名、修改时在后台重建。能拿到文件名, 所以桌面上别的文件变了不算; ALTRun 自己的文件夹也不算
+    ; (放在桌面上时, 写缓存、日志会一直触发)
+    ;---------------------------------------------------------------------------
+    static StartWatching() {
+        static FILE_LIST_DIRECTORY := 0x1, SHARE_ALL := 0x7, OPEN_EXISTING := 3, BACKUP_SEMANTICS := 0x02000000, OVERLAPPED := 0x40000000
+        ApplicationProvider.StopWatching()
+        options := AppSettings.Feature("Applications")
+        for folder in options["Folders"] {
+            folder := RTrim(Path.Resolve(folder), "\")
+            if (folder = "" || !DirExist(folder))
+                continue
+            handle := DllCall("CreateFileW", "Str", folder, "UInt", FILE_LIST_DIRECTORY, "UInt", SHARE_ALL, "Ptr", 0, "UInt", OPEN_EXISTING
+                , "UInt", BACKUP_SEMANTICS | OVERLAPPED, "Ptr", 0, "Ptr")
+            if (handle = -1 || !handle) {
+                Logger.Debug("ApplicationProvider: cannot watch " folder)
+                continue
+            }
+            watch := {Folder: folder, Handle: handle, Event: DllCall("CreateEventW", "Ptr", 0, "Int", true, "Int", false, "Ptr", 0, "Ptr")
+                , Overlapped: Buffer(A_PtrSize * 2 + 8 + A_PtrSize, 0), Buffer: Buffer(32768)}
+            NumPut("Ptr", watch.Event, watch.Overlapped, A_PtrSize * 2 + 8)  ; OVERLAPPED.hEvent
+            if ApplicationProvider._ReadChanges(watch)
+                ApplicationProvider._watches.Push(watch)
+            else
+                ApplicationProvider._CloseWatch(watch)
+        }
+        ApplicationProvider._watchTypes := ApplicationProvider._TypesPattern(options)
+        if (ApplicationProvider._watchTimer = "")
+            ApplicationProvider._watchTimer := Logger.Watch("app folder watch", () => ApplicationProvider._PollWatches())
+        if ApplicationProvider._watches.Length
+            SetTimer(ApplicationProvider._watchTimer, 2000)
+    }
+
+    static StopWatching() {
+        if (ApplicationProvider._watchTimer != "")
+            SetTimer(ApplicationProvider._watchTimer, 0)
+        for watch in ApplicationProvider._watches
+            ApplicationProvider._CloseWatch(watch)
+        ApplicationProvider._watches := [], ApplicationProvider._changedAt := 0
+    }
+
+    static _CloseWatch(watch) {
+        DllCall("CancelIoEx", "Ptr", watch.Handle, "Ptr", 0)                ; 取消还在等的读取, 之后才能放掉缓冲区
+        DllCall("CloseHandle", "Ptr", watch.Handle)
+        if watch.Event
+            DllCall("CloseHandle", "Ptr", watch.Event)
+    }
+
+    ; 开始 (再次) 异步等这个文件夹 (包括子文件夹) 的下一批变化: 文件名、文件夹名、修改时间
+    static _ReadChanges(watch) {
+        DllCall("ResetEvent", "Ptr", watch.Event)
+        return DllCall("ReadDirectoryChangesW", "Ptr", watch.Handle, "Ptr", watch.Buffer, "UInt", watch.Buffer.Size, "Int", true
+            , "UInt", 0x1 | 0x2 | 0x10, "Ptr", 0, "Ptr", watch.Overlapped, "Ptr", 0)
+    }
+
+    ; 每 2 秒: 读出已经到了的变化 (不等待), 有应用相关的就记下时间; 安静 WatchQuietMs、离上一次后台重建至少 WatchMinGapMs 时重建
+    static _PollWatches() {
+        for watch in ApplicationProvider._watches {
+            if (DllCall("WaitForSingleObject", "Ptr", watch.Event, "UInt", 0, "UInt") != 0)
+                continue
+            bytes := 0
+            DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", false)
+            names := ApplicationProvider._ChangedNames(watch.Buffer, bytes)
+            relevant := (bytes = 0)                                         ; 0 = 变化太多, 缓冲区放不下: 当作有变化
+            for name in names
+                if ApplicationProvider.IsWatchedChange(watch.Folder "\" name, ApplicationProvider._watchTypes) {
+                    relevant := true
+                    break
+                }
+            if relevant
+                ApplicationProvider._changedAt := A_TickCount
+            ApplicationProvider._ReadChanges(watch)
+        }
+        if (!ApplicationProvider._changedAt || A_TickCount - ApplicationProvider._changedAt < ApplicationProvider.WatchQuietMs)
+            return
+        if (ApplicationProvider._lastBackground && A_TickCount - ApplicationProvider._lastBackground < ApplicationProvider.WatchMinGapMs)
+            return
+        if IsObject(ApplicationProvider._job)
+            return
+        ApplicationProvider._changedAt := 0
+        Logger.Debug("ApplicationProvider: folders changed, rebuilding")
+        ApplicationProvider.RefreshInBackground()
+    }
+
+    ; FILE_NOTIFY_INFORMATION 链表 -> 相对路径的数组
+    static _ChangedNames(buffer, bytes) {
+        names := [], offset := 0
+        while (bytes && offset < bytes) {
+            next := NumGet(buffer, offset, "UInt"), length := NumGet(buffer, offset + 8, "UInt")
+            names.Push(StrGet(buffer.Ptr + offset + 12, length // 2, "UTF-16"))
+            if !next
+                break
+            offset += next
+        }
+        return names
+    }
+
+    ; 纯函数: 这个路径的变化要不要重建 -- 应用类型的文件 (types: _TypesPattern), 或没有扩展名的 (多半是文件夹,
+    ; 例如开始菜单里一个程序的文件夹被删掉 / 改名); ALTRun 自己文件夹里的不算
+    static IsWatchedChange(fullPath, types, ownDir := A_ScriptDir) {
+        if (ownDir != "" && InStr(fullPath, RTrim(ownDir, "\") "\") = 1)
+            return false
+        SplitPath(fullPath, &name, , &ext)
+        return (ext = "" || RegExMatch(name, types)) ? true : false
+    }
+
+    ; FileTypes ("*.lnk"...) -> 一个正则 ("i)^(?:.*\.lnk|...)$")
+    static _TypesPattern(options) {
+        types := ""
+        for pattern in options["FileTypes"]
+            types .= (types = "" ? "" : "|") StrReplace(StrReplace(RegExReplace(pattern, "[\\.^$+()\[\]{}|]", "\$0"), "*", ".*"), "?", ".")
+        return "i)^(?:" types ")$"
     }
 
     static Search(query) {
@@ -163,16 +283,18 @@ class ApplicationProvider {
     static RefreshInBackground() {
         if IsObject(ApplicationProvider._job)
             return
+        ApplicationProvider._lastBackground := A_TickCount
         ApplicationProvider._job := ApplicationProvider._NewJob()
         if (ApplicationProvider._scanTimer = "")
             ApplicationProvider._scanTimer := Logger.Watch("app scan", () => ApplicationProvider._ScanSome())
         SetTimer(ApplicationProvider._scanTimer, 10)
     }
 
-    ; 每分钟: 缓存过期了就在后台重建。用户正在用电脑 (空闲不到 RefreshIdleMs) 或搜索窗口开着时等下一次
+    ; 每分钟: 缓存过期了就在后台重建 (兜底, 平时靠监视文件夹)。搜索窗口开着时等下一次。不用等键盘鼠标空闲:
+    ; 扫描是分段的, 窗口一打开就停, 最后写缓存也等空闲再写 (见 _Finish)
     static _CheckRefresh() {
-        if (IsObject(ApplicationProvider._job) || !SearchWindow._CanPrefetch() || A_TimeIdlePhysical < ApplicationProvider.RefreshIdleMs)
-            return
+        if (IsObject(ApplicationProvider._job) || ApplicationProvider._savePending || !SearchWindow._CanPrefetch())
+            return                                                          ; _savePending: 刚重建完, 缓存文件还没写 (修改时间是旧的)
         if ApplicationProvider._CacheExpired()
             ApplicationProvider.RefreshInBackground()
     }
@@ -207,12 +329,9 @@ class ApplicationProvider {
             if (folder != "" && DirExist(folder))
                 roots.Push(folder)
         }
-        types := ""
-        for pattern in options["FileTypes"]                                 ; "*.lnk" -> .*\.lnk 等, 合成一个正则
-            types .= (types = "" ? "" : "|") StrReplace(StrReplace(RegExReplace(pattern, "[\\.^$+()\[\]{}|]", "\$0"), "*", ".*"), "?", ".")
         found := Map()
         found.CaseSense := "Off"
-        return {Options: options, Roots: roots, Next: 1, Stack: [], Types: "i)^(?:" types ")$", Found: found}
+        return {Options: options, Roots: roots, Next: 1, Stack: [], Types: ApplicationProvider._TypesPattern(options), Found: found}
     }
 
     ; 扫一部分: 用时超过 budget 毫秒就停 (0 = 一次扫完); 扫完返回 true
@@ -265,7 +384,10 @@ class ApplicationProvider {
             apps.Push(entry)
         ApplicationProvider._MergeStoreApps(apps)                          ; 保留上一次的商店应用, 后台更新完成后再替换
         ApplicationProvider.Apps := apps
-        ApplicationProvider._SaveCache()
+        if manual
+            ApplicationProvider._SaveCache()
+        else
+            ApplicationProvider._SaveWhenIdle()
         if (job.Options["StoreApps"] && (manual || !ApplicationProvider._storeScanned
                 || A_TickCount - ApplicationProvider._storeScanned >= 3600000))
             ApplicationProvider._StartStoreScan()
@@ -361,7 +483,31 @@ class ApplicationProvider {
         return true
     }
 
+    ; 后台重建后的写缓存: 等键盘鼠标空闲 SaveIdleMs 并且搜索窗口没开时再写, 不在用户正操作时卡那一下
+    static _SaveWhenIdle() {
+        ApplicationProvider._savePending := true
+        if (ApplicationProvider._saveTimer = "")
+            ApplicationProvider._saveTimer := Logger.Watch("app index save", () => ApplicationProvider._SaveIfIdle())
+        SetTimer(ApplicationProvider._saveTimer, 1000)
+    }
+
+    static _SaveIfIdle() {
+        if (A_TimeIdlePhysical < ApplicationProvider.SaveIdleMs || !SearchWindow._CanPrefetch())
+            return
+        SetTimer(ApplicationProvider._saveTimer, 0)
+        ApplicationProvider.SavePending()
+    }
+
+    ; 还没写的缓存马上写 (退出时)
+    static SavePending() {
+        if !ApplicationProvider._savePending
+            return
+        ApplicationProvider._savePending := false
+        ApplicationProvider._SaveCache()
+    }
+
     static _SaveCache() {
+        ApplicationProvider._savePending := false
         try {
             JSON.WriteFile(ApplicationProvider.IndexFile, Map("Apps", ApplicationProvider.Apps))
         } catch as e {

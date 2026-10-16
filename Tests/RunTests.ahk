@@ -1798,6 +1798,51 @@ class Tests {
         ApplicationProvider._Finish(job, false)
         eq("background", titles(), expected)
 
+        ; 监视文件夹: 有新文件时 (安静一会儿后) 在后台重建; 后台重建的缓存等空闲再写
+        savedQuiet := ApplicationProvider.WatchQuietMs, savedGap := ApplicationProvider.WatchMinGapMs
+        ApplicationProvider.WatchQuietMs := 0, ApplicationProvider.WatchMinGapMs := 0
+        ApplicationProvider.StartWatching()
+        eq("watching the folder", ApplicationProvider._watches.Length, 1)
+        ApplicationProvider._PollWatches()
+        eq("no change, no rebuild", IsObject(ApplicationProvider._job), false)
+        FileAppend("", root "\notes2.txt")                                  ; 不是应用的文件: 不重建
+        Sleep(300)
+        ApplicationProvider._PollWatches()
+        eq("other file, no rebuild", IsObject(ApplicationProvider._job), false)
+        FileAppend("", root "\Solitaire.exe")
+        Sleep(300)
+        ApplicationProvider._PollWatches()
+        eq("new file starts a rebuild", IsObject(ApplicationProvider._job), true)
+        job := ApplicationProvider._job
+        ApplicationProvider._StopJob()
+        if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
+            ApplicationProvider._lastBackground := 0                        ; 子文件夹里的变化也收得到 (开始菜单的快捷方式大多在子文件夹里; Wine 不支持)
+            FileAppend("", root "\Games\Chess2.exe")
+            Sleep(300)
+            ApplicationProvider._PollWatches()
+            eq("change in a subfolder starts a rebuild", IsObject(ApplicationProvider._job), true)
+            ApplicationProvider._StopJob()
+            job := ApplicationProvider._NewJob()
+        }
+        while !ApplicationProvider._Step(job, 0)
+            continue
+        modified := FileGetTime(ApplicationProvider.IndexFile, "M")
+        ApplicationProvider._Finish(job, false)
+        eq("new app found", InStr(titles(), "Solitaire") > 0, true)
+        eq("background save waits", ApplicationProvider._savePending && FileGetTime(ApplicationProvider.IndexFile, "M") = modified, true)
+        ApplicationProvider.SavePending()
+        eq("saved", ApplicationProvider._savePending, false)
+        ApplicationProvider.StopWatching()
+        types := ApplicationProvider._TypesPattern(options)
+        eq("watch: shortcut", ApplicationProvider.IsWatchedChange("C:\Start\Tool.lnk", types, "D:\ALTRun"), true)
+        eq("watch: folder (no extension)", ApplicationProvider.IsWatchedChange("C:\Start\Vendor", types, "D:\ALTRun"), true)
+        eq("watch: other file", ApplicationProvider.IsWatchedChange("C:\Desktop\Report.docx", types, "D:\ALTRun"), false)
+        eq("watch: ALTRun's own folder", ApplicationProvider.IsWatchedChange("C:\Desktop\ALTRun\Data\AppIndex.json", types, "C:\Desktop\ALTRun"), false)
+        eq("watch: ALTRun's own exe", ApplicationProvider.IsWatchedChange("C:\Desktop\ALTRun\ALTRun.exe", types, "C:\Desktop\ALTRun"), false)
+        ApplicationProvider.WatchQuietMs := savedQuiet, ApplicationProvider.WatchMinGapMs := savedGap
+        if (ApplicationProvider._saveTimer != "")
+            SetTimer(ApplicationProvider._saveTimer, 0)
+
         for key, value in saved
             options[key] := value
         ApplicationProvider.IndexFile := savedFile, ApplicationProvider.Apps := savedApps
