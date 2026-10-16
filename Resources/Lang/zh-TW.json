@@ -177,7 +177,7 @@
   "Menu.CheatSheet": "快捷鍵和語法",
   "Prefs.Add": "新增...",
   "Prefs.AppDepth": "子資料夾深度",
-  "Prefs.AppDepth.Desc": "往下掃描幾層子資料夾。這些資料夾裡的捷徑有變化時索引自動更新, 新裝的軟體幾秒後就能搜到",
+  "Prefs.AppDepth.Desc": "往下掃描幾層子資料夾; 捷徑有變化時自動更新, 新裝的軟體幾秒後就能搜到",
   "Prefs.AppExclude": "排除 (規則運算式)",
   "Prefs.AppExclude.Desc": "名稱相符這個規則運算式的檔案不收錄",
   "Prefs.AppFileTypes": "檔案類型",

@@ -176,7 +176,7 @@
   "Menu.CheatSheet": "快捷键和语法",
   "Prefs.Add": "添加...",
   "Prefs.AppDepth": "子文件夹深度",
-  "Prefs.AppDepth.Desc": "往下扫描几层子文件夹。这些文件夹里的快捷方式有变化时索引自动更新, 新装的软件几秒后就能搜到",
+  "Prefs.AppDepth.Desc": "往下扫描几层子文件夹; 快捷方式有变化时自动更新, 新装的软件几秒后就能搜到",
   "Prefs.AppExclude": "排除 (正则)",
   "Prefs.AppExclude.Desc": "名称匹配这个正则表达式的文件不收录",
   "Prefs.AppFileTypes": "文件类型",
