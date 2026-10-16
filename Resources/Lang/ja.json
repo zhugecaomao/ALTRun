@@ -176,7 +176,7 @@
   "Menu.CheatSheet": "ショートカットと書き方",
   "Prefs.Add": "追加...",
   "Prefs.AppDepth": "サブフォルダーの深さ",
-  "Prefs.AppDepth.Desc": "走査するサブフォルダーの階層数です。この間隔でバックグラウンド更新されます (120 分以上を推奨)。",
+  "Prefs.AppDepth.Desc": "走査するサブフォルダーの階層数です。これらのフォルダーのショートカットが変わると自動で更新され、新しいソフトは数秒で検索できます。",
   "Prefs.AppExclude": "除外 (正規表現)",
   "Prefs.AppExclude.Desc": "この正規表現に一致する名前のファイルはインデックスされません。",
   "Prefs.AppFileTypes": "ファイルの種類",

@@ -611,7 +611,7 @@ class PreferencesWindow {
         PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 4)
         PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", "L")
         PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", "L")
-        PreferencesWindow._Pair(["Features.Applications.Depth", "Prefs.AppDepth", "S", "number"], ["Features.Applications.RefreshMinutes", "Prefs.RefreshMinutes", "S", "number"])
+        PreferencesWindow._Field("Features.Applications.Depth", "Prefs.AppDepth", "S", "number")   ; 没有刷新间隔: 监视文件夹, 有变化时自动更新
         PreferencesWindow._Button("Prefs.RebuildIndex", (*) => App.RebuildIndex())
         PreferencesWindow._Section("Prefs.Section.AppResults")
         PreferencesWindow._Lines("Features.Applications.Hidden", "Prefs.AppHidden", 4)

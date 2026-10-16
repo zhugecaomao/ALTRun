@@ -9,7 +9,8 @@
 ; 不弹通知, 扫描中搜索窗口打开 (或正在呼出) 就暂停 (已经有旧索引可用时), 关了再继续, 不和呼出、搜索抢时间:
 ;   - 监视 Folders (包括子文件夹, Windows 的文件夹变化通知): 有文件新增、删除、改名, 安静 WatchQuietMs 后重建
 ;     (装软件时会连续建好几个快捷方式), 两次之间至少隔 WatchMinGapMs。新装的软件几秒后就能搜到
-;   - 兜底: 缓存超过 RefreshMinutes 分钟 (最少 5 分钟) 也重建, 每分钟检查一次
+;   - 兜底 (监视不到的: ALTRun 没运行时装的软件、启动时还不存在或监视不了的文件夹): 缓存超过
+;     FallbackMinutes 分钟也重建, 启动时和之后每分钟检查一次 (以前是设置 RefreshMinutes, 现在不再读取)
 ;   - 后台重建后的写缓存等键盘鼠标空闲一会儿再写 (写 JSON 的那一下不分段), 退出时还没写就马上写
 ; 商店应用 (PowerShell) 后台最多每小时扫一次。
 ; 托盘菜单 "重建索引" 或系统命令 "Rebuild ALTRun Index" 立即重建 (一次做完, 显示结果)。
@@ -19,7 +20,7 @@
 ; 删掉 Hidden 的一行即可恢复。
 ;
 ; 设置 (ALTRun.json -> Features.Applications):
-;   Folders / FileTypes / Depth / Exclude / Hidden / StoreApps / MatchPinyin / RefreshMinutes
+;   Folders / FileTypes / Depth / Exclude / Hidden / StoreApps / MatchPinyin
 ;===============================================================================
 
 class ApplicationProvider {
@@ -28,7 +29,7 @@ class ApplicationProvider {
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
     static _job := "", _scanTimer := "", _refreshTimer := ""         ; 后台重建: 见 _NewJob
-    static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000
+    static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000, FallbackMinutes := 60
     static _watches := [], _watchTimer := "", _watchTypes := "", _changedAt := 0, _lastBackground := 0, _savePending := false, _saveTimer := ""
     static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []
 
@@ -476,9 +477,9 @@ class ApplicationProvider {
         }
     }
 
-    ; 缓存超过 RefreshMinutes 分钟 (最少 5 分钟) 了吗; 没有缓存文件也算过期
+    ; 缓存超过 FallbackMinutes 分钟了吗; 没有缓存文件也算过期
     static _CacheExpired() {
-        minutes := Max(5, AppSettings.Feature("Applications")["RefreshMinutes"])
+        minutes := ApplicationProvider.FallbackMinutes
         try return DateDiff(A_Now, FileGetTime(ApplicationProvider.IndexFile, "M"), "Minutes") >= minutes
         return true
     }

@@ -295,7 +295,7 @@ class AppSettings {
                     "Hidden"        , [],                                   ; 在搜索结果里删除 (Ctrl+Del) 的应用的路径
                     "StoreApps"     , 1,
                     "MatchPinyin"   , 1,
-                    "RefreshMinutes", 120
+                    "RefreshMinutes", 120                                    ; 不再使用 (改成监视文件夹), 下次升级设置版本时删掉 (#176)
                 ),
                 "CustomCommands", Map("Enabled", 1),
                 "Snippets", Map(
