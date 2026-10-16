@@ -51,7 +51,7 @@ ALTRun picks automatically:
 | Situation | What is searched |
 |---|---|
 | [Everything](https://www.voidtools.com/) is running | Queries **all disks** directly through Everything's IPC interface, instantly; no `Everything64.dll` or `es.exe` needed |
-| Everything isn't running | The built-in index: scans Desktop, Documents and Downloads in the background (4 levels deep, at most 30,000 items), cached in `Data\FileIndex.json` and rescanned at startup when older than 30 minutes. If Everything is running when ALTRun starts, the built-in index isn't read or scanned until Everything is closed and it's actually needed |
+| Everything isn't running | The built-in index: scans Desktop, Documents and Downloads in the background (4 levels deep, at most 30,000 items), cached in `Data\FileIndex.json` and rescanned in the background every 30 minutes. If Everything is running when ALTRun starts, the built-in index isn't read or scanned until Everything is closed and it's actually needed |
 
 The top of Preferences → Search Sources shows whether Everything is running right now.
 
@@ -78,7 +78,7 @@ Preferences → File Search (how a search starts, file types, number of results)
 | ScopeDepth | 4 | Subfolder depth of the built-in index |
 | ScopeExclude | `node_modules`, `.git`, `__pycache__`, Recycle Bin | Folders the built-in index skips (regular expression) |
 | MaxEntries | 30000 | Maximum number of items in the built-in index |
-| RefreshMinutes | 30 | How often the built-in index is refreshed |
+| RefreshMinutes | 30 | How often the built-in index is refreshed in the background (at least 5 minutes; checked at startup and then every minute) |
 
 After changing what the built-in index covers, click "Rebuild File Index" in Preferences to apply it right away.
 

@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.16.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- 应用搜索和内置文件索引的 "刷新间隔" 在运行中也生效 (#189): 以前只在启动时看缓存是否过期, 运行中从不刷新。现在启动时和之后每分钟检查一次, 到时间就在后台静默重建 (搜索窗口打开时等下一次), 不弹通知; 只有手动 "重建索引" 才显示结果。间隔最少 5 分钟
+
+### 改进
+- 应用索引改为在后台分批扫描 (每次最多约 15 ms), 重建时不再卡住热键; 每个文件夹只列一次目录, 扫描也快了约三成
+- 应用商店应用 (PowerShell) 在后台最多每小时扫一次, 手动重建时照常扫
+
 ## [2026.10.14.6]
 
 测试版。
@@ -671,7 +684,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.1...HEAD
+[2026.10.16.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.6...2026.10.16.1
 [2026.10.14.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.5...2026.10.14.6
 [2026.10.14.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.4...2026.10.14.5
 [2026.10.14.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.14.3...2026.10.14.4
