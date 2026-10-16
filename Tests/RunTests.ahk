@@ -1768,7 +1768,7 @@ class Tests {
                 , "\Office\Tools\More\Draw.exe", "\Office\Tools\More\TooDeep\Hidden.exe", "\Games\Chess.exe", "\Games\notes.txt"]
             FileAppend("", root relative)
         options := AppSettings.Feature("Applications")
-        saved := Map("Folders", options["Folders"], "StoreApps", options["StoreApps"], "RefreshMinutes", options["RefreshMinutes"])
+        saved := Map("Folders", options["Folders"], "StoreApps", options["StoreApps"])
         savedFile := ApplicationProvider.IndexFile, savedApps := ApplicationProvider.Apps
         options["Folders"] := [root], options["StoreApps"] := 0
         ApplicationProvider.IndexFile := A_Temp "\ALTRunAppIndexTest.json"
@@ -1784,10 +1784,9 @@ class Tests {
         eq("no cache = expired", ApplicationProvider._CacheExpired(), true)
         eq("manual count", ApplicationProvider.Rebuild(), 5)
         eq("manual", titles(), expected)
-        options["RefreshMinutes"] := 1
-        eq("fresh cache, at least 5 minutes", ApplicationProvider._CacheExpired(), false)
-        FileSetTime(DateAdd(A_Now, -6, "Minutes"), ApplicationProvider.IndexFile, "M")
-        eq("6 minutes old", ApplicationProvider._CacheExpired(), true)
+        eq("fresh cache", ApplicationProvider._CacheExpired(), false)
+        FileSetTime(DateAdd(A_Now, -(ApplicationProvider.FallbackMinutes + 1), "Minutes"), ApplicationProvider.IndexFile, "M")
+        eq("older than the fallback interval", ApplicationProvider._CacheExpired(), true)
 
         ApplicationProvider.Apps := []
         job := ApplicationProvider._NewJob(), steps := 1

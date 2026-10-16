@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.16.8]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 应用搜索: 去掉 "刷新间隔" (#189)。有了监视文件夹, 新装的软件几秒后就能搜到, 不需要再设置; 内部固定兜底: 缓存超过 1 小时也在后台重建 (覆盖 ALTRun 没运行时装的软件)。设置文件里的 `Features.Applications.RefreshMinutes` 不再读取, 下次升级设置版本时删掉。内置文件索引的刷新间隔不变
+
 ## [2026.10.16.7]
 
 测试版。
@@ -723,7 +732,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.8...HEAD
+[2026.10.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.7...2026.10.16.8
 [2026.10.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.6...2026.10.16.7
 [2026.10.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.5...2026.10.16.6
 [2026.10.16.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.2...2026.10.16.5
