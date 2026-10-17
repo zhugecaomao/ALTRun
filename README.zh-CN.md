@@ -20,6 +20,7 @@
   <a href="https://zhugecaomao.github.io/ALTRun/">官网</a> ·
   <a href="#为什么选择-altrun">为什么选择</a> ·
   <a href="#快速开始">快速开始</a> ·
+  <a href="#隐私安全与资源占用">隐私与安全</a> ·
   <a href="#功能">功能</a> ·
   <a href="#快捷键">快捷键</a> ·
   <a href="https://github.com/zhugecaomao/ALTRun/wiki">使用文档 (Wiki)</a> ·
@@ -32,34 +33,27 @@
 
 
 ## 为什么选择 ALTRun
-- **小巧**：约 2.5 MB，只有一个 `ALTRun.exe` 和少量资源文件，不需要安装 .NET、Electron 或其他运行库。
-- **快速响应**：输入第一个字符即显示结果；配合 [Everything](https://www.voidtools.com/) 毫秒级搜索全盘文件，未安装时使用内置索引。
-- **智能排序**：根据使用习惯自动调整排名；支持单词首字母（`vsc` → Visual Studio Code）和拼音首字母（`wx` → 微信；文件也可以：`cs` → 测试文件.zip），并高亮匹配内容。
-- **不只是启动**：[对话框快速跳转（Quick Switch）](#功能)让打开 / 保存对话框一步跳到 Total Commander 或资源管理器中已打开的文件夹；在任意程序中选中文字、文件或网址，按 `Ctrl+Alt+\` 直接操作；在任何地方输入 `;关键字` 展开文字片段。
-- **多合一**：计算与单位换算、网页搜索、浏览器书签、剪贴板历史、文字片段、系统命令、终端，无需再装多个小工具。
-- **全键盘操作**：`→` 打开操作面板，状态栏显示 `Enter` 做什么，`F3` 直接编辑，`Ctrl+1`～`Ctrl+9` 快速打开。
-- **便携与隐私**：免安装、不写注册表、无需管理员权限，无后台服务或驱动；数据默认保存在本机（部分剪贴板数据存于 `%LOCALAPPDATA%\ALTRun`）。不收集数据；联网仅用于更新、可选汇率及用户主动下载的网站图标。
-- **自动更新**：有新版本时在搜索窗口中提示，按 `Enter` 即可安装（自动校验 SHA256），设置保留；也支持 Scoop。
-- **个性化**：简体中文、繁體中文、English、日本語界面；20 套内置主题（偏好设置里看缩略图选择），可跟随系统浅色 / 深色模式；主题和设置均为 JSON 文件。
-- **开源免费**：GPL-3.0 许可；每个 PR 都会在 Windows 上自动运行 8000 余项测试。
+- **轻巧快速**：约 2.5 MB 的便携程序，输入即出结果，无需安装 .NET、Electron 或其他运行库。
+- **更智能的搜索**：根据使用习惯调整排序，支持单词首字母和中文拼音首字母，并高亮匹配内容。
+- **不只是启动器**：Quick Switch 可快速切换打开 / 保存对话框的目录；可操作任意程序中选中的文字、文件，也可用关键字展开文字片段。
+- **一个窗口，键盘优先**：搜索程序和文件、计算、查找书签、管理剪贴板、运行系统命令和终端。
+- **开源且可定制**：GPL-3.0 许可，支持四种界面语言和 20 套内置主题。
 
 
 ## 快速开始
-1. 下载[最新版本](https://github.com/zhugecaomao/ALTRun/releases/latest)，解压到任意文件夹，运行 `ALTRun.exe`（无需安装，也无需 AutoHotkey）。如果 Windows SmartScreen 提示“Windows 已保护你的电脑”，点 **更多信息** → **仍要运行**；杀毒软件误报见[常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#杀毒软件报毒)。
-2. 按 `Alt+Space`（或 `Alt+R`）打开搜索窗口，输入名称，按 `Enter` 打开；也可以在偏好设置中改为双击 `Ctrl` / `Shift` 呼出。
-3. 输入 `?` 查看全部语法和快捷键；按 `Ctrl+,` 打开偏好设置。
+1. [下载最新版本](https://github.com/zhugecaomao/ALTRun/releases/latest)，解压到任意文件夹，运行 `ALTRun.exe`——无需安装，也无需 AutoHotkey。
+2. 按 `Alt+Space`（或 `Alt+R`），输入程序或文件名称，再按 `Enter`。
+3. 输入 `?` 查看全部搜索语法和快捷键；按 `Ctrl+,` 打开偏好设置。
 
-已安装 [AutoHotkey v2](https://www.autohotkey.com/) 时，也可以直接运行源码中的 `ALTRun.ahk`。
+如果 Windows SmartScreen 拦截程序，点击 **更多信息** → **仍要运行**。杀毒软件误报请参阅[常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#杀毒软件报毒)。
 
-**通过 [Scoop](https://scoop.sh/) 安装**（自动创建开始菜单快捷方式，升级时保留设置）：
-```powershell
-scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
-scoop install altrun
-scoop update altrun    # 升级（请先退出 ALTRun）
-```
-winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 安装。
 
-**升级**：有新版本时搜索窗口中显示“发现新版本”，按 `Enter` 安装，设置保留。从较早的版本或 2.x 升级见[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
+## 隐私、安全与资源占用
+- **默认本地存储**：应用数据默认保存在本机；部分剪贴板数据存于 `%LOCALAPPDATA%\ALTRun`，也可配置自定义数据目录。
+- **不收集遥测数据**：联网用于检查更新、可选货币换算，以及用户主动下载的网站图标。
+- **更新校验**：下载的更新包会校验 SHA256；升级时保留设置。
+- **正式构建签名**：仅由本仓库 [Release 工作流](.github/workflows/release.yml) 构建的 `ALTRun.exe` 会签名。详见[隐私说明](SECURITY.md#隐私说明)。
+- **体积小、无常驻组件**：程序约 2.5 MB，无需后台服务、驱动、注册表写入或管理员权限。
 
 
 ## 功能
@@ -183,6 +177,21 @@ winget 清单已提交，收录后可使用 `winget install zhugecaomao.ALTRun` 
 | [设置文件参考](https://github.com/zhugecaomao/ALTRun/wiki/Configuration) | ALTRun.json 各项的含义和默认值 |
 | [常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ) | 热键冲突、搜索不到、杀毒软件误报等 |
 | [开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development) | 架构、新增搜索功能、代码规范、测试 |
+
+
+## 其他安装方式与升级
+**通过 [Scoop](https://scoop.sh/) 安装**（自动创建开始菜单快捷方式，升级时保留设置）：
+```powershell
+scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
+scoop install altrun
+scoop update altrun    # 升级（请先退出 ALTRun）
+```
+
+winget 清单已提交，等待审核收录；收录后可使用 `winget install zhugecaomao.ALTRun` 安装。
+
+从源码运行：安装 [AutoHotkey v2](https://www.autohotkey.com/)，然后运行 `ALTRun.ahk`。
+
+从较早版本或 2.x 升级，请参阅[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
 
 
 ## 贡献与反馈
