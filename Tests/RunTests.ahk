@@ -90,7 +90,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "AppIndexRefresh", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1852,6 +1852,65 @@ class Tests {
         ApplicationProvider.IndexFile := savedFile, ApplicationProvider.Apps := savedApps
         try FileDelete(A_Temp "\ALTRunAppIndexTest.json")
         try DirDelete(root, true)
+    }
+
+    ; 故障后的目录监视器应能重新挂载，并在关闭时安全结束待处理的异步 I/O
+    static WatcherRecovery() {
+        eq := (n, a, e) => TestRunner.Equal("WatcherRecovery." n, a, e)
+        root := A_Temp "\ALTRunWatcherRecoveryTest"
+        try DirDelete(root, true)
+        DirCreate(root)
+        savedWatches := ApplicationProvider._watches
+        savedChangedAt := ApplicationProvider._changedAt
+        savedQuiet := ApplicationProvider.WatchQuietMs
+        savedGap := ApplicationProvider.WatchMinGapMs
+        try {
+            ApplicationProvider.StopWatching()
+            ApplicationProvider._watches := []
+            ApplicationProvider._changedAt := 0
+            ApplicationProvider.WatchQuietMs := 60000              ; 只检查检测到变化，不触发后台重建
+            ApplicationProvider.WatchMinGapMs := 0
+
+            watch := ApplicationProvider._CreateWatch(root)
+            eq("watch created", IsObject(watch), true)
+            if !IsObject(watch)
+                return
+            eq("initial read pending", watch.Pending, true)
+
+            ; 模拟读取失败后被禁用的监视器；Poll 应重新打开目录并继续等待变化。
+            watch.Disabled := true
+            watch.RetryAt := 0
+            ApplicationProvider._watches := [watch]
+            ApplicationProvider._PollWatches()
+            recovered := ApplicationProvider._watches[1]
+            eq("disabled watcher replaced", recovered != watch, true)
+            eq("recovered read pending", recovered.Pending, true)
+            eq("recovered watcher enabled", recovered.HasOwnProp("Disabled"), false)
+
+            FileAppend("", root "\Recovered.exe")
+            Sleep(300)
+            ApplicationProvider._PollWatches()
+            eq("recovered watcher detects application change", ApplicationProvider._changedAt > 0, true)
+
+            ; 多次关闭仍在等待的异步读取，确认关闭后不再标记为 pending。
+            ApplicationProvider.StopWatching()
+            for i in [1, 2, 3] {
+                pendingWatch := ApplicationProvider._CreateWatch(root)
+                eq("close cycle " i " created", IsObject(pendingWatch), true)
+                if !IsObject(pendingWatch)
+                    continue
+                eq("close cycle " i " pending", pendingWatch.Pending, true)
+                ApplicationProvider._CloseWatch(pendingWatch)
+                eq("close cycle " i " completed", pendingWatch.Pending, false)
+            }
+        } finally {
+            ApplicationProvider.StopWatching()
+            ApplicationProvider._watches := savedWatches
+            ApplicationProvider._changedAt := savedChangedAt
+            ApplicationProvider.WatchQuietMs := savedQuiet
+            ApplicationProvider.WatchMinGapMs := savedGap
+            try DirDelete(root, true)
+        }
     }
 
     static HiddenSystemCommands() {
