@@ -29,8 +29,9 @@ class ApplicationProvider {
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
     static _job := "", _scanTimer := "", _refreshTimer := ""         ; 后台重建: 见 _NewJob
-    static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000, FallbackMinutes := 60
-    static _watches := [], _watchTimer := "", _watchTypes := "", _changedAt := 0, _lastBackground := 0, _savePending := false, _saveTimer := ""
+    static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000, FallbackMinutes := 60, WatchRetryMs := 30000
+    static _watches := [], _watchTimer := "", _watchTypes := "", _watchRetryAt := 0, _watchIncomplete := false
+    static _changedAt := 0, _lastBackground := 0, _savePending := false, _saveTimer := ""
     static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []
 
     static Init() {
@@ -51,28 +52,45 @@ class ApplicationProvider {
         static FILE_LIST_DIRECTORY := 0x1, SHARE_ALL := 0x7, OPEN_EXISTING := 3, BACKUP_SEMANTICS := 0x02000000, OVERLAPPED := 0x40000000
         ApplicationProvider.StopWatching()
         options := AppSettings.Feature("Applications")
+        ApplicationProvider._watchIncomplete := false
         for folder in options["Folders"] {
             folder := RTrim(Path.Resolve(folder), "\")
-            if (folder = "" || !DirExist(folder))
+            if (folder = "")
                 continue
+            if !DirExist(folder) {
+                ApplicationProvider._watchIncomplete := true
+                Logger.Debug("ApplicationProvider: watch folder unavailable " folder)
+                continue
+            }
             handle := DllCall("CreateFileW", "Str", folder, "UInt", FILE_LIST_DIRECTORY, "UInt", SHARE_ALL, "Ptr", 0, "UInt", OPEN_EXISTING
                 , "UInt", BACKUP_SEMANTICS | OVERLAPPED, "Ptr", 0, "Ptr")
             if (handle = -1 || !handle) {
+                ApplicationProvider._watchIncomplete := true
                 Logger.Debug("ApplicationProvider: cannot watch " folder)
                 continue
             }
             watch := {Folder: folder, Handle: handle, Event: DllCall("CreateEventW", "Ptr", 0, "Int", true, "Int", false, "Ptr", 0, "Ptr")
                 , Overlapped: Buffer(A_PtrSize * 2 + 8 + A_PtrSize, 0), Buffer: Buffer(32768)}
-            NumPut("Ptr", watch.Event, watch.Overlapped, A_PtrSize * 2 + 8)  ; OVERLAPPED.hEvent
+            if !watch.Event {
+                ApplicationProvider._watchIncomplete := true
+                ApplicationProvider._CloseWatch(watch)
+                Logger.Debug("ApplicationProvider: cannot create watch event for " folder)
+                continue
+            }
+            NumPut("Ptr", watch.Event, watch.Overlapped, A_PtrSize * 2 + 8)
             if ApplicationProvider._ReadChanges(watch)
                 ApplicationProvider._watches.Push(watch)
-            else
+            else {
+                ApplicationProvider._watchIncomplete := true
                 ApplicationProvider._CloseWatch(watch)
+                Logger.Debug("ApplicationProvider: cannot start watching " folder)
+            }
         }
         ApplicationProvider._watchTypes := ApplicationProvider._TypesPattern(options)
+        ApplicationProvider._watchRetryAt := ApplicationProvider._watchIncomplete ? A_TickCount + ApplicationProvider.WatchRetryMs : 0
         if (ApplicationProvider._watchTimer = "")
             ApplicationProvider._watchTimer := Logger.Watch("app folder watch", () => ApplicationProvider._PollWatches())
-        if ApplicationProvider._watches.Length
+        if (ApplicationProvider._watches.Length || ApplicationProvider._watchIncomplete)
             SetTimer(ApplicationProvider._watchTimer, 2000)
     }
 
@@ -82,6 +100,7 @@ class ApplicationProvider {
         for watch in ApplicationProvider._watches
             ApplicationProvider._CloseWatch(watch)
         ApplicationProvider._watches := [], ApplicationProvider._changedAt := 0
+        ApplicationProvider._watchRetryAt := 0, ApplicationProvider._watchIncomplete := false
     }
 
     static _CloseWatch(watch) {
@@ -100,21 +119,39 @@ class ApplicationProvider {
 
     ; 每 2 秒: 读出已经到了的变化 (不等待), 有应用相关的就记下时间; 安静 WatchQuietMs、离上一次后台重建至少 WatchMinGapMs 时重建
     static _PollWatches() {
+        if (ApplicationProvider._watchIncomplete && ApplicationProvider._watchRetryAt
+                && A_TickCount >= ApplicationProvider._watchRetryAt) {
+            Logger.Debug("ApplicationProvider: retrying folder watches")
+            ApplicationProvider.StartWatching()
+            return
+        }
         for watch in ApplicationProvider._watches {
+            if (watch.HasOwnProp("Disabled") && watch.Disabled)
+                continue
             if (DllCall("WaitForSingleObject", "Ptr", watch.Event, "UInt", 0, "UInt") != 0)
                 continue
             bytes := 0
-            DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", false)
-            names := ApplicationProvider._ChangedNames(watch.Buffer, bytes)
-            relevant := (bytes = 0)                                         ; 0 = 变化太多, 缓冲区放不下: 当作有变化
-            for name in names
-                if ApplicationProvider.IsWatchedChange(watch.Folder "\" name, ApplicationProvider._watchTypes) {
-                    relevant := true
-                    break
-                }
+            if !DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", false) {
+                error := A_LastError
+                Logger.Debug("ApplicationProvider: watch read failed for " watch.Folder " (error " error ")")
+                relevant := true
+            } else {
+                names := ApplicationProvider._ChangedNames(watch.Buffer, bytes)
+                relevant := (bytes = 0)
+                for name in names
+                    if ApplicationProvider.IsWatchedChange(watch.Folder "\" name, ApplicationProvider._watchTypes) {
+                        relevant := true
+                        break
+                    }
+            }
             if relevant
                 ApplicationProvider._changedAt := A_TickCount
-            ApplicationProvider._ReadChanges(watch)
+            if !ApplicationProvider._ReadChanges(watch) {
+                watch.Disabled := true
+                ApplicationProvider._watchIncomplete := true
+                ApplicationProvider._watchRetryAt := A_TickCount + ApplicationProvider.WatchRetryMs
+                Logger.Debug("ApplicationProvider: watch re-arm failed for " watch.Folder "; retry scheduled")
+            }
         }
         if (!ApplicationProvider._changedAt || A_TickCount - ApplicationProvider._changedAt < ApplicationProvider.WatchQuietMs)
             return
@@ -143,8 +180,10 @@ class ApplicationProvider {
     ; 纯函数: 这个路径的变化要不要重建 -- 应用类型的文件 (types: _TypesPattern), 或没有扩展名的 (多半是文件夹,
     ; 例如开始菜单里一个程序的文件夹被删掉 / 改名); ALTRun 自己文件夹里的不算
     static IsWatchedChange(fullPath, types, ownDir := A_ScriptDir) {
-        if (ownDir != "" && InStr(fullPath, RTrim(ownDir, "\") "\") = 1)
+        if (ownDir != "" && InStr(fullPath, RTrim(ownDir, "\\") "\\") = 1)
             return false
+        if DirExist(fullPath)
+            return true
         SplitPath(fullPath, &name, , &ext)
         return (ext = "" || RegExMatch(name, types)) ? true : false
     }
