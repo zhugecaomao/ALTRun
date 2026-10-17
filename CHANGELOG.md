@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.17.2]
+
+测试版。
+
+Test build.
+
+### 修复
+- 关闭或重启应用目录监视时，等待异步读取完成或取消完成后再释放 `OVERLAPPED` 和缓冲区，避免异步 I/O 仍在使用内存时资源被提前释放。
+
 ## [2026.10.17.1]
 
 测试版。
@@ -741,7 +750,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.2...HEAD
+[2026.10.17.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.1...2026.10.17.2
 [2026.10.17.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.8...2026.10.17.1
 [2026.10.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.7...2026.10.16.8
 [2026.10.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.6...2026.10.16.7
