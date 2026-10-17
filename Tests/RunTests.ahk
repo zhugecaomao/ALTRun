@@ -1833,6 +1833,10 @@ class Tests {
         eq("saved", ApplicationProvider._savePending, false)
         ApplicationProvider.StopWatching()
         types := ApplicationProvider._TypesPattern(options)
+        dotFolder := root "\Vendor.Office"
+        DirCreate(dotFolder)
+        eq("watch: folder with extension", ApplicationProvider.IsWatchedChange(dotFolder, types, "D:\ALTRun"), true)
+        DirDelete(dotFolder)
         eq("watch: shortcut", ApplicationProvider.IsWatchedChange("C:\Start\Tool.lnk", types, "D:\ALTRun"), true)
         eq("watch: folder (no extension)", ApplicationProvider.IsWatchedChange("C:\Start\Vendor", types, "D:\ALTRun"), true)
         eq("watch: other file", ApplicationProvider.IsWatchedChange("C:\Desktop\Report.docx", types, "D:\ALTRun"), false)

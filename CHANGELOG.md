@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.17.1]
+
+测试版。
+
+Test build.
+
+### 改进
+- 应用搜索文件夹监视更可靠：读取通知失败时会触发后台重建，并每 30 秒尝试恢复失效的监视；名称带扩展名且仍存在的目录也会被识别为目录变化。
+
 ## [2026.10.16.8]
 
 测试版。
@@ -732,7 +741,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.1...HEAD
+[2026.10.17.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.8...2026.10.17.1
 [2026.10.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.7...2026.10.16.8
 [2026.10.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.6...2026.10.16.7
 [2026.10.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.5...2026.10.16.6
