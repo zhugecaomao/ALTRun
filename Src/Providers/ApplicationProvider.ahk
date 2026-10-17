@@ -79,10 +79,9 @@ class ApplicationProvider {
     static _CloseWatch(watch) {
         if (watch.Handle && watch.HasOwnProp("Pending") && watch.Pending) {
             ; CancelIoEx only requests cancellation. Wait for completion before releasing OVERLAPPED/buffer memory.
-            if DllCall("CancelIoEx", "Ptr", watch.Handle, "Ptr", watch.Overlapped) {
-                bytes := 0
-                DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", true)
-            }
+            DllCall("CancelIoEx", "Ptr", watch.Handle, "Ptr", watch.Overlapped)
+            bytes := 0
+            DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", true)
             watch.Pending := false
         }
         if watch.Handle
