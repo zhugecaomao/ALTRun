@@ -51,8 +51,8 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory tools -Force | Out-Null
-          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
-          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
+          # Keep the interpreter fixed so baseline/candidate benchmark results are comparable.
+          $ahkTag = 'v2.0.30'
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
 
