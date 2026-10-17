@@ -6,9 +6,9 @@
 ; Data\ 目录里, 各是一个单独的文件: 删掉索引等文件只会让它们重新生成, 不影响设置。
 ; 3.x 到 v2026.09.26 把 ALTRun.json 放在程序目录, 启动时自动移到 Data\ (MoveLegacyFile)。
 ;
-; 文件结构 (SchemaVersion 3):
+; 文件结构 (SchemaVersion 5):
 ; {
-;   "SchemaVersion" : 3,
+;   "SchemaVersion" : 5,
 ;   "General"       : { 呼出热键 / 开机启动 / 托盘图标 / 失焦隐藏 / 语言 ... },
 ;   "Appearance"    : { 主题 / 窗口宽度 / 可见行数 },
 ;   "Features"      : { "<功能名>": { "Enabled": 1, ...该功能自己的设置 } },

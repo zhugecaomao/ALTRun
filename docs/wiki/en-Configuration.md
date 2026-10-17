@@ -11,7 +11,7 @@ All settings and user data are saved in `Data\ALTRun.json` in the program folder
 ## Structure
 ```jsonc
 {
-  "SchemaVersion": 4,
+  "SchemaVersion": 5,
   "General":    { ... },          // general
   "Appearance": { ... },          // appearance
   "Features":   { ... },          // the search features

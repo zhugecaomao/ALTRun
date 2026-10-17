@@ -11,7 +11,7 @@
 ## 结构
 ```jsonc
 {
-  "SchemaVersion": 4,
+  "SchemaVersion": 5,
   "General":    { ... },          // 通用
   "Appearance": { ... },          // 外观
   "Features":   { ... },          // 各个搜索功能
