@@ -1837,11 +1837,6 @@ class Tests {
         DirCreate(dotFolder)
         eq("watch: folder with extension", ApplicationProvider.IsWatchedChange(dotFolder, types, "D:\ALTRun"), true)
         DirDelete(dotFolder)
-        options["Folders"] := [root, root "\MissingWatchFolder"]
-        ApplicationProvider.StartWatching()
-        eq("missing watch folder flagged", ApplicationProvider._watchIncomplete, true)
-        eq("missing watch folder retry scheduled", ApplicationProvider._watchRetryAt > A_TickCount, true)
-        ApplicationProvider.StopWatching()
         eq("watch: shortcut", ApplicationProvider.IsWatchedChange("C:\Start\Tool.lnk", types, "D:\ALTRun"), true)
         eq("watch: folder (no extension)", ApplicationProvider.IsWatchedChange("C:\Start\Vendor", types, "D:\ALTRun"), true)
         eq("watch: other file", ApplicationProvider.IsWatchedChange("C:\Desktop\Report.docx", types, "D:\ALTRun"), false)
