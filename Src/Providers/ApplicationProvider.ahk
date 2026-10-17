@@ -52,7 +52,7 @@ class ApplicationProvider {
         ApplicationProvider.StopWatching()
         options := AppSettings.Feature("Applications")
         for folder in options["Folders"] {
-            folder := RTrim(Path.Resolve(folder), "\\")
+            folder := RTrim(Path.Resolve(folder), "\")
             if (folder = "" || !DirExist(folder))
                 continue
             watch := ApplicationProvider._CreateWatch(folder)
@@ -140,7 +140,7 @@ class ApplicationProvider {
                 names := ApplicationProvider._ChangedNames(watch.Buffer, bytes)
                 relevant := (bytes = 0)                                     ; 0 = changes overflowed the buffer
                 for name in names
-                    if ApplicationProvider.IsWatchedChange(watch.Folder "\\" name, ApplicationProvider._watchTypes) {
+                    if ApplicationProvider.IsWatchedChange(watch.Folder "\" name, ApplicationProvider._watchTypes) {
                         relevant := true
                         break
                     }
@@ -180,7 +180,7 @@ class ApplicationProvider {
     ; 纯函数: 这个路径的变化要不要重建 -- 应用类型的文件 (types: _TypesPattern), 或没有扩展名的 (多半是文件夹,
     ; 例如开始菜单里一个程序的文件夹被删掉 / 改名); ALTRun 自己文件夹里的不算
     static IsWatchedChange(fullPath, types, ownDir := A_ScriptDir) {
-        if (ownDir != "" && InStr(fullPath, RTrim(ownDir, "\\") "\\") = 1)
+        if (ownDir != "" && InStr(fullPath, RTrim(ownDir, "\") "\") = 1)
             return false
         if DirExist(fullPath)
             return true
