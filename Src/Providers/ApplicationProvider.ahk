@@ -77,8 +77,15 @@ class ApplicationProvider {
     }
 
     static _CloseWatch(watch) {
-        DllCall("CancelIoEx", "Ptr", watch.Handle, "Ptr", 0)                ; 取消还在等的读取, 之后才能放掉缓冲区
-        DllCall("CloseHandle", "Ptr", watch.Handle)
+        if (watch.Handle && watch.HasOwnProp("Pending") && watch.Pending) {
+            ; CancelIoEx only requests cancellation. Wait for completion before releasing OVERLAPPED/buffer memory.
+            DllCall("CancelIoEx", "Ptr", watch.Handle, "Ptr", watch.Overlapped)
+            bytes := 0
+            DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", true)
+            watch.Pending := false
+        }
+        if watch.Handle
+            DllCall("CloseHandle", "Ptr", watch.Handle)
         if watch.Event
             DllCall("CloseHandle", "Ptr", watch.Event)
     }
@@ -93,7 +100,7 @@ class ApplicationProvider {
         if (handle = -1 || !handle)
             return ""
         watch := {Folder: folder, Handle: handle, Event: DllCall("CreateEventW", "Ptr", 0, "Int", true, "Int", false, "Ptr", 0, "Ptr")
-            , Overlapped: Buffer(A_PtrSize * 2 + 8 + A_PtrSize, 0), Buffer: Buffer(32768)}
+            , Overlapped: Buffer(A_PtrSize * 2 + 8 + A_PtrSize, 0), Buffer: Buffer(32768), Pending: false}
         if !watch.Event {
             DllCall("CloseHandle", "Ptr", handle)
             return ""
@@ -109,8 +116,12 @@ class ApplicationProvider {
     ; 开始 (再次) 异步等这个文件夹 (包括子文件夹) 的下一批变化: 文件名、文件夹名、修改时间
     static _ReadChanges(watch) {
         DllCall("ResetEvent", "Ptr", watch.Event)
-        return DllCall("ReadDirectoryChangesW", "Ptr", watch.Handle, "Ptr", watch.Buffer, "UInt", watch.Buffer.Size, "Int", true
-            , "UInt", 0x1 | 0x2 | 0x10, "Ptr", 0, "Ptr", watch.Overlapped, "Ptr", 0)
+        if DllCall("ReadDirectoryChangesW", "Ptr", watch.Handle, "Ptr", watch.Buffer, "UInt", watch.Buffer.Size, "Int", true
+            , "UInt", 0x1 | 0x2 | 0x10, "Ptr", 0, "Ptr", watch.Overlapped, "Ptr", 0) {
+            watch.Pending := true
+            return true
+        }
+        return false
     }
 
     ; 每 2 秒: 读出已经到了的变化 (不等待), 有应用相关的就记下时间; 安静 WatchQuietMs、离上一次后台重建至少 WatchMinGapMs 时重建
@@ -132,6 +143,7 @@ class ApplicationProvider {
             if (DllCall("WaitForSingleObject", "Ptr", watch.Event, "UInt", 0, "UInt") != 0)
                 continue
             bytes := 0
+            watch.Pending := false                                           ; The signaled event means this operation has completed.
             if !DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", false) {
                 lastError := A_LastError
                 Logger.Debug("ApplicationProvider: watch read failed for " watch.Folder " (error " lastError ")")
