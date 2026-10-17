@@ -68,12 +68,13 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory tools -Force | Out-Null
-          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
-          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
-          Write-Host "AutoHotkey $ahkTag"
+          # Pin compiler versions for reproducible release artifacts; update these deliberately.
+          $ahkTag = 'v2.0.30'
+          $ahk2exeTag = 'Ahk2Exe1.1.37.02a2'
+          Write-Host "AutoHotkey $ahkTag; Ahk2Exe $ahk2exeTag"
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
-          gh release download --repo AutoHotkey/Ahk2Exe --pattern "Ahk2Exe*.zip" --dir tools
+          gh release download $ahk2exeTag --repo AutoHotkey/Ahk2Exe --pattern "Ahk2Exe*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "Ahk2Exe*.zip")[0].FullName tools/ahk2exe
           if (-not (Test-Path tools/ahk/AutoHotkey64.exe)) { throw "AutoHotkey64.exe missing" }
           if (-not (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)) { throw "Ahk2Exe.exe missing" }
