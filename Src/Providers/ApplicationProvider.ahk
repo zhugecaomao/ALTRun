@@ -148,6 +148,7 @@ class ApplicationProvider {
             if relevant
                 ApplicationProvider._changedAt := A_TickCount
             if !ApplicationProvider._ReadChanges(watch) {
+                ApplicationProvider._changedAt := A_TickCount
                 watch.Disabled := true
                 watch.RetryAt := A_TickCount + ApplicationProvider.WatchRetryMs
                 Logger.Debug("ApplicationProvider: watch re-arm failed for " watch.Folder "; retry scheduled")
