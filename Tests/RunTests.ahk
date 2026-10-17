@@ -1802,6 +1802,7 @@ class Tests {
         ApplicationProvider.WatchQuietMs := 0, ApplicationProvider.WatchMinGapMs := 0
         ApplicationProvider.StartWatching()
         eq("watching the folder", ApplicationProvider._watches.Length, 1)
+        eq("watch read pending", ApplicationProvider._watches[1].Pending, true)
         ApplicationProvider._PollWatches()
         eq("no change, no rebuild", IsObject(ApplicationProvider._job), false)
         FileAppend("", root "\notes2.txt")                                  ; 不是应用的文件: 不重建
