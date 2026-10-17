@@ -732,7 +732,7 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.1...HEAD
 [2026.10.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.7...2026.10.16.8
 [2026.10.16.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.6...2026.10.16.7
 [2026.10.16.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.5...2026.10.16.6
