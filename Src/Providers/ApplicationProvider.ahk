@@ -30,7 +30,7 @@ class ApplicationProvider {
     static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
     static _job := "", _scanTimer := "", _refreshTimer := ""         ; 后台重建: 见 _NewJob
     static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000, FallbackMinutes := 60, WatchRetryMs := 30000
-    static _watches := [], _watchTimer := "", _watchTypes := "", _watchRetryAt := 0, _watchIncomplete := false
+    static _watches := [], _watchTimer := "", _watchTypes := ""
     static _changedAt := 0, _lastBackground := 0, _savePending := false, _saveTimer := ""
     static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []
 
@@ -49,48 +49,22 @@ class ApplicationProvider {
     ; (放在桌面上时, 写缓存、日志会一直触发)
     ;---------------------------------------------------------------------------
     static StartWatching() {
-        static FILE_LIST_DIRECTORY := 0x1, SHARE_ALL := 0x7, OPEN_EXISTING := 3, BACKUP_SEMANTICS := 0x02000000, OVERLAPPED := 0x40000000
         ApplicationProvider.StopWatching()
         options := AppSettings.Feature("Applications")
-        ApplicationProvider._watchIncomplete := false
         for folder in options["Folders"] {
-            folder := RTrim(Path.Resolve(folder), "\")
-            if (folder = "")
+            folder := RTrim(Path.Resolve(folder), "\\")
+            if (folder = "" || !DirExist(folder))
                 continue
-            if !DirExist(folder) {
-                ApplicationProvider._watchIncomplete := true
-                Logger.Debug("ApplicationProvider: watch folder unavailable " folder)
-                continue
-            }
-            handle := DllCall("CreateFileW", "Str", folder, "UInt", FILE_LIST_DIRECTORY, "UInt", SHARE_ALL, "Ptr", 0, "UInt", OPEN_EXISTING
-                , "UInt", BACKUP_SEMANTICS | OVERLAPPED, "Ptr", 0, "Ptr")
-            if (handle = -1 || !handle) {
-                ApplicationProvider._watchIncomplete := true
-                Logger.Debug("ApplicationProvider: cannot watch " folder)
-                continue
-            }
-            watch := {Folder: folder, Handle: handle, Event: DllCall("CreateEventW", "Ptr", 0, "Int", true, "Int", false, "Ptr", 0, "Ptr")
-                , Overlapped: Buffer(A_PtrSize * 2 + 8 + A_PtrSize, 0), Buffer: Buffer(32768)}
-            if !watch.Event {
-                ApplicationProvider._watchIncomplete := true
-                ApplicationProvider._CloseWatch(watch)
-                Logger.Debug("ApplicationProvider: cannot create watch event for " folder)
-                continue
-            }
-            NumPut("Ptr", watch.Event, watch.Overlapped, A_PtrSize * 2 + 8)
-            if ApplicationProvider._ReadChanges(watch)
+            watch := ApplicationProvider._CreateWatch(folder)
+            if IsObject(watch)
                 ApplicationProvider._watches.Push(watch)
-            else {
-                ApplicationProvider._watchIncomplete := true
-                ApplicationProvider._CloseWatch(watch)
-                Logger.Debug("ApplicationProvider: cannot start watching " folder)
-            }
+            else
+                Logger.Debug("ApplicationProvider: cannot watch " folder)
         }
         ApplicationProvider._watchTypes := ApplicationProvider._TypesPattern(options)
-        ApplicationProvider._watchRetryAt := ApplicationProvider._watchIncomplete ? A_TickCount + ApplicationProvider.WatchRetryMs : 0
         if (ApplicationProvider._watchTimer = "")
             ApplicationProvider._watchTimer := Logger.Watch("app folder watch", () => ApplicationProvider._PollWatches())
-        if (ApplicationProvider._watches.Length || ApplicationProvider._watchIncomplete)
+        if ApplicationProvider._watches.Length
             SetTimer(ApplicationProvider._watchTimer, 2000)
     }
 
@@ -100,7 +74,6 @@ class ApplicationProvider {
         for watch in ApplicationProvider._watches
             ApplicationProvider._CloseWatch(watch)
         ApplicationProvider._watches := [], ApplicationProvider._changedAt := 0
-        ApplicationProvider._watchRetryAt := 0, ApplicationProvider._watchIncomplete := false
     }
 
     static _CloseWatch(watch) {
@@ -108,6 +81,29 @@ class ApplicationProvider {
         DllCall("CloseHandle", "Ptr", watch.Handle)
         if watch.Event
             DllCall("CloseHandle", "Ptr", watch.Event)
+    }
+
+    ; Open a fresh watcher for recovery after a completed read cannot be re-armed.
+    static _CreateWatch(folder) {
+        static FILE_LIST_DIRECTORY := 0x1, SHARE_ALL := 0x7, OPEN_EXISTING := 3, BACKUP_SEMANTICS := 0x02000000, OVERLAPPED := 0x40000000
+        if !DirExist(folder)
+            return ""
+        handle := DllCall("CreateFileW", "Str", folder, "UInt", FILE_LIST_DIRECTORY, "UInt", SHARE_ALL, "Ptr", 0, "UInt", OPEN_EXISTING
+            , "UInt", BACKUP_SEMANTICS | OVERLAPPED, "Ptr", 0, "Ptr")
+        if (handle = -1 || !handle)
+            return ""
+        watch := {Folder: folder, Handle: handle, Event: DllCall("CreateEventW", "Ptr", 0, "Int", true, "Int", false, "Ptr", 0, "Ptr")
+            , Overlapped: Buffer(A_PtrSize * 2 + 8 + A_PtrSize, 0), Buffer: Buffer(32768)}
+        if !watch.Event {
+            DllCall("CloseHandle", "Ptr", handle)
+            return ""
+        }
+        NumPut("Ptr", watch.Event, watch.Overlapped, A_PtrSize * 2 + 8)
+        if !ApplicationProvider._ReadChanges(watch) {
+            ApplicationProvider._CloseWatch(watch)
+            return ""
+        }
+        return watch
     }
 
     ; 开始 (再次) 异步等这个文件夹 (包括子文件夹) 的下一批变化: 文件名、文件夹名、修改时间
@@ -119,27 +115,32 @@ class ApplicationProvider {
 
     ; 每 2 秒: 读出已经到了的变化 (不等待), 有应用相关的就记下时间; 安静 WatchQuietMs、离上一次后台重建至少 WatchMinGapMs 时重建
     static _PollWatches() {
-        if (ApplicationProvider._watchIncomplete && ApplicationProvider._watchRetryAt
-                && A_TickCount >= ApplicationProvider._watchRetryAt) {
-            Logger.Debug("ApplicationProvider: retrying folder watches")
-            ApplicationProvider.StartWatching()
-            return
-        }
-        for watch in ApplicationProvider._watches {
-            if (watch.HasOwnProp("Disabled") && watch.Disabled)
+        for index, watch in ApplicationProvider._watches {
+            if (watch.HasOwnProp("Disabled") && watch.Disabled) {
+                if (A_TickCount < watch.RetryAt)
+                    continue
+                replacement := ApplicationProvider._CreateWatch(watch.Folder)
+                if IsObject(replacement) {
+                    ApplicationProvider._CloseWatch(watch)
+                    ApplicationProvider._watches[index] := replacement
+                    Logger.Debug("ApplicationProvider: watch recovered for " replacement.Folder)
+                } else {
+                    watch.RetryAt := A_TickCount + ApplicationProvider.WatchRetryMs
+                }
                 continue
+            }
             if (DllCall("WaitForSingleObject", "Ptr", watch.Event, "UInt", 0, "UInt") != 0)
                 continue
             bytes := 0
             if !DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", false) {
                 error := A_LastError
                 Logger.Debug("ApplicationProvider: watch read failed for " watch.Folder " (error " error ")")
-                relevant := true
+                relevant := true                                             ; Errors may have lost changes; refresh conservatively
             } else {
                 names := ApplicationProvider._ChangedNames(watch.Buffer, bytes)
-                relevant := (bytes = 0)
+                relevant := (bytes = 0)                                     ; 0 = changes overflowed the buffer
                 for name in names
-                    if ApplicationProvider.IsWatchedChange(watch.Folder "\" name, ApplicationProvider._watchTypes) {
+                    if ApplicationProvider.IsWatchedChange(watch.Folder "\\" name, ApplicationProvider._watchTypes) {
                         relevant := true
                         break
                     }
@@ -148,8 +149,7 @@ class ApplicationProvider {
                 ApplicationProvider._changedAt := A_TickCount
             if !ApplicationProvider._ReadChanges(watch) {
                 watch.Disabled := true
-                ApplicationProvider._watchIncomplete := true
-                ApplicationProvider._watchRetryAt := A_TickCount + ApplicationProvider.WatchRetryMs
+                watch.RetryAt := A_TickCount + ApplicationProvider.WatchRetryMs
                 Logger.Debug("ApplicationProvider: watch re-arm failed for " watch.Folder "; retry scheduled")
             }
         }
