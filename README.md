@@ -20,6 +20,7 @@
   <a href="https://zhugecaomao.github.io/ALTRun/">Website</a> ·
   <a href="#why-altrun">Why ALTRun</a> ·
   <a href="#getting-started">Getting started</a> ·
+  <a href="#privacy-security-and-footprint">Privacy & security</a> ·
   <a href="#features">Features</a> ·
   <a href="#keyboard-shortcuts">Shortcuts</a> ·
   <a href="https://github.com/zhugecaomao/ALTRun/wiki/en-Home">Documentation (Wiki)</a> ·
@@ -32,34 +33,27 @@
 
 
 ## Why ALTRun
-- **Tiny**: about 2.5 MB: one `ALTRun.exe` plus a few resource files, with no .NET, Electron or other runtime to install.
-- **Fast**: results appear from the first character you type. With [Everything](https://www.voidtools.com/) running, it searches every file on your disks in milliseconds; without it, a built-in index is used.
-- **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信; file names too: `cs` → 测试文件.zip), and highlights the matched characters.
-- **Beyond launching**: [Quick Switch](#features) jumps an Open / Save dialog to a folder you already have open in Total Commander or Explorer; select text, files or a URL in any program and press `Ctrl+Alt+\` to act on it; type `;keyword` anywhere to expand a snippet.
-- **All in one**: calculator and unit conversion, web search, browser bookmarks, clipboard history, text snippets, system commands and a terminal, so you don't need a handful of separate little tools.
-- **Keyboard first**: `→` opens the action panel, a status bar shows what `Enter` does, `F3` edits in place, `Ctrl+1`–`Ctrl+9` open a result directly.
-- **Portable and private**: no installer, registry entries, admin rights, background service or driver; data stays local by default (some clipboard data is stored in `%LOCALAPPDATA%\ALTRun`). No telemetry; internet access is limited to updates, optional exchange rates and site icons you request.
-- **Automatic updates**: new versions are announced in the search window; press `Enter` to install (SHA256 verified, settings kept). Scoop is supported too.
-- **Customizable**: English, Simplified Chinese, Traditional Chinese and Japanese interface; 20 built-in themes (pick one from thumbnails in Preferences), or follow the Windows light / dark mode; themes and settings are plain JSON files.
-- **Free and open source**: GPL-3.0; more than 8,000 tests run automatically on Windows for every pull request.
+- **Lightweight and fast**: a roughly 2.5 MB portable app, with instant results and no .NET, Electron or other runtime to install.
+- **Smarter search**: learns from your choices, matches word initials and Chinese pinyin initials, and highlights matches.
+- **More than a launcher**: use Quick Switch for Open / Save dialogs, act on selected text or files in any app, and expand snippets with a keyword.
+- **One keyboard-first workspace**: search apps and files, calculate, browse bookmarks, manage clipboard history, run system commands and use a terminal.
+- **Open source and customizable**: GPL-3.0, four interface languages and 20 built-in themes.
 
 
 ## Getting started
-1. Download the [latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` (no installation, no AutoHotkey needed). If Windows SmartScreen says "Windows protected your PC", click **More info** → **Run anyway**; if your antivirus complains, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ#my-antivirus-flags-it).
-2. Press `Alt+Space` (or `Alt+R`) to open the search window, type a name and press `Enter`. In Preferences you can switch to a double tap of `Ctrl` / `Shift` instead.
-3. Type `?` to see every syntax and shortcut; press `Ctrl+,` to open Preferences.
+1. [Download the latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` — no installation or AutoHotkey required.
+2. Press `Alt+Space` (or `Alt+R`), type an app or file name, then press `Enter`.
+3. Type `?` to see all search syntax and shortcuts; press `Ctrl+,` to open Preferences.
 
-With [AutoHotkey v2](https://www.autohotkey.com/) installed, you can also run `ALTRun.ahk` from the source code directly.
+If Windows SmartScreen blocks the app, choose **More info** → **Run anyway**. For antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ#my-antivirus-flags-it).
 
-**Install with [Scoop](https://scoop.sh/)** (creates a Start menu shortcut and keeps your settings across upgrades):
-```powershell
-scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
-scoop install altrun
-scoop update altrun    # upgrade (quit ALTRun first)
-```
-The winget manifest has been submitted; once it is accepted you can install with `winget install zhugecaomao.ALTRun`.
 
-**Upgrading**: when a new version is available, the search window shows "Update Available"; press `Enter` to install it, and your settings are kept. Upgrading from an older version or from 2.x: see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
+## Privacy, security and footprint
+- **Local by default**: app data stays on your PC by default; some clipboard data is stored in `%LOCALAPPDATA%\ALTRun`. Custom data locations may be configured.
+- **No telemetry**: internet access is used for updates, optional currency conversion and site icons you choose to download.
+- **Verified updates**: downloaded update packages are checked against their SHA256 hash; settings are kept during upgrades.
+- **Signed release builds**: only `ALTRun.exe` built by this repository's [Release workflow](.github/workflows/release.yml) is signed. See the [privacy policy](SECURITY.md#privacy-policy).
+- **Small distribution**: about 2.5 MB, with no background service, driver, registry entries or administrator rights required.
 
 
 ## Features
@@ -183,6 +177,21 @@ The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wi
 | [Settings reference](https://github.com/zhugecaomao/ALTRun/wiki/en-Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives and more |
 | [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/en-Development) | Architecture, adding a search feature, code style, tests |
+
+
+## Installation options and upgrades
+**Scoop** (adds a Start menu shortcut and keeps settings across upgrades):
+```powershell
+scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
+scoop install altrun
+scoop update altrun    # upgrade (quit ALTRun first)
+```
+
+The winget manifest has been submitted and is awaiting acceptance. Once accepted, install with `winget install zhugecaomao.ALTRun`.
+
+To run from source, install [AutoHotkey v2](https://www.autohotkey.com/) and launch `ALTRun.ahk`.
+
+For upgrading from an older version or from 2.x, see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
 
 
 ## Feedback and contributing
