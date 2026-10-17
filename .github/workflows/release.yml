@@ -34,6 +34,15 @@ jobs:
       - name: Keep line endings as in the repository
         run: git config --global core.autocrlf false
 
+      # Publishing must use the exact main branch; dry-run builds may use any branch.
+      - name: Validate publish ref
+        if: inputs.publish
+        shell: pwsh
+        run: |
+          if (${{ toJSON(github.ref) }} -ne '"refs/heads/main"') {
+            throw "Publishing is only allowed from main (current ref: ${{ github.ref }})"
+          }
+
       - uses: actions/checkout@v7
 
       - name: Read version
@@ -46,6 +55,248 @@ jobs:
           Write-Host "Version: $version"
           "version=$version" >> $env:GITHUB_OUTPUT
           if ("${{ inputs.publish }}" -eq "true") {
+            if ($version -notmatch '^\d{4}\.\d{2}\.\d{2}
+            if ($LASTEXITCODE -eq 0) { throw "Release $version already exists - bump App.Version first" }
+            $global:LASTEXITCODE = 0
+          }
+
+      - name: Download AutoHotkey v2 and Ahk2Exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
+          Write-Host "AutoHotkey $ahkTag"
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+          gh release download --repo AutoHotkey/Ahk2Exe --pattern "Ahk2Exe*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "Ahk2Exe*.zip")[0].FullName tools/ahk2exe
+          if (-not (Test-Path tools/ahk/AutoHotkey64.exe)) { throw "AutoHotkey64.exe missing" }
+          if (-not (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)) { throw "Ahk2Exe.exe missing" }
+
+      - name: Unit tests
+        shell: pwsh
+        run: |
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk' `
+                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput test.log -RedirectStandardError test.err
+          Get-Content test.log | Where-Object { $_ -notmatch '^PASS' }
+          Get-Content test.log | Where-Object { $_ -match '^(FAIL|UNCAUGHT)' } | ForEach-Object { Write-Host "::error::$_" }   # 失败的测试显示在检查结果的注释里
+          Get-Content test.err
+          if ($proc.ExitCode -ne 0) { throw "Unit tests failed (exit code $($proc.ExitCode))" }
+
+      - name: Compile ALTRun.exe
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory build/ALTRun -Force | Out-Null
+          $ahk2exe = (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)[0].FullName
+          $proc = Start-Process $ahk2exe -Wait -PassThru -NoNewWindow -ArgumentList `
+                  '/in', "$PWD\ALTRun.ahk", '/out', "$PWD\build\ALTRun\ALTRun.exe", '/base', "$PWD\tools\ahk\AutoHotkey64.exe", '/silent', 'verbose'
+          if ($proc.ExitCode -ne 0 -or -not (Test-Path build/ALTRun/ALTRun.exe)) { throw "Compile failed (exit code $($proc.ExitCode))" }
+          Copy-Item -Recurse Resources build/ALTRun/Resources
+          foreach ($lang in "zh-CN", "zh-TW", "ja") {
+            if (-not (Test-Path "build/ALTRun/Resources/Lang/$lang.json")) { throw "Resources\Lang\$lang.json is missing" }
+          }
+          Copy-Item LICENSE, README.md, README.zh-CN.md, CHANGELOG.md build/ALTRun/
+          foreach ($file in @("LICENSE", "README.md", "README.zh-CN.md", "CHANGELOG.md") + (git ls-files Resources)) {   # 和仓库逐字节相同 (换行符没被转换)
+            if ((git hash-object --no-filters "build/ALTRun/$file") -ne (git rev-parse "HEAD:$file")) { throw "$file in the package differs from the repository" }
+          }
+          (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
+
+      # 代码签名 (SignPath Foundation 免费为开源项目签名, 见 packaging/README.md): 设置了 SIGNPATH_API_TOKEN secret
+      # 和 SIGNPATH_ORGANIZATION_ID 变量后自动签名, 没有设置时跳过, 照常发布未签名的版本。
+      # publish = false 用测试证书 (test-signing); publish = true 用正式证书 (release-signing), 要等正式证书导入、
+      # 把变量 SIGNPATH_RELEASE_SIGNING 设为 true 之后才签, 在那之前正式发布照常发布未签名的版本
+      - name: Upload unsigned ALTRun.exe for signing
+        id: unsigned
+        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
+        uses: actions/upload-artifact@v7
+        with:
+          name: ALTRun-unsigned
+          path: build/ALTRun/ALTRun.exe
+
+      - name: Sign ALTRun.exe (SignPath)
+        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ALTRun
+          signing-policy-slug: ${{ inputs.publish && 'release-signing' || 'test-signing' }}
+          github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
+          wait-for-completion: true
+          wait-for-completion-timeout-in-seconds: 1800        # 正式签名要在 SignPath 网页上批准
+          output-artifact-directory: build/signed
+
+      - name: Use the signed ALTRun.exe
+        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
+        shell: pwsh
+        run: |
+          Copy-Item build/signed/ALTRun.exe build/ALTRun/ALTRun.exe -Force
+          $sig = Get-AuthenticodeSignature build/ALTRun/ALTRun.exe
+          Write-Host "Signature: $($sig.Status) - $($sig.SignerCertificate.Subject)"
+          if ("${{ inputs.publish }}" -eq "true" -and $sig.Status -ne 'Valid') { throw "ALTRun.exe is not signed with a trusted certificate" }
+
+      # exe 的图标要是 Resources\ALTRun.ico (;@Ahk2Exe-SetMainIcon), 而不是 AutoHotkey 默认的绿色 H
+      - name: Check program icon
+        shell: pwsh
+        run: |
+          Add-Type -AssemblyName System.Drawing
+          $exe = [System.Drawing.Icon]::ExtractAssociatedIcon("$PWD\build\ALTRun\ALTRun.exe").ToBitmap()
+          $ico = (New-Object System.Drawing.Icon("$PWD\Resources\ALTRun.ico", $exe.Width, $exe.Height)).ToBitmap()
+          $diff = 0
+          for ($y = 0; $y -lt $exe.Height; $y++) { for ($x = 0; $x -lt $exe.Width; $x++) {
+            if ($exe.GetPixel($x, $y).ToArgb() -ne $ico.GetPixel($x, $y).ToArgb()) { $diff++ } } }
+          Write-Host "Icon $($exe.Width)x$($exe.Height): $diff different pixels"
+          if ($diff -gt 0) { throw "ALTRun.exe does not use Resources\ALTRun.ico" }
+
+      # 模拟用户从 v2026.08.12 升级: 文件夹里只有旧的 ALTRun.ini, 解压新版本后第一次运行
+      - name: Upgrade test (ALTRun.ini from v2026.08.12)
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:RUNNER_TEMP "upgrade"
+          New-Item -ItemType Directory $dir -Force | Out-Null
+          Copy-Item build/ALTRun/* $dir -Recurse
+          Copy-Item Tests/Fixtures/ALTRun.v2026.08.12.ini (Join-Path $dir "ALTRun.ini")
+          $iniHash = (Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash
+          $started = Get-Date
+          $proc = Start-Process (Join-Path $dir "ALTRun.exe") -WorkingDirectory $dir -PassThru
+          $json = Join-Path $dir "Data\ALTRun.json"
+          for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
+          Start-Sleep -Seconds 3
+          $running = -not $proc.HasExited
+          if (-not $running) {
+            # 2026.09.24 发布时出现过一次 ALTRun.exe 自己退出, 之后 12 次都没有复现; 再出现时留下线索
+            Write-Host "ALTRun.exe exited after $(((Get-Date) - $started).TotalSeconds.ToString('N1'))s, exit code $($proc.ExitCode)"
+            # 另一个 ALTRun 进程是谁启动的: 命令行里有 /restart 是 ALTRun 自己重启, 否则看父进程
+            Get-CimInstance Win32_Process -Filter "Name = 'ALTRun.exe'" -ErrorAction SilentlyContinue | ForEach-Object {
+              $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $($_.ParentProcessId)" -ErrorAction SilentlyContinue
+              Write-Host "Other ALTRun process: $($_.ProcessId) started $($_.CreationDate.ToString('HH:mm:ss.fff')), command line: $($_.CommandLine)"
+              Write-Host "  parent: $($_.ParentProcessId) $($parent.Name) $($parent.CommandLine)"
+            }
+            Get-ChildItem $dir -Recurse -Name | ForEach-Object { Write-Host "  file: $_" }
+            Get-WinEvent -FilterHashtable @{LogName = 'Application'; StartTime = $started} -ErrorAction SilentlyContinue |
+              Where-Object { $_.Message -match 'ALTRun|AutoHotkey' } | Select-Object -First 5 |
+              ForEach-Object { Write-Host "  event $($_.Id) $($_.ProviderName): $($_.Message)" }
+            $log = Join-Path $env:TEMP "ALTRun.log"
+            if (Test-Path $log) { Get-Content $log -Tail 30 | ForEach-Object { Write-Host "  log: $_" } }
+          }
+          Get-Process -Name ALTRun -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          if (-not (Test-Path $json)) { throw "Data\ALTRun.json was not created" }
+          $settings = Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json
+          Write-Host "Running: $running; SchemaVersion: $($settings.SchemaVersion); commands: $($settings.CustomCommands.Count); language: $($settings.General.Language)"
+          if (-not $running) { throw "ALTRun.exe exited on its own" }
+          if ($settings.SchemaVersion -lt 4) { throw "Settings were not upgraded" }
+          if ($settings.CustomCommands.Count -ne 10) { throw "Expected 10 imported commands" }
+          if ($settings.General.Language -ne "zh-CN") { throw "Config section was not imported" }
+          if ((Get-FileHash (Join-Path $dir "ALTRun.ini")).Hash -ne $iniHash) { throw "ALTRun.ini was modified" }
+
+      - name: Single instance test (compiled ALTRun.exe)
+        shell: pwsh
+        run: |
+          # 已经在运行时再启动 ALTRun.exe: 交给正在运行的处理 (双击 = 弹出搜索窗口, 发送到 = 添加命令), 不多开一个
+          $dir = Join-Path $env:RUNNER_TEMP "single"
+          New-Item -ItemType Directory $dir -Force | Out-Null
+          Copy-Item build/ALTRun/* $dir -Recurse
+          $exe = Join-Path $dir "ALTRun.exe"
+          $json = Join-Path $dir "Data\ALTRun.json"
+          $first = Start-Process $exe -ArgumentList '-Startup' -WorkingDirectory $dir -PassThru
+          for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
+          Start-Sleep -Seconds 3
+          # 主窗口的标题 (找正在运行的 ALTRun 靠它), 留在日志里
+          $probe = Join-Path $env:RUNNER_TEMP "titles.ahk"
+          'DetectHiddenWindows(true)', 'for hwnd in WinGetList("ahk_class AutoHotkey")', '    FileAppend(WinGetTitle(hwnd) "`n", "*")' | Set-Content $probe -Encoding UTF8
+          $out = Join-Path $env:RUNNER_TEMP "titles.txt"
+          Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', $probe -Wait -NoNewWindow -RedirectStandardOutput $out
+          Get-Content $out | ForEach-Object { Write-Host "AutoHotkey window: $_" }
+          $before = (Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json).CustomCommands.Count
+          New-Item -ItemType Directory (Join-Path $dir "SendTo A") -Force | Out-Null
+          Set-Content (Join-Path $dir "SendTo B.txt") "x"
+          # 交出去之后马上退出; 没交出去时它会一直运行, 所以只等 10 秒
+          (Start-Process $exe -WorkingDirectory $dir -PassThru).WaitForExit(10000) | Out-Null
+          (Start-Process $exe -ArgumentList '-SendTo', "`"$(Join-Path $dir 'SendTo A')`"", "`"$(Join-Path $dir 'SendTo B.txt')`"" -WorkingDirectory $dir -PassThru).WaitForExit(10000) | Out-Null
+          Start-Sleep -Seconds 3
+          $processes = @(Get-Process -Name ALTRun -ErrorAction SilentlyContinue)
+          $alive = -not $first.HasExited
+          $after = (Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json).CustomCommands.Count
+          Get-Process -Name ALTRun -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Write-Host "ALTRun processes: $($processes.Count); first still running: $alive; commands: $before -> $after"
+          if ($processes.Count -ne 1 -or -not $alive) { throw "Starting ALTRun.exe again did not hand over to the running instance" }
+          if ($after -ne $before + 2) { throw "Send to did not add the commands in the running instance" }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $zip = "build/ALTRun_v${{ steps.version.outputs.version }}.zip"
+          Compress-Archive -Path build/ALTRun/* -DestinationPath $zip
+          Get-Item $zip | Format-List Name, Length
+
+      - name: Release notes from CHANGELOG.md
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          $lines = Get-Content CHANGELOG.md -Encoding UTF8
+          $start = ($lines | Select-String -Pattern "^## \[$([regex]::Escape($version))\]").LineNumber
+          if (-not $start) { throw "CHANGELOG.md has no section for $version" }
+          $notes = @()
+          foreach ($line in $lines[$start..($lines.Count - 1)]) {
+            if ($line -match '^## ') { break }
+            $notes += $line
+          }
+          $previous = gh release view --repo "${{ github.repository }}" --json tagName --jq .tagName 2>$null
+          $global:LASTEXITCODE = 0
+          if ($previous -and $previous -ne $version) {
+            $notes += ""
+            $notes += "**Full Changelog**: https://github.com/${{ github.repository }}/compare/$previous...$version"
+          }
+          $notes | Set-Content build/notes.md -Encoding UTF8
+          Get-Content build/notes.md
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ALTRun_v${{ steps.version.outputs.version }}
+          path: |
+            build/ALTRun_v*.zip
+            build/notes.md
+
+      - name: Create GitHub release
+        if: inputs.publish
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          gh release create $version "build/ALTRun_v$version.zip" --repo "${{ github.repository }}" `
+            --title "ALTRun - v$version" --notes-file build/notes.md --target "${{ github.sha }}"
+
+      - name: Update Scoop and winget manifests
+        if: inputs.publish
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          git fetch --quiet origin main
+          git checkout -B main origin/main
+          ./packaging/Update-Manifests.ps1 -Version $version -Zip "build/ALTRun_v$version.zip"
+          git add bucket packaging
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { Write-Host "Manifests are already up to date"; exit 0 }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --quiet -m "Packaging: Scoop / winget 清单更新到 $version"
+          git push origin main
+
+      # 只能更新 winget-pkgs 里已经有的包; 第一次提交见 packaging/README.md
+      - name: Submit the new version to winget-pkgs
+        if: inputs.publish && env.WINGET_TOKEN != ''
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.version }}"
+          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+          .\wingetcreate.exe update zhugecaomao.ALTRun --version $version `
+            --urls "https://github.com/${{ github.repository }}/releases/download/$version/ALTRun_v$version.zip" `
+            --submit --token $env:WINGET_TOKEN
+          if ($LASTEXITCODE -ne 0) { throw "wingetcreate failed (exit code $LASTEXITCODE)" }
+) {
+              throw "Formal release version must have three parts (YYYY.MM.DD); found $version"
+            }
             gh release view $version --repo "${{ github.repository }}" 2>$null
             if ($LASTEXITCODE -eq 0) { throw "Release $version already exists - bump App.Version first" }
             $global:LASTEXITCODE = 0
