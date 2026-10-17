@@ -133,8 +133,8 @@ class ApplicationProvider {
                 continue
             bytes := 0
             if !DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", false) {
-                error := A_LastError
-                Logger.Debug("ApplicationProvider: watch read failed for " watch.Folder " (error " error ")")
+                lastError := A_LastError
+                Logger.Debug("ApplicationProvider: watch read failed for " watch.Folder " (error " lastError ")")
                 relevant := true                                             ; Errors may have lost changes; refresh conservatively
             } else {
                 names := ApplicationProvider._ChangedNames(watch.Buffer, bytes)
