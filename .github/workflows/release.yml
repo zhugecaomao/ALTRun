@@ -39,8 +39,8 @@ jobs:
         if: inputs.publish
         shell: pwsh
         run: |
-          if (${{ toJSON(github.ref) }} -ne '"refs/heads/main"') {
-            throw "Publishing is only allowed from main (current ref: ${{ github.ref }})"
+          if ($env:GITHUB_REF -ne 'refs/heads/main') {
+            throw "Publishing is only allowed from main (current ref: $env:GITHUB_REF)"
           }
 
       - uses: actions/checkout@v7
@@ -55,7 +55,10 @@ jobs:
           Write-Host "Version: $version"
           "version=$version" >> $env:GITHUB_OUTPUT
           if ("${{ inputs.publish }}" -eq "true") {
-            if ($version -notmatch '^\d{4}\.\d{2}\.\d{2}
+            if ($version -notmatch '^\d{4}\.\d{2}\.\d{2}$') {
+              throw "Formal release version must have three parts (YYYY.MM.DD); found $version"
+            }
+            gh release view $version --repo "${{ github.repository }}" 2>$null
             if ($LASTEXITCODE -eq 0) { throw "Release $version already exists - bump App.Version first" }
             $global:LASTEXITCODE = 0
           }
