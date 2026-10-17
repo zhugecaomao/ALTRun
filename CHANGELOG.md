@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.17.3]
+
+测试版。
+
+Test build.
+
+### 改进
+- 正式构建固定使用 AutoHotkey v2.0.30 和 Ahk2Exe 1.1.37.02a2，基准测试固定使用 AutoHotkey v2.0.30；单元测试仍使用最新稳定版 AutoHotkey，继续检测上游兼容性。
+
 ## [2026.10.17.2]
 
 测试版。
@@ -750,7 +759,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.3...HEAD
+[2026.10.17.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.2...2026.10.17.3
 [2026.10.17.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.1...2026.10.17.2
 [2026.10.17.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.8...2026.10.17.1
 [2026.10.16.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.7...2026.10.16.8
