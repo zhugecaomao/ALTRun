@@ -37,7 +37,11 @@ concurrency:
 
 jobs:
   build:
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    # Release runs are named by the publish input; dry-run builds must not redeploy the site.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.display_title == 'Publish release')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

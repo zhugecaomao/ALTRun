@@ -8,6 +8,7 @@
 # 发布之后自动把 Scoop (bucket/altrun.json) 和 winget (packaging/winget) 清单更新到新版本, 提交到 main;
 # 设置了 WINGET_TOKEN secret (有 public_repo 权限的 GitHub token) 时, 再用 wingetcreate 向 winget-pkgs 提交新版本。
 name: Release
+run-name: ${{ inputs.publish && 'Publish release' || 'Test build' }}
 
 on:
   workflow_dispatch:
