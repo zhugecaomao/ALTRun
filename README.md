@@ -33,12 +33,16 @@
 
 
 ## Why ALTRun
-- **Lightweight and fast**: a roughly 2.5 MB portable app, with instant results and no .NET, Electron or other runtime to install.
-- **Smarter search**: learns from your choices, matches word initials and Chinese pinyin initials, and highlights matches.
-- **More than a launcher**: use Quick Switch for Open / Save dialogs, act on selected text or files in any app, and expand snippets with a keyword.
-- **One keyboard-first workspace**: search apps and files, calculate, browse bookmarks, manage clipboard history, run system commands and use a terminal.
-- **Open source and customizable**: GPL-3.0, four interface languages and 20 built-in themes.
-
+- **Tiny**: about 2.5 MB, with one `ALTRun.exe` and a few resource files; no .NET, Electron or other runtime to install.
+- **Fast**: results appear as you type. With [Everything](https://www.voidtools.com/) running, file searches cover all disks in milliseconds; otherwise, ALTRun uses its built-in index.
+- **Smart ranking**: learns from your choices, matches word initials (`vsc` → Visual Studio Code) and Chinese pinyin initials (`wx` → 微信, including file names), and highlights matches.
+- **Beyond launching**: [Quick Switch](#features) jumps Open / Save dialogs to folders open in Total Commander or Explorer; act on selected text, files or URLs in any app; expand snippets with `;keyword`.
+- **All in one**: calculate and convert units, search the web, browse bookmarks, manage clipboard history and snippets, run system commands, or open a terminal—without separate tools for each task.
+- **Keyboard first**: use `→` for the action panel, see what `Enter` will do in the status bar, edit in place with `F3`, or open a result directly with `Ctrl+1`–`Ctrl+9`.
+- **Portable and private**: no installer, registry entries, admin rights, background service or driver. Data stays local by default; some clipboard data is stored in `%LOCALAPPDATA%\ALTRun`. No telemetry; internet access is used for updates, optional exchange rates and site icons you request.
+- **Automatic updates**: new versions appear in the search window; press `Enter` to install. Packages are SHA256-verified and settings are kept; Scoop is also supported.
+- **Customizable**: four interface languages—English, Simplified Chinese, Traditional Chinese and Japanese—and 20 built-in themes. Follow Windows light / dark mode or customize themes and settings through plain JSON files.
+- **Free and open source**: GPL-3.0 licensed, with more than 8,000 tests run automatically on Windows for every pull request.
 
 ## Getting started
 1. [Download the latest release](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder and run `ALTRun.exe` — no installation or AutoHotkey required.
