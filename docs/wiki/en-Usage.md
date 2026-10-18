@@ -5,6 +5,14 @@
 ## Search window
 Press `Alt+Space` to open it and start typing. You can change the hotkey in Preferences → General: click the box and press the new keys. You can also set a "Second hotkey", or open it like Listary with "Double-tap Ctrl" / "Double-tap Shift". Each row shows an icon, a title and one line of details (path, arguments or type), with the `Ctrl+number` shortcut on the right. The window hides itself when it loses focus. If ALTRun is already running, double-clicking `ALTRun.exe` again also opens the search window (it doesn't restart).
 
+### Starting in the background
+Launching ALTRun normally displays the search window, giving users visible confirmation that the application has started successfully. To run ALTRun in the background and show the search window only when needed, use the `-Startup` command-line argument:
+
+- **Compiled version:** `ALTRun.exe -Startup`
+- **Source version:** Add `-Startup` to the shortcut's command-line arguments.
+
+With this argument, ALTRun initializes without displaying the search window. You can still open it using your configured hotkey, such as `Alt+Space`.
+
 Drag the empty space around the input box to move the search window. To have it open where you dragged it next time: Preferences → Appearance → "Remember the position after dragging the window" (the position is remembered relative to the screen, so it also works on another monitor; "Reset Window Position" goes back to centered horizontally, 20% from the top). With more than one screen, "Show the window on" can be the screen with the mouse pointer (default), the main screen, or the screen with the active window. Short notices after an action (such as "Copied") appear on the screen with the search window; when the search window isn't open, the same setting picks the screen.
 
 To have the search window remember your last search (like "keep input" in 2.x): Preferences → Search Window → "Keep the last search when the window opens". With it on, the last input and results are still there when you open the window, with the text selected: press `Enter` to open it again, start typing for a new search, or press `Space` for a file search. To edit the last input (for example a calculation), press `→` or `End` to clear the selection and put the cursor at the end (that `→` doesn't open the action panel; press it again to open it).
