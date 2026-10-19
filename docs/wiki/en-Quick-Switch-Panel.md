@@ -27,6 +27,8 @@ Recent folders come from Windows' **Recent items**. For a file that was opened, 
 
 ## Settings
 
+![Preferences → Dialog Panel](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-dialogpanel.png)
+
 Change these in Preferences → Dialog Panel. They are stored under `Extensions.QuickSwitch`:
 
 | Setting | Default / values | Purpose |

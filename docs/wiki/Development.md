@@ -118,6 +118,34 @@ Wiki 的源文件在仓库的 `docs/wiki/`, 合并到 `main` 后自动发布到 
 AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名...]
 ```
 
+## 界面翻译
+英文原文写在 `Src\Core\I18n.ahk` 里 (`s["Prefs.Page.General"] := "General"`), 是所有键的标准; 其它语言是 `Resources\Lang\<代码>.json` (UTF-8), 键和英文一样, 值是翻译。文件里没有的键先找 `_fallback` 指定的语言 (例如繁体中文缺的找简体中文), 最后用英文。
+
+| 特殊的键 | 作用 |
+|---|---|
+| `_name` | 偏好设置 → 通用 → 语言 里显示的名称, 用这种语言自己的文字 (例如 `日本語`) |
+| `_font` | 界面字体 (主题的 `FontName` 是 `auto` 时用), 例如 `Microsoft YaHei UI`、`Yu Gothic UI` |
+| `_fallback` | 可选, 缺的键先找哪种语言 |
+| `_comment` | 写给翻译者的说明, 程序不读 |
+
+翻译时: `{1}` `{2}` 这些占位符的个数要和英文一样 (位置可以换); `\n` 是换行; 偏好设置的说明要短, 日文最容易超出页面宽度。
+
+**新加一条界面文字**: 在 `I18n.ahk` 里加英文, 再在三个 JSON 里加同一个键的翻译。
+
+**添加一种语言** (例如韩语):
+1. 复制 `zh-CN.json` 为 `Resources\Lang\ko.json`, 改 `_name` (`한국어`) 和 `_font` (`Malgun Gothic`), 逐条翻译
+2. 不用改代码: 偏好设置的语言列表自动出现; "自动" 按 Windows 的显示语言选, 地区代码 (例如 `zh-HK` → `zh-TW`) 在 `I18n.Aliases` 里对应
+3. 跑测试: `I18nLanguages` 检查每个语言文件不缺键、没有多余的键、不是空的、占位符个数一致、写了 `_font`; `PreferencesFit` / `PreferencesSpacing` 检查每一页在这种语言下放得下、不挤在一起; `I18nUnused` 检查英文里没有不用的键
+4. Wiki 只有中英文: 中文界面 (简体、繁体) 的帮助打开中文页, 其它语言打开英文页
+
+## 发布流程
+详细步骤见 [贡献指南](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.zh-CN.md#发布新版本), 这里是概要:
+
+- **测试版** (每个改了程序的 PR): 版本号四段 `YYYY.MM.DD.N`, 改 `App.Version` 和 `;@Ahk2Exe-SetVersion` (`ReleaseVersion` 测试检查两者一致), `CHANGELOG.md` 加一节 (`ChangelogLinks` 测试检查比较链接); 在 PR 的分支上运行 **Release** workflow, `publish = false`, 构建好的程序在 Actions 页面底部的 Artifacts (`ALTRun_v<版本>`)
+- **正式版**: 版本号三段 `YYYY.MM.DD`, 每天最多一个; 把这一轮测试版的 CHANGELOG 合成一节 (中英文摘要 + 升级 / 新增 / 改进 / 修复), 合并到 main 后在 main 上运行 **Release**, `publish = true`
+
+Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe → 单元测试 → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本。
+
 ## 性能测试
 GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟机上用真实的按键模拟日常操作, 比较两个版本
 (baseline 默认最新正式版, candidate 默认选中的分支)。每个版本两轮, 两个版本轮流 (A B B A), 每轮重新启动 ALTRun:

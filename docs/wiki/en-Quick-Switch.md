@@ -24,6 +24,8 @@ The folder is read directly from Total Commander through its `WM_COPYDATA` inter
 
 ## Settings
 
+![Preferences → Quick Switch](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-quickswitch.png)
+
 Preferences → Quick Switch controls the hotkeys, eligible windows and automatic switching. The settings are stored under `Extensions.QuickSwitch`:
 
 | Setting | Default / purpose |

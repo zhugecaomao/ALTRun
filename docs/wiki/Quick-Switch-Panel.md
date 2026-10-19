@@ -27,6 +27,8 @@
 
 ## 相关设置
 
+![偏好设置 → 对话框面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-dialogpanel.png)
+
 在偏好设置 → 对话框面板中修改, 对应设置文件为 `Extensions.QuickSwitch`:
 
 | 设置 | 默认 / 可选值 | 作用 |

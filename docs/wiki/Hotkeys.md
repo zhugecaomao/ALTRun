@@ -12,6 +12,8 @@
 
 默认的一条: 在 RAPT (`RAPTW.exe`) 里按鼠标中键打开 PT 工具箱。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage#快捷键)。
 
+![偏好设置 → 自定义热键](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
+
 ### CapsLock 切换输入法
 和 Mac 一样: 在 偏好设置 → 自定义热键 最上面把 **CapsLock 键** 设成:
 - **按一下切换输入法**: 切换到下一个已安装的输入法, 和 `Win+Space` 一样 (例如 英语(美国) ↔ 微软拼音)

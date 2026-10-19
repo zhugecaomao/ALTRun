@@ -12,6 +12,8 @@ Preferences → Hotkeys: assign a [system command](en-Extensions#system-commands
 
 The default one: the middle mouse button in RAPT (`RAPTW.exe`) opens PT Tools. `F1`–`F4` in the search window are built in, see [Shortcuts](en-Usage#shortcuts).
 
+![Preferences → Hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
+
 ### Caps Lock switches the input method
 Like on a Mac: at the top of Preferences → Hotkeys, set **Caps Lock** to one of:
 - **Press to switch input method**: switches to the next installed input method, like `Win+Space` (for example English (US) ↔ Microsoft Pinyin)
