@@ -54,7 +54,7 @@
 | `snip` / `snip xxx` | 只搜索文字片段 |
 | `;关键字` (在任何程序里) | 片段自动展开, 见 [自定义命令与片段](Commands-and-Snippets) |
 
-关键字后面加了空格 (例如 `clip `、`g xxx`、`'xxx`、`>xxx`), 就只显示这个功能的结果。没有任何结果时, 显示兜底项: 用 Google 搜索、搜索文件、用 Bing 搜索 (可在 `Features.WebSearch.Fallbacks` 修改)。
+关键字后面加了空格 (例如 `clip `、`g xxx`、`'xxx`、`>xxx`), 就只显示这个功能的结果。网页搜索、自定义命令和文字片段的关键字可以写几个, 用逗号分隔 (例如 `g, ㅎ`), 输入哪个都行, 经常切换键盘布局 / 输入法时有用。没有任何结果时, 显示兜底项: 用 Google 搜索、搜索文件、用 Bing 搜索 (可在 `Features.WebSearch.Fallbacks` 修改)。
 
 ![网页搜索: g autohotkey v2 hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch.png)
 

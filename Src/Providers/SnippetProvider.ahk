@@ -2,6 +2,7 @@
 ; SnippetProvider.ahk - 文字片段 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; ALTRun.json -> Snippets, 每一条: { "Name": "名称", "Keyword": "关键字", "Text": "正文" }
+; Keyword 可以写几个, 用逗号分隔 ("sig, signature"), 搜索和自动展开都能用。
 ; 搜索名称、关键字和正文 (Features.Snippets.SearchText, 正文至少输入 3 个字符, 每个词都要出现,
 ; 只有正文匹配的排在后面), Enter 把正文粘贴到呼出 ALTRun 之前的窗口。输入 "snip xxx"
 ; (Features.Snippets.Keyword) 只在片段里搜索, "snip" 单独输入列出全部片段。
@@ -33,7 +34,7 @@ class SnippetProvider {
                 continue
             name    := snippet.Has("Name") ? snippet["Name"] : ""
             keyword := snippet.Has("Keyword") ? snippet["Keyword"] : ""
-            score := (onlySnippets && needle = "") ? 50 : FuzzyMatcher.Best(needle, [keyword, name])
+            score := (onlySnippets && needle = "") ? 50 : FuzzyMatcher.Best(needle, SnippetProvider._MatchTexts(keyword, name))
             found := searchText ? SnippetProvider.TextMatch(snippet["Text"], tokens) : 0
             if (found && score < SnippetProvider.TextScore)
                 score := SnippetProvider.TextScore
@@ -54,6 +55,13 @@ class SnippetProvider {
         return results
     }
 
+    ; 搜索时比较的文字: 每个关键字和名称
+    static _MatchTexts(keyword, name) {
+        texts := SearchQuery.Keywords(keyword).Clone()
+        texts.Push(name)
+        return texts
+    }
+
     static EditorFields() {
         prefix := AppSettings.Feature("Snippets")["ExpandPrefix"]
         maxKeyword := SnippetExpander.MaxAbbreviation - StrLen(prefix)
@@ -65,13 +73,13 @@ class SnippetProvider {
               , ItemEditor.Field("AutoExpand", "Prefs.Col.AutoExpand", "check", , , I18n.T("Snippet.Hint.AutoExpand", prefix))]
     }
 
-    ; 编辑框点 OK 时: 要自动展开但关键字太长 / 有空格 -> 提示 (返回 "" = 没问题)
+    ; 编辑框点 OK 时: 要自动展开但有关键字太长 / 有空格 -> 提示 (返回 "" = 没问题)
     static CheckKeyword(keyword, edited, prefix) {
-        keyword := Trim(keyword)
-        if (keyword = "" || (edited.Has("AutoExpand") && !edited["AutoExpand"]))
+        if (edited.Has("AutoExpand") && !edited["AutoExpand"])
             return ""
-        if (StrLen(prefix keyword) > SnippetExpander.MaxAbbreviation || RegExMatch(keyword, "\s"))
-            return I18n.T("Snippet.KeywordTooLong", prefix, SnippetExpander.MaxAbbreviation)
+        for each in SearchQuery.Keywords(keyword)
+            if (StrLen(prefix each) > SnippetExpander.MaxAbbreviation || RegExMatch(each, "\s"))
+                return I18n.T("Snippet.KeywordTooLong", prefix, SnippetExpander.MaxAbbreviation)
         return ""
     }
 

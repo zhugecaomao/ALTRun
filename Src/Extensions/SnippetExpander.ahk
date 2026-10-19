@@ -11,6 +11,7 @@
 ;   Features.Snippets.ExpandPrefix    关键字前面要加的前缀, 默认 ";"
 ;   Features.Snippets.ExpandExclude   不展开的窗口, 逗号分隔 (ahk_exe xxx.exe / ahk_class xxx / 标题)
 ;   Snippets[n].AutoExpand            单个片段设为 0 可以不自动展开 (仍可搜索)
+;   Snippets[n].Keyword               可以写几个, 用逗号分隔 ("sig, signature"), 每个都能展开
 ; 修改片段后调用 Refresh(), 新的关键字随即生效。
 ;
 ; 用法:
@@ -36,8 +37,7 @@ class SnippetExpander {
         wanted.CaseSense := "Off"                                           ; 和热字串一样不区分大小写
         if (options["Enabled"] && options["AutoExpand"]) {
             for snippet in AppSettings.Snippets {
-                abbreviation := SnippetExpander.Abbreviation(snippet, options["ExpandPrefix"])
-                if (abbreviation != "")
+                for abbreviation in SnippetExpander.Abbreviations(snippet, options["ExpandPrefix"])
                     wanted[abbreviation] := snippet["Text"]
             }
         }
@@ -81,18 +81,21 @@ class SnippetExpander {
         return true
     }
 
-    ; 片段 -> 触发的缩写 ("" = 不自动展开)
-    static Abbreviation(snippet, prefix) {
+    ; 片段 -> 触发的缩写, 每个关键字一个 ([] = 不自动展开)
+    static Abbreviations(snippet, prefix) {
+        abbreviations := []
         if !(snippet is Map) || !snippet.Has("Keyword") || !snippet.Has("Text")
-            return ""
+            return abbreviations
         if (snippet.Has("AutoExpand") && !snippet["AutoExpand"])
-            return ""
-        keyword := Trim(snippet["Keyword"])
-        if (keyword = "" || RegExMatch(keyword, "[\s``]"))                  ; 空白和反引号不能用在缩写里
-            return ""
-        if (StrLen(prefix keyword) > SnippetExpander.MaxAbbreviation)       ; 太长的注册不了, 只能搜索 (编辑时已经提示过)
-            return ""
-        return prefix keyword
+            return abbreviations
+        for keyword in SearchQuery.Keywords(snippet["Keyword"]) {
+            if RegExMatch(keyword, "[\s``]")                                ; 空白和反引号不能用在缩写里
+                continue
+            if (StrLen(prefix keyword) > SnippetExpander.MaxAbbreviation)   ; 太长的注册不了, 只能搜索 (编辑时已经提示过)
+                continue
+            abbreviations.Push(prefix keyword)
+        }
+        return abbreviations
     }
 
     ; 单独一个方法生成闭包; 正文在触发时再查, 这样修改片段后不必重新生成
