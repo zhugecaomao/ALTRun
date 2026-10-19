@@ -30,7 +30,7 @@ class FileIndex {
     static Scanning := false
     static _stack := [], _new := "", _timer := "", _lastNeedle := "", _lastMatches := ""
     static Deferred := false                                               ; 启动时有 Everything, 还没读缓存
-    static _refreshTimer := ""
+    static _refreshTimer := "", _onDone := ""
     static RefreshIdleMs := 30000                                          ; 定时重建要等键盘鼠标空闲这么久
     static WatchQuietMs := 5000, WatchMinGapMs := 300000, SaveIdleMs := 2000
     static _watcher := "", _watchTimer := "", _changedAt := 0, _lastScan := 0, _savePending := false, _saveTimer := ""
@@ -144,7 +144,10 @@ class FileIndex {
             FileIndex.Rebuild()
     }
 
-    static Rebuild() {
+    ; onDone: 可选, 扫完后调用 onDone(条数) (在新的线程里, 可以弹对话框); 正在扫描时等这一次扫完
+    static Rebuild(onDone := "") {
+        if IsObject(onDone)
+            FileIndex._onDone := onDone
         if FileIndex.Scanning
             return
         FileIndex.Deferred := false, FileIndex._lastScan := A_TickCount
@@ -202,6 +205,10 @@ class FileIndex {
         FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
         FileIndex._SaveWhenIdle()
         Logger.Debug("FileIndex: " FileIndex.Paths.Length " entries")
+        if IsObject(done := FileIndex._onDone) {
+            FileIndex._onDone := "", count := FileIndex.Paths.Length
+            SetTimer(() => done.Call(count), -1)                            ; 不在扫描的计时器里弹对话框 (不算进它的耗时)
+        }
     }
 
     ; 按文件名匹配: 完全相同 100 / 开头 90 / 单词开头 80 / 包含 60。
