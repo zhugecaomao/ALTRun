@@ -257,6 +257,7 @@ class QuickSwitch {
         list.Opt("+Redraw")
         rows := Max(3, Min(folders.Length, QuickSwitch.PanelRows))           ; 高度跟着内容 (3 ~ PanelRows 行)
         list.Move(, , , QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + Win.Scale(4))
+        list.ModifyCol(3, "AutoHdr")                                        ; 最后一列补满到右边, 选中行的颜色铺满整行; 改完高度 (该有滚动条时已经有了) 再算, 不会多出横向滚动条
         if DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) {     ; 搜索结果变了: 重新调整大小和位置
             QuickSwitch._panelPos := ""
             QuickSwitch._PlacePanel(QuickSwitch._panelFor)

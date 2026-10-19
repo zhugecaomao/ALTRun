@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.19.4]
+
+测试版。
+
+Test build.
+
+### 修复
+- 对话框下面的文件夹面板: 最右边的来源列 (例如 "Total Commander (other panel)") 补满到面板右边, 选中行的颜色铺满整行, 右边不再留一条空白和竖线
+
 ## [2026.10.19.3]
 
 测试版。
@@ -789,7 +798,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.4...HEAD
+[2026.10.19.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.3...2026.10.19.4
 [2026.10.19.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.2...2026.10.19.3
 [2026.10.19.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.1...2026.10.19.2
 [2026.10.19.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.3...2026.10.19.1
