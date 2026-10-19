@@ -110,7 +110,7 @@
 ### Calculator 计算器
 | 键 | 默认 | 说明 |
 |---|---|---|
-| StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Calculator) |
+| StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [计算器](Calculator) |
 | RebarCover | 40 | 结构计算: 保护层 (mm, 每边) |
 | MaxBarSpacing | 300 | 结构计算: 主筋最大间距 (mm) |
 | BarSizes | `[13, 16, 20, 25, 32]` | 结构计算: 配筋面积那一行列出的钢筋直径 (mm) |
