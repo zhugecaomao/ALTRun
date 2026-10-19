@@ -433,6 +433,13 @@ class ApplicationProvider {
     }
 
     ; 缓存超过 FallbackMinutes 分钟了吗; 没有缓存文件也算过期
+    ; 让缓存算作过期 (偏好设置里改了扫描范围): 下次启动照常先读它, 再在后台重新扫描。
+    ; 还没写的缓存也不写了 (按旧的范围扫的; 退出时写的话修改时间又成了现在)
+    static ExpireCache() {
+        ApplicationProvider._savePending := false
+        try FileSetTime("20000101000000", ApplicationProvider.IndexFile, "M")
+    }
+
     static _CacheExpired() {
         minutes := ApplicationProvider.FallbackMinutes
         try return DateDiff(A_Now, FileGetTime(ApplicationProvider.IndexFile, "M"), "Minutes") >= minutes

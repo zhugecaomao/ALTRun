@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.19.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置里改了应用索引 (文件夹、文件类型、排除、子文件夹深度) 或内置文件索引 (文件夹、深度、排除、最多条数) 的范围, 点 "应用" 后自动在后台重新扫描, 扫完前旧索引照常可用。以前要等文件夹有变化或 1 小时兜底, 先点 "重建索引" 的话用的还是改之前的设置
+- 偏好设置 → 应用搜索: "子文件夹深度" 和 "重建索引" 放在一行 (和搜索来源页一样); 两页这一行和 "最多条数 / 刷新间隔" 的说明写得更清楚
+- 偏好设置 → 文件搜索: 文件关键字、文件夹关键字的说明更详细; 文件类型的输入框改成 4 行
+- 偏好设置 → 搜索来源: Everything 现在有没有在运行写在复选框后面, 下面是怎样让 Everything 用拼音搜中文文件名; 内置索引一节加上 "中文文件名可以直接用拼音首字母搜" 的说明
+- 偏好设置的说明里, 要输入的例子都加上引号, 例如 "doc 报告" 只搜文档, 和说明文字分得更清楚
+
 ## [2026.10.19.4]
 
 测试版。
@@ -798,7 +811,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.5...HEAD
+[2026.10.19.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.4...2026.10.19.5
 [2026.10.19.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.3...2026.10.19.4
 [2026.10.19.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.2...2026.10.19.3
 [2026.10.19.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.1...2026.10.19.2

@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1865,6 +1865,44 @@ class Tests {
             ApplicationProvider.IndexFile := savedFile, ApplicationProvider.Apps := savedApps
             try FileDelete(A_Temp "\ALTRunBrokenShortcut.json")
             try DirDelete(root, true)
+        }
+    }
+
+    ; 偏好设置里改了索引的扫描范围: 保存后让缓存过期, 重新启动后在后台重新扫描
+    static StaleIndexes() {
+        eq := (n, a, e) => TestRunner.Equal("StaleIndexes." n, a, e)
+        before := AppSettings.Defaults()
+        stale(change) {
+            after := PreferencesWindow.DeepCopy(before)
+            change(after)
+            result := PreferencesWindow.StaleIndexes(before, after)
+            return result.Apps "/" result.Files
+        }
+        eq("nothing changed", stale((data) => 0), "0/0")
+        eq("app depth", stale((data) => data["Features"]["Applications"]["Depth"] := 5), "1/0")
+        eq("app folders", stale((data) => data["Features"]["Applications"]["Folders"].Push("D:\Tools")), "1/0")
+        eq("app hidden list is not the scan range", stale((data) => data["Features"]["Applications"]["Hidden"].Push("x")), "0/0")
+        eq("file exclude", stale((data) => data["Features"]["FileSearch"]["ScopeExclude"] := "i)temp"), "0/1")
+        eq("file max entries", stale((data) => data["Features"]["FileSearch"]["MaxEntries"] := 1000), "0/1")
+        eq("refresh interval is not the scan range", stale((data) => data["Features"]["FileSearch"]["RefreshMinutes"] := 30), "0/0")
+        savedApp := ApplicationProvider.IndexFile, savedFile := FileIndex.File
+        ApplicationProvider.IndexFile := A_Temp "\ALTRunStaleApp.json", FileIndex.File := A_Temp "\ALTRunStaleFile.json"
+        try {
+            for path in [ApplicationProvider.IndexFile, FileIndex.File] {
+                try FileDelete(path)
+                FileAppend("{}", path)
+            }
+            eq("fresh caches", ApplicationProvider._CacheExpired() || FileIndex._CacheExpired(), false)
+            FileIndex._savePending := true
+            ApplicationProvider.ExpireCache(), FileIndex.ExpireCache()
+            eq("expired", ApplicationProvider._CacheExpired() && FileIndex._CacheExpired(), true)
+            eq("pending save dropped", FileIndex._savePending, false)
+            ApplicationProvider.ExpireCache()                               ; 没有缓存文件也不报错
+        } finally {
+            FileIndex._savePending := false
+            try FileDelete(ApplicationProvider.IndexFile)
+            try FileDelete(FileIndex.File)
+            ApplicationProvider.IndexFile := savedApp, FileIndex.File := savedFile
         }
     }
 
