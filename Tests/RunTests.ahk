@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2504,6 +2504,48 @@ class Tests {
 
     ; 搜索窗口的位置: 默认居中、离顶部 20%; 记住的位置按屏幕里的千分比换算, 换一块屏幕也放在对应的地方
     ; 每一页的控件都在底部按钮上面 (中英文都检查, 文字长短不同)
+    ; 偏好设置每一页: 上下相邻的控件 (左右有重叠) 至少隔 4 像素, 不会挤在一起。
+    ; 灰色说明 (小一号的字) 本来就紧贴在上面的设置下面, 不算
+    static PreferencesSpacing() {
+        smallFont(ctrl) {
+            if !(ctrl.Type = "Text" || ctrl.Type = "Link") || !(font := SendMessage(0x31, 0, 0, ctrl.Hwnd))   ; WM_GETFONT
+                return false
+            logFont := Buffer(92, 0)
+            DllCall("GetObject", "Ptr", font, "Int", 92, "Ptr", logFont)
+            return Abs(NumGet(logFont, 0, "Int")) <= 11 * A_ScreenDPI / 96      ; s8 约 11 像素, s9 约 12 像素
+        }
+        savedLang := I18n.Lang
+        for lang in ["en", "zh-CN", "ja"] {
+            I18n.Init(lang)
+            PreferencesWindow.Show(1, -3000, -3000)
+            PreferencesWindow.BuildAll()
+            for index, page in PreferencesWindow.Pages {
+                boxes := []
+                for ctrl in page.Controls {
+                    ctrl.GetPos(&x, &y, &w, &h)
+                    if (h > 2)                                               ; 分节下面的细线不算
+                        boxes.Push({Ctrl: ctrl, X: x, Y: y, W: w, H: h, Small: smallFont(ctrl)})
+                }
+                tight := ""
+                for upper in boxes {
+                    below := "", gap := 9999
+                    for other in boxes {
+                        if (other = upper || other.Y < upper.Y + upper.H - 2 || other.X >= upper.X + upper.W || upper.X >= other.X + other.W)
+                            continue
+                        if (other.Y - upper.Y - upper.H < gap)
+                            below := other, gap := other.Y - upper.Y - upper.H
+                    }
+                    if (IsObject(below) && gap < 4 && !below.Small && !upper.Small)
+                        tight .= upper.Ctrl.Type " '" SubStr(upper.Ctrl.Text, 1, 20) "' -> " below.Ctrl.Type " '" SubStr(below.Ctrl.Text, 1, 20) "' (" gap "); "
+                }
+                TestRunner.Equal("PreferencesSpacing." lang " page " index " " page.Key, tight, "")
+            }
+            PreferencesWindow._dirty := false
+            PreferencesWindow.Close()
+        }
+        I18n.Init(savedLang)
+    }
+
     static PreferencesFit() {
         savedLang := I18n.Lang
         for language in I18n.Languages() {                                   ; 按代码排序, ja 在 zh-TW 前 (Wine 没有这两种字体, 先用过 JhengHei 后量出的日文宽度偏小)

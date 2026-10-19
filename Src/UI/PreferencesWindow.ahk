@@ -611,8 +611,9 @@ class PreferencesWindow {
         for row in [["Bookmarks", "Prefs.Feature.Bookmarks"], ["Windows", "Prefs.Feature.Windows"]] {   ; 书签和窗口: 普通搜索里也显示 + 只搜它们的关键字
             rowY := PreferencesWindow._y
             PreferencesWindow._Check("Features." row[1] ".InDefaultResults", "Prefs.ShowInNormal", , , row[2], columnW)
-            PreferencesWindow._SideField(rowY, PreferencesWindow._InputX() + columnW, "Features." row[1] ".Keyword", "Prefs.FeatureKeyword")   ; 和上面功能的右列对齐
-            PreferencesWindow._y := rowY + 25
+            field := PreferencesWindow._SideField(rowY, PreferencesWindow._InputX() + columnW, "Features." row[1] ".Keyword", "Prefs.FeatureKeyword")   ; 和上面功能的右列对齐
+            field.GetPos(, &fieldY, , &fieldH)
+            PreferencesWindow._y := Max(rowY + 25, fieldY + fieldH + 8)     ; 两行的关键字框至少隔 5 (中日文的输入框高一些)
         }
         PreferencesWindow._y -= 3
         PreferencesWindow._Desc("Prefs.FeatureKeyword", PreferencesWindow._InputX())
@@ -881,7 +882,7 @@ class PreferencesWindow {
         x := PreferencesWindow._InputX()
         standard := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T("Prefs.QSStandard"))
         standard.Value := (others.Length < windows.Length) ? 1 : 0
-        PreferencesWindow._Below(0, standard)                               ; 说明写在复选框的文字里 (这一页放了三个 4 行的列表)
+        PreferencesWindow._Below(6, standard)                               ; 说明写在复选框的文字里 (这一页放了三个 4 行的列表); 和 _Check 没有说明时一样隔 6
         otherList := PreferencesWindow._WinList("", "Prefs.QSOtherDialogs", 4, others)
         PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], PreferencesWindow.SplitLines(otherList.Value)))
         PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 4)
@@ -1397,7 +1398,7 @@ class PreferencesWindow {
         value := PreferencesWindow.JoinLines(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
         ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() " r" rows " +Multi -Wrap +HScroll +VScroll", value)
         PreferencesWindow._Bind(path, () => PreferencesWindow.SplitLines(ctrl.Value))
-        PreferencesWindow._Below(3, label, ctrl)
+        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)   ; 没有说明时和下一行隔开
         PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
     }
 
@@ -1410,7 +1411,7 @@ class PreferencesWindow {
         ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() " r" rows " +Multi -Wrap +HScroll +VScroll", PreferencesWindow.JoinLines(value))
         if (path != "")
             PreferencesWindow._Bind(path, () => PreferencesWindow.JoinWindows(PreferencesWindow.SplitLines(ctrl.Value)))
-        PreferencesWindow._Below(3, label, ctrl)
+        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)   ; 没有说明时和下一行隔开
         PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
         return ctrl
     }
@@ -1550,6 +1551,7 @@ class PreferencesWindow {
         ctrl.Move(, rowY - 3)
         return ctrl
     }
+
     ; "重建索引": 马上重建 (一次做完), 弹出结果, 点确定关掉
     static _RebuildApps(button) {
         button.Enabled := false

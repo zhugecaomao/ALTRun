@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.19.13]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置 → 对话框快速跳转: "生效的窗口" 的复选框和下面 "其它对话框" 的输入框贴在一起, 拉开一点
+- 偏好设置 → 功能: 书签和窗口两行的 "关键字" 输入框靠得太近 (中文、日文界面几乎贴在一起), 拉开一点
+
 ## [2026.10.19.12]
 
 测试版。
@@ -884,7 +894,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...HEAD
+[2026.10.19.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...2026.10.19.13
 [2026.10.19.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...2026.10.19.12
 [2026.10.19.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.10...2026.10.19.11
 [2026.10.19.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.9...2026.10.19.10
