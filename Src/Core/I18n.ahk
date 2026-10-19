@@ -726,6 +726,7 @@ class I18n {
         s["Prefs.Feature.Recent"]      := "Pinned and recent items"
         s["Prefs.Feature.Scripts"]     := "Scripts"
         s["Prefs.Feature.Help"]         := "Help (?)"
+        s["Prefs.Feature.LargeType"]    := "Large type (Ctrl+L)"
         s["Prefs.Feature.Bookmarks"]   := "Browser bookmarks"
         s["Prefs.StructuralCalc"]      := "Add structural results (main bars / rebar area)"
         s["Prefs.StructuralCalc.Desc"] := "Two more rows under results above 2 × cover: the result as beam width (main bars and spacing) and as rebar area As (bars needed of each size)."

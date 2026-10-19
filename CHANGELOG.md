@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.19.15]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 功能 → 启用的功能 里加 "大字显示 (Ctrl+L)" 开关。新安装默认关; 从旧版本升级的保持打开。关掉时 `Ctrl+L` 不起作用, 操作面板和 `?` 速查表里也没有这一项
+
 ## [2026.10.19.14]
 
 测试版。
@@ -907,7 +916,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...HEAD
+[2026.10.19.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...2026.10.19.15
 [2026.10.19.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...2026.10.19.14
 [2026.10.19.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...2026.10.19.13
 [2026.10.19.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...2026.10.19.12

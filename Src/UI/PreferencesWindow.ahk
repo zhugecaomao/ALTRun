@@ -614,7 +614,9 @@ class PreferencesWindow {
                 rowH := Max(rowH, checkH + 4)
             }
         }
-        PreferencesWindow._y := startY + (features.Length // 2) * rowH        ; 最后一格: Windows 设置的页面 (系统命令的一部分)
+        PreferencesWindow._y := startY + (features.Length // 2) * rowH        ; 最后一行: 大字显示 (不是搜索功能), Windows 设置的页面 (系统命令的一部分)
+        PreferencesWindow._Check("Features.LargeType.Enabled", "Prefs.Feature.LargeType", PreferencesWindow._InputX(), , "", columnW)
+        PreferencesWindow._y := startY + (features.Length // 2) * rowH
         PreferencesWindow._Check("Features.System.SettingsPages", "Prefs.SettingsPages", PreferencesWindow._InputX() + columnW, , "", columnW)
         PreferencesWindow._y := startY + Ceil((features.Length + 1) / 2) * rowH
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")

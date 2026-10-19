@@ -164,6 +164,11 @@ See [File search](en-File-Search#settings).
 |---|---|---|
 | Enabled | 1 | Typing `?` shows every search syntax and shortcut |
 
+### LargeType
+| Key | Default | Description |
+|---|---|---|
+| Enabled | 0 | `Ctrl+L` and "Show in Large Type" in the action panel. Off on new installations; upgrades from before 2026.10.19.15 keep it on |
+
 ### System (system commands)
 | Key | Default | Description |
 |---|---|---|

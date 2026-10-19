@@ -159,7 +159,7 @@ class AppSettings {
             changed := true                                                 ; 第一次运行: 写出一份带默认值的文件
         }
 
-        if (data.Count && AppSettings._KeepDensity(data))
+        if (data.Count && AppSettings._KeepPrevious(data))
             changed := true
         if AppSettings._MergeDefaults(data, AppSettings.Defaults())
             changed := true
@@ -226,6 +226,21 @@ class AppSettings {
 
     ; 把 defaults 里有、target 里没有的键补上 (逐层递归, 只补 Map, 数组整体看待)。
     ; 返回是否有改动。类型不一致 (比如该是 Map 的地方被手改成了字符串) 也用默认值覆盖。
+    ; 已有的设置文件里还没有的新设置: 保持原来的样子, 不用新安装的默认值 (见下面两个)。返回是否补上了
+    static _KeepPrevious(data) {
+        keptDensity := AppSettings._KeepDensity(data)
+        keptLargeType := AppSettings._KeepLargeType(data)                  ; 不叫 largeType: 会遮住 LargeType 类
+        return keptDensity || keptLargeType
+    }
+
+    ; 已有的设置文件还没有 Features.LargeType (2026.10.19.15 以前): 大字显示一直是打开的, 保持打开
+    static _KeepLargeType(data) {
+        if !(data.Has("Features") && data["Features"] is Map) || data["Features"].Has("LargeType")
+            return false
+        data["Features"]["LargeType"] := Map("Enabled", 1)
+        return true
+    }
+
     ; 已有的设置文件还没有 Appearance.Density (2026.10.19.12 以前): 保持原来的大小, 不用新安装的默认值 "Normal"。
     ; 原来的大小 = 宽松; 用的是以前的紧凑主题 (DarkCompact 等) 的 = 常规 (和它们的尺寸一样)。返回是否补上了
     static _KeepDensity(data) {
@@ -383,6 +398,7 @@ class AppSettings {
                     "Shell"  , "cmd"                                        ; cmd / powershell / pwsh / wt
                 ),
                 "Help", Map("Enabled", 1),                                  ; 输入 ? 显示所有输入语法和快捷键
+                "LargeType", Map("Enabled", 0),                             ; Ctrl+L / 操作面板里的 "大字显示" (新安装默认关; 以前的设置文件保持打开)
                 "Bookmarks", Map(
                     "Enabled"         , 1,
                     "Keyword"         , "bm",                               ; "bm 关键词" 只搜书签

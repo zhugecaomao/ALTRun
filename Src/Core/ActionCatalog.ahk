@@ -109,7 +109,8 @@ class ActionCatalog {
             add("Action.Unpin", IconCache.Own("Pinned", "res:imageres.dll,-5303"), (*) => RecentProvider.Unpin(item.Uid))
         else if (RecentProvider.CanPin(item) && !RecentProvider.IsPinned(item))
             add("Action.Pin", IconCache.Own("Pinned", "res:imageres.dll,-5303"), (*) => RecentProvider.Pin(item))
-        add("Action.LargeType", "res:imageres.dll,-183", (*) => LargeType.Show(item.DisplayText()), "Ctrl+L")
+        if LargeType.Enabled()
+            add("Action.LargeType", "res:imageres.dll,-183", (*) => LargeType.Show(item.DisplayText()), "Ctrl+L")
         return list
     }
 
