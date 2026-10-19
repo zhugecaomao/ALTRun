@@ -328,6 +328,13 @@ class FileIndex {
     }
 
     ; 缓存超过 RefreshMinutes 分钟 (最少 5 分钟) 了吗; 没有缓存文件也算过期
+    ; 让缓存算作过期 (偏好设置里改了扫描范围): 下次启动照常先读它, 再在后台重新扫描。
+    ; 还没写的缓存也不写了 (按旧的范围扫的; 退出时写的话修改时间又成了现在)
+    static ExpireCache() {
+        FileIndex._savePending := false
+        try FileSetTime("20000101000000", FileIndex.File, "M")
+    }
+
     static _CacheExpired() {
         minutes := Max(5, AppSettings.Feature("FileSearch")["RefreshMinutes"])
         try return DateDiff(A_Now, FileGetTime(FileIndex.File, "M"), "Minutes") >= minutes

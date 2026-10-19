@@ -79,7 +79,7 @@ Every feature has `Enabled` (1 = on).
 | Hidden | `[]` | Paths of apps removed with `Ctrl+Del` in the search results; delete a line to restore one |
 | StoreApps | 1 | Include Microsoft Store apps |
 | MatchPinyin | 1 | Match Chinese names by their pinyin initials |
-| RefreshMinutes | 120 | No longer used (since 2026.10.16.8). The index updates itself by watching the `Folders`: when a shortcut is added, removed or renamed, it is rebuilt silently in the background a few seconds later (at most once a minute), without a notification, pausing while the search window is open; it is also rebuilt when the cache is more than an hour old (fallback). Microsoft Store apps aren't in those folders and are rescanned at most once an hour |
+| RefreshMinutes | 120 | No longer used (since 2026.10.16.8). The index updates itself by watching the `Folders`: when a shortcut is added, removed or renamed, it is rebuilt silently in the background a few seconds later (at most once a minute), without a notification, pausing while the search window is open; it is also rebuilt after you change `Folders`, `FileTypes`, `Exclude` or `Depth` in Preferences and click Apply, and when the cache is more than an hour old (fallback). Microsoft Store apps aren't in those folders and are rescanned at most once an hour |
 
 ### Snippets
 | Key | Default | Description |
