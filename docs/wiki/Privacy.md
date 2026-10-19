@@ -18,7 +18,7 @@ ALTRun 自己只在下面几种情况访问网络:
 
 ## 本机保存了什么
 所有数据都在 Data 文件夹和本机的几个文件夹里, 每个文件是什么、能不能删、怎样备份见 [数据文件](Data-Files)。和隐私有关的几点:
-- **剪贴板历史**: 密码管理器等程序标记为 "不要记录" 的内容 (`ExcludeClipboardContentFromMonitorProcessing`、`CanIncludeInClipboardHistory = 0`) 不会记录; 偏好设置 → 剪贴板 → "不记录的程序" (默认是几个密码管理器) 里的程序复制的内容也不记录。不想在磁盘上留下历史: 把 `Features.Clipboard.Persist` 设为 0, 历史只在内存里, 退出就清空; 或者把 偏好设置 → 剪贴板 → "保存位置" 改成全部只存本机, 不跟着同步盘里的 Data 文件夹走。见 [剪贴板历史](Commands-and-Snippets#剪贴板历史)
+- **剪贴板历史**: 密码管理器等程序标记为 "不要记录" 的内容 (`ExcludeClipboardContentFromMonitorProcessing`、`CanIncludeInClipboardHistory = 0`) 不会记录; 偏好设置 → 剪贴板 → "不记录的程序" (默认是几个密码管理器) 里的程序复制的内容也不记录。不想在磁盘上留下历史: 把 `Features.Clipboard.Persist` 设为 0, 历史只在内存里, 退出就清空; 或者把 偏好设置 → 剪贴板 → "保存位置" 改成全部只存本机, 不跟着同步盘里的 Data 文件夹走。见 [剪贴板历史](Clipboard)
 - **使用统计** (`Usage.json`): 只记每天每个功能用了几次, 不记输入的内容和打开的文件
 - **学习排序** (`Knowledge.json`): 记 "输入了什么 → 选了哪一项", 用来把常用的排在前面; 偏好设置 → 高级 → "重置学习排序" 清空
 - **片段自动展开** 不在 Windows 的密码输入框里触发, 也可以在 偏好设置 → 片段 → "不展开的窗口" 里排除远程桌面、密码管理器等

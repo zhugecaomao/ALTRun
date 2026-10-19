@@ -81,7 +81,7 @@ ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时�
 一部分会。文字历史保存在 `Data\ClipboardHistory.json`, 把文件夹复制到 U 盘或放在同步盘里时会一起带走; 图片和很长的条目默认只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun\Clipboard`)。想让文字历史也只留在这台电脑上, 把 偏好设置 → 剪贴板 → "保存位置" 改成 "全部只存本机" (见 [剪贴板设置](Configuration#clipboard-剪贴板历史) 的 `LocalFiles`)。完全不想在磁盘上留下历史, 把 `Persist` 设为 0: 只放在内存里, 退出 ALTRun 就清空。`IgnoreApps` 里的程序 (默认是几个密码管理器) 和程序标记为隐私的内容不会被记录。
 
 ### 从 2.x 升级后命令不见了
-2.x 的用户命令会从 `ALTRun.ini` 导入为自定义命令, 内置命令由 [系统命令](Extensions#系统命令) 取代。导入只在还没有 `ALTRun.json` 时进行一次: 如果想重新导入, 退出 ALTRun, 把 `Data\ALTRun.json` 改名, 再运行。`ALTRun.ini` 始终保持不变, 详见 [安装与升级](Installation#从-2x-v20260812-及更早-升级到-30)。
+2.x 的用户命令会从 `ALTRun.ini` 导入为自定义命令, 内置命令由 [系统命令](System-Commands#系统命令) 取代。导入只在还没有 `ALTRun.json` 时进行一次: 如果想重新导入, 退出 ALTRun, 把 `Data\ALTRun.json` 改名, 再运行。`ALTRun.ini` 始终保持不变, 详见 [安装与升级](Installation#从-2x-v20260812-及更早-升级到-30)。
 
 ---
 没有找到答案? 请 [提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) 或在 [Discussions](https://github.com/zhugecaomao/ALTRun/discussions) 提问。

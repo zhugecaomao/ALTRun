@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.19.17]
+
+测试版。
+
+Test build.
+
+### 改进
+- Wiki: 网页搜索、窗口切换、剪贴板历史、置顶和最近使用、系统命令和终端 也各有一页 (中英文), 和偏好设置的页面对应; 搜索与快捷键页的输入语法表、首页、侧边栏和设置文件参考里都加了入口, 指向旧位置的链接都改到新页面
+- 偏好设置 → 剪贴板 / 网页搜索 的 "帮助" 按钮和 `F1` 打开各自的页面; `?` 速查表里剪贴板、网页搜索、书签、窗口切换和终端的链接也改到对应的页面
+
 ## [2026.10.19.16]
 
 测试版。
@@ -927,7 +937,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.17...HEAD
+[2026.10.19.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...2026.10.19.17
 [2026.10.19.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...2026.10.19.16
 [2026.10.19.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...2026.10.19.15
 [2026.10.19.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...2026.10.19.14
