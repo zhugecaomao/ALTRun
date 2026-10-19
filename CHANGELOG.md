@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.19.13]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置中 Quick Switch、对话框面板、一键加日期、自定义热键、计算器和脚本扩展的 F1 帮助改为打开各自的 Wiki 页面, 不再统一跳转到旧的扩展功能分类。
+
 ## [2026.10.19.12]
 
 测试版。
@@ -884,7 +893,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...HEAD
+[2026.10.19.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...2026.10.19.13
 [2026.10.19.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...2026.10.19.12
 [2026.10.19.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.10...2026.10.19.11
 [2026.10.19.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.9...2026.10.19.10

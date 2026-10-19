@@ -2,7 +2,7 @@
 
 # 扩展功能
 
-搜索窗口以外的功能。对话框快速跳转和一键加日期各有一页设置 (偏好设置 → 对话框跳转 / 一键加日期)。
+本页是旧的扩展功能综合说明, 保留兼容链接。偏好设置中已独立成页的功能, 可直接阅读: [对话框跳转](Quick-Switch)、[对话框面板](Dialog-Panel)、[一键加日期](Date-Stamp)、[自定义热键](Hotkeys)、[计算器](Calculator)、[脚本扩展](Scripts)。
 
 ## 对话框快速跳转 (Quick Switch)
 在打开 / 保存对话框里一步跳到已经打开的文件夹。做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。

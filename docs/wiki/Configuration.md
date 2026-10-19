@@ -110,12 +110,12 @@
 ### Calculator 计算器
 | 键 | 默认 | 说明 |
 |---|---|---|
-| StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Extensions#计算器) |
+| StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Calculator) |
 | RebarCover | 40 | 结构计算: 保护层 (mm, 每边) |
 | MaxBarSpacing | 300 | 结构计算: 主筋最大间距 (mm) |
 | BarSizes | `[13, 16, 20, 25, 32]` | 结构计算: 配筋面积那一行列出的钢筋直径 (mm) |
 | BarPrefix | `H` | 结构计算: 钢筋代号前缀 (`T`、`Y`、`Φ`...) |
-| Currency | 0 | 货币换算 (`100 usd to sgd`), 每天从 frankfurter.dev 下载汇率, 见 [单位和货币换算](Extensions#单位和货币换算) |
+| Currency | 0 | 货币换算 (`100 usd to sgd`), 每天从 frankfurter.dev 下载汇率, 见 [单位和货币换算](Calculator#单位和货币换算) |
 
 ### Bookmarks 浏览器书签
 | 键 | 默认 | 说明 |
@@ -126,7 +126,7 @@
 偏好设置 → 功能 → 功能选项里也能改。读 Chrome、Edge、Brave、Vivaldi 所有用户配置的书签; Firefox 的书签存在 SQLite 数据库里, 暂不支持。
 
 ### Scripts 脚本扩展
-只有 `Enabled`。脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Extensions#脚本扩展)。
+只有 `Enabled`。脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Scripts)。
 
 ### Recent 置顶和最近使用
 | 键 | 默认 | 说明 |

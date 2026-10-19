@@ -2,7 +2,7 @@
 
 # Extensions
 
-Features outside the search window. Quick Switch and date stamp each have their own settings pages (Preferences → Quick Switch / Dialog Panel / Date Stamp).
+This is the legacy combined guide, retained for compatibility. Features with their own Preferences pages have dedicated guides: [Quick Switch](Quick-Switch), [Dialog Panel](Dialog-Panel), [Date Stamp](Date-Stamp), [Custom Hotkeys](Hotkeys), [Calculator](Calculator), and [Scripts](Scripts).
 
 ## Quick Switch
 Jump an Open / Save dialog to a folder you already have open. The approach follows [Listary](https://www.listary.com/)'s Quick Switch.
