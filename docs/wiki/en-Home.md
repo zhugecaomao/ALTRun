@@ -8,7 +8,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 - **Fast**: results as you type; with [Everything](https://www.voidtools.com/) running, every file on your disks is searched in milliseconds
 - **Learns what you use**: remembers your picks and puts frequent ones first; matches word initials (`vsc`) and pinyin initials (`wx` → 微信)
 - **One window for everyday tasks**: calculator, web search, clipboard history, snippet expansion, system commands, terminal
-- **Portable, data stays on your PC**: no registry entries, no admin rights, no background service; all settings live in the `Data\` folder; one-key updates keep your settings
+- **Portable, data stays on your PC**: no registry entries, no admin rights, no background service; settings and data live in the program's `Data\` folder by default; if the program folder isn't writable, ALTRun uses `%APPDATA%\ALTRun\Data`; you can also change the location in Preferences → Advanced → Settings and data; one-key updates keep your settings
 - **English / Simplified Chinese / Traditional Chinese / Japanese interface**, 22 built-in themes (each in three densities), and you can make your own
 
 > This documentation covers version **3.0** and later. 3.0 redesigned the search window and the settings file; 2.x settings are converted automatically the first time you start it, see [Installation and upgrades](en-Installation).
