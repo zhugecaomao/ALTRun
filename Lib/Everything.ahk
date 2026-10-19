@@ -15,13 +15,15 @@
 class Everything {
     static SORT_NAME := 1, SORT_DATE_MODIFIED_DESC := 14
     static _replyId := 0x414C5400, _pending := 0, _results := "", _listening := false
+    static LastProblem := "", _foreign := 0                               ; 上一次查询为什么是空的 (没接收 / 超时), 给调用方写日志
 
     static IsRunning() {
         return DllCall("FindWindowW", "Str", "EVERYTHING_TASKBAR_NOTIFICATION", "Ptr", 0, "Ptr") != 0
     }
 
-    ; 返回 [{Path, IsFolder}], Everything 没运行或超时返回空数组
+    ; 返回 [{Path, IsFolder}], Everything 没运行或超时返回空数组 (原因在 LastProblem)
     static Query(search, maxResults := 30, sort := 14, timeoutMs := 1000) {
+        Everything.LastProblem := ""
         everythingHwnd := DllCall("FindWindowW", "Str", "EVERYTHING_TASKBAR_NOTIFICATION", "Ptr", 0, "Ptr")
         if !everythingHwnd
             return []
@@ -46,14 +48,19 @@ class Everything {
         NumPut("Ptr", query.Ptr, copyData, A_PtrSize * 2)
         ; Everything 的 IPC 窗口是隐藏的, AHK 的 SendMessage("ahk_id ...") 默认找不到隐藏窗口,
         ; 所以直接调用 SendMessageTimeout (2 = SMTO_ABORTIFHUNG)
-        accepted := 0
+        accepted := 0, started := A_TickCount
         if !DllCall("SendMessageTimeoutW", "Ptr", everythingHwnd, "UInt", 0x4A, "Ptr", A_ScriptHwnd, "Ptr", copyData.Ptr
-                  , "UInt", 2, "UInt", timeoutMs, "UPtr*", &accepted) || !accepted
+                  , "UInt", 2, "UInt", timeoutMs, "UPtr*", &accepted) || !accepted {
+            Everything.LastProblem := "query not accepted after " (A_TickCount - started) " ms"
             return []
+        }
 
+        Everything._foreign := 0
         deadline := A_TickCount + timeoutMs
         while (!IsObject(Everything._results) && A_TickCount < deadline)
             Sleep(5)
+        if !IsObject(Everything._results)                                   ; 没等到回复: Everything 很忙, 或者回复和别的 WM_COPYDATA 撞上了
+            Everything.LastProblem := "no reply in " (A_TickCount - started) " ms (other WM_COPYDATA while waiting: " Everything._foreign ")"
         results := IsObject(Everything._results) ? Everything._results : []
         Everything._pending := 0
         return results
@@ -64,8 +71,11 @@ class Everything {
     ;   然后 numitems 个 {flags, data_offset}; data_offset 处是 DWORD 长度 + UTF-16 路径
     static _OnCopyData(wParam, lParam, msg, hwnd) {
         replyId := NumGet(lParam, 0, "UPtr")
-        if (!Everything._pending || replyId != Everything._pending)
+        if (!Everything._pending || replyId != Everything._pending) {
+            if Everything._pending
+                Everything._foreign++
             return
+        }
         list := NumGet(lParam, A_PtrSize * 2, "Ptr")
         count := NumGet(list, 4, "UInt")
         results := []

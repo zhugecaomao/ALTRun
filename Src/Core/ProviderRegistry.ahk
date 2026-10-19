@@ -124,14 +124,15 @@ class ProviderRegistry {
         return entries
     }
 
-    static Search(rawText) {
+    ; skip: 可选, 这一次不搜的功能 (例如恢复上次的搜索时先不搜文件, 窗口显示后再完整搜一次)
+    static Search(rawText, skip := "") {
         query := SearchQuery(rawText)
         if (query.Text = "")
             return ProviderRegistry.EmptyResults()
 
         results := [], started := Logger.Ms(), slow := ""
         for provider in ProviderRegistry.Providers {
-            if !ProviderRegistry.IsEnabled(provider)
+            if (!ProviderRegistry.IsEnabled(provider) || provider = skip)
                 continue
             try {
                 start := Logger.Ms()
