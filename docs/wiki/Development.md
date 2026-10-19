@@ -45,6 +45,36 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 5. `SearchWindow` 用 NM_CUSTOMDRAW 自己画每一行
 6. 执行时 `ActionCatalog` 按 `Kind` 决定怎么打开, `Knowledge.Record()` 记住这次选择
 
+## 模块边界与数据流
+
+- App 负责启动、全局热键、托盘、重载和退出; AppSettings / SchemaMigration 负责设置默认值、保存与版本迁移。
+- SearchWindow 接收输入并显示结果; SearchQuery 解析输入语法, ProviderRegistry 调用各个 Provider 并合并结果, FuzzyMatcher 计算匹配分数, Knowledge 提供学习排序加分。
+- ResultItem 是搜索功能与界面之间的结果模型; ActionCatalog 根据结果类型生成默认操作和操作面板项目。
+- Src/Providers 中的 Provider 负责各自功能的数据读取和搜索; 共用的文件系统监视放在 Lib/FolderWatcher.ahk, 避免应用索引和文件索引各自实现一套监视器。
+
+~~~mermaid
+flowchart TD
+    Input[SearchWindow 输入] --> Query[SearchQuery]
+    Query --> Registry[ProviderRegistry]
+    Registry --> Providers[各 Provider]
+    Providers --> Match[FuzzyMatcher 与 Knowledge]
+    Match --> Results[ResultItem 列表]
+    Results --> UI[SearchWindow 显示]
+    UI --> Actions[ActionCatalog 执行操作]
+~~~
+
+## 后台任务与资源生命周期
+
+- 启动时加载设置、主题、索引和各 Provider; 设置变更通过应用 / 确定保存后重载, 取消则丢弃工作副本。
+- 文件夹监视器和定时器只负责发现变化并安排后台工作; 定时回调应通过 Logger.Watch(label, fn) 记录耗时。主线程里的网络请求使用 HttpGet.Start, 避免同步下载阻塞窗口。
+- 索引与历史数据保存在数据目录, 可重建的缓存应允许丢失后恢复; 退出时应停止监视和定时任务, 并完成必要的缓存保存, 避免回调继续访问已关闭的窗口或已释放的状态。
+- 排查问题时先看搜索结果是否只在特定 Provider 缺失, 再检查对应设置、索引目录与排除规则; 需要更多信息时开启高级页的调试日志。日志用于诊断, 不应记录用户输入的搜索文字。
+
+## 测试能验证什么
+
+- Tests/RunTests.ahk 覆盖可脱离界面的解析、匹配、设置迁移、计算器、文本处理、排序和部分 Provider 逻辑; 通过不代表 Windows 窗口交互一定正确。
+- Windows CI 还负责语法检查和偏好设置布局检查; 截图工作流用于人工核对界面, 性能基准用于比较典型搜索工作负载。三者用途不同, 不能互相替代。
+
 ## 新增一个搜索功能
 1. 在 `Src\Providers\` 新建 `XxxProvider.ahk`:
    ```autohotkey

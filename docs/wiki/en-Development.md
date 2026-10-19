@@ -45,6 +45,36 @@ When it runs, ALTRun creates `Data\` in its folder (the settings file `ALTRun.js
 5. `SearchWindow` draws every row itself with NM_CUSTOMDRAW
 6. When a result runs, `ActionCatalog` decides how to open it from its `Kind`, and `Knowledge.Record()` remembers the choice
 
+## Module boundaries and data flow
+
+- App owns startup, global hotkeys, the tray, reload and shutdown. AppSettings / SchemaMigration own defaults, persistence and settings-version migration.
+- SearchWindow receives input and displays results. SearchQuery parses the syntax, ProviderRegistry calls and merges providers, FuzzyMatcher scores matches, and Knowledge adds learned-ranking bonuses.
+- ResultItem is the result model shared by providers and the UI. ActionCatalog builds default actions and action-panel entries from each result's kind.
+- Providers in Src/Providers own their feature's data and search logic. Shared file-system watching belongs in Lib/FolderWatcher.ahk; application and file indexing should not implement separate watchers.
+
+~~~mermaid
+flowchart TD
+    Input[SearchWindow input] --> Query[SearchQuery]
+    Query --> Registry[ProviderRegistry]
+    Registry --> Providers[Feature providers]
+    Providers --> Match[FuzzyMatcher and Knowledge]
+    Match --> Results[ResultItem list]
+    Results --> UI[SearchWindow display]
+    UI --> Actions[ActionCatalog actions]
+~~~
+
+## Background work and resource lifecycle
+
+- Startup loads settings, themes, indexes and providers. Applying or confirming settings saves the working copy and reloads ALTRun; Cancel discards it.
+- Folder watchers and timers should detect changes and schedule background work. Timer callbacks should be wrapped with Logger.Watch(label, fn) for timing. Use HttpGet.Start for network work rather than blocking the main thread with a synchronous download.
+- Indexes and history live in the data directory; rebuildable caches should recover if lost. Shutdown should stop watchers and timers and finish required cache writes so callbacks do not touch closed windows or released state.
+- To diagnose missing results, identify whether one provider is affected, then check its settings, indexed folders and exclusions. Enable debug logging on the Advanced page when more evidence is needed. Logs should help diagnose behavior without recording search text.
+
+## What the tests cover
+
+- Tests/RunTests.ahk covers UI-independent parsing, matching, settings migration, calculator logic, text processing, ranking and some provider logic. Passing it does not prove every Windows UI interaction works.
+- Windows CI also checks syntax and Preferences layout. The screenshot workflow supports visual review, while the benchmark compares representative search workloads. These checks serve different purposes and are not interchangeable.
+
 ## Adding a search feature
 1. Create `XxxProvider.ahk` in `Src\Providers\`:
    ```autohotkey

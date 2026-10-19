@@ -27,6 +27,18 @@ Before you type anything, the search window lists (pinned items have a pin at th
 
 Only results you can open again are remembered: apps, files, folders, URLs, custom commands and system commands; clipboard history, calculations, snippets, web searches and windows are not. Select an item and press `Ctrl+Del` to unpin it or remove it from the recent items; Preferences → Advanced → "Reset Learned Ranking" clears the recent items. The whole feature can be turned off in Preferences → Features.
 
+## Browser bookmarks
+
+Enable Browser Bookmarks in Preferences → Features to find bookmarks by name, or type bm keyword to search bookmarks only. In normal results, matching bookmarks appear after apps and commands, with up to 8 shown. Select one and press Enter to open it in the default browser, or Alt+Enter to copy its URL.
+
+Chrome, Edge, Brave and Vivaldi profiles are supported. ALTRun reads bookmarks at startup, then checks their files in the background every 30 seconds and reloads only when they change. Firefox bookmarks are not supported. See [Settings reference](en-Configuration#bookmarks) for the keyword and default-results options.
+
+## Automatic application index updates
+
+By default, the application index watches the current user's and public Desktop and Start Menu folders, including subfolders. When an app shortcut is added, removed or renamed, ALTRun updates the index quietly in the background; it does not show a notification, and rebuilding pauses while the search window is open. Changing the indexed folders, file types, exclusion rules or subfolder depth in Preferences → Applications and pressing **Apply** or **OK** also rebuilds the index.
+
+If software was installed while ALTRun was not running, a cache check after the next start catches up. Store apps are scanned separately on a schedule. Manual rebuilding is usually unnecessary; if results are clearly out of date, open Preferences → Applications and click **Rebuild Index**.
+
 ## Usage tips
 Each time you open the search window, the status bar at the bottom shows another usage tip (for example "Tip: folder bk  search folders only"), in turn. Once you know them, turn off "Show a usage tip" (below "Show the status bar") in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
 
