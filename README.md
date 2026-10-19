@@ -152,6 +152,7 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `F3` | Edit the selected result, or add an app, file or URL as a custom command |
 | `Ctrl+Del` | Delete the selected result (with confirmation); apps: hide from results |
 | `Ctrl+C` / `Ctrl+L` | Copy the selected result / large type |
+| `Ctrl+E` | Edit the selected file in its editor (e.g. an .ahk script) |
 | `F2` or `Ctrl+,` / `F4` | Preferences / edit ALTRun.json in Notepad |
 | `F1` | About ALTRun (version, check for updates, project page) |
 | `Ctrl+Alt+C` | Clipboard history |

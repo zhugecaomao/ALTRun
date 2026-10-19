@@ -20,6 +20,7 @@
 ;   空格 (已输入文字, SpaceToRun)    执行选中项; Shift+空格输入空格
 ;   Ctrl+C (输入框没有选中文字时)    复制当前项
 ;   Ctrl+L                           大字显示
+;   Ctrl+E                           编辑选中的文件 (这类文件登记了 "编辑" 时, 见 ActionCatalog.EditorFor)
 ;   F3                               编辑当前项 (没有结果时: 用输入的文字新建自定义命令)
 ;   Ctrl+Del (光标在末尾时)          删除当前项 (确认后)
 ;   F1                               关于 ALTRun (偏好设置的高级页)
@@ -1433,6 +1434,9 @@ class SearchWindow {
             case 0x4C:                                                      ; Ctrl+L
                 SearchWindow._ShowLargeType()
                 return 0
+            case 0x45:                                                      ; Ctrl+E
+                SearchWindow._EditFileSelected()
+                return 0
             case 0xBC:                                                      ; Ctrl+,
                 SearchWindow.Hide()
                 App.OpenPreferences()
@@ -1503,6 +1507,15 @@ class SearchWindow {
             return
         SearchWindow.Hide()
         ActionCatalog.CopyText(item.CopyText())
+    }
+
+    ; 选中的文件登记了 "编辑" 时用编辑程序打开 (操作面板里的 "编辑"); 别的结果不做什么
+    static _EditFileSelected() {
+        item := SearchWindow.SelectedItem()
+        if !(IsObject(item) && item.Kind = "file" && IsObject(ActionCatalog.EditorFor(item.Arg)))
+            return
+        SearchWindow.Hide()
+        SearchWindow._SafeRun(() => ActionCatalog.EditFile(item.Arg))
     }
 
     static _ShowLargeType() {

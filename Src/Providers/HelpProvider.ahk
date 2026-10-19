@@ -54,6 +54,7 @@ class HelpProvider {
             ["Query"     , "CustomCommands", "Commands-and-Snippets"],
             ["CheckPaths", "CustomCommands", "Commands-and-Snippets"],
             ["LargeType" , ""              , "Usage"],
+            ["EditFile"  , "FileSearch"    , "Usage"],
             ["Prefs"     , ""              , "Configuration"],
             ["EditJson"  , ""              , "Configuration"],
             ["About"     , ""              , "Installation"],
