@@ -276,6 +276,7 @@ class AppSettings {
             ),
             "Appearance", Map(
                 "Theme"      , "System",                                    ; 内置主题名 (见 ThemeManager; System = 跟随 Windows 的深 / 浅色) 或 Themes\<名称>.json
+                "Compact"    , 0,                                           ; 紧凑: 任何主题的字号、行高、图标小一些, 一屏显示更多结果
                 "Width"      , 700,
                 "VisibleRows", 8,
                 "Placeholder", "",                                          ; 空搜索框里的灰色文字, 空 = 默认 ("ALTRun 搜索")

@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.19.12]
+
+测试版。
+
+Test build.
+
+### 升级
+- 内置主题 "紧凑深色"、"紧凑浅色"、"紧凑午夜" 去掉了, 改成任何主题都能用的 "紧凑" 选项。原来用这三个主题的: 打开 偏好设置 → 外观, 选 深色 / 浅色 / 午夜, 勾选 大小 → "紧凑", 点 确定。没改之前会自动按 "对应的主题 + 紧凑" 显示, 打开外观页时也已经替你选好, 点 确定 即可。紧凑午夜原来的图标是 24 px, 现在和其它主题的紧凑一样是 28 px
+
+### 新增
+- 偏好设置 → 外观 → 大小 → "紧凑": 任何主题 (包括自定义主题) 的字号、边距、行高和图标都小一些, 同样的高度能显示更多结果。默认尺寸的主题和以前的紧凑深色一样 (行高 54 → 48, 图标 32 → 28 px), 自己设了尺寸的主题按同样的比例缩小
+
 ## [2026.10.19.11]
 
 测试版。
@@ -870,7 +882,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...HEAD
+[2026.10.19.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...2026.10.19.12
 [2026.10.19.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.10...2026.10.19.11
 [2026.10.19.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.9...2026.10.19.10
 [2026.10.19.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.8...2026.10.19.9

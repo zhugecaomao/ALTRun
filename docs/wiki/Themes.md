@@ -12,15 +12,12 @@
 | 跟随系统 | `System` | 默认, 跟随 Windows 的浅色 / 深色模式 (Light 或 Dark), 系统切换时自动更新 |
 | 浅色 | `Light` | 浅灰白底 + 淡蓝选中 |
 | 深色 | `Dark` | 深灰底 + 蓝灰选中 |
-| 紧凑深色 | `DarkCompact` | 和深色一样的配色, 字号和行高小一些, 一屏显示更多结果 |
 | 经典 | `Classic` | 浅灰底 + 醒目的蓝色整行选中条 |
 | 午夜 | `Midnight` | 接近纯黑, 圆角选中 |
-| 紧凑午夜 | `MidnightCompact` | 和午夜一样的配色, 字号、行高小一些, 图标 24 px |
 | 霜白 | `Frost` | 半透明的冷白色 |
 | 石墨 | `Graphite` | macOS 深色 + 系统蓝强调色 |
 | 海洋 | `Ocean` | 蓝灰色 ([Nord](https://www.nordtheme.com/) 配色) |
 | 纸张 | `Paper` | 米黄色, 适合长时间看 |
-| 紧凑浅色 | `LightCompact` | 和浅色一样的配色, 字号和行高小一些 (和紧凑深色对应) |
 | 现代深色 | `DarkModern` | VS Code 默认的 Dark Modern 配色: 深灰底 + 深蓝选中 + 亮蓝高亮, 图标 24 px |
 | 现代浅色 | `LightModern` | VS Code 默认的 Light Modern 配色: 浅灰白底 + 淡蓝选中, 图标 24 px |
 | Monokai | `Monokai` | 经典的 Monokai 配色: 橄榄深色底 + 绿色高亮 |
@@ -36,18 +33,21 @@
 | ![Light](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/search.png) | ![Dark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dark.png) | ![Classic](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-classic.png) |
 | **Midnight** | **Frost** | **Graphite** |
 | ![Midnight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-midnight.png) | ![Frost](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-frost.png) | ![Graphite](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-graphite.png) |
-| **Ocean** | **Paper** | **DarkCompact** |
-| ![Ocean](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-ocean.png) | ![Paper](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-paper.png) | ![DarkCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-darkcompact.png) |
-| **LightCompact** | **TokyoNight** | **Dracula** |
-| ![LightCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightcompact.png) | ![TokyoNight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-tokyonight.png) | ![Dracula](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dracula.png) |
-| **CatppuccinMocha** | **GruvboxDark** | **SolarizedLight** |
-| ![CatppuccinMocha](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-catppuccinmocha.png) | ![GruvboxDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-gruvboxdark.png) | ![SolarizedLight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-solarizedlight.png) |
-| **MidnightCompact** | **DarkModern** | **LightModern** |
-| ![MidnightCompact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-midnightcompact.png) | ![DarkModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-darkmodern.png) | ![LightModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightmodern.png) |
-| **Monokai** | **OneDark** | |
-| ![Monokai](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-monokai.png) | ![OneDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-onedark.png) | |
+| **Ocean** | **Paper** | **Dark + 紧凑** |
+| ![Ocean](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-ocean.png) | ![Paper](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-paper.png) | ![Dark + 紧凑](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-compact.png) |
+| **TokyoNight** | **Dracula** | **CatppuccinMocha** |
+| ![TokyoNight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-tokyonight.png) | ![Dracula](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dracula.png) | ![CatppuccinMocha](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-catppuccinmocha.png) |
+| **GruvboxDark** | **SolarizedLight** | **DarkModern** |
+| ![GruvboxDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-gruvboxdark.png) | ![SolarizedLight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-solarizedlight.png) | ![DarkModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-darkmodern.png) |
+| **LightModern** | **Monokai** | **OneDark** |
+| ![LightModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightmodern.png) | ![Monokai](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-monokai.png) | ![OneDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-onedark.png) |
 
 Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些文件升级时会被替换, 请不要直接修改, 改用下面的自定义主题。
+
+## 紧凑
+偏好设置 → 外观 → 大小 → **紧凑**: 任何主题 (包括自定义主题) 的字号、边距、行高和图标都小一些, 同样的高度能显示更多结果 (设置里是 `Appearance.Compact`)。浅色、深色等用默认尺寸的主题: 输入框字号 20 → 17, 标题 13 → 11.5, 行高 54 → 48, 图标 32 → 28 px; 自己设了尺寸的主题 (例如现代深色) 按同样的比例缩小。
+
+以前的内置主题 紧凑深色 (`DarkCompact`)、紧凑浅色 (`LightCompact`)、紧凑午夜 (`MidnightCompact`) 已经去掉, 改成 深色 / 浅色 / 午夜 + 紧凑。设置里还是这几个名字时, 会自动按 "对应的主题 + 紧凑" 显示; 打开 偏好设置 → 外观 会自动选好, 点 **确定** 后保存成新的写法。自定义主题的 `Base` 写着这几个名字的照常能用。紧凑午夜原来的图标是 24 px, 想要更小的图标可以用自定义主题设置 `IconSize`。
 
 ## 自定义主题
 最简单的方法: 偏好设置 → 外观 → 选中一个接近的主题 → **复制为自定义主题...** → 起个名字。ALTRun 会在 `Themes\<名字>.json` 生成一份包含全部键的文件, 自动选中它并用记事本打开。改好颜色后保存, 再在偏好设置里点 **应用** (或托盘菜单 → 重新载入) 就能看到效果。
