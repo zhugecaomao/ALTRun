@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.17.3"
+    static Version := "2026.10.19.1"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -635,7 +635,8 @@ class App {
     ; OnExit 回调返回非零值会取消退出, 所以这里不返回任何值
     static _OnExit() {
         CapsLockHelper.Stop()
-        try ApplicationProvider.SavePending()                              ; 后台重建后还没来得及写的应用索引
+        try ApplicationProvider.SavePending()                              ; 后台重建后还没来得及写的应用索引、文件索引
+        try FileIndex.SavePending()
         Knowledge.Save()
         Usage.Save()
         ClipboardProvider.Save()

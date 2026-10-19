@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.19.1]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内置文件索引 (没有 Everything 时用) 也改成监视文件夹 (#189): 索引的文件夹里有文件 / 文件夹新增、删除、改名, 安静 5 秒后在后台重新扫描 (两次至少隔 5 分钟); 修改文件内容、浏览器下载中的临时文件、Office 的锁文件不算, 比扫描深度深的、排除的也不算。刷新间隔留作兜底, 偏好设置里的说明也改了
+- 文件索引扫完后的写缓存 (3 万条约 0.6–0.8 秒) 改到键盘鼠标空闲 2 秒后再写, 退出时还没写就马上写
+- 应用索引和文件索引共用一套文件夹监视 (`Lib\FolderWatcher.ahk`), 2026.10.17.1 / .2 的失败恢复和安全关闭也在里面; 某个文件夹停掉一阵又恢复监视时, 按 "可能有变化" 重建一次
+
 ## [2026.10.17.3]
 
 测试版。
@@ -759,7 +770,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.1...HEAD
+[2026.10.19.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.3...2026.10.19.1
 [2026.10.17.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.2...2026.10.17.3
 [2026.10.17.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.1...2026.10.17.2
 [2026.10.17.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.16.8...2026.10.17.1

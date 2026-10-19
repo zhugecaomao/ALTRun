@@ -373,7 +373,7 @@
   "Prefs.MaxBarSpacing": "最大間距 (mm)",
   "Prefs.MaxBarSpacing.Desc": "間距大於這個值時增加主筋。",
   "Prefs.MaxEntries": "最多筆數",
-  "Prefs.MaxEntries.Desc": "掃描到這麼多個檔案和資料夾後停止; 索引按這個間隔在背景自動更新 (建議 60 分鐘以上)",
+  "Prefs.MaxEntries.Desc": "掃描到這麼多個檔案和資料夾後停止; 資料夾有變化時自動更新, 間隔只是備援",
   "Prefs.NoLog": "還沒有記錄。勾選「寫入偵錯記錄檔」, 按「套用」, 然後重現一下問題。",
   "Prefs.NoScripts": "(還沒有腳本)",
   "Prefs.NotRunning": "沒有執行 - 使用內建索引",

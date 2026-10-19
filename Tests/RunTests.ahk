@@ -21,6 +21,7 @@
 #Include %A_ScriptDir%\..\Lib\ClipboardData.ahk
 #Include %A_ScriptDir%\..\Lib\Dialogs.ahk
 #Include %A_ScriptDir%\..\Lib\HttpGet.ahk
+#Include %A_ScriptDir%\..\Lib\FolderWatcher.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
 #Include %A_ScriptDir%\..\Src\Core\AppSettings.ahk
@@ -90,7 +91,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -882,6 +883,85 @@ class Tests {
         TestRunner.True("FileIndex.word start >= 70", FileIndex.ScoreName("omega", "project omega") >= 70)
         eq("no match", FileIndex.ScoreName("xyz", "notes.txt"), 0)
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+    }
+
+    ; 监视索引的文件夹: 哪些变化要重新扫描、变化后重新扫描、扫完后等空闲再写缓存
+    static FileIndexWatch() {
+        eq := (n, a, e) => TestRunner.Equal("FileIndexWatch." n, a, e)
+        roots := ["C:\Users\me\Desktop", "D:\Docs"]
+        changed := (fullPath, exclude := "") => FileIndex.IsWatchedChange(fullPath, roots, 2, exclude, "D:\ALTRun")
+        eq("file in root", changed("C:\Users\me\Desktop\Plan.dwg"), true)
+        eq("second level", changed("D:\Docs\Tower\Plan.pdf"), true)
+        eq("deeper than the scan", changed("D:\Docs\Tower\Old\Plan.pdf"), false)
+        eq("outside the roots", changed("C:\Users\me\Downloads\a.zip"), false)
+        eq("similar root name", changed("D:\Docs2\a.txt"), false)
+        eq("download in progress", changed("C:\Users\me\Desktop\setup.exe.crdownload"), false)
+        eq("office lock file", changed("D:\Docs\~$Report.docx"), false)
+        eq("temp file", changed("D:\Docs\~WRL0001.tmp"), false)
+        eq("libreoffice lock", changed("D:\Docs\.~lock.Report.odt#"), false)
+        eq("excluded", changed("D:\Docs\node_modules", "i)\\node_modules(\\|$)"), false)
+        eq("own folder", FileIndex.IsWatchedChange("D:\Docs\ALTRun\Data\FileIndex.json", roots, 3, "", "D:\Docs\ALTRun"), false)
+
+        root := A_Temp "\ALTRunFileIndexWatch"
+        try DirDelete(root, true)
+        DirCreate(root)
+        FileAppend("", root "\Old Plan.dwg")
+        options := AppSettings.Feature("FileSearch")
+        saved := {Folders: options["ScopeFolders"], Everything: options["UseEverything"], File: FileIndex.File
+            , Paths: FileIndex.Paths, Names: FileIndex.Names, Folders2: FileIndex.Folders
+            , Quiet: FileIndex.WatchQuietMs, Gap: FileIndex.WatchMinGapMs, Idle: FileIndex.SaveIdleMs}
+        options["ScopeFolders"] := [root], options["UseEverything"] := 0
+        FileIndex.File := A_Temp "\ALTRunFileIndexWatch.json"
+        try FileDelete(FileIndex.File)
+        FileIndex.WatchQuietMs := 0, FileIndex.WatchMinGapMs := 0, FileIndex.SaveIdleMs := 999999999   ; 不自动写, 测试里自己写
+        waitScan() {
+            Loop 100 {
+                if !FileIndex.Scanning
+                    break
+                Sleep(20)
+            }
+        }
+        try {
+            FileIndex.StartWatching()
+            eq("watching", FileIndex._watcher.Count, 1)
+            FileIndex.Rebuild(), waitScan()
+            eq("scanned", FileIndex.Paths.Length, 1)
+            eq("save waits for idle", FileIndex._savePending && !FileExist(FileIndex.File), true)
+            FileIndex.SavePending()
+            eq("saved on demand", !FileIndex._savePending && FileExist(FileIndex.File) != "", true)
+            FileIndex._PollWatches()
+            eq("no change, no scan", FileIndex.Scanning, false)
+            FileAppend("x", root "\Old Plan.dwg")                         ; 修改文件: 索引里只有路径, 不用重新扫描
+            FileAppend("", root "\Report.docx.crdownload")                ; 临时文件也不算
+            Sleep(300)
+            FileIndex._PollWatches()
+            eq("edit and temp file ignored", FileIndex.Scanning || FileIndex._changedAt != 0, false)
+            FileAppend("", root "\New Plan.dwg")
+            Sleep(300)
+            FileIndex._PollWatches()
+            eq("new file rescans", FileIndex.Scanning || FileIndex.Paths.Length = 3, true)
+            waitScan()
+            eq("new file indexed", FileIndex.Paths.Length, 3)               ; 包括 .crdownload (扫描不跳过, 只是它不触发)
+            FileIndex.WatchMinGapMs := 600000
+            FileDelete(root "\New Plan.dwg")
+            Sleep(300)
+            FileIndex._PollWatches()
+            eq("minimum gap", FileIndex.Scanning = false && FileIndex._changedAt != 0, true)
+            FileIndex.StopWatching()
+            eq("stopped", FileIndex._watcher, "")
+        } finally {
+            FileIndex.StopWatching()
+            waitScan()
+            if (FileIndex._saveTimer != "")
+                SetTimer(FileIndex._saveTimer, 0)
+            FileIndex._savePending := false, FileIndex._changedAt := 0, FileIndex._lastScan := 0
+            options["ScopeFolders"] := saved.Folders, options["UseEverything"] := saved.Everything
+            FileIndex.File := saved.File
+            FileIndex.Paths := saved.Paths, FileIndex.Names := saved.Names, FileIndex.Folders := saved.Folders2
+            FileIndex.WatchQuietMs := saved.Quiet, FileIndex.WatchMinGapMs := saved.Gap, FileIndex.SaveIdleMs := saved.Idle
+            try FileDelete(A_Temp "\ALTRunFileIndexWatch.json")
+            try DirDelete(root, true)
+        }
     }
 
     ; 文件类型筛选: doc 报告 / cad 平面图 (和 Listary 一样)
@@ -1801,8 +1881,8 @@ class Tests {
         savedQuiet := ApplicationProvider.WatchQuietMs, savedGap := ApplicationProvider.WatchMinGapMs
         ApplicationProvider.WatchQuietMs := 0, ApplicationProvider.WatchMinGapMs := 0
         ApplicationProvider.StartWatching()
-        eq("watching the folder", ApplicationProvider._watches.Length, 1)
-        eq("watch read pending", ApplicationProvider._watches[1].Pending, true)
+        eq("watching the folder", ApplicationProvider._watcher.Count, 1)
+        eq("watch read pending", ApplicationProvider._watcher.Watches[1].Pending, true)
         ApplicationProvider._PollWatches()
         eq("no change, no rebuild", IsObject(ApplicationProvider._job), false)
         FileAppend("", root "\notes2.txt")                                  ; 不是应用的文件: 不重建
@@ -1860,55 +1940,44 @@ class Tests {
         root := A_Temp "\ALTRunWatcherRecoveryTest"
         try DirDelete(root, true)
         DirCreate(root)
-        savedWatches := ApplicationProvider._watches
-        savedChangedAt := ApplicationProvider._changedAt
-        savedQuiet := ApplicationProvider.WatchQuietMs
-        savedGap := ApplicationProvider.WatchMinGapMs
+        watcher := ""
         try {
-            ApplicationProvider.StopWatching()
-            ApplicationProvider._watches := []
-            ApplicationProvider._changedAt := 0
-            ApplicationProvider.WatchQuietMs := 60000              ; 只检查检测到变化，不触发后台重建
-            ApplicationProvider.WatchMinGapMs := 0
-
-            watch := ApplicationProvider._CreateWatch(root)
-            eq("watch created", IsObject(watch), true)
-            if !IsObject(watch)
+            watcher := FolderWatcher([root, root "\missing"])
+            eq("missing folder skipped", watcher.Count, 1)
+            if !watcher.Count
                 return
+            watch := watcher.Watches[1]
             eq("initial read pending", watch.Pending, true)
+            eq("nothing yet", watcher.Poll().Length, 0)
 
-            ; 模拟读取失败后被禁用的监视器；Poll 应重新打开目录并继续等待变化。
-            watch.Disabled := true
+            ; 模拟再开始等失败后停掉的文件夹: 到时间重新打开, 报告 "*" (停掉期间可能漏了变化), 之后照常监视
+            watch.Disabled := true, watch.RetryAt := A_TickCount + 60000
+            eq("waits for retry", watcher.Poll().Length, 0)
             watch.RetryAt := 0
-            ApplicationProvider._watches := [watch]
-            ApplicationProvider._PollWatches()
-            recovered := ApplicationProvider._watches[1]
-            eq("disabled watcher replaced", recovered != watch, true)
-            eq("recovered read pending", recovered.Pending, true)
-            eq("recovered watcher enabled", recovered.HasOwnProp("Disabled"), false)
-
+            changes := watcher.Poll()
+            recovered := watcher.Watches[1]
+            eq("disabled watch replaced", recovered != watch, true)
+            eq("recovery reports unknown changes", changes.Length = 1 && changes[1] = "*", true)
+            eq("recovered read pending", recovered.Pending && !recovered.Disabled, true)
             FileAppend("", root "\Recovered.exe")
             Sleep(300)
-            ApplicationProvider._PollWatches()
-            eq("recovered watcher detects application change", ApplicationProvider._changedAt > 0, true)
+            changes := watcher.Poll()
+            eq("recovered watch reports the file", changes.Length >= 1 && changes[1] = root "\Recovered.exe", true)
 
-            ; 多次关闭仍在等待的异步读取，确认关闭后不再标记为 pending。
-            ApplicationProvider.StopWatching()
+            ; 关闭还在等的读取: 等它结束后才放掉缓冲区, 多次打开 / 关闭都正常
             for i in [1, 2, 3] {
-                pendingWatch := ApplicationProvider._CreateWatch(root)
-                eq("close cycle " i " created", IsObject(pendingWatch), true)
+                pendingWatch := FolderWatcher.Create(root)
+                eq("close cycle " i " created", IsObject(pendingWatch) && pendingWatch.Pending, true)
                 if !IsObject(pendingWatch)
                     continue
-                eq("close cycle " i " pending", pendingWatch.Pending, true)
-                ApplicationProvider._CloseWatch(pendingWatch)
-                eq("close cycle " i " completed", pendingWatch.Pending, false)
+                FolderWatcher.Close(pendingWatch)
+                eq("close cycle " i " completed", pendingWatch.Pending || pendingWatch.Handle || pendingWatch.Event, false)
+                FolderWatcher.Close(pendingWatch)                           ; 再关一次也没事
             }
+            eq("create missing", FolderWatcher.Create(root "\missing"), "")
         } finally {
-            ApplicationProvider.StopWatching()
-            ApplicationProvider._watches := savedWatches
-            ApplicationProvider._changedAt := savedChangedAt
-            ApplicationProvider.WatchQuietMs := savedQuiet
-            ApplicationProvider.WatchMinGapMs := savedGap
+            if IsObject(watcher)
+                watcher.Stop()
             try DirDelete(root, true)
         }
     }

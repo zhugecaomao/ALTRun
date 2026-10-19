@@ -51,7 +51,7 @@ ALTRun picks automatically:
 | Situation | What is searched |
 |---|---|
 | [Everything](https://www.voidtools.com/) is running | Queries **all disks** directly through Everything's IPC interface, instantly; no `Everything64.dll` or `es.exe` needed |
-| Everything isn't running | The built-in index: scans Desktop, Documents and Downloads in the background (4 levels deep, at most 30,000 items), cached in `Data\FileIndex.json` and rescanned in the background every 60 minutes by default. If Everything is running when ALTRun starts, the built-in index isn't read or scanned until Everything is closed and it's actually needed |
+| Everything isn't running | The built-in index: scans Desktop, Documents and Downloads in the background (4 levels deep, at most 30,000 items), cached in `Data\FileIndex.json`. When files or folders are added, removed or renamed in those folders, it is rescanned in the background a few seconds later (at most once every 5 minutes; edits to file contents and browser downloads in progress don't count), plus a fallback rescan every 60 minutes by default. If Everything is running when ALTRun starts, the built-in index isn't read or scanned until Everything is closed and it's actually needed |
 
 The top of Preferences → Search Sources shows whether Everything is running right now.
 
@@ -78,7 +78,7 @@ Preferences → File Search (how a search starts, file types, number of results)
 | ScopeDepth | 4 | Subfolder depth of the built-in index |
 | ScopeExclude | `node_modules`, `.git`, `__pycache__`, Recycle Bin | Folders the built-in index skips (regular expression) |
 | MaxEntries | 30000 | Maximum number of items in the built-in index |
-| RefreshMinutes | 60 | How often the built-in index is refreshed in the background (60 or more recommended, at least 5 minutes; checked at startup and then every minute, rebuilt once the keyboard and mouse have been idle for 30 seconds and the search window is closed; not refreshed while Everything is used) |
+| RefreshMinutes | 60 | Fallback: the built-in index is also rescanned in the background when its cache is older than this (at least 5 minutes; checked at startup and then every minute, rebuilt once the keyboard and mouse have been idle for 30 seconds and the search window is closed). Normally it updates itself by watching the folders; nothing is scanned while Everything is used |
 
 After changing what the built-in index covers, click "Rebuild File Index" in Preferences to apply it right away.
 
