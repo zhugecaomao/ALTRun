@@ -616,7 +616,7 @@ class PreferencesWindow {
         PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 4)
         PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", "L")
         PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", "L")
-        PreferencesWindow._FieldButton("Features.Applications.Depth", "Prefs.AppDepth", "Prefs.RebuildIndex", (*) => App.RebuildIndex())   ; 没有刷新间隔: 监视文件夹, 有变化时自动更新
+        PreferencesWindow._FieldButton("Features.Applications.Depth", "Prefs.AppDepth", "Prefs.RebuildIndex", (button, *) => PreferencesWindow._RebuildApps(button))   ; 没有刷新间隔: 监视文件夹, 有变化时自动更新
         PreferencesWindow._Section("Prefs.Section.AppResults")
         PreferencesWindow._Lines("Features.Applications.Hidden", "Prefs.AppHidden", 4)
         PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps", , , "Prefs.Group.Options")
@@ -641,15 +641,14 @@ class PreferencesWindow {
     static _BuildFileIndex() {
         PreferencesWindow._BeginPage("Prefs.Page.FileIndex", 130)
         PreferencesWindow._Section("Prefs.Section.Everything")
-        status := I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning")   ; 现在有没有在运行, 写在复选框文字后面
-        PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", , , , , I18n.T("Prefs.UseEverything") " (" status ")")
         pinyinHelp := HelpProvider.WikiPage("File-Search") (SubStr(I18n.Lang, 1, 2) = "zh" ? "#常见问题" : "#troubleshooting")
-        PreferencesWindow._LinkDesc(I18n.T("Prefs.EverythingPinyin", pinyinHelp), PreferencesWindow._InputX() + 18)   ; 怎样让 Everything 支持拼音 (和复选框的文字对齐)
+        PreferencesWindow._LinkDesc(I18n.T("Prefs.EverythingPinyin", pinyinHelp), PreferencesWindow.ContentX)   ; 分节的说明: 怎样让 Everything 支持拼音 (和内置索引一节的拼音说明对照)
+        PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", , I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning"))   ; 现在有没有在运行
         PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", "L")
         PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", "L", "folder")
         PreferencesWindow._Section("Prefs.Section.BuiltinIndex")
         PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 4)
-        PreferencesWindow._FieldButton("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", "Prefs.RebuildFileIndex", (*) => FileIndex.Rebuild())
+        PreferencesWindow._FieldButton("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", "Prefs.RebuildFileIndex", (button, *) => PreferencesWindow._RebuildFiles(button))
         PreferencesWindow._Field("Features.FileSearch.ScopeExclude", "Prefs.ScopeExclude", "L")
         PreferencesWindow._Pair(["Features.FileSearch.MaxEntries", "Prefs.MaxEntries", "S", "number"], ["Features.FileSearch.RefreshMinutes", "Prefs.RefreshMinutes", "S", "number"])
     }
@@ -1198,9 +1197,9 @@ class PreferencesWindow {
         PreferencesWindow._Below(10, ctrl)
     }
 
-    ; 带链接的灰色说明 (<a href="...">...</a>, 点了打开网页), 放在没有说明的复选框下面
+    ; 带链接的灰色说明 (<a href="...">...</a>, 点了打开网页), 放在没有说明的分节标题下面
     static _LinkDesc(text, x) {
-        PreferencesWindow._y -= 6                                           ; 收回复选框没有说明时留的间距
+        PreferencesWindow._y -= 6                                           ; 和分节自己的说明一样, 离标题下的线 4 像素
         PreferencesWindow.Gui.SetFont("s8")
         ctrl := PreferencesWindow._Add("Link", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x) " cGray", text)
         PreferencesWindow.Gui.SetFont("s9")
@@ -1247,11 +1246,11 @@ class PreferencesWindow {
 
     ; 复选框放在控件列; group: 左列的分组标签 (一组里的第一个复选框才写)。
     ; desc: 代替 "<labelKey>.Desc" 显示的说明 (例如随状态变化的文字); width: 默认到页面右边
-    static _Check(path, labelKey, x := 0, desc := "", group := "", width := 0, text := "") {
+    static _Check(path, labelKey, x := 0, desc := "", group := "", width := 0) {
         x := x ? x : PreferencesWindow._InputX()
         if (group != "")
             PreferencesWindow._GroupLabel(group)
-        ctrl := PreferencesWindow._Add("Checkbox", "x" x " w" (width ? width : PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), (text != "") ? text : I18n.T(labelKey))   ; 建的时候就给全文字: 放不下时按换行后的高度建
+        ctrl := PreferencesWindow._Add("Checkbox", "x" x " w" (width ? width : PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T(labelKey))
         ctrl.Value := PreferencesWindow.GetPath(PreferencesWindow.Working, path) ? 1 : 0
         PreferencesWindow._Bind(path, () => ctrl.Value)
         hasDesc := (desc != "" || PreferencesWindow._HasDesc(labelKey))
@@ -1530,6 +1529,41 @@ class PreferencesWindow {
         ctrl.Move(, rowY - 3)
         return ctrl
     }
+    ; "重建索引": 马上重建 (一次做完), 弹出结果, 点确定关掉
+    static _RebuildApps(button) {
+        button.Enabled := false
+        count := ApplicationProvider.Rebuild()
+        button.Enabled := true
+        PreferencesWindow._RebuildResult(I18n.T("Prefs.RebuildIndex.Done", count), I18n.T("Prefs.RebuildIndex"))
+    }
+
+    ; "重建文件索引": 在后台分批扫描, 按钮显示 "正在重建...", 扫完弹出结果
+    static _RebuildFiles(button) {
+        label := button.Text
+        button.Text := I18n.T("Prefs.Rebuilding"), button.Enabled := false
+        FileIndex.Rebuild(Done)
+
+        Done(count) {
+            try button.Text := label, button.Enabled := true                ; 偏好设置可能已经关了
+            options := AppSettings.Feature("FileSearch")
+            message := I18n.T("Prefs.RebuildFileIndex.Done", count)
+            if (count >= options["MaxEntries"])
+                message .= "`n`n" I18n.T("Prefs.RebuildFileIndex.Limit", options["MaxEntries"])
+            if (options["UseEverything"] && Everything.IsRunning())
+                message .= "`n`n" I18n.T("Prefs.RebuildFileIndex.Everything")
+            PreferencesWindow._RebuildResult(message, label)
+        }
+    }
+
+    ; 重建的结果: 偏好设置开着时弹出对话框 (点确定关掉); 已经关了时用通知
+    static _RebuildResult(message, title) {
+        if !IsObject(PreferencesWindow.Gui)
+            return App.Toast(message)
+        if PreferencesWindow._dirty                                         ; 重建用的是已经保存的设置
+            message .= "`n`n" I18n.T("Prefs.RebuildUnsaved")
+        MsgBox(message, title, "Iconi Owner" PreferencesWindow.Gui.Hwnd)
+    }
+
     ; 数字输入框 (宽度 "S") 右边紧跟一个按钮 (例如 "子文件夹深度" + "重建索引"), 灰色说明 (labelKey 的) 放在两个的下面
     static _FieldButton(path, labelKey, buttonKey, fn) {
         label := PreferencesWindow._Label(labelKey)

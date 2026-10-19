@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.19.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置里的 "重建索引" 和 "重建文件索引" 做完后弹出结果 (找到多少个应用 / 文件和文件夹), 点 "确定" 关掉。重建文件索引在后台进行, 按钮显示 "正在重建...", 扫完再提示; 达到最多条数、Everything 正在运行 (现在搜索用的是 Everything)、页面上还有没应用的修改时, 结果里会说明
+- 偏好设置 → 搜索来源: 怎样让 Everything 用拼音搜中文文件名放在 Everything 一节的标题下面 (和内置索引一节的拼音说明对照); Everything 现在有没有在运行写在复选框下面
+
 ## [2026.10.19.5]
 
 测试版。
@@ -811,7 +821,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.6...HEAD
+[2026.10.19.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.5...2026.10.19.6
 [2026.10.19.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.4...2026.10.19.5
 [2026.10.19.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.3...2026.10.19.4
 [2026.10.19.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.2...2026.10.19.3

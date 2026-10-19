@@ -529,8 +529,8 @@ class I18n {
         s["Prefs.MaxEntries"]           := "Max entries"
         s["Prefs.MaxEntries.Desc"]      := "Max entries: scanning stops after this many files and folders. Refresh every: as a safety net, an index older than this is also rescanned while the PC is idle."
         s["Prefs.EverythingPinyin"]    := 'To find Chinese file names by pinyin, turn on pinyin in Everything first: <a href="{1}">how to</a>'
-        s["Prefs.Running"]             := "running now, searching the whole disk"
-        s["Prefs.NotRunning"]          := "not running now, using the built-in index"
+        s["Prefs.Running"]             := "Everything is running - searching the whole disk"
+        s["Prefs.NotRunning"]          := "Everything is not running - using the built-in index"
         s["Prefs.Page.Commands"]       := "Custom Commands"
         s["Prefs.Page.Snippets"]       := "Snippets"
         s["Prefs.Page.Clipboard"]      := "Clipboard"
@@ -780,6 +780,12 @@ class I18n {
         s["Prefs.MatchPinyin.Desc"]    := 'e.g. "wx" finds 微信 (WeChat). File names always match pinyin.'
         s["Prefs.RefreshMinutes"]       := "Refresh every (min)"
         s["Prefs.RebuildIndex"]        := "Rebuild Index"
+        s["Prefs.RebuildUnsaved"]      := "Changes you haven't applied yet are not included; click Apply and the index is rescanned automatically."
+        s["Prefs.RebuildFileIndex.Everything"] := "Everything is running, so searches use Everything now; the built-in index is used when Everything is closed."
+        s["Prefs.RebuildFileIndex.Limit"] := "It reached Max entries ({1}), so the rest were not indexed. Increase Max entries or index fewer folders."
+        s["Prefs.RebuildFileIndex.Done"] := "The file index has been rebuilt: {1} files and folders."
+        s["Prefs.RebuildIndex.Done"]   := "The app index has been rebuilt: {1} apps found."
+        s["Prefs.Rebuilding"]          := "Rebuilding..."
         ; Lists
         s["Prefs.Col.Title"]           := "Title"
         s["Prefs.Col.Type"]            := "Type"
