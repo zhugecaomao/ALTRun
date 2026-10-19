@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1119,6 +1119,52 @@ class Tests {
     }
 
     ; 文件的操作: 复制 / 剪切文件、打开方式、移到回收站
+    ; 文件类型登记了 "编辑" 时, 操作面板里有 "编辑" (右边是编辑程序的名称), Ctrl+E 也能用; 没登记的类型没有
+    static EditAction() {
+        eq := (n, a, e) => TestRunner.Equal("EditAction." n, a, e)
+        root := A_Temp "\ALTRun-test-edit"
+        try DirDelete(root, true)
+        DirCreate(root)
+        FileAppend("x", root "\script.altruntest")
+        FileAppend("x", root "\plain.altrunnone")
+        classes := "HKCU\Software\Classes"
+        try {
+            RegWrite("ALTRunTest.File", "REG_SZ", classes "\.altruntest")
+            RegWrite('"' A_WinDir '\notepad.exe" "%1"', "REG_SZ", classes "\ALTRunTest.File\shell\edit\command")
+            ; Wine 的 AssocQueryStringW 查不到任何类型 (连 .txt 都没有), 登记了的情况只在 Windows 上检查
+            onWine := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
+            if !onWine {
+                editor := ActionCatalog.EditorFor(root "\script.altruntest")
+                eq("registered", IsObject(editor), true)
+                eq("editor icon", IsObject(editor) ? editor.Icon : "", A_WinDir "\notepad.exe")
+            }
+            eq("not registered", ActionCatalog.EditorFor(root "\plain.altrunnone"), "")
+            eq("folder", ActionCatalog.EditorFor(root), "")
+            eq("missing file", ActionCatalog.EditorFor(root "\gone.altruntest"), "")
+            eq("unknown type", ActionCatalog.AssocString(1, ".altrunnone", "edit"), "")
+            titles(path) {
+                list := "|"
+                for action in ActionCatalog.ListFor(FileSearchProvider._ToItem({Path: path, IsFolder: false}, 10))
+                    list .= action.Title "|"
+                return list
+            }
+            if !onWine
+                eq("action shown", InStr(titles(root "\script.altruntest"), "|" I18n.T("Action.EditFile") "|") ? 1 : 0, 1)
+            eq("action hidden", InStr(titles(root "\plain.altrunnone"), "|" I18n.T("Action.EditFile") "|") ? 1 : 0, 0)
+            openWith := ""
+            for action in ActionCatalog.ListFor(FileSearchProvider._ToItem({Path: root "\plain.altrunnone", IsFolder: false}, 10))
+                if (action.Title = I18n.T("Action.OpenWith"))
+                    openWith := action.Icon
+            eq("open with icon", openWith, "res:shell32.dll,-3")
+            if !onWine                                                      ; 原来的 shell32.dll,-16702 在 Windows 上没有, 菜单里没有图标
+                eq("open with icon loads", IconCache.GetNow(openWith) != 0, true)
+        } finally {
+            try RegDeleteKey(classes "\ALTRunTest.File")
+            try RegDeleteKey(classes "\.altruntest")
+            try DirDelete(root, true)
+        }
+    }
+
     static FileActions() {
         eq := (n, a, e) => TestRunner.Equal("FileActions." n, a, e)
         root := A_Temp "\ALTRun-test-fileactions"

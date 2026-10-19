@@ -63,8 +63,11 @@ class ActionCatalog {
                 add("Action.Open", target, (*) => ActionCatalog.OpenFile(target, item.Arguments), enter)
                 if RegExMatch(target, "i)\.(exe|lnk|bat|cmd|msc|ps1)$")
                     add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => ActionCatalog.RunAsAdmin(target, item.Arguments))
+                if IsObject(editor := ActionCatalog.EditorFor(target))      ; 这类文件登记了 "编辑" (例如 .ahk 用编辑器打开)
+                    list.Push(ResultItem(I18n.T("Action.EditFile"), editor.Name (editor.Name != "" ? "  " : "") "Ctrl+E"
+                        , {Icon: editor.Icon, OnRun: (*) => ActionCatalog.EditFile(target)}))
                 if FileExist(target)
-                    add("Action.OpenWith", "res:shell32.dll,-16702", (*) => ActionCatalog.OpenWith(target))
+                    add("Action.OpenWith", "res:shell32.dll,-3", (*) => ActionCatalog.OpenWith(target))   ; 通用的程序图标
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
                 add("Action.CopyName", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(Path.Leaf(target)))
@@ -346,6 +349,40 @@ class ActionCatalog {
             return false
         App.Notify(I18n.T(cut ? "Action.FileCut" : "Action.FileCopied", Path.Leaf(RTrim(paths[1], "\"))))
         return true
+    }
+
+    ; 这类文件在 Windows 里登记的 "编辑" 程序 (右键菜单里的 "编辑") -> {Name, Icon}; 没有登记时 ""
+    static EditorFor(target) {
+        static ASSOCSTR_COMMAND := 1, ASSOCSTR_EXECUTABLE := 2, ASSOCSTR_FRIENDLYAPPNAME := 4
+        SplitPath(target, , , &ext)
+        attributes := FileExist(target)
+        if (ext = "" || attributes = "" || InStr(attributes, "D"))
+            return ""
+        if (ActionCatalog.AssocString(ASSOCSTR_COMMAND, "." ext, "edit") = "")
+            return ""
+        exe := ActionCatalog.AssocString(ASSOCSTR_EXECUTABLE, "." ext, "edit")
+        return {Name: ActionCatalog.AssocString(ASSOCSTR_FRIENDLYAPPNAME, "." ext, "edit")
+              , Icon: (exe != "" && FileExist(exe)) ? exe : A_WinDir "\notepad.exe"}
+    }
+
+    ; AssocQueryStringW: 文件类型 (".ahk") 的某个动作 ("edit") 的命令、程序、程序名称; 没有时 ""
+    static AssocString(kind, ext, verb) {
+        static ASSOCF_NOTRUNCATE := 0x20, ASSOCF_INIT_IGNOREUNKNOWN := 0x400   ; 没登记的类型不要退到 "打开方式" 的设置
+        size := 0
+        DllCall("shlwapi\AssocQueryStringW", "UInt", ASSOCF_NOTRUNCATE | ASSOCF_INIT_IGNOREUNKNOWN, "UInt", kind, "WStr", ext, "WStr", verb
+            , "Ptr", 0, "UInt*", &size)
+        if (size <= 1)
+            return ""
+        buf := Buffer(size * 2, 0)
+        if (DllCall("shlwapi\AssocQueryStringW", "UInt", ASSOCF_NOTRUNCATE | ASSOCF_INIT_IGNOREUNKNOWN, "UInt", kind, "WStr", ext, "WStr", verb
+            , "Ptr", buf, "UInt*", &size) != 0)
+            return ""
+        return StrGet(buf)
+    }
+
+    ; 用登记的编辑程序打开 (和右键菜单的 "编辑" 一样)
+    static EditFile(target) {
+        Run('edit "' Path.Resolve(target) '"')
     }
 
     static OpenWith(target) {

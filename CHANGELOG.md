@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.19.7]
+
+测试版。
+
+Test build.
+
+### 新增
+- 文件的操作面板里加 "编辑": 这类文件在 Windows 里登记了编辑程序时 (和右键菜单的 "编辑" 一样, 例如 .ahk 脚本用编辑器打开而不是运行) 才出现, 右边显示编辑程序的名称; 搜索窗口里按 `Ctrl+E` 直接编辑选中的文件。AutoHotkey 论坛用户的建议
+
+### 修复
+- 操作面板里的 "打开方式" 没有图标 (用的图标在 Windows 里不存在), 换成通用的程序图标
+
 ## [2026.10.19.6]
 
 测试版。
@@ -821,7 +833,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.7...HEAD
+[2026.10.19.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.6...2026.10.19.7
 [2026.10.19.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.5...2026.10.19.6
 [2026.10.19.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.4...2026.10.19.5
 [2026.10.19.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.3...2026.10.19.4

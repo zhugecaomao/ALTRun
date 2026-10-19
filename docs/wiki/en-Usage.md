@@ -100,6 +100,7 @@ ALTRun remembers "what you typed → which result you finally picked": if you ty
 | `Ctrl+Del` (cursor at the end) | Delete the selected result, see below |
 | `Ctrl+C` | Copy the selected result (copies text as usual when text is selected in the input box) |
 | `Ctrl+L` | Large type |
+| `Ctrl+E` | Edit the selected file in the editor registered for its type (for example, open an .ahk script in an editor instead of running it) |
 | `Ctrl+Backspace` | Delete the previous word |
 | `F2` / `Ctrl+,` | Preferences |
 | `F4` | Edit ALTRun.json in Notepad (reloaded automatically when saved) |
@@ -116,7 +117,7 @@ Select a result and press `→` (or right-click) to list everything you can do w
 
 | Result type | Actions |
 |---|---|
-| Program / file | Open, Run as Administrator (exe / lnk / bat...), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Properties, Move to Recycle Bin |
+| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Properties, Move to Recycle Bin |
 | Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC, Properties, Move to Recycle Bin |
 | URL | Open, Copy URL |
 | Text | Copy to Clipboard, Paste to Front Window |
