@@ -20,7 +20,6 @@
   <a href="https://zhugecaomao.github.io/ALTRun/">Website</a> ·
   <a href="#why-altrun">Why ALTRun</a> ·
   <a href="#getting-started">Getting started</a> ·
-  <a href="#privacy-security-and-footprint">Privacy & security</a> ·
   <a href="#features">Features</a> ·
   <a href="#keyboard-shortcuts">Shortcuts</a> ·
   <a href="https://github.com/zhugecaomao/ALTRun/wiki/en-Home">Documentation (Wiki)</a> ·
@@ -35,10 +34,10 @@
 ## Why ALTRun
 - **Tiny**: about 2.5 MB, with one `ALTRun.exe` and a few resource files; no .NET, Electron or other runtime to install.
 - **Fast**: results appear as you type. With [Everything](https://www.voidtools.com/) running, file searches cover all disks in milliseconds; otherwise, ALTRun uses its built-in index.
-- **Smart ranking**: learns from your choices, matches word initials (`vsc` → Visual Studio Code) and Chinese pinyin initials (`wx` → 微信, including file names), and highlights matches.
+- **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信; file names too: `cs` → 测试文件.zip), and highlights the matched characters.
 - **Beyond launching**: [Quick Switch](#features) jumps Open / Save dialogs to folders open in Total Commander or Explorer; act on selected text, files or URLs in any app; expand snippets with `;keyword`.
 - **All in one**: calculate and convert units, search the web, browse bookmarks, manage clipboard history and snippets, run system commands, or open a terminal—without separate tools for each task.
-- **Keyboard first**: use `→` for the action panel, see what `Enter` will do in the status bar, edit in place with `F3`, or open a result directly with `Ctrl+1`–`Ctrl+9`.
+- **Keyboard first**: use `→` for the action panel, see what `Enter` will do in the status bar, edit in place with `F3`, open a result directly with `Ctrl+1`–`Ctrl+9`, or use `Ctrl+Enter` to open a file’s containing folder or paste text into the active window.
 - **Portable and private**: no installer, registry entries, admin rights, background service or driver. Data stays local by default; some clipboard data is stored in `%LOCALAPPDATA%\ALTRun`. No telemetry; internet access is used for updates, optional exchange rates and site icons you request.
 - **Automatic updates**: new versions appear in the search window; press `Enter` to install. Packages are SHA256-verified and settings are kept; Scoop is also supported.
 - **Customizable**: four interface languages—English, Simplified Chinese, Traditional Chinese and Japanese—and 20 built-in themes. Follow Windows light / dark mode or customize themes and settings through plain JSON files.
@@ -51,13 +50,7 @@
 
 If Windows SmartScreen blocks the app, choose **More info** → **Run anyway**. For antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ#my-antivirus-flags-it).
 
-
-## Privacy, security and footprint
-- **Local by default**: app data stays on your PC by default; some clipboard data is stored in `%LOCALAPPDATA%\ALTRun`. Custom data locations may be configured.
-- **No telemetry**: internet access is used for updates, optional currency conversion and site icons you choose to download.
-- **Verified updates**: downloaded update packages are checked against their SHA256 hash; settings are kept during upgrades.
-- **Signed release builds**: only `ALTRun.exe` built by this repository's [Release workflow](.github/workflows/release.yml) is signed. See the [privacy policy](SECURITY.md#privacy-policy).
-- **Small distribution**: about 2.5 MB, with no background service, driver, registry entries or administrator rights required.
+**Other installation options:** [Scoop](#installation-options-and-upgrades), [winget (once accepted)](#installation-options-and-upgrades), or [run `ALTRun.ahk` with AutoHotkey v2](#installation-options-and-upgrades). For details, see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
 
 
 ## Features
