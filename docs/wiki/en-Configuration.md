@@ -126,7 +126,7 @@ Every feature has `Enabled` (1 = on).
 Also in Preferences → Features → Feature options. Reads the bookmarks of every profile of Chrome, Edge, Brave and Vivaldi; Firefox keeps its bookmarks in an SQLite database and isn't supported yet.
 
 ### Scripts
-Only `Enabled`. Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](en-Extensions#scripts) for how to write them.
+Only `Enabled`. Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](en-Scripts) for how to write them.
 
 ### Recent (pinned and recent items)
 | Key | Default | Description |
