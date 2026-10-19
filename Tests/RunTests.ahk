@@ -904,6 +904,12 @@ class Tests {
         eq("temp file", changed("D:\Docs\~WRL0001.tmp"), false)
         eq("libreoffice lock", changed("D:\Docs\.~lock.Report.odt#"), false)
         eq("excluded", changed("D:\Docs\node_modules", "i)\\node_modules(\\|$)"), false)
+        ; 默认的排除: 代码仓库、虚拟环境、开发工具的缓存 (整个文件夹, 不管大小写); 名字只是相似的照常扫描
+        exclude := AppSettings.Defaults()["Features"]["FileSearch"]["ScopeExclude"]
+        for folder in ["node_modules", ".git", ".SVN", ".hg", "__pycache__", ".venv", "venv", ".tox", ".cache", ".idea", ".vs", "$RECYCLE.BIN"]
+            eq("default exclude " folder, RegExMatch("D:\Docs\Tool\" folder "\x.txt", exclude) > 0, true)
+        for folder in ["venvs", "my.venv", "cache", "Visual Studio", ".vscode", "github", "idea"]
+            eq("default keeps " folder, RegExMatch("D:\Docs\" folder "\x.txt", exclude), 0)
         eq("own folder", FileIndex.IsWatchedChange("D:\Docs\ALTRun\Data\FileIndex.json", roots, 3, "", "D:\Docs\ALTRun"), false)
 
         root := A_Temp "\ALTRunFileIndexWatch"

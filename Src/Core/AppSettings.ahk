@@ -359,7 +359,7 @@ class AppSettings {
                     "EverythingPath"     , "",                              ; Everything.exe 的位置, 留空自动查找 (只用于 "在 Everything 中搜索")
                     "ScopeFolders"       , ["A_Desktop", "A_MyDocuments", "%UserProfile%\Downloads"],   ; 没有 Everything 时的内置索引范围
                     "ScopeDepth"         , 4,
-                    "ScopeExclude"       , "i)\\(node_modules|\.git|__pycache__|\$RECYCLE\.BIN)(\\|$)",
+                    "ScopeExclude"       , "i)\\(node_modules|\.git|\.svn|\.hg|__pycache__|\.venv|venv|\.tox|\.cache|\.idea|\.vs|\$RECYCLE\.BIN)(\\|$)",   ; 代码仓库、虚拟环境、IDE 缓存: 动辄上万个文件, 会占满 MaxEntries
                     "MaxEntries"         , 30000,
                     "RefreshMinutes"     , 60
                 ),

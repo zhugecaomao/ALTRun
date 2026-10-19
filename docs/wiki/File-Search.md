@@ -76,7 +76,7 @@ ALTRun 自动选择:
 | EverythingPath | 空 | Everything.exe 的位置, 只用于 "在 Everything 中搜索"; 留空自动查找 |
 | ScopeFolders | 桌面、文档、下载 | 内置索引扫描的文件夹, 可以用 [路径变量](Commands-and-Snippets#路径里可以用的变量) |
 | ScopeDepth | 4 | 内置索引的子文件夹深度 |
-| ScopeExclude | `node_modules`、`.git`、`__pycache__`、回收站 | 内置索引跳过的文件夹 (正则) |
+| ScopeExclude | `node_modules`、`.git`、`.svn`、`.hg`、`__pycache__`、`.venv`、`venv`、`.tox`、`.cache`、`.idea`、`.vs`、回收站 | 内置索引跳过的文件夹 (正则, 对完整路径)。默认跳过代码仓库、Python 虚拟环境和开发工具的缓存: 里面动辄上万个文件, 会占满 MaxEntries, 也没有要找的文档 |
 | MaxEntries | 30000 | 内置索引最多收录多少项 |
 | RefreshMinutes | 60 | 兜底: 内置索引的缓存超过这么久也在后台重新扫描 (最少 5 分钟; 启动时检查一次, 之后每分钟检查, 键盘鼠标空闲 30 秒、搜索窗口没开时才重建)。平时靠监视文件夹自动更新; 用 Everything 时都不扫描 |
 
