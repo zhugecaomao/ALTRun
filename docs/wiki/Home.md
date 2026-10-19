@@ -27,7 +27,10 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [对话框快速跳转](Quick-Switch) | 跳到资源管理器或 Total Commander 已打开的文件夹 |
 | [对话框文件夹面板](Quick-Switch-Panel) | 在打开 / 保存对话框附近搜索并选择文件夹 |
 | [一键加日期](Date-Stamp) | 重命名文件或在文本末尾添加日期 |
-| [扩展功能](Extensions) | 自定义热键、系统命令列表、计算器、脚本扩展、PT 工具箱 |
+| [计算器](Calculator) | 算式、单位和货币换算、附带的结构计算 |
+| [脚本扩展](Scripts) | 把自己的脚本变成搜索结果里的命令 |
+| [自定义热键](Hotkeys) | 给热键指定系统命令、CapsLock 切换输入法、怎样设置热键 |
+| [扩展功能](Extensions) | 系统命令列表、终端、PT 工具箱, 以及各扩展页面的入口 |
 | [设置文件参考](Configuration) | ALTRun.json 每一项的含义和默认值 |
 | [常见问题](FAQ) | 热键冲突、搜不到、杀毒软件误报、隐私... |
 | [开发指南](Development) | 架构、新增搜索功能、代码规范、测试 |

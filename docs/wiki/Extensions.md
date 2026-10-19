@@ -2,51 +2,18 @@
 
 # 扩展功能
 
-搜索窗口以外的功能。计算器、脚本扩展、自定义热键、Quick Switch、对话框文件夹面板和一键加日期都有独立说明:
+搜索窗口以外的功能。下面几项各有独立的页面, 偏好设置里对应的页面按 `F1` 也会打开它们:
 
-- [计算器](Calculator): 算式、单位换算和结构计算。
-- [脚本扩展](Scripts): 添加并运行自己的脚本。
-- [自定义热键](Hotkeys): 给热键指定系统命令。
+| 页面 | 内容 |
+|---|---|
+| [对话框快速跳转](Quick-Switch) | 在打开 / 保存对话框里跳到 Total Commander 或资源管理器已经打开的文件夹 (`Ctrl+G` / `Ctrl+E`), 自动跳转 |
+| [对话框文件夹面板](Quick-Switch-Panel) | 对话框下面的文件夹面板: 列出打开的文件夹和最近的文件夹, 搜索框 (`Ctrl+Shift+G`) |
+| [一键加日期](Date-Stamp) | 重命名文件或在文字末尾加上日期 (`Ctrl+D`) |
+| [自定义热键](Hotkeys) | 给热键指定系统命令; CapsLock 切换输入法; 怎样设置热键 |
+| [计算器](Calculator) | 算式、单位和货币换算、附带的结构计算 |
+| [脚本扩展](Scripts) | 把自己的脚本变成搜索结果里的命令 |
 
-Quick Switch、对话框文件夹面板和一键加日期也各有独立的设置页和 Wiki 说明。
-
-## 对话框快速跳转 (Quick Switch)
-
-Quick Switch、对话框文件夹面板和一键加日期已分别整理成独立页面:
-
-- [对话框快速跳转](Quick-Switch): 在打开 / 保存对话框里跳到已打开的文件夹。
-- [对话框文件夹面板](Quick-Switch-Panel): 通过面板浏览、搜索并选择文件夹或文件。
-- [一键加日期](Date-Stamp): 重命名文件或在文本末尾添加日期。
-
-## 自定义热键
-偏好设置 → 自定义热键: 给任意热键指定一条 [系统命令](#系统命令), 可以限定只在某个窗口里生效。
-
-| 字段 | 例子 | 说明 |
-|---|---|---|
-| 热键 (Key) | `Ctrl+Alt+P` | 点一下框, 按下组合键 (见下文 [设置热键](#设置热键)); 鼠标热键: 在框里点鼠标中键或侧键。勾选 "保留按键原来的功能" 时, 按键原来的作用照常 (设置文件里是开头的 `~`) |
-| 操作 (Action) | `PTTools` | 系统命令的 Id, 或 `ToggleWindow` (显示 / 隐藏 ALTRun) |
-| 窗口 (WinTitle) | `ahk_exe notepad.exe` | 留空 = 全局; 否则只在匹配的窗口里生效; `ALTRun` = 只在 ALTRun 的搜索窗口里 |
-
-默认的一条: 在 RAPT (`RAPTW.exe`) 里按鼠标中键打开 PT 工具箱。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage#快捷键)。
-
-### CapsLock 切换输入法
-和 Mac 一样: 在 偏好设置 → 自定义热键 最上面把 **CapsLock 键** 设成:
-- **按一下切换输入法**: 切换到下一个已安装的输入法, 和 `Win+Space` 一样 (例如 英语(美国) ↔ 微软拼音)
-- **按一下切换中 / 英模式**: 切换当前输入法的中 / 英模式, 和微软拼音里按 `Shift` 一样; 只装了一个中文输入法时用这个
-
-按住 CapsLock 0.3 秒才开 / 关大写锁定 (不用等松开), 并短暂提示 "大写锁定: 开 / 关" (不想要提示可以取消 "显示大写锁定开 / 关的提示"); `Shift+CapsLock` 和原来一样开 / 关大写锁定。默认不开 (`General.CapsLock`)。把 CapsLock 当修饰键的自定义热键 (例如 `CapsLock & J`) 不要和它一起用。通过 Chrome 远程桌面等远程控制使用时也可以: 远程软件为了同步大写锁定补发的极短的 CapsLock 会被忽略。
-
-**管理员窗口里也生效**: Windows 不让普通权限的程序控制以管理员身份运行的窗口, 所以默认在这些窗口里按 CapsLock 不会切换。勾选下面的 "在管理员窗口里也生效" (`General.CapsLockElevated`) 后, ALTRun 建一个计划任务 (这时确认一次 UAC), 之后每次启动都用它以管理员身份运行一个**只管 CapsLock 的小助手** (不再弹 UAC), 退出时一起退出。ALTRun 本身还是普通权限, 从它打开的程序、拖放文件、网络驱动器都不受影响。取消勾选时删掉计划任务 (再确认一次)。移动了 ALTRun 的文件夹后, 把这个选项关掉再打开一次。
-
-### 设置热键
-偏好设置里所有的热键 (呼出热键、剪贴板历史、对话框跳转、一键加日期、自定义热键) 都用同一种框, 和 Alfred、PowerToys 一样直接按键录制:
-- 框里显示 `Alt+Space`、`Ctrl+Alt+C` 这样的写法。点一下框, 出现 "请按下快捷键...", 按下想要的组合键就记下来
-- `Esc` 取消 (保留原来的热键), `Backspace` / `Delete` 清除 (不用这个热键)
-- 单独的字母、数字、空格、回车等会影响平时打字, 要加上 `Ctrl`、`Alt` 或 `Win`; `F1` ~ `F24`、`Pause` 等可以单独用
-- 录制时 ALTRun 自己的热键暂停, `Alt+Space`、`Win+E` 这类组合也不会触发系统或其它程序的功能
-- 保存时, 如果两个全局热键相同 (例如呼出热键和剪贴板历史都是 `Ctrl+Alt+C`), 会先提示。只在某些窗口里生效的热键 (对话框跳转、一键加日期、填了窗口的自定义热键) 可以重复
-
-设置文件里仍然是 AutoHotkey 的写法 (`!` Alt, `^` Ctrl, `+` Shift, `#` Win, 例如 `!Space`), 也可以直接编辑; `CapsLock & J` 这类特殊写法在偏好设置里重新录制之前会原样保留。
+下面是没有单独页面的几项。
 
 ## 系统命令
 直接在搜索框里输入名称 (中文、英文或 Id 都可以), 也可以用在自定义热键里。
@@ -91,71 +58,6 @@ Quick Switch、对话框文件夹面板和一键加日期已分别整理成独�
 输入 `>命令` 在终端里运行, 窗口保持打开, 例如 `>ipconfig /all`、`>ping 8.8.8.8`。操作面板里的 "在此处打开终端" 在文件所在文件夹打开终端。
 
 终端程序 `Features.Terminal.Shell`: `cmd` (默认) / `powershell` / `pwsh` / `wt` (Windows Terminal); 前缀 `Prefix` 默认 `>`。
-
-## 计算器
-直接输入算式: `12*(3+4)`、`=2^10`, `Enter` 复制结果。支持 `+ - * /`、乘方 `^` (或 `**`) 和括号, 结果最多保留两位小数 (`10/3` 显示 `3.33`; 不到 0.005 的数保留到第一位有效数字后一位, 例如 `0.004`)。
-
-在 偏好设置 → 计算器 打开 "附带结构计算" (`Features.Calculator.StructuralCalc`) 后, 结果大于 2 × 保护层时下方附带两行结构计算:
-- 把结果当作 **梁宽 (mm)**: 主筋根数和间距。根数 = ⌈(梁宽 − 2 × 保护层) / 最大间距⌉ + 1, 间距 = (梁宽 − 2 × 保护层) / (根数 − 1)
-- 把结果当作 **配筋面积 As (mm²)**: 每种直径需要的根数 (⌈As / 一根的面积⌉, 一根的面积 = π d² / 4)
-
-例如 `300*2` (600) 默认显示 `Beam width 600 mm: 3 main bars @ 260 c/c` 和 `As = 600 mm²: 5H13  3H16  2H20  2H25  1H32`。参数在同一页里修改:
-
-| 设置 | 键 | 默认 | 说明 |
-|---|---|---|---|
-| 保护层 (Rebar cover) | `RebarCover` | `40` | 每边, mm |
-| 最大间距 | `MaxBarSpacing` | `300` | mm, 间距大于它时增加主筋 |
-| 钢筋直径 | `BarSizes` | `[13, 16, 20, 25, 32]` | 配筋面积那一行列出的直径 (mm) |
-| 钢筋代号 | `BarPrefix` | `H` | 钢筋代号, 例如 `T`、`Y`、`Φ` |
-
-![偏好设置 → 计算器](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-calculator.png)
-
-### 单位和货币换算
-写法: 数值 + 单位 + `in` / `to` / `=` / `->` / `转` + 目标单位, 单位不区分大小写, `m²` 可以写成 `m2`。例如 `10 km in mi`、`5ft to cm`、`100 f to c`、`3 亩 in m2`、`1 GB to MB`、`300 kN to kip`、`20 MPa in psi`。`Enter` 复制数字。
-
-| 类别 | 单位 |
-|---|---|
-| 长度 | mm cm m km in ft yd mi nmi (毫米 厘米 米 公里 英寸 英尺 码 英里 海里) |
-| 质量 | mg g kg t lb oz 斤 两 |
-| 面积 | mm2 cm2 m2 km2 ha acre ft2 in2 亩 |
-| 体积 | ml cl l m3 cm3 ft3 gal qt pt cup floz |
-| 速度 | m/s km/h mph knot ft/s |
-| 时间 | ms s min h day week year |
-| 数据 | bit B KB MB GB TB (按 1024) |
-| 压强 / 应力 | Pa kPa MPa (N/mm2) bar psi ksi atm psf |
-| 力 | N kN lbf kip kgf tf |
-| 能量 / 功率 | J kJ cal kcal Wh kWh / W kW hp |
-| 温度 | C F K |
-
-**货币换算** (`100 usd to sgd`、`100 美元 to 人民币`) 默认关闭: 在 偏好设置 → 计算器 勾选 "货币换算" (`Features.Calculator.Currency`)。打开后每天从 [Frankfurter](https://frankfurter.dev) 下载一次欧洲央行等央行公布的参考汇率 (免费, 不需要注册), 保存在 `Data\Currency.json`; 这是 ALTRun 除 GitHub 之外唯一会自己访问的网站 (网页搜索的网站只在你点 "下载网站图标" 时访问一次)。结果里会显示汇率的日期。
-
-## 脚本扩展
-把自己的脚本放进 `Scripts\` 文件夹 (程序目录里; 偏好设置 → 脚本 → "打开脚本文件夹", 或者搜索 "打开脚本文件夹", 第一次打开时会建几个示例: 后台运行显示通知的、关键字后面带参数的、用文本编辑器看输出的), 就能在搜索窗口里按名称或关键字找到并运行, 和 Raycast 的 Script Commands 一样。支持 `.ahk` (用 ALTRun 自带的 AutoHotkey 运行, 不用另外安装)、`.ps1`、`.bat` / `.cmd`、`.py` (需要装 Python)。偏好设置 → 脚本 列出找到的脚本, 双击用记事本编辑:
-
-![偏好设置 → 脚本](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-scripts.png)
-
-脚本开头的注释里可以写这些设置 (注释符 `;` `#` `REM` `::` `//` 都行, 都可以不写):
-
-| 设置 | 说明 |
-|---|---|
-| `@altrun.title 名称` | 显示的名称, 默认用文件名 |
-| `@altrun.keyword 关键字` | 输入完全相同时排在最前面 |
-| `@altrun.argument 提示` | 需要参数: 输入 "关键字 文字", 文字作为第一个参数传给脚本; 只搜到名称时 `Enter` 补全成 "关键字 " |
-| `@altrun.mode window` | 默认: 正常运行 (有窗口) |
-| `@altrun.mode silent` | 在后台运行, 结束后把输出的最后一行显示成通知 |
-| `@altrun.mode output` | 在后台运行, 结束后用 `.txt` 的默认程序 (一般是记事本) 打开全部输出 |
-
-例子 (`Scripts\Hash.ps1`):
-```powershell
-# @altrun.title    文件哈希
-# @altrun.keyword  hash
-# @altrun.argument 文件路径
-# @altrun.mode     output
-Get-FileHash -Algorithm SHA256 $args[0] | Format-List
-```
-输入 `hash D:\Downloads\setup.exe` 后 `Enter`, SHA256 用文本编辑器显示。关键字不要和默认命令重复 (例如 `ping` 已经是自带的 Ping 命令)。
-
-`.ahk` 脚本里用 `FileAppend("文字", "*")` 输出。增删、修改脚本后马上生效, 不用重新载入; 选中脚本按 `F3` 用记事本编辑。后台运行的脚本最多等 2 分钟。
 
 ## PT 工具箱
 预应力设计用的小工具, 输入 `PTTools` / `SPF2M` 或用自定义热键打开:

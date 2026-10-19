@@ -2,51 +2,18 @@
 
 # Extensions
 
-Features outside the search window. Calculator, Scripts, Custom Hotkeys, Quick Switch, the Dialog Panel and Date Stamp have separate documentation:
+Features outside the search window. These have their own pages, which `F1` on the matching Preferences page also opens:
 
-- [Calculator](en-Calculator): expressions, unit conversion and structural calculations.
-- [Scripts](en-Scripts): add and run your own scripts.
-- [Custom Hotkeys](en-Hotkeys): assign system commands to hotkeys.
+| Page | What it covers |
+|---|---|
+| [Quick Switch](en-Quick-Switch) | Jump an Open / Save dialog to a folder open in Total Commander or Explorer (`Ctrl+G` / `Ctrl+E`), auto switch |
+| [Dialog Folder Panel](en-Quick-Switch-Panel) | The folder panel under dialogs: open and recent folders, the search box (`Ctrl+Shift+G`) |
+| [Date Stamp](en-Date-Stamp) | Add a date while renaming a file or at the end of a line of text (`Ctrl+D`) |
+| [Custom Hotkeys](en-Hotkeys) | Assign system commands to hotkeys; Caps Lock switches the input method; how to set hotkeys |
+| [Calculator](en-Calculator) | Expressions, unit and currency conversion, structural calculations |
+| [Scripts](en-Scripts) | Turn your own scripts into commands in the search results |
 
-Quick Switch, the Dialog Panel and Date Stamp each have their own Preferences page and Wiki article.
-
-## Quick Switch, Dialog Folder Panel and Date Stamp
-
-Quick Switch, the dialog folder panel and Date Stamp now have separate pages:
-
-- [Quick Switch](en-Quick-Switch): jump an Open / Save dialog to a folder already open.
-- [Dialog Folder Panel](en-Quick-Switch-Panel): browse and search folders or files from the panel.
-- [Date Stamp](en-Date-Stamp): add a date while renaming a file or at the end of a line of text.
-
-## Custom hotkeys
-Preferences → Hotkeys: assign a [system command](#system-commands) to any hotkey, optionally only inside a certain window.
-
-| Field | Example | Description |
-|---|---|---|
-| Hotkey (Key) | `Ctrl+Alt+P` | Click the box and press the keys (see [Setting hotkeys](#setting-hotkeys) below); mouse hotkeys: click the middle or a side button in the box. With "Keep the key's original function" ticked, the key still does what it normally does (a leading `~` in the settings file) |
-| Action | `PTTools` | A system command Id, or `ToggleWindow` (show / hide ALTRun) |
-| Only in window (WinTitle) | `ahk_exe notepad.exe` | Empty = everywhere; otherwise only in matching windows; `ALTRun` = only in ALTRun's search window |
-
-The default one: the middle mouse button in RAPT (`RAPTW.exe`) opens PT Tools. `F1`–`F4` in the search window are built in, see [Shortcuts](en-Usage#shortcuts).
-
-### Caps Lock switches the input method
-Like on a Mac: at the top of Preferences → Hotkeys, set **Caps Lock** to one of:
-- **Press to switch input method**: switches to the next installed input method, like `Win+Space` (for example English (US) ↔ Microsoft Pinyin)
-- **Press to switch Chinese / English mode**: switches the mode of the current input method, like pressing `Shift` in Microsoft Pinyin; handy when only a Chinese input method is installed
-
-Holding Caps Lock for 0.3 s turns caps lock on or off (without waiting for you to let go) and briefly shows "Caps Lock On" / "Caps Lock Off" (untick "Show a notice when caps lock turns on or off" to turn that off); `Shift+Caps Lock` turns caps lock on or off as usual. It's off by default (`General.CapsLock`). Custom hotkeys that use Caps Lock as a modifier (such as `CapsLock & J`) don't mix well with it. It also works over remote control such as Chrome Remote Desktop: the very short extra Caps Lock presses that the remote tool sends to sync the caps lock state are ignored.
-
-**Also in windows running as administrator**: Windows doesn't let programs with normal rights control windows running as administrator, so by default Caps Lock doesn't switch there. Tick "Also in windows running as administrator" (`General.CapsLockElevated`) and ALTRun creates a scheduled task (confirm UAC once); from then on every start uses it to run a **small helper with administrator rights that only handles Caps Lock** (no more UAC prompts), and the helper exits with ALTRun. ALTRun itself keeps normal rights, so programs opened from it, drag and drop and network drives are not affected. Unticking it deletes the task (confirm once more). After moving the ALTRun folder, turn the option off and on again.
-
-### Setting hotkeys
-Every hotkey in Preferences (the ALTRun hotkey, clipboard history, Quick Switch, date stamp, custom hotkeys) uses the same kind of box, recording the keys directly like Alfred and PowerToys:
-- The box shows `Alt+Space`, `Ctrl+Alt+C` and so on. Click the box, "Press a shortcut..." appears, and the keys you press are recorded
-- `Esc` cancels (keeps the old hotkey), `Backspace` / `Delete` clears it (no hotkey)
-- A single letter, digit, space, Enter and the like would get in the way of typing and need `Ctrl`, `Alt` or `Win`; `F1`–`F24`, `Pause` and similar keys work on their own
-- While recording, ALTRun's own hotkeys are paused, and combinations such as `Alt+Space` or `Win+E` don't trigger Windows or other programs
-- When saving, you're warned if two global hotkeys are the same (for example the ALTRun hotkey and clipboard history both `Ctrl+Alt+C`). Hotkeys that only work in some windows (Quick Switch, date stamp, custom hotkeys with a window) can repeat
-
-The settings file still uses AutoHotkey syntax (`!` Alt, `^` Ctrl, `+` Shift, `#` Win, for example `!Space`), and you can edit it directly; special forms such as `CapsLock & J` are kept as they are until you record the hotkey again in Preferences.
+The rest have no page of their own.
 
 ## System commands
 Type the name in the search box (English, Chinese or the Id all work); they can also be used in custom hotkeys.
@@ -91,71 +58,6 @@ The confirmation for shut down, restart and similar commands can be turned off w
 Type `>command` to run it in a terminal that stays open, for example `>ipconfig /all` or `>ping 8.8.8.8`. "Open Terminal Here" in the action panel opens a terminal in the file's folder.
 
 The terminal program `Features.Terminal.Shell`: `cmd` (default) / `powershell` / `pwsh` / `wt` (Windows Terminal); the prefix `Prefix` is `>` by default.
-
-## Calculator
-Type an expression directly: `12*(3+4)`, `=2^10`; `Enter` copies the result. Supports `+ - * /`, powers `^` (or `**`) and parentheses; results keep at most two decimals (`10/3` shows `3.33`; numbers below 0.005 keep one digit after the first significant digit, for example `0.004`).
-
-With "Add structural results (main bars / rebar area)" (`Features.Calculator.StructuralCalc`) turned on in Preferences → Calculator, two lines of structural results are added below when the result is more than 2 × the cover:
-- The result as a **beam width (mm)**: number and spacing of main bars. Number = ⌈(width − 2 × cover) / max spacing⌉ + 1, spacing = (width − 2 × cover) / (number − 1)
-- The result as a **rebar area As (mm²)**: bars needed for each size (⌈As / area of one bar⌉, area of one bar = π d² / 4)
-
-For example `300*2` (600) shows `Beam width 600 mm: 3 main bars @ 260 c/c` and `As = 600 mm²: 5H13  3H16  2H20  2H25  1H32` by default. The parameters are on the same page:
-
-| Setting | Key | Default | Description |
-|---|---|---|---|
-| Rebar cover (mm) | `RebarCover` | `40` | Each side, mm |
-| Max spacing (mm) | `MaxBarSpacing` | `300` | mm; more main bars are added when the spacing would exceed it |
-| Bar sizes (mm) | `BarSizes` | `[13, 16, 20, 25, 32]` | Diameters (mm) listed in the rebar area line |
-| Bar prefix | `BarPrefix` | `H` | Bar designation, for example `T`, `Y`, `Φ` |
-
-![Preferences → Calculator](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-calculator.png)
-
-### Unit and currency conversion
-Syntax: number + unit + `in` / `to` / `=` / `->` / `转` + target unit; units are case-insensitive, and `m²` can be written `m2`. For example `10 km in mi`, `5ft to cm`, `100 f to c`, `3 亩 in m2`, `1 GB to MB`, `300 kN to kip`, `20 MPa in psi`. `Enter` copies the number.
-
-| Category | Units |
-|---|---|
-| Length | mm cm m km in ft yd mi nmi (Chinese names work too) |
-| Mass | mg g kg t lb oz 斤 两 |
-| Area | mm2 cm2 m2 km2 ha acre ft2 in2 亩 |
-| Volume | ml cl l m3 cm3 ft3 gal qt pt cup floz |
-| Speed | m/s km/h mph knot ft/s |
-| Time | ms s min h day week year |
-| Data | bit B KB MB GB TB (powers of 1024) |
-| Pressure / stress | Pa kPa MPa (N/mm2) bar psi ksi atm psf |
-| Force | N kN lbf kip kgf tf |
-| Energy / power | J kJ cal kcal Wh kWh / W kW hp |
-| Temperature | C F K |
-
-**Currency conversion** (`100 usd to sgd`) is off by default: tick "Currency conversion" in Preferences → Calculator (`Features.Calculator.Currency`). Once on, the reference rates published by the European Central Bank and other central banks are downloaded once a day from [Frankfurter](https://frankfurter.dev) (free, no sign-up) and saved in `Data\Currency.json`; apart from GitHub, this is the only website ALTRun contacts on its own (a web search's site is visited only when you click "Download Site Icon"). Results show the date of the rates.
-
-## Scripts
-Put your own scripts into the `Scripts\` folder (in the program folder; Preferences → Scripts → "Open Scripts Folder", or search for "Open Scripts Folder"; a few examples are created the first time: a background script that shows a notification, one that takes an argument after its keyword, and one whose output opens in your text editor) and you can find and run them by name or keyword in the search window, like Raycast's Script Commands. Supported: `.ahk` (run with the AutoHotkey inside ALTRun, nothing else to install), `.ps1`, `.bat` / `.cmd`, `.py` (needs Python). Preferences → Scripts lists the scripts found; double-click one to edit it in Notepad:
-
-![Preferences → Scripts](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-scripts.png)
-
-Comments at the top of a script can hold these settings (the comment markers `;` `#` `REM` `::` `//` all work; all are optional):
-
-| Setting | Description |
-|---|---|
-| `@altrun.title name` | The name shown; the file name by default |
-| `@altrun.keyword keyword` | An exact match ranks first |
-| `@altrun.argument hint` | Needs an argument: type "keyword text" and the text is passed to the script as its first argument; when only the name is found, `Enter` completes it to "keyword " |
-| `@altrun.mode window` | Default: runs normally (with a window) |
-| `@altrun.mode silent` | Runs in the background and shows the last line of its output as a notification when done |
-| `@altrun.mode output` | Runs in the background and opens all of its output with the default program for `.txt` files (usually Notepad) when done |
-
-Example (`Scripts\Hash.ps1`):
-```powershell
-# @altrun.title    File hash
-# @altrun.keyword  hash
-# @altrun.argument file path
-# @altrun.mode     output
-Get-FileHash -Algorithm SHA256 $args[0] | Format-List
-```
-Type `hash D:\Downloads\setup.exe` and press `Enter`; the SHA256 opens in your text editor. Pick a keyword that isn't used by a default command (for example `ping` already belongs to the built-in Ping command).
-
-In `.ahk` scripts, write output with `FileAppend("text", "*")`. Adding, removing or changing scripts takes effect right away without reloading; select a script and press `F3` to edit it in Notepad. Background scripts are given at most 2 minutes.
 
 ## PT Tools
 Small tools for post-tensioning design; type `PTTools` / `SPF2M` or open them with a custom hotkey:

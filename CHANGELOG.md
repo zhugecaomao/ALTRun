@@ -5,17 +5,6 @@
 
 ## [未发布]
 
-## [2026.10.19.17]
-
-测试版。
-
-Test build.
-
-### 改进
-- 计算器、脚本扩展和自定义热键的偏好设置帮助改为打开各自的中英文专题页; 扩展功能页保留旧内容并增加新页面入口, 设置参考、侧边栏和映射测试同步更新。
-
-Preferences help for Calculator, Scripts and Custom Hotkeys now opens dedicated bilingual pages. Added links from Extensions and the sidebar, and updated the settings reference and mapping tests.
-
 ## [2026.10.19.16]
 
 测试版。
@@ -23,10 +12,9 @@ Preferences help for Calculator, Scripts and Custom Hotkeys now opens dedicated 
 Test build.
 
 ### 改进
-- 偏好设置的帮助链接改为对应专题页, 新增浏览器书签、对话框跳转、文件夹面板和一键加日期的中英文独立说明; 补充应用索引自动更新、数据目录和开发架构说明, 并列出全部偏好设置页对应的文档入口。
-
-Preferences help links now open the relevant topic pages. Added bilingual pages for bookmarks, Quick Switch, the dialog folder panel and Date Stamp; documented app index updates, data locations and architecture; and mapped every Preferences page to its documentation.
-
+- Wiki: 对话框快速跳转、对话框文件夹面板、一键加日期、浏览器书签、计算器、脚本扩展、自定义热键都有了自己的中英文页面; 扩展功能页改成这些页面的入口, 只留下系统命令、终端和 PT 工具箱, 内容不再两处重复; 其它页面里指向旧位置的链接都改到新页面
+- 偏好设置的 "帮助" 按钮和 `F1` 打开对应的页面 (计算器、脚本、自定义热键、对话框跳转、对话框面板、一键加日期以前都打开扩展功能页); `?` 速查表里计算器、单位换算和脚本的链接也改到各自的页面
+- Wiki 补充: 应用索引怎样自动更新、设置文件参考里每个偏好设置页面对应的文档、开发指南的模块和运行流程、测试能验证什么
 
 ## [2026.10.19.15]
 
@@ -939,8 +927,7 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.17...HEAD
-[2026.10.19.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...2026.10.19.17
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...HEAD
 [2026.10.19.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...2026.10.19.16
 [2026.10.19.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...2026.10.19.15
 [2026.10.19.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...2026.10.19.14

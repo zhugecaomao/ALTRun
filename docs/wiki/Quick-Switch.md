@@ -18,7 +18,7 @@
 
 在偏好设置 → 对话框跳转里打开“自动跳转”后, 从 Total Commander 切换到打开 / 保存对话框时, ALTRun 会自动跳到 Total Commander 当前面板的文件夹。
 
-“生效的窗口”可填写窗口条件, 每行一条, 例如 `ahk_class #32770` (Windows 标准对话框)。可在“不生效的窗口”里排除特定窗口; “不自动跳转的对话框”只关闭自动跳转, 手动热键仍然可用。
+“生效的窗口”: 勾选 “标准的打开 / 保存对话框” (`ahk_class #32770`, 默认勾选); 其它程序自己画的对话框写在 “其它对话框” 里, 每行一个, 例如 WPS 的 `ahk_class Qt5QWindowIcon`。“不生效的窗口” 里的窗口不跳转; “不自动跳转的对话框” 只关闭自动跳转, 手动热键仍然可用。
 
 Total Commander 的路径通过其 `WM_COPYDATA` 接口直接读取 (需要 TC 8.0 或更新), 不经过剪贴板, 不会把路径写进 Windows 剪贴板历史 (`Win+V`)。
 
@@ -31,7 +31,7 @@ Total Commander 的路径通过其 `WM_COPYDATA` 接口直接读取 (需要 TC 8
 | `Enabled` | `1` = 启用 Quick Switch |
 | `ExplorerHotkey` | 跳到资源管理器当前文件夹, 默认 `Ctrl+E` |
 | `TotalCmdHotkey` | 跳到 Total Commander 当前文件夹, 默认 `Ctrl+G` |
-| `AutoSwitch` | 是否从 Total Commander 切换到对话框时自动跳转 |
+| `AutoSwitch` | 从 Total Commander 切换到对话框时自动跳转, 默认 `0` (关) |
 | `DialogWindows` | 允许生效的对话框窗口条件 |
 | `ExcludeWindows` | 完全排除的窗口条件 |
 | `AutoSwitchExclude` | 不自动跳转、但仍可手动操作的窗口条件 |

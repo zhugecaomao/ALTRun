@@ -49,12 +49,12 @@
 
 | 键 | 默认 | 说明 |
 |---|---|---|
-| Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Extensions#设置热键)) |
+| Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Hotkeys#设置热键)) |
 | SecondaryHotkey | `!r` | 第二个呼出热键 (Alt+R), 留空 = 不用 |
 | DoubleTap | 空 | `Ctrl` / `Shift` = 快速按两下这个键也能呼出 (和 Listary 一样), 空 = 不用 |
-| CapsLock | 空 | 和 Mac 一样: `Layout` = 按一下 CapsLock 切换到下一个输入法 (和 `Win+Space` 一样), `Mode` = 切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定。空 = CapsLock 照常。见 [CapsLock 切换输入法](Extensions#capslock-切换输入法) |
+| CapsLock | 空 | 和 Mac 一样: `Layout` = 按一下 CapsLock 切换到下一个输入法 (和 `Win+Space` 一样), `Mode` = 切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定。空 = CapsLock 照常。见 [CapsLock 切换输入法](Hotkeys#capslock-切换输入法) |
 | CapsLockNotify | 1 | 开 / 关大写锁定时显示 "大写锁定: 开 / 关" 的提示; 0 = 不显示 |
-| CapsLockElevated | 0 | 1 = CapsLock 切换在管理员权限的窗口里也生效: 用计划任务以管理员身份运行一个只管 CapsLock 的小助手, ALTRun 本身还是普通权限。见 [CapsLock 切换输入法](Extensions#capslock-切换输入法) |
+| CapsLockElevated | 0 | 1 = CapsLock 切换在管理员权限的窗口里也生效: 用计划任务以管理员身份运行一个只管 CapsLock 的小助手, ALTRun 本身还是普通权限。见 [CapsLock 切换输入法](Hotkeys#capslock-切换输入法) |
 | SelectionHotkey | `^!\` | 选中文字 / 文件 / 网址后按下, 直接打开它们的操作 (Ctrl+Alt+\), 见 [选中内容的操作](Usage#选中内容的操作); 留空 = 不用 |
 | Language | `auto` | `auto` 跟随 Windows 的显示语言, 或语言代码: `en` / `zh-CN` (简体中文) / `zh-TW` (繁體中文) / `ja`; 除了英文, 每种语言是 `Resources\Lang\` 里的一个文件 (以前的 `zh` 等于 `zh-CN`) |
 | LaunchAtLogin | 1 | 开机自动启动 |
@@ -129,12 +129,12 @@
 ### Calculator 计算器
 | 键 | 默认 | 说明 |
 |---|---|---|
-| StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Extensions#计算器) |
+| StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Calculator) |
 | RebarCover | 40 | 结构计算: 保护层 (mm, 每边) |
 | MaxBarSpacing | 300 | 结构计算: 主筋最大间距 (mm) |
 | BarSizes | `[13, 16, 20, 25, 32]` | 结构计算: 配筋面积那一行列出的钢筋直径 (mm) |
 | BarPrefix | `H` | 结构计算: 钢筋代号前缀 (`T`、`Y`、`Φ`...) |
-| Currency | 0 | 货币换算 (`100 usd to sgd`), 每天从 frankfurter.dev 下载汇率, 见 [单位和货币换算](Extensions#单位和货币换算) |
+| Currency | 0 | 货币换算 (`100 usd to sgd`), 每天从 frankfurter.dev 下载汇率, 见 [单位和货币换算](Calculator#单位和货币换算) |
 
 ### Bookmarks 浏览器书签
 | 键 | 默认 | 说明 |
@@ -145,7 +145,7 @@
 偏好设置 → 功能 → 功能选项里也能改。读 Chrome、Edge、Brave、Vivaldi 所有用户配置的书签; Firefox 的书签存在 SQLite 数据库里, 暂不支持。
 
 ### Scripts 脚本扩展
-只有 `Enabled`。脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Extensions#脚本扩展)。
+只有 `Enabled`。脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Scripts)。
 
 ### Recent 置顶和最近使用
 | 键 | 默认 | 说明 |
@@ -217,7 +217,7 @@
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
 ]
 ```
-字段说明见 [自定义命令与片段](Commands-and-Snippets) 和 [扩展功能](Extensions#自定义热键)。
+字段说明见 [自定义命令与片段](Commands-and-Snippets) 和 [扩展功能](Hotkeys)。
 
 ## Data 文件夹
 运行时生成, 删掉只会重新生成 (学习记录和剪贴板历史会清空):

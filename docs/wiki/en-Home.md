@@ -27,7 +27,10 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Quick Switch](en-Quick-Switch) | Jump to a folder open in File Explorer or Total Commander |
 | [Dialog Folder Panel](en-Quick-Switch-Panel) | Search and pick folders in an Open / Save dialog |
 | [Date Stamp](en-Date-Stamp) | Add dates when renaming files or at the end of text |
-| [Extensions](en-Extensions) | Custom hotkeys, system commands, calculator, scripts and PT Tools |
+| [Calculator](en-Calculator) | Expressions, unit and currency conversion, structural calculations |
+| [Scripts](en-Scripts) | Turn your own scripts into commands in the search results |
+| [Custom hotkeys](en-Hotkeys) | Assign system commands to hotkeys, Caps Lock input switching, how to set hotkeys |
+| [Extensions](en-Extensions) | System commands, terminal, PT Tools, and links to the extension pages |
 | [Settings reference](en-Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives, privacy... |
 | [Development guide](en-Development) | Architecture, adding a search feature, code style, tests |

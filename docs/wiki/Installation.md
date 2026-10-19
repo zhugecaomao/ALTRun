@@ -55,7 +55,7 @@ winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
 | `Data\ALTRun.json` | 你的全部设置和自定义命令、片段 | 保留 (自动升级格式) |
 | `Data\` 里的其它文件 | 应用索引、文件索引、学习记录、剪贴板历史、使用统计 | 保留 (删掉会重新生成) |
 | `Themes\` | 你自己的主题 | 保留 |
-| `Scripts\` | 你自己的[脚本](Extensions#脚本扩展) | 保留 |
+| `Scripts\` | 你自己的[脚本](Scripts) | 保留 |
 
 ## 开机启动、开始菜单、"发送到"
 在 偏好设置 → 通用 里设置:
