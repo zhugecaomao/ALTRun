@@ -1671,8 +1671,17 @@ class Tests {
         eq("default comfortable", ThemeManager.Get("RowHeight") "|" ThemeManager.Density, "54|Comfortable")
         ThemeManager.Load("Dark", "Huge")
         eq("unknown = comfortable", ThemeManager.Get("RowHeight") "|" ThemeManager.Density, "54|Comfortable")
-        ThemeManager.Load("DarkModern", "Normal")                           ; 主题自己的尺寸也按比例缩小
-        eq("scales theme sizes", ThemeManager.Get("RowHeight") < ThemeManager.Resolve("DarkModern")["RowHeight"], true)
+        eq("scales theme sizes", ThemeManager.Scaled(Map("RowHeight", 60, "IconSize", 40), "Normal")["RowHeight"] "|" ThemeManager.Scaled(Map("RowHeight", 60, "IconSize", 40), "Normal")["IconSize"], "53|36")   ; 自定义主题自己的尺寸也按比例缩小
+        ; 内置主题只有颜色不同, 尺寸都和浅色一样: 同一档密度下切换主题, 窗口不会忽大忽小
+        differ := ""
+        for themeName in ThemeManager.Names() {
+            if (themeName = "System")
+                continue
+            ThemeManager.Load(themeName, "Normal")
+            if (sizes() != "17/11.5/9/8.5/12/48/28")
+                differ .= themeName " " sizes() "; "
+        }
+        eq("builtin themes same size", differ, "")
         ThemeManager.Load("System", "Compact")
         eq("system compact", ThemeManager.Get("RowHeight"), 42)
         for oldName, base in Map("DarkCompact", "Dark", "LightCompact", "Light", "MidnightCompact", "Midnight") {

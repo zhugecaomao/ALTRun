@@ -23,8 +23,8 @@ In Preferences → Appearance, click a theme's thumbnail to pick it (each thumbn
 | Forest | `Forest` | Deep green background with green selection and highlights |
 | Sunset | `Sunset` | Warm dark brown background with orange accents |
 | High Contrast | `HighContrast` | Pure black, white text and a full-width yellow selection; easier to read with low vision or in bright light |
-| Dark Modern | `DarkModern` | VS Code's default Dark Modern colors: dark gray background, dark blue selection, bright blue highlights, 24 px icons |
-| Light Modern | `LightModern` | VS Code's default Light Modern colors: off-white background, light blue selection, 24 px icons |
+| Dark Modern | `DarkModern` | VS Code's default Dark Modern colors: dark gray background, dark blue selection, bright blue highlights |
+| Light Modern | `LightModern` | VS Code's default Light Modern colors: off-white background, light blue selection |
 | Monokai | `Monokai` | The classic Monokai colors: dark olive background, green highlights |
 | One Dark | `OneDark` | Atom / VS Code One Dark colors: blue-gray dark background, blue highlights |
 | Tokyo Night | `TokyoNight` | Deep night blue with blue accents ([Tokyo Night](https://github.com/folke/tokyonight.nvim) palette) |
@@ -62,7 +62,7 @@ Preferences → Appearance → Size → **Density** applies to every theme, cust
 | Normal | `Normal` | Default for new installations: 17 / 11.5 pt, 48, 28 px |
 | Compact | `Compact` | 15 / 10.5 pt, 42, 24 px; the most results on screen |
 
-Themes with their own sizes (such as Dark Modern) scale by the same ratios. Upgrades keep their previous size (Comfortable); switch to Normal for something smaller.
+Built-in themes all share the same sizes and differ only in colors; custom themes with their own sizes scale by the same ratios. Upgrades keep their previous size (Comfortable); switch to Normal for something smaller.
 
 The former built-in themes Dark Compact (`DarkCompact`), Light Compact (`LightCompact`) and Midnight Compact (`MidnightCompact`) are gone: use Dark / Light / Midnight with Normal density instead (same sizes as before). If the settings still name one of them, it shows as "that theme + Normal"; opening Preferences → Appearance selects them for you, and **OK** saves the new form. Custom themes whose `Base` names one of them keep working.
 

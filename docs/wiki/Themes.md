@@ -23,8 +23,8 @@
 | 森林 | `Forest` | 墨绿深色底 + 绿色选中和高亮 |
 | 日落 | `Sunset` | 暖棕深色底 + 橙色强调 |
 | 高对比 | `HighContrast` | 纯黑底 + 白字 + 黄色整行选中, 视力不好或强光下更清楚 |
-| 现代深色 | `DarkModern` | VS Code 默认的 Dark Modern 配色: 深灰底 + 深蓝选中 + 亮蓝高亮, 图标 24 px |
-| 现代浅色 | `LightModern` | VS Code 默认的 Light Modern 配色: 浅灰白底 + 淡蓝选中, 图标 24 px |
+| 现代深色 | `DarkModern` | VS Code 默认的 Dark Modern 配色: 深灰底 + 深蓝选中 + 亮蓝高亮 |
+| 现代浅色 | `LightModern` | VS Code 默认的 Light Modern 配色: 浅灰白底 + 淡蓝选中 |
 | Monokai | `Monokai` | 经典的 Monokai 配色: 橄榄深色底 + 绿色高亮 |
 | One Dark | `OneDark` | Atom / VS Code 的 One Dark 配色: 蓝灰深色底 + 蓝色高亮 |
 | Tokyo Night | `TokyoNight` | 深蓝夜色 + 蓝色强调 ([Tokyo Night](https://github.com/folke/tokyonight.nvim) 配色) |
@@ -62,7 +62,7 @@ Light 写在程序里, 其它内置主题在 `Resources\Themes\*.json`。这些�
 | 常规 | `Normal` | 新安装的默认: 17 / 11.5 pt, 48, 28 px |
 | 紧凑 | `Compact` | 15 / 10.5 pt, 42, 24 px, 一屏显示最多结果 |
 
-自己设了尺寸的主题 (例如现代深色) 按同样的比例缩放。从旧版本升级时保持原来的大小 (宽松), 想要小一点的可以改成常规。
+内置主题都用同样的尺寸, 只是颜色不同; 自定义主题自己设了尺寸的按同样的比例缩放。从旧版本升级时保持原来的大小 (宽松), 想要小一点的可以改成常规。
 
 以前的内置主题 紧凑深色 (`DarkCompact`)、紧凑浅色 (`LightCompact`)、紧凑午夜 (`MidnightCompact`) 已经去掉, 改成 深色 / 浅色 / 午夜 + 常规 (尺寸和以前一样)。设置里还是这几个名字时, 会自动按 "对应的主题 + 常规" 显示; 打开 偏好设置 → 外观 会自动选好, 点 **确定** 后保存成新的写法。自定义主题的 `Base` 写着这几个名字的照常能用。
 
