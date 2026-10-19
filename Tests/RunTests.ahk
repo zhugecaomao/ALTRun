@@ -1544,6 +1544,18 @@ class Tests {
         eq("page list rows", PreferencesWindow.PageList.GetCount(), PreferencesWindow.Pages.Length)
         PreferencesWindow.Show(3)                                           ; 已经开着时按页码打开 ("-Preferences 3" 交过来的)
         eq("open by number while open", PreferencesWindow._page "|" PreferencesWindow.PageList.GetNext(), "3|3")
+        gallery := ""                                                       ; 外观页的主题列表: 一行正好 4 个缩略图, 右边不剩一大块
+        for ctrl in PreferencesWindow.Pages[3].Controls
+            if (ctrl.Type = "ListView" && !IsObject(gallery))
+                gallery := ctrl
+        itemPos := (index) => (point := Buffer(8, 0), SendMessage(0x1010, index, point.Ptr, gallery), [NumGet(point, 0, "Int"), NumGet(point, 4, "Int")])   ; LVM_GETITEMPOSITION
+        spacing := SendMessage(0x1033, 0, 0, gallery) & 0xFFFF              ; LVM_GETITEMSPACING (大图标)
+        galleryRect := Buffer(16)
+        DllCall("GetClientRect", "Ptr", gallery.Hwnd, "Ptr", galleryRect)
+        first := itemPos(0), fourth := itemPos(3), fifth := itemPos(4)
+        eq("gallery: 4 per row", (fourth[2] = first[2] && fifth[2] > first[2]) ? 1 : 0, 1)
+        TestRunner.True("ThemeGallery.gallery fills the row (left " (NumGet(galleryRect, 8, "Int") - 4 * spacing) ")"
+            , NumGet(galleryRect, 8, "Int") - 4 * spacing < 8)
         PreferencesWindow.PageList.Modify(3, "-Select")                     ; 点了列表下面的空白处: 松开鼠标后选回当前页
         click := Buffer(3 * A_PtrSize + 40, 0)                              ; NMITEMACTIVATE, iItem = -1 (没有点到行)
         NumPut("Int", -1, click, 3 * A_PtrSize)
