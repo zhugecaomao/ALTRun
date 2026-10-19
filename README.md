@@ -76,7 +76,7 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 - **Clipboard history**: press `Ctrl+Alt+C` or type `clip`. Records text, files and images; pin the ones you use often, paste as plain text, and ignore anything copied from password managers.
 - **Text snippets**: search by name, keyword or content; placeholders such as `{date}`, `{clipboard}` and `{cursor}`; type `;keyword` in any program to expand a snippet; import them in bulk from Excel / CSV, or export them.
 - **Terminal**: type `>ipconfig /all` to run it in a terminal.
-- **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results.
+- **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results (turn it on in Preferences → Features).
 
 **Extensions**
 - **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder.

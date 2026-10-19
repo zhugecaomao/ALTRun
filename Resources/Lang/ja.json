@@ -314,6 +314,7 @@
   "Prefs.Feature.CustomCommands": "カスタムコマンド",
   "Prefs.Feature.FileSearch": "ファイル検索",
   "Prefs.Feature.Help": "ヘルプ (?)",
+  "Prefs.Feature.LargeType": "拡大表示 (Ctrl+L)",
   "Prefs.Feature.Recent": "ピン留めと最近の項目",
   "Prefs.Feature.Scripts": "スクリプト",
   "Prefs.Feature.Snippets": "スニペット",

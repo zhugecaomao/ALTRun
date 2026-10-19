@@ -314,6 +314,7 @@
   "Prefs.Feature.CustomCommands": "自定义命令",
   "Prefs.Feature.FileSearch": "文件搜索",
   "Prefs.Feature.Help": "帮助 (?)",
+  "Prefs.Feature.LargeType": "大字显示 (Ctrl+L)",
   "Prefs.Feature.Recent": "置顶和最近使用",
   "Prefs.Feature.Scripts": "脚本扩展",
   "Prefs.Feature.Snippets": "文字片段",

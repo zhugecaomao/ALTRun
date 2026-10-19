@@ -53,7 +53,7 @@ class HelpProvider {
             ["Scripts"   , "Scripts"       , "Extensions"],
             ["Query"     , "CustomCommands", "Commands-and-Snippets"],
             ["CheckPaths", "CustomCommands", "Commands-and-Snippets"],
-            ["LargeType" , ""              , "Usage"],
+            ["LargeType" , "LargeType"     , "Usage"],
             ["EditFile"  , "FileSearch"    , "Usage"],
             ["Prefs"     , ""              , "Configuration"],
             ["EditJson"  , ""              , "Configuration"],

@@ -3,6 +3,7 @@
 ;-------------------------------------------------------------------------------
 ; 和 Alfred 的 Large Type 一样: 屏幕中央用超大字号显示一段文字 (电话号码、
 ; 计算结果、密码...), 按任意键、点击或切换窗口后关闭。字号按文字长度自动选。
+; 偏好设置 → 功能 里可以关掉 (Features.LargeType.Enabled, 新安装默认关): 关掉时 Ctrl+L 不起作用, 操作面板里也没有这一项。
 ;
 ; 用法:
 ;   LargeType.Show("138 0013 8000")
@@ -11,6 +12,11 @@
 class LargeType {
     static Gui := ""
     static _handlersReady := false
+
+    static Enabled() {
+        try return AppSettings.Feature("LargeType")["Enabled"] ? true : false
+        return false
+    }
 
     static Show(text) {
         LargeType.Close()

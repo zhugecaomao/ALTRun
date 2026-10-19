@@ -1465,7 +1465,8 @@ class SearchWindow {
                 SearchWindow._CopySelected()
                 return 0
             case 0x4C:                                                      ; Ctrl+L
-                SearchWindow._ShowLargeType()
+                if LargeType.Enabled()
+                    SearchWindow._ShowLargeType()
                 return 0
             case 0x45:                                                      ; Ctrl+E
                 SearchWindow._EditFileSelected()

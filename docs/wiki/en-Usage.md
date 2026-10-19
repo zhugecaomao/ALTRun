@@ -99,7 +99,7 @@ ALTRun remembers "what you typed → which result you finally picked": if you ty
 | `F3` | Edit the selected result, see below |
 | `Ctrl+Del` (cursor at the end) | Delete the selected result, see below |
 | `Ctrl+C` | Copy the selected result (copies text as usual when text is selected in the input box) |
-| `Ctrl+L` | Large type |
+| `Ctrl+L` | Large type: shows the selected result in huge text in the middle of the screen (phone numbers, codes, calculation results...); any key closes it. Turn it on in Preferences → Features first (off by default on new installations) |
 | `Ctrl+E` | Edit the selected file in the editor registered for its type (for example, open an .ahk script in an editor instead of running it) |
 | `Ctrl+Backspace` | Delete the previous word |
 | `F2` / `Ctrl+,` | Preferences |
@@ -121,7 +121,7 @@ Select a result and press `→` (or right-click) to list everything you can do w
 | Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC, Properties, Move to Recycle Bin |
 | URL | Open, Copy URL |
 | Text | Copy to Clipboard, Paste to Front Window |
-| All | Edit... / Add to Custom Commands... (`F3`), Delete (`Ctrl+Del`), Show in Large Type (`Ctrl+L`) |
+| All | Edit... / Add to Custom Commands... (`F3`), Delete (`Ctrl+Del`), Show in Large Type (`Ctrl+L`, when turned on) |
 
 File actions (like Listary):
 - **Copy File / Cut File**: puts the file itself on the clipboard; press `Ctrl+V` in TC or Explorer to paste it (a cut file is moved when pasted).
