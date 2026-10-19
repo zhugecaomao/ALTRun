@@ -5,7 +5,7 @@ name: Screenshots
 on:
   workflow_dispatch:
   push:
-    branches: ["claude/**"]
+    branches-ignore: [main]
     paths:
       - Tests/Screenshots/**
       - .github/workflows/screenshots.yml

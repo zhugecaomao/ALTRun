@@ -1,7 +1,7 @@
 # 在 Windows 上模拟日常操作, 比较两个版本的性能 (Tests/Bench/BenchDriver.ahk), 结果写进运行摘要, 原始数据是 artifact。
 #   手动运行 (Actions → Bench → Run workflow): baseline 默认最新正式版, candidate 默认运行的分支;
 #   每个版本 2 轮 x (searches 次搜索 + 每种操作 others 次), 默认 500 / 100 (每个版本 1000 次搜索 + 各 200 次, 约 50 分钟)
-#   claude/** 分支上改了测试脚本时: 自动用很少的次数跑一遍 (冒烟测试, 约 8 分钟)
+#   main 以外的分支上改了测试脚本时: 自动用很少的次数跑一遍 (冒烟测试, 约 8 分钟)
 name: Bench
 
 on:
@@ -24,7 +24,7 @@ on:
         required: false
         default: "100"
   push:
-    branches: ["claude/**"]
+    branches-ignore: [main]
     paths:
       - Tests/Bench/**
       - .github/workflows/bench.yml
