@@ -118,7 +118,7 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 
 默认每轮 500 次搜索 + 每种操作 100 次 (约 50 分钟), 结果 (中位数 / p90 / p99 / 最慢) 在运行摘要里, 原始数据是 artifact。
 测试副本里多 #Include 一个 `Tests\Bench\BenchProbe.ahk`, 驱动程序 (`BenchDriver.ahk`) 通过它知道 "当前输入的结果画好了没有";
-发布的程序里没有它。改了测试脚本推到 `claude/**` 分支时会自动用很少的次数跑一遍。
+发布的程序里没有它。改了测试脚本推到 main 以外的分支时会自动用很少的次数跑一遍。
 
 ## 代码规范
 见仓库的 [贡献指南](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.zh-CN.md)。几个 AutoHotkey v2 的坑:

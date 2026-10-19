@@ -119,7 +119,7 @@ alternating (A B B A), with ALTRun restarted for every round:
 
 By default each round has 500 searches + 100 of each other operation (about 50 minutes); the results (median / p90 / p99 / max) are in the run summary, and the raw data is an artifact.
 The test copies #Include one extra file, `Tests\Bench\BenchProbe.ahk`, which tells the driver (`BenchDriver.ahk`) whether the results for the current input have been drawn;
-the released program doesn't contain it. Pushing changes to the benchmark scripts to a `claude/**` branch runs a short smoke test automatically.
+the released program doesn't contain it. Pushing changes to the benchmark scripts to a branch other than main runs a short smoke test automatically.
 
 ## Code style
 See [CONTRIBUTING.md](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md) in the repository. A few AutoHotkey v2 pitfalls:
