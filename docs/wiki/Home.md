@@ -23,7 +23,13 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [自定义命令与片段](Commands-and-Snippets) | 命令类型、路径变量、片段占位符、自动展开、剪贴板历史 |
 | [文件搜索](File-Search) | Everything 联动、内置索引、排除规则 |
 | [主题](Themes) | 22 套内置主题 (也可以跟随系统浅色 / 深色)、显示密度、自定义主题、全部可用的键 |
-| [扩展功能](Extensions) | 对话框快速跳转、一键加日期、自定义热键、系统命令列表、PT 工具箱 |
+| [对话框跳转](Quick-Switch) | 在打开 / 保存对话框中快速切换文件夹 |
+| [对话框面板](Dialog-Panel) | 浏览、过滤和搜索文件夹 |
+| [一键加日期](Date-Stamp) | 重命名文件或在文字末尾添加日期 |
+| [自定义热键](Hotkeys) | 把快捷键绑定到系统命令 |
+| [计算器](Calculator) | 计算器、单位和货币换算 |
+| [脚本扩展](Scripts) | 添加和运行自定义脚本 |
+| [扩展功能索引](Extensions) | 系统命令列表、PT 工具箱和旧版链接 |
 | [设置文件参考](Configuration) | ALTRun.json 每一项的含义和默认值 |
 | [常见问题](FAQ) | 热键冲突、搜不到、杀毒软件误报、隐私... |
 | [开发指南](Development) | 架构、新增搜索功能、代码规范、测试 |
@@ -39,7 +45,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | 运行命令 | `>ipconfig /all` |
 | 锁屏 / 关机 | `lock` / `shutdown` |
 | 粘贴常用文字 | 任何程序里输入 `;sig` 自动展开签名 |
-| 打开 / 保存对话框跳到某个文件夹 | 在对话框下面的[文件夹面板](Extensions#对话框快速跳转-quick-switch)里点一下, 或按 `Ctrl+G` 跳到 Total Commander 当前的文件夹 |
+| 打开 / 保存对话框跳到某个文件夹 | 在对话框下面的[文件夹面板](Dialog-Panel)里点一下, 或按 `Ctrl+G` 跳到 Total Commander 当前的文件夹 |
 | 修改选中的命令 | `F3` |
 | 更多操作 | `→` 或鼠标右键 |
 | 忘了怎么写 | `?` 查看所有输入语法和快捷键 |

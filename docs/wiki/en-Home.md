@@ -23,7 +23,13 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Custom commands and snippets](en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion, clipboard history |
 | [File search](en-File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](en-Themes) | 22 built-in themes (or follow the Windows light / dark mode), density, custom themes, every available key |
-| [Extensions](en-Extensions) | Quick Switch, date stamp, custom hotkeys, list of system commands, PT Tools |
+| [Quick Switch](en-Quick-Switch) | Jump between folders in Open / Save dialogs |
+| [Dialog Panel](en-Dialog-Panel) | Browse, filter and search folders |
+| [Date Stamp](en-Date-Stamp) | Add dates to file names or the end of text |
+| [Custom Hotkeys](en-Hotkeys) | Bind hotkeys to system commands |
+| [Calculator](en-Calculator) | Calculator, unit and currency conversion |
+| [Scripts](en-Scripts) | Add and run custom scripts |
+| [Extensions index](en-Extensions) | System commands, PT Tools and legacy links |
 | [Settings reference](en-Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives, privacy... |
 | [Development guide](en-Development) | Architecture, adding a search feature, code style, tests |
@@ -39,7 +45,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | Run a command | `>ipconfig /all` |
 | Lock / shut down | `lock` / `shutdown` |
 | Paste text you use often | type `;sig` in any program to expand your signature |
-| Jump an Open / Save dialog to a folder | click it in the [Quick Switch](en-Extensions#quick-switch) panel below the dialog, or `Ctrl+G` for the current Total Commander folder |
+| Jump an Open / Save dialog to a folder | click it in the [Quick Switch](en-Dialog-Panel) panel below the dialog, or `Ctrl+G` for the current Total Commander folder |
 | Edit the selected command | `F3` |
 | More actions | `→` or right-click |
 | Forgot the syntax | `?` lists every search syntax and shortcut |
