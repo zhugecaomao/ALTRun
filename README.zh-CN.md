@@ -50,7 +50,7 @@
 
 如果 Windows SmartScreen 拦截程序，点击 **更多信息** → **仍要运行**。杀毒软件误报请参阅[常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#杀毒软件报毒)。
 
-**其他安装方式：**[Scoop](#其他安装方式与升级)、[winget（审核收录后）](#其他安装方式与升级)，或[安装 AutoHotkey v2 后直接运行 `ALTRun.ahk`](#其他安装方式与升级)。详情请参阅[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
+也可以通过 Scoop 或 winget（审核收录后）安装，或使用 AutoHotkey v2 直接运行 `ALTRun.ahk`。详情请参阅[其他安装方式与升级](#其他安装方式与升级)或[安装与升级 Wiki](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
 
 
 ## 功能
