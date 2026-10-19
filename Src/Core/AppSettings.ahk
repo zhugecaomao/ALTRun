@@ -228,9 +228,9 @@ class AppSettings {
     ; 返回是否有改动。类型不一致 (比如该是 Map 的地方被手改成了字符串) 也用默认值覆盖。
     ; 已有的设置文件里还没有的新设置: 保持原来的样子, 不用新安装的默认值 (见下面两个)。返回是否补上了
     static _KeepPrevious(data) {
-        density := AppSettings._KeepDensity(data)
-        largeType := AppSettings._KeepLargeType(data)
-        return density || largeType
+        keptDensity := AppSettings._KeepDensity(data)
+        keptLargeType := AppSettings._KeepLargeType(data)                  ; 不叫 largeType: 会遮住 LargeType 类
+        return keptDensity || keptLargeType
     }
 
     ; 已有的设置文件还没有 Features.LargeType (2026.10.19.15 以前): 大字显示一直是打开的, 保持打开
