@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.19.2]
+
+测试版。
+
+Test build.
+
+### 修复
+- 桌面、开始菜单里有损坏的快捷方式时, 扫描应用报错 "This local variable has not been assigned a value (linkTarget)", 这次扫描也停在半路, 之后的应用索引不再自动更新。现在损坏的快捷方式照样收进索引 (没有目标), 不报错
+- 对话框旁的最近文件夹: "最近使用的项目" 里有损坏的快捷方式时也会报同样的错, 现在跳过它
+
 ## [2026.10.19.1]
 
 测试版。
@@ -770,7 +780,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.2...HEAD
+[2026.10.19.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.1...2026.10.19.2
 [2026.10.19.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.3...2026.10.19.1
 [2026.10.17.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.2...2026.10.17.3
 [2026.10.17.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.1...2026.10.17.2

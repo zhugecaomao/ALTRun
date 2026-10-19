@@ -315,8 +315,9 @@ class ApplicationProvider {
                     continue
                 detail := ""
                 if (ext = "lnk") {                                          ; 同一个程序在多个位置有快捷方式时只保留一个
-                    linkTarget := "", linkArgs := ""
                     try FileGetShortcut(A_LoopFileFullPath, &linkTarget, , &linkArgs)
+                    catch                                                   ; 损坏的快捷方式: 出错时两个变量都成了未赋值
+                        linkTarget := "", linkArgs := ""
                     detail := Trim(linkTarget " " linkArgs)
                     key := StrLower(title "|" detail)
                 } else {
