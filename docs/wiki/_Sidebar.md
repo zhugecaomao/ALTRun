@@ -1,6 +1,7 @@
 **[ALTRun](en-Home)**
 
 **English**
+- [Getting started](en-Getting-Started)
 - [Installation and upgrades](en-Installation)
 - [Search and shortcuts](en-Usage)
 - [Browser bookmarks](en-Bookmarks)
@@ -15,10 +16,13 @@
 - [Date Stamp](en-Date-Stamp)
 - [Extensions](en-Extensions)
 - [Settings reference](en-Configuration)
+- [Data files](en-Data-Files)
+- [Privacy and network access](en-Privacy)
 - [FAQ](en-FAQ)
 - [Development guide](en-Development)
 
 **[中文](Home)**
+- [5 分钟上手](Getting-Started)
 - [安装与升级](Installation)
 - [搜索与快捷键](Usage)
 - [浏览器书签](Bookmarks)
@@ -33,6 +37,8 @@
 - [一键加日期](Date-Stamp)
 - [扩展功能](Extensions)
 - [设置文件参考](Configuration)
+- [数据文件](Data-Files)
+- [隐私与网络访问](Privacy)
 - [常见问题](FAQ)
 - [开发指南](Development)
 

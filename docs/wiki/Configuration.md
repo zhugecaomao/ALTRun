@@ -129,7 +129,7 @@
 ### Calculator 计算器
 | 键 | 默认 | 说明 |
 |---|---|---|
-| StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [扩展功能](Calculator) |
+| StructuralCalc | 0 | 结果下方附带梁主筋 / 配筋面积计算, 见 [计算器](Calculator) |
 | RebarCover | 40 | 结构计算: 保护层 (mm, 每边) |
 | MaxBarSpacing | 300 | 结构计算: 主筋最大间距 (mm) |
 | BarSizes | `[13, 16, 20, 25, 32]` | 结构计算: 配筋面积那一行列出的钢筋直径 (mm) |
@@ -217,20 +217,7 @@
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
 ]
 ```
-字段说明见 [自定义命令与片段](Commands-and-Snippets) 和 [扩展功能](Hotkeys)。
+字段说明见 [自定义命令与片段](Commands-and-Snippets) 和 [自定义热键](Hotkeys)。
 
 ## Data 文件夹
-运行时生成, 删掉只会重新生成 (学习记录和剪贴板历史会清空):
-
-| 文件 | 内容 |
-|---|---|
-| `AppIndex.json` | 应用索引 |
-| `FileIndex.json` | 内置文件索引 (没有 Everything 时) |
-| `Knowledge.json` | 学习排序和最近的搜索 |
-| `Usage.json` | 使用统计 (每天每个功能用了几次) |
-| `ClipboardHistory.json` | 剪贴板历史 (很长的条目和图片单独存成文件, 默认在本机的 `%LOCALAPPDATA%\ALTRun\Clipboard\`, `LocalFiles = 0` 时在 `Data\Clipboard\`; `LocalFiles = 2` 时这个文件也在本机, 不在 Data 里) |
-| `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) |
-| `Update.json` | 上次检查更新的时间、跳过的版本 |
-| `Icons\` | "下载网站图标" 保存的网页搜索图标 |
-
-图标缓存不在 Data 里: 读过的结果图标存在本机的 `%LOCALAPPDATA%\ALTRun\IconCache\Icons-<尺寸>.bin`, 重启后图标马上显示; 每台电脑各一份, 删掉后自动重建。
+数据文件夹在哪里、里面每个文件是什么、能不能删、怎样备份, 见 [数据文件](Data-Files)。

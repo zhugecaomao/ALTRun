@@ -102,7 +102,7 @@ On the first run, the old `ALTRun.ini` is imported automatically (settings, cust
 The old `Res\` folder has been renamed to `Resources\`; at startup, any files you put in `Res\` yourself are moved over automatically.
 
 ## Uninstalling
-1. Tray menu → Quit
-2. In Preferences → General, first turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" (or delete those shortcuts by hand)
+1. In Preferences → General, turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" (or delete those shortcuts by hand); if you ticked Preferences → Hotkeys → "Also in windows running as administrator", untick it too so its scheduled task is removed
+2. Tray menu → Quit
 3. Delete the program folder
-4. To remove everything, also delete `%LOCALAPPDATA%\ALTRun` (clipboard images, icon cache; and `%APPDATA%\ALTRun` if the settings were stored there because the program folder was not writable)
+4. To remove everything, also delete `%LOCALAPPDATA%\ALTRun` (clipboard images, icon cache; and `%APPDATA%\ALTRun` if the settings were stored there because the program folder was not writable) and `%Temp%\ALTRun.log` (the debug log, only there if you turned it on). If you moved the data folder (Preferences → Advanced → Data), delete that folder too. Where every file lives: [Data files](en-Data-Files)

@@ -18,6 +18,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 ## Start here
 | Page | Contents |
 |---|---|
+| [Getting started](en-Getting-Started) | First steps: open the window, launch programs, everyday features, your own commands |
 | [Installation and upgrades](en-Installation) | Download, Scoop / winget, start with Windows, one-key updates, upgrading from 2.x, uninstalling |
 | [Search and shortcuts](en-Usage) | Every search syntax, shortcuts, action panel, learned ranking, usage statistics |
 | [Custom commands and snippets](en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion, clipboard history |
@@ -32,6 +33,8 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Custom hotkeys](en-Hotkeys) | Assign system commands to hotkeys, Caps Lock input switching, how to set hotkeys |
 | [Extensions](en-Extensions) | System commands, terminal, PT Tools, and links to the extension pages |
 | [Settings reference](en-Configuration) | Every ALTRun.json setting and its default value |
+| [Data files](en-Data-Files) | Where the data folder is, what each file is, backups and moving to another PC |
+| [Privacy and network access](en-Privacy) | When ALTRun goes online, where to, and what is stored on your PC |
 | [FAQ](en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives, privacy... |
 | [Development guide](en-Development) | Architecture, adding a search feature, code style, tests |
 
