@@ -16,6 +16,8 @@ The hotkey appends ` - date` to the end of the current line, for example `Checke
 
 ## Settings
 
+![Preferences → Date Stamp](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-datestamp.png)
+
 Preferences → Date Stamp has a separate hotkey and **Works in** window list for each action. Enter one window condition per line; for example, `ahk_class CabinetWClass` is File Explorer and `ahk_class TTOTAL_CMD` is Total Commander.
 
 Settings are stored under `Extensions.AutoDate`:

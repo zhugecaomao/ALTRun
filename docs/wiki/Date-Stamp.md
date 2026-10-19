@@ -16,6 +16,8 @@
 
 ## 相关设置
 
+![偏好设置 → 一键加日期](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-datestamp.png)
+
 偏好设置 → 一键加日期为两种场景分别提供热键和“生效的窗口”列表, 每行一个窗口条件。例如 `ahk_class CabinetWClass` 表示资源管理器, `ahk_class TTOTAL_CMD` 表示 Total Commander。
 
 设置保存在 `Extensions.AutoDate`:

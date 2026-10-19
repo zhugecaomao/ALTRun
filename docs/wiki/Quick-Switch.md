@@ -24,6 +24,8 @@ Total Commander 的路径通过其 `WM_COPYDATA` 接口直接读取 (需要 TC 8
 
 ## 相关设置
 
+![偏好设置 → 对话框跳转](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-quickswitch.png)
+
 在偏好设置 → 对话框跳转中可修改热键、适用窗口和自动跳转行为。对应设置文件为 `Extensions.QuickSwitch`:
 
 | 设置 | 默认值 / 作用 |

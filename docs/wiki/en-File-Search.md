@@ -58,6 +58,9 @@ The top of Preferences → Search Sources shows whether Everything is running ri
 Installing Everything and letting it start with Windows (Everything's "Options → General → Start Everything on system startup") is recommended: wider coverage and faster.
 
 ## Settings
+
+![Preferences → Search Sources](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-searchsources.png)
+
 Preferences → File Search (how a search starts, file types, number of results) and Search Sources (Everything, built-in index), or `ALTRun.json` → `Features.FileSearch`:
 
 | Setting | Default | Description |

@@ -58,6 +58,9 @@ ALTRun 自动选择:
 推荐安装 Everything 并让它开机启动 (Everything 的 "选项 → 常规 → 开机启动"), 搜索范围和速度都更好。
 
 ## 设置
+
+![偏好设置 → 搜索来源](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-searchsources.png)
+
 偏好设置 → 文件搜索 (怎样开始搜索、文件类型、结果数量) 和 搜索来源 (Everything、内置索引), 或 `ALTRun.json` → `Features.FileSearch`:
 
 | 设置 | 默认 | 说明 |
