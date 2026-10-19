@@ -319,8 +319,16 @@ class Tests {
         TestRunner.Equal("WebSearch.utf8", items[1].Arg, "https://www.baidu.com/s?wd=%E4%B8%AD%E6%96%87")
         saved := ClipboardAll()
         A_Clipboard := ""
+        items := WebSearchProvider.Search(SearchQuery("g "))
+        TestRunner.True("WebSearch.keyword and space with empty clipboard is not runnable", items.Length = 1 && !items[1].Valid && items[1].Subtitle = I18n.T("Web.ClipboardEmpty"))
+        A_Clipboard := "from clipboard"
         items := WebSearchProvider.Search(SearchQuery("g"))
-        TestRunner.True("WebSearch.keyword only with empty clipboard is not runnable", items.Length = 1 && !items[1].Valid)
+        TestRunner.True("WebSearch.keyword only: hint, clipboard not used", items.Length = 1 && !items[1].Valid && items[1].Title = I18n.T("Web.SearchEmpty", "Google") && items[1].AutoComplete = "g ")
+        items := WebSearchProvider.Search(SearchQuery("g "))
+        TestRunner.True("WebSearch.keyword and space: clipboard", items.Length = 1 && items[1].Valid && items[1].Arg = "https://www.google.com/search?q=from%20clipboard")
+        items := WebSearchProvider.Search(SearchQuery("g typed"))
+        TestRunner.Equal("WebSearch.keyword and text: typed text", items[1].Arg, "https://www.google.com/search?q=typed")
+        A_Clipboard := ""
         fallbacks := WebSearchProvider.Fallbacks(SearchQuery("xyz"))
         TestRunner.Equal("WebSearch.fallbacks", fallbacks.Length, 3)
 
@@ -334,6 +342,8 @@ class Tests {
         item := WebSearchProvider.ItemFor(engine, "")
         eq("keyword only with default", (item.Valid ? 1 : 0) "|" item.Arg "|" item.AutoComplete, "1|http://localhost:8000/|lh ")
         eq("keyword only with default: title", item.Title, I18n.T("Web.SearchFor", "Localhost", "8000"))
+        item := WebSearchProvider.ItemFor(engine, "", "lh", true)
+        eq("keyword without space: hint, default not used", (item.Valid ? 1 : 0) "|" item.Title "|" item.AutoComplete, "0|" I18n.T("Web.SearchEmpty", "Localhost") "|lh ")
         ; {query|clipboard}: 只输入关键字时搜索剪贴板里的文字
         google := Map("Id", "google", "Keyword", "g", "Title", "Google", "Url", "https://www.google.com/search?q={query|clipboard}")
         eq("clipboard default", WebSearchProvider.UsesClipboard(google["Url"]) && WebSearchProvider.UsesClipboard("https://x/?q={query|Clipboard}") && !WebSearchProvider.UsesClipboard(engine["Url"]), true)
@@ -353,12 +363,48 @@ class Tests {
         A_Clipboard := ""
         Loop 300
             A_Clipboard .= "a"
-        eq("clipboard: truncated", StrLen(WebSearchProvider.ClipboardText()), WebSearchProvider.MaxClipboardChars)
+        eq("clipboard: truncated", StrLen(WebSearchProvider.ClipboardText()), WebSearchProvider.MaxTermChars)
+        eq("term: truncated", StrLen(WebSearchProvider.Term(A_Clipboard " more")), WebSearchProvider.MaxTermChars)
+        ; 文字和图片一起 (Excel 复制单元格): 用文字; 密码管理器标了 "不要记录": 不读; 复制的是文件: 不读
+        putText("cell text", ClipboardData.CF_BITMAP)
+        eq("clipboard: text with a bitmap", WebSearchProvider.ClipboardText(), "cell text")
+        putText("secret", DllCall("RegisterClipboardFormat", "Str", "ExcludeClipboardContentFromMonitorProcessing", "UInt"))
+        eq("clipboard: private", WebSearchProvider.ClipboardText(), "")
+        ClipboardData.SetFiles([A_ScriptDir])
+        eq("clipboard: files", WebSearchProvider.ClipboardText(), "")
         A_Clipboard := saved
+        ; 已有设置文件里自带引擎的旧默认网址换成 {query|clipboard}; 改过的、自己加的不动
+        data := Map("Features", Map("WebSearch", Map("Engines", [
+            Map("Id", "google", "Url", "https://www.google.com/search?q={query}"),
+            Map("Id", "bing", "Url", "https://www.bing.com/search?q={query}&setlang=en"),
+            Map("Id", "amz", "Url", "https://www.amazon.com/s?k={query}")])))
+        engines := data["Features"]["WebSearch"]["Engines"]
+        eq("upgrade engines", AppSettings._UpgradeEngines(data) "|" engines[1]["Url"] "|" engines[2]["Url"] "|" engines[3]["Url"]
+            , "1|https://www.google.com/search?q={query|clipboard}|https://www.bing.com/search?q={query}&setlang=en|https://www.amazon.com/s?k={query}")
+        eq("upgrade engines: only once", AppSettings._UpgradeEngines(data), false)
+        eq("upgrade engines: no web search", AppSettings._UpgradeEngines(Map("Features", Map())), false)
         for engine2 in AppSettings.Feature("WebSearch")["Engines"]
             eq("default engine uses clipboard: " engine2["Id"], WebSearchProvider.UsesClipboard(engine2["Url"]), true)
         ; Icon: 没写 / 文件不存在时用浏览器的图标; 图片用缩略图; 相对路径从 Data 文件夹算起
         eq("icon: none", WebSearchProvider.IconFor(engine), "url:")
+
+        ; 剪贴板里放文字和另一种格式 (format 的内容: 位图格式放一个 1x1 位图, 其它放一个 0)
+        putText(text, format) {
+            if !DllCall("OpenClipboard", "Ptr", A_ScriptHwnd)
+                return
+            DllCall("EmptyClipboard")
+            size := (StrLen(text) + 1) * 2
+            hText := DllCall("GlobalAlloc", "UInt", 0x42, "UPtr", size, "Ptr")
+            StrPut(text, DllCall("GlobalLock", "Ptr", hText, "Ptr"), "UTF-16"), DllCall("GlobalUnlock", "Ptr", hText)
+            DllCall("SetClipboardData", "UInt", 13, "Ptr", hText)            ; CF_UNICODETEXT
+            if (format = ClipboardData.CF_BITMAP) {
+                DllCall("SetClipboardData", "UInt", format, "Ptr", DllCall("CreateBitmap", "Int", 1, "Int", 1, "UInt", 1, "UInt", 32, "Ptr", 0, "Ptr"))
+            } else {
+                hFlag := DllCall("GlobalAlloc", "UInt", 0x42, "UPtr", 4, "Ptr")
+                DllCall("SetClipboardData", "UInt", format, "Ptr", hFlag)
+            }
+            DllCall("CloseClipboard")
+        }
         engine["Icon"] := "res:imageres.dll,-1"
         eq("icon: resource", WebSearchProvider.IconFor(engine), "res:imageres.dll,-1")
         engine["Icon"] := A_Temp "\no-such-icon.png"

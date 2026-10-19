@@ -117,7 +117,7 @@ class SelectionActions {
     ; 用每个搜索引擎搜索 text 的操作 (选中内容和剪贴板历史共用); 网页搜索关掉时没有
     static SearchActions(text) {
         actions := []
-        query := Trim(RegExReplace(text, "\s+", " "))
+        query := WebSearchProvider.Term(text)
         if (query = "" || !ProviderRegistry.IsEnabled(WebSearchProvider))
             return actions
         for engine in AppSettings.Feature("WebSearch")["Engines"] {

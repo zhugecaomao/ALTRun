@@ -422,7 +422,7 @@ class ClipboardProvider {
     static _OnChange(dataType) {
         if (dataType = 0 || A_TickCount < ClipboardProvider._pausedUntil)  ; 0 = 剪贴板被清空
             return
-        if ClipboardProvider._IsPrivate()
+        if ClipboardProvider.IsPrivate()
             return
         processName := ""
         try processName := WinGetProcessName("A")
@@ -467,8 +467,8 @@ class ClipboardProvider {
         return true
     }
 
-    ; 密码管理器等会给剪贴板内容加上 "不要记录" 的标记 (Windows 剪贴板历史也遵守)
-    static _IsPrivate() {
+    ; 密码管理器等会给剪贴板内容加上 "不要记录" 的标记 (Windows 剪贴板历史也遵守; 网页搜索的 {query|clipboard} 也不读)
+    static IsPrivate() {
         static excludeFormat := DllCall("RegisterClipboardFormat", "Str", "ExcludeClipboardContentFromMonitorProcessing", "UInt")
         static historyFormat := DllCall("RegisterClipboardFormat", "Str", "CanIncludeInClipboardHistory", "UInt")
         if DllCall("IsClipboardFormatAvailable", "UInt", excludeFormat)

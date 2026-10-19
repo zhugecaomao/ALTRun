@@ -168,7 +168,7 @@
 ### WebSearch 网页搜索
 | 键 | 说明 |
 |---|---|
-| Engines | 搜索引擎列表, 每一条 `{ "Id", "Keyword", "Title", "Url", "Icon" }`, `Keyword` 可以写几个, 用逗号分隔 (例如 `"g, ㅎ"`)。`Url` 里的 `{query}` 替换为输入的文字。写成 `{query|8000}` 时有默认值: 只输入关键字就用 8000 打开 (例如 `http://localhost:{query|8000}`); 默认值写成 `clipboard` (`{query|clipboard}`) 时只输入关键字就搜索剪贴板里的文字, 新安装自带的引擎都是这样写的。`Icon` (可选): 结果的图标, `.ico`、`.png` 或 `.exe` 文件, 相对路径从 Data 文件夹算起 (例如 `Icons\jira.png`)。编辑框里的 **下载网站图标** 会访问网址所在的网站一次, 把它的图标存到 `Data\Icons` 并填好这一项。留空 = 自带的图标 (默认的几个引擎都有) 或浏览器的图标 |
+| Engines | 搜索引擎列表, 每一条 `{ "Id", "Keyword", "Title", "Url", "Icon" }`, `Keyword` 可以写几个, 用逗号分隔 (例如 `"g, ㅎ"`)。`Url` 里的 `{query}` 替换为输入的文字。写成 `{query|8000}` 时有默认值: 输入关键字加空格、不输入搜索词就用 8000 打开 (例如 `http://localhost:{query|8000}`); 默认值写成 `clipboard` (`{query|clipboard}`) 时搜索剪贴板里的文字, 自带的引擎都是这样写的 (从旧版本升级时, 网址还是原来默认值的自带引擎会自动换成这样)。`Icon` (可选): 结果的图标, `.ico`、`.png` 或 `.exe` 文件, 相对路径从 Data 文件夹算起 (例如 `Icons\jira.png`)。编辑框里的 **下载网站图标** 会访问网址所在的网站一次, 把它的图标存到 `Data\Icons` 并填好这一项。留空 = 自带的图标 (默认的几个引擎都有) 或浏览器的图标 |
 | Fallbacks | 没有任何结果时显示的兜底项: 引擎的 Id, 或 `files` (文件搜索)。默认 `["google", "files", "bing"]` |
 
 ### FileSearch 文件搜索

@@ -4,8 +4,9 @@
 ; ALTRun.json -> Features.WebSearch.Engines, 每个引擎:
 ;   { "Id": "google", "Keyword": "g", "Title": "Google", "Url": "https://...?q={query}", "Icon": "" }
 ; 输入 "g 关键词" 用对应引擎搜索; 只输入关键字 "g" 时提示补全。Keyword 可以写几个, 用逗号分隔 ("g, ㅎ")。
-; Url 里写 {query|默认值} 时, 只输入关键字也能直接打开: 用默认值, 例如 "http://localhost:{query|8000}"。
-; 默认值写成 clipboard ({query|clipboard}) 时, 只输入关键字就搜索剪贴板里的文字 (只读文字, 压成一行, 最多 MaxClipboardChars 个字符)。
+; Url 里写 {query|默认值} 时, 关键字后面不输入搜索词也能直接打开: 用默认值, 例如 "http://localhost:{query|8000}"。
+; 默认值写成 clipboard ({query|clipboard}) 时搜索剪贴板里的文字 (只读文字, 压成一行, 最多 MaxTermChars 个字符)。
+; 默认值在关键字后面加了空格、没有输入搜索词时才用 ("g "); 只输入关键字 ("g") 时提示补全。
 ; Icon: 结果的图标, 可以是 .ico / .png / .exe 等文件 (相对路径从 Data 文件夹算起), 或 IconCache 的写法
 ; (res:、ext: 等); 不写时自带的引擎 (按 Id) 用 Resources\Icons\Web 里的图标, 其它用默认浏览器的图标。
 ; 编辑框里的 "下载网站图标": 用户点了才访问网址所在的网站 (不经过第三方图标服务), 找到的图标存进 Data\Icons。
@@ -30,7 +31,7 @@ class WebSearchProvider {
             if !(engine is Map) || !engine.Has("Keyword") || !(keywords := SearchQuery.Keywords(engine["Keyword"])).Length
                 continue
             if query.MatchKeyword(keywords, &term, &keyword) {
-                item := WebSearchProvider.ItemFor(engine, term, keyword)
+                item := WebSearchProvider.ItemFor(engine, term, keyword, !query.HasRest)   ; 只输入 "g" -> 提示补全; "g " -> 默认值 / 剪贴板
                 item.Score := 150
                 item.Exclusive := query.HasRest
                 results.Push(item)
@@ -44,22 +45,20 @@ class WebSearchProvider {
     }
 
     ; keyword: 输入的那个关键字 (补全时保留); 没有时用第一个
-    ; hintOnly: 只是提示补全 (输入的是引擎名称), 默认值是 clipboard 时也不去读剪贴板
+    ; hintOnly: 只是提示补全 (只输入了关键字, 或输入的是引擎名称), 不用默认值, 也不去读剪贴板
     static ItemFor(engine, term, keyword := "", hintOnly := false) {
         icon := WebSearchProvider.IconFor(engine)
         if (keyword = "")
             keyword := WebSearchProvider.FirstKeyword(engine)
         autoComplete := keyword " " term
         fromClipboard := false
-        if (term = "") {
+        if (term = "" && !hintOnly) {
             if WebSearchProvider.UsesClipboard(engine["Url"]) {
-                if !hintOnly {
-                    term := WebSearchProvider.ClipboardText(), fromClipboard := true
-                    if (term = "")
-                        return ResultItem(I18n.T("Web.SearchClipboard", engine["Title"]), I18n.T("Web.ClipboardEmpty"), {
-                            Kind: "url", Icon: icon, Valid: false, AutoComplete: autoComplete, Source: engine
-                        })
-                }
+                term := WebSearchProvider.ClipboardText(), fromClipboard := true
+                if (term = "")
+                    return ResultItem(I18n.T("Web.SearchClipboard", engine["Title"]), I18n.T("Web.ClipboardEmpty"), {
+                        Kind: "url", Icon: icon, Valid: false, AutoComplete: autoComplete, Source: engine
+                    })
             } else
                 term := WebSearchProvider.DefaultTerm(engine["Url"])
         }
@@ -99,16 +98,22 @@ class WebSearchProvider {
     ; 默认值是 clipboard (不区分大小写)
     static UsesClipboard(template) => WebSearchProvider.DefaultTerm(template) = "clipboard"
 
-    static MaxClipboardChars := 200
+    static MaxTermChars := 200
 
-    ; 剪贴板里的文字: 空白压成一个空格, 最多 MaxClipboardChars 个字符; 图片、文件或没有文字时 ""
+    ; 剪贴板里的文字 (Term 处理过); 复制的是文件、没有文字, 或密码管理器标了 "不要记录" 时 ""。
+    ; 文字和图片同时在时 (例如从 Excel 复制单元格) 用文字, 和剪贴板历史一样
     static ClipboardText() {
-        if (ClipboardData.HasImage() || ClipboardData.HasFiles())
+        if (ClipboardData.HasFiles() || ClipboardProvider.IsPrivate())
             return ""
         text := ""
         try text := A_Clipboard
+        return WebSearchProvider.Term(text)
+    }
+
+    ; 放进网址的搜索词: 空白压成一个空格, 最多 MaxTermChars 个字符 (太长的网址搜索网站会报错)
+    static Term(text) {
         text := Trim(RegExReplace(text, "\s+", " "))
-        return StrLen(text) > WebSearchProvider.MaxClipboardChars ? Trim(SubStr(text, 1, WebSearchProvider.MaxClipboardChars)) : text
+        return StrLen(text) > WebSearchProvider.MaxTermChars ? Trim(SubStr(text, 1, WebSearchProvider.MaxTermChars)) : text
     }
 
     ; 结果标题里显示的搜索词: 太长的截短
