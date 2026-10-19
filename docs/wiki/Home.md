@@ -18,6 +18,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 ## 从这里开始
 | 页面 | 内容 |
 |---|---|
+| [5 分钟上手](Getting-Started) | 第一次用: 呼出、打开程序、常用功能、加自己的命令 |
 | [安装与升级](Installation) | 下载、Scoop / winget、开机启动、一键更新、从 2.x 升级、卸载 |
 | [搜索与快捷键](Usage) | 所有输入语法、快捷键、操作面板、学习排序、使用统计 |
 | [自定义命令与片段](Commands-and-Snippets) | 命令类型、路径变量、片段占位符、自动展开、剪贴板历史 |
@@ -32,6 +33,8 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [自定义热键](Hotkeys) | 给热键指定系统命令、CapsLock 切换输入法、怎样设置热键 |
 | [扩展功能](Extensions) | 系统命令列表、终端、PT 工具箱, 以及各扩展页面的入口 |
 | [设置文件参考](Configuration) | ALTRun.json 每一项的含义和默认值 |
+| [数据文件](Data-Files) | 数据文件夹在哪里、每个文件是什么、怎样备份和换电脑 |
+| [隐私与网络访问](Privacy) | ALTRun 什么时候联网、访问哪里、本机保存了什么 |
 | [常见问题](FAQ) | 热键冲突、搜不到、杀毒软件误报、隐私... |
 | [开发指南](Development) | 架构、新增搜索功能、代码规范、测试 |
 

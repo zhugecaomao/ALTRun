@@ -129,7 +129,7 @@ Every feature has `Enabled` (1 = on).
 ### Calculator
 | Key | Default | Description |
 |---|---|---|
-| StructuralCalc | 0 | Add beam main bar / rebar area results below the result, see [Extensions](en-Calculator) |
+| StructuralCalc | 0 | Add beam main bar / rebar area results below the result, see [Calculator](en-Calculator) |
 | RebarCover | 40 | Structural results: rebar cover (mm, each side) |
 | MaxBarSpacing | 300 | Structural results: maximum main bar spacing (mm) |
 | BarSizes | `[13, 16, 20, 25, 32]` | Structural results: bar diameters (mm) listed in the rebar area line |
@@ -217,20 +217,7 @@ See [Extensions](en-Extensions).
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
 ]
 ```
-For the fields, see [Custom commands and snippets](en-Commands-and-Snippets) and [Extensions](en-Hotkeys).
+For the fields, see [Custom commands and snippets](en-Commands-and-Snippets) and [Custom hotkeys](en-Hotkeys).
 
 ## The Data folder
-Created at runtime; deleting files only makes them be rebuilt (the learned ranking and clipboard history are lost):
-
-| File | Contents |
-|---|---|
-| `AppIndex.json` | App index |
-| `FileIndex.json` | Built-in file index (without Everything) |
-| `Knowledge.json` | Learned ranking and recent searches |
-| `Usage.json` | Usage statistics (how often each feature was used each day) |
-| `ClipboardHistory.json` | Clipboard history (very long items and images are stored as separate files, by default on this PC in `%LOCALAPPDATA%\ALTRun\Clipboard\`; in `Data\Clipboard\` with `LocalFiles = 0`; with `LocalFiles = 2` this file is on this PC too, not in Data) |
-| `Currency.json` | Exchange rates for currency conversion (only once currency conversion is on) |
-| `Update.json` | Time of the last update check, skipped versions |
-| `Icons\` | Web search icons saved by "Download Site Icon" |
-
-The icon cache is not in Data: result icons that have been read are kept on this PC in `%LOCALAPPDATA%\ALTRun\IconCache\Icons-<size>.bin`, so icons show at once after a restart; each PC has its own, and it is rebuilt automatically if deleted.
+Where the data folder is, what each file in it is, whether it can be deleted and how to back it up: see [Data files](en-Data-Files).

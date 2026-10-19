@@ -39,7 +39,7 @@ The line at the bottom of the search window (like Listary and Raycast), shown wh
 | Any text | Apps, custom commands, snippets, system commands, Windows tools, Windows Settings pages (for example `bluetooth`, `default apps`) |
 | `Space`, then type (press Space in an empty search box) | Files and folders only; the input box shows "Search files..."; `Backspace` in an empty box goes back |
 | `12*(3+4)` or `=2^10` | Calculator; `Enter` copies the result |
-| `10 km in mi` `100 f to c` `20 mpa in psi` | Unit conversion; with currency conversion turned on also `100 usd to sgd`, see [Extensions](en-Calculator#unit-and-currency-conversion) |
+| `10 km in mi` `100 f to c` `20 mpa in psi` | Unit conversion; with currency conversion turned on also `100 usd to sgd`, see [Calculator](en-Calculator#unit-and-currency-conversion) |
 | `255 in hex` `0xff to dec` `10 in bin` / `0b1010` | Number bases (hex / bin / oct / dec); a number starting with `0x`, `0b` or `0o` on its own lists decimal, hexadecimal and binary |
 | `today + 30 days` `2026-12-25 - 2w` / `2026-12-25 - today` | Date arithmetic (units d w m y), with the day of the week; subtracting two dates gives the number of days between them |
 | `bm xxx` | Browser bookmarks only (typing a bookmark name without `bm` finds it too, ranked after apps and commands), see [Browser bookmarks](en-Bookmarks) |
