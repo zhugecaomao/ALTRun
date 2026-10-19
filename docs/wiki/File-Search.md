@@ -51,7 +51,7 @@ ALTRun 自动选择:
 | 情况 | 搜索范围 |
 |---|---|
 | [Everything](https://www.voidtools.com/) 正在运行 | 通过 Everything 的 IPC 接口直接查询**全盘**, 结果即时; 不需要 `Everything64.dll` 或 `es.exe` |
-| Everything 没有运行 | 内置索引: 在后台扫描 桌面、文档、下载 (深度 4 层, 最多 30000 项), 缓存在 `Data\FileIndex.json`, 默认每 60 分钟在后台重新扫描一次。ALTRun 启动时 Everything 正在运行的话, 内置索引不读也不扫描, 等 Everything 关掉、真的要用时再读 |
+| Everything 没有运行 | 内置索引: 在后台扫描 桌面、文档、下载 (深度 4 层, 最多 30000 项), 缓存在 `Data\FileIndex.json`。这些文件夹里有文件 / 文件夹新增、删除、改名时, 几秒后在后台重新扫描 (两次至少隔 5 分钟; 修改文件内容、浏览器下载中的临时文件不算), 另外默认每 60 分钟兜底扫描一次。ALTRun 启动时 Everything 正在运行的话, 内置索引不读也不扫描, 等 Everything 关掉、真的要用时再读 |
 
 偏好设置 → 搜索来源 页面顶部会显示 Everything 当前是否在运行。
 
@@ -78,7 +78,7 @@ ALTRun 自动选择:
 | ScopeDepth | 4 | 内置索引的子文件夹深度 |
 | ScopeExclude | `node_modules`、`.git`、`__pycache__`、回收站 | 内置索引跳过的文件夹 (正则) |
 | MaxEntries | 30000 | 内置索引最多收录多少项 |
-| RefreshMinutes | 60 | 内置索引多久在后台更新一次 (建议 60 分钟以上, 最少 5 分钟; 启动时检查一次, 之后每分钟检查, 键盘鼠标空闲 30 秒、搜索窗口没开时才重建; 用 Everything 时不更新) |
+| RefreshMinutes | 60 | 兜底: 内置索引的缓存超过这么久也在后台重新扫描 (最少 5 分钟; 启动时检查一次, 之后每分钟检查, 键盘鼠标空闲 30 秒、搜索窗口没开时才重建)。平时靠监视文件夹自动更新; 用 Everything 时都不扫描 |
 
 改了内置索引的范围后, 可以在偏好设置里点 "重建文件索引" 立即生效。
 

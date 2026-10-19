@@ -29,8 +29,8 @@ class ApplicationProvider {
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
     static _job := "", _scanTimer := "", _refreshTimer := ""         ; 后台重建: 见 _NewJob
-    static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000, FallbackMinutes := 60, WatchRetryMs := 30000
-    static _watches := [], _watchTimer := "", _watchTypes := ""
+    static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000, FallbackMinutes := 60
+    static _watcher := "", _watchTimer := "", _watchTypes := ""
     static _changedAt := 0, _lastBackground := 0, _savePending := false, _saveTimer := ""
     static _entries := [], _keys := [], _keysFor := "", _lastNeedle := "", _lastMatches := []
 
@@ -44,128 +44,43 @@ class ApplicationProvider {
     }
 
     ;---------------------------------------------------------------------------
-    ; 监视索引的文件夹 (ReadDirectoryChangesW, 异步, 每 2 秒看一眼不等待): 应用类型的文件 (FileTypes) 或文件夹
+    ; 监视索引的文件夹 (FolderWatcher, 每 2 秒看一眼不等待): 应用类型的文件 (FileTypes) 或文件夹
     ; 新增、删除、改名、修改时在后台重建。能拿到文件名, 所以桌面上别的文件变了不算; ALTRun 自己的文件夹也不算
     ; (放在桌面上时, 写缓存、日志会一直触发)
     ;---------------------------------------------------------------------------
     static StartWatching() {
         ApplicationProvider.StopWatching()
         options := AppSettings.Feature("Applications")
-        for folder in options["Folders"] {
-            folder := RTrim(Path.Resolve(folder), "\")
-            if (folder = "" || !DirExist(folder))
-                continue
-            watch := ApplicationProvider._CreateWatch(folder)
-            if IsObject(watch)
-                ApplicationProvider._watches.Push(watch)
-            else
-                Logger.Debug("ApplicationProvider: cannot watch " folder)
-        }
+        folders := []
+        for folder in options["Folders"]
+            folders.Push(Path.Resolve(folder))
+        ApplicationProvider._watcher := FolderWatcher(folders)
         ApplicationProvider._watchTypes := ApplicationProvider._TypesPattern(options)
         if (ApplicationProvider._watchTimer = "")
             ApplicationProvider._watchTimer := Logger.Watch("app folder watch", () => ApplicationProvider._PollWatches())
-        if ApplicationProvider._watches.Length
+        if ApplicationProvider._watcher.Count
             SetTimer(ApplicationProvider._watchTimer, 2000)
+        if (ApplicationProvider._watcher.Count < folders.Length)
+            Logger.Debug("ApplicationProvider: watching " ApplicationProvider._watcher.Count " of " folders.Length " folders")
     }
 
     static StopWatching() {
         if (ApplicationProvider._watchTimer != "")
             SetTimer(ApplicationProvider._watchTimer, 0)
-        for watch in ApplicationProvider._watches
-            ApplicationProvider._CloseWatch(watch)
-        ApplicationProvider._watches := [], ApplicationProvider._changedAt := 0
-    }
-
-    static _CloseWatch(watch) {
-        if (watch.Handle && watch.HasOwnProp("Pending") && watch.Pending) {
-            ; CancelIoEx only requests cancellation. Wait for completion before releasing OVERLAPPED/buffer memory.
-            DllCall("CancelIoEx", "Ptr", watch.Handle, "Ptr", watch.Overlapped)
-            bytes := 0
-            DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", true)
-            watch.Pending := false
-        }
-        if watch.Handle
-            DllCall("CloseHandle", "Ptr", watch.Handle)
-        if watch.Event
-            DllCall("CloseHandle", "Ptr", watch.Event)
-    }
-
-    ; Open a fresh watcher for recovery after a completed read cannot be re-armed.
-    static _CreateWatch(folder) {
-        static FILE_LIST_DIRECTORY := 0x1, SHARE_ALL := 0x7, OPEN_EXISTING := 3, BACKUP_SEMANTICS := 0x02000000, OVERLAPPED := 0x40000000
-        if !DirExist(folder)
-            return ""
-        handle := DllCall("CreateFileW", "Str", folder, "UInt", FILE_LIST_DIRECTORY, "UInt", SHARE_ALL, "Ptr", 0, "UInt", OPEN_EXISTING
-            , "UInt", BACKUP_SEMANTICS | OVERLAPPED, "Ptr", 0, "Ptr")
-        if (handle = -1 || !handle)
-            return ""
-        watch := {Folder: folder, Handle: handle, Event: DllCall("CreateEventW", "Ptr", 0, "Int", true, "Int", false, "Ptr", 0, "Ptr")
-            , Overlapped: Buffer(A_PtrSize * 2 + 8 + A_PtrSize, 0), Buffer: Buffer(32768), Pending: false}
-        if !watch.Event {
-            DllCall("CloseHandle", "Ptr", handle)
-            return ""
-        }
-        NumPut("Ptr", watch.Event, watch.Overlapped, A_PtrSize * 2 + 8)
-        if !ApplicationProvider._ReadChanges(watch) {
-            ApplicationProvider._CloseWatch(watch)
-            return ""
-        }
-        return watch
-    }
-
-    ; 开始 (再次) 异步等这个文件夹 (包括子文件夹) 的下一批变化: 文件名、文件夹名、修改时间
-    static _ReadChanges(watch) {
-        DllCall("ResetEvent", "Ptr", watch.Event)
-        if DllCall("ReadDirectoryChangesW", "Ptr", watch.Handle, "Ptr", watch.Buffer, "UInt", watch.Buffer.Size, "Int", true
-            , "UInt", 0x1 | 0x2 | 0x10, "Ptr", 0, "Ptr", watch.Overlapped, "Ptr", 0) {
-            watch.Pending := true
-            return true
-        }
-        return false
+        if IsObject(ApplicationProvider._watcher)
+            ApplicationProvider._watcher.Stop()
+        ApplicationProvider._watcher := "", ApplicationProvider._changedAt := 0
     }
 
     ; 每 2 秒: 读出已经到了的变化 (不等待), 有应用相关的就记下时间; 安静 WatchQuietMs、离上一次后台重建至少 WatchMinGapMs 时重建
     static _PollWatches() {
-        for index, watch in ApplicationProvider._watches {
-            if (watch.HasOwnProp("Disabled") && watch.Disabled) {
-                if (A_TickCount < watch.RetryAt)
-                    continue
-                replacement := ApplicationProvider._CreateWatch(watch.Folder)
-                if IsObject(replacement) {
-                    ApplicationProvider._CloseWatch(watch)
-                    ApplicationProvider._watches[index] := replacement
-                    Logger.Debug("ApplicationProvider: watch recovered for " replacement.Folder)
-                } else {
-                    watch.RetryAt := A_TickCount + ApplicationProvider.WatchRetryMs
-                }
-                continue
-            }
-            if (DllCall("WaitForSingleObject", "Ptr", watch.Event, "UInt", 0, "UInt") != 0)
-                continue
-            bytes := 0
-            watch.Pending := false                                           ; The signaled event means this operation has completed.
-            if !DllCall("GetOverlappedResult", "Ptr", watch.Handle, "Ptr", watch.Overlapped, "UInt*", &bytes, "Int", false) {
-                lastError := A_LastError
-                Logger.Debug("ApplicationProvider: watch read failed for " watch.Folder " (error " lastError ")")
-                relevant := true                                             ; Errors may have lost changes; refresh conservatively
-            } else {
-                names := ApplicationProvider._ChangedNames(watch.Buffer, bytes)
-                relevant := (bytes = 0)                                     ; 0 = changes overflowed the buffer
-                for name in names
-                    if ApplicationProvider.IsWatchedChange(watch.Folder "\" name, ApplicationProvider._watchTypes) {
-                        relevant := true
-                        break
-                    }
-            }
-            if relevant
+        if !IsObject(ApplicationProvider._watcher)
+            return
+        for fullPath in ApplicationProvider._watcher.Poll()
+            if (fullPath = "*" || ApplicationProvider.IsWatchedChange(fullPath, ApplicationProvider._watchTypes)) {
                 ApplicationProvider._changedAt := A_TickCount
-            if !ApplicationProvider._ReadChanges(watch) {
-                ApplicationProvider._changedAt := A_TickCount
-                watch.Disabled := true
-                watch.RetryAt := A_TickCount + ApplicationProvider.WatchRetryMs
-                Logger.Debug("ApplicationProvider: watch re-arm failed for " watch.Folder "; retry scheduled")
+                break
             }
-        }
         if (!ApplicationProvider._changedAt || A_TickCount - ApplicationProvider._changedAt < ApplicationProvider.WatchQuietMs)
             return
         if (ApplicationProvider._lastBackground && A_TickCount - ApplicationProvider._lastBackground < ApplicationProvider.WatchMinGapMs)
@@ -175,19 +90,6 @@ class ApplicationProvider {
         ApplicationProvider._changedAt := 0
         Logger.Debug("ApplicationProvider: folders changed, rebuilding")
         ApplicationProvider.RefreshInBackground()
-    }
-
-    ; FILE_NOTIFY_INFORMATION 链表 -> 相对路径的数组
-    static _ChangedNames(buffer, bytes) {
-        names := [], offset := 0
-        while (bytes && offset < bytes) {
-            next := NumGet(buffer, offset, "UInt"), length := NumGet(buffer, offset + 8, "UInt")
-            names.Push(StrGet(buffer.Ptr + offset + 12, length // 2, "UTF-16"))
-            if !next
-                break
-            offset += next
-        }
-        return names
     }
 
     ; 纯函数: 这个路径的变化要不要重建 -- 应用类型的文件 (types: _TypesPattern), 或没有扩展名的 (多半是文件夹,
