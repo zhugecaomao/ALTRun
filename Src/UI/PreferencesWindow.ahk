@@ -1184,17 +1184,30 @@ class PreferencesWindow {
         return I18n.Strings.Has(labelKey ".Desc")
     }
 
+    ; 说明里带 Wiki 链接的设置: 说明文字里的 {1} 换成 [页面, 中文页的锚点, 英文页的锚点] 的网址
+    static DescLinks := Map("Prefs.SelectionHotkey", ["Usage", "#选中内容的操作", "#actions-on-selected-content"])
+
     ; 设置下面的灰色小字说明 (I18n 里的 "<labelKey>.Desc"); 没有时什么也不加。x: 和上面的控件左边对齐
     static _Desc(labelKey, x, text := "") {
+        controlType := "Text"
         if (text = "") {
             if !PreferencesWindow._HasDesc(labelKey)
                 return
-            text := I18n.T(labelKey ".Desc")
+            text := I18n.T(labelKey ".Desc", PreferencesWindow._DescLink(labelKey))
+            if PreferencesWindow.DescLinks.Has(labelKey)
+                controlType := "Link"                                              ; <a href="...">...</a>, 点了打开网页
         }
         PreferencesWindow.Gui.SetFont("s8")
-        ctrl := PreferencesWindow._Add("Text", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x) " cGray", text)
+        ctrl := PreferencesWindow._Add(controlType, "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x) " cGray", text)
         PreferencesWindow.Gui.SetFont("s9")
         PreferencesWindow._Below(10, ctrl)
+    }
+
+    static _DescLink(labelKey) {
+        if !PreferencesWindow.DescLinks.Has(labelKey)
+            return ""
+        link := PreferencesWindow.DescLinks[labelKey]
+        return HelpProvider.WikiPage(link[1]) (SubStr(I18n.Lang, 1, 2) = "zh" ? link[2] : link[3])
     }
 
     ; 带链接的灰色说明 (<a href="...">...</a>, 点了打开网页), 放在没有说明的分节标题下面

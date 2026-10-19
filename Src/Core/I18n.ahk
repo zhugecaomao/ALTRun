@@ -624,7 +624,7 @@ class I18n {
         s["Prefs.CapsLockElevatedFailed"] := "Caps Lock for administrator windows could not be set up (the confirmation may have been cancelled). The option stays off."
         s["Caps.HelperFailed"]         := "Caps Lock in administrator windows could not start. Turn the option off and on again in Preferences → Hotkeys."
         s["Prefs.SelectionHotkey"]     := "Selection hotkey"
-        s["Prefs.SelectionHotkey.Desc"] := "Select text, files or a link in any program and press this to show its actions."
+        s["Prefs.SelectionHotkey.Desc"] := 'Select text, files or a link in any program and press this to show its actions: search the web, change case, save as a snippet; for files, copy the path or open a terminal there. <a href="{1}">All actions</a>'
         s["Prefs.Language"]            := "Language"
         s["Prefs.Language.auto"]       := "Automatic"
         s["Prefs.Language.Desc"]       := "Automatic follows the Windows display language."
