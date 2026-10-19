@@ -5,6 +5,7 @@
 ;   { "Id": "google", "Keyword": "g", "Title": "Google", "Url": "https://...?q={query}", "Icon": "" }
 ; 输入 "g 关键词" 用对应引擎搜索; 只输入关键字 "g" 时提示补全。Keyword 可以写几个, 用逗号分隔 ("g, ㅎ")。
 ; Url 里写 {query|默认值} 时, 只输入关键字也能直接打开: 用默认值, 例如 "http://localhost:{query|8000}"。
+; 默认值写成 clipboard ({query|clipboard}) 时, 只输入关键字就搜索剪贴板里的文字 (只读文字, 压成一行, 最多 MaxClipboardChars 个字符)。
 ; Icon: 结果的图标, 可以是 .ico / .png / .exe 等文件 (相对路径从 Data 文件夹算起), 或 IconCache 的写法
 ; (res:、ext: 等); 不写时自带的引擎 (按 Id) 用 Resources\Icons\Web 里的图标, 其它用默认浏览器的图标。
 ; 编辑框里的 "下载网站图标": 用户点了才访问网址所在的网站 (不经过第三方图标服务), 找到的图标存进 Data\Icons。
@@ -34,7 +35,7 @@ class WebSearchProvider {
                 item.Exclusive := query.HasRest
                 results.Push(item)
             } else if (!query.HasRest && StrLen(query.Text) >= 2 && FuzzyMatcher.Score(query.Text, engine["Title"]) >= 80) {
-                item := WebSearchProvider.ItemFor(engine, "")                ; 输入引擎名称 -> 提示 "g " 补全
+                item := WebSearchProvider.ItemFor(engine, "", "", true)      ; 输入引擎名称 -> 提示 "g " 补全 (不读剪贴板)
                 item.Score := 20
                 results.Push(item)
             }
@@ -43,20 +44,33 @@ class WebSearchProvider {
     }
 
     ; keyword: 输入的那个关键字 (补全时保留); 没有时用第一个
-    static ItemFor(engine, term, keyword := "") {
+    ; hintOnly: 只是提示补全 (输入的是引擎名称), 默认值是 clipboard 时也不去读剪贴板
+    static ItemFor(engine, term, keyword := "", hintOnly := false) {
         icon := WebSearchProvider.IconFor(engine)
         if (keyword = "")
             keyword := WebSearchProvider.FirstKeyword(engine)
         autoComplete := keyword " " term
-        if (term = "")
-            term := WebSearchProvider.DefaultTerm(engine["Url"])
+        fromClipboard := false
+        if (term = "") {
+            if WebSearchProvider.UsesClipboard(engine["Url"]) {
+                if !hintOnly {
+                    term := WebSearchProvider.ClipboardText(), fromClipboard := true
+                    if (term = "")
+                        return ResultItem(I18n.T("Web.SearchClipboard", engine["Title"]), I18n.T("Web.ClipboardEmpty"), {
+                            Kind: "url", Icon: icon, Valid: false, AutoComplete: autoComplete, Source: engine
+                        })
+                }
+            } else
+                term := WebSearchProvider.DefaultTerm(engine["Url"])
+        }
         if (term = "") {
             return ResultItem(I18n.T("Web.SearchEmpty", engine["Title"]), I18n.T("Search.TypeAfter", keyword), {
                 Kind: "url", Icon: icon, Valid: false, AutoComplete: autoComplete, Source: engine
             })
         }
         target := WebSearchProvider.Fill(engine["Url"], term)
-        return ResultItem(I18n.T("Web.SearchFor", engine["Title"], term), target, {
+        title := fromClipboard ? I18n.T("Web.SearchClipboardFor", engine["Title"], WebSearchProvider.Preview(term)) : I18n.T("Web.SearchFor", engine["Title"], term)
+        return ResultItem(title, target, {
             Kind: "url", Arg: target, Icon: icon, AutoComplete: autoComplete, Source: engine
         })
     }
@@ -66,10 +80,14 @@ class WebSearchProvider {
         return keywords.Length ? keywords[1] : ""
     }
 
-    ; 网址里的 {query} / {query|默认值} 换成搜索词 (编码); 搜索词是空的时用默认值
-    static Fill(template, term) {
-        if (term = "")
+    ; 网址里的 {query} / {query|默认值} 换成搜索词 (编码); 搜索词是空的时用默认值 (clipboard = 剪贴板里的文字)
+    ; readClipboard: false 时默认值是 clipboard 也不去读 (只要网址的其它部分时用)
+    static Fill(template, term, readClipboard := true) {
+        if (term = "") {
             term := WebSearchProvider.DefaultTerm(template)
+            if (term = "clipboard")
+                term := readClipboard ? WebSearchProvider.ClipboardText() : ""
+        }
         return RegExReplace(template, "\{query(?:\|[^}]*)?\}", Url.Encode(term))   ; 编码后只有字母、数字和 %-_.~, 没有 $
     }
 
@@ -77,6 +95,24 @@ class WebSearchProvider {
     static DefaultTerm(template) {
         return RegExMatch(template, "\{query\|([^}]*)\}", &m) ? m[1] : ""
     }
+
+    ; 默认值是 clipboard (不区分大小写)
+    static UsesClipboard(template) => WebSearchProvider.DefaultTerm(template) = "clipboard"
+
+    static MaxClipboardChars := 200
+
+    ; 剪贴板里的文字: 空白压成一个空格, 最多 MaxClipboardChars 个字符; 图片、文件或没有文字时 ""
+    static ClipboardText() {
+        if (ClipboardData.HasImage() || ClipboardData.HasFiles())
+            return ""
+        text := ""
+        try text := A_Clipboard
+        text := Trim(RegExReplace(text, "\s+", " "))
+        return StrLen(text) > WebSearchProvider.MaxClipboardChars ? Trim(SubStr(text, 1, WebSearchProvider.MaxClipboardChars)) : text
+    }
+
+    ; 结果标题里显示的搜索词: 太长的截短
+    static Preview(text) => StrLen(text) > 60 ? SubStr(text, 1, 60) "..." : text
 
     ; 引擎的 Icon: 图片文件用缩略图, .ico / .exe 等用文件自己的图标; 没写或文件不存在时
     ; 自带的引擎用自带的图标 (BuiltinIcon), 其它用默认浏览器的图标
@@ -119,7 +155,7 @@ class WebSearchProvider {
     ; 只接受 PNG / ICO / JPG / GIF / BMP (看文件头), 最大 1 MB。fetch 只在测试时传入 (代替联网)
     static DownloadIcon(address, name, fetch := "") {
         fetch := IsObject(fetch) ? fetch : (target) => WebSearchProvider._Fetch(target)
-        page := WebSearchProvider.Fill(address, "")
+        page := WebSearchProvider.Fill(address, "", false)          ; 只要网站地址, 不读剪贴板
         if !RegExMatch(page, "i)^(https?://[^/?#{}]+)", &m)
             return {Error: I18n.T("Web.IconBadUrl")}
         origin := RTrim(m[1], ":")

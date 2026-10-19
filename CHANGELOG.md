@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.19.18]
+
+测试版。
+
+Test build.
+
+### 新增
+- 网页搜索: 网址里的默认值可以写成 `clipboard` (`{query|clipboard}`), 只输入关键字就搜索剪贴板里的文字。自带的搜索引擎 (新安装) 都改成这样写, 例如 `https://www.google.com/search?q={query|clipboard}`; 列表里显示 "用 Google 搜索剪贴板: '...'", 剪贴板里没有文字 (图片、文件、空) 时提示并且不能打开。已有的引擎不会被改动
+- 剪贴板历史里的文字条目, 按 `→` 可以用每个网页搜索引擎搜索
+
+### 改进
+- 偏好设置 → 网页搜索 里 "网址" 项的说明加上 `{query|clipboard}` 的写法 (四种语言), Wiki 网页搜索 / 剪贴板 / 设置文件参考和 README 同步更新
+
 ## [2026.10.19.17]
 
 测试版。
@@ -937,7 +950,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.18...HEAD
+[2026.10.19.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.17...2026.10.19.18
 [2026.10.19.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...2026.10.19.17
 [2026.10.19.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...2026.10.19.16
 [2026.10.19.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...2026.10.19.15

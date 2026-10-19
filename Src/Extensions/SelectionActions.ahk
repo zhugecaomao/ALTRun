@@ -101,14 +101,8 @@ class SelectionActions {
             result := CalculatorProvider.Format(value)
             actions.Push(ResultItem("= " result, I18n.T("Action.CopyResult"), {Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), OnRun: (*) => ActionCatalog.CopyText(result)}))
         }
-        ; 用每个搜索引擎搜索
-        query := Trim(RegExReplace(text, "\s+", " "))
-        if ProviderRegistry.IsEnabled(WebSearchProvider) {
-            for engine in AppSettings.Feature("WebSearch")["Engines"] {
-                searchUrl := WebSearchProvider.Fill(engine["Url"], query)
-                actions.Push(ResultItem(I18n.T("Action.SearchWith", engine["Title"]), "", {Icon: WebSearchProvider.IconFor(engine), OnRun: SelectionActions._Opener(searchUrl)}))
-            }
-        }
+        for action in SelectionActions.SearchActions(text)
+            actions.Push(action)
         actions.Push(ResultItem(I18n.T("Action.SaveSnippet"), "", {Icon: IconCache.Own("Snippet", "res:imageres.dll,-102")
             , OnRun: (*) => SnippetProvider.Edit("", Map("Name", SubStr(preview, 1, 40), "Text", text))}))
         ; 替换为转换后的文字 (粘贴回原来的程序, 选中的文字还在那里)
@@ -118,6 +112,19 @@ class SelectionActions {
         }
         return ResultItem(preview, I18n.T("Selection.Text", StrLen(text)), {Kind: "text", Arg: text, Icon: "res:imageres.dll,-5314"
             , LargeText: text, Provider: "Selection", Actions: actions})
+    }
+
+    ; 用每个搜索引擎搜索 text 的操作 (选中内容和剪贴板历史共用); 网页搜索关掉时没有
+    static SearchActions(text) {
+        actions := []
+        query := Trim(RegExReplace(text, "\s+", " "))
+        if (query = "" || !ProviderRegistry.IsEnabled(WebSearchProvider))
+            return actions
+        for engine in AppSettings.Feature("WebSearch")["Engines"] {
+            searchUrl := WebSearchProvider.Fill(engine["Url"], query)
+            actions.Push(ResultItem(I18n.T("Action.SearchWith", engine["Title"]), "", {Icon: WebSearchProvider.IconFor(engine), OnRun: SelectionActions._Opener(searchUrl)}))
+        }
+        return actions
     }
 
     ; [I18n 键, 转换函数]; 和系统命令里的剪贴板文字转换是同一套

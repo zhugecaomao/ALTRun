@@ -501,15 +501,15 @@ class AppSettings {
     static _DefaultEngines() {
         engines := []
         for row in [
-            ["google"   , "g"   , "Google"   , "https://www.google.com/search?q={query}"],
-            ["bing"     , "bing", "Bing"     , "https://www.bing.com/search?q={query}"],
-            ["baidu"    , "bd"  , "Baidu"    , "https://www.baidu.com/s?wd={query}"],
-            ["github"   , "gh"  , "GitHub"   , "https://github.com/search?q={query}"],
-            ["wikipedia", "wiki", "Wikipedia", "https://en.wikipedia.org/wiki/Special:Search?search={query}"],
-            ["youtube"  , "yt"  , "YouTube"  , "https://www.youtube.com/results?search_query={query}"],
-            ["taobao"   , "tb"  , "Taobao"   , "https://s.taobao.com/search?q={query}"],
-            ["jd"       , "jd"  , "JD.com"   , "https://search.jd.com/Search?keyword={query}&enc=utf-8"],
-            ["translate", "tr"  , "Google Translate", "https://translate.google.com/?sl=auto&tl=zh-CN&text={query}"]
+            ["google"   , "g"   , "Google"   , "https://www.google.com/search?q={query|clipboard}"],
+            ["bing"     , "bing", "Bing"     , "https://www.bing.com/search?q={query|clipboard}"],
+            ["baidu"    , "bd"  , "Baidu"    , "https://www.baidu.com/s?wd={query|clipboard}"],
+            ["github"   , "gh"  , "GitHub"   , "https://github.com/search?q={query|clipboard}"],
+            ["wikipedia", "wiki", "Wikipedia", "https://en.wikipedia.org/wiki/Special:Search?search={query|clipboard}"],
+            ["youtube"  , "yt"  , "YouTube"  , "https://www.youtube.com/results?search_query={query|clipboard}"],
+            ["taobao"   , "tb"  , "Taobao"   , "https://s.taobao.com/search?q={query|clipboard}"],
+            ["jd"       , "jd"  , "JD.com"   , "https://search.jd.com/Search?keyword={query|clipboard}&enc=utf-8"],
+            ["translate", "tr"  , "Google Translate", "https://translate.google.com/?sl=auto&tl=zh-CN&text={query|clipboard}"]
         ]
             engines.Push(Map("Id", row[1], "Keyword", row[2], "Title", row[3], "Url", row[4]))
         return engines

@@ -317,8 +317,10 @@ class Tests {
         TestRunner.Equal("WebSearch.url", items[1].Arg, "https://www.google.com/search?q=hello%20world")
         items := WebSearchProvider.Search(SearchQuery("bd 中文"))
         TestRunner.Equal("WebSearch.utf8", items[1].Arg, "https://www.baidu.com/s?wd=%E4%B8%AD%E6%96%87")
+        saved := ClipboardAll()
+        A_Clipboard := ""
         items := WebSearchProvider.Search(SearchQuery("g"))
-        TestRunner.True("WebSearch.keyword only is not runnable", items.Length = 1 && !items[1].Valid)
+        TestRunner.True("WebSearch.keyword only with empty clipboard is not runnable", items.Length = 1 && !items[1].Valid)
         fallbacks := WebSearchProvider.Fallbacks(SearchQuery("xyz"))
         TestRunner.Equal("WebSearch.fallbacks", fallbacks.Length, 3)
 
@@ -332,6 +334,29 @@ class Tests {
         item := WebSearchProvider.ItemFor(engine, "")
         eq("keyword only with default", (item.Valid ? 1 : 0) "|" item.Arg "|" item.AutoComplete, "1|http://localhost:8000/|lh ")
         eq("keyword only with default: title", item.Title, I18n.T("Web.SearchFor", "Localhost", "8000"))
+        ; {query|clipboard}: 只输入关键字时搜索剪贴板里的文字
+        google := Map("Id", "google", "Keyword", "g", "Title", "Google", "Url", "https://www.google.com/search?q={query|clipboard}")
+        eq("clipboard default", WebSearchProvider.UsesClipboard(google["Url"]) && WebSearchProvider.UsesClipboard("https://x/?q={query|Clipboard}") && !WebSearchProvider.UsesClipboard(engine["Url"]), true)
+        A_Clipboard := "  hello`r`n  world  "
+        item := WebSearchProvider.ItemFor(google, "")
+        eq("clipboard: item", (item.Valid ? 1 : 0) "|" item.Arg "|" item.AutoComplete, "1|https://www.google.com/search?q=hello%20world|g ")
+        eq("clipboard: title", item.Title, I18n.T("Web.SearchClipboardFor", "Google", "hello world"))
+        item := WebSearchProvider.ItemFor(google, "typed")
+        eq("clipboard: typed text wins", item.Arg "|" item.Title, "https://www.google.com/search?q=typed|" I18n.T("Web.SearchFor", "Google", "typed"))
+        item := WebSearchProvider.ItemFor(google, "", "", true)
+        eq("clipboard: name hint does not read the clipboard", (item.Valid ? 1 : 0) "|" item.Title, "0|" I18n.T("Web.SearchEmpty", "Google"))
+        A_Clipboard := ""
+        item := WebSearchProvider.ItemFor(google, "")
+        eq("clipboard: empty", (item.Valid ? 1 : 0) "|" item.Title "|" item.Subtitle, "0|" I18n.T("Web.SearchClipboard", "Google") "|" I18n.T("Web.ClipboardEmpty"))
+        A_Clipboard := "line1`nline2"
+        eq("clipboard: one line", WebSearchProvider.ClipboardText(), "line1 line2")
+        A_Clipboard := ""
+        Loop 300
+            A_Clipboard .= "a"
+        eq("clipboard: truncated", StrLen(WebSearchProvider.ClipboardText()), WebSearchProvider.MaxClipboardChars)
+        A_Clipboard := saved
+        for engine2 in AppSettings.Feature("WebSearch")["Engines"]
+            eq("default engine uses clipboard: " engine2["Id"], WebSearchProvider.UsesClipboard(engine2["Url"]), true)
         ; Icon: 没写 / 文件不存在时用浏览器的图标; 图片用缩略图; 相对路径从 Data 文件夹算起
         eq("icon: none", WebSearchProvider.IconFor(engine), "url:")
         engine["Icon"] := "res:imageres.dll,-1"
@@ -5366,6 +5391,11 @@ Func | PTTools | PT Tools (AHK)=99
         ok("text: save as snippet", InStr(list, "Save as Snippet...|"))
         ok("text: replace with uppercase", InStr(list, "Replace with: UPPERCASE|"))
         ok("text: no calculation", !InStr(list, "= "))
+        ; 剪贴板历史里的文字条目: → 菜单里也有搜索操作 (图片、文件没有)
+        clipItem := ResultItem("hello", "", {Kind: "text", Arg: "hello world", Provider: ClipboardProvider.Id, Source: Map("Text", "hello world", "Time", A_Now)})
+        ok("clipboard history: search engines", InStr(titles(clipItem), "Search Google|"))
+        clipItem.Source := Map("Type", "image", "Time", A_Now)
+        ok("clipboard history: image has no search", !InStr(titles(clipItem), "Search Google|"))
         list := titles(SelectionActions.ItemFor({Text: "12*(3+4)"}))
         ok("math: result first extra", InStr(list, "= 84|"))
         item := SelectionActions.ItemFor({Text: "  https://github.com/zhugecaomao/ALTRun  "})
