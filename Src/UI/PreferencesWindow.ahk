@@ -611,8 +611,7 @@ class PreferencesWindow {
         PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 4)
         PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", "L")
         PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", "L")
-        PreferencesWindow._Field("Features.Applications.Depth", "Prefs.AppDepth", "S", "number")   ; 没有刷新间隔: 监视文件夹, 有变化时自动更新
-        PreferencesWindow._Button("Prefs.RebuildIndex", (*) => App.RebuildIndex())
+        PreferencesWindow._FieldButton("Features.Applications.Depth", "Prefs.AppDepth", "Prefs.RebuildIndex", (*) => App.RebuildIndex())   ; 没有刷新间隔: 监视文件夹, 有变化时自动更新
         PreferencesWindow._Section("Prefs.Section.AppResults")
         PreferencesWindow._Lines("Features.Applications.Hidden", "Prefs.AppHidden", 4)
         PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps", , , "Prefs.Group.Options")
@@ -645,9 +644,7 @@ class PreferencesWindow {
         PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", "L", "folder")
         PreferencesWindow._Section("Prefs.Section.BuiltinIndex")
         PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 4)
-        depthY := PreferencesWindow._y                                      ; 按钮和 "子文件夹深度" 放在同一行
-        PreferencesWindow._Field("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", "S", "number")
-        PreferencesWindow._SideButton(depthY, "Prefs.RebuildFileIndex", (*) => FileIndex.Rebuild())
+        PreferencesWindow._FieldButton("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", "Prefs.RebuildFileIndex", (*) => FileIndex.Rebuild())
         PreferencesWindow._Field("Features.FileSearch.ScopeExclude", "Prefs.ScopeExclude", "L")
         PreferencesWindow._Pair(["Features.FileSearch.MaxEntries", "Prefs.MaxEntries", "S", "number"], ["Features.FileSearch.RefreshMinutes", "Prefs.RefreshMinutes", "S", "number"])
     }
@@ -1528,10 +1525,15 @@ class PreferencesWindow {
         ctrl.Move(, rowY - 3)
         return ctrl
     }
-    static _SideButton(rowY, labelKey, fn) {
-        x := PreferencesWindow._InputX() + PreferencesWindow.WidthS + 12
-        ctrl := PreferencesWindow._Add("Button", "x" x " y" (rowY - 2) " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T(labelKey))
-        ctrl.OnEvent("Click", fn)
+    ; 数字输入框 (宽度 "S") 右边紧跟一个按钮 (例如 "子文件夹深度" + "重建索引"), 灰色说明 (labelKey 的) 放在两个的下面
+    static _FieldButton(path, labelKey, buttonKey, fn) {
+        label := PreferencesWindow._Label(labelKey)
+        rowY := PreferencesWindow._y
+        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow.WidthS " r1 -Multi Number", PreferencesWindow.GetPath(PreferencesWindow.Working, path))
+        PreferencesWindow._Bind(path, () => IsInteger(ctrl.Value) ? Integer(ctrl.Value) : 0)
+        button := PreferencesWindow._Add("Button", "x" (PreferencesWindow._InputX() + PreferencesWindow.WidthS + 12) " y" (rowY - 2) " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T(buttonKey))
+        button.OnEvent("Click", fn)
+        PreferencesWindow._BelowInput(labelKey, label, ctrl, button)
         return ctrl
     }
 
