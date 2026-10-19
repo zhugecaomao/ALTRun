@@ -57,6 +57,7 @@
 | 键 | 默认 | 说明 |
 |---|---|---|
 | Theme | `System` | 主题名, 见 [主题](Themes); `System` 跟随 Windows 的深 / 浅色 |
+| Density | `Normal` | 显示密度, 对任何主题都有效: `Comfortable` 宽松 (主题本来的大小) / `Normal` 常规 / `Compact` 紧凑, 见 [主题](Themes#显示密度)。从旧版本升级时是 `Comfortable` (保持原来的大小) |
 | Width | 700 | 搜索窗口宽度 (像素, 按屏幕缩放) |
 | VisibleRows | 8 | 最多显示几行结果 (1~9) |
 | Placeholder | "" | 空搜索框里的灰色文字; 空 = 默认的 "ALTRun 搜索", 只写空格 = 什么都不显示 (关掉状态栏时这里显示使用提示) |

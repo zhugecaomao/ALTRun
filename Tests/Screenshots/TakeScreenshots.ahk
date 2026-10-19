@@ -59,14 +59,18 @@ class Shots {
             ["prefs-calculator", "Light", "-Preferences 12", () => Shots.Preferences()],
             ["prefs-scripts",    "Light", "-Preferences 13", () => Shots.Preferences()],
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
-            ["theme-darkcompact", "DarkCompact", "", () => Shots.Search("re")],
+            ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; 深色 + 显示密度 "紧凑" (其它截图都是新安装默认的 "常规")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
             ["theme-midnight",  "Midnight", "", () => Shots.Search("re")],
-            ["theme-midnightcompact", "MidnightCompact", "", () => Shots.Search("re")],
             ["theme-frost",     "Frost",    "", () => Shots.Search("re")],
             ["theme-graphite",  "Graphite", "", () => Shots.Search("re")],
             ["theme-ocean",     "Ocean",    "", () => Shots.Search("re")],
             ["theme-paper",     "Paper",    "", () => Shots.Search("re")],
+            ["theme-lavender",  "Lavender", "", () => Shots.Search("re")],
+            ["theme-rose",      "Rose",     "", () => Shots.Search("re")],
+            ["theme-forest",    "Forest",   "", () => Shots.Search("re")],
+            ["theme-sunset",    "Sunset",   "", () => Shots.Search("re")],
+            ["theme-highcontrast", "HighContrast", "", () => Shots.Search("re")],
             ["theme-darkmodern", "DarkModern", "", () => Shots.Search("re")],
             ["theme-lightmodern", "LightModern", "", () => Shots.Search("re")],
             ["theme-monokai", "Monokai", "", () => Shots.Search("re")],
@@ -75,8 +79,7 @@ class Shots {
             ["theme-dracula", "Dracula", "", () => Shots.Search("re")],
             ["theme-catppuccinmocha", "CatppuccinMocha", "", () => Shots.Search("re")],
             ["theme-gruvboxdark", "GruvboxDark", "", () => Shots.Search("re")],
-            ["theme-solarizedlight", "SolarizedLight", "", () => Shots.Search("re")],
-            ["theme-lightcompact", "LightCompact", "", () => Shots.Search("re")]
+            ["theme-solarizedlight", "SolarizedLight", "", () => Shots.Search("re")]
         ]
     }
 
@@ -183,13 +186,21 @@ class Shots {
     }
     static AppsDir := ""
 
+    ; 当前的设置版本 (AppSettings.CurrentVersion)。写旧版本号的话 ALTRun 启动时会升级设置, 升级提示显示期间不弹出搜索窗口,
+    ; 每个场景都找不到窗口 (设置版本升到 5 以后就是这样)
+    static SchemaVersion() {
+        return RegExMatch(FileRead(Shots.RepoDir "\Src\Core\AppSettings.ahk", "UTF-8"), "static CurrentVersion\s*:=\s*(\d+)", &m) ? Integer(m[1]) : 5
+    }
+
+    ; theme: 主题名, 可以加 "|显示密度" (例如 "Dark|Compact"); 不写时用新安装的默认 "Normal"
     static WriteSettings(theme) {
         demo := Shots.DemoDir
+        parts := StrSplit(theme, "|"), theme := parts[1], density := (parts.Length >= 2) ? parts[2] : "Normal"
         settings := Map(
-            "SchemaVersion", 4,
+            "SchemaVersion", Shots.SchemaVersion(),
             "General", Map("Language", "en", "LaunchAtLogin", 0, "HideOnDeactivate", 0, "SendToMenu", 0,
                            "StartMenuShortcut", 0, "CheckForUpdates", 0, "Hotkey", "!Space", "ShowTips", 0),
-            "Appearance", Map("Theme", theme, "Width", 700, "VisibleRows", 8),
+            "Appearance", Map("Theme", theme, "Density", density, "Width", 700, "VisibleRows", 8),
             "Features", Map(
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
                 "Calculator", Map("StructuralCalc", 1),

@@ -40,7 +40,7 @@
 - **键盘优先**：按 `→` 打开操作面板，状态栏提示 `Enter` 的操作，按 `F3` 直接编辑，用 `Ctrl+1`～`Ctrl+9` 快速打开对应结果；按 `Ctrl+Enter` 可打开文件所在文件夹，或将文本粘贴到当前活动窗口。
 - **便携与隐私**：免安装、不写注册表、无需管理员权限，无后台服务或驱动。数据默认保存在本机；部分剪贴板数据存于 `%LOCALAPPDATA%\ALTRun`。不收集遥测数据；联网用于更新、可选汇率换算和用户主动下载的网站图标。
 - **自动更新**：新版本会在搜索窗口中提示，按 `Enter` 即可安装；更新包会校验 SHA256 并保留设置，也支持 Scoop。
-- **个性化定制**：支持简体中文、繁體中文、English、日本語四种界面语言和 20 套内置主题；可跟随 Windows 浅色 / 深色模式，也可通过 JSON 文件自定义主题和设置。
+- **个性化定制**：支持简体中文、繁體中文、English、日本語四种界面语言和 22 套内置主题（每套都有宽松 / 常规 / 紧凑三种密度）；可跟随 Windows 浅色 / 深色模式，也可通过 JSON 文件自定义主题和设置。
 - **免费开源**：采用 GPL-3.0 许可证；每个 Pull Request 都会在 Windows 上自动运行 8,000 余项测试。
 
 ## 快速开始
@@ -109,23 +109,25 @@
 | <img src="docs/images/screenshots/prefs-snippets.png" alt="文字片段"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> |
 
 <details>
-<summary><b>内置主题</b>（共 20 套，点击展开）</summary>
+<summary><b>内置主题</b>（共 22 套，每套都有宽松 / 常规 / 紧凑三种密度，点击展开）</summary>
 
 | Dark | Classic | Midnight |
 |:---:|:---:|:---:|
 | <img src="docs/images/screenshots/theme-dark.png" alt="Dark"> | <img src="docs/images/screenshots/theme-classic.png" alt="Classic"> | <img src="docs/images/screenshots/theme-midnight.png" alt="Midnight"> |
 | **Frost** | **Graphite** | **Ocean** |
 | <img src="docs/images/screenshots/theme-frost.png" alt="Frost"> | <img src="docs/images/screenshots/theme-graphite.png" alt="Graphite"> | <img src="docs/images/screenshots/theme-ocean.png" alt="Ocean"> |
-| **Paper** | **DarkCompact** | **LightCompact** |
-| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | <img src="docs/images/screenshots/theme-darkcompact.png" alt="DarkCompact"> | <img src="docs/images/screenshots/theme-lightcompact.png" alt="LightCompact"> |
-| **TokyoNight** | **Dracula** | **CatppuccinMocha** |
-| <img src="docs/images/screenshots/theme-tokyonight.png" alt="TokyoNight"> | <img src="docs/images/screenshots/theme-dracula.png" alt="Dracula"> | <img src="docs/images/screenshots/theme-catppuccinmocha.png" alt="CatppuccinMocha"> |
-| **GruvboxDark** | **SolarizedLight** | **MidnightCompact** |
-| <img src="docs/images/screenshots/theme-gruvboxdark.png" alt="GruvboxDark"> | <img src="docs/images/screenshots/theme-solarizedlight.png" alt="SolarizedLight"> | <img src="docs/images/screenshots/theme-midnightcompact.png" alt="MidnightCompact"> |
+| **Paper** | **Lavender** | **Rose** |
+| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | <img src="docs/images/screenshots/theme-lavender.png" alt="Lavender"> | <img src="docs/images/screenshots/theme-rose.png" alt="Rose"> |
+| **Forest** | **Sunset** | **HighContrast** |
+| <img src="docs/images/screenshots/theme-forest.png" alt="Forest"> | <img src="docs/images/screenshots/theme-sunset.png" alt="Sunset"> | <img src="docs/images/screenshots/theme-highcontrast.png" alt="HighContrast"> |
+| **Dark · 紧凑** | **TokyoNight** | **Dracula** |
+| <img src="docs/images/screenshots/theme-compact.png" alt="Dark · 紧凑"> | <img src="docs/images/screenshots/theme-tokyonight.png" alt="TokyoNight"> | <img src="docs/images/screenshots/theme-dracula.png" alt="Dracula"> |
+| **CatppuccinMocha** | **GruvboxDark** | **SolarizedLight** |
+| <img src="docs/images/screenshots/theme-catppuccinmocha.png" alt="CatppuccinMocha"> | <img src="docs/images/screenshots/theme-gruvboxdark.png" alt="GruvboxDark"> | <img src="docs/images/screenshots/theme-solarizedlight.png" alt="SolarizedLight"> |
 | **DarkModern** | **LightModern** | **Monokai** |
 | <img src="docs/images/screenshots/theme-darkmodern.png" alt="DarkModern"> | <img src="docs/images/screenshots/theme-lightmodern.png" alt="LightModern"> | <img src="docs/images/screenshots/theme-monokai.png" alt="Monokai"> |
-| **OneDark** | | |
-| <img src="docs/images/screenshots/theme-onedark.png" alt="OneDark"> | | |
+| **OneDark** | |  |
+| <img src="docs/images/screenshots/theme-onedark.png" alt="OneDark"> | |  |
 
 </details>
 

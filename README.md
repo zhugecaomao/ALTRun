@@ -40,7 +40,7 @@
 - **Keyboard first**: use `→` for the action panel, see what `Enter` will do in the status bar, edit in place with `F3`, open a result directly with `Ctrl+1`–`Ctrl+9`, or use `Ctrl+Enter` to open a file’s containing folder or paste text into the active window.
 - **Portable and private**: no installer, registry entries, admin rights, background service or driver. Data stays local by default; some clipboard data is stored in `%LOCALAPPDATA%\ALTRun`. No telemetry; internet access is used for updates, optional exchange rates and site icons you request.
 - **Automatic updates**: new versions appear in the search window; press `Enter` to install. Packages are SHA256-verified and settings are kept; Scoop is also supported.
-- **Customizable**: four interface languages—English, Simplified Chinese, Traditional Chinese and Japanese—and 20 built-in themes. Follow Windows light / dark mode or customize themes and settings through plain JSON files.
+- **Customizable**: four interface languages—English, Simplified Chinese, Traditional Chinese and Japanese—and 22 built-in themes, each in three densities. Follow Windows light / dark mode or customize themes and settings through plain JSON files.
 - **Free and open source**: GPL-3.0 licensed, with more than 8,000 tests run automatically on Windows for every pull request.
 
 ## Getting started
@@ -109,23 +109,25 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 | <img src="docs/images/screenshots/prefs-snippets.png" alt="Snippets"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> |
 
 <details>
-<summary><b>Built-in themes</b> (20 in total, click to expand)</summary>
+<summary><b>Built-in themes</b> (22 in total, each in three densities; click to expand)</summary>
 
 | Dark | Classic | Midnight |
 |:---:|:---:|:---:|
 | <img src="docs/images/screenshots/theme-dark.png" alt="Dark"> | <img src="docs/images/screenshots/theme-classic.png" alt="Classic"> | <img src="docs/images/screenshots/theme-midnight.png" alt="Midnight"> |
 | **Frost** | **Graphite** | **Ocean** |
 | <img src="docs/images/screenshots/theme-frost.png" alt="Frost"> | <img src="docs/images/screenshots/theme-graphite.png" alt="Graphite"> | <img src="docs/images/screenshots/theme-ocean.png" alt="Ocean"> |
-| **Paper** | **DarkCompact** | **LightCompact** |
-| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | <img src="docs/images/screenshots/theme-darkcompact.png" alt="DarkCompact"> | <img src="docs/images/screenshots/theme-lightcompact.png" alt="LightCompact"> |
-| **TokyoNight** | **Dracula** | **CatppuccinMocha** |
-| <img src="docs/images/screenshots/theme-tokyonight.png" alt="TokyoNight"> | <img src="docs/images/screenshots/theme-dracula.png" alt="Dracula"> | <img src="docs/images/screenshots/theme-catppuccinmocha.png" alt="CatppuccinMocha"> |
-| **GruvboxDark** | **SolarizedLight** | **MidnightCompact** |
-| <img src="docs/images/screenshots/theme-gruvboxdark.png" alt="GruvboxDark"> | <img src="docs/images/screenshots/theme-solarizedlight.png" alt="SolarizedLight"> | <img src="docs/images/screenshots/theme-midnightcompact.png" alt="MidnightCompact"> |
+| **Paper** | **Lavender** | **Rose** |
+| <img src="docs/images/screenshots/theme-paper.png" alt="Paper"> | <img src="docs/images/screenshots/theme-lavender.png" alt="Lavender"> | <img src="docs/images/screenshots/theme-rose.png" alt="Rose"> |
+| **Forest** | **Sunset** | **HighContrast** |
+| <img src="docs/images/screenshots/theme-forest.png" alt="Forest"> | <img src="docs/images/screenshots/theme-sunset.png" alt="Sunset"> | <img src="docs/images/screenshots/theme-highcontrast.png" alt="HighContrast"> |
+| **Dark · Compact** | **TokyoNight** | **Dracula** |
+| <img src="docs/images/screenshots/theme-compact.png" alt="Dark · Compact"> | <img src="docs/images/screenshots/theme-tokyonight.png" alt="TokyoNight"> | <img src="docs/images/screenshots/theme-dracula.png" alt="Dracula"> |
+| **CatppuccinMocha** | **GruvboxDark** | **SolarizedLight** |
+| <img src="docs/images/screenshots/theme-catppuccinmocha.png" alt="CatppuccinMocha"> | <img src="docs/images/screenshots/theme-gruvboxdark.png" alt="GruvboxDark"> | <img src="docs/images/screenshots/theme-solarizedlight.png" alt="SolarizedLight"> |
 | **DarkModern** | **LightModern** | **Monokai** |
 | <img src="docs/images/screenshots/theme-darkmodern.png" alt="DarkModern"> | <img src="docs/images/screenshots/theme-lightmodern.png" alt="LightModern"> | <img src="docs/images/screenshots/theme-monokai.png" alt="Monokai"> |
-| **OneDark** | | |
-| <img src="docs/images/screenshots/theme-onedark.png" alt="OneDark"> | | |
+| **OneDark** | |  |
+| <img src="docs/images/screenshots/theme-onedark.png" alt="OneDark"> | |  |
 
 </details>
 

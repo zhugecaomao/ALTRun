@@ -9,7 +9,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 - **Learns what you use**: remembers your picks and puts frequent ones first; matches word initials (`vsc`) and pinyin initials (`wx` → 微信)
 - **One window for everyday tasks**: calculator, web search, clipboard history, snippet expansion, system commands, terminal
 - **Portable, data stays on your PC**: no registry entries, no admin rights, no background service; all settings live in the `Data\` folder; one-key updates keep your settings
-- **English / Simplified Chinese / Traditional Chinese / Japanese interface**, 20 built-in themes, and you can make your own
+- **English / Simplified Chinese / Traditional Chinese / Japanese interface**, 22 built-in themes (each in three densities), and you can make your own
 
 > This documentation covers version **3.0** and later. 3.0 redesigned the search window and the settings file; 2.x settings are converted automatically the first time you start it, see [Installation and upgrades](en-Installation).
 
@@ -22,7 +22,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Search and shortcuts](en-Usage) | Every search syntax, shortcuts, action panel, learned ranking, usage statistics |
 | [Custom commands and snippets](en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion, clipboard history |
 | [File search](en-File-Search) | Everything integration, built-in index, exclusion rules |
-| [Themes](en-Themes) | 20 built-in themes (or follow the Windows light / dark mode), custom themes, every available key |
+| [Themes](en-Themes) | 22 built-in themes (or follow the Windows light / dark mode), density, custom themes, every available key |
 | [Extensions](en-Extensions) | Quick Switch, date stamp, custom hotkeys, list of system commands, PT Tools |
 | [Settings reference](en-Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives, privacy... |

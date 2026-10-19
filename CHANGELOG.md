@@ -5,6 +5,20 @@
 
 ## [未发布]
 
+## [2026.10.19.12]
+
+测试版。
+
+Test build.
+
+### 升级
+- 新增的 "显示密度" 默认是常规 (比以前小一些); 从旧版本升级的保持原来的大小 (宽松), 想要小一点的: 偏好设置 → 外观 → 大小 → "显示密度" 选 "常规" 或 "紧凑"
+- 内置主题 "紧凑深色"、"紧凑浅色"、"紧凑午夜" 去掉了, 改成任何主题都能用的显示密度。原来用这三个主题的: 打开 偏好设置 → 外观, 选 深色 / 浅色 / 午夜, "显示密度" 选 "常规" (尺寸和以前一样), 点 确定。没改之前会自动按 "对应的主题 + 常规" 显示, 打开外观页时也已经替你选好, 点 确定 即可。紧凑午夜原来的图标是 24 px, 想要一样小可以选 "紧凑"
+
+### 新增
+- 偏好设置 → 外观 → 大小 → "显示密度": 宽松 / 常规 / 紧凑, 对所有主题 (包括自定义主题) 都有效。宽松是主题本来的大小 (行高 54, 图标 32 px), 常规和以前的紧凑深色一样 (行高 48, 图标 28 px), 紧凑再小一级 (行高 42, 图标 24 px)。新安装默认常规
+- 5 个新的内置主题: 薰衣草、玫瑰 (浅色), 森林、日落 (深色), 高对比 (黑底白字、黄色选中, 视力不好或强光下更清楚)。内置主题共 22 个
+
 ## [2026.10.19.11]
 
 测试版。
@@ -870,7 +884,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...HEAD
+[2026.10.19.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...2026.10.19.12
 [2026.10.19.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.10...2026.10.19.11
 [2026.10.19.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.9...2026.10.19.10
 [2026.10.19.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.8...2026.10.19.9

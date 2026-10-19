@@ -1,0 +1,16 @@
+{
+  "SelectedRadius": 0,
+  "Background": "000000",
+  "Border": "FFFFFF",
+  "InputText": "FFFFFF",
+  "Separator": "808080",
+  "Title": "FFFFFF",
+  "Subtitle": "E0E0E0",
+  "Shortcut": "C8C8C8",
+  "SelectedBackground": "FFD60A",
+  "SelectedTitle": "000000",
+  "SelectedSubtitle": "000000",
+  "SelectedShortcut": "000000",
+  "Highlight": "00E5FF",
+  "SelectedHighlight": "0033CC"
+}

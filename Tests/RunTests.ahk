@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1617,7 +1617,7 @@ class Tests {
             for key in ["Background", "Title", "SelectedBackground", "SelectedTitle"]
                 TestRunner.True("Themes." themeName "." key " is RRGGBB", RegExMatch(ThemeManager.Get(key), "^[0-9A-Fa-f]{6}$"))
         }
-        eq("builtin count", ThemeManager.Names().Length, 21)
+        eq("builtin count", ThemeManager.Names().Length, 23)
         TestRunner.True("Themes.Ocean is builtin", ThemeManager.IsBuiltin("Ocean"))
 
         ; 用户主题: 同名覆盖内置主题 ("Base" 写自己 = 在内置那一套上改), 以及 Base 链
@@ -1627,7 +1627,7 @@ class Tests {
         ThemeManager.Load("Mine")
         eq("user base color", ThemeManager.Get("Background"), "2E3440")
         eq("user override", ThemeManager.Get("SelectedRadius"), 12)
-        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 22 && !ThemeManager.IsBuiltin("Mine"))
+        TestRunner.True("Themes.user listed", ThemeManager.Names().Length = 24 && !ThemeManager.IsBuiltin("Mine"))
         ThemeManager.Load("Dark")
         eq("user overrides builtin", ThemeManager.Get("Title"), "FF0000")
         eq("user override keeps builtin", ThemeManager.Get("Background"), "1E1F22")
@@ -1638,6 +1638,60 @@ class Tests {
         ThemeManager.Load("No Such Theme")
         eq("missing falls back", ThemeManager.Resolved, "Light")
         ThemeManager.Load("Light")
+    }
+
+    ; 显示密度 (Appearance.Density): 任何主题的尺寸按比例缩放, 颜色不变; 以前的 DarkCompact 等当作 Dark + 常规
+    static Densities() {
+        eq := (n, a, e) => TestRunner.Equal("Densities." n, a, e)
+        ThemeManager.BuiltinDir := A_ScriptDir "\..\Resources\Themes"
+        ThemeManager.UserDir := A_Temp "\ALTRunDensityTest"
+        try DirDelete(ThemeManager.UserDir, true)
+        sizes := () => ThemeManager.Get("InputFontSize") "/" ThemeManager.Get("TitleFontSize") "/" ThemeManager.Get("SubtitleFontSize") "/"
+            . ThemeManager.Get("ShortcutFontSize") "/" ThemeManager.Get("Padding") "/" ThemeManager.Get("RowHeight") "/" ThemeManager.Get("IconSize")
+        ThemeManager.Load("Dark", "Comfortable")
+        eq("comfortable = theme size", sizes() "|" ThemeManager.Density, "20/13/9.5/9/14/54/32|Comfortable")
+        ThemeManager.Load("Dark", "Normal")
+        eq("normal = old Dark Compact", sizes(), "17/11.5/9/8.5/12/48/28")
+        eq("colors kept", ThemeManager.Get("Background") "|" ThemeManager.Resolved "|" ThemeManager.Density, "1E1F22|Dark|Normal")
+        ThemeManager.Load("Dark", "Compact")
+        eq("compact", sizes(), "15/10.5/8.5/8/10/42/24")
+        ThemeManager.Load("Dark")
+        eq("default comfortable", ThemeManager.Get("RowHeight") "|" ThemeManager.Density, "54|Comfortable")
+        ThemeManager.Load("Dark", "Huge")
+        eq("unknown = comfortable", ThemeManager.Get("RowHeight") "|" ThemeManager.Density, "54|Comfortable")
+        ThemeManager.Load("DarkModern", "Normal")                           ; 主题自己的尺寸也按比例缩小
+        eq("scales theme sizes", ThemeManager.Get("RowHeight") < ThemeManager.Resolve("DarkModern")["RowHeight"], true)
+        ThemeManager.Load("System", "Compact")
+        eq("system compact", ThemeManager.Get("RowHeight"), 42)
+        for oldName, base in Map("DarkCompact", "Dark", "LightCompact", "Light", "MidnightCompact", "Midnight") {
+            ThemeManager.Load(oldName)
+            eq("old " oldName, ThemeManager.Name "|" ThemeManager.Resolved "|" ThemeManager.Density "|" ThemeManager.Get("RowHeight"), base "|" base "|Normal|48")
+            eq("old " oldName " not listed", ThemeManager._Contains(ThemeManager.Names(), oldName), false)
+        }
+        ThemeManager.Load("DarkCompact", "Normal")                          ; 不会缩小两次
+        eq("old name + normal once", ThemeManager.Get("RowHeight"), 48)
+        ThemeManager.Load("DarkCompact", "Compact")
+        eq("old name + compact", ThemeManager.Get("RowHeight"), 42)
+
+        ; 用户主题的 "Base" 还写着以前的紧凑主题: 照常是 Dark 的颜色、常规的尺寸; 用户自己有同名主题时用用户的
+        DirCreate(ThemeManager.UserDir)
+        FileAppend('{ "Base": "DarkCompact", "Title": "FF0000" }', ThemeManager.UserDir "\Mine.json", "UTF-8")
+        ThemeManager.Load("Mine")
+        eq("user base old name", ThemeManager.Get("Background") "|" ThemeManager.Get("Title") "|" ThemeManager.Get("RowHeight"), "1E1F22|FF0000|48")
+        FileAppend('{ "Base": "Dark", "RowHeight": 40 }', ThemeManager.UserDir "\MidnightCompact.json", "UTF-8")
+        eq("user file wins", ThemeManager.LegacyCompact("MidnightCompact"), "")
+        ThemeManager.Load("MidnightCompact")
+        eq("user file loaded", ThemeManager.Resolved "|" ThemeManager.Get("RowHeight") "|" ThemeManager.Density, "MidnightCompact|40|Comfortable")
+        DirDelete(ThemeManager.UserDir, true)
+        ThemeManager.Load("Light")
+
+        ; 新安装默认常规; 已有的设置文件没有这一项时保持原来的大小 (宽松), 用以前的紧凑主题的是常规
+        eq("new install default", AppSettings.Defaults()["Appearance"]["Density"], "Normal")
+        keep := (theme) => (data := Map("Appearance", Map("Theme", theme)), AppSettings._KeepDensity(data), data["Appearance"]["Density"])
+        eq("existing file keeps size", keep("Dark"), "Comfortable")
+        eq("existing old compact theme", keep("darkcompact"), "Normal")
+        set := Map("Appearance", Map("Theme", "Dark", "Density", "Compact"))
+        eq("already set", AppSettings._KeepDensity(set) "|" set["Appearance"]["Density"], "0|Compact")
     }
 
     ; 命令很多时: 只为前 MaxResults 条生成结果 (算上学习加分), 继续输入时只在上次的结果里找
