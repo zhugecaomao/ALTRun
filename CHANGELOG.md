@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.19.10]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 通用 → "选中内容的操作" 下面的说明写得更具体 (文字可以网页搜索、转换大小写 / 简繁、存为片段; 文件可以复制路径、在此处打开终端等), 后面加 "查看全部操作" 链接, 打开 Wiki 里的说明
+
 ## [2026.10.19.9]
 
 测试版。
@@ -852,7 +861,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.10...HEAD
+[2026.10.19.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.9...2026.10.19.10
 [2026.10.19.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.8...2026.10.19.9
 [2026.10.19.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.7...2026.10.19.8
 [2026.10.19.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.6...2026.10.19.7

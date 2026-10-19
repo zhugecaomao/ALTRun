@@ -3147,6 +3147,15 @@ class Tests {
         TestRunner.True("PreferenceDescriptions.count " count, count >= 50)
         for key in ["Prefs.RememberPosition.Desc", "Prefs.ShowOn.Desc", "Prefs.HideOnDeactivate.Desc", "Prefs.Hotkey.Desc"]
             TestRunner.True("PreferenceDescriptions.has " key, I18n.Strings.Has(key))
+        ; 带 Wiki 链接的说明: 每种语言都写了 <a href="{1}">, 网址按界面语言打开中文 / 英文页; 其它说明不能有链接 (会原样显示)
+        for language in I18n.Languages() {
+            strings := (language[1] = "en") ? I18n.Strings : I18n.ReadFile(language[1])
+            for key, text in strings
+                if (SubStr(key, -5) = ".Desc")
+                    TestRunner.True("PreferenceDescriptions.link " language[1] " " key
+                        , PreferencesWindow.DescLinks.Has(SubStr(key, 1, -5)) ? InStr(text, '<a href="{1}">') : !InStr(text, "<a "))
+        }
+        TestRunner.True("PreferenceDescriptions.link url", InStr(PreferencesWindow._DescLink("Prefs.SelectionHotkey"), "/wiki/") && PreferencesWindow._DescLink("Prefs.Hotkey") = "")
     }
 
     ; 资源管理器 "发送到": 多个文件直接添加, 已经有的不重复添加 (1 个时弹对话框, 这里不测)
