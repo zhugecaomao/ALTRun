@@ -530,8 +530,9 @@ class QuickSwitch {
         for line in StrSplit(Sort(RTrim(lines, "`n"), "R"), "`n") {
             if (line = "" || A_Index > limit * 6)                           ; 只看最近的一部分, 不用读完几百个快捷方式
                 break
-            target := ""
             try FileGetShortcut(SubStr(line, InStr(line, "`t") + 1), &target)
+            catch                                                           ; 损坏的快捷方式: 出错时 target 成了未赋值
+                continue
             if !(target ~= "^([A-Za-z]:\\|\\\\)")
                 continue
             if IconCache.IsRemote(target)

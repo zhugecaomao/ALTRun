@@ -91,7 +91,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1028,6 +1028,8 @@ class Tests {
         FileSetTime("20260115000000", root "\Recent\Docs.lnk")
         FileCreateShortcut(root "\Gone", root "\Recent\Gone.lnk")                     ; 已经不存在
         FileSetTime("20260301000000", root "\Recent\Gone.lnk")
+        FileAppend("not a shortcut", root "\Recent\Broken.lnk")                     ; 损坏的快捷方式: 跳过, 不报错
+        FileSetTime("20260401000000", root "\Recent\Broken.lnk")
         folders := QuickSwitch.RecentFolders(10, root "\Recent")
         eq("count", folders.Length, 2)
         eq("newest first", folders.Length ? folders[1] : "", root "\Docs")
@@ -1836,6 +1838,33 @@ class Tests {
         ProviderRegistry.Providers := saved
         AppSettings.File := savedFile
         try FileDelete(A_Temp "\ALTRunTest.json")
+    }
+
+    ; 索引的文件夹里有损坏的快捷方式: 照样收进索引 (没有目标), 扫描不中断 (曾经报 "linkTarget 未赋值")
+    static BrokenShortcut() {
+        eq := (n, a, e) => TestRunner.Equal("BrokenShortcut." n, a, e)
+        root := A_Temp "\ALTRunBrokenShortcut"
+        try DirDelete(root, true)
+        DirCreate(root)
+        FileAppend("not a shortcut", root "\Broken.lnk")
+        FileAppend("", root "\Editor.exe")
+        options := AppSettings.Feature("Applications")
+        saved := Map("Folders", options["Folders"], "StoreApps", options["StoreApps"])
+        savedFile := ApplicationProvider.IndexFile, savedApps := ApplicationProvider.Apps
+        options["Folders"] := [root], options["StoreApps"] := 0
+        ApplicationProvider.IndexFile := A_Temp "\ALTRunBrokenShortcut.json"
+        try {
+            eq("count", ApplicationProvider.Rebuild(), 2)
+            titles := ""
+            for entry in ApplicationProvider.Apps
+                titles .= entry["Title"] "|"
+            eq("titles", titles, "Broken|Editor|")
+        } finally {
+            options["Folders"] := saved["Folders"], options["StoreApps"] := saved["StoreApps"]
+            ApplicationProvider.IndexFile := savedFile, ApplicationProvider.Apps := savedApps
+            try FileDelete(A_Temp "\ALTRunBrokenShortcut.json")
+            try DirDelete(root, true)
+        }
     }
 
     static AppIndexRefresh() {
