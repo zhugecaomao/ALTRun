@@ -20,7 +20,9 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 | Applications | [Settings reference: Applications](en-Configuration#features) |
 | File Search / Search Sources | [File search](en-File-Search) |
 | Custom Commands / Snippets / Clipboard | [Custom commands and snippets](en-Commands-and-Snippets) |
-| Calculator / Scripts / Hotkeys | [Extensions](en-Extensions) |
+| Calculator | [Calculator](en-Calculator) |
+| Scripts | [Scripts](en-Scripts) |
+| Hotkeys | [Custom hotkeys](en-Hotkeys) |
 | Quick Switch | [Quick Switch](en-Quick-Switch) |
 | Dialog Panel | [Dialog Folder Panel](en-Quick-Switch-Panel) |
 | Date Stamp | [Date Stamp](en-Date-Stamp) |

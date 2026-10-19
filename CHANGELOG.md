@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.19.17]
+
+测试版。
+
+Test build.
+
+### 改进
+- 计算器、脚本扩展和自定义热键的偏好设置帮助改为打开各自的中英文专题页; 扩展功能页保留旧内容并增加新页面入口, 设置参考、侧边栏和映射测试同步更新。
+
+Preferences help for Calculator, Scripts and Custom Hotkeys now opens dedicated bilingual pages. Added links from Extensions and the sidebar, and updated the settings reference and mapping tests.
+
 ## [2026.10.19.16]
 
 测试版。
@@ -928,7 +939,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.17...HEAD
+[2026.10.19.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...2026.10.19.17
 [2026.10.19.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...2026.10.19.16
 [2026.10.19.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...2026.10.19.15
 [2026.10.19.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...2026.10.19.14

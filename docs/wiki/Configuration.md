@@ -20,7 +20,9 @@
 | 应用 | [设置文件参考: 应用索引](Configuration#applications-应用) |
 | 文件搜索 / 搜索来源 | [文件搜索](File-Search) |
 | 自定义命令 / 文字片段 / 剪贴板 | [自定义命令与片段](Commands-and-Snippets) |
-| 计算器 / 脚本扩展 / 自定义热键 | [扩展功能](Extensions) |
+| 计算器 | [计算器](Calculator) |
+| 脚本扩展 | [脚本扩展](Scripts) |
+| 自定义热键 | [自定义热键](Hotkeys) |
 | 对话框跳转 | [对话框快速跳转](Quick-Switch) |
 | 对话框面板 | [对话框文件夹面板](Quick-Switch-Panel) |
 | 一键加日期 | [一键加日期](Date-Stamp) |

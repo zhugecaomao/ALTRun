@@ -2,7 +2,13 @@
 
 # Extensions
 
-Features outside the search window. Quick Switch, the Dialog Panel and Date Stamp each have their own Preferences page and Wiki article.
+Features outside the search window. Calculator, Scripts, Custom Hotkeys, Quick Switch, the Dialog Panel and Date Stamp have separate documentation:
+
+- [Calculator](en-Calculator): expressions, unit conversion and structural calculations.
+- [Scripts](en-Scripts): add and run your own scripts.
+- [Custom Hotkeys](en-Hotkeys): assign system commands to hotkeys.
+
+Quick Switch, the Dialog Panel and Date Stamp each have their own Preferences page and Wiki article.
 
 ## Quick Switch, Dialog Folder Panel and Date Stamp
 
