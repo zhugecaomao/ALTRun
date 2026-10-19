@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.19.11]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内置文件索引默认还跳过 `.svn`、`.hg`、`.venv`、`venv`、`.tox`、`.cache`、`.idea`、`.vs` 文件夹 (原来是 `node_modules`、`.git`、`__pycache__`、回收站)。代码仓库、Python 虚拟环境和开发工具的缓存里动辄上万个文件, 会占满 "最多条数" (3 万), 真正的文档反而搜不到。只影响新安装; 已经在用的设置不变, 可以在 偏好设置 → 搜索来源 → "排除 (正则)" 里自己加
+
 ## [2026.10.19.10]
 
 测试版。
@@ -861,7 +870,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...HEAD
+[2026.10.19.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.10...2026.10.19.11
 [2026.10.19.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.9...2026.10.19.10
 [2026.10.19.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.8...2026.10.19.9
 [2026.10.19.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.7...2026.10.19.8

@@ -76,7 +76,7 @@ Preferences → File Search (how a search starts, file types, number of results)
 | EverythingPath | empty | Location of Everything.exe, only used for "Search in Everything"; leave empty to find it automatically |
 | ScopeFolders | Desktop, Documents, Downloads | Folders the built-in index scans; [path variables](en-Commands-and-Snippets#variables-in-paths) work |
 | ScopeDepth | 4 | Subfolder depth of the built-in index |
-| ScopeExclude | `node_modules`, `.git`, `__pycache__`, Recycle Bin | Folders the built-in index skips (regular expression) |
+| ScopeExclude | `node_modules`, `.git`, `.svn`, `.hg`, `__pycache__`, `.venv`, `venv`, `.tox`, `.cache`, `.idea`, `.vs`, Recycle Bin | Folders the built-in index skips (regular expression, matched against the full path). By default it skips code repositories, Python virtual environments and developer tool caches: they often hold tens of thousands of files that would fill up MaxEntries, and none of them are documents you look for |
 | MaxEntries | 30000 | Maximum number of items in the built-in index |
 | RefreshMinutes | 60 | Fallback: the built-in index is also rescanned in the background when its cache is older than this (at least 5 minutes; checked at startup and then every minute, rebuilt once the keyboard and mouse have been idle for 30 seconds and the search window is closed). Normally it updates itself by watching the folders; nothing is scanned while Everything is used |
 
