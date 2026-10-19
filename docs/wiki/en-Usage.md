@@ -42,7 +42,7 @@ The line at the bottom of the search window (like Listary and Raycast), shown wh
 | `10 km in mi` `100 f to c` `20 mpa in psi` | Unit conversion; with currency conversion turned on also `100 usd to sgd`, see [Extensions](en-Extensions#unit-and-currency-conversion) |
 | `255 in hex` `0xff to dec` `10 in bin` / `0b1010` | Number bases (hex / bin / oct / dec); a number starting with `0x`, `0b` or `0o` on its own lists decimal, hexadecimal and binary |
 | `today + 30 days` `2026-12-25 - 2w` / `2026-12-25 - today` | Date arithmetic (units d w m y), with the day of the week; subtracting two dates gives the number of days between them |
-| `bm xxx` | Browser bookmarks only (typing a bookmark name without `bm` finds it too, ranked after apps and commands) |
+| `bm xxx` | Browser bookmarks only (typing a bookmark name without `bm` finds it too, ranked after apps and commands), see [Browser bookmarks](en-Bookmarks) |
 | `w xxx` / `w ` | Switch to an open window (by title or program name; `w ` alone lists them all); `→` can close the window. Windows whose title matches well also show up without `w` (at most 3) |
 | `'report` / `open report` / `find report` | Files and folders only, see [File search](en-File-Search) |
 | `doc report` `pic logo` `cad plan` | One kind of file only (documents / pictures / CAD...); the kinds can be changed |
@@ -80,6 +80,14 @@ Custom commands are also matched on the folder / file name of their target: if t
 
 ### Learned ranking
 ALTRun remembers "what you typed → which result you finally picked": if you typed `no` and picked Notepad, Notepad comes first the next time you type `no` or `not`; items you use often move up in general. Press `Ctrl+↑` / `Ctrl+↓` to recall the previous / next search. The learned ranking is saved in `Data\Knowledge.json` and can be reset in Preferences → Advanced.
+
+## Automatic app index updates
+
+ALTRun watches the application index folders: the current user's and all users' Start menus and desktops, including the public desktop and subfolders. When a shortcut is added, removed or renamed, the index is usually rebuilt silently in the background a few seconds later. Rebuilds are at least one minute apart, and pause while the search window is open.
+
+If software is installed while ALTRun isn't running, a fallback rebuild happens when the cache is more than an hour old. Microsoft Store apps aren't in these folders and are rescanned at most once an hour.
+
+You normally don't need to do anything. If an app still doesn't appear, check **Indexed folders** and the exclusion rules in Preferences → Applications, then click **Rebuild index**. Changing the indexed folders, file types, exclusions or depth and clicking Apply also starts a background rebuild. The previous index remains available until the new one is ready.
 
 ## Shortcuts
 | Key | Action |

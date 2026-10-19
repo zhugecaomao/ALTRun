@@ -2546,6 +2546,10 @@ class Tests {
         eq("wiki file search", PreferencesWindow.WikiPage("Prefs.Page.FileSearch"), "File-Search")
         eq("wiki commands", PreferencesWindow.WikiPage("Prefs.Page.Commands"), "Commands-and-Snippets")
         eq("wiki appearance", PreferencesWindow.WikiPage("Prefs.Page.Appearance"), "Themes")
+        eq("wiki quick switch", PreferencesWindow.WikiPage("Prefs.Page.QuickSwitch"), "Quick-Switch")
+        eq("wiki dialog panel", PreferencesWindow.WikiPage("Prefs.Page.QSPanel"), "Quick-Switch-Panel")
+        eq("wiki date stamp", PreferencesWindow.WikiPage("Prefs.Page.DateStamp"), "Date-Stamp")
+        eq("wiki applications", PreferencesWindow.WikiPage("Prefs.Page.Applications"), "Configuration")
         eq("wiki default", PreferencesWindow.WikiPage("Prefs.Page.General"), "Configuration")
         for key in ["Prefs.OK", "Prefs.Cancel", "Prefs.Apply", "Prefs.Help", "Prefs.DiscardChanges"]
             eq("text " key, I18n.T(key) != key, true)

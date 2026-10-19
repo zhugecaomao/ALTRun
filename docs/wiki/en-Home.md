@@ -8,7 +8,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 - **Fast**: results as you type; with [Everything](https://www.voidtools.com/) running, every file on your disks is searched in milliseconds
 - **Learns what you use**: remembers your picks and puts frequent ones first; matches word initials (`vsc`) and pinyin initials (`wx` → 微信)
 - **One window for everyday tasks**: calculator, web search, clipboard history, snippet expansion, system commands, terminal
-- **Portable, data stays on your PC**: no registry entries, no admin rights, no background service; all settings live in the `Data\` folder; one-key updates keep your settings
+- **Portable, data is local by default**: no registry entries, no admin rights, no background service; settings default to `Data\`, use `%APPDATA%\ALTRun\Data\` when the program folder isn't writable, and can be moved in Preferences → Advanced; one-key updates keep your settings
 - **English / Simplified Chinese / Traditional Chinese / Japanese interface**, 22 built-in themes (each in three densities), and you can make your own
 
 > This documentation covers version **3.0** and later. 3.0 redesigned the search window and the settings file; 2.x settings are converted automatically the first time you start it, see [Installation and upgrades](en-Installation).
@@ -23,7 +23,11 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Custom commands and snippets](en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion, clipboard history |
 | [File search](en-File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](en-Themes) | 22 built-in themes (or follow the Windows light / dark mode), density, custom themes, every available key |
-| [Extensions](en-Extensions) | Quick Switch, date stamp, custom hotkeys, list of system commands, PT Tools |
+| [Browser bookmarks](en-Bookmarks) | Search, open and copy bookmark URLs |
+| [Quick Switch](en-Quick-Switch) | Jump to a folder open in File Explorer or Total Commander |
+| [Dialog Folder Panel](en-Quick-Switch-Panel) | Search and pick folders in an Open / Save dialog |
+| [Date Stamp](en-Date-Stamp) | Add dates when renaming files or at the end of text |
+| [Extensions](en-Extensions) | Custom hotkeys, system commands, calculator, scripts and PT Tools |
 | [Settings reference](en-Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives, privacy... |
 | [Development guide](en-Development) | Architecture, adding a search feature, code style, tests |
@@ -39,7 +43,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | Run a command | `>ipconfig /all` |
 | Lock / shut down | `lock` / `shutdown` |
 | Paste text you use often | type `;sig` in any program to expand your signature |
-| Jump an Open / Save dialog to a folder | click it in the [Quick Switch](en-Extensions#quick-switch) panel below the dialog, or `Ctrl+G` for the current Total Commander folder |
+| Jump an Open / Save dialog to a folder | click it in the [Dialog Folder Panel](en-Quick-Switch-Panel) below the dialog, or `Ctrl+G` for the current Total Commander folder |
 | Edit the selected command | `F3` |
 | More actions | `→` or right-click |
 | Forgot the syntax | `?` lists every search syntax and shortcut |

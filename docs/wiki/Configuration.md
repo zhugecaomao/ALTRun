@@ -8,6 +8,23 @@
 - 文件格式有错误 (例如少了逗号) 时, ALTRun 会提示, 把原文件改名为 `ALTRun.json.bad` 保留下来, 然后用默认设置启动; 修好后改回原名即可
 - `SchemaVersion` 是设置格式的版本号, 不要手动修改; 格式升级时 ALTRun 会自动转换并备份
 
+## 偏好设置页面与文档
+
+偏好设置底部的 **帮助** 按钮和 `F1` 会打开当前页面的说明。下面列出每个页面对应的 Wiki 入口, 方便查找具体设置:
+
+| 偏好设置页面 | 文档 |
+|---|---|
+| 通用 / 高级 | [设置文件参考](Configuration) |
+| 搜索窗口 / 功能 / 网页搜索 / 使用统计 | [搜索与快捷键](Usage); 书签设置见 [浏览器书签](Bookmarks) |
+| 外观 | [主题](Themes) |
+| 应用 | [设置文件参考: 应用索引](Configuration#applications-应用) |
+| 文件搜索 / 搜索来源 | [文件搜索](File-Search) |
+| 自定义命令 / 文字片段 / 剪贴板 | [自定义命令与片段](Commands-and-Snippets) |
+| 计算器 / 脚本扩展 / 自定义热键 | [扩展功能](Extensions) |
+| 对话框跳转 | [对话框快速跳转](Quick-Switch) |
+| 对话框面板 | [对话框文件夹面板](Quick-Switch-Panel) |
+| 一键加日期 | [一键加日期](Date-Stamp) |
+
 ## 结构
 ```jsonc
 {
@@ -181,8 +198,8 @@
 
 | 节点 | 键 |
 |---|---|
-| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `MenuHotkey` (`^+g`, 光标跳到面板的搜索框) `RecentFolders` (10) `ShowPanel` (1, 对话框下面的文件夹面板) `PanelSearch` (`folders` = 只搜文件夹, `all` = 文件夹和文件) `AutoSwitch` `DialogWindows` (`ahk_class #32770`) `ExcludeWindows` `AutoSwitchExclude` |
-| AutoDate | `Enabled` `DateFormat` (`dd.MM.yyyy`) `RenameHotkey` (`^d`) `RenameWindows` `AppendHotkey` (`^d`) `AppendWindows` |
+| QuickSwitch | 见 [对话框快速跳转](Quick-Switch) 和 [对话框文件夹面板](Quick-Switch-Panel) |
+| AutoDate | 见 [一键加日期](Date-Stamp) |
 | PTTools | PT 工具箱自己保存的输入和窗口位置 |
 
 ## 列表

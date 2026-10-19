@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.19.16]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置的帮助链接改为对应专题页, 新增浏览器书签、对话框跳转、文件夹面板和一键加日期的中英文独立说明; 补充应用索引自动更新、数据目录和开发架构说明, 并列出全部偏好设置页对应的文档入口。
+
+Preferences help links now open the relevant topic pages. Added bilingual pages for bookmarks, Quick Switch, the dialog folder panel and Date Stamp; documented app index updates, data locations and architecture; and mapped every Preferences page to its documentation.
+
+
 ## [2026.10.19.15]
 
 测试版。
@@ -916,7 +928,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...HEAD
+[2026.10.19.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...2026.10.19.16
 [2026.10.19.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...2026.10.19.15
 [2026.10.19.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...2026.10.19.14
 [2026.10.19.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...2026.10.19.13

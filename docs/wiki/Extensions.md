@@ -2,50 +2,15 @@
 
 # 扩展功能
 
-搜索窗口以外的功能。对话框快速跳转和一键加日期各有一页设置 (偏好设置 → 对话框跳转 / 一键加日期)。
+搜索窗口以外的功能。Quick Switch、对话框文件夹面板和一键加日期各有独立的设置页和 Wiki 说明。
 
 ## 对话框快速跳转 (Quick Switch)
-在打开 / 保存对话框里一步跳到已经打开的文件夹。做法借鉴 [Listary](https://www.listary.com/) 的 Quick Switch。
 
-**文件夹面板** (默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 正下方就自动贴一个和对话框一样宽的面板 (下面放不下时放在上面), 点一个文件夹对话框就跳过去, 不用记热键:
+Quick Switch、对话框文件夹面板和一键加日期已分别整理成独立页面:
 
-![打开对话框下面的文件夹面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch.png)
-
-- 列出每个 Total Commander 窗口的当前面板和另一侧面板、打开的资源管理器窗口、最近用过的文件夹;
-- 上面的搜索框: 输入文字先过滤列表, 再用 Everything (或内置索引) 找名字匹配的文件夹和文件 (文件夹在前); `↑` `↓` 选择, `Enter` 确定, `Esc` 回到对话框;
-- 选中的是文件时: 跳到它所在的文件夹 (打开和保存对话框都一样, 不替你打开或保存);
-- 跳转时文件名框里原来的文件名 (例如另存为时程序预填的名字) 会保留;
-- 面板的颜色跟随 ALTRun 的主题 (偏好设置 → 外观), 深色主题下面板也是深色; 对话框改变宽度时面板跟着变;
-- 搜索框里用中文输入法时, 按 `Enter` 是把拼音上屏, 不会跳转; 上屏之后再按 `Enter` 才跳转;
-- 搜索框搜什么: 偏好设置 → 对话框面板 → "搜索框搜索": 只搜文件夹 (默认) / 文件夹和文件 (`PanelSearch`: `folders` / `all`)。文件夹单独搜, 同名的文件很多时也不会把文件夹挤掉;
-- 对话框不在前台时隐藏;
-- 切到 TC 换了目录再回到对话框, 列表会刷新;
-- 面板的设置 (开关、搜索范围、最近文件夹的数量、键盘操作的热键) 在 偏好设置 → 对话框面板 (`ShowPanel`)。最近的文件夹来自 Windows 的 "最近使用的项目" (打开过的文件取所在的文件夹), 默认 10 个, 0 = 不列。
-
-键盘操作, 在标准的 "打开 / 保存文件" 对话框里:
-- `Ctrl+G`: 跳到 Total Commander 当前打开的文件夹
-- `Ctrl+E`: 跳到资源管理器当前打开的文件夹
-- `Ctrl+Shift+G`: 光标跳到文件夹面板的搜索框, 用键盘选择: 输入文字搜索, `↑` `↓` 选择, `Enter` 跳过去, `Esc` 回到对话框。没有打开自动显示面板时, 按这个热键临时显示面板
-
-打开 "自动跳转" (`AutoSwitch`) 后, 从 Total Commander 切换到对话框时会自动跳转。
-
-TC 的目录是直接问 TC 要的 (TC 的 `WM_COPYDATA` 接口, TC 8.0 以上), 不经过剪贴板, Windows 的剪贴板历史 (`Win+V`) 里不会多出路径。
-
-偏好设置 → 对话框跳转:
-- **生效的窗口**: "Windows 标准对话框" (`ahk_class #32770`, 默认勾选) 和 "其它对话框", 例如 WPS 的 `ahk_class Qt5QWindowIcon`, 每行一个
-- **不生效的窗口**: 在这些窗口里不跳转
-- **不自动跳转的对话框**: 这些对话框里不自动跳转, 仍然可以按热键
-
-设置文件里是 `Extensions.QuickSwitch` → `TotalCmdHotkey` / `ExplorerHotkey` / `MenuHotkey` / `RecentFolders` / `ShowPanel` / `PanelSearch` / `AutoSwitch` / `DialogWindows` / `ExcludeWindows` / `AutoSwitchExclude` (窗口条件用逗号分隔)。
-
-## 一键加日期
-按热键 (默认 `Ctrl+D`, 可以改):
-- **重命名文件时** (资源管理器、Total Commander、桌面、对话框): 在扩展名前加上 ` - 日期`, 已经有日期的更新为今天。例如 `Report.docx` → `Report - 23.09.2026.docx`。只在改名的输入框里生效, 在文件列表里按 Ctrl+D 还是程序自己的功能 (资源管理器里是删除)
-- **文字末尾** (例如 Total Commander 的文件备注): 在光标所在行的末尾加上 ` - 日期`, 例如 `已审核` → `已审核 - 23.09.2026`
-
-偏好设置 → 一键加日期: 两种场景各有自己的热键和 "生效的窗口" 列表 (每行一个, 例如 `ahk_class CabinetWClass` 资源管理器、`ahk_class TTOTAL_CMD` Total Commander)。设置文件里是 `Extensions.AutoDate` → `RenameHotkey` / `RenameWindows` / `AppendHotkey` / `AppendWindows`。
-
-日期格式 `DateFormat` 默认 `dd.MM.yyyy` (写法见 [AutoHotkey FormatTime](https://www.autohotkey.com/docs/v2/lib/FormatTime.htm)), 片段里的 `{date}` 也用这个格式。
+- [对话框快速跳转](Quick-Switch): 在打开 / 保存对话框里跳到已打开的文件夹。
+- [对话框文件夹面板](Quick-Switch-Panel): 通过面板浏览、搜索并选择文件夹或文件。
+- [一键加日期](Date-Stamp): 重命名文件或在文本末尾添加日期。
 
 ## 自定义热键
 偏好设置 → 自定义热键: 给任意热键指定一条 [系统命令](#系统命令), 可以限定只在某个窗口里生效。

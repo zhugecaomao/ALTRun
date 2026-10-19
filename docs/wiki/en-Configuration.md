@@ -8,6 +8,23 @@ All settings and user data are saved in `Data\ALTRun.json` in the program folder
 - If the file has a syntax error (a missing comma, say), ALTRun tells you, keeps the original renamed to `ALTRun.json.bad` and starts with the default settings; fix it and rename it back
 - `SchemaVersion` is the version of the settings format; don't change it by hand. When the format is upgraded, ALTRun converts it automatically and makes a backup
 
+## Preferences pages and documentation
+
+The **Help** button at the bottom of Preferences, or `F1`, opens the documentation for the current page. This table lists every Preferences page and its Wiki entry:
+
+| Preferences page | Documentation |
+|---|---|
+| General / Advanced | [Settings reference](en-Configuration) |
+| Search Window / Features / Web Search / Usage | [Search and shortcuts](en-Usage); bookmark settings: [Browser bookmarks](en-Bookmarks) |
+| Appearance | [Themes](en-Themes) |
+| Applications | [Settings reference: Applications](en-Configuration#features) |
+| File Search / Search Sources | [File search](en-File-Search) |
+| Custom Commands / Snippets / Clipboard | [Custom commands and snippets](en-Commands-and-Snippets) |
+| Calculator / Scripts / Hotkeys | [Extensions](en-Extensions) |
+| Quick Switch | [Quick Switch](en-Quick-Switch) |
+| Dialog Panel | [Dialog Folder Panel](en-Quick-Switch-Panel) |
+| Date Stamp | [Date Stamp](en-Date-Stamp) |
+
 ## Structure
 ```jsonc
 {
@@ -181,8 +198,8 @@ See [Extensions](en-Extensions).
 
 | Node | Keys |
 |---|---|
-| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `MenuHotkey` (`^+g`, moves the cursor to the panel's search box) `RecentFolders` (10) `ShowPanel` (1, the folder panel below dialogs) `PanelSearch` (`folders` = folders only, `all` = folders and files) `AutoSwitch` `DialogWindows` (`ahk_class #32770`) `ExcludeWindows` `AutoSwitchExclude` |
-| AutoDate | `Enabled` `DateFormat` (`dd.MM.yyyy`) `RenameHotkey` (`^d`) `RenameWindows` `AppendHotkey` (`^d`) `AppendWindows` |
+| QuickSwitch | See [Quick Switch](en-Quick-Switch) and [Dialog Folder Panel](en-Quick-Switch-Panel) |
+| AutoDate | See [Date Stamp](en-Date-Stamp) |
 | PTTools | Inputs and window positions saved by PT Tools itself |
 
 ## Lists

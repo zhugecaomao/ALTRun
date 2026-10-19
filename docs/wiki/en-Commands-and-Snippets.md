@@ -86,7 +86,7 @@ Replaced when pasting:
 
 | Placeholder | Replaced by |
 |---|---|
-| `{date}` | Today's date, in the DateFormat of the [date stamp](en-Extensions#date-stamp) (default `dd.MM.yyyy`) |
+| `{date}` | Today's date, in the DateFormat of the [date stamp](en-Date-Stamp) (default `dd.MM.yyyy`) |
 | `{time}` | The current time `HH:mm` |
 | `{datetime}` | Date + time |
 | `{clipboard}` | The text on the clipboard |
