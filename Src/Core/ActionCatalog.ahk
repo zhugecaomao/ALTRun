@@ -99,6 +99,10 @@ class ActionCatalog {
         for extra in item.Actions
             list.Push(extra)
 
+        if (item.Provider = ClipboardProvider.Id && item.Source is Map && ClipboardProvider.TypeOf(item.Source) = "text")   ; 剪贴板历史里的文字: 用每个网页搜索引擎搜索 (打开 → 菜单时才生成)
+            for extra in SelectionActions.SearchActions(item.Arg)
+                list.Push(extra)
+
         if ActionCatalog._ProviderCan(item, "EditItem")
             add("Action.Edit", "res:imageres.dll,-5306", (*) => SearchWindow.EditItem(item), "F3")
         else if ActionCatalog.CanEdit(item)

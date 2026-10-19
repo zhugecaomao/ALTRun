@@ -161,6 +161,8 @@ class AppSettings {
 
         if (data.Count && AppSettings._KeepPrevious(data))
             changed := true
+        if (data.Count && AppSettings._UpgradeEngines(data))
+            changed := true
         if AppSettings._MergeDefaults(data, AppSettings.Defaults())
             changed := true
         if (AppSettings.DataDir != AppSettings.DefaultDataDir() && data.Has("DataLocation"))
@@ -250,6 +252,27 @@ class AppSettings {
         theme := appearance.Has("Theme") ? appearance["Theme"] : ""
         appearance["Density"] := RegExMatch(theme, "i)^(Dark|Light|Midnight)Compact$") ? "Normal" : "Comfortable"
         return true
+    }
+
+    ; 自带的搜索引擎 2026.10.19.18 起写成 {query|clipboard}: 已有的设置文件里网址还是原来默认值 ({query}) 的
+    ; 自带引擎 (按 Id) 换成新写法; 改过网址的不动。返回是否改了
+    static _UpgradeEngines(data) {
+        if !(data.Has("Features") && data["Features"] is Map && data["Features"].Has("WebSearch") && data["Features"]["WebSearch"] is Map)
+            return false
+        webSearch := data["Features"]["WebSearch"]
+        if !(webSearch.Has("Engines") && webSearch["Engines"] is Array)
+            return false
+        upgrades := Map()
+        for engine in AppSettings._DefaultEngines()
+            upgrades[engine["Id"]] := [StrReplace(engine["Url"], "{query|clipboard}", "{query}"), engine["Url"]]
+        changed := false
+        for engine in webSearch["Engines"] {
+            if !(engine is Map && engine.Has("Id") && engine.Has("Url") && upgrades.Has(engine["Id"]))
+                continue
+            if (engine["Url"] == upgrades[engine["Id"]][1])
+                engine["Url"] := upgrades[engine["Id"]][2], changed := true
+        }
+        return changed
     }
 
     static _MergeDefaults(target, defaults) {
@@ -501,15 +524,15 @@ class AppSettings {
     static _DefaultEngines() {
         engines := []
         for row in [
-            ["google"   , "g"   , "Google"   , "https://www.google.com/search?q={query}"],
-            ["bing"     , "bing", "Bing"     , "https://www.bing.com/search?q={query}"],
-            ["baidu"    , "bd"  , "Baidu"    , "https://www.baidu.com/s?wd={query}"],
-            ["github"   , "gh"  , "GitHub"   , "https://github.com/search?q={query}"],
-            ["wikipedia", "wiki", "Wikipedia", "https://en.wikipedia.org/wiki/Special:Search?search={query}"],
-            ["youtube"  , "yt"  , "YouTube"  , "https://www.youtube.com/results?search_query={query}"],
-            ["taobao"   , "tb"  , "Taobao"   , "https://s.taobao.com/search?q={query}"],
-            ["jd"       , "jd"  , "JD.com"   , "https://search.jd.com/Search?keyword={query}&enc=utf-8"],
-            ["translate", "tr"  , "Google Translate", "https://translate.google.com/?sl=auto&tl=zh-CN&text={query}"]
+            ["google"   , "g"   , "Google"   , "https://www.google.com/search?q={query|clipboard}"],
+            ["bing"     , "bing", "Bing"     , "https://www.bing.com/search?q={query|clipboard}"],
+            ["baidu"    , "bd"  , "Baidu"    , "https://www.baidu.com/s?wd={query|clipboard}"],
+            ["github"   , "gh"  , "GitHub"   , "https://github.com/search?q={query|clipboard}"],
+            ["wikipedia", "wiki", "Wikipedia", "https://en.wikipedia.org/wiki/Special:Search?search={query|clipboard}"],
+            ["youtube"  , "yt"  , "YouTube"  , "https://www.youtube.com/results?search_query={query|clipboard}"],
+            ["taobao"   , "tb"  , "Taobao"   , "https://s.taobao.com/search?q={query|clipboard}"],
+            ["jd"       , "jd"  , "JD.com"   , "https://search.jd.com/Search?keyword={query|clipboard}&enc=utf-8"],
+            ["translate", "tr"  , "Google Translate", "https://translate.google.com/?sl=auto&tl=zh-CN&text={query|clipboard}"]
         ]
             engines.Push(Map("Id", row[1], "Keyword", row[2], "Title", row[3], "Url", row[4]))
         return engines

@@ -5,6 +5,23 @@
 
 ## [未发布]
 
+## [2026.10.19.18]
+
+测试版。
+
+Test build.
+
+### 新增
+- 网页搜索: 网址里的默认值可以写成 `clipboard` (`{query|clipboard}`), 输入关键字加空格 (例如 `g `) 不再输入时搜索剪贴板里的文字, 继续输入了就搜输入的。自带的搜索引擎都改成这样写, 例如 `https://www.google.com/search?q={query|clipboard}`; 从旧版本升级时, 网址还是原来默认值的自带引擎自动换成新写法, 改过的和自己加的不动
+  - 列表里显示 "用 Google 搜索剪贴板: '...'"; 剪贴板里没有文字 (复制的是文件、空的) 时提示并且不能打开
+  - 文字和图片一起复制时 (例如 Excel 的单元格) 搜索文字; 密码管理器复制的内容不读, 和剪贴板历史一样
+- 剪贴板历史里的文字条目, 按 `→` 可以用每个网页搜索引擎搜索
+
+### 改进
+- 网页搜索: 只输入关键字 (例如 `lh`) 时都是提示补全, `Enter` 补全成 `lh `; 写了默认值 (`{query|8000}`) 的引擎在关键字加空格后才用默认值打开 (以前只输入关键字就直接打开)
+- 用搜索引擎搜索选中内容或剪贴板历史时, 搜索词最多 200 个字符 (很长的文字以前会生成搜索网站打不开的超长网址)
+- 偏好设置 → 网页搜索 里 "网址" 项的说明加上 `{query|clipboard}` 的写法 (四种语言), Wiki 网页搜索 / 剪贴板 / 设置文件参考和 README 同步更新
+
 ## [2026.10.19.17]
 
 测试版。
@@ -937,7 +954,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.18...HEAD
+[2026.10.19.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.17...2026.10.19.18
 [2026.10.19.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...2026.10.19.17
 [2026.10.19.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...2026.10.19.16
 [2026.10.19.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...2026.10.19.15
