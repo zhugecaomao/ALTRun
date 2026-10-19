@@ -50,7 +50,7 @@
 
 If Windows SmartScreen blocks the app, choose **More info** → **Run anyway**. For antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ#my-antivirus-flags-it).
 
-**Other installation options:** [Scoop](#installation-options-and-upgrades), [winget (once accepted)](#installation-options-and-upgrades), or [run `ALTRun.ahk` with AutoHotkey v2](#installation-options-and-upgrades). For details, see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
+You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` with AutoHotkey v2. See [Installation options and upgrades](#installation-options-and-upgrades) or the [Installation and upgrades wiki](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation) for details.
 
 
 ## Features
