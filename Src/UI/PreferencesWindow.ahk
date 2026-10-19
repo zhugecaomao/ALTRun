@@ -665,7 +665,8 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.Snippets", 150)
         PreferencesWindow._List("Snippets", 220
             , [["Prefs.Col.Name", "Name", 150], ["Prefs.Col.Keyword", "Keyword", 90], ["Prefs.Col.Text", "Text", 300]]
-            , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet())
+            , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet(), ""
+            , [{Label: I18n.T("Snippet.ImportExport"), Width: 100, Click: (list, button) => PreferencesWindow._SnippetMenu(list, button)}])
         PreferencesWindow._Section("Prefs.Section.Options")
         PreferencesWindow._Check("Features.Snippets.SearchText", "Prefs.SnippetSearchText", , , "Prefs.Group.Search")
         PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")
@@ -674,6 +675,85 @@ class PreferencesWindow {
         PreferencesWindow._Field("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude", "L")
         PreferencesWindow._Pair(["Features.Snippets.PasteMode", "Prefs.PasteMode", "M", "choice", ["Auto", "Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Auto"), I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")]]
             , ["Features.Snippets.PasteDelay", "Prefs.PasteDelay", "S", "number"])
+    }
+
+    ; 文字片段页的 "导入 / 导出" 按钮: 弹出菜单
+    static _SnippetMenu(list, button) {
+        popup := Menu()
+        popup.Add(I18n.T("Snippet.Import"), (*) => PreferencesWindow._ImportSnippets(list))
+        popup.Add(I18n.T("Snippet.Export"), (*) => PreferencesWindow._ExportSnippets(list))
+        button.GetPos(&x, &y, , &h)
+        popup.Show(x, y + h)
+    }
+
+    ; 从表格导入: 粘贴从 Excel 复制的内容, 或者读 CSV / TSV 文件; 合并进列表 (按 "取消" 关掉偏好设置就不保存)
+    static _ImportSnippets(list) {
+        owner := PreferencesWindow.Gui, title := I18n.T("Snippet.Import.Title"), state := {Message: ""}
+        g := Gui("+Owner" owner.Hwnd " -MinimizeBox", title)
+        g.SetFont("s9", ThemeManager.FontName())
+        g.MarginX := 14, g.MarginY := 12
+        g.AddText("xm w560", I18n.T("Snippet.Import.Help"))
+        g.SetFont("s8")
+        g.AddText("xm y+4 w560 cGray", I18n.T("Snippet.Import.Columns"))
+        g.SetFont("s9")
+        box := g.AddEdit("xm y+8 w560 r12 +Multi +WantTab")
+        g.AddButton("xm y+12 w100", I18n.T("Snippet.Import.File")).OnEvent("Click", ChooseFile)
+        g.AddButton("x" (14 + 560 - 170) " yp w80 Default", I18n.T("Snippet.Import.Ok")).OnEvent("Click", DoImport)
+        g.AddButton("x+10 yp w80", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => g.Destroy())
+        g.OnEvent("Escape", (*) => g.Destroy())
+        g.OnEvent("Close", (*) => g.Destroy())
+        owner.Opt("+Disabled")
+        g.Show()
+        WinWaitClose(g.Hwnd)
+        owner.Opt("-Disabled")
+        try WinActivate("ahk_id " owner.Hwnd)
+        if (state.Message != "")
+            MsgBox(state.Message, title, "Iconi Owner" owner.Hwnd)
+        return
+
+        ChooseFile(*) {
+            g.Opt("+OwnDialogs")
+            selected := FileSelect(1, , title, I18n.T("Snippet.Import.Filter"))
+            if (selected = "")
+                return
+            try box.Value := DelimitedText.ReadFile(selected)
+            catch as e
+                MsgBox(e.Message, title, "Icon! Owner" g.Hwnd)
+        }
+        DoImport(*) {
+            prefix := PreferencesWindow.GetPath(PreferencesWindow.Working, "Features.Snippets.ExpandPrefix")
+            result := SnippetProvider.ImportRows(DelimitedText.Parse(box.Value), list.Items, prefix)
+            if !(result.Added || result.Updated) {
+                MsgBox(I18n.T("Snippet.Import.None"), title, "Icon! Owner" g.Hwnd)
+                return
+            }
+            PreferencesWindow.MarkDirty(true)
+            list.Reload.Call()
+            state.Message := I18n.T("Snippet.Import.Done", result.Added, result.Updated)
+                . (result.Skipped ? "`n" I18n.T("Snippet.Import.Skipped", result.Skipped) : "")
+            g.Destroy()
+        }
+    }
+
+    ; 导出为 CSV (UTF-8 带 BOM, Excel 直接打开不乱码): 偏好设置里现在的列表, 包括还没保存的修改
+    static _ExportSnippets(list) {
+        owner := PreferencesWindow.Gui, title := I18n.T("Snippet.Export")
+        owner.Opt("+OwnDialogs")
+        target := FileSelect("S16", "Snippets.csv", title, I18n.T("Snippet.Export.Filter"))
+        if (target = "")
+            return
+        if !RegExMatch(target, "i)\.(csv|txt)$")
+            target .= ".csv"
+        rows := SnippetProvider.ExportRows(list.Items)
+        try {
+            if FileExist(target)
+                FileDelete(target)
+            FileAppend(DelimitedText.ToCsv(rows), target, "UTF-8")
+        } catch as e {
+            MsgBox(e.Message, title, "Icon! Owner" owner.Hwnd)
+            return
+        }
+        MsgBox(I18n.T("Snippet.Export.Done", rows.Length - 1, target), title, "Iconi Owner" owner.Hwnd)
     }
 
     static _BuildClipboard() {
@@ -1459,7 +1539,7 @@ class PreferencesWindow {
     ; check: 可选, (item, roots) => "OK" / "Missing" / "Unavailable" / "Skipped"。
     ; 提供时多一个 "检查路径" 按钮, 结果显示在 "Status" 列 (列表里的项目本身没有这个键)
     ; 按钮右边的筛选框: 只显示含有所有输入的词的项目 (在各列的文字里找, 不分大小写)
-    static _List(path, height, columns, fields, newItem, check := "") {
+    static _List(path, height, columns, fields, newItem, check := "", buttons := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
         for column in columns
@@ -1579,13 +1659,22 @@ class PreferencesWindow {
 
         listView.OnEvent("DoubleClick", EditItem)
         Refresh()
-        PreferencesWindow._lists[path] := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting}   ; 外面加进来的项目 (AddCommands)
+        ReloadList() {                                                      ; 外面直接改了 items (导入) 之后
+            if IsObject(filterBox)
+                filterBox.Value := ""
+            Refresh()
+        }
+        list := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting, Reload: ReloadList}
+        PreferencesWindow._lists[path] := list                              ; 外面加进来的项目 (AddCommands)
         PreferencesWindow._y += height - 34
         PreferencesWindow._Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Edit")).OnEvent("Click", EditItem)
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Delete")).OnEvent("Click", DeleteItem)
         if IsObject(check)
             PreferencesWindow._Add("Button", "x+24 yp w100", I18n.T("Prefs.CheckTargets")).OnEvent("Click", CheckItems)
+        if IsObject(buttons)                                                ; 这一页自己的按钮: [{Label, Width, Click: (list, button) => ...}]
+            for extra in buttons
+                PreferencesWindow._Add("Button", "x+24 yp w" extra.Width, extra.Label).OnEvent("Click", ((extra, button, *) => extra.Click.Call(list, button)).Bind(extra))
         listView.GetPos(&listX, , &listW)
         filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; 不用 _Add: 筛选不算修改设置
         PreferencesWindow._current.Controls.Push(filterBox)

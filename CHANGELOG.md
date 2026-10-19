@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.19.3]
+
+测试版。
+
+Test build.
+
+### 新增
+- 文字片段批量导入 / 导出: 偏好设置 → 文字片段 → "导入/导出"。可以把 Excel 里复制的单元格直接粘贴进来, 或者读取 CSV / TSV 文件; 列的顺序 名称 | 关键字 | 正文 | 自动展开 (可选), 表头自动跳过, 关键字相同的片段会更新。导出为 CSV (UTF-8 带 BOM), 可以用 Excel 打开修改后再导入
+
 ## [2026.10.19.2]
 
 测试版。
@@ -780,7 +789,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.3...HEAD
+[2026.10.19.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.2...2026.10.19.3
 [2026.10.19.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.1...2026.10.19.2
 [2026.10.19.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.3...2026.10.19.1
 [2026.10.17.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.17.2...2026.10.17.3
