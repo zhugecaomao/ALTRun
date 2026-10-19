@@ -593,15 +593,20 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.EnabledFeatures")
         features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "Windows", "Recent", "FileSearch", "Scripts", "Terminal", "System", "Help"]
         startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; 两列: 英文名称较长, 三列会换行
+        rowH := 20                                                          ; 行距: 至少比复选框高 4 (中文、日文的复选框高一些)
         for index, feature in features {
             column := Mod(index - 1, 2), row := (index - 1) // 2
-            PreferencesWindow._y := startY + row * 20
-            PreferencesWindow._Check("Features." feature ".Enabled", "Prefs.Feature." feature
+            PreferencesWindow._y := startY + row * rowH
+            check := PreferencesWindow._Check("Features." feature ".Enabled", "Prefs.Feature." feature
                 , PreferencesWindow._InputX() + column * columnW, , (index = 1) ? "Prefs.Group.SearchFeatures" : "", columnW)
+            if (index = 1) {
+                check.GetPos(, , , &checkH)
+                rowH := Max(rowH, checkH + 4)
+            }
         }
-        PreferencesWindow._y := startY + (features.Length // 2) * 20          ; 最后一格: Windows 设置的页面 (系统命令的一部分)
+        PreferencesWindow._y := startY + (features.Length // 2) * rowH        ; 最后一格: Windows 设置的页面 (系统命令的一部分)
         PreferencesWindow._Check("Features.System.SettingsPages", "Prefs.SettingsPages", PreferencesWindow._InputX() + columnW, , "", columnW)
-        PreferencesWindow._y := startY + Ceil((features.Length + 1) / 2) * 20
+        PreferencesWindow._y := startY + Ceil((features.Length + 1) / 2) * rowH
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")
         PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
         PreferencesWindow._Lines("Features.System.Hidden", "Prefs.SysHidden", 4)
