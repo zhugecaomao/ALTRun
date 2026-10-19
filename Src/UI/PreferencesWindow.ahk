@@ -527,7 +527,7 @@ class PreferencesWindow {
             . " Icon -Multi -Hdr", ["Theme"])
         DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "WStr", "Explorer", "Ptr", 0)   ; 选中项画浅色方框, 不把缩略图染成蓝色
         list.SetImageList(ThemePreview.ImageList(themes, thumbW, thumbH), 0)   ; 0 = 大图标
-        SendMessage(0x1035, 0, (thumbW + Win.Scale(16)) | ((thumbH + Win.Scale(30)) << 16), list.Hwnd)   ; LVM_SETICONSPACING
+        SendMessage(0x1035, 0, PreferencesWindow.GalleryColumnWidth(list, thumbW) | ((thumbH + Win.Scale(30)) << 16), list.Hwnd)   ; LVM_SETICONSPACING
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         selected := 1
         for index, themeName in themes {
@@ -540,6 +540,16 @@ class PreferencesWindow {
         PreferencesWindow._Bind(path, () => themes[list.GetNext() || selected])
         PreferencesWindow._Below(8, list)
         return list
+    }
+
+    ; 主题列表每一格的宽度: 一行正好放 GalleryColumns 个缩略图, 均匀铺满 (右边不剩一大块), 留 2 像素余量免得最后一个挤到下一行。
+    ; 主题多于两行, 有竖滚动条, 宽度先减掉它
+    static GalleryColumns := 4
+    static GalleryColumnWidth(list, thumbW) {
+        rect := Buffer(16, 0)
+        DllCall("GetClientRect", "Ptr", list.Hwnd, "Ptr", rect)
+        width := NumGet(rect, 8, "Int") - (DllCall("GetWindowLong", "Ptr", list.Hwnd, "Int", -16, "Int") & 0x200000 ? 0 : SysGet(2))   ; WS_VSCROLL 还没出现时减掉 SM_CXVSCROLL
+        return Max(thumbW + Win.Scale(8), (width - 2) // PreferencesWindow.GalleryColumns)
     }
 
     ; 主题列表里选中了另一个主题: "应用" 可用

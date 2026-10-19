@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.19.14]
+
+测试版。
+
+Test build.
+
+### 升级
+- 现代深色、现代浅色、经典 三个主题去掉了自己的尺寸, 和其它主题一样大 (以前现代深色 / 浅色的字号、行高和图标小一些, 加上显示密度后显得比别的主题小一圈)。用这两个主题、喜欢原来那么小的: 偏好设置 → 外观 → "显示密度" 选 "紧凑", 大小和以前基本一样
+
+### 改进
+- 所有内置主题在同一档显示密度下一样大, 切换主题时窗口不会忽大忽小
+- 偏好设置 → 外观: 主题缩略图的间距按列表宽度均匀分配, 一行 4 个刚好铺满, 右边不再空一大块; 名字长的主题 (例如 "跟随系统 (浅色 / 深色)") 也不容易被截断
+
 ## [2026.10.19.13]
 
 测试版。
@@ -894,7 +907,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...HEAD
+[2026.10.19.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...2026.10.19.14
 [2026.10.19.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...2026.10.19.13
 [2026.10.19.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.11...2026.10.19.12
 [2026.10.19.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.10...2026.10.19.11

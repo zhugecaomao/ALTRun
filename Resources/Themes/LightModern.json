@@ -1,11 +1,4 @@
 {
-  "InputFontSize": 18,
-  "TitleFontSize": 12,
-  "SubtitleFontSize": 9,
-  "ShortcutFontSize": 8.5,
-  "Padding": 12,
-  "RowHeight": 48,
-  "IconSize": 24,
   "SelectedRadius": 4,
   "Background": "F8F8F8",
   "Border": "CECECE",
