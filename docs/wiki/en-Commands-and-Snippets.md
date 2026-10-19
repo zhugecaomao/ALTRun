@@ -105,6 +105,13 @@ Type `;keyword` (for example `;sig`) in any program and what you typed is delete
 - `Clipboard`: borrows the clipboard + `Ctrl+V`, then restores the clipboard (the default before 2026.10.14; changed to `Auto` on upgrade)
 - `Type`: types the text character by character, for programs that don't accept pasting
 
+### Importing and exporting
+Preferences → Snippets → "Import/Export":
+- **Import from a table**: paste cells copied from Excel, or click "Open File" to read a CSV / TSV file (UTF-8, or the system's default encoding). Columns: Name | Keyword | Text | Expand automatically (optional, `1` / `0`, blank = on). A header row is skipped, rows without text are skipped, and a missing name is taken from the keyword or the first line of the text
+- A row whose keyword matches an existing snippet (ignoring case; or whose name matches, when there's no keyword) updates it; other rows are added. If a keyword is too long or has spaces (so it can't expand), auto-expansion is turned off for it
+- Imported snippets are saved when you click OK or Apply in Preferences; Cancel discards them
+- **Export to CSV**: with a header row, UTF-8 with BOM, so Excel opens it directly; edit it there and import it again
+
 ## Clipboard history
 Press `Ctrl+Alt+C` or type `clip` to list the text, files and images you copied; `clip keywords` filters, `Enter` pastes into the front window, and `Ctrl+Del` removes an item from the history.
 

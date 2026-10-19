@@ -74,7 +74,7 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 - **Actions on selected content**: select text, files or a URL in any program and press `Ctrl+Alt+\` for actions such as web search, save as a snippet, or convert and replace the original text.
 - **Edit in place**: press `F3` to edit a command, snippet or search engine; apps and files can be turned into custom commands in one step.
 - **Clipboard history**: press `Ctrl+Alt+C` or type `clip`. Records text, files and images; pin the ones you use often, paste as plain text, and ignore anything copied from password managers.
-- **Text snippets**: search by name, keyword or content; placeholders such as `{date}`, `{clipboard}` and `{cursor}`; type `;keyword` in any program to expand a snippet.
+- **Text snippets**: search by name, keyword or content; placeholders such as `{date}`, `{clipboard}` and `{cursor}`; type `;keyword` in any program to expand a snippet; import them in bulk from Excel / CSV, or export them.
 - **Terminal**: type `>ipconfig /all` to run it in a terminal.
 - **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results.
 

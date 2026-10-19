@@ -79,6 +79,74 @@ class SnippetProvider {
         return Map("Name", "", "Keyword", "", "Text", "", "AutoExpand", 1)
     }
 
+    ;---------------------------------------------------------------------------
+    ; 导入 / 导出 (偏好设置 → 文字片段 → 导入 / 导出): 表格的列 名称 | 关键字 | 正文 | 自动展开 (可选)
+    ;---------------------------------------------------------------------------
+    ; 纯函数: rows (DelimitedText.Parse 的结果) 合并进 snippets (就地修改)。关键字相同的 (不分大小写; 没有关键字时
+    ; 名称相同的) 更新, 其它的加在后面; 没有正文的行跳过; 第一行是表头时跳过。没有名称时用关键字或正文的第一行。
+    ; 自动展开: 空白时打开, 0 / no / 否 等关掉; 关键字太长、有空格 (自动展开用不了) 时也关掉。
+    ; 返回 {Added, Updated, Skipped}
+    static ImportRows(rows, snippets, prefix := "") {
+        static Off := Map("0", 1, "no", 1, "n", 1, "false", 1, "off", 1, "否", 1, "いいえ", 1)
+        result := {Added: 0, Updated: 0, Skipped: 0}
+        for index, row in rows {
+            if (index = 1 && SnippetProvider.IsHeaderRow(row))
+                continue
+            name := (row.Length >= 1) ? Trim(row[1]) : "", keyword := (row.Length >= 2) ? Trim(row[2]) : ""
+            text := (row.Length >= 3) ? row[3] : "", expand := (row.Length >= 4) ? StrLower(Trim(row[4])) : ""
+            if (Trim(text, " `t`r`n") = "") {
+                result.Skipped++
+                continue
+            }
+            if (name = "")
+                name := (keyword != "") ? keyword : SubStr(Trim(StrSplit(Trim(text, " `t`r`n"), "`n", "`r")[1]), 1, 40)
+            snippet := Map("Name", name, "Keyword", keyword, "Text", text, "AutoExpand", Off.Has(expand) ? 0 : 1)
+            if (snippet["AutoExpand"] && SnippetProvider.CheckKeyword(keyword, snippet, prefix) != "")
+                snippet["AutoExpand"] := 0
+            existing := SnippetProvider._Find(snippets, keyword, name)
+            if IsObject(existing) {
+                for key, value in snippet
+                    existing[key] := value
+                result.Updated++
+            } else {
+                snippets.Push(snippet)
+                result.Added++
+            }
+        }
+        return result
+    }
+
+    ; 导出的表格: 第一行是表头 (当前界面语言的列名)
+    static ExportRows(snippets) {
+        rows := [[I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Text"), I18n.T("Prefs.Col.AutoExpand")]]
+        for snippet in snippets
+            if (snippet is Map)
+                rows.Push([snippet.Has("Name") ? snippet["Name"] : "", snippet.Has("Keyword") ? snippet["Keyword"] : ""
+                    , snippet.Has("Text") ? snippet["Text"] : "", (!snippet.Has("AutoExpand") || snippet["AutoExpand"]) ? 1 : 0])
+        return rows
+    }
+
+    ; 第一列是 "名称"、第三列是 "正文" (任何一种界面语言的写法) 就是表头
+    static IsHeaderRow(row) {
+        static Names := "|name|title|名称|名稱|名前|标题|標題|", Texts := "|text|content|正文|本文|内容|內容|"
+        if (row.Length < 3)
+            return false
+        first := StrLower(Trim(row[1])), third := StrLower(Trim(row[3]))
+        return ((InStr(Names, "|" first "|") || first = StrLower(I18n.T("Prefs.Col.Name")))
+            && (InStr(Texts, "|" third "|") || third = StrLower(I18n.T("Prefs.Col.Text")))) ? true : false
+    }
+
+    static _Find(snippets, keyword, name) {
+        for snippet in snippets {
+            if !(snippet is Map)
+                continue
+            other := snippet.Has("Keyword") ? Trim(snippet["Keyword"]) : ""
+            if (keyword != "" ? (other = keyword) : (other = "" && snippet.Has("Name") && Trim(snippet["Name"]) = name))
+                return snippet
+        }
+        return ""
+    }
+
     ; snippet: AppSettings.Snippets 里的一条 (就地修改), 或 "" 新建 (prefill 预先填好的字段)
     static Edit(snippet := "", prefill := "") {
         isNew := !IsObject(snippet)

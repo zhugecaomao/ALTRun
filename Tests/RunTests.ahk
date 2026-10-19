@@ -15,6 +15,7 @@
 #Include %A_ScriptDir%\..\Lib\Logger.ahk
 #Include %A_ScriptDir%\..\Lib\Util.ahk
 #Include %A_ScriptDir%\..\Lib\TextTools.ahk
+#Include %A_ScriptDir%\..\Lib\DelimitedText.ahk
 #Include %A_ScriptDir%\..\Lib\Kanji.ahk
 #Include %A_ScriptDir%\..\Lib\Everything.ahk
 #Include %A_ScriptDir%\..\Lib\Units.ahk
@@ -91,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -4841,6 +4842,78 @@ Func | PTTools | PT Tools (AHK)=99
     }
 
     ; 片段编辑框: 每个字段都有灰色说明; 关键字太长 / 有空格时提示
+    ; 表格文字: 从 Excel 复制的 (Tab 分隔, 单元格里有换行时加引号)、CSV、欧洲 Excel 的 ; 分隔
+    static DelimitedText() {
+        eq := (n, a, e) => TestRunner.Equal("DelimitedText." n, a, e)
+        joined(rows) {
+            text := ""
+            for row in rows {
+                for index, cell in row
+                    text .= (index > 1 ? "|" : "") cell
+                text .= "/"
+            }
+            return text
+        }
+        eq("excel paste", joined(DelimitedText.Parse("Name`tKey`tText`r`nMail`tem`t" '"a@b.com' "`r`n" 'Thanks"' "`r`n")), "Name|Key|Text/Mail|em|a@b.com`nThanks/")
+        eq("csv quotes", joined(DelimitedText.Parse('a,"b,c","say ""hi"""' "`n" "d,,e")), 'a|b,c|say "hi"/d||e/')
+        eq("semicolon", joined(DelimitedText.Parse("a;b,c;d`n1;2;3")), "a|b,c|d/1|2|3/")
+        eq("blank lines skipped", joined(DelimitedText.Parse("`n`na`tb`n`t`n")), "a|b/")
+        eq("quote inside a field", joined(DelimitedText.Parse('5" pipe,ok')), '5" pipe|ok/')
+        eq("delimiter in quotes ignored", DelimitedText.Delimiter('"a`tb",c,d'), ",")
+        eq("tab wins", DelimitedText.Delimiter("a`tb,c`td"), "`t")
+        rows := [["Name", "Text"], ["Mail", "line1`r`nline2"], ["Quote", 'say "hi", ok'], [" pad", "1"]]
+        csv := DelimitedText.ToCsv(rows)
+        eq("to csv", csv, "Name,Text`r`nMail," '"line1' "`r`n" 'line2"' "`r`nQuote," '"say ""hi"", ok"' "`r`n" '" pad",1' "`r`n")
+        eq("round trip", joined(DelimitedText.Parse(csv)), "Name|Text/Mail|line1`nline2/Quote|say " '"hi", ok/ pad|1/')
+        path := A_Temp "\ALTRunDelimited.csv"
+        for encoding in ["UTF-8", "UTF-8-RAW"] {                            ; 带 BOM / 不带 BOM
+            try FileDelete(path)
+            FileAppend("名称,正文`r`n邮箱,谢谢", path, encoding)
+            eq("read " encoding, DelimitedText.ReadFile(path), "名称,正文`r`n邮箱,谢谢")
+        }
+        try FileDelete(path)
+        FileAppend("名称,正文", path, "CP936")                              ; GBK (中文 Excel 默认保存的 CSV): 按系统编码读 (CI 不是中文系统, 只比较两种读法一样)
+        eq("read system code page", DelimitedText.ReadFile(path), FileRead(path, "CP0"))
+        try FileDelete(path)
+    }
+
+    ; 文字片段的导入 / 导出: 合并规则、表头、自动展开
+    static SnippetImport() {
+        eq := (n, a, e) => TestRunner.Equal("SnippetImport." n, a, e)
+        snippets := [Map("Name", "Mail", "Keyword", "em", "Text", "old", "AutoExpand", 1)
+            , Map("Name", "Address", "Keyword", "", "Text", "old address", "AutoExpand", 1)]
+        rows := [["名称", "关键字", "正文", "自动展开"]
+            , ["Mail (work)", "EM", "new@b.com", ""]                       ; 关键字相同 (不分大小写): 更新
+            , ["Address", "", "new address"]                               ; 没有关键字, 名称相同: 更新
+            , ["", "sig", "Best regards`nCaomao", "0"]                     ; 没有名称: 用关键字; 0 = 不自动展开
+            , ["", "", "  Line one  `nLine two"]                           ; 没有名称和关键字: 用正文第一行
+            , ["Spaced", "two words", "x"]                                 ; 关键字有空格 (自动展开用不了): 自动展开关掉
+            , ["Empty", "e", "   "]]                                       ; 没有正文: 跳过
+        result := SnippetProvider.ImportRows(rows, snippets, ";")
+        eq("counts", result.Added "/" result.Updated "/" result.Skipped, "3/2/1")
+        eq("updated by keyword", snippets[1]["Name"] "|" snippets[1]["Text"] "|" snippets[1]["Keyword"], "Mail (work)|new@b.com|EM")
+        eq("updated by name", snippets[2]["Text"], "new address")
+        eq("name from keyword", snippets[3]["Name"] "|" snippets[3]["AutoExpand"], "sig|0")
+        eq("name from text", snippets[4]["Name"], "Line one")
+        eq("keyword with a space", snippets[5]["AutoExpand"], 0)
+        eq("total", snippets.Length, 5)
+        eq("header only on the first row", SnippetProvider.ImportRows([["Mail", "m", "x"], ["Name", "k", "Text"]], [], ";").Added, 2)
+        eq("header english", SnippetProvider.IsHeaderRow(["Name", "Keyword", "Text"]), true)
+        eq("header japanese", SnippetProvider.IsHeaderRow(["名前", "キーワード", "本文", "自動"]), true)
+        eq("not header", SnippetProvider.IsHeaderRow(["Mail", "em", "a@b.com"]), false)
+        exported := SnippetProvider.ExportRows(snippets)
+        eq("export header", SnippetProvider.IsHeaderRow(exported[1]), true)
+        eq("export rows", exported.Length, 6)
+        eq("export auto expand", exported[4][4], 0)
+        again := []                                                         ; 导出再导入: 内容不变
+        SnippetProvider.ImportRows(DelimitedText.Parse(DelimitedText.ToCsv(exported)), again, ";")
+        same := again.Length = snippets.Length
+        for index, snippet in snippets
+            for key in ["Name", "Keyword", "Text", "AutoExpand"]
+                same := same && again[index][key] == snippet[key]
+        eq("round trip", same, true)
+    }
+
     static SnippetEditor() {
         eq := (n, a, e) => TestRunner.Equal("SnippetEditor." n, a, e)
         ok := (n, c) => TestRunner.True("SnippetEditor." n, c)
