@@ -220,6 +220,7 @@ class I18n {
         s["Calc.RebarArea"]            := "As = {1} mm²: {2}"
         s["Web.SearchFor"]             := "Search {1} for '{2}'"
         s["Web.SearchEmpty"]           := "Search {1} for '...'"
+        s["Web.Field.Keyword"]         := "Type it before the search words, e.g. g hello. Several keywords: separate with commas, e.g. g, ㅎ (handy when you switch keyboard layouts)."
         s["Web.Field.Url"]             := "{query} is replaced by the text typed after the keyword. With {query|8000}, 8000 is used when nothing is typed."
         s["Web.Field.Icon"]            := "Optional: an .ico, .png or .exe file (a relative path starts from the Data folder). Download Site Icon visits the website in the URL once and saves its icon in Data\Icons. Empty = the built-in icon, or the browser icon."
         s["Web.IconDownload"]          := "Download Site Icon"
@@ -333,7 +334,7 @@ class I18n {
         s["Cmd.Field.Type"]            := "File: open a file or run a program. Folder: open in the file manager. Command line: a program plus arguments. Web address / link: a web page, or a link such as ms-settings:windowsupdate or mailto:."
         s["Cmd.Field.Target"]           := "Path, program or web address. Variables work, e.g. A_Desktop\Projects or %OneDrive%\Documents. File and folder names are searched too."
         s["Cmd.Field.Arguments"]       := "Passed to the program, e.g. /k ipconfig /all. Usually empty for files, folders and web addresses. {query} in the target or arguments is replaced by the text typed after the keyword."
-        s["Cmd.Field.Keyword"]          := "Optional. Typing exactly this word puts the command first, e.g. np for Notepad."
+        s["Cmd.Field.Keyword"]          := "Optional. Typing exactly this word puts the command first, e.g. np for Notepad. Several keywords: separate with commas, e.g. np, ㅜㅔ."
         s["Index.Done"]                := "Index rebuilt: {1} applications."
 
         ; --- System commands ---
@@ -810,7 +811,7 @@ class I18n {
         s["Prefs.WinTitleHint"]         := "e.g. ahk_exe notepad.exe. ALTRun = only in the ALTRun search window."
         s["Prefs.Col.AutoExpand"]      := "Expand automatically when typed"
         s["Snippet.Hint.Name"]         := "Shown in search results and used for searching. Use words you would type to find it, e.g. PT quotation."
-        s["Snippet.Hint.Keyword"]      := "Optional short code, e.g. pq. An exact match ranks first; to auto-expand, type {1}pq in any app. Max {2} characters, no spaces."
+        s["Snippet.Hint.Keyword"]      := "Optional short code, e.g. pq. An exact match ranks first; to auto-expand, type {1}pq in any app. Several codes: separate with commas. Max {2} characters each, no spaces."
         s["Snippet.Hint.Text"]         := "Enter pastes it into the window you were in. Words in the text are searchable too (3+ characters). Placeholders, filled in when pasting:"
         s["Snippet.Hint.AutoExpand"]   := "Type {1} + keyword in any app and it is replaced by the text right away. Turn off to paste it only from the search window."
         s["Snippet.ImportExport"]       := "Import/Export"

@@ -135,7 +135,7 @@ class HelpProvider {
             case "Selection":   return [Win.HotkeyLabel(AppSettings.General["SelectionHotkey"])]
             case "WebSearch":
                 engines := AppSettings.Feature("WebSearch")["Engines"]
-                return [engines.Length ? engines[1]["Keyword"] : "g"]
+                return [(engines.Length && WebSearchProvider.FirstKeyword(engines[1]) != "") ? WebSearchProvider.FirstKeyword(engines[1]) : "g"]
         }
         return []
     }

@@ -54,7 +54,7 @@ The line at the bottom of the search window (like Listary and Raycast), shown wh
 | `snip` / `snip xxx` | Snippets only |
 | `;keyword` (in any program) | Snippet expansion, see [Custom commands and snippets](en-Commands-and-Snippets) |
 
-When a keyword is followed by a space (for example `clip `, `g xxx`, `'xxx`, `>xxx`), only that feature's results are shown. When nothing matches, fallback items are shown: search Google, search files, search Bing (change them in `Features.WebSearch.Fallbacks`).
+When a keyword is followed by a space (for example `clip `, `g xxx`, `'xxx`, `>xxx`), only that feature's results are shown. Web searches, custom commands and snippets can have several keywords separated by commas (for example `g, ㅎ`); any of them works, which helps when you switch keyboard layouts. When nothing matches, fallback items are shown: search Google, search files, search Bing (change them in `Features.WebSearch.Fallbacks`).
 
 ![Web search: g autohotkey v2 hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch.png)
 

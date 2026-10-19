@@ -36,7 +36,7 @@ Each field in the edit dialog has a line of gray help text below it.
 | Type | `File` file / program, `Folder` folder, `Command` program + arguments, `Url` web address / link (a web page, or a link such as `ms-settings:windowsupdate` or `mailto:`) |
 | Target | Path, program or web address |
 | Arguments | Command-line arguments passed to the program, for example `/k ipconfig /all` |
-| Keyword | Optional. Typing exactly this keyword puts the command first |
+| Keyword | Optional. Typing exactly this keyword puts the command first. Several keywords: separate with commas, for example `np, ㅜㅔ` (handy when you switch keyboard layouts: any of them works) |
 
 Besides the title and keyword, `File` / `Folder` commands also match the target's file name (without the extension) or folder name: with the Target `Q:\Projects\PT1931 - 24 NIR` and the title `CKR, EA, JIB`, typing `nir` or `1931` finds it too. At the same match quality, a title match ranks first.
 
@@ -77,7 +77,7 @@ Save text you use often (signatures, addresses, templates...) as snippets. Searc
 | Field | Description |
 |---|---|
 | Name | Required. Shown in search results and used for searching. Use words you would type to find it, for example `PT quotation` |
-| Keyword | Optional and short, for example `pq`. An exact match ranks first; to auto-expand, type `;pq`. The prefix plus the keyword can be at most 40 characters (39 for the keyword with the default prefix `;`), without spaces; you're told before saving if it's too long |
+| Keyword | Optional and short, for example `pq`. An exact match ranks first; to auto-expand, type `;pq`. The prefix plus the keyword can be at most 40 characters (39 for the keyword with the default prefix `;`), without spaces; you're told before saving if it's too long. Several keywords: separate with commas (for example `sig, signature`); each one searches and expands |
 | Text | Required. What gets pasted; can be several lines and use the placeholders below. Words in the text are searchable too (type at least 3 characters; turn it off in Preferences if you don't want this) |
 | AutoExpand | Type `;keyword` in any program and it's replaced by the text right away |
 

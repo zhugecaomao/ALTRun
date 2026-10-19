@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -834,11 +834,14 @@ class Tests {
 
     static SnippetExpander() {
         eq := (n, a, e) => TestRunner.Equal("SnippetExpander." n, a, e)
-        eq("prefix", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x"), ";"), ";sig")
-        eq("no keyword", SnippetExpander.Abbreviation(Map("Keyword", "", "Text", "x"), ";"), "")
-        eq("disabled", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x", "AutoExpand", 0), ";"), "")
-        eq("space", SnippetExpander.Abbreviation(Map("Keyword", "a b", "Text", "x"), ";"), "")
-        eq("no prefix", SnippetExpander.Abbreviation(Map("Keyword", "sig", "Text", "x"), ""), "sig")
+        abbr := (snippet, prefix) => Tests._Join(SnippetExpander.Abbreviations(snippet, prefix))
+        eq("prefix", abbr(Map("Keyword", "sig", "Text", "x"), ";"), ";sig")
+        eq("no keyword", abbr(Map("Keyword", "", "Text", "x"), ";"), "")
+        eq("disabled", abbr(Map("Keyword", "sig", "Text", "x", "AutoExpand", 0), ";"), "")
+        eq("space", abbr(Map("Keyword", "a b", "Text", "x"), ";"), "")
+        eq("no prefix", abbr(Map("Keyword", "sig", "Text", "x"), ""), "sig")
+        eq("several keywords", abbr(Map("Keyword", " sig, ㄴ ,，sg ", "Text", "x"), ";"), ";sig,;ㄴ,;sg")
+        eq("several: bad one skipped", abbr(Map("Keyword", "a b, ab", "Text", "x"), ";"), ";ab")
         options := AppSettings.Feature("Snippets"), saved := options["ExpandExclude"]
         options["ExpandExclude"] := " ahk_exe mstsc.exe ,, ahk_class KeePass "
         SnippetExpander.Refresh()
@@ -1787,6 +1790,50 @@ class Tests {
         SplitPath(dir, , , , , &drive)
         eq("root remembered", roots.Has(drive) && roots[drive], true)
         try DirDelete(dir, true)
+    }
+
+    ; 关键字一栏写几个 (逗号分隔): 网页搜索、自定义命令、片段输入哪个都行, 提示和补全用输入的那个 (没有时用第一个)
+    static MultipleKeywords() {
+        eq := (n, a, e) => TestRunner.Equal("MultipleKeywords." n, a, e)
+        eq("split", Tests._Join(SearchQuery.Keywords(" g , ㅎ,,google，구글 ")), "g,ㅎ,google,구글")
+        eq("empty", SearchQuery.Keywords("").Length "|" SearchQuery.Keywords(" , ").Length, "0|0")
+        eq("matched keyword", SearchQuery("ㅎ hello").MatchKeyword(["g", "ㅎ"], &term, &matched) ? matched "|" term : "no", "ㅎ|hello")
+
+        options := AppSettings.Feature("WebSearch"), savedEngines := options["Engines"]
+        options["Engines"] := [Map("Id", "multi", "Keyword", "gg, ㅎㅎ", "Title", "Multi", "Url", "https://x.test/?q={query}")]
+        items := WebSearchProvider.Search(SearchQuery("ㅎㅎ hello"))
+        eq("web: second keyword", items.Length "|" items[1].Arg "|" items[1].AutoComplete, "1|https://x.test/?q=hello|ㅎㅎ hello")
+        items := WebSearchProvider.Search(SearchQuery("GG"))
+        eq("web: first keyword, any case", items.Length "|" items[1].Valid, "1|0")
+        eq("web: waiting hint", items[1].Subtitle, I18n.T("Search.TypeAfter", "gg"))
+        eq("web: whole text is not a keyword", WebSearchProvider.Search(SearchQuery("gg, x")).Length, 0)
+        eq("web: fallback uses first", WebSearchProvider.ItemFor(options["Engines"][1], "a").AutoComplete, "gg a")
+        eq("web: help example", HelpProvider._Args("WebSearch")[1], "gg")
+        options["Engines"] := savedEngines
+
+        saved := AppSettings.Data["CustomCommands"]
+        AppSettings.Data["CustomCommands"] := [
+            Map("Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np, ㅜㅔ"),
+            Map("Title", "Jira", "Type", "Url", "Target", "https://jira.test/{query}", "Arguments", "", "Keyword", "jira, ㅓㅑㄱㅁ")]
+        CustomCommandProvider._ResetNarrowing()
+        top(text) {
+            items := ProviderRegistry.SortByScore(CustomCommandProvider.Search(SearchQuery(text)))
+            return items.Length ? items[1].Title "|" items[1].Score : ""
+        }
+        eq("command: first keyword", top("np"), "Notepad|115")
+        eq("command: second keyword", top("ㅜㅔ"), "Notepad|115")
+        items := CustomCommandProvider.Search(SearchQuery("ㅓㅑㄱㅁ ABC-1"))
+        eq("command: query after second keyword", items.Length "|" items[1].Arg "|" items[1].AutoComplete, "1|https://jira.test/ABC-1|ㅓㅑㄱㅁ ABC-1")
+        item := CustomCommandProvider._ToItem(AppSettings.Data["CustomCommands"][2], 50)
+        eq("command: hint uses first", item.AutoComplete "|" (InStr(item.Subtitle, I18n.T("Search.TypeAfter", "jira")) = 1), "jira |1")
+        AppSettings.Data["CustomCommands"] := saved
+        CustomCommandProvider._ResetNarrowing()
+
+        savedSnippets := AppSettings.Data["Snippets"]
+        AppSettings.Data["Snippets"] := [Map("Name", "Signature", "Keyword", "sig, ㄴㅑㅎ", "Text", "Best regards", "AutoExpand", 1)]
+        found := (text) => SnippetProvider.Search(SearchQuery(text)).Length
+        eq("snippet: each keyword", found("sig") "|" found("ㄴㅑㅎ") "|" found("signature"), "1|1|1")
+        AppSettings.Data["Snippets"] := savedSnippets
     }
 
     static CommandTargets() {
@@ -5065,8 +5112,10 @@ Func | PTTools | PT Tools (AHK)=99
         eq("39 + prefix ok", SnippetProvider.CheckKeyword(StrRepeat("a", 39), Map("AutoExpand", 1), ";"), "")
         ok("space", SnippetProvider.CheckKeyword("a b", Map("AutoExpand", 1), ";") != "")
         eq("no auto-expand", SnippetProvider.CheckKeyword(longKeyword, Map("AutoExpand", 0), ";"), "")
-        eq("too long not registered", SnippetExpander.Abbreviation(Map("Keyword", longKeyword, "Text", "x"), ";"), "")
-        eq("longest registered", SnippetExpander.Abbreviation(Map("Keyword", StrRepeat("a", 39), "Text", "x"), ";"), ";" StrRepeat("a", 39))
+        eq("too long not registered", SnippetExpander.Abbreviations(Map("Keyword", longKeyword, "Text", "x"), ";").Length, 0)
+        eq("longest registered", Tests._Join(SnippetExpander.Abbreviations(Map("Keyword", StrRepeat("a", 39), "Text", "x"), ";")), ";" StrRepeat("a", 39))
+        eq("several keywords ok", SnippetProvider.CheckKeyword("sig, ㄴ", Map("AutoExpand", 1), ";"), "")
+        ok("several: one too long", SnippetProvider.CheckKeyword("sig, " longKeyword, Map("AutoExpand", 1), ";") != "")
         store := ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"})
         list := ""
         for action in ActionCatalog.ListFor(store)

@@ -3,7 +3,7 @@
 ;-------------------------------------------------------------------------------
 ; ALTRun.json -> Features.WebSearch.Engines, 每个引擎:
 ;   { "Id": "google", "Keyword": "g", "Title": "Google", "Url": "https://...?q={query}", "Icon": "" }
-; 输入 "g 关键词" 用对应引擎搜索; 只输入关键字 "g" 时提示补全。
+; 输入 "g 关键词" 用对应引擎搜索; 只输入关键字 "g" 时提示补全。Keyword 可以写几个, 用逗号分隔 ("g, ㅎ")。
 ; Url 里写 {query|默认值} 时, 只输入关键字也能直接打开: 用默认值, 例如 "http://localhost:{query|8000}"。
 ; Icon: 结果的图标, 可以是 .ico / .png / .exe 等文件 (相对路径从 Data 文件夹算起), 或 IconCache 的写法
 ; (res:、ext: 等); 不写时自带的引擎 (按 Id) 用 Resources\Icons\Web 里的图标, 其它用默认浏览器的图标。
@@ -26,10 +26,10 @@ class WebSearchProvider {
     static Search(query) {
         results := []
         for engine in WebSearchProvider.Engines() {
-            if !(engine is Map) || !engine.Has("Keyword") || engine["Keyword"] = ""
+            if !(engine is Map) || !engine.Has("Keyword") || !(keywords := SearchQuery.Keywords(engine["Keyword"])).Length
                 continue
-            if query.MatchKeyword([engine["Keyword"]], &term) {
-                item := WebSearchProvider.ItemFor(engine, term)
+            if query.MatchKeyword(keywords, &term, &keyword) {
+                item := WebSearchProvider.ItemFor(engine, term, keyword)
                 item.Score := 150
                 item.Exclusive := query.HasRest
                 results.Push(item)
@@ -42,13 +42,16 @@ class WebSearchProvider {
         return results
     }
 
-    static ItemFor(engine, term) {
+    ; keyword: 输入的那个关键字 (补全时保留); 没有时用第一个
+    static ItemFor(engine, term, keyword := "") {
         icon := WebSearchProvider.IconFor(engine)
-        autoComplete := engine["Keyword"] " " term
+        if (keyword = "")
+            keyword := WebSearchProvider.FirstKeyword(engine)
+        autoComplete := keyword " " term
         if (term = "")
             term := WebSearchProvider.DefaultTerm(engine["Url"])
         if (term = "") {
-            return ResultItem(I18n.T("Web.SearchEmpty", engine["Title"]), I18n.T("Search.TypeAfter", engine["Keyword"]), {
+            return ResultItem(I18n.T("Web.SearchEmpty", engine["Title"]), I18n.T("Search.TypeAfter", keyword), {
                 Kind: "url", Icon: icon, Valid: false, AutoComplete: autoComplete, Source: engine
             })
         }
@@ -56,6 +59,11 @@ class WebSearchProvider {
         return ResultItem(I18n.T("Web.SearchFor", engine["Title"], term), target, {
             Kind: "url", Arg: target, Icon: icon, AutoComplete: autoComplete, Source: engine
         })
+    }
+
+    static FirstKeyword(engine) {
+        keywords := SearchQuery.Keywords((engine is Map && engine.Has("Keyword")) ? engine["Keyword"] : "")
+        return keywords.Length ? keywords[1] : ""
     }
 
     ; 网址里的 {query} / {query|默认值} 换成搜索词 (编码); 搜索词是空的时用默认值
@@ -246,7 +254,7 @@ class WebSearchProvider {
 
     static EditorFields() {
         return [ItemEditor.Field("Title", "Prefs.Col.Title", "text", true)
-              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", true)
+              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", true, "", I18n.T("Web.Field.Keyword"))
               , ItemEditor.Field("Url", "Prefs.Col.Url", "text", true, "", I18n.T("Web.Field.Url"))
               , ItemEditor.Field("Id", "Prefs.Col.Id", "text", true)
               , WebSearchProvider._IconField()]

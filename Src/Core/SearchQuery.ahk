@@ -8,6 +8,7 @@
 ; 用法:
 ;   q := SearchQuery("g hello")
 ;   if q.MatchKeyword(["g", "google"], &term)   ; term = "hello"
+;   SearchQuery.Keywords("g, ㅎ, google")        ["g", "ㅎ", "google"] (关键字一栏可以写几个, 用逗号分隔)
 ;===============================================================================
 
 class SearchQuery {
@@ -21,16 +22,31 @@ class SearchQuery {
         this.HasRest := spacePos > 0
     }
 
-    ; 第一个词是 keywords 之一 (不区分大小写) 时返回 true, 并把后面的文字放进 term
-    MatchKeyword(keywords, &term) {
-        term := ""
+    ; 第一个词是 keywords 之一 (不区分大小写) 时返回 true, 并把后面的文字放进 term, 对上的关键字放进 matched
+    MatchKeyword(keywords, &term, &matched := "") {
+        term := "", matched := ""
         for keyword in keywords {
             if (keyword != "" && this.Keyword = keyword) {
-                term := this.Rest
+                term := this.Rest, matched := keyword
                 return true
             }
         }
         return false
+    }
+
+    ; 网页搜索、自定义命令、片段的关键字一栏可以写几个, 用逗号 (半角或全角) 分隔, 例如 "g, ㅎ, google"
+    ; (中英文 / 韩文键盘切换时都能用)。拆开、去掉空白, 空的不要。结果按原文缓存 (每次输入都要用), 不要修改
+    static Keywords(text) {
+        static cache := Map()
+        text := text ""
+        if !cache.Has(text) {
+            keywords := []
+            for keyword in StrSplit(StrReplace(text, "，", ","), ",")
+                if ((keyword := Trim(keyword)) != "")
+                    keywords.Push(keyword)
+            cache[text] := keywords
+        }
+        return cache[text]
     }
 
     ; 以 prefix 开头 (前缀后面不需要空格, 例如 ">dir" 或 "'report") 时返回 true

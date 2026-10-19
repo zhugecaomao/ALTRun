@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.19.9]
+
+测试版。
+
+Test build.
+
+### 新增
+- 网页搜索、自定义命令和文字片段的关键字一栏可以写几个, 用逗号分隔, 例如 `g, ㅎ, google`, 输入哪个都行: 经常在英文和韩文 / 中文等键盘布局之间切换时, 不用先切回英文。片段的每个关键字都能自动展开; 只输入关键字时的提示和补全用输入的那个 (其它地方用第一个)。设置文件的结构不变。AutoHotkey 论坛用户的建议
+
 ## [2026.10.19.8]
 
 测试版。
@@ -843,7 +852,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.9...HEAD
+[2026.10.19.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.8...2026.10.19.9
 [2026.10.19.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.7...2026.10.19.8
 [2026.10.19.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.6...2026.10.19.7
 [2026.10.19.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.5...2026.10.19.6

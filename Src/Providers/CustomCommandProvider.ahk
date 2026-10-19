@@ -5,7 +5,7 @@
 ;   { "Title": "显示名称", "Type": "File|Folder|Command|Url",
 ;     "Target": "路径 / 程序 / 网址", "Arguments": "命令行参数", "Keyword": "可选关键字" }
 ; Target 可以用 A_Desktop / A_ScriptDir 等内置变量开头, 或 %AppData% 等环境变量。
-; Keyword 完全相同时排在最前面。
+; Keyword 完全相同时排在最前面; 可以写几个, 用逗号分隔 ("np, ㅜㅔ"), 输入哪个都行。
 ; Target / Arguments 里可以写 {query}: 输入 "关键字 文字" 时换成后面的文字 (网址里自动编码), 例如
 ;   { "Title": "Jira", "Type": "Url", "Target": "https://jira.example.com/browse/{query}", "Keyword": "jira" }
 ;   输入 "jira ABC-123" 打开 .../browse/ABC-123; 搜到这条命令但还没输入文字时, Enter 补全成 "jira "
@@ -46,8 +46,9 @@ class CustomCommandProvider {
             if !(command is Map) || !command.Has("Title") || !command.Has("Target")
                 continue
             keyword := command.Has("Keyword") ? command["Keyword"] : ""
-            if (keyword != "" && query.HasRest && query.Keyword = keyword && CustomCommandProvider.TakesQuery(command)) {
-                item := CustomCommandProvider._ToItem(command, 150, query.Rest)  ; "jira ABC-123": 只显示带参数的命令
+            exact := (keyword != "") && query.MatchKeyword(SearchQuery.Keywords(keyword), &rest, &typed)
+            if (exact && query.HasRest && CustomCommandProvider.TakesQuery(command)) {
+                item := CustomCommandProvider._ToItem(command, 150, rest, typed)  ; "jira ABC-123": 只显示带参数的命令
                 item.Exclusive := true
                 withQuery.Push(item)
                 continue
@@ -57,7 +58,7 @@ class CustomCommandProvider {
             targetScore := FuzzyMatcher.BestKey(needle, CustomCommandProvider._TargetKeysFor(commandType, command["Target"]))
             if (targetScore > 0)
                 score := Max(score, targetScore - 5)                        ; 名称优先
-            if (keyword != "" && query.Keyword = keyword)
+            if exact
                 score := Max(score, 100)
             if (score <= 0)
                 continue
@@ -119,13 +120,16 @@ class CustomCommandProvider {
         return "custom:" StrLower(commandType "|" command["Target"] "|" arguments)
     }
 
-    ; 名称 / 关键字 / 拼音首字母的搜索 Key, 按 "名称|关键字" 缓存 (修改命令后自然换成新的键)
+    ; 名称 / 每个关键字 / 拼音首字母的搜索 Key, 按 "名称|关键字" 缓存 (修改命令后自然换成新的键)
     static _KeysFor(title, keyword) {
         static cache := Map()
         cacheKey := title "|" keyword
         if !cache.Has(cacheKey) {
             pinyinText := Pinyin.Initials(title)
-            cache[cacheKey] := [FuzzyMatcher.Key(title), (keyword != "") ? FuzzyMatcher.Key(keyword) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]
+            keys := [FuzzyMatcher.Key(title), (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]
+            for each in SearchQuery.Keywords(keyword)
+                keys.Push(FuzzyMatcher.Key(each))
+            cache[cacheKey] := keys
         }
         return cache[cacheKey]
     }
@@ -156,11 +160,15 @@ class CustomCommandProvider {
     }
 
     ; term: 输入的参数, 换掉 {query} (网址里编码); 带 {query} 的命令还没有参数时: 有关键字就 Enter 补全 "关键字 ", 没有就换成空
-    static _ToItem(command, score, term := "") {
+    ; keyword: 输入的那个关键字 (有几个关键字时补全保留输入的), 没有时用第一个
+    static _ToItem(command, score, term := "", keyword := "") {
         target := command["Target"]
         arguments := command.Has("Arguments") ? command["Arguments"] : ""
         commandType := command.Has("Type") ? command["Type"] : "File"
-        keyword := command.Has("Keyword") ? command["Keyword"] : ""
+        if (keyword = "") {
+            keywords := SearchQuery.Keywords(command.Has("Keyword") ? command["Keyword"] : "")
+            keyword := keywords.Length ? keywords[1] : ""
+        }
         title := command["Title"], extra := {}
         if CustomCommandProvider.TakesQuery(command) {
             if (term = "" && keyword != "")
