@@ -181,13 +181,19 @@ class Shots {
     }
     static AppsDir := ""
 
+    ; 当前的设置版本 (AppSettings.CurrentVersion)。写旧版本号的话 ALTRun 启动时会升级设置, 升级提示显示期间不弹出搜索窗口,
+    ; 每个场景都找不到窗口 (设置版本升到 5 以后就是这样)
+    static SchemaVersion() {
+        return RegExMatch(FileRead(Shots.RepoDir "\Src\Core\AppSettings.ahk", "UTF-8"), "static CurrentVersion\s*:=\s*(\d+)", &m) ? Integer(m[1]) : 5
+    }
+
     ; theme: 主题名, 后面加 "+Compact" 表示勾选 "紧凑"
     static WriteSettings(theme) {
         demo := Shots.DemoDir
         compact := (SubStr(theme, -8) = "+Compact") ? 1 : 0
         theme := compact ? SubStr(theme, 1, -8) : theme
         settings := Map(
-            "SchemaVersion", 4,
+            "SchemaVersion", Shots.SchemaVersion(),
             "General", Map("Language", "en", "LaunchAtLogin", 0, "HideOnDeactivate", 0, "SendToMenu", 0,
                            "StartMenuShortcut", 0, "CheckForUpdates", 0, "Hotkey", "!Space", "ShowTips", 0),
             "Appearance", Map("Theme", theme, "Compact", compact, "Width", 700, "VisibleRows", 8),
