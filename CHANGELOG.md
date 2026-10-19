@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.19.8]
+
+测试版。
+
+Test build.
+
+### 修复
+- 打开了 "呼出窗口时保留上一次的搜索" 时, 如果上次搜的是文件, 呼出窗口可能卡 1 秒 (要等 Everything 回复, Everything 忙时等到超时)。现在先显示不用等的结果 (应用、命令、片段等), 窗口马上出来, 显示后再完整搜索并选中上次的那一行
+- Everything 没在限时内回复时写进调试日志 (等了多久、期间有没有别的消息进来), 再遇到卡顿时能看出原因
+
 ## [2026.10.19.7]
 
 测试版。
@@ -833,7 +843,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.8...HEAD
+[2026.10.19.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.7...2026.10.19.8
 [2026.10.19.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.6...2026.10.19.7
 [2026.10.19.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.5...2026.10.19.6
 [2026.10.19.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.4...2026.10.19.5

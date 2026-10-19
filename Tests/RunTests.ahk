@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -3423,6 +3423,56 @@ class Tests {
             SearchWindow.Mode := saved[1], SearchWindow.FileMode := saved[2], SearchWindow._prepared := saved[3]
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
+    ; 呼出时恢复上次的搜索: 先不搜文件 (马上显示窗口), 显示后再完整搜一次并选中上次的那一行; 已经开始打字就不用了
+    static RestoreQuick() {
+        eq := (n, a, e) => TestRunner.Equal("RestoreQuick." n, a, e)
+        saved := Map()
+        for name in ["SetResults", "MoveSelection"]
+            saved[name] := SearchWindow.GetOwnPropDesc(name)
+        savedRegistry := ProviderRegistry.GetOwnPropDesc("Search")
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedTimer := SearchWindow._searchTimer
+        savedState := [SearchWindow.Mode, SearchWindow.FileMode, SearchWindow.Results, SearchWindow.Selected]
+        calls := []
+        ProviderRegistry.DefineProp("Search", {Call: (this, text, skip := "") => (calls.Push((skip = FileSearchProvider ? "quick " : "full ") text)
+            , [ResultItem("A", "a"), ResultItem("B", "b"), ResultItem("C", "c")])})
+        SearchWindow.DefineProp("SetResults", {Call: (this, results) => (SearchWindow.Results := results, SearchWindow.Selected := results.Length ? 1 : 0)})
+        SearchWindow.DefineProp("MoveSelection", {Call: (this, delta) => SearchWindow.Selected += delta})
+        searches := {Count: 0}
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        try {
+            SearchWindow.Mode := "results", SearchWindow.FileMode := false
+            SearchWindow._ShowQuickResults("rep")
+            eq("quick search, no files", calls.Length = 1 && calls[1] = "quick rep", true)
+            eq("text restored", SearchWindow.Input.Value, "rep")
+            SearchWindow._searchTimer := () => searches.Count++
+            SearchWindow._OnInputChange()                                   ; 自己填的文字引起的 Change: 不另外搜
+            Sleep(30)
+            eq("own text change ignored", searches.Count, 0)
+            g.Show("NoActivate")
+            gen := SearchWindow._searchGen
+            SearchWindow._FinishRestore(gen, {Text: "rep", Selected: 3})
+            eq("full search after showing", calls.Length = 2 && calls[2] = "full rep", true)
+            eq("last row selected", SearchWindow.Selected, 3)
+            eq("quiet text cleared", SearchWindow._quietText, "")
+            SearchWindow._ShowQuickResults("rep")
+            gen := SearchWindow._searchGen
+            SearchWindow._quietText := "", SearchWindow.Input.Value := "repo"   ; 显示后马上打了字
+            SearchWindow._FinishRestore(gen, {Text: "rep", Selected: 3})
+            eq("typed: no full search for the old text", calls.Length, 3)
+            SearchWindow.FileMode := true
+            SearchWindow._ShowQuickResults("plan")
+            eq("file mode: nothing until the full search", SearchWindow.Results.Length "|" calls.Length, "0|3")
+        } finally {
+            for name, desc in saved
+                SearchWindow.DefineProp(name, desc)
+            ProviderRegistry.DefineProp("Search", savedRegistry)
+            SearchWindow.Mode := savedState[1], SearchWindow.FileMode := savedState[2], SearchWindow.Results := savedState[3], SearchWindow.Selected := savedState[4]
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow._searchTimer := savedTimer, SearchWindow._quietText := ""
             g.Destroy()
         }
     }

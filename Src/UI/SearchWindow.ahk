@@ -592,9 +592,10 @@ class SearchWindow {
         SearchWindow.HistoryIndex := 0
         SearchWindow._Step("results")
         if (!reuse && !prepared) {
-            SearchWindow._SetInput(restore ? last.Text : text)
-            if restore
-                SearchWindow.MoveSelection(last.Selected - SearchWindow.Selected)
+            if restore                                                      ; 恢复上次的搜索: 先显示不用等的结果, 显示后再完整搜索 (_FinishRestore)
+                SearchWindow._ShowQuickResults(last.Text)
+            else
+                SearchWindow._SetInput(text)
         }
 
         SearchWindow._Step("position")
@@ -648,6 +649,10 @@ class SearchWindow {
         if prepared {
             gen := SearchWindow._searchGen
             SetTimer(() => SearchWindow._RefreshShown(gen), -1)
+        }
+        if (restore && !reuse) {
+            gen := SearchWindow._searchGen
+            SetTimer(() => SearchWindow._FinishRestore(gen, last), -1)
         }
         Logger.Time(prepared ? "show (prepared)" : "show", started)
     }
@@ -797,6 +802,32 @@ class SearchWindow {
         Logger.Time("prepare empty box", started)
     }
 
+    ; 恢复上次的搜索 (呼出时保留上一次的搜索, 但输入框和结果已经不是隐藏时的样子): 文件搜索 (Everything) 一般要
+    ; 几十毫秒, Everything 很忙时要等到超时 (1 秒), 窗口一直出不来 (2026-10 日志: show 1089 ms)。所以先只用不用等的
+    ; 功能 (应用、命令、片段...) 的结果, 马上显示窗口, 显示后再完整搜一次 (_FinishRestore)
+    static _quietText := ""
+    static _ShowQuickResults(text) {
+        SearchWindow._quietText := text
+        SearchWindow.Input.Value := text
+        ++SearchWindow._searchGen
+        browse := FileSearchProvider.BrowsePath(text)
+        SearchWindow.HighlightText := IsObject(browse) ? browse.Filter : text
+        SearchWindow.SetResults(SearchWindow.FileMode ? [] : ProviderRegistry.Search(text, FileSearchProvider))
+    }
+
+    ; 显示后完整搜索, 选中上次选中的那一行; 已经开始打字 / 打开了操作面板时不用了
+    static _FinishRestore(gen, last) {
+        SearchWindow._quietText := ""
+        if (gen != SearchWindow._searchGen || !SearchWindow.IsVisible() || SearchWindow.Mode != "results"
+            || SearchWindow.Input.Value != last.Text)
+            return
+        if (SearchWindow._searchTimer != "")
+            SetTimer(SearchWindow._searchTimer, 0)
+        SearchWindow._RunSearch()
+        if (SearchWindow.Input.Value == last.Text)
+            SearchWindow.MoveSelection(last.Selected - SearchWindow.Selected)
+    }
+
     ; 准备好的空搜索框还没用过、没被改过
     static IsPrepared() {
         return SearchWindow._prepared && SearchWindow.Mode = "results" && !SearchWindow.FileMode && SearchWindow.Input.Value == ""
@@ -846,6 +877,8 @@ class SearchWindow {
     }
 
     static _OnInputChange() {
+        if (SearchWindow._quietText != "" && SearchWindow.Input.Value == SearchWindow._quietText)
+            return                                                          ; 恢复上次的搜索时自己填进去的文字: 显示后再搜 (_FinishRestore)
         text := SearchWindow.Input.Value
         if RegExMatch(text, "[`r`n`t]") {                                   ; 粘贴了多行文字: 合并成一行, 搜索框始终只有一行
             SearchWindow.Input.Value := RegExReplace(text, "\s*[`r`n`t]+\s*", " ")

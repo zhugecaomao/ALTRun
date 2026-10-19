@@ -243,6 +243,8 @@ class FileSearchProvider {
                 found.Push({Path: item.Path, IsFolder: item.IsFolder, Score: FileSearchProvider.NameScore(scoreNeedle, name)})
                 seen[StrLower(item.Path)] := true
             }
+            if (Everything.LastProblem != "")
+                Logger.Warn("FileSearch: Everything " Everything.LastProblem)
             ; 文件和文件夹一起搜时, 同名的文件很多 (例如 ppie 文件夹里有几百个 ppie_xxx.dwg) 的话, 按修改时间取的前 fetch 条
             ; 可能全是文件, 名称完全相同的文件夹反而排不进来: 另外单独取一次文件夹
             if (!IsObject(scope) && !scope && !RegExMatch(term, "i)(^|\s)(folder|file|files|ext):")) {   ; 已经写了 folder: / ext: 等就不另外取
