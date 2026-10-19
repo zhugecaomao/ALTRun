@@ -18,14 +18,7 @@ Drag the empty space around the input box to move the search window. To have it 
 To have the search window remember your last search (like "keep input" in 2.x): Preferences → Search Window → "Keep the last search when the window opens". With it on, the last input and results are still there when you open the window, with the text selected: press `Enter` to open it again, start typing for a new search, or press `Space` for a file search. To edit the last input (for example a calculation), press `→` or `End` to clear the selection and put the cursor at the end (that `→` doesn't open the action panel; press it again to open it).
 
 ## Pinned and recent items
-Before you type anything, the search window lists (pinned items have a pin at the bottom right of their icon):
-
-![Empty search box: pinned and recent items](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/empty.png)
-- **Pinned items**: on any result, press `→` to open the action panel and choose **Pin to Empty Search Box**. Pinned items are saved in `ALTRun.json` (`Features.Recent.Pinned`), so they travel with your settings to another PC
-- **Recently opened items**: not shown by default (0); set Preferences → Search Window → Empty search box → "Recent items to show" to, for example, 5 to list them
-- **Gray text in the search box**: "ALTRun Search" by default; change it in Preferences → Search Window → Empty search box → "Placeholder text" (leave blank for the default, or type a single space to show nothing)
-
-Only results you can open again are remembered: apps, files, folders, URLs, custom commands and system commands; clipboard history, calculations, snippets, web searches and windows are not. Select an item and press `Ctrl+Del` to unpin it or remove it from the recent items; Preferences → Advanced → "Reset Learned Ranking" clears the recent items. The whole feature can be turned off in Preferences → Features.
+See [Pinned and recent items](en-Recent).
 
 ## Usage tips
 Each time you open the search window, the status bar at the bottom shows another usage tip (for example "Tip: folder bk  search folders only"), in turn. Once you know them, turn off "Show a usage tip" (below "Show the status bar") in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
@@ -43,14 +36,14 @@ The line at the bottom of the search window (like Listary and Raycast), shown wh
 | `255 in hex` `0xff to dec` `10 in bin` / `0b1010` | Number bases (hex / bin / oct / dec); a number starting with `0x`, `0b` or `0o` on its own lists decimal, hexadecimal and binary |
 | `today + 30 days` `2026-12-25 - 2w` / `2026-12-25 - today` | Date arithmetic (units d w m y), with the day of the week; subtracting two dates gives the number of days between them |
 | `bm xxx` | Browser bookmarks only (typing a bookmark name without `bm` finds it too, ranked after apps and commands), see [Browser bookmarks](en-Bookmarks) |
-| `w xxx` / `w ` | Switch to an open window (by title or program name; `w ` alone lists them all); `→` can close the window. Windows whose title matches well also show up without `w` (at most 3) |
+| `w xxx` / `w ` | Switch to an open window (by title or program name; `w ` alone lists them all); `→` can close the window. Windows whose title matches well also show up without `w` (at most 3). See [Window switching](en-Window-Switching) |
 | `'report` / `open report` / `find report` | Files and folders only, see [File search](en-File-Search) |
 | `doc report` `pic logo` `cad plan` | One kind of file only (documents / pictures / CAD...); the kinds can be changed |
 | `folder bk` | Folders only |
 | `?` / `? file` | Cheat sheet: every search syntax and shortcut (filtered); `Enter` opens the matching wiki page |
-| `g xxx` `bing xxx` `bd xxx` `gh xxx` `wiki xxx` `yt xxx` `tb xxx` `jd xxx` `tr xxx` | Web search: Google / Bing / Baidu / GitHub / Wikipedia / YouTube / Taobao / JD.com / Google Translate |
-| `>command` | Runs it in a terminal, for example `>ipconfig /all` |
-| `clip` / `clip xxx` | Clipboard history: text, files and images (all / filtered) |
+| `g xxx` `bing xxx` `bd xxx` `gh xxx` `wiki xxx` `yt xxx` `tb xxx` `jd xxx` `tr xxx` | Web search: Google / Bing / Baidu / GitHub / Wikipedia / YouTube / Taobao / JD.com / Google Translate; you can add your own, see [Web search](en-Web-Search) |
+| `>command` | Runs it in a terminal, for example `>ipconfig /all`. See [System commands and terminal](en-System-Commands#terminal) |
+| `clip` / `clip xxx` | Clipboard history: text, files and images (all / filtered). See [Clipboard history](en-Clipboard) |
 | `snip` / `snip xxx` | Snippets only |
 | `;keyword` (in any program) | Snippet expansion, see [Custom commands and snippets](en-Commands-and-Snippets) |
 

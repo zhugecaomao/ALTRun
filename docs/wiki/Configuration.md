@@ -15,11 +15,13 @@
 | 偏好设置页面 | 文档 |
 |---|---|
 | 通用 / 高级 | [设置文件参考](Configuration) |
-| 搜索窗口 / 功能 / 网页搜索 / 使用统计 | [搜索与快捷键](Usage); 书签设置见 [浏览器书签](Bookmarks) |
+| 搜索窗口 / 功能 / 使用统计 | [搜索与快捷键](Usage); 功能页里的各项: [浏览器书签](Bookmarks)、[窗口切换](Window-Switching)、[置顶和最近使用](Recent)、[系统命令和终端](System-Commands) |
+| 网页搜索 | [网页搜索](Web-Search) |
 | 外观 | [主题](Themes) |
 | 应用 | [设置文件参考: 应用索引](Configuration#applications-应用) |
 | 文件搜索 / 搜索来源 | [文件搜索](File-Search) |
-| 自定义命令 / 文字片段 / 剪贴板 | [自定义命令与片段](Commands-and-Snippets) |
+| 自定义命令 / 文字片段 | [自定义命令与片段](Commands-and-Snippets) |
+| 剪贴板 | [剪贴板历史](Clipboard) |
 | 计算器 | [计算器](Calculator) |
 | 脚本扩展 | [脚本扩展](Scripts) |
 | 自定义热键 | [自定义热键](Hotkeys) |
@@ -153,7 +155,7 @@
 | RecentCount | 0 | 空搜索框里显示几个最近打开的项目, 0 = 不显示 (默认只显示置顶的项目) |
 | Pinned | `[]` | 置顶到空搜索框的项目 (在操作面板里置顶 / 取消, 不用手动改) |
 
-最近打开的项目记在 `Data\Knowledge.json` 里, 见 [置顶和最近使用](Usage#置顶和最近使用)。
+最近打开的项目记在 `Data\Knowledge.json` 里, 见 [置顶和最近使用](Recent)。
 
 ### Windows 切换窗口
 | 键 | 默认 | 说明 |

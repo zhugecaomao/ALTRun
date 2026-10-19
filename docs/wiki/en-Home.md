@@ -21,17 +21,22 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Getting started](en-Getting-Started) | First steps: open the window, launch programs, everyday features, your own commands |
 | [Installation and upgrades](en-Installation) | Download, Scoop / winget, start with Windows, one-key updates, upgrading from 2.x, uninstalling |
 | [Search and shortcuts](en-Usage) | Every search syntax, shortcuts, action panel, learned ranking, usage statistics |
-| [Custom commands and snippets](en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion, clipboard history |
+| [Custom commands and snippets](en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion |
+| [Clipboard history](en-Clipboard) | Text, image and file history, pasting, merging, excluded programs |
 | [File search](en-File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](en-Themes) | 22 built-in themes (or follow the Windows light / dark mode), density, custom themes, every available key |
 | [Browser bookmarks](en-Bookmarks) | Search, open and copy bookmark URLs |
+| [Web search](en-Web-Search) | Keywords such as `g` / `bd`, adding your own engines, fallback searches |
+| [Window switching](en-Window-Switching) | Find an open window and switch to it |
+| [Pinned and recent items](en-Recent) | Pinned and recently opened items shown when the search box is empty |
 | [Quick Switch](en-Quick-Switch) | Jump to a folder open in File Explorer or Total Commander |
 | [Dialog Folder Panel](en-Quick-Switch-Panel) | Search and pick folders in an Open / Save dialog |
 | [Date Stamp](en-Date-Stamp) | Add dates when renaming files or at the end of text |
 | [Calculator](en-Calculator) | Expressions, unit and currency conversion, structural calculations |
 | [Scripts](en-Scripts) | Turn your own scripts into commands in the search results |
+| [System commands and terminal](en-System-Commands) | Every system command (lock, shut down...); `>` runs a command |
 | [Custom hotkeys](en-Hotkeys) | Assign system commands to hotkeys, Caps Lock input switching, how to set hotkeys |
-| [Extensions](en-Extensions) | System commands, terminal, PT Tools, and links to the extension pages |
+| [Extensions](en-Extensions) | PT Tools, and links to the extension pages |
 | [Settings reference](en-Configuration) | Every ALTRun.json setting and its default value |
 | [Data files](en-Data-Files) | Where the data folder is, what each file is, backups and moving to another PC |
 | [Privacy and network access](en-Privacy) | When ALTRun goes online, where to, and what is stored on your PC |

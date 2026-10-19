@@ -24,8 +24,8 @@
 | `12*(3+4)` | 计算, `Enter` 复制结果 ([计算器](Calculator)) |
 | `10 km in mi` | 单位换算 |
 | `g 天气` | 用 Google 搜索 ([网页搜索](Usage#输入语法)) |
-| `clip` 或 `Ctrl+Alt+C` | 剪贴板历史 ([剪贴板历史](Commands-and-Snippets#剪贴板历史)) |
-| `lock` | 锁屏等系统命令 ([系统命令](Extensions#系统命令)) |
+| `clip` 或 `Ctrl+Alt+C` | 剪贴板历史 ([剪贴板历史](Clipboard)) |
+| `lock` | 锁屏等系统命令 ([系统命令](System-Commands#系统命令)) |
 | `>ipconfig` | 在终端里运行命令 |
 | `?` | 速查表: 所有输入语法和快捷键 |
 

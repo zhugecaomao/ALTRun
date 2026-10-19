@@ -24,8 +24,8 @@ ALTRun remembers what you pick, so the next time you type the same thing it come
 | `12*(3+4)` | Calculation; `Enter` copies the result ([Calculator](en-Calculator)) |
 | `10 km in mi` | Unit conversion |
 | `g weather` | Search Google ([web search](en-Usage#search-syntax)) |
-| `clip` or `Ctrl+Alt+C` | Clipboard history ([clipboard history](en-Commands-and-Snippets#clipboard-history)) |
-| `lock` | Lock the screen and other system commands ([system commands](en-Extensions#system-commands)) |
+| `clip` or `Ctrl+Alt+C` | Clipboard history ([clipboard history](en-Clipboard)) |
+| `lock` | Lock the screen and other system commands ([system commands](en-System-Commands#system-commands)) |
 | `>ipconfig` | Run a command in the terminal |
 | `?` | Cheat sheet: every search syntax and shortcut |
 

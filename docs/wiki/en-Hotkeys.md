@@ -2,7 +2,7 @@
 
 # Custom Hotkeys
 
-Preferences → Hotkeys: assign a [system command](en-Extensions#system-commands) to any hotkey, optionally only inside a certain window.
+Preferences → Hotkeys: assign a [system command](en-System-Commands#system-commands) to any hotkey, optionally only inside a certain window.
 
 | Field | Example | Description |
 |---|---|---|

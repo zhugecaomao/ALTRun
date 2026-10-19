@@ -21,17 +21,22 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [5 分钟上手](Getting-Started) | 第一次用: 呼出、打开程序、常用功能、加自己的命令 |
 | [安装与升级](Installation) | 下载、Scoop / winget、开机启动、一键更新、从 2.x 升级、卸载 |
 | [搜索与快捷键](Usage) | 所有输入语法、快捷键、操作面板、学习排序、使用统计 |
-| [自定义命令与片段](Commands-and-Snippets) | 命令类型、路径变量、片段占位符、自动展开、剪贴板历史 |
+| [自定义命令与片段](Commands-and-Snippets) | 命令类型、路径变量、片段占位符、自动展开 |
+| [剪贴板历史](Clipboard) | 文字、图片和文件的历史, 粘贴、合并、排除的程序 |
 | [文件搜索](File-Search) | Everything 联动、内置索引、排除规则 |
 | [主题](Themes) | 22 套内置主题 (也可以跟随系统浅色 / 深色)、显示密度、自定义主题、全部可用的键 |
 | [浏览器书签](Bookmarks) | 搜索、打开和复制书签 URL |
+| [网页搜索](Web-Search) | `g` / `bd` 等关键字、自己加搜索引擎、兜底搜索 |
+| [窗口切换](Window-Switching) | 搜索已经打开的窗口并切换过去 |
+| [置顶和最近使用](Recent) | 空搜索框显示的置顶项目和最近打开的项目 |
 | [对话框快速跳转](Quick-Switch) | 跳到资源管理器或 Total Commander 已打开的文件夹 |
 | [对话框文件夹面板](Quick-Switch-Panel) | 在打开 / 保存对话框附近搜索并选择文件夹 |
 | [一键加日期](Date-Stamp) | 重命名文件或在文本末尾添加日期 |
 | [计算器](Calculator) | 算式、单位和货币换算、附带的结构计算 |
 | [脚本扩展](Scripts) | 把自己的脚本变成搜索结果里的命令 |
+| [系统命令和终端](System-Commands) | 锁屏、关机等系统命令的完整列表; `>` 运行命令 |
 | [自定义热键](Hotkeys) | 给热键指定系统命令、CapsLock 切换输入法、怎样设置热键 |
-| [扩展功能](Extensions) | 系统命令列表、终端、PT 工具箱, 以及各扩展页面的入口 |
+| [扩展功能](Extensions) | PT 工具箱, 以及各扩展页面的入口 |
 | [设置文件参考](Configuration) | ALTRun.json 每一项的含义和默认值 |
 | [数据文件](Data-Files) | 数据文件夹在哪里、每个文件是什么、怎样备份和换电脑 |
 | [隐私与网络访问](Privacy) | ALTRun 什么时候联网、访问哪里、本机保存了什么 |

@@ -15,11 +15,13 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 | Preferences page | Documentation |
 |---|---|
 | General / Advanced | [Settings reference](en-Configuration) |
-| Search Window / Features / Web Search / Usage | [Search and shortcuts](en-Usage); bookmark settings: [Browser bookmarks](en-Bookmarks) |
+| Search Window / Features / Usage | [Search and shortcuts](en-Usage); items on the Features page: [Browser bookmarks](en-Bookmarks), [Window switching](en-Window-Switching), [Pinned and recent items](en-Recent), [System commands and terminal](en-System-Commands) |
+| Web Search | [Web search](en-Web-Search) |
 | Appearance | [Themes](en-Themes) |
 | Applications | [Settings reference: Applications](en-Configuration#features) |
 | File Search / Search Sources | [File search](en-File-Search) |
-| Custom Commands / Snippets / Clipboard | [Custom commands and snippets](en-Commands-and-Snippets) |
+| Custom Commands / Snippets | [Custom commands and snippets](en-Commands-and-Snippets) |
+| Clipboard | [Clipboard history](en-Clipboard) |
 | Calculator | [Calculator](en-Calculator) |
 | Scripts | [Scripts](en-Scripts) |
 | Hotkeys | [Custom hotkeys](en-Hotkeys) |
@@ -153,7 +155,7 @@ Only `Enabled`. Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRu
 | RecentCount | 0 | How many recently opened items the empty search box shows; 0 = none (only pinned items by default) |
 | Pinned | `[]` | Items pinned to the empty search box (pin / unpin them in the action panel, no need to edit by hand) |
 
-Recently opened items are kept in `Data\Knowledge.json`, see [Pinned and recent items](en-Usage#pinned-and-recent-items).
+Recently opened items are kept in `Data\Knowledge.json`, see [Pinned and recent items](en-Recent).
 
 ### Windows (window switcher)
 | Key | Default | Description |
