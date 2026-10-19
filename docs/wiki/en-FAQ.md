@@ -46,7 +46,7 @@ In Preferences → Search Window, set "Switch to English when shown" to "English
 ### Caps Lock and other features don't work in windows running as administrator
 Windows doesn't let programs with normal rights control windows running as administrator. While such a window is in front, switching the input method with Caps Lock, double-tapping Ctrl, snippet expansion, pasting a result into that window and Quick Switch for its dialogs don't work; showing ALTRun, searching and opening programs work as usual.
 
-**Just switching the input method with Caps Lock**: tick "Also in windows running as administrator" in Preferences → Hotkeys. Only a small helper that handles Caps Lock runs as administrator; ALTRun itself keeps normal rights, without the side effects below. See [Caps Lock switches the input method](en-Extensions#caps-lock-switches-the-input-method).
+**Just switching the input method with Caps Lock**: tick "Also in windows running as administrator" in Preferences → Hotkeys. Only a small helper that handles Caps Lock runs as administrator; ALTRun itself keeps normal rights, without the side effects below. See [Caps Lock switches the input method](en-Hotkeys#caps-lock-switches-the-input-method).
 
 If you need the other features often too, run all of ALTRun as administrator:
 - **As administrator at sign-in** (no UAC prompt): turn off "Launch ALTRun at login" in Preferences → General, then open Task Scheduler → Create Task:

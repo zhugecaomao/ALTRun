@@ -45,6 +45,18 @@ When it runs, ALTRun creates `Data\` in its folder (the settings file `ALTRun.js
 5. `SearchWindow` draws every row itself with NM_CUSTOMDRAW
 6. When a result runs, `ActionCatalog` decides how to open it from its `Kind`, and `Knowledge.Record()` remembers the choice
 
+## Core modules and runtime lifecycle
+
+- `App` owns startup, reload and shutdown. `AppSettings` reads and saves settings; `SchemaMigration` upgrades older settings formats.
+- `SearchWindow` receives input; `SearchQuery` parses keywords and prefixes; `ProviderRegistry` calls enabled providers and combines their results.
+- `ResultItem` defines the common result model; `FuzzyMatcher` scores matches; `Knowledge` adjusts learned ranking; `ActionCatalog` performs actions such as opening, copying and running.
+- `PreferencesWindow` edits a working copy of the settings. Saving reloads the application so controls don't mutate the live settings object directly.
+- `ApplicationProvider` and `FileIndex` share `Lib\FolderWatcher.ahk` to watch indexed folders. Index rebuilds run in the background, and the previous index remains usable until the new one is ready.
+
+A typical lifecycle is: start and load settings → initialize providers and windows → receive search input → parse the query and collect results → rank and display them → execute the selected action. Settings changes are saved and then reloaded. Shutdown stops folder watchers and background work and handles pending cache saves.
+
+Background work must respect window and resource lifetimes. Timer callbacks are wrapped with `Logger.Watch(label, fn)` for timing; network requests use asynchronous `HttpGet.Start` rather than blocking the main thread; index caches are normally saved after keyboard and mouse idle, with pending data handled immediately at shutdown.
+
 ## Adding a search feature
 1. Create `XxxProvider.ahk` in `Src\Providers\`:
    ```autohotkey
@@ -120,6 +132,14 @@ alternating (A B B A), with ALTRun restarted for every round:
 By default each round has 500 searches + 100 of each other operation (about 50 minutes); the results (median / p90 / p99 / max) are in the run summary, and the raw data is an artifact.
 The test copies #Include one extra file, `Tests\Bench\BenchProbe.ahk`, which tells the driver (`BenchDriver.ahk`) whether the results for the current input have been drawn;
 the released program doesn't contain it. Pushing changes to the benchmark scripts to a branch other than main runs a short smoke test automatically.
+
+## Quality checks and limitations
+
+- `Tests\RunTests.ahk` covers pure logic such as matching, query parsing, settings migration, ranking, clipboard and indexes; it is not a full manual UI test.
+- Windows CI runs unit tests and syntax checks, and checks Preferences layout, Wiki page pairs and documentation links.
+- Screenshot tests check major windows across languages and themes; they do not verify every interaction.
+- Performance benchmarks simulate common operations on Windows and compare before / after timings; compare runs in the same environment.
+- Wiki automation detects missing pages and broken links, but cannot tell whether explanations are accurate or cover every setting. When settings change, check the code and both language versions item by item.
 
 ## Code style
 See [CONTRIBUTING.md](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md) in the repository. A few AutoHotkey v2 pitfalls:

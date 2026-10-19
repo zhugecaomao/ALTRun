@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.19.16]
+
+测试版。
+
+Test build.
+
+### 改进
+- Wiki: 对话框快速跳转、对话框文件夹面板、一键加日期、浏览器书签、计算器、脚本扩展、自定义热键都有了自己的中英文页面; 扩展功能页改成这些页面的入口, 只留下系统命令、终端和 PT 工具箱, 内容不再两处重复; 其它页面里指向旧位置的链接都改到新页面
+- 偏好设置的 "帮助" 按钮和 `F1` 打开对应的页面 (计算器、脚本、自定义热键、对话框跳转、对话框面板、一键加日期以前都打开扩展功能页); `?` 速查表里计算器、单位换算和脚本的链接也改到各自的页面
+- Wiki 补充: 应用索引怎样自动更新、设置文件参考里每个偏好设置页面对应的文档、开发指南的模块和运行流程、测试能验证什么
+
 ## [2026.10.19.15]
 
 测试版。
@@ -916,7 +927,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...HEAD
+[2026.10.19.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...2026.10.19.16
 [2026.10.19.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.14...2026.10.19.15
 [2026.10.19.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.13...2026.10.19.14
 [2026.10.19.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.12...2026.10.19.13

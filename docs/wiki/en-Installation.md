@@ -55,7 +55,7 @@ winget upgrade zhugecaomao.ALTRun     # later upgrades (quit ALTRun first)
 | `Data\ALTRun.json` | All your settings, custom commands and snippets | Kept (format upgraded automatically) |
 | Other files in `Data\` | App index, file index, learned ranking, clipboard history, usage statistics | Kept (rebuilt if deleted) |
 | `Themes\` | Your own themes | Kept |
-| `Scripts\` | Your own [scripts](en-Extensions#scripts) | Kept |
+| `Scripts\` | Your own [scripts](en-Scripts) | Kept |
 
 ## Start with Windows, Start menu, "Send to"
 In Preferences → General:

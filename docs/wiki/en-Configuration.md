@@ -8,6 +8,25 @@ All settings and user data are saved in `Data\ALTRun.json` in the program folder
 - If the file has a syntax error (a missing comma, say), ALTRun tells you, keeps the original renamed to `ALTRun.json.bad` and starts with the default settings; fix it and rename it back
 - `SchemaVersion` is the version of the settings format; don't change it by hand. When the format is upgraded, ALTRun converts it automatically and makes a backup
 
+## Preferences pages and documentation
+
+The **Help** button at the bottom of Preferences, or `F1`, opens the documentation for the current page. This table lists every Preferences page and its Wiki entry:
+
+| Preferences page | Documentation |
+|---|---|
+| General / Advanced | [Settings reference](en-Configuration) |
+| Search Window / Features / Web Search / Usage | [Search and shortcuts](en-Usage); bookmark settings: [Browser bookmarks](en-Bookmarks) |
+| Appearance | [Themes](en-Themes) |
+| Applications | [Settings reference: Applications](en-Configuration#features) |
+| File Search / Search Sources | [File search](en-File-Search) |
+| Custom Commands / Snippets / Clipboard | [Custom commands and snippets](en-Commands-and-Snippets) |
+| Calculator | [Calculator](en-Calculator) |
+| Scripts | [Scripts](en-Scripts) |
+| Hotkeys | [Custom hotkeys](en-Hotkeys) |
+| Quick Switch | [Quick Switch](en-Quick-Switch) |
+| Dialog Panel | [Dialog Folder Panel](en-Quick-Switch-Panel) |
+| Date Stamp | [Date Stamp](en-Date-Stamp) |
+
 ## Structure
 ```jsonc
 {
@@ -30,12 +49,12 @@ Split over the "General", "Search Window" and "Hotkeys" (Caps Lock) pages in Pre
 
 | Key | Default | Description |
 |---|---|---|
-| Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](en-Extensions#setting-hotkeys)) |
+| Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](en-Hotkeys#setting-hotkeys)) |
 | SecondaryHotkey | `!r` | Second hotkey (Alt+R); empty = none |
 | DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary); empty = off |
-| CapsLock | empty | Like on a Mac: `Layout` = pressing Caps Lock switches to the next input method (like `Win+Space`), `Mode` = it switches the Chinese / English mode of the input method; holding it for 0.3 s turns caps lock on or off. Empty = Caps Lock works as usual. See [Caps Lock switches the input method](en-Extensions#caps-lock-switches-the-input-method) |
+| CapsLock | empty | Like on a Mac: `Layout` = pressing Caps Lock switches to the next input method (like `Win+Space`), `Mode` = it switches the Chinese / English mode of the input method; holding it for 0.3 s turns caps lock on or off. Empty = Caps Lock works as usual. See [Caps Lock switches the input method](en-Hotkeys#caps-lock-switches-the-input-method) |
 | CapsLockNotify | 1 | Show "Caps Lock On / Off" when caps lock is turned on or off; 0 = no notice |
-| CapsLockElevated | 0 | 1 = Caps Lock switching also works in windows running as administrator: a scheduled task runs a small helper with administrator rights that only handles Caps Lock, while ALTRun itself keeps normal rights. See [Caps Lock switches the input method](en-Extensions#caps-lock-switches-the-input-method) |
+| CapsLockElevated | 0 | 1 = Caps Lock switching also works in windows running as administrator: a scheduled task runs a small helper with administrator rights that only handles Caps Lock, while ALTRun itself keeps normal rights. See [Caps Lock switches the input method](en-Hotkeys#caps-lock-switches-the-input-method) |
 | SelectionHotkey | `^!\` | Press it after selecting text / files / a URL to open their actions directly (Ctrl+Alt+\), see [Actions on selected content](en-Usage#actions-on-selected-content); empty = off |
 | Language | `auto` | `auto` follows the Windows display language, or a language code: `en` / `zh-CN` (Simplified Chinese) / `zh-TW` (Traditional Chinese) / `ja`; apart from English, each language is a file in `Resources\Lang\` (the old `zh` means `zh-CN`) |
 | LaunchAtLogin | 1 | Launch ALTRun at login |
@@ -110,12 +129,12 @@ Every feature has `Enabled` (1 = on).
 ### Calculator
 | Key | Default | Description |
 |---|---|---|
-| StructuralCalc | 0 | Add beam main bar / rebar area results below the result, see [Extensions](en-Extensions#calculator) |
+| StructuralCalc | 0 | Add beam main bar / rebar area results below the result, see [Extensions](en-Calculator) |
 | RebarCover | 40 | Structural results: rebar cover (mm, each side) |
 | MaxBarSpacing | 300 | Structural results: maximum main bar spacing (mm) |
 | BarSizes | `[13, 16, 20, 25, 32]` | Structural results: bar diameters (mm) listed in the rebar area line |
 | BarPrefix | `H` | Structural results: bar designation prefix (`T`, `Y`, `Φ`...) |
-| Currency | 0 | Currency conversion (`100 usd to sgd`); downloads exchange rates from frankfurter.dev once a day, see [Unit and currency conversion](en-Extensions#unit-and-currency-conversion) |
+| Currency | 0 | Currency conversion (`100 usd to sgd`); downloads exchange rates from frankfurter.dev once a day, see [Unit and currency conversion](en-Calculator#unit-and-currency-conversion) |
 
 ### Bookmarks
 | Key | Default | Description |
@@ -126,7 +145,7 @@ Every feature has `Enabled` (1 = on).
 Also in Preferences → Features → Feature options. Reads the bookmarks of every profile of Chrome, Edge, Brave and Vivaldi; Firefox keeps its bookmarks in an SQLite database and isn't supported yet.
 
 ### Scripts
-Only `Enabled`. Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](en-Extensions#scripts) for how to write them.
+Only `Enabled`. Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](en-Scripts) for how to write them.
 
 ### Recent (pinned and recent items)
 | Key | Default | Description |
@@ -181,8 +200,8 @@ See [Extensions](en-Extensions).
 
 | Node | Keys |
 |---|---|
-| QuickSwitch | `Enabled` `ExplorerHotkey` (`^e`) `TotalCmdHotkey` (`^g`) `MenuHotkey` (`^+g`, moves the cursor to the panel's search box) `RecentFolders` (10) `ShowPanel` (1, the folder panel below dialogs) `PanelSearch` (`folders` = folders only, `all` = folders and files) `AutoSwitch` `DialogWindows` (`ahk_class #32770`) `ExcludeWindows` `AutoSwitchExclude` |
-| AutoDate | `Enabled` `DateFormat` (`dd.MM.yyyy`) `RenameHotkey` (`^d`) `RenameWindows` `AppendHotkey` (`^d`) `AppendWindows` |
+| QuickSwitch | See [Quick Switch](en-Quick-Switch) and [Dialog Folder Panel](en-Quick-Switch-Panel) |
+| AutoDate | See [Date Stamp](en-Date-Stamp) |
 | PTTools | Inputs and window positions saved by PT Tools itself |
 
 ## Lists
@@ -198,7 +217,7 @@ See [Extensions](en-Extensions).
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
 ]
 ```
-For the fields, see [Custom commands and snippets](en-Commands-and-Snippets) and [Extensions](en-Extensions#custom-hotkeys).
+For the fields, see [Custom commands and snippets](en-Commands-and-Snippets) and [Extensions](en-Hotkeys).
 
 ## The Data folder
 Created at runtime; deleting files only makes them be rebuilt (the learned ranking and clipboard history are lost):

@@ -264,11 +264,12 @@ class PreferencesWindow {
 
     ; 每一页对应的 Wiki 页面 (帮助按钮 / F1)
     static WikiPage(nameKey) {
-        static pages := Map("Prefs.Page.Window", "Usage", "Prefs.Page.Appearance", "Themes", "Prefs.Page.Features", "Usage", "Prefs.Page.FileSearch", "File-Search"
-                          , "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
-                          , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage", "Prefs.Page.Calculator", "Extensions", "Prefs.Page.Scripts", "Extensions"
-                          , "Prefs.Page.Hotkeys", "Extensions", "Prefs.Page.QuickSwitch", "Extensions", "Prefs.Page.QSPanel", "Extensions", "Prefs.Page.DateStamp", "Extensions"
-                          , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Usage", "Usage")
+        static pages := Map("Prefs.Page.General", "Configuration", "Prefs.Page.Window", "Usage", "Prefs.Page.Appearance", "Themes"
+                          , "Prefs.Page.Features", "Usage", "Prefs.Page.Applications", "Configuration", "Prefs.Page.FileSearch", "File-Search"
+                          , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
+                          , "Prefs.Page.Clipboard", "Commands-and-Snippets", "Prefs.Page.WebSearch", "Usage", "Prefs.Page.Calculator", "Calculator"
+                          , "Prefs.Page.Scripts", "Scripts", "Prefs.Page.Hotkeys", "Hotkeys", "Prefs.Page.QuickSwitch", "Quick-Switch"
+                          , "Prefs.Page.QSPanel", "Quick-Switch-Panel", "Prefs.Page.DateStamp", "Date-Stamp", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
 
