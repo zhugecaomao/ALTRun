@@ -159,6 +159,8 @@ class AppSettings {
             changed := true                                                 ; 第一次运行: 写出一份带默认值的文件
         }
 
+        if (data.Count && AppSettings._KeepDensity(data))
+            changed := true
         if AppSettings._MergeDefaults(data, AppSettings.Defaults())
             changed := true
         if (AppSettings.DataDir != AppSettings.DefaultDataDir() && data.Has("DataLocation"))
@@ -224,6 +226,17 @@ class AppSettings {
 
     ; 把 defaults 里有、target 里没有的键补上 (逐层递归, 只补 Map, 数组整体看待)。
     ; 返回是否有改动。类型不一致 (比如该是 Map 的地方被手改成了字符串) 也用默认值覆盖。
+    ; 已有的设置文件还没有 Appearance.Density (2026.10.19.12 以前): 保持原来的大小, 不用新安装的默认值 "Normal"。
+    ; 原来的大小 = 宽松; 用的是以前的紧凑主题 (DarkCompact 等) 的 = 常规 (和它们的尺寸一样)。返回是否补上了
+    static _KeepDensity(data) {
+        if !(data.Has("Appearance") && data["Appearance"] is Map) || data["Appearance"].Has("Density")
+            return false
+        appearance := data["Appearance"]
+        theme := appearance.Has("Theme") ? appearance["Theme"] : ""
+        appearance["Density"] := RegExMatch(theme, "i)^(Dark|Light|Midnight)Compact$") ? "Normal" : "Comfortable"
+        return true
+    }
+
     static _MergeDefaults(target, defaults) {
         changed := false
         for key, defaultValue in defaults {
@@ -276,7 +289,7 @@ class AppSettings {
             ),
             "Appearance", Map(
                 "Theme"      , "System",                                    ; 内置主题名 (见 ThemeManager; System = 跟随 Windows 的深 / 浅色) 或 Themes\<名称>.json
-                "Compact"    , 0,                                           ; 紧凑: 任何主题的字号、行高、图标小一些, 一屏显示更多结果
+                "Density"    , "Normal",                                    ; 显示密度 (任何主题): Comfortable 宽松 (主题本来的大小) / Normal 常规 / Compact 紧凑, 见 ThemeManager.DensityScale
                 "Width"      , 700,
                 "VisibleRows", 8,
                 "Placeholder", "",                                          ; 空搜索框里的灰色文字, 空 = 默认 ("ALTRun 搜索")

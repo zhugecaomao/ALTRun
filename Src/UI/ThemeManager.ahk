@@ -10,9 +10,10 @@
 ;   Themes\*.json             用户自己的主题, 升级不动; 和内置主题同名时用户的优先
 ;   System                    跟随 Windows 的浅色 / 深色设置 (Light 或 Dark), 系统切换时自动更新
 ; 弹出菜单 (托盘、☰、结果的右键菜单、Quick Switch 的文件夹菜单) 跟随主题的深浅, 见 ApplyMenuMode
-; 紧凑 (Appearance.Compact): 任何主题的字号、边距、行高、图标按 CompactScale 缩小, 一屏显示更多结果, 见 Compacted。
+; 显示密度 (Appearance.Density): 任何主题的字号、边距、行高、图标按 DensityScale 缩放 (见 Scaled):
+;   Comfortable 宽松 = 主题本来的大小; Normal 常规 (新安装的默认) = 以前的 Dark Compact; Compact 紧凑 = 再小一级
 ; 以前的内置主题 DarkCompact / LightCompact / MidnightCompact 已经去掉: 设置里还是这几个名字 (或者用户主题的 "Base"
-; 写的是它们) 时, 当作 Dark / Light / Midnight + 紧凑, 见 LegacyCompact
+; 写的是它们) 时, 当作 Dark / Light / Midnight + 常规, 见 LegacyCompact
 ;
 ; 主题文件只写要改的键; "Base" 指定从哪个主题开始 (默认 Light), 例如 Themes\MyBlue.json:
 ;   { "Base": "Dark", "SelectedBackground": "1D4ED8", "Opacity": 240 }
@@ -30,7 +31,7 @@
 ;
 ; 用法:
 ;   ThemeManager.Load("Dark")
-;   ThemeManager.Load("Dark", true)      紧凑
+;   ThemeManager.Load("Dark", "Compact") 紧凑
 ;   ThemeManager.Get("Background")       -> "1E1F22"
 ;   ThemeManager.FontName()              -> 实际使用的字体
 ;   ThemeManager.Names()                 -> System, Light, 内置主题, 用户主题
@@ -43,18 +44,25 @@ class ThemeManager {
     static Resolved := "Light"                      ; 实际使用的主题 (System -> Light / Dark)
     static BuiltinDir := A_ScriptDir "\Resources\Themes"
     static UserDir    := AppSettings.Portable ? A_ScriptDir "\Themes" : AppSettings.UserDir "\Themes"
-    static BuiltinOrder := ["Dark", "Classic", "Midnight", "Frost", "Graphite", "Ocean", "Paper"
+    static BuiltinOrder := ["Dark", "Classic", "Midnight", "Frost", "Graphite", "Ocean", "Paper", "Lavender", "Rose", "Forest", "Sunset", "HighContrast"
                           , "DarkModern", "LightModern", "Monokai", "OneDark", "TokyoNight", "Dracula", "CatppuccinMocha", "GruvboxDark", "SolarizedLight"]   ; 列表里的顺序
-    static Compact := false                         ; 实际是不是紧凑 (设置里的, 或者以前的 *Compact 主题)
-    ; 紧凑时每个尺寸乘的系数: 浅色的尺寸 (20 / 13 / 9.5 / 9 / 14 / 54 / 32) 正好变成以前的 Dark Compact (17 / 11.5 / 9 / 8.5 / 12 / 48 / 28)
-    static CompactScale := Map("InputFontSize", 0.85, "TitleFontSize", 0.885, "SubtitleFontSize", 0.95, "ShortcutFontSize", 0.95
-                             , "Padding", 0.86, "RowHeight", 0.89, "IconSize", 0.875)
+    static Densities := ["Comfortable", "Normal", "Compact"]
+    static Density := "Comfortable"                 ; 实际用的显示密度
+    ; 每种密度下尺寸乘的系数 (宽松 = 1)。浅色的尺寸 (20 / 13 / 9.5 / 9 / 14 / 54 / 32) 在常规下正好是以前的 Dark Compact
+    ; (17 / 11.5 / 9 / 8.5 / 12 / 48 / 28), 紧凑下是 15 / 10.5 / 8.5 / 8 / 10 / 42 / 24
+    static DensityScale := Map(
+        "Normal" , Map("InputFontSize", 0.85, "TitleFontSize", 0.885, "SubtitleFontSize", 0.95, "ShortcutFontSize", 0.95
+                     , "Padding", 0.86, "RowHeight", 0.89, "IconSize", 0.875),
+        "Compact", Map("InputFontSize", 0.75, "TitleFontSize", 0.808, "SubtitleFontSize", 0.895, "ShortcutFontSize", 0.889
+                     , "Padding", 0.714, "RowHeight", 0.778, "IconSize", 0.75))
     static LegacyNames := Map("DarkCompact", "Dark", "LightCompact", "Light", "MidnightCompact", "Midnight")
     static _listening := false
 
-    static Load(themeName, compact := false) {
-        if ((base := ThemeManager.LegacyCompact(themeName)) != "")
-            themeName := base, compact := true
+    static Load(themeName, density := "Comfortable") {
+        if !ThemeManager.DensityScale.Has(density)
+            density := "Comfortable"                                        ; 宽松, 或者认不出的值
+        if ((base := ThemeManager.LegacyCompact(themeName)) != "")         ; 以前的紧凑主题: 至少是常规 (选了紧凑就是紧凑)
+            themeName := base, density := (density = "Comfortable") ? "Normal" : density
         ThemeManager.Name := themeName
         if (themeName = "System") {
             themeName := ThemeManager.SystemUsesDark() ? "Dark" : "Light"
@@ -66,8 +74,8 @@ class ThemeManager {
             themeName := "Light"
             theme := ThemeManager.Defaults()
         }
-        ThemeManager.Current := compact ? ThemeManager.Compacted(theme) : theme
-        ThemeManager.Compact := compact ? true : false
+        ThemeManager.Current := ThemeManager.Scaled(theme, density)
+        ThemeManager.Density := ThemeManager.DensityScale.Has(density) ? density : "Comfortable"
         ThemeManager.Resolved := themeName
         ThemeManager.ApplyMenuMode(ThemeManager.IsDark())
     }
@@ -127,17 +135,19 @@ class ThemeManager {
         return (I18n.Font != "") ? I18n.Font : "Segoe UI"                    ; 语言文件的 "_font"
     }
 
-    ; 主题的尺寸按 CompactScale 缩小 (返回新的 Map): 字号取到 0.5 pt, 边距、行高取整, 图标取偶数
-    static Compacted(theme) {
-        compacted := theme.Clone()
-        for key, factor in ThemeManager.CompactScale {
-            if !(compacted.Has(key) && IsNumber(compacted[key]))
+    ; 主题的尺寸按 density 的 DensityScale 缩放 (返回新的 Map; 宽松原样返回): 字号取到 0.5 pt, 边距、行高取整, 图标取偶数
+    static Scaled(theme, density) {
+        if !ThemeManager.DensityScale.Has(density)
+            return theme
+        scaled := theme.Clone()
+        for key, factor in ThemeManager.DensityScale[density] {
+            if !(scaled.Has(key) && IsNumber(scaled[key]))
                 continue
-            value := compacted[key] * factor
+            value := scaled[key] * factor
             value := InStr(key, "FontSize") ? Round(value * 2) / 2 : (key = "IconSize") ? Round(value / 2) * 2 : Round(value)
-            compacted[key] := (value = Round(value)) ? Round(value) : value    ; 17.0 -> 17 (和主题文件里的写法一样)
+            scaled[key] := (value = Round(value)) ? Round(value) : value    ; 17.0 -> 17 (和主题文件里的写法一样)
         }
-        return compacted
+        return scaled
     }
 
     ; 以前的内置紧凑主题 (DarkCompact 等) -> 对应的主题名 ("Dark"); 不是, 或者用户自己有同名的主题文件时 ""
@@ -153,7 +163,7 @@ class ThemeManager {
             return ThemeManager.Defaults()
         themeFile := ThemeManager.FileFor(themeName, builtinOnly)
         if (themeFile = "" && ThemeManager.LegacyNames.Has(themeName))      ; 以前的紧凑主题 (用户主题的 "Base" 还写着它)
-            return ThemeManager.Compacted(ThemeManager.Resolve(ThemeManager.LegacyNames[themeName], false, depth + 1))
+            return ThemeManager.Scaled(ThemeManager.Resolve(ThemeManager.LegacyNames[themeName], false, depth + 1), "Normal")
         if (themeFile = "")
             return (themeName = "Light") ? ThemeManager.Defaults() : ""
         try {

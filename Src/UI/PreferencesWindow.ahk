@@ -467,8 +467,11 @@ class PreferencesWindow {
     static _BuildAppearance() {
         PreferencesWindow._BeginPage("Prefs.Page.Appearance", 150)
         appearance := PreferencesWindow.Working["Appearance"]
-        if ((base := ThemeManager.LegacyCompact(appearance["Theme"])) != "")    ; 以前的紧凑主题: 选中对应的主题并勾选 "紧凑" (保存后生效)
-            appearance["Theme"] := base, appearance["Compact"] := 1
+        if ((base := ThemeManager.LegacyCompact(appearance["Theme"])) != "") {  ; 以前的紧凑主题: 选中对应的主题, 密度至少是常规 (保存后生效)
+            appearance["Theme"] := base
+            if (appearance["Density"] = "Comfortable")
+                appearance["Density"] := "Normal"
+        }
         PreferencesWindow._Section("Prefs.Section.Theme")
         themes := ThemeManager.Names()
         gallery := PreferencesWindow._ThemeGallery("Appearance.Theme", themes, 164)   ; 一行半缩略图 (看得出可以滚动), 给下面的 "紧凑" 留出地方
@@ -477,7 +480,8 @@ class PreferencesWindow {
             , ["Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir)])
         PreferencesWindow._Section("Prefs.Section.Size")
         PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"], ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "number"])
-        PreferencesWindow._Check("Appearance.Compact", "Prefs.Compact", , , "Prefs.Group.Layout")   ; 任何主题都能紧凑 (ThemeManager.Compacted)
+        PreferencesWindow._Choice("Appearance.Density", "Prefs.Density", ThemeManager.Densities   ; 任何主题都能缩放 (ThemeManager.Scaled)
+            , [I18n.T("Prefs.Density.Comfortable"), I18n.T("Prefs.Density.Normal"), I18n.T("Prefs.Density.Compact")])
         PreferencesWindow._Check("Appearance.Fade", "Prefs.Fade", , , "Prefs.Group.Animation")
         PreferencesWindow._Section("Prefs.WindowPosition")
         PreferencesWindow._Choice("Appearance.ShowOn", "Prefs.ShowOn", ["Mouse", "Primary", "Active"]

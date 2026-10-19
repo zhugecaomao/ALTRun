@@ -59,7 +59,7 @@ class App {
         I18n.Init(AppSettings.General["Language"])
         Knowledge.Load()
         Usage.Load()
-        ThemeManager.Load(AppSettings.Appearance["Theme"], AppSettings.Appearance["Compact"])
+        ThemeManager.Load(AppSettings.Appearance["Theme"], AppSettings.Appearance["Density"])
         Logger.Time("startup: learning, usage, theme", phase)
 
         for provider in [ClipboardProvider, ApplicationProvider, CustomCommandProvider, SnippetProvider, SystemProvider

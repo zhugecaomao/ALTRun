@@ -18,6 +18,11 @@ In Preferences → Appearance, click a theme's thumbnail to pick it (each thumbn
 | Graphite | `Graphite` | macOS dark with the system blue accent |
 | Ocean | `Ocean` | Blue-gray ([Nord](https://www.nordtheme.com/) palette) |
 | Paper | `Paper` | Warm beige, easy on the eyes for long sessions |
+| Lavender | `Lavender` | Pale lavender background, soft purple selection and purple highlights, rounded |
+| Rose | `Rose` | Pale pink background with rose accents, rounded |
+| Forest | `Forest` | Deep green background with green selection and highlights |
+| Sunset | `Sunset` | Warm dark brown background with orange accents |
+| High Contrast | `HighContrast` | Pure black, white text and a full-width yellow selection; easier to read with low vision or in bright light |
 | Dark Modern | `DarkModern` | VS Code's default Dark Modern colors: dark gray background, dark blue selection, bright blue highlights, 24 px icons |
 | Light Modern | `LightModern` | VS Code's default Light Modern colors: off-white background, light blue selection, 24 px icons |
 | Monokai | `Monokai` | The classic Monokai colors: dark olive background, green highlights |
@@ -33,21 +38,33 @@ In Preferences → Appearance, click a theme's thumbnail to pick it (each thumbn
 | ![Light](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/search.png) | ![Dark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dark.png) | ![Classic](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-classic.png) |
 | **Midnight** | **Frost** | **Graphite** |
 | ![Midnight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-midnight.png) | ![Frost](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-frost.png) | ![Graphite](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-graphite.png) |
-| **Ocean** | **Paper** | **Dark + Compact** |
-| ![Ocean](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-ocean.png) | ![Paper](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-paper.png) | ![Dark + Compact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-compact.png) |
-| **TokyoNight** | **Dracula** | **CatppuccinMocha** |
-| ![TokyoNight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-tokyonight.png) | ![Dracula](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dracula.png) | ![CatppuccinMocha](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-catppuccinmocha.png) |
-| **GruvboxDark** | **SolarizedLight** | **DarkModern** |
-| ![GruvboxDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-gruvboxdark.png) | ![SolarizedLight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-solarizedlight.png) | ![DarkModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-darkmodern.png) |
-| **LightModern** | **Monokai** | **OneDark** |
-| ![LightModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightmodern.png) | ![Monokai](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-monokai.png) | ![OneDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-onedark.png) |
+| **Ocean** | **Paper** | **Lavender** |
+| ![Ocean](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-ocean.png) | ![Paper](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-paper.png) | ![Lavender](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lavender.png) |
+| **Rose** | **Forest** | **Sunset** |
+| ![Rose](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-rose.png) | ![Forest](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-forest.png) | ![Sunset](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-sunset.png) |
+| **HighContrast** | **Dark · Compact** | **TokyoNight** |
+| ![HighContrast](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-highcontrast.png) | ![Dark · Compact](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-compact.png) | ![TokyoNight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-tokyonight.png) |
+| **Dracula** | **CatppuccinMocha** | **GruvboxDark** |
+| ![Dracula](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-dracula.png) | ![CatppuccinMocha](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-catppuccinmocha.png) | ![GruvboxDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-gruvboxdark.png) |
+| **SolarizedLight** | **DarkModern** | **LightModern** |
+| ![SolarizedLight](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-solarizedlight.png) | ![DarkModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-darkmodern.png) | ![LightModern](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-lightmodern.png) |
+| **Monokai** | **OneDark** | |
+| ![Monokai](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-monokai.png) | ![OneDark](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/theme-onedark.png) | |
 
 Light is built into the program; the other built-in themes are in `Resources\Themes\*.json`. Those files are replaced on upgrade, so don't edit them; use a custom theme as described below.
 
-## Compact
-Preferences → Appearance → Size → **Compact**: any theme (custom ones too) gets smaller text, padding, rows and icons, so more results fit in the same height (`Appearance.Compact` in the settings). For themes with the default sizes, such as Light and Dark: input text 20 → 17, titles 13 → 11.5, rows 54 → 48, icons 32 → 28 px; themes with their own sizes (such as Dark Modern) shrink by the same ratios.
+## Density
+Preferences → Appearance → Size → **Density** applies to every theme, custom ones too (`Appearance.Density` in the settings):
 
-The former built-in themes Dark Compact (`DarkCompact`), Light Compact (`LightCompact`) and Midnight Compact (`MidnightCompact`) are gone: use Dark / Light / Midnight with Compact instead. If the settings still name one of them, it shows as "that theme + Compact"; opening Preferences → Appearance selects them for you, and **OK** saves the new form. Custom themes whose `Base` names one of them keep working. Midnight Compact used 24 px icons; for smaller icons, set `IconSize` in a custom theme.
+| Density | Value | Themes with the default sizes (Light, Dark...): input / title text, row height, icons |
+|---|---|---|
+| Comfortable | `Comfortable` | Each theme's own size: 20 / 13 pt, 54, 32 px |
+| Normal | `Normal` | Default for new installations: 17 / 11.5 pt, 48, 28 px |
+| Compact | `Compact` | 15 / 10.5 pt, 42, 24 px; the most results on screen |
+
+Themes with their own sizes (such as Dark Modern) scale by the same ratios. Upgrades keep their previous size (Comfortable); switch to Normal for something smaller.
+
+The former built-in themes Dark Compact (`DarkCompact`), Light Compact (`LightCompact`) and Midnight Compact (`MidnightCompact`) are gone: use Dark / Light / Midnight with Normal density instead (same sizes as before). If the settings still name one of them, it shows as "that theme + Normal"; opening Preferences → Appearance selects them for you, and **OK** saves the new form. Custom themes whose `Base` names one of them keep working.
 
 ## Custom themes
 The easiest way: Preferences → Appearance → select a theme close to what you want → **Copy as Custom Theme...** → give it a name. ALTRun creates `Themes\<name>.json` with every key, selects it and opens it in Notepad. Change the colors, save, then click **Apply** in Preferences (or tray menu → Reload) to see the result.

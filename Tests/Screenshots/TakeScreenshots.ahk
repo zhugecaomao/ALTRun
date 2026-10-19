@@ -59,13 +59,18 @@ class Shots {
             ["prefs-calculator", "Light", "-Preferences 12", () => Shots.Preferences()],
             ["prefs-scripts",    "Light", "-Preferences 13", () => Shots.Preferences()],
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
-            ["theme-compact", "Dark+Compact", "", () => Shots.Search("re")],   ; 深色 + 偏好设置里的 "紧凑"
+            ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; 深色 + 显示密度 "紧凑" (其它截图都是新安装默认的 "常规")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
             ["theme-midnight",  "Midnight", "", () => Shots.Search("re")],
             ["theme-frost",     "Frost",    "", () => Shots.Search("re")],
             ["theme-graphite",  "Graphite", "", () => Shots.Search("re")],
             ["theme-ocean",     "Ocean",    "", () => Shots.Search("re")],
             ["theme-paper",     "Paper",    "", () => Shots.Search("re")],
+            ["theme-lavender",  "Lavender", "", () => Shots.Search("re")],
+            ["theme-rose",      "Rose",     "", () => Shots.Search("re")],
+            ["theme-forest",    "Forest",   "", () => Shots.Search("re")],
+            ["theme-sunset",    "Sunset",   "", () => Shots.Search("re")],
+            ["theme-highcontrast", "HighContrast", "", () => Shots.Search("re")],
             ["theme-darkmodern", "DarkModern", "", () => Shots.Search("re")],
             ["theme-lightmodern", "LightModern", "", () => Shots.Search("re")],
             ["theme-monokai", "Monokai", "", () => Shots.Search("re")],
@@ -187,16 +192,15 @@ class Shots {
         return RegExMatch(FileRead(Shots.RepoDir "\Src\Core\AppSettings.ahk", "UTF-8"), "static CurrentVersion\s*:=\s*(\d+)", &m) ? Integer(m[1]) : 5
     }
 
-    ; theme: 主题名, 后面加 "+Compact" 表示勾选 "紧凑"
+    ; theme: 主题名, 可以加 "|显示密度" (例如 "Dark|Compact"); 不写时用新安装的默认 "Normal"
     static WriteSettings(theme) {
         demo := Shots.DemoDir
-        compact := (SubStr(theme, -8) = "+Compact") ? 1 : 0
-        theme := compact ? SubStr(theme, 1, -8) : theme
+        parts := StrSplit(theme, "|"), theme := parts[1], density := (parts.Length >= 2) ? parts[2] : "Normal"
         settings := Map(
             "SchemaVersion", Shots.SchemaVersion(),
             "General", Map("Language", "en", "LaunchAtLogin", 0, "HideOnDeactivate", 0, "SendToMenu", 0,
                            "StartMenuShortcut", 0, "CheckForUpdates", 0, "Hotkey", "!Space", "ShowTips", 0),
-            "Appearance", Map("Theme", theme, "Compact", compact, "Width", 700, "VisibleRows", 8),
+            "Appearance", Map("Theme", theme, "Density", density, "Width", 700, "VisibleRows", 8),
             "Features", Map(
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
                 "Calculator", Map("StructuralCalc", 1),
