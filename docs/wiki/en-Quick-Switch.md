@@ -18,7 +18,7 @@ The existing file name is preserved when jumping. For example, a name suggested 
 
 Enable **Auto switch** in Preferences → Quick Switch to jump automatically to Total Commander's current folder when switching from Total Commander to an Open / Save dialog.
 
-**Works in**: tick **Standard Open / Save dialogs** (`ahk_class #32770`, on by default); dialogs that programs draw themselves go in **Other dialogs**, one per line, for example WPS's `ahk_class Qt5QWindowIcon`. Windows in **Never in** never switch; **No auto jump in** disables only automatic switching, and the hotkeys still work there.
+**Works in**: tick **Standard Open / Save dialogs** (`ahk_class #32770`, on by default; only dialogs with an Explorer file list count, so program windows that are dialogs themselves, such as System Information (msinfo32), are left alone); dialogs that programs draw themselves go in **Other dialogs**, one per line, for example WPS's `ahk_class Qt5QWindowIcon`. Windows in **Never in** never switch; **No auto jump in** disables only automatic switching, and the hotkeys still work there.
 
 The folder is read directly from Total Commander through its `WM_COPYDATA` interface (TC 8.0 or later), not through the clipboard, so the path does not appear in Windows clipboard history (`Win+V`).
 

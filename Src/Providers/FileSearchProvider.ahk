@@ -275,6 +275,8 @@ class FileSearchProvider {
     ; "cs" 找到的 "测试.bat" 文件名里没有 "cs": 再按拼音首字母打一次分, 比同一档的直接匹配低 5 分。
     ; 名称都对不上 (路径匹配、全拼、多个词等) 时 50 分。多个词 ("pt 2024") 时 ScoreName 本来就对不上, 不算拼音 (白算)
     static NameScore(needle, name) {
+        if (needle = "")                                                    ; 只输入了 Everything 的语法 (例如 "d:"、"folder:"): 按 Everything 的顺序
+            return 50
         if (score := FileIndex.ScoreName(needle, StrLower(name)))
             return score
         if (FileIndex.UsePinyin(needle) && (initials := FileIndex.InitialsOf(name)) != "" && (score := FileIndex.PinyinScore(needle, initials)))

@@ -21,6 +21,7 @@
 
 隐私:
 - 密码管理器 (KeePass、1Password、Bitwarden...) 复制的内容不会记录; 带 "不要加入剪贴板历史" 标记的内容也不会记录
+- 复制后约 0.15 秒才去读剪贴板, 读完马上关掉 (图片在关掉之后再存成 PNG): 截图工具等写完剪贴板马上又要用它的程序不会被挡住
 - `Features.Clipboard.IgnoreApps` 可以加上其它不想记录的程序
 - `Persist = 0` 时只保存在内存里, 退出即清空 (也不记录图片); 否则保存在 `Data\ClipboardHistory.json` (很长的条目和图片单独存在 `%LOCALAPPDATA%\ALTRun\Clipboard\`; `LocalFiles = 0` 时放在 `Data\Clipboard\`; 偏好设置 → 剪贴板 → "保存位置" 选 "全部只存本机" 时历史也只存本机)
 - 偏好设置 → 剪贴板历史 里可以清空历史

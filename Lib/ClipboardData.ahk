@@ -30,18 +30,21 @@ class ClipboardData {
         return files
     }
 
-    ; 先读 CF_DIB (设备无关位图, 别的程序放的图片也能读), 读不到再读 CF_BITMAP
+    ; 先读 CF_DIB (设备无关位图, 别的程序放的图片也能读), 读不到再读 CF_BITMAP。
+    ; 剪贴板只在把原始数据复制出来时打开, 转换、存 PNG 都在关掉之后做, 别的程序不用等
     static SaveImage(file) {
         if !ClipboardData.HasImage() || !ClipboardData.StartGdiplus() || !ClipboardData._Open()
             return ""
-        bitmap := 0
+        bitmap := 0, dib := ""
         try {
-            bitmap := ClipboardData._FromDib()
-            if (!bitmap && (hbm := DllCall("GetClipboardData", "UInt", ClipboardData.CF_BITMAP, "Ptr")))   ; 位图归剪贴板所有, 不要删除
+            dib := ClipboardData._CopyDib()
+            if (!dib && (hbm := DllCall("GetClipboardData", "UInt", ClipboardData.CF_BITMAP, "Ptr")))   ; 位图归剪贴板所有, 不要删除
                 DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "Ptr", hbm, "Ptr", 0, "Ptr*", &bitmap)
         } finally {
             DllCall("CloseClipboard")
         }
+        if IsObject(dib)
+            bitmap := ClipboardData._FromDib(dib)
         if !bitmap
             return ""
         width := 0, height := 0
@@ -55,12 +58,22 @@ class ClipboardData {
         return status ? "" : {Width: width, Height: height}
     }
 
-    ; 剪贴板已打开时调用; 返回复制出来的 GDI+ 位图 (解锁之后剪贴板的内存就不能再用了), 失败时 0
-    static _FromDib() {
+    ; 剪贴板已打开时调用: 把 CF_DIB 的内容复制到 Buffer (剪贴板关掉以后那块内存就不能再用了), 没有时 ""
+    static _CopyDib() {
         if !(hMem := DllCall("GetClipboardData", "UInt", ClipboardData.CF_DIB, "Ptr"))
-            return 0
-        if !(info := DllCall("GlobalLock", "Ptr", hMem, "Ptr"))
-            return 0
+            return ""
+        size := DllCall("GlobalSize", "Ptr", hMem, "UPtr")
+        if (size < 40 || !(source := DllCall("GlobalLock", "Ptr", hMem, "Ptr")))
+            return ""
+        dib := Buffer(size)
+        DllCall("RtlMoveMemory", "Ptr", dib, "Ptr", source, "UPtr", size)
+        DllCall("GlobalUnlock", "Ptr", hMem)
+        return dib
+    }
+
+    ; CF_DIB 的内容 (BITMAPINFO + 像素) 做成 GDI+ 位图, 失败时 0
+    static _FromDib(dib) {
+        info := dib.Ptr
         copy := 0
         try {
             headerSize := NumGet(info, 0, "UInt"), bitCount := NumGet(info, 14, "UShort")
@@ -75,8 +88,6 @@ class ClipboardData {
                 DllCall("gdiplus\GdipCloneBitmapAreaI", "Int", 0, "Int", 0, "Int", width, "Int", height, "Int", 0x22009, "Ptr", source, "Ptr*", &copy)   ; 32bppRGB
                 DllCall("gdiplus\GdipDisposeImage", "Ptr", source)
             }
-        } finally {
-            DllCall("GlobalUnlock", "Ptr", hMem)
         }
         return copy
     }
