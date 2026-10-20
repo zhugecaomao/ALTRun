@@ -107,9 +107,11 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 Wiki 的源文件在仓库的 `docs/wiki/`, 合并到 `main` 后自动发布到 Wiki (`.github/workflows/wiki.yml`)。请通过 PR 修改 `docs/wiki/`, 不要直接在网页上编辑。
 
 文档是中英双语的, 改一种语言时另一种也要一起改:
-- README 和贡献指南: `README.md` / `CONTRIBUTING.md` (英文, GitHub 默认显示) 和 `README.zh-CN.md` / `CONTRIBUTING.zh-CN.md` (中文), 开头互相链接
+- README: `README.md` (英文, GitHub 默认显示) 和 `README.zh-CN.md` (中文), 开头互相链接
+- `CONTRIBUTING.md` 和 `SECURITY.md`: 一个文件里英文在前、中文在后, 开头有跳到两种语言的链接。`CONTRIBUTING.md` 只写反馈问题和提交 PR 的要点, 详细内容在这一页
 - Wiki: 每页两个文件, 中文 `Usage.md`, 英文 `en-Usage.md`; 每页开头链接到另一种语言, 英文页之间的链接写 `en-` 的页面名。侧边栏 `_Sidebar.md` 分中英两组。程序里的帮助 (速查表、偏好设置的 `F1`) 按界面语言打开: 中文界面打开中文页, 其它语言打开 `en-` 页 (`HelpProvider.WikiPage`)。`WikiPages` 测试检查每页都有英文页、链接指向存在的页面
-- CHANGELOG 用中文写, 每个版本开头的概要后面加一句英文 (Release 的说明就是这一节)
+- CHANGELOG: 测试版各节用中文写; 正式版那一节英文在前、中文在后, 也是 Release 的说明 (格式见下面的 "发布流程")
+- Wiki 页面之间的链接写页面名, 不带 `.md` (例如 `[主题](Themes)`, 英文页写 `[Themes](en-Themes)`)。英文不熟悉的话可以只改中文, 在 PR 里说明, 维护者会补上英文
 
 官网 (https://zhugecaomao.github.io/ALTRun/) 的源文件在 `site/`: `index.html` 是中英文模板, `build.py` 填入最新版本号、下载链接和大小、下载次数、主题截图和最新版本的更新内容, 生成到 `_site/`。`.github/workflows/pages.yml` 在 main 上相关文件变化、Release 成功后和每天一次自动生成, 用 GitHub Pages 的官方 Actions 部署 (Settings → Pages → Source 选 "GitHub Actions")。本地预览: `python3 site/build.py && python3 -m http.server -d _site`。
 
@@ -139,10 +141,21 @@ AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景
 4. Wiki 只有中英文: 中文界面 (简体、繁体) 的帮助打开中文页, 其它语言打开英文页
 
 ## 发布流程
-详细步骤见 [贡献指南](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.zh-CN.md#发布新版本), 这里是概要:
+版本号用日期。`Src\Core\App.ahk` 的 `App.Version` 和 `ALTRun.ahk` 的 `;@Ahk2Exe-SetVersion` 要一致 (`ReleaseVersion` 测试检查); `CHANGELOG.md` 每个版本标题在文件末尾都有链接, `[未发布]` 从最新的版本比较 (`ChangelogLinks` 测试检查)。
 
-- **测试版** (每个改了程序的 PR): 版本号四段 `YYYY.MM.DD.N`, 改 `App.Version` 和 `;@Ahk2Exe-SetVersion` (`ReleaseVersion` 测试检查两者一致), `CHANGELOG.md` 加一节 (`ChangelogLinks` 测试检查比较链接); 在 PR 的分支上运行 **Release** workflow, `publish = false`, 构建好的程序在 Actions 页面底部的 Artifacts (`ALTRun_v<版本>`)
-- **正式版**: 版本号三段 `YYYY.MM.DD`, 每天最多一个; 把这一轮测试版的 CHANGELOG 合成一节 (中英文摘要 + 升级 / 新增 / 改进 / 修复), 合并到 main 后在 main 上运行 **Release**, `publish = true`
+**测试版** (每个改了程序的 PR):
+1. 版本号四段 `YYYY.MM.DD.N` (例如 `2026.10.20.1`); 要比下一个正式版小, 否则装了测试版的检测不到正式版的更新
+2. `CHANGELOG.md` 在 `## [未发布]` 下面加一节 `## [YYYY.MM.DD.N]`: 第一段 "测试版。", 第二段 "Test build.", 再写 新增 / 改进 / 修复 (用中文); 文件末尾加比较链接 `[YYYY.MM.DD.N]: .../compare/<上一版>...<这一版>`, `[未发布]` 改成从这一版比较
+3. 在 PR 的分支上运行 **Release** workflow, `publish = false`; 构建好的程序在 Actions 页面底部的 Artifacts (`ALTRun_v<版本>`)
+
+**正式版** (每天最多一个):
+1. 开一个 PR, 版本号改成三段 `YYYY.MM.DD`
+2. `CHANGELOG.md` 把这一轮测试版的各节合并成一节 `## [YYYY.MM.DD]`, 英文在前、中文在后, 英文是中文的完整翻译:
+   - `### Summary` (英文摘要一段) / `### Upgrade` / `### New` / `### Improvements` / `### Fixes`
+   - `---`
+   - `### 中文说明` (中文摘要一段) / `#### 升级` / `#### 新增` / `#### 改进` / `#### 修复`
+   - 这一节里不要用 `##` 标题 (Release workflow 取到下一个 `##` 为止); 删掉测试版各节和它们的比较链接; 文件末尾 `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD`, `[未发布]: .../compare/YYYY.MM.DD...HEAD`
+3. 合并到 main 后, 在 main 上运行 **Release**, `publish = true`
 
 Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe → 单元测试 → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本。
 
@@ -169,13 +182,30 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 - Wiki 自动检查只能发现缺页和断链, 不能判断说明是否准确或是否覆盖每个设置项; 修改设置时仍需逐项对照代码和中英文文档。
 
 ## 代码规范
-见仓库的 [贡献指南](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.zh-CN.md)。几个 AutoHotkey v2 的坑:
-- 名字不区分大小写: 局部变量不要和类同名 (`pinyin` 会遮住 `Pinyin` 类), 同一个类里方法和属性不要只差大小写
+- **文件与类**: 一个文件一个类, 文件名 = 类名, PascalCase (`SearchWindow.ahk` → `class SearchWindow`)
+- **文件夹**: `Lib\` 放和 ALTRun 无关、可以拿到别的项目用的通用库; ALTRun 自己的代码放 `Src\` 下对应的子文件夹
+- **命名**: 类、方法、属性用 PascalCase; 局部变量用 camelCase; 内部使用的成员以 `_` 开头 (`_Layout()`、`_cache`)
+- **避免重名**: AutoHotkey 的名字不区分大小写, 局部变量不要和类同名 (例如不要把变量叫 `pinyin`, 会遮住 `Pinyin` 类); 同一个类里的方法和属性也不要只差大小写
+- **注释**: 每个文件开头说明用途和用法; 代码里的注释说明 "为什么", 用中文或英文都可以
+- **设置**: 新的设置项加到 `AppSettings.Defaults()`; 改变已有设置的结构见上面的 "修改设置结构"
+- **界面文字**: 英文原文写在 `I18n.ahk`, 翻译写在 `Resources\Lang\` 的每个语言文件里, 见上面的 "界面翻译"
+- **编码**: UTF-8; `ALTRun.ahk` 保持 UTF-8 BOM + CRLF, 其它文件 UTF-8 + LF
+
+几个 AutoHotkey v2 的坑:
 - 很大的 `static X := Map(...)` 会报 "Declaration too long", 改成在方法里构造
 - 字符串按值传给函数时会整段复制: 在循环里反复把一个大字符串 (整个文件) 传给函数, 耗时会随长度平方增长, 要按引用传 (`&text`), 见 `Lib\JSON.ahk`
 - 调试日志 (`General.SaveLog`) 里 `Perf:` 开头的行是启动各阶段、慢搜索和慢的后台任务的耗时; 用 `Logger.Ms()` / `Logger.Time(label, start)` 记录新的, 计时器的回调用 `Logger.Watch(label, fn)` 包一层 (超过 50 ms 才记)
 - 不要在主线程里用 `Download()` 下载 (下载完之前整个程序都停着), 用 `HttpGet.Start(url, done, fail)` 在后台下载
 - 要知道文件夹里的变化, 用 `FolderWatcher` (`Lib\FolderWatcher.ahk`, 定时 `Poll()` 不等待), 不要定时扫描整个文件夹; 关闭时它会等异步读取结束再放掉缓冲区
 - 嵌套函数修改外层变量时, 通过对象传回结果 (`state := {Result: ""}`)
-- 所有 `Edit` 控件都写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行
+- 所有 `Edit` 控件都写明行数 (`r1 -Multi`), 否则长文字会让它自动变成多行 (有测试检查)
 - `#Warn All` 的警告都当作错误处理
+
+## 提交 Pull Request
+1. 从 `main` 新建分支, 一个 PR 只做一件事
+2. 提交前确认单元测试全部通过、`/validate` 没有警告 (见上面的 "环境")
+3. 新功能或修复请附带测试 (`Tests\RunTests.ahk`)
+4. 涉及界面的改动请附上截图; README / Wiki 里的截图由 Screenshots workflow 生成 (见上面的 "文档"), 用英文界面和虚构的示例数据, 不要放个人或工作相关的信息
+5. 用户可见的变化请更新 README (中英文)、`CHANGELOG.md`, 必要时更新 Wiki (中文页和 `en-` 英文页)
+
+提交代码即表示你同意以 [GPL-3.0](https://github.com/zhugecaomao/ALTRun/blob/main/LICENSE) 许可发布你的贡献。
