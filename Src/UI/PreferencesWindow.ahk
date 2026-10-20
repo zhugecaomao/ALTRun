@@ -553,67 +553,25 @@ class PreferencesWindow {
         return Max(thumbW + Win.Scale(8), (width - 2) // PreferencesWindow.GalleryColumns)
     }
 
-    ; 表格的各列按设计的宽度比例铺满列表, 不出现横向滚动条: 行数多到要出现竖滚动条时先减掉它的宽度。
-    ; 列表内容变了 (添加、删除、筛选) 再调用一次; 用户拖过列宽之后不再调整 (这时出现横向滚动条是用户自己选的)
+    ; 表格最后一列占满剩下的宽度 (和 AutoHdr 一样), 但先让出竖滚动条的位置: 还没显示过的列表 Windows 先不画竖滚动条,
+    ; AutoHdr 按没有滚动条算, 显示出来以后就多出横向滚动条。列表内容变了 (添加、删除、筛选) 再调用一次
     static FitColumns(listView) {
         static LVM_GETCOLUMNWIDTH := 0x101D, LVM_SETCOLUMNWIDTH := 0x101E, LVM_GETHEADER := 0x101F, HDM_GETITEMCOUNT := 0x1200
-        header := SendMessage(LVM_GETHEADER, 0, 0, listView.Hwnd)
-        columns := SendMessage(HDM_GETITEMCOUNT, 0, 0, header)
-        if (columns < 1)
-            return
-        widths := []
-        Loop columns
-            widths.Push(SendMessage(LVM_GETCOLUMNWIDTH, A_Index - 1, 0, listView.Hwnd))
-        if listView.HasOwnProp("FitState") {
-            state := listView.FitState
-            for index, width in widths
-                if (width != state.Fitted[index])
-                    return                                                  ; 用户拖过列宽
-            design := state.Design
-        } else
-            design := widths
-        scrollW := SysGet(2)                                                ; SM_CXVSCROLL
-        available := PreferencesWindow._ListClientSize(listView, &height, &hasVScroll)
-        available -= (hasVScroll || PreferencesWindow.ListRowsFit(listView, header, height) < listView.GetCount()) ? scrollW : 0
-        total := 0
-        for width in design
-            total += width
-        if (total <= 0 || available <= columns)
-            return
-        fitted := [], used := 0
-        for index, width in design {
-            width := (index = columns) ? available - used : Round(width * available / total)
-            fitted.Push(width), used += width
-            SendMessage(LVM_SETCOLUMNWIDTH, index - 1, width, listView.Hwnd)
-        }
-        listView.FitState := {Design: design, Fitted: fitted}
+        columns := SendMessage(HDM_GETITEMCOUNT, 0, 0, SendMessage(LVM_GETHEADER, 0, 0, listView.Hwnd))
+        width := PreferencesWindow.ListWidth(listView)
+        Loop columns - 1
+            width -= SendMessage(LVM_GETCOLUMNWIDTH, A_Index - 1, 0, listView.Hwnd)
+        SendMessage(LVM_SETCOLUMNWIDTH, columns - 1, Max(width, 50), listView.Hwnd)
     }
 
-    ; 列表没有滚动条时的客户区宽度 (返回值) 和高度 (height); hasVScroll: 现在有没有竖滚动条
-    static _ListClientSize(listView, &height, &hasVScroll := false) {
+    ; 表格各列加起来应有的宽度: 客户区宽度, 一屏放不下所有行 (竖滚动条已经出现或将要出现) 时减掉滚动条的宽度
+    static ListWidth(listView) {
+        static LVM_GETCOUNTPERPAGE := 0x1028
         rect := Buffer(16, 0)
         DllCall("GetClientRect", "Ptr", listView.Hwnd, "Ptr", rect)
-        style := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int")
-        height := NumGet(rect, 12, "Int") + (style & 0x100000 ? SysGet(3) : 0)   ; WS_HSCROLL, SM_CYHSCROLL
-        hasVScroll := (style & 0x200000) ? true : false                     ; WS_VSCROLL
-        return NumGet(rect, 8, "Int") + (hasVScroll ? SysGet(2) : 0)        ; SM_CXVSCROLL
-    }
-
-    ; 列表 (高度 height, 没有横向滚动条) 一屏能放下几行: 用第一行的高度和表头的高度自己算。
-    ; 竖滚动条已经出现时 FitColumns 直接以它为准; 这里算的是去掉横向滚动条之后, 行数是不是还要竖滚动条
-    static ListRowsFit(listView, header, height) {
-        static LVM_GETITEMRECT := 0x100E, HDM_LAYOUT := 0x1205
-        if !listView.GetCount()
-            return 0
-        rect := Buffer(16, 0)                                               ; 第一行的高度 (LVIR_BOUNDS)
-        if !SendMessage(LVM_GETITEMRECT, 0, rect.Ptr, listView.Hwnd)
-            return listView.GetCount()
-        rowH := NumGet(rect, 12, "Int") - NumGet(rect, 4, "Int")
-        area := Buffer(16, 0), NumPut("Int", 0, "Int", 0, "Int", 1000, "Int", height, area)
-        pos := Buffer(A_PtrSize * 2 + 24, 0)                               ; WINDOWPOS: 表头要的高度在 cy
-        layout := Buffer(A_PtrSize * 2, 0), NumPut("Ptr", area.Ptr, "Ptr", pos.Ptr, layout)
-        headerH := SendMessage(HDM_LAYOUT, 0, layout.Ptr, header) ? NumGet(pos, A_PtrSize * 2 + 12, "Int") : 0
-        return rowH > 0 ? (height - headerH) // rowH : listView.GetCount()
+        hasVScroll := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int") & 0x200000   ; WS_VSCROLL
+        needVScroll := hasVScroll || listView.GetCount() > SendMessage(LVM_GETCOUNTPERPAGE, 0, 0, listView.Hwnd)
+        return NumGet(rect, 8, "Int") + (hasVScroll ? SysGet(2) : 0) - (needVScroll ? SysGet(2) : 0)   ; SM_CXVSCROLL
     }
 
     ; 主题列表里选中了另一个主题: "应用" 可用
@@ -1716,7 +1674,7 @@ class PreferencesWindow {
             if (selectRow && shown.Length)
                 listView.Modify(Min(selectRow, shown.Length), "Select Focus Vis")
             listView.Opt("+Redraw")
-            PreferencesWindow.FitColumns(listView)                          ; 重画打开后滚动条才是最新的
+            PreferencesWindow.FitColumns(listView)
         }
         RowOf(index) {                                                      ; items 里的第 index 项在第几行, 没有显示时 0
             for row, shownIndex in shown

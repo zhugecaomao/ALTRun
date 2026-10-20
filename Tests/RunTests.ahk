@@ -2641,7 +2641,7 @@ class Tests {
     ; 每一页的控件都在底部按钮上面 (中英文都检查, 文字长短不同)
     ; 偏好设置每一页: 上下相邻的控件 (左右有重叠) 至少隔 4 像素, 不会挤在一起。
     ; 灰色说明 (小一号的字) 本来就紧贴在上面的设置下面, 不算
-    ; 偏好设置里的表格: 各列刚好铺满列表 (有竖滚动条时减掉它), 没有横向滚动条; 用户拖过列宽之后不再调整
+    ; 偏好设置里的表格: 最后一列补满, 各列刚好铺满列表 (有竖滚动条时减掉它), 没有横向滚动条
     static ListColumnsFit() {
         eq := (n, a, e) => TestRunner.Equal("ListColumnsFit." n, a, e)
         PreferencesWindow.Show(1, -3000, -3000)
@@ -2655,24 +2655,20 @@ class Tests {
         for entry in lists {
             listView := entry[2]
             columns := SendMessage(0x1200, 0, 0, SendMessage(0x101F, 0, 0, listView.Hwnd))
-            total := 0, widths := ""
+            total := 0
             Loop columns
-                width := SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd), total += width, widths .= width " "
-            fitted := ""
-            if listView.HasOwnProp("FitState")
-                for width in listView.FitState.Fitted
-                    fitted .= width " "
-            rect := Buffer(16, 0)
-            DllCall("GetClientRect", "Ptr", listView.Hwnd, "Ptr", rect)
+                total += SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd)
+            eq(entry[1] " fills the width", total, PreferencesWindow.ListWidth(listView))
             style := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int")
-            PreferencesWindow._ListClientSize(listView, &height)
-            eq(entry[1] " fills the width (rows " listView.GetCount() ", fit " PreferencesWindow.ListRowsFit(listView, SendMessage(0x101F, 0, 0, listView.Hwnd), height) ", widths " widths "/ fitted " fitted ")", total, NumGet(rect, 8, "Int"))
             eq(entry[1] " no horizontal scroll bar", style & 0x100000 ? 1 : 0, 0)   ; WS_HSCROLL
         }
-        listView := lists[1][2]                                             ; 拖过列宽: 不再调整
+        listView := lists[1][2]                                             ; 拖窄了前面的列: 最后一列补上
         SendMessage(0x101E, 0, 33, listView.Hwnd)
         PreferencesWindow.FitColumns(listView)
-        eq("user width kept", SendMessage(0x101D, 0, 0, listView.Hwnd), 33)
+        columns := SendMessage(0x1200, 0, 0, SendMessage(0x101F, 0, 0, listView.Hwnd)), total := 0
+        Loop columns
+            total += SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd)
+        eq("user width kept", SendMessage(0x101D, 0, 0, listView.Hwnd) "|" total, "33|" PreferencesWindow.ListWidth(listView))
         PreferencesWindow.Close()
     }
 
