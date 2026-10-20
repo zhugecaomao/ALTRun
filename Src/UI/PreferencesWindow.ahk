@@ -573,8 +573,8 @@ class PreferencesWindow {
         } else
             design := widths
         scrollW := SysGet(2)                                                ; SM_CXVSCROLL
-        available := PreferencesWindow._ListClientSize(listView, &height)
-        available -= PreferencesWindow.ListRowsFit(listView, header, height) < listView.GetCount() ? scrollW : 0
+        available := PreferencesWindow._ListClientSize(listView, &height, &hasVScroll)
+        available -= (hasVScroll || PreferencesWindow.ListRowsFit(listView, header, height) < listView.GetCount()) ? scrollW : 0
         total := 0
         for width in design
             total += width
@@ -589,17 +589,18 @@ class PreferencesWindow {
         listView.FitState := {Design: design, Fitted: fitted}
     }
 
-    ; 列表没有滚动条时的客户区宽度 (返回值) 和高度 (height)
-    static _ListClientSize(listView, &height) {
+    ; 列表没有滚动条时的客户区宽度 (返回值) 和高度 (height); hasVScroll: 现在有没有竖滚动条
+    static _ListClientSize(listView, &height, &hasVScroll := false) {
         rect := Buffer(16, 0)
         DllCall("GetClientRect", "Ptr", listView.Hwnd, "Ptr", rect)
         style := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int")
         height := NumGet(rect, 12, "Int") + (style & 0x100000 ? SysGet(3) : 0)   ; WS_HSCROLL, SM_CYHSCROLL
-        return NumGet(rect, 8, "Int") + (style & 0x200000 ? SysGet(2) : 0)       ; WS_VSCROLL, SM_CXVSCROLL
+        hasVScroll := (style & 0x200000) ? true : false                     ; WS_VSCROLL
+        return NumGet(rect, 8, "Int") + (hasVScroll ? SysGet(2) : 0)        ; SM_CXVSCROLL
     }
 
-    ; 列表 (高度 height, 没有横向滚动条) 一屏能放下几行: 用第一行的高度和表头的高度自己算
-    ; (LVM_GETCOUNTPERPAGE 在 Windows 上对还没显示过的页面算得不准, 会多算)
+    ; 列表 (高度 height, 没有横向滚动条) 一屏能放下几行: 用第一行的高度和表头的高度自己算。
+    ; 竖滚动条已经出现时 FitColumns 直接以它为准; 这里算的是去掉横向滚动条之后, 行数是不是还要竖滚动条
     static ListRowsFit(listView, header, height) {
         static LVM_GETITEMRECT := 0x100E, HDM_LAYOUT := 0x1205
         if !listView.GetCount()
@@ -1714,8 +1715,8 @@ class PreferencesWindow {
             }
             if (selectRow && shown.Length)
                 listView.Modify(Min(selectRow, shown.Length), "Select Focus Vis")
-            PreferencesWindow.FitColumns(listView)
             listView.Opt("+Redraw")
+            PreferencesWindow.FitColumns(listView)                          ; 重画打开后滚动条才是最新的
         }
         RowOf(index) {                                                      ; items 里的第 index 项在第几行, 没有显示时 0
             for row, shownIndex in shown
