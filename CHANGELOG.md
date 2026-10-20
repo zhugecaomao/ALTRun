@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.19.19]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置里的表格 (自定义命令、文字片段、网页搜索、脚本、自定义热键、使用统计) 最后一列补满剩下的宽度: 不再有横向滚动条, 右边也不留空; 行数多到出现竖滚动条时先让出它的宽度
+- 偏好设置 → 网页搜索: 列表和编辑框里的 "网址 ({query} = 搜索词)" 改成 "网址"; `{query}`、`{query|默认值}`、`{query|clipboard}` 的写法放到网址输入框下面的说明里, 关键字和网址的说明都加了例子 (例如 "g hello" 用 Google 搜索 hello)。默认值的例子从 `8000` (其实是端口号) 换成 `天气`
+
 ## [2026.10.19.18]
 
 测试版。
@@ -954,7 +964,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.19...HEAD
+[2026.10.19.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.18...2026.10.19.19
 [2026.10.19.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.17...2026.10.19.18
 [2026.10.19.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.16...2026.10.19.17
 [2026.10.19.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.19.15...2026.10.19.16

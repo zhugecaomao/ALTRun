@@ -553,6 +553,27 @@ class PreferencesWindow {
         return Max(thumbW + Win.Scale(8), (width - 2) // PreferencesWindow.GalleryColumns)
     }
 
+    ; 表格最后一列占满剩下的宽度 (和 AutoHdr 一样), 但先让出竖滚动条的位置: 还没显示过的列表 Windows 先不画竖滚动条,
+    ; AutoHdr 按没有滚动条算, 显示出来以后就多出横向滚动条。列表内容变了 (添加、删除、筛选) 再调用一次
+    static FitColumns(listView) {
+        static LVM_GETCOLUMNWIDTH := 0x101D, LVM_SETCOLUMNWIDTH := 0x101E, LVM_GETHEADER := 0x101F, HDM_GETITEMCOUNT := 0x1200
+        columns := SendMessage(HDM_GETITEMCOUNT, 0, 0, SendMessage(LVM_GETHEADER, 0, 0, listView.Hwnd))
+        width := PreferencesWindow.ListWidth(listView)
+        Loop columns - 1
+            width -= SendMessage(LVM_GETCOLUMNWIDTH, A_Index - 1, 0, listView.Hwnd)
+        SendMessage(LVM_SETCOLUMNWIDTH, columns - 1, Max(width, 50), listView.Hwnd)
+    }
+
+    ; 表格各列加起来应有的宽度: 客户区宽度, 一屏放不下所有行 (竖滚动条已经出现或将要出现) 时减掉滚动条的宽度
+    static ListWidth(listView) {
+        static LVM_GETCOUNTPERPAGE := 0x1028
+        rect := Buffer(16, 0)
+        DllCall("GetClientRect", "Ptr", listView.Hwnd, "Ptr", rect)
+        hasVScroll := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int") & 0x200000   ; WS_VSCROLL
+        needVScroll := hasVScroll || listView.GetCount() > SendMessage(LVM_GETCOUNTPERPAGE, 0, 0, listView.Hwnd)
+        return NumGet(rect, 8, "Int") + (hasVScroll ? SysGet(2) : 0) - (needVScroll ? SysGet(2) : 0)   ; SM_CXVSCROLL
+    }
+
     ; 主题列表里选中了另一个主题: "应用" 可用
     static _OnGalleryChange(lParam) {
         static LVIS_SELECTED := 0x2
@@ -853,6 +874,7 @@ class PreferencesWindow {
             listView.Add(, script.Title, script.Keyword, script.Argument, I18n.T(modes[script.Mode]), script.Name)
         if !ScriptProvider.Scripts.Length
             listView.Add(, I18n.T("Prefs.NoScripts"))
+        PreferencesWindow.FitColumns(listView)
     }
 
     static _BuildHotkeys() {
@@ -1090,6 +1112,7 @@ class PreferencesWindow {
             share := (row.Id = "Show") ? "-" : (total ? Format("{:.1f}%", row.All * 100 / total) : "0%")
             list.Add("", I18n.T("Usage.F." row.Id), counts[1], counts[2], counts[3], counts[4], share)
         }
+        PreferencesWindow.FitColumns(list)
     }
 
     static _ClearUsage() {
@@ -1651,6 +1674,7 @@ class PreferencesWindow {
             if (selectRow && shown.Length)
                 listView.Modify(Min(selectRow, shown.Length), "Select Focus Vis")
             listView.Opt("+Redraw")
+            PreferencesWindow.FitColumns(listView)
         }
         RowOf(index) {                                                      ; items 里的第 index 项在第几行, 没有显示时 0
             for row, shownIndex in shown

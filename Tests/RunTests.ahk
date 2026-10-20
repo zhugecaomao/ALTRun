@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -2641,6 +2641,37 @@ class Tests {
     ; 每一页的控件都在底部按钮上面 (中英文都检查, 文字长短不同)
     ; 偏好设置每一页: 上下相邻的控件 (左右有重叠) 至少隔 4 像素, 不会挤在一起。
     ; 灰色说明 (小一号的字) 本来就紧贴在上面的设置下面, 不算
+    ; 偏好设置里的表格: 最后一列补满, 各列刚好铺满列表 (有竖滚动条时减掉它), 没有横向滚动条
+    static ListColumnsFit() {
+        eq := (n, a, e) => TestRunner.Equal("ListColumnsFit." n, a, e)
+        PreferencesWindow.Show(1, -3000, -3000)
+        PreferencesWindow.BuildAll()
+        lists := []
+        for page in PreferencesWindow.Pages
+            for ctrl in page.Controls
+                if (ctrl.Type = "ListView" && SendMessage(0x108F, 0, 0, ctrl.Hwnd) = 1)   ; LVM_GETVIEW = LV_VIEW_DETAILS (主题缩略图不算)
+                    lists.Push([page.Key, ctrl])
+        TestRunner.True("ListColumnsFit.found the tables (" lists.Length ")", lists.Length >= 6)
+        for entry in lists {
+            listView := entry[2]
+            columns := SendMessage(0x1200, 0, 0, SendMessage(0x101F, 0, 0, listView.Hwnd))
+            total := 0
+            Loop columns
+                total += SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd)
+            eq(entry[1] " fills the width", total, PreferencesWindow.ListWidth(listView))
+            style := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int")
+            eq(entry[1] " no horizontal scroll bar", style & 0x100000 ? 1 : 0, 0)   ; WS_HSCROLL
+        }
+        listView := lists[1][2]                                             ; 拖窄了前面的列: 最后一列补上
+        SendMessage(0x101E, 0, 33, listView.Hwnd)
+        PreferencesWindow.FitColumns(listView)
+        columns := SendMessage(0x1200, 0, 0, SendMessage(0x101F, 0, 0, listView.Hwnd)), total := 0
+        Loop columns
+            total += SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd)
+        eq("user width kept", SendMessage(0x101D, 0, 0, listView.Hwnd) "|" total, "33|" PreferencesWindow.ListWidth(listView))
+        PreferencesWindow.Close()
+    }
+
     static PreferencesSpacing() {
         smallFont(ctrl) {
             if !(ctrl.Type = "Text" || ctrl.Type = "Link") || !(font := SendMessage(0x31, 0, 0, ctrl.Hwnd))   ; WM_GETFONT

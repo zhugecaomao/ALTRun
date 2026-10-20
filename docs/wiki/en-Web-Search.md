@@ -31,7 +31,7 @@ Preferences → Web Search: double-click an engine in the list to edit it, or cl
 |---|---|
 | Title | Shown in the result, for example "Search Google for ..." |
 | Keyword | Type it followed by a space to search this site. Several keywords: separate them with commas, for example `g, ㅎ, google` (handy when you switch keyboard layouts: any of them works); hints and completion use the one you typed |
-| URL | The address of the results page; `{query}` is replaced by what you typed (encoded). With `{query|default}`, the keyword and a space with no search words opens it with the default value, for example `http://localhost:{query|8000}`; with the default `clipboard` (`https://www.google.com/search?q={query|clipboard}`), the text on the clipboard is searched |
+| URL | The address of the results page; `{query}` is replaced by what you typed (encoded). With `{query|default}`, the keyword and a space with no search words searches the default value, for example `https://www.bing.com/search?q={query|weather}` searches "weather" when you type `bing `; with the default `clipboard` (`https://www.google.com/search?q={query|clipboard}`), the text on the clipboard is searched |
 | Id | A name (Latin letters) that identifies the engine, used by fallback searches |
 | Icon | Optional: an `.ico`, `.png` or `.exe` file; a relative path starts from the Data folder. **Download Site Icon** visits the website in the URL once, saves its icon in `Data\Icons` and fills this in. Empty = the built-in icon (the engines above have one) or the browser icon |
 
@@ -41,7 +41,7 @@ Examples:
 |---|---|---|
 | Merriam-Webster | `dict` | `https://www.merriam-webster.com/dictionary/{query}` |
 | Amazon | `amz` | `https://www.amazon.com/s?k={query}` |
-| Local dev server | `lh` | `http://localhost:{query|8000}` |
+| Local dev server | `lh` | `http://localhost:{query|8000}` (8000 is the port: `lh ` opens 8000, `lh 3000` opens 3000) |
 
 ### Searching the clipboard
 - The clipboard is read only after the keyword and a space (`g `); the completion hint for only the keyword (`g`) or the engine name (for example `google`) doesn't read it

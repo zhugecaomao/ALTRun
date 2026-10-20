@@ -31,7 +31,7 @@
 |---|---|
 | 名称 | 显示在结果里, 例如 "Search Google for ..." |
 | 关键字 | 输入这个词再加空格就用这个网站搜索。可以写几个, 用逗号分隔, 例如 `g, ㅎ, google` (经常切换键盘布局 / 输入法时, 输入哪个都行); 提示和补全用输入的那个 |
-| 网址 | 搜索结果页的地址, `{query}` 换成输入的搜索词 (自动编码)。写成 `{query|默认值}` 时, 输入关键字加空格、不输入搜索词就用默认值打开, 例如 `http://localhost:{query|8000}`; 默认值写成 `clipboard` (`https://www.google.com/search?q={query|clipboard}`) 时搜索剪贴板里的文字 |
+| 网址 | 搜索结果页的地址, `{query}` 换成输入的搜索词 (自动编码)。写成 `{query|默认值}` 时, 输入关键字加空格、不输入搜索词就搜索默认值, 例如 `https://www.bing.com/search?q={query|天气}` 输入 `bing ` 就搜索 "天气"; 默认值写成 `clipboard` (`https://www.google.com/search?q={query|clipboard}`) 时搜索剪贴板里的文字 |
 | Id | 区分引擎用的名字 (英文字母), 兜底搜索里用它 |
 | 图标 | 可选: `.ico`、`.png` 或 `.exe` 文件, 相对路径从 Data 文件夹算起。点 **下载网站图标** 会访问网址所在的网站一次, 找到的图标存到 `Data\Icons` 并填好这一项。留空 = 自带的图标 (上面的几个引擎都有) 或浏览器的图标 |
 
@@ -41,7 +41,7 @@
 |---|---|---|
 | 必应词典 | `dict` | `https://cn.bing.com/dict/search?q={query}` |
 | Amazon | `amz` | `https://www.amazon.com/s?k={query}` |
-| 本地开发服务器 | `lh` | `http://localhost:{query|8000}` |
+| 本地开发服务器 | `lh` | `http://localhost:{query|8000}` (8000 是端口号: `lh ` 打开 8000, `lh 3000` 打开 3000) |
 
 ### 搜索剪贴板
 - 只在输入了关键字加空格 (`g `) 时才读取剪贴板; 只输入关键字 (`g`) 或引擎名称 (例如 `google`) 的补全提示不读
