@@ -553,6 +553,43 @@ class PreferencesWindow {
         return Max(thumbW + Win.Scale(8), (width - 2) // PreferencesWindow.GalleryColumns)
     }
 
+    ; 表格的各列按设计的宽度比例铺满列表, 不出现横向滚动条: 行数多到要出现竖滚动条时先减掉它的宽度。
+    ; 列表内容变了 (添加、删除、筛选) 再调用一次; 用户拖过列宽之后不再调整 (这时出现横向滚动条是用户自己选的)
+    static FitColumns(listView) {
+        static LVM_GETCOLUMNWIDTH := 0x101D, LVM_SETCOLUMNWIDTH := 0x101E, LVM_GETHEADER := 0x101F, LVM_GETCOUNTPERPAGE := 0x1028, HDM_GETITEMCOUNT := 0x1200
+        columns := SendMessage(HDM_GETITEMCOUNT, 0, 0, SendMessage(LVM_GETHEADER, 0, 0, listView.Hwnd))
+        if (columns < 1)
+            return
+        widths := []
+        Loop columns
+            widths.Push(SendMessage(LVM_GETCOLUMNWIDTH, A_Index - 1, 0, listView.Hwnd))
+        if listView.HasOwnProp("FitState") {
+            state := listView.FitState
+            for index, width in widths
+                if (width != state.Fitted[index])
+                    return                                                  ; 用户拖过列宽
+            design := state.Design
+        } else
+            design := widths
+        rect := Buffer(16, 0)
+        DllCall("GetClientRect", "Ptr", listView.Hwnd, "Ptr", rect)
+        scrollW := SysGet(2)                                                ; SM_CXVSCROLL
+        full := NumGet(rect, 8, "Int") + (DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int") & 0x200000 ? scrollW : 0)   ; WS_VSCROLL
+        available := full - (listView.GetCount() > SendMessage(LVM_GETCOUNTPERPAGE, 0, 0, listView.Hwnd) ? scrollW : 0)
+        total := 0
+        for width in design
+            total += width
+        if (total <= 0 || available <= columns)
+            return
+        fitted := [], used := 0
+        for index, width in design {
+            width := (index = columns) ? available - used : Round(width * available / total)
+            fitted.Push(width), used += width
+            SendMessage(LVM_SETCOLUMNWIDTH, index - 1, width, listView.Hwnd)
+        }
+        listView.FitState := {Design: design, Fitted: fitted}
+    }
+
     ; 主题列表里选中了另一个主题: "应用" 可用
     static _OnGalleryChange(lParam) {
         static LVIS_SELECTED := 0x2
@@ -853,6 +890,7 @@ class PreferencesWindow {
             listView.Add(, script.Title, script.Keyword, script.Argument, I18n.T(modes[script.Mode]), script.Name)
         if !ScriptProvider.Scripts.Length
             listView.Add(, I18n.T("Prefs.NoScripts"))
+        PreferencesWindow.FitColumns(listView)
     }
 
     static _BuildHotkeys() {
@@ -1090,6 +1128,7 @@ class PreferencesWindow {
             share := (row.Id = "Show") ? "-" : (total ? Format("{:.1f}%", row.All * 100 / total) : "0%")
             list.Add("", I18n.T("Usage.F." row.Id), counts[1], counts[2], counts[3], counts[4], share)
         }
+        PreferencesWindow.FitColumns(list)
     }
 
     static _ClearUsage() {
@@ -1650,6 +1689,7 @@ class PreferencesWindow {
             }
             if (selectRow && shown.Length)
                 listView.Modify(Min(selectRow, shown.Length), "Select Focus Vis")
+            PreferencesWindow.FitColumns(listView)
             listView.Opt("+Redraw")
         }
         RowOf(index) {                                                      ; items 里的第 index 项在第几行, 没有显示时 0
