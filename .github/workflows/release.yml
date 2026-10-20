@@ -284,7 +284,7 @@ jobs:
           if ($LASTEXITCODE -eq 0) { Write-Host "Manifests are already up to date"; exit 0 }
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit --quiet -m "Packaging: Scoop / winget 清单更新到 $version"
+          git commit --quiet -m "Packaging: update Scoop / winget manifests to $version"
           git push origin main
 
       # 只能更新 winget-pkgs 里已经有的包; 第一次提交见 packaging/README.md
