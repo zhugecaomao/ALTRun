@@ -7,11 +7,88 @@
 
 ## [2026.10.20]
 
-新装的软件、新建的文件几秒后就能搜到, 后台重建索引不再和打字抢时间; 没有 Everything 时文件名也能用拼音首字母找; 所有主题都有宽松 / 常规 / 紧凑三种显示密度, 另有 5 个新主题; 关键字可以写几个 (例如 `g, ㅎ`); 输入 `g ` 就搜索剪贴板里的文字; 文字片段可以从 Excel / CSV 批量导入导出; 文件可以直接 "编辑"; Wiki 按功能重新整理成一页一个功能。
+### Summary
 
 New apps and files show up in search a few seconds after they appear, and background re-indexing no longer competes with your typing; find files by pinyin initials even without Everything; every theme now comes in Comfortable / Normal / Compact density, plus 5 new themes; keywords can have alternatives (e.g. `g, ㅎ`); type `g ` to search the text on the clipboard; import and export snippets from Excel / CSV; open files for editing; the Wiki is reorganized with one page per feature.
 
-### 升级
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- The settings file format has not changed. New options are added at startup, and upgrades keep the way things were:
+  - `Appearance.Density`: upgrades keep the previous size, "Comfortable"; new installations default to "Normal" (a little smaller)
+  - `Features.LargeType` (Large Type, `Ctrl+L`): stays on after upgrading; off by default for new installations
+  - Built-in web search engines whose URL is still the old default switch to `{query|clipboard}` (see "New" below); engines whose URL you changed and engines you added are left alone
+- **If you use "Dark Compact", "Light Compact" or "Midnight Compact"**: these three themes are gone, replaced by a density setting that works with every theme. After upgrading they show as "the matching theme + Normal", the same size as before; open Preferences → Appearance, where this is already selected, and click OK to save
+- **If you use "Dark Modern" or "Light Modern"**: they are now the same size as the other themes (they used to be a size smaller). To keep them that small: Preferences → Appearance → "Density" → "Compact"
+- Preferences → Applications no longer has "Refresh every" (folder watching makes it unnecessary); `Features.Applications.RefreshMinutes` in the settings file is no longer read
+
+### New
+- **New apps show up in seconds** (#189): the Applications folders are watched (by default the desktop, public desktop, Start menu and public Start menu, including subfolders); when a shortcut is added, deleted or renamed, the index is rebuilt in the background after 5 quiet seconds (at most once a minute), with no notification. It uses Windows folder change notifications and costs almost nothing while idle; the cache is also rebuilt in the background when it is older than an hour (for apps installed while ALTRun was not running)
+- **The built-in file index watches folders too** (#189, used when Everything is not running): when files or folders are added, deleted or renamed in the indexed folders, they are rescanned in the background after 5 quiet seconds (at most once every 5 minutes). Edits to file contents, browser download temp files, Office lock files, and anything deeper than the scan depth or excluded do not count. The refresh interval remains as a fallback
+- **Pinyin initials for file names without Everything** (#180): `cs` finds "测试.bat", `zjsm` finds "证件扫描文件.zip"; the matching characters are highlighted, ranked a little below direct name matches. Initials are computed in the background in batches after the index loads (about 0.25 s for 10,000 Chinese file names), so startup is not slowed down
+- **Chinese file names that Everything finds by pinyin are ranked by how well they match** (#180; Everything 1.5 beta with the `pinyin` option, or 1.4 with IbEverythingExt), instead of coming after direct matches
+- **Density**: Preferences → Appearance → Size → "Density": Comfortable / Normal / Compact, for every theme including custom ones. Comfortable is the theme's own size (row height 54, 32 px icons), Normal matches the old Dark Compact (row height 48, 28 px icons), Compact is one step smaller (row height 42, 24 px icons)
+- **5 new themes**: Lavender and Rose (light), Forest and Sunset (dark), High Contrast (white on black with a yellow selection, clearer for low vision or bright light). 22 built-in themes in total
+- **Several keywords**: the keyword of a web search, custom command or snippet can list alternatives separated by commas, e.g. `g, ㅎ, google`, and any of them works, so you don't have to switch back to an English layout first. Every keyword of a snippet expands; the hint and completion for a keyword alone use the one you typed. Suggested by an AutoHotkey forum user
+- **Type `g ` to search the clipboard**: when the default value in the URL is `clipboard` (`{query|clipboard}`), typing the keyword and a space with nothing after it searches the text on the clipboard; if you go on typing, what you typed is searched. The built-in engines now use it, e.g. `https://www.google.com/search?q={query|clipboard}`
+  - The list shows "Search Google for clipboard: '...'"; when the clipboard has no text (copied files, empty) it says so and can't be opened
+  - When text and an image are copied together (e.g. Excel cells) the text is searched; content copied from password managers is not read, just like in the clipboard history
+- **Web search from the clipboard history**: select a text item and press `→` to search it with each engine
+- **Import / export snippets**: Preferences → Snippets → "Import/Export". Paste cells copied from Excel, or read a CSV / TSV file; columns are Name | Keyword | Text | Auto-expand (optional), a header row is skipped, and snippets with the same keyword are updated. Export to CSV (UTF-8 with BOM), edit it in Excel and import it again
+- **Edit files**: the action panel of a file has "Edit" when Windows has an editor registered for that file type (like "Edit" in the right-click menu, e.g. open an .ahk script in the editor instead of running it), with the editor's name on the right; `Ctrl+E` in the search window edits the selected file. Suggested by an AutoHotkey forum user
+- **Large Type can be turned off**: Preferences → Features → "Large type (Ctrl+L)". When off, `Ctrl+L` does nothing and the action panel and `?` cheat sheet don't list it
+
+### Improvements
+- **Background re-indexing no longer competes with typing** (#189):
+  - The application index is scanned in the background in small batches (at most about 15 ms each), so hotkeys no longer stall during a rebuild; each folder is listed only once, about 30% faster; scanning pauses while the search window is open and resumes when it closes
+  - Writing the cache after a scan (70–120 ms for the application index, about 0.6–0.8 s for a 30,000-entry file index) waits until the keyboard and mouse have been idle for 2 seconds, and happens right away on exit if still pending
+  - Microsoft Store apps (PowerShell) are scanned in the background at most once an hour; a manual rebuild still scans them
+  - The application and file indexes share one folder watcher: a failed read triggers a background rebuild, broken watches are retried every 30 seconds and a rebuild runs once they recover; folders whose names contain a dot are recognized
+- **Changes to what is indexed take effect right away**: after changing the application index (folders, file types, exclusions, subfolder depth) or the built-in file index (folders, depth, exclusions, max entries) in Preferences, Apply rescans in the background; the old index keeps working until the scan finishes
+- **Rebuild results**: "Rebuild Index" and "Rebuild File Index" show how many apps / files and folders were found when done; Rebuild File Index runs in the background with the button showing "Rebuilding..."; the result also mentions reaching the entry limit, Everything running (searches then use Everything), or unapplied changes on the page
+- New installations of the built-in file index also skip `.svn`, `.hg`, `.venv`, `venv`, `.tox`, `.cache`, `.idea` and `.vs` folders by default (repositories, virtual environments and tool caches easily hold tens of thousands of files, fill up "Max entries" and push real documents out), and refresh every 60 minutes instead of 30; existing settings are unchanged
+- **Pinyin initials are faster and easier to discover** (#180):
+  - Each character's initial is looked up once and remembered (apps, commands and bookmarks benefit too); when Everything returns many Chinese file names, sorting takes about a quarter of the time; with several words (e.g. `pt 2024`) pinyin is no longer computed for every result
+  - The Simplified Chinese usage tips (status bar, `?` cheat sheet) mention that `cs` finds apps and files by pinyin initials
+  - Preferences → Search Sources: under the Everything heading, how to make Everything search Chinese file names by pinyin (with a link), and whether Everything is running below the checkbox; the built-in index section says Chinese file names can be found by pinyin initials directly
+  - Preferences → Applications: the description of pinyin matching says it only applies to apps (file names always support pinyin); the README feature list and the Wiki file search FAQ mention it too
+- All built-in themes are the same size at the same density, so the window no longer changes size when you switch themes
+- Preferences → Appearance: theme thumbnails are spaced evenly across the list, four per row with no big gap on the right; long theme names (such as "System (Light / Dark)") are less likely to be cut off
+- Web search: typing only a keyword (e.g. `g`) always shows a completion hint, and `Enter` completes it to `g `; engines with a default value (e.g. `{query|8000}`) open with it only after the keyword and a space (they used to open on the keyword alone)
+- Searching the selection or a clipboard history item with a search engine uses at most 200 characters (very long text used to produce URLs the sites could not open)
+- Tables in Preferences (Custom Commands, Snippets, Web Search, Scripts, Hotkeys, Usage): the last column fills the remaining width, with no horizontal scroll bar and no gap on the right; room is left for the vertical scroll bar when there are more rows than fit
+- Preferences → Web Search: "URL ({query} = search term)" in the list and editor is now just "URL"; how to write `{query}`, `{query|default}` and `{query|clipboard}` is explained under the URL field, and the keyword and URL descriptions have examples (e.g. "g hello" searches Google for hello); the default-value example is `weather` instead of `8000` (which was a port number)
+- Preferences → Applications: "Subfolder depth" and "Rebuild Index" share a row (like on Search Sources); the descriptions for that row and for "Max entries / Refresh every" on both pages are clearer, with a recommended refresh interval for the built-in file index (60 minutes or more)
+- Preferences → File Search: more detailed descriptions for the file and folder keywords; the file types box is 4 lines tall
+- Preferences → General → "Selection hotkey": a more concrete description (search text on the web, change case or Simplified / Traditional Chinese, save as a snippet; copy a file's path, open a terminal there, and more) with a "See all actions" link
+- Preferences → Date Stamp: the two cases are now "File names (before the extension)" and "End of the text" (formerly "Rename files" / "Comment box"), each with an example: an existing date in a file name becomes today's, at the end of the text the date is simply added
+- Examples to type in Preferences descriptions are in quotes, e.g. "doc report" searches only documents, so they stand apart from the description
+- The Help button and `F1` in Preferences open the Wiki page for that feature (several pages used to open "Extensions" or "Search and shortcuts"); the links in the `?` cheat sheet point to the matching pages too
+- The Wiki is reorganized with one page per feature, matching the Preferences pages: new pages (English and Chinese) for Getting started, Privacy and network access, Data files, Web search, Window switching, Clipboard history, Pinned and recent items, System commands and terminal, Quick Switch, Dialog Folder Panel, Date Stamp, Browser bookmarks, Calculator, Scripts, Custom hotkeys and more; plus how the application index updates itself, which documentation belongs to each Preferences page, the modules in the development guide, translating and the release process; more Preferences screenshots
+- When the search box has selected text (e.g. the restored text of "Keep the last search when the window opens"), `→` only clears the selection and moves the cursor to the end, like any text box, instead of opening the action panel: a restored calculation (`1250+500`) can be edited; press `→` again for the action panel
+- The log file stays open instead of being opened and closed for every line: showing the window during the first minute after startup is no longer slow (on old PCs antivirus software checks the file each time it is closed); the time taken by each of the two input method switching steps and Everything replies that time out (how long it waited, whether other messages arrived meanwhile) are written to the debug log
+- Development: release builds are pinned to AutoHotkey v2.0.30 and Ahk2Exe 1.1.37.02a2, benchmarks to AutoHotkey v2.0.30; unit tests still use the latest stable AutoHotkey to keep checking compatibility
+
+### Fixes
+- A broken shortcut on the desktop or in the Start menu made the application scan fail with "This local variable has not been assigned a value (linkTarget)", stopping halfway, after which the application index no longer updated by itself; broken shortcuts are now indexed (without a target) without an error. The recent folders next to dialogs hit the same error with a broken shortcut in Recent Items and now skip it
+- With "Keep the last search when the window opens" on and a file search as the last search, showing the window could stall for a second (waiting for Everything). Results that need no waiting now show first, the window appears right away, and the full search runs afterwards and reselects the previous row
+- Showing the search window could be delayed by icons being preloaded in the background (2.3 s once on an old PC); icons are no longer read until the window is shown
+- "Refresh every" of the built-in file index had no effect while running: the cache age was only checked at startup. It is now checked every minute and rebuilt silently in the background when due (waiting while the search window is open); the minimum interval is 5 minutes
+- Closing Preferences while it was still building a page (e.g. ALTRun busy, the tray menu clicked or Esc pressed) showed the error "This value of type "String" has no method named "Add""
+- Dialog Folder Panel: the source column on the right (e.g. "Total Commander (other panel)") now fills to the edge, so the selection color covers the whole row without a blank strip and line on the right
+- "Open With..." in the action panel had no icon (the icon it used does not exist in Windows); it now uses the generic program icon
+- Preferences → Quick Switch: the "Works in" checkbox was touching the "Other dialogs" box below it
+- Preferences → Features: the "Keyword" boxes on the Bookmarks and Windows rows were too close together (almost touching in Chinese and Japanese); the two columns of feature checkboxes above also get a little more row spacing in Chinese and Japanese, based on the checkbox height
+- Closing or restarting a folder watcher now waits for the pending asynchronous read to finish or be cancelled before freeing its memory, so memory is not released while a read is still using it
+
+---
+
+### 中文说明
+
+新装的软件、新建的文件几秒后就能搜到, 后台重建索引不再和打字抢时间; 没有 Everything 时文件名也能用拼音首字母找; 所有主题都有宽松 / 常规 / 紧凑三种显示密度, 另有 5 个新主题; 关键字可以写几个 (例如 `g, ㅎ`); 输入 `g ` 就搜索剪贴板里的文字; 文字片段可以从 Excel / CSV 批量导入导出; 文件可以直接 "编辑"; Wiki 按功能重新整理成一页一个功能。
+
+#### 升级
 - 一键升级: 托盘图标 → 检查更新 → 安装更新
 - 用 Scoop 安装的: `scoop update altrun`
 - 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
@@ -23,7 +100,7 @@ New apps and files show up in search a few seconds after they appear, and backgr
 - **用 "现代深色"、"现代浅色" 主题的**: 现在和其它主题一样大 (以前小一圈)。喜欢原来那么小的: 偏好设置 → 外观 → "显示密度" 选 "紧凑"
 - 偏好设置 → 应用搜索 去掉了 "刷新间隔" (监视文件夹之后不再需要), 设置文件里的 `Features.Applications.RefreshMinutes` 不再读取
 
-### 新增
+#### 新增
 - **新装的软件几秒后就能搜到** (#189): 监视应用搜索的文件夹 (默认: 桌面、公共桌面、开始菜单、公共开始菜单, 包括子文件夹), 快捷方式有新增、删除、改名时, 安静 5 秒后在后台重建索引 (两次至少隔 1 分钟), 不弹通知。用的是 Windows 的文件夹变化通知, 平时几乎不占资源; 另外缓存超过 1 小时也在后台重建 (覆盖 ALTRun 没运行时装的软件)
 - **内置文件索引也监视文件夹** (#189, 没有 Everything 时用): 索引的文件夹里有文件 / 文件夹新增、删除、改名, 安静 5 秒后在后台重新扫描 (两次至少隔 5 分钟); 修改文件内容、浏览器下载中的临时文件、Office 的锁文件不算, 比扫描深度深的、排除的也不算。刷新间隔留作兜底
 - **没有 Everything 时文件名也能用拼音首字母找** (#180): `cs` 找到 "测试.bat", `zjsm` 找到 "证件扫描文件.zip"; 同样高亮对应的字, 比名称直接匹配的排得靠后一点。首字母在载入索引后于后台分批算好 (1 万个中文文件名约 0.25 秒), 不拖慢启动
@@ -39,7 +116,7 @@ New apps and files show up in search a few seconds after they appear, and backgr
 - **编辑文件**: 文件的操作面板里加 "编辑", 这类文件在 Windows 里登记了编辑程序时才出现 (和右键菜单的 "编辑" 一样, 例如 .ahk 脚本用编辑器打开而不是运行), 右边显示编辑程序的名称; 搜索窗口里按 `Ctrl+E` 直接编辑选中的文件。AutoHotkey 论坛用户的建议
 - **大字显示可以关掉**: 偏好设置 → 功能 → 启用的功能 → "大字显示 (Ctrl+L)"。关掉时 `Ctrl+L` 不起作用, 操作面板和 `?` 速查表里也没有这一项
 
-### 改进
+#### 改进
 - **后台重建索引不再和打字抢时间** (#189):
   - 应用索引改为在后台分批扫描 (每次最多约 15 ms), 重建时不再卡住热键; 每个文件夹只列一次目录, 扫描也快了约三成; 搜索窗口打开时暂停, 关了再继续
   - 扫完后写缓存 (应用索引一次 70–120 ms, 3 万条的文件索引约 0.6–0.8 秒) 改到键盘鼠标空闲 2 秒后再写, 退出时还没写就马上写
@@ -70,7 +147,7 @@ New apps and files show up in search a few seconds after they appear, and backgr
 - 日志文件一直开着, 不再每写一条都打开、关闭一次: 刚启动的一分钟里呼出窗口不再变慢 (旧电脑上杀毒软件每次关闭文件都要检查); 切换输入法的两步各用了多久、Everything 没在限时内回复 (等了多久、期间有没有别的消息) 都会写进调试日志
 - 开发: 正式构建固定使用 AutoHotkey v2.0.30 和 Ahk2Exe 1.1.37.02a2, 基准测试固定使用 AutoHotkey v2.0.30; 单元测试仍用最新稳定版, 继续检测兼容性
 
-### 修复
+#### 修复
 - 桌面、开始菜单里有损坏的快捷方式时, 扫描应用报错 "This local variable has not been assigned a value (linkTarget)", 这次扫描停在半路, 之后应用索引不再自动更新; 现在损坏的快捷方式照样收进索引, 不报错。对话框旁的最近文件夹遇到损坏的快捷方式时也会报同样的错, 现在跳过它
 - 打开了 "呼出窗口时保留上一次的搜索" 时, 如果上次搜的是文件, 呼出窗口可能卡 1 秒 (要等 Everything 回复)。现在先显示不用等的结果, 窗口马上出来, 显示后再完整搜索并选中上次的那一行
 - 呼出搜索窗口时被后台预读图标耽误 (一台旧电脑上有一次多等了 2.3 秒): 窗口显示完之前不读图标
@@ -84,11 +161,64 @@ New apps and files show up in search a few seconds after they appear, and backgr
 
 ## [2026.10.14]
 
-更快: 偏好设置一打开就是、片段马上展开、图标和文字一起出来, 检查更新时不再卡住; CapsLock 切换输入法在管理员窗口里也能用, 以管理员身份运行 ALTRun 时一切照常; 窗口可以淡入淡出, 空搜索框的提示文字可以自定义; 恢复默认设置、复制系统信息; 修好了 Ctrl+D 偶尔把文件名换成 "d" 和结果行偶尔空白卡住的问题。
+### Summary
 
 Faster: Preferences opens instantly, snippets expand right away, icons appear together with the text, and checking for updates no longer freezes ALTRun; switching the input method with Caps Lock also works in administrator windows, and everything works when ALTRun itself runs as administrator; optional fade in / out for the window and your own placeholder text; reset to defaults and copy system info; fixed Ctrl+D sometimes renaming a file to "d" and result rows that occasionally stayed blank.
 
-### 升级
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- 2026.09.25 and earlier: exit ALTRun and extract `ALTRun_v2026.10.14.zip` over the old folder; for upgrading from 2.x see [the 2026.09.23 notes](https://github.com/zhugecaomao/ALTRun/releases/tag/2026.09.23)
+- **The settings file is upgraded to version 5**: on first start the old settings are backed up as `Data\ALTRun.v4.backup.json` and a "Settings upgraded" notice is shown once. Only things existing users won't find surprising are changed:
+  - Snippets still on the old default paste method "Clipboard + Ctrl+V" switch to the new "Automatic" (see "Improvements" below); "Typing the text" is kept
+  - Defaults added later are filled in for existing users too (only what is missing; your own entries stay, emptied lists are left alone): the file search keyword `file`; Date Stamp works in Total Commander's dialogs and rename box; Quick Switch doesn't pop up in 7-Zip's extract window and Total Commander's dialogs
+  - Cleanup: the "F1 → About" hotkey left by early test builds (F1 is built in now) is removed, and rebar diameters are stored as numbers
+  - Visible new defaults only apply to new installations; existing settings are unchanged: the theme follows the system (was Light)
+- New options are added at startup: `Appearance.Fade` (default 0, no fading), `Appearance.Placeholder` (default empty, shows "ALTRun Search"), `General.CapsLockNotify` (default 1), `General.CapsLockElevated` (default 0); `General.SwitchToEnglishInput` gains the value 2 (English mode of the current input method), 0 / 1 are unchanged
+- The icon cache is stored on this PC in `%LOCALAPPDATA%\ALTRun\IconCache` (not synced with Data); you can delete that folder too when removing ALTRun completely
+- When upgrading by extracting the zip, exit the running ALTRun first (tray icon → Exit) and then overwrite the files
+
+### New
+- **Caps Lock input switching also works in administrator windows** (#158; Preferences → Hotkeys → "Also in windows running as administrator", off by default): turning it on creates a scheduled task (one UAC confirmation; the option shows the Windows shield), which ALTRun then uses at every start to run a small helper that only handles Caps Lock as administrator (no more UAC prompts); it exits together with ALTRun. ALTRun itself keeps normal rights, so the programs it opens, drag and drop and network drives are not affected
+- **Everything works when ALTRun runs as administrator** (#158): Everything file search, Quick Switch reading Total Commander's current folder, and the tray icon after Explorer restarts all work; starting ALTRun again hands over to the running instance; Run as administrator from the right-click menu replaces a running normal instance; the tray tooltip and version show "(Administrator)". The Wiki FAQ explains how to start ALTRun as administrator at logon with a scheduled task (no UAC prompt)
+- **Fade in / out for the search window** (#158; Preferences → Appearance → Animation, off by default): fades in over about 120 ms while the window still gets focus right away, so typing is not affected; when hiding, the window disappears immediately and a shadow copy fades out over about 100 ms
+- **Custom placeholder text in the empty search box** (#158; Preferences → Search Window → Empty search box → "Placeholder text"): empty shows "ALTRun Search", a single space shows nothing
+- **Switch to the English mode of the current input method when shown** (#154; Preferences → Search Window → "Switch to English when shown": Off / English (US) keyboard / English mode of the current input method): no need to add an English keyboard in Windows; your usual input method (e.g. WeChat or Sogou) stays, only its Chinese mode is turned off; with "switch back when hidden" on, the previous Chinese / English mode is restored
+- **The Caps Lock on / off notice can be turned off** (#158; Preferences → Hotkeys)
+- **Restore defaults** (Preferences → Advanced → Reset): every option goes back to its default, while custom commands, snippets, hotkeys, web searches and pinned items are kept; the old settings are backed up as `ALTRun.json.bak`
+- **Copy System Info** and **Open Log** (Preferences → Advanced → Diagnostics): paste the version, Windows version, display scaling, language, input method, theme, Everything status and so on into a bug report (no file paths or search text)
+
+### Improvements
+- **Preferences opens faster**: only the page being shown is built, others when first clicked (372 ms → 93 ms on the test machine; old PCs used to take a second or two; saving is twice as fast too)
+- **Snippets expand faster**: the new paste method "Automatic" (default) types single-line text of up to 100 characters directly, so it appears right away without touching the clipboard or waiting to restore it (100 ms → 28 ms); multi-line text, tabs, longer text or emoji still go through the clipboard. Preferences → Snippets can switch back to "Clipboard + Ctrl+V"
+- **Icons no longer lag behind**: about 2 seconds after startup, icons of frequent items are preloaded in the background; icons are kept in a disk cache on this PC, so after a restart they appear together with the text. They are only read while the search window is hidden, so typing and results are not slowed down; changed program icons are picked up automatically
+- **Checking for updates and downloading exchange rates no longer freeze ALTRun**: the whole program used to stop until the download finished (with a slow network or a proxy timing out, hotkeys and the search window could be unresponsive for ten seconds or more); downloads now run in the background
+- Pressing the hotkey while the icon cache is being saved shows the window right away (it used to wait for a slow write to finish)
+- Defaults for new installations: the theme follows the system (Dark in Windows dark mode), the file search keyword `file` is added, and Quick Switch and Date Stamp know the 7-Zip and Total Commander windows
+- Preferences → Advanced is rearranged: the version has its own row, and "Write debug log" moves to the "Diagnostics" section together with Open Log and Copy System Info
+- The record editor (custom hotkeys / commands / snippets / search engines): a little more space between the gray descriptions and the inputs and between rows; on Preferences → Search Window the input boxes are aligned on the left
+- Debug log: background tasks over 50 ms (`Perf: slow ...`), the time of each step when saving the icon cache, and readings for Ctrl+D and input method switching are recorded, so occasional problems can be traced
+- Development: a new benchmark (`Tests/Bench`, "Bench" on GitHub Actions) simulates everyday use with real keystrokes on Windows and compares two versions
+
+### Fixes
+- **Ctrl+D sometimes renamed a file to "d"** (after the PC stayed on overnight, woke from sleep or was locked): Ctrl+D now only takes over in the rename box and passes the key through everywhere else
+- The keyboard hook is reinstalled after waking from sleep, unlocking, or connecting / disconnecting a monitor, so hotkeys, snippet expansion, double Ctrl and Caps Lock keep working on a PC that is never shut down
+- **Result rows occasionally stayed blank while hotkeys and the tray did not respond**: background icon loading no longer interrupts drawing the result rows; the first Chinese (or Japanese, Korean) result after a fresh boot no longer stalls either (the fallback font is loaded in the background after startup)
+- With Caps Lock set to "switch Chinese / English mode", some input methods such as WeChat only switched once (#154)
+- The text in the search box looked too high (#158)
+- The last search result row was cut off at the bottom
+- After recording a hotkey in Preferences, the box below was fully selected (typing a character replaced the whole window list); the recording hint did not move with the window
+- The same icon was occasionally read twice
+- After changing the rebar diameters in Preferences → Calculator, they were saved as text in the settings file
+
+---
+
+### 中文说明
+
+更快: 偏好设置一打开就是、片段马上展开、图标和文字一起出来, 检查更新时不再卡住; CapsLock 切换输入法在管理员窗口里也能用, 以管理员身份运行 ALTRun 时一切照常; 窗口可以淡入淡出, 空搜索框的提示文字可以自定义; 恢复默认设置、复制系统信息; 修好了 Ctrl+D 偶尔把文件名换成 "d" 和结果行偶尔空白卡住的问题。
+
+#### 升级
 - 一键升级: 托盘图标 → 检查更新 → 安装更新
 - 用 Scoop 安装的: `scoop update altrun`
 - 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
@@ -102,7 +232,7 @@ Faster: Preferences opens instantly, snippets expand right away, icons appear to
 - 图标缓存存在本机的 `%LOCALAPPDATA%\ALTRun\IconCache` (不跟着 Data 同步); 彻底删除 ALTRun 时这个文件夹也可以删掉
 - 手动解压升级时, 请先退出正在运行的 ALTRun (托盘图标 → 退出) 再覆盖文件
 
-### 新增
+#### 新增
 - **CapsLock 切换输入法在管理员窗口里也生效** (#158; 偏好设置 → 自定义热键 → "在管理员窗口里也生效", 默认关): 打开时建一个计划任务 (确认一次 UAC, 选项前面有 Windows 的小盾牌), 之后 ALTRun 每次启动都用它以管理员身份运行一个只管 CapsLock 的小助手 (不再弹 UAC), ALTRun 退出时一起退出。ALTRun 本身还是普通权限, 打开的程序、拖放文件、网络驱动器都不受影响
 - **以管理员身份运行 ALTRun 时一切照常** (#158): Everything 文件搜索、Quick Switch 读 Total Commander 的当前文件夹、资源管理器重启后的托盘图标都正常; 再启动 ALTRun 时交给正在运行的那个; 右键 → 以管理员身份运行时替换掉正在运行的普通权限的 ALTRun; 托盘提示和版本号后面显示 "(管理员)"。Wiki 的常见问题里写了用计划任务开机以管理员身份运行 (不弹 UAC) 的步骤
 - **搜索窗口淡入淡出** (#158; 偏好设置 → 外观 → 动画, 默认关): 淡入约 120 ms, 窗口照样马上获得焦点, 不影响打字; 隐藏时窗口照常马上隐藏, 留一个影子淡出约 100 ms
@@ -112,7 +242,7 @@ Faster: Preferences opens instantly, snippets expand right away, icons appear to
 - **恢复默认设置** (偏好设置 → 高级 → 重置): 所有选项恢复成默认值, 自定义命令、文字片段、热键、网页搜索和置顶的项目保留; 原来的设置备份为 `ALTRun.json.bak`
 - **复制系统信息** 和 **打开日志** (偏好设置 → 高级 → 诊断): 报告问题时贴上版本、Windows 版本、显示缩放、语言、输入法、主题、Everything 状态等 (不含文件路径和搜索的内容)
 
-### 改进
+#### 改进
 - **偏好设置打开得更快**: 只建要显示的那一页, 别的页第一次点到时再建 (在测试机上 372 ms → 93 ms, 旧电脑上以前要一两秒; 保存也快了一倍)
 - **片段展开更快**: 新的粘贴方式 "自动" (默认): 100 个字符以内的单行文字直接输入, 马上出来, 不动剪贴板, 也不用停下来等着还原剪贴板 (100 ms → 28 ms); 多行、带 Tab、更长或有 emoji 的仍用剪贴板。偏好设置 → 片段里可以改回 "剪贴板 + Ctrl+V"
 - **图标不再晚一步出现**: 启动约 2 秒后在后台预读常用项目的图标; 读过的图标存在本机的磁盘缓存里, 重启后图标和文字一起出来。只在搜索窗口隐藏时读, 不影响打字和出结果的速度; 程序更新了图标会自动换上新的
@@ -124,7 +254,7 @@ Faster: Preferences opens instantly, snippets expand right away, icons appear to
 - 调试日志: 一次超过 50 ms 的后台任务 (`Perf: slow ...`)、保存图标缓存各步的耗时、Ctrl+D 和输入法切换的读数都会记下, 偶尔出问题时看得出原因
 - 开发: 新的性能测试 (`Tests/Bench`, GitHub Actions 上的 "Bench") 在 Windows 上用真实按键模拟日常操作, 比较两个版本
 
-### 修复
+#### 修复
 - **Ctrl+D 有时把文件名换成 "d"** (电脑一夜不关机、睡眠唤醒或锁屏之后): Ctrl+D 现在只在改名的编辑框里接管, 其它时候按键原样交给程序
 - 睡眠唤醒、解锁、接上 / 拔掉显示器之后自动重新装一次键盘钩子, 热键、片段展开、双击 Ctrl、CapsLock 不会因为一直开着不关机而失灵
 - **结果行偶尔一直是空白, 同时热键和托盘也没有反应**: 画结果行时不再让后台载入图标的任务插进来; 刚开机后第一次出现中文 (或日文、韩文) 结果时也不再卡住 (启动后先在后台载入后备字体)
