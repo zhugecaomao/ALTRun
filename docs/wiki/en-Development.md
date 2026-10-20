@@ -107,9 +107,11 @@ Optional:
 The wiki sources are in `docs/wiki/` in the repository and are published to the wiki automatically after merging to `main` (`.github/workflows/wiki.yml`). Change `docs/wiki/` through pull requests; don't edit the wiki on the web.
 
 The documentation is bilingual; when you change one language, change the other one too:
-- README and contributing guide: `README.md` / `CONTRIBUTING.md` (English, shown by default on GitHub) and `README.zh-CN.md` / `CONTRIBUTING.zh-CN.md` (Chinese), linking to each other at the top
+- README: `README.md` (English, shown by default on GitHub) and `README.zh-CN.md` (Chinese), linking to each other at the top
+- `CONTRIBUTING.md` and `SECURITY.md`: one file each, English first and then Chinese, with links to both languages at the top. `CONTRIBUTING.md` only covers reporting problems and the pull request essentials; the details are on this page
 - Wiki: two files per page, Chinese `Usage.md` and English `en-Usage.md`; each page links to the other language at the top, and links between English pages use the `en-` page names. The sidebar `_Sidebar.md` has an English and a Chinese group. Help opened from the program (cheat sheet, `F1` in Preferences) follows the UI language: the Chinese page for a Chinese UI, the `en-` page otherwise (`HelpProvider.WikiPage`). The `WikiPages` test checks that every page has an English page and that links point to existing pages
-- CHANGELOG is written in Chinese, with an English sentence after each version's summary (that section is the release notes)
+- CHANGELOG: test build sections are written in Chinese; a release section is English first and then Chinese, and is also the release notes (see the format under "Release process" below)
+- Links between wiki pages use the page name without `.md` (for example `[Themes](en-Themes)`; Chinese pages use `[主题](Themes)`). If you're not comfortable with Chinese, change just the English page and say so in the pull request; a maintainer will add the other language
 
 The website (https://zhugecaomao.github.io/ALTRun/) sources are in `site/`: `index.html` is a Chinese / English template, and `build.py` fills in the latest version, download link and size, download count, theme screenshots and the latest release notes, writing to `_site/`. `.github/workflows/pages.yml` builds it when related files change on main, after a successful release and once a day, and deploys it with the official GitHub Pages actions (Settings → Pages → Source: "GitHub Actions"). Local preview: `python3 site/build.py && python3 -m http.server -d _site`.
 
@@ -139,10 +141,21 @@ When translating: keep the same number of `{1}` `{2}` placeholders as the Englis
 4. The Wiki is Chinese and English only: help opens the Chinese pages for Simplified and Traditional Chinese, the English pages for every other language
 
 ## Release process
-Detailed steps are in the [contributing guide](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md#releasing-a-new-version); in short:
+Versions are dates. `App.Version` in `Src\Core\App.ahk` and `;@Ahk2Exe-SetVersion` in `ALTRun.ahk` must match (the `ReleaseVersion` test checks this); every version heading in `CHANGELOG.md` has a link at the end of the file, and `[未发布]` (Unreleased) compares from the newest version (the `ChangelogLinks` test checks this).
 
-- **Test builds** (every PR that changes the program): a four-part version `YYYY.MM.DD.N` in `App.Version` and `;@Ahk2Exe-SetVersion` (the `ReleaseVersion` test checks they match) and a `CHANGELOG.md` section (the `ChangelogLinks` test checks the compare links); run the **Release** workflow on the PR branch with `publish = false`, and the build is under Artifacts at the bottom of the Actions page (`ALTRun_v<version>`)
-- **Releases**: a three-part version `YYYY.MM.DD`, at most one per day; merge the round's test build sections of the CHANGELOG into one (Chinese and English summary + upgrade / new / improved / fixed), then after merging to main run **Release** on main with `publish = true`
+**Test builds** (every PR that changes the program):
+1. A four-part version `YYYY.MM.DD.N` (for example `2026.10.20.1`); it must be lower than the next release, or installed test builds won't see that release as an update
+2. In `CHANGELOG.md`, add a section `## [YYYY.MM.DD.N]` below `## [未发布]`: first paragraph "测试版。", second "Test build.", then 新增 / 改进 / 修复 (New / Improvements / Fixes, in Chinese); add the compare link `[YYYY.MM.DD.N]: .../compare/<previous>...<this>` at the end and make `[未发布]` compare from this version
+3. Run the **Release** workflow on the PR branch with `publish = false`; the build is under Artifacts at the bottom of the Actions page (`ALTRun_v<version>`)
+
+**Releases** (at most one per day):
+1. Open a pull request that sets the three-part version `YYYY.MM.DD`
+2. In `CHANGELOG.md`, merge the round's test build sections into one `## [YYYY.MM.DD]` section, English first and then Chinese, with the English a full translation of the Chinese:
+   - `### Summary` (one English paragraph) / `### Upgrade` / `### New` / `### Improvements` / `### Fixes`
+   - `---`
+   - `### 中文说明` (one Chinese paragraph) / `#### 升级` / `#### 新增` / `#### 改进` / `#### 修复`
+   - Don't use `##` headings inside the section (the Release workflow takes everything up to the next `##`); remove the test build sections and their compare links; at the end of the file, `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD` and `[未发布]: .../compare/YYYY.MM.DD...HEAD`
+3. After merging to main, run **Release** on main with `publish = true`
 
 On Windows the Release workflow: reads the version → downloads AutoHotkey and Ahk2Exe → runs the unit tests → compiles `ALTRun.exe` → signs it when SignPath is configured → checks the program icon → runs the upgrade test with a 2.x `ALTRun.ini` → runs the single instance test on the compiled program → packages `ALTRun_v<version>.zip`. With `publish = true` it then: takes that CHANGELOG section as the release notes → creates the GitHub release (GitHub provides the SHA256 that one-key updates verify) → updates the Scoop and winget manifests in `packaging/` and commits them to main → submits the new version to winget-pkgs when `WINGET_TOKEN` is configured.
 
@@ -170,13 +183,30 @@ the released program doesn't contain it. Pushing changes to the benchmark script
 - Wiki automation detects missing pages and broken links, but cannot tell whether explanations are accurate or cover every setting. When settings change, check the code and both language versions item by item.
 
 ## Code style
-See [CONTRIBUTING.md](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md) in the repository. A few AutoHotkey v2 pitfalls:
-- Names are case-insensitive: don't give a local variable the name of a class (`pinyin` hides the `Pinyin` class), and don't let a method and a property in the same class differ only in case
+- **Files and classes**: one class per file, file name = class name, PascalCase (`SearchWindow.ahk` → `class SearchWindow`)
+- **Folders**: `Lib\` holds general-purpose libraries with nothing ALTRun-specific that could be reused in other projects; ALTRun's own code goes in the matching subfolder of `Src\`
+- **Naming**: PascalCase for classes, methods and properties; camelCase for local variables; internal members start with `_` (`_Layout()`, `_cache`)
+- **Avoid name clashes**: AutoHotkey names are case-insensitive, so don't give a local variable the name of a class (for example, don't call a variable `pinyin`, it hides the `Pinyin` class); methods and properties in the same class shouldn't differ only in case either
+- **Comments**: every file starts with a description of what it's for and how to use it; comments in the code explain "why", in English or Chinese
+- **Settings**: add new settings to `AppSettings.Defaults()`; for changes to the structure of existing settings see "Changing the settings structure" above
+- **UI text**: the English original goes in `I18n.ahk`, translations go in every language file in `Resources\Lang\`, see "Translating the interface" above
+- **Encoding**: UTF-8; `ALTRun.ahk` stays UTF-8 with BOM + CRLF, every other file UTF-8 + LF
+
+A few AutoHotkey v2 pitfalls:
 - A very large `static X := Map(...)` fails with "Declaration too long"; build it inside a method instead
 - Strings passed to functions by value are copied whole: passing a big string (a whole file) to a function over and over in a loop makes the time grow with the square of its length; pass it by reference (`&text`), see `Lib\JSON.ahk`
 - Lines starting with `Perf:` in the debug log (`General.SaveLog`) are the timings of startup phases, slow searches and slow background tasks; use `Logger.Ms()` / `Logger.Time(label, start)` to record new ones, and wrap timer callbacks in `Logger.Watch(label, fn)` (logged only over 50 ms)
 - Don't download with `Download()` on the main thread (the whole program stops until it finishes); use `HttpGet.Start(url, done, fail)` to download in the background
 - To learn about changes in a folder, use `FolderWatcher` (`Lib\FolderWatcher.ahk`, call `Poll()` on a timer, it doesn't wait) instead of rescanning the folder on a timer; when closing it waits for the pending read to finish before releasing the buffer
 - When a nested function changes an outer variable, pass the result back through an object (`state := {Result: ""}`)
-- Give every `Edit` control a row count (`r1 -Multi`), otherwise long text turns it into a multi-line box
+- Give every `Edit` control a row count (`r1 -Multi`), otherwise long text turns it into a multi-line box (a test checks this)
 - Treat every `#Warn All` warning as an error
+
+## Submitting a pull request
+1. Create a branch from `main`; one pull request does one thing
+2. Before submitting, make sure all unit tests pass and `/validate` shows no warnings (see "Environment" above)
+3. Include tests with new features or fixes (`Tests\RunTests.ahk`)
+4. For UI changes, attach screenshots; the screenshots in the README / wiki are generated by the Screenshots workflow (see "Documentation" above) with the English UI and made-up sample data; don't include anything personal or work-related
+5. For user-visible changes, update the README (English and Chinese), `CHANGELOG.md` and, where needed, the wiki (the Chinese page and the `en-` English page)
+
+By submitting code, you agree to release your contribution under the [GPL-3.0](https://github.com/zhugecaomao/ALTRun/blob/main/LICENSE) license.

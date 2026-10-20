@@ -197,7 +197,7 @@ winget 清单已提交，等待审核收录；收录后可使用 `winget install
 ## 贡献与反馈
 - 报告问题：[提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose)（请附上 Windows 版本和复现步骤）
 - 建议与讨论：[Discussions](https://github.com/zhugecaomao/ALTRun/discussions)
-- 贡献代码：请先阅读 [贡献指南](CONTRIBUTING.zh-CN.md)；项目结构、运行测试、新增搜索功能见 Wiki 的[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)
+- 贡献代码：请先阅读 [贡献指南](CONTRIBUTING.md#参与贡献)；项目结构、运行测试、新增搜索功能见 Wiki 的[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)
 
 如果 ALTRun 对你有帮助，欢迎点亮星标 ⭐
 
