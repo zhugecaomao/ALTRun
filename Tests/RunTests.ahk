@@ -2655,14 +2655,18 @@ class Tests {
         for entry in lists {
             listView := entry[2]
             columns := SendMessage(0x1200, 0, 0, SendMessage(0x101F, 0, 0, listView.Hwnd))
-            total := 0
+            total := 0, widths := ""
             Loop columns
-                total += SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd)
+                width := SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd), total += width, widths .= width " "
+            fitted := ""
+            if listView.HasOwnProp("FitState")
+                for width in listView.FitState.Fitted
+                    fitted .= width " "
             rect := Buffer(16, 0)
             DllCall("GetClientRect", "Ptr", listView.Hwnd, "Ptr", rect)
             style := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int")
             PreferencesWindow._ListClientSize(listView, &height)
-            eq(entry[1] " fills the width (rows " listView.GetCount() ", fit " PreferencesWindow.ListRowsFit(listView, SendMessage(0x101F, 0, 0, listView.Hwnd), height) ")", total, NumGet(rect, 8, "Int"))
+            eq(entry[1] " fills the width (rows " listView.GetCount() ", fit " PreferencesWindow.ListRowsFit(listView, SendMessage(0x101F, 0, 0, listView.Hwnd), height) ", widths " widths "/ fitted " fitted ")", total, NumGet(rect, 8, "Int"))
             eq(entry[1] " no horizontal scroll bar", style & 0x100000 ? 1 : 0, 0)   ; WS_HSCROLL
         }
         listView := lists[1][2]                                             ; 拖过列宽: 不再调整
