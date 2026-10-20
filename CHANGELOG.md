@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.20.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- ALTRun 在剪贴板变化后马上去读, 会占着剪贴板, 让截图工具等写完剪贴板马上又打开它的程序 OpenClipboard 失败。现在等约 0.15 秒再读 (期间又变了就先读上一次的), 复制图片时只在复制原始数据时打开剪贴板, 转换和存 PNG 在关掉之后做。AutoHotkey 论坛用户的反馈
+- 文件搜索 (用 Everything 时) 只输入 Everything 的语法 (例如 `d:`、`folder:`) 时报错 "Parameter #2 of InStr is invalid"。AutoHotkey 论坛用户的反馈
+- "系统信息" (msinfo32) 等本身是对话框 (`#32770`) 的程序窗口被当成打开 / 保存对话框, 触发对话框快速跳转和文件夹面板; 现在 `#32770` 窗口要有资源管理器的文件列表才算。AutoHotkey 论坛用户的反馈
+
 ## [2026.10.20]
 
 ### Summary
@@ -813,7 +824,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.1...HEAD
+[2026.10.20.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20...2026.10.20.1
 [2026.10.20]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.20
 [2026.10.14]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.14
 [2026.10.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.12

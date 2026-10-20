@@ -416,15 +416,23 @@ class QuickSwitch {
     static IsFileDialog(*) {
         if (!WinActive("ahk_group ALTRunDialogs") || WinActive("ahk_group ALTRunDialogExclude"))
             return false
-        controls := []
+        controls := [], title := "", winClass := ""
         try controls := WinGetControls("A")
-        if !controls.Length {
-            title := ""
-            try title := WinGetTitle("A")
+        try title := WinGetTitle("A")
+        try winClass := WinGetClass("A")
+        return QuickSwitch.LooksLikeFileDialog(winClass, controls, title)
+    }
+
+    ; 按窗口的控件判断 (和系统语言无关)。#32770 是系统对话框: 要有资源管理器的文件视图才算,
+    ; 只有普通列表的 (例如 "系统信息" msinfo32 的主窗口, 有查找框、列表和按钮) 不算。
+    ; 其它程序 (偏好设置里加的 "其它对话框") 有普通列表也算; 读不到控件的 (Qt 等) 按标题判断
+    static LooksLikeFileDialog(winClass, controls, title := "") {
+        if !controls.Length
             return RegExMatch(title, "i)(open|save|select|import|export|browse|打开|另存|选择|导入|导出)") > 0
-        }
         hasNameEdit := QuickSwitch._HasControl(controls, "^Edit\d+$")
-        hasFileView := QuickSwitch._HasControl(controls, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
+        hasFileView := (winClass = "#32770")
+            ? QuickSwitch._HasControl(controls, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$")
+            : QuickSwitch._HasControl(controls, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
         hasButtons  := QuickSwitch._HasControl(controls, "^Button\d+$", "^ToolbarWindow32\d+$", "^ComboBoxEx32\d+$", "^ComboBox\d+$")
         return hasNameEdit && hasFileView && hasButtons
     }

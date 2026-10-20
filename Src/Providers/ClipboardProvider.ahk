@@ -44,7 +44,8 @@ class ClipboardProvider {
     static Icon => IconCache.Own("Clipboard", "res:imageres.dll,-5314")   ; 文字条目的图标
     static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
     static Entries := []              ; 最新的在前, 见文件开头的说明
-    static _pausedUntil := 0, _saveTimer := "", _mergeUntil := 0
+    static ReadDelay := 150                                                 ; 剪贴板变了之后等多久再去读 (毫秒)
+    static _pausedUntil := 0, _saveTimer := "", _mergeUntil := 0, _pending := "", _readTimer := ""
 
     static Init() {
         options := AppSettings.Feature("Clipboard")
@@ -419,13 +420,34 @@ class ClipboardProvider {
     ;---------------------------------------------------------------------------
     ; Recording
     ;---------------------------------------------------------------------------
+    ; 剪贴板变了: 稍等 ReadDelay 再去读。很多程序 (截图工具等) 写完剪贴板马上又打开一次,
+    ; 立刻去读会占着剪贴板, 让它们的 OpenClipboard 失败。等的时候又变了: 先把上一次的读掉, 再等这一次的
+    ; (连按两次 Ctrl+C 合并时, 第一次复制的要先记下来)
     static _OnChange(dataType) {
         if (dataType = 0 || A_TickCount < ClipboardProvider._pausedUntil)  ; 0 = 剪贴板被清空
             return
+        processName := ""
+        try processName := WinGetProcessName("A")                          ; 复制时的前台程序
+        if IsObject(ClipboardProvider._pending)
+            ClipboardProvider._ReadPending()
+        ClipboardProvider._pending := {Type: dataType, App: processName}
+        if !IsObject(ClipboardProvider._readTimer)
+            ClipboardProvider._readTimer := ObjBindMethod(ClipboardProvider, "_ReadPending")
+        SetTimer(ClipboardProvider._readTimer, -ClipboardProvider.ReadDelay)
+    }
+
+    static _ReadPending() {
+        pending := ClipboardProvider._pending
+        ClipboardProvider._pending := ""
+        if IsObject(ClipboardProvider._readTimer)
+            SetTimer(ClipboardProvider._readTimer, 0)
+        if (IsObject(pending) && A_TickCount >= ClipboardProvider._pausedUntil)   ; 等的时候 ALTRun 自己借用了剪贴板: 现在里面是临时的内容, 不记
+            ClipboardProvider._Record(pending.Type, pending.App)
+    }
+
+    static _Record(dataType, processName) {
         if ClipboardProvider.IsPrivate()
             return
-        processName := ""
-        try processName := WinGetProcessName("A")
         options := AppSettings.Feature("Clipboard")
         for ignored in options["IgnoreApps"]
             if (processName = ignored)

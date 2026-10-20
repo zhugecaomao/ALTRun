@@ -729,6 +729,28 @@ class Tests {
         ClipboardProvider._OnChange(1)
         eq("paused", ClipboardProvider.Entries.Length, 1)
         ClipboardProvider.Entries := []
+        ; 剪贴板变了之后等 ReadDelay 再读 (不占着剪贴板); 等的时候又变了: 先读上一次的
+        saved := ClipboardAll(), ClipboardProvider._pausedUntil := 0
+        A_Clipboard := "first copy"
+        ClipboardProvider.Entries := []
+        ClipboardProvider._OnChange(1)
+        eq("read later", ClipboardProvider.Entries.Length, 0)
+        A_Clipboard := "second copy"
+        ClipboardProvider._OnChange(1)
+        eq("earlier change read first", ClipboardProvider.Entries.Length ? ClipboardProvider.Entries[1]["Text"] : "", "second copy")
+        Sleep(ClipboardProvider.ReadDelay + 150)
+        eq("read after the delay", ClipboardProvider.Entries.Length " " ClipboardProvider.Entries[1]["Text"], "1 second copy")
+        eq("nothing pending", IsObject(ClipboardProvider._pending), false)
+        A_Clipboard := "copied before ALTRun borrows the clipboard"
+        ClipboardProvider.Entries := []
+        ClipboardProvider._OnChange(1)
+        ClipboardProvider.PauseRecording(1000)                              ; 例如片段粘贴: 剪贴板里马上换成临时的内容
+        Sleep(ClipboardProvider.ReadDelay + 150)
+        eq("not read while ALTRun borrows it", ClipboardProvider.Entries.Length, 0)
+        ClipboardProvider._pausedUntil := 0
+        A_Clipboard := saved
+        Sleep(ClipboardProvider.ReadDelay + 150)
+        ClipboardProvider.Entries := []
     }
 
     ; 剪贴板历史里的文件和图片, 连按两次 Ctrl+C 合并
@@ -1128,6 +1150,15 @@ class Tests {
         eq("panel kept on screen", pos.X "," pos.Y, "1120,740")
         eq("folder name", QuickSwitch.FolderName("D:\Projects\Tower A\"), "Tower A")
         eq("drive name", QuickSwitch.FolderName("D:\"), "D:\")
+        ; 文件对话框: #32770 要有资源管理器的文件视图; "系统信息" (msinfo32) 的主窗口只有普通列表, 不算
+        fileDialog := ["DUIViewWndClassName1", "DirectUIHWND1", "SHELLDLL_DefView1", "DirectUIHWND2", "ComboBoxEx321", "ComboBox1", "Edit1", "Button1", "Button2", "ToolbarWindow323"]
+        oldDialog := ["ToolbarWindow321", "ComboBox1", "SHELLDLL_DefView1", "SysListView321", "Edit1", "Button1", "Button2"]
+        msinfo := ["SysTreeView321", "SysListView321", "Static1", "Edit1", "Button1", "Button2", "Button3", "Button4"]
+        eq("file dialog", QuickSwitch.LooksLikeFileDialog("#32770", fileDialog), true)
+        eq("old-style file dialog", QuickSwitch.LooksLikeFileDialog("#32770", oldDialog), true)
+        eq("msinfo32 main window", QuickSwitch.LooksLikeFileDialog("#32770", msinfo), false)
+        eq("other app with a plain list", QuickSwitch.LooksLikeFileDialog("TMyOpenDialog", msinfo), true)
+        eq("no controls: title", QuickSwitch.LooksLikeFileDialog("Qt5QWindowIcon", [], "Open File") " " QuickSwitch.LooksLikeFileDialog("Qt5QWindowIcon", [], "Writer"), "1 0")
         base := [{Path: "D:\Projects\Tower A", Tag: "TC"}, {Path: "C:\Docs", Tag: "Recent"}]
         filtered := QuickSwitch.FilterFolders(base, "tower", ["D:\Projects\Tower A", "E:\Archive\Tower B"])
         eq("filter count", filtered.Length, 2)
@@ -2538,6 +2569,8 @@ class Tests {
         eq("score needle folder:", FileSearchProvider.ScoreNeedle("folder:bk"), "bk")
         eq("score needle ext:", FileSearchProvider.ScoreNeedle("ext:pdf report"), "pdf report")
         eq("score needle plain", FileSearchProvider.ScoreNeedle("bk tower"), "bk tower")
+        eq("only Everything syntax (d:)", FileSearchProvider.NameScore(FileSearchProvider.ScoreNeedle("d:"), "AhkScripts"), 50)
+        eq("only Everything syntax (folder:)", FileSearchProvider.NameScore(FileSearchProvider.ScoreNeedle("folder:"), "AhkScripts"), 50)
         options["UseEverything"] := savedEverything
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
         FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
