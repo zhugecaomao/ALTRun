@@ -2661,7 +2661,8 @@ class Tests {
             rect := Buffer(16, 0)
             DllCall("GetClientRect", "Ptr", listView.Hwnd, "Ptr", rect)
             style := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int")
-            eq(entry[1] " fills the width", total, NumGet(rect, 8, "Int"))
+            PreferencesWindow._ListClientSize(listView, &height)
+            eq(entry[1] " fills the width (rows " listView.GetCount() ", fit " PreferencesWindow.ListRowsFit(listView, SendMessage(0x101F, 0, 0, listView.Hwnd), height) ")", total, NumGet(rect, 8, "Int"))
             eq(entry[1] " no horizontal scroll bar", style & 0x100000 ? 1 : 0, 0)   ; WS_HSCROLL
         }
         listView := lists[1][2]                                             ; 拖过列宽: 不再调整
