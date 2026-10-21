@@ -1,33 +1,33 @@
-[English](en-Privacy) · **中文**
+**English** · [中文](Privacy-zh)
 
-# 隐私与网络访问
+# Privacy and network access
 
-ALTRun 不收集、不上传任何数据, 没有统计、遥测或广告。搜索、剪贴板历史、学习记录都只在本机处理和保存。
+ALTRun collects and uploads nothing: no statistics, telemetry or ads. Searches, clipboard history and learned ranking are processed and stored only on your PC.
 
-## 什么时候会联网
-ALTRun 自己只在下面几种情况访问网络:
+## When ALTRun goes online
+ALTRun itself only accesses the network in these cases:
 
-| 什么时候 | 访问哪里 | 做什么 | 怎样关掉 |
+| When | Where | What for | How to turn it off |
 |---|---|---|---|
-| 自动检查更新: 启动 1 分钟后 (离上次检查满 1 小时), 之后一直开着时每满 6 小时 | `api.github.com` | 读取最新发布的版本号, 不发送任何本机信息 | 偏好设置 → 通用 → "自动检查更新" (`General.CheckForUpdates`) |
-| 一键更新: 你按了 "安装更新" 时 | `github.com` (Release 的下载文件) | 下载新版本的 zip, 先核对 GitHub 给出的 SHA256 再替换 | 不点就不会下载 |
-| 货币换算 (默认关): 启动 1.5 分钟后, 离上次下载满 12 小时 | `api.frankfurter.dev` | 下载欧洲央行等公布的参考汇率, 存在 `Data\Currency.json` | 偏好设置 → 计算器 → "货币换算" (`Features.Calculator.Currency`) |
-| 下载网站图标: 你在网页搜索的编辑框里点了 "下载网站图标" 时 | 网址所在的网站 | 下载这个网站的图标, 存在 `Data\Icons` | 不点就不会访问 |
+| Automatic update check: 1 minute after startup (if the last check was over 1 hour ago), then every 6 hours while it keeps running | `api.github.com` | Reads the latest release's version number; sends nothing about your PC | Preferences → General → "Check for updates automatically" (`General.CheckForUpdates`) |
+| One-key update: when you press "Install update" | `github.com` (the release download) | Downloads the new version's zip and checks GitHub's SHA256 before replacing anything | Nothing is downloaded unless you press it |
+| Currency conversion (off by default): 1.5 minutes after startup, when the last download is over 12 hours old | `api.frankfurter.dev` | Downloads reference exchange rates published by the ECB and other central banks, saved in `Data\Currency.json` | Preferences → Calculator → "Currency conversion" (`Features.Calculator.Currency`) |
+| Download Site Icon: when you click "Download Site Icon" in the web search editor | The website in the URL | Downloads that site's icon and saves it in `Data\Icons` | Never accessed unless you click it |
 
-除此之外, 打开网页搜索、书签、网址类的自定义命令或帮助链接时, 是交给默认浏览器打开, ALTRun 本身不访问这些网站。和 Everything、Total Commander 的通信只在本机进行 (Windows 消息), 不经过网络。
+Apart from that, web searches, bookmarks, web address commands and help links are handed to your default browser; ALTRun itself does not contact those sites. Talking to Everything and Total Commander happens locally (Windows messages), not over the network.
 
-## 本机保存了什么
-所有数据都在 Data 文件夹和本机的几个文件夹里, 每个文件是什么、能不能删、怎样备份见 [数据文件](Data-Files)。和隐私有关的几点:
-- **剪贴板历史**: 密码管理器等程序标记为 "不要记录" 的内容 (`ExcludeClipboardContentFromMonitorProcessing`、`CanIncludeInClipboardHistory = 0`) 不会记录; 偏好设置 → 剪贴板 → "不记录的程序" (默认是几个密码管理器) 里的程序复制的内容也不记录。不想在磁盘上留下历史: 把 `Features.Clipboard.Persist` 设为 0, 历史只在内存里, 退出就清空; 或者把 偏好设置 → 剪贴板 → "保存位置" 改成全部只存本机, 不跟着同步盘里的 Data 文件夹走。见 [剪贴板历史](Clipboard)
-- **使用统计** (`Usage.json`): 只记每天每个功能用了几次, 不记输入的内容和打开的文件
-- **学习排序** (`Knowledge.json`): 记 "输入了什么 → 选了哪一项", 用来把常用的排在前面; 偏好设置 → 高级 → "重置学习排序" 清空
-- **片段自动展开** 不在 Windows 的密码输入框里触发, 也可以在 偏好设置 → 片段 → "不展开的窗口" 里排除远程桌面、密码管理器等
-- **调试日志** 默认不写; 偏好设置 → 高级 → "写入调试日志" 打开后写到 `%Temp%\ALTRun.log`, 用来排查问题, 记录启动和后台任务的耗时、出错的信息。发到 issue 之前可以先看一遍内容, 见 [怎样提交调试日志](FAQ#怎样提交调试日志)
+## What is stored on your PC
+Everything lives in the Data folder and a few local folders; what each file is, whether it can be deleted and how to back it up is in [Data files](Data-Files). Points related to privacy:
+- **Clipboard history**: content that password managers and other programs mark as "do not record" (`ExcludeClipboardContentFromMonitorProcessing`, `CanIncludeInClipboardHistory = 0`) is never recorded, and neither is content copied in the programs listed under Preferences → Clipboard → "Never record from" (a few password managers by default). To leave no history on disk, set `Features.Clipboard.Persist` to 0: the history stays in memory and is gone when ALTRun quits; or set Preferences → Clipboard → "Save in" to keep everything on this PC only, so it doesn't follow a Data folder in a sync folder. See [Clipboard history](Clipboard)
+- **Usage statistics** (`Usage.json`): only how many times each feature was used per day; never what you typed or opened
+- **Learned ranking** (`Knowledge.json`): "what was typed → which item was picked", used to put frequent picks first; Preferences → Advanced → "Reset Learned Ranking" clears it
+- **Snippet expansion** never triggers in Windows password boxes, and Preferences → Snippets → "Don't expand in" can exclude Remote Desktop, password managers and so on
+- **Debug log** is off by default; Preferences → Advanced → "Write a debug log" writes `%Temp%\ALTRun.log` for troubleshooting, with timings of startup and background tasks and error messages. Look it over before attaching it to an issue, see [How do I send a debug log?](FAQ#how-do-i-send-a-debug-log)
 
-## 权限
-ALTRun 以普通用户权限运行, 不需要管理员权限, 不写注册表里的系统位置, 没有后台服务。只有一个例外: 勾选 偏好设置 → 自定义热键 → "在管理员窗口里也生效" 时, 会建一个计划任务, 以管理员身份运行一个只管 CapsLock 的小助手 (建和删时各确认一次 UAC), 见 [CapsLock 切换输入法](Hotkeys#capslock-切换输入法)。
+## Permissions
+ALTRun runs with normal user rights: no administrator rights, no system-wide registry entries, no background service. The one exception: ticking Preferences → Hotkeys → "Also in windows running as administrator" creates a scheduled task that runs a small Caps Lock-only helper as administrator (one UAC confirmation when it is created and one when it is removed), see [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method).
 
-## 完全删除
-见 [卸载](Installation#卸载)。
+## Removing everything
+See [Uninstalling](Installation#uninstalling).
 
-更多安全相关的说明 (怎样报告安全问题、发布文件怎样校验) 见 [安全策略](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md)。
+For more on security (reporting security issues, verifying release files) see the [security policy](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md).

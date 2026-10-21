@@ -1,48 +1,48 @@
-[English](en-Data-Files) · **中文**
+**English** · [中文](Data-Files-zh)
 
-# 数据文件
+# Data files
 
-## 数据文件夹在哪里
-| 情况 | 位置 |
+## Where the data folder is
+| Situation | Location |
 |---|---|
-| 默认 (程序目录可以写入, 绿色便携) | 程序目录下的 `Data\` |
-| 程序目录不能写入 (例如放在 `C:\Program Files`) | `%APPDATA%\ALTRun\Data\` |
-| 在 偏好设置 → 高级 → 数据 → 更改位置 选了别的文件夹 | 选的文件夹 (默认位置的 `ALTRun.json` 里只留一项 `DataLocation` 指路), 见 [多台电脑共用设置](FAQ#在多台电脑上使用同一份设置) |
+| Default (the program folder is writable, portable) | `Data\` in the program folder |
+| The program folder isn't writable (for example under `C:\Program Files`) | `%APPDATA%\ALTRun\Data\` |
+| You picked another folder in Preferences → Advanced → Data → Change Location | That folder (the `ALTRun.json` in the default location only keeps a `DataLocation` entry pointing there), see [Using the same settings on several PCs](FAQ#using-the-same-settings-on-several-pcs) |
 
-偏好设置 → 高级 → 数据 → "打开数据文件夹" 可以直接打开它。
+Preferences → Advanced → Data → "Open Data Folder" opens it.
 
-## Data 文件夹里的文件
-| 文件 | 内容 | 删掉会怎样 |
+## Files in the Data folder
+| File | Contents | If you delete it |
 |---|---|---|
-| `ALTRun.json` | 所有设置、自定义命令、文字片段、热键、网页搜索, 见 [设置文件参考](Configuration) | 恢复成默认设置, 自定义命令和片段都没了 (**要备份的就是它**) |
-| `ALTRun.json.bak` | 偏好设置 → 高级 → "恢复默认设置" 之前的备份 | 没有影响 |
-| `ALTRun.v<版本>.backup.json` | 设置格式升级之前的备份 (例如 `ALTRun.v4.backup.json`) | 没有影响; 想退回旧版本时用它 |
-| `ALTRun.json.bad` | 设置文件格式有错误时, 原文件改成这个名字保留下来, 修好后改回 `ALTRun.json` | 没有影响 |
-| `AppIndex.json` | 应用索引 | 启动时重新扫描 |
-| `FileIndex.json` | 内置文件索引 (没有 Everything 时用) | 后台重新扫描 |
-| `Knowledge.json` | 学习排序、搜索历史、最近使用的项目 (置顶的项目在 `ALTRun.json` 里) | 排序要重新学, 最近使用清空 |
-| `Usage.json` | 使用统计 (每天每个功能用了几次) | 统计从零开始 |
-| `ClipboardHistory.json` | 剪贴板历史 (文字) | 历史清空 |
-| `Clipboard\` | 剪贴板历史里的图片和很长的条目 (只在 "保存位置" 选了 "都放在 Data 文件夹" 时在这里) | 这些条目在历史里不再显示 |
-| `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) | 下次启动重新下载 |
-| `Update.json` | 上次检查更新的时间、跳过的版本 | 下次启动重新检查 |
-| `Icons\` | "下载网站图标" 保存的网页搜索图标 | 那些引擎改用默认图标 |
+| `ALTRun.json` | All settings, custom commands, snippets, hotkeys and web searches, see [Settings reference](Configuration) | Settings go back to defaults and your commands and snippets are gone (**this is the file to back up**) |
+| `ALTRun.json.bak` | Backup taken by Preferences → Advanced → "Restore Defaults" | No effect |
+| `ALTRun.v<version>.backup.json` | Backup taken before the settings format was upgraded (for example `ALTRun.v4.backup.json`) | No effect; use it to go back to an older version |
+| `ALTRun.json.bad` | When the settings file has a format error, the original is kept under this name; fix it and rename it back to `ALTRun.json` | No effect |
+| `AppIndex.json` | App index | Rescanned at startup |
+| `FileIndex.json` | Built-in file index (used without Everything) | Rescanned in the background |
+| `Knowledge.json` | Learned ranking, search history, recent items (pinned items are in `ALTRun.json`) | Ranking has to be learned again, recent items are cleared |
+| `Usage.json` | Usage statistics (how often each feature was used each day) | Statistics start from zero |
+| `ClipboardHistory.json` | Clipboard history (text) | History is cleared |
+| `Clipboard\` | Images and very long items of the clipboard history (only here when "Save in" is set to keep everything in the Data folder) | Those items no longer show in the history |
+| `Currency.json` | Exchange rates for currency conversion (only once it is turned on) | Downloaded again at the next start |
+| `Update.json` | Time of the last update check, skipped versions | Checked again at the next start |
+| `Icons\` | Web search icons saved by "Download Site Icon" | Those engines use the default icon |
 
-除了 `ALTRun.json`, 其它文件都是运行时生成的, 删掉只会重新生成。
+Apart from `ALTRun.json`, every file is created at runtime and simply rebuilt if deleted.
 
-## Data 文件夹以外的文件
-| 位置 | 内容 |
+## Files outside the Data folder
+| Location | Contents |
 |---|---|
-| `%LOCALAPPDATA%\ALTRun\IconCache\` | 图标缓存 (`Icons-<尺寸>.bin`), 重启后图标马上显示; 每台电脑各一份, 删掉自动重建 |
-| `%LOCALAPPDATA%\ALTRun\Clipboard\` | 剪贴板历史里的图片和很长的条目 (默认存在这里, 不跟着同步盘走); "全部只存本机" 时 `ClipboardHistory.json` 也在 `%LOCALAPPDATA%\ALTRun\` |
-| 程序目录的 `Themes\` (程序目录不能写入时 `%APPDATA%\ALTRun\Themes\`) | 自己做的主题, 见 [主题](Themes#自定义主题) |
-| 程序目录的 `Scripts\` (程序目录不能写入时 `%APPDATA%\ALTRun\Scripts\`) | 自己的脚本, 见 [脚本扩展](Scripts) |
-| `%Temp%\ALTRun.log` | 调试日志, 只在 偏好设置 → 高级 → "写入调试日志" 打开时写 |
+| `%LOCALAPPDATA%\ALTRun\IconCache\` | Icon cache (`Icons-<size>.bin`) so icons show at once after a restart; one per PC, rebuilt automatically if deleted |
+| `%LOCALAPPDATA%\ALTRun\Clipboard\` | Images and very long clipboard items (kept here by default so they don't follow a sync folder); with "everything on this PC only", `ClipboardHistory.json` is in `%LOCALAPPDATA%\ALTRun\` too |
+| `Themes\` in the program folder (`%APPDATA%\ALTRun\Themes\` if it isn't writable) | Your own themes, see [Themes](Themes#custom-themes) |
+| `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` if it isn't writable) | Your own scripts, see [Scripts](Scripts) |
+| `%Temp%\ALTRun.log` | Debug log, written only with Preferences → Advanced → "Write a debug log" on |
 
-开机启动、开始菜单、"发送到" 的快捷方式和管理员小助手的计划任务见 [卸载](Installation#卸载)。
+For the startup, Start menu and "Send to" shortcuts and the administrator helper's scheduled task, see [Uninstalling](Installation#uninstalling).
 
-## 备份和换电脑
-- **只备份一个文件就够**: `ALTRun.json` 包括所有设置、自定义命令和片段。想连学习排序、剪贴板历史一起带走, 备份整个 Data 文件夹
-- **换电脑**: 把整个程序文件夹 (连同 `Data\`) 复制过去即可; 路径尽量用 [路径变量](Commands-and-Snippets#路径里可以用的变量), 换了用户名也能用
-- **多台电脑同步**: 把数据文件夹换到同步盘里, 见 [多台电脑共用设置](FAQ#在多台电脑上使用同一份设置)。不要在两台电脑上同时开着 ALTRun 修改设置, 否则同步盘可能生成冲突副本
-- **只导出文字片段**: 偏好设置 → 文字片段 → 导入 / 导出, 存成 CSV, 见 [自定义命令与片段](Commands-and-Snippets)
+## Backups and moving to another PC
+- **One file is enough**: `ALTRun.json` holds every setting, custom command and snippet. To take the learned ranking and clipboard history along too, back up the whole Data folder
+- **New PC**: copy the whole program folder (including `Data\`); use [path variables](Commands-and-Snippets#variables-in-paths) in paths so they still work with a different user name
+- **Syncing several PCs**: move the data folder into a sync folder, see [Using the same settings on several PCs](FAQ#using-the-same-settings-on-several-pcs). Don't change settings on two PCs with ALTRun open at the same time, or the sync service may create conflict copies
+- **Snippets only**: Preferences → Snippets → Import / Export saves them as CSV, see [Custom commands and snippets](Commands-and-Snippets)

@@ -1,21 +1,21 @@
-[English](en-Window-Switching) · **中文**
+**English** · [中文](Window-Switching-zh)
 
-# 窗口切换
+# Window switching
 
-输入窗口标题或程序名, `Enter` 切换到这个已经打开的窗口 (最小化的先还原), 和 PowerToys Run 的 Window Walker、Raycast 的 Switch Windows 一样。
+Type a window title or program name and `Enter` switches to that open window (restoring it if it is minimized), like PowerToys Run's Window Walker or Raycast's Switch Windows.
 
-- `w 关键字`: 只搜窗口, 例如 `w excel`、`w 报价`
-- `w ` (`w` 加空格): 列出所有窗口, 按前后顺序 (最近用过的在前)
-- 直接输入 (不加 `w`): 标题匹配得好的窗口也会显示, 排在应用和自定义命令后面, 最多 3 个
-- 选中一个窗口按 `→`: 关闭这个窗口
+- `w keyword`: search windows only, for example `w excel`, `w quote`
+- `w ` (`w` and a space): list every window, in front-to-back order (most recently used first)
+- Typing without `w`: windows whose title matches well show up too, after apps and custom commands, at most 3
+- Press `→` on a window: close it
 
-只列出任务栏上能看到的窗口: 不包括隐藏的窗口、工具窗口、别的虚拟桌面上的窗口和 ALTRun 自己的窗口。窗口不会被记进 [最近使用](Recent)。
+Only windows you can see on the taskbar are listed: no hidden windows, tool windows, windows on other virtual desktops or ALTRun's own windows. Windows are never added to the [recent items](Recent).
 
-## 设置
-偏好设置 → 功能: "窗口切换" 打开或关闭整个功能; 下面的 "功能选项" 里, "普通搜索里也显示" 和 "关键字" 对应:
+## Settings
+Preferences → Features: "Window switching" turns the whole feature on or off; under "Feature options", "Show in normal search" and "Keyword" map to:
 
-| 设置 | 默认 | 说明 |
+| Setting | Default | Description |
 |---|---|---|
-| `Features.Windows.Enabled` | `1` | 是否启用窗口切换 |
-| `Features.Windows.Keyword` | `w` | 只搜窗口的关键字 |
-| `Features.Windows.InDefaultResults` | `1` | 直接输入时也显示标题匹配得好的窗口 |
+| `Features.Windows.Enabled` | `1` | Turn window switching on or off |
+| `Features.Windows.Keyword` | `w` | Keyword that searches windows only |
+| `Features.Windows.InDefaultResults` | `1` | Also show windows whose title matches well when typing without the keyword |

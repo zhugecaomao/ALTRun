@@ -48,9 +48,9 @@
 2. 按 `Alt+Space`（或 `Alt+R`），输入程序或文件名称，再按 `Enter`。
 3. 输入 `?` 查看全部搜索语法和快捷键；按 `Ctrl+,` 打开偏好设置。
 
-如果 Windows SmartScreen 拦截程序，点击 **更多信息** → **仍要运行**。杀毒软件误报请参阅[常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#杀毒软件报毒)。
+如果 Windows SmartScreen 拦截程序，点击 **更多信息** → **仍要运行**。杀毒软件误报请参阅[常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ-zh#杀毒软件报毒)。
 
-也可以通过 Scoop 或 winget（审核收录后）安装，或使用 AutoHotkey v2 直接运行 `ALTRun.ahk`。详情请参阅[其他安装方式与升级](https://github.com/zhugecaomao/ALTRun/pull/206/changes#其他安装方式与升级)。
+也可以通过 Scoop 或 winget（审核收录后）安装，或使用 AutoHotkey v2 直接运行 `ALTRun.ahk`。详情请参阅[其他安装方式与升级](#其他安装方式与升级)。
 
 
 ## 功能
@@ -160,7 +160,7 @@
 | `Ctrl+Alt+C` | 剪贴板历史 |
 | `Esc` | 关闭操作面板 / 隐藏窗口 |
 
-完整语法（`'文件`、`>命令`、`clip`、`snip`、网页搜索关键字等）见 Wiki：[搜索与快捷键](https://github.com/zhugecaomao/ALTRun/wiki/Usage)。
+完整语法（`'文件`、`>命令`、`clip`、`snip`、网页搜索关键字等）见 Wiki：[搜索与快捷键](https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh)。
 
 
 ## 文档
@@ -168,15 +168,15 @@
 
 | 页面 | 内容 |
 |---|---|
-| [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation) | 下载、Scoop / winget、开机启动、自动更新、从 2.x 升级、卸载 |
-| [搜索与快捷键](https://github.com/zhugecaomao/ALTRun/wiki/Usage) | 输入语法、快捷键、操作面板、学习排序、使用统计 |
-| [自定义命令与片段](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets) | 命令类型、路径变量、片段占位符、自动展开 |
-| [文件搜索](https://github.com/zhugecaomao/ALTRun/wiki/File-Search) | Everything 联动、内置索引、排除规则 |
-| [主题](https://github.com/zhugecaomao/ALTRun/wiki/Themes) | 内置主题、自定义主题、全部可用的键 |
-| [扩展功能](https://github.com/zhugecaomao/ALTRun/wiki/Extensions) | 对话框快速跳转、一键加日期、自定义热键、系统命令、PT 工具箱 |
-| [设置文件参考](https://github.com/zhugecaomao/ALTRun/wiki/Configuration) | ALTRun.json 各项的含义和默认值 |
-| [常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ) | 热键冲突、搜索不到、杀毒软件误报等 |
-| [开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development) | 架构、新增搜索功能、代码规范、测试 |
+| [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation-zh) | 下载、Scoop / winget、开机启动、自动更新、从 2.x 升级、卸载 |
+| [搜索与快捷键](https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh) | 输入语法、快捷键、操作面板、学习排序、使用统计 |
+| [自定义命令与片段](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets-zh) | 命令类型、路径变量、片段占位符、自动展开 |
+| [文件搜索](https://github.com/zhugecaomao/ALTRun/wiki/File-Search-zh) | Everything 联动、内置索引、排除规则 |
+| [主题](https://github.com/zhugecaomao/ALTRun/wiki/Themes-zh) | 内置主题、自定义主题、全部可用的键 |
+| [扩展功能](https://github.com/zhugecaomao/ALTRun/wiki/Extensions-zh) | 对话框快速跳转、一键加日期、自定义热键、系统命令、PT 工具箱 |
+| [设置文件参考](https://github.com/zhugecaomao/ALTRun/wiki/Configuration-zh) | ALTRun.json 各项的含义和默认值 |
+| [常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ-zh) | 热键冲突、搜索不到、杀毒软件误报等 |
+| [开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development-zh) | 架构、新增搜索功能、代码规范、测试 |
 
 
 ## 其他安装方式与升级
@@ -191,13 +191,13 @@ winget 清单已提交，等待审核收录；收录后可使用 `winget install
 
 从源码运行：安装 [AutoHotkey v2](https://www.autohotkey.com/)，然后运行 `ALTRun.ahk`。
 
-从较早版本或 2.x 升级，请参阅[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation)。
+从较早版本或 2.x 升级，请参阅[安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation-zh)。
 
 
 ## 贡献与反馈
 - 报告问题：[提交 Issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose)（请附上 Windows 版本和复现步骤）
 - 建议与讨论：[Discussions](https://github.com/zhugecaomao/ALTRun/discussions)
-- 贡献代码：请先阅读 [贡献指南](CONTRIBUTING.md#参与贡献)；项目结构、运行测试、新增搜索功能见 Wiki 的[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)
+- 贡献代码：请先阅读 [贡献指南](CONTRIBUTING.md#参与贡献)；项目结构、运行测试、新增搜索功能见 Wiki 的[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development-zh)
 
 如果 ALTRun 对你有帮助，欢迎点亮星标 ⭐
 

@@ -1,34 +1,34 @@
-[English](en-Hotkeys) · **中文**
+**English** · [中文](Hotkeys-zh)
 
-# 自定义热键
+# Custom Hotkeys
 
-偏好设置 → 自定义热键: 给任意热键指定一条 [系统命令](System-Commands#系统命令), 可以限定只在某个窗口里生效。
+Preferences → Hotkeys: assign a [system command](System-Commands#system-commands) to any hotkey, optionally only inside a certain window.
 
-| 字段 | 例子 | 说明 |
+| Field | Example | Description |
 |---|---|---|
-| 热键 (Key) | `Ctrl+Alt+P` | 点一下框, 按下组合键 (见下文 [设置热键](#设置热键)); 鼠标热键: 在框里点鼠标中键或侧键。勾选 "保留按键原来的功能" 时, 按键原来的作用照常 (设置文件里是开头的 `~`) |
-| 操作 (Action) | `PTTools` | 系统命令的 Id, 或 `ToggleWindow` (显示 / 隐藏 ALTRun) |
-| 窗口 (WinTitle) | `ahk_exe notepad.exe` | 留空 = 全局; 否则只在匹配的窗口里生效; `ALTRun` = 只在 ALTRun 的搜索窗口里 |
+| Hotkey (Key) | `Ctrl+Alt+P` | Click the box and press the keys (see [Setting hotkeys](#setting-hotkeys) below); mouse hotkeys: click the middle or a side button in the box. With "Keep the key's original function" ticked, the key still does what it normally does (a leading `~` in the settings file) |
+| Action | `PTTools` | A system command Id, or `ToggleWindow` (show / hide ALTRun) |
+| Only in window (WinTitle) | `ahk_exe notepad.exe` | Empty = everywhere; otherwise only in matching windows; `ALTRun` = only in ALTRun's search window |
 
-默认的一条: 在 RAPT (`RAPTW.exe`) 里按鼠标中键打开 PT 工具箱。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage#快捷键)。
+The default one: the middle mouse button in RAPT (`RAPTW.exe`) opens PT Tools. `F1`–`F4` in the search window are built in, see [Shortcuts](Usage#shortcuts).
 
-![偏好设置 → 自定义热键](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
+![Preferences → Hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 
-### CapsLock 切换输入法
-和 Mac 一样: 在 偏好设置 → 自定义热键 最上面把 **CapsLock 键** 设成:
-- **按一下切换输入法**: 切换到下一个已安装的输入法, 和 `Win+Space` 一样 (例如 英语(美国) ↔ 微软拼音)
-- **按一下切换中 / 英模式**: 切换当前输入法的中 / 英模式, 和微软拼音里按 `Shift` 一样; 只装了一个中文输入法时用这个
+### Caps Lock switches the input method
+Like on a Mac: at the top of Preferences → Hotkeys, set **Caps Lock** to one of:
+- **Press to switch input method**: switches to the next installed input method, like `Win+Space` (for example English (US) ↔ Microsoft Pinyin)
+- **Press to switch Chinese / English mode**: switches the mode of the current input method, like pressing `Shift` in Microsoft Pinyin; handy when only a Chinese input method is installed
 
-按住 CapsLock 0.3 秒才开 / 关大写锁定 (不用等松开), 并短暂提示 "大写锁定: 开 / 关" (不想要提示可以取消 "显示大写锁定开 / 关的提示"); `Shift+CapsLock` 和原来一样开 / 关大写锁定。默认不开 (`General.CapsLock`)。把 CapsLock 当修饰键的自定义热键 (例如 `CapsLock & J`) 不要和它一起用。通过 Chrome 远程桌面等远程控制使用时也可以: 远程软件为了同步大写锁定补发的极短的 CapsLock 会被忽略。
+Holding Caps Lock for 0.3 s turns caps lock on or off (without waiting for you to let go) and briefly shows "Caps Lock On" / "Caps Lock Off" (untick "Show a notice when caps lock turns on or off" to turn that off); `Shift+Caps Lock` turns caps lock on or off as usual. It's off by default (`General.CapsLock`). Custom hotkeys that use Caps Lock as a modifier (such as `CapsLock & J`) don't mix well with it. It also works over remote control such as Chrome Remote Desktop: the very short extra Caps Lock presses that the remote tool sends to sync the caps lock state are ignored.
 
-**管理员窗口里也生效**: Windows 不让普通权限的程序控制以管理员身份运行的窗口, 所以默认在这些窗口里按 CapsLock 不会切换。勾选下面的 "在管理员窗口里也生效" (`General.CapsLockElevated`) 后, ALTRun 建一个计划任务 (这时确认一次 UAC), 之后每次启动都用它以管理员身份运行一个**只管 CapsLock 的小助手** (不再弹 UAC), 退出时一起退出。ALTRun 本身还是普通权限, 从它打开的程序、拖放文件、网络驱动器都不受影响。取消勾选时删掉计划任务 (再确认一次)。移动了 ALTRun 的文件夹后, 把这个选项关掉再打开一次。
+**Also in windows running as administrator**: Windows doesn't let programs with normal rights control windows running as administrator, so by default Caps Lock doesn't switch there. Tick "Also in windows running as administrator" (`General.CapsLockElevated`) and ALTRun creates a scheduled task (confirm UAC once); from then on every start uses it to run a **small helper with administrator rights that only handles Caps Lock** (no more UAC prompts), and the helper exits with ALTRun. ALTRun itself keeps normal rights, so programs opened from it, drag and drop and network drives are not affected. Unticking it deletes the task (confirm once more). After moving the ALTRun folder, turn the option off and on again.
 
-### 设置热键
-偏好设置里所有的热键 (呼出热键、剪贴板历史、对话框跳转、一键加日期、自定义热键) 都用同一种框, 和 Alfred、PowerToys 一样直接按键录制:
-- 框里显示 `Alt+Space`、`Ctrl+Alt+C` 这样的写法。点一下框, 出现 "请按下快捷键...", 按下想要的组合键就记下来
-- `Esc` 取消 (保留原来的热键), `Backspace` / `Delete` 清除 (不用这个热键)
-- 单独的字母、数字、空格、回车等会影响平时打字, 要加上 `Ctrl`、`Alt` 或 `Win`; `F1` ~ `F24`、`Pause` 等可以单独用
-- 录制时 ALTRun 自己的热键暂停, `Alt+Space`、`Win+E` 这类组合也不会触发系统或其它程序的功能
-- 保存时, 如果两个全局热键相同 (例如呼出热键和剪贴板历史都是 `Ctrl+Alt+C`), 会先提示。只在某些窗口里生效的热键 (对话框跳转、一键加日期、填了窗口的自定义热键) 可以重复
+### Setting hotkeys
+Every hotkey in Preferences (the ALTRun hotkey, clipboard history, Quick Switch, date stamp, custom hotkeys) uses the same kind of box, recording the keys directly like Alfred and PowerToys:
+- The box shows `Alt+Space`, `Ctrl+Alt+C` and so on. Click the box, "Press a shortcut..." appears, and the keys you press are recorded
+- `Esc` cancels (keeps the old hotkey), `Backspace` / `Delete` clears it (no hotkey)
+- A single letter, digit, space, Enter and the like would get in the way of typing and need `Ctrl`, `Alt` or `Win`; `F1`–`F24`, `Pause` and similar keys work on their own
+- While recording, ALTRun's own hotkeys are paused, and combinations such as `Alt+Space` or `Win+E` don't trigger Windows or other programs
+- When saving, you're warned if two global hotkeys are the same (for example the ALTRun hotkey and clipboard history both `Ctrl+Alt+C`). Hotkeys that only work in some windows (Quick Switch, date stamp, custom hotkeys with a window) can repeat
 
-设置文件里仍然是 AutoHotkey 的写法 (`!` Alt, `^` Ctrl, `+` Shift, `#` Win, 例如 `!Space`), 也可以直接编辑; `CapsLock & J` 这类特殊写法在偏好设置里重新录制之前会原样保留。
+The settings file still uses AutoHotkey syntax (`!` Alt, `^` Ctrl, `+` Shift, `#` Win, for example `!Space`), and you can edit it directly; special forms such as `CapsLock & J` are kept as they are until you record the hotkey again in Preferences.

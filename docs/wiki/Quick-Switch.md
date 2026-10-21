@@ -1,41 +1,41 @@
-[English](en-Quick-Switch) · **中文**
+**English** · [中文](Quick-Switch-zh)
 
-# 对话框快速跳转 (Quick Switch)
+# Quick Switch
 
-在 Windows 的打开 / 保存对话框里, 快速跳到已经打开的文件夹, 不必重新浏览目录。文件夹面板的使用方式和设置见[对话框文件夹面板](Quick-Switch-Panel)。
+Quick Switch jumps an Open / Save dialog to a folder you already have open, without browsing through the directory tree again. For the visual folder panel and its settings, see [Dialog Folder Panel](Quick-Switch-Panel).
 
-## 快捷键
+## Shortcuts
 
-在标准的打开 / 保存文件对话框里:
+In a standard Open / Save file dialog:
 
-- `Ctrl+G`: 跳到 Total Commander 当前打开的文件夹
-- `Ctrl+E`: 跳到资源管理器当前打开的文件夹
-- `Ctrl+Shift+G`: 打开文件夹面板并把光标放到搜索框, 用键盘选择目标文件夹或文件
+- `Ctrl+G`: jump to the folder currently open in Total Commander
+- `Ctrl+E`: jump to the folder currently open in File Explorer
+- `Ctrl+Shift+G`: show the folder panel and focus its search box so you can pick a folder or file with the keyboard
 
-跳转时, 文件名框里原来的内容会保留。例如另存为对话框预填的文件名不会被清掉。
+The existing file name is preserved when jumping. For example, a name suggested by a Save As dialog is not cleared.
 
-## 自动跳转
+## Automatic switching
 
-在偏好设置 → 对话框跳转里打开“自动跳转”后, 从 Total Commander 切换到打开 / 保存对话框时, ALTRun 会自动跳到 Total Commander 当前面板的文件夹。
+Enable **Auto switch** in Preferences → Quick Switch to jump automatically to Total Commander's current folder when switching from Total Commander to an Open / Save dialog.
 
-“生效的窗口”: 勾选 “标准的打开 / 保存对话框” (`ahk_class #32770`, 默认勾选; 只认有资源管理器文件列表的对话框, "系统信息" (msinfo32) 这类本身是对话框的程序窗口不算); 其它程序自己画的对话框写在 “其它对话框” 里, 每行一个, 例如 WPS 的 `ahk_class Qt5QWindowIcon`。“不生效的窗口” 里的窗口不跳转; “不自动跳转的对话框” 只关闭自动跳转, 手动热键仍然可用。
+**Works in**: tick **Standard Open / Save dialogs** (`ahk_class #32770`, on by default; only dialogs with an Explorer file list count, so program windows that are dialogs themselves, such as System Information (msinfo32), are left alone); dialogs that programs draw themselves go in **Other dialogs**, one per line, for example WPS's `ahk_class Qt5QWindowIcon`. Windows in **Never in** never switch; **No auto jump in** disables only automatic switching, and the hotkeys still work there.
 
-Total Commander 的路径通过其 `WM_COPYDATA` 接口直接读取 (需要 TC 8.0 或更新), 不经过剪贴板, 不会把路径写进 Windows 剪贴板历史 (`Win+V`)。
+The folder is read directly from Total Commander through its `WM_COPYDATA` interface (TC 8.0 or later), not through the clipboard, so the path does not appear in Windows clipboard history (`Win+V`).
 
-## 相关设置
+## Settings
 
-![偏好设置 → 对话框跳转](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-quickswitch.png)
+![Preferences → Quick Switch](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-quickswitch.png)
 
-在偏好设置 → 对话框跳转中可修改热键、适用窗口和自动跳转行为。对应设置文件为 `Extensions.QuickSwitch`:
+Preferences → Quick Switch controls the hotkeys, eligible windows and automatic switching. The settings are stored under `Extensions.QuickSwitch`:
 
-| 设置 | 默认值 / 作用 |
+| Setting | Default / purpose |
 |---|---|
-| `Enabled` | `1` = 启用 Quick Switch |
-| `ExplorerHotkey` | 跳到资源管理器当前文件夹, 默认 `Ctrl+E` |
-| `TotalCmdHotkey` | 跳到 Total Commander 当前文件夹, 默认 `Ctrl+G` |
-| `AutoSwitch` | 从 Total Commander 切换到对话框时自动跳转, 默认 `0` (关) |
-| `DialogWindows` | 允许生效的对话框窗口条件 |
-| `ExcludeWindows` | 完全排除的窗口条件 |
-| `AutoSwitchExclude` | 不自动跳转、但仍可手动操作的窗口条件 |
+| `Enabled` | `1` = enable Quick Switch |
+| `ExplorerHotkey` | Jump to File Explorer's current folder; default `Ctrl+E` |
+| `TotalCmdHotkey` | Jump to Total Commander's current folder; default `Ctrl+G` |
+| `AutoSwitch` | Jump automatically when switching from Total Commander to a dialog, default `0` (off) |
+| `DialogWindows` | Window conditions where Quick Switch is enabled |
+| `ExcludeWindows` | Windows where Quick Switch is fully disabled |
+| `AutoSwitchExclude` | Windows where automatic switching is disabled but manual hotkeys still work |
 
-[对话框文件夹面板](Quick-Switch-Panel)有独立设置页, 可自动显示在打开 / 保存对话框附近。
+The [Dialog Folder Panel](Quick-Switch-Panel) has its own Preferences page and can appear beside Open / Save dialogs.

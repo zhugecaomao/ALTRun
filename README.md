@@ -22,7 +22,7 @@
   <a href="#getting-started">Getting started</a> ·
   <a href="#features">Features</a> ·
   <a href="#keyboard-shortcuts">Shortcuts</a> ·
-  <a href="https://github.com/zhugecaomao/ALTRun/wiki/en-Home">Documentation (Wiki)</a> ·
+  <a href="https://github.com/zhugecaomao/ALTRun/wiki/Home">Documentation (Wiki)</a> ·
   <a href="CHANGELOG.md">Changelog</a>
 </p>
 
@@ -48,9 +48,9 @@
 2. Press `Alt+Space` (or `Alt+R`), type an app or file name, then press `Enter`.
 3. Type `?` to see all search syntax and shortcuts; press `Ctrl+,` to open Preferences.
 
-If Windows SmartScreen blocks the app, choose **More info** → **Run anyway**. For antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ#my-antivirus-flags-it).
+If Windows SmartScreen blocks the app, choose **More info** → **Run anyway**. For antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#my-antivirus-flags-it).
 
-You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` with AutoHotkey v2. See [Installation options and upgrades](https://github.com/zhugecaomao/ALTRun/pull/206/changes#installation-options-and-upgrades) for details.
+You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` with AutoHotkey v2. See [Installation options and upgrades](#installation-options-and-upgrades) for details.
 
 
 ## Features
@@ -160,23 +160,23 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `Ctrl+Alt+C` | Clipboard history |
 | `Esc` | Close the action panel / hide the window |
 
-For the full syntax (`'file`, `>command`, `clip`, `snip`, web search keywords and more), see [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/en-Usage) in the wiki.
+For the full syntax (`'file`, `>command`, `clip`, `snip`, web search keywords and more), see [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/Usage) in the wiki.
 
 
 ## Documentation
-The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wiki/en-Home):
+The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wiki/Home):
 
 | Page | Contents |
 |---|---|
-| [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation) | Download, Scoop / winget, start with Windows, automatic updates, upgrading from 2.x, uninstalling |
-| [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/en-Usage) | Search syntax, shortcuts, action panel, learned ranking, usage statistics |
-| [Custom commands and snippets](https://github.com/zhugecaomao/ALTRun/wiki/en-Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion |
-| [File search](https://github.com/zhugecaomao/ALTRun/wiki/en-File-Search) | Everything integration, built-in index, exclusion rules |
-| [Themes](https://github.com/zhugecaomao/ALTRun/wiki/en-Themes) | Built-in themes, custom themes, every available key |
-| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/en-Extensions) | Quick Switch, date stamp, custom hotkeys, system commands, PT Tools |
-| [Settings reference](https://github.com/zhugecaomao/ALTRun/wiki/en-Configuration) | Every ALTRun.json setting and its default value |
-| [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/en-FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives and more |
-| [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/en-Development) | Architecture, adding a search feature, code style, tests |
+| [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation) | Download, Scoop / winget, start with Windows, automatic updates, upgrading from 2.x, uninstalling |
+| [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/Usage) | Search syntax, shortcuts, action panel, learned ranking, usage statistics |
+| [Custom commands and snippets](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion |
+| [File search](https://github.com/zhugecaomao/ALTRun/wiki/File-Search) | Everything integration, built-in index, exclusion rules |
+| [Themes](https://github.com/zhugecaomao/ALTRun/wiki/Themes) | Built-in themes, custom themes, every available key |
+| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/Extensions) | Quick Switch, date stamp, custom hotkeys, system commands, PT Tools |
+| [Settings reference](https://github.com/zhugecaomao/ALTRun/wiki/Configuration) | Every ALTRun.json setting and its default value |
+| [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives and more |
+| [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development) | Architecture, adding a search feature, code style, tests |
 
 
 ## Installation options and upgrades
@@ -191,13 +191,13 @@ The winget manifest has been submitted and is awaiting acceptance. Once accepted
 
 To run from source, install [AutoHotkey v2](https://www.autohotkey.com/) and launch `ALTRun.ahk`.
 
-For upgrading from an older version or from 2.x, see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/en-Installation).
+For upgrading from an older version or from 2.x, see [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation).
 
 
 ## Feedback and contributing
 - Report a problem: [open an issue](https://github.com/zhugecaomao/ALTRun/issues/new/choose) (please include your Windows version and the steps to reproduce)
 - Ideas and discussion: [Discussions](https://github.com/zhugecaomao/ALTRun/discussions)
-- Code contributions: please read [CONTRIBUTING.md](CONTRIBUTING.md) first; the [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/en-Development) covers the project structure, running the tests and adding a search feature
+- Code contributions: please read [CONTRIBUTING.md](CONTRIBUTING.md) first; the [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development) covers the project structure, running the tests and adding a search feature
 
 Issues and pull requests are welcome in English or Chinese. If ALTRun is useful to you, a star ⭐ is much appreciated.
 

@@ -1,108 +1,108 @@
-[English](en-Installation) · **中文**
+**English** · [中文](Installation-zh)
 
-# 安装与升级
+# Installation and upgrades
 
-## 系统要求
-- Windows 10 或 Windows 11 (64 位)
-- 用源码运行时需要 [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新版本; 发布的 exe 不需要
-- 不需要 .NET、Electron 或其他运行库; 程序约 2.5 MB
+## System requirements
+- Windows 10 or Windows 11 (64-bit)
+- Running from source needs [AutoHotkey v2](https://www.autohotkey.com/) 2.0 or later; the released exe doesn't
+- No .NET, Electron or other runtime; the program is about 2.5 MB
 
-## 安装
-ALTRun 是绿色软件, 不需要安装, 不写注册表。
+## Installing
+ALTRun is portable: there is nothing to install and nothing is written to the registry.
 
-1. 从 [Releases](https://github.com/zhugecaomao/ALTRun/releases/latest) 下载最新版本, 解压到任意文件夹 (例如 `D:\Apps\ALTRun`)
-   - 或者克隆仓库, 双击 `ALTRun.ahk` 用 AutoHotkey v2 运行
-2. 运行后托盘出现 ALTRun 图标, 按 `Alt+Space` 呼出搜索窗口
-3. 第一次运行会在后台建立应用索引, 几秒后就能搜到开始菜单里的程序
+1. Download the latest version from [Releases](https://github.com/zhugecaomao/ALTRun/releases/latest) and unzip it to any folder (for example `D:\Apps\ALTRun`)
+   - Or clone the repository and double-click `ALTRun.ahk` to run it with AutoHotkey v2
+2. The ALTRun icon appears in the notification area; press `Alt+Space` to open the search window
+3. The first run builds the app index in the background; after a few seconds your Start menu programs can be found
 
-第一次运行时如果 Windows SmartScreen 提示 "Windows 已保护你的电脑", 点 **更多信息** → **仍要运行**; 杀毒软件误报见 [常见问题](FAQ#杀毒软件报毒)。
+If Windows SmartScreen says "Windows protected your PC" when you first run it, click **More info** → **Run anyway**; if your antivirus complains, see the [FAQ](FAQ#my-antivirus-flags-it).
 
-建议放在自己能写入的文件夹里 (例如 `D:\Apps\ALTRun`), 设置和数据保存在程序目录的 `Data\` 里, 整个文件夹可以直接带走。放在需要管理员权限才能写入的文件夹 (例如 `C:\Program Files`) 时, 设置和数据改为保存在 `%APPDATA%\ALTRun\`, 但一键更新不能替换程序文件, 要手动下载新版本。
+Put it in a folder you can write to (for example `D:\Apps\ALTRun`): settings and data are saved in the `Data\` folder next to the program, so you can take the whole folder with you. In a folder that needs admin rights to write to (such as `C:\Program Files`), settings and data are saved in `%APPDATA%\ALTRun\` instead, but one-key updates can't replace the program files and you have to download new versions by hand.
 
-### 用 Scoop 安装
-[Scoop](https://scoop.sh/) 是 Windows 的命令行软件管理工具。ALTRun 的仓库本身就是一个 Scoop bucket:
+### Installing with Scoop
+[Scoop](https://scoop.sh/) is a command-line installer for Windows. The ALTRun repository is itself a Scoop bucket:
 
 ```powershell
 scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
 scoop install altrun
 ```
 
-- 安装后开始菜单里有 "Scoop Apps → ALTRun", 程序在 `scoop\apps\altrun\current`
-- 升级: 先退出 ALTRun, 再运行 `scoop update altrun`。设置和数据 (`Data\`, 包括 `Data\ALTRun.json`)、`Themes\` 都会保留
-- 卸载: `scoop uninstall altrun`, 设置留在 `scoop\persist\altrun`, 重新安装后自动恢复; 连设置一起删除用 `scoop uninstall altrun --purge`
-- 用 Scoop 安装时, "检查更新" 发现新版本会提示用 `scoop update altrun` 升级, 不要手动解压覆盖
+- After installing, the Start menu has "Scoop Apps → ALTRun"; the program is in `scoop\apps\altrun\current`
+- Upgrading: quit ALTRun first, then run `scoop update altrun`. Settings and data (`Data\`, including `Data\ALTRun.json`) and `Themes\` are kept
+- Uninstalling: `scoop uninstall altrun`; your settings stay in `scoop\persist\altrun` and come back when you reinstall. To delete them too, use `scoop uninstall altrun --purge`
+- When installed with Scoop, a new version found by "Check for Updates" tells you to upgrade with `scoop update altrun`; don't unzip over it by hand
 
-### 用 winget 安装
-winget 清单已经准备好 (`packaging\winget`), 等 [winget 官方仓库](https://github.com/microsoft/winget-pkgs) 收录后就可以:
+### Installing with winget
+The winget manifest is ready (`packaging\winget`). Once the [official winget repository](https://github.com/microsoft/winget-pkgs) accepts it, you can run:
 
 ```powershell
 winget install zhugecaomao.ALTRun
-winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
+winget upgrade zhugecaomao.ALTRun     # later upgrades (quit ALTRun first)
 ```
 
-- 程序在 `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`, 命令行里可以直接输入 `altrun` 启动
-- 升级和卸载只删除 zip 里原有的文件, 设置和数据 (`Data\`、`Themes\`) 会保留; `winget uninstall --purge` 才会连同它们一起删除, 或者卸载后手动删掉上面的文件夹
-- winget 本身不创建开始菜单快捷方式: 第一次用 `altrun` 启动后, ALTRun 会自己添加到开始菜单 (偏好设置 → 通用 → "添加到开始菜单")
-- 卸载前先在 偏好设置 → 通用 里关闭 "开机自动启动"、"添加到开始菜单"、"添加到 '发送到' 菜单", 否则这些快捷方式会留下
-- 第一次运行时 Windows 可能提示 "无法验证发布者" (程序是从网上下载的), 选择 "运行" 即可
+- The program is in `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`; type `altrun` on the command line to start it
+- Upgrading and uninstalling only remove the files that came in the zip; settings and data (`Data\`, `Themes\`) are kept. Only `winget uninstall --purge` deletes them as well, or delete the folder above by hand after uninstalling
+- winget itself doesn't create a Start menu shortcut: after you start it once with `altrun`, ALTRun adds itself to the Start menu (Preferences → General → "Add to Start menu")
+- Before uninstalling, turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" in Preferences → General, otherwise those shortcuts are left behind
+- The first time it runs, Windows may say it "couldn't verify the publisher" (the program was downloaded from the internet); choose "Run"
 
-## 程序目录里的文件
-| 文件 / 文件夹 | 说明 | 升级时 |
+## Files in the program folder
+| File / folder | What it is | On upgrade |
 |---|---|---|
-| `ALTRun.ahk` 或 `ALTRun.exe` | 主程序 | 替换 |
-| `Lib\` `Src\` | 程序代码 (源码版) | 替换 |
-| `Resources\` | 随程序发布的数据: 简繁对照表、内置主题、界面语言、图标 | 覆盖 |
-| `Data\ALTRun.json` | 你的全部设置和自定义命令、片段 | 保留 (自动升级格式) |
-| `Data\` 里的其它文件 | 应用索引、文件索引、学习记录、剪贴板历史、使用统计 | 保留 (删掉会重新生成) |
-| `Themes\` | 你自己的主题 | 保留 |
-| `Scripts\` | 你自己的[脚本](Scripts) | 保留 |
+| `ALTRun.ahk` or `ALTRun.exe` | The program | Replaced |
+| `Lib\` `Src\` | Program code (source version) | Replaced |
+| `Resources\` | Data shipped with the program: Simplified / Traditional table, built-in themes, interface languages, icons | Overwritten |
+| `Data\ALTRun.json` | All your settings, custom commands and snippets | Kept (format upgraded automatically) |
+| Other files in `Data\` | App index, file index, learned ranking, clipboard history, usage statistics | Kept (rebuilt if deleted) |
+| `Themes\` | Your own themes | Kept |
+| `Scripts\` | Your own [scripts](Scripts) | Kept |
 
-## 开机启动、开始菜单、"发送到"
-在 偏好设置 → 通用 里设置:
-- **开机自动启动**: 在 "启动" 文件夹里创建快捷方式
-- **添加到开始菜单**: 可以从开始菜单打开 ALTRun
-- **添加到 "发送到" 菜单**: 在资源管理器里右键文件 → 发送到 → ALTRun, 把它加为自定义命令 (1 个时弹出编辑对话框, 多个时直接全部添加)
+## Start with Windows, Start menu, "Send to"
+In Preferences → General:
+- **Launch ALTRun at login**: creates a shortcut in the Startup folder
+- **Add to Start menu**: lets you open ALTRun from the Start menu
+- **Add to Explorer 'Send to' menu**: right-click a file in Explorer → Send to → ALTRun adds it as a custom command (one file opens the edit dialog; several are all added at once)
 
-## 升级
-- 一键升级: 托盘图标 → 检查更新 → 安装更新
-- 用 Scoop 安装的: `scoop update altrun`
-- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+## Upgrading
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
 
-下面是详细说明。
+Details below.
 
-### 一键更新
-ALTRun 在后台到 GitHub 检查新版本 (启动时和之后每 6 小时一次) (偏好设置 → 通用 → "自动检查更新")。和 Alfred 一样不弹窗: 发现新版本后, 呼出搜索窗口时空搜索框下面会显示一条 **"发现新版本: ALTRun x"** (下面一行是当前版本和按键说明) (输入 `更新` / `update` 也能找到):
-- `Enter`: **安装更新**。下载新版本, 核对 SHA256 校验值, 替换程序文件后自动重新启动。`Data\` (设置和数据)、`Themes\` 不会改动
-- `→`: **更新说明** (打开 GitHub 上这个版本的说明), 或 **跳过此版本** (有更新的版本时再提醒)
+### One-key updates
+ALTRun checks GitHub for new versions in the background (at startup and then every 6 hours) (Preferences → General → "Check for updates automatically"). Like Alfred, it doesn't pop up a window: once a new version is found, the empty search box shows **"Update Available: ALTRun x"** when you open the search window, with the current version and the keys on the line below (typing `update` finds it too):
+- `Enter`: **Install Update**. Downloads the new version, checks its SHA256 checksum, replaces the program files and restarts automatically. `Data\` (settings and data) and `Themes\` are not touched
+- `→`: **Release Notes** (opens this version's notes on GitHub) or **Skip This Version** (you'll be told again when there is a newer one)
 
-开机后先等 1 分钟 (网络可能还没连上), 离上次检查满 1 小时就检查, 所以每天开机就能发现前一天发布的版本; 之后每小时看一下离上次检查是否满 6 小时。检查的时间和跳过的版本记在 `Data\Update.json`, 改完设置重新载入 ALTRun 不会反复检查。网络不通时只写日志, 一小时后再试。
+After Windows starts, it waits 1 minute (the network may not be up yet) and checks if the last check was more than 1 hour ago, so a version released the day before is found when you start your PC; after that it looks every hour whether 6 hours have passed since the last check. The time of the last check and skipped versions are kept in `Data\Update.json`, so reloading ALTRun after changing settings doesn't check again and again. When there's no network it only writes a log entry and tries again an hour later.
 
-想马上检查: 托盘菜单 → "检查更新", 或搜索 "检查更新" (`CheckUpdate`)。手动检查总会弹出结果: 已是最新版本, 或 "ALTRun 有可用的更新" 对话框: 安装更新 / 更新说明 / 稍后。
+To check right away: tray menu → "Check for Updates", or search for "Check for ALTRun Updates" (`CheckUpdate`). A manual check always shows the result: you're up to date, or the "ALTRun Update Available" dialog: Install Update / Release Notes / Later.
 
-更新过程中出现任何问题 (网络、校验、写入权限), 原来的程序保持不变, 并提示打开下载页面手动更新。命令行 `ALTRun.exe -Update` 会直接检查并安装更新, 不询问。
+If anything goes wrong during an update (network, checksum, write permission), the old program is left as it was and you're offered the download page to update by hand. The command line `ALTRun.exe -Update` checks for and installs an update without asking.
 
-以下情况不能一键更新, 搜索窗口里的那一条会说明怎么做:
-- 用 Scoop / winget 安装: `Enter` 复制升级命令 (`scoop update altrun` / `winget upgrade zhugecaomao.ALTRun`), 退出 ALTRun 后在终端里运行
-- 运行源码 `ALTRun.ahk`: 用 `git pull` 更新, 或 `Enter` 打开下载页面
-- 程序放在没有写入权限的文件夹里: `Enter` 打开下载页面
+One-key updates aren't possible in these cases; the item in the search window tells you what to do instead:
+- Installed with Scoop / winget: `Enter` copies the upgrade command (`scoop update altrun` / `winget upgrade zhugecaomao.ALTRun`); quit ALTRun and run it in a terminal
+- Running the source `ALTRun.ahk`: update with `git pull`, or press `Enter` to open the download page
+- The program is in a folder you can't write to: `Enter` opens the download page
 
-### 手动更新
-把新版本复制覆盖到程序目录即可, 设置和数据不受影响。设置文件的格式有变化时, ALTRun 启动时会自动升级, 并先备份原文件。
+### Updating by hand
+Copy the new version over the program folder; your settings and data are not affected. If the settings file format has changed, ALTRun upgrades it at startup and backs up the original first.
 
-### 从 2.x (v2026.08.12 及更早) 升级到 3.0
-1. 托盘图标 → 退出旧版本
-2. 把新版本的压缩包解压到原来的 ALTRun 文件夹, 覆盖 `ALTRun.exe`
-3. 运行 `ALTRun.exe`
+### Upgrading from 2.x (v2026.08.12 and earlier) to 3.0
+1. Tray icon → quit the old version
+2. Unzip the new version into your existing ALTRun folder, replacing `ALTRun.exe`
+3. Run `ALTRun.exe`
 
-第一次运行时, 旧版本的 `ALTRun.ini` 会自动导入 (设置、自定义命令、热键), 保存为新的 `Data\ALTRun.json`。`ALTRun.ini` 保持不变: 想退回旧版本, 放回旧的 `ALTRun.exe` 即可。开机启动、开始菜单、"发送到" 的快捷方式沿用同一个 `ALTRun.exe`, 不需要重新设置。
+On the first run, the old `ALTRun.ini` is imported automatically (settings, custom commands, hotkeys) and saved as the new `Data\ALTRun.json`. `ALTRun.ini` is left unchanged: to go back to the old version, put the old `ALTRun.exe` back. The Startup, Start menu and "Send to" shortcuts keep pointing to the same `ALTRun.exe`, so nothing needs to be set up again.
 
-- **保留**: 呼出热键、开机启动等通用设置; 用户命令 (File / Dir / CMD / URL → 自定义命令, Clip → 文字片段); 索引目录、文件类型和深度; 结构计算开关; 对话框快速跳转; 一键加日期 (Ctrl+D); PT 工具箱设置; 条件热键
-- **不再保留**: 内置命令列表 (由 [系统命令](System-Commands#系统命令) 取代)、旧的索引 (会重新建立)、执行历史、使用统计、旧的列表外观选项
+- **Kept**: the hotkey, start with Windows and other general settings; user commands (File / Dir / CMD / URL → custom commands, Clip → snippets); index folders, file types and depth; the structural calculation switch; Quick Switch; date stamp (Ctrl+D); PT Tools settings; conditional hotkeys
+- **No longer kept**: the built-in command list (replaced by [system commands](System-Commands#system-commands)), the old index (rebuilt), run history, usage statistics, old list appearance options
 
-旧版本的 `Res\` 文件夹已改名为 `Resources\`, 启动时会自动把 `Res\` 里你自己放的文件移过去。
+The old `Res\` folder has been renamed to `Resources\`; at startup, any files you put in `Res\` yourself are moved over automatically.
 
-## 卸载
-1. 在 偏好设置 → 通用 里关闭 "开机自动启动"、"添加到开始菜单"、"添加到 '发送到' 菜单" (或者手动删除对应的快捷方式); 勾选过 偏好设置 → 自定义热键 → "在管理员窗口里也生效" 的, 也先取消勾选, 这样会删掉它建的计划任务
-2. 托盘菜单 → 退出
-3. 删除程序文件夹
-4. 想彻底删除的话, 再删掉 `%LOCALAPPDATA%\ALTRun` (剪贴板图片、图标缓存; 程序目录不能写入时设置在 `%APPDATA%\ALTRun`), 以及 `%Temp%\ALTRun.log` (调试日志, 打开过才有)。数据文件夹换过位置 (偏好设置 → 高级 → 数据) 的, 那个文件夹也要删。所有文件的位置见 [数据文件](Data-Files)
+## Uninstalling
+1. In Preferences → General, turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" (or delete those shortcuts by hand); if you ticked Preferences → Hotkeys → "Also in windows running as administrator", untick it too so its scheduled task is removed
+2. Tray menu → Quit
+3. Delete the program folder
+4. To remove everything, also delete `%LOCALAPPDATA%\ALTRun` (clipboard images, icon cache; and `%APPDATA%\ALTRun` if the settings were stored there because the program folder was not writable) and `%Temp%\ALTRun.log` (the debug log, only there if you turned it on). If you moved the data folder (Preferences → Advanced → Data), delete that folder too. Where every file lives: [Data files](Data-Files)

@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.20.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- Wiki 改成英文为默认, 和 README 一样: 英文页面去掉 `en-` 前缀 (例如 `Usage`), 中文页面加上 `-zh` 后缀 (例如 `Usage-zh`), 首页 `Home` 是英文, `Home-zh` 是中文; 侧边栏英文在前。中文界面 (简体、繁体) 的帮助 (`F1`、`?` 速查表) 打开 `-zh` 页, 其它语言打开英文页; README、官网、Bug 报告模板里的链接都改到新名字
+  - 原来指向中文页的旧链接 (例如 `wiki/Usage`) 现在打开英文页, 每页开头可以切换到中文
+  - 原来的英文页 (例如 `wiki/en-Usage`) 暂时保留成一行的跳转页, 指向新名字; 2026.10.20 之后发布满三个正式版后自动删掉
+
 ## [2026.10.20.1]
 
 测试版。
@@ -375,7 +386,7 @@ Pick themes from thumbnails, 4 new themes and a Traditional Chinese interface; n
 - 偏好设置 → 外观 的主题改为看缩略图选择 (类似 Alfred / Listary): 每个主题按自己的颜色和圆角画出一个简化的迷你搜索窗口 (背景、选中行、文字和高亮色, 结果行带彩色图标), 自定义主题也有; 列表可以滚动, 也可以用方向键选择
 - 4 个新的内置主题: 现代深色 (`DarkModern`) 和现代浅色 (`LightModern`, 都是 VS Code 的默认配色)、`Monokai`、`One Dark`
 - 繁體中文界面: 偏好设置 → 常规 → 界面语言 选 "繁體中文" (台湾用语, 字体用微软正黑体); 系统是繁体中文 (台湾、香港、澳门) 时 "自动" 也会选它。翻译在 `Resources\Lang\zh-TW.json`
-- **带参数的自定义命令**: 目标或参数里写 `{query}`, 输入 "关键字 文字" 时换成后面的文字 (网址里自动编码), 例如 `jira ABC-123` 打开对应的页面、`ping 10.0.0.1` 运行 ping。新安装的默认命令里有 3 个例子 (`ping 10.0.0.1`、`maps 地名`、`docs 文件夹名`); 已有的设置不变, 可以照着 [说明](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets) 自己加
+- **带参数的自定义命令**: 目标或参数里写 `{query}`, 输入 "关键字 文字" 时换成后面的文字 (网址里自动编码), 例如 `jira ABC-123` 打开对应的页面、`ping 10.0.0.1` 运行 ping。新安装的默认命令里有 3 个例子 (`ping 10.0.0.1`、`maps 地名`、`docs 文件夹名`); 已有的设置不变, 可以照着 [说明](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets-zh) 自己加
 - **搜索 Windows 设置的页面**: 输入 "蓝牙"、"显示"、"默认应用"、"Windows 更新" 等直接打开对应的设置页 (40 多个, 中英文名称都能搜); 偏好设置 → 功能 里可以关掉
 - **切换窗口**: 输入窗口标题或程序名, `Enter` 切换到已打开的窗口 (最小化的先还原), `→` 可以关闭窗口; `w 关键词` 只搜窗口, `w ` 列出全部 (和 PowerToys 的 Window Walker 一样)
 - **置顶和最近使用**: 呼出搜索窗口还没输入时, 列出置顶的项目 (操作面板里 "置顶到空搜索框") 和最近打开的项目 (默认不列, 在 偏好设置 → 搜索窗口 设个数, 例如 5); `Ctrl+Del` 取消置顶 / 从最近使用里去掉
@@ -824,7 +835,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.2...HEAD
+[2026.10.20.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.1...2026.10.20.2
 [2026.10.20.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20...2026.10.20.1
 [2026.10.20]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.20
 [2026.10.14]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.14

@@ -1,12 +1,12 @@
-[English](en-Recent) · **中文**
+**English** · [中文](Recent-zh)
 
-# 置顶和最近使用
+# Pinned and recent items
 
-呼出搜索窗口还没输入时, 下面直接列出 (置顶的项目图标右下角有一个图钉):
+Before you type anything, the search window lists (pinned items have a pin at the bottom right of their icon):
 
-![空搜索框: 置顶和最近使用](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/empty.png)
-- **置顶的项目**: 任意一个结果按 `→` 打开操作面板, 选 **置顶到空搜索框**。置顶的项目保存在 `ALTRun.json` 里 (`Features.Recent.Pinned`), 换电脑同步设置时一起带走
-- **最近打开的项目**: 默认不显示 (0), 在 偏好设置 → 搜索窗口 → 空搜索框 → "显示几个最近使用的项目" 设为例如 5 就会列出
-- **搜索框里的灰色文字**: 默认 "ALTRun 搜索", 在 偏好设置 → 搜索窗口 → 空搜索框 → "提示文字" 改成自己喜欢的 (留空恢复默认, 写一个空格就什么都不显示)
+![Empty search box: pinned and recent items](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/empty.png)
+- **Pinned items**: on any result, press `→` to open the action panel and choose **Pin to Empty Search Box**. Pinned items are saved in `ALTRun.json` (`Features.Recent.Pinned`), so they travel with your settings to another PC
+- **Recently opened items**: not shown by default (0); set Preferences → Search Window → Empty search box → "Recent items to show" to, for example, 5 to list them
+- **Gray text in the search box**: "ALTRun Search" by default; change it in Preferences → Search Window → Empty search box → "Placeholder text" (leave blank for the default, or type a single space to show nothing)
 
-只记能重新打开的结果: 应用、文件、文件夹、网址、自定义命令和系统命令; 剪贴板历史、计算结果、片段、网页搜索、窗口不记。选中一项按 `Ctrl+Del` 取消置顶或从最近使用里去掉; 偏好设置 → 高级 → "重置学习排序" 会清空最近使用。整个功能可以在 偏好设置 → 功能 里关掉。
+Only results you can open again are remembered: apps, files, folders, URLs, custom commands and system commands; clipboard history, calculations, snippets, web searches and windows are not. Select an item and press `Ctrl+Del` to unpin it or remove it from the recent items; Preferences → Advanced → "Reset Learned Ranking" clears the recent items. The whole feature can be turned off in Preferences → Features.
