@@ -34,7 +34,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; 屏幕缩放 (150% = 1.5)
 
     static NormalScale := ["quickswitch", "prefs-general", "prefs-appearance", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"]   ; 按 100% 截的场景 (见 screenshots.yml)
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"]   ; 按 100% 截的场景 (见 screenshots.yml)
 
     ; 场景名 -> [主题, 启动参数, 函数, 启动前准备数据的函数 (可选)]
     static Scenes() {
@@ -54,16 +54,17 @@ class Shots {
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
             ["demo",        "Light", "", () => Shots.Demo(), () => Shots.PrepareDemo()],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
-            ["prefs-appearance", "Light", "-Preferences 3", () => Shots.Preferences()],
-            ["prefs-commands",   "Light", "-Preferences 8", () => Shots.Preferences()],
-            ["prefs-snippets",   "Light", "-Preferences 9", () => Shots.Preferences()],
-            ["prefs-calculator", "Light", "-Preferences 12", () => Shots.Preferences()],
-            ["prefs-scripts",    "Light", "-Preferences 13", () => Shots.Preferences()],
-            ["prefs-searchsources", "Light", "-Preferences 7", () => Shots.Preferences()],   ; Wiki: 文件搜索
-            ["prefs-hotkeys",    "Light", "-Preferences 14", () => Shots.Preferences()],     ; Wiki: 自定义热键
-            ["prefs-quickswitch", "Light", "-Preferences 15", () => Shots.Preferences()],    ; Wiki: 对话框快速跳转
-            ["prefs-dialogpanel", "Light", "-Preferences 16", () => Shots.Preferences()],    ; Wiki: 对话框文件夹面板
-            ["prefs-datestamp",  "Light", "-Preferences 17", () => Shots.Preferences()],     ; Wiki: 一键加日期
+            ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
+            ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
+            ["prefs-snippets",   "Light", "-Preferences 10", () => Shots.Preferences()],
+            ["prefs-calculator", "Light", "-Preferences 13", () => Shots.Preferences()],
+            ["prefs-scripts",    "Light", "-Preferences 14", () => Shots.Preferences()],
+            ["prefs-searchsources", "Light", "-Preferences 8", () => Shots.Preferences()],   ; Wiki: 文件搜索
+            ["prefs-keyboard",   "Light", "-Preferences 3", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
+            ["prefs-hotkeys",    "Light", "-Preferences 15", () => Shots.Preferences()],     ; Wiki: 自定义热键
+            ["prefs-quickswitch", "Light", "-Preferences 16", () => Shots.Preferences()],    ; Wiki: 对话框快速跳转
+            ["prefs-dialogpanel", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: 对话框文件夹面板
+            ["prefs-datestamp",  "Light", "-Preferences 18", () => Shots.Preferences()],     ; Wiki: 一键加日期
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; 深色 + 显示密度 "紧凑" (其它截图都是新安装默认的 "常规")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],

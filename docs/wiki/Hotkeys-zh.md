@@ -15,7 +15,9 @@
 ![偏好设置 → 自定义热键](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 
 ### CapsLock 切换输入法
-和 Mac 一样: 在 偏好设置 → 自定义热键 最上面把 **CapsLock 键** 设成:
+![偏好设置 → 键盘](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-keyboard.png)
+
+和 Mac 一样: 在 偏好设置 → 键盘 → 输入法 把 **CapsLock 键** 设成:
 - **按一下切换输入法**: 切换到下一个已安装的输入法, 和 `Win+Space` 一样 (例如 英语(美国) ↔ 微软拼音)
 - **按一下切换中 / 英模式**: 切换当前输入法的中 / 英模式, 和微软拼音里按 `Shift` 一样; 只装了一个中文输入法时用这个
 

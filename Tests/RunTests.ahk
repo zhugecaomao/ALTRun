@@ -1644,10 +1644,11 @@ class Tests {
         eq("open a page from search", PreferencesWindow._page, PreferencesWindow._PageIndex("Prefs.Page.Calculator"))
         eq("page list follows", PreferencesWindow.PageList.GetNext(), PreferencesWindow._page)
         eq("page list rows", PreferencesWindow.PageList.GetCount(), PreferencesWindow.Pages.Length)
-        PreferencesWindow.Show(3)                                           ; 已经开着时按页码打开 ("-Preferences 3" 交过来的)
-        eq("open by number while open", PreferencesWindow._page "|" PreferencesWindow.PageList.GetNext(), "3|3")
-        gallery := ""                                                       ; 外观页的主题列表: 一行正好 4 个缩略图, 右边不剩一大块
-        for ctrl in PreferencesWindow.Pages[3].Controls
+        appearancePage := PreferencesWindow._PageIndex("Prefs.Page.Appearance")
+        PreferencesWindow.Show(appearancePage)                              ; opening by number while already open ("-Preferences 4" handed over)
+        eq("open by number while open", PreferencesWindow._page "|" PreferencesWindow.PageList.GetNext(), appearancePage "|" appearancePage)
+        gallery := ""                                                       ; the theme list on the Appearance page: exactly 4 thumbnails per row, no wide gap on the right
+        for ctrl in PreferencesWindow.Pages[appearancePage].Controls
             if (ctrl.Type = "ListView" && !IsObject(gallery))
                 gallery := ctrl
         itemPos := (index) => (point := Buffer(8, 0), SendMessage(0x1010, index, point.Ptr, gallery), [NumGet(point, 0, "Int"), NumGet(point, 4, "Int")])   ; LVM_GETITEMPOSITION
@@ -1658,11 +1659,11 @@ class Tests {
         eq("gallery: 4 per row", (fourth[2] = first[2] && fifth[2] > first[2]) ? 1 : 0, 1)
         TestRunner.True("ThemeGallery.gallery fills the row (left " (NumGet(galleryRect, 8, "Int") - 4 * spacing) ")"
             , NumGet(galleryRect, 8, "Int") - 4 * spacing < 8)
-        PreferencesWindow.PageList.Modify(3, "-Select")                     ; 点了列表下面的空白处: 松开鼠标后选回当前页
+        PreferencesWindow.PageList.Modify(appearancePage, "-Select")        ; a click on the blank area below the list: the current page is selected again on release
         click := Buffer(3 * A_PtrSize + 40, 0)                              ; NMITEMACTIVATE, iItem = -1 (没有点到行)
         NumPut("Int", -1, click, 3 * A_PtrSize)
         PreferencesWindow._OnPageClick(click.Ptr)
-        eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), 3)
+        eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), appearancePage)
         draw := Buffer(6 * A_PtrSize + 40, 0)                               ; NMCUSTOMDRAW: 选中行不画虚线焦点框
         NumPut("UInt", 0x1, draw, 3 * A_PtrSize)
         eq("custom draw asks for each row", PreferencesWindow._OnPageListDraw(draw.Ptr), 0x20)
@@ -2675,6 +2676,7 @@ class Tests {
         eq("default page", args.Page, 1)
         eq("wiki general", PreferencesWindow.WikiPage("Prefs.Page.General"), "Configuration")
         eq("wiki window", PreferencesWindow.WikiPage("Prefs.Page.Window"), "Usage")
+        eq("wiki keyboard", PreferencesWindow.WikiPage("Prefs.Page.Keyboard"), "Hotkeys")
         eq("wiki appearance", PreferencesWindow.WikiPage("Prefs.Page.Appearance"), "Themes")
         eq("wiki features", PreferencesWindow.WikiPage("Prefs.Page.Features"), "Usage")
         eq("wiki applications", PreferencesWindow.WikiPage("Prefs.Page.Applications"), "Configuration")
@@ -2781,20 +2783,23 @@ class Tests {
             limit := PreferencesWindow.ButtonY - 6
             rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
             for index, page in PreferencesWindow.Pages {
-                if (page.Key = "Prefs.Page.Hotkeys" && !AppSettings.General["CapsLock"]) {   ; CapsLock 照常: "管理员窗口里也生效" 灰着, 说明为什么
+                if (page.Key = "Prefs.Page.Keyboard" && !AppSettings.General["CapsLock"]) {  ; Caps Lock as usual: "also in administrator windows" is grayed out, with the reason
                     hint := 0
                     for ctrl in page.Controls
                         hint := hint || (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.CapsLockElevated.NeedsMode"))
                     TestRunner.True("PreferencesFit." lang " caps lock helper hint", hint)
                     TestRunner.Equal("PreferencesFit." lang " shield space", StrLen(PreferencesWindow.ShieldPad(4)) " " StrLen(PreferencesWindow.ShieldPad(3)), "5 7")
                 }
-                if (page.Key = "Prefs.Page.Window") {                       ; 搜索历史条数、提示文字、最近项目数的输入框左边对齐
-                    lefts := ""
+                if (page.Key = "Prefs.Page.Window" || page.Key = "Prefs.Page.Keyboard") {   ; the input boxes / drop-downs of these pages share one left edge
+                    lefts := "", count := 0
                     for ctrl in page.Controls
-                        if (ctrl.Type = "Edit")
-                            ctrl.GetPos(&x), lefts .= (lefts = "" ? "" : " ") x
-                    first := StrSplit(lefts, " ")[1]
-                    TestRunner.Equal("PreferencesFit." lang " window page inputs aligned", lefts, Trim(first " " first " " first))
+                        if (ctrl.Type = "Edit" || ctrl.Type = "DDL")
+                            ctrl.GetPos(&x), lefts .= (lefts = "" ? "" : " ") x, count += 1
+                    first := StrSplit(lefts, " ")[1], expected := ""
+                    Loop count
+                        expected .= (A_Index = 1 ? "" : " ") first
+                    TestRunner.Equal("PreferencesFit." lang " " page.Key " controls aligned", lefts, expected)
+                    TestRunner.Equal("PreferencesFit." lang " " page.Key " control count", count, page.Key = "Prefs.Page.Window" ? 2 : 4)
                 }
                 bottom := 0, right := 0
                 for ctrl in page.Controls {

@@ -145,7 +145,7 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `↑` `↓` / `Ctrl+P` `Ctrl+N` | Move up / down one row |
 | `PgUp` `PgDn` | Previous / next page |
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history |
-| `Tab` | Autocomplete; folders: browse into them (or next result, see Preferences → Search Window) |
+| `Tab` | Autocomplete; folders: browse into them (or next result, see Preferences → Keyboard) |
 | `Insert` | Mark several files / folders, then press `→` to act on all of them |
 | `Space` (in an empty search box, or with the cursor at the start) | Switch to file search, keeping what you typed; `Backspace` in an empty box or at the start switches back |
 | `folder name` | Search folders only |

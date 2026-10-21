@@ -92,10 +92,10 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `↑` `↓` / `Ctrl+P` `Ctrl+N` | Select the previous / next row (`Ctrl+P` `Ctrl+N` work like in terminals and Emacs, so your hands stay on the letter keys) |
 | `PgUp` `PgDn` | Previous / next page (as many rows as the window shows) |
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history (like Alfred); going past the newest restores what you had typed |
-| `Tab` | Autocomplete; on a folder, go into it (the input becomes `path\`) and browse its contents. With Preferences → Search Window → "Tab key" set to "Next result", `Tab` / `Shift+Tab` go to the next / previous result (after the last one, back to the first) and `Ctrl+Tab` autocompletes |
+| `Tab` | Autocomplete; on a folder, go into it (the input becomes `path\`) and browse its contents. With Preferences → Keyboard → "Tab key" set to "Next result", `Tab` / `Shift+Tab` go to the next / previous result (after the last one, back to the first) and `Ctrl+Tab` autocompletes |
 | `Insert` | Mark / unmark the selected file or folder and move to the next row (like Total Commander); marked rows have a bar on the left. Then press `→` to act on all marked items: open all, copy / cut (paste in TC or Explorer), copy paths, copy / move to the current folder in TC, add to custom commands, move to the Recycle Bin |
 | `Space` (empty search box, or cursor at the start) | Switch to file search, keeping what you typed (typed `seismic` first? press `Home`, then `Space`); `Backspace` in an empty box or at the start goes back to a normal search |
-| `Space` (after typing) | With Preferences → Search Window → "Space runs the selected result" turned on: runs the selected result; `Shift+Space` types a space (for several keywords) |
+| `Space` (after typing) | With Preferences → Keyboard → "Space runs the selected result" turned on: runs the selected result; `Shift+Space` types a space (for several keywords) |
 | `→` (cursor at the end) | Open the action panel; `←` / `Esc` go back. Holding `→` to move the cursor doesn't open it when the cursor reaches the end; press `→` once more |
 | `F3` | Edit the selected result, see below |
 | `Ctrl+Del` (cursor at the end) | Delete the selected result, see below |
