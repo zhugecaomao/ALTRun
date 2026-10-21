@@ -472,8 +472,10 @@ class AppSettings {
                 ),
                 "PTTools", Map()                                            ; 由 PTToolsWindow 自己补默认值
             ),
-            "Hotkeys", [
-                Map("Key", "~MButton", "Action", "PTTools", "WinTitle", "ahk_exe RAPTW.exe")
+            "Hotkeys", [                                                    ; examples: global, only in one program, only in ALTRun
+                Map("Key", "^!#v", "Action", "PastePlain", "WinTitle", ""),                         ; same key as PowerToys "Paste as plain text"
+                Map("Key", "^!t", "Action", "TerminalHere", "WinTitle", "ahk_class CabinetWClass"), ; File Explorer
+                Map("Key", "^r", "Action", "RebuildIndex", "WinTitle", "ALTRun")
             ],
             "CustomCommands", AppSettings._DefaultCommands(),
             "Snippets", AppSettings._DefaultSnippets()

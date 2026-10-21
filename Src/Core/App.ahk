@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.20.5"
+    static Version := "2026.10.20.6"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -520,8 +520,9 @@ class App {
         return (sinceLastMs <= App.DoubleTapMs) ? "show" : "first"
     }
 
+    ; Remember the window the hotkey was pressed in first: commands such as TerminalHere work on that window
     static _HotkeyAction(actionId) {
-        return (*) => SystemProvider.RunCommand(actionId)
+        return (*) => (App.RememberActiveWindow(), SystemProvider.RunCommand(actionId))
     }
 
     static _SetIcon() {

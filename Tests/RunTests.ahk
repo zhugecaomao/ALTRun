@@ -2849,8 +2849,18 @@ class Tests {
         }
         TestRunner.True("DefaultExamples.snippets for email", keywords.Has("sig") && keywords.Has("thx"))
         eq("second hotkey", defaults["General"]["SecondaryHotkey"], "!r")
-        for entry in defaults["Hotkeys"]                                    ; F1 ~ F4 内置在搜索窗口里, 不在自定义热键中
+        commandIds := Map()
+        for command in SystemProvider.Commands()
+            commandIds[command["Id"]] := true
+        scopes := ""
+        for entry in defaults["Hotkeys"] {                                  ; F1 ~ F4 are built into the search window, not custom hotkeys
             TestRunner.True("DefaultExamples.no F-key hotkey " entry["Key"], !RegExMatch(entry["Key"], "i)^F[1-4]$"))
+            TestRunner.True("DefaultExamples.hotkey action " entry["Action"], commandIds.Has(entry["Action"]))
+            eq("hotkey key order " entry["Key"], HotkeyBox.Compose(RegExReplace(entry["Key"], "i)\w+$"), RegExReplace(entry["Key"], "^[\^!+#]+")), entry["Key"])   ; as Preferences would record it
+            scopes .= (entry["WinTitle"] = "" ? "global" : entry["WinTitle"] = "ALTRun" ? "altrun" : "window") " "
+        }
+        eq("hotkey examples: global, one program, ALTRun", scopes, "global window altrun ")
+        eq("no mouse hotkeys by default (no mouse hook)", App.UsesMouseHotkeys(defaults["Hotkeys"]), false)
         help := ""
         for item in HelpProvider.Items()
             help .= item.Id " "
