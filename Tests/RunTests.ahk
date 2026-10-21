@@ -2801,11 +2801,6 @@ class Tests {
                     ctrl.GetPos(&x, &y, &w, &h)
                     bottom := Max(bottom, y + h), right := Max(right, x + w)
                 }
-                if (lang = "zh-CN" && page.Key = "Prefs.Page.Window")       ; TEMP diagnostic: control positions on Windows
-                    for ctrl in page.Controls {
-                        ctrl.GetPos(&x, &y, &w, &h)
-                        FileAppend("FAIL DIAG " ctrl.Type " y" y " h" h " " SubStr(ctrl.Text, 1, 20) "`n", "*", "UTF-8")
-                    }
                 TestRunner.True("PreferencesFit." lang " page " index " (bottom " bottom ", limit " limit ")", bottom <= limit)
                 TestRunner.True("PreferencesFit." lang " page " index " (right " right ", limit " rightLimit ")", right <= rightLimit)
             }
