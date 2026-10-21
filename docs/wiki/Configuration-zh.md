@@ -210,7 +210,9 @@
 ## 列表
 ```jsonc
 "Hotkeys": [
-  { "Key": "~MButton", "Action": "PTTools", "WinTitle": "ahk_exe RAPTW.exe" }
+  { "Key": "^!#v", "Action": "PastePlain", "WinTitle": "" },
+  { "Key": "^!t", "Action": "TerminalHere", "WinTitle": "ahk_class CabinetWClass" },
+  { "Key": "^r", "Action": "RebuildIndex", "WinTitle": "ALTRun" }
 ],
 "CustomCommands": [
   { "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },

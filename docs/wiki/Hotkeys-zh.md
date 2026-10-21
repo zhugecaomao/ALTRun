@@ -6,11 +6,16 @@
 
 | 字段 | 例子 | 说明 |
 |---|---|---|
-| 热键 (Key) | `Ctrl+Alt+P` | 点一下框, 按下组合键 (见下文 [设置热键](#设置热键)); 鼠标热键: 在框里点鼠标中键或侧键。勾选 "保留按键原来的功能" 时, 按键原来的作用照常 (设置文件里是开头的 `~`) |
-| 操作 (Action) | `PTTools` | 系统命令的 Id, 或 `ToggleWindow` (显示 / 隐藏 ALTRun) |
-| 窗口 (WinTitle) | `ahk_exe notepad.exe` | 留空 = 全局; 否则只在匹配的窗口里生效; `ALTRun` = 只在 ALTRun 的搜索窗口里 |
+| 热键 (Key) | `Ctrl+Alt+T` | 点一下框, 按下组合键 (见下文 [设置热键](#设置热键)); 鼠标热键: 在框里点鼠标中键或侧键。勾选 "保留按键原来的功能" 时, 按键原来的作用照常 (设置文件里是开头的 `~`) |
+| 操作 (Action) | `TerminalHere` | 系统命令的 Id, 或 `ToggleWindow` (显示 / 隐藏 ALTRun) |
+| 窗口 (WinTitle) | `ahk_class CabinetWClass` | 留空 = 全局; 否则只在匹配的窗口里生效; `ALTRun` = 只在 ALTRun 的搜索窗口里 |
 
-默认的一条: 在 RAPT (`RAPTW.exe`) 里按鼠标中键打开 PT 工具箱。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage-zh#快捷键)。
+新安装时带三个示例, 每种用法一个:
+- `Ctrl+Alt+Win+V`: 在任何地方把剪贴板粘贴为纯文本 (和 PowerToys 的 "粘贴为纯文本" 同一个键)
+- `Ctrl+Alt+T`: 在资源管理器 (`ahk_class CabinetWClass`) 里, 在当前文件夹打开终端
+- `Ctrl+R`: 在 ALTRun 搜索窗口 (`ALTRun`) 里重建索引
+
+可以随意删除或修改; 已有的设置保留自己的列表。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage-zh#快捷键)。
 
 ![偏好设置 → 自定义热键](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 

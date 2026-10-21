@@ -5,6 +5,22 @@
 
 ## [未发布]
 
+## [2026.10.20.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 自定义热键的默认示例换成三个有代表性的 (只对新安装生效, 已有的设置保留自己的列表), 每种用法一个:
+  - `Ctrl+Alt+Win+V`: 在任何地方把剪贴板粘贴为纯文本 (和 PowerToys 的 "粘贴为纯文本" 同一个键)
+  - `Ctrl+Alt+T`: 在资源管理器里, 在当前文件夹打开终端
+  - `Ctrl+R`: 在 ALTRun 搜索窗口里重建索引
+  - 默认没有鼠标热键, 新安装不再装鼠标钩子
+
+### 修复
+- 用自定义热键执行 "在当前文件夹打开终端" 时, 打开的是按热键时所在的资源管理器文件夹, 而不是上次呼出 ALTRun 之前的窗口
+
 ## [2026.10.20.5]
 
 测试版。
@@ -867,7 +883,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.6...HEAD
+[2026.10.20.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.5...2026.10.20.6
 [2026.10.20.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.4...2026.10.20.5
 [2026.10.20.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.3...2026.10.20.4
 [2026.10.20.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.2...2026.10.20.3

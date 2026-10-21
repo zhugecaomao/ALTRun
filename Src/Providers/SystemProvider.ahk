@@ -1,8 +1,8 @@
 ;===============================================================================
 ; SystemProvider.ahk - 系统命令 / Windows 工具 / ALTRun 命令 / 剪贴板文字工具 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 每条命令有一个固定的 Id, ALTRun.json 的 Hotkeys 列表用 Id 引用命令, 例如:
-;   { "Key": "~MButton", "Action": "PTTools", "WinTitle": "ahk_exe RAPTW.exe" }
+; Every command has a fixed Id; the Hotkeys list in ALTRun.json refers to commands by Id, for example:
+;   { "Key": "^!t", "Action": "TerminalHere", "WinTitle": "ahk_class CabinetWClass" }
 ; 可用的 Id 见 Commands() 里的列表; 旧版本 (2.x) 的函数名通过 Aliases 兼容。
 ; 另外两个只给热键用的 Id: "ToggleWindow" (显示/隐藏搜索窗口), "Show"。
 ;
