@@ -390,8 +390,8 @@ class AppSettings {
                 "FileSearch", Map(
                     "Enabled"            , 1,
                     "Keywords"           , ["open", "find", "file"],
-                    "FolderKeywords"     , ["folder"],                      ; "folder bk" 只搜文件夹
-                    "TypeFilters"        , [                                ; "doc 报告" 只搜这些扩展名的文件, 每行 "关键字 = 扩展名 ..."
+                    "FolderKeywords"     , ["folder"],                      ; "folder budget" searches folders only
+                    "TypeFilters"        , [                                ; "doc report" searches only files with these extensions; one "keyword = ext ..." per line
                         "doc = doc docx xls xlsx xlsm csv ppt pptx pdf txt md rtf odt ods",
                         "pic = jpg jpeg png gif bmp tif tiff webp svg ico heic",
                         "video = mp4 mkv avi mov wmv flv webm m4v",

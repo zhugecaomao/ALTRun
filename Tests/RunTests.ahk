@@ -1404,9 +1404,9 @@ class Tests {
         SearchWindow.HighlightText := savedText
     }
 
-    ; 高亮的字和其它字分段画, 字的位置不能随高亮边界移动 (输入时字距跳动)
+    ; Highlighted and other characters are drawn in segments; character positions must not move with the highlight boundary (jitter while typing)
     static HighlightSpacing() {
-        title := "Weima Wave Station", width := 320, height := 40
+        title := "Western Wave Station", width := 320, height := 40
         hdc0 := DllCall("GetDC", "Ptr", 0, "Ptr")
         hdc := DllCall("CreateCompatibleDC", "Ptr", hdc0, "Ptr")
         hbm := DllCall("CreateCompatibleBitmap", "Ptr", hdc0, "Int", width, "Int", height, "Ptr")
@@ -1441,8 +1441,8 @@ class Tests {
             }
             return columns
         }
-        plainHighlight := ink("weima wave station")                         ; 整个标题都高亮: 和逐段画的位置比较
-        for query in ["", "w", "we", "wei", "weim", "wave", "ws", "zzz"]                ; "" / "ws" / "zzz": 没有高亮的字
+        plainHighlight := ink("western wave station")                       ; the whole title highlighted: compare with the segmented drawing
+        for query in ["", "w", "we", "wes", "west", "wave", "ws", "zzz"]                ; "" / "ws" / "zzz": no highlighted characters
             TestRunner.Equal("HighlightSpacing." query, ink(query), plainHighlight)
         for key, value in saved
             if (value != "")
@@ -2511,47 +2511,47 @@ class Tests {
         eq := (n, a, e) => TestRunner.Equal("FileSearchModes." n, a, e)
         options := AppSettings.Feature("FileSearch")
         saved := [options["InDefaultResults"], options["UseEverything"]]
-        options["UseEverything"] := 0                                       ; 测试用内置索引
-        FileIndex.Paths := ["C:\Windows\Fonts\NIRMALA.TTF", "C:\Docs\Nirvana Notes.pdf"]
-        FileIndex.Names := ["nirmala.ttf", "nirvana notes.pdf"]
+        options["UseEverything"] := 0                                       ; the tests use the built-in index
+        FileIndex.Paths := ["C:\Windows\Fonts\MARLETT.TTF", "C:\Docs\Market Notes.pdf"]
+        FileIndex.Names := ["marlett.ttf", "market notes.pdf"]
         FileIndex.Folders := [0, 0]
         FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
         eq("default off", AppSettings.Defaults()["Features"]["FileSearch"]["InDefaultResults"], 0)
         eq("space prefix on", AppSettings.Defaults()["Features"]["FileSearch"]["SpacePrefix"], 1)
         options["InDefaultResults"] := 0
-        eq("normal search has no files", FileSearchProvider.Search(SearchQuery("nir")).Length, 0)
-        files := ProviderRegistry.SearchFiles("nir")
+        eq("normal search has no files", FileSearchProvider.Search(SearchQuery("mar")).Length, 0)
+        files := ProviderRegistry.SearchFiles("mar")
         TestRunner.True("FileSearchModes.file mode finds files", files.Length >= 2 && files[1].Provider = "FileSearch")
         eq("file mode empty", ProviderRegistry.SearchFiles("  ").Length, 0)
-        TestRunner.True("FileSearchModes.quote still works", FileSearchProvider.Search(SearchQuery("'nir")).Length >= 2)
+        TestRunner.True("FileSearchModes.quote still works", FileSearchProvider.Search(SearchQuery("'mar")).Length >= 2)
         options["InDefaultResults"] := saved[1], options["UseEverything"] := saved[2]
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
     }
 
-    ; folder bk 只搜文件夹; 关键字后面还没输入空格时不挡住其它结果; 结果按名称匹配程度排序
+    ; "folder atlas" searches folders only; a keyword without a following space does not hide other results; results are sorted by name match
     static FolderSearch() {
         eq := (n, a, e) => TestRunner.Equal("FolderSearch." n, a, e)
         options := AppSettings.Feature("FileSearch")
         savedEverything := options["UseEverything"]
-        options["UseEverything"] := 0                                       ; 测试用内置索引
-        FileIndex.Paths := ["C:\Docs\notebk.pdf", "C:\Projects\BK Tower", "C:\Docs\BK drawing.dwg", "C:\Projects\Old BK"]
-        FileIndex.Names := ["notebk.pdf", "bk tower", "bk drawing.dwg", "old bk"]
+        options["UseEverything"] := 0                                       ; the tests use the built-in index
+        FileIndex.Paths := ["C:\Docs\noteatlas.pdf", "C:\Projects\Atlas Tower", "C:\Docs\Atlas drawing.dwg", "C:\Projects\Old Atlas"]
+        FileIndex.Names := ["noteatlas.pdf", "atlas tower", "atlas drawing.dwg", "old atlas"]
         FileIndex.Folders := [0, 1, 0, 1]
         FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
         titles(results) {
             list := ""
             for item in results
-                if (item.Kind = "file" || item.Kind = "folder")             ; 不算最后的 "用 Everything / Windows 搜索"
+                if (item.Kind = "file" || item.Kind = "folder")             ; not the trailing "Search with Everything / Windows"
                     list .= item.Title "|"
             return RTrim(list, "|")
         }
         eq("default keyword", AppSettings.Defaults()["Features"]["FileSearch"]["FolderKeywords"][1], "folder")
-        eq("folders only", titles(FileSearchProvider.Search(SearchQuery("folder bk"))), "BK Tower|Old BK")
-        eq("folders exclusive", FileSearchProvider.Search(SearchQuery("folder bk"))[1].Exclusive, true)
-        eq("files keyword", titles(FileSearchProvider.Search(SearchQuery("open bk"))), "BK Tower|BK drawing.dwg|Old BK|notebk.pdf")
-        eq("file mode folder keyword", titles(ProviderRegistry.SearchFiles("folder bk")), "BK Tower|Old BK")
-        eq("file mode plain", titles(ProviderRegistry.SearchFiles("bk")), "BK Tower|BK drawing.dwg|Old BK|notebk.pdf")
-        ; 只输入关键字 (还没有空格): 提示排在后面, 不挡住名字带 folder 的命令
+        eq("folders only", titles(FileSearchProvider.Search(SearchQuery("folder atlas"))), "Atlas Tower|Old Atlas")
+        eq("folders exclusive", FileSearchProvider.Search(SearchQuery("folder atlas"))[1].Exclusive, true)
+        eq("files keyword", titles(FileSearchProvider.Search(SearchQuery("open atlas"))), "Atlas Tower|Atlas drawing.dwg|Old Atlas|noteatlas.pdf")
+        eq("file mode folder keyword", titles(ProviderRegistry.SearchFiles("folder atlas")), "Atlas Tower|Old Atlas")
+        eq("file mode plain", titles(ProviderRegistry.SearchFiles("atlas")), "Atlas Tower|Atlas drawing.dwg|Old Atlas|noteatlas.pdf")
+        ; Only the keyword (no space yet): the hint ranks low and does not hide commands with folder in their name
         hint := FileSearchProvider.Search(SearchQuery("folder"))
         eq("keyword alone hint", hint.Length, 1)
         eq("keyword alone not exclusive", hint[1].Exclusive, false)
@@ -2559,16 +2559,16 @@ class Tests {
         eq("open alone not exclusive", FileSearchProvider.Search(SearchQuery("open"))[1].Exclusive, false)
         eq("keyword with space exclusive", FileSearchProvider.Search(SearchQuery("folder "))[1].Exclusive, true)
         eq("quote alone exclusive", FileSearchProvider.Search(SearchQuery("'"))[1].Exclusive, true)
-        ; Everything 的结果按修改时间来: 名称开头 / 单词开头的排前面, 同分时文件夹在前
-        found := [{Path: "C:\a\notebk.pdf", IsFolder: 0, Score: FileIndex.ScoreName("bk", "notebk.pdf")}
-                , {Path: "C:\a\BK x.dwg", IsFolder: 0, Score: FileIndex.ScoreName("bk", "bk x.dwg")}
-                , {Path: "C:\a\BK x.pdf", IsFolder: 1, Score: FileIndex.ScoreName("bk", "bk x.pdf")}]
+        ; Everything results come by modification time: name-start / word-start matches first, folders first on ties
+        found := [{Path: "C:\a\noteatlas.pdf", IsFolder: 0, Score: FileIndex.ScoreName("atlas", "noteatlas.pdf")}
+                , {Path: "C:\a\Atlas x.dwg", IsFolder: 0, Score: FileIndex.ScoreName("atlas", "atlas x.dwg")}
+                , {Path: "C:\a\Atlas x.pdf", IsFolder: 1, Score: FileIndex.ScoreName("atlas", "atlas x.pdf")}]
         best := FileSearchProvider._Best(found, 3)
-        eq("best order", best[1].Path "|" best[2].Path "|" best[3].Path, "C:\a\BK x.pdf|C:\a\BK x.dwg|C:\a\notebk.pdf")
+        eq("best order", best[1].Path "|" best[2].Path "|" best[3].Path, "C:\a\Atlas x.pdf|C:\a\Atlas x.dwg|C:\a\noteatlas.pdf")
         eq("everything fetches more", FileSearchProvider.EverythingFetch >= 300, true)
-        eq("score needle folder:", FileSearchProvider.ScoreNeedle("folder:bk"), "bk")
+        eq("score needle folder:", FileSearchProvider.ScoreNeedle("folder:atlas"), "atlas")
         eq("score needle ext:", FileSearchProvider.ScoreNeedle("ext:pdf report"), "pdf report")
-        eq("score needle plain", FileSearchProvider.ScoreNeedle("bk tower"), "bk tower")
+        eq("score needle plain", FileSearchProvider.ScoreNeedle("atlas tower"), "atlas tower")
         eq("only Everything syntax (d:)", FileSearchProvider.NameScore(FileSearchProvider.ScoreNeedle("d:"), "AhkScripts"), 50)
         eq("only Everything syntax (folder:)", FileSearchProvider.NameScore(FileSearchProvider.ScoreNeedle("folder:"), "AhkScripts"), 50)
         options["UseEverything"] := savedEverything
@@ -2590,6 +2590,32 @@ class Tests {
         for item in items
             ids .= item.Id " "
         eq("folder entry listed", InStr(ids, "Folders ") > 0, true)
+        ; The most useful entries come first
+        eq("order", InStr(ids, "Files Folders FileKeyword FileTypes Reveal Actions QuickSwitch About Prefs Edit EditJson ") = 1, true)
+        ; Short keyword lists for the tips: preferred ones first, then the rest in order
+        eq("keywords preferred", HelpProvider._Keywords(["open", "find", "file"], ["file", "open"], 2), "file / open")
+        eq("keywords changed by user", HelpProvider._Keywords(["find", "search"], ["file", "open"], 2), "find / search")
+        eq("keywords type filters", HelpProvider._Keywords(["doc", "pic", "video", "zip"], ["doc", "zip"], 2), "doc / zip")
+        eq("keywords none", HelpProvider._Keywords([], ["doc"], 2), "")
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        keyOf(id) {
+            for item in HelpProvider.Items()
+                if (item.Id = id)
+                    return item.Key
+            return ""
+        }
+        options := AppSettings.Feature("FileSearch"), savedKeywords := options["Keywords"]
+        options["Keywords"] := ["open", "find", "file"]
+        eq("file keyword key", keyOf("FileKeyword"), "file / open / ' + name")
+        options["Keywords"] := savedKeywords
+        quick := AppSettings.Extension("QuickSwitch"), savedQuick := [quick["Enabled"], quick["TotalCmdHotkey"], quick["ExplorerHotkey"]]
+        quick["Enabled"] := 1, quick["TotalCmdHotkey"] := "^g", quick["ExplorerHotkey"] := "^e"
+        eq("quick switch key", keyOf("QuickSwitch"), "Ctrl+G / Ctrl+E (in an Open / Save dialog)")
+        quick["TotalCmdHotkey"] := "", quick["ExplorerHotkey"] := ""
+        eq("quick switch without hotkeys", keyOf("QuickSwitch"), "")
+        quick["Enabled"] := savedQuick[1], quick["TotalCmdHotkey"] := savedQuick[2], quick["ExplorerHotkey"] := savedQuick[3]
+        I18n.Init(savedLang)
         savedLang := I18n.Lang                                              ; 拼音提示只给简体中文界面
         hasPinyin(lang) {
             I18n.Init(lang)
@@ -2611,7 +2637,7 @@ class Tests {
         for item in items
             if (item.Id = "Folders")
                 folderItem := item
-        eq("configured keyword", folderItem.Key, AppSettings.Feature("FileSearch")["FolderKeywords"][1] " bk")
+        eq("configured keyword", InStr(folderItem.Key, AppSettings.Feature("FileSearch")["FolderKeywords"][1] " + ") = 1, true)
         eq("wiki page", folderItem.Url, HelpProvider.WikiPage("File-Search"))
         eq("wiki page in English", HelpProvider.WikiPage("File-Search", "en"), "https://github.com/zhugecaomao/ALTRun/wiki/File-Search")
         eq("wiki page in Japanese UI", HelpProvider.WikiPage("Usage", "ja"), "https://github.com/zhugecaomao/ALTRun/wiki/Usage")

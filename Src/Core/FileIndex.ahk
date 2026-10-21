@@ -211,10 +211,10 @@ class FileIndex {
         }
     }
 
-    ; 按文件名匹配: 完全相同 100 / 开头 90 / 单词开头 80 / 包含 60。
-    ; 继续输入时只在上一次匹配到的里面找 (只用 "包含" 类规则, 范围只会缩小)。
-    ; foldersOnly: 只要文件夹 ("folder bk")
-    ; extensions: Map("pdf", true, ...) 时只要这些扩展名的文件 (文件类型筛选, 例如 "doc 报告")
+    ; Matches file names: exact 100 / start 90 / start of a word 80 / contains 60.
+    ; While typing on, only the previous matches are searched (only "contains"-type rules, so the set can only shrink).
+    ; foldersOnly: folders only ("folder budget")
+    ; extensions: with Map("pdf", true, ...) only files with these extensions (file type filter, e.g. "doc report")
     static Search(needle, limit, foldersOnly := false, extensions := "") {
         FileIndex.EnsureLoaded()
         needle := StrLower(Trim(needle))
