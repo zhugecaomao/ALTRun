@@ -968,16 +968,16 @@ class Tests {
 
     static FileIndex() {
         eq := (n, a, e) => TestRunner.Equal("FileIndex." n, a, e)
-        FileIndex.Paths := ["C:\Docs\Project Omega", "C:\Docs\Project Omega\Omega Plan.dwg", "C:\Docs\notes.txt", "C:\Docs\Tender Report.pdf"]
-        FileIndex.Names := ["project omega", "omega plan.dwg", "notes.txt", "tender report.pdf"]
+        FileIndex.Paths := ["C:\Docs\Project Atlas", "C:\Docs\Project Atlas\Atlas Plan.dwg", "C:\Docs\notes.txt", "C:\Docs\Status Report.pdf"]
+        FileIndex.Names := ["project atlas", "atlas plan.dwg", "notes.txt", "status report.pdf"]
         FileIndex.Folders := [1, 0, 0, 0]
         FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
-        found := FileIndex.Search("omega", 10)
+        found := FileIndex.Search("atlas", 10)
         eq("count", found.Length, 2)
-        eq("prefix first", found[1].Path, "C:\Docs\Project Omega\Omega Plan.dwg")
-        eq("narrowed", FileIndex.Search("omega p", 10).Length, 1)
-        eq("new search", FileIndex.Search("rep", 10)[1].Path, "C:\Docs\Tender Report.pdf")
-        TestRunner.True("FileIndex.word start >= 70", FileIndex.ScoreName("omega", "project omega") >= 70)
+        eq("prefix first", found[1].Path, "C:\Docs\Project Atlas\Atlas Plan.dwg")
+        eq("narrowed", FileIndex.Search("atlas p", 10).Length, 1)
+        eq("new search", FileIndex.Search("rep", 10)[1].Path, "C:\Docs\Status Report.pdf")
+        TestRunner.True("FileIndex.word start >= 70", FileIndex.ScoreName("atlas", "project atlas") >= 70)
         eq("no match", FileIndex.ScoreName("xyz", "notes.txt"), 0)
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
     }
@@ -1882,23 +1882,23 @@ class Tests {
         eq("trim keeps newest", keys, "ac")
         eq("trim used map", IconCache._used.Count, 2)
         IconCache._icons := savedIcons, IconCache._used := savedUsed
-        eq("remote unc", IconCache.IsRemote("\\server\share\PT1931"), true)
+        eq("remote unc", IconCache.IsRemote("\\server\share\PT1001"), true)
         eq("remote local", IconCache.IsRemote("C:\Windows"), false)
-        eq("remote folder key", IconCache._CacheKey("\\server\share\PT1931 - 24 NIR"), "folder:")
-        eq("remote folder slash", IconCache._CacheKey("\\server\share\PT1931\"), "folder:")
+        eq("remote folder key", IconCache._CacheKey("\\server\share\PT1001 - 24 Harbor"), "folder:")
+        eq("remote folder slash", IconCache._CacheKey("\\server\share\PT1001\"), "folder:")
         eq("remote file key", IconCache._CacheKey("\\server\share\Report.PDF"), "ext:.pdf")
         eq("remote exe key", IconCache._CacheKey("\\server\share\tool.exe"), "ext:.exe")
         ; 名字里带点的文件夹不是 "扩展名" (以前变成空白图标)
-        eq("remote dotted folder", IconCache._CacheKey("\\server\TENDER PROPOSAL\2025\26. 18 New Industrial Road (EA)"), "folder:")
-        eq("remote dotted folder slash", IconCache._CacheKey("\\server\share\10.PT2310-29NIR\"), "folder:")
-        eq("local dotted folder", IconCache._CacheKey("C:\Projects\26. 18 New Industrial Road (EA)"), "c:\projects\26. 18 new industrial road (ea)")
+        eq("remote dotted folder", IconCache._CacheKey("\\server\Proposals\2025\26. 18 Sample Road (A)"), "folder:")
+        eq("remote dotted folder slash", IconCache._CacheKey("\\server\share\10.PT1002-29Harbor\"), "folder:")
+        eq("local dotted folder", IconCache._CacheKey("C:\Projects\26. 18 Sample Road (A)"), "c:\projects\26. 18 sample road (a)")
         eq("extension", IconCache._Extension("C:\a\Report.PDF"), "PDF")
         eq("extension with spaces", IconCache._Extension("C:\a\26. 18 New Road"), "")
         eq("extension appref-ms", IconCache._Extension("C:\a\App.appref-ms"), "appref-ms")
         eq("extension 7z", IconCache._Extension("C:\a\backup.7z"), "7z")
         eq("extension sldprt", IconCache._Extension("C:\a\Beam.SLDPRT"), "SLDPRT")
         eq("extension digits only", IconCache._Extension("C:\a\Design.2019"), "")
-        eq("folder command icon remote", CustomCommandProvider._FolderIcon("\\server\share\26. 18 New Industrial Road (EA)"), "folder:")
+        eq("folder command icon remote", CustomCommandProvider._FolderIcon("\\server\share\26. 18 Sample Road (A)"), "folder:")
         ; 普通文件夹用通用图标, 带 desktop.ini (自定义图标) 的和磁盘根目录用自己的
         iconRoot := A_Temp "\ALTRun-folder-icon-test"
         try DirDelete(iconRoot, true)
@@ -1944,12 +1944,12 @@ class Tests {
         eq := (n, a, e) => TestRunner.Equal("CheckTargets." n, a, e)
         dir := A_Temp "\ALTRunTest_CheckTargets"
         try DirDelete(dir, true)
-        DirCreate(dir "\PT1931 - 24 NIR")
+        DirCreate(dir "\PT1001 - 24 Harbor")
         FileAppend("", dir "\summary.pdf")
         check(type, target, roots := "") => CustomCommandProvider.CheckTarget(Map("Title", "t", "Type", type, "Target", target), roots)
-        eq("folder ok", check("Folder", dir "\PT1931 - 24 NIR"), "OK")
-        eq("folder renamed", check("Folder", dir "\PT1931 - 24 NIR (old)"), "Missing")
-        eq("folder trailing slash", check("Folder", dir "\PT1931 - 24 NIR\"), "OK")
+        eq("folder ok", check("Folder", dir "\PT1001 - 24 Harbor"), "OK")
+        eq("folder renamed", check("Folder", dir "\PT1001 - 24 Harbor (old)"), "Missing")
+        eq("folder trailing slash", check("Folder", dir "\PT1001 - 24 Harbor\"), "OK")
         eq("file ok", check("File", dir "\summary.pdf"), "OK")
         eq("quoted file", check("File", '"' dir '\summary.pdf"'), "OK")
         eq("file moved", check("File", dir "\summary-old.pdf"), "Missing")
@@ -1966,7 +1966,7 @@ class Tests {
         eq("clsid skipped", check("Folder", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"), "Skipped")
         ; 断开的网络盘: 驱动器能否访问记在 roots 里, 不再逐条等待
         offline := Map("Q:", false)
-        eq("drive offline", check("Folder", "Q:\DESIGN PROJECTS\PT1931", offline), "Unavailable")
+        eq("drive offline", check("Folder", "Q:\Projects\PT1001", offline), "Unavailable")
         eq("unc offline", check("File", "\\server\share\a.pdf", Map("\\server\share", false)), "Unavailable")
         roots := Map()
         check("Folder", dir, roots)
@@ -2051,8 +2051,8 @@ class Tests {
         eq := (n, a, e) => TestRunner.Equal("CommandTargets." n, a, e)
         saved := AppSettings.Data["CustomCommands"]
         AppSettings.Data["CustomCommands"] := [
-            Map("Title", "CKR, EA, JIB", "Type", "Folder", "Target", "Q:\DESIGN PROJECTS\Design-2019\PT1931 - 24 NIR", "Arguments", "", "Keyword", ""),
-            Map("Title", "NIR Report", "Type", "File", "Target", "Q:\Docs\summary.pdf", "Arguments", "", "Keyword", ""),
+            Map("Title", "Tower A, B, C", "Type", "Folder", "Target", "Q:\Projects\Design-2019\PT1001 - 24 Harbor", "Arguments", "", "Keyword", ""),
+            Map("Title", "Harbor Report", "Type", "File", "Target", "Q:\Docs\summary.pdf", "Arguments", "", "Keyword", ""),
             Map("Title", "Check IP", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ipconfig", "Keyword", ""),
             Map("Title", "Drive Q", "Type", "Folder", "Target", "Q:\", "Arguments", "", "Keyword", "")]
         titles(text) {
@@ -2061,9 +2061,9 @@ class Tests {
                 list .= item.Title "|"
             return RTrim(list, "|")
         }
-        eq("folder name", titles("1931"), "CKR, EA, JIB")
-        eq("title first", titles("nir"), "NIR Report|CKR, EA, JIB")
-        eq("file name without extension", titles("summary"), "NIR Report")
+        eq("folder name", titles("1001"), "Tower A, B, C")
+        eq("title first", titles("harbor"), "Harbor Report|Tower A, B, C")
+        eq("file name without extension", titles("summary"), "Harbor Report")
         eq("extension not searched", titles("pdf"), "")
         eq("command target not searched", titles("cmd"), "")
         eq("drive root not a name", titles("q:"), "")
@@ -2512,8 +2512,8 @@ class Tests {
         options := AppSettings.Feature("FileSearch")
         saved := [options["InDefaultResults"], options["UseEverything"]]
         options["UseEverything"] := 0                                       ; 测试用内置索引
-        FileIndex.Paths := ["C:\Windows\Fonts\NIRMALA.TTF", "C:\Docs\Nir Report.pdf"]
-        FileIndex.Names := ["nirmala.ttf", "nir report.pdf"]
+        FileIndex.Paths := ["C:\Windows\Fonts\NIRMALA.TTF", "C:\Docs\Nirvana Notes.pdf"]
+        FileIndex.Names := ["nirmala.ttf", "nirvana notes.pdf"]
         FileIndex.Folders := [0, 0]
         FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
         eq("default off", AppSettings.Defaults()["Features"]["FileSearch"]["InDefaultResults"], 0)
@@ -3615,27 +3615,27 @@ class Tests {
         g := Gui()
         SearchWindow.Input := g.AddEdit("w200")
         SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow.HistoryIndex := 0
-        Knowledge.History := ["nir", "wah", "pt tools"]
+        Knowledge.History := ["report", "notes", "pt tools"]
         try {
             SearchWindow.Input.Value := "typed"
             SearchWindow.RecallHistory(1)
-            eq("ctrl+up newest", SearchWindow.Input.Value, "nir")
+            eq("ctrl+up newest", SearchWindow.Input.Value, "report")
             SearchWindow.RecallHistory(1)
-            eq("ctrl+up older", SearchWindow.Input.Value, "wah")
+            eq("ctrl+up older", SearchWindow.Input.Value, "notes")
             SearchWindow.RecallHistory(1), SearchWindow.RecallHistory(1)
             eq("stops at oldest", SearchWindow.Input.Value "|" SearchWindow.HistoryIndex, "pt tools|3")
             SearchWindow.RecallHistory(-1)
-            eq("ctrl+down newer", SearchWindow.Input.Value, "wah")
+            eq("ctrl+down newer", SearchWindow.Input.Value, "notes")
             SearchWindow.RecallHistory(-1), SearchWindow.RecallHistory(-1)
             eq("back to typed text", SearchWindow.Input.Value "|" SearchWindow.HistoryIndex, "typed|0")
             SearchWindow.RecallHistory(-1)
             eq("ctrl+down at the start does nothing", SearchWindow.Input.Value, "typed")
-            SearchWindow.Input.Value := "nir", SearchWindow.HistoryIndex := 0     ; 例如保留的上一次搜索
+            SearchWindow.Input.Value := "report", SearchWindow.HistoryIndex := 0     ; e.g. the restored last search
             SearchWindow.RecallHistory(1)
-            eq("same text skipped", SearchWindow.Input.Value, "wah")
+            eq("same text skipped", SearchWindow.Input.Value, "notes")
             SearchWindow.HistoryIndex := 0, SearchWindow.FileMode := true
             SearchWindow.RecallHistory(1)
-            eq("not in file mode", SearchWindow.Input.Value, "wah")
+            eq("not in file mode", SearchWindow.Input.Value, "notes")
         } finally {
             SearchWindow.FileMode := false, SearchWindow.HistoryIndex := 0
             SearchWindow.DefineProp("_RunSearch", savedSearch)
@@ -4666,7 +4666,7 @@ File | C:\Windows\Notepad.exe=9
 Dir | A_Desktop | Desktop=99
 CMD | cmd.exe /k ipconfig | Check IP Address=9
 URL | https://www.google.com/search?q_Equal_x_Semicolon_y | Google Query=5
-Dir | Q:\DESIGN PROJECTS\Design-2019\PT1931 - 24 NIR | CKR, EA, JIB=3
+Dir | Q:\Projects\Design-2019\PT1001 - 24 Harbor | Tower A, B, C=3
 Func | PTTools | PT Tools (AHK)=99
 [History]
 1=Dir | A_Desktop | Desktop
@@ -4707,7 +4707,7 @@ Func | PTTools | PT Tools (AHK)=99
         commands := Map()
         for command in settings["CustomCommands"]
             commands[command["Title"]] := command
-        eq("folder command", commands["CKR, EA, JIB"]["Target"], "Q:\DESIGN PROJECTS\Design-2019\PT1931 - 24 NIR")
+        eq("folder command", commands["Tower A, B, C"]["Target"], "Q:\Projects\Design-2019\PT1001 - 24 Harbor")
         eq("command args", commands["Check IP Address"]["Arguments"], "/k ipconfig")
         eq("url unescaped", commands["Google Query"]["Target"], "https://www.google.com/search?q=x;y")
         eq("file title", commands["Notepad"]["Type"], "File")

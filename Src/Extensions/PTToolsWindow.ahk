@@ -1,32 +1,27 @@
 ;===============================================================================
-; PTToolsWindow.ahk - PT 工具箱: 钢筋/BRC 计算器 + SPF2M 束线型计算器 (AutoHotkey v2)
+; PTToolsWindow.ahk - PT Tools: rebar / BRC calculator + SPF2M tendon profile calculator (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 从仓库根目录旧的 PTTools.ahk (AutoHotkey v1, 独立进程运行) 移植并模块化而来。
+; Ported and modularized from the old PTTools.ahk in the repository root (AutoHotkey v1, ran as a
+; separate process). Only the engineering tools were ported: the rebar / BRC calculator, expression
+; evaluation and the SPF2M tendon profile calculator; the rest of the old file was left out.
 ;
-; 没有移植的部分: 旧文件里的 "RAPT KEY" 标签页会安装一个虚拟驱动
-; (MultiKey/HASPHL), 在注册表里写入伪造的加密狗 (dongle) 数据, 让 RAPT 这款商业
-; 结构工程软件误以为检测到了已授权的硬件加密狗 —— 这是绕过商业软件许可证保护的
-; 工具, 不属于这个项目要维护的范围, 因此完全没有移植。这个 class 只保留了
-; Rebar/BRC 计算器、表达式求值、以及 SPF2M 束线型计算器这几项正常的工程小工具。
+; The rebar / BRC calculator and SPF2M are two separate windows (PTToolsWindow.Show() /
+; PTToolsWindow.ShowSpf2m()) instead of tabs, so each can be opened and closed on its own and
+; remembers its own position. Both share one Settings map (the "PTTools" node in ALTRun.json),
+; but each only reads and writes its own fields (RebarFieldNames / Spf2mFieldNames) and has its
+; own window position (WinLeft/WinTop for PT Tools, Spf2mWinLeft/Spf2mWinTop for SPF2M).
 ;
-; Rebar/BRC 计算器和 SPF2M 分成两个独立窗口(PTToolsWindow.Show() /
-; PTToolsWindow.ShowSpf2m()), 不再用 Tab 切换 - 各自可以单独开关、单独记住
-; 窗口位置, 互不影响。两边共用同一份 Settings(都存在 ALTRun.json 的
-; "PTTools" 节点里), 只是各自只读写自己关心的那部分字段(RebarFieldNames /
-; Spf2mFieldNames), 也各自有一份窗口位置(WinLeft/WinTop 给 PT Tools 窗口,
-; Spf2mWinLeft/Spf2mWinTop 给 SPF2M 窗口)。
+; SPF2M tendon profiles are calculated by TendonProfile.ahk, with the same results as the original
+; SPF2M.EXE (a DOS program that used to run in DOSBox and is no longer shipped).
 ;
-; SPF2M 束线型直接由 TendonProfile.ahk 计算, 结果和原来的 SPF2M.EXE (DOS 程序, 以前要用
-; DOSBox 运行, 已经不再随程序发布) 一致。
+; Settings live in the Extensions.PTTools node of ALTRun.json (AppSettings.Extension("PTTools"));
+; Settings points straight at that Map, and saving calls AppSettings.Save(). The field names are
+; more descriptive than the old ones (SpanWidth1 / RebarSize1 / ... numbered by GroupBox); the old
+; keys were renamed by hand in the only existing ALTRun.json, so there is no migration code.
 ;
-; 设置存在 ALTRun.json 的 Extensions.PTTools 节点里 (AppSettings.Extension("PTTools")),
-; Settings 直接指向那个 Map, 保存时调用 AppSettings.Save()。字段名比旧版本 (SpanWidth1/
-; RebarSize1/... 按 GroupBox 编号) 更语义化, 因为是这台机器唯一一份数据, 改名时
-; 直接手动同步改了 ALTRun.json 里对应的 key, 没有另外写一遍迁移代码。
-;
-; 用法: 系统命令 "PTTools" / "SPF2M" (见 SystemProvider), 或自定义热键里的同名 Action
-;   PTToolsWindow.Show()          ; Rebar/BRC 计算器
-;   PTToolsWindow.ShowSpf2m()     ; SPF2M 束线型计算器
+; Usage: the system commands "PTTools" / "SPF2M" (see SystemProvider), or the same Action in custom hotkeys
+;   PTToolsWindow.Show()          ; rebar / BRC calculator
+;   PTToolsWindow.ShowSpf2m()     ; SPF2M tendon profile calculator
 ;===============================================================================
 
 Class PTToolsWindow {

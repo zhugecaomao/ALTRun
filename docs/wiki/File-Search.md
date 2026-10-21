@@ -14,7 +14,7 @@ Normal searches show apps, commands, snippets and so on, but **not** files from 
 
 A keyword needs a space after it to start a file search: typing just `folder`, `open` or `doc` shows commands and apps with that word in their name as usual.
 
-Results are sorted by how well the name matches: exact > start of the name > start of a word (for example `PT2310-BK`) > contains (for example `notebk`); at the same match quality, folders come before files, then by modification time (newest first). With Everything, ALTRun takes Everything's first 300 results and then sorts them, so the best-matching folder isn't missed just because it wasn't modified recently.
+Results are sorted by how well the name matches: exact > start of the name > start of a word (for example `PT1002-BK`) > contains (for example `notebk`); at the same match quality, folders come before files, then by modification time (newest first). With Everything, ALTRun takes Everything's first 300 results and then sorts them, so the best-matching folder isn't missed just because it wasn't modified recently.
 
 Everything's search syntax can be used as is and is passed straight to Everything: for example `Space` + `folder:bk 2024`, `ext:pdf report` or `path:Tender report`.
 
