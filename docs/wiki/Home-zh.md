@@ -21,7 +21,8 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [5 分钟上手](Getting-Started-zh) | 第一次用: 呼出、打开程序、常用功能、加自己的命令 |
 | [安装与升级](Installation-zh) | 下载、Scoop / winget、开机启动、一键更新、从 2.x 升级、卸载 |
 | [搜索与快捷键](Usage-zh) | 所有输入语法、快捷键、操作面板、学习排序、使用统计 |
-| [自定义命令与片段](Commands-and-Snippets-zh) | 命令类型、路径变量、片段占位符、自动展开 |
+| [自定义命令](Custom-Commands-zh) | 命令类型、带参数的命令、路径变量 |
+| [文字片段](Snippets-zh) | 占位符、自动展开、不展开的窗口、导入 / 导出 |
 | [剪贴板历史](Clipboard-zh) | 文字、图片和文件的历史, 粘贴、合并、排除的程序 |
 | [文件搜索](File-Search-zh) | Everything 联动、内置索引、排除规则 |
 | [主题](Themes-zh) | 22 套内置主题 (也可以跟随系统浅色 / 深色)、显示密度、自定义主题、全部可用的键 |

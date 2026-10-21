@@ -12,7 +12,7 @@
 2. Check whether its name is filtered out by "Exclude (regex)", or whether it's in the "Hidden apps" list
 3. Search `rebuild` and run "Rebuild ALTRun Index"
 
-Simpler: add it as a [custom command](Commands-and-Snippets), optionally with a keyword.
+Simpler: add it as a [custom command](Custom-Commands), optionally with a keyword.
 
 ### Files can't be found
 Normal searches don't show files by default. Press `Space` in an empty search box first (or use `'report` / `open report`) to start a file search. Without Everything running, ALTRun only looks in Desktop, Documents and Downloads; install and run [Everything](https://www.voidtools.com/) to search all disks. See [File search](File-Search).
@@ -75,7 +75,7 @@ Two ways:
 - **Sync only the settings and data**: Preferences → Advanced → Settings and data → **Change Location...**, and pick a folder in a synced drive (OneDrive, Dropbox...). Your current settings and data are copied there, and ALTRun reloads and uses that folder. On the other PC, pick the same folder; when it says the folder already has ALTRun settings, choose **Yes** to use them. The location is kept in `"DataLocation"` in `Data\ALTRun.json` at the default location (environment variables such as `%OneDrive%\ALTRun` work, so it's fine if the OneDrive path differs between PCs); pick the original `Data\` folder again in Change Location..., or delete that entry, to go back to the default location
 - **Keep the whole folder on a USB stick or a synced drive**: ALTRun is portable, so the program and `Data\` travel together
 
-Avoid running ALTRun and changing settings on two PCs at the same time with data in a synced folder, or the sync service may create conflicting copies. Use [path variables](Commands-and-Snippets#variables-in-paths) (for example `A_Desktop`, `%OneDrive%`) where you can, so paths work on every PC.
+Avoid running ALTRun and changing settings on two PCs at the same time with data in a synced folder, or the sync service may create conflicting copies. Use [path variables](Custom-Commands#variables-in-paths) (for example `A_Desktop`, `%OneDrive%`) where you can, so paths work on every PC.
 
 ### Does clipboard history travel with the Data folder?
 Partly. Text history is saved in `Data\ClipboardHistory.json`, so it goes along when you copy the folder to a USB stick or keep it in a synced drive. Images and very long items are kept on this PC by default (`%LOCALAPPDATA%\ALTRun\Clipboard`). To keep the text history on this PC only as well, set Preferences → Clipboard → "Save in" to "Everything on this PC only" (see `LocalFiles` in [Clipboard settings](Configuration#clipboard)). To keep no history on disk at all, set `Persist` to 0: it stays in memory and is gone when ALTRun quits. Programs listed in `IgnoreApps` (password managers by default), and content that apps mark as private, are never recorded.

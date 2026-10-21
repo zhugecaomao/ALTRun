@@ -170,7 +170,8 @@ The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wi
 |---|---|
 | [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation) | Download, Scoop / winget, start with Windows, automatic updates, upgrading from 2.x, uninstalling |
 | [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/Usage) | Search syntax, shortcuts, action panel, learned ranking, usage statistics |
-| [Custom commands and snippets](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion |
+| [Custom commands](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands) | Command types, commands with an argument, path variables |
+| [Snippets](https://github.com/zhugecaomao/ALTRun/wiki/Snippets) | Placeholders, snippet expansion, windows without expansion, import / export |
 | [File search](https://github.com/zhugecaomao/ALTRun/wiki/File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](https://github.com/zhugecaomao/ALTRun/wiki/Themes) | Built-in themes, custom themes, every available key |
 | [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/Extensions) | Quick Switch, date stamp, custom hotkeys, system commands, PT Tools |

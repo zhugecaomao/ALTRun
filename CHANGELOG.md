@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.20.7]
+
+测试版。
+
+Test build.
+
+### 改进
+- Wiki 的 "自定义命令与片段" 拆成 [自定义命令](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands-zh) 和 [文字片段](https://github.com/zhugecaomao/ALTRun/wiki/Snippets-zh) 两页, 和偏好设置的两个页面对应; 偏好设置的帮助按钮 / F1 和使用提示打开对应的那一页。旧的页面留一个指向这两页的链接
+
+### 修复
+- 偏好设置 → 文字片段 → "不展开的窗口" 在 Wiki 里没有说明: 文字片段页新增 "不展开的窗口" 一节 (写法、默认值、总是不展开的地方)
+
 ## [2026.10.20.6]
 
 测试版。
@@ -883,7 +895,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.7...HEAD
+[2026.10.20.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.6...2026.10.20.7
 [2026.10.20.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.5...2026.10.20.6
 [2026.10.20.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.4...2026.10.20.5
 [2026.10.20.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.3...2026.10.20.4

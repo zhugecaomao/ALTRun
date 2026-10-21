@@ -12,7 +12,7 @@
 2. 检查名称是不是被 "排除 (正则)" 过滤掉了, 或者在 "已删除的应用" 列表里
 3. 搜索 `rebuild` 执行 "重建 ALTRun 索引"
 
-更简单的办法: 把它加为 [自定义命令](Commands-and-Snippets-zh), 还可以设关键字。
+更简单的办法: 把它加为 [自定义命令](Custom-Commands-zh), 还可以设关键字。
 
 ### 搜不到文件
 普通搜索默认不显示文件, 要先在空的搜索框里按 `空格` (或用 `'报告` / `open 报告`) 进入文件搜索。Everything 没有运行时, ALTRun 只在 桌面、文档、下载 里找; 安装并运行 [Everything](https://www.voidtools.com/) 就能搜全盘, 详见 [文件搜索](File-Search-zh)。
@@ -75,7 +75,7 @@ ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时�
 - **只同步设置和数据**: 偏好设置 → 高级 → 数据 → **更改位置...**, 选同步盘 (OneDrive、Dropbox...) 里的一个文件夹。现在的设置和数据会复制过去, ALTRun 重新载入后改用那里; 在另一台电脑上选同一个文件夹, 提示 "已经有 ALTRun 的设置" 时选 **是** 就会用那里的设置。选的位置记在默认位置 `Data\ALTRun.json` 的 `"DataLocation"` 里 (可以写 `%OneDrive%\ALTRun` 这样的环境变量, 每台电脑的 OneDrive 路径不同也能用); 在 更改位置 里选回原来的 `Data\` 文件夹, 或者删掉这一项, 就回到默认位置
 - **整个文件夹放在 U 盘或同步盘里**: ALTRun 是绿色软件, 程序和 `Data\` 一起带走
 
-同步盘里的数据最好不要在两台电脑上同时打开 ALTRun 修改, 否则同步盘可能生成冲突副本。路径尽量用 [路径变量](Commands-and-Snippets-zh#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
+同步盘里的数据最好不要在两台电脑上同时打开 ALTRun 修改, 否则同步盘可能生成冲突副本。路径尽量用 [路径变量](Custom-Commands-zh#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
 
 ### 剪贴板历史会跟着 Data 文件夹走吗
 一部分会。文字历史保存在 `Data\ClipboardHistory.json`, 把文件夹复制到 U 盘或放在同步盘里时会一起带走; 图片和很长的条目默认只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun\Clipboard`)。想让文字历史也只留在这台电脑上, 把 偏好设置 → 剪贴板 → "保存位置" 改成 "全部只存本机" (见 [剪贴板设置](Configuration-zh#clipboard-剪贴板历史) 的 `LocalFiles`)。完全不想在磁盘上留下历史, 把 `Persist` 设为 0: 只放在内存里, 退出 ALTRun 就清空。`IgnoreApps` 里的程序 (默认是几个密码管理器) 和程序标记为隐私的内容不会被记录。

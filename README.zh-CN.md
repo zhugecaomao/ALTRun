@@ -170,7 +170,8 @@
 |---|---|
 | [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation-zh) | 下载、Scoop / winget、开机启动、自动更新、从 2.x 升级、卸载 |
 | [搜索与快捷键](https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh) | 输入语法、快捷键、操作面板、学习排序、使用统计 |
-| [自定义命令与片段](https://github.com/zhugecaomao/ALTRun/wiki/Commands-and-Snippets-zh) | 命令类型、路径变量、片段占位符、自动展开 |
+| [自定义命令](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands-zh) | 命令类型、带参数的命令、路径变量 |
+| [文字片段](https://github.com/zhugecaomao/ALTRun/wiki/Snippets-zh) | 占位符、自动展开、不展开的窗口、导入 / 导出 |
 | [文件搜索](https://github.com/zhugecaomao/ALTRun/wiki/File-Search-zh) | Everything 联动、内置索引、排除规则 |
 | [主题](https://github.com/zhugecaomao/ALTRun/wiki/Themes-zh) | 内置主题、自定义主题、全部可用的键 |
 | [扩展功能](https://github.com/zhugecaomao/ALTRun/wiki/Extensions-zh) | 对话框快速跳转、一键加日期、自定义热键、系统命令、PT 工具箱 |

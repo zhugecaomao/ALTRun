@@ -34,7 +34,7 @@ Turn folders, files and web addresses you use often into custom commands, then o
 - In Explorer, right-click → Send to → ALTRun, adjust the name and press `Enter`
 - Or Preferences → Custom Commands → Add
 
-Save text you type often (signatures, addresses) as snippets and type `;keyword` in any program to expand it, see [Custom commands and snippets](Commands-and-Snippets).
+Save text you type often (signatures, addresses) as snippets and type `;keyword` in any program to expand it, see [Snippets](Snippets).
 
 ## 6. Preferences
 Right-click the notification area icon → Preferences, or press `F2` / `Ctrl+,` in the search window. `F1` (or Help) on any page opens its documentation. Appearance has 22 themes and three densities, see [Themes](Themes).

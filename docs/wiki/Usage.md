@@ -45,7 +45,7 @@ The line at the bottom of the search window (like Listary and Raycast), shown wh
 | `>command` | Runs it in a terminal, for example `>ipconfig /all`. See [System commands and terminal](System-Commands#terminal) |
 | `clip` / `clip xxx` | Clipboard history: text, files and images (all / filtered). See [Clipboard history](Clipboard) |
 | `snip` / `snip xxx` | Snippets only |
-| `;keyword` (in any program) | Snippet expansion, see [Custom commands and snippets](Commands-and-Snippets) |
+| `;keyword` (in any program) | Snippet expansion, see [Snippets](Snippets#snippet-expansion) |
 
 When a keyword is followed by a space (for example `clip `, `g xxx`, `'xxx`, `>xxx`), only that feature's results are shown. Web searches, custom commands and snippets can have several keywords separated by commas (for example `g, ㅎ`); any of them works, which helps when you switch keyboard layouts. When nothing matches, fallback items are shown: search Google, search files, search Bing (change them in `Features.WebSearch.Fallbacks`).
 
