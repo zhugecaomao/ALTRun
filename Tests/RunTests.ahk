@@ -2801,6 +2801,16 @@ class Tests {
                     TestRunner.Equal("PreferencesFit." lang " " page.Key " controls aligned", lefts, expected)
                     TestRunner.Equal("PreferencesFit." lang " " page.Key " control count", count, page.Key = "Prefs.Page.Window" ? 2 : 4)
                 }
+                suffix := I18n.T("Prefs.DefaultChoice", "")
+                for ctrl in page.Controls                                   ; every drop-down marks exactly one option "(default)" and shows its longest option in full
+                    if (ctrl.Type = "DDL") {
+                        marked := 0
+                        for text in ControlGetItems(ctrl)
+                            marked += (SubStr(text, -StrLen(suffix)) = suffix)
+                        ctrl.GetPos(, , &w)
+                        TestRunner.Equal("PreferencesFit." lang " " page.Key " default marked once (" ControlGetItems(ctrl)[1] ")", marked, 1)
+                        TestRunner.True("PreferencesFit." lang " " page.Key " drop-down fits (" ControlGetItems(ctrl)[1] ", " w " < " PreferencesWindow._ChoiceWidth(ctrl) ")", w >= PreferencesWindow._ChoiceWidth(ctrl))
+                    }
                 bottom := 0, right := 0
                 for ctrl in page.Controls {
                     ctrl.GetPos(&x, &y, &w, &h)
@@ -3757,7 +3767,7 @@ class Tests {
                         return item.Key "|" item.Text
                 return ""
             }
-            eq("tip in next mode", keyOf("Tab"), "Tab / Shift+Tab|next / previous result; Ctrl+Tab completes the name")
+            eq("tip in next mode", keyOf("Tab"), "Tab / Shift+Tab|next / previous result; Ctrl+Tab autocompletes")
             AppSettings.General["TabKey"] := "Complete"
             eq("tip in complete mode", keyOf("Tab"), "Tab|" I18n.T("Help.Tab.Text"))
             I18n.Init(savedLang)

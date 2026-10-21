@@ -483,18 +483,19 @@ class PreferencesWindow {
         tabLabels := [I18n.T("Prefs.TabKey.Complete"), I18n.T("Prefs.TabKey.Next")]
         tab := PreferencesWindow._Choice("General.TabKey", "Prefs.TabKey", ["Complete", "Next"], tabLabels)
         PreferencesWindow._Field("General.HistorySize", "Prefs.HistorySize", "S", "number")   ; Ctrl+↑ / ↓ recall earlier searches
-        PreferencesWindow._SameWidth([capsLock, capsLabels], [english, englishLabels], [tab, tabLabels])
+        PreferencesWindow._SameWidth(capsLock, english, tab)
     }
 
     ; Drop-downs in one column get one width: wide enough for the longest option of any of them, at least "M"
-    static _SameWidth(pairs*) {
+    ; (a button in the column just takes the same width)
+    static _SameWidth(ctrls*) {
         width := PreferencesWindow.WidthM
-        for pair in pairs
-            for text in pair[2]
-                width := Max(width, Ceil(Win.TextExtent(pair[1].Hwnd, text) * 96 / A_ScreenDPI) + 32)   ; plus the arrow button and border
+        for ctrl in ctrls
+            if (ctrl.Type = "DDL")
+                width := Max(width, PreferencesWindow._ChoiceWidth(ctrl))
         width := Min(width, PreferencesWindow._InputW())
-        for pair in pairs
-            pair[1].Move(, , width)
+        for ctrl in ctrls
+            ctrl.Move(, , width)
     }
 
     static _BuildAppearance() {
@@ -513,14 +514,15 @@ class PreferencesWindow {
             , ["Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir)])
         PreferencesWindow._Section("Prefs.Section.Size")
         PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"], ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "number"])
-        PreferencesWindow._Choice("Appearance.Density", "Prefs.Density", ThemeManager.Densities   ; 任何主题都能缩放 (ThemeManager.Scaled)
+        density := PreferencesWindow._Choice("Appearance.Density", "Prefs.Density", ThemeManager.Densities   ; any theme can be scaled (ThemeManager.Scaled)
             , [I18n.T("Prefs.Density.Comfortable"), I18n.T("Prefs.Density.Normal"), I18n.T("Prefs.Density.Compact")])
         PreferencesWindow._Check("Appearance.Fade", "Prefs.Fade", , , "Prefs.Group.Animation")
         PreferencesWindow._Section("Prefs.WindowPosition")
-        PreferencesWindow._Choice("Appearance.ShowOn", "Prefs.ShowOn", ["Mouse", "Primary", "Active"]
-            , [I18n.T("Prefs.ShowOn.Mouse"), I18n.T("Prefs.ShowOn.Primary"), I18n.T("Prefs.ShowOn.Active")], "B")
+        showOn := PreferencesWindow._Choice("Appearance.ShowOn", "Prefs.ShowOn", ["Mouse", "Primary", "Active"]
+            , [I18n.T("Prefs.ShowOn.Mouse"), I18n.T("Prefs.ShowOn.Primary"), I18n.T("Prefs.ShowOn.Active")])
         PreferencesWindow._Check("Appearance.RememberPosition", "Prefs.RememberPosition", , , "Prefs.Group.Dragging")
-        PreferencesWindow._Button("Prefs.ResetPosition", (button, *) => PreferencesWindow._ResetPosition(button))
+        reset := PreferencesWindow._Button("Prefs.ResetPosition", (button, *) => PreferencesWindow._ResetPosition(button))
+        PreferencesWindow._SameWidth(density, showOn, reset)                ; one column: the two drop-downs and the button below them
     }
 
     ; 记住的位置恢复为默认 (保存时生效)
@@ -1322,7 +1324,6 @@ class PreferencesWindow {
             case "S": return PreferencesWindow.WidthS
             case "M": return PreferencesWindow.WidthM
             case "K": return PreferencesWindow.WidthK
-            case "B": return PreferencesWindow.ButtonW                      ; 和按钮一样宽 (外观页: 主题下拉框和下面的按钮对齐)
         }
         return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
     }
@@ -1391,29 +1392,6 @@ class PreferencesWindow {
         }
     }
 
-    ; 标签后面紧跟下拉框 (分节排列的页面用): "呼出时切换到 [不切换 v]"。下拉框按最长的选项定宽
-    static _InlineChoice(path, labelKey, values, labels) {
-        x := PreferencesWindow._InputX()
-        PreferencesWindow._y += 3
-        label := PreferencesWindow._Add("Text", "x" x, I18n.T(labelKey))
-        PreferencesWindow._y -= 3
-        label.GetPos(, , &labelW)
-        width := 0
-        for text in labels
-            width := Max(width, Ceil(Win.TextExtent(label.Hwnd, text) * 96 / A_ScreenDPI) + 32)   ; 加上箭头按钮和边框
-        width := Min(width, PreferencesWindow.ContentX + PreferencesWindow.ContentW - x - labelW - 8)
-        ctrl := PreferencesWindow._Add("DropDownList", "x" (x + labelW + 8) " w" width, labels)
-        current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
-        ctrl.Value := 1
-        for index, value in values
-            if (value = current)
-                ctrl.Value := index
-        PreferencesWindow._Bind(path, () => values[ctrl.Value])
-        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)
-        PreferencesWindow._Desc(labelKey, x)
-        return ctrl
-    }
-
     ; kind: text / number / file / folder; size: "S" / "M" / "L" (见 _Width)
     static _Field(path, labelKey, size, kind := "text") {
         label := PreferencesWindow._Label(labelKey)
@@ -1443,15 +1421,38 @@ class PreferencesWindow {
 
     static _Choice(path, labelKey, values, labels, size := "M") {
         label := PreferencesWindow._Label(labelKey)
-        ctrl := PreferencesWindow._Add("DropDownList", "x" PreferencesWindow._InputX() " w" PreferencesWindow._Width(size), labels)
+        ctrl := PreferencesWindow._DropDown(PreferencesWindow._InputX(), path, values, labels, size)
+        PreferencesWindow._BelowInput(labelKey, label, ctrl)
+        return ctrl
+    }
+
+    ; A drop-down bound to path. The option matching the default value is marked "(default)",
+    ; and the box widens (up to the right edge of the page) when an option would be cut off
+    static _DropDown(x, path, values, labels, size) {
+        static defaults := AppSettings.Defaults()
+        default := PreferencesWindow.GetPath(defaults, path)
+        marked := []
+        for index, label in labels
+            marked.Push(values[index] = default ? I18n.T("Prefs.DefaultChoice", label) : label)
+        ctrl := PreferencesWindow._Add("DropDownList", "x" x " w" PreferencesWindow._Width(size), marked)
+        width := Min(PreferencesWindow._ChoiceWidth(ctrl), PreferencesWindow.ContentX + PreferencesWindow.ContentW - x)
+        if (width > PreferencesWindow._Width(size))
+            ctrl.Move(, , width)
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         ctrl.Value := 1
         for index, value in values
             if (value = current)
                 ctrl.Value := index
         PreferencesWindow._Bind(path, () => values[ctrl.Value])
-        PreferencesWindow._BelowInput(labelKey, label, ctrl)
         return ctrl
+    }
+
+    ; Width a drop-down needs to show its longest option in full
+    static _ChoiceWidth(ctrl) {
+        width := 0
+        for text in ControlGetItems(ctrl)
+            width := Max(width, Ceil(Win.TextExtent(ctrl.Hwnd, text) * 96 / A_ScreenDPI) + 32)   ; plus the arrow button and border
+        return width
     }
 
     static _Lines(path, labelKey, rows) {
@@ -1575,15 +1576,8 @@ class PreferencesWindow {
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         if (kind = "hotkey")
             return PreferencesWindow._HotkeyBox(x, path)
-        if (kind = "choice") {
-            ctrl := PreferencesWindow._Add("DropDownList", "x" x " w" PreferencesWindow._Width(size), labels)
-            ctrl.Value := 1
-            for index, value in values
-                if (value = current)
-                    ctrl.Value := index
-            PreferencesWindow._Bind(path, () => values[ctrl.Value])
-            return ctrl
-        }
+        if (kind = "choice")
+            return PreferencesWindow._DropDown(x, path, values, labels, size)
         text := (kind = "csv") ? PreferencesWindow.JoinCsv(current) : current
         ctrl := PreferencesWindow._Add("Edit", "x" x " w" PreferencesWindow._Width(size) " r1 -Multi" (kind = "number" ? " Number" : ""), text)
         switch kind {
