@@ -1,34 +1,34 @@
-[English](en-Extensions) · **中文**
+**English** · [中文](Extensions-zh)
 
-# 扩展功能
+# Extensions
 
-搜索窗口以外的功能。下面几项各有独立的页面, 偏好设置里对应的页面按 `F1` 也会打开它们:
+Features outside the search window. These have their own pages, which `F1` on the matching Preferences page also opens:
 
-| 页面 | 内容 |
+| Page | What it covers |
 |---|---|
-| [对话框快速跳转](Quick-Switch) | 在打开 / 保存对话框里跳到 Total Commander 或资源管理器已经打开的文件夹 (`Ctrl+G` / `Ctrl+E`), 自动跳转 |
-| [对话框文件夹面板](Quick-Switch-Panel) | 对话框下面的文件夹面板: 列出打开的文件夹和最近的文件夹, 搜索框 (`Ctrl+Shift+G`) |
-| [一键加日期](Date-Stamp) | 重命名文件或在文字末尾加上日期 (`Ctrl+D`) |
-| [自定义热键](Hotkeys) | 给热键指定系统命令; CapsLock 切换输入法; 怎样设置热键 |
-| [计算器](Calculator) | 算式、单位和货币换算、附带的结构计算 |
-| [脚本扩展](Scripts) | 把自己的脚本变成搜索结果里的命令 |
-| [系统命令和终端](System-Commands) | 锁屏、关机、清空回收站等系统命令的完整列表; `>` 在终端里运行命令 |
+| [Quick Switch](Quick-Switch) | Jump an Open / Save dialog to a folder open in Total Commander or Explorer (`Ctrl+G` / `Ctrl+E`), auto switch |
+| [Dialog Folder Panel](Quick-Switch-Panel) | The folder panel under dialogs: open and recent folders, the search box (`Ctrl+Shift+G`) |
+| [Date Stamp](Date-Stamp) | Add a date while renaming a file or at the end of a line of text (`Ctrl+D`) |
+| [Custom Hotkeys](Hotkeys) | Assign system commands to hotkeys; Caps Lock switches the input method; how to set hotkeys |
+| [Calculator](Calculator) | Expressions, unit and currency conversion, structural calculations |
+| [Scripts](Scripts) | Turn your own scripts into commands in the search results |
+| [System commands and terminal](System-Commands) | The full list of system commands (lock, shut down, empty the Recycle Bin...); `>` runs a command in the terminal |
 
-PT 工具箱没有单独的页面, 见下面。
+PT Tools has no page of its own, see below.
 
-## 系统命令
-见 [系统命令和终端](System-Commands#系统命令)。
+## System commands
+See [System commands and terminal](System-Commands#system-commands).
 
-## 终端
-见 [系统命令和终端](System-Commands#终端)。
+## Terminal
+See [System commands and terminal](System-Commands#terminal).
 
-## PT 工具箱
-预应力设计用的小工具, 输入 `PTTools` / `SPF2M` 或用自定义热键打开:
-- **PT Tools**: 钢筋 / BRC 面积计算器, 以及算式计算
-- **SPF2M Post-Tensioning Tendon Profile Calculator (束线型计算)**: 直接在 ALTRun 里计算, 不再需要 DOSBox。选择线型 (双抛物线 / 抛物线-直线-抛物线 / 抛物线-直线 / 直线-抛物线) 和钢绞线类型, 输入起点、终点标高和水平距离, 右边的表格立即给出每个支架处的高度 (Actual、Beam 按 5mm、Slab 按 10mm 取整), 以及曲率半径和反弯点位置
-  - 结果和原来的 SPF2M.EXE 完全一致: 在 DOSBox 里用原程序跑了 139 组 (4 种线型 × 6 种钢绞线, 上升 / 下降, 非整米跨度, 自定义半径 / 反弯点 / 支架间距), 1100 多个数值逐个比对, 作为单元测试的一部分
-  - 可选项留空 = SPF2M 的默认值 (灰色显示): **最小曲率半径** (Slab 5000、7S 3200、12S 4200、19S 5300、22S 5700、31S 6700), **反弯点距离** (指定后反算曲率半径, 小于最小半径时提示), **支架间距** (默认最大 1000mm, 零头放在高点一侧; 也可以写 `500, 1500, 800 ...`, 加起来要等于水平距离)
-  - **At C.G.**: 标高给的是束中心时勾选, 自动减去半个管道直径。管道直径留空时用默认值 (Slab 25、7S 70、12S 90、19S 100、22S 120、31S 130), 填了则每种钢绞线各自记住
-  - 表格从高点开始 (和 SPF2M 一样); **Copy Table** 复制成表格, 直接粘贴到 Excel
-  - SPF2M 在某些无法实现的线型上会直接退出, 这里会给出说明; 反弯点超过半跨时 SPF2M 什么也不显示, 这里也会提示
-  - 原来的 SPF2M.EXE 和 DOSBox 已经不再随程序发布。从旧版本升级后, `Resources\` 里的 `DOSBox.exe`、`SDL.dll`、`SDL_net.dll`、`SPF2M.exe`、`Run.bat` 可以删掉
+## PT Tools
+Small tools for post-tensioning design; type `PTTools` / `SPF2M` or open them with a custom hotkey:
+- **PT Tools**: rebar / BRC mesh area calculator, plus an expression calculator
+- **SPF2M Post-Tensioning Tendon Profile Calculator**: calculated directly in ALTRun, no DOSBox needed any more. Pick the profile (double parabola / parabola-straight-parabola / parabola-straight / straight-parabola) and the strand type, enter the start and end levels and the horizontal distance, and the table on the right immediately gives the height at every support (Actual, Beam rounded to 5 mm, Slab rounded to 10 mm), plus the radius of curvature and the inflection point position
+  - The results match the original SPF2M.EXE exactly: 139 cases (4 profiles × 6 strand types, rising / falling, non-whole-meter spans, custom radius / inflection point / support spacing) were run with the original program in DOSBox, and more than 1,100 values are compared one by one as part of the unit tests
+  - Leaving an optional field empty = SPF2M's default (shown in gray): **minimum radius of curvature** (Slab 5000, 7S 3200, 12S 4200, 19S 5300, 22S 5700, 31S 6700), **inflection point distance** (when given, the radius is worked back from it, with a warning if it's below the minimum radius), **support spacing** (at most 1000 mm by default, with the remainder on the high-point side; you can also write `500, 1500, 800 ...`, which must add up to the horizontal distance)
+  - **At C.G.**: tick it when the levels are given at the tendon center; half the duct diameter is subtracted automatically. With the duct diameter empty, the default is used (Slab 25, 7S 70, 12S 90, 19S 100, 22S 120, 31S 130); a value you enter is remembered for each strand type
+  - The table starts from the high point (like SPF2M); **Copy Table** copies it as a table to paste straight into Excel
+  - SPF2M simply quits on some impossible profiles; here you get an explanation instead. When the inflection point is beyond half the span SPF2M shows nothing, and here you get a warning too
+  - The original SPF2M.EXE and DOSBox are no longer shipped. After upgrading from an old version, `DOSBox.exe`, `SDL.dll`, `SDL_net.dll`, `SPF2M.exe` and `Run.bat` in `Resources\` can be deleted

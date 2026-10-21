@@ -19,9 +19,9 @@ Thank you for wanting to improve ALTRun! Bug reports, documentation improvements
    ```
 3. Include tests with new features and fixes (`Tests\RunTests.ahk`)
 4. For UI changes, attach screenshots made with the English UI and made-up sample data; don't include anything personal or work-related
-5. For user-visible changes, update the README (`README.md` and `README.zh-CN.md`), `CHANGELOG.md` and, where needed, the wiki (`docs/wiki/`, both the Chinese page and the `en-` English page)
+5. For user-visible changes, update the README (`README.md` and `README.zh-CN.md`), `CHANGELOG.md` and, where needed, the wiki (`docs/wiki/`, both the English page and the `-zh` Chinese page)
 
-The project structure, development environment, code style, translations, documentation and release process are described in the **[Development guide](https://github.com/zhugecaomao/ALTRun/wiki/en-Development)** in the wiki.
+The project structure, development environment, code style, translations, documentation and release process are described in the **[Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development)** in the wiki.
 
 By submitting code, you agree to release your contribution under the [GPL-3.0](LICENSE) license.
 
@@ -46,8 +46,8 @@ By submitting code, you agree to release your contribution under the [GPL-3.0](L
    ```
 3. 新功能或修复请附带测试 (`Tests\RunTests.ahk`)
 4. 涉及界面的改动请附上截图, 用英文界面和虚构的示例数据, 不要放个人或工作相关的信息
-5. 用户可见的变化请更新 README (`README.md` 和 `README.zh-CN.md`)、`CHANGELOG.md`, 必要时更新 Wiki (`docs/wiki/`, 中文页和 `en-` 英文页都要改)
+5. 用户可见的变化请更新 README (`README.md` 和 `README.zh-CN.md`)、`CHANGELOG.md`, 必要时更新 Wiki (`docs/wiki/`, 英文页和 `-zh` 中文页都要改)
 
-项目结构、开发环境、代码规范、界面翻译、文档和发布流程见 Wiki 的 **[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development)**。
+项目结构、开发环境、代码规范、界面翻译、文档和发布流程见 Wiki 的 **[开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development-zh)**。
 
 提交代码即表示你同意以 [GPL-3.0](LICENSE) 许可发布你的贡献。

@@ -1,160 +1,160 @@
-[English](en-Usage) · **中文**
+**English** · [中文](Usage-zh)
 
-# 搜索与快捷键
+# Search and shortcuts
 
-## 搜索窗口
-按 `Alt+Space` (可在 偏好设置 → 通用 修改: 点一下框, 按下新的组合键; 也可以再设一个 "第二个呼出热键", 或者和 Listary 一样 "双击 Ctrl" / "双击 Shift" 呼出) 呼出, 输入即搜。每行显示图标、标题和一行说明 (路径、参数或类型), 右侧是 `Ctrl+数字` 快捷键。窗口失去焦点时自动隐藏。 ALTRun 已经在运行时, 再双击 `ALTRun.exe` 也是弹出搜索窗口 (不会重新启动)。
+## Search window
+Press `Alt+Space` to open it and start typing. You can change the hotkey in Preferences → General: click the box and press the new keys. You can also set a "Second hotkey", or open it like Listary with "Double-tap Ctrl" / "Double-tap Shift". Each row shows an icon, a title and one line of details (path, arguments or type), with the `Ctrl+number` shortcut on the right. The window hides itself when it loses focus. If ALTRun is already running, double-clicking `ALTRun.exe` again also opens the search window (it doesn't restart).
 
-### 后台启动
-正常启动 ALTRun 时会显示搜索窗口, 让用户能直观看到程序已成功启动。如果希望 ALTRun 在后台运行、只在需要时通过热键呼出, 可以使用命令行参数 `-Startup`:
+### Starting in the background
+Launching ALTRun normally displays the search window, giving users visible confirmation that the application has started successfully. To run ALTRun in the background and show the search window only when needed, use the `-Startup` command-line argument:
 
-- **编译版:** `ALTRun.exe -Startup`
-- **源码版:** 在启动脚本的快捷方式命令行参数中添加 `-Startup`。
+- **Compiled version:** `ALTRun.exe -Startup`
+- **Source version:** Add `-Startup` to the shortcut's command-line arguments.
 
-使用此参数后, ALTRun 初始化时不会显示搜索窗口。之后仍可通过已配置的呼出热键 (例如 `Alt+Space`) 打开窗口。
+With this argument, ALTRun initializes without displaying the search window. You can still open it using your configured hotkey, such as `Alt+Space`.
 
-按住输入框四周的空白处可以拖动搜索窗口。想让它下次还出现在拖到的位置: 偏好设置 → 外观 → "拖动窗口后记住位置" (记住的是在屏幕里的相对位置, 换一块屏幕也适用; "恢复默认位置" 回到水平居中、离顶部 20%)。有多个屏幕时, "窗口显示在" 可以选 鼠标所在的屏幕 (默认) / 主屏幕 / 当前窗口所在的屏幕; 操作后的小提示 (例如 "已复制") 显示在搜索窗口所在的屏幕, 没有打开搜索窗口时也按这个设置选屏幕。
+Drag the empty space around the input box to move the search window. To have it open where you dragged it next time: Preferences → Appearance → "Remember the position after dragging the window" (the position is remembered relative to the screen, so it also works on another monitor; "Reset Window Position" goes back to centered horizontally, 20% from the top). With more than one screen, "Show the window on" can be the screen with the mouse pointer (default), the main screen, or the screen with the active window. Short notices after an action (such as "Copied") appear on the screen with the search window; when the search window isn't open, the same setting picks the screen.
 
-想让搜索窗口记住上一次的搜索 (和 2.x 的 "保留输入" 一样): 偏好设置 → 搜索窗口 → "呼出窗口时保留上一次的搜索"。打开后, 呼出窗口时上一次的输入和结果都还在, 文字是全选的: 按 `Enter` 再打开一次, 直接输入就开始新的搜索, 按 `空格` 进入文件搜索; 想修改上次的输入 (例如算式), 按 `→` 或 `End` 取消全选、光标到末尾 (这时的 `→` 不会打开操作面板, 再按一次才打开)。
+To have the search window remember your last search (like "keep input" in 2.x): Preferences → Search Window → "Keep the last search when the window opens". With it on, the last input and results are still there when you open the window, with the text selected: press `Enter` to open it again, start typing for a new search, or press `Space` for a file search. To edit the last input (for example a calculation), press `→` or `End` to clear the selection and put the cursor at the end (that `→` doesn't open the action panel; press it again to open it).
 
-## 置顶和最近使用
-见 [置顶和最近使用](Recent)。
+## Pinned and recent items
+See [Pinned and recent items](Recent).
 
-## 使用提示
-每次呼出搜索窗口, 底部状态栏会换一条使用提示 (例如 "提示: folder bk  只搜文件夹"), 按顺序轮换。学会之后可以在 偏好设置 → 搜索窗口 关掉 "显示使用提示" (在 "显示状态栏" 下面)。忘了某个写法时, 输入 `?` 查看全部。
+## Usage tips
+Each time you open the search window, the status bar at the bottom shows another usage tip (for example "Tip: folder bk  search folders only"), in turn. Once you know them, turn off "Show a usage tip" (below "Show the status bar") in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
 
-## 状态栏
-搜索窗口最下面的一行 (和 Listary、Raycast 一样), 有结果时显示: 左边是 ☰ 菜单按钮 (偏好设置、快捷键和语法、重建索引、检查更新、重新载入、退出) 和使用提示 (文件搜索模式下是 "正在搜索文件"); 右边是选中项按 `Enter` 做什么 (打开、复制、粘贴、运行...) 和打开操作面板的 `→`, 按键画成键帽。没有结果行时 (空搜索框又没有置顶项) 只显示搜索框。可以在 偏好设置 → 搜索窗口 → "显示状态栏" 关掉 (`Appearance.StatusBar`), 关掉后使用提示还是显示在空搜索框里。
+## Status bar
+The line at the bottom of the search window (like Listary and Raycast), shown when there are results: on the left, a ☰ menu button (Preferences, shortcuts and syntax, rebuild index, check for updates, reload, quit) and the usage tip ("Searching files" in file search mode); on the right, what `Enter` does for the selected result (Open, Copy, Paste, Run...) and `→` for its action panel, drawn as key caps. With no result rows (an empty search box without pinned items) only the search box shows. Turn it off in Preferences → Search Window → "Show the status bar" (`Appearance.StatusBar`); the usage tip then shows in the empty search box as before.
 
-## 输入语法
-| 输入 | 结果 |
+## Search syntax
+| Input | Result |
 |---|---|
-| 任意文字 | 应用、自定义命令、片段、系统命令、Windows 工具、Windows 设置的页面 (例如 `蓝牙`、`默认应用`) |
-| `空格` 再输入 (搜索框为空时按空格) | 只搜索文件和文件夹, 输入框显示 "搜索文件..."; 输入框为空时 `Backspace` 返回 |
-| `12*(3+4)` 或 `=2^10` | 计算器, `Enter` 复制结果 |
-| `10 km in mi` `100 f to c` `20 mpa in psi` | 单位换算; 打开货币换算后还可以 `100 usd to sgd`, 见 [计算器](Calculator#单位和货币换算) |
-| `255 in hex` `0xff to dec` `10 in bin` / `0b1010` | 进制换算 (hex 十六进制 / bin 二进制 / oct 八进制 / dec 十进制); 单独输入 `0x`、`0b`、`0o` 开头的数时列出十进制、十六进制和二进制 |
-| `today + 30 days` `2026-12-25 - 2w` `今天 + 3 个月` / `2026-12-25 - today` | 日期加减 (单位 d w m y, 或 天 周 月 年), 结果带星期几; 两个日期相减得到相差几天 |
-| `bm xxx` | 只搜浏览器书签 (直接输入书签名称也能找到, 排在应用和命令后面), 见 [浏览器书签](Bookmarks) |
-| `w xxx` / `w ` | 切换到已打开的窗口 (按标题或程序名; 只输入 `w ` 列出全部), `→` 可以关闭窗口; 直接输入时标题匹配得好的窗口也会显示 (最多 3 个), 见 [窗口切换](Window-Switching) |
-| `'报告` / `open 报告` / `find 报告` | 只搜索文件和文件夹, 见 [文件搜索](File-Search) |
-| `doc 报告` `pic logo` `cad 平面图` | 只搜某类文件 (文档 / 图片 / CAD...), 类型可以自己改 |
-| `folder bk` | 只搜索文件夹 |
-| `?` / `? 文件` | 速查表: 所有输入语法和快捷键 (过滤), `Enter` 打开 Wiki 对应的页面 |
-| `g xxx` `bing xxx` `bd xxx` `gh xxx` `wiki xxx` `yt xxx` `tb xxx` `jd xxx` `tr xxx` | 网页搜索: Google / Bing / 百度 / GitHub / 维基百科 / YouTube / 淘宝 / 京东 / Google 翻译, 可以自己加, 见 [网页搜索](Web-Search) |
-| `>命令` | 在终端里运行, 例如 `>ipconfig /all`, 见 [系统命令和终端](System-Commands#终端) |
-| `clip` / `clip xxx` | 剪贴板历史: 文字、文件和图片 (全部 / 过滤), 见 [剪贴板历史](Clipboard) |
-| `snip` / `snip xxx` | 只搜索文字片段 |
-| `;关键字` (在任何程序里) | 片段自动展开, 见 [自定义命令与片段](Commands-and-Snippets) |
+| Any text | Apps, custom commands, snippets, system commands, Windows tools, Windows Settings pages (for example `bluetooth`, `default apps`) |
+| `Space`, then type (press Space in an empty search box) | Files and folders only; the input box shows "Search files..."; `Backspace` in an empty box goes back |
+| `12*(3+4)` or `=2^10` | Calculator; `Enter` copies the result |
+| `10 km in mi` `100 f to c` `20 mpa in psi` | Unit conversion; with currency conversion turned on also `100 usd to sgd`, see [Calculator](Calculator#unit-and-currency-conversion) |
+| `255 in hex` `0xff to dec` `10 in bin` / `0b1010` | Number bases (hex / bin / oct / dec); a number starting with `0x`, `0b` or `0o` on its own lists decimal, hexadecimal and binary |
+| `today + 30 days` `2026-12-25 - 2w` / `2026-12-25 - today` | Date arithmetic (units d w m y), with the day of the week; subtracting two dates gives the number of days between them |
+| `bm xxx` | Browser bookmarks only (typing a bookmark name without `bm` finds it too, ranked after apps and commands), see [Browser bookmarks](Bookmarks) |
+| `w xxx` / `w ` | Switch to an open window (by title or program name; `w ` alone lists them all); `→` can close the window. Windows whose title matches well also show up without `w` (at most 3). See [Window switching](Window-Switching) |
+| `'report` / `open report` / `find report` | Files and folders only, see [File search](File-Search) |
+| `doc report` `pic logo` `cad plan` | One kind of file only (documents / pictures / CAD...); the kinds can be changed |
+| `folder bk` | Folders only |
+| `?` / `? file` | Cheat sheet: every search syntax and shortcut (filtered); `Enter` opens the matching wiki page |
+| `g xxx` `bing xxx` `bd xxx` `gh xxx` `wiki xxx` `yt xxx` `tb xxx` `jd xxx` `tr xxx` | Web search: Google / Bing / Baidu / GitHub / Wikipedia / YouTube / Taobao / JD.com / Google Translate; you can add your own, see [Web search](Web-Search) |
+| `>command` | Runs it in a terminal, for example `>ipconfig /all`. See [System commands and terminal](System-Commands#terminal) |
+| `clip` / `clip xxx` | Clipboard history: text, files and images (all / filtered). See [Clipboard history](Clipboard) |
+| `snip` / `snip xxx` | Snippets only |
+| `;keyword` (in any program) | Snippet expansion, see [Custom commands and snippets](Commands-and-Snippets) |
 
-关键字后面加了空格 (例如 `clip `、`g xxx`、`'xxx`、`>xxx`), 就只显示这个功能的结果。网页搜索、自定义命令和文字片段的关键字可以写几个, 用逗号分隔 (例如 `g, ㅎ`), 输入哪个都行, 经常切换键盘布局 / 输入法时有用。没有任何结果时, 显示兜底项: 用 Google 搜索、搜索文件、用 Bing 搜索 (可在 `Features.WebSearch.Fallbacks` 修改)。
+When a keyword is followed by a space (for example `clip `, `g xxx`, `'xxx`, `>xxx`), only that feature's results are shown. Web searches, custom commands and snippets can have several keywords separated by commas (for example `g, ㅎ`); any of them works, which helps when you switch keyboard layouts. When nothing matches, fallback items are shown: search Google, search files, search Bing (change them in `Features.WebSearch.Fallbacks`).
 
-![网页搜索: g autohotkey v2 hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch.png)
+![Web search: g autohotkey v2 hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/websearch.png)
 
-### 怎样匹配
-不区分大小写, 按下面的顺序打分:
+### How matching works
+Case-insensitive, scored in this order:
 
-| 规则 | 例子 |
+| Rule | Example |
 |---|---|
-| 完全相同 | `notepad` → Notepad |
-| 开头相同 | `note` → Notepad |
-| 某个单词的开头 | `code` → Visual Studio Code |
-| 单词首字母 | `vsc` → Visual Studio Code |
-| 拼音首字母 | `wx` → 微信 |
-| 包含 | `pad` → Notepad |
-| 多个关键词 | `st co` → Visual Studio Code |
-| 按顺序出现的字母 (至少 3 个, 首字母相同) | `ntpd` → Notepad |
+| Exact match | `notepad` → Notepad |
+| Same beginning | `note` → Notepad |
+| Beginning of a word | `code` → Visual Studio Code |
+| Word initials | `vsc` → Visual Studio Code |
+| Pinyin initials | `wx` → 微信 (WeChat) |
+| Contains | `pad` → Notepad |
+| Several keywords | `st co` → Visual Studio Code |
+| Letters in order (at least 3, same first letter) | `ntpd` → Notepad |
 
-![拼音首字母: jsb → 记事本](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pinyin.png)
+![Pinyin initials: jsb → 记事本 (Notepad)](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pinyin.png)
 
-结果标题里和输入匹配的字会换颜色高亮 (连续的字、单词首字母、多个关键词、按顺序的字母、拼音首字母都会标出), 颜色由主题的 `Highlight` / `SelectedHighlight` 决定, 见 [主题](Themes)。靠关键字、路径、片段正文等标题以外的内容匹配到的结果, 标题不高亮。
+The characters in a result title that match your input are highlighted (consecutive characters, word initials, several keywords, letters in order and pinyin initials are all marked); the colors come from the theme's `Highlight` / `SelectedHighlight`, see [Themes](Themes). Results matched on something other than the title (a keyword, the path, a snippet's text and so on) have no highlighted title.
 
-自定义命令还会按目标的文件夹名 / 文件名匹配, 例如 Target 是 `Q:\Projects\PT1931 - 24 NIR` 时输入 `nir` 也能找到。
+Custom commands are also matched on the folder / file name of their target: if the Target is `Q:\Projects\PT1931 - 24 NIR`, typing `nir` finds it.
 
-### 学习排序
-ALTRun 记住 "输入了什么 → 最后选了哪一项": 输入 `no` 选过记事本, 下次输入 `no` 或 `not` 时记事本排第一; 常用的项目整体也会靠前。按 `Ctrl+↑` / `Ctrl+↓` 调出上一条 / 下一条搜索记录。学习记录保存在 `Data\Knowledge.json`, 可以在 偏好设置 → 高级 里重置。
+### Learned ranking
+ALTRun remembers "what you typed → which result you finally picked": if you typed `no` and picked Notepad, Notepad comes first the next time you type `no` or `not`; items you use often move up in general. Press `Ctrl+↑` / `Ctrl+↓` to recall the previous / next search. The learned ranking is saved in `Data\Knowledge.json` and can be reset in Preferences → Advanced.
 
-## 应用索引自动更新
+## Automatic app index updates
 
-ALTRun 会监视应用索引文件夹: 当前用户和所有用户的开始菜单、桌面及公共桌面 (包含子目录)。快捷方式新增、删除或改名后, 通常几秒后会在后台静默重建索引, 两次重建至少间隔 1 分钟, 不弹通知; 搜索窗口打开时会暂停重建。
+ALTRun watches the application index folders: the current user's and all users' Start menus and desktops, including the public desktop and subfolders. When a shortcut is added, removed or renamed, the index is usually rebuilt silently in the background a few seconds later. Rebuilds are at least one minute apart, and pause while the search window is open.
 
-如果 ALTRun 没有运行时安装了新软件, 缓存超过 1 小时后会兜底重建。应用商店应用不在这些文件夹里, 最多每小时重新扫描一次。
+If software is installed while ALTRun isn't running, a fallback rebuild happens when the cache is more than an hour old. Microsoft Store apps aren't in these folders and are rescanned at most once an hour.
 
-一般不需要手动操作。若应用仍未出现, 可在偏好设置 → 应用搜索里检查 “文件夹” 和排除规则, 然后点“重建索引”。修改索引文件夹、文件类型、排除规则或深度后, 点“应用”也会触发后台重建。旧索引在新索引完成前仍可使用。
+You normally don't need to do anything. If an app still doesn't appear, check **Folders** and the exclusion rules in Preferences → Applications, then click **Rebuild Index**. Changing the indexed folders, file types, exclusions or depth and clicking Apply also starts a background rebuild. The previous index remains available until the new one is ready.
 
-## 快捷键
-| 按键 | 作用 |
+## Shortcuts
+| Key | Action |
 |---|---|
-| `Enter` | 执行选中项 (打开文件 / 程序 / 网址, 复制计算结果, 粘贴片段...) |
-| `Ctrl+Enter` | 文件 / 文件夹: 在文件管理器中显示; 文字: 粘贴到前台窗口 |
-| `Alt+Enter` | 复制路径 / 网址 / 文字 |
-| `Ctrl+1` ~ `Ctrl+9` | 直接执行可见的第 N 行 |
-| `↑` `↓` / `Ctrl+P` `Ctrl+N` | 选择上一行 / 下一行 (`Ctrl+P` `Ctrl+N` 和终端、Emacs 一样, 手不用离开字母区) |
-| `PgUp` `PgDn` | 上翻 / 下翻一页 (按窗口显示的行数) |
-| `Ctrl+↑` / `Ctrl+↓` | 上一条 / 下一条搜索记录 (和 Alfred 一样); 翻回最新之后恢复原来输入的文字 |
-| `Tab` | 自动补全; 选中的是文件夹时进入这个文件夹 (输入框变成 `路径\`), 浏览里面的内容 |
-| `Insert` | 标记 / 取消标记选中的文件或文件夹并移到下一行 (和 Total Commander 一样), 标记的左边有一条竖线; 再按 `→` 对所有标记的一起操作: 全部打开、复制 / 剪切 (到 TC 或资源管理器里粘贴)、复制路径、复制 / 移动到 TC 当前的文件夹、添加到自定义命令、移到回收站 |
-| `空格` (搜索框为空时, 或光标在最前面时) | 进入文件搜索模式, 已经输入的文字保留 (先输入了 `seismic`, 按 `Home` 再按空格就改用文件搜索); 搜索框为空或光标在最前面时按 `Backspace` 返回普通搜索 |
-| `空格` (已输入文字) | 打开 偏好设置 → 搜索窗口 → "按空格执行选中项" 后: 执行选中项, `Shift+空格` 输入空格 (多个关键词时用) |
-| `→` (光标在末尾) | 打开操作面板; `←` / `Esc` 返回。按住 `→` 移动光标时, 到了末尾也不会打开, 要再按一下 `→` |
-| `F3` | 编辑选中项, 见下文 |
-| `Ctrl+Del` (光标在末尾) | 删除选中项, 见下文 |
-| `Ctrl+C` | 复制选中项 (输入框里选中了文字时照常复制文字) |
-| `Ctrl+L` | 大字显示: 屏幕中央用超大字号显示选中的结果 (电话号码、验证码、计算结果...), 按任意键关掉。要先在 偏好设置 → 功能 里打开 (新安装默认关) |
-| `Ctrl+E` | 编辑选中的文件: 用这类文件登记的编辑程序打开 (例如 .ahk 用编辑器打开, 不运行) |
-| `Ctrl+Backspace` | 删除前一个词 |
-| `F2` / `Ctrl+,` | 偏好设置 |
-| `F4` | 用记事本编辑 ALTRun.json (保存后自动重新载入) |
-| `F1` | 关于 ALTRun: 偏好设置的高级页 (版本、检查更新、项目主页) |
-| `Esc` | 关闭操作面板 / 隐藏窗口 |
-| `Ctrl+Alt+C` (全局) | 剪贴板历史 |
+| `Enter` | Run the selected result (open a file / program / URL, copy a calculation, paste a snippet...) |
+| `Ctrl+Enter` | Files / folders: reveal in the file manager; text: paste into the front window |
+| `Alt+Enter` | Copy the path / URL / text |
+| `Ctrl+1` – `Ctrl+9` | Run the Nth visible row |
+| `↑` `↓` / `Ctrl+P` `Ctrl+N` | Select the previous / next row (`Ctrl+P` `Ctrl+N` work like in terminals and Emacs, so your hands stay on the letter keys) |
+| `PgUp` `PgDn` | Previous / next page (as many rows as the window shows) |
+| `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history (like Alfred); going past the newest restores what you had typed |
+| `Tab` | Autocomplete; on a folder, go into it (the input becomes `path\`) and browse its contents |
+| `Insert` | Mark / unmark the selected file or folder and move to the next row (like Total Commander); marked rows have a bar on the left. Then press `→` to act on all marked items: open all, copy / cut (paste in TC or Explorer), copy paths, copy / move to the current folder in TC, add to custom commands, move to the Recycle Bin |
+| `Space` (empty search box, or cursor at the start) | Switch to file search, keeping what you typed (typed `seismic` first? press `Home`, then `Space`); `Backspace` in an empty box or at the start goes back to a normal search |
+| `Space` (after typing) | With Preferences → Search Window → "Space runs the selected result" turned on: runs the selected result; `Shift+Space` types a space (for several keywords) |
+| `→` (cursor at the end) | Open the action panel; `←` / `Esc` go back. Holding `→` to move the cursor doesn't open it when the cursor reaches the end; press `→` once more |
+| `F3` | Edit the selected result, see below |
+| `Ctrl+Del` (cursor at the end) | Delete the selected result, see below |
+| `Ctrl+C` | Copy the selected result (copies text as usual when text is selected in the input box) |
+| `Ctrl+L` | Large type: shows the selected result in huge text in the middle of the screen (phone numbers, codes, calculation results...); any key closes it. Turn it on in Preferences → Features first (off by default on new installations) |
+| `Ctrl+E` | Edit the selected file in the editor registered for its type (for example, open an .ahk script in an editor instead of running it) |
+| `Ctrl+Backspace` | Delete the previous word |
+| `F2` / `Ctrl+,` | Preferences |
+| `F4` | Edit ALTRun.json in Notepad (reloaded automatically when saved) |
+| `F1` | About ALTRun: the Advanced page of Preferences (version, check for updates, project page) |
+| `Esc` | Close the action panel / hide the window |
+| `Ctrl+Alt+C` (global) | Clipboard history |
 
-鼠标: 单击选择, 双击执行, 滚轮移动选择, 右键弹出操作菜单。
+Mouse: click to select, double-click to run, the wheel moves the selection, right-click opens the action menu.
 
-## 操作面板
-选中一项按 `→` (或鼠标右键) 列出它的全部操作, 可以继续输入文字过滤:
+## Action panel
+Select a result and press `→` (or right-click) to list everything you can do with it; keep typing to filter:
 
-![操作面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/actions.png)
+![Action panel](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/actions.png)
 
-| 结果类型 | 操作 |
+| Result type | Actions |
 |---|---|
-| 程序 / 文件 | 打开、以管理员身份运行 (exe / lnk / bat...)、编辑 (`Ctrl+E`, 这类文件登记了编辑程序时, 右边显示程序名称)、打开方式、在文件管理器中显示、复制路径、复制名称、复制文件 / 剪切文件、复制 / 移动到 TC 当前的文件夹、在此处打开终端、属性、移到回收站 |
-| 文件夹 | 打开、在此处打开终端、在文件管理器中显示、复制路径、复制 / 剪切文件夹、复制 / 移动到 TC 当前的文件夹、属性、移到回收站 |
-| 网址 | 打开、复制网址 |
-| 文字 | 复制、粘贴到前台窗口 |
-| 全部 | 编辑... / 添加到自定义命令... (`F3`)、删除 (`Ctrl+Del`)、大字显示 (`Ctrl+L`, 打开了才有) |
+| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Properties, Move to Recycle Bin |
+| Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC, Properties, Move to Recycle Bin |
+| URL | Open, Copy URL |
+| Text | Copy to Clipboard, Paste to Front Window |
+| All | Edit... / Add to Custom Commands... (`F3`), Delete (`Ctrl+Del`), Show in Large Type (`Ctrl+L`, when turned on) |
 
-文件操作 (和 Listary 一样):
-- **复制文件 / 剪切文件**: 把文件本身放进剪贴板, 到 TC 或资源管理器里 `Ctrl+V` 粘贴 (剪切的粘贴后是移动)。
-- **复制 / 移动到 TC 当前的文件夹**: 目标是最前面的 Total Commander (或资源管理器) 窗口当前打开的文件夹; 文件已经在那个文件夹里时不显示。用的是 Windows 自己的复制, 有进度窗口, 重名时会询问, 可以撤销。
-- **移到回收站**: Windows 会先确认, 可以从回收站还原。
+File actions (like Listary):
+- **Copy File / Cut File**: puts the file itself on the clipboard; press `Ctrl+V` in TC or Explorer to paste it (a cut file is moved when pasted).
+- **Copy / Move to Current Folder in TC**: the target is the folder currently open in the frontmost Total Commander (or Explorer) window; not shown when the file is already in that folder. Uses Windows' own copy, with a progress window, a prompt when names clash, and undo.
+- **Move to Recycle Bin**: Windows asks first, and you can restore it from the Recycle Bin.
 
-## 选中内容的操作
-和 Alfred 的 Universal Actions 一样: 在任何程序里选中文字、文件或网址, 按 `Ctrl+Alt+\` (偏好设置 → 通用 → "选中内容的操作" 可以改), ALTRun 直接打开这些内容的操作面板, 可以继续输入文字过滤:
+## Actions on selected content
+Like Alfred's Universal Actions: select text, files or a URL in any program and press `Ctrl+Alt+\` (change it in Preferences → General → "Selection hotkey"); ALTRun opens the action panel for that content directly, and you can type to filter:
 
-| 选中的是 | 操作 |
+| Selection | Actions |
 |---|---|
-| 文字 | 复制、用每个搜索引擎搜索 (Google、百度、GitHub、翻译...)、存为文字片段、大字显示; 是算式时直接给出结果; **替换为** 大写 / 小写 / 首字母大写 / 排序 / 去掉空行和重复行 / 简繁转换 / URL 编码 (转换后粘贴回原来的程序, 替换选中的文字) |
-| 网址 | 打开、复制 |
-| 一个文件或文件夹 (或者选中的文字就是一个路径) | 打开、以管理员身份运行、在文件管理器中显示、复制路径、在此处打开终端、属性、添加到自定义命令 |
-| 多个文件 | 复制路径、全部添加到自定义命令 |
+| Text | Copy, search with each search engine (Google, Baidu, GitHub, Translate...), Save as Snippet, Show in Large Type; an expression shows its result directly; **Replace with** upper case / lower case / title case / sorted / without blank or duplicate lines / Simplified ↔ Traditional / URL-encoded (converted and pasted back into the original program, replacing the selected text) |
+| URL | Open, Copy |
+| One file or folder (or selected text that is a path) | Open, Run as Administrator, Reveal in File Manager, Copy Path, Open Terminal Here, Properties, Add to Custom Commands |
+| Several files | Copy paths, Add All to Custom Commands |
 
-取选中内容的方法是模拟一次复制 (`Ctrl+C`), 读完马上还原剪贴板, 也不会记进剪贴板历史。命令行 / 终端窗口里 `Ctrl+C` 会中断正在运行的程序, 这些窗口改用 `Ctrl+Insert`。`Esc` 或 `←` 关掉窗口。
+The selection is read by simulating a copy (`Ctrl+C`); the clipboard is restored right after and the copy isn't recorded in the clipboard history. In console / terminal windows `Ctrl+C` would interrupt the running program, so `Ctrl+Insert` is used there. `Esc` or `←` closes the window.
 
-## 在结果里编辑和删除
-| 选中的是 | `F3` | `Ctrl+Del` |
+## Editing and deleting in the results
+| Selected result | `F3` | `Ctrl+Del` |
 |---|---|---|
-| 自定义命令 / 文字片段 / 搜索引擎 | 打开编辑窗口, 保存后回到原来的搜索 | 确认后删除 |
-| 剪贴板历史 | 文字: 保存为文字片段; 文件: 添加到自定义命令 | 从历史中删除 |
-| 应用 | 添加为自定义命令 (可以再加关键字) | 从搜索结果中删除 (不卸载程序), 可在 偏好设置 → 应用搜索 → "已删除的应用" 里恢复 |
-| 内置命令 (系统命令、Windows 工具等) | - | 从搜索结果中删除, 热键里照样能用; 可在 偏好设置 → 功能 → "已删除的命令" 里恢复 |
-| 文件 / 文件夹 / 网址 | 添加为自定义命令 | - |
-| 没有结果 | 用输入的文字新建一条自定义命令 | - |
+| Custom command / snippet / search engine | Opens the edit window and returns to your search after saving | Deleted after confirmation |
+| Clipboard history | Text: save as a snippet; file: add to custom commands | Removed from the history |
+| App | Add as a custom command (with a keyword if you like) | Removed from the search results (not uninstalled); restore it in Preferences → Applications → "Hidden apps" |
+| Built-in command (system commands, Windows tools and so on) | - | Removed from the search results, still works from hotkeys; restore it in Preferences → Features → "Hidden commands" |
+| File / folder / URL | Add as a custom command | - |
+| No results | Create a custom command from the text you typed | - |
 
-## 使用统计
-偏好设置 → 使用统计 (和 Alfred 的 Usage 一样):
-- 今天、最近 7 天、最近 30 天和总共用了多少次, 以及呼出搜索窗口的次数
-- 最近 30 天每天的使用次数 (柱状图)
-- 每个功能 (应用、自定义命令、文件、网页搜索、计算器、剪贴板历史、文字片段、系统命令、终端命令、片段自动展开、对话框快速跳转、一键加日期) 的次数和占比
+## Usage statistics
+Preferences → Usage (like Alfred's Usage):
+- How many times you used ALTRun today, in the last 7 days, the last 30 days and in total, and how often you opened the search window
+- Uses per day for the last 30 days (bar chart)
+- Count and share for each feature (apps, custom commands, files, web search, calculator, clipboard history, snippets, system commands, terminal commands, snippet expansion, Quick Switch, date stamp)
 
-只记录次数, 不记录输入的文字和打开的内容, 保存在 `Data\Usage.json` (保留最近 400 天)。"清除使用统计" 按钮清空重新开始。
+Only counts are kept, never what you typed or opened. They're saved in `Data\Usage.json` (the last 400 days). The "Clear Usage Statistics" button starts over.

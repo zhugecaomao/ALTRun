@@ -1,45 +1,45 @@
-[English](en-Getting-Started) · **中文**
+**English** · [中文](Getting-Started-zh)
 
-# 5 分钟上手
+# Getting started in 5 minutes
 
-## 1. 安装和启动
-从 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases/latest) 下载 `ALTRun_v<版本>.zip`, 解压到任意文件夹 (例如 `D:\Tools\ALTRun`), 运行 `ALTRun.exe`。不需要安装, 也不需要管理员权限; 用 Scoop / winget 安装见 [安装与升级](Installation)。
+## 1. Install and start
+Download `ALTRun_v<version>.zip` from [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder (for example `D:\Tools\ALTRun`) and run `ALTRun.exe`. Nothing to install and no administrator rights needed; for Scoop / winget see [Installation and upgrades](Installation).
 
-第一次运行会弹出搜索窗口, 托盘里出现 ALTRun 的图标。默认开机自动启动 (偏好设置 → 通用 可以关掉)。
+The first run opens the search window and puts the ALTRun icon in the notification area. ALTRun starts with Windows by default (turn it off in Preferences → General).
 
-## 2. 呼出搜索窗口
-按 `Alt+Space` (或者 `Alt+R`)。再按一次、按 `Esc` 或点别处就隐藏。热键在 偏好设置 → 通用 里改; 也可以设成双击 `Ctrl` 呼出。
+## 2. Open the search window
+Press `Alt+Space` (or `Alt+R`). Press it again, press `Esc` or click elsewhere to hide it. Change the hotkey in Preferences → General; double-tapping `Ctrl` works too if you turn it on.
 
-## 3. 打开程序和文件
-- 输入程序名的一部分, 例如 `note` 找记事本; 也可以输单词首字母 (`vsc` → Visual Studio Code) 或拼音首字母 (`wx` → 微信)
-- `Enter` 打开选中的一项, `↑` `↓` 选择, `Ctrl+1` ~ `Ctrl+9` 直接打开第几项
-- 选中后按 `→` (或鼠标右键) 打开操作面板: 以管理员身份运行、在文件管理器中显示、复制路径...
-- 以 `'` 开头只搜文件和文件夹, 例如 `'报告`; 装了 [Everything](https://www.voidtools.com/) 时搜全盘, 否则搜桌面、文档、下载, 见 [文件搜索](File-Search)
+## 3. Open programs and files
+- Type part of a program's name, for example `note` for Notepad; word initials work too (`vsc` → Visual Studio Code), as do pinyin initials for Chinese names (`wx` → 微信)
+- `Enter` opens the selected item, `↑` `↓` select, `Ctrl+1` to `Ctrl+9` open that item directly
+- Press `→` (or right-click) on a result for the action panel: run as administrator, show in the file manager, copy the path...
+- Start with `'` to search only files and folders, for example `'report`; with [Everything](https://www.voidtools.com/) running it searches the whole disk, otherwise Desktop, Documents and Downloads, see [File search](File-Search)
 
-选过的项目会记下来, 下次输入同样的字时排在最前面。
+ALTRun remembers what you pick, so the next time you type the same thing it comes first.
 
-## 4. 试几个常用功能
-| 输入 | 结果 |
+## 4. Try a few everyday features
+| Type | Result |
 |---|---|
-| `12*(3+4)` | 计算, `Enter` 复制结果 ([计算器](Calculator)) |
-| `10 km in mi` | 单位换算 |
-| `g 天气` | 用 Google 搜索 ([网页搜索](Usage#输入语法)) |
-| `clip` 或 `Ctrl+Alt+C` | 剪贴板历史 ([剪贴板历史](Clipboard)) |
-| `lock` | 锁屏等系统命令 ([系统命令](System-Commands#系统命令)) |
-| `>ipconfig` | 在终端里运行命令 |
-| `?` | 速查表: 所有输入语法和快捷键 |
+| `12*(3+4)` | Calculation; `Enter` copies the result ([Calculator](Calculator)) |
+| `10 km in mi` | Unit conversion |
+| `g weather` | Search Google ([web search](Usage#search-syntax)) |
+| `clip` or `Ctrl+Alt+C` | Clipboard history ([clipboard history](Clipboard)) |
+| `lock` | Lock the screen and other system commands ([system commands](System-Commands#system-commands)) |
+| `>ipconfig` | Run a command in the terminal |
+| `?` | Cheat sheet: every search syntax and shortcut |
 
-## 5. 加一个自己的命令
-常用的文件夹、文件、网址加成自定义命令, 以后输入名字或关键字就能打开:
-- 资源管理器里右键 → 发送到 → ALTRun, 改好名称, 按 `Enter`
-- 或者 偏好设置 → 自定义命令 → 添加
+## 5. Add your own command
+Turn folders, files and web addresses you use often into custom commands, then open them by name or keyword:
+- In Explorer, right-click → Send to → ALTRun, adjust the name and press `Enter`
+- Or Preferences → Custom Commands → Add
 
-常用的文字 (签名、地址) 存成文字片段, 在任何程序里输入 `;关键字` 自动替换, 见 [自定义命令与片段](Commands-and-Snippets)。
+Save text you type often (signatures, addresses) as snippets and type `;keyword` in any program to expand it, see [Custom commands and snippets](Commands-and-Snippets).
 
-## 6. 偏好设置
-托盘图标右键 → 偏好设置, 或者在搜索窗口里按 `F2` / `Ctrl+,`。每一页按 `F1` (或点 帮助) 打开那一页的说明。外观里可以选 22 套主题和显示密度, 见 [主题](Themes)。
+## 6. Preferences
+Right-click the notification area icon → Preferences, or press `F2` / `Ctrl+,` in the search window. `F1` (or Help) on any page opens its documentation. Appearance has 22 themes and three densities, see [Themes](Themes).
 
-## 下一步
-- [搜索与快捷键](Usage): 所有输入语法、快捷键、操作面板
-- [常见问题](FAQ): 热键没反应、搜不到、杀毒软件误报
-- [隐私与网络访问](Privacy): ALTRun 什么时候联网、数据存在哪里
+## Next steps
+- [Search and shortcuts](Usage): every search syntax, shortcut and the action panel
+- [FAQ](FAQ): hotkey does nothing, things can't be found, antivirus false positives
+- [Privacy and network access](Privacy): when ALTRun goes online and where your data lives

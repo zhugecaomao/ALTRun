@@ -2598,7 +2598,7 @@ class Tests {
                     return item.Key " " item.Url
             return ""
         }
-        eq("pinyin tip in zh-CN", hasPinyin("zh-CN"), "cs " HelpProvider.WikiUrl "File-Search")
+        eq("pinyin tip in zh-CN", hasPinyin("zh-CN"), "cs " HelpProvider.WikiUrl "File-Search-zh")
         eq("no pinyin tip in zh-TW / en", hasPinyin("zh-TW") hasPinyin("en"), "")
         I18n.Init(savedLang)
         ; 过滤: ? 后面的文字
@@ -2613,10 +2613,10 @@ class Tests {
                 folderItem := item
         eq("configured keyword", folderItem.Key, AppSettings.Feature("FileSearch")["FolderKeywords"][1] " bk")
         eq("wiki page", folderItem.Url, HelpProvider.WikiPage("File-Search"))
-        eq("wiki page in English", HelpProvider.WikiPage("File-Search", "en"), "https://github.com/zhugecaomao/ALTRun/wiki/en-File-Search")
-        eq("wiki page in Japanese UI", HelpProvider.WikiPage("Usage", "ja"), "https://github.com/zhugecaomao/ALTRun/wiki/en-Usage")
-        eq("wiki page in Chinese", HelpProvider.WikiPage("File-Search", "zh-CN"), "https://github.com/zhugecaomao/ALTRun/wiki/File-Search")
-        eq("wiki page in Traditional Chinese", HelpProvider.WikiPage("Usage", "zh-TW"), "https://github.com/zhugecaomao/ALTRun/wiki/Usage")
+        eq("wiki page in English", HelpProvider.WikiPage("File-Search", "en"), "https://github.com/zhugecaomao/ALTRun/wiki/File-Search")
+        eq("wiki page in Japanese UI", HelpProvider.WikiPage("Usage", "ja"), "https://github.com/zhugecaomao/ALTRun/wiki/Usage")
+        eq("wiki page in Chinese", HelpProvider.WikiPage("File-Search", "zh-CN"), "https://github.com/zhugecaomao/ALTRun/wiki/File-Search-zh")
+        eq("wiki page in Traditional Chinese", HelpProvider.WikiPage("Usage", "zh-TW"), "https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh")
         ; 关掉的功能不显示
         clip := AppSettings.Feature("Clipboard"), savedClip := clip["Enabled"]
         clip["Enabled"] := 0
@@ -2925,18 +2925,24 @@ class Tests {
         TestRunner.Equal("I18nUnused", unused, "")
     }
 
-    ; Wiki 中英两套页面 (Usage / en-Usage): 每页都有英文页, 页面里的 Wiki 链接都指向存在的页面,
-    ; 程序里打开的帮助页 (速查表、偏好设置的 F1) 两种语言都有
+    ; Wiki 中英两套页面 (英文 Usage / 中文 Usage-zh): 每页都有中文页, 页面里的 Wiki 链接都指向存在的页面,
+    ; 程序里打开的帮助页 (速查表、偏好设置的 F1) 两种语言都有; 不再有旧的 en- 页面 (过渡页由 wiki.yml 发布时生成)
     static WikiPages() {
         dir := A_ScriptDir "\..\docs\wiki\"
         pages := Map()
         Loop Files, dir "*.md"
             pages[SubStr(A_LoopFileName, 1, -3)] := true
-        missing := ""
-        for page in pages
-            if (SubStr(page, 1, 1) != "_" && SubStr(page, 1, 3) != "en-" && page != "Home" && !pages.Has("en-" page))
+        missing := "", old := ""
+        for page in pages {
+            if (SubStr(page, 1, 3) = "en-")
+                old .= page " "
+            else if (SubStr(page, 1, 1) != "_" && !RegExMatch(page, "-zh$") && !pages.Has(page "-zh"))
                 missing .= page " "
-        TestRunner.Equal("WikiPages.english page for every page", missing, "")
+            else if (RegExMatch(page, "^(.+)-zh$", &zh) && !pages.Has(zh[1]))
+                missing .= page " "
+        }
+        TestRunner.Equal("WikiPages.chinese page for every page", missing, "")
+        TestRunner.Equal("WikiPages.no old en- pages", old, "")
         broken := ""
         for page in pages {
             text := FileRead(dir page ".md", "UTF-8"), pos := 1
@@ -2954,7 +2960,7 @@ class Tests {
             used[PreferencesWindow.WikiPage(pageKey)] := true
         missing := ""
         for page in used
-            if !pages.Has(page) || !pages.Has("en-" page)
+            if !pages.Has(page) || !pages.Has(page "-zh")
                 missing .= page " "
         TestRunner.Equal("WikiPages.help pages exist in both languages", missing, "")
     }

@@ -18,9 +18,9 @@ class HelpProvider {
     static Init() {
     }
 
-    ; Wiki 页面的网址: 中文界面打开中文页 (Usage), 其他语言打开英文页 (en-Usage)
+    ; Wiki 页面的网址: 中文界面打开中文页 (Usage-zh), 其他语言打开英文页 (Usage)
     static WikiPage(page, lang := I18n.Lang) {
-        return HelpProvider.WikiUrl (SubStr(lang, 1, 2) = "zh" ? "" : "en-") page
+        return HelpProvider.WikiUrl page (SubStr(lang, 1, 2) = "zh" ? "-zh" : "")
     }
 
     static Entries() {

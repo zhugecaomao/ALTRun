@@ -1,116 +1,116 @@
-[English](en-Commands-and-Snippets) · **中文**
+**English** · [中文](Commands-and-Snippets-zh)
 
-# 自定义命令与片段
+# Custom commands and snippets
 
-## 自定义命令
-把常用的文件、文件夹、程序或网址加进 ALTRun, 用名字或关键字打开。
+## Custom commands
+Add the files, folders, programs or web addresses you use often to ALTRun and open them by name or keyword.
 
-![偏好设置里的自定义命令](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-commands.png)
+![Custom commands in Preferences](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-commands.png)
 
-### 添加
-- 搜索结果里选中应用 / 文件 / 文件夹 / 网址, 按 `F3` (或 `→` → "添加到自定义命令...")
-- 没有搜到结果时按 `F3`, 用输入的文字新建一条
-- 资源管理器里右键 → 发送到 → ALTRun: 选中 **1 个** 文件 / 文件夹时弹出编辑对话框, 名称、类型、目标已经填好, 改好名称或加上关键字后按 `Enter`; 取消则不添加。选中 **多个** 时全部直接添加 (不会一个个弹对话框), 已经有的命令不重复添加。发送一个已经有的文件 / 文件夹时, 打开已有的那条命令修改。偏好设置开着时, 新命令加进 偏好设置 → 自定义命令 的列表, 按 确定 / 应用 保存
-- 偏好设置 → 自定义命令 → 添加
+### Adding commands
+- In the search results, select an app / file / folder / URL and press `F3` (or `→` → "Add to Custom Commands...")
+- When nothing is found, press `F3` to create one from the text you typed
+- In Explorer, right-click → Send to → ALTRun. With **one** file / folder selected, the edit dialog opens with the name, type and target already filled in; adjust the name or add a keyword and press `Enter` (Cancel adds nothing). With **several** selected, they're all added at once (no dialog for each one), and commands that already exist aren't added twice. Sending a file / folder that already has a command opens that command for editing. If Preferences is open, the new commands are added to the list in Preferences → Custom Commands and saved when you press OK / Apply
+- Preferences → Custom Commands → Add...
 
-已有的命令: 搜索到后按 `F3` 修改, `Ctrl+Del` 删除; 或在偏好设置里双击编辑。命令多的时候, 在列表右下角的 **筛选** 框里输入名称、路径或关键字里的词, 只显示匹配的命令 (文字片段、网页搜索、自定义热键的列表也有)。
+Existing commands: find one and press `F3` to edit it or `Ctrl+Del` to delete it, or double-click it in Preferences. With many commands, type a word from the name, path or keyword into the **Filter** box at the bottom right of the list to show only matching commands (the snippet, web search and custom hotkey lists have one too).
 
-### 检查路径
-文件夹改名、文件移走后, 指向它的命令就失效了。偏好设置 → 自定义命令 → **检查路径** 会检查每条命令的目标是否还在, 结果显示在 "状态" 列, 并选中第一条有问题的命令, 双击即可修改路径:
+### Checking paths
+When a folder is renamed or a file is moved, the commands pointing to it stop working. Preferences → Custom Commands → **Check Paths** checks whether every command's target still exists, shows the result in the "Status" column and selects the first command with a problem; double-click it to fix the path:
 
-| 状态 | 含义 |
+| Status | Meaning |
 |---|---|
-| 正常 | 目标存在 |
-| 找不到 | 文件或文件夹不在了 (改名、移动或删除), 需要修改路径或删除命令 |
-| 无法访问 | 所在的驱动器或网络位置现在连不上 (例如网络盘没有连接), 无法判断, 连上后再检查 |
-| - | 网址和 `shell:` 等位置不检查 |
+| OK | The target exists |
+| Not found | The file or folder is gone (renamed, moved or deleted); fix the path or delete the command |
+| Offline | The drive or network location can't be reached right now (for example a network drive isn't connected), so it can't be checked; check again once it's connected |
+| - | URLs and locations such as `shell:` aren't checked |
 
-`Command` 类型只写程序名 (例如 `cmd.exe`) 时, 在 PATH 和系统登记的程序 (App Paths) 里查找。检查结果只显示在偏好设置里, 不会修改或删除任何命令。
+For the `Command` type with only a program name (for example `cmd.exe`), the program is looked up in PATH and the programs registered with Windows (App Paths). The results only appear in Preferences; no command is changed or deleted.
 
-### 字段
-编辑对话框里每个字段下面都有一行灰色的说明。
+### Fields
+Each field in the edit dialog has a line of gray help text below it.
 
-| 字段 | 说明 |
+| Field | Description |
 |---|---|
-| 名称 (Title) | 显示的名称, 按它搜索 |
-| 类型 (Type) | `File` 文件 / 程序, `Folder` 文件夹, `Command` 程序 + 参数, `Url` 网址 / 链接 (网页, 或 `ms-settings:windowsupdate`、`mailto:` 这样的链接) |
-| 目标 (Target) | 路径、程序或网址 |
-| 参数 (Arguments) | 运行程序时附带的命令行参数, 例如 `/k ipconfig /all` |
-| 关键字 (Keyword) | 可选。输入完全相同的关键字时排在最前面。可以写几个, 用逗号分隔, 例如 `np, ㅜㅔ` (经常切换键盘布局 / 输入法时, 输入哪个都行) |
+| Title | The name shown in results and used for searching |
+| Type | `File` file / program, `Folder` folder, `Command` program + arguments, `Url` web address / link (a web page, or a link such as `ms-settings:windowsupdate` or `mailto:`) |
+| Target | Path, program or web address |
+| Arguments | Command-line arguments passed to the program, for example `/k ipconfig /all` |
+| Keyword | Optional. Typing exactly this keyword puts the command first. Several keywords: separate with commas, for example `np, ㅜㅔ` (handy when you switch keyboard layouts: any of them works) |
 
-搜索时除了名称和关键字, `File` / `Folder` 类型还会匹配目标的文件名 (不含扩展名) 或文件夹名: Target 是 `Q:\Projects\PT1931 - 24 NIR`, 名称是 `CKR, EA, JIB`, 输入 `nir` 或 `1931` 也能找到。同样的匹配程度, 名称匹配排在前面。
+Besides the title and keyword, `File` / `Folder` commands also match the target's file name (without the extension) or folder name: with the Target `Q:\Projects\PT1931 - 24 NIR` and the title `CKR, EA, JIB`, typing `nir` or `1931` finds it too. At the same match quality, a title match ranks first.
 
-文件夹用 偏好设置 → 通用 → 文件管理器 打开 (默认资源管理器, 也可以设为 Total Commander 等)。
+Folders open in Preferences → General → File manager (Explorer by default; Total Commander and others work too).
 
-### 带参数的命令 ({query})
-目标或参数里写 `{query}`, 再设一个关键字, 输入 "关键字 文字" 时 `{query}` 换成后面的文字 (网址里自动编码), 和网页搜索的关键字一样用:
+### Commands with an argument ({query})
+Put `{query}` in the target or arguments and give the command a keyword; typing "keyword text" replaces `{query}` with the text (URL-encoded in web addresses). It works just like a web search keyword:
 
-| 名称 | 类型 | 目标 | 参数 | 关键字 | 输入 |
+| Title | Type | Target | Arguments | Keyword | Type this |
 |---|---|---|---|---|---|
-| Jira | 网址 | `https://jira.example.com/browse/{query}` | | `jira` | `jira ABC-123` |
-| Ping | 命令行 | `cmd.exe` | `/k ping {query}` | `ping` | `ping 10.0.0.1` |
-| 项目文件夹 | 文件夹 | `D:\Projects\{query}` | | `pj` | `pj 2026-05` |
-| Google Maps | 网址 | `https://www.google.com/maps/search/{query}` | | `maps` | `maps Changi Airport` |
+| Jira | Link | `https://jira.example.com/browse/{query}` | | `jira` | `jira ABC-123` |
+| Ping | Command line | `cmd.exe` | `/k ping {query}` | `ping` | `ping 10.0.0.1` |
+| Project folder | Folder | `D:\Projects\{query}` | | `pj` | `pj 2026-05` |
+| Google Maps | Link | `https://www.google.com/maps/search/{query}` | | `maps` | `maps Changi Airport` |
 
-新安装时默认命令里已经有 Ping、Google Maps 和 Documents subfolder (`docs 文件夹名` 打开 "文档" 里的子文件夹) 三个例子。只输入名称搜到这条命令时, 下面一行会说明接着输入什么 (例如 "在 'ping ' 后面输入内容, 再按 Enter"), 按 `Enter` 补全成 "关键字 ", 接着输入参数。没有关键字时 `{query}` 换成空。"检查路径" 不检查带 `{query}` 的路径。
+A new installation already has three examples among the default commands: Ping, Google Maps and Documents subfolder (`docs folder-name` opens a subfolder of Documents). When you find such a command by its name, the line below it says what to type (for example "Type after 'ping ', then press Enter"), and `Enter` completes it to "keyword " so you can type the argument. Without a keyword, `{query}` is replaced by nothing. "Check Paths" skips paths containing `{query}`.
 
-### 路径里可以用的变量
-| 写法 | 含义 |
+### Variables in paths
+| Write | Meaning |
 |---|---|
-| `A_Desktop` `A_DesktopCommon` | 桌面 / 公共桌面 |
-| `A_MyDocuments` | 文档 |
+| `A_Desktop` `A_DesktopCommon` | Desktop / public desktop |
+| `A_MyDocuments` | Documents |
 | `A_AppData` | `%AppData%` |
-| `A_Programs` `A_ProgramsCommon` | 开始菜单 "程序" (当前用户 / 所有用户) |
-| `A_StartMenu` `A_StartMenuCommon` | 开始菜单 |
-| `A_Startup` `A_StartupCommon` | 启动文件夹 |
-| `A_ProgramFiles` `A_WinDir` `A_Temp` | Program Files / Windows / 临时文件夹 |
-| `A_ScriptDir` | ALTRun 所在的文件夹 |
-| `%Temp%` `%AppData%` `%UserProfile%` `%OneDrive%` | 环境变量 |
+| `A_Programs` `A_ProgramsCommon` | Start menu "Programs" (current user / all users) |
+| `A_StartMenu` `A_StartMenuCommon` | Start menu |
+| `A_Startup` `A_StartupCommon` | Startup folder |
+| `A_ProgramFiles` `A_WinDir` `A_Temp` | Program Files / Windows / temporary folder |
+| `A_ScriptDir` | The folder ALTRun is in |
+| `%Temp%` `%AppData%` `%UserProfile%` `%OneDrive%` | Environment variables |
 
-`A_` 变量要写在开头, 例如 `A_Desktop\Projects`。只写程序名 (例如 `notepad`) 时会在 PATH 里查找。
+`A_` variables must come first, for example `A_Desktop\Projects`. A bare program name (for example `notepad`) is looked up in PATH.
 
-## 文字片段
-常用的文字 (签名、地址、模板...) 存成片段, 搜索名称、关键字或正文里的词, `Enter` 粘贴到呼出 ALTRun 之前的窗口。输入 `snip` 列出全部片段, `snip xxx` 只在片段里搜索。
+## Snippets
+Save text you use often (signatures, addresses, templates...) as snippets. Search by name, keyword or a word in the text, and `Enter` pastes it into the window you were in before opening ALTRun. Type `snip` to list all snippets, `snip xxx` to search snippets only.
 
-![偏好设置 → 文字片段](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-snippets.png)
+![Preferences → Snippets](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-snippets.png)
 
-| 字段 | 说明 |
+| Field | Description |
 |---|---|
-| 名称 (Name) | 必填, 显示在搜索结果里, 也用来搜索。写成容易想到的几个词, 例如 `PT quotation` |
-| 关键字 (Keyword) | 可选, 短一点, 例如 `pq`。搜索时输入完全相同的关键字排在最前面; 自动展开时输入 `;pq`。可以写几个, 用逗号分隔 (例如 `sig, signature`), 每个都能搜索和自动展开。前缀加关键字最多 40 个字符 (默认前缀 `;` 时关键字最多 39 个), 不能有空格, 太长时保存前会提示 |
-| 正文 (Text) | 必填, 粘贴的内容, 可以多行, 可以用下面的占位符。正文里的词也能搜到 (至少输入 3 个字符, 不想搜正文时在偏好设置里关掉) |
-| 自动展开 (AutoExpand) | 在任何程序里输入 `;关键字` 时直接替换成正文 |
+| Name | Required. Shown in search results and used for searching. Use words you would type to find it, for example `PT quotation` |
+| Keyword | Optional and short, for example `pq`. An exact match ranks first; to auto-expand, type `;pq`. The prefix plus the keyword can be at most 40 characters (39 for the keyword with the default prefix `;`), without spaces; you're told before saving if it's too long. Several keywords: separate with commas (for example `sig, signature`); each one searches and expands |
+| Text | Required. What gets pasted; can be several lines and use the placeholders below. Words in the text are searchable too (type at least 3 characters; turn it off in Preferences if you don't want this) |
+| AutoExpand | Type `;keyword` in any program and it's replaced by the text right away |
 
-### 占位符
-粘贴时替换:
+### Placeholders
+Replaced when pasting:
 
-| 占位符 | 替换为 |
+| Placeholder | Replaced by |
 |---|---|
-| `{date}` | 今天的日期, 格式同 [一键加日期](Date-Stamp) 的 DateFormat (默认 `dd.MM.yyyy`) |
-| `{time}` | 当前时间 `HH:mm` |
-| `{datetime}` | 日期 + 时间 |
-| `{clipboard}` | 剪贴板里的文字 |
-| `{date:yyyy-MM-dd}` `{time:HH:mm:ss}` | 自己指定格式 ([FormatTime](https://www.autohotkey.com/docs/v2/lib/FormatTime.htm) 的写法, 例如 `dddd` 星期几) |
-| `{date+7}` `{date-1:dd.MM}` | 往后 / 往前几天的日期, 也可以带格式 |
-| `{clipboard:1}` `{clipboard:2}` | 剪贴板历史里往前第 1、2 条文字 (和 Alfred 一样; `{clipboard}` 是现在的剪贴板; 跳过文件和图片) |
-| `{uuid}` | 随机生成的 UUID, 每个都不一样 |
-| `{cursor}` | 粘贴后光标停在这里 |
+| `{date}` | Today's date, in the DateFormat of the [date stamp](Date-Stamp) (default `dd.MM.yyyy`) |
+| `{time}` | The current time `HH:mm` |
+| `{datetime}` | Date + time |
+| `{clipboard}` | The text on the clipboard |
+| `{date:yyyy-MM-dd}` `{time:HH:mm:ss}` | Your own format (as in [FormatTime](https://www.autohotkey.com/docs/v2/lib/FormatTime.htm), for example `dddd` for the day of the week) |
+| `{date+7}` `{date-1:dd.MM}` | A date some days later / earlier, optionally with a format |
+| `{clipboard:1}` `{clipboard:2}` | The 1st, 2nd previous text in the clipboard history (like Alfred; `{clipboard}` is the current clipboard; files and images are skipped) |
+| `{uuid}` | A randomly generated UUID, different each time |
+| `{cursor}` | The cursor ends up here after pasting |
 
-### 自动展开
-在任何程序里输入 `;关键字` (例如 `;sig`), 输入的文字自动删掉并换成片段正文, 和 Alfred 的 Snippet 一样。前缀 `;` 是为了避免平时打字误触发, 可以在 `Features.Snippets.ExpandPrefix` 修改。单个片段不想自动展开时, 在编辑窗口里取消 "自动展开" (`"AutoExpand": 0`), 仍然可以搜索。在 ALTRun 自己的搜索窗口、Windows 的密码输入框, 以及 偏好设置 → 片段 → "不展开的窗口" 里的程序 (默认是远程桌面、KeePass、KeePassXC; `Features.Snippets.ExpandExclude`) 里不会展开。
+### Snippet expansion
+Type `;keyword` (for example `;sig`) in any program and what you typed is deleted and replaced by the snippet text, like Alfred's snippets. The `;` prefix keeps normal typing from triggering it by accident; change it in `Features.Snippets.ExpandPrefix`. To stop a single snippet from expanding, untick "Expand automatically when typed" in its edit window (`"AutoExpand": 0`); it can still be searched. Snippets don't expand in ALTRun's own search window, in Windows password boxes, or in the programs listed in Preferences → Snippets → "Don't expand in" (Remote Desktop, KeePass and KeePassXC by default; `Features.Snippets.ExpandExclude`).
 
-### 粘贴方式
+### Paste mode
 `Features.Snippets.PasteMode`:
-- `Auto` (默认): 100 个字符以内的单行文字直接输入 (马上出来, 不动剪贴板); 多行、带 Tab、更长或有 emoji 的用剪贴板
-- `Clipboard`: 临时借用剪贴板 + `Ctrl+V`, 之后还原剪贴板 (2026.10.14 以前的默认值, 升级时改成 `Auto`)
-- `Type`: 逐字输入, 适合不接受粘贴的程序
+- `Auto` (default): types single-line text of up to 100 characters (instant, leaves the clipboard alone); text with several lines, tabs, more characters or emoji goes through the clipboard
+- `Clipboard`: borrows the clipboard + `Ctrl+V`, then restores the clipboard (the default before 2026.10.14; changed to `Auto` on upgrade)
+- `Type`: types the text character by character, for programs that don't accept pasting
 
-### 批量导入 / 导出
-偏好设置 → 文字片段 → "导入/导出":
-- **从表格导入**: 把 Excel 里选中复制的单元格粘贴进来, 或者点 "打开文件" 读取 CSV / TSV 文件 (UTF-8, 或者系统默认编码, 例如中文 Excel 保存的 GBK)。列的顺序: 名称 | 关键字 | 正文 | 自动展开 (可选, `1` / `0`, 空白 = 打开)。第一行是表头时自动跳过; 正文是空的行跳过; 没有名称时用关键字或正文的第一行
-- 关键字和已有的片段相同 (不分大小写; 没有关键字时名称相同) 的会更新, 其它的加在后面。关键字太长或有空格 (不能自动展开) 时, 这一条的自动展开会关掉
-- 导入后要在偏好设置里点 "确定" 或 "应用" 才保存; 点 "取消" 就不导入
-- **导出为 CSV**: 包括表头, UTF-8 带 BOM, 可以直接用 Excel 打开修改后再导入
+### Importing and exporting
+Preferences → Snippets → "Import/Export":
+- **Import from a table**: paste cells copied from Excel, or click "Open File" to read a CSV / TSV file (UTF-8, or the system's default encoding). Columns: Name | Keyword | Text | Expand automatically (optional, `1` / `0`, blank = on). A header row is skipped, rows without text are skipped, and a missing name is taken from the keyword or the first line of the text
+- A row whose keyword matches an existing snippet (ignoring case; or whose name matches, when there's no keyword) updates it; other rows are added. If a keyword is too long or has spaces (so it can't expand), auto-expansion is turned off for it
+- Imported snippets are saved when you click OK or Apply in Preferences; Cancel discards them
+- **Export to CSV**: with a header row, UTF-8 with BOM, so Excel opens it directly; edit it there and import it again
 
-## 剪贴板历史
-见 [剪贴板历史](Clipboard)。
+## Clipboard history
+See [Clipboard history](Clipboard).

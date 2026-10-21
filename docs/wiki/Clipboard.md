@@ -1,27 +1,27 @@
-[English](en-Clipboard) · **中文**
+**English** · [中文](Clipboard-zh)
 
-# 剪贴板历史
+# Clipboard history
 
-按 `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字、文件和图片, `clip 关键词` 过滤, `Enter` 粘贴到前台窗口, `Ctrl+Del` 从历史中删除。
+Press `Ctrl+Alt+C` or type `clip` to list the text, files and images you copied; `clip keywords` filters, `Enter` pastes into the front window, and `Ctrl+Del` removes an item from the history.
 
-![剪贴板历史](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/clipboard.png)
+![Clipboard history](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/clipboard.png)
 
-| 复制的是 | 显示 | `Enter` | `F3` / `→` |
+| What was copied | Shown as | `Enter` | `F3` / `→` |
 |---|---|---|---|
-| 文字 | 文字的开头 | 粘贴文字 | 保存为片段 / 复制、粘贴、大字显示 |
-| 文件 | 文件名 (多个文件用逗号隔开) | 粘贴文件 (在资源管理器里就是复制过去) | 添加到自定义命令 / 一个文件时有打开、在文件管理器中显示、复制路径等操作 |
-| 图片 (截图、网页上的图片...) | "图片 1920 × 1080" 和缩略图 | 粘贴图片 | - / 用看图程序打开、在文件管理器中显示 |
+| Text | The beginning of the text | Pastes the text | Save as a snippet / copy, paste, large type |
+| Files | The file names (separated by commas) | Pastes the files (in Explorer that copies them there) | Add to custom commands / for one file: open, reveal in the file manager, copy path and more |
+| Image (screenshot, picture from a web page...) | "Image 1920 × 1080" with a thumbnail | Pastes the image | - / open in the image viewer, reveal in the file manager |
 
-- 图片存成 PNG 放在 `Clipboard\` 文件夹 (默认在本机的 `%LOCALAPPDATA%\ALTRun\Clipboard`, Data 在同步盘里时不用每次上传), 默认最多 50 张 (`MaxImages`), 只在 "退出后保留历史" 打开时记录; 不想记录图片可以在 偏好设置 → 剪贴板历史 关掉 "也记录图片"
-- 输入 `clip 图片` 或 `clip image` 只看图片
-- **搜索这段文字**: 选中一条文字按 `→`, 可以用 [网页搜索](Web-Search) 里的每个网站搜索它
-- **置顶**: 选中一条按 `→`, 选 "置顶"。置顶的条目一直排在最前面 (图标右下角有一个图钉), 超过条数时不会被挤掉, "清空剪贴板历史" 时也保留; 常用的地址、账号等可以放在这里
-- **粘贴为纯文本**: 系统命令 "粘贴为纯文本" 把剪贴板里的内容去掉格式 (字体、颜色、表格...) 粘贴, 剪贴板随后还原。在 [自定义热键](Hotkeys) 里设成 `Ctrl+Shift+V` 最方便
-- **连续复制合并** (默认关闭, 偏好设置 → 剪贴板历史 → "快速按两次 Ctrl+C: 接到上一条后面"): 先复制一段, 再选中下一段快速按两次 `Ctrl+C`, 两段合成一条 (中间换行), 剪贴板里也是合并后的文字, 可以直接粘贴。和 Alfred 的 Merging 一样, 适合从几个地方摘抄。注意: DeepL 等翻译软件也用 "按两次 Ctrl+C" 呼出, 打开后两边会同时响应
+- Images are saved as PNG files in the `Clipboard\` folder (by default on this PC in `%LOCALAPPDATA%\ALTRun\Clipboard`, so they aren't uploaded every time when `Data\` is in a synced folder), at most 50 by default (`MaxImages`), and only recorded while "Keep history after ALTRun quits" is on; to stop recording images, turn off "Also record images" in Preferences → Clipboard
+- Type `clip image` to see only images
+- **Search the text**: select a text item and press `→` to search it on each site from [Web Search](Web-Search)
+- **Pin**: select an item, press `→` and choose "Pin". Pinned items always stay at the top (with a pin at the bottom right of the icon), are never pushed out when the history is full, and are kept by "Clear Clipboard History"; good for addresses, account names and the like
+- **Paste as plain text**: the system command "Paste as Plain Text" pastes the clipboard content without formatting (fonts, colors, tables...) and restores the clipboard afterwards. It's handiest as `Ctrl+Shift+V` in [custom hotkeys](Hotkeys)
+- **Merge copies** (off by default, Preferences → Clipboard → "Press Ctrl+C twice to append to the previous item"): copy one piece, then select the next and press `Ctrl+C` twice quickly; both become one item (separated by a line break) and the clipboard holds the merged text, ready to paste. Like Alfred's Merging, handy for collecting bits from several places. Note: translators such as DeepL also use "press Ctrl+C twice", so with this on both react
 
-隐私:
-- 密码管理器 (KeePass、1Password、Bitwarden...) 复制的内容不会记录; 带 "不要加入剪贴板历史" 标记的内容也不会记录
-- 复制后约 0.15 秒才去读剪贴板, 读完马上关掉 (图片在关掉之后再存成 PNG): 截图工具等写完剪贴板马上又要用它的程序不会被挡住
-- `Features.Clipboard.IgnoreApps` 可以加上其它不想记录的程序
-- `Persist = 0` 时只保存在内存里, 退出即清空 (也不记录图片); 否则保存在 `Data\ClipboardHistory.json` (很长的条目和图片单独存在 `%LOCALAPPDATA%\ALTRun\Clipboard\`; `LocalFiles = 0` 时放在 `Data\Clipboard\`; 偏好设置 → 剪贴板 → "保存位置" 选 "全部只存本机" 时历史也只存本机)
-- 偏好设置 → 剪贴板历史 里可以清空历史
+Privacy:
+- Content copied from password managers (KeePass, 1Password, Bitwarden...) is never recorded, nor is content marked "don't add to clipboard history"
+- The clipboard is read about 0.15 s after a copy and closed right away (images are saved as PNG after it is closed), so screen capture tools and other programs that use the clipboard again right after writing it are not blocked
+- Add other programs you don't want recorded to `Features.Clipboard.IgnoreApps`
+- With `Persist = 0` the history is kept in memory only and is gone when ALTRun quits (no images either); otherwise it's saved in `Data\ClipboardHistory.json` (very long items and images are stored separately in `%LOCALAPPDATA%\ALTRun\Clipboard\`; in `Data\Clipboard\` with `LocalFiles = 0`; with Preferences → Clipboard → "Save in" set to "Everything on this PC only", the history stays on this PC too)
+- Preferences → Clipboard can clear the history
