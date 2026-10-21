@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.4]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 搜索窗口 → "Tab 键" (`General.TabKey`): 默认仍是自动补全; 选 "切换到下一个结果" 后, `Tab` / `Shift+Tab` 选下一个 / 上一个结果 (最后一个之后回到第一个, 和 uTools 一样), `Ctrl+Tab` 自动补全。使用提示和 `?` 速查表跟着设置显示。#238 的建议
+
 ## [2026.10.20.3]
 
 测试版。
@@ -844,7 +853,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.4...HEAD
+[2026.10.20.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.3...2026.10.20.4
 [2026.10.20.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.2...2026.10.20.3
 [2026.10.20.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.1...2026.10.20.2
 [2026.10.20.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20...2026.10.20.1

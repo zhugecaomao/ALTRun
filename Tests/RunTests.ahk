@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -3707,6 +3707,60 @@ class Tests {
             options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
+            g.Destroy()
+        }
+    }
+
+    ; Tab: completes by default; with TabKey = "Next" it moves to the next result (wrapping), Shift+Tab to the previous
+    static TabKey() {
+        eq := (n, a, e) => TestRunner.Equal("TabKey." n, a, e)
+        eq("default complete", AppSettings.Defaults()["General"]["TabKey"], "Complete")
+        saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Results, Selected: SearchWindow.Selected
+            , Offset: SearchWindow.Offset, Mode: SearchWindow.Mode, TabKey: AppSettings.General["TabKey"]}
+        savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch"), savedRepaint := SearchWindow.GetOwnPropDesc("_Repaint")
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0}), SearchWindow.DefineProp("_Repaint", {Call: (*) => 0})
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        hwnd := SearchWindow.Input.Hwnd
+        tab := () => SearchWindow._OnKeyDown(0x09, 0, 0x100, hwnd)
+        try {
+            SearchWindow.Mode := "results", SearchWindow.Offset := 0
+            SearchWindow.Results := [ResultItem("Notepad"), ResultItem("Notes"), ResultItem("Notion")], SearchWindow.Selected := 1
+            SearchWindow.Input.Value := "no"
+            AppSettings.General["TabKey"] := "Complete"
+            eq("complete: handled", tab(), 0)
+            eq("complete: fills in the name", SearchWindow.Input.Value "|" SearchWindow.Selected, "Notepad|1")
+            AppSettings.General["TabKey"] := "Next", SearchWindow.Input.Value := "no"
+            tab()
+            eq("next: second result", SearchWindow.Selected "|" SearchWindow.Input.Value, "2|no")
+            tab()
+            eq("next: third result", SearchWindow.Selected, 3)
+            tab()
+            eq("next: wraps to the first", SearchWindow.Selected, 1)
+            SearchWindow.MoveSelection(-1, true)                            ; what Shift+Tab does
+            eq("previous: wraps to the last", SearchWindow.Selected, 3)
+            SearchWindow.MoveSelection(1)
+            eq("down arrow still stops at the last", SearchWindow.Selected, 3)
+            SearchWindow.Results := []
+            eq("next: no results", tab() "|" SearchWindow.Selected, "0|3")
+            ; The cheat sheet / tip for Tab follows the setting
+            savedLang := I18n.Lang
+            I18n.Init("en")
+            keyOf(id) {
+                for item in HelpProvider.Items()
+                    if (item.Id = id)
+                        return item.Key "|" item.Text
+                return ""
+            }
+            eq("tip in next mode", keyOf("Tab"), "Tab / Shift+Tab|next / previous result; Ctrl+Tab completes the name")
+            AppSettings.General["TabKey"] := "Complete"
+            eq("tip in complete mode", keyOf("Tab"), "Tab|" I18n.T("Help.Tab.Text"))
+            I18n.Init(savedLang)
+        } finally {
+            AppSettings.General["TabKey"] := saved.TabKey
+            SearchWindow.DefineProp("_RunSearch", savedSearch), SearchWindow.DefineProp("_Repaint", savedRepaint)
+            SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results
+            SearchWindow.Selected := saved.Selected, SearchWindow.Offset := saved.Offset, SearchWindow.Mode := saved.Mode
             g.Destroy()
         }
     }

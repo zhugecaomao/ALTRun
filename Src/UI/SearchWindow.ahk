@@ -13,7 +13,8 @@
 ;   PgUp PgDn                        上翻 / 下翻一页 (VisibleRows 行)
 ;   Ctrl+↑ / Ctrl+↓                  上一条 / 下一条搜索记录; 翻回最新之后恢复原来输入的文字
 ;   Ctrl+1 ~ Ctrl+9                  直接执行可见的第 N 行
-;   Tab                              自动补全; 文件夹: 进入文件夹浏览 (输入框变成 "路径\")
+;   Tab                              complete the name; on a folder, browse into it (the box becomes "path\")
+;                                    with TabKey = "Next": Tab / Shift+Tab = next / previous result (wraps), Ctrl+Tab completes
 ;   Insert                           标记 / 取消标记文件和文件夹 (可以标记多个), → 对所有标记的一起操作
 ;   →  (光标在末尾时)                打开操作面板; ← / Esc 返回
 ;   空格 (搜索框为空时)              进入文件搜索模式 (只搜文件, 提示 "搜索文件..."); Backspace 返回
@@ -1058,11 +1059,15 @@ class SearchWindow {
         return SearchWindow.Results[SearchWindow.Selected]
     }
 
-    static MoveSelection(step) {
+    ; wrap: past the last result go back to the first (and the other way round), used by Tab cycling
+    static MoveSelection(step, wrap := false) {
         count := SearchWindow.Results.Length
         if !count
             return
-        SearchWindow.Selected := Max(1, Min(count, SearchWindow.Selected + step))
+        if (wrap && (SearchWindow.Selected + step > count || SearchWindow.Selected + step < 1))
+            SearchWindow.Selected := (step > 0) ? 1 : count
+        else
+            SearchWindow.Selected := Max(1, Min(count, SearchWindow.Selected + step))
         visible := SearchWindow.VisibleRows
         if (SearchWindow.Selected <= SearchWindow.Offset)
             SearchWindow.Offset := SearchWindow.Selected - 1
@@ -1391,8 +1396,11 @@ class SearchWindow {
                     return 0
                 }
                 return
-            case 0x09:                                                      ; Tab
-                SearchWindow._AutoComplete()
+            case 0x09:                                                      ; Tab: complete, or (TabKey = "Next") next / previous result; Ctrl+Tab always completes
+                if (!ctrl && AppSettings.General["TabKey"] = "Next")
+                    SearchWindow.MoveSelection(shift ? -1 : 1, true)
+                else
+                    SearchWindow._AutoComplete()
                 return 0
             case 0x27:                                                      ; →
                 ; 只认新按下的 →: 按住 → 移动光标时, 光标到了最后也不会因为自动重复打开操作面板 (lParam 第 30 位 = 之前已经按着)
