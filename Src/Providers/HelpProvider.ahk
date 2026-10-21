@@ -80,8 +80,9 @@ class HelpProvider {
                 continue
             if (entry[1] = "Pinyin" && I18n.Lang != "zh-CN")                ; pinyin initials only cover Simplified Chinese, so only that UI shows it
                 continue
-            items.Push({Id: entry[1], Key: I18n.T("Help." entry[1] ".Key", HelpProvider._Args(entry[1])*)
-                      , Text: I18n.T("Help." entry[1] ".Text"), Url: HelpProvider.WikiPage(entry[3])})
+            textId := (entry[1] = "Tab" && AppSettings.General["TabKey"] = "Next") ? "TabNext" : entry[1]   ; the Tab tip follows the Tab key setting
+            items.Push({Id: entry[1], Key: I18n.T("Help." textId ".Key", HelpProvider._Args(entry[1])*)
+                      , Text: I18n.T("Help." textId ".Text"), Url: HelpProvider.WikiPage(entry[3])})
         }
         return items
     }

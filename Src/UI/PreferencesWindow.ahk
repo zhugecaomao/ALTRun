@@ -457,6 +457,8 @@ class PreferencesWindow {
         restore.Enabled := english.Value > 1
         english.OnEvent("Change", (*) => restore.Enabled := english.Value > 1)
         PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
+        PreferencesWindow._InlineChoice("General.TabKey", "Prefs.TabKey", ["Complete", "Next"]
+            , [I18n.T("Prefs.TabKey.Complete"), I18n.T("Prefs.TabKey.Next")])
         history := PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")   ; Ctrl+↑ / ↓ 调出搜索历史, 也是输入时用的
         PreferencesWindow._Section("Prefs.Section.EmptyBox")
         placeholder := PreferencesWindow._InlineField("Appearance.Placeholder", "Prefs.Placeholder", "M")
