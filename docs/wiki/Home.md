@@ -21,7 +21,8 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Getting started](Getting-Started) | First steps: open the window, launch programs, everyday features, your own commands |
 | [Installation and upgrades](Installation) | Download, Scoop / winget, start with Windows, one-key updates, upgrading from 2.x, uninstalling |
 | [Search and shortcuts](Usage) | Every search syntax, shortcuts, action panel, learned ranking, usage statistics |
-| [Custom commands and snippets](Commands-and-Snippets) | Command types, path variables, snippet placeholders, snippet expansion |
+| [Custom commands](Custom-Commands) | Command types, commands with an argument, path variables |
+| [Snippets](Snippets) | Placeholders, snippet expansion, windows without expansion, import / export |
 | [Clipboard history](Clipboard) | Text, image and file history, pasting, merging, excluded programs |
 | [File search](File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](Themes) | 22 built-in themes (or follow the Windows light / dark mode), density, custom themes, every available key |

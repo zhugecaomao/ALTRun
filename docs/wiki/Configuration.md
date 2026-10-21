@@ -20,7 +20,8 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 | Appearance | [Themes](Themes) |
 | Applications | [Settings reference: Applications](Configuration#features) |
 | File Search / Search Sources | [File search](File-Search) |
-| Custom Commands / Snippets | [Custom commands and snippets](Commands-and-Snippets) |
+| Custom Commands | [Custom commands](Custom-Commands) |
+| Snippets | [Snippets](Snippets) |
 | Clipboard | [Clipboard history](Clipboard) |
 | Calculator | [Calculator](Calculator) |
 | Scripts | [Scripts](Scripts) |
@@ -95,7 +96,7 @@ Every feature has `Enabled` (1 = on).
 ### Applications
 | Key | Default | Description |
 |---|---|---|
-| Folders | Start menu (current user / all users), desktop (current user / public) | Indexed folders; [path variables](Commands-and-Snippets#variables-in-paths) work |
+| Folders | Start menu (current user / all users), desktop (current user / public) | Indexed folders; [path variables](Custom-Commands#variables-in-paths) work |
 | FileTypes | `*.lnk` `*.exe` `*.url` `*.appref-ms` | Indexed file types |
 | Depth | 3 | Subfolder depth |
 | Exclude | `i)(uninstall\|卸载\|readme\|help\|documentation)` | Names matching this regular expression are left out |
@@ -222,7 +223,7 @@ See [Extensions](Extensions).
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
 ]
 ```
-For the fields, see [Custom commands and snippets](Commands-and-Snippets) and [Custom hotkeys](Hotkeys).
+For the fields, see [Custom commands](Custom-Commands#fields), [Snippets](Snippets) and [Custom hotkeys](Hotkeys).
 
 ## The Data folder
 Where the data folder is, what each file in it is, whether it can be deleted and how to back it up: see [Data files](Data-Files).

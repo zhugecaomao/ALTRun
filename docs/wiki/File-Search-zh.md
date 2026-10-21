@@ -22,7 +22,7 @@ Everything 的搜索语法可以直接用, 原样交给 Everything: 例如 `空�
 
 想让普通搜索也显示文件 (旧的行为): 在 偏好设置 → 文件搜索 勾选 "普通搜索时也显示匹配的文件和文件夹", 最多显示 6 条, 只收录名称开头或单词开头匹配的。
 
-常用的文件夹更适合加为 [自定义命令](Commands-and-Snippets-zh): 自定义命令也按目标的文件夹名匹配, 普通搜索就能找到。
+常用的文件夹更适合加为 [自定义命令](Custom-Commands-zh): 自定义命令也按目标的文件夹名匹配, 普通搜索就能找到。
 
 ![文件搜索](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/files.png)
 
@@ -77,7 +77,7 @@ ALTRun 自动选择:
 | UseEverything | 1 | Everything 在运行时用它搜索 |
 | EverythingFilter | `!C:\Windows\ !\AppData\ !\$Recycle.Bin\` | 追加在 Everything 搜索后面的条件, `!` 表示排除 (Everything 搜索语法) |
 | EverythingPath | 空 | Everything.exe 的位置, 只用于 "在 Everything 中搜索"; 留空自动查找 |
-| ScopeFolders | 桌面、文档、下载 | 内置索引扫描的文件夹, 可以用 [路径变量](Commands-and-Snippets-zh#路径里可以用的变量) |
+| ScopeFolders | 桌面、文档、下载 | 内置索引扫描的文件夹, 可以用 [路径变量](Custom-Commands-zh#路径里可以用的变量) |
 | ScopeDepth | 4 | 内置索引的子文件夹深度 |
 | ScopeExclude | `node_modules`、`.git`、`.svn`、`.hg`、`__pycache__`、`.venv`、`venv`、`.tox`、`.cache`、`.idea`、`.vs`、回收站 | 内置索引跳过的文件夹 (正则, 对完整路径)。默认跳过代码仓库、Python 虚拟环境和开发工具的缓存: 里面动辄上万个文件, 会占满 MaxEntries, 也没有要找的文档 |
 | MaxEntries | 30000 | 内置索引最多收录多少项 |
@@ -87,7 +87,7 @@ ALTRun 自动选择:
 
 ## 常见问题
 - **Everything 装了但不起作用**: Everything 必须正在运行 (托盘里有图标)。如果 Everything 以管理员身份运行而 ALTRun 不是, Windows 可能拦截两者之间的通信, 让两者以相同的权限运行即可 (推荐 Everything 安装为服务、普通权限运行)。
-- **网络驱动器上的文件**: Everything 默认不索引网络驱动器, 需要在 Everything 的 "选项 → 索引 → 文件夹" 里添加; 内置索引可以把网络文件夹加到 ScopeFolders, 但扫描会比较慢。常用的网络文件夹更适合加为 [自定义命令](Commands-and-Snippets-zh)。
+- **网络驱动器上的文件**: Everything 默认不索引网络驱动器, 需要在 Everything 的 "选项 → 索引 → 文件夹" 里添加; 内置索引可以把网络文件夹加到 ScopeFolders, 但扫描会比较慢。常用的网络文件夹更适合加为 [自定义命令](Custom-Commands-zh)。
 - **用拼音搜中文文件名** (例如输入 `cs` 找到 "测试.bat", `zjsm` 找到 "证件扫描文件.zip"): 支持拼音首字母, 找到的文件同样高亮对应的字, 按首字母的匹配程度排序 (同样的匹配程度, 名称直接匹配的排在前面)
   - **没有 Everything (内置索引)**: 直接就能用。载入索引后在后台算好首字母 (1 万个中文文件名约零点几秒), 刚启动的这一小会儿里暂时不按拼音找。只按一个词找: `zj sm` 这样分开写的找不到
   - **用 Everything 时**: 文件是 Everything 找的, 要先让 Everything 支持拼音 (ALTRun 把输入原样交给 Everything, 不用另外设置):

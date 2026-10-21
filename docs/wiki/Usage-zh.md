@@ -45,7 +45,7 @@
 | `>命令` | 在终端里运行, 例如 `>ipconfig /all`, 见 [系统命令和终端](System-Commands-zh#终端) |
 | `clip` / `clip xxx` | 剪贴板历史: 文字、文件和图片 (全部 / 过滤), 见 [剪贴板历史](Clipboard-zh) |
 | `snip` / `snip xxx` | 只搜索文字片段 |
-| `;关键字` (在任何程序里) | 片段自动展开, 见 [自定义命令与片段](Commands-and-Snippets-zh) |
+| `;关键字` (在任何程序里) | 片段自动展开, 见 [文字片段](Snippets-zh#自动展开) |
 
 关键字后面加了空格 (例如 `clip `、`g xxx`、`'xxx`、`>xxx`), 就只显示这个功能的结果。网页搜索、自定义命令和文字片段的关键字可以写几个, 用逗号分隔 (例如 `g, ㅎ`), 输入哪个都行, 经常切换键盘布局 / 输入法时有用。没有任何结果时, 显示兜底项: 用 Google 搜索、搜索文件、用 Bing 搜索 (可在 `Features.WebSearch.Fallbacks` 修改)。
 

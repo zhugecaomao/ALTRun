@@ -21,7 +21,7 @@ Everything lives in the Data folder and a few local folders; what each file is, 
 - **Clipboard history**: content that password managers and other programs mark as "do not record" (`ExcludeClipboardContentFromMonitorProcessing`, `CanIncludeInClipboardHistory = 0`) is never recorded, and neither is content copied in the programs listed under Preferences → Clipboard → "Never record from" (a few password managers by default). To leave no history on disk, set `Features.Clipboard.Persist` to 0: the history stays in memory and is gone when ALTRun quits; or set Preferences → Clipboard → "Save in" to keep everything on this PC only, so it doesn't follow a Data folder in a sync folder. See [Clipboard history](Clipboard)
 - **Usage statistics** (`Usage.json`): only how many times each feature was used per day; never what you typed or opened
 - **Learned ranking** (`Knowledge.json`): "what was typed → which item was picked", used to put frequent picks first; Preferences → Advanced → "Reset Learned Ranking" clears it
-- **Snippet expansion** never triggers in Windows password boxes, and Preferences → Snippets → "Don't expand in" can exclude Remote Desktop, password managers and so on
+- **Snippet expansion** never triggers in Windows password boxes, and Preferences → Snippets → "[Don't expand in](Snippets#dont-expand-in)" can exclude Remote Desktop, password managers and so on
 - **Debug log** is off by default; Preferences → Advanced → "Write a debug log" writes `%Temp%\ALTRun.log` for troubleshooting, with timings of startup and background tasks and error messages. Look it over before attaching it to an issue, see [How do I send a debug log?](FAQ#how-do-i-send-a-debug-log)
 
 ## Permissions

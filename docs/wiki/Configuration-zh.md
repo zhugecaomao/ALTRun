@@ -20,7 +20,8 @@
 | 外观 | [主题](Themes-zh) |
 | 应用 | [设置文件参考: 应用索引](Configuration-zh#applications-应用) |
 | 文件搜索 / 搜索来源 | [文件搜索](File-Search-zh) |
-| 自定义命令 / 文字片段 | [自定义命令与片段](Commands-and-Snippets-zh) |
+| 自定义命令 | [自定义命令](Custom-Commands-zh) |
+| 文字片段 | [文字片段](Snippets-zh) |
 | 剪贴板 | [剪贴板历史](Clipboard-zh) |
 | 计算器 | [计算器](Calculator-zh) |
 | 脚本扩展 | [脚本扩展](Scripts-zh) |
@@ -95,7 +96,7 @@
 ### Applications 应用
 | 键 | 默认 | 说明 |
 |---|---|---|
-| Folders | 开始菜单 (当前用户 / 所有用户)、桌面 (当前用户 / 公共) | 索引的文件夹, 可以用 [路径变量](Commands-and-Snippets-zh#路径里可以用的变量) |
+| Folders | 开始菜单 (当前用户 / 所有用户)、桌面 (当前用户 / 公共) | 索引的文件夹, 可以用 [路径变量](Custom-Commands-zh#路径里可以用的变量) |
 | FileTypes | `*.lnk` `*.exe` `*.url` `*.appref-ms` | 索引的文件类型 |
 | Depth | 3 | 子文件夹深度 |
 | Exclude | `i)(uninstall\|卸载\|readme\|help\|documentation)` | 名称匹配这个正则的不收录 |
@@ -222,7 +223,7 @@
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
 ]
 ```
-字段说明见 [自定义命令与片段](Commands-and-Snippets-zh) 和 [自定义热键](Hotkeys-zh)。
+字段说明见 [自定义命令](Custom-Commands-zh#字段)、[文字片段](Snippets-zh) 和 [自定义热键](Hotkeys-zh)。
 
 ## Data 文件夹
 数据文件夹在哪里、里面每个文件是什么、能不能删、怎样备份, 见 [数据文件](Data-Files-zh)。

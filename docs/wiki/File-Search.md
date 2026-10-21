@@ -22,7 +22,7 @@ At most 30 results are shown; when nothing is found you can continue in Everythi
 
 To show files in normal searches too (the old behavior): in Preferences → File Search, tick "Also show matching files and folders in normal results"; at most 6 are shown, and only those whose name or a word in it starts with what you typed.
 
-Folders you use often work better as [custom commands](Commands-and-Snippets): custom commands also match their target's folder name, so a normal search finds them.
+Folders you use often work better as [custom commands](Custom-Commands): custom commands also match their target's folder name, so a normal search finds them.
 
 ![File search](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/files.png)
 
@@ -77,7 +77,7 @@ Preferences → File Search (how a search starts, file types, number of results)
 | UseEverything | 1 | Use Everything when it's running |
 | EverythingFilter | `!C:\Windows\ !\AppData\ !\$Recycle.Bin\` | Conditions added to every Everything search; `!` excludes (Everything search syntax) |
 | EverythingPath | empty | Location of Everything.exe, only used for "Search in Everything"; leave empty to find it automatically |
-| ScopeFolders | Desktop, Documents, Downloads | Folders the built-in index scans; [path variables](Commands-and-Snippets#variables-in-paths) work |
+| ScopeFolders | Desktop, Documents, Downloads | Folders the built-in index scans; [path variables](Custom-Commands#variables-in-paths) work |
 | ScopeDepth | 4 | Subfolder depth of the built-in index |
 | ScopeExclude | `node_modules`, `.git`, `.svn`, `.hg`, `__pycache__`, `.venv`, `venv`, `.tox`, `.cache`, `.idea`, `.vs`, Recycle Bin | Folders the built-in index skips (regular expression, matched against the full path). By default it skips code repositories, Python virtual environments and developer tool caches: they often hold tens of thousands of files that would fill up MaxEntries, and none of them are documents you look for |
 | MaxEntries | 30000 | Maximum number of items in the built-in index |
@@ -87,7 +87,7 @@ After changing what the built-in index covers, click "Rebuild File Index" in Pre
 
 ## Troubleshooting
 - **Everything is installed but not used**: Everything must be running (its icon is in the notification area). If Everything runs as administrator and ALTRun doesn't, Windows may block the communication between them; run both with the same rights (installing Everything as a service and running it normally is recommended).
-- **Files on network drives**: Everything doesn't index network drives by default; add them in Everything's "Options → Indexes → Folders". The built-in index can include network folders in ScopeFolders, but scanning is slower. Network folders you use often work better as [custom commands](Commands-and-Snippets).
+- **Files on network drives**: Everything doesn't index network drives by default; add them in Everything's "Options → Indexes → Folders". The built-in index can include network folders in ScopeFolders, but scanning is slower. Network folders you use often work better as [custom commands](Custom-Commands).
 - **Searching Chinese file names by pinyin** (for example `cs` finding "测试.bat" or `zjsm` finding "证件扫描文件.zip"): pinyin initials are supported; files found this way are highlighted too and sorted by how well the initials match (at the same match quality, names that match directly come first)
   - **Without Everything (built-in index)**: works out of the box. The initials are worked out in the background after the index loads (a fraction of a second for 10,000 Chinese file names); for that short moment after startup pinyin isn't matched yet. Only a single word is matched: `zj sm` written apart isn't found
   - **With Everything**: Everything does the finding, so make Everything itself match pinyin first (ALTRun passes your input to Everything as is, so nothing else needs to be set):
