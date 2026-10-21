@@ -1,26 +1,26 @@
 ;===============================================================================
-; FileSearchProvider.ahk - 文件 / 文件夹搜索 (AutoHotkey v2)
+; FileSearchProvider.ahk - File / folder search (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 两种用法 (和 Alfred 一样):
-;   1. 默认结果 (InDefaultResults, 默认关闭): 直接输入名称, 匹配的文件和文件夹显示在
-;      应用和命令下面 (最多 DefaultResultsLimit 条, 至少输入 MinQueryLength 个字)
-;   2. 专门搜索文件:  空的搜索框里先按空格 (SpacePrefix, 见 SearchWindow) 再输入 report
-;                     (已经输入了 report 时光标移到最前面再按空格也可以),
-;                     或  'report  /  open report  /  find report
-;   3. 只搜文件夹:    folder bk (FolderKeywords), 文件搜索模式里也可以写 "folder bk"
-;   4. 按类型搜索:    doc 报告 / pic logo / cad 平面图 ... (TypeFilters: "关键字 = 扩展名 扩展名 ..."),
-;                     和 Listary 的文件类型筛选一样; 文件搜索模式里也可以写 "doc 报告"
-;   5. 浏览文件夹:    输入路径 C:\  D:\Projects\rep  \\server\share\  ~\  %OneDrive%\ ,
-;                     列出这个文件夹里的内容 (最后一段过滤), 文件夹在前; Tab 进入选中的文件夹, Backspace 回到上一级
-;                     (和 PowerToys Run / Flow Launcher 的文件夹浏览一样)。隐藏和系统文件不列出
-; 结果按名称匹配程度排序 (完全相同 > 名称开头 > 单词开头 > 包含), 同分时文件夹在前,
-; 再按修改时间。Everything 的语法 (folder:、ext:、path:...) 原样传给 Everything。
+; Ways to use it (as in Alfred):
+;   1. Default results (InDefaultResults, off by default): type a name, and matching files and folders show
+;      below apps and commands (at most DefaultResultsLimit, from MinQueryLength characters)
+;   2. Files only:      press Space in the empty search box first (SpacePrefix, see SearchWindow), then type report
+;                       (with report already typed, move the cursor to the start and press Space),
+;                       or  'report  /  open report  /  find report  /  file report
+;   3. Folders only:    folder budget (FolderKeywords); "folder budget" also works in file search mode
+;   4. One file type:   doc report / pic logo / cad plan ... (TypeFilters: "keyword = ext ext ..."),
+;                       like Listary's file type filters; "doc report" also works in file search mode
+;   5. Browse a folder: type a path such as C:\  D:\Projects\rep  \\server\share\  ~\  %OneDrive%\ to list
+;                       that folder (the last part filters), folders first; Tab opens the selected folder, Backspace goes up
+;                       (like folder browsing in PowerToys Run / Flow Launcher). Hidden and system files are not listed
+; Results are sorted by how well the name matches (exact > start of the name > start of a word > contains), folders
+; first on ties, then by modification time. Everything syntax (folder:, ext:, path:...) is passed to Everything as is.
 ;
-; 数据来源 (自动选择):
-;   - Everything 在运行: 通过 IPC 直接查询 (Lib\Everything.ahk), 全盘, 不需要额外文件
-;   - 否则: 内置索引 (Src\Core\FileIndex.ahk), 只包括 ScopeFolders 里的文件夹
+; Sources (chosen automatically):
+;   - Everything running: queried directly over IPC (Lib\Everything.ahk), the whole disk, no extra files needed
+;   - Otherwise: the built-in index (Src\Core\FileIndex.ahk), covering only the ScopeFolders
 ;
-; 设置 (ALTRun.json -> Features.FileSearch):
+; Settings (ALTRun.json -> Features.FileSearch):
 ;   Keywords / FolderKeywords / TypeFilters / SpacePrefix / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
 ;   MinQueryLength / UseEverything / EverythingFilter / EverythingPath /
 ;   ScopeFolders / ScopeDepth / ScopeExclude / MaxEntries / RefreshMinutes
@@ -40,7 +40,7 @@ class FileSearchProvider {
             return FileSearchProvider.BrowseResults(browse)
         if (options["QuotePrefix"] && query.MatchPrefix("'", &term))
             return FileSearchProvider._KeywordResults(term, options, false, true)
-        ; open / find / file / folder: 输入空格之后才只显示文件结果; 只输入 "folder" 时名字带 folder 的命令照常显示
+        ; open / find / file / folder: only after a space do just file results show; typing only "folder" still shows commands with folder in their name
         if query.MatchKeyword(options["Keywords"], &term)
             return FileSearchProvider._KeywordResults(term, options, false, query.HasRest)
         if query.MatchKeyword(options["FolderKeywords"], &term)
@@ -52,7 +52,7 @@ class FileSearchProvider {
         return []
     }
 
-    ; 搜索窗口的文件搜索模式 (空格开头) 调用: 只搜文件, 空文字不返回结果; "folder bk" 只搜文件夹, "doc 报告" 只搜文档
+    ; Called by the search window's file search mode (starting with Space): files only, nothing for empty text; "folder budget" searches folders only, "doc report" documents only
     static SearchFiles(term) {
         term := Trim(term)
         if (term = "")
@@ -223,11 +223,11 @@ class FileSearchProvider {
         return results
     }
 
-    ; 返回 [{Path, IsFolder, Score}], 按匹配程度排序
-    ; preferPrefix: 默认结果只要名称开头 / 单词开头匹配的, 避免一大堆只是 "包含" 的文件
-    ; scope:        true = 只要文件夹 (folder bk); TypeFilters 里的一项 = 只要这些扩展名的文件 (doc 报告)
-    ; Everything 按修改时间返回; 只取前 limit 条的话, 名称最匹配但不是最近修改的文件夹 (例如
-    ; "bk" 匹配到大量文件时) 就排不进来, 所以多取一些 (EverythingFetch 条), 再按名称匹配程度挑
+    ; Returns [{Path, IsFolder, Score}], sorted by how well they match
+    ; preferPrefix: default results keep only name-start / word-start matches, avoiding piles of files that merely "contain" the text
+    ; scope:        true = folders only (folder budget); an entry of TypeFilters = only files with those extensions (doc report)
+    ; Everything returns results by modification time; taking only the first limit, the folder with the best name match but not
+    ; modified recently (e.g. when a short word matches lots of files) would not get in, so fetch more (EverythingFetch) and pick by name match
     static Query(term, limit, preferPrefix, scope := false) {
         options := AppSettings.Feature("FileSearch")
         needle := StrLower(Trim(term))
@@ -245,9 +245,9 @@ class FileSearchProvider {
             }
             if (Everything.LastProblem != "")
                 Logger.Warn("FileSearch: Everything " Everything.LastProblem)
-            ; 文件和文件夹一起搜时, 同名的文件很多 (例如 ppie 文件夹里有几百个 ppie_xxx.dwg) 的话, 按修改时间取的前 fetch 条
-            ; 可能全是文件, 名称完全相同的文件夹反而排不进来: 另外单独取一次文件夹
-            if (!IsObject(scope) && !scope && !RegExMatch(term, "i)(^|\s)(folder|file|files|ext):")) {   ; 已经写了 folder: / ext: 等就不另外取
+            ; When files and folders are searched together and many files share the name (e.g. a "plans" folder holding hundreds of
+            ; plans_xxx.dwg), the first fetch results by modification time may all be files and the folder of that exact name is left out: fetch folders separately
+            if (!IsObject(scope) && !scope && !RegExMatch(term, "i)(^|\s)(folder|file|files|ext):")) {   ; not when folder: / ext: etc. is already given
                 folderSearch := (preferPrefix ? "startwith:" : "") "folder:" FileSearchProvider._EverythingTerm(term) " " options["EverythingFilter"]
                 for item in Everything.Query(Trim(folderSearch), 50, Everything.SORT_DATE_MODIFIED_DESC) {
                     if seen.Has(StrLower(item.Path))
@@ -289,7 +289,7 @@ class FileSearchProvider {
         return IsObject(scope) ? scope.Everything " " : scope ? "folder:" : ""
     }
 
-    ; 给结果打分用的文字: 去掉 Everything 的语法前缀 ("folder:bk" -> "bk", "ext:pdf report" -> "pdf report")
+    ; Text used to score results: Everything syntax prefixes removed ("folder:budget" -> "budget", "ext:pdf report" -> "pdf report")
     static ScoreNeedle(needle) {
         return Trim(RegExReplace(needle, "(^|\s)[a-z]+:", "$1"))
     }

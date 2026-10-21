@@ -1,12 +1,13 @@
 ;===============================================================================
-; HelpProvider.ahk - 速查表 (输入 ?) 和空搜索框里的使用提示 (AutoHotkey v2)
+; HelpProvider.ahk - Cheat sheet (type ?) and usage tips in the status bar (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 一张表 (Entries) 两种用途:
-;   ?          列出所有输入语法和快捷键, ? 后面的文字用来过滤 (? 文件), Enter 打开 Wiki 对应的页面 (按界面语言, 见 WikiPage)
-;   NextTip()  搜索窗口每次显示时, 空搜索框里的灰色提示文字按顺序换一条 (General.ShowTips)
-; 每一条: [Id, 所属功能 (关闭时不显示, "" = 总是显示), Wiki 页面]
-; 显示的文字在 I18n: Help.<Id>.Key (输入 / 按键) 和 Help.<Id>.Text (作用);
-; Key 里的 {1} {2} 换成当前设置里的关键字 / 热键 (见 _Args)。
+; One table (Entries) serves two purposes:
+;   ?          lists all input syntax and shortcuts; text after ? filters them (? file), Enter opens the matching Wiki page (by UI language, see WikiPage)
+;   NextTip()  each time the search window is shown, the status bar shows the next tip in turn (General.ShowTips)
+; Each entry: [Id, feature it belongs to (hidden when that feature is off, "" = always shown), Wiki page]
+; The order is the order in the cheat sheet and in the tips: the most useful entries come first.
+; The text is in I18n: Help.<Id>.Key (input / keys) and Help.<Id>.Text (what it does);
+; {1} {2} in Key are replaced with the keywords / hotkeys from the current settings (see _Args).
 ;===============================================================================
 
 class HelpProvider {
@@ -18,51 +19,52 @@ class HelpProvider {
     static Init() {
     }
 
-    ; Wiki 页面的网址: 中文界面打开中文页 (Usage-zh), 其他语言打开英文页 (Usage)
+    ; Wiki page URL: the Chinese UI opens the Chinese page (Usage-zh), other languages the English page (Usage)
     static WikiPage(page, lang := I18n.Lang) {
         return HelpProvider.WikiUrl page (SubStr(lang, 1, 2) = "zh" ? "-zh" : "")
     }
 
     static Entries() {
         return [
-            ["Files"     , "FileSearch"    , "File-Search"],
-            ["Pinyin"    , ""              , "File-Search"],
-            ["Folders"   , "FileSearch"    , "File-Search"],
-            ["FileKeyword", "FileSearch"   , "File-Search"],
-            ["FileTypes" , "FileSearch"    , "File-Search"],
-            ["Browse"    , "FileSearch"    , "File-Search"],
-            ["Mark"      , "FileSearch"    , "File-Search"],
-            ["Actions"   , ""              , "Usage"],
-            ["Selection" , ""              , "Usage"],
-            ["Edit"      , ""              , "Commands-and-Snippets"],
-            ["Delete"    , ""              , "Usage"],
-            ["Reveal"    , ""              , "Usage"],
-            ["Copy"      , ""              , "Usage"],
-            ["Number"    , ""              , "Usage"],
-            ["History"   , ""              , "Usage"],
-            ["Tab"       , ""              , "Usage"],
-            ["Clipboard" , "Clipboard"     , "Clipboard"],
-            ["Snippets"  , "Snippets"      , "Commands-and-Snippets"],
-            ["Expand"    , "Snippets"      , "Commands-and-Snippets"],
-            ["Terminal"  , "Terminal"      , "System-Commands"],
-            ["Calculator", "Calculator"    , "Calculator"],
-            ["Convert"   , "Calculator"    , "Calculator"],
-            ["WebSearch" , "WebSearch"     , "Web-Search"],
-            ["Bookmarks" , "Bookmarks"     , "Bookmarks"],
-            ["Windows"   , "Windows"       , "Window-Switching"],
-            ["Scripts"   , "Scripts"       , "Scripts"],
-            ["Query"     , "CustomCommands", "Commands-and-Snippets"],
-            ["CheckPaths", "CustomCommands", "Commands-and-Snippets"],
-            ["LargeType" , "LargeType"     , "Usage"],
-            ["EditFile"  , "FileSearch"    , "Usage"],
-            ["Prefs"     , ""              , "Configuration"],
-            ["EditJson"  , ""              , "Configuration"],
-            ["About"     , ""              , "Installation"],
-            ["Help"      , ""              , "Usage"]
+            ["Files"      , "FileSearch"    , "File-Search"],
+            ["Folders"    , "FileSearch"    , "File-Search"],
+            ["FileKeyword", "FileSearch"    , "File-Search"],
+            ["FileTypes"  , "FileSearch"    , "File-Search"],
+            ["Reveal"     , ""              , "Usage"],
+            ["Actions"    , ""              , "Usage"],
+            ["QuickSwitch", "QuickSwitch"   , "Quick-Switch"],
+            ["About"      , ""              , "Installation"],
+            ["Prefs"      , ""              , "Configuration"],
+            ["Edit"       , ""              , "Commands-and-Snippets"],
+            ["EditJson"   , ""              , "Configuration"],
+            ["Selection"  , ""              , "Usage"],
+            ["Delete"     , ""              , "Usage"],
+            ["Copy"       , ""              , "Usage"],
+            ["Number"     , ""              , "Usage"],
+            ["History"    , ""              , "Usage"],
+            ["Tab"        , ""              , "Usage"],
+            ["Clipboard"  , "Clipboard"     , "Clipboard"],
+            ["Snippets"   , "Snippets"      , "Commands-and-Snippets"],
+            ["Expand"     , "Snippets"      , "Commands-and-Snippets"],
+            ["Terminal"   , "Terminal"      , "System-Commands"],
+            ["Calculator" , "Calculator"    , "Calculator"],
+            ["Convert"    , "Calculator"    , "Calculator"],
+            ["WebSearch"  , "WebSearch"     , "Web-Search"],
+            ["Windows"    , "Windows"       , "Window-Switching"],
+            ["Scripts"    , "Scripts"       , "Scripts"],
+            ["Query"      , "CustomCommands", "Commands-and-Snippets"],
+            ["EditFile"   , "FileSearch"    , "Usage"],
+            ["Pinyin"     , ""              , "File-Search"],
+            ["Browse"     , "FileSearch"    , "File-Search"],
+            ["Mark"       , "FileSearch"    , "File-Search"],
+            ["Bookmarks"  , "Bookmarks"     , "Bookmarks"],
+            ["LargeType"  , "LargeType"     , "Usage"],
+            ["CheckPaths" , "CustomCommands", "Commands-and-Snippets"],
+            ["Help"       , ""              , "Usage"]
         ]
     }
 
-    ; 当前设置下要显示的条目: [{Id, Key, Text, Url}...]
+    ; Entries to show with the current settings: [{Id, Key, Text, Url}...]
     static Items() {
         items := []
         for entry in HelpProvider.Entries() {
@@ -74,7 +76,9 @@ class HelpProvider {
                 continue
             if (entry[1] = "FileTypes" && !FileSearchProvider.TypeFilters().Length)
                 continue
-            if (entry[1] = "Pinyin" && I18n.Lang != "zh-CN")                ; 拼音首字母只认简体字: 只给简体中文界面看
+            if (entry[1] ~= "^(Folders|FileKeyword|QuickSwitch)$" && HelpProvider._Args(entry[1])[1] = "")   ; no keyword / hotkey left
+                continue
+            if (entry[1] = "Pinyin" && I18n.Lang != "zh-CN")                ; pinyin initials only cover Simplified Chinese, so only that UI shows it
                 continue
             items.Push({Id: entry[1], Key: I18n.T("Help." entry[1] ".Key", HelpProvider._Args(entry[1])*)
                       , Text: I18n.T("Help." entry[1] ".Text"), Url: HelpProvider.WikiPage(entry[3])})
@@ -89,7 +93,7 @@ class HelpProvider {
         for item in HelpProvider.Items() {
             if (term != "" && FuzzyMatcher.Best(term, [item.Key, item.Text]) <= 0)
                 continue
-            wikiPage := item.Url                                            ; 不能叫 url: 和 Url 类同名
+            wikiPage := item.Url                                            ; not "url": that would shadow the Url class
             results.Push(ResultItem(item.Key, item.Text, {
                 Icon: IconCache.Own("Help", "res:shell32.dll,-24"), Score: 200 - results.Length * 0.01, Exclusive: true,
                 OnRun: (*) => ActionCatalog.OpenUrl(wikiPage)
@@ -98,7 +102,7 @@ class HelpProvider {
         return results
     }
 
-    ; 按顺序轮换的下一条提示 (每次启动从随机的一条开始)
+    ; The next tip in turn (each start begins at a random one)
     static NextTip() {
         items := HelpProvider.Items()
         if !items.Length
@@ -113,19 +117,30 @@ class HelpProvider {
 
     static _FeatureEnabled(id) {
         try return AppSettings.Feature(id)["Enabled"] ? true : false
+        try return AppSettings.Extension(id)["Enabled"] ? true : false          ; e.g. QuickSwitch
         return false
     }
 
-    ; Key 里的占位符: 用户改过的关键字、热键也显示成改过之后的
+    ; Placeholders in Key: keywords and hotkeys the user changed are shown as changed
     static _Args(id) {
         switch id {
-            case "Folders":     return [AppSettings.Feature("FileSearch")["FolderKeywords"].Length ? AppSettings.Feature("FileSearch")["FolderKeywords"][1] : "folder"]
-            case "FileTypes":
-                keywords := ""
-                for filter in FileSearchProvider.TypeFilters()
-                    keywords .= (keywords = "" ? "" : " / ") filter.Keyword
+            case "Folders":     return [HelpProvider._Keywords(AppSettings.Feature("FileSearch")["FolderKeywords"], ["folder"], 1)]
+            case "FileKeyword":                                             ; e.g. "file / open / '"
+                keywords := HelpProvider._Keywords(AppSettings.Feature("FileSearch")["Keywords"], ["file", "open"], 2)
+                if AppSettings.Feature("FileSearch")["QuotePrefix"]
+                    keywords .= (keywords = "" ? "" : " / ") "'"
                 return [keywords]
-            case "FileKeyword": return [AppSettings.Feature("FileSearch")["Keywords"].Length ? AppSettings.Feature("FileSearch")["Keywords"][1] : "open"]
+            case "FileTypes":                                               ; e.g. "doc / zip"
+                keywords := []
+                for filter in FileSearchProvider.TypeFilters()
+                    keywords.Push(filter.Keyword)
+                return [HelpProvider._Keywords(keywords, ["doc", "zip"], 2)]
+            case "QuickSwitch":
+                options := AppSettings.Extension("QuickSwitch"), keys := ""
+                for name in ["TotalCmdHotkey", "ExplorerHotkey"]
+                    if (options.Has(name) && options[name] != "")
+                        keys .= (keys = "" ? "" : " / ") Win.HotkeyLabel(options[name])
+                return [keys]
             case "Clipboard":   return [AppSettings.Feature("Clipboard")["Keyword"], Win.HotkeyLabel(AppSettings.Feature("Clipboard")["Hotkey"])]
             case "Snippets":    return [AppSettings.Feature("Snippets")["Keyword"]]
             case "Expand":      return [AppSettings.Feature("Snippets")["ExpandPrefix"]]
@@ -138,5 +153,29 @@ class HelpProvider {
                 return [(engines.Length && WebSearchProvider.FirstKeyword(engines[1]) != "") ? WebSearchProvider.FirstKeyword(engines[1]) : "g"]
         }
         return []
+    }
+
+    ; Up to max keywords for a short tip: the preferred ones first (when the user still has them), then the rest in order
+    static _Keywords(keywords, preferred, max) {
+        picked := []
+        for word in preferred
+            for keyword in keywords
+                if (keyword = word && picked.Length < max) {
+                    picked.Push(keyword)
+                    break
+                }
+        for keyword in keywords {
+            if (picked.Length >= max)
+                break
+            known := false
+            for p in picked
+                known := known || (p = keyword)
+            if !known
+                picked.Push(keyword)
+        }
+        text := ""
+        for keyword in picked
+            text .= (text = "" ? "" : " / ") keyword
+        return text
     }
 }

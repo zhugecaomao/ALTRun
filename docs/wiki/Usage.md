@@ -21,7 +21,7 @@ To have the search window remember your last search (like "keep input" in 2.x): 
 See [Pinned and recent items](Recent).
 
 ## Usage tips
-Each time you open the search window, the status bar at the bottom shows another usage tip (for example "Tip: folder bk  search folders only"), in turn. Once you know them, turn off "Show a usage tip" (below "Show the status bar") in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
+Each time you open the search window, the status bar at the bottom shows another usage tip (for example "Tip: folder + name  search folders only"), in turn, starting with the most useful ones (file search, the action panel, Quick Switch, F1 ~ F4...). Once you know them, turn off "Show a usage tip" (below "Show the status bar") in Preferences → Search Window. If you forget how to write something, type `?` to see everything.
 
 ## Status bar
 The line at the bottom of the search window (like Listary and Raycast), shown when there are results: on the left, a ☰ menu button (Preferences, shortcuts and syntax, rebuild index, check for updates, reload, quit) and the usage tip ("Searching files" in file search mode); on the right, what `Enter` does for the selected result (Open, Copy, Paste, Run...) and `→` for its action panel, drawn as key caps. With no result rows (an empty search box without pinned items) only the search box shows. Turn it off in Preferences → Search Window → "Show the status bar" (`Appearance.StatusBar`); the usage tip then shows in the empty search box as before.
@@ -37,9 +37,9 @@ The line at the bottom of the search window (like Listary and Raycast), shown wh
 | `today + 30 days` `2026-12-25 - 2w` / `2026-12-25 - today` | Date arithmetic (units d w m y), with the day of the week; subtracting two dates gives the number of days between them |
 | `bm xxx` | Browser bookmarks only (typing a bookmark name without `bm` finds it too, ranked after apps and commands), see [Browser bookmarks](Bookmarks) |
 | `w xxx` / `w ` | Switch to an open window (by title or program name; `w ` alone lists them all); `→` can close the window. Windows whose title matches well also show up without `w` (at most 3). See [Window switching](Window-Switching) |
-| `'report` / `open report` / `find report` | Files and folders only, see [File search](File-Search) |
+| `file report` / `open report` / `'report` | Files and folders only, see [File search](File-Search) |
 | `doc report` `pic logo` `cad plan` | One kind of file only (documents / pictures / CAD...); the kinds can be changed |
-| `folder bk` | Folders only |
+| `folder budget` | Folders only |
 | `?` / `? file` | Cheat sheet: every search syntax and shortcut (filtered); `Enter` opens the matching wiki page |
 | `g xxx` `bing xxx` `bd xxx` `gh xxx` `wiki xxx` `yt xxx` `tb xxx` `jd xxx` `tr xxx` | Web search: Google / Bing / Baidu / GitHub / Wikipedia / YouTube / Taobao / JD.com / Google Translate; you can add your own, see [Web search](Web-Search) |
 | `>command` | Runs it in a terminal, for example `>ipconfig /all`. See [System commands and terminal](System-Commands#terminal) |

@@ -6,17 +6,17 @@
 Normal searches show apps, commands, snippets and so on, but **not** files from all over your disks (so unrelated files such as `NIRMALA.TTF` don't get mixed in). To search for files:
 
 - **Space**: in an empty search box, press `Space` first; the input box shows a gray "Search files...", then type the name. If you've already typed something, move the cursor to the start (`Home`) and press `Space` to search files for it. `Backspace` in an empty input box or at the start goes back to a normal search. Like Alfred's Quick File Search
-- **`'report`**, **`open report`** or **`find report`**: same effect
-- **Folders only**: **`folder bk`** (change the keyword in Preferences → File Search → "Folder keywords"); `folder bk` also works in file search mode. With Everything this is the same as Everything's `folder:bk`
+- **`file report`**, **`open report`**, **`find report`** or **`'report`**: same effect
+- **Folders only**: **`folder budget`** (change the keyword in Preferences → File Search → "Folder keywords"); `folder budget` also works in file search mode. With Everything this is the same as Everything's `folder:budget`
 
 - **By type** (like Listary's filters): **`doc report`** searches documents only; there are also `pic` pictures, `video`, `audio`, `zip` archives, `exe` programs and `cad` (dwg / dxf / dgn / rvt / ifc / skp...). `doc report` also works in file search mode. Change the keywords and extensions in Preferences → File Search → "File types", one `keyword = ext ext ...` per line. With Everything this is the same as `ext:doc;docx;...`
 - To find files by modification date, write Everything's syntax directly, for example `Space` + `dm:today report` or `dm:thisweek`
 
 A keyword needs a space after it to start a file search: typing just `folder`, `open` or `doc` shows commands and apps with that word in their name as usual.
 
-Results are sorted by how well the name matches: exact > start of the name > start of a word (for example `PT1002-BK`) > contains (for example `notebk`); at the same match quality, folders come before files, then by modification time (newest first). With Everything, ALTRun takes Everything's first 300 results and then sorts them, so the best-matching folder isn't missed just because it wasn't modified recently.
+Results are sorted by how well the name matches: exact > start of the name > start of a word (for example `2026-Budget`) > contains (for example `NewBudget`); at the same match quality, folders come before files, then by modification time (newest first). With Everything, ALTRun takes Everything's first 300 results and then sorts them, so the best-matching folder isn't missed just because it wasn't modified recently.
 
-Everything's search syntax can be used as is and is passed straight to Everything: for example `Space` + `folder:bk 2024`, `ext:pdf report` or `path:Tender report`.
+Everything's search syntax can be used as is and is passed straight to Everything: for example `Space` + `folder:budget 2024`, `ext:pdf report` or `path:Projects report`.
 
 At most 30 results are shown; when nothing is found you can continue in Everything or Windows Search with one key. When a normal search finds nothing at all, a "Search files" fallback item is offered at the end as well.
 
