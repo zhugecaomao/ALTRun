@@ -24,7 +24,7 @@
 | 剪贴板 | [剪贴板历史](Clipboard-zh) |
 | 计算器 | [计算器](Calculator-zh) |
 | 脚本扩展 | [脚本扩展](Scripts-zh) |
-| 自定义热键 | [自定义热键](Hotkeys-zh) |
+| 键盘 / 自定义热键 | [自定义热键](Hotkeys-zh) (CapsLock、切换到英文; 空格和 Tab 键另见 [快捷键](Usage-zh#快捷键)) |
 | 对话框跳转 | [对话框快速跳转](Quick-Switch-zh) |
 | 对话框面板 | [对话框文件夹面板](Quick-Switch-Panel-zh) |
 | 一键加日期 | [一键加日期](Date-Stamp-zh) |
@@ -47,7 +47,7 @@
 `DataLocation` 只在默认位置 (`Data\ALTRun.json`, 或 `%APPDATA%\ALTRun\Data\ALTRun.json`) 的文件里起作用: 有这一项时, ALTRun 改用那个文件夹里的设置和数据, 默认位置的文件只用来指路。一般在 偏好设置 → 高级 → 数据 → 更改位置 里设置, 不用手动写; 可以用环境变量, 相对路径从程序目录算起。
 
 ## General 通用
-偏好设置里分在 "通用"、"搜索窗口" 和 "热键" (CapsLock) 三页。
+偏好设置里分在 "通用"、"搜索窗口" 和 "键盘" 三页。
 
 | 键 | 默认 | 说明 |
 |---|---|---|

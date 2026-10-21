@@ -5,6 +5,20 @@
 
 ## [未发布]
 
+## [2026.10.20.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置新增 "键盘" 页 (第 3 页): 输入法 (CapsLock 键、大写锁定开 / 关的提示、在管理员窗口里也生效、呼出时切换到英文、窗口隐藏后切回原来的输入法) 和 搜索框按键 (按空格执行选中项、Tab 键、搜索历史条数)。这些选项原来在 "搜索窗口" 和 "自定义热键" 页, 设置文件不变
+  - "搜索窗口" 页只留窗口和空搜索框, 不再拥挤, 之前为了放下 Tab 键去掉的说明都恢复了
+  - "自定义热键" 页只有热键列表, 列表更高
+  - "自定义热键" 页的侧边栏图标换成快捷键图标, "键盘" 页用键盘图标
+- 偏好设置里所有下拉框的默认选项后面都标上 "(默认)", 例如 "自动补全 (默认)"; 选项放不下时下拉框自动加宽
+- "Tab 键" 的两个选项改名为 "自动补全" 和 "选择下一个结果", 更好懂
+
 ## [2026.10.20.4]
 
 测试版。
@@ -853,7 +867,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.5...HEAD
+[2026.10.20.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.4...2026.10.20.5
 [2026.10.20.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.3...2026.10.20.4
 [2026.10.20.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.2...2026.10.20.3
 [2026.10.20.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.1...2026.10.20.2

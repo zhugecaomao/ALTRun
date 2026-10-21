@@ -32,7 +32,7 @@ class PreferencesWindow {
     static Gui := "", Working := "", Pages := [], Binds := [], PageList := ""
     static _lists := Map()                                                  ; 列表页的设置路径 (例如 "CustomCommands") -> 加入 / 编辑项目的方法
     ; 页面的顺序 (和 _BuildPages 一致, 有测试检查); 搜索里的 "ALTRun 偏好设置: 外观" 等由它生成, 不用打开窗口
-    static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
+    static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Keyboard", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
         , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
         , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp"
         , "Prefs.Page.Usage", "Prefs.Page.Advanced"]
@@ -264,7 +264,7 @@ class PreferencesWindow {
 
     ; 每一页对应的 Wiki 页面 (帮助按钮 / F1)
     static WikiPage(nameKey) {
-        static pages := Map("Prefs.Page.General", "Configuration", "Prefs.Page.Window", "Usage", "Prefs.Page.Appearance", "Themes"
+        static pages := Map("Prefs.Page.General", "Configuration", "Prefs.Page.Window", "Usage", "Prefs.Page.Keyboard", "Hotkeys", "Prefs.Page.Appearance", "Themes"
                           , "Prefs.Page.Features", "Usage", "Prefs.Page.Applications", "Configuration", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Commands", "Commands-and-Snippets", "Prefs.Page.Snippets", "Commands-and-Snippets"
                           , "Prefs.Page.Clipboard", "Clipboard", "Prefs.Page.WebSearch", "Web-Search", "Prefs.Page.Calculator", "Calculator"
@@ -365,7 +365,7 @@ class PreferencesWindow {
     ; Pages
     ;---------------------------------------------------------------------------
     ; 每一页的建法, 和 PageKeys 一一对应
-    static PageBuilders := ["_BuildGeneral", "_BuildWindow", "_BuildAppearance", "_BuildFeatures", "_BuildApplications"
+    static PageBuilders := ["_BuildGeneral", "_BuildWindow", "_BuildKeyboard", "_BuildAppearance", "_BuildFeatures", "_BuildApplications"
         , "_BuildFileSearch", "_BuildFileIndex", "_BuildCommands", "_BuildSnippets", "_BuildClipboard", "_BuildWebSearch"
         , "_BuildCalculator", "_BuildScripts", "_BuildHotkeys", "_BuildQuickSwitch", "_BuildQuickSwitchPanel", "_BuildDateStamp"
         , "_BuildUsage", "_BuildAdvanced"]
@@ -450,21 +450,52 @@ class PreferencesWindow {
         PreferencesWindow._Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
         PreferencesWindow._Check("Appearance.StatusBar", "Prefs.StatusBar")       ; 使用提示在状态栏里 (关掉状态栏时在空搜索框里), 放在一起
         PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
-        PreferencesWindow._Section("Prefs.Group.Typing")
-        english := PreferencesWindow._InlineChoice("General.SwitchToEnglishInput", "Prefs.EnglishInput", [0, 1, 2]   ; 呼出时切换到英文
-            , [I18n.T("Prefs.EnglishInput.Off"), I18n.T("Prefs.EnglishInput.Keyboard"), I18n.T("Prefs.EnglishInput.Mode")])
-        restore := PreferencesWindow._Check("General.RestoreInput", "Prefs.RestoreInput", PreferencesWindow._InputX() + 18)   ; 子选项, 缩进
-        restore.Enabled := english.Value > 1
-        english.OnEvent("Change", (*) => restore.Enabled := english.Value > 1)
-        PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun")
-        PreferencesWindow._InlineChoice("General.TabKey", "Prefs.TabKey", ["Complete", "Next"]
-            , [I18n.T("Prefs.TabKey.Complete"), I18n.T("Prefs.TabKey.Next")])
-        history := PreferencesWindow._InlineField("General.HistorySize", "Prefs.HistorySize", "S", "number")   ; Ctrl+↑ / ↓ 调出搜索历史, 也是输入时用的
         PreferencesWindow._Section("Prefs.Section.EmptyBox")
         placeholder := PreferencesWindow._InlineField("Appearance.Placeholder", "Prefs.Placeholder", "M")
         Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; 留空时灰色显示默认的文字
         recent := PreferencesWindow._InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
-        PreferencesWindow._AlignLeft(history, placeholder, recent)          ; 这一页的几个输入框左边对齐
+        PreferencesWindow._AlignLeft(placeholder, recent)                   ; the input boxes on this page share one left edge
+    }
+
+    ; Keyboard: input method switching (Caps Lock, English when shown) and the keys in the search box.
+    ; A two-column form like the General page: labels right-aligned on the left, every control starting on one line
+    static _BuildKeyboard() {
+        PreferencesWindow._BeginPage("Prefs.Page.Keyboard", 190)
+        PreferencesWindow._Section("Prefs.Group.InputMethod")
+        capsLabels := [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")]
+        capsLock := PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"], capsLabels)   ; Caps Lock switches the input method (CapsLockSwitch)
+        notice := PreferencesWindow._Check("General.CapsLockNotify", "Prefs.CapsLockNotify")   ; hint when Caps Lock turns on / off
+        elevated := PreferencesWindow._Check("General.CapsLockElevated", "Prefs.CapsLockElevated")   ; also in administrator windows (CapsLockHelper)
+        controls := PreferencesWindow._current.Controls
+        elevatedDesc := controls[controls.Length]                           ; the description just added (sized for two lines, so the shorter text fits too)
+        PreferencesWindow._ShieldBefore(elevated)                           ; turning it on / off asks for UAC
+        update := (*) => (notice.Enabled := elevated.Enabled := capsLock.Value > 1
+            , elevatedDesc.Text := I18n.T(elevated.Enabled ? "Prefs.CapsLockElevated.Desc" : "Prefs.CapsLockElevated.NeedsMode"))   ; when grayed out, say why
+        update()
+        capsLock.OnEvent("Change", update)
+        englishLabels := [I18n.T("Prefs.EnglishInput.Off"), I18n.T("Prefs.EnglishInput.Keyboard"), I18n.T("Prefs.EnglishInput.Mode")]
+        english := PreferencesWindow._Choice("General.SwitchToEnglishInput", "Prefs.EnglishInput", [0, 1, 2], englishLabels)   ; switch to English when shown
+        restore := PreferencesWindow._Check("General.RestoreInput", "Prefs.RestoreInput")
+        restore.Enabled := english.Value > 1
+        english.OnEvent("Change", (*) => restore.Enabled := english.Value > 1)
+        PreferencesWindow._Section("Prefs.Group.SearchKeys")
+        PreferencesWindow._Check("General.SpaceToRun", "Prefs.SpaceToRun", , , "Prefs.Group.SpaceKey")
+        tabLabels := [I18n.T("Prefs.TabKey.Complete"), I18n.T("Prefs.TabKey.Next")]
+        tab := PreferencesWindow._Choice("General.TabKey", "Prefs.TabKey", ["Complete", "Next"], tabLabels)
+        PreferencesWindow._Field("General.HistorySize", "Prefs.HistorySize", "S", "number")   ; Ctrl+↑ / ↓ recall earlier searches
+        PreferencesWindow._SameWidth(capsLock, english, tab)
+    }
+
+    ; Drop-downs in one column get one width: wide enough for the longest option of any of them, at least "M"
+    ; (a button in the column just takes the same width)
+    static _SameWidth(ctrls*) {
+        width := PreferencesWindow.WidthM
+        for ctrl in ctrls
+            if (ctrl.Type = "DDL")
+                width := Max(width, PreferencesWindow._ChoiceWidth(ctrl))
+        width := Min(width, PreferencesWindow._InputW())
+        for ctrl in ctrls
+            ctrl.Move(, , width)
     }
 
     static _BuildAppearance() {
@@ -483,14 +514,15 @@ class PreferencesWindow {
             , ["Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir)])
         PreferencesWindow._Section("Prefs.Section.Size")
         PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"], ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "number"])
-        PreferencesWindow._Choice("Appearance.Density", "Prefs.Density", ThemeManager.Densities   ; 任何主题都能缩放 (ThemeManager.Scaled)
+        density := PreferencesWindow._Choice("Appearance.Density", "Prefs.Density", ThemeManager.Densities   ; any theme can be scaled (ThemeManager.Scaled)
             , [I18n.T("Prefs.Density.Comfortable"), I18n.T("Prefs.Density.Normal"), I18n.T("Prefs.Density.Compact")])
         PreferencesWindow._Check("Appearance.Fade", "Prefs.Fade", , , "Prefs.Group.Animation")
         PreferencesWindow._Section("Prefs.WindowPosition")
-        PreferencesWindow._Choice("Appearance.ShowOn", "Prefs.ShowOn", ["Mouse", "Primary", "Active"]
-            , [I18n.T("Prefs.ShowOn.Mouse"), I18n.T("Prefs.ShowOn.Primary"), I18n.T("Prefs.ShowOn.Active")], "B")
+        showOn := PreferencesWindow._Choice("Appearance.ShowOn", "Prefs.ShowOn", ["Mouse", "Primary", "Active"]
+            , [I18n.T("Prefs.ShowOn.Mouse"), I18n.T("Prefs.ShowOn.Primary"), I18n.T("Prefs.ShowOn.Active")])
         PreferencesWindow._Check("Appearance.RememberPosition", "Prefs.RememberPosition", , , "Prefs.Group.Dragging")
-        PreferencesWindow._Button("Prefs.ResetPosition", (button, *) => PreferencesWindow._ResetPosition(button))
+        reset := PreferencesWindow._Button("Prefs.ResetPosition", (button, *) => PreferencesWindow._ResetPosition(button))
+        PreferencesWindow._SameWidth(density, showOn, reset)                ; one column: the two drop-downs and the button below them
     }
 
     ; 记住的位置恢复为默认 (保存时生效)
@@ -880,23 +912,11 @@ class PreferencesWindow {
     }
 
     static _BuildHotkeys() {
-        PreferencesWindow._BeginPage("Prefs.Page.Hotkeys", 100)                ; 标签列窄一些: 下面的列表从最左边开始, 上面的选项也靠左
-        capsLock := PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"]     ; 按 CapsLock 切换输入法 (CapsLockSwitch)
-            , [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")])
-        notice := PreferencesWindow._Check("General.CapsLockNotify", "Prefs.CapsLockNotify")   ; 大写锁定开 / 关的提示
-        elevated := PreferencesWindow._Check("General.CapsLockElevated", "Prefs.CapsLockElevated")   ; 管理员窗口里也生效 (CapsLockHelper)
-        controls := PreferencesWindow._current.Controls
-        elevatedDesc := controls[controls.Length]                           ; 刚加的说明 (按两行的长度建好, 换短的文字也放得下)
-        PreferencesWindow._ShieldBefore(elevated)                           ; 打开 / 关掉时要确认 UAC
-        update := (*) => (notice.Enabled := elevated.Enabled := capsLock.Value > 1
-            , elevatedDesc.Text := I18n.T(elevated.Enabled ? "Prefs.CapsLockElevated.Desc" : "Prefs.CapsLockElevated.NeedsMode"))   ; 灰着时说明为什么
-        update()
-        capsLock.OnEvent("Change", update)
-        PreferencesWindow._Gap()
+        PreferencesWindow._BeginPage("Prefs.Page.Hotkeys", 100)                ; narrow label column: the list starts at the left edge (Caps Lock is on the Keyboard page)
         actions := [["ToggleWindow", "Show / hide ALTRun (ToggleWindow)"]]
         for command in SystemProvider.Commands()
             actions.Push([command["Id"], command["Title"] " (" command["Id"] ")"])
-        PreferencesWindow._List("Hotkeys", 398
+        PreferencesWindow._List("Hotkeys", 500
             , [["Prefs.Col.Key", "Key", 160], ["Prefs.Col.Action", "Action", 150], ["Prefs.Col.WinTitle", "WinTitle", 230]]
             , [ItemEditor.Field("Key", "Prefs.Col.Key", "hotkey", true, "", I18n.T("Prefs.HotkeyHint"))
              , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)
@@ -1304,7 +1324,6 @@ class PreferencesWindow {
             case "S": return PreferencesWindow.WidthS
             case "M": return PreferencesWindow.WidthM
             case "K": return PreferencesWindow.WidthK
-            case "B": return PreferencesWindow.ButtonW                      ; 和按钮一样宽 (外观页: 主题下拉框和下面的按钮对齐)
         }
         return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
     }
@@ -1373,29 +1392,6 @@ class PreferencesWindow {
         }
     }
 
-    ; 标签后面紧跟下拉框 (分节排列的页面用): "呼出时切换到 [不切换 v]"。下拉框按最长的选项定宽
-    static _InlineChoice(path, labelKey, values, labels) {
-        x := PreferencesWindow._InputX()
-        PreferencesWindow._y += 3
-        label := PreferencesWindow._Add("Text", "x" x, I18n.T(labelKey))
-        PreferencesWindow._y -= 3
-        label.GetPos(, , &labelW)
-        width := 0
-        for text in labels
-            width := Max(width, Ceil(Win.TextExtent(label.Hwnd, text) * 96 / A_ScreenDPI) + 32)   ; 加上箭头按钮和边框
-        width := Min(width, PreferencesWindow.ContentX + PreferencesWindow.ContentW - x - labelW - 8)
-        ctrl := PreferencesWindow._Add("DropDownList", "x" (x + labelW + 8) " w" width, labels)
-        current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
-        ctrl.Value := 1
-        for index, value in values
-            if (value = current)
-                ctrl.Value := index
-        PreferencesWindow._Bind(path, () => values[ctrl.Value])
-        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)
-        PreferencesWindow._Desc(labelKey, x)
-        return ctrl
-    }
-
     ; kind: text / number / file / folder; size: "S" / "M" / "L" (见 _Width)
     static _Field(path, labelKey, size, kind := "text") {
         label := PreferencesWindow._Label(labelKey)
@@ -1425,15 +1421,38 @@ class PreferencesWindow {
 
     static _Choice(path, labelKey, values, labels, size := "M") {
         label := PreferencesWindow._Label(labelKey)
-        ctrl := PreferencesWindow._Add("DropDownList", "x" PreferencesWindow._InputX() " w" PreferencesWindow._Width(size), labels)
+        ctrl := PreferencesWindow._DropDown(PreferencesWindow._InputX(), path, values, labels, size)
+        PreferencesWindow._BelowInput(labelKey, label, ctrl)
+        return ctrl
+    }
+
+    ; A drop-down bound to path. The option matching the default value is marked "(default)",
+    ; and the box widens (up to the right edge of the page) when an option would be cut off
+    static _DropDown(x, path, values, labels, size) {
+        static defaults := AppSettings.Defaults()
+        default := PreferencesWindow.GetPath(defaults, path)
+        marked := []
+        for index, label in labels
+            marked.Push(values[index] = default ? I18n.T("Prefs.DefaultChoice", label) : label)
+        ctrl := PreferencesWindow._Add("DropDownList", "x" x " w" PreferencesWindow._Width(size), marked)
+        width := Min(PreferencesWindow._ChoiceWidth(ctrl), PreferencesWindow.ContentX + PreferencesWindow.ContentW - x)
+        if (width > PreferencesWindow._Width(size))
+            ctrl.Move(, , width)
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         ctrl.Value := 1
         for index, value in values
             if (value = current)
                 ctrl.Value := index
         PreferencesWindow._Bind(path, () => values[ctrl.Value])
-        PreferencesWindow._BelowInput(labelKey, label, ctrl)
         return ctrl
+    }
+
+    ; Width a drop-down needs to show its longest option in full
+    static _ChoiceWidth(ctrl) {
+        width := 0
+        for text in ControlGetItems(ctrl)
+            width := Max(width, Ceil(Win.TextExtent(ctrl.Hwnd, text) * 96 / A_ScreenDPI) + 32)   ; plus the arrow button and border
+        return width
     }
 
     static _Lines(path, labelKey, rows) {
@@ -1557,15 +1576,8 @@ class PreferencesWindow {
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         if (kind = "hotkey")
             return PreferencesWindow._HotkeyBox(x, path)
-        if (kind = "choice") {
-            ctrl := PreferencesWindow._Add("DropDownList", "x" x " w" PreferencesWindow._Width(size), labels)
-            ctrl.Value := 1
-            for index, value in values
-                if (value = current)
-                    ctrl.Value := index
-            PreferencesWindow._Bind(path, () => values[ctrl.Value])
-            return ctrl
-        }
+        if (kind = "choice")
+            return PreferencesWindow._DropDown(x, path, values, labels, size)
         text := (kind = "csv") ? PreferencesWindow.JoinCsv(current) : current
         ctrl := PreferencesWindow._Add("Edit", "x" x " w" PreferencesWindow._Width(size) " r1 -Multi" (kind = "number" ? " Number" : ""), text)
         switch kind {

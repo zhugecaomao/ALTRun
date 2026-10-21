@@ -15,7 +15,9 @@ The default one: the middle mouse button in RAPT (`RAPTW.exe`) opens PT Tools. `
 ![Preferences → Hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 
 ### Caps Lock switches the input method
-Like on a Mac: at the top of Preferences → Hotkeys, set **Caps Lock** to one of:
+![Preferences → Keyboard](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-keyboard.png)
+
+Like on a Mac: in Preferences → Keyboard → Input method, set **Caps Lock** to one of:
 - **Press to switch input method**: switches to the next installed input method, like `Win+Space` (for example English (US) ↔ Microsoft Pinyin)
 - **Press to switch Chinese / English mode**: switches the mode of the current input method, like pressing `Shift` in Microsoft Pinyin; handy when only a Chinese input method is installed
 

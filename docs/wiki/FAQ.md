@@ -36,7 +36,7 @@ Programs compiled with AutoHotkey are sometimes reported by mistake. Add the ALT
 Just after Windows starts, Explorer and OneDrive (or another sync tool) are often busy for a while. ALTRun asks Windows for icons and shortcuts, so it has to wait for them too: the search window may open slowly, or ignore typing for a few seconds. It recovers by itself once Windows has settled down. To check, turn on the debug log: lines starting with `Perf: startup:` show how long each startup step took, and `Perf: icon ... ms` lines show icons that took a long time to load. If it happens every time, look in Task Manager at what is using the CPU or disk after startup (OneDrive syncing many files is a common cause).
 
 ### Searching is awkward with a Chinese input method
-In Preferences → Search Window, set "Switch to English when shown" to "English (US) keyboard" (the keyboard needs to be added in Windows) or "English mode of the current input method" (keeps your input method and only turns it to English). Chinese names can also be searched by their pinyin initials ("wx" → 微信).
+In Preferences → Keyboard, set "Switch to English when shown" to "English (US) keyboard" (the keyboard needs to be added in Windows) or "English mode of the current input method" (keeps your input method and only turns it to English). Chinese names can also be searched by their pinyin initials ("wx" → 微信).
 
 ### Snippet expansion doesn't work
 - Make sure the snippet has a keyword in Preferences → Snippets and "Expand automatically when typed" is ticked
@@ -46,7 +46,7 @@ In Preferences → Search Window, set "Switch to English when shown" to "English
 ### Caps Lock and other features don't work in windows running as administrator
 Windows doesn't let programs with normal rights control windows running as administrator. While such a window is in front, switching the input method with Caps Lock, double-tapping Ctrl, snippet expansion, pasting a result into that window and Quick Switch for its dialogs don't work; showing ALTRun, searching and opening programs work as usual.
 
-**Just switching the input method with Caps Lock**: tick "Also in windows running as administrator" in Preferences → Hotkeys. Only a small helper that handles Caps Lock runs as administrator; ALTRun itself keeps normal rights, without the side effects below. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method).
+**Just switching the input method with Caps Lock**: tick "Also in windows running as administrator" in Preferences → Keyboard. Only a small helper that handles Caps Lock runs as administrator; ALTRun itself keeps normal rights, without the side effects below. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method).
 
 If you need the other features often too, run all of ALTRun as administrator:
 - **As administrator at sign-in** (no UAC prompt): turn off "Launch ALTRun at login" in Preferences → General, then open Task Scheduler → Create Task:

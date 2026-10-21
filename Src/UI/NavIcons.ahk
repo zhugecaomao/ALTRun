@@ -15,6 +15,7 @@ class NavIcons {
     static Glyphs := Map(
         "Prefs.Page.General",      0xE713,    ; Settings
         "Prefs.Page.Window",       0xE721,    ; Search
+        "Prefs.Page.Keyboard",     0xE765,    ; KeyboardClassic
         "Prefs.Page.Appearance",   0xE790,    ; Color
         "Prefs.Page.Features",     0xEA86,    ; Puzzle
         "Prefs.Page.Applications", 0xE71D,    ; AllApps
@@ -26,7 +27,7 @@ class NavIcons {
         "Prefs.Page.WebSearch",    0xE774,    ; Globe
         "Prefs.Page.Calculator",   0xE8EF,    ; Calculator
         "Prefs.Page.Scripts",      0xE943,    ; Code
-        "Prefs.Page.Hotkeys",      0xE765,    ; KeyboardClassic
+        "Prefs.Page.Hotkeys",      0xEDA7,    ; KeyboardShortcut
         "Prefs.Page.QuickSwitch",  0xE8AB,    ; Switch
         "Prefs.Page.QSPanel",      0xE8A0,    ; OpenPane
         "Prefs.Page.DateStamp",    0xE787,    ; Calendar
