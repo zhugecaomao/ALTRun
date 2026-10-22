@@ -900,7 +900,7 @@ class I18n {
         ; Extensions
         s["Prefs.QuickSwitch"]         := "File dialog quick switch"
         s["Prefs.QSHotkey"]             := "Hotkey"
-        s["Prefs.QSHotkey.Desc"]        := "Folder of the TC, Opus or Explorer window you used last."
+        s["Prefs.QSHotkey.Desc"]        := "Jumps to the folder of the Total Commander, Directory Opus or File Explorer window you used last."
         s["Prefs.QSMenu"]              := "Hotkey"
         s["Prefs.QSPanel"]             := "Show the folder panel below dialogs"
         s["Prefs.QSPanelSection"]      := "Folder panel"
@@ -920,7 +920,7 @@ class I18n {
         s["Prefs.QSStandard"]           := "Standard Open / Save dialogs (ahk_class #32770)"
         s["Prefs.QSBrowse"]             := "Browse for Folder dialogs (folder tree only)"
         s["Prefs.QSOtherDialogs"]       := "Other dialogs"
-        s["Prefs.QSOtherDialogs.Desc"]  := "One window per line, e.g. ahk_class Qt5QWindowIcon for WPS Office."
+        s["Prefs.QSOtherDialogs.Desc"]  := "Separate windows with commas, e.g. ahk_class Qt5QWindowIcon for WPS Office."
         s["Prefs.QSExclude"]            := "Never in"
         s["Prefs.QSExclude.Desc"]       := "Never switch in these. One per line: ahk_class, ahk_exe or a title."
         s["Prefs.QSAutoExclude"]        := "No auto jump in"
