@@ -273,36 +273,23 @@ class PreferencesWindow {
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
 
-    ; 复选框文字前面放 Windows 的 UAC 小盾牌 (imageres.dll 的资源 78, 和操作面板的 "以管理员身份运行" 一样; 取不到时用
-    ; 系统的 IDI_SHIELD): 改这个选项要确认 UAC。复选框里放不进图标 (BCM_SETSHIELD 只用于按钮), 所以文字前面空出图标的
-    ; 位置, 放一个图片控件压在上面 (没有 SS_NOTIFY, 点它等于点复选框)。后建的控件在 Z 序的下面, 所以把图片挪到最上面,
-    ; 复选框加 WS_CLIPSIBLINGS: 启用 / 禁用时复选框整片重画, 不然会把盾牌盖掉
-    static _ShieldBefore(check) {
+    ; UAC shield right after the checkbox text: changing the option asks for UAC (imageres.dll icon 78, as for "Run as
+    ; administrator" in the actions panel; IDI_SHIELD when missing). A checkbox can't hold an icon (BCM_SETSHIELD is for
+    ; buttons only), so it is a picture beside it, not on top: one over the checkbox was painted over when it was enabled / disabled
+    static _ShieldAfter(check) {
         size := Win.Scale(16), hIcon := 0
         DllCall("user32\PrivateExtractIconsW", "WStr", "imageres.dll", "Int", -78, "Int", size, "Int", size, "Ptr*", &hIcon, "Ptr", 0, "UInt", 1, "UInt", 0)
         if !hIcon
             hIcon := DllCall("LoadImageW", "Ptr", 0, "Ptr", 32518, "UInt", 1, "Int", size, "Int", size, "UInt", 0x8000, "Ptr")   ; IDI_SHIELD, IMAGE_ICON, LR_SHARED
         if !hIcon
             return
-        spaceW := Max(1, Win.TextExtent(check.Hwnd, "    ") * 96 / A_ScreenDPI / 4)
-        check.Text := PreferencesWindow.ShieldPad(spaceW) check.Text
-        check.Opt("+0x4000000")                                             ; WS_CLIPSIBLINGS
         check.GetPos(&x, &y, , &h)
+        textW := Ceil(Win.TextExtent(check.Hwnd, check.Text) * 96 / A_ScreenDPI)
+        check.Move(, , 18 + textW + 2)                                      ; box and gap + text: the checkbox ends where its text does
         saved := PreferencesWindow._y
         PreferencesWindow._y := y + (h - 16) // 2
-        try {
-            shield := PreferencesWindow._Add("Picture", "x" (x + 18) " w16 h16", "HICON:" hIcon)
-            DllCall("SetWindowPos", "Ptr", shield.Hwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; HWND_TOP; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
-        }
+        try PreferencesWindow._Add("Picture", "x" (x + 18 + textW + 6) " w16 h16", "HICON:" hIcon)
         PreferencesWindow._y := saved
-    }
-
-    ; 文字前面给 16 像素的盾牌和一点间距留出位置的空格 (spaceW: 一个空格的宽度)
-    static ShieldPad(spaceW) {
-        pad := ""
-        Loop Ceil(20 / spaceW)
-            pad .= " "
-        return pad
     }
 
     ; "管理员窗口里也生效" 打开时建计划任务、关掉时删掉 (各确认一次 UAC)。建不成 (取消了 UAC) 时说明并把选项关回去;
@@ -460,7 +447,7 @@ class PreferencesWindow {
     ; Keyboard: input method switching (Caps Lock, English when shown) and the keys in the search box.
     ; A two-column form like the General page: labels right-aligned on the left, every control starting on one line
     static _BuildKeyboard() {
-        PreferencesWindow._BeginPage("Prefs.Page.Keyboard", 190)
+        PreferencesWindow._BeginPage("Prefs.Page.Keyboard", 150)
         PreferencesWindow._Section("Prefs.Group.InputMethod")
         capsLabels := [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")]
         capsLock := PreferencesWindow._Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"], capsLabels)   ; Caps Lock switches the input method (CapsLockSwitch)
@@ -468,7 +455,7 @@ class PreferencesWindow {
         elevated := PreferencesWindow._Check("General.CapsLockElevated", "Prefs.CapsLockElevated")   ; also in administrator windows (CapsLockHelper)
         controls := PreferencesWindow._current.Controls
         elevatedDesc := controls[controls.Length]                           ; the description just added (sized for two lines, so the shorter text fits too)
-        PreferencesWindow._ShieldBefore(elevated)                           ; turning it on / off asks for UAC
+        PreferencesWindow._ShieldAfter(elevated)                            ; turning it on / off asks for UAC
         update := (*) => (notice.Enabled := elevated.Enabled := capsLock.Value > 1
             , elevatedDesc.Text := I18n.T(elevated.Enabled ? "Prefs.CapsLockElevated.Desc" : "Prefs.CapsLockElevated.NeedsMode"))   ; when grayed out, say why
         update()
@@ -865,7 +852,7 @@ class PreferencesWindow {
     ; 计算器: 货币换算, 结构计算 (梁主筋 / 配筋面积) 和它的参数
     static _BuildCalculator() {
         base := "Features.Calculator."
-        PreferencesWindow._BeginPage("Prefs.Page.Calculator", 180)
+        PreferencesWindow._BeginPage("Prefs.Page.Calculator", 150)
         PreferencesWindow._Section("Prefs.Section.Calculator")
         PreferencesWindow._Check(base "Currency", "Prefs.Currency")
         PreferencesWindow._Section("Prefs.Section.Structural")
@@ -928,7 +915,7 @@ class PreferencesWindow {
     ; 对话框快速跳转 (Listary 的 Quick Switch)
     static _BuildQuickSwitch() {
         base := "Extensions.QuickSwitch."
-        PreferencesWindow._BeginPage("Prefs.Page.QuickSwitch", 170)
+        PreferencesWindow._BeginPage("Prefs.Page.QuickSwitch", 150)
         PreferencesWindow._Section("Prefs.QuickSwitch")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
         PreferencesWindow._Pair([base "TotalCmdHotkey", "Prefs.QSTotalCmd", "K", "hotkey"], [base "ExplorerHotkey", "Prefs.QSExplorer", "K", "hotkey"])

@@ -2821,7 +2821,18 @@ class Tests {
                     for ctrl in page.Controls
                         hint := hint || (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.CapsLockElevated.NeedsMode"))
                     TestRunner.True("PreferencesFit." lang " caps lock helper hint", hint)
-                    TestRunner.Equal("PreferencesFit." lang " shield space", StrLen(PreferencesWindow.ShieldPad(4)) " " StrLen(PreferencesWindow.ShieldPad(3)), "5 7")
+                    shieldCheck := "", shield := ""                       ; the UAC shield sits right after the checkbox text, not on top of the checkbox
+                    for ctrl in page.Controls {
+                        if (ctrl.Type = "CheckBox" && ctrl.Text = I18n.T("Prefs.CapsLockElevated"))
+                            shieldCheck := ctrl
+                        else if (ctrl.Type = "Pic")
+                            shield := ctrl
+                    }
+                    if IsObject(shield) && IsObject(shieldCheck) {
+                        shieldCheck.GetPos(&cx, &cy, &cw, &ch), shield.GetPos(&sx, &sy, , &sh)
+                        TestRunner.True("PreferencesFit." lang " shield after the text (" cx + cw " <= " sx ")", cx + cw <= sx && sx <= cx + cw + 8)
+                        TestRunner.True("PreferencesFit." lang " shield centered on the row", Abs((sy + sh / 2) - (cy + ch / 2)) <= 1)
+                    }
                 }
                 if (page.Key = "Prefs.Page.Window" || page.Key = "Prefs.Page.Keyboard") {   ; the input boxes / drop-downs of these pages share one left edge
                     lefts := "", count := 0

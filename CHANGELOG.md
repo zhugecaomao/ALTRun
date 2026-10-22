@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.20.10]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置的 "键盘"、"计算器"、"对话框快速跳转" 三页: 左边的标签列和 "一键加日期" 页一样宽, 右边的选项和说明不再挤在右侧
+  - 英文的 "Switch to English when shown" 简化为 "Switch to English" (说明里写了呼出时切换); "对话框快速跳转" 的两个热键标签简化为 "Total Commander" / "资源管理器"
+
+### 修复
+- 偏好设置 → 键盘: 改 "CapsLock 键" 时, "在管理员窗口里也生效" 前面的管理员盾牌图标会消失。盾牌改放在文字后面, 不再和复选框重叠
+
 ## [2026.10.20.9]
 
 测试版。
@@ -914,7 +927,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.10...HEAD
+[2026.10.20.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.9...2026.10.20.10
 [2026.10.20.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.8...2026.10.20.9
 [2026.10.20.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.7...2026.10.20.8
 [2026.10.20.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.6...2026.10.20.7
