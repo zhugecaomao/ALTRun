@@ -944,7 +944,8 @@ class PreferencesWindow {
         x := PreferencesWindow._InputX()
         standard := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T("Prefs.QSStandard"))
         standard.Value := (others.Length < windows.Length) ? 1 : 0
-        PreferencesWindow._Below(6, standard)                               ; 说明写在复选框的文字里 (这一页放了三个 4 行的列表); 和 _Check 没有说明时一样隔 6
+        PreferencesWindow._Below(6, standard)                               ; the description is in the checkbox text (this page has three 4-line lists); 6 apart like _Check without a description
+        PreferencesWindow._Check(base "BrowseDialogs", "Prefs.QSBrowse")   ; "Browse for Folder": folder tree only (QuickSwitch.LooksLikeBrowseDialog)
         otherList := PreferencesWindow._WinList("", "Prefs.QSOtherDialogs", 4, others)
         PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], PreferencesWindow.SplitLines(otherList.Value)))
         PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 4)

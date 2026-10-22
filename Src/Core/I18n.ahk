@@ -919,6 +919,7 @@ class I18n {
         s["Prefs.Section.QSAuto"]       := "When a dialog opens"
         s["Prefs.Group.DialogWindows"]  := "Works in"
         s["Prefs.QSStandard"]           := "Standard Open / Save dialogs (ahk_class #32770)"
+        s["Prefs.QSBrowse"]             := "Browse for Folder dialogs (folder tree only)"
         s["Prefs.QSOtherDialogs"]       := "Other dialogs"
         s["Prefs.QSOtherDialogs.Desc"]  := "One window per line, e.g. ahk_class Qt5QWindowIcon for WPS Office."
         s["Prefs.QSExclude"]            := "Never in"

@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.20.9]
+
+测试版。
+
+Test build.
+
+### 新增
+- 对话框快速跳转支持旧式的 "浏览文件夹" 对话框 (只有文件夹树, 很多程序选择目录时还在用): 文件夹面板照常贴在下面, 点一下文件夹 (或用 `Ctrl+G` / `Ctrl+E`), 左边的文件夹树就展开并选中它, 确定还是由用户自己点; 和 Listary 一样
+  - 偏好设置 → 对话框快速跳转 → 生效的窗口 新增 "浏览文件夹对话框" 开关, 默认打开 (`Extensions.QuickSwitch.BrowseDialogs`)
+
 ## [2026.10.20.8]
 
 测试版。
@@ -904,7 +914,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.9...HEAD
+[2026.10.20.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.8...2026.10.20.9
 [2026.10.20.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.7...2026.10.20.8
 [2026.10.20.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.6...2026.10.20.7
 [2026.10.20.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.5...2026.10.20.6

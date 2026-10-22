@@ -22,7 +22,7 @@
 ;===============================================================================
 
 class QuickSwitch {
-    static Options := Map()
+    static Options := Map(), _hasExclude := false
     static _lastWasTC := false
     static _panel := "", _panelFor := 0, _panelFolders := [], _panelPos := ""
 
@@ -32,8 +32,10 @@ class QuickSwitch {
             return
         Loop Parse, options["DialogWindows"], ","
             GroupAdd("ALTRunDialogs", Trim(A_LoopField))
+        QuickSwitch._hasExclude := false
         Loop Parse, options["ExcludeWindows"], ","
-            GroupAdd("ALTRunDialogExclude", Trim(A_LoopField))
+            if (Trim(A_LoopField) != "")
+                GroupAdd("ALTRunDialogExclude", Trim(A_LoopField)), QuickSwitch._hasExclude := true
         if options.Has("AutoSwitchExclude")
             Loop Parse, options["AutoSwitchExclude"], ","
                 if (Trim(A_LoopField) != "")
@@ -414,13 +416,19 @@ class QuickSwitch {
 
     ; 只认真正的打开/保存文件对话框 (有文件名输入框 + 文件列表 + 按钮或路径栏)
     static IsFileDialog(*) {
-        if (!WinActive("ahk_group ALTRunDialogs") || WinActive("ahk_group ALTRunDialogExclude"))
+        browse := QuickSwitch.Options.Has("BrowseDialogs") && QuickSwitch.Options["BrowseDialogs"]
+        listed := WinActive("ahk_group ALTRunDialogs")
+        if !(listed || browse && WinActive("ahk_class #32770"))
             return false
-        controls := [], title := "", winClass := ""
+        if (QuickSwitch._hasExclude && WinActive("ahk_group ALTRunDialogExclude"))
+            return false
+        controls := [], title := "", winClass := ""                         ; read once for both kinds (this runs every 250 ms)
         try controls := WinGetControls("A")
         try title := WinGetTitle("A")
         try winClass := WinGetClass("A")
-        return QuickSwitch.LooksLikeFileDialog(winClass, controls, title)
+        if (browse && QuickSwitch.LooksLikeBrowseDialog(winClass, controls, QuickSwitch._TreeId(controls, "A")))
+            return true
+        return listed && QuickSwitch.LooksLikeFileDialog(winClass, controls, title)
     }
 
     ; 按窗口的控件判断 (和系统语言无关)。#32770 是系统对话框: 要有资源管理器的文件视图才算,
@@ -435,6 +443,58 @@ class QuickSwitch {
             : QuickSwitch._HasControl(controls, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
         hasButtons  := QuickSwitch._HasControl(controls, "^Button\d+$", "^ToolbarWindow32\d+$", "^ComboBoxEx32\d+$", "^ComboBox\d+$")
         return hasNameEdit && hasFileView && hasButtons
+    }
+
+    ; The old "Browse for Folder" dialog (SHBrowseForFolder): only a folder tree, no file list, so it is not one
+    ; of the dialogs above. Told apart by fixed names, whatever the system language: the new style puts the tree
+    ; in a "SHBrowseForFolder ShellNameSpace Control", the classic style has the tree itself with control ID 0x3741.
+    ; Turned on by Works in → "Browse for Folder dialogs" (BrowseDialogs); ExcludeWindows applies too
+    static IsBrowseWindow(hwnd) {
+        controls := [], winClass := ""
+        try controls := WinGetControls("ahk_id " hwnd), winClass := WinGetClass("ahk_id " hwnd)
+        return QuickSwitch.LooksLikeBrowseDialog(winClass, controls, QuickSwitch._TreeId(controls, "ahk_id " hwnd))
+    }
+
+    static LooksLikeBrowseDialog(winClass, controls, treeId := 0) {
+        return winClass = "#32770" && (treeId = 0x3741 || QuickSwitch._HasControl(controls, "^SHBrowseForFolder ShellNameSpace Control\d+$"))
+    }
+
+    ; Control ID of the dialog's first tree view (0 = none)
+    static _TreeId(controls, win) {
+        for name in controls
+            if (name = "SysTreeView321")
+                try return DllCall("GetDlgCtrlID", "Ptr", ControlGetHwnd(name, win), "Int")
+        return 0
+    }
+
+    ; Select a folder in a "Browse for Folder" dialog's tree, like Listary: BFFM_SETSELECTIONW expands the tree to it.
+    ; The message carries a pointer, so the path is first written into the dialog's own process. Doesn't press OK
+    static SelectInBrowseDialog(folder, dialog) {
+        folder := RTrim(folder, "\")
+        if RegExMatch(folder, "^[A-Za-z]:$")
+            folder .= "\"                                                   ; a drive needs its backslash
+        pid := 0
+        try pid := WinGetPID("ahk_id " dialog)
+        if !pid || !(process := DllCall("OpenProcess", "UInt", 0x38, "Int", false, "UInt", pid, "Ptr"))   ; PROCESS_VM_OPERATION | VM_READ | VM_WRITE
+            return false
+        size := (StrLen(folder) + 1) * 2, ok := false
+        remote := DllCall("VirtualAllocEx", "Ptr", process, "Ptr", 0, "UPtr", size, "UInt", 0x3000, "UInt", 0x04, "Ptr")   ; MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE
+        if remote {
+            DllCall("IsWow64Process", "Ptr", process, "Int*", &wow64 := 0)
+            text := Buffer(size), StrPut(folder, text, "UTF-16")
+            if (!(wow64 && remote > 0xFFFFFFFF)                             ; a 32-bit program only sees the low 4 GB
+                && DllCall("WriteProcessMemory", "Ptr", process, "Ptr", remote, "Ptr", text, "UPtr", size, "Ptr", 0)) {
+                try {
+                    SendMessage(0x467, 1, remote, , "ahk_id " dialog, , , , 2000)   ; BFFM_SETSELECTIONW (WM_USER + 103); wParam TRUE = lParam is a path
+                    ok := true
+                }
+            }
+            DllCall("VirtualFreeEx", "Ptr", process, "Ptr", remote, "UPtr", 0, "UInt", 0x8000)   ; MEM_RELEASE
+        }
+        DllCall("CloseHandle", "Ptr", process)
+        if !ok
+            Logger.Error("QuickSwitch: cannot select " folder " in the Browse for Folder dialog")
+        return ok
     }
 
     static _HasControl(controls, patterns*) {
@@ -628,6 +688,8 @@ class QuickSwitch {
         if !(dialog && WinExist("ahk_id " dialog))
             return
         Usage.Count("QuickSwitch")
+        if QuickSwitch.IsBrowseWindow(dialog)                               ; folder tree only: select it there, pressing Enter would mean OK
+            return QuickSwitch.SelectInBrowseDialog(folder, dialog)
         className := ""
         try className := WinGetClass("ahk_id " dialog)
         if (className = "Qt5QWindowIcon") {                                 ; WPS 的对话框没有可用的 Edit 控件, 只能模拟输入

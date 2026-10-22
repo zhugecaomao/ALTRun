@@ -79,7 +79,7 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 - **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results (turn it on in Preferences → Features).
 
 **Extensions**
-- **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder.
+- **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder. Also works in the older Browse for Folder dialog (folder tree only).
 - **Date stamp**: while renaming a file, press `Ctrl+D` to add or update a date before the extension (`Report.docx` → `Report - 28.09.2026.docx`).
 - **Custom hotkeys**: assign a hotkey to any system command, optionally only inside specific programs.
 - **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown.
