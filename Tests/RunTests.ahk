@@ -1169,6 +1169,22 @@ class Tests {
         eq("file dialog is not a browse dialog", QuickSwitch.LooksLikeBrowseDialog("#32770", fileDialog), false)
         eq("browse dialog is not a file dialog", QuickSwitch.LooksLikeFileDialog("#32770", newStyle) QuickSwitch.LooksLikeFileDialog("#32770", classic), "00")
         eq("browse dialogs on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["BrowseDialogs"], 1)
+        ; Directory Opus: "dopusrt /info <file>,paths" output -> tabs; the jump uses the source tab of the lister
+        xml := '<?xml version="1.0"?>`n<results command="paths" result="1">`n'
+            . '  <path active_lister="1" active_tab="1" tab_state="2" side="1" lister="0x70e2a" tab="0x50e1a" display_path="C:\Program Files">C:\Program Files</path>`n'
+            . '  <path active_lister="1" active_tab="2" tab_state="1" side="2" lister="0x70e2a" tab="0xf0f30">D:\R&amp;D &lt;2026&gt;</path>`n'
+            . '  <path active_lister="1" active_tab="0" tab_state="0" side="1" lister="0x70e2a" tab="0x1">E:\Background tab</path>`n'
+            . '  <path active_lister="0" active_tab="1" tab_state="1" side="1" lister="0x9a0b4" tab="0x2">F:\Second lister</path>`n</results>'
+        tabs := QuickSwitch.ParseDOpusPaths(xml)
+        eq("opus tabs", tabs.Length, 4)
+        eq("opus tab fields", tabs[1].Path "|" tabs[1].Lister "|" tabs[1].State "|" tabs[1].ActiveLister, "C:\Program Files|" 0x70e2a "|2|1")
+        eq("opus entities", tabs[2].Path, "D:\R&D <2026>")
+        eq("opus: active lister's source tab", QuickSwitch.PickDOpusFolder(tabs), "D:\R&D <2026>")
+        eq("opus: a given lister", QuickSwitch.PickDOpusFolder(tabs, 0x9a0b4), "F:\Second lister")
+        eq("opus: unknown lister -> active", QuickSwitch.PickDOpusFolder(tabs, 0x1234), "D:\R&D <2026>")
+        eq("opus: nothing", QuickSwitch.PickDOpusFolder(QuickSwitch.ParseDOpusPaths("")), "")
+        eq("opus not running: no tabs, no dopusrt", WinExist("ahk_class dopus.lister") ? "skip" : QuickSwitch.DOpusTabs().Length, WinExist("ahk_class dopus.lister") ? "skip" : 0)
+        eq("file manager windows", QuickSwitch.IsFileManager(0), false)
         ; A real one: AutoHotkey's DirSelect is SHBrowseForFolder (option 4 = classic style). Detected, the folder is
         ; selected in its tree, and OK returns it
         target := A_WinDir "\System32"
@@ -2645,7 +2661,7 @@ class Tests {
         options["Keywords"] := savedKeywords
         quick := AppSettings.Extension("QuickSwitch"), savedQuick := [quick["Enabled"], quick["TotalCmdHotkey"], quick["ExplorerHotkey"]]
         quick["Enabled"] := 1, quick["TotalCmdHotkey"] := "^g", quick["ExplorerHotkey"] := "^e"
-        eq("quick switch key", keyOf("QuickSwitch"), "Ctrl+G / Ctrl+E (in an Open / Save dialog)")
+        eq("quick switch key", keyOf("QuickSwitch"), "Ctrl+G (in an Open / Save dialog)")
         quick["TotalCmdHotkey"] := "", quick["ExplorerHotkey"] := ""
         eq("quick switch without hotkeys", keyOf("QuickSwitch"), "")
         quick["Enabled"] := savedQuick[1], quick["TotalCmdHotkey"] := savedQuick[2], quick["ExplorerHotkey"] := savedQuick[3]

@@ -5,6 +5,21 @@
 
 ## [未发布]
 
+## [2026.10.20.11]
+
+测试版。
+
+Test build.
+
+### 新增
+- 对话框快速跳转支持 Directory Opus: 文件夹面板列出每个 Opus 窗口当前的标签页 (双栏时也列出另一侧), `Ctrl+G` 和自动跳转也能跳到 Opus 的文件夹。用 Opus 自带的 `dopusrt /info` 读取, 不经过剪贴板; 只在开着 Opus、需要文件夹时运行, 面板先显示其它文件夹, Opus 的稍后补上
+
+### 改进
+- 对话框快速跳转只用一个热键 `Ctrl+G`: 跳到最近用过的文件管理器 (Total Commander、Directory Opus 或资源管理器) 当前的文件夹, 和 Listary 一样。原来跳到资源管理器的 `Ctrl+E` 不再使用, 还给资源管理器和文件对话框原来的 "定位到搜索框"; 改过这个热键的话, 现在请用 `Ctrl+G`
+  - 偏好设置 → 对话框快速跳转: 两个热键框合成一个 "热键", 下面的说明写了支持哪三种文件管理器
+  - 自动跳转也支持这三种: 从其中任何一个切换到对话框时, 跳到刚才那个窗口的文件夹
+  - 设置文件不变 (仍用 `TotalCmdHotkey`), 改名和去掉 `ExplorerHotkey` 留到下次升级设置版本时再做
+
 ## [2026.10.20.10]
 
 测试版。
@@ -927,7 +942,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.11...HEAD
+[2026.10.20.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.10...2026.10.20.11
 [2026.10.20.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.9...2026.10.20.10
 [2026.10.20.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.8...2026.10.20.9
 [2026.10.20.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.7...2026.10.20.8

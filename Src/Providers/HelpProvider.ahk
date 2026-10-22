@@ -137,11 +137,8 @@ class HelpProvider {
                     keywords.Push(filter.Keyword)
                 return [HelpProvider._Keywords(keywords, ["doc", "zip"], 2)]
             case "QuickSwitch":
-                options := AppSettings.Extension("QuickSwitch"), keys := ""
-                for name in ["TotalCmdHotkey", "ExplorerHotkey"]
-                    if (options.Has(name) && options[name] != "")
-                        keys .= (keys = "" ? "" : " / ") Win.HotkeyLabel(options[name])
-                return [keys]
+                options := AppSettings.Extension("QuickSwitch")                ; one hotkey for TC / Opus / Explorer
+                return [(options.Has("TotalCmdHotkey") && options["TotalCmdHotkey"] != "") ? Win.HotkeyLabel(options["TotalCmdHotkey"]) : ""]
             case "Clipboard":   return [AppSettings.Feature("Clipboard")["Keyword"], Win.HotkeyLabel(AppSettings.Feature("Clipboard")["Hotkey"])]
             case "Snippets":    return [AppSettings.Feature("Snippets")["Keyword"]]
             case "Expand":      return [AppSettings.Feature("Snippets")["ExpandPrefix"]]

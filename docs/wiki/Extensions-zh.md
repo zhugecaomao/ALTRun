@@ -6,7 +6,7 @@
 
 | 页面 | 内容 |
 |---|---|
-| [对话框快速跳转](Quick-Switch-zh) | 在打开 / 保存对话框里跳到 Total Commander 或资源管理器已经打开的文件夹 (`Ctrl+G` / `Ctrl+E`), 自动跳转 |
+| [对话框快速跳转](Quick-Switch-zh) | 在打开 / 保存对话框里跳到 Total Commander、Directory Opus 或资源管理器已经打开的文件夹 (`Ctrl+G`), 自动跳转 |
 | [对话框文件夹面板](Quick-Switch-Panel-zh) | 对话框下面的文件夹面板: 列出打开的文件夹和最近的文件夹, 搜索框 (`Ctrl+Shift+G`) |
 | [一键加日期](Date-Stamp-zh) | 重命名文件或在文字末尾加上日期 (`Ctrl+D`) |
 | [自定义热键](Hotkeys-zh) | 给热键指定系统命令; CapsLock 切换输入法; 怎样设置热键 |

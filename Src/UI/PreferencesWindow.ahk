@@ -918,7 +918,7 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.QuickSwitch", 150)
         PreferencesWindow._Section("Prefs.QuickSwitch")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
-        PreferencesWindow._Pair([base "TotalCmdHotkey", "Prefs.QSTotalCmd", "K", "hotkey"], [base "ExplorerHotkey", "Prefs.QSExplorer", "K", "hotkey"])
+        PreferencesWindow._Field(base "TotalCmdHotkey", "Prefs.QSHotkey", "K", "hotkey")   ; one hotkey for TC / Opus / Explorer: the one used last
 
         ; DialogWindows 拆成 "标准对话框" 复选框 + 其它对话框的列表, 保存时再合成一个列表
         PreferencesWindow._Section("Prefs.Section.QSDialogs")
