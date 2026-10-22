@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.8]
+
+测试版。
+
+Test build.
+
+### 修复
+- ALTRun 自己打开着系统对话框时 (例如编辑自定义命令时点了 "选择文件" / "选择文件夹", 或者有确认框), 呼出的搜索窗口能搜索, 但 `Enter` 不能执行、`Esc` 不能关闭, `↑` `↓` `Tab` 等也不起作用。原因是这时 AutoHotkey 收不到发给搜索框的按键消息; 现在这种情况下改在搜索框自己的窗口过程里处理按键
+
 ## [2026.10.20.7]
 
 测试版。
@@ -895,7 +904,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.8...HEAD
+[2026.10.20.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.7...2026.10.20.8
 [2026.10.20.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.6...2026.10.20.7
 [2026.10.20.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.5...2026.10.20.6
 [2026.10.20.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.4...2026.10.20.5
