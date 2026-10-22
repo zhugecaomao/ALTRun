@@ -1159,6 +1159,39 @@ class Tests {
         eq("msinfo32 main window", QuickSwitch.LooksLikeFileDialog("#32770", msinfo), false)
         eq("other app with a plain list", QuickSwitch.LooksLikeFileDialog("TMyOpenDialog", msinfo), true)
         eq("no controls: title", QuickSwitch.LooksLikeFileDialog("Qt5QWindowIcon", [], "Open File") " " QuickSwitch.LooksLikeFileDialog("Qt5QWindowIcon", [], "Writer"), "1 0")
+        ; "Browse for Folder" (folder tree only): its own kind, never a file dialog (pressing Enter there means OK)
+        newStyle := ["Static1", "SHBrowseForFolder ShellNameSpace Control1", "SysTreeView321", "Static2", "Edit1", "Button1", "Button2", "Button3"]
+        classic := ["SysTreeView321", "Static1", "Static2", "Static3", "Edit1", "Button1", "Button2", "Button3"]
+        eq("browse dialog: new style", QuickSwitch.LooksLikeBrowseDialog("#32770", newStyle), true)
+        eq("browse dialog: classic tree ID", QuickSwitch.LooksLikeBrowseDialog("#32770", classic, 0x3741), true)
+        eq("other dialog with a tree", QuickSwitch.LooksLikeBrowseDialog("#32770", classic, 0x3F2), false)
+        eq("browse dialog: other class", QuickSwitch.LooksLikeBrowseDialog("TMyDialog", newStyle), false)
+        eq("file dialog is not a browse dialog", QuickSwitch.LooksLikeBrowseDialog("#32770", fileDialog), false)
+        eq("browse dialog is not a file dialog", QuickSwitch.LooksLikeFileDialog("#32770", newStyle) QuickSwitch.LooksLikeFileDialog("#32770", classic), "00")
+        eq("browse dialogs on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["BrowseDialogs"], 1)
+        ; A real one: AutoHotkey's DirSelect is SHBrowseForFolder (option 4 = classic style). Detected, the folder is
+        ; selected in its tree, and OK returns it
+        target := A_WinDir "\System32"
+        for options in [0, 4] {
+            seen := {Detected: "", Selected: ""}, tries := 0
+            probe() {
+                if !(dlg := SearchWindow.InSystemDialog()) {
+                    if (++tries < 50)
+                        SetTimer(probe, -100)
+                    return
+                }
+                seen.Detected := QuickSwitch.IsBrowseWindow(dlg)
+                seen.Selected := QuickSwitch.SelectInBrowseDialog(target "\", dlg)
+                Sleep(300)
+                PostMessage(0x111, 1, 0, , "ahk_id " dlg)                   ; WM_COMMAND IDOK
+                SetTimer(() => WinExist("ahk_id " dlg) && WinClose("ahk_id " dlg), -3000)   ; never left open
+            }
+            SetTimer(probe, -300)
+            picked := DirSelect("C:\", options)
+            eq("DirSelect " options ": detected", seen.Detected, true)
+            eq("DirSelect " options ": selected", seen.Selected, true)
+            eq("DirSelect " options ": OK returns it", StrLower(RTrim(picked, "\")), StrLower(target))
+        }
         base := [{Path: "D:\Projects\Tower A", Tag: "TC"}, {Path: "C:\Docs", Tag: "Recent"}]
         filtered := QuickSwitch.FilterFolders(base, "tower", ["D:\Projects\Tower A", "E:\Archive\Tower B"])
         eq("filter count", filtered.Length, 2)

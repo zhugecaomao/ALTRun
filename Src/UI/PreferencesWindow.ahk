@@ -944,14 +944,15 @@ class PreferencesWindow {
         x := PreferencesWindow._InputX()
         standard := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T("Prefs.QSStandard"))
         standard.Value := (others.Length < windows.Length) ? 1 : 0
-        PreferencesWindow._Below(6, standard)                               ; 说明写在复选框的文字里 (这一页放了三个 4 行的列表); 和 _Check 没有说明时一样隔 6
-        otherList := PreferencesWindow._WinList("", "Prefs.QSOtherDialogs", 4, others)
+        PreferencesWindow._Below(6, standard)                               ; the description is in the checkbox text (this page has three lists); 6 apart like _Check without a description
+        PreferencesWindow._Check(base "BrowseDialogs", "Prefs.QSBrowse")   ; "Browse for Folder": folder tree only (QuickSwitch.LooksLikeBrowseDialog)
+        otherList := PreferencesWindow._WinList("", "Prefs.QSOtherDialogs", 3, others)   ; usually empty: 3 rows
         PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], PreferencesWindow.SplitLines(otherList.Value)))
         PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 4)
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
         PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
-        PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 4)
+        PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 3)   ; usually empty: 3 rows
     }
 
     ; 对话框面板 (QuickSwitch 的一部分): 打开 / 保存对话框下面的文件夹列表和搜索框, 以及键盘用的文件夹菜单

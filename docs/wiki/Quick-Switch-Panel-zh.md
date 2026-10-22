@@ -2,7 +2,7 @@
 
 # 对话框文件夹面板
 
-文件夹面板是 Quick Switch 的可视操作方式。默认启用; 打开 / 保存对话框出现时, 面板会贴在对话框下方, 下方空间不足时显示在上方。点击文件夹即可跳转, 不用记快捷键。
+文件夹面板是 Quick Switch 的可视操作方式。默认启用; 打开 / 保存对话框 (或 [浏览文件夹](Quick-Switch-zh#浏览文件夹对话框) 对话框) 出现时, 面板会贴在对话框下方, 下方空间不足时显示在上方。点击文件夹即可跳转, 不用记快捷键。
 
 ![打开对话框下面的文件夹面板](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch.png)
 

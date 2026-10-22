@@ -445,6 +445,7 @@
   "Prefs.QSRecent": "最近的資料夾",
   "Prefs.QSRecent.Desc": "來自 Windows 的“最近使用的項目”; 0 = 不列",
   "Prefs.QSStandard": "標準的 開啟 / 儲存 對話框 (ahk_class #32770)",
+  "Prefs.QSBrowse": "瀏覽資料夾 對話框 (只有資料夾樹)",
   "Prefs.QSTotalCmd": "Total Commander 熱鍵",
   "Prefs.QuickSwitch": "對話框快速跳轉",
   "Prefs.QuickSwitch.Desc": "在 開啟 / 儲存 對話框裡, 跳到 TC 或檔案總管開啟的資料夾",

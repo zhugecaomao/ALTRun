@@ -459,6 +459,7 @@ class AppSettings {
                     "ShowPanel"        , 1,                                 ; 对话框一出现就在下面显示文件夹面板 (和 Listary 一样), 点一下就跳过去
                     "AutoSwitch"       , 0,
                     "DialogWindows"    , "ahk_class #32770",                ; 标准的 Windows 对话框, 另外可以加 "ahk_class Qt5QWindowIcon" (WPS) 等
+                    "BrowseDialogs"    , 1,                                 ; also the old "Browse for Folder" dialog (folder tree only, SHBrowseForFolder)
                     "ExcludeWindows"   , "ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe 7zG.exe, ahk_exe TOTALCMD64.exe",   ; 7-Zip 解压、Total Commander 的对话框不是要跳转的 "打开 / 保存"
                     "AutoSwitchExclude", ""                                 ; 这些对话框不自动跳转 (仍然可以按热键)
                 ),

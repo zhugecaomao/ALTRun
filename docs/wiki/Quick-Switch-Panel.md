@@ -2,7 +2,7 @@
 
 # Dialog Folder Panel
 
-The folder panel is the visual way to use Quick Switch. It is enabled by default. When an Open / Save dialog appears, the panel attaches below it, or above it if there is not enough room. Click a folder to jump there without remembering a shortcut.
+The folder panel is the visual way to use Quick Switch. It is enabled by default. When an Open / Save dialog (or a [Browse for Folder](Quick-Switch#browse-for-folder-dialogs) dialog) appears, the panel attaches below it, or above it if there is not enough room. Click a folder to jump there without remembering a shortcut.
 
 ![Quick Switch folder panel below an Open dialog](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch.png)
 

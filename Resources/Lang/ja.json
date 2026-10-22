@@ -444,6 +444,7 @@
   "Prefs.QSRecent": "最近のフォルダー",
   "Prefs.QSRecent.Desc": "Windows の「最近使ったアイテム」から。0 = 表示しない",
   "Prefs.QSStandard": "標準の「開く」「保存」ダイアログ (ahk_class #32770)",
+  "Prefs.QSBrowse": "「フォルダーの参照」ダイアログ (フォルダーツリーのみ)",
   "Prefs.QSTotalCmd": "Total Commander 用ホットキー",
   "Prefs.QuickSwitch": "ファイルダイアログのクイック切り替え",
   "Prefs.QuickSwitch.Desc": "「開く」「保存」ダイアログで、TC やエクスプローラーのフォルダーに移動します。",
