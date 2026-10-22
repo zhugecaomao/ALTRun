@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.13]
+
+测试版。
+
+Test build.
+
+### 改进
+- 对话框快速跳转: 加在 "其它对话框" 里、读不到文件名框的对话框 (Java、GTK、Qt6 等程序自己画的对话框), 跳转时不再先按 `Alt+D`, 直接把路径输入到文件名框再按回车 (和 WPS 一样)。`Alt+D` 在这些对话框里不是 "地址栏", 可能什么都不做, 也可能按到对话框里的某个按钮; 系统对话框不受影响
+
 ## [2026.10.20.12]
 
 测试版。
@@ -952,7 +961,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.13...HEAD
+[2026.10.20.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.12...2026.10.20.13
 [2026.10.20.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.11...2026.10.20.12
 [2026.10.20.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.10...2026.10.20.11
 [2026.10.20.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.9...2026.10.20.10

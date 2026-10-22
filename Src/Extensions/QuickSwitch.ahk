@@ -770,32 +770,43 @@ class QuickSwitch {
         Usage.Count("QuickSwitch")
         if QuickSwitch.IsBrowseWindow(dialog)                               ; folder tree only: select it there, pressing Enter would mean OK
             return QuickSwitch.SelectInBrowseDialog(folder, dialog)
-        className := ""
+        className := "", hasEdit := false
         try className := WinGetClass("ahk_id " dialog)
-        if (className = "Qt5QWindowIcon") {                                 ; WPS 的对话框没有可用的 Edit 控件, 只能模拟输入
-            if !WinActive("ahk_id " dialog)
+        try hasEdit := ControlGetHwnd("Edit1", "ahk_id " dialog) != 0
+        method := QuickSwitch.JumpMethod(className, hasEdit)
+        if (method = "edit") {
+            try {
+                saved := ""
+                try saved := ControlGetText("Edit1", "ahk_id " dialog)         ; what the file name box held (e.g. a name Save As filled in)
+                ControlFocus("Edit1", "ahk_id " dialog)
+                ControlSetText(folder, "Edit1", "ahk_id " dialog)
+                ControlSend("{Enter}", "Edit1", "ahk_id " dialog)
+                if QuickSwitch.ShouldRestoreName(saved) {                   ; put it back after the jump, so the suggested name isn't lost
+                    Sleep(150)
+                    try ControlSetText(saved, "Edit1", "ahk_id " dialog)
+                }
                 return
-            SendText(folder)
-            SendInput("{Enter}")
-            return
-        }
-        try {
-            saved := ""
-            try saved := ControlGetText("Edit1", "ahk_id " dialog)             ; 文件名框原来的内容 (例如另存为时程序预填的文件名)
-            ControlFocus("Edit1", "ahk_id " dialog)
-            ControlSetText(folder, "Edit1", "ahk_id " dialog)
-            ControlSend("{Enter}", "Edit1", "ahk_id " dialog)
-            if QuickSwitch.ShouldRestoreName(saved) {                       ; 跳过去之后填回去, 不丢掉预填的文件名
-                Sleep(150)
-                try ControlSetText(saved, "Edit1", "ahk_id " dialog)
             }
-        } catch {
-            if !WinActive("ahk_id " dialog)
-                return
-            SendInput("!d")                                                 ; 没有 Edit1 的自绘对话框: 用地址栏
-            Sleep(60)
-            SendText(folder)
-            SendInput("{Enter}")
+            method := (className = "#32770") ? "address" : "type"           ; the box refused: as if there were none
         }
+        if !WinActive("ahk_id " dialog)                                     ; typing goes to the foreground window: only into the dialog
+            return
+        if (method = "address") {                                           ; a system dialog without the box: its address bar
+            SendInput("!d")
+            Sleep(60)
+        }
+        SendText(folder)                                                    ; dialogs a program draws itself (WPS / Qt, GTK, Java...): the
+        SendInput("{Enter}")                                                ; file name box has the focus; a folder path + Enter goes there
+    }
+
+    ; How to put the folder into a dialog:
+    ;   edit    = into its file name box (Edit1) + Enter: system dialogs and programs with real edit controls
+    ;   address = a system dialog (#32770) without that box: Alt+D (address bar), type, Enter
+    ;   type    = a dialog a program draws itself (WPS / Qt, GTK, Java...): type into the focused file name box, Enter.
+    ;             No Alt+D there: it isn't the address bar and may press some button of the dialog
+    static JumpMethod(className, hasEdit) {
+        if hasEdit
+            return "edit"
+        return (className = "#32770") ? "address" : "type"
     }
 }

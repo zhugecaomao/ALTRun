@@ -1169,6 +1169,11 @@ class Tests {
         eq("file dialog is not a browse dialog", QuickSwitch.LooksLikeBrowseDialog("#32770", fileDialog), false)
         eq("browse dialog is not a file dialog", QuickSwitch.LooksLikeFileDialog("#32770", newStyle) QuickSwitch.LooksLikeFileDialog("#32770", classic), "00")
         eq("browse dialogs on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["BrowseDialogs"], 1)
+        ; How the folder goes in: the file name box when there is one; Alt+D (address bar) only in system dialogs;
+        ; dialogs that programs draw themselves get the path typed into the focused box, no Alt+D
+        eq("jump: file name box", QuickSwitch.JumpMethod("#32770", true) " " QuickSwitch.JumpMethod("TMyOpenDialog", true), "edit edit")
+        eq("jump: system dialog without the box", QuickSwitch.JumpMethod("#32770", false), "address")
+        eq("jump: drawn dialogs", QuickSwitch.JumpMethod("Qt5QWindowIcon", false) " " QuickSwitch.JumpMethod("SunAwtDialog", false) " " QuickSwitch.JumpMethod("gdkWindowToplevel", false), "type type type")
         ; Directory Opus: "dopusrt /info <file>,paths" output -> tabs; the jump uses the source tab of the lister
         xml := '<?xml version="1.0"?>`n<results command="paths" result="1">`n'
             . '  <path active_lister="1" active_tab="1" tab_state="2" side="1" lister="0x70e2a" tab="0x50e1a" display_path="C:\Program Files">C:\Program Files</path>`n'
