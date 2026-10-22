@@ -122,8 +122,8 @@ class SearchWindow {
         SearchWindow.Gui := g, SearchWindow.Input := searchBox, SearchWindow.List := list, SearchWindow.Separator := separator
         SearchWindow._CreateStatusBar(g, w, pad)
 
-        OnMessage(0x100, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_KEYDOWN
-        OnMessage(0x104, (p*) => SearchWindow._OnKeyDown(p*))               ; WM_SYSKEYDOWN (Alt+...)
+        OnMessage(0x100, (p*) => SearchWindow._OnKeyMessage(p*))            ; WM_KEYDOWN
+        OnMessage(0x104, (p*) => SearchWindow._OnKeyMessage(p*))            ; WM_SYSKEYDOWN (Alt+...)
         OnMessage(0x6,   (p*) => SearchWindow._OnActivate(p*))              ; WM_ACTIVATE
         OnMessage(0x20A, (p*) => SearchWindow._OnMouseWheel(p*))            ; WM_MOUSEWHEEL
         OnMessage(0x201, (p*) => SearchWindow._OnLButtonDown(p*))           ; WM_LBUTTONDOWN: 拖动窗口
@@ -607,6 +607,7 @@ class SearchWindow {
         ; 先让 DWM 把窗口藏起来 (cloak), 显示并立即画好整个窗口之后再露出来
         hwnd := SearchWindow.Gui.Hwnd
         SearchWindow._Step("window")
+        SearchWindow._HookKeysIfModal()
         hidden := !SearchWindow.IsVisible()
         WindowFade.Stop()                                                   ; 上一次隐藏的影子还在淡出: 马上去掉
         cloaked := hidden && SearchWindow._Cloak(hwnd, true)
@@ -775,6 +776,7 @@ class SearchWindow {
             if AppSettings.Appearance["Fade"]
                 WindowFade.Out(SearchWindow.Gui.Hwnd)                       ; 窗口照常马上隐藏, 留一个影子淡出
             SearchWindow.Gui.Hide()
+            SearchWindow._UnhookKeys()
             SearchWindow._PrepareLater()
         }
         LargeType.Close()
@@ -1326,6 +1328,70 @@ class SearchWindow {
     ;---------------------------------------------------------------------------
     static _IsOwnWindow(hwnd) {
         return IsObject(SearchWindow.Gui) && (hwnd = SearchWindow.Gui.Hwnd || hwnd = SearchWindow.Input.Hwnd || hwnd = SearchWindow.List.Hwnd)
+    }
+
+    static _OnKeyMessage(wParam, lParam, msg, hwnd) {
+        result := SearchWindow._OnKeyDown(wParam, lParam, msg, hwnd)
+        SearchWindow._keySeen := (result = "" && SearchWindow._IsOwnWindow(hwnd))   ; dispatched next: the subclass (if any) lets it through
+        return result
+    }
+
+    ; While ALTRun shows a system dialog (MsgBox, FileSelect, DirSelect...), that dialog's modal message loop
+    ; dispatches posted messages without calling OnMessage, so the keys never reach _OnKeyDown: typing still
+    ; searches, but Enter, Esc, arrows... do nothing. Shown at such a time, the window subclasses the search box
+    ; and the list and handles the keys in their window procedure instead (until it hides)
+    static _keyCallback := 0, _keyHooked := false, _keySeen := false, _swallowChar := false
+
+    ; A visible dialog (#32770) of this process: MsgBox, FileSelect, DirSelect... (about 0.04 ms: only dialogs are looked at)
+    static InSystemDialog() {
+        pid := DllCall("GetCurrentProcessId"), hwnd := 0
+        while (hwnd := DllCall("FindWindowEx", "Ptr", 0, "Ptr", hwnd, "Str", "#32770", "Ptr", 0, "Ptr")) {
+            DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "UInt*", &owner := 0)
+            if (owner = pid && DllCall("IsWindowVisible", "Ptr", hwnd))
+                return hwnd
+        }
+        return 0
+    }
+
+    static _HookKeysIfModal() {
+        if SearchWindow.InSystemDialog()
+            SearchWindow._HookKeys()
+    }
+
+    static _HookKeys() {
+        if SearchWindow._keyHooked
+            return
+        if !SearchWindow._keyCallback                                       ; created once and kept: it may be running when the window hides
+            SearchWindow._keyCallback := CallbackCreate((hwnd, msg, wParam, lParam, id, data) => SearchWindow._KeyProc(hwnd, msg, wParam, lParam), , 6)
+        SearchWindow._keySeen := false, SearchWindow._swallowChar := false
+        for hwnd in [SearchWindow.Input.Hwnd, SearchWindow.List.Hwnd]
+            DllCall("comctl32\SetWindowSubclass", "Ptr", hwnd, "Ptr", SearchWindow._keyCallback, "UPtr", 1, "UPtr", 0)
+        SearchWindow._keyHooked := true
+        Logger.Debug("SearchWindow: keys handled in the window procedure (a system dialog is open)")
+    }
+
+    static _UnhookKeys() {
+        if !SearchWindow._keyHooked
+            return
+        for hwnd in [SearchWindow.Input.Hwnd, SearchWindow.List.Hwnd]
+            DllCall("comctl32\RemoveWindowSubclass", "Ptr", hwnd, "Ptr", SearchWindow._keyCallback, "UPtr", 1)
+        SearchWindow._keyHooked := false
+    }
+
+    static _KeyProc(hwnd, msg, wParam, lParam) {
+        if (msg = 0x100 || msg = 0x104) {                                   ; WM_KEYDOWN / WM_SYSKEYDOWN
+            SearchWindow._swallowChar := false
+            if SearchWindow._keySeen                                        ; OnMessage already saw it (no modal loop)
+                SearchWindow._keySeen := false
+            else if (SearchWindow._OnKeyDown(wParam, lParam, msg, hwnd) != "") {
+                SearchWindow._swallowChar := true                           ; the WM_CHAR made from it (Enter, Esc, Space...) must not reach the box either
+                return 0
+            }
+        } else if ((msg = 0x102 || msg = 0x106) && SearchWindow._swallowChar) {   ; WM_CHAR / WM_SYSCHAR
+            SearchWindow._swallowChar := false
+            return 0
+        }
+        return DllCall("comctl32\DefSubclassProc", "Ptr", hwnd, "UInt", msg, "UPtr", wParam, "Ptr", lParam, "Ptr")
     }
 
     ; 返回 0 表示这个按键已经处理, 不再交给输入框; 返回空 = 按正常方式处理
