@@ -18,16 +18,16 @@ The hotkey appends ` - date` to the end of the current line, for example `Checke
 
 ![Preferences → Date Stamp](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-datestamp.png)
 
-Preferences → Date Stamp has a separate hotkey and **Works in** window list for each action. Enter one window condition per line; for example, `ahk_class CabinetWClass` is File Explorer and `ahk_class TTOTAL_CMD` is Total Commander.
+Preferences → Date Stamp has one **Hotkey** for both actions; which one runs depends on the window, set in the **Works in** list of each action. Enter one window condition per line; for example, `ahk_class CabinetWClass` is File Explorer and `ahk_class TTOTAL_CMD` is Total Commander.
 
 Settings are stored under `Extensions.AutoDate`:
 
 | Setting | Default | Purpose |
 |---|---|---|
 | `Enabled` | `1` | Whether Date Stamp is enabled |
-| `RenameHotkey` | `Ctrl+D` | Hotkey used while renaming files |
+| `RenameHotkey` | `Ctrl+D` | The hotkey, for both renaming and appending (the name stays for now) |
 | `RenameWindows` | Default window rules | Windows where renaming is enabled |
-| `AppendHotkey` | `Ctrl+D` | Hotkey used to append a date to text |
+| `AppendHotkey` | `Ctrl+D` | No longer used: `RenameHotkey` covers both |
 | `AppendWindows` | Default window rules | Windows where appending a date is enabled |
 | `DateFormat` | `dd.MM.yyyy` | Date format, also used by the snippet `{date}` placeholder |
 

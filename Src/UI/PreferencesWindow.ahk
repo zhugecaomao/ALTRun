@@ -321,7 +321,6 @@ class PreferencesWindow {
             PreferencesWindow.SetPath(PreferencesWindow.Working, bind.Path, bind.Read.Call())
         general := PreferencesWindow.Working["General"]
         appearance := PreferencesWindow.Working["Appearance"]
-        appearance["VisibleRows"] := Max(1, Min(appearance["VisibleRows"], 9))
         appearance["Width"] := Max(400, appearance["Width"])
         if (general["Hotkey"] = "")
             general["Hotkey"] := "!Space"
@@ -500,7 +499,8 @@ class PreferencesWindow {
             , ["Prefs.CopyTheme", (*) => PreferencesWindow._CopyTheme(gallery, themes)]
             , ["Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir)])
         PreferencesWindow._Section("Prefs.Section.Size")
-        PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"], ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "number"])
+        PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"]
+            , ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "choice", [1, 2, 3, 4, 5, 6, 7, 8, 9], ["1", "2", "3", "4", "5", "6", "7", "8", "9"]])   ; a list: nothing out of range to type
         density := PreferencesWindow._Choice("Appearance.Density", "Prefs.Density", ThemeManager.Densities   ; any theme can be scaled (ThemeManager.Scaled)
             , [I18n.T("Prefs.Density.Comfortable"), I18n.T("Prefs.Density.Normal"), I18n.T("Prefs.Density.Compact")])
         PreferencesWindow._Check("Appearance.Fade", "Prefs.Fade", , , "Prefs.Group.Animation")
@@ -962,12 +962,11 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.DateStamp", 150)
         PreferencesWindow._Section("Prefs.AutoDate")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
+        PreferencesWindow._Field(base "RenameHotkey", "Prefs.RenameHotkey", "K", "hotkey")   ; one hotkey: the window decides between the two below
         PreferencesWindow._Field(base "DateFormat", "Prefs.DateFormat", "M")
         PreferencesWindow._Section("Prefs.Section.DateRename")
-        PreferencesWindow._Field(base "RenameHotkey", "Prefs.RenameHotkey", "K", "hotkey")
         PreferencesWindow._WinList(base "RenameWindows", "Prefs.RenameWindows", 4)
         PreferencesWindow._Section("Prefs.Section.DateAppend")
-        PreferencesWindow._Field(base "AppendHotkey", "Prefs.AppendHotkey", "K", "hotkey")
         PreferencesWindow._WinList(base "AppendWindows", "Prefs.AppendWindows", 4)
     }
 

@@ -687,7 +687,7 @@ class I18n {
         ; Appearance
         s["Prefs.Width"]                := "Window width (px)"
         s["Prefs.Width.Desc"]           := "Scales with the Windows display scale. More results scroll with ↑ ↓."
-        s["Prefs.VisibleRows"]          := "Visible results (1-9)"
+        s["Prefs.VisibleRows"]          := "Visible results"
         s["Prefs.CopyTheme"]           := "Copy as Custom Theme..."
         s["Prefs.CopyThemePrompt"]     := "Name of the new theme (saved in the Themes folder):"
         s["Prefs.ThemeExists"]         := "Theme '{1}' already exists. Replace it?"
@@ -930,7 +930,6 @@ class I18n {
         s["Prefs.DateFormat"]          := "Date format"
         s["Prefs.DateFormat.Desc"]     := "e.g. dd.MM.yyyy or yyyy-MM-dd. Also used by {date} in snippets."
         s["Prefs.RenameHotkey"]         := "Hotkey"
-        s["Prefs.AppendHotkey"]         := "Hotkey"
         s["Prefs.Section.DateRename"]   := "File names (before the extension)"
         s["Prefs.Section.DateAppend"]   := "End of the text"
         s["Prefs.RenameWindows"]        := "Works in"

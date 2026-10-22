@@ -8,7 +8,8 @@
 ; 日期格式见 DateFormat (默认 dd.MM.yyyy)。
 ;
 ; 设置 (ALTRun.json -> Extensions.AutoDate):
-;   Enabled / DateFormat / RenameHotkey / RenameWindows / AppendHotkey / AppendWindows
+;   Enabled / DateFormat / RenameHotkey (the one hotkey, for both) / RenameWindows / AppendWindows
+;   (AppendHotkey is no longer used; renamed / removed with the next SchemaVersion, see #176)
 ;
 ; 用法:
 ;   AutoDate.Init(AppSettings.Extension("AutoDate"))    启动时
@@ -32,8 +33,8 @@ class AutoDate {
         try {
             HotIf((*) => WinActive("ahk_group ALTRunRenameWindows") && AutoDate.IsEditControl(AutoDate.FocusedControl()))
             Hotkey(options["RenameHotkey"], (*) => AutoDate._OnRename())
-            HotIfWinActive("ahk_group ALTRunAppendWindows")
-            Hotkey(options["AppendHotkey"], (*) => AutoDate._OnAppend())
+            HotIfWinActive("ahk_group ALTRunAppendWindows")                 ; the same hotkey: the window decides
+            Hotkey(options["RenameHotkey"], (*) => AutoDate._OnAppend())
         } catch as e {
             Logger.Error("AutoDate: cannot register hotkeys - " e.Message)
         }
