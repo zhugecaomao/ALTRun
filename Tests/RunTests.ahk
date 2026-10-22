@@ -2855,6 +2855,23 @@ class Tests {
                         TestRunner.True("PreferencesFit." lang " shield centered on the row", Abs((sy + sh / 2) - (cy + ch / 2)) <= 1)
                     }
                 }
+                if (page.Key = "Prefs.Page.Appearance") {                 ; "Visible results" and the column below it end on one line
+                    rights := ""
+                    for ctrl in page.Controls
+                        if (ctrl.Type = "DDL" || ctrl.Type = "Button" && ctrl.Text = I18n.T("Prefs.ResetPosition"))
+                            ctrl.GetPos(&x, , &w), rights .= (rights = "" ? "" : " ") (x + w)
+                    parts := StrSplit(rights, " "), same := parts.Length = 4
+                    for value in parts
+                        same := same && value = parts[1]
+                    TestRunner.True("PreferencesFit." lang " appearance right edges (" rights ")", same)
+                }
+                if (page.Key = "Prefs.Page.DateStamp") {                  ; the date format box is as wide as the hotkey box
+                    widths := []
+                    for ctrl in page.Controls
+                        if (ctrl.Type = "Edit" && widths.Length < 2)
+                            ctrl.GetPos(, , &w), widths.Push(w)
+                    TestRunner.Equal("PreferencesFit." lang " date stamp widths", widths[1] " " widths[2], widths[1] " " widths[1])
+                }
                 if (page.Key = "Prefs.Page.Window" || page.Key = "Prefs.Page.Keyboard") {   ; the input boxes / drop-downs of these pages share one left edge
                     lefts := "", count := 0
                     for ctrl in page.Controls

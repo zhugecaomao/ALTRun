@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.20.15]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 外观: "显示结果行数" 下拉框加宽一点, 下面的 "显示密度"、"窗口显示在" 和 "恢复默认位置" 按钮右边和它对齐
+- 偏好设置 → 一键加日期: "日期格式" 输入框和上面的热键框一样宽
+
 ## [2026.10.20.14]
 
 测试版。
@@ -971,7 +981,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.15...HEAD
+[2026.10.20.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.14...2026.10.20.15
 [2026.10.20.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.13...2026.10.20.14
 [2026.10.20.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.12...2026.10.20.13
 [2026.10.20.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.11...2026.10.20.12
