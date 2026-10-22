@@ -36,7 +36,7 @@ Programs compiled with AutoHotkey are sometimes reported by mistake. Add the ALT
 Just after Windows starts, Explorer and OneDrive (or another sync tool) are often busy for a while. ALTRun asks Windows for icons and shortcuts, so it has to wait for them too: the search window may open slowly, or ignore typing for a few seconds. It recovers by itself once Windows has settled down. To check, turn on the debug log: lines starting with `Perf: startup:` show how long each startup step took, and `Perf: icon ... ms` lines show icons that took a long time to load. If it happens every time, look in Task Manager at what is using the CPU or disk after startup (OneDrive syncing many files is a common cause).
 
 ### Searching is awkward with a Chinese input method
-In Preferences → Keyboard, set "Switch to English when shown" to "English (US) keyboard" (the keyboard needs to be added in Windows) or "English mode of the current input method" (keeps your input method and only turns it to English). Chinese names can also be searched by their pinyin initials ("wx" → 微信).
+In Preferences → Keyboard, set "Switch to English" to "English (US) keyboard" (the keyboard needs to be added in Windows) or "English mode of the current input method" (keeps your input method and only turns it to English). Chinese names can also be searched by their pinyin initials ("wx" → 微信).
 
 ### Snippet expansion doesn't work
 - Make sure the snippet has a keyword in Preferences → Snippets and "Expand automatically when typed" is ticked
