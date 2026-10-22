@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.20.14]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 外观: "显示结果行数" 改成 1 ~ 9 的下拉框, 不会再填出范围外的数字 (以前填 25 会悄悄变成 9); 默认值标着 "8 (默认)"
+- 偏好设置 → 一键加日期: 两个热键合成一个, 放在最上面; 改名还是加到行尾, 由下面两节的窗口列表决定 (默认本来就都是 `Ctrl+D`)。如果以前给 "加到行尾" 设了别的键, 现在请用 "热键" 这一个; 设置文件不变 (仍用 `RenameHotkey`)
+
 ## [2026.10.20.13]
 
 测试版。
@@ -961,7 +971,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.14...HEAD
+[2026.10.20.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.13...2026.10.20.14
 [2026.10.20.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.12...2026.10.20.13
 [2026.10.20.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.11...2026.10.20.12
 [2026.10.20.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.10...2026.10.20.11

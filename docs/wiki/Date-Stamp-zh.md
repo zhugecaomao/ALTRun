@@ -18,16 +18,16 @@
 
 ![偏好设置 → 一键加日期](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-datestamp.png)
 
-偏好设置 → 一键加日期为两种场景分别提供热键和“生效的窗口”列表, 每行一个窗口条件。例如 `ahk_class CabinetWClass` 表示资源管理器, `ahk_class TTOTAL_CMD` 表示 Total Commander。
+偏好设置 → 一键加日期只有一个“热键”, 两种场景共用; 按下时做哪一种, 由各自的“生效的窗口”列表决定, 每行一个窗口条件。例如 `ahk_class CabinetWClass` 表示资源管理器, `ahk_class TTOTAL_CMD` 表示 Total Commander。
 
 设置保存在 `Extensions.AutoDate`:
 
 | 设置 | 默认值 | 作用 |
 |---|---|---|
 | `Enabled` | `1` | 是否启用一键加日期 |
-| `RenameHotkey` | `Ctrl+D` | 重命名文件时使用的热键 |
+| `RenameHotkey` | `Ctrl+D` | 热键, 重命名和追加日期共用 (名字暂时不变) |
 | `RenameWindows` | 按默认窗口规则 | 允许重命名操作生效的窗口 |
-| `AppendHotkey` | `Ctrl+D` | 在文本末尾添加日期的热键 |
+| `AppendHotkey` | `Ctrl+D` | 不再使用: `RenameHotkey` 两种场景共用 |
 | `AppendWindows` | 按默认窗口规则 | 允许文本追加操作生效的窗口 |
 | `DateFormat` | `dd.MM.yyyy` | 日期格式, 也用于文字片段的 `{date}` 占位符 |
 

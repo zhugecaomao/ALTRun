@@ -468,7 +468,7 @@ class AppSettings {
                     "DateFormat"   , "dd.MM.yyyy",
                     "RenameHotkey" , "^d",
                     "RenameWindows", "ahk_class CabinetWClass, ahk_class Progman, ahk_class WorkerW, ahk_class #32770, ahk_class TTOTAL_CMD, ahk_class TSTDTREEDLG, ahk_class TCOMBOINPUT",   ; TC: 主窗口、对话框、改名输入框
-                    "AppendHotkey" , "^d",
+                    "AppendHotkey" , "^d",                                  ; no longer used (RenameHotkey covers both); removed with the next SchemaVersion, see #176
                     "AppendWindows", "ahk_class TCmtEditForm, ahk_exe Notepad4.exe"
                 ),
                 "PTTools", Map()                                            ; 由 PTToolsWindow 自己补默认值
