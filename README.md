@@ -35,7 +35,7 @@
 - **Tiny**: about 2.5 MB, with one `ALTRun.exe` and a few resource files; no .NET, Electron or other runtime to install.
 - **Fast**: results appear as you type. With [Everything](https://www.voidtools.com/) running, file searches cover all disks in milliseconds; otherwise, ALTRun uses its built-in index.
 - **Smart ranking**: learns from what you pick; matches word initials (`vsc` → Visual Studio Code) and pinyin initials (`wx` → 微信; file names too: `cs` → 测试文件.zip), and highlights the matched characters.
-- **Beyond launching**: [Quick Switch](#features) jumps Open / Save dialogs to folders open in Total Commander or Explorer; act on selected text, files or URLs in any app; expand snippets with `;keyword`.
+- **Beyond launching**: [Quick Switch](#features) jumps Open / Save dialogs to folders open in Total Commander, Directory Opus or Explorer; act on selected text, files or URLs in any app; expand snippets with `;keyword`.
 - **All in one**: calculate and convert units, search the web, browse bookmarks, manage clipboard history and snippets, run system commands, or open a terminal—without separate tools for each task.
 - **Keyboard first**: use `→` for the action panel, see what `Enter` will do in the status bar, edit in place with `F3`, open a result directly with `Ctrl+1`–`Ctrl+9`, or use `Ctrl+Enter` to open a file’s containing folder or paste text into the active window.
 - **Portable and private**: no installer, registry entries, admin rights, background service or driver. Data stays local by default; some clipboard data is stored in `%LOCALAPPDATA%\ALTRun`. No telemetry; internet access is used for updates, optional exchange rates and site icons you request.
@@ -79,7 +79,7 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 - **Large type**: press `Ctrl+L` to show a result in full-screen large type, handy for phone numbers or calculation results (turn it on in Preferences → Features).
 
 **Extensions**
-- **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the current Total Commander folder or `Ctrl+E` for the current Explorer folder; a folder panel next to the dialog lists every open and recently used folder. Also works in the older Browse for Folder dialog (folder tree only).
+- **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the folder of the file manager you used last (Total Commander, Directory Opus or Explorer); a folder panel next to the dialog lists every open and recently used folder. Also works in the older Browse for Folder dialog (folder tree only).
 - **Date stamp**: while renaming a file, press `Ctrl+D` to add or update a date before the extension (`Report.docx` → `Report - 28.09.2026.docx`).
 - **Custom hotkeys**: assign a hotkey to any system command, optionally only inside specific programs.
 - **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown.

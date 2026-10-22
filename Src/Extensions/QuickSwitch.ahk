@@ -1,9 +1,9 @@
 ;===============================================================================
 ; QuickSwitch.ahk - 打开/保存对话框路径快速跳转 (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 Listary 的 "Quick Switch" 一样: 在标准的打开/保存文件对话框里按热键, 把对话框
-; 跳到 Total Commander (默认 Ctrl+G) 或资源管理器 (默认 Ctrl+E) 当前打开的文件夹。
-; AutoSwitch = 1 时, 从 TC 切换到对话框会自动跳转。
+; Like Listary's "Quick Switch": in an Open / Save dialog, the hotkey (Ctrl+G by default) jumps the dialog to the
+; folder open in the file manager used last: Total Commander, Directory Opus or File Explorer (see FileManagerFolder).
+; AutoSwitch = 1: switching from one of them to a dialog jumps automatically.
 ; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 下面就贴一个搜索框 +
 ; 文件夹列表 (所有 TC 窗口的两个面板、资源管理器窗口、最近用过的文件夹), 点一下就跳过去, 不用记热键;
 ; 搜索框还能搜索文件夹 (PanelSearch = all 时也搜文件, 选中文件跳到它所在的文件夹)。对话框不在前台时隐藏,
@@ -11,19 +11,20 @@
 ; 热键 (MenuHotkey, 默认 Ctrl+Shift+G): 光标跳到面板的搜索框, 用键盘选择; 没有打开自动显示时临时显示面板。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
-;   Enabled / ExplorerHotkey / TotalCmdHotkey / MenuHotkey / RecentFolders / ShowPanel / PanelSearch / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
+;   Enabled / TotalCmdHotkey (the jump hotkey, for all three) / MenuHotkey / RecentFolders / ShowPanel / PanelSearch / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
+;   (ExplorerHotkey is no longer used; renamed / removed with the next SchemaVersion, see #176)
 ;   DialogWindows 等是逗号分隔的窗口条件 (ahk_class / ahk_exe / 标题)
 ;
 ; 用法:
 ;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    启动时
-;   QuickSwitch.FolderOfWindow(hwnd)     TC / 资源管理器窗口当前的文件夹 (只读, 给 "在此处打开终端" 用)
+;   QuickSwitch.FolderOfWindow(hwnd)     current folder of a TC / Opus / Explorer window (read only, for "terminal here")
 ;   QuickSwitch.MenuFolders()            面板里的文件夹 [{Path, Group, Tag}]
 ;   QuickSwitch.RecentFolders(n)         最近用过的 n 个文件夹 (打开过的文件取所在的文件夹)
 ;===============================================================================
 
 class QuickSwitch {
     static Options := Map(), _hasExclude := false
-    static _lastWasTC := false
+    static _lastWasManager := false
     static _panel := "", _panelFor := 0, _panelFolders := [], _panelPos := ""
 
     static Init(options) {
@@ -43,10 +44,8 @@ class QuickSwitch {
 
         HotIf((*) => QuickSwitch.IsFileDialog())
         try {
-            if (options["ExplorerHotkey"] != "")
-                Hotkey(options["ExplorerHotkey"], (*) => QuickSwitch.SyncExplorerPath())
             if (options["TotalCmdHotkey"] != "")
-                Hotkey(options["TotalCmdHotkey"], (*) => QuickSwitch.SyncTotalCmdPath())
+                Hotkey(options["TotalCmdHotkey"], (*) => QuickSwitch.SyncFileManagerPath())
             if (options["MenuHotkey"] != "")
                 Hotkey(options["MenuHotkey"], (*) => QuickSwitch.FocusPanel())
         } catch as e {
@@ -80,9 +79,9 @@ class QuickSwitch {
             return
         }
         isDialog := QuickSwitch.IsFileDialog()
-        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasTC && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
-            QuickSwitch.SyncTotalCmdPath(true)
-        QuickSwitch._lastWasTC := WinActive("ahk_class TTOTAL_CMD") ? true : false
+        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasManager && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
+            QuickSwitch.SyncFileManagerPath(true)
+        QuickSwitch._lastWasManager := QuickSwitch.IsFileManager(WinExist("A"))
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; 关掉了自动显示时, 按热键临时打开的面板也要跟着对话框
             QuickSwitch._UpdatePanel(isDialog)
     }
@@ -140,7 +139,7 @@ class QuickSwitch {
     static _BuildPanel(dialog) {
         QuickSwitch.HidePanel()
         QuickSwitch._panelFor := dialog
-        QuickSwitch._panelBase := QuickSwitch.MenuFolders()
+        QuickSwitch._panelBase := QuickSwitch.MenuFolders(false)
         rect := QuickSwitch._FrameRect(dialog)
         width := QuickSwitch.PanelWidthFor(IsObject(rect) ? rect.W : 600)
         colors := QuickSwitch.PanelColors()                                 ; 跟随 ALTRun 的主题 (浅色 / 深色...)
@@ -173,6 +172,16 @@ class QuickSwitch {
             try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; 深色主题: 滚动条和选中行也用深色
         try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: 小圆角
         QuickSwitch._ShowFolders(QuickSwitch._panelBase)
+        if WinExist("ahk_class dopus.lister")                               ; reading Opus takes a moment: show the panel first
+            SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, dialog), -1)
+    }
+
+    static _AddDOpusFolders(dialog) {
+        if (QuickSwitch._panelFor != dialog || !IsObject(QuickSwitch._panelList))
+            return
+        QuickSwitch._panelBase := QuickSwitch.MenuFolders()
+        if (QuickSwitch._panelFor = dialog && IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value = "")   ; not while searching
+            QuickSwitch._ShowFolders(QuickSwitch._panelBase)
     }
 
     static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
@@ -505,18 +514,12 @@ class QuickSwitch {
         return false
     }
 
-    static SyncTotalCmdPath(silent := false) {
-        folder := QuickSwitch.TotalCmdFolder()
-        if (folder = "")
-            return silent ? "" : MsgBox(I18n.T("QuickSwitch.NoTC"), App.Name, 48)
-        QuickSwitch.SetDialogPath(folder "\")                               ; 结尾带反斜杠, AutoCAD 等程序才认
-    }
-
-    static SyncExplorerPath() {
-        folder := QuickSwitch.ExplorerFolder()
-        if (folder = "")
-            return MsgBox(I18n.T("QuickSwitch.NoExplorer"), App.Name, 48)
-        QuickSwitch.SetDialogPath(folder)
+    ; The jump hotkey: the folder of the file manager used last (TC, Opus or Explorer, see FileManagerFolder)
+    static SyncFileManagerPath(silent := false) {
+        manager := QuickSwitch.FileManagerFolder()
+        if !(IsObject(manager) && manager.Path != "")
+            return silent ? "" : MsgBox(I18n.T("QuickSwitch.NoFileManager"), App.Name, 48)
+        QuickSwitch.SetDialogPath(RTrim(manager.Path, "\") "\")             ; with a trailing backslash: AutoCAD and others need it
     }
 
     ; Total Commander 面板的文件夹: 用 TC 的 WM_COPYDATA 接口直接问 (TC 8.0 起支持), 不碰剪贴板。
@@ -564,7 +567,8 @@ class QuickSwitch {
     ;---------------------------------------------------------------------------
     ; [{Path, Group: "open" / "recent", Tag}]: 每个 TC 窗口的当前面板和另一个面板、每个资源管理器窗口、
     ; 最近的文件夹 (RecentFolders 个), 去掉重复的
-    static MenuFolders() {
+    ; opus = false: without Directory Opus (the panel adds those a moment later, see _AddDOpusFolders)
+    static MenuFolders(opus := true) {
         list := [], seen := Map()
         add(folder, group, tag) {
             if (folder = "" || seen.Has(StrLower(RTrim(folder, "\"))))
@@ -576,6 +580,11 @@ class QuickSwitch {
             add(QuickSwitch.TotalCmdFolder(hwnd), "open", I18n.T("QuickSwitch.TagTC"))
             add(QuickSwitch.TotalCmdFolder(hwnd, true), "open", I18n.T("QuickSwitch.TagTCOther"))
         }
+        if opus                                                             ; the source tab of each lister, then the other side
+            for state in [1, 2]
+                for tab in QuickSwitch.DOpusTabs()
+                    if (tab.State = state)
+                        add(tab.Path, "open", I18n.T(state = 1 ? "QuickSwitch.TagOpus" : "QuickSwitch.TagOpusOther"))
         try {
             for window in ComObject("Shell.Application").Windows
                 try add(window.Document.Folder.Self.Path, "open", I18n.T("QuickSwitch.TagExplorer"))
@@ -642,27 +651,98 @@ class QuickSwitch {
         return ""
     }
 
-    ; 最前面的 TC / 资源管理器窗口当前的文件夹: {Path, Tag}; 没有时 "" (文件操作 "复制到 ..." 用)
+    ; Current folder of the TC / Opus / Explorer window nearest the top: {Path, Tag, Hwnd}, "" when none.
+    ; Windows are listed front to back, so with a dialog in front this is the file manager used last
+    ; (the jump hotkey, auto jump, "Copy to ..." in the actions)
     static FileManagerFolder() {
-        for hwnd in WinGetList() {                                          ; 按窗口的前后顺序
+        for hwnd in WinGetList() {
             className := ""
             try className := WinGetClass("ahk_id " hwnd)
             switch className {
-                case "TTOTAL_CMD"   : return {Path: QuickSwitch.TotalCmdFolder(hwnd), Tag: "Total Commander"}
-                case "CabinetWClass": return {Path: QuickSwitch.ExplorerFolder(hwnd), Tag: I18n.T("QuickSwitch.TagExplorer")}
+                case "TTOTAL_CMD"   : return {Path: QuickSwitch.TotalCmdFolder(hwnd), Tag: "Total Commander", Hwnd: hwnd}
+                case "dopus.lister" : return {Path: QuickSwitch.DOpusFolder(hwnd), Tag: "Directory Opus", Hwnd: hwnd}
+                case "CabinetWClass": return {Path: QuickSwitch.ExplorerFolder(hwnd), Tag: I18n.T("QuickSwitch.TagExplorer"), Hwnd: hwnd}
             }
         }
         return ""
+    }
+
+    static IsFileManager(hwnd) {
+        className := ""
+        try className := WinGetClass("ahk_id " hwnd)
+        return className = "TTOTAL_CMD" || className = "dopus.lister" || className = "CabinetWClass"
     }
 
     static FolderOfWindow(hwnd) {
         if (!hwnd || !WinExist("ahk_id " hwnd))
             return ""
         switch WinGetClass("ahk_id " hwnd) {
-            case "TTOTAL_CMD"   : return QuickSwitch.TotalCmdFolder()
+            case "TTOTAL_CMD"   : return QuickSwitch.TotalCmdFolder(hwnd)
+            case "dopus.lister" : return QuickSwitch.DOpusFolder(hwnd)
             case "CabinetWClass": return QuickSwitch.ExplorerFolder(hwnd)
         }
         return ""
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Directory Opus: its own "dopusrt.exe /info <file>,paths" writes every lister's tabs to a small XML file
+    ; (read only, no clipboard). It runs only when an Opus window is open and a folder is actually needed,
+    ; and a result is reused for DOpusCacheMs
+    ;---------------------------------------------------------------------------
+    static DOpusCacheMs := 1500, _dopusTabs := [], _dopusAt := 0
+
+    ; Source (focused) tab of a lister; hwnd 0 = the active lister
+    static DOpusFolder(hwnd := 0) => QuickSwitch.PickDOpusFolder(QuickSwitch.DOpusTabs(), hwnd)
+
+    static PickDOpusFolder(tabs, hwnd := 0) {
+        for tab in tabs
+            if (tab.State = 1 && (hwnd ? tab.Lister = hwnd : tab.ActiveLister))
+                return tab.Path
+        for tab in tabs                                                     ; lister not found (e.g. Opus just opened it): the active one
+            if (tab.State = 1 && tab.ActiveLister)
+                return tab.Path
+        return ""
+    }
+
+    static DOpusTabs() {
+        if !(lister := WinExist("ahk_class dopus.lister"))
+            return []
+        if (QuickSwitch._dopusAt && A_TickCount - QuickSwitch._dopusAt < QuickSwitch.DOpusCacheMs)
+            return QuickSwitch._dopusTabs
+        started := Logger.Ms(), tabs := []
+        try {
+            SplitPath(WinGetProcessPath("ahk_id " lister), , &dir)
+            xmlFile := A_Temp "\ALTRun.dopus-paths.xml"
+            try FileDelete(xmlFile)
+            Run('"' dir '\dopusrt.exe" /info "' xmlFile '",paths', , "Hide", &pid)
+            if ProcessWaitClose(pid, 3)                                     ; still running after 3 s (returns its PID): never hang the dialog on it
+                try ProcessClose(pid)
+            tabs := QuickSwitch.ParseDOpusPaths(FileRead(xmlFile, "UTF-8"))
+            try FileDelete(xmlFile)
+        } catch as e {
+            Logger.Error("QuickSwitch: cannot read the Directory Opus folders - " e.Message)
+        }
+        QuickSwitch._dopusTabs := tabs, QuickSwitch._dopusAt := A_TickCount
+        if Logger.Enabled
+            Logger.Debug(Format("Perf: Directory Opus paths {} ms, {} tabs", Round(Logger.Ms() - started), tabs.Length))
+        return tabs
+    }
+
+    ; <path active_lister="1" active_tab="1" tab_state="1" side="1" lister="0x70e2a" tab="0x50e1a" ...>C:\Folder</path>
+    ; tab_state: 1 = the source (focused) tab of its lister, 2 = the tab shown on the other side of a dual lister
+    static ParseDOpusPaths(xml) {
+        tabs := [], pos := 1, attrs := ""
+        value(name) => RegExMatch(attrs, "\b" name '="([^"]*)"', &a) ? a[1] : ""
+        while (pos := RegExMatch(xml, "s)<path\b([^>]*)>(.*?)</path>", &m, pos)) {
+            pos += m.Len
+            attrs := m[1], folder := m[2]
+            for entity in [["&lt;", "<"], ["&gt;", ">"], ["&quot;", '"'], ["&apos;", "'"], ["&amp;", "&"]]   ; &amp; last
+                folder := StrReplace(folder, entity[1], entity[2])
+            lister := value("lister"), state := value("tab_state")
+            tabs.Push({Path: Trim(folder), Lister: IsInteger(lister) ? Integer(lister) : 0, State: IsInteger(state) ? Integer(state) : 0
+                , ActiveLister: value("active_lister") = "1"})
+        }
+        return tabs
     }
 
     ; 在对话框里选中一个文件: 打开和保存对话框都一样, 跳到它所在的文件夹 (不替用户打开或保存)

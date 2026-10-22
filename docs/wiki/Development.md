@@ -166,7 +166,7 @@ two versions (baseline: the latest release by default; candidate: the selected b
 alternating (A B B A), with ALTRun restarted for every round:
 
 - Random searches (start of app names, word initials, random letters, file search, custom commands): time to show the window, and from the last key to drawn results
-- Running programs / opening files and folders, the action panel (→), the calculator (result + Enter to copy), Quick Switch (folder panel + Ctrl+E),
+- Running programs / opening files and folders, the action panel (→), the calculator (result + Enter to copy), Quick Switch (folder panel + Ctrl+G),
   opening and saving Preferences, snippet expansion
 - ALTRun's CPU time, memory, GDI / USER objects and handles at the end of each round
 - Background tasks over 50 ms (`Perf: slow`, in versions that log them) and errors from the ALTRun log

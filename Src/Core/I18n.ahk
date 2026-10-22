@@ -254,7 +254,7 @@ class I18n {
         s["Help.Actions.Key"]          := "→  /  right-click"
         s["Help.Actions.Text"]         := "more actions for the selected item (run as admin, copy path...)"
         s["Help.QuickSwitch.Key"]      := "{1} (in an Open / Save dialog)"
-        s["Help.QuickSwitch.Text"]     := "go to the folder open in Total Commander / File Explorer"
+        s["Help.QuickSwitch.Text"]     := "go to the folder of the file manager used last (TC / Opus / Explorer)"
         s["Help.Edit.Key"]             := "F3"
         s["Help.Edit.Text"]            := "edit the selected item, or add it as a custom command"
         s["Help.Delete.Key"]           := "Ctrl+Del"
@@ -899,9 +899,8 @@ class I18n {
         s["Prefs.HotkeysNote"]          := "Global hotkeys for ALTRun commands. Fill in the window to limit a hotkey to one program; ALTRun means only in the ALTRun search window."
         ; Extensions
         s["Prefs.QuickSwitch"]         := "File dialog quick switch"
-        s["Prefs.QuickSwitch.Desc"]    := "In Open / Save dialogs, jump to a folder open in Total Commander or Explorer."
-        s["Prefs.QSExplorer"]           := "Explorer"
-        s["Prefs.QSTotalCmd"]           := "Total Commander"
+        s["Prefs.QSHotkey"]             := "Hotkey"
+        s["Prefs.QSHotkey.Desc"]        := "Folder of the TC, Opus or Explorer window you used last."
         s["Prefs.QSMenu"]              := "Hotkey"
         s["Prefs.QSPanel"]             := "Show the folder panel below dialogs"
         s["Prefs.QSPanelSection"]      := "Folder panel"
@@ -914,7 +913,7 @@ class I18n {
         s["Prefs.QSPanelSearch.All"]   := "Folders and files"
         s["Prefs.QSPanelSearch.Folders"] := "Folders only"
         s["Prefs.QSRecent"]            := "Recent folders"
-        s["Prefs.QSAuto"]              := "Jump automatically when switching from Total Commander"
+        s["Prefs.QSAuto"]              := "Jump automatically when switching from TC / Opus / Explorer"
         s["Prefs.Section.QSDialogs"]    := "Dialogs"
         s["Prefs.Section.QSAuto"]       := "When a dialog opens"
         s["Prefs.Group.DialogWindows"]  := "Works in"
@@ -1026,14 +1025,15 @@ class I18n {
         ; --- QuickSwitch (file dialog path sync) ---
         s["QuickSwitch.TagTC"]         := "Total Commander"
         s["QuickSwitch.TagTCOther"]    := "Total Commander (other panel)"
+        s["QuickSwitch.TagOpus"]       := "Directory Opus"
+        s["QuickSwitch.TagOpusOther"]  := "Directory Opus (other side)"
         s["QuickSwitch.TagExplorer"]   := "File Explorer"
         s["QuickSwitch.TagRecent"]     := "Recent"
         s["QuickSwitch.SearchCue"]     := "Search folders and files"
         s["QuickSwitch.SearchCueFolders"] := "Search folders"
         s["QuickSwitch.TagSearch"]     := "Search"
         s["QuickSwitch.TagFile"]       := "File"
-        s["QuickSwitch.NoTC"]          := "Total Commander is not running."
-        s["QuickSwitch.NoExplorer"]    := "No File Explorer window is open."
+        s["QuickSwitch.NoFileManager"] := "No Total Commander, Directory Opus or File Explorer window is open."
         return s
     }
 }

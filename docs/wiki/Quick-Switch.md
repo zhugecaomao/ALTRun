@@ -8,23 +8,27 @@ Quick Switch jumps an Open / Save dialog to a folder you already have open, with
 
 In a standard Open / Save file dialog:
 
-- `Ctrl+G`: jump to the folder currently open in Total Commander
-- `Ctrl+E`: jump to the folder currently open in File Explorer
+- `Ctrl+G`: jump to the folder open in the file manager you used last: Total Commander, Directory Opus or File Explorer. ALTRun looks at the windows from front to back and takes the first of the three, so with several open it is the one you used most recently; the [folder panel](Quick-Switch-Panel) lists all of them
 - `Ctrl+Shift+G`: show the folder panel and focus its search box so you can pick a folder or file with the keyboard
 
 The existing file name is preserved when jumping. For example, a name suggested by a Save As dialog is not cleared.
 
 ## Automatic switching
 
-Enable **Auto switch** in Preferences → Quick Switch to jump automatically to Total Commander's current folder when switching from Total Commander to an Open / Save dialog.
+Enable **Auto switch** in Preferences → Quick Switch to jump automatically when you switch from Total Commander, Directory Opus or File Explorer to an Open / Save dialog: the dialog goes to the folder of the window you came from.
 
 **Works in**: tick **Standard Open / Save dialogs** (`ahk_class #32770`, on by default; only dialogs with an Explorer file list count, so program windows that are dialogs themselves, such as System Information (msinfo32), are left alone); **Browse for Folder dialogs** (on by default) covers the older folder picker that only shows a folder tree (see below); dialogs that programs draw themselves go in **Other dialogs**, one per line, for example WPS's `ahk_class Qt5QWindowIcon`. Windows in **Never in** never switch; **No auto jump in** disables only automatic switching, and the hotkeys still work there.
 
 ## Browse for Folder dialogs
 
-Many programs still pick a folder with the older "Browse for Folder" dialog: a folder tree with OK / Cancel and no file list. The folder panel, `Ctrl+G` and `Ctrl+E` work there too: the tree expands to the folder and selects it, and you still click OK yourself (pressing Enter in that dialog would mean OK). Untick **Browse for Folder dialogs** under **Works in** to leave these dialogs alone (`BrowseDialogs`). Like other dialogs, it doesn't work in programs running as administrator.
+Many programs still pick a folder with the older "Browse for Folder" dialog: a folder tree with OK / Cancel and no file list. The folder panel and `Ctrl+G` work there too: the tree expands to the folder and selects it, and you still click OK yourself (pressing Enter in that dialog would mean OK). Untick **Browse for Folder dialogs** under **Works in** to leave these dialogs alone (`BrowseDialogs`). Like other dialogs, it doesn't work in programs running as administrator.
 
-The folder is read directly from Total Commander through its `WM_COPYDATA` interface (TC 8.0 or later), not through the clipboard, so the path does not appear in Windows clipboard history (`Win+V`).
+## Where the folders come from
+
+None of them go through the clipboard, so the paths don't appear in Windows clipboard history (`Win+V`):
+- **Total Commander**: asked directly through its `WM_COPYDATA` interface (TC 8.0 or later)
+- **Directory Opus**: Opus's own `dopusrt.exe /info …,paths`, which lists the tabs of every Opus window (found next to the running `dopus.exe`, nothing to set up). It runs only while an Opus window is open, when a folder is actually needed (the hotkey, auto switch, or the panel when a dialog opens; the panel shows the other folders first and adds Opus's a moment later), and a result is reused for 1.5 s. With logging on, the log shows how long each read took (`Perf: Directory Opus paths … ms`)
+- **File Explorer**: the Shell windows list
 
 ## Settings
 
@@ -35,9 +39,9 @@ Preferences → Quick Switch controls the hotkeys, eligible windows and automati
 | Setting | Default / purpose |
 |---|---|
 | `Enabled` | `1` = enable Quick Switch |
-| `ExplorerHotkey` | Jump to File Explorer's current folder; default `Ctrl+E` |
-| `TotalCmdHotkey` | Jump to Total Commander's current folder; default `Ctrl+G` |
-| `AutoSwitch` | Jump automatically when switching from Total Commander to a dialog, default `0` (off) |
+| `TotalCmdHotkey` | The jump hotkey, default `Ctrl+G`: the folder of the Total Commander / Directory Opus / File Explorer window used last (the name stays for now) |
+| `ExplorerHotkey` | No longer used: `Ctrl+G` covers File Explorer too, and `Ctrl+E` goes back to its usual job (the search box in Explorer) |
+| `AutoSwitch` | Jump automatically when switching from Total Commander, Directory Opus or File Explorer to a dialog, default `0` (off) |
 | `DialogWindows` | Window conditions where Quick Switch is enabled |
 | `BrowseDialogs` | `1` = also in "Browse for Folder" dialogs (folder tree only) |
 | `ExcludeWindows` | Windows where Quick Switch is fully disabled |

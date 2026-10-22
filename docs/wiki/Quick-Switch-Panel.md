@@ -8,7 +8,7 @@ The folder panel is the visual way to use Quick Switch. It is enabled by default
 
 ## Contents and controls
 
-- Lists the current and opposite panels of each Total Commander window, open File Explorer windows and recently used folders.
+- Lists the current and opposite panels of each Total Commander window, the current tab (and the other side) of each Directory Opus window, open File Explorer windows and recently used folders.
 - The search box filters the list first, then searches matching folder and file names with Everything (or ALTRun's built-in file index); folders are listed before files.
 - Selecting a file jumps to its containing folder; it does not open or save the file.
 - Use `↑` / `↓` to select, `Enter` to jump and `Esc` to return to the original dialog. With a Chinese input method, the first `Enter` may commit the composition; press it again to jump.

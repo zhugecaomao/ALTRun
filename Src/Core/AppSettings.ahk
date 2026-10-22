@@ -451,8 +451,8 @@ class AppSettings {
             "Extensions", Map(
                 "QuickSwitch", Map(
                     "Enabled"          , 1,
-                    "ExplorerHotkey"   , "^e",
-                    "TotalCmdHotkey"   , "^g",
+                    "ExplorerHotkey"   , "^e",                              ; no longer used (TotalCmdHotkey covers Explorer too); removed with the next SchemaVersion, see #176
+                    "TotalCmdHotkey"   , "^g",                              ; the jump hotkey: folder of the TC / Opus / Explorer window used last
                     "MenuHotkey"       , "^+g",                             ; 文件夹菜单: 所有 TC 面板、资源管理器窗口、最近的文件夹
                     "RecentFolders"    , 10,                                ; 菜单里列出几个最近的文件夹, 0 = 不列
                     "PanelSearch"      , "folders",                         ; 面板搜索框: folders = 只搜文件夹, all = 文件夹和文件

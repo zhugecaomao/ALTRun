@@ -6,7 +6,7 @@ Features outside the search window. These have their own pages, which `F1` on th
 
 | Page | What it covers |
 |---|---|
-| [Quick Switch](Quick-Switch) | Jump an Open / Save dialog to a folder open in Total Commander or Explorer (`Ctrl+G` / `Ctrl+E`), auto switch |
+| [Quick Switch](Quick-Switch) | Jump an Open / Save dialog to the folder open in Total Commander, Directory Opus or Explorer (`Ctrl+G`), auto switch |
 | [Dialog Folder Panel](Quick-Switch-Panel) | The folder panel under dialogs: open and recent folders, the search box (`Ctrl+Shift+G`) |
 | [Date Stamp](Date-Stamp) | Add a date while renaming a file or at the end of a line of text (`Ctrl+D`) |
 | [Custom Hotkeys](Hotkeys) | Assign system commands to hotkeys; Caps Lock switches the input method; how to set hotkeys |
