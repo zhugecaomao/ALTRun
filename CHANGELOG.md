@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.20.12]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 对话框快速跳转: 热键下面的说明写得更清楚 ("跳到最近用过的 Total Commander、Directory Opus 或资源管理器窗口的文件夹")
+- "其它对话框" 改成一行输入框, 多个窗口用逗号分隔 (和 "不展开的窗口" 一样), 给上面的说明腾出位置; 设置文件不变
+
 ## [2026.10.20.11]
 
 测试版。
@@ -942,7 +952,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.12...HEAD
+[2026.10.20.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.11...2026.10.20.12
 [2026.10.20.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.10...2026.10.20.11
 [2026.10.20.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.9...2026.10.20.10
 [2026.10.20.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.8...2026.10.20.9

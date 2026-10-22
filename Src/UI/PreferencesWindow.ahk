@@ -920,7 +920,7 @@ class PreferencesWindow {
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
         PreferencesWindow._Field(base "TotalCmdHotkey", "Prefs.QSHotkey", "K", "hotkey")   ; one hotkey for TC / Opus / Explorer: the one used last
 
-        ; DialogWindows 拆成 "标准对话框" 复选框 + 其它对话框的列表, 保存时再合成一个列表
+        ; DialogWindows is split into the "standard dialogs" checkbox + the other dialogs, joined again when saved
         PreferencesWindow._Section("Prefs.Section.QSDialogs")
         windows := PreferencesWindow.SplitWindows(PreferencesWindow.GetPath(PreferencesWindow.Working, base "DialogWindows"))
         standardClass := "ahk_class #32770", others := []
@@ -931,10 +931,12 @@ class PreferencesWindow {
         x := PreferencesWindow._InputX()
         standard := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T("Prefs.QSStandard"))
         standard.Value := (others.Length < windows.Length) ? 1 : 0
-        PreferencesWindow._Below(6, standard)                               ; the description is in the checkbox text (this page has three lists); 6 apart like _Check without a description
+        PreferencesWindow._Below(6, standard)                               ; the description is in the checkbox text; 6 apart like _Check without a description
         PreferencesWindow._Check(base "BrowseDialogs", "Prefs.QSBrowse")   ; "Browse for Folder": folder tree only (QuickSwitch.LooksLikeBrowseDialog)
-        otherList := PreferencesWindow._WinList("", "Prefs.QSOtherDialogs", 3, others)   ; usually empty: 3 rows
-        PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], PreferencesWindow.SplitLines(otherList.Value)))
+        label := PreferencesWindow._Label("Prefs.QSOtherDialogs")           ; usually empty or one or two: one line, comma-separated (#244)
+        otherBox := PreferencesWindow._Add("Edit", "x" x " w" PreferencesWindow._InputW() " r1 -Multi", PreferencesWindow.JoinWindows(others))
+        PreferencesWindow._BelowInput("Prefs.QSOtherDialogs", label, otherBox)
+        PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], PreferencesWindow.SplitWindows(otherBox.Value)))
         PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 4)
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
