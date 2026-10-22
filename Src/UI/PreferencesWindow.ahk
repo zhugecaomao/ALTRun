@@ -501,6 +501,9 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.Section.Size")
         PreferencesWindow._Pair(["Appearance.Width", "Prefs.Width", "S", "number"]
             , ["Appearance.VisibleRows", "Prefs.VisibleRows", "S", "choice", [1, 2, 3, 4, 5, 6, 7, 8, 9], ["1", "2", "3", "4", "5", "6", "7", "8", "9"]])   ; a list: nothing out of range to type
+        for ctrl in PreferencesWindow._current.Controls                      ; the drop-down _Pair just added
+            if (ctrl.Type = "DDL")
+                visible := ctrl
         density := PreferencesWindow._Choice("Appearance.Density", "Prefs.Density", ThemeManager.Densities   ; any theme can be scaled (ThemeManager.Scaled)
             , [I18n.T("Prefs.Density.Comfortable"), I18n.T("Prefs.Density.Normal"), I18n.T("Prefs.Density.Compact")])
         PreferencesWindow._Check("Appearance.Fade", "Prefs.Fade", , , "Prefs.Group.Animation")
@@ -510,6 +513,12 @@ class PreferencesWindow {
         PreferencesWindow._Check("Appearance.RememberPosition", "Prefs.RememberPosition", , , "Prefs.Group.Dragging")
         reset := PreferencesWindow._Button("Prefs.ResetPosition", (button, *) => PreferencesWindow._ResetPosition(button))
         PreferencesWindow._SameWidth(density, showOn, reset)                ; one column: the two drop-downs and the button below them
+        ; "Visible results" a little wider than its longest option, and that column ends on the same line as it
+        visible.GetPos(&vx, , &vw), density.GetPos(&dx, , &dw)
+        right := Min(Max(vx + vw + 16, dx + dw), PreferencesWindow.ContentX + PreferencesWindow.ContentW)
+        visible.Move(, , right - vx)
+        for ctrl in [density, showOn, reset]
+            ctrl.Move(, , right - dx)
     }
 
     ; 记住的位置恢复为默认 (保存时生效)
@@ -963,7 +972,7 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.AutoDate")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
         PreferencesWindow._Field(base "RenameHotkey", "Prefs.RenameHotkey", "K", "hotkey")   ; one hotkey: the window decides between the two below
-        PreferencesWindow._Field(base "DateFormat", "Prefs.DateFormat", "M")
+        PreferencesWindow._Field(base "DateFormat", "Prefs.DateFormat", "K")   ; as wide as the hotkey box above
         PreferencesWindow._Section("Prefs.Section.DateRename")
         PreferencesWindow._WinList(base "RenameWindows", "Prefs.RenameWindows", 4)
         PreferencesWindow._Section("Prefs.Section.DateAppend")
