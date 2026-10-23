@@ -753,10 +753,10 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand", , , "Prefs.Group.AutoExpand")
         ; Two rows of the same short boxes: Search keyword / Paste by on the left, Keyword prefix / Delay on the right
         keywordRow := PreferencesWindow._Pair(["Features.Snippets.Keyword", "Prefs.SnippetKeyword", "K"], ["Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", "K"])
-        PreferencesWindow._LinesButton("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude", , true)
         pasteRow := PreferencesWindow._Pair(["Features.Snippets.PasteMode", "Prefs.PasteMode", "K", "choice", ["Auto", "Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Auto"), I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")]]
             , ["Features.Snippets.PasteDelay", "Prefs.PasteDelay", "K", "number"])
         PreferencesWindow._AlignPairRows(keywordRow, pasteRow)
+        PreferencesWindow._LinesButton("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude", , true)
     }
 
     ; 文字片段页的 "导入 / 导出" 按钮: 弹出菜单
