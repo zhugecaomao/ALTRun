@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.23]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 文件搜索 → "最近文件关键字" 下面加回一行灰色说明 ("recent 报告" 搜最近打开过的文件, 最新的在前); "文件类型" 保持 3 行
+
 ## [2026.10.20.22]
 
 测试版。
@@ -1053,7 +1062,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.22...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.23...HEAD
+[2026.10.20.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.22...2026.10.20.23
 [2026.10.20.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.21...2026.10.20.22
 [2026.10.20.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.20...2026.10.20.21
 [2026.10.20.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.19...2026.10.20.20
