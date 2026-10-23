@@ -68,7 +68,7 @@
 | SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
 | TabKey | `"Complete"` | 搜索窗口里 `Tab` 的作用: `"Complete"` 自动补全 (文件夹: 进入浏览); `"Next"` 选下一个结果 (`Shift+Tab` 上一个, 到头后循环), `Ctrl+Tab` 自动补全 |
 | KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次, 直接输入开始新的搜索。从 2.x 升级时沿用 `KeepInput` |
-| ShowTips | 1 | 轮换显示使用提示: 显示在状态栏, 关掉状态栏 (`Appearance.StatusBar = 0`) 时显示在空搜索框里 |
+| ShowTips | 1 | 轮换显示使用提示, 用灰色小字显示在空搜索框里 |
 | FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号 |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |
@@ -81,10 +81,10 @@
 |---|---|---|
 | Theme | `System` | 主题名, 见 [主题](Themes-zh); `System` 跟随 Windows 的深 / 浅色 |
 | Density | `Normal` | 显示密度, 对任何主题都有效: `Comfortable` 宽松 (主题本来的大小) / `Normal` 常规 / `Compact` 紧凑, 见 [主题](Themes-zh#显示密度)。从旧版本升级时是 `Comfortable` (保持原来的大小) |
-| Width | 700 | 搜索窗口宽度 (像素, 按屏幕缩放) |
+| Width | 700 | 搜索窗口宽度 (像素, 按屏幕缩放; 最小 450) |
 | VisibleRows | 8 | 最多显示几行结果 (1~9) |
-| Placeholder | "" | 空搜索框里的灰色文字; 空 = 默认的 "ALTRun 搜索", 只写空格 = 什么都不显示 (关掉状态栏时这里显示使用提示) |
-| StatusBar | 1 | 搜索窗口底部的状态栏 (有结果时显示: ☰ 菜单、使用提示、`Enter` / `→` 做什么); 0 = 不显示, 使用提示显示在空搜索框里 |
+| Placeholder | "" | 空搜索框里的灰色文字; 空 = 默认的 "ALTRun 搜索", 只写空格 = 什么都不显示 (有使用提示时不显示) |
+| StatusBar | 1 | 搜索窗口底部的状态栏 (有结果时显示: ☰ 菜单, 以及 `Enter` / `Ctrl+Enter` / `F3` / `→` 做什么); 0 = 不显示 |
 | ShowOn | `Mouse` | 搜索窗口显示在哪块屏幕: `Mouse` 鼠标所在 / `Primary` 主屏幕 / `Active` 当前窗口所在 |
 | Fade | 0 | 显示和隐藏搜索窗口时淡入淡出 (淡入约 120 ms 到主题的透明度, 淡出约 100 ms); 窗口照样马上获得焦点, 不影响打字 |
 | RememberPosition | 0 | 拖动搜索窗口 (按住输入框四周的空白处) 后记住位置 |
