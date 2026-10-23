@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.27]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 文字片段: "不展开的窗口" 移到 "粘贴方式" / "等待" 的下面, 四个短框排在一起
+
 ## [2026.10.20.26]
 
 测试版。
@@ -1095,7 +1104,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.27...HEAD
+[2026.10.20.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...2026.10.20.27
 [2026.10.20.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...2026.10.20.26
 [2026.10.20.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.24...2026.10.20.25
 [2026.10.20.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.23...2026.10.20.24
