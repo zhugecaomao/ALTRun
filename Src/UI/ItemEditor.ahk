@@ -144,6 +144,43 @@ class ItemEditor {
         }
     }
 
+    ; A list with one item per line in a roomy window of its own (PreferencesWindow._LinesButton): help text on top, a big
+    ; box that doesn't wrap (long paths stay on one line), OK / Cancel. Returns the lines (blank ones dropped), or "" on Cancel
+    static EditLines(owner, title, help, lines) {
+        state := {Result: ""}
+        g := Gui("+Owner" owner.Hwnd " -MinimizeBox", title)
+        g.SetFont("s9", ThemeManager.FontName())
+        g.MarginX := 14, g.MarginY := 12
+        width := 680
+        if (help != "")
+            g.AddText("w" width, help)
+        box := g.AddEdit("xm y+10 w" width " r16 +Multi -Wrap +HScroll +VScroll", TextTools.Join(lines))
+        g.AddButton("xm+" (width - 170) " y+14 w80 Default", "OK").OnEvent("Click", OnOk)
+        g.AddButton("x+10 yp w80", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => g.Destroy())
+        g.OnEvent("Escape", (*) => g.Destroy())
+        g.OnEvent("Close", (*) => g.Destroy())
+        owner.Opt("+Disabled")
+        g.Show()
+        SendMessage(0xB1, 0, 0, box.Hwnd)                                   ; EM_SETSEL: caret at the start, nothing selected
+        WinWaitClose(g.Hwnd)
+        owner.Opt("-Disabled")
+        try WinActivate("ahk_id " owner.Hwnd)
+        return state.Result
+
+        OnOk(*) {
+            state.Result := ItemEditor.SplitLines(box.Value)
+            g.Destroy()
+        }
+    }
+
+    static SplitLines(text) {
+        items := []
+        for line in StrSplit(text, "`n", "`r")
+            if ((line := Trim(line)) != "")
+                items.Push(line)
+        return items
+    }
+
     ; 字段自己的按钮: OnClick(controls, g), controls = 字段的 Key -> 控件
     static _FieldButton(button, controls, g) {
         return (*) => button.OnClick.Call(controls, g)

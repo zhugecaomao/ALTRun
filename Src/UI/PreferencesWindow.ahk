@@ -14,7 +14,7 @@
 ;   _Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")   文本框, 宽度 "S" / "M" / "L"
 ;   _Field("General.Hotkey", "Prefs.Hotkey", "K", "hotkey")     录制热键的框 (HotkeyBox): 显示 Alt+Space, 保存 !Space
 ;   _Choice("General.Language", "Prefs.Language", 值数组, 显示文字数组)
-;   _Lines("Features.Applications.Folders", "Prefs.AppFolders", 行数)   数组 <-> 每行一项
+;   _LinesButton("Features.Applications.Folders", "Prefs.AppFolders")  one item per line: summary + "Edit..." window
 ;   _Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", "M")   数组 <-> 逗号分隔
 ;   _Button("Prefs.ClipClear", fn) / _Section("Prefs.QuickSwitch") / _Info(标签, 文字)
 ;   _List(...)                                                  列表 + 添加/编辑/删除 (ItemEditor)
@@ -45,7 +45,7 @@ class PreferencesWindow {
     static MinWindowWidth := 450                                            ; the search window: room for the status bar's four parts
     static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
     static WidthK := 150                                                    ; 热键框 ("K")
-    static _pairX := 0, _pairFirstW := 0, _pairSecondW := 0, _pairSizes := ["", ""]
+    static _pairX := 0, _pairFirstW := 0, _pairSecondW := 0, _pairSizes := ["", ""], _listButtons := []
     static ButtonY := 619                                                   ; 底部按钮的位置; 页面内容要在它上面 (y < ButtonY - 10)
     static LabelMax := 250                                                  ; 左列最宽多少, 再长的标签换行
     static _positionReset := false
@@ -377,7 +377,7 @@ class PreferencesWindow {
         PreferencesWindow._ready := false                                   ; 程序自己填的值不算修改 (和刚打开窗口时一样)
         Loop 2 {
             PreferencesWindow._wider := Map(), binds := PreferencesWindow.Binds.Length
-            try PreferencesWindow.%page.Builder%()
+            try PreferencesWindow.%page.Builder%(), PreferencesWindow._AlignListButtons()
             catch as e {
                 if IsObject(PreferencesWindow.Gui)
                     throw e
@@ -674,7 +674,7 @@ class PreferencesWindow {
         PreferencesWindow._y := startY + Ceil((features.Length + 1) / 2) * rowH
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")
         PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
-        PreferencesWindow._Lines("Features.System.Hidden", "Prefs.SysHidden", 4)
+        PreferencesWindow._LinesButton("Features.System.Hidden", "Prefs.SysHidden")
         PreferencesWindow._y += 4                                           ; 比 _Gap 小一点: 这一页放满了
         PreferencesWindow._Pair(["Features.Terminal.Prefix", "Prefs.TerminalPrefix", "S"]
             , ["Features.Terminal.Shell", "Prefs.TerminalShell", "M", "choice", ["cmd", "powershell", "pwsh", "wt"], ["Command Prompt (cmd)", "Windows PowerShell", "PowerShell 7 (pwsh)", "Windows Terminal (wt)"]])
@@ -692,12 +692,12 @@ class PreferencesWindow {
     static _BuildApplications() {
         PreferencesWindow._BeginPage("Prefs.Page.Applications", 130)
         PreferencesWindow._Section("Prefs.Section.AppIndex")
-        PreferencesWindow._Lines("Features.Applications.Folders", "Prefs.AppFolders", 4)
+        PreferencesWindow._LinesButton("Features.Applications.Folders", "Prefs.AppFolders")
         PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", "L")
         PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", "L")
         PreferencesWindow._FieldButton("Features.Applications.Depth", "Prefs.AppDepth", "Prefs.RebuildIndex", (button, *) => PreferencesWindow._RebuildApps(button))   ; 没有刷新间隔: 监视文件夹, 有变化时自动更新
         PreferencesWindow._Section("Prefs.Section.AppResults")
-        PreferencesWindow._Lines("Features.Applications.Hidden", "Prefs.AppHidden", 4)
+        PreferencesWindow._LinesButton("Features.Applications.Hidden", "Prefs.AppHidden", (lines) => PreferencesWindow.NameSummary(lines))
         PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps", , , "Prefs.Group.Options")
         PreferencesWindow._Check("Features.Applications.MatchPinyin", "Prefs.MatchPinyin")
     }
@@ -709,7 +709,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
         PreferencesWindow._Pair(["Features.FileSearch.Keywords", "Prefs.FileKeywords", "M", "csv"], ["Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", "S", "csv"])
         PreferencesWindow._Csv("Features.FileSearch.RecentKeywords", "Prefs.RecentKeywords", "M")
-        PreferencesWindow._Lines("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", 3)
+        PreferencesWindow._LinesButton("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", (lines) => PreferencesWindow.TypeFilterSummary(lines))
         PreferencesWindow._Section("Prefs.Section.FileResults")
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
@@ -727,7 +727,7 @@ class PreferencesWindow {
         PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", "L")
         PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", "L", "folder")
         PreferencesWindow._Section("Prefs.Section.BuiltinIndex")
-        PreferencesWindow._Lines("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders", 4)
+        PreferencesWindow._LinesButton("Features.FileSearch.ScopeFolders", "Prefs.ScopeFolders")
         PreferencesWindow._FieldButton("Features.FileSearch.ScopeDepth", "Prefs.ScopeDepth", "Prefs.RebuildFileIndex", (button, *) => PreferencesWindow._RebuildFiles(button))
         PreferencesWindow._Field("Features.FileSearch.ScopeExclude", "Prefs.ScopeExclude", "L")
         PreferencesWindow._Pair(["Features.FileSearch.MaxEntries", "Prefs.MaxEntries", "S", "number"], ["Features.FileSearch.RefreshMinutes", "Prefs.RefreshMinutes", "S", "number"])
@@ -753,7 +753,7 @@ class PreferencesWindow {
         PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")
         PreferencesWindow._Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand", , , "Prefs.Group.AutoExpand")
         PreferencesWindow._Field("Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", "S")
-        PreferencesWindow._Field("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude", "L")
+        PreferencesWindow._LinesButton("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude", , true)
         PreferencesWindow._Pair(["Features.Snippets.PasteMode", "Prefs.PasteMode", "M", "choice", ["Auto", "Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Auto"), I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")]]
             , ["Features.Snippets.PasteDelay", "Prefs.PasteDelay", "S", "number"])
     }
@@ -845,10 +845,10 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.Clipboard.Images", "Prefs.ClipImages")
         PreferencesWindow._Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
         PreferencesWindow._Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]   ; 存在哪里 (ClipboardProvider.PlaceStorage)
-            , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "L")
+            , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "P")
         PreferencesWindow._Check("Features.Clipboard.MergeDoubleCopy", "Prefs.ClipMerge", , , "Prefs.Group.Copy")
         PreferencesWindow._Gap()
-        PreferencesWindow._Lines("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps", 4)
+        PreferencesWindow._LinesButton("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps")
         PreferencesWindow._Button("Prefs.ClipClear", (*) => ClipboardProvider.Clear())
     }
 
@@ -944,15 +944,13 @@ class PreferencesWindow {
         standard.Value := (others.Length < windows.Length) ? 1 : 0
         PreferencesWindow._Below(6, standard)                               ; the description is in the checkbox text; 6 apart like _Check without a description
         PreferencesWindow._Check(base "BrowseDialogs", "Prefs.QSBrowse")   ; "Browse for Folder": folder tree only (QuickSwitch.LooksLikeBrowseDialog)
-        label := PreferencesWindow._Label("Prefs.QSOtherDialogs")           ; usually empty or one or two: one line, comma-separated (#244)
-        otherBox := PreferencesWindow._Add("Edit", "x" x " w" PreferencesWindow._InputW() " r1 -Multi", PreferencesWindow.JoinWindows(others))
-        PreferencesWindow._BelowInput("Prefs.QSOtherDialogs", label, otherBox)
-        PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], PreferencesWindow.SplitWindows(otherBox.Value)))
-        PreferencesWindow._WinList(base "ExcludeWindows", "Prefs.QSExclude", 4)
+        other := PreferencesWindow._LinesButton("", "Prefs.QSOtherDialogs", , true, others)
+        PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], other.Lines))
+        PreferencesWindow._LinesButton(base "ExcludeWindows", "Prefs.QSExclude", , true)
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
         PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
-        PreferencesWindow._WinList(base "AutoSwitchExclude", "Prefs.QSAutoExclude", 3)   ; usually empty: 3 rows
+        PreferencesWindow._LinesButton(base "AutoSwitchExclude", "Prefs.QSAutoExclude", , true)
     }
 
     ; 对话框面板 (QuickSwitch 的一部分): 打开 / 保存对话框下面的文件夹列表和搜索框, 以及键盘用的文件夹菜单
@@ -976,9 +974,9 @@ class PreferencesWindow {
         PreferencesWindow._Field(base "RenameHotkey", "Prefs.RenameHotkey", "K", "hotkey")   ; one hotkey: the window decides between the two below
         PreferencesWindow._Field(base "DateFormat", "Prefs.DateFormat", "K")   ; as wide as the hotkey box above
         PreferencesWindow._Section("Prefs.Section.DateRename")
-        PreferencesWindow._WinList(base "RenameWindows", "Prefs.RenameWindows", 4)
+        PreferencesWindow._LinesButton(base "RenameWindows", "Prefs.RenameWindows", , true)
         PreferencesWindow._Section("Prefs.Section.DateAppend")
-        PreferencesWindow._WinList(base "AppendWindows", "Prefs.AppendWindows", 4)
+        PreferencesWindow._LinesButton(base "AppendWindows", "Prefs.AppendWindows", , true)
     }
 
     ; 上面是 "关于" (图标、名称、版本、主页、检查更新), 下面是设置和数据文件的位置和操作
@@ -1202,6 +1200,7 @@ class PreferencesWindow {
         PreferencesWindow._y := 14
         PreferencesWindow._pageKey := nameKey
         PreferencesWindow._pairX := 0                                       ; 这一页成对设置的右列位置, 见 _Pair
+        PreferencesWindow._listButtons := []                                ; this page's "Edit..." buttons, see _AlignListButtons
         PreferencesWindow.LabelW := Max(labelW, PreferencesWindow._labelWidths.Get(I18n.Lang " " nameKey, 0))
     }
 
@@ -1324,6 +1323,9 @@ class PreferencesWindow {
             case "S": return PreferencesWindow.WidthS
             case "M": return PreferencesWindow.WidthM
             case "K": return PreferencesWindow.WidthK
+            case "P":                                                       ; to the right edge of the page's paired settings (_Pair)
+                if PreferencesWindow._pairX
+                    return PreferencesWindow._pairX + PreferencesWindow._pairSecondW - PreferencesWindow._InputX()
         }
         return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
     }
@@ -1455,27 +1457,81 @@ class PreferencesWindow {
         return width
     }
 
-    static _Lines(path, labelKey, rows) {
+    ; A list with one item per line, shown as a read-only summary + "Edit...", which opens it in a roomy window of its own
+    ; (ItemEditor.EditLines, with the longer "<labelKey>.Help" text): the page stays short and long lines are easy to read.
+    ; The button lines up with the right column of the page's paired settings (_Pair), otherwise with the right edge.
+    ; windows: the setting is one comma-separated string of windows (SplitWindows / JoinWindows), not an array.
+    ; path "": not bound, start from lines; the caller binds the returned state's Lines itself
+    static _LinesButton(path, labelKey, summarize := "", windows := false, lines := "") {
         label := PreferencesWindow._Label(labelKey)
-        value := PreferencesWindow.JoinLines(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
-        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() " r" rows " +Multi -Wrap +HScroll +VScroll", value)
-        PreferencesWindow._Bind(path, () => PreferencesWindow.SplitLines(ctrl.Value))
-        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)   ; 没有说明时和下一行隔开
-        PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
+        if (path != "") {
+            value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
+            lines := windows ? PreferencesWindow.SplitWindows(value) : PreferencesWindow.SplitLines(PreferencesWindow.JoinLines(value))
+        }
+        state := {Lines: (lines is Array) ? lines : []}
+        summarize := summarize ? summarize : (lines) => PreferencesWindow.ListSummary(lines)
+        x := PreferencesWindow._InputX(), buttonW := PreferencesWindow.WidthS
+        buttonX := x + PreferencesWindow._InputW() - buttonW                ; at the right edge; _AlignListButtons moves it when the page has pairs
+        box := PreferencesWindow._Add("Edit", "x" x " w" (buttonX - 8 - x) " r1 -Multi ReadOnly", summarize(state.Lines))
+        box.GetPos(, , , &boxH)
+        button := PreferencesWindow._Add("Button", "x" buttonX " yp-1 w" buttonW " h" (boxH + 2), I18n.T("Prefs.EditList"))
+        button.OnEvent("Click", (*) => PreferencesWindow._EditLines(labelKey, state, box, summarize))
+        PreferencesWindow._listButtons.Push({Box: box, Button: button})
+        if (path != "")
+            PreferencesWindow._Bind(path, windows ? () => PreferencesWindow.JoinWindows(state.Lines) : () => state.Lines)
+        PreferencesWindow._BelowInput(labelKey, label, box, button)
+        return state
     }
 
-    ; 窗口列表 (设置里是逗号分隔的 "ahk_class ..., ahk_exe ...") 每行显示一个。
-    ; path 为空时不绑定, value 直接给数组; 返回输入框
-    static _WinList(path, labelKey, rows, value := "") {
-        label := PreferencesWindow._Label(labelKey)
-        if (path != "")
-            value := PreferencesWindow.SplitWindows(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
-        ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() " r" rows " +Multi -Wrap +HScroll +VScroll", PreferencesWindow.JoinLines(value))
-        if (path != "")
-            PreferencesWindow._Bind(path, () => PreferencesWindow.JoinWindows(PreferencesWindow.SplitLines(ctrl.Value)))
-        PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 3 : 8, label, ctrl)   ; 没有说明时和下一行隔开
-        PreferencesWindow._Desc(labelKey, PreferencesWindow._InputX())
-        return ctrl
+    ; After a page is built: its "Edit..." buttons end where the right column of its paired settings ends, above or below
+    ; them (e.g. Folder keywords / Files in normal results), when that column holds short boxes ("S")
+    static _AlignListButtons() {
+        if !(PreferencesWindow._pairX && PreferencesWindow._pairSizes[2] = "S")
+            return
+        right := PreferencesWindow._pairX + PreferencesWindow._pairSecondW, buttonW := PreferencesWindow._pairSecondW
+        for item in PreferencesWindow._listButtons {
+            item.Box.GetPos(&boxX)
+            item.Button.Move(right - buttonW, , buttonW)
+            item.Box.Move(, , right - buttonW - 8 - boxX)
+        }
+    }
+
+    static _EditLines(labelKey, state, box, summarize) {
+        help := I18n.Strings.Has(labelKey ".Help") ? I18n.T(labelKey ".Help") : I18n.T(labelKey ".Desc")
+        edited := ItemEditor.EditLines(PreferencesWindow.Gui, I18n.T(labelKey), help, state.Lines)
+        if (!(edited is Array) || PreferencesWindow.JoinLines(edited) == PreferencesWindow.JoinLines(state.Lines))
+            return
+        state.Lines := edited, box.Value := summarize(edited)
+        PreferencesWindow.MarkDirty()
+    }
+
+    ; The summary next to "Edit...": the items joined with commas (the box cuts off what doesn't fit)
+    static ListSummary(lines) {
+        text := ""
+        for line in lines
+            text .= (text = "" ? "" : ", ") line
+        return text
+    }
+
+    ; File types: just the keywords ("doc, pic, video, ...")
+    static TypeFilterSummary(lines) {
+        keywords := []
+        for line in lines
+            if IsObject(filter := FileSearchProvider.ParseTypeFilter(line))
+                keywords.Push(filter.Keyword)
+        return PreferencesWindow.ListSummary(keywords)
+    }
+
+    ; Hidden apps: the app names (Disk Cleanup, NVIDIACorp.NVIDIAControlPanel), not the long paths
+    static NameSummary(lines) {
+        names := []
+        for line in lines {
+            SplitPath(line, &name)
+            if InStr(name, "!")                                             ; shell:AppsFolder\<family>!<app>
+                name := SubStr(name, InStr(name, "!", , -1) + 1)
+            names.Push(RegExReplace(name, "i)\.lnk$"))
+        }
+        return PreferencesWindow.ListSummary(names)
     }
 
     ; numeric: 数字列表 (例如钢筋直径), 存成数字而不是文字

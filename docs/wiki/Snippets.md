@@ -33,7 +33,7 @@ Type `;keyword` (for example `;sig`) in any program and what you typed is delete
 ## Don't expand in
 Preferences → Snippets → "Don't expand in" (`Features.Snippets.ExpandExclude`): typing `;keyword` in these windows doesn't expand anything. Useful for Remote Desktop, password managers, games, or programs where you really type text starting with `;`.
 
-- Separate several windows with commas, for example `ahk_exe mstsc.exe, ahk_exe KeePass.exe, ahk_class Notepad`
+- Click **Edit...** and enter one window per line, for example `ahk_exe mstsc.exe`, `ahk_exe KeePass.exe`, `ahk_class Notepad` (in the settings file they are one comma-separated line)
 - Each item can be:
   - `ahk_exe program.exe`: every window of that program (Task Manager → Details shows the program name)
   - `ahk_class ClassName`: windows of that class
