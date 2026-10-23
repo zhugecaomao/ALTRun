@@ -68,7 +68,7 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 | SpaceToRun | 0 | After typing, Space runs the selected result and `Shift+Space` types a space |
 | TabKey | `"Complete"` | What `Tab` does in the search window: `"Complete"` autocompletes (on a folder, browses into it); `"Next"` goes to the next result (`Shift+Tab` the previous one, wrapping around), and `Ctrl+Tab` autocompletes |
 | KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again, typing starts a new search. Taken over from `KeepInput` when upgrading from 2.x |
-| ShowTips | 1 | Show a usage tip, a different one each time: in the status bar, or in the empty search box when the status bar is off (`Appearance.StatusBar = 0`) |
+| ShowTips | 1 | Show a usage tip, a different one each time, in small gray text in the empty search box |
 | FileManager | `explorer.exe` | Program that opens folders, optionally with parameters, for example `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` reuse the open window, `/T` new tab, `/S` active panel); quote a path with spaces |
 | SendToMenu | 1 | Add to Explorer's "Send to" menu |
 | StartMenuShortcut | 1 | Add to the Start menu |
@@ -81,10 +81,10 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 |---|---|---|
 | Theme | `System` | Theme name, see [Themes](Themes); `System` follows the Windows light / dark mode |
 | Density | `Normal` | Density for every theme: `Comfortable` (the theme's own size) / `Normal` / `Compact`, see [Themes](Themes#density). Upgrades get `Comfortable` (keeps the previous size) |
-| Width | 700 | Search window width (pixels, scaled with the display) |
+| Width | 700 | Search window width (pixels, scaled with the display; at least 450) |
 | VisibleRows | 8 | Maximum number of result rows shown (1–9) |
-| Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (usage tips show there when the status bar is off) |
-| StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: ☰ menu, usage tip, what `Enter` / `→` do); 0 = off, the usage tip shows in the empty search box |
+| Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (not shown while there is a usage tip) |
+| StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: ☰ menu, what `Enter` / `Ctrl+Enter` / `F3` / `→` do); 0 = off |
 | ShowOn | `Mouse` | Which screen the search window opens on: `Mouse` the one with the mouse pointer / `Primary` the main screen / `Active` the one with the active window |
 | Fade | 0 | Fade the search window in and out when showing and hiding (about 120 ms in, up to the theme opacity; about 100 ms out); the window still gets focus at once, so typing is never delayed |
 | RememberPosition | 0 | Remember the position after dragging the search window (drag the empty space around the input box) |

@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.20.16]
+
+测试版。
+
+Test build.
+
+### 改进
+- 状态栏多显示两个操作, 例如文件夹: "打开 ↵ | 打开所在位置 Ctrl ↵ | 编辑 F3 | 操作 →"。`Ctrl+Enter` 按结果类型显示 (打开所在位置 / 粘贴 / 复制), 和 `Enter` 一样时不显示; 能编辑的结果才显示 `F3`
+- 使用提示改到空搜索框里, 用灰色小字显示 (不再用搜索框的大字, 长的提示也放得下), 一开始打字就消失; 状态栏右边留给操作提示。以前默认设置下刚呼出时没有结果行, 状态栏不显示, 提示要等打字后才看得到
+- 搜索窗口最窄改为 450 像素 (原来 400), 保证状态栏的四段都放得下
+
 ## [2026.10.20.15]
 
 测试版。
@@ -981,7 +992,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.16...HEAD
+[2026.10.20.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.15...2026.10.20.16
 [2026.10.20.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.14...2026.10.20.15
 [2026.10.20.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.13...2026.10.20.14
 [2026.10.20.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.12...2026.10.20.13

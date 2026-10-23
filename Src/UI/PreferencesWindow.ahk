@@ -42,6 +42,7 @@ class PreferencesWindow {
     ; 左列宽度每页按标签长短定 (_BeginPage); 输入框只用三种宽度, 复选框按组在左列加标签,
     ; 按钮统一尺寸, 灰色说明和控件左对齐
     static ContentX := 190, ContentW := 560, LabelW := 190
+    static MinWindowWidth := 450                                            ; the search window: room for the status bar's four parts
     static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
     static WidthK := 150                                                    ; 热键框 ("K")
     static _pairX := 0, _pairFirstW := 0, _pairSecondW := 0, _pairSizes := ["", ""]
@@ -321,7 +322,7 @@ class PreferencesWindow {
             PreferencesWindow.SetPath(PreferencesWindow.Working, bind.Path, bind.Read.Call())
         general := PreferencesWindow.Working["General"]
         appearance := PreferencesWindow.Working["Appearance"]
-        appearance["Width"] := Max(400, appearance["Width"])
+        appearance["Width"] := Max(PreferencesWindow.MinWindowWidth, appearance["Width"])
         if (general["Hotkey"] = "")
             general["Hotkey"] := "!Space"
         clash := PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(PreferencesWindow.Working))

@@ -62,10 +62,11 @@ class SearchWindow {
     static _layoutBefore := 0                                               ; 呼出前前台窗口的输入法 (SwitchToEnglishInput = 1 时隐藏后切回)
     static _imeBefore := ""                                                 ; 呼出时输入法的 {Open, Conv} (SwitchToEnglishInput = 2 时隐藏后恢复)
     static _keepOpen := false                        ; 右键菜单 / 删除确认期间不因失去焦点而隐藏
-    ; 底部状态栏 (Appearance.StatusBar, 和 Listary / Raycast 一样): 有结果行时显示在最下面。左边是 ☰ 菜单按钮 (偏好设置、
-    ; 速查表、重建索引、检查更新、重新载入、退出) 和使用提示 (或文件搜索模式、操作面板的状态), 右边是选中项的 Enter 操作和
-    ; 打开操作面板的 → (圆角键帽)。打开时空搜索框里只显示固定的 "ALTRun 搜索", 使用提示挪到状态栏; 没有结果行时不显示
-    static StatusHeight := 0, StatusBar := "", _statusKey := ""
+    ; Status bar at the bottom (Appearance.StatusBar, like Listary / Raycast), shown when there are result rows. On the left
+    ; the ☰ menu button (Preferences, cheat sheet, rebuild index, check for updates, reload, quit) and the file search /
+    ; actions panel state; on the right what Enter, Ctrl+Enter, F3 and → do with the selected result (round key caps).
+    ; The usage tip is in the empty search box (TipLabel), not here
+    static StatusHeight := 0, StatusBar := "", _statusKey := "", TipLabel := ""
 
     ;---------------------------------------------------------------------------
     ; Create
@@ -100,6 +101,18 @@ class SearchWindow {
         searchBox.Move(pad, pad + SearchWindow.InputTop(SearchWindow.InputHeight, editH, pad, metrics.Ascent, metrics.Cap))
         searchBox.OnEvent("Change", (*) => SearchWindow._OnInputChange())
         Win.SetCueBanner(searchBox.Hwnd, SearchWindow.Placeholder())
+        ; The usage tip in the empty box: a small gray label over it (the cue banner would use the big input font
+        ; and cut long tips off). Static without SS_NOTIFY: clicks go through to the box. Kept on top of the box,
+        ; which no longer paints over its siblings (WS_CLIPSIBLINGS)
+        g.SetFont("s" ThemeManager.Get("SubtitleFontSize") " c" ThemeManager.Get("Subtitle"))
+        margin := SendMessage(0xD4, 0, 0, searchBox) & 0xFFFF                ; EM_GETMARGINS: where the box's text starts
+        tipLabel := g.AddText("x" (pad + margin) " y0 w" (w - 2 * pad - margin) " r1 Hidden +0x4000 Background" background)   ; SS_ENDELLIPSIS
+        tipLabel.GetPos(, , , &tipH)
+        tipLabel.Move(, pad + (SearchWindow.InputHeight - tipH) // 2)
+        g.SetFont("s" ThemeManager.Get("InputFontSize") " c" ThemeManager.Get("InputText"))
+        searchBox.Opt("+0x4000000")                                         ; WS_CLIPSIBLINGS
+        DllCall("SetWindowPos", "Ptr", tipLabel.Hwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; HWND_TOP; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
+        SearchWindow.TipLabel := tipLabel
 
         listTop := pad + SearchWindow.InputHeight + pad // 2
         separator := g.AddText("x0 y" listTop " w" w " h1 Hidden Background" ThemeManager.Get("Separator"))
@@ -179,26 +192,35 @@ class SearchWindow {
         if !SearchWindow.StatusHeight
             return
         texts := SearchWindow.StatusTexts()
-        key := texts.Left "`n" texts.Enter "`n" texts.Actions
+        key := texts.Left "`n" texts.Enter "`n" texts.Ctrl "`n" texts.Edit "`n" texts.Actions
         if (key == SearchWindow._statusKey)
             return
         SearchWindow._statusKey := key
         SearchWindow._RenderStatusBar(texts)
     }
 
-    ; {Left, Enter, Actions}: 左边的文字 (空搜索框时的使用提示 / 文件搜索模式 / 操作面板的返回键; 正在输入时也显示这次的提示),
-    ; 选中项按 Enter 做什么 (没有时 ""), 是否显示 "操作 →"
+    ; {Left, Enter, Ctrl, Edit, Actions}: the text on the left (file search mode / Esc in the actions panel; the usage
+    ; tip is in the empty box instead), what Enter / Ctrl+Enter do with the selected result ("" = nothing to show),
+    ; whether F3 edits it and whether "Actions →" is shown
     static StatusTexts() {
         actions := SearchWindow.Mode = "actions"
-        if actions
-            left := I18n.T("Status.Back")
-        else if SearchWindow.FileMode
-            left := I18n.T("Status.FileMode")
-        else
-            left := SearchWindow._tip
+        left := actions ? I18n.T("Status.Back") : SearchWindow.FileMode ? I18n.T("Status.FileMode") : ""
         item := SearchWindow.SelectedItem()
         enter := !IsObject(item) ? "" : actions ? I18n.T("Status.Run") : SearchWindow.EnterTitle(item)
-        return {Left: left, Enter: enter, Actions: (!actions && IsObject(item) && item.Valid) ? 1 : 0}
+        usable := !actions && IsObject(item) && item.Valid
+        ctrl := usable ? SearchWindow.CtrlEnterTitle(item, enter) : ""
+        return {Left: left, Enter: enter, Ctrl: ctrl, Edit: (usable && ActionCatalog.CanEdit(item)) ? 1 : 0, Actions: usable ? 1 : 0}
+    }
+
+    ; What Ctrl+Enter does (ActionCatalog.RunModifier); "" when it is the same as Enter
+    static CtrlEnterTitle(item, enter) {
+        switch item.Kind {
+            case "file", "folder": title := I18n.T("Status.Reveal")
+            case "text"          : title := I18n.T("Status.Paste")
+            case "url"           : title := I18n.T("Status.Copy")
+            default              : return ""
+        }
+        return (title = enter) ? "" : title
     }
 
     ; 选中项按 Enter 做什么 (短的名称): 结果自己写的 (RunTitle) > 按类型 (打开 / 复制 / 粘贴 / 运行); 不能执行的提示行: 补全
@@ -214,18 +236,48 @@ class SearchWindow {
         return I18n.T("Status.Run")
     }
 
-    ; 右边的几段: [{Label, Keys: [键帽...]}], 两段之间画一条竖线 (和 Raycast / Listary 一样: 打开 ↵ | 操作 →)
+    ; The parts on the right: [{Label, Keys: [key caps...]}], a line between two parts:
+    ; Open ↵ | Open location Ctrl ↵ | Edit F3 | Actions →
     static StatusParts(texts) {
         parts := []
         if (texts.Enter != "")
             parts.Push({Label: texts.Enter, Keys: ["↵"]})
+        if (texts.Ctrl != "")
+            parts.Push({Label: texts.Ctrl, Keys: ["Ctrl", "↵"]})
+        if texts.Edit
+            parts.Push({Label: I18n.T("Status.Edit"), Keys: ["F3"]})
         if texts.Actions
             parts.Push({Label: I18n.T("Status.Actions"), Keys: ["→"]})
         return parts
     }
 
+    ; Sizes on the status bar's right side: drawing it and checking that it fits use the same ones
+    static _StatusMetrics() => {KeyH: Win.Scale(20), KeyPad: Win.Scale(6), Gap: Win.Scale(6), KeyGap: Win.Scale(4), Divider: Win.Scale(8)}
+
+    ; Arrows are drawn in a key cap 1.3 times as wide as high; other keys fit their text
+    static _KeyWidth(hdc, keyText, m) => (keyText = "↵" || keyText = "→") ? Round(m.KeyH * 1.3) : Max(m.KeyH, SearchWindow._TextWidth(hdc, keyText) + 2 * m.KeyPad)
+
+    ; Width of the parts on the right as _RenderStatusBar draws them (the fonts must exist, see _CreateGdiObjects)
+    static StatusPartsWidth(parts) {
+        m := SearchWindow._StatusMetrics(), gdi := SearchWindow._gdi
+        hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr"), width := 0
+        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"], "Ptr")
+        for index, part in parts {
+            DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"])
+            for keyText in part.Keys
+                width += SearchWindow._KeyWidth(hdc, keyText, m) + m.KeyGap
+            width += m.Gap - m.KeyGap
+            DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["StatusFont"])
+            width += SearchWindow._TextWidth(hdc, part.Label) + (index > 1 ? 2 * m.Divider : 0)
+        }
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
+        DllCall("DeleteDC", "Ptr", hdc)
+        return width
+    }
+
     ; ☰ 按钮占的宽度 (从状态栏左边算起)
-    static StatusMenuWidth() => SearchWindow.Padding + Win.Scale(28)
+    static StatusMenuWidth() => SearchWindow.StatusMenuWidthFor(SearchWindow.Padding)
+    static StatusMenuWidthFor(pad) => pad + Win.Scale(28)
 
     ; 点了状态栏: 点在 ☰ 上时弹出菜单
     static _OnStatusClick() {
@@ -295,7 +347,8 @@ class SearchWindow {
         oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["StatusFont"], "Ptr")
 
         ; 右边从右往左排: 标签 + 键帽, 两段之间一条竖线
-        keyH := Win.Scale(20), keyPad := Win.Scale(6), gap := Win.Scale(6), keyGap := Win.Scale(4), divider := Win.Scale(10)
+        m := SearchWindow._StatusMetrics()
+        keyH := m.KeyH, gap := m.Gap, keyGap := m.KeyGap, divider := m.Divider
         top := (h - keyH) // 2 + 1, x := w - pad
         parts := SearchWindow.StatusParts(texts)
         labelBgr := SearchWindow.MixColor(title, background, 0.15), keyBgr := SearchWindow.MixColor(background, title, 0.11)
@@ -308,7 +361,7 @@ class SearchWindow {
                 keyText := part.Keys[keyIndex]
                 DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"])
                 arrowKey := (keyText = "↵" || keyText = "→")                    ; 箭头自己画 (字体里的箭头太小、位置偏低)
-                keyW := arrowKey ? Round(keyH * 1.3) : Max(keyH, SearchWindow._TextWidth(hdc, keyText) + 2 * keyPad)
+                keyW := SearchWindow._KeyWidth(hdc, keyText, m)
                 Win.FillRoundRect(hdc, x - keyW, top, x, top + keyH, Win.Scale(5), keyBgr)
                 if arrowKey {
                     SearchWindow.DrawKeyArrow(hdc, keyText, x - keyW / 2, top + keyH / 2, keyH * 0.5, keyTextBgr)
@@ -880,6 +933,7 @@ class SearchWindow {
     }
 
     static _OnInputChange() {
+        SearchWindow._UpdateTip()
         if (SearchWindow._quietText != "" && SearchWindow.Input.Value == SearchWindow._quietText)
             return                                                          ; 恢复上次的搜索时自己填进去的文字: 显示后再搜 (_FinishRestore)
         text := SearchWindow.Input.Value
@@ -1187,14 +1241,28 @@ class SearchWindow {
     }
 
     ; 灰色提示文字: 普通搜索 / 文件搜索模式 (操作面板的提示在 _OpenActions 里设置)
-    ; 空搜索框里的灰色文字: 文件搜索模式 "搜索文件...", 否则是这次显示时轮到的使用提示 (关掉提示时 "ALTRun 搜索")
+    ; Gray text in the empty box: "Search files..." in file search mode; otherwise this time's usage tip (the small
+    ; TipLabel), or the placeholder when tips are off. The tip is for before typing, so it is only in the empty box
     static _UpdateCueBanner() {
         if SearchWindow.FileMode
             text := I18n.T("Search.FilesPlaceholder")
         else
-            text := (SearchWindow._tip != "" && !SearchWindow.StatusHeight) ? SearchWindow._tip : SearchWindow.Placeholder()   ; 有状态栏时提示显示在状态栏
+            text := (SearchWindow._tip != "") ? "" : SearchWindow.Placeholder()
         Win.SetCueBanner(SearchWindow.Input.Hwnd, text)
+        SearchWindow._UpdateTip()
     }
+
+    static _UpdateTip() {
+        if !IsObject(SearchWindow.TipLabel)
+            return
+        show := SearchWindow.ShowsTip()
+        if (show && SearchWindow.TipLabel.Text != SearchWindow._tip)
+            SearchWindow.TipLabel.Text := SearchWindow._tip
+        if (SearchWindow.TipLabel.Visible != show)
+            SearchWindow.TipLabel.Visible := show
+    }
+
+    static ShowsTip() => SearchWindow._tip != "" && !SearchWindow.FileMode && SearchWindow.Mode = "results" && SearchWindow.Input.Value = ""
 
     ; 输入框在输入区 (高 bandH) 里的上边距: 按大写字母的高度居中 (ascent: 基线到字体顶部, cap: 大写字母高度)。
     ; 按整个字体的高度居中时下面还算上了 g、y 等下伸笔画的空间, 字看起来偏上 (2026-10 #158; 150% 时上边空 7 像素、

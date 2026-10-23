@@ -92,7 +92,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -3943,18 +3943,29 @@ class Tests {
             SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow._tip := "Tip: ? cheat sheet"
             SearchWindow.Input.Value := "", SearchWindow.Results := [], SearchWindow.Selected := 0
             texts := SearchWindow.StatusTexts()
-            eq("empty box: tip", texts.Left "|" texts.Enter "|" texts.Actions, "Tip: ? cheat sheet||0")
+            eq("empty box: the tip is in the box, not the status bar", texts.Left "|" texts.Enter "|" texts.Actions "|" SearchWindow.ShowsTip(), "||0|1")
             SearchWindow.Input.Value := "note", SearchWindow.Results := [fileItem, ResultItem("b")], SearchWindow.Selected := 1
             texts := SearchWindow.StatusTexts()
-            eq("results: tip, enter and actions", texts.Left "|" texts.Enter "|" texts.Actions, "Tip: ? cheat sheet|Open|1")
-            parts := SearchWindow.StatusParts(texts)
-            eq("parts like Raycast", parts.Length = 2 ? parts[1].Label " " parts[1].Keys[1] " | " parts[2].Label " " parts[2].Keys[1] : "", "Open ↵ | Actions →")
+            eq("typing: no tip", SearchWindow.ShowsTip(), false)
+            eq("results: enter, ctrl+enter, edit, actions", texts.Left "|" texts.Enter "|" texts.Ctrl "|" texts.Edit "|" texts.Actions, "|Open|Open location|1|1")
+            parts := SearchWindow.StatusParts(texts), shown := ""
+            for part in parts {
+                keys := ""
+                for key in part.Keys
+                    keys .= (keys = "" ? "" : " ") key
+                shown .= (shown = "" ? "" : " | ") part.Label " " keys
+            }
+            eq("four parts", shown, "Open ↵ | Open location Ctrl ↵ | Edit F3 | Actions →")
+            eq("ctrl+enter: text pastes", SearchWindow.CtrlEnterTitle(ResultItem("42", "", {Kind: "text"}), "Copy"), "Paste")
+            eq("ctrl+enter: same as enter is not shown", SearchWindow.CtrlEnterTitle(ResultItem("s", "", {Kind: "text", OnRun: (*) => 0}), "Paste"), "")
+            eq("ctrl+enter: url copies", SearchWindow.CtrlEnterTitle(ResultItem("w", "", {Kind: "url"}), "Open"), "Copy")
+            eq("ctrl+enter: commands have none", SearchWindow.CtrlEnterTitle(ResultItem("Lock", "", {OnRun: (*) => 0}), "Run"), "")
             items := SearchWindow.MainMenuItems(), labels := ""
             for entry in items
                 labels .= (IsObject(entry) ? StrSplit(entry[1], "`t")[1] : "-") ";"
             eq("menu", labels, "Preferences...;Shortcuts and Syntax;-;Rebuild Index;Check for Updates;-;Reload;Quit;")
-            SearchWindow.FileMode := true
-            eq("fileItem mode", SearchWindow.StatusTexts().Left, I18n.T("Status.FileMode"))
+            SearchWindow.FileMode := true, SearchWindow.Input.Value := ""
+            eq("fileItem mode", SearchWindow.StatusTexts().Left "|" SearchWindow.ShowsTip(), I18n.T("Status.FileMode") "|0")
             SearchWindow.FileMode := false, SearchWindow.Mode := "actions"
             texts := SearchWindow.StatusTexts()
             eq("action panel", texts.Left "|" texts.Enter "|" texts.Actions, "Esc  Back|Run|0")
@@ -3984,6 +3995,24 @@ class Tests {
             SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results, SearchWindow.Selected := saved.Selected
             SearchWindow.Mode := saved.Mode, SearchWindow.FileMode := saved.FileMode, SearchWindow._tip := saved.Tip, SearchWindow.StatusHeight := saved.Status
             g.Destroy()
+        }
+    }
+
+    ; At the narrowest window (450 px) the four parts on the right still leave room for the ☰ button, in every language
+    static StatusBarFit() {
+        savedLang := I18n.Lang, savedGdi := SearchWindow._gdi.Clone()
+        SearchWindow._CreateGdiObjects()
+        pad := Win.Scale(ThemeManager.Get("Padding"))
+        try {
+            for language in I18n.Languages() {
+                I18n.Init(language[1])
+                parts := SearchWindow.StatusParts({Enter: I18n.T("Status.Open"), Ctrl: I18n.T("Status.Reveal"), Edit: 1, Actions: 1})
+                used := SearchWindow.StatusPartsWidth(parts) + pad + SearchWindow.StatusMenuWidthFor(pad)   ; right padding + the ☰ button
+                TestRunner.True("StatusBarFit." language[1] " (" used " of " Win.Scale(PreferencesWindow.MinWindowWidth) ")", used <= Win.Scale(PreferencesWindow.MinWindowWidth))
+            }
+        } finally {
+            I18n.Init(savedLang)
+            SearchWindow._gdi := savedGdi
         }
     }
 
