@@ -344,6 +344,7 @@
   "Prefs.Filter": "筛选",
   "Prefs.FolderKeywords": "文件夹关键字",
   "Prefs.RecentKeywords": "最近文件关键字",
+  "Prefs.RecentKeywords.Desc": "\"recent 报告\" 搜最近打开过的文件, 最新的在前",
   "Prefs.Group.Animation": "动画",
   "Prefs.Group.AutoExpand": "自动展开",
   "Prefs.Group.Copy": "复制",
