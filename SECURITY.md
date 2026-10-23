@@ -76,7 +76,7 @@ All data stays on your computer, in the `Data` folder next to `ALTRun.exe` (or `
 | Search indexes | `AppIndex.json`, `FileIndex.json` | Names and paths of applications and files, used for searching |
 | Icon cache | `%LOCALAPPDATA%\ALTRun\IconCache` | Result icons and the paths they belong to, so icons show at once after a restart; kept on this computer only, safe to delete |
 | Exchange rates, update status | `Currency.json`, `Update.json` | |
-| Debug log (off by default) | `%TEMP%\ALTRun.log` | Timings and errors, plus recent search text to help diagnose problems |
+| Debug log (off by default) | `%TEMP%\ALTRun.log` | Timings and errors, file paths and program names, to help diagnose problems; never what you type |
 
 To remove all data, quit ALTRun and delete the `Data` folder and `%LOCALAPPDATA%\ALTRun`. No copies are kept anywhere else.
 
@@ -162,7 +162,7 @@ ALTRun 本身只在以下情况联网:
 | 搜索索引 | `AppIndex.json`、`FileIndex.json` | 应用和文件的名称、路径, 用于搜索 |
 | 图标缓存 | `%LOCALAPPDATA%\ALTRun\IconCache` | 结果的图标和对应的路径, 重启后图标马上显示; 只存在这台电脑上, 可以随时删除 |
 | 汇率、更新状态 | `Currency.json`、`Update.json` | |
-| 调试日志 (默认关闭) | `%TEMP%\ALTRun.log` | 耗时和错误信息, 以及最近几次搜索的文字 (用来排查问题) |
+| 调试日志 (默认关闭) | `%TEMP%\ALTRun.log` | 耗时、错误信息、文件路径和程序名 (用来排查问题); 不记录输入的文字 |
 
 要删除全部数据, 退出 ALTRun 后删除 `Data` 文件夹和 `%LOCALAPPDATA%\ALTRun` 即可, 其它地方没有副本。
 

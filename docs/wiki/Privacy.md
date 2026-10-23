@@ -22,7 +22,7 @@ Everything lives in the Data folder and a few local folders; what each file is, 
 - **Usage statistics** (`Usage.json`): only how many times each feature was used per day; never what you typed or opened
 - **Learned ranking** (`Knowledge.json`): "what was typed → which item was picked", used to put frequent picks first; Preferences → Advanced → "Reset Learned Ranking" clears it
 - **Snippet expansion** never triggers in Windows password boxes, and Preferences → Snippets → "[Don't expand in](Snippets#dont-expand-in)" can exclude Remote Desktop, password managers and so on
-- **Debug log** is off by default; Preferences → Advanced → "Write a debug log" writes `%Temp%\ALTRun.log` for troubleshooting, with timings of startup and background tasks and error messages. Look it over before attaching it to an issue, see [How do I send a debug log?](FAQ#how-do-i-send-a-debug-log)
+- **Debug log** is off by default; Preferences → Advanced → "Write a debug log" writes `%Temp%\ALTRun.log` for troubleshooting, with timings of startup and background tasks and error messages (never what you type in the search box). Look it over before attaching it to an issue, see [How do I send a debug log?](FAQ#how-do-i-send-a-debug-log)
 
 ## Permissions
 ALTRun runs with normal user rights: no administrator rights, no system-wide registry entries, no background service. The one exception: ticking Preferences → Keyboard → "Also in windows running as administrator" creates a scheduled task that runs a small Caps Lock-only helper as administrator (one UAC confirmation when it is created and one when it is removed), see [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method).

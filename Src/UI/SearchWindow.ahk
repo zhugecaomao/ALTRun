@@ -1029,11 +1029,12 @@ class SearchWindow {
         SearchWindow._Layout()
     }
 
-    ; 诊断 "窗口有几行高, 结果行却是空白": 内存里记下最近 10 次换结果 (时间、输入、结果数、列表行数),
-    ; 画行时发现这一行没有对应的结果, 把它们写进调试日志 (每次显示窗口最多写一次)
+    ; To diagnose "the window is several rows high but the rows are blank": the last 10 result changes are kept in memory
+    ; (time, input length, results, list rows) and written to the debug log when a row has no result to draw (at most once
+    ; per show). Only the length of the input, never the text
     static _recent := [], _blankLogged := false
     static _NoteResults(count) {
-        SearchWindow._recent.Push(FormatTime(, "HH:mm:ss") "." Format("{:03}", A_MSec) " '" SubStr(SearchWindow.Input.Value, 1, 30) "' mode " SearchWindow.Mode
+        SearchWindow._recent.Push(FormatTime(, "HH:mm:ss") "." Format("{:03}", A_MSec) " input " StrLen(SearchWindow.Input.Value) " chars, mode " SearchWindow.Mode
             . (SearchWindow.FileMode ? " (files)" : "") " results " count " gen " SearchWindow._searchGen " list rows before " SearchWindow.List.GetCount())
         if (SearchWindow._recent.Length > 10)
             SearchWindow._recent.RemoveAt(1)

@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.20.20]
+
+测试版。
+
+Test build.
+
+### 改进
+- 调试日志不再记录任何输入的文字: 结果行显示成空白、窗口高度不对时写进日志的最近 10 次搜索, 原来带着输入的前 30 个字, 现在只记字数。隐私说明 (SECURITY.md) 相应改为 "不记录输入的文字", 和使用说明一致
+- README 的致谢里补上 pypinyin 的版权声明; 官网的介绍写明拼音首字母也认得繁体字和生僻字
+
 ## [2026.10.20.19]
 
 测试版。
@@ -1022,7 +1032,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.19...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.20...HEAD
+[2026.10.20.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.19...2026.10.20.20
 [2026.10.20.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.18...2026.10.20.19
 [2026.10.20.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.17...2026.10.20.18
 [2026.10.20.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.16...2026.10.20.17
