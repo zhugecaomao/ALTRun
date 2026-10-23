@@ -45,7 +45,7 @@ class PreferencesWindow {
     static MinWindowWidth := 450                                            ; the search window: room for the status bar's four parts
     static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
     static WidthK := 150                                                    ; 热键框 ("K")
-    static _pairX := 0, _pairFirstW := 0, _pairSecondW := 0, _pairSizes := ["", ""], _listButtons := []
+    static _pairX := 0, _pairFirstW := 0, _pairSecondW := 0, _pairSizes := ["", ""]
     static ButtonY := 619                                                   ; 底部按钮的位置; 页面内容要在它上面 (y < ButtonY - 10)
     static LabelMax := 250                                                  ; 左列最宽多少, 再长的标签换行
     static _positionReset := false
@@ -377,7 +377,7 @@ class PreferencesWindow {
         PreferencesWindow._ready := false                                   ; 程序自己填的值不算修改 (和刚打开窗口时一样)
         Loop 2 {
             PreferencesWindow._wider := Map(), binds := PreferencesWindow.Binds.Length
-            try PreferencesWindow.%page.Builder%(), PreferencesWindow._AlignListButtons()
+            try PreferencesWindow.%page.Builder%()
             catch as e {
                 if IsObject(PreferencesWindow.Gui)
                     throw e
@@ -709,7 +709,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
         PreferencesWindow._Pair(["Features.FileSearch.Keywords", "Prefs.FileKeywords", "M", "csv"], ["Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", "S", "csv"])
         PreferencesWindow._Csv("Features.FileSearch.RecentKeywords", "Prefs.RecentKeywords", "M")
-        PreferencesWindow._LinesButton("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", (lines) => PreferencesWindow.TypeFilterSummary(lines))
+        PreferencesWindow._LinesButton("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", (lines) => PreferencesWindow.TypeFilterSummary(lines), , , true)
         PreferencesWindow._Section("Prefs.Section.FileResults")
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
@@ -750,12 +750,13 @@ class PreferencesWindow {
             , [{Label: I18n.T("Snippet.ImportExport"), Width: 100, Click: (list, button) => PreferencesWindow._SnippetMenu(list, button)}])
         PreferencesWindow._Section("Prefs.Section.Options")
         PreferencesWindow._Check("Features.Snippets.SearchText", "Prefs.SnippetSearchText", , , "Prefs.Group.Search")
-        PreferencesWindow._Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")
         PreferencesWindow._Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand", , , "Prefs.Group.AutoExpand")
-        PreferencesWindow._Field("Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", "S")
+        ; Two rows of the same short boxes: Search keyword / Paste by on the left, Keyword prefix / Delay on the right
+        keywordRow := PreferencesWindow._Pair(["Features.Snippets.Keyword", "Prefs.SnippetKeyword", "K"], ["Features.Snippets.ExpandPrefix", "Prefs.ExpandPrefix", "K"])
         PreferencesWindow._LinesButton("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude", , true)
-        PreferencesWindow._Pair(["Features.Snippets.PasteMode", "Prefs.PasteMode", "M", "choice", ["Auto", "Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Auto"), I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")]]
-            , ["Features.Snippets.PasteDelay", "Prefs.PasteDelay", "S", "number"])
+        pasteRow := PreferencesWindow._Pair(["Features.Snippets.PasteMode", "Prefs.PasteMode", "K", "choice", ["Auto", "Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Auto"), I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")]]
+            , ["Features.Snippets.PasteDelay", "Prefs.PasteDelay", "K", "number"])
+        PreferencesWindow._AlignPairRows(keywordRow, pasteRow)
     }
 
     ; 文字片段页的 "导入 / 导出" 按钮: 弹出菜单
@@ -1200,7 +1201,6 @@ class PreferencesWindow {
         PreferencesWindow._y := 14
         PreferencesWindow._pageKey := nameKey
         PreferencesWindow._pairX := 0                                       ; 这一页成对设置的右列位置, 见 _Pair
-        PreferencesWindow._listButtons := []                                ; this page's "Edit..." buttons, see _AlignListButtons
         PreferencesWindow.LabelW := Max(labelW, PreferencesWindow._labelWidths.Get(I18n.Lang " " nameKey, 0))
     }
 
@@ -1459,10 +1459,10 @@ class PreferencesWindow {
 
     ; A list with one item per line, shown as a read-only summary + "Edit...", which opens it in a roomy window of its own
     ; (ItemEditor.EditLines, with the longer "<labelKey>.Help" text): the page stays short and long lines are easy to read.
-    ; The button lines up with the right column of the page's paired settings (_Pair), otherwise with the right edge.
+    ; The button is at the right edge; alignPairs: under the right column of the paired settings above (_Pair) instead.
     ; windows: the setting is one comma-separated string of windows (SplitWindows / JoinWindows), not an array.
     ; path "": not bound, start from lines; the caller binds the returned state's Lines itself
-    static _LinesButton(path, labelKey, summarize := "", windows := false, lines := "") {
+    static _LinesButton(path, labelKey, summarize := "", windows := false, lines := "", alignPairs := false) {
         label := PreferencesWindow._Label(labelKey)
         if (path != "") {
             value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
@@ -1470,30 +1470,17 @@ class PreferencesWindow {
         }
         state := {Lines: (lines is Array) ? lines : []}
         summarize := summarize ? summarize : (lines) => PreferencesWindow.ListSummary(lines)
-        x := PreferencesWindow._InputX(), buttonW := PreferencesWindow.WidthS
-        buttonX := x + PreferencesWindow._InputW() - buttonW                ; at the right edge; _AlignListButtons moves it when the page has pairs
+        x := PreferencesWindow._InputX(), paired := alignPairs && PreferencesWindow._pairX
+        buttonW := paired ? PreferencesWindow._pairSecondW : PreferencesWindow.WidthS
+        buttonX := (paired ? PreferencesWindow._pairX + PreferencesWindow._pairSecondW : x + PreferencesWindow._InputW()) - buttonW
         box := PreferencesWindow._Add("Edit", "x" x " w" (buttonX - 8 - x) " r1 -Multi ReadOnly", summarize(state.Lines))
         box.GetPos(, , , &boxH)
         button := PreferencesWindow._Add("Button", "x" buttonX " yp-1 w" buttonW " h" (boxH + 2), I18n.T("Prefs.EditList"))
         button.OnEvent("Click", (*) => PreferencesWindow._EditLines(labelKey, state, box, summarize))
-        PreferencesWindow._listButtons.Push({Box: box, Button: button})
         if (path != "")
             PreferencesWindow._Bind(path, windows ? () => PreferencesWindow.JoinWindows(state.Lines) : () => state.Lines)
         PreferencesWindow._BelowInput(labelKey, label, box, button)
         return state
-    }
-
-    ; After a page is built: its "Edit..." buttons end where the right column of its paired settings ends, above or below
-    ; them (e.g. Folder keywords / Files in normal results), when that column holds short boxes ("S")
-    static _AlignListButtons() {
-        if !(PreferencesWindow._pairX && PreferencesWindow._pairSizes[2] = "S")
-            return
-        right := PreferencesWindow._pairX + PreferencesWindow._pairSecondW, buttonW := PreferencesWindow._pairSecondW
-        for item in PreferencesWindow._listButtons {
-            item.Box.GetPos(&boxX)
-            item.Button.Move(right - buttonW, , buttonW)
-            item.Box.Move(, , right - buttonW - 8 - boxX)
-        }
     }
 
     static _EditLines(labelKey, state, box, summarize) {
@@ -1625,6 +1612,19 @@ class PreferencesWindow {
         if secondW
             second.Move(, , secondW)
         PreferencesWindow._BelowInput(left[2], label, first, label2, second)
+        return {Label2: label2, Second: second}
+    }
+
+    ; Rows from _Pair whose right boxes should start at the same x even when a later row's right label is wider:
+    ; move the right label and box of the other rows to the rightmost one
+    static _AlignPairRows(rows*) {
+        target := 0
+        for row in rows
+            row.Second.GetPos(&x), target := Max(target, x)
+        for row in rows {
+            row.Second.GetPos(&x), row.Label2.GetPos(&labelX)
+            row.Second.Move(target), row.Label2.Move(labelX + target - x)
+        }
     }
 
     ; 单独一个输入控件 (不带标签), 并绑定 path; kind 见 _Pair

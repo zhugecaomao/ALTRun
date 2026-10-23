@@ -876,7 +876,6 @@ class I18n {
         s["Prefs.ExpandExclude"]       := "Don't expand in"
         s["Prefs.ExpandExclude.Help"]  := "Snippets are not expanded in these windows, one per line: ahk_exe program.exe, ahk_class ClassName or part of the title, for example ahk_exe mstsc.exe (Remote Desktop) or ahk_exe KeePass.exe.`n`nSnippets are never expanded in password boxes or in ALTRun's own search window either."
         s["Prefs.ExpandPrefix"]        := "Keyword prefix"
-        s["Prefs.ExpandPrefix.Desc"]   := "Keeps normal typing from expanding by accident."
         s["Prefs.PasteMode"]           := "Paste by"
         s["Prefs.PasteMode.Auto"]      := "Automatic"
         s["Prefs.PasteMode.Clipboard"] := "Clipboard + Ctrl+V"
@@ -884,7 +883,7 @@ class I18n {
         s["Prefs.PasteMode.Desc"]       := "Automatic types short single-line text and pastes longer text. Delay: wait before restoring the clipboard; raise it if the old clipboard gets pasted."
         s["Prefs.PasteDelay"]           := "Delay (ms)"
         s["Prefs.SnippetKeyword"]      := "Search keyword"
-        s["Prefs.SnippetKeyword.Desc"] := 'e.g. "snip sig" searches only snippets; the keyword alone lists all.'
+        s["Prefs.SnippetKeyword.Desc"] := 'Search keyword: "snip sig" searches only snippets, the keyword alone lists all. Keyword prefix: typed before a keyword to expand it, so normal typing does not expand by accident.'
         s["Prefs.SnippetSearchText"]   := "Also search snippet text"
         s["Prefs.SnippetSearchText.Desc"] := "With 3+ characters, text matches are listed too, after name and keyword matches."
         s["Prefs.ClipKeyword"]         := "Keyword"
