@@ -68,7 +68,7 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 | SpaceToRun | 0 | After typing, Space runs the selected result and `Shift+Space` types a space |
 | TabKey | `"Complete"` | What `Tab` does in the search window: `"Complete"` autocompletes (on a folder, browses into it); `"Next"` goes to the next result (`Shift+Tab` the previous one, wrapping around), and `Ctrl+Tab` autocompletes |
 | KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again, typing starts a new search. Taken over from `KeepInput` when upgrading from 2.x |
-| ShowTips | 1 | Show a usage tip, a different one each time, in small gray text in the empty search box |
+| ShowTips | 1 | Show a usage tip, a different one each time, as gray text in the empty search box |
 | FileManager | `explorer.exe` | Program that opens folders, optionally with parameters, for example `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` reuse the open window, `/T` new tab, `/S` active panel); quote a path with spaces |
 | SendToMenu | 1 | Add to Explorer's "Send to" menu |
 | StartMenuShortcut | 1 | Add to the Start menu |

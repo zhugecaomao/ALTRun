@@ -53,7 +53,27 @@ class UpdateChecker {
 
     static _CheckFailed(message) {
         Logger.Error("UpdateChecker: " message)
-        MsgBox(I18n.T("Update.Failed", message), App.Name, 48)
+        MsgBox(I18n.T("Update.Failed", UpdateChecker.FailureText(message)), App.Name, 48)
+    }
+
+    ; What went wrong, in words people understand, with the raw error as the last line (for bug reports):
+    ;   HTTP 403 / 429 = GitHub's hourly limit for requests without an account, counted per IP address, so on a shared
+    ;   network (company, ISP NAT) other programs can use it up
+    static FailureText(message) {
+        static kinds := [["i)^HTTP (403|429)\b|rate limit", "Update.RateLimited"]
+                       , ["i)^(Network error|Timed out)", "Update.Offline"]
+                       , ["i)^HTTP 5\d\d\b", "Update.ServerError"]
+                       , ["i)^HTTP 4\d\d\b", "Update.NotFound"]
+                       , ["i)SHA256 does not match", "Update.Corrupt"]
+                       , ["i)extract|missing from the update package", "Update.BadPackage"]
+                       , ["i)tag_name|JSON", "Update.BadResponse"]]
+        reason := I18n.T("Update.Unknown")
+        for kind in kinds
+            if RegExMatch(message, kind[1]) {
+                reason := I18n.T(kind[2])
+                break
+            }
+        return reason "`n`n" I18n.T("Update.Detail", message)
     }
 
     static _Checked(release, install) {
@@ -266,7 +286,7 @@ class UpdateChecker {
         } catch as e {
             progress.Destroy()
             Logger.Error("UpdateChecker: install " release.Version " - " e.Message)
-            if (MsgBox(I18n.T("Update.InstallFailed", e.Message), App.Name, "YesNo Icon!") = "Yes")
+            if (MsgBox(I18n.T("Update.InstallFailed", UpdateChecker.FailureText(e.Message)), App.Name, "YesNo Icon!") = "Yes")
                 Run(release.Page)
             return
         }
