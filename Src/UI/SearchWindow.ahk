@@ -552,9 +552,9 @@ class SearchWindow {
         if (typed.Text = "" && typed.Key = "")
             return
         if Logger.Enabled
-            Logger.Debug("SearchWindow: typed while showing '" typed.Text "'" (typed.Key != "" ? " + " typed.Key : ""))
+            Logger.Debug("SearchWindow: typed while showing " SearchWindow.TypeAheadSummary(typed))
         if (typed.Key = "Escape")
-            return SearchWindow.Hide()
+            return SearchWindow.Hide("Esc")
         text := typed.Text
         if (text != "") {
             if (SubStr(text, 1, 1) = " " && SearchWindow.Mode = "results" && !SearchWindow.FileMode) {
@@ -573,6 +573,22 @@ class SearchWindow {
         }
         if (typed.Key != "")
             SearchWindow._Execute(typed.Modifier)
+    }
+
+    ; For the log: shown again while still visible (not active: it opens empty, see _Show; which program had the focus)
+    static ShowNote(wasVisible, active, foreground) {
+        return !wasVisible ? "" : active ? " (already visible, active)" : " (already visible, not active; foreground: " foreground ")"
+    }
+
+    ; For the log: the program and window class in front, e.g. "notepad.exe Notepad" (no window titles)
+    static ForegroundText() {
+        try return WinGetProcessName("A") " " WinGetClass("A")
+        return "none"
+    }
+
+    ; For the log: how much was typed, not what (the log never holds the search text), e.g. "5 chars (leading space) + Enter"
+    static TypeAheadSummary(typed) {
+        return StrLen(typed.Text) " chars" (SubStr(typed.Text, 1, 1) = " " ? " (leading space)" : "") (typed.Key != "" ? " + " typed.Key : "")
     }
 
     ; 上一次还没显示完 (例如显示过程中又按了热键): 不重入。但上一次卡住太久 (2026-10 关掉一台显示器后卡了 2 分半,
@@ -608,9 +624,10 @@ class SearchWindow {
     static _Show(text) {
         started := Logger.Ms()
         SearchWindow._blankLogged := false, SearchWindow._skipLogged := false
-        if Logger.Enabled
-            Logger.Debug("SearchWindow: show")                              ; 和下面的 "Perf: show" 配对: 卡住时看得出卡在显示窗口里
         wasVisible := SearchWindow.IsVisible()
+        if Logger.Enabled                                                   ; pairs with "Perf: show" below: a stuck show is stuck in here
+            Logger.Debug("SearchWindow: show" SearchWindow.ShowNote(wasVisible, wasVisible && SearchWindow.IsActive()
+                , wasVisible ? SearchWindow.ForegroundText() : ""))
         if (text = "" && wasVisible)
             SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
         SearchWindow._Step("previous window")
@@ -806,8 +823,12 @@ class SearchWindow {
         AppSettings.Save()
     }
 
-    static Hide() {
+    ; reason: for the log ("run", "Esc", "hotkey", "deactivated by ..."); when the search box seems to empty itself
+    ; (2026-10, appinn), the log shows whether the window was hidden and shown again in between
+    static Hide(reason := "") {
         if SearchWindow.IsVisible() {
+            if Logger.Enabled
+                Logger.Debug("SearchWindow: hide" (reason != "" ? " (" reason ")" : ""))
             try {                                                           ; 刚隐藏后的提示 (例如 "已置顶") 显示在同一块屏幕上, 见 Hud
                 WinGetPos(&x, &y, &w, &h, "ahk_id " SearchWindow.Gui.Hwnd)
                 SearchWindow.LastArea := Win.WorkAreaAt(x + w // 2, y + SearchWindow.InputHeight // 2), SearchWindow.HiddenAt := A_TickCount
@@ -852,7 +873,7 @@ class SearchWindow {
     static _quietText := ""
     static _ShowQuickResults(text) {
         SearchWindow._quietText := text
-        SearchWindow.Input.Value := text
+        SearchWindow._inputLen := StrLen(text), SearchWindow.Input.Value := text
         ++SearchWindow._searchGen
         browse := FileSearchProvider.BrowsePath(text)
         SearchWindow.HighlightText := IsObject(browse) ? browse.Filter : text
@@ -905,7 +926,7 @@ class SearchWindow {
 
     static Toggle() {
         if (SearchWindow.IsVisible() && WinActive("ahk_id " SearchWindow.Gui.Hwnd))
-            SearchWindow.Hide()
+            SearchWindow.Hide("hotkey")
         else
             SearchWindow.Show()
     }
@@ -914,16 +935,29 @@ class SearchWindow {
     ; Search / results
     ;---------------------------------------------------------------------------
     static _SetInput(text) {
-        SearchWindow.Input.Value := text
+        if (text = "" && Logger.Enabled && SearchWindow.IsVisible())
+            SearchWindow._LogEmptied(StrLen(SearchWindow.Input.Value), "by ALTRun, mode " SearchWindow.Mode)
+        SearchWindow._inputLen := StrLen(text), SearchWindow.Input.Value := text
         len := StrLen(text)
         SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)                ; EM_SETSEL: 光标放到末尾
         SearchWindow._RunSearch()
+    }
+
+    ; The search box went from 2 or more characters to empty in one step: by ALTRun (_SetInput) or by one edit (select all
+    ; and delete, an input method, another program). Only the count is logged, never the text
+    static _inputLen := 0
+    static _LogEmptied(before, how) {
+        if (before >= 2)
+            Logger.Debug("SearchWindow: input emptied (" before " chars, " how ")")
     }
 
     static _OnInputChange() {
         if (SearchWindow._quietText != "" && SearchWindow.Input.Value == SearchWindow._quietText)
             return                                                          ; 恢复上次的搜索时自己填进去的文字: 显示后再搜 (_FinishRestore)
         text := SearchWindow.Input.Value
+        if (text = "" && Logger.Enabled)
+            SearchWindow._LogEmptied(SearchWindow._inputLen, "by an edit")
+        SearchWindow._inputLen := StrLen(text)
         if RegExMatch(text, "[`r`n`t]") {                                   ; 粘贴了多行文字: 合并成一行, 搜索框始终只有一行
             SearchWindow.Input.Value := RegExReplace(text, "\s*[`r`n`t]+\s*", " ")
             len := StrLen(SearchWindow.Input.Value)
@@ -1133,7 +1167,7 @@ class SearchWindow {
             RecentProvider.Remember(source)
             Usage.CountItem(source)
             SearchWindow.Marked := Map()
-            SearchWindow.Hide()
+            SearchWindow.Hide("run")
             SearchWindow._SafeRun(() => item.OnRun.Call(source))
             return
         }
@@ -1146,7 +1180,7 @@ class SearchWindow {
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
         RecentProvider.Remember(item)
         Usage.CountItem(item)
-        SearchWindow.Hide()
+        SearchWindow.Hide("run")
         if (modifier = "")
             SearchWindow._SafeRun(() => ActionCatalog.RunDefault(item))
         else
@@ -1476,11 +1510,11 @@ class SearchWindow {
                 return 0
             case 0x1B:                                                      ; Esc
                 if (actions && SearchWindow._actionsOnly)
-                    SearchWindow.Hide()
+                    SearchWindow.Hide("Esc")
                 else if actions
                     SearchWindow._CloseActions()
                 else
-                    SearchWindow.Hide()
+                    SearchWindow.Hide("Esc")
                 return 0
             case 0x20:                                                      ; 空格: 空的搜索框里 (或光标在最前面时) 进入文件搜索模式
                 if (ctrl || alt)
@@ -1768,7 +1802,7 @@ class SearchWindow {
         if SearchWindow._keepOpen
             return
         if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
-            SearchWindow.Hide()
+            SearchWindow.Hide(Logger.Enabled ? "deactivated by " SearchWindow.ForegroundText() : "")
     }
 
     ;---------------------------------------------------------------------------
