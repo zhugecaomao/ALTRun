@@ -221,4 +221,4 @@ Thanks to these projects for the inspiration:
 - [Alfred](https://www.alfredapp.com/): the interaction model
 - [Listary](https://www.listary.com/): its Quick Switch is the model for ALTRun's
 
-The pinyin initials of uncommon and traditional Chinese characters (`Resources/Pinyin.txt`) come from [pypinyin](https://github.com/mozillazg/python-pinyin) (mozillazg, MIT license).
+The pinyin initials of uncommon and traditional Chinese characters (`Resources/Pinyin.txt`) come from [pypinyin](https://github.com/mozillazg/python-pinyin) (Copyright (c) 2016 mozillazg, 闲耘; [MIT license](https://github.com/mozillazg/python-pinyin/blob/master/LICENSE.txt)).

@@ -4182,11 +4182,13 @@ class Tests {
         for name in ["_RunSearch", "IsVisible"]
             saved[name] := SearchWindow.GetOwnPropDesc(name)
         savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedMode := SearchWindow.Mode
+        savedList := SearchWindow.List, savedRecent := SearchWindow._recent.Clone()
         savedLog := [Logger.Enabled, Logger.File, Logger.Immediate]
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => ""})
         SearchWindow.DefineProp("IsVisible", {Call: (*) => true})
         g := Gui()
-        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200"), SearchWindow.Mode := "results"
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200"), SearchWindow.List := g.AddListView("w200", ["Title"])
+        SearchWindow.Mode := "results"
         Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunEmptiedTest.log"
         try FileDelete(Logger.File)
         try {
@@ -4204,12 +4206,16 @@ class Tests {
             eq("by an edit", InStr(logText, "SearchWindow: input emptied (5 chars, by an edit)") > 0, true)
             eq("one character skipped", InStr(logText, "(1 chars"), 0)
             eq("text never logged", InStr(logText, "secret") || InStr(logText, "hello"), 0)
+            SearchWindow.Input.Value := "secret words", SearchWindow._NoteResults(3)
+            eq("recent results: length only", RegExMatch(SearchWindow._recent[-1], "input 12 chars, mode results results 3 ") > 0
+                && !InStr(SearchWindow._recent[-1], "secret"), true)
         } finally {
             try FileDelete(Logger.File)
             Logger.Enabled := savedLog[1], Logger.File := savedLog[2], Logger.Immediate := savedLog[3]
             for name, desc in saved
                 SearchWindow.DefineProp(name, desc)
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.Mode := savedMode, SearchWindow._inputLen := 0
+            SearchWindow.List := savedList, SearchWindow._recent := savedRecent
             g.Destroy()
         }
     }
