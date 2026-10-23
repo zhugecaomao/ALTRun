@@ -34,7 +34,7 @@ Apart from `ALTRun.json`, every file is created at runtime and simply rebuilt if
 | Location | Contents |
 |---|---|
 | `%LOCALAPPDATA%\ALTRun\IconCache\` | Icon cache (`Icons-<size>.bin`) so icons show at once after a restart; one per PC, rebuilt automatically if deleted |
-| `%LOCALAPPDATA%\ALTRun\Clipboard\` | Images and very long clipboard items (kept here by default so they don't follow a sync folder); with "everything on this PC only", `ClipboardHistory.json` is in `%LOCALAPPDATA%\ALTRun\` too |
+| `%LOCALAPPDATA%\ALTRun\Clipboard\` | Images and very long clipboard items (kept here by default so they don't follow a sync folder); with "This PC: everything", `ClipboardHistory.json` is in `%LOCALAPPDATA%\ALTRun\` too |
 | `Themes\` in the program folder (`%APPDATA%\ALTRun\Themes\` if it isn't writable) | Your own themes, see [Themes](Themes#custom-themes) |
 | `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` if it isn't writable) | Your own scripts, see [Scripts](Scripts) |
 | `%Temp%\ALTRun.log` | Debug log, written only with Preferences → Advanced → "Write a debug log" on |

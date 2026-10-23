@@ -249,6 +249,19 @@ class QuickSwitch {
     }
     static _searchTimer := () => QuickSwitch._SearchPanel()
 
+    static ColumnsWidth(list) {
+        total := 0
+        loop 3
+            total += SendMessage(0x101D, A_Index - 1, 0, list)            ; LVM_GETCOLUMNWIDTH
+        return total
+    }
+
+    static ClientWidth(list) {
+        rect := Buffer(16)
+        DllCall("GetClientRect", "Ptr", list.Hwnd, "Ptr", rect)
+        return NumGet(rect, 8, "Int")
+    }
+
     ; 列表: 文件夹名 | 完整路径 | 来源 (TC / 资源管理器 / 最近 / 搜索)
     static _ShowFolders(folders) {
         list := QuickSwitch._panelList
@@ -269,6 +282,10 @@ class QuickSwitch {
         rows := Max(3, Min(folders.Length, QuickSwitch.PanelRows))           ; 高度跟着内容 (3 ~ PanelRows 行)
         list.Move(, , , QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + Win.Scale(4))
         list.ModifyCol(3, "AutoHdr")                                        ; 最后一列补满到右边, 选中行的颜色铺满整行; 改完高度 (该有滚动条时已经有了) 再算, 不会多出横向滚动条
+        ; The last column is never narrower than its (hidden) header text: with no rows, or only short tags, it can stick out
+        ; past the right edge and bring up a horizontal scrollbar. Take the difference off the path column
+        if (over := QuickSwitch.ColumnsWidth(list) - QuickSwitch.ClientWidth(list)) > 0
+            list.ModifyCol(2, Max(0, SendMessage(0x101D, 1, 0, list) - over))
         if DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) {     ; 搜索结果变了: 重新调整大小和位置
             QuickSwitch._panelPos := ""
             QuickSwitch._PlacePanel(QuickSwitch._panelFor)

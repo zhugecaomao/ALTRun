@@ -252,7 +252,8 @@ class I18n {
         s["Help.FileTypes.Key"]        := "{1} + name"
         s["Help.FileTypes.Text"]       := "search one type of file only (documents, archives, CAD...)"
         s["Prefs.TypeFilters"]         := "File types"
-        s["Prefs.TypeFilters.Desc"]    := 'One per line: keyword = extensions. e.g. "doc report" finds only documents (folders only: Folder keywords above).'
+        s["Prefs.TypeFilters.Desc"]    := 'Keyword + name searches one type of file, e.g. "doc report" documents only, "zip backup" archives only.'
+        s["Prefs.TypeFilters.Help"]    := 'One rule per line: keyword = file extensions, separated by spaces (with or without the dot).`n`nType the keyword, a space and part of a name to search only those files: "doc report" finds documents, "pic logo" pictures, "cad plan" drawings. It also works after Space (file search mode). With Everything this is the same as ext:doc;docx;...`n`nLines without "=" are ignored. To search folders only, use the Folder keywords.'
         s["Help.FileKeyword.Key"]      := "{1} + name"
         s["Help.FileKeyword.Text"]     := "search files and folders, same as Space"
         s["Help.Actions.Key"]          := "→  /  right-click"
@@ -498,6 +499,7 @@ class I18n {
         s["Prefs.Delete"]              := "Delete"
         s["Prefs.Filter"]              := "Filter"
         s["Prefs.Browse"]              := "..."
+        s["Prefs.EditList"]            := "Edit..."
         s["Prefs.DefaultChoice"]       := "{1} (default)"                ; the default option in a drop-down
         s["Prefs.CheckTargets"]        := "Check Paths"
         s["Prefs.CheckAllOk"]          := "All {1} paths exist."
@@ -790,7 +792,7 @@ class I18n {
         s["Prefs.FileKeywords.Desc"]    := 'File keywords: "open report" finds files and folders whose names contain "report". Folder keywords: "folder projects" finds folders only. Separate several keywords with commas.'
         s["Prefs.FolderKeywords"]       := "Folder keywords"
         s["Prefs.RecentKeywords"]       := "Recent keywords"
-        s["Prefs.RecentKeywords.Desc"]  := '"recent report" finds files you opened recently, newest first.'
+        s["Prefs.RecentKeywords.Desc"]  := '"recent report" finds files and folders you opened recently in any program (Windows Recent items), newest first.'
         s["Prefs.QuotePrefix"]         := "Typing ' first searches files"
         s["Prefs.SpacePrefix"]         := "Space in an empty search box searches files"
         s["Prefs.SpacePrefix.Desc"]    := "Like Alfred. Backspace goes back to normal search."
@@ -892,8 +894,8 @@ class I18n {
         s["Prefs.ClipImages.Desc"]     := "Saved as PNG files with the long entries. Only while history is kept after quitting."
         s["Prefs.ClipStorage"]         := "Save in"
         s["Prefs.ClipStorage.Data"]    := "The Data folder"
-        s["Prefs.ClipStorage.Files"]   := "Images and long items on this PC only"
-        s["Prefs.ClipStorage.All"]     := "Everything on this PC only"
+        s["Prefs.ClipStorage.Files"]   := "This PC: images and long items"
+        s["Prefs.ClipStorage.All"]     := "This PC: everything"
         s["Prefs.ClipStorage.Desc"]    := "This PC = %LOCALAPPDATA%\ALTRun, not carried with a synced or portable Data folder; files move when changed."
         s["Prefs.ClipMaxImages"]       := "Keep images"
         s["Prefs.ClipMaxImages.Desc"]  := "The oldest images are removed first."

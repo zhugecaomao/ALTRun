@@ -93,7 +93,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowWhileOpen", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "RecentFiles", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowWhileOpen", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "RecentFiles", "EditList", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1167,6 +1167,18 @@ class Tests {
         }
     }
 
+    ; Lists edited in their own window ("Edit..."): the summary next to the button, splitting the edited text
+    static EditList() {
+        eq := (n, a, e) => TestRunner.Equal("EditList." n, a, e)
+        eq("summary", PreferencesWindow.ListSummary(["a.exe", "b.exe"]), "a.exe, b.exe")
+        eq("empty summary", PreferencesWindow.ListSummary([]), "")
+        eq("file types: keywords", PreferencesWindow.TypeFilterSummary(["doc = doc docx", "bad line", "pic = png"]), "doc, pic")
+        eq("defaults", PreferencesWindow.TypeFilterSummary(AppSettings.Defaults()["Features"]["FileSearch"]["TypeFilters"]), "doc, pic, video, audio, zip, exe, cad")
+        lines := ItemEditor.SplitLines("  doc = doc docx `r`n`r`n pic = png`n")
+        eq("split", lines.Length "|" lines[1] "|" lines[2], "2|doc = doc docx|pic = png")
+        eq("help text", I18n.Strings.Has("Prefs.TypeFilters.Help"), true)
+    }
+
     ; 对话框的文件夹菜单: 最近的文件夹 (Windows 的 "最近使用的项目")、菜单文字
     static FolderMenu() {
         eq := (n, a, e) => TestRunner.Equal("FolderMenu." n, a, e)
@@ -1301,8 +1313,12 @@ class Tests {
         eq("closed dialog ignored", threw, false)
         QuickSwitch._BuildPanel(A_ScriptHwnd)                              ; 真的建一次面板 (Gui 选项写错时这里就会报错)
         TestRunner.True("FolderMenu.panel built", IsObject(QuickSwitch._panel) && IsObject(QuickSwitch._panelList))
+        QuickSwitch._ShowFolders([])                                       ; nothing open (no TC / Explorer, no recent folders)
+        eq("empty panel: no horizontal scrollbar", ControlGetStyle(QuickSwitch._panelList) & 0x100000, 0)   ; WS_HSCROLL
+        eq("empty panel: columns fit", QuickSwitch.ColumnsWidth(QuickSwitch._panelList) <= QuickSwitch.ClientWidth(QuickSwitch._panelList), true)
         QuickSwitch._ShowFolders(base)
         eq("panel rows", QuickSwitch._panelList.GetCount(), 2)
+        eq("panel: no horizontal scrollbar", ControlGetStyle(QuickSwitch._panelList) & 0x100000, 0)
         eq("panel name column", QuickSwitch._panelList.GetText(1, 1), "Tower A")
         QuickSwitch._panelSearch.Value := "docs"
         QuickSwitch._panelBase := base
@@ -2929,6 +2945,17 @@ class Tests {
                         same := same && value = parts[1]
                     TestRunner.True("PreferencesFit." lang " appearance right edges (" rights ")", same)
                 }
+                if (page.Key = "Prefs.Page.FileSearch" || page.Key = "Prefs.Page.Clipboard") {   ; "Edit..." / "Save in" end where the right column of the pairs ends
+                    lineEnd := 0, editRights := Map()
+                    for ctrl in page.Controls {
+                        ctrl.GetPos(&x, , &w)
+                        if (page.Key = "Prefs.Page.FileSearch" ? ctrl.Type = "Button" && ctrl.Text = I18n.T("Prefs.EditList") : ctrl.Type = "DDL")
+                            lineEnd := x + w
+                        else if (ctrl.Type = "Edit")
+                            editRights[x + w] := (editRights.Has(x + w) ? editRights[x + w] : 0) + 1
+                    }
+                    TestRunner.True("PreferencesFit." lang " " page.Key " right edge (" lineEnd ")", lineEnd && editRights.Has(lineEnd) && editRights[lineEnd] >= 2)
+                }
                 if (page.Key = "Prefs.Page.DateStamp") {                  ; the date format box is as wide as the hotkey box
                     widths := []
                     for ctrl in page.Controls
@@ -3112,7 +3139,7 @@ class Tests {
         dynamic := ["Help.", "Theme.", "Setting.", "Usage.F.", "Usage.Col.", "Prefs.Feature.", "Prefs.Status.", "Prefs.TypeShort.", "Cmd.Field."]
         unused := ""
         for key in I18n.Strings {
-            if (InStr(source, '"' key '"', true) || SubStr(key, -5) = ".Desc")
+            if (InStr(source, '"' key '"', true) || SubStr(key, -5) = ".Desc" || SubStr(key, -5) = ".Help")
                 continue
             for prefix in dynamic
                 if (SubStr(key, 1, StrLen(prefix)) == prefix)

@@ -709,7 +709,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
         PreferencesWindow._Pair(["Features.FileSearch.Keywords", "Prefs.FileKeywords", "M", "csv"], ["Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", "S", "csv"])
         PreferencesWindow._Csv("Features.FileSearch.RecentKeywords", "Prefs.RecentKeywords", "M")
-        PreferencesWindow._Lines("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", 3)
+        PreferencesWindow._LinesButton("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", (lines) => PreferencesWindow.TypeFilterSummary(lines))
         PreferencesWindow._Section("Prefs.Section.FileResults")
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
@@ -845,7 +845,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.Clipboard.Images", "Prefs.ClipImages")
         PreferencesWindow._Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
         PreferencesWindow._Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]   ; 存在哪里 (ClipboardProvider.PlaceStorage)
-            , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "L")
+            , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "P")
         PreferencesWindow._Check("Features.Clipboard.MergeDoubleCopy", "Prefs.ClipMerge", , , "Prefs.Group.Copy")
         PreferencesWindow._Gap()
         PreferencesWindow._Lines("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps", 4)
@@ -1324,6 +1324,9 @@ class PreferencesWindow {
             case "S": return PreferencesWindow.WidthS
             case "M": return PreferencesWindow.WidthM
             case "K": return PreferencesWindow.WidthK
+            case "P":                                                       ; to the right edge of the page's paired settings (_Pair)
+                if PreferencesWindow._pairX
+                    return PreferencesWindow._pairX + PreferencesWindow._pairSecondW - PreferencesWindow._InputX()
         }
         return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
     }
@@ -1479,6 +1482,50 @@ class PreferencesWindow {
     }
 
     ; numeric: 数字列表 (例如钢筋直径), 存成数字而不是文字
+    ; A list with one item per line, shown as a read-only summary + "Edit...", which opens it in a roomy window of its own
+    ; (ItemEditor.EditLines, with the longer "<labelKey>.Help" text): the page stays short and long lines are easy to read.
+    ; The button lines up with the right column of the page's paired settings (_Pair), otherwise with the right edge
+    static _LinesButton(path, labelKey, summarize := "") {
+        label := PreferencesWindow._Label(labelKey)
+        state := {Lines: PreferencesWindow.SplitLines(PreferencesWindow.JoinLines(PreferencesWindow.GetPath(PreferencesWindow.Working, path)))}
+        summarize := summarize ? summarize : (lines) => PreferencesWindow.ListSummary(lines)
+        x := PreferencesWindow._InputX()
+        buttonW := PreferencesWindow._pairX ? PreferencesWindow._pairSecondW : PreferencesWindow.WidthS
+        buttonX := (PreferencesWindow._pairX ? PreferencesWindow._pairX + PreferencesWindow._pairSecondW : x + PreferencesWindow._InputW()) - buttonW
+        box := PreferencesWindow._Add("Edit", "x" x " w" (buttonX - 8 - x) " r1 -Multi ReadOnly", summarize(state.Lines))
+        box.GetPos(, , , &boxH)
+        button := PreferencesWindow._Add("Button", "x" buttonX " yp-1 w" buttonW " h" (boxH + 2), I18n.T("Prefs.EditList"))
+        button.OnEvent("Click", (*) => PreferencesWindow._EditLines(labelKey, state, box, summarize))
+        PreferencesWindow._Bind(path, () => state.Lines)
+        PreferencesWindow._BelowInput(labelKey, label, box, button)
+    }
+
+    static _EditLines(labelKey, state, box, summarize) {
+        help := I18n.Strings.Has(labelKey ".Help") ? I18n.T(labelKey ".Help") : I18n.T(labelKey ".Desc")
+        edited := ItemEditor.EditLines(PreferencesWindow.Gui, I18n.T(labelKey), help, state.Lines)
+        if (!(edited is Array) || PreferencesWindow.JoinLines(edited) == PreferencesWindow.JoinLines(state.Lines))
+            return
+        state.Lines := edited, box.Value := summarize(edited)
+        PreferencesWindow.MarkDirty()
+    }
+
+    ; The summary next to "Edit...": the items joined with commas (the box cuts off what doesn't fit)
+    static ListSummary(lines) {
+        text := ""
+        for line in lines
+            text .= (text = "" ? "" : ", ") line
+        return text
+    }
+
+    ; File types: just the keywords ("doc, pic, video, ...")
+    static TypeFilterSummary(lines) {
+        keywords := []
+        for line in lines
+            if IsObject(filter := FileSearchProvider.ParseTypeFilter(line))
+                keywords.Push(filter.Keyword)
+        return PreferencesWindow.ListSummary(keywords)
+    }
+
     static _Csv(path, labelKey, size, numeric := false) {
         label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.JoinCsv(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
