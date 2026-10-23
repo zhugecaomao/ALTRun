@@ -220,3 +220,5 @@ Thanks to these projects for the inspiration:
 - [RunZ](https://github.com/goreliu/runz) (goreliu, AutoHotkey): the idea of writing a launcher in AutoHotkey
 - [Alfred](https://www.alfredapp.com/): the interaction model
 - [Listary](https://www.listary.com/): its Quick Switch is the model for ALTRun's
+
+The pinyin initials of uncommon and traditional Chinese characters (`Resources/Pinyin.txt`) come from [pypinyin](https://github.com/mozillazg/python-pinyin) (mozillazg, MIT license).

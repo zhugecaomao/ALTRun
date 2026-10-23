@@ -60,7 +60,7 @@
 | 开头相同 | `note` → Notepad |
 | 某个单词的开头 | `code` → Visual Studio Code |
 | 单词首字母 | `vsc` → Visual Studio Code |
-| 拼音首字母 | `wx` → 微信 |
+| 拼音首字母 (简体、繁体, 生僻字也可以) | `wx` → 微信, `ql` → 琪璐 |
 | 包含 | `pad` → Notepad |
 | 多个关键词 | `st co` → Visual Studio Code |
 | 按顺序出现的字母 (至少 3 个, 首字母相同) | `ntpd` → Notepad |

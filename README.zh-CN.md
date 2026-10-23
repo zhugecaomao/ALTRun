@@ -220,3 +220,5 @@ ALTRun 以 [GPL-3.0](LICENSE) 许可开源 © zhugecaomao
 - [RunZ](https://github.com/goreliu/runz)（goreliu，AutoHotkey）：用 AutoHotkey 写启动器的思路
 - [Alfred](https://www.alfredapp.com/)：操作方式
 - [Listary](https://www.listary.com/)：对话框快速跳转参考了它的 Quick Switch
+
+生僻字和繁体字的拼音首字母（`Resources/Pinyin.txt`）来自 [pypinyin](https://github.com/mozillazg/python-pinyin)（mozillazg，MIT 许可）。

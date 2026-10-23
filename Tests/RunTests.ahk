@@ -78,6 +78,7 @@ I18n.Init("en")
 AppSettings.Data := AppSettings.Defaults()                                  ; 内存里的默认设置, 不读写文件
 AppSettings.Feature("Clipboard")["Persist"] := 0                           ; 剪贴板历史测试不写盘
 IconCache.DiskDir := ""                                                     ; 图标不写磁盘缓存 (IconDiskCache 测试里临时打开)
+Pinyin.DataFile := A_ScriptDir "\..\Resources\Pinyin.txt"                   ; the scripts run from Tests\
 
 TestRunner.Run()
 
@@ -2516,7 +2517,16 @@ class Tests {
         eq("chinese needle: no pinyin", score("测s", "测试.bat"), 50)
         eq("several words: no pinyin", score("cs bat", "测 试.bat"), 50)
         eq("initials cached", Pinyin.Initials("测试") Pinyin.Initials("试测") Pinyin._cache.Has("测"), "CSSC1")
-        eq("unknown character", Pinyin.Initials("A龘B"), "AB")
+        eq("unknown character", Pinyin.Initials("A" Chr(0x9FFF) "B"), "AB")
+        ; The full table (#257): GB2312 level-2, GBK-only and traditional characters; level-1 ones keep their letter
+        eq("table loaded", Pinyin._letters.Size, 0x9FFF - 0x3400 + 1)
+        eq("level-2 characters", Pinyin.Initials("麋鹿昊鑫琪璐"), "MLHXQL")
+        eq("GBK-only and traditional", Pinyin.Initials("喆記事本"), "ZJSB")
+        eq("polyphones keep their old letter", Pinyin.Initials("长城長"), "CCC")
+        eq("CJK punctuation dropped as before", Pinyin.Initials("测试。"), "CS")
+        letters := Pinyin._letters, Pinyin._letters := Buffer(0), Pinyin._cache := Map()     ; without the file: the ranges
+        eq("no table: level-1 only", Pinyin.Initials("记事本麋"), "JSB")
+        Pinyin._letters := letters, Pinyin._cache := Map()
 
         ; 内置索引 (没有 Everything 时) 也按拼音首字母找
         paths := ["C:\D\测试.bat", "C:\D\cs_report.bat", "C:\D\证件扫描文件.zip", "C:\D\项目测试报告.docx", "C:\D\notes.txt"]

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.18]
+
+测试版。
+
+Test build.
+
+### 修复
+- 拼音首字母搜索支持全部汉字: 以前只认 3755 个常用字 (GB2312 一级字), 二级字、生僻字和繁体字 (例如 麋、昊、鑫、喆、記) 没有首字母, 名字里有这些字的程序和文件用拼音首字母搜不到 (#257)。现在由随程序发布的首字母表 `Resources/Pinyin.txt` 查找 (2 万 7 千多个字, 简体和繁体都有), 常用字的首字母和以前一样; 查表比原来转换编码再查区间快约 4 倍
+
 ## [2026.10.20.17]
 
 测试版。
@@ -1003,7 +1012,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.18...HEAD
+[2026.10.20.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.17...2026.10.20.18
 [2026.10.20.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.16...2026.10.20.17
 [2026.10.20.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.15...2026.10.20.16
 [2026.10.20.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.14...2026.10.20.15

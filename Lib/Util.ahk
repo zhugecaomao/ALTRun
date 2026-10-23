@@ -546,8 +546,7 @@ class Arr {
 
 
 ;===============================================================================
-; Pinyin - 中文拼音首字母
-; 用 GBK 编码区间映射, 不需要词库, 够用且零依赖
+; Pinyin - initials of Chinese characters (Resources\Pinyin.txt, GB2312 ranges as fallback)
 ;===============================================================================
 class Pinyin {
     static _ranges := [
@@ -558,11 +557,11 @@ class Pinyin {
         [-14149,-14091,"R"], [-14090,-13319,"S"], [-13318,-12839,"T"], [-12838,-12557,"W"],
         [-12556,-11848,"X"], [-11847,-11056,"Y"], [-11055,-10247,"Z"] ]
 
-    ; "记事本" -> "JSB"; 非中文字符原样保留
-    ; 每个汉字查过一次就记住 (_cache): 文件名、应用名里同一个字反复出现, 不用每次都转编码再查表
+    ; "记事本" -> "JSB"; other characters stay as they are
+    ; Each character is looked up once (_cache): the same characters come up again and again in file and app names
     static _cache := Map(), _buf := Buffer(4)
     static Initials(str) {
-        if !RegExMatch(str, "[^\x{00}-\x{ff}]")     ; 没有中文就直接返回
+        if !RegExMatch(str, "[^\x{00}-\x{ff}]")     ; No Chinese: return it as it is
             return str
         out := "", cache := Pinyin._cache
         for ch in StrSplit(str) {
@@ -575,8 +574,18 @@ class Pinyin {
         return out
     }
 
-    ; 一个汉字的首字母 (GB2312 一级汉字按拼音排序, 按编码范围查); 查不到 (二级汉字、繁体字...) 时 ""
+    ; The initial of one character: CJK U+3400 - U+9FFF from Resources\Pinyin.txt (one ASCII letter per code point,
+    ; made by Tests\Tools\MakePinyin.py; "-" = no reading), so GB2312 level-2, GBK and traditional characters work too.
+    ; Other characters, or without the file: the GB2312 ranges below (only the 3755 level-1 characters, sorted by pinyin)
+    static DataFile := A_ScriptDir "\Resources\Pinyin.txt", TableStart := 0x3400, _letters := Buffer(0), _tried := false
     static _Initial(ch) {
+        if !Pinyin._tried
+            Pinyin._Load()
+        index := Ord(ch) - Pinyin.TableStart
+        if (index >= 0 && index < Pinyin._letters.Size) {
+            letter := NumGet(Pinyin._letters, index, "UChar")
+            return (letter = 45) ? "" : Chr(letter)                         ; 45 = "-"
+        }
         buf := Pinyin._buf
         StrPut(ch, buf, "CP936")
         gbk := (NumGet(buf, 0, "UChar") << 8) + NumGet(buf, 1, "UChar") - 65536
@@ -584,6 +593,13 @@ class Pinyin {
             if (gbk >= r[1] && gbk <= r[2])
                 return r[3]
         return ""
+    }
+
+    ; Read once, the first time a character is looked up (a Buffer: no string copies; empty when the file is missing,
+    ; then the ranges still work)
+    static _Load() {
+        Pinyin._tried := true
+        try Pinyin._letters := FileRead(Pinyin.DataFile, "RAW")
     }
 }
 
