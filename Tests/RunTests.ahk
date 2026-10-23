@@ -4149,6 +4149,8 @@ class Tests {
             SearchWindow.FileMode := false, options["SpacePrefix"] := 0, SearchWindow.Input.Value := ""
             eq("space prefix off", apply(" a") "|" SearchWindow.FileMode, "search: a;|0")
             eq("no hook: nothing", SearchWindow._TakeTypeAhead().Text, "")
+            eq("log: count only", SearchWindow.TypeAheadSummary({Text: "secret", Key: "", Modifier: ""}), "6 chars")
+            eq("log: leading space and key", SearchWindow.TypeAheadSummary({Text: " ab", Key: "Enter", Modifier: ""}), "3 chars (leading space) + Enter")
         } finally {
             SearchWindow.FileMode := false
             options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]

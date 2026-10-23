@@ -552,7 +552,7 @@ class SearchWindow {
         if (typed.Text = "" && typed.Key = "")
             return
         if Logger.Enabled
-            Logger.Debug("SearchWindow: typed while showing '" typed.Text "'" (typed.Key != "" ? " + " typed.Key : ""))
+            Logger.Debug("SearchWindow: typed while showing " SearchWindow.TypeAheadSummary(typed))
         if (typed.Key = "Escape")
             return SearchWindow.Hide()
         text := typed.Text
@@ -573,6 +573,11 @@ class SearchWindow {
         }
         if (typed.Key != "")
             SearchWindow._Execute(typed.Modifier)
+    }
+
+    ; For the log: how much was typed, not what (the log never holds the search text), e.g. "5 chars (leading space) + Enter"
+    static TypeAheadSummary(typed) {
+        return StrLen(typed.Text) " chars" (SubStr(typed.Text, 1, 1) = " " ? " (leading space)" : "") (typed.Key != "" ? " + " typed.Key : "")
     }
 
     ; 上一次还没显示完 (例如显示过程中又按了热键): 不重入。但上一次卡住太久 (2026-10 关掉一台显示器后卡了 2 分半,
