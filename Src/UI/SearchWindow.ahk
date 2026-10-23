@@ -628,8 +628,8 @@ class SearchWindow {
         if Logger.Enabled                                                   ; pairs with "Perf: show" below: a stuck show is stuck in here
             Logger.Debug("SearchWindow: show" SearchWindow.ShowNote(wasVisible, wasVisible && SearchWindow.IsActive()
                 , wasVisible ? SearchWindow.ForegroundText() : ""))
-        if (text = "" && wasVisible)
-            SearchWindow._RememberQuery()                                   ; 窗口还开着 (例如没有失去焦点就隐藏): 保留现在的输入
+        if (text = "" && wasVisible)                                        ; already open: bring it to the front as it is
+            return SearchWindow._BringToFront(started)
         SearchWindow._Step("previous window")
         App.RememberActiveWindow()
         SearchWindow._actionsOnly := false
@@ -715,6 +715,22 @@ class SearchWindow {
             SetTimer(() => SearchWindow._FinishRestore(gen, last), -1)
         }
         Logger.Time(prepared ? "show (prepared)" : "show", started)
+    }
+
+    ; Shown again while still open (the hotkey while it is not active, the tray's Show, or ALTRun.exe started again, which
+    ; hands over to this instance): keep the search text, results, mode and caret, only activate it. It used to start
+    ; over with an empty box, so what was being typed was lost (2026-10, appinn: another program started ALTRun.exe).
+    ; The window "before ALTRun" stays the one from the real show, as in _Reopen
+    static _BringToFront(started) {
+        Usage.Count("Show")
+        hwnd := SearchWindow.Input.Hwnd
+        selection := SendMessage(0xB0, 0, 0, hwnd)                          ; EM_GETSEL
+        SearchWindow._Step("activate")
+        try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
+        SearchWindow._Step("focus")
+        SearchWindow.Input.Focus()
+        SendMessage(0xB1, selection & 0xFFFF, (selection >> 16) & 0xFFFF, hwnd)   ; EM_SETSEL: focusing the box selects all
+        Logger.Time("show (already open)", started)
     }
 
     ; 搜索框的输入法切到英文模式 (和 CapsLock 切中 / 英一样设打开状态和转换模式), 记下原来的状态, 隐藏时恢复。

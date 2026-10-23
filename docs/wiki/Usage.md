@@ -17,6 +17,8 @@ Drag the empty space around the input box to move the search window. To have it 
 
 To have the search window remember your last search (like "keep input" in 2.x): Preferences → Search Window → "Keep the last search when the window opens". With it on, the last input and results are still there when you open the window, with the text selected: press `Enter` to open it again, start typing for a new search, or press `Space` for a file search. To edit the last input (for example a calculation), press `→` or `End` to clear the selection and put the cursor at the end (that `→` doesn't open the action panel; press it again to open it).
 
+When the search window is already open but not in front, the hotkey (or the tray's "Show", or starting ALTRun again) brings it to the front as it is: what you typed, the results and the cursor stay.
+
 ## Pinned and recent items
 See [Pinned and recent items](Recent).
 
