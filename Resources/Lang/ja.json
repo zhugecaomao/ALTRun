@@ -344,7 +344,6 @@
   "Prefs.Filter": "絞り込み",
   "Prefs.FolderKeywords": "フォルダーキーワード",
   "Prefs.RecentKeywords": "最近のファイルキーワード",
-  "Prefs.RecentKeywords.Desc": "\"recent 報告書\" で、どのプログラムで開いたかを問わず最近開いたファイルとフォルダー (Windows の「最近使ったアイテム」) を新しい順に検索します。",
   "Prefs.Group.Animation": "アニメーション",
   "Prefs.Group.AutoExpand": "自動展開",
   "Prefs.Group.Copy": "コピー",

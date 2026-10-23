@@ -790,7 +790,6 @@ class I18n {
         s["Prefs.FileKeywords.Desc"]    := 'File keywords: "open report" finds files and folders whose names contain "report". Folder keywords: "folder projects" finds folders only. Separate several keywords with commas.'
         s["Prefs.FolderKeywords"]       := "Folder keywords"
         s["Prefs.RecentKeywords"]       := "Recent keywords"
-        s["Prefs.RecentKeywords.Desc"]  := '"recent report" finds files and folders you opened recently in any program (Windows Recent items), newest first.'
         s["Prefs.QuotePrefix"]         := "Typing ' first searches files"
         s["Prefs.SpacePrefix"]         := "Space in an empty search box searches files"
         s["Prefs.SpacePrefix.Desc"]    := "Like Alfred. Backspace goes back to normal search."

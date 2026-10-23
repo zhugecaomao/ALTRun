@@ -345,7 +345,6 @@
   "Prefs.Filter": "篩選",
   "Prefs.FolderKeywords": "資料夾關鍵字",
   "Prefs.RecentKeywords": "最近檔案關鍵字",
-  "Prefs.RecentKeywords.Desc": "輸入 \"recent 報告\" 搜最近在任何程式裡開啟過的檔案和資料夾 (Windows 的 \"最近使用的項目\"), 最新的在前",
   "Prefs.Group.Animation": "動畫",
   "Prefs.Group.AutoExpand": "自動展開",
   "Prefs.Group.Copy": "複製",
