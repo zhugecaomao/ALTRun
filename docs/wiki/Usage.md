@@ -60,7 +60,7 @@ Case-insensitive, scored in this order:
 | Same beginning | `note` → Notepad |
 | Beginning of a word | `code` → Visual Studio Code |
 | Word initials | `vsc` → Visual Studio Code |
-| Pinyin initials | `wx` → 微信 (WeChat) |
+| Pinyin initials (simplified and traditional, uncommon characters too) | `wx` → 微信 (WeChat), `ql` → 琪璐 |
 | Contains | `pad` → Notepad |
 | Several keywords | `st co` → Visual Studio Code |
 | Letters in order (at least 3, same first letter) | `ntpd` → Notepad |
