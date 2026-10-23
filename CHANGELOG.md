@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.20.19]
+
+测试版。
+
+Test build.
+
+### 改进
+- 调试日志多记几处, 方便查 "搜索框里的字突然没了" 这类问题: 窗口隐藏和原因 (执行、Esc、热键、被哪个程序抢走了焦点), 窗口开着时又呼出了一次 (当时在前台的程序), 搜索框从有字一下子变空 (是 ALTRun 清空的还是一次编辑删光的)。只记字数和程序名, 不记输入的文字
+- 窗口还没显示完就开始打字时, 日志只记打了几个字, 不再记下打的内容 (和使用说明里 "日志不记录输入的文字" 一致)
+
 ## [2026.10.20.18]
 
 测试版。
@@ -1012,7 +1022,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.19...HEAD
+[2026.10.20.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.18...2026.10.20.19
 [2026.10.20.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.17...2026.10.20.18
 [2026.10.20.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.16...2026.10.20.17
 [2026.10.20.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.15...2026.10.20.16

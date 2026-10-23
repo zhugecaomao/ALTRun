@@ -93,7 +93,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -4169,6 +4169,49 @@ class Tests {
         typed := SearchWindow._TakeTypeAhead()
         eq("hook collects text", typed.Text "|" typed.Key, "ab|Enter")
         eq("hook stopped", ih.InProgress "|" (SearchWindow._typeAhead = "" ? 1 : 0), "0|1")
+    }
+
+    ; Debug log for a search box that seems to empty itself (2026-10, appinn): counts and program names, never the text
+    static EmptiedLog() {
+        eq := (n, a, e) => TestRunner.Equal("EmptiedLog." n, a, e)
+        eq("show: hidden", SearchWindow.ShowNote(false, false, ""), "")
+        eq("show: visible, active", SearchWindow.ShowNote(true, true, "x.exe X"), " (already visible, active)")
+        eq("show: visible, not active", SearchWindow.ShowNote(true, false, "ime.exe Cand"), " (already visible, not active; foreground: ime.exe Cand)")
+        eq("foreground text", RegExMatch(SearchWindow.ForegroundText(), "^(none|\S+\.exe .+)$") > 0, true)
+        saved := Map()
+        for name in ["_RunSearch", "IsVisible"]
+            saved[name] := SearchWindow.GetOwnPropDesc(name)
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedMode := SearchWindow.Mode
+        savedLog := [Logger.Enabled, Logger.File, Logger.Immediate]
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => ""})
+        SearchWindow.DefineProp("IsVisible", {Call: (*) => true})
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200"), SearchWindow.Mode := "results"
+        Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunEmptiedTest.log"
+        try FileDelete(Logger.File)
+        try {
+            SearchWindow._SetInput("secret words")
+            SearchWindow._SetInput("")
+            SearchWindow._SetInput("a")
+            SearchWindow._SetInput("")                                      ; one character: not worth a line
+            SearchWindow._SetInput("hello")
+            SearchWindow.Input.Value := ""
+            SearchWindow._OnInputChange()
+            SetTimer(SearchWindow._searchTimer, 0)                          ; its search must not run in a later test
+            Logger.Flush()
+            logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
+            eq("by ALTRun", InStr(logText, "SearchWindow: input emptied (12 chars, by ALTRun, mode results)") > 0, true)
+            eq("by an edit", InStr(logText, "SearchWindow: input emptied (5 chars, by an edit)") > 0, true)
+            eq("one character skipped", InStr(logText, "(1 chars"), 0)
+            eq("text never logged", InStr(logText, "secret") || InStr(logText, "hello"), 0)
+        } finally {
+            try FileDelete(Logger.File)
+            Logger.Enabled := savedLog[1], Logger.File := savedLog[2], Logger.Immediate := savedLog[3]
+            for name, desc in saved
+                SearchWindow.DefineProp(name, desc)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.Mode := savedMode, SearchWindow._inputLen := 0
+            g.Destroy()
+        }
     }
 
     ; 列表画完了但自绘回调没有运行 (空白行): 写日志并再画一次; 回调运行过、还没画时不算
