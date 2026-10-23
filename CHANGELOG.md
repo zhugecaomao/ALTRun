@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.21]
+
+测试版。
+
+Test build.
+
+### 修复
+- 正在搜索框里打字时, 输入的文字有时一下子全没了, 窗口变回刚打开的样子: 这时 ALTRun.exe 被别的程序 (或快捷方式) 又启动了一次, 新启动的交给正在运行的 ALTRun 去 "打开搜索窗口", 而打开时总是清空搜索框。现在搜索窗口已经开着时再次呼出 (再次启动 ALTRun、托盘的 "显示"、窗口不在最前面时按热键), 只把窗口切到前面, 输入的文字、结果和光标位置都保留; 窗口关着时呼出还是空的搜索框 (appinn 论坛反馈)
+
 ## [2026.10.20.20]
 
 测试版。
@@ -1032,7 +1041,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.20...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.21...HEAD
+[2026.10.20.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.20...2026.10.20.21
 [2026.10.20.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.19...2026.10.20.20
 [2026.10.20.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.18...2026.10.20.19
 [2026.10.20.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.17...2026.10.20.18

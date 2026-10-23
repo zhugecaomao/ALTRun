@@ -93,7 +93,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowWhileOpen", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -4169,6 +4169,34 @@ class Tests {
         typed := SearchWindow._TakeTypeAhead()
         eq("hook collects text", typed.Text "|" typed.Key, "ab|Enter")
         eq("hook stopped", ih.InProgress "|" (SearchWindow._typeAhead = "" ? 1 : 0), "0|1")
+    }
+
+    ; Shown again while still open (e.g. ALTRun.exe started again by another program, 2026-10 appinn): the text, mode
+    ; and caret stay, nothing is searched again
+    static ShowWhileOpen() {
+        eq := (n, a, e) => TestRunner.Equal("ShowWhileOpen." n, a, e)
+        savedSet := SearchWindow.GetOwnPropDesc("_SetInput")
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedMode := SearchWindow.Mode
+        calls := {Text: ""}
+        SearchWindow.DefineProp("_SetInput", {Call: (this, text) => calls.Text .= "set:" text ";"})
+        g := Gui("+ToolWindow")
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        try {
+            g.Show("NoActivate w220 h40")
+            SearchWindow.Input.Value := "half typed", SearchWindow.Mode := "actions"
+            SendMessage(0xB1, 4, 4, SearchWindow.Input.Hwnd)
+            SearchWindow._Show("")
+            selection := SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd)
+            eq("text kept", SearchWindow.Input.Value, "half typed")
+            eq("mode kept", SearchWindow.Mode, "actions")
+            eq("caret kept", (selection & 0xFFFF) "-" ((selection >> 16) & 0xFFFF), "4-4")
+            eq("not searched again", calls.Text, "")
+            eq("still visible", SearchWindow.IsVisible() ? 1 : 0, 1)
+        } finally {
+            SearchWindow.DefineProp("_SetInput", savedSet)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.Mode := savedMode
+            g.Destroy()
+        }
     }
 
     ; Debug log for a search box that seems to empty itself (2026-10, appinn): counts and program names, never the text
