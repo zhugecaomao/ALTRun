@@ -3943,11 +3943,10 @@ class Tests {
             SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow._tip := "Tip: ? cheat sheet"
             SearchWindow.Input.Value := "", SearchWindow.Results := [], SearchWindow.Selected := 0
             texts := SearchWindow.StatusTexts()
-            eq("empty box: the tip is in the box, not the status bar", texts.Left "|" texts.Enter "|" texts.Actions "|" SearchWindow.ShowsTip(), "||0|1")
+            eq("empty box: the tip is in the box, not the status bar", texts.Left "|" texts.Enter "|" texts.Actions, "||0")
             SearchWindow.Input.Value := "note", SearchWindow.Results := [fileItem, ResultItem("b")], SearchWindow.Selected := 1
             texts := SearchWindow.StatusTexts()
-            eq("typing: no tip", SearchWindow.ShowsTip(), false)
-            eq("results: enter, ctrl+enter, edit, actions", texts.Left "|" texts.Enter "|" texts.Ctrl "|" texts.Edit "|" texts.Actions, "|Open|Open location|1|1")
+            eq("results: enter, ctrl+enter, edit, actions", texts.Left "|" texts.Enter "|" texts.Ctrl "|" texts.Edit "|" texts.Actions, "|Open|Reveal|1|1")
             parts := SearchWindow.StatusParts(texts), shown := ""
             for part in parts {
                 keys := ""
@@ -3955,7 +3954,10 @@ class Tests {
                     keys .= (keys = "" ? "" : " ") key
                 shown .= (shown = "" ? "" : " | ") part.Label " " keys
             }
-            eq("four parts", shown, "Open ↵ | Open location Ctrl ↵ | Edit F3 | Actions →")
+            eq("four parts", shown, "Open ↵ | Reveal Ctrl ↵ | Edit F3 | Actions →")
+            ; A tip too long for the box ends with "…" (one character per unit here)
+            eq("fit: short tip unchanged", SearchWindow.FitWidth("Tip: ? cheat sheet", 30, (t) => StrLen(t)), "Tip: ? cheat sheet")
+            eq("fit: long tip shortened", SearchWindow.FitWidth("Tip: folder + name  search folders only", 20, (t) => StrLen(t)), "Tip: folder + name…")
             eq("ctrl+enter: text pastes", SearchWindow.CtrlEnterTitle(ResultItem("42", "", {Kind: "text"}), "Copy"), "Paste")
             eq("ctrl+enter: same as enter is not shown", SearchWindow.CtrlEnterTitle(ResultItem("s", "", {Kind: "text", OnRun: (*) => 0}), "Paste"), "")
             eq("ctrl+enter: url copies", SearchWindow.CtrlEnterTitle(ResultItem("w", "", {Kind: "url"}), "Open"), "Copy")
@@ -3965,7 +3967,7 @@ class Tests {
                 labels .= (IsObject(entry) ? StrSplit(entry[1], "`t")[1] : "-") ";"
             eq("menu", labels, "Preferences...;Shortcuts and Syntax;-;Rebuild Index;Check for Updates;-;Reload;Quit;")
             SearchWindow.FileMode := true, SearchWindow.Input.Value := ""
-            eq("fileItem mode", SearchWindow.StatusTexts().Left "|" SearchWindow.ShowsTip(), I18n.T("Status.FileMode") "|0")
+            eq("fileItem mode", SearchWindow.StatusTexts().Left, I18n.T("Status.FileMode"))
             SearchWindow.FileMode := false, SearchWindow.Mode := "actions"
             texts := SearchWindow.StatusTexts()
             eq("action panel", texts.Left "|" texts.Enter "|" texts.Actions, "Esc  Back|Run|0")
@@ -5062,6 +5064,15 @@ Func | PTTools | PT Tools (AHK)=99
     static SelfUpdate() {
         eq := (n, a, e) => TestRunner.Equal("SelfUpdate." n, a, e)
         ok := (n, c) => TestRunner.True("SelfUpdate." n, c)
+        ; GitHub's hourly limit (per IP address) gets a message people understand; other errors stay as they are
+        reason := (message) => StrSplit(UpdateChecker.FailureText(message), "`n")[1]
+        for pair in [["HTTP 403 rate limit exceeded", "Update.RateLimited"], ["HTTP 429 Too Many Requests", "Update.RateLimited"]
+                   , ["Network error 12007", "Update.Offline"], ["Timed out after 30 s", "Update.Offline"], ["HTTP 502 Bad Gateway", "Update.ServerError"]
+                   , ["HTTP 404 Not Found", "Update.NotFound"], ["SHA256 does not match (expected a, got b).", "Update.Corrupt"]
+                   , ["Could not extract the downloaded package (exit code 1).", "Update.BadPackage"], ["Cannot find 'tag_name' in the GitHub response.", "Update.BadResponse"]
+                   , ["(5) Access is denied.", "Update.Unknown"]]
+            eq("failure " pair[1] ": " pair[2], reason(pair[1]), I18n.T(pair[2]))
+        eq("failure keeps the raw error as details", SubStr(UpdateChecker.FailureText("HTTP 404 Not Found"), -StrLen(I18n.T("Update.Detail", "HTTP 404 Not Found"))), I18n.T("Update.Detail", "HTTP 404 Not Found"))
         digest := "3779b0aedbd58a7bf235eab4c0cc52d3b4c9f3188cb98be38319837605cef017"
         response := '{"tag_name": "v2026.10.01", "html_url": "https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01", "assets": ['
             . '{"name": "notes.txt", "browser_download_url": "https://x/notes.txt", "digest": null},'

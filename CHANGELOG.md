@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.20.17]
+
+测试版。
+
+Test build.
+
+### 改进
+- 状态栏的 "打开所在位置" 改成更短的 "定位" (英文 Reveal, 和操作面板里的 "在文件管理器中显示" 一致)
+- 使用提示改回空搜索框的占位文字 (上一版的小字标签下面有光标一直在闪, 风格也和其它地方不一样); 放不下时末尾显示 "…", 不再从中间切掉
+- 检查更新、安装更新失败时, 提示改成看得懂的话, 原始错误放在最后一行作为 "详细信息"。例如 GitHub 返回 "HTTP 403 rate limit exceeded" 时显示 "GitHub 暂时限制了查询次数 (同一网络里查询的人太多), 请稍后再试"; 连不上网络、GitHub 出问题、找不到下载、下载校验不通过等也各有说明
+
 ## [2026.10.20.16]
 
 测试版。
@@ -992,7 +1003,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.17...HEAD
+[2026.10.20.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.16...2026.10.20.17
 [2026.10.20.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.15...2026.10.20.16
 [2026.10.20.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.14...2026.10.20.15
 [2026.10.20.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.13...2026.10.20.14

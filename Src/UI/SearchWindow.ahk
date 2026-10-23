@@ -65,8 +65,8 @@ class SearchWindow {
     ; Status bar at the bottom (Appearance.StatusBar, like Listary / Raycast), shown when there are result rows. On the left
     ; the ☰ menu button (Preferences, cheat sheet, rebuild index, check for updates, reload, quit) and the file search /
     ; actions panel state; on the right what Enter, Ctrl+Enter, F3 and → do with the selected result (round key caps).
-    ; The usage tip is in the empty search box (TipLabel), not here
-    static StatusHeight := 0, StatusBar := "", _statusKey := "", TipLabel := ""
+    ; The usage tip is in the empty search box (its cue banner), not here
+    static StatusHeight := 0, StatusBar := "", _statusKey := ""
 
     ;---------------------------------------------------------------------------
     ; Create
@@ -101,18 +101,6 @@ class SearchWindow {
         searchBox.Move(pad, pad + SearchWindow.InputTop(SearchWindow.InputHeight, editH, pad, metrics.Ascent, metrics.Cap))
         searchBox.OnEvent("Change", (*) => SearchWindow._OnInputChange())
         Win.SetCueBanner(searchBox.Hwnd, SearchWindow.Placeholder())
-        ; The usage tip in the empty box: a small gray label over it (the cue banner would use the big input font
-        ; and cut long tips off). Static without SS_NOTIFY: clicks go through to the box. Kept on top of the box,
-        ; which no longer paints over its siblings (WS_CLIPSIBLINGS)
-        g.SetFont("s" ThemeManager.Get("SubtitleFontSize") " c" ThemeManager.Get("Subtitle"))
-        margin := SendMessage(0xD4, 0, 0, searchBox) & 0xFFFF                ; EM_GETMARGINS: where the box's text starts
-        tipLabel := g.AddText("x" (pad + margin) " y0 w" (w - 2 * pad - margin) " r1 Hidden +0x4000 Background" background)   ; SS_ENDELLIPSIS
-        tipLabel.GetPos(, , , &tipH)
-        tipLabel.Move(, pad + (SearchWindow.InputHeight - tipH) // 2)
-        g.SetFont("s" ThemeManager.Get("InputFontSize") " c" ThemeManager.Get("InputText"))
-        searchBox.Opt("+0x4000000")                                         ; WS_CLIPSIBLINGS
-        DllCall("SetWindowPos", "Ptr", tipLabel.Hwnd, "Ptr", 0, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; HWND_TOP; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
-        SearchWindow.TipLabel := tipLabel
 
         listTop := pad + SearchWindow.InputHeight + pad // 2
         separator := g.AddText("x0 y" listTop " w" w " h1 Hidden Background" ThemeManager.Get("Separator"))
@@ -237,7 +225,7 @@ class SearchWindow {
     }
 
     ; The parts on the right: [{Label, Keys: [key caps...]}], a line between two parts:
-    ; Open ↵ | Open location Ctrl ↵ | Edit F3 | Actions →
+    ; Open ↵ | Reveal Ctrl ↵ | Edit F3 | Actions →
     static StatusParts(texts) {
         parts := []
         if (texts.Enter != "")
@@ -933,7 +921,6 @@ class SearchWindow {
     }
 
     static _OnInputChange() {
-        SearchWindow._UpdateTip()
         if (SearchWindow._quietText != "" && SearchWindow.Input.Value == SearchWindow._quietText)
             return                                                          ; 恢复上次的搜索时自己填进去的文字: 显示后再搜 (_FinishRestore)
         text := SearchWindow.Input.Value
@@ -1241,28 +1228,39 @@ class SearchWindow {
     }
 
     ; 灰色提示文字: 普通搜索 / 文件搜索模式 (操作面板的提示在 _OpenActions 里设置)
-    ; Gray text in the empty box: "Search files..." in file search mode; otherwise this time's usage tip (the small
-    ; TipLabel), or the placeholder when tips are off. The tip is for before typing, so it is only in the empty box
+    ; Gray text in the empty box (the cue banner, so it shows only while the box is empty): "Search files..." in file
+    ; search mode, otherwise this time's usage tip, or the placeholder when tips are off
     static _UpdateCueBanner() {
         if SearchWindow.FileMode
             text := I18n.T("Search.FilesPlaceholder")
         else
-            text := (SearchWindow._tip != "") ? "" : SearchWindow.Placeholder()
+            text := (SearchWindow._tip != "") ? SearchWindow.FitCue(SearchWindow._tip) : SearchWindow.Placeholder()
         Win.SetCueBanner(SearchWindow.Input.Hwnd, text)
-        SearchWindow._UpdateTip()
     }
 
-    static _UpdateTip() {
-        if !IsObject(SearchWindow.TipLabel)
-            return
-        show := SearchWindow.ShowsTip()
-        if (show && SearchWindow.TipLabel.Text != SearchWindow._tip)
-            SearchWindow.TipLabel.Text := SearchWindow._tip
-        if (SearchWindow.TipLabel.Visible != show)
-            SearchWindow.TipLabel.Visible := show
+    ; The cue banner uses the box's big font and just cuts off what doesn't fit: shorten it with "…" instead
+    static FitCue(text) {
+        hwnd := SearchWindow.Input.Hwnd, rect := Buffer(16, 0)
+        DllCall("GetClientRect", "Ptr", hwnd, "Ptr", rect)
+        margins := SendMessage(0xD4, 0, 0, hwnd)                            ; EM_GETMARGINS: left / right margin
+        room := NumGet(rect, 8, "Int") - (margins & 0xFFFF) - (margins >> 16) - 2
+        return SearchWindow.FitWidth(text, room, (part) => Win.TextExtent(hwnd, part))
     }
 
-    static ShowsTip() => SearchWindow._tip != "" && !SearchWindow.FileMode && SearchWindow.Mode = "results" && SearchWindow.Input.Value = ""
+    ; The longest start of text (+ "…") that measure() says fits in room; the text itself when it fits
+    static FitWidth(text, room, measure) {
+        if (room <= 0 || measure(text) <= room)
+            return text
+        low := 0, high := StrLen(text)
+        while (low < high) {
+            middle := (low + high + 1) // 2
+            if (measure(RTrim(SubStr(text, 1, middle)) "…") <= room)
+                low := middle
+            else
+                high := middle - 1
+        }
+        return RTrim(SubStr(text, 1, low)) "…"
+    }
 
     ; 输入框在输入区 (高 bandH) 里的上边距: 按大写字母的高度居中 (ascent: 基线到字体顶部, cap: 大写字母高度)。
     ; 按整个字体的高度居中时下面还算上了 g、y 等下伸笔画的空间, 字看起来偏上 (2026-10 #158; 150% 时上边空 7 像素、
