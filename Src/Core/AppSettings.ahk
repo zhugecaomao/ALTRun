@@ -392,6 +392,7 @@ class AppSettings {
                     "Enabled"            , 1,
                     "Keywords"           , ["open", "find", "file"],
                     "FolderKeywords"     , ["folder"],                      ; "folder budget" searches folders only
+                    "RecentKeywords"     , ["recent"],                      ; "recent budget" searches Windows' recent files and folders
                     "TypeFilters"        , [                                ; "doc report" searches only files with these extensions; one "keyword = ext ..." per line
                         "doc = doc docx xls xlsx xlsm csv ppt pptx pdf txt md rtf odt ods",
                         "pic = jpg jpeg png gif bmp tif tiff webp svg ico heic",

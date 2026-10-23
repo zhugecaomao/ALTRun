@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.20.22]
+
+测试版。
+
+Test build.
+
+### 新增
+- 搜索最近打开的文件: 输入 `recent 报告` 搜最近在任何程序里打开过的文件和文件夹 (Windows 的 "最近使用的项目"), 最新的在前, 本地和网络上的都有; 只输入 `recent ` 列出最新的。直接读 Windows 的 "最近使用的项目" 文件夹, 不需要 Everything, 也不用内置索引; 结果是原文件本身, 打开、定位、复制路径等操作都针对原文件。网络上的文件不去访问网络, 网络慢或断开时也不会卡住。关键字在 偏好设置 → 文件搜索 → "最近文件关键字" 修改, 文件搜索模式里也可以用 (AutoHotkey 论坛反馈)
+
+### 改进
+- 对话框跳转菜单里的 "最近的文件夹" 和最近文件搜索共用同一份读取: 读过的快捷方式记住, 没变就不再读, 第二次打开菜单从约 30 ms 降到约 5 ms
+
 ## [2026.10.20.21]
 
 测试版。
@@ -1041,7 +1053,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.21...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.22...HEAD
+[2026.10.20.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.21...2026.10.20.22
 [2026.10.20.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.20...2026.10.20.21
 [2026.10.20.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.19...2026.10.20.20
 [2026.10.20.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.18...2026.10.20.19

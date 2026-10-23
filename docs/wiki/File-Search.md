@@ -9,10 +9,11 @@ Normal searches show apps, commands, snippets and so on, but **not** files from 
 - **`file report`**, **`open report`**, **`find report`** or **`'report`**: same effect
 - **Folders only**: **`folder budget`** (change the keyword in Preferences → File Search → "Folder keywords"); `folder budget` also works in file search mode. With Everything this is the same as Everything's `folder:budget`
 
+- **Recently opened files**: **`recent report`** searches the files and folders you opened recently in any program (Windows' "Recent items"), newest first, on local disks and network shares alike; **`recent `** with nothing after it lists the newest. It reads Windows' Recent folder directly, so it works without Everything and without the built-in index (Everything doesn't list these by default: `\AppData\` is excluded in Preferences → Search Sources → "Filter"). Change the keyword in Preferences → File Search → "Recent keywords"; `recent report` also works in file search mode. Network files are listed without accessing the network, so a slow or disconnected share doesn't hold up the list
 - **By type** (like Listary's filters): **`doc report`** searches documents only; there are also `pic` pictures, `video`, `audio`, `zip` archives, `exe` programs and `cad` (dwg / dxf / dgn / rvt / ifc / skp...). `doc report` also works in file search mode. Change the keywords and extensions in Preferences → File Search → "File types", one `keyword = ext ext ...` per line. With Everything this is the same as `ext:doc;docx;...`
 - To find files by modification date, write Everything's syntax directly, for example `Space` + `dm:today report` or `dm:thisweek`
 
-A keyword needs a space after it to start a file search: typing just `folder`, `open` or `doc` shows commands and apps with that word in their name as usual.
+A keyword needs a space after it to start a file search: typing just `folder`, `open`, `recent` or `doc` shows commands and apps with that word in their name as usual.
 
 Results are sorted by how well the name matches: exact > start of the name > start of a word (for example `2026-Budget`) > contains (for example `NewBudget`); at the same match quality, folders come before files, then by modification time (newest first). With Everything, ALTRun takes Everything's first 300 results and then sorts them, so the best-matching folder isn't missed just because it wasn't modified recently.
 
@@ -71,6 +72,7 @@ Preferences → File Search (how a search starts, file types, number of results)
 | MinQueryLength | 2 | Minimum number of letters before files are searched |
 | Keywords | `open, find, file` | Keywords that search files only |
 | FolderKeywords | `folder` | Keywords that search folders only |
+| RecentKeywords | `recent` | Keywords that search recently opened files and folders (Windows' Recent items) |
 | TypeFilters | doc / pic / video / audio / zip / exe / cad | File type filters, one `keyword = ext ...` per line |
 | QuotePrefix | 1 | Input starting with `'` searches files and folders only |
 | MaxResults | 30 | Maximum number of results when searching files only |

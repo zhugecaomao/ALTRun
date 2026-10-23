@@ -595,31 +595,14 @@ class QuickSwitch {
         return list
     }
 
-    ; Windows "最近使用的项目" (Recent 文件夹里的快捷方式) 里最近的 limit 个文件夹; 打开过的文件取所在的文件夹。
-    ; 网络上的路径不访问磁盘 (可能很慢), 按有没有扩展名判断是不是文件
+    ; The newest limit folders of Windows "Recent items" (FileSearchProvider.RecentItems); a file gives its folder.
+    ; Only the newest limit * 6 shortcuts are looked at, not all of the hundreds there may be
     static RecentFolders(limit, recentDir := "") {
         folders := [], seen := Map()
         if (limit <= 0)
             return folders
-        recentDir := (recentDir != "") ? recentDir : A_AppData "\Microsoft\Windows\Recent"
-        lines := ""
-        Loop Files, recentDir "\*.lnk"
-            lines .= A_LoopFileTimeModified "`t" A_LoopFileFullPath "`n"
-        for line in StrSplit(Sort(RTrim(lines, "`n"), "R"), "`n") {
-            if (line = "" || A_Index > limit * 6)                           ; 只看最近的一部分, 不用读完几百个快捷方式
-                break
-            try FileGetShortcut(SubStr(line, InStr(line, "`t") + 1), &target)
-            catch                                                           ; 损坏的快捷方式: 出错时 target 成了未赋值
-                continue
-            if !(target ~= "^([A-Za-z]:\\|\\\\)")
-                continue
-            if IconCache.IsRemote(target)
-                folder := (IconCache._Extension(target) = "") ? target : QuickSwitch._Parent(target)
-            else if (attributes := FileExist(target))
-                folder := InStr(attributes, "D") ? target : QuickSwitch._Parent(target)
-            else
-                continue                                                    ; 已经删掉或移走了
-            folder := RTrim(folder, "\")
+        for item in FileSearchProvider.RecentItems(limit * 6, recentDir) {
+            folder := RTrim(item.IsFolder ? item.Path : QuickSwitch._Parent(item.Path), "\")
             if (folder ~= "^[A-Za-z]:$")
                 folder .= "\"
             if (folder = "" || seen.Has(StrLower(folder)))

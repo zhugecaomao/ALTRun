@@ -93,7 +93,7 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowWhileOpen", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowWhileOpen", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "RecentFiles", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
             try {
                 Tests.%name%()
             } catch as e {
@@ -1112,6 +1112,59 @@ class Tests {
         options["TypeFilters"].Pop()
         options["UseEverything"] := savedEverything
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+    }
+
+    ; "recent report": Windows' recent files and folders (shortcuts in the Recent folder), newest first, without Everything
+    static RecentFiles() {
+        eq := (n, a, e) => TestRunner.Equal("RecentFiles." n, a, e)
+        root := A_Temp "\ALTRun-test-recentfiles"
+        try DirDelete(root, true)
+        DirCreate(root "\Recent"), DirCreate(root "\Projects\Tower"), DirCreate(root "\Docs")
+        longPath := Buffer(2048)                                            ; A_Temp may be an 8.3 path; shortcuts give the long one
+        if DllCall("GetLongPathNameW", "Str", root, "Ptr", longPath, "UInt", 1024)
+            root := StrGet(longPath)
+        recent := root "\Recent"
+        link := (target, name, time) => (FileCreateShortcut(target, recent "\" name ".lnk"), FileSetTime(time, recent "\" name ".lnk"))
+        FileAppend("x", root "\Docs\Report 2026.pdf"), FileAppend("x", root "\Docs\notes.txt")
+        link(root "\Docs\Report 2026.pdf", "Report 2026.pdf", "20260301000000")
+        link(root "\Docs\notes.txt", "notes.txt", "20260201000000")
+        link(root "\Projects\Tower", "Tower", "20260101000000")
+        link(root "\Docs\Report 2026.pdf", "Report copy", "20251201000000")   ; the same target twice: listed once
+        link(root "\Docs\Gone.docx", "Gone.docx", "20260401000000")           ; deleted: left out
+        FileAppend("not a shortcut", recent "\Broken.lnk"), FileSetTime("20260501000000", recent "\Broken.lnk")
+        FileAppend("x", recent "\desktop.ini")                             ; not a shortcut
+        saved := [FileSearchProvider.RecentDir, FileSearchProvider.RecentCacheMs]
+        FileSearchProvider.RecentDir := recent, FileSearchProvider.RecentCacheMs := 0
+        options := AppSettings.Feature("FileSearch")
+        try {
+            items := FileSearchProvider.RecentItems(300)
+            names := ""
+            for item in items
+                names .= item.Name (item.IsFolder ? "/" : "") ";"
+            eq("newest first, once, existing only", names, "Report 2026.pdf;notes.txt;Tower/;")
+            eq("target path", items.Length ? items[1].Path : "", root "\Docs\Report 2026.pdf")
+            eq("newest shortcuts only", FileSearchProvider.RecentItems(2).Length, 0)   ; Broken and Gone are the two newest
+            listed := FileSearchProvider.RecentResults("", options, true)
+            eq("recent + space: newest", listed.Length "|" listed[1].Title "|" listed[1].Subtitle "|" listed[1].Arg, "3|Report 2026.pdf|" root "\Docs|" root "\Docs\Report 2026.pdf")
+            eq("folder kind and Tab", listed[3].Kind "|" listed[3].AutoComplete, "folder|" root "\Projects\Tower\")
+            eq("exclusive", listed[1].Exclusive, true)
+            found := FileSearchProvider.RecentResults("rep", options, true)
+            eq("filtered", found.Length "|" found[1].Title, "1|Report 2026.pdf")
+            none := FileSearchProvider.RecentResults("zzz", options, true)
+            eq("nothing found", none.Length "|" none[1].Valid "|" none[1].Title, "1|0|" I18n.T("Files.RecentNone"))
+            hint := FileSearchProvider.RecentResults("", options, false)
+            eq("keyword only: a hint", hint.Length "|" hint[1].Valid "|" hint[1].Score "|" hint[1].Subtitle, "1|0|5|recent ...")
+            results := FileSearchProvider.Search(SearchQuery("recent note"))
+            eq("through Search", results.Length ? results[1].Title : "", "notes.txt")
+            eq("file search mode", FileSearchProvider.SearchFiles("recent tower")[1].Title, "Tower")
+            eq("default keyword", AppSettings.Defaults()["Features"]["FileSearch"]["RecentKeywords"][1], "recent")
+            FileSetTime("20260601000000", recent "\notes.txt.lnk")             ; opened again: moves to the top
+            eq("reopened moves up", FileSearchProvider.RecentItems(300)[1].Name, "notes.txt")
+            eq("quick switch folders", QuickSwitch.RecentFolders(10, recent).Length, 2)
+        } finally {
+            FileSearchProvider.RecentDir := saved[1], FileSearchProvider.RecentCacheMs := saved[2]
+            try DirDelete(root, true)
+        }
     }
 
     ; 对话框的文件夹菜单: 最近的文件夹 (Windows 的 "最近使用的项目")、菜单文字
@@ -2655,8 +2708,9 @@ class Tests {
         for item in items
             ids .= item.Id " "
         eq("folder entry listed", InStr(ids, "Folders ") > 0, true)
+        eq("recent entry listed", InStr(ids, "Recent ") > 0, true)
         ; The most useful entries come first
-        eq("order", InStr(ids, "Files Folders FileKeyword FileTypes Reveal Actions QuickSwitch About Prefs Edit EditJson ") = 1, true)
+        eq("order", InStr(ids, "Files Folders Recent FileKeyword FileTypes Reveal Actions QuickSwitch About Prefs Edit EditJson ") = 1, true)
         ; Short keyword lists for the tips: preferred ones first, then the rest in order
         eq("keywords preferred", HelpProvider._Keywords(["open", "find", "file"], ["file", "open"], 2), "file / open")
         eq("keywords changed by user", HelpProvider._Keywords(["find", "search"], ["file", "open"], 2), "find / search")

@@ -235,6 +235,8 @@ class I18n {
         s["Files.WindowsSearch"]       := "Search '{1}' with Windows Search"
         s["Files.Keyword"]             := "Find files by name"
         s["Folders.Keyword"]           := "Find folders by name"
+        s["Files.RecentKeyword"]       := "Find recently opened files and folders"
+        s["Files.RecentNone"]          := "No matching recent files"
         s["Files.TypeKeyword"]         := "Find files of type: {1}"
 
         ; 速查表 (输入 ?) 和空搜索框里的使用提示, 见 HelpProvider。提示要放得进搜索框, 尽量短
@@ -245,6 +247,8 @@ class I18n {
         s["Help.Pinyin.Text"]          := "pinyin initials find apps and files, e.g. 测试文件.zip"
         s["Help.Folders.Key"]          := "{1} + name"
         s["Help.Folders.Text"]         := "search folders only"
+        s["Help.Recent.Key"]           := "{1} + name"
+        s["Help.Recent.Text"]          := "search files and folders you opened recently in any program"
         s["Help.FileTypes.Key"]        := "{1} + name"
         s["Help.FileTypes.Text"]       := "search one type of file only (documents, archives, CAD...)"
         s["Prefs.TypeFilters"]         := "File types"
@@ -785,6 +789,7 @@ class I18n {
         s["Prefs.FileKeywords"]         := "File keywords"
         s["Prefs.FileKeywords.Desc"]    := 'File keywords: "open report" finds files and folders whose names contain "report". Folder keywords: "folder projects" finds folders only. Separate several keywords with commas.'
         s["Prefs.FolderKeywords"]       := "Folder keywords"
+        s["Prefs.RecentKeywords"]       := "Recent keywords"
         s["Prefs.QuotePrefix"]         := "Typing ' first searches files"
         s["Prefs.SpacePrefix"]         := "Space in an empty search box searches files"
         s["Prefs.SpacePrefix.Desc"]    := "Like Alfred. Backspace goes back to normal search."
