@@ -9,10 +9,11 @@
 - **`file 报告`**、**`open 报告`**、**`find 报告`** 或 **`'报告`**: 效果相同
 - **只搜文件夹**: **`folder 预算`** (关键字可以在 偏好设置 → 文件搜索 → "文件夹搜索关键字" 修改); 文件搜索模式里也可以输入 `folder 预算`。有 Everything 时相当于 Everything 的 `folder:预算`
 
+- **最近打开的文件**: **`recent 报告`** 搜最近在任何程序里打开过的文件和文件夹 (Windows 的 "最近使用的项目"), 最新的在前, 本地和网络上的都有; 只输入 **`recent `** (后面不跟文字) 列出最新的几个。直接读 Windows 的 "最近使用的项目" 文件夹, 不需要 Everything, 也不用内置索引 (Everything 默认搜不到这些: 偏好设置 → 搜索来源 → "过滤条件" 里排除了 `\AppData\`)。关键字可以在 偏好设置 → 文件搜索 → "最近文件关键字" 修改; 文件搜索模式里也可以输入 `recent 报告`。网络上的文件不去访问网络, 网络慢或断开时列表也不会卡住
 - **按类型搜索** (和 Listary 的筛选一样): **`doc 报告`** 只搜文档, 还有 `pic` 图片、`video` 视频、`audio` 音频、`zip` 压缩包、`exe` 程序、`cad` (dwg / dxf / dgn / rvt / ifc / skp...)。文件搜索模式里也可以输入 `doc 报告`。关键字和扩展名可以在 偏好设置 → 文件搜索 → "文件类型" 修改, 每行一个 `关键字 = 扩展名 扩展名 ...`。有 Everything 时相当于 `ext:doc;docx;...`
 - 按修改日期找可以直接写 Everything 的语法, 例如 `空格` + `dm:today 报告`、`dm:thisweek`
 
-关键字后面要有空格才进入文件搜索: 只输入 `folder`、`open`、`doc` 时, 名字里带这个词的命令、应用照常显示。
+关键字后面要有空格才进入文件搜索: 只输入 `folder`、`open`、`recent`、`doc` 时, 名字里带这个词的命令、应用照常显示。
 
 结果按名称的匹配程度排序: 完全相同 > 名称开头 > 单词开头 (例如 `2026-Budget`) > 包含 (例如 `NewBudget`); 同样的匹配程度, 文件夹排在文件前面, 再按修改时间 (新的在前)。用 Everything 时, ALTRun 先取 Everything 的前 300 条结果再排序, 所以名称最匹配的文件夹不会因为不是最近修改的而漏掉。
 
@@ -71,6 +72,7 @@ ALTRun 自动选择:
 | MinQueryLength | 2 | 至少输入几个字才搜文件 |
 | Keywords | `open, find, file` | 只搜文件的关键字 |
 | FolderKeywords | `folder` | 只搜文件夹的关键字 |
+| RecentKeywords | `recent` | 搜最近打开的文件和文件夹 (Windows 的 "最近使用的项目") 的关键字 |
 | TypeFilters | doc / pic / video / audio / zip / exe / cad | 文件类型筛选, 每行 `关键字 = 扩展名 ...` |
 | QuotePrefix | 1 | 以 `'` 开头只搜文件和文件夹 |
 | MaxResults | 30 | 只搜文件时最多显示几条 |

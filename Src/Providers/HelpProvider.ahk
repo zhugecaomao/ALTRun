@@ -28,6 +28,7 @@ class HelpProvider {
         return [
             ["Files"      , "FileSearch"    , "File-Search"],
             ["Folders"    , "FileSearch"    , "File-Search"],
+            ["Recent"     , "FileSearch"    , "File-Search"],
             ["FileKeyword", "FileSearch"    , "File-Search"],
             ["FileTypes"  , "FileSearch"    , "File-Search"],
             ["Reveal"     , ""              , "Usage"],
@@ -126,6 +127,7 @@ class HelpProvider {
     static _Args(id) {
         switch id {
             case "Folders":     return [HelpProvider._Keywords(AppSettings.Feature("FileSearch")["FolderKeywords"], ["folder"], 1)]
+            case "Recent":      return [HelpProvider._Keywords(AppSettings.Feature("FileSearch")["RecentKeywords"], ["recent"], 1)]
             case "FileKeyword":                                             ; e.g. "file / open / '"
                 keywords := HelpProvider._Keywords(AppSettings.Feature("FileSearch")["Keywords"], ["file", "open"], 2)
                 if AppSettings.Feature("FileSearch")["QuotePrefix"]

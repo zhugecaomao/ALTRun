@@ -10,6 +10,8 @@
 ;   3. Folders only:    folder budget (FolderKeywords); "folder budget" also works in file search mode
 ;   4. One file type:   doc report / pic logo / cad plan ... (TypeFilters: "keyword = ext ext ..."),
 ;                       like Listary's file type filters; "doc report" also works in file search mode
+;   4b. Recent files:   recent report (RecentKeywords): files and folders opened recently in any program (Windows "Recent
+;                       items"), newest first, without Everything or the index; "recent " alone lists the newest
 ;   5. Browse a folder: type a path such as C:\  D:\Projects\rep  \\server\share\  ~\  %OneDrive%\ to list
 ;                       that folder (the last part filters), folders first; Tab opens the selected folder, Backspace goes up
 ;                       (like folder browsing in PowerToys Run / Flow Launcher). Hidden and system files are not listed
@@ -21,7 +23,7 @@
 ;   - Otherwise: the built-in index (Src\Core\FileIndex.ahk), covering only the ScopeFolders
 ;
 ; Settings (ALTRun.json -> Features.FileSearch):
-;   Keywords / FolderKeywords / TypeFilters / SpacePrefix / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
+;   Keywords / FolderKeywords / RecentKeywords / TypeFilters / SpacePrefix / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
 ;   MinQueryLength / UseEverything / EverythingFilter / EverythingPath /
 ;   ScopeFolders / ScopeDepth / ScopeExclude / MaxEntries / RefreshMinutes
 ;===============================================================================
@@ -45,6 +47,8 @@ class FileSearchProvider {
             return FileSearchProvider._KeywordResults(term, options, false, query.HasRest)
         if query.MatchKeyword(options["FolderKeywords"], &term)
             return FileSearchProvider._KeywordResults(term, options, true, query.HasRest)
+        if query.MatchKeyword(options["RecentKeywords"], &term)
+            return FileSearchProvider.RecentResults(term, options, query.HasRest)
         if IsObject(filter := FileSearchProvider.MatchType(query, &term))
             return FileSearchProvider._KeywordResults(term, options, filter, query.HasRest)
         if (options["InDefaultResults"] && StrLen(query.Text) >= options["MinQueryLength"] && !Calc.Looks(query.Text))
@@ -63,6 +67,8 @@ class FileSearchProvider {
         query := SearchQuery(term), rest := ""
         if (query.HasRest && query.MatchKeyword(options["FolderKeywords"], &rest) && rest != "")
             return FileSearchProvider._KeywordResults(rest, options, true, true)
+        if (query.HasRest && query.MatchKeyword(options["RecentKeywords"], &rest))
+            return FileSearchProvider.RecentResults(rest, options, true)
         if (query.HasRest && IsObject(filter := FileSearchProvider.MatchType(query, &rest)) && rest != "")
             return FileSearchProvider._KeywordResults(rest, options, filter, true)
         return FileSearchProvider._KeywordResults(term, options, false, true)
@@ -213,6 +219,92 @@ class FileSearchProvider {
         fallback.Exclusive := exclusive
         results.Push(fallback)
         return results
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Recent files: Windows "Recent items" (%AppData%\Microsoft\Windows\Recent holds a shortcut to every file and folder
+    ; opened in any program). %UserProfile%\Recent is only a legacy junction that programs may not list
+    ;---------------------------------------------------------------------------
+    ; "recent report": the recent files and folders whose names match, newest first on ties; "recent " alone lists the
+    ; newest; "recent" without the space is only a hint below the other results
+    static RecentResults(term, options, exclusive) {
+        keywords := options["RecentKeywords"], keyword := keywords.Length ? keywords[1] : ""
+        if !exclusive
+            return [ResultItem(I18n.T("Files.RecentKeyword"), keyword " ...", {Icon: "folder:", Valid: false, Score: 5})]
+        items := FileSearchProvider.RecentItems(FileSearchProvider.RecentScan)
+        needle := StrLower(Trim(term)), scores := Map()
+        for index, item in items {
+            score := (needle = "") ? 100 : FuzzyMatcher.Score(needle, item.Name)
+            if (score > 0)
+                scores[index] := score - index * 0.001                      ; the newer one first on ties
+        }
+        results := []
+        for index in FuzzyMatcher.TopIndexes(scores, options["MaxResults"]) {
+            item := items[index]
+            SplitPath(item.Path, , &dir)
+            results.Push(ResultItem(item.Name, dir, {
+                Kind: item.IsFolder ? "folder" : "file", Arg: item.Path, Icon: item.IsFolder ? "folder:" : item.Path,
+                Uid: "file:" StrLower(item.Path), Score: 150 + scores[index] / 1000, Exclusive: true,
+                AutoComplete: item.IsFolder ? RTrim(item.Path, "\") "\" : ""
+            }))
+        }
+        if !results.Length
+            results.Push(ResultItem(I18n.T("Files.RecentNone"), keyword " " term, {Icon: "folder:", Valid: false, Score: 150, Exclusive: true}))
+        return results
+    }
+
+    ; The targets of the newest maxLinks shortcuts in the Recent folder, newest first, each once:
+    ; [{Path, Name, IsFolder}]. Local targets that are gone are left out; network targets are not checked (the network can
+    ; be slow): no extension = folder. Reading a shortcut is a COM call, so each one is read once and kept until it
+    ; changes; the whole list is kept for RecentCacheMs (typing "recent rep" searches once per character)
+    static RecentDir := A_AppData "\Microsoft\Windows\Recent"
+    static RecentScan := 300, RecentCacheMs := 2000, _recentLinks := Map(), _recentLists := Map()
+    static RecentItems(maxLinks, recentDir := "") {
+        recentDir := (recentDir != "") ? recentDir : FileSearchProvider.RecentDir
+        listKey := StrLower(recentDir) "|" maxLinks
+        lists := FileSearchProvider._recentLists
+        if (lists.Has(listKey) && A_TickCount - lists[listKey].Time < FileSearchProvider.RecentCacheMs)
+            return lists[listKey].Items
+        lines := ""
+        Loop Files, recentDir "\*.lnk"
+            lines .= A_LoopFileTimeModified "`t" A_LoopFileFullPath "`n"
+        links := FileSearchProvider._recentLinks
+        if (links.Count > FileSearchProvider.RecentScan * 4)                ; old shortcuts pile up: start over
+            links := FileSearchProvider._recentLinks := Map()
+        items := [], seen := Map()
+        for line in StrSplit(Sort(RTrim(lines, "`n"), "R"), "`n") {
+            if (line = "" || A_Index > maxLinks)
+                break
+            parts := StrSplit(line, "`t", , 2)
+            key := StrLower(parts[2])
+            if !(links.Has(key) && links[key].Time = parts[1]) {
+                try FileGetShortcut(parts[2], &target)
+                catch                                                       ; a broken shortcut: target is left unset
+                    target := ""
+                links[key] := {Time: parts[1], Target: target}
+            }
+            target := links[key].Target
+            if !(target ~= "^([A-Za-z]:\\|\\\\)")                          ; shell items without a path (Control Panel...)
+                continue
+            target := RTrim(target, "\")
+            if (target ~= "^[A-Za-z]:$")
+                target .= "\"
+            if seen.Has(StrLower(target))
+                continue
+            if IconCache.IsRemote(target)
+                isFolder := (IconCache._Extension(target) = "")
+            else if (attributes := FileExist(target))
+                isFolder := InStr(attributes, "D") ? true : false
+            else
+                continue                                                    ; deleted or moved
+            seen[StrLower(target)] := true
+            SplitPath(target, &name)
+            items.Push({Path: target, Name: (name != "") ? name : target, IsFolder: isFolder})
+        }
+        if (lists.Count > 10)
+            lists.Clear()
+        lists[listKey] := {Time: A_TickCount, Items: items}
+        return items
     }
 
     ; 默认结果: 分数压低 (最高约 40), 排在应用 / 命令后面

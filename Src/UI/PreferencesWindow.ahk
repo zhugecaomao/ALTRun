@@ -708,6 +708,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.SpacePrefix", "Prefs.SpacePrefix", , , "Prefs.Group.StartFileSearch")
         PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
         PreferencesWindow._Pair(["Features.FileSearch.Keywords", "Prefs.FileKeywords", "M", "csv"], ["Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", "S", "csv"])
+        PreferencesWindow._Csv("Features.FileSearch.RecentKeywords", "Prefs.RecentKeywords", "M")
         PreferencesWindow._Lines("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", 4)
         PreferencesWindow._Section("Prefs.Section.FileResults")
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
