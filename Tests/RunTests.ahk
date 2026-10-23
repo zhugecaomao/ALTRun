@@ -1177,6 +1177,12 @@ class Tests {
         lines := ItemEditor.SplitLines("  doc = doc docx `r`n`r`n pic = png`n")
         eq("split", lines.Length "|" lines[1] "|" lines[2], "2|doc = doc docx|pic = png")
         eq("help text", I18n.Strings.Has("Prefs.TypeFilters.Help"), true)
+        eq("app names", PreferencesWindow.NameSummary(["C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools\Disk Cleanup.lnk"
+            , "shell:AppsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel"]), "Disk Cleanup, NVIDIACorp.NVIDIAControlPanel")
+        eq("window lists round trip", PreferencesWindow.JoinWindows(PreferencesWindow.SplitWindows("ahk_exe a.exe, ahk_class B,ahk_exe a.exe")), "ahk_exe a.exe, ahk_class B")
+        for key in ["Prefs.SysHidden", "Prefs.AppFolders", "Prefs.AppHidden", "Prefs.ScopeFolders", "Prefs.ClipIgnoreApps", "Prefs.QSExclude"
+                  , "Prefs.QSAutoExclude", "Prefs.QSOtherDialogs", "Prefs.RenameWindows", "Prefs.AppendWindows", "Prefs.ExpandExclude"]
+            eq("help: " key, I18n.Strings.Has(key ".Help"), true)
     }
 
     ; 对话框的文件夹菜单: 最近的文件夹 (Windows 的 "最近使用的项目")、菜单文字
@@ -2945,6 +2951,17 @@ class Tests {
                         same := same && value = parts[1]
                     TestRunner.True("PreferencesFit." lang " appearance right edges (" rights ")", same)
                 }
+                editButtons := [], rights := Map(), previous := ""         ; every list's "Edit..." (after its read-only summary) ends where something else does
+                for ctrl in page.Controls {
+                    ctrl.GetPos(&x, , &w)
+                    if (ctrl.Type = "Button" && IsObject(previous) && previous.Type = "Edit" && (ControlGetStyle(previous) & 0x800))   ; ES_READONLY
+                        editButtons.Push(x + w)
+                    else
+                        rights[x + w] := true
+                    previous := ctrl
+                }
+                for right in editButtons
+                    TestRunner.True("PreferencesFit." lang " " page.Key " Edit... aligned (" right ")", rights.Has(right))
                 if (page.Key = "Prefs.Page.FileSearch" || page.Key = "Prefs.Page.Clipboard") {   ; "Edit..." / "Save in" end where the right column of the pairs ends
                     lineEnd := 0, editRights := Map()
                     for ctrl in page.Controls {

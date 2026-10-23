@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.20.25]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置里其它列表也改成 "一行摘要 + 编辑...", 在单独的大窗口里修改 (每行一项, 长的行不折行, 上面有详细说明): 应用程序 → 文件夹、已删除的应用 (摘要只显示应用名); 功能 → 已删除的命令; 搜索来源 → 文件夹; 剪贴板 → 不记录的程序; 文字片段 → 不展开的窗口; 对话框跳转 → 其它对话框、不生效的窗口、不自动跳转的对话框; 一键加日期 → 两个 "生效的窗口"。设置文件的格式不变 (窗口列表仍然是逗号分隔的一行)
+- "编辑..." 按钮在有成对设置的页面上和右列的输入框对齐 (例如 文字片段 → 不展开的窗口 和下面的 "延迟")
+
 ## [2026.10.20.24]
 
 测试版。
@@ -1075,7 +1085,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.24...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...HEAD
+[2026.10.20.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.24...2026.10.20.25
 [2026.10.20.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.23...2026.10.20.24
 [2026.10.20.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.22...2026.10.20.23
 [2026.10.20.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.21...2026.10.20.22
