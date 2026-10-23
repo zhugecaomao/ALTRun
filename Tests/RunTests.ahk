@@ -2962,6 +2962,18 @@ class Tests {
                 }
                 for right in editButtons
                     TestRunner.True("PreferencesFit." lang " " page.Key " Edit... aligned (" right ")", rights.Has(right))
+                if (page.Key = "Prefs.Page.Snippets") {                   ; Search keyword / Keyword prefix over Paste by / Delay: four boxes alike, two columns
+                    boxes := []
+                    for ctrl in page.Controls {
+                        if !((ctrl.Type = "Edit" && !(ControlGetStyle(ctrl) & 0x804)) || ctrl.Type = "DDL")   ; not read-only, not multi-line
+                            continue
+                        ctrl.GetPos(&x, &y, &w)
+                        boxes.Push({X: x, Y: y, W: w})
+                    }
+                    grid := (boxes.Length >= 4) ? [boxes[boxes.Length - 3], boxes[boxes.Length - 2], boxes[boxes.Length - 1], boxes[boxes.Length]] : []
+                    TestRunner.True("PreferencesFit." lang " snippets grid", grid.Length = 4 && grid[1].W = grid[2].W && grid[2].W = grid[3].W && grid[3].W = grid[4].W
+                        && grid[1].X = grid[3].X && grid[2].X = grid[4].X && grid[1].Y = grid[2].Y && grid[3].Y = grid[4].Y)
+                }
                 if (page.Key = "Prefs.Page.FileSearch" || page.Key = "Prefs.Page.Clipboard") {   ; "Edit..." / "Save in" end where the right column of the pairs ends
                     lineEnd := 0, editRights := Map()
                     for ctrl in page.Controls {

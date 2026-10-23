@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.20.26]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 文字片段 整理: "搜索关键字" 和 "关键字前缀" 放在同一行, 和下面的 "粘贴方式" / "等待" 排成两行两列, 四个框一样宽、左右各自对齐; 两个说明合成一段
+- 剪贴板 → 不记录的程序、搜索来源 → 文件夹、文字片段 → 不展开的窗口: 摘要框和 "编辑..." 按钮伸到页面最右边 (只有 文件搜索 → 文件类型 的按钮和上下的输入框对齐)
+
 ## [2026.10.20.25]
 
 测试版。
@@ -1085,7 +1095,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...HEAD
+[2026.10.20.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...2026.10.20.26
 [2026.10.20.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.24...2026.10.20.25
 [2026.10.20.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.23...2026.10.20.24
 [2026.10.20.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.22...2026.10.20.23
