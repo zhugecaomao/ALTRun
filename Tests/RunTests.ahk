@@ -3645,6 +3645,12 @@ class Tests {
             if (found.Source.Title = "Ping Host")
                 item := found
         eq("needs argument: complete keyword", item.Valid "|" item.AutoComplete, "0|ping ")
+        eq("script keyword: all scripts", titles("script "), "Clean Temp|Ping Host|Restart Explorer")
+        eq("script keyword: by name", titles("script expl"), "Restart Explorer")
+        onlyScripts := ScriptProvider.Search(SearchQuery("script clean"))
+        eq("script keyword: exclusive", onlyScripts.Length "|" onlyScripts[1].Exclusive, "1|1")
+        eq("keyword without space: normal search", ScriptProvider.Search(SearchQuery("script")).Length, 0)
+        eq("default script keyword", AppSettings.Defaults()["Features"]["Scripts"]["Keyword"], "script")
         eq("ps1 command", ScriptProvider.CommandLine(byTitle["Ping Host"], "a b"), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "a b"')
         eq("bat command", ScriptProvider.CommandLine(byTitle["Clean Temp"]), A_ComSpec ' /c ""' root '\clean.bat""')
         FileAppend("line one`r`n`r`nlast line  `r`n", root "\out.txt")

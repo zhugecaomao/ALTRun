@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.30]
+
+测试版。
+
+Test build.
+
+### 新增
+- 脚本关键字: 输入 `script 备份` 只搜脚本, 只输入 `script ` 列出全部脚本 (和片段的 `snip`、剪贴板的 `clip` 一样); 只输入 `script` 不带空格时照常显示名字里有这个词的命令。关键字在 偏好设置 → 脚本 → "搜索关键字" 修改, 速查表 (`?`) 里也列出 (appinn 论坛建议; 没有占用 `'`, 它和空格一样是 Alfred 的快速搜文件习惯)
+
 ## [2026.10.20.28]
 
 测试版。
@@ -1121,7 +1130,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.30...HEAD
+[2026.10.20.30]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...2026.10.20.30
 [2026.10.20.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.27...2026.10.20.28
 [2026.10.20.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...2026.10.20.27
 [2026.10.20.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...2026.10.20.26
