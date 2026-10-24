@@ -1,15 +1,15 @@
 ;===============================================================================
-; CurrencyRates.ahk - 货币换算用的汇率 (AutoHotkey v2)
+; CurrencyRates.ahk - exchange rates for currency conversion (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 只在打开 Features.Calculator.Currency 时使用 (默认关闭): 这是 ALTRun 除 GitHub 之外唯一会访问的网站。
-; 汇率来自 Frankfurter (https://frankfurter.dev, 欧洲央行等央行公布的参考汇率, 免费, 不需要 key),
-; 工作日每天更新一次。下载的结果存在 Data\Currency.json; 启动 1.5 分钟后、之后每小时看一下,
-; 距离上次下载满 12 小时再下载。下载失败只写日志, 继续用上次的汇率。
+; Only used with Features.Calculator.Currency on (off by default): the only site besides GitHub that ALTRun ever visits.
+; Rates come from Frankfurter (https://frankfurter.dev, reference rates published by the ECB and other central banks, free, no key needed),
+; updated once per working day. The download is stored in Data\Currency.json; 1.5 minutes after start-up and every hour after,
+; it downloads again when the last download is 12 hours old. Failures only go to the log, and the last rates stay in use.
 ;
-; 用法:
-;   CurrencyRates.Start()    启动时 (设置打开了才调用): 读缓存, 需要时在后台下载
-;   CurrencyRates.Date       汇率的日期 (yyyy-MM-dd), 显示在换算结果里
-;   Units.Rates              换算用的汇率 (Lib\Units.ahk)
+; Usage:
+;   CurrencyRates.Start()    at start-up (only called when the setting is on): reads the cache, downloads in the background if needed
+;   CurrencyRates.Date       date of the rates (yyyy-MM-dd), shown in conversion results
+;   Units.Rates              the rates conversions use (Lib\Units.ahk)
 ;===============================================================================
 
 class CurrencyRates {
@@ -46,7 +46,7 @@ class CurrencyRates {
         }
     }
 
-    ; Frankfurter 的回复 ({"base": "EUR", "date": "...", "rates": {...}}) 或缓存 ({"Date", "Rates"}) -> Units.Rates
+    ; Frankfurter's reply ({"base": "EUR", "date": "...", "rates": {...}}) or the cache ({"Date", "Rates"}) -> Units.Rates
     static Apply(data) {
         rates := data.Has("rates") ? data["rates"] : data.Has("Rates") ? data["Rates"] : ""
         if !(rates is Map) || !rates.Count
@@ -59,7 +59,7 @@ class CurrencyRates {
         CurrencyRates.Date := data.Has("date") ? data["date"] : data.Has("Date") ? data["Date"] : ""
     }
 
-    ; 在后台下载 (不卡住 ALTRun), 下载完再换上新的汇率
+    ; Downloads in the background (ALTRun doesn't hang) and swaps in the new rates when done
     static Refresh() {
         HttpGet.Start(CurrencyRates.Url, (text) => CurrencyRates._Downloaded(text), (message) => Logger.Error("CurrencyRates: " message))
     }

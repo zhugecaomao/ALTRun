@@ -1,20 +1,20 @@
 ;===============================================================================
-; Hud.ahk - 操作后的简短提示 (AutoHotkey v2)
+; Hud.ahk - short notices after an action (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 Alfred 的 "Copied to clipboard" 一样: 一块跟随当前主题颜色和字体的圆角小窗,
-; 淡入, 停留 duration 毫秒后淡出。不抢焦点, 鼠标可以点穿。
-; 位置固定: 搜索窗口开着时在它下方居中 (下面放不下就放上面); 否则在一块屏幕的中间偏下:
-;   - 搜索窗口刚隐藏 (例如执行了 "置顶" 等操作, RecentWindowMs 之内): 窗口所在的屏幕
-;   - 其它时候 (片段展开、后台的提示): 和搜索窗口一样按 Appearance.ShowOn 选 (主屏幕 / 鼠标所在 / 活动窗口所在)
+; Like Alfred's "Copied to clipboard": a small rounded window in the current theme's colors and font,
+; fading in, staying duration ms, fading out. Doesn't take focus; clicks go through.
+; Fixed position: below the search window, centered, while it is open (above if there is no room below); otherwise low in the middle of a screen:
+;   - the search window just hid (e.g. after "Pin", within RecentWindowMs): the screen it was on
+;   - other times (snippet expansion, background notices): chosen like the search window by Appearance.ShowOn (primary screen / under the mouse / active window's)
 ;
-; 用法:
-;   Hud.Show("已复制")                    一般通过 App.Notify(text, duration) 调用
+; Usage:
+;   Hud.Show("Copied")                    usually called through App.Notify(text, duration)
 ;   Hud.Hide()
 ;===============================================================================
 
 class Hud {
     static Gui := ""
-    static MaxWidth := 520                  ; 超过这个宽度 (96 DPI 下的像素) 自动换行
+    static MaxWidth := 520                  ; wider than this (pixels at 96 DPI) wraps
     static Alpha := 240
     static _alpha := 0
     static _timer := ""
@@ -32,7 +32,7 @@ class Hud {
         maxW := Win.Scale(Hud.MaxWidth)
         label := g.AddText("Center", text)
         label.GetPos(, , &textW)
-        if (textW > maxW) {                                                 ; 太宽就按最大宽度自动换行 (控件不能单独删除, 先藏起来)
+        if (textW > maxW) {                                                 ; too wide: wrap at the maximum width (controls can't be deleted one by one, so it is hidden first)
             label.Visible := false
             label := g.AddText("xm ym Center w" maxW, text)
         }
@@ -61,7 +61,7 @@ class Hud {
         }
     }
 
-    ; w x h 的提示放在哪里。anchor: {Window: 搜索窗口 {X, Y, W, H} 或 "", Area: 工作区 {Left, Top, Right, Bottom}}
+    ; Where a w x h notice goes. anchor: {Window: the search window {X, Y, W, H} or "", Area: work area {Left, Top, Right, Bottom}}
     static Position(w, h, anchor) {
         area := anchor.Area, gap := Win.Scale(12)
         if IsObject(anchor.Window) {
@@ -93,7 +93,7 @@ class Hud {
         return {Window: "", Area: Hud.ScreenArea(AppSettings.Appearance["ShowOn"])}
     }
 
-    ; 和搜索窗口的 Appearance.ShowOn 一样选屏幕; Active 用现在的活动窗口
+    ; screen chosen like the search window's Appearance.ShowOn; Active uses the current active window
     static ScreenArea(showOn) {
         switch showOn, false {
             case "Primary": return Win.WorkArea(MonitorGetPrimary())
@@ -112,7 +112,7 @@ class Hud {
     }
 
     static _StartFadeOut(g) {
-        if (Hud.Gui != g)                   ; 已经换成了新的提示
+        if (Hud.Gui != g)                   ; already replaced by a new notice
             return
         Hud._fadingOut := true
         if !IsObject(Hud._timer) {
@@ -121,7 +121,7 @@ class Hud {
         }
     }
 
-    ; 每 15 ms 调整一次透明度: 淡入约 100 ms, 淡出约 150 ms
+    ; adjust the opacity every 15 ms: fade in about 100 ms, fade out about 150 ms
     static _Step() {
         if !IsObject(Hud.Gui)
             return Hud.Hide()

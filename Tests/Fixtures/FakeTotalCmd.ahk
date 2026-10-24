@@ -1,9 +1,9 @@
 ﻿;===============================================================================
-; FakeTotalCmd.ahk - 测试用: 模拟 Total Commander 的 WM_COPYDATA 接口 (AutoHotkey v2)
+; FakeTotalCmd.ahk - for tests: imitates Total Commander's WM_COPYDATA interface (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 收到 dwData = "GW" 的 WM_COPYDATA (内容是 ANSI 命令) 时, 和 TC 一样马上用 dwData = "RW" (UTF-16)
-; 回复给 wParam 里的窗口: SP = 当前面板路径, TP = 另一个面板路径, A = 当前是哪一边。
-; 由 RunTests.ahk 启动, 20 秒后自己退出。
+; On a WM_COPYDATA with dwData = "GW" (an ANSI command) it replies at once, like TC, with dwData = "RW" (UTF-16)
+; to the window in wParam: SP = path of the active panel, TP = path of the other panel, A = which side is active.
+; Started by RunTests.ahk; exits by itself after 20 s.
 ;===============================================================================
 #Requires AutoHotkey v2.0
 #SingleInstance Off
@@ -18,7 +18,7 @@ SetTimer(() => ExitApp(), -20000)
 OnCopyData(wParam, lParam, msg, hwnd) {
     if (NumGet(lParam, 0, "UPtr") != Ord("G") + 256 * Ord("W"))
         return
-    command := StrGet(NumGet(lParam, A_PtrSize * 2, "Ptr"), NumGet(lParam, A_PtrSize, "UInt"), "CP0")    ; 到结尾的 0 为止
+    command := StrGet(NumGet(lParam, A_PtrSize * 2, "Ptr"), NumGet(lParam, A_PtrSize, "UInt"), "CP0")    ; up to the terminating 0
     reply := replies.Has(command) ? replies[command] : ""
     data := Buffer((StrLen(reply) + 1) * 2, 0)
     StrPut(reply, data, "UTF-16")

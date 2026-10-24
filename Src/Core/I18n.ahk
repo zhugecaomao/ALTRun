@@ -1,34 +1,34 @@
 ;===============================================================================
-; I18n.ahk - 界面文字 (AutoHotkey v2)
+; I18n.ahk - UI text (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 英文原文编译在程序里 (下面的 _Build, 每条一个语义化的键名; {1} {2} ... 是参数占位符);
-; 其它语言是 Resources\Lang\<代码>.json 里的翻译 ({"键名": "文字", ...}), 代码用 BCP 47 写法:
-;   zh-CN.json 简体中文   zh-TW.json 繁體中文   ja.json 日本語
-; 文件开头以 "_" 开头的键是这种语言的信息:
-;   "_name"     偏好设置里显示的名称 (用这种语言自己的文字)
-;   "_font"     界面字体 (主题的 FontName 是 "auto" 时用), 不写用 Segoe UI
-;   "_fallback" 这个文件里没有的键先找哪种语言 (例如 zh-TW -> zh-CN), 最后都是英文
-; 加一种语言 = 放一个 JSON 文件, 偏好设置的语言列表会自动列出; 测试会检查每个键都有翻译、占位符一致。
-; 加一条界面文字 = 在 _Build 里加英文, 再在每个语言文件里加翻译。
+; The English text is compiled into the program (_Build below, one meaningful key per entry; {1} {2} ... are parameter placeholders);
+; other languages are translations in Resources\Lang\<code>.json ({"key": "text", ...}), with BCP 47 codes:
+;   zh-CN.json Simplified Chinese   zh-TW.json Traditional Chinese   ja.json Japanese
+; Keys at the top of a file starting with "_" describe the language:
+;   "_name"     the name shown in Preferences (in the language itself)
+;   "_font"     UI font (used when the theme's FontName is "auto"), Segoe UI if not given
+;   "_fallback" which language to try first for keys this file lacks (e.g. zh-TW -> zh-CN); English in the end
+; Adding a language = adding a JSON file; the language list in Preferences picks it up. Tests check every key is translated with the same placeholders.
+; Adding UI text = the English in _Build plus a translation in every language file.
 ;
-; 用法:
-;   I18n.Init("auto")                          启动时调用, "auto" 按 Windows 的显示语言选择
-;   I18n.T("Search.Placeholder")               取当前语言的文字
-;   I18n.T("Web.SearchFor", "Google", "abc")   带参数
+; Usage:
+;   I18n.Init("auto")                          at start-up; "auto" follows the Windows display language
+;   I18n.T("Search.Placeholder")               text in the current language
+;   I18n.T("Web.SearchFor", "Google", "abc")   with parameters
 ;===============================================================================
 
 class I18n {
-    static Lang := "en"                                                     ; 当前语言的代码
-    static Font := ""                                                       ; 当前语言的界面字体 ("" = Segoe UI)
-    static Texts := Map()                                                   ; 当前语言的翻译 (已经合并了 _fallback 的语言)
+    static Lang := "en"                                                     ; code of the current language
+    static Font := ""                                                       ; UI font of the current language ("" = Segoe UI)
+    static Texts := Map()                                                   ; translations of the current language (with the _fallback languages merged in)
     static LangDir := A_ScriptDir "\Resources\Lang"
-    static Aliases := Map("zh", "zh-CN", "zh-SG", "zh-CN", "zh-HK", "zh-TW", "zh-MO", "zh-TW")   ; 以前的设置值 "zh"; 地区 -> 用哪个文件
+    static Aliases := Map("zh", "zh-CN", "zh-SG", "zh-CN", "zh-HK", "zh-TW", "zh-MO", "zh-TW")   ; the former setting "zh"; region -> which file
 
-    ; setting: "auto" 或语言代码; 没有这种语言的文件时按 Resolve 找最接近的, 都没有就用英文
+    ; setting: "auto" or a language code; without a file for it, Resolve finds the closest, English if none
     static Init(setting := "auto") {
         code := I18n.Normalize(setting)
         code := I18n.Resolve(code = "auto" ? I18n.SystemLocale() : code)
-        chain := []                                                         ; 这种语言, 然后是它的 _fallback ...
+        chain := []                                                         ; this language, then its _fallback ...
         while (code != "en" && chain.Length < 4) {
             data := I18n.ReadFile(code)
             if !data.Count
@@ -39,7 +39,7 @@ class I18n {
         I18n.Texts := Map(), I18n.Font := "", I18n.Lang := "en"
         if !chain.Length
             return I18n.Lang
-        Loop chain.Length {                                                 ; 从最后一个 _fallback 开始, 前面的语言覆盖后面的
+        Loop chain.Length {                                                 ; from the last _fallback on, earlier languages override later ones
             for key, text in chain[chain.Length - A_Index + 1]
                 if (SubStr(key, 1, 1) != "_")
                     I18n.Texts[key] := text
@@ -50,7 +50,7 @@ class I18n {
         return I18n.Lang := I18n.Normalize(chain[1]["_code"])
     }
 
-    ; "zh-tw" -> "zh-TW"; 以前的写法 (见 Aliases) 换成现在的代码; "" -> "auto"
+    ; "zh-tw" -> "zh-TW"; former forms (see Aliases) become today's codes; "" -> "auto"
     static Normalize(code) {
         code := Trim(code)
         if (code = "" || code = "auto")
@@ -64,7 +64,7 @@ class I18n {
         return I18n.Aliases.Get(code, code)
     }
 
-    ; 语言代码 -> 有文件的语言: 先找完全一样的, 再找只有语言部分的 ("ko-KR" -> "ko"), 都没有用 "en"
+    ; Language code -> a language with a file: an exact match first, then the language part alone ("ko-KR" -> "ko"), "en" if neither
     static Resolve(code) {
         if (code = "en")
             return "en"
@@ -75,7 +75,7 @@ class I18n {
         return "en"
     }
 
-    ; Windows 的显示语言 -> 语言代码 (例如 "zh-SG" 用简体中文, "zh-HK" 用繁體中文)
+    ; Windows display language -> language code (e.g. "zh-SG" uses Simplified Chinese, "zh-HK" Traditional Chinese)
     static SystemLocale() {
         name := Buffer(85 * 2, 0)
         if !DllCall("LCIDToLocaleName", "UInt", Integer("0x" A_Language), "Ptr", name, "Int", 85, "UInt", 0)
@@ -83,7 +83,7 @@ class I18n {
         return I18n.Normalize(StrGet(name))
     }
 
-    ; Resources\Lang\<代码>.json -> Map (读不了时为空); "_code" 是文件名里的代码
+    ; Resources\Lang\<code>.json -> Map (empty if it can't be read); "_code" is the code from the file name
     static ReadFile(code) {
         data := Map()
         try {
@@ -98,7 +98,7 @@ class I18n {
         return data
     }
 
-    ; 偏好设置的语言列表: [[代码, 名称], ...], 英文在最前, 其它按代码排序
+    ; The language list in Preferences: [[code, name], ...], English first, the rest by code
     static Languages() {
         found := Map()
         Loop Files, I18n.LangDir "\*.json" {
@@ -106,7 +106,7 @@ class I18n {
             name := code
             try if RegExMatch(FileRead(A_LoopFileFullPath, "UTF-8"), '"_name"\s*:\s*"([^"]+)"', &m)
                 name := m[1]
-            found[code] := name                                             ; Map 按键排序
+            found[code] := name                                             ; Map sorted by key
         }
         list := [["en", "English"]]
         for code, name in found
@@ -126,7 +126,7 @@ class I18n {
 
     static Strings := I18n._Build()
 
-    ; 每条: 键名 -> 英文原文
+    ; each entry: key -> English text
     static _Build() {
         s := Map()
         ; --- App / tray ---
@@ -183,7 +183,7 @@ class I18n {
         s["Action.CopyingMany"]        := "Copying {1} items to {2}"
         s["Action.MovingMany"]         := "Moving {1} items to {2}"
         s["Search.MarkedItems"]        := "{1} marked items"
-        s["Search.TypeAfter"]          := "Type after '{1} ', then press Enter"         ; 等待参数: 关键字已经补全或还没输入参数时
+        s["Search.TypeAfter"]          := "Type after '{1} ', then press Enter"         ; waiting for arguments: when the keyword is complete or no argument is typed yet
         s["Search.TypeArgAfter"]       := "Type {2} after '{1} ', then press Enter"
         s["Action.Pin"]                := "Pin to Empty Search Box"
         s["Action.Unpin"]              := "Unpin"
@@ -240,7 +240,7 @@ class I18n {
         s["Files.RecentNone"]          := "No matching recent files"
         s["Files.TypeKeyword"]         := "Find files of type: {1}"
 
-        ; 速查表 (输入 ?) 和空搜索框里的使用提示, 见 HelpProvider。提示要放得进搜索框, 尽量短
+        ; The cheat sheet (type ?) and the usage tips in the empty search box, see HelpProvider. Tips must fit in the search box: keep them short
         s["Help.TipFormat"]            := "Tip: {1}  {2}"
         s["Help.Files.Key"]            := "Space + name"
         s["Help.Files.Text"]           := "search files and folders"
@@ -437,7 +437,7 @@ class I18n {
         s["Tool.WinVer"]               := "About Windows"
         s["Tool.Subtitle"]             := "Windows tool"
 
-        ; --- Windows 设置的页面 ---
+        ; --- Windows Settings pages ---
         s["Recent.PinnedHint"]         := "Pinned: {1} is shown when the search box is empty"
         s["Recent.ConfirmUnpin"]       := "Unpin '{1}'?"
         s["Recent.ConfirmForget"]      := "Remove '{1}' from the recent items?"
@@ -567,7 +567,7 @@ class I18n {
         s["Prefs.Page.FileIndex"]       := "Search Sources"
         s["Prefs.Page.Advanced"]       := "Advanced"
         s["Prefs.Page.Usage"]          := "Usage"
-        ; 两列表单左列的分组标签
+        ; group labels in the left column of two-column forms
         s["Prefs.Group.Startup"]          := "Startup"
         s["Prefs.Group.Integration"]      := "Windows"
         s["Prefs.Group.Updates"]          := "Updates"

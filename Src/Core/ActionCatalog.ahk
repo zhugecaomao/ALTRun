@@ -45,7 +45,7 @@ class ActionCatalog {
             InStr(FileExist(markedPath), "D") ? ActionCatalog.OpenFolder(markedPath) : ActionCatalog.OpenFile(markedPath)
     }
 
-    ; 复制 / 移动到一个文件夹 (Windows 自己的复制, 有进度和重名提示); 不能复制到自己或自己的子文件夹里
+    ; Copy / move into a folder (Windows' own copy, with progress and name-conflict prompts); not into itself or its own subfolders
     static CopyMany(paths, destination, move := false) {
         folder := ComObject("Shell.Application").NameSpace(RTrim(destination, "\") (RegExMatch(destination, "^[A-Za-z]:\\?$") ? "\" : ""))
         if !IsObject(folder)
@@ -61,7 +61,7 @@ class ActionCatalog {
         return done > 0
     }
 
-    ; 一起移到回收站: 先确认一次 (可以从回收站还原)
+    ; Move to the Recycle Bin together: confirm once first (they can be restored from the Recycle Bin)
     static RecycleMany(paths) {
         if (MsgBox(I18n.T("Action.ConfirmRecycleAll", paths.Length), App.Name, "YesNo Icon? Default2") != "Yes")
             return false
@@ -76,13 +76,13 @@ class ActionCatalog {
     }
 
     ;---------------------------------------------------------------------------
-    ; 具体操作
+    ; Operations
     ;---------------------------------------------------------------------------
     static OpenFile(target, arguments := "") {
         resolved := Path.Resolve(target)
         workDir := ActionCatalog.ParentDir(resolved)
         if RegExMatch(resolved, "i)^(shell:|::\{|[a-z]+:\/\/)") || !FileExist(resolved)
-            return Run(Trim(resolved " " arguments))                        ; shell: 路径 / 协议 / PATH 里的程序名
+            return Run(Trim(resolved " " arguments))                        ; shell: paths / protocols / program names in PATH
         Run(Trim('"' resolved '" ' arguments), DirExist(workDir) ? workDir : "")
     }
 
@@ -104,8 +104,8 @@ class ActionCatalog {
         if (fileManager = "" || InStr(fileManager, "explorer"))
             return Run('explorer.exe /select,"' resolved '"')
         if InStr(fileManager, "totalcmd")
-            return Run(fileManager ' /P "' resolved '"')                   ; Total Commander: 打开所在文件夹并选中这个文件
-        Run(fileManager ' "' ActionCatalog.ParentDir(resolved) '"')        ; 其它文件管理器的参数各不相同: 打开所在文件夹
+            return Run(fileManager ' /P "' resolved '"')                   ; Total Commander: open the containing folder and select the file
+        Run(fileManager ' "' ActionCatalog.ParentDir(resolved) '"')        ; other file managers take different arguments: open the containing folder
     }
 
     static OpenUrl(address) {
@@ -114,7 +114,7 @@ class ActionCatalog {
         Run(address)
     }
 
-    ; 和资源管理器里 "右键 -> 属性" 一样。Run 的 properties 动词对网络盘上的文件夹等会失败, 所以用 SHObjectProperties
+    ; Like "right-click -> Properties" in Explorer. Run's properties verb fails for folders on network drives etc., so SHObjectProperties is used
     static ShowProperties(target) {
         target := Path.Resolve(target)
         if !DllCall("shell32\SHObjectProperties", "Ptr", 0, "UInt", 0x2, "WStr", target, "Ptr", 0)   ; 0x2 = SHOP_FILEPATH
@@ -128,9 +128,9 @@ class ActionCatalog {
         App.Notify(I18n.T("Search.Copied", ActionCatalog._Preview(text)))
     }
 
-    ; 把文字粘贴到呼出 ALTRun 之前的那个窗口 (focusPrevious = false 时粘贴到当前窗口)。
-    ; 粘贴方式见 Features.Snippets.PasteMode: "Clipboard" = 临时借用剪贴板 + Ctrl+V
-    ; (之后还原, 这段时间剪贴板历史不记录); "Type" = 逐字输入
+    ; Pastes text into the window that was active before ALTRun was shown (focusPrevious = false: into the current window).
+    ; Paste mode, see Features.Snippets.PasteMode: "Clipboard" = borrow the clipboard + Ctrl+V
+    ; (restored afterwards; the clipboard history doesn't record it meanwhile); "Type" = typed character by character
     static PasteText(text, focusPrevious := true) {
         snippetSettings := AppSettings.Feature("Snippets")
         mode  := snippetSettings["PasteMode"]
@@ -157,11 +157,11 @@ class ActionCatalog {
         return true
     }
 
-    ; 粘贴方式 (Features.Snippets.PasteMode) -> 这段文字是不是直接输入:
-    ;   Auto (默认)  不长 (AutoTypeMax 个字符以内) 的单行文字直接输入: 马上出来, 不动剪贴板, 也不用等着还原剪贴板;
-    ;                多行 (直接输入时换行是 Enter, 可能把聊天消息发出去)、带 Tab、很长、有 emoji 等补充平面字符的用剪贴板
-    ;   Clipboard    总是剪贴板 + Ctrl+V
-    ;   Type         总是逐字输入 (适合不接受粘贴的程序)
+    ; Paste mode (Features.Snippets.PasteMode) -> whether this text is typed:
+    ;   Auto (default)  short (at most AutoTypeMax characters) single-line text is typed: it appears at once, leaves the clipboard alone, no wait to restore it;
+    ;                   multi-line text (a typed line break is Enter, which may send a chat message), text with Tabs, very long text or emoji and other supplementary-plane characters use the clipboard
+    ;   Clipboard       always the clipboard + Ctrl+V
+    ;   Type            always typed character by character (for programs that don't accept pasting)
     static AutoTypeMax := 100
 
     static TypesText(text, mode) {
@@ -172,7 +172,7 @@ class ActionCatalog {
         return StrLen(text) <= ActionCatalog.AutoTypeMax && !RegExMatch(text, "[\r\n\t]|[^\x{0}-\x{FFFF}]")
     }
 
-    ; 把文件放进剪贴板 (剪贴板历史照常记录), 在 TC / 资源管理器里 Ctrl+V 粘贴
+    ; Puts files on the clipboard (the clipboard history records them as usual), to paste with Ctrl+V in TC / Explorer
     static CopyFiles(paths, cut := false) {
         if !ClipboardData.SetFiles(paths, cut)
             return false
@@ -180,7 +180,7 @@ class ActionCatalog {
         return true
     }
 
-    ; 这类文件在 Windows 里登记的 "编辑" 程序 (右键菜单里的 "编辑") -> {Name, Icon}; 没有登记时 ""
+    ; The "Edit" program Windows has registered for this file type ("Edit" in the context menu) -> {Name, Icon}; "" if none
     static EditorFor(target) {
         static ASSOCSTR_COMMAND := 1, ASSOCSTR_EXECUTABLE := 2, ASSOCSTR_FRIENDLYAPPNAME := 4
         SplitPath(target, , , &ext)
@@ -194,9 +194,9 @@ class ActionCatalog {
               , Icon: (exe != "" && FileExist(exe)) ? exe : A_WinDir "\notepad.exe"}
     }
 
-    ; AssocQueryStringW: 文件类型 (".ahk") 的某个动作 ("edit") 的命令、程序、程序名称; 没有时 ""
+    ; AssocQueryStringW: the command, program or program name of a verb ("edit") of a file type (".ahk"); "" if none
     static AssocString(kind, ext, verb) {
-        static ASSOCF_NOTRUNCATE := 0x20, ASSOCF_INIT_IGNOREUNKNOWN := 0x400   ; 没登记的类型不要退到 "打开方式" 的设置
+        static ASSOCF_NOTRUNCATE := 0x20, ASSOCF_INIT_IGNOREUNKNOWN := 0x400   ; unregistered types must not fall back to the "Open with" settings
         size := 0
         DllCall("shlwapi\AssocQueryStringW", "UInt", ASSOCF_NOTRUNCATE | ASSOCF_INIT_IGNOREUNKNOWN, "UInt", kind, "WStr", ext, "WStr", verb
             , "Ptr", 0, "UInt*", &size)
@@ -209,16 +209,16 @@ class ActionCatalog {
         return StrGet(buf)
     }
 
-    ; 用登记的编辑程序打开 (和右键菜单的 "编辑" 一样)
+    ; Opens with the registered editor (like "Edit" in the context menu)
     static EditFile(target) {
         Run('edit "' Path.Resolve(target) '"')
     }
 
     static OpenWith(target) {
-        Run("rundll32.exe shell32.dll,OpenAs_RunDLL " Path.Resolve(target))    ; 路径不加引号 (OpenAs_RunDLL 取整个剩余的命令行)
+        Run("rundll32.exe shell32.dll,OpenAs_RunDLL " Path.Resolve(target))    ; the path isn't quoted (OpenAs_RunDLL takes the whole rest of the command line)
     }
 
-    ; 用 Windows 自己的复制 / 移动 (有进度窗口、重名时询问、可以撤销), 在后台进行, 不会卡住 ALTRun
+    ; Windows' own copy / move (progress window, asks on name conflicts, can be undone), in the background so ALTRun doesn't hang
     static CopyTo(target, destination, move := false) {
         folder := ComObject("Shell.Application").NameSpace(RTrim(destination, "\") (RegExMatch(destination, "^[A-Za-z]:\\?$") ? "\" : ""))
         if !IsObject(folder)
@@ -228,7 +228,7 @@ class ActionCatalog {
         return true
     }
 
-    ; 移到回收站: 用 Windows 的 "删除" (会先确认, 可以从回收站还原)
+    ; Move to the Recycle Bin with Windows' "Delete" (confirms first; can be restored from the Recycle Bin)
     static Recycle(target) {
         SplitPath(RTrim(target, "\"), &name, &dir)
         try {

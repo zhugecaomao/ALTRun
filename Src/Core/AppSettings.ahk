@@ -1,46 +1,46 @@
 ;===============================================================================
-; AppSettings.ahk - 用户设置 Data\ALTRun.json 的读写和默认值 (AutoHotkey v2)
+; AppSettings.ahk - reads and writes the user settings in Data\ALTRun.json, with their defaults (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; ALTRun.json 只保存用户设置和用户数据 (自定义命令 / 片段 / 网页搜索引擎 /
-; 自定义热键)。它和运行时生成的数据 (应用索引、学习记录、剪贴板历史) 都放在
-; Data\ 目录里, 各是一个单独的文件: 删掉索引等文件只会让它们重新生成, 不影响设置。
-; 3.x 到 v2026.09.26 把 ALTRun.json 放在程序目录, 启动时自动移到 Data\ (MoveLegacyFile)。
+; ALTRun.json only holds the user's settings and data (custom commands / snippets / web search engines /
+; custom hotkeys). It and the data made at run time (application index, learned ranking, clipboard history) are all in
+; the Data\ folder, each in a file of its own: deleting an index only makes it rebuild, the settings aren't affected.
+; 3.x to v2026.09.26 kept ALTRun.json in the program folder; at start-up it is moved to Data\ (MoveLegacyFile).
 ;
-; 文件结构 (SchemaVersion 5):
+; File structure (SchemaVersion 6):
 ; {
 ;   "SchemaVersion" : 5,
-;   "General"       : { 呼出热键 / 开机启动 / 托盘图标 / 失焦隐藏 / 语言 ... },
-;   "Appearance"    : { 主题 / 窗口宽度 / 可见行数 },
-;   "Features"      : { "<功能名>": { "Enabled": 1, ...该功能自己的设置 } },
+;   "General"       : { show hotkey / start with Windows / tray icon / hide on focus loss / language ... },
+;   "Appearance"    : { theme / window width / visible rows },
+;   "Features"      : { "<feature>": { "Enabled": 1, ...the feature's own settings } },
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
-;   "Hotkeys"       : [ { "Key", "Action", "WinTitle" } ],   自定义热键 -> 系统命令
+;   "Hotkeys"       : [ { "Key", "Action", "WinTitle" } ],   custom hotkeys -> system commands
 ;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword" } ],
 ;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ],
-;   "DataLocation"  : "D:\\OneDrive\\ALTRun"   可选, 只在默认位置的文件里有: 改用这个数据文件夹 (见 ResolveDataDir)
+;   "DataLocation"  : "D:\\OneDrive\\ALTRun"   optional, only in the file at the default location: use this data folder instead (see ResolveDataDir)
 ; }
 ;
-; 旧版本 (没有 SchemaVersion 的 2.x 格式) 由 SchemaMigration 自动升级, 升级前
-; 会先把原文件备份一份, 见 SchemaMigration.ahk。
+; Old versions (the 2.x format without SchemaVersion) are upgraded by SchemaMigration; the original file is
+; backed up first, see SchemaMigration.ahk.
 ;
-; 用法:
-;   AppSettings.Load()                       启动时调用一次
-;   AppSettings.General["Hotkey"]            读某一节的某个值
-;   AppSettings.Feature("WebSearch")         某个功能的设置 (Map)
-;   AppSettings.Save()                       写回 Data\ALTRun.json
+; Usage:
+;   AppSettings.Load()                       once at start-up
+;   AppSettings.General["Hotkey"]            one value of a section
+;   AppSettings.Feature("WebSearch")         a feature's settings (Map)
+;   AppSettings.Save()                       writes Data\ALTRun.json
 ;===============================================================================
 
 class AppSettings {
     static CurrentVersion := 6
-    static Portable := Path.IsWritable(A_ScriptDir)                          ; 程序目录能写入: 数据放在程序目录 (便携)
-    static UserDir := A_AppData "\ALTRun"                                   ; 程序目录不能写入时 (例如装在 Program Files) 用这里
+    static Portable := Path.IsWritable(A_ScriptDir)                          ; the program folder is writable: data goes in the program folder (portable)
+    static UserDir := A_AppData "\ALTRun"                                   ; used when the program folder isn't writable (e.g. installed in Program Files)
     static DataDir := AppSettings.ResolveDataDir()
     static File := AppSettings.DataDir "\ALTRun.json"
     static ThemesDir := (AppSettings.Portable ? A_ScriptDir : AppSettings.UserDir) "\Themes"   ; the user's own theme files (see ThemeManager)
-    static LegacyFile := A_ScriptDir "\ALTRun.json"      ; 旧版本的位置, 2.x 的 ALTRun.ini 也在这个目录
+    static LegacyFile := A_ScriptDir "\ALTRun.json"      ; the location of old versions; 2.x's ALTRun.ini is in this folder too
     static Data := Map()
-    static MigratedFrom := 0          ; 本次启动时从哪个版本升级过来的 (0 = 没有升级)
-    static ImportedFrom := ""         ; 本次启动时从旧版本的 ALTRun.ini 导入 ("" = 没有)
-    static MovedFrom := ""            ; 本次启动时从程序目录移到 Data\ ("" = 没有)
+    static MigratedFrom := 0          ; the version upgraded from at this start-up (0 = no upgrade)
+    static ImportedFrom := ""         ; the old ALTRun.ini imported at this start-up ("" = none)
+    static MovedFrom := ""            ; moved from the program folder to Data\ at this start-up ("" = no)
 
     static General        => AppSettings.Data["General"]
     static Appearance     => AppSettings.Data["Appearance"]
@@ -48,12 +48,12 @@ class AppSettings {
     static CustomCommands => AppSettings.Data["CustomCommands"]
     static Snippets       => AppSettings.Data["Snippets"]
 
-    ; 数据文件夹 (设置、索引、学习记录、剪贴板历史...):
-    ;   1. 默认位置的 ALTRun.json 里有 "DataLocation" (偏好设置 → 高级 → 更改位置): 改用那个文件夹,
-    ;      例如 OneDrive 里的, 几台电脑共用一份设置 (可以写 %OneDrive%\ALTRun, 相对路径从程序目录算起)。
-    ;      只看默认位置的这一项, 那个文件夹里的 ALTRun.json 不再跳转
-    ;   2. 程序目录能写入: 程序目录\Data (便携, 默认)
-    ;   3. 否则: %APPDATA%\ALTRun\Data
+    ; The data folder (settings, indexes, learned ranking, clipboard history...):
+    ;   1. ALTRun.json at the default location has "DataLocation" (Preferences → Advanced → Change location): use that folder,
+    ;      e.g. one in OneDrive so several PCs share the settings (%OneDrive%\ALTRun works; relative paths start from the program folder).
+    ;      Only this entry at the default location counts; an ALTRun.json in that folder doesn't redirect again
+    ;   2. the program folder is writable: <program folder>\Data (portable, the default)
+    ;   3. otherwise: %APPDATA%\ALTRun\Data
     static ResolveDataDir() {
         if ((location := AppSettings.DataLocationIn(AppSettings.DefaultDataDir() "\ALTRun.json")) != "")
             return location
@@ -62,8 +62,8 @@ class AppSettings {
 
     static DefaultDataDir() => AppSettings.Portable ? A_ScriptDir "\Data" : AppSettings.UserDir "\Data"
 
-    ; 设置文件里 "DataLocation" 指定的文件夹 (没有、为空或就是默认位置时 "")。启动时调用:
-    ; 只找这一项, 不解析整个文件 (不跳转时同一个文件马上还要完整读一次)
+    ; The folder given by "DataLocation" in the settings file ("" when missing, empty or the default location). Called at start-up:
+    ; it only looks for this entry without parsing the whole file (without a redirect the same file is fully read right after)
     static DataLocationIn(settingsFile) {
         if !FileExist(settingsFile)
             return ""
@@ -77,7 +77,7 @@ class AppSettings {
         return ""
     }
 
-    ; 把数据文件夹改成 folder ("" 或默认位置 = 恢复默认): 写进默认位置的 ALTRun.json ("DataLocation"), 重新载入后生效
+    ; Changes the data folder to folder ("" or the default location = back to the default): written to ALTRun.json at the default location ("DataLocation"); takes effect after reloading
     static SetDataLocation(folder) {
         settingsFile := AppSettings.DefaultDataDir() "\ALTRun.json"
         reset := (folder = "" || Path.Full(folder) = AppSettings.DefaultDataDir())
@@ -92,7 +92,7 @@ class AppSettings {
             data.Delete("DataLocation")
         DirCreate(AppSettings.DefaultDataDir())
         JSON.WriteFile(settingsFile, data)
-        if (AppSettings.DataDir = AppSettings.DefaultDataDir()) {           ; 正在用默认位置的设置: 之后保存时也要留着这一项
+        if (AppSettings.DataDir = AppSettings.DefaultDataDir()) {           ; the settings at the default location are in use: keep this entry when saving later too
             if !reset
                 AppSettings.Data["DataLocation"] := folder
             else if AppSettings.Data.Has("DataLocation")
@@ -100,11 +100,11 @@ class AppSettings {
         }
     }
 
-    ; 恢复默认设置 (偏好设置 → 高级) 时保留的: 自己加的内容, 不是选项
+    ; Kept when resetting to the defaults (Preferences → Advanced): content the user added, not options
     static KeptOnReset := [["CustomCommands"], ["Snippets"], ["Hotkeys"], ["Features", "WebSearch", "Engines"]
         , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["Extensions", "PTTools"], ["DataLocation"]]
 
-    ; current 恢复成默认设置后的样子: 默认值 + current 里 KeptOnReset 的部分
+    ; current after a reset to the defaults: the defaults + the KeptOnReset parts of current
     static ResetData(current) {
         data := AppSettings.Defaults()
         for keys in AppSettings.KeptOnReset {
@@ -138,8 +138,8 @@ class AppSettings {
         data := AppSettings._ReadFile()
         changed := false
 
-        ; 已发布的 2.x (到 v2026.08.12) 把设置存在 ALTRun.ini: 还没有 ALTRun.json 时从它导入。
-        ; ALTRun.ini 保持不变, 退回旧版本时仍然可以用
+        ; The released 2.x (up to v2026.08.12) kept its settings in ALTRun.ini: imported from it while there is no ALTRun.json yet.
+        ; ALTRun.ini stays unchanged, so going back to the old version still works
         if (!data.Count && !FileExist(AppSettings.File)) {
             iniFile := SchemaMigration.LegacyIniFile(AppSettings.LegacyFile)
             if FileExist(iniFile) {
@@ -157,7 +157,7 @@ class AppSettings {
                 changed := true
             }
         } else {
-            changed := true                                                 ; 第一次运行: 写出一份带默认值的文件
+            changed := true                                                 ; first run: write a file with the defaults
         }
 
         if (data.Count && AppSettings._KeepPrevious(data))
@@ -167,7 +167,7 @@ class AppSettings {
         if AppSettings._MergeDefaults(data, AppSettings.Defaults())
             changed := true
         if (AppSettings.DataDir != AppSettings.DefaultDataDir() && data.Has("DataLocation"))
-            data.Delete("DataLocation")                                     ; 跳转到的文件夹里的这一项没有作用, 去掉免得混淆
+            data.Delete("DataLocation")                                     ; this entry has no effect in the folder redirected to: remove it to avoid confusion
         data["SchemaVersion"] := AppSettings.CurrentVersion
         AppSettings.Data := data
 
@@ -181,14 +181,14 @@ class AppSettings {
             return true
         } catch as e {
             Logger.Error("AppSettings.Save: " e.Message)
-            MsgBox(I18n.T("Settings.SaveError", e.Message), App.Name, "Icon! 0x40000")   ; 总在最前面: 启动时还没有窗口, 不能被别的窗口挡住像是卡死了
+            MsgBox(I18n.T("Settings.SaveError", e.Message), App.Name, "Icon! 0x40000")   ; always on top: there is no window yet at start-up, and hidden behind another window it would look hung
             return false
         }
     }
 
-    ; 旧版本的 ALTRun.json 在程序目录: 还没有 Data\ALTRun.json 时连同升级备份 (ALTRun.v*.backup.json)
-    ; 和解析失败留下的 ALTRun.json.bad 一起移过去。两边都有时用 Data\ 里的, 旧文件不动。
-    ; 移不动 (例如文件被占用) 时这次继续用旧位置, 下次启动再试
+    ; An old ALTRun.json in the program folder: while there is no Data\ALTRun.json, move it together with the upgrade backups (ALTRun.v*.backup.json)
+    ; and the ALTRun.json.bad left by a failed parse. If both exist the one in Data\ is used and the old file is left alone.
+    ; If it can't be moved (e.g. the file is in use), keep using the old location this time and try again at the next start-up
     static MoveLegacyFile() {
         legacy := AppSettings.LegacyFile, target := AppSettings.File
         if (legacy = target || !FileExist(legacy) || FileExist(target))
@@ -229,16 +229,16 @@ class AppSettings {
         }
     }
 
-    ; 把 defaults 里有、target 里没有的键补上 (逐层递归, 只补 Map, 数组整体看待)。
-    ; 返回是否有改动。类型不一致 (比如该是 Map 的地方被手改成了字符串) 也用默认值覆盖。
-    ; 已有的设置文件里还没有的新设置: 保持原来的样子, 不用新安装的默认值 (见下面两个)。返回是否补上了
+    ; Adds the keys that defaults has and target lacks (recursively; only Maps are filled in, arrays count as a whole).
+    ; Returns whether anything changed. A wrong type (e.g. a Map edited into a string by hand) is replaced by the default too.
+    ; New settings that an existing settings file doesn't have yet: keep the old behavior instead of the new install's default (see the two below). Returns whether one was added
     static _KeepPrevious(data) {
         keptDensity := AppSettings._KeepDensity(data)
-        keptLargeType := AppSettings._KeepLargeType(data)                  ; 不叫 largeType: 会遮住 LargeType 类
+        keptLargeType := AppSettings._KeepLargeType(data)                  ; not called largeType: that would shadow the LargeType class
         return keptDensity || keptLargeType
     }
 
-    ; 已有的设置文件还没有 Features.LargeType (2026.10.19.15 以前): 大字显示一直是打开的, 保持打开
+    ; An existing settings file without Features.LargeType (before 2026.10.19.15): Large Type was always on, keep it on
     static _KeepLargeType(data) {
         if !(data.Has("Features") && data["Features"] is Map) || data["Features"].Has("LargeType")
             return false
@@ -246,8 +246,8 @@ class AppSettings {
         return true
     }
 
-    ; 已有的设置文件还没有 Appearance.Density (2026.10.19.12 以前): 保持原来的大小, 不用新安装的默认值 "Normal"。
-    ; 原来的大小 = 宽松; 用的是以前的紧凑主题 (DarkCompact 等) 的 = 常规 (和它们的尺寸一样)。返回是否补上了
+    ; An existing settings file without Appearance.Density (before 2026.10.19.12): keep the old size instead of the new install's default "Normal".
+    ; The old size = Comfortable; with one of the former compact themes (DarkCompact etc.) = Normal (the same size as them). Returns whether it was added
     static _KeepDensity(data) {
         if !(data.Has("Appearance") && data["Appearance"] is Map) || data["Appearance"].Has("Density")
             return false
@@ -257,8 +257,8 @@ class AppSettings {
         return true
     }
 
-    ; 自带的搜索引擎 2026.10.19.18 起写成 {query|clipboard}: 已有的设置文件里网址还是原来默认值 ({query}) 的
-    ; 自带引擎 (按 Id) 换成新写法; 改过网址的不动。返回是否改了
+    ; Since 2026.10.19.18 the built-in search engines use {query|clipboard}: built-in engines (by Id) whose URL in an existing settings file is still
+    ; the old default ({query}) get the new form; changed URLs are left alone. Returns whether anything changed
     static _UpgradeEngines(data) {
         if !(data.Has("Features") && data["Features"] is Map && data["Features"].Has("WebSearch") && data["Features"]["WebSearch"] is Map)
             return false
@@ -300,28 +300,28 @@ class AppSettings {
         return changed
     }
 
-    ; 每次调用都新建一份, 调用方可以随意修改返回值
+    ; a new copy on each call: callers may change the result freely
     static Defaults() {
         return Map(
             "SchemaVersion", AppSettings.CurrentVersion,
             "General", Map(
                 "Hotkey"              , "!Space",
                 "SecondaryHotkey"     , "!r",                               ; Alt+R
-                "DoubleTap"           , "",                                ; 双击 Ctrl / Shift 呼出搜索窗口 (和 Listary 一样), "" = 不用
-                "CapsLock"            , "",                                 ; 按 CapsLock: Layout = 切换输入法, Mode = 切换中英模式, "" = 照常 (见 CapsLockSwitch)
-                "CapsLockNotify"      , 1,                                  ; 开 / 关大写锁定时显示 "大写锁定: 开 / 关" 的提示
-                "CapsLockElevated"    , 0,                                  ; 管理员窗口里也生效: 用计划任务以管理员身份运行一个只管 CapsLock 的小助手 (见 CapsLockHelper)
-                "SelectionHotkey"     , "^!\",                              ; 选中文字 / 文件后按: 直接打开它们的操作 (Ctrl+Alt+\)
-                "Language"            , "auto",                             ; auto 或 Resources\Lang 里的语言代码 (zh-CN / zh-TW / ja), en
+                "DoubleTap"           , "",                                ; double-tap Ctrl / Shift shows the search window (as in Listary), "" = off
+                "CapsLock"            , "",                                 ; CapsLock: Layout = switch input language, Mode = toggle Chinese / English mode, "" = as usual (see CapsLockSwitch)
+                "CapsLockNotify"      , 1,                                  ; show a "Caps Lock: on / off" notice when Caps Lock is toggled
+                "CapsLockElevated"    , 0,                                  ; also in administrator windows: a small helper that only handles CapsLock runs as administrator from a scheduled task (see CapsLockHelper)
+                "SelectionHotkey"     , "^!\",                              ; after selecting text / files: open their actions directly (Ctrl+Alt+\)
+                "Language"            , "auto",                             ; auto or a language code in Resources\Lang (zh-CN / zh-TW / ja), en
                 "LaunchAtLogin"       , 1,
                 "ShowTrayIcon"        , 1,
                 "HideOnDeactivate"    , 1,
-                "SwitchToEnglishInput", 0,                                 ; 呼出时切换到英文: 1 = 英语 (美国) 键盘, 2 = 当前输入法的英文模式
-                "RestoreInput"        , 1,                                 ; SwitchToEnglishInput 时: 窗口隐藏后切回原来的输入法
-                "SpaceToRun"          , 0,                                  ; 空格执行选中项 (Shift+空格输入空格)
+                "SwitchToEnglishInput", 0,                                 ; switch to English when shown: 1 = English (US) keyboard, 2 = English mode of the current input method
+                "RestoreInput"        , 1,                                 ; with SwitchToEnglishInput: switch back to the previous input language after the window hides
+                "SpaceToRun"          , 0,                                  ; Space runs the selected result (Shift+Space types a space)
                 "TabKey"              , "Complete",                         ; Tab: "Complete" = complete the name / browse into a folder; "Next" = next result (Shift+Tab previous, Ctrl+Tab completes)
-                "KeepLastQuery"       , 0,                                  ; 呼出窗口时恢复上一次的搜索 (文字全选)
-                "ShowTips"            , 1,                                  ; 空搜索框里轮换显示使用提示
+                "KeepLastQuery"       , 0,                                  ; restore the last search when shown (text selected)
+                "ShowTips"            , 1,                                  ; rotate usage tips in the empty search box
                 "FileManager"         , "explorer.exe",
                 "SendToMenu"          , 1,
                 "StartMenuShortcut"   , 1,
@@ -330,16 +330,16 @@ class AppSettings {
                 "HistorySize"         , 30
             ),
             "Appearance", Map(
-                "Theme"      , "System",                                    ; 内置主题名 (见 ThemeManager; System = 跟随 Windows 的深 / 浅色) 或 Themes\<名称>.json
-                "Density"    , "Normal",                                    ; 显示密度 (任何主题): Comfortable 宽松 (主题本来的大小) / Normal 常规 / Compact 紧凑, 见 ThemeManager.DensityScale
+                "Theme"      , "System",                                    ; a built-in theme (see ThemeManager; System = follow Windows dark / light) or Themes\<name>.json
+                "Density"    , "Normal",                                    ; density (any theme): Comfortable (the theme's own size) / Normal / Compact, see ThemeManager.DensityScale
                 "Width"      , 700,
                 "VisibleRows", 8,
-                "Placeholder", "",                                          ; 空搜索框里的灰色文字, 空 = 默认 ("ALTRun 搜索")
-                "StatusBar"  , 1,                                           ; 搜索窗口底部的状态栏 (☰ 菜单、使用提示、选中项的 Enter 操作和 →)
-                "Fade"       , 0,                                           ; 显示 / 隐藏时淡入淡出 (见 WindowFade)
-                "ShowOn"     , "Mouse",                                     ; 显示在哪块屏幕: Mouse 鼠标所在 / Primary 主屏幕 / Active 当前窗口所在
-                "RememberPosition", 0,                                      ; 拖动窗口后记住位置
-                "Position"   , Map("X", 500, "Y", 200)                      ; 记住的位置: 屏幕里的千分比 (见 SearchWindow.Place)
+                "Placeholder", "",                                          ; gray text in the empty search box, empty = the default ("ALTRun Search")
+                "StatusBar"  , 1,                                           ; status bar at the bottom of the search window (☰ menu, usage tips, the selected result's Enter action and →)
+                "Fade"       , 0,                                           ; fade in / out when showing / hiding (see WindowFade)
+                "ShowOn"     , "Mouse",                                     ; which screen: Mouse = under the mouse / Primary = primary screen / Active = the active window's
+                "RememberPosition", 0,                                      ; remember the position after the window is dragged
+                "Position"   , Map("X", 500, "Y", 200)                      ; the remembered position: per mille of the screen (see SearchWindow.Place)
             ),
             "Features", Map(
                 "Applications", Map(
@@ -348,7 +348,7 @@ class AppSettings {
                     "FileTypes"     , ["*.lnk", "*.exe", "*.url", "*.appref-ms"],
                     "Depth"         , 3,
                     "Exclude"       , "i)(uninstall|卸载|readme|help|documentation)",
-                    "Hidden"        , [],                                   ; 在搜索结果里删除 (Ctrl+Del) 的应用的路径
+                    "Hidden"        , [],                                   ; paths of applications deleted from the results (Ctrl+Del)
                     "StoreApps"     , 1,
                     "MatchPinyin"   , 1
                 ),
@@ -356,39 +356,39 @@ class AppSettings {
                 "Snippets", Map(
                     "Enabled"     , 1,
                     "Keyword"     , "snip",
-                    "SearchText"  , 1,                                      ; 也搜索正文 (至少 3 个字符)
-                    "PasteMode"   , "Auto",                                 ; Auto = 短的单行文字直接输入, 其它用剪贴板; Clipboard = 剪贴板 + Ctrl+V; Type = 逐字输入
+                    "SearchText"  , 1,                                      ; also search the text (at least 3 characters)
+                    "PasteMode"   , "Auto",                                 ; Auto = short single-line text is typed, the rest goes through the clipboard; Clipboard = clipboard + Ctrl+V; Type = typed character by character
                     "PasteDelay"  , 300,
-                    "AutoExpand"  , 1,                                      ; 在任何程序里输入 前缀+关键字 自动展开
+                    "AutoExpand"  , 1,                                      ; typing prefix + keyword in any program expands it
                     "ExpandPrefix", ";",
                     "ExpandExclude", ["ahk_exe mstsc.exe", "ahk_exe KeePass.exe", "ahk_exe KeePassXC.exe"]   ; no expansion in these windows
                 ),
                 "Clipboard", Map(
                     "Enabled"      , 1,
                     "Keyword"      , "clip",
-                    "Hotkey"       , "^!c",                                 ; 直接打开剪贴板历史
+                    "Hotkey"       , "^!c",                                 ; opens the clipboard history directly
                     "MaxItems"     , 200,
-                    "MaxItemLength", 100000,                                ; 超过这么多字的内容不记录
-                    "Persist"      , 1,                                     ; 0 = 只在内存里, 退出即清空
-                    "Images"       , 1,                                     ; 也记录图片 (存成 Clipboard\*.png, 需要 Persist = 1)
-                    "LocalFiles"   , 1,                                     ; 存在哪里: 0 = 都在 Data; 1 = 图片和很长的条目只存本机 (%LOCALAPPDATA%\ALTRun); 2 = 历史也只存本机 (见 ClipboardProvider.PlaceStorage)
+                    "MaxItemLength", 100000,                                ; content longer than this many characters isn't recorded
+                    "Persist"      , 1,                                     ; 0 = in memory only, cleared on exit
+                    "Images"       , 1,                                     ; record images too (saved as Clipboard\*.png, needs Persist = 1)
+                    "LocalFiles"   , 1,                                     ; where it is stored: 0 = all in Data; 1 = images and very long entries only on this PC (%LOCALAPPDATA%\ALTRun); 2 = the history too (see ClipboardProvider.PlaceStorage)
                     "MaxImages"    , 50,
-                    "MergeDoubleCopy", 0,                                   ; 快速按两次 Ctrl+C: 接到上一条后面
+                    "MergeDoubleCopy", 0,                                   ; press Ctrl+C twice quickly: append to the previous entry
                     "IgnoreApps"   , ["KeePass.exe", "KeePassXC.exe", "1Password.exe", "Bitwarden.exe"]
                 ),
                 "Calculator", Map(
                     "Enabled"       , 1,
-                    "StructuralCalc", 0,                                    ; 结果下方附带梁主筋 / 配筋面积计算
-                    "RebarCover"    , 40,                                   ; 保护层 (mm, 每边)
-                    "MaxBarSpacing" , 300,                                  ; 主筋最大间距 (mm)
-                    "BarSizes"      , [13, 16, 20, 25, 32],                 ; 配筋面积那一行列出的钢筋直径 (mm)
-                    "BarPrefix"     , "H",                                  ; 钢筋代号前缀 (H / T / Y / Φ...)
-                    "Currency"      , 0                                     ; 货币换算 (100 usd to sgd): 每天从 frankfurter.dev 下载汇率, 默认关闭
+                    "StructuralCalc", 0,                                    ; beam main bars / steel area below the result
+                    "RebarCover"    , 40,                                   ; cover (mm, each side)
+                    "MaxBarSpacing" , 300,                                  ; maximum spacing of main bars (mm)
+                    "BarSizes"      , [13, 16, 20, 25, 32],                 ; bar diameters listed in the steel area row (mm)
+                    "BarPrefix"     , "H",                                  ; bar symbol prefix (H / T / Y / Φ...)
+                    "Currency"      , 0                                     ; currency conversion (100 usd to sgd): exchange rates downloaded daily from frankfurter.dev, off by default
                 ),
                 "WebSearch", Map(
                     "Enabled"  , 1,
                     "Engines"  , AppSettings._DefaultEngines(),
-                    "Fallbacks", ["google", "files", "bing"]                ; 没有任何结果时显示的兜底项 (引擎 Id 或 "files")
+                    "Fallbacks", ["google", "files", "bing"]                ; fallbacks shown when there are no results at all (engine Id or "files")
                 ),
                 "FileSearch", Map(
                     "Enabled"            , 1,
@@ -404,18 +404,18 @@ class AppSettings {
                         "exe = exe msi bat cmd ps1 lnk",
                         "cad = dwg dxf dgn dwf rvt ifc skp"
                     ],
-                    "SpacePrefix"        , 1,                               ; 空的搜索框里先按空格 = 只搜文件, 和 Alfred 一样
-                    "QuotePrefix"        , 1,                               ; 以 ' 开头直接搜索文件, 和 Alfred 一样
+                    "SpacePrefix"        , 1,                               ; Space first in the empty search box = search files only, as in Alfred
+                    "QuotePrefix"        , 1,                               ; starting with ' searches files directly, as in Alfred
                     "MaxResults"         , 30,
-                    "InDefaultResults"   , 0,                               ; 直接输入名称时也显示匹配的文件 / 文件夹 (默认关闭, 避免全盘的无关文件混进来)
+                    "InDefaultResults"   , 0,                               ; also show matching files / folders when typing a name (off by default, so unrelated files from the whole disk don't mix in)
                     "DefaultResultsLimit", 6,
                     "MinQueryLength"     , 2,
-                    "UseEverything"      , 1,                               ; Everything 在运行时通过 IPC 查询全盘
+                    "UseEverything"      , 1,                               ; while Everything runs, query the whole disk over IPC
                     "EverythingFilter"   , "!C:\Windows\ !\AppData\ !\$Recycle.Bin\",
-                    "EverythingPath"     , "",                              ; Everything.exe 的位置, 留空自动查找 (只用于 "在 Everything 中搜索")
-                    "ScopeFolders"       , ["A_Desktop", "A_MyDocuments", "%UserProfile%\Downloads"],   ; 没有 Everything 时的内置索引范围
+                    "EverythingPath"     , "",                              ; where Everything.exe is; empty = find it (only used for "Search in Everything")
+                    "ScopeFolders"       , ["A_Desktop", "A_MyDocuments", "%UserProfile%\Downloads"],   ; what the built-in index covers when there is no Everything
                     "ScopeDepth"         , 4,
-                    "ScopeExclude"       , "i)\\(node_modules|\.git|\.svn|\.hg|__pycache__|\.venv|venv|\.tox|\.cache|\.idea|\.vs|\$RECYCLE\.BIN)(\\|$)",   ; 代码仓库、虚拟环境、IDE 缓存: 动辄上万个文件, 会占满 MaxEntries
+                    "ScopeExclude"       , "i)\\(node_modules|\.git|\.svn|\.hg|__pycache__|\.venv|venv|\.tox|\.cache|\.idea|\.vs|\$RECYCLE\.BIN)(\\|$)",   ; code repositories, virtual environments, IDE caches: often tens of thousands of files that would fill MaxEntries
                     "MaxEntries"         , 30000,
                     "RefreshMinutes"     , 60
                 ),
@@ -424,42 +424,42 @@ class AppSettings {
                     "Prefix" , ">",
                     "Shell"  , "cmd"                                        ; cmd / powershell / pwsh / wt
                 ),
-                "Help", Map("Enabled", 1),                                  ; 输入 ? 显示所有输入语法和快捷键
-                "LargeType", Map("Enabled", 0),                             ; Ctrl+L / 操作面板里的 "大字显示" (新安装默认关; 以前的设置文件保持打开)
+                "Help", Map("Enabled", 1),                                  ; typing ? shows every input syntax and shortcut
+                "LargeType", Map("Enabled", 0),                             ; "Large Type" with Ctrl+L / in the actions panel (off for new installs; older settings files keep it on)
                 "Bookmarks", Map(
                     "Enabled"         , 1,
-                    "Keyword"         , "bm",                               ; "bm 关键词" 只搜书签
-                    "InDefaultResults", 1                                   ; 直接输入名称时也显示匹配的书签 (排在应用和命令后面)
+                    "Keyword"         , "bm",                               ; "bm word" searches bookmarks only
+                    "InDefaultResults", 1                                   ; also show matching bookmarks when typing a name (after applications and commands)
                 ),
                 "Scripts", Map(
-                    "Enabled"    , 1,                                       ; Scripts\ 文件夹里的脚本变成命令
+                    "Enabled"    , 1,                                       ; scripts in the Scripts\ folder become commands
                     "Keyword"    , "script"                                 ; "script backup" searches scripts only, "script " lists them all
                 ),
                 "Recent", Map(
                     "Enabled"    , 1,
-                    "RecentCount", 0,                                       ; 空搜索框里显示几个最近打开的项目 (0 = 不显示, 默认只显示置顶的)
-                    "Pinned"     , []                                       ; 置顶到空搜索框的项目 (操作面板里 "置顶")
+                    "RecentCount", 0,                                       ; how many recently opened items the empty search box shows (0 = none; by default only the pinned ones)
+                    "Pinned"     , []                                       ; items pinned to the empty search box ("Pin" in the actions panel)
                 ),
                 "Windows", Map(
                     "Enabled"         , 1,
-                    "Keyword"         , "w",                                ; "w 标题" 只搜已打开的窗口, "w " 列出全部
-                    "InDefaultResults", 1                                   ; 直接输入时也显示标题匹配得好的窗口 (最多 3 个)
+                    "Keyword"         , "w",                                ; "w title" searches open windows only, "w " lists them all
+                    "InDefaultResults", 1                                   ; also show windows whose title matches well when typing (at most 3)
                 ),
                 "System", Map(
                     "Enabled"       , 1,
-                    "ConfirmActions", 1,                                    ; 关机/重启/注销/清空回收站前确认
-                    "SettingsPages" , 1,                                    ; 搜索 Windows 设置的页面 (显示、蓝牙、WLAN...)
-                    "Hidden"        , []                                    ; 在搜索结果里删除 (Ctrl+Del) 的系统命令的 Id
+                    "ConfirmActions", 1,                                    ; confirm before shutdown / restart / sign out / emptying the Recycle Bin
+                    "SettingsPages" , 1,                                    ; search the pages of Windows Settings (display, Bluetooth, WLAN...)
+                    "Hidden"        , []                                    ; Ids of system commands deleted from the results (Ctrl+Del)
                 )
             ),
             "Extensions", Map(
                 "QuickSwitch", Map(
                     "Enabled"          , 1,
                     "Hotkey"           , "^g",                              ; the jump hotkey: folder of the TC / Opus / Explorer window used last
-                    "MenuHotkey"       , "^+g",                             ; 文件夹菜单: 所有 TC 面板、资源管理器窗口、最近的文件夹
-                    "RecentFolders"    , 10,                                ; 菜单里列出几个最近的文件夹, 0 = 不列
-                    "PanelSearch"      , "folders",                         ; 面板搜索框: folders = 只搜文件夹, all = 文件夹和文件
-                    "ShowPanel"        , 1,                                 ; 对话框一出现就在下面显示文件夹面板 (和 Listary 一样), 点一下就跳过去
+                    "MenuHotkey"       , "^+g",                             ; folder menu: every TC panel, Explorer window and recent folder
+                    "RecentFolders"    , 10,                                ; how many recent folders the menu lists, 0 = none
+                    "PanelSearch"      , "folders",                         ; panel search box: folders = folders only, all = folders and files
+                    "ShowPanel"        , 1,                                 ; show the folder panel below a dialog as soon as it appears (as in Listary); one click jumps there
                     "AutoSwitch"       , 0,
                     "StandardDialogs"  , 1,                                 ; the standard Open / Save dialogs (ahk_class #32770)
                     "DialogWindows"    , [],                                ; dialogs programs draw themselves, e.g. "ahk_class Qt5QWindowIcon" (WPS)
@@ -474,7 +474,7 @@ class AppSettings {
                     "RenameWindows", ["ahk_class CabinetWClass", "ahk_class Progman", "ahk_class WorkerW", "ahk_class #32770", "ahk_class TTOTAL_CMD", "ahk_class TSTDTREEDLG", "ahk_class TCOMBOINPUT"],   ; TC: main window, dialogs, rename box
                     "AppendWindows", ["ahk_class TCmtEditForm", "ahk_exe Notepad4.exe"]
                 ),
-                "PTTools", Map()                                            ; 由 PTToolsWindow 自己补默认值
+                "PTTools", Map()                                            ; PTToolsWindow fills in its own defaults
             ),
             "Hotkeys", [                                                    ; examples: global, only in one program, only in ALTRun
                 Map("Key", "^!#v", "Action", "PastePlain", "WinTitle", ""),                         ; same key as PowerToys "Paste as plain text"
@@ -486,23 +486,23 @@ class AppSettings {
         )
     }
 
-    ; 默认的自定义命令: 每种类型都有, 让新用户看到能做什么 (已有的用户不受影响)
+    ; The default custom commands: one of each type, so new users see what they can do (existing users aren't affected)
     static _DefaultCommands() {
         commands := []
         for row in [
-            ; 文件 / 程序: 运行程序, 或打开文件; Arguments 附带参数
+            ; file / program: runs the program or opens the file; Arguments are passed along
             ["Notepad"             , "File"   , "notepad.exe"            , ""                                       , "np"],
             ["Edit hosts file"     , "File"   , "notepad.exe"            , "C:\Windows\System32\drivers\etc\hosts"  , "hosts"],
             ["Paint"               , "File"   , "mspaint.exe"            , ""                                       , ""],
-            ; 文件夹: 用文件管理器打开; 可以用 A_Desktop 等内置变量或 %UserProfile% 等环境变量
+            ; folder: opens in the file manager; built-in variables such as A_Desktop or environment variables such as %UserProfile% work
             ["Desktop"             , "Folder" , "A_Desktop"              , ""                                       , ""],
             ["Downloads"           , "Folder" , "%UserProfile%\Downloads", ""                                       , "dl"],
             ["ALTRun Folder"       , "Folder" , "A_ScriptDir"            , ""                                       , ""],
-            ["Documents subfolder" , "Folder" , "%UserProfile%\Documents\{query}", ""                               , "docs"],   ; {query}: "docs 文件夹名"
-            ; 命令行: 程序 + 参数
+            ["Documents subfolder" , "Folder" , "%UserProfile%\Documents\{query}", ""                               , "docs"],   ; {query}: "docs <folder name>"
+            ; command line: program + arguments
             ["IP Configuration"    , "Command", "cmd.exe"                , "/k ipconfig /all"                       , "ipconfig"],
             ["Ping"                , "Command", "cmd.exe"                , "/k ping {query}"                        , "ping"],     ; {query}: "ping 10.0.0.1"
-            ; 网址: 网页, 也可以是 ms-settings: 等系统链接
+            ; URL: a web page, or a system link such as ms-settings:
             ["ALTRun on GitHub"    , "Url"    , "https://github.com/zhugecaomao/ALTRun", ""                     , "altrun"],
             ["Google Maps"         , "Url"    , "https://www.google.com/maps/search/{query}", ""                 , "maps"],     ; {query}: "maps Changi Airport"
             ["Windows Update"      , "Url"    , "ms-settings:windowsupdate", ""                                  , ""]
@@ -511,7 +511,7 @@ class AppSettings {
         return commands
     }
 
-    ; 默认的文字片段: 日期、剪贴板、写邮件常用的几段 (输入 ;关键字 自动展开, 或在搜索窗口里搜名称)
+    ; The default snippets: dates, the clipboard and a few common email lines (type ;keyword to expand, or search the name in the search window)
     static _DefaultSnippets() {
         snippets := []
         for row in [

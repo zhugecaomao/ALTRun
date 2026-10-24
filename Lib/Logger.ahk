@@ -1,34 +1,34 @@
 ;===============================================================================
-; Logger.ahk - 轻量日志 (AutoHotkey v2)
+; Logger.ahk - a light logger (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 日志文件默认写到 %Temp%\ALTRun.log。
-; 启动时缓冲后批量落盘 (启动时一下子写几十条), 启动完成后 (Logger.Immediate) 每条马上写入:
-; 程序卡住被强制结束时, 日志里也能看到最后做到哪一步。警告和错误总是马上写入。
-; 每条日志一行 (CRLF), 消息里的换行换成 " | "。
+; The log file is %Temp%\ALTRun.log by default.
+; During start-up lines are buffered and written in batches (dozens at once); after start-up (Logger.Immediate) each line is written at once:
+; if the program hangs and is killed, the log still shows how far it got. Warnings and errors are always written at once.
+; One line per entry (CRLF); line breaks in a message become " | ".
 ;
-; 用法:
+; Usage:
 ;   Logger.Debug("xxx")  /  Logger.Warn("xxx")  /  Logger.Error("xxx")
-;   Logger.Flush()   ; 立即把缓冲区写盘, 一般不用手动调, 退出时会自动调用一次
-;   Logger.Close()   ; 关闭日志文件 (平时一直开着, 下次写入时自动重新打开), 退出时会自动调用一次
-;   Logger.Rotate()  ; 日志文件过大时截断保留一份 .old, 启动时自动调用一次
-;   start := Logger.Ms(), ..., Logger.Time("load index", start)   ; 记录耗时 "Perf: load index 12 ms"
-;   SetTimer(Logger.Watch("save usage", fn), ...)   ; 后台任务一次超过 SlowMs 时记 "Perf: slow save usage 80 ms"
+;   Logger.Flush()   ; writes the buffer now; rarely needed by hand, it is called once on exit
+;   Logger.Close()   ; closes the log file (normally kept open, reopened on the next write); called once on exit
+;   Logger.Rotate()  ; when the log is too big, keeps it as .old and starts a new one; called once at start-up
+;   start := Logger.Ms(), ..., Logger.Time("load index", start)   ; logs the time "Perf: load index 12 ms"
+;   SetTimer(Logger.Watch("save usage", fn), ...)   ; logs "Perf: slow save usage 80 ms" when one run of a background task exceeds SlowMs
 ;
-; 是否写盘由 Logger.Enabled 决定, App 启动时按设置 General.SaveLog 赋值。
+; Logger.Enabled decides whether anything is written; App sets it from General.SaveLog at start-up.
 ;===============================================================================
 
 class Logger {
     static File    := A_Temp "\ALTRun.log"
     static _buffer := []
-    static _file := "", _filePath := ""         ; 一直开着的日志文件 (见 _Open)
-    static _maxBuf := 60                        ; 攒够这么多条才写一次盘
+    static _file := "", _filePath := ""         ; the log file, kept open (see _Open)
+    static _maxBuf := 60                        ; write to disk once this many lines are buffered
     static Enabled := true
-    static Immediate := false                   ; true = 每条马上写盘 (App 启动完成后打开)
-    static TraceUntil := 0                      ; A_TickCount 在这之前时 Trace() 才写 (启动后的一小段时间)
+    static Immediate := false                   ; true = write each line at once (switched on when App has started)
+    static TraceUntil := 0                      ; Trace() only writes while A_TickCount is before this (a short time after start-up)
 
     static Debug(msg) => Logger._Write("DBG", msg)
 
-    ; 高精度的毫秒数 (QueryPerformanceCounter; A_TickCount 的精度只有 10 ~ 16 ms)
+    ; High-resolution milliseconds (QueryPerformanceCounter; A_TickCount is only accurate to 10 ~ 16 ms)
     static Ms() {
         static freq := 0
         if !freq
@@ -37,15 +37,15 @@ class Logger {
         return now * 1000 / freq
     }
 
-    ; 从 start (Logger.Ms()) 到现在的耗时写进日志, 返回毫秒数
+    ; Logs the time from start (Logger.Ms()) until now; returns the milliseconds
     static Time(label, start) {
         elapsed := Logger.Ms() - start
         if Logger.Enabled
             Logger._Write("DBG", "Perf: " label " " Round(elapsed) " ms")
         return elapsed
     }
-    ; 包一层计时 (给计时器用): 一次超过 SlowMs 时记一条 "Perf: slow <label> N ms", 找出偶尔卡一下的后台任务。
-    ; 期间被热键等打断时, 打断的时间也算在里面
+    ; Wraps a function with timing (for timers): a run over SlowMs logs "Perf: slow <label> N ms", to find background tasks that stall now and then.
+    ; Time spent in an interruption (a hotkey etc.) counts too
     static SlowMs := 50
     static Watch(label, fn) => (params*) => Logger._Watched(label, fn, params)
 
@@ -59,7 +59,7 @@ class Logger {
         }
     }
 
-    ; 更细的步骤 (呼出窗口的每一步、加载的图标...), 只在启动后的一小段时间里记, 平时不占日志
+    ; Finer steps (each step of showing the window, icons loaded...), only logged for a short time after start-up so they don't fill the log
     static Trace(msg) {
         if (Logger.Enabled && A_TickCount < Logger.TraceUntil)
             Logger._Write("DBG", msg)
@@ -70,14 +70,14 @@ class Logger {
     static _Write(level, msg) {
         if !Logger.Enabled
             return
-        msg := RegExReplace(msg, "\R+", " | ")                               ; 一条一行, 行尾统一 CRLF
+        msg := RegExReplace(msg, "\R+", " | ")                               ; one entry per line, always ending in CRLF
         Logger._buffer.Push(FormatTime(A_Now, "yyyy-MM-dd HH:mm:ss") " [" level "] " msg "`r`n")
         if (Logger.Immediate || level != "DBG" || Logger._buffer.Length >= Logger._maxBuf)
             Logger.Flush()
     }
 
-    ; 把缓冲区一次性追加到文件。退出前会自动调用一次(见 App.ahk 的 OnExit),
-    ; 但如果程序是被强制结束/崩溃的, 还没来得及 Flush 的那几条会丢失。
+    ; Appends the buffer to the file in one go. Called once before exit (see OnExit in App.ahk),
+    ; but if the program is killed or crashes, the lines not yet flushed are lost.
     static Flush() {
         if (Logger._buffer.Length = 0)
             return
@@ -88,15 +88,15 @@ class Logger {
         try {
             out := Logger._Open()
             out.Write(text)
-            handle := out.Handle                                               ; 读 Handle 时把写缓冲交给系统: 程序被强制结束也不丢
+            handle := out.Handle                                               ; reading Handle hands the write buffer to the system: nothing is lost if the program is killed
             return
         }
         Logger.Close()
         try FileAppend(text, Logger.File, "UTF-8")
     }
 
-    ; 日志文件一直开着: 每条都打开、关闭一次很慢 (旧电脑上杀毒软件每次关闭都要检查, 一条要 20 ~ 30 ms)。
-    ; 共享读写删除, 写着的时候也能用别的程序打开看; 换了 Logger.File 或文件被删掉时重新打开。
+    ; The log file stays open: opening and closing it for each line is slow (on old PCs antivirus checks every close, 20 ~ 30 ms per line).
+    ; Shared for read / write / delete, so other programs can open it while it is written; reopened when Logger.File changes or the file is deleted.
     static _Open() {
         if (Logger._file != "" && (Logger._filePath != Logger.File || !FileExist(Logger.File)))
             Logger.Close()
@@ -114,7 +114,7 @@ class Logger {
         Logger._file := "", Logger._filePath := ""
     }
 
-    ; 日志过大时截断, 防止无限增长。App 启动时调用一次。
+    ; Cuts the log when it gets too big, so it can't grow forever. App calls it once at start-up.
     static Rotate(maxBytes := 1048576) {
         Logger.Close()
         try {

@@ -1,10 +1,10 @@
-# 把 main 分支和所有标签同步到 Gitee 镜像仓库, 国内访问 / 克隆更快。
-# 需要先在仓库 Settings -> Secrets and variables -> Actions 里添加:
-#   GITEE_SSH_KEY   (Secret)   私钥; 对应的公钥加到 Gitee 的 个人设置 -> SSH 公钥 (https://gitee.com/profile/sshkeys)
-#                              (Gitee 的仓库部署公钥只能读, 不能推送)
-#   GITEE_REPO      (Variable) 可选, Gitee 上的 用户名/仓库名, 默认 zhugecaomao/ALTRun
-# 没有 GITEE_SSH_KEY 时什么也不做。
-# 发布工作流用 GITHUB_TOKEN 推送的提交和标签不会触发别的工作流, 所以另外每天定时同步一次。
+# Syncs the main branch and all tags to the Gitee mirror, for faster access / cloning in China.
+# First add in the repository's Settings -> Secrets and variables -> Actions:
+#   GITEE_SSH_KEY   (Secret)   the private key; add the matching public key under Gitee's Personal settings -> SSH keys (https://gitee.com/profile/sshkeys)
+#                              (Gitee's repository deploy keys are read-only and can't push)
+#   GITEE_REPO      (Variable) optional, user/repository on Gitee, default zhugecaomao/ALTRun
+# Does nothing without GITEE_SSH_KEY.
+# Commits and tags the release workflow pushes with GITHUB_TOKEN don't trigger other workflows, so it also syncs once a day on a schedule.
 name: Sync to Gitee
 
 on:
@@ -46,7 +46,7 @@ jobs:
           printf '%s\n' "$GITEE_SSH_KEY" > ~/.ssh/gitee
           chmod 600 ~/.ssh/gitee
           ssh-keyscan -t ed25519,rsa gitee.com >> ~/.ssh/known_hosts 2>/dev/null
-          # 从 GitHub 的机器连 Gitee 偶尔会断开 (Connection reset): 保持连接, 每次推送失败重试几次
+          # Connections from GitHub's machines to Gitee sometimes drop (Connection reset): keep the connection alive and retry each failed push a few times
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/gitee -o IdentitiesOnly=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=8"
           remote="git@gitee.com:${GITEE_REPO}.git"
           retry() {
@@ -59,7 +59,7 @@ jobs:
           }
           git fetch --tags origin
           retry git push --force "$remote" "refs/remotes/origin/main:refs/heads/main"
-          # 标签一个一个推, 只推 Gitee 上还没有或指向不同提交的; 一次推太多容易断开
+          # tags are pushed one by one, only those missing on Gitee or pointing to a different commit; pushing too many at once tends to disconnect
           retry git ls-remote --tags "$remote" > remote-tags.txt
           failed=0
           for tag in $(git tag --sort=creatordate); do

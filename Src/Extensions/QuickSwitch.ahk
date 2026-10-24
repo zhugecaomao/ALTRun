@@ -1,25 +1,25 @@
 ;===============================================================================
-; QuickSwitch.ahk - 打开/保存对话框路径快速跳转 (AutoHotkey v2)
+; QuickSwitch.ahk - quick folder jumps in open / save dialogs (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Like Listary's "Quick Switch": in an Open / Save dialog, the hotkey (Ctrl+G by default) jumps the dialog to the
 ; folder open in the file manager used last: Total Commander, Directory Opus or File Explorer (see FileManagerFolder).
 ; AutoSwitch = 1: switching from one of them to a dialog jumps automatically.
-; 文件夹面板 (ShowPanel, 默认打开, 和 Listary 的 Quick Switch 窗口一样): 对话框一出现, 下面就贴一个搜索框 +
-; 文件夹列表 (所有 TC 窗口的两个面板、资源管理器窗口、最近用过的文件夹), 点一下就跳过去, 不用记热键;
-; 搜索框还能搜索文件夹 (PanelSearch = all 时也搜文件, 选中文件跳到它所在的文件夹)。对话框不在前台时隐藏,
-; 回到对话框时刷新 (TC 里换了目录也能马上看到)。颜色跟随 ALTRun 的主题。
-; 热键 (MenuHotkey, 默认 Ctrl+Shift+G): 光标跳到面板的搜索框, 用键盘选择; 没有打开自动显示时临时显示面板。
+; The folder panel (ShowPanel, on by default, like Listary's Quick Switch window): as soon as a dialog appears, a search box +
+; folder list (both panels of every TC window, Explorer windows, recently used folders) sits below it; one click jumps there, no hotkey to remember;
+; the search box also searches folders (with PanelSearch = all, files too: choosing a file jumps to its folder). Hidden when the dialog isn't in front,
+; refreshed when back in the dialog (a folder change in TC shows right away). The colors follow ALTRun's theme.
+; Hotkey (MenuHotkey, default Ctrl+Shift+G): the caret jumps to the panel's search box to choose with the keyboard; shows the panel for the moment when automatic showing is off.
 ;
-; 设置 (ALTRun.json -> Extensions.QuickSwitch):
+; Settings (ALTRun.json -> Extensions.QuickSwitch):
 ;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / RecentFolders / ShowPanel / PanelSearch / AutoSwitch /
 ;   StandardDialogs (ahk_class #32770) / BrowseDialogs / DialogWindows / ExcludeWindows / AutoSwitchExclude
 ;   The window lists are arrays of window conditions (ahk_class / ahk_exe / part of the title)
 ;
-; 用法:
-;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    启动时
+; Usage:
+;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    at start-up
 ;   QuickSwitch.FolderOfWindow(hwnd)     current folder of a TC / Opus / Explorer window (read only, for "terminal here")
-;   QuickSwitch.MenuFolders()            面板里的文件夹 [{Path, Group, Tag}]
-;   QuickSwitch.RecentFolders(n)         最近用过的 n 个文件夹 (打开过的文件取所在的文件夹)
+;   QuickSwitch.MenuFolders()            the folders in the panel [{Path, Group, Tag}]
+;   QuickSwitch.RecentFolders(n)         the n most recently used folders (opened files count by their folder)
 ;===============================================================================
 
 class QuickSwitch {
@@ -50,13 +50,13 @@ class QuickSwitch {
         } catch as e {
             Logger.Error("QuickSwitch: cannot register hotkeys - " e.Message)
         }
-        OnMessage(0x100, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_KEYDOWN: 面板搜索框里的 ↑ ↓ Enter Esc
+        OnMessage(0x100, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_KEYDOWN: ↑ ↓ Enter Esc in the panel's search box
 
         SetTimer(Logger.Watch("quick switch watch", () => QuickSwitch._Watch()), 250)
     }
 
-    ; 用 WM_KEYDOWN 而不是热键: 中文输入法正在输入 (还没上屏) 时按键是 VK_PROCESSKEY, 不会被当成 Enter / Esc
-    ; 只比较记下的窗口句柄: 面板关掉之后控件对象已经销毁, 不能再读它们的 Hwnd
+    ; WM_KEYDOWN rather than a hotkey: while a Chinese IME is composing (not yet committed) keys are VK_PROCESSKEY and aren't taken for Enter / Esc
+    ; compare only the window handles noted: after the panel closes its control objects are destroyed and their Hwnd can't be read
     static _OnKeyDown(wParam, lParam, msg, hwnd) {
         if !(hwnd && (hwnd = QuickSwitch._searchHwnd || hwnd = QuickSwitch._listHwnd))
             return
@@ -70,10 +70,10 @@ class QuickSwitch {
         return 0
     }
 
-    ; 每 250 ms: AutoSwitch 时从 TC 切到对话框自动跳转; 显示 / 隐藏 / 摆放文件夹面板
+    ; Every 250 ms: with AutoSwitch, jump when switching from TC to the dialog; show / hide / position the folder panel
     static _Watch() {
-        if QuickSwitch.PanelActive() {                                      ; 正在面板的搜索框里输入: 对话框和面板都保持原样
-            if !WinExist("ahk_id " QuickSwitch._panelFor)                   ; 对话框已经关掉 (程序自己关的): 面板也关掉
+        if QuickSwitch.PanelActive() {                                      ; typing in the panel's search box: the dialog and panel stay as they are
+            if !WinExist("ahk_id " QuickSwitch._panelFor)                   ; the dialog was closed (by its program): close the panel too
                 QuickSwitch.HidePanel()
             return
         }
@@ -81,7 +81,7 @@ class QuickSwitch {
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasManager && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
             QuickSwitch.SyncFileManagerPath(true)
         QuickSwitch._lastWasManager := QuickSwitch.IsFileManager(WinExist("A"))
-        if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; 关掉了自动显示时, 按热键临时打开的面板也要跟着对话框
+        if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
             QuickSwitch._UpdatePanel(isDialog)
     }
 
@@ -89,7 +89,7 @@ class QuickSwitch {
 
     static _PanelEnabled() => QuickSwitch.Options.Has("ShowPanel") && QuickSwitch.Options["ShowPanel"]
 
-    ; 热键 (MenuHotkey, 默认 Ctrl+Shift+G): 光标跳到面板的搜索框, 用键盘选择; 没有打开自动显示时临时显示面板
+    ; Hotkey (MenuHotkey, default Ctrl+Shift+G): the caret jumps to the panel's search box to choose with the keyboard; shows the panel for the moment when automatic showing is off
     static FocusPanel() {
         dialog := WinExist("A")
         if (!IsObject(QuickSwitch._panel) || QuickSwitch._panelFor != dialog) {
@@ -105,16 +105,16 @@ class QuickSwitch {
     }
 
     ;---------------------------------------------------------------------------
-    ; 文件夹面板 (和 Listary 的 Quick Switch 窗口一样): 贴在对话框下面, 和对话框一样宽;
-    ; 上面是搜索框 (先过滤列表, 再用 Everything / 内置索引找文件夹和文件), 下面是列表。
-    ; 点一项或在搜索框里按 Enter 就跳过去 (文件见 PickFile); Esc 回到对话框
+    ; The folder panel (like Listary's Quick Switch window): attached below the dialog, as wide as it;
+    ; the search box on top (filters the list first, then finds folders and files with Everything / the built-in index), the list below.
+    ; Clicking an item or Enter in the search box jumps there (files: see PickFile); Esc goes back to the dialog
     ;---------------------------------------------------------------------------
     static _UpdatePanel(isDialog) {
         dialog := 0
         try dialog := isDialog ? WinGetID("A") : 0
         if !dialog
             return QuickSwitch.HidePanel()
-        if (dialog != QuickSwitch._panelFor) {                              ; 新的对话框, 或者从别的窗口切回来: 重新列出文件夹
+        if (dialog != QuickSwitch._panelFor) {                              ; a new dialog, or back from another window: list the folders again
             if !QuickSwitch._PanelEnabled()
                 return QuickSwitch.HidePanel()
             QuickSwitch._BuildPanel(dialog)
@@ -122,14 +122,14 @@ class QuickSwitch {
         QuickSwitch._PlacePanel(dialog)
     }
 
-    ; 正在面板的搜索框里输入 (面板是前台窗口)
+    ; typing in the panel's search box (the panel is the foreground window)
     static PanelActive(*) => IsObject(QuickSwitch._panel) && WinActive("ahk_id " QuickSwitch._panel.Hwnd)
 
     static HidePanel() {
         if IsObject(QuickSwitch._panel)
             try QuickSwitch._panel.Destroy()
         QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := ""
-        QuickSwitch._panelSearch := "", QuickSwitch._panelList := "", QuickSwitch._panelLine := ""   ; 控件已经销毁, 不再引用
+        QuickSwitch._panelSearch := "", QuickSwitch._panelList := "", QuickSwitch._panelLine := ""   ; the controls are destroyed: no more references
         QuickSwitch._searchHwnd := 0, QuickSwitch._listHwnd := 0
     }
 
@@ -141,26 +141,26 @@ class QuickSwitch {
         QuickSwitch._panelBase := QuickSwitch.MenuFolders(false)
         rect := QuickSwitch._FrameRect(dialog)
         width := QuickSwitch.PanelWidthFor(IsObject(rect) ? rect.W : 600)
-        colors := QuickSwitch.PanelColors()                                 ; 跟随 ALTRun 的主题 (浅色 / 深色...)
-        ; -DPIScale: 面板和对话框一样宽, 宽度是对话框的实际像素; 行高也是量出来的像素。让 AHK 再按 DPI 放大一次的话,
-        ; 150% 缩放时面板会比对话框宽一半, 下面多出一片空白。固定的边距用 Win.Scale 换算
+        colors := QuickSwitch.PanelColors()                                 ; follows ALTRun's theme (light / dark...)
+        ; -DPIScale: the panel is as wide as the dialog, in the dialog's real pixels; the row height is measured in pixels too. Letting AHK scale by DPI again
+        ; would make the panel half again as wide as the dialog at 150%, with an empty area below. Fixed margins are converted with Win.Scale
         panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border -DPIScale", "ALTRun Quick Switch")
         panel.MarginX := 0, panel.MarginY := 0, panel.BackColor := colors.Background
         panel.SetFont("s10 c" colors.Text, QuickSwitch._FontName())
         search := panel.AddEdit("x" Win.Scale(10) " y" Win.Scale(8) " w" (width - Win.Scale(20)) " r1 -Multi -E0x200 Background" colors.Background)
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
-        DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: 灰色提示文字
+        DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: gray cue text
         search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
-        line := panel.AddText("x0 y+" Win.Scale(6) " w" width " h1 Background" colors.Separator)   ; 搜索框和列表之间的分隔线
+        line := panel.AddText("x0 y+" Win.Scale(6) " w" width " h1 Background" colors.Separator)   ; separator between the search box and the list
         panel.SetFont("s9 c" colors.Text)
-        list := panel.AddListView("x0 y+" Win.Scale(2) " w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 Background" colors.Background, ["Name", "Folder", "From"])   ; 0x400 = 路径太长时悬停显示完整路径
+        list := panel.AddListView("x0 y+" Win.Scale(2) " w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 Background" colors.Background, ["Name", "Folder", "From"])   ; 0x400 = the full path on hover when it is too long
         icons := IL_Create(2)
-        IL_Add(icons, "shell32.dll", 4)                                     ; 1 = 文件夹
-        IL_Add(icons, "shell32.dll", 1)                                     ; 2 = 文件
+        IL_Add(icons, "shell32.dll", 4)                                     ; 1 = folder
+        IL_Add(icons, "shell32.dll", 1)                                     ; 2 = file
         list.SetImageList(icons)
         list.OnEvent("Click", (ctrl, row) => QuickSwitch._PanelJump(row))
-        list.OnNotify(-12, (ctrl, lParam) => QuickSwitch._OnCustomDraw(lParam))   ; NM_CUSTOMDRAW: 选中行和灰色文字用主题的颜色
-        list.Add("Icon1", "X")                                              ; 先放一行才量得出行高 (LVM_APPROXIMATEVIEWRECT)
+        list.OnNotify(-12, (ctrl, lParam) => QuickSwitch._OnCustomDraw(lParam))   ; NM_CUSTOMDRAW: the selected row and gray text in the theme's colors
+        list.Add("Icon1", "X")                                              ; the row height can only be measured with one row in (LVM_APPROXIMATEVIEWRECT)
         QuickSwitch._rowTop := SendMessage(0x1040, 1, 0, list) >> 16
         QuickSwitch._rowHeight := (SendMessage(0x1040, 2, 0, list) >> 16) - QuickSwitch._rowTop
         list.Delete()
@@ -168,8 +168,8 @@ class QuickSwitch {
         QuickSwitch._panelLine := line, QuickSwitch._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitch._panelColors := colors
         QuickSwitch._searchHwnd := search.Hwnd, QuickSwitch._listHwnd := list.Hwnd
         if colors.Dark
-            try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; 深色主题: 滚动条和选中行也用深色
-        try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: 小圆角
+            try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; dark theme: dark scroll bars and selected row too
+        try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: small rounded corners
         QuickSwitch._ShowFolders(QuickSwitch._panelBase)
         if WinExist("ahk_class dopus.lister")                               ; reading Opus takes a moment: show the panel first
             SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, dialog), -1)
@@ -185,10 +185,10 @@ class QuickSwitch {
 
     static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
 
-    ; 面板宽度 = 对话框宽度 (420 ~ 1000, 按 DPI 换算; 都是实际像素)
+    ; Panel width = dialog width (420 ~ 1000, converted by DPI; all real pixels)
     static PanelWidthFor(dialogWidth) => Max(Win.Scale(420), Min(dialogWidth, Win.Scale(1000)))
 
-    ; 面板的颜色: 用 ALTRun 当前主题的背景 / 文字 / 分隔线颜色; 主题还没载入时用浅色
+    ; The panel's colors: background / text / separator colors of ALTRun's current theme; light while no theme is loaded yet
     static PanelColors() {
         get(key, fallback) => ((value := ThemeManager.Get(key)) != "") ? value : fallback
         background := get("Background", "FFFFFF")
@@ -197,13 +197,13 @@ class QuickSwitch {
               , Dark: QuickSwitch.IsDarkColor(background)}
     }
 
-    ; "RRGGBB" -> Windows 的 COLORREF (0x00BBGGRR)
+    ; "RRGGBB" -> a Windows COLORREF (0x00BBGGRR)
     static ColorRef(hex) {
         value := Integer("0x" hex)
         return ((value & 0xFF) << 16) | (value & 0xFF00) | ((value >> 16) & 0xFF)
     }
 
-    ; 每个格子自己定颜色: 选中行用主题的选中色, 路径和来源用灰色 (NMLVCUSTOMDRAW)
+    ; Each cell sets its own colors: the selected row in the theme's selection color, paths and sources in gray (NMLVCUSTOMDRAW)
     static _OnCustomDraw(lParam) {
         static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001, CDDS_SUBITEMPREPAINT := 0x30001
         static CDRF_NEWFONT := 0x2, CDRF_NOTIFYITEMDRAW := 0x20, CDRF_NOTIFYSUBITEMDRAW := 0x20
@@ -220,7 +220,7 @@ class QuickSwitch {
         column := NumGet(lParam, x64 ? 88 : 56, "Int")
         selected := SendMessage(0x102C, row, 0x2, QuickSwitch._panelList) & 0x2   ; LVM_GETITEMSTATE / LVIS_SELECTED
         stateOffset := x64 ? 64 : 40
-        NumPut("UInt", NumGet(lParam, stateOffset, "UInt") & ~0x11, lParam, stateOffset)   ; 去掉 CDIS_SELECTED / CDIS_FOCUS, 不画系统的蓝色高亮
+        NumPut("UInt", NumGet(lParam, stateOffset, "UInt") & ~0x11, lParam, stateOffset)   ; remove CDIS_SELECTED / CDIS_FOCUS so the system's blue highlight isn't drawn
         text := selected ? (column ? colors.SelectedSubtitle : colors.SelectedText) : (column ? colors.Subtitle : colors.Text)
         NumPut("UInt", QuickSwitch.ColorRef(text), lParam, x64 ? 80 : 48)
         NumPut("UInt", QuickSwitch.ColorRef(selected ? colors.Selected : colors.Background), lParam, x64 ? 84 : 52)
@@ -234,7 +234,7 @@ class QuickSwitch {
         return "Segoe UI"
     }
 
-    ; 对话框的宽度改了: 面板跟着改宽度
+    ; the dialog's width changed: the panel follows
     static _ResizePanel(dialogWidth) {
         width := QuickSwitch.PanelWidthFor(dialogWidth)
         QuickSwitch._panelDialogW := dialogWidth
@@ -244,7 +244,7 @@ class QuickSwitch {
         QuickSwitch._panelSearch.Move(, , width - Win.Scale(20))
         QuickSwitch._panelLine.Move(, , width)
         QuickSwitch._panelList.Move(, , width)
-        QuickSwitch._ShowFolders(QuickSwitch._panelFolders)                ; 重新算列宽, 并调整面板大小和位置
+        QuickSwitch._ShowFolders(QuickSwitch._panelFolders)                ; Recomputes the column widths and adjusts the panel's size and position
     }
     static _searchTimer := () => QuickSwitch._SearchPanel()
 
@@ -261,7 +261,7 @@ class QuickSwitch {
         return NumGet(rect, 8, "Int")
     }
 
-    ; 列表: 文件夹名 | 完整路径 | 来源 (TC / 资源管理器 / 最近 / 搜索)
+    ; List: folder name | full path | source (TC / Explorer / recent / search)
     static _ShowFolders(folders) {
         list := QuickSwitch._panelList
         if !IsObject(list)
@@ -278,20 +278,20 @@ class QuickSwitch {
         if folders.Length
             list.Modify(1, "Select Focus")
         list.Opt("+Redraw")
-        rows := Max(3, Min(folders.Length, QuickSwitch.PanelRows))           ; 高度跟着内容 (3 ~ PanelRows 行)
+        rows := Max(3, Min(folders.Length, QuickSwitch.PanelRows))           ; the height follows the content (3 ~ PanelRows rows)
         list.Move(, , , QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + Win.Scale(4))
-        list.ModifyCol(3, "AutoHdr")                                        ; 最后一列补满到右边, 选中行的颜色铺满整行; 改完高度 (该有滚动条时已经有了) 再算, 不会多出横向滚动条
+        list.ModifyCol(3, "AutoHdr")                                        ; the last column fills to the right so the selected row's color spans the row; computed after the height is set (with a scroll bar where needed), so no horizontal scroll bar appears
         ; The last column is never narrower than its (hidden) header text: with no rows, or only short tags, it can stick out
         ; past the right edge and bring up a horizontal scrollbar. Take the difference off the path column
         if (over := QuickSwitch.ColumnsWidth(list) - QuickSwitch.ClientWidth(list)) > 0
             list.ModifyCol(2, Max(0, SendMessage(0x101D, 1, 0, list) - over))
-        if DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) {     ; 搜索结果变了: 重新调整大小和位置
+        if DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) {     ; The search results changed: adjust the size and position again
             QuickSwitch._panelPos := ""
             QuickSwitch._PlacePanel(QuickSwitch._panelFor)
         }
     }
 
-    ; "D:\Projects\Tower" -> "Tower"; 磁盘根目录显示 "D:\"
+    ; "D:\Projects\Tower" -> "Tower"; drive roots show as "D:\"
     static FolderName(folder) {
         trimmed := RTrim(folder, "\")
         if (trimmed ~= "^[A-Za-z]:$")
@@ -300,7 +300,7 @@ class QuickSwitch {
         return (name != "") ? name : folder
     }
 
-    ; 搜索框里的文字: 先过滤列表 (路径包含每个词), 再加上搜到的文件夹和文件 (Everything 或内置索引, 最多 30 个)
+    ; The text in the search box: filter the list first (paths containing every word), then add the folders and files found (Everything or the built-in index, at most 30)
     static _SearchPanel() {
         if !IsObject(QuickSwitch._panelSearch)
             return
@@ -308,8 +308,8 @@ class QuickSwitch {
         QuickSwitch._ShowFolders(QuickSwitch.FilterFolders(QuickSwitch._panelBase, term, term = "" ? [] : QuickSwitch._FindItems(term)))
     }
 
-    ; [{Path, IsFolder}], 文件夹在前。文件夹单独搜 (和文件一起搜时, 名称完全相同的文件夹可能因为不是最近修改的而排不进来);
-    ; PanelSearch = "folders" 时只搜文件夹
+    ; [{Path, IsFolder}], folders first. Folders are searched separately (searched together with files, a folder with exactly the name might not make it in for not being recently modified);
+    ; PanelSearch = "folders" searches folders only
     static _FindItems(term) {
         found := [], seen := Map()
         try {
@@ -324,8 +324,8 @@ class QuickSwitch {
         return found
     }
 
-    ; 过滤 base (不区分大小写, 每个词都要出现在路径里), 再把 extra 里没有重复的加在后面:
-    ; extra 的每一项是路径 (文件夹) 或 {Path, IsFolder}; 文件夹的来源标 "搜索", 文件标 "文件"
+    ; Filters base (case-insensitive, every word must appear in the path), then appends the items of extra that aren't duplicates:
+    ; each item of extra is a path (folder) or {Path, IsFolder}; folders get the source "search", files "file"
     static FilterFolders(base, term, extra) {
         result := [], seen := Map(), words := StrSplit(Trim(term), " ")
         for entry in base {
@@ -358,7 +358,7 @@ class QuickSwitch {
             QuickSwitch.PickFile(entry.Path, dialog)
         else
             QuickSwitch.SetDialogPath(RTrim(entry.Path, "\") "\", dialog)
-        if (IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value != "") {   ; 跳过去之后清空搜索, 列表恢复原样
+        if (IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value != "") {   ; after jumping, clear the search so the list is back as it was
             QuickSwitch._panelSearch.Value := ""
             QuickSwitch._ShowFolders(QuickSwitch._panelBase)
         }
@@ -374,7 +374,7 @@ class QuickSwitch {
         }
     }
 
-    ; 搜索框里的按键: ↑ ↓ 选择, Enter 跳转, Esc 回到对话框
+    ; Keys in the search box: ↑ ↓ choose, Enter jumps, Esc goes back to the dialog
     static PanelKey(key) {
         list := QuickSwitch._panelList
         if !IsObject(list)
@@ -401,19 +401,19 @@ class QuickSwitch {
             return QuickSwitch.HidePanel()
         if (QuickSwitch._panelDialogW && rect.W != QuickSwitch._panelDialogW)
             return QuickSwitch._ResizePanel(rect.W)
-        if !QuickSwitch._panelPos                                           ; 第一次显示或大小变了: 先按内容算出大小
+        if !QuickSwitch._panelPos                                           ; first showing, or the size changed: compute the size from the content first
             QuickSwitch._panel.Show(DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) ? "NA AutoSize" : "NA Hide AutoSize")
         QuickSwitch._panel.GetPos(, , &panelW, &panelH)
         area := Win.WorkAreaAt(rect.X + rect.W // 2, rect.Y + rect.H // 2)
         pos := QuickSwitch.PanelPosition(rect.X, rect.Y, rect.W, rect.H, panelW, panelH, area)
         key := pos.X "," pos.Y
-        if (key != QuickSwitch._panelPos) {                                 ; 对话框移动了才重新摆
+        if (key != QuickSwitch._panelPos) {                                 ; reposition only when the dialog moved
             QuickSwitch._panel.Show("NA x" pos.X " y" pos.Y)
             QuickSwitch._panelPos := key
         }
     }
 
-    ; 窗口看得见的边框 (Win10/11 窗口外面还有一圈看不见的调整大小的边框, WinGetPos 包括它)
+    ; the window's visible frame (Win10/11 windows have an invisible resize border around them, which WinGetPos includes)
     static _FrameRect(hwnd) {
         rect := Buffer(16, 0)
         if !DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16) {   ; DWMWA_EXTENDED_FRAME_BOUNDS
@@ -428,8 +428,8 @@ class QuickSwitch {
         return ""
     }
 
-    ; 面板的位置 (和 Listary 一样): 对话框正下方, 左边对齐; 下面放不下时放在对话框上方;
-    ; 上下都放不下时贴在对话框里面的底部
+    ; Panel position (as in Listary): right below the dialog, left-aligned; above the dialog when there is no room below;
+    ; inside the dialog at its bottom when there is room neither above nor below
     static PanelPosition(x, y, w, h, panelW, panelH, area) {
         left := Max(area.Left, Min(x, area.Right - panelW))
         if (y + h + panelH <= area.Bottom)
@@ -439,7 +439,7 @@ class QuickSwitch {
         return {X: left, Y: Max(area.Top, area.Bottom - panelH)}
     }
 
-    ; 只认真正的打开/保存文件对话框 (有文件名输入框 + 文件列表 + 按钮或路径栏)
+    ; Only real open / save file dialogs count (a file name box + a file list + buttons or an address bar)
     static IsFileDialog(*) {
         browse := QuickSwitch.Options.Has("BrowseDialogs") && QuickSwitch.Options["BrowseDialogs"]
         listed := WinActive("ahk_group ALTRunDialogs")
@@ -456,9 +456,9 @@ class QuickSwitch {
         return listed && QuickSwitch.LooksLikeFileDialog(winClass, controls, title)
     }
 
-    ; 按窗口的控件判断 (和系统语言无关)。#32770 是系统对话框: 要有资源管理器的文件视图才算,
-    ; 只有普通列表的 (例如 "系统信息" msinfo32 的主窗口, 有查找框、列表和按钮) 不算。
-    ; 其它程序 (偏好设置里加的 "其它对话框") 有普通列表也算; 读不到控件的 (Qt 等) 按标题判断
+    ; Decided by the window's controls (independent of the system language). #32770 is a system dialog: it needs Explorer's file view to count;
+    ; one with only a plain list (e.g. the main window of "System Information" msinfo32, with a find box, a list and buttons) doesn't.
+    ; Other programs ("other dialogs" added in Preferences) count with a plain list too; those whose controls can't be read (Qt etc.) are decided by title
     static LooksLikeFileDialog(winClass, controls, title := "") {
         if !controls.Length
             return RegExMatch(title, "i)(open|save|select|import|export|browse|打开|另存|选择|导入|导出)") > 0
@@ -538,18 +538,18 @@ class QuickSwitch {
         QuickSwitch.SetDialogPath(RTrim(manager.Path, "\") "\")             ; with a trailing backslash: AutoCAD and others need it
     }
 
-    ; Total Commander 面板的文件夹: 用 TC 的 WM_COPYDATA 接口直接问 (TC 8.0 起支持), 不碰剪贴板。
-    ; hwnd 为 0 时取最前面的 TC 窗口; otherPanel = true 时取另一个面板
+    ; The folder of a Total Commander panel: asked directly through TC's WM_COPYDATA interface (since TC 8.0), without touching the clipboard.
+    ; hwnd = 0 takes the frontmost TC window; otherPanel = true takes the other panel
     static TotalCmdFolder(hwnd := 0, otherPanel := false) {
         if !(hwnd := hwnd ? hwnd : WinExist("ahk_class TTOTAL_CMD"))
             return ""
         folder := RTrim(QuickSwitch.TotalCmdAsk(hwnd, otherPanel ? "TP" : "SP"), "\")
-        return (folder ~= "^([A-Za-z]:|\\\\)") ? folder : ""               ; 只要真正的路径 (不要 FTP、压缩包里面等)
+        return (folder ~= "^([A-Za-z]:|\\\\)") ? folder : ""               ; only real paths (no FTP, inside archives etc.)
     }
 
-    ; 发 WM_COPYDATA (dwData = "GW", 内容是 ANSI 的命令) 问 TC, TC 马上用 WM_COPYDATA (dwData = "RW", UTF-16)
-    ; 回复给 wParam 里的窗口。命令: A = 当前是哪一边 (L / R); 两个字母: 第一个 L 左 / R 右 / S 当前 / T 另一个,
-    ; 第二个 P 路径 / C 文件数 / I 光标位置 / N 光标下的文件名。TC 没有回复时返回 ""
+    ; Sends WM_COPYDATA (dwData = "GW", an ANSI command) to TC, which replies at once with WM_COPYDATA (dwData = "RW", UTF-16)
+    ; to the window in wParam. Commands: A = which side is active (L / R); two letters: first L left / R right / S active / T the other,
+    ; second P path / C file count / I caret position / N file name under the caret. "" if TC doesn't reply
     static _tcWaiting := false, _tcReply := "", _tcListening := false
     static TotalCmdAsk(hwnd, command, timeoutMs := 500) {
         if !QuickSwitch._tcListening {
@@ -564,25 +564,25 @@ class QuickSwitch {
         NumPut("Ptr", request.Ptr, copyData, A_PtrSize * 2)
         QuickSwitch._tcReply := "", QuickSwitch._tcWaiting := true, accepted := 0
         DllCall("SendMessageTimeoutW", "Ptr", hwnd, "UInt", 0x4A, "Ptr", A_ScriptHwnd, "Ptr", copyData.Ptr
-              , "UInt", 2, "UInt", timeoutMs, "UPtr*", &accepted)                 ; 2 = SMTO_ABORTIFHUNG: TC 卡住时不等
-        QuickSwitch._tcWaiting := false                                         ; TC 在处理这条消息时就回复了, 不用另外等
+              , "UInt", 2, "UInt", timeoutMs, "UPtr*", &accepted)                 ; 2 = SMTO_ABORTIFHUNG: don't wait when TC hangs
+        QuickSwitch._tcWaiting := false                                         ; TC replies while handling this message, so no extra wait
         return QuickSwitch._tcReply
     }
 
     static _OnTotalCmdReply(wParam, lParam, msg, hwnd) {
         if (!QuickSwitch._tcWaiting || NumGet(lParam, 0, "UPtr") != Ord("R") + 256 * Ord("W"))
-            return                                                              ; 不是在等的回复: 交给别的处理 (Everything)
+            return                                                              ; not the reply waited for: leave it to other handlers (Everything)
         size := NumGet(lParam, A_PtrSize, "UInt"), data := NumGet(lParam, A_PtrSize * 2, "Ptr")
-        reply := (data && size >= 2) ? StrGet(data, size // 2, "UTF-16") : ""  ; 到结尾的 0 为止
+        reply := (data && size >= 2) ? StrGet(data, size // 2, "UTF-16") : ""  ; up to the terminating 0
         QuickSwitch._tcReply := reply, QuickSwitch._tcWaiting := false
         return true
     }
 
     ;---------------------------------------------------------------------------
-    ; 面板里的文件夹
+    ; The folders in the panel
     ;---------------------------------------------------------------------------
-    ; [{Path, Group: "open" / "recent", Tag}]: 每个 TC 窗口的当前面板和另一个面板、每个资源管理器窗口、
-    ; 最近的文件夹 (RecentFolders 个), 去掉重复的
+    ; [{Path, Group: "open" / "recent", Tag}]: the active and other panel of each TC window, each Explorer window,
+    ; recent folders (RecentFolders of them), without duplicates
     ; opus = false: without Directory Opus (the panel adds those a moment later, see _AddDOpusFolders)
     static MenuFolders(opus := true) {
         list := [], seen := Map()
@@ -636,7 +636,7 @@ class QuickSwitch {
         return dir
     }
 
-    ; 资源管理器窗口当前的文件夹; hwnd 为 0 时取最前面的资源管理器窗口
+    ; The current folder of an Explorer window; hwnd = 0 takes the frontmost Explorer window
     static ExplorerFolder(hwnd := 0) {
         if !hwnd
             hwnd := WinExist("ahk_class CabinetWClass")
@@ -744,21 +744,21 @@ class QuickSwitch {
         return tabs
     }
 
-    ; 在对话框里选中一个文件: 打开和保存对话框都一样, 跳到它所在的文件夹 (不替用户打开或保存)
+    ; Choosing a file in a dialog: for open and save dialogs alike, jump to its folder (without opening or saving for the user)
     static PickFile(filePath, dialog := 0) {
         SplitPath(filePath, , &dir)
         if (dir != "")
             QuickSwitch.SetDialogPath(RTrim(dir, "\") "\", dialog)
     }
 
-    ; 文件名框里原来是普通的文件名时才填回去 (空的、路径、*.txt 这样的筛选条件不填)
+    ; fill the old name back only when the file name box held a normal file name (not when empty, a path or a filter like *.txt)
     static ShouldRestoreName(saved) {
         saved := Trim(saved)
         return saved != "" && !RegExMatch(saved, "[\\/:*?]")
     }
 
-    ; dialog: 要跳转的对话框 (默认是当前窗口)。模拟键盘输入之前确认它是前台窗口,
-    ; 否则文字会打到别的窗口里 (例如切回对话框失败、面板还在前台)
+    ; dialog: the dialog to jump in (the current window by default). Before simulating keyboard input, make sure it is the foreground window,
+    ; otherwise the text would go to another window (e.g. switching back to the dialog failed and the panel is still in front)
     static SetDialogPath(folder, dialog := 0) {
         if (folder = "" || !FileExist(folder))
             return

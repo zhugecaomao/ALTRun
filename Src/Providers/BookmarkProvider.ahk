@@ -1,13 +1,13 @@
 ;===============================================================================
-; BookmarkProvider.ahk - 浏览器书签 (AutoHotkey v2)
+; BookmarkProvider.ahk - browser bookmarks (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 Alfred 的 Web Bookmarks 一样: 直接输入书签名称就能找到 (InDefaultResults, 排在应用和命令后面),
-; "bm 关键词" (Keyword) 只搜书签。Enter 用默认浏览器打开, Alt+Enter 复制网址。
-; 读 Chromium 系浏览器 (Chrome、Edge、Brave、Vivaldi) 每个用户配置 (Default、Profile 1...) 的
-; Bookmarks 文件 (JSON)。Firefox 的书签存在 SQLite 数据库里, 读不了。
-; 启动时读一次; 之后每 30 秒在后台看一下文件有没有变 (修改时间), 变了再重新读 (不在打字时读, 读一次要 20 ~ 30 ms)。
+; Like Alfred's Web Bookmarks: typing a bookmark's name finds it (InDefaultResults, after applications and commands),
+; "bm word" (Keyword) searches bookmarks only. Enter opens in the default browser, Alt+Enter copies the URL.
+; Reads the Bookmarks file (JSON) of every profile (Default, Profile 1...) of Chromium browsers (Chrome, Edge, Brave, Vivaldi).
+; Firefox keeps its bookmarks in an SQLite database, which can't be read.
+; Read once at start-up; then every 30 s a background check whether the files changed (modified time) reads them again (not while typing; one read takes 20 ~ 30 ms).
 ;
-; 设置 (ALTRun.json -> Features.Bookmarks): Enabled / Keyword / InDefaultResults
+; Settings (ALTRun.json -> Features.Bookmarks): Enabled / Keyword / InDefaultResults
 ;===============================================================================
 
 class BookmarkProvider {
@@ -19,7 +19,7 @@ class BookmarkProvider {
 
     static Init() {
         BookmarkProvider.Load()
-        SetTimer(Logger.Watch("bookmarks refresh", () => BookmarkProvider._RefreshIfChanged()), 30000)         ; 在后台看书签文件有没有变, 不占用打字时的搜索
+        SetTimer(Logger.Watch("bookmarks refresh", () => BookmarkProvider._RefreshIfChanged()), 30000)         ; check the bookmark files in the background, not during searches while typing
     }
 
     static Search(query) {
@@ -32,7 +32,7 @@ class BookmarkProvider {
         } else if !options["InDefaultResults"] || StrLen(query.Text) < 2 {
             return []
         }
-        if !BookmarkProvider._checked                                       ; 启动时书签是关着的, 后来才打开
+        if !BookmarkProvider._checked                                       ; bookmarks were off at start-up and switched on later
             BookmarkProvider.Init()
         needle := StrLower(Trim(term))
         results := []
@@ -46,13 +46,13 @@ class BookmarkProvider {
             bookmark := BookmarkProvider.Items[index]
             results.Push(ResultItem(bookmark.Title, bookmark.Url, {
                 Kind: "url", Arg: bookmark.Url, Icon: "url:", Uid: "bookmark:" bookmark.Url,
-                Score: scores[index] - (exclusive ? 0 : 12), Exclusive: exclusive     ; 默认结果里排在应用和命令后面
+                Score: scores[index] - (exclusive ? 0 : 12), Exclusive: exclusive     ; in the default results after applications and commands
             }))
         }
         return results
     }
 
-    ; 所有浏览器的所有配置里的 Bookmarks 文件
+    ; The Bookmarks files of every profile of every browser
     static Files() {
         files := []
         for browser in BookmarkProvider.Browsers {
@@ -72,12 +72,12 @@ class BookmarkProvider {
             try {
                 fileStamp := bookmarkFile[2] FileGetTime(bookmarkFile[2], "M") "|"
                 for bookmark in BookmarkProvider.ParseFile(FileRead(bookmarkFile[2], "UTF-8"))
-                    if !seen.Has(bookmark.Url) {                            ; 几个浏览器都有的书签只留一条
+                    if !seen.Has(bookmark.Url) {                            ; a bookmark several browsers have is kept once
                         seen[bookmark.Url] := true
                         bookmark.Browser := bookmarkFile[1]
                         items.Push(bookmark)
                     }
-                stamp .= fileStamp                                          ; 读成功了才记下: 浏览器正在写文件时读失败, 下次再读
+                stamp .= fileStamp                                          ; noted only after a successful read: reading fails while the browser is writing the file, so read again next time
             } catch as e {
                 Logger.Error("BookmarkProvider: " bookmarkFile[2] " - " e.Message)
             }
@@ -86,7 +86,7 @@ class BookmarkProvider {
         Logger.Debug("BookmarkProvider: " items.Length " bookmarks")
     }
 
-    ; Bookmarks 文件 (JSON) -> [{Title, Url, Keys}], 只要 http / https 网址
+    ; Bookmarks file (JSON) -> [{Title, Url, Keys}], only http / https URLs
     static ParseFile(text) {
         data := JSON.Parse(text)
         list := []

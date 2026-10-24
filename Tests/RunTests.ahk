@@ -82,13 +82,13 @@
 #Include %A_ScriptDir%\Suites\ExtensionTests.ahk
 #Include %A_ScriptDir%\Suites\ProjectTests.ahk
 
-OnError((err, mode) => TestRunner.OnUncaught(err, mode))                                             ; 运行错误时输出并退出, 不弹对话框卡住
+OnError((err, mode) => TestRunner.OnUncaught(err, mode))                                             ; on a runtime error, print it and exit instead of hanging on a dialog
 Logger.Enabled := false
 I18n.LangDir := A_ScriptDir "\..\Resources\Lang"
 I18n.Init("en")
-AppSettings.Data := AppSettings.Defaults()                                  ; 内存里的默认设置, 不读写文件
-AppSettings.Feature("Clipboard")["Persist"] := 0                           ; 剪贴板历史测试不写盘
-IconCache.DiskDir := ""                                                     ; 图标不写磁盘缓存 (IconDiskCache 测试里临时打开)
+AppSettings.Data := AppSettings.Defaults()                                  ; default settings in memory; no file is read or written
+AppSettings.Feature("Clipboard")["Persist"] := 0                           ; the clipboard history tests don't write to disk
+IconCache.DiskDir := ""                                                     ; icons don't use the disk cache (switched on for the IconDiskCache test only)
 Pinyin.DataFile := A_ScriptDir "\..\Resources\Pinyin.txt"                   ; the scripts run from Tests\
 
 TestRunner.Run()
@@ -96,7 +96,7 @@ TestRunner.Run()
 class TestRunner {
     static Passed := 0, Failed := 0
 
-    ; 8.3 短路径 (C:\Users\RUNNER~1\...) -> 长路径, 和 Loop Files 列出的路径一样
+    ; 8.3 short path (C:\Users\RUNNER~1\...) -> long path, as Loop Files lists them
     static LongPath(shortPath) {
         buf := Buffer(32767 * 2)
         return DllCall("GetLongPathNameW", "WStr", shortPath, "Ptr", buf, "UInt", 32767, "UInt") ? StrGet(buf) : shortPath

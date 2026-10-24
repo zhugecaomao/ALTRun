@@ -1,29 +1,29 @@
 ;===============================================================================
-; Usage.ahk - 使用统计, 和 Alfred 的 Usage 一样 (AutoHotkey v2)
+; Usage.ahk - usage statistics, like Alfred's Usage (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 按天记录每个功能用了几次, 存在 Data\Usage.json:
+; Counts how often each feature is used per day, stored in Data\Usage.json:
 ;   {"Since": "2026-09-26", "Days": {"2026-09-26": {"Show": 12, "Applications": 5, ...}, ...}}
-; 只记次数, 不记输入了什么、打开了什么。计数只改内存里的 Map, 几秒后合并写一次盘,
-; 对搜索速度没有影响。保留最近 KeepDays 天。
+; Only counts, never what was typed or opened. Counting only changes the Map in memory; it is written once a few seconds later,
+; so search speed isn't affected. The last KeepDays days are kept.
 ;
-; 用法:
+; Usage:
 ;   Usage.Load() / Usage.Save()
-;   Usage.Count("SnippetExpand")        用了某个功能 (键见 Features; "Show" = 呼出搜索窗口)
-;   Usage.CountItem(item)               执行了一个搜索结果 (按它的 Provider 计数)
-;   Usage.Summary(days)                 最近 days 天 (0 = 全部) 每个功能的次数: Map(功能 -> 次数)
-;   Usage.Total(summary)                使用次数 = 各功能相加 (不含 "Show")
-;   Usage.Daily(days)                   最近 days 天每天的使用次数 [[日期, 次数], ...], 旧的在前
+;   Usage.Count("SnippetExpand")        a feature was used (keys as in Features; "Show" = the search window was shown)
+;   Usage.CountItem(item)               a search result was run (counted for its provider)
+;   Usage.Summary(days)                 counts per feature for the last days days (0 = all): Map(feature -> count)
+;   Usage.Total(summary)                uses = the features added up (without "Show")
+;   Usage.Daily(days)                   uses per day for the last days days [[date, count], ...], oldest first
 ;   Usage.Clear()
 ;===============================================================================
 
 class Usage {
     static File     := AppSettings.DataDir "\Usage.json"
     static KeepDays := 400
-    ; 统计页上的顺序 (次数相同时); "Show" 单独显示, 不算在使用次数里
+    ; order on the statistics page (for equal counts); "Show" is shown separately and isn't counted as a use
     static Features := ["Applications", "CustomCommands", "FileSearch", "WebSearch", "Bookmarks", "Calculator", "Clipboard",
                         "Snippets", "System", "Windows", "Scripts", "Recent", "Terminal", "SnippetExpand", "Selection", "QuickSwitch", "AutoDate"]
-    static Days  := Map()        ; "yyyy-MM-dd" -> Map(功能 -> 次数)
-    static Since := ""           ; 开始统计的日期
+    static Days  := Map()        ; "yyyy-MM-dd" -> Map(feature -> count)
+    static Since := ""           ; the date counting started
     static _saveTimer := ""
 
     static Load() {
@@ -66,9 +66,9 @@ class Usage {
         if !IsObject(item)
             return
         feature := item.Provider
-        if (feature = "")                                                   ; 没有结果时的兜底项: 网页搜索或文件搜索
+        if (feature = "")                                                   ; fallbacks when there are no results: web search or file search
             feature := (item.Kind = "url") ? "WebSearch" : "FileSearch"
-        if (feature != "Help")                                              ; 速查表只是打开 Wiki, 不算
+        if (feature != "Help")                                              ; the cheat sheet only opens the Wiki: not counted
             Usage.Count(feature)
     }
 
@@ -76,7 +76,7 @@ class Usage {
         cutoff := (days > 0) ? Usage._DaysAgo(days - 1, today) : ""
         result := Map()
         for date, day in Usage.Days {
-            if ((cutoff != "" && StrCompare(date, cutoff) < 0) || !(day is Map))    ; 日期是 yyyy-MM-dd, 按文字比较
+            if ((cutoff != "" && StrCompare(date, cutoff) < 0) || !(day is Map))    ; dates are yyyy-MM-dd and compare as text
                 continue
             for feature, n in day
                 result[feature] := (result.Has(feature) ? result[feature] : 0) + n
@@ -107,7 +107,7 @@ class Usage {
         Usage.Save()
     }
 
-    ; n 天前的日期 "yyyy-MM-dd" (today 留空 = 今天)
+    ; the date n days ago as "yyyy-MM-dd" (today empty = today)
     static _DaysAgo(n, today := "") {
         base := (today = "") ? A_Now : StrReplace(today, "-") "000000"
         return FormatTime(DateAdd(base, -n, "Days"), "yyyy-MM-dd")
@@ -123,7 +123,7 @@ class Usage {
             Usage.Days.Delete(date)
     }
 
-    ; 连续计数时只写一次盘; 搜索窗口开着 (正在输入) 时先不写, 免得打字时卡一下
+    ; Writes once while counting in a row; not while the search window is open (typing), so typing never stalls
     static _SaveLater() {
         if (Usage._saveTimer = "")
             Usage._saveTimer := Logger.Watch("save usage", () => Usage._SaveWhenIdle())

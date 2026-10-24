@@ -23,7 +23,7 @@ class PreferencesTests {
         eq("join lines", TextTools.Join(["a", "b"]), "a`r`nb")
         eq("csv", TextTools.SplitList("open, find ,, x")[3], "x")
         eq("join csv", TextTools.JoinList(["open", "find"]), "open, find")
-        sizes := TextTools.SplitList("10, 12,16", true)             ; 数字列表 (钢筋直径) 存成数字
+        sizes := TextTools.SplitList("10, 12,16", true)             ; number lists (bar diameters) are stored as numbers
         eq("numeric csv", (sizes[1] is Number) && sizes[3] = 16 ? 1 : 0, 1)
         eq("text csv stays text", TextTools.SplitList("10")[1] is String ? 1 : 0, 1)
     }
@@ -45,12 +45,12 @@ class PreferencesTests {
             eq("help: " key, I18n.Strings.Has(key ".Help"), true)
     }
 
-    ; 自定义命令编辑框: 类型选 "文件夹" 时浏览按钮选择文件夹
+    ; Custom command editor: with the type set to "Folder" the browse button chooses a folder
     static BrowseKind() {
         eq := (n, a, e) => TestRunner.Equal("BrowseKind." n, a, e)
         fields := CustomCommandProvider.EditorFields()
         eq("target has rule", fields[3].FolderWhen[2], "Folder")
-        controls := Map("Type", {Value: 2})                                  ; 第 2 项 = 文件夹
+        controls := Map("Type", {Value: 2})                                  ; item 2 = Folder
         eq("folder type", ItemEditor.KindFor(fields[3].FolderWhen, fields, controls), "folder")
         controls["Type"].Value := 1
         eq("file type", ItemEditor.KindFor(fields[3].FolderWhen, fields, controls), "file")
@@ -79,40 +79,40 @@ class PreferencesTests {
             if hbm
                 DllCall("DeleteObject", "Ptr", hbm)
         }
-        il := ThemePreview.ImageList(["Dark"], 112, 76)                       ; 经过图像列表画出来: 背景不透明 (GDI+ 的圆角不能让背景变透明)
+        il := ThemePreview.ImageList(["Dark"], 112, 76)                       ; drawn through the image list: the background is opaque (GDI+ rounded corners mustn't make it transparent)
         screen := DllCall("GetDC", "Ptr", 0, "Ptr")
         dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr"), canvas := DllCall("CreateCompatibleBitmap", "Ptr", screen, "Int", 112, "Int", 76, "Ptr")
         DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
         oldCanvas := DllCall("SelectObject", "Ptr", dc, "Ptr", canvas, "Ptr")
         rect := Buffer(16), NumPut("Int", 0, "Int", 0, "Int", 112, "Int", 76, rect)
-        DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", DllCall("GetStockObject", "Int", 0, "Ptr"))   ; 白色
+        DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", DllCall("GetStockObject", "Int", 0, "Ptr"))   ; white
         DllCall("comctl32\ImageList_Draw", "Ptr", il, "Int", 0, "Ptr", dc, "Int", 0, "Int", 0, "UInt", 0)   ; ILD_NORMAL
         eq("image list background opaque", DllCall("GetPixel", "Ptr", dc, "Int", 56, "Int", 6, "UInt"), Win.ColorToBgr(ThemeManager.Resolve("Dark")["Background"]))
         DllCall("SelectObject", "Ptr", dc, "Ptr", oldCanvas), DllCall("DeleteObject", "Ptr", canvas), DllCall("DeleteDC", "Ptr", dc)
         DllCall("comctl32\ImageList_Destroy", "Ptr", il)
-        hbm := ThemePreview.ForName("System", 112, 76)                      ; 左半边 Light, 右半边 Dark
+        hbm := ThemePreview.ForName("System", 112, 76)                      ; Light on the left half, Dark on the right
         eq("system left", pixel(hbm, 20, 6), Win.ColorToBgr(ThemeManager.Defaults()["Background"]))
         eq("system right", pixel(hbm, 100, 6), Win.ColorToBgr(ThemeManager.Resolve("Dark")["Background"]))
         DllCall("DeleteObject", "Ptr", hbm)
 
         PreferencesWindow.Show(1, -3000, -3000)
-        PreferencesWindow.BuildAll()                                         ; 页面用到时才建: 检查每一页之前先全部建好
-        Sleep(400)                                                          ; 打开 300 ms 之后的修改才算 (见 PreferencesWindow.Show)
-        focused := DllCall("GetFocus", "Ptr")                               ; 打开时焦点在页面列表 (↑ ↓ 切换页面, 不改第一页的设置)
+        PreferencesWindow.BuildAll()                                         ; pages are built when needed: build them all before checking each page
+        Sleep(400)                                                          ; only changes 300 ms after opening count (see PreferencesWindow.Show)
+        focused := DllCall("GetFocus", "Ptr")                               ; on opening the focus is in the page list (↑ ↓ switch pages without changing the first page's settings)
         eq("focus on page list", focused = PreferencesWindow.PageList.Hwnd, true)
         nextTab := DllCall("GetNextDlgTabItem", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", PreferencesWindow.PageList.Hwnd, "Int", 0, "Ptr")
-        onPage := false                                                     ; Tab: 列表之后是当前页面里的控件, 不是底部按钮
+        onPage := false                                                     ; Tab: after the list come the current page's controls, not the bottom buttons
         for ctrl in PreferencesWindow.Pages[1].Controls
             onPage := onPage || ctrl.Hwnd = nextTab
         eq("tab from page list goes into the page", onPage, true)
-        keys := ""                                                         ; PageKeys 和实际建的页面一致 (搜索里的子页面靠它)
+        keys := ""                                                         ; PageKeys matches the pages actually built (the subpages in search rely on it)
         for page in PreferencesWindow.Pages
             keys .= page.Key " "
         expected := ""
         for pageKey in PreferencesWindow.PageKeys
             expected .= pageKey " "
         eq("page keys match the pages", keys, expected)
-        SystemProvider._PageOpener("Prefs.Page.Calculator")()               ; 窗口开着时跳到那一页
+        SystemProvider._PageOpener("Prefs.Page.Calculator")()               ; with the window open, jump to that page
         eq("open a page from search", PreferencesWindow._page, PreferencesWindow._PageIndex("Prefs.Page.Calculator"))
         eq("page list follows", PreferencesWindow.PageList.GetNext(), PreferencesWindow._page)
         eq("page list rows", PreferencesWindow.PageList.GetCount(), PreferencesWindow.Pages.Length)
@@ -124,7 +124,7 @@ class PreferencesTests {
             if (ctrl.Type = "ListView" && !IsObject(gallery))
                 gallery := ctrl
         itemPos := (index) => (point := Buffer(8, 0), SendMessage(0x1010, index, point.Ptr, gallery), [NumGet(point, 0, "Int"), NumGet(point, 4, "Int")])   ; LVM_GETITEMPOSITION
-        spacing := SendMessage(0x1033, 0, 0, gallery) & 0xFFFF              ; LVM_GETITEMSPACING (大图标)
+        spacing := SendMessage(0x1033, 0, 0, gallery) & 0xFFFF              ; LVM_GETITEMSPACING (large icons)
         galleryRect := Buffer(16)
         DllCall("GetClientRect", "Ptr", gallery.Hwnd, "Ptr", galleryRect)
         first := itemPos(0), fourth := itemPos(3), fifth := itemPos(4)
@@ -132,29 +132,29 @@ class PreferencesTests {
         TestRunner.True("ThemeGallery.gallery fills the row (left " (NumGet(galleryRect, 8, "Int") - 4 * spacing) ")"
             , NumGet(galleryRect, 8, "Int") - 4 * spacing < 8)
         PreferencesWindow.PageList.Modify(appearancePage, "-Select")        ; a click on the blank area below the list: the current page is selected again on release
-        blankClick := Buffer(3 * A_PtrSize + 40, 0)                              ; NMITEMACTIVATE, iItem = -1 (没有点到行)
+        blankClick := Buffer(3 * A_PtrSize + 40, 0)                              ; NMITEMACTIVATE, iItem = -1 (no row hit)
         NumPut("Int", -1, blankClick, 3 * A_PtrSize)
         PreferencesWindow._OnPageClick(blankClick.Ptr)
         eq("blank click keeps the page selected", PreferencesWindow.PageList.GetNext(), appearancePage)
-        draw := Buffer(6 * A_PtrSize + 40, 0)                               ; NMCUSTOMDRAW: 选中行不画虚线焦点框
+        draw := Buffer(6 * A_PtrSize + 40, 0)                               ; NMCUSTOMDRAW: no dotted focus rectangle on the selected row
         NumPut("UInt", 0x1, draw, 3 * A_PtrSize)
         eq("custom draw asks for each row", PreferencesWindow._OnPageListDraw(draw.Ptr), 0x20)
         NumPut("UInt", 0x10001, draw, 3 * A_PtrSize), NumPut("UInt", 0x11, draw, 6 * A_PtrSize + 16)   ; CDIS_SELECTED | CDIS_FOCUS
         PreferencesWindow._OnPageListDraw(draw.Ptr)
         eq("row drawn without the focus rectangle", NumGet(draw, 6 * A_PtrSize + 16, "UInt"), 0x1)
-        listRect := Buffer(16)                                              ; 唯一的一列占满列表宽度 (不留列分隔线)
+        listRect := Buffer(16)                                              ; the only column fills the list width (no column separator left)
         DllCall("GetClientRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", listRect)
         eq("column fills the list", SendMessage(0x101D, 0, 0, PreferencesWindow.PageList), NumGet(listRect, 8, "Int"))   ; LVM_GETCOLUMNWIDTH
-        PreferencesWindow.PageList.Modify(5, "Select Focus")                ; 用户在列表里选了一页 (点击或 ↑ ↓)
+        PreferencesWindow.PageList.Modify(5, "Select Focus")                ; the user selected a page in the list (click or ↑ ↓)
         Sleep(50)
         eq("selecting a row shows the page", PreferencesWindow._page, 5)
-        wrong := 0                                                          ; 换页只显示这一页的控件, 别的页都隐藏
+        wrong := 0                                                          ; switching pages shows only that page's controls, the other pages are hidden
         for index, page in PreferencesWindow.Pages
             for ctrl in page.Controls
                 wrong += (ctrl.Visible != (index = 5))
         eq("only the current page is visible", wrong, 0)
         eq("every page has an icon", NavIcons.MissingPages(PreferencesWindow.PageKeys), "")
-        if (NavIcons.FontName() != "") {                                    ; Windows 上有图标字体 (Wine 没有)
+        if (NavIcons.FontName() != "") {                                    ; Windows has the icon fonts (Wine doesn't)
             il := NavIcons.ImageList(PreferencesWindow.PageKeys)
             eq("one icon per page", DllCall("comctl32\ImageList_GetImageCount", "Ptr", il), PreferencesWindow.PageKeys.Length)
             DllCall("comctl32\ImageList_Destroy", "Ptr", il)
@@ -185,7 +185,7 @@ class PreferencesTests {
         PreferencesWindow.Close()
     }
 
-    ; 偏好设置: 应用 之后用 "-Preferences 页码 x y" 重新打开; 帮助 打开每页对应的 Wiki
+    ; Preferences: after Apply it reopens with "-Preferences page x y"; Help opens each page's Wiki page
     static PreferencesButtons() {
         eq := (n, a, e) => TestRunner.Equal("PreferencesButtons." n, a, e)
         args := PreferencesWindow.ParseArgs(["-Preferences", "5", "120", "-8"])
@@ -220,11 +220,11 @@ class PreferencesTests {
             eq("text " key, I18n.T(key) != key, true)
     }
 
-    ; 搜索窗口的位置: 默认居中、离顶部 20%; 记住的位置按屏幕里的千分比换算, 换一块屏幕也放在对应的地方
-    ; 每一页的控件都在底部按钮上面 (中英文都检查, 文字长短不同)
-    ; 偏好设置每一页: 上下相邻的控件 (左右有重叠) 至少隔 4 像素, 不会挤在一起。
-    ; 灰色说明 (小一号的字) 本来就紧贴在上面的设置下面, 不算
-    ; 偏好设置里的表格: 最后一列补满, 各列刚好铺满列表 (有竖滚动条时减掉它), 没有横向滚动条
+    ; Search window position: centered and 20% from the top by default; a remembered position is per mille of the screen, so it lands in the matching place on another screen
+    ; Every page's controls are above the bottom buttons (checked in Chinese and English, whose text lengths differ)
+    ; Every Preferences page: vertically adjacent controls (overlapping horizontally) are at least 4 pixels apart, never crammed together.
+    ; Gray descriptions (one size smaller) sit right below their setting by design and don't count
+    ; Tables in Preferences: the last column fills, the columns exactly span the list (minus a vertical scroll bar if any), no horizontal scroll bar
     static ListColumnsFit() {
         eq := (n, a, e) => TestRunner.Equal("ListColumnsFit." n, a, e)
         PreferencesWindow.Show(1, -3000, -3000)
@@ -232,7 +232,7 @@ class PreferencesTests {
         lists := []
         for page in PreferencesWindow.Pages
             for ctrl in page.Controls
-                if (ctrl.Type = "ListView" && SendMessage(0x108F, 0, 0, ctrl.Hwnd) = 1)   ; LVM_GETVIEW = LV_VIEW_DETAILS (主题缩略图不算)
+                if (ctrl.Type = "ListView" && SendMessage(0x108F, 0, 0, ctrl.Hwnd) = 1)   ; LVM_GETVIEW = LV_VIEW_DETAILS (theme thumbnails don't count)
                     lists.Push([page.Key, ctrl])
         TestRunner.True("ListColumnsFit.found the tables (" lists.Length ")", lists.Length >= 6)
         for entry in lists {
@@ -245,7 +245,7 @@ class PreferencesTests {
             style := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int")
             eq(entry[1] " no horizontal scroll bar", style & 0x100000 ? 1 : 0, 0)   ; WS_HSCROLL
         }
-        listView := lists[1][2]                                             ; 拖窄了前面的列: 最后一列补上
+        listView := lists[1][2]                                             ; earlier columns dragged narrower: the last column fills up
         SendMessage(0x101E, 0, 33, listView.Hwnd)
         PreferencesWindow.FitColumns(listView)
         columns := SendMessage(0x1200, 0, 0, SendMessage(0x101F, 0, 0, listView.Hwnd)), total := 0
@@ -261,7 +261,7 @@ class PreferencesTests {
                 return false
             logFont := Buffer(92, 0)
             DllCall("GetObject", "Ptr", font, "Int", 92, "Ptr", logFont)
-            return Abs(NumGet(logFont, 0, "Int")) <= 11 * A_ScreenDPI / 96      ; s8 约 11 像素, s9 约 12 像素
+            return Abs(NumGet(logFont, 0, "Int")) <= 11 * A_ScreenDPI / 96      ; s8 is about 11 pixels, s9 about 12
         }
         savedLang := I18n.Lang
         for lang in ["en", "zh-CN", "ja"] {
@@ -272,7 +272,7 @@ class PreferencesTests {
                 boxes := []
                 for ctrl in page.Controls {
                     ctrl.GetPos(&x, &y, &w, &h)
-                    if (h > 2)                                               ; 分节下面的细线不算
+                    if (h > 2)                                               ; the thin line below sections doesn't count
                         boxes.Push({Ctrl: ctrl, X: x, Y: y, W: w, H: h, Small: smallFont(ctrl)})
                 }
                 tight := ""
@@ -297,13 +297,13 @@ class PreferencesTests {
 
     static PreferencesFit() {
         savedLang := I18n.Lang
-        for language in I18n.Languages() {                                   ; 按代码排序, ja 在 zh-TW 前 (Wine 没有这两种字体, 先用过 JhengHei 后量出的日文宽度偏小)
+        for language in I18n.Languages() {                                   ; sorted by code, ja before zh-TW (Wine lacks both fonts, and Japanese measured too narrow after JhengHei was used first)
             lang := language[1]
             I18n.Init(lang)
             PreferencesWindow.Show(1, -3000, -3000)
-            PreferencesWindow.BuildAll()                                         ; 页面用到时才建: 检查每一页之前先全部建好
+            PreferencesWindow.BuildAll()                                         ; pages are built when needed: build them all before checking each page
             limit := PreferencesWindow.ButtonY - 6
-            rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; 分节下面的细线 (SS_ETCHEDHORZ) 会宽 2 像素
+            rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; the thin line below sections (SS_ETCHEDHORZ) is 2 pixels wider
             for index, page in PreferencesWindow.Pages {
                 if (page.Key = "Prefs.Page.Keyboard" && !AppSettings.General["CapsLock"]) {  ; Caps Lock as usual: "also in administrator windows" is grayed out, with the reason
                     hint := 0
@@ -404,7 +404,7 @@ class PreferencesTests {
                 TestRunner.True("PreferencesFit." lang " page " index " (right " right ", limit " rightLimit ")", right <= rightLimit)
             }
             PreferencesWindow.Close()
-            if (lang = "en" || lang = "zh-CN") {                            ; 中英文的左列宽度是调好的, 不需要加宽
+            if (lang = "en" || lang = "zh-CN") {                            ; the left column widths for Chinese and English are tuned and need no widening
                 widened := ""
                 for key in PreferencesWindow._labelWidths
                     if (SubStr(key, 1, StrLen(lang) + 1) = lang " ")
@@ -415,8 +415,8 @@ class PreferencesTests {
         I18n.Init(savedLang)
     }
 
-    ; Windows 设置的页面: 按名称 (和英文名称) 搜到, 可以整组关掉
-    ; 搜索里的偏好设置子页面: 每页一条 ("ALTRun Preferences: Appearance"), 按页名找得到, 主项 "ALTRun Preferences" 排在子项前面
+    ; Windows Settings pages: found by name (and English name), can be turned off as a group
+    ; Preferences subpages in search: one per page ("ALTRun Preferences: Appearance"), found by page name, the main entry "ALTRun Preferences" before the subpages
     static PreferencePages() {
         eq := (n, a, e) => TestRunner.Equal("PreferencePages." n, a, e)
         best(text) {
@@ -460,7 +460,7 @@ class PreferencesTests {
         eq("default on", AppSettings.Defaults()["Features"]["System"]["SettingsPages"], 1)
     }
 
-    ; 偏好设置里的灰色说明: "<标签>.Desc" 要有对应的标签, 中英文都不能空
+    ; Gray descriptions in Preferences: each "<label>.Desc" has its label, and neither Chinese nor English is empty
     static PreferenceDescriptions() {
         count := 0
         for key, english in I18n.Strings {
@@ -474,7 +474,7 @@ class PreferencesTests {
         TestRunner.True("PreferenceDescriptions.count " count, count >= 50)
         for key in ["Prefs.RememberPosition.Desc", "Prefs.ShowOn.Desc", "Prefs.HideOnDeactivate.Desc", "Prefs.Hotkey.Desc"]
             TestRunner.True("PreferenceDescriptions.has " key, I18n.Strings.Has(key))
-        ; 带 Wiki 链接的说明: 每种语言都写了 <a href="{1}">, 网址按界面语言打开中文 / 英文页; 其它说明不能有链接 (会原样显示)
+        ; Descriptions with Wiki links: every language has <a href="{1}">, the URL opens the Chinese / English page by UI language; other descriptions must have no links (they would show as is)
         for language in I18n.Languages() {
             strings := (language[1] = "en") ? I18n.Strings : I18n.ReadFile(language[1])
             for key, text in strings
@@ -485,7 +485,7 @@ class PreferencesTests {
         TestRunner.True("PreferenceDescriptions.link url", InStr(PreferencesWindow._DescLink("Prefs.SelectionHotkey"), "/wiki/") && PreferencesWindow._DescLink("Prefs.Hotkey") = "")
     }
 
-    ; 偏好设置 → 高级: 链接显示名称 (主页 · GitHub · 更新说明 · 报告问题), 版权, 数据文件夹一行 (长路径用省略号, 鼠标停留显示完整路径)
+    ; Preferences → Advanced: links show names (Home · GitHub · Release notes · Report a problem), copyright, the data folder line (long paths with an ellipsis, the full path on hover)
     static AdvancedPage() {
         eq := (n, a, e) => TestRunner.Equal("AdvancedPage." n, a, e)
         PreferencesWindow.Show("Prefs.Page.Advanced", -3000, -3000)
@@ -515,8 +515,8 @@ class PreferencesTests {
         g.Destroy()
     }
 
-    ; 偏好设置的页面用到时才建: 打开时只有要显示的那一页; 换页时建, Tab 键顺序 列表 -> 页面 -> 底部按钮;
-    ; 建页面时程序自己填的值不算修改, 之后的修改照常记录
+    ; Preferences pages are built when needed: on opening only the page shown exists; switching builds the page, with Tab order list -> page -> bottom buttons;
+    ; values the program fills in while building don't count as changes, later changes are recorded as usual
     static PreferencesLazyPages() {
         eq := (n, a, e) => TestRunner.Equal("PreferencesLazyPages." n, a, e)
         PreferencesWindow.Show("Prefs.Page.Appearance", -3000, -3000)
@@ -543,7 +543,7 @@ class PreferencesTests {
             for ctrl in PreferencesWindow.Pages[general].Controls
                 if (ctrl.Type = "CheckBox") {
                     ctrl.Value := !ctrl.Value
-                    ControlClick(ctrl)                                      ; 用户点一下 (Click 事件)
+                    ControlClick(ctrl)                                      ; the user clicks once (Click event)
                     break
                 }
             Sleep(100)
@@ -552,7 +552,7 @@ class PreferencesTests {
             for page in PreferencesWindow.Pages
                 built += page.Built
             eq("unvisited pages still not built", built, 3)
-            ; 建页面的中途窗口被关掉 (别的线程打断了建页面): 不再往已经没有的窗口上加控件, 不报错
+            ; the window is closed while a page is being built (another thread interrupted the build): no controls added to a window that is gone, no error
             usagePage := PreferencesWindow._PageIndex("Prefs.Page.Usage")
             PreferencesWindow.Pages[usagePage].Builder := "_TestCloseWhileBuilding"
             PreferencesWindow.DefineProp("_TestCloseWhileBuilding", {Call: (this) => (PreferencesWindow.Close(), PreferencesWindow._Add("Text", "x200 w100", "x"))})
@@ -569,7 +569,7 @@ class PreferencesTests {
         }
     }
 
-    ; 热键的显示 (Alt+Space) 和录制框的规则; 偏好设置保存前检查重复的全局热键
+    ; Hotkey display (Alt+Space) and the rules of the recording box; duplicate global hotkeys checked before Preferences saves
     static HotkeyText() {
         eq := (n, a, e) => TestRunner.Equal("HotkeyText." n, a, e)
         ok := (n, c) => TestRunner.True("HotkeyText." n, c)
@@ -584,7 +584,7 @@ class PreferencesTests {
         eq("compose order", HotkeyBox.Compose("#+!^", "C"), "^!+#c")
         eq("compose name", HotkeyBox.Compose("!", "Space"), "!Space")
         eq("compose none", HotkeyBox.Compose("", "F5"), "F5")
-        ; 录制时的修饰键以 InputHook 收到的按下 / 松开为准 (远程桌面模拟的按键不算物理按下)
+        ; while recording, modifiers count by the downs / ups InputHook received (keys simulated by a remote desktop aren't physically down)
         savedActive := HotkeyBox._active
         HotkeyBox._active := {Hwnd: 0}
         HotkeyBox._held := Map("RControl", true, "LAlt", true)
@@ -599,7 +599,7 @@ class PreferencesTests {
             ok("allowed " hk, HotkeyBox.IsAllowed(hk))
         for hk in ["a", "+a", "Space", "+Space", "Enter", "Tab", "Numpad5", "1", "Delete"]
             ok("not allowed " hk, !HotkeyBox.IsAllowed(hk))
-        ; 关掉的窗口里的框要去掉: 句柄会被重新使用, 留着的话在别的控件上点中键会被当成录制
+        ; boxes of closed windows must go: handles are reused, and a middle click on another control would count as recording
         g := Gui()
         box := HotkeyBox.Add(g, "w120", "^!k", true)
         boxHwnd := box.Hwnd, state := HotkeyBox.Boxes[boxHwnd]
@@ -610,13 +610,13 @@ class PreferencesTests {
         ok("destroyed box pruned", !HotkeyBox.Boxes.Has(boxHwnd))
         g := Gui()
         HotkeyBox.Add(g, "w120", "", false)
-        HotkeyBox.Boxes[boxHwnd] := state                                   ; 下一次 Add 时也会清理
+        HotkeyBox.Boxes[boxHwnd] := state                                   ; also cleaned up on the next Add
         HotkeyBox.Add(g, "w120", "", false)
         ok("pruned on add", !HotkeyBox.Boxes.Has(boxHwnd) || HotkeyBox.Boxes[boxHwnd] != state)
         g.Destroy()
         HotkeyBox.Prune()
 
-        ; 偏好设置里重复的全局热键
+        ; duplicate global hotkeys in Preferences
         list := [{Key: "!Space", Label: "A"}, {Key: "!r", Label: "B"}, {Key: "~!R", Label: "C"}]
         clash := PreferencesWindow.DuplicateHotkey(list)
         eq("duplicate", IsObject(clash) ? clash.First "|" clash.Second : "", "B|C")
@@ -633,8 +633,8 @@ class PreferencesTests {
         eq("list cell", PreferencesWindow._Cell(Map("Key", "~MButton"), "Key"), "Middle mouse button")
     }
 
-    ; 录完热键: 焦点移到下一个控件但不全选里面的文字 (下面是窗口列表时, 接着打字会整个换掉);
-    ; 录制时框下面的提示跟着窗口移动
+    ; After recording a hotkey: focus moves to the next control without selecting its text (with a window list below, the next typing would replace it all);
+    ; while recording, the tip below the box follows the window
     static HotkeyBoxFocus() {
         eq := (n, a, e) => TestRunner.Equal("HotkeyBoxFocus." n, a, e)
         g := Gui(, "ALTRun hotkey box test")
@@ -648,7 +648,7 @@ class PreferencesTests {
                 return
             }
             state := HotkeyBox.Boxes[box.Hwnd]
-            box.Focus()                                                     ; 点进框里: 开始录制
+            box.Focus()                                                     ; clicking into the box: recording starts
             Sleep(50)
             eq("recording", HotkeyBox._active == state, true)
             eq("tip shown", state.Tip != "", true)

@@ -6,8 +6,8 @@
 ; TestRunner runs them in name order, and each one must put back the shared state it changes.
 ;===============================================================================
 class SearchWindowTests {
-    ; 文件的操作: 复制 / 剪切文件、打开方式、移到回收站
-    ; 文件类型登记了 "编辑" 时, 操作面板里有 "编辑" (右边是编辑程序的名称), Ctrl+E 也能用; 没登记的类型没有
+    ; File actions: copy / cut the file, Open with, move to the Recycle Bin
+    ; When the file type has an "Edit" verb the actions panel has "Edit" (with the editor's name on the right) and Ctrl+E works; unregistered types don't
     static EditAction() {
         eq := (n, a, e) => TestRunner.Equal("EditAction." n, a, e)
         root := A_Temp "\ALTRun-test-edit"
@@ -19,7 +19,7 @@ class SearchWindowTests {
         try {
             RegWrite("ALTRunTest.File", "REG_SZ", classes "\.altruntest")
             RegWrite('"' A_WinDir '\notepad.exe" "%1"', "REG_SZ", classes "\ALTRunTest.File\shell\edit\command")
-            ; Wine 的 AssocQueryStringW 查不到任何类型 (连 .txt 都没有), 登记了的情况只在 Windows 上检查
+            ; Wine's AssocQueryStringW finds no type at all (not even .txt), so the registered case is only checked on Windows
             onWine := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
             if !onWine {
                 editor := ActionCatalog.EditorFor(root "\script.altruntest")
@@ -44,7 +44,7 @@ class SearchWindowTests {
                 if (action.Title = I18n.T("Action.OpenWith"))
                     openWith := action.Icon
             eq("open with icon", openWith, "res:shell32.dll,-3")
-            if !onWine                                                      ; 原来的 shell32.dll,-16702 在 Windows 上没有, 菜单里没有图标
+            if !onWine                                                      ; the former shell32.dll,-16702 doesn't exist on Windows, leaving the menu without an icon
                 eq("open with icon loads", IconCache.GetNow(openWith) != 0, true)
         } finally {
             try RegDeleteKey(classes "\ALTRunTest.File")
@@ -105,7 +105,7 @@ class SearchWindowTests {
         ProviderRegistry.Providers := saved
     }
 
-    ; 搜索结果标题里高亮匹配的字
+    ; Matching characters highlighted in result titles
     static MatchHighlight() {
         eq := (n, a, e) => TestRunner.Equal("Highlight." n, a, e)
         str(ranges) {
@@ -168,8 +168,8 @@ class SearchWindowTests {
         gdi := SearchWindow._gdi, saved := Map()
         for key in ["TitleColor", "HighlightColor", "SelectedTitleColor", "SelectedHighlightColor"]
             saved[key] := gdi.Has(key) ? gdi[key] : ""
-        gdi["TitleColor"] := 0, gdi["HighlightColor"] := 0, gdi["SelectedTitleColor"] := 0, gdi["SelectedHighlightColor"] := 0   ; 同一种颜色: 只比较位置
-        ink(query) {                                                        ; 每一列有没有字 (不看颜色)
+        gdi["TitleColor"] := 0, gdi["HighlightColor"] := 0, gdi["SelectedTitleColor"] := 0, gdi["SelectedHighlightColor"] := 0   ; one color: compare positions only
+        ink(query) {                                                        ; whether each column has ink (ignoring color)
             rect := Buffer(16), NumPut("Int", 0, "Int", 0, "Int", width, "Int", height, rect)
             DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", DllCall("GetStockObject", "Int", 0, "Ptr"))
             ranges := (query = "") ? [] : FuzzyMatcher.MatchRanges(query, title)
@@ -182,7 +182,7 @@ class SearchWindowTests {
                 x := A_Index - 1, dark := false
                 Loop height {
                     color := NumGet(pixels, ((A_Index - 1) * width + x) * 4, "UInt")
-                    if (Min(color & 0xFF, color >> 8 & 0xFF, color >> 16 & 0xFF) < 64) {   ; 只看笔画中心 (抗锯齿的边缘在分段交界处会叠加)
+                    if (Min(color & 0xFF, color >> 8 & 0xFF, color >> 16 & 0xFF) < 64) {   ; only stroke centers (antialiased edges overlap where parts meet)
                         dark := true
                         break
                     }
@@ -204,8 +204,8 @@ class SearchWindowTests {
         DllCall("DeleteDC", "Ptr", hdc)
     }
 
-    ; 不是系统尺寸的图标 (紧凑主题 28 px 等) 平滑缩放成正好的尺寸
-    ; 每条内置命令都要有图标 (Wine 里没有控制面板等 Shell 项目, 只在 Windows 上检查)
+    ; icons that aren't a system size (28 px for the compact density etc.) are scaled smoothly to the exact size
+    ; Every built-in command has an icon (Wine lacks Control Panel and other shell items, so only checked on Windows)
     static BuiltinIcons() {
         if DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
             return
@@ -218,13 +218,13 @@ class SearchWindowTests {
                 missing .= command["Id"] " "
         }
         TestRunner.Equal("BuiltinIcons.missing", Trim(missing), "")
-        hIcon := IconCache._Load("::{A8A91A66-3A7D-4424-8D24-04E180695C7A}")      ; 只写 CLSID 的控制面板项目
+        hIcon := IconCache._Load("::{A8A91A66-3A7D-4424-8D24-04E180695C7A}")      ; a Control Panel item given only as a CLSID
         TestRunner.True("BuiltinIcons.control panel item", hIcon)
         if hIcon
             DllCall("DestroyIcon", "Ptr", hIcon)
     }
 
-    ; Resources\Icons 里 ALTRun 自己的图标: 每个都在, 各种尺寸都能读出正好的大小; 文件不在时用系统图标
+    ; ALTRun's own icons in Resources\Icons: all present, each size reads at exactly that size; system icons when a file is missing
     static OwnIcons() {
         eq := (n, a, e) => TestRunner.Equal("OwnIcons." n, a, e)
         saved := IconCache.Size
@@ -244,7 +244,7 @@ class SearchWindowTests {
         eq("fallback", IconCache.Own("NoSuchIcon", "res:shell32.dll,-24"), "res:shell32.dll,-24")
     }
 
-    ; 选中行和主题缩略图的圆角矩形: 里面和直边是实心的, 圆角外面不画; 圆角边缘抗锯齿 (Wine 的 GDI+ 不做抗锯齿, 跳过这一项)
+    ; Rounded rectangles of the selected row and theme thumbnails: solid inside and along straight edges, nothing outside the corners; antialiased corner edges (Wine's GDI+ doesn't antialias, so that part is skipped)
     static RoundedFill() {
         eq := (n, a, e) => TestRunner.Equal("RoundedFill." n, a, e)
         screen := DllCall("GetDC", "Ptr", 0, "Ptr")
@@ -271,7 +271,7 @@ class SearchWindowTests {
             TestRunner.True("RoundedFill.anti-aliased corner", blended > 0)
         }
         DllCall("FillRect", "Ptr", dc, "Ptr", rect, "Ptr", white)
-        Win.FillRoundRect(dc, 0, 0, 40, 24, 0, 0x000000)                       ; 半径 0: 直角矩形
+        Win.FillRoundRect(dc, 0, 0, 40, 24, 0, 0x000000)                       ; radius 0: a square rectangle
         eq("square corner", px(0, 0), 0)
         DllCall("SelectObject", "Ptr", dc, "Ptr", old)
         DllCall("DeleteObject", "Ptr", hbm), DllCall("DeleteDC", "Ptr", dc)
@@ -295,13 +295,13 @@ class SearchWindowTests {
                     DllCall("DestroyIcon", "Ptr", hIcon)
             }
         }
-        IconCache.Size := 28                                                ; 没有 Alpha 通道的旧式图标 (按掩码透明)
+        IconCache.Size := 28                                                ; old-style icons without an alpha channel (transparent by mask)
         hIcon := IconCache.FitSize(DllCall("CopyIcon", "Ptr", DllCall("LoadIcon", "Ptr", 0, "Ptr", 32512, "Ptr"), "Ptr"))
         eq("legacy icon", IconCache.IconWidth(hIcon), 28)
         DllCall("DestroyIcon", "Ptr", hIcon)
         eq("no icon", IconCache.FitSize(0), 0)
         IconCache.Size := saved
-        ; 读得慢的图标写进调试日志 (阈值设为 0 时每个都算慢)
+        ; slow icon reads go into the debug log (with the threshold at 0 every one counts as slow)
         savedLog := [Logger.Enabled, Logger.File, Logger.Immediate, IconCache.SlowLoadMs]
         Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunIconLogTest.log"
         try FileDelete(Logger.File)
@@ -316,8 +316,8 @@ class SearchWindowTests {
         Logger.Enabled := savedLog[1], Logger.File := savedLog[2], Logger.Immediate := savedLog[3], IconCache.SlowLoadMs := savedLog[4]
     }
 
-    ; 主题缩略图: 每个主题都画得出来, 背景、选中行用的是主题自己的颜色; 外观页点选缩略图就是选主题
-    ; 弹出菜单跟随主题的深浅: 按背景色判断深色; Windows 10 1903 (18362) 起才设置
+    ; Theme thumbnails: every theme can be drawn, the background and selected row use the theme's own colors; clicking a thumbnail on the Appearance page chooses the theme
+    ; Popup menus follow the theme's darkness: dark is decided by the background color; only set from Windows 10 1903 (18362)
     static MenuMode() {
         eq := (n, a, e) => TestRunner.Equal("MenuMode." n, a, e)
         saved := [ThemeManager.Name, ThemeManager.Current, ThemeManager.Resolved, ThemeManager.MenuMode]
@@ -359,7 +359,7 @@ class SearchWindowTests {
         eq("builtin count", ThemeManager.Names().Length, 23)
         TestRunner.True("Themes.Ocean is builtin", ThemeManager.IsBuiltin("Ocean"))
 
-        ; 用户主题: 同名覆盖内置主题 ("Base" 写自己 = 在内置那一套上改), 以及 Base 链
+        ; User themes: one with a built-in name overrides it ("Base" naming itself = changing the built-in one), and Base chains
         DirCreate(ThemeManager.UserDir)
         FileAppend('{ "Base": "Ocean", "SelectedRadius": 12 }', ThemeManager.UserDir "\Mine.json", "UTF-8")
         FileAppend('{ "Base": "Dark", "Title": "FF0000" }', ThemeManager.UserDir "\Dark.json", "UTF-8")
@@ -379,7 +379,7 @@ class SearchWindowTests {
         ThemeManager.Load("Light")
     }
 
-    ; 显示密度 (Appearance.Density): 任何主题的尺寸按比例缩放, 颜色不变; 以前的 DarkCompact 等当作 Dark + 常规
+    ; Density (Appearance.Density): any theme's sizes scale proportionally, colors unchanged; the former DarkCompact etc. count as Dark + Normal
     static Densities() {
         eq := (n, a, e) => TestRunner.Equal("Densities." n, a, e)
         ThemeManager.BuiltinDir := A_ScriptDir "\..\Resources\Themes"
@@ -398,8 +398,8 @@ class SearchWindowTests {
         eq("default comfortable", ThemeManager.Get("RowHeight") "|" ThemeManager.Density, "54|Comfortable")
         ThemeManager.Load("Dark", "Huge")
         eq("unknown = comfortable", ThemeManager.Get("RowHeight") "|" ThemeManager.Density, "54|Comfortable")
-        eq("scales theme sizes", ThemeManager.Scaled(Map("RowHeight", 60, "IconSize", 40), "Normal")["RowHeight"] "|" ThemeManager.Scaled(Map("RowHeight", 60, "IconSize", 40), "Normal")["IconSize"], "53|36")   ; 自定义主题自己的尺寸也按比例缩小
-        ; 内置主题只有颜色不同, 尺寸都和浅色一样: 同一档密度下切换主题, 窗口不会忽大忽小
+        eq("scales theme sizes", ThemeManager.Scaled(Map("RowHeight", 60, "IconSize", 40), "Normal")["RowHeight"] "|" ThemeManager.Scaled(Map("RowHeight", 60, "IconSize", 40), "Normal")["IconSize"], "53|36")   ; a custom theme's own sizes scale down proportionally too
+        ; built-in themes only differ in color, all sizes as in Light: switching themes at one density doesn't make the window jump in size
         differ := ""
         for themeName in ThemeManager.Names() {
             if (themeName = "System")
@@ -416,12 +416,12 @@ class SearchWindowTests {
             eq("old " oldName, ThemeManager.Name "|" ThemeManager.Resolved "|" ThemeManager.Density "|" ThemeManager.Get("RowHeight"), base "|" base "|Normal|48")
             eq("old " oldName " not listed", ThemeManager._Contains(ThemeManager.Names(), oldName), false)
         }
-        ThemeManager.Load("DarkCompact", "Normal")                          ; 不会缩小两次
+        ThemeManager.Load("DarkCompact", "Normal")                          ; never scaled twice
         eq("old name + normal once", ThemeManager.Get("RowHeight"), 48)
         ThemeManager.Load("DarkCompact", "Compact")
         eq("old name + compact", ThemeManager.Get("RowHeight"), 42)
 
-        ; 用户主题的 "Base" 还写着以前的紧凑主题: 照常是 Dark 的颜色、常规的尺寸; 用户自己有同名主题时用用户的
+        ; a user theme whose "Base" still names a former compact theme: Dark's colors and Normal's sizes as usual; the user's own theme of that name wins
         DirCreate(ThemeManager.UserDir)
         FileAppend('{ "Base": "DarkCompact", "Title": "FF0000" }', ThemeManager.UserDir "\Mine.json", "UTF-8")
         ThemeManager.Load("Mine")
@@ -433,7 +433,7 @@ class SearchWindowTests {
         DirDelete(ThemeManager.UserDir, true)
         ThemeManager.Load("Light")
 
-        ; 新安装默认常规; 已有的设置文件没有这一项时保持原来的大小 (宽松), 用以前的紧凑主题的是常规
+        ; new installs default to Normal; an existing settings file without the entry keeps the old size (Comfortable), Normal with a former compact theme
         eq("new install default", AppSettings.Defaults()["Appearance"]["Density"], "Normal")
         keep := (theme) => (data := Map("Appearance", Map("Theme", theme)), AppSettings._KeepDensity(data), data["Appearance"]["Density"])
         eq("existing file keeps size", keep("Dark"), "Comfortable")
@@ -442,7 +442,7 @@ class SearchWindowTests {
         eq("already set", AppSettings._KeepDensity(set) "|" set["Appearance"]["Density"], "0|Compact")
     }
 
-    ; 大字显示可以在 偏好设置 → 功能 里关掉: 新安装默认关, 以前的设置文件保持打开; 关掉时操作面板和速查表里都没有
+    ; Large Type can be turned off in Preferences → Features: off for new installs, on for older settings files; when off neither the actions panel nor the cheat sheet lists it
     static LargeTypeSwitch() {
         eq := (n, a, e) => TestRunner.Equal("LargeTypeSwitch." n, a, e)
         eq("new install off", AppSettings.Defaults()["Features"]["LargeType"]["Enabled"], 0)
@@ -481,14 +481,14 @@ class SearchWindowTests {
         eq("missing word", PreferencesWindow.FilterMatch("devices notepad", cells), false)
         eq("not across columns", PreferencesWindow.FilterMatch("printersfile", cells), false)
 
-        ; 自定义命令页: 筛选框里输入后只显示匹配的行, 筛选不算修改设置
+        ; Custom commands page: typing in the filter box shows only matching rows; filtering isn't a settings change
         saved := AppSettings.Data["CustomCommands"]
         AppSettings.Data["CustomCommands"] := [
             Map("Title", "Devices and Printers", "Type", "Command", "Target", "control", "Arguments", "printers", "Keyword", ""),
             Map("Title", "Notepad", "Type", "File", "Target", "C:\Windows\notepad.exe", "Arguments", "", "Keyword", "np"),
             Map("Title", "Printer queue", "Type", "Command", "Target", "control", "Arguments", "printers", "Keyword", "")]
         PreferencesWindow.Show(1, -3000, -3000)
-        PreferencesWindow.BuildAll()                                         ; 页面用到时才建: 检查每一页之前先全部建好
+        PreferencesWindow.BuildAll()                                         ; pages are built when needed: build them all before checking each page
         page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Commands")]
         listView := "", filterBox := ""
         for ctrl in page.Controls {
@@ -513,13 +513,13 @@ class SearchWindowTests {
         AppSettings.Data["CustomCommands"] := saved
     }
 
-    ; 输入路径浏览文件夹: 文件夹在前, 最后一段过滤, 隐藏文件不列出, Tab 进入下一级; Insert 标记多个一起操作
+    ; Browsing folders by typing a path: folders first, the last part filters, hidden files aren't listed, Tab goes one level down; Insert marks several to act on together
     static FolderBrowse() {
         eq := (n, a, e) => TestRunner.Equal("FolderBrowse." n, a, e)
         root := A_Temp "\ALTRun-browse-test"
         try DirDelete(root, true)
         DirCreate(root "\Reports"), DirCreate(root "\Archive")
-        root := TestRunner.LongPath(root)                                   ; %Temp% 可能是 8.3 短路径 (C:\Users\RUNNER~1), 列出的文件是长路径
+        root := TestRunner.LongPath(root)                                   ; %Temp% may be an 8.3 short path (C:\Users\RUNNER~1), while files are listed with long paths
         FileAppend("x", root "\readme.txt"), FileAppend("x", root "\report 2026.docx"), FileAppend("x", root "\secret.txt")
         FileSetAttrib("+H", root "\secret.txt")
         browse := FileSearchProvider.BrowsePath(root "\rep")
@@ -529,7 +529,7 @@ class SearchWindowTests {
         missing := FileSearchProvider.BrowsePath(root "\Nope\x")
         eq("missing folder", IsObject(missing) && missing.HasOwnProp("Missing") ? missing.Dir : "", root "\Nope\")
         eq("missing folder: hint", titles(root "\Nope\x"), I18n.T("Files.FolderNotFound"))
-        wide := FileSearchProvider.BrowsePath(SubStr(root, 1, 1) "：、" StrReplace(SubStr(root, 4), "\", "、") "、rep")   ; 中文输入法的全角冒号和顿号
+        wide := FileSearchProvider.BrowsePath(SubStr(root, 1, 1) "：、" StrReplace(SubStr(root, 4), "\", "、") "、rep")   ; full-width colon and ideographic comma from a Chinese IME
         eq("chinese punctuation", IsObject(wide) ? wide.Dir "|" wide.Filter : "", root "\|rep")
         home := FileSearchProvider.BrowsePath("~")
         eq("home", IsObject(home) ? home.Dir : "", EnvGet("UserProfile") "\")
@@ -595,10 +595,10 @@ class SearchWindowTests {
         eq("wiki window page", PreferencesWindow.WikiPage("Prefs.Page.Window"), "Usage")
     }
 
-    ; 资源管理器 "发送到": 多个文件直接添加, 已经有的不重复添加 (1 个时弹对话框, 这里不测)
+    ; Explorer's "Send to": several files are added directly, existing ones not added again (one opens a dialog, not tested here)
     static SendTo() {
         eq := (n, a, e) => TestRunner.Equal("SendTo." n, a, e)
-        ; 关掉开机启动等设置时只删 ALTRun 自己建的快捷方式, 用户自己建的同名快捷方式保留 (#113)
+        ; Turning off start with Windows etc. deletes only ALTRun's own shortcuts; a shortcut of the same name the user made stays (#113)
         eq("own by description", App.IsOwnShortcut("", "ALTRun - 高效的 Windows 启动器", ""), true)
         eq("own by startup flag", App.IsOwnShortcut('"D:\ALTRun\ALTRun.ahk" -Startup', "", "-Startup"), true)
         eq("user shortcut", App.IsOwnShortcut("", "", "-Startup"), false)
@@ -612,7 +612,7 @@ class SearchWindowTests {
         eq("remove own", App.RemoveOwnShortcut(lnkDir "\own.lnk", "-Startup") && !FileExist(lnkDir "\own.lnk"), true)
         eq("keep user", !App.RemoveOwnShortcut(lnkDir "\user.lnk", "-Startup") && FileExist(lnkDir "\user.lnk") != "", true)
         eq("missing", App.RemoveOwnShortcut(lnkDir "\none.lnk", "-Startup"), false)
-        ; 启动时快捷方式没变就不重写
+        ; at start-up an unchanged shortcut isn't rewritten
         description := "ALTRun - An effective launcher for Windows", iconFile := Path.Full("..\Resources\ALTRun.ico")
         FileCreateShortcut(A_AhkPath, lnkDir "\same.lnk", A_ScriptDir, "-SendTo", description, iconFile)
         eq("matches", App.ShortcutMatches(lnkDir "\same.lnk", A_AhkPath, A_ScriptDir, "-SendTo", description, iconFile), true)
@@ -647,9 +647,9 @@ class SearchWindowTests {
         eq("several added, existing skipped", commands.Length, 3)
         eq("added in order", commands[2]["Title"] "|" commands[3]["Title"], "Design Report|Windows")
 
-        ; 偏好设置开着时: 加进 "命令" 页的列表 (算作修改, 按 确定 / 应用 才保存), 不直接写进设置
+        ; With Preferences open: added to the list on the Commands page (counts as a change, saved by OK / Apply), not written to the settings directly
         AppSettings.Data["CustomCommands"] := [Map("Title", "Old", "Type", "Folder", "Target", folder "\pt2415 - riverside\", "Arguments", "", "Keyword", "")]
-        PreferencesWindow.Show(1, -3000, -3000)                             ; 刚打开 (还没开始记录修改) 时加进来的也算修改
+        PreferencesWindow.Show(1, -3000, -3000)                             ; added right after opening (before changes are recorded) still counts as a change
         CustomCommandProvider.AddFromPaths([folder "\PT2415 - Riverside", folder "\Design Report.docx", folder "\design report.docx", "C:\Windows"])
         working := PreferencesWindow.Working["CustomCommands"]
         eq("prefs: added to the working list", working.Length "|" working[2]["Title"] "|" working[3]["Title"], "3|Design Report|Windows")
@@ -668,7 +668,7 @@ class SearchWindowTests {
         try DirDelete(folder, true)
     }
 
-    ; Ctrl+↑ / Ctrl+↓ 翻搜索记录 (↑ ↓ 只移动选择); 用隐藏的输入框代替搜索窗口, 不真的搜索
+    ; Ctrl+↑ / Ctrl+↓ browse the search history (↑ ↓ only move the selection); a hidden input box stands in for the search window, no real search
     static HistoryKeys() {
         eq := (n, a, e) => TestRunner.Equal("HistoryKeys." n, a, e)
         savedInput := SearchWindow.Input, savedHistory := Knowledge.History, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
@@ -705,7 +705,7 @@ class SearchWindowTests {
         }
     }
 
-    ; 光标在最前面按空格: 已经输入的文字改用文件搜索; 文件搜索模式下光标在最前面按 Backspace: 回到普通搜索, 文字都保留
+    ; Space with the caret at the start: the typed text switches to file search; Backspace at the start in file search mode: back to normal search; the text stays either way
     static FileModeKeys() {
         eq := (n, a, e) => TestRunner.Equal("FileModeKeys." n, a, e)
         savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
@@ -847,7 +847,7 @@ class SearchWindowTests {
         }
     }
 
-    ; 底部状态栏: 左边的提示 / 状态, 右边选中项的 Enter 操作; 窗口高度算上状态栏; → 不认自动重复
+    ; Bottom status bar: the tip / state on the left, the selected result's Enter action on the right; the window height includes it; → ignores auto-repeat
     static StatusBar() {
         eq := (n, a, e) => TestRunner.Equal("StatusBar." n, a, e)
         eq("on by default", AppSettings.Defaults()["Appearance"]["StatusBar"], 1)
@@ -911,14 +911,14 @@ class SearchWindowTests {
             opened := {Count: 0}
             SearchWindow.DefineProp("_OpenActions", {Call: (*) => (opened.Count++, true)})
             hwnd := SearchWindow.Input.Hwnd
-            SearchWindow.Input.Value := "note", SendMessage(0xB1, 4, 4, hwnd)   ; 光标在最后
-            SearchWindow._OnKeyDown(0x27, 0x40000000 | 1, 0x100, hwnd)       ; 按住 → 的自动重复
+            SearchWindow.Input.Value := "note", SendMessage(0xB1, 4, 4, hwnd)   ; caret at the end
+            SearchWindow._OnKeyDown(0x27, 0x40000000 | 1, 0x100, hwnd)       ; auto-repeat from holding →
             eq("held right arrow does not open actions", opened.Count, 0)
-            SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd)                    ; 新按下的 →
+            SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd)                    ; a fresh →
             eq("fresh right arrow opens actions", opened.Count, 1)
-            SearchWindow.Input.Value := "1250+500", SendMessage(0xB1, 0, -1, hwnd)   ; 恢复上次的搜索: 全选
+            SearchWindow.Input.Value := "1250+500", SendMessage(0xB1, 0, -1, hwnd)   ; the restored last search: all selected
             eq("right arrow on selected text: no actions", (SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 1)
-            SendMessage(0xB1, 8, 8, hwnd)                                     ; Edit 自己处理 →: 取消选择, 光标到末尾
+            SendMessage(0xB1, 8, 8, hwnd)                                     ; the Edit handles → itself: deselects and moves the caret to the end
             eq("right arrow again opens actions", (SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 2)
         } finally {
             SearchWindow.DefineProp("_OpenActions", savedOpen)
@@ -946,8 +946,8 @@ class SearchWindowTests {
         }
     }
 
-    ; 呼出窗口期间打的字: 显示完补进搜索框, Enter 搜完后执行, Esc 关掉
-    ; 隐藏后准备好空的搜索框: 呼出时不用先搜索; 输入框改过或用过一次就不算; 显示后的刷新只在结果变了时换上
+    ; Characters typed while the window is showing: added to the search box afterwards; Enter runs after the search, Esc closes
+    ; The empty search box prepared after hiding: no search needed when showing; not used once the box changed or it was used once; the refresh after showing swaps in only when the results changed
     static ShowPrepared() {
         eq := (n, a, e) => TestRunner.Equal("ShowPrepared." n, a, e)
         savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
@@ -958,7 +958,7 @@ class SearchWindowTests {
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         try {
             SearchWindow.Input.Value := "abc", SearchWindow.Mode := "actions", SearchWindow.FileMode := true
-            SearchWindow.PrepareEmpty()                                     ; 窗口隐藏着: 清空输入框, 搜一次
+            SearchWindow.PrepareEmpty()                                     ; the window is hidden: clear the box and search once
             eq("prepared", SearchWindow.IsPrepared() "|" SearchWindow.Input.Value "|" SearchWindow.Mode "|" SearchWindow.FileMode "|" searches.Count, "1||results|0|1")
             SearchWindow.Input.Value := "x"
             eq("input changed", SearchWindow.IsPrepared(), false)
@@ -983,7 +983,7 @@ class SearchWindowTests {
         }
     }
 
-    ; 呼出时恢复上次的搜索: 先不搜文件 (马上显示窗口), 显示后再完整搜一次并选中上次的那一行; 已经开始打字就不用了
+    ; Restoring the last search when shown: files aren't searched first (the window shows at once), then a full search after showing selects last time's row; not once typing has started
     static RestoreQuick() {
         eq := (n, a, e) => TestRunner.Equal("RestoreQuick." n, a, e)
         saved := Map()
@@ -1006,7 +1006,7 @@ class SearchWindowTests {
             eq("quick search, no files", calls.Length = 1 && calls[1] = "quick rep", true)
             eq("text restored", SearchWindow.Input.Value, "rep")
             SearchWindow._searchTimer := () => searches.Count++
-            SearchWindow._OnInputChange()                                   ; 自己填的文字引起的 Change: 不另外搜
+            SearchWindow._OnInputChange()                                   ; a Change caused by the text filled in by the program: no extra search
             Sleep(30)
             eq("own text change ignored", searches.Count, 0)
             g.Show("NoActivate")
@@ -1017,7 +1017,7 @@ class SearchWindowTests {
             eq("quiet text cleared", SearchWindow._quietText, "")
             SearchWindow._ShowQuickResults("rep")
             gen := SearchWindow._searchGen
-            SearchWindow._quietText := "", SearchWindow.Input.Value := "repo"   ; 显示后马上打了字
+            SearchWindow._quietText := "", SearchWindow.Input.Value := "repo"   ; typed right after showing
             SearchWindow._FinishRestore(gen, {Text: "rep", Selected: 3})
             eq("typed: no full search for the old text", calls.Length, 3)
             SearchWindow.FileMode := true
@@ -1054,7 +1054,7 @@ class SearchWindowTests {
             SearchWindow.Input.Value := ""
             eq("nothing typed", apply(""), "")
             eq("text typed", apply("note") "|" SearchWindow.Input.Value, "search:note;|note")
-            SendMessage(0xB1, 0, -1, hwnd)                                  ; 恢复的上次搜索是全选的
+            SendMessage(0xB1, 0, -1, hwnd)                                  ; the restored last search is all selected
             eq("replaces selected text", apply("calc") "|" SearchWindow.Input.Value, "search:calc;|calc")
             SendMessage(0xB1, 4, 4, hwnd)
             eq("appends at the caret", apply("s") "|" SearchWindow.Input.Value, "search:calcs;|calcs")
@@ -1077,7 +1077,7 @@ class SearchWindowTests {
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
             g.Destroy()
         }
-        ; 真正的 InputHook: 模拟打字被拦下记住, 停止后不再拦
+        ; a real InputHook: simulated typing is caught and kept, and no longer caught after stopping
         SearchWindow._typeAhead := ""
         ih := InputHook("T3")
         ih.KeyOpt("{Enter}{NumpadEnter}{Esc}", "ES")
@@ -1166,8 +1166,8 @@ class SearchWindowTests {
         }
     }
 
-    ; 列表画完了但自绘回调没有运行 (空白行): 写日志并再画一次; 回调运行过、还没画时不算
-    ; 后备字体预热: 在内存 DC 上用结果行的字体量一次中日韩文字 (见 SearchWindow.WarmUpFonts)
+    ; The list finished painting but the custom-draw callback didn't run (blank rows): log and paint again; a callback that ran, or nothing painted yet, doesn't count
+    ; Fallback font warm-up: CJK text measured once in each result font on a memory DC (see SearchWindow.WarmUpFonts)
     static FontWarmUp() {
         eq := (n, a, e) => TestRunner.Equal("FontWarmUp." n, a, e)
         saved := [SearchWindow._gdi, Logger.Enabled, Logger.File, Logger.Immediate]
@@ -1176,7 +1176,7 @@ class SearchWindowTests {
         created := []
         try {
             SearchWindow._gdi := Map()
-            SearchWindow.WarmUpFonts()                                      ; 字体还没建好: 什么都不做
+            SearchWindow.WarmUpFonts()                                      ; fonts not created yet: do nothing
             eq("no fonts yet: nothing done", FileExist(Logger.File) ? 1 : 0, 0)
             for key in ["TitleFont", "SubtitleFont"]
                 created.Push(SearchWindow._gdi[key] := SearchWindow._CreateFont("Segoe UI", 12, 400))
@@ -1194,7 +1194,7 @@ class SearchWindowTests {
         }
     }
 
-    ; 自绘回调不可打断 (见 SearchWindow._OnCustomDraw): Critical 在这个线程里一直有效到线程结束, 调用后检查再关掉
+    ; The custom-draw callback isn't interruptible (see SearchWindow._OnCustomDraw): Critical stays on in this thread until it ends, so check after the call and then turn it off
     static CustomDrawCritical() {
         nmcd := Buffer(A_PtrSize * 4 + 64, 0)
         NumPut("UInt", 0x1, nmcd, A_PtrSize * 3)                            ; CDDS_PREPAINT
@@ -1208,8 +1208,8 @@ class SearchWindowTests {
         TestRunner.True("CustomDrawCritical.critical", wasCritical != 0)
     }
 
-    ; CapsLock 切换中 / 英模式要做什么 (Win.ImeTarget), 包括读数不跟着变的输入法 (#154)
-    ; 启动后预读常用图标: 选过的按次数排在前面; 去重、跳过已缓存的、最多 PrefetchMax 个; 窗口显示时不读
+    ; What the CapsLock Chinese / English toggle does (Win.ImeTarget), including IMEs whose reading doesn't follow (#154)
+    ; Prefetching common icons after start-up: picked ones first by count; duplicates removed, cached ones skipped, at most PrefetchMax; nothing read while the window shows
     static IconPrefetch() {
         eq := (n, a, e) => TestRunner.Equal("IconPrefetch." n, a, e)
         savedPicks := Knowledge.Picks
@@ -1250,7 +1250,7 @@ class SearchWindowTests {
         SearchWindow._showing := savedShowing
     }
 
-    ; 图标的磁盘缓存: 像素来回转换、文件格式 (按最近用到的保留、损坏的文件不用)、从缓存直接显示、过期判断
+    ; Icon disk cache: pixel round trips, file format (keeping the most recently used, ignoring a damaged file), showing straight from the cache, expiry
     static IconDiskCache() {
         eq := (n, a, e) => TestRunner.Equal("IconDiskCache." n, a, e)
         same := (a, b) => (a.Size = b.Size && DllCall("ntdll\RtlCompareMemory", "Ptr", a, "Ptr", b, "UPtr", a.Size, "UPtr") = a.Size)
@@ -1299,7 +1299,7 @@ class SearchWindowTests {
             eq("save", IconCache.SaveDisk(cacheFile), true)
             eq("nothing to save", IconCache.SaveDisk(cacheFile), false)
             eq("load", IconCache.LoadDisk(cacheFile), 3)
-            ; 分块写 (每块很小时写很多块), 内容一样; 没有留下临时文件
+            ; written in chunks (many chunks when each is tiny), same content; no temporary file left behind
             savedChunk := IconCache.DiskChunk, IconCache.DiskChunk := 1000
             try {
                 IconCache._disk := entries, IconCache._diskDirty := true
@@ -1366,7 +1366,7 @@ class SearchWindowTests {
         }
     }
 
-    ; 睡眠唤醒 / 解锁 / 显示器变化后重新装键盘钩子: 连着几个事件只装一次; 有鼠标热键时也装鼠标钩子
+    ; Reinstalling the keyboard hook after waking, unlocking or a monitor change: once for several events in a row; the mouse hook too when there are mouse hotkeys
     static WakeHooks() {
         eq := (n, a, e) => TestRunner.Equal("WakeHooks." n, a, e)
         eq("mouse hotkeys", App.UsesMouseHotkeys([Map("Key", "~MButton", "Action", "PTTools")]), true)
@@ -1377,7 +1377,7 @@ class SearchWindowTests {
         App.WakeDelay := 50
         App._AfterWake("resume"), App._AfterWake("unlock"), App._AfterWake("display change")
         eq("last reason wins", App._wakeReason, "display change")
-        Sleep(150)                                                          ; 定时器运行 ReinstallHooks (不出错)
+        Sleep(150)                                                          ; the timer runs ReinstallHooks (without errors)
         App.WakeDelay := savedDelay
         App.ReinstallHooks("test")
         eq("hook still works", A_IsSuspended, 0)
@@ -1398,7 +1398,7 @@ class SearchWindowTests {
         try IconCache._queue.Delete(key)
     }
 
-    ; 淡入淡出: 透明度曲线; 真的窗口淡入时先透明、结束后是主题的透明度; 淡出时留一个影子, 结束后消失
+    ; Fading: the opacity curve; a real window is transparent first when fading in and ends at the theme's opacity; fading out leaves a shadow that disappears at the end
     static WindowFade() {
         eq := (n, a, e) => TestRunner.Equal("WindowFade." n, a, e)
         eq("alpha start", WindowFade.Alpha(0, 120, 0, 255), 0)
@@ -1422,7 +1422,7 @@ class SearchWindowTests {
         eq("in: stopped", WindowFade.Running, false)
 
         WindowFade.In(g.Hwnd, 255)
-        WindowFade.Out(g.Hwnd)                                              ; 淡入还没完就隐藏: 窗口恢复不透明, 换成影子
+        WindowFade.Out(g.Hwnd)                                              ; hidden before the fade in finished: the window gets its opacity back and the shadow takes over
         eq("out: window opaque again", WinGetTransparent("ahk_id " g.Hwnd), 255)
         eq("out: ghost shown", WindowFade.GhostVisible, true)
         g.Hide()
@@ -1432,7 +1432,7 @@ class SearchWindowTests {
         eq("out: finished by itself", WindowFade.Running, false)
         eq("out: ghost gone", WindowFade.GhostVisible, false)
 
-        WindowFade.Out(g.Hwnd)                                              ; 窗口不在屏幕上: 没有影子
+        WindowFade.Out(g.Hwnd)                                              ; the window isn't on screen: no shadow
         eq("out: hidden window has no ghost", WindowFade.Running || WindowFade.GhostVisible, false)
         g.Destroy()
     }
@@ -1444,14 +1444,14 @@ class SearchWindowTests {
         eq("chinese -> english (also closes the IME)", Win.ImeTarget(1, 1025), "en open 0 conv 1024")
         eq("closed -> open chinese", Win.ImeTarget(0, 0), "zh open 1 conv 1")
         eq("closed with native bit -> open chinese", Win.ImeTarget(0, 1025), "zh open 1 conv 1025")
-        ; 读数可信: 切换后的读数和这次不同, 按读数
+        ; a trustworthy reading: the reading after the toggle differs from this one, so go by the reading
         eq("reliable readings", Win.ImeTarget(1, 1, {Open: 0, Conv: 0, Chinese: false}), "en open 0 conv 0")
-        ; 微信输入法 (#154 的日志): 读数跟着设置变, 一直是打开; 上次切到了中文 -> 这次英文 (关闭输入法)
+        ; WeChat IME (log of #154): the reading follows the setting and is always open; last switched to Chinese -> English this time (close the IME)
         eq("wechat ime: to english", Win.ImeTarget(1, 0x401, {Open: 1, Conv: 0x401, Chinese: true}), "en open 0 conv 1024 remembered")
-        ; 读数不跟着变: 一直读到 "没打开 / 0", 上次切到了中文 -> 这次切回英文, 再下次又切到中文
+        ; a reading that doesn't follow: always "not open / 0"; last switched to Chinese -> back to English this time, then Chinese again next time
         eq("stuck readings: back to english", Win.ImeTarget(0, 0, {Open: 0, Conv: 0, Chinese: true}), "en open 0 conv 0 remembered")
         eq("stuck readings: chinese again", Win.ImeTarget(0, 0, {Open: 0, Conv: 0, Chinese: false}), "zh open 1 conv 1 remembered")
-        ; 设置的顺序: 打开时先打开再设转换模式, 关闭时先设转换模式再关闭 (6 = IMC_SETOPENSTATUS, 2 = IMC_SETCONVERSIONMODE)
+        ; Order of the settings: when opening, open first then set the conversion mode; when closing, set the mode first then close (6 = IMC_SETOPENSTATUS, 2 = IMC_SETCONVERSIONMODE)
         steps(open, conv) {
             list := ""
             for step in Win.ImeSteps(open, conv)
@@ -1460,7 +1460,7 @@ class SearchWindowTests {
         }
         TestRunner.Equal("ImeToggle.steps: open", steps(1, 0x401), "6:1 2:1025")
         TestRunner.Equal("ImeToggle.steps: close", steps(0, 0x400), "2:1024 6:0")
-        ; 呼出时切到英文模式 (SwitchToEnglishInput = 2): 去掉中文位, 关闭输入法, 其它位不变
+        ; Switching to English mode when shown (SwitchToEnglishInput = 2): remove the native bit, close the IME, other bits unchanged
         english := Win.ImeEnglish(0x409)
         TestRunner.Equal("ImeToggle.english mode", english.Open " " english.Conv, "0 1032")
         english := Win.ImeEnglish(0)
@@ -1472,7 +1472,7 @@ class SearchWindowTests {
         saved := [SearchWindow.Gui, SearchWindow.List, SearchWindow.Input, SearchWindow.Results, Logger.Enabled, Logger.File, Logger.Immediate]
         g := Gui("-Caption")
         input := g.AddEdit("w200")
-        list := g.AddListView("w200 h100 -Hdr", [""])                       ; 没有接自绘回调: 每次画都相当于回调被跳过
+        list := g.AddListView("w200 h100 -Hdr", [""])                       ; no custom-draw callback connected: every paint is as if the callback was skipped
         list.Add("", "")
         g.Show("NA x0 y0")
         SearchWindow.Gui := g, SearchWindow.List := list, SearchWindow.Input := input, SearchWindow.Results := []
@@ -1482,21 +1482,21 @@ class SearchWindowTests {
         paint := () => (DllCall("InvalidateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0), DllCall("UpdateWindow", "Ptr", list.Hwnd))
         try {
             SearchWindow._skipLogged := false
-            SearchWindow._WatchPaint(), paint(), SearchWindow._paints++     ; 回调运行过
+            SearchWindow._WatchPaint(), paint(), SearchWindow._paints++     ; the callback ran
             SearchWindow._CheckPaint()
             eq("drawn: no repaint", pending() ? 1 : 0, 0)
             DllCall("InvalidateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0)
-            SearchWindow._WatchPaint(), SearchWindow._CheckPaint()          ; 还没画
+            SearchWindow._WatchPaint(), SearchWindow._CheckPaint()          ; nothing painted yet
             eq("not painted yet: wait", SearchWindow._paintTries "|" SearchWindow._paintRetries, "1|0")
             DllCall("UpdateWindow", "Ptr", list.Hwnd)
-            Critical(1000)                                                  ; 执行中不处理消息 (写日志慢时, 补画的请求会先被处理掉)
-            SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()  ; 画了, 回调没运行
+            Critical(1000)                                                  ; no messages handled while running (with a slow log write, the repaint request would be handled first)
+            SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()  ; painted, callback didn't run
             eq("skipped: repaint", (pending() ? 1 : 0) "|" SearchWindow._paintRetries, "1|1")
             Critical("Off")
             logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
             TestRunner.True("SkippedPaint.logged", InStr(logText, "[WRN] SearchWindow: custom draw skipped") > 0)
             DllCall("UpdateWindow", "Ptr", list.Hwnd)
-            SearchWindow._paintRetries := 3, SearchWindow._CheckPaint()     ; 最多补画 3 次
+            SearchWindow._paintRetries := 3, SearchWindow._CheckPaint()     ; at most 3 extra paints
             eq("gives up after 3 repaints", pending() ? 1 : 0, 0)
             SearchWindow._WatchPaint(), paint(), SearchWindow._CheckPaint()
             logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
@@ -1512,8 +1512,8 @@ class SearchWindowTests {
         }
     }
 
-    ; 操作后的提示: 搜索窗口开着时在它下方居中, 否则在屏幕中间偏下; 不出屏幕
-    ; 显示搜索窗口时不重入, 但上一次卡住超过 StuckShowMs 就不再挡住新的显示 (关掉一台显示器后卡了 2 分半)
+    ; Notices after an action: below the search window, centered, while it is open, otherwise low in the middle of the screen; never off screen
+    ; Showing the search window doesn't re-enter, but a previous showing stuck for over StuckShowMs no longer blocks a new one (stuck for 2.5 min after a monitor was turned off)
     static StuckShow() {
         eq := (n, a, e) => TestRunner.Equal("StuckShow." n, a, e)
         saved := [SearchWindow._showing, SearchWindow._showStarted, SearchWindow._showStep]
@@ -1542,7 +1542,7 @@ class SearchWindowTests {
         second := {Left: 1920, Top: 0, Right: 3840, Bottom: 1080}
         eq("second monitor", Hud.Position(200, 40, {Window: "", Area: second}).X, 2780)
         savedArea := SearchWindow.LastArea, savedAt := SearchWindow.HiddenAt, savedShowOn := AppSettings.Appearance["ShowOn"]
-        SearchWindow.LastArea := second, SearchWindow.HiddenAt := A_TickCount                          ; 搜索窗口刚在第二块屏幕上隐藏
+        SearchWindow.LastArea := second, SearchWindow.HiddenAt := A_TickCount                          ; the search window just hid on the second screen
         eq("just hidden: same screen", Hud._Anchor().Area.Left, 1920)
         SearchWindow.HiddenAt := A_TickCount - Hud.RecentWindowMs - 1
         AppSettings.Appearance["ShowOn"] := "Primary"
@@ -1553,7 +1553,7 @@ class SearchWindowTests {
         long := ""
         Loop 40
             long .= "long text "
-        Hud.Show(long, 300)                                                 ; 超过最大宽度: 自动换行, 不报错
+        Hud.Show(long, 300)                                                 ; wider than the maximum: wraps without an error
         Hud.Gui.GetPos(, , &longW)
         eq("long text wraps", longW <= Win.Scale(Hud.MaxWidth) + Win.Scale(60), true)
         LargeType.Show(long long long)

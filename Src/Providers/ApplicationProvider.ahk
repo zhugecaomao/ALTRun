@@ -1,25 +1,25 @@
 ;===============================================================================
-; ApplicationProvider.ahk - 应用程序搜索 (AutoHotkey v2)
+; ApplicationProvider.ahk - application search (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 索引开始菜单、桌面 (Features.Applications.Folders) 里的快捷方式和程序, 以及
-; 应用商店应用 (PowerShell Get-StartApps, 在后台运行不卡界面)。中文名称同时
-; 按拼音首字母匹配 ("wx" -> 微信)。
+; Indexes the shortcuts and programs in the Start menu and on the desktop (Features.Applications.Folders), and
+; Store apps (PowerShell Get-StartApps, run in the background without blocking the UI). Chinese names also
+; match by pinyin initials ("wx" -> 微信).
 ;
-; 索引缓存在 Data\AppIndex.json, 启动时直接读缓存。在后台分批重新扫描 (每次定时器最多约 15 ms, 不挡热键),
-; 不弹通知, 扫描中搜索窗口打开 (或正在呼出) 就暂停 (已经有旧索引可用时), 关了再继续, 不和呼出、搜索抢时间:
-;   - 监视 Folders (包括子文件夹, Windows 的文件夹变化通知): 有文件新增、删除、改名, 安静 WatchQuietMs 后重建
-;     (装软件时会连续建好几个快捷方式), 两次之间至少隔 WatchMinGapMs。新装的软件几秒后就能搜到
-;   - 兜底 (监视不到的: ALTRun 没运行时装的软件、启动时还不存在或监视不了的文件夹): 缓存超过
-;     FallbackMinutes 分钟也重建, 启动时和之后每分钟检查一次 (以前是设置 RefreshMinutes, 现在不再读取)
-;   - 后台重建后的写缓存等键盘鼠标空闲一会儿再写 (写 JSON 的那一下不分段), 退出时还没写就马上写
-; 商店应用 (PowerShell) 后台最多每小时扫一次。
-; 托盘菜单 "重建索引" 或系统命令 "Rebuild ALTRun Index" 立即重建 (一次做完, 显示结果)。
+; The index is cached in Data\AppIndex.json and read directly at start-up. It is rescanned in the background in batches (at most about 15 ms per timer tick, so hotkeys aren't blocked),
+; without notifications; when the search window is open (or opening) during a scan it pauses (if an old index is available) and goes on after it closes, so it never competes with showing or searching:
+;   - watching Folders (with subfolders, Windows folder change notifications): files added, deleted or renamed rebuild after WatchQuietMs of quiet
+;     (installers create several shortcuts in a row), at least WatchMinGapMs apart. Newly installed software can be found a few seconds later
+;   - as a fallback (what watching misses: software installed while ALTRun wasn't running, folders that didn't exist or couldn't be watched at start-up): it also rebuilds when the cache is older than
+;     FallbackMinutes, checked at start-up and every minute after (formerly the RefreshMinutes setting, no longer read)
+;   - the cache write after a background rebuild waits until keyboard and mouse have been idle a while (writing the JSON is done in one go), and is done at once on exit if still pending
+; Store apps (PowerShell) are scanned in the background at most once an hour.
+; The tray menu's "Rebuild index" or the system command "Rebuild ALTRun Index" rebuilds immediately (in one go, showing the result).
 ;
-; 不需要的应用: 在搜索结果里按 Ctrl+Del (或右键 "删除") 把它加入 Hidden 列表, 不再显示,
-; 重建索引后也不会回来 (不会卸载程序, 也不改 AppIndex.json)。偏好设置 -> 应用搜索里
-; 删掉 Hidden 的一行即可恢复。
+; Unwanted applications: Ctrl+Del (or right-click "Delete") in the results adds them to the Hidden list so they no longer show,
+; not even after rebuilding (nothing is uninstalled and AppIndex.json isn't changed). Deleting the line from Hidden in
+; Preferences -> Applications brings it back.
 ;
-; 设置 (ALTRun.json -> Features.Applications):
+; Settings (ALTRun.json -> Features.Applications):
 ;   Folders / FileTypes / Depth / Exclude / Hidden / StoreApps / MatchPinyin
 ;===============================================================================
 
@@ -28,7 +28,7 @@ class ApplicationProvider {
     static IndexFile := AppSettings.DataDir "\AppIndex.json"
     static Apps      := []            ; [Map("Title", "Target", "Detail", "Search")...]
     static _storePid := 0, _storeFile := "", _storeTimer := "", _storeScanned := 0
-    static _job := "", _scanTimer := "", _refreshTimer := ""         ; 后台重建: 见 _NewJob
+    static _job := "", _scanTimer := "", _refreshTimer := ""         ; background rebuild: see _NewJob
     static WatchQuietMs := 5000, WatchMinGapMs := 60000, SaveIdleMs := 2000, FallbackMinutes := 60
     static _watcher := "", _watchTimer := "", _watchTypes := ""
     static _changedAt := 0, _lastBackground := 0, _savePending := false, _saveTimer := ""
@@ -36,17 +36,17 @@ class ApplicationProvider {
 
     static Init() {
         if !ApplicationProvider._LoadCache() || ApplicationProvider._CacheExpired()
-            SetTimer(() => ApplicationProvider.RefreshInBackground(), -3000)   ; 先让窗口出来, 再在后台扫描
-        SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; 预先算好搜索 Key, 第一次搜索不用等
+            SetTimer(() => ApplicationProvider.RefreshInBackground(), -3000)   ; show the window first, then scan in the background
+        SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; compute the search keys in advance, so the first search doesn't wait
         ApplicationProvider._refreshTimer := Logger.Watch("app refresh check", () => ApplicationProvider._CheckRefresh())
         SetTimer(ApplicationProvider._refreshTimer, 60000)
         ApplicationProvider.StartWatching()
     }
 
     ;---------------------------------------------------------------------------
-    ; 监视索引的文件夹 (FolderWatcher, 每 2 秒看一眼不等待): 应用类型的文件 (FileTypes) 或文件夹
-    ; 新增、删除、改名、修改时在后台重建。能拿到文件名, 所以桌面上别的文件变了不算; ALTRun 自己的文件夹也不算
-    ; (放在桌面上时, 写缓存、日志会一直触发)
+    ; Watch the indexed folders (FolderWatcher, a quick look every 2 s without waiting): rebuild in the background when application-type files (FileTypes) or folders
+    ; are added, deleted, renamed or modified. The file names are known, so other files changing on the desktop don't count; neither do ALTRun's own folders
+    ; (on the desktop, cache and log writes would trigger it all the time)
     ;---------------------------------------------------------------------------
     static StartWatching() {
         ApplicationProvider.StopWatching()
@@ -72,7 +72,7 @@ class ApplicationProvider {
         ApplicationProvider._watcher := "", ApplicationProvider._changedAt := 0
     }
 
-    ; 每 2 秒: 读出已经到了的变化 (不等待), 有应用相关的就记下时间; 安静 WatchQuietMs、离上一次后台重建至少 WatchMinGapMs 时重建
+    ; Every 2 s: read the changes that have arrived (no waiting) and note the time of application-related ones; rebuild after WatchQuietMs of quiet, at least WatchMinGapMs after the last background rebuild
     static _PollWatches() {
         if !IsObject(ApplicationProvider._watcher)
             return
@@ -92,8 +92,8 @@ class ApplicationProvider {
         ApplicationProvider.RefreshInBackground()
     }
 
-    ; 纯函数: 这个路径的变化要不要重建 -- 应用类型的文件 (types: _TypesPattern), 或没有扩展名的 (多半是文件夹,
-    ; 例如开始菜单里一个程序的文件夹被删掉 / 改名); ALTRun 自己文件夹里的不算
+    ; Pure function: whether a change at this path needs a rebuild -- an application-type file (types: _TypesPattern), or one without an extension (probably a folder,
+    ; e.g. a program's folder in the Start menu deleted / renamed); not inside ALTRun's own folders
     static IsWatchedChange(fullPath, types, ownDir := A_ScriptDir) {
         if (ownDir != "" && InStr(fullPath, RTrim(ownDir, "\") "\") = 1)
             return false
@@ -103,7 +103,7 @@ class ApplicationProvider {
         return (ext = "" || RegExMatch(name, types)) ? true : false
     }
 
-    ; FileTypes ("*.lnk"...) -> 一个正则 ("i)^(?:.*\.lnk|...)$")
+    ; FileTypes ("*.lnk"...) -> one regex ("i)^(?:.*\.lnk|...)$")
     static _TypesPattern(options) {
         types := ""
         for pattern in options["FileTypes"]
@@ -118,8 +118,8 @@ class ApplicationProvider {
         keys := ApplicationProvider._SearchKeys()
         apps := ApplicationProvider._entries
 
-        ; 继续输入 (新输入以上一次的输入开头) 时只需要在上一次匹配到的里面找。
-        ; 3 个字母以下时 "按顺序出现的字母" 规则不生效, 那时的结果不能用来缩小范围。
+        ; When typing on (the new input starts with the previous one), only the previous matches need searching.
+        ; Below 3 letters the "letters in order" rule doesn't apply, so those results can't be used to narrow down.
         candidates := ""
         if (StrLen(ApplicationProvider._lastNeedle) >= 3 && InStr(needle, ApplicationProvider._lastNeedle) = 1)
             candidates := ApplicationProvider._lastMatches
@@ -136,7 +136,7 @@ class ApplicationProvider {
         matches := [], ranks := Map()
         for index, score in scores {
             matches.Push(index)
-            ranks[index] := score + Knowledge.Boost(query.Text, "app:" StrLower(apps[index]["Target"]))   ; 常选的应用不会被挤出前几名
+            ranks[index] := score + Knowledge.Boost(query.Text, "app:" StrLower(apps[index]["Target"]))   ; often chosen applications aren't pushed out of the top results
         }
         ApplicationProvider._lastNeedle := needle, ApplicationProvider._lastMatches := matches
 
@@ -153,7 +153,7 @@ class ApplicationProvider {
         return results
     }
 
-    ; 启动后空闲时先算好搜索 Key, 第一次输入不用等
+    ; compute the search keys while idle after start-up, so the first input doesn't wait
     static Warm() {
         ApplicationProvider._SearchKeys()
     }
@@ -167,8 +167,8 @@ class ApplicationProvider {
         return items
     }
 
-    ; 没有隐藏的应用 (_entries) 和它们的搜索 Key (名称 + 拼音首字母);
-    ; Apps 换成新数组或隐藏列表变化时重新计算
+    ; The applications that aren't hidden (_entries) and their search keys (name + pinyin initials);
+    ; recomputed when Apps becomes a new array or the hidden list changes
     static _SearchKeys() {
         version := ObjPtr(ApplicationProvider.Apps) "|" ApplicationProvider._HiddenSignature()
         if (ApplicationProvider._keysFor = version)
@@ -189,7 +189,7 @@ class ApplicationProvider {
     }
 
     ;---------------------------------------------------------------------------
-    ; 隐藏不需要的应用 (搜索结果里 Ctrl+Del / 右键 "删除")
+    ; Hides an unwanted application (Ctrl+Del / right-click "Delete" in the results)
     ;---------------------------------------------------------------------------
     static DeleteItem(item) {
         return ApplicationProvider.Hide(item.Arg)
@@ -207,7 +207,7 @@ class ApplicationProvider {
         return AppSettings.Save()
     }
 
-    ; 隐藏列表 -> Map (不区分大小写), 列表变化 (换了数组或条数变了) 时重新生成
+    ; The hidden list -> Map (case-insensitive), rebuilt when the list changes (a new array or a different count)
     static _HiddenTargets() {
         static cache := "", cacheFor := ""
         signature := ApplicationProvider._HiddenSignature()
@@ -226,7 +226,7 @@ class ApplicationProvider {
         return ObjPtr(hidden) ":" hidden.Length
     }
 
-    ; 立即重新扫描 (一次做完), 返回找到的应用数量。正在后台重建的话先停掉
+    ; Rescans now (in one go) and returns the number of applications found. Stops a background rebuild first
     static Rebuild() {
         ApplicationProvider._StopJob()
         job := ApplicationProvider._NewJob()
@@ -234,7 +234,7 @@ class ApplicationProvider {
         return ApplicationProvider._Finish(job, true)
     }
 
-    ; 在后台分批重新扫描, 扫完再替换 Apps (中途搜索用的还是旧的); 已经在扫的话不重复
+    ; Rescans in the background in batches and replaces Apps when done (searches meanwhile use the old one); no second scan while one runs
     static RefreshInBackground() {
         if IsObject(ApplicationProvider._job)
             return
@@ -245,11 +245,11 @@ class ApplicationProvider {
         SetTimer(ApplicationProvider._scanTimer, 10)
     }
 
-    ; 每分钟: 缓存过期了就在后台重建 (兜底, 平时靠监视文件夹)。搜索窗口开着时等下一次。不用等键盘鼠标空闲:
-    ; 扫描是分段的, 窗口一打开就停, 最后写缓存也等空闲再写 (见 _Finish)
+    ; Every minute: rebuild in the background when the cache is out of date (a fallback; normally the folder watch does it). Waits for the next time while the search window is open. No need to wait for keyboard and mouse idle:
+    ; scanning is split up and stops as soon as the window opens, and the final cache write also waits for idle (see _Finish)
     static _CheckRefresh() {
         if (IsObject(ApplicationProvider._job) || ApplicationProvider._savePending || !BackgroundWork.CanRun())
-            return                                                          ; _savePending: 刚重建完, 缓存文件还没写 (修改时间是旧的)
+            return                                                          ; _savePending: just rebuilt, the cache file isn't written yet (its time is old)
         if ApplicationProvider._CacheExpired()
             ApplicationProvider.RefreshInBackground()
     }
@@ -265,7 +265,7 @@ class ApplicationProvider {
         SetTimer(ApplicationProvider._scanTimer, 0)
         ApplicationProvider._job := ""
         ApplicationProvider._Finish(job, false)
-        SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; 新的搜索 Key 也先算好
+        SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; compute the new search keys in advance too
     }
 
     static _StopJob() {
@@ -274,8 +274,8 @@ class ApplicationProvider {
         ApplicationProvider._job := ""
     }
 
-    ; 一次扫描: 按 Folders 的顺序一个一个扫, 每个用一个待扫描文件夹的栈代替递归, 可以随时停下, 下次接着扫。
-    ; 每个文件夹只列一次, 文件名和 FileTypes (通配符) 自己比 (分别按每种类型列目录要慢好几倍)
+    ; One scan: the Folders one by one in order, each with a stack of folders to scan instead of recursion, so it can stop any time and go on later.
+    ; Each folder is listed once and the file names compared with FileTypes (wildcards) here (listing once per type is several times slower)
     static _NewJob() {
         options := AppSettings.Feature("Applications")
         roots := []
@@ -289,7 +289,7 @@ class ApplicationProvider {
         return {Options: options, Roots: roots, Next: 1, Stack: [], Types: ApplicationProvider._TypesPattern(options), Found: found}
     }
 
-    ; 扫一部分: 用时超过 budget 毫秒就停 (0 = 一次扫完); 扫完返回 true
+    ; Scans a part: stops after budget ms (0 = all at once); true when done
     static _Step(job, budget) {
         options := job.Options, exclude := options["Exclude"], maxDepth := options["Depth"]
         start := A_TickCount
@@ -314,9 +314,9 @@ class ApplicationProvider {
                 if (exclude != "" && RegExMatch(title, exclude))
                     continue
                 detail := ""
-                if (ext = "lnk") {                                          ; 同一个程序在多个位置有快捷方式时只保留一个
+                if (ext = "lnk") {                                          ; a program with shortcuts in several places is kept once
                     try FileGetShortcut(A_LoopFileFullPath, &linkTarget, , &linkArgs)
-                    catch                                                   ; 损坏的快捷方式: 出错时两个变量都成了未赋值
+                    catch                                                   ; a broken shortcut: on an error both variables are left unassigned
                         linkTarget := "", linkArgs := ""
                     detail := Trim(linkTarget " " linkArgs)
                     key := StrLower(title "|" detail)
@@ -326,19 +326,19 @@ class ApplicationProvider {
                 if !job.Found.Has(key)
                     job.Found[key] := ApplicationProvider._Entry(title, A_LoopFileFullPath, detail, options)
             }
-            Loop subfolders.Length                                          ; 倒着压栈, 先扫前面的
+            Loop subfolders.Length                                          ; pushed in reverse, so the earlier ones are scanned first
                 job.Stack.Push([subfolders[subfolders.Length - A_Index + 1], depth + 1])
             if (budget && A_TickCount - start >= budget)
                 return false
         }
     }
 
-    ; 扫完: 换上新的 Apps, 写缓存; 商店应用手动重建时总是扫, 后台最多每小时一次
+    ; Done: swap in the new Apps and write the cache; Store apps are always scanned for a manual rebuild, at most once an hour in the background
     static _Finish(job, manual) {
         apps := []
         for key, entry in job.Found
             apps.Push(entry)
-        ApplicationProvider._MergeStoreApps(apps)                          ; 保留上一次的商店应用, 后台更新完成后再替换
+        ApplicationProvider._MergeStoreApps(apps)                          ; keep the previous Store apps and replace them when the background update finishes
         ApplicationProvider.Apps := apps
         if manual
             ApplicationProvider._SaveCache()
@@ -357,7 +357,7 @@ class ApplicationProvider {
     }
 
     ;---------------------------------------------------------------------------
-    ; Microsoft Store apps (后台 PowerShell)
+    ; Microsoft Store apps (PowerShell in the background)
     ;---------------------------------------------------------------------------
     static _StartStoreScan() {
         if (ApplicationProvider._storePid && ProcessExist(ApplicationProvider._storePid))
@@ -389,11 +389,11 @@ class ApplicationProvider {
         options := AppSettings.Feature("Applications")
         storeApps := []
         for line in StrSplit(FileRead(csvFile, "UTF-8"), "`n", "`r") {
-            if (A_Index = 1 || !RegExMatch(line, '^"(.*)","(.*)"$', &m))    ; 第一行是表头
+            if (A_Index = 1 || !RegExMatch(line, '^"(.*)","(.*)"$', &m))    ; the first line is the header
                 continue
             if (m[1] = "" || m[2] = "" || RegExMatch(m[1], options["Exclude"]))
                 continue
-            if !InStr(m[2], "!")                                            ; 只要 "包名!应用" 形式的真正商店应用, 普通程序已在开始菜单里索引过
+            if !InStr(m[2], "!")                                            ; only real Store apps of the form "package!app"; normal programs are already indexed from the Start menu
                 continue
             storeApps.Push(ApplicationProvider._Entry(m[1], "shell:AppsFolder\" m[2], "", options))
         }
@@ -432,9 +432,9 @@ class ApplicationProvider {
         }
     }
 
-    ; 缓存超过 FallbackMinutes 分钟了吗; 没有缓存文件也算过期
-    ; 让缓存算作过期 (偏好设置里改了扫描范围): 下次启动照常先读它, 再在后台重新扫描。
-    ; 还没写的缓存也不写了 (按旧的范围扫的; 退出时写的话修改时间又成了现在)
+    ; Whether the cache is older than FallbackMinutes; no cache file counts as out of date
+    ; Makes the cache count as out of date (the scan scope changed in Preferences): the next start-up still reads it first, then rescans in the background.
+    ; A pending cache write is dropped too (scanned with the old scope; writing it on exit would make its time current again)
     static ExpireCache() {
         ApplicationProvider._savePending := false
         try FileSetTime("20000101000000", ApplicationProvider.IndexFile, "M")
@@ -446,7 +446,7 @@ class ApplicationProvider {
         return true
     }
 
-    ; 后台重建后的写缓存: 等键盘鼠标空闲 SaveIdleMs 并且搜索窗口没开时再写, 不在用户正操作时卡那一下
+    ; The cache write after a background rebuild: waits until keyboard and mouse have been idle for SaveIdleMs and the search window is closed, so it never stalls while the user works
     static _SaveWhenIdle() {
         ApplicationProvider._savePending := true
         if (ApplicationProvider._saveTimer = "")
@@ -461,7 +461,7 @@ class ApplicationProvider {
         ApplicationProvider.SavePending()
     }
 
-    ; 还没写的缓存马上写 (退出时)
+    ; write a pending cache now (on exit)
     static SavePending() {
         if !ApplicationProvider._savePending
             return

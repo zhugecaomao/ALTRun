@@ -1,5 +1,5 @@
-; BenchProbe.ahk - 只放进性能测试用的副本 (见 BenchDriver.ahk / bench.yml): 回答驱动程序
-; "现在输入框里的文字的结果已经换上并画好了吗"。两个版本用同一份, 只用到两边都有的成员
+; BenchProbe.ahk - only put in the benchmark copies (see BenchDriver.ahk / bench.yml): answers the driver
+; "are the results for the text in the input box swapped in and drawn yet". Both versions use the same file, using only members both have
 class BenchProbe {
     static Text := "", Mode := "", Paints := -1, Count := -1, Calls := 0
     static Init() {
@@ -14,11 +14,11 @@ class BenchProbe {
         BenchProbe.Paints := SearchWindow._paints, BenchProbe.Count := results.Length
         return r
     }
-    ; w = 1: 搜索结果好了 (l = 输入框里应有的字数); 3: 操作面板好了; 2: 只是回应 (启动完、空闲)
+    ; w = 1: search results ready (l = the number of characters the box should have); 3: actions panel ready; 2: just a reply (started, idle)
     static _Query(w, l) {
         if (w = 2)
             return 1
-        if (w = 9)                                                          ; 调试: SetResults 调用了几次 / 输入框字数 / 自绘次数
+        if (w = 9)                                                          ; debugging: how many times SetResults was called / characters in the box / custom-draw count
             return BenchProbe.Calls
         if (w = 8)
             return StrLen(SearchWindow.Input.Value)

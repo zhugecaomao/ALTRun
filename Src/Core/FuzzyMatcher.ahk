@@ -1,27 +1,27 @@
 ;===============================================================================
-; FuzzyMatcher.ahk - 搜索匹配打分 (AutoHotkey v2)
+; FuzzyMatcher.ahk - match scoring for search (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 返回 0 (不匹配) ~ 100 (完全相同), 规则按 Alfred 的习惯:
-;   100  完全相同                     "notepad"  -> Notepad
-;    90  开头相同                     "note"     -> Notepad
-;    80  某个单词的开头               "code"     -> Visual Studio Code
-;    75  单词首字母                   "vsc"      -> Visual Studio Code
-;    60  包含 (越靠前分越高)          "pad"      -> Notepad
-;    45  多个关键词都能匹配上         "st co"    -> Visual Studio Code
-;    30  按顺序出现的字母 (至少 3 个, 首字母相同)  "ntpd" -> Notepad
-; 同一档里, 文字越短分数越高 (更精确)。都不区分大小写。
+; Returns 0 (no match) ~ 100 (identical), following Alfred:
+;   100  identical                     "notepad"  -> Notepad
+;    90  same start                    "note"     -> Notepad
+;    80  start of a word               "code"     -> Visual Studio Code
+;    75  word initials                 "vsc"      -> Visual Studio Code
+;    60  contains (higher nearer the start)  "pad"      -> Notepad
+;    45  several words all match       "st co"    -> Visual Studio Code
+;    30  letters in order (at least 3, same first letter)  "ntpd" -> Notepad
+; Within a tier, shorter text scores higher (more exact). All case-insensitive.
 ;
-; 性能: 每次按键都要给几千个候选打分, 所以候选文字预先算好 SearchKey (小写、
-; 单词边界、首字母), 打分时只剩几次 InStr, 不用正则。不匹配的候选 (绝大多数)
-; 一般两次 InStr 就被排除。
+; Performance: thousands of candidates are scored on each key press, so each candidate's SearchKey (lower case,
+; word boundaries, initials) is computed in advance and scoring is just a few InStr calls, no regex. Candidates that don't match (most of them)
+; are usually ruled out after two InStr calls.
 ;
-; 用法:
-;   key := FuzzyMatcher.Key("Visual Studio Code")          候选文字建一次, 缓存起来
-;   FuzzyMatcher.ScoreKey("vsc", key)                      needle 必须已经是小写
-;   FuzzyMatcher.BestKey("wx", [titleKey, pinyinKey])      多个候选取最高分
-;   FuzzyMatcher.Score("vsc", "Visual Studio Code")        一次性打分 (内部建 Key)
-;   FuzzyMatcher.TopIndexes(scores, limit)                 分数数组 -> 分数最高的 limit 个下标
-;   FuzzyMatcher.MatchRanges("vsc", "Visual Studio Code")  要高亮的位置 -> [[1, 1], [8, 1], [15, 1]]
+; Usage:
+;   key := FuzzyMatcher.Key("Visual Studio Code")          build once per candidate and cache it
+;   FuzzyMatcher.ScoreKey("vsc", key)                      needle must already be lower case
+;   FuzzyMatcher.BestKey("wx", [titleKey, pinyinKey])      the best score of several
+;   FuzzyMatcher.Score("vsc", "Visual Studio Code")        one-off scoring (builds the key itself)
+;   FuzzyMatcher.TopIndexes(scores, limit)                 scores -> the indexes of the limit best
+;   FuzzyMatcher.MatchRanges("vsc", "Visual Studio Code")  the positions to highlight -> [[1, 1], [8, 1], [15, 1]]
 ;===============================================================================
 
 class FuzzyMatcher {
@@ -46,8 +46,8 @@ class FuzzyMatcher {
         return best
     }
 
-    ; 预先计算的候选文字: Lower = 小写原文, Words = " " + 单词之间只用空格分隔的小写文字,
-    ; Initials = 各单词首字母 (驼峰也算单词)
+    ; Precomputed candidate text: Lower = the text in lower case, Words = " " + the lower-case text with only spaces between words,
+    ; Initials = the initials of the words (camel case counts as words)
     static Key(text) {
         lower := StrLower(text)
         words := " " RegExReplace(lower, "[\s\-_.\\/()\[\]]+", " ")
@@ -66,7 +66,7 @@ class FuzzyMatcher {
         return best
     }
 
-    ; needle: 已经 Trim + 小写
+    ; needle: already trimmed and lower case
     static ScoreKey(needle, key) {
         if (needle = "")
             return 1
@@ -74,21 +74,21 @@ class FuzzyMatcher {
         if (h = "")
             return 0
         needleLength := StrLen(needle)
-        lengthPenalty := Min(Max(key.Length - needleLength, 0), 40) * 0.1  ; 最多扣 4 分
+        lengthPenalty := Min(Max(key.Length - needleLength, 0), 40) * 0.1  ; at most 4 points off
 
         if (pos := InStr(h, needle)) {
             if (key.Length = needleLength)
                 return 100
             if (pos = 1)
                 return 90 - lengthPenalty
-            if (InStr(key.Words, " " needle) || InStr(" -_.\/()[]", SubStr(h, pos - 1, 1)))   ; 第二个条件: needle 本身带分隔符时
+            if (InStr(key.Words, " " needle) || InStr(" -_.\/()[]", SubStr(h, pos - 1, 1)))   ; second condition: when the needle itself contains separators
                 return 80 - lengthPenalty
             return 60 - Min(pos, 20) * 0.25 - lengthPenalty
         }
         if (needleLength >= 2 && InStr(key.Initials, needle) = 1)
             return 75 - lengthPenalty
 
-        if InStr(needle, " ") {                                             ; 多个关键词: 每个都要能匹配上
+        if InStr(needle, " ") {                                             ; several words: each must match
             total := 0, count := 0
             for token in StrSplit(needle, " ") {
                 if (token = "")
@@ -101,16 +101,16 @@ class FuzzyMatcher {
             return count ? Min(total / count, 90) * 0.5 : 0
         }
 
-        ; 按顺序出现的字母: 至少 3 个, 且第一个字母相同, 否则会命中太多无关项
+        ; letters in order: at least 3 and the same first letter, otherwise too many unrelated items match
         if (needleLength >= 3 && SubStr(needle, 1, 1) = SubStr(h, 1, 1) && FuzzyMatcher.IsSubsequence(needle, h))
             return 30 - lengthPenalty
         return 0
     }
 
-    ; 搜索结果里要高亮的字: needle 在 text 里命中的位置, 返回 [[开始, 长度], ...] (从 1 开始, 按位置排好、合并相邻的)。
-    ; 和 ScoreKey 的匹配方式对应: 连续出现 (优先单词开头) / 单词首字母 / 多个词各自出现 / 按顺序出现的字母;
-    ; 都没有时按拼音首字母找 (一个汉字对应一个字母, 位置相同)。多个词整体匹配不上时 (例如 "snip 报价"
-    ; 前面是关键字), 能找到的词单独标出。找不到返回 []
+    ; The characters to highlight in a result: where needle hits text, as [[start, length], ...] (1-based, sorted by position, adjacent ones merged).
+    ; Matches the way ScoreKey matches: a contiguous run (preferring word starts) / word initials / several words each found / letters in order;
+    ; failing those, by pinyin initials (one letter per Chinese character, same positions). When several words don't match as a whole (e.g. "snip 报价",
+    ; where the first is a keyword), the words that are found are marked on their own. [] if nothing is found
     static MatchRanges(needle, text) {
         needle := StrLower(Trim(RegExReplace(needle, "\s+", " ")))
         if (needle = "" || text = "")
@@ -132,7 +132,7 @@ class FuzzyMatcher {
 
     static _Ranges(needle, text, allowSubsequence) {
         h := StrLower(text)
-        if (pos := InStr(h, needle)) {                                      ; 连续出现: 有在单词开头的就用它
+        if (pos := InStr(h, needle)) {                                      ; contiguous: use one at a word start if there is one
             starts := FuzzyMatcher.WordStarts(text), found := pos
             while pos {
                 if FuzzyMatcher._Has(starts, pos) {
@@ -144,7 +144,7 @@ class FuzzyMatcher {
             return [[found, StrLen(needle)]]
         }
         needleLength := StrLen(needle)
-        if (needleLength >= 2 && !InStr(needle, " ")) {                     ; 单词首字母
+        if (needleLength >= 2 && !InStr(needle, " ")) {                     ; word initials
             starts := FuzzyMatcher.WordStarts(text), initials := ""
             for start in starts
                 initials .= SubStr(h, start, 1)
@@ -155,7 +155,7 @@ class FuzzyMatcher {
                 return ranges
             }
         }
-        if InStr(needle, " ") {                                             ; 多个词: 每个都要找到
+        if InStr(needle, " ") {                                             ; several words: each must be found
             ranges := []
             for token in StrSplit(needle, " ") {
                 if (token = "")
@@ -168,7 +168,7 @@ class FuzzyMatcher {
             }
             return ranges
         }
-        if (allowSubsequence && needleLength >= 3 && SubStr(needle, 1, 1) = SubStr(h, 1, 1)) {   ; 按顺序出现的字母
+        if (allowSubsequence && needleLength >= 3 && SubStr(needle, 1, 1) = SubStr(h, 1, 1)) {   ; letters in order
             ranges := [], pos := 1
             Loop Parse needle {
                 if !(pos := InStr(h, A_LoopField, false, pos))
@@ -180,7 +180,7 @@ class FuzzyMatcher {
         return []
     }
 
-    ; 每个单词第一个字的位置 (和 Initials 的分词一样: 字母数字以外的字符分隔, 驼峰也算单词)
+    ; Position of the first character of each word (split like Initials: characters other than letters and digits separate, camel case counts as words)
     static WordStarts(text) {
         starts := [], previous := ""
         Loop Parse text {
@@ -218,7 +218,7 @@ class FuzzyMatcher {
         return merged
     }
 
-    ; 按命中位置把文字分成几段: [[文字, 是否高亮], ...] (超出文字长度的部分忽略)
+    ; Splits the text at the hits: [[text, highlighted], ...] (anything beyond the text's length is ignored)
     static Segments(text, ranges) {
         segments := [], pos := 1, textLength := StrLen(text)
         for range in ranges {
@@ -236,7 +236,7 @@ class FuzzyMatcher {
         return segments
     }
 
-    ; "Visual Studio Code" -> "vsc"; "my_file-name" -> "mfn"; "AutoHotkey" -> "ah" (驼峰也算单词)
+    ; "Visual Studio Code" -> "vsc"; "my_file-name" -> "mfn"; "AutoHotkey" -> "ah" (camel case counts as words)
     static Initials(text) {
         text := RegExReplace(text, "([a-z])([A-Z])", "$1 $2")
         initials := ""
@@ -257,7 +257,7 @@ class FuzzyMatcher {
         return true
     }
 
-    ; scores: 下标 -> 分数 (Map), 返回分数最高的 limit 个下标 (分数相同时下标小的在前)
+    ; scores: index -> score (Map); returns the indexes of the limit highest scores (on ties, lower indexes first)
     static TopIndexes(scores, limit) {
         if !scores.Count
             return []

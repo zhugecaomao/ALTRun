@@ -1,9 +1,9 @@
-# 把 docs/wiki/ 发布到 GitHub Wiki。
-# Wiki 的内容以仓库里的 docs/wiki/ 为准 (可以通过 PR 修改和审阅); 合并到 main 后自动同步。
-# 直接在网页上修改的 Wiki 会在下次同步时被覆盖, 请改 docs/wiki/。
-# 2026.10.20 以前英文页叫 en-Usage、中文页叫 Usage; 现在英文页是 Usage、中文页是 Usage-zh。
-# 为了旧链接和旧版本 ALTRun 里的帮助链接, 发布时另外生成一行的 en-Usage 页面指向新名字,
-# 2026.10.20 之后发布满三个正式版后不再生成 (每周一也检查一次, 到时自动删掉)。
+# Publishes docs/wiki/ to the GitHub Wiki.
+# The Wiki's content comes from docs/wiki/ in the repository (changed and reviewed through PRs); synced automatically after merging to main.
+# Edits made directly on the Wiki website are overwritten at the next sync; change docs/wiki/ instead.
+# Before 2026.10.20 the English pages were called en-Usage and the Chinese pages Usage; now the English page is Usage and the Chinese Usage-zh.
+# For old links and the help links in old ALTRun versions, publishing also generates one-line en-Usage pages pointing to the new names,
+# no longer generated once three releases have come out after 2026.10.20 (also checked every Monday, deleted automatically then).
 name: Publish wiki
 
 on:
@@ -34,10 +34,10 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           git clone --depth 1 "https://x-access-token:${TOKEN}@github.com/${REPO}.wiki.git" wiki
-          find wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +   # 页面以 docs/wiki/ 为准, 删掉的页面也同步删除
+          find wiki -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +   # the pages follow docs/wiki/; deleted pages are deleted too
           cp -r docs/wiki/. wiki/
 
-          # 旧的 en- 页面: 2026.10.20 之后的正式版 (三段版本号) 不满三个时生成
+          # the old en- pages: generated while there are fewer than three releases (three-part versions) after 2026.10.20
           after=$(gh release list --repo "$REPO" --limit 100 --json tagName --jq '.[].tagName' | grep -E '^[0-9]{4}\.[0-9]{2}\.[0-9]{2}$' | awk '$0 > "2026.10.20"' | wc -l)
           if [ "$after" -lt 3 ]; then
             for file in docs/wiki/*.md; do

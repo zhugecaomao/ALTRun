@@ -1,17 +1,17 @@
 ;===============================================================================
-; NavIcons.ahk - 偏好设置左边页面列表的图标 (AutoHotkey v2)
+; NavIcons.ahk - icons of the page list on the left of Preferences (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 用 Windows 自带的图标字体画 (Windows 11: Segoe Fluent Icons, Windows 10: Segoe MDL2 Assets,
-; 和 Windows 设置、PowerToys 同一套单色线条图标): 不用另外带图标文件, 高 DPI 下也清晰。
-; 两种字体都没有时 (例如 Wine) 返回 0, 列表只显示文字。
+; Drawn with Windows' own icon fonts (Windows 11: Segoe Fluent Icons, Windows 10: Segoe MDL2 Assets,
+; the same monochrome line icons as Windows Settings and PowerToys): no icon files to ship, sharp at high DPI.
+; Without either font (e.g. Wine) it returns 0 and the list shows text only.
 ;
-; 用法:
-;   il := NavIcons.ImageList(PreferencesWindow.PageKeys)   ; 0 = 没有图标字体
+; Usage:
+;   il := NavIcons.ImageList(PreferencesWindow.PageKeys)   ; 0 = no icon font
 ;===============================================================================
 
 class NavIcons {
     static Fonts := ["Segoe Fluent Icons", "Segoe MDL2 Assets"]
-    ; 页面 -> 字形 (两种字体的编码相同)
+    ; page -> glyph (the same code points in both fonts)
     static Glyphs := Map(
         "Prefs.Page.General",      0xE713,    ; Settings
         "Prefs.Page.Window",       0xE721,    ; Search
@@ -33,9 +33,9 @@ class NavIcons {
         "Prefs.Page.DateStamp",    0xE787,    ; Calendar
         "Prefs.Page.Usage",        0xE9D2,    ; AreaChart
         "Prefs.Page.Advanced",     0xE90F)    ; Repair
-    static Color := 0x505050                                                ; RGB, 和正文接近的深灰
+    static Color := 0x505050                                                ; RGB, a dark gray close to the body text
 
-    ; 每页一个图标的图像列表 (keys 的顺序), 格子宽 28、高 26 (按 DPI 放大), 字形 16 px 居中
+    ; An image list with one icon per page (in the order of keys), cells 28 wide and 26 high (scaled with DPI), 16 px glyphs centered
     static ImageList(keys) {
         font := NavIcons.FontName()
         if (font = "")
@@ -45,13 +45,13 @@ class NavIcons {
         il := DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x20, "Int", keys.Length, "Int", 0, "Ptr")   ; ILC_COLOR32
         hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
         hFont := DllCall("CreateFontW", "Int", -Round(16 * scale), "Int", 0, "Int", 0, "Int", 0, "Int", 400, "UInt", 0, "UInt", 0, "UInt", 0
-                       , "UInt", 1, "UInt", 0, "UInt", 0, "UInt", 4, "UInt", 0, "Str", font, "Ptr")   ; 4 = ANTIALIASED_QUALITY (灰度, 不用 ClearType 的彩边)
+                       , "UInt", 1, "UInt", 0, "UInt", 0, "UInt", 4, "UInt", 0, "Str", font, "Ptr")   ; 4 = ANTIALIASED_QUALITY (grayscale, without ClearType's color fringes)
         oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", hFont, "Ptr")
         DllCall("SetTextColor", "Ptr", hdc, "UInt", 0xFFFFFF)
         DllCall("SetBkMode", "Ptr", hdc, "Int", 1)
         r := (NavIcons.Color >> 16) & 0xFF, g := (NavIcons.Color >> 8) & 0xFF, b := NavIcons.Color & 0xFF
         for key in keys {
-            info := Buffer(40, 0)                                           ; BITMAPINFOHEADER: 32 位, 从上到下
+            info := Buffer(40, 0)                                           ; BITMAPINFOHEADER: 32-bit, top-down
             NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 32, info)
             hbm := DllCall("CreateDIBSection", "Ptr", hdc, "Ptr", info, "UInt", 0, "Ptr*", &bits := 0, "Ptr", 0, "UInt", 0, "Ptr")
             old := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbm, "Ptr")
@@ -60,7 +60,7 @@ class NavIcons {
                 NumPut("Int", 0, "Int", 0, "Int", w, "Int", h, rect)
                 DllCall("DrawTextW", "Ptr", hdc, "Str", Chr(NavIcons.Glyphs[key]), "Int", -1, "Ptr", rect, "UInt", 0x825)   ; CENTER | VCENTER | SINGLELINE | NOPREFIX
                 DllCall("GdiFlush")
-                ; 白字画在黑底上, 亮度就是不透明度: 换成预乘 Alpha 的深灰
+                ; white text on black: the brightness is the opacity; turn it into premultiplied-alpha dark gray
                 Loop w * h {
                     offset := (A_Index - 1) * 4
                     if (a := NumGet(bits, offset, "UChar"))
@@ -77,7 +77,7 @@ class NavIcons {
         return il
     }
 
-    ; 没有图标的页面 (测试用), 空格分开
+    ; pages without an icon (for tests), separated by spaces
     static MissingPages(keys) {
         missing := ""
         for key in keys
@@ -86,7 +86,7 @@ class NavIcons {
         return missing
     }
 
-    ; 图标字体里没有的字形 (测试用; Win10 的 Segoe MDL2 Assets 比 Win11 的字体少一些字形)
+    ; glyphs missing from the icon font (for tests; Win10's Segoe MDL2 Assets has fewer glyphs than Win11's font)
     static MissingGlyphs() {
         missing := ""
         hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
@@ -104,7 +104,7 @@ class NavIcons {
         return missing
     }
 
-    ; 装了的第一种图标字体, 都没有时 ""
+    ; the first icon font installed, "" if none
     static FontName() {
         static found := ""
         if (found = "") {
@@ -118,7 +118,7 @@ class NavIcons {
                 DllCall("GetTextFaceW", "Ptr", hdc, "Int", 64, "Ptr", face)
                 DllCall("SelectObject", "Ptr", hdc, "Ptr", old)
                 DllCall("DeleteObject", "Ptr", hFont)
-                if (StrGet(face, "UTF-16") = name) {                        ; 没有这种字体时 Windows 换成别的字体
+                if (StrGet(face, "UTF-16") = name) {                        ; without the font Windows substitutes another
                     found := name
                     break
                 }

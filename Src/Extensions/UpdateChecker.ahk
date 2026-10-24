@@ -1,29 +1,29 @@
 ;===============================================================================
-; UpdateChecker.ahk - 检查 GitHub 上的新版本, 一键更新 (AutoHotkey v2)
+; UpdateChecker.ahk - checks GitHub for a new version, one-click update (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 版本号是日期格式 (2026.09.23), 和 GitHub Release 的 tag 比较。
+; Versions are dates (2026.09.23), compared with the GitHub Release tag.
 ;
-; 用法:
-;   UpdateChecker.Schedule()           启动时: 后台自动检查, 1 分钟后第一次, 之后每 6 小时一次 (见下)
-;   UpdateChecker.Check()              手动检查 (托盘菜单 / 系统命令 / 偏好设置), 总会给出结果
-;   UpdateChecker.Check(true)          有新版本就直接更新, 不询问 (命令行 -Update)
-;   UpdateChecker.PendingItem()        后台发现的新版本 -> 搜索窗口里的一条结果 (没有时 "")
-;   UpdateChecker.CleanUp()            启动时删掉上次更新留下的旧程序和临时文件
+; Usage:
+;   UpdateChecker.Schedule()           at start-up: automatic background checks, the first after 1 minute, then every 6 hours (see below)
+;   UpdateChecker.Check()              manual check (tray menu / system command / Preferences), always reports a result
+;   UpdateChecker.Check(true)          updates right away when there is a new version, without asking (command line -Update)
+;   UpdateChecker.PendingItem()        a new version found in the background -> a result in the search window ("" if none)
+;   UpdateChecker.CleanUp()            at start-up: deletes the old program and temporary files left by the last update
 ;
-; 自动检查 (General.CheckForUpdates) 和 Alfred 一样不弹窗: ALTRun 常常开机启动后一直运行,
-; 所以不只在启动时检查: 启动 1 分钟后, 离上次检查满 1 小时就检查 (每天开机就能发现前一天晚上发布的
-; 版本; 改设置后重新载入不会反复检查), 之后每小时看一下离上次检查是否满 6 小时 (时间记在
-; Data\Update.json; 检查失败时下一个小时再试)。发现新版本后, 空搜索框和搜索 "更新" 时显示一条
-; "发现新版本: ALTRun x": Enter 安装更新, → 更新说明 / 跳过此版本 (跳过的版本记在 Update.json)。
+; Automatic checks (General.CheckForUpdates) don't pop up, as in Alfred. ALTRun often starts with Windows and keeps running,
+; so it doesn't only check at start-up: 1 minute after start-up it checks if the last check is at least 1 hour old (so a version released the previous evening
+; is found at each day's boot, and reloading after settings changes doesn't check again and again), then every hour it looks whether the last check is 6 hours old (the time is kept in
+; Data\Update.json; a failed check retries the next hour). After a new version is found, the empty search box and a search for "update" show
+; "New version available: ALTRun x": Enter installs it, → release notes / skip this version (skipped versions are kept in Update.json).
 ;
-; 一键更新 (发现新版本时选 "立即更新"):
-;   1. 下载 Release 里的 ALTRun_v<版本>.zip, 核对 GitHub 给出的 SHA256
-;   2. 解压到临时文件夹, 先复制 exe 以外的文件 (Resources\ 等), 再把正在运行的
-;      ALTRun.exe 改名为 ALTRun.exe.old (运行中的 exe 不能覆盖, 但可以改名), 复制新的 exe;
-;      被覆盖的文件先备份, 任何一步失败都全部还原。Data\ (含 ALTRun.json)、Themes\ 不在 zip 里, 不会动
-;   3. 启动新版本 (-Updated), 新版本启动时删掉 ALTRun.exe.old
-; 用 Scoop / winget 安装的, 提示对应的升级命令 (搜索窗口里 Enter 复制命令); 运行源码时提示用
-; git pull 或下载新版本; 程序目录不能写入、Release 没有 SHA256 时, 打开下载页面。
+; One-click update ("Update now" when a new version is found):
+;   1. download ALTRun_v<version>.zip from the Release and verify the SHA256 GitHub gives
+;   2. extract to a temporary folder, copy the files other than the exe first (Resources\ etc.), then rename the running
+;      ALTRun.exe to ALTRun.exe.old (a running exe can't be overwritten but can be renamed) and copy the new exe;
+;      overwritten files are backed up first, and any failing step restores everything. Data\ (with ALTRun.json) and Themes\ aren't in the zip and stay untouched
+;   3. start the new version (-Updated), which deletes ALTRun.exe.old at start-up
+; Installed with Scoop / winget: show the matching upgrade command (Enter in the search window copies it); running the source: suggest
+; git pull or downloading the new version; when the program folder isn't writable or the Release has no SHA256, open the download page.
 ;===============================================================================
 
 class UpdateChecker {
@@ -32,18 +32,18 @@ class UpdateChecker {
     static RepoUrl     := "https://github.com/zhugecaomao/ALTRun/"
     static TempDir     := A_Temp "\ALTRun-update"
     static OldSuffix   := ".old"
-    static PackageExe  := "ALTRun.exe"                                     ; zip 里的程序名 (本机的 exe 可能改过名)
-    ; 以前的版本带有、新版本已经不要的文件, 更新时删掉 (Resources\ 里其它文件可能是用户自己放的, 不动)
+    static PackageExe  := "ALTRun.exe"                                     ; the program name in the zip (the local exe may have been renamed)
+    ; files older versions shipped that the new one no longer needs, deleted on update (other files in Resources\ may be the user's, left alone)
     static ObsoleteFiles := ["Resources\DOSBox.exe", "Resources\SDL.dll", "Resources\SDL_net.dll",
                              "Resources\SPF2M.exe", "Resources\Run.bat"]
     static UpgradeCommands := Map("scoop", "scoop update altrun", "winget", "winget upgrade zhugecaomao.ALTRun")
     static StateFile   := AppSettings.DataDir "\Update.json"                    ; {LastCheck, Skip}
-    static CheckHours  := 6                                                 ; 一直开着时: 离上次检查满几小时再查
-    static StartupHours := 1                                                ; 启动时: 离上次检查满几小时就查
-    static Pending     := ""                                                ; 后台发现的新版本 (ParseRelease 的结果 + Mode)
+    static CheckHours  := 6                                                 ; while running: check when the last check is this many hours old
+    static StartupHours := 1                                                ; at start-up: check when the last check is this many hours old
+    static Pending     := ""                                                ; a new version found in the background (the result of ParseRelease + Mode)
     static _timer      := "", _checking := false
 
-    ; 在后台下载版本信息 (不卡住 ALTRun), 下载完再给出结果; 正在检查时再点一次不重复检查
+    ; Downloads the release info in the background (ALTRun doesn't hang) and reports when done; clicking again during a check doesn't start another
     static Check(install := false) {
         if UpdateChecker._checking
             return
@@ -86,7 +86,7 @@ class UpdateChecker {
             MsgBox(I18n.T("Update.Latest", App.Version), App.Name, 64)
             return
         }
-        UpdateChecker.SetPending(release)                                   ; 选 "以后再说" 时搜索窗口里仍然有这一条
+        UpdateChecker.SetPending(release)                                   ; with "Later" the result stays in the search window
         switch release.Mode {
             case "install":
                 choice := install ? "Install" : UpdateChecker._Ask(release)
@@ -107,9 +107,9 @@ class UpdateChecker {
     }
 
     ;---------------------------------------------------------------------------
-    ; 后台自动检查 + 搜索窗口里的更新提示
+    ; Automatic background checks + the update notice in the search window
     ;---------------------------------------------------------------------------
-    ; 启动时调用: 开机时网络可能还没连上, 1 分钟后再第一次检查
+    ; Called at start-up: the network may not be up yet at boot, so the first check is after 1 minute
     static Schedule() {
         UpdateChecker._timer := () => UpdateChecker._Tick()
         SetTimer(() => UpdateChecker._Tick(UpdateChecker.StartupHours), -60000)
@@ -121,7 +121,7 @@ class UpdateChecker {
         SetTimer(UpdateChecker._timer, -3600000)
     }
 
-    ; 离上次检查 (yyyyMMddHHmmss) 满 hours 小时 (默认 CheckHours) 了吗; 没检查过、时间不对 (改过系统时间) 时也检查
+    ; Whether the last check (yyyyMMddHHmmss) is at least hours old (default CheckHours); also checks when never checked or the time is invalid (system clock changed)
     static IsDue(lastCheck, now, hours := "") {
         if (hours = "")
             hours := UpdateChecker.CheckHours
@@ -134,7 +134,7 @@ class UpdateChecker {
         return true
     }
 
-    ; 静默检查: 出错只写日志 (不记检查时间, 下一个小时再试); 有新版本 (且不是跳过的版本) 时记在 Pending
+    ; Silent check: errors only go to the log (the time isn't recorded, so it retries next hour); a new version (not a skipped one) goes into Pending
     static CheckInBackground() {
         UpdateChecker.FetchAsync((release) => UpdateChecker._CheckedInBackground(release), (message) => Logger.Error("UpdateChecker: " message))
     }
@@ -154,14 +154,14 @@ class UpdateChecker {
         return UpdateChecker.Compare(version, current) > 0 && version != skip
     }
 
-    ; 记下新版本, 并决定怎么更新 (Mode): "scoop" / "winget" / "source" (运行源码) / "install" (一键更新) / "page" (打开下载页面)
+    ; Notes the new version and decides how to update (Mode): "scoop" / "winget" / "source" (running the source) / "install" (one-click update) / "page" (open the download page)
     static SetPending(release) {
         manager := UpdateChecker.InstalledBy(A_ScriptDir)
         release.Mode := (manager != "") ? manager : !A_IsCompiled ? "source" : UpdateChecker.CanInstall(release) ? "install" : "page"
         UpdateChecker.Pending := release
     }
 
-    ; 搜索窗口里的一条 "发现新版本: ALTRun x" (空搜索框, 或搜索 "更新" 时由 SystemProvider 显示); 没有新版本时 ""
+    ; The "New version available: ALTRun x" result in the search window (empty search box, or shown by SystemProvider when searching "update"); "" without a new version
     static PendingItem() {
         release := UpdateChecker.Pending
         if !IsObject(release)
@@ -179,7 +179,7 @@ class UpdateChecker {
             , {Icon: icon, OnRun: (*) => UpdateChecker.RunPending(), Actions: actions})
     }
 
-    ; 搜索窗口里按 Enter: 一键更新 / 打开下载页面 / 复制包管理器的升级命令
+    ; Enter in the search window: one-click update / open the download page / copy the package manager's upgrade command
     static RunPending() {
         release := UpdateChecker.Pending
         if !IsObject(release)
@@ -224,12 +224,12 @@ class UpdateChecker {
     ;---------------------------------------------------------------------------
     ; GitHub Release
     ;---------------------------------------------------------------------------
-    ; 在后台下载最新版本的信息: done(release) (ParseRelease 的结果), 出错时 fail(message)
+    ; Downloads the latest release info in the background: done(release) (the result of ParseRelease), fail(message) on errors
     static FetchAsync(done, fail) {
         HttpGet.Start(UpdateChecker.ApiUrl, (text) => done.Call(UpdateChecker.ParseRelease(text)), fail)
     }
 
-    ; GitHub API 的 releases/latest -> {Version, Page, ZipUrl, Sha256} (没有 zip / SHA256 时为 "")
+    ; GitHub API releases/latest -> {Version, Page, ZipUrl, Sha256} ("" without zip / SHA256)
     static ParseRelease(text) {
         data := JSON.Parse(text)
         if !(data is Map) || !data.Has("tag_name") || data["tag_name"] = ""
@@ -258,15 +258,15 @@ class UpdateChecker {
         return (address is String) && InStr(address, UpdateChecker.RepoUrl sub, true) = 1 && !RegExMatch(address, '\.\.|[\s"<>^|&]')
     }
 
-    ; 能不能在程序里直接更新: 编译后的 exe, Release 有 zip 和 SHA256, 程序目录能写入
+    ; Whether it can update itself: a compiled exe, a Release with zip and SHA256, and a writable program folder
     static CanInstall(release) {
         return A_IsCompiled && release.ZipUrl != "" && release.Sha256 != "" && UpdateChecker.IsWritable(A_ScriptDir)
     }
 
     static IsWritable(dir) => Path.IsWritable(dir)
 
-    ; 用包管理器安装的, 提示用它升级 (程序自己替换文件会让包管理器的记录对不上):
-    ;   Scoop   ...\scoop\apps\altrun\current (或版本号文件夹)
+    ; Installed with a package manager: suggest upgrading with it (replacing files itself would leave the package manager's records wrong):
+    ;   Scoop   ...\scoop\apps\altrun\current (or a version folder)
     ;   winget  %LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...
     static InstalledBy(dir) {
         if RegExMatch(dir, "i)\\apps\\altrun\\[^\\]+$")
@@ -276,7 +276,7 @@ class UpdateChecker {
         return ""
     }
 
-    ; 下载 -> 核对 SHA256 -> 解压 -> 替换 -> 启动新版本; 出错时提示打开下载页面
+    ; Download -> verify SHA256 -> extract -> replace -> start the new version; on errors offer to open the download page
     static Install(release) {
         progress := UpdateChecker._Progress(I18n.T("Update.Downloading", release.Version))
         try {
@@ -304,8 +304,8 @@ class UpdateChecker {
         App.Restart("-Updated " release.Version)
     }
 
-    ; zip -> 文件夹。先用 Windows 10 (1803) 起自带的 tar.exe (快, 不受 PowerShell 策略限制),
-    ; 没有或失败时用 PowerShell 的 Expand-Archive
+    ; zip -> folder. First tar.exe, built in since Windows 10 (1803) (fast, not limited by PowerShell policies);
+    ; PowerShell's Expand-Archive if it is missing or fails
     static Extract(zip, dest) {
         DirCreate(dest)
         tar := A_WinDir "\System32\tar.exe"
@@ -323,8 +323,8 @@ class UpdateChecker {
             throw Error("Could not extract the downloaded package (exit code " exitCode ").")
     }
 
-    ; 把 src 里的新版本复制到 dest: 先复制其它文件, 最后替换 dest\exeName (改名为 .old 后复制新的)。
-    ; 被覆盖的文件先备份到 src.backup; 任何一步失败都还原 (覆盖的改回去, 新增的删掉), 再抛出错误
+    ; Copies the new version in src to dest: other files first, dest\exeName last (renamed to .old, then the new one copied).
+    ; Overwritten files are backed up to src.backup first; any failing step restores (overwritten ones put back, new ones deleted) and then throws
     static Apply(src, dest, exeName) {
         newExe := src "\" UpdateChecker.PackageExe
         if !FileExist(newExe)
@@ -337,7 +337,7 @@ class UpdateChecker {
         try {
             UpdateChecker._CopyTree(src, dest, backup, changes, UpdateChecker.PackageExe)
             if FileExist(old)
-                FileDelete(old)                                             ; 上次更新留下的, 删不掉就不要继续
+                FileDelete(old)                                             ; left by the last update: stop if it can't be deleted
             if FileExist(exe) {
                 FileMove(exe, old)
                 movedExe := true
@@ -356,12 +356,12 @@ class UpdateChecker {
         }
         try DirDelete(backup, true)
         for rel in UpdateChecker.ObsoleteFiles
-            if !FileExist(src "\" rel)                                    ; 新版本里还有的就留着
+            if !FileExist(src "\" rel)                                    ; keep what the new version still has
                 try FileDelete(dest "\" rel)
     }
 
-    ; 逐层复制 (按文件名拼路径: A_Temp 和 Loop Files 给出的路径可能一个是长文件名、一个是 8.3 短文件名,
-    ; 不能按长度截取相对路径)。已有的文件覆盖前先复制到 backup, 记在 changes 里以便还原
+    ; Copies level by level (building paths from file names: A_Temp and Loop Files may give one a long name and the other an 8.3 short name,
+    ; so relative paths can't be cut by length). Existing files are copied to backup before being overwritten and noted in changes so they can be restored
     static _CopyTree(src, dest, backup, changes, skipFile := "") {
         if !InStr(FileExist(dest), "D") {
             DirCreate(dest)
@@ -394,11 +394,11 @@ class UpdateChecker {
                 Logger.Error("UpdateChecker: cannot restore " pair[1] " from " pair[2] " - " e.Message)
         for created in changes.Created
             try FileDelete(created)
-        Loop changes.Dirs.Length                                            ; 从里往外删新建的 (空) 文件夹
+        Loop changes.Dirs.Length                                            ; delete the new (empty) folders from the inside out
             try DirDelete(changes.Dirs[changes.Dirs.Length - A_Index + 1])
     }
 
-    ; 新版本启动时: 删掉改了名的旧程序 (旧进程可能还没退出, 过一会儿再试) 和下载的临时文件
+    ; At the new version's start-up: deletes the renamed old program (the old process may not have exited yet; retried a little later) and the downloaded temporary files
     static CleanUp(attempt := 1) {
         old := A_ScriptFullPath UpdateChecker.OldSuffix
         if FileExist(old) {
@@ -427,7 +427,7 @@ class UpdateChecker {
         return hex
     }
 
-    ; 按点分隔逐段比较数字: > 0 表示 v1 更新
+    ; Compares the numbers between the dots one by one: > 0 means v1 is newer
     static Compare(v1, v2) {
         parts1 := StrSplit(v1, "."), parts2 := StrSplit(v2, ".")
         Loop Max(parts1.Length, parts2.Length) {
@@ -439,7 +439,7 @@ class UpdateChecker {
         return 0
     }
 
-    ; 发现新版本的对话框 -> "Install" / "Notes" / "" (以后再说)
+    ; The new version dialog -> "Install" / "Notes" / "" (later)
     static _Ask(release) {
         choice := ""
         dlg := Gui("+AlwaysOnTop -MinimizeBox -MaximizeBox", I18n.T("Update.DialogTitle"))

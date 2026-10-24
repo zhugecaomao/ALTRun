@@ -1,16 +1,16 @@
 ;===============================================================================
-; ClipboardData.ahk - 剪贴板里的图片和文件 (AutoHotkey v2)
+; ClipboardData.ahk - images and files on the clipboard (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; AutoHotkey 的 A_Clipboard 只处理文字; 这里补上图片 (存成 / 读回 PNG, 用 GDI+) 和文件列表 (CF_HDROP)。
+; AutoHotkey's A_Clipboard only handles text; this adds images (saved as / read back from PNG with GDI+) and file lists (CF_HDROP).
 ;
-; 用法:
+; Usage:
 ;   ClipboardData.HasImage() / HasFiles()
-;   size := ClipboardData.SaveImage("C:\x.png")      -> {Width, Height}, 没有图片或失败时 ""
-;   ClipboardData.SetImage("C:\x.png")                 把 PNG 放到剪贴板 (CF_DIB), 成功返回 true
-;   ClipboardData.Files()                               -> [路径...] (剪贴板里复制的文件)
-;   ClipboardData.SetFiles(["C:\a.txt", "C:\b"])       把文件放到剪贴板 (在资源管理器里 Ctrl+V 就是粘贴文件)
-;   ClipboardData.SetFiles(paths, true)                剪切: 粘贴时移动文件
-;   ClipboardData.StartGdiplus()                       启动 GDI+ (只启动一次)
+;   size := ClipboardData.SaveImage("C:\x.png")      -> {Width, Height}, "" when there is no image or it fails
+;   ClipboardData.SetImage("C:\x.png")                 puts the PNG on the clipboard (CF_DIB), true on success
+;   ClipboardData.Files()                               -> [paths...] (files copied to the clipboard)
+;   ClipboardData.SetFiles(["C:\a.txt", "C:\b"])       puts files on the clipboard (Ctrl+V in Explorer pastes the files)
+;   ClipboardData.SetFiles(paths, true)                cut: pasting moves the files
+;   ClipboardData.StartGdiplus()                       starts GDI+ (only once)
 ;   ClipboardData.Borrow(ms)                           ALTRun puts temporary content on the clipboard for ms
 ;   ClipboardData.Borrowed()                           -> true until then (the clipboard history doesn't record it)
 ;===============================================================================
@@ -30,21 +30,21 @@ class ClipboardData {
         files := []
         if !ClipboardData.HasFiles()
             return files
-        for line in StrSplit(A_Clipboard, "`n", "`r")                     ; 复制文件时 A_Clipboard 是每行一个路径
+        for line in StrSplit(A_Clipboard, "`n", "`r")                     ; for copied files A_Clipboard has one path per line
             if (line != "")
                 files.Push(line)
         return files
     }
 
-    ; 先读 CF_DIB (设备无关位图, 别的程序放的图片也能读), 读不到再读 CF_BITMAP。
-    ; 剪贴板只在把原始数据复制出来时打开, 转换、存 PNG 都在关掉之后做, 别的程序不用等
+    ; Reads CF_DIB first (device-independent bitmap, so images put there by other programs work too), then CF_BITMAP.
+    ; The clipboard is open only while the raw data is copied out; converting and saving the PNG happen after it is closed, so other programs don't wait
     static SaveImage(file) {
         if !ClipboardData.HasImage() || !ClipboardData.StartGdiplus() || !ClipboardData._Open()
             return ""
         bitmap := 0, dib := ""
         try {
             dib := ClipboardData._CopyDib()
-            if (!dib && (hbm := DllCall("GetClipboardData", "UInt", ClipboardData.CF_BITMAP, "Ptr")))   ; 位图归剪贴板所有, 不要删除
+            if (!dib && (hbm := DllCall("GetClipboardData", "UInt", ClipboardData.CF_BITMAP, "Ptr")))   ; the bitmap belongs to the clipboard: don't delete it
                 DllCall("gdiplus\GdipCreateBitmapFromHBITMAP", "Ptr", hbm, "Ptr", 0, "Ptr*", &bitmap)
         } finally {
             DllCall("CloseClipboard")
@@ -57,14 +57,14 @@ class ClipboardData {
         DllCall("gdiplus\GdipGetImageWidth", "Ptr", bitmap, "UInt*", &width)
         DllCall("gdiplus\GdipGetImageHeight", "Ptr", bitmap, "UInt*", &height)
         clsid := Buffer(16)
-        DllCall("ole32\CLSIDFromString", "Str", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "Ptr", clsid)   ; PNG 编码器
+        DllCall("ole32\CLSIDFromString", "Str", "{557CF406-1A04-11D3-9A73-0000F81EF32E}", "Ptr", clsid)   ; PNG encoder
         try FileDelete(file)
         status := DllCall("gdiplus\GdipSaveImageToFile", "Ptr", bitmap, "WStr", file, "Ptr", clsid, "Ptr", 0)
         DllCall("gdiplus\GdipDisposeImage", "Ptr", bitmap)
         return status ? "" : {Width: width, Height: height}
     }
 
-    ; 剪贴板已打开时调用: 把 CF_DIB 的内容复制到 Buffer (剪贴板关掉以后那块内存就不能再用了), 没有时 ""
+    ; Called with the clipboard open: copies the CF_DIB contents into a Buffer (that memory can't be used after the clipboard closes), "" if there is none
     static _CopyDib() {
         if !(hMem := DllCall("GetClipboardData", "UInt", ClipboardData.CF_DIB, "Ptr"))
             return ""
@@ -77,7 +77,7 @@ class ClipboardData {
         return dib
     }
 
-    ; CF_DIB 的内容 (BITMAPINFO + 像素) 做成 GDI+ 位图, 失败时 0
+    ; CF_DIB contents (BITMAPINFO + pixels) -> a GDI+ bitmap, 0 on failure
     static _FromDib(dib) {
         info := dib.Ptr
         copy := 0
@@ -85,7 +85,7 @@ class ClipboardData {
             headerSize := NumGet(info, 0, "UInt"), bitCount := NumGet(info, 14, "UShort")
             compression := NumGet(info, 16, "UInt"), colorsUsed := NumGet(info, 32, "UInt")
             colors := colorsUsed ? colorsUsed : (bitCount <= 8) ? (1 << bitCount) : 0
-            masks := (compression = 3 && headerSize = 40) ? 12 : 0          ; BI_BITFIELDS: 头后面还有 3 个颜色掩码
+            masks := (compression = 3 && headerSize = 40) ? 12 : 0          ; BI_BITFIELDS: three color masks follow the header
             source := 0
             if (!DllCall("gdiplus\GdipCreateBitmapFromGdiDib", "Ptr", info, "Ptr", info + headerSize + masks + colors * 4, "Ptr*", &source) && source) {
                 width := 0, height := 0
@@ -98,14 +98,14 @@ class ClipboardData {
         return copy
     }
 
-    ; 放进去的是 CF_DIB (所有程序都认), Windows 会自动提供 CF_BITMAP 等其他格式
+    ; CF_DIB goes in (every program understands it); Windows provides CF_BITMAP and the other formats itself
     static SetImage(file) {
         if !FileExist(file) || !ClipboardData.StartGdiplus()
             return false
         bitmap := 0, hbm := 0
         if DllCall("gdiplus\GdipCreateBitmapFromFile", "WStr", file, "Ptr*", &bitmap) || !bitmap
             return false
-        DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", bitmap, "Ptr*", &hbm, "UInt", 0xFFFFFFFF)   ; 透明的地方填白色
+        DllCall("gdiplus\GdipCreateHBITMAPFromBitmap", "Ptr", bitmap, "Ptr*", &hbm, "UInt", 0xFFFFFFFF)   ; transparent areas become white
         width := 0, height := 0
         DllCall("gdiplus\GdipGetImageWidth", "Ptr", bitmap, "UInt*", &width)
         DllCall("gdiplus\GdipGetImageHeight", "Ptr", bitmap, "UInt*", &height)
@@ -118,7 +118,7 @@ class ClipboardData {
             return false
         }
         info := DllCall("GlobalLock", "Ptr", hMem, "Ptr")
-        NumPut("UInt", 40, "Int", width, "Int", height, "UShort", 1, "UShort", 32, info)   ; BITMAPINFOHEADER, 从下往上, 32 位 BI_RGB
+        NumPut("UInt", 40, "Int", width, "Int", height, "UShort", 1, "UShort", 32, info)   ; BITMAPINFOHEADER, bottom-up, 32-bit BI_RGB
         hdc := DllCall("GetDC", "Ptr", 0, "Ptr")
         lines := DllCall("GetDIBits", "Ptr", hdc, "Ptr", hbm, "UInt", 0, "UInt", height, "Ptr", info + 40, "Ptr", info, "UInt", 0)
         DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdc)
@@ -129,15 +129,15 @@ class ClipboardData {
             return false
         }
         DllCall("EmptyClipboard")
-        ok := DllCall("SetClipboardData", "UInt", ClipboardData.CF_DIB, "Ptr", hMem, "Ptr")   ; 成功后内存归剪贴板所有
+        ok := DllCall("SetClipboardData", "UInt", ClipboardData.CF_DIB, "Ptr", hMem, "Ptr")   ; on success the memory belongs to the clipboard
         DllCall("CloseClipboard")
         if !ok
             DllCall("GlobalFree", "Ptr", hMem)
         return ok ? true : false
     }
 
-    ; DROPFILES 结构 (20 字节) + 以两个空字符结尾的 UTF-16 路径列表;
-    ; cut = true 时再放一个 "Preferred DropEffect" = 移动, 资源管理器 / TC 粘贴时就是移动文件
+    ; DROPFILES structure (20 bytes) + a UTF-16 path list ending in two null characters;
+    ; cut = true also sets "Preferred DropEffect" = move, so pasting in Explorer / TC moves the files
     static SetFiles(paths, cut := false) {
         size := 20 + 2
         for filePath in paths
@@ -146,7 +146,7 @@ class ClipboardData {
         if !hMem
             return false
         pointer := DllCall("GlobalLock", "Ptr", hMem, "Ptr")
-        NumPut("UInt", 20, pointer)                                         ; pFiles: 路径列表的位置
+        NumPut("UInt", 20, pointer)                                         ; pFiles: where the path list starts
         NumPut("Int", 1, pointer + 16)                                      ; fWide: UTF-16
         offset := 20
         for filePath in paths {
@@ -177,7 +177,7 @@ class ClipboardData {
         return format
     }
 
-    ; 剪贴板里的文件是剪切的 (粘贴时移动) 时返回 true
+    ; true when the files on the clipboard were cut (pasting moves them)
     static IsCut() {
         if !DllCall("IsClipboardFormatAvailable", "UInt", ClipboardData.DropEffectFormat()) || !ClipboardData._Open()
             return false
@@ -190,7 +190,7 @@ class ClipboardData {
         return (effect & 2) && !(effect & 1)
     }
 
-    ; 别的程序正占用剪贴板时稍等再试
+    ; another program holds the clipboard: wait a moment and retry
     static _Open() {
         Loop 10 {
             if DllCall("OpenClipboard", "Ptr", A_ScriptHwnd)
@@ -200,7 +200,7 @@ class ClipboardData {
         return false
     }
 
-    ; GDI+ 只需启动一次 (IconCache 画图片缩略图也用)
+    ; GDI+ needs starting only once (IconCache uses it for image thumbnails too)
     static StartGdiplus() {
         if ClipboardData._token
             return true

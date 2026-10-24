@@ -1,13 +1,13 @@
 ;===============================================================================
-; DelimitedText.ahk - 表格文字 (CSV / TSV / 从 Excel 复制的内容) <-> 二维数组 (AutoHotkey v2)
+; DelimitedText.ahk - table text (CSV / TSV / copied from Excel) <-> two-dimensional array (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 纯函数。分隔符自动判断 (第一行里 Tab 最多就是 Tab, 其次 ; 和 ,); 双引号里的分隔符、换行照原样保留,
-; "" 表示一个 ", 和 Excel 复制 / 保存的格式一样。
+; Pure functions. The separator is detected (Tab if the first line has the most Tabs, then ; and ,); separators and line breaks inside double quotes are kept,
+; "" stands for one ", as Excel copies and saves it.
 ;
-; 用法:
-;   rows := DelimitedText.Parse(text)           [["名称", "关键字"], ["邮箱", "em"]...], 空行跳过
-;   csv  := DelimitedText.ToCsv(rows)           逗号分隔, 需要时加引号, 行之间 `r`n
-;   text := DelimitedText.ReadFile(path)        UTF-8 (有没有 BOM 都行), 不是 UTF-8 时按系统编码 (例如 GBK)
+; Usage:
+;   rows := DelimitedText.Parse(text)           [["Name", "Keyword"], ["Email", "em"]...], blank lines skipped
+;   csv  := DelimitedText.ToCsv(rows)           comma-separated, quoted where needed, `r`n between rows
+;   text := DelimitedText.ReadFile(path)        UTF-8 (with or without BOM); otherwise the system code page (e.g. GBK)
 ;===============================================================================
 
 class DelimitedText {
@@ -26,7 +26,7 @@ class DelimitedText {
                 } else {
                     field .= char
                 }
-            } else if (char = '"' && field = "") {                          ; 只有字段开头的引号才算
+            } else if (char = '"' && field = "") {                          ; only a quote at the start of a field counts
                 quoted := true
             } else if (char = delimiter) {
                 row.Push(field), field := ""
@@ -43,14 +43,14 @@ class DelimitedText {
         return rows
     }
 
-    ; 第一个不空的行 (引号外) 里 Tab 最多就用 Tab, 否则 ; 比 , 多时用 ; (欧洲的 Excel), 默认 ,
+    ; In the first non-empty line (outside quotes): Tab if it has the most Tabs, otherwise ; if there are more ; than , (European Excel), , by default
     static Delimiter(text) {
         counts := Map("`t", 0, ";", 0, ",", 0), quoted := false, seen := false
         Loop Parse, text {
             if (A_LoopField = '"')
                 quoted := !quoted
             else if (!quoted && A_LoopField = "`n") {
-                if seen                                                     ; 前面的空行不算第一行
+                if seen                                                     ; blank lines before it don't count as the first line
                     break
             } else if !quoted
                 seen := true
@@ -85,7 +85,7 @@ class DelimitedText {
 
     static ReadFile(path) {
         text := FileRead(path, "UTF-8")
-        return InStr(text, Chr(0xFFFD)) ? FileRead(path, "CP0") : text   ; 有解不出来的字节: 不是 UTF-8
+        return InStr(text, Chr(0xFFFD)) ? FileRead(path, "CP0") : text   ; bytes that don't decode: not UTF-8
     }
 
     static _AddRow(rows, row) {
