@@ -13,7 +13,7 @@ class TestUtil {
     }
 }
 
-class FakeHttpRequest {                                                    ; HttpGet 测试用的假请求 (Msxml2.XMLHTTP 用到的部分)
+class FakeHttpRequest {                                                    ; a fake request for the HttpGet tests (the parts of Msxml2.XMLHTTP that are used)
     readyState := 1, status := 0, statusText := "", responseText := ""
     Method := "", Url := "", Async := "", Header := "", Aborted := false
     open(method, url, async) => (this.Method := method, this.Url := url, this.Async := async)

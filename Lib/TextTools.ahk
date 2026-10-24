@@ -1,10 +1,10 @@
 ;===============================================================================
-; TextTools.ahk - 文字转换 (AutoHotkey v2)
+; TextTools.ahk - text conversions (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 纯函数, 输入一段文字返回转换后的文字, 不碰剪贴板。统一按 `n / `r`n 拆行,
-; 合并时统一用 `r`n。
+; Pure functions: take text, return the converted text, never touch the clipboard. Lines are split at `n / `r`n
+; and joined with `r`n.
 ;
-; 用法: TextTools.SortLines(text) / TextTools.DedupeLines(text) / ...
+; Usage: TextTools.SortLines(text) / TextTools.DedupeLines(text) / ...
 ;===============================================================================
 
 class TextTools {
@@ -56,7 +56,7 @@ class TextTools {
         return TextTools.Join(TextTools.Lines(Sort(StrReplace(text, "`r`n", "`n"), descending ? "R" : "")))
     }
 
-    ; 逐行去掉首尾空格/Tab, 保留空行本身
+    ; Trims spaces / Tabs at both ends of each line; blank lines stay
     static TrimLines(text) {
         trimmed := []
         for line in TextTools.Lines(text)
@@ -72,7 +72,7 @@ class TextTools {
         return TextTools.Join(kept)
     }
 
-    ; 按原顺序去重 (Sort 的 U 选项会顺带重新排序)
+    ; Removes duplicates keeping the order (Sort's U option would also re-sort)
     static DedupeLines(text) {
         seen := Map(), kept := []
         for line in TextTools.Lines(text) {

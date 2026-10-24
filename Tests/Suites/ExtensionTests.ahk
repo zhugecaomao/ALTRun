@@ -6,22 +6,22 @@
 ; TestRunner runs them in name order, and each one must put back the shared state it changes.
 ;===============================================================================
 class ExtensionTests {
-    ; 按 CapsLock 切换输入法: 设置的取值、下一个输入法的选择
+    ; CapsLock switches the input language: setting values, choosing the next input language
     static CapsLockSwitch() {
         eq := (n, a, e) => TestRunner.Equal("CapsLockSwitch." n, a, e)
         eq("off by default", AppSettings.Defaults()["General"]["CapsLock"], "")
         eq("modes", (CapsLockSwitch.IsMode("Layout") ? 1 : 0) (CapsLockSwitch.IsMode("Mode") ? 1 : 0) (CapsLockSwitch.IsMode("") ? 1 : 0) (CapsLockSwitch.IsMode("x") ? 1 : 0), "1100")
         eq("hold time", CapsLockSwitch.HoldMs, 300)
         eq("notification text", CapsLockSwitch.StateText(true) "|" CapsLockSwitch.StateText(false), "Caps Lock On|Caps Lock Off")
-        eq("uses the keyboard hook", InStr(CapsLockSwitch.Key, "$") ? 1 : 0, 1)    ; 不用钩子时拦不住大写切换, 按住时也会不停切换
-        eq("with any modifier", InStr(CapsLockSwitch.Key, "*") ? 1 : 0, 1)        ; 远程桌面补发的 Alt+CapsLock 等也要拦下
+        eq("uses the keyboard hook", InStr(CapsLockSwitch.Key, "$") ? 1 : 0, 1)    ; without the hook the Caps Lock toggle can't be stopped, and holding would keep switching
+        eq("with any modifier", InStr(CapsLockSwitch.Key, "*") ? 1 : 0, 1)        ; Alt+CapsLock etc. sent extra by remote desktops must be caught too
         registered := [], savedInterval := A_HotkeyInterval
         CapsLockSwitch.Register((key, fn) => registered.Push(key))
         eq("down and up hotkeys", registered.Length = 2 ? registered[1] "|" registered[2] : "", "*$CapsLock|*$CapsLock up")
         eq("no too-many-hotkeys warning", A_HotkeyInterval, 0)
         A_HotkeyInterval := savedInterval
 
-        ; 大写锁定的提示可以关掉 (General.CapsLockNotify)
+        ; the Caps Lock notice can be turned off (General.CapsLockNotify)
         eq("notice on by default", AppSettings.Defaults()["General"]["CapsLockNotify"], 1)
         notices := [], savedNotify := App.GetOwnPropDesc("Notify")
         App.DefineProp("Notify", {Call: (this, text, *) => notices.Push(text)})
@@ -32,7 +32,7 @@ class ExtensionTests {
         App.DefineProp("Notify", savedNotify)
         eq("notice shown only when on", notices.Length = 1 ? notices[1] : notices.Length, "Caps Lock On")
 
-        ; 管理员窗口里的小助手 (CapsLockHelper, #158)
+        ; the helper for administrator windows (CapsLockHelper, #158)
         eq("helper off by default", AppSettings.Defaults()["General"]["CapsLockElevated"], 0)
         eq("helper wanted", (CapsLockHelper.Wanted(Map("CapsLock", "Mode", "CapsLockElevated", 1)) ? 1 : 0)
             . (CapsLockHelper.Wanted(Map("CapsLock", "", "CapsLockElevated", 1)) ? 1 : 0)
@@ -53,14 +53,14 @@ class ExtensionTests {
         eq("task: no time limit, runs on battery", (InStr(xml, "<ExecutionTimeLimit>PT0S</ExecutionTimeLimit>") && InStr(xml, "<DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>")) ? 1 : 0, 1)
         eq("task: escaped path", InStr(xml, "<Command>C:\A &amp; B\ALTRun.exe</Command><Arguments>-CapsLockHelper</Arguments>") ? 1 : 0, 1)
         eq("task: no trigger (started by ALTRun)", InStr(xml, "<Triggers>") ? 1 : 0, 0)
-        shown := []                                                         ; 大写锁定的提示交给 Notify (小助手里换成告诉 ALTRun)
+        shown := []                                                         ; the Caps Lock notice goes to Notify (in the helper, ALTRun is told instead)
         savedNotify := CapsLockSwitch.Notify, CapsLockSwitch.Notify := (on) => shown.Push(on)
         before := GetKeyState("CapsLock", "T")
         CapsLockSwitch.ToggleCapsLock()
         eq("notify on toggle", shown.Length = 1 && shown[1] = !before ? 1 : 0, 1)
         SetCapsLockState(before ? "On" : "Off"), CapsLockSwitch.Notify := savedNotify
 
-        ; 按下 / 松开的顺序 (假的时钟, 定时器手动触发)
+        ; order of presses / releases (a fake clock, timers fired by hand)
         saved := Map()
         for name in ["Clock", "ToggleCapsLock", "Switch", "ShiftDown"]
             saved[name] := CapsLockSwitch.GetOwnPropDesc(name)
@@ -77,23 +77,23 @@ class ExtensionTests {
             eq("tap: switch once", calls.Text, "switch;")
             calls.Text := ""
             at(2000), CapsLockSwitch.Down()
-            Loop 20                                                         ; 按住时的自动重复, 每 30 ms 一下
+            Loop 20                                                         ; auto-repeat while held, every 30 ms
                 at(2000 + A_Index * 30), CapsLockSwitch.Down()
-            CapsLockSwitch.Hold()                                           ; 定时器: 按住满 0.3 秒
+            CapsLockSwitch.Hold()                                           ; timer: held for 0.3 s
             Loop 10
                 at(2600 + A_Index * 30), CapsLockSwitch.Down()
             at(3000), CapsLockSwitch.Up()
             eq("hold: caps lock once, never switches", calls.Text, "caps;")
             calls.Text := ""
-            at(4000), CapsLockSwitch.Down(), at(4400), CapsLockSwitch.Up()  ; 定时器没来得及运行
+            at(4000), CapsLockSwitch.Down(), at(4400), CapsLockSwitch.Up()  ; the timer didn't get to run
             eq("late timer: still a hold", calls.Text, "caps;")
             calls.Text := ""
-            at(5000), CapsLockSwitch.Down(), at(7000), CapsLockSwitch.Down(), at(7050), CapsLockSwitch.Up()   ; 上一次的松开丢了
+            at(5000), CapsLockSwitch.Down(), at(7000), CapsLockSwitch.Down(), at(7050), CapsLockSwitch.Up()   ; the last release was lost
             eq("lost key-up: new press", calls.Text, "switch;")
             calls.Text := ""
             CapsLockSwitch.Up()
             eq("extra key-up ignored", calls.Text, "")
-            at(8000), CapsLockSwitch.Down(), at(8000.4), CapsLockSwitch.Up()  ; Chrome 远程桌面补发来对齐大写锁定的
+            at(8000), CapsLockSwitch.Down(), at(8000.4), CapsLockSwitch.Up()  ; sent by Chrome Remote Desktop to align Caps Lock
             eq("remote sync tap ignored", calls.Text, "")
             at(9000), CapsLockSwitch.Down(), at(9040), CapsLockSwitch.Up()
             eq("quick real tap still switches", calls.Text, "switch;")
@@ -102,11 +102,11 @@ class ExtensionTests {
             at(10000), CapsLockSwitch.Down(), at(10080), CapsLockSwitch.Up()
             eq("shift+caps lock: caps lock as usual", calls.Text, "caps;")
             calls.Text := ""
-            at(11000), CapsLockSwitch.Down(), at(11000.3), CapsLockSwitch.Up()   ; 打 Shift+字母时远程桌面补发的
+            at(11000), CapsLockSwitch.Down(), at(11000.3), CapsLockSwitch.Up()   ; sent by a remote desktop while typing Shift+letter
             eq("remote sync tap with shift ignored", calls.Text, "")
             shift.Down := false
             CapsLockSwitch.Clock := saved["Clock"].Value
-            ; Sleep 按 15.6 ms 一档的 A_TickCount 判断, 实际可能少睡将近一档: 睡 100 ms, 只要求量到 50 ms 以上
+            ; Sleep goes by A_TickCount in 15.6 ms steps and may sleep almost a step short: sleeps 100 ms, only requires over 50 ms measured
             first := CapsLockSwitch.Clock.Call(), Sleep(100), second := CapsLockSwitch.Clock.Call()
             TestRunner.True("CapsLockSwitch.precise clock", second - first >= 50 && second - first < 5000)
         } finally {
@@ -124,7 +124,7 @@ class ExtensionTests {
     static AutoDate() {
         eq := (n, a, e) => TestRunner.Equal("AutoDate." n, a, e)
         today := "23.09.2026"
-        ; Ctrl+D 只在改名的编辑框里接管 (其它时候按键原样交给程序, 不补发)
+        ; Ctrl+D is only taken in a rename box (at other times the key goes to the program unchanged, not sent again)
         eq("edit box", AutoDate.IsEditControl("Edit1"), true)
         eq("TC rename box", AutoDate.IsEditControl("TInEdit1"), true)
         eq("scintilla", AutoDate.IsEditControl("Scintilla1"), true)
@@ -137,7 +137,7 @@ class ExtensionTests {
         eq("folder update", AutoDate.AddDateToName("Project - 01.01.2020", today), "Project - 23.09.2026")
         eq("numeric ext", AutoDate.AddDateToName("Version 1.2", today), "Version 1.2 - 23.09.2026")
         eq("dot space", AutoDate.AddDateToName("1. DWG", today), "1. DWG - 23.09.2026")
-        ; 设置里换了日期格式: 末尾那种格式的日期照样更新, 不会再加一个
+        ; the date format changed in the settings: a date in that format at the end is still updated, not added again
         eq("iso update", AutoDate.AddDateToName("Report - 2020-01-01.docx", "2026-09-23", "yyyy-MM-dd"), "Report - 2026-09-23.docx")
         eq("iso folder", AutoDate.AddDateToName("Project - 2020-01-01", "2026-09-23", "yyyy-MM-dd"), "Project - 2026-09-23")
         eq("dotted iso folder", AutoDate.AddDateToName("Project - 2020.01.01", "2026.09.23", "yyyy.MM.dd"), "Project - 2026.09.23")
@@ -148,7 +148,7 @@ class ExtensionTests {
         eq("pattern", AutoDate.DatePattern("dd.MM.yyyy"), "\d{2}\.\d{2}\.\d{4}")
     }
 
-    ; 粘贴方式 Auto: 短的单行文字直接输入 (不动剪贴板), 多行 / Tab / 很长 / emoji 用剪贴板
+    ; Paste mode Auto: short single-line text is typed (clipboard untouched); multi-line / Tab / very long / emoji go through the clipboard
     static SnippetPasteMode() {
         eq := (n, a, e) => TestRunner.Equal("SnippetPasteMode." n, a, e)
         types := (text, mode) => ActionCatalog.TypesText(text, mode)
@@ -166,7 +166,7 @@ class ExtensionTests {
         eq("type: always typed", types("Dear Sir,`nThanks", "Type"), true)
         eq("unknown mode: clipboard", types("hi", "Other"), false)
 
-        ; 真的输入到一个编辑框: 文字出来了, 剪贴板没动
+        ; really typed into an edit box: the text appears and the clipboard is unchanged
         snippets := AppSettings.Feature("Snippets")
         savedMode := snippets["PasteMode"], savedClip := ClipboardAll()
         g := Gui("+AlwaysOnTop", "ALTRun paste test")
@@ -211,25 +211,25 @@ class ExtensionTests {
         SnippetExpander.Refresh()
     }
 
-    ; 对话框的文件夹菜单: 最近的文件夹 (Windows 的 "最近使用的项目")、菜单文字
+    ; The dialogs' folder menu: recent folders (Windows' "Recent items"), menu text
     static FolderMenu() {
         eq := (n, a, e) => TestRunner.Equal("FolderMenu." n, a, e)
         root := A_Temp "\ALTRun-test-recent"
         try DirDelete(root, true)
         DirCreate(root "\Recent"), DirCreate(root "\Projects\Tower"), DirCreate(root "\Docs")
-        longPath := Buffer(2048)                                            ; A_Temp 可能是 8.3 短路径 (C:\Users\RUNNER~1), 快捷方式读回来的是长路径
+        longPath := Buffer(2048)                                            ; A_Temp may be an 8.3 short path (C:\Users\RUNNER~1), while shortcuts read back long paths
         if DllCall("GetLongPathNameW", "Str", root, "Ptr", longPath, "UInt", 1024)
             root := StrGet(longPath)
         FileAppend("x", root "\Docs\report.pdf")
         FileCreateShortcut(root "\Projects\Tower", root "\Recent\Tower.lnk")
         FileSetTime("20260101000000", root "\Recent\Tower.lnk")
-        FileCreateShortcut(root "\Docs\report.pdf", root "\Recent\report.pdf.lnk")    ; 文件: 取所在的文件夹
+        FileCreateShortcut(root "\Docs\report.pdf", root "\Recent\report.pdf.lnk")    ; a file: its folder is taken
         FileSetTime("20260201000000", root "\Recent\report.pdf.lnk")
-        FileCreateShortcut(root "\Docs", root "\Recent\Docs.lnk")                     ; 和上一条同一个文件夹: 只出现一次
+        FileCreateShortcut(root "\Docs", root "\Recent\Docs.lnk")                     ; the same folder as the previous one: listed once
         FileSetTime("20260115000000", root "\Recent\Docs.lnk")
-        FileCreateShortcut(root "\Gone", root "\Recent\Gone.lnk")                     ; 已经不存在
+        FileCreateShortcut(root "\Gone", root "\Recent\Gone.lnk")                     ; no longer exists
         FileSetTime("20260301000000", root "\Recent\Gone.lnk")
-        FileAppend("not a shortcut", root "\Recent\Broken.lnk")                     ; 损坏的快捷方式: 跳过, 不报错
+        FileAppend("not a shortcut", root "\Recent\Broken.lnk")                     ; a broken shortcut: skipped without an error
         FileSetTime("20260401000000", root "\Recent\Broken.lnk")
         folders := QuickSwitch.RecentFolders(10, root "\Recent")
         eq("count", folders.Length, 2)
@@ -248,7 +248,7 @@ class ExtensionTests {
         eq("panel kept on screen", pos.X "," pos.Y, "1120,740")
         eq("folder name", QuickSwitch.FolderName("D:\Projects\Tower A\"), "Tower A")
         eq("drive name", QuickSwitch.FolderName("D:\"), "D:\")
-        ; 文件对话框: #32770 要有资源管理器的文件视图; "系统信息" (msinfo32) 的主窗口只有普通列表, 不算
+        ; File dialogs: #32770 needs Explorer's file view; the main window of "System Information" (msinfo32) only has a plain list and doesn't count
         fileDialog := ["DUIViewWndClassName1", "DirectUIHWND1", "SHELLDLL_DefView1", "DirectUIHWND2", "ComboBoxEx321", "ComboBox1", "Edit1", "Button1", "Button2", "ToolbarWindow323"]
         oldDialog := ["ToolbarWindow321", "ComboBox1", "SHELLDLL_DefView1", "SysListView321", "Edit1", "Button1", "Button2"]
         msinfo := ["SysTreeView321", "SysListView321", "Static1", "Edit1", "Button1", "Button2", "Button3", "Button4"]
@@ -325,7 +325,7 @@ class ExtensionTests {
         eq("no restore empty", QuickSwitch.ShouldRestoreName("  "), false)
         eq("no restore filter", QuickSwitch.ShouldRestoreName("*.txt"), false)
         eq("no restore path", QuickSwitch.ShouldRestoreName("C:\Docs\a.txt"), false)
-        ; TC 的路径用 WM_COPYDATA 问 (另一个进程模拟 TC 的回复), 不碰剪贴板
+        ; TC's path is asked for with WM_COPYDATA (another process imitates TC's reply), without touching the clipboard
         A_Clipboard := "clipboard before"
         Run('"' A_AhkPath '" "' A_ScriptDir '\Fixtures\FakeTotalCmd.ahk"', , , &fakePid)
         fakeHwnd := WinWait("ALTRun Fake Total Commander ahk_pid " fakePid, , 5)
@@ -339,11 +339,11 @@ class ExtensionTests {
         closed := Gui(), closedHwnd := closed.Hwnd
         closed.Destroy()
         threw := false
-        try QuickSwitch.SetDialogPath(A_Temp "\", closedHwnd)               ; 对话框已经关掉: 什么也不做 (不往别的窗口里打字)
+        try QuickSwitch.SetDialogPath(A_Temp "\", closedHwnd)               ; the dialog has closed: do nothing (don't type into another window)
         catch
             threw := true
         eq("closed dialog ignored", threw, false)
-        QuickSwitch._BuildPanel(A_ScriptHwnd)                              ; 真的建一次面板 (Gui 选项写错时这里就会报错)
+        QuickSwitch._BuildPanel(A_ScriptHwnd)                              ; really build the panel once (a wrong Gui option would throw here)
         TestRunner.True("FolderMenu.panel built", IsObject(QuickSwitch._panel) && IsObject(QuickSwitch._panelList))
         QuickSwitch._ShowFolders([])                                       ; nothing open (no TC / Explorer, no recent folders)
         eq("empty panel: no horizontal scrollbar", ControlGetStyle(QuickSwitch._panelList) & 0x100000, 0)   ; WS_HSCROLL
@@ -357,17 +357,17 @@ class ExtensionTests {
         QuickSwitch._SearchPanel()
         eq("panel search filters", QuickSwitch._panelList.GetText(1, 2), "C:\Docs")
         eq("resize before", QuickSwitch._panelWidth, QuickSwitch.PanelWidthFor(QuickSwitch._panelDialogW ? QuickSwitch._panelDialogW : 600))
-        QuickSwitch._ResizePanel(900)                                      ; 对话框变宽: 面板跟着变宽
+        QuickSwitch._ResizePanel(900)                                      ; the dialog gets wider: the panel follows
         QuickSwitch._panelList.GetPos(, , &listW)
         eq("resize width", QuickSwitch._panelWidth "|" listW, "900|900")
         eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
         eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitch._panelSearch.Hwnd), 0)
-        eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; 输入法正在输入: 不拦截
+        eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; the IME is composing: not intercepted
         searchHwnd := QuickSwitch._searchHwnd
         QuickSwitch.HidePanel()
         eq("panel hidden", QuickSwitch._panel, "")
         eq("controls released", QuickSwitch._panelSearch "|" QuickSwitch._searchHwnd, "|0")
-        eq("key after hide", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, searchHwnd), "")   ; 面板关掉之后: 不报错, 也不处理
+        eq("key after hide", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, searchHwnd), "")   ; after the panel closes: no error, nothing handled
         eq("key no panel", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, 0), "")
         eq("width min", QuickSwitch.PanelWidthFor(300), 420)
         eq("width max", QuickSwitch.PanelWidthFor(1600), 1000)
@@ -385,9 +385,9 @@ class ExtensionTests {
         try DirDelete(root, true)
     }
 
-    ; 束线型计算和原来的 SPF2M.EXE 逐个比对: Tests\Fixtures\SPF2M-Reference.json 是在 DOSBox 里运行
-    ; SPF2M 得到的结果 (4 种线型 x 6 种钢绞线, 上升 / 下降, 非整米跨度, 自定义半径 / 反弯点 /
-    ; 支架间距, 以及 SPF2M 报错或崩溃的情况); 生成方法见 Tests\Tools\SPF2M
+    ; The tendon profile calculation compared value by value with the original SPF2M.EXE: Tests\Fixtures\SPF2M-Reference.json holds the results of running
+    ; SPF2M in DOSBox (4 profile types x 6 strand types, rising / falling, spans that aren't whole meters, custom radius / contraflexure /
+    ; support spacing, and the cases where SPF2M reports an error or crashes); how it was made: see Tests\Tools\SPF2M
     static TendonProfileVsSpf2m() {
         data := JSON.Parse(FileRead(A_ScriptDir "\Fixtures\SPF2M-Reference.json", "UTF-8"))
         checked := 0, failed := 0
@@ -424,8 +424,8 @@ class ExtensionTests {
         TestRunner.True("TendonProfile.rows checked (" checked ")", checked > 1000 && !failed)
     }
 
-    ; 输入检查、支架间距、SPF2M 没有处理好的情况 (崩溃 / 不显示任何东西)
-    ; PT Tools 窗口: 结果框不停留 Tab 焦点 (Area Expression 之后直接到 Rebar Diameter), 单位写成 mm², 点进输入框时全选
+    ; Input checks, support spacing, cases SPF2M didn't handle well (crashes / shows nothing)
+    ; PT Tools window: result boxes take no Tab stop (from Area Expression straight to Rebar Diameter), units written as mm², clicking into an input box selects all
     static PTToolsWindowUi() {
         eq := (n, a, e) => TestRunner.Equal("PTToolsWindowUi." n, a, e)
         saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"]]
@@ -435,7 +435,7 @@ class ExtensionTests {
         tabbed := "", oldUnit := ""
         for ctrl in g {
             style := ControlGetStyle(ctrl)
-            if (ctrl.Type = "Edit" && (style & 0x800) && (style & 0x10000))     ; ES_READONLY 还有 WS_TABSTOP
+            if (ctrl.Type = "Edit" && (style & 0x800) && (style & 0x10000))     ; ES_READONLY still with WS_TABSTOP
                 tabbed .= ctrl.Name " "
             if InStr(ctrl.Text, "mm2")
                 oldUnit .= ctrl.Text " | "
@@ -445,26 +445,26 @@ class ExtensionTests {
         next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")
         eq("expression -> diameter", next = g["RequiredBarDiameter"].Hwnd, true)
         span := g["RebarSpanWidth"]
-        SendMessage(0xB1, 1, 1, span)                                       ; 光标放在中间
+        SendMessage(0xB1, 1, 1, span)                                       ; caret in the middle
         span.Focus()
-        Sleep(100)                                                          ; 处理 PostMessage 的全选
+        Sleep(100)                                                          ; handle the PostMessage select-all
         start := 0, finish := 0
         DllCall("SendMessage", "Ptr", span.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
         eq("select all on focus", start "-" finish, "0-" StrLen(span.Value))
-        eq("right margin", (SendMessage(0xD4, 0, 0, span) >> 16) >= 4, true)   ; EM_GETMARGINS: 光标不紧贴数字
-        g["RebarSpanWidth"].Value := 5000                                   ; 第一组的 Span Width -> BRC 的 Span Width -> 钢筋网面积一起重算
+        eq("right margin", (SendMessage(0xD4, 0, 0, span) >> 16) >= 4, true)   ; EM_GETMARGINS: the caret doesn't touch the digits
+        g["RebarSpanWidth"].Value := 5000                                   ; the first group's Span Width -> BRC's Span Width -> the mesh area recomputed together
         PTToolsWindow.OnRebarFieldChanged()
         eq("brc span follows", g["BrcSpanWidth"].Value, "5000")
         eq("top mesh area recalculated", g["BrcTopArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcTopMeshMark"].Value)))
         eq("bottom mesh area recalculated", g["BrcBotArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcBotMeshMark"].Value)))
         safety := g["SafetyFactorEnabled"]
         eq("safety factor checkbox skips tab", (ControlGetStyle(safety) & 0x10000) != 0, false)
-        ; 钢筋直径下拉框里的数字右对齐: 第一个字的位置 (EM_POSFROMCHAR) 在输入框的右半边 (Wine 不支持建好后改对齐, 只在 Windows 上看位置)
+        ; Numbers in the bar diameter combo box are right-aligned: the first character's position (EM_POSFROMCHAR) is in the right half of the box (Wine doesn't support changing alignment after creation, so only checked on Windows)
         diaEdit := DllCall("FindWindowEx", "Ptr", g["RebarBarDiameter"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
         eq("diameter diaEdit has ES_RIGHT", (ControlGetStyle(diaEdit) & 0x2) != 0, true)
         if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
             WinGetClientPos(, , &ew, , diaEdit)
-            firstX := SendMessage(0xD6, 0, 0, diaEdit) & 0xFFFF                     ; EM_POSFROMCHAR: 第 0 个字的 x
+            firstX := SendMessage(0xD6, 0, 0, diaEdit) & 0xFFFF                     ; EM_POSFROMCHAR: x of character 0
             TestRunner.True("PTToolsWindowUi.diameter text on the right (first char at " firstX " of " ew ")", firstX > ew // 2)
         }
         g.Destroy(), PTToolsWindow.G := ""
@@ -500,9 +500,9 @@ class ExtensionTests {
         eq("interval not a number", profileOf(1, 600, 100, 8000, Map("Intervals", TendonProfile.ParseIntervals("1000 abc"))).Error != "", true)
         eq("missing distance", profileOf(1, 600, 100, "").Error != "", true)
         eq("missing level", profileOf(1, "", 100, 8000).Error != "", true)
-        ; SPF2M 崩溃的情况: 这里给出错误说明
+        ; where SPF2M crashes: an error description here
         eq("psp not achievable", InStr(profileOf(2, 900, 100, 3000, Map("Tendon", 6)).Error, "NOT ACHIEVABLE") > 0, true)
-        ; SPF2M 什么都不显示的情况: 反弯点超过半跨
+        ; where SPF2M shows nothing: the contraflexure point beyond half the span
         eq("contraflexure beyond half span", InStr(profileOf(1, 600, 100, 9000, Map("Contraflexure", 5000)).Error, "half") > 0, true)
         eq("contraflexure with equal levels", profileOf(1, 300, 300, 6000, Map("Contraflexure", 500)).Error != "", true)
         result := profileOf(1, 600, 100, 9000, Map("Contraflexure", 1200))
@@ -514,7 +514,7 @@ class ExtensionTests {
         eq("default tendon 12S", PTToolsWindow.Defaults["TendonType"], 3)
     }
 
-    ; 一键更新: 解析 GitHub 的 Release、SHA256、替换文件 (用临时文件夹里的假程序, 不下载)
+    ; One-click update: parsing GitHub's Release, SHA256, replacing files (with a fake program in a temporary folder, no download)
     static SelfUpdate() {
         eq := (n, a, e) => TestRunner.Equal("SelfUpdate." n, a, e)
         ok := (n, c) => TestRunner.True("SelfUpdate." n, c)
@@ -563,7 +563,7 @@ class ExtensionTests {
         write(root "\abc.txt", "abc")
         eq("sha256 file", UpdateChecker.Sha256File(root "\abc.txt"), "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")
         ok("writable", UpdateChecker.IsWritable(root))
-        tar := A_WinDir "\System32\tar.exe"                                ; 解压 (Windows 10 起自带 tar.exe; Wine 里没有就跳过)
+        tar := A_WinDir "\System32\tar.exe"                                ; extraction (tar.exe is built in since Windows 10; skipped when Wine lacks it)
         if FileExist(tar) {
             write(root "\pkg\ALTRun.exe", "exe"), write(root "\pkg\Resources\Lang\zh-CN.json", "{}")
             RunWait('"' tar '" -a -cf "' root '\pkg.zip" -C "' root '\pkg" ALTRun.exe Resources', , "Hide")
@@ -597,7 +597,7 @@ class ExtensionTests {
                 extra .= A_LoopFileName " "
         eq("no stray folders", extra, "")
 
-        write(dest "\Launcher.exe", "renamed old")                          ; 用户把 ALTRun.exe 改过名
+        write(dest "\Launcher.exe", "renamed old")                          ; the user renamed ALTRun.exe
         FileDelete(dest "\ALTRun.exe")
         UpdateChecker.Apply(src, dest, "Launcher.exe")
         eq("renamed exe replaced", read(dest "\Launcher.exe") "|" read(dest "\Launcher.exe.old"), "new exe|renamed old")
@@ -612,7 +612,7 @@ class ExtensionTests {
         ok("package without exe throws", failed)
         eq("package without exe changes nothing", read(dest "\Launcher.exe") "|" read(dest "\Launcher.exe.old"), "new exe|<missing>")
 
-        ; 复制到一半失败 (目标文件被别的程序独占打开): 已经覆盖的改回去, 新增的文件和文件夹删掉, exe 不动
+        ; copying fails halfway (the target file is held exclusively by another program): overwritten files are put back, new files and folders deleted, the exe untouched
         try DirDelete(root, true)
         write(src "\ALTRun.exe", "new exe")
         write(src "\README.md", "new readme")
@@ -635,7 +635,7 @@ class ExtensionTests {
         try DirDelete(root, true)
     }
 
-    ; 后台检查更新: 每天一次、跳过的版本、搜索窗口里的更新提示 (不联网: 直接设置 Pending)
+    ; Background update checks: once a day, skipped versions, the update notice in the search window (no network: Pending is set directly)
     static UpdateNotice() {
         eq := (n, a, e) => TestRunner.Equal("UpdateNotice." n, a, e)
         ok := (n, c) => TestRunner.True("UpdateNotice." n, c)
@@ -651,7 +651,7 @@ class ExtensionTests {
         ok("not wanted: skipped", !UpdateChecker.IsWanted("2026.10.01", "2026.09.28", "2026.10.01"))
         ok("wanted: newer than skipped", UpdateChecker.IsWanted("2026.10.02", "2026.09.28", "2026.10.01"))
 
-        ; 状态文件
+        ; the state file
         savedFile := UpdateChecker.StateFile
         root := A_Temp "\ALTRun-test-update-state"
         try DirDelete(root, true)
@@ -663,12 +663,12 @@ class ExtensionTests {
         state := UpdateChecker.LoadState()
         eq("state: saved", state["LastCheck"] "|" state["Skip"], "20260928120000|2026.10.01")
 
-        ; 没有新版本: 空搜索框没有结果
+        ; no new version: no results in the empty search box
         UpdateChecker.Pending := ""
         eq("no update: empty query", ProviderRegistry.Search("").Length, 0)
         eq("no update: item", UpdateChecker.PendingItem(), "")
 
-        ; 有新版本: 空搜索框和搜索 "update" 都显示, 排在 "检查更新" 前面
+        ; a new version: shown in the empty search box and for "update", before "Check for updates"
         release := {Version: "2026.10.02", Page: "https://x/notes", ZipUrl: "https://x/a.zip", Sha256: "ab"}
         UpdateChecker.SetPending(release)
         eq("mode (tests run the source)", release.Mode, "source")
@@ -684,7 +684,7 @@ class ExtensionTests {
         ok("action panel", InStr(titles, "Release Notes|Skip This Version|"))
         results := ProviderRegistry.Search("update")
         ok("search update: first", results.Length >= 2 && results[1].Title = "Update Available: ALTRun 2026.10.02")
-        ; 操作面板右侧的说明: 放得下时完整显示, 放不下时名称优先 (最多一半), 说明用剩下的
+        ; Description on the right of the actions panel: in full when it fits, otherwise the name first (at most half) and the description gets the rest
         eq("hint fits", SearchWindow.HintWidth(600, 120, 300, 12), 300)
         eq("hint shares the row", SearchWindow.HintWidth(400, 120, 600, 12), 268)
         eq("long title keeps half", SearchWindow.HintWidth(400, 500, 600, 12), 188)
@@ -692,7 +692,7 @@ class ExtensionTests {
         for mode, text in Map("install", "Install Update", "page", "Download Page", "scoop", "scoop update altrun", "winget", "winget upgrade")
             release.Mode := mode, ok("subtitle " mode, InStr(UpdateChecker.PendingItem().Subtitle, text))
 
-        ; 跳过这个版本: 不再显示, 记在状态文件里
+        ; skip this version: no longer shown, noted in the state file
         UpdateChecker.SkipVersion("2026.10.02")
         eq("skipped: no item", ProviderRegistry.Search("").Length, 0)
         eq("skipped: saved", UpdateChecker.LoadState()["Skip"], "2026.10.02")
@@ -702,7 +702,7 @@ class ExtensionTests {
         try DirDelete(root, true)
     }
 
-    ; 片段的占位符
+    ; snippet placeholders
     static SnippetPlaceholders() {
         eq := (n, a, e) => TestRunner.Equal("Placeholders." n, a, e)
         ok := (n, c) => TestRunner.True("Placeholders." n, c)
@@ -721,18 +721,18 @@ class ExtensionTests {
         ClipboardProvider.Entries := saved
     }
 
-    ; 文字片段的导入 / 导出: 合并规则、表头、自动展开
+    ; Snippet import / export: merge rules, header, auto expansion
     static SnippetImport() {
         eq := (n, a, e) => TestRunner.Equal("SnippetImport." n, a, e)
         snippets := [Map("Name", "Mail", "Keyword", "em", "Text", "old", "AutoExpand", 1)
             , Map("Name", "Address", "Keyword", "", "Text", "old address", "AutoExpand", 1)]
         rows := [["名称", "关键字", "正文", "自动展开"]
-            , ["Mail (work)", "EM", "new@b.com", ""]                       ; 关键字相同 (不分大小写): 更新
-            , ["Address", "", "new address"]                               ; 没有关键字, 名称相同: 更新
-            , ["", "sig", "Best regards`nCaomao", "0"]                     ; 没有名称: 用关键字; 0 = 不自动展开
-            , ["", "", "  Line one  `nLine two"]                           ; 没有名称和关键字: 用正文第一行
-            , ["Spaced", "two words", "x"]                                 ; 关键字有空格 (自动展开用不了): 自动展开关掉
-            , ["Empty", "e", "   "]]                                       ; 没有正文: 跳过
+            , ["Mail (work)", "EM", "new@b.com", ""]                       ; same keyword (case-insensitive): updated
+            , ["Address", "", "new address"]                               ; no keyword, same name: updated
+            , ["", "sig", "Best regards`nCaomao", "0"]                     ; no name: the keyword is used; 0 = no auto expansion
+            , ["", "", "  Line one  `nLine two"]                           ; no name or keyword: the first line of the text
+            , ["Spaced", "two words", "x"]                                 ; a keyword with a space (auto expansion can't use it): auto expansion off
+            , ["Empty", "e", "   "]]                                       ; no text: skipped
         result := SnippetProvider.ImportRows(rows, snippets, ";")
         eq("counts", result.Added "/" result.Updated "/" result.Skipped, "3/2/1")
         eq("updated by keyword", snippets[1]["Name"] "|" snippets[1]["Text"] "|" snippets[1]["Keyword"], "Mail (work)|new@b.com|EM")
@@ -749,7 +749,7 @@ class ExtensionTests {
         eq("export header", SnippetProvider.IsHeaderRow(exported[1]), true)
         eq("export rows", exported.Length, 6)
         eq("export auto expand", exported[4][4], 0)
-        again := []                                                         ; 导出再导入: 内容不变
+        again := []                                                         ; export then import: content unchanged
         SnippetProvider.ImportRows(DelimitedText.Parse(DelimitedText.ToCsv(exported)), again, ";")
         same := again.Length = snippets.Length
         for index, snippet in snippets
@@ -758,7 +758,7 @@ class ExtensionTests {
         eq("round trip", same, true)
     }
 
-    ; 选中内容的操作: 按内容类型生成操作面板的来源
+    ; Actions for the selection: the source of the actions panel by content type
     static SelectionItems() {
         eq := (n, a, e) => TestRunner.Equal("Selection." n, a, e)
         ok := (n, c) => TestRunner.True("Selection." n, c)
@@ -776,7 +776,7 @@ class ExtensionTests {
         ok("text: save as snippet", InStr(list, "Save as Snippet...|"))
         ok("text: replace with uppercase", InStr(list, "Replace with: UPPERCASE|"))
         ok("text: no calculation", !InStr(list, "= "))
-        ; 剪贴板历史里的文字条目: → 菜单里也有搜索操作 (图片、文件没有)
+        ; text entries in the clipboard history: the → menu has search actions too (images and files don't)
         clipItem := ResultItem("hello", "", {Kind: "text", Arg: "hello world", Provider: ClipboardProvider.Id, Source: Map("Text", "hello world", "Time", A_Now)})
         ok("clipboard history: search engines", InStr(titles(clipItem), "Search Google|"))
         clipItem.Source := Map("Type", "image", "Time", A_Now)

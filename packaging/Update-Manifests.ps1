@@ -1,5 +1,5 @@
-# 把 Scoop (bucket\altrun.json) 和 winget (packaging\winget\*.yaml) 清单更新到新版本。
-# Release 工作流发布之后自动运行; 也可以手动运行:
+# Updates the Scoop (bucket\altrun.json) and winget (packaging\winget\*.yaml) manifests to a new version.
+# Runs automatically after the Release workflow publishes; can also be run by hand:
 #   pwsh packaging/Update-Manifests.ps1 -Version 2026.09.25 -Zip build/ALTRun_v2026.09.25.zip
 param(
     [Parameter(Mandatory)][string]$Version,

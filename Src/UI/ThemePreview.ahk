@@ -1,28 +1,28 @@
 ;===============================================================================
-; ThemePreview.ahk - 主题缩略图 (偏好设置 -> 外观 的主题列表) (AutoHotkey v2)
+; ThemePreview.ahk - theme thumbnails (the theme list in Preferences -> Appearance) (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 按主题自己的颜色和圆角画一个简化的迷你搜索窗口 (不写字, 只用色块): 输入框里一段输入文字色,
-; 分隔线, 三行结果 (彩色图标 + 一条标题); 第一行是选中行, 标题前一段是高亮色。
-; 不用图片文件, 自定义主题也有缩略图;
-; System (跟随系统) 左半边是 Light, 右半边是 Dark。
+; Draws a simplified mini search window in the theme's own colors and corner radius (no text, only color blocks): a stretch of input text color in the input box,
+; a separator, three result rows (a colored icon + a title bar); the first row is selected, with the start of its title in the highlight color.
+; No image files, so custom themes get thumbnails too;
+; System (follow the system) is Light on the left half and Dark on the right.
 ;
-; 用法:
-;   hbm := ThemePreview.Bitmap(ThemeManager.Resolve("Dark"), 128, 88)   ; HBITMAP, 用完 DeleteObject
-;   il  := ThemePreview.ImageList(["System", "Light", "Dark"], 128, 88)   ; 顺序和名称一样, 找不到的主题用 Light
+; Usage:
+;   hbm := ThemePreview.Bitmap(ThemeManager.Resolve("Dark"), 128, 88)   ; HBITMAP; DeleteObject when done
+;   il  := ThemePreview.ImageList(["System", "Light", "Dark"], 128, 88)   ; in the order of the names; unknown themes use Light
 ;===============================================================================
 
 class ThemePreview {
-    static TitleWidths := [0.52, 0.40, 0.46]                                    ; 三行标题的长度 (占宽度的比例)
-    static IconColors := ["3B82F6", "F59E0B", "10B981"]                        ; 结果行左边的 "图标" (蓝 / 橙 / 绿, 每个主题都一样)
+    static TitleWidths := [0.52, 0.40, 0.46]                                    ; lengths of the three titles (fraction of the width)
+    static IconColors := ["3B82F6", "F59E0B", "10B981"]                        ; the "icons" on the left of the result rows (blue / orange / green, the same in every theme)
 
-    ; 一个主题 (完整的键值 Map) 的缩略图, w x h 像素。用 24 位 DIB (没有 Alpha): 圆角是 GDI+ 画的,
-    ; 在 32 位位图上会写 Alpha = 255, 而 GDI 画的背景 Alpha 是 0, 图像列表看到有 Alpha 就把背景当成透明
+    ; Thumbnail of one theme (the complete Map of keys), w x h pixels. A 24-bit DIB (no alpha): the rounded corners are drawn by GDI+,
+    ; which writes alpha = 255 on a 32-bit bitmap while the background GDI draws has alpha 0, and an image list seeing alpha treats the background as transparent
     static Bitmap(theme, w, h) {
         screen := DllCall("GetDC", "Ptr", 0, "Ptr")
         dc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr")
         DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
         info := Buffer(40, 0)                                               ; BITMAPINFOHEADER
-        NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 24, info)   ; 自上而下, 24 位
+        NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 24, info)   ; top-down, 24-bit
         bits := 0
         hbm := DllCall("CreateDIBSection", "Ptr", dc, "Ptr", info, "UInt", 0, "Ptr*", &bits, "Ptr", 0, "UInt", 0, "Ptr")
         old := DllCall("SelectObject", "Ptr", dc, "Ptr", hbm, "Ptr")
@@ -32,7 +32,7 @@ class ThemePreview {
         return hbm
     }
 
-    ; 主题名 -> 缩略图; "System" 拼成左浅右深
+    ; theme name -> thumbnail; "System" is light on the left and dark on the right
     static ForName(themeName, w, h) {
         if (themeName != "System") {
             theme := ThemeManager.Resolve(themeName)
@@ -57,7 +57,7 @@ class ThemePreview {
         return light
     }
 
-    ; 每个主题一张缩略图的图像列表 (ListView 的大图标); ListView 销毁时一起释放
+    ; An image list with one thumbnail per theme (the ListView's large icons); freed with the ListView
     static ImageList(names, w, h) {
         il := DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x20, "Int", names.Length, "Int", 4, "Ptr")   ; ILC_COLOR32
         for themeName in names
@@ -84,10 +84,10 @@ class ThemePreview {
         roundRect(left, top, right, bottom, radius, bgr) {
             if (radius <= 0)
                 return fill(left, top, right, bottom, bgr)
-            Win.FillRoundRect(dc, left, top, right + 1, bottom + 1, radius, bgr)   ; 抗锯齿 (GDI+)
+            Win.FillRoundRect(dc, left, top, right + 1, bottom + 1, radius, bgr)   ; antialiased (GDI+)
         }
-        bar(left, top, width, height, bgr) => roundRect(left, top, left + width, top + height, height // 2, bgr)   ; 代表一段文字
-        soft(key, backKey, t) {                                             ; 颜色往背景色靠 t (0~1): 细线条不那么刺眼
+        bar(left, top, width, height, bgr) => roundRect(left, top, left + width, top + height, height // 2, bgr)   ; stands for a piece of text
+        soft(key, backKey, t) {                                             ; the color moved towards the background by t (0~1): thin lines aren't as harsh
             a := color(key), b := color(backKey), mixed := 0
             Loop 3 {
                 shift := (A_Index - 1) * 8
@@ -122,7 +122,7 @@ class ThemePreview {
             roundRect(pad, iconTop, pad + iconSize, iconTop + iconSize, Max(1, iconSize // 4), Win.ColorToBgr(ThemePreview.IconColors[index]))
             x := pad + iconSize + Max(3, Round(w * 0.05))
             titleY := top + Round((rowH - titleH) / 2), titleLen := Round(w * titleW)
-            if selected {                                                   ; 选中行: 前一段是和输入匹配的高亮色
+            if selected {                                                   ; selected row: the start is in the highlight color that matches the input
                 matchW := Round(w * 0.12), gap := Max(1, Round(w * 0.012))
                 bar(x, titleY, matchW, titleH, color("SelectedHighlight"))
                 bar(x + matchW + gap, titleY, titleLen - matchW - gap, titleH, soft("SelectedTitle", back, 0.3))

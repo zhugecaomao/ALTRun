@@ -24,10 +24,10 @@
 ;@Ahk2Exe-SetCopyright Copyright (c) 2013-2026 zhugecaomao
 ;@Ahk2Exe-SetOrigFilename ALTRun.exe
 ;@Ahk2Exe-SetMainIcon Resources\ALTRun.ico
-; (编译: 见 .github/workflows/release.yml; SetVersion 要和 App.Version 一致, 有测试检查)
+; (compiling: see .github/workflows/release.yml; SetVersion must match App.Version, which a test checks)
 
 #Requires AutoHotkey v2.0
-#SingleInstance Off                     ; 已经在运行时交给它处理 (见 App.HandOff)
+#SingleInstance Off                     ; when one is already running, hand over to it (see App.HandOff)
 #NoTrayIcon
 #Warn All, OutputDebug
 

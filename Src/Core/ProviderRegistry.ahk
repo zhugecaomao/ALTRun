@@ -31,7 +31,7 @@
 class ProviderRegistry {
     static Providers  := []
     static MaxResults := 50
-    static SlowSearchMs := 30                                               ; 超过这么多毫秒的搜索写进调试日志
+    static SlowSearchMs := 30                                               ; searches slower than this many milliseconds go into the debug log
 
     static Register(provider) {
         ProviderRegistry.Providers.Push(provider)
@@ -100,7 +100,7 @@ class ProviderRegistry {
         return specs
     }
 
-    ; 按 Knowledge 里选中的次数从多到少排 (没选过的保持原来的顺序, 排在后面)
+    ; Sorted by how often Knowledge says they were chosen (unchosen ones keep their order and come last)
     static ByPicks(items) {
         picked := [], rest := []
         for item in items {
@@ -119,7 +119,7 @@ class ProviderRegistry {
         return sorted
     }
 
-    static _SortPicks(entries) {                                            ; 次数多的在前, 一样多时保持原来的顺序 (插入排序, 选过的通常只有几十个)
+    static _SortPicks(entries) {                                            ; more picks first, ties keep their order (insertion sort; usually only a few dozen were picked)
         Loop entries.Length - 1 {
             i := A_Index + 1, entry := entries[i], j := i - 1
             while (j >= 1 && entries[j].Count < entry.Count)
@@ -129,7 +129,7 @@ class ProviderRegistry {
         return entries
     }
 
-    ; skip: 可选, 这一次不搜的功能 (例如恢复上次的搜索时先不搜文件, 窗口显示后再完整搜一次)
+    ; skip: optional, a feature not searched this time (e.g. files are skipped when restoring the last search, then a full search runs once the window shows)
     static Search(rawText, skip := "") {
         query := SearchQuery(rawText)
         if (query.Text = "")
@@ -162,12 +162,12 @@ class ProviderRegistry {
             results.Length := ProviderRegistry.MaxResults
         if !results.Length
             results := ProviderRegistry._Fallbacks(query)
-        if (Logger.Enabled && (total := Logger.Ms() - started) >= ProviderRegistry.SlowSearchMs)   ; 慢的搜索记进日志 (不记输入的文字)
+        if (Logger.Enabled && (total := Logger.Ms() - started) >= ProviderRegistry.SlowSearchMs)   ; slow searches go into the log (without the input text)
             Logger.Debug("Perf: search (" StrLen(rawText) " chars) " Round(total) " ms," slow)
         return results
     }
 
-    ; 空搜索框: 平时没有结果, 只有 Provider 的 EmptyResults() (例如后台发现了新版本)
+    ; Empty search box: normally no results, only the providers' EmptyResults() (e.g. a new version found in the background)
     static EmptyResults() {
         results := []
         for provider in ProviderRegistry.Providers {
@@ -180,7 +180,7 @@ class ProviderRegistry {
                     item.Provider := provider.Id
                     results.Push(item)
                 }
-                if (Logger.Enabled && Logger.Ms() - start >= 30)              ; 慢的记进日志 (置顶 / 最近使用的图标、路径)
+                if (Logger.Enabled && Logger.Ms() - start >= 30)              ; slow ones go into the log (icons and paths of pinned / recent items)
                     Logger.Time("empty results: " provider.Id, start)
             } catch as e {
                 Logger.Error("ProviderRegistry: " provider.Id ".EmptyResults failed - " e.Message)
@@ -215,7 +215,7 @@ class ProviderRegistry {
         return results
     }
 
-    ; 分数从高到低; 分数相同时保持原来的顺序 (功能注册的顺序)
+    ; By score, highest first; ties keep their order (the order the features were registered)
     static SortByScore(items) {
         if (items.Length < 2)
             return items

@@ -1,17 +1,17 @@
 ;===============================================================================
-; CapsLockHelper.ahk - 管理员窗口里也能按 CapsLock 切换输入法 (AutoHotkey v2)
+; CapsLockHelper.ahk - CapsLock switches the input language in administrator windows too (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; Windows 不让普通权限的程序控制管理员权限的窗口 (UIPI): 前台是管理员窗口时, ALTRun 的键盘钩子收不到按键,
-; 发给它的切换消息也会被挡掉 (#158)。整个 ALTRun 以管理员身份运行又会让打开的程序都变成管理员权限
-; (看不到映射的网络盘、拖放被拒)。所以单独起一个以管理员身份运行的小助手, 只做 CapsLock 切换:
-;   - 设置 General.CapsLockElevated = 1 时 (偏好设置 → 自定义热键), 建一个 "最高权限" 的计划任务 (只在这时
-;     确认一次 UAC); ALTRun 每次启动都运行这个任务 (schtasks /run, 不弹 UAC) 启动小助手, 退出时让它也退出
-;   - 小助手就是 ALTRun 本身, 带参数 -CapsLockHelper 启动: 只注册 CapsLock 热键 (CapsLockSwitch), 不建窗口、
-;     不写设置、不运行任何程序。主窗口的标题改成 Title, 不会被当作 "已经在运行的 ALTRun"
-;   - ALTRun 和小助手都注册 CapsLock 热键: 键盘钩子按安装的先后依次调用, 先收到的那个拦下按键, 后一个就收不到,
-;     所以普通窗口里只会切换一次; 管理员窗口里只有小助手收得到
-;   - 大写锁定开 / 关的提示由 ALTRun 显示 (小助手发 "-CapsLockState 1/0" 过去, 管理员权限的程序给普通程序发消息不受限制)
-;   - 小助手只接受 "-Exit" (WM_COPYDATA, 放行普通程序发来的这一种消息); 找不到 ALTRun 时自己退出
+; Windows doesn't let programs with normal rights control windows with administrator rights (UIPI): with an administrator window in front, ALTRun's keyboard hook gets no keys,
+; and switch messages sent to it are blocked (#158). Running all of ALTRun as administrator would make every program it opens elevated too
+; (mapped network drives invisible, drag and drop refused). So a separate small helper runs as administrator and only does the CapsLock switch:
+;   - with General.CapsLockElevated = 1 (Preferences → Custom hotkeys), a scheduled task with "highest privileges" is created (UAC is confirmed once,
+;     only then); ALTRun runs this task at every start-up (schtasks /run, no UAC prompt) to start the helper, and makes it exit on exit
+;   - the helper is ALTRun itself started with -CapsLockHelper: it only registers the CapsLock hotkey (CapsLockSwitch), creates no windows,
+;     writes no settings and runs no programs. Its main window's title becomes Title, so it isn't taken for "an ALTRun already running"
+;   - ALTRun and the helper both register the CapsLock hotkey: keyboard hooks are called in the order they were installed, and the first to get the key catches it so the other doesn't,
+;     so a normal window switches only once; in an administrator window only the helper gets it
+;   - ALTRun shows the Caps Lock on / off notice (the helper sends "-CapsLockState 1/0" to it; an elevated program may send messages to a normal one freely)
+;   - the helper only accepts "-Exit" (WM_COPYDATA, the one message allowed from normal programs); it exits by itself when ALTRun can't be found
 ;===============================================================================
 
 class CapsLockHelper {
@@ -20,12 +20,12 @@ class CapsLockHelper {
     static Title    := "ALTRun CapsLock Helper"
 
     ;---------------------------------------------------------------------------
-    ; 小助手这边 (以管理员身份运行的进程)
+    ; The helper's side (the process running as administrator)
     ;---------------------------------------------------------------------------
     static Run() {
         A_IconHidden := true
         DetectHiddenWindows(true)
-        for hwnd in WinGetList(CapsLockHelper.Title " ahk_class AutoHotkey")   ; 已经有一个在运行
+        for hwnd in WinGetList(CapsLockHelper.Title " ahk_class AutoHotkey")   ; one is already running
             if (hwnd != A_ScriptHwnd)
                 ExitApp()
         DllCall("SetWindowTextW", "Ptr", A_ScriptHwnd, "Str", CapsLockHelper.Title)
@@ -37,10 +37,10 @@ class CapsLockHelper {
         CapsLockSwitch.Mode := mode
         CapsLockSwitch.Notify := (on) => CapsLockHelper._TellMain(on)
         CapsLockSwitch.Register((key, fn) => Hotkey(key, fn))
-        SetTimer(() => App._RunningInstance() || ExitApp(), 3000)           ; ALTRun 不在了 (被结束、崩溃): 跟着退出
+        SetTimer(() => App._RunningInstance() || ExitApp(), 3000)           ; ALTRun is gone (ended, crashed): exit too
     }
 
-    ; 设置文件里的 General.CapsLock (只读, 不写回); 读不到时 ""
+    ; General.CapsLock from the settings file (read only, never written back); "" if it can't be read
     static ModeFromSettings(file) {
         try {
             general := JSON.Parse(FileRead(file, "UTF-8"))["General"]
@@ -59,16 +59,16 @@ class CapsLockHelper {
         return 1
     }
 
-    ; 大写锁定开 / 关的提示: 让 ALTRun 显示
+    ; The Caps Lock on / off notice: let ALTRun show it
     static _TellMain(on) {
         if (hwnd := App._RunningInstance())
             App.SendArgs(hwnd, ["-CapsLockState", on ? "1" : "0"])
     }
 
     ;---------------------------------------------------------------------------
-    ; ALTRun 这边 (普通权限)
+    ; ALTRun's side (normal rights)
     ;---------------------------------------------------------------------------
-    ; 打开了这个选项、CapsLock 设成了切换输入法、ALTRun 本身不是管理员时, 在后台运行计划任务启动小助手
+    ; With the option on, CapsLock set to switch the input language and ALTRun itself not elevated, run the scheduled task in the background to start the helper
     static Wanted(general) {
         return general.Has("CapsLockElevated") && general["CapsLockElevated"] && general.Has("CapsLock")
             && CapsLockSwitch.IsMode(general["CapsLock"])
@@ -77,7 +77,7 @@ class CapsLockHelper {
     static Start() {
         if (A_IsAdmin || !CapsLockHelper.Wanted(AppSettings.General) || CapsLockHelper.Window())
             return
-        SetTimer(() => CapsLockHelper._RunTask(), -500)                     ; 不拖慢启动
+        SetTimer(() => CapsLockHelper._RunTask(), -500)                     ; don't slow down start-up
     }
 
     static _RunTask() {
@@ -88,7 +88,7 @@ class CapsLockHelper {
             App.Toast(I18n.T("Caps.HelperFailed"), 8000)
     }
 
-    ; ALTRun 退出 / 重新载入时让小助手也退出 (重新载入后按新的设置再启动)
+    ; When ALTRun exits / reloads, the helper exits too (restarted with the new settings after reloading)
     static Stop() {
         if (hwnd := CapsLockHelper.Window())
             try App.SendArgs(hwnd, ["-Exit"])
@@ -102,7 +102,7 @@ class CapsLockHelper {
         return hwnd
     }
 
-    ; 建计划任务 (确认一次 UAC)。返回 true = 建好了; 取消 UAC 或失败时 false
+    ; Creates the scheduled task (UAC confirmed once). true = created; false when UAC is canceled or it fails
     static Install() {
         if A_IsCompiled
             command := A_ScriptFullPath, arguments := CapsLockHelper.Arg
@@ -122,7 +122,7 @@ class CapsLockHelper {
         return code = 0
     }
 
-    ; 删掉计划任务 (确认一次 UAC; 取消也没关系, 选项关了就不会再运行它)
+    ; Deletes the scheduled task (UAC confirmed once; canceling is fine, it won't run anymore with the option off)
     static Uninstall() {
         CapsLockHelper.Stop()
         try RunWait('*RunAs schtasks.exe /delete /tn "' CapsLockHelper.TaskName '" /f', , "Hide")
@@ -133,8 +133,8 @@ class CapsLockHelper {
         return (domain != "") ? domain "\" A_UserName : A_UserName
     }
 
-    ; 计划任务的 XML: 最高权限、用户登录时才运行 (交互式, 能装键盘钩子)、只手动运行 (没有触发器)、
-    ; 用电池时也运行、不限运行时长、正常优先级 (默认 7 是低优先级, 按键反应会慢)
+    ; The scheduled task's XML: highest privileges, runs only while the user is logged on (interactive, so it can install a keyboard hook), only run manually (no triggers),
+    ; runs on battery too, no run time limit, normal priority (the default 7 is low priority, which makes keys respond slowly)
     static TaskXml(command, arguments, workingDir, userId) {
         esc(s) => StrReplace(StrReplace(StrReplace(StrReplace(s, "&", "&amp;"), "<", "&lt;"), ">", "&gt;"), '"', "&quot;")
         return '<?xml version="1.0" encoding="UTF-16"?>`n'

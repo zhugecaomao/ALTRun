@@ -1,57 +1,57 @@
 ;===============================================================================
-; IconCache.ahk - 结果图标 (HICON) 的读取和缓存 (AutoHotkey v2)
+; IconCache.ahk - reads and caches result icons (HICON) (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; ResultItem.Icon 的写法:
-;   "C:\Windows\notepad.exe"     文件 / 文件夹 / 快捷方式自己的图标
-;   "shell:AppsFolder\<AppID>"   shell 路径 (应用商店应用等)
-;   "res:imageres.dll,-102"      dll / exe 里的图标资源 (负数 = 资源 Id)
-;   "ext:.pdf"                   某种扩展名的默认图标
-;   "url:"                       默认浏览器 (网址) 图标
-;   "folder:"                    通用文件夹图标
-;   "thumb:C:\x.png"             图片本身的缩略图 (剪贴板历史里的图片)
-; exe/lnk/ico 等每个文件图标不同, 按完整路径缓存; 其它文件按扩展名缓存。
-; 网络位置 (\\server\share、映射的网络盘) 上的文件和文件夹不读磁盘, 用扩展名 / 文件夹的
-; 通用图标: 读一次网络上的图标可能要几百毫秒, 而加载图标和打字在同一个线程里。
-; 普通文件夹也用通用的文件夹图标 (FolderIcon): 只有带 desktop.ini (自定义图标, 如 OneDrive、
-; 桌面、下载) 的文件夹和磁盘根目录才单独读取。
+; Forms of ResultItem.Icon:
+;   "C:\Windows\notepad.exe"     the icon of the file / folder / shortcut itself
+;   "shell:AppsFolder\<AppID>"   a shell path (Store apps etc.)
+;   "res:imageres.dll,-102"      an icon resource in a dll / exe (negative = resource Id)
+;   "ext:.pdf"                   the default icon of an extension
+;   "url:"                       the default browser (URL) icon
+;   "folder:"                    the generic folder icon
+;   "thumb:C:\x.png"             a thumbnail of the image itself (images in the clipboard history)
+; exe / lnk / ico etc. differ per file and are cached by full path; other files are cached by extension.
+; Files and folders on network locations (\\server\share, mapped drives) aren't read from disk; the generic icons of the extension / folder are used:
+; reading one icon over the network can take hundreds of milliseconds, and loading icons runs on the same thread as typing.
+; Normal folders also use the generic folder icon (FolderIcon): only folders with a desktop.ini (custom icons, e.g. OneDrive,
+; Desktop, Downloads) and drive roots are read individually.
 ;
 ;
-; 图标按 Size 读取: 取不小于 Size 的系统尺寸 (16 / 32 / 48...), 不是正好的尺寸 (例如紧凑主题的 28 px、
-; 125% 缩放时的 40 px) 用 GDI+ 高质量双三次插值缩放成 Size x Size 再缓存 (FitSize), 边缘平滑没有锯齿。
+; Icons are read at Size: the smallest system size not below Size (16 / 32 / 48...); sizes that don't fit exactly (e.g. 28 px for the compact density,
+; 40 px at 125% scaling) are scaled to Size x Size with high-quality bicubic interpolation in GDI+ before caching (FitSize), so edges are smooth.
 ;
-; 缓存最多 MaxIcons 个: ALTRun 常常开机后连续运行几周, 图标句柄 (每个程序最多 1 万个) 不能只增不减。
-; 超过时去掉最久没用到的 (DestroyIcon), 剩 80%; 再用到时重新加载。
+; At most MaxIcons are cached: ALTRun often runs for weeks after boot, and icon handles (at most 10,000 per program) mustn't only grow.
+; Beyond that the least recently used are destroyed (DestroyIcon) down to 80%; they reload when used again.
 ;
-; 磁盘缓存: 读过的图标 (缩放好的 Size x Size 像素) 存在 %LOCALAPPDATA%\ALTRun\IconCache\Icons-<Size>.bin,
-; 每台电脑各一份 (同一个路径在别的电脑上可能是别的程序, 也不跟着 Data 同步)。启动后读入, Get 遇到
-; 内存里没有、磁盘缓存里有的图标直接做成 HICON (不到 1 ms), 不用等后台读取; 重启后也是立刻显示。
-; 先用缓存里的, 再在后台 (窗口隐藏时) 核对: 文件的修改时间和大小变了 (程序更新了图标) 就重新读;
-; 不是文件的 (扩展名、资源、应用商店应用...) 存了超过 DiskRecheckDays 天的重新读一次。
-; 最多 DiskMax 个, 按最近用到的日期保留; 有新图标时攒一阵 (DiskSaveDelay), 窗口隐藏时保存, 退出时也保存。删掉这个文件夹没有影响。
+; Disk cache: icons read (scaled to Size x Size pixels) are stored in %LOCALAPPDATA%\ALTRun\IconCache\Icons-<Size>.bin,
+; one per PC (the same path may be another program on another PC, and it isn't synced with Data). Loaded after start-up; when Get finds an icon
+; missing in memory but in the disk cache, it makes the HICON directly (under 1 ms) without waiting for a background read; after a restart icons show at once too.
+; The cached icon is used first and checked in the background (while the window is hidden): when the file's time or size changed (the program updated its icon) it is read again;
+; icons that aren't files (extensions, resources, Store apps...) are read again after DiskRecheckDays days.
+; At most DiskMax, keeping the most recently used; new icons are collected for a while (DiskSaveDelay) and saved while the window is hidden, and on exit. Deleting the folder does no harm.
 ;
-; 读取图标 (特别是 exe/lnk、网络路径) 可能要几毫秒到几十毫秒, 所以 Get() 遇到
-; 还没加载的图标先返回 0 并放进队列, 由定时器在后台加载, 加载完调用 OnLoaded
-; (SearchWindow 在那里重画列表)。这样打字时不会被图标卡住。
+; Reading an icon (especially exe / lnk or network paths) can take milliseconds to tens of milliseconds, so Get() returns 0 for an
+; icon not loaded yet and queues it; a timer loads it in the background and then calls OnLoaded
+; (SearchWindow repaints the list there). So icons never hold up typing.
 ;
-; 用法:
-;   IconCache.Size := 32                 (由 SearchWindow 按主题和 DPI 设置)
-;   IconCache.OnLoaded := () => ...      后台加载完一批图标后调用
-;   hIcon := IconCache.Get(item.Icon)    0 = 没有图标 / 还在加载
-;   IconCache.Prefetch(specs)            启动后在后台预读常用的图标 (见 Prefetch)
-;   IconCache.LoadDisk() / SaveDisk()    启动后读入 / 退出时保存磁盘缓存 (见下面 "磁盘缓存")
-;   item.Icon := IconCache.FolderIcon(path)   文件夹: 通用图标 "folder:" 或它自己的路径
+; Usage:
+;   IconCache.Size := 32                 (set by SearchWindow from the theme and DPI)
+;   IconCache.OnLoaded := () => ...      called after a batch of icons was loaded in the background
+;   hIcon := IconCache.Get(item.Icon)    0 = no icon / still loading
+;   IconCache.Prefetch(specs)            reads common icons in the background after start-up (see Prefetch)
+;   IconCache.LoadDisk() / SaveDisk()    loads the disk cache after start-up / saves it on exit (see "disk cache" below)
+;   item.Icon := IconCache.FolderIcon(path)   folders: the generic icon "folder:" or the folder's own path
 ;===============================================================================
 
 class IconCache {
     static Size     := 32
     static OnLoaded := ""
     static _icons   := Map()
-    static _queue   := Map()              ; key -> spec, 等待后台加载
-    static _loading := Map()              ; 正在读的 (读的时候界面可能又来要同一个图标, 不再排一次队)
+    static _queue   := Map()              ; key -> spec, waiting to be loaded in the background
+    static _loading := Map()              ; being read (while reading, the UI may ask for the same icon again; don't queue it twice)
     static _timer   := ""
     static MaxIcons := 1500
-    static SlowLoadMs := 200              ; 读一个图标超过这么多毫秒时写进调试日志 (见 _LoadQueued)
-    static _used    := Map(), _tick := 0  ; key -> 最后一次用到的序号 (越大越新)
+    static SlowLoadMs := 200              ; reading one icon slower than this many milliseconds goes into the debug log (see _LoadQueued)
+    static _used    := Map(), _tick := 0  ; key -> sequence number of its last use (higher = more recent)
 
     static Get(spec) {
         if (spec = "")
@@ -61,7 +61,7 @@ class IconCache {
             IconCache._used[key] := ++IconCache._tick
             return IconCache._icons[key]
         }
-        if (hIcon := IconCache._FromDisk(key, spec)) {                      ; 磁盘缓存里有: 马上显示, 之后在后台核对
+        if (hIcon := IconCache._FromDisk(key, spec)) {                      ; in the disk cache: show it now, check it in the background later
             IconCache._Store(key, hIcon)
             return hIcon
         }
@@ -74,7 +74,7 @@ class IconCache {
         return 0
     }
 
-    ; 立即加载 (不经过队列), 测试或需要马上拿到图标时用
+    ; Loads immediately (bypassing the queue), for tests or when the icon is needed right away
     static GetNow(spec) {
         if (spec = "")
             return 0
@@ -116,12 +116,12 @@ class IconCache {
 
     static _PrefetchStep() {
         if (IconCache._queue.Count || !BackgroundWork.CanRun())
-            return                                                          ; 屏幕上的图标优先 / 窗口显示中: 下一轮再说
+            return                                                          ; icons on screen first / the window is shown: next round
         start := IconCache._Ms(), stats := IconCache._prefetchStats
         while IconCache._prefetch.Length {
             spec := IconCache._prefetch.RemoveAt(1)
             key := IconCache._CacheKey(spec)
-            if (IconCache._icons.Has(key) || IconCache._disk.Has(key) || IconCache._loading.Has(key))   ; 磁盘缓存里有的用到时直接做, 不用预读
+            if (IconCache._icons.Has(key) || IconCache._disk.Has(key) || IconCache._loading.Has(key))   ; icons in the disk cache are made directly when used, no prefetch needed
                 continue
             hIcon := 0
             try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
@@ -138,14 +138,14 @@ class IconCache {
     }
 
     ;---------------------------------------------------------------------------
-    ; 磁盘缓存 (见文件开头)。文件格式: 头 16 字节 (标记 "ARIC"、版本、保留、图标尺寸、个数), 然后每个图标:
-    ; 键 / 戳 (UTF-16, 前面是字数)、保存日期、最近用到的日期 (yyyyMMdd)、Size x Size 的 BGRA 像素。
-    ; 不压缩: 在 Windows 上实测 830 个图标压缩后 1.2 MB / 不压缩 3.4 MB, 但读入 12 ms / 5 ms、保存 24 ms / 11 ms,
-    ; 性能比省下的两三 MB 重要
+    ; The disk cache (see the top of the file). File format: a 16-byte header (marker "ARIC", version, reserved, icon size, count), then per icon:
+    ; key / stamp (UTF-16, preceded by the length), date saved, date last used (yyyyMMdd), Size x Size BGRA pixels.
+    ; Not compressed: measured on Windows, 830 icons were 1.2 MB compressed / 3.4 MB uncompressed, but loading took 12 ms / 5 ms and saving 24 ms / 11 ms;
+    ; speed matters more than the two or three MB saved
     ;---------------------------------------------------------------------------
     static DiskDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun\IconCache" : ""
     static DiskMax := 1000, DiskRecheckDays := 7, DiskSaveDelay := 30000, DiskVersion := 2, DiskChunk := 262144
-    static _disk := Map()                 ; key -> {Stamp, Saved, Used, Data, Offset}: 像素在 Data 的 Offset 处
+    static _disk := Map()                 ; key -> {Stamp, Saved, Used, Data, Offset}: the pixels are at Offset in Data
     static _diskDirty := false, _diskTouched := false, _saveTimer := "", _saving := false
     static _verify := [], _verified := Map(), _verifyTimer := ""
 
@@ -167,8 +167,8 @@ class IconCache {
         return IconCache._disk.Count
     }
 
-    ; 只有整理数据时不让别的线程插进来 (几毫秒); 写文件 (磁盘忙、杀毒软件扫描时可能要几百毫秒) 分块写,
-    ; 期间按下热键照样马上呼出窗口。先写到临时文件再替换, 中途退出也不会留下写了一半的缓存
+    ; Only preparing the data keeps other threads out (a few milliseconds); the file is written in chunks (it can take hundreds of milliseconds with a busy disk or antivirus scan),
+    ; so a hotkey pressed meanwhile still shows the window at once. Written to a temporary file and then replaced, so exiting halfway never leaves a half-written cache
     static SaveDisk(file := "") {
         file := (file = "") ? IconCache.DiskFile() : file
         if (file = "" || !(IconCache._diskDirty || IconCache._diskTouched) || IconCache._saving)
@@ -179,7 +179,7 @@ class IconCache {
             Critical("On")
             try data := IconCache._SerializeDisk(IconCache._disk, IconCache.Size, IconCache.DiskMax)
             finally Critical("Off")
-            IconCache._diskDirty := false, IconCache._diskTouched := false   ; 写的时候又有新图标: 之后再存一次
+            IconCache._diskDirty := false, IconCache._diskTouched := false   ; new icons arrived while writing: save again later
             built := IconCache._Ms()
             SplitPath(file, , &folder)
             DirCreate(folder)
@@ -219,11 +219,11 @@ class IconCache {
 
     static _SaveWhenIdle() {
         if !BackgroundWork.CanRun()
-            return SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)  ; 窗口显示中: 隐藏后再存
+            return SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)  ; the window is shown: save after it hides
         IconCache.SaveDisk()
     }
 
-    ; 磁盘缓存里有就做成 HICON, 并安排在后台核对 (每次运行每个图标核对一次)
+    ; Makes an HICON from the disk cache if it is there, and schedules a background check (each icon once per run)
     static _FromDisk(key, spec) {
         if !IconCache._disk.Has(key)
             return 0
@@ -245,7 +245,7 @@ class IconCache {
         return hIcon
     }
 
-    ; 和预读一样只在窗口隐藏时做, 每轮最多约 10 ms
+    ; like the prefetch, only while the window is hidden, at most about 10 ms per round
     static _VerifyStep() {
         if (IconCache._queue.Count || !BackgroundWork.CanRun())
             return
@@ -258,7 +258,7 @@ class IconCache {
             try hIcon := IconCache._Load(IconCache._LoadSpec(spec, key))
             if hIcon {
                 IconCache._Remember(key, hIcon)
-                if IconCache._icons.Has(key) {                              ; 换上新的图标
+                if IconCache._icons.Has(key) {                              ; swap in the new icon
                     old := IconCache._icons[key], IconCache._icons[key] := hIcon, changed := true
                     if old
                         DllCall("DestroyIcon", "Ptr", old)
@@ -275,7 +275,7 @@ class IconCache {
             IconCache.OnLoaded.Call()
     }
 
-    ; 文件: 修改时间或大小变了; 其它: 存了 DiskRecheckDays 天以上
+    ; files: the time or size changed; others: stored DiskRecheckDays days or more ago
     static IsStale(key, entry) {
         if IconCache.IsFileKey(key)
             return IconCache.Stamp(key) != entry.Stamp
@@ -284,7 +284,7 @@ class IconCache {
 
     static IsFileKey(key) => !RegExMatch(key, "i)^(res|ext|url|folder|thumb|shell):|^::\{")
 
-    ; 文件的 "修改时间|大小" (文件夹的大小是 0); 不存在时 ""
+    ; A file's "modified time|size" (folders have size 0); "" if it doesn't exist
     static Stamp(key) {
         try {
             target := Path.Resolve(key)
@@ -301,7 +301,7 @@ class IconCache {
 
     static _Today() => Integer(A_YYYY A_MM A_DD)
 
-    ; 新读出来的图标记进磁盘缓存 (剪贴板图片的缩略图不存: 每张图片只用一阵子)
+    ; A newly read icon goes into the disk cache (thumbnails of clipboard images don't: each image is only used for a while)
     static _Remember(key, hIcon) {
         if (!hIcon || IconCache.DiskDir = "" || SubStr(key, 1, 6) = "thumb:")
             return
@@ -310,12 +310,12 @@ class IconCache {
         today := IconCache._Today()
         IconCache._disk[key] := {Stamp: IconCache.IsFileKey(key) ? IconCache.Stamp(key) : "", Saved: today, Used: today, Data: pixels, Offset: 0}
         IconCache._verified[key] := true
-        if (IconCache._disk.Count > IconCache.DiskMax + 200)               ; ALTRun 常常连续运行几周: 内存里的也不能只增不减
+        if (IconCache._disk.Count > IconCache.DiskMax + 200)               ; ALTRun often runs for weeks: what is in memory mustn't only grow either
             IconCache._TrimDisk(IconCache.DiskMax)
         IconCache._ScheduleSave()
     }
 
-    ; 只留 keep 个最近用到的
+    ; keep only the keep most recently used
     static _TrimDisk(keep) {
         lines := ""
         for key, entry in IconCache._disk
@@ -325,7 +325,7 @@ class IconCache {
                 IconCache._disk.Delete(SubStr(line, InStr(line, "`t") + 1))
     }
 
-    ; 图标 -> Size x Size 的 BGRA 像素 (带 Alpha); 尺寸不对或读不到时 0
+    ; Icon -> Size x Size BGRA pixels (with alpha); 0 for a wrong size or if it can't be read
     static IconPixels(hIcon) {
         size := IconCache.Size
         info := Buffer(8 + 3 * A_PtrSize, 0)                                ; ICONINFO
@@ -344,14 +344,14 @@ class IconCache {
         return pixels
     }
 
-    ; data 的 offset 处 Size x Size 的 BGRA 像素 -> 图标。像素原样放进 32 位 DIB (CreateIconIndirect), 和读出来时
-    ; 一模一样; 不经过 GDI+ (它做图标时会把颜色乘上 Alpha, 来回几次半透明的边缘就越来越暗)。
-    ; 32 位带 Alpha 的图标画的时候用 Alpha, 掩码全 0 即可
+    ; Size x Size BGRA pixels at offset in data -> an icon. The pixels go unchanged into a 32-bit DIB (CreateIconIndirect), exactly as they were read;
+    ; not through GDI+ (it multiplies the colors by alpha when making icons, so semi-transparent edges get darker with each round trip).
+    ; 32-bit icons with alpha are drawn using the alpha, so an all-zero mask will do
     static MakeIcon(data, offset := 0) {
         size := IconCache.Size
         if (size <= 0 || data.Size < offset + size * size * 4)
             return 0
-        header := Buffer(40, 0)                                             ; BITMAPINFOHEADER: 自上而下的 32 位
+        header := Buffer(40, 0)                                             ; BITMAPINFOHEADER: top-down, 32-bit
         NumPut("UInt", 40, "Int", size, "Int", -size, "UShort", 1, "UShort", 32, header)
         bits := 0
         if !(color := DllCall("CreateDIBSection", "Ptr", 0, "Ptr", header, "UInt", 0, "Ptr*", &bits, "Ptr", 0, "UInt", 0, "Ptr"))
@@ -369,7 +369,7 @@ class IconCache {
         return hIcon
     }
 
-    ; 最近用到的在前, 最多 limit 个
+    ; most recently used first, at most limit
     static _SerializeDisk(entries, size, limit) {
         lines := ""
         for key, entry in entries
@@ -401,7 +401,7 @@ class IconCache {
         return out
     }
 
-    ; 像素不复制, 直接用读进来的 data (Offset 指到 data 里)
+    ; the pixels aren't copied: the data read is used directly (Offset points into data)
     static _ParseDisk(data, size) {
         entries := Map()
         if (data.Size < 16 || NumGet(data, 0, "UInt") != 0x43495241 || NumGet(data, 4, "UShort") != IconCache.DiskVersion
@@ -428,10 +428,10 @@ class IconCache {
         return entries
     }
 
-    ; 文件夹结果的图标: 普通文件夹都一样, 用通用图标 (不用逐个读, 几百个文件夹时明显更快);
-    ; 有自定义图标 (desktop.ini) 的文件夹和磁盘根目录用它自己的。按路径缓存, 每个文件夹只看一次。
-    ; 看 desktop.ini 要访问磁盘, 搜索时不做: 先返回通用图标, 放进队列在后台看 (probeNow: 启动后
-    ; 预热时直接看)
+    ; Icons of folder results: normal folders all look the same, so the generic icon is used (not read one by one, clearly faster with hundreds of folders);
+    ; folders with a custom icon (desktop.ini) and drive roots use their own. Cached by path; each folder is looked at once.
+    ; Checking desktop.ini touches the disk, so it isn't done while searching: the generic icon is returned first and the folder queued to check in the background (probeNow:
+    ; check right away, when warming up after start-up)
     static _folderIcons := Map(), _folderProbes := Map(), _probeTimer := ""
     static FolderIcon(folder, probeNow := false) {
         if IconCache._folderIcons.Has(folder)
@@ -454,9 +454,9 @@ class IconCache {
         return IconCache._folderIcons[folder] := FileExist(RTrim(folder, "\/") "\desktop.ini") ? folder : "folder:"
     }
 
-    ; 和加载图标一样, 每轮最多 10 ms。遍历的是副本: 中途另一轮 (定时器打断了这一轮) 可能已经处理掉
-    ; 后面的文件夹, 已经不在队列里的跳过。用 try 删除, 不先 Has 再 Delete: 定时器也可能正好在两行之间
-    ; 打断, Delete 一个已经没有的项会报 "Item has no value"
+    ; Like loading icons, at most 10 ms per round. It goes through a copy: another round (a timer interrupting this one) may already have handled
+    ; later folders; those no longer queued are skipped. Deleted with try instead of Has then Delete: a timer may also interrupt between the two lines,
+    ; and deleting a missing item throws "Item has no value"
     static _ProbeQueued() {
         start := IconCache._Ms()
         for folder in IconCache._folderProbes.Clone() {
@@ -471,22 +471,22 @@ class IconCache {
             SetTimer(IconCache._probeTimer, -1)
     }
 
-    ; 每次最多加载约 10 ms, 剩下的留到下一轮, 中间可以处理键盘输入
+    ; load for at most about 10 ms each time and leave the rest for the next round, so keyboard input can be handled in between
     static _LoadQueued() {
         start := IconCache._Ms()
         loaded := false
         for key, spec in IconCache._queue.Clone() {
-            try IconCache._queue.Delete(key)                                ; 另一轮已经加载了 (同 _ProbeQueued)
+            try IconCache._queue.Delete(key)                                ; another round already loaded it (as in _ProbeQueued)
             catch
                 continue
             hIcon := 0
             Logger.Trace("icon: " spec)
             loadStart := IconCache._Ms()
-            IconCache._loading[key] := true                                 ; 读外壳图标时可能处理消息、重画列表, 又来要这个图标
+            IconCache._loading[key] := true                                 ; reading shell icons may handle messages and repaint the list, which asks for this icon again
             try hIcon := IconCache._Load(spec)
             IconCache._loading.Delete(key)
-            ; 开机时资源管理器 / OneDrive 很忙, 第一次读图标 (外壳初始化图标列表) 可能卡很久,
-            ; 这期间打字、失去焦点隐藏都在排队。慢的记下来, 看得出卡在哪个图标上
+            ; At boot Explorer / OneDrive are busy, and the first icon read (the shell initializing its image list) can stall for a long time,
+            ; with typing and hiding on focus loss queued meanwhile. Slow ones are logged to show which icon it got stuck on
             if ((took := IconCache._Ms() - loadStart) >= IconCache.SlowLoadMs)
                 Logger.Debug("Perf: icon " Round(took) " ms: " spec)
             IconCache._StoreLoaded(key, hIcon)
@@ -500,7 +500,7 @@ class IconCache {
             IconCache.OnLoaded.Call()
     }
 
-    ; 毫秒 (QueryPerformanceCounter; A_TickCount 的精度只有 10 ~ 16 ms)
+    ; milliseconds (QueryPerformanceCounter; A_TickCount is only accurate to 10 ~ 16 ms)
     static _Ms() {
         static freq := 0
         if !freq
@@ -509,7 +509,7 @@ class IconCache {
         return now * 1000 / freq
     }
 
-    ; 去掉所有图标, 磁盘缓存也一起清空 (换了尺寸, 或者同一个文件换了内容, 例如重新下载的网站图标)
+    ; Removes all icons and clears the disk cache too (the size changed, or a file got new content, e.g. a site icon downloaded again)
     static Clear() {
         IconCache._prefetch := [], IconCache._verify := [], IconCache._verified := Map()
         for key, hIcon in IconCache._icons
@@ -520,7 +520,7 @@ class IconCache {
             IconCache._disk := Map(), IconCache._ScheduleSave()
     }
 
-    ; 新读出来的图标: 放进缓存, 也记进磁盘缓存
+    ; A newly read icon: into the cache, and into the disk cache
     static _StoreLoaded(key, hIcon) {
         IconCache._Store(key, hIcon)
         IconCache._Remember(key, hIcon)
@@ -533,7 +533,7 @@ class IconCache {
             IconCache.Trim(Round(IconCache.MaxIcons * 0.8))
     }
 
-    ; 只留 keep 个最近用到的图标
+    ; keep only the keep most recently used icons
     static Trim(keep) {
         drop := IconCache._icons.Count - keep
         if (drop <= 0)
@@ -560,16 +560,16 @@ class IconCache {
         if Path.IsRemote(spec)
             return (ext = "") ? "folder:" : "ext:." StrLower(ext)
         if (ext = "" || RegExMatch(ext, "i)^(exe|lnk|ico|url|appref-ms|msc|cpl|scr)$") || InStr(spec, "shell:") = 1)
-            return StrLower(spec)                                           ; 每个文件自己的图标
+            return StrLower(spec)                                           ; each file has its own icon
         return "ext:." StrLower(ext)
     }
 
-    ; 网络位置按通用图标加载 (缓存键就是 "folder:" / "ext:.pdf"), 其它按原来的路径
+    ; network locations load the generic icons (the cache key is "folder:" / "ext:.pdf"), others the original path
     static _LoadSpec(spec, key) {
         return (Path.IsRemote(spec) && RegExMatch(key, "^(folder|ext):")) ? key : spec
     }
 
-    ; 读出图标后缩放到正好 Size x Size (见 FitSize)
+    ; after reading, scale the icon to exactly Size x Size (see FitSize)
     static _Load(spec) {
         return IconCache.FitSize(IconCache._LoadRaw(spec))
     }
@@ -591,14 +591,14 @@ class IconCache {
 
         target := Path.Resolve(spec)
         if RegExMatch(target, "i)^(shell:|::\{)") {
-            ; 控制面板里的项目 (设备和打印机等) 只写 ::{CLSID} 时在桌面下找不到, 再到控制面板下面找
+            ; Control Panel items (Devices and Printers etc.) given only as ::{CLSID} aren't found under the desktop; look under Control Panel too
             if (!(hIcon := IconCache._FromPidl(target)) && RegExMatch(target, "^::\{[^\\]+\}$"))
                 hIcon := IconCache._FromPidl("::{21EC2020-3AEA-1069-A2DD-08002B30309D}\" target)
             return hIcon
         }
         SplitPath(target, , , &ext)
         if FileExist(target) {
-            if (ext = "ico") {                                              ; .ico 直接读里面的图片 (Resources\Icons 的图标), 不依赖资源管理器的缩略图
+            if (ext = "ico") {                                              ; .ico files are read directly (the icons in Resources\Icons), without relying on Explorer's thumbnails
                 size := IconCache.SourceSize(IconCache.Size)
                 if (hIcon := DllCall("LoadImageW", "Ptr", 0, "WStr", target, "UInt", 1, "Int", size, "Int", size, "UInt", 0x10, "Ptr"))   ; IMAGE_ICON, LR_LOADFROMFILE
                     return hIcon
@@ -608,7 +608,7 @@ class IconCache {
         return IconCache._FromShell(ext != "" ? "." ext : ".exe", FILE_ATTRIBUTE_NORMAL, true)
     }
 
-    ; 图片缩小后放在 Size x Size 的透明方块中间 (保持比例), 做成图标
+    ; The image is shrunk and centered in a transparent Size x Size square (keeping its proportions) and made into an icon
     static _FromImage(file) {
         if (!FileExist(file) || !ClipboardData.StartGdiplus())
             return 0
@@ -631,7 +631,7 @@ class IconCache {
         return hIcon
     }
 
-    ; SHGetFileInfo 取系统图标列表里的序号, 再从合适尺寸的图标列表里取图标
+    ; SHGetFileInfo gives the index in the system image list, then the icon is taken from the image list of a suitable size
     static _FromShell(target, attributes, useAttributes) {
         static SHGFI_SYSICONINDEX := 0x4000, SHGFI_USEFILEATTRIBUTES := 0x10
         info := Buffer(A_PtrSize + 688, 0)
@@ -652,8 +652,8 @@ class IconCache {
         return ok ? IconCache._FromSystemList(NumGet(info, A_PtrSize, "Int")) : 0
     }
 
-    ; 系统图标列表: SHIL_SMALL / SHIL_LARGE / SHIL_EXTRALARGE (96 DPI 下 16 / 32 / 48 px, 随系统 DPI 变大),
-    ; 取不小于 Size 的最小的一个 (都比 Size 小时取最大的), 不是正好的尺寸由 FitSize 平滑缩放
+    ; System image lists: SHIL_SMALL / SHIL_LARGE / SHIL_EXTRALARGE (16 / 32 / 48 px at 96 DPI, larger with the system DPI);
+    ; take the smallest not below Size (the largest if all are smaller); sizes that don't fit exactly are scaled smoothly by FitSize
     static _FromSystemList(index) {
         static IID_IImageList := "", lists := Map(), sizes := Map()
         if (IID_IImageList = "") {
@@ -683,14 +683,14 @@ class IconCache {
     static _FromResource(file, index) {
         hIcon := 0
         size := IconCache.SourceSize(IconCache.Size)
-        ; PrivateExtractIcons 可以直接取指定尺寸; 负数序号表示资源 Id。取图标里一般都有的尺寸,
-        ; 让 Windows 不必自己缩放 (它的缩放有锯齿), 不是正好的尺寸由 FitSize 平滑缩放
+        ; PrivateExtractIcons can take a given size directly; a negative index is a resource Id. Take a size icons usually have,
+        ; so Windows doesn't scale it itself (its scaling is jagged); sizes that don't fit exactly are scaled smoothly by FitSize
         DllCall("user32\PrivateExtractIconsW", "WStr", file, "Int", index, "Int", size, "Int", size, "Ptr*", &hIcon, "Ptr", 0, "UInt", 1, "UInt", 0)
         return hIcon
     }
 
-    ; ALTRun 自己的图标 Resources\Icons\<name>.ico (片段、计算器、帮助、置顶...), 和 Clipboard.ico 同一套画法;
-    ; 文件不在时 (例如只复制了 exe) 用 fallback 的系统图标。每个名字只看一次文件在不在
+    ; ALTRun's own icons Resources\Icons\<name>.ico (snippets, calculator, help, pin...), drawn in the same style as Clipboard.ico;
+    ; without the file (e.g. only the exe was copied) the fallback system icon is used. Each name checks for the file once
     static Own(name, fallback) {
         static found := Map()
         if !found.Has(name) {
@@ -700,7 +700,7 @@ class IconCache {
         return found[name]
     }
 
-    ; 图标文件里一般都有的尺寸里, 不小于 size 的最小的一个
+    ; Of the sizes icon files usually have, the smallest not below size
     static SourceSize(size) {
         for native in [16, 24, 32, 48, 256]
             if (native >= size)
@@ -708,7 +708,7 @@ class IconCache {
         return 256
     }
 
-    ; 图标的宽度 (像素), 读不到返回 0
+    ; Width of the icon (pixels), 0 if it can't be read
     static IconWidth(hIcon) {
         info := Buffer(8 + 3 * A_PtrSize, 0)                                ; ICONINFO
         if (!hIcon || !DllCall("GetIconInfo", "Ptr", hIcon, "Ptr", info))
@@ -723,8 +723,8 @@ class IconCache {
         return width
     }
 
-    ; 尺寸不是正好 Size 的图标 (例如紧凑主题的 28 px、125% 缩放时的 40 px) 用 GDI+ 高质量双三次插值
-    ; 缩放成 Size x Size, 换掉原来的图标。绘制时 DrawIconEx 不用再缩放: 它的缩放直接丢掉 / 重复像素, 边缘有锯齿
+    ; Icons not exactly Size (e.g. 28 px for the compact density, 40 px at 125% scaling) are scaled with high-quality bicubic interpolation in GDI+
+    ; to Size x Size, replacing the original. Drawing with DrawIconEx then needs no scaling: its scaling just drops / repeats pixels, so edges are jagged
     static FitSize(hIcon) {
         size := IconCache.Size
         if (!hIcon || size <= 0)
@@ -762,9 +762,9 @@ class IconCache {
         if (source && canvas) {
             DllCall("gdiplus\GdipGetImageGraphicsContext", "Ptr", canvas, "Ptr*", &graphics)
             DllCall("gdiplus\GdipSetInterpolationMode", "Ptr", graphics, "Int", 7)              ; HighQualityBicubic
-            DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", graphics, "Int", 4)                ; HighQuality: 不偏半个像素
+            DllCall("gdiplus\GdipSetPixelOffsetMode", "Ptr", graphics, "Int", 4)                ; HighQuality: no half-pixel offset
             DllCall("gdiplus\GdipCreateImageAttributes", "Ptr*", &attributes)
-            DllCall("gdiplus\GdipSetImageAttributesWrapMode", "Ptr", attributes, "Int", 3, "UInt", 0, "Int", 0)   ; TileFlipXY: 边缘不混进透明的黑边
+            DllCall("gdiplus\GdipSetImageAttributesWrapMode", "Ptr", attributes, "Int", 3, "UInt", 0, "Int", 0)   ; TileFlipXY: no transparent black fringe at the edges
             DllCall("gdiplus\GdipDrawImageRectRectI", "Ptr", graphics, "Ptr", source, "Int", 0, "Int", 0, "Int", size, "Int", size
                 , "Int", 0, "Int", 0, "Int", width, "Int", height, "Int", 2, "Ptr", attributes, "Ptr", 0, "Ptr", 0)   ; 2 = UnitPixel
             DllCall("gdiplus\GdipDisposeImageAttributes", "Ptr", attributes)
@@ -778,7 +778,7 @@ class IconCache {
         return hIcon
     }
 
-    ; 旧式图标没有 Alpha 通道 (全是 0): 按掩码 (白 = 透明) 补上
+    ; old-style icons have no alpha channel (all 0): fill it from the mask (white = transparent)
     static _FixAlpha(pixels, hbmMask, width, height) {
         Loop width * height
             if (NumGet(pixels, A_Index * 4 - 1, "UChar"))
@@ -790,7 +790,7 @@ class IconCache {
         }
     }
 
-    ; 位图 -> 自上而下的 32 位像素 (BGRA), 失败返回 0
+    ; Bitmap -> top-down 32-bit pixels (BGRA), 0 on failure
     static _Bits(hBitmap, width, height) {
         header := Buffer(40, 0)                                             ; BITMAPINFOHEADER
         NumPut("UInt", 40, "Int", width, "Int", -height, "UShort", 1, "UShort", 32, header)

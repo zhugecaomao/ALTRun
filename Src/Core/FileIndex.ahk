@@ -1,40 +1,40 @@
 ;===============================================================================
-; FileIndex.ahk - 内置的文件 / 文件夹索引 (Everything 没有运行时使用) (AutoHotkey v2)
+; FileIndex.ahk - the built-in file / folder index (used when Everything isn't running) (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 索引 Features.FileSearch.ScopeFolders 里的文件夹 (默认: 桌面、文档、下载),
-; 深度 ScopeDepth 层, 包括文件夹和文件, 最多 MaxEntries 项。
+; Indexes the folders in Features.FileSearch.ScopeFolders (default: Desktop, Documents, Downloads),
+; ScopeDepth levels deep, folders and files, at most MaxEntries entries.
 ;
-; 扫描在后台分批进行 (每次定时器最多约 15 ms, 用一个待扫描文件夹的栈代替递归),
-; 扫描期间界面照常响应; 结果缓存在 Data\FileIndex.json, 下次启动直接读。扫描中搜索窗口打开 (或正在呼出)
-; 就暂停 (已经有旧索引可用时), 关了再继续; 扫完后的写缓存 (3 万条约 0.8 秒, 不分段) 等键盘鼠标空闲
-; SaveIdleMs 再写, 退出时还没写就马上写。什么时候重新扫描:
-;   - 监视 ScopeFolders (FolderWatcher): 有文件 / 文件夹新增、删除、改名 (修改文件不算; 也不算临时文件、比 ScopeDepth 深的、
-;     ScopeExclude 的、ALTRun 自己的文件夹), 安静 WatchQuietMs 后重新扫描, 两次至少隔 WatchMinGapMs
-;   - 兜底: 缓存超过 RefreshMinutes 分钟 (最少 5 分钟), 启动时和之后每分钟检查, 要等键盘鼠标空闲 RefreshIdleMs
-;   - 用 Everything 时 (UseEverything 并且在运行) 都不扫描
-; 启动时 Everything 正在运行 (并且 UseEverything) 就不读缓存也不扫描 (最多 3 万条, 用不上),
-; 等真的要用内置索引时 (Everything 关掉了) 再读。
+; Scanning runs in the background in batches (at most about 15 ms per timer tick, with a stack of folders to scan instead of recursion),
+; so the UI keeps responding; the result is cached in Data\FileIndex.json and read at the next start-up. When the search window is open (or opening)
+; during a scan it pauses (if an old index is available) and goes on after it closes; the cache write after a scan (about 0.8 s for 30,000 entries, in one go) waits
+; until keyboard and mouse have been idle for SaveIdleMs, and is done at once on exit if still pending. When it rescans:
+;   - watching ScopeFolders (FolderWatcher): files / folders added, deleted or renamed (not file modifications, temporary files, anything deeper than ScopeDepth,
+;     matching ScopeExclude or in ALTRun's own folders); rescans after WatchQuietMs of quiet, at least WatchMinGapMs apart
+;   - as a fallback: the cache is older than RefreshMinutes (at least 5), checked at start-up and every minute after, waiting for RefreshIdleMs of keyboard and mouse idle
+;   - never while Everything is used (UseEverything and running)
+; If Everything is running at start-up (and UseEverything), neither the cache is read nor a scan done (up to 30,000 entries that wouldn't be used);
+; it is read when the built-in index is really needed (Everything was closed).
 ;
-; 用法:
-;   FileIndex.Start()                      启动时 (读缓存, 需要时开始后台扫描)
-;   FileIndex.Search("report", 20)         -> [{Path, IsFolder, Score}] 按分数排序
-;   FileIndex.Search("cs", 20)             中文文件名也按拼音首字母匹配 ("测试.bat"), 比同一档的直接匹配低 5 分
+; Usage:
+;   FileIndex.Start()                      at start-up (reads the cache, starts a background scan if needed)
+;   FileIndex.Search("report", 20)         -> [{Path, IsFolder, Score}] sorted by score
+;   FileIndex.Search("cs", 20)             Chinese file names also match by pinyin initials ("测试.bat"), 5 points below a direct match of the same tier
 ;===============================================================================
 
 class FileIndex {
     static File     := AppSettings.DataDir "\FileIndex.json"
-    static Paths    := [], Names := [], Folders := []     ; 三个平行数组: 完整路径 / 小写文件名 / 是否文件夹
-    ; 中文文件名的小写拼音首字母: Map(下标, "cs.bat") (只有含中文的; 搜索时只需要看这些)。_initialsFor = 对应的 Names
-    ; (换了索引、测试直接设 Names 时对不上, 不按拼音找)。读缓存后在后台分批算 (1 万个中文名约 0.25 秒), 不拖慢启动
+    static Paths    := [], Names := [], Folders := []     ; three parallel arrays: full path / lower-case file name / is a folder
+    ; Lower-case pinyin initials of Chinese file names: Map(index, "cs.bat") (only names with Chinese; search only needs these). _initialsFor = the Names they belong to
+    ; (after the index changed, or when tests set Names directly, they don't match and pinyin isn't used). Computed in the background in batches after reading the cache (about 0.25 s for 10,000 Chinese names), so start-up isn't slowed
     static Initials := Map(), _initialsFor := "", _initialsTimer := "", _initialsJob := ""
     static Scanning := false
     static _stack := [], _new := "", _timer := "", _lastNeedle := "", _lastMatches := ""
-    static Deferred := false                                               ; 启动时有 Everything, 还没读缓存
+    static Deferred := false                                               ; Everything ran at start-up; the cache isn't read yet
     static _refreshTimer := "", _onDone := ""
-    static RefreshIdleMs := 30000                                          ; 定时重建要等键盘鼠标空闲这么久
+    static RefreshIdleMs := 30000                                          ; a scheduled rebuild waits for keyboard and mouse to be idle this long
     static WatchQuietMs := 5000, WatchMinGapMs := 300000, SaveIdleMs := 2000
     static _watcher := "", _watchTimer := "", _changedAt := 0, _lastScan := 0, _savePending := false, _saveTimer := ""
-    ; 不当作变化的临时文件: 浏览器下载中、Office 打开文档时的锁文件、编辑器的临时文件
+    ; temporary files that don't count as changes: downloads in progress, Office lock files for open documents, editors' temporary files
     static TempNames := "i)(\.(crdownload|part|partial|download|tmp|temp)$|^~\$|^\.~lock\.|~$)"
 
     static Start() {
@@ -49,7 +49,7 @@ class FileIndex {
         FileIndex._Load(5000)
     }
 
-    ; 读缓存; 没有缓存或已经过期时 delay 毫秒后在后台重新扫描。开始监视文件夹 (用内置索引了)
+    ; Reads the cache; without one, or if it is out of date, rescans in the background after delay ms. Starts watching the folders (the built-in index is in use)
     static _Load(delay) {
         FileIndex.Deferred := false
         FileIndex.StartWatching()
@@ -59,14 +59,14 @@ class FileIndex {
     }
 
     ;---------------------------------------------------------------------------
-    ; 监视索引的文件夹: 有变化时在后台重新扫描 (见文件开头)
+    ; Watch the indexed folders: rescan in the background on changes (see the top of the file)
     ;---------------------------------------------------------------------------
     static StartWatching() {
         FileIndex.StopWatching()
         folders := []
         for folder in AppSettings.Feature("FileSearch")["ScopeFolders"]
             folders.Push(Path.Resolve(folder))
-        FileIndex._watcher := FolderWatcher(folders, FolderWatcher.NameChanges)  ; 索引里只有路径: 修改文件不用重新扫描
+        FileIndex._watcher := FolderWatcher(folders, FolderWatcher.NameChanges)  ; the index only has paths: modified files need no rescan
         if (FileIndex._watchTimer = "")
             FileIndex._watchTimer := Logger.Watch("file index watch", () => FileIndex._PollWatches())
         if FileIndex._watcher.Count
@@ -81,7 +81,7 @@ class FileIndex {
         FileIndex._watcher := "", FileIndex._changedAt := 0
     }
 
-    ; 每 2 秒: 有要算的变化就记下时间; 安静 WatchQuietMs、离上一次扫描至少 WatchMinGapMs、没在用 Everything 时重新扫描
+    ; Every 2 s: note the time of relevant changes; rescan after WatchQuietMs of quiet, at least WatchMinGapMs after the last scan, when Everything isn't used
     static _PollWatches() {
         if !IsObject(FileIndex._watcher)
             return
@@ -107,8 +107,8 @@ class FileIndex {
         FileIndex.Rebuild()
     }
 
-    ; 纯函数: 这个路径的变化要不要重新扫描 -- 在某个索引的文件夹里、不比 depth 层深 (和扫描一样: 第一层是 0)、
-    ; 不是临时文件、不匹配 exclude (正则, 对完整路径)、不在 ALTRun 自己的文件夹里
+    ; Pure function: whether a change at this path needs a rescan -- inside an indexed folder, no deeper than depth levels (as in scanning: the first level is 0),
+    ; not a temporary file, not matching exclude (a regex on the full path), not in ALTRun's own folders
     static IsWatchedChange(fullPath, roots, depth, exclude := "", ownDir := A_ScriptDir) {
         if (ownDir != "" && InStr(fullPath, RTrim(ownDir, "\") "\") = 1)
             return false
@@ -126,17 +126,17 @@ class FileIndex {
         return false
     }
 
-    ; 要用内置索引了 (Everything 没有运行): 启动时跳过的话现在读
+    ; The built-in index is needed now (Everything isn't running): read it now if it was skipped at start-up
     static EnsureLoaded() {
         if FileIndex.Deferred
             FileIndex._Load(10)
     }
 
-    ; 每分钟: 在用内置索引 (已经读过、Everything 没在用) 并且缓存过期了, 就在后台重新扫描。
-    ; 用户正在用电脑 (空闲不到 RefreshIdleMs) 或搜索窗口开着时等下一次
+    ; Every minute: when the built-in index is in use (read, Everything not used) and the cache is out of date, rescan in the background.
+    ; While the user is working (idle less than RefreshIdleMs) or the search window is open, wait for the next time
     static _CheckRefresh() {
         if (FileIndex.Scanning || FileIndex.Deferred || FileIndex._savePending || !BackgroundWork.CanRun() || A_TimeIdlePhysical < FileIndex.RefreshIdleMs)
-            return                                                          ; _savePending: 刚扫完, 缓存文件还没写 (修改时间是旧的)
+            return                                                          ; _savePending: just scanned, the cache file isn't written yet (its time is old)
         options := AppSettings.Feature("FileSearch")
         if (options["UseEverything"] && Everything.IsRunning())
             return
@@ -144,7 +144,7 @@ class FileIndex {
             FileIndex.Rebuild()
     }
 
-    ; onDone: 可选, 扫完后调用 onDone(条数) (在新的线程里, 可以弹对话框); 正在扫描时等这一次扫完
+    ; onDone: optional, called as onDone(count) after the scan (in a new thread, so it may show a dialog); during a scan it waits for that one to finish
     static Rebuild(onDone := "") {
         if IsObject(onDone)
             FileIndex._onDone := onDone
@@ -177,7 +177,7 @@ class FileIndex {
             folder := entry[1], depth := entry[2]
             try {
                 Loop Files, folder "\*", "FD" {
-                    if (A_LoopFileAttrib ~= "[HS]")                             ; 跳过隐藏 / 系统文件
+                    if (A_LoopFileAttrib ~= "[HS]")                             ; skip hidden / system files
                         continue
                     if (exclude != "" && RegExMatch(A_LoopFileFullPath, exclude))
                         continue
@@ -207,7 +207,7 @@ class FileIndex {
         Logger.Debug("FileIndex: " FileIndex.Paths.Length " entries")
         if IsObject(done := FileIndex._onDone) {
             FileIndex._onDone := "", count := FileIndex.Paths.Length
-            SetTimer(() => done.Call(count), -1)                            ; 不在扫描的计时器里弹对话框 (不算进它的耗时)
+            SetTimer(() => done.Call(count), -1)                            ; no dialog inside the scan timer (it would count towards its time)
         }
     }
 
@@ -223,7 +223,7 @@ class FileIndex {
         candidates := (FileIndex._lastNeedle != "" && InStr(needle, FileIndex._lastNeedle) = 1) ? FileIndex._lastMatches : ""
         scores := Map(), matches := []
         names := FileIndex.Names, initials := FileIndex.Initials
-        usePinyin := IsObject(FileIndex._initialsFor) && FileIndex._initialsFor == names && FileIndex.UsePinyin(needle)   ; 拼音: 首字母算好了, 输入是一个英文词
+        usePinyin := IsObject(FileIndex._initialsFor) && FileIndex._initialsFor == names && FileIndex.UsePinyin(needle)   ; pinyin: the initials are ready and the input is one English word
         if IsObject(candidates) {
             for index in candidates
                 if (score := FileIndex.ScoreName(needle, names[index]))
@@ -233,7 +233,7 @@ class FileIndex {
             for index, name in names
                 if (score := FileIndex.ScoreName(needle, name))
                     scores[index] := score, matches.Push(index)
-            if usePinyin                                                    ; 只看中文文件名, 先用 InStr 粗筛 (绝大多数对不上)
+            if usePinyin                                                    ; only Chinese file names, filtered roughly with InStr first (most don't match)
                 for index, text in initials
                     if (InStr(text, needle) && !scores.Has(index) && (score := FileIndex.PinyinScore(needle, text)))
                         scores[index] := score, matches.Push(index)
@@ -264,13 +264,13 @@ class FileIndex {
         return ext
     }
 
-    ; 拼音首字母匹配: 只在输入是一个英文词时 (多个词 ScoreName 本来就对不上; 输入有中文时直接按原文匹配)
+    ; Pinyin initials only when the input is one English word (several words wouldn't match ScoreName anyway; input with Chinese matches the text itself)
     static UsePinyin(needle) => !InStr(needle, " ") && !RegExMatch(needle, "[^\x{00}-\x{7f}]")
 
-    ; 文件名的小写拼音首字母 ("测试.bat" -> "cs.bat"); 没有中文时 "" (不用另外匹配)
+    ; Lower-case pinyin initials of a file name ("测试.bat" -> "cs.bat"); "" without Chinese (no separate match needed)
     static InitialsOf(name) => RegExMatch(name, "[^\x{00}-\x{ff}]") ? StrLower(Pinyin.Initials(name)) : ""
 
-    ; 按拼音首字母打分: 和 ScoreName 同样的规则, 低 5 分 (同一档里名称直接匹配的在前), 最低 50; 对不上时 0
+    ; Score by pinyin initials: the same rules as ScoreName, 5 points lower (direct name matches of the same tier come first), at least 50; 0 if no match
     static PinyinScore(needle, initials) => (score := FileIndex.ScoreName(needle, initials)) ? Max(score - 5, 50) : 0
 
     static ScoreName(needle, name) {
@@ -306,7 +306,7 @@ class FileIndex {
         }
     }
 
-    ; 在后台分批算 Names 的拼音首字母 (每次定时器最多约 15 ms), 算完再换上; 期间换了索引 (重新扫描完) 就不要了
+    ; Computes the pinyin initials of Names in the background in batches (at most about 15 ms per timer tick) and swaps them in when done; dropped if the index changed meanwhile (a rescan finished)
     static BuildInitials() {
         FileIndex._initialsJob := {Names: FileIndex.Names, Pos: 0, Initials: Map()}
         if (FileIndex._initialsTimer = "")
@@ -331,12 +331,12 @@ class FileIndex {
             return
         SetTimer(FileIndex._initialsTimer, 0)
         FileIndex.Initials := job.Initials, FileIndex._initialsFor := names, FileIndex._initialsJob := ""
-        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""            ; 之前缩小范围时还没有拼音的结果
+        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""            ; results without pinyin from narrowing down earlier
     }
 
-    ; 缓存超过 RefreshMinutes 分钟 (最少 5 分钟) 了吗; 没有缓存文件也算过期
-    ; 让缓存算作过期 (偏好设置里改了扫描范围): 下次启动照常先读它, 再在后台重新扫描。
-    ; 还没写的缓存也不写了 (按旧的范围扫的; 退出时写的话修改时间又成了现在)
+    ; Whether the cache is older than RefreshMinutes (at least 5); no cache file counts as out of date
+    ; Makes the cache count as out of date (the scan scope changed in Preferences): the next start-up still reads it first, then rescans in the background.
+    ; A pending cache write is dropped too (scanned with the old scope; writing it on exit would make its time current again)
     static ExpireCache() {
         FileIndex._savePending := false
         try FileSetTime("20000101000000", FileIndex.File, "M")
@@ -348,7 +348,7 @@ class FileIndex {
         return true
     }
 
-    ; 扫完后的写缓存: 等键盘鼠标空闲 SaveIdleMs 并且搜索窗口没开时再写, 不在用户正操作时卡那一下
+    ; The cache write after a scan: waits until keyboard and mouse have been idle for SaveIdleMs and the search window is closed, so it never stalls while the user works
     static _SaveWhenIdle() {
         FileIndex._savePending := true
         if (FileIndex._saveTimer = "")
@@ -363,7 +363,7 @@ class FileIndex {
         FileIndex.SavePending()
     }
 
-    ; 还没写的缓存马上写 (退出时)
+    ; write a pending cache now (on exit)
     static SavePending() {
         if FileIndex._savePending
             FileIndex._SaveCache()

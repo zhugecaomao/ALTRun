@@ -1,17 +1,17 @@
-; BenchDriver.ahk - 在 Windows 上模拟日常操作, 比较两个版本的性能 (AutoHotkey v2)
+; BenchDriver.ahk - simulates daily use on Windows to compare the performance of two versions (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 由 .github/workflows/bench.yml 运行 (GitHub → Actions → Bench → Run workflow), 也可以在自己的电脑上运行
-; (会占用键盘和屏幕几十分钟, 建议用虚拟机)。每个版本复制一份到 C:\Bench\<名字>, ALTRun.ahk 最后
-; App.Start() 之前加上 #Include BenchProbe.ahk (只在测试副本里, 回答 "结果画好了吗")。
+; Run by .github/workflows/bench.yml (GitHub → Actions → Bench → Run workflow); it can also run on your own PC
+; (it takes over the keyboard and screen for tens of minutes; a virtual machine is recommended). Each version is copied to C:\Bench\<name>, and ALTRun.ahk gets
+; #Include BenchProbe.ahk just before App.Start() at the end (only in the test copies; it answers "are the results drawn?").
 ;
-;   BenchDriver.ahk demo                                               建 C:\BenchDemo 示例文件
-;   BenchDriver.ahk prepare <appDir>                                   写测试用的设置 (各版本一样)
+;   BenchDriver.ahk demo                                               creates the sample files in C:\BenchDemo
+;   BenchDriver.ahk prepare <appDir>                                   writes the test settings (the same for every version)
 ;   BenchDriver.ahk round <label> <appDir> <outFile> <seed> <searches> <others>
 ;
-; 一轮: 启动 ALTRun, 随机穿插 searches 次搜索和各 others 次 运行程序 / 打开文件和文件夹、操作面板、计算器、
-; Quick Switch、打开并保存偏好设置、片段展开, 每次的耗时写进 outFile (一行 label|项目|毫秒), 最后记下
-; CPU、内存、GDI / USER 对象和句柄数, 正常退出。输入用真实的按键 (SendLevel 1, 热键和热字串都会响应),
-; 前台一直有一个 "BenchEdit" 窗口 (平时按热键时前台总有一个程序)。bench_stats.py 汇总成表。
+; One round: start ALTRun, randomly mix searches searches and others each of running programs / opening files and folders, the actions panel, calculator,
+; Quick Switch, opening and saving Preferences, snippet expansion; each timing goes into outFile (one line label|item|ms), and at the end
+; CPU, memory, GDI / USER objects and handle counts are noted before a normal exit. Input uses real key presses (SendLevel 1, so hotkeys and hotstrings respond),
+; and a "BenchEdit" window is always in front (normally some program is in front when the hotkey is pressed). bench_stats.py summarizes it into a table.
 #Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
@@ -20,7 +20,7 @@
 OnError(DriverError)
 DriverError(e, mode) {
     try FileAppend("driver error: " e.Message " line " e.Line " " e.What "`n", A_Temp "\BenchDriverErrors.txt")
-    return -1                                                               ; 继续 (这一项记为失败)
+    return -1                                                               ; go on (this item counts as failed)
 }
 DllCall("winmm\timeBeginPeriod", "UInt", 1)
 SendLevel(1)
@@ -28,7 +28,7 @@ SetKeyDelay(0, 0)
 SetTitleMatchMode(3)
 DetectHiddenWindows(false)
 
-global Demo := "C:\BenchDemo", Ahk := A_AhkPath, LogFile := A_Temp "\ALTRun.log"   ; ALTRun 的日志 (Logger.File)
+global Demo := "C:\BenchDemo", Ahk := A_AhkPath, LogFile := A_Temp "\ALTRun.log"   ; ALTRun's log (Logger.File)
 switch A_Args[1] {
     case "prepare": Prepare(A_Args[2])
     case "demo":    MakeDemo()
@@ -37,7 +37,7 @@ switch A_Args[1] {
 ExitApp(0)
 
 ;-------------------------------------------------------------------------------
-; 准备
+; Preparation
 ;-------------------------------------------------------------------------------
 MakeDemo() {
     try DirDelete(Demo, true)
@@ -59,7 +59,7 @@ Prepare(appDir) {
         Map("Title", "Bench Notes", "Type", "File", "Target", Demo "\notes.txt", "Arguments", "", "Keyword", "bnt"),
         Map("Title", "Bench Folder", "Type", "Folder", "Target", Demo "\Folder B", "Arguments", "", "Keyword", "bfo")
     ]
-    Loop Files A_WinDir "\System32\*.exe" {                                 ; 再加 40 条, 像平时那样有不少自定义命令
+    Loop Files A_WinDir "\System32\*.exe" {                                 ; 40 more, so there are plenty of custom commands as usual
         if (A_Index > 40)
             break
         SplitPath(A_LoopFileName, , , , &name)
@@ -75,7 +75,7 @@ Prepare(appDir) {
     settings := Map(
         "SchemaVersion", 4,
         "General", Map("Language", "en", "LaunchAtLogin", 0, "HideOnDeactivate", 1, "SendToMenu", 0, "StartMenuShortcut", 0,
-                       "CheckForUpdates", 0, "Hotkey", "!Space", "ShowTips", 0, "SaveLog", 1),   ; 日志: 慢的后台任务、错误 (见 HarvestLog)
+                       "CheckForUpdates", 0, "Hotkey", "!Space", "ShowTips", 0, "SaveLog", 1),   ; Log: slow background tasks, errors (see HarvestLog)
         "Features", Map("FileSearch", Map("UseEverything", 0, "ScopeFolders", [Demo])),
         "CustomCommands", commands,
         "Snippets", snippets
@@ -86,7 +86,7 @@ Prepare(appDir) {
 }
 
 ;-------------------------------------------------------------------------------
-; 一轮: 启动 ALTRun, 随机穿插各种操作, 记下每次的耗时和最后的资源占用, 正常退出
+; One round: start ALTRun, randomly mix all kinds of actions, note each timing and the final resource use, exit normally
 ;-------------------------------------------------------------------------------
 class B {
     static Label := "", Out := "", Pid := 0, Main := 0, Search := 0, Seed := 1, Editor := "", Explorer := 0
@@ -101,28 +101,28 @@ NowMs() {
     return now * 1000 / freq
 }
 
-Rand(n) {                                                                   ; 0 .. n-1, 固定种子, 两个版本一样
+Rand(n) {                                                                   ; 0 .. n-1, fixed seed, the same for both versions
     B.Seed := Mod(B.Seed * 1103515245 + 12345, 2147483648)
     return Mod(B.Seed // 65536, n)
 }
 
 Rec(op, value) => FileAppend(B.Label "|" op "|" (IsNumber(value) ? Round(value, 2) : value) "`n", B.Out, "UTF-8")
 
-Probe(code, l := 0) {                                                       ; 直接用句柄 (ALTRun 的主窗口是隐藏的, 不受 DetectHiddenWindows 影响)
+Probe(code, l := 0) {                                                       ; use the handle directly (ALTRun's main window is hidden; DetectHiddenWindows doesn't matter)
     result := 0
     if !DllCall("SendMessageTimeoutW", "Ptr", B.Main, "UInt", 0x8123, "Ptr", code, "Ptr", l, "UInt", 0, "UInt", 10000, "Ptr*", &result)
         return -1
     return result
 }
 
-WaitFor(fn, timeout := 5000) {                                              ; 等到 fn() 为真, 返回毫秒数; 超时返回 ""
+WaitFor(fn, timeout := 5000) {                                              ; Waits until fn() is true and returns the milliseconds; "" on timeout
     start := NowMs()
     loop {
         if fn()
             return NowMs() - start
         if (NowMs() - start > timeout)
             return ""
-        Sleep(5)                                                            ; 问得太勤 ALTRun 忙着回答, 定时器和重画会被耽误
+        Sleep(5)                                                            ; asking too often keeps ALTRun busy answering, delaying its timers and repaints
     }
 }
 
@@ -152,13 +152,13 @@ Round_(label, appDir, outFile, seed, searches, others) {
         return
     }
     DetectHiddenWindows(false)
-    Sleep(6000)                                                             ; 启动后的预热 / 预读做完 (平时也不会一启动就搜)
+    Sleep(6000)                                                             ; after start-up warm-up / prefetch is done (nobody searches right at start-up either)
     Resources("start")
 
-    B.Editor := Gui("+AlwaysOnTop", "BenchEdit")                            ; 模拟平时在用的程序 (也用来测片段展开)
+    B.Editor := Gui("+AlwaysOnTop", "BenchEdit")                            ; imitates a program in use (also for testing snippet expansion)
     B.Editor.Add("Edit", "w420 h60 vText")
     B.Editor.Show("x0 y0 NoActivate")
-    Run('explorer.exe "' Demo '\Folder A"')                                 ; Quick Switch 跳转的目标
+    Run('explorer.exe "' Demo '\Folder A"')                                 ; the target of Quick Switch jumps
     B.Explorer := WinWait("Folder A ahk_class CabinetWClass", , 15)
 
     ops := []
@@ -167,7 +167,7 @@ Round_(label, appDir, outFile, seed, searches, others) {
     for op in ["run", "action", "calc", "quickswitch", "prefs", "snippet"]
         Loop others
             ops.Push(op)
-    Loop ops.Length - 1 {                                                   ; 打乱 (Fisher-Yates)
+    Loop ops.Length - 1 {                                                   ; shuffle (Fisher-Yates)
         i := ops.Length - A_Index + 1, j := Rand(i) + 1
         t := ops[i], ops[i] := ops[j], ops[j] := t
     }
@@ -183,14 +183,14 @@ Round_(label, appDir, outFile, seed, searches, others) {
     try WinClose(B.Explorer)
     try B.Editor.Destroy()
     DetectHiddenWindows(true)
-    WinClose("ahk_id " B.Main)                                              ; 正常退出 (保存学习记录、图标缓存)
+    WinClose("ahk_id " B.Main)                                              ; normal exit (saves the learned ranking and icon cache)
     if !ProcessWaitClose(pid, 15)
         ProcessClose(pid)
     HarvestLog()
 }
 
-; ALTRun 的日志里: 一次超过 50 ms 的后台任务 ("Perf: slow <任务> N ms", 有这种记录的版本) 记成 "bg <任务>",
-; 错误记成 "log error", 保存图标缓存的耗时和启动后超过 200 ms 的步骤记成 "note"
+; From ALTRun's log: background tasks over 50 ms ("Perf: slow <task> N ms", in versions that log it) are recorded as "bg <task>",
+; errors as "log error", the icon cache save time and steps over 200 ms after start-up as "note"
 HarvestLog() {
     try text := FileRead(LogFile, "UTF-8")
     catch
@@ -204,7 +204,7 @@ HarvestLog() {
             Rec("note", m[1])
         else if (RegExMatch(A_LoopField, "^\S+ (\S+) \[DBG\] Perf: (.+ (\d+) ms)$", &m) && m[3] >= 200
               && !RegExMatch(m[2], "^(startup|warm-up|empty results|icons prefetched|icon cache loaded|font warm-up|prepare)"))
-            Rec("note", m[1] " " m[2])                                       ; 启动之后很慢的一步 (呼出窗口、搜索...): 对照时间找原因
+            Rec("note", m[1] " " m[2])                                       ; a very slow step after start-up (showing the window, searching...): compare the times to find the cause
     }
 }
 
@@ -253,7 +253,7 @@ Work() {
     }
 }
 
-; 回到干净的状态: 关掉偏好设置、操作面板, 隐藏搜索窗口
+; Back to a clean state: close Preferences and the actions panel, hide the search window
 Reset() {
     if (prefs := WinExist("ALTRun Preferences ahk_pid " B.Pid))
         try WinClose(prefs)
@@ -266,12 +266,12 @@ Reset() {
 }
 
 ;-------------------------------------------------------------------------------
-; 基本动作
+; Basic actions
 ;-------------------------------------------------------------------------------
 Show() {
     if Visible()
         Hide()
-    Work()                                                                  ; 平时按热键时前台总有一个程序
+    Work()                                                                  ; normally some program is in front when the hotkey is pressed
     start := NowMs()
     Send("!{Space}")
     if (WaitFor(Visible, 3000) = "")
@@ -279,7 +279,7 @@ Show() {
     Rec("show: visible ms", NowMs() - start)
     if (WaitFor(() => Probe(1, 0) = 1, 3000) != "")
         Rec("show: ready ms", NowMs() - start)
-    if (WaitFor(() => WinActive("ahk_id " B.Search), 2000) = "")            ; 拿到焦点之前打的字会进别的窗口
+    if (WaitFor(() => WinActive("ahk_id " B.Search), 2000) = "")            ; characters typed before it has focus would go into another window
         throw Error("window not active (active: " ActiveTitle() ")")
 }
 
@@ -288,14 +288,14 @@ Hide() {
     WaitFor(() => !Visible(), 2000)
 }
 
-Type(text) {                                                                ; 一个字一个字地打, 像平时那样每个字之间停一下
+Type(text) {                                                                ; typed character by character, with a short pause between them as usual
     Loop Parse text {
         Send("{Text}" A_LoopField)
         Sleep(30)
     }
 }
 
-; 打完最后一个字到结果画好
+; from the last character typed until the results are drawn
 TypeAndWait(text, metric, length := "") {
     Type(text)
     start := NowMs()
@@ -310,11 +310,11 @@ TypeAndWait(text, metric, length := "") {
 
 RandomQuery() {
     kind := Rand(100)
-    if (kind < 50 && B.Words.Length) {                                      ; 应用名称的开头
+    if (kind < 50 && B.Words.Length) {                                      ; the start of an application name
         word := B.Words[Rand(B.Words.Length) + 1]
         return SubStr(StrLower(word), 1, 2 + Rand(4))
     }
-    if (kind < 65 && B.Words.Length) {                                      ; 单词首字母 (vsc -> Visual Studio Code)
+    if (kind < 65 && B.Words.Length) {                                      ; word initials (vsc -> Visual Studio Code)
         initials := ""
         for part in StrSplit(B.Words[Rand(B.Words.Length) + 1], " ")
             if (part != "")
@@ -322,24 +322,24 @@ RandomQuery() {
         if (StrLen(initials) >= 2)
             return SubStr(initials, 1, 4)
     }
-    if (kind < 80) {                                                        ; 随便几个字母
+    if (kind < 80) {                                                        ; a few random letters
         q := ""
         Loop 2 + Rand(2)
             q .= Chr(97 + Rand(26))
         return q
     }
-    if (kind < 90 && B.Files.Length)                                        ; 文件搜索: 空格 + 文件名开头
+    if (kind < 90 && B.Files.Length)                                        ; file search: Space + the start of a file name
         return " " SubStr(StrLower(B.Files[Rand(B.Files.Length) + 1]), 1, 3 + Rand(4))
-    return ["tool", "bench", "bnp", "bnt", "bfo", "too"][Rand(6) + 1]       ; 自定义命令
+    return ["tool", "bench", "bnp", "bnt", "bfo", "too"][Rand(6) + 1]       ; custom commands
 }
 
 ;-------------------------------------------------------------------------------
-; 各种操作
+; All kinds of actions
 ;-------------------------------------------------------------------------------
 Op_search() {
     q := RandomQuery()
     Show()
-    if (SubStr(q, 1, 1) = " ") {                                            ; 文件搜索模式
+    if (SubStr(q, 1, 1) = " ") {                                            ; file search mode
         Send("{Space}")
         Sleep(60)
         name := SubStr(q, 2)

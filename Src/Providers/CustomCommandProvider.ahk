@@ -1,22 +1,22 @@
 ;===============================================================================
-; CustomCommandProvider.ahk - 用户自定义命令 (AutoHotkey v2)
+; CustomCommandProvider.ahk - the user's custom commands (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; ALTRun.json -> CustomCommands, 每一条:
-;   { "Title": "显示名称", "Type": "File|Folder|Command|Url",
-;     "Target": "路径 / 程序 / 网址", "Arguments": "命令行参数", "Keyword": "可选关键字" }
-; Target 可以用 A_Desktop / A_ScriptDir 等内置变量开头, 或 %AppData% 等环境变量。
-; Keyword 完全相同时排在最前面; 可以写几个, 用逗号分隔 ("np, ㅜㅔ"), 输入哪个都行。
-; Target / Arguments 里可以写 {query}: 输入 "关键字 文字" 时换成后面的文字 (网址里自动编码), 例如
+; ALTRun.json -> CustomCommands, each entry:
+;   { "Title": "display name", "Type": "File|Folder|Command|Url",
+;     "Target": "path / program / URL", "Arguments": "command-line arguments", "Keyword": "optional keyword" }
+; Target can start with a built-in variable such as A_Desktop / A_ScriptDir, or use environment variables such as %AppData%.
+; An exactly matching Keyword comes first; several can be given, separated by commas ("np, ㅜㅔ"), and any of them works.
+; Target / Arguments can contain {query}: typing "keyword text" replaces it with the text (encoded in URLs), e.g.
 ;   { "Title": "Jira", "Type": "Url", "Target": "https://jira.example.com/browse/{query}", "Keyword": "jira" }
-;   输入 "jira ABC-123" 打开 .../browse/ABC-123; 搜到这条命令但还没输入文字时, Enter 补全成 "jira "
-; 搜索范围: 名称、关键字、名称的拼音首字母; File / Folder 类型还包括目标的文件名
-; (不含扩展名) 或文件夹名, 例如 Target "D:\Projects\2026 - Annual Report" 输入 "annual" 也能找到。
-; 同样的匹配程度, 名称匹配排在文件名 / 文件夹名匹配前面。
+;   typing "jira ABC-123" opens .../browse/ABC-123; when the command is found but no text typed yet, Enter completes to "jira "
+; Searched: name, keyword, pinyin initials of the name; for File / Folder also the target's file name
+; (without extension) or folder name, e.g. Target "D:\Projects\2026 - Annual Report" is found by "annual" too.
+; At the same match level, name matches come before file / folder name matches.
 ;
-; 用法:
-;   CustomCommandProvider.AddFromPaths(paths)            "发送到" 菜单: 1 个弹出编辑对话框, 多个直接添加
-;   CustomCommandProvider.Edit(command [, prefill])      打开编辑对话框; command 为 "" 时新建
-;   搜索结果里 F3 / 右键 "编辑" 调用 EditItem(), Ctrl+Del 调用 DeleteItem()
+; Usage:
+;   CustomCommandProvider.AddFromPaths(paths)            "Send to" menu: one opens the edit dialog, several are added directly
+;   CustomCommandProvider.Edit(command [, prefill])      opens the edit dialog; command = "" creates a new one
+;   F3 / right-click "Edit" in the results calls EditItem(), Ctrl+Del calls DeleteItem()
 ;===============================================================================
 
 class CustomCommandProvider {
@@ -26,10 +26,10 @@ class CustomCommandProvider {
     static Init() {
     }
 
-    ; 先给所有命令打分, 只为排在前面的 MaxResults 条生成结果 (命令多时, 输入一个字母就能
-    ; 匹配上几百条, 每条都生成结果会让输入卡顿)。取前几条时算上学习加分, 常选的命令不会被挤掉。
-    ; 继续输入 (新输入以上一次的输入开头, 至少 3 个字母) 时只在上一次匹配到的命令里找,
-    ; 和 ApplicationProvider 一样; 命令有增删改时重新从全部命令里找
+    ; All commands are scored first, and results are only made for the top MaxResults (with many commands one letter can
+    ; match hundreds, and making a result for each would make typing lag). The learned bonus counts when taking the top ones, so often chosen commands aren't pushed out.
+    ; When typing on (the new input starts with the previous one, at least 3 letters) only the previous matches are searched,
+    ; as in ApplicationProvider; after commands are added, changed or deleted, all commands are searched again
     static Search(query) {
         needle := StrLower(query.Text)
         commands := AppSettings.CustomCommands
@@ -48,7 +48,7 @@ class CustomCommandProvider {
             keyword := command.Has("Keyword") ? command["Keyword"] : ""
             exact := (keyword != "") && query.MatchKeyword(SearchQuery.Keywords(keyword), &rest, &typed)
             if (exact && query.HasRest && CustomCommandProvider.TakesQuery(command)) {
-                item := CustomCommandProvider._ToItem(command, 150, rest, typed)  ; "jira ABC-123": 只显示带参数的命令
+                item := CustomCommandProvider._ToItem(command, 150, rest, typed)  ; "jira ABC-123": only commands that take arguments
                 item.Exclusive := true
                 withQuery.Push(item)
                 continue
@@ -57,18 +57,18 @@ class CustomCommandProvider {
             score := FuzzyMatcher.BestKey(needle, CustomCommandProvider._KeysFor(command["Title"], keyword))
             targetScore := FuzzyMatcher.BestKey(needle, CustomCommandProvider._TargetKeysFor(commandType, command["Target"]))
             if (targetScore > 0)
-                score := Max(score, targetScore - 5)                        ; 名称优先
+                score := Max(score, targetScore - 5)                        ; the name first
             if exact
                 score := Max(score, 100)
             if (score <= 0)
                 continue
-            scores[index] := score + 15                                     ; 用户自己加的命令比索引出来的应用优先
+            scores[index] := score + 15                                     ; the user's own commands rank above indexed applications
             ranks[index] := scores[index] + Knowledge.Boost(query.Text, CustomCommandProvider._Uid(command))
             matches.Push(index)
         }
         CustomCommandProvider._lastNeedle := needle, CustomCommandProvider._lastMatches := matches, CustomCommandProvider._lastList := list
         if withQuery.Length {
-            CustomCommandProvider._lastNeedle := ""                          ; 参数每次都不同, 不用上一次的匹配缩小范围
+            CustomCommandProvider._lastNeedle := ""                          ; the arguments differ every time: don't narrow down with the previous matches
             return withQuery
         }
         results := []
@@ -77,8 +77,8 @@ class CustomCommandProvider {
         return results
     }
 
-    ; 启动后空闲时预先算好每条命令的搜索 Key (名称 / 关键字 / 拼音 / 目标名) 和目标路径,
-    ; 第一次输入时就不用等 (几百条命令第一次算要几百毫秒)。每次算 WarmBatch 条, 中间可以处理输入
+    ; While idle after start-up, compute each command's search keys (name / keyword / pinyin / target name) and target path in advance,
+    ; so the first input doesn't wait (hundreds of commands take hundreds of milliseconds the first time). WarmBatch at a time, so input can be handled in between
     static WarmBatch := 40
     static Warm(start := 1) {
         commands := AppSettings.CustomCommands
@@ -97,7 +97,7 @@ class CustomCommandProvider {
             SetTimer(() => CustomCommandProvider.Warm(last + 1), -10)
     }
 
-    ; 命令被修改后, 下一次搜索从全部命令里找
+    ; after commands changed, the next search looks at all commands
     static _ResetNarrowing() {
         CustomCommandProvider._lastNeedle := ""
     }
@@ -120,7 +120,7 @@ class CustomCommandProvider {
         return "custom:" StrLower(commandType "|" command["Target"] "|" arguments)
     }
 
-    ; 名称 / 每个关键字 / 拼音首字母的搜索 Key, 按 "名称|关键字" 缓存 (修改命令后自然换成新的键)
+    ; Search keys of the name / each keyword / pinyin initials, cached by "name|keyword" (a changed command gets new keys naturally)
     static _KeysFor(title, keyword) {
         static cache := Map()
         cacheKey := title "|" keyword
@@ -134,7 +134,7 @@ class CustomCommandProvider {
         return cache[cacheKey]
     }
 
-    ; File / Folder 的目标文件名 (不含扩展名) 或文件夹名及其拼音首字母, 按 "类型|目标" 缓存
+    ; The target's file name (without extension) or folder name of File / Folder and its pinyin initials, cached by "type|target"
     static _TargetKeysFor(commandType, target) {
         static cache := Map()
         cacheKey := commandType "|" target
@@ -148,19 +148,19 @@ class CustomCommandProvider {
             return []
         SplitPath(RTrim(CustomCommandProvider._Resolve(target), "\/"), &fileName, , , &nameNoExt)
         name := (commandType = "File") ? nameNoExt : fileName
-        if (name = "" || InStr(name, ":"))                                  ; 驱动器根目录 "Q:" 不算名称
+        if (name = "" || InStr(name, ":"))                                  ; a drive root "Q:" isn't a name
             return []
         pinyinText := Pinyin.Initials(name)
         return [FuzzyMatcher.Key(name), (pinyinText != name) ? FuzzyMatcher.Key(pinyinText) : ""]
     }
 
-    ; Target / Arguments 里有 {query}
+    ; Target / Arguments contain {query}
     static TakesQuery(command) {
         return InStr(command["Target"], "{query}") || (command.Has("Arguments") && InStr(command["Arguments"], "{query}"))
     }
 
-    ; term: 输入的参数, 换掉 {query} (网址里编码); 带 {query} 的命令还没有参数时: 有关键字就 Enter 补全 "关键字 ", 没有就换成空
-    ; keyword: 输入的那个关键字 (有几个关键字时补全保留输入的), 没有时用第一个
+    ; term: the typed argument, replacing {query} (encoded in URLs); a {query} command without an argument yet: with a keyword Enter completes "keyword ", otherwise it becomes empty
+    ; keyword: the keyword that was typed (completion keeps it when there are several), the first if none
     static _ToItem(command, score, term := "", keyword := "") {
         target := command["Target"]
         arguments := command.Has("Arguments") ? command["Arguments"] : ""
@@ -180,12 +180,12 @@ class CustomCommandProvider {
         }
         switch commandType, false {
             case "Folder": kind := "folder", icon := CustomCommandProvider._FolderIcon(CustomCommandProvider._Resolve(target))
-            case "Url"   : kind := "url",    icon := RegExMatch(target, "i)^ms-settings:") ? "res:imageres.dll,-114" : "url:"   ; 系统设置链接用齿轮图标
+            case "Url"   : kind := "url",    icon := RegExMatch(target, "i)^ms-settings:") ? "res:imageres.dll,-114" : "url:"   ; system settings links use the gear icon
             default      : kind := "file",   icon := CustomCommandProvider._Resolve(target)
         }
         displayTarget := (kind = "url") ? target : CustomCommandProvider._Resolve(target)
         subtitle := Trim(displayTarget " " arguments)
-        if (extra.HasOwnProp("Valid") && !extra.Valid)                     ; 等待参数: 说明要接着输入什么
+        if (extra.HasOwnProp("Valid") && !extra.Valid)                     ; waiting for an argument: say what to type next
             subtitle := I18n.T("Search.TypeAfter", keyword) " · " subtitle
         item := ResultItem(title, subtitle, {
             Kind: kind, Arg: target, Arguments: arguments, Icon: icon, Score: score, Source: command,
@@ -196,12 +196,12 @@ class CustomCommandProvider {
         return item
     }
 
-    ; 网络位置上的文件夹直接用通用的文件夹图标 (不读网络, 也不会因为名字里带点被当成文件)
+    ; folders on network locations use the generic folder icon directly (no network access, and a dot in the name doesn't make it a file)
     static _FolderIcon(folder) {
         return IconCache.FolderIcon(folder)
     }
 
-    ; Path.Resolve 对只写程序名的目标 ("cmd.exe") 要查磁盘和 PATH, 结果缓存起来
+    ; Path.Resolve needs the disk and PATH for targets given only as a program name ("cmd.exe"): cache the result
     static _Resolve(target) {
         static cache := Map()
         if !cache.Has(target)
@@ -212,9 +212,9 @@ class CustomCommandProvider {
     static EditorFields() {
         types := [["File", I18n.T("Prefs.Type.File")], ["Folder", I18n.T("Prefs.Type.Folder")]
                 , ["Command", I18n.T("Prefs.Type.Command")], ["Url", I18n.T("Prefs.Type.Url")]]
-        hint := (name) => I18n.T("Cmd.Field." name)                        ; 每个字段下面的灰色说明
+        hint := (name) => I18n.T("Cmd.Field." name)                        ; the gray description below each field
         target := ItemEditor.Field("Target", "Prefs.Col.Target", "file", true, "", hint("Target"))
-        target.FolderWhen := ["Type", "Folder"]                             ; 类型选 "文件夹" 时, 浏览按钮选择文件夹
+        target.FolderWhen := ["Type", "Folder"]                             ; with the type set to "Folder", the browse button chooses a folder
         return [ItemEditor.Field("Title", "Prefs.Col.Title", "text", true, "", hint("Title"))
               , ItemEditor.Field("Type", "Prefs.Col.Type", "choice", false, types, hint("Type"))
               , target
@@ -222,12 +222,12 @@ class CustomCommandProvider {
               , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", false, "", hint("Keyword"))]
     }
 
-    ; 检查命令的目标是否还在 (文件夹改名、文件移走后命令会失效), 返回:
-    ;   "OK"          存在
-    ;   "Missing"     找不到
-    ;   "Unavailable" 所在的驱动器或网络位置现在无法访问 (例如网络盘没连上), 不能判断
-    ;   "Skipped"     网址、shell: 等不是文件的目标, 不检查
-    ; roots: 同一次检查共用的 Map, 记住每个驱动器 / 网络共享能否访问, 断开的网络盘只等一次
+    ; Checks whether a command's target still exists (renamed folders and moved files break commands); returns:
+    ;   "OK"          exists
+    ;   "Missing"     not found
+    ;   "Unavailable" its drive or network location can't be reached now (e.g. a network drive not connected), so it can't be told
+    ;   "Skipped"     targets that aren't files (URLs, shell: etc.) aren't checked
+    ; roots: a Map shared by one check run that remembers whether each drive / network share is reachable, so a disconnected network drive is waited for once
     static CheckTarget(command, roots := "") {
         commandType := command.Has("Type") ? command["Type"] : "File"
         if (commandType = "Url")
@@ -235,12 +235,12 @@ class CustomCommandProvider {
         raw := Trim(command.Has("Target") ? command["Target"] : "", "`" `t")
         if (raw = "")
             return "Missing"
-        if InStr(raw, "{query}")                                            ; 路径里有参数, 要输入后才知道
+        if InStr(raw, "{query}")                                            ; the path contains an argument, known only once typed
             return "Skipped"
         target := Path.Resolve(raw)
-        if RegExMatch(target, "i)^([a-z][a-z0-9+.-]+:|::\{)")               ; shell:、ms-settings:、http: 等 (不是 "C:")
+        if RegExMatch(target, "i)^([a-z][a-z0-9+.-]+:|::\{)")               ; shell:, ms-settings:, http: etc. (not "C:")
             return "Skipped"
-        if !InStr(target, "\")                                              ; 裸文件名, PATH 里没有
+        if !InStr(target, "\")                                              ; a bare file name not in PATH
             return CustomCommandProvider._InAppPaths(target) ? "OK" : "Missing"
         SplitPath(target, , , , , &drive)
         if (drive != "") {
@@ -255,7 +255,7 @@ class CustomCommandProvider {
         return (found != "") ? "OK" : "Missing"
     }
 
-    ; "App Paths" 里注册的程序 (winword、chrome...), Run 也能直接打开
+    ; programs registered under "App Paths" (winword, chrome...), which Run can open directly too
     static _InAppPaths(name) {
         SplitPath(name, , , &ext)
         if (ext = "")
@@ -270,7 +270,7 @@ class CustomCommandProvider {
         return Map("Title", "", "Type", "File", "Target", "", "Arguments", "", "Keyword", "")
     }
 
-    ; command: AppSettings.CustomCommands 里的一条 (就地修改), 或 "" 新建 (prefill 预先填好的字段)
+    ; command: an entry of AppSettings.CustomCommands (changed in place), or "" for a new one (prefill = the prefilled fields)
     static Edit(command := "", prefill := "") {
         isNew := !IsObject(command)
         base := isNew ? CustomCommandProvider.NewCommand() : ItemEditor.WithDefaults(command, CustomCommandProvider.NewCommand())
@@ -304,13 +304,13 @@ class CustomCommandProvider {
         return false
     }
 
-    ; 资源管理器 "发送到 → ALTRun" (选中几个就一次传进来几个路径):
-    ;   1 个: 弹出编辑对话框, 名称 / 类型 / 目标已填好, 确定后才添加; 已经有这条命令时打开它修改
-    ;   多个: 全部直接添加 (一个个弹对话框太多), 已经有的跳过
+    ; Explorer's "Send to → ALTRun" (all selected paths come in at once):
+    ;   one: opens the edit dialog with name / type / target filled in, added only on OK; if the command already exists it opens that for editing
+    ;   several: all added directly (a dialog each would be too many), existing ones skipped
     static AddFromPaths(paths) {
         if !paths.Length
             return
-        if IsObject(PreferencesWindow.Gui)                                  ; 偏好设置开着: 加进它的 "命令" 页, 不会被之后的保存盖掉
+        if IsObject(PreferencesWindow.Gui)                                  ; Preferences is open: add to its Commands page, so the next save doesn't overwrite them
             return PreferencesWindow.AddCommands(paths)
         if (paths.Length = 1) {
             existing := CustomCommandProvider.FindByTarget(paths[1])
@@ -338,10 +338,10 @@ class CustomCommandProvider {
         App.Toast(I18n.T("Custom.AddedMany", added) (skipped ? " " I18n.T("Custom.SkippedExisting", skipped) : ""), 3000)
     }
 
-    ; 文件 / 文件夹路径 -> 一条新命令 (名称 = 文件名去掉扩展名, 或文件夹名)
+    ; File / folder path -> a new command (name = file name without extension, or folder name)
     static FromPath(target) {
         target := RTrim(target, "\/")
-        if RegExMatch(target, "^[A-Za-z]:$")                                ; 整个驱动器 "D:"
+        if RegExMatch(target, "^[A-Za-z]:$")                                ; a whole drive "D:"
             target .= "\"
         isFolder := DirExist(target) != ""
         SplitPath(RTrim(target, "\"), &fileName, , , &nameNoExt)
@@ -351,7 +351,7 @@ class CustomCommandProvider {
         return Map("Title", title, "Type", isFolder ? "Folder" : "File", "Target", target, "Arguments", "", "Keyword", "")
     }
 
-    ; 目标指向同一个文件 / 文件夹的命令 (比较展开变量后的路径, 不分大小写), 没有返回 ""; commands: 在哪个列表里找 (偏好设置里正在编辑的)
+    ; The command whose target is the same file / folder (comparing paths with variables expanded, case-insensitive), "" if none; commands: the list to search (the one being edited in Preferences)
     static FindByTarget(target, commands := AppSettings.CustomCommands) {
         wanted := StrLower(RTrim(Path.Resolve(target), "\/"))
         for command in commands {

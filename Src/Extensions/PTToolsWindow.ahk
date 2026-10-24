@@ -27,8 +27,8 @@
 Class PTToolsWindow {
 
     ; ---------------------------------------------------------------------
-    ; 默认值 / 当前设置 - 键名就是控件的 Name (v2 里用 "v" 前缀注册的那个名字),
-    ; 这样 Save()/Show() 都能直接按同一份名单循环, 不用另外维护映射表。
+    ; Defaults / current settings - the keys are the controls' Names (the names registered with the "v" prefix in v2),
+    ; so Save() / Show() loop over the same list without a separate mapping table.
     ; ---------------------------------------------------------------------
     static Defaults := Map(
         "WinLeft", 500, "WinTop", 500,
@@ -54,7 +54,7 @@ Class PTToolsWindow {
         "StartLevel", 450, "StartAtCG", 0,
         "EndLevel", 50, "EndAtCG", 0,
         "HorizontalDistance", 12000,
-        "MinRadius", "", "Contraflexure", "", "SupportIntervals", "",       ; 空 = SPF2M 的默认值
+        "MinRadius", "", "Contraflexure", "", "SupportIntervals", "",       ; empty = SPF2M's default
 
         ; Duct diameters for "At C.G.", per tendon type - empty = TendonProfile.DuctDiameters
         "DuctDiaMono", "", "DuctDia7s", "", "DuctDia12s", "",
@@ -91,12 +91,12 @@ Class PTToolsWindow {
     static Settings := PTToolsWindow.Defaults.Clone()
     static G    := ""                                                     ; PT Tools (Rebar/BRC) Gui object, while open
     static SpfG := ""                                                     ; SPF2M Gui object, while open
-    static LastResult := ""                                               ; 最近一次 TendonProfile.Calc 的结果 (复制表格用)
+    static LastResult := ""                                               ; the result of the last TendonProfile.Calc (for copying the table)
     static HotkeysReady := false
     static Spf2mHotkeysReady := false
 
-    ; App.Start() 调用: saved 是 AppSettings 里的 Extensions.PTTools, 缺的字段用默认值补上,
-    ; 之后 Settings 和它是同一个 Map, 修改后 AppSettings.Save() 就会写进 ALTRun.json。
+    ; Called by App.Start(): saved is Extensions.PTTools from AppSettings, with missing fields filled from the defaults;
+    ; after that Settings is the same Map, so AppSettings.Save() writes changes to ALTRun.json.
     static Load(saved) {
         for key, value in PTToolsWindow.Defaults
             if !saved.Has(key)
@@ -136,7 +136,7 @@ Class PTToolsWindow {
         S := PTToolsWindow.Settings
         g := Gui("+AlwaysOnTop", "PT Tools")
         PTToolsWindow.G := g
-        g.SetFont("s10", "Segoe UI")                                        ; Windows 的界面字体, 英文和数字更清楚
+        g.SetFont("s10", "Segoe UI")                                        ; the Windows UI font: clearer English and digits
         g.OnEvent("Close", (p*) => PTToolsWindow.OnClose(p*))
 
         rebarRight    := PTToolsWindow.BuildRebarAreaGroup(g, S, 20)
@@ -150,7 +150,7 @@ Class PTToolsWindow {
         ; (see the note on ComboFields at the top of the class).
         g["RebarBarDiameter"].Text := S["RebarBarDiameter"]
         g["RequiredBarDiameter"].Text := S["RequiredBarDiameter"]
-        for name in ["RebarBarDiameter", "RequiredBarDiameter"]             ; 下拉框里的输入框也右对齐 (ES_RIGHT), 和别的数字一样
+        for name in ["RebarBarDiameter", "RequiredBarDiameter"]             ; the edit box inside the combo box is right-aligned too (ES_RIGHT), like the other numbers
             try ControlSetStyle("+0x2", DllCall("FindWindowEx", "Ptr", g[name].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr"))
 
         PTToolsWindow.SetupHotkeys()
@@ -174,9 +174,9 @@ Class PTToolsWindow {
         HotIfWinActive()
     }
 
-    ; 输入框和结果框: 左右各留一点边距, 右对齐时光标不会紧贴着数字;
-    ; 用鼠标点进输入框时全选 (用 Tab / Enter 进来时 Windows 本来就会全选), 直接输入新数字就行。
-    ; 全选用 PostMessage: 等鼠标按下的处理 (把光标放到点击的位置) 做完之后再全选
+    ; Input and result boxes: a little margin on both sides, so a right-aligned caret doesn't touch the digits;
+    ; clicking into an input box selects all (tabbing / Enter in already selects all in Windows), so a new number can just be typed.
+    ; Select all with PostMessage: after the mouse-down handling (placing the caret at the click) is done
     static SetupInputs(g) {
         margin := Round(4 * A_ScreenDPI / 96), margins := (margin << 16) | margin
         for ctrl in g {
@@ -187,7 +187,7 @@ Class PTToolsWindow {
                 SendMessage(0xD3, 3, margins, inner)                         ; EM_SETMARGINS: EC_LEFTMARGIN | EC_RIGHTMARGIN
             if (ctrl.Type = "ComboBox")
                 ctrl.OnEvent("Focus", (c, *) => PostMessage(0x142, 0, 0xFFFF0000, c))   ; CB_SETEDITSEL 0, -1
-            else if !(ControlGetStyle(ctrl) & 0x800)                        ; ES_READONLY 的结果框不用全选
+            else if !(ControlGetStyle(ctrl) & 0x800)                        ; ES_READONLY result boxes don't need select-all
                 ctrl.OnEvent("Focus", (c, *) => PostMessage(0xB1, 0, -1, c))   ; EM_SETSEL 0, -1
         }
     }
@@ -229,7 +229,7 @@ Class PTToolsWindow {
     ; editX) and returns the Edit control, so callers can still chain
     ; .OnEvent(...) - shared by every numeric/text field on this tab.
     static Field(g, x, editX, y, w, label, name, value, opts := "") {
-        if InStr(opts, "ReadOnly")                                          ; 结果框: Tab / Enter 直接跳过, 仍然可以用鼠标选中复制
+        if InStr(opts, "ReadOnly")                                          ; Result boxes: Tab / Enter skip them; they can still be selected with the mouse to copy
             opts .= " -Tabstop"
         g.AddText("x" x " y" (y + 3), label)
         return g.AddEdit("x" editX " y" y " w" w " r1 " opts " v" name, value)
@@ -306,7 +306,7 @@ Class PTToolsWindow {
         ; Sits under the Total Rebar Area + Rebar Qty Required columns only
         ; (same as the taller BRC Area column standing beside it, not under it).
         w := requiredGroupRight - 20
-        g.Add("GroupBox", "x20 y258 w" w " h70", "Calculator")   ; 底边和 BRC Area 对齐 (8 + 320)
+        g.Add("GroupBox", "x20 y258 w" w " h70", "Calculator")   ; bottom aligned with BRC Area (8 + 320)
 
         inputW  := (w - 65) // 2                                            ; 65 = margins (35+15) + "=" sign column (15)
         eqX     := 35 + inputW + 8
@@ -330,7 +330,7 @@ Class PTToolsWindow {
         g["RebarBarCount"].Value := PTToolsWindow.Fmt2(count)
         g["RebarTotalArea"].Value := PTToolsWindow.Fmt2(count * PTToolsWindow.CalculateRebarArea(diameter))
 
-        PTToolsWindow.OnBrcFieldChanged()                                   ; BRC 的 Span Width 跟着变 (程序改的值不触发 Change): 钢筋网面积和 "+ Rebar" 一起重算
+        PTToolsWindow.OnBrcFieldChanged()                                   ; BRC's Span Width follows (values changed by the program don't fire Change): the mesh area and "+ Rebar" are recomputed together
     }
 
     static OnRequiredExpressionChanged(*) {
@@ -385,12 +385,12 @@ Class PTToolsWindow {
         g["ExprResult"].Value := PTToolsWindow.Fmt2(Calc.Eval(g["ExprInput"].Value))
     }
 
-    ; 根据钢筋直径计算钢筋截面积 (mm2)
+    ; Bar cross-section area from the bar diameter (mm2)
     static CalculateRebarArea(diameter) {
         return Round((diameter / 2) ** 2.0 * 3.1415926, 2)
     }
 
-    ; 根据钢筋网型号 (如 "A7"/"B8"/"D10"/"E6") 计算钢筋网截面积 (mm2/m)
+    ; Mesh cross-section area from the mesh type (e.g. "A7" / "B8" / "D10" / "E6") (mm2/m)
     static CalculateMeshArea(meshMark) {
         wireGrade := Format("{:U}", SubStr(meshMark, 1, 1))
         wireSizeStr := SubStr(meshMark, 2)
@@ -409,8 +409,8 @@ Class PTToolsWindow {
     ; ===================================================================
     ; SPF2M window - tendon profile calculator
     ; ===================================================================
-    ; 以前是把参数自动敲进 DOSBox 里的 SPF2M.EXE; 现在由 TendonProfile 直接计算 (结果和
-    ; SPF2M 完全一致, 见 TendonProfile.ahk), 修改任何输入都立即更新右边的表格。
+    ; The parameters used to be typed into SPF2M.EXE in DOSBox automatically; now TendonProfile calculates directly (with results
+    ; identical to SPF2M, see TendonProfile.ahk), and changing any input updates the table on the right at once.
     static ShowSpf2m() {
         if WinExist(PTToolsWindow.Spf2mTitle " ahk_class AutoHotkeyGUI") {
             WinActivate()
@@ -427,7 +427,7 @@ Class PTToolsWindow {
         PTToolsWindow.BuildResultGroup(g, right + 10)
         PTToolsWindow.SetupSpf2mHotkeys()
         PTToolsWindow.SetupInputs(g)
-        PTToolsWindow.OnTendonChanged()                                    ; 最小半径 / 管道直径的提示跟着钢绞线类型
+        PTToolsWindow.OnTendonChanged()                                    ; the hints for minimum radius / duct diameter follow the strand type
         g.Show("x" S["Spf2mWinLeft"] " y" S["Spf2mWinTop"] " AutoSize")
     }
 
@@ -464,14 +464,14 @@ Class PTToolsWindow {
         AppSettings.Save()
     }
 
-    ; 每种钢绞线类型各自记住管道直径 ("At C.G." 时标高减去半个直径)
+    ; each strand type remembers its own duct diameter ("At C.G." subtracts half the diameter from the levels)
     static DuctDiaKey(tendon) {
         static keys := ["DuctDiaMono", "DuctDia7s", "DuctDia12s", "DuctDia19s", "DuctDia22s", "DuctDia31s"]
         return keys[Max(1, Min(tendon, keys.Length))]
     }
 
     static Spf2mTitle := "SPF2M Post-Tensioning Tendon Profile Calculator"
-    static GroupH := 420                                                   ; 两个 GroupBox 的高度
+    static GroupH := 420                                                   ; heights of the two GroupBoxes
 
     static ProfileLabelGap := 190
     static ProfileFieldW   := 90
@@ -499,7 +499,7 @@ Class PTToolsWindow {
         g.AddCheckBox("x" cbX " y149 w" PTToolsWindow.ProfileCbW " vEndAtCG Checked" S["EndAtCG"], "At C.G.").OnEvent("Click", recalc)
         PTToolsWindow.Field(g, labelX, editX, 182, PTToolsWindow.ProfileFieldW, "Horizontal Distance (mm)", "HorizontalDistance", S["HorizontalDistance"]).OnEvent("Change", recalc)
 
-        g.AddText("x" labelX " y222 w" (w - 30) " h1 0x10")                ; 分隔线: 下面是可选项, 空着 = SPF2M 的默认值
+        g.AddText("x" labelX " y222 w" (w - 30) " h1 0x10")                ; separator: optional fields below, empty = SPF2M's default
         PTToolsWindow.Field(g, labelX, editX, 235, PTToolsWindow.ProfileFieldW, "Min. Radius of Curvature (mm)", "MinRadius", S["MinRadius"]).OnEvent("Change", recalc)
         PTToolsWindow.Field(g, labelX, editX, 270, PTToolsWindow.ProfileFieldW, "Point of Contraflexure (mm)", "Contraflexure", S["Contraflexure"]).OnEvent("Change", recalc)
         PTToolsWindow.Field(g, labelX, editX, 305, fullW, "Support Intervals (mm)", "SupportIntervals", S["SupportIntervals"]).OnEvent("Change", recalc)
@@ -514,7 +514,7 @@ Class PTToolsWindow {
     static BuildResultGroup(g, x0) {
         w := 480
         g.Add("GroupBox", "x" x0 " y15 w" w " h" PTToolsWindow.GroupH, "Tendon Profile - Support Heights (mm)")
-        ; 从下往上排: Copy Table 按钮贴着框底, 上面是两三行的摘要, 剩下的高度都给表格
+        ; laid out bottom-up: the Copy Table button at the bottom of the frame, two or three summary lines above, the rest of the height for the table
         buttonY  := PTToolsWindow.GroupH - 25
         summaryY := buttonY - 53
         list := g.AddListView("x" (x0 + 12) " y40 w" (w - 24) " h" (summaryY - 48) " vResultList -Multi NoSort Grid"
@@ -528,7 +528,7 @@ Class PTToolsWindow {
         g.AddButton("x" (x0 + 12) " y" buttonY " w140 h30", "Copy Table").OnEvent("Click", (*) => PTToolsWindow.CopyProfileTable())
     }
 
-    ; 钢绞线类型变了: 最小半径的灰色提示换成这种类型的默认值, 管道直径换成这种类型记住的值
+    ; The strand type changed: the gray hint for minimum radius becomes this type's default, the duct diameter the value remembered for it
     static OnTendonChanged(saveOld := false) {
         g := PTToolsWindow.SpfG
         S := PTToolsWindow.Settings
@@ -543,7 +543,7 @@ Class PTToolsWindow {
         PTToolsWindow.Recalculate()
     }
 
-    ; 窗口里的输入 -> TendonProfile.Calc 的参数 ("At C.G." 的标高减去半个管道直径)
+    ; Window inputs -> the parameters of TendonProfile.Calc ("At C.G." subtracts half the duct diameter from the levels)
     static ProfileInput() {
         g := PTToolsWindow.SpfG
         halfDuct := PTToolsWindow.Num(g["DuctDia"].Value, TendonProfile.DefaultDuctDiameter(g["TendonType"].Value)) / 2
@@ -595,12 +595,12 @@ Class PTToolsWindow {
         return text
     }
 
-    ; 标高可能带小数 ("At C.G." 减去半个管道直径): 整数照常显示, 否则保留一位小数
+    ; levels may have decimals ("At C.G." minus half the duct diameter): integers as usual, otherwise one decimal
     static FmtLevel(v) {
         return (v = Integer(v)) ? Integer(v) : Round(v, 1)
     }
 
-    ; 表格复制成制表符分隔的文字, 粘贴到 Excel 正好是一列一列的
+    ; The table copied as tab-separated text, which pastes into Excel column by column
     static CopyProfileTable() {
         result := PTToolsWindow.LastResult
         if !IsObject(result) || result.Error != ""

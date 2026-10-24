@@ -1,17 +1,17 @@
 ;===============================================================================
-; AutoDate.ahk - Ctrl+D 自动添加日期 (AutoHotkey v2)
+; AutoDate.ahk - Ctrl+D adds a date (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 两个场景:
-;   1. 重命名 (RenameWindows 里的窗口, 如资源管理器 / Total Commander): 在文件名
-;      扩展名前加上 " - 日期", 已经有日期的更新为今天。
-;   2. 文字备注 (AppendWindows 里的窗口, 如 TC 的文件备注框): 在文字末尾加 " - 日期"。
-; 日期格式见 DateFormat (默认 dd.MM.yyyy)。
+; Two cases:
+;   1. renaming (windows in RenameWindows, e.g. Explorer / Total Commander): adds " - date" before the
+;      file name's extension; an existing date is updated to today.
+;   2. text comments (windows in AppendWindows, e.g. TC's file comment box): adds " - date" at the end of the text.
+; Date format: see DateFormat (default dd.MM.yyyy).
 ;
-; 设置 (ALTRun.json -> Extensions.AutoDate):
+; Settings (ALTRun.json -> Extensions.AutoDate):
 ;   Enabled / DateFormat / Hotkey (one hotkey for both) / RenameWindows / AppendWindows (arrays of window conditions)
 ;
-; 用法:
-;   AutoDate.Init(AppSettings.Extension("AutoDate"))    启动时
+; Usage:
+;   AutoDate.Init(AppSettings.Extension("AutoDate"))    at start-up
 ;   AutoDate.AddDateToName("Report.docx")               -> "Report - 23.09.2026.docx"
 ;===============================================================================
 
@@ -26,9 +26,9 @@ class AutoDate {
             GroupAdd("ALTRunRenameWindows", window)
         for window in options["AppendWindows"]
             GroupAdd("ALTRunAppendWindows", window)
-        ; 重命名: 只在焦点是改名的编辑框时才接管热键, 其它时候 (例如资源管理器的文件列表里 Ctrl+D = 删除)
-        ; 按键原样交给程序, 不用再自己补发一次。以前是先接管再补发: 补发时如果已经松开了 Ctrl, 而 ALTRun
-        ; 记的按键状态还是按着 (电脑睡眠 / 锁屏一夜之后可能这样), 只发出一个 "d", 把选中的文件名换成了 "d"
+        ; Renaming: the hotkey is only taken while the focus is in the rename box; at other times (e.g. Ctrl+D = delete in Explorer's file list)
+        ; the key goes to the program unchanged, with no need to send it again. It used to take the key and send it on: if Ctrl was already up when sending but ALTRun
+        ; still thought it was down (possible after a night of sleep / lock), only a "d" was sent, replacing the selected file name with "d"
         try {
             HotIf((*) => WinActive("ahk_group ALTRunRenameWindows") && AutoDate.IsEditControl(AutoDate.FocusedControl()))
             Hotkey(options["Hotkey"], (*) => AutoDate._OnRename())
@@ -40,13 +40,13 @@ class AutoDate {
         HotIf()
     }
 
-    ; 当前窗口里有焦点的控件的 ClassNN, 取不到时 ""
+    ; ClassNN of the focused control in the current window, "" if it can't be read
     static FocusedControl() {
         try return ControlGetClassNN(ControlGetFocus("A"))
         return ""
     }
 
-    ; 改名 / 输入用的编辑框 (资源管理器、对话框的 Edit, TC 的改名框 TInEdit, Scintilla)
+    ; edit boxes for renaming / typing (Edit in Explorer and dialogs, TC's rename box TInEdit, Scintilla)
     static IsEditControl(classNN) => (classNN != "" && (InStr(classNN, "Edit") || InStr(classNN, "Scintilla"))) ? true : false
 
     static Today() {
@@ -58,7 +58,7 @@ class AutoDate {
             ? AutoDate.Options["DateFormat"] : "dd.MM.yyyy"
     }
 
-    ; 日期格式 -> 匹配这种格式的日期的正则 ("dd.MM.yyyy" -> "\d{2}\.\d{2}\.\d{4}"), 用来找出名字末尾已有的日期
+    ; Date format -> a regex matching dates in that format ("dd.MM.yyyy" -> "\d{2}\.\d{2}\.\d{4}"), to find a date already at the end of the name
     static DatePattern(format) {
         static tokens := [["yyyy", "\d{4}"], ["dddd", "\p{L}+"], ["MMMM", "\p{L}+"], ["ddd", "\p{L}+"], ["MMM", "\p{L}+"]
             , ["yy", "\d{2}"], ["MM", "\d{2}"], ["dd", "\d{2}"], ["M", "\d{1,2}"], ["d", "\d{1,2}"], ["y", "\d{1,2}"]]
@@ -76,7 +76,7 @@ class AutoDate {
         return pattern
     }
 
-    ; 只在重命名的编辑框里触发 (见 Init 的 HotIf)。万一触发后焦点已经离开编辑框, 什么都不做, 不补发按键
+    ; Only fires in a rename box (see the HotIf in Init). If the focus has left the box after firing, do nothing and don't send the key on
     static _OnRename() {
         focused := AutoDate.FocusedControl()
         if !AutoDate.IsEditControl(focused) {
@@ -99,12 +99,12 @@ class AutoDate {
         SendInput("{Blind}{Text} - " AutoDate.Today())
     }
 
-    ; 纯函数, 方便测试: 文件名 (可以带扩展名) -> 加上 / 更新日期后的文件名
-    ; format: 日期格式 (默认用设置里的 DateFormat); 名字末尾已经是这种格式的日期时换成今天
+    ; Pure function, easy to test: a file name (with or without extension) -> the name with the date added / updated
+    ; format: the date format (default: DateFormat from the settings); a date in this format at the end of the name is replaced by today
     static AddDateToName(fileName, today := "", format := "") {
         today := (today != "") ? today : AutoDate.Today()
         datePattern := "\s?-\s?" AutoDate.DatePattern((format != "") ? format : AutoDate.Format()) "$"
-        ; 只有 "点 + 1~4 个字母数字" 且不是纯数字时才算扩展名 ("1. DWG" 这种不算)
+        ; only "dot + 1~4 letters or digits" that aren't all digits count as an extension ("1. DWG" doesn't)
         if RegExMatch(fileName, "^(.*)\.([A-Za-z0-9]{1,4})$", &m) && !RegExMatch(m[2], "^\d+$")
             return RegExReplace(m[1], datePattern) " - " today "." m[2]
         if RegExMatch(fileName, datePattern)

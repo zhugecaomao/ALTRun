@@ -1,18 +1,18 @@
 ;===============================================================================
-; JSON.ahk - 极简 JSON 读写器 (AutoHotkey v2)
+; JSON.ahk - a minimal JSON reader / writer (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 对象 -> Map, 数组 -> Array, true/false -> 1/0, null -> ""
-; Stringify 输出带缩进的可读格式, 方便你直接用记事本改配置。
+; object -> Map, array -> Array, true / false -> 1 / 0, null -> ""
+; Stringify writes an indented, readable form, so the settings can be edited in Notepad.
 ;
-; 用法:
+; Usage:
 ;   data := JSON.Parse(FileRead("x.json", "UTF-8"))
 ;   text := JSON.Stringify(data)
-;   JSON.WriteFile("x.json", data)      写文件: 先写临时文件再替换, UTF-8 不带 BOM
+;   JSON.WriteFile("x.json", data)      writes a temporary file first and then replaces the file; UTF-8 without BOM
 ;===============================================================================
 
 class JSON {
 
-    ;--- 解析入口 ----------------------------------------------------------------
+    ;--- Parsing -----------------------------------------------------------------
     static Parse(text) {
         pos := 1
         value := JSON._Value(&text, &pos)
@@ -20,9 +20,9 @@ class JSON {
         return value
     }
 
-    ;--- 序列化入口 --------------------------------------------------------------
-    ; obj    : Map / Array / 字符串 / 数字
-    ; indent : 当前缩进层级(递归用, 外部调用不用传)
+    ;--- Serializing -------------------------------------------------------------
+    ; obj    : Map / Array / string / number
+    ; indent : current indent level (for recursion; callers leave it out)
     static Stringify(obj, indent := 0) {
         pad    := JSON._Pad(indent)
         padIn  := JSON._Pad(indent + 1)
@@ -45,17 +45,17 @@ class JSON {
             return "[`r`n" JSON._Join(parts, ",`r`n") "`r`n" pad "]"
         }
 
-        ; 整数/浮点直接输出; 其余一律当字符串
+        ; integers / floats as they are; everything else as a string
         if (obj is Integer || obj is Float)
             return obj ""
 
         return '"' JSON.Escape(obj "") '"'
     }
 
-    ;--- 写文件 ------------------------------------------------------------------
-    ; 先写同一文件夹里的临时文件, 再替换原来的文件: 写到一半崩溃或断电也不会弄坏原来的文件。
-    ; 文件夹不在时自动创建; UTF-8 不带 BOM (JSON 标准 RFC 8259)。
-    ; OneDrive 等同步盘、杀毒软件会短暂占用刚改过的文件: 替换失败时每 100 毫秒重试, 最多 MoveTries 次, 还不行才抛出异常
+    ;--- Writing files -----------------------------------------------------------
+    ; Writes a temporary file in the same folder, then replaces the original: a crash or power cut halfway can't damage it.
+    ; Creates the folder if needed; UTF-8 without BOM (JSON standard RFC 8259).
+    ; Sync folders such as OneDrive and antivirus software hold a just-changed file for a moment: on failure retry every 100 ms, up to MoveTries times, then throw
     static MoveTries := 20
 
     static WriteFile(file, data, indent := 0) {
@@ -64,7 +64,7 @@ class JSON {
             DirCreate(dir)
         tmpFile := file ".tmp"
         try FileDelete(tmpFile)
-        if FileExist(tmpFile)                                               ; 上次留下的临时文件删不掉 (被占用): 换一个名字
+        if FileExist(tmpFile)                                               ; a temporary file left over from last time can't be deleted (in use): use another name
             tmpFile := file "." A_TickCount ".tmp"
         FileAppend(JSON.Stringify(data, indent), tmpFile, "UTF-8-RAW")
         Loop JSON.MoveTries {
@@ -81,14 +81,14 @@ class JSON {
         }
     }
 
-    ;--- 字符串转义 --------------------------------------------------------------
+    ;--- String escaping ---------------------------------------------------------
     static Escape(str) {
         str := StrReplace(str, "\", "\\")
         str := StrReplace(str, '"', '\"')
         str := StrReplace(str, "`r", "\r")
         str := StrReplace(str, "`n", "\n")
         str := StrReplace(str, "`t", "\t")
-        if RegExMatch(str, "[\x00-\x1F]") {                                ; 其它控制字符 (少见, 例如从终端复制的 ESC): \u00XX
+        if RegExMatch(str, "[\x00-\x1F]") {                                ; other control characters (rare, e.g. ESC copied from a terminal): \u00XX
             out := ""
             Loop Parse, str
                 out .= (Ord(A_LoopField) < 32) ? Format("\u{:04X}", Ord(A_LoopField)) : A_LoopField
@@ -97,7 +97,7 @@ class JSON {
         return str
     }
 
-    ;=== 以下为内部实现 ==========================================================
+    ;=== Internals ===============================================================
 
     static _Pad(level) {
         pad := ""
@@ -113,11 +113,11 @@ class JSON {
         return out
     }
 
-    ; 整段文本一律按引用 (&text) 传给内部函数: AutoHotkey 按值传字符串时会复制一份, 每读一个值
-    ; 就复制一次整个文件, 总耗时随文件大小平方增长 (6000 条路径要 9 秒, 3 万条要几分钟)。
-    ; 读取时也只用 InStr / SubStr 按位置前进, 不对整段文本做正则。
+    ; The whole text is always passed by reference (&text) to the internal functions: AutoHotkey copies a string passed by value,
+    ; so each value read would copy the whole file, and the total time grew with the square of its size (9 s for 6,000 paths, minutes for 30,000).
+    ; Reading also moves along with InStr / SubStr only, never running a regex over the whole text.
 
-    ; 跳过空白 (空格、Tab、回车、换行)
+    ; skip white space (space, Tab, CR, LF)
     static _Space(&text, &pos) {
         while ((ch := Ord(SubStr(text, pos, 1))) = 32 || ch = 9 || ch = 13 || ch = 10)
             pos++
@@ -144,7 +144,7 @@ class JSON {
             pos += 4
             return ""
         }
-        stop := pos                                 ; 数字: 先取出连续的数字字符, 再只对这一小段用正则检查
+        stop := pos                                 ; numbers: take the run of number characters first, then check only that short piece with a regex
         while ((c := SubStr(text, stop, 1)) != "" && InStr("0123456789+-.eE", c, true))
             stop++
         numText := SubStr(text, pos, stop - pos)
@@ -157,7 +157,7 @@ class JSON {
 
     static _Object(&text, &pos) {
         obj := Map()
-        pos++                                       ; 跳过 {
+        pos++                                       ; skip {
         JSON._Space(&text, &pos)
         if (SubStr(text, pos, 1) = "}") {
             pos++
@@ -186,7 +186,7 @@ class JSON {
 
     static _Array(&text, &pos) {
         items := Array()
-        pos++                                       ; 跳过 [
+        pos++                                       ; skip [
         JSON._Space(&text, &pos)
         if (SubStr(text, pos, 1) = "]") {
             pos++
@@ -205,7 +205,7 @@ class JSON {
         }
     }
 
-    ; pos 指向开头的引号: 用 InStr 找下一个引号, 前面有奇数个反斜杠的是转义的引号, 继续往后找
+    ; pos is at the opening quote: InStr finds the next quote; one after an odd number of backslashes is escaped, so look further
     static _String(&text, &pos) {
         from := pos + 1
         loop {
@@ -215,7 +215,7 @@ class JSON {
             back := quote - 1
             while (SubStr(text, back, 1) = "\")
                 back--
-            if Mod(quote - 1 - back, 2) = 0         ; 偶数个反斜杠: 这个引号就是结尾
+            if Mod(quote - 1 - back, 2) = 0         ; an even number of backslashes: this quote is the end
                 break
             from := quote + 1
         }
@@ -224,9 +224,9 @@ class JSON {
         return JSON._Unescape(raw)
     }
 
-    ; 按反斜杠分段拼接 (不逐个字符处理)
+    ; joined piece by piece between backslashes (not character by character)
     static _Unescape(str) {
-        if !InStr(str, "\")                        ; 没有转义符就直接返回
+        if !InStr(str, "\")                        ; no escapes: return it as it is
             return str
         out := "", i := 1
         while (j := InStr(str, "\", true, i)) {

@@ -14,7 +14,7 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageDraw
 
 RADIUS = 8
-SCALE = 4                                    # 先按 4 倍画圆角矩形再缩小: 边缘平滑
+SCALE = 4                                    # draw the rounded rectangle at 4x and scale it down: smooth edges
 
 
 def rounded_mask(size, radius=RADIUS):

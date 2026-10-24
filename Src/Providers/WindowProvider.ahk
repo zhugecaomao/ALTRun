@@ -1,16 +1,16 @@
 ;===============================================================================
-; WindowProvider.ahk - 切换到已经打开的窗口 (AutoHotkey v2)
+; WindowProvider.ahk - switches to windows that are already open (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 PowerToys Run 的 Window Walker、Raycast 的 Switch Windows 一样: 输入窗口标题或程序名,
-; Enter 切换过去 (最小化的先还原)。
-;   "w 关键词" (Keyword)   只搜窗口; 只输入 "w " 列出所有窗口 (按前后顺序)
-;   直接输入               InDefaultResults = 1 时, 标题匹配得好的窗口也显示 (排在应用和命令后面, 最多 3 个)
-; 操作面板 (→): 关闭窗口。
-; 只列出任务栏上能看到的窗口: 可见、有标题、不是工具窗口 / 被别的窗口拥有的窗口、
-; 不在别的虚拟桌面上 (DWM cloaked), 也不包括 ALTRun 自己的窗口。
-; 窗口列表在一次搜索中复用, 1 秒内的连续输入不重新枚举。
+; Like PowerToys Run's Window Walker and Raycast's Switch Windows: type a window title or program name,
+; Enter switches to it (restoring it first if minimized).
+;   "w word" (Keyword)     searches windows only; only "w " lists all windows (in z-order)
+;   typing directly        with InDefaultResults = 1, windows whose title matches well show too (after applications and commands, at most 3)
+; Actions panel (→): close the window.
+; Only windows visible on the taskbar are listed: visible, with a title, not tool windows / windows owned by another window,
+; not on another virtual desktop (DWM cloaked), and none of ALTRun's own windows.
+; The window list is reused within a search; typing within 1 s doesn't enumerate again.
 ;
-; 设置 (ALTRun.json -> Features.Windows): Enabled / Keyword / InDefaultResults
+; Settings (ALTRun.json -> Features.Windows): Enabled / Keyword / InDefaultResults
 ;===============================================================================
 
 class WindowProvider {
@@ -34,7 +34,7 @@ class WindowProvider {
         scores := Map()
         for index, window in windows {
             score := (needle = "") ? 100 - index * 0.01 : FuzzyMatcher.BestKey(needle, window.Keys)
-            if (score > 0 && (exclusive || score >= 60))                   ; 默认结果里只要匹配得好的, 免得一堆浏览器标签页
+            if (score > 0 && (exclusive || score >= 60))                   ; only good matches in the default results, to avoid a pile of browser tabs
                 scores[index] := score
         }
         results := []
@@ -55,7 +55,7 @@ class WindowProvider {
         })
     }
 
-    ; 任务栏上的窗口, 按前后顺序 (最前面的在前): [{Hwnd, Title, Process, Path, Keys}]
+    ; The windows on the taskbar, in z-order (frontmost first): [{Hwnd, Title, Process, Path, Keys}]
     static List() {
         if (A_TickCount - WindowProvider._listTime < WindowProvider.CacheMs)
             return WindowProvider._list
@@ -79,21 +79,21 @@ class WindowProvider {
         return list
     }
 
-    ; 和任务栏一样的判断: 可见、有标题、不是工具窗口、没有所有者、没有被 DWM 隐藏 (别的虚拟桌面 / 挂起的商店应用)
+    ; The same test as the taskbar: visible, with a title, not a tool window, no owner, not hidden by DWM (another virtual desktop / a suspended Store app)
     static IsSwitchable(hwnd) {
         try {
             if !DllCall("IsWindowVisible", "Ptr", hwnd) || WinGetTitle("ahk_id " hwnd) = ""
                 return false
             exStyle := WinGetExStyle("ahk_id " hwnd)
-            if (exStyle & 0x80) && !(exStyle & 0x40000)                     ; WS_EX_TOOLWINDOW, 除非 WS_EX_APPWINDOW
+            if (exStyle & 0x80) && !(exStyle & 0x40000)                     ; WS_EX_TOOLWINDOW, unless WS_EX_APPWINDOW
                 return false
-            if DllCall("GetWindow", "Ptr", hwnd, "UInt", 4, "Ptr") && !(exStyle & 0x40000)   ; GW_OWNER: 对话框等
+            if DllCall("GetWindow", "Ptr", hwnd, "UInt", 4, "Ptr") && !(exStyle & 0x40000)   ; GW_OWNER: dialogs etc.
                 return false
             cloaked := 0
             DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 14, "UInt*", &cloaked, "UInt", 4)   ; DWMWA_CLOAKED
             if cloaked
                 return false
-            if (WinGetPID("ahk_id " hwnd) = DllCall("GetCurrentProcessId"))  ; ALTRun 自己的窗口
+            if (WinGetPID("ahk_id " hwnd) = DllCall("GetCurrentProcessId"))  ; ALTRun's own windows
                 return false
             return WinGetClass("ahk_id " hwnd) != "Progman"
         }

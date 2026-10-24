@@ -1,20 +1,20 @@
 ;===============================================================================
-; TakeScreenshots.ahk - 自动生成 README / Wiki 用的界面截图 (AutoHotkey v2)
+; TakeScreenshots.ahk - makes the UI screenshots for the README / Wiki (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 在一个临时文件夹里准备好演示用的 ALTRun (示例设置、自定义命令、应用快捷方式、示例文件),
-; 逐个场景启动 ALTRun, 输入搜索内容, 把窗口截成 PNG。不改动你自己的 ALTRun.json。
-; 截图用英文界面, 演示数据都是虚构的通用内容 (不要放个人或工作相关的信息)。
+; Prepares a demo ALTRun in a temporary folder (sample settings, custom commands, application shortcuts, sample files),
+; starts ALTRun for each scene, types the search, and saves the window as a PNG. Your own ALTRun.json isn't touched.
+; Screenshots use the English UI, and the demo data is made-up generic content (nothing personal or work-related).
 ;
-;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景名... | -场景名...]
+;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [output folder] [scene... | -scene...]
 ;
-; 输出文件夹默认 docs\images\screenshots; 不写场景名 = 全部场景; "-场景名" = 除了这些场景;
-; "normal-scale" / "-normal-scale" = Shots.NormalScale 里的场景 / 除了它们。
-; "demo" 场景不截单张图, 而是把一段操作的每一帧存到 %Temp%\ALTRunDemoFrames (frames.txt 每行: 文件名 Tab 停留的毫秒数
-; Tab 这一步按的键),
-; 由 MakeDemo.py 合成 README 首页的动图 demo.png。截图的圆角由 RoundCorners.py 加上; 截图前 SetDisplay.ps1 把屏幕调成
-; 1920 x 1080、150% 缩放 (见 screenshots.yml), 下面的坐标都按 Shots.Scale 放大。偏好设置和 Quick Switch 的截图
-; (Shots.NormalScale) 在 150% 下太大, screenshots.yml 再把缩放调回 100% 单独截一次。
-; GitHub Actions 的 "Screenshots" 工作流在 Windows 上运行它, 并把截图提交回分支。
+; The output folder defaults to docs\images\screenshots; no scene names = all scenes; "-scene" = all but these;
+; "normal-scale" / "-normal-scale" = the scenes in Shots.NormalScale / all but them.
+; The "demo" scene isn't a single shot: every frame of a sequence goes to %Temp%\ALTRunDemoFrames (frames.txt, each line: file name Tab ms shown
+; Tab the key pressed for this step),
+; and MakeDemo.py turns them into the animation demo.png on the README front page. RoundCorners.py adds the rounded corners; before the shots SetDisplay.ps1 sets the screen to
+; 1920 x 1080 at 150% scaling (see screenshots.yml), and the coordinates below scale by Shots.Scale. The Preferences and Quick Switch shots
+; (Shots.NormalScale) are too big at 150%, so screenshots.yml sets the scaling back to 100% and takes them separately.
+; GitHub Actions' "Screenshots" workflow runs it on Windows and commits the screenshots back to the branch.
 ;===============================================================================
 #Requires AutoHotkey v2.0
 #SingleInstance Force
@@ -26,25 +26,25 @@ ExitApp(Shots.Failures)
 
 class Shots {
     static RepoDir  := Shots._FullPath(A_ScriptDir "\..\..")
-    static AppDir   := "C:\ALTRun"                                   ; 截图里显示的路径 (偏好设置 → 脚本) 简单好看
+    static AppDir   := "C:\ALTRun"                                   ; a short, tidy path shown in the screenshots (Preferences → Scripts)
     static OutDir   := ""
     static DemoDir  := ""
     static Pid      := 0
     static Failures := 0
-    static Scale    := A_ScreenDPI / 96                             ; 屏幕缩放 (150% = 1.5)
+    static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
 
     static NormalScale := ["quickswitch", "prefs-general", "prefs-appearance", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"]   ; 按 100% 截的场景 (见 screenshots.yml)
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"]   ; scenes shot at 100% (see screenshots.yml)
 
-    ; 场景名 -> [主题, 启动参数, 函数, 启动前准备数据的函数 (可选)]
+    ; scene name -> [theme, start arguments, function, function preparing data before start-up (optional)]
     static Scenes() {
         return [
             ["search",      "Light", "", () => Shots.Search("re")],
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
             ["files",       "Light", "", () => Shots.FileMode("report")],
-            ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; 按类型搜索: 只要文档 (TypeFilters 的 doc)
-            ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: 附带结构计算的两行
+            ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)
+            ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: with the two rows of structural calculation
             ["clipboard",   "Light", "", () => Shots.Search("clip "), () => Shots.WriteClipboard()],
             ["empty",       "Light", "", () => Shots.EmptyBox(), () => Shots.WritePinnedAndRecent()],
             ["browse",      "Light", "", () => Shots.Search(Shots.DemoDir "\Annual Report 2026\")],
@@ -59,14 +59,14 @@ class Shots {
             ["prefs-snippets",   "Light", "-Preferences 10", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences 13", () => Shots.Preferences()],
             ["prefs-scripts",    "Light", "-Preferences 14", () => Shots.Preferences()],
-            ["prefs-searchsources", "Light", "-Preferences 8", () => Shots.Preferences()],   ; Wiki: 文件搜索
+            ["prefs-searchsources", "Light", "-Preferences 8", () => Shots.Preferences()],   ; Wiki: file search
             ["prefs-keyboard",   "Light", "-Preferences 3", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
-            ["prefs-hotkeys",    "Light", "-Preferences 15", () => Shots.Preferences()],     ; Wiki: 自定义热键
-            ["prefs-quickswitch", "Light", "-Preferences 16", () => Shots.Preferences()],    ; Wiki: 对话框快速跳转
-            ["prefs-dialogpanel", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: 对话框文件夹面板
-            ["prefs-datestamp",  "Light", "-Preferences 18", () => Shots.Preferences()],     ; Wiki: 一键加日期
+            ["prefs-hotkeys",    "Light", "-Preferences 15", () => Shots.Preferences()],     ; Wiki: custom hotkeys
+            ["prefs-quickswitch", "Light", "-Preferences 16", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
+            ["prefs-dialogpanel", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
+            ["prefs-datestamp",  "Light", "-Preferences 18", () => Shots.Preferences()],     ; Wiki: date stamp
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
-            ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; 深色 + 显示密度 "紧凑" (其它截图都是新安装默认的 "常规")
+            ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
             ["theme-midnight",  "Midnight", "", () => Shots.Search("re")],
             ["theme-frost",     "Frost",    "", () => Shots.Search("re")],
@@ -109,16 +109,16 @@ class Shots {
             if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]))
                 continue
             Shots.Log("== " scene[1])
-            ; 结果行一直空白时重新启动 ALTRun 再试 (保险)。以前的原因: 画行时定时器插进来要求重画, 列表一直等着重画
-            ; (见 SearchWindow._OnCustomDraw, 现在自绘回调不可打断)
+            ; When the result rows stay blank, restart ALTRun and try again (a safeguard). The former cause: a timer slipping in while a row was painted asked for a repaint, and the list kept waiting for it
+            ; (see SearchWindow._OnCustomDraw; the custom-draw callback is no longer interruptible)
             Loop 4 {
                 try {
                     Shots.Launch(scene[2], scene[3], (scene.Length >= 5) ? scene[5] : "")
                     hwnd := scene[4]()
                     outFile := Shots.OutDir "\" scene[1] ".png"
-                    if (hwnd is Array)                                      ; 几个窗口 (对话框 + 文件夹面板) 截成一张
+                    if (hwnd is Array)                                      ; several windows (dialog + folder panel) in one shot
                         Shots.CaptureWindows(hwnd, outFile)
-                    else if (hwnd != "") {                                  ; "" = demo: 每一帧已经存好
+                    else if (hwnd != "") {                                  ; "" = demo: every frame is already saved
                         if (!Shots.WaitPainted(hwnd, 20) && A_Index < 4) {
                             Shots.Diagnose(hwnd)
                             Shots.Log("relaunching")
@@ -140,7 +140,7 @@ class Shots {
     }
 
     ;---------------------------------------------------------------------------
-    ; 准备
+    ; Preparation
     ;---------------------------------------------------------------------------
     static PrepareApp() {
         try DirDelete(Shots.AppDir, true)
@@ -148,7 +148,7 @@ class Shots {
         FileCopy(Shots.RepoDir "\ALTRun.ahk", Shots.AppDir "\ALTRun.ahk")
         for folder in ["Lib", "Src", "Resources"]
             DirCopy(Shots.RepoDir "\" folder, Shots.AppDir "\" folder)
-        ; 脚本扩展的示例 (偏好设置 → 脚本 的列表)
+        ; examples for the Scripts extension (the list in Preferences → Scripts)
         DirCreate(Shots.AppDir "\Scripts")
         FileAppend("; @altrun.title    Ping host`n; @altrun.keyword  ping`n; @altrun.argument host name`n; @altrun.mode     output`n"
             . "RunWait('ping ' A_Args[1])`n", Shots.AppDir "\Scripts\Ping.ahk", "UTF-8")
@@ -156,7 +156,7 @@ class Shots {
             , Shots.AppDir "\Scripts\Today.ps1", "UTF-8")
     }
 
-    ; 通用的示例文件夹
+    ; generic sample folders
     static PrepareDemoFiles() {
         drive := "C:"
         Shots.DemoDir := drive "\Demo Projects"
@@ -178,12 +178,12 @@ class Shots {
             DirCreate(dir)
             FileAppend("", Shots.DemoDir "\" relative)
         }
-        ; 应用: 只索引这里的快捷方式, 结果和机器上装了什么无关
-        ; (记事本、命令提示符等 Windows 工具是 ALTRun 内置的系统命令, 不用再建)
+        ; Applications: only the shortcuts here are indexed, so the results don't depend on what the machine has installed
+        ; (Notepad, Command Prompt and other Windows tools are ALTRun's built-in system commands, no need to create them)
         appDir := drive "\ALTRun Demo Apps"
         try DirDelete(appDir, true)
         DirCreate(appDir)
-        ; 中文名称的记事本: 演示拼音首字母搜索 (jsb)
+        ; Notepad with a Chinese name: demonstrates pinyin initial search (jsb)
         for shortcut in [["Remote Desktop Connection", A_WinDir "\System32\mstsc.exe"],
                          ["记事本", A_WinDir "\System32\notepad.exe"],
                          ["Microsoft Edge", A_ProgramFiles " (x86)\Microsoft\Edge\Application\msedge.exe"]]
@@ -193,13 +193,13 @@ class Shots {
     }
     static AppsDir := ""
 
-    ; 当前的设置版本 (AppSettings.CurrentVersion)。写旧版本号的话 ALTRun 启动时会升级设置, 升级提示显示期间不弹出搜索窗口,
-    ; 每个场景都找不到窗口 (设置版本升到 5 以后就是这样)
+    ; The current settings version (AppSettings.CurrentVersion). With an older version ALTRun upgrades the settings at start-up and doesn't show the search window while the upgrade notice is up,
+    ; so no scene would find the window (that is what happened after the settings version reached 5)
     static SchemaVersion() {
         return RegExMatch(FileRead(Shots.RepoDir "\Src\Core\AppSettings.ahk", "UTF-8"), "static CurrentVersion\s*:=\s*(\d+)", &m) ? Integer(m[1]) : 5
     }
 
-    ; theme: 主题名, 可以加 "|显示密度" (例如 "Dark|Compact"); 不写时用新安装的默认 "Normal"
+    ; theme: theme name, optionally with "|density" (e.g. "Dark|Compact"); the new install default "Normal" if not given
     static WriteSettings(theme) {
         demo := Shots.DemoDir
         parts := StrSplit(theme, "|"), theme := parts[1], density := (parts.Length >= 2) ? parts[2] : "Normal"
@@ -214,7 +214,7 @@ class Shots {
                 "Recent", Map("Pinned", Shots.Pinned, "RecentCount", 5),
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0)
             ),
-            "Extensions", Map("QuickSwitch", Map("RecentFolders", 3)),         ; 文件夹面板只列 WriteRecentFolders 建的最近项目
+            "Extensions", Map("QuickSwitch", Map("RecentFolders", 3)),         ; the folder panel only lists the recent items WriteRecentFolders created
             "CustomCommands", [
                 Map("Title", "Website Redesign", "Type", "Folder", "Target", demo "\Website Redesign", "Arguments", "", "Keyword", ""),
                 Map("Title", "Annual Report 2026", "Type", "Folder", "Target", demo "\Annual Report 2026", "Arguments", "", "Keyword", ""),
@@ -224,13 +224,13 @@ class Shots {
                 Map("Title", "ALTRun on GitHub", "Type", "Url", "Target", "https://github.com/zhugecaomao/ALTRun", "Arguments", "", "Keyword", "altrun")
             ]
         )
-        try DirDelete(Shots.AppDir "\Data", true)                           ; 每个场景从空的索引和学习记录开始
-        try FileDelete(Shots.AppDir "\ALTRun.json")                         ; 旧版本的位置
+        try DirDelete(Shots.AppDir "\Data", true)                           ; each scene starts with an empty index and learned ranking
+        try FileDelete(Shots.AppDir "\ALTRun.json")                         ; the location of old versions
         DirCreate(Shots.AppDir "\Data")
         FileAppend(JSON.Stringify(settings, 4), Shots.AppDir "\Data\ALTRun.json", "UTF-8")
     }
 
-    ; 空搜索框里置顶的项目 (只在 "empty" 场景里有, 见 WritePinnedAndRecent)
+    ; items pinned to the empty search box (only in the "empty" scene, see WritePinnedAndRecent)
     static Pinned := []
 
     static Entry(title, kind, target) {
@@ -239,7 +239,7 @@ class Shots {
                  , "Icon", "", "Uid", kind ":" StrLower(target))
     }
 
-    ; 置顶两项 + 最近打开的三项 (Knowledge.json), 空搜索框里显示
+    ; Two pinned + three recently opened items (Knowledge.json), shown in the empty search box
     static WritePinnedAndRecent() {
         demo := Shots.DemoDir
         Shots.Pinned := [Shots.Entry("Annual Report 2026", "folder", demo "\Annual Report 2026")
@@ -252,7 +252,7 @@ class Shots {
         FileAppend(JSON.Stringify(Map("Picks", Map(), "QueryPicks", Map(), "History", [], "Recent", recent)), Shots.AppDir "\Data\Knowledge.json", "UTF-8")
     }
 
-    ; Quick Switch 的 "最近用过的文件夹": 在 Windows 的最近使用的项目里放三个示例文件的快捷方式 (比别的都新)
+    ; Quick Switch's "recently used folders": shortcuts to three sample files in Windows' Recent items (newer than all others)
     static WriteRecentFolders() {
         recent := A_AppData "\Microsoft\Windows\Recent"
         DirCreate(recent)
@@ -264,7 +264,7 @@ class Shots {
         }
     }
 
-    ; 动图: 剪贴板历史里有几条记录; 关掉结构计算 (计算器只显示结果, 不附带梁主筋 / 配筋面积, 一般用户看不懂)
+    ; Animation: a few entries in the clipboard history; structural calculation off (the calculator shows only the result, without beam bars / steel area, which most users wouldn't understand)
     static PrepareDemo() {
         Shots.WriteClipboard()
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
@@ -274,7 +274,7 @@ class Shots {
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
 
-    ; 剪贴板历史: 几条常见的文字, 其中一条置顶
+    ; Clipboard history: a few common texts, one of them pinned
     static WriteClipboard() {
         entries := [], stamp := A_Now
         for item in [["SELECT name, total FROM orders WHERE total > 100", 0],
@@ -290,8 +290,8 @@ class Shots {
         FileAppend(JSON.Stringify(Map("Entries", entries)), Shots.AppDir "\Data\ClipboardHistory.json", "UTF-8")
     }
 
-    ; 纯色背景铺满屏幕, 挡住桌面上的其它窗口 (半透明主题会透出后面的内容)。
-    ; 置顶才能盖住控制台窗口; 搜索窗口也是置顶的, 后显示的在上面
+    ; A plain background covering the screen hides other windows on the desktop (translucent themes would show what is behind).
+    ; It must be topmost to cover the console window; the search window is topmost too, and the one shown later is on top
     static ShowBackdrop() {
         backdrop := Gui("-Caption +ToolWindow +AlwaysOnTop -DPIScale")
         backdrop.BackColor := "8A9BB0"
@@ -300,17 +300,17 @@ class Shots {
     }
     static Backdrop := ""
 
-    ; 截图前把背景板排到这个窗口正下方: 运行机上别的置顶窗口 (例如运行日志) 可能插在两者之间,
-    ; 半透明的主题 (Frost) 截图时会透出它的文字
+    ; Before the shot, put the backdrop right below this window: another topmost window on the runner (e.g. the run log) may slip in between,
+    ; and a translucent theme (Frost) would show its text in the shot
     static BackdropBehind(hwnd) {
         if !IsObject(Shots.Backdrop)
             return
         DllCall("SetWindowPos", "Ptr", Shots.Backdrop.Hwnd, "Ptr", hwnd, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
-        Sleep(100)                                                          ; 等 DWM 重新合成
+        Sleep(100)                                                          ; wait for DWM to compose again
     }
 
     ;---------------------------------------------------------------------------
-    ; 启动 / 关闭
+    ; Start / close
     ;---------------------------------------------------------------------------
     static Launch(theme, args := "", prepare := "") {
         Shots.WriteSettings(theme)
@@ -318,7 +318,7 @@ class Shots {
             prepare()
         Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" ' args, Shots.AppDir, , &pid)
         Shots.Pid := pid
-        ; 启动时屏幕上方的 "ALTRun 已在运行" 提示 3 秒后消失
+        ; the "ALTRun is already running" notice at the top of the screen at start-up disappears after 3 s
         Sleep(4500)
     }
 
@@ -340,11 +340,11 @@ class Shots {
     static SetQuery(hwnd, text) {
         ControlSetText(text, "Edit1", hwnd)
         ControlSend("{End}", "Edit1", hwnd)
-        Sleep(2000)                                                         ; 搜索 + 图标异步载入
+        Sleep(2000)                                                         ; search + icons loaded asynchronously
     }
 
     ;---------------------------------------------------------------------------
-    ; 场景
+    ; Scenes
     ;---------------------------------------------------------------------------
     static Search(text) {
         hwnd := Shots.SearchWindow()
@@ -361,7 +361,7 @@ class Shots {
 
     static FileMode(text) {
         hwnd := Shots.SearchWindow()
-        Sleep(4000)                                                         ; 内置文件索引
+        Sleep(4000)                                                         ; the built-in file index
         ControlSetText("", "Edit1", hwnd)
         ControlSend("{Space}", "Edit1", hwnd)
         Sleep(300)
@@ -370,7 +370,7 @@ class Shots {
         return hwnd
     }
 
-    ; 按类型搜索 (doc report): 等内置文件索引建好再输入
+    ; Search by type (doc report): type after the built-in file index is ready
     static TypeSearch(text) {
         hwnd := Shots.SearchWindow()
         Sleep(4000)
@@ -378,29 +378,29 @@ class Shots {
         return hwnd
     }
 
-    ; 剪贴板历史记录复制时的前台程序: 从记事本复制, 而不是截图脚本自己
-    ; 空搜索框: 启动时打开的窗口, 等图标载入
+    ; the clipboard history records the foreground program at copy time: copy from Notepad, not from the screenshot script itself
+    ; Empty search box: the window opened at start-up, after the icons load
     static EmptyBox() {
         hwnd := Shots.SearchWindow()
         Sleep(2500)
         return hwnd
     }
 
-    ; 操作后的提示 (HUD): 回车复制计算结果, 搜索窗口关闭, 提示显示在屏幕中间偏下
+    ; A notice after an action (HUD): Enter copies the calculation result, the search window closes, and the notice shows low in the middle of the screen
     static Hud(text) {
         hwnd := Shots.Search(text)
         ControlSend("{Enter}", "Edit1", hwnd)
         hud := WinWait("ALTRun HUD ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 3)
         if !hud
             throw Error("HUD not shown")
-        Sleep(300)                                                          ; 淡入
+        Sleep(300)                                                          ; fade in
         return hud
     }
 
-    ; Quick Switch: 打开两个资源管理器窗口, 另一个程序 (OpenDialog.ahk) 弹出 "打开" 对话框, 下面贴着文件夹面板。
-    ; 屏幕可能只有 1024 x 768: 对话框放在上面, 面板放得下
+    ; Quick Switch: two Explorer windows open, another program (OpenDialog.ahk) shows an "Open" dialog with the folder panel attached below.
+    ; the screen may be only 1024 x 768: the dialog goes at the top so the panel fits
     static QuickSwitch() {
-        try ControlSend("{Esc}", "Edit1", Shots.SearchWindow())            ; 启动时打开的搜索窗口先关掉
+        try ControlSend("{Esc}", "Edit1", Shots.SearchWindow())            ; close the search window opened at start-up first
         for folder in ["Website Redesign", "Annual Report 2026"]
             Run('explorer.exe "' Shots.DemoDir "\" folder '"')
         Sleep(3000)
@@ -412,42 +412,42 @@ class Shots {
         dialog := WinWait("Open ahk_class #32770 ahk_pid " pid, , 10)
         if !dialog
             throw Error("Open dialog not shown")
-        WinSetAlwaysOnTop(1, dialog)                                        ; 在背景之上
+        WinSetAlwaysOnTop(1, dialog)                                        ; above the backdrop
         k := Shots.Scale
         WinMove(Round(160 * k), Round(20 * k), Round(720 * k), Round(440 * k), dialog)
         WinActivate(dialog)
         panel := WinWait("ALTRun Quick Switch ahk_pid " Shots.Pid, , 5)
         if !panel
             throw Error("Quick Switch panel not shown")
-        Sleep(1500)                                                         ; 面板的图标和位置
+        Sleep(1500)                                                         ; the panel's icons and position
         return [dialog, panel]
     }
     static HelperPid := 0
 
-    ; 关掉 QuickSwitch 场景打开的对话框和资源管理器窗口
+    ; Closes the dialog and Explorer windows the QuickSwitch scene opened
     static CloseHelpers() {
         for pid in [Shots.HelperPid, Shots.NotepadPid]
             if pid
                 try ProcessClose(pid)
         Shots.HelperPid := 0, Shots.NotepadPid := 0
-        for window in Shots.HiddenWindows                                   ; Demo 藏起来的终端窗口
+        for window in Shots.HiddenWindows                                   ; the terminal window the demo hid
             try WinShow(window)
         Shots.HiddenWindows := []
         for window in WinGetList("ahk_class CabinetWClass")
             try WinClose(window)
     }
 
-    ; README 首页的动图: 7 个场景 (应用、操作面板、文件、剪贴板历史、窗口切换、计算器、系统命令), 每一步把同一块屏幕区域
-    ; 存成一帧, 记下这一步按的键。MakeDemo.py 再取出窗口, 放到模糊的背景上, 右下角画出按键。返回 "" (不另外截图)
+    ; The animation on the README front page: 7 scenes (applications, actions panel, files, clipboard history, window switching, calculator, system commands); each step saves the same screen area
+    ; as a frame, noting the key pressed for it. MakeDemo.py then cuts out the window, puts it on a blurred background and draws the keys at the bottom right. Returns "" (no separate shot)
     static DemoFrames := A_Temp "\ALTRunDemoFrames"
     static NotepadPid := 0, HiddenWindows := []
     static Demo() {
         hwnd := Shots.SearchWindow()
-        for folder in ["Website Redesign", "Annual Report 2026"]           ; 窗口切换要有窗口可切 (都在背景后面)
+        for folder in ["Website Redesign", "Annual Report 2026"]           ; window switching needs windows to switch to (all behind the backdrop)
             Run('explorer.exe "' Shots.DemoDir "\" folder '"')
         Run("notepad.exe", , , &pid)
         Shots.NotepadPid := pid
-        ; GitHub 虚拟机上运行截图的终端窗口也在任务栏上, 窗口切换会列出它: 先藏起来, 截完再显示
+        ; On the GitHub VM the terminal window running the shots is on the taskbar too and window switching would list it: hide it first, show it again afterwards
         for title in ["ahk_exe WindowsTerminal.exe", "ahk_class ConsoleWindowClass", "ahk_class CASCADIA_HOSTING_WINDOW_CLASS"]
             for window in WinGetList(title)
                 try WinHide(window), Shots.HiddenWindows.Push(window)
@@ -460,7 +460,7 @@ class Shots {
         r := Shots.FrameRect(hwnd)
         pad := Round(24 * Shots.Scale)
         region := {X: Max(0, r.X - pad), Y: Max(0, r.Y - pad), W: r.W + 2 * pad, H: Min(A_ScreenHeight - Max(0, r.Y - pad), Round(640 * Shots.Scale))}
-        state := {Frames: "", Count: 0}                                     ; 内部函数改外面的变量: 通过对象传
+        state := {Frames: "", Count: 0}                                     ; inner functions change outer variables: passed through an object
         frame(ms, keys := "") {
             name := Format("frame-{:02}.png", ++state.Count)
             hbm := Shots.CaptureRect(region.X, region.Y, region.W, region.H)
@@ -477,14 +477,14 @@ class Shots {
             ControlSetText("", "Edit1", hwnd)
             Sleep(400)
         }
-        frame(900, "Alt+Space")                                             ; 刚呼出的空搜索框
+        frame(900, "Alt+Space")                                             ; the empty search box just shown
         type("r", 350), type("e", 350), type("p", 1500)
         ControlSend("{Right}", "Edit1", hwnd), Sleep(1200), frame(1800, "→")
         ControlSend("{Esc}", "Edit1", hwnd), Sleep(300), clear()
         ControlSend("{Space}", "Edit1", hwnd), Sleep(300)
         ControlSend("{Text}report", "Edit1", hwnd), Sleep(1200), frame(2000, "Space")
-        clear(), ControlSend("{Backspace}", "Edit1", hwnd), Sleep(300)      ; 回到普通搜索
-        WinActivate(hwnd), Send("^!c"), Sleep(1500), frame(2000, "Ctrl+Alt+C")   ; 剪贴板历史的快捷键
+        clear(), ControlSend("{Backspace}", "Edit1", hwnd), Sleep(300)      ; back to normal search
+        WinActivate(hwnd), Send("^!c"), Sleep(1500), frame(2000, "Ctrl+Alt+C")   ; the clipboard history shortcut
         clear(), type("w ", 2000)
         clear(), type("1200*1.09", 1800)
         clear(), type("lock", 1800)
@@ -497,9 +497,9 @@ class Shots {
         hwnd := WinWait("ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
         if !hwnd
             throw Error("preferences window not found")
-        WinSetAlwaysOnTop(1, hwnd)                                          ; 在背景之上
+        WinSetAlwaysOnTop(1, hwnd)                                          ; above the backdrop
         r := Shots.FrameRect(hwnd)
-        if (r.Y < 0)                                                        ; 150% 时窗口很高, 居中后标题栏会跑到屏幕上面
+        if (r.Y < 0)                                                        ; at 150% the window is tall, and centering would push its title bar above the screen
             WinMove(, 0, , , hwnd)
         WinActivate(hwnd)
         Sleep(1500)
@@ -507,9 +507,9 @@ class Shots {
     }
 
     ;---------------------------------------------------------------------------
-    ; 截图: 从屏幕复制窗口区域 (包括半透明效果), 用 GDI+ 存成 PNG
+    ; Screenshot: copies the window area from the screen (with translucency) and saves it as a PNG with GDI+
     ;---------------------------------------------------------------------------
-    ; 等到列表区域不再是一片空白 (窗口忙, 还没画出结果), 最多等 seconds 秒
+    ; Waits until the list area is no longer blank (the window is busy and hasn't drawn the results yet), at most seconds s
     static WaitPainted(hwnd, seconds) {
         start := A_TickCount
         Loop {
@@ -543,7 +543,7 @@ class Shots {
         Shots.Log("saved " file " (" w "x" h ")")
     }
 
-    ; 列表画不出来时, 把 ALTRun 的所有窗口 (包括错误对话框的内容) 和列表状态写到日志
+    ; when the list can't be drawn, log all ALTRun windows (including the contents of error dialogs) and the list state
     static Diagnose(hwnd) {
         try Shots.Log("list: items=" SendMessage(0x1004, 0, 0, "SysListView321", hwnd) " visible=" ControlGetVisible("SysListView321", hwnd))
         DetectHiddenWindows(false)
@@ -554,19 +554,19 @@ class Shots {
         }
     }
 
-    ; 窗口在屏幕上看得见的范围 {X, Y, W, H}
+    ; The window's visible area on screen {X, Y, W, H}
     static FrameRect(hwnd) {
         rect := Buffer(16, 0)
         if (DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16) = 0 && NumGet(rect, 8, "Int") > NumGet(rect, 0, "Int")) {
-            x := NumGet(rect, 0, "Int"), y := NumGet(rect, 4, "Int")         ; DWMWA_EXTENDED_FRAME_BOUNDS: 不含看不见的边框
+            x := NumGet(rect, 0, "Int"), y := NumGet(rect, 4, "Int")         ; DWMWA_EXTENDED_FRAME_BOUNDS: without the invisible border
             return {X: x, Y: y, W: NumGet(rect, 8, "Int") - x, H: NumGet(rect, 12, "Int") - y}
         }
         WinGetPos(&x, &y, &w, &h, hwnd)
         return {X: x, Y: y, W: w, H: h}
     }
 
-    ; 几个窗口截成一张 (对话框 + 文件夹面板): 先按给的顺序放到最前面 (后面的在上面), 再把背景板放到第一个的正下方。
-    ; 以前没有排: 上一个场景把背景板排到搜索窗口下面之后, 对话框被背景板挡住, 截出来只有面板
+    ; Several windows in one shot (dialog + folder panel): bring them to the front in the given order (later ones on top), then put the backdrop right below the first.
+    ; Without this ordering: after the previous scene put the backdrop below the search window, the dialog was covered by it and only the panel came out
     static CaptureWindows(hwnds, file) {
         for hwnd in hwnds
             DllCall("SetWindowPos", "Ptr", hwnd, "Ptr", -1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; HWND_TOPMOST, SWP_NOSIZE | SWP_NOMOVE | SWP_NOACTIVATE
@@ -588,7 +588,7 @@ class Shots {
         return Shots.CaptureRect(r.X, r.Y, w, h, &blank)
     }
 
-    ; 从屏幕复制一块区域, 返回 HBITMAP (调用的人 DeleteObject); blank: 搜索窗口的列表区域还是一片空白
+    ; Copies an area of the screen and returns an HBITMAP (the caller calls DeleteObject); blank: the search window's list area is still blank
     static CaptureRect(x, y, w, h, &blank := false) {
         hdcScreen := DllCall("GetDC", "Ptr", 0, "Ptr")
         hdcMem := DllCall("CreateCompatibleDC", "Ptr", hdcScreen, "Ptr")
@@ -602,12 +602,12 @@ class Shots {
         return hbm
     }
 
-    ; 搜索窗口: 输入框以下 (约 80 像素起) 每隔几个像素取一个点, 全都一样 = 结果还没画出来
+    ; search window: points every few pixels below the input box (from about 80 pixels down) all the same = results not drawn yet
     static _ListIsBlank(hdc, w, h) {
         if (h < Round(120 * Shots.Scale))
             return false
         top := Round(80 * Shots.Scale)
-        bottom := h - 4 - Round(40 * Shots.Scale)                           ; 不看底部的状态栏 (颜色不同, 以前因此总当作已经画好)
+        bottom := h - 4 - Round(40 * Shots.Scale)                           ; the status bar at the bottom isn't looked at (its different color used to make it always count as drawn)
         first := DllCall("GetPixel", "Ptr", hdc, "Int", Round(60 * Shots.Scale), "Int", top, "UInt")
         y := top
         while (y < bottom) {

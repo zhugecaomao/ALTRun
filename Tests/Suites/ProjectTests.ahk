@@ -37,7 +37,7 @@ class ProjectTests {
         TestRunner.Equal("Layers." folder " uses no upper layer", found, "")
     }
 
-    ; 所有 Edit 控件都要写明行数 (r1 / r8 ...): 不写时长文字会让 AHK 自动变成多行并加高, 盖住下面的控件
+    ; Every Edit control must give a row count (r1 / r8 ...): without it long text makes AHK turn it multi-line and taller, covering the controls below
     static EditRows() {
         missing := ""
         for folder in ["Src", "Lib"] {
@@ -51,8 +51,8 @@ class ProjectTests {
         TestRunner.Equal("EditRows.all edits set rows", missing, "")
     }
 
-    ; 英文原文都不为空; 每个语言文件 (Resources\Lang\*.json) 每个键都有翻译、没有多余的键、占位符 {1} {2} ... 和英文一样;
-    ; 读语言文件: 代码的写法、_fallback、_font、文件不在或缺键时退回
+    ; No empty English text; every key in every language file (Resources\Lang\*.json) is translated, no extra keys, placeholders {1} {2} ... as in English;
+    ; reading language files: code forms, _fallback, _font, falling back when a file or key is missing
     static I18nLanguages() {
         eq := (n, a, e) => TestRunner.Equal("I18nLanguages." n, a, e)
         for key, text in I18n.Strings
@@ -104,7 +104,7 @@ class ProjectTests {
         eq("zh-TW args", I18n.T("Clipboard.ClearHint", 3), "3 筆")
         I18n.Init("en")
         eq("en", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" ThemeManager.FontName(), "en|General|Segoe UI")
-        I18n.Init("ko-KR")                                                  ; 没有的语言: 英文
+        I18n.Init("ko-KR")                                                  ; a language that doesn't exist: English
         eq("unknown", I18n.Lang "|" I18n.T("Prefs.Page.General"), "en|General")
 
         savedDir := I18n.LangDir
@@ -113,25 +113,25 @@ class ProjectTests {
         DirCreate(dir)
         I18n.LangDir := dir
         FileCopy(savedDir "\zh-CN.json", dir "\zh-CN.json")
-        I18n.Init("zh-TW")                                                  ; 繁体的文件不在: 简体中文
+        I18n.Init("zh-TW")                                                  ; the Traditional Chinese file is missing: Simplified Chinese
         eq("no zh-TW file", I18n.Lang "|" I18n.T("Prefs.Page.General"), "zh-CN|通用")
         FileAppend('{"_name": "繁體中文", "_font": "Test Font", "_fallback": "zh-CN", "Prefs.Page.General": "一般"}', dir "\zh-TW.json", "UTF-8")
-        I18n.Init("zh-TW")                                                  ; 缺的键: 先找 _fallback, 再用英文
+        I18n.Init("zh-TW")                                                  ; missing keys: _fallback first, then English
         eq("fallback", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" I18n.T("Prefs.Page.Appearance") "|" ThemeManager.FontName(), "zh-TW|一般|外观|Test Font")
         FileAppend('{"_name": "Test", "_fallback": "xx", "Prefs.Page.General": "Allgemein"}', dir "\de.json", "UTF-8")
-        I18n.Init("de-DE")                                                  ; 只有语言部分的文件; _fallback 的文件不在: 英文
+        I18n.Init("de-DE")                                                  ; a file for the language part only; the _fallback file missing: English
         eq("base language", I18n.Lang "|" I18n.T("Prefs.Page.General") "|" I18n.T("Prefs.Page.Appearance") "|" ThemeManager.FontName(), "de|Allgemein|Appearance|Segoe UI")
         eq("list from folder", I18n.Languages().Length, 4)
         FileDelete(dir "\zh-CN.json")
         FileAppend("{broken", dir "\zh-CN.json", "UTF-8")
-        I18n.Init("zh-CN")                                                  ; 读不了: 英文
+        I18n.Init("zh-CN")                                                  ; can't be read: English
         eq("broken file", I18n.Lang "|" I18n.T("Prefs.Page.General"), "en|General")
         I18n.LangDir := savedDir
         DirDelete(dir, true)
         I18n.Init(savedLang)
     }
 
-    ; 每条界面文字都有代码用到: 键名原样出现在源码里, 或者属于按名称拼出来的那几组 (Theme.<主题名> 等)
+    ; Every UI text is used by the code: the key appears as is in the source, or belongs to one of the groups built from names (Theme.<theme name> etc.)
     static I18nUnused() {
         source := ""
         Loop Files, A_ScriptDir "\..\Src\*.ahk", "R"
@@ -150,8 +150,8 @@ class ProjectTests {
         TestRunner.Equal("I18nUnused", unused, "")
     }
 
-    ; Wiki 中英两套页面 (英文 Usage / 中文 Usage-zh): 每页都有中文页, 页面里的 Wiki 链接都指向存在的页面,
-    ; 程序里打开的帮助页 (速查表、偏好设置的 F1) 两种语言都有; 不再有旧的 en- 页面 (过渡页由 wiki.yml 发布时生成)
+    ; Wiki pages in English and Chinese (English Usage / Chinese Usage-zh): every page has a Chinese page, Wiki links in pages point to pages that exist,
+    ; and the help pages the program opens (cheat sheet, F1 in Preferences) exist in both languages; no old en- pages any more (wiki.yml generates the redirect pages when publishing)
     static WikiPages() {
         dir := A_ScriptDir "\..\docs\wiki\"
         pages := Map()
@@ -171,7 +171,7 @@ class ProjectTests {
         broken := ""
         for page in pages {
             text := FileRead(dir page ".md", "UTF-8"), pos := 1
-            while (pos := RegExMatch(text, "\]\(([A-Za-z][\w-]*)(#[^)]*)?\)", &m, pos)) {   ; [文字](Page) 或 [文字](Page#标题)
+            while (pos := RegExMatch(text, "\]\(([A-Za-z][\w-]*)(#[^)]*)?\)", &m, pos)) {   ; [text](Page) or [text](Page#heading)
                 pos += m.Len
                 if !pages.Has(m[1])
                     broken .= page " -> " m[1] "; "
@@ -190,7 +190,7 @@ class ProjectTests {
         TestRunner.Equal("WikiPages.help pages exist in both languages", missing, "")
     }
 
-    ; CHANGELOG.md 的每个版本标题都有链接 (文件末尾的 [版本]: 网址), "未发布" 比较的是最新发布的版本
+    ; Every version heading in CHANGELOG.md has a link ([version]: URL at the end of the file), and "未发布" compares against the latest release
     static ChangelogLinks() {
         text := FileRead(A_ScriptDir "\..\CHANGELOG.md", "UTF-8")
         missing := "", newest := "", pos := 1
@@ -206,14 +206,14 @@ class ProjectTests {
         TestRunner.True("ChangelogLinks.newest is App.Version", newest = App.Version)
     }
 
-    ; 编译信息里的版本号 (ALTRun.ahk 的 ;@Ahk2Exe-SetVersion) 要和 App.Version 一致
+    ; The version in the compile info (;@Ahk2Exe-SetVersion in ALTRun.ahk) must match App.Version
     static ReleaseVersion() {
         main := FileRead(A_ScriptDir "\..\ALTRun.ahk", "UTF-8")
         RegExMatch(main, "m);@Ahk2Exe-SetVersion\s+(\S+)", &m)
         TestRunner.Equal("ReleaseVersion.exe version = App.Version", IsObject(m) ? m[1] : "", App.Version)
-        RegExMatch(main, "m);@Ahk2Exe-SetDescription\s+(.+?)\s*$", &m)                ; Windows 用它当显示名 (通知、任务管理器), 只写软件名
+        RegExMatch(main, "m);@Ahk2Exe-SetDescription\s+(.+?)\s*$", &m)                ; Windows uses it as the display name (notifications, Task Manager): only the software's name
         TestRunner.Equal("ReleaseVersion.exe description = App.Name", IsObject(m) ? m[1] : "", App.Name)
-        TestRunner.True("ReleaseVersion.date format", RegExMatch(App.Version, "^\d{4}\.\d{2}\.\d{2}(\.\d+)?$"))   ; 同一天再发布: 2026.09.30.1
+        TestRunner.True("ReleaseVersion.date format", RegExMatch(App.Version, "^\d{4}\.\d{2}\.\d{2}(\.\d+)?$"))   ; a second release on the same day: 2026.09.30.1
         TestRunner.True("ReleaseVersion.same-day release is newer", UpdateChecker.Compare("2026.09.30.1", "2026.09.30") > 0 && UpdateChecker.Compare("2026.10.01", "2026.09.30.2") > 0)
     }
 }

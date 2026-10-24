@@ -1,20 +1,20 @@
 ;===============================================================================
-; HttpGet.ahk - 在后台下载网页内容, 下载期间程序照常响应 (AutoHotkey v2)
+; HttpGet.ahk - downloads web content in the background; the program keeps responding meanwhile (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; AHK 的 Download() 下载完之前整个程序都停着: 网络慢、代理要等超时时, 热键、搜索窗口都没反应。
-; 这里用 Msxml2.XMLHTTP.6.0 异步请求 (和 Download() 一样走 WinINet, 用系统的代理设置),
-; 用计时器看是否完成 (只在有请求时运行), 完成后再调用回调。
+; AHK's Download() stops the whole program until it finishes: with a slow network or a proxy timing out, hotkeys and the search window don't respond.
+; This uses asynchronous Msxml2.XMLHTTP.6.0 requests (WinINet like Download(), with the system proxy settings),
+; checks for completion on a timer (running only while there are requests) and then calls the callback.
 ;
-; 用法:
+; Usage:
 ;   HttpGet.Start(url, done, fail?, timeoutMs?)
-;     done(text)      HTTP 2xx 时调用, text 是回复的内容; done 出错 (例如内容不对) 时改为调用 fail
-;     fail(message)   网络错误、HTTP 错误、超时 (默认 30 秒) 时调用; 没给 fail 时写进日志
-;   HttpGet.Pending   还没完成的请求数
+;     done(text)      called for HTTP 2xx with the response text; if done throws (e.g. bad content), fail is called instead
+;     fail(message)   called for network errors, HTTP errors and timeouts (30 s by default); without fail it goes to the log
+;   HttpGet.Pending   number of requests not finished yet
 ;===============================================================================
 
 class HttpGet {
     static PollMs := 100, TimeoutMs := 30000
-    static NewRequest := () => ComObject("Msxml2.XMLHTTP.6.0")              ; 测试时换成假的请求
+    static NewRequest := () => ComObject("Msxml2.XMLHTTP.6.0")              ; replaced by a fake request in tests
     static _active := [], _timer := ""
 
     static Pending => HttpGet._active.Length
@@ -25,7 +25,7 @@ class HttpGet {
         try {
             xhr := HttpGet.NewRequest.Call()
             xhr.open("GET", url, true)
-            xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 2000 00:00:00 GMT")   ; 不用 WinINet 缓存里的旧内容 (和 Download() 一样每次都问服务器)
+            xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 2000 00:00:00 GMT")   ; don't use old content from the WinINet cache (ask the server every time, like Download())
             xhr.send()
         } catch as e {
             return HttpGet._Later(fail, "", e.Message)
@@ -59,7 +59,7 @@ class HttpGet {
     static _Finish(request) {
         try {
             status := request.Xhr.status
-            if (status >= 12000)                                            ; WinINet 的错误号 (连不上、找不到主机...)
+            if (status >= 12000)                                            ; WinINet error number (can't connect, host not found...)
                 throw Error("Network error " status)
             if (status < 200 || status >= 300)
                 throw Error("HTTP " status " " request.Xhr.statusText)
@@ -70,7 +70,7 @@ class HttpGet {
         HttpGet._Later(request.Fail, request.Done, text)
     }
 
-    ; 回调放到单独的线程里: 回调弹出对话框时, 不耽误其它请求的检查
+    ; The callback runs in its own thread: if it shows a dialog, the other requests are still checked
     static _Later(fail, done, value) {
         SetTimer(() => HttpGet._Call(fail, done, value), -1)
     }

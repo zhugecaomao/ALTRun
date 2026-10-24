@@ -1,43 +1,43 @@
 ;===============================================================================
-; CapsLockSwitch.ahk - 和 macOS 一样: 按一下 CapsLock 切换输入法, 按住才是大写锁定 (AutoHotkey v2)
+; CapsLockSwitch.ahk - as on macOS: tap CapsLock to switch the input language, hold it for Caps Lock (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 设置 (ALTRun.json -> General.CapsLock):
-;   ""       不用 (默认), CapsLock 照常
-;   "Layout" 切换到下一个输入法 (和 Win+Space 一样, 例如 英语(美国) <-> 微软拼音)
-;   "Mode"   切换当前中文输入法的 中 / 英 模式 (和微软拼音里按 Shift 一样)
-; 按住超过 HoldMs 才开 / 关大写锁定 (不用等松开), 并显示 "大写锁定: 开 / 关" 的提示;
-; Shift+CapsLock 和原来一样直接开 / 关大写锁定 (也显示提示)。
+; Settings (ALTRun.json -> General.CapsLock):
+;   ""       off (default), CapsLock as usual
+;   "Layout" switch to the next input language (like Win+Space, e.g. English (US) <-> Microsoft Pinyin)
+;   "Mode"   toggle the Chinese / English mode of the current Chinese IME (like Shift in Microsoft Pinyin)
+; Caps Lock toggles only after holding for HoldMs (without waiting for the release), with a "Caps Lock: on / off" notice;
+; Shift+CapsLock toggles Caps Lock directly as before (with the notice too).
 ;
-; 按下和松开分成两个热键, 只在松开时 (而且没有按住满 HoldMs) 切换输入法, 按住期间什么都不切换。
-; 不用 KeyWait 等松开: 切换输入法时 (或者有的输入法) 会刷新按键状态, KeyWait 以为已经松开,
-; 按住时自动重复的每一下都切换一次输入法。按住时的自动重复 (连续的按下) 不算新的一次。
-; 热键用键盘钩子 ($): 单独的 CapsLock 会用系统的 RegisterHotkey 注册, 拦不住 CapsLock 本身的大写切换。
+; Press and release are two hotkeys; the input language switches only on release (when not held for HoldMs), nothing switches while held.
+; No KeyWait for the release: switching input languages (or some IMEs) refreshes the key state, KeyWait thinks it was released,
+; and every auto-repeat while held would switch once. Auto-repeat while held (consecutive presses) doesn't count as a new press.
+; The hotkeys use the keyboard hook ($): a lone CapsLock would be registered with the system's RegisterHotkey, which can't stop CapsLock's own toggle.
 ;
-; 远程控制 (Chrome 远程桌面等): 本机按 CapsLock 时本机的大写锁定也会变, 远程软件发下一个按键前会补发
-; 一次 CapsLock (按下和松开连在一起, 不到 1 ms) 把远程电脑的大写锁定对齐。按下到松开不到 MinTapMs 的
-; 当作这种补发, 拦下但什么都不做 (人按一下至少几十毫秒); 否则每打一个字都会切换一次输入法。
-; 计时用高精度的 QueryPerformanceCounter: A_TickCount 的精度只有 10 ~ 16 ms, 分不清。
-; 补发时常常按着别的键 (按 Alt+Space 时补发的是 Alt+CapsLock, 还有 Ctrl+C、Shift+字母...), 所以热键带 *:
-; 不管按着什么修饰键都拦下, 否则漏过去的那一次会真的切换大写锁定 (呼出窗口后大写被锁定)。
-; 按住方向键等时每次自动重复都会补发一次, 很快超过 AutoHotkey "2 秒内最多 70 次热键" 的限制, 弹出
-; A_MaxHotkeysPerInterval 的警告 (警告期间按键没被拦下, 大写锁定又被切换); 注册时关掉这个检查
-; (A_HotkeyInterval := 0): 这个检查是防止 Send 触发自己的热键无限循环, 带 $ 的热键不会被自己 Send 触发。
+; Remote control (Chrome Remote Desktop etc.): pressing CapsLock locally changes the local Caps Lock too, and before the next key the remote software sends
+; an extra CapsLock (press and release together, under 1 ms) to align the remote PC's Caps Lock. Press-to-release under MinTapMs
+; is taken as such an extra one and caught without doing anything (a human press takes at least tens of milliseconds); otherwise every character typed would switch the input language.
+; Timed with the high-resolution QueryPerformanceCounter: A_TickCount is only accurate to 10 ~ 16 ms, too coarse to tell.
+; The extra press often comes with other keys held (Alt+Space sends Alt+CapsLock, also Ctrl+C, Shift+letters...), so the hotkeys have *:
+; caught whatever modifiers are held, otherwise the one that slips through really toggles Caps Lock (Caps Lock on after showing the window).
+; Holding an arrow key etc. sends one extra press per auto-repeat, quickly passing AutoHotkey's limit of "at most 70 hotkeys in 2 s" and showing
+; the A_MaxHotkeysPerInterval warning (keys aren't caught during the warning, so Caps Lock toggles again); registering turns that check off
+; (A_HotkeyInterval := 0): the check guards against Send triggering its own hotkey in an endless loop, and hotkeys with $ aren't triggered by their own Send.
 ;
-; 用法:
-;   App 注册热键时: CapsLockSwitch.Mode := "Layout", CapsLockSwitch.Register(Hotkey)
+; Usage:
+;   when App registers hotkeys: CapsLockSwitch.Mode := "Layout", CapsLockSwitch.Register(Hotkey)
 ;===============================================================================
 
 class CapsLockSwitch {
     static Mode := "", HoldMs := 300
-    static Key := "*$CapsLock"                                              ; * = 按着修饰键也算, $ = 用键盘钩子, 见上面
-    static RepeatGapMs := 1000                                              ; 上一次按下 (或自动重复) 过了这么久还没松开: 当作松开事件丢了, 是新的一次
-    static MinTapMs := 25                                                   ; 更短的按一下: 远程软件补发来对齐大写锁定的, 不算
-    static Clock := () => CapsLockSwitch.Now()                              ; 测试时换成假的时钟
+    static Key := "*$CapsLock"                                              ; * = counts with modifiers held, $ = keyboard hook, see above
+    static RepeatGapMs := 1000                                              ; when the last press (or auto-repeat) is this old without a release, the release event was lost: a new press
+    static MinTapMs := 25                                                   ; a shorter tap: sent by remote software to align Caps Lock, doesn't count
+    static Clock := () => CapsLockSwitch.Now()                              ; replaced by a fake clock in tests
     static _down := false, _held := false, _shift := false, _downAt := 0, _lastDown := 0, _holdTimer := ""
 
     static IsMode(value) => (value = "Layout" || value = "Mode")
 
-    ; 高精度的毫秒数 (小数)
+    ; High-resolution milliseconds (fractional)
     static Now() {
         static frequency := 0
         if !frequency
@@ -47,16 +47,16 @@ class CapsLockSwitch {
         return counter * 1000 / frequency
     }
 
-    ; register: 注册热键的函数 (key, callback), 一般是 Hotkey 或 App._TryHotkey
+    ; register: the function that registers hotkeys (key, callback), usually Hotkey or App._TryHotkey
     static Register(register) {
-        A_HotkeyInterval := 0                                               ; 关掉 "热键太频繁" 的警告, 见上面
+        A_HotkeyInterval := 0                                               ; turn off the "too many hotkeys" warning, see above
         register(CapsLockSwitch.Key, (*) => CapsLockSwitch.Down())
         register(CapsLockSwitch.Key " up", (*) => CapsLockSwitch.Up())
     }
 
     static Down() {
         now := CapsLockSwitch.Clock.Call()
-        if (CapsLockSwitch._down && now - CapsLockSwitch._lastDown < CapsLockSwitch.RepeatGapMs) {   ; 按住时的自动重复
+        if (CapsLockSwitch._down && now - CapsLockSwitch._lastDown < CapsLockSwitch.RepeatGapMs) {   ; auto-repeat while held
             CapsLockSwitch._lastDown := now
             return
         }
@@ -67,7 +67,7 @@ class CapsLockSwitch {
         SetTimer(CapsLockSwitch._holdTimer, -CapsLockSwitch.HoldMs)
     }
 
-    ; 按住满 HoldMs: 开 / 关大写锁定 (只一次)
+    ; held for HoldMs: toggle Caps Lock (once)
     static Hold() {
         if (!CapsLockSwitch._down || CapsLockSwitch._held)
             return
@@ -84,9 +84,9 @@ class CapsLockSwitch {
         if CapsLockSwitch._held
             return
         pressed := CapsLockSwitch.Clock.Call() - CapsLockSwitch._downAt
-        if (pressed < CapsLockSwitch.MinTapMs)                              ; 远程软件补发的, 见上面
+        if (pressed < CapsLockSwitch.MinTapMs)                              ; sent by remote software, see above
             return
-        if (CapsLockSwitch._shift || pressed >= CapsLockSwitch.HoldMs) {    ; Shift+CapsLock: 和原来一样; 定时器还没来得及运行 (程序忙): 也算按住
+        if (CapsLockSwitch._shift || pressed >= CapsLockSwitch.HoldMs) {    ; Shift+CapsLock: as before; the timer hasn't had a chance to run yet (the program is busy): counts as held too
             CapsLockSwitch.ToggleCapsLock()
         } else {
             if Logger.Enabled
@@ -95,7 +95,7 @@ class CapsLockSwitch {
         }
     }
 
-    ; 开 / 关大写锁定, 并用 HUD 提示现在是开还是关 (按住时看不到别的反馈, 远程控制时也看不到本机的指示灯)
+    ; Toggles Caps Lock and shows with the HUD whether it is on or off (there is no other feedback while holding, and the local light isn't visible under remote control)
     static ToggleCapsLock() {
         on := !GetKeyState("CapsLock", "T")
         SetCapsLockState(on ? "On" : "Off")
@@ -103,7 +103,7 @@ class CapsLockSwitch {
     }
 
     static NotifyMs := 1000
-    static Notify := (on) => App.CapsLockNotice(on)                        ; 管理员窗口的小助手里换成让 ALTRun 显示 (CapsLockHelper)
+    static Notify := (on) => App.CapsLockNotice(on)                        ; in the helper for administrator windows ALTRun shows it instead (CapsLockHelper)
     static ShiftDown() => GetKeyState("Shift")
     static StateText(on) => I18n.T(on ? "Caps.On" : "Caps.Off")
 

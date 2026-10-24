@@ -1,26 +1,26 @@
 ;===============================================================================
-; Knowledge.ahk - 学习排序 + 搜索历史 (AutoHotkey v2)
+; Knowledge.ahk - learned ranking + search history (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 Alfred 的 Knowledge 一样, 记住 "输入了什么 -> 最后选了哪一项":
-;   - 每项结果被选中的总次数和最近一次时间 (越常用越靠前)
-;   - 某个输入 (以及它的前缀) 选中了哪一项 (输入 "no" 选过记事本, 下次输入
-;     "no" 或 "not" 时记事本排第一)
-;   - 最近的搜索文字, 搜索框为空时按 ↑ 调出
-; 数据存在 Data\Knowledge.json, 删掉只会让排序重新开始学习。
+; Like Alfred's Knowledge, it remembers "what was typed -> which result was chosen in the end":
+;   - how often each result was chosen in total and when last (more used = higher)
+;   - which result an input (and its prefixes) chose (after choosing Notepad for "no", it comes first next time
+;     for "no" or "not")
+;   - recent search text, recalled with ↑ in the empty search box
+; The data is in Data\Knowledge.json; deleting it only makes the ranking start learning again.
 ;
-; 用法:
-;   Knowledge.Load()                    启动时
-;   Knowledge.Record(queryText, uid)    执行某一项后
-;   Knowledge.Boost(queryText, uid)     搜索排序时的加分
-;   Knowledge.History                   最近的搜索文字 (新的在前)
+; Usage:
+;   Knowledge.Load()                    at start-up
+;   Knowledge.Record(queryText, uid)    after running a result
+;   Knowledge.Boost(queryText, uid)     the bonus when ranking search results
+;   Knowledge.History                   recent search text (newest first)
 ;===============================================================================
 
 class Knowledge {
     static File        := AppSettings.DataDir "\Knowledge.json"
     static Picks       := Map()      ; uid -> Map("Count", n, "Last", "yyyyMMddHHmmss")
-    static QueryPicks  := Map()      ; 小写输入 -> Map(uid -> 次数)
+    static QueryPicks  := Map()      ; lower-case input -> Map(uid -> count)
     static History     := []
-    static Recent      := []         ; 最近打开的项目 (新的在前), 见 RecentProvider
+    static Recent      := []         ; recently opened items (newest first), see RecentProvider
     static MaxQueryLen := 20
     static _saveTimer  := ""
 
@@ -85,7 +85,7 @@ class Knowledge {
             Knowledge.History.Pop()
     }
 
-    ; 排序加分: 常用程度 (最多约 +25) + 最近用过 (+5) + 这个输入及其前缀选过它 (最多约 +60)
+    ; Ranking bonus: how often it is used (up to about +25) + used recently (+5) + chosen for this input and its prefixes (up to about +60)
     static Boost(queryText, uid) {
         if (uid = "" || !Knowledge.Picks.Has(uid))
             return 0
@@ -99,7 +99,7 @@ class Knowledge {
         Loop len {
             prefix := SubStr(queryText, 1, len - A_Index + 1)
             if (Knowledge.QueryPicks.Has(prefix) && Knowledge.QueryPicks[prefix].Has(uid)) {
-                exact := (A_Index = 1) ? 1.5 : 1                            ; 完全相同的输入权重更高
+                exact := (A_Index = 1) ? 1.5 : 1                            ; an identical input weighs more
                 boost += Min(25 * exact * Ln(1 + Knowledge.QueryPicks[prefix][uid]), 60)
                 break
             }
@@ -107,7 +107,7 @@ class Knowledge {
         return boost
     }
 
-    ; 连续执行多个命令时只写一次盘; 搜索窗口开着 (正在输入) 时先不写, 免得打字时卡一下
+    ; Writes once after several commands in a row; not while the search window is open (typing), so typing never stalls
     static _SaveLater() {
         if (Knowledge._saveTimer = "")
             Knowledge._saveTimer := Logger.Watch("save knowledge", () => Knowledge._SaveWhenIdle())

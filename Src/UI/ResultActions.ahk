@@ -18,13 +18,13 @@
 ;===============================================================================
 
 class ResultActions {
-    ; 操作面板: 第一项是默认操作, 然后是这一类结果的通用操作, 再加上结果自带的操作
+    ; The actions panel: the default action first, then the general actions for this kind of result, then the result's own actions
     static ListFor(item) {
         list := []
         add(titleKey, icon, fn, hint := "") => list.Push(ResultItem(I18n.T(titleKey), hint, {Icon: icon, OnRun: fn}))
         target := item.Arg
         enter := "Enter"
-        if (item.RunTitle != "" && IsObject(item.OnRun)) {                   ; 结果自己的默认操作 (例如剪贴板历史里的图片: 粘贴)
+        if (item.RunTitle != "" && IsObject(item.OnRun)) {                   ; the result's own default action (e.g. images in the clipboard history: paste)
             list.Push(ResultItem(item.RunTitle, "Enter", {Icon: item.Icon, OnRun: (*) => item.OnRun.Call(item)}))
             enter := ""
         }
@@ -34,17 +34,17 @@ class ResultActions {
                 add("Action.Open", target, (*) => ActionCatalog.OpenFile(target, item.Arguments), enter)
                 if RegExMatch(target, "i)\.(exe|lnk|bat|cmd|msc|ps1)$")
                     add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => ActionCatalog.RunAsAdmin(target, item.Arguments))
-                if IsObject(editor := ActionCatalog.EditorFor(target))      ; 这类文件登记了 "编辑" (例如 .ahk 用编辑器打开)
+                if IsObject(editor := ActionCatalog.EditorFor(target))      ; the file type has an "Edit" verb (e.g. .ahk opens in an editor)
                     list.Push(ResultItem(I18n.T("Action.EditFile"), editor.Name (editor.Name != "" ? "  " : "") "Ctrl+E"
                         , {Icon: editor.Icon, OnRun: (*) => ActionCatalog.EditFile(target)}))
                 if FileExist(target)
-                    add("Action.OpenWith", "res:shell32.dll,-3", (*) => ActionCatalog.OpenWith(target))   ; 通用的程序图标
+                    add("Action.OpenWith", "res:shell32.dll,-3", (*) => ActionCatalog.OpenWith(target))   ; the generic program icon
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
                 add("Action.CopyName", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(Path.Leaf(target)))
                 ResultActions._FileActions(list, target)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(ActionCatalog.ParentDir(target)))
-                if !ActionCatalog.IsShellItem(target)                       ; 应用商店应用 (shell:AppsFolder\...) 没有属性窗口
+                if !ActionCatalog.IsShellItem(target)                       ; Store apps (shell:AppsFolder\...) have no properties window
                     add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
                 if FileExist(target)
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
@@ -55,7 +55,7 @@ class ResultActions {
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
                 ResultActions._FileActions(list, target)
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
-                if (FileExist(target) && !RegExMatch(RTrim(target, "\"), "^[A-Za-z]:$"))       ; 磁盘根目录不能删
+                if (FileExist(target) && !RegExMatch(RTrim(target, "\"), "^[A-Za-z]:$"))       ; drive roots can't be deleted
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "url":
                 add("Action.Open", "url:", (*) => ActionCatalog.OpenUrl(target), enter)
@@ -70,7 +70,7 @@ class ResultActions {
         for extra in item.Actions
             list.Push(extra)
 
-        if (item.Provider = ClipboardProvider.Id && item.Source is Map && ClipboardProvider.TypeOf(item.Source) = "text")   ; 剪贴板历史里的文字: 用每个网页搜索引擎搜索 (打开 → 菜单时才生成)
+        if (item.Provider = ClipboardProvider.Id && item.Source is Map && ClipboardProvider.TypeOf(item.Source) = "text")   ; text in the clipboard history: search with each web search engine (built only when → opens the menu)
             for extra in SelectionActions.SearchActions(item.Arg)
                 list.Push(extra)
 
@@ -89,7 +89,7 @@ class ResultActions {
         return list
     }
 
-    ; 标记的多个文件 / 文件夹 (搜索窗口里 Insert 标记) 一起操作
+    ; Several marked files / folders (marked with Insert in the search window) together
     static ListForMany(paths) {
         list := []
         add(title, icon, fn, hint := "") => list.Push(ResultItem(title, hint, {Icon: icon, OnRun: fn}))
@@ -111,10 +111,10 @@ class ResultActions {
     }
 
     ;---------------------------------------------------------------------------
-    ; 编辑 / 删除 (交给结果所属的 Provider 的 EditItem / DeleteItem)
+    ; Edit / delete (handed to the EditItem / DeleteItem of the result's provider)
     ;---------------------------------------------------------------------------
     static CanEdit(item) {
-        if ResultActions._ProviderHas(item, "EditItem")                     ; 结果所属的 Provider 自己决定 (剪贴板历史里的图片不能编辑)
+        if ResultActions._ProviderHas(item, "EditItem")                     ; the result's provider decides (images in the clipboard history can't be edited)
             return ResultActions._ProviderCan(item, "EditItem")
         return item.Valid && item.Arg != "" && RegExMatch(item.Kind, "^(file|folder|url)$")
     }
@@ -123,7 +123,7 @@ class ResultActions {
         return ResultActions._ProviderCan(item, "DeleteItem")
     }
 
-    ; 返回 true = 已保存修改
+    ; true = the change was saved
     static EditItem(item) {
         if ResultActions._ProviderCan(item, "EditItem")
             return ProviderRegistry.ById(item.Provider).EditItem(item)
@@ -138,7 +138,7 @@ class ResultActions {
         return ProviderRegistry.ById(item.Provider).DeleteItem(item)
     }
 
-    ; 删除前的确认文字; Provider 可以用 DeletePrompt(item) 说明删除的实际效果
+    ; The confirmation text before deleting; a provider can explain what deleting really does with DeletePrompt(item)
     static DeletePrompt(item) {
         provider := ProviderRegistry.ById(item.Provider)
         if (IsObject(provider) && HasMethod(provider, "DeletePrompt"))
@@ -146,14 +146,14 @@ class ResultActions {
         return I18n.T("Search.ConfirmDelete", item.Title)
     }
 
-    ; 应用 / 文件 / 文件夹 / 网址 -> 打开编辑对话框新建一条自定义命令 (可以再加关键字等)
+    ; Application / file / folder / URL -> opens the edit dialog for a new custom command (a keyword etc. can be added)
     static AddAsCommand(item) {
         commandType := (item.Kind = "folder") ? "Folder" : (item.Kind = "url") ? "Url" : "File"
         return CustomCommandProvider.Edit("", Map("Title", item.Title, "Type", commandType, "Target", item.Arg, "Arguments", item.Arguments))
     }
 
-    ; 结果带着 Source (设置里对应的那一条), 且所属 Provider 实现了 method 时才能编辑 / 删除
-    ; Provider 还可以用 CanEditItem(item) / CanDeleteItem(item) 只让其中一部分结果编辑 / 删除
+    ; Only results that carry a Source (their entry in the settings) and whose provider implements method can be edited / deleted
+    ; A provider can also let only some results be edited / deleted with CanEditItem(item) / CanDeleteItem(item)
     static _ProviderCan(item, method) {
         if !ResultActions._ProviderHas(item, method)
             return false
@@ -168,7 +168,7 @@ class ResultActions {
         return IsObject(provider) && HasMethod(provider, method)
     }
 
-    ; 复制 / 剪切文件, 复制 / 移动到文件管理器当前的文件夹 (真实存在的本地或网络路径才有)
+    ; Copy / cut the file, copy / move to the file manager's current folder (only for real local or network paths)
     static _FileActions(list, target) {
         if (!RegExMatch(target, "^([A-Za-z]:\\|\\\\)") || !FileExist(target))
             return
@@ -179,7 +179,7 @@ class ResultActions {
         if (destination = "" || !DirExist(destination))
             return
         parent := RTrim(ActionCatalog.ParentDir(RTrim(target, "\")), "\")
-        inside := (InStr(RTrim(destination, "\") "\", RTrim(target, "\") "\") = 1)   ; 不能把文件夹复制到它自己里面
+        inside := (InStr(RTrim(destination, "\") "\", RTrim(target, "\") "\") = 1)   ; a folder can't be copied into itself
         if (StrLower(RTrim(destination, "\")) = StrLower(parent) || inside)
             return
         list.Push(ResultItem(I18n.T("Action.CopyTo", manager.Tag), destination, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination)}))

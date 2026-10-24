@@ -1,11 +1,11 @@
-# SetDisplay.ps1 - 截图前把 GitHub Actions 的 Windows 虚拟机调成更适合截图的显示设置
-#   1. 分辨率 1920 x 1080 (默认 1024 x 768, 放不下 150% 的窗口)
-#   2. 缩放 150%: 界面按 1.5 倍像素画, 截图在网页上缩小显示时更清晰 (高分屏上尤其明显)
-#   3. 150% 时字体用灰度抗锯齿, 不用 ClearType: 子像素的彩色毛边在缩小显示的截图里不好看;
-#      100% 时 (偏好设置、Quick Switch) 用 ClearType, 和平常 100% 的 Windows 看起来一样 (灰度的字偏粗、偏虚)
-# 缩放用的是 Windows 的未公开接口 (SPI_SETLOGICALDPIOVERRIDE, 设置里的 "缩放" 下拉框用的就是它): 值是相对
-# "推荐缩放" 的档数, 不知道推荐的是哪一档, 所以逐档试, 每次用新启动的 AutoHotkey 读 A_ScreenDPI 确认。
-# 做不到时保持原样 (截图照常, 只是 100%)。实际的缩放比例写进 $env:GITHUB_ENV 的 SHOT_SCALE, 给 RoundCorners.py / MakeDemo.py 用。
+# SetDisplay.ps1 - before the screenshots, gives the GitHub Actions Windows VM display settings better suited to screenshots
+#   1. resolution 1920 x 1080 (default 1024 x 768, too small for 150% windows)
+#   2. scaling 150%: the UI is drawn at 1.5x pixels, so screenshots shown smaller on web pages look sharper (especially on high-DPI screens)
+#   3. at 150% fonts use grayscale smoothing, not ClearType: subpixel color fringes look bad in screenshots shown smaller;
+#      at 100% (Preferences, Quick Switch) ClearType, to look like a normal 100% Windows (grayscale text looks bolder and blurrier)
+# Scaling uses an undocumented Windows interface (SPI_SETLOGICALDPIOVERRIDE, which the "Scale" dropdown in Settings uses): the value is the number of steps relative
+# to the "recommended scaling", which isn't known, so each step is tried and checked by reading A_ScreenDPI with a freshly started AutoHotkey.
+# If it fails it stays as it is (screenshots as usual, just at 100%). The actual scale goes into SHOT_SCALE in $env:GITHUB_ENV, for RoundCorners.py / MakeDemo.py.
 #
 #   pwsh Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe [-Width 1920] [-Height 1080] [-Scale 150]
 param([Parameter(Mandatory)][string]$Ahk, [int]$Width = 1920, [int]$Height = 1080, [int]$Scale = 150)
@@ -31,7 +31,7 @@ public static class ShotDisplay {
 }
 "@
 
-# 1. 分辨率
+# 1. resolution
 $dm = New-Object ShotDisplay+DEVMODE
 $dm.dmSize = [System.Runtime.InteropServices.Marshal]::SizeOf($dm)
 [void][ShotDisplay]::EnumDisplaySettings($null, -1, [ref]$dm)                   # ENUM_CURRENT_SETTINGS
@@ -41,18 +41,18 @@ $dm.dmFields = 0x80000 -bor 0x100000                                            
 $result = [ShotDisplay]::ChangeDisplaySettings([ref]$dm, 0)
 Write-Host "ChangeDisplaySettings $Width x $Height -> $result (0 = OK)"
 
-# 3. 字体抗锯齿 (SPI_SETFONTSMOOTHING = 1; SPI_SETFONTSMOOTHINGTYPE: 1 = 灰度 FE_FONTSMOOTHINGSTANDARD, 2 = ClearType)
+# 3. font smoothing (SPI_SETFONTSMOOTHING = 1; SPI_SETFONTSMOOTHINGTYPE: 1 = grayscale FE_FONTSMOOTHINGSTANDARD, 2 = ClearType)
 $smoothing = if ($Scale -eq 100) { 2 } else { 1 }
 [void][ShotDisplay]::SystemParametersInfo(0x004B, 1, [IntPtr]::Zero, 3)
 [void][ShotDisplay]::SystemParametersInfo(0x200B, 0, [IntPtr]$smoothing, 3)
 Write-Host "Font smoothing: $(if ($smoothing -eq 2) { 'ClearType' } else { 'grayscale' })"
 
-# 2. 缩放
+# 2. scaling
 $probe = Join-Path $env:TEMP "ShotDpi.ahk"
 Set-Content $probe '#NoTrayIcon
 FileAppend(A_ScreenDPI, "*")' -Encoding utf8
 $out = Join-Path $env:TEMP "ShotDpi.txt"
-function Get-Dpi {                                                                  # 新启动的程序才会用新的缩放
+function Get-Dpi {                                                                  # only newly started programs use the new scaling
     Start-Process $Ahk -ArgumentList '/ErrorStdOut', $probe -Wait -NoNewWindow -RedirectStandardOutput $out
     [int]((Get-Content $out -Raw) -replace '\D', '')
 }
@@ -60,7 +60,7 @@ $target = [int][Math]::Round(96 * $Scale / 100)
 $dpi = Get-Dpi
 Write-Host "DPI before: $dpi (target $target)"
 if ($dpi -ne $target) {
-    foreach ($step in 0, 1, 2, 3, 4, -1, -2) {                                 # 0 = 推荐缩放 (再调回 100% 时一般就是它)
+    foreach ($step in 0, 1, 2, 3, 4, -1, -2) {                                 # 0 = recommended scaling (usually what going back to 100% means)
         [void][ShotDisplay]::SystemParametersInfo(0x009F, [uint32]($step -band 0xFFFFFFFF), [IntPtr]::Zero, 1)   # SPI_SETLOGICALDPIOVERRIDE
         Start-Sleep -Seconds 2
         $dpi = Get-Dpi

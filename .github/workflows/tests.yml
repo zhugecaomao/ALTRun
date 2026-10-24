@@ -1,4 +1,4 @@
-# 每个 PR 和 main 上的提交: 在 Windows 上跑单元测试和 /validate (语法检查 + #Warn 警告)
+# Every PR and commit on main: unit tests and /validate (syntax check + #Warn warnings) on Windows
 name: Tests
 
 on:
@@ -31,7 +31,7 @@ jobs:
       - name: Validate (syntax and warnings)
         shell: pwsh
         run: |
-          # #Warn 的警告改为输出到 stdout, 有任何输出都算失败
+          # #Warn warnings go to stdout, and any output counts as a failure
           (Get-Content ALTRun.ahk -Raw) -replace '#Warn All, OutputDebug', '#Warn All, StdOut' | Set-Content _validate.ahk -Encoding utf8BOM
           $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', '/validate', '_validate.ahk' `
                   -Wait -PassThru -NoNewWindow -RedirectStandardOutput validate.log -RedirectStandardError validate.err
@@ -45,6 +45,6 @@ jobs:
           $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk' `
                   -Wait -PassThru -NoNewWindow -RedirectStandardOutput test.log -RedirectStandardError test.err
           Get-Content test.log | Where-Object { $_ -notmatch '^PASS' }
-          Get-Content test.log | Where-Object { $_ -match '^(FAIL|UNCAUGHT)' } | ForEach-Object { Write-Host "::error::$_" }   # 失败的测试显示在检查结果的注释里
+          Get-Content test.log | Where-Object { $_ -match '^(FAIL|UNCAUGHT)' } | ForEach-Object { Write-Host "::error::$_" }   # failed tests show in the annotations of the check results
           Get-Content test.err
           if ($proc.ExitCode -ne 0) { throw "Unit tests failed (exit code $($proc.ExitCode))" }

@@ -1,4 +1,4 @@
-# 每月检查 GitHub Actions 用到的 action 有没有新版本, 自动开 PR
+# Checks monthly whether the actions used by GitHub Actions have new versions and opens PRs
 version: 2
 updates:
   - package-ecosystem: github-actions

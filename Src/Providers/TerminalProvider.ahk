@@ -1,11 +1,11 @@
 ;===============================================================================
-; TerminalProvider.ahk - 在终端里运行命令 (AutoHotkey v2)
+; TerminalProvider.ahk - runs commands in a terminal (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 输入 ">ipconfig /all" (前缀见 Features.Terminal.Prefix) 在终端里运行这条命令,
-; 窗口保持打开。Shell 可选: cmd / powershell / pwsh / wt (Windows Terminal)。
+; Typing ">ipconfig /all" (prefix in Features.Terminal.Prefix) runs the command in a terminal
+; whose window stays open. Shell options: cmd / powershell / pwsh / wt (Windows Terminal).
 ;
-; 用法 (其它模块里):
-;   TerminalProvider.OpenAt(folder)          在指定文件夹打开终端
+; Usage (from other modules):
+;   TerminalProvider.OpenAt(folder)          opens a terminal in the folder
 ;   TerminalProvider.RunCommand(command)
 ;===============================================================================
 
@@ -52,7 +52,7 @@ class TerminalProvider {
         }
     }
 
-    ; 资源管理器 / Total Commander 当前打开的文件夹 (呼出 ALTRun 前的那个窗口)
+    ; The folder open in Explorer / Total Commander (the window active before ALTRun was shown)
     static OpenAtCurrentFolder() {
         folder := QuickSwitch.FolderOfWindow(App.PreviousWindow)
         if (folder = "")

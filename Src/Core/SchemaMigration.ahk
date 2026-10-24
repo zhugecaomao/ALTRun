@@ -1,27 +1,27 @@
 ;===============================================================================
-; SchemaMigration.ahk - ALTRun.json 版本升级 (AutoHotkey v2)
+; SchemaMigration.ahk - upgrades ALTRun.json between versions (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 每个版本的升级是一个独立的 _FromN(data) 方法, 负责把版本 N 的数据转换成
-; 版本 N+1。Upgrade() 从文件当前的版本开始逐级调用, 直到 CurrentVersion:
-;   ALTRun.ini           已发布的 2.x (到 v2026.08.12) 的设置文件, ReadLegacyIni() 读成
-;                        版本 2 的结构, 再走下面的逐级升级 (见 AppSettings.Load)
+; Each version's upgrade is a separate _FromN(data) method that turns version N data into
+; version N+1. Upgrade() calls them one after another from the file's version up to CurrentVersion:
+;   ALTRun.ini           the settings file of the released 2.x (up to v2026.08.12); ReadLegacyIni() reads it into
+;                        the version 2 structure, which then goes through the upgrades below (see AppSettings.Load)
 ;   2 -> 3   _From2()   ALTRun 2.x (Config/Gui/Hotkey/UserCommand...) -> 3.0
-;   3 -> 4   _From3()   文件搜索默认不再混进普通结果 (InDefaultResults 1 -> 0)
-;   4 -> 5   _From4()   片段的粘贴方式 Clipboard -> Auto; 补上后来加进默认值的窗口 / 关键字; 小清理 (见 issue #176)
+;   3 -> 4   _From3()   file search no longer mixes into the normal results by default (InDefaultResults 1 -> 0)
+;   4 -> 5   _From4()   snippet paste mode Clipboard -> Auto; windows / keywords added to the defaults later are added; small cleanups (see issue #176)
 ;   5 -> 6   _From5()   window lists become arrays; StandardDialogs split out of DialogWindows; two hotkeys renamed to
 ;                       Hotkey; unused keys removed; old ScopeExclude default and Compact themes replaced (#176)
 ;
-; 以后改设置结构时: AppSettings.CurrentVersion + 1, 再在这里加一个 _FromN()。
-; 升级前 Backup() 会把原文件复制成 ALTRun.v<N>.backup.json。
+; When the settings structure changes later: AppSettings.CurrentVersion + 1, and add a _FromN() here.
+; Before upgrading, Backup() copies the original file to ALTRun.v<N>.backup.json.
 ;
-; 2.x -> 3.0 保留的内容:
-;   - 呼出热键、开机启动、托盘、失焦隐藏、文件管理器等通用设置
-;   - 用户命令 (UserCommand): File/Dir/CMD/URL -> CustomCommands, Clip -> Snippets
-;   - 索引目录/类型/深度、结构计算开关、片段粘贴方式
-;   - Listary 路径跳转、Ctrl+D 加日期、PT Tools 的设置
-;   - 条件热键 (例如 RAPT 里中键打开 PT Tools) -> Hotkeys
-; 不再保留: 内置命令列表 (DefaultCommand, 已由系统命令功能取代)、旧索引
-; (Index, 会重新建立)、执行历史、使用统计、列表外观相关的旧选项。
+; Kept from 2.x -> 3.0:
+;   - general settings: show hotkey, start with Windows, tray, hide on focus loss, file manager
+;   - user commands (UserCommand): File/Dir/CMD/URL -> CustomCommands, Clip -> Snippets
+;   - index folders / types / depth, the structural calculation switch, snippet paste mode
+;   - Listary-style folder jumps, Ctrl+D date stamp, PT Tools settings
+;   - conditional hotkeys (e.g. middle button opens PT Tools in RAPT) -> Hotkeys
+; Not kept: the built-in command list (DefaultCommand, replaced by the system commands feature), the old index
+; (Index, rebuilt), run history, usage statistics and the old list-appearance options.
 ;===============================================================================
 
 class SchemaMigration {
@@ -57,12 +57,12 @@ class SchemaMigration {
         return dir "\ALTRun.ini"
     }
 
-    ; 读 2.x 的 ALTRun.ini -> Map("Config", Map(...), "Gui", ..., "Hotkey", ..., "UserCommand", ...)
-    ; 和 _From2() 期望的版本 2 结构一样。只读需要转换的节; Index / History / Usage /
-    ; DefaultCommand / FallbackCommand 不再使用。
-    ;   普通节: "键=值", 按第一个 = 分开, 数字转成整数
-    ;   UserCommand: "类型 | 目标 | 说明=排名", 按最后一个 = 分开; 键里的 = 和 ; 在 2.x 里
-    ;                写成 _Equal_ / _Semicolon_, 这里还原
+    ; Reads 2.x's ALTRun.ini -> Map("Config", Map(...), "Gui", ..., "Hotkey", ..., "UserCommand", ...),
+    ; the version 2 structure _From2() expects. Only the sections that are converted are read; Index / History / Usage /
+    ; DefaultCommand / FallbackCommand are no longer used.
+    ;   normal sections: "key=value", split at the first =, numbers become integers
+    ;   UserCommand: "type | target | description=rank", split at the last =; = and ; in keys were written
+    ;                as _Equal_ / _Semicolon_ by 2.x and are restored here
     static ReadLegacyIni(iniFile) {
         data := Map()
         for section in ["Config", "Gui", "Hotkey", "UserCommand"] {
@@ -183,10 +183,10 @@ class SchemaMigration {
     ;---------------------------------------------------------------------------
     ; 4 -> 5
     ;---------------------------------------------------------------------------
-    ; 只改老用户不会觉得意外的地方 (看得见的改动, 例如主题跟随系统、Alt+R, 只对新安装生效; 清单见 GitHub issue #176):
-    ;   - 片段的粘贴方式: Clipboard (旧的默认值, 几乎都是当时自动写入的) -> Auto (更快, 不动剪贴板); Type 不变
-    ;   - 后来补进默认值的窗口 / 关键字, 老用户的列表里也补上 (缺什么补什么, 用户自己加的保留; 清空了的列表不动)
-    ;   - 残留的 "F1 -> 关于" 热键 (F1 已经内置) 删掉; 钢筋直径存成数字
+    ; Only changes old users won't be surprised by (visible changes, e.g. the theme following the system or Alt+R, apply to new installs only; list in GitHub issue #176):
+    ;   - snippet paste mode: Clipboard (the old default, almost always written automatically back then) -> Auto (faster, leaves the clipboard alone); Type stays
+    ;   - windows / keywords added to the defaults later are added to old users' lists too (only what is missing; the user's own entries stay; emptied lists are left alone)
+    ;   - a leftover "F1 -> About" hotkey (F1 is built in now) is removed; bar diameters are stored as numbers
     static _From4(data) {
         features := SchemaMigration._Section(data, "Features")
         snippets := SchemaMigration._Section(features, "Snippets")
@@ -209,11 +209,11 @@ class SchemaMigration {
 
         extensions := SchemaMigration._Section(data, "Extensions")
         dateStamp := SchemaMigration._Section(extensions, "AutoDate")
-        SchemaMigration._AddWindows(dateStamp, "RenameWindows", ["ahk_class TSTDTREEDLG", "ahk_class TCOMBOINPUT"])   ; Total Commander 的对话框 / 改名输入框
+        SchemaMigration._AddWindows(dateStamp, "RenameWindows", ["ahk_class TSTDTREEDLG", "ahk_class TCOMBOINPUT"])   ; Total Commander's dialogs / rename box
         if (dateStamp.Has("AppendWindows") && dateStamp["AppendWindows"] = "ahk_class TCmtEditForm,ahk_exe Notepad4.exe")
-            dateStamp["AppendWindows"] := "ahk_class TCmtEditForm, ahk_exe Notepad4.exe"   ; 旧的默认值, 只是统一写法
+            dateStamp["AppendWindows"] := "ahk_class TCmtEditForm, ahk_exe Notepad4.exe"   ; the old default, only written the same way
         switcher := SchemaMigration._Section(extensions, "QuickSwitch")
-        SchemaMigration._AddWindows(switcher, "ExcludeWindows", ["ahk_exe 7zG.exe", "ahk_exe TOTALCMD64.exe"])   ; 7-Zip 解压、TC 的对话框
+        SchemaMigration._AddWindows(switcher, "ExcludeWindows", ["ahk_exe 7zG.exe", "ahk_exe TOTALCMD64.exe"])   ; 7-Zip extract, TC's dialogs
 
         if (data.Has("Hotkeys") && data["Hotkeys"] is Array) {
             i := data["Hotkeys"].Length
@@ -228,7 +228,7 @@ class SchemaMigration {
         return data
     }
 
-    ; 逗号分隔的窗口列表 section[key] 里补上 windows 里还没有的 (不区分大小写); 没有这一项、或者用户清空了的不动
+    ; Adds the windows not yet in the comma-separated window list section[key] (case-insensitive); a missing or emptied list is left alone
     static _AddWindows(section, key, windows) {
         if (!section.Has(key) || !(section[key] is String) || Trim(section[key]) = "")
             return
@@ -245,9 +245,9 @@ class SchemaMigration {
     ;---------------------------------------------------------------------------
     ; 3 -> 4
     ;---------------------------------------------------------------------------
-    ; 3.0 早期默认在普通结果里显示全盘匹配的文件, 会混进 NIRMALA.TTF 这类无关文件;
-    ; 现在默认关闭, 需要时用 空格 / ' / open / find 专门搜索文件。旧文件里的 1 只是当时
-    ; 自动写入的默认值, 这里改成新的默认值 (想要的话可以在偏好设置里重新打开)。
+    ; Early 3.0 showed files matching on the whole disk in the normal results by default, mixing in unrelated files like NIRMALA.TTF;
+    ; now it is off by default, and Space / ' / open / find search files on purpose. The 1 in old files was only the default
+    ; written automatically back then, so it becomes the new default here (it can be switched on again in Preferences).
     static _From3(data) {
         features := SchemaMigration._Section(data, "Features")
         fileSearch := SchemaMigration._Section(features, "FileSearch")
@@ -275,7 +275,7 @@ class SchemaMigration {
         general["HideOnDeactivate"]     := pick(config, "HideOnLostFocus", 1)
         general["SwitchToEnglishInput"] := pick(config, "AutoEngIME", 0)
         general["SpaceToRun"]           := pick(config, "SpaceToRun", 0)
-        general["KeepLastQuery"]        := pick(config, "KeepInput", 1)     ; 2.x 默认保留输入
+        general["KeepLastQuery"]        := pick(config, "KeepInput", 1)     ; 2.x kept the input by default
         general["FileManager"]          := pick(config, "FileMgr", "explorer.exe")
         general["SendToMenu"]           := pick(config, "EnableSendTo", 1)
         general["StartMenuShortcut"]    := pick(config, "InStartMenu", 1)
@@ -321,14 +321,14 @@ class SchemaMigration {
         userCommands := SchemaMigration._Section(old, "UserCommand")
         for cmdLine, rank in userCommands
             SchemaMigration._ConvertCommand(cmdLine, commands, snippets)
-        if (userCommands.Count) {                                           ; 用户有自己的命令时, 不再塞默认示例
+        if (userCommands.Count) {                                           ; users with their own commands don't get the default examples
             data["CustomCommands"] := commands
             data["Snippets"] := snippets.Length ? snippets : data["Snippets"]
         }
         return data
     }
 
-    ; "Type | Target | Description" -> CustomCommands / Snippets 条目
+    ; "Type | Target | Description" -> a CustomCommands / Snippets entry
     static _ConvertCommand(cmdLine, commands, snippets) {
         parts := StrSplit(cmdLine, " | ")
         if (parts.Length < 2)
@@ -346,14 +346,14 @@ class SchemaMigration {
         }
 
         typeMap := Map()
-        typeMap.CaseSense := "Off"                                          ; 只能在 Map 为空时设置
+        typeMap.CaseSense := "Off"                                          ; can only be set while the Map is empty
         typeMap.Set("File", "File", "Dir", "Folder", "CMD", "Command", "URL", "Url", "App", "File")
         if !typeMap.Has(cmdType)
-            return                                                          ; Func 等旧内置命令不再迁移
+            return                                                          ; Func and other old built-in commands aren't migrated
 
         newType := typeMap[cmdType]
         arguments := ""
-        if (newType = "Command") {                                          ; "cmd.exe /k ipconfig" -> 程序 + 参数
+        if (newType = "Command") {                                          ; "cmd.exe /k ipconfig" -> program + arguments
             if RegExMatch(target, "^(`"[^`"]+`"|\S+)\s+(.+)$", &m) {
                 target := Trim(m[1], "`"")
                 arguments := m[2]
@@ -366,7 +366,7 @@ class SchemaMigration {
         commands.Push(Map("Title", title, "Type", newType, "Target", target, "Arguments", arguments, "Keyword", ""))
     }
 
-    ; 旧的 "条件热键" (CondTitle/CondHotkey/CondAction) -> Hotkeys 列表
+    ; the old "conditional hotkey" (CondTitle / CondHotkey / CondAction) -> the Hotkeys list
     static _ConditionalHotkeys(oldHotkeys) {
         result := []
         key    := oldHotkeys.Has("CondHotkey") ? oldHotkeys["CondHotkey"] : ""
@@ -396,7 +396,7 @@ class SchemaMigration {
         return (key = "None") ? "" : key
     }
 
-    ; 2.x 的 Clip 正文存成一行: \n = 换行, \t = Tab, \\ = 反斜杠
+    ; 2.x stored a Clip's text on one line: \n = line break, \t = Tab, \\ = backslash
     static _UnescapeClip(text) {
         text := StrReplace(text, "\\", Chr(1))
         text := StrReplace(text, "\n", "`r`n")

@@ -1,18 +1,18 @@
 ;===============================================================================
-; ScriptProvider.ahk - 脚本扩展: Scripts\ 文件夹里的脚本变成命令 (AutoHotkey v2)
+; ScriptProvider.ahk - Scripts extension: scripts in the Scripts\ folder become commands (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 Raycast 的 Script Commands、RunZ 的插件一样: 把脚本放进 Scripts\ (程序目录, 程序目录不能写入时
-; 在 %APPDATA%\ALTRun\Scripts), 就能按名称或关键字搜到并运行。支持 .ahk .ps1 .bat .cmd .py。
-; 脚本开头的注释里可以写 (注释符 ; # REM :: // 都行, 都可以不写):
-;   @altrun.title     名称              (默认用文件名)
-;   @altrun.keyword   关键字            输入完全相同时排在最前面
-;   @altrun.argument  提示文字          需要参数: 输入 "关键字 文字", 文字作为第一个参数传给脚本
+; Like Raycast's Script Commands and RunZ's plugins: put a script in Scripts\ (in the program folder, or
+; %APPDATA%\ALTRun\Scripts when that isn't writable), and it can be found by name or keyword and run. .ahk .ps1 .bat .cmd .py are supported.
+; The comments at the top of a script can say (any comment marker ; # REM :: // works; all are optional):
+;   @altrun.title     name              (the file name by default)
+;   @altrun.keyword   keyword           comes first when typed exactly
+;   @altrun.argument  hint text         takes an argument: type "keyword text", and the text is passed to the script as its first argument
 ;   @altrun.mode      window | silent | output
-;                     window (默认) 正常运行, 有窗口; silent 在后台运行, 结束后把输出的最后一行显示成通知;
-;                     output 在后台运行, 结束后用 .txt 的默认程序 (一般是记事本) 打开全部输出
-; 文件夹有变化时 (修改时间) 重新读取, 不用重新载入 ALTRun。F3 用记事本编辑脚本。
+;                     window (default) runs normally with a window; silent runs in the background and shows the last line of output as a notification when done;
+;                     output runs in the background and opens all output with the default program for .txt (usually Notepad) when done
+; Read again when the folder changes (modified time), without reloading ALTRun. F3 edits the script in Notepad.
 ;
-; 设置 (ALTRun.json -> Features.Scripts): Enabled / Keyword ("script backup" searches scripts only, "script " lists all,
+; Settings (ALTRun.json -> Features.Scripts): Enabled / Keyword ("script backup" searches scripts only, "script " lists all,
 ; like the snippets' "snip"; just "script" without the space still shows the commands with that word)
 ;===============================================================================
 
@@ -21,9 +21,9 @@ class ScriptProvider {
     static Extensions := Map("ahk", 1, "ps1", 1, "bat", 1, "cmd", 1, "py", 1)
     static Scripts := []
     static _lastStamp := "", _checked := 0
-    static TimeoutMs := 120000                                              ; 后台脚本最多等多久
+    static TimeoutMs := 120000                                              ; how long to wait for a background script at most
 
-    static Folder := ""                                                     ; 不为空时用这个文件夹 (测试用)
+    static Folder := ""                                                     ; when not empty, this folder is used (for tests)
     static Dir => (ScriptProvider.Folder != "") ? ScriptProvider.Folder : AppSettings.Portable ? A_ScriptDir "\Scripts" : AppSettings.UserDir "\Scripts"
 
     static Init() {
@@ -31,7 +31,7 @@ class ScriptProvider {
     }
 
     static Search(query) {
-        if (A_TickCount - ScriptProvider._checked > 2000)                   ; 最多 2 秒看一次文件夹有没有变
+        if (A_TickCount - ScriptProvider._checked > 2000)                   ; check whether the folder changed at most every 2 s
             ScriptProvider._RefreshIfChanged()
         results := [], keyword := AppSettings.Feature("Scripts")["Keyword"]
         onlyScripts := (keyword != "" && query.HasRest && query.MatchKeyword([keyword], &term))
@@ -66,7 +66,7 @@ class ScriptProvider {
         title := script.Title, subtitle := I18n.T("Script.Subtitle", script.Name)
         if (script.Argument != "") {
             if (argument = "") {
-                props.Valid := (script.Keyword = "")                        ; 有关键字: Enter 补全 "关键字 ", 接着输入参数
+                props.Valid := (script.Keyword = "")                        ; with a keyword: Enter completes "keyword " so the argument can be typed next
                 props.AutoComplete := (script.Keyword != "") ? script.Keyword " " : ""
                 subtitle := ((script.Keyword != "") ? I18n.T("Search.TypeArgAfter", script.Keyword, script.Argument) : script.Argument) " · " subtitle
             } else
@@ -83,7 +83,7 @@ class ScriptProvider {
         }
     }
 
-    ; 运行脚本的命令行
+    ; The command line that runs the script
     static CommandLine(script, argument := "") {
         quoted := '"' script.Path '"' ((argument != "") ? ' "' StrReplace(argument, '"', '\"') '"' : "")
         switch script.Ext {
@@ -99,7 +99,7 @@ class ScriptProvider {
         command := ScriptProvider.CommandLine(script, argument)
         if (script.Mode = "window")
             return Run(command, dir)
-        output := A_Temp "\ALTRun-script-" A_TickCount ".txt"              ; 后台运行, 输出写到临时文件
+        output := A_Temp "\ALTRun-script-" A_TickCount ".txt"              ; runs in the background, output goes to a temporary file
         Run(A_ComSpec ' /c "' command ' > "' output '" 2>&1"', dir, "Hide", &pid)
         started := A_TickCount
         check() {
@@ -115,7 +115,7 @@ class ScriptProvider {
         text := ""
         try text := FileRead(output)
         if (script.Mode = "output") {
-            Path.OpenText(output)                                           ; .txt 的默认程序 (一般是记事本), 临时文件留在 %Temp%
+            Path.OpenText(output)                                           ; the default program for .txt (usually Notepad); the temporary file stays in %Temp%
             return
         }
         try FileDelete(output)
@@ -128,7 +128,7 @@ class ScriptProvider {
         return message
     }
 
-    ; F3: 用记事本编辑脚本
+    ; F3: edit the script in Notepad
     static EditItem(item) {
         Run('notepad.exe "' item.Source.Path '"')
         return false
@@ -150,7 +150,7 @@ class ScriptProvider {
         ScriptProvider._checked := A_TickCount
     }
 
-    ; 脚本文件 -> {Path, Name, Ext, Title, Keyword, Argument, Mode, Keys}; 读开头 30 行里的 @altrun.xxx
+    ; Script file -> {Path, Name, Ext, Title, Keyword, Argument, Mode, Keys}; reads @altrun.xxx in the first 30 lines
     static ReadScript(path) {
         SplitPath(path, &name, , &ext, &baseName)
         meta := Map("title", baseName, "keyword", "", "argument", "", "mode", "window")
@@ -172,7 +172,7 @@ class ScriptProvider {
               , Keys: [FuzzyMatcher.Key(title), (keyword != "") ? FuzzyMatcher.Key(keyword) : "", (pinyinText != title) ? FuzzyMatcher.Key(pinyinText) : ""]}
     }
 
-    ; 文件夹和里面每个文件的修改时间拼起来, 有变化就重新读
+    ; the modified times of the folder and each file in it joined: read again when it changes
     static _Stamp() {
         stamp := ""
         if DirExist(ScriptProvider.Dir)
@@ -187,8 +187,8 @@ class ScriptProvider {
             ScriptProvider.Load()
     }
 
-    ; 示例脚本, 各演示一种写法: 后台运行显示通知 (ahk, silent)、关键字后面带参数 (bat, window; 关键字不要和默认命令重复)、
-    ; 用记事本看全部输出 (ps1, output)。只用 ASCII 字符: Windows PowerShell 5 按 ANSI 读不带 BOM 的文件
+    ; Example scripts, each showing one form: background with a notification (ahk, silent), a keyword with an argument (bat, window; the keyword mustn't clash with the default commands),
+    ; all output in Notepad (ps1, output). ASCII only: Windows PowerShell 5 reads files without BOM as ANSI
     static ExampleScripts() {
         return Map(
             "Today.ahk",
@@ -213,14 +213,14 @@ class ScriptProvider {
               . "Get-NetIPAddress -AddressFamily IPv4 | Where-Object IPAddress -ne '127.0.0.1' | Format-Table InterfaceAlias, IPAddress -AutoSize`r`n")
     }
 
-    ; 打开 Scripts 文件夹; 还没有时先建几个示例脚本 (ExampleScripts)
+    ; Opens the Scripts folder; creates a few example scripts first if it doesn't exist yet (ExampleScripts)
     static OpenFolder() {
         dir := ScriptProvider.Dir
         if !DirExist(dir) {
             DirCreate(dir)
             for name, text in ScriptProvider.ExampleScripts()
-                FileAppend(text, dir "\" name, "UTF-8-RAW")                 ; 不带 BOM: cmd 读到 BOM 会把第一行当成命令报错
+                FileAppend(text, dir "\" name, "UTF-8-RAW")                 ; no BOM: cmd would take a BOM as part of a command on the first line and fail
         }
-        ActionCatalog.OpenFolder(dir)                                       ; 设置的文件管理器 (例如 Total Commander)
+        ActionCatalog.OpenFolder(dir)                                       ; the file manager in the settings (e.g. Total Commander)
     }
 }

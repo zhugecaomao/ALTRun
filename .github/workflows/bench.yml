@@ -1,7 +1,7 @@
-# 在 Windows 上模拟日常操作, 比较两个版本的性能 (Tests/Bench/BenchDriver.ahk), 结果写进运行摘要, 原始数据是 artifact。
-#   手动运行 (Actions → Bench → Run workflow): baseline 默认最新正式版, candidate 默认运行的分支;
-#   每个版本 2 轮 x (searches 次搜索 + 每种操作 others 次), 默认 500 / 100 (每个版本 1000 次搜索 + 各 200 次, 约 50 分钟)
-#   main 以外的分支上改了测试脚本时: 自动用很少的次数跑一遍 (冒烟测试, 约 8 分钟)
+# Simulates daily use on Windows to compare the performance of two versions (Tests/Bench/BenchDriver.ahk); results go to the run summary, raw data is an artifact.
+#   Run manually (Actions → Bench → Run workflow): baseline defaults to the latest release, candidate to the branch it runs on;
+#   2 rounds per version x (searches searches + others of each action), default 500 / 100 (1000 searches + 200 of each per version, about 50 minutes)
+#   When the test scripts change on a branch other than main: a short run with few iterations (smoke test, about 8 minutes)
 name: Bench
 
 on:
@@ -87,7 +87,7 @@ jobs:
           $root = (Get-Location).Path
           $ahk = "$root\tools\ahk\AutoHotkey64.exe"
           $out = "$root\bench.txt"
-          # 两个版本轮流 (A B B A), 每轮重新启动 ALTRun, 同一对用同一个随机种子
+          # the two versions alternate (A B B A), ALTRun restarted each round, one random seed per pair
           $rounds = @(@("baseline", 1, 11), @("candidate", 1, 11), @("candidate", 2, 22), @("baseline", 2, 22))
           foreach ($r in $rounds) {
             $label = "$($r[0])-r$($r[1])"

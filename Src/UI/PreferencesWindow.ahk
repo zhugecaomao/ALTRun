@@ -1,58 +1,58 @@
 ;===============================================================================
-; PreferencesWindow.ahk - 偏好设置窗口 (AutoHotkey v2)
+; PreferencesWindow.ahk - the Preferences window (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 Alfred 的 Preferences 一样左边是分类, 右边是该分类的设置。
-; 所有修改先作用在设置的一份副本 (Working) 上, 按钮和一般的 Windows 设置窗口一样:
-;   确定   写回 ALTRun.json, 关闭窗口, ALTRun 在后台重新载入 (没有修改时直接关闭)
-;   取消   丢弃修改 (有修改时先确认); Esc 和右上角的关闭按钮相同
-;   应用   写回并重新载入, 偏好设置在同一页、同一位置重新打开; 没有修改时是灰色的
-;   帮助   (F1) 打开当前页对应的 Wiki 说明
-; 设置要在重新载入后才生效 (热键、主题、索引...), 所以 "应用" 时窗口会闪一下。
+; Like Alfred's Preferences: categories on the left, the category's settings on the right.
+; All changes go to a copy of the settings (Working) first; the buttons work like in any Windows settings window:
+;   OK       writes ALTRun.json, closes the window, and ALTRun reloads in the background (closes directly without changes)
+;   Cancel   discards the changes (confirms first if there are any); Esc and the close button do the same
+;   Apply    writes and reloads, and Preferences reopens on the same page at the same position; grayed out without changes
+;   Help     (F1) opens the Wiki page for the current page
+; Settings take effect after reloading (hotkeys, theme, indexes...), so the window flashes on "Apply".
 ;
-; 页面构建用几个小工具, 每个设置项只写一行:
-;   _Check("General.LaunchAtLogin", "Prefs.LaunchAtLogin", , , "Prefs.Group.Startup")  复选框 (最后是左列的分组标签)
-;   _Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")   文本框, 宽度 "S" / "M" / "L"
-;   _Field("General.Hotkey", "Prefs.Hotkey", "K", "hotkey")     录制热键的框 (HotkeyBox): 显示 Alt+Space, 保存 !Space
-;   _Choice("General.Language", "Prefs.Language", 值数组, 显示文字数组)
+; Pages are built with a few small helpers, one line per setting:
+;   _Check("General.LaunchAtLogin", "Prefs.LaunchAtLogin", , , "Prefs.Group.Startup")  check box (the last one is the group label in the left column)
+;   _Field("Features.Snippets.Keyword", "Prefs.SnippetKeyword", "M")   text box, width "S" / "M" / "L"
+;   _Field("General.Hotkey", "Prefs.Hotkey", "K", "hotkey")     a box that records a hotkey (HotkeyBox): shows Alt+Space, saves !Space
+;   _Choice("General.Language", "Prefs.Language", values, display texts)
 ;   _LinesButton("Features.Applications.Folders", "Prefs.AppFolders")  one item per line: summary + "Edit..." window
-;   _Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", "M")   数组 <-> 逗号分隔
-;   _Button("Prefs.ClipClear", fn) / _Section("Prefs.QuickSwitch") / _Info(标签, 文字)
-;   _List(...)                                                  列表 + 添加/编辑/删除 (ItemEditor)
-; 路径是 ALTRun.json 里的键, 用 "." 连接。
-; 布局是两列表单: 左列是右对齐的标签 (LabelW), 所有控件从 _InputX() 开始, 这样每一页都整齐。
-; 和 Alfred 一样, 每个设置下面有一行灰色的说明: I18n 里有 "<标签的键>.Desc" (例如
-; Prefs.LaunchAtLogin.Desc) 时自动显示, 不用在页面里另写。
+;   _Csv("Features.FileSearch.Keywords", "Prefs.FileKeywords", "M")   array <-> comma-separated
+;   _Button("Prefs.ClipClear", fn) / _Section("Prefs.QuickSwitch") / _Info(label, text)
+;   _List(...)                                                  list + Add / Edit / Delete (ItemEditor)
+; Paths are keys in ALTRun.json joined with ".".
+; The layout is a two-column form: right-aligned labels on the left (LabelW), every control starts at _InputX(), so every page lines up.
+; Like Alfred, each setting has a gray description below it: when I18n has "<label key>.Desc" (e.g.
+; Prefs.LaunchAtLogin.Desc) it is shown automatically, nothing extra on the page.
 ;
-; 用法:
-;   PreferencesWindow.Show([页码, x, y])
-;   PreferencesWindow.AddCommands(paths)   "发送到" 时偏好设置开着: 加进 "命令" 页
+; Usage:
+;   PreferencesWindow.Show([page, x, y])
+;   PreferencesWindow.AddCommands(paths)   "Send to" while Preferences is open: added to the Commands page
 ;===============================================================================
 
 class PreferencesWindow {
     static Gui := "", Working := "", Pages := [], Binds := [], PageList := ""
-    static _lists := Map()                                                  ; 列表页的设置路径 (例如 "CustomCommands") -> 加入 / 编辑项目的方法
-    ; 页面的顺序 (和 _BuildPages 一致, 有测试检查); 搜索里的 "ALTRun 偏好设置: 外观" 等由它生成, 不用打开窗口
+    static _lists := Map()                                                  ; setting path of a list page (e.g. "CustomCommands") -> the method that adds / edits items
+    ; the order of the pages (matching _BuildPages, checked by a test); search entries like "ALTRun Preferences: Appearance" come from it without opening the window
     static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Keyboard", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
         , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
         , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp"
         , "Prefs.Page.Usage", "Prefs.Page.Advanced"]
     static _page := 0, _y := 0
     static _dirty := false, _ready := false, ApplyButton := ""
-    ; 两列表单 (和 Alfred / Listary 一样): 左列是右对齐的标签, 一页里的控件从同一条竖线 (_InputX) 开始,
-    ; 左列宽度每页按标签长短定 (_BeginPage); 输入框只用三种宽度, 复选框按组在左列加标签,
-    ; 按钮统一尺寸, 灰色说明和控件左对齐
+    ; Two-column form (as in Alfred / Listary): right-aligned labels on the left, and a page's controls start at one vertical line (_InputX);
+    ; the left column's width is set per page by its labels (_BeginPage); input boxes have only three widths, check boxes get group labels in the left column,
+    ; buttons share one size, and gray descriptions align with the controls
     static ContentX := 190, ContentW := 560, LabelW := 190
     static MinWindowWidth := 450                                            ; the search window: room for the status bar's four parts
-    static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = 整个控件列 (_InputW)
-    static WidthK := 150                                                    ; 热键框 ("K")
+    static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = the whole control column (_InputW)
+    static WidthK := 150                                                    ; hotkey box ("K")
     static _pairX := 0, _pairFirstW := 0, _pairSecondW := 0, _pairSizes := ["", ""]
-    static ButtonY := 619                                                   ; 底部按钮的位置; 页面内容要在它上面 (y < ButtonY - 10)
-    static LabelMax := 250                                                  ; 左列最宽多少, 再长的标签换行
+    static ButtonY := 619                                                   ; where the bottom buttons are; page content must stay above (y < ButtonY - 10)
+    static LabelMax := 250                                                  ; widest the left column gets; longer labels wrap
     static _positionReset := false
-    static _pageKey := "", _wider := Map()                                  ; 正在建的页; 标签放不下的页 -> 需要的左列宽度
-    static _labelWidths := Map()                                            ; "语言 页" -> 加宽后的左列宽度 (打开过一次就记住)
+    static _pageKey := "", _wider := Map()                                  ; the page being built; pages whose labels don't fit -> the left column width they need
+    static _labelWidths := Map()                                            ; "language page" -> the widened left column (remembered once opened)
 
-    ; pageIndex: 页码, 或页面的键 (例如 "Prefs.Page.Advanced")
+    ; pageIndex: page number, or the page's key (e.g. "Prefs.Page.Advanced")
     static Show(pageIndex := 1, x := "", y := "") {
         if IsObject(PreferencesWindow.Gui) {
             index := IsInteger(pageIndex) ? pageIndex : PreferencesWindow._PageIndex(pageIndex)
@@ -65,8 +65,8 @@ class PreferencesWindow {
         PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
         PreferencesWindow.Binds := [], PreferencesWindow._wider := Map(), PreferencesWindow._lists := Map(), PreferencesWindow._helpButton := ""
         PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false, PreferencesWindow._page := 0
-        ; 页面用到时才建 (_BuildPage): 打开时只建要显示的那一页, 别的页第一次点到时再建。以前打开时 19 页全部建好,
-        ; 每次要 300 多毫秒 (旧电脑上一两秒), 大部分页根本不会看
+        ; Pages are built when needed (_BuildPage): opening builds only the page shown, the others when first clicked. Opening used to build all 19 pages,
+        ; over 300 ms each time (a second or two on old PCs), and most pages are never looked at
         PreferencesWindow.Pages := []
         for index, key in PreferencesWindow.PageKeys
             PreferencesWindow.Pages.Push({Key: key, Name: I18n.T(key), Wiki: PreferencesWindow.WikiPage(key), Controls: [], Built: false
@@ -74,33 +74,33 @@ class PreferencesWindow {
 
         g := Gui("-MinimizeBox", I18n.T("Prefs.Title"))
         g.SetFont("s9", ThemeManager.FontName())
-        g.OnEvent("Close", (*) => PreferencesWindow.Cancel())                ; 返回 true = 不关闭 (选择了继续编辑)
+        g.OnEvent("Close", (*) => PreferencesWindow.Cancel())                ; true = don't close (chose to keep editing)
         g.OnEvent("Escape", (*) => PreferencesWindow.Cancel())
         PreferencesWindow.Gui := g
 
-        ; 左边的页面列表最先建: Tab 键的顺序是 列表 -> 页面里的控件 -> 底部按钮 (之后才建的页面, 控件挪到底部按钮前面, 见 _BuildPage)
-        ; ListView 而不是 ListBox: 每页前面一个图标 (系统图标字体画的, 见 NavIcons); 0x20 整行选中, 0x10000 双缓冲
+        ; The page list on the left is built first: the Tab order is list -> the page's controls -> bottom buttons (pages built later have their controls moved before the bottom buttons, see _BuildPage)
+        ; A ListView rather than a ListBox: an icon before each page (drawn with the system icon font, see NavIcons); 0x20 full-row select, 0x10000 double buffering
         pageList := g.AddListView("x12 y12 w160 h" (PreferencesWindow.ButtonY - 24) " -Hdr -Multi LV0x10020", [""])
         if !IsInteger(pageIndex)
             pageIndex := PreferencesWindow._PageIndex(pageIndex)
         pageIndex := Max(1, Min(pageIndex, PreferencesWindow.Pages.Length))
         PreferencesWindow._BuildPage(pageIndex)
-        if !IsObject(PreferencesWindow.Gui)                                 ; 建页面时窗口被关掉了 (见 _BuildPage)
+        if !IsObject(PreferencesWindow.Gui)                                 ; the window was closed while a page was being built (see _BuildPage)
             return
 
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
-        icons := NavIcons.ImageList(PreferencesWindow.PageKeys)             ; 图像列表的高度就是行高 (更宽松的侧边栏)
+        icons := NavIcons.ImageList(PreferencesWindow.PageKeys)             ; the image list's height is the row height (a roomier sidebar)
         if icons
             pageList.SetImageList(icons, 1)
         for index, name in names
             pageList.Add("Icon" index, name)
-        pageList.ModifyCol(1, "AutoHdr")                                    ; 唯一的一列占满列表宽度 (列比列表窄时右边会多一条列分隔线)
-        DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; 和资源管理器一样的悬停 / 选中效果
-        pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (ItemSelect 事件有时收不到)
-        pageList.OnNotify(-12, (ctrl, lParam) => PreferencesWindow._OnPageListDraw(lParam))   ; NM_CUSTOMDRAW: 不画虚线焦点框
-        for code in [-2, -3, -5, -6]                                        ; NM_CLICK / NM_DBLCLK / NM_RCLICK / NM_RDBLCLK (点得快时第二下算双击)
+        pageList.ModifyCol(1, "AutoHdr")                                    ; the only column fills the list width (a column narrower than the list would add a column separator on the right)
+        DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; the same hover / selection look as Explorer
+        pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (the ItemSelect event sometimes doesn't arrive)
+        pageList.OnNotify(-12, (ctrl, lParam) => PreferencesWindow._OnPageListDraw(lParam))   ; NM_CUSTOMDRAW: no dotted focus rectangle
+        for code in [-2, -3, -5, -6]                                        ; NM_CLICK / NM_DBLCLK / NM_RCLICK / NM_RDBLCLK (a fast second click counts as a double-click)
             pageList.OnNotify(code, (ctrl, lParam) => PreferencesWindow._OnPageClick(lParam))
         PreferencesWindow.PageList := pageList
 
@@ -119,8 +119,8 @@ class PreferencesWindow {
 
         PreferencesWindow._SelectRow(pageIndex)
         g.Show((IsInteger(x) && IsInteger(y) ? "x" x " y" y " " : "") "w765 h" (PreferencesWindow.ButtonY + 41))
-        pageList.Focus()                                                    ; 焦点在页面列表: ↑ ↓ 切换页面, 不会不小心改了第一页的设置
-        ; 打开窗口时程序自己填的值不算修改, 等控件的通知都处理完再开始记录
+        pageList.Focus()                                                    ; focus in the page list: ↑ ↓ switch pages, so the first page's settings can't be changed by accident
+        ; values the program fills in when opening don't count as changes; start recording once the controls' notifications are handled
         SetTimer(() => (PreferencesWindow._ready := true), -300)
     }
 
@@ -130,18 +130,18 @@ class PreferencesWindow {
             PreferencesWindow.PageList.Modify(index, "Select Focus Vis")
     }
 
-    ; 选中了一行: 显示那一页
+    ; A row was selected: show that page
     static _OnPageRow(lParam) {
-        row := NumGet(lParam, 3 * A_PtrSize, "Int") + 1                     ; NMLISTVIEW: iItem (从 0 开始), uNewState, uOldState
+        row := NumGet(lParam, 3 * A_PtrSize, "Int") + 1                     ; NMLISTVIEW: iItem (0-based), uNewState, uOldState
         newState := NumGet(lParam, 3 * A_PtrSize + 8, "UInt"), oldState := NumGet(lParam, 3 * A_PtrSize + 12, "UInt")
-        if !((newState ^ oldState) & 0x2)                                   ; LVIS_SELECTED 没变 (例如只是焦点变了)
+        if !((newState ^ oldState) & 0x2)                                   ; LVIS_SELECTED didn't change (e.g. only the focus changed)
             return
         if ((newState & 0x2) && row != PreferencesWindow._page)
             PreferencesWindow.SelectPage(row)
     }
 
-    ; 选中行只用高亮表示, 不画虚线焦点框 (和 Windows 设置的导航一样)。Windows 按 "最近是不是用了键盘"
-    ; 决定显示不显示焦点框, 所以有时第一次打开偏好设置会看到虚线、有时看不到; 这里在画每一行之前去掉 CDIS_FOCUS
+    ; The selected row is shown by its highlight only, without a dotted focus rectangle (like the navigation in Windows Settings). Windows decides whether to show focus rectangles
+    ; by "whether the keyboard was used recently", so the first time Preferences opens the dots sometimes show and sometimes don't; CDIS_FOCUS is removed before each row is drawn
     static _OnPageListDraw(lParam) {
         stage := NumGet(lParam, 3 * A_PtrSize, "UInt")                      ; NMCUSTOMDRAW.dwDrawStage
         if (stage = 0x1)                                                    ; CDDS_PREPAINT
@@ -153,8 +153,8 @@ class PreferencesWindow {
         return 0                                                            ; CDRF_DODEFAULT
     }
 
-    ; 点了列表下面的空白处 (没有点到行), ListView 会取消选中: 松开鼠标后选回当前页。
-    ; 不在取消选中时马上选回: 点另一行时也会先取消选中上一行, 那样上一行会闪一下
+    ; A click on the blank area below the list (not on a row) makes ListView deselect: select the current page again after the mouse is released.
+    ; Not right at deselecting: clicking another row also deselects the previous row first, and that row would flash
     static _OnPageClick(lParam) {
         if (NumGet(lParam, 3 * A_PtrSize, "Int") < 0 && !PreferencesWindow.PageList.GetNext())   ; NMITEMACTIVATE.iItem = -1
             PreferencesWindow.PageList.Modify(PreferencesWindow._page, "Select Focus")
@@ -167,7 +167,7 @@ class PreferencesWindow {
         return 1
     }
 
-    ; 有控件被用户修改过: "应用" 变为可用, 取消时要确认; force: 刚打开窗口时也算 ("发送到" 加进来的命令)
+    ; A control was changed by the user: "Apply" becomes available and Cancel asks first; force: counts even right after opening (commands added by "Send to")
     static MarkDirty(force := false) {
         if ((!PreferencesWindow._ready && !force) || PreferencesWindow._dirty)
             return
@@ -175,8 +175,8 @@ class PreferencesWindow {
         try PreferencesWindow.ApplyButton.Enabled := true
     }
 
-    ; 换页时只隐藏上一页、显示这一页的控件, 再只重画右边的页面区域:
-    ; 不重画左边的页面列表和底部按钮, 切换时不闪 (不对整个窗口用 WM_SETREDRAW: 顶层窗口停止重画后子控件会画不出来)
+    ; Switching pages only hides the old page's controls, shows the new one's and repaints just the page area on the right:
+    ; the page list and bottom buttons aren't repainted, so switching doesn't flicker (no WM_SETREDRAW on the whole window: a top-level window that stops redrawing leaves its child controls unpainted)
     static SelectPage(pageIndex) {
         PreferencesWindow._BuildPage(pageIndex)
         if !IsObject(PreferencesWindow.Gui)
@@ -185,34 +185,34 @@ class PreferencesWindow {
         previous := PreferencesWindow._page
         PreferencesWindow._page := pageIndex
         for index, page in PreferencesWindow.Pages {
-            if (index = pageIndex || index = previous || previous = 0)      ; 刚建好时所有页面都要隐藏一次
+            if (index = pageIndex || index = previous || previous = 0)      ; right after building, every page has to be hidden once
                 for ctrl in page.Controls
                     ctrl.Visible := (index = pageIndex)
         }
-        ; 复选框和说明文字是透明背景: 不先擦掉背景就重画, 文字会叠两遍变成粗体
+        ; check boxes and descriptions have a transparent background: repainting without erasing would draw the text twice, making it bold
         DllCall("RedrawWindow", "Ptr", hwnd, "Ptr", PreferencesWindow._PageArea(), "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW
     }
 
-    ; 页面区域 (窗口客户区里, 页面列表右边、底部按钮上面) 的 RECT
+    ; The RECT of the page area (in the window's client area, right of the page list, above the bottom buttons)
     static _PageArea() {
         list := Buffer(16), client := Buffer(16), area := Buffer(16)
         DllCall("GetWindowRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", list)
-        DllCall("MapWindowPoints", "Ptr", 0, "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", list, "UInt", 2)   ; 屏幕坐标 -> 客户区坐标
+        DllCall("MapWindowPoints", "Ptr", 0, "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", list, "UInt", 2)   ; screen coordinates -> client coordinates
         DllCall("GetClientRect", "Ptr", PreferencesWindow.Gui.Hwnd, "Ptr", client)
         NumPut("Int", NumGet(list, 8, "Int"), "Int", 0, "Int", NumGet(client, 8, "Int"), "Int", NumGet(list, 12, "Int"), area)
         return area
     }
 
     static Close() {
-        HotkeyBox.CancelActive()                                            ; 正在录制热键时关窗口: 先结束录制, 恢复 ALTRun 的热键
+        HotkeyBox.CancelActive()                                            ; closing the window while a hotkey is being recorded: end the recording first and restore ALTRun's hotkeys
         if IsObject(PreferencesWindow.Gui)
             PreferencesWindow.Gui.Destroy()
         PreferencesWindow.Gui := "", PreferencesWindow._lists := Map()
     }
 
-    ; "发送到" 时偏好设置开着: 切到 "命令" 页, 把文件 / 文件夹加进列表, 按 确定 / 应用 才保存
-    ; (直接写进设置文件, 会被之后的保存盖掉)。和没开偏好设置时一样: 1 个打开编辑框
-    ; (已经有这个命令时编辑它), 多个直接加上, 跳过已有的
+    ; "Send to" while Preferences is open: switch to the Commands page and add the files / folders to the list; they are saved by OK / Apply
+    ; (writing to the settings file directly would be overwritten by the next save). As without Preferences open: one opens the edit dialog
+    ; (editing the existing command if there is one), several are added directly, skipping existing ones
     static AddCommands(paths) {
         PreferencesWindow.Show("Prefs.Page.Commands")
         list := PreferencesWindow._lists["CustomCommands"]
@@ -250,7 +250,7 @@ class PreferencesWindow {
             PreferencesWindow.Save(true)
     }
 
-    ; 返回 true 表示没有关闭 (有修改, 选择了继续编辑)
+    ; true = not closed (there were changes and the user chose to keep editing)
     static Cancel() {
         if (PreferencesWindow._dirty && MsgBox(I18n.T("Prefs.DiscardChanges"), I18n.T("Prefs.Title"), "YesNo Icon? Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
             return true
@@ -263,7 +263,7 @@ class PreferencesWindow {
         ActionCatalog.OpenUrl(HelpProvider.WikiPage(page.Wiki))
     }
 
-    ; 每一页对应的 Wiki 页面 (帮助按钮 / F1)
+    ; the Wiki page for each page (Help button / F1)
     static WikiPage(nameKey) {
         static pages := Map("Prefs.Page.General", "Configuration", "Prefs.Page.Window", "Usage", "Prefs.Page.Keyboard", "Hotkeys", "Prefs.Page.Appearance", "Themes"
                           , "Prefs.Page.Features", "Usage", "Prefs.Page.Applications", "Configuration", "Prefs.Page.FileSearch", "File-Search"
@@ -293,13 +293,13 @@ class PreferencesWindow {
         PreferencesWindow._y := saved
     }
 
-    ; "管理员窗口里也生效" 打开时建计划任务、关掉时删掉 (各确认一次 UAC)。建不成 (取消了 UAC) 时说明并把选项关回去;
-    ; 返回 false = 不保存 (用户选择回去改)
+    ; Turning on "also in administrator windows" creates the scheduled task, turning it off deletes it (one UAC prompt each). If creating fails (UAC canceled), explain and turn the option off again;
+    ; false = don't save (the user chose to go back and change it)
     static _ApplyCapsLockHelper(general) {
         was := AppSettings.General.Has("CapsLockElevated") && AppSettings.General["CapsLockElevated"]
         now := general.Has("CapsLockElevated") && general["CapsLockElevated"]
         if (now && !CapsLockSwitch.IsMode(general["CapsLock"]))
-            general["CapsLockElevated"] := now := 0                         ; CapsLock 照常时这个选项没有作用
+            general["CapsLockElevated"] := now := 0                         ; the option has no effect while CapsLock works as usual
         if (now && !was && !CapsLockHelper.Install()) {
             MsgBox(I18n.T("Prefs.CapsLockElevatedFailed"), I18n.T("Prefs.Title"), "Icon! Owner" PreferencesWindow.Gui.Hwnd)
             general["CapsLockElevated"] := 0
@@ -309,14 +309,14 @@ class PreferencesWindow {
         return true
     }
 
-    ; 命令行 "-Preferences 页码 [x y]" (应用 之后重新打开) -> {Page, X, Y}
+    ; Command line "-Preferences page [x y]" (reopening after Apply) -> {Page, X, Y}
     static ParseArgs(args) {
         value(i) => (args.Length >= i && IsInteger(args[i])) ? Integer(args[i]) : ""
         page := value(2)
         return {Page: (page = "") ? 1 : page, X: value(3), Y: value(4)}
     }
 
-    ; reopen: 应用 = 重新载入后在同一页、同一位置重新打开; 确定 = 只在后台重新载入
+    ; reopen: Apply = reload and reopen on the same page at the same position; OK = only reload in the background
     static Save(reopen := true) {
         for bind in PreferencesWindow.Binds
             PreferencesWindow.SetPath(PreferencesWindow.Working, bind.Path, bind.Read.Call())
@@ -329,7 +329,7 @@ class PreferencesWindow {
         if (IsObject(clash) && MsgBox(I18n.T("Prefs.HotkeyClash", HotkeyBox.Label(clash.Key), clash.First, clash.Second)
                 , I18n.T("Prefs.Title"), "YesNo Icon! Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
             return
-        if !PreferencesWindow._positionReset                                ; 打开偏好设置之后拖动过搜索窗口: 用新的位置
+        if !PreferencesWindow._positionReset                                ; the search window was dragged after Preferences opened: use the new position
             appearance["Position"] := PreferencesWindow.DeepCopy(AppSettings.Appearance["Position"])
 
         if !PreferencesWindow._ApplyCapsLockHelper(general)
@@ -338,7 +338,7 @@ class PreferencesWindow {
         AppSettings.Data := PreferencesWindow.Working
         if !AppSettings.Save()
             return
-        if stale.Apps                                                       ; 改了索引的范围: 重新启动后在后台重新扫描 (扫完前旧索引照常用)
+        if stale.Apps                                                       ; the index scope changed: rescan in the background after restarting (the old index is used until then)
             ApplicationProvider.ExpireCache()
         if stale.Files
             FileIndex.ExpireCache()
@@ -351,22 +351,22 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; Pages
     ;---------------------------------------------------------------------------
-    ; 每一页的建法, 和 PageKeys 一一对应
+    ; how each page is built, one per PageKeys entry
     static PageBuilders := ["_BuildGeneral", "_BuildWindow", "_BuildKeyboard", "_BuildAppearance", "_BuildFeatures", "_BuildApplications"
         , "_BuildFileSearch", "_BuildFileIndex", "_BuildCommands", "_BuildSnippets", "_BuildClipboard", "_BuildWebSearch"
         , "_BuildCalculator", "_BuildScripts", "_BuildHotkeys", "_BuildQuickSwitch", "_BuildQuickSwitchPanel", "_BuildDateStamp"
         , "_BuildUsage", "_BuildAdvanced"]
     static _current := "", _helpButton := ""
 
-    ; 建好所有页 (测试检查每一页的布局时用)
+    ; Builds every page (for the tests that check each page's layout)
     static BuildAll() {
         Loop PreferencesWindow.Pages.Length
             PreferencesWindow._BuildPage(A_Index)
     }
 
-    ; 建一页 (已经建过就什么都不做)。左列宽度每页写死了一个值 (按中英文的标签定); 别的语言的标签更长、放不下时,
-    ; 按实际的文字宽度加宽左列, 这一页重新建一次 (第一次建的控件藏起来不用; 记住宽度, 下次打开不用再建两次)。
-    ; 建页面的中途可能被别的线程打断 (Sleep、托盘菜单、Esc / 关闭按钮), 窗口被关掉后 Gui 是 "": 不再往上加控件, 返回 false
+    ; Builds a page (does nothing if already built). Each page has a fixed left column width (set for the Chinese / English labels); when another language's labels are longer and don't fit,
+    ; the left column is widened to the actual text width and the page built again (the controls from the first build are hidden and unused; the width is remembered so later openings build once).
+    ; Building can be interrupted by another thread (Sleep, tray menu, Esc / close button); after the window closes Gui is "": add no more controls and return false
     static _BuildPage(index) {
         if !IsObject(PreferencesWindow.Gui)
             return false
@@ -374,7 +374,7 @@ class PreferencesWindow {
         if page.Built
             return false
         wasReady := PreferencesWindow._ready
-        PreferencesWindow._ready := false                                   ; 程序自己填的值不算修改 (和刚打开窗口时一样)
+        PreferencesWindow._ready := false                                   ; values the program fills in don't count as changes (as right after opening)
         Loop 2 {
             PreferencesWindow._wider := Map(), binds := PreferencesWindow.Binds.Length
             try PreferencesWindow.%page.Builder%()
@@ -394,18 +394,18 @@ class PreferencesWindow {
         }
         if !IsObject(PreferencesWindow.Gui)
             return false
-        if IsObject(PreferencesWindow._helpButton)                          ; 窗口已经建好: 新的控件挪到底部按钮前面 (Tab 键的顺序)
+        if IsObject(PreferencesWindow._helpButton)                          ; the window is already built: new controls move before the bottom buttons (Tab order)
             PreferencesWindow._BeforeButtons(page.Controls)
-        if wasReady {                                                       ; 先处理掉建页面时控件发出的通知 (Change 事件), 再开始记录修改
+        if wasReady {                                                       ; handle the notifications the controls sent while building (Change events) first, then start recording changes
             Sleep(-1)
             PreferencesWindow._ready := true
         }
-        if !IsObject(PreferencesWindow.Gui)                                 ; Sleep 时窗口被关掉了
+        if !IsObject(PreferencesWindow.Gui)                                 ; the window was closed during Sleep
             return false
         return true
     }
 
-    ; 控件按顺序放到 "帮助" 按钮前面 (Tab 键按控件的 Z 顺序走: 列表 -> 页面 -> 底部按钮)
+    ; Puts the controls in order before the "Help" button (Tab follows the controls' Z order: list -> page -> bottom buttons)
     static _BeforeButtons(controls) {
         after := DllCall("GetWindow", "Ptr", PreferencesWindow._helpButton.Hwnd, "UInt", 3, "Ptr")   ; GW_HWNDPREV
         for ctrl in controls {
@@ -423,23 +423,23 @@ class PreferencesWindow {
         PreferencesWindow._Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
                    , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
-                   , ["CheckForUpdates", "Prefs.CheckUpdates", "Prefs.Group.Updates"]]   ; 写入调试日志在 高级 → 诊断
+                   , ["CheckForUpdates", "Prefs.CheckUpdates", "Prefs.Group.Updates"]]   ; writing the debug log is under Advanced → Diagnostics
             PreferencesWindow._Check("General." row[1], row[2], , , row[3])
         PreferencesWindow._Gap()
         PreferencesWindow._Field("General.FileManager", "Prefs.FileManager", "L", "file")
     }
 
-    ; 搜索窗口的行为 (设置仍然在 General 里, 只是分到单独一页)
+    ; Search window behavior (the settings are still in General, just on a page of their own)
     static _BuildWindow() {
-        PreferencesWindow._BeginPage("Prefs.Page.Window", 16)                ; 分节排列, 每节的内容缩进一点
+        PreferencesWindow._BeginPage("Prefs.Page.Window", 16)                ; arranged in sections, each section's content indented a little
         PreferencesWindow._Section("Prefs.Group.Window")
         PreferencesWindow._Check("General.HideOnDeactivate", "Prefs.HideOnDeactivate")
         PreferencesWindow._Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
-        PreferencesWindow._Check("Appearance.StatusBar", "Prefs.StatusBar")       ; 使用提示在状态栏里 (关掉状态栏时在空搜索框里), 放在一起
+        PreferencesWindow._Check("Appearance.StatusBar", "Prefs.StatusBar")       ; the usage tips are in the status bar (in the empty search box when the status bar is off): kept together
         PreferencesWindow._Check("General.ShowTips", "Prefs.ShowTips")
         PreferencesWindow._Section("Prefs.Section.EmptyBox")
         placeholder := PreferencesWindow._InlineField("Appearance.Placeholder", "Prefs.Placeholder", "M")
-        Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; 留空时灰色显示默认的文字
+        Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; empty shows the default text in gray
         recent := PreferencesWindow._InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
         PreferencesWindow._AlignLeft(placeholder, recent)                   ; the input boxes on this page share one left edge
     }
@@ -488,14 +488,14 @@ class PreferencesWindow {
     static _BuildAppearance() {
         PreferencesWindow._BeginPage("Prefs.Page.Appearance", 150)
         appearance := PreferencesWindow.Working["Appearance"]
-        if ((base := ThemeManager.LegacyCompact(appearance["Theme"])) != "") {  ; 以前的紧凑主题: 选中对应的主题, 密度至少是常规 (保存后生效)
+        if ((base := ThemeManager.LegacyCompact(appearance["Theme"])) != "") {  ; a former compact theme: select the matching theme, density at least Normal (takes effect after saving)
             appearance["Theme"] := base
             if (appearance["Density"] = "Comfortable")
                 appearance["Density"] := "Normal"
         }
         PreferencesWindow._Section("Prefs.Section.Theme")
         themes := ThemeManager.Names()
-        gallery := PreferencesWindow._ThemeGallery("Appearance.Theme", themes, 164)   ; 一行半缩略图 (看得出可以滚动), 给下面的 "紧凑" 留出地方
+        gallery := PreferencesWindow._ThemeGallery("Appearance.Theme", themes, 164)   ; one and a half rows of thumbnails (shows it can scroll), leaving room for "Compact" below
         PreferencesWindow._Buttons("Prefs.Group.CustomThemes"
             , ["Prefs.CopyTheme", (*) => PreferencesWindow._CopyTheme(gallery, themes)]
             , ["Prefs.OpenThemes", (*) => PreferencesWindow._OpenFolder(ThemeManager.UserDir)])
@@ -522,7 +522,7 @@ class PreferencesWindow {
             ctrl.Move(, , right - dx)
     }
 
-    ; 记住的位置恢复为默认 (保存时生效)
+    ; the remembered position goes back to the default (takes effect when saved)
     static _ResetPosition(button) {
         PreferencesWindow.Working["Appearance"]["Position"] := AppSettings.Defaults()["Appearance"]["Position"]
         PreferencesWindow._positionReset := true
@@ -530,7 +530,7 @@ class PreferencesWindow {
         button.Enabled := false
     }
 
-    ; 界面语言的选项: 自动 + Resources\Lang 里的语言 (每种语言用它自己的文字显示)
+    ; Options for the UI language: Auto + the languages in Resources\Lang (each shown in its own language)
     static _LanguageValues() {
         values := ["auto"]
         for language in I18n.Languages()
@@ -545,20 +545,20 @@ class PreferencesWindow {
         return labels
     }
 
-    ; 内置主题显示翻译后的名称, 用户主题显示文件名
+    ; built-in themes show their translated names, user themes their file names
     static _ThemeLabel(themeName) {
         label := I18n.T("Theme." themeName)
         return (label = "Theme." themeName) ? themeName : label
     }
 
-    ; 主题列表: 每个主题一张缩略图 (ThemePreview, 按主题的颜色画的迷你搜索窗口), 像 Alfred / Listary 一样点选。
-    ; 用 ListView 的大图标视图: 自带滚动条、方向键选择, 主题再多也放得下。返回 ListView (行号 = themes 里的序号)
+    ; Theme list: a thumbnail per theme (ThemePreview, a mini search window in the theme's colors), picked by clicking like in Alfred / Listary.
+    ; A ListView in large-icon view: its own scroll bar and arrow-key selection, room for any number of themes. Returns the ListView (row = index in themes)
     static _ThemeGallery(path, themes, height) {
         thumbW := Win.Scale(112), thumbH := Win.Scale(76)
         list := PreferencesWindow._Add("ListView", "x" PreferencesWindow.ContentX " w" PreferencesWindow.ContentW " h" height
             . " Icon -Multi -Hdr", ["Theme"])
-        DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "WStr", "Explorer", "Ptr", 0)   ; 选中项画浅色方框, 不把缩略图染成蓝色
-        list.SetImageList(ThemePreview.ImageList(themes, thumbW, thumbH), 0)   ; 0 = 大图标
+        DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "WStr", "Explorer", "Ptr", 0)   ; the selected item gets a light frame instead of tinting the thumbnail blue
+        list.SetImageList(ThemePreview.ImageList(themes, thumbW, thumbH), 0)   ; 0 = large icons
         SendMessage(0x1035, 0, PreferencesWindow.GalleryColumnWidth(list, thumbW) | ((thumbH + Win.Scale(30)) << 16), list.Hwnd)   ; LVM_SETICONSPACING
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         selected := 1
@@ -568,24 +568,24 @@ class PreferencesWindow {
                 selected := index
         }
         list.Modify(selected, "Select Focus Vis")
-        list.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnGalleryChange(lParam))   ; LVN_ITEMCHANGED (程序里选中的也算)
+        list.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnGalleryChange(lParam))   ; LVN_ITEMCHANGED (selection by the program counts too)
         PreferencesWindow._Bind(path, () => themes[list.GetNext() || selected])
         PreferencesWindow._Below(8, list)
         return list
     }
 
-    ; 主题列表每一格的宽度: 一行正好放 GalleryColumns 个缩略图, 均匀铺满 (右边不剩一大块), 留 2 像素余量免得最后一个挤到下一行。
-    ; 主题多于两行, 有竖滚动条, 宽度先减掉它
+    ; Width of each cell of the theme list: exactly GalleryColumns thumbnails per row, spread evenly (no big gap on the right), with 2 pixels to spare so the last doesn't wrap.
+    ; more than two rows of themes have a vertical scroll bar: subtract it first
     static GalleryColumns := 4
     static GalleryColumnWidth(list, thumbW) {
         rect := Buffer(16, 0)
         DllCall("GetClientRect", "Ptr", list.Hwnd, "Ptr", rect)
-        width := NumGet(rect, 8, "Int") - (DllCall("GetWindowLong", "Ptr", list.Hwnd, "Int", -16, "Int") & 0x200000 ? 0 : SysGet(2))   ; WS_VSCROLL 还没出现时减掉 SM_CXVSCROLL
+        width := NumGet(rect, 8, "Int") - (DllCall("GetWindowLong", "Ptr", list.Hwnd, "Int", -16, "Int") & 0x200000 ? 0 : SysGet(2))   ; subtract SM_CXVSCROLL while WS_VSCROLL hasn't appeared yet
         return Max(thumbW + Win.Scale(8), (width - 2) // PreferencesWindow.GalleryColumns)
     }
 
-    ; 表格最后一列占满剩下的宽度 (和 AutoHdr 一样), 但先让出竖滚动条的位置: 还没显示过的列表 Windows 先不画竖滚动条,
-    ; AutoHdr 按没有滚动条算, 显示出来以后就多出横向滚动条。列表内容变了 (添加、删除、筛选) 再调用一次
+    ; The table's last column fills the remaining width (like AutoHdr) but first leaves room for the vertical scroll bar: Windows doesn't draw it for a list not yet shown,
+    ; so AutoHdr counts without it and a horizontal scroll bar appears once shown. Call again when the list contents change (add, delete, filter)
     static FitColumns(listView) {
         static LVM_GETCOLUMNWIDTH := 0x101D, LVM_SETCOLUMNWIDTH := 0x101E, LVM_GETHEADER := 0x101F, HDM_GETITEMCOUNT := 0x1200
         columns := SendMessage(HDM_GETITEMCOUNT, 0, 0, SendMessage(LVM_GETHEADER, 0, 0, listView.Hwnd))
@@ -595,7 +595,7 @@ class PreferencesWindow {
         SendMessage(LVM_SETCOLUMNWIDTH, columns - 1, Max(width, 50), listView.Hwnd)
     }
 
-    ; 表格各列加起来应有的宽度: 客户区宽度, 一屏放不下所有行 (竖滚动条已经出现或将要出现) 时减掉滚动条的宽度
+    ; The width the table's columns should add up to: the client width, minus the scroll bar's width when the rows don't fit on one screen (the scroll bar is there or will be)
     static ListWidth(listView) {
         static LVM_GETCOUNTPERPAGE := 0x1028
         rect := Buffer(16, 0)
@@ -605,7 +605,7 @@ class PreferencesWindow {
         return NumGet(rect, 8, "Int") + (hasVScroll ? SysGet(2) : 0) - (needVScroll ? SysGet(2) : 0)   ; SM_CXVSCROLL
     }
 
-    ; 主题列表里选中了另一个主题: "应用" 可用
+    ; another theme was selected in the theme list: "Apply" becomes available
     static _OnGalleryChange(lParam) {
         static LVIS_SELECTED := 0x2
         offset := A_PtrSize * 3 + 4                                         ; NMLISTVIEW: hdr, iItem, iSubItem, uNewState
@@ -614,7 +614,7 @@ class PreferencesWindow {
             PreferencesWindow.MarkDirty()
     }
 
-    ; 把选中的主题 (展开成完整的键) 复制到 Themes\<新名称>.json, 用记事本打开, 并在列表里选中它
+    ; Copies the selected theme (expanded to all keys) to Themes\<new name>.json, opens it in Notepad and selects it in the list
     static _CopyTheme(gallery, themes) {
         source := themes[gallery.GetNext() || 1]
         if (source = "System")
@@ -655,8 +655,8 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.Features", 140)
         PreferencesWindow._Section("Prefs.EnabledFeatures")
         features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "Windows", "Recent", "FileSearch", "Scripts", "Terminal", "System", "Help"]
-        startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; 两列: 英文名称较长, 三列会换行
-        rowH := 20                                                          ; 行距: 至少比复选框高 4 (中文、日文的复选框高一些)
+        startY := PreferencesWindow._y, columnW := PreferencesWindow._InputW() // 2      ; two columns: the English names are long, three would wrap
+        rowH := 20                                                          ; row spacing: at least 4 more than a check box (Chinese and Japanese check boxes are taller)
         for index, feature in features {
             column := Mod(index - 1, 2), row := (index - 1) // 2
             PreferencesWindow._y := startY + row * rowH
@@ -667,7 +667,7 @@ class PreferencesWindow {
                 rowH := Max(rowH, checkH + 4)
             }
         }
-        PreferencesWindow._y := startY + (features.Length // 2) * rowH        ; 最后一行: 大字显示 (不是搜索功能), Windows 设置的页面 (系统命令的一部分)
+        PreferencesWindow._y := startY + (features.Length // 2) * rowH        ; last row: Large Type (not a search feature), Windows Settings pages (part of the system commands)
         PreferencesWindow._Check("Features.LargeType.Enabled", "Prefs.Feature.LargeType", PreferencesWindow._InputX(), , "", columnW)
         PreferencesWindow._y := startY + (features.Length // 2) * rowH
         PreferencesWindow._Check("Features.System.SettingsPages", "Prefs.SettingsPages", PreferencesWindow._InputX() + columnW, , "", columnW)
@@ -675,15 +675,15 @@ class PreferencesWindow {
         PreferencesWindow._Section("Prefs.Section.FeatureOptions")
         PreferencesWindow._Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
         PreferencesWindow._LinesButton("Features.System.Hidden", "Prefs.SysHidden")
-        PreferencesWindow._y += 4                                           ; 比 _Gap 小一点: 这一页放满了
+        PreferencesWindow._y += 4                                           ; a little less than _Gap: this page is full
         PreferencesWindow._Pair(["Features.Terminal.Prefix", "Prefs.TerminalPrefix", "S"]
             , ["Features.Terminal.Shell", "Prefs.TerminalShell", "M", "choice", ["cmd", "powershell", "pwsh", "wt"], ["Command Prompt (cmd)", "Windows PowerShell", "PowerShell 7 (pwsh)", "Windows Terminal (wt)"]])
-        for row in [["Bookmarks", "Prefs.Feature.Bookmarks"], ["Windows", "Prefs.Feature.Windows"]] {   ; 书签和窗口: 普通搜索里也显示 + 只搜它们的关键字
+        for row in [["Bookmarks", "Prefs.Feature.Bookmarks"], ["Windows", "Prefs.Feature.Windows"]] {   ; bookmarks and windows: also in normal search + a keyword that searches only them
             rowY := PreferencesWindow._y
             PreferencesWindow._Check("Features." row[1] ".InDefaultResults", "Prefs.ShowInNormal", , , row[2], columnW)
-            field := PreferencesWindow._SideField(rowY, PreferencesWindow._InputX() + columnW, "Features." row[1] ".Keyword", "Prefs.FeatureKeyword")   ; 和上面功能的右列对齐
+            field := PreferencesWindow._SideField(rowY, PreferencesWindow._InputX() + columnW, "Features." row[1] ".Keyword", "Prefs.FeatureKeyword")   ; aligned with the right column of the features above
             field.GetPos(, &fieldY, , &fieldH)
-            PreferencesWindow._y := Max(rowY + 25, fieldY + fieldH + 8)     ; 两行的关键字框至少隔 5 (中日文的输入框高一些)
+            PreferencesWindow._y := Max(rowY + 25, fieldY + fieldH + 8)     ; keyword boxes on two rows at least 5 apart (Chinese / Japanese input boxes are taller)
         }
         PreferencesWindow._y -= 3
         PreferencesWindow._Desc("Prefs.FeatureKeyword", PreferencesWindow._InputX())
@@ -695,7 +695,7 @@ class PreferencesWindow {
         PreferencesWindow._LinesButton("Features.Applications.Folders", "Prefs.AppFolders")
         PreferencesWindow._Csv("Features.Applications.FileTypes", "Prefs.AppFileTypes", "L")
         PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", "L")
-        PreferencesWindow._FieldButton("Features.Applications.Depth", "Prefs.AppDepth", "Prefs.RebuildIndex", (button, *) => PreferencesWindow._RebuildApps(button))   ; 没有刷新间隔: 监视文件夹, 有变化时自动更新
+        PreferencesWindow._FieldButton("Features.Applications.Depth", "Prefs.AppDepth", "Prefs.RebuildIndex", (button, *) => PreferencesWindow._RebuildApps(button))   ; no refresh interval: the folders are watched and updated on changes
         PreferencesWindow._Section("Prefs.Section.AppResults")
         PreferencesWindow._LinesButton("Features.Applications.Hidden", "Prefs.AppHidden", {Summary: (lines) => PreferencesWindow.NameSummary(lines)})
         PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps", , , "Prefs.Group.Options")
@@ -714,16 +714,16 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
         PreferencesWindow._Field("Features.FileSearch.MinQueryLength", "Prefs.FileMinLength", "S", "number")
-        PreferencesWindow._Section("Prefs.Section.Browse")                  ; 浏览文件夹总是可用, 只有说明
+        PreferencesWindow._Section("Prefs.Section.Browse")                  ; browsing folders is always available: just a description
     }
 
-    ; 搜索来源: Everything (在运行时用它搜全盘) 和 Everything 没有运行时的内置文件索引
+    ; Search sources: Everything (searches the whole disk while it runs) and the built-in file index when Everything isn't running
     static _BuildFileIndex() {
         PreferencesWindow._BeginPage("Prefs.Page.FileIndex", 130)
         PreferencesWindow._Section("Prefs.Section.Everything")
         pinyinHelp := HelpProvider.WikiPage("File-Search") (SubStr(I18n.Lang, 1, 2) = "zh" ? "#常见问题" : "#troubleshooting")
-        PreferencesWindow._LinkDesc(I18n.T("Prefs.EverythingPinyin", pinyinHelp), PreferencesWindow.ContentX)   ; 分节的说明: 怎样让 Everything 支持拼音 (和内置索引一节的拼音说明对照)
-        PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", , I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning"))   ; 现在有没有在运行
+        PreferencesWindow._LinkDesc(I18n.T("Prefs.EverythingPinyin", pinyinHelp), PreferencesWindow.ContentX)   ; the section's description: how to make Everything support pinyin (to compare with the pinyin note in the built-in index section)
+        PreferencesWindow._Check("Features.FileSearch.UseEverything", "Prefs.UseEverything", , I18n.T(Everything.IsRunning() ? "Prefs.Running" : "Prefs.NotRunning"))   ; whether it is running now
         PreferencesWindow._Field("Features.FileSearch.EverythingFilter", "Prefs.EverythingFilter", "L")
         PreferencesWindow._Field("Features.FileSearch.EverythingPath", "Prefs.EverythingPath", "L", "folder")
         PreferencesWindow._Section("Prefs.Section.BuiltinIndex")
@@ -759,7 +759,7 @@ class PreferencesWindow {
         PreferencesWindow._LinesButton("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude")
     }
 
-    ; 文字片段页的 "导入 / 导出" 按钮: 弹出菜单
+    ; The "Import / Export" button on the Snippets page: shows a menu
     static _SnippetMenu(list, button) {
         popup := Menu()
         popup.Add(I18n.T("Snippet.Import"), (*) => PreferencesWindow._ImportSnippets(list))
@@ -768,7 +768,7 @@ class PreferencesWindow {
         popup.Show(x, y + h)
     }
 
-    ; 从表格导入: 粘贴从 Excel 复制的内容, 或者读 CSV / TSV 文件; 合并进列表 (按 "取消" 关掉偏好设置就不保存)
+    ; Import from a table: paste what was copied from Excel, or read a CSV / TSV file; merged into the list (closing Preferences with Cancel doesn't save it)
     static _ImportSnippets(list) {
         owner := PreferencesWindow.Gui, title := I18n.T("Snippet.Import.Title"), state := {Message: ""}
         g := Gui("+Owner" owner.Hwnd " -MinimizeBox", title)
@@ -817,7 +817,7 @@ class PreferencesWindow {
         }
     }
 
-    ; 导出为 CSV (UTF-8 带 BOM, Excel 直接打开不乱码): 偏好设置里现在的列表, 包括还没保存的修改
+    ; Export as CSV (UTF-8 with BOM, so Excel opens it without garbled text): the list in Preferences now, including unsaved changes
     static _ExportSnippets(list) {
         owner := PreferencesWindow.Gui, title := I18n.T("Snippet.Export")
         owner.Opt("+OwnDialogs")
@@ -845,7 +845,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.Clipboard.Persist", "Prefs.ClipPersist", , , "Prefs.Group.History")
         PreferencesWindow._Check("Features.Clipboard.Images", "Prefs.ClipImages")
         PreferencesWindow._Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
-        PreferencesWindow._Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]   ; 存在哪里 (ClipboardProvider.PlaceStorage)
+        PreferencesWindow._Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]   ; where it is stored (ClipboardProvider.PlaceStorage)
             , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "L")   ; long options: full width
         PreferencesWindow._Check("Features.Clipboard.MergeDoubleCopy", "Prefs.ClipMerge", , , "Prefs.Group.Copy")
         PreferencesWindow._Gap()
@@ -861,7 +861,7 @@ class PreferencesWindow {
         PreferencesWindow._Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", "L")
     }
 
-    ; 计算器: 货币换算, 结构计算 (梁主筋 / 配筋面积) 和它的参数
+    ; Calculator: currency conversion, structural calculation (beam main bars / steel area) and its parameters
     static _BuildCalculator() {
         base := "Features.Calculator."
         PreferencesWindow._BeginPage("Prefs.Page.Calculator", 150)
@@ -869,17 +869,17 @@ class PreferencesWindow {
         PreferencesWindow._Check(base "Currency", "Prefs.Currency")
         PreferencesWindow._Section("Prefs.Section.Structural")
         PreferencesWindow._Check(base "StructuralCalc", "Prefs.StructuralCalc")
-        PreferencesWindow._Field(base "RebarCover", "Prefs.RebarCover", "S", "number")      ; 每项一行: 标签和输入框各自对齐
+        PreferencesWindow._Field(base "RebarCover", "Prefs.RebarCover", "S", "number")      ; one row per item: labels and input boxes each aligned
         PreferencesWindow._Field(base "MaxBarSpacing", "Prefs.MaxBarSpacing", "S", "number")
         PreferencesWindow._Csv(base "BarSizes", "Prefs.BarSizes", "M", true)
         PreferencesWindow._Field(base "BarPrefix", "Prefs.BarPrefix", "S")
     }
 
-    ; 脚本扩展: 说明、Scripts 文件夹、找到的脚本 (双击用记事本编辑); 开关在 "功能" 页
+    ; Scripts extension: description, the Scripts folder, the scripts found (double-click edits in Notepad); the switch is on the Features page
     static _BuildScripts() {
         PreferencesWindow._BeginPage("Prefs.Page.Scripts", 110)
         PreferencesWindow._Section("Prefs.Section.Scripts")
-        folder := PreferencesWindow._Info("Prefs.Group.ScriptsFolder", ScriptProvider.Dir, " r1 cGray 0x8100")   ; 和高级页的数据文件夹一样: 太长时中间用省略号
+        folder := PreferencesWindow._Info("Prefs.Group.ScriptsFolder", ScriptProvider.Dir, " r1 cGray 0x8100")   ; like the data folder on the Advanced page: an ellipsis in the middle when too long
         Win.AddTooltip(folder.Hwnd, ScriptProvider.Dir)
         PreferencesWindow._y += 4
         PreferencesWindow._Button("Prefs.ScriptsFolder", (*) => (ScriptProvider.OpenFolder(), PreferencesWindow._FillScripts()))
@@ -925,7 +925,7 @@ class PreferencesWindow {
         PreferencesWindow._Note("Prefs.HotkeysNote")
     }
 
-    ; 对话框快速跳转 (Listary 的 Quick Switch)
+    ; Quick switch for dialogs (Listary's Quick Switch)
     static _BuildQuickSwitch() {
         base := "Extensions.QuickSwitch."
         PreferencesWindow._BeginPage("Prefs.Page.QuickSwitch", 150)
@@ -944,7 +944,7 @@ class PreferencesWindow {
         PreferencesWindow._LinesButton(base "AutoSwitchExclude", "Prefs.QSAutoExclude")
     }
 
-    ; 对话框面板 (QuickSwitch 的一部分): 打开 / 保存对话框下面的文件夹列表和搜索框, 以及键盘用的文件夹菜单
+    ; The dialog panel (part of QuickSwitch): the folder list and search box below open / save dialogs, and the folder menu for the keyboard
     static _BuildQuickSwitchPanel() {
         base := "Extensions.QuickSwitch."
         PreferencesWindow._BeginPage("Prefs.Page.QSPanel", 150)
@@ -956,7 +956,7 @@ class PreferencesWindow {
         PreferencesWindow._Field(base "MenuHotkey", "Prefs.QSMenu", "K", "hotkey")
     }
 
-    ; 一键加日期 (AutoDate): 重命名文件 / 备注框里各自的热键和生效的窗口
+    ; Date stamp (AutoDate): hotkeys and target windows for renaming files and for comment boxes
     static _BuildDateStamp() {
         base := "Extensions.AutoDate."
         PreferencesWindow._BeginPage("Prefs.Page.DateStamp", 150)
@@ -970,25 +970,25 @@ class PreferencesWindow {
         PreferencesWindow._LinesButton(base "AppendWindows", "Prefs.AppendWindows")
     }
 
-    ; 上面是 "关于" (图标、名称、版本、主页、检查更新), 下面是设置和数据文件的位置和操作
+    ; "About" at the top (icon, name, version, home page, check for updates), the settings and data file locations and actions below
     static _BuildAdvanced() {
         PreferencesWindow._BeginPage("Prefs.Page.Advanced", 110)
         textX := PreferencesWindow._InputX(), textW := PreferencesWindow._InputW(), top := PreferencesWindow._y + 6
-        PreferencesWindow._y := top                                         ; 图标在左列, 文字和按钮和下面的控件列对齐
-        if FileExist(App.IconFile)                                         ; 图标文件不在时 (例如只复制了 exe) 用 exe 里的图标
+        PreferencesWindow._y := top                                         ; the icon in the left column; text and buttons aligned with the control column below
+        if FileExist(App.IconFile)                                         ; without the icon file (e.g. only the exe was copied) use the icon in the exe
             PreferencesWindow._Add("Picture", "x" (textX - 64 - 18) " w64 h64", App.IconFile)
         else if A_IsCompiled
             PreferencesWindow._Add("Picture", "x" (textX - 64 - 18) " w64 h64 Icon1", A_ScriptFullPath)
         PreferencesWindow.Gui.SetFont("s15 bold")
         PreferencesWindow._Add("Text", "x" textX " w" textW, App.Name)
         PreferencesWindow.Gui.SetFont("s9 norm")
-        ; 宣传语、版本号 (报告问题时要找的, 单独一行)、版权和许可证: 同样的字号, 后两行灰色, 行距宽松一点
+        ; tagline, version (what a problem report asks for, on its own line), copyright and license: the same font size, the last two gray, a little more line spacing
         PreferencesWindow._y := top + 33
         PreferencesWindow._Add("Text", "x" textX " w" textW, I18n.T("App.Tagline"))
         PreferencesWindow._y := top + 56
         PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", I18n.T("Prefs.Version", App.Version) App.AdminSuffix())
         PreferencesWindow._y := top + 78
-        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao   ·   GPL-3.0")   ; 版本号以发布年份开头
+        PreferencesWindow._Add("Text", "x" textX " w" textW " cGray", "© 2013–" SubStr(App.Version, 1, 4) " zhugecaomao   ·   GPL-3.0")   ; the version starts with the release year
         PreferencesWindow._y := top + 105
         links := ""
         for link in [[App.Website, I18n.T("Prefs.Homepage")], [App.RepoUrl, "GitHub"], [App.RepoUrl "/releases", I18n.T("Update.ReleaseNotes")]
@@ -1001,7 +1001,7 @@ class PreferencesWindow {
         PreferencesWindow._y := top + 134 + PreferencesWindow.ButtonH + 22
 
         PreferencesWindow._Section("Prefs.Section.Data")
-        ; 设置文件就是数据文件夹里的 ALTRun.json, 不另写一行; 路径太长时中间用省略号 (SS_PATHELLIPSIS), 鼠标停留显示完整路径
+        ; The settings file is ALTRun.json in the data folder, so no extra line; an ellipsis in the middle when the path is too long (SS_PATHELLIPSIS), the full path on hover
         folder := PreferencesWindow._Info("Prefs.Group.DataFolder", AppSettings.DataDir, " r1 cGray 0x8100")
         Win.AddTooltip(folder.Hwnd, AppSettings.DataDir)
         PreferencesWindow._y += 4
@@ -1010,7 +1010,7 @@ class PreferencesWindow {
             , ["Prefs.OpenDataFolder", (*) => PreferencesWindow._OpenFolder(AppSettings.DataDir)]
             , ["Prefs.ChangeDataFolder", (*) => PreferencesWindow._ChangeDataFolder()])
 
-        ; 报告问题时要的: 调试日志 (从常规页挪过来, 和打开日志放在一起) 和系统信息
+        ; What a problem report needs: the debug log (moved here from the General page, next to opening the log) and system info
         PreferencesWindow._Section("Prefs.Group.Diagnostics")
         PreferencesWindow._Check("General.SaveLog", "Prefs.SaveLog")
         PreferencesWindow._y += 4
@@ -1024,7 +1024,7 @@ class PreferencesWindow {
             , ["Prefs.RestoreDefaults", (*) => PreferencesWindow._RestoreDefaults()])
     }
 
-    ; 还没有日志时 (没打开 "写入调试日志", 或者刚打开还没应用) 说明怎样才有
+    ; while there is no log yet ("Write debug log" off, or just switched on and not applied), say how to get one
     static _OpenLog() {
         Logger.Flush()
         if !FileExist(Logger.File)
@@ -1032,8 +1032,8 @@ class PreferencesWindow {
         App.OpenLog()
     }
 
-    ; 恢复默认设置: 确认后备份 ALTRun.json, 保留自己加的内容 (见 AppSettings.KeptOnReset), 其余换成默认值, 重新载入。
-    ; 偏好设置里还没应用的修改不要了
+    ; Reset to defaults: after confirming, back up ALTRun.json, keep what the user added (see AppSettings.KeptOnReset), replace the rest with the defaults and reload.
+    ; changes not yet applied in Preferences are dropped
     static _RestoreDefaults() {
         if (MsgBox(I18n.T("Prefs.RestoreDefaultsConfirm"), App.Name, "YesNo Icon! Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
             return
@@ -1048,7 +1048,7 @@ class PreferencesWindow {
         App.Reload()
     }
 
-    ; 使用统计 (和 Alfred 的 Usage 一样): 合计, 最近 30 天每天的柱状图, 每个功能的次数
+    ; Usage statistics (like Alfred's Usage): totals, a bar chart per day for the last 30 days, the count per feature
     static _usage := ""
     static _BuildUsage() {
         PreferencesWindow._BeginPage("Prefs.Page.Usage")
@@ -1101,7 +1101,7 @@ class PreferencesWindow {
         ui.First.Value := SubStr(daily[1][1], 6)
         ui.Chart.Value := I18n.T("Usage.Chart", num(most))
 
-        ; 次数多的在前 (相同时按 Usage.Features 的顺序), "呼出搜索窗口" 放最后
+        ; most used first (ties in the order of Usage.Features), "show search window" last
         rows := []
         for order, feature in Usage.Features
             rows.Push({Id: feature, Order: order, All: all.Has(feature) ? all[feature] : 0})
@@ -1139,8 +1139,8 @@ class PreferencesWindow {
         MsgBox(I18n.T("Prefs.ResetDone"), App.Name, 64)
     }
 
-    ; 换一个数据文件夹 (例如 OneDrive 里的, 几台电脑共用): 把现在的设置和数据复制过去 (那里已经有 ALTRun 的
-    ; 设置时可以直接用那里的), 位置记在默认位置的 ALTRun.json ("DataLocation"), 重新载入。原来的文件夹不动, 相当于留了一份备份
+    ; Switch to another data folder (e.g. one in OneDrive shared by several PCs): copy the current settings and data there (if ALTRun settings are already there,
+    ; they can be used directly); the location goes into ALTRun.json at the default location ("DataLocation") and ALTRun reloads. The old folder is left alone, like a backup
     static _ChangeDataFolder() {
         current := AppSettings.DataDir
         folder := DirSelect("*" current, 3, I18n.T("Prefs.DataFolderPrompt"))
@@ -1161,7 +1161,7 @@ class PreferencesWindow {
         } else if (MsgBox(I18n.T("Prefs.DataFolderCopy", folder), App.Name, "OKCancel Icon?" owner) != "OK") {
             return
         }
-        if PreferencesWindow.Cancel()                                       ; 有没保存的修改时先问要不要放弃
+        if PreferencesWindow.Cancel()                                       ; with unsaved changes, ask whether to discard them first
             return
         try {
             if !useExisting {
@@ -1177,24 +1177,24 @@ class PreferencesWindow {
 
     static _OpenFolder(folder) {
         DirCreate(folder)
-        ActionCatalog.OpenFolder(folder)                                    ; 设置的文件管理器 (例如 Total Commander)
+        ActionCatalog.OpenFolder(folder)                                    ; the file manager in the settings (e.g. Total Commander)
     }
 
     ;---------------------------------------------------------------------------
     ; Builders
     ;---------------------------------------------------------------------------
-    ; labelW: 这一页左列标签的宽度 (按这一页最长的标签定, 内容不会整体偏右)
+    ; labelW: width of this page's left-column labels (set by its longest label, so the content isn't pushed right as a whole)
     static _BeginPage(nameKey, labelW := 190) {
         page := PreferencesWindow.Pages[PreferencesWindow._PageIndex(nameKey)]
         page.Controls := [], page.Built := true
         PreferencesWindow._current := page
         PreferencesWindow._y := 14
         PreferencesWindow._pageKey := nameKey
-        PreferencesWindow._pairX := 0                                       ; 这一页成对设置的右列位置, 见 _Pair
+        PreferencesWindow._pairX := 0                                       ; right-column position of this page's paired settings, see _Pair
         PreferencesWindow.LabelW := Max(labelW, PreferencesWindow._labelWidths.Get(I18n.Lang " " nameKey, 0))
     }
 
-    ; 左列的标签放不下 (会换行) 时记下这一页需要的宽度, 见 Show
+    ; when a left-column label doesn't fit (it would wrap), note the width this page needs, see Show
     static _FitLabel(ctrl, text) {
         need := Ceil(Win.TextExtent(ctrl.Hwnd, text) * 96 / A_ScreenDPI) + 12 + 2
         if (need > PreferencesWindow.LabelW && PreferencesWindow.LabelW < PreferencesWindow.LabelMax) {
@@ -1207,7 +1207,7 @@ class PreferencesWindow {
         pos := InStr(options, " x") || InStr(options, "x") = 1 ? "" : "x" PreferencesWindow.ContentX " "
         ctrl := PreferencesWindow.Gui.Add(type, pos "y" PreferencesWindow._y " " options " Hidden", text)
         PreferencesWindow._current.Controls.Push(ctrl)
-        switch type, false {                                                ; 用户修改 -> "应用" 可用 (类型名不区分大小写)
+        switch type, false {                                                ; a user change -> "Apply" becomes available (type names are case-insensitive)
             case "Edit", "DropDownList", "ComboBox": ctrl.OnEvent("Change", (*) => PreferencesWindow.MarkDirty())
             case "CheckBox", "Radio":                ctrl.OnEvent("Click", (*) => PreferencesWindow.MarkDirty())
         }
@@ -1218,7 +1218,7 @@ class PreferencesWindow {
         PreferencesWindow.Binds.Push({Path: path, Read: readFn})
     }
 
-    ; 把 _y 移到这些控件最下面的位置之下 (控件的实际高度, 文字换行后也不会重叠)
+    ; Moves _y below the lowest of these controls (their real height, so wrapped text never overlaps)
     static _Below(gap, controls*) {
         bottom := PreferencesWindow._y
         for ctrl in controls {
@@ -1228,7 +1228,7 @@ class PreferencesWindow {
         PreferencesWindow._y := bottom + gap
     }
 
-    ; 分节标题: 粗体 + 下面一条细线; 不是页面第一行时和上面隔开一点
+    ; Section title: bold + a thin line below; a little space above when it isn't the page's first row
     static _Section(labelKey) {
         if (PreferencesWindow._y > 20)
             PreferencesWindow._y += 8
@@ -1245,10 +1245,10 @@ class PreferencesWindow {
         return I18n.Strings.Has(labelKey ".Desc")
     }
 
-    ; 说明里带 Wiki 链接的设置: 说明文字里的 {1} 换成 [页面, 中文页的锚点, 英文页的锚点] 的网址
+    ; Settings whose description has a Wiki link: {1} in the description becomes the URL of [page, anchor on the Chinese page, anchor on the English page]
     static DescLinks := Map("Prefs.SelectionHotkey", ["Usage", "#选中内容的操作", "#actions-on-selected-content"])
 
-    ; 设置下面的灰色小字说明 (I18n 里的 "<labelKey>.Desc"); 没有时什么也不加。x: 和上面的控件左边对齐
+    ; The small gray description below a setting ("<labelKey>.Desc" in I18n); nothing if there is none. x: aligned with the left of the control above
     static _Desc(labelKey, x, text := "") {
         controlType := "Text"
         if (text = "") {
@@ -1256,7 +1256,7 @@ class PreferencesWindow {
                 return
             text := I18n.T(labelKey ".Desc", PreferencesWindow._DescLink(labelKey))
             if PreferencesWindow.DescLinks.Has(labelKey)
-                controlType := "Link"                                              ; <a href="...">...</a>, 点了打开网页
+                controlType := "Link"                                              ; <a href="...">...</a>, opens the web page when clicked
         }
         PreferencesWindow.Gui.SetFont("s8")
         ctrl := PreferencesWindow._Add(controlType, "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x) " cGray", text)
@@ -1271,16 +1271,16 @@ class PreferencesWindow {
         return HelpProvider.WikiPage(link[1]) (SubStr(I18n.Lang, 1, 2) = "zh" ? link[2] : link[3])
     }
 
-    ; 带链接的灰色说明 (<a href="...">...</a>, 点了打开网页), 放在没有说明的分节标题下面
+    ; A gray description with links (<a href="...">...</a>, opens the page when clicked), below a section title that has no description of its own
     static _LinkDesc(text, x) {
-        PreferencesWindow._y -= 6                                           ; 和分节自己的说明一样, 离标题下的线 4 像素
+        PreferencesWindow._y -= 6                                           ; like a section's own description, 4 pixels below the title's line
         PreferencesWindow.Gui.SetFont("s8")
         ctrl := PreferencesWindow._Add("Link", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x) " cGray", text)
         PreferencesWindow.Gui.SetFont("s9")
         PreferencesWindow._Below(10, ctrl)
     }
 
-    ; 整行宽的灰色说明 (列表下面)
+    ; A full-width gray description (below lists)
     static _Note(textKey) {
         PreferencesWindow._Desc("", PreferencesWindow.ContentX, I18n.T(textKey))
     }
@@ -1289,7 +1289,7 @@ class PreferencesWindow {
         PreferencesWindow._y += 10
     }
 
-    ; 标签和输入框放在同一行: 标签往下挪 3 像素和输入框的文字对齐
+    ; A label and an input box on the same row: the label moves down 3 pixels to align with the box's text
     static _Label(labelKey) {
         PreferencesWindow._y += 3
         ctrl := PreferencesWindow._Add("Text", "w" (PreferencesWindow.LabelW - 12) " Right", I18n.T(labelKey))
@@ -1302,12 +1302,12 @@ class PreferencesWindow {
         return PreferencesWindow.ContentX + PreferencesWindow.LabelW
     }
 
-    ; 控件列的宽度 (长输入框 "L" 的宽度)
+    ; width of the control column (the width of a long "L" input box)
     static _InputW() {
         return PreferencesWindow.ContentW - PreferencesWindow.LabelW
     }
 
-    ; 输入框宽度: "S" 数字 / "M" 热键、关键字 / "L" 路径、过滤条件 (整个控件列; 带浏览按钮时让出按钮的位置)
+    ; Input box width: "S" numbers / "M" hotkeys, keywords / "L" paths, filters (the whole control column; leaves room for a browse button if there is one)
     static _Width(size, withBrowse := false) {
         switch size {
             case "S": return PreferencesWindow.WidthS
@@ -1317,8 +1317,8 @@ class PreferencesWindow {
         return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
     }
 
-    ; 复选框放在控件列; group: 左列的分组标签 (一组里的第一个复选框才写)。
-    ; desc: 代替 "<labelKey>.Desc" 显示的说明 (例如随状态变化的文字); width: 默认到页面右边
+    ; Check box in the control column; group: the group label in the left column (only on the first check box of a group).
+    ; desc: a description shown instead of "<labelKey>.Desc" (e.g. text that changes with a state); width: to the right edge of the page by default
     static _Check(path, labelKey, x := 0, desc := "", group := "", width := 0) {
         x := x ? x : PreferencesWindow._InputX()
         if (group != "")
@@ -1328,11 +1328,11 @@ class PreferencesWindow {
         PreferencesWindow._Bind(path, () => ctrl.Value)
         hasDesc := (desc != "" || PreferencesWindow._HasDesc(labelKey))
         PreferencesWindow._Below(hasDesc ? 0 : 6, ctrl)
-        PreferencesWindow._Desc(labelKey, x + 18, desc)                     ; 和复选框的文字对齐
+        PreferencesWindow._Desc(labelKey, x + 18, desc)                     ; aligned with the check box's text
         return ctrl
     }
 
-    ; 左列的分组标签, 和右边第一个控件同一行
+    ; A group label in the left column, on the same row as the first control on the right
     static _GroupLabel(labelKey, dy := 1) {
         PreferencesWindow._y += dy
         ctrl := PreferencesWindow._Add("Text", "x" PreferencesWindow.ContentX " w" (PreferencesWindow.LabelW - 12) " Right", I18n.T(labelKey))
@@ -1341,7 +1341,7 @@ class PreferencesWindow {
         return ctrl
     }
 
-    ; 左列标签 + 右边一段文字 (或链接), 例如 "版本: 2026.09.26"
+    ; Left-column label + some text (or a link) on the right, e.g. "Version: 2026.09.26"
     static _Info(labelKey, text, options := "", type := "Text") {
         label := PreferencesWindow._GroupLabel(labelKey)
         ctrl := PreferencesWindow._Add(type, "x" PreferencesWindow._InputX() " w" PreferencesWindow._InputW() options, text)
@@ -1349,7 +1349,7 @@ class PreferencesWindow {
         return ctrl
     }
 
-    ; 标签后面紧跟输入框 (分节排列的页面用, 不用左列): "搜索历史条数 [30]"
+    ; A label directly followed by an input box (for pages arranged in sections, without the left column): "Search history entries [30]"
     static _InlineField(path, labelKey, size, kind := "text") {
         x := PreferencesWindow._InputX()
         PreferencesWindow._y += 3
@@ -1367,7 +1367,7 @@ class PreferencesWindow {
         return ctrl
     }
 
-    ; 几个控件 (上下几行 _InlineField 的输入框) 左边对齐到最靠右的那个
+    ; Aligns the left edges of several controls (the input boxes of _InlineField rows) to the rightmost one
     static _AlignLeft(controls*) {
         left := 0
         for ctrl in controls {
@@ -1381,7 +1381,7 @@ class PreferencesWindow {
         }
     }
 
-    ; kind: text / number / file / folder; size: "S" / "M" / "L" (见 _Width)
+    ; kind: text / number / file / folder; size: "S" / "M" / "L" (see _Width)
     static _Field(path, labelKey, size, kind := "text") {
         label := PreferencesWindow._Label(labelKey)
         if (kind = "hotkey")
@@ -1401,7 +1401,7 @@ class PreferencesWindow {
         PreferencesWindow._BelowInput(labelKey, label, ctrl)
     }
 
-    ; 标签 + 输入框一行之后: 有说明时说明紧贴在输入框下面
+    ; After a label + input box row: a description goes right below the box
     static _BelowInput(labelKey, controls*) {
         hasDesc := PreferencesWindow._HasDesc(labelKey)
         PreferencesWindow._Below(hasDesc ? 3 : 8, controls*)
@@ -1496,7 +1496,7 @@ class PreferencesWindow {
         return TextTools.JoinList(names)
     }
 
-    ; numeric: 数字列表 (例如钢筋直径), 存成数字而不是文字
+    ; numeric: a list of numbers (e.g. bar diameters), stored as numbers rather than text
     static _Csv(path, labelKey, size, numeric := false) {
         label := PreferencesWindow._Label(labelKey)
         value := TextTools.JoinList(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
@@ -1505,10 +1505,10 @@ class PreferencesWindow {
         PreferencesWindow._BelowInput(labelKey, label, ctrl)
     }
 
-    ; 按钮放在控件列, 统一尺寸; group: 左列的分组标签
+    ; Button in the control column, one size for all; group: the group label in the left column
     static _Button(labelKey, fn, group := "") {
         if (group != "")
-            PreferencesWindow._GroupLabel(group, 5)                         ; 和按钮上的文字对齐
+            PreferencesWindow._GroupLabel(group, 5)                         ; aligned with the button's text
         ctrl := PreferencesWindow._Add("Button", "x" PreferencesWindow._InputX() " w" PreferencesWindow.ButtonW " h" PreferencesWindow.ButtonH, I18n.T(labelKey))
         ctrl.OnEvent("Click", fn)
         PreferencesWindow._Below(PreferencesWindow._HasDesc(labelKey) ? 2 : 6, ctrl)
@@ -1516,12 +1516,12 @@ class PreferencesWindow {
         return ctrl
     }
 
-    ; 一行并排几个按钮: specs = [labelKey, fn], ...; 说明用第一个按钮的 "<labelKey>.Desc"
+    ; Several buttons side by side: specs = [labelKey, fn], ...; the description is the first button's "<labelKey>.Desc"
     static _Buttons(group, specs*) {
         if (group != "")
             PreferencesWindow._GroupLabel(group, 5)
         x := PreferencesWindow._InputX(), controls := []
-        buttonW := Min(PreferencesWindow.ButtonW, (PreferencesWindow._InputW() - 10 * (specs.Length - 1)) // specs.Length)   ; 左列加宽后放不下时按钮窄一点
+        buttonW := Min(PreferencesWindow.ButtonW, (PreferencesWindow._InputW() - 10 * (specs.Length - 1)) // specs.Length)   ; narrower buttons when they don't fit after the left column was widened
         for spec in specs {
             ctrl := PreferencesWindow._Add("Button", "x" x " w" buttonW " h" PreferencesWindow.ButtonH, I18n.T(spec[1]))
             ctrl.OnEvent("Click", spec[2])
@@ -1532,15 +1532,15 @@ class PreferencesWindow {
         PreferencesWindow._Desc(specs[1][1], PreferencesWindow._InputX())
     }
 
-    ; 同一行两个设置: 左边的标签在左列, 右边的标签紧跟在左边的输入框后面。
+    ; Two settings on one row: the left one's label in the left column, the right one's label right after the left input box.
     ; left / right = [path, labelKey, size, kind := "text", values, labels] (kind: text / number / csv / choice)
-    ; 说明用左边的 "<labelKey>.Desc"
+    ; the description is the left one's "<labelKey>.Desc"
     static _Pair(left, right) {
         label := PreferencesWindow._Label(left[2])
         first := PreferencesWindow._Input(PreferencesWindow._InputX(), left*)
         first.GetPos(&x, , &w)
         sameAsFirstRow := PreferencesWindow._pairX && left[3] = PreferencesWindow._pairSizes[1] && right[3] = PreferencesWindow._pairSizes[2]
-        if sameAsFirstRow {                                                 ; 和这一页第一行一样的输入框: 用同样的宽度, 右边对齐到同一列
+        if sameAsFirstRow {                                                 ; the same kind of input box as the first row of the page: the same width, right side aligned to the same column
             w := PreferencesWindow._pairFirstW
             first.Move(, , w)
         }
@@ -1548,7 +1548,7 @@ class PreferencesWindow {
         label2 := PreferencesWindow._Add("Text", "x" (x + w + 18), I18n.T(right[2]))
         PreferencesWindow._y -= 3
         label2.GetPos(&x2, , &w2)
-        ; 左列加宽后控件列变窄, 放不下时把左边的输入框缩短 (最短 "S"); 两边是同一种输入框时一起缩短, 保持一样宽
+        ; With a widened left column the control column is narrower: if it doesn't fit, shorten the left input box (down to "S"); with the same kind of box on both sides shorten both, keeping them equal
         secondW := sameAsFirstRow ? PreferencesWindow._pairSecondW : 0
         overflow := x2 + w2 + 8 + (secondW ? secondW : PreferencesWindow._Width(right[3])) - (PreferencesWindow.ContentX + PreferencesWindow.ContentW)
         if (!sameAsFirstRow && overflow > 0 && left[3] = right[3] && w > PreferencesWindow.WidthS) {
@@ -1565,14 +1565,14 @@ class PreferencesWindow {
             label2.Move(x + w + 18)
             label2.GetPos(&x2)
         }
-        if (overflow > 0) {                                                 ; 还是放不下: 右边这一项换到下一行
+        if (overflow > 0) {                                                 ; still doesn't fit: the right one moves to the next row
             first.GetPos(, &firstY, , &firstH)
             PreferencesWindow._y := firstY + firstH + 6
             label2.Move(PreferencesWindow._InputX(), PreferencesWindow._y + 3)
             label2.GetPos(&x2)
         }
         secondX := x2 + w2 + 8
-        ; 同一页的几行成对的设置, 左边输入框一样宽或更窄时: 右边的输入框对齐到第一行右边输入框的位置 (标签靠右贴着输入框)
+        ; Paired settings on several rows of a page, with the left boxes as wide or narrower: the right boxes align with the first row's right box (labels right-aligned against the boxes)
         if (overflow <= 0) {
             target := PreferencesWindow._pairX
             if !target
@@ -1602,7 +1602,7 @@ class PreferencesWindow {
         }
     }
 
-    ; 单独一个输入控件 (不带标签), 并绑定 path; kind 见 _Pair
+    ; A single input control (without a label) bound to path; kind as in _Pair
     static _Input(x, path, labelKey, size, kind := "text", values := "", labels := "") {
         current := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         if (kind = "hotkey")
@@ -1619,7 +1619,7 @@ class PreferencesWindow {
         return ctrl
     }
 
-    ; 录制热键的框: 不经过 _Add (程序改框里的文字不算修改), 录到新热键时才标记 "有修改"
+    ; The hotkey recording box: not through _Add (the program changing its text isn't a change); marked as changed only when a new hotkey is recorded
     static _HotkeyBox(x, path) {
         ctrl := HotkeyBox.Add(PreferencesWindow.Gui, "x" x " y" PreferencesWindow._y " w" PreferencesWindow.WidthK " Hidden"
             , PreferencesWindow.GetPath(PreferencesWindow.Working, path), false, () => PreferencesWindow.MarkDirty())
@@ -1628,8 +1628,8 @@ class PreferencesWindow {
         return ctrl
     }
 
-    ; 和上一行的短输入框 ("S") 同一行的按钮 (例如 "子文件夹深度 [4]  [重建文件索引]")
-    ; 复选框同一行右边的 "标签 [输入框]": 标签从 x 开始, 输入框紧跟在后面, 和复选框上下居中
+    ; A button on the same row as the short input box ("S") above (e.g. "Subfolder depth [4]  [Rebuild file index]")
+    ; "label [input box]" right of a check box on the same row: the label starts at x, the box follows right after, centered vertically with the check box
     static _SideField(rowY, x, path, labelKey, size := "S") {
         label := PreferencesWindow._Add("Text", "x" x " y" (rowY + 1), I18n.T(labelKey))
         label.GetPos(&labelX, , &labelW)
@@ -1638,7 +1638,7 @@ class PreferencesWindow {
         return ctrl
     }
 
-    ; "重建索引": 马上重建 (一次做完), 弹出结果, 点确定关掉
+    ; "Rebuild index": rebuild now (in one go), show the result, OK closes it
     static _RebuildApps(button) {
         button.Enabled := false
         count := ApplicationProvider.Rebuild()
@@ -1646,14 +1646,14 @@ class PreferencesWindow {
         PreferencesWindow._RebuildResult(I18n.T("Prefs.RebuildIndex.Done", count), I18n.T("Prefs.RebuildIndex"))
     }
 
-    ; "重建文件索引": 在后台分批扫描, 按钮显示 "正在重建...", 扫完弹出结果
+    ; "Rebuild file index": scans in the background in batches, the button shows "Rebuilding...", the result is shown when done
     static _RebuildFiles(button) {
         label := button.Text
         button.Text := I18n.T("Prefs.Rebuilding"), button.Enabled := false
         FileIndex.Rebuild(Done)
 
         Done(count) {
-            try button.Text := label, button.Enabled := true                ; 偏好设置可能已经关了
+            try button.Text := label, button.Enabled := true                ; Preferences may have closed already
             options := AppSettings.Feature("FileSearch")
             message := I18n.T("Prefs.RebuildFileIndex.Done", count)
             if (count >= options["MaxEntries"])
@@ -1664,16 +1664,16 @@ class PreferencesWindow {
         }
     }
 
-    ; 重建的结果: 偏好设置开着时弹出对话框 (点确定关掉); 已经关了时用通知
+    ; The rebuild result: a dialog while Preferences is open (OK closes it); a notification if it has closed
     static _RebuildResult(message, title) {
         if !IsObject(PreferencesWindow.Gui)
             return App.Toast(message)
-        if PreferencesWindow._dirty                                         ; 重建用的是已经保存的设置
+        if PreferencesWindow._dirty                                         ; the rebuild uses the saved settings
             message .= "`n`n" I18n.T("Prefs.RebuildUnsaved")
         MsgBox(message, title, "Iconi Owner" PreferencesWindow.Gui.Hwnd)
     }
 
-    ; 数字输入框 (宽度 "S") 右边紧跟一个按钮 (例如 "子文件夹深度" + "重建索引"), 灰色说明 (labelKey 的) 放在两个的下面
+    ; A number box (width "S") followed by a button (e.g. "Subfolder depth" + "Rebuild index"), with the gray description (of labelKey) below both
     static _FieldButton(path, labelKey, buttonKey, fn) {
         label := PreferencesWindow._Label(labelKey)
         rowY := PreferencesWindow._y
@@ -1685,10 +1685,10 @@ class PreferencesWindow {
         return ctrl
     }
 
-    ; 列表页: ListView 显示 path 指向的数组, 添加 / 编辑 / 删除都用 ItemEditor
-    ; check: 可选, (item, roots) => "OK" / "Missing" / "Unavailable" / "Skipped"。
-    ; 提供时多一个 "检查路径" 按钮, 结果显示在 "Status" 列 (列表里的项目本身没有这个键)
-    ; 按钮右边的筛选框: 只显示含有所有输入的词的项目 (在各列的文字里找, 不分大小写)
+    ; List page: a ListView shows the array at path; Add / Edit / Delete use ItemEditor
+    ; check: optional, (item, roots) => "OK" / "Missing" / "Unavailable" / "Skipped".
+    ; When given there is a "Check paths" button, with the results in a "Status" column (the items themselves have no such key)
+    ; The filter box right of the buttons: only items containing all the typed words (searched in every column's text, case-insensitive)
     static _List(path, height, columns, fields, newItem, check := "", buttons := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
@@ -1698,8 +1698,8 @@ class PreferencesWindow {
         for index, column in columns
             listView.ModifyCol(index, column[3])
         pageName := PreferencesWindow._current.Name
-        statuses := Map()                                                   ; ObjPtr(item) -> 检查结果, 检查过才有
-        shown := []                                                         ; 每一行对应 items 里的第几项 (筛选时只显示一部分)
+        statuses := Map()                                                   ; ObjPtr(item) -> check result, only after checking
+        shown := []                                                         ; which item in items each row shows (filtering shows only some)
         filterBox := ""
 
         Refresh(selectRow := 0) {
@@ -1721,7 +1721,7 @@ class PreferencesWindow {
             listView.Opt("+Redraw")
             PreferencesWindow.FitColumns(listView)
         }
-        RowOf(index) {                                                      ; items 里的第 index 项在第几行, 没有显示时 0
+        RowOf(index) {                                                      ; The row showing item index of items, 0 if not shown
             for row, shownIndex in shown
                 if (shownIndex = index)
                     return row
@@ -1731,12 +1731,12 @@ class PreferencesWindow {
             key := ObjPtr(item)
             return statuses.Has(key) ? I18n.T("Prefs.Status." statuses[key]) : ""
         }
-        Recheck(item) {                                                     ; 检查过之后, 新增 / 修改的项目也马上检查
+        Recheck(item) {                                                     ; after a check, added / changed items are checked right away too
             if statuses.Count
                 statuses[ObjPtr(item)] := check(item, Map())
         }
         AddItem(*) => Insert(newItem())
-        Insert(item) {                                                      ; 打开编辑框 (item 是预先填好的内容), 确定后加进列表
+        Insert(item) {                                                      ; Opens the edit dialog (item = the prefilled content) and adds the result to the list on OK
             edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, item)
             if IsObject(edited)
                 Append(edited)
@@ -1746,10 +1746,10 @@ class PreferencesWindow {
             PreferencesWindow.MarkDirty(true)
             Recheck(item)
             if IsObject(filterBox)
-                filterBox.Value := ""                                       ; 清掉筛选, 新加的一项一定看得到
+                filterBox.Value := ""                                       ; clear the filter so the new item is surely visible
             Refresh(items.Length)
         }
-        EditExisting(item) {                                                ; 选中列表里的这一项并打开编辑框
+        EditExisting(item) {                                                ; Selects this item in the list and opens the edit dialog
             for index, existing in items {
                 if (existing = item) {
                     if IsObject(filterBox)
@@ -1810,31 +1810,31 @@ class PreferencesWindow {
 
         listView.OnEvent("DoubleClick", EditItem)
         Refresh()
-        ReloadList() {                                                      ; 外面直接改了 items (导入) 之后
+        ReloadList() {                                                      ; after items were changed from outside (import)
             if IsObject(filterBox)
                 filterBox.Value := ""
             Refresh()
         }
         list := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting, Reload: ReloadList}
-        PreferencesWindow._lists[path] := list                              ; 外面加进来的项目 (AddCommands)
+        PreferencesWindow._lists[path] := list                              ; items added from outside (AddCommands)
         PreferencesWindow._y += height - 34
         PreferencesWindow._Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Edit")).OnEvent("Click", EditItem)
         PreferencesWindow._Add("Button", "x+8 yp w80", I18n.T("Prefs.Delete")).OnEvent("Click", DeleteItem)
         if IsObject(check)
             PreferencesWindow._Add("Button", "x+24 yp w100", I18n.T("Prefs.CheckTargets")).OnEvent("Click", CheckItems)
-        if IsObject(buttons)                                                ; 这一页自己的按钮: [{Label, Width, Click: (list, button) => ...}]
+        if IsObject(buttons)                                                ; the page's own buttons: [{Label, Width, Click: (list, button) => ...}]
             for extra in buttons
                 PreferencesWindow._Add("Button", "x+24 yp w" extra.Width, extra.Label).OnEvent("Click", ((extra, button, *) => extra.Click.Call(list, button)).Bind(extra))
         listView.GetPos(&listX, , &listW)
-        filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; 不用 _Add: 筛选不算修改设置
+        filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; not _Add: filtering doesn't change the settings
         PreferencesWindow._current.Controls.Push(filterBox)
         Win.SetCueBanner(filterBox.Hwnd, I18n.T("Prefs.Filter"))
         filterBox.OnEvent("Change", (*) => Refresh())
         PreferencesWindow._y += 38
     }
 
-    ; 筛选框: filter 里的每个词 (空格分开) 都出现在某一列里才显示, 不分大小写; 空白时全部显示
+    ; Filter box: shown only when every word of filter (separated by spaces) appears in some column, case-insensitive; all shown when empty
     static FilterMatch(filter, cells) {
         filter := Trim(filter)
         if (filter = "")
@@ -1851,11 +1851,11 @@ class PreferencesWindow {
     static _Cell(item, key) {
         if !(item is Map) || !item.Has(key)
             return ""
-        if (key = "Target" && item.Has("Arguments") && Trim(item["Arguments"]) != "")   ; 自定义命令: 目标后面接着显示参数
+        if (key = "Target" && item.Has("Arguments") && Trim(item["Arguments"]) != "")   ; custom commands: the arguments follow the target
             return RegExReplace(item["Target"] " " item["Arguments"], "\s+", " ")
-        if (key = "Key")                                                    ; 自定义热键: 显示 Ctrl+Alt+P、鼠标中键
+        if (key = "Key")                                                    ; custom hotkeys: shown as Ctrl+Alt+P, Middle button
             return HotkeyBox.Label(item[key])
-        if (key = "Type") {                                                 ; 自定义命令的类型显示翻译后的名称
+        if (key = "Type") {                                                 ; the type of a custom command shows its translated name
             label := I18n.T("Prefs.TypeShort." item[key])
             if (label != "Prefs.TypeShort." item[key])
                 return label
@@ -1864,10 +1864,10 @@ class PreferencesWindow {
     }
 
     ;---------------------------------------------------------------------------
-    ; Data helpers (纯函数, 有单元测试)
+    ; Data helpers (pure functions, with unit tests)
     ;---------------------------------------------------------------------------
-    ; 全局热键 (不限定窗口的) -> [{Key, Label}...]: 呼出热键、第二个呼出热键、剪贴板历史、没有填窗口的自定义热键。
-    ; 对话框跳转、一键加日期只在特定的窗口里生效 (两个 Ctrl+D 是正常的), 不算在内
+    ; Global hotkeys (not tied to a window) -> [{Key, Label}...]: the show hotkey, the second show hotkey, clipboard history, custom hotkeys without a window.
+    ; Quick switch and date stamp only work in particular windows (two Ctrl+D are fine), so they aren't included
     static _GlobalHotkeys(data) {
         list := []
         add(key, label) => (Trim(key) != "") ? list.Push({Key: key, Label: label}) : ""
@@ -1885,12 +1885,12 @@ class PreferencesWindow {
         return list
     }
 
-    ; 第一个重复的热键 -> {Key, First, Second} (两处的名称); 没有重复时 ""。~ * $ 不影响是不是同一个键
+    ; The first duplicate hotkey -> {Key, First, Second} (the names of both); "" without duplicates. ~ * $ don't change whether it is the same key
     static DuplicateHotkey(list) {
         seen := Map()
         for entry in list {
             key := StrLower(RegExReplace(Trim(entry.Key), "^[~*$]+"))
-            if RegExMatch(key, "^([\^!+#]+)(.+)$", &m)                     ; 修饰符的顺序不同也是同一个键 (!^c = ^!c)
+            if RegExMatch(key, "^([\^!+#]+)(.+)$", &m)                     ; a different modifier order is the same key (!^c = ^!c)
                 key := StrReplace(Sort(RegExReplace(m[1], "(.)", "$1`n")), "`n") m[2]
             if seen.Has(key)
                 return {Key: entry.Key, First: seen[key], Second: entry.Label}
@@ -1899,7 +1899,7 @@ class PreferencesWindow {
         return ""
     }
 
-    ; 纯函数: 保存前后, 应用索引 / 文件索引的扫描范围有没有变 -> {Apps, Files}
+    ; Pure function: whether the scan scope of the application index / file index changed between before and after saving -> {Apps, Files}
     static StaleIndexes(before, after) {
         changed(group, keys) {
             for key in keys

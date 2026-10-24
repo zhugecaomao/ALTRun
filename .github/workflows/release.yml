@@ -1,12 +1,12 @@
-# 打包发布 ALTRun: 在 Windows 上编译 ALTRun.exe, 跑单元测试, 用旧版本的 ALTRun.ini 验证升级,
-# 打包成 ALTRun_v<版本>.zip; publish = true 时再创建 GitHub Release (标签 = 版本号)。
+# Packages a release of ALTRun: compiles ALTRun.exe on Windows, runs the unit tests, verifies upgrading from an old ALTRun.ini,
+# packs ALTRun_v<version>.zip; with publish = true it also creates the GitHub Release (tag = version).
 #
-# 发布步骤:
-#   1. 更新 Src\Core\App.ahk 的 App.Version 和 ALTRun.ahk 的 ;@Ahk2Exe-SetVersion (有测试检查两者一致)
-#   2. CHANGELOG.md 加一节 "## [<版本>] ...", 作为 Release 的说明
-#   3. 合并到 main 后, 在 Actions 页面运行 "Release": 先 publish = false 检查, 再 publish = true 发布
-# 发布之后自动把 Scoop (bucket/altrun.json) 和 winget (packaging/winget) 清单更新到新版本, 提交到 main;
-# 设置了 WINGET_TOKEN secret (有 public_repo 权限的 GitHub token) 时, 再用 wingetcreate 向 winget-pkgs 提交新版本。
+# Release steps:
+#   1. update App.Version in Src\Core\App.ahk and ;@Ahk2Exe-SetVersion in ALTRun.ahk (a test checks they match)
+#   2. add a section "## [<version>] ..." to CHANGELOG.md, used as the release notes
+#   3. after merging to main, run "Release" on the Actions page: first publish = false to check, then publish = true to release
+# After publishing, the Scoop (bucket/altrun.json) and winget (packaging/winget) manifests are updated to the new version and committed to main;
+# with the WINGET_TOKEN secret (a GitHub token with public_repo scope) wingetcreate also submits the new version to winget-pkgs.
 name: Release
 run-name: ${{ inputs.publish && 'Publish release' || 'Test build' }}
 
@@ -20,7 +20,7 @@ on:
 
 permissions:
   contents: write
-  actions: read                   # SignPath 用 GITHUB_TOKEN 读取这次构建和下载要签名的产物
+  actions: read                   # SignPath reads this build and downloads the artifacts to sign with GITHUB_TOKEN
 
 jobs:
   build:
@@ -30,8 +30,8 @@ jobs:
       WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
       SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
     steps:
-      # Windows 上的 Git 默认把文本文件的 LF 转成 CRLF (core.autocrlf), 发布包里的 README、LICENSE、JSON
-      # 就和仓库 / 源码 ZIP 逐字节不同。关掉转换, 发布包里的文件和仓库完全一样
+      # Git on Windows converts text files from LF to CRLF by default (core.autocrlf), so the README, LICENSE and JSON in the package
+      # would differ byte for byte from the repository / source ZIP. Turn the conversion off so the package's files match the repository exactly
       - name: Keep line endings as in the repository
         run: git config --global core.autocrlf false
 
@@ -85,7 +85,7 @@ jobs:
           $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk' `
                   -Wait -PassThru -NoNewWindow -RedirectStandardOutput test.log -RedirectStandardError test.err
           Get-Content test.log | Where-Object { $_ -notmatch '^PASS' }
-          Get-Content test.log | Where-Object { $_ -match '^(FAIL|UNCAUGHT)' } | ForEach-Object { Write-Host "::error::$_" }   # 失败的测试显示在检查结果的注释里
+          Get-Content test.log | Where-Object { $_ -match '^(FAIL|UNCAUGHT)' } | ForEach-Object { Write-Host "::error::$_" }   # failed tests show in the annotations of the check results
           Get-Content test.err
           if ($proc.ExitCode -ne 0) { throw "Unit tests failed (exit code $($proc.ExitCode))" }
 
@@ -102,15 +102,15 @@ jobs:
             if (-not (Test-Path "build/ALTRun/Resources/Lang/$lang.json")) { throw "Resources\Lang\$lang.json is missing" }
           }
           Copy-Item LICENSE, README.md, README.zh-CN.md, CHANGELOG.md build/ALTRun/
-          foreach ($file in @("LICENSE", "README.md", "README.zh-CN.md", "CHANGELOG.md") + (git ls-files Resources)) {   # 和仓库逐字节相同 (换行符没被转换)
+          foreach ($file in @("LICENSE", "README.md", "README.zh-CN.md", "CHANGELOG.md") + (git ls-files Resources)) {   # byte for byte identical to the repository (line endings not converted)
             if ((git hash-object --no-filters "build/ALTRun/$file") -ne (git rev-parse "HEAD:$file")) { throw "$file in the package differs from the repository" }
           }
           (Get-Item build/ALTRun/ALTRun.exe).VersionInfo | Format-List FileVersion, ProductName, FileDescription
 
-      # 代码签名 (SignPath Foundation 免费为开源项目签名, 见 packaging/README.md): 设置了 SIGNPATH_API_TOKEN secret
-      # 和 SIGNPATH_ORGANIZATION_ID 变量后自动签名, 没有设置时跳过, 照常发布未签名的版本。
-      # publish = false 用测试证书 (test-signing); publish = true 用正式证书 (release-signing), 要等正式证书导入、
-      # 把变量 SIGNPATH_RELEASE_SIGNING 设为 true 之后才签, 在那之前正式发布照常发布未签名的版本
+      # Code signing (SignPath Foundation signs open source projects for free, see packaging/README.md): signs automatically once the SIGNPATH_API_TOKEN secret
+      # and the SIGNPATH_ORGANIZATION_ID variable are set; skipped without them, and the unsigned version is released as usual.
+      # publish = false uses the test certificate (test-signing); publish = true the release certificate (release-signing), which only signs after the release certificate is imported
+      # and the variable SIGNPATH_RELEASE_SIGNING is set to true; until then releases go out unsigned as usual
       - name: Upload unsigned ALTRun.exe for signing
         id: unsigned
         if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
@@ -129,7 +129,7 @@ jobs:
           signing-policy-slug: ${{ inputs.publish && 'release-signing' || 'test-signing' }}
           github-artifact-id: ${{ steps.unsigned.outputs.artifact-id }}
           wait-for-completion: true
-          wait-for-completion-timeout-in-seconds: 1800        # 正式签名要在 SignPath 网页上批准
+          wait-for-completion-timeout-in-seconds: 1800        # release signing must be approved on the SignPath website
           output-artifact-directory: build/signed
 
       - name: Use the signed ALTRun.exe
@@ -141,7 +141,7 @@ jobs:
           Write-Host "Signature: $($sig.Status) - $($sig.SignerCertificate.Subject)"
           if ("${{ inputs.publish }}" -eq "true" -and $sig.Status -ne 'Valid') { throw "ALTRun.exe is not signed with a trusted certificate" }
 
-      # exe 的图标要是 Resources\ALTRun.ico (;@Ahk2Exe-SetMainIcon), 而不是 AutoHotkey 默认的绿色 H
+      # the exe's icon must be Resources\ALTRun.ico (;@Ahk2Exe-SetMainIcon), not AutoHotkey's default green H
       - name: Check program icon
         shell: pwsh
         run: |
@@ -154,7 +154,7 @@ jobs:
           Write-Host "Icon $($exe.Width)x$($exe.Height): $diff different pixels"
           if ($diff -gt 0) { throw "ALTRun.exe does not use Resources\ALTRun.ico" }
 
-      # 模拟用户从 v2026.08.12 升级: 文件夹里只有旧的 ALTRun.ini, 解压新版本后第一次运行
+      # Simulates a user upgrading from v2026.08.12: only the old ALTRun.ini in the folder, the first run after extracting the new version
       - name: Upgrade test (ALTRun.ini from v2026.08.12)
         shell: pwsh
         run: |
@@ -170,9 +170,9 @@ jobs:
           Start-Sleep -Seconds 3
           $running = -not $proc.HasExited
           if (-not $running) {
-            # 2026.09.24 发布时出现过一次 ALTRun.exe 自己退出, 之后 12 次都没有复现; 再出现时留下线索
+            # During the 2026.09.24 release ALTRun.exe once exited by itself and didn't happen again in 12 runs; leave clues if it recurs
             Write-Host "ALTRun.exe exited after $(((Get-Date) - $started).TotalSeconds.ToString('N1'))s, exit code $($proc.ExitCode)"
-            # 另一个 ALTRun 进程是谁启动的: 命令行里有 /restart 是 ALTRun 自己重启, 否则看父进程
+            # who started the other ALTRun process: /restart on the command line means ALTRun restarted itself, otherwise look at the parent process
             Get-CimInstance Win32_Process -Filter "Name = 'ALTRun.exe'" -ErrorAction SilentlyContinue | ForEach-Object {
               $parent = Get-CimInstance Win32_Process -Filter "ProcessId = $($_.ParentProcessId)" -ErrorAction SilentlyContinue
               Write-Host "Other ALTRun process: $($_.ProcessId) started $($_.CreationDate.ToString('HH:mm:ss.fff')), command line: $($_.CommandLine)"
@@ -198,7 +198,7 @@ jobs:
       - name: Single instance test (compiled ALTRun.exe)
         shell: pwsh
         run: |
-          # 已经在运行时再启动 ALTRun.exe: 交给正在运行的处理 (双击 = 弹出搜索窗口, 发送到 = 添加命令), 不多开一个
+          # Starting ALTRun.exe while it already runs: handed to the running one (double-click = show the search window, Send to = add commands), no second instance
           $dir = Join-Path $env:RUNNER_TEMP "single"
           New-Item -ItemType Directory $dir -Force | Out-Null
           Copy-Item build/ALTRun/* $dir -Recurse
@@ -207,7 +207,7 @@ jobs:
           $first = Start-Process $exe -ArgumentList '-Startup' -WorkingDirectory $dir -PassThru
           for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
           Start-Sleep -Seconds 3
-          # 主窗口的标题 (找正在运行的 ALTRun 靠它), 留在日志里
+          # the main window's title (used to find the running ALTRun), kept in the log
           $probe = Join-Path $env:RUNNER_TEMP "titles.ahk"
           'DetectHiddenWindows(true)', 'for hwnd in WinGetList("ahk_class AutoHotkey")', '    FileAppend(WinGetTitle(hwnd) "`n", "*")' | Set-Content $probe -Encoding UTF8
           $out = Join-Path $env:RUNNER_TEMP "titles.txt"
@@ -216,7 +216,7 @@ jobs:
           $before = (Get-Content $json -Raw -Encoding UTF8 | ConvertFrom-Json).CustomCommands.Count
           New-Item -ItemType Directory (Join-Path $dir "SendTo A") -Force | Out-Null
           Set-Content (Join-Path $dir "SendTo B.txt") "x"
-          # 交出去之后马上退出; 没交出去时它会一直运行, 所以只等 10 秒
+          # it exits right after handing over; if it didn't hand over it keeps running, so wait only 10 s
           (Start-Process $exe -WorkingDirectory $dir -PassThru).WaitForExit(10000) | Out-Null
           (Start-Process $exe -ArgumentList '-SendTo', "`"$(Join-Path $dir 'SendTo A')`"", "`"$(Join-Path $dir 'SendTo B.txt')`"" -WorkingDirectory $dir -PassThru).WaitForExit(10000) | Out-Null
           Start-Sleep -Seconds 3
@@ -287,7 +287,7 @@ jobs:
           git commit --quiet -m "Packaging: update Scoop / winget manifests to $version"
           git push origin main
 
-      # 只能更新 winget-pkgs 里已经有的包; 第一次提交见 packaging/README.md
+      # only packages already in winget-pkgs can be updated; for the first submission see packaging/README.md
       - name: Submit the new version to winget-pkgs
         if: inputs.publish && env.WINGET_TOKEN != ''
         continue-on-error: true

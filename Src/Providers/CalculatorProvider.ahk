@@ -1,15 +1,15 @@
 ;===============================================================================
-; CalculatorProvider.ahk - 计算器 (AutoHotkey v2)
+; CalculatorProvider.ahk - calculator (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 输入算式直接显示结果 ("12*(3+4)" / "=2^10"), 最多两位小数, Enter 复制结果。
-; 打开 Features.Calculator.StructuralCalc 后, 结果下方附带两行结构计算:
-;   - 把结果当作梁宽 (mm): 主筋根数和间距 (保护层 RebarCover, 默认 40 mm; 最大间距 MaxBarSpacing, 默认 300 mm)
-;   - 把结果当作配筋面积 As (mm²): BarSizes 里每种直径需要的根数 (默认 H13 / H16 / H20 / H25 / H32, 前缀 BarPrefix)
-; 单位换算 (Lib\Units.ahk): "10 km in mi"、"100 f to c"、"20 mpa in psi"...; 货币换算 "100 usd to sgd"
-; 要打开 Features.Calculator.Currency (默认关闭, 汇率每天从 frankfurter.dev 下载, 见 CurrencyRates)。
-; 进制: "0xFF" / "0b1010" / "0o17" 显示十进制、十六进制、二进制; "255 in hex" / "0xff to dec" / "10 in bin" / "8 in oct"。
-; 日期: "today + 30 days" / "2026-12-25 - 2 weeks" / "today + 3 months" (单位 d w m y, 也可以写 天 周 月 年);
-;       "2026-12-25 - today" 两个日期相差几天。今天也可以写 now / 今天。
+; Typing an expression shows the result directly ("12*(3+4)" / "=2^10"), at most two decimals; Enter copies the result.
+; With Features.Calculator.StructuralCalc on, two rows of structural calculation follow the result:
+;   - the result as a beam width (mm): number and spacing of main bars (cover RebarCover, default 40 mm; maximum spacing MaxBarSpacing, default 300 mm)
+;   - the result as a steel area As (mm²): the number of bars needed for each diameter in BarSizes (default H13 / H16 / H20 / H25 / H32, prefix BarPrefix)
+; Unit conversion (Lib\Units.ahk): "10 km in mi", "100 f to c", "20 mpa in psi"...; currency conversion "100 usd to sgd"
+; needs Features.Calculator.Currency (off by default; exchange rates downloaded daily from frankfurter.dev, see CurrencyRates).
+; Number bases: "0xFF" / "0b1010" / "0o17" show decimal, hex and binary; "255 in hex" / "0xff to dec" / "10 in bin" / "8 in oct".
+; Dates: "today + 30 days" / "2026-12-25 - 2 weeks" / "today + 3 months" (units d w m y, or 天 周 月 年);
+;       "2026-12-25 - today" gives the days between two dates. today can also be now / 今天.
 ;===============================================================================
 
 class CalculatorProvider {
@@ -48,9 +48,9 @@ class CalculatorProvider {
         return results
     }
 
-    ; 最多两位小数, 去掉多余的 0, 整数部分加千分位: 1234567.504 -> 1,234,567.5, 10/3 -> 3.33
-    ; (浮点数直接转文字会带出 774.39999999999998 这样的尾巴)。
-    ; 不到 0.005 的数按两位小数会变成 0, 改为保留到第一位有效数字后一位: 0.004, 0.000031
+    ; At most two decimals, trailing 0s dropped, thousands separators in the integer part: 1234567.504 -> 1,234,567.5, 10/3 -> 3.33
+    ; (turning a float into text directly brings tails like 774.39999999999998).
+    ; Numbers below 0.005 would become 0 with two decimals, so they keep one digit after the first significant one: 0.004, 0.000031
     static Format(value) {
         decimals := 2
         if (value != 0 && Abs(value) < 0.005)
@@ -63,7 +63,7 @@ class CalculatorProvider {
         return Calc.Thousands(text)
     }
 
-    ; "10 km in mi" -> 一条结果 "6.21 mi" (Enter 复制数字); 货币还没有汇率时给出提示
+    ; "10 km in mi" -> one result "6.21 mi" (Enter copies the number); a hint when there are no exchange rates yet for currencies
     static _Convert(conversion) {
         icon := IconCache.Own("Calculator", "res:imageres.dll,-182")
         value := Units.Convert(conversion.Value, conversion.From, conversion.To)
@@ -75,12 +75,12 @@ class CalculatorProvider {
                 subtitle .= " · " I18n.T("Calc.RatesOf", CurrencyRates.Date)
             return [ResultItem(text " " label, subtitle, {Kind: "text", Arg: text, Icon: icon, Score: 200, LargeText: text " " label})]
         }
-        ; 两边都像货币代码 (3 个字母) 又不是单位: 提示打开货币换算 / 还没有下载汇率
+        ; both sides look like currency codes (3 letters) but aren't units: hint to turn on currency conversion / rates not downloaded yet
         if (RegExMatch(conversion.From, "^[a-z]{3}$") && RegExMatch(conversion.To, "^[a-z]{3}$")
                 && !IsObject(Units._Lookup(conversion.From)) && !IsObject(Units._Lookup(conversion.To))) {
             if AppSettings.Feature("Calculator")["Currency"]
                 return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.RatesNotYet"), {Icon: icon, Score: 150, Valid: false})]
-            return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.CurrencyOff"), {Icon: icon, Score: 150   ; Enter: 打开计算器设置页
+            return [ResultItem(I18n.T("Calc.Currency"), I18n.T("Calc.CurrencyOff"), {Icon: icon, Score: 150   ; Enter: opens the Calculator settings page
                 , OnRun: (*) => App.OpenPreferences("Prefs.Page.Calculator")})]
         }
         return []
@@ -90,12 +90,12 @@ class CalculatorProvider {
         return ResultItem(text, subtitle, {Kind: "text", Arg: text, Icon: IconCache.Own("Calculator", "res:imageres.dll,-182"), Score: score, LargeText: text})
     }
 
-    ; 进制换算: 带前缀的数 (0x / 0b / 0o) 单独输入时列出三种写法; "数 in hex|bin|oct|dec" 换成指定的进制
+    ; Number bases: a prefixed number (0x / 0b / 0o) typed alone lists the three forms; "n in hex|bin|oct|dec" converts to that base
     static _Bases(text) {
         static names := Map("hex", 16, "bin", 2, "oct", 8, "dec", 10)
         if !RegExMatch(Trim(text), "i)^(0x[0-9a-f]+|0b[01]+|0o[0-7]+|\d+)(?:\s+(?:in|to)\s+(hex|bin|oct|dec))?$", &m)
             return []
-        if (m[2] = "" && !RegExMatch(m[1], "i)^0[xbo]"))                   ; 普通数字不当作进制换算
+        if (m[2] = "" && !RegExMatch(m[1], "i)^0[xbo]"))                   ; plain numbers aren't base conversions
             return []
         value := CalculatorProvider.ParseInteger(m[1])
         if (value = "")
@@ -108,12 +108,12 @@ class CalculatorProvider {
               , CalculatorProvider._Item("0b" CalculatorProvider.ToBase(value, 2), subtitle, 198)]
     }
 
-    ; "0xff" / "0b101" / "0o17" / "255" -> 整数 (太大时 "")
+    ; "0xff" / "0b101" / "0o17" / "255" -> an integer ("" when too big)
     static ParseInteger(text) {
         base := 10, digits := text
         if RegExMatch(text, "i)^0([xbo])(.+)$", &m)
             base := (StrLower(m[1]) = "x") ? 16 : (StrLower(m[1]) = "b") ? 2 : 8, digits := m[2]
-        if (StrLen(digits) > ((base = 2) ? 62 : (base = 8) ? 20 : 15))     ; 不超过 64 位整数
+        if (StrLen(digits) > ((base = 2) ? 62 : (base = 8) ? 20 : 15))     ; at most a 64-bit integer
             return ""
         value := 0
         Loop Parse, StrLower(digits)
@@ -134,7 +134,7 @@ class CalculatorProvider {
         return digits
     }
 
-    ; 日期加减: "today + 30 days" / "2026-12-25 - 2w" -> 那一天; "2026-12-25 - today" -> 相差几天
+    ; Date arithmetic: "today + 30 days" / "2026-12-25 - 2w" -> that day; "2026-12-25 - today" -> days between
     static _Dates(text, today := "") {
         static dateRe := "(today|now|今天|\d{4}-\d{1,2}-\d{1,2})"
         text := Trim(StrLower(text)), today := (today != "") ? today : FormatTime(, "yyyyMMdd")
@@ -170,13 +170,13 @@ class CalculatorProvider {
             return ""
         stamp := Format("{:04}{:02}{:02}", m[1], m[2], m[3])
         try {
-            if (FormatTime(stamp, "yyyyMMdd") = stamp)                      ; 2026-02-30 这样不存在的日期不算
+            if (FormatTime(stamp, "yyyyMMdd") = stamp)                      ; dates that don't exist, like 2026-02-30, don't count
                 return stamp
         }
         return ""
     }
 
-    ; 加几个月; 那个月没有这一天时用月底 (1 月 31 日 + 1 个月 = 2 月 28 / 29 日)
+    ; Adds months; when that month lacks the day, its last day is used (31 Jan + 1 month = 28 / 29 Feb)
     static AddMonths(stamp, months) {
         year := SubStr(stamp, 1, 4) + 0, month := SubStr(stamp, 5, 2) + 0, day := SubStr(stamp, 7, 2) + 0
         total := year * 12 + (month - 1) + months
@@ -188,12 +188,12 @@ class CalculatorProvider {
 
     static _AddStructural(results, value) {
         options := AppSettings.Feature("Calculator")
-        number(key, fallback, minimum) {                                    ; 设置里的数字, 写错时用默认值
+        number(key, fallback, minimum) {                                    ; a number from the settings; the default if it is invalid
             raw := options.Has(key) ? options[key] : fallback
             return (IsNumber(raw) && raw >= minimum) ? raw + 0 : fallback
         }
         cover := number("RebarCover", 40, 0), maxSpacing := number("MaxBarSpacing", 300, 1)
-        inner := value - 2 * cover                                          ; 扣掉两边的保护层
+        inner := value - 2 * cover                                          ; minus the cover on both sides
         if (inner <= 0)
             return
         barCount := Ceil(inner / maxSpacing + 1)
@@ -207,7 +207,7 @@ class CalculatorProvider {
         for size in sizes {
             if !(IsNumber(size) && size > 0)
                 continue
-            area := 3.141592653589793 * size * size / 4                     ; 一根的面积 (mm²)
+            area := 3.141592653589793 * size * size / 4                     ; area of one bar (mm²)
             bars .= (bars = "" ? "" : "  ") Ceil(Round(value / area, 6)) prefix CalculatorProvider.Format(size + 0)
         }
         if (bars = "")

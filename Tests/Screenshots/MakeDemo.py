@@ -22,8 +22,8 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 from RoundCorners import RADIUS, round_image, rounded_mask
 
 SCALE = float(os.environ.get("SHOT_SCALE") or 1)
-BACKDROP = (0x8A, 0x9B, 0xB0)        # TakeScreenshots.ahk 里截图时背景的颜色
-MARGIN = round(56 * SCALE)           # 窗口四周露出的背景
+BACKDROP = (0x8A, 0x9B, 0xB0)        # background color behind the window in TakeScreenshots.ahk shots
+MARGIN = round(56 * SCALE)           # background visible around the window
 SHADOW_BLUR, SHADOW_OFFSET, SHADOW_OPACITY = round(18 * SCALE), round(10 * SCALE), 110
 CORNER = round(RADIUS * SCALE)
 HERE = Path(__file__).resolve().parent
@@ -48,7 +48,7 @@ def background(size):
     width, height = size
     image = Image.new("RGB", size)
     draw = ImageDraw.Draw(image)
-    top, bottom = (24, 38, 92), (58, 32, 104)                          # 深蓝 -> 深紫
+    top, bottom = (24, 38, 92), (58, 32, 104)                          # dark blue -> dark purple
     for y in range(height):
         t = y / max(1, height - 1)
         draw.line([(0, y), (width, y)], fill=tuple(round(a + (b - a) * t) for a, b in zip(top, bottom)))
@@ -59,8 +59,8 @@ def background(size):
                              (0.50, 0.50, 0.30, (90, 110, 255))]:
         x, y, rr = cx * width, cy * height, r * max(width, height)
         spots.ellipse((x - rr, y - rr, x + rr, y + rr), fill=color)
-    glow = glow.filter(ImageFilter.GaussianBlur(max(width, height) // 6)).point(lambda v: v * 3 // 5)   # 光斑柔和一些
-    return ImageChops.screen(image, glow)                               # 光斑叠在渐变上
+    glow = glow.filter(ImageFilter.GaussianBlur(max(width, height) // 6)).point(lambda v: v * 3 // 5)   # softer light spots
+    return ImageChops.screen(image, glow)                               # light spots on top of the gradient
 
 
 def with_shadow(canvas_bg, window_size):
@@ -74,7 +74,7 @@ def with_shadow(canvas_bg, window_size):
 
 def main(frame_dir, output):
     frame_dir = Path(frame_dir)
-    entries = []                                                        # (图片, 毫秒, 按键)
+    entries = []                                                        # (image, ms, keys)
     for line in (frame_dir / "frames.txt").read_text(encoding="utf-8").splitlines():
         if line.strip():
             fields = line.split("\t") if "\t" in line else line.rsplit(" ", 1)
@@ -93,7 +93,7 @@ def main(frame_dir, output):
     frames = []
     for window in windows:
         frame = with_shadow(canvas_bg, window.size).convert("RGBA")
-        frame.alpha_composite(round_image(window, CORNER), (MARGIN, MARGIN))     # 圆角边缘半透明, 不会有锯齿
+        frame.alpha_composite(round_image(window, CORNER), (MARGIN, MARGIN))     # semi-transparent rounded edges, no jaggies
         frames.append(frame.convert("RGB"))
     frames[0].save(output, format="PNG", save_all=True, append_images=frames[1:], duration=[entry[1] for entry in entries],
                    loop=0, disposal=0, blend=0, optimize=True)

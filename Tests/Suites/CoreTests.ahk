@@ -83,7 +83,7 @@ class CoreTests {
         eq("pttools", data["Extensions"]["PTTools"]["RebarSpanWidth"], 4000)
         eq("hotkeys", data["Hotkeys"].Length, 1)
         eq("hotkey action", data["Hotkeys"][1]["Action"], "PTTools")
-        eq("commands", data["CustomCommands"].Length, 4)                    ; Func 不迁移
+        eq("commands", data["CustomCommands"].Length, 4)                    ; Func isn't migrated
         commands := Map()
         for command in data["CustomCommands"]
             commands[command["Title"]] := command
@@ -103,14 +103,14 @@ class CoreTests {
         eq("3->4 keeps other settings", v4["Features"]["FileSearch"]["MaxResults"], 50)
         eq("3->4 upgraded to current", v4["SchemaVersion"], AppSettings.CurrentVersion)
         eq("3->4 without section", SchemaMigration.Upgrade(Map("SchemaVersion", 3), 3)["SchemaVersion"], AppSettings.CurrentVersion)
-        ; 4 -> 5: 片段的粘贴方式 Clipboard (旧的默认值) -> Auto; Type 不变
+        ; 4 -> 5: snippet paste mode Clipboard (the old default) -> Auto; Type stays
         v5 := SchemaMigration.Upgrade(Map("SchemaVersion", 4, "Features", Map("Snippets", Map("PasteMode", "Clipboard", "PasteDelay", 500))), 4)
         eq("4->5 clipboard -> auto", v5["Features"]["Snippets"]["PasteMode"], "Auto")
         eq("4->5 keeps other settings", v5["Features"]["Snippets"]["PasteDelay"], 500)
         eq("4->5 on to the current version", v5["SchemaVersion"], AppSettings.CurrentVersion)
         eq("4->5 type stays", SchemaMigration.Upgrade(Map("SchemaVersion", 4, "Features", Map("Snippets", Map("PasteMode", "Type"))), 4)["Features"]["Snippets"]["PasteMode"], "Type")
         eq("4->5 without section", InStr(JSON.Stringify(SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4)), "PasteMode"), 0)
-        ; 4 -> 5: 后来补进默认值的窗口 / 关键字也补给老用户 (缺什么补什么, 用户自己加的保留, 清空了的不动); 小清理
+        ; 4 -> 5: windows / keywords added to the defaults later are added for old users too (only what is missing; the user's own stay; emptied lists are left alone); small cleanups
         defaults := AppSettings.Defaults()
         old := Map("SchemaVersion", 4
             , "Features", Map("FileSearch", Map("Keywords", ["open", "find"]), "Calculator", Map("BarSizes", ["13", "16", " 20 ", 25, "abc"]))
@@ -267,7 +267,7 @@ class CoreTests {
 
     static Knowledge() {
         Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := []
-        Knowledge._saveTimer := () => 0                                     ; 测试时不写盘
+        Knowledge._saveTimer := () => 0                                     ; no disk writes in tests
         Knowledge.Record("no", "app:notepad")
         Knowledge.Record("no", "app:notepad")
         TestRunner.True("Knowledge.boost exact", Knowledge.Boost("no", "app:notepad") > Knowledge.Boost("no", "app:other"))
@@ -339,7 +339,7 @@ class CoreTests {
         return true
     }
 
-    ; 双击 Ctrl / Shift: 只认两次单独的短按
+    ; Double-tap Ctrl / Shift: only two separate short presses count
     static DoubleTap() {
         eq := (n, a, e) => TestRunner.Equal("DoubleTap." n, a, e)
         eq("first tap", App.TapDecision("LControl", "LCtrl", 80, 99999), "first")
@@ -352,7 +352,7 @@ class CoreTests {
         eq("default off", AppSettings.Defaults()["General"]["DoubleTap"], "")
     }
 
-    ; 关键字一栏写几个 (逗号分隔): 网页搜索、自定义命令、片段输入哪个都行, 提示和补全用输入的那个 (没有时用第一个)
+    ; Several keywords in the keyword field (comma-separated): web searches, custom commands, snippets work with any of them; hints and completion use the one typed (the first if none)
     static MultipleKeywords() {
         eq := (n, a, e) => TestRunner.Equal("MultipleKeywords." n, a, e)
         eq("split", TextTools.JoinList(SearchQuery.Keywords(" g , ㅎ,,google，구글 "), ","), "g,ㅎ,google,구글")
@@ -396,7 +396,7 @@ class CoreTests {
         AppSettings.Data["Snippets"] := savedSnippets
     }
 
-    ; 数据文件夹: 默认位置的 ALTRun.json 里的 "DataLocation" (环境变量、相对路径); 写 / 恢复默认
+    ; Data folder: "DataLocation" in ALTRun.json at the default location (environment variables, relative paths); setting / back to default
     static DataLocation() {
         eq := (n, a, e) => TestRunner.Equal("DataLocation." n, a, e)
         eq("full: absolute", Path.Full("C:\Sync\ALTRun\"), "C:\Sync\ALTRun")
@@ -407,7 +407,7 @@ class CoreTests {
         try DirDelete(root, true)
         DirCreate(root "\user\Data")
         saved := {Portable: AppSettings.Portable, UserDir: AppSettings.UserDir, DataDir: AppSettings.DataDir}
-        AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; 默认位置 = root\user\Data
+        AppSettings.Portable := false, AppSettings.UserDir := root "\user"   ; default location = root\user\Data
         settingsFile := root "\user\Data\ALTRun.json"
         eq("default when not portable", AppSettings.DefaultDataDir(), root "\user\Data")
         eq("no settings settingsFile", AppSettings.ResolveDataDir(), root "\user\Data")
@@ -424,7 +424,7 @@ class CoreTests {
         eq("empty = default", AppSettings.ResolveDataDir(), root "\user\Data")
         FileDelete(settingsFile)
 
-        AppSettings.DataDir := "E:\Elsewhere"                                ; 正在用别处的设置: 只改默认位置的文件
+        AppSettings.DataDir := "E:\Elsewhere"                                ; settings from elsewhere in use: only the file at the default location changes
         FileAppend('{"General": {"Hotkey": "!r"}}', settingsFile, "UTF-8")
         AppSettings.SetDataLocation("E:\Sync\ALTRun")
         data := JSON.Parse(FileRead(settingsFile, "UTF-8"))
@@ -446,7 +446,7 @@ class CoreTests {
         DirDelete(root, true)
     }
 
-    ; 计算器: 进制换算和日期加减
+    ; Calculator: number bases and date arithmetic
     static CalcBasesDates() {
         eq := (n, a, e) => TestRunner.Equal("CalcBasesDates." n, a, e)
         first(text) {
@@ -476,7 +476,7 @@ class CoreTests {
         eq("normal math still works", first("12*(3+4)"), "84")
     }
 
-    ; 只运行一个 ALTRun: 再启动时把命令行参数交给正在运行的 (WM_COPYDATA), 重新启动 (/restart) 时替换它
+    ; Only one ALTRun: a second start hands the command-line arguments to the running one (WM_COPYDATA); a restart (/restart) replaces it
     static SingleInstance() {
         eq := (n, a, e) => TestRunner.Equal("SingleInstance." n, a, e)
         eq("restart (compiled)", App.IsRestart('"C:\ALTRun\ALTRun.exe" /restart -Reloaded'), true)
@@ -506,7 +506,7 @@ class CoreTests {
                 eq("forwarded", received[1][2], true)
                 eq("double-click: no arguments", received[2][1].Length, 0)
             }
-            copyData := Buffer(A_PtrSize * 3, 0)                            ; 别的程序 (例如 Everything) 的 WM_COPYDATA 不处理
+            copyData := Buffer(A_PtrSize * 3, 0)                            ; WM_COPYDATA of other programs (e.g. Everything) isn't handled
             NumPut("UPtr", 0x1234, copyData, 0)
             eq("other copydata ignored", App._OnCopyData(0, copyData.Ptr, 0x4A, A_ScriptHwnd), "")
         } finally {
@@ -515,8 +515,8 @@ class CoreTests {
         }
     }
 
-    ; 正在读的图标: 界面又来要时不再排一次队 (以前慢的图标会读两遍)
-    ; 后台下载: 异步请求, 完成 / 出错 / 超时后在单独的线程里调用回调 (用假的请求, 不连网)
+    ; an icon being read: when the UI asks again it isn't queued twice (slow icons used to be read twice)
+    ; Background downloads: asynchronous requests; on completion / error / timeout the callback runs in its own thread (fake requests, no network)
     static HttpGet() {
         eq := (n, a, e) => TestRunner.Equal("HttpGet." n, a, e)
         saved := [HttpGet.NewRequest, HttpGet.PollMs]
@@ -557,7 +557,7 @@ class CoreTests {
             eq("timeout aborts", fakes[5].Aborted, true)
             eq("nothing pending after timeout", HttpGet.Pending, 0)
 
-            ; 一个请求的回调还在运行 (例如弹出了对话框) 时, 另一个照样完成
+            ; while one request's callback is still running (e.g. it showed a dialog), another one still completes
             got.Length := 0, release := false
             HttpGet.Start("https://example.test/b", (t) => (got.Push("b"), release := true))
             HttpGet.Start("https://example.test/a", (t) => (got.Push("a start"), TestUtil.WaitFor(() => release, 2000), got.Push("a end")))
@@ -574,7 +574,7 @@ class CoreTests {
             HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2]
         }
 
-        ; 检查更新 / 汇率不再用 Download() (下载期间整个程序都停着); 一键更新下载 zip 时有进度窗口, 仍用 Download()
+        ; update and exchange-rate checks no longer use Download() (the whole program stops while it downloads); the one-click update's zip download has a progress window and still uses Download()
         for name in ["UpdateChecker", "CurrencyRates"] {
             text := FileRead(A_ScriptDir "\..\Src\Extensions\" name ".ahk", "UTF-8")
             pos := 1, count := 0
@@ -584,7 +584,7 @@ class CoreTests {
             eq(name ": synchronous downloads", count, name = "UpdateChecker" ? 1 : 0)
         }
 
-        ; 检查更新: 版本信息下载完再处理 (假的回复)
+        ; Check for updates: the release info is handled after it has downloaded (a fake reply)
         savedState := [UpdateChecker.StateFile, UpdateChecker.Pending]
         root := A_Temp "\ALTRun-test-update-async"
         try DirDelete(root, true)
@@ -608,8 +608,8 @@ class CoreTests {
             try DirDelete(root, true)
         }
 
-        ; 真的请求 (Msxml2.XMLHTTP.6.0, 只在 GitHub Actions 的 Windows 上): 等待时程序照常运行, 内容正确。
-        ; 连不上网 / 超时不算失败 (和程序无关), 只写一行说明
+        ; A real request (Msxml2.XMLHTTP.6.0, only on Windows in GitHub Actions): the program keeps running while waiting, and the content is right.
+        ; no network / a timeout isn't a failure (it has nothing to do with the program); it only prints a note
         if (EnvGet("GITHUB_ACTIONS") = "true") {
             got := [], ticks := 0
             HttpGet.Start("https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/LICENSE", (t) => got.Push("done " SubStr(Trim(t, " `t`r`n"), 1, 26)), (m) => got.Push("fail " m))
@@ -626,7 +626,7 @@ class CoreTests {
         }
     }
 
-    ; 日志文件一直开着 (不是每条都打开、关闭一次): 写完马上能读到; 换文件、文件被删、截断后重新打开
+    ; The log file stays open (not opened and closed per line): readable right after writing; reopened after a file change, deletion or truncation
     static LoggerFile() {
         eq := (n, a, e) => TestRunner.Equal("LoggerFile." n, a, e)
         read := (file) => FileExist(file) ? FileRead(file, "UTF-8") : ""
@@ -653,7 +653,7 @@ class CoreTests {
             Logger.Debug("four")
             eq("reopened after close", InStr(read(second), "four") > 0 && lines(second) = 1, true)
             if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
-                FileDelete(second)                                          ; 开着的时候被删掉 (Wine 里删不掉开着的文件, 跳过)
+                FileDelete(second)                                          ; deleted while open (Wine can't delete an open file, so skipped there)
                 Logger.Debug("five")
                 eq("recreated after delete", read(second) ~= "^\x{FEFF}?[^\r\n]*five\r\n$" ? 1 : 0, 1)
             }
@@ -674,7 +674,7 @@ class CoreTests {
         }
     }
 
-    ; 后台任务一次超过 SlowMs 时记一条 "Perf: slow"; 快的不记; 返回值、参数照常
+    ; A background task run over SlowMs logs "Perf: slow"; fast ones don't; return values and parameters as usual
     static SlowTaskLog() {
         eq := (n, a, e) => TestRunner.Equal("SlowTaskLog." n, a, e)
         saved := [Logger.Enabled, Logger.File, Logger.Immediate, Logger.SlowMs]
@@ -705,14 +705,14 @@ class CoreTests {
             eq("watched: " label, InStr(FileRead(A_ScriptDir "\..\Src\" source ".ahk", "UTF-8"), 'Logger.Watch("' label '"') > 0, true)
     }
 
-    ; 已发布的 v2026.08.12 用 ALTRun.ini: 第一次启动新版本时整体导入
+    ; The released v2026.08.12 used ALTRun.ini: imported as a whole at the first start of the new version
     static LegacyIni() {
         eq := (n, a, e) => TestRunner.Equal("LegacyIni." n, a, e)
         folder := A_Temp "\ALTRunLegacyTest"
         try DirDelete(folder, true)
         DirCreate(folder)
         iniFile := folder "\ALTRun.ini"
-        ; 和 2.x 写出的文件一样: UTF-16, 注释行, 键里的 = 和 ; 被转义
+        ; like the files 2.x writes: UTF-16, comment lines, = and ; escaped in keys
         FileAppend("
         (
 [Config]
@@ -754,7 +754,7 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("LegacyIni.escaped key restored", data["UserCommand"].Has("URL | https://www.google.com/search?q=x;y | Google Query"))
         eq("detected as 2.x", SchemaMigration.DetectVersion(data), 2)
 
-        ; 完整的启动流程: 没有 ALTRun.json, 只有程序目录下的 ALTRun.ini
+        ; The full start-up: no ALTRun.json, only ALTRun.ini in the program folder
         savedFile := AppSettings.File, savedLegacy := AppSettings.LegacyFile, savedData := AppSettings.Data
         AppSettings.File := folder "\Data\ALTRun.json", AppSettings.LegacyFile := folder "\ALTRun.json"
         AppSettings.ImportedFrom := "", AppSettings.MigratedFrom := 0, AppSettings.MovedFrom := ""
@@ -787,7 +787,7 @@ Func | PTTools | PT Tools (AHK)=99
         eq("url unescaped", commands["Google Query"]["Target"], "https://www.google.com/search?q=x;y")
         eq("file title", commands["Notepad"]["Type"], "File")
 
-        ; 真实的 v2026.08.12 生成的 ALTRun.ini (UTF-16, 带默认命令) + 用户加的一条命令和设置
+        ; an ALTRun.ini written by the real v2026.08.12 (UTF-16, with default commands) + a command and settings the user added
         fixture := SchemaMigration.Upgrade(SchemaMigration.ReadLegacyIni(A_ScriptDir "\Fixtures\ALTRun.v2026.08.12.ini"), 2)
         eq("fixture commands", fixture["CustomCommands"].Length, 10)
         eq("fixture language", fixture["General"]["Language"], "zh-CN")
@@ -795,7 +795,7 @@ Func | PTTools | PT Tools (AHK)=99
         eq("keep last query default off", AppSettings.Defaults()["General"]["KeepLastQuery"], 0)
         eq("fixture hotkey", fixture["Hotkeys"][1]["Key"], "~Mbutton")
 
-        ; 第二次启动: 已经有 ALTRun.json, 不再导入
+        ; second start: ALTRun.json exists now, no import again
         AppSettings.ImportedFrom := ""
         AppSettings.Load()
         eq("no second import", AppSettings.ImportedFrom, "")
@@ -805,7 +805,7 @@ Func | PTTools | PT Tools (AHK)=99
         try DirDelete(folder, true)
     }
 
-    ; 旧版本的 ALTRun.json 在程序目录, 启动时移到 Data\
+    ; An old ALTRun.json in the program folder moves to Data\ at start-up
     static SettingsLocation() {
         eq := (n, a, e) => TestRunner.Equal("SettingsLocation." n, a, e)
         read := (f) => FileExist(f) ? FileRead(f, "UTF-8") : "<missing>"
@@ -818,7 +818,7 @@ Func | PTTools | PT Tools (AHK)=99
         savedFile := AppSettings.File, savedLegacy := AppSettings.LegacyFile, savedData := AppSettings.Data
         AppSettings.File := root "\Data\ALTRun.json", AppSettings.LegacyFile := root "\ALTRun.json"
 
-        ; 3.x 的布局: ALTRun.json、升级备份和 .bad 都在程序目录, 还没有 Data\
+        ; the 3.x layout: ALTRun.json, upgrade backups and .bad all in the program folder, no Data\ yet
         old := AppSettings.Defaults()
         old["SchemaVersion"] := 3, old["General"]["Hotkey"] := "#Space"
         write(root "\ALTRun.json", JSON.Stringify(old))
@@ -836,18 +836,18 @@ Func | PTTools | PT Tools (AHK)=99
         eq("old backups moved", read(root "\Data\ALTRun.v2.backup.json") "|" read(root "\Data\ALTRun.json.bad"), "backup|bad")
         eq("ini left alone", read(root "\ALTRun.ini"), "[Config]")
 
-        ; 下一次启动: 已经在 Data\ 里, 不再移动
+        ; the next start: already in Data\, no move
         AppSettings.MovedFrom := "", AppSettings.MigratedFrom := 0
         AppSettings.Load()
         eq("second start", AppSettings.MovedFrom "|" AppSettings.MigratedFrom, "|0")
 
-        ; 两边都有 (例如退回旧版本又生成了一份): 用 Data\ 里的, 旧文件不动
+        ; both exist (e.g. an old version run again made another): the one in Data\ is used, the old file left alone
         write(root "\ALTRun.json", "{}")
         AppSettings.Load()
         eq("both exist: Data wins", AppSettings.General["Hotkey"] "|" AppSettings.MovedFrom, "#Space|")
         eq("both exist: old file kept", read(root "\ALTRun.json"), "{}")
 
-        ; 移不动 (文件被占用): 这次继续用旧位置
+        ; can't move (the file is in use): keep the old location this time
         FileDelete(root "\Data\ALTRun.json")
         lock := FileOpen(root "\ALTRun.json", "r -rwd")
         AppSettings.MoveLegacyFile()
@@ -859,7 +859,7 @@ Func | PTTools | PT Tools (AHK)=99
         try DirDelete(root, true)
     }
 
-    ; 使用统计: 按天、按功能计数, 合计 / 每天 / 保存和载入 (用临时文件, 不碰真正的 Data\Usage.json)
+    ; Usage statistics: counted per day and feature; totals / per day / save and load (with temporary files, not the real Data\Usage.json)
     static UsageStats() {
         eq := (n, a, e) => TestRunner.Equal("Usage." n, a, e)
         saved := {File: Usage.File, Days: Usage.Days, Since: Usage.Since}
@@ -886,13 +886,13 @@ Func | PTTools | PT Tools (AHK)=99
 
             Usage.Days := Map()
             Usage.CountItem({Provider: "CustomCommands", Kind: "file"})
-            Usage.CountItem({Provider: "", Kind: "url"})                    ; 兜底的网页搜索
-            Usage.CountItem({Provider: "", Kind: ""})                       ; 兜底的文件搜索
-            Usage.CountItem({Provider: "Help", Kind: "url"})                ; 速查表不算
+            Usage.CountItem({Provider: "", Kind: "url"})                    ; web search fallback
+            Usage.CountItem({Provider: "", Kind: ""})                       ; file search fallback
+            Usage.CountItem({Provider: "Help", Kind: "url"})                ; the cheat sheet doesn't count
             all := Usage.Summary(0)
             eq("count item", all["CustomCommands"] "|" all["WebSearch"] "|" all["FileSearch"] "|" all.Has("Help"), "1|1|1|0")
 
-            Usage.Days := Map("2020-01-01", Map("Calculator", 9))           ; 太旧的保存时删掉
+            Usage.Days := Map("2020-01-01", Map("Calculator", 9))           ; too old: removed when saving
             Usage.Count("Snippets")
             Usage.Save()
             Usage.Days := Map(), Usage.Since := ""
@@ -906,7 +906,7 @@ Func | PTTools | PT Tools (AHK)=99
         }
     }
 
-    ; JSON: 转义、数字、嵌套、往返; 大文件读取是线性的 (以前按值传整段文本, 越大越慢)
+    ; JSON: escaping, numbers, nesting, round trips; reading large files is linear (passing the whole text by value used to get slower with size)
     static JsonReadWrite() {
         eq := (n, a, e) => TestRunner.Equal("Json." n, a, e)
         ok := (n, c) => TestRunner.True("Json." n, c)
@@ -925,12 +925,12 @@ Func | PTTools | PT Tools (AHK)=99
         for bad in ['{"a": 1', '{"a" 1}', '[1, 2', '"open', '{a: 1}', '[1 2]', '@']
             ok("error: " bad, !JsonReadWrite_Parses(bad))
 
-        ; 控制字符 (例如从终端复制的 ESC) 写成 \u001B, 文件里不出现原样的控制字符
+        ; control characters (e.g. ESC copied from a terminal) are written as \u001B; no raw control characters in the file
         control := "a" Chr(27) "[0m" Chr(8) Chr(12) Chr(1) "z"
         written := JSON.Stringify(Map("Text", control))
         ok("control chars escaped", !RegExMatch(written, "[\x00-\x08\x0B\x0C\x0E-\x1F]") && InStr(written, "\u001B[0m\u0008\u000C\u0001z"))
         eq("control chars round trip", JSON.Parse(written)["Text"], control)
-        ; 写文件: 先写临时文件再替换, 不带 BOM, 不留下 .tmp
+        ; Writing files: a temporary file first, then replaced; no BOM, no .tmp left behind
         dir := A_Temp "\ALTRun-json-test"
         try DirDelete(dir, true)
         jsonFile := dir "\sub\data.json"
@@ -938,7 +938,7 @@ Func | PTTools | PT Tools (AHK)=99
         JSON.WriteFile(jsonFile, Map("k", "v2"))
         firstByte := FileOpen(jsonFile, "r").RawRead(bytes := Buffer(3), 3) ? NumGet(bytes, 0, "UChar") : 0
         eq("write file", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (firstByte = 0xEF ? "bom" : "no bom") "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v2|no bom|")
-        locked := FileOpen(jsonFile, "r -rwd")                              ; 同步盘 / 杀毒软件暂时占着文件: 等它放开后写入
+        locked := FileOpen(jsonFile, "r -rwd")                              ; a sync folder / antivirus holds the file for a moment: written once it is released
         SetTimer(() => locked.Close(), -300)
         JSON.WriteFile(jsonFile, Map("k", "v3"))
         eq("write file: retries while locked", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"], "v3")
@@ -948,7 +948,7 @@ Func | PTTools | PT Tools (AHK)=99
         catch
             failed := true
         locked.Close(), JSON.MoveTries := saved
-        if failed                                                           ; Wine 不一定支持独占打开, 这时直接写成功
+        if failed                                                           ; Wine may not support exclusive opening; then the write just succeeds
             eq("write file: gives up, original kept, no tmp left", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v3|")
         DirDelete(dir, true)
 
@@ -960,10 +960,10 @@ Func | PTTools | PT Tools (AHK)=99
         parsed := JSON.Parse(text)
         elapsed := A_TickCount - start
         eq("big file", parsed["Paths"].Length "|" parsed["Paths"][20000], "20000|" paths[20000])
-        ok("big file is fast (" elapsed " ms)", elapsed < 3000)             ; 以前要好几分钟
+        ok("big file is fast (" elapsed " ms)", elapsed < 3000)             ; used to take minutes
     }
 
-    ; 单位 / 货币换算 (计算器)
+    ; Unit / currency conversion (calculator)
     static UnitConversion() {
         eq := (n, a, e) => TestRunner.Equal("Units." n, a, e)
         ok := (n, c) => TestRunner.True("Units." n, c)
@@ -993,7 +993,7 @@ Func | PTTools | PT Tools (AHK)=99
         eq("unknown unit", Units.Convert(1, "km", "xyz"), "")
         eq("label", Units.Label("m2"), "m²")
 
-        ; 计算器里的结果
+        ; results in the calculator
         results := CalculatorProvider.Search(SearchQuery("10 km in mi"))
         eq("calc result", results.Length ? results[1].Title "|" results[1].Arg : "", "6.21 mi|6.21")
         ok("calc subtitle", results.Length && InStr(results[1].Subtitle, "10 km = 6.21 mi"))
@@ -1014,8 +1014,8 @@ Func | PTTools | PT Tools (AHK)=99
         ok("fresh: 2 h", !CurrencyRates.IsStale("20260929100000", "20260929120000"))
     }
 
-    ; 片段编辑框: 每个字段都有灰色说明; 关键字太长 / 有空格时提示
-    ; 表格文字: 从 Excel 复制的 (Tab 分隔, 单元格里有换行时加引号)、CSV、欧洲 Excel 的 ; 分隔
+    ; Snippet editor: every field has a gray description; warns when a keyword is too long / has spaces
+    ; Table text: copied from Excel (Tab-separated, quoted when a cell has line breaks), CSV, European Excel's ; separator
     static DelimitedText() {
         eq := (n, a, e) => TestRunner.Equal("DelimitedText." n, a, e)
         joined(rows) {
@@ -1039,19 +1039,19 @@ Func | PTTools | PT Tools (AHK)=99
         eq("to csv", csv, "Name,Text`r`nMail," '"line1' "`r`n" 'line2"' "`r`nQuote," '"say ""hi"", ok"' "`r`n" '" pad",1' "`r`n")
         eq("round trip", joined(DelimitedText.Parse(csv)), "Name|Text/Mail|line1`nline2/Quote|say " '"hi", ok/ pad|1/')
         csvFile := A_Temp "\ALTRunDelimited.csv"
-        for encoding in ["UTF-8", "UTF-8-RAW"] {                            ; 带 BOM / 不带 BOM
+        for encoding in ["UTF-8", "UTF-8-RAW"] {                            ; with BOM / without BOM
             try FileDelete(csvFile)
             FileAppend("名称,正文`r`n邮箱,谢谢", csvFile, encoding)
             eq("read " encoding, DelimitedText.ReadFile(csvFile), "名称,正文`r`n邮箱,谢谢")
         }
         try FileDelete(csvFile)
-        FileAppend("名称,正文", csvFile, "CP936")                              ; GBK (中文 Excel 默认保存的 CSV): 按系统编码读 (CI 不是中文系统, 只比较两种读法一样)
+        FileAppend("名称,正文", csvFile, "CP936")                              ; GBK (the CSV Chinese Excel saves by default): read with the system code page (CI isn't a Chinese system, so it only checks both ways read the same)
         eq("read system code page", DelimitedText.ReadFile(csvFile), FileRead(csvFile, "CP0"))
         try FileDelete(csvFile)
     }
 
     static Misc() {
-        ; 日志和 .txt 输出用默认程序打开, 打不开 (没有关联) 时用记事本
+        ; The log and .txt output open with the default program, or Notepad when that fails (no association)
         calls := []
         Path.OpenText("C:\Temp\a.log", (cmd) => calls.Push(cmd))
         TestRunner.Equal("Misc.open text: default program", calls.Length ? calls[1] : "", '"C:\Temp\a.log"')
@@ -1068,14 +1068,14 @@ Func | PTTools | PT Tools (AHK)=99
         saved := AppSettings.General["SwitchToEnglishInput"]
         AppSettings.General["SwitchToEnglishInput"] := 0
         SearchWindow._layoutBefore := 0x08040804
-        SearchWindow._RestoreInputLanguage()                                 ; 没开这个选项: 什么也不做, 只清掉记录
+        SearchWindow._RestoreInputLanguage()                                 ; the option is off: do nothing, only clear the record
         TestRunner.Equal("Input.restore clears the saved layout", SearchWindow._layoutBefore, 0)
         SearchWindow._imeBefore := {Open: 1, Conv: 0x401}
-        SearchWindow._RestoreInputLanguage()                                 ; 英文模式也一样: 没开时不恢复, 只清掉记录
+        SearchWindow._RestoreInputLanguage()                                 ; English mode too: not restored when off, only the record cleared
         TestRunner.Equal("Input.restore clears the saved IME mode", SearchWindow._imeBefore, "")
         AppSettings.General["SwitchToEnglishInput"] := 1
         SearchWindow._imeBefore := {Open: 1, Conv: 0x401}
-        SearchWindow._RestoreInputLanguage()                                 ; 选的是英语键盘: 不动中 / 英模式
+        SearchWindow._RestoreInputLanguage()                                 ; the English keyboard was chosen: the Chinese / English mode is left alone
         TestRunner.Equal("Input.keyboard choice leaves the IME mode alone", SearchWindow._imeBefore, "")
         savedPlaceholder := AppSettings.Appearance["Placeholder"]
         AppSettings.Appearance["Placeholder"] := ""
@@ -1085,7 +1085,7 @@ Func | PTTools | PT Tools (AHK)=99
         AppSettings.Appearance["Placeholder"] := " Type to search "
         TestRunner.Equal("Placeholder.custom (trimmed)", SearchWindow.Placeholder(), "Type to search")
         AppSettings.Appearance["Placeholder"] := savedPlaceholder
-        ; 输入框按大写字母的高度居中 (#158): 150% 时实测基线在 42、大写字母高 33, 往下挪 7 像素
+        ; The input box is centered on the capital-letter height (#158): at 150% the baseline measured 42 and the capital height 33, so it moves down 7 pixels
         TestRunner.Equal("InputTop.cap centered", SearchWindow.InputTop(64, 64, 21, 42, 33), 7)
         TestRunner.Equal("InputTop.at most half the padding", SearchWindow.InputTop(64, 64, 8, 42, 33), 4)
         TestRunner.Equal("InputTop.no metrics: centered", SearchWindow.InputTop(60, 40, 14, 0, 0), 10)
@@ -1093,7 +1093,7 @@ Func | PTTools | PT Tools (AHK)=99
         g := Gui()
         g.SetFont("s20", "Segoe UI")
         metrics := Win.CapMetrics(g.AddEdit("w200 r1").Hwnd)
-        ; 搜索结果列表的实际行高 (最后一行不被切掉): 和 SearchWindow 一样用 48 像素高的图标列表撑开行高
+        ; The real row height of the result list (the last row isn't cut off): rows set by a 48-pixel image list, as in SearchWindow
         list := g.AddListView("w300 h0 -Hdr +0x2000", ["Result"])
         images := DllCall("comctl32\ImageList_Create", "Int", 1, "Int", 48, "UInt", 0x21, "Int", 1, "Int", 1, "Ptr")
         list.SetImageList(images, 1)
@@ -1106,7 +1106,7 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("InputTop.font metrics (ascent " metrics.Ascent ", cap " metrics.Cap ")", metrics.Ascent > metrics.Cap && metrics.Cap > 10)
         TestRunner.Equal("Input.english choices", AppSettings.Defaults()["General"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
         AppSettings.General["SwitchToEnglishInput"] := saved
-        ; 恢复默认设置: 选项换成默认值, 自己加的内容 (命令、片段、热键、网页搜索、置顶、隐藏的系统命令) 保留
+        ; Reset to defaults: options become the defaults, what the user added (commands, snippets, hotkeys, web searches, pinned items, hidden system commands) stays
         current := AppSettings.Defaults()
         current["General"]["Hotkey"] := "^Space", current["Appearance"]["Theme"] := "Dark"
         current["CustomCommands"] := [Map("Title", "Mine")], current["Snippets"] := [Map("Keyword", "sig")]
@@ -1119,12 +1119,12 @@ Func | PTTools | PT Tools (AHK)=99
             " " reset["Features"]["Recent"]["Pinned"][1] " " reset["Features"]["System"]["Hidden"][1], "Mine sig mine x Lock")
         TestRunner.Equal("RestoreDefaults.no data location", AppSettings.ResetData(Map()).Has("DataLocation") ? 1 : 0, 0)
         TestRunner.Equal("RestoreDefaults.data location kept", AppSettings.ResetData(Map("DataLocation", "D:\Sync"))["DataLocation"], "D:\Sync")
-        ; 系统信息: 有版本号, 不含数据文件夹的路径
+        ; System info: has the version, no data folder path
         info := App.SystemInfo()
         TestRunner.True("SystemInfo.version", InStr(info, App.Name " " App.Version " (") = 1)
         TestRunner.True("SystemInfo.no paths", !InStr(info, AppSettings.DataDir) && !InStr(info, A_ScriptDir))
         TestRunner.Equal("SystemInfo.lines", StrSplit(Trim(info, "`n"), "`n").Length, 9)
-        ; 以管理员身份运行 (#158): 新启动的是管理员、正在运行的不是时替换它, 其它情况照常把参数交过去
+        ; Running as administrator (#158): a new elevated instance replaces a running non-elevated one; otherwise the arguments are handed over as usual
         TestRunner.Equal("Admin.takes over", (App.TakesOver(true, false) ? 1 : 0) (App.TakesOver(true, true) ? 1 : 0) (App.TakesOver(false, false) ? 1 : 0) (App.TakesOver(false, true) ? 1 : 0), "1000")
         TestRunner.Equal("Admin.this process", Win.IsElevated(ProcessExist()) ? 1 : 0, A_IsAdmin ? 1 : 0)
         TestRunner.Equal("Admin.no such process", Win.IsElevated(0) ? 1 : 0, 0)

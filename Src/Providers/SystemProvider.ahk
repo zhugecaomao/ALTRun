@@ -1,14 +1,14 @@
 ;===============================================================================
-; SystemProvider.ahk - 系统命令 / Windows 工具 / ALTRun 命令 / 剪贴板文字工具 (AutoHotkey v2)
+; SystemProvider.ahk - system commands / Windows tools / ALTRun commands / clipboard text tools (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Every command has a fixed Id; the Hotkeys list in ALTRun.json refers to commands by Id, for example:
 ;   { "Key": "^!t", "Action": "TerminalHere", "WinTitle": "ahk_class CabinetWClass" }
-; 可用的 Id 见 Commands() 里的列表; 旧版本 (2.x) 的函数名通过 Aliases 兼容。
-; 另外两个只给热键用的 Id: "ToggleWindow" (显示/隐藏搜索窗口), "Show"。
+; The available Ids are in the list in Commands(); the function names of old versions (2.x) still work through Aliases.
+; Two more Ids only for hotkeys: "ToggleWindow" (show / hide the search window), "Show".
 ;
-; 关机 / 重启 / 注销 / 休眠 / 清空回收站 执行前会确认 (Features.System.ConfirmActions)。
+; Shutdown / restart / sign out / hibernate / empty Recycle Bin ask first (Features.System.ConfirmActions).
 ;
-; 用法:
+; Usage:
 ;   SystemProvider.RunCommand("Lock")
 ;===============================================================================
 
@@ -50,7 +50,7 @@ class SystemProvider {
                 OnRun: SystemProvider._Runner(command["Id"])
             }))
             if (command["Id"] = "CheckUpdate" && IsObject(update := UpdateChecker.PendingItem())) {
-                update.Score := score + 1                                   ; 有新版本时, 搜索 "更新" 排在 "检查更新" 前面
+                update.Score := score + 1                                   ; with a new version available, searching "update" puts "Update" before "Check for updates"
                 results.Push(update)
             }
         }
@@ -58,7 +58,7 @@ class SystemProvider {
     }
 
     ;---------------------------------------------------------------------------
-    ; 隐藏用不到的命令 (搜索结果里 Ctrl+Del / 右键 "删除"); 热键和别的地方仍然可以用 Id 调用
+    ; Hides commands that aren't needed (Ctrl+Del / right-click "Delete" in the results); hotkeys and other places can still call them by Id
     ;---------------------------------------------------------------------------
     static DeleteItem(item) {
         return SystemProvider.Hide(item.Source["Id"])
@@ -75,7 +75,7 @@ class SystemProvider {
         return AppSettings.Save()
     }
 
-    ; 隐藏列表 -> Map (不区分大小写), 列表变化 (换了数组或条数变了) 时重新生成
+    ; The hidden list -> Map (case-insensitive), rebuilt when the list changes (a new array or a different count)
     static _HiddenIds() {
         static cache := "", cacheFor := ""
         hidden := AppSettings.Feature("System")["Hidden"]
@@ -90,7 +90,7 @@ class SystemProvider {
         return cache
     }
 
-    ; 空搜索框里的结果: 后台发现了新版本时, 显示 "发现新版本: ALTRun x" (和 Alfred 一样, 不弹窗)
+    ; Results for the empty search box: when a new version was found in the background, "New version available: ALTRun x" (as in Alfred, no popup)
     static EmptyResults() {
         update := UpdateChecker.PendingItem()
         return IsObject(update) ? [update] : []
@@ -102,8 +102,8 @@ class SystemProvider {
 
     static _PageOpener(pageKey) => () => App.OpenPreferences(pageKey)
 
-    ; 剪贴板里的内容去掉格式 (字体、颜色、表格...) 粘贴, 剪贴板随后还原。可以在 自定义热键 里设成 Ctrl+Shift+V:
-    ; 用热键时贴到当前窗口; 在搜索窗口里运行时贴到呼出之前的窗口
+    ; Pastes the clipboard without formatting (fonts, colors, tables...) and restores the clipboard afterwards. Can be set to Ctrl+Shift+V in custom hotkeys:
+    ; with a hotkey it pastes into the current window; run from the search window it pastes into the window active before showing
     static PastePlainText() {
         text := A_Clipboard
         if (text = "")
@@ -131,7 +131,7 @@ class SystemProvider {
         Logger.Error("SystemProvider: unknown command " id)
     }
 
-    ; 命令表只建一次 (标题跟随当前语言)
+    ; the command table is built once (titles follow the current language)
     static Commands() {
         if IsObject(SystemProvider._commands)
             return SystemProvider._commands
@@ -151,12 +151,12 @@ class SystemProvider {
 
         ; --- ALTRun ---
         add("Preferences" , "Sys.Preferences" , "res:imageres.dll,-114" , () => App.OpenPreferences())
-        for pageKey in PreferencesWindow.PageKeys                          ; 每个设置页一条, 直接打开那一页 ("ALTRun 偏好设置: 外观");
-            add("Preferences." SubStr(pageKey, 12), "", "res:imageres.dll,-114", SystemProvider._PageOpener(pageKey), false, "Sys.Subtitle"   ; 标题比主项长, 同一档里排在它后面
+        for pageKey in PreferencesWindow.PageKeys                          ; one entry per settings page that opens it directly ("ALTRun Preferences: Appearance");
+            add("Preferences." SubStr(pageKey, 12), "", "res:imageres.dll,-114", SystemProvider._PageOpener(pageKey), false, "Sys.Subtitle"   ; the title is longer than the main entry, so it comes after it in the same tier
               , I18n.T("Sys.PreferencesPage", I18n.T(pageKey)), Format(I18n.Strings["Sys.PreferencesPage"], I18n.Strings[pageKey]))
         add("Reload"      , "Sys.Reload"      , "res:imageres.dll,-5311", () => App.Reload())
         add("RebuildIndex", "Sys.RebuildIndex", "res:imageres.dll,-8"   , () => App.RebuildIndex())
-        appIcon := FileExist(App.IconFile) ? App.IconFile : "res:imageres.dll,-81"      ; ALTRun 自己的事用程序图标
+        appIcon := FileExist(App.IconFile) ? App.IconFile : "res:imageres.dll,-81"      ; ALTRun's own commands use the program icon
         add("CheckUpdate" , "Sys.CheckUpdate" , appIcon                 , () => UpdateChecker.Check())
         add("About"       , "Sys.About"       , appIcon                 , () => App.About())
         add("Log"         , "Sys.Log"         , "res:imageres.dll,-102" , () => App.OpenLog())
@@ -231,7 +231,7 @@ class SystemProvider {
         tool("Paint"             , "Tool.Paint"             , system32 "mspaint.exe")
         tool("WinVer"            , "Tool.WinVer"            , system32 "winver.exe")
 
-        ; --- Windows 设置的页面 (ms-settings:, Windows 10 / 11 都有), 可以在偏好设置里关掉 (Features.System.SettingsPages) ---
+        ; --- Windows Settings pages (ms-settings:, on both Windows 10 and 11); can be turned off in Preferences (Features.System.SettingsPages) ---
         setting(id, page) {
             add("Set" id, "Setting." id, "shell:AppsFolder\windows.immersivecontrolpanel_cw5n1h2txyewy!microsoft.windows.immersivecontrolpanel"
                 , () => Run("ms-settings:" page), false, "Setting.Subtitle")
@@ -304,7 +304,7 @@ class SystemProvider {
         MsgBox(addresses, I18n.T("Sys.IPCopied"), 64)
     }
 
-    ; 运行控制台命令, 结果写到临时文件后用 .txt 的默认程序 (一般是记事本) 打开
+    ; Runs a console command and opens its output, written to a temporary file, with the default program for .txt (usually Notepad)
     static _ShowCommandOutput(command, fileName) {
         outFile := A_Temp "\" fileName
         try FileDelete(outFile)

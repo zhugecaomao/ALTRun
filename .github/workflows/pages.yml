@@ -1,11 +1,11 @@
-# 生成官网 (site/build.py) 并用 GitHub Pages 发布: https://zhugecaomao.github.io/ALTRun/
-# 需要在仓库 Settings -> Pages 里把 Source 设为 "GitHub Actions" (只设一次)。
+# Builds the website (site/build.py) and publishes it with GitHub Pages: https://zhugecaomao.github.io/ALTRun/
+# Needs Source set to "GitHub Actions" in the repository's Settings -> Pages (once).
 #
-# 什么时候更新:
-#   - main 上网站、截图、更新日志、主题列表有变化时
-#   - Release 工作流成功后 (新版本号、下载链接、文件大小、更新内容)
-#   - 每天一次 (下载次数)
-# 网站内容以 site/ 和仓库里的数据为准; 每次部署都会在仓库首页的 Deployments 里留下记录。
+# When it updates:
+#   - when the site, screenshots, changelog or theme list change on main
+#   - after the Release workflow succeeds (new version, download links, file size, release notes)
+#   - once a day (download counts)
+# The site's content comes from site/ and the data in the repository; each deployment leaves a record under Deployments on the repository's home page.
 name: Publish site
 
 on:

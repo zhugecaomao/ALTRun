@@ -1,5 +1,5 @@
-# 在 Windows 上自动生成 README / Wiki 用的界面截图 (Tests\Screenshots\TakeScreenshots.ahk),
-# 上传为 artifact; 在 main 以外的分支上运行时, 把截图提交回该分支。
+# Makes the UI screenshots for the README / Wiki on Windows (Tests\Screenshots\TakeScreenshots.ahk),
+# uploads them as an artifact; on branches other than main it commits the screenshots back to the branch.
 name: Screenshots
 
 on:
@@ -31,8 +31,8 @@ jobs:
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
 
-      # 文档图标: .docx / .xlsx / .pptx 等关联到 Tests/Screenshots/Icons 里的 LibreOffice 文档图标, 不用安装 Office
-      # (只写当前用户的注册表; 只在 GitHub 的虚拟机上做, 本地运行截图脚本时不会改你的文件关联)。做不到时照常截图
+      # Document icons: .docx / .xlsx / .pptx etc. are associated with the LibreOffice document icons in Tests/Screenshots/Icons, no Office needed
+      # (only the current user's registry; only on the GitHub VM, running the screenshot script locally doesn't change your file associations). Screenshots go on as usual if it fails
       - name: Document icons
         continue-on-error: true
         shell: pwsh
@@ -45,10 +45,10 @@ jobs:
             foreach ($ext in $types[$kind].Split(" ")) { New-Item "HKCU:\Software\Classes\.$ext" -Value $progId -Force | Out-Null }
           }
           Add-Type -Namespace Shots -Name Shell -MemberDefinition '[DllImport("shell32.dll")] public static extern void SHChangeNotify(int e, uint f, IntPtr a, IntPtr b);'
-          [Shots.Shell]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)   # SHCNE_ASSOCCHANGED: 刷新图标
+          [Shots.Shell]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)   # SHCNE_ASSOCCHANGED: refresh the icons
           Write-Host "Document icons registered from $icons"
 
-      # 1920 x 1080、150% 缩放、灰度字体抗锯齿: 截图更清晰 (做不到时保持 100%)
+      # 1920 x 1080, 150% scaling, grayscale font smoothing: sharper screenshots (stays at 100% if it fails)
       - name: Display settings for screenshots
         shell: pwsh
         run: pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe
@@ -57,8 +57,8 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Skip normal-scale
 
-      # 截图加上 Windows 11 那样的圆角 (虚拟机没有显卡加速, 系统不画圆角), README 首页的动图 demo.png (APNG)
-      # 由 "demo" 场景存下的帧合成 (圆角、阴影、模糊的背景); 都用 Pillow, 按 SHOT_SCALE 放大圆角和边距
+      # Screenshots get Windows 11-style rounded corners (the VM has no GPU acceleration, so the system draws none); the README front page animation demo.png (APNG)
+      # is assembled from the frames the "demo" scene saved (rounded corners, shadow, blurred background); all with Pillow, corners and margins scaled by SHOT_SCALE
       - name: Rounded corners and demo GIF
         shell: pwsh
         run: |
@@ -70,8 +70,8 @@ jobs:
           python Tests/Screenshots/MakeDemo.py $frames docs/images/screenshots/demo.png
           if ($LASTEXITCODE -ne 0) { throw "MakeDemo.py failed" }
 
-      # 偏好设置和 Quick Switch (Shots.NormalScale) 在 150% 下太大: 缩放调回 100% 再截一次 (字体用 ClearType), 圆角按 100% 的半径
-      # (已经是圆角的图 RoundCorners.py 不再处理)
+      # Preferences and Quick Switch (Shots.NormalScale) are too big at 150%: set the scaling back to 100% and shoot again (fonts with ClearType), corners with the 100% radius
+      # (RoundCorners.py leaves images that already have rounded corners alone)
       - name: Display at 100% for Preferences and Quick Switch
         shell: pwsh
         run: pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Scale 100

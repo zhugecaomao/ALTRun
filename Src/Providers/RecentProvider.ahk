@@ -1,19 +1,19 @@
 ;===============================================================================
-; RecentProvider.ahk - 空搜索框里的置顶项目和最近使用 (AutoHotkey v2)
+; RecentProvider.ahk - pinned and recently used items in the empty search box (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 和 Raycast / Alfred 一样, 呼出搜索窗口还没输入时直接列出:
-;   1. 置顶的项目: 操作面板 (→) 里 "置顶到空搜索框", 存在 ALTRun.json (Features.Recent.Pinned), 跟设置走
-;   2. 最近打开的项目 (RecentCount 个, 0 = 不显示), 存在 Data\Knowledge.json (Knowledge.Recent)
-; Ctrl+Del: 取消置顶 / 从最近使用里去掉。
-; 只记能重新打开的结果: 文件、文件夹、程序、网址 (保存路径) 和系统命令 (保存 Id, 显示时用当前语言的名称);
-; 剪贴板历史、计算结果、片段、网页搜索、窗口等跟输入或当时状态有关的不记。
+; As in Raycast / Alfred, they are listed when the search window is shown and nothing is typed yet:
+;   1. pinned items: "Pin to empty search box" in the actions panel (→), stored in ALTRun.json (Features.Recent.Pinned), so they go with the settings
+;   2. recently opened items (RecentCount, 0 = none), stored in Data\Knowledge.json (Knowledge.Recent)
+; Ctrl+Del: unpin / remove from the recently used.
+; Only results that can be opened again are kept: files, folders, programs, URLs (path saved) and system commands (Id saved, shown with the name in the current language);
+; clipboard history, calculation results, snippets, web searches, windows and others that depend on the input or the moment aren't.
 ;
-; 设置 (ALTRun.json -> Features.Recent): Enabled / RecentCount / Pinned
+; Settings (ALTRun.json -> Features.Recent): Enabled / RecentCount / Pinned
 ;===============================================================================
 
 class RecentProvider {
     static Id := "Recent"
-    static Keep := 30                                                       ; Knowledge.json 里最多记多少条
+    static Keep := 30                                                       ; at most this many entries kept in Knowledge.json
     static Skip := Map("WebSearch", 1, "Windows", 1, "Clipboard", 1, "Calculator", 1, "Snippets", 1, "Help", 1, "Terminal", 1)
 
     static Init() {
@@ -23,7 +23,7 @@ class RecentProvider {
         return []
     }
 
-    ; 空搜索框: 置顶的在前, 然后是最近使用 (去掉已经置顶的)
+    ; Empty search box: pinned first, then the recently used (without the pinned ones)
     static EmptyResults() {
         options := AppSettings.Feature("Recent")
         results := [], seen := Map()
@@ -45,7 +45,7 @@ class RecentProvider {
         return results
     }
 
-    ; 结果 -> 保存用的 Map; 不能重新打开的结果返回 ""
+    ; Result -> the Map to save; "" for results that can't be opened again
     static Snapshot(item) {
         if (!IsObject(item) || item.Provider = "" || RecentProvider.Skip.Has(item.Provider) || !item.Valid)
             return ""
@@ -57,7 +57,7 @@ class RecentProvider {
         return ""
     }
 
-    ; 打开了某一项 (搜索窗口里 Enter / 操作 / 右键菜单)
+    ; An item was opened (Enter / an action / the context menu in the search window)
     static Remember(item) {
         if !IsObject(entry := RecentProvider.Snapshot(item))
             return
@@ -103,7 +103,7 @@ class RecentProvider {
         return false
     }
 
-    ; 保存的 Map -> 结果; 系统命令按 Id 找当前的命令 (已经没有这个命令时 "")
+    ; Saved Map -> result; system commands are looked up by Id ("" if the command no longer exists)
     static ItemFor(entry, pinned) {
         if !(entry is Map) || !entry.Has("Uid")
             return ""
