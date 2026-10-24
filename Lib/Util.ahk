@@ -362,7 +362,7 @@ class Win {
         next := Win.NextLayout(layouts, current)
         ; When the foreground is ALTRun's own window (e.g. the search window), switch directly: 2026-10 report that CapsLock couldn't switch
         ; to Chinese in the search window (with "switch to English when shown" on, the window had switched to English with
-        ; ActivateKeyboardLayout), and the message sent to our own window had no effect. Like restoring on hide (SearchWindow._RestoreInputLanguage), use ActivateKeyboardLayout
+        ; ActivateKeyboardLayout), and the message sent to our own window had no effect. Like restoring on hide (SearchInputLanguage.Restore), use ActivateKeyboardLayout
         own := DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "Ptr", 0, "UInt") = DllCall("GetCurrentThreadId", "UInt")
         if own {
             try DllCall("ActivateKeyboardLayout", "Ptr", next, "UInt", 0)

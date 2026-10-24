@@ -7,7 +7,7 @@
 ; The result list is a ListView that draws every row itself (NM_CUSTOMDRAW); it only holds the rows currently visible
 ; (at most VisibleRows), and Offset does the scrolling, so there is never a scroll bar.
 ;
-; Keyboard (all handled in _OnKeyDown, catching WM_KEYDOWN / WM_SYSKEYDOWN with OnMessage):
+; Keyboard (all handled in SearchKeys.OnKeyDown, catching WM_KEYDOWN / WM_SYSKEYDOWN with OnMessage):
 ;   Enter / Ctrl+Enter / Alt+Enter   run / reveal or paste / copy   (see ActionCatalog)
 ;   ↑ ↓  Ctrl+P Ctrl+N               up / down one row (moves the selection only, as in Alfred; not mixed with history)
 ;   PgUp PgDn                        up / down one page (VisibleRows rows)
@@ -35,6 +35,9 @@
 ; Active = the active window's). By default centered horizontally, 20% from the top; with Appearance.RememberPosition,
 ; a dragged position is saved relative to the screen (per mille, Appearance.Position), so it lands in the matching place on another screen.
 ;
+; Helpers in their own files: SearchKeys (keyboard), ResultRows (draws the rows), SearchStatusBar, TypeAhead (keys typed while showing),
+; SearchInputLanguage (English input while shown), ResultActions (actions panel, edit, delete).
+;
 ; Usage:
 ;   SearchWindow.Create()             once at start-up
 ;   SearchWindow.Show([text])  Hide()  Toggle()
@@ -53,20 +56,12 @@ class SearchWindow {
     static _historyDraft := ""                       ; the text in the box before browsing the history; restored by Ctrl+↓
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
     static SelectedRadius := 0
-    static _gdi := Map()
     static _searchTimer := "", _hideTimer := ""
     static _shownRows := -1                                                 ; how many result rows the window is currently sized for
     static _tip := ""                                                       ; the usage tip for this showing (HelpProvider.NextTip)
     static LastArea := "", HiddenAt := 0                                    ; work area of the screen at the last hide, and its time (for Hud)
     static _last := ""                                                      ; the search at the last hide {Text, FileMode, Selected} (KeepLastQuery)
-    static _layoutBefore := 0                                               ; input language of the foreground window before showing (switched back after hiding when SwitchToEnglishInput = 1)
-    static _imeBefore := ""                                                 ; {Open, Conv} of the IME when shown (restored after hiding when SwitchToEnglishInput = 2)
-    static _keepOpen := false                        ; don't hide on focus loss during a context menu / delete confirmation
-    ; Status bar at the bottom (Appearance.StatusBar, like Listary / Raycast), shown when there are result rows. On the left
-    ; the ☰ menu button (Preferences, cheat sheet, rebuild index, check for updates, reload, quit) and the file search /
-    ; actions panel state; on the right what Enter, Ctrl+Enter, F3 and → do with the selected result (round key caps).
-    ; The usage tip is in the empty search box (its cue banner), not here
-    static StatusHeight := 0, StatusBar := "", _statusKey := ""
+    static _keepOpen := false                                               ; don't hide on focus loss during a context menu / delete confirmation
 
     ;---------------------------------------------------------------------------
     ; Create
@@ -84,7 +79,7 @@ class SearchWindow {
         IconCache.Size := SearchWindow.IconSize
         IconCache.OnLoaded := () => SearchWindow._Repaint()
         BackgroundWork.IsBusy := () => !SearchWindow._AllowsBackgroundWork()
-        SearchWindow._CreateGdiObjects()
+        ResultRows.CreateGdi()
 
         w := SearchWindow.Width, pad := SearchWindow.Padding
         background := ThemeManager.Get("Background")
@@ -113,7 +108,7 @@ class SearchWindow {
         ; The real row height: the ListView is 1 pixel taller than the image list (2026-10: a theme row of 48 pixels was really 49); when the list and window counted 48,
         ; each row was off by 1 pixel and with 8 rows the bottom 8 pixels of the last row were cut off (the lower corners of the selected row disappeared). Lay out with the measured height
         SearchWindow.RowHeight := Win.ListRowHeight(list, SearchWindow.RowHeight)
-        list.OnNotify(-12, (ctrl, lParam) => SearchWindow._OnCustomDraw(lParam))    ; NM_CUSTOMDRAW
+        list.OnNotify(-12, (ctrl, lParam) => ResultRows.OnCustomDraw(lParam))       ; NM_CUSTOMDRAW
         list.OnEvent("Click", (ctrl, row) => SearchWindow._OnRowClick(row))
         list.OnEvent("DoubleClick", (ctrl, row) => SearchWindow._OnRowDoubleClick(row))
         list.OnEvent("ContextMenu", (ctrl, row, isRightClick, x, y) => SearchWindow._OnRowContextMenu(row, x, y))
@@ -121,10 +116,10 @@ class SearchWindow {
         g.OnEvent("Close", (*) => SearchWindow.Hide())
 
         SearchWindow.Gui := g, SearchWindow.Input := searchBox, SearchWindow.List := list, SearchWindow.Separator := separator
-        SearchWindow._CreateStatusBar(g, w, pad)
+        SearchStatusBar.Create(g, w, pad)
 
-        OnMessage(0x100, (p*) => SearchWindow._OnKeyMessage(p*))            ; WM_KEYDOWN
-        OnMessage(0x104, (p*) => SearchWindow._OnKeyMessage(p*))            ; WM_SYSKEYDOWN (Alt+...)
+        OnMessage(0x100, (p*) => SearchKeys.OnKeyMessage(p*))               ; WM_KEYDOWN
+        OnMessage(0x104, (p*) => SearchKeys.OnKeyMessage(p*))               ; WM_SYSKEYDOWN (Alt+...)
         OnMessage(0x6,   (p*) => SearchWindow._OnActivate(p*))              ; WM_ACTIVATE
         OnMessage(0x20A, (p*) => SearchWindow._OnMouseWheel(p*))            ; WM_MOUSEWHEEL
         OnMessage(0x201, (p*) => SearchWindow._OnLButtonDown(p*))           ; WM_LBUTTONDOWN: drag the window
@@ -143,342 +138,6 @@ class SearchWindow {
     static Opacity() {
         opacity := ThemeManager.Get("Opacity")
         return (IsNumber(opacity) && opacity >= 1 && opacity < 255) ? Round(opacity) : 255
-    }
-
-    ; Status bar: a picture control whose contents (background, separators, icons, tip, keycaps) are drawn into a bitmap, see _RenderStatusBar
-    static _CreateStatusBar(g, w, pad) {
-        SearchWindow.StatusHeight := 0, SearchWindow.StatusBar := "", SearchWindow._statusKey := ""
-        if !SearchWindow.StatusBarEnabled()
-            return
-        SearchWindow.StatusHeight := Win.Scale(38)
-        SearchWindow.StatusBar := g.AddPicture("x0 y0 w" w " h" SearchWindow.StatusHeight " Hidden +0xE")   ; 0xE = SS_BITMAP
-        SearchWindow.StatusBar.OnEvent("Click", (*) => SearchWindow._OnStatusClick())   ; click on ☰: the menu (clicks elsewhere on the status bar do nothing)
-        SearchWindow._PlaceStatusBar(0)
-    }
-
-    static StatusBarEnabled() {
-        appearance := AppSettings.Appearance
-        return !appearance.Has("StatusBar") || appearance["StatusBar"]
-    }
-
-    ; status bar height: only shown with result rows
-    static _StatusShown(visibleCount) => (SearchWindow.StatusHeight && visibleCount > 0)
-
-    ; the status bar goes below the results; hidden without result rows
-    static _PlaceStatusBar(visibleCount) {
-        if !SearchWindow.StatusHeight
-            return
-        shown := SearchWindow._StatusShown(visibleCount)
-        if shown
-            SearchWindow.StatusBar.Move(0, SearchWindow._ContentHeight(visibleCount))
-        if (SearchWindow.StatusBar.Visible != shown)
-            SearchWindow.StatusBar.Visible := shown
-    }
-
-    ; only repaint the status bar when its contents changed
-    static _UpdateStatusBar() {
-        if !SearchWindow.StatusHeight
-            return
-        texts := SearchWindow.StatusTexts()
-        key := texts.Left "`n" texts.Enter "`n" texts.Ctrl "`n" texts.Edit "`n" texts.Actions
-        if (key == SearchWindow._statusKey)
-            return
-        SearchWindow._statusKey := key
-        SearchWindow._RenderStatusBar(texts)
-    }
-
-    ; {Left, Enter, Ctrl, Edit, Actions}: the text on the left (file search mode / Esc in the actions panel; the usage
-    ; tip is in the empty box instead), what Enter / Ctrl+Enter do with the selected result ("" = nothing to show),
-    ; whether F3 edits it and whether "Actions →" is shown
-    static StatusTexts() {
-        actions := SearchWindow.Mode = "actions"
-        left := actions ? I18n.T("Status.Back") : SearchWindow.FileMode ? I18n.T("Status.FileMode") : ""
-        item := SearchWindow.SelectedItem()
-        enter := !IsObject(item) ? "" : actions ? I18n.T("Status.Run") : SearchWindow.EnterTitle(item)
-        usable := !actions && IsObject(item) && item.Valid
-        ctrl := usable ? SearchWindow.CtrlEnterTitle(item, enter) : ""
-        return {Left: left, Enter: enter, Ctrl: ctrl, Edit: (usable && ResultActions.CanEdit(item)) ? 1 : 0, Actions: usable ? 1 : 0}
-    }
-
-    ; What Ctrl+Enter does (ActionCatalog.RunModifier); "" when it is the same as Enter
-    static CtrlEnterTitle(item, enter) {
-        switch item.Kind {
-            case "file", "folder": title := I18n.T("Status.Reveal")
-            case "text"          : title := I18n.T("Status.Paste")
-            case "url"           : title := I18n.T("Status.Copy")
-            default              : return ""
-        }
-        return (title = enter) ? "" : title
-    }
-
-    ; What Enter does for the selected result (a short name): the result's own (RunTitle) > by type (open / copy / paste / run); hint rows that can't run: complete
-    static EnterTitle(item) {
-        if !item.Valid
-            return (item.AutoComplete != "") ? I18n.T("Status.Complete") : ""
-        if (item.RunTitle != "")
-            return item.RunTitle
-        switch item.Kind {
-            case "file", "folder", "url": return I18n.T("Status.Open")
-            case "text": return IsObject(item.OnRun) ? I18n.T("Status.Paste") : I18n.T("Status.Copy")
-        }
-        return I18n.T("Status.Run")
-    }
-
-    ; The parts on the right: [{Label, Keys: [key caps...]}], a line between two parts:
-    ; Open ↵ | Reveal Ctrl ↵ | Edit F3 | Actions →
-    static StatusParts(texts) {
-        parts := []
-        if (texts.Enter != "")
-            parts.Push({Label: texts.Enter, Keys: ["↵"]})
-        if (texts.Ctrl != "")
-            parts.Push({Label: texts.Ctrl, Keys: ["Ctrl", "↵"]})
-        if texts.Edit
-            parts.Push({Label: I18n.T("Status.Edit"), Keys: ["F3"]})
-        if texts.Actions
-            parts.Push({Label: I18n.T("Status.Actions"), Keys: ["→"]})
-        return parts
-    }
-
-    ; Sizes on the status bar's right side: drawing it and checking that it fits use the same ones
-    static _StatusMetrics() => {KeyH: Win.Scale(20), KeyPad: Win.Scale(6), Gap: Win.Scale(6), KeyGap: Win.Scale(4), Divider: Win.Scale(8)}
-
-    ; Arrows are drawn in a key cap 1.3 times as wide as high; other keys fit their text
-    static _KeyWidth(hdc, keyText, m) => (keyText = "↵" || keyText = "→") ? Round(m.KeyH * 1.3) : Max(m.KeyH, SearchWindow._TextWidth(hdc, keyText) + 2 * m.KeyPad)
-
-    ; Width of the parts on the right as _RenderStatusBar draws them (the fonts must exist, see _CreateGdiObjects)
-    static StatusPartsWidth(parts) {
-        m := SearchWindow._StatusMetrics(), gdi := SearchWindow._gdi
-        hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr"), width := 0
-        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"], "Ptr")
-        for index, part in parts {
-            DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"])
-            for keyText in part.Keys
-                width += SearchWindow._KeyWidth(hdc, keyText, m) + m.KeyGap
-            width += m.Gap - m.KeyGap
-            DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["StatusFont"])
-            width += SearchWindow._TextWidth(hdc, part.Label) + (index > 1 ? 2 * m.Divider : 0)
-        }
-        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
-        DllCall("DeleteDC", "Ptr", hdc)
-        return width
-    }
-
-    ; width taken by the ☰ button (from the left of the status bar)
-    static StatusMenuWidth() => SearchWindow.StatusMenuWidthFor(SearchWindow.Padding)
-    static StatusMenuWidthFor(pad) => pad + Win.Scale(28)
-
-    ; The status bar was clicked: show the menu when the click is on ☰
-    static _OnStatusClick() {
-        point := Buffer(8)
-        DllCall("GetCursorPos", "Ptr", point)
-        DllCall("ScreenToClient", "Ptr", SearchWindow.StatusBar.Hwnd, "Ptr", point)
-        if (NumGet(point, 0, "Int") <= SearchWindow.StatusMenuWidth())
-            SearchWindow.ShowMainMenu()
-    }
-
-    ; The ☰ menu's items: [[name, function], ...], "" = separator
-    static MainMenuItems() {
-        later := (fn) => (*) => (SearchWindow.Hide(), SetTimer(fn, -1))     ; hide the search window first, act after the menu closes
-        return [[I18n.T("Tray.Preferences") "`tCtrl+,", later(() => App.OpenPreferences())]
-              , [I18n.T("Menu.CheatSheet") "`t?", (*) => SearchWindow._SetInput("?")]
-              , ""
-              , [I18n.T("Tray.RebuildIndex"), later(() => App.RebuildIndex())]
-              , [I18n.T("Tray.CheckUpdate"), later(() => UpdateChecker.Check())]
-              , ""
-              , [I18n.T("Tray.Reload"), later(() => App.Reload())]
-              , [I18n.T("Tray.Exit"), later(() => App.Quit())]]
-    }
-
-    ; Shows the menu above ☰ (the status bar is at the bottom of the window; the system puts the menu where it fits)
-    static ShowMainMenu() {
-        mainMenu := Menu()
-        for entry in SearchWindow.MainMenuItems()
-            IsObject(entry) ? mainMenu.Add(entry[1], entry[2]) : mainMenu.Add()
-        SearchWindow.StatusBar.GetPos(&x, &y)
-        SearchWindow._keepOpen := true
-        CoordMode("Menu", "Client")
-        mainMenu.Show(SearchWindow.Padding, y)
-        SearchWindow._keepOpen := false
-        if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
-            try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
-    }
-
-    ; Mixes two colors ("RRGGBB") by t (0 ~ 1); returns BGR for GDI
-    static MixColor(base, other, t) {
-        a := Win.ColorToBgr(base), b := Win.ColorToBgr(other), mixed := 0
-        for shift in [0, 8, 16] {
-            ca := (a >> shift) & 0xFF, cb := (b >> shift) & 0xFF
-            mixed |= Round(ca + (cb - ca) * t) << shift
-        }
-        return mixed
-    }
-
-    ; Draws the status bar bitmap and replaces the one in the picture control. The background is the background color moved slightly towards the text color (a bit darker in light themes, lighter in dark ones),
-    ; keycaps a bit more; the ↵ in a keycap uses Segoe UI Symbol (normal fonts may lack it).
-    ; A 24-bit DIB (no alpha, like ThemePreview): in a 32-bit bitmap the background and text GDI draws have alpha 0 and only the keycaps GDI+ draws have 255,
-    ; and the picture control shows a 32-bit bitmap with its alpha, so the text and background would be invisible
-    static _RenderStatusBar(texts) {
-        w := SearchWindow.Width, h := SearchWindow.StatusHeight, pad := SearchWindow.Padding
-        background := ThemeManager.Get("Background"), title := ThemeManager.Get("Title")
-        gdi := SearchWindow._gdi
-        screen := DllCall("GetDC", "Ptr", 0, "Ptr")
-        hdc := DllCall("CreateCompatibleDC", "Ptr", screen, "Ptr")
-        DllCall("ReleaseDC", "Ptr", 0, "Ptr", screen)
-        info := Buffer(40, 0)                                               ; BITMAPINFOHEADER: top-down, 24-bit
-        NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 24, info)
-        bits := 0
-        bitmap := DllCall("CreateDIBSection", "Ptr", hdc, "Ptr", info, "UInt", 0, "Ptr*", &bits, "Ptr", 0, "UInt", 0, "Ptr")
-        oldBitmap := DllCall("SelectObject", "Ptr", hdc, "Ptr", bitmap, "Ptr")
-        SearchWindow._FillRect(hdc, 0, 0, w, h, SearchWindow.MixColor(background, title, 0.045))
-        SearchWindow._FillRect(hdc, 0, 0, w, 1, Win.ColorToBgr(ThemeManager.Get("Separator")))
-        DllCall("SetBkMode", "Ptr", hdc, "Int", 1)                         ; TRANSPARENT
-        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["StatusFont"], "Ptr")
-
-        ; the right side goes right to left: label + keycap, with a vertical line between the parts
-        m := SearchWindow._StatusMetrics()
-        keyH := m.KeyH, gap := m.Gap, keyGap := m.KeyGap, divider := m.Divider
-        top := (h - keyH) // 2 + 1, x := w - pad
-        parts := SearchWindow.StatusParts(texts)
-        labelBgr := SearchWindow.MixColor(title, background, 0.15), keyBgr := SearchWindow.MixColor(background, title, 0.11)
-        keyTextBgr := SearchWindow.MixColor(title, background, 0.3), lineBgr := SearchWindow.MixColor(background, title, 0.18)
-        index := parts.Length
-        while (index >= 1) {
-            part := parts[index]
-            keyIndex := part.Keys.Length
-            while (keyIndex >= 1) {
-                keyText := part.Keys[keyIndex]
-                DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["KeyFont"])
-                arrowKey := (keyText = "↵" || keyText = "→")                    ; the arrows are drawn (the font's arrows are too small and sit too low)
-                keyW := SearchWindow._KeyWidth(hdc, keyText, m)
-                Win.FillRoundRect(hdc, x - keyW, top, x, top + keyH, Win.Scale(5), keyBgr)
-                if arrowKey {
-                    SearchWindow.DrawKeyArrow(hdc, keyText, x - keyW / 2, top + keyH / 2, keyH * 0.5, keyTextBgr)
-                } else {
-                    DllCall("SetTextColor", "Ptr", hdc, "UInt", keyTextBgr)
-                    SearchWindow._DrawText(hdc, keyText, x - keyW, top, x, top + keyH, 0x825)   ; DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX
-                }
-                x -= keyW + keyGap
-                keyIndex--
-            }
-            x -= gap - keyGap
-            DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["StatusFont"])
-            labelW := SearchWindow._TextWidth(hdc, part.Label)
-            DllCall("SetTextColor", "Ptr", hdc, "UInt", labelBgr)
-            SearchWindow._DrawText(hdc, part.Label, x - labelW, 1, x, h, 0x824)          ; DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX
-            x -= labelW
-            if (index > 1) {                                                ; the vertical line to the previous part
-                x -= divider
-                SearchWindow._FillRect(hdc, x, top + Win.Scale(3), x + Max(1, Win.Scale(1)), top + keyH - Win.Scale(3), lineBgr)
-                x -= divider
-            }
-            index--
-        }
-
-        ; Left: the ☰ menu button (three lines) + the tip (with an ellipsis if it doesn't fit)
-        lineW := Win.Scale(14), lineH := Max(1, Round(Win.Scale(1) * 1.5)), lineGap := Win.Scale(4)
-        lineTop := (h - 3 * lineH - 2 * lineGap) // 2 + 1
-        Loop 3
-            SearchWindow._FillRect(hdc, pad, lineTop + (A_Index - 1) * (lineH + lineGap), pad + lineW, lineTop + (A_Index - 1) * (lineH + lineGap) + lineH, labelBgr)
-        left := SearchWindow.StatusMenuWidth()
-        DllCall("SetTextColor", "Ptr", hdc, "UInt", gdi["SubtitleColor"])
-        SearchWindow._DrawText(hdc, texts.Left, left, 1, x - Win.Scale(16), h, 0x8824)  ; DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS
-
-        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
-        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldBitmap)
-        DllCall("DeleteDC", "Ptr", hdc)
-        ctrl := SearchWindow.StatusBar.Hwnd
-        previous := SendMessage(0x172, 0, bitmap, ctrl)                     ; STM_SETIMAGE: returns the previous bitmap
-        if previous
-            DllCall("DeleteObject", "Ptr", previous)
-        if (SendMessage(0x173, 0, 0, ctrl) != bitmap)                       ; STM_GETIMAGE: when the control made its own copy (a 32-bit bitmap), ours is no longer needed
-            DllCall("DeleteObject", "Ptr", bitmap)
-    }
-
-    ; An arrow in a keycap (antialiased lines); (cx, cy) is the center, size the width and height:
-    ;   ↵ Enter: down from the top right, then left, with the arrowhead at the left end;  → right arrow key: a horizontal line with the arrowhead at the right end
-    static DrawKeyArrow(hdc, key, cx, cy, size, bgr) {
-        graphics := 0, pen := 0
-        if (!ClipboardData.StartGdiplus() || DllCall("gdiplus\GdipCreateFromHDC", "Ptr", hdc, "Ptr*", &graphics) || !graphics)
-            return
-        DllCall("gdiplus\GdipSetSmoothingMode", "Ptr", graphics, "Int", 4)    ; AntiAlias
-        argb := 0xFF000000 | ((bgr & 0xFF) << 16) | (bgr & 0xFF00) | ((bgr >> 16) & 0xFF)
-        DllCall("gdiplus\GdipCreatePen1", "UInt", argb, "Float", Max(1.2, size * 0.13), "Int", 2, "Ptr*", &pen)   ; 2 = UnitPixel
-        DllCall("gdiplus\GdipSetPenLineJoin", "Ptr", pen, "Int", 2)             ; LineJoinRound
-        DllCall("gdiplus\GdipSetPenStartCap", "Ptr", pen, "Int", 2), DllCall("gdiplus\GdipSetPenEndCap", "Ptr", pen, "Int", 2)   ; LineCapRound
-        half := size / 2, head := size * 0.3
-        if (key = "→") {
-            points := [[cx - half, cy], [cx + half, cy]]
-            tip := [[cx + half - head, cy - head], [cx + half, cy], [cx + half - head, cy + head]]
-        } else {
-            baseY := cy + size * 0.18
-            points := [[cx + half, cy - half], [cx + half, baseY], [cx - half, baseY]]      ; vertical line + horizontal line
-            tip := [[cx - half + head, baseY - head], [cx - half, baseY], [cx - half + head, baseY + head]]
-        }
-        for lines in [points, tip] {                                        ; line + arrowhead (two slanted lines meeting at one end of the line)
-            buf := Buffer(8 * lines.Length)
-            for index, point in lines
-                NumPut("Float", point[1], "Float", point[2], buf, (index - 1) * 8)
-            DllCall("gdiplus\GdipDrawLines", "Ptr", graphics, "Ptr", pen, "Ptr", buf, "Int", lines.Length)
-        }
-        DllCall("gdiplus\GdipDeletePen", "Ptr", pen)
-        DllCall("gdiplus\GdipDeleteGraphics", "Ptr", graphics)
-    }
-
-    static _FillRect(hdc, left, top, right, bottom, bgr) {
-        rect := Buffer(16)
-        NumPut("Int", left, "Int", top, "Int", right, "Int", bottom, rect)
-        brush := DllCall("CreateSolidBrush", "UInt", bgr, "Ptr")
-        DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", brush)
-        DllCall("DeleteObject", "Ptr", brush)
-    }
-
-    static _CreateGdiObjects() {
-        font := ThemeManager.FontName()
-        gdi := SearchWindow._gdi
-        gdi["TitleFont"]    := SearchWindow._CreateFont(font, ThemeManager.Get("TitleFontSize"), 400)
-        gdi["SubtitleFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("SubtitleFontSize"), 400)
-        gdi["ShortcutFont"] := SearchWindow._CreateFont(font, ThemeManager.Get("ShortcutFontSize"), 400)
-        gdi["StatusFont"]   := gdi["SubtitleFont"]                          ; the status bar text is like the description text
-        gdi["KeyFont"]      := SearchWindow._CreateFont(font, Max(7, ThemeManager.Get("SubtitleFontSize") - 1), 400)   ; text in the status bar keycaps (Ctrl, K)
-        gdi["Background"]   := DllCall("CreateSolidBrush", "UInt", Win.ColorToBgr(ThemeManager.Get("Background")), "Ptr")
-        gdi["SelectedBgr"]  := Win.ColorToBgr(ThemeManager.Get("SelectedBackground"))
-        gdi["Selected"]     := DllCall("CreateSolidBrush", "UInt", gdi["SelectedBgr"], "Ptr")
-        for key in ["Title", "Subtitle", "Shortcut", "SelectedTitle", "SelectedSubtitle", "SelectedShortcut", "Highlight", "SelectedHighlight"]
-            gdi[key "Color"] := Win.ColorToBgr(ThemeManager.Get(key))
-        SearchWindow._ScheduleFontWarmUp()
-    }
-
-    ; Warms up the fallback fonts: Segoe UI in the English UI has no CJK characters, so the first time they are drawn Windows loads a fallback font (Microsoft YaHei etc.).
-    ; Right after boot that takes hundreds of milliseconds, and inside the result list's custom-draw callback (WM_PAINT) it stalls for a long time: the result rows stay blank
-    ; and timers and hotkeys don't run either (found on a freshly started Windows on GitHub, 2026-10). So 1 s after the fonts are created, CJK text is measured once
-    ; in each result font on a memory DC to load the fallback fonts first; drawing later doesn't wait
-    static FontWarmUpText := "记事本 メモ帳 한글", FontWarmUpDelay := 1000, _fontWarmUp := ""
-    static _ScheduleFontWarmUp() {
-        if (SearchWindow._fontWarmUp = "")
-            SearchWindow._fontWarmUp := () => SearchWindow.WarmUpFonts()
-        SetTimer(SearchWindow._fontWarmUp, -SearchWindow.FontWarmUpDelay)
-    }
-
-    static WarmUpFonts() {
-        gdi := SearchWindow._gdi
-        if !(gdi.Has("TitleFont") && gdi.Has("SubtitleFont"))
-            return
-        start := Logger.Ms()
-        hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
-        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["TitleFont"], "Ptr")
-        SearchWindow._Extents(hdc, SearchWindow.FontWarmUpText)
-        DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["SubtitleFont"])
-        SearchWindow._Extents(hdc, SearchWindow.FontWarmUpText)
-        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
-        DllCall("DeleteDC", "Ptr", hdc)
-        Logger.Time("font warm-up", start)
-    }
-
-    static _CreateFont(name, pointSize, weight) {
-        height := -Round(pointSize * A_ScreenDPI / 72)
-        return DllCall("CreateFontW", "Int", height, "Int", 0, "Int", 0, "Int", 0, "Int", weight
-            , "UInt", 0, "UInt", 0, "UInt", 0, "UInt", 1, "UInt", 0, "UInt", 0, "UInt", 5, "UInt", 0   ; 1 = DEFAULT_CHARSET, 5 = CLEARTYPE_QUALITY
-            , "WStr", name, "Ptr")
     }
 
     static _IsWindows11() {
@@ -500,7 +159,7 @@ class SearchWindow {
     ; input, file search mode and selected row come back with the text selected: Enter runs it again, typing starts a new search
     static _showing := false, _showStarted := 0, _showStep := ""
     static StuckShowMs := 3000                                              ; when the last showing hasn't finished after this long, it counts as stuck and no longer blocks a new one
-    ; typeAhead: characters typed while showing are kept and added to the search box afterwards (see _StartTypeAhead)
+    ; typeAhead: characters typed while showing are kept and added to the search box afterwards (see TypeAhead)
     static Show(text := "", typeAhead := true) {
         if !IsObject(SearchWindow.Gui)
             return
@@ -509,42 +168,14 @@ class SearchWindow {
         if (SearchWindow._prepareTimer != "")
             SetTimer(SearchWindow._prepareTimer, 0)
         if typeAhead
-            SearchWindow._StartTypeAhead()
+            TypeAhead.Start()
         SearchWindow._showing := true, SearchWindow._showStarted := A_TickCount, SearchWindow._showStep := "start"
         try SearchWindow._Show(text)
         finally {
             SearchWindow._showing := false
-            typed := SearchWindow._TakeTypeAhead()
+            typed := TypeAhead.Take()
         }
         SearchWindow._ApplyTypeAhead(typed)
-    }
-
-    ; From the hotkey press until the search box has focus takes tens of milliseconds (first the empty box is searched, then the window shown; longer right after boot), and characters typed
-    ; in that time used to go to the foreground program, lost or typed into another window. Now InputHook catches and keeps the keys that type characters during that time
-    ; (Ctrl / Alt combinations, arrow keys etc. as usual) and adds them to the search box once it has focus; an Enter pressed meanwhile runs the first result after the search, Esc closes the window.
-    ; At most TypeAheadMs: if showing hangs, typing isn't held forever
-    static TypeAheadMs := 3000
-    static _typeAhead := ""
-    static _StartTypeAhead() {
-        if (IsObject(SearchWindow._typeAhead) || SearchWindow.IsActive())
-            return
-        try {
-            ih := InputHook("T" SearchWindow.TypeAheadMs / 1000)
-            ih.KeyOpt("{Enter}{NumpadEnter}{Esc}", "ES")
-            ih.Start()
-            SearchWindow._typeAhead := ih
-        }
-    }
-
-    ; Stops recording; returns {Text: the typed characters, Key: "Enter" / "NumpadEnter" / "Escape" / "", Modifier: Ctrl / Alt held with Enter}
-    static _TakeTypeAhead() {
-        ih := SearchWindow._typeAhead, SearchWindow._typeAhead := ""
-        if !IsObject(ih)
-            return {Text: "", Key: "", Modifier: ""}
-        try ih.Stop()
-        key := (ih.EndReason = "EndKey") ? ih.EndKey : ""
-        modifier := (key = "") ? "" : InStr(ih.EndMods, "^") ? "ctrl" : InStr(ih.EndMods, "!") ? "alt" : ""
-        return {Text: RegExReplace(ih.Input, "[\x00-\x1F\x7F]"), Key: key, Modifier: modifier}   ; no Tab or other control characters
     }
 
     ; Treats the characters typed while showing as typed in the search box: they replace selected text (the restored last search); a leading space enters file search mode
@@ -552,13 +183,13 @@ class SearchWindow {
         if (typed.Text = "" && typed.Key = "")
             return
         if Logger.Enabled
-            Logger.Debug("SearchWindow: typed while showing " SearchWindow.TypeAheadSummary(typed))
+            Logger.Debug("SearchWindow: typed while showing " TypeAhead.Summary(typed))
         if (typed.Key = "Escape")
             return SearchWindow.Hide("Esc")
         text := typed.Text
         if (text != "") {
             if (SubStr(text, 1, 1) = " " && SearchWindow.Mode = "results" && !SearchWindow.FileMode) {
-                if SearchWindow._AllTextSelected()
+                if SearchKeys.AllTextSelected()
                     SearchWindow.Input.Value := ""
                 if SearchWindow._CanEnterFileMode() {
                     SearchWindow.FileMode := true
@@ -584,11 +215,6 @@ class SearchWindow {
     static ForegroundText() {
         try return WinGetProcessName("A") " " WinGetClass("A")
         return "none"
-    }
-
-    ; For the log: how much was typed, not what (the log never holds the search text), e.g. "5 chars (leading space) + Enter"
-    static TypeAheadSummary(typed) {
-        return StrLen(typed.Text) " chars" (SubStr(typed.Text, 1, 1) = " " ? " (leading space)" : "") (typed.Key != "" ? " + " typed.Key : "")
     }
 
     ; The last showing hasn't finished (e.g. the hotkey was pressed again meanwhile): no re-entry. But when it has been stuck too long (2026-10: stuck for 2.5 min after turning off a monitor,
@@ -649,7 +275,7 @@ class SearchWindow {
         SearchWindow.FileMode := restore ? last.FileMode : false
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
-        SearchWindow._UpdateStatusBar()
+        SearchStatusBar.Update()
         SearchWindow.HistoryIndex := 0
         SearchWindow._Step("results")
         if (!reuse && !prepared) {
@@ -667,7 +293,7 @@ class SearchWindow {
         ; So DWM hides (cloaks) the window first, and it is revealed after showing and painting the whole window at once
         hwnd := SearchWindow.Gui.Hwnd
         SearchWindow._Step("window")
-        SearchWindow._HookKeysIfModal()
+        SearchKeys.HookIfModal()
         hidden := !SearchWindow.IsVisible()
         WindowFade.Stop()                                                   ; the shadow of the last hide is still fading out: remove it now
         cloaked := hidden && SearchWindow._Cloak(hwnd, true)
@@ -691,23 +317,7 @@ class SearchWindow {
             SendMessage(0xB1, 0, -1, SearchWindow.Input.Hwnd)               ; restored text is selected: typing replaces it
         else
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; the Edit selects all on focus: put the caret back at the end
-        switch AppSettings.General["SwitchToEnglishInput"] {
-            case 1:                                                         ; switch to the English (US) keyboard
-                SearchWindow._Step("input language: read")                  ; logged in two steps: right after boot this once took 17 s; see which step
-                step := Logger.Ms()
-                if (!wasVisible || !SearchWindow._layoutBefore)                 ; switch back to the previous input language on hide
-                    SearchWindow._layoutBefore := App.PreviousWindow ? Win.KeyboardLayout(App.PreviousWindow) : 0
-                SearchWindow._LogSlowStep("input language: read", step)
-                SearchWindow._Step("input language: switch")
-                step := Logger.Ms()
-                Win.SwitchToEnglishIME()
-                SearchWindow._LogSlowStep("input language: switch", step)
-            case 2:                                                         ; keep the input method, switch it to English mode
-                SearchWindow._Step("input mode")
-                step := Logger.Ms()
-                SearchWindow._SwitchImeToEnglish(wasVisible)
-                SearchWindow._LogSlowStep("input mode", step)
-        }
+        SearchInputLanguage.SwitchOnShow(wasVisible)
         if prepared {
             gen := SearchWindow._searchGen
             SetTimer(() => SearchWindow._RefreshShown(gen), -1)
@@ -733,53 +343,6 @@ class SearchWindow {
         SearchWindow.Input.Focus()
         SendMessage(0xB1, selection & 0xFFFF, (selection >> 16) & 0xFFFF, hwnd)   ; EM_SETSEL: focusing the box selects all
         Logger.Time("show (already open)", started)
-    }
-
-    ; Switches the search box's IME to English mode (setting the open status and conversion mode like the CapsLock Chinese / English toggle), keeping the old state to restore on hide.
-    ; No extra English (US) keyboard needed: the input method stays the same, only in English (suggested in #154, 2026-10)
-    static _SwitchImeToEnglish(wasVisible) {
-        if !(imeWnd := DllCall("imm32\ImmGetDefaultIMEWnd", "Ptr", SearchWindow.Input.Hwnd, "Ptr"))
-            return
-        before := Win.ImeState(imeWnd)
-        if (!wasVisible || !IsObject(SearchWindow._imeBefore))
-            SearchWindow._imeBefore := before
-        target := Win.ImeEnglish(before.Conv)
-        Win.SetImeState(imeWnd, target.Open, target.Conv)
-        if Logger.Enabled {
-            after := Win.ImeState(imeWnd)
-            Logger.Debug(Format("IME to English: open {} conv 0x{:X} -> now open {} conv 0x{:X}", before.Open, before.Conv, after.Open, after.Conv))
-        }
-    }
-
-    ; Showing switched to an English input language: switch back on hide. Only needed when all programs share one input language (the Windows default);
-    ; with "use a different input method for each app window" only ALTRun itself switched and other programs are unaffected
-    static _RestoreInputLanguage() {
-        SearchWindow._RestoreImeMode()
-        layout := SearchWindow._layoutBefore, SearchWindow._layoutBefore := 0
-        if (!layout || AppSettings.General["SwitchToEnglishInput"] != 1 || !AppSettings.General["RestoreInput"]
-            || Win.PerWindowInputMethod() || layout = Win.KeyboardLayout())
-            return
-        if SearchWindow.IsActive() {                                        ; still in the foreground: switch back ourselves, which applies to all programs
-            try DllCall("ActivateKeyboardLayout", "Ptr", layout, "UInt", 0)
-        } else if (hwnd := WinExist("A")) {                                 ; focus already lost: ask the foreground window to switch
-            try PostMessage(0x50, 0, layout, , "ahk_id " hwnd)              ; WM_INPUTLANGCHANGEREQUEST
-        }
-    }
-
-    ; Showing switched the IME to English mode: restore the old open status and conversion mode on hide. Most Chinese IMEs share one Chinese / English state across programs,
-    ; so without restoring, other programs would be in English too. If focus is already lost, set it on the foreground window (like switching the input language back above)
-    static _RestoreImeMode() {
-        before := SearchWindow._imeBefore, SearchWindow._imeBefore := ""
-        if (!IsObject(before) || AppSettings.General["SwitchToEnglishInput"] != 2 || !AppSettings.General["RestoreInput"])
-            return
-        if !(hwnd := WinExist("A")) || !(imeWnd := Win.ImeWindow(hwnd))
-            return
-        Win.SetImeState(imeWnd, before.Open, before.Conv)
-        if Logger.Enabled {
-            after := Win.ImeState(imeWnd)
-            Logger.Debug(Format("IME restore: open {} conv 0x{:X}{} -> now open {} conv 0x{:X}", before.Open, before.Conv
-                , SearchWindow.IsActive() ? "" : " (other window)", after.Open, after.Conv))
-        }
     }
 
     ; DWMWA_CLOAK: the window shows and paints as usual, DWM just doesn't put it on screen. true = success (Windows 8 and later)
@@ -852,11 +415,11 @@ class SearchWindow {
                 SearchWindow.LastArea := Win.WorkAreaAt(x + w // 2, y + SearchWindow.InputHeight // 2), SearchWindow.HiddenAt := A_TickCount
             }
             SearchWindow._RememberQuery()
-            SearchWindow._RestoreInputLanguage()
+            SearchInputLanguage.Restore()
             if AppSettings.Appearance["Fade"]
                 WindowFade.Out(SearchWindow.Gui.Hwnd)                       ; the window hides at once as usual, leaving a shadow that fades out
             SearchWindow.Gui.Hide()
-            SearchWindow._UnhookKeys()
+            SearchKeys.Unhook()
             SearchWindow._PrepareLater()
         }
         LargeType.Close()
@@ -1072,7 +635,7 @@ class SearchWindow {
     }
 
     static _WindowHeight(visibleCount) {
-        return SearchWindow._ContentHeight(visibleCount) + (SearchWindow._StatusShown(visibleCount) ? SearchWindow.StatusHeight : 0)
+        return SearchWindow._ContentHeight(visibleCount) + (SearchStatusBar.Shown(visibleCount) ? SearchStatusBar.Height : 0)
     }
 
     ; Height of the input box and result rows (without the status bar)
@@ -1100,7 +663,7 @@ class SearchWindow {
             list.Visible := visibleCount > 0
             SearchWindow.Separator.Visible := visibleCount > 0
         }
-        SearchWindow._PlaceStatusBar(visibleCount)
+        SearchStatusBar.Place(visibleCount)
         SearchWindow._Repaint()
         if (SearchWindow.IsVisible() && SearchWindow._shownRows != visibleCount) {
             SearchWindow.Gui.Show("NA w" SearchWindow.Width " h" SearchWindow._WindowHeight(visibleCount))
@@ -1111,7 +674,7 @@ class SearchWindow {
     static _Repaint() {
         DllCall("InvalidateRect", "Ptr", SearchWindow.List.Hwnd, "Ptr", 0, "Int", 1)
         SearchWindow._WatchPaint()
-        SearchWindow._UpdateStatusBar()                                     ; the results / selected row changed
+        SearchStatusBar.Update()                                            ; the results / selected row changed
     }
 
     ; Diagnoses "the window is several rows tall but the result rows are blank" (when the row count matches the results): about 100 ms after each list repaint request it checks
@@ -1270,7 +833,7 @@ class SearchWindow {
     ; goes back to normal search (the text stays too), as if the leading space had been deleted
     ;---------------------------------------------------------------------------
     static _CanEnterFileMode() {
-        return SearchWindow.Mode = "results" && !SearchWindow.FileMode && (SearchWindow.Input.Value = "" || SearchWindow._CaretAtStart())
+        return SearchWindow.Mode = "results" && !SearchWindow.FileMode && (SearchWindow.Input.Value = "" || SearchKeys.CaretAtStart())
             && AppSettings.Feature("FileSearch")["SpacePrefix"] && ProviderRegistry.IsEnabled(FileSearchProvider)
     }
 
@@ -1443,238 +1006,8 @@ class SearchWindow {
     }
 
     ;---------------------------------------------------------------------------
-    ; Keyboard / mouse
+    ; Keyboard actions (keys: see SearchKeys) / mouse
     ;---------------------------------------------------------------------------
-    static _IsOwnWindow(hwnd) {
-        return IsObject(SearchWindow.Gui) && (hwnd = SearchWindow.Gui.Hwnd || hwnd = SearchWindow.Input.Hwnd || hwnd = SearchWindow.List.Hwnd)
-    }
-
-    static _OnKeyMessage(wParam, lParam, msg, hwnd) {
-        result := SearchWindow._OnKeyDown(wParam, lParam, msg, hwnd)
-        SearchWindow._keySeen := (result = "" && SearchWindow._IsOwnWindow(hwnd))   ; dispatched next: the subclass (if any) lets it through
-        return result
-    }
-
-    ; While ALTRun shows a system dialog (MsgBox, FileSelect, DirSelect...), that dialog's modal message loop
-    ; dispatches posted messages without calling OnMessage, so the keys never reach _OnKeyDown: typing still
-    ; searches, but Enter, Esc, arrows... do nothing. Shown at such a time, the window subclasses the search box
-    ; and the list and handles the keys in their window procedure instead (until it hides)
-    static _keyCallback := 0, _keyHooked := false, _keySeen := false, _swallowChar := false
-
-    ; A visible dialog (#32770) of this process: MsgBox, FileSelect, DirSelect... (about 0.04 ms: only dialogs are looked at)
-    static InSystemDialog() {
-        pid := DllCall("GetCurrentProcessId"), hwnd := 0
-        while (hwnd := DllCall("FindWindowEx", "Ptr", 0, "Ptr", hwnd, "Str", "#32770", "Ptr", 0, "Ptr")) {
-            DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "UInt*", &owner := 0)
-            if (owner = pid && DllCall("IsWindowVisible", "Ptr", hwnd))
-                return hwnd
-        }
-        return 0
-    }
-
-    static _HookKeysIfModal() {
-        if SearchWindow.InSystemDialog()
-            SearchWindow._HookKeys()
-    }
-
-    static _HookKeys() {
-        if SearchWindow._keyHooked
-            return
-        if !SearchWindow._keyCallback                                       ; created once and kept: it may be running when the window hides
-            SearchWindow._keyCallback := CallbackCreate((hwnd, msg, wParam, lParam, id, data) => SearchWindow._KeyProc(hwnd, msg, wParam, lParam), , 6)
-        SearchWindow._keySeen := false, SearchWindow._swallowChar := false
-        for hwnd in [SearchWindow.Input.Hwnd, SearchWindow.List.Hwnd]
-            DllCall("comctl32\SetWindowSubclass", "Ptr", hwnd, "Ptr", SearchWindow._keyCallback, "UPtr", 1, "UPtr", 0)
-        SearchWindow._keyHooked := true
-        Logger.Debug("SearchWindow: keys handled in the window procedure (a system dialog is open)")
-    }
-
-    static _UnhookKeys() {
-        if !SearchWindow._keyHooked
-            return
-        for hwnd in [SearchWindow.Input.Hwnd, SearchWindow.List.Hwnd]
-            DllCall("comctl32\RemoveWindowSubclass", "Ptr", hwnd, "Ptr", SearchWindow._keyCallback, "UPtr", 1)
-        SearchWindow._keyHooked := false
-    }
-
-    static _KeyProc(hwnd, msg, wParam, lParam) {
-        if (msg = 0x100 || msg = 0x104) {                                   ; WM_KEYDOWN / WM_SYSKEYDOWN
-            SearchWindow._swallowChar := false
-            if SearchWindow._keySeen                                        ; OnMessage already saw it (no modal loop)
-                SearchWindow._keySeen := false
-            else if (SearchWindow._OnKeyDown(wParam, lParam, msg, hwnd) != "") {
-                SearchWindow._swallowChar := true                           ; the WM_CHAR made from it (Enter, Esc, Space...) must not reach the box either
-                return 0
-            }
-        } else if ((msg = 0x102 || msg = 0x106) && SearchWindow._swallowChar) {   ; WM_CHAR / WM_SYSCHAR
-            SearchWindow._swallowChar := false
-            return 0
-        }
-        return DllCall("comctl32\DefSubclassProc", "Ptr", hwnd, "UInt", msg, "UPtr", wParam, "Ptr", lParam, "Ptr")
-    }
-
-    ; 0 = the key is handled and not passed to the input box; empty = handled the normal way
-    static _OnKeyDown(wParam, lParam, msg, hwnd) {
-        if !SearchWindow._IsOwnWindow(hwnd)
-            return
-        vk := wParam
-        ctrl  := GetKeyState("Ctrl")
-        shift := GetKeyState("Shift")
-        alt   := (msg = 0x104) || GetKeyState("Alt")
-        actions := SearchWindow.Mode = "actions"
-
-        switch vk {
-            case 0x0D:                                                      ; Enter
-                SearchWindow._Execute(ctrl ? "ctrl" : alt ? "alt" : "")
-                return 0
-            case 0x1B:                                                      ; Esc
-                if (actions && SearchWindow._actionsOnly)
-                    SearchWindow.Hide("Esc")
-                else if actions
-                    SearchWindow._CloseActions()
-                else
-                    SearchWindow.Hide("Esc")
-                return 0
-            case 0x20:                                                      ; Space: in the empty search box (or with the caret at the start), enter file search mode
-                if (ctrl || alt)
-                    return
-                ; with all text selected (the restored last search) a space would replace it, so treat it as an empty search box
-                if (!shift && !actions && !SearchWindow.FileMode && SearchWindow._AllTextSelected()) {
-                    SearchWindow._SetInput("")
-                    if SearchWindow._CanEnterFileMode() {
-                        SearchWindow._SetFileMode(true)
-                        return 0
-                    }
-                    return
-                }
-                if (!shift && SearchWindow._CanEnterFileMode()) {
-                    SearchWindow._SetFileMode(true)
-                    return 0
-                }
-                ; SpaceToRun (the 2.x option of the same name): with text typed, Space runs the selected result; Shift+Space types a space as usual
-                if (!shift && AppSettings.General["SpaceToRun"] && SearchWindow.Input.Value != "" && IsObject(SearchWindow.SelectedItem())) {
-                    SearchWindow._Execute()
-                    return 0
-                }
-                return
-            case 0x26:                                                      ; ↑ / Ctrl+↑ previous search in the history
-                if ctrl
-                    SearchWindow.RecallHistory(1)
-                else
-                    SearchWindow.MoveSelection(-1)
-                return 0
-            case 0x28:                                                      ; ↓ / Ctrl+↓ next search in the history
-                if ctrl
-                    SearchWindow.RecallHistory(-1)
-                else
-                    SearchWindow.MoveSelection(1)
-                return 0
-            case 0x21:                                                      ; PgUp
-                SearchWindow.MoveSelection(-SearchWindow.VisibleRows)
-                return 0
-            case 0x22:                                                      ; PgDn
-                SearchWindow.MoveSelection(SearchWindow.VisibleRows)
-                return 0
-            case 0x2D:                                                      ; Insert: mark / unmark (as in Total Commander) and move to the next row
-                if (!actions && !ctrl && !shift && !alt) {
-                    SearchWindow.ToggleMark()
-                    return 0
-                }
-                return
-            case 0x09:                                                      ; Tab: complete, or (TabKey = "Next") next / previous result; Ctrl+Tab always completes
-                if (!ctrl && AppSettings.General["TabKey"] = "Next")
-                    SearchWindow.MoveSelection(shift ? -1 : 1, true)
-                else
-                    SearchWindow._AutoComplete()
-                return 0
-            case 0x27:                                                      ; →
-                ; Only a fresh →: holding → to move the caret doesn't open the actions panel by auto-repeat when the caret reaches the end (lParam bit 30 = already down)
-                ; With text selected (e.g. the restored last search selected all), like a normal input box it only deselects and moves the caret to the end, so editing an expression doesn't open the panel
-                if (!(lParam & 0x40000000) && SearchWindow._CaretAtEnd() && !SearchWindow._HasTextSelection() && SearchWindow._OpenActions())
-                    return 0
-                return
-            case 0x25:                                                      ; ←
-                if (actions && SearchWindow.Input.Value = "") {
-                    if SearchWindow._actionsOnly
-                        SearchWindow.Hide()
-                    else
-                        SearchWindow._CloseActions()
-                    return 0
-                }
-                return
-            case 0x70:                                                      ; F1
-                SearchWindow.Hide()
-                App.About()
-                return 0
-            case 0x72:                                                      ; F3
-                SearchWindow._EditSelected()
-                return 0
-            case 0x71:                                                      ; F2
-                SearchWindow.Hide()
-                App.OpenPreferences()
-                return 0
-            case 0x73:                                                      ; F4
-                SearchWindow.Hide()
-                App.EditSettingsFile()
-                return 0
-            case 0x2E:                                                      ; Ctrl+Del
-                if (ctrl && SearchWindow._CaretAtEnd() && IsObject(item := SearchWindow._TargetItem()) && ResultActions.CanDelete(item)) {
-                    SearchWindow._Later(() => SearchWindow.DeleteItem(item))
-                    return 0
-                }
-                return
-            case 0x08:                                                      ; Backspace
-                if (actions && SearchWindow.Input.Value = "") {
-                    if SearchWindow._actionsOnly
-                        SearchWindow.Hide()
-                    else
-                        SearchWindow._CloseActions()
-                    return 0
-                }
-                ; pressed again after emptying the box in file search mode, or with the caret at the start: back to normal search
-                if (SearchWindow.FileMode && (SearchWindow.Input.Value = "" || !actions && SearchWindow._CaretAtStart())) {
-                    SearchWindow._SetFileMode(false)
-                    return 0
-                }
-                if ctrl {                                                   ; Ctrl+Backspace: delete the previous word (a normal Edit control doesn't support it)
-                    SearchWindow._DeletePreviousWord()
-                    return 0
-                }
-                return
-        }
-
-        if !ctrl
-            return
-        switch vk {
-            case 0x4E:                                                      ; Ctrl+N
-                SearchWindow.MoveSelection(1)
-                return 0
-            case 0x50:                                                      ; Ctrl+P
-                SearchWindow.MoveSelection(-1)
-                return 0
-            case 0x43:                                                      ; Ctrl+C
-                if (shift || SearchWindow._HasTextSelection())
-                    return
-                SearchWindow._CopySelected()
-                return 0
-            case 0x4C:                                                      ; Ctrl+L
-                if LargeType.Enabled()
-                    SearchWindow._ShowLargeType()
-                return 0
-            case 0x45:                                                      ; Ctrl+E
-                SearchWindow._EditFileSelected()
-                return 0
-            case 0xBC:                                                      ; Ctrl+,
-                SearchWindow.Hide()
-                App.OpenPreferences()
-                return 0
-        }
-        if (vk >= 0x31 && vk <= 0x39) {                                     ; Ctrl+1..9
-            SearchWindow._RunVisibleRow(vk - 0x30)
-            return 0
-        }
-    }
-
     ; step: 1 = an older entry (Ctrl+↑), -1 = a newer one (Ctrl+↓). As soon as the text in the box changes it starts from the newest again
     ; (_OnInputChange resets HistoryIndex). Entries equal to the current text are skipped, so each press changes something
     static RecallHistory(step) {
@@ -1752,38 +1085,6 @@ class SearchWindow {
         LargeType.Show(text)
     }
 
-    ; Caret at the start, no text selected
-    static _CaretAtStart() {
-        return SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd) = 0             ; EM_GETSEL: start and end both 0
-    }
-
-    static _CaretAtEnd() {
-        selection := SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd)        ; EM_GETSEL
-        return ((selection >> 16) & 0xFFFF) >= StrLen(SearchWindow.Input.Value)
-    }
-
-    ; All text in the box is selected (after restoring the last search): a key press now replaces it
-    static _AllTextSelected() {
-        len := StrLen(SearchWindow.Input.Value)
-        selection := SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd)        ; EM_GETSEL
-        return len && (selection & 0xFFFF) = 0 && ((selection >> 16) & 0xFFFF) >= len
-    }
-
-    static _HasTextSelection() {
-        selection := SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd)
-        return (selection & 0xFFFF) != ((selection >> 16) & 0xFFFF)
-    }
-
-    static _DeletePreviousWord() {
-        text := SearchWindow.Input.Value
-        caret := (SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd) >> 16) & 0xFFFF
-        before := RegExReplace(SubStr(text, 1, caret), "\S*\s*$")
-        SearchWindow.Input.Value := before SubStr(text, caret + 1)
-        len := StrLen(before)
-        SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)
-        SearchWindow._OnInputChange()
-    }
-
     static _OnRowClick(row) {
         if (row >= 1 && SearchWindow.Offset + row <= SearchWindow.Results.Length) {
             SearchWindow.Selected := SearchWindow.Offset + row
@@ -1800,7 +1101,7 @@ class SearchWindow {
     }
 
     static _OnMouseWheel(wParam, lParam, msg, hwnd) {
-        if !SearchWindow._IsOwnWindow(hwnd)
+        if !SearchKeys.IsOwnWindow(hwnd)
             return
         delta := (wParam >> 16) & 0xFFFF
         SearchWindow.MoveSelection(delta >= 0x8000 ? 1 : -1)                ; the high word is the signed scroll amount
@@ -1824,200 +1125,4 @@ class SearchWindow {
             SearchWindow.Hide(Logger.Enabled ? "deactivated by " SearchWindow.ForegroundText() : "")
     }
 
-    ;---------------------------------------------------------------------------
-    ; Painting (NM_CUSTOMDRAW)
-    ;---------------------------------------------------------------------------
-    ; Not interruptible (Critical): when painting a row takes over about 15 ms (fonts loading the first time, a busy machine...), AutoHotkey lets timers run in the middle of the callback.
-    ; An icon timer slipping in then asks for a list repaint (_Repaint) while the list is painting; that doesn't re-enter, so the repaint request stays pending and Windows keeps sending WM_PAINT:
-    ; AutoHotkey keeps handling WM_PAINT and never returns to the thread painting the row, and the lower-priority WM_TIMER never gets a turn either -- the result rows stay blank, and timers, hotkeys and
-    ; the tray don't respond, yet the window doesn't count as "not responding" (confirmed by a controlled experiment on Windows on GitHub, 2026-10). When not interruptible, timers wait until painting is done
-    static _OnCustomDraw(lParam) {
-        static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001
-        static CDRF_DODEFAULT := 0x0, CDRF_SKIPDEFAULT := 0x4, CDRF_NOTIFYITEMDRAW := 0x20
-        Critical("On")
-        stage := NumGet(lParam, A_PtrSize * 3, "UInt")
-        if (stage = CDDS_PREPAINT) {
-            SearchWindow._paints++                                          ; the custom-draw callback ran (see _CheckPaint)
-            return CDRF_NOTIFYITEMDRAW
-        }
-        if (stage != CDDS_ITEMPREPAINT)
-            return CDRF_DODEFAULT
-
-        hdc := NumGet(lParam, A_PtrSize = 8 ? 32 : 16, "Ptr")
-        row := NumGet(lParam, A_PtrSize = 8 ? 56 : 36, "UPtr")             ; dwItemSpec, 0-based
-        ; Take this row's result before painting: another thread may slip in while painting (e.g. hiding the window after running a command, or a new search from clearing the box)
-        ; and swap in fewer results with SetResults; reading SearchWindow.Results by index afterwards would be out of range ("Invalid index")
-        results := SearchWindow.Results, index := SearchWindow.Offset + row + 1
-        if (index > results.Length) {
-            SearchWindow._LogBlankRow(row + 1, results.Length)
-            return CDRF_SKIPDEFAULT
-        }
-        item := results[index]
-
-        rect := Buffer(16, 0)                                               ; left = LVIR_BOUNDS (0)
-        SendMessage(0x100E, row, rect.Ptr, SearchWindow.List.Hwnd)          ; LVM_GETITEMRECT
-        SearchWindow._PaintRow(hdc, rect, item, index = SearchWindow.Selected, row + 1)
-        return CDRF_SKIPDEFAULT
-    }
-
-    ; the pin mark Resources\Icons\Pinned.ico, read once per size (0 = no such file)
-    static _PinBadge(size) {
-        static icons := Map(), file := A_ScriptDir "\Resources\Icons\Pinned.ico"
-        if !icons.Has(size)
-            icons[size] := FileExist(file) ? DllCall("LoadImageW", "Ptr", 0, "WStr", file, "UInt", 1, "Int", size, "Int", size, "UInt", 0x10, "Ptr") : 0   ; IMAGE_ICON, LR_LOADFROMFILE
-        return icons[size]
-    }
-
-    static _PaintRow(hdc, rect, item, selected, visibleRow) {
-        static DT_RIGHT := 0x2, DT_VCENTER := 0x4, DT_BOTTOM := 0x8, DT_SINGLELINE := 0x20
-        static DT_NOPREFIX := 0x800, DT_PATH_ELLIPSIS := 0x4000, DT_END_ELLIPSIS := 0x8000
-        gdi := SearchWindow._gdi
-        left := NumGet(rect, 0, "Int"), top := NumGet(rect, 4, "Int")
-        right := NumGet(rect, 8, "Int"), bottom := NumGet(rect, 12, "Int")
-        pad := SearchWindow.Padding, iconSize := SearchWindow.IconSize, rowH := bottom - top
-
-        if (selected && SearchWindow.SelectedRadius > 0) {                 ; rounded selection: a little margin left and right, an antialiased rounded rectangle
-            DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", gdi["Background"])
-            inset := Win.Scale(6), gap := Win.Scale(2)
-            Win.FillRoundRect(hdc, left + inset, top + gap, right - inset + 1, bottom - gap + 1, SearchWindow.SelectedRadius, gdi["SelectedBgr"])
-        } else {
-            DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", selected ? gdi["Selected"] : gdi["Background"])
-        }
-        DllCall("SetBkMode", "Ptr", hdc, "Int", 1)                          ; TRANSPARENT
-        if (SearchWindow.Mode = "results" && SearchWindow.IsMarked(item)) {  ; marked: a vertical bar in the highlight color on the left
-            mark := Buffer(16)
-            NumPut("Int", left + Win.Scale(2), "Int", top + Win.Scale(4), "Int", left + Win.Scale(6), "Int", bottom - Win.Scale(4), mark)
-            brush := DllCall("CreateSolidBrush", "UInt", gdi["HighlightColor"], "Ptr")
-            DllCall("FillRect", "Ptr", hdc, "Ptr", mark, "Ptr", brush)
-            DllCall("DeleteObject", "Ptr", brush)
-        }
-
-        iconY := top + (rowH - iconSize) // 2
-        if (hIcon := IconCache.Get(item.Icon))
-            DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad, "Int", iconY, "Ptr", hIcon, "Int", iconSize, "Int", iconSize, "UInt", 0, "Ptr", 0, "UInt", 3)
-        if (item.Pinned && (hBadge := SearchWindow._PinBadge(badge := Max(Win.Scale(13), Round(iconSize * 0.55))))) {   ; pinned: a pin at the bottom right
-            offset := iconSize - badge + Win.Scale(3)
-            DllCall("DrawIconEx", "Ptr", hdc, "Int", left + pad + offset, "Int", iconY + offset, "Ptr", hBadge, "Int", badge, "Int", badge, "UInt", 0, "Ptr", 0, "UInt", 3)
-        }
-
-        textLeft := left + pad + iconSize + Win.Scale(12)
-        shortcutW := Win.Scale(56)
-        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["ShortcutFont"], "Ptr")
-        textRight := right - pad - shortcutW - Win.Scale(8)
-
-        if (visibleRow <= 9 && SearchWindow.Mode = "results") {             ; Ctrl+N hint on the right
-            DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedShortcutColor"] : gdi["ShortcutColor"])
-            SearchWindow._DrawText(hdc, "Ctrl+" visibleRow, right - pad - shortcutW, top, right - pad, bottom, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX)
-        } else if (SearchWindow.Mode = "actions") {                         ; actions panel: shortcut or description on the right, with room for its actual width
-            hintW := 0, gap := Win.Scale(12)
-            if (item.Subtitle != "") {
-                hintW := SearchWindow._TextWidth(hdc, item.Subtitle)
-                DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["TitleFont"])
-                titleW := SearchWindow._TextWidth(hdc, item.Title)
-                DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["ShortcutFont"])
-                hintW := SearchWindow.HintWidth(right - pad - textLeft, titleW, hintW, gap)
-                DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedShortcutColor"] : gdi["ShortcutColor"])
-                SearchWindow._DrawText(hdc, item.Subtitle, right - pad - hintW, top, right - pad, bottom, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS)
-            }
-            textRight := right - pad - (hintW ? hintW + gap : 0)
-        }
-
-        DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["TitleFont"])
-        DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedTitleColor"] : gdi["TitleColor"])
-        hasSubtitle := (item.Subtitle != "" && SearchWindow.Mode = "results")
-        middle := top + Round(rowH * 0.54)
-        ranges := (SearchWindow.Mode = "results") ? SearchWindow.HighlightRanges(item) : []
-        if hasSubtitle
-            SearchWindow._DrawTitle(hdc, item.Title, ranges, textLeft, top, textRight, middle, DT_BOTTOM | DT_SINGLELINE | DT_NOPREFIX, selected)
-        else
-            SearchWindow._DrawTitle(hdc, item.Title, ranges, textLeft, top, textRight, bottom, DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX, selected)
-
-        if hasSubtitle {
-            DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["SubtitleFont"])
-            DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedSubtitleColor"] : gdi["SubtitleColor"])
-            ellipsis := (item.Kind = "file" || item.Kind = "folder") ? DT_PATH_ELLIPSIS : DT_END_ELLIPSIS
-            SearchWindow._DrawText(hdc, item.Subtitle, textLeft, middle + Win.Scale(2), textRight, bottom, DT_SINGLELINE | DT_NOPREFIX | ellipsis)
-        }
-        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
-    }
-
-    ; Width of the description on the right of an actions panel row: the name first (at most half), the description gets the rest; both in full when they fit
-    static HintWidth(available, titleW, hintW, gap) {
-        keep := Min(titleW, available // 2)
-        return Max(0, Min(hintW, available - keep - gap))
-    }
-
-    ; Positions to highlight in the title, cached on the result per search text (not recomputed for repaints or selection moves)
-    static HighlightRanges(item) {
-        text := SearchWindow.HighlightText
-        if (Trim(text) = "" || item.Title = "")
-            return []
-        if (!item.HasOwnProp("HighlightFor") || item.HighlightFor !== text)
-            item.HighlightFor := text, item.HighlightRanges := FuzzyMatcher.MatchRanges(text, item.Title)
-        return item.HighlightRanges
-    }
-
-    ; Draws the title: matching characters in the Highlight color; cut off with "…" when it doesn't fit.
-    ; Each character's position is measured once for the whole title (GetTextExtentExPoint) and the parts are placed at those positions with ExtTextOut;
-    ; titles without highlights are drawn the same way. Measuring each part separately and joining them, or using two ways of drawing with and without highlights (DrawText adjusts spacing),
-    ; is off by about 1 pixel, so the spacing would jump as the highlight edges move while typing
-    static _DrawTitle(hdc, title, ranges, left, top, right, bottom, flags, selected) {
-        static DT_VCENTER := 0x4, DT_BOTTOM := 0x8, ETO_CLIPPED := 0x4
-        if (title = "")
-            return
-        gdi := SearchWindow._gdi
-        available := right - left
-        extents := SearchWindow._Extents(hdc, title)
-        if (extents.Length && extents[extents.Length] > available) {
-            ellipsis := SearchWindow._TextWidth(hdc, "…"), fit := 0
-            while (fit < extents.Length && extents[fit + 1] <= available - ellipsis)
-                fit++
-            title := SubStr(title, 1, fit) "…"
-            extents := SearchWindow._Extents(hdc, title)
-        }
-        metrics := Buffer(60, 0)                                            ; TEXTMETRICW, tmHeight comes first
-        DllCall("GetTextMetricsW", "Ptr", hdc, "Ptr", metrics)
-        lineHeight := NumGet(metrics, 0, "Int")
-        y := (flags & DT_BOTTOM) ? bottom - lineHeight : (flags & DT_VCENTER) ? top + (bottom - top - lineHeight) // 2 : top
-        clip := Buffer(16)
-        NumPut("Int", left, "Int", top, "Int", right, "Int", bottom, clip)
-        normal := selected ? gdi["SelectedTitleColor"] : gdi["TitleColor"]
-        highlight := selected ? gdi["SelectedHighlightColor"] : gdi["HighlightColor"]
-        pos := 1
-        for segment in FuzzyMatcher.Segments(title, ranges) {
-            count := StrLen(segment[1])
-            advances := Buffer(count * 4)                                   ; width of each character (difference of two adjacent cumulative widths)
-            Loop count
-                NumPut("Int", extents[pos + A_Index - 1] - (pos + A_Index - 2 >= 1 ? extents[pos + A_Index - 2] : 0), advances, (A_Index - 1) * 4)
-            x := left + (pos > 1 ? extents[pos - 1] : 0)
-            DllCall("SetTextColor", "Ptr", hdc, "UInt", segment[2] ? highlight : normal)
-            DllCall("ExtTextOutW", "Ptr", hdc, "Int", x, "Int", y, "UInt", ETO_CLIPPED, "Ptr", clip, "WStr", segment[1], "UInt", count, "Ptr", advances)
-            pos += count
-        }
-        DllCall("SetTextColor", "Ptr", hdc, "UInt", normal)
-    }
-
-    ; Width from the start to the end of each character (pixels, measured once for the whole text): extents[i] = width of the first i characters
-    static _Extents(hdc, text) {
-        count := StrLen(text), extents := []
-        if !count
-            return extents
-        fit := 0, partial := Buffer(count * 4, 0), size := Buffer(8, 0)
-        DllCall("GetTextExtentExPointW", "Ptr", hdc, "WStr", text, "Int", count, "Int", 0x7FFFFFFF, "Int*", &fit, "Ptr", partial, "Ptr", size)
-        Loop count
-            extents.Push(NumGet(partial, (A_Index - 1) * 4, "Int"))
-        return extents
-    }
-
-    static _TextWidth(hdc, text) {
-        size := Buffer(8, 0)
-        DllCall("GetTextExtentPoint32W", "Ptr", hdc, "WStr", text, "Int", StrLen(text), "Ptr", size)
-        return NumGet(size, 0, "Int")
-    }
-
-    static _DrawText(hdc, text, left, top, right, bottom, flags) {
-        rect := Buffer(16)
-        NumPut("Int", left, "Int", top, "Int", right, "Int", bottom, rect)
-        DllCall("DrawTextW", "Ptr", hdc, "WStr", text, "Int", -1, "Ptr", rect, "UInt", flags)
-    }
 }

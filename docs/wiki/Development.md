@@ -21,7 +21,8 @@ Src\Core\           App (startup), AppSettings + SchemaMigration (settings and v
                     SearchQuery / ResultItem (search model), FuzzyMatcher (match scoring),
                     Knowledge (learned ranking), Usage (usage statistics), ActionCatalog (running results: open, copy, paste...),
                     ProviderRegistry, FileIndex, BackgroundWork (when background work may run)
-Src\UI\             SearchWindow, ResultActions (actions panel, edit, delete), PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
+Src\UI\             SearchWindow (+ SearchKeys, ResultRows, SearchStatusBar, TypeAhead, SearchInputLanguage),
+                    ResultActions (actions panel, edit, delete), PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      Search features, one class per feature
 Src\Extensions\     Features outside the search window (SnippetExpander, QuickSwitch, AutoDate, CapsLockSwitch, TendonProfile + PTToolsWindow, UpdateChecker)
 Resources\          Data shipped with the program (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)

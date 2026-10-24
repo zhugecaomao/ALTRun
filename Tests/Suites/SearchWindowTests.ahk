@@ -146,11 +146,11 @@ class SearchWindowTests {
         item := ResultItem("Visual Studio Code")
         savedText := SearchWindow.HighlightText
         SearchWindow.HighlightText := "vsc"
-        eq("item ranges", str(SearchWindow.HighlightRanges(item)), "1+1 8+1 15+1")
+        eq("item ranges", str(ResultRows.HighlightRanges(item)), "1+1 8+1 15+1")
         SearchWindow.HighlightText := "code"
-        eq("item ranges updated", str(SearchWindow.HighlightRanges(item)), "15+4")
+        eq("item ranges updated", str(ResultRows.HighlightRanges(item)), "15+4")
         SearchWindow.HighlightText := ""
-        eq("no query", str(SearchWindow.HighlightRanges(item)), "")
+        eq("no query", str(ResultRows.HighlightRanges(item)), "")
         SearchWindow.HighlightText := savedText
     }
 
@@ -162,10 +162,10 @@ class SearchWindowTests {
         hbm := DllCall("CreateCompatibleBitmap", "Ptr", hdc0, "Int", width, "Int", height, "Ptr")
         DllCall("ReleaseDC", "Ptr", 0, "Ptr", hdc0)
         oldBitmap := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbm, "Ptr")
-        font := SearchWindow._CreateFont("Segoe UI", 13, 400)
+        font := ResultRows._CreateFont("Segoe UI", 13, 400)
         oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", font, "Ptr")
         DllCall("SetBkMode", "Ptr", hdc, "Int", 1)
-        gdi := SearchWindow._gdi, saved := Map()
+        gdi := ResultRows.Gdi, saved := Map()
         for key in ["TitleColor", "HighlightColor", "SelectedTitleColor", "SelectedHighlightColor"]
             saved[key] := gdi.Has(key) ? gdi[key] : ""
         gdi["TitleColor"] := 0, gdi["HighlightColor"] := 0, gdi["SelectedTitleColor"] := 0, gdi["SelectedHighlightColor"] := 0   ; one color: compare positions only
@@ -173,7 +173,7 @@ class SearchWindowTests {
             rect := Buffer(16), NumPut("Int", 0, "Int", 0, "Int", width, "Int", height, rect)
             DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", DllCall("GetStockObject", "Int", 0, "Ptr"))
             ranges := (query = "") ? [] : FuzzyMatcher.MatchRanges(query, title)
-            SearchWindow._DrawTitle(hdc, title, ranges, 4, 0, width - 4, height, 0x24 | 0x800, false)
+            ResultRows.DrawTitle(hdc, title, ranges, 4, 0, width - 4, height, 0x24 | 0x800, false)
             header := Buffer(40, 0), NumPut("UInt", 40, "Int", width, "Int", -height, "UShort", 1, "UShort", 32, header)
             pixels := Buffer(width * height * 4)
             DllCall("GetDIBits", "Ptr", hdc, "Ptr", hbm, "UInt", 0, "UInt", height, "Ptr", pixels, "Ptr", header, "UInt", 0)
@@ -715,7 +715,7 @@ class SearchWindowTests {
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         hwnd := SearchWindow.Input.Hwnd
         caret := (start, end := "") => SendMessage(0xB1, start, end = "" ? start : end, hwnd)   ; EM_SETSEL
-        key := (vk) => SearchWindow._OnKeyDown(vk, 0, 0x100, hwnd)
+        key := (vk) => SearchKeys.OnKeyDown(vk, 0, 0x100, hwnd)
         SearchWindow.Mode := "results", SearchWindow.FileMode := false
         options["SpacePrefix"] := 1, options["Enabled"] := 1
         try {
@@ -757,7 +757,7 @@ class SearchWindowTests {
         g := Gui()
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         hwnd := SearchWindow.Input.Hwnd
-        tab := () => SearchWindow._OnKeyDown(0x09, 0, 0x100, hwnd)
+        tab := () => SearchKeys.OnKeyDown(0x09, 0, 0x100, hwnd)
         try {
             SearchWindow.Mode := "results", SearchWindow.Offset := 0
             SearchWindow.Results := [ResultItem("Notepad"), ResultItem("Notes"), ResultItem("Notion")], SearchWindow.Selected := 1
@@ -813,9 +813,9 @@ class SearchWindowTests {
         hwnd := SearchWindow.Input.Hwnd
         tab := () => SendMessage(0x100, 0x09, 0, hwnd)                       ; WM_KEYDOWN Tab
         try {
-            eq("no system dialog open", SearchWindow.InSystemDialog(), 0)
+            eq("no system dialog open", SearchKeys.InSystemDialog(), 0)
             found := 0
-            SetTimer(() => (found := SearchWindow.InSystemDialog(), found && WinClose("ahk_id " found)), -300)
+            SetTimer(() => (found := SearchKeys.InSystemDialog(), found && WinClose("ahk_id " found)), -300)
             MsgBox("SystemDialogKeys", , "T3")                              ; closed by the timer above (or after 3 s)
             eq("finds an open MsgBox", found != 0, true)
             SearchWindow.Mode := "results", SearchWindow.Offset := 0, SearchWindow.Input.Value := "no"
@@ -823,22 +823,22 @@ class SearchWindowTests {
             AppSettings.General["TabKey"] := "Next"
             tab()
             eq("not hooked: the key is lost", SearchWindow.Selected, 1)
-            SearchWindow._HookKeys()
+            SearchKeys.Hook()
             eq("hooked: handled", tab(), 0)
             eq("hooked: next result", SearchWindow.Selected, 2)
-            eq("its WM_CHAR is swallowed", SendMessage(0x102, 0x09, 0, hwnd) "|" SearchWindow._swallowChar, "0|0")
+            eq("its WM_CHAR is swallowed", SendMessage(0x102, 0x09, 0, hwnd) "|" SearchKeys._swallowChar, "0|0")
             SendMessage(0x100, 0x26, 0, SearchWindow.List.Hwnd)              ; ↑ with the list focused
             eq("list: previous result", SearchWindow.Selected, 1)
-            SearchWindow._keySeen := true                                   ; OnMessage already handled this one
+            SearchKeys._seen := true                                        ; OnMessage already handled this one
             tab()
-            eq("seen by OnMessage: not handled twice", SearchWindow.Selected "|" SearchWindow._keySeen, "1|0")
+            eq("seen by OnMessage: not handled twice", SearchWindow.Selected "|" SearchKeys._seen, "1|0")
             SendMessage(0x100, 0x41, 0, hwnd)                               ; A: not a search window key
-            eq("other keys go on to the box", SearchWindow._swallowChar, 0)
-            SearchWindow._UnhookKeys()
+            eq("other keys go on to the box", SearchKeys._swallowChar, 0)
+            SearchKeys.Unhook()
             tab()
-            eq("unhooked", SearchWindow.Selected "|" SearchWindow._keyHooked, "1|0")
+            eq("unhooked", SearchWindow.Selected "|" SearchKeys._hooked, "1|0")
         } finally {
-            SearchWindow._UnhookKeys()
+            SearchKeys.Unhook()
             AppSettings.General["TabKey"] := saved.TabKey
             SearchWindow.DefineProp("_RunSearch", savedSearch), SearchWindow.DefineProp("_Repaint", savedRepaint)
             SearchWindow.Input := saved.Input, SearchWindow.List := saved.List, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results
@@ -852,30 +852,30 @@ class SearchWindowTests {
         eq := (n, a, e) => TestRunner.Equal("StatusBar." n, a, e)
         eq("on by default", AppSettings.Defaults()["Appearance"]["StatusBar"], 1)
         fileItem := ResultItem("Notepad", "", {Kind: "file", Arg: "C:\Windows\notepad.exe"})
-        eq("file: open", SearchWindow.EnterTitle(fileItem), "Open")
-        eq("folder: open", SearchWindow.EnterTitle(ResultItem("Docs", "", {Kind: "folder"})), "Open")
-        eq("url: open", SearchWindow.EnterTitle(ResultItem("Web", "", {Kind: "url"})), "Open")
-        eq("text: copy", SearchWindow.EnterTitle(ResultItem("42", "", {Kind: "text"})), "Copy")
-        eq("text with its own action: paste", SearchWindow.EnterTitle(ResultItem("snippet", "", {Kind: "text", OnRun: (*) => 0})), "Paste")
-        eq("command: run", SearchWindow.EnterTitle(ResultItem("Lock", "", {OnRun: (*) => 0})), "Run")
-        eq("own name", SearchWindow.EnterTitle(ResultItem("img", "", {Kind: "text", OnRun: (*) => 0, RunTitle: "Paste Image"})), "Paste Image")
-        eq("hint row: complete", SearchWindow.EnterTitle(ResultItem("g", "", {Valid: false, AutoComplete: "g "})), "Complete")
-        eq("hint row without completion", SearchWindow.EnterTitle(ResultItem("x", "", {Valid: false})), "")
+        eq("file: open", SearchStatusBar.EnterTitle(fileItem), "Open")
+        eq("folder: open", SearchStatusBar.EnterTitle(ResultItem("Docs", "", {Kind: "folder"})), "Open")
+        eq("url: open", SearchStatusBar.EnterTitle(ResultItem("Web", "", {Kind: "url"})), "Open")
+        eq("text: copy", SearchStatusBar.EnterTitle(ResultItem("42", "", {Kind: "text"})), "Copy")
+        eq("text with its own action: paste", SearchStatusBar.EnterTitle(ResultItem("snippet", "", {Kind: "text", OnRun: (*) => 0})), "Paste")
+        eq("command: run", SearchStatusBar.EnterTitle(ResultItem("Lock", "", {OnRun: (*) => 0})), "Run")
+        eq("own name", SearchStatusBar.EnterTitle(ResultItem("img", "", {Kind: "text", OnRun: (*) => 0, RunTitle: "Paste Image"})), "Paste Image")
+        eq("hint row: complete", SearchStatusBar.EnterTitle(ResultItem("g", "", {Valid: false, AutoComplete: "g "})), "Complete")
+        eq("hint row without completion", SearchStatusBar.EnterTitle(ResultItem("x", "", {Valid: false})), "")
 
         saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Results, Selected: SearchWindow.Selected
-            , Mode: SearchWindow.Mode, FileMode: SearchWindow.FileMode, Tip: SearchWindow._tip, Status: SearchWindow.StatusHeight}
+            , Mode: SearchWindow.Mode, FileMode: SearchWindow.FileMode, Tip: SearchWindow._tip, Status: SearchStatusBar.Height}
         savedOpen := SearchWindow.GetOwnPropDesc("_OpenActions")
         g := Gui()
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         try {
             SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow._tip := "Tip: ? cheat sheet"
             SearchWindow.Input.Value := "", SearchWindow.Results := [], SearchWindow.Selected := 0
-            texts := SearchWindow.StatusTexts()
+            texts := SearchStatusBar.Texts()
             eq("empty box: the tip is in the box, not the status bar", texts.Left "|" texts.Enter "|" texts.Actions, "||0")
             SearchWindow.Input.Value := "note", SearchWindow.Results := [fileItem, ResultItem("b")], SearchWindow.Selected := 1
-            texts := SearchWindow.StatusTexts()
+            texts := SearchStatusBar.Texts()
             eq("results: enter, ctrl+enter, edit, actions", texts.Left "|" texts.Enter "|" texts.Ctrl "|" texts.Edit "|" texts.Actions, "|Open|Reveal|1|1")
-            parts := SearchWindow.StatusParts(texts), shown := ""
+            parts := SearchStatusBar.Parts(texts), shown := ""
             for part in parts {
                 keys := ""
                 for key in part.Keys
@@ -886,25 +886,25 @@ class SearchWindowTests {
             ; A tip too long for the box ends with "…" (one character per unit here)
             eq("fit: short tip unchanged", SearchWindow.FitWidth("Tip: ? cheat sheet", 30, (t) => StrLen(t)), "Tip: ? cheat sheet")
             eq("fit: long tip shortened", SearchWindow.FitWidth("Tip: folder + name  search folders only", 20, (t) => StrLen(t)), "Tip: folder + name…")
-            eq("ctrl+enter: text pastes", SearchWindow.CtrlEnterTitle(ResultItem("42", "", {Kind: "text"}), "Copy"), "Paste")
-            eq("ctrl+enter: same as enter is not shown", SearchWindow.CtrlEnterTitle(ResultItem("s", "", {Kind: "text", OnRun: (*) => 0}), "Paste"), "")
-            eq("ctrl+enter: url copies", SearchWindow.CtrlEnterTitle(ResultItem("w", "", {Kind: "url"}), "Open"), "Copy")
-            eq("ctrl+enter: commands have none", SearchWindow.CtrlEnterTitle(ResultItem("Lock", "", {OnRun: (*) => 0}), "Run"), "")
-            items := SearchWindow.MainMenuItems(), labels := ""
+            eq("ctrl+enter: text pastes", SearchStatusBar.CtrlEnterTitle(ResultItem("42", "", {Kind: "text"}), "Copy"), "Paste")
+            eq("ctrl+enter: same as enter is not shown", SearchStatusBar.CtrlEnterTitle(ResultItem("s", "", {Kind: "text", OnRun: (*) => 0}), "Paste"), "")
+            eq("ctrl+enter: url copies", SearchStatusBar.CtrlEnterTitle(ResultItem("w", "", {Kind: "url"}), "Open"), "Copy")
+            eq("ctrl+enter: commands have none", SearchStatusBar.CtrlEnterTitle(ResultItem("Lock", "", {OnRun: (*) => 0}), "Run"), "")
+            items := SearchStatusBar.MenuItems(), labels := ""
             for entry in items
                 labels .= (IsObject(entry) ? StrSplit(entry[1], "`t")[1] : "-") ";"
             eq("menu", labels, "Preferences...;Shortcuts and Syntax;-;Rebuild Index;Check for Updates;-;Reload;Quit;")
             SearchWindow.FileMode := true, SearchWindow.Input.Value := ""
-            eq("fileItem mode", SearchWindow.StatusTexts().Left, I18n.T("Status.FileMode"))
+            eq("fileItem mode", SearchStatusBar.Texts().Left, I18n.T("Status.FileMode"))
             SearchWindow.FileMode := false, SearchWindow.Mode := "actions"
-            texts := SearchWindow.StatusTexts()
+            texts := SearchStatusBar.Texts()
             eq("action panel", texts.Left "|" texts.Enter "|" texts.Actions, "Esc  Back|Run|0")
             SearchWindow.Mode := "results"
-            eq("mix colors", Format("{:06X}", SearchWindow.MixColor("FFFFFF", "000000", 0.5)), "808080")
+            eq("mix colors", Format("{:06X}", SearchStatusBar.MixColor("FFFFFF", "000000", 0.5)), "808080")
 
-            SearchWindow.StatusHeight := 0
+            SearchStatusBar.Height := 0
             plain := SearchWindow._WindowHeight(3)
-            SearchWindow.StatusHeight := 26
+            SearchStatusBar.Height := 26
             eq("window height includes the status bar", SearchWindow._WindowHeight(3) - plain, 26)
             eq("no status bar without result rows", SearchWindow._WindowHeight(0) - SearchWindow._ContentHeight(0), 0)
 
@@ -912,37 +912,37 @@ class SearchWindowTests {
             SearchWindow.DefineProp("_OpenActions", {Call: (*) => (opened.Count++, true)})
             hwnd := SearchWindow.Input.Hwnd
             SearchWindow.Input.Value := "note", SendMessage(0xB1, 4, 4, hwnd)   ; caret at the end
-            SearchWindow._OnKeyDown(0x27, 0x40000000 | 1, 0x100, hwnd)       ; auto-repeat from holding →
+            SearchKeys.OnKeyDown(0x27, 0x40000000 | 1, 0x100, hwnd)          ; auto-repeat from holding →
             eq("held right arrow does not open actions", opened.Count, 0)
-            SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd)                    ; a fresh →
+            SearchKeys.OnKeyDown(0x27, 1, 0x100, hwnd)                       ; a fresh →
             eq("fresh right arrow opens actions", opened.Count, 1)
             SearchWindow.Input.Value := "1250+500", SendMessage(0xB1, 0, -1, hwnd)   ; the restored last search: all selected
-            eq("right arrow on selected text: no actions", (SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 1)
+            eq("right arrow on selected text: no actions", (SearchKeys.OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 1)
             SendMessage(0xB1, 8, 8, hwnd)                                     ; the Edit handles → itself: deselects and moves the caret to the end
-            eq("right arrow again opens actions", (SearchWindow._OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 2)
+            eq("right arrow again opens actions", (SearchKeys.OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 2)
         } finally {
             SearchWindow.DefineProp("_OpenActions", savedOpen)
             SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results, SearchWindow.Selected := saved.Selected
-            SearchWindow.Mode := saved.Mode, SearchWindow.FileMode := saved.FileMode, SearchWindow._tip := saved.Tip, SearchWindow.StatusHeight := saved.Status
+            SearchWindow.Mode := saved.Mode, SearchWindow.FileMode := saved.FileMode, SearchWindow._tip := saved.Tip, SearchStatusBar.Height := saved.Status
             g.Destroy()
         }
     }
 
     ; At the narrowest window (450 px) the four parts on the right still leave room for the ☰ button, in every language
     static StatusBarFit() {
-        savedLang := I18n.Lang, savedGdi := SearchWindow._gdi.Clone()
-        SearchWindow._CreateGdiObjects()
+        savedLang := I18n.Lang, savedGdi := ResultRows.Gdi.Clone()
+        ResultRows.CreateGdi()
         pad := Win.Scale(ThemeManager.Get("Padding"))
         try {
             for language in I18n.Languages() {
                 I18n.Init(language[1])
-                parts := SearchWindow.StatusParts({Enter: I18n.T("Status.Open"), Ctrl: I18n.T("Status.Reveal"), Edit: 1, Actions: 1})
-                used := SearchWindow.StatusPartsWidth(parts) + pad + SearchWindow.StatusMenuWidthFor(pad)   ; right padding + the ☰ button
+                parts := SearchStatusBar.Parts({Enter: I18n.T("Status.Open"), Ctrl: I18n.T("Status.Reveal"), Edit: 1, Actions: 1})
+                used := SearchStatusBar.PartsWidth(parts) + pad + SearchStatusBar.MenuWidthFor(pad)         ; right padding + the ☰ button
                 TestRunner.True("StatusBarFit." language[1] " (" used " of " Win.Scale(PreferencesWindow.MinWindowWidth) ")", used <= Win.Scale(PreferencesWindow.MinWindowWidth))
             }
         } finally {
             I18n.Init(savedLang)
-            SearchWindow._gdi := savedGdi
+            ResultRows.Gdi := savedGdi
         }
     }
 
@@ -1066,9 +1066,9 @@ class SearchWindowTests {
             eq("leading space enters file mode", apply(" seismic") "|" SearchWindow.FileMode "|" SearchWindow.Input.Value, "search:seismic;|1|seismic")
             SearchWindow.FileMode := false, options["SpacePrefix"] := 0, SearchWindow.Input.Value := ""
             eq("space prefix off", apply(" a") "|" SearchWindow.FileMode, "search: a;|0")
-            eq("no hook: nothing", SearchWindow._TakeTypeAhead().Text, "")
-            eq("log: count only", SearchWindow.TypeAheadSummary({Text: "secret", Key: "", Modifier: ""}), "6 chars")
-            eq("log: leading space and key", SearchWindow.TypeAheadSummary({Text: " ab", Key: "Enter", Modifier: ""}), "3 chars (leading space) + Enter")
+            eq("no hook: nothing", TypeAhead.Take().Text, "")
+            eq("log: count only", TypeAhead.Summary({Text: "secret", Key: "", Modifier: ""}), "6 chars")
+            eq("log: leading space and key", TypeAhead.Summary({Text: " ab", Key: "Enter", Modifier: ""}), "3 chars (leading space) + Enter")
         } finally {
             SearchWindow.FileMode := false
             options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]
@@ -1078,15 +1078,15 @@ class SearchWindowTests {
             g.Destroy()
         }
         ; a real InputHook: simulated typing is caught and kept, and no longer caught after stopping
-        SearchWindow._typeAhead := ""
+        TypeAhead._hook := ""
         ih := InputHook("T3")
         ih.KeyOpt("{Enter}{NumpadEnter}{Esc}", "ES")
-        ih.Start(), SearchWindow._typeAhead := ih
+        ih.Start(), TypeAhead._hook := ih
         SendEvent("{Text}ab")
         SendEvent("{Enter}")
-        typed := SearchWindow._TakeTypeAhead()
+        typed := TypeAhead.Take()
         eq("hook collects text", typed.Text "|" typed.Key, "ab|Enter")
-        eq("hook stopped", ih.InProgress "|" (SearchWindow._typeAhead = "" ? 1 : 0), "0|1")
+        eq("hook stopped", ih.InProgress "|" (TypeAhead._hook = "" ? 1 : 0), "0|1")
     }
 
     ; Shown again while still open (e.g. ALTRun.exe started again by another program, 2026-10 appinn): the text, mode
@@ -1167,40 +1167,40 @@ class SearchWindowTests {
     }
 
     ; The list finished painting but the custom-draw callback didn't run (blank rows): log and paint again; a callback that ran, or nothing painted yet, doesn't count
-    ; Fallback font warm-up: CJK text measured once in each result font on a memory DC (see SearchWindow.WarmUpFonts)
+    ; Fallback font warm-up: CJK text measured once in each result font on a memory DC (see ResultRows.WarmUpFonts)
     static FontWarmUp() {
         eq := (n, a, e) => TestRunner.Equal("FontWarmUp." n, a, e)
-        saved := [SearchWindow._gdi, Logger.Enabled, Logger.File, Logger.Immediate]
+        saved := [ResultRows.Gdi, Logger.Enabled, Logger.File, Logger.Immediate]
         Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunFontTest.log"
         try FileDelete(Logger.File)
         created := []
         try {
-            SearchWindow._gdi := Map()
-            SearchWindow.WarmUpFonts()                                      ; fonts not created yet: do nothing
+            ResultRows.Gdi := Map()
+            ResultRows.WarmUpFonts()                                        ; fonts not created yet: do nothing
             eq("no fonts yet: nothing done", FileExist(Logger.File) ? 1 : 0, 0)
             for key in ["TitleFont", "SubtitleFont"]
-                created.Push(SearchWindow._gdi[key] := SearchWindow._CreateFont("Segoe UI", 12, 400))
-            SearchWindow.WarmUpFonts()
+                created.Push(ResultRows.Gdi[key] := ResultRows._CreateFont("Segoe UI", 12, 400))
+            ResultRows.WarmUpFonts()
             logText := FileExist(Logger.File) ? FileRead(Logger.File, "UTF-8") : ""
             TestRunner.True("FontWarmUp.logged", InStr(logText, "Perf: font warm-up") > 0)
-            text := SearchWindow.FontWarmUpText
+            text := ResultRows.FontWarmUpText
             eq("Chinese, Japanese and Korean", (RegExMatch(text, "[\x{4E00}-\x{9FFF}]") && RegExMatch(text, "[\x{3040}-\x{30FF}]")
                 && RegExMatch(text, "[\x{AC00}-\x{D7AF}]")) ? 1 : 0, 1)
         } finally {
             for font in created
                 DllCall("DeleteObject", "Ptr", font)
-            SearchWindow._gdi := saved[1], Logger.Enabled := saved[2], Logger.File := saved[3], Logger.Immediate := saved[4]
+            ResultRows.Gdi := saved[1], Logger.Enabled := saved[2], Logger.File := saved[3], Logger.Immediate := saved[4]
             try FileDelete(A_Temp "\ALTRunFontTest.log")
         }
     }
 
-    ; The custom-draw callback isn't interruptible (see SearchWindow._OnCustomDraw): Critical stays on in this thread until it ends, so check after the call and then turn it off
+    ; The custom-draw callback isn't interruptible (see ResultRows.OnCustomDraw): Critical stays on in this thread until it ends, so check after the call and then turn it off
     static CustomDrawCritical() {
         nmcd := Buffer(A_PtrSize * 4 + 64, 0)
         NumPut("UInt", 0x1, nmcd, A_PtrSize * 3)                            ; CDDS_PREPAINT
         saved := SearchWindow._paints
         Critical("Off")
-        result := SearchWindow._OnCustomDraw(nmcd.Ptr)
+        result := ResultRows.OnCustomDraw(nmcd.Ptr)
         wasCritical := A_IsCritical
         Critical("Off")
         SearchWindow._paints := saved
