@@ -281,9 +281,7 @@ class ClipboardProvider {
     static AddFiles(files, source := "") {
         if !files.Length
             return false
-        joined := ""
-        for filePath in files
-            joined .= (joined = "" ? "" : "`r`n") filePath
+        joined := TextTools.Join(files)
         entry := Map("Type", "files", "Files", files, "Text", joined, "Time", A_Now, "App", source)
         if IsObject(previous := ClipboardProvider._RemoveSame("files", joined)) && ClipboardProvider.IsPinned(previous)
             entry["Pinned"] := 1
@@ -537,10 +535,7 @@ class ClipboardProvider {
                     case "files":
                         if !(entry.Has("Files") && entry["Files"] is Array && entry["Files"].Length)
                             continue
-                        joined := ""
-                        for filePath in entry["Files"]
-                            joined .= (joined = "" ? "" : "`r`n") filePath
-                        entry["Text"] := joined
+                        entry["Text"] := TextTools.Join(entry["Files"])
                     case "image":
                         if !(entry.Has("Image") && FileExist(ClipboardProvider.Folder "\" entry["Image"]))
                             continue

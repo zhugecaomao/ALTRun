@@ -297,9 +297,7 @@ class SystemProvider {
     }
 
     static ShowIP() {
-        addresses := ""
-        for address in SysGetIPAddresses()
-            addresses .= (addresses = "" ? "" : "`n") address
+        addresses := TextTools.JoinList(SysGetIPAddresses(), "`n")
         if (addresses = "")
             return MsgBox(I18n.T("Sys.NoIP"), App.Name, 48)
         A_Clipboard := StrSplit(addresses, "`n")[1]

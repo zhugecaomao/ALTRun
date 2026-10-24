@@ -194,7 +194,7 @@ class ExtensionTests {
 
     static SnippetExpander() {
         eq := (n, a, e) => TestRunner.Equal("SnippetExpander." n, a, e)
-        abbr := (snippet, prefix) => TestUtil.Join(SnippetExpander.Abbreviations(snippet, prefix))
+        abbr := (snippet, prefix) => TextTools.JoinList(SnippetExpander.Abbreviations(snippet, prefix), ",")
         eq("prefix", abbr(Map("Keyword", "sig", "Text", "x"), ";"), ";sig")
         eq("no keyword", abbr(Map("Keyword", "", "Text", "x"), ";"), "")
         eq("disabled", abbr(Map("Keyword", "sig", "Text", "x", "AutoExpand", 0), ";"), "")

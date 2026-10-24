@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.35]
+
+测试版。
+
+Test build.
+
+### 改进
+- 代码整理: 逗号分隔列表的拆分和合并统一用 `TextTools.SplitList` / `JoinList` (偏好设置、设置升级、搜索关键字、测试里原来各有一份), 几处把路径逐行合并的循环改用 `TextTools.Join`。
+
 ## [2026.10.20.34]
 
 测试版。
@@ -1163,7 +1172,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.34...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.35...HEAD
+[2026.10.20.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.34...2026.10.20.35
 [2026.10.20.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.33...2026.10.20.34
 [2026.10.20.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.32...2026.10.20.33
 [2026.10.20.32]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.31...2026.10.20.32

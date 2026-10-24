@@ -1447,13 +1447,13 @@ class PreferencesWindow {
     ; A list with one item per line, shown as a read-only summary + "Edit...", which opens it in a roomy window of its own
     ; (ItemEditor.EditLines, with the longer "<labelKey>.Help" text): the page stays short and long lines are easy to read.
     ; The setting at path is an array. options (all optional):
-    ;   Summary:    (lines) => the text shown on the page (default ListSummary: the items joined with commas)
+    ;   Summary:    (lines) => the text shown on the page (default: the items joined with commas; the box cuts off what doesn't fit)
     ;   AlignPairs: the button goes under the right column of the paired settings above (_Pair), not at the right edge
     static _LinesButton(path, labelKey, options := "") {
         label := PreferencesWindow._Label(labelKey)
         value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         state := {Lines: (value is Array) ? value.Clone() : []}
-        summarize := (IsObject(options) && options.HasOwnProp("Summary")) ? options.Summary : (lines) => PreferencesWindow.ListSummary(lines)
+        summarize := (IsObject(options) && options.HasOwnProp("Summary")) ? options.Summary : (lines) => TextTools.JoinList(lines)
         alignPairs := IsObject(options) && options.HasOwnProp("AlignPairs") && options.AlignPairs
         x := PreferencesWindow._InputX(), paired := alignPairs && PreferencesWindow._pairX
         buttonW := paired ? PreferencesWindow._pairSecondW : PreferencesWindow.WidthS
@@ -1475,21 +1475,13 @@ class PreferencesWindow {
         PreferencesWindow.MarkDirty()
     }
 
-    ; The summary next to "Edit...": the items joined with commas (the box cuts off what doesn't fit)
-    static ListSummary(lines) {
-        text := ""
-        for line in lines
-            text .= (text = "" ? "" : ", ") line
-        return text
-    }
-
     ; File types: just the keywords ("doc, pic, video, ...")
     static TypeFilterSummary(lines) {
         keywords := []
         for line in lines
             if IsObject(filter := FileSearchProvider.ParseTypeFilter(line))
                 keywords.Push(filter.Keyword)
-        return PreferencesWindow.ListSummary(keywords)
+        return TextTools.JoinList(keywords)
     }
 
     ; Hidden apps: the app names (Disk Cleanup, NVIDIACorp.NVIDIAControlPanel), not the long paths
@@ -1501,15 +1493,15 @@ class PreferencesWindow {
                 name := SubStr(name, InStr(name, "!", , -1) + 1)
             names.Push(RegExReplace(name, "i)\.lnk$"))
         }
-        return PreferencesWindow.ListSummary(names)
+        return TextTools.JoinList(names)
     }
 
     ; numeric: 数字列表 (例如钢筋直径), 存成数字而不是文字
     static _Csv(path, labelKey, size, numeric := false) {
         label := PreferencesWindow._Label(labelKey)
-        value := PreferencesWindow.JoinCsv(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
+        value := TextTools.JoinList(PreferencesWindow.GetPath(PreferencesWindow.Working, path))
         ctrl := PreferencesWindow._Add("Edit", "x" PreferencesWindow._InputX() " w" PreferencesWindow._Width(size) " r1 -Multi", value)
-        PreferencesWindow._Bind(path, () => PreferencesWindow.SplitCsv(ctrl.Value, numeric))
+        PreferencesWindow._Bind(path, () => TextTools.SplitList(ctrl.Value, numeric))
         PreferencesWindow._BelowInput(labelKey, label, ctrl)
     }
 
@@ -1617,11 +1609,11 @@ class PreferencesWindow {
             return PreferencesWindow._HotkeyBox(x, path)
         if (kind = "choice")
             return PreferencesWindow._DropDown(x, path, values, labels, size)
-        text := (kind = "csv") ? PreferencesWindow.JoinCsv(current) : current
+        text := (kind = "csv") ? TextTools.JoinList(current) : current
         ctrl := PreferencesWindow._Add("Edit", "x" x " w" PreferencesWindow._Width(size) " r1 -Multi" (kind = "number" ? " Number" : ""), text)
         switch kind {
             case "number": PreferencesWindow._Bind(path, () => IsInteger(ctrl.Value) ? Integer(ctrl.Value) : 0)
-            case "csv":    PreferencesWindow._Bind(path, () => PreferencesWindow.SplitCsv(ctrl.Value))
+            case "csv":    PreferencesWindow._Bind(path, () => TextTools.SplitList(ctrl.Value))
             default:       PreferencesWindow._Bind(path, () => ctrl.Value)
         }
         return ctrl
@@ -1943,22 +1935,5 @@ class PreferencesWindow {
             node := node[key]
         }
         node[keys[keys.Length]] := value
-    }
-
-    static SplitCsv(text, numeric := false) {
-        items := []
-        for part in StrSplit(text, ",")
-            if ((part := Trim(part)) != "")
-                items.Push((numeric && IsNumber(part)) ? part + 0 : part)
-        return items
-    }
-
-    static JoinCsv(items) {
-        if !(items is Array)
-            return items
-        out := ""
-        for index, item in items
-            out .= (index = 1 ? "" : ", ") item
-        return out
     }
 }

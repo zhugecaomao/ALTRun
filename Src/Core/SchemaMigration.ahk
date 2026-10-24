@@ -305,12 +305,12 @@ class SchemaMigration {
         quick["Hotkey"]         := pick(oldHotkeys, "TotalCMDDir", quick["Hotkey"])
         quick["AutoSwitch"]     := pick(config, "AutoSwitchDir", 0)
         quick["DialogWindows"]  := pick(config, "DialogWin", "ahk_class #32770")
-        quick["ExcludeWindows"] := pick(config, "ExcludeWin", SchemaMigration._JoinList(quick["ExcludeWindows"]))
+        quick["ExcludeWindows"] := pick(config, "ExcludeWin", TextTools.JoinList(quick["ExcludeWindows"]))
 
         dateOptions := data["Extensions"]["AutoDate"]
         dateOptions["Hotkey"]        := pick(oldHotkeys, "AutoDateBEHKey", dateOptions["Hotkey"])
-        dateOptions["RenameWindows"] := pick(oldHotkeys, "AutoDateBefExt", SchemaMigration._JoinList(dateOptions["RenameWindows"]))
-        dateOptions["AppendWindows"] := pick(oldHotkeys, "AutoDateAtEnd", SchemaMigration._JoinList(dateOptions["AppendWindows"]))
+        dateOptions["RenameWindows"] := pick(oldHotkeys, "AutoDateBefExt", TextTools.JoinList(dateOptions["RenameWindows"]))
+        dateOptions["AppendWindows"] := pick(oldHotkeys, "AutoDateAtEnd", TextTools.JoinList(dateOptions["AppendWindows"]))
 
         if (old.Has("PTTools") && old["PTTools"] is Map)
             data["Extensions"]["PTTools"] := old["PTTools"]
@@ -382,18 +382,12 @@ class SchemaMigration {
         return (data.Has(name) && data[name] is Map) ? data[name] : Map()
     }
 
-    static _JoinList(list) {
-        text := ""
-        for item in list
-            text .= (text = "" ? "" : ", ") item
-        return text
-    }
-
+    ; A comma-separated value of an old version -> its items (2.x wrote C:\Path\IndexLocation as a placeholder)
     static _SplitList(text) {
         list := []
-        for item in StrSplit(text, ",")
-            if (Trim(item) != "" && Trim(item) != "C:\Path\IndexLocation")
-                list.Push(Trim(item))
+        for item in TextTools.SplitList(text)
+            if (item != "C:\Path\IndexLocation")
+                list.Push(item)
         return list
     }
 
