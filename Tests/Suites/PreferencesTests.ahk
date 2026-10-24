@@ -21,18 +21,18 @@ class PreferencesTests {
         eq("deep copy independent", original["General"]["Hotkey"], "!Space")
         eq("lines", TextTools.SplitLines(" a `r`n`r`nb ").Length, 2)
         eq("join lines", TextTools.Join(["a", "b"]), "a`r`nb")
-        eq("csv", PreferencesWindow.SplitCsv("open, find ,, x")[3], "x")
-        eq("join csv", PreferencesWindow.JoinCsv(["open", "find"]), "open, find")
-        sizes := PreferencesWindow.SplitCsv("10, 12,16", true)             ; 数字列表 (钢筋直径) 存成数字
+        eq("csv", TextTools.SplitList("open, find ,, x")[3], "x")
+        eq("join csv", TextTools.JoinList(["open", "find"]), "open, find")
+        sizes := TextTools.SplitList("10, 12,16", true)             ; 数字列表 (钢筋直径) 存成数字
         eq("numeric csv", (sizes[1] is Number) && sizes[3] = 16 ? 1 : 0, 1)
-        eq("text csv stays text", PreferencesWindow.SplitCsv("10")[1] is String ? 1 : 0, 1)
+        eq("text csv stays text", TextTools.SplitList("10")[1] is String ? 1 : 0, 1)
     }
 
     ; Lists edited in their own window ("Edit..."): the summary next to the button, splitting the edited text
     static EditList() {
         eq := (n, a, e) => TestRunner.Equal("EditList." n, a, e)
-        eq("summary", PreferencesWindow.ListSummary(["a.exe", "b.exe"]), "a.exe, b.exe")
-        eq("empty summary", PreferencesWindow.ListSummary([]), "")
+        eq("summary", TextTools.JoinList(["a.exe", "b.exe"]), "a.exe, b.exe")
+        eq("empty summary", TextTools.JoinList([]), "")
         eq("file types: keywords", PreferencesWindow.TypeFilterSummary(["doc = doc docx", "bad line", "pic = png"]), "doc, pic")
         eq("defaults", PreferencesWindow.TypeFilterSummary(AppSettings.Defaults()["Features"]["FileSearch"]["TypeFilters"]), "doc, pic, video, audio, zip, exe, cad")
         lines := TextTools.SplitLines("  doc = doc docx `r`n`r`n pic = png`n")
@@ -690,7 +690,7 @@ class PreferencesTests {
         ok("space", SnippetProvider.CheckKeyword("a b", Map("AutoExpand", 1), ";") != "")
         eq("no auto-expand", SnippetProvider.CheckKeyword(longKeyword, Map("AutoExpand", 0), ";"), "")
         eq("too long not registered", SnippetExpander.Abbreviations(Map("Keyword", longKeyword, "Text", "x"), ";").Length, 0)
-        eq("longest registered", TestUtil.Join(SnippetExpander.Abbreviations(Map("Keyword", StrRepeat("a", 39), "Text", "x"), ";")), ";" StrRepeat("a", 39))
+        eq("longest registered", TextTools.JoinList(SnippetExpander.Abbreviations(Map("Keyword", StrRepeat("a", 39), "Text", "x"), ";"), ","), ";" StrRepeat("a", 39))
         eq("several keywords ok", SnippetProvider.CheckKeyword("sig, ㄴ", Map("AutoExpand", 1), ";"), "")
         ok("several: one too long", SnippetProvider.CheckKeyword("sig, " longKeyword, Map("AutoExpand", 1), ";") != "")
         store := ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"})

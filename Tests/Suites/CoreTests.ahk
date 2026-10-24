@@ -119,13 +119,13 @@ class CoreTests {
                               , "QuickSwitch", Map("ExcludeWindows", "ahk_class SysListView32, ahk_exe Explorer.exe"))
             , "Hotkeys", [Map("Key", "~MButton", "Action", "PTTools", "WinTitle", "ahk_exe RAPTW.exe"), Map("Key", "F1", "Action", "About", "WinTitle", "ALTRun")])
         v5 := SchemaMigration.Upgrade(old, 4)
-        eq("4->5 keywords: file added", TestUtil.Join(v5["Features"]["FileSearch"]["Keywords"]), "open,find,file")
-        eq("4->5 keywords = new default", TestUtil.Join(v5["Features"]["FileSearch"]["Keywords"]), TestUtil.Join(defaults["Features"]["FileSearch"]["Keywords"]))
-        eq("4->5 rename windows: TC dialogs added", TestUtil.Join(v5["Extensions"]["AutoDate"]["RenameWindows"])
+        eq("4->5 keywords: file added", TextTools.JoinList(v5["Features"]["FileSearch"]["Keywords"], ","), "open,find,file")
+        eq("4->5 keywords = new default", TextTools.JoinList(v5["Features"]["FileSearch"]["Keywords"], ","), TextTools.JoinList(defaults["Features"]["FileSearch"]["Keywords"], ","))
+        eq("4->5 rename windows: TC dialogs added", TextTools.JoinList(v5["Extensions"]["AutoDate"]["RenameWindows"], ",")
             , "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD,ahk_class TSTDTREEDLG,ahk_class TCOMBOINPUT")
-        eq("4->5 rename windows = new default", TestUtil.Join(v5["Extensions"]["AutoDate"]["RenameWindows"]), TestUtil.Join(defaults["Extensions"]["AutoDate"]["RenameWindows"]))
-        eq("4->5 append windows = new default", TestUtil.Join(v5["Extensions"]["AutoDate"]["AppendWindows"]), TestUtil.Join(defaults["Extensions"]["AutoDate"]["AppendWindows"]))
-        eq("4->5 exclude windows = new default", TestUtil.Join(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"]), TestUtil.Join(defaults["Extensions"]["QuickSwitch"]["ExcludeWindows"]))
+        eq("4->5 rename windows = new default", TextTools.JoinList(v5["Extensions"]["AutoDate"]["RenameWindows"], ","), TextTools.JoinList(defaults["Extensions"]["AutoDate"]["RenameWindows"], ","))
+        eq("4->5 append windows = new default", TextTools.JoinList(v5["Extensions"]["AutoDate"]["AppendWindows"], ","), TextTools.JoinList(defaults["Extensions"]["AutoDate"]["AppendWindows"], ","))
+        eq("4->5 exclude windows = new default", TextTools.JoinList(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], ","), TextTools.JoinList(defaults["Extensions"]["QuickSwitch"]["ExcludeWindows"], ","))
         eq("4->5 old F1 hotkey removed, others kept", v5["Hotkeys"].Length "|" v5["Hotkeys"][1]["Key"], "1|~MButton")
         sizes := v5["Features"]["Calculator"]["BarSizes"]
         eq("4->5 bar sizes as numbers", (sizes[1] is Integer) "|" sizes[1] "|" sizes[3] "|" (sizes[3] is Integer) "|" sizes[4] "|" sizes[5], "1|13|20|1|25|abc")
@@ -133,10 +133,10 @@ class CoreTests {
             , "Features", Map("FileSearch", Map("Keywords", ["open", "FILE"])), "Extensions", Map("AutoDate", Map("RenameWindows", "ahk_exe foo.exe, AHK_CLASS tstdtreedlg"
                 , "AppendWindows", "ahk_exe bar.exe"), "QuickSwitch", Map("ExcludeWindows", "")))
         v5 := SchemaMigration.Upgrade(custom, 4)
-        eq("4->5 keywords: no duplicate file", TestUtil.Join(v5["Features"]["FileSearch"]["Keywords"]), "open,FILE")
-        eq("4->5 custom windows kept, only missing added", TestUtil.Join(v5["Extensions"]["AutoDate"]["RenameWindows"]), "ahk_exe foo.exe,AHK_CLASS tstdtreedlg,ahk_class TCOMBOINPUT")
-        eq("4->5 custom append windows untouched", TestUtil.Join(v5["Extensions"]["AutoDate"]["AppendWindows"]), "ahk_exe bar.exe")
-        eq("4->5 emptied list stays empty", TestUtil.Join(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"]), "")
+        eq("4->5 keywords: no duplicate file", TextTools.JoinList(v5["Features"]["FileSearch"]["Keywords"], ","), "open,FILE")
+        eq("4->5 custom windows kept, only missing added", TextTools.JoinList(v5["Extensions"]["AutoDate"]["RenameWindows"], ","), "ahk_exe foo.exe,AHK_CLASS tstdtreedlg,ahk_class TCOMBOINPUT")
+        eq("4->5 custom append windows untouched", TextTools.JoinList(v5["Extensions"]["AutoDate"]["AppendWindows"], ","), "ahk_exe bar.exe")
+        eq("4->5 emptied list stays empty", TextTools.JoinList(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], ","), "")
         eq("4->5 missing sections not created", SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4).Count, 1)
         ; 5 -> 6: one format for lists (arrays), StandardDialogs, hotkeys renamed, unused keys removed (#176)
         v5 := Map("SchemaVersion", 5
@@ -152,10 +152,10 @@ class CoreTests {
         eq("5->6 version", v6["SchemaVersion"], 6)
         eq("5->6 jump hotkey renamed", quick["Hotkey"] "|" quick.Has("TotalCmdHotkey") "|" quick.Has("ExplorerHotkey"), "^!g|0|0")
         eq("5->6 date hotkey renamed", dates["Hotkey"] "|" dates.Has("RenameHotkey") "|" dates.Has("AppendHotkey"), "^!d|0|0")
-        eq("5->6 standard dialogs split out", quick["StandardDialogs"] "|" TestUtil.Join(quick["DialogWindows"]), "1|ahk_class Qt5QWindowIcon")
-        eq("5->6 window lists as arrays", TestUtil.Join(quick["ExcludeWindows"]) "|" quick["AutoSwitchExclude"].Length "|" TestUtil.Join(dates["RenameWindows"]) "|" TestUtil.Join(dates["AppendWindows"])
+        eq("5->6 standard dialogs split out", quick["StandardDialogs"] "|" TextTools.JoinList(quick["DialogWindows"], ","), "1|ahk_class Qt5QWindowIcon")
+        eq("5->6 window lists as arrays", TextTools.JoinList(quick["ExcludeWindows"], ",") "|" quick["AutoSwitchExclude"].Length "|" TextTools.JoinList(dates["RenameWindows"], ",") "|" TextTools.JoinList(dates["AppendWindows"], ",")
             , "ahk_exe 7zG.exe|0|ahk_class CabinetWClass|ahk_exe a.exe,ahk_exe b.exe")
-        eq("5->6 snippet exclusions as an array", TestUtil.Join(v6["Features"]["Snippets"]["ExpandExclude"]), "ahk_exe mstsc.exe,ahk_exe KeePass.exe")
+        eq("5->6 snippet exclusions as an array", TextTools.JoinList(v6["Features"]["Snippets"]["ExpandExclude"], ","), "ahk_exe mstsc.exe,ahk_exe KeePass.exe")
         eq("5->6 unused refresh removed", v6["Features"]["Applications"].Has("RefreshMinutes") "|" v6["Features"]["Applications"]["Depth"], "0|3")
         eq("5->6 old scope exclude -> new default", v6["Features"]["FileSearch"]["ScopeExclude"], defaults["Features"]["FileSearch"]["ScopeExclude"])
         eq("5->6 compact theme -> theme at normal density", v6["Appearance"]["Theme"] "|" v6["Appearance"]["Density"], "Dark|Normal")
@@ -164,8 +164,8 @@ class CoreTests {
         v6 := SchemaMigration.Upgrade(custom, 5)
         quick := v6["Extensions"]["QuickSwitch"]
         eq("5->6 new name already there wins", quick["Hotkey"] "|" quick.Has("TotalCmdHotkey"), "^h|0")
-        eq("5->6 no standard dialogs", quick["StandardDialogs"] "|" TestUtil.Join(quick["DialogWindows"]), "0|ahk_class Qt5QWindowIcon")
-        eq("5->6 arrays left alone", TestUtil.Join(quick["ExcludeWindows"]), "ahk_exe x.exe")
+        eq("5->6 no standard dialogs", quick["StandardDialogs"] "|" TextTools.JoinList(quick["DialogWindows"], ","), "0|ahk_class Qt5QWindowIcon")
+        eq("5->6 arrays left alone", TextTools.JoinList(quick["ExcludeWindows"], ","), "ahk_exe x.exe")
         eq("5->6 custom scope exclude kept", v6["Features"]["FileSearch"]["ScopeExclude"], "i)\(build)(\|$)")
         eq("5->6 compact theme without density", v6["Appearance"]["Theme"] "|" v6["Appearance"]["Density"], "Light|Normal")
         eq("5->6 other theme left alone", SchemaMigration.Upgrade(Map("SchemaVersion", 5, "Appearance", Map("Theme", "Midnight", "Density", "Comfortable")), 5)["Appearance"]["Density"], "Comfortable")
@@ -355,7 +355,7 @@ class CoreTests {
     ; 关键字一栏写几个 (逗号分隔): 网页搜索、自定义命令、片段输入哪个都行, 提示和补全用输入的那个 (没有时用第一个)
     static MultipleKeywords() {
         eq := (n, a, e) => TestRunner.Equal("MultipleKeywords." n, a, e)
-        eq("split", TestUtil.Join(SearchQuery.Keywords(" g , ㅎ,,google，구글 ")), "g,ㅎ,google,구글")
+        eq("split", TextTools.JoinList(SearchQuery.Keywords(" g , ㅎ,,google，구글 "), ","), "g,ㅎ,google,구글")
         eq("empty", SearchQuery.Keywords("").Length "|" SearchQuery.Keywords(" , ").Length, "0|0")
         eq("matched keyword", SearchQuery("ㅎ hello").MatchKeyword(["g", "ㅎ"], &term, &matched) ? matched "|" term : "no", "ㅎ|hello")
 
@@ -564,7 +564,7 @@ class CoreTests {
             fakes[6].status := 200, fakes[6].readyState := 4
             fakes[7].status := 200, fakes[7].readyState := 4
             TestUtil.WaitFor(() => got.Length >= 3, 4000)
-            eq("callbacks do not block each other", got.Length = 3 ? got[3] : TestUtil.Join(got), "a end")
+            eq("callbacks do not block each other", got.Length = 3 ? got[3] : TextTools.JoinList(got, ","), "a end")
 
             HttpGet.NewRequest := () => ComObject("ALTRun.NoSuchClass")
             got.Length := 0

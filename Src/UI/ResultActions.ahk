@@ -97,9 +97,7 @@ class ResultActions {
         add(I18n.T("Action.OpenAll", count), "res:imageres.dll,-5302", (*) => ActionCatalog.OpenMany(paths), "Enter")
         add(I18n.T("Action.CopyFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths), I18n.T("Action.CopyFile.Hint"))
         add(I18n.T("Action.CutFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths, true), I18n.T("Action.CopyFile.Hint"))
-        joined := ""
-        for markedPath in paths
-            joined .= (joined = "" ? "" : "`r`n") markedPath
+        joined := TextTools.Join(paths)
         add(I18n.T("Action.CopyPaths", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(joined))
         manager := QuickSwitch.FileManagerFolder()
         destination := IsObject(manager) ? manager.Path : ""

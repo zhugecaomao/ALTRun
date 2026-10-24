@@ -40,11 +40,7 @@ class SearchQuery {
         static cache := Map()
         text := text ""
         if !cache.Has(text) {
-            keywords := []
-            for keyword in StrSplit(StrReplace(text, "，", ","), ",")
-                if ((keyword := Trim(keyword)) != "")
-                    keywords.Push(keyword)
-            cache[text] := keywords
+            cache[text] := TextTools.SplitList(StrReplace(text, "，", ","))   ; a full-width comma separates too
         }
         return cache[text]
     }

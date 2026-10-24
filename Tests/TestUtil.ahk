@@ -2,13 +2,6 @@
 ; TestUtil.ahk - helpers shared by the test suites, and test doubles
 ;===============================================================================
 class TestUtil {
-    static Join(list) {
-        text := ""
-        for item in list
-            text .= (A_Index > 1 ? "," : "") item
-        return text
-    }
-
     static WaitFor(fn, ms := 2000) {
         start := A_TickCount
         while !fn() {

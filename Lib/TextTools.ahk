@@ -30,10 +30,25 @@ class TextTools {
         return items
     }
 
-    static Join(lines) {
+    static Join(lines) => TextTools.JoinList(lines, "`r`n")
+
+    ; Comma-separated items (a one-line list in Preferences, an old settings value): trimmed, blanks dropped;
+    ; numeric: numbers become numbers ("10, 12" -> [10, 12])
+    static SplitList(text, numeric := false) {
+        items := []
+        for item in StrSplit(text, ",")
+            if ((item := Trim(item)) != "")
+                items.Push((numeric && IsNumber(item)) ? item + 0 : item)
+        return items
+    }
+
+    ; The items joined with separator (default ", "); a value that isn't an array is returned as it is
+    static JoinList(items, separator := ", ") {
+        if !(items is Array)
+            return items
         out := ""
-        for index, line in lines
-            out .= (index = 1 ? "" : "`r`n") . line
+        for index, item in items
+            out .= (index = 1 ? "" : separator) item
         return out
     }
 
