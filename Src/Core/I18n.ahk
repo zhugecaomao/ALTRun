@@ -132,6 +132,7 @@ class I18n {
         ; --- App / tray ---
         s["App.Tagline"]               := "A lightweight launcher for Windows"
         s["App.Running"]               := "ALTRun is running. Press {1} to search."
+        s["App.HotkeyFailed"]          := "The hotkey {1} cannot be registered:`n{2}`n`nAnother program may be using it. Choose another one in Preferences → General."
         s["Tray.Show"]                 := "Show ALTRun"
         s["Tray.Preferences"]          := "Preferences..."
         s["Tray.RebuildIndex"]         := "Rebuild Index"
