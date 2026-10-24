@@ -1,0 +1,6 @@
+# Commits that only reformat or translate and that `git blame` should skip.
+# GitHub's blame view uses this file automatically; locally run once:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+
+# Translate All Code Comments to English (#274)
+77c7541c14c01d3e491129ccc945add940f02c17

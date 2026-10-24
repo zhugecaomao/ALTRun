@@ -194,7 +194,7 @@ the released program doesn't contain it. Pushing changes to the benchmark script
 - **Folders**: `Lib\` holds general-purpose libraries with nothing ALTRun-specific that could be reused in other projects; ALTRun's own code goes in the matching subfolder of `Src\`
 - **Naming**: PascalCase for classes, methods and properties; camelCase for local variables; internal members start with `_` (`_Layout()`, `_cache`)
 - **Avoid name clashes**: AutoHotkey names are case-insensitive, so don't give a local variable the name of a class (for example, don't call a variable `pinyin`, it hides the `Pinyin` class); methods and properties in the same class shouldn't differ only in case either
-- **Comments**: every file starts with a description of what it's for and how to use it; comments in the code explain "why" and are written in English
+- **Comments**: every file starts with a description of what it's for and how to use it; comments in the code explain "why" and are written in English. `git blame` skips commits listed in `.git-blame-ignore-revs` (such as the one-time translation of the comments) once you run `git config blame.ignoreRevsFile .git-blame-ignore-revs`; GitHub uses it automatically
 - **Settings**: add new settings to `AppSettings.Defaults()`; for changes to the structure of existing settings see "Changing the settings structure" above
 - **UI text**: the English original goes in `I18n.ahk`, translations go in every language file in `Resources\Lang\`, see "Translating the interface" above
 - **Encoding**: UTF-8; `ALTRun.ahk` stays UTF-8 with BOM + CRLF, every other file UTF-8 + LF
