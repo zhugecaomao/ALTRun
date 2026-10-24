@@ -83,7 +83,7 @@ class SearchWindow {
             IconCache.Clear()
         IconCache.Size := SearchWindow.IconSize
         IconCache.OnLoaded := () => SearchWindow._Repaint()
-        IconCache.PrefetchWhen := () => SearchWindow._CanPrefetch()
+        BackgroundWork.IsBusy := () => !SearchWindow._AllowsBackgroundWork()
         SearchWindow._CreateGdiObjects()
 
         w := SearchWindow.Width, pad := SearchWindow.Padding
@@ -197,7 +197,7 @@ class SearchWindow {
         enter := !IsObject(item) ? "" : actions ? I18n.T("Status.Run") : SearchWindow.EnterTitle(item)
         usable := !actions && IsObject(item) && item.Valid
         ctrl := usable ? SearchWindow.CtrlEnterTitle(item, enter) : ""
-        return {Left: left, Enter: enter, Ctrl: ctrl, Edit: (usable && ActionCatalog.CanEdit(item)) ? 1 : 0, Actions: usable ? 1 : 0}
+        return {Left: left, Enter: enter, Ctrl: ctrl, Edit: (usable && ResultActions.CanEdit(item)) ? 1 : 0, Actions: usable ? 1 : 0}
     }
 
     ; What Ctrl+Enter does (ActionCatalog.RunModifier); "" when it is the same as Enter
@@ -609,9 +609,11 @@ class SearchWindow {
         Logger.Trace("show: " name)
     }
 
-    ; 预读图标只在窗口隐藏时进行, 不和打字抢时间。正在显示时也不读: 显示到一半时窗口还没出来 (算作隐藏),
-    ; 显示超过约 15 ms 后定时器能插进来, 读图标的 COM 调用一次可能要几秒, 显示就一直等着 (2026-10 一台旧电脑上等了 2.3 秒)
-    static _CanPrefetch() => !SearchWindow._showing && !SearchWindow.IsVisible()
+    ; Background work (icon prefetch, index scans, cache writes) runs only while the window is hidden, so it doesn't
+    ; compete with typing. Not while showing either: halfway through, the window isn't up yet (it counts as hidden);
+    ; once showing takes more than about 15 ms a timer can slip in, and one COM call that reads an icon can take
+    ; seconds, so showing waits for it (2.3 s on an old PC, 2026-10)
+    static _AllowsBackgroundWork() => !SearchWindow._showing && !SearchWindow.IsVisible()
 
     ; 显示过程中某一步特别慢时记下来 (Trace 只在刚启动时写; 这里一直写)
     static SlowStepMs := 100
@@ -1000,7 +1002,7 @@ class SearchWindow {
         }
         browse := FileSearchProvider.BrowsePath(text)                       ; 浏览文件夹: 只按最后一段 (过滤的文字) 高亮, 路径里的词不算
         SearchWindow.HighlightText := IsObject(browse) ? browse.Filter : text
-        results := SearchWindow.FileMode ? ProviderRegistry.SearchFiles(text) : ProviderRegistry.Search(text)
+        results := SearchWindow.FileMode ? ProviderRegistry.SearchOnly(FileSearchProvider, text) : ProviderRegistry.Search(text)
         if (gen != SearchWindow._searchGen)                                 ; 搜索期间又输入了字: 用新的那次的结果
             return
         SearchWindow.SetResults(results)
@@ -1242,9 +1244,9 @@ class SearchWindow {
             for key, markedPath in SearchWindow.Marked
                 paths.Push(markedPath)
             item := ResultItem(I18n.T("Search.MarkedItems", paths.Length), "", {Icon: "folder:"})
-            actions := ActionCatalog.ListForMany(paths)
+            actions := ResultActions.ListForMany(paths)
         } else
-            actions := ActionCatalog.ListFor(item)
+            actions := ResultActions.ListFor(item)
         if !actions.Length
             return false
         SearchWindow.SavedQuery := SearchWindow.Input.Value
@@ -1350,7 +1352,7 @@ class SearchWindow {
     static _EditSelected() {
         item := SearchWindow._TargetItem()
         isFallback := IsObject(item) && item.Provider = ""                  ; 没有匹配时的兜底项 (网页搜索等)
-        if (IsObject(item) && !isFallback && ActionCatalog.CanEdit(item))
+        if (IsObject(item) && !isFallback && ResultActions.CanEdit(item))
             return SearchWindow._Later(() => SearchWindow.EditItem(item))
         query := Trim(SearchWindow._CurrentQuery())
         if (query != "" && (!IsObject(item) || isFallback))                 ; 没有结果: 用输入的文字新建一条命令
@@ -1362,7 +1364,7 @@ class SearchWindow {
     static EditItem(item) {
         query := SearchWindow._CurrentQuery()
         SearchWindow.Hide()
-        SearchWindow._SafeRun(() => ActionCatalog.EditItem(item))
+        SearchWindow._SafeRun(() => ResultActions.EditItem(item))
         SearchWindow._Reopen(query)
     }
 
@@ -1376,10 +1378,10 @@ class SearchWindow {
         query := SearchWindow._CurrentQuery()
         wasVisible := SearchWindow.IsVisible()
         SearchWindow._keepOpen := true
-        answer := MsgBox(ActionCatalog.DeletePrompt(item), App.Name, "YesNo Icon! Default2" (wasVisible ? " Owner" SearchWindow.Gui.Hwnd : ""))
+        answer := MsgBox(ResultActions.DeletePrompt(item), App.Name, "YesNo Icon! Default2" (wasVisible ? " Owner" SearchWindow.Gui.Hwnd : ""))
         SearchWindow._keepOpen := false
         if (answer = "Yes")
-            SearchWindow._SafeRun(() => ActionCatalog.DeleteItem(item))
+            SearchWindow._SafeRun(() => ResultActions.DeleteItem(item))
         selected := SearchWindow.Selected
         SearchWindow._Reopen(query)
         if (answer = "Yes" && selected > 1)
@@ -1401,12 +1403,12 @@ class SearchWindow {
             SearchWindow._Repaint()
         }
         item := SearchWindow._TargetItem()
-        if (!IsObject(item) || !item.Valid && !ActionCatalog.CanEdit(item))
+        if (!IsObject(item) || !item.Valid && !ResultActions.CanEdit(item))
             return
         if (SearchWindow.Mode = "actions")                                  ; 操作面板里右键 = 执行这一项
             return SearchWindow._Execute()
         contextMenu := Menu()
-        for action in ActionCatalog.ListFor(item) {
+        for action in ResultActions.ListFor(item) {
             label := StrReplace(action.Title, "&", "&&") (action.Subtitle != "" ? "`t" action.Subtitle : "")
             contextMenu.Add(label, SearchWindow._MenuHandler(action, item))
             if (A_Index = 1)
@@ -1616,7 +1618,7 @@ class SearchWindow {
                 App.EditSettingsFile()
                 return 0
             case 0x2E:                                                      ; Ctrl+Del
-                if (ctrl && SearchWindow._CaretAtEnd() && IsObject(item := SearchWindow._TargetItem()) && ActionCatalog.CanDelete(item)) {
+                if (ctrl && SearchWindow._CaretAtEnd() && IsObject(item := SearchWindow._TargetItem()) && ResultActions.CanDelete(item)) {
                     SearchWindow._Later(() => SearchWindow.DeleteItem(item))
                     return 0
                 }

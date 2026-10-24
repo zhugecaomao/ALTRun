@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.20.34]
+
+测试版。
+
+Test build.
+
+### 改进
+- 代码整理 (分层): 核心模块不再直接调用搜索窗口、搜索功能和扩展功能, 测试 `Layers` 检查这一点。
+  - 后台任务 (索引扫描、写缓存、预读图标) 统一问 `BackgroundWork.CanRun()`; 搜索窗口开着或正在呼出时等待。学习排序和使用统计写盘现在也在窗口呼出的那一下等待, 以前只在窗口显示后等待。
+  - 结果的操作面板、F3 编辑、Ctrl+Del 删除移到 `Src\UI\ResultActions.ahk`; `ActionCatalog` 只保留打开、复制、粘贴等操作。
+  - `ProviderRegistry` 不再写死网页搜索和文件搜索: 兜底项和文件搜索模式改为 Provider 可选的 `Fallbacks` / `SearchOnly`; 预读图标的列表由 `App` 交给 `IconCache`。
+  - "ALTRun 临时借用剪贴板, 这段时间不记录历史" 的状态移到 `ClipboardData.Borrow`; 用户主题文件夹移到 `AppSettings.ThemesDir`。
+
 ## [2026.10.20.33]
 
 测试版。
@@ -1150,7 +1163,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.33...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.34...HEAD
+[2026.10.20.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.33...2026.10.20.34
 [2026.10.20.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.32...2026.10.20.33
 [2026.10.20.32]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.31...2026.10.20.32
 [2026.10.20.31]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...2026.10.20.31

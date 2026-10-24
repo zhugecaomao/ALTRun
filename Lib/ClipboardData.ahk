@@ -11,11 +11,17 @@
 ;   ClipboardData.SetFiles(["C:\a.txt", "C:\b"])       把文件放到剪贴板 (在资源管理器里 Ctrl+V 就是粘贴文件)
 ;   ClipboardData.SetFiles(paths, true)                剪切: 粘贴时移动文件
 ;   ClipboardData.StartGdiplus()                       启动 GDI+ (只启动一次)
+;   ClipboardData.Borrow(ms)                           ALTRun puts temporary content on the clipboard for ms
+;   ClipboardData.Borrowed()                           -> true until then (the clipboard history doesn't record it)
 ;===============================================================================
 
 class ClipboardData {
     static CF_BITMAP := 2, CF_DIB := 8, CF_HDROP := 15
     static _token := 0
+    static BorrowedUntil := 0                                               ; A_TickCount until which the clipboard is borrowed
+
+    static Borrow(milliseconds) => ClipboardData.BorrowedUntil := A_TickCount + milliseconds
+    static Borrowed() => A_TickCount < ClipboardData.BorrowedUntil
 
     static HasImage() => (DllCall("IsClipboardFormatAvailable", "UInt", ClipboardData.CF_DIB) || DllCall("IsClipboardFormatAvailable", "UInt", ClipboardData.CF_BITMAP)) ? true : false
     static HasFiles() => DllCall("IsClipboardFormatAvailable", "UInt", ClipboardData.CF_HDROP) ? true : false

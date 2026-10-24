@@ -19,8 +19,9 @@ Lib\                通用库, 与 ALTRun 无关, 可以直接拿到别的项目
                     (JSON, Logger, Util: Path/Win/Url..., TextTools, Kanji, Dialogs, Everything IPC)
 Src\Core\           App (启动流程), AppSettings + SchemaMigration (设置和版本升级),
                     SearchQuery / ResultItem (搜索模型), FuzzyMatcher (匹配打分),
-                    Knowledge (学习排序), Usage (使用统计), ActionCatalog (操作), ProviderRegistry, FileIndex
-Src\UI\             SearchWindow, PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
+                    Knowledge (学习排序), Usage (使用统计), ActionCatalog (执行结果: 打开、复制、粘贴...),
+                    ProviderRegistry, FileIndex, BackgroundWork (后台任务什么时候可以运行)
+Src\UI\             SearchWindow, ResultActions (操作面板、编辑、删除), PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, CapsLockSwitch, TendonProfile + PTToolsWindow, UpdateChecker)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
@@ -36,15 +37,17 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 .github\            GitHub Actions (测试、截图、发布、Wiki、官网、同步到 Gitee)、Issue / PR 模板
 ```
 
+分层: `Lib` 不用 `Src` 里的任何东西; `Src\Core` 不用 `UI`、`Providers`、`Extensions` (只有负责启动的 `App.ahk` 可以)。Core 需要上层的信息时, 由上层设置回调或调用 Core, 例如 `BackgroundWork.IsBusy` (搜索窗口设置) 和 `IconCache.Prefetch(ProviderRegistry.IconSpecs())` (`App` 调用)。测试 `Layers` 检查这一点。
+
 运行后程序目录下会生成 `Data\` (设置文件 `ALTRun.json`, 以及可以删除的索引和历史) 和 `Themes\` (自定义主题)。
 
 ## 一次搜索的流程
 1. `SearchWindow` 输入框变化 → `ProviderRegistry.Search(text)`
 2. 文字被解析成 `SearchQuery` (关键字、前缀、剩余文字)
 3. 每个启用的 Provider 的 `Search(query)` 返回 `ResultItem` 数组
-4. `ProviderRegistry` 合并结果, 加上 `Knowledge` 的学习加分, 按分数排序, 同一个 `Uid` 只保留一条; 有 `Exclusive` 结果时只显示这些; 一条都没有时显示 WebSearch 的兜底项
+4. `ProviderRegistry` 合并结果, 加上 `Knowledge` 的学习加分, 按分数排序, 同一个 `Uid` 只保留一条; 有 `Exclusive` 结果时只显示这些; 一条都没有时显示 Provider 的兜底项 (`Fallbacks(query)`, 网页搜索)
 5. `SearchWindow` 用 NM_CUSTOMDRAW 自己画每一行
-6. 执行时 `ActionCatalog` 按 `Kind` 决定怎么打开, `Knowledge.Record()` 记住这次选择
+6. 执行时 `ActionCatalog` 按 `Kind` 决定怎么打开 (操作面板、F3、Ctrl+Del 经过 `ResultActions`), `Knowledge.Record()` 记住这次选择
 
 ## 核心模块与运行生命周期
 

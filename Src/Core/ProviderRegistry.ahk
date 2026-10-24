@@ -1,25 +1,30 @@
 ;===============================================================================
-; ProviderRegistry.ahk - 管理所有搜索功能 (Provider), 汇总排序搜索结果 (AutoHotkey v2)
+; ProviderRegistry.ahk - the search features (providers): registers them, searches them all and ranks the results
+;   (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; 每个功能 (Src\Providers\*.ahk) 是一个只有静态方法的类, 约定:
-;   static Id            功能名, 同时也是 ALTRun.json 里 Features 下的设置键名
-;   static Init()        启动时调用一次 (建立索引等)
-;   static Search(query) 参数是 SearchQuery, 返回 [ResultItem...]
-;   static EditItem(item) / DeleteItem(item)   可选: 搜索结果里 F3 编辑 / Ctrl+Del 删除
-;   static DeletePrompt(item)                  可选: 删除前的确认文字 (默认 "确定删除 ... 吗?")
-;   static EmptyResults()                      可选: 空搜索框里显示的结果 (例如有新版本时的更新提示)
-;                        (结果的 Source 指向设置里的那一条, 见 ActionCatalog.CanEdit)
-; 没有启用 (Features.<Id>.Enabled = 0) 的功能不会被初始化, 也不参与搜索。
+; Each feature (Src\Providers\*.ahk) is a class with static methods only:
+;   static Id            the feature's name, also its settings key under Features in ALTRun.json
+;   static Init()        called once at start-up (builds indexes etc.)
+;   static Search(query) takes a SearchQuery, returns [ResultItem...]
+;   Optional:
+;   static EditItem(item) / DeleteItem(item)   F3 edit / Ctrl+Del delete in the results (the result's Source points
+;                                              to its entry in the settings, see ResultActions.CanEdit)
+;   static DeletePrompt(item)                  the confirmation text before deleting (default "Delete ...?")
+;   static EmptyResults()                      results shown in the empty search box (e.g. the update notice)
+;   static Fallbacks(query)                    results when nothing else matched (web search engines)
+;   static SearchOnly(text)                    the provider's own search mode (the file search mode)
+;   static Warm() / IconItems()                see WarmUp / IconSpecs
+; Disabled features (Features.<Id>.Enabled = 0) are neither initialized nor searched.
 ;
-; Search() 把所有功能的结果合在一起, 加上 Knowledge 的学习加分后按分数排序,
-; 同一个 Uid 只保留分数最高的一条; 一条都没有时显示兜底项 (WebSearch 的 Fallbacks)。
-; 某个功能进入关键字模式时 (结果带 Exclusive, 例如 "clip "), 只显示这些结果。
+; Search() merges every feature's results, adds the Knowledge boost and sorts by score, keeping the best result per
+; Uid; with no results it shows the fallbacks. When a feature enters its keyword mode (its results are Exclusive,
+; e.g. "clip "), only those results are shown.
 ;
-; 用法:
-;   ProviderRegistry.Register(ApplicationProvider)    启动时按顺序注册
+; Usage:
+;   ProviderRegistry.Register(ApplicationProvider)    at start-up, in order
 ;   ProviderRegistry.InitAll()
-;   ProviderRegistry.WarmUp()                         启动后空闲时: 预先算好搜索用的数据 (可选的 Warm())
-;   ProviderRegistry.PrefetchIcons()                  启动后空闲时: 在后台预读常用项目的图标 (可选的 IconItems())
+;   ProviderRegistry.WarmUp()                         after start-up, when idle: prepare the search data (Warm())
+;   IconCache.Prefetch(ProviderRegistry.IconSpecs())  after start-up, when idle: read the common items' icons
 ;   ProviderRegistry.Search("note")                   -> [ResultItem...]
 ;===============================================================================
 
@@ -72,9 +77,9 @@ class ProviderRegistry {
         }
     }
 
-    ; 置顶 / 最近使用的项目在前, 然后是各功能的项目 (IconItems: [{Icon, Uid}...], 应用、自定义命令),
-    ; 选过的按选中次数排在前面, 交给 IconCache 在后台预读
-    static PrefetchIcons() {
+    ; The icons worth reading in the background after start-up, most useful first: pinned / recent items, then the
+    ; providers' items (IconItems: [{Icon, Uid}...], e.g. applications and custom commands), picked ones by pick count
+    static IconSpecs() {
         specs := [], others := []
         try {
             for item in ProviderRegistry.EmptyResults()
@@ -92,7 +97,7 @@ class ProviderRegistry {
         }
         for item in ProviderRegistry.ByPicks(others)
             specs.Push(item.Icon)
-        IconCache.Prefetch(specs)
+        return specs
     }
 
     ; 按 Knowledge 里选中的次数从多到少排 (没选过的保持原来的顺序, 排在后面)
@@ -155,8 +160,8 @@ class ProviderRegistry {
         results := ProviderRegistry._Dedupe(ProviderRegistry.SortByScore(results))
         if (results.Length > ProviderRegistry.MaxResults)
             results.Length := ProviderRegistry.MaxResults
-        if (!results.Length && ProviderRegistry.IsEnabled(WebSearchProvider))
-            results := WebSearchProvider.Fallbacks(query)
+        if !results.Length
+            results := ProviderRegistry._Fallbacks(query)
         if (Logger.Enabled && (total := Logger.Ms() - started) >= ProviderRegistry.SlowSearchMs)   ; 慢的搜索记进日志 (不记输入的文字)
             Logger.Debug("Perf: search (" StrLen(rawText) " chars) " Round(total) " ms," slow)
         return results
@@ -184,13 +189,29 @@ class ProviderRegistry {
         return results
     }
 
-    ; 搜索窗口的文件搜索模式: 只要文件搜索的结果 (已按匹配程度排好)
-    static SearchFiles(text) {
-        if !ProviderRegistry.IsEnabled(FileSearchProvider)
+    ; Nothing matched: the providers' Fallbacks(query) (e.g. "Search Google for ...")
+    static _Fallbacks(query) {
+        results := []
+        for provider in ProviderRegistry.Providers {
+            if !ProviderRegistry.IsEnabled(provider) || !HasMethod(provider, "Fallbacks")
+                continue
+            try {
+                for item in provider.Fallbacks(query)
+                    results.Push(item)
+            } catch as e {
+                Logger.Error("ProviderRegistry: " provider.Id ".Fallbacks failed - " e.Message)
+            }
+        }
+        return results
+    }
+
+    ; One provider's own search mode (the search window's file search mode): only its results, already sorted
+    static SearchOnly(provider, text) {
+        if !ProviderRegistry.IsEnabled(provider)
             return []
-        results := FileSearchProvider.SearchFiles(text)
+        results := provider.SearchOnly(text)
         for item in results
-            item.Provider := FileSearchProvider.Id
+            item.Provider := provider.Id
         return results
     }
 

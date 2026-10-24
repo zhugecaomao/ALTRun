@@ -32,7 +32,7 @@ class SearchWindowTests {
             eq("unknown type", ActionCatalog.AssocString(1, ".altrunnone", "edit"), "")
             titles(path) {
                 list := "|"
-                for action in ActionCatalog.ListFor(FileSearchProvider._ToItem({Path: path, IsFolder: false}, 10))
+                for action in ResultActions.ListFor(FileSearchProvider._ToItem({Path: path, IsFolder: false}, 10))
                     list .= action.Title "|"
                 return list
             }
@@ -40,7 +40,7 @@ class SearchWindowTests {
                 eq("action shown", InStr(titles(root "\script.altruntest"), "|" I18n.T("Action.EditFile") "|") ? 1 : 0, 1)
             eq("action hidden", InStr(titles(root "\plain.altrunnone"), "|" I18n.T("Action.EditFile") "|") ? 1 : 0, 0)
             openWith := ""
-            for action in ActionCatalog.ListFor(FileSearchProvider._ToItem({Path: root "\plain.altrunnone", IsFolder: false}, 10))
+            for action in ResultActions.ListFor(FileSearchProvider._ToItem({Path: root "\plain.altrunnone", IsFolder: false}, 10))
                 if (action.Title = I18n.T("Action.OpenWith"))
                     openWith := action.Icon
             eq("open with icon", openWith, "res:shell32.dll,-3")
@@ -61,21 +61,21 @@ class SearchWindowTests {
         FileAppend("x", root "\plan.dwg")
         item := FileSearchProvider._ToItem({Path: root "\plan.dwg", IsFolder: false}, 10)
         titles := "|"
-        for action in ActionCatalog.ListFor(item)
+        for action in ResultActions.ListFor(item)
             titles .= action.Title "|"
         for key in ["Action.OpenWith", "Action.CopyFile", "Action.CutFile", "Action.Recycle"]
             eq("has " key, InStr(titles, "|" I18n.T(key) "|") ? 1 : 0, 1)
         missing := FileSearchProvider._ToItem({Path: root "\gone.dwg", IsFolder: false}, 10)
         titles := "|"
-        for action in ActionCatalog.ListFor(missing)
+        for action in ResultActions.ListFor(missing)
             titles .= action.Title "|"
         eq("missing file: no copy", InStr(titles, "|" I18n.T("Action.CopyFile") "|") ? 1 : 0, 0)
         drive := FileSearchProvider._ToItem({Path: "C:\", IsFolder: true}, 10)
         titles := "|"
-        for action in ActionCatalog.ListFor(drive)
+        for action in ResultActions.ListFor(drive)
             titles .= action.Title "|"
         eq("drive: no recycle", InStr(titles, "|" I18n.T("Action.Recycle") "|") ? 1 : 0, 0)
-        ClipboardProvider.PauseRecording(3000)
+        ClipboardData.Borrow(3000)
         TestRunner.True("FileActions.copy file", ActionCatalog.CopyFiles([root "\plan.dwg"]))
         eq("copied path", ClipboardData.Files().Length ? ClipboardData.Files()[1] : "", root "\plan.dwg")
         eq("copy is not cut", ClipboardData.IsCut(), false)
@@ -91,15 +91,15 @@ class SearchWindowTests {
         ProviderRegistry.Providers := [CustomCommandProvider, FileSearchProvider, ClipboardProvider]
         command := Map("Title", "Notes", "Type", "File", "Target", "C:\notes.txt", "Arguments", "", "Keyword", "")
         custom := CustomCommandProvider._ToItem(command, 50), custom.Provider := "CustomCommands"
-        eq("custom edit", ActionCatalog.CanEdit(custom), true)
-        eq("custom delete", ActionCatalog.CanDelete(custom), true)
+        eq("custom edit", ResultActions.CanEdit(custom), true)
+        eq("custom delete", ResultActions.CanDelete(custom), true)
         found := FileSearchProvider._ToItem({Path: "C:\Docs\a.pdf", IsFolder: false}, 10), found.Provider := "FileSearch"
-        eq("file edit (add command)", ActionCatalog.CanEdit(found), true)
-        eq("file delete", ActionCatalog.CanDelete(found), false)
+        eq("file edit (add command)", ResultActions.CanEdit(found), true)
+        eq("file delete", ResultActions.CanDelete(found), false)
         system := ResultItem("Lock", "", {OnRun: (*) => 0}), system.Provider := "System"
-        eq("system edit", ActionCatalog.CanEdit(system), false)
+        eq("system edit", ResultActions.CanEdit(system), false)
         titles := ""
-        for action in ActionCatalog.ListFor(custom)
+        for action in ResultActions.ListFor(custom)
             titles .= action.Title "|"
         TestRunner.True("EditActions.list has edit", InStr(titles, I18n.T("Action.Edit")) && InStr(titles, I18n.T("Action.Delete")))
         ProviderRegistry.Providers := saved
@@ -452,7 +452,7 @@ class SearchWindowTests {
         eq("already set", AppSettings._KeepLargeType(set) "|" set["Features"]["LargeType"]["Enabled"], "0|0")
         options := AppSettings.Feature("LargeType"), saved := options["Enabled"]
         hasAction() {
-            for action in ActionCatalog.ListFor(ResultItem("42", "", {Kind: "text", Arg: "42"}))
+            for action in ResultActions.ListFor(ResultItem("42", "", {Kind: "text", Arg: "42"}))
                 if (action.Title = I18n.T("Action.LargeType"))
                     return 1
             return 0
@@ -545,13 +545,13 @@ class SearchWindowTests {
         eq("folder tab completes", items[1].AutoComplete "|" items[1].Exclusive "|" items[1].Kind, root "\Reports\|1|folder")
         eq("file", items[2].Kind "|" items[2].Arg, "file|" root "\report 2026.docx")
         eq("empty", titles(root "\Reports\"), I18n.T("Files.EmptyFolder"))
-        eq("file mode", FileSearchProvider.SearchFiles(root "\arc")[1].Title, "Archive")
+        eq("file mode", FileSearchProvider.SearchOnly(root "\arc")[1].Title, "Archive")
 
         SearchWindow.Marked := Map(StrLower(items[2].Arg), items[2].Arg)
         eq("marked", SearchWindow.IsMarked(items[2]) "|" SearchWindow.IsMarked(items[1]), "1|0")
         SearchWindow.Marked := Map()
         actions := ""
-        for action in ActionCatalog.ListForMany([root "\readme.txt", root "\Archive"])
+        for action in ResultActions.ListForMany([root "\readme.txt", root "\Archive"])
             actions .= action.Title "|"
         eq("many: open all", InStr(actions, I18n.T("Action.OpenAll", 2)) = 1, true)
         eq("many: copy, recycle", InStr(actions, I18n.T("Action.CopyFiles", 2)) && InStr(actions, I18n.T("Action.RecycleAll", 2)) ? 1 : 0, 1)
@@ -1222,16 +1222,16 @@ class SearchWindowTests {
         eq("bad pick data is ignored", ProviderRegistry.ByPicks([{Uid: "x"}]).Length, 1)
         Knowledge.Picks := savedPicks
 
-        savedMax := IconCache.PrefetchMax, savedWhen := IconCache.PrefetchWhen
+        savedMax := IconCache.PrefetchMax, savedBusy := BackgroundWork.IsBusy
         cached := "ext:.prefetchcached"
         IconCache.GetNow(cached)
-        IconCache.PrefetchWhen := () => false                               ; 窗口显示中
+        BackgroundWork.IsBusy := () => true                                 ; the window is shown
         IconCache.PrefetchMax := 3
         IconCache.Prefetch(["ext:.pf1", "", "ext:.PF1", cached, "ext:.pf2", "ext:.pf3", "ext:.pf4"])
         eq("dedupe, skip cached, limit", IconCache.PrefetchPending, 3)
         IconCache._PrefetchStep()
         eq("waits while the window is shown", IconCache.PrefetchPending, 3)
-        IconCache.PrefetchWhen := () => true
+        BackgroundWork.IsBusy := () => false
         start := A_TickCount
         while (IconCache.PrefetchPending && A_TickCount - start < 3000)
             IconCache._PrefetchStep()
@@ -1240,13 +1240,13 @@ class SearchWindowTests {
         eq("over the limit not loaded", IconCache._icons.Has(IconCache._CacheKey("ext:.pf4")), false)
         IconCache.Prefetch([])
         eq("empty list", IconCache.PrefetchPending, 0)
-        IconCache.PrefetchMax := savedMax, IconCache.PrefetchWhen := savedWhen
+        IconCache.PrefetchMax := savedMax, BackgroundWork.IsBusy := savedBusy
 
-        savedShowing := SearchWindow._showing                               ; 显示到一半 (窗口还没出来) 时也不预读
+        savedShowing := SearchWindow._showing                               ; not while half shown either (the window isn't up yet)
         SearchWindow._showing := true
-        eq("not while showing", SearchWindow._CanPrefetch(), false)
+        eq("not while showing", SearchWindow._AllowsBackgroundWork(), false)
         SearchWindow._showing := false
-        eq("hidden and not showing", SearchWindow._CanPrefetch(), !SearchWindow.IsVisible())
+        eq("hidden and not showing", SearchWindow._AllowsBackgroundWork(), !SearchWindow.IsVisible())
         SearchWindow._showing := savedShowing
     }
 

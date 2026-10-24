@@ -88,11 +88,12 @@ class IconCache {
         return IconCache._icons[key]
     }
 
-    ; 启动后在后台预读常用项目的图标 (specs 按优先顺序, 最多 PrefetchMax 个): 第一次搜到时图标和文字一起出来,
-    ; 不再先空着、过一会儿才出现 (旧电脑上读一个程序的图标要几十毫秒)。和 Get 的队列一样每轮最多约 10 ms,
-    ; 但只在 PrefetchWhen 返回 true 时 (搜索窗口隐藏, 没有在打字) 读, 不和显示中的结果抢时间; 已经缓存的跳过。
-    ; 预读的图标不在屏幕上, 读完不重画
-    static PrefetchMax := 300, PrefetchGapMs := 30, PrefetchWhen := ""
+    ; After start-up, read the common items' icons in the background (specs in order of priority, at most PrefetchMax):
+    ; the first time an item is found its icon appears with the text instead of a moment later (reading a program's
+    ; icon takes tens of milliseconds on an old PC). Like the queue of Get, at most about 10 ms per round, and only
+    ; when BackgroundWork.CanRun() (the search window is hidden, nobody is typing), so it doesn't compete with the
+    ; results on screen; icons already cached are skipped. Prefetched icons aren't on screen: no repaint after reading
+    static PrefetchMax := 300, PrefetchGapMs := 30
     static _prefetch := [], _prefetchTimer := "", _prefetchStats := ""
     static Prefetch(specs) {
         IconCache._prefetch := [], seen := Map()
@@ -114,7 +115,7 @@ class IconCache {
     static PrefetchPending => IconCache._prefetch.Length
 
     static _PrefetchStep() {
-        if (IconCache._queue.Count || (IsObject(IconCache.PrefetchWhen) && !IconCache.PrefetchWhen.Call()))
+        if (IconCache._queue.Count || !BackgroundWork.CanRun())
             return                                                          ; 屏幕上的图标优先 / 窗口显示中: 下一轮再说
         start := IconCache._Ms(), stats := IconCache._prefetchStats
         while IconCache._prefetch.Length {
@@ -217,7 +218,7 @@ class IconCache {
     }
 
     static _SaveWhenIdle() {
-        if (IsObject(IconCache.PrefetchWhen) && !IconCache.PrefetchWhen.Call())
+        if !BackgroundWork.CanRun()
             return SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)  ; 窗口显示中: 隐藏后再存
         IconCache.SaveDisk()
     }
@@ -246,7 +247,7 @@ class IconCache {
 
     ; 和预读一样只在窗口隐藏时做, 每轮最多约 10 ms
     static _VerifyStep() {
-        if (IconCache._queue.Count || (IsObject(IconCache.PrefetchWhen) && !IconCache.PrefetchWhen.Call()))
+        if (IconCache._queue.Count || !BackgroundWork.CanRun())
             return
         start := IconCache._Ms(), changed := false
         while IconCache._verify.Length {

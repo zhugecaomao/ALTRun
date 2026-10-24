@@ -43,7 +43,7 @@ class ThemeManager {
     static Name     := "Light"                      ; 设置里选的主题
     static Resolved := "Light"                      ; 实际使用的主题 (System -> Light / Dark)
     static BuiltinDir := A_ScriptDir "\Resources\Themes"
-    static UserDir    := AppSettings.Portable ? A_ScriptDir "\Themes" : AppSettings.UserDir "\Themes"
+    static UserDir    := AppSettings.ThemesDir
     static BuiltinOrder := ["Dark", "Classic", "Midnight", "Frost", "Graphite", "Ocean", "Paper", "Lavender", "Rose", "Forest", "Sunset", "HighContrast"
                           , "DarkModern", "LightModern", "Monokai", "OneDark", "TokyoNight", "Dracula", "CatppuccinMocha", "GruvboxDark", "SolarizedLight"]   ; 列表里的顺序
     static Densities := ["Comfortable", "Normal", "Compact"]

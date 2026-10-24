@@ -56,8 +56,8 @@ class FileSearchProvider {
         return []
     }
 
-    ; Called by the search window's file search mode (starting with Space): files only, nothing for empty text; "folder budget" searches folders only, "doc report" documents only
-    static SearchFiles(term) {
+    ; ProviderRegistry.SearchOnly: the search window's file search mode (starting with Space): files only, nothing for empty text; "folder budget" searches folders only, "doc report" documents only
+    static SearchOnly(term) {
         term := Trim(term)
         if (term = "")
             return []

@@ -131,7 +131,7 @@ class Usage {
     }
 
     static _SaveWhenIdle() {
-        if SearchWindow.IsVisible()
+        if !BackgroundWork.CanRun()
             return SetTimer(Usage._saveTimer, -3000)
         Usage.Save()
     }

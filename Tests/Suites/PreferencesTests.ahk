@@ -695,11 +695,11 @@ class PreferencesTests {
         ok("several: one too long", SnippetProvider.CheckKeyword("sig, " longKeyword, Map("AutoExpand", 1), ";") != "")
         store := ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"})
         list := ""
-        for action in ActionCatalog.ListFor(store)
+        for action in ResultActions.ListFor(store)
             list .= action.Title "|"
         ok("store app: no properties", !InStr(list, I18n.T("Action.Properties") "|"))
         list := ""
-        for action in ActionCatalog.ListFor(ResultItem("Windows", "", {Kind: "folder", Arg: A_WinDir}))
+        for action in ResultActions.ListFor(ResultItem("Windows", "", {Kind: "folder", Arg: A_WinDir}))
             list .= action.Title "|"
         ok("folder: properties", InStr(list, I18n.T("Action.Properties") "|"))
     }

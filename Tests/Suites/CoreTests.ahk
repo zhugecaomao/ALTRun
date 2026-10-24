@@ -252,6 +252,19 @@ class CoreTests {
         TestRunner.Equal("Sorting.order", Trim(order), "high mid1 mid2 low")
     }
 
+    ; Background work waits while the search window says it is busy; with nothing set (tests) it never waits
+    static BackgroundGate() {
+        eq := (n, a, e) => TestRunner.Equal("BackgroundGate." n, a, e)
+        saved := BackgroundWork.IsBusy
+        BackgroundWork.IsBusy := ""
+        eq("nothing set", BackgroundWork.CanRun(), true)
+        BackgroundWork.IsBusy := () => true
+        eq("busy", BackgroundWork.CanRun(), false)
+        BackgroundWork.IsBusy := () => false
+        eq("idle", BackgroundWork.CanRun(), true)
+        BackgroundWork.IsBusy := saved
+    }
+
     static Knowledge() {
         Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := []
         Knowledge._saveTimer := () => 0                                     ; 测试时不写盘

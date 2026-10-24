@@ -29,7 +29,6 @@
 ;                          2 = 历史 (ClipboardHistory.json) 也只存本机。本机 = %LOCALAPPDATA%\ALTRun, 见 PlaceStorage
 ;
 ; 用法:
-;   ClipboardProvider.PauseRecording(ms)   ALTRun 自己临时借用剪贴板时调用, 这段时间不记录
 ;   ClipboardProvider.Add(text, source)    手动加入一条 (source = 来源程序的进程名)
 ;   ClipboardProvider.AddFiles(paths, source) / AddImage(source)
 ;   ClipboardProvider.TextAt(n)            第 n 条文字 (1 = 最新的), 片段的 {clipboard:N} 用
@@ -45,7 +44,7 @@ class ClipboardProvider {
     static MergeWindow := 400                                               ; 两次 Ctrl+C 最多隔多少毫秒算 "连按"
     static Entries := []              ; 最新的在前, 见文件开头的说明
     static ReadDelay := 150                                                 ; 剪贴板变了之后等多久再去读 (毫秒)
-    static _pausedUntil := 0, _saveTimer := "", _mergeUntil := 0, _pending := "", _readTimer := ""
+    static _saveTimer := "", _mergeUntil := 0, _pending := "", _readTimer := ""
 
     static Init() {
         options := AppSettings.Feature("Clipboard")
@@ -102,10 +101,6 @@ class ClipboardProvider {
             Logger.Error("ClipboardProvider: cannot move " source " to " target " - " e.Message)
             return source
         }
-    }
-
-    static PauseRecording(milliseconds) {
-        ClipboardProvider._pausedUntil := A_TickCount + milliseconds
     }
 
     static Search(query) {
@@ -255,7 +250,7 @@ class ClipboardProvider {
         delay := Max(AppSettings.Feature("Snippets")["PasteDelay"], 500)    ; 资源管理器粘贴文件时读剪贴板比较慢
         App.FocusPreviousWindow()
         Win.WaitModifiersUp()
-        ClipboardProvider.PauseRecording(delay + 1000)
+        ClipboardData.Borrow(delay + 1000)
         saved := ClipboardAll()
         if !setter() {
             A_Clipboard := saved
@@ -424,7 +419,7 @@ class ClipboardProvider {
     ; 立刻去读会占着剪贴板, 让它们的 OpenClipboard 失败。等的时候又变了: 先把上一次的读掉, 再等这一次的
     ; (连按两次 Ctrl+C 合并时, 第一次复制的要先记下来)
     static _OnChange(dataType) {
-        if (dataType = 0 || A_TickCount < ClipboardProvider._pausedUntil)  ; 0 = 剪贴板被清空
+        if (dataType = 0 || ClipboardData.Borrowed())                      ; 0 = the clipboard was emptied
             return
         processName := ""
         try processName := WinGetProcessName("A")                          ; 复制时的前台程序
@@ -441,7 +436,7 @@ class ClipboardProvider {
         ClipboardProvider._pending := ""
         if IsObject(ClipboardProvider._readTimer)
             SetTimer(ClipboardProvider._readTimer, 0)
-        if (IsObject(pending) && A_TickCount >= ClipboardProvider._pausedUntil)   ; 等的时候 ALTRun 自己借用了剪贴板: 现在里面是临时的内容, 不记
+        if (IsObject(pending) && !ClipboardData.Borrowed())                 ; ALTRun borrowed the clipboard meanwhile: it now holds temporary content, not recorded
             ClipboardProvider._Record(pending.Type, pending.App)
     }
 
@@ -483,7 +478,7 @@ class ClipboardProvider {
         ClipboardProvider._mergeUntil := 0
         entries.RemoveAt(1, 2)
         ClipboardProvider.Add(merged, source)
-        ClipboardProvider.PauseRecording(500)
+        ClipboardData.Borrow(500)
         A_Clipboard := merged
         App.Notify(I18n.T("Clipboard.Merged"))
         return true

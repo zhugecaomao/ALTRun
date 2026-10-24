@@ -115,7 +115,7 @@ class Knowledge {
     }
 
     static _SaveWhenIdle() {
-        if SearchWindow.IsVisible()
+        if !BackgroundWork.CanRun()
             return SetTimer(Knowledge._saveTimer, -2000)
         Knowledge.Save()
     }
