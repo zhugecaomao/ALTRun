@@ -53,6 +53,7 @@ class HelpProvider {
             ["WebSearch"  , "WebSearch"     , "Web-Search"],
             ["Windows"    , "Windows"       , "Window-Switching"],
             ["Scripts"    , "Scripts"       , "Scripts"],
+            ["ScriptKeyword", "Scripts"     , "Scripts"],
             ["Query"      , "CustomCommands", "Custom-Commands"],
             ["EditFile"   , "FileSearch"    , "Usage"],
             ["Pinyin"     , ""              , "File-Search"],
@@ -143,6 +144,7 @@ class HelpProvider {
                 return [(options["Hotkey"] != "") ? Win.HotkeyLabel(options["Hotkey"]) : ""]
             case "Clipboard":   return [AppSettings.Feature("Clipboard")["Keyword"], Win.HotkeyLabel(AppSettings.Feature("Clipboard")["Hotkey"])]
             case "Snippets":    return [AppSettings.Feature("Snippets")["Keyword"]]
+            case "ScriptKeyword": return [AppSettings.Feature("Scripts")["Keyword"]]
             case "Expand":      return [AppSettings.Feature("Snippets")["ExpandPrefix"]]
             case "Terminal":    return [AppSettings.Feature("Terminal")["Prefix"]]
             case "Bookmarks":   return [AppSettings.Feature("Bookmarks")["Keyword"]]

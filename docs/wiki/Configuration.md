@@ -150,7 +150,11 @@ The index updates itself by watching the `Folders`: when a shortcut is added, re
 Also in Preferences → Features → Feature options. Reads the bookmarks of every profile of Chrome, Edge, Brave and Vivaldi; Firefox keeps its bookmarks in an SQLite database and isn't supported yet.
 
 ### Scripts
-Only `Enabled`. Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](Scripts) for how to write them.
+| Key | Default | Description |
+|---|---|---|
+| Keyword | `script` | `script backup` searches only scripts, `script ` lists them all (typing just `script` without the space still shows commands with that word) |
+
+Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](Scripts) for how to write them.
 
 ### Recent (pinned and recent items)
 | Key | Default | Description |

@@ -150,7 +150,11 @@
 偏好设置 → 功能 → 功能选项里也能改。读 Chrome、Edge、Brave、Vivaldi 所有用户配置的书签; Firefox 的书签存在 SQLite 数据库里, 暂不支持。
 
 ### Scripts 脚本扩展
-只有 `Enabled`。脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Scripts-zh)。
+| 键 | 默认 | 说明 |
+|---|---|---|
+| Keyword | `script` | `script 备份` 只搜脚本, `script ` 列出全部脚本 (只输入 `script` 不带空格时, 照常显示名字里有这个词的命令) |
+
+脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Scripts-zh)。
 
 ### Recent 置顶和最近使用
 | 键 | 默认 | 说明 |

@@ -12,7 +12,8 @@
 ;                     output 在后台运行, 结束后用 .txt 的默认程序 (一般是记事本) 打开全部输出
 ; 文件夹有变化时 (修改时间) 重新读取, 不用重新载入 ALTRun。F3 用记事本编辑脚本。
 ;
-; 设置 (ALTRun.json -> Features.Scripts): Enabled
+; 设置 (ALTRun.json -> Features.Scripts): Enabled / Keyword ("script backup" searches scripts only, "script " lists all,
+; like the snippets' "snip"; just "script" without the space still shows the commands with that word)
 ;===============================================================================
 
 class ScriptProvider {
@@ -32,9 +33,19 @@ class ScriptProvider {
     static Search(query) {
         if (A_TickCount - ScriptProvider._checked > 2000)                   ; 最多 2 秒看一次文件夹有没有变
             ScriptProvider._RefreshIfChanged()
-        results := []
-        needle := StrLower(query.Text)
+        results := [], keyword := AppSettings.Feature("Scripts")["Keyword"]
+        onlyScripts := (keyword != "" && query.HasRest && query.MatchKeyword([keyword], &term))
+        needle := StrLower(onlyScripts ? term : query.Text)
         for script in ScriptProvider.Scripts {
+            if onlyScripts {                                                ; "script " / "script name": scripts only, all of them for no name
+                score := (needle = "") ? 50 : FuzzyMatcher.BestKey(needle, script.Keys)
+                if (score > 0) {
+                    item := ScriptProvider.ItemFor(script, score + 40)
+                    item.Exclusive := true
+                    results.Push(item)
+                }
+                continue
+            }
             if (script.Keyword != "" && query.Keyword = script.Keyword && script.Argument != "" && query.HasRest) {
                 item := ScriptProvider.ItemFor(script, 150, query.Rest)
                 item.Exclusive := true

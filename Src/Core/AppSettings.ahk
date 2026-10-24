@@ -431,7 +431,8 @@ class AppSettings {
                     "InDefaultResults", 1                                   ; 直接输入名称时也显示匹配的书签 (排在应用和命令后面)
                 ),
                 "Scripts", Map(
-                    "Enabled"    , 1                                        ; Scripts\ 文件夹里的脚本变成命令
+                    "Enabled"    , 1,                                       ; Scripts\ 文件夹里的脚本变成命令
+                    "Keyword"    , "script"                                 ; "script backup" searches scripts only, "script " lists them all
                 ),
                 "Recent", Map(
                     "Enabled"    , 1,

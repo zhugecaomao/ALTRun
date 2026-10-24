@@ -883,6 +883,7 @@ class PreferencesWindow {
         Win.AddTooltip(folder.Hwnd, ScriptProvider.Dir)
         PreferencesWindow._y += 4
         PreferencesWindow._Button("Prefs.ScriptsFolder", (*) => (ScriptProvider.OpenFolder(), PreferencesWindow._FillScripts()))
+        PreferencesWindow._Field("Features.Scripts.Keyword", "Prefs.ScriptKeyword", "S")
         PreferencesWindow._Section("Prefs.Section.ScriptList")
         listView := PreferencesWindow._Add("ListView", "w" PreferencesWindow.ContentW " h170 -Multi NoSort Grid ReadOnly"
             , [I18n.T("Prefs.Col.Name"), I18n.T("Prefs.Col.Keyword"), I18n.T("Prefs.Col.Argument"), I18n.T("Prefs.Col.Mode"), I18n.T("Prefs.Col.File")])

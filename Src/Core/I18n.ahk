@@ -301,6 +301,8 @@ class I18n {
         s["Help.Bookmarks.Text"]       := "search browser bookmarks (Chrome, Edge...)"
         s["Help.Scripts.Key"]          := "Scripts\"
         s["Help.Scripts.Text"]         := "put your scripts (.ahk .ps1 .bat .py) here to run them as commands"
+        s["Help.ScriptKeyword.Key"]    := "{1} + name"
+        s["Help.ScriptKeyword.Text"]   := "search your scripts only"
         s["Help.Windows.Key"]          := "{1} title"
         s["Help.Windows.Text"]         := "switch to an open window"
         s["Help.Selection.Key"]        := "{1} (with text or files selected)"
@@ -785,6 +787,8 @@ class I18n {
         s["Prefs.Section.Scripts"]      := "Script commands"
         s["Prefs.Section.Scripts.Desc"] := "Put .ahk, .ps1, .bat, .cmd or .py files in the Scripts folder and they become commands: search for the name or keyword and press Enter to run (like Raycast Script Commands). .ahk scripts run with ALTRun itself, .py needs Python. Changes take effect right away; turn the feature on or off in Features."
         s["Prefs.Group.ScriptsFolder"]  := "Folder"
+        s["Prefs.ScriptKeyword"]        := "Search keyword"
+        s["Prefs.ScriptKeyword.Desc"]   := '"script backup" searches only your scripts; "script " lists them all.'
         s["Prefs.Section.ScriptList"]   := "Scripts found"
         s["Prefs.NoScripts"]            := "(no scripts yet)"
         s["Prefs.ScriptsNote"]          := "Optional comments at the top of a script (; # REM :: // all work): @altrun.title name, @altrun.keyword ping, @altrun.argument host name (asks for text after the keyword), @altrun.mode window | silent | output. Double-click a script to edit it; F1 for details and examples."
