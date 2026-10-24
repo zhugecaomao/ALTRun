@@ -846,7 +846,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.Clipboard.Images", "Prefs.ClipImages")
         PreferencesWindow._Field("Features.Clipboard.MaxImages", "Prefs.ClipMaxImages", "S", "number")
         PreferencesWindow._Choice("Features.Clipboard.LocalFiles", "Prefs.ClipStorage", [0, 1, 2]   ; 存在哪里 (ClipboardProvider.PlaceStorage)
-            , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "P")
+            , [I18n.T("Prefs.ClipStorage.Data"), I18n.T("Prefs.ClipStorage.Files"), I18n.T("Prefs.ClipStorage.All")], "L")   ; long options: full width
         PreferencesWindow._Check("Features.Clipboard.MergeDoubleCopy", "Prefs.ClipMerge", , , "Prefs.Group.Copy")
         PreferencesWindow._Gap()
         PreferencesWindow._LinesButton("Features.Clipboard.IgnoreApps", "Prefs.ClipIgnoreApps")
@@ -1312,9 +1312,6 @@ class PreferencesWindow {
             case "S": return PreferencesWindow.WidthS
             case "M": return PreferencesWindow.WidthM
             case "K": return PreferencesWindow.WidthK
-            case "P":                                                       ; to the right edge of the page's paired settings (_Pair)
-                if PreferencesWindow._pairX
-                    return PreferencesWindow._pairX + PreferencesWindow._pairSecondW - PreferencesWindow._InputX()
         }
         return PreferencesWindow._InputW() - (withBrowse ? 34 : 0)
     }
