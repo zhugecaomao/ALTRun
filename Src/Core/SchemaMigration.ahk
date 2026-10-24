@@ -97,6 +97,10 @@ class SchemaMigration {
             return ""
         backup := SchemaMigration.BackupFile(file, version)
         try FileCopy(file, backup, true)
+        catch as e {                                                        ; the upgrade still goes on; the log says the backup is missing
+            Logger.Error("SchemaMigration: cannot back up the settings as " backup " - " e.Message)
+            return ""
+        }
         return backup
     }
 
