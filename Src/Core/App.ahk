@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.20.28"
+    static Version := "2026.10.20.31"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; 托盘、窗口、快捷方式 (编译后的 exe 里也有同一个图标)
@@ -485,7 +485,7 @@ class App {
         } catch as e {
             Logger.Error("App: cannot register hotkey " key " - " e.Message)
             if notify
-                MsgBox("Cannot register hotkey " key ":`n" e.Message, App.Name, "Icon! 0x40000")   ; 0x40000: 总在最前面
+                MsgBox(I18n.T("App.HotkeyFailed", Win.HotkeyLabel(key), e.Message), App.Name, "Icon! 0x40000")   ; 0x40000: always on top
             return false
         }
     }
@@ -636,8 +636,12 @@ class App {
     ; OnExit 回调返回非零值会取消退出, 所以这里不返回任何值
     static _OnExit() {
         CapsLockHelper.Stop()
-        try ApplicationProvider.SavePending()                              ; 后台重建后还没来得及写的应用索引、文件索引
+        try ApplicationProvider.SavePending()                              ; indexes rebuilt in the background but not written yet
+        catch as e
+            Logger.Error("App: cannot save the app index on exit - " e.Message)
         try FileIndex.SavePending()
+        catch as e
+            Logger.Error("App: cannot save the file index on exit - " e.Message)
         Knowledge.Save()
         Usage.Save()
         ClipboardProvider.Save()

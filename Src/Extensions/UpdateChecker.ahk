@@ -29,6 +29,7 @@
 class UpdateChecker {
     static ApiUrl      := "https://api.github.com/repos/zhugecaomao/ALTRun/releases/latest"
     static ReleasePage := "https://github.com/zhugecaomao/ALTRun/releases"
+    static RepoUrl     := "https://github.com/zhugecaomao/ALTRun/"
     static TempDir     := A_Temp "\ALTRun-update"
     static OldSuffix   := ".old"
     static PackageExe  := "ALTRun.exe"                                     ; zip 里的程序名 (本机的 exe 可能改过名)
@@ -234,19 +235,27 @@ class UpdateChecker {
         if !(data is Map) || !data.Has("tag_name") || data["tag_name"] = ""
             throw Error("Cannot find 'tag_name' in the GitHub response.")
         release := {Version: Trim(data["tag_name"], "vV "), Page: UpdateChecker.ReleasePage, ZipUrl: "", Sha256: ""}
-        if data.Has("html_url") && data["html_url"] != ""
+        ; The page is opened with Run and the zip is downloaded: only addresses in this repository are used, whatever
+        ; else the response says (the SHA256 comes from the same response, so it only catches a broken download)
+        if data.Has("html_url") && UpdateChecker.InRepo(data["html_url"])
             release.Page := data["html_url"]
         if data.Has("assets") && data["assets"] is Array {
             for asset in data["assets"] {
                 if !(asset is Map) || !asset.Has("name") || !RegExMatch(asset["name"], "i)^ALTRun_v?[\d.]+\.zip$")
                     continue
-                release.ZipUrl := asset.Has("browser_download_url") ? asset["browser_download_url"] : ""
+                release.ZipUrl := (asset.Has("browser_download_url") && UpdateChecker.InRepo(asset["browser_download_url"], "releases/download/"))
+                    ? asset["browser_download_url"] : ""
                 if asset.Has("digest") && RegExMatch(asset["digest"], "i)^sha256:([0-9a-f]{64})$", &m)
                     release.Sha256 := StrLower(m[1])
                 break
             }
         }
         return release
+    }
+
+    ; An https address in this repository (under sub, e.g. "releases/download/"), with no tricks such as "..", spaces or quotes
+    static InRepo(address, sub := "") {
+        return (address is String) && InStr(address, UpdateChecker.RepoUrl sub, true) = 1 && !RegExMatch(address, '\.\.|[\s"<>^|&]')
     }
 
     ; 能不能在程序里直接更新: 编译后的 exe, Release 有 zip 和 SHA256, 程序目录能写入
@@ -338,6 +347,8 @@ class UpdateChecker {
             if movedExe {
                 try FileDelete(exe)
                 try FileMove(old, exe)
+                catch as restoreError                                       ; ALTRun.exe may be missing now: say where the old one is
+                    Logger.Error("UpdateChecker: cannot put back " exe " from " old " - " restoreError.Message)
             }
             UpdateChecker._Undo(changes)
             try DirDelete(backup, true)
@@ -379,6 +390,8 @@ class UpdateChecker {
     static _Undo(changes) {
         for pair in changes.Replaced
             try FileCopy(pair[2], pair[1], true)
+            catch as e
+                Logger.Error("UpdateChecker: cannot restore " pair[1] " from " pair[2] " - " e.Message)
         for created in changes.Created
             try FileDelete(created)
         Loop changes.Dirs.Length                                            ; 从里往外删新建的 (空) 文件夹

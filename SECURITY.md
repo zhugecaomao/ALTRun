@@ -41,7 +41,7 @@ Out of scope:
 ## Security measures
 
 - **Builds**: every release is built from the public source code by [GitHub Actions](.github/workflows/release.yml); no binaries are built on personal computers. Each change runs 8,000+ automated tests on Windows, and the repository is scanned by CodeQL.
-- **Updates**: one-click updates download only from GitHub Releases over HTTPS, verify the SHA256 checksum published by GitHub before replacing any file, and restore the previous version if any step fails.
+- **Updates**: one-click updates download only from this repository's GitHub Releases over HTTPS (download and release page addresses outside the repository are ignored), verify the SHA256 checksum published by GitHub before replacing any file, and restore the previous version if any step fails.
 - **Code signing**: see the [code signing policy](README.md#code-signing-policy).
 - **Least privilege**: ALTRun runs as a normal user. It needs no administrator rights and installs no services or drivers.
 - **Clipboard**: content marked by password managers and other programs as private (`ExcludeClipboardContentFromMonitorProcessing`, `CanIncludeInClipboardHistory = 0`) is never recorded; content copied from KeePass, KeePassXC, 1Password and Bitwarden is ignored by default.
@@ -127,7 +127,7 @@ Changes to this policy are recorded in the [changelog](CHANGELOG.md) and the [hi
 ## 安全措施
 
 - **构建**: 每个发布版本都由 [GitHub Actions](.github/workflows/release.yml) 从公开源码编译, 不在个人电脑上构建。每次修改都在 Windows 上运行 8000 余项自动测试, 仓库开启了 CodeQL 扫描。
-- **更新**: 一键更新只从 GitHub Releases 通过 HTTPS 下载, 替换文件前先核对 GitHub 给出的 SHA256, 任何一步出错都还原到原来的版本。
+- **更新**: 一键更新只从本仓库的 GitHub Releases 通过 HTTPS 下载 (不是本仓库的下载地址和发布页面地址一律不用), 替换文件前先核对 GitHub 给出的 SHA256, 任何一步出错都还原到原来的版本。
 - **代码签名**: 见 [代码签名策略](README.md#code-signing-policy)。
 - **最小权限**: ALTRun 以普通用户身份运行, 不需要管理员权限, 不安装服务或驱动。
 - **剪贴板**: 带有 "不要记录" 标记的内容 (`ExcludeClipboardContentFromMonitorProcessing`、`CanIncludeInClipboardHistory = 0`, 密码管理器常用) 从不记录; 默认忽略 KeePass、KeePassXC、1Password、Bitwarden 复制的内容。

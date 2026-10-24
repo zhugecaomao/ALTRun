@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.20.31]
+
+测试版。
+
+Test build.
+
+### 改进
+- 检查更新更安全: 只使用本仓库的下载地址和发布页面地址, GitHub 返回别的地址时一律不用 (打开发布页面是直接运行这个地址的)。隐私说明 (SECURITY.md) 相应补充
+- 呼出热键注册不了时的提示改成四种语言, 并说明可能被别的程序占用、去哪里换
+- 几处关键操作失败时写进调试日志, 不再悄悄忽略: 设置文件解析失败后另存旧文件、升级设置前的备份、一键更新失败后还原文件、退出时保存索引
+
 ## [2026.10.20.28]
 
 测试版。
@@ -1121,7 +1132,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.31...HEAD
+[2026.10.20.31]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...2026.10.20.31
 [2026.10.20.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.27...2026.10.20.28
 [2026.10.20.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...2026.10.20.27
 [2026.10.20.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...2026.10.20.26
