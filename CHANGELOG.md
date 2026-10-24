@@ -5,6 +5,23 @@
 
 ## [未发布]
 
+## [2026.10.20.28]
+
+测试版。
+
+Test build.
+
+### 升级
+- 设置文件升级到版本 6: 第一次启动会把原来的 ALTRun.json 备份成 `ALTRun.v5.backup.json`, 并提示一次 "设置已升级"。升级后不要再用旧版本打开同一个设置文件 (旧版本读不了新的列表格式); 要退回旧版本时, 先把备份文件改回 ALTRun.json
+
+### 改进
+- 设置文件的格式统一 (#176): 窗口列表 (对话框跳转的 其它对话框 / 不生效的窗口 / 不自动跳转的对话框, 一键加日期的两个 "生效的窗口", 文字片段的 不展开的窗口) 从逗号分隔的一行改成和其它列表一样的数组, 窗口标题里带逗号的也能写了; "标准的打开 / 保存对话框" 单独存成 `StandardDialogs`; 对话框跳转和一键加日期的热键都改名为 `Hotkey`; 删掉不再使用的 `ExplorerHotkey`、`AppendHotkey` 和应用程序的 `RefreshMinutes`
+- 老用户的设置一起升级: 内置索引的排除规则还是旧默认值的, 换成新默认值 (多跳过 `.svn`、`.venv`、`.idea` 等缓存文件夹) 并重新扫描; 已经去掉的紧凑主题 (DarkCompact 等) 换成对应的主题加 "常规" 密度
+- 代码整理: 读 Windows "最近使用的项目" 的代码移到单独的 `Lib\WindowsRecent.ahk` (文件搜索和对话框跳转共用); 判断网络路径和扩展名的函数移到 `Path`; 偏好设置里列表的写法简化
+
+### 修复
+- 操作后的小提示 (例如 "已复制") 正在淡入时又被关掉或换成新的提示, 偶尔会弹出 "Parameter #1 of SetTimer requires an Object" 的错误
+
 ## [2026.10.20.27]
 
 测试版。
@@ -1104,7 +1121,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.27...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...HEAD
+[2026.10.20.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.27...2026.10.20.28
 [2026.10.20.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...2026.10.20.27
 [2026.10.20.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...2026.10.20.26
 [2026.10.20.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.24...2026.10.20.25

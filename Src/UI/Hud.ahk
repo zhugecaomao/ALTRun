@@ -132,7 +132,8 @@ class Hud {
         } else {
             Hud._alpha := Min(Hud._alpha + 40, Hud.Alpha)
             if (Hud._alpha >= Hud.Alpha) {
-                SetTimer(Hud._timer, 0)
+                if IsObject(Hud._timer)                                     ; Hide / a new Show may have run in between and cleared it
+                    SetTimer(Hud._timer, 0)
                 Hud._timer := ""
             }
         }

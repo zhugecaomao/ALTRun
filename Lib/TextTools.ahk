@@ -21,6 +21,15 @@ class TextTools {
 
     static Lines(text) => StrSplit(text, "`n", "`r")
 
+    ; One item per line: trimmed, blank lines dropped (the lists edited in Preferences)
+    static SplitLines(text) {
+        items := []
+        for line in StrSplit(text, "`n", "`r")
+            if ((line := Trim(line)) != "")
+                items.Push(line)
+        return items
+    }
+
     static Join(lines) {
         out := ""
         for index, line in lines

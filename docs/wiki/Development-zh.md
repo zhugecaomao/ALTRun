@@ -51,6 +51,7 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 - `SearchWindow` 接收输入; `SearchQuery` 解析关键字和前缀; `ProviderRegistry` 调用已启用的 Provider 并合并结果。
 - `ResultItem` 统一结果数据; `FuzzyMatcher` 计算匹配分数; `Knowledge` 调整学习排序; `ActionCatalog` 执行打开、复制、运行等操作。
 - `PreferencesWindow` 在设置副本上编辑, 保存后由程序重新载入, 避免控件直接修改运行中的设置对象。
+- `FileSearchProvider` (`recent 报告`) 和 `QuickSwitch` (最近的文件夹) 通过 `Lib\WindowsRecent.ahk` 读 Windows 的 "最近使用的项目"。
 - `ApplicationProvider` 与 `FileIndex` 共用 `Lib\FolderWatcher.ahk` 监视索引目录; 索引重建在后台进行, 新索引完成前继续使用旧索引。
 
 一次典型的生命周期是: 启动并加载设置 → 初始化 Provider 和窗口 → 接收搜索输入 → 解析查询并收集结果 → 排序和显示 → 执行选中项的操作。设置变更会保存后重新载入; 退出时停止文件夹监视和后台任务, 并完成待保存的缓存处理。

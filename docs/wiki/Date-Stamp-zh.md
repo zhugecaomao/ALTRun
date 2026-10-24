@@ -25,10 +25,9 @@
 | 设置 | 默认值 | 作用 |
 |---|---|---|
 | `Enabled` | `1` | 是否启用一键加日期 |
-| `RenameHotkey` | `Ctrl+D` | 热键, 重命名和追加日期共用 (名字暂时不变) |
-| `RenameWindows` | 按默认窗口规则 | 允许重命名操作生效的窗口 |
-| `AppendHotkey` | `Ctrl+D` | 不再使用: `RenameHotkey` 两种场景共用 |
-| `AppendWindows` | 按默认窗口规则 | 允许文本追加操作生效的窗口 |
+| `Hotkey` | `Ctrl+D` | 热键, 重命名和追加日期共用 (设置版本 6 以前叫 `RenameHotkey`) |
+| `RenameWindows` | 按默认窗口规则 | 允许重命名操作生效的窗口 (窗口条件列表) |
+| `AppendWindows` | 按默认窗口规则 | 允许文本追加操作生效的窗口 (窗口条件列表) |
 | `DateFormat` | `dd.MM.yyyy` | 日期格式, 也用于文字片段的 `{date}` 占位符 |
 
 日期格式写法见 [AutoHotkey FormatTime](https://www.autohotkey.com/docs/v2/lib/FormatTime.htm)。

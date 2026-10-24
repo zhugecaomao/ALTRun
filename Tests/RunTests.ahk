@@ -23,6 +23,7 @@
 #Include %A_ScriptDir%\..\Lib\Dialogs.ahk
 #Include %A_ScriptDir%\..\Lib\HttpGet.ahk
 #Include %A_ScriptDir%\..\Lib\FolderWatcher.ahk
+#Include %A_ScriptDir%\..\Lib\WindowsRecent.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
 #Include %A_ScriptDir%\..\Src\Core\AppSettings.ahk
@@ -202,6 +203,10 @@ class Tests {
         eq("depth", data["Features"]["Applications"]["Depth"], 2)
         eq("pastemode", data["Features"]["Snippets"]["PasteMode"], "Type")
         eq("autoswitch", data["Extensions"]["QuickSwitch"]["AutoSwitch"], 1)
+        eq("2.x jump hotkey -> Hotkey", data["Extensions"]["QuickSwitch"]["Hotkey"] "|" data["Extensions"]["AutoDate"]["Hotkey"], "^g|^d")
+        eq("2.x dialogs: standard ones, as arrays", data["Extensions"]["QuickSwitch"]["StandardDialogs"] "|" data["Extensions"]["QuickSwitch"]["DialogWindows"].Length
+            "|" (data["Extensions"]["AutoDate"]["RenameWindows"] is Array), "1|0|1")
+        eq("2.x old hotkeys not kept", data["Extensions"]["QuickSwitch"].Has("ExplorerHotkey") || data["Extensions"]["QuickSwitch"].Has("TotalCmdHotkey"), false)
         eq("pttools", data["Extensions"]["PTTools"]["RebarSpanWidth"], 4000)
         eq("hotkeys", data["Hotkeys"].Length, 1)
         eq("hotkey action", data["Hotkeys"][1]["Action"], "PTTools")
@@ -229,7 +234,7 @@ class Tests {
         v5 := SchemaMigration.Upgrade(Map("SchemaVersion", 4, "Features", Map("Snippets", Map("PasteMode", "Clipboard", "PasteDelay", 500))), 4)
         eq("4->5 clipboard -> auto", v5["Features"]["Snippets"]["PasteMode"], "Auto")
         eq("4->5 keeps other settings", v5["Features"]["Snippets"]["PasteDelay"], 500)
-        eq("4->5 version", v5["SchemaVersion"], 5)
+        eq("4->5 on to the current version", v5["SchemaVersion"], AppSettings.CurrentVersion)
         eq("4->5 type stays", SchemaMigration.Upgrade(Map("SchemaVersion", 4, "Features", Map("Snippets", Map("PasteMode", "Type"))), 4)["Features"]["Snippets"]["PasteMode"], "Type")
         eq("4->5 without section", InStr(JSON.Stringify(SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4)), "PasteMode"), 0)
         ; 4 -> 5: 后来补进默认值的窗口 / 关键字也补给老用户 (缺什么补什么, 用户自己加的保留, 清空了的不动); 小清理
@@ -243,10 +248,11 @@ class Tests {
         v5 := SchemaMigration.Upgrade(old, 4)
         eq("4->5 keywords: file added", Tests._Join(v5["Features"]["FileSearch"]["Keywords"]), "open,find,file")
         eq("4->5 keywords = new default", Tests._Join(v5["Features"]["FileSearch"]["Keywords"]), Tests._Join(defaults["Features"]["FileSearch"]["Keywords"]))
-        eq("4->5 rename windows: TC dialogs added", v5["Extensions"]["AutoDate"]["RenameWindows"]
-            , "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD, ahk_class TSTDTREEDLG, ahk_class TCOMBOINPUT")
-        eq("4->5 append windows = new default", v5["Extensions"]["AutoDate"]["AppendWindows"], defaults["Extensions"]["AutoDate"]["AppendWindows"])
-        eq("4->5 exclude windows = new default", v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], defaults["Extensions"]["QuickSwitch"]["ExcludeWindows"])
+        eq("4->5 rename windows: TC dialogs added", Tests._Join(v5["Extensions"]["AutoDate"]["RenameWindows"])
+            , "ahk_class CabinetWClass,ahk_class Progman,ahk_class WorkerW,ahk_class #32770,ahk_class TTOTAL_CMD,ahk_class TSTDTREEDLG,ahk_class TCOMBOINPUT")
+        eq("4->5 rename windows = new default", Tests._Join(v5["Extensions"]["AutoDate"]["RenameWindows"]), Tests._Join(defaults["Extensions"]["AutoDate"]["RenameWindows"]))
+        eq("4->5 append windows = new default", Tests._Join(v5["Extensions"]["AutoDate"]["AppendWindows"]), Tests._Join(defaults["Extensions"]["AutoDate"]["AppendWindows"]))
+        eq("4->5 exclude windows = new default", Tests._Join(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"]), Tests._Join(defaults["Extensions"]["QuickSwitch"]["ExcludeWindows"]))
         eq("4->5 old F1 hotkey removed, others kept", v5["Hotkeys"].Length "|" v5["Hotkeys"][1]["Key"], "1|~MButton")
         sizes := v5["Features"]["Calculator"]["BarSizes"]
         eq("4->5 bar sizes as numbers", (sizes[1] is Integer) "|" sizes[1] "|" sizes[3] "|" (sizes[3] is Integer) "|" sizes[4] "|" sizes[5], "1|13|20|1|25|abc")
@@ -255,10 +261,45 @@ class Tests {
                 , "AppendWindows", "ahk_exe bar.exe"), "QuickSwitch", Map("ExcludeWindows", "")))
         v5 := SchemaMigration.Upgrade(custom, 4)
         eq("4->5 keywords: no duplicate file", Tests._Join(v5["Features"]["FileSearch"]["Keywords"]), "open,FILE")
-        eq("4->5 custom windows kept, only missing added", v5["Extensions"]["AutoDate"]["RenameWindows"], "ahk_exe foo.exe, AHK_CLASS tstdtreedlg, ahk_class TCOMBOINPUT")
-        eq("4->5 custom append windows untouched", v5["Extensions"]["AutoDate"]["AppendWindows"], "ahk_exe bar.exe")
-        eq("4->5 emptied list stays empty", v5["Extensions"]["QuickSwitch"]["ExcludeWindows"], "")
+        eq("4->5 custom windows kept, only missing added", Tests._Join(v5["Extensions"]["AutoDate"]["RenameWindows"]), "ahk_exe foo.exe,AHK_CLASS tstdtreedlg,ahk_class TCOMBOINPUT")
+        eq("4->5 custom append windows untouched", Tests._Join(v5["Extensions"]["AutoDate"]["AppendWindows"]), "ahk_exe bar.exe")
+        eq("4->5 emptied list stays empty", Tests._Join(v5["Extensions"]["QuickSwitch"]["ExcludeWindows"]), "")
         eq("4->5 missing sections not created", SchemaMigration.Upgrade(Map("SchemaVersion", 4), 4).Count, 1)
+        ; 5 -> 6: one format for lists (arrays), StandardDialogs, hotkeys renamed, unused keys removed (#176)
+        v5 := Map("SchemaVersion", 5
+            , "Appearance", Map("Theme", "DarkCompact", "Density", "Comfortable")
+            , "Features", Map("Snippets", Map("ExpandExclude", "ahk_exe mstsc.exe,  ahk_exe KeePass.exe ,")
+                , "Applications", Map("RefreshMinutes", 120, "Depth", 3)
+                , "FileSearch", Map("ScopeExclude", SchemaMigration.OldScopeExclude))
+            , "Extensions", Map("QuickSwitch", Map("TotalCmdHotkey", "^!g", "ExplorerHotkey", "^e", "DialogWindows", "ahk_class #32770, ahk_class Qt5QWindowIcon"
+                    , "ExcludeWindows", "ahk_exe 7zG.exe", "AutoSwitchExclude", "")
+                , "AutoDate", Map("RenameHotkey", "^!d", "AppendHotkey", "^d", "RenameWindows", "ahk_class CabinetWClass", "AppendWindows", "ahk_exe a.exe, ahk_exe b.exe")))
+        v6 := SchemaMigration.Upgrade(v5, 5)
+        quick := v6["Extensions"]["QuickSwitch"], dates := v6["Extensions"]["AutoDate"]
+        eq("5->6 version", v6["SchemaVersion"], 6)
+        eq("5->6 jump hotkey renamed", quick["Hotkey"] "|" quick.Has("TotalCmdHotkey") "|" quick.Has("ExplorerHotkey"), "^!g|0|0")
+        eq("5->6 date hotkey renamed", dates["Hotkey"] "|" dates.Has("RenameHotkey") "|" dates.Has("AppendHotkey"), "^!d|0|0")
+        eq("5->6 standard dialogs split out", quick["StandardDialogs"] "|" Tests._Join(quick["DialogWindows"]), "1|ahk_class Qt5QWindowIcon")
+        eq("5->6 window lists as arrays", Tests._Join(quick["ExcludeWindows"]) "|" quick["AutoSwitchExclude"].Length "|" Tests._Join(dates["RenameWindows"]) "|" Tests._Join(dates["AppendWindows"])
+            , "ahk_exe 7zG.exe|0|ahk_class CabinetWClass|ahk_exe a.exe,ahk_exe b.exe")
+        eq("5->6 snippet exclusions as an array", Tests._Join(v6["Features"]["Snippets"]["ExpandExclude"]), "ahk_exe mstsc.exe,ahk_exe KeePass.exe")
+        eq("5->6 unused refresh removed", v6["Features"]["Applications"].Has("RefreshMinutes") "|" v6["Features"]["Applications"]["Depth"], "0|3")
+        eq("5->6 old scope exclude -> new default", v6["Features"]["FileSearch"]["ScopeExclude"], defaults["Features"]["FileSearch"]["ScopeExclude"])
+        eq("5->6 compact theme -> theme at normal density", v6["Appearance"]["Theme"] "|" v6["Appearance"]["Density"], "Dark|Normal")
+        custom := Map("SchemaVersion", 5, "Appearance", Map("Theme", "LightCompact"), "Features", Map("FileSearch", Map("ScopeExclude", "i)\(build)(\|$)"))
+            , "Extensions", Map("QuickSwitch", Map("Hotkey", "^h", "TotalCmdHotkey", "^g", "DialogWindows", "ahk_class Qt5QWindowIcon", "ExcludeWindows", ["ahk_exe x.exe"])))
+        v6 := SchemaMigration.Upgrade(custom, 5)
+        quick := v6["Extensions"]["QuickSwitch"]
+        eq("5->6 new name already there wins", quick["Hotkey"] "|" quick.Has("TotalCmdHotkey"), "^h|0")
+        eq("5->6 no standard dialogs", quick["StandardDialogs"] "|" Tests._Join(quick["DialogWindows"]), "0|ahk_class Qt5QWindowIcon")
+        eq("5->6 arrays left alone", Tests._Join(quick["ExcludeWindows"]), "ahk_exe x.exe")
+        eq("5->6 custom scope exclude kept", v6["Features"]["FileSearch"]["ScopeExclude"], "i)\(build)(\|$)")
+        eq("5->6 compact theme without density", v6["Appearance"]["Theme"] "|" v6["Appearance"]["Density"], "Light|Normal")
+        eq("5->6 other theme left alone", SchemaMigration.Upgrade(Map("SchemaVersion", 5, "Appearance", Map("Theme", "Midnight", "Density", "Comfortable")), 5)["Appearance"]["Density"], "Comfortable")
+        eq("5->6 missing sections not created", SchemaMigration.Upgrade(Map("SchemaVersion", 5), 5).Count, 1)
+        for path in ["Extensions.QuickSwitch.DialogWindows", "Extensions.QuickSwitch.ExcludeWindows", "Extensions.QuickSwitch.AutoSwitchExclude"
+                   , "Extensions.AutoDate.RenameWindows", "Extensions.AutoDate.AppendWindows", "Features.Snippets.ExpandExclude"]
+            eq("defaults: " path " is an array", PreferencesWindow.GetPath(defaults, path) is Array, true)
         TestRunner.True("Migration.defaults filled", !AppSettings._MergeDefaults(data, AppSettings.Defaults()))
         TestRunner.True("Migration.no downgrade", SchemaMigration.Upgrade(Map("SchemaVersion", AppSettings.CurrentVersion), AppSettings.CurrentVersion)["SchemaVersion"] = AppSettings.CurrentVersion)
     }
@@ -937,10 +978,10 @@ class Tests {
         eq("several keywords", abbr(Map("Keyword", " sig, ㄴ ,，sg ", "Text", "x"), ";"), ";sig,;ㄴ,;sg")
         eq("several: bad one skipped", abbr(Map("Keyword", "a b, ab", "Text", "x"), ";"), ";ab")
         options := AppSettings.Feature("Snippets"), saved := options["ExpandExclude"]
-        options["ExpandExclude"] := " ahk_exe mstsc.exe ,, ahk_class KeePass "
+        options["ExpandExclude"] := ["ahk_exe mstsc.exe", "ahk_class KeePass"]
         SnippetExpander.Refresh()
         eq("exclude list", SnippetExpander._exclude.Length "|" SnippetExpander._exclude[2], "2|ahk_class KeePass")
-        eq("default exclude", AppSettings.Defaults()["Features"]["Snippets"]["ExpandExclude"] != "", true)
+        eq("default exclude", AppSettings.Defaults()["Features"]["Snippets"]["ExpandExclude"].Length > 0, true)
         options["ExpandExclude"] := saved
         SnippetExpander.Refresh()
     }
@@ -958,8 +999,8 @@ class Tests {
         copy := PreferencesWindow.DeepCopy(original)
         copy["General"]["Hotkey"] := "^Space"
         eq("deep copy independent", original["General"]["Hotkey"], "!Space")
-        eq("lines", PreferencesWindow.SplitLines(" a `r`n`r`nb ").Length, 2)
-        eq("join lines", PreferencesWindow.JoinLines(["a", "b"]), "a`r`nb")
+        eq("lines", TextTools.SplitLines(" a `r`n`r`nb ").Length, 2)
+        eq("join lines", TextTools.Join(["a", "b"]), "a`r`nb")
         eq("csv", PreferencesWindow.SplitCsv("open, find ,, x")[3], "x")
         eq("join csv", PreferencesWindow.JoinCsv(["open", "find"]), "open, find")
         sizes := PreferencesWindow.SplitCsv("10, 12,16", true)             ; 数字列表 (钢筋直径) 存成数字
@@ -1133,17 +1174,17 @@ class Tests {
         link(root "\Docs\Gone.docx", "Gone.docx", "20260401000000")           ; deleted: left out
         FileAppend("not a shortcut", recent "\Broken.lnk"), FileSetTime("20260501000000", recent "\Broken.lnk")
         FileAppend("x", recent "\desktop.ini")                             ; not a shortcut
-        saved := [FileSearchProvider.RecentDir, FileSearchProvider.RecentCacheMs]
-        FileSearchProvider.RecentDir := recent, FileSearchProvider.RecentCacheMs := 0
+        saved := [WindowsRecent.Dir, WindowsRecent.CacheMs]
+        WindowsRecent.Dir := recent, WindowsRecent.CacheMs := 0
         options := AppSettings.Feature("FileSearch")
         try {
-            items := FileSearchProvider.RecentItems(300)
+            items := WindowsRecent.Items(300)
             names := ""
             for item in items
                 names .= item.Name (item.IsFolder ? "/" : "") ";"
             eq("newest first, once, existing only", names, "Report 2026.pdf;notes.txt;Tower/;")
             eq("target path", items.Length ? items[1].Path : "", root "\Docs\Report 2026.pdf")
-            eq("newest shortcuts only", FileSearchProvider.RecentItems(2).Length, 0)   ; Broken and Gone are the two newest
+            eq("newest shortcuts only", WindowsRecent.Items(2).Length, 0)   ; Broken and Gone are the two newest
             listed := FileSearchProvider.RecentResults("", options, true)
             eq("recent + space: newest", listed.Length "|" listed[1].Title "|" listed[1].Subtitle "|" listed[1].Arg, "3|Report 2026.pdf|" root "\Docs|" root "\Docs\Report 2026.pdf")
             eq("folder kind and Tab", listed[3].Kind "|" listed[3].AutoComplete, "folder|" root "\Projects\Tower\")
@@ -1159,10 +1200,10 @@ class Tests {
             eq("file search mode", FileSearchProvider.SearchFiles("recent tower")[1].Title, "Tower")
             eq("default keyword", AppSettings.Defaults()["Features"]["FileSearch"]["RecentKeywords"][1], "recent")
             FileSetTime("20260601000000", recent "\notes.txt.lnk")             ; opened again: moves to the top
-            eq("reopened moves up", FileSearchProvider.RecentItems(300)[1].Name, "notes.txt")
+            eq("reopened moves up", WindowsRecent.Items(300)[1].Name, "notes.txt")
             eq("quick switch folders", QuickSwitch.RecentFolders(10, recent).Length, 2)
         } finally {
-            FileSearchProvider.RecentDir := saved[1], FileSearchProvider.RecentCacheMs := saved[2]
+            WindowsRecent.Dir := saved[1], WindowsRecent.CacheMs := saved[2]
             try DirDelete(root, true)
         }
     }
@@ -1174,12 +1215,11 @@ class Tests {
         eq("empty summary", PreferencesWindow.ListSummary([]), "")
         eq("file types: keywords", PreferencesWindow.TypeFilterSummary(["doc = doc docx", "bad line", "pic = png"]), "doc, pic")
         eq("defaults", PreferencesWindow.TypeFilterSummary(AppSettings.Defaults()["Features"]["FileSearch"]["TypeFilters"]), "doc, pic, video, audio, zip, exe, cad")
-        lines := ItemEditor.SplitLines("  doc = doc docx `r`n`r`n pic = png`n")
+        lines := TextTools.SplitLines("  doc = doc docx `r`n`r`n pic = png`n")
         eq("split", lines.Length "|" lines[1] "|" lines[2], "2|doc = doc docx|pic = png")
         eq("help text", I18n.Strings.Has("Prefs.TypeFilters.Help"), true)
         eq("app names", PreferencesWindow.NameSummary(["C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools\Disk Cleanup.lnk"
             , "shell:AppsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel"]), "Disk Cleanup, NVIDIACorp.NVIDIAControlPanel")
-        eq("window lists round trip", PreferencesWindow.JoinWindows(PreferencesWindow.SplitWindows("ahk_exe a.exe, ahk_class B,ahk_exe a.exe")), "ahk_exe a.exe, ahk_class B")
         for key in ["Prefs.SysHidden", "Prefs.AppFolders", "Prefs.AppHidden", "Prefs.ScopeFolders", "Prefs.ClipIgnoreApps", "Prefs.QSExclude"
                   , "Prefs.QSAutoExclude", "Prefs.QSOtherDialogs", "Prefs.RenameWindows", "Prefs.AppendWindows", "Prefs.ExpandExclude"]
             eq("help: " key, I18n.Strings.Has(key ".Help"), true)
@@ -2013,8 +2053,8 @@ class Tests {
         eq("trim keeps newest", keys, "ac")
         eq("trim used map", IconCache._used.Count, 2)
         IconCache._icons := savedIcons, IconCache._used := savedUsed
-        eq("remote unc", IconCache.IsRemote("\\server\share\PT1001"), true)
-        eq("remote local", IconCache.IsRemote("C:\Windows"), false)
+        eq("remote unc", Path.IsRemote("\\server\share\PT1001"), true)
+        eq("remote local", Path.IsRemote("C:\Windows"), false)
         eq("remote folder key", IconCache._CacheKey("\\server\share\PT1001 - 24 Harbor"), "folder:")
         eq("remote folder slash", IconCache._CacheKey("\\server\share\PT1001\"), "folder:")
         eq("remote file key", IconCache._CacheKey("\\server\share\Report.PDF"), "ext:.pdf")
@@ -2023,12 +2063,12 @@ class Tests {
         eq("remote dotted folder", IconCache._CacheKey("\\server\Proposals\2025\26. 18 Sample Road (A)"), "folder:")
         eq("remote dotted folder slash", IconCache._CacheKey("\\server\share\10.PT1002-29Harbor\"), "folder:")
         eq("local dotted folder", IconCache._CacheKey("C:\Projects\26. 18 Sample Road (A)"), "c:\projects\26. 18 sample road (a)")
-        eq("extension", IconCache._Extension("C:\a\Report.PDF"), "PDF")
-        eq("extension with spaces", IconCache._Extension("C:\a\26. 18 New Road"), "")
-        eq("extension appref-ms", IconCache._Extension("C:\a\App.appref-ms"), "appref-ms")
-        eq("extension 7z", IconCache._Extension("C:\a\backup.7z"), "7z")
-        eq("extension sldprt", IconCache._Extension("C:\a\Beam.SLDPRT"), "SLDPRT")
-        eq("extension digits only", IconCache._Extension("C:\a\Design.2019"), "")
+        eq("extension", Path.Extension("C:\a\Report.PDF"), "PDF")
+        eq("extension with spaces", Path.Extension("C:\a\26. 18 New Road"), "")
+        eq("extension appref-ms", Path.Extension("C:\a\App.appref-ms"), "appref-ms")
+        eq("extension 7z", Path.Extension("C:\a\backup.7z"), "7z")
+        eq("extension sldprt", Path.Extension("C:\a\Beam.SLDPRT"), "SLDPRT")
+        eq("extension digits only", Path.Extension("C:\a\Design.2019"), "")
         eq("folder command icon remote", CustomCommandProvider._FolderIcon("\\server\share\26. 18 Sample Road (A)"), "folder:")
         ; 普通文件夹用通用图标, 带 desktop.ini (自定义图标) 的和磁盘根目录用自己的
         iconRoot := A_Temp "\ALTRun-folder-icon-test"
@@ -2750,12 +2790,12 @@ class Tests {
         options["Keywords"] := ["open", "find", "file"]
         eq("file keyword key", keyOf("FileKeyword"), "file / open / ' + name")
         options["Keywords"] := savedKeywords
-        quick := AppSettings.Extension("QuickSwitch"), savedQuick := [quick["Enabled"], quick["TotalCmdHotkey"], quick["ExplorerHotkey"]]
-        quick["Enabled"] := 1, quick["TotalCmdHotkey"] := "^g", quick["ExplorerHotkey"] := "^e"
+        quick := AppSettings.Extension("QuickSwitch"), savedQuick := [quick["Enabled"], quick["Hotkey"]]
+        quick["Enabled"] := 1, quick["Hotkey"] := "^g"
         eq("quick switch key", keyOf("QuickSwitch"), "Ctrl+G (in an Open / Save dialog)")
-        quick["TotalCmdHotkey"] := "", quick["ExplorerHotkey"] := ""
+        quick["Hotkey"] := ""
         eq("quick switch without hotkeys", keyOf("QuickSwitch"), "")
-        quick["Enabled"] := savedQuick[1], quick["TotalCmdHotkey"] := savedQuick[2], quick["ExplorerHotkey"] := savedQuick[3]
+        quick["Enabled"] := savedQuick[1], quick["Hotkey"] := savedQuick[2]
         I18n.Init(savedLang)
         savedLang := I18n.Lang                                              ; 拼音提示只给简体中文界面
         hasPinyin(lang) {
@@ -3073,10 +3113,8 @@ class Tests {
         for command in SystemProvider.Commands()
             ids[command["Id"]] := true
         eq("about command exists", ids.Has("About"), true)
-        eq("auto switch exclude default", defaults["Extensions"]["QuickSwitch"]["AutoSwitchExclude"], "")
-
-        eq("split windows", PreferencesWindow.JoinLines(PreferencesWindow.SplitWindows("ahk_class A,  ahk_exe b.exe ,,")), "ahk_class A`r`nahk_exe b.exe")
-        eq("join windows", PreferencesWindow.JoinWindows(["ahk_class #32770"], ["ahk_class Qt5QWindowIcon", " ", "ahk_class #32770"]), "ahk_class #32770, ahk_class Qt5QWindowIcon")
+        eq("auto switch exclude default", defaults["Extensions"]["QuickSwitch"]["AutoSwitchExclude"].Length, 0)
+        eq("standard dialogs default", defaults["Extensions"]["QuickSwitch"]["StandardDialogs"] "|" defaults["Extensions"]["QuickSwitch"]["DialogWindows"].Length, "1|0")
     }
 
     ; 英文原文都不为空; 每个语言文件 (Resources\Lang\*.json) 每个键都有翻译、没有多余的键、占位符 {1} {2} ... 和英文一样;

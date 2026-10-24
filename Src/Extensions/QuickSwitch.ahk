@@ -11,9 +11,9 @@
 ; 热键 (MenuHotkey, 默认 Ctrl+Shift+G): 光标跳到面板的搜索框, 用键盘选择; 没有打开自动显示时临时显示面板。
 ;
 ; 设置 (ALTRun.json -> Extensions.QuickSwitch):
-;   Enabled / TotalCmdHotkey (the jump hotkey, for all three) / MenuHotkey / RecentFolders / ShowPanel / PanelSearch / AutoSwitch / DialogWindows / ExcludeWindows / AutoSwitchExclude
-;   (ExplorerHotkey is no longer used; renamed / removed with the next SchemaVersion, see #176)
-;   DialogWindows 等是逗号分隔的窗口条件 (ahk_class / ahk_exe / 标题)
+;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / RecentFolders / ShowPanel / PanelSearch / AutoSwitch /
+;   StandardDialogs (ahk_class #32770) / BrowseDialogs / DialogWindows / ExcludeWindows / AutoSwitchExclude
+;   The window lists are arrays of window conditions (ahk_class / ahk_exe / part of the title)
 ;
 ; 用法:
 ;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    启动时
@@ -31,21 +31,20 @@ class QuickSwitch {
         QuickSwitch.Options := options
         if !options["Enabled"]
             return
-        Loop Parse, options["DialogWindows"], ","
-            GroupAdd("ALTRunDialogs", Trim(A_LoopField))
+        if options["StandardDialogs"]
+            GroupAdd("ALTRunDialogs", "ahk_class #32770")
+        for window in options["DialogWindows"]
+            GroupAdd("ALTRunDialogs", window)
         QuickSwitch._hasExclude := false
-        Loop Parse, options["ExcludeWindows"], ","
-            if (Trim(A_LoopField) != "")
-                GroupAdd("ALTRunDialogExclude", Trim(A_LoopField)), QuickSwitch._hasExclude := true
-        if options.Has("AutoSwitchExclude")
-            Loop Parse, options["AutoSwitchExclude"], ","
-                if (Trim(A_LoopField) != "")
-                    GroupAdd("ALTRunAutoSwitchExclude", Trim(A_LoopField))
+        for window in options["ExcludeWindows"]
+            GroupAdd("ALTRunDialogExclude", window), QuickSwitch._hasExclude := true
+        for window in options["AutoSwitchExclude"]
+            GroupAdd("ALTRunAutoSwitchExclude", window)
 
         HotIf((*) => QuickSwitch.IsFileDialog())
         try {
-            if (options["TotalCmdHotkey"] != "")
-                Hotkey(options["TotalCmdHotkey"], (*) => QuickSwitch.SyncFileManagerPath())
+            if (options["Hotkey"] != "")
+                Hotkey(options["Hotkey"], (*) => QuickSwitch.SyncFileManagerPath())
             if (options["MenuHotkey"] != "")
                 Hotkey(options["MenuHotkey"], (*) => QuickSwitch.FocusPanel())
         } catch as e {
@@ -612,13 +611,13 @@ class QuickSwitch {
         return list
     }
 
-    ; The newest limit folders of Windows "Recent items" (FileSearchProvider.RecentItems); a file gives its folder.
+    ; The newest limit folders of Windows "Recent items" (WindowsRecent); a file gives its folder.
     ; Only the newest limit * 6 shortcuts are looked at, not all of the hundreds there may be
     static RecentFolders(limit, recentDir := "") {
         folders := [], seen := Map()
         if (limit <= 0)
             return folders
-        for item in FileSearchProvider.RecentItems(limit * 6, recentDir) {
+        for item in WindowsRecent.Items(limit * 6, recentDir) {
             folder := RTrim(item.IsFolder ? item.Path : QuickSwitch._Parent(item.Path), "\")
             if (folder ~= "^[A-Za-z]:$")
                 folder .= "\"

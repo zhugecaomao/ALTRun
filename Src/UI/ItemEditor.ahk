@@ -168,17 +168,9 @@ class ItemEditor {
         return state.Result
 
         OnOk(*) {
-            state.Result := ItemEditor.SplitLines(box.Value)
+            state.Result := TextTools.SplitLines(box.Value)
             g.Destroy()
         }
-    }
-
-    static SplitLines(text) {
-        items := []
-        for line in StrSplit(text, "`n", "`r")
-            if ((line := Trim(line)) != "")
-                items.Push(line)
-        return items
     }
 
     ; 字段自己的按钮: OnClick(controls, g), controls = 字段的 Key -> 控件

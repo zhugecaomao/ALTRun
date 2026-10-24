@@ -39,12 +39,14 @@ Preferences → Quick Switch controls the hotkeys, eligible windows and automati
 | Setting | Default / purpose |
 |---|---|
 | `Enabled` | `1` = enable Quick Switch |
-| `TotalCmdHotkey` | The jump hotkey, default `Ctrl+G`: the folder of the Total Commander / Directory Opus / File Explorer window used last (the name stays for now) |
-| `ExplorerHotkey` | No longer used: `Ctrl+G` covers File Explorer too, and `Ctrl+E` goes back to its usual job (the search box in Explorer) |
+| `Hotkey` | The jump hotkey, default `Ctrl+G`: the folder of the Total Commander / Directory Opus / File Explorer window used last (`TotalCmdHotkey` before settings version 6) |
 | `AutoSwitch` | Jump automatically when switching from Total Commander, Directory Opus or File Explorer to a dialog, default `0` (off) |
-| `DialogWindows` | Window conditions where Quick Switch is enabled |
+| `StandardDialogs` | `1` = in the standard Open / Save dialogs (`ahk_class #32770`) |
+| `DialogWindows` | Other dialogs where Quick Switch works (dialogs programs draw themselves), a list of window conditions, default `[]` |
 | `BrowseDialogs` | `1` = also in "Browse for Folder" dialogs (folder tree only) |
-| `ExcludeWindows` | Windows where Quick Switch is fully disabled |
-| `AutoSwitchExclude` | Windows where automatic switching is disabled but manual hotkeys still work |
+| `ExcludeWindows` | Windows where Quick Switch is fully disabled (a list) |
+| `AutoSwitchExclude` | Windows where automatic switching is disabled but manual hotkeys still work (a list) |
+
+Window conditions are `ahk_exe program.exe`, `ahk_class ClassName` or part of the window title, one per list item, for example `"ExcludeWindows": ["ahk_exe 7zG.exe", "ahk_class SysListView32"]`.
 
 The [Dialog Folder Panel](Quick-Switch-Panel) has its own Preferences page and can appear beside Open / Save dialogs.

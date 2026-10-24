@@ -103,7 +103,8 @@
 | Hidden | `[]` | 在搜索结果里按 `Ctrl+Del` 删除的应用路径, 删掉一行即可恢复 |
 | StoreApps | 1 | 包含应用商店应用 |
 | MatchPinyin | 1 | 中文名称按拼音首字母匹配 |
-| RefreshMinutes | 120 | 不再使用 (2026.10.16.8 起)。索引靠监视 `Folders` 自动更新: 有快捷方式新增、删除、改名, 几秒后就在后台静默重建 (两次至少隔 1 分钟), 不弹通知, 搜索窗口打开时暂停; 偏好设置里改了 `Folders`、`FileTypes`、`Exclude` 或 `Depth`, 点 "应用" 后也会重建; 另外缓存超过 1 小时也重建 (兜底)。应用商店应用不在这些文件夹里, 最多每小时扫一次 |
+
+索引靠监视 `Folders` 自动更新: 有快捷方式新增、删除、改名, 几秒后就在后台静默重建 (两次至少隔 1 分钟), 不弹通知, 搜索窗口打开时暂停; 偏好设置里改了 `Folders`、`FileTypes`、`Exclude` 或 `Depth`, 点 "应用" 后也会重建; 另外缓存超过 1 小时也重建 (兜底)。应用商店应用不在这些文件夹里, 最多每小时扫一次
 
 ### Snippets 文字片段
 | 键 | 默认 | 说明 |
@@ -114,7 +115,7 @@
 | PasteDelay | 300 | 粘贴后等待多少毫秒再还原剪贴板 |
 | AutoExpand | 1 | 在任何程序里输入 前缀 + 关键字 自动展开 |
 | ExpandPrefix | `;` | 自动展开的前缀 |
-| ExpandExclude | `ahk_exe mstsc.exe, ahk_exe KeePass.exe, ahk_exe KeePassXC.exe` | 这些窗口里不自动展开 (逗号分隔: `ahk_exe`、`ahk_class` 或标题的一部分); 密码输入框里总是不展开 |
+| ExpandExclude | `["ahk_exe mstsc.exe", "ahk_exe KeePass.exe", "ahk_exe KeePassXC.exe"]` | 这些窗口里不自动展开 (每一项: `ahk_exe`、`ahk_class` 或标题的一部分); 密码输入框里总是不展开 |
 
 ### Clipboard 剪贴板历史
 | 键 | 默认 | 说明 |

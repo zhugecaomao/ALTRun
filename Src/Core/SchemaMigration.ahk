@@ -8,6 +8,8 @@
 ;   2 -> 3   _From2()   ALTRun 2.x (Config/Gui/Hotkey/UserCommand...) -> 3.0
 ;   3 -> 4   _From3()   文件搜索默认不再混进普通结果 (InDefaultResults 1 -> 0)
 ;   4 -> 5   _From4()   片段的粘贴方式 Clipboard -> Auto; 补上后来加进默认值的窗口 / 关键字; 小清理 (见 issue #176)
+;   5 -> 6   _From5()   window lists become arrays; StandardDialogs split out of DialogWindows; two hotkeys renamed to
+;                       Hotkey; unused keys removed; old ScopeExclude default and Compact themes replaced (#176)
 ;
 ; 以后改设置结构时: AppSettings.CurrentVersion + 1, 再在这里加一个 _FromN()。
 ; 升级前 Backup() 会把原文件复制成 ALTRun.v<N>.backup.json。
@@ -99,6 +101,82 @@ class SchemaMigration {
     }
 
     ;---------------------------------------------------------------------------
+    ; 5 -> 6
+    ;---------------------------------------------------------------------------
+    ; One settings format from here on (#176):
+    ;   - window lists (QuickSwitch DialogWindows / ExcludeWindows / AutoSwitchExclude, AutoDate RenameWindows /
+    ;     AppendWindows, Snippets ExpandExclude) were comma-separated strings: now arrays, like every other list (a window
+    ;     title with a comma in it can be written now). "ahk_class #32770" in DialogWindows becomes StandardDialogs = 1
+    ;   - QuickSwitch.TotalCmdHotkey and AutoDate.RenameHotkey become Hotkey (one hotkey each since 2026.10.20);
+    ;     ExplorerHotkey, AppendHotkey and Applications.RefreshMinutes were no longer read: removed
+    ;   - FileSearch.ScopeExclude still at the old default: the new default (skips more caches); the index is rescanned
+    ;   - the removed DarkCompact / LightCompact / MidnightCompact themes: Dark / Light / Midnight at Normal density
+    ;     (unless the user has a theme file of that name). ThemeManager.LegacyCompact still reads them (a theme's Base)
+    static OldScopeExclude := "i)\\(node_modules|\.git|__pycache__|\$RECYCLE\.BIN)(\\|$)"
+    static _From5(data) {
+        features := SchemaMigration._Section(data, "Features")
+        extensions := SchemaMigration._Section(data, "Extensions")
+
+        quick := SchemaMigration._Section(extensions, "QuickSwitch")
+        SchemaMigration._RenameKey(quick, "TotalCmdHotkey", "Hotkey")
+        SchemaMigration._DeleteKey(quick, "ExplorerHotkey")
+        if (quick.Has("DialogWindows") && quick["DialogWindows"] is String) {
+            others := [], standard := 0
+            for window in SchemaMigration._SplitList(quick["DialogWindows"])
+                if (window = "ahk_class #32770")
+                    standard := 1
+                else
+                    others.Push(window)
+            quick["StandardDialogs"] := standard, quick["DialogWindows"] := others
+        }
+        SchemaMigration._ListFromText(quick, "ExcludeWindows")
+        SchemaMigration._ListFromText(quick, "AutoSwitchExclude")
+
+        dateStamp := SchemaMigration._Section(extensions, "AutoDate")
+        SchemaMigration._RenameKey(dateStamp, "RenameHotkey", "Hotkey")
+        SchemaMigration._DeleteKey(dateStamp, "AppendHotkey")
+        SchemaMigration._ListFromText(dateStamp, "RenameWindows")
+        SchemaMigration._ListFromText(dateStamp, "AppendWindows")
+
+        SchemaMigration._ListFromText(SchemaMigration._Section(features, "Snippets"), "ExpandExclude")
+        SchemaMigration._DeleteKey(SchemaMigration._Section(features, "Applications"), "RefreshMinutes")
+
+        fileSearch := SchemaMigration._Section(features, "FileSearch")
+        if (fileSearch.Has("ScopeExclude") && fileSearch["ScopeExclude"] == SchemaMigration.OldScopeExclude) {
+            fileSearch["ScopeExclude"] := AppSettings.Defaults()["Features"]["FileSearch"]["ScopeExclude"]
+            FileIndex.ExpireCache()                                         ; rescan with the new exclusions
+        }
+
+        appearance := SchemaMigration._Section(data, "Appearance")
+        if (appearance.Has("Theme") && RegExMatch(appearance["Theme"], "i)^(Dark|Light|Midnight)Compact$", &m)
+            && !FileExist(ThemeManager.UserDir "\" appearance["Theme"] ".json")) {
+            appearance["Theme"] := m[1]
+            if (!appearance.Has("Density") || appearance["Density"] = "Comfortable")
+                appearance["Density"] := "Normal"
+        }
+        return data
+    }
+
+    ; section[key]: a comma-separated string -> an array of its items (already an array, or missing: left alone)
+    static _ListFromText(section, key) {
+        if (section.Has(key) && section[key] is String)
+            section[key] := SchemaMigration._SplitList(section[key])
+    }
+
+    static _RenameKey(section, oldKey, newKey) {
+        if !section.Has(oldKey)
+            return
+        if !section.Has(newKey)
+            section[newKey] := section[oldKey]
+        section.Delete(oldKey)
+    }
+
+    static _DeleteKey(section, key) {
+        if section.Has(key)
+            section.Delete(key)
+    }
+
+    ;---------------------------------------------------------------------------
     ; 4 -> 5
     ;---------------------------------------------------------------------------
     ; 只改老用户不会觉得意外的地方 (看得见的改动, 例如主题跟随系统、Alt+R, 只对新安装生效; 清单见 GitHub issue #176):
@@ -148,7 +226,7 @@ class SchemaMigration {
 
     ; 逗号分隔的窗口列表 section[key] 里补上 windows 里还没有的 (不区分大小写); 没有这一项、或者用户清空了的不动
     static _AddWindows(section, key, windows) {
-        if (!section.Has(key) || Trim(section[key]) = "")
+        if (!section.Has(key) || !(section[key] is String) || Trim(section[key]) = "")
             return
         have := Map(), have.CaseSense := "Off"
         for item in SchemaMigration._SplitList(section[key])
@@ -217,18 +295,18 @@ class SchemaMigration {
         if (everythingPath != "" && everythingPath != "C:\Apps\Everything.exe")
             data["Features"]["FileSearch"]["EverythingPath"] := everythingPath
 
+        ; The window lists are written as the comma-separated text of 2.x (the later steps expect that and turn them into
+        ; arrays in _From5); the hotkeys go straight to their current names. 2.x's Explorer / append hotkeys are not used
         quick := data["Extensions"]["QuickSwitch"]
-        quick["ExplorerHotkey"] := pick(oldHotkeys, "ExplorerDir", quick["ExplorerHotkey"])
-        quick["TotalCmdHotkey"] := pick(oldHotkeys, "TotalCMDDir", quick["TotalCmdHotkey"])
+        quick["Hotkey"]         := pick(oldHotkeys, "TotalCMDDir", quick["Hotkey"])
         quick["AutoSwitch"]     := pick(config, "AutoSwitchDir", 0)
-        quick["DialogWindows"]  := pick(config, "DialogWin", quick["DialogWindows"])
-        quick["ExcludeWindows"] := pick(config, "ExcludeWin", quick["ExcludeWindows"])
+        quick["DialogWindows"]  := pick(config, "DialogWin", "ahk_class #32770")
+        quick["ExcludeWindows"] := pick(config, "ExcludeWin", SchemaMigration._JoinList(quick["ExcludeWindows"]))
 
         dateOptions := data["Extensions"]["AutoDate"]
-        dateOptions["RenameHotkey"]  := pick(oldHotkeys, "AutoDateBEHKey", dateOptions["RenameHotkey"])
-        dateOptions["RenameWindows"] := pick(oldHotkeys, "AutoDateBefExt", dateOptions["RenameWindows"])
-        dateOptions["AppendHotkey"]  := pick(oldHotkeys, "AutoDateAEHKey", dateOptions["AppendHotkey"])
-        dateOptions["AppendWindows"] := pick(oldHotkeys, "AutoDateAtEnd", dateOptions["AppendWindows"])
+        dateOptions["Hotkey"]        := pick(oldHotkeys, "AutoDateBEHKey", dateOptions["Hotkey"])
+        dateOptions["RenameWindows"] := pick(oldHotkeys, "AutoDateBefExt", SchemaMigration._JoinList(dateOptions["RenameWindows"]))
+        dateOptions["AppendWindows"] := pick(oldHotkeys, "AutoDateAtEnd", SchemaMigration._JoinList(dateOptions["AppendWindows"]))
 
         if (old.Has("PTTools") && old["PTTools"] is Map)
             data["Extensions"]["PTTools"] := old["PTTools"]
@@ -298,6 +376,13 @@ class SchemaMigration {
 
     static _Section(data, name) {
         return (data.Has(name) && data[name] is Map) ? data[name] : Map()
+    }
+
+    static _JoinList(list) {
+        text := ""
+        for item in list
+            text .= (text = "" ? "" : ", ") item
+        return text
     }
 
     static _SplitList(text) {

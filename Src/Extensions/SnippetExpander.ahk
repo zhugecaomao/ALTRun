@@ -9,7 +9,7 @@
 ; 设置:
 ;   Features.Snippets.AutoExpand      1 = 开启
 ;   Features.Snippets.ExpandPrefix    关键字前面要加的前缀, 默认 ";"
-;   Features.Snippets.ExpandExclude   不展开的窗口, 逗号分隔 (ahk_exe xxx.exe / ahk_class xxx / 标题)
+;   Features.Snippets.ExpandExclude   windows to leave alone, an array (ahk_exe xxx.exe / ahk_class xxx / part of the title)
 ;   Snippets[n].AutoExpand            单个片段设为 0 可以不自动展开 (仍可搜索)
 ;   Snippets[n].Keyword               可以写几个, 用逗号分隔 ("sig, signature"), 每个都能展开
 ; 修改片段后调用 Refresh(), 新的关键字随即生效。
@@ -41,10 +41,7 @@ class SnippetExpander {
                     wanted[abbreviation] := snippet["Text"]
             }
         }
-        SnippetExpander._exclude := []
-        Loop Parse, options.Has("ExpandExclude") ? options["ExpandExclude"] : "", ","
-            if ((window := Trim(A_LoopField)) != "")
-                SnippetExpander._exclude.Push(window)
+        SnippetExpander._exclude := options["ExpandExclude"]
         HotIf(SnippetExpander._criterion)
         for abbreviation in SnippetExpander._texts
             if !wanted.Has(abbreviation)
