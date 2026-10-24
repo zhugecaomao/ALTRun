@@ -294,7 +294,7 @@ class ExtensionTests {
         for options in [0, 4] {
             seen := {Detected: "", Selected: ""}, tries := 0
             probe() {
-                if !(dlg := SearchWindow.InSystemDialog()) {
+                if !(dlg := SearchKeys.InSystemDialog()) {
                     if (++tries < 50)
                         SetTimer(probe, -100)
                     return
@@ -685,10 +685,10 @@ class ExtensionTests {
         results := ProviderRegistry.Search("update")
         ok("search update: first", results.Length >= 2 && results[1].Title = "Update Available: ALTRun 2026.10.02")
         ; Description on the right of the actions panel: in full when it fits, otherwise the name first (at most half) and the description gets the rest
-        eq("hint fits", SearchWindow.HintWidth(600, 120, 300, 12), 300)
-        eq("hint shares the row", SearchWindow.HintWidth(400, 120, 600, 12), 268)
-        eq("long title keeps half", SearchWindow.HintWidth(400, 500, 600, 12), 188)
-        eq("no room", SearchWindow.HintWidth(20, 100, 50, 12), 0)
+        eq("hint fits", ResultRows.HintWidth(600, 120, 300, 12), 300)
+        eq("hint shares the row", ResultRows.HintWidth(400, 120, 600, 12), 268)
+        eq("long title keeps half", ResultRows.HintWidth(400, 500, 600, 12), 188)
+        eq("no room", ResultRows.HintWidth(20, 100, 50, 12), 0)
         for mode, text in Map("install", "Install Update", "page", "Download Page", "scoop", "scoop update altrun", "winget", "winget upgrade")
             release.Mode := mode, ok("subtitle " mode, InStr(UpdateChecker.PendingItem().Subtitle, text))
 

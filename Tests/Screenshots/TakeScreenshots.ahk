@@ -110,7 +110,7 @@ class Shots {
                 continue
             Shots.Log("== " scene[1])
             ; When the result rows stay blank, restart ALTRun and try again (a safeguard). The former cause: a timer slipping in while a row was painted asked for a repaint, and the list kept waiting for it
-            ; (see SearchWindow._OnCustomDraw; the custom-draw callback is no longer interruptible)
+            ; (see ResultRows.OnCustomDraw; the custom-draw callback is no longer interruptible)
             Loop 4 {
                 try {
                     Shots.Launch(scene[2], scene[3], (scene.Length >= 5) ? scene[5] : "")
