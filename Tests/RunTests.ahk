@@ -94,7 +94,8 @@ class TestRunner {
 
     static Run() {
         for name in ["FuzzyMatcher", "SearchQuery", "SchemaMigration", "Calculator", "WebSearch"
-                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowWhileOpen", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "RecentFiles", "EditList", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+                    , "AutoDate", "TextTools", "Sorting", "Knowledge", "Clipboard", "ClipboardKinds", "ClipboardPin", "ClipboardLocal", "SnippetExpander", "SnippetPasteMode", "Preferences", "FileIndex", "FileIndexWatch", "TopIndexes", "EditActions", "Themes", "Densities", "MenuMode", "ThemeGallery", "IconScaling", "OwnIcons", "RoundedFill", "BuiltinIcons", "MatchHighlight", "HighlightSpacing", "CommandTargets", "CommandSearchScale", "CheckTargets", "EditRows", "HiddenApps", "BrokenShortcut", "StaleIndexes", "AppIndexRefresh", "WatcherRecovery", "HiddenSystemCommands", "SettingsPages", "PreferencePages", "WindowSwitch", "RecentItems", "Scripts", "ListFilter", "DefaultFolders", "FileSearchModes", "FileSearchPinyin", "FolderSearch", "HelpAndTips", "PreferencesButtons", "PreferencesFit", "PreferencesSpacing", "ListColumnsFit", "I18nLanguages", "I18nUnused", "DefaultExamples", "WindowPosition", "PreferenceDescriptions", "SendTo", "SingleInstance", "AdvancedPage", "HistoryKeys", "FileModeKeys", "TabKey", "SystemDialogKeys", "StatusBar", "StatusBarFit", "TypeAhead", "EmptiedLog", "ShowWhileOpen", "ShowPrepared", "RestoreQuick", "SiteIcon", "CapsLockSwitch", "ImeToggle", "WindowFade", "IconPrefetch", "IconDiskCache", "WakeHooks", "IconLoadingOnce", "HttpGet", "SlowTaskLog", "LoggerFile", "PreferencesLazyPages", "SkippedPaint", "FontWarmUp", "CustomDrawCritical", "TendonProfileVsSpf2m", "TendonProfileInputs", "PTToolsWindowUi", "LegacyIni", "SettingsLocation", "DataLocation", "ReleaseVersion", "ChangelogLinks", "WikiPages", "SelfUpdate", "UpdateNotice", "HotkeyText", "HotkeyBoxFocus", "JsonReadWrite", "UnitConversion", "CalcBasesDates", "SnippetPlaceholders", "SnippetTextSearch", "SnippetEditor", "MultipleKeywords", "LargeTypeSwitch", "DelimitedText", "SnippetImport", "Bookmarks", "SelectionItems", "FileTypes", "FolderMenu", "RecentFiles", "EditList", "SettingsKeys", "FileActions", "EditAction", "FolderBrowse", "DoubleTap", "BrowseKind", "UsageStats", "HudPlacement", "StuckShow", "Misc"] {
+            state := TestRunner._State()
             try {
                 Tests.%name%()
             } catch as e {
@@ -102,9 +103,22 @@ class TestRunner {
                 stack := RegExReplace(Trim(e.Stack, "`r`n"), "\R", " <- ")
                 TestRunner.Fail(name, "exception: " e.Message " (" fileName ":" e.Line ") " SubStr(stack, 1, 600))
             }
+            if ((after := TestRunner._State()) != state)                    ; each test puts back what it changed, so the order doesn't matter
+                TestRunner.Fail(name, "left shared state changed (settings, language or logging): " TestRunner._Changed(state, after))
         }
         FileAppend("`n" TestRunner.Passed " passed, " TestRunner.Failed " failed`n", "*")
         ExitApp(TestRunner.Failed)
+    }
+
+    ; What a test must leave as it found it: the settings, the UI language, the log switches
+    static _State() => JSON.Stringify(AppSettings.Data) "`n" I18n.Lang "`n" Logger.Enabled "|" Logger.File "|" Logger.Immediate
+
+    ; The first difference, short enough to read in the CI annotation
+    static _Changed(before, after) {
+        loop Min(StrLen(before), StrLen(after))
+            if (SubStr(before, A_Index, 1) != SubStr(after, A_Index, 1))
+                return "... " SubStr(after, Max(1, A_Index - 40), 80) " ..."
+        return "(length " StrLen(before) " -> " StrLen(after) ")"
     }
 
     static OnUncaught(err, mode) {
@@ -1206,6 +1220,69 @@ class Tests {
             WindowsRecent.Dir := saved[1], WindowsRecent.CacheMs := saved[2]
             try DirDelete(root, true)
         }
+    }
+
+    ; Every setting the code reads exists in AppSettings.Defaults() (a typo in a key name would only show at run time).
+    ; Reads guarded by .Has("Key") are optional and may be missing. SchemaMigration reads old names on purpose
+    static SettingsKeys() {
+        defaults := AppSettings.Defaults(), missing := "", count := 0
+        Loop Files, A_ScriptDir "\..\Src\*.ahk", "R" {
+            if (A_LoopFileName = "SchemaMigration.ahk" || A_LoopFileName = "AppSettings.ahk")
+                continue
+            text := RegExReplace(FileRead(A_LoopFileFullPath, "UTF-8"), "m)(^|\s);[^\n]*")      ; comments out
+            for setting in Tests._SettingPaths(text) {
+                count++
+                parts := StrSplit(setting, ".")
+                if !Tests._HasSetting(defaults, parts) && !InStr(text, '.Has("' parts[parts.Length] '")')
+                    missing .= setting " (" A_LoopFileName ") "
+            }
+        }
+        TestRunner.True("SettingsKeys.found reads (" count ")", count > 100)
+        TestRunner.Equal("SettingsKeys.every read key has a default", missing, "")
+        TestRunner.True("SettingsKeys.a typo is caught", !Tests._HasSetting(defaults, ["Features", "FileSearch", "Keyword"]))
+    }
+
+    ; "Features.FileSearch.Keywords"-style paths read in one source file: AppSettings.Feature("X")["Y"], .General["Y"],
+    ; a variable holding AppSettings.Feature("X") then var["Y"] in the same method, base := "Extensions.X." + base "Y",
+    ; and quoted paths (Preferences binds those)
+    static _SettingPaths(text) {
+        paths := Map()
+        for m in Tests._Matches(text, 'AppSettings\.(Feature|Extension)\("(\w+)"\)\["(\w+)"\]')
+            paths[Tests._Section(m[1]) "." m[2] "." m[3]] := true
+        for m in Tests._Matches(text, 'AppSettings\.(General|Appearance)\["(\w+)"\]')
+            paths[m[1] "." m[2]] := true
+        for m in Tests._Matches(text, '"((?:Features|Extensions)\.\w+\.\w+|(?:General|Appearance)\.\w+)"')
+            paths[m[1]] := true
+        for method in StrSplit(text, "static ") {
+            for m in Tests._Matches(method, '(\w+) := AppSettings\.(Feature|Extension)\("(\w+)"\)')
+                for key in Tests._Matches(method, '\b' m[1] '\["(\w+)"\]')
+                    paths[Tests._Section(m[2]) "." m[3] "." key[1]] := true
+            if RegExMatch(method, 'base := "((?:Features|Extensions)\.\w+)\."', &b)
+                for key in Tests._Matches(method, 'base "(\w+)"')
+                    paths[b[1] "." key[1]] := true
+        }
+        list := []
+        for path in paths
+            list.Push(path)
+        return list
+    }
+
+    static _Section(kind) => (kind = "Feature") ? "Features" : "Extensions"
+
+    static _Matches(haystack, pattern) {
+        found := [], pos := 1
+        while (pos := RegExMatch(haystack, pattern, &m, pos))
+            found.Push(m), pos += m.Len
+        return found
+    }
+
+    static _HasSetting(data, parts) {
+        for part in parts {
+            if !(data is Map) || !data.Has(part)
+                return false
+            data := data[part]
+        }
+        return true
     }
 
     ; Lists edited in their own window ("Edit..."): the summary next to the button, splitting the edited text
