@@ -30,7 +30,7 @@
 ;===============================================================================
 
 class AppSettings {
-    static CurrentVersion := 5
+    static CurrentVersion := 6
     static Portable := Path.IsWritable(A_ScriptDir)                          ; 程序目录能写入: 数据放在程序目录 (便携)
     static UserDir := A_AppData "\ALTRun"                                   ; 程序目录不能写入时 (例如装在 Program Files) 用这里
     static DataDir := AppSettings.ResolveDataDir()
@@ -347,8 +347,7 @@ class AppSettings {
                     "Exclude"       , "i)(uninstall|卸载|readme|help|documentation)",
                     "Hidden"        , [],                                   ; 在搜索结果里删除 (Ctrl+Del) 的应用的路径
                     "StoreApps"     , 1,
-                    "MatchPinyin"   , 1,
-                    "RefreshMinutes", 120                                    ; 不再使用 (改成监视文件夹), 下次升级设置版本时删掉 (#176)
+                    "MatchPinyin"   , 1
                 ),
                 "CustomCommands", Map("Enabled", 1),
                 "Snippets", Map(
@@ -359,7 +358,7 @@ class AppSettings {
                     "PasteDelay"  , 300,
                     "AutoExpand"  , 1,                                      ; 在任何程序里输入 前缀+关键字 自动展开
                     "ExpandPrefix", ";",
-                    "ExpandExclude", "ahk_exe mstsc.exe, ahk_exe KeePass.exe, ahk_exe KeePassXC.exe"   ; 这些窗口里不自动展开
+                    "ExpandExclude", ["ahk_exe mstsc.exe", "ahk_exe KeePass.exe", "ahk_exe KeePassXC.exe"]   ; no expansion in these windows
                 ),
                 "Clipboard", Map(
                     "Enabled"      , 1,
@@ -452,25 +451,24 @@ class AppSettings {
             "Extensions", Map(
                 "QuickSwitch", Map(
                     "Enabled"          , 1,
-                    "ExplorerHotkey"   , "^e",                              ; no longer used (TotalCmdHotkey covers Explorer too); removed with the next SchemaVersion, see #176
-                    "TotalCmdHotkey"   , "^g",                              ; the jump hotkey: folder of the TC / Opus / Explorer window used last
+                    "Hotkey"           , "^g",                              ; the jump hotkey: folder of the TC / Opus / Explorer window used last
                     "MenuHotkey"       , "^+g",                             ; 文件夹菜单: 所有 TC 面板、资源管理器窗口、最近的文件夹
                     "RecentFolders"    , 10,                                ; 菜单里列出几个最近的文件夹, 0 = 不列
                     "PanelSearch"      , "folders",                         ; 面板搜索框: folders = 只搜文件夹, all = 文件夹和文件
                     "ShowPanel"        , 1,                                 ; 对话框一出现就在下面显示文件夹面板 (和 Listary 一样), 点一下就跳过去
                     "AutoSwitch"       , 0,
-                    "DialogWindows"    , "ahk_class #32770",                ; 标准的 Windows 对话框, 另外可以加 "ahk_class Qt5QWindowIcon" (WPS) 等
+                    "StandardDialogs"  , 1,                                 ; the standard Open / Save dialogs (ahk_class #32770)
+                    "DialogWindows"    , [],                                ; dialogs programs draw themselves, e.g. "ahk_class Qt5QWindowIcon" (WPS)
                     "BrowseDialogs"    , 1,                                 ; also the old "Browse for Folder" dialog (folder tree only, SHBrowseForFolder)
-                    "ExcludeWindows"   , "ahk_class SysListView32, ahk_exe Explorer.exe, ahk_exe 7zG.exe, ahk_exe TOTALCMD64.exe",   ; 7-Zip 解压、Total Commander 的对话框不是要跳转的 "打开 / 保存"
-                    "AutoSwitchExclude", ""                                 ; 这些对话框不自动跳转 (仍然可以按热键)
+                    "ExcludeWindows"   , ["ahk_class SysListView32", "ahk_exe Explorer.exe", "ahk_exe 7zG.exe", "ahk_exe TOTALCMD64.exe"],   ; 7-Zip's extract and Total Commander's dialogs are not Open / Save dialogs
+                    "AutoSwitchExclude", []                                 ; no automatic jump in these dialogs (the hotkey still works)
                 ),
                 "AutoDate", Map(
                     "Enabled"      , 1,
                     "DateFormat"   , "dd.MM.yyyy",
-                    "RenameHotkey" , "^d",
-                    "RenameWindows", "ahk_class CabinetWClass, ahk_class Progman, ahk_class WorkerW, ahk_class #32770, ahk_class TTOTAL_CMD, ahk_class TSTDTREEDLG, ahk_class TCOMBOINPUT",   ; TC: 主窗口、对话框、改名输入框
-                    "AppendHotkey" , "^d",                                  ; no longer used (RenameHotkey covers both); removed with the next SchemaVersion, see #176
-                    "AppendWindows", "ahk_class TCmtEditForm, ahk_exe Notepad4.exe"
+                    "Hotkey"       , "^d",                                  ; one hotkey: the window decides between renaming and appending
+                    "RenameWindows", ["ahk_class CabinetWClass", "ahk_class Progman", "ahk_class WorkerW", "ahk_class #32770", "ahk_class TTOTAL_CMD", "ahk_class TSTDTREEDLG", "ahk_class TCOMBOINPUT"],   ; TC: main window, dialogs, rename box
+                    "AppendWindows", ["ahk_class TCmtEditForm", "ahk_exe Notepad4.exe"]
                 ),
                 "PTTools", Map()                                            ; 由 PTToolsWindow 自己补默认值
             ),

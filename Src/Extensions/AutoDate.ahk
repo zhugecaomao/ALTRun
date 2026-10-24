@@ -8,8 +8,7 @@
 ; 日期格式见 DateFormat (默认 dd.MM.yyyy)。
 ;
 ; 设置 (ALTRun.json -> Extensions.AutoDate):
-;   Enabled / DateFormat / RenameHotkey (the one hotkey, for both) / RenameWindows / AppendWindows
-;   (AppendHotkey is no longer used; renamed / removed with the next SchemaVersion, see #176)
+;   Enabled / DateFormat / Hotkey (one hotkey for both) / RenameWindows / AppendWindows (arrays of window conditions)
 ;
 ; 用法:
 ;   AutoDate.Init(AppSettings.Extension("AutoDate"))    启动时
@@ -23,18 +22,18 @@ class AutoDate {
         AutoDate.Options := options
         if !options["Enabled"]
             return
-        Loop Parse, options["RenameWindows"], ","
-            GroupAdd("ALTRunRenameWindows", Trim(A_LoopField))
-        Loop Parse, options["AppendWindows"], ","
-            GroupAdd("ALTRunAppendWindows", Trim(A_LoopField))
+        for window in options["RenameWindows"]
+            GroupAdd("ALTRunRenameWindows", window)
+        for window in options["AppendWindows"]
+            GroupAdd("ALTRunAppendWindows", window)
         ; 重命名: 只在焦点是改名的编辑框时才接管热键, 其它时候 (例如资源管理器的文件列表里 Ctrl+D = 删除)
         ; 按键原样交给程序, 不用再自己补发一次。以前是先接管再补发: 补发时如果已经松开了 Ctrl, 而 ALTRun
         ; 记的按键状态还是按着 (电脑睡眠 / 锁屏一夜之后可能这样), 只发出一个 "d", 把选中的文件名换成了 "d"
         try {
             HotIf((*) => WinActive("ahk_group ALTRunRenameWindows") && AutoDate.IsEditControl(AutoDate.FocusedControl()))
-            Hotkey(options["RenameHotkey"], (*) => AutoDate._OnRename())
+            Hotkey(options["Hotkey"], (*) => AutoDate._OnRename())
             HotIfWinActive("ahk_group ALTRunAppendWindows")                 ; the same hotkey: the window decides
-            Hotkey(options["RenameHotkey"], (*) => AutoDate._OnAppend())
+            Hotkey(options["Hotkey"], (*) => AutoDate._OnAppend())
         } catch as e {
             Logger.Error("AutoDate: cannot register hotkeys - " e.Message)
         }

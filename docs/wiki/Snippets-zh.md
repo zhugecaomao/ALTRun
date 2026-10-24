@@ -33,7 +33,7 @@
 ## 不展开的窗口
 偏好设置 → 文字片段 → "不展开的窗口" (`Features.Snippets.ExpandExclude`): 在这些窗口里输入 `;关键字` 不会展开, 适合远程桌面、密码管理器、游戏, 或者本来就要输入 `;` 开头文字的程序。
 
-- 点 **编辑...**, 每行写一个窗口, 例如 `ahk_exe mstsc.exe`、`ahk_exe KeePass.exe`、`ahk_class Notepad` (设置文件里是逗号分隔的一行)
+- 点 **编辑...**, 每行写一个窗口, 例如 `ahk_exe mstsc.exe`、`ahk_exe KeePass.exe`、`ahk_class Notepad`
 - 每一项可以是:
   - `ahk_exe 程序名.exe`: 这个程序的所有窗口 (程序名在任务管理器 → 详细信息里可以看到)
   - `ahk_class 窗口类名`: 这一类窗口

@@ -697,7 +697,7 @@ class PreferencesWindow {
         PreferencesWindow._Field("Features.Applications.Exclude", "Prefs.AppExclude", "L")
         PreferencesWindow._FieldButton("Features.Applications.Depth", "Prefs.AppDepth", "Prefs.RebuildIndex", (button, *) => PreferencesWindow._RebuildApps(button))   ; 没有刷新间隔: 监视文件夹, 有变化时自动更新
         PreferencesWindow._Section("Prefs.Section.AppResults")
-        PreferencesWindow._LinesButton("Features.Applications.Hidden", "Prefs.AppHidden", (lines) => PreferencesWindow.NameSummary(lines))
+        PreferencesWindow._LinesButton("Features.Applications.Hidden", "Prefs.AppHidden", {Summary: (lines) => PreferencesWindow.NameSummary(lines)})
         PreferencesWindow._Check("Features.Applications.StoreApps", "Prefs.StoreApps", , , "Prefs.Group.Options")
         PreferencesWindow._Check("Features.Applications.MatchPinyin", "Prefs.MatchPinyin")
     }
@@ -709,7 +709,7 @@ class PreferencesWindow {
         PreferencesWindow._Check("Features.FileSearch.QuotePrefix", "Prefs.QuotePrefix")
         PreferencesWindow._Pair(["Features.FileSearch.Keywords", "Prefs.FileKeywords", "M", "csv"], ["Features.FileSearch.FolderKeywords", "Prefs.FolderKeywords", "S", "csv"])
         PreferencesWindow._Csv("Features.FileSearch.RecentKeywords", "Prefs.RecentKeywords", "M")
-        PreferencesWindow._LinesButton("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", (lines) => PreferencesWindow.TypeFilterSummary(lines), , , true)
+        PreferencesWindow._LinesButton("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", {Summary: (lines) => PreferencesWindow.TypeFilterSummary(lines), AlignPairs: true})
         PreferencesWindow._Section("Prefs.Section.FileResults")
         PreferencesWindow._Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
         PreferencesWindow._Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
@@ -756,7 +756,7 @@ class PreferencesWindow {
         pasteRow := PreferencesWindow._Pair(["Features.Snippets.PasteMode", "Prefs.PasteMode", "K", "choice", ["Auto", "Clipboard", "Type"], [I18n.T("Prefs.PasteMode.Auto"), I18n.T("Prefs.PasteMode.Clipboard"), I18n.T("Prefs.PasteMode.Type")]]
             , ["Features.Snippets.PasteDelay", "Prefs.PasteDelay", "K", "number"])
         PreferencesWindow._AlignPairRows(keywordRow, pasteRow)
-        PreferencesWindow._LinesButton("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude", , true)
+        PreferencesWindow._LinesButton("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude")
     }
 
     ; 文字片段页的 "导入 / 导出" 按钮: 弹出菜单
@@ -930,28 +930,17 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.QuickSwitch", 150)
         PreferencesWindow._Section("Prefs.QuickSwitch")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
-        PreferencesWindow._Field(base "TotalCmdHotkey", "Prefs.QSHotkey", "K", "hotkey")   ; one hotkey for TC / Opus / Explorer: the one used last
+        PreferencesWindow._Field(base "Hotkey", "Prefs.QSHotkey", "K", "hotkey")   ; one hotkey for TC / Opus / Explorer: the one used last
 
-        ; DialogWindows is split into the "standard dialogs" checkbox + the other dialogs, joined again when saved
         PreferencesWindow._Section("Prefs.Section.QSDialogs")
-        windows := PreferencesWindow.SplitWindows(PreferencesWindow.GetPath(PreferencesWindow.Working, base "DialogWindows"))
-        standardClass := "ahk_class #32770", others := []
-        for window in windows
-            if (window != standardClass)
-                others.Push(window)
-        PreferencesWindow._GroupLabel("Prefs.Group.DialogWindows")
-        x := PreferencesWindow._InputX()
-        standard := PreferencesWindow._Add("Checkbox", "x" x " w" (PreferencesWindow.ContentX + PreferencesWindow.ContentW - x), I18n.T("Prefs.QSStandard"))
-        standard.Value := (others.Length < windows.Length) ? 1 : 0
-        PreferencesWindow._Below(6, standard)                               ; the description is in the checkbox text; 6 apart like _Check without a description
+        PreferencesWindow._Check(base "StandardDialogs", "Prefs.QSStandard", , , "Prefs.Group.DialogWindows")   ; ahk_class #32770
         PreferencesWindow._Check(base "BrowseDialogs", "Prefs.QSBrowse")   ; "Browse for Folder": folder tree only (QuickSwitch.LooksLikeBrowseDialog)
-        other := PreferencesWindow._LinesButton("", "Prefs.QSOtherDialogs", , true, others)
-        PreferencesWindow._Bind(base "DialogWindows", () => PreferencesWindow.JoinWindows(standard.Value ? [standardClass] : [], other.Lines))
-        PreferencesWindow._LinesButton(base "ExcludeWindows", "Prefs.QSExclude", , true)
+        PreferencesWindow._LinesButton(base "DialogWindows", "Prefs.QSOtherDialogs")
+        PreferencesWindow._LinesButton(base "ExcludeWindows", "Prefs.QSExclude")
 
         PreferencesWindow._Section("Prefs.Section.QSAuto")
         PreferencesWindow._Check(base "AutoSwitch", "Prefs.QSAuto", , , "Prefs.Group.Options")
-        PreferencesWindow._LinesButton(base "AutoSwitchExclude", "Prefs.QSAutoExclude", , true)
+        PreferencesWindow._LinesButton(base "AutoSwitchExclude", "Prefs.QSAutoExclude")
     }
 
     ; 对话框面板 (QuickSwitch 的一部分): 打开 / 保存对话框下面的文件夹列表和搜索框, 以及键盘用的文件夹菜单
@@ -972,12 +961,12 @@ class PreferencesWindow {
         PreferencesWindow._BeginPage("Prefs.Page.DateStamp", 150)
         PreferencesWindow._Section("Prefs.AutoDate")
         PreferencesWindow._Check(base "Enabled", "Prefs.EnableExtension", , , "Prefs.Group.Status")
-        PreferencesWindow._Field(base "RenameHotkey", "Prefs.RenameHotkey", "K", "hotkey")   ; one hotkey: the window decides between the two below
+        PreferencesWindow._Field(base "Hotkey", "Prefs.RenameHotkey", "K", "hotkey")   ; one hotkey: the window decides between the two below
         PreferencesWindow._Field(base "DateFormat", "Prefs.DateFormat", "K")   ; as wide as the hotkey box above
         PreferencesWindow._Section("Prefs.Section.DateRename")
-        PreferencesWindow._LinesButton(base "RenameWindows", "Prefs.RenameWindows", , true)
+        PreferencesWindow._LinesButton(base "RenameWindows", "Prefs.RenameWindows")
         PreferencesWindow._Section("Prefs.Section.DateAppend")
-        PreferencesWindow._LinesButton(base "AppendWindows", "Prefs.AppendWindows", , true)
+        PreferencesWindow._LinesButton(base "AppendWindows", "Prefs.AppendWindows")
     }
 
     ; 上面是 "关于" (图标、名称、版本、主页、检查更新), 下面是设置和数据文件的位置和操作
@@ -1459,17 +1448,15 @@ class PreferencesWindow {
 
     ; A list with one item per line, shown as a read-only summary + "Edit...", which opens it in a roomy window of its own
     ; (ItemEditor.EditLines, with the longer "<labelKey>.Help" text): the page stays short and long lines are easy to read.
-    ; The button is at the right edge; alignPairs: under the right column of the paired settings above (_Pair) instead.
-    ; windows: the setting is one comma-separated string of windows (SplitWindows / JoinWindows), not an array.
-    ; path "": not bound, start from lines; the caller binds the returned state's Lines itself
-    static _LinesButton(path, labelKey, summarize := "", windows := false, lines := "", alignPairs := false) {
+    ; The setting at path is an array. options (all optional):
+    ;   Summary:    (lines) => the text shown on the page (default ListSummary: the items joined with commas)
+    ;   AlignPairs: the button goes under the right column of the paired settings above (_Pair), not at the right edge
+    static _LinesButton(path, labelKey, options := "") {
         label := PreferencesWindow._Label(labelKey)
-        if (path != "") {
-            value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
-            lines := windows ? PreferencesWindow.SplitWindows(value) : PreferencesWindow.SplitLines(PreferencesWindow.JoinLines(value))
-        }
-        state := {Lines: (lines is Array) ? lines : []}
-        summarize := summarize ? summarize : (lines) => PreferencesWindow.ListSummary(lines)
+        value := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
+        state := {Lines: (value is Array) ? value.Clone() : []}
+        summarize := (IsObject(options) && options.HasOwnProp("Summary")) ? options.Summary : (lines) => PreferencesWindow.ListSummary(lines)
+        alignPairs := IsObject(options) && options.HasOwnProp("AlignPairs") && options.AlignPairs
         x := PreferencesWindow._InputX(), paired := alignPairs && PreferencesWindow._pairX
         buttonW := paired ? PreferencesWindow._pairSecondW : PreferencesWindow.WidthS
         buttonX := (paired ? PreferencesWindow._pairX + PreferencesWindow._pairSecondW : x + PreferencesWindow._InputW()) - buttonW
@@ -1477,16 +1464,14 @@ class PreferencesWindow {
         box.GetPos(, , , &boxH)
         button := PreferencesWindow._Add("Button", "x" buttonX " yp-1 w" buttonW " h" (boxH + 2), I18n.T("Prefs.EditList"))
         button.OnEvent("Click", (*) => PreferencesWindow._EditLines(labelKey, state, box, summarize))
-        if (path != "")
-            PreferencesWindow._Bind(path, windows ? () => PreferencesWindow.JoinWindows(state.Lines) : () => state.Lines)
+        PreferencesWindow._Bind(path, () => state.Lines)
         PreferencesWindow._BelowInput(labelKey, label, box, button)
-        return state
     }
 
     static _EditLines(labelKey, state, box, summarize) {
         help := I18n.Strings.Has(labelKey ".Help") ? I18n.T(labelKey ".Help") : I18n.T(labelKey ".Desc")
         edited := ItemEditor.EditLines(PreferencesWindow.Gui, I18n.T(labelKey), help, state.Lines)
-        if (!(edited is Array) || PreferencesWindow.JoinLines(edited) == PreferencesWindow.JoinLines(state.Lines))
+        if (!(edited is Array) || TextTools.Join(edited) == TextTools.Join(state.Lines))
             return
         state.Lines := edited, box.Value := summarize(edited)
         PreferencesWindow.MarkDirty()
@@ -1962,40 +1947,12 @@ class PreferencesWindow {
         node[keys[keys.Length]] := value
     }
 
-    static SplitLines(text) {
-        items := []
-        for line in StrSplit(text, "`n", "`r")
-            if (Trim(line) != "")
-                items.Push(Trim(line))
-        return items
-    }
-
-    static JoinLines(items) {
-        return (items is Array) ? TextTools.Join(items) : items
-    }
-
     static SplitCsv(text, numeric := false) {
         items := []
         for part in StrSplit(text, ",")
             if ((part := Trim(part)) != "")
                 items.Push((numeric && IsNumber(part)) ? part + 0 : part)
         return items
-    }
-
-    ; 窗口条件列表 "ahk_class A, ahk_exe B" <-> 数组 (去掉空白和空项)
-    static SplitWindows(text) {
-        return PreferencesWindow.SplitCsv(text)
-    }
-
-    ; 几个数组合成 "ahk_class A, ahk_exe B", 去掉重复
-    static JoinWindows(lists*) {
-        all := [], seen := Map()
-        seen.CaseSense := false
-        for list in lists
-            for window in list
-                if (Trim(window) != "" && !seen.Has(Trim(window)))
-                    seen[Trim(window)] := true, all.Push(Trim(window))
-        return PreferencesWindow.JoinCsv(all)
     }
 
     static JoinCsv(items) {

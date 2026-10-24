@@ -140,7 +140,7 @@ class HelpProvider {
                 return [HelpProvider._Keywords(keywords, ["doc", "zip"], 2)]
             case "QuickSwitch":
                 options := AppSettings.Extension("QuickSwitch")                ; one hotkey for TC / Opus / Explorer
-                return [(options.Has("TotalCmdHotkey") && options["TotalCmdHotkey"] != "") ? Win.HotkeyLabel(options["TotalCmdHotkey"]) : ""]
+                return [(options["Hotkey"] != "") ? Win.HotkeyLabel(options["Hotkey"]) : ""]
             case "Clipboard":   return [AppSettings.Feature("Clipboard")["Keyword"], Win.HotkeyLabel(AppSettings.Feature("Clipboard")["Hotkey"])]
             case "Snippets":    return [AppSettings.Feature("Snippets")["Keyword"]]
             case "Expand":      return [AppSettings.Feature("Snippets")["ExpandPrefix"]]

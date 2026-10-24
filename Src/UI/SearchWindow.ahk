@@ -575,7 +575,7 @@ class SearchWindow {
             SearchWindow._Execute(typed.Modifier)
     }
 
-    ; For the log: shown again while still visible (not active: it opens empty, see _Show; which program had the focus)
+    ; For the log: shown again while still visible (see _BringToFront), and which program had the focus
     static ShowNote(wasVisible, active, foreground) {
         return !wasVisible ? "" : active ? " (already visible, active)" : " (already visible, not active; foreground: " foreground ")"
     }

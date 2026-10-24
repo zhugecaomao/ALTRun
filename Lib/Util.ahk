@@ -16,6 +16,27 @@
 class Path {
     static _varCache := ""
 
+    ; A UNC path, or a drive letter Windows calls a network drive (GetDriveType doesn't touch the network; each letter
+    ; is asked once)
+    static IsRemote(target) {
+        static drives := Map()
+        if (SubStr(target, 1, 2) = "\\")
+            return true
+        if !RegExMatch(target, "^([A-Za-z]):", &match)
+            return false
+        letter := StrUpper(match[1])
+        if !drives.Has(letter)
+            drives[letter] := DllCall("GetDriveTypeW", "WStr", letter ":\", "UInt") = 4      ; DRIVE_REMOTE
+        return drives[letter]
+    }
+
+    ; Only what looks like an extension counts (1-6 letters / digits, at least one letter: pdf, docx, dwg, sldprt):
+    ; folders with a dot in the name such as "26. Main Street (A)", "10.Project-2310", "Design.2019" have none
+    static Extension(path) {
+        SplitPath(RTrim(path, "\/"), , , &ext)
+        return (RegExMatch(ext, "^(?=.*[A-Za-z])[A-Za-z0-9]{1,6}$") || ext = "appref-ms") ? ext : ""
+    }
+
     ; 延迟初始化内置变量表 (启动时就取会拖慢冷启动)
     static _Vars() {
         if (Path._varCache != "")

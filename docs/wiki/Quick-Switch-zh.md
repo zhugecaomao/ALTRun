@@ -39,12 +39,14 @@
 | 设置 | 默认值 / 作用 |
 |---|---|
 | `Enabled` | `1` = 启用 Quick Switch |
-| `TotalCmdHotkey` | 跳转热键, 默认 `Ctrl+G`: 跳到最近用过的 Total Commander / Directory Opus / 资源管理器窗口当前的文件夹 (名字暂时不变) |
-| `ExplorerHotkey` | 不再使用: `Ctrl+G` 也包括资源管理器, `Ctrl+E` 还给它原来的作用 (资源管理器里定位到搜索框) |
+| `Hotkey` | 跳转热键, 默认 `Ctrl+G`: 跳到最近用过的 Total Commander / Directory Opus / 资源管理器窗口当前的文件夹 (设置版本 6 以前叫 `TotalCmdHotkey`) |
 | `AutoSwitch` | 从 Total Commander、Directory Opus 或资源管理器切换到对话框时自动跳转, 默认 `0` (关) |
-| `DialogWindows` | 允许生效的对话框窗口条件 |
+| `StandardDialogs` | `1` = 在标准的打开 / 保存对话框 (`ahk_class #32770`) 里生效 |
+| `DialogWindows` | 其它生效的对话框 (程序自己画的对话框), 窗口条件列表, 默认 `[]` |
 | `BrowseDialogs` | `1` = 也在只有文件夹树的 "浏览文件夹" 对话框里生效 |
-| `ExcludeWindows` | 完全排除的窗口条件 |
-| `AutoSwitchExclude` | 不自动跳转、但仍可手动操作的窗口条件 |
+| `ExcludeWindows` | 完全排除的窗口 (列表) |
+| `AutoSwitchExclude` | 不自动跳转、但仍可手动操作的窗口 (列表) |
+
+窗口条件写 `ahk_exe 程序.exe`、`ahk_class 窗口类名` 或者标题的一部分, 列表里每项一个, 例如 `"ExcludeWindows": ["ahk_exe 7zG.exe", "ahk_class SysListView32"]`。
 
 [对话框文件夹面板](Quick-Switch-Panel-zh)有独立设置页, 可自动显示在打开 / 保存对话框附近。

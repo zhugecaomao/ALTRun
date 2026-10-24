@@ -438,7 +438,7 @@ class IconCache {
         trimmed := RTrim(folder, "\/")
         if (RegExMatch(trimmed, "^[A-Za-z]:$") || RegExMatch(folder, "i)^(shell:|::\{)"))
             return IconCache._folderIcons[folder] := folder
-        if IconCache.IsRemote(folder)
+        if Path.IsRemote(folder)
             return IconCache._folderIcons[folder] := "folder:"
         if probeNow
             return IconCache._ProbeFolder(folder)
@@ -555,37 +555,17 @@ class IconCache {
     static _CacheKey(spec) {
         if RegExMatch(spec, "i)^(res|ext|url|folder|thumb):")
             return StrLower(spec)
-        ext := IconCache._Extension(spec)
-        if IconCache.IsRemote(spec)
+        ext := Path.Extension(spec)
+        if Path.IsRemote(spec)
             return (ext = "") ? "folder:" : "ext:." StrLower(ext)
         if (ext = "" || RegExMatch(ext, "i)^(exe|lnk|ico|url|appref-ms|msc|cpl|scr)$") || InStr(spec, "shell:") = 1)
             return StrLower(spec)                                           ; 每个文件自己的图标
         return "ext:." StrLower(ext)
     }
 
-    ; 像扩展名的才算扩展名 (1~6 个字母数字, 至少一个字母, 如 pdf / docx / dwg / sldprt):
-    ; "26. Main Street (A)"、"10.Project-2310"、"Design.2019" 这种名字里带点的文件夹没有扩展名
-    static _Extension(path) {
-        SplitPath(RTrim(path, "\/"), , , &ext)
-        return (RegExMatch(ext, "^(?=.*[A-Za-z])[A-Za-z0-9]{1,6}$") || ext = "appref-ms") ? ext : ""
-    }
-
     ; 网络位置按通用图标加载 (缓存键就是 "folder:" / "ext:.pdf"), 其它按原来的路径
     static _LoadSpec(spec, key) {
-        return (IconCache.IsRemote(spec) && RegExMatch(key, "^(folder|ext):")) ? key : spec
-    }
-
-    ; UNC 路径, 或者 Windows 认为是网络驱动器的盘符 (GetDriveType 不访问网络, 每个盘符只查一次)
-    static IsRemote(target) {
-        static drives := Map()
-        if (SubStr(target, 1, 2) = "\\")
-            return true
-        if !RegExMatch(target, "^([A-Za-z]):", &match)
-            return false
-        letter := StrUpper(match[1])
-        if !drives.Has(letter)
-            drives[letter] := DllCall("GetDriveTypeW", "WStr", letter ":\", "UInt") = 4      ; DRIVE_REMOTE
-        return drives[letter]
+        return (Path.IsRemote(spec) && RegExMatch(key, "^(folder|ext):")) ? key : spec
     }
 
     ; 读出图标后缩放到正好 Size x Size (见 FitSize)

@@ -25,10 +25,9 @@ Settings are stored under `Extensions.AutoDate`:
 | Setting | Default | Purpose |
 |---|---|---|
 | `Enabled` | `1` | Whether Date Stamp is enabled |
-| `RenameHotkey` | `Ctrl+D` | The hotkey, for both renaming and appending (the name stays for now) |
-| `RenameWindows` | Default window rules | Windows where renaming is enabled |
-| `AppendHotkey` | `Ctrl+D` | No longer used: `RenameHotkey` covers both |
-| `AppendWindows` | Default window rules | Windows where appending a date is enabled |
+| `Hotkey` | `Ctrl+D` | The hotkey, for both renaming and appending (`RenameHotkey` before settings version 6) |
+| `RenameWindows` | Default window rules | Windows where renaming is enabled (a list of window conditions) |
+| `AppendWindows` | Default window rules | Windows where appending a date is enabled (a list of window conditions) |
 | `DateFormat` | `dd.MM.yyyy` | Date format, also used by the snippet `{date}` placeholder |
 
 See [AutoHotkey FormatTime](https://www.autohotkey.com/docs/v2/lib/FormatTime.htm) for date format syntax.
