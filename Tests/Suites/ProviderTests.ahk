@@ -241,12 +241,12 @@ class ProviderTests {
         AppSettings.Feature("Clipboard")["MaxItems"] := 200
         ClipboardProvider.Remove("third")
         eq("remove", ClipboardProvider.Entries[1]["Text"], "first entry")
-        ClipboardProvider.PauseRecording(10000)
+        ClipboardData.Borrow(10000)
         ClipboardProvider._OnChange(1)
         eq("paused", ClipboardProvider.Entries.Length, 1)
         ClipboardProvider.Entries := []
         ; 剪贴板变了之后等 ReadDelay 再读 (不占着剪贴板); 等的时候又变了: 先读上一次的
-        saved := ClipboardAll(), ClipboardProvider._pausedUntil := 0
+        saved := ClipboardAll(), ClipboardData.BorrowedUntil := 0
         A_Clipboard := "first copy"
         ClipboardProvider.Entries := []
         ClipboardProvider._OnChange(1)
@@ -260,10 +260,10 @@ class ProviderTests {
         A_Clipboard := "copied before ALTRun borrows the clipboard"
         ClipboardProvider.Entries := []
         ClipboardProvider._OnChange(1)
-        ClipboardProvider.PauseRecording(1000)                              ; 例如片段粘贴: 剪贴板里马上换成临时的内容
+        ClipboardData.Borrow(1000)                              ; 例如片段粘贴: 剪贴板里马上换成临时的内容
         Sleep(ClipboardProvider.ReadDelay + 150)
         eq("not read while ALTRun borrows it", ClipboardProvider.Entries.Length, 0)
-        ClipboardProvider._pausedUntil := 0
+        ClipboardData.BorrowedUntil := 0
         A_Clipboard := saved
         Sleep(ClipboardProvider.ReadDelay + 150)
         ClipboardProvider.Entries := []
@@ -296,11 +296,11 @@ class ProviderTests {
         eq("files title", item.Title, "a.xlsx, b.docx")
         eq("files subtitle", item.Subtitle, I18n.T("Clipboard.FilesSubtitle", ClipboardProvider._FormatTime(item.Source["Time"]), "explorer.exe", 2))
         eq("files kind", item.Kind, "text")
-        actions := ActionCatalog.ListFor(item)
+        actions := ResultActions.ListFor(item)
         eq("files first action", actions[1].Title, I18n.T("Clipboard.PasteFiles"))
         eq("files first hint", actions[1].Subtitle, "Enter")
         eq("files copy no enter", actions[2].Subtitle, "")
-        ok("files add all", ActionCatalog.CanEdit(item))
+        ok("files add all", ResultActions.CanEdit(item))
         ClipboardProvider.AddFiles([A_WinDir], "explorer.exe")               ; 一个文件夹: 和文件搜索的结果一样
         single := ClipboardProvider.Search(SearchQuery("clip"))[1]
         eq("single kind", single.Kind, "folder")
@@ -324,9 +324,9 @@ class ProviderTests {
         eq("image arg", imageItem.Arg, root "\Clipboard\one.png")
         eq("image thumbnail", imageItem.Icon, "thumb:" root "\Clipboard\one.png")
         eq("image search word", ClipboardProvider.Search(SearchQuery("clip image")).Length, 2)
-        ok("image not editable", !ActionCatalog.CanEdit(imageItem))
-        ok("image deletable", ActionCatalog.CanDelete(imageItem))
-        eq("image first action", ActionCatalog.ListFor(imageItem)[1].Title, I18n.T("Clipboard.PasteImage"))
+        ok("image not editable", !ResultActions.CanEdit(imageItem))
+        ok("image deletable", ResultActions.CanDelete(imageItem))
+        eq("image first action", ResultActions.ListFor(imageItem)[1].Title, I18n.T("Clipboard.PasteImage"))
         options["MaxImages"] := 1
         ClipboardProvider._Trim()
         imageCount := 0
@@ -368,7 +368,7 @@ class ProviderTests {
         eq("merge needs text", ClipboardProvider._Merge("C:\x.txt", ""), false)
 
         ; 剪贴板里的文件 (CF_HDROP) 和图片 (位图) 放进去再读出来
-        ClipboardProvider.PauseRecording(3000)
+        ClipboardData.Borrow(3000)
         ok("set files", ClipboardData.SetFiles([A_WinDir "\win.ini", A_WinDir "\System32"]))
         ok("has files", ClipboardData.HasFiles())
         clipFiles := ClipboardData.Files()
@@ -528,8 +528,8 @@ class ProviderTests {
         eq("doc", titles(FileSearchProvider.Search(SearchQuery("doc tower"))), "Tower Plan.pdf")
         eq("pic", titles(FileSearchProvider.Search(SearchQuery("pic tower"))), "Tower photo.jpg")
         eq("exclusive", FileSearchProvider.Search(SearchQuery("cad tower"))[1].Exclusive, true)
-        eq("file mode", titles(ProviderRegistry.SearchFiles("cad tower")), "Tower Plan.dwg")
-        eq("file mode plain", titles(ProviderRegistry.SearchFiles("tower")), "Tower|Tower Plan.dwg|Tower Plan.pdf|Tower photo.jpg")
+        eq("file mode", titles(ProviderRegistry.SearchOnly(FileSearchProvider, "cad tower")), "Tower Plan.dwg")
+        eq("file mode plain", titles(ProviderRegistry.SearchOnly(FileSearchProvider, "tower")), "Tower|Tower Plan.dwg|Tower Plan.pdf|Tower photo.jpg")
         hint := FileSearchProvider.Search(SearchQuery("cad"))
         eq("keyword alone hint", hint.Length, 1)
         eq("keyword alone low score", hint[1].Score < 10 && !hint[1].Exclusive, true)
@@ -586,7 +586,7 @@ class ProviderTests {
             eq("keyword only: a hint", hint.Length "|" hint[1].Valid "|" hint[1].Score "|" hint[1].Subtitle, "1|0|5|recent ...")
             results := FileSearchProvider.Search(SearchQuery("recent note"))
             eq("through Search", results.Length ? results[1].Title : "", "notes.txt")
-            eq("file search mode", FileSearchProvider.SearchFiles("recent tower")[1].Title, "Tower")
+            eq("file search mode", FileSearchProvider.SearchOnly("recent tower")[1].Title, "Tower")
             eq("default keyword", AppSettings.Defaults()["Features"]["FileSearch"]["RecentKeywords"][1], "recent")
             FileSetTime("20260601000000", recent "\notes.txt.lnk")             ; opened again: moves to the top
             eq("reopened moves up", WindowsRecent.Items(300)[1].Name, "notes.txt")
@@ -822,9 +822,9 @@ class ProviderTests {
         eq("before", titles(), "Notepad|Notepad++")
         item := ApplicationProvider.Search(SearchQuery("notepad++"))[1]
         item.Provider := "Applications"
-        TestRunner.True("HiddenApps.can delete", ActionCatalog.CanDelete(item))
-        TestRunner.True("HiddenApps.prompt", InStr(ActionCatalog.DeletePrompt(item), "Notepad++") && InStr(ActionCatalog.DeletePrompt(item), "uninstalled"))
-        ActionCatalog.DeleteItem(item)
+        TestRunner.True("HiddenApps.can delete", ResultActions.CanDelete(item))
+        TestRunner.True("HiddenApps.prompt", InStr(ResultActions.DeletePrompt(item), "Notepad++") && InStr(ResultActions.DeletePrompt(item), "uninstalled"))
+        ResultActions.DeleteItem(item)
         eq("hidden", titles(), "Notepad")
         eq("saved in settings", options["Hidden"][1], "C:\Start Menu\Notepad++.lnk")
         ApplicationProvider.Apps := [
@@ -1065,9 +1065,9 @@ class ProviderTests {
         TestRunner.True("HiddenSystemCommands.found", InStr(titles(), I18n.T("Tool.Printers")))
         item := SystemProvider.Search(SearchQuery("devices and printers"))[1]
         item.Provider := "System"
-        TestRunner.True("HiddenSystemCommands.can delete", ActionCatalog.CanDelete(item))
-        TestRunner.True("HiddenSystemCommands.prompt", InStr(ActionCatalog.DeletePrompt(item), I18n.T("Tool.Printers")))
-        ActionCatalog.DeleteItem(item)
+        TestRunner.True("HiddenSystemCommands.can delete", ResultActions.CanDelete(item))
+        TestRunner.True("HiddenSystemCommands.prompt", InStr(ResultActions.DeletePrompt(item), I18n.T("Tool.Printers")))
+        ResultActions.DeleteItem(item)
         eq("saved in settings", options["Hidden"].Length ? options["Hidden"][1] : "", "Printers")
         TestRunner.True("HiddenSystemCommands.hidden", !InStr(titles(), I18n.T("Tool.Printers")))
         SystemProvider.Hide("Printers")
@@ -1180,9 +1180,9 @@ class ProviderTests {
         eq("space prefix on", AppSettings.Defaults()["Features"]["FileSearch"]["SpacePrefix"], 1)
         options["InDefaultResults"] := 0
         eq("normal search has no files", FileSearchProvider.Search(SearchQuery("mar")).Length, 0)
-        files := ProviderRegistry.SearchFiles("mar")
+        files := ProviderRegistry.SearchOnly(FileSearchProvider, "mar")
         TestRunner.True("FileSearchModes.file mode finds files", files.Length >= 2 && files[1].Provider = "FileSearch")
-        eq("file mode empty", ProviderRegistry.SearchFiles("  ").Length, 0)
+        eq("file mode empty", ProviderRegistry.SearchOnly(FileSearchProvider, "  ").Length, 0)
         TestRunner.True("FileSearchModes.quote still works", FileSearchProvider.Search(SearchQuery("'mar")).Length >= 2)
         options["InDefaultResults"] := saved[1], options["UseEverything"] := saved[2]
         FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
@@ -1209,8 +1209,8 @@ class ProviderTests {
         eq("folders only", titles(FileSearchProvider.Search(SearchQuery("folder atlas"))), "Atlas Tower|Old Atlas")
         eq("folders exclusive", FileSearchProvider.Search(SearchQuery("folder atlas"))[1].Exclusive, true)
         eq("files keyword", titles(FileSearchProvider.Search(SearchQuery("open atlas"))), "Atlas Tower|Atlas drawing.dwg|Old Atlas|noteatlas.pdf")
-        eq("file mode folder keyword", titles(ProviderRegistry.SearchFiles("folder atlas")), "Atlas Tower|Old Atlas")
-        eq("file mode plain", titles(ProviderRegistry.SearchFiles("atlas")), "Atlas Tower|Atlas drawing.dwg|Old Atlas|noteatlas.pdf")
+        eq("file mode folder keyword", titles(ProviderRegistry.SearchOnly(FileSearchProvider, "folder atlas")), "Atlas Tower|Old Atlas")
+        eq("file mode plain", titles(ProviderRegistry.SearchOnly(FileSearchProvider, "atlas")), "Atlas Tower|Atlas drawing.dwg|Old Atlas|noteatlas.pdf")
         ; Only the keyword (no space yet): the hint ranks low and does not hide commands with folder in their name
         hint := FileSearchProvider.Search(SearchQuery("folder"))
         eq("keyword alone hint", hint.Length, 1)
@@ -1441,7 +1441,7 @@ class ProviderTests {
         eq("is pinned", RecentProvider.IsPinned(fileItem("c.txt")) "|" RecentProvider.IsPinned(fileItem("b.txt")), "1|0")
         eq("can pin", RecentProvider.CanPin(fileItem("b.txt")) "|" RecentProvider.CanPin(clip), "1|0")
         actions := ""
-        for action in ActionCatalog.ListFor(items[2])
+        for action in ResultActions.ListFor(items[2])
             actions .= action.Title "|"
         eq("pin action", InStr(actions, I18n.T("Action.Pin")) > 0, true)
         RecentProvider.DeleteItem(items[3])                                  ; Ctrl+Del: 从最近使用里去掉

@@ -19,8 +19,9 @@ Lib\                Shared libraries with nothing ALTRun-specific, usable in oth
                     (JSON, Logger, Util: Path/Win/Url..., TextTools, Kanji, Dialogs, Everything IPC)
 Src\Core\           App (startup), AppSettings + SchemaMigration (settings and version upgrades),
                     SearchQuery / ResultItem (search model), FuzzyMatcher (match scoring),
-                    Knowledge (learned ranking), Usage (usage statistics), ActionCatalog (actions), ProviderRegistry, FileIndex
-Src\UI\             SearchWindow, PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
+                    Knowledge (learned ranking), Usage (usage statistics), ActionCatalog (running results: open, copy, paste...),
+                    ProviderRegistry, FileIndex, BackgroundWork (when background work may run)
+Src\UI\             SearchWindow, ResultActions (actions panel, edit, delete), PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      Search features, one class per feature
 Src\Extensions\     Features outside the search window (SnippetExpander, QuickSwitch, AutoDate, CapsLockSwitch, TendonProfile + PTToolsWindow, UpdateChecker)
 Resources\          Data shipped with the program (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
@@ -36,15 +37,17 @@ site\               Website template and build script (published to GitHub Pages
 .github\            GitHub Actions (tests, screenshots, release, wiki, website, Gitee sync), issue / PR templates
 ```
 
+Layers: `Lib` uses nothing from `Src`; `Src\Core` uses nothing from `UI`, `Providers` or `Extensions` (only `App.ahk`, which starts everything, does). Where Core needs to know something from above, the upper layer sets a callback or calls Core, for example `BackgroundWork.IsBusy` (set by the search window) and `IconCache.Prefetch(ProviderRegistry.IconSpecs())` (called by `App`). The `Layers` test checks this.
+
 When it runs, ALTRun creates `Data\` in its folder (the settings file `ALTRun.json`, plus indexes and history that can be deleted) and `Themes\` (custom themes).
 
 ## How a search runs
 1. The `SearchWindow` input changes → `ProviderRegistry.Search(text)`
 2. The text is parsed into a `SearchQuery` (keyword, prefix, remaining text)
 3. Each enabled provider's `Search(query)` returns an array of `ResultItem`s
-4. `ProviderRegistry` merges the results, adds the learned bonus from `Knowledge`, sorts by score and keeps one result per `Uid`; if there are `Exclusive` results only those are shown; if there are none at all, WebSearch's fallback items are shown
+4. `ProviderRegistry` merges the results, adds the learned bonus from `Knowledge`, sorts by score and keeps one result per `Uid`; if there are `Exclusive` results only those are shown; if there are none at all, the providers' fallback items are shown (`Fallbacks(query)`, WebSearch)
 5. `SearchWindow` draws every row itself with NM_CUSTOMDRAW
-6. When a result runs, `ActionCatalog` decides how to open it from its `Kind`, and `Knowledge.Record()` remembers the choice
+6. When a result runs, `ActionCatalog` decides how to open it from its `Kind` (the actions panel, F3 and Ctrl+Del go through `ResultActions`), and `Knowledge.Record()` remembers the choice
 
 ## Core modules and runtime lifecycle
 

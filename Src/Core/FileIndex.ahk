@@ -135,7 +135,7 @@ class FileIndex {
     ; 每分钟: 在用内置索引 (已经读过、Everything 没在用) 并且缓存过期了, 就在后台重新扫描。
     ; 用户正在用电脑 (空闲不到 RefreshIdleMs) 或搜索窗口开着时等下一次
     static _CheckRefresh() {
-        if (FileIndex.Scanning || FileIndex.Deferred || FileIndex._savePending || !SearchWindow._CanPrefetch() || A_TimeIdlePhysical < FileIndex.RefreshIdleMs)
+        if (FileIndex.Scanning || FileIndex.Deferred || FileIndex._savePending || !BackgroundWork.CanRun() || A_TimeIdlePhysical < FileIndex.RefreshIdleMs)
             return                                                          ; _savePending: 刚扫完, 缓存文件还没写 (修改时间是旧的)
         options := AppSettings.Feature("FileSearch")
         if (options["UseEverything"] && Everything.IsRunning())
@@ -166,8 +166,8 @@ class FileIndex {
     }
 
     static _ScanSome() {
-        if (FileIndex.Paths.Length && !SearchWindow._CanPrefetch())         ; 搜索窗口开着 / 正在呼出时先停, 关了再继续 (包括最后写缓存);
-            return                                                          ; 还没有索引 (第一次运行) 时照常扫
+        if (FileIndex.Paths.Length && !BackgroundWork.CanRun())             ; pause while the search window is open or opening, go on
+            return                                                          ; when it closes (the cache write too); with no index yet (first run), scan anyway
         options := AppSettings.Feature("FileSearch")
         exclude := options["ScopeExclude"]
         start := A_TickCount
@@ -357,7 +357,7 @@ class FileIndex {
     }
 
     static _SaveIfIdle() {
-        if (A_TimeIdlePhysical < FileIndex.SaveIdleMs || !SearchWindow._CanPrefetch())
+        if (A_TimeIdlePhysical < FileIndex.SaveIdleMs || !BackgroundWork.CanRun())
             return
         SetTimer(FileIndex._saveTimer, 0)
         FileIndex.SavePending()

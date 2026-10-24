@@ -679,7 +679,7 @@ class ExtensionTests {
         ok("source hint", InStr(results[1].Subtitle, "git pull"))
         eq("actions: notes + skip", results[1].Actions.Length, 2)
         titles := ""
-        for action in ActionCatalog.ListFor(results[1])
+        for action in ResultActions.ListFor(results[1])
             titles .= action.Title "|"
         ok("action panel", InStr(titles, "Release Notes|Skip This Version|"))
         results := ProviderRegistry.Search("update")
@@ -764,7 +764,7 @@ class ExtensionTests {
         ok := (n, c) => TestRunner.True("Selection." n, c)
         titles(item) {
             text := ""
-            for action in ActionCatalog.ListFor(item)
+            for action in ResultActions.ListFor(item)
                 text .= action.Title "|"
             return text
         }

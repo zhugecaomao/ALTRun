@@ -153,7 +153,7 @@ class SchemaMigration {
 
         appearance := SchemaMigration._Section(data, "Appearance")
         if (appearance.Has("Theme") && RegExMatch(appearance["Theme"], "i)^(Dark|Light|Midnight)Compact$", &m)
-            && !FileExist(ThemeManager.UserDir "\" appearance["Theme"] ".json")) {
+            && !FileExist(AppSettings.ThemesDir "\" appearance["Theme"] ".json")) {
             appearance["Theme"] := m[1]
             if (!appearance.Has("Density") || appearance["Density"] = "Comfortable")
                 appearance["Density"] := "Normal"

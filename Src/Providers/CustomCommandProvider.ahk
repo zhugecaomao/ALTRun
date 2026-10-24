@@ -102,7 +102,7 @@ class CustomCommandProvider {
         CustomCommandProvider._lastNeedle := ""
     }
 
-    ; 启动后在后台预读图标用 (见 ProviderRegistry.PrefetchIcons)
+    ; For the icon prefetch after start-up (see ProviderRegistry.IconSpecs)
     static IconItems() {
         items := []
         for command in AppSettings.CustomCommands {

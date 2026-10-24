@@ -6,6 +6,37 @@
 ; TestRunner runs them in name order, and each one must put back the shared state it changes.
 ;===============================================================================
 class ProjectTests {
+    ; Layers: Lib uses nothing from Src; Src\Core uses nothing from the UI, the providers or the extensions (only
+    ; App.ahk, which starts everything, does). Lower layers offer callbacks instead (e.g. BackgroundWork.IsBusy)
+    static Layers() {
+        ProjectTests._CheckLayer("Lib", ["Core", "UI", "Providers", "Extensions"])
+        ProjectTests._CheckLayer("Src\Core", ["UI", "Providers", "Extensions"], ["App.ahk"])
+    }
+
+    static _CheckLayer(folder, upperFolders, skip := []) {
+        names := ""
+        for upper in upperFolders
+            Loop Files, A_ScriptDir "\..\Src\" upper "\*.ahk"
+                Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r"
+                    if RegExMatch(A_LoopField, "^class (\w+)", &m)
+                        names .= (names = "" ? "" : "|") m[1]
+        TestRunner.True("Layers." folder " has upper classes to check", names != "")
+        found := ""
+        Loop Files, A_ScriptDir "\..\" folder "\*.ahk" {
+            fileName := A_LoopFileName
+            for skipped in skip
+                if (fileName = skipped)
+                    continue 2
+            Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r" {
+                code := RegExReplace(A_LoopField, "`"[^`"]*`"|'[^']*'", "''")    ; strings (e.g. "QuickSwitch.Title" keys) don't count
+                code := RegExReplace(code, "(^|\s);.*$")                    ; nor comments
+                if RegExMatch(code, "\b(" names ")\.", &m)
+                    found .= (found = "" ? "" : ", ") fileName ":" A_Index " " m[1]
+            }
+        }
+        TestRunner.Equal("Layers." folder " uses no upper layer", found, "")
+    }
+
     ; 所有 Edit 控件都要写明行数 (r1 / r8 ...): 不写时长文字会让 AHK 自动变成多行并加高, 盖住下面的控件
     static EditRows() {
         missing := ""

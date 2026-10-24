@@ -31,7 +31,7 @@ class SelectionActions {
         className := ""
         try className := WinGetClass("A")
         Win.WaitModifiersUp()                                               ; 热键的 Ctrl+Alt 还按着时, Ctrl+C 会变成 Ctrl+Alt+C
-        ClipboardProvider.PauseRecording(2000)
+        ClipboardData.Borrow(2000)
         saved := ClipboardAll()
         A_Clipboard := ""
         Send(RegExMatch(className, SelectionActions.ConsoleClasses) ? "^{Insert}" : "^c")

@@ -35,6 +35,7 @@ class AppSettings {
     static UserDir := A_AppData "\ALTRun"                                   ; 程序目录不能写入时 (例如装在 Program Files) 用这里
     static DataDir := AppSettings.ResolveDataDir()
     static File := AppSettings.DataDir "\ALTRun.json"
+    static ThemesDir := (AppSettings.Portable ? A_ScriptDir : AppSettings.UserDir) "\Themes"   ; the user's own theme files (see ThemeManager)
     static LegacyFile := A_ScriptDir "\ALTRun.json"      ; 旧版本的位置, 2.x 的 ALTRun.ini 也在这个目录
     static Data := Map()
     static MigratedFrom := 0          ; 本次启动时从哪个版本升级过来的 (0 = 没有升级)

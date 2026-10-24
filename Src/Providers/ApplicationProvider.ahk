@@ -158,7 +158,7 @@ class ApplicationProvider {
         ApplicationProvider._SearchKeys()
     }
 
-    ; 启动后在后台预读图标用 (见 ProviderRegistry.PrefetchIcons): 没有隐藏的应用
+    ; For the icon prefetch after start-up (see ProviderRegistry.IconSpecs): the applications that aren't hidden
     static IconItems() {
         ApplicationProvider._SearchKeys()
         items := []
@@ -248,7 +248,7 @@ class ApplicationProvider {
     ; 每分钟: 缓存过期了就在后台重建 (兜底, 平时靠监视文件夹)。搜索窗口开着时等下一次。不用等键盘鼠标空闲:
     ; 扫描是分段的, 窗口一打开就停, 最后写缓存也等空闲再写 (见 _Finish)
     static _CheckRefresh() {
-        if (IsObject(ApplicationProvider._job) || ApplicationProvider._savePending || !SearchWindow._CanPrefetch())
+        if (IsObject(ApplicationProvider._job) || ApplicationProvider._savePending || !BackgroundWork.CanRun())
             return                                                          ; _savePending: 刚重建完, 缓存文件还没写 (修改时间是旧的)
         if ApplicationProvider._CacheExpired()
             ApplicationProvider.RefreshInBackground()
@@ -258,8 +258,8 @@ class ApplicationProvider {
         job := ApplicationProvider._job
         if !IsObject(job)
             return SetTimer(ApplicationProvider._scanTimer, 0)
-        if (ApplicationProvider.Apps.Length && !SearchWindow._CanPrefetch())   ; 搜索窗口开着 / 正在呼出时先停, 关了再继续 (包括最后写缓存);
-            return                                                          ; 还没有索引 (第一次运行) 时照常扫
+        if (ApplicationProvider.Apps.Length && !BackgroundWork.CanRun())    ; pause while the search window is open or opening, go on
+            return                                                          ; when it closes (the cache write too); with no index yet (first run), scan anyway
         if !ApplicationProvider._Step(job, 15)
             return
         SetTimer(ApplicationProvider._scanTimer, 0)
@@ -455,7 +455,7 @@ class ApplicationProvider {
     }
 
     static _SaveIfIdle() {
-        if (A_TimeIdlePhysical < ApplicationProvider.SaveIdleMs || !SearchWindow._CanPrefetch())
+        if (A_TimeIdlePhysical < ApplicationProvider.SaveIdleMs || !BackgroundWork.CanRun())
             return
         SetTimer(ApplicationProvider._saveTimer, 0)
         ApplicationProvider.SavePending()

@@ -31,6 +31,7 @@
 #Include %A_ScriptDir%\..\Src\Core\SearchQuery.ahk
 #Include %A_ScriptDir%\..\Src\Core\ResultItem.ahk
 #Include %A_ScriptDir%\..\Src\Core\FuzzyMatcher.ahk
+#Include %A_ScriptDir%\..\Src\Core\BackgroundWork.ahk
 #Include %A_ScriptDir%\..\Src\Core\Knowledge.ahk
 #Include %A_ScriptDir%\..\Src\Core\Usage.ahk
 #Include %A_ScriptDir%\..\Src\Core\ActionCatalog.ahk
@@ -41,6 +42,7 @@
 #Include %A_ScriptDir%\..\Src\UI\NavIcons.ahk
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
+#Include %A_ScriptDir%\..\Src\UI\ResultActions.ahk
 #Include %A_ScriptDir%\..\Src\UI\WindowFade.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
 #Include %A_ScriptDir%\..\Src\UI\Hud.ahk
