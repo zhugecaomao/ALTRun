@@ -220,6 +220,8 @@ class AppSettings {
         } catch as e {
             badFile := AppSettings.File ".bad"
             try FileMove(AppSettings.File, badFile, true)
+            catch as moveError                                              ; the defaults written next would replace the user's file
+                Logger.Error("AppSettings: cannot keep the invalid file as " badFile " - " moveError.Message)
             Logger.Error("AppSettings: invalid JSON - " e.Message)
             MsgBox(I18n.T("Settings.ParseError", e.Message, badFile), App.Name, "Icon! 0x40000")
             return Map()

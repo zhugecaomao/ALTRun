@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.20.30]
+## [2026.10.20.33]
 
 测试版。
 
@@ -13,6 +13,26 @@ Test build.
 
 ### 新增
 - 脚本关键字: 输入 `script 备份` 只搜脚本, 只输入 `script ` 列出全部脚本 (和片段的 `snip`、剪贴板的 `clip` 一样); 只输入 `script` 不带空格时照常显示名字里有这个词的命令。关键字在 偏好设置 → 脚本 → "搜索关键字" 修改, 速查表 (`?`) 里也列出 (appinn 论坛建议; 没有占用 `'`, 它和空格一样是 Alfred 的快速搜文件习惯)
+
+## [2026.10.20.32]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 剪贴板 → "保存位置" 下拉框伸到页面右边 (选项文字长, 按统一的排版规则放全宽), 英文选项恢复原来更清楚的写法: "Images and long items on this PC only" / "Everything on this PC only"
+
+## [2026.10.20.31]
+
+测试版。
+
+Test build.
+
+### 改进
+- 检查更新更安全: 只使用本仓库的下载地址和发布页面地址, GitHub 返回别的地址时一律不用 (打开发布页面是直接运行这个地址的)。隐私说明 (SECURITY.md) 相应补充
+- 呼出热键注册不了时的提示改成四种语言, 并说明可能被别的程序占用、去哪里换
+- 几处关键操作失败时写进调试日志, 不再悄悄忽略: 设置文件解析失败后另存旧文件、升级设置前的备份、一键更新失败后还原文件、退出时保存索引
 
 ## [2026.10.20.28]
 
@@ -1130,8 +1150,10 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.30...HEAD
-[2026.10.20.30]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...2026.10.20.30
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.33...HEAD
+[2026.10.20.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.32...2026.10.20.33
+[2026.10.20.32]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.31...2026.10.20.32
+[2026.10.20.31]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...2026.10.20.31
 [2026.10.20.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.27...2026.10.20.28
 [2026.10.20.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...2026.10.20.27
 [2026.10.20.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...2026.10.20.26

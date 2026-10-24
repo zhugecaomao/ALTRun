@@ -3014,11 +3014,11 @@ class Tests {
                     TestRunner.True("PreferencesFit." lang " snippets grid", grid.Length = 4 && grid[1].W = grid[2].W && grid[2].W = grid[3].W && grid[3].W = grid[4].W
                         && grid[1].X = grid[3].X && grid[2].X = grid[4].X && grid[1].Y = grid[2].Y && grid[3].Y = grid[4].Y)
                 }
-                if (page.Key = "Prefs.Page.FileSearch" || page.Key = "Prefs.Page.Clipboard") {   ; "Edit..." / "Save in" end where the right column of the pairs ends
+                if (page.Key = "Prefs.Page.FileSearch") {                 ; File types' "Edit..." ends where the right column of the pairs ends
                     lineEnd := 0, editRights := Map()
                     for ctrl in page.Controls {
                         ctrl.GetPos(&x, , &w)
-                        if (page.Key = "Prefs.Page.FileSearch" ? ctrl.Type = "Button" && ctrl.Text = I18n.T("Prefs.EditList") : ctrl.Type = "DDL")
+                        if (ctrl.Type = "Button" && ctrl.Text = I18n.T("Prefs.EditList"))
                             lineEnd := x + w
                         else if (ctrl.Type = "Edit")
                             editRights[x + w] := (editRights.Has(x + w) ? editRights[x + w] : 0) + 1
@@ -5319,15 +5319,25 @@ Func | PTTools | PT Tools (AHK)=99
         digest := "3779b0aedbd58a7bf235eab4c0cc52d3b4c9f3188cb98be38319837605cef017"
         response := '{"tag_name": "v2026.10.01", "html_url": "https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01", "assets": ['
             . '{"name": "notes.txt", "browser_download_url": "https://x/notes.txt", "digest": null},'
-            . '{"name": "ALTRun_v2026.10.01.zip", "browser_download_url": "https://x/ALTRun_v2026.10.01.zip", "digest": "sha256:' StrUpper(digest) '"}]}'
+            . '{"name": "ALTRun_v2026.10.01.zip", "browser_download_url": "https://github.com/zhugecaomao/ALTRun/releases/download/2026.10.01/ALTRun_v2026.10.01.zip", "digest": "sha256:' StrUpper(digest) '"}]}'
         release := UpdateChecker.ParseRelease(response)
         eq("version", release.Version, "2026.10.01")
         eq("page", release.Page, "https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01")
-        eq("zip", release.ZipUrl, "https://x/ALTRun_v2026.10.01.zip")
+        eq("zip", release.ZipUrl, "https://github.com/zhugecaomao/ALTRun/releases/download/2026.10.01/ALTRun_v2026.10.01.zip")
         eq("sha256", release.Sha256, digest)
         release := UpdateChecker.ParseRelease('{"tag_name": "2026.10.01", "assets": [{"name": "ALTRun_v2026.10.01.zip", "browser_download_url": "https://x/a.zip", "digest": null}]}')
         eq("no digest", release.Sha256 "|" release.Page, "|" UpdateChecker.ReleasePage)
         ok("no digest -> no install", !UpdateChecker.CanInstall(release))
+        ; Only addresses in this repository are opened / downloaded (Run would start anything)
+        other := UpdateChecker.ParseRelease('{"tag_name": "2026.10.01", "html_url": "calc.exe", "assets": [{"name": "ALTRun_v2026.10.01.zip"'
+            . ', "browser_download_url": "https://evil.example/ALTRun_v2026.10.01.zip", "digest": "sha256:' digest '"}]}')
+        eq("foreign page ignored", other.Page, UpdateChecker.ReleasePage)
+        eq("foreign zip ignored", other.ZipUrl, "")
+        ok("foreign zip -> no install", !UpdateChecker.CanInstall(other))
+        eq("in repo", UpdateChecker.InRepo("https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01"), true)
+        eq("other repo", UpdateChecker.InRepo("https://github.com/zhugecaomao/ALTRunX/releases"), false)
+        eq("tricks rejected", UpdateChecker.InRepo('https://github.com/zhugecaomao/ALTRun/../../x') || UpdateChecker.InRepo('https://github.com/zhugecaomao/ALTRun/" & calc'), false)
+        eq("download folder", UpdateChecker.InRepo("https://github.com/zhugecaomao/ALTRun/releases/tag/x.zip", "releases/download/"), false)
         failed := false
         try UpdateChecker.ParseRelease('{"message": "API rate limit exceeded"}')
         catch

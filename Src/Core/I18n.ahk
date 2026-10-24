@@ -132,6 +132,7 @@ class I18n {
         ; --- App / tray ---
         s["App.Tagline"]               := "A lightweight launcher for Windows"
         s["App.Running"]               := "ALTRun is running. Press {1} to search."
+        s["App.HotkeyFailed"]          := "The hotkey {1} cannot be registered:`n{2}`n`nAnother program may be using it. Choose another one in Preferences → General."
         s["Tray.Show"]                 := "Show ALTRun"
         s["Tray.Preferences"]          := "Preferences..."
         s["Tray.RebuildIndex"]         := "Rebuild Index"
@@ -902,8 +903,8 @@ class I18n {
         s["Prefs.ClipImages.Desc"]     := "Saved as PNG files with the long entries. Only while history is kept after quitting."
         s["Prefs.ClipStorage"]         := "Save in"
         s["Prefs.ClipStorage.Data"]    := "The Data folder"
-        s["Prefs.ClipStorage.Files"]   := "This PC: images and long items"
-        s["Prefs.ClipStorage.All"]     := "This PC: everything"
+        s["Prefs.ClipStorage.Files"]   := "Images and long items on this PC only"
+        s["Prefs.ClipStorage.All"]     := "Everything on this PC only"
         s["Prefs.ClipStorage.Desc"]    := "This PC = %LOCALAPPDATA%\ALTRun, not carried with a synced or portable Data folder; files move when changed."
         s["Prefs.ClipMaxImages"]       := "Keep images"
         s["Prefs.ClipMaxImages.Desc"]  := "The oldest images are removed first."

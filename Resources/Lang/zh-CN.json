@@ -48,6 +48,7 @@
   "Action.Unpin": "取消置顶",
   "App.Admin": "管理员",
   "App.ConfirmHide": "从搜索结果中删除 '{1}' 吗?\n\n不会卸载程序, 可以在 偏好设置 → 应用搜索 里恢复。",
+  "App.HotkeyFailed": "热键 {1} 注册不了:\n{2}\n\n可能被别的程序占用了。请在 偏好设置 → 通用 里换一个。",
   "App.Running": "ALTRun 已在运行, 按 {1} 开始搜索。",
   "App.Subtitle.Store": "应用商店应用",
   "App.Tagline": "轻量的 Windows 启动器",

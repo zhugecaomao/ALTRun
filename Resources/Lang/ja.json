@@ -48,6 +48,7 @@
   "Action.Unpin": "ピン留めを解除",
   "App.Admin": "管理者",
   "App.ConfirmHide": "'{1}' を検索結果から削除しますか?\n\nプログラム自体はアンインストールされません。環境設定 → アプリ検索 で復元できます。",
+  "App.HotkeyFailed": "ホットキー {1} を登録できません:\n{2}\n\nほかのプログラムが使っている可能性があります。環境設定 → 全般 で別のキーを選んでください。",
   "App.Running": "ALTRun は実行中です。{1} で検索を開始します。",
   "App.Subtitle.Store": "Microsoft Store アプリ",
   "App.Tagline": "Windows 用の軽量ランチャー",
