@@ -24,7 +24,8 @@ Src\UI\             SearchWindow, PreferencesWindow, ItemEditor, LargeType, Them
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, CapsLockSwitch, TendonProfile + PTToolsWindow, UpdateChecker)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
-Tests\RunTests.ahk  单元测试
+Tests\RunTests.ahk  单元测试的入口: 载入程序代码 (设置只在内存里), 运行所有测试类
+Tests\Suites\       单元测试, 每个方面一个类 (Core, Provider, SearchWindow, Preferences, Extension, Project)
 Tests\Fixtures\     测试数据: 旧版本的 ALTRun.ini, SPF2M 对照数据
 Tests\Screenshots\  自动截图
 Tests\Bench\       性能测试: 在 Windows 上模拟日常操作, 比较两个版本 (见下面 "性能测试")
@@ -79,7 +80,7 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 2. 在 `ALTRun.ahk` 里 `#Include`, 在 `App.Start()` 里 `ProviderRegistry.Register(XxxProvider)`
 3. 在 `AppSettings.Defaults()` 的 `Features` 下加 `"Xxx", Map("Enabled", 1, ...)`
 4. 界面文字: 英文加到 `I18n.ahk`, 翻译加到 `Resources\Lang\` 的每个语言文件 (测试会检查每个文件都有)
-5. 在 `Tests\RunTests.ahk` 里加测试
+5. 在 `Tests\Suites\` 里对应的类加测试
 
 可选:
 - `EditItem(item)` / `DeleteItem(item)`: 支持在结果里 `F3` 编辑、`Ctrl+Del` 删除; 结果的 `Source` 要指向设置里对应的那一条
@@ -178,6 +179,7 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 ## 质量验证与局限
 
 - `Tests\RunTests.ahk`: 覆盖匹配、查询解析、设置迁移、排序、剪贴板和索引等纯逻辑; 不等于完整的手动 UI 测试。
+- 测试就是 `Tests\Suites\` 里各个类的静态方法, 名字不以 `_` 开头 (`_` 开头的是辅助函数); 不用另外登记就会运行。测试改了设置、界面语言或日志开关要改回去, 否则算失败, 所以测试之间不依赖先后顺序。程序读到的每个设置都要在 `AppSettings.Defaults()` 里有默认值 (`SettingsKeys` 检查)。
 - Windows CI: 运行单元测试和语法检查, 并检查偏好设置布局、Wiki 页面配对和文档链接。
 - 截图测试: 检查主要窗口在不同语言 / 主题下的显示; 不验证所有交互流程。
 - 性能基准: 在 Windows 上模拟常见操作比较改动前后的耗时, 应在相同环境下对比。
@@ -206,7 +208,7 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 ## 提交 Pull Request
 1. 从 `main` 新建分支, 一个 PR 只做一件事
 2. 提交前确认单元测试全部通过、`/validate` 没有警告 (见上面的 "环境")
-3. 新功能或修复请附带测试 (`Tests\RunTests.ahk`)
+3. 新功能或修复请附带测试 (`Tests\Suites\`)
 4. 涉及界面的改动请附上截图; README / Wiki 里的截图由 Screenshots workflow 生成 (见上面的 "文档"), 用英文界面和虚构的示例数据, 不要放个人或工作相关的信息
 5. 用户可见的变化请更新 README (中英文)、`CHANGELOG.md`, 必要时更新 Wiki (英文页和 `-zh` 中文页)
 
