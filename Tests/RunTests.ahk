@@ -3014,11 +3014,11 @@ class Tests {
                     TestRunner.True("PreferencesFit." lang " snippets grid", grid.Length = 4 && grid[1].W = grid[2].W && grid[2].W = grid[3].W && grid[3].W = grid[4].W
                         && grid[1].X = grid[3].X && grid[2].X = grid[4].X && grid[1].Y = grid[2].Y && grid[3].Y = grid[4].Y)
                 }
-                if (page.Key = "Prefs.Page.FileSearch" || page.Key = "Prefs.Page.Clipboard") {   ; "Edit..." / "Save in" end where the right column of the pairs ends
+                if (page.Key = "Prefs.Page.FileSearch") {                 ; File types' "Edit..." ends where the right column of the pairs ends
                     lineEnd := 0, editRights := Map()
                     for ctrl in page.Controls {
                         ctrl.GetPos(&x, , &w)
-                        if (page.Key = "Prefs.Page.FileSearch" ? ctrl.Type = "Button" && ctrl.Text = I18n.T("Prefs.EditList") : ctrl.Type = "DDL")
+                        if (ctrl.Type = "Button" && ctrl.Text = I18n.T("Prefs.EditList"))
                             lineEnd := x + w
                         else if (ctrl.Type = "Edit")
                             editRights[x + w] := (editRights.Has(x + w) ? editRights[x + w] : 0) + 1

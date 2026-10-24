@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.29]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 剪贴板 → "保存位置" 下拉框伸到页面右边 (选项文字长, 按统一的排版规则放全宽), 英文选项恢复原来更清楚的写法: "Images and long items on this PC only" / "Everything on this PC only"
+
 ## [2026.10.20.28]
 
 测试版。
@@ -1121,7 +1130,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.29...HEAD
+[2026.10.20.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...2026.10.20.29
 [2026.10.20.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.27...2026.10.20.28
 [2026.10.20.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...2026.10.20.27
 [2026.10.20.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...2026.10.20.26
