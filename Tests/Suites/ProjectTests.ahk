@@ -13,6 +13,66 @@ class ProjectTests {
         ProjectTests._CheckLayer("Src\Core", ["UI", "Providers", "Extensions"], ["App.ahk"])
     }
 
+    ; AHK names are case-insensitive: a parameter or local variable named like a class hides the class in its function,
+    ; so a call such as TypeAhead.Start() there fails at run time ("Integer has no method named Start"). Flags a function
+    ; that has such a name and also uses that class (a parameter named path in a function that never uses Path is fine)
+    static ShadowedClasses() {
+        files := [], classes := Map()
+        for folder in ["Src", "Lib"]
+            Loop Files, A_ScriptDir "\..\" folder "\*.ahk", "R"
+                files.Push(A_LoopFileFullPath)
+        for sourceFile in files
+            Loop Parse, FileRead(sourceFile, "UTF-8"), "`n", "`r"
+                if RegExMatch(A_LoopField, "^class (\w+)", &m)
+                    classes[StrLower(m[1])] := m[1]
+        found := ""
+        for sourceFile in files {
+            SplitPath(sourceFile, &fileName)
+            lines := [], startLine := 0
+            Loop Parse, FileRead(sourceFile, "UTF-8") "`n}", "`n", "`r" {
+                code := RegExReplace(A_LoopField, "`"[^`"]*`"|'[^']*'", "''")    ; strings and comments don't count
+                code := RegExReplace(code, "(^|\s);.*$")
+                if (RegExMatch(code, "^    static \w+\(") || RegExMatch(code, "^\}")) {
+                    found .= ProjectTests._Shadowed(lines, classes, fileName ":" startLine)
+                    lines := [], startLine := A_Index
+                }
+                lines.Push(code)
+            }
+        }
+        TestRunner.Equal("ShadowedClasses", found, "")
+    }
+
+    ; The names a function's lines declare (parameters, assigned locals, for variables) that hide a class it also uses
+    static _Shadowed(lines, classes, where) {
+        if !lines.Length
+            return ""
+        names := Map()
+        if RegExMatch(lines[1], "^    static \w+\((.*?)\)\s*(\{|=>)", &m)
+            for param in StrSplit(m[1], ",")
+                if RegExMatch(param, "^\s*&?(\w+)", &p)
+                    names[StrLower(p[1])] := true
+        for line in lines {
+            pos := 1
+            while (pos := RegExMatch(line, "(?<![\w.%])(\w+)\s*:=", &m, pos))
+                names[StrLower(m[1])] := true, pos += StrLen(m[0])
+            if RegExMatch(line, "^\s*for\s+(\w+)(?:\s*,\s*(\w+))?\s+in\b", &m)
+                Loop m.Count
+                    if (m[A_Index] != "")
+                        names[StrLower(m[A_Index])] := true
+        }
+        found := ""
+        for name in names {
+            if !classes.Has(name)
+                continue
+            for line in lines
+                if RegExMatch(line, "i)(?<![\w.])" classes[name] "\.\w") {
+                    found .= where " " classes[name] ", "
+                    break
+                }
+        }
+        return found
+    }
+
     static _CheckLayer(folder, upperFolders, skip := []) {
         names := ""
         for upper in upperFolders

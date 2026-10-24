@@ -159,15 +159,15 @@ class SearchWindow {
     ; input, file search mode and selected row come back with the text selected: Enter runs it again, typing starts a new search
     static _showing := false, _showStarted := 0, _showStep := ""
     static StuckShowMs := 3000                                              ; when the last showing hasn't finished after this long, it counts as stuck and no longer blocks a new one
-    ; typeAhead: characters typed while showing are kept and added to the search box afterwards (see TypeAhead)
-    static Show(text := "", typeAhead := true) {
+    ; catchTyping: characters typed while showing are kept and added to the search box afterwards (see TypeAhead)
+    static Show(text := "", catchTyping := true) {
         if !IsObject(SearchWindow.Gui)
             return
         if SearchWindow._ShouldSkipShow()
             return
         if (SearchWindow._prepareTimer != "")
             SetTimer(SearchWindow._prepareTimer, 0)
-        if typeAhead
+        if catchTyping
             TypeAhead.Start()
         SearchWindow._showing := true, SearchWindow._showStarted := A_TickCount, SearchWindow._showStep := "start"
         try SearchWindow._Show(text)
