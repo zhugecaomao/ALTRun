@@ -553,7 +553,7 @@ class Shots {
         if !explorer
             throw Error("Explorer window not shown")
         k := Shots.Scale
-        WinMove(Round(60 * k), Round(40 * k), Round(760 * k), Round(500 * k), explorer)
+        WinMove(Round(60 * k), Round(40 * k), Round(760 * k), Round(580 * k), explorer)   ; tall enough for the menu
         WinSetAlwaysOnTop(1, explorer)                                      ; above the backdrop
         WinActivate(explorer)
         Sleep(2000)                                                         ; the selection and the file icons
