@@ -12,8 +12,19 @@
 Test build.
 
 ### 改进
-- 空闲时几乎不再占用 CPU ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): AutoHotkey 只要有一个计时器在等 (哪怕 1 小时后才执行), 就每 10 ms 醒来检查一次, 空闲时每分钟约 3.3 亿个 CPU 周期, 任务管理器里一直显示 0.1% 左右。一直在等的计时器 (每 2 秒检查文件夹变化、每 30 / 60 秒的检查、每小时的更新检查和汇率、保存图标缓存、编辑设置文件时的检查、CapsLock 管理员辅助进程) 改用 Windows 计时器 (新的 `Lib/WinTimer.ahk`), 到时间才运行
+- 空闲时几乎不再占用 CPU ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): AutoHotkey 只要有一个计时器在等 (哪怕 1 小时后才执行), 就每 10 ms 醒来检查一次, 空闲时每分钟约 3.3 亿个 CPU 周期, 任务管理器里一直显示 0.1% 左右。一直在等的计时器 (每 2 秒检查文件夹变化、每 30 / 60 秒的检查、每小时的更新检查和汇率、保存图标缓存、编辑设置文件时的检查、CapsLock 管理员辅助进程) 改用 Windows 计时器 (新的 `Lib/WinTimer.ahk`), 到时间才运行。和上一版 Quick Switch 改成窗口事件一起, 空闲时不再有任何 AutoHotkey 计时器在等
 - 新增项目测试: 源码里周期 2 秒以上或一次性 1 分钟以上的 `SetTimer` 会报错, 要用 `WinTimer`
+
+## [2026.10.26.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 文件对话框面板 (Quick Switch) 改由 Windows 的窗口事件驱动, 不再轮询: 以前每 250 ms 检查一次前台窗口是不是打开 / 保存对话框, 空闲时也一直占用一点 CPU; 现在只在前台窗口切换, 或者对话框显示出来、建好文件列表、设好标题、被拖动时才处理, 空闲时和对话框开着时都不占 CPU; 在对话框里浏览文件夹也不会让 ALTRun 收到大量事件 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290))
+- 对话框的文件列表一出来面板就出现 (以前最多等 250 ms); 拖动或调整对话框大小时面板实时跟着移动, 切走或关闭对话框时面板马上消失
+- 自动跳转 (AutoSwitch) 更准: 从 Total Commander 等文件管理器经任务栏或 Alt+Tab 切到对话框时, 中间一闪而过的任务栏 / 切换窗口不再被当成 "上一个窗口"
 
 ## [2026.10.26.4]
 
@@ -968,7 +979,8 @@ Smoother typing, easier to get started, and a few useful new features.
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
 [未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.6...HEAD
-[2026.10.26.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.6
+[2026.10.26.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...2026.10.26.6
+[2026.10.26.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.5
 [2026.10.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...2026.10.26.4
 [2026.10.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...2026.10.26.3
 [2026.10.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...2026.10.26.2
