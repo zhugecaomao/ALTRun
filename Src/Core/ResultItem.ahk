@@ -26,6 +26,11 @@
 ;===============================================================================
 
 class ResultItem {
+    ; Score of the hint for a built-in keyword typed alone (script, recent, folder, doc...): below names starting with that
+    ; word or matching by initials (commands 71+, apps 81+: FuzzyMatcher tiers, +10 for apps), above "contains" and weaker
+    ; matches (commands below 60, apps below 70). So "doc" + Enter still opens Docker, and completes "doc " when nothing starts with it
+    static KeywordHintScore := 70
+
     __New(title, subtitle := "", props := "") {
         this.Title        := title
         this.Subtitle     := subtitle

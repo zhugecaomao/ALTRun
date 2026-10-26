@@ -205,7 +205,7 @@ class FileSearchProvider {
                 hint := scope ? ResultItem(I18n.T("Folders.Keyword"), keyword " ...", {Icon: "folder:", Valid: false})
                               : ResultItem(I18n.T("Files.Keyword"), "'..." (keyword != "" ? " / " keyword " ..." : ""), {Icon: "folder:", Valid: false})
             }
-            hint.Score := exclusive ? 150 : 5                               ; before the space is typed they come later, so other results aren't blocked
+            hint.Score := exclusive ? 150 : ResultItem.KeywordHintScore     ; before the space is typed, names starting with the word still come first
             if (!exclusive && typed != "")
                 hint.AutoComplete := typed " "
             hint.Exclusive := exclusive
@@ -228,12 +228,12 @@ class FileSearchProvider {
     ; Recent files: Windows "Recent items", read by Lib\WindowsRecent.ahk
     ;---------------------------------------------------------------------------
     ; "recent report": the recent files and folders whose names match, newest first on ties; "recent " alone lists the
-    ; newest; "recent" without the space is only a hint below the other results. Only the newest RecentScan shortcuts
+    ; newest; "recent" without the space is only a hint (ResultItem.KeywordHintScore). Only the newest RecentScan shortcuts
     static RecentScan := 300
     static RecentResults(term, options, exclusive, typed := "") {
         keywords := options["RecentKeywords"], keyword := keywords.Length ? keywords[1] : ""
         if !exclusive
-            return [ResultItem(I18n.T("Files.RecentKeyword"), keyword " ...", {Icon: "folder:", Valid: false, Score: 5, AutoComplete: (typed != "") ? typed " " : ""})]
+            return [ResultItem(I18n.T("Files.RecentKeyword"), keyword " ...", {Icon: "folder:", Valid: false, Score: ResultItem.KeywordHintScore, AutoComplete: (typed != "") ? typed " " : ""})]
         items := WindowsRecent.Items(FileSearchProvider.RecentScan)
         needle := StrLower(Trim(term)), scores := Map()
         for index, item in items {

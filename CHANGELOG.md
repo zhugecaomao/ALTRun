@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 只输入内置关键字 (`script`、`recent`、`folder`、`open` / `find` / `file`、`doc` 等文件类型) 时, 提示行不再总排在最后: 名字以这个词开头或首字母对得上的应用、命令 (例如 `doc` 对应的 Docker) 仍然排在前面, 按 `Enter` 照样打开它们; 没有的话提示排第一, 按 `Enter` 直接补全成 `doc `。名字里只是包含这个词的结果排在提示后面。网页搜索 (`g`) 和自定义命令的关键字是自己设的, 仍然排在最前面
+
 ## [2026.10.26.1]
 
 测试版。
@@ -928,7 +937,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...HEAD
+[2026.10.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...2026.10.26.2
 [2026.10.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26...2026.10.26.1
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26
 [2026.10.20]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.20
