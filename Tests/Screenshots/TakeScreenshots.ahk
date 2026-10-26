@@ -495,7 +495,7 @@ class Shots {
         return ""
     }
 
-    ; Windows to switch to (all behind the backdrop): Explorer, Notepad with a text file, Character Map, Remote Desktop Connection
+    ; Windows to switch to (all behind the backdrop): Explorer, Notepad with a text file, Character Map, Remote Desktop Connection; returns how many didn't show
     ; (Windows 11 opens a second Explorer folder as a tab of the same window, so other programs instead).
     ; On the GitHub VM the terminal window running the shots is on the taskbar too and window switching would list it: hide it first, CloseHelpers shows it again
     static OpenSampleWindows() {
@@ -508,13 +508,22 @@ class Shots {
         for title in ["ahk_exe WindowsTerminal.exe", "ahk_class ConsoleWindowClass", "ahk_class CASCADIA_HOSTING_WINDOW_CLASS"]
             for window in WinGetList(title)
                 try WinHide(window), Shots.HiddenWindows.Push(window)
-        Sleep(3000)
+        ; wait until every window is on screen: some take several seconds (a fixed wait once left only two in the list)
+        missing := []
+        for title in ["Annual Report 2026 ahk_class CabinetWClass", "Packing List.txt", "Character Map", "Remote Desktop Connection"]
+            if !WinWait(title, , 15)
+                missing.Push(title)
+        for title in missing
+            Shots.Log("sample window not shown: " title)
+        Sleep(1000)
+        return missing.Length
     }
 
     ; Window switching: "w " lists the open windows
     static Windows() {
         hwnd := Shots.SearchWindow()
-        Shots.OpenSampleWindows()
+        if Shots.OpenSampleWindows()
+            throw Error("not all sample windows shown")
         WinActivate(hwnd)
         Shots.SetQuery(hwnd, "w ")
         return hwnd
