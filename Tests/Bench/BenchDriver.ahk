@@ -9,7 +9,7 @@
 ;   BenchDriver.ahk round <label> <appDir> <outFile> <seed> <searches> <others>
 ;
 ; One round: start ALTRun, randomly mix searches searches and others each of running programs / opening files and folders, the actions panel, calculator,
-; Quick Switch, opening and saving Preferences, snippet expansion; each timing goes into outFile (one line label|item|ms), and at the end
+; Quick Switch, opening and saving Preferences, snippet expansion (before them, a minute idle measures the CPU used while idle); each timing goes into outFile (one line label|item|ms), and at the end
 ; CPU, memory, GDI / USER objects and handle counts are noted before a normal exit. Input uses real key presses (SendLevel 1, so hotkeys and hotstrings respond),
 ; and a "BenchEdit" window is always in front (normally some program is in front when the hotkey is pressed). bench_stats.py summarizes it into a table.
 #Requires AutoHotkey v2.0
@@ -160,6 +160,7 @@ Round_(label, appDir, outFile, seed, searches, others) {
     B.Editor.Show("x0 y0 NoActivate")
     Run('explorer.exe "' Demo '\Folder A"')                                 ; the target of Quick Switch jumps
     B.Explorer := WinWait("Folder A ahk_class CabinetWClass", , 15)
+    IdleCpu()
 
     ops := []
     Loop searches
@@ -239,6 +240,26 @@ Resources(when) {
     Rec("res " when " USER objects", DllCall("GetGuiResources", "Ptr", h, "UInt", 1))
     Rec("res " when " handles", handles)
     DllCall("CloseHandle", "Ptr", h)
+}
+
+; CPU time ALTRun uses in IdleMs with another program in front and nothing typed (timers, polling); recorded per minute
+IdleCpu() {
+    static IdleMs := 60000
+    try WinActivate("ahk_id " B.Editor.Hwnd)
+    Sleep(2000)                                                             ; let the switch settle
+    before := CpuMs()
+    Sleep(IdleMs)
+    if (before != "" && (after := CpuMs()) != "")
+        Rec("idle cpu ms per minute", (after - before) * 60000 / IdleMs)
+}
+
+CpuMs() {
+    if !(h := DllCall("OpenProcess", "UInt", 0x1000, "Int", 0, "UInt", B.Pid, "Ptr"))   ; PROCESS_QUERY_LIMITED_INFORMATION
+        return ""
+    c := 0, e := 0, k := 0, u := 0
+    DllCall("GetProcessTimes", "Ptr", h, "Int64*", &c, "Int64*", &e, "Int64*", &k, "Int64*", &u)
+    DllCall("CloseHandle", "Ptr", h)
+    return (k + u) / 10000
 }
 
 ActiveTitle() {
@@ -428,10 +449,10 @@ Op_quickswitch() {
         Rec("quickswitch fail", "panel not shown")
     WinActivate(dialog)
     start := NowMs()
-    Send("^e")
+    Send("^g")                                                         ; the jump hotkey (default Ctrl+G since settings version 6)
     ms := WaitFor(() => DialogFolder(dialog, "Folder A"), 5000)
     if (ms != "")
-        Rec("quickswitch: ctrl+e to folder ms", ms)
+        Rec("quickswitch: ctrl+g to folder ms", ms)
     else
         Rec("quickswitch fail", "folder not changed")
     try WinClose(dialog)
