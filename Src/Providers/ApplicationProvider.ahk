@@ -39,6 +39,7 @@ class ApplicationProvider {
             SetTimer(() => ApplicationProvider.RefreshInBackground(), -3000)   ; show the window first, then scan in the background
         SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; compute the search keys in advance, so the first search doesn't wait
         ApplicationProvider._refreshTimer := Logger.Watch("app refresh check", () => ApplicationProvider._CheckRefresh())
+        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
         WinTimer.Set(ApplicationProvider._refreshTimer, 60000)
         ApplicationProvider.StartWatching()
     }
