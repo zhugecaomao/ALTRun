@@ -428,10 +428,10 @@ class Shots {
 
     ; Closes the windows the scenes opened (Quick Switch dialog, Explorer, Notepad, context menu), shows the hidden terminal, puts the Send to shortcut back
     static CloseHelpers() {
-        for pid in [Shots.HelperPid, Shots.NotepadPid]
+        for pid in [Shots.HelperPid, Shots.SamplePids*]
             if pid
                 try ProcessClose(pid)
-        Shots.HelperPid := 0, Shots.NotepadPid := 0
+        Shots.HelperPid := 0, Shots.SamplePids := []
         for window in Shots.HiddenWindows                                   ; the terminal window the demo hid
             try WinShow(window)
         Shots.HiddenWindows := []
@@ -450,7 +450,7 @@ class Shots {
     ; The animation on the README front page: 7 scenes (applications, actions panel, files, clipboard history, window switching, calculator, system commands); each step saves the same screen area
     ; as a frame, noting the key pressed for it. MakeDemo.py then cuts out the window, puts it on a blurred background and draws the keys at the bottom right. Returns "" (no separate shot)
     static DemoFrames := A_Temp "\ALTRunDemoFrames"
-    static NotepadPid := 0, HiddenWindows := []
+    static SamplePids := [], HiddenWindows := []
     static Demo() {
         hwnd := Shots.SearchWindow()
         Shots.OpenSampleWindows()
@@ -495,13 +495,16 @@ class Shots {
         return ""
     }
 
-    ; Windows to switch to (all behind the backdrop): two Explorer windows and Notepad.
+    ; Windows to switch to (all behind the backdrop): Explorer, Notepad with a text file, Character Map, Remote Desktop Connection
+    ; (Windows 11 opens a second Explorer folder as a tab of the same window, so other programs instead).
     ; On the GitHub VM the terminal window running the shots is on the taskbar too and window switching would list it: hide it first, CloseHelpers shows it again
     static OpenSampleWindows() {
-        for folder in ["Website Redesign", "Annual Report 2026"]
-            Run('explorer.exe "' Shots.DemoDir "\" folder '"')
-        Run("notepad.exe", , , &pid)
-        Shots.NotepadPid := pid
+        Run('explorer.exe "' Shots.DemoDir '\Annual Report 2026"')
+        notes := Shots.AppDir "\Packing List.txt"
+        if !FileExist(notes)
+            FileAppend("Passport`r`nCharger`r`nUmbrella`r`n", notes, "UTF-8")
+        for command in ['notepad.exe "' notes '"', "charmap.exe", "mstsc.exe"]
+            try Run(command, , , &pid), Shots.SamplePids.Push(pid)
         for title in ["ahk_exe WindowsTerminal.exe", "ahk_class ConsoleWindowClass", "ahk_class CASCADIA_HOSTING_WINDOW_CLASS"]
             for window in WinGetList(title)
                 try WinHide(window), Shots.HiddenWindows.Push(window)
@@ -555,9 +558,19 @@ class Shots {
         WinActivate(explorer)
         Sleep(2000)                                                         ; the selection and the file icons
         Shots.BackdropBehind(explorer)
+        ; the focus must be in the file list: in the Windows 11 address / command bar Shift+F10 opens that bar's own menu
+        view := 0
+        try view := DllCall("FindWindowEx", "Ptr", ControlGetHwnd("SHELLDLL_DefView1", explorer), "Ptr", 0, "Str", "DirectUIHWND", "Ptr", 0, "Ptr")
+        if view
+            try ControlFocus(view)
+        Sleep(300)
         Send("+{F10}")
-        if !WinWait("ahk_class #32768", , 5)
+        if !WinWait("ahk_class #32768", , 5) {
+            focus := ""
+            try focus := ControlGetClassNN(ControlGetFocus("A"))
+            try Shots.Log("active window: " WinGetClass("A") ' "' WinGetTitle("A") '", focus: ' focus ", file list: " view)
             throw Error("context menu not shown")
+        }
         Sleep(1000)
         Send("n")                                                           ; Se&nd to: opens the submenu with its first item selected
         Sleep(1500)                                                         ; the Send to items are read when it opens
