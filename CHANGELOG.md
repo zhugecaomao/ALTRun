@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.37]
+
+测试版。
+
+Test build.
+
+### 改进
+- 代码整理: 偏好设置 (`PreferencesWindow.ahk`, 原来近 2000 行) 拆成三个文件: 窗口、页面列表和按钮留在 `PreferencesWindow`, 各个页面在 `PrefsPages`, 表单的小工具和布局尺寸 (标签宽度、输入框宽度、按钮位置等) 集中在 `PrefsForm`。功能和外观不变。
+
 ## [2026.10.20.36]
 
 测试版。
@@ -1181,7 +1190,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.36...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.37...HEAD
+[2026.10.20.37]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.36...2026.10.20.37
 [2026.10.20.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.35...2026.10.20.36
 [2026.10.20.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.34...2026.10.20.35
 [2026.10.20.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.33...2026.10.20.34

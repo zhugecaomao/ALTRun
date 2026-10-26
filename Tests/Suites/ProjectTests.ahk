@@ -103,7 +103,7 @@ class ProjectTests {
         for folder in ["Src", "Lib"] {
             Loop Files, A_ScriptDir "\..\" folder "\*.ahk", "R" {
                 Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r" {
-                    if (RegExMatch(A_LoopField, 'AddEdit\(|_Add\("Edit"') && !RegExMatch(A_LoopField, '[" ]r(\d|"\s)'))
+                    if (RegExMatch(A_LoopField, 'AddEdit\(|PrefsForm\.Add\("Edit"') && !RegExMatch(A_LoopField, '[" ]r(\d|"\s)'))
                         missing .= A_LoopFileName ":" A_Index " "
                 }
             }
@@ -123,7 +123,7 @@ class ProjectTests {
             codes .= language[1] "=" language[2] " "
         eq("list", codes, "en=English ja=日本語 zh-CN=简体中文 zh-TW=繁體中文 ")
         values := ""
-        for value in PreferencesWindow._LanguageValues()
+        for value in PrefsPages._LanguageValues()
             values .= value " "
         eq("preference values", values, "auto en ja zh-CN zh-TW ")
         for language in languages {

@@ -33,12 +33,12 @@ class PreferencesTests {
         eq := (n, a, e) => TestRunner.Equal("EditList." n, a, e)
         eq("summary", TextTools.JoinList(["a.exe", "b.exe"]), "a.exe, b.exe")
         eq("empty summary", TextTools.JoinList([]), "")
-        eq("file types: keywords", PreferencesWindow.TypeFilterSummary(["doc = doc docx", "bad line", "pic = png"]), "doc, pic")
-        eq("defaults", PreferencesWindow.TypeFilterSummary(AppSettings.Defaults()["Features"]["FileSearch"]["TypeFilters"]), "doc, pic, video, audio, zip, exe, cad")
+        eq("file types: keywords", PrefsPages.TypeFilterSummary(["doc = doc docx", "bad line", "pic = png"]), "doc, pic")
+        eq("defaults", PrefsPages.TypeFilterSummary(AppSettings.Defaults()["Features"]["FileSearch"]["TypeFilters"]), "doc, pic, video, audio, zip, exe, cad")
         lines := TextTools.SplitLines("  doc = doc docx `r`n`r`n pic = png`n")
         eq("split", lines.Length "|" lines[1] "|" lines[2], "2|doc = doc docx|pic = png")
         eq("help text", I18n.Strings.Has("Prefs.TypeFilters.Help"), true)
-        eq("app names", PreferencesWindow.NameSummary(["C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools\Disk Cleanup.lnk"
+        eq("app names", PrefsPages.NameSummary(["C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Administrative Tools\Disk Cleanup.lnk"
             , "shell:AppsFolder\NVIDIACorp.NVIDIAControlPanel_56jybvy8sckqj!NVIDIACorp.NVIDIAControlPanel"]), "Disk Cleanup, NVIDIACorp.NVIDIAControlPanel")
         for key in ["Prefs.SysHidden", "Prefs.AppFolders", "Prefs.AppHidden", "Prefs.ScopeFolders", "Prefs.ClipIgnoreApps", "Prefs.QSExclude"
                   , "Prefs.QSAutoExclude", "Prefs.QSOtherDialogs", "Prefs.RenameWindows", "Prefs.AppendWindows", "Prefs.ExpandExclude"]
@@ -241,17 +241,17 @@ class PreferencesTests {
             total := 0
             Loop columns
                 total += SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd)
-            eq(entry[1] " fills the width", total, PreferencesWindow.ListWidth(listView))
+            eq(entry[1] " fills the width", total, PrefsForm.ListWidth(listView))
             style := DllCall("GetWindowLong", "Ptr", listView.Hwnd, "Int", -16, "Int")
             eq(entry[1] " no horizontal scroll bar", style & 0x100000 ? 1 : 0, 0)   ; WS_HSCROLL
         }
         listView := lists[1][2]                                             ; earlier columns dragged narrower: the last column fills up
         SendMessage(0x101E, 0, 33, listView.Hwnd)
-        PreferencesWindow.FitColumns(listView)
+        PrefsForm.FitColumns(listView)
         columns := SendMessage(0x1200, 0, 0, SendMessage(0x101F, 0, 0, listView.Hwnd)), total := 0
         Loop columns
             total += SendMessage(0x101D, A_Index - 1, 0, listView.Hwnd)
-        eq("user width kept", SendMessage(0x101D, 0, 0, listView.Hwnd) "|" total, "33|" PreferencesWindow.ListWidth(listView))
+        eq("user width kept", SendMessage(0x101D, 0, 0, listView.Hwnd) "|" total, "33|" PrefsForm.ListWidth(listView))
         PreferencesWindow.Close()
     }
 
@@ -302,8 +302,8 @@ class PreferencesTests {
             I18n.Init(lang)
             PreferencesWindow.Show(1, -3000, -3000)
             PreferencesWindow.BuildAll()                                         ; pages are built when needed: build them all before checking each page
-            limit := PreferencesWindow.ButtonY - 6
-            rightLimit := PreferencesWindow.ContentX + PreferencesWindow.ContentW + 3   ; the thin line below sections (SS_ETCHEDHORZ) is 2 pixels wider
+            limit := PrefsForm.ButtonY - 6
+            rightLimit := PrefsForm.ContentX + PrefsForm.ContentW + 3                   ; the thin line below sections (SS_ETCHEDHORZ) is 2 pixels wider
             for index, page in PreferencesWindow.Pages {
                 if (page.Key = "Prefs.Page.Keyboard" && !AppSettings.General["CapsLock"]) {  ; Caps Lock as usual: "also in administrator windows" is grayed out, with the reason
                     hint := 0
@@ -393,7 +393,7 @@ class PreferencesTests {
                             marked += (SubStr(text, -StrLen(suffix)) = suffix)
                         ctrl.GetPos(, , &w)
                         TestRunner.Equal("PreferencesFit." lang " " page.Key " default marked once (" ControlGetItems(ctrl)[1] ")", marked, 1)
-                        TestRunner.True("PreferencesFit." lang " " page.Key " drop-down fits (" ControlGetItems(ctrl)[1] ", " w " < " PreferencesWindow._ChoiceWidth(ctrl) ")", w >= PreferencesWindow._ChoiceWidth(ctrl))
+                        TestRunner.True("PreferencesFit." lang " " page.Key " drop-down fits (" ControlGetItems(ctrl)[1] ", " w " < " PrefsForm.ChoiceWidth(ctrl) ")", w >= PrefsForm.ChoiceWidth(ctrl))
                     }
                 bottom := 0, right := 0
                 for ctrl in page.Controls {
@@ -406,7 +406,7 @@ class PreferencesTests {
             PreferencesWindow.Close()
             if (lang = "en" || lang = "zh-CN") {                            ; the left column widths for Chinese and English are tuned and need no widening
                 widened := ""
-                for key in PreferencesWindow._labelWidths
+                for key in PrefsForm.LabelWidths
                     if (SubStr(key, 1, StrLen(lang) + 1) = lang " ")
                         widened .= key "; "
                 TestRunner.Equal("PreferencesFit." lang " no widened pages", widened, "")
@@ -480,9 +480,9 @@ class PreferencesTests {
             for key, text in strings
                 if (SubStr(key, -5) = ".Desc")
                     TestRunner.True("PreferenceDescriptions.link " language[1] " " key
-                        , PreferencesWindow.DescLinks.Has(SubStr(key, 1, -5)) ? InStr(text, '<a href="{1}">') : !InStr(text, "<a "))
+                        , PrefsForm.DescLinks.Has(SubStr(key, 1, -5)) ? InStr(text, '<a href="{1}">') : !InStr(text, "<a "))
         }
-        TestRunner.True("PreferenceDescriptions.link url", InStr(PreferencesWindow._DescLink("Prefs.SelectionHotkey"), "/wiki/") && PreferencesWindow._DescLink("Prefs.Hotkey") = "")
+        TestRunner.True("PreferenceDescriptions.link url", InStr(PrefsForm.DescLink("Prefs.SelectionHotkey"), "/wiki/") && PrefsForm.DescLink("Prefs.Hotkey") = "")
     }
 
     ; Preferences → Advanced: links show names (Home · GitHub · Release notes · Report a problem), copyright, the data folder line (long paths with an ellipsis, the full path on hover)
@@ -555,12 +555,12 @@ class PreferencesTests {
             ; the window is closed while a page is being built (another thread interrupted the build): no controls added to a window that is gone, no error
             usagePage := PreferencesWindow._PageIndex("Prefs.Page.Usage")
             PreferencesWindow.Pages[usagePage].Builder := "_TestCloseWhileBuilding"
-            PreferencesWindow.DefineProp("_TestCloseWhileBuilding", {Call: (this) => (PreferencesWindow.Close(), PreferencesWindow._Add("Text", "x200 w100", "x"))})
+            PrefsPages.DefineProp("_TestCloseWhileBuilding", {Call: (this) => (PreferencesWindow.Close(), PrefsForm.Add("Text", "x200 w100", "x"))})
             closedOk := true
             try PreferencesWindow._SelectRow(usagePage)
             catch
                 closedOk := false
-            PreferencesWindow.DeleteProp("_TestCloseWhileBuilding")
+            PrefsPages.DeleteProp("_TestCloseWhileBuilding")
             eq("closed while building: no error", closedOk, true)
             eq("closed while building: window gone", IsObject(PreferencesWindow.Gui), false)
         } finally {
@@ -630,7 +630,7 @@ class PreferencesTests {
         eq("global hotkeys (window-limited left out)", keys, "!Space|!r|^!\|^!c|^!c|")
         ok("default clipboard hotkey clashes with a global ^!c", IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(data))))
         ok("defaults have no clash", !IsObject(PreferencesWindow.DuplicateHotkey(PreferencesWindow._GlobalHotkeys(AppSettings.Defaults()))))
-        eq("list cell", PreferencesWindow._Cell(Map("Key", "~MButton"), "Key"), "Middle mouse button")
+        eq("list cell", PrefsForm.Cell(Map("Key", "~MButton"), "Key"), "Middle mouse button")
     }
 
     ; After recording a hotkey: focus moves to the next control without selecting its text (with a window list below, the next typing would replace it all);

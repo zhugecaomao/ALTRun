@@ -1357,7 +1357,7 @@ class ProviderTests {
         for item in HelpProvider.Items()
             help .= item.Id " "
         eq("help lists F1 and F4", (InStr(help, "About ") && InStr(help, "EditJson ")) ? 1 : 0, 1)
-        eq("command target shows arguments", PreferencesWindow._Cell(Map("Target", "cmd.exe", "Arguments", "/k ipconfig /all"), "Target"), "cmd.exe /k ipconfig /all")
+        eq("command target shows arguments", PrefsForm.Cell(Map("Target", "cmd.exe", "Arguments", "/k ipconfig /all"), "Target"), "cmd.exe /k ipconfig /all")
         eq("url type name", I18n.Strings["Prefs.Type.Url"], "Web address / link")
         ids := Map()
         for command in SystemProvider.Commands()

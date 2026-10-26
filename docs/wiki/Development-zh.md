@@ -22,7 +22,8 @@ Src\Core\           App (启动流程), AppSettings + SchemaMigration (设置和
                     Knowledge (学习排序), Usage (使用统计), ActionCatalog (执行结果: 打开、复制、粘贴...),
                     ProviderRegistry, FileIndex, BackgroundWork (后台任务什么时候可以运行)
 Src\UI\             SearchWindow (+ SearchKeys 键盘、ResultRows 结果行绘制、SearchStatusBar 状态栏、TypeAhead、SearchInputLanguage),
-                    ResultActions (操作面板、编辑、删除), PreferencesWindow, ItemEditor, LargeType, ThemeManager, IconCache
+                    ResultActions (操作面板、编辑、删除), PreferencesWindow (+ PrefsPages 各个页面、
+                    PrefsForm 表单工具和布局尺寸), ItemEditor, LargeType, ThemeManager, IconCache
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, CapsLockSwitch, TendonProfile + PTToolsWindow, UpdateChecker)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)

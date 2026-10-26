@@ -54,6 +54,8 @@
 #Include %A_ScriptDir%\..\Src\UI\ItemEditor.ahk
 #Include %A_ScriptDir%\..\Src\UI\HotkeyBox.ahk
 #Include %A_ScriptDir%\..\Src\UI\PreferencesWindow.ahk
+#Include %A_ScriptDir%\..\Src\UI\PrefsForm.ahk
+#Include %A_ScriptDir%\..\Src\UI\PrefsPages.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ClipboardProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\ApplicationProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\CustomCommandProvider.ahk
