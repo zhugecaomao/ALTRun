@@ -1218,6 +1218,13 @@ class ProviderTests {
         eq("keyword alone low score", hint[1].Score < 10, true)
         eq("open alone not exclusive", FileSearchProvider.Search(SearchQuery("open"))[1].Exclusive, false)
         eq("keyword with space exclusive", FileSearchProvider.Search(SearchQuery("folder "))[1].Exclusive, true)
+        ; the hint completes to the keyword typed and a space (Enter / Tab / click); nothing to complete once the space is there
+        complete := (text) => FileSearchProvider.Search(SearchQuery(text))[1].AutoComplete
+        eq("hint completes: folder", complete("folder"), "folder ")
+        eq("hint completes: the keyword typed", complete("Find"), "find ")
+        eq("hint completes: file type", complete("doc"), "doc ")
+        eq("hint completes: recent", complete("recent"), "recent ")
+        eq("keyword with space: no completion", complete("folder "), "")
         eq("quote alone exclusive", FileSearchProvider.Search(SearchQuery("'"))[1].Exclusive, true)
         ; Everything results come by modification time: name-start / word-start matches first, folders first on ties
         found := [{Path: "C:\a\noteatlas.pdf", IsFolder: 0, Score: FileIndex.ScoreName("atlas", "noteatlas.pdf")}
@@ -1576,6 +1583,7 @@ class ProviderTests {
         hint := ScriptProvider.Search(SearchQuery("script"))                ; without the space: only a hint below the other results
         eq("keyword without space: a hint", hint.Length "|" hint[1].Valid "|" hint[1].Exclusive "|" hint[1].Subtitle, "1|0|0|script ...")
         eq("keyword without space: hint comes last", hint[1].Score, 5)
+        eq("keyword without space: Enter / Tab complete", hint[1].AutoComplete, "script ")
         eq("keyword with space: no hint", titles("script "), "Clean Temp|Ping Host|Restart Explorer")
         eq("default script keyword", AppSettings.Defaults()["Features"]["Scripts"]["Keyword"], "script")
         eq("ps1 command", ScriptProvider.CommandLine(byTitle["Ping Host"], "a b"), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "a b"')
