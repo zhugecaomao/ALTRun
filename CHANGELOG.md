@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- 只输入关键字 (`script`、`recent`、`folder`、`open` / `find` / `file`、`doc` 等文件类型) 时显示的提示行, 选中后按 `Enter` 或双击没有反应, 按 `Tab` 填进去的是提示的标题。现在和网页搜索 (`g`) 的提示一样, 按 `Enter`、`Tab` 或双击补全成输入的关键字加空格 (例如 `script `), 状态栏显示 "补全"; 提示仍然排在其它结果下面
+
 ## [2026.10.26]
 
 ### Summary
@@ -919,7 +928,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...HEAD
+[2026.10.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26...2026.10.26.1
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26
 [2026.10.20]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.20
 [2026.10.14]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.14

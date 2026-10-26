@@ -37,20 +37,20 @@ class FileSearchProvider {
 
     static Search(query) {
         options := AppSettings.Feature("FileSearch")
-        term := ""
+        term := "", typed := ""
         if IsObject(browse := FileSearchProvider.BrowsePath(query.Raw))
             return FileSearchProvider.BrowseResults(browse)
         if (options["QuotePrefix"] && query.MatchPrefix("'", &term))
             return FileSearchProvider._KeywordResults(term, options, false, true)
         ; open / find / file / folder: only after a space do just file results show; typing only "folder" still shows commands with folder in their name
-        if query.MatchKeyword(options["Keywords"], &term)
-            return FileSearchProvider._KeywordResults(term, options, false, query.HasRest)
-        if query.MatchKeyword(options["FolderKeywords"], &term)
-            return FileSearchProvider._KeywordResults(term, options, true, query.HasRest)
-        if query.MatchKeyword(options["RecentKeywords"], &term)
-            return FileSearchProvider.RecentResults(term, options, query.HasRest)
+        if query.MatchKeyword(options["Keywords"], &term, &typed)
+            return FileSearchProvider._KeywordResults(term, options, false, query.HasRest, typed)
+        if query.MatchKeyword(options["FolderKeywords"], &term, &typed)
+            return FileSearchProvider._KeywordResults(term, options, true, query.HasRest, typed)
+        if query.MatchKeyword(options["RecentKeywords"], &term, &typed)
+            return FileSearchProvider.RecentResults(term, options, query.HasRest, typed)
         if IsObject(filter := FileSearchProvider.MatchType(query, &term))
-            return FileSearchProvider._KeywordResults(term, options, filter, query.HasRest)
+            return FileSearchProvider._KeywordResults(term, options, filter, query.HasRest, filter.Keyword)
         if (options["InDefaultResults"] && StrLen(query.Text) >= options["MinQueryLength"] && !Calc.Looks(query.Text))
             return FileSearchProvider._DefaultResults(query.Text, options)
         return []
@@ -194,7 +194,8 @@ class FileSearchProvider {
     ; 'xxx / open xxx / folder xxx / doc xxx: show only file (or folder, or one kind of file) results
     ; scope: false = files and folders, true = folders only, or an entry of TypeFilters
     ; exclusive: the space after the keyword is typed: show only these results
-    static _KeywordResults(term, options, scope, exclusive) {
+    ; typed: the keyword typed; the hint for the keyword alone completes to it and a space (Enter / Tab / click)
+    static _KeywordResults(term, options, scope, exclusive, typed := "") {
         if (term = "") {
             if IsObject(scope)
                 hint := ResultItem(I18n.T("Files.TypeKeyword", StrReplace(SubStr(scope.Everything, 5), ";", " ")), scope.Keyword " ...", {Icon: "folder:", Valid: false})
@@ -205,6 +206,8 @@ class FileSearchProvider {
                               : ResultItem(I18n.T("Files.Keyword"), "'..." (keyword != "" ? " / " keyword " ..." : ""), {Icon: "folder:", Valid: false})
             }
             hint.Score := exclusive ? 150 : 5                               ; before the space is typed they come later, so other results aren't blocked
+            if (!exclusive && typed != "")
+                hint.AutoComplete := typed " "
             hint.Exclusive := exclusive
             return [hint]
         }
@@ -227,10 +230,10 @@ class FileSearchProvider {
     ; "recent report": the recent files and folders whose names match, newest first on ties; "recent " alone lists the
     ; newest; "recent" without the space is only a hint below the other results. Only the newest RecentScan shortcuts
     static RecentScan := 300
-    static RecentResults(term, options, exclusive) {
+    static RecentResults(term, options, exclusive, typed := "") {
         keywords := options["RecentKeywords"], keyword := keywords.Length ? keywords[1] : ""
         if !exclusive
-            return [ResultItem(I18n.T("Files.RecentKeyword"), keyword " ...", {Icon: "folder:", Valid: false, Score: 5})]
+            return [ResultItem(I18n.T("Files.RecentKeyword"), keyword " ...", {Icon: "folder:", Valid: false, Score: 5, AutoComplete: (typed != "") ? typed " " : ""})]
         items := WindowsRecent.Items(FileSearchProvider.RecentScan)
         needle := StrLower(Trim(term)), scores := Map()
         for index, item in items {
