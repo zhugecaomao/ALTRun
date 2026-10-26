@@ -307,36 +307,48 @@ class ExtensionTests {
         eq("other window in front: not a dialog", QuickSwitch._MayBeDialog(), false)
         hiddenDialog.Destroy(), otherWindow.Destroy()
         QuickSwitch.Options := savedOptions
-        ; Foreground changes and the dialog's moves arrive as events, with no polling (Wine doesn't deliver WinEvents, so only checked on Windows)
+        ; Dragging the dialog (EVENT_SYSTEM_MOVESIZESTART / END): the panel follows every DragMs until it ends; other windows don't count
+        savedDrag := [QuickSwitch._dragTimer, QuickSwitch._placeTimer, QuickSwitch._panelFor]
+        drags := {Count: 0}
+        QuickSwitch._dragTimer := () => drags.Count++, QuickSwitch._placeTimer := () => 0, QuickSwitch._panelFor := 0x1234
+        QuickSwitch._OnEvent(0, 0xA, 0x5678, 0, 0, 0, 0), Sleep(150)
+        otherDragged := drags.Count
+        QuickSwitch._OnEvent(0, 0xA, 0x1234, 0, 0, 0, 0), Sleep(150)
+        QuickSwitch._OnEvent(0, 0xB, 0x1234, 0, 0, 0, 0)
+        followed := drags.Count, Sleep(150)
+        eq("drag: another window", otherDragged, 0)
+        TestRunner.True("QuickSwitch.drag: the panel follows (" followed ")", followed >= 3)
+        eq("drag: stops when it ends", drags.Count, followed)
+        QuickSwitch._dragTimer := savedDrag[1], QuickSwitch._placeTimer := savedDrag[2], QuickSwitch._panelFor := savedDrag[3]
+        ; Foreground changes and a possible dialog's controls arrive as events, with no polling (Wine doesn't deliver WinEvents, so only checked on Windows)
         if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
-            saved := [QuickSwitch._checkTimer, QuickSwitch._placeTimer, QuickSwitch._panelFor]
-            counts := {Check: 0, Place: 0}
-            QuickSwitch._checkTimer := () => counts.Check++, QuickSwitch._placeTimer := () => counts.Place++
+            saved := QuickSwitch._checkTimer
+            counts := {Check: 0}
+            QuickSwitch._checkTimer := () => counts.Check++
             first := Gui("+AlwaysOnTop", "QuickSwitch event A"), first.Show("w200 h100 x100 y100")
             second := Gui("+AlwaysOnTop", "QuickSwitch event B"), second.Show("w200 h100 x400 y100")
             hook := QuickSwitch._HookEvent(0x3, 0x3)
             WinActivate("ahk_id " first.Hwnd), Sleep(300)
             WinActivate("ahk_id " second.Hwnd), Sleep(300)
             switched := counts.Check
-            QuickSwitch._panelFor := first.Hwnd
-            QuickSwitch._WatchWindow(first.Hwnd)                            ; the events of its UI thread, as for a dialog in front
-            first.Move(150, 150), Sleep(300)
-            placed := counts.Place
-            second.Move(450, 150), Sleep(300)                               ; another window of the same thread: not the dialog
-            movedOther := counts.Place
+            QuickSwitch._WatchWindow(first.Hwnd, false)                     ; a possible dialog: object events of its UI thread
+            candidateHooks := QuickSwitch._threadHooks.Length
             counts.Check := 0
             first.Add("Button", , "Late control"), Sleep(300)               ; a control created after the window came to the front
             shownLater := counts.Check
-            watchedHooks := QuickSwitch._threadHooks.Length
+            QuickSwitch._WatchWindow(first.Hwnd, true)                      ; recognized: only moving / resizing
+            dialogHooks := QuickSwitch._threadHooks.Length
+            counts.Check := 0
+            first.Add("Button", , "Another control"), Sleep(300)
+            shownAfter := counts.Check
             QuickSwitch._UnwatchWindow()
             DllCall("UnhookWinEvent", "Ptr", hook)
             first.Destroy(), second.Destroy()
-            QuickSwitch._checkTimer := saved[1], QuickSwitch._placeTimer := saved[2], QuickSwitch._panelFor := saved[3]
+            QuickSwitch._checkTimer := saved
             TestRunner.True("QuickSwitch.foreground events (" switched ")", hook && switched >= 2)
-            eq("thread events hooked", watchedHooks, 2)
-            TestRunner.True("QuickSwitch.dialog move events (" placed ")", placed >= 1)
-            eq("other windows' moves ignored", movedOther, placed)
+            eq("thread events hooked: possible dialog / recognized", candidateHooks " / " dialogHooks, "2 / 1")
             TestRunner.True("QuickSwitch.a control shown later is checked (" shownLater ")", shownLater >= 1)
+            eq("controls of a recognized dialog aren't watched", shownAfter, 0)
             ; The whole way: an Open dialog in another process gets the panel, nothing polls while it is open, and the panel closes with it
             QuickSwitch.Options := AppSettings.Extension("QuickSwitch")
             GroupAdd("ALTRunDialogs", "ahk_class #32770")

@@ -58,23 +58,26 @@ class QuickSwitch {
     ; Watching dialogs with Windows events, without polling (no CPU while idle; the panel as soon as the dialog is ready):
     ;   EVENT_SYSTEM_FOREGROUND, every process: another window came to the front
     ;   While the window in front may be a dialog (DialogWindows / #32770, also while still hidden), events of its UI thread only:
-    ;     EVENT_OBJECT_DESTROY / SHOW / HIDE: the dialog or its controls appear or go (some dialogs come to the front before they are
-    ;     shown, or build their file list after that); EVENT_OBJECT_LOCATIONCHANGE: the panel follows the dialog;
-    ;     EVENT_OBJECT_NAMECHANGE: dialogs drawn by their program (Qt...) are told by their title, which may be set later.
-    ;     A burst (a dialog creating its controls) is checked once, CheckDelayMs after it
+    ;     until it is recognized, EVENT_OBJECT_DESTROY / SHOW / HIDE (the dialog or its controls appear or go: some dialogs come to the
+    ;     front before they are shown, or build their file list after that) and EVENT_OBJECT_NAMECHANGE (dialogs drawn by their program,
+    ;     Qt..., are told by their title, which may be set later); a burst (a dialog creating its controls) is checked once, CheckDelayMs after it.
+    ;     Once recognized, only EVENT_SYSTEM_MOVESIZESTART / END: the panel follows every DragMs while the dialog is dragged or resized.
+    ;     Object events are no longer needed then, and browsing folders raises a great many of them (every item of the file list)
+    ;   While the caret is in the panel's search box: checked every PollMs whether the dialog is still there (no window event says so)
     ;   Any other window in front: checked every PollMs for SettleMs after the switch (a window listed by a title that is set a moment later)
     ; If a hook can't be set, it checks every PollMs instead (all the time, or while that window is in front)
     ;---------------------------------------------------------------------------
-    static PollMs := 250, SettleMs := 1500, CheckDelayMs := 30
+    static PollMs := 250, SettleMs := 1500, CheckDelayMs := 50, DragMs := 15
     static _foregroundHook := 0, _threadHooks := [], _watched := 0, _recognized := false, _eventCallback := 0
     static _alwaysPoll := false, _threadPoll := false, _polling := false, _settleUntil := 0
     static _foreground := 0, _fromManager := false
-    static _checkTimer := "", _pollTimer := "", _placeTimer := ""
+    static _checkTimer := "", _pollTimer := "", _placeTimer := "", _dragTimer := ""
 
     static _StartWatching() {
         QuickSwitch._checkTimer := Logger.Watch("quick switch check", () => QuickSwitch._Check())   ; one-shot (events) and repeating (polling) need separate timers
         QuickSwitch._pollTimer := Logger.Watch("quick switch watch", () => QuickSwitch._Check())
         QuickSwitch._placeTimer := () => QuickSwitch._panelFor && QuickSwitch._PlacePanel(QuickSwitch._panelFor)
+        QuickSwitch._dragTimer := () => QuickSwitch._panelFor && QuickSwitch._PlacePanel(QuickSwitch._panelFor)   ; one-shot and repeating need separate timers
         if !(QuickSwitch._foregroundHook := QuickSwitch._HookEvent(0x3, 0x3)) {   ; EVENT_SYSTEM_FOREGROUND, every process
             Logger.Error("QuickSwitch: cannot watch foreground changes, checking every " QuickSwitch.PollMs " ms")
             QuickSwitch._alwaysPoll := true
@@ -94,26 +97,28 @@ class QuickSwitch {
             QuickSwitch._settleUntil := A_TickCount + QuickSwitch.SettleMs
             return SetTimer(QuickSwitch._checkTimer, -1)
         }
-        if (idObject != 0 || idChild != 0 || !hwnd)                         ; windows only (OBJID_WINDOW), not the caret, the cursor or parts of controls
+        if (event = 0xA || event = 0xB) {                                   ; EVENT_SYSTEM_MOVESIZESTART / END: the dialog is dragged or resized
+            if (hwnd && hwnd = QuickSwitch._panelFor)
+                SetTimer(QuickSwitch._dragTimer, event = 0xA ? QuickSwitch.DragMs : 0), SetTimer(QuickSwitch._placeTimer, -1)
             return
-        if (event = 0x800B)                                                 ; EVENT_OBJECT_LOCATIONCHANGE: only the dialog itself moving matters
-            return (hwnd = QuickSwitch._panelFor) ? SetTimer(QuickSwitch._placeTimer, -1) : ""
-        if (QuickSwitch._recognized && hwnd != QuickSwitch._watched)        ; already recognized: its controls changing (browsing folders) changes nothing
+        }
+        if (idObject != 0 || idChild != 0 || !hwnd)                         ; windows only (OBJID_WINDOW), not the caret, the cursor or parts of controls
             return
         SetTimer(QuickSwitch._checkTimer, -QuickSwitch.CheckDelayMs)
     }
 
-    ; The UI thread of the window in front (one window at a time): DESTROY..HIDE and LOCATIONCHANGE..NAMECHANGE, see above
-    static _WatchWindow(hwnd) {
-        if (hwnd = QuickSwitch._watched)
+    ; The UI thread of the window in front (one window at a time), with the events for its phase (see above)
+    static _WatchWindow(hwnd, recognized) {
+        if (hwnd = QuickSwitch._watched && recognized = QuickSwitch._recognized)
             return
         QuickSwitch._UnwatchWindow()
-        QuickSwitch._watched := hwnd
+        QuickSwitch._watched := hwnd, QuickSwitch._recognized := recognized
+        ranges := recognized ? [[0xA, 0xB]] : [[0x8001, 0x8003], [0x800C, 0x800C]]   ; MOVESIZESTART..END / DESTROY..HIDE, NAMECHANGE
         if (tid := DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "UInt*", &pid := 0, "UInt"))
-            for range in [[0x8001, 0x8003], [0x800B, 0x800C]]
+            for range in ranges
                 if (hook := QuickSwitch._HookEvent(range[1], range[2], pid, tid))
                     QuickSwitch._threadHooks.Push(hook)
-        if (QuickSwitch._threadHooks.Length < 2) {
+        if (QuickSwitch._threadHooks.Length < ranges.Length) {
             QuickSwitch._threadPoll := true
             Logger.Warn("QuickSwitch: cannot watch the events of a dialog, checking every " QuickSwitch.PollMs " ms while it is in front")
         }
@@ -123,6 +128,7 @@ class QuickSwitch {
         for hook in QuickSwitch._threadHooks
             DllCall("UnhookWinEvent", "Ptr", hook)
         QuickSwitch._threadHooks := [], QuickSwitch._watched := 0, QuickSwitch._recognized := false, QuickSwitch._threadPoll := false
+        SetTimer(QuickSwitch._dragTimer, 0)
     }
 
     static _Poll(on) {
@@ -176,7 +182,7 @@ class QuickSwitch {
         if (IsObject(QuickSwitch._panel) && active = QuickSwitch._panel.Hwnd) {   ; typing in the panel's search box: the dialog and panel stay as they are
             if !DllCall("IsWindow", "Ptr", QuickSwitch._panelFor)          ; the dialog was closed (by its program): close the panel too
                 QuickSwitch.HidePanel(), QuickSwitch._UnwatchWindow()
-            return QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll)
+            return QuickSwitch._Poll(true)                                  ; until the caret leaves the panel (a foreground event)
         }
         className := ""
         try className := WinGetClass("ahk_id " active)
@@ -191,10 +197,9 @@ class QuickSwitch {
         }
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
             QuickSwitch._UpdatePanel(isDialog ? active : 0)
-        if (isDialog || QuickSwitch._MayBeDialog(active)) {
-            QuickSwitch._WatchWindow(active)
-            QuickSwitch._recognized := isDialog
-        } else
+        if (isDialog || QuickSwitch._MayBeDialog(active))
+            QuickSwitch._WatchWindow(active, isDialog)
+        else
             QuickSwitch._UnwatchWindow()
         QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll || !QuickSwitch._watched && A_TickCount < QuickSwitch._settleUntil)
     }
@@ -280,6 +285,8 @@ class QuickSwitch {
             try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; dark theme: dark scroll bars and selected row too
         try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: small rounded corners
         QuickSwitch._ShowFolders(QuickSwitch._panelBase)
+        if (QuickSwitch._placeTimer != "")
+            SetTimer(QuickSwitch._placeTimer, -500)                         ; once more: some dialogs move or resize themselves right after they are shown
         if WinExist("ahk_class dopus.lister")                               ; reading Opus takes a moment: show the panel first
             SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, dialog), -1)
     }
