@@ -452,7 +452,7 @@ Op_quickswitch() {
     Send("^g")                                                         ; the jump hotkey (default Ctrl+G since settings version 6)
     ms := WaitFor(() => DialogFolder(dialog, "Folder A"), 5000)
     if (ms != "")
-        Rec("quickswitch: ctrl+e to folder ms", ms)
+        Rec("quickswitch: ctrl+g to folder ms", ms)
     else
         Rec("quickswitch fail", "folder not changed")
     try WinClose(dialog)
