@@ -128,7 +128,8 @@ class QuickSwitch {
         for hook in QuickSwitch._threadHooks
             DllCall("UnhookWinEvent", "Ptr", hook)
         QuickSwitch._threadHooks := [], QuickSwitch._watched := 0, QuickSwitch._recognized := false, QuickSwitch._threadPoll := false
-        SetTimer(QuickSwitch._dragTimer, 0)
+        if (QuickSwitch._dragTimer != "")                                   ; not before _StartWatching
+            SetTimer(QuickSwitch._dragTimer, 0)
     }
 
     static _Poll(on) {
