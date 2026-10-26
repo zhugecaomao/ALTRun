@@ -1573,7 +1573,10 @@ class ProviderTests {
         eq("script keyword: by name", titles("script expl"), "Restart Explorer")
         onlyScripts := ScriptProvider.Search(SearchQuery("script clean"))
         eq("script keyword: exclusive", onlyScripts.Length "|" onlyScripts[1].Exclusive, "1|1")
-        eq("keyword without space: normal search", ScriptProvider.Search(SearchQuery("script")).Length, 0)
+        hint := ScriptProvider.Search(SearchQuery("script"))                ; without the space: only a hint below the other results
+        eq("keyword without space: a hint", hint.Length "|" hint[1].Valid "|" hint[1].Exclusive "|" hint[1].Subtitle, "1|0|0|script ...")
+        eq("keyword without space: hint comes last", hint[1].Score, 5)
+        eq("keyword with space: no hint", titles("script "), "Clean Temp|Ping Host|Restart Explorer")
         eq("default script keyword", AppSettings.Defaults()["Features"]["Scripts"]["Keyword"], "script")
         eq("ps1 command", ScriptProvider.CommandLine(byTitle["Ping Host"], "a b"), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "a b"')
         eq("bat command", ScriptProvider.CommandLine(byTitle["Clean Temp"]), A_ComSpec ' /c ""' root '\clean.bat""')

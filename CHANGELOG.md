@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.38]
+
+测试版。
+
+Test build.
+
+### 修复
+- 脚本关键字: 只输入 `script` (不带空格) 时没有提示。现在和 `recent`、`folder` 等关键字一样, 在其它结果下面显示 "按名称查找脚本 · script ..."
+
 ## [2026.10.20.37]
 
 测试版。
@@ -1190,7 +1199,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.37...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.38...HEAD
+[2026.10.20.38]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.37...2026.10.20.38
 [2026.10.20.37]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.36...2026.10.20.37
 [2026.10.20.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.35...2026.10.20.36
 [2026.10.20.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.34...2026.10.20.35

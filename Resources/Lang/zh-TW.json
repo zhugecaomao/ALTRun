@@ -626,6 +626,7 @@
   "Script.Mode.Silent": "背景, 顯示通知",
   "Script.Mode.Window": "一般視窗",
   "Script.Subtitle": "腳本 · {1}",
+  "Scripts.Keyword": "按名稱尋找腳本",
   "Search.ActionsFor": "{1} 的操作",
   "Search.ConfirmDelete": "確定刪除 '{1}' 嗎?",
   "Search.Copied": "已複製: {1}",

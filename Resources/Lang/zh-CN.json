@@ -625,6 +625,7 @@
   "Script.Mode.Silent": "后台, 显示通知",
   "Script.Mode.Window": "正常窗口",
   "Script.Subtitle": "脚本 · {1}",
+  "Scripts.Keyword": "按名称查找脚本",
   "Search.ActionsFor": "{1} 的操作",
   "Search.ConfirmDelete": "确定删除 '{1}' 吗?",
   "Search.Copied": "已复制: {1}",
