@@ -288,6 +288,30 @@ class ExtensionTests {
         eq("opus: nothing", QuickSwitch.PickDOpusFolder(QuickSwitch.ParseDOpusPaths("")), "")
         eq("opus not running: no tabs, no dopusrt", WinExist("ahk_class dopus.lister") ? "skip" : QuickSwitch.DOpusTabs().Length, WinExist("ahk_class dopus.lister") ? "skip" : 0)
         eq("file manager windows", QuickSwitch.IsFileManager(0), false)
+        eq("transient windows while switching", QuickSwitch.IsTransientWindow("Shell_TrayWnd") QuickSwitch.IsTransientWindow("XamlExplorerHostIslandWindow"), "11")
+        eq("not transient", QuickSwitch.IsTransientWindow("TTOTAL_CMD") QuickSwitch.IsTransientWindow("#32770"), "00")
+        ; Foreground changes and the dialog's moves arrive as events, with no polling (Wine doesn't deliver WinEvents, so only checked on Windows)
+        if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
+            saved := [QuickSwitch._checkTimer, QuickSwitch._placeTimer, QuickSwitch._panelFor]
+            counts := {Check: 0, Place: 0}
+            QuickSwitch._checkTimer := () => counts.Check++, QuickSwitch._placeTimer := () => counts.Place++
+            first := Gui("+AlwaysOnTop", "QuickSwitch event A"), first.Show("w200 h100 x100 y100")
+            second := Gui("+AlwaysOnTop", "QuickSwitch event B"), second.Show("w200 h100 x400 y100")
+            hook := QuickSwitch._HookEvent(0x3, 0)
+            WinActivate("ahk_id " first.Hwnd), Sleep(300)
+            WinActivate("ahk_id " second.Hwnd), Sleep(300)
+            QuickSwitch._panelFor := first.Hwnd
+            moveHook := QuickSwitch._HookEvent(0x800B, ProcessExist())
+            first.Move(150, 150), Sleep(300)
+            placed := counts.Place
+            second.Move(450, 150), Sleep(300)                               ; another window of the same process: not the dialog
+            DllCall("UnhookWinEvent", "Ptr", hook), DllCall("UnhookWinEvent", "Ptr", moveHook)
+            first.Destroy(), second.Destroy()
+            QuickSwitch._checkTimer := saved[1], QuickSwitch._placeTimer := saved[2], QuickSwitch._panelFor := saved[3]
+            TestRunner.True("QuickSwitch.foreground events (" counts.Check ")", hook && counts.Check >= 2)
+            TestRunner.True("QuickSwitch.dialog move events (" placed ")", moveHook && placed >= 1)
+            eq("other windows' moves ignored", counts.Place, placed)
+        }
         ; A real one: AutoHotkey's DirSelect is SHBrowseForFolder (option 4 = classic style). Detected, the folder is
         ; selected in its tree, and OK returns it
         target := A_WinDir "\System32"

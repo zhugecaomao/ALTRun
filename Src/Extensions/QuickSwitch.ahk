@@ -24,7 +24,6 @@
 
 class QuickSwitch {
     static Options := Map(), _hasExclude := false
-    static _lastWasManager := false
     static _panel := "", _panelFor := 0, _panelFolders := [], _panelPos := ""
 
     static Init(options) {
@@ -52,8 +51,63 @@ class QuickSwitch {
         }
         OnMessage(0x100, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_KEYDOWN: ↑ ↓ Enter Esc in the panel's search box
 
-        SetTimer(Logger.Watch("quick switch watch", () => QuickSwitch._Watch()), 250)
+        QuickSwitch._StartWatching()
     }
+
+    ;---------------------------------------------------------------------------
+    ; Watching the window in front without using CPU while idle: Windows reports every foreground change (EVENT_SYSTEM_FOREGROUND),
+    ; and only while a window that may be a dialog (DialogWindows / #32770, or the panel) is in front is it checked every PollMs,
+    ; because some dialogs build their file list or set their title (Qt) only after they come to the front.
+    ; While the panel is shown, the dialog's moves (EVENT_OBJECT_LOCATIONCHANGE, its process only) move the panel right away.
+    ; If the hook can't be set, it checks every PollMs all the time (as before)
+    ;---------------------------------------------------------------------------
+    static PollMs := 250
+    static _foregroundHook := 0, _moveHook := 0, _eventCallback := 0, _alwaysPoll := false, _polling := false
+    static _foreground := 0, _fromManager := false
+    static _checkTimer := "", _pollTimer := "", _placeTimer := ""
+
+    static _StartWatching() {
+        QuickSwitch._checkTimer := Logger.Watch("quick switch check", () => QuickSwitch._Check())   ; one-shot (events) and repeating (polling) need separate timers
+        QuickSwitch._pollTimer := Logger.Watch("quick switch watch", () => QuickSwitch._Check())
+        QuickSwitch._placeTimer := () => QuickSwitch._panelFor && QuickSwitch._PlacePanel(QuickSwitch._panelFor)
+        if !(QuickSwitch._foregroundHook := QuickSwitch._HookEvent(0x3, 0)) {   ; EVENT_SYSTEM_FOREGROUND, every process
+            Logger.Error("QuickSwitch: cannot watch foreground changes, checking every " QuickSwitch.PollMs " ms")
+            QuickSwitch._alwaysPoll := true
+        }
+        SetTimer(QuickSwitch._checkTimer, -1)                               ; the window in front now
+    }
+
+    static _HookEvent(event, pid) {
+        if !QuickSwitch._eventCallback
+            QuickSwitch._eventCallback := CallbackCreate((p*) => QuickSwitch._OnEvent(p*), , 7)
+        return DllCall("SetWinEventHook", "UInt", event, "UInt", event, "Ptr", 0, "Ptr", QuickSwitch._eventCallback, "UInt", pid, "UInt", 0, "UInt", 0, "Ptr")   ; WINEVENT_OUTOFCONTEXT
+    }
+
+    ; Keep the callback short: the work runs from a timer, after the event is handled
+    static _OnEvent(hook, event, hwnd, idObject, idChild, thread, time) {
+        if (event = 0x3)
+            SetTimer(QuickSwitch._checkTimer, -1)
+        else if (idObject = 0 && idChild = 0 && hwnd && hwnd = QuickSwitch._panelFor)   ; OBJID_WINDOW: the dialog itself, not its controls or the caret
+            SetTimer(QuickSwitch._placeTimer, -1)
+    }
+
+    static _Poll(on) {
+        if (on = QuickSwitch._polling || QuickSwitch._pollTimer = "")
+            return
+        QuickSwitch._polling := on
+        SetTimer(QuickSwitch._pollTimer, on ? QuickSwitch.PollMs : 0)
+    }
+
+    ; The window in front matches the dialog lists (it may be a dialog, or become one once its controls or title are there)
+    static _MayBeDialog() {
+        browse := QuickSwitch.Options.Has("BrowseDialogs") && QuickSwitch.Options["BrowseDialogs"]
+        if !(WinActive("ahk_group ALTRunDialogs") || browse && WinActive("ahk_class #32770"))
+            return false
+        return !(QuickSwitch._hasExclude && WinActive("ahk_group ALTRunDialogExclude"))
+    }
+
+    ; Windows that are in front only for a moment while switching (taskbar, Alt+Tab): they don't count as "the window before" for AutoSwitch
+    static IsTransientWindow(className) => RegExMatch(className, "i)^(Shell_TrayWnd|Shell_SecondaryTrayWnd|MultitaskingViewFrame|XamlExplorerHostIslandWindow|TaskSwitcherWnd|ForegroundStaging)$") > 0
 
     ; WM_KEYDOWN rather than a hotkey: while a Chinese IME is composing (not yet committed) keys are VK_PROCESSKEY and aren't taken for Enter / Esc
     ; compare only the window handles noted: after the panel closes its control objects are destroyed and their Hwnd can't be read
@@ -70,19 +124,28 @@ class QuickSwitch {
         return 0
     }
 
-    ; Every 250 ms: with AutoSwitch, jump when switching from TC to the dialog; show / hide / position the folder panel
-    static _Watch() {
+    ; On a foreground change, and every PollMs while a possible dialog is in front: with AutoSwitch, jump when switching from TC to the dialog;
+    ; show / hide / position the folder panel
+    static _Check() {
         if QuickSwitch.PanelActive() {                                      ; typing in the panel's search box: the dialog and panel stay as they are
             if !WinExist("ahk_id " QuickSwitch._panelFor)                   ; the dialog was closed (by its program): close the panel too
                 QuickSwitch.HidePanel()
-            return
+            return QuickSwitch._Poll(true)
+        }
+        active := WinExist("A"), className := ""
+        try className := WinGetClass("ahk_id " active)
+        if (active != QuickSwitch._foreground && !QuickSwitch.IsTransientWindow(className)) {   ; another window came to the front: was the one before a file manager?
+            QuickSwitch._fromManager := QuickSwitch.IsFileManager(QuickSwitch._foreground)
+            QuickSwitch._foreground := active
         }
         isDialog := QuickSwitch.IsFileDialog()
-        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._lastWasManager && !WinActive("ahk_group ALTRunAutoSwitchExclude"))
+        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinActive("ahk_group ALTRunAutoSwitchExclude")) {
+            QuickSwitch._fromManager := false                               ; once per switch
             QuickSwitch.SyncFileManagerPath(true)
-        QuickSwitch._lastWasManager := QuickSwitch.IsFileManager(WinExist("A"))
+        }
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
             QuickSwitch._UpdatePanel(isDialog)
+        QuickSwitch._Poll(QuickSwitch._alwaysPoll || isDialog || IsObject(QuickSwitch._panel) || QuickSwitch._MayBeDialog())
     }
 
     static _SearchesFiles() => QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "all"
@@ -126,6 +189,8 @@ class QuickSwitch {
     static PanelActive(*) => IsObject(QuickSwitch._panel) && WinActive("ahk_id " QuickSwitch._panel.Hwnd)
 
     static HidePanel() {
+        if QuickSwitch._moveHook
+            DllCall("UnhookWinEvent", "Ptr", QuickSwitch._moveHook), QuickSwitch._moveHook := 0
         if IsObject(QuickSwitch._panel)
             try QuickSwitch._panel.Destroy()
         QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := ""
@@ -171,6 +236,11 @@ class QuickSwitch {
             try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; dark theme: dark scroll bars and selected row too
         try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: small rounded corners
         QuickSwitch._ShowFolders(QuickSwitch._panelBase)
+        pid := 0
+        try pid := WinGetPID("ahk_id " dialog)
+        if pid
+            QuickSwitch._moveHook := QuickSwitch._HookEvent(0x800B, pid)  ; EVENT_OBJECT_LOCATIONCHANGE: the panel follows while the dialog is dragged
+        QuickSwitch._Poll(true)                                             ; the hotkey (FocusPanel) can open the panel between checks
         if WinExist("ahk_class dopus.lister")                               ; reading Opus takes a moment: show the panel first
             SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, dialog), -1)
     }
@@ -447,7 +517,7 @@ class QuickSwitch {
             return false
         if (QuickSwitch._hasExclude && WinActive("ahk_group ALTRunDialogExclude"))
             return false
-        controls := [], title := "", winClass := ""                         ; read once for both kinds (this runs every 250 ms)
+        controls := [], title := "", winClass := ""                         ; read once for both kinds (this runs on every check)
         try controls := WinGetControls("A")
         try title := WinGetTitle("A")
         try winClass := WinGetClass("A")

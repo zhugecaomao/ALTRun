@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.26.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 文件对话框面板 (Quick Switch) 空闲时不再占用 CPU: 以前每 250 ms 检查一次前台窗口是不是打开 / 保存对话框, 现在由 Windows 通知前台窗口的切换, 只在可能是对话框的窗口 (系统对话框和 "其它对话框" 里列出的窗口) 在前台时才检查, 用其它程序时完全不检查 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290))
+- 切到对话框时面板马上出现 (以前最多等 250 ms); 拖动对话框时面板实时跟着移动
+- 自动跳转 (AutoSwitch) 更准: 从 Total Commander 等文件管理器经任务栏或 Alt+Tab 切到对话框时, 中间一闪而过的任务栏 / 切换窗口不再被当成 "上一个窗口"
+
 ## [2026.10.26.4]
 
 测试版。
@@ -957,7 +968,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...HEAD
+[2026.10.26.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.5
 [2026.10.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...2026.10.26.4
 [2026.10.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...2026.10.26.3
 [2026.10.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...2026.10.26.2
