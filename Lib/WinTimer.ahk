@@ -1,11 +1,20 @@
 ;===============================================================================
 ; WinTimer.ahk - timers that wait without waking AutoHotkey every 10 ms (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; While any SetTimer timer is set, AutoHotkey checks its timers every 10 ms, even when the only one is due in an hour: about 330 million
-; CPU cycles a minute while idle (measured on Windows Server 2025, idle minute: no timer 0.8, one 2 s SetTimer 330, one one-hour one-shot
-; SetTimer 328, one Windows timer 4.5 Mcycles). WinTimer uses Windows timers instead (SetTimer on a message-only window, WM_TIMER), so
-; nothing runs until a timer is due. Meant for timers that stay set while ALTRun is idle (watching folders every 2 s, hourly checks);
-; short-lived ones (batches, delays while typing) keep SetTimer.
+; While any SetTimer timer is set, AutoHotkey keeps a 10 ms Windows timer running to check its timers, even when the only one is due
+; in an hour. AutoHotkey v2.0 source:
+;   globaldata.h  SLEEP_INTERVAL 10; SET_MAIN_TIMER = SetTimer(g_hWnd, TIMER_ID_MAIN, SLEEP_INTERVAL, NULL)
+;                 https://github.com/AutoHotkey/AutoHotkey/blob/v2.0/source/globaldata.h#L218-L239
+;   script.cpp    enabling a script timer: "SET_MAIN_TIMER // Ensure the API timer is always running when there is at least one enabled
+;                 timed subroutine"; KILL_MAIN_TIMER only when none is left
+;                 https://github.com/AutoHotkey/AutoHotkey/blob/v2.0/source/script.cpp#L3941-L3991
+; Measured on Windows Server 2025 (GitHub Actions), CPU cycles of a small script in an idle minute: no timer 0.8, one 2 s SetTimer 330,
+; one one-hour one-shot SetTimer 328, one 2 s Windows timer 4.5 million. ALTRun always has such timers (folder watches, hourly checks),
+; so it used 240 to 420 million cycles a minute while idle (Tests\Bench), the constant 0.1% in Task Manager (#290).
+; WinTimer uses Windows timers instead (SetTimer on a message-only window, WM_TIMER), so nothing runs until a timer is due.
+; Meant for timers that stay set while ALTRun is idle; short-lived ones (batches, delays while typing) keep SetTimer.
+; A single SetTimer timer left set while idle keeps the 10 ms timer running for all (the bench showed no gain while Quick Switch still
+; polled with SetTimer), so every one of them must be a WinTimer: ProjectTests.LongTimers flags long SetTimer periods.
 ; Like SetTimer, the function runs in a new thread; WM_TIMER is a low-priority message, so a busy moment can delay it a little.
 ;
 ; Usage:
