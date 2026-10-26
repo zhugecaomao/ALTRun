@@ -311,6 +311,31 @@ class ExtensionTests {
             TestRunner.True("QuickSwitch.foreground events (" counts.Check ")", hook && counts.Check >= 2)
             TestRunner.True("QuickSwitch.dialog move events (" placed ")", moveHook && placed >= 1)
             eq("other windows' moves ignored", counts.Place, placed)
+            ; The whole way: an Open dialog in another process gets the panel, with no polling before it comes up
+            QuickSwitch.Options := AppSettings.Extension("QuickSwitch")
+            GroupAdd("ALTRunDialogs", "ahk_class #32770")
+            QuickSwitch._StartWatching()
+            helper := A_Temp "\ALTRunTestOpenDialog.ahk"
+            try FileDelete(helper)
+            FileAppend('#NoTrayIcon`nFileSelect(, A_WinDir, "Open")`n', helper, "UTF-8")
+            Run('"' A_AhkPath '" "' helper '"', , , &dialogPid)
+            dialog := WinWait("Open ahk_class #32770 ahk_pid " dialogPid, , 10)
+            panelShown := false
+            Loop 50 {
+                if (panelShown := IsObject(QuickSwitch._panel) && DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd))
+                    break
+                Sleep(100)
+            }
+            try WinClose("ahk_id " dialog)
+            if !ProcessWaitClose(dialogPid, 3)
+                try ProcessClose(dialogPid)
+            Sleep(500)
+            panelGone := !IsObject(QuickSwitch._panel)
+            DllCall("UnhookWinEvent", "Ptr", QuickSwitch._foregroundHook), QuickSwitch._foregroundHook := 0
+            SetTimer(QuickSwitch._pollTimer, 0), SetTimer(QuickSwitch._checkTimer, 0), QuickSwitch._polling := false
+            QuickSwitch.HidePanel()
+            TestRunner.True("QuickSwitch.panel below another process's Open dialog", dialog && panelShown)
+            TestRunner.True("QuickSwitch.panel closed with the dialog", panelGone)
         }
         ; A real one: AutoHotkey's DirSelect is SHBrowseForFolder (option 4 = classic style). Detected, the folder is
         ; selected in its tree, and OK returns it

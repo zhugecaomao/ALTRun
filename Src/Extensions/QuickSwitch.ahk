@@ -57,13 +57,14 @@ class QuickSwitch {
     ;---------------------------------------------------------------------------
     ; Watching the window in front without using CPU while idle: Windows reports every foreground change (EVENT_SYSTEM_FOREGROUND),
     ; and only while a window that may be a dialog (DialogWindows / #32770, or the panel) is in front is it checked every PollMs,
-    ; because some dialogs build their file list or set their title (Qt) only after they come to the front.
+    ; because some dialogs build their file list or set their title (Qt) only after they come to the front; and for SettleMs after every
+    ; foreground change, as a dialog can come to the front before it is visible (not yet seen as a dialog then, and no new event follows).
     ; While the panel is shown, the dialog's moves (EVENT_OBJECT_LOCATIONCHANGE, its process only) move the panel right away.
     ; If the hook can't be set, it checks every PollMs all the time (as before)
     ;---------------------------------------------------------------------------
-    static PollMs := 250
+    static PollMs := 250, SettleMs := 1500
     static _foregroundHook := 0, _moveHook := 0, _eventCallback := 0, _alwaysPoll := false, _polling := false
-    static _foreground := 0, _fromManager := false
+    static _foreground := 0, _fromManager := false, _settleUntil := 0
     static _checkTimer := "", _pollTimer := "", _placeTimer := ""
 
     static _StartWatching() {
@@ -85,8 +86,10 @@ class QuickSwitch {
 
     ; Keep the callback short: the work runs from a timer, after the event is handled
     static _OnEvent(hook, event, hwnd, idObject, idChild, thread, time) {
-        if (event = 0x3)
+        if (event = 0x3) {
+            QuickSwitch._settleUntil := A_TickCount + QuickSwitch.SettleMs
             SetTimer(QuickSwitch._checkTimer, -1)
+        }
         else if (idObject = 0 && idChild = 0 && hwnd && hwnd = QuickSwitch._panelFor)   ; OBJID_WINDOW: the dialog itself, not its controls or the caret
             SetTimer(QuickSwitch._placeTimer, -1)
     }
@@ -145,7 +148,7 @@ class QuickSwitch {
         }
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
             QuickSwitch._UpdatePanel(isDialog)
-        QuickSwitch._Poll(QuickSwitch._alwaysPoll || isDialog || IsObject(QuickSwitch._panel) || QuickSwitch._MayBeDialog())
+        QuickSwitch._Poll(QuickSwitch._alwaysPoll || isDialog || IsObject(QuickSwitch._panel) || A_TickCount < QuickSwitch._settleUntil || QuickSwitch._MayBeDialog())
     }
 
     static _SearchesFiles() => QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "all"
