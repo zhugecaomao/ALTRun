@@ -5,391 +5,111 @@
 
 ## [未发布]
 
-## [2026.10.20.38]
-
-测试版。
-
-Test build.
-
-### 修复
-- 脚本关键字: 只输入 `script` (不带空格) 时没有提示。现在和 `recent`、`folder` 等关键字一样, 在其它结果下面显示 "按名称查找脚本 · script ..."
-
-## [2026.10.20.37]
-
-测试版。
-
-Test build.
-
-### 改进
-- 代码整理: 偏好设置 (`PreferencesWindow.ahk`, 原来近 2000 行) 拆成三个文件: 窗口、页面列表和按钮留在 `PreferencesWindow`, 各个页面在 `PrefsPages`, 表单的小工具和布局尺寸 (标签宽度、输入框宽度、按钮位置等) 集中在 `PrefsForm`。功能和外观不变。
-
-## [2026.10.20.36]
-
-测试版。
-
-Test build.
-
-### 改进
-- 代码整理: 搜索窗口 (`SearchWindow.ahk`, 原来 2000 多行) 拆出几个单独的文件: 键盘处理 `SearchKeys`、结果行的绘制 `ResultRows`、底部状态栏 `SearchStatusBar`、呼出期间打的字 `TypeAhead`、呼出时切换英文输入 `SearchInputLanguage`。功能和外观不变。
-
-## [2026.10.20.35]
-
-测试版。
-
-Test build.
-
-### 改进
-- 代码整理: 逗号分隔列表的拆分和合并统一用 `TextTools.SplitList` / `JoinList` (偏好设置、设置升级、搜索关键字、测试里原来各有一份), 几处把路径逐行合并的循环改用 `TextTools.Join`。
-
-## [2026.10.20.34]
-
-测试版。
-
-Test build.
-
-### 改进
-- 代码整理 (分层): 核心模块不再直接调用搜索窗口、搜索功能和扩展功能, 测试 `Layers` 检查这一点。
-  - 后台任务 (索引扫描、写缓存、预读图标) 统一问 `BackgroundWork.CanRun()`; 搜索窗口开着或正在呼出时等待。学习排序和使用统计写盘现在也在窗口呼出的那一下等待, 以前只在窗口显示后等待。
-  - 结果的操作面板、F3 编辑、Ctrl+Del 删除移到 `Src\UI\ResultActions.ahk`; `ActionCatalog` 只保留打开、复制、粘贴等操作。
-  - `ProviderRegistry` 不再写死网页搜索和文件搜索: 兜底项和文件搜索模式改为 Provider 可选的 `Fallbacks` / `SearchOnly`; 预读图标的列表由 `App` 交给 `IconCache`。
-  - "ALTRun 临时借用剪贴板, 这段时间不记录历史" 的状态移到 `ClipboardData.Borrow`; 用户主题文件夹移到 `AppSettings.ThemesDir`。
-
-## [2026.10.20.33]
-
-测试版。
-
-Test build.
-
-### 新增
-- 脚本关键字: 输入 `script 备份` 只搜脚本, 只输入 `script ` 列出全部脚本 (和片段的 `snip`、剪贴板的 `clip` 一样); 只输入 `script` 不带空格时照常显示名字里有这个词的命令。关键字在 偏好设置 → 脚本 → "搜索关键字" 修改, 速查表 (`?`) 里也列出 (appinn 论坛建议; 没有占用 `'`, 它和空格一样是 Alfred 的快速搜文件习惯)
-
-## [2026.10.20.32]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 剪贴板 → "保存位置" 下拉框伸到页面右边 (选项文字长, 按统一的排版规则放全宽), 英文选项恢复原来更清楚的写法: "Images and long items on this PC only" / "Everything on this PC only"
-
-## [2026.10.20.31]
-
-测试版。
-
-Test build.
-
-### 改进
-- 检查更新更安全: 只使用本仓库的下载地址和发布页面地址, GitHub 返回别的地址时一律不用 (打开发布页面是直接运行这个地址的)。隐私说明 (SECURITY.md) 相应补充
-- 呼出热键注册不了时的提示改成四种语言, 并说明可能被别的程序占用、去哪里换
-- 几处关键操作失败时写进调试日志, 不再悄悄忽略: 设置文件解析失败后另存旧文件、升级设置前的备份、一键更新失败后还原文件、退出时保存索引
-
-## [2026.10.20.28]
-
-测试版。
-
-Test build.
-
-### 升级
-- 设置文件升级到版本 6: 第一次启动会把原来的 ALTRun.json 备份成 `ALTRun.v5.backup.json`, 并提示一次 "设置已升级"。升级后不要再用旧版本打开同一个设置文件 (旧版本读不了新的列表格式); 要退回旧版本时, 先把备份文件改回 ALTRun.json
-
-### 改进
-- 设置文件的格式统一 (#176): 窗口列表 (对话框跳转的 其它对话框 / 不生效的窗口 / 不自动跳转的对话框, 一键加日期的两个 "生效的窗口", 文字片段的 不展开的窗口) 从逗号分隔的一行改成和其它列表一样的数组, 窗口标题里带逗号的也能写了; "标准的打开 / 保存对话框" 单独存成 `StandardDialogs`; 对话框跳转和一键加日期的热键都改名为 `Hotkey`; 删掉不再使用的 `ExplorerHotkey`、`AppendHotkey` 和应用程序的 `RefreshMinutes`
-- 老用户的设置一起升级: 内置索引的排除规则还是旧默认值的, 换成新默认值 (多跳过 `.svn`、`.venv`、`.idea` 等缓存文件夹) 并重新扫描; 已经去掉的紧凑主题 (DarkCompact 等) 换成对应的主题加 "常规" 密度
-- 代码整理: 读 Windows "最近使用的项目" 的代码移到单独的 `Lib\WindowsRecent.ahk` (文件搜索和对话框跳转共用); 判断网络路径和扩展名的函数移到 `Path`; 偏好设置里列表的写法简化
-
-### 修复
-- 操作后的小提示 (例如 "已复制") 正在淡入时又被关掉或换成新的提示, 偶尔会弹出 "Parameter #1 of SetTimer requires an Object" 的错误
-
-## [2026.10.20.27]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 文字片段: "不展开的窗口" 移到 "粘贴方式" / "等待" 的下面, 四个短框排在一起
-
-## [2026.10.20.26]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 文字片段 整理: "搜索关键字" 和 "关键字前缀" 放在同一行, 和下面的 "粘贴方式" / "等待" 排成两行两列, 四个框一样宽、左右各自对齐; 两个说明合成一段
-- 剪贴板 → 不记录的程序、搜索来源 → 文件夹、文字片段 → 不展开的窗口: 摘要框和 "编辑..." 按钮伸到页面最右边 (只有 文件搜索 → 文件类型 的按钮和上下的输入框对齐)
-
-## [2026.10.20.25]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置里其它列表也改成 "一行摘要 + 编辑...", 在单独的大窗口里修改 (每行一项, 长的行不折行, 上面有详细说明): 应用程序 → 文件夹、已删除的应用 (摘要只显示应用名); 功能 → 已删除的命令; 搜索来源 → 文件夹; 剪贴板 → 不记录的程序; 文字片段 → 不展开的窗口; 对话框跳转 → 其它对话框、不生效的窗口、不自动跳转的对话框; 一键加日期 → 两个 "生效的窗口"。设置文件的格式不变 (窗口列表仍然是逗号分隔的一行)
-- "编辑..." 按钮在有成对设置的页面上和右列的输入框对齐 (例如 文字片段 → 不展开的窗口 和下面的 "延迟")
-
-## [2026.10.20.24]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 文件搜索 → "文件类型" 改成一行: 只显示关键字 (`doc, pic, video, …`), 点 "编辑..." 在单独的大窗口里修改 (每行一条规则, 长的行不折行, 上面有详细说明)。按钮和上下两行右边的输入框对齐; 页面省出的空间用来把 "最近文件关键字" 的说明写得详细一些
-- 偏好设置 → 剪贴板 → "保存位置" 下拉框的右边和 "最长" 输入框对齐 (英文选项改短: "This PC: images and long items" / "This PC: everything")
-
-### 修复
-- 对话框跳转面板: 没有打开任何资源管理器或 Total Commander、列表是空的时候, 下面多出一条横向滚动条 (最后一列至少有它 (隐藏的) 标题那么宽, 超出了右边)
-
-## [2026.10.20.23]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 文件搜索 → "最近文件关键字" 下面加回一行灰色说明 ("recent 报告" 搜最近打开过的文件, 最新的在前); "文件类型" 保持 3 行
-
-## [2026.10.20.22]
-
-测试版。
-
-Test build.
-
-### 新增
-- 搜索最近打开的文件: 输入 `recent 报告` 搜最近在任何程序里打开过的文件和文件夹 (Windows 的 "最近使用的项目"), 最新的在前, 本地和网络上的都有; 只输入 `recent ` 列出最新的。直接读 Windows 的 "最近使用的项目" 文件夹, 不需要 Everything, 也不用内置索引; 结果是原文件本身, 打开、定位、复制路径等操作都针对原文件。网络上的文件不去访问网络, 网络慢或断开时也不会卡住。关键字在 偏好设置 → 文件搜索 → "最近文件关键字" 修改, 文件搜索模式里也可以用 (AutoHotkey 论坛反馈)
-
-### 改进
-- 对话框跳转菜单里的 "最近的文件夹" 和最近文件搜索共用同一份读取: 读过的快捷方式记住, 没变就不再读, 第二次打开菜单从约 30 ms 降到约 5 ms
-
-## [2026.10.20.21]
-
-测试版。
-
-Test build.
-
-### 修复
-- 正在搜索框里打字时, 输入的文字有时一下子全没了, 窗口变回刚打开的样子: 这时 ALTRun.exe 被别的程序 (或快捷方式) 又启动了一次, 新启动的交给正在运行的 ALTRun 去 "打开搜索窗口", 而打开时总是清空搜索框。现在搜索窗口已经开着时再次呼出 (再次启动 ALTRun、托盘的 "显示"、窗口不在最前面时按热键), 只把窗口切到前面, 输入的文字、结果和光标位置都保留; 窗口关着时呼出还是空的搜索框 (appinn 论坛反馈)
-
-## [2026.10.20.20]
-
-测试版。
-
-Test build.
-
-### 改进
-- 调试日志不再记录任何输入的文字: 结果行显示成空白、窗口高度不对时写进日志的最近 10 次搜索, 原来带着输入的前 30 个字, 现在只记字数。隐私说明 (SECURITY.md) 相应改为 "不记录输入的文字", 和使用说明一致
-- README 的致谢里补上 pypinyin 的版权声明; 官网的介绍写明拼音首字母也认得繁体字和生僻字
-
-## [2026.10.20.19]
-
-测试版。
-
-Test build.
-
-### 改进
-- 调试日志多记几处, 方便查 "搜索框里的字突然没了" 这类问题: 窗口隐藏和原因 (执行、Esc、热键、被哪个程序抢走了焦点), 窗口开着时又呼出了一次 (当时在前台的程序), 搜索框从有字一下子变空 (是 ALTRun 清空的还是一次编辑删光的)。只记字数和程序名, 不记输入的文字
-- 窗口还没显示完就开始打字时, 日志只记打了几个字, 不再记下打的内容 (和使用说明里 "日志不记录输入的文字" 一致)
-
-## [2026.10.20.18]
-
-测试版。
-
-Test build.
-
-### 修复
-- 拼音首字母搜索支持全部汉字: 以前只认 3755 个常用字 (GB2312 一级字), 二级字、生僻字和繁体字 (例如 麋、昊、鑫、喆、記) 没有首字母, 名字里有这些字的程序和文件用拼音首字母搜不到 (#257)。现在由随程序发布的首字母表 `Resources/Pinyin.txt` 查找 (2 万 7 千多个字, 简体和繁体都有), 常用字的首字母和以前一样; 查表比原来转换编码再查区间快约 4 倍
-
-## [2026.10.20.17]
-
-测试版。
-
-Test build.
-
-### 改进
-- 状态栏的 "打开所在位置" 改成更短的 "定位" (英文 Reveal, 和操作面板里的 "在文件管理器中显示" 一致)
-- 使用提示改回空搜索框的占位文字 (上一版的小字标签下面有光标一直在闪, 风格也和其它地方不一样); 放不下时末尾显示 "…", 不再从中间切掉
-- 检查更新、安装更新失败时, 提示改成看得懂的话, 原始错误放在最后一行作为 "详细信息"。例如 GitHub 返回 "HTTP 403 rate limit exceeded" 时显示 "GitHub 暂时限制了查询次数 (同一网络里查询的人太多), 请稍后再试"; 连不上网络、GitHub 出问题、找不到下载、下载校验不通过等也各有说明
-
-## [2026.10.20.16]
-
-测试版。
-
-Test build.
-
-### 改进
-- 状态栏多显示两个操作, 例如文件夹: "打开 ↵ | 打开所在位置 Ctrl ↵ | 编辑 F3 | 操作 →"。`Ctrl+Enter` 按结果类型显示 (打开所在位置 / 粘贴 / 复制), 和 `Enter` 一样时不显示; 能编辑的结果才显示 `F3`
-- 使用提示改到空搜索框里, 用灰色小字显示 (不再用搜索框的大字, 长的提示也放得下), 一开始打字就消失; 状态栏右边留给操作提示。以前默认设置下刚呼出时没有结果行, 状态栏不显示, 提示要等打字后才看得到
-- 搜索窗口最窄改为 450 像素 (原来 400), 保证状态栏的四段都放得下
-
-## [2026.10.20.15]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 外观: "显示结果行数" 下拉框加宽一点, 下面的 "显示密度"、"窗口显示在" 和 "恢复默认位置" 按钮右边和它对齐
-- 偏好设置 → 一键加日期: "日期格式" 输入框和上面的热键框一样宽
-
-## [2026.10.20.14]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 外观: "显示结果行数" 改成 1 ~ 9 的下拉框, 不会再填出范围外的数字 (以前填 25 会悄悄变成 9); 默认值标着 "8 (默认)"
-- 偏好设置 → 一键加日期: 两个热键合成一个, 放在最上面; 改名还是加到行尾, 由下面两节的窗口列表决定 (默认本来就都是 `Ctrl+D`)。如果以前给 "加到行尾" 设了别的键, 现在请用 "热键" 这一个; 设置文件不变 (仍用 `RenameHotkey`)
-
-## [2026.10.20.13]
-
-测试版。
-
-Test build.
-
-### 改进
-- 对话框快速跳转: 加在 "其它对话框" 里、读不到文件名框的对话框 (Java、GTK、Qt6 等程序自己画的对话框), 跳转时不再先按 `Alt+D`, 直接把路径输入到文件名框再按回车 (和 WPS 一样)。`Alt+D` 在这些对话框里不是 "地址栏", 可能什么都不做, 也可能按到对话框里的某个按钮; 系统对话框不受影响
-
-## [2026.10.20.12]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 对话框快速跳转: 热键下面的说明写得更清楚 ("跳到最近用过的 Total Commander、Directory Opus 或资源管理器窗口的文件夹")
-- "其它对话框" 改成一行输入框, 多个窗口用逗号分隔 (和 "不展开的窗口" 一样), 给上面的说明腾出位置; 设置文件不变
-
-## [2026.10.20.11]
-
-测试版。
-
-Test build.
-
-### 新增
-- 对话框快速跳转支持 Directory Opus: 文件夹面板列出每个 Opus 窗口当前的标签页 (双栏时也列出另一侧), `Ctrl+G` 和自动跳转也能跳到 Opus 的文件夹。用 Opus 自带的 `dopusrt /info` 读取, 不经过剪贴板; 只在开着 Opus、需要文件夹时运行, 面板先显示其它文件夹, Opus 的稍后补上
-
-### 改进
-- 对话框快速跳转只用一个热键 `Ctrl+G`: 跳到最近用过的文件管理器 (Total Commander、Directory Opus 或资源管理器) 当前的文件夹, 和 Listary 一样。原来跳到资源管理器的 `Ctrl+E` 不再使用, 还给资源管理器和文件对话框原来的 "定位到搜索框"; 改过这个热键的话, 现在请用 `Ctrl+G`
-  - 偏好设置 → 对话框快速跳转: 两个热键框合成一个 "热键", 下面的说明写了支持哪三种文件管理器
-  - 自动跳转也支持这三种: 从其中任何一个切换到对话框时, 跳到刚才那个窗口的文件夹
-  - 设置文件不变 (仍用 `TotalCmdHotkey`), 改名和去掉 `ExplorerHotkey` 留到下次升级设置版本时再做
-
-## [2026.10.20.10]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置的 "键盘"、"计算器"、"对话框快速跳转" 三页: 左边的标签列和 "一键加日期" 页一样宽, 右边的选项和说明不再挤在右侧
-  - 英文的 "Switch to English when shown" 简化为 "Switch to English" (说明里写了呼出时切换); "对话框快速跳转" 的两个热键标签简化为 "Total Commander" / "资源管理器"
-
-### 修复
-- 偏好设置 → 键盘: 改 "CapsLock 键" 时, "在管理员窗口里也生效" 前面的管理员盾牌图标会消失。盾牌改放在文字后面, 不再和复选框重叠
-
-## [2026.10.20.9]
-
-测试版。
-
-Test build.
-
-### 新增
-- 对话框快速跳转支持旧式的 "浏览文件夹" 对话框 (只有文件夹树, 很多程序选择目录时还在用): 文件夹面板照常贴在下面, 点一下文件夹 (或用 `Ctrl+G` / `Ctrl+E`), 左边的文件夹树就展开并选中它, 确定还是由用户自己点; 和 Listary 一样
-  - 偏好设置 → 对话框快速跳转 → 生效的窗口 新增 "浏览文件夹对话框" 开关, 默认打开 (`Extensions.QuickSwitch.BrowseDialogs`)
-
-## [2026.10.20.8]
-
-测试版。
-
-Test build.
-
-### 修复
-- ALTRun 自己打开着系统对话框时 (例如编辑自定义命令时点了 "选择文件" / "选择文件夹", 或者有确认框), 呼出的搜索窗口能搜索, 但 `Enter` 不能执行、`Esc` 不能关闭, `↑` `↓` `Tab` 等也不起作用。原因是这时 AutoHotkey 收不到发给搜索框的按键消息; 现在这种情况下改在搜索框自己的窗口过程里处理按键
-
-## [2026.10.20.7]
-
-测试版。
-
-Test build.
-
-### 改进
-- Wiki 的 "自定义命令与片段" 拆成 [自定义命令](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands-zh) 和 [文字片段](https://github.com/zhugecaomao/ALTRun/wiki/Snippets-zh) 两页, 和偏好设置的两个页面对应; 偏好设置的帮助按钮 / F1 和使用提示打开对应的那一页。旧的页面留一个指向这两页的链接
-
-### 修复
-- 偏好设置 → 文字片段 → "不展开的窗口" 在 Wiki 里没有说明: 文字片段页新增 "不展开的窗口" 一节 (写法、默认值、总是不展开的地方)
-
-## [2026.10.20.6]
-
-测试版。
-
-Test build.
-
-### 改进
-- 自定义热键的默认示例换成三个有代表性的 (只对新安装生效, 已有的设置保留自己的列表), 每种用法一个:
-  - `Ctrl+Alt+Win+V`: 在任何地方把剪贴板粘贴为纯文本 (和 PowerToys 的 "粘贴为纯文本" 同一个键)
-  - `Ctrl+Alt+T`: 在资源管理器里, 在当前文件夹打开终端
-  - `Ctrl+R`: 在 ALTRun 搜索窗口里重建索引
-  - 默认没有鼠标热键, 新安装不再装鼠标钩子
-
-### 修复
-- 用自定义热键执行 "在当前文件夹打开终端" 时, 打开的是按热键时所在的资源管理器文件夹, 而不是上次呼出 ALTRun 之前的窗口
-
-## [2026.10.20.5]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置新增 "键盘" 页 (第 3 页): 输入法 (CapsLock 键、大写锁定开 / 关的提示、在管理员窗口里也生效、呼出时切换到英文、窗口隐藏后切回原来的输入法) 和 搜索框按键 (按空格执行选中项、Tab 键、搜索历史条数)。这些选项原来在 "搜索窗口" 和 "自定义热键" 页, 设置文件不变
-  - "搜索窗口" 页只留窗口和空搜索框, 不再拥挤, 之前为了放下 Tab 键去掉的说明都恢复了
-  - "自定义热键" 页只有热键列表, 列表更高
-  - "自定义热键" 页的侧边栏图标换成快捷键图标, "键盘" 页用键盘图标
-- 偏好设置里所有下拉框的默认选项后面都标上 "(默认)", 例如 "自动补全 (默认)"; 选项放不下时下拉框自动加宽
-- "Tab 键" 的两个选项改名为 "自动补全" 和 "选择下一个结果", 更好懂
-
-## [2026.10.20.4]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 搜索窗口 → "Tab 键" (`General.TabKey`): 默认仍是自动补全; 选 "切换到下一个结果" 后, `Tab` / `Shift+Tab` 选下一个 / 上一个结果 (最后一个之后回到第一个, 和 uTools 一样), `Ctrl+Tab` 自动补全。使用提示和 `?` 速查表跟着设置显示。#238 的建议
-
-## [2026.10.20.3]
-
-测试版。
-
-Test build.
-
-### 改进
-- 使用提示和 `?` 速查表更容易看懂: 最常用的排在前面 (空格 / `folder` / `file` / `doc` + 名称、`Ctrl+Enter`、`→`、Quick Switch、`F1` ~ `F4`...), 写法统一成 "关键字 + 名称" (例如 `folder + 名称`、`file / open / ' + 名称`、`doc / zip + 名称`), 每条说明写清做什么; 新增一条 Quick Switch 的提示 (`Ctrl+G / Ctrl+E`, 在打开 / 保存对话框里)
-
-## [2026.10.20.2]
-
-测试版。
-
-Test build.
-
-### 改进
-- Wiki 改成英文为默认, 和 README 一样: 英文页面去掉 `en-` 前缀 (例如 `Usage`), 中文页面加上 `-zh` 后缀 (例如 `Usage-zh`), 首页 `Home` 是英文, `Home-zh` 是中文; 侧边栏英文在前。中文界面 (简体、繁体) 的帮助 (`F1`、`?` 速查表) 打开 `-zh` 页, 其它语言打开英文页; README、官网、Bug 报告模板里的链接都改到新名字
-  - 原来指向中文页的旧链接 (例如 `wiki/Usage`) 现在打开英文页, 每页开头可以切换到中文
-  - 原来的英文页 (例如 `wiki/en-Usage`) 暂时保留成一行的跳转页, 指向新名字; 2026.10.20 之后发布满三个正式版后自动删掉
-
-## [2026.10.20.1]
-
-测试版。
-
-Test build.
-
-### 修复
-- ALTRun 在剪贴板变化后马上去读, 会占着剪贴板, 让截图工具等写完剪贴板马上又打开它的程序 OpenClipboard 失败。现在等约 0.15 秒再读 (期间又变了就先读上一次的), 复制图片时只在复制原始数据时打开剪贴板, 转换和存 PNG 在关掉之后做。AutoHotkey 论坛用户的反馈
-- 文件搜索 (用 Everything 时) 只输入 Everything 的语法 (例如 `d:`、`folder:`) 时报错 "Parameter #2 of InStr is invalid"。AutoHotkey 论坛用户的反馈
-- "系统信息" (msinfo32) 等本身是对话框 (`#32770`) 的程序窗口被当成打开 / 保存对话框, 触发对话框快速跳转和文件夹面板; 现在 `#32770` 窗口要有资源管理器的文件列表才算。AutoHotkey 论坛用户的反馈
+## [2026.10.26]
+
+### Summary
+
+Search recently opened files (`recent`) and scripts only (`script`); pinyin initials now cover every Chinese character, including rare and Traditional ones; Quick Switch supports Directory Opus and the old "Browse for Folder" dialog, all with one hotkey, `Ctrl+G`; `Tab` can select the next result; Preferences has a new Keyboard page, and long lists became a one-line summary with "Edit..."; the status bar shows more actions; fixed typed text sometimes disappearing all at once. The settings file is upgraded to version 6.
+
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- The settings file is upgraded to version 6: the first start of the new version backs up ALTRun.json as `ALTRun.v5.backup.json` and shows a "Settings upgraded" notice once. After upgrading, don't open the same settings file with an older version (it can't read the new list format); to go back to an older version, first rename the backup to ALTRun.json
+  - Window lists are stored as arrays instead of one comma-separated line, so window titles with commas work too; the Quick Switch and Date Stamp hotkeys are renamed to `Hotkey`; the unused `ExplorerHotkey`, `AppendHotkey` and the applications' `RefreshMinutes` are removed (#176)
+  - The built-in file index exclusions, if still the old default, become the new default (also skipping cache folders such as `.svn`, `.venv`, `.idea`) and the index is rescanned once; exclusions you changed are left alone
+  - The removed compact themes (DarkCompact etc.) are rewritten as the matching theme with "Normal" density; nothing changes on screen
+- Quick Switch uses a single hotkey, `Ctrl+G` (Total Commander, Directory Opus or Explorer): `Ctrl+E`, which jumped to Explorer, is no longer used and goes back to "focus the search box" in Explorer and file dialogs
+- Date Stamp's two hotkeys are merged into one; if you had set a different key for "append to the end", set it in Preferences → Date Stamp → "Hotkey"
+- The Wiki is now in English by default: English pages lost the `en-` prefix (e.g. `Usage`), Chinese pages have a `-zh` suffix (e.g. `Usage-zh`); old `en-` links still redirect for now
+
+### New
+- **Search recently opened files**: type `recent report` to search the files and folders recently opened in any program (Windows "Recent items"), newest first, local and network alike; `recent ` alone lists the newest. No Everything or built-in index needed; the results are the original files, so open, reveal, copy path and the other actions work on them; network files are not accessed, so a slow or disconnected network doesn't stall the search. Change the keyword in Preferences → File Search → "Recent keywords"; it works in file search mode too (AutoHotkey forum feedback)
+- **Script keyword**: `script backup` searches scripts only, `script ` lists all scripts (like `snip` for snippets and `clip` for the clipboard); `script` alone shows a hint "Find scripts by name" below the other results. Change the keyword in Preferences → Scripts → "Search keyword"; the `?` cheat sheet lists it too (suggested on the appinn forum)
+- **`Tab` selects the next result** (#238): with Preferences → Keyboard → "Tab key" set to "Select next result", `Tab` / `Shift+Tab` select the next / previous result (wrapping around after the last), and completion moves to `Ctrl+Tab`; completion stays the default. The usage tips and `?` cheat sheet follow the setting
+- **Quick Switch supports Directory Opus**: the folder panel lists the current tab of every Opus window (and the other side in dual mode), and `Ctrl+G` and automatic switching jump to Opus folders too. Read with Opus's own `dopusrt /info`, not through the clipboard, and only while Opus is running; the panel shows the other folders first and adds the Opus ones a moment later
+- **Quick Switch supports the old "Browse for Folder" dialog** (just a folder tree, still used by many programs to pick a folder): the folder panel attaches below as usual; click a folder (or press `Ctrl+G`) and the tree expands to it and selects it, and you still click OK yourself, as in Listary. Preferences → Quick Switch → Works in → "Browse for Folder dialogs (folder tree only)", on by default
+- **New Keyboard page in Preferences**: input method options (Caps Lock, the caps lock notice, also in windows running as administrator, switch to English when shown, switch back after hiding) and search box keys (Space runs the selection, Tab key, search history size) in one place; the Search Window page is no longer crowded, and the Custom Hotkeys page has only the hotkey list, which is taller
+
+### Improvements
+- **Long lists in Preferences became a one-line summary with "Edit..."** (#244): File Search → File types; Applications → Folders, Hidden apps; Features → Hidden commands; Search Sources → Folders; Clipboard → Never record from; Snippets → Don't expand in; Quick Switch → Other dialogs, Never in, No auto jump in; Date Stamp → both "Works in" lists. "Edit..." opens a large window (one item per line, long lines not wrapped, a detailed description on top); the space saved on the pages goes to more detailed descriptions
+- **The status bar shows more actions**, e.g. for a folder: "Open ↵ | Reveal Ctrl ↵ | Edit F3 | Actions →". `Ctrl+Enter` depends on the result type (reveal / paste / copy) and is hidden when it does the same as `Enter`; `F3` appears only for results that can be edited. The search window is at least 450 pixels wide so the status bar fits; usage tips in the empty search box end with "…" when they don't fit
+- Preferences layout: the default option of every dropdown is marked "(default)", and dropdowns widen when an option doesn't fit; the "Tab key" options are renamed "Autocomplete" / "Select next result"; Appearance → "Visible results" is a 1–9 dropdown (typing 25 used to silently become 9); the label column on the Keyboard, Calculator and Quick Switch pages is as wide as on Date Stamp; short boxes are aligned in two columns and long ones (paths, lists, dropdowns with long options) reach the right edge, e.g. the four short boxes on Snippets and Clipboard → "Save in"; the Quick Switch hotkey description is clearer
+- Quick Switch: for dialogs added under "Other dialogs" whose file name box can't be read (dialogs drawn by Java, GTK, Qt6 and other programs), it no longer presses `Alt+D` first but types the path into the file name box and presses Enter (in those dialogs `Alt+D` may press some button); system dialogs are unchanged
+- The "Recent folders" of the Quick Switch menu and the recent files search share one reader that remembers shortcuts it has read: opening the menu a second time takes about 5 ms instead of about 30 ms
+- The usage tips and `?` cheat sheet are easier to follow: the most used first, written as "keyword + name" (e.g. `folder + name`), each saying what it does; a new tip for Quick Switch
+- The default custom hotkey examples are three representative ones (new installations only): `Ctrl+Alt+Win+V` pastes as plain text anywhere, `Ctrl+Alt+T` opens a terminal in the current Explorer folder, `Ctrl+R` rebuilds the index in the search window; no default mouse hotkeys, so new installations no longer install a mouse hook
+- When checking for or installing an update fails, the message is in plain words (e.g. GitHub limited the number of queries, no network, the download failed verification), with the original error on the last line; when the show hotkey can't be registered, the message is in all four languages and says it may be taken by another program and where to change it
+- Privacy and security: update checks only use this repository's download and release page addresses; the debug log no longer records any typed text (only the number of characters); the privacy notes (SECURITY.md) are updated to match
+- More details in the debug log for troubleshooting: why the window was hidden, the window being shown again while open, the search box suddenly becoming empty; failures of a few key operations (parsing the settings file, the backup before an upgrade, restoring files after a failed one-click update, saving the index on exit) are logged instead of silently ignored
+- Wiki: English by default, Chinese pages with a `-zh` suffix; help (`F1`, `?`) opens the Chinese pages in the Chinese UI and the English pages otherwise; "Custom Commands and Snippets" is split into Custom Commands and Snippets, and the Snippets page explains "Don't expand in"; new window switching and "Send to" screenshots in the README, on the website and in the Wiki
+- The README credits include the pypinyin copyright notice
+- Code cleanup (no change in features or appearance): the search window and Preferences are each split into several files; core modules no longer call the UI and extensions directly (a test checks the layers); comma-separated lists are handled in one place; code comments are all in English
+
+### Fixes
+- Typed text sometimes disappeared all at once while typing in the search box: ALTRun.exe had been started again by another program (or a shortcut), and showing the search window always cleared it. Now showing the window while it is already open only brings it to the front, keeping the text, results and cursor position (appinn forum feedback)
+- Pinyin initials cover every Chinese character (#257): only the 3,755 common characters used to have initials, so names with less common, rare or Traditional characters (e.g. 麋, 昊, 鑫, 喆, 記) couldn't be found by pinyin initials. A table shipped with ALTRun now covers more than 27,000 characters, Simplified and Traditional, and the lookup is about 4 times faster
+- While ALTRun itself showed a system dialog (e.g. "Choose file" while editing a command), `Enter`, `Esc`, `↑` `↓` and `Tab` didn't work in the search window
+- ALTRun read the clipboard right after it changed, making programs such as screenshot tools fail when they opened the clipboard again right after writing it; it now waits about 0.15 s (AutoHotkey forum feedback)
+- File search with Everything: typing only Everything syntax (e.g. `d:`, `folder:`) showed the error "Parameter #2 of InStr is invalid" (AutoHotkey forum feedback)
+- Programs whose main window is itself a dialog, such as "System Information" (msinfo32), were treated as Open / Save dialogs, triggering Quick Switch and the folder panel (AutoHotkey forum feedback)
+- The custom hotkey "Open terminal in the current folder" opened the window from before ALTRun was last shown, not the Explorer folder where the hotkey was pressed
+- Preferences → Keyboard: changing "Caps Lock" made the shield icon of "Also in windows running as administrator" disappear
+- Dialog Folder Panel: an empty list showed a horizontal scroll bar
+- When a notice after an action (e.g. "Copied") was closed or replaced while fading in, the error "Parameter #1 of SetTimer requires an Object" could appear
+
+---
+
+### 中文说明
+
+搜索最近打开的文件 (`recent`)、只搜脚本 (`script`); 拼音首字母认得全部汉字, 包括生僻字和繁体字; 对话框快速跳转支持 Directory Opus 和旧式的 "浏览文件夹" 对话框, 只用一个热键 `Ctrl+G`; `Tab` 可以选下一个结果; 偏好设置新增 "键盘" 页, 长的列表改成 "一行摘要 + 编辑..."; 状态栏显示更多操作; 修复了打字时输入的文字偶尔一下子全没了的问题。设置文件升级到版本 6。
+
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 设置文件升级到版本 6: 第一次启动新版本时把原来的 ALTRun.json 备份成 `ALTRun.v5.backup.json`, 并提示一次 "设置已升级"。升级后不要再用旧版本打开同一个设置文件 (旧版本读不了新的列表格式); 要退回旧版本时, 先把备份文件改回 ALTRun.json
+  - 窗口列表从逗号分隔的一行改成数组, 窗口标题里带逗号的也能写了; 对话框快速跳转和一键加日期的热键改名为 `Hotkey`; 删掉不再使用的 `ExplorerHotkey`、`AppendHotkey` 和应用程序的 `RefreshMinutes` (#176)
+  - 内置文件索引的排除规则还是旧默认值的, 换成新默认值 (多跳过 `.svn`、`.venv`、`.idea` 等缓存文件夹) 并重新扫描一次; 改过的不动
+  - 已经去掉的紧凑主题 (DarkCompact 等) 改写成对应的主题加 "常规" 密度, 外观不变
+- 对话框快速跳转只用一个热键 `Ctrl+G` (Total Commander、Directory Opus 或资源管理器): 原来跳到资源管理器的 `Ctrl+E` 不再使用, 还给资源管理器和文件对话框原来的 "定位到搜索框"
+- 一键加日期的两个热键合成一个; 以前给 "加到行尾" 设了别的键的, 请在 偏好设置 → 一键加日期 → "热键" 里重新设
+- Wiki 改成英文为默认: 英文页面去掉 `en-` 前缀 (例如 `Usage`), 中文页面加上 `-zh` 后缀 (例如 `Usage-zh`); 旧的 `en-` 链接暂时还能跳转
+
+#### 新增
+- **搜索最近打开的文件**: 输入 `recent 报告` 搜最近在任何程序里打开过的文件和文件夹 (Windows 的 "最近使用的项目"), 最新的在前, 本地和网络上的都有; 只输入 `recent ` 列出最新的。不需要 Everything, 也不用内置索引; 结果是原文件本身, 打开、定位、复制路径等操作都针对原文件; 网络上的文件不去访问网络, 网络慢或断开时也不会卡住。关键字在 偏好设置 → 文件搜索 → "最近文件关键字" 修改, 文件搜索模式里也可以用 (AutoHotkey 论坛反馈)
+- **脚本关键字**: 输入 `script 备份` 只搜脚本, 只输入 `script ` 列出全部脚本 (和片段的 `snip`、剪贴板的 `clip` 一样); 只输入 `script` 时在其它结果下面提示 "按名称查找脚本"。关键字在 偏好设置 → 脚本 → "搜索关键字" 修改, `?` 速查表里也列出 (appinn 论坛建议)
+- **`Tab` 选下一个结果** (#238): 偏好设置 → 键盘 → "Tab 键" 选 "选择下一个结果" 后, `Tab` / `Shift+Tab` 选下一个 / 上一个结果 (最后一个之后回到第一个), 自动补全改用 `Ctrl+Tab`; 默认仍是自动补全。使用提示和 `?` 速查表跟着设置显示
+- **对话框快速跳转支持 Directory Opus**: 文件夹面板列出每个 Opus 窗口当前的标签页 (双栏时也列出另一侧), `Ctrl+G` 和自动跳转也能跳到 Opus 的文件夹。用 Opus 自带的 `dopusrt /info` 读取, 不经过剪贴板, 只在开着 Opus 时运行; 面板先显示其它文件夹, Opus 的稍后补上
+- **对话框快速跳转支持旧式的 "浏览文件夹" 对话框** (只有文件夹树, 很多程序选择目录时还在用): 文件夹面板照常贴在下面, 点一下文件夹 (或按 `Ctrl+G`), 左边的文件夹树就展开并选中它, 确定还是由自己点, 和 Listary 一样。偏好设置 → 对话框快速跳转 → 生效的窗口 → "浏览文件夹对话框", 默认打开
+- **偏好设置新增 "键盘" 页**: 输入法 (CapsLock 键、大写锁定的提示、在管理员窗口里也生效、呼出时切换到英文、隐藏后切回原来的输入法) 和搜索框按键 (按空格执行选中项、Tab 键、搜索历史条数) 集中在这里; "搜索窗口" 页不再拥挤, "自定义热键" 页只有热键列表, 列表更高
+
+#### 改进
+- **偏好设置里的长列表改成 "一行摘要 + 编辑..."** (#244): 文件搜索 → 文件类型; 应用 → 文件夹、已删除的应用; 功能 → 已删除的命令; 搜索来源 → 文件夹; 剪贴板 → 不记录的程序; 文字片段 → 不展开的窗口; 对话框快速跳转 → 其它对话框、不生效的窗口、不自动跳转的对话框; 一键加日期 → 两个 "生效的窗口"。点 "编辑..." 在单独的大窗口里修改 (每行一项, 长的行不折行, 上面有详细说明); 页面省出的空间用来把说明写得更详细
+- **状态栏显示更多操作**, 例如文件夹: "打开 ↵ | 定位 Ctrl ↵ | 编辑 F3 | 操作 →"。`Ctrl+Enter` 按结果类型显示 (定位 / 粘贴 / 复制), 和 `Enter` 一样时不显示; 能编辑的结果才显示 `F3`。搜索窗口最窄改为 450 像素, 保证状态栏放得下; 空搜索框里的使用提示放不下时末尾显示 "…"
+- 偏好设置的排版: 所有下拉框的默认选项标上 "(默认)", 选项放不下时下拉框自动加宽; "Tab 键" 的选项改名为 "自动补全" / "选择下一个结果"; 外观 → "显示结果行数" 改成 1 ~ 9 的下拉框 (以前填 25 会悄悄变成 9); 键盘、计算器、对话框快速跳转三页的标签列和一键加日期页一样宽; 短的输入框按两列对齐, 长的 (路径、列表、选项文字长的下拉框) 伸到页面右边, 例如 文字片段 页的四个短框、剪贴板 → "保存位置"; 对话框快速跳转热键的说明写得更清楚
+- 对话框快速跳转: 加在 "其它对话框" 里、读不到文件名框的对话框 (Java、GTK、Qt6 等程序自己画的对话框), 跳转时不再先按 `Alt+D`, 直接把路径输入到文件名框再按回车 (在这些对话框里 `Alt+D` 可能按到某个按钮); 系统对话框不受影响
+- 对话框跳转菜单里的 "最近的文件夹" 和最近文件搜索共用同一份读取, 读过的快捷方式记住: 第二次打开菜单从约 30 ms 降到约 5 ms
+- 使用提示和 `?` 速查表更容易看懂: 最常用的排在前面, 写法统一成 "关键字 + 名称" (例如 `folder + 名称`), 每条写清做什么; 新增一条对话框快速跳转的提示
+- 自定义热键的默认示例换成三个有代表性的 (只对新安装生效): `Ctrl+Alt+Win+V` 在任何地方粘贴为纯文本、`Ctrl+Alt+T` 在资源管理器的当前文件夹打开终端、`Ctrl+R` 在搜索窗口里重建索引; 默认没有鼠标热键, 新安装不再装鼠标钩子
+- 检查更新、安装更新失败时, 提示改成看得懂的话 (例如 GitHub 限制了查询次数、连不上网络、下载校验不通过), 原始错误放在最后一行; 呼出热键注册不了时的提示改成四种语言, 并说明可能被别的程序占用、去哪里换
+- 隐私和安全: 检查更新只使用本仓库的下载地址和发布页面地址; 调试日志不再记录任何输入的文字 (只记字数); 隐私说明 (SECURITY.md) 相应更新
+- 调试日志多记几处, 方便查问题: 窗口隐藏的原因、窗口开着时又被呼出、搜索框突然变空; 几处关键操作失败 (设置文件解析失败、升级前的备份、一键更新失败后还原文件、退出时保存索引) 也写进日志, 不再悄悄忽略
+- Wiki: 英文为默认, 中文页面加 `-zh` 后缀; 中文界面的帮助 (`F1`、`?`) 打开中文页, 其它语言打开英文页; "自定义命令与片段" 拆成 自定义命令 和 文字片段 两页, 文字片段页补上 "不展开的窗口" 的说明; README、官网和 Wiki 新增窗口切换和 "发送到" 的截图
+- README 的致谢补上 pypinyin 的版权声明
+- 代码整理 (功能和外观不变): 搜索窗口和偏好设置各拆成几个文件; 核心模块不再直接调用界面和扩展功能 (有测试检查分层); 逗号分隔列表统一处理; 代码注释统一用英文
+
+#### 修复
+- 正在搜索框里打字时, 输入的文字有时一下子全没了: 这时 ALTRun.exe 被别的程序 (或快捷方式) 又启动了一次, 而打开搜索窗口时总是清空搜索框。现在窗口已经开着时再次呼出, 只把窗口切到前面, 输入的文字、结果和光标位置都保留 (appinn 论坛反馈)
+- 拼音首字母支持全部汉字 (#257): 以前只认 3755 个常用字, 二级字、生僻字和繁体字 (例如 麋、昊、鑫、喆、記) 没有首字母, 名字里有这些字的用拼音首字母搜不到。现在用随程序发布的首字母表 (2 万 7 千多个字, 简体和繁体都有), 查表也比原来快约 4 倍
+- ALTRun 自己打开着系统对话框时 (例如编辑命令时点了 "选择文件"), 呼出的搜索窗口里 `Enter`、`Esc`、`↑` `↓`、`Tab` 不起作用
+- ALTRun 在剪贴板变化后马上去读, 会让截图工具等写完剪贴板马上又打开它的程序失败; 现在等约 0.15 秒再读 (AutoHotkey 论坛反馈)
+- 文件搜索 (用 Everything 时) 只输入 Everything 的语法 (例如 `d:`、`folder:`) 时报错 "Parameter #2 of InStr is invalid" (AutoHotkey 论坛反馈)
+- "系统信息" (msinfo32) 等本身是对话框的程序窗口被当成打开 / 保存对话框, 触发对话框快速跳转和文件夹面板 (AutoHotkey 论坛反馈)
+- 用自定义热键执行 "在当前文件夹打开终端" 时, 打开的是上次呼出 ALTRun 之前的窗口, 而不是按热键时所在的资源管理器文件夹
+- 偏好设置 → 键盘: 改 "CapsLock 键" 时, "在管理员窗口里也生效" 前面的盾牌图标会消失
+- 对话框文件夹面板: 列表是空的时候下面多出一条横向滚动条
+- 操作后的小提示 (例如 "已复制") 淡入时又被关掉或换成新的提示, 偶尔弹出 "Parameter #1 of SetTimer requires an Object" 的错误
 
 ## [2026.10.20]
 
@@ -1199,43 +919,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.38...HEAD
-[2026.10.20.38]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.37...2026.10.20.38
-[2026.10.20.37]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.36...2026.10.20.37
-[2026.10.20.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.35...2026.10.20.36
-[2026.10.20.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.34...2026.10.20.35
-[2026.10.20.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.33...2026.10.20.34
-[2026.10.20.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.32...2026.10.20.33
-[2026.10.20.32]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.31...2026.10.20.32
-[2026.10.20.31]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.28...2026.10.20.31
-[2026.10.20.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.27...2026.10.20.28
-[2026.10.20.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.26...2026.10.20.27
-[2026.10.20.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.25...2026.10.20.26
-[2026.10.20.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.24...2026.10.20.25
-[2026.10.20.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.23...2026.10.20.24
-[2026.10.20.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.22...2026.10.20.23
-[2026.10.20.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.21...2026.10.20.22
-[2026.10.20.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.20...2026.10.20.21
-[2026.10.20.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.19...2026.10.20.20
-[2026.10.20.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.18...2026.10.20.19
-[2026.10.20.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.17...2026.10.20.18
-[2026.10.20.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.16...2026.10.20.17
-[2026.10.20.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.15...2026.10.20.16
-[2026.10.20.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.14...2026.10.20.15
-[2026.10.20.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.13...2026.10.20.14
-[2026.10.20.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.12...2026.10.20.13
-[2026.10.20.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.11...2026.10.20.12
-[2026.10.20.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.10...2026.10.20.11
-[2026.10.20.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.9...2026.10.20.10
-[2026.10.20.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.8...2026.10.20.9
-[2026.10.20.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.7...2026.10.20.8
-[2026.10.20.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.6...2026.10.20.7
-[2026.10.20.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.5...2026.10.20.6
-[2026.10.20.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.4...2026.10.20.5
-[2026.10.20.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.3...2026.10.20.4
-[2026.10.20.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.2...2026.10.20.3
-[2026.10.20.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.1...2026.10.20.2
-[2026.10.20.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20...2026.10.20.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26...HEAD
+[2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26
 [2026.10.20]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.20
 [2026.10.14]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.14
 [2026.10.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.12
