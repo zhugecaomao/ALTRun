@@ -120,7 +120,7 @@ class Shots {
                     outFile := Shots.OutDir "\" scene[1] ".png"
                     if (hwnd is Array)                                      ; several windows (dialog + folder panel) in one shot
                         Shots.CaptureWindows(hwnd, outFile)
-                    else if (hwnd != "") {                                  ; "" = demo: every frame is already saved
+                    else if (hwnd != "") {                                  ; "" = already saved (demo: every frame, sendto: Explorer and its menus)
                         if (!Shots.WaitPainted(hwnd, 20) && A_Index < 4) {
                             Shots.Diagnose(hwnd)
                             Shots.Log("relaunching")
@@ -538,7 +538,7 @@ class Shots {
     }
 
     ; A sample file selected in Explorer, its context menu open with "Send to" expanded (ALTRun is the first item).
-    ; The full menu, as with Shift+right-click (the short Windows 11 menu has no "Send to")
+    ; The full menu (the short Windows 11 menu has no "Send to")
     static SendTo() {
         try ControlSend("{Esc}", "Edit1", Shots.SearchWindow())            ; close the search window opened at start-up first
         Loop 20 {
@@ -558,35 +558,42 @@ class Shots {
         WinActivate(explorer)
         Sleep(2000)                                                         ; the selection and the file icons
         Shots.BackdropBehind(explorer)
-        ; WM_CONTEXTMENU at the selection (lParam -1, as from the keyboard) straight to the file list, with Shift held for the full menu:
-        ; Shift+F10 goes to the focus, which in Windows 11 Explorer stays in the address / command bar (a XAML island) and opens that bar's menu
+        ; WM_CONTEXTMENU at the selection (lParam -1, as from the keyboard) straight to the file list: Shift+F10 goes to the focus,
+        ; which in Windows 11 Explorer stays in the address / command bar (a XAML island) and opens that bar's menu.
+        ; Windows 11 shows its short menu first; its "Show more options" (Shift+F10) opens the full one. (Shift held from the start
+        ; would give the extended menu, whose Send to also lists every folder in the user profile)
         view := 0
         try view := DllCall("FindWindowEx", "Ptr", ControlGetHwnd("SHELLDLL_DefView1", explorer), "Ptr", 0, "Str", "DirectUIHWND", "Ptr", 0, "Ptr")
         if !view
             throw Error("Explorer file list not found")
-        contextMenu := 0
-        Send("{Shift down}")
-        try {
-            PostMessage(0x7B, view, -1, , view)                             ; WM_CONTEXTMENU
-            contextMenu := WinWait("ahk_class #32768", , 5)
-        } finally Send("{Shift up}")
-        if !contextMenu {
-            classes := ""
-            for window in WinGetList("ahk_exe explorer.exe")
-                try classes .= WinGetClass(window) " "
-            Shots.Log("explorer windows: " classes)
-            throw Error("context menu not shown")
+        PostMessage(0x7B, view, -1, , view)                                 ; WM_CONTEXTMENU
+        if !WinWait("ahk_class #32768", , 3) {
+            Sleep(500)
+            Send("+{F10}")
+            if !WinWait("ahk_class #32768", , 5) {
+                try Shots.Log("active window: " WinGetClass("A"))
+                throw Error("context menu not shown")
+            }
         }
         Sleep(1000)
         Send("n")                                                           ; Se&nd to: opens the submenu with its first item selected
         Sleep(1500)                                                         ; the Send to items are read when it opens
-        menus := WinGetList("ahk_class #32768")
-        if (menus.Length < 2)
+        ; Explorer is topmost and the menus above it: captured as they are, without changing the order (making Explorer topmost again would cover the menu)
+        left := 99999, top := 99999, right := -99999, bottom := -99999, count := 0
+        for hwnd in [explorer, WinGetList("ahk_class #32768")*] {
+            r := Shots.FrameRect(hwnd)
+            Shots.Log(WinGetClass(hwnd) " at " r.X "," r.Y " " r.W "x" r.H)
+            left := Min(left, r.X), top := Min(top, r.Y), right := Max(right, r.X + r.W), bottom := Max(bottom, r.Y + r.H)
+            count += 1
+        }
+        if (count < 3)
             throw Error("Send to submenu not shown")
-        hwnds := [explorer]
-        Loop menus.Length                                                   ; WinGetList is top to bottom: the submenu last, on top
-            hwnds.Push(menus[menus.Length + 1 - A_Index])
-        return hwnds
+        file := Shots.OutDir "\sendto.png"
+        hbm := Shots.CaptureRect(left, top, right - left, bottom - top)
+        try Shots.SavePng(hbm, file)
+        finally DllCall("DeleteObject", "Ptr", hbm)
+        Shots.Log("saved " file " (" (right - left) "x" (bottom - top) ")")
+        return ""                                                           ; already saved
     }
 
     static Preferences() {
