@@ -8,6 +8,7 @@
 ; Usage:
 ;   q := SearchQuery("g hello")
 ;   if q.MatchKeyword(["g", "google"], &term)   ; term = "hello"
+;   SearchQuery("scrip").StartsKeyword(["script"], &keyword)   ; true, keyword = "script" (a keyword not typed in full yet)
 ;   SearchQuery.Keywords("g, ㅎ, google")        ["g", "ㅎ", "google"] (the keyword field can hold several, separated by commas)
 ;===============================================================================
 
@@ -28,6 +29,22 @@ class SearchQuery {
         for keyword in keywords {
             if (keyword != "" && this.Keyword = keyword) {
                 term := this.Rest, matched := keyword
+                return true
+            }
+        }
+        return false
+    }
+
+    ; true when the text (one word, at least PrefixMin letters, no space yet) is the start of a longer keyword, put into keyword
+    static PrefixMin := 3
+    StartsKeyword(keywords, &keyword) {
+        keyword := ""
+        length := StrLen(this.Text)
+        if (this.HasRest || length < SearchQuery.PrefixMin)
+            return false
+        for candidate in keywords {
+            if (StrLen(candidate) > length && SubStr(candidate, 1, length) = this.Text) {
+                keyword := StrLower(candidate)
                 return true
             }
         }

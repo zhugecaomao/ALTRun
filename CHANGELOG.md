@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.3]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内置关键字还没输完整时 (至少 3 个字母, 例如 `scr`、`scrip`、`fol`、`rec`、`vid`), 列表最后也显示这个关键字的提示, 按 `Enter`、`Tab` 或双击补全成 `script `、`folder ` 等。以前要把关键字输完整才有提示, 输到一半时往下翻也找不到。提示排在所有匹配结果后面, 不影响其它结果; `doc`、`zip` 这类只有 3 个字母的关键字照旧
+
 ## [2026.10.26.2]
 
 测试版。
@@ -937,7 +946,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...HEAD
+[2026.10.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...2026.10.26.3
 [2026.10.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...2026.10.26.2
 [2026.10.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26...2026.10.26.1
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26

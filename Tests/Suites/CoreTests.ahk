@@ -38,6 +38,14 @@ class CoreTests {
         TestRunner.True("SearchQuery.keyword only", q.MatchKeyword(["g"], &term) && term = "" && !q.HasRest)
         q := SearchQuery("clip ")
         TestRunner.True("SearchQuery.keyword + space", q.MatchKeyword(["clip"], &term) && term = "" && q.HasRest)
+        ; the start of a keyword not typed in full yet: at least 3 letters, no space, a longer keyword (case-insensitive)
+        keyword := ""
+        TestRunner.True("SearchQuery.starts keyword", SearchQuery("Scrip").StartsKeyword(["open", "script"], &keyword) && keyword = "script")
+        TestRunner.True("SearchQuery.starts keyword: 3 letters", SearchQuery("scr").StartsKeyword(["script"], &keyword))
+        TestRunner.True("SearchQuery.starts keyword: too short", !SearchQuery("sc").StartsKeyword(["script"], &keyword))
+        TestRunner.True("SearchQuery.starts keyword: typed in full", !SearchQuery("script").StartsKeyword(["script"], &keyword))
+        TestRunner.True("SearchQuery.starts keyword: after a space", !SearchQuery("scr ").StartsKeyword(["script"], &keyword))
+        TestRunner.True("SearchQuery.starts keyword: not the start", !SearchQuery("ript").StartsKeyword(["script"], &keyword))
     }
 
     static SchemaMigration() {

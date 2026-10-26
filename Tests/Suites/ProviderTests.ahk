@@ -1233,6 +1233,15 @@ class ProviderTests {
         eq("hint completes: file type", complete("doc"), "doc ")
         eq("hint completes: recent", complete("recent"), "recent ")
         eq("keyword with space: no completion", complete("folder "), "")
+        ; a keyword not typed in full yet: the same hint at the end of the list
+        prefixHint := (text) => FileSearchProvider.Search(SearchQuery(text))
+        eq("prefix hint: folder", prefixHint("fol").Length "|" prefixHint("fol")[1].AutoComplete "|" prefixHint("fol")[1].Score, "1|folder |" ResultItem.KeywordPrefixHintScore)
+        eq("prefix hint: recent", prefixHint("rec")[1].AutoComplete, "recent ")
+        eq("prefix hint: file type", prefixHint("vid")[1].AutoComplete, "video ")
+        eq("prefix hint: the keyword it starts", prefixHint("fin")[1].AutoComplete, "find ")
+        eq("prefix hint: not exclusive, can't run", prefixHint("fol")[1].Exclusive "|" prefixHint("fol")[1].Valid, "0|0")
+        eq("prefix hint: two letters are not enough", prefixHint("fo").Length, 0)
+        eq("prefix hint: after every match", ResultItem.KeywordPrefixHintScore < 30 - 4, true)      ; the weakest match (letters in order, long text) scores 26
         eq("quote alone exclusive", FileSearchProvider.Search(SearchQuery("'"))[1].Exclusive, true)
         ; Everything results come by modification time: name-start / word-start matches first, folders first on ties
         found := [{Path: "C:\a\noteatlas.pdf", IsFolder: 0, Score: FileIndex.ScoreName("atlas", "noteatlas.pdf")}
@@ -1592,6 +1601,9 @@ class ProviderTests {
         eq("keyword without space: a hint", hint.Length "|" hint[1].Valid "|" hint[1].Exclusive "|" hint[1].Subtitle, "1|0|0|script ...")
         eq("keyword without space: hint score", hint[1].Score, ResultItem.KeywordHintScore)
         eq("keyword without space: Enter / Tab complete", hint[1].AutoComplete, "script ")
+        prefix := ScriptProvider.Search(SearchQuery("scrip"))               ; not typed in full yet: the hint at the end of the list
+        eq("keyword start: a hint", prefix.Length "|" prefix[1].Valid "|" prefix[1].AutoComplete "|" prefix[1].Score, "1|0|script |" ResultItem.KeywordPrefixHintScore)
+        eq("keyword start: two letters are not enough", ScriptProvider.Search(SearchQuery("sc")).Length, 0)
         eq("keyword with space: no hint", titles("script "), "Clean Temp|Ping Host|Restart Explorer")
         eq("default script keyword", AppSettings.Defaults()["Features"]["Scripts"]["Keyword"], "script")
         eq("ps1 command", ScriptProvider.CommandLine(byTitle["Ping Host"], "a b"), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "a b"')
