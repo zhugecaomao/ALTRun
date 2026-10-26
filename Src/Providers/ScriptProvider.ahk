@@ -36,6 +36,8 @@ class ScriptProvider {
         results := [], keyword := AppSettings.Feature("Scripts")["Keyword"]
         onlyScripts := (keyword != "" && query.HasRest && query.MatchKeyword([keyword], &term))
         needle := StrLower(onlyScripts ? term : query.Text)
+        if (keyword != "" && !query.HasRest && query.MatchKeyword([keyword], &term))   ; "script" without the space: a hint below the other results, like the other keywords
+            results.Push(ResultItem(I18n.T("Scripts.Keyword"), keyword " ...", {Icon: "res:imageres.dll,-5323", Valid: false, Score: 5}))
         for script in ScriptProvider.Scripts {
             if onlyScripts {                                                ; "script " / "script name": scripts only, all of them for no name
                 score := (needle = "") ? 50 : FuzzyMatcher.BestKey(needle, script.Keys)

@@ -625,6 +625,7 @@
   "Script.Mode.Silent": "バックグラウンド、通知",
   "Script.Mode.Window": "ウィンドウ",
   "Script.Subtitle": "スクリプト · {1}",
+  "Scripts.Keyword": "名前でスクリプトを検索",
   "Search.ActionsFor": "{1} の操作",
   "Search.ConfirmDelete": "'{1}' を削除しますか?",
   "Search.Copied": "コピーしました: {1}",

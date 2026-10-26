@@ -442,6 +442,7 @@ class I18n {
         s["Recent.ConfirmUnpin"]       := "Unpin '{1}'?"
         s["Recent.ConfirmForget"]      := "Remove '{1}' from the recent items?"
         s["Script.Subtitle"]           := "Script · {1}"
+        s["Scripts.Keyword"]           := "Find scripts by name"
         s["Script.Done"]               := "{1}: done"
         s["Win.Subtitle"]              := "{1} - switch to this window"
         s["Win.Gone"]                  := "That window has been closed"
