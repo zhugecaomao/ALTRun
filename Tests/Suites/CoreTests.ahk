@@ -1067,16 +1067,16 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("Input.per-window setting is a flag", Win.PerWindowInputMethod() = true || Win.PerWindowInputMethod() = false)
         saved := AppSettings.General["SwitchToEnglishInput"]
         AppSettings.General["SwitchToEnglishInput"] := 0
-        SearchWindow._layoutBefore := 0x08040804
-        SearchWindow._RestoreInputLanguage()                                 ; the option is off: do nothing, only clear the record
-        TestRunner.Equal("Input.restore clears the saved layout", SearchWindow._layoutBefore, 0)
-        SearchWindow._imeBefore := {Open: 1, Conv: 0x401}
-        SearchWindow._RestoreInputLanguage()                                 ; English mode too: not restored when off, only the record cleared
-        TestRunner.Equal("Input.restore clears the saved IME mode", SearchWindow._imeBefore, "")
+        SearchInputLanguage._layoutBefore := 0x08040804
+        SearchInputLanguage.Restore()                                        ; the option is off: do nothing, only clear the record
+        TestRunner.Equal("Input.restore clears the saved layout", SearchInputLanguage._layoutBefore, 0)
+        SearchInputLanguage._imeBefore := {Open: 1, Conv: 0x401}
+        SearchInputLanguage.Restore()                                        ; English mode too: not restored when off, only the record cleared
+        TestRunner.Equal("Input.restore clears the saved IME mode", SearchInputLanguage._imeBefore, "")
         AppSettings.General["SwitchToEnglishInput"] := 1
-        SearchWindow._imeBefore := {Open: 1, Conv: 0x401}
-        SearchWindow._RestoreInputLanguage()                                 ; the English keyboard was chosen: the Chinese / English mode is left alone
-        TestRunner.Equal("Input.keyboard choice leaves the IME mode alone", SearchWindow._imeBefore, "")
+        SearchInputLanguage._imeBefore := {Open: 1, Conv: 0x401}
+        SearchInputLanguage.Restore()                                        ; the English keyboard was chosen: the Chinese / English mode is left alone
+        TestRunner.Equal("Input.keyboard choice leaves the IME mode alone", SearchInputLanguage._imeBefore, "")
         savedPlaceholder := AppSettings.Appearance["Placeholder"]
         AppSettings.Appearance["Placeholder"] := ""
         TestRunner.Equal("Placeholder.default", SearchWindow.Placeholder(), "ALTRun Search")

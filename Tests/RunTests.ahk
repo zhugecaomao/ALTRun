@@ -42,6 +42,11 @@
 #Include %A_ScriptDir%\..\Src\UI\NavIcons.ahk
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
+#Include %A_ScriptDir%\..\Src\UI\ResultRows.ahk
+#Include %A_ScriptDir%\..\Src\UI\SearchStatusBar.ahk
+#Include %A_ScriptDir%\..\Src\UI\TypeAhead.ahk
+#Include %A_ScriptDir%\..\Src\UI\SearchInputLanguage.ahk
+#Include %A_ScriptDir%\..\Src\UI\SearchKeys.ahk
 #Include %A_ScriptDir%\..\Src\UI\ResultActions.ahk
 #Include %A_ScriptDir%\..\Src\UI\WindowFade.ahk
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk

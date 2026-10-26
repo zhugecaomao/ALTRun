@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.20.36]
+
+测试版。
+
+Test build.
+
+### 改进
+- 代码整理: 搜索窗口 (`SearchWindow.ahk`, 原来 2000 多行) 拆出几个单独的文件: 键盘处理 `SearchKeys`、结果行的绘制 `ResultRows`、底部状态栏 `SearchStatusBar`、呼出期间打的字 `TypeAhead`、呼出时切换英文输入 `SearchInputLanguage`。功能和外观不变。
+
 ## [2026.10.20.35]
 
 测试版。
@@ -1172,7 +1181,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.35...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.36...HEAD
+[2026.10.20.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.35...2026.10.20.36
 [2026.10.20.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.34...2026.10.20.35
 [2026.10.20.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.33...2026.10.20.34
 [2026.10.20.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.20.32...2026.10.20.33
