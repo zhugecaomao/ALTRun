@@ -266,6 +266,18 @@ class ProjectTests {
         TestRunner.True("ChangelogLinks.newest is App.Version", newest = App.Version)
     }
 
+    ; Timers that stay set while idle use WinTimer, not SetTimer: while any SetTimer timer is set, AutoHotkey checks its timers every 10 ms
+    ; (about 330 million CPU cycles a minute). Flags SetTimer with a literal period of 2 s or more, or a one-shot delay of a minute or more
+    static LongTimers() {
+        found := ""
+        for folder in ["Src", "Lib"]
+            Loop Files, A_ScriptDir "\..\" folder "\*.ahk", "R"
+                Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r"
+                    if (RegExMatch(A_LoopField, "^\s*[^;]*\bSetTimer\(.+,\s*(-?\d+)\)", &m) && (m[1] >= 2000 || m[1] <= -60000))
+                        found .= A_LoopFileName ":" A_Index " "
+        TestRunner.Equal("LongTimers.SetTimer kept set while idle (use WinTimer)", found, "")
+    }
+
     ; The version in the compile info (;@Ahk2Exe-SetVersion in ALTRun.ahk) must match App.Version
     static ReleaseVersion() {
         main := FileRead(A_ScriptDir "\..\ALTRun.ahk", "UTF-8")

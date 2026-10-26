@@ -39,7 +39,7 @@ class ApplicationProvider {
             SetTimer(() => ApplicationProvider.RefreshInBackground(), -3000)   ; show the window first, then scan in the background
         SetTimer(() => ApplicationProvider._SearchKeys(), -500)             ; compute the search keys in advance, so the first search doesn't wait
         ApplicationProvider._refreshTimer := Logger.Watch("app refresh check", () => ApplicationProvider._CheckRefresh())
-        SetTimer(ApplicationProvider._refreshTimer, 60000)
+        WinTimer.Set(ApplicationProvider._refreshTimer, 60000)
         ApplicationProvider.StartWatching()
     }
 
@@ -59,14 +59,14 @@ class ApplicationProvider {
         if (ApplicationProvider._watchTimer = "")
             ApplicationProvider._watchTimer := Logger.Watch("app folder watch", () => ApplicationProvider._PollWatches())
         if ApplicationProvider._watcher.Count
-            SetTimer(ApplicationProvider._watchTimer, 2000)
+            WinTimer.Set(ApplicationProvider._watchTimer, 2000)
         if (ApplicationProvider._watcher.Count < folders.Length)
             Logger.Debug("ApplicationProvider: watching " ApplicationProvider._watcher.Count " of " folders.Length " folders")
     }
 
     static StopWatching() {
         if (ApplicationProvider._watchTimer != "")
-            SetTimer(ApplicationProvider._watchTimer, 0)
+            WinTimer.Set(ApplicationProvider._watchTimer, 0)
         if IsObject(ApplicationProvider._watcher)
             ApplicationProvider._watcher.Stop()
         ApplicationProvider._watcher := "", ApplicationProvider._changedAt := 0

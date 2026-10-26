@@ -37,7 +37,7 @@ class CapsLockHelper {
         CapsLockSwitch.Mode := mode
         CapsLockSwitch.Notify := (on) => CapsLockHelper._TellMain(on)
         CapsLockSwitch.Register((key, fn) => Hotkey(key, fn))
-        SetTimer(() => App._RunningInstance() || ExitApp(), 3000)           ; ALTRun is gone (ended, crashed): exit too
+        WinTimer.Set(() => App._RunningInstance() || ExitApp(), 3000)          ; ALTRun is gone (ended, crashed): exit too
     }
 
     ; General.CapsLock from the settings file (read only, never written back); "" if it can't be read

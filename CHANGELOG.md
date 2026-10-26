@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 空闲时几乎不再占用 CPU ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): AutoHotkey 只要有一个计时器在等 (哪怕 1 小时后才执行), 就每 10 ms 醒来检查一次, 空闲时每分钟约 3.3 亿个 CPU 周期, 任务管理器里一直显示 0.1% 左右。一直在等的计时器 (每 2 秒检查文件夹变化、每 30 / 60 秒的检查、每小时的更新检查和汇率、保存图标缓存、编辑设置文件时的检查、CapsLock 管理员辅助进程) 改用 Windows 计时器 (新的 `Lib/WinTimer.ahk`), 到时间才运行
+- 新增项目测试: 源码里周期 2 秒以上或一次性 1 分钟以上的 `SetTimer` 会报错, 要用 `WinTimer`
+
 ## [2026.10.26.4]
 
 测试版。
@@ -957,7 +967,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.6...HEAD
+[2026.10.26.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.6
 [2026.10.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...2026.10.26.4
 [2026.10.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...2026.10.26.3
 [2026.10.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...2026.10.26.2

@@ -214,12 +214,12 @@ class IconCache {
             return
         if (IconCache._saveTimer = "")
             IconCache._saveTimer := Logger.Watch("save icon cache", () => IconCache._SaveWhenIdle())
-        SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)
+        WinTimer.Set(IconCache._saveTimer, -IconCache.DiskSaveDelay)
     }
 
     static _SaveWhenIdle() {
         if !BackgroundWork.CanRun()
-            return SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)  ; the window is shown: save after it hides
+            return WinTimer.Set(IconCache._saveTimer, -IconCache.DiskSaveDelay) ; the window is shown: save after it hides
         IconCache.SaveDisk()
     }
 

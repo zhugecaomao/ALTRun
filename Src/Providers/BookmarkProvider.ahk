@@ -19,7 +19,7 @@ class BookmarkProvider {
 
     static Init() {
         BookmarkProvider.Load()
-        SetTimer(Logger.Watch("bookmarks refresh", () => BookmarkProvider._RefreshIfChanged()), 30000)         ; check the bookmark files in the background, not during searches while typing
+        WinTimer.Set(Logger.Watch("bookmarks refresh", () => BookmarkProvider._RefreshIfChanged()), 30000)        ; check the bookmark files in the background, not during searches while typing
     }
 
     static Search(query) {

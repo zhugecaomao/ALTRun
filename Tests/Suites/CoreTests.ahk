@@ -7,6 +7,32 @@
 ; TestRunner runs them in name order, and each one must put back the shared state it changes.
 ;===============================================================================
 class CoreTests {
+    ; WinTimer: Windows timers instead of SetTimer for timers that stay set while idle (AutoHotkey checks its own every 10 ms while any is set)
+    static WinTimers() {
+        eq := (n, a, e) => TestRunner.Equal("WinTimers." n, a, e)
+        counts := {Every: 0, Once: 0}
+        every := () => counts.Every++, once := () => counts.Once++
+        before := WinTimer.Count
+        WinTimer.Set(every, 50), WinTimer.Set(once, -50)
+        eq("set", WinTimer.Count - before, 2)
+        Sleep(400)
+        WinTimer.Set(every, 0)
+        ran := counts.Every
+        TestRunner.True("WinTimers.repeats (" ran ")", ran >= 3)
+        eq("once", counts.Once, 1)
+        eq("stopped and done ones removed", WinTimer.Count, before)
+        Sleep(200)
+        eq("stopped", counts.Every, ran)
+        WinTimer.Set(once, -50), WinTimer.Set(once, -60000), Sleep(200)  ; setting it again restarts it with the new time
+        eq("restarted", counts.Once, 1)
+        WinTimer.Set(once, 0), WinTimer.Set(() => 0, 0)
+        eq("stop", WinTimer.Count, before)
+        hidden := A_DetectHiddenWindows
+        DetectHiddenWindows(true)
+        eq("message-only window", WinExist("ALTRun timers ahk_pid " ProcessExist()), 0)
+        DetectHiddenWindows(hidden)
+    }
+
     static FuzzyMatcher() {
         eq := (n, a, e) => TestRunner.Equal("FuzzyMatcher." n, a, e)
         ok := (n, c) => TestRunner.True("FuzzyMatcher." n, c)
