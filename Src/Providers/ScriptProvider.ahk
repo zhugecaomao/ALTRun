@@ -23,6 +23,7 @@ class ScriptProvider {
     static _lastStamp := "", _checked := 0
     static TimeoutMs := 120000                                              ; how long to wait for a background script at most
 
+    static HintIcon := "res:imageres.dll,-5323"                             ; icon of the keyword hint row
     static Folder := ""                                                     ; when not empty, this folder is used (for tests)
     static Dir => (ScriptProvider.Folder != "") ? ScriptProvider.Folder : AppSettings.Portable ? A_ScriptDir "\Scripts" : AppSettings.UserDir "\Scripts"
 
@@ -37,9 +38,9 @@ class ScriptProvider {
         onlyScripts := (keyword != "" && query.HasRest && query.MatchKeyword([keyword], &term))
         needle := StrLower(onlyScripts ? term : query.Text)
         if (keyword != "" && !query.HasRest && query.MatchKeyword([keyword], &term))   ; "script" without the space: a hint, like the other keywords (ResultItem.KeywordHintScore); Enter completes "script "
-            results.Push(ResultItem(I18n.T("Scripts.Keyword"), keyword " ...", {Icon: "res:imageres.dll,-5323", Valid: false, Score: ResultItem.KeywordHintScore, AutoComplete: keyword " "}))
+            results.Push(ResultItem.KeywordHint(I18n.T("Scripts.Keyword"), keyword, ScriptProvider.HintIcon))
         else if (keyword != "" && query.StartsKeyword([keyword], &full))       ; "scrip": the same hint at the end of the list
-            results.Push(ResultItem(I18n.T("Scripts.Keyword"), full " ...", {Icon: "res:imageres.dll,-5323", Valid: false, Score: ResultItem.KeywordPrefixHintScore, AutoComplete: full " "}))
+            results.Push(ResultItem.KeywordHint(I18n.T("Scripts.Keyword"), full, ScriptProvider.HintIcon, true))
         for script in ScriptProvider.Scripts {
             if onlyScripts {                                                ; "script " / "script name": scripts only, all of them for no name
                 score := (needle = "") ? 50 : FuzzyMatcher.BestKey(needle, script.Keys)

@@ -1,7 +1,7 @@
 **English** · [中文](Snippets-zh)
 
 # Snippets
-Save text you use often (signatures, addresses, templates...) as snippets. Search by name, keyword or a word in the text, and `Enter` pastes it into the window you were in before opening ALTRun. Type `snip` to list all snippets, `snip xxx` to search snippets only.
+Save text you use often (signatures, addresses, templates...) as snippets. Search by name, keyword or a word in the text, and `Enter` pastes it into the window you were in before opening ALTRun. Type `snip` to list all snippets, `snip xxx` to search snippets only (while typing, e.g. `sni`, a hint at the end of the list completes `snip `).
 
 ![Preferences → Snippets](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-snippets.png)
 

@@ -401,7 +401,23 @@ class CoreTests {
         AppSettings.Data["Snippets"] := [Map("Name", "Signature", "Keyword", "sig, ㄴㅑㅎ", "Text", "Best regards", "AutoExpand", 1)]
         found := (text) => SnippetProvider.Search(SearchQuery(text)).Length
         eq("snippet: each keyword", found("sig") "|" found("ㄴㅑㅎ") "|" found("signature"), "1|1|1")
+        ; "sni": the snip keyword's hint at the end of the list; "snip" alone lists the snippets (no hint)
+        hint := SnippetProvider.Search(SearchQuery("sni"))
+        eq("snippet keyword start: hint", hint.Length "|" hint[1].Valid "|" hint[1].AutoComplete "|" hint[1].Score, "1|0|snip |" ResultItem.KeywordPrefixHintScore)
+        listed := SnippetProvider.Search(SearchQuery("snip"))
+        eq("snippet keyword alone: the snippets", listed.Length "|" listed[1].Title, "1|Signature")
         AppSettings.Data["Snippets"] := savedSnippets
+    }
+
+    ; The hint row for a built-in keyword: can't run, completes "keyword ", typed in full / only the start typed decide the score
+    static KeywordHint() {
+        eq := (n, a, e) => TestRunner.Equal("KeywordHint." n, a, e)
+        hint := ResultItem.KeywordHint("Find scripts by name", "script", "res:imageres.dll,-5323")
+        eq("typed in full", hint.Valid "|" hint.AutoComplete "|" hint.Subtitle "|" hint.Score, "0|script |script ...|" ResultItem.KeywordHintScore)
+        eq("only the start typed", ResultItem.KeywordHint("t", "script", "", true).Score, ResultItem.KeywordPrefixHintScore)
+        eq("own subtitle", ResultItem.KeywordHint("t", "open", "", false, "'... / open ...").Subtitle, "'... / open ...")
+        eq("no keyword: nothing to complete", ResultItem.KeywordHint("t", "", "").AutoComplete, "")
+        eq("the start after every match", ResultItem.KeywordPrefixHintScore < ResultItem.KeywordHintScore, true)
     }
 
     ; Data folder: "DataLocation" in ALTRun.json at the default location (environment variables, relative paths); setting / back to default

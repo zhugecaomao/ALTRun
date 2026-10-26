@@ -22,10 +22,14 @@ class SnippetProvider {
     static Init() {
     }
 
+    static Icon => IconCache.Own("Snippet", "res:imageres.dll,-102")
+
     static Search(query) {
         options := AppSettings.Feature("Snippets")
         results := []
-        onlySnippets := query.MatchKeyword([options["Keyword"]], &term)
+        onlySnippets := query.MatchKeyword([options["Keyword"]], &term), full := ""
+        if (!onlySnippets && query.StartsKeyword([options["Keyword"]], &full))   ; "sni": the keyword's hint at the end of the list ("snip" alone lists the snippets)
+            results.Push(ResultItem.KeywordHint(I18n.T("Snippets.Keyword"), full, SnippetProvider.Icon, true))
         needle := onlySnippets ? term : query.Text
         tokens := StrSplit(Trim(needle), " ")
         searchText := options["SearchText"] && StrLen(Trim(needle)) >= SnippetProvider.TextMinChars
@@ -44,7 +48,7 @@ class SnippetProvider {
                 continue
             preview := SnippetProvider._Preview(snippet["Text"], found)
             item := ResultItem((name != "") ? name : preview, I18n.T("Snippet.Subtitle", preview), {
-                Kind: "text", Arg: snippet["Text"], Icon: IconCache.Own("Snippet", "res:imageres.dll,-102"),
+                Kind: "text", Arg: snippet["Text"], Icon: SnippetProvider.Icon,
                 Uid: "snippet:" StrLower(keyword "|" name), Score: score + (onlySnippets ? 30 : 0), Source: snippet,
                 Exclusive: onlySnippets && query.HasRest,
                 LargeText: SnippetProvider.Expand(snippet["Text"])

@@ -23,6 +23,7 @@
 ;
 ; Usage:
 ;   ResultItem("Notepad", "C:\Windows\notepad.exe", {Kind: "file", Arg: path, Uid: "app:" path})
+;   ResultItem.KeywordHint("Find scripts by name", "script", icon)   the hint row for a built-in keyword (see below)
 ;===============================================================================
 
 class ResultItem {
@@ -68,5 +69,14 @@ class ResultItem {
     ; the text for Ctrl+L Large Type
     DisplayText() {
         return (this.LargeText != "") ? this.LargeText : this.CopyText()
+    }
+
+    ; The hint row for a built-in keyword ("script", "snip", "recent"...): can't run, Enter / Tab / double-click complete "keyword ".
+    ; prefix: only the start of the keyword is typed ("scrip"), so it goes to the end of the list. subtitle: "keyword ..." if empty
+    static KeywordHint(title, keyword, icon, prefix := false, subtitle := "") {
+        return ResultItem(title, (subtitle != "") ? subtitle : keyword " ...", {
+            Icon: icon, Valid: false, AutoComplete: (keyword != "") ? keyword " " : "",
+            Score: prefix ? ResultItem.KeywordPrefixHintScore : ResultItem.KeywordHintScore
+        })
     }
 }

@@ -218,16 +218,16 @@ class FileSearchProvider {
     static _KeywordResults(term, options, scope, exclusive, typed := "") {
         if (term = "") {
             if IsObject(scope)
-                hint := ResultItem(I18n.T("Files.TypeKeyword", StrReplace(SubStr(scope.Everything, 5), ";", " ")), scope.Keyword " ...", {Icon: "folder:", Valid: false})
+                title := I18n.T("Files.TypeKeyword", StrReplace(SubStr(scope.Everything, 5), ";", " ")), subtitle := scope.Keyword " ..."
             else {
                 keywords := options[scope ? "FolderKeywords" : "Keywords"]
                 keyword := keywords.Length ? keywords[1] : ""
-                hint := scope ? ResultItem(I18n.T("Folders.Keyword"), keyword " ...", {Icon: "folder:", Valid: false})
-                              : ResultItem(I18n.T("Files.Keyword"), "'..." (keyword != "" ? " / " keyword " ..." : ""), {Icon: "folder:", Valid: false})
+                title := I18n.T(scope ? "Folders.Keyword" : "Files.Keyword")
+                subtitle := scope ? keyword " ..." : "'..." (keyword != "" ? " / " keyword " ..." : "")
             }
-            hint.Score := exclusive ? 150 : ResultItem.KeywordHintScore     ; before the space is typed, names starting with the word still come first
-            if (!exclusive && typed != "")
-                hint.AutoComplete := typed " "
+            hint := ResultItem.KeywordHint(title, typed, "folder:", false, subtitle)   ; before the space is typed, names starting with the word still come first
+            if exclusive                                                    ; "folder " / "'": only this row, nothing to complete
+                hint.Score := 150, hint.AutoComplete := ""
             hint.Exclusive := exclusive
             return [hint]
         }
@@ -253,7 +253,7 @@ class FileSearchProvider {
     static RecentResults(term, options, exclusive, typed := "") {
         keywords := options["RecentKeywords"], keyword := keywords.Length ? keywords[1] : ""
         if !exclusive
-            return [ResultItem(I18n.T("Files.RecentKeyword"), keyword " ...", {Icon: "folder:", Valid: false, Score: ResultItem.KeywordHintScore, AutoComplete: (typed != "") ? typed " " : ""})]
+            return [ResultItem.KeywordHint(I18n.T("Files.RecentKeyword"), typed, "folder:", false, keyword " ...")]
         items := WindowsRecent.Items(FileSearchProvider.RecentScan)
         needle := StrLower(Trim(term)), scores := Map()
         for index, item in items {

@@ -2,7 +2,7 @@
 
 # 剪贴板历史
 
-按 `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字、文件和图片, `clip 关键词` 过滤, `Enter` 粘贴到前台窗口, `Ctrl+Del` 从历史中删除。
+按 `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字、文件和图片 (还没输完整时, 例如 `cli`, 列表最后有一行提示, 按 `Enter` 补全成 `clip `), `clip 关键词` 过滤, `Enter` 粘贴到前台窗口, `Ctrl+Del` 从历史中删除。
 
 ![剪贴板历史](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/clipboard.png)
 
