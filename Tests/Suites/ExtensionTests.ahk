@@ -314,21 +314,30 @@ class ExtensionTests {
             QuickSwitch._checkTimer := () => counts.Check++, QuickSwitch._placeTimer := () => counts.Place++
             first := Gui("+AlwaysOnTop", "QuickSwitch event A"), first.Show("w200 h100 x100 y100")
             second := Gui("+AlwaysOnTop", "QuickSwitch event B"), second.Show("w200 h100 x400 y100")
-            hook := QuickSwitch._HookEvent(0x3, 0)
+            hook := QuickSwitch._HookEvent(0x3, 0x3)
             WinActivate("ahk_id " first.Hwnd), Sleep(300)
             WinActivate("ahk_id " second.Hwnd), Sleep(300)
+            switched := counts.Check
             QuickSwitch._panelFor := first.Hwnd
-            moveHook := QuickSwitch._HookEvent(0x800B, ProcessExist())
+            QuickSwitch._WatchWindow(first.Hwnd)                            ; the events of its UI thread, as for a dialog in front
             first.Move(150, 150), Sleep(300)
             placed := counts.Place
-            second.Move(450, 150), Sleep(300)                               ; another window of the same process: not the dialog
-            DllCall("UnhookWinEvent", "Ptr", hook), DllCall("UnhookWinEvent", "Ptr", moveHook)
+            second.Move(450, 150), Sleep(300)                               ; another window of the same thread: not the dialog
+            movedOther := counts.Place
+            counts.Check := 0
+            first.Add("Button", , "Late control"), Sleep(300)               ; a control created after the window came to the front
+            shownLater := counts.Check
+            watchedHooks := QuickSwitch._threadHooks.Length
+            QuickSwitch._UnwatchWindow()
+            DllCall("UnhookWinEvent", "Ptr", hook)
             first.Destroy(), second.Destroy()
             QuickSwitch._checkTimer := saved[1], QuickSwitch._placeTimer := saved[2], QuickSwitch._panelFor := saved[3]
-            TestRunner.True("QuickSwitch.foreground events (" counts.Check ")", hook && counts.Check >= 2)
-            TestRunner.True("QuickSwitch.dialog move events (" placed ")", moveHook && placed >= 1)
-            eq("other windows' moves ignored", counts.Place, placed)
-            ; The whole way: an Open dialog in another process gets the panel, with no polling before it comes up
+            TestRunner.True("QuickSwitch.foreground events (" switched ")", hook && switched >= 2)
+            eq("thread events hooked", watchedHooks, 2)
+            TestRunner.True("QuickSwitch.dialog move events (" placed ")", placed >= 1)
+            eq("other windows' moves ignored", movedOther, placed)
+            TestRunner.True("QuickSwitch.a control shown later is checked (" shownLater ")", shownLater >= 1)
+            ; The whole way: an Open dialog in another process gets the panel, nothing polls while it is open, and the panel closes with it
             QuickSwitch.Options := AppSettings.Extension("QuickSwitch")
             GroupAdd("ALTRunDialogs", "ahk_class #32770")
             QuickSwitch._StartWatching()
@@ -343,15 +352,19 @@ class ExtensionTests {
                     break
                 Sleep(100)
             }
+            Sleep(QuickSwitch.SettleMs + 300)
+            pollingWhileOpen := QuickSwitch._polling
             try WinClose("ahk_id " dialog)
             if !ProcessWaitClose(dialogPid, 3)
                 try ProcessClose(dialogPid)
-            Sleep(500)
+            Sleep(300)
             panelGone := !IsObject(QuickSwitch._panel)
             DllCall("UnhookWinEvent", "Ptr", QuickSwitch._foregroundHook), QuickSwitch._foregroundHook := 0
+            QuickSwitch._UnwatchWindow()
             SetTimer(QuickSwitch._pollTimer, 0), SetTimer(QuickSwitch._checkTimer, 0), QuickSwitch._polling := false
             QuickSwitch.HidePanel()
             TestRunner.True("QuickSwitch.panel below another process's Open dialog", dialog && panelShown)
+            eq("no polling while the dialog is open", pollingWhileOpen, false)
             TestRunner.True("QuickSwitch.panel closed with the dialog", panelGone)
         }
         ; A real one: AutoHotkey's DirSelect is SHBrowseForFolder (option 4 = classic style). Detected, the folder is
