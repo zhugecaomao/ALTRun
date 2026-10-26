@@ -290,6 +290,23 @@ class ExtensionTests {
         eq("file manager windows", QuickSwitch.IsFileManager(0), false)
         eq("transient windows while switching", QuickSwitch.IsTransientWindow("Shell_TrayWnd") QuickSwitch.IsTransientWindow("XamlExplorerHostIslandWindow"), "11")
         eq("not transient", QuickSwitch.IsTransientWindow("TTOTAL_CMD") QuickSwitch.IsTransientWindow("#32770"), "00")
+        ; A dialog can be in front before it is shown: it still counts as a possible dialog (polling goes on until it shows)
+        savedOptions := QuickSwitch.Options
+        QuickSwitch.Options := AppSettings.Extension("QuickSwitch")
+        GroupAdd("ALTRunDialogs", "QuickSwitch hidden dialog probe")
+        otherWindow := Gui(, "QuickSwitch other window"), otherWindow.Show("w200 h100")
+        hiddenDialog := Gui(, "QuickSwitch hidden dialog probe"), hiddenDialog.Show("Hide w200 h100")
+        DllCall("SetForegroundWindow", "Ptr", hiddenDialog.Hwnd), Sleep(200)
+        DetectHiddenWindows(false)
+        if (DllCall("GetForegroundWindow", "Ptr") = hiddenDialog.Hwnd) {
+            eq("hidden dialog in front: not seen by default", WinActive("ahk_group ALTRunDialogs") != 0, false)
+            eq("hidden dialog in front: may be a dialog", QuickSwitch._MayBeDialog(), true)
+            eq("hidden windows setting restored", A_DetectHiddenWindows, false)
+        }
+        WinActivate("ahk_id " otherWindow.Hwnd), Sleep(200)
+        eq("other window in front: not a dialog", QuickSwitch._MayBeDialog(), false)
+        hiddenDialog.Destroy(), otherWindow.Destroy()
+        QuickSwitch.Options := savedOptions
         ; Foreground changes and the dialog's moves arrive as events, with no polling (Wine doesn't deliver WinEvents, so only checked on Windows)
         if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
             saved := [QuickSwitch._checkTimer, QuickSwitch._placeTimer, QuickSwitch._panelFor]

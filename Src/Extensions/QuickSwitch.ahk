@@ -56,9 +56,9 @@ class QuickSwitch {
 
     ;---------------------------------------------------------------------------
     ; Watching the window in front without using CPU while idle: Windows reports every foreground change (EVENT_SYSTEM_FOREGROUND),
-    ; and only while a window that may be a dialog (DialogWindows / #32770, or the panel) is in front is it checked every PollMs,
-    ; because some dialogs build their file list or set their title (Qt) only after they come to the front; and for SettleMs after every
-    ; foreground change, as a dialog can come to the front before it is visible (not yet seen as a dialog then, and no new event follows).
+    ; and only while a window that may be a dialog (DialogWindows / #32770, also while still hidden, or the panel) is in front is it checked
+    ; every PollMs: some dialogs come to the front before they are shown, build their file list or set their title (Qt) only after that,
+    ; and no new event follows. Also for SettleMs after every foreground change (e.g. a listed title that is set a moment later).
     ; While the panel is shown, the dialog's moves (EVENT_OBJECT_LOCATIONCHANGE, its process only) move the panel right away.
     ; If the hook can't be set, it checks every PollMs all the time (as before)
     ;---------------------------------------------------------------------------
@@ -102,11 +102,16 @@ class QuickSwitch {
     }
 
     ; The window in front matches the dialog lists (it may be a dialog, or become one once its controls or title are there)
+    ; Hidden windows count too: a dialog can be in front for a while before it is shown, and no new event comes when it is
     static _MayBeDialog() {
         browse := QuickSwitch.Options.Has("BrowseDialogs") && QuickSwitch.Options["BrowseDialogs"]
-        if !(WinActive("ahk_group ALTRunDialogs") || browse && WinActive("ahk_class #32770"))
-            return false
-        return !(QuickSwitch._hasExclude && WinActive("ahk_group ALTRunDialogExclude"))
+        hidden := A_DetectHiddenWindows
+        DetectHiddenWindows(true)
+        try {
+            if !(WinActive("ahk_group ALTRunDialogs") || browse && WinActive("ahk_class #32770"))
+                return false
+            return !(QuickSwitch._hasExclude && WinActive("ahk_group ALTRunDialogExclude"))
+        } finally DetectHiddenWindows(hidden)
     }
 
     ; Windows that are in front only for a moment while switching (taskbar, Alt+Tab): they don't count as "the window before" for AutoSwitch
