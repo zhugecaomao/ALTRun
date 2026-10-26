@@ -51,9 +51,29 @@ class FileSearchProvider {
             return FileSearchProvider.RecentResults(term, options, query.HasRest, typed)
         if IsObject(filter := FileSearchProvider.MatchType(query, &term))
             return FileSearchProvider._KeywordResults(term, options, filter, query.HasRest, filter.Keyword)
+        results := FileSearchProvider._PrefixHints(query, options)
         if (options["InDefaultResults"] && StrLen(query.Text) >= options["MinQueryLength"] && !Calc.Looks(query.Text))
-            return FileSearchProvider._DefaultResults(query.Text, options)
-        return []
+            results.Push(FileSearchProvider._DefaultResults(query.Text, options)*)
+        return results
+    }
+
+    ; "fol" / "rec" / "vid": a keyword not typed in full yet gets its hint at the end of the list (Enter / Tab complete "folder " ...)
+    static _PrefixHints(query, options) {
+        hints := [], keyword := ""
+        if query.StartsKeyword(options["Keywords"], &keyword)
+            hints.Push(FileSearchProvider._KeywordResults("", options, false, false, keyword)*)
+        if query.StartsKeyword(options["FolderKeywords"], &keyword)
+            hints.Push(FileSearchProvider._KeywordResults("", options, true, false, keyword)*)
+        if query.StartsKeyword(options["RecentKeywords"], &keyword)
+            hints.Push(FileSearchProvider.RecentResults("", options, false, keyword)*)
+        for filter in FileSearchProvider.TypeFilters()
+            if query.StartsKeyword([filter.Keyword], &keyword) {
+                hints.Push(FileSearchProvider._KeywordResults("", options, filter, false, keyword)*)
+                break
+            }
+        for hint in hints
+            hint.Score := ResultItem.KeywordPrefixHintScore
+        return hints
     }
 
     ; ProviderRegistry.SearchOnly: the search window's file search mode (starting with Space): files only, nothing for empty text; "folder budget" searches folders only, "doc report" documents only

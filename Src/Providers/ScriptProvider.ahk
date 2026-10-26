@@ -33,11 +33,13 @@ class ScriptProvider {
     static Search(query) {
         if (A_TickCount - ScriptProvider._checked > 2000)                   ; check whether the folder changed at most every 2 s
             ScriptProvider._RefreshIfChanged()
-        results := [], keyword := AppSettings.Feature("Scripts")["Keyword"]
+        results := [], keyword := AppSettings.Feature("Scripts")["Keyword"], full := ""
         onlyScripts := (keyword != "" && query.HasRest && query.MatchKeyword([keyword], &term))
         needle := StrLower(onlyScripts ? term : query.Text)
         if (keyword != "" && !query.HasRest && query.MatchKeyword([keyword], &term))   ; "script" without the space: a hint, like the other keywords (ResultItem.KeywordHintScore); Enter completes "script "
             results.Push(ResultItem(I18n.T("Scripts.Keyword"), keyword " ...", {Icon: "res:imageres.dll,-5323", Valid: false, Score: ResultItem.KeywordHintScore, AutoComplete: keyword " "}))
+        else if (keyword != "" && query.StartsKeyword([keyword], &full))       ; "scrip": the same hint at the end of the list
+            results.Push(ResultItem(I18n.T("Scripts.Keyword"), full " ...", {Icon: "res:imageres.dll,-5323", Valid: false, Score: ResultItem.KeywordPrefixHintScore, AutoComplete: full " "}))
         for script in ScriptProvider.Scripts {
             if onlyScripts {                                                ; "script " / "script name": scripts only, all of them for no name
                 score := (needle = "") ? 50 : FuzzyMatcher.BestKey(needle, script.Keys)
