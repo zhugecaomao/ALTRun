@@ -217,10 +217,9 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 ## License and credits
 ALTRun is open source under the [GPL-3.0](LICENSE) license © zhugecaomao
 
-Thanks to these projects for the inspiration:
+Thanks to these projects:
 - [ALTRun](https://github.com/etworker/ALTRun) (etworker, Delphi): the name and the original design
 - [RunZ](https://github.com/goreliu/runz) (goreliu, AutoHotkey): the idea of writing a launcher in AutoHotkey
 - [Alfred](https://www.alfredapp.com/): the interaction model
 - [Listary](https://www.listary.com/): its Quick Switch is the model for ALTRun's
-
-The pinyin initials of uncommon and traditional Chinese characters (`Resources/Pinyin.txt`) come from [pypinyin](https://github.com/mozillazg/python-pinyin) (Copyright (c) 2016 mozillazg, 闲耘; [MIT license](https://github.com/mozillazg/python-pinyin/blob/master/LICENSE.txt)).
+- [pypinyin](https://github.com/mozillazg/python-pinyin) (Copyright (c) 2016 mozillazg, 闲耘; [MIT](https://github.com/mozillazg/python-pinyin/blob/master/LICENSE.txt)): pinyin initials of rare and Traditional characters

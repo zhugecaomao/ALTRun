@@ -217,10 +217,9 @@ Free code signing provided by [SignPath.io](https://about.signpath.io/), certifi
 ## 许可证与致谢
 ALTRun 以 [GPL-3.0](LICENSE) 许可开源 © zhugecaomao
 
-感谢这些项目带来的启发：
+感谢这些项目：
 - [ALTRun](https://github.com/etworker/ALTRun)（etworker，Delphi）：名字和最初的设计
 - [RunZ](https://github.com/goreliu/runz)（goreliu，AutoHotkey）：用 AutoHotkey 写启动器的思路
 - [Alfred](https://www.alfredapp.com/)：操作方式
 - [Listary](https://www.listary.com/)：对话框快速跳转参考了它的 Quick Switch
-
-生僻字和繁体字的拼音首字母（`Resources/Pinyin.txt`）来自 [pypinyin](https://github.com/mozillazg/python-pinyin)（Copyright (c) 2016 mozillazg, 闲耘；[MIT 许可](https://github.com/mozillazg/python-pinyin/blob/master/LICENSE.txt)）。
+- [pypinyin](https://github.com/mozillazg/python-pinyin)（Copyright (c) 2016 mozillazg, 闲耘；[MIT](https://github.com/mozillazg/python-pinyin/blob/master/LICENSE.txt)）：生僻字和繁体字的拼音首字母
