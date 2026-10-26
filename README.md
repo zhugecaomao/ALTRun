@@ -103,6 +103,8 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 | <img src="docs/images/screenshots/browse.png" alt="Browse folders"> | <img src="docs/images/screenshots/websearch.png" alt="Web search"> |
 | **Quick Switch (folder panel below an Open / Save dialog)** | **Themes (Preferences → Appearance)** |
 | <img src="docs/images/screenshots/quickswitch.png" alt="Quick Switch"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="Themes"> |
+| **Window switching (`w` + Space)** | **Add commands from Explorer (right-click → Send to → ALTRun)** |
+| <img src="docs/images/screenshots/windows.png" alt="Window switching"> | <img src="docs/images/screenshots/sendto.png" alt="Send to ALTRun"> |
 | **Preferences** | **Custom commands** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="Preferences"> | <img src="docs/images/screenshots/prefs-commands.png" alt="Custom commands"> |
 | **Snippets** | **Scripts** |

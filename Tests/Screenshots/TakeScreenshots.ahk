@@ -33,7 +33,7 @@ class Shots {
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
 
-    static NormalScale := ["quickswitch", "prefs-general", "prefs-appearance", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "sendto", "prefs-general", "prefs-appearance", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; scene name -> [theme, start arguments, function, function preparing data before start-up (optional)]
@@ -52,6 +52,8 @@ class Shots {
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
+            ["windows",     "Light", "", () => Shots.Windows()],                 ; window switching (w + Space)
+            ["sendto",      "Light", "", () => Shots.SendTo(), () => Shots.EnableSendTo()],
             ["demo",        "Light", "", () => Shots.Demo(), () => Shots.PrepareDemo()],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
@@ -424,7 +426,7 @@ class Shots {
     }
     static HelperPid := 0
 
-    ; Closes the dialog and Explorer windows the QuickSwitch scene opened
+    ; Closes the windows the scenes opened (Quick Switch dialog, Explorer, Notepad, context menu), shows the hidden terminal, puts the Send to shortcut back
     static CloseHelpers() {
         for pid in [Shots.HelperPid, Shots.NotepadPid]
             if pid
@@ -435,6 +437,14 @@ class Shots {
         Shots.HiddenWindows := []
         for window in WinGetList("ahk_class CabinetWClass")
             try WinClose(window)
+        if WinExist("ahk_class #32768")                                     ; a context menu left open
+            try Send("{Esc 3}")
+        if Shots.SendToActive {                                             ; the Send to scene: the demo shortcut out, the one put aside back
+            try FileDelete(Shots.SendToLink)
+            if Shots.SendToBackup
+                try FileMove(Shots.SendToBackup, Shots.SendToLink)
+            Shots.SendToActive := false, Shots.SendToBackup := ""
+        }
     }
 
     ; The animation on the README front page: 7 scenes (applications, actions panel, files, clipboard history, window switching, calculator, system commands); each step saves the same screen area
@@ -443,15 +453,7 @@ class Shots {
     static NotepadPid := 0, HiddenWindows := []
     static Demo() {
         hwnd := Shots.SearchWindow()
-        for folder in ["Website Redesign", "Annual Report 2026"]           ; window switching needs windows to switch to (all behind the backdrop)
-            Run('explorer.exe "' Shots.DemoDir "\" folder '"')
-        Run("notepad.exe", , , &pid)
-        Shots.NotepadPid := pid
-        ; On the GitHub VM the terminal window running the shots is on the taskbar too and window switching would list it: hide it first, show it again afterwards
-        for title in ["ahk_exe WindowsTerminal.exe", "ahk_class ConsoleWindowClass", "ahk_class CASCADIA_HOSTING_WINDOW_CLASS"]
-            for window in WinGetList(title)
-                try WinHide(window), Shots.HiddenWindows.Push(window)
-        Sleep(3000)
+        Shots.OpenSampleWindows()
         WinActivate(hwnd)
         Shots.WaitPainted(hwnd, 10)
         dir := Shots.DemoFrames
@@ -491,6 +493,81 @@ class Shots {
         FileAppend(state.Frames, dir "\frames.txt", "UTF-8-RAW")
         Shots.Log("saved " state.Count " demo frames to " dir)
         return ""
+    }
+
+    ; Windows to switch to (all behind the backdrop): two Explorer windows and Notepad.
+    ; On the GitHub VM the terminal window running the shots is on the taskbar too and window switching would list it: hide it first, CloseHelpers shows it again
+    static OpenSampleWindows() {
+        for folder in ["Website Redesign", "Annual Report 2026"]
+            Run('explorer.exe "' Shots.DemoDir "\" folder '"')
+        Run("notepad.exe", , , &pid)
+        Shots.NotepadPid := pid
+        for title in ["ahk_exe WindowsTerminal.exe", "ahk_class ConsoleWindowClass", "ahk_class CASCADIA_HOSTING_WINDOW_CLASS"]
+            for window in WinGetList(title)
+                try WinHide(window), Shots.HiddenWindows.Push(window)
+        Sleep(3000)
+    }
+
+    ; Window switching: "w " lists the open windows
+    static Windows() {
+        hwnd := Shots.SearchWindow()
+        Shots.OpenSampleWindows()
+        WinActivate(hwnd)
+        Shots.SetQuery(hwnd, "w ")
+        return hwnd
+    }
+
+    ; Explorer's "Send to": ALTRun creates its Send to shortcut at start-up when SendToMenu is on (off in all other scenes).
+    ; A Send to shortcut already there (your own ALTRun's, when run locally) is put aside and restored by CloseHelpers
+    static SendToLink := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
+    static SendToActive := false, SendToBackup := ""
+    static EnableSendTo() {
+        if (!Shots.SendToActive && FileExist(Shots.SendToLink)) {
+            Shots.SendToBackup := A_Temp "\ALTRun-SendTo-backup.lnk"
+            FileMove(Shots.SendToLink, Shots.SendToBackup, true)
+        }
+        Shots.SendToActive := true
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["General"]["SendToMenu"] := 1
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; A sample file selected in Explorer, its context menu open with "Send to" expanded (ALTRun is the first item).
+    ; Shift+F10 opens the full menu, on Windows 11 too (a right-click shows the short one without "Send to")
+    static SendTo() {
+        try ControlSend("{Esc}", "Edit1", Shots.SearchWindow())            ; close the search window opened at start-up first
+        Loop 20 {
+            if FileExist(Shots.SendToLink)
+                break
+            Sleep(250)
+        }
+        if !FileExist(Shots.SendToLink)
+            throw Error("Send to shortcut not created")
+        Run('explorer.exe /select,"' Shots.DemoDir '\Annual Report 2026\Annual Report 2026 Draft.docx"')
+        explorer := WinWait("Annual Report 2026 ahk_class CabinetWClass", , 10)
+        if !explorer
+            throw Error("Explorer window not shown")
+        k := Shots.Scale
+        WinMove(Round(60 * k), Round(40 * k), Round(760 * k), Round(500 * k), explorer)
+        WinSetAlwaysOnTop(1, explorer)                                      ; above the backdrop
+        WinActivate(explorer)
+        Sleep(2000)                                                         ; the selection and the file icons
+        Shots.BackdropBehind(explorer)
+        Send("+{F10}")
+        if !WinWait("ahk_class #32768", , 5)
+            throw Error("context menu not shown")
+        Sleep(1000)
+        Send("n")                                                           ; Se&nd to: opens the submenu with its first item selected
+        Sleep(1500)                                                         ; the Send to items are read when it opens
+        menus := WinGetList("ahk_class #32768")
+        if (menus.Length < 2)
+            throw Error("Send to submenu not shown")
+        hwnds := [explorer]
+        Loop menus.Length                                                   ; WinGetList is top to bottom: the submenu last, on top
+            hwnds.Push(menus[menus.Length + 1 - A_Index])
+        return hwnds
     }
 
     static Preferences() {
