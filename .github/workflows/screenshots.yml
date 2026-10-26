@@ -80,6 +80,7 @@ jobs:
         shell: pwsh
         run: |
           pwsh -NoProfile -File Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only normal-scale
+          if ($LASTEXITCODE -ne 0) { throw "screenshots at 100% failed" }
           python Tests/Screenshots/RoundCorners.py docs/images/screenshots
           if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
 

@@ -538,7 +538,7 @@ class Shots {
     }
 
     ; A sample file selected in Explorer, its context menu open with "Send to" expanded (ALTRun is the first item).
-    ; Shift+F10 opens the full menu, on Windows 11 too (a right-click shows the short one without "Send to")
+    ; The full menu, as with Shift+right-click (the short Windows 11 menu has no "Send to")
     static SendTo() {
         try ControlSend("{Esc}", "Edit1", Shots.SearchWindow())            ; close the search window opened at start-up first
         Loop 20 {
@@ -558,17 +558,23 @@ class Shots {
         WinActivate(explorer)
         Sleep(2000)                                                         ; the selection and the file icons
         Shots.BackdropBehind(explorer)
-        ; the focus must be in the file list: in the Windows 11 address / command bar Shift+F10 opens that bar's own menu
+        ; WM_CONTEXTMENU at the selection (lParam -1, as from the keyboard) straight to the file list, with Shift held for the full menu:
+        ; Shift+F10 goes to the focus, which in Windows 11 Explorer stays in the address / command bar (a XAML island) and opens that bar's menu
         view := 0
         try view := DllCall("FindWindowEx", "Ptr", ControlGetHwnd("SHELLDLL_DefView1", explorer), "Ptr", 0, "Str", "DirectUIHWND", "Ptr", 0, "Ptr")
-        if view
-            try ControlFocus(view)
-        Sleep(300)
-        Send("+{F10}")
-        if !WinWait("ahk_class #32768", , 5) {
-            focus := ""
-            try focus := ControlGetClassNN(ControlGetFocus("A"))
-            try Shots.Log("active window: " WinGetClass("A") ' "' WinGetTitle("A") '", focus: ' focus ", file list: " view)
+        if !view
+            throw Error("Explorer file list not found")
+        contextMenu := 0
+        Send("{Shift down}")
+        try {
+            PostMessage(0x7B, view, -1, , view)                             ; WM_CONTEXTMENU
+            contextMenu := WinWait("ahk_class #32768", , 5)
+        } finally Send("{Shift up}")
+        if !contextMenu {
+            classes := ""
+            for window in WinGetList("ahk_exe explorer.exe")
+                try classes .= WinGetClass(window) " "
+            Shots.Log("explorer windows: " classes)
             throw Error("context menu not shown")
         }
         Sleep(1000)
