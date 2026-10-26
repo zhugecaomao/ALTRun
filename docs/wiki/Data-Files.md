@@ -19,7 +19,7 @@ Preferences → Advanced → Data → "Open Data Folder" opens it.
 | `ALTRun.v<version>.backup.json` | Backup taken before the settings format was upgraded (for example `ALTRun.v4.backup.json`) | No effect; use it to go back to an older version |
 | `ALTRun.json.bad` | When the settings file has a format error, the original is kept under this name; fix it and rename it back to `ALTRun.json` | No effect |
 | `AppIndex.json` | App index | Rescanned at startup |
-| `FileIndex.json` | Built-in file index (used without Everything) | Rescanned in the background |
+| `FileIndex.txt` | Built-in file index (used without Everything) | Rescanned in the background |
 | `Knowledge.json` | Learned ranking, search history, recent items (pinned items are in `ALTRun.json`) | Ranking has to be learned again, recent items are cleared |
 | `Usage.json` | Usage statistics (how often each feature was used each day) | Statistics start from zero |
 | `ClipboardHistory.json` | Clipboard history (text) | History is cleared |

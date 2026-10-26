@@ -402,10 +402,7 @@ class ProviderTests {
 
     static FileIndex() {
         eq := (n, a, e) => TestRunner.Equal("FileIndex." n, a, e)
-        FileIndex.Paths := ["C:\Docs\Project Atlas", "C:\Docs\Project Atlas\Atlas Plan.dwg", "C:\Docs\notes.txt", "C:\Docs\Status Report.pdf"]
-        FileIndex.Names := ["project atlas", "atlas plan.dwg", "notes.txt", "status report.pdf"]
-        FileIndex.Folders := [1, 0, 0, 0]
-        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        FileIndex.SetEntries(["C:\Docs\Project Atlas", "C:\Docs\Project Atlas\Atlas Plan.dwg", "C:\Docs\notes.txt", "C:\Docs\Status Report.pdf"], [1, 0, 0, 0])
         found := FileIndex.Search("atlas", 10)
         eq("count", found.Length, 2)
         eq("prefix first", found[1].Path, "C:\Docs\Project Atlas\Atlas Plan.dwg")
@@ -413,7 +410,58 @@ class ProviderTests {
         eq("new search", FileIndex.Search("rep", 10)[1].Path, "C:\Docs\Status Report.pdf")
         TestRunner.True("FileIndex.word start >= 70", FileIndex.ScoreName("atlas", "project atlas") >= 70)
         eq("no match", FileIndex.ScoreName("xyz", "notes.txt"), 0)
-        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+        FileIndex.SetEntries([])
+    }
+
+    ; The packed index (FileIndex.Entries): names, folders and paths come back as added; Find scores like ScoreName; the cache file round-trips
+    static FileIndexPacked() {
+        eq := (n, a, e) => TestRunner.Equal("FileIndexPacked." n, a, e)
+        paths := ["C:\Docs\Project Atlas", "C:\Docs\Project Atlas\Atlas Plan.DWG", "D:\notes.txt", "C:\Docs\Status Report (atlas).pdf"
+            , "C:\Docs\atlas", "C:\Docs\测试 Atlas.docx", "C:\Docs\atlasatlas.txt"]
+        FileIndex.SetEntries(paths, [1, 0, 0, 0, 1, 0, 0])
+        data := FileIndex.Data
+        eq("count", FileIndex.Count, 7)
+        back := ""
+        Loop data.Count
+            back .= data.PathAt(A_Index) "|" data.IsFolderAt(A_Index) ";"
+        eq("paths, case and folders kept", back, "C:\Docs\Project Atlas|1;C:\Docs\Project Atlas\Atlas Plan.DWG|0;D:\notes.txt|0;C:\Docs\Status Report (atlas).pdf|0;"
+            . "C:\Docs\atlas|1;C:\Docs\测试 Atlas.docx|0;C:\Docs\atlasatlas.txt|0;")
+        eq("each folder once", data.Dirs.Length, 3)
+        for needle in ["atlas", "a", "plan.dwg", "notes.txt", "(", "测试", "xyz", "atlasatlas.txt"] {
+            scores := Map(), matches := []
+            data.Find(needle, scores, matches)
+            expected := "", found := ""
+            Loop data.Count
+                if (score := FileIndex.ScoreName(needle, StrLower(data.NameAt(A_Index))))
+                    expected .= A_Index "=" score " "
+            for index in matches
+                found .= index "=" scores[index] " "
+            eq("Find scores like ScoreName: " needle, found, expected)
+        }
+        eq("an entry once (two matches in the name)", FileIndex.Search("atlas", 10).Length, 6)
+        eq("extension filter", FileIndex.Search("atlas", 10, false, Map("dwg", true))[1].Path, "C:\Docs\Project Atlas\Atlas Plan.DWG")
+        eq("folders only", FileIndex.Search("atlas", 10, true).Length, 2)
+        savedFile := FileIndex.File, savedOld := FileIndex.OldFile
+        FileIndex.File := A_Temp "\ALTRunPackedIndex.txt", FileIndex.OldFile := A_Temp "\ALTRunPackedIndex.json"
+        try {
+            FileIndex._SaveCache()
+            FileIndex.SetEntries([])
+            FileAppend("{}", FileIndex.OldFile)
+            eq("cache read", FileIndex._LoadCache(), true)
+            again := ""
+            Loop FileIndex.Count
+                again .= FileIndex.Data.PathAt(A_Index) "|" FileIndex.Data.IsFolderAt(A_Index) ";"
+            eq("cache round trip", again, back)
+            eq("old JSON cache deleted", FileExist(FileIndex.OldFile), "")
+            FileDelete(FileIndex.File), FileAppend('{"Paths": [], "Folders": []}', FileIndex.File)
+            eq("a cache in another format isn't read", FileIndex._LoadCache(), false)
+        } finally {
+            try FileDelete(FileIndex.File)
+            try FileDelete(FileIndex.OldFile)
+            FileIndex.File := savedFile, FileIndex.OldFile := savedOld
+        }
+        FileIndex.SetEntries([])
+        eq("empty index", FileIndex.Search("atlas", 10).Length, 0)
     }
 
     ; Watching the indexed folders: which changes need a rescan, rescanning after changes, writing the cache after the scan when idle
@@ -437,7 +485,7 @@ class ProviderTests {
             eq("default exclude " folder, RegExMatch("D:\Docs\Tool\" folder "\x.txt", exclude) > 0, true)
         for folder in ["venvs", "my.venv", "cache", "Visual Studio", ".vscode", "github", "idea"]
             eq("default keeps " folder, RegExMatch("D:\Docs\" folder "\x.txt", exclude), 0)
-        eq("own folder", FileIndex.IsWatchedChange("D:\Docs\ALTRun\Data\FileIndex.json", roots, 3, "", "D:\Docs\ALTRun"), false)
+        eq("own folder", FileIndex.IsWatchedChange("D:\Docs\ALTRun\Data\FileIndex.txt", roots, 3, "", "D:\Docs\ALTRun"), false)
 
         root := A_Temp "\ALTRunFileIndexWatch"
         try DirDelete(root, true)
@@ -445,10 +493,10 @@ class ProviderTests {
         FileAppend("", root "\Old Plan.dwg")
         options := AppSettings.Feature("FileSearch")
         saved := {Folders: options["ScopeFolders"], Everything: options["UseEverything"], File: FileIndex.File
-            , Paths: FileIndex.Paths, Names: FileIndex.Names, Folders2: FileIndex.Folders
+            , Data: FileIndex.Data, Initials: FileIndex.Initials, InitialsFor: FileIndex._initialsFor
             , Quiet: FileIndex.WatchQuietMs, Gap: FileIndex.WatchMinGapMs, Idle: FileIndex.SaveIdleMs}
         options["ScopeFolders"] := [root], options["UseEverything"] := 0
-        FileIndex.File := A_Temp "\ALTRunFileIndexWatch.json"
+        FileIndex.File := A_Temp "\ALTRunFileIndexWatch.txt"
         try FileDelete(FileIndex.File)
         FileIndex.WatchQuietMs := 0, FileIndex.WatchMinGapMs := 0, FileIndex.SaveIdleMs := 999999999   ; not written automatically; the test writes it itself
         waitScan() {
@@ -462,7 +510,7 @@ class ProviderTests {
             FileIndex.StartWatching()
             eq("watching", FileIndex._watcher.Count, 1)
             FileIndex.Rebuild(), waitScan()
-            eq("scanned", FileIndex.Paths.Length, 1)
+            eq("scanned", FileIndex.Count, 1)
             eq("save waits for idle", FileIndex._savePending && !FileExist(FileIndex.File), true)
             FileIndex.SavePending()
             eq("saved on demand", !FileIndex._savePending && FileExist(FileIndex.File) != "", true)
@@ -476,9 +524,9 @@ class ProviderTests {
             FileAppend("", root "\New Plan.dwg")
             Sleep(300)
             FileIndex._PollWatches()
-            eq("new file rescans", FileIndex.Scanning || FileIndex.Paths.Length = 3, true)
+            eq("new file rescans", FileIndex.Scanning || FileIndex.Count = 3, true)
             waitScan()
-            eq("new file indexed", FileIndex.Paths.Length, 3)               ; including .crdownload (scanning doesn't skip it, it just doesn't trigger)
+            eq("new file indexed", FileIndex.Count, 3)               ; including .crdownload (scanning doesn't skip it, it just doesn't trigger)
             FileIndex.WatchMinGapMs := 600000
             FileDelete(root "\New Plan.dwg")
             Sleep(300)
@@ -494,9 +542,9 @@ class ProviderTests {
             FileIndex._savePending := false, FileIndex._changedAt := 0, FileIndex._lastScan := 0
             options["ScopeFolders"] := saved.Folders, options["UseEverything"] := saved.Everything
             FileIndex.File := saved.File
-            FileIndex.Paths := saved.Paths, FileIndex.Names := saved.Names, FileIndex.Folders := saved.Folders2
+            FileIndex.Data := saved.Data, FileIndex.Initials := saved.Initials, FileIndex._initialsFor := saved.InitialsFor
             FileIndex.WatchQuietMs := saved.Quiet, FileIndex.WatchMinGapMs := saved.Gap, FileIndex.SaveIdleMs := saved.Idle
-            try FileDelete(A_Temp "\ALTRunFileIndexWatch.json")
+            try FileDelete(A_Temp "\ALTRunFileIndexWatch.txt")
             try DirDelete(root, true)
         }
     }
@@ -516,10 +564,7 @@ class ProviderTests {
         for filter in FileSearchProvider.TypeFilters()
             keywords .= filter.Keyword " "
         eq("default keywords", keywords, "doc pic video audio zip exe cad ")
-        FileIndex.Paths := ["C:\P\Tower Plan.dwg", "C:\P\Tower Plan.pdf", "C:\P\Tower photo.jpg", "C:\P\Tower"]
-        FileIndex.Names := ["tower plan.dwg", "tower plan.pdf", "tower photo.jpg", "tower"]
-        FileIndex.Folders := [0, 0, 0, 1]
-        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        FileIndex.SetEntries(["C:\P\Tower Plan.dwg", "C:\P\Tower Plan.pdf", "C:\P\Tower photo.jpg", "C:\P\Tower"], [0, 0, 0, 1])
         titles(results) {
             list := ""
             for item in results
@@ -544,7 +589,7 @@ class ProviderTests {
         eq("settings change", titles(FileSearchProvider.Search(SearchQuery("dwgonly tower"))), "Tower Plan.dwg")
         options["TypeFilters"].Pop()
         options["UseEverything"] := savedEverything
-        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+        FileIndex.SetEntries([])
     }
 
     ; "recent report": Windows' recent files and folders (shortcuts in the Recent folder), newest first, without Everything
@@ -1128,18 +1173,12 @@ class ProviderTests {
 
         ; the built-in index (without Everything) also finds by pinyin initials
         paths := ["C:\D\测试.bat", "C:\D\cs_report.bat", "C:\D\证件扫描文件.zip", "C:\D\项目测试报告.docx", "C:\D\notes.txt"]
-        FileIndex.Paths := paths, FileIndex.Names := [], FileIndex.Folders := [0, 0, 0, 0, 0]
-        for fullPath in paths {
-            SplitPath(fullPath, &fileName)
-            FileIndex.Names.Push(StrLower(fileName))
-        }
+        FileIndex.SetEntries(paths)
         eq("index: before initials are ready", names("zjsm"), "")
         FileIndex.BuildInitials()                                             ; computed in the background in batches
-        eq("index: initials built in the background", TestUtil.WaitFor(() => FileIndex._initialsFor == FileIndex.Names), true)
+        eq("index: initials built in the background", TestUtil.WaitFor(() => FileIndex._initialsFor == FileIndex.Data), true)
         eq("index initials", FileIndex.Initials.Count "|" FileIndex.Initials[1] "|" FileIndex.Initials.Has(2) "|" FileIndex.Initials[3], "3|cs.bat|0|zjsmwj.zip")
-        names(needle, fresh := true) {
-            if fresh
-                FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        names(needle) {
             list := ""
             for item in FileIndex.Search(needle, 10) {
                 SplitPath(item.Path, &fileName)
@@ -1149,23 +1188,23 @@ class ProviderTests {
         }
         eq("index: direct first, then pinyin", names("cs"), "cs_report.bat|测试.bat|项目测试报告.docx")
         eq("index: initials", names("zjsm"), "证件扫描文件.zip")
-        eq("index: narrowing keeps pinyin", (names("c"), names("cs", false)), "cs_report.bat|测试.bat|项目测试报告.docx")
+        eq("index: typing on keeps pinyin", (names("c"), names("cs")), "cs_report.bat|测试.bat|项目测试报告.docx")
         eq("index: chinese input", names("测试"), "测试.bat|项目测试报告.docx")
         eq("index: several words", names("zj sm"), "")
-        FileIndex.Names := FileIndex.Names.Clone()                            ; Names replaced (e.g. set directly by a test): the initials don't match, so no pinyin
-        eq("index: initials for other names", names("zjsm"), "")
-        savedFile := FileIndex.File, FileIndex.File := A_Temp "\ALTRunPinyinIndex.json"
+        FileIndex.SetEntries(paths)                                           ; a new index: the initials belong to the old one, so no pinyin until rebuilt
+        eq("index: initials for another index", names("zjsm"), "")
+        savedFile := FileIndex.File, FileIndex.File := A_Temp "\ALTRunPinyinIndex.txt"
         try {
-            JSON.WriteFile(FileIndex.File, Map("Paths", ["C:\D\证件扫描文件.zip", "C:\D\notes.txt"], "Folders", [0, 0]))
+            FileIndex.SetEntries(["C:\D\证件扫描文件.zip", "C:\D\notes.txt"])
+            FileIndex._SaveCache(), FileIndex.SetEntries([])
             FileIndex._LoadCache()
-            TestUtil.WaitFor(() => FileIndex._initialsFor == FileIndex.Names)
+            TestUtil.WaitFor(() => FileIndex._initialsFor == FileIndex.Data)
             eq("cache load builds initials", FileIndex.Initials.Count "|" FileIndex.Initials[1], "1|zjsmwj.zip")
         } finally {
             try FileDelete(FileIndex.File)
             FileIndex.File := savedFile
         }
-        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := [], FileIndex.Initials := Map(), FileIndex._initialsFor := ""
-        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        FileIndex.SetEntries([])
         ranges := FuzzyMatcher.MatchRanges("cs", "测试.bat")
         eq("highlight", ranges.Length = 1 ? ranges[1][1] "," ranges[1][2] : ranges.Length, "1,2")
     }
@@ -1175,10 +1214,7 @@ class ProviderTests {
         options := AppSettings.Feature("FileSearch")
         saved := [options["InDefaultResults"], options["UseEverything"]]
         options["UseEverything"] := 0                                       ; the tests use the built-in index
-        FileIndex.Paths := ["C:\Windows\Fonts\MARLETT.TTF", "C:\Docs\Market Notes.pdf"]
-        FileIndex.Names := ["marlett.ttf", "market notes.pdf"]
-        FileIndex.Folders := [0, 0]
-        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        FileIndex.SetEntries(["C:\Windows\Fonts\MARLETT.TTF", "C:\Docs\Market Notes.pdf"], [0, 0])
         eq("default off", AppSettings.Defaults()["Features"]["FileSearch"]["InDefaultResults"], 0)
         eq("space prefix on", AppSettings.Defaults()["Features"]["FileSearch"]["SpacePrefix"], 1)
         options["InDefaultResults"] := 0
@@ -1188,7 +1224,7 @@ class ProviderTests {
         eq("file mode empty", ProviderRegistry.SearchOnly(FileSearchProvider, "  ").Length, 0)
         TestRunner.True("FileSearchModes.quote still works", FileSearchProvider.Search(SearchQuery("'mar")).Length >= 2)
         options["InDefaultResults"] := saved[1], options["UseEverything"] := saved[2]
-        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
+        FileIndex.SetEntries([])
     }
 
     ; "folder atlas" searches folders only; a keyword without a following space does not hide other results; results are sorted by name match
@@ -1197,10 +1233,7 @@ class ProviderTests {
         options := AppSettings.Feature("FileSearch")
         savedEverything := options["UseEverything"]
         options["UseEverything"] := 0                                       ; the tests use the built-in index
-        FileIndex.Paths := ["C:\Docs\noteatlas.pdf", "C:\Projects\Atlas Tower", "C:\Docs\Atlas drawing.dwg", "C:\Projects\Old Atlas"]
-        FileIndex.Names := ["noteatlas.pdf", "atlas tower", "atlas drawing.dwg", "old atlas"]
-        FileIndex.Folders := [0, 1, 0, 1]
-        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        FileIndex.SetEntries(["C:\Docs\noteatlas.pdf", "C:\Projects\Atlas Tower", "C:\Docs\Atlas drawing.dwg", "C:\Projects\Old Atlas"], [0, 1, 0, 1])
         titles(results) {
             list := ""
             for item in results
@@ -1259,8 +1292,7 @@ class ProviderTests {
         eq("only Everything syntax (d:)", FileSearchProvider.NameScore(FileSearchProvider.ScoreNeedle("d:"), "AhkScripts"), 50)
         eq("only Everything syntax (folder:)", FileSearchProvider.NameScore(FileSearchProvider.ScoreNeedle("folder:"), "AhkScripts"), 50)
         options["UseEverything"] := savedEverything
-        FileIndex.Paths := [], FileIndex.Names := [], FileIndex.Folders := []
-        FileIndex._lastNeedle := "", FileIndex._lastMatches := ""
+        FileIndex.SetEntries([])
     }
 
     ; Typing ? shows the cheat sheet; usage tips rotate in the empty search box
