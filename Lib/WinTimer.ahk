@@ -15,6 +15,8 @@
 ; Meant for timers that stay set while ALTRun is idle; short-lived ones (batches, delays while typing) keep SetTimer.
 ; A single SetTimer timer left set while idle keeps the 10 ms timer running for all (the bench showed no gain while Quick Switch still
 ; polled with SetTimer), so every one of them must be a WinTimer: ProjectTests.LongTimers flags long SetTimer periods.
+; Result (Tests\Bench, median of 6 idle minutes): 301 million cycles a minute before, 18 million with these timers on WinTimer and
+; Quick Switch on window events (#291, #295).
 ; Like SetTimer, the function runs in a new thread; WM_TIMER is a low-priority message, so a busy moment can delay it a little.
 ;
 ; Usage:
