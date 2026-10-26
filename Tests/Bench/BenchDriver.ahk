@@ -449,7 +449,7 @@ Op_quickswitch() {
         Rec("quickswitch fail", "panel not shown")
     WinActivate(dialog)
     start := NowMs()
-    Send("^e")
+    Send("^g")                                                         ; the jump hotkey (default Ctrl+G since settings version 6)
     ms := WaitFor(() => DialogFolder(dialog, "Folder A"), 5000)
     if (ms != "")
         Rec("quickswitch: ctrl+e to folder ms", ms)
