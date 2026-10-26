@@ -144,7 +144,7 @@ class ItemEditor {
         }
     }
 
-    ; A list with one item per line in a roomy window of its own (PreferencesWindow._LinesButton): help text on top, a big
+    ; A list with one item per line in a roomy window of its own (PrefsForm.LinesButton): help text on top, a big
     ; box that doesn't wrap (long paths stay on one line), OK / Cancel. Returns the lines (blank ones dropped), or "" on Cancel
     static EditLines(owner, title, help, lines) {
         state := {Result: ""}

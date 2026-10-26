@@ -473,13 +473,13 @@ class SearchWindowTests {
     static ListFilter() {
         eq := (n, a, e) => TestRunner.Equal("ListFilter." n, a, e)
         cells := ["Devices and Printers", "File", "C:\Windows\System32\control.exe printers", "dp"]
-        eq("empty", PreferencesWindow.FilterMatch("", cells), true)
-        eq("spaces only", PreferencesWindow.FilterMatch("   ", cells), true)
-        eq("title", PreferencesWindow.FilterMatch("printer", cells), true)
-        eq("case-insensitive", PreferencesWindow.FilterMatch("CONTROL", cells), true)
-        eq("all words, any column", PreferencesWindow.FilterMatch("devices  system32", cells), true)
-        eq("missing word", PreferencesWindow.FilterMatch("devices notepad", cells), false)
-        eq("not across columns", PreferencesWindow.FilterMatch("printersfile", cells), false)
+        eq("empty", PrefsForm.FilterMatch("", cells), true)
+        eq("spaces only", PrefsForm.FilterMatch("   ", cells), true)
+        eq("title", PrefsForm.FilterMatch("printer", cells), true)
+        eq("case-insensitive", PrefsForm.FilterMatch("CONTROL", cells), true)
+        eq("all words, any column", PrefsForm.FilterMatch("devices  system32", cells), true)
+        eq("missing word", PrefsForm.FilterMatch("devices notepad", cells), false)
+        eq("not across columns", PrefsForm.FilterMatch("printersfile", cells), false)
 
         ; Custom commands page: typing in the filter box shows only matching rows; filtering isn't a settings change
         saved := AppSettings.Data["CustomCommands"]
