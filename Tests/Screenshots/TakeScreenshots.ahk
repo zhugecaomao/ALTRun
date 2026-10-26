@@ -588,11 +588,11 @@ class Shots {
         }
         if (count < 3)
             throw Error("Send to submenu not shown")
-        file := Shots.OutDir "\sendto.png"
+        outFile := Shots.OutDir "\sendto.png"
         hbm := Shots.CaptureRect(left, top, right - left, bottom - top)
-        try Shots.SavePng(hbm, file)
+        try Shots.SavePng(hbm, outFile)
         finally DllCall("DeleteObject", "Ptr", hbm)
-        Shots.Log("saved " file " (" (right - left) "x" (bottom - top) ")")
+        Shots.Log("saved " outFile " (" (right - left) "x" (bottom - top) ")")
         return ""                                                           ; already saved
     }
 
