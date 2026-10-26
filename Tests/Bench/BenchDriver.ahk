@@ -9,7 +9,7 @@
 ;   BenchDriver.ahk round <label> <appDir> <outFile> <seed> <searches> <others>
 ;
 ; One round: start ALTRun, randomly mix searches searches and others each of running programs / opening files and folders, the actions panel, calculator,
-; Quick Switch, opening and saving Preferences, snippet expansion (before them, a minute idle measures the CPU used while idle); each timing goes into outFile (one line label|item|ms), and at the end
+; Quick Switch, opening and saving Preferences, snippet expansion (before them, three idle minutes measure the CPU used while idle); each timing goes into outFile (one line label|item|ms), and at the end
 ; CPU, memory, GDI / USER objects and handle counts are noted before a normal exit. Input uses real key presses (SendLevel 1, so hotkeys and hotstrings respond),
 ; and a "BenchEdit" window is always in front (normally some program is in front when the hotkey is pressed). bench_stats.py summarizes it into a table.
 #Requires AutoHotkey v2.0
@@ -242,24 +242,28 @@ Resources(when) {
     DllCall("CloseHandle", "Ptr", h)
 }
 
-; CPU time ALTRun uses in IdleMs with another program in front and nothing typed (timers, polling); recorded per minute
+; CPU ALTRun uses with another program in front and nothing typed (timers, polling): Samples one-minute samples in a row, each recorded,
+; so background work that happens to fall into one (start-up prefetch, a cache write) shows as one outlier and the median stays meaningful.
+; Counted in CPU cycles (QueryProcessCycleTime): process times only advance in 15.6 ms steps, too coarse for a few timers a minute
 IdleCpu() {
-    static IdleMs := 60000
+    static Samples := 3, SampleMs := 60000
     try WinActivate("ahk_id " B.Editor.Hwnd)
     Sleep(2000)                                                             ; let the switch settle
-    before := CpuMs()
-    Sleep(IdleMs)
-    if (before != "" && (after := CpuMs()) != "")
-        Rec("idle cpu ms per minute", (after - before) * 60000 / IdleMs)
+    Loop Samples {
+        before := CpuCycles()
+        Sleep(SampleMs)
+        if (before != "" && (after := CpuCycles()) != "")
+            Rec("idle cpu Mcycles per minute", (after - before) / 1e6 * 60000 / SampleMs)
+    }
 }
 
-CpuMs() {
+CpuCycles() {
     if !(h := DllCall("OpenProcess", "UInt", 0x1000, "Int", 0, "UInt", B.Pid, "Ptr"))   ; PROCESS_QUERY_LIMITED_INFORMATION
         return ""
-    c := 0, e := 0, k := 0, u := 0
-    DllCall("GetProcessTimes", "Ptr", h, "Int64*", &c, "Int64*", &e, "Int64*", &k, "Int64*", &u)
+    cycles := 0
+    ok := DllCall("QueryProcessCycleTime", "Ptr", h, "Int64*", &cycles)
     DllCall("CloseHandle", "Ptr", h)
-    return (k + u) / 10000
+    return ok ? cycles : ""
 }
 
 ActiveTitle() {

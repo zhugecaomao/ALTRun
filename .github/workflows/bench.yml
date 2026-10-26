@@ -1,7 +1,7 @@
 # Simulates daily use on Windows to compare the performance of two versions (Tests/Bench/BenchDriver.ahk); results go to the run summary, raw data is an artifact.
 #   Run manually (Actions → Bench → Run workflow): baseline defaults to the latest release, candidate to the branch it runs on;
-#   2 rounds per version x (searches searches + others of each action), default 500 / 100 (1000 searches + 200 of each per version, about 50 minutes)
-#   When the test scripts change on a branch other than main: a short run with few iterations (smoke test, about 8 minutes)
+#   2 rounds per version x (searches searches + others of each action), default 500 / 100 (1000 searches + 200 of each per version, about 1 hour)
+#   When the test scripts change on a branch other than main: a short run with few iterations (smoke test, about 20 minutes)
 name: Bench
 
 on:
