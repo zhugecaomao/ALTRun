@@ -9,6 +9,8 @@
 - 直接输入 (不加 `w`): 标题匹配得好的窗口也会显示, 排在应用和自定义命令后面, 最多 3 个
 - 选中一个窗口按 `→`: 关闭这个窗口
 
+![w 加空格列出打开的窗口](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/windows.png)
+
 只列出任务栏上能看到的窗口: 不包括隐藏的窗口、工具窗口、别的虚拟桌面上的窗口和 ALTRun 自己的窗口。窗口不会被记进 [最近使用](Recent-zh)。
 
 ## 设置

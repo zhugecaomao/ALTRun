@@ -15,6 +15,8 @@
     pinyin: ["拼音首字母: jsb → 记事本", "Pinyin initials: jsb → 记事本 (Notepad)", "pinyin.png"],
     websearch: ["g 关键词 用 Google 搜索, 搜索引擎可以自定义", "g keywords searches Google; engines are customizable", "websearch.png"],
     empty: ["还没输入时列出置顶的项目 (带图钉) 和最近打开的项目", "Before you type: pinned items (with a pin) and recently opened items", "empty.png"],
+    windows: ["w 加空格列出所有打开的窗口, 再输入标题或程序名筛选, Enter 切换过去, → 可以关闭窗口", "w and a space lists your open windows; type a title or program name to filter, Enter switches to it, → closes it", "windows.png"],
+    sendto: ["资源管理器里右键 → 发送到 → ALTRun, 把文件和文件夹加成自定义命令 (可以多选)", "In Explorer, right-click → Send to → ALTRun adds files and folders as custom commands (several at once works too)", "sendto.png"],
     browse: ["输入路径浏览文件夹, Tab 进入, Backspace 返回上一级", "Type a path to browse a folder; Tab goes in, Backspace goes up", "browse.png"],
     "prefs-general": ["偏好设置: 每一项都有说明", "Preferences: every option is explained", "prefs-general.png"],
     "prefs-snippets": ["文字片段: 搜索名称或正文粘贴, 也可以在任何程序里输入 ;关键字 自动展开", "Snippets: search by name or text to paste, or type ;keyword in any program to expand", "prefs-snippets.png"]

@@ -103,6 +103,8 @@
 | <img src="docs/images/screenshots/browse.png" alt="浏览文件夹"> | <img src="docs/images/screenshots/websearch.png" alt="网页搜索"> |
 | **对话框快速跳转（打开 / 保存对话框下面的文件夹面板）** | **主题（偏好设置 → 外观）** |
 | <img src="docs/images/screenshots/quickswitch.png" alt="对话框快速跳转"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="主题"> |
+| **窗口切换（`w` + 空格）** | **从资源管理器添加命令（右键 → 发送到 → ALTRun）** |
+| <img src="docs/images/screenshots/windows.png" alt="窗口切换"> | <img src="docs/images/screenshots/sendto.png" alt="发送到 ALTRun"> |
 | **偏好设置** | **自定义命令** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
 | **文字片段** | **脚本扩展** |

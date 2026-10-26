@@ -9,6 +9,8 @@ Type a window title or program name and `Enter` switches to that open window (re
 - Typing without `w`: windows whose title matches well show up too, after apps and custom commands, at most 3
 - Press `→` on a window: close it
 
+![w and a space lists the open windows](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/windows.png)
+
 Only windows you can see on the taskbar are listed: no hidden windows, tool windows, windows on other virtual desktops or ALTRun's own windows. Windows are never added to the [recent items](Recent).
 
 ## Settings
