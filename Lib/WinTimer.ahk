@@ -17,7 +17,10 @@
 ; polled with SetTimer), so every one of them must be a WinTimer: ProjectTests.LongTimers flags long SetTimer periods.
 ; Result (Tests\Bench, median of 6 idle minutes): 301 million cycles a minute before, 18 million with these timers on WinTimer and
 ; Quick Switch on window events (#291, #295).
-; Like SetTimer, the function runs in a new thread; WM_TIMER is a low-priority message, so a busy moment can delay it a little.
+; Like SetTimer, the function runs in a new thread, and not again while it is still running (a later tick is skipped, not queued);
+; WM_TIMER is a low-priority message, so a busy moment can delay it a little.
+; The timers are coalescable (SetCoalescableTimer, a tolerance of a tenth of the time, at most 1 s): Windows may line them up with other
+; timers to wake the CPU less often, as recommended for background work. None of these needs to run to the millisecond.
 ;
 ; Usage:
 ;   WinTimer.Set(fn, 2000)       every 2 s; setting the same function again restarts it with the new time
@@ -28,6 +31,8 @@
 
 class WinTimer {
     static _byFn := Map(), _byId := Map(), _nextId := 0, _gui := ""
+
+    static MaxToleranceMs := 1000
 
     static Count => WinTimer._byId.Count
 
@@ -41,10 +46,19 @@ class WinTimer {
         if !ms
             return WinTimer._Delete(id)
         hwnd := WinTimer._Window()
-        WinTimer._byFn[fn] := id, WinTimer._byId[id] := {Fn: fn, Once: ms < 0}
-        if !DllCall("SetTimer", "Ptr", hwnd, "UPtr", id, "UInt", Abs(ms), "Ptr", 0, "UPtr")   ; the same id again: restarts it
+        running := WinTimer._byId.Has(id) && WinTimer._byId[id].Running     ; set again from its own function: it is still running
+        WinTimer._byFn[fn] := id, WinTimer._byId[id] := {Fn: fn, Once: ms < 0, Running: running}
+        if !WinTimer._SetTimer(hwnd, id, Abs(ms))                           ; the same id again: restarts it
             throw OSError(A_LastError, "WinTimer.Set")
     }
+
+    ; Windows 8+: SetCoalescableTimer; SetTimer where it is missing
+    static _SetTimer(hwnd, id, ms) {
+        try return DllCall("SetCoalescableTimer", "Ptr", hwnd, "UPtr", id, "UInt", ms, "Ptr", 0, "UInt", WinTimer.Tolerance(ms), "UPtr")
+        return DllCall("SetTimer", "Ptr", hwnd, "UPtr", id, "UInt", ms, "Ptr", 0, "UPtr")
+    }
+
+    static Tolerance(ms) => Min(Abs(ms) // 10, WinTimer.MaxToleranceMs)
 
     static _Delete(id) {
         if !WinTimer._byId.Has(id)
@@ -66,9 +80,16 @@ class WinTimer {
         if (hwnd != WinTimer._gui.Hwnd || !WinTimer._byId.Has(id))
             return                                                          ; someone else's timer (AutoHotkey uses WM_TIMER too)
         timer := WinTimer._byId[id]
+        if timer.Running                                                    ; its function hasn't finished yet: skip this tick, like SetTimer
+            return 0
         if timer.Once
             WinTimer._Delete(id)
-        timer.Fn.Call()
+        timer.Running := true
+        try timer.Fn.Call()
+        finally {
+            if (WinTimer._byId.Has(id) && WinTimer._byId[id].Fn = timer.Fn)   ; may have been stopped or set again meanwhile
+                WinTimer._byId[id].Running := false
+        }
         return 0
     }
 }

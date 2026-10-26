@@ -27,6 +27,13 @@ class CoreTests {
         eq("restarted", counts.Once, 1)
         WinTimer.Set(once, 0), WinTimer.Set(() => 0, 0)
         eq("stop", WinTimer.Count, before)
+        ; Not run again while it is still running (like SetTimer): a slow function with a short period runs one at a time
+        state := {Now: 0, Most: 0, Runs: 0}
+        slow := () => (state.Now++, state.Most := Max(state.Most, state.Now), state.Runs++, Sleep(200), state.Now--)
+        WinTimer.Set(slow, 30), Sleep(700), WinTimer.Set(slow, 0), Sleep(300)
+        eq("no re-entry", state.Most, 1)
+        TestRunner.True("WinTimers.slow one still repeats (" state.Runs ")", state.Runs >= 2)
+        eq("tolerance: a tenth, at most 1 s", WinTimer.Tolerance(2000) " " WinTimer.Tolerance(-60000) " " WinTimer.Tolerance(50), "200 1000 5")
         hidden := A_DetectHiddenWindows
         DetectHiddenWindows(true)
         eq("message-only window", WinExist("ALTRun timers ahk_pid " ProcessExist()), 0)
