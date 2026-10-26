@@ -1,54 +1,55 @@
-name: Bug 报告 / Bug report
-description: ALTRun 出现错误或和预期不一致
+name: Bug report / Bug 报告
+description: Something in ALTRun is wrong or not as expected / ALTRun 出现错误或和预期不一致
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
+        Thanks for the report! Please search for an existing issue first, and see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ).
         感谢反馈! 提交前请先搜索一下是否已有相同的 Issue, 并看看 [常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ-zh)。
   - type: textarea
     id: description
     attributes:
-      label: 问题描述 / What happened
-      description: 发生了什么? 你期望的结果是什么?
+      label: What happened / 问题描述
+      description: What happened, and what did you expect? / 发生了什么? 你期望的结果是什么?
     validations:
       required: true
   - type: textarea
     id: steps
     attributes:
-      label: 复现步骤 / Steps to reproduce
+      label: Steps to reproduce / 复现步骤
       placeholder: |
-        1. 按 Alt+Space
-        2. 输入 ...
-        3. 看到 ...
+        1. Press Alt+Space / 按 Alt+Space
+        2. Type ... / 输入 ...
+        3. See ... / 看到 ...
     validations:
       required: true
   - type: input
     id: version
     attributes:
-      label: ALTRun 版本 / Version
-      description: 在搜索框输入 "关于" (或 about), 打开 "关于 ALTRun"
+      label: Version / ALTRun 版本
+      description: Type "about" in the search box and open "About ALTRun" / 在搜索框输入 "关于" (或 about), 打开 "关于 ALTRun"
       placeholder: "2026.09.25"
     validations:
       required: true
   - type: dropdown
     id: run-mode
     attributes:
-      label: 运行方式 / How do you run it
+      label: How do you run it / 运行方式
       options:
-        - 发布的 exe / Released exe
-        - 源码 ALTRun.ahk + AutoHotkey v2
+        - Released exe / 发布的 exe
+        - Source ALTRun.ahk + AutoHotkey v2 / 源码 ALTRun.ahk + AutoHotkey v2
     validations:
       required: true
   - type: input
     id: windows
     attributes:
-      label: Windows 版本 / Windows version
+      label: Windows version / Windows 版本
       placeholder: "Windows 11 24H2"
     validations:
       required: true
   - type: textarea
     id: extra
     attributes:
-      label: 截图、日志或设置片段 / Screenshots, logs, settings
-      description: 可以附上截图, 或 ALTRun.json 里相关的部分 (请去掉隐私信息)
+      label: Screenshots, logs, settings / 截图、日志或设置片段
+      description: Screenshots, or the relevant part of ALTRun.json (remove private information) / 可以附上截图, 或 ALTRun.json 里相关的部分 (请去掉隐私信息)
