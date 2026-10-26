@@ -560,8 +560,8 @@ class Shots {
         Shots.BackdropBehind(explorer)
         ; WM_CONTEXTMENU at the selection (lParam -1, as from the keyboard) straight to the file list: Shift+F10 goes to the focus,
         ; which in Windows 11 Explorer stays in the address / command bar (a XAML island) and opens that bar's menu.
-        ; Windows 11 shows its short menu first; its "Show more options" (Shift+F10) opens the full one. (Shift held from the start
-        ; would give the extended menu, whose Send to also lists every folder in the user profile)
+        ; Windows 11 shows its short menu without "Send to" (screenshots.yml sets the VM to the full menu); its "Show more options" (Shift+F10)
+        ; is tried too. Not Shift + WM_CONTEXTMENU: that gives the extended menu, whose Send to also lists every folder in the user profile
         view := 0
         try view := DllCall("FindWindowEx", "Ptr", ControlGetHwnd("SHELLDLL_DefView1", explorer), "Ptr", 0, "Str", "DirectUIHWND", "Ptr", 0, "Ptr")
         if !view

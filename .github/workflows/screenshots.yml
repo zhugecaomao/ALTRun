@@ -31,6 +31,18 @@ jobs:
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
 
+      # Windows 11's short context menu has no "Send to": the "sendto" scene needs the full one, so the VM is set to always show it
+      # (only the current user's registry, only on the GitHub VM; takes effect after Explorer restarts). Screenshots go on as usual if it fails
+      - name: Full context menu
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          New-Item "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" -Value "" -Force | Out-Null
+          Stop-Process -Name explorer -Force
+          Start-Sleep -Seconds 5
+          if (-not (Get-Process explorer -ErrorAction SilentlyContinue)) { Start-Process explorer.exe; Start-Sleep -Seconds 5 }
+          Write-Host "Explorer restarted with the full context menu"
+
       # Document icons: .docx / .xlsx / .pptx etc. are associated with the LibreOffice document icons in Tests/Screenshots/Icons, no Office needed
       # (only the current user's registry; only on the GitHub VM, running the screenshot script locally doesn't change your file associations). Screenshots go on as usual if it fails
       - name: Document icons
