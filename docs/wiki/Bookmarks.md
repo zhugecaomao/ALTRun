@@ -6,7 +6,7 @@ Search browser bookmarks directly in ALTRun, without opening the browser and bro
 
 ## Search and open
 
-- Type `bm keyword` to search bookmarks only.
+- Type `bm keyword` to search bookmarks only. `bm` alone shows a hint; `Enter` on it completes `bm `.
 - When you type a bookmark name directly, matching bookmarks can also appear in normal results, after apps and custom commands, with up to 8 bookmarks shown. The URL's domain is also matched, so typing a site domain can find its bookmarks.
 - Press `Enter` to open a bookmark; press `Alt+Enter` to copy its URL.
 - Supported browsers: Chrome, Edge, Brave and Vivaldi, across all user profiles. Firefox stores bookmarks in an SQLite database and is not supported yet.

@@ -2,7 +2,7 @@
 
 # Clipboard history
 
-Press `Ctrl+Alt+C` or type `clip` to list the text, files and images you copied; `clip keywords` filters, `Enter` pastes into the front window, and `Ctrl+Del` removes an item from the history.
+Press `Ctrl+Alt+C` or type `clip` to list the text, files and images you copied (while typing, e.g. `cli`, a hint at the end of the list completes `clip `); `clip keywords` filters, `Enter` pastes into the front window, and `Ctrl+Del` removes an item from the history.
 
 ![Clipboard history](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/clipboard.png)
 

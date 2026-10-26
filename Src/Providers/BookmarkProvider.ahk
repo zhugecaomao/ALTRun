@@ -24,10 +24,10 @@ class BookmarkProvider {
 
     static Search(query) {
         options := AppSettings.Feature("Bookmarks")
-        exclusive := false, term := query.Text
-        if query.MatchKeyword([options["Keyword"]], &rest) {
-            if !query.HasRest
-                return []
+        exclusive := false, term := query.Text, keyword := ""
+        if query.MatchKeyword([options["Keyword"]], &rest, &keyword) {
+            if !query.HasRest                                               ; "bm" alone: the keyword's hint, Enter completes "bm "
+                return [ResultItem.KeywordHint(I18n.T("Bookmarks.Keyword"), keyword, "url:")]
             term := rest, exclusive := true
         } else if !options["InDefaultResults"] || StrLen(query.Text) < 2 {
             return []

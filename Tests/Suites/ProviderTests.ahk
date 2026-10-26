@@ -233,6 +233,9 @@ class ProviderTests {
         eq("keyword only", ClipboardProvider.Search(SearchQuery("second")).Length, 0)
         TestRunner.True("Clipboard.exclusive after space", ClipboardProvider.Search(SearchQuery("clip "))[1].Exclusive)
         TestRunner.True("Clipboard.not exclusive without space", !ClipboardProvider.Search(SearchQuery("clip"))[1].Exclusive)
+        hint := ClipboardProvider.Search(SearchQuery("cli"))                ; only the start of the keyword: its hint at the end of the list
+        eq("keyword start: hint", hint.Length "|" hint[1].Valid "|" hint[1].AutoComplete "|" hint[1].Score, "1|0|clip |" ResultItem.KeywordPrefixHintScore)
+        eq("two letters: nothing", ClipboardProvider.Search(SearchQuery("cl")).Length, 0)
         mixed := [ResultItem("a", "", {Exclusive: true}), ResultItem("b")]
         eq("registry keeps exclusive", ProviderRegistry._KeepExclusive(mixed).Length, 1)
         AppSettings.Feature("Clipboard")["MaxItems"] := 2
@@ -1719,6 +1722,8 @@ class ProviderTests {
         results := BookmarkProvider.Search(SearchQuery("bm tenders"))
         ok("keyword + host", results.Length = 1 && results[1].Exclusive)
         eq("too short", BookmarkProvider.Search(SearchQuery("g")).Length, 0)
+        hint := BookmarkProvider.Search(SearchQuery("bm"))                  ; the keyword alone: its hint, Enter completes "bm "
+        eq("keyword alone: hint", hint.Length "|" hint[1].Valid "|" hint[1].AutoComplete "|" hint[1].Score "|" hint[1].Exclusive, "1|0|bm |" ResultItem.KeywordHintScore "|0")
         ; when a bookmark file can't be read (the browser is writing it) its time isn't noted, so it is read again at the next search
         root := A_Temp "\ALTRun-test-bookmarks"
         try DirDelete(root, true)

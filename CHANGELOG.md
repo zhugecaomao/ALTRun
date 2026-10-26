@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.26.4]
+
+测试版。
+
+Test build.
+
+### 改进
+- 片段和剪贴板的关键字还没输完整时 (例如 `sni`、`cli`), 列表最后也显示提示, 按 `Enter`、`Tab` 或双击补全成 `snip ` / `clip ` (和上一版的 `scrip`、`fol` 一样); 输完整的 `snip` / `clip` 照旧直接列出片段 / 剪贴板历史
+- 只输入书签关键字 `bm` 时, 以前什么都不显示, 现在显示一行提示, 按 `Enter` 补全成 `bm `
+- 代码整理: 关键字提示行改由共用的 `ResultItem.KeywordHint` 生成 (文件搜索、脚本、片段、剪贴板、书签), 分数和补全规则只在一个地方
+
 ## [2026.10.26.3]
 
 测试版。
@@ -946,7 +957,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...HEAD
+[2026.10.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...2026.10.26.4
 [2026.10.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...2026.10.26.3
 [2026.10.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...2026.10.26.2
 [2026.10.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26...2026.10.26.1

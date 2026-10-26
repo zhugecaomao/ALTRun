@@ -105,8 +105,12 @@ class ClipboardProvider {
 
     static Search(query) {
         options := AppSettings.Feature("Clipboard")
-        if !query.MatchKeyword([options["Keyword"]], &term)
+        if !query.MatchKeyword([options["Keyword"]], &term) {
+            full := ""
+            if query.StartsKeyword([options["Keyword"]], &full)            ; "cli": the keyword's hint at the end of the list ("clip" alone lists the history)
+                return [ResultItem.KeywordHint(I18n.T("Clipboard.Keyword"), full, ClipboardProvider.Icon, true)]
             return []
+        }
         icon := ClipboardProvider.Icon
         exclusive := query.HasRest                                          ; after "clip " only the clipboard history is shown
         if !ClipboardProvider.Entries.Length
