@@ -410,6 +410,7 @@ class AppSettings {
                     "MaxResults"         , 30,
                     "InDefaultResults"   , 0,                               ; also show matching files / folders when typing a name (off by default, so unrelated files from the whole disk don't mix in)
                     "DefaultResultsLimit", 6,
+                    "DefaultResultsMatch", "Start",                         ; files in normal results: Start = the name or a word in it starts with the text, Contains = anywhere in the name
                     "MinQueryLength"     , 2,
                     "UseEverything"      , 1,                               ; while Everything runs, query the whole disk over IPC
                     "EverythingFilter"   , "!C:\Windows\ !\AppData\ !\$Recycle.Bin\",

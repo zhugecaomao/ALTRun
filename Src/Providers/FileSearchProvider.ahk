@@ -3,7 +3,8 @@
 ;-------------------------------------------------------------------------------
 ; Ways to use it (as in Alfred):
 ;   1. Default results (InDefaultResults, off by default): type a name, and matching files and folders show
-;      below apps and commands (at most DefaultResultsLimit, from MinQueryLength characters)
+;      below apps and commands (at most DefaultResultsLimit, from MinQueryLength characters); DefaultResultsMatch: Start = only
+;      names that start with the text, or have a word that does; Contains = anywhere in the name (e.g. when only your own folders are indexed)
 ;   2. Files only:      press Space in the empty search box first (SpacePrefix, see SearchWindow), then type report
 ;                       (with report already typed, move the cursor to the start and press Space),
 ;                       or  'report  /  open report  /  find report  /  file report
@@ -23,7 +24,7 @@
 ;   - Otherwise: the built-in index (Src\Core\FileIndex.ahk), covering only the ScopeFolders
 ;
 ; Settings (ALTRun.json -> Features.FileSearch):
-;   Keywords / FolderKeywords / RecentKeywords / TypeFilters / SpacePrefix / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit /
+;   Keywords / FolderKeywords / RecentKeywords / TypeFilters / SpacePrefix / QuotePrefix / MaxResults / InDefaultResults / DefaultResultsLimit / DefaultResultsMatch /
 ;   MinQueryLength / UseEverything / EverythingFilter / EverythingPath /
 ;   ScopeFolders / ScopeDepth / ScopeExclude / MaxEntries / RefreshMinutes
 ;===============================================================================
@@ -279,7 +280,7 @@ class FileSearchProvider {
     ; default results: scores lowered (at most about 40), after applications / commands
     static _DefaultResults(text, options) {
         results := []
-        for found in FileSearchProvider.Query(text, options["DefaultResultsLimit"], true)
+        for found in FileSearchProvider.Query(text, options["DefaultResultsLimit"], options["DefaultResultsMatch"] != "Contains")
             results.Push(FileSearchProvider._ToItem(found, 5 + (found.Score + (found.IsFolder ? 1 : 0)) * 0.35))
         return results
     }

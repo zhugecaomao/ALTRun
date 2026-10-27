@@ -416,7 +416,7 @@ class PrefsForm {
         if secondW
             second.Move(, , secondW)
         PrefsForm.BelowInput(left[2], label, first, label2, second)
-        return {Label2: label2, Second: second}
+        return {First: first, Label2: label2, Second: second}
     }
 
     ; Rows from Pair whose right boxes should start at the same x even when a later row's right label is wider:

@@ -274,10 +274,17 @@ class PrefsPages {
         PrefsForm.Csv("Features.FileSearch.RecentKeywords", "Prefs.RecentKeywords", "M")
         PrefsForm.LinesButton("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", {Summary: (lines) => PrefsPages.TypeFilterSummary(lines), AlignPairs: true})
         PrefsForm.Section("Prefs.Section.FileResults")
-        PrefsForm.Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
-        PrefsForm.Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
-        PrefsForm.Field("Features.FileSearch.MinQueryLength", "Prefs.FileMinLength", "S", "number")
-        PrefsForm.Section("Prefs.Section.Browse")                           ; browsing folders is always available: just a description
+        inNormal := PrefsForm.Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
+        ; two rows, aligned with the keyword boxes above: when files show in normal results (match, letters), then how many (file search, normal results)
+        when := PrefsForm.Pair(["Features.FileSearch.DefaultResultsMatch", "Prefs.FileDefaultMatch", "M", "choice", ["Start", "Contains"]
+            , [I18n.T("Prefs.FileDefaultMatch.Start"), I18n.T("Prefs.FileDefaultMatch.Contains")]], ["Features.FileSearch.MinQueryLength", "Prefs.FileMinLength", "S", "number"])
+        counts := PrefsForm.Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
+        update := (*) => (when.First.Enabled := when.Second.Enabled := counts.Second.Enabled := inNormal.Value = 1)   ; only used with files in normal results
+        update()
+        inNormal.OnEvent("Click", update)
+        PrefsForm.Section("Prefs.Section.Browse")                           ; browsing folders is always available: one line and a link to the Wiki section
+        browseHelp := HelpProvider.WikiPage("File-Search") (SubStr(I18n.Lang, 1, 2) = "zh" ? "#浏览文件夹" : "#browsing-folders")
+        PrefsForm.LinkDesc(I18n.T("Prefs.BrowseFolders", browseHelp), PrefsForm.ContentX)
     }
 
     ; Search sources: Everything (searches the whole disk while it runs) and the built-in file index when Everything isn't running

@@ -33,7 +33,7 @@ class Shots {
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
 
-    static NormalScale := ["quickswitch", "sendto", "prefs-general", "prefs-appearance", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -62,6 +62,7 @@ class Shots {
             ["prefs-snippets",   "Light", "-Preferences 10", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences 13", () => Shots.Preferences()],
             ["prefs-scripts",    "Light", "-Preferences 14", () => Shots.Preferences()],
+            ["prefs-filesearch", "Light", "-Preferences 7", () => Shots.Preferences(), () => Shots.FilesInNormalResults()],   ; Wiki: file search (files in normal results)
             ["prefs-searchsources", "Light", "-Preferences 8", () => Shots.Preferences()],   ; Wiki: file search
             ["prefs-keyboard",   "Light", "-Preferences 3", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
             ["prefs-hotkeys",    "Light", "-Preferences 15", () => Shots.Preferences()],     ; Wiki: custom hotkeys
@@ -540,6 +541,15 @@ class Shots {
     ; Explorer's "Send to": ALTRun creates its Send to shortcut at start-up when SendToMenu is on (off in all other scenes).
     ; A Send to shortcut already there (your own ALTRun's, when run locally) is put aside and restored by CloseHelpers
     static SendToLink := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
+    ; The File Search page with "Also show matching files and folders in normal results" ticked, so its options aren't grayed out
+    static FilesInNormalResults() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["Features"]["FileSearch"]["InDefaultResults"] := 1
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
     ; Made-up usage counts for the last 30 days, so the Usage page has a chart and a table to show
     static WriteUsage() {
         features := [["Show", 18], ["Applications", 9], ["CustomCommands", 4], ["FileSearch", 5], ["WebSearch", 3], ["Calculator", 2]

@@ -21,7 +21,12 @@ Everything 的搜索语法可以直接用, 原样交给 Everything: 例如 `空�
 
 最多显示 30 条; 没有结果时可以一键在 Everything 或 Windows 搜索里继续找。普通搜索一条结果都没有时, 最后也会给出 "搜索文件" 的兜底项。
 
-想让普通搜索也显示文件 (旧的行为): 在 偏好设置 → 文件搜索 勾选 "普通搜索时也显示匹配的文件和文件夹", 最多显示 6 条, 只收录名称开头或单词开头匹配的。
+想不按空格、普通搜索时也显示文件: 在 偏好设置 → 文件搜索 勾选 "普通搜索时也显示匹配的文件和文件夹"。文件显示在应用和命令下面, 最多 6 条 ("普通结果里的文件数"), 输入 2 个字以后才开始找 ("最少字数")。"匹配方式" 决定哪些文件名算匹配:
+
+- **文件名开头或词的开头** (默认): `budget` 能找到 `2026-Budget.xlsx`, `udge` 找不到。短输入不会带出一长串无关的文件
+- **文件名包含**: `udge` 也能找到, 和文件搜索一样。适合内置索引只包括自己文件夹的情况 (偏好设置 → 搜索来源); 用 Everything 搜整个硬盘时, 短输入可能带出很多无关文件
+
+![偏好设置 → 文件搜索](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-filesearch.png)
 
 常用的文件夹更适合加为 [自定义命令](Custom-Commands-zh): 自定义命令也按目标的文件夹名匹配, 普通搜索就能找到。
 
@@ -69,6 +74,7 @@ ALTRun 自动选择:
 | SpacePrefix | 1 | 在空的搜索框里按空格进入文件搜索模式 |
 | InDefaultResults | 0 | 普通搜索时也显示匹配的文件和文件夹 |
 | DefaultResultsLimit | 6 | 普通结果里最多显示几条文件 |
+| DefaultResultsMatch | `Start` | 普通结果里显示哪些文件: `Start` = 文件名或其中某个词以输入的文字开头, `Contains` = 文件名任意位置包含 |
 | MinQueryLength | 2 | 至少输入几个字才搜文件 |
 | Keywords | `open, find, file` | 只搜文件的关键字 |
 | FolderKeywords | `folder` | 只搜文件夹的关键字 |

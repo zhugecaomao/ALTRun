@@ -538,8 +538,14 @@ class I18n {
         s["Prefs.Page.Applications"]   := "Applications"
         s["Prefs.Page.FileSearch"]     := "File Search"
         s["Prefs.FileInDefault"]       := "Also show matching files and folders in normal results"
+        s["Prefs.FileInDefault.Desc"]  := "As you type, files and folders show below apps and commands, without pressing Space first."
+        s["Prefs.FileDefaultMatch"]     := "Match"
+        s["Prefs.FileDefaultMatch.Start"] := "Start of name or word"
+        s["Prefs.FileDefaultMatch.Contains"] := "Anywhere in the name"
+        s["Prefs.FileDefaultMatch.Desc"] := 'Start: "budget" finds 2026-Budget.xlsx, "udge" does not. Anywhere: both do; best when only your own folders are indexed, as with Everything short words can bring in many unrelated files. Files are searched once at least "Min. letters" are typed.'
         s["Prefs.FileDefaultLimit"]     := "Files in normal results"
-        s["Prefs.FileMaxResults"]       := "Max results"
+        s["Prefs.FileMaxResults"]       := "File search results"
+        s["Prefs.FileMaxResults.Desc"]  := "At most this many results in file search (Space first, or a keyword), and this many files in normal results."
         s["Prefs.UseEverything"]       := "Use Everything when it is running"
         s["Prefs.EverythingFilter"]     := "Filter"
         s["Prefs.EverythingFilter.Desc"] := "Added to every Everything search. ! excludes, e.g. !C:\Windows\"
@@ -550,7 +556,6 @@ class I18n {
         s["Prefs.ScopeDepth.Desc"]     := "How many subfolder levels to scan. The index updates itself when files or folders are added, removed or renamed, or when these settings change; Rebuild File Index rescans right away."
         s["Prefs.RebuildFileIndex"]    := "Rebuild File Index"
         s["Prefs.FileMinLength"]        := "Min. letters"
-        s["Prefs.FileMinLength.Desc"]   := "Files are searched in normal results only after this many letters."
         s["Prefs.ScopeExclude"]         := "Exclude (regex)"
         s["Prefs.ScopeExclude.Desc"]    := "Folders whose path matches this regular expression are skipped, e.g. node_modules and .git."
         s["Prefs.MaxEntries"]           := "Max entries"
@@ -607,7 +612,7 @@ class I18n {
         s["Prefs.Section.FileStart"]      := "Starting a file search"
         s["Prefs.Section.FileResults"]    := "Results"
         s["Prefs.Section.Browse"]         := "Browsing folders"
-        s["Prefs.Section.Browse.Desc"]    := "Type a folder path such as C:\, C:\Users\, ~\ (your user folder), %OneDrive%\ or \\server\share\ to list what is in it; the text after the last \ filters the list. Tab opens the selected folder (any folder in the results), Backspace goes back up. Insert marks files and folders, then → acts on all marked ones (open, copy, move to the Total Commander folder, recycle)."
+        s["Prefs.BrowseFolders"]          := 'Type a folder path such as C:\ or ~\ to list what is in it and browse folder by folder. <a href="{1}">How it works</a>'
         s["Prefs.Section.Everything"]     := "Everything (whole-disk search)"
         s["Prefs.Section.BuiltinIndex"]   := "Built-in index (when Everything is not running)"
         s["Prefs.Section.BuiltinIndex.Desc"] := 'Chinese file names also match pinyin initials, e.g. "cs" finds 测试.docx. No setup needed.'
