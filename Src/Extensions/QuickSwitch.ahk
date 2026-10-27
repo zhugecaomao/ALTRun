@@ -206,6 +206,8 @@ class QuickSwitch {
             if QuickSwitch._InputSettled(active) {
                 QuickSwitch._fromManager := false                           ; once per switch
                 Logger.Debug("QuickSwitch: AutoSwitch jumps")
+                if Logger.Enabled
+                    SetTimer(QuickSwitch._LogAfterJump.Bind(QuickSwitch, active), -100)
                 QuickSwitch.SyncFileManagerPath(true)
             } else
                 SetTimer(QuickSwitch._checkTimer, -QuickSwitch.CheckDelayMs)   ; the switch is still going on: try again a moment later
@@ -249,6 +251,19 @@ class QuickSwitch {
         if (QuickSwitch._settledSince <= 0)
             QuickSwitch._settledSince := A_TickCount
         return A_TickCount - QuickSwitch._settledSince >= QuickSwitch.InputSettleMs
+    }
+
+    ; Debug log, 100 ms after an AutoSwitch jump: a file name box still holding the folder (ending in \) means the dialog didn't take the Enter
+    static _LogAfterJump(dialog) {
+        text := "", focused := ""
+        try text := ControlGetText("Edit1", "ahk_id " dialog)
+        try focused := ControlGetClassNN(ControlGetFocus("ahk_id " dialog))
+        info := Buffer(A_PtrSize = 8 ? 72 : 48, 0)
+        NumPut("UInt", info.Size, info)
+        tid := DllCall("GetWindowThreadProcessId", "Ptr", dialog, "Ptr", 0, "UInt")
+        flags := tid && DllCall("GetGUIThreadInfo", "UInt", tid, "Ptr", info) ? NumGet(info, 4, "UInt") : -1
+        Logger.Debug(Format("QuickSwitch: after the jump, folder still in the box: {}, focus {}, thread flags 0x{:X}, in front: {}",
+            SubStr(text, -1) = "\", focused, flags, DllCall("GetForegroundWindow", "Ptr") = dialog))
     }
 
     static _SearchesFiles() => QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "all"
