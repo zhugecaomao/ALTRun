@@ -612,7 +612,7 @@ class I18n {
         s["Prefs.Section.FileStart"]      := "Starting a file search"
         s["Prefs.Section.FileResults"]    := "Results"
         s["Prefs.Section.Browse"]         := "Browsing folders"
-        s["Prefs.Section.Browse.Desc"]    := "Type a folder path such as C:\, C:\Users\, ~\ (your user folder), %OneDrive%\ or \\server\share\ to list what is in it; the text after the last \ filters the list. Tab opens the selected folder (any folder in the results), Backspace goes back up. Insert marks files and folders, then → acts on all marked ones (open, copy, move to the Total Commander folder, recycle)."
+        s["Prefs.BrowseFolders"]          := 'Type a folder path such as C:\ or ~\ to list what is in it and browse folder by folder. <a href="{1}">How it works</a>'
         s["Prefs.Section.Everything"]     := "Everything (whole-disk search)"
         s["Prefs.Section.BuiltinIndex"]   := "Built-in index (when Everything is not running)"
         s["Prefs.Section.BuiltinIndex.Desc"] := 'Chinese file names also match pinyin initials, e.g. "cs" finds 测试.docx. No setup needed.'

@@ -282,7 +282,9 @@ class PrefsPages {
         update := (*) => (when.First.Enabled := when.Second.Enabled := counts.Second.Enabled := inNormal.Value = 1)   ; only used with files in normal results
         update()
         inNormal.OnEvent("Click", update)
-        PrefsForm.Section("Prefs.Section.Browse")                           ; browsing folders is always available: just a description
+        PrefsForm.Section("Prefs.Section.Browse")                           ; browsing folders is always available: one line and a link to the Wiki section
+        browseHelp := HelpProvider.WikiPage("File-Search") (SubStr(I18n.Lang, 1, 2) = "zh" ? "#浏览文件夹" : "#browsing-folders")
+        PrefsForm.LinkDesc(I18n.T("Prefs.BrowseFolders", browseHelp), PrefsForm.ContentX)
     }
 
     ; Search sources: Everything (searches the whole disk while it runs) and the built-in file index when Everything isn't running
