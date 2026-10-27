@@ -1037,20 +1037,30 @@ class QuickSwitch {
     }
 
     ; The jump is checked ConfirmMs later in the dialog's address bar: when it isn't in the folder (seen once when switching with Alt+Tab, the
-    ; dialog still activating), the jump is made once more. Safe to repeat: OK is only sent with exactly the folder in the box
-    static ConfirmMs := 400
+    ; dialog still activating), the jump is made once more. Safe to repeat: OK is only sent with exactly the folder in the box.
+    ; The dialog is also redrawn then: after Alt+Tab its address bar read the new folder while the old one could still be seen
+    static ConfirmMs := 400, RecheckMs := 2000
 
     static _ConfirmJump(folder, dialog, before, retries) {
         if !WinExist("ahk_id " dialog)
             return
+        DllCall("RedrawWindow", "Ptr", dialog, "Ptr", 0, "Ptr", 0, "UInt", 0x585)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW | RDW_FRAME
         now := QuickSwitch.DialogFolder(dialog), wanted := RTrim(folder, "\")
-        if Logger.Enabled
-            Logger.Debug("QuickSwitch: after the jump the dialog shows [" now "] (before [" before "], wanted [" wanted "])" QuickSwitch._DialogState(dialog))
+        if Logger.Enabled {
+            Logger.Debug("QuickSwitch: after the jump the dialog shows [" now "] (before [" before "], wanted [" wanted "]), redrawn" QuickSwitch._DialogState(dialog))
+            SetTimer(QuickSwitch._LogDialogFolder.Bind(QuickSwitch, dialog, wanted), -QuickSwitch.RecheckMs)
+        }
         if (now = "" || now = wanted || !retries)                          ; "" = the address bar can't be read: nothing to compare
             return
         Logger.Debug("QuickSwitch: not in the folder, jumping once more")
         if QuickSwitch._JumpByMessage(folder, dialog)
             SetTimer(QuickSwitch._ConfirmJump.Bind(QuickSwitch, folder, dialog, before, retries - 1), -QuickSwitch.ConfirmMs)
+    }
+
+    ; For the debug log: whether the dialog still shows the folder RecheckMs after the jump
+    static _LogDialogFolder(dialog, wanted) {
+        if WinExist("ahk_id " dialog)
+            Logger.Debug("QuickSwitch: " QuickSwitch.RecheckMs " ms later the dialog shows [" QuickSwitch.DialogFolder(dialog) "] (wanted [" wanted "])" QuickSwitch._DialogState(dialog))
     }
 
     ; The folder a system dialog shows, from its address bar ("Address: C:\Docs", the label in the UI language); "" if it can't be read
@@ -1074,7 +1084,10 @@ class QuickSwitch {
             if (focused := NumGet(info, 8 + A_PtrSize, "Ptr"))             ; hwndFocus
                 try focus := WinGetClass("ahk_id " focused)
         }
-        return Format(", box [{}], focus {}, thread flags 0x{:X}, in front {}", box, focus, flags, DllCall("GetForegroundWindow", "Ptr") = dialog)
+        cloaked := 0
+        try DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", dialog, "UInt", 14, "UInt*", &cloaked, "UInt", 4)   ; DWMWA_CLOAKED
+        return Format(", box [{}], focus {}, thread flags 0x{:X}, in front {}, cloaked {}, Alt down {}", box, focus, flags
+            , DllCall("GetForegroundWindow", "Ptr") = dialog, cloaked, GetKeyState("Alt", "P"))
     }
 
     ; Puts text into a dialog's file name box and tells its parent, as typing does (see _JumpByMessage, step 2); false if the box

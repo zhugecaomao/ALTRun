@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.14]
+
+测试版。
+
+Test build.
+
+### 修复
+- 自动跳转: 用 Alt+Tab 切到对话框后, 对话框地址栏已经是新文件夹, 看到的却还是原来的文件夹。跳转后 0.4 秒重绘一次对话框
+- 调试日志: 跳转后 2 秒再记一次对话框显示的文件夹; 状态里加上对话框是否被系统隐藏 (cloaked) 和 Alt 是否按着
+
 ## [2026.10.26.13]
 
 测试版。
@@ -1029,7 +1039,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.14...HEAD
+[2026.10.26.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.13...2026.10.26.14
 [2026.10.26.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.12...2026.10.26.13
 [2026.10.26.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.11...2026.10.26.12
 [2026.10.26.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.10...2026.10.26.11
