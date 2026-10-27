@@ -112,7 +112,6 @@ class UpdateChecker {
     ; Called at start-up: the network may not be up yet at boot, so the first check is after 1 minute
     static Schedule() {
         UpdateChecker._timer := () => UpdateChecker._Tick()
-        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
         WinTimer.Set(() => UpdateChecker._Tick(UpdateChecker.StartupHours), -60000)
     }
 

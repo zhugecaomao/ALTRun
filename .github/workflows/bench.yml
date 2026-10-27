@@ -103,7 +103,7 @@ jobs:
           "## ALTRun benchmark`n" | Add-Content $env:GITHUB_STEP_SUMMARY
           (Get-Content versions.txt) -join ", " | Add-Content $env:GITHUB_STEP_SUMMARY
           "`nSearches / other operations per round: $env:SEARCHES / $env:OTHERS (2 rounds per version)`n" | Add-Content $env:GITHUB_STEP_SUMMARY
-          $summary | Add-Content $env:GITHUB_STEP_SUMMARY
+          $summary | Where-Object { $_ -notmatch '^::' } | Add-Content $env:GITHUB_STEP_SUMMARY
           "`nOS: $((Get-CimInstance Win32_OperatingSystem).Caption) $([Environment]::OSVersion.Version), CPU: $((Get-CimInstance Win32_Processor).Name)" | Tee-Object -Append $env:GITHUB_STEP_SUMMARY
 
       - uses: actions/upload-artifact@v7
