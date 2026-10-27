@@ -291,6 +291,15 @@ class ExtensionTests {
         eq("file manager windows", QuickSwitch.IsFileManager(0), false)
         eq("transient windows while switching", QuickSwitch.IsTransientWindow("Shell_TrayWnd") QuickSwitch.IsTransientWindow("XamlExplorerHostIslandWindow"), "11")
         eq("not transient", QuickSwitch.IsTransientWindow("TTOTAL_CMD") QuickSwitch.IsTransientWindow("#32770"), "00")
+        ; Windows 11's Alt+Tab window is already hidden when its foreground event is handled: still read its class, and pass over it
+        passing := Gui()
+        eq("class of a hidden window", QuickSwitch.ClassOf(passing.Hwnd), "AutoHotkeyGUI")
+        eq("a hidden window in front is passing", QuickSwitch.IsPassingWindow(passing.Hwnd, "AutoHotkeyGUI"), true)
+        passing.Show("NA w100 h50")
+        eq("a shown window is not", QuickSwitch.IsPassingWindow(passing.Hwnd, "AutoHotkeyGUI"), false)
+        gone := passing.Hwnd
+        passing.Destroy()
+        eq("a window gone is passing", QuickSwitch.ClassOf(gone) "|" QuickSwitch.IsPassingWindow(gone, ""), "|1")
         ; A dialog can be in front before it is shown: it still counts as a possible dialog (polling goes on until it shows)
         savedOptions := QuickSwitch.Options
         QuickSwitch.Options := AppSettings.Extension("QuickSwitch")

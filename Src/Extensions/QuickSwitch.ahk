@@ -181,7 +181,17 @@ class QuickSwitch {
         finally DetectHiddenWindows(hidden)
     }
 
-    ; Windows that are in front only for a moment while switching (taskbar, Alt+Tab): they don't count as "the window before" for AutoSwitch
+    ; Windows that are in front only for a moment while switching (taskbar, Alt+Tab): they don't count as "the window before" for AutoSwitch.
+    ; Also any window already hidden or gone when the event is handled: Windows 11's Alt+Tab window hides right after the switch, and
+    ; read with hidden windows not detected its class was "", so it counted as the window before the dialog and AutoSwitch didn't jump
+    static IsPassingWindow(hwnd, className) => QuickSwitch.IsTransientWindow(className) || !DllCall("IsWindowVisible", "Ptr", hwnd)
+
+    ; A window's class, also when it is hidden (WinGetClass doesn't find hidden windows unless DetectHiddenWindows is on); "" if it is gone
+    static ClassOf(hwnd) {
+        name := Buffer(512)
+        return DllCall("GetClassNameW", "Ptr", hwnd, "Ptr", name, "Int", 256) ? StrGet(name) : ""
+    }
+
     static IsTransientWindow(className) => RegExMatch(className, "i)^(Shell_TrayWnd|Shell_SecondaryTrayWnd|MultitaskingViewFrame|XamlExplorerHostIslandWindow|TaskSwitcherWnd|ForegroundStaging)$") > 0
 
     ; WM_KEYDOWN rather than a hotkey: while a Chinese IME is composing (not yet committed) keys are VK_PROCESSKEY and aren't taken for Enter / Esc
@@ -211,10 +221,9 @@ class QuickSwitch {
                 QuickSwitch._WatchWindow(QuickSwitch._panelFor, "panel")    ; until the caret leaves the panel (a foreground event)
             return QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll)
         }
-        className := ""
-        try className := WinGetClass("ahk_id " active)
+        className := QuickSwitch.ClassOf(active)
         switched := false, previous := QuickSwitch._foreground
-        if (active != previous && !QuickSwitch.IsTransientWindow(className)) {   ; another window came to the front: was the one before a file manager?
+        if (active != previous && !QuickSwitch.IsPassingWindow(active, className)) {   ; another window came to the front: was the one before a file manager?
             owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr")  ; GW_OWNER
             if !(owner && owner = previous && A_TickCount - QuickSwitch._foregroundAt < QuickSwitch.OwnerPassMs)   ; see OwnerPassMs
                 QuickSwitch._fromManager := QuickSwitch.IsFileManager(previous)
@@ -248,9 +257,9 @@ class QuickSwitch {
         exe := "", ownerClass := ""
         try exe := WinGetProcessName("ahk_id " active)
         if (owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr"))
-            try ownerClass := WinGetClass("ahk_id " owner)
-        Logger.Debug(Format("QuickSwitch: in front 0x{:X} {} of {}, owner 0x{:X} {}, transient {}, file dialog {}, from a file manager {}", active, className, exe
-            , owner, ownerClass, QuickSwitch.IsTransientWindow(className), isDialog, QuickSwitch._fromManager))
+            ownerClass := QuickSwitch.ClassOf(owner)
+        Logger.Debug(Format("QuickSwitch: in front 0x{:X} {} of {}, owner 0x{:X} {}, passing {}, file dialog {}, from a file manager {}", active, className, exe
+            , owner, ownerClass, QuickSwitch.IsPassingWindow(active, className), isDialog, QuickSwitch._fromManager))
     }
 
     static _AutoSwitch(dialog, previous) {
