@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.10.27.1]
+## [2026.10.26.18]
 
 测试版。
 
@@ -1079,8 +1079,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.27.1...HEAD
-[2026.10.27.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...2026.10.27.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.18...HEAD
+[2026.10.26.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...2026.10.26.18
 [2026.10.26.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.16...2026.10.26.17
 [2026.10.26.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.15...2026.10.26.16
 [2026.10.26.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.14...2026.10.26.15
