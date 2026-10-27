@@ -1,0 +1,23 @@
+name: File index bench (temporary)
+on:
+  push:
+    branches: [exp/fileindex-bench]
+jobs:
+  bench:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          gh release download v2.0.31 --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+      - name: Bench
+        shell: pwsh
+        run: |
+          $p = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\_FileIndexBench.ahk' -PassThru -NoNewWindow -RedirectStandardOutput bench.log -RedirectStandardError bench.err
+          if (-not $p.WaitForExit(900000)) { Write-Host "BENCH HUNG"; $p.Kill() }
+          Get-Content bench.log, bench.err
