@@ -23,11 +23,11 @@
 ;   FileIndex.SetEntries(paths, folders)   replaces the index (tests); folders: 1 / 0 per path
 ;
 ; The entries are packed (FileIndex.Entries): every name in two long strings, per entry its place and folder in a Buffer, each folder path once.
-; Kept as arrays of strings (full path, lower-case name, is a folder), 30,000 entries took 33 MB: AutoHotkey stores every string of an array
-; separately, about 1 KB each with its overhead; packed they take 2.6 MB. A search finds the needle in the long string with InStr instead of
-; scoring every name in a loop: 0.25 to 1.8 ms instead of 13 ms when a few names match, 33 ms instead of 24 ms when all 30,000 do
-; (measured on Windows Server 2025, GitHub Actions). The cache is a text file read straight into this form (JSON would build all the
-; strings first, as big as the arrays)
+; Kept as arrays (full path, lower-case name and folder flag per entry, each string a separate allocation), the index data of 30,000
+; entries took about 35 MB, some 1.2 KB per entry; packed it takes about 4.7 MB (measured on Windows Server 2025, GitHub Actions).
+; A search finds the needle in the long string with InStr (case-sensitive, both sides are lower case) instead of scoring every name
+; in a loop, so it only touches the names that contain it, see Entries.Find. The cache is a text file read straight into this form
+; (JSON would build all the strings first, as big as the arrays)
 ;===============================================================================
 
 class FileIndex {
@@ -234,7 +234,7 @@ class FileIndex {
         data.Find(needle, scores, matches)
         if (FileIndex._initialsFor == data && FileIndex.UsePinyin(needle))  ; pinyin: the initials are ready and the input is one English word;
             for index, text in initials                                     ; only Chinese file names, filtered roughly with InStr first (most don't match)
-                if (InStr(text, needle) && !scores.Has(index) && (score := FileIndex.PinyinScore(needle, text)))
+                if (InStr(text, needle, true) && !scores.Has(index) && (score := FileIndex.PinyinScore(needle, text)))
                     scores[index] := score, matches.Push(index)
         if (foldersOnly || IsObject(extensions))
             for index in matches
@@ -420,16 +420,21 @@ class FileIndex {
         PathAt(index) => this.Dirs[Abs(NumGet(this.Info, (index - 1) * 8 + 4, "Int"))] "\" this.NameAt(index)
 
         ; Every entry whose name contains needle (lower-case, no "`n"), scored like FileIndex.ScoreName: scores[index] := score, matches.Push(index).
-        ; InStr finds each place in Lower; the entry is a few steps on from the last one (places come in order) or found by binary search,
-        ; the score comes from the places without cutting the name out, and the rest of that name is skipped (only its first match counts)
+        ; InStr finds each place in Lower; places come in order, so the entry is a few steps on from the last one, or further on found by
+        ; doubling the stride (8, 16, 32...) and a binary search in the last stride: with many matches they are close together, and this
+        ; took 27 instead of 42 ms when 5,000 of 30,000 names matched (a binary search over all the rest each time). The score comes from
+        ; the places without cutting the name out, and the rest of that name is skipped (only its first match counts)
         Find(needle, scores, matches) {
             len := StrLen(needle), lower := this.Lower, info := this.Info, count := this.Count, entry := 0, at := 1
-            while (at := InStr(lower, needle, , at)) {
+            while (at := InStr(lower, needle, true, at)) {                 ; case-sensitive: both sides are lower case already, and it is faster
                 steps := 0
                 while (entry + 1 < count && NumGet(info, (entry + 1) * 8, "Int") < at && ++steps <= 4)
                     entry++
-                if (steps > 4) {                                            ; further on: binary search for the last entry starting before at
-                    lo := entry, hi := count - 1
+                if (steps > 4) {                                            ; further on: double the stride, then a binary search in it
+                    lo := entry, gap := 8                                   ; for the last entry starting before at
+                    while ((hi := entry + gap) < count && NumGet(info, hi * 8, "Int") < at)
+                        lo := hi, gap *= 2
+                    hi := Min(hi, count) - 1
                     while (lo < hi) {
                         mid := (lo + hi + 1) >> 1
                         if (NumGet(info, mid * 8, "Int") < at)
@@ -464,9 +469,7 @@ class FileIndex {
                 text .= "D`t" dir "`n"
             Loop this.Count
                 text .= NumGet(this.Info, (A_Index - 1) * 8 + 4, "Int") "`t" this.NameAt(A_Index) "`n"
-            temp := file ".tmp"
-            FileOpen(temp, "w", "UTF-8").Write(text)
-            FileMove(temp, file, true)
+            SafeFile.WriteText(file, text)
         }
     }
 }

@@ -416,6 +416,21 @@ class ProviderTests {
     ; The packed index (FileIndex.Entries): names, folders and paths come back as added; Find scores like ScoreName; the cache file round-trips
     static FileIndexPacked() {
         eq := (n, a, e) => TestRunner.Equal("FileIndexPacked." n, a, e)
+        ; Find == ScoreName on every name, for matches close together, far apart (the stride doubles) and at the very end
+        data := FileIndex.Entries()
+        Loop 3000
+            data.Add("C:\Big", (Mod(A_Index, 1000) = 0 ? "far " : Mod(A_Index, 3) = 0 ? "near " : "x ") A_Index ".txt", false)
+        data.Seal()
+        for needle in ["near", "far", "3000.txt", "x 1", "zzz"] {
+            scores := Map(), matches := [], expected := "", got := ""
+            data.Find(needle, scores, matches)
+            Loop data.Count
+                if (score := FileIndex.ScoreName(needle, StrLower(data.NameAt(A_Index))))
+                    expected .= A_Index "=" score " "
+            for index in matches
+                got .= index "=" scores[index] " "
+            eq("find all, like ScoreName: " needle, got, expected)
+        }
         paths := ["C:\Docs\Project Atlas", "C:\Docs\Project Atlas\Atlas Plan.DWG", "D:\notes.txt", "C:\Docs\Status Report (atlas).pdf"
             , "C:\Docs\atlas", "C:\Docs\测试 Atlas.docx", "C:\Docs\atlasatlas.txt"]
         FileIndex.SetEntries(paths, [1, 0, 0, 0, 1, 0, 0])

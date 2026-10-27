@@ -53,33 +53,8 @@ class JSON {
     }
 
     ;--- Writing files -----------------------------------------------------------
-    ; Writes a temporary file in the same folder, then replaces the original: a crash or power cut halfway can't damage it.
-    ; Creates the folder if needed; UTF-8 without BOM (JSON standard RFC 8259).
-    ; Sync folders such as OneDrive and antivirus software hold a just-changed file for a moment: on failure retry every 100 ms, up to MoveTries times, then throw
-    static MoveTries := 20
-
-    static WriteFile(file, data, indent := 0) {
-        SplitPath(file, , &dir)
-        if (dir != "")
-            DirCreate(dir)
-        tmpFile := file ".tmp"
-        try FileDelete(tmpFile)
-        if FileExist(tmpFile)                                               ; a temporary file left over from last time can't be deleted (in use): use another name
-            tmpFile := file "." A_TickCount ".tmp"
-        FileAppend(JSON.Stringify(data, indent), tmpFile, "UTF-8-RAW")
-        Loop JSON.MoveTries {
-            try {
-                FileMove(tmpFile, file, true)
-                return
-            } catch as e {
-                if (A_Index = JSON.MoveTries) {
-                    try FileDelete(tmpFile)
-                    throw e
-                }
-                Sleep(100)
-            }
-        }
-    }
+    ; UTF-8 without BOM (JSON standard RFC 8259), written safely: see SafeFile.WriteText in Util.ahk
+    static WriteFile(file, data, indent := 0) => SafeFile.WriteText(file, JSON.Stringify(data, indent))
 
     ;--- String escaping ---------------------------------------------------------
     static Escape(str) {
