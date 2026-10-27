@@ -11,6 +11,8 @@
 
 Preferences → Advanced → Data → "Open Data Folder" opens it.
 
+![Preferences → Advanced](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-advanced.png)
+
 ## Files in the Data folder
 | File | Contents | If you delete it |
 |---|---|---|

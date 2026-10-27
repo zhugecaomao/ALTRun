@@ -27,6 +27,8 @@ Type "keyword search terms" to search a website, for example `g autohotkey hotke
 ## Adding and editing
 Preferences → Web Search: double-click an engine in the list to edit it, or click "Add". Each engine has these fields:
 
+![Preferences → Web Search](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-websearch.png)
+
 | Field | Description |
 |---|---|
 | Title | Shown in the result, for example "Search Google for ..." |

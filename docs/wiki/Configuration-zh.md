@@ -50,6 +50,8 @@
 ## General 通用
 偏好设置里分在 "通用"、"搜索窗口" 和 "键盘" 三页。
 
+![偏好设置 → 通用](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-general.png)
+
 | 键 | 默认 | 说明 |
 |---|---|---|
 | Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Hotkeys-zh#设置热键)) |
@@ -93,6 +95,8 @@
 
 ## Features 搜索功能
 每个功能都有 `Enabled` (1 = 开启)。
+
+![偏好设置 → 功能](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-features.png)
 
 ### Applications 应用
 | 键 | 默认 | 说明 |

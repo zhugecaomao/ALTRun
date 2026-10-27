@@ -5,6 +5,8 @@
 ## 搜索窗口
 按 `Alt+Space` (可在 偏好设置 → 通用 修改: 点一下框, 按下新的组合键, 只想用左边或右边的 `Alt` 见 [设置热键](Hotkeys-zh#设置热键); 也可以再设一个 "第二个呼出热键", 或者和 Listary 一样 "双击 Ctrl" / "双击 Shift" 呼出) 呼出, 输入即搜。每行显示图标、标题和一行说明 (路径、参数或类型), 右侧是 `Ctrl+数字` 快捷键。窗口失去焦点时自动隐藏。 ALTRun 已经在运行时, 再双击 `ALTRun.exe` 也是弹出搜索窗口 (不会重新启动)。
 
+![偏好设置 → 搜索窗口](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-window.png)
+
 ### 后台启动
 正常启动 ALTRun 时会显示搜索窗口, 让用户能直观看到程序已成功启动。如果希望 ALTRun 在后台运行、只在需要时通过热键呼出, 可以使用命令行参数 `-Startup`:
 
@@ -84,6 +86,8 @@ ALTRun 会监视应用索引文件夹: 当前用户和所有用户的开始菜�
 
 一般不需要手动操作。若应用仍未出现, 可在偏好设置 → 应用搜索里检查 “文件夹” 和排除规则, 然后点“重建索引”。修改索引文件夹、文件类型、排除规则或深度后, 点“应用”也会触发后台重建。旧索引在新索引完成前仍可使用。
 
+![偏好设置 → 应用搜索](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-applications.png)
+
 ## 快捷键
 | 按键 | 作用 |
 |---|---|
@@ -160,3 +164,5 @@ ALTRun 会监视应用索引文件夹: 当前用户和所有用户的开始菜�
 - 每个功能 (应用、自定义命令、文件、网页搜索、计算器、剪贴板历史、文字片段、系统命令、终端命令、片段自动展开、对话框快速跳转、一键加日期) 的次数和占比
 
 只记录次数, 不记录输入的文字和打开的内容, 保存在 `Data\Usage.json` (保留最近 400 天)。"清除使用统计" 按钮清空重新开始。
+
+![偏好设置 → 使用统计](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-usage.png)

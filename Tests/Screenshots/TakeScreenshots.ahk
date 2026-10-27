@@ -34,7 +34,8 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
 
     static NormalScale := ["quickswitch", "sendto", "prefs-general", "prefs-appearance", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"]   ; scenes shot at 100% (see screenshots.yml)
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"
+                         , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; scene name -> [theme, start arguments, function, function preparing data before start-up (optional)]
     static Scenes() {
@@ -67,6 +68,13 @@ class Shots {
             ["prefs-quickswitch", "Light", "-Preferences 16", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
             ["prefs-dialogpanel", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
             ["prefs-datestamp",  "Light", "-Preferences 18", () => Shots.Preferences()],     ; Wiki: date stamp
+            ["prefs-window",     "Light", "-Preferences 2", () => Shots.Preferences()],      ; Wiki: search and shortcuts
+            ["prefs-features",   "Light", "-Preferences 5", () => Shots.Preferences()],      ; Wiki: settings reference (features)
+            ["prefs-applications", "Light", "-Preferences 6", () => Shots.Preferences()],    ; Wiki: automatic app index updates
+            ["prefs-clipboard",  "Light", "-Preferences 11", () => Shots.Preferences()],     ; Wiki: clipboard history
+            ["prefs-websearch",  "Light", "-Preferences 12", () => Shots.Preferences()],     ; Wiki: web search
+            ["prefs-usage",      "Light", "-Preferences 19", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
+            ["prefs-advanced",   "Light", "-Preferences 20", () => Shots.Preferences()],     ; Wiki: data files
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
@@ -532,6 +540,25 @@ class Shots {
     ; Explorer's "Send to": ALTRun creates its Send to shortcut at start-up when SendToMenu is on (off in all other scenes).
     ; A Send to shortcut already there (your own ALTRun's, when run locally) is put aside and restored by CloseHelpers
     static SendToLink := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
+    ; Made-up usage counts for the last 30 days, so the Usage page has a chart and a table to show
+    static WriteUsage() {
+        features := [["Show", 18], ["Applications", 9], ["CustomCommands", 4], ["FileSearch", 5], ["WebSearch", 3], ["Calculator", 2]
+                   , ["Clipboard", 3], ["Snippets", 1], ["SnippetExpand", 4], ["QuickSwitch", 2], ["AutoDate", 1], ["System", 1]]
+        days := Map()
+        Loop 30 {
+            n := A_Index
+            if (Mod(n, 7) = 0 || Mod(n, 7) = 6)                             ; weekends: little use
+                continue
+            day := Map()
+            for pair in features
+                day[pair[1]] := Max(0, pair[2] + Mod(n * 7 + StrLen(pair[1]) * 3, 5) - 2)
+            days[FormatTime(DateAdd(A_Now, -(n - 1), "Days"), "yyyy-MM-dd")] := day
+        }
+        usageFile := Shots.AppDir "\Data\Usage.json"
+        try FileDelete(usageFile)
+        FileAppend(JSON.Stringify(Map("Since", FormatTime(DateAdd(A_Now, -29, "Days"), "yyyy-MM-dd"), "Days", days)), usageFile, "UTF-8")
+    }
+
     static SendToActive := false, SendToBackup := ""
     static EnableSendTo() {
         if (!Shots.SendToActive && FileExist(Shots.SendToLink)) {
