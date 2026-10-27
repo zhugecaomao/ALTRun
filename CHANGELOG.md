@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.19]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置里点了 "重建文件索引" 后, 索引建完前就关闭偏好设置, 有时会报错 "Invalid window handle" ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): 窗口刚关掉的一瞬间结果正好出来, 提示框找的还是已经关闭的窗口。现在只在偏好设置还开着时弹提示框, 否则改成通知
+
 ## [2026.10.26.18]
 
 测试版。
@@ -1079,7 +1088,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.19...HEAD
+[2026.10.26.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.18...2026.10.26.19
 [2026.10.26.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...2026.10.26.18
 [2026.10.26.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.16...2026.10.26.17
 [2026.10.26.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.15...2026.10.26.16

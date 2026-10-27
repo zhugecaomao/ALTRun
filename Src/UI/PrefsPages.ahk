@@ -794,10 +794,10 @@ class PrefsPages {
 
     ; The rebuild result: a dialog while Preferences is open (OK closes it); a notification if it has closed
     static _RebuildResult(message, title) {
-        if !IsObject(PreferencesWindow.Gui)
+        if !(owner := PreferencesWindow.OpenHwnd())
             return App.Toast(message)
         if PreferencesWindow._dirty                                         ; the rebuild uses the saved settings
             message .= "`n`n" I18n.T("Prefs.RebuildUnsaved")
-        MsgBox(message, title, "Iconi Owner" PreferencesWindow.Gui.Hwnd)
+        MsgBox(message, title, "Iconi Owner" owner)
     }
 }
