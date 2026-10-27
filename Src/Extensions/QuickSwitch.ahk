@@ -221,6 +221,8 @@ class QuickSwitch {
             QuickSwitch._foreground := active, QuickSwitch._foregroundAt := A_TickCount, QuickSwitch._settledSince := 0, switched := true
         }
         isDialog := QuickSwitch._IsFileDialogWindow(active)
+        if (Logger.Enabled && active != QuickSwitch._loggedForeground)
+            QuickSwitch._LogForeground(active, className, isDialog)
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active))
             QuickSwitch._AutoSwitch(active, switched ? previous : 0)
 
@@ -239,6 +241,18 @@ class QuickSwitch {
     }
 
     ; AutoSwitch: jump to the file manager's folder once per switch. previous: the window before, on the first check after the switch (debug log)
+    ; For the debug log: each window that comes to the front, and whether AutoSwitch counts the window before it as a file manager
+    static _loggedForeground := 0
+    static _LogForeground(active, className, isDialog) {
+        QuickSwitch._loggedForeground := active
+        exe := "", ownerClass := ""
+        try exe := WinGetProcessName("ahk_id " active)
+        if (owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr"))
+            try ownerClass := WinGetClass("ahk_id " owner)
+        Logger.Debug(Format("QuickSwitch: in front 0x{:X} {} of {}, owner 0x{:X} {}, transient {}, file dialog {}, from a file manager {}", active, className, exe
+            , owner, ownerClass, QuickSwitch.IsTransientWindow(className), isDialog, QuickSwitch._fromManager))
+    }
+
     static _AutoSwitch(dialog, previous) {
         method := QuickSwitch.DialogJumpMethod(dialog)
         if (previous && Logger.Enabled) {
