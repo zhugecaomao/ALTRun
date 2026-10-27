@@ -84,6 +84,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\SelectionActions.ahk
 
 #Include %A_ScriptDir%\TestUtil.ahk
+#Include %A_ScriptDir%\Bench\FileIndexBench.ahk
 #Include %A_ScriptDir%\Suites\CoreTests.ahk
 #Include %A_ScriptDir%\Suites\ProviderTests.ahk
 #Include %A_ScriptDir%\Suites\SearchWindowTests.ahk
@@ -100,6 +101,8 @@ AppSettings.Feature("Clipboard")["Persist"] := 0                           ; the
 IconCache.DiskDir := ""                                                     ; icons don't use the disk cache (switched on for the IconDiskCache test only)
 Pinyin.DataFile := A_ScriptDir "\..\Resources\Pinyin.txt"                   ; the scripts run from Tests\
 
+if (A_Args.Length && A_Args[1] = "FileIndexBench")                      ; RunTests.ahk FileIndexBench: time the built-in file index (see the file)
+    FileIndexBench.Run(), ExitApp(0)
 TestRunner.Run()
 
 class TestRunner {

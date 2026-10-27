@@ -190,6 +190,11 @@ By default each round has 500 searches + 100 of each other operation (about 50 m
 The test copies #Include one extra file, `Tests\Bench\BenchProbe.ahk`, which tells the driver (`BenchDriver.ahk`) whether the results for the current input have been drawn;
 the released program doesn't contain it. Pushing changes to the benchmark scripts to a branch other than main runs a short smoke test automatically.
 
+### File index benchmark
+GitHub → Actions → **File index benchmark** runs `Tests\RunTests.ahk FileIndexBench` (`Tests\Bench\FileIndexBench.ahk`) on Windows: it creates 64,000 empty files in 400 folders (one in ten with a Chinese name) and times a full rescan as ALTRun does it, writing and reading the cache, and searches with few and many matches; the numbers are in the run summary. It also runs on pull requests that change the file index, file search or `FuzzyMatcher`, so compare those numbers with the last run on `main`.
+
+AutoHotkey copies a string held in an object property every time an expression reads it, and `obj.prop .= x` builds a whole new string. With long strings (the file index keeps all names in one) that turns linear work into quadratic: build long strings in a local variable or an array, and keep text that is read in small pieces in a `Buffer` (`StrGet` at an offset).
+
 ## Quality checks and limitations
 
 - `Tests\RunTests.ahk` covers pure logic such as matching, query parsing, settings migration, ranking, clipboard and indexes; it is not a full manual UI test.

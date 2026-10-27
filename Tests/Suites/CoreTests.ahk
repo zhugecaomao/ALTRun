@@ -282,6 +282,22 @@ class CoreTests {
         top := FuzzyMatcher.TopIndexes(Map(1, 10, 2, 90, 3, 50, 4, 90), 3)
         TestRunner.Equal("TopIndexes.order", top[1] " " top[2] " " top[3], "2 4 3")
         TestRunner.Equal("TopIndexes.few", FuzzyMatcher.TopIndexes(Map(5, 1, 7, 9), 10)[1], 7)
+        ; a few of many (one pass keeping a short list): the same as sorting them all, ties by lower index
+        many := Map(), expected := []
+        Loop 500
+            many[A_Index * 2] := Mod(A_Index * 37, 11) + (Mod(A_Index, 3) = 0 ? 0.5 : 0)
+        for pair in StrSplit(Sort(TopListAll(many), "R"), "`n")
+            expected.Push(9999999 - Integer(StrSplit(pair, "`t")[2]))
+        got := FuzzyMatcher.TopIndexes(many, 10), same := ""
+        Loop 10
+            same .= (got[A_Index] = expected[A_Index]) ? "" : A_Index " "
+        TestRunner.Equal("TopIndexes.few of many like sorting all", got.Length "|" same, "10|")
+        TopListAll(scores) {
+            lines := ""
+            for index, score in scores
+                lines .= Format("{:09.4f}", score) "`t" Format("{:07}", 9999999 - index) "`n"
+            return RTrim(lines, "`n")
+        }
     }
 
     static Sorting() {
@@ -1007,6 +1023,15 @@ Func | PTTools | PT Tools (AHK)=99
         locked.Close(), SafeFile.MoveTries := saved
         if failed                                                           ; Wine may not support exclusive opening; then the write just succeeds
             eq("write file: gives up, original kept, no tmp left", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v3|")
+        binFile := dir "\data.bin", bytes := Buffer(4), NumPut("UInt", 0x01020304, bytes)    ; binary content through SafeFile.Write
+        SafeFile.Write(binFile, (out) => (out.Write("AB"), out.RawWrite(bytes, 4)))
+        back := FileRead(binFile, "RAW")
+        eq("write binary", back.Size "|" StrGet(back, 2, "CP0") "|" Format("{:X}", NumGet(back, 2, "UInt")), "6|AB|1020304")
+        failed := false
+        try SafeFile.Write(binFile, (out) => (out.Write("x"), Integer("not a number")))
+        catch
+            failed := true
+        eq("write: a writer error keeps the old file, no tmp left", failed "|" FileGetSize(binFile) "|" (FileExist(binFile ".tmp") ? "tmp" : ""), "1|6|")
         DirDelete(dir, true)
 
         paths := []

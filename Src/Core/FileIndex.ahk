@@ -5,7 +5,7 @@
 ; ScopeDepth levels deep, folders and files, at most MaxEntries entries.
 ;
 ; Scanning runs in the background in batches (at most about 15 ms per timer tick, with a stack of folders to scan instead of recursion),
-; so the UI keeps responding; the result is cached in Data\FileIndex.txt and read at the next start-up. When the search window is open (or opening)
+; so the UI keeps responding; the result is cached in Data\FileIndex.bin and read at the next start-up. When the search window is open (or opening)
 ; during a scan it pauses (if an old index is available) and goes on after it closes; the cache write after a scan (in one go) waits
 ; until keyboard and mouse have been idle for SaveIdleMs, and is done at once on exit if still pending. When it rescans:
 ;   - watching ScopeFolders (FolderWatcher): files / folders added, deleted or renamed (not file modifications, temporary files, anything deeper than ScopeDepth,
@@ -22,21 +22,25 @@
 ;   FileIndex.Count                        entries in the index
 ;   FileIndex.SetEntries(paths, folders)   replaces the index (tests); folders: 1 / 0 per path
 ;
-; The entries are packed (FileIndex.Entries): every name in two long strings, per entry its place and folder in a Buffer, each folder path once.
+; The entries are packed (FileIndex.Entries): every name in one long text, per entry its place and folder in a Buffer, each folder path once.
 ; Kept as arrays (full path, lower-case name and folder flag per entry, each string a separate allocation), the index data of 30,000
 ; entries took about 35 MB, some 1.2 KB per entry; packed it takes about 4.7 MB (measured on Windows Server 2025, GitHub Actions).
-; A search finds the needle in the long string with InStr (case-sensitive, both sides are lower case) instead of scoring every name
-; in a loop, so it only touches the names that contain it, see Entries.Find. The cache is a text file read straight into this form
-; (JSON would build all the strings first, as big as the arrays)
+; A search finds the needle in the long lower-case string with InStr (case-sensitive, both sides are lower case) instead of scoring
+; every name in a loop, so it only touches the names that contain it, see Entries.Find.
+; AutoHotkey copies a string held in an object property whenever an expression reads it, and "obj.prop .= x" builds a new string each time.
+; So the names are collected in an array and joined once (Seal), and the names as shown are kept in a Buffer, read one at a time with
+; StrGet: appending to the property and reading names out of it made a rescan of 64,000 entries take 94 s and reading its cache 92 s.
+; The cache is binary (Entries.Save / Load): the Buffer and the folder table as they are in memory, read back in a few milliseconds
 ;===============================================================================
 
 class FileIndex {
-    static File     := AppSettings.DataDir "\FileIndex.txt", OldFile := AppSettings.DataDir "\FileIndex.json"   ; OldFile: the JSON cache of older versions, deleted
-    static CacheHeader := "ALTRun file index 2"
+    static File     := AppSettings.DataDir "\FileIndex.bin"
+    static OldFiles := [AppSettings.DataDir "\FileIndex.txt", AppSettings.DataDir "\FileIndex.json"]   ; the caches of older versions (text, JSON): deleted, the index is rebuilt once
+    static CacheMagic := "ALTRunIX", CacheVersion := 1
     static Data     := FileIndex.Entries()                                 ; the index, see Entries
     ; Lower-case pinyin initials of Chinese file names: Map(index, "cs.bat") (only names with Chinese; search only needs these). _initialsFor = the Data they belong to
-    ; (after the index changed they don't match and pinyin isn't used). Computed in the background in batches after reading the cache (about 0.25 s for 10,000 Chinese names), so start-up isn't slowed
-    static Initials := Map(), _initialsFor := "", _initialsTimer := "", _initialsJob := ""
+    ; (after the index changed they don't match and pinyin isn't used). Computed while scanning and kept in the cache
+    static Initials := Map(), _initialsFor := ""
     static Scanning := false
     static _stack := [], _new := "", _newInitials := "", _timer := ""
 
@@ -228,13 +232,11 @@ class FileIndex {
         needle := StrLower(Trim(needle))
         if (needle = "")
             return []
-        data := FileIndex.Data, initials := FileIndex.Initials
+        data := FileIndex.Data
         scores := Map(), matches := []
         data.Find(needle, scores, matches)
-        if (FileIndex._initialsFor == data && FileIndex.UsePinyin(needle))  ; pinyin: the initials are ready and the input is one English word;
-            for index, text in initials                                     ; only Chinese file names, filtered roughly with InStr first (most don't match)
-                if (InStr(text, needle, true) && !scores.Has(index) && (score := FileIndex.PinyinScore(needle, text)))
-                    scores[index] := score, matches.Push(index)
+        if (FileIndex._initialsFor == data && FileIndex.UsePinyin(needle))  ; pinyin: the initials are ready and the input is one English word
+            FileIndex._FindInitials(needle, scores, matches)
         if (foldersOnly || IsObject(extensions))
             for index in matches
                 if (foldersOnly ? !data.IsFolderAt(index) : data.IsFolderAt(index) || !extensions.Has(StrLower(FileIndex._Ext(data.NameAt(index)))))
@@ -243,6 +245,35 @@ class FileIndex {
         for index in FuzzyMatcher.TopIndexes(scores, limit)
             results.Push({Path: data.PathAt(index), IsFolder: data.IsFolderAt(index), Score: scores[index]})
         return results
+    }
+
+    ; The pinyin initials (only Chinese file names) as one text, "`n" before each, searched with one InStr like the names: checking them one
+    ; by one took 2 ms per search with 6,400 Chinese names. Built when the initials change (after a scan or reading the cache)
+    static _pinyin := ""
+    static _FindInitials(needle, scores, matches) {
+        initials := FileIndex.Initials
+        if !(IsObject(packed := FileIndex._pinyin) && packed.For == initials) {
+            text := "`n", starts := [], indexes := []
+            for index, initialsText in initials
+                starts.Push(StrLen(text)), indexes.Push(index), text .= initialsText "`n"   ; starts: the place of the "`n" before each
+            starts.Push(StrLen(text))                                       ; and the closing one
+            FileIndex._pinyin := packed := {For: initials, Text: text, Starts: starts, Indexes: indexes}
+        }
+        text := packed.Text, starts := packed.Starts, indexes := packed.Indexes, at := 1
+        while (at := InStr(text, needle, true, at)) {
+            lo := 1, hi := indexes.Length                                   ; the last line starting before at
+            while (lo < hi) {
+                mid := (lo + hi + 1) >> 1
+                if (starts[mid] < at)
+                    lo := mid
+                else
+                    hi := mid - 1
+            }
+            index := indexes[lo]
+            if (!scores.Has(index) && (score := FileIndex.PinyinScore(needle, SubStr(text, starts[lo] + 1, starts[lo + 1] - starts[lo] - 1))))
+                scores[index] := score, matches.Push(index)
+            at := starts[lo + 1] + 1                                        ; on to the next line
+        }
     }
 
     static _Ext(filePath) {
@@ -272,28 +303,17 @@ class FileIndex {
         return 60 - Min(pos, 20) * 0.25 - penalty
     }
 
-    ; The cache: CacheHeader, then a line per folder ("D" Tab path) and per entry (folder number Tab name; negative = a folder)
+    ; The cache (see Entries.Save); an old or damaged one isn't read (false), the index is then rebuilt
     static _LoadCache() {
-        if FileExist(FileIndex.OldFile)                                     ; the JSON cache of older versions: a rescan replaces it
-            try FileDelete(FileIndex.OldFile)
+        for oldFile in FileIndex.OldFiles                                   ; the caches of older versions: a rescan replaces them
+            if FileExist(oldFile)
+                try FileDelete(oldFile)
         if !FileExist(FileIndex.File)
             return false
         try {
-            text := FileRead(FileIndex.File, "UTF-8")
-            if (SubStr(text, 1, StrLen(FileIndex.CacheHeader)) != FileIndex.CacheHeader)
+            if !IsObject(loaded := FileIndex.Entries.Load(FileIndex.File))
                 return false
-            data := FileIndex.Entries(), dirs := []
-            Loop Parse, text, "`n", "`r" {
-                if (A_Index = 1 || A_LoopField = "")
-                    continue
-                tab := InStr(A_LoopField, "`t")
-                if (SubStr(A_LoopField, 1, tab - 1) = "D")
-                    dirs.Push(SubStr(A_LoopField, tab + 1))
-                else
-                    id := Integer(SubStr(A_LoopField, 1, tab - 1)), data.Add(dirs[Abs(id)], SubStr(A_LoopField, tab + 1), id < 0)
-            }
-            FileIndex.Data := data.Seal(), FileIndex.Initials := Map(), FileIndex._initialsFor := ""
-            FileIndex.BuildInitials()
+            FileIndex.Data := loaded.Data, FileIndex.Initials := loaded.Initials, FileIndex._initialsFor := loaded.Data
             return true
         } catch as e {
             Logger.Error("FileIndex: cannot read cache - " e.Message)
@@ -301,41 +321,16 @@ class FileIndex {
         }
     }
 
-    ; Replaces the index with these full paths (folders: 1 for a folder, 0 for a file, per path; all files when omitted). For tests
+    ; Replaces the index with these full paths (folders: 1 for a folder, 0 for a file, per path; all files when omitted), with their pinyin initials. For tests
     static SetEntries(paths, folders := "") {
-        data := FileIndex.Entries()
+        data := FileIndex.Entries(), initials := Map()
         for index, fullPath in paths {
             SplitPath(fullPath, &name, &dir)
             data.Add(dir, name, IsObject(folders) && folders[index])
+            if ((text := FileIndex.InitialsOf(name)) != "")
+                initials[data.Count] := text
         }
-        FileIndex.Data := data.Seal(), FileIndex.Initials := Map(), FileIndex._initialsFor := ""
-    }
-
-    ; Computes the pinyin initials of the names in the background in batches (at most about 15 ms per timer tick) and swaps them in when done; dropped if the index changed meanwhile (a rescan finished)
-    static BuildInitials() {
-        FileIndex._initialsJob := {Data: FileIndex.Data, Pos: 0, Initials: Map()}
-        if (FileIndex._initialsTimer = "")
-            FileIndex._initialsTimer := Logger.Watch("file index pinyin", () => FileIndex._InitialsSome())
-        SetTimer(FileIndex._initialsTimer, 10)
-    }
-
-    static _InitialsSome() {
-        job := FileIndex._initialsJob
-        if (!IsObject(job) || job.Data !== FileIndex.Data) {
-            FileIndex._initialsJob := ""
-            return SetTimer(FileIndex._initialsTimer, 0)
-        }
-        data := job.Data, count := data.Count, i := job.Pos, start := A_TickCount
-        while (i < count && A_TickCount - start < 15) {
-            i++
-            if ((initials := FileIndex.InitialsOf(data.NameAt(i))) != "")
-                job.Initials[i] := initials
-        }
-        job.Pos := i
-        if (i < count)
-            return
-        SetTimer(FileIndex._initialsTimer, 0)
-        FileIndex.Initials := job.Initials, FileIndex._initialsFor := data, FileIndex._initialsJob := ""
+        FileIndex.Data := data.Seal(), FileIndex.Initials := initials, FileIndex._initialsFor := data
     }
 
     ; Whether the cache is older than RefreshMinutes (at least 5); no cache file counts as out of date
@@ -376,20 +371,21 @@ class FileIndex {
     static _SaveCache() {
         FileIndex._savePending := false
         try {
-            FileIndex.Data.WriteFile(FileIndex.File, FileIndex.CacheHeader)
+            FileIndex.Data.Save(FileIndex.File, FileIndex._initialsFor == FileIndex.Data ? FileIndex.Initials : Map())
         } catch as e {
             Logger.Error("FileIndex: cannot write cache - " e.Message)
         }
     }
 
     ;---------------------------------------------------------------------------
-    ; The entries, packed (see the top of the file): the names in two long strings, Lower (lower-case, searched) and Shown (as they are),
-    ; each after a "`n" and with a "`n" at the end; StrLower keeps the length, so a place is the same in both. Info holds per entry (index 1..Count)
-    ; two Int32: the place of the "`n" before its name and its folder number (negative = the entry is a folder); one more place at the end
-    ; (the closing "`n"), so a name ends where the next one starts. Dirs: each folder path once, by number. Built with Add, then Seal
+    ; The entries, packed (see the top of the file). The names one after another, each after a "`n" and with a "`n" at the end: as they are
+    ; in the Buffer Shown (UTF-16, read a name at a time with StrGet) and lower case in the string Lower (searched with InStr; StrLower keeps
+    ; the length, so a place is the same in both). Info holds per entry (index 1..Count) two Int32: the place of the "`n" before its name
+    ; and its folder number (negative = the entry is a folder); one more place at the end (the closing "`n"), so a name ends where the next
+    ; one starts. Dirs: each folder path once, by number. Built with Add, then Seal; or read from the cache with Load
     ;---------------------------------------------------------------------------
     class Entries {
-        Count := 0, Lower := "`n", Shown := "`n", Dirs := [], Info := Buffer(8 * 1024), _dirIds := Map(), _end := 1
+        Count := 0, Lower := "`n", Shown := "", Dirs := [], Info := Buffer(8 * 1024), _names := [], _dirIds := Map(), _end := 1
 
         Add(dir, name, isFolder) {
             if !this._dirIds.Has(dir)
@@ -399,22 +395,26 @@ class FileIndex {
                 this.Info.Size *= 2
             NumPut("Int", this._end, "Int", isFolder ? -id : id, this.Info, this.Count * 8)
             this.Count++
-            this.Lower .= StrLower(name) "`n", this.Shown .= name "`n"
+            this._names.Push(name)                                          ; joined once in Seal: appending to a property copies it every time
             this._end += StrLen(name) + 1
         }
 
-        ; Done adding: the closing place, no spare room, no lookup of folder numbers
+        ; Done adding: the closing place, no spare room, no lookup of folder numbers; the names joined into Shown and Lower
         Seal() {
             NumPut("Int", this._end, this.Info, this.Count * 8)
             this.Info.Size := (this.Count + 1) * 8, this._dirIds := ""
-            lower := this.Lower, shown := this.Shown, this.Lower := "", this.Shown := ""
-            VarSetStrCapacity(&lower, -1), VarSetStrCapacity(&shown, -1)
-            this.Lower := lower, this.Shown := shown
+            text := "`n"
+            for name in this._names                                         ; a local variable grows in place
+                text .= name "`n"
+            this._names := ""
+            this.Shown := Buffer(StrLen(text) * 2 + 2)
+            StrPut(text, this.Shown, "UTF-16")
+            this.Lower := StrLower(text)
             return this
         }
 
         _Place(index) => NumGet(this.Info, (index - 1) * 8, "Int")
-        NameAt(index) => SubStr(this.Shown, (place := this._Place(index)) + 1, this._Place(index + 1) - place - 1)
+        NameAt(index) => StrGet(this.Shown.Ptr + (place := this._Place(index)) * 2, this._Place(index + 1) - place - 1, "UTF-16")
         IsFolderAt(index) => NumGet(this.Info, (index - 1) * 8 + 4, "Int") < 0
         PathAt(index) => this.Dirs[Abs(NumGet(this.Info, (index - 1) * 8 + 4, "Int"))] "\" this.NameAt(index)
 
@@ -424,7 +424,7 @@ class FileIndex {
         ; took 27 instead of 42 ms when 5,000 of 30,000 names matched (a binary search over all the rest each time). The score comes from
         ; the places without cutting the name out, and the rest of that name is skipped (only its first match counts)
         Find(needle, scores, matches) {
-            len := StrLen(needle), lower := this.Lower, info := this.Info, count := this.Count, entry := 0, at := 1
+            len := StrLen(needle), lower := this.Lower, info := this.Info, count := this.Count, entry := 0, at := 1   ; Lower read (copied) once
             while (at := InStr(lower, needle, true, at)) {                 ; case-sensitive: both sides are lower case already, and it is faster
                 steps := 0
                 while (entry + 1 < count && NumGet(info, (entry + 1) * 8, "Int") < at && ++steps <= 4)
@@ -461,14 +461,59 @@ class FileIndex {
             }
         }
 
-        ; The cache file: header, a line per folder ("D" Tab path), a line per entry (folder number Tab name)
-        WriteFile(file, header) {
-            text := header "`n"
+        ; The cache file, binary, little-endian: the magic "ALTRunIX" (8 bytes), five UInt32 (version, Count, then the lengths in UTF-16
+        ; characters of the names, the folders and the initials), Info as it is, the names as in Shown, the folder paths each followed
+        ; by "`n", the pinyin initials as "index Tab initials`n" lines. Written in one go, replacing the old file only when complete (SafeFile)
+        Save(file, initials) {
+            dirs := "", lines := ""
             for dir in this.Dirs
-                text .= "D`t" dir "`n"
-            Loop this.Count
-                text .= NumGet(this.Info, (A_Index - 1) * 8 + 4, "Int") "`t" this.NameAt(A_Index) "`n"
-            SafeFile.WriteText(file, text)
+                dirs .= dir "`n"
+            for index, text in initials
+                lines .= index "`t" text "`n"
+            shownChars := this._Place(this.Count + 1)
+            SafeFile.Write(file, (out) => (out.Write(FileIndex.CacheMagic)
+                , out.WriteUInt(FileIndex.CacheVersion), out.WriteUInt(this.Count), out.WriteUInt(shownChars), out.WriteUInt(StrLen(dirs)), out.WriteUInt(StrLen(lines))
+                , out.RawWrite(this.Info, (this.Count + 1) * 8), out.RawWrite(this.Shown, shownChars * 2)
+                , StrLen(dirs) && out.RawWrite(StrPtr(dirs), StrLen(dirs) * 2), StrLen(lines) && out.RawWrite(StrPtr(lines), StrLen(lines) * 2)))
+        }
+
+        ; Reads a cache written by Save -> {Data, Initials}; "" if it isn't one of this version or doesn't add up (cut short, damaged)
+        static Load(file) {
+            static headerSize := 28
+            if !(input := FileOpen(file, "r"))
+                return ""
+            try {
+                size := input.Length
+                if (size < headerSize)
+                    return ""
+                magic := Buffer(8), input.RawRead(magic, 8)
+                if (StrGet(magic, 8, "CP0") != FileIndex.CacheMagic || input.ReadUInt() != FileIndex.CacheVersion)
+                    return ""
+                count := input.ReadUInt(), shownChars := input.ReadUInt(), dirsChars := input.ReadUInt(), initialsChars := input.ReadUInt()
+                if (size != headerSize + (count + 1) * 8 + (shownChars + dirsChars + initialsChars) * 2)
+                    return ""
+                data := FileIndex.Entries(), data._names := "", data._dirIds := ""
+                data.Count := count, data.Info := Buffer((count + 1) * 8), input.RawRead(data.Info, data.Info.Size)
+                if (NumGet(data.Info, 0, "Int") != 1 || NumGet(data.Info, count * 8, "Int") != shownChars)
+                    return ""
+                data.Shown := Buffer(shownChars * 2 + 2, 0), input.RawRead(data.Shown, shownChars * 2)
+                data.Lower := StrLower(StrGet(data.Shown, shownChars, "UTF-16")), data._end := shownChars
+                dirs := FileIndex.Entries._ReadText(input, dirsChars)
+                data.Dirs := (dirs = "") ? [] : StrSplit(SubStr(dirs, 1, -1), "`n")
+                initials := Map()
+                Loop Parse, FileIndex.Entries._ReadText(input, initialsChars), "`n" {
+                    if (A_LoopField != "" && (tab := InStr(A_LoopField, "`t")))
+                        initials[Integer(SubStr(A_LoopField, 1, tab - 1))] := SubStr(A_LoopField, tab + 1)
+                }
+                return {Data: data, Initials: initials}
+            } finally input.Close()
+        }
+
+        static _ReadText(input, chars) {
+            if !chars
+                return ""
+            text := Buffer(chars * 2), input.RawRead(text, chars * 2)
+            return StrGet(text, chars, "UTF-16")
         }
     }
 }

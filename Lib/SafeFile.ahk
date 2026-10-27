@@ -7,11 +7,15 @@
 ;
 ; Usage:
 ;   SafeFile.WriteText("x.txt", text)
+;   SafeFile.Write("x.bin", (out) => out.RawWrite(buf, buf.Size))   writer gets the File object (opened as UTF-8 without BOM)
 ;===============================================================================
 class SafeFile {
     static MoveTries := 20
 
-    static WriteText(file, text) {
+    static WriteText(file, text) => SafeFile.Write(file, (out) => out.Write(text))
+
+    ; writer(out) writes the content into out, a File object open for writing (UTF-8 without BOM for text; RawWrite for binary data)
+    static Write(file, writer) {
         SplitPath(file, , &dir)
         if (dir != "")
             DirCreate(dir)
@@ -19,7 +23,15 @@ class SafeFile {
         try FileDelete(tmpFile)
         if FileExist(tmpFile)                                               ; a temporary file left over from last time can't be deleted (in use): use another name
             tmpFile := file "." A_TickCount ".tmp"
-        FileAppend(text, tmpFile, "UTF-8-RAW")
+        if !(out := FileOpen(tmpFile, "w", "UTF-8-RAW"))
+            throw OSError(A_LastError, -1, tmpFile)
+        try writer(out)
+        catch as e {
+            out.Close()
+            try FileDelete(tmpFile)
+            throw e
+        }
+        out.Close()
         Loop SafeFile.MoveTries {
             try {
                 FileMove(tmpFile, file, true)

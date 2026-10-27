@@ -21,7 +21,7 @@
 | `ALTRun.v<版本>.backup.json` | 设置格式升级之前的备份 (例如 `ALTRun.v4.backup.json`) | 没有影响; 想退回旧版本时用它 |
 | `ALTRun.json.bad` | 设置文件格式有错误时, 原文件改成这个名字保留下来, 修好后改回 `ALTRun.json` | 没有影响 |
 | `AppIndex.json` | 应用索引 | 启动时重新扫描 |
-| `FileIndex.txt` | 内置文件索引 (没有 Everything 时用) | 后台重新扫描 |
+| `FileIndex.bin` | 内置文件索引 (没有 Everything 时用) | 后台重新扫描 |
 | `Knowledge.json` | 学习排序、搜索历史、最近使用的项目 (置顶的项目在 `ALTRun.json` 里) | 排序要重新学, 最近使用清空 |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) | 统计从零开始 |
 | `ClipboardHistory.json` | 剪贴板历史 (文字) | 历史清空 |
