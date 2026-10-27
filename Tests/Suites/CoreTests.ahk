@@ -987,7 +987,7 @@ Func | PTTools | PT Tools (AHK)=99
         written := JSON.Stringify(Map("Text", control))
         ok("control chars escaped", !RegExMatch(written, "[\x00-\x08\x0B\x0C\x0E-\x1F]") && InStr(written, "\u001B[0m\u0008\u000C\u0001z"))
         eq("control chars round trip", JSON.Parse(written)["Text"], control)
-        ; Writing files: a temporary file first, then replaced; no BOM, no .tmp left behind
+        ; Writing files (SafeFile.WriteText, used by JSON.WriteFile): a temporary file first, then replaced; no BOM, no .tmp left behind
         dir := A_Temp "\ALTRun-json-test"
         try DirDelete(dir, true)
         jsonFile := dir "\sub\data.json"
@@ -999,12 +999,12 @@ Func | PTTools | PT Tools (AHK)=99
         SetTimer(() => locked.Close(), -300)
         JSON.WriteFile(jsonFile, Map("k", "v3"))
         eq("write file: retries while locked", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"], "v3")
-        locked := FileOpen(jsonFile, "r -rwd"), saved := JSON.MoveTries, JSON.MoveTries := 2
+        locked := FileOpen(jsonFile, "r -rwd"), saved := SafeFile.MoveTries, SafeFile.MoveTries := 2
         failed := false
         try JSON.WriteFile(jsonFile, Map("k", "v4"))
         catch
             failed := true
-        locked.Close(), JSON.MoveTries := saved
+        locked.Close(), SafeFile.MoveTries := saved
         if failed                                                           ; Wine may not support exclusive opening; then the write just succeeds
             eq("write file: gives up, original kept, no tmp left", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v3|")
         DirDelete(dir, true)

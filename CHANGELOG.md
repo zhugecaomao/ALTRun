@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.10]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内置文件索引 (没有 Everything 时用) 的内存减少约 90%, 搜索更快 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): 以前每个文件存成几个单独的字符串 (完整路径、小写文件名), 3 万个文件的索引占约 35 MB; 现在所有文件名拼成长字符串, 每个文件的位置和所在文件夹存在一块二进制数据里, 文件夹路径只存一份, 约 4.7 MB。搜索用 `InStr` 在长字符串里直接找, 不再逐个文件比较, 命中不多时从约 13 ms 降到 1 ms 以内
+- 索引缓存改成文本文件 `Data\FileIndex.txt`, 读取时直接装进紧凑结构; 旧的 `FileIndex.json` 会删掉, 第一次启动时在后台重新扫描一次
+
 ## [2026.10.26.9]
 
 测试版。
@@ -991,7 +1001,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.10...HEAD
+[2026.10.26.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.9...2026.10.26.10
 [2026.10.26.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.6...2026.10.26.9
 [2026.10.26.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...2026.10.26.6
 [2026.10.26.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.5
