@@ -69,7 +69,7 @@ jobs:
         run: |
           New-Item -ItemType Directory tools -Force | Out-Null
           # Pin compiler versions for reproducible release artifacts; update these deliberately.
-          $ahkTag = 'v2.0.30'
+          $ahkTag = 'v2.0.31'
           $ahk2exeTag = 'Ahk2Exe1.1.37.02a2'
           Write-Host "AutoHotkey $ahkTag; Ahk2Exe $ahk2exeTag"
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
