@@ -232,13 +232,11 @@ class FileIndex {
         needle := StrLower(Trim(needle))
         if (needle = "")
             return []
-        data := FileIndex.Data, initials := FileIndex.Initials
+        data := FileIndex.Data
         scores := Map(), matches := []
         data.Find(needle, scores, matches)
-        if (FileIndex._initialsFor == data && FileIndex.UsePinyin(needle))  ; pinyin: the initials are ready and the input is one English word;
-            for index, text in initials                                     ; only Chinese file names, filtered roughly with InStr first (most don't match)
-                if (InStr(text, needle, true) && !scores.Has(index) && (score := FileIndex.PinyinScore(needle, text)))
-                    scores[index] := score, matches.Push(index)
+        if (FileIndex._initialsFor == data && FileIndex.UsePinyin(needle))  ; pinyin: the initials are ready and the input is one English word
+            FileIndex._FindInitials(needle, scores, matches)
         if (foldersOnly || IsObject(extensions))
             for index in matches
                 if (foldersOnly ? !data.IsFolderAt(index) : data.IsFolderAt(index) || !extensions.Has(StrLower(FileIndex._Ext(data.NameAt(index)))))
@@ -247,6 +245,35 @@ class FileIndex {
         for index in FuzzyMatcher.TopIndexes(scores, limit)
             results.Push({Path: data.PathAt(index), IsFolder: data.IsFolderAt(index), Score: scores[index]})
         return results
+    }
+
+    ; The pinyin initials (only Chinese file names) as one text, "`n" before each, searched with one InStr like the names: checking them one
+    ; by one took 2 ms per search with 6,400 Chinese names. Built when the initials change (after a scan or reading the cache)
+    static _pinyin := ""
+    static _FindInitials(needle, scores, matches) {
+        initials := FileIndex.Initials
+        if !(IsObject(packed := FileIndex._pinyin) && packed.For == initials) {
+            text := "`n", starts := [], indexes := []
+            for index, initialsText in initials
+                starts.Push(StrLen(text)), indexes.Push(index), text .= initialsText "`n"   ; starts: the place of the "`n" before each
+            starts.Push(StrLen(text))                                       ; and the closing one
+            FileIndex._pinyin := packed := {For: initials, Text: text, Starts: starts, Indexes: indexes}
+        }
+        text := packed.Text, starts := packed.Starts, indexes := packed.Indexes, at := 1
+        while (at := InStr(text, needle, true, at)) {
+            lo := 1, hi := indexes.Length                                   ; the last line starting before at
+            while (lo < hi) {
+                mid := (lo + hi + 1) >> 1
+                if (starts[mid] < at)
+                    lo := mid
+                else
+                    hi := mid - 1
+            }
+            index := indexes[lo]
+            if (!scores.Has(index) && (score := FileIndex.PinyinScore(needle, SubStr(text, starts[lo] + 1, starts[lo + 1] - starts[lo] - 1))))
+                scores[index] := score, matches.Push(index)
+            at := starts[lo + 1] + 1                                        ; on to the next line
+        }
     }
 
     static _Ext(filePath) {

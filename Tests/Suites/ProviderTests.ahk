@@ -1214,6 +1214,18 @@ class ProviderTests {
         eq("index: typing on keeps pinyin", (names("c"), names("cs")), "cs_report.bat|测试.bat|项目测试报告.docx")
         eq("index: chinese input", names("测试"), "测试.bat|项目测试报告.docx")
         eq("index: several words", names("zj sm"), "")
+        ; many Chinese names, matches far apart: the packed initials find the same as checking each one
+        many := []
+        Loop 400
+            many.Push("C:\D\" (Mod(A_Index, 97) = 0 ? "证件扫描" : Mod(A_Index, 2) ? "测试" : "项目") A_Index ".txt")
+        FileIndex.SetEntries(many)
+        expected := 0
+        for index, text in FileIndex.Initials
+            expected += FileIndex.PinyinScore("zjsm", text) ? 1 : 0
+        scores := Map(), matches := []
+        FileIndex._FindInitials("zjsm", scores, matches)
+        eq("index: packed initials, far apart", matches.Length "|" expected "|" FileIndex.Search("zjsm", 10)[1].Path, "4|4|C:\D\证件扫描97.txt")
+        FileIndex.SetEntries(paths)
         FileIndex._initialsFor := ""                                          ; initials of another index: no pinyin
         eq("index: initials for another index", names("zjsm"), "")
         savedFile := FileIndex.File, FileIndex.File := A_Temp "\ALTRunPinyinIndex.bin"
