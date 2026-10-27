@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.17]
+
+测试版。
+
+Test build.
+
+### 修复
+- 自动跳转: 用 Alt+Tab 从文件管理器切到打开 / 保存对话框时没有跳转 (点标题栏、点任务栏正常)。Windows 11 的 Alt+Tab 切换界面在切换后马上隐藏, 处理切换时读不到它的类名, 没被当成切换中的临时窗口, 而被当成了对话框之前的窗口, 所以不算从文件管理器切过来。现在隐藏窗口的类名也能读到, 处理时已经隐藏或关闭的窗口一律当作临时窗口跳过
+- 去掉 .13 到 .15 为排查加的跳转后确认、重试和重绘 (跳转本身没有问题); 调试日志保留跳转的每一步和每个切到前面的窗口
+
 ## [2026.10.26.16]
 
 测试版。
@@ -1058,7 +1068,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...HEAD
+[2026.10.26.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.16...2026.10.26.17
 [2026.10.26.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.15...2026.10.26.16
 [2026.10.26.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.14...2026.10.26.15
 [2026.10.26.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.13...2026.10.26.14
