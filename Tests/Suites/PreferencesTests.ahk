@@ -532,6 +532,7 @@ class PreferencesTests {
             eq("built when selected", PreferencesWindow.Pages[commands].Built, true)
             eq("building is not a change", PreferencesWindow._dirty, false)
             eq("ready again", PreferencesWindow._ready, true)
+            eq("open: window handle", PreferencesWindow.OpenHwnd() = PreferencesWindow.Gui.Hwnd, true)
             first := ""
             for ctrl in PreferencesWindow.Pages[commands].Controls
                 if (!first && ctrl.Visible && (DllCall("GetWindowLong", "Ptr", ctrl.Hwnd, "Int", -16, "Int") & 0x10000))   ; WS_TABSTOP
@@ -563,6 +564,13 @@ class PreferencesTests {
             PrefsPages.DeleteProp("_TestCloseWhileBuilding")
             eq("closed while building: no error", closedOk, true)
             eq("closed while building: window gone", IsObject(PreferencesWindow.Gui), false)
+            eq("closed: no window handle", PreferencesWindow.OpenHwnd(), 0)
+            ; a rebuild result arriving while Close destroys the window (#290): Gui is still set but the window is gone
+            destroyed := Gui()
+            destroyed.Destroy()
+            PreferencesWindow.Gui := destroyed
+            eq("destroyed window: no handle", PreferencesWindow.OpenHwnd(), 0)
+            PreferencesWindow.Gui := ""
         } finally {
             PreferencesWindow._dirty := false
             PreferencesWindow.Close()

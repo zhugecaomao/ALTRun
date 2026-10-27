@@ -184,6 +184,17 @@ class PreferencesWindow {
         return area
     }
 
+    ; The window's handle while Preferences is open, else 0. For results that arrive later (a file index rebuild runs in the background):
+    ; Gui is still set for a moment after the window is destroyed (Close), and a timer can run in between; a dialog owned by the
+    ; destroyed window failed with "Invalid window handle" (#290)
+    static OpenHwnd() {
+        try {
+            if (IsObject(PreferencesWindow.Gui) && DllCall("IsWindow", "Ptr", hwnd := PreferencesWindow.Gui.Hwnd))
+                return hwnd
+        }
+        return 0
+    }
+
     static Close() {
         HotkeyBox.CancelActive()                                            ; closing the window while a hotkey is being recorded: end the recording first and restore ALTRun's hotkeys
         if IsObject(PreferencesWindow.Gui)
