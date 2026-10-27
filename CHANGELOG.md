@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.11]
+
+测试版。
+
+Test build.
+
+### 改进
+- 文件对话框面板 (Quick Switch) 不再有任何轮询, 全部由窗口事件驱动 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): 以前每次切换窗口后会每 250 ms 检查一次、共 1.5 秒 (为了标题稍后才设好的窗口), 光标在面板搜索框里时也每 250 ms 检查对话框还在不在, 拖动对话框时每 15 ms 移一次面板; 现在分别改成监听这个窗口的标题变化、对话框被关闭和对话框位置变化, 只在真的有变化时才处理, 拖动时面板跟得更紧
+
 ## [2026.10.26.10]
 
 测试版。
@@ -1001,7 +1010,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.11...HEAD
+[2026.10.26.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.10...2026.10.26.11
 [2026.10.26.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.9...2026.10.26.10
 [2026.10.26.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.6...2026.10.26.9
 [2026.10.26.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...2026.10.26.6
