@@ -290,6 +290,13 @@ class ExtensionTests {
         eq("file manager windows", QuickSwitch.IsFileManager(0), false)
         eq("transient windows while switching", QuickSwitch.IsTransientWindow("Shell_TrayWnd") QuickSwitch.IsTransientWindow("XamlExplorerHostIslandWindow"), "11")
         eq("not transient", QuickSwitch.IsTransientWindow("TTOTAL_CMD") QuickSwitch.IsTransientWindow("#32770"), "00")
+        ; AutoSwitch waits until the switch is over: InputSettleMs with no key / button held and the dialog's thread not moving or in a menu
+        settleWindow := Gui(, "QuickSwitch settle probe"), settleWindow.Show("w200 h100")
+        QuickSwitch._settledSince := 0
+        firstCheck := QuickSwitch._InputSettled(settleWindow.Hwnd)
+        Sleep(QuickSwitch.InputSettleMs + 50)
+        eq("input settle: not at once, then after InputSettleMs", firstCheck "|" QuickSwitch._InputSettled(settleWindow.Hwnd), "0|1")
+        settleWindow.Destroy(), QuickSwitch._settledSince := 0
         ; A dialog can be in front before it is shown: it still counts as a possible dialog (polling goes on until it shows)
         savedOptions := QuickSwitch.Options
         QuickSwitch.Options := AppSettings.Extension("QuickSwitch")

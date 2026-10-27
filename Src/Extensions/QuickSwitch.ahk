@@ -189,12 +189,15 @@ class QuickSwitch {
         try className := WinGetClass("ahk_id " active)
         if (active != QuickSwitch._foreground && !QuickSwitch.IsTransientWindow(className)) {   ; another window came to the front: was the one before a file manager?
             QuickSwitch._fromManager := QuickSwitch.IsFileManager(QuickSwitch._foreground)
-            QuickSwitch._foreground := active
+            QuickSwitch._foreground := active, QuickSwitch._settledSince := 0
         }
         isDialog := QuickSwitch._IsFileDialogWindow(active)
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active)) {
-            QuickSwitch._fromManager := false                               ; once per switch
-            QuickSwitch.SyncFileManagerPath(true)
+            if QuickSwitch._InputSettled(active) {
+                QuickSwitch._fromManager := false                           ; once per switch
+                QuickSwitch.SyncFileManagerPath(true)
+            } else
+                SetTimer(QuickSwitch._checkTimer, -QuickSwitch.CheckDelayMs)   ; the switch is still going on: try again a moment later
         }
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
             QuickSwitch._UpdatePanel(isDialog ? active : 0)
@@ -203,6 +206,34 @@ class QuickSwitch {
         else
             QuickSwitch._UnwatchWindow()
         QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll || !QuickSwitch._watched && A_TickCount < QuickSwitch._settleUntil)
+    }
+
+    ; AutoSwitch types into the dialog (Enter after the folder), so it waits until the switch is over. The foreground event comes
+    ; as soon as the dialog is activated: while Alt (Alt+Tab) or the mouse button (a click on the title bar) is still held, and the
+    ; dialog's thread may not have read that input yet. Keys posted to it are read before that input, so the dialog would take them
+    ; with Alt still down, or the move loop of the title bar click would take the Enter: the path is put in, but no jump.
+    ; Settled = no mouse button or modifier key physically down and the dialog's thread not in a move / size or menu loop
+    ; (GetGUIThreadInfo), then InputSettleMs more for the dialog to read its input
+    static InputSettleMs := 100, _settledSince := 0
+
+    static _InputSettled(dialog) {
+        busy := false
+        for key in ["LButton", "RButton", "MButton", "Alt", "Ctrl", "Shift", "LWin", "RWin"]
+            if GetKeyState(key, "P") {
+                busy := true
+                break
+            }
+        if !busy {
+            info := Buffer(A_PtrSize = 8 ? 72 : 48, 0)                     ; GUITHREADINFO
+            NumPut("UInt", info.Size, info)
+            tid := DllCall("GetWindowThreadProcessId", "Ptr", dialog, "Ptr", 0, "UInt")
+            busy := tid && DllCall("GetGUIThreadInfo", "UInt", tid, "Ptr", info) && (NumGet(info, 4, "UInt") & 0x1E) != 0   ; GUI_INMOVESIZE | GUI_INMENUMODE | GUI_SYSTEMMENUMODE | GUI_POPUPMENUMODE
+        }
+        if busy
+            return (QuickSwitch._settledSince := 0, false)
+        if !QuickSwitch._settledSince
+            QuickSwitch._settledSince := A_TickCount
+        return A_TickCount - QuickSwitch._settledSince >= QuickSwitch.InputSettleMs
     }
 
     static _SearchesFiles() => QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "all"

@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.8]
+
+测试版。
+
+Test build.
+
+### 修复
+- 自动跳转 (AutoSwitch): 用 Alt+Tab 或点击对话框标题栏从文件管理器切到对话框时, 文件名框里填上了路径, 但对话框没有跳过去。原因是切换还没结束 (Alt 或鼠标键还按着) 时就发了 Enter, 被对话框当成 Alt+Enter 或拖动窗口的按键吃掉了; 现在等按键和鼠标都松开、对话框处理完这次输入后再跳 (约 100 ms)
+
 ## [2026.10.26.5]
 
 测试版。
@@ -968,7 +977,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.8...HEAD
+[2026.10.26.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...2026.10.26.8
 [2026.10.26.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.5
 [2026.10.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...2026.10.26.4
 [2026.10.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...2026.10.26.3
