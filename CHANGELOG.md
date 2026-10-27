@@ -5,15 +5,27 @@
 
 ## [未发布]
 
-## [2026.10.26.7]
+## [2026.10.26.10]
 
 测试版。
 
 Test build.
 
 ### 改进
-- 内置文件索引 (没有 Everything 时用) 的内存减少约 90%, 搜索更快 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): 以前每个文件存成几个单独的字符串 (完整路径、小写文件名), AutoHotkey 里每个字符串连同开销约 1 KB, 3 万个文件占约 33 MB; 现在所有文件名拼成长字符串, 每个文件的位置和所在文件夹存在一块二进制数据里, 文件夹路径只存一份, 3 万个文件约 2.6 MB。搜索用 `InStr` 在长字符串里直接找, 不再逐个文件比较: 命中不多时从约 13 ms 降到 0.25 到 1.8 ms; 只有几乎所有文件都命中时稍慢 (约 24 → 33 ms)
+- 内置文件索引 (没有 Everything 时用) 的内存减少约 90%, 搜索更快 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): 以前每个文件存成几个单独的字符串 (完整路径、小写文件名), 3 万个文件的索引占约 35 MB; 现在所有文件名拼成长字符串, 每个文件的位置和所在文件夹存在一块二进制数据里, 文件夹路径只存一份, 约 4.7 MB。搜索用 `InStr` 在长字符串里直接找, 不再逐个文件比较, 命中不多时从约 13 ms 降到 1 ms 以内
 - 索引缓存改成文本文件 `Data\FileIndex.txt`, 读取时直接装进紧凑结构; 旧的 `FileIndex.json` 会删掉, 第一次启动时在后台重新扫描一次
+
+## [2026.10.26.9]
+
+测试版。
+
+Test build.
+
+### 修复
+- 自动跳转 (AutoSwitch): 从 Total Commander 等文件管理器用 Alt+Tab 或点击对话框标题栏切到打开 / 保存对话框时, 路径填进了文件名框但没有跳过去 (2026.10.26.5 起); 在 "另存为" 对话框里按着 Alt 时更糟, 对话框会把模拟的 Enter 当成 "保存", 用原来的文件名直接保存在原来的文件夹里。原因是跳转模拟按下 Enter, 而这时 Alt 或鼠标键还按着。现在标准对话框不再模拟按键: 用窗口消息把文件夹写进文件名框, 确认确实写进去了, 像打字一样通知对话框文字已经改了, 再发 "确定" 命令 (和在对话框里按 Enter 一样), 不受按键和鼠标状态影响; 快捷键 `Ctrl+G` 和文件夹面板也走这条路。另存为已经填好的文件名跳转后放回去
+- 程序自己画的对话框 (WPS / Qt 等) 仍然要输入文字, 自动跳转时会等按键和鼠标松开再输入
+- 点击对话框时如果它的程序 (例如 Word) 先到前面一下, 程序之前的窗口仍然算作对话框的 "上一个窗口"
+- 文件名框没能写进文件夹时不再按 Enter (以前可能直接打开 / 保存框里原来的文件名)
 
 ## [2026.10.26.6]
 
@@ -989,8 +1001,9 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.7...HEAD
-[2026.10.26.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.6...2026.10.26.7
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.10...HEAD
+[2026.10.26.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.9...2026.10.26.10
+[2026.10.26.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.6...2026.10.26.9
 [2026.10.26.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...2026.10.26.6
 [2026.10.26.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.5
 [2026.10.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...2026.10.26.4
