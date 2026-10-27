@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.10.26.20]
+
+测试版。
+
+Test build.
+
+### 新增
+- 普通搜索里显示文件时可以选匹配方式 ([讨论 #308](https://github.com/zhugecaomao/ALTRun/discussions/308)): 偏好设置 → 文件搜索 → "匹配方式", "文件名开头或词的开头" (默认, 和以前一样) 或 "文件名包含" (例如 `udge` 也能找到 `2026-Budget.xlsx`, 和先按空格的文件搜索一样)。适合内置索引只包括自己文件夹的情况, 输入就能直接找到文件, 不用先按空格
+
+### 改进
+- 偏好设置 → 文件搜索 的 "搜索结果" 一节: 每个选项都加了说明; "普通结果里的文件数" 和 "最少字数" 放在同一行, 没有勾选 "普通搜索时也显示匹配的文件和文件夹" 时这几项变灰
+- Wiki 的文件搜索页加了这一页的截图 (CI 自动截取)
+
 ## [2026.10.26.19]
 
 测试版。
@@ -1088,7 +1101,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.19...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.20...HEAD
+[2026.10.26.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.19...2026.10.26.20
 [2026.10.26.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.18...2026.10.26.19
 [2026.10.26.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...2026.10.26.18
 [2026.10.26.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.16...2026.10.26.17

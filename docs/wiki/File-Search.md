@@ -21,7 +21,12 @@ Everything's search syntax can be used as is and is passed straight to Everythin
 
 At most 30 results are shown; when nothing is found you can continue in Everything or Windows Search with one key. When a normal search finds nothing at all, a "Search files" fallback item is offered at the end as well.
 
-To show files in normal searches too (the old behavior): in Preferences → File Search, tick "Also show matching files and folders in normal results"; at most 6 are shown, and only those whose name or a word in it starts with what you typed.
+To show files in normal searches too, without pressing Space first: in Preferences → File Search, tick "Also show matching files and folders in normal results". They show below apps and commands, at most 6 ("Files in normal results"), once you've typed 2 letters ("Min. letters"). "Match" decides which names count:
+
+- **Start of the name or of a word** (default): `budget` finds `2026-Budget.xlsx`, `udge` doesn't. Short inputs don't pull in long lists of unrelated names
+- **Anywhere in the name**: `udge` finds it too, as in file search. Best when the built-in index covers only your own folders (Preferences → Search Sources); with Everything, which searches the whole disk, short inputs can bring in many unrelated files
+
+![Preferences → File Search](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-filesearch.png)
 
 Folders you use often work better as [custom commands](Custom-Commands): custom commands also match their target's folder name, so a normal search finds them.
 
@@ -69,6 +74,7 @@ Preferences → File Search (how a search starts, file types, number of results)
 | SpacePrefix | 1 | Pressing Space in an empty search box starts file search mode |
 | InDefaultResults | 0 | Also show matching files and folders in normal searches |
 | DefaultResultsLimit | 6 | Maximum number of files in normal results |
+| DefaultResultsMatch | `Start` | Which files show in normal results: `Start` = the name or a word in it starts with what you typed, `Contains` = anywhere in the name |
 | MinQueryLength | 2 | Minimum number of letters before files are searched |
 | Keywords | `open, find, file` | Keywords that search files only |
 | FolderKeywords | `folder` | Keywords that search folders only |

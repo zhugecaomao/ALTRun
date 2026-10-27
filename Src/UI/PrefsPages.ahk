@@ -274,9 +274,14 @@ class PrefsPages {
         PrefsForm.Csv("Features.FileSearch.RecentKeywords", "Prefs.RecentKeywords", "M")
         PrefsForm.LinesButton("Features.FileSearch.TypeFilters", "Prefs.TypeFilters", {Summary: (lines) => PrefsPages.TypeFilterSummary(lines), AlignPairs: true})
         PrefsForm.Section("Prefs.Section.FileResults")
-        PrefsForm.Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
-        PrefsForm.Pair(["Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
-        PrefsForm.Field("Features.FileSearch.MinQueryLength", "Prefs.FileMinLength", "S", "number")
+        inNormal := PrefsForm.Check("Features.FileSearch.InDefaultResults", "Prefs.FileInDefault", , , "Prefs.Group.NormalSearch")
+        match := PrefsForm.Choice("Features.FileSearch.DefaultResultsMatch", "Prefs.FileDefaultMatch", ["Start", "Contains"]
+            , [I18n.T("Prefs.FileDefaultMatch.Start"), I18n.T("Prefs.FileDefaultMatch.Contains")], "L")
+        normal := PrefsForm.Pair(["Features.FileSearch.MinQueryLength", "Prefs.FileMinLength", "S", "number"], ["Features.FileSearch.DefaultResultsLimit", "Prefs.FileDefaultLimit", "S", "number"])
+        update := (*) => (match.Enabled := normal.First.Enabled := normal.Second.Enabled := inNormal.Value = 1)   ; only used with files in normal results
+        update()
+        inNormal.OnEvent("Click", update)
+        PrefsForm.Field("Features.FileSearch.MaxResults", "Prefs.FileMaxResults", "S", "number")
         PrefsForm.Section("Prefs.Section.Browse")                           ; browsing folders is always available: just a description
     }
 

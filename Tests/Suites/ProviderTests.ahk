@@ -1238,6 +1238,21 @@ class ProviderTests {
         TestRunner.True("FileSearchModes.file mode finds files", files.Length >= 2 && files[1].Provider = "FileSearch")
         eq("file mode empty", ProviderRegistry.SearchOnly(FileSearchProvider, "  ").Length, 0)
         TestRunner.True("FileSearchModes.quote still works", FileSearchProvider.Search(SearchQuery("'mar")).Length >= 2)
+        ; files in normal results: by default only the start of the name or of a word; Contains = anywhere in the name (discussion #308)
+        savedMatch := options["DefaultResultsMatch"]
+        eq("match default", AppSettings.Defaults()["Features"]["FileSearch"]["DefaultResultsMatch"], "Start")
+        options["InDefaultResults"] := 1, options["DefaultResultsMatch"] := "Start"
+        eq("start: word start found", FileSearchProvider.Search(SearchQuery("notes")).Length, 1)
+        eq("start: middle of a word not found", FileSearchProvider.Search(SearchQuery("ket")).Length, 0)
+        options["DefaultResultsMatch"] := "Contains"
+        found := FileSearchProvider.Search(SearchQuery("ket"))
+        eq("contains: middle of a word found", found.Length = 1 ? found[1].Title : found.Length, "Market Notes.pdf")
+        FileIndex.SetEntries(["C:\Docs\Annotated.txt", "C:\Docs\Market Notes.pdf"], [0, 0])
+        found := FileSearchProvider.Search(SearchQuery("not"))
+        eq("contains: a word start still ranks first", found.Length = 2 ? found[1].Title : found.Length, "Market Notes.pdf")
+        options["DefaultResultsMatch"] := "Start"
+        eq("start: only the word start", FileSearchProvider.Search(SearchQuery("not")).Length, 1)
+        options["DefaultResultsMatch"] := savedMatch
         options["InDefaultResults"] := saved[1], options["UseEverything"] := saved[2]
         FileIndex.SetEntries([])
     }
