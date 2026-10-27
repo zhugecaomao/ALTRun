@@ -987,7 +987,13 @@ class QuickSwitch {
         if !QuickSwitch._SendCommand(dialog, DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr"), 0, 1)   ; BN_CLICKED from IDOK
             Logger.Warn("QuickSwitch: the dialog didn't answer the OK command in 2 s")   ; it may still go there: no second try with keys
         else if QuickSwitch.ShouldRestoreName(saved) {                      ; put back a name Save As suggested, so it isn't lost
-            Sleep(100)
+            Loop 6 {                                                        ; the dialog may put it back itself after going there: leave that
+                Sleep(50)
+                text := ""
+                try text := ControlGetText(box)
+                if (text != folder && text != "")
+                    return true
+            }
             try QuickSwitch._SetBoxText(box, saved)
         }
         return true

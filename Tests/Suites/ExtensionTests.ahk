@@ -446,13 +446,14 @@ class ExtensionTests {
             for held in ["Alt", "Ctrl"] {                                   ; Alt: AutoSwitch right after Alt+Tab; Ctrl: the Ctrl+G hotkey
                 try FileDelete(helper)
                 try FileDelete(result)
-                try FileDelete(target "\Report 2026.txt")
+                try FileDelete(target "\Report 2026*")
                 FileAppend('#NoTrayIcon`nFileAppend(FileSelect("S", A_WinDir "\\Report 2026.txt", "Save probe"), "' result '", "UTF-8")`n', helper, "UTF-8")
                 Run('"' A_AhkPath '" "' helper '"', , , &dialogPid)
                 dialog := WinWait("Save probe ahk_class #32770 ahk_pid " dialogPid, , 10)
-                jumpMethod := dialog ? QuickSwitch.DialogJumpMethod(dialog) : "", nameAfter := "no dialog"
+                jumpMethod := dialog ? QuickSwitch.DialogJumpMethod(dialog) : "", nameAfter := "no dialog", nameBefore := ""
                 if dialog {
                     WinActivate("ahk_id " dialog), WinWaitActive("ahk_id " dialog, , 3), Sleep(300)
+                    nameBefore := ControlGetText("Edit1", "ahk_id " dialog)    ; "Report 2026", or with ".txt" when extensions are shown
                     Send("{" held " down}")
                     try QuickSwitch.SetDialogPath(target "\", dialog)
                     finally Send("{" held " up}")
@@ -465,9 +466,9 @@ class ExtensionTests {
                 saved := ""
                 try saved := FileRead(result, "UTF-8")
                 eq("message jump: a system Save As", jumpMethod, "message")
-                eq("message jump (" held " held): suggested name put back", nameAfter, "Report 2026.txt")
-                eq("message jump (" held " held): saved in the folder jumped to", saved, target "\Report 2026.txt")
-                try FileDelete(A_WinDir "\Report 2026.txt")                 ; only if a jump went wrong and saved in the old folder
+                eq("message jump (" held " held): suggested name put back", nameAfter, nameBefore)
+                eq("message jump (" held " held): saved in the folder jumped to", RegExReplace(saved, "\.txt$"), target "\Report 2026")
+                try FileDelete(A_WinDir "\Report 2026*")                    ; only if a jump went wrong and saved in the old folder
             }
             try DirDelete(target, true)
             try FileDelete(helper)
