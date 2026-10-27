@@ -52,7 +52,7 @@ jobs:
         run: |
           New-Item -ItemType Directory tools -Force | Out-Null
           # Keep the interpreter fixed so baseline/candidate benchmark results are comparable.
-          $ahkTag = 'v2.0.30'
+          $ahkTag = 'v2.0.31'
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
 

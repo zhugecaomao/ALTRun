@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.12]
+
+测试版。
+
+Test build.
+
+### 改进
+- 正式构建改用 AutoHotkey v2.0.31 (原来是 v2.0.30), 基准测试也一样; 单元测试本来就用最新的稳定版, 已经在 v2.0.31 上全部通过。v2.0.31 是修复版: `a.b[c]` 在 `a.b` 是方法时会报错, 以及设断点时的一个崩溃
+
 ## [2026.10.26.11]
 
 测试版。
@@ -1010,7 +1019,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.12...HEAD
+[2026.10.26.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.11...2026.10.26.12
 [2026.10.26.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.10...2026.10.26.11
 [2026.10.26.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.9...2026.10.26.10
 [2026.10.26.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.6...2026.10.26.9

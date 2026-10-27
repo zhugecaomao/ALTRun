@@ -15,6 +15,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Off
 #NoTrayIcon
+#Warn All, StdOut                                                           ; never a warning dialog: on a CI runner nobody closes it
 #Include ..\..\Lib\JSON.ahk
 
 OnError(DriverError)
