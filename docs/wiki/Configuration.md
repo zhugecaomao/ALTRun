@@ -50,6 +50,8 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 ## General
 Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 
+![Preferences → General](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-general.png)
+
 | Key | Default | Description |
 |---|---|---|
 | Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](Hotkeys#setting-hotkeys)) |
@@ -93,6 +95,8 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 
 ## Features
 Every feature has `Enabled` (1 = on).
+
+![Preferences → Features](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-features.png)
 
 ### Applications
 | Key | Default | Description |

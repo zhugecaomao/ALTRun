@@ -5,6 +5,8 @@
 ## Search window
 Press `Alt+Space` to open it and start typing. You can change the hotkey in Preferences → General: click the box and press the new keys (to use only the left or right `Alt`, see [Setting hotkeys](Hotkeys#setting-hotkeys)). You can also set a "Second hotkey", or open it like Listary with "Double-tap Ctrl" / "Double-tap Shift". Each row shows an icon, a title and one line of details (path, arguments or type), with the `Ctrl+number` shortcut on the right. The window hides itself when it loses focus. If ALTRun is already running, double-clicking `ALTRun.exe` again also opens the search window (it doesn't restart).
 
+![Preferences → Search Window](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-window.png)
+
 ### Starting in the background
 Launching ALTRun normally displays the search window, giving users visible confirmation that the application has started successfully. To run ALTRun in the background and show the search window only when needed, use the `-Startup` command-line argument:
 
@@ -84,6 +86,8 @@ If software is installed while ALTRun isn't running, a fallback rebuild happens 
 
 You normally don't need to do anything. If an app still doesn't appear, check **Folders** and the exclusion rules in Preferences → Applications, then click **Rebuild Index**. Changing the indexed folders, file types, exclusions or depth and clicking Apply also starts a background rebuild. The previous index remains available until the new one is ready.
 
+![Preferences → Applications](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-applications.png)
+
 ## Shortcuts
 | Key | Action |
 |---|---|
@@ -160,3 +164,5 @@ Preferences → Usage (like Alfred's Usage):
 - Count and share for each feature (apps, custom commands, files, web search, calculator, clipboard history, snippets, system commands, terminal commands, snippet expansion, Quick Switch, date stamp)
 
 Only counts are kept, never what you typed or opened. They're saved in `Data\Usage.json` (the last 400 days). The "Clear Usage Statistics" button starts over.
+
+![Preferences → Usage](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-usage.png)
