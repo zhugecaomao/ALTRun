@@ -55,21 +55,25 @@ class QuickSwitch {
     }
 
     ;---------------------------------------------------------------------------
-    ; Watching dialogs with Windows events, without polling (no CPU while idle; the panel as soon as the dialog is ready):
+    ; Watching dialogs with Windows events only, no polling (no CPU while idle; the panel as soon as the dialog is ready):
     ;   EVENT_SYSTEM_FOREGROUND, every process: another window came to the front
-    ;   While the window in front may be a dialog (DialogWindows / #32770, also while still hidden), events of its UI thread only:
-    ;     until it is recognized, EVENT_OBJECT_DESTROY / SHOW / HIDE (the dialog or its controls appear or go: some dialogs come to the
-    ;     front before they are shown, or build their file list after that) and EVENT_OBJECT_NAMECHANGE (dialogs drawn by their program,
-    ;     Qt..., are told by their title, which may be set later); a burst (a dialog creating its controls) is checked once, CheckDelayMs after it.
-    ;     Once recognized, only EVENT_SYSTEM_MOVESIZESTART / END: the panel follows every DragMs while the dialog is dragged or resized.
-    ;     Object events are no longer needed then, and browsing folders raises a great many of them (every item of the file list)
-    ;   While the caret is in the panel's search box: checked every PollMs whether the dialog is still there (no window event says so)
-    ;   Any other window in front: checked every PollMs for SettleMs after the switch (a window listed by a title that is set a moment later)
-    ; If a hook can't be set, it checks every PollMs instead (all the time, or while that window is in front)
+    ;   One window at a time, with events of its UI thread only, for what it is now (Phases):
+    ;     candidate  the window in front may be a dialog (DialogWindows / #32770, also while still hidden): EVENT_OBJECT_DESTROY / SHOW /
+    ;                HIDE (the dialog or its controls appear or go: some dialogs come to the front before they are shown, or build their
+    ;                file list after that) and EVENT_OBJECT_NAMECHANGE (dialogs drawn by their program, Qt..., are told by their title,
+    ;                which may be set later); a burst (a dialog creating its controls) is checked once, CheckDelayMs after it
+    ;     dialog     recognized: only EVENT_SYSTEM_MOVESIZESTART / END. Object events aren't needed then, and browsing folders raises a
+    ;                great many of them (every item of the file list). While it is dragged or resized, EVENT_OBJECT_LOCATIONCHANGE of
+    ;                that thread moves the panel along (see _Drag)
+    ;     settle     any other window, for SettleMs after it came to the front: EVENT_OBJECT_NAMECHANGE (a window listed by a title
+    ;                that is set a moment later)
+    ;     panel      the caret is in the panel's search box: EVENT_OBJECT_DESTROY of the dialog's thread (closed by its program)
+    ; Only if a hook can't be set, it checks every PollMs instead (all the time, or while that window is watched)
     ;---------------------------------------------------------------------------
     static PollMs := 250, SettleMs := 1500, CheckDelayMs := 50, DragMs := 15
-    static _foregroundHook := 0, _threadHooks := [], _watched := 0, _recognized := false, _eventCallback := 0
-    static _alwaysPoll := false, _threadPoll := false, _polling := false, _settleUntil := 0
+    static Phases := Map("candidate", [[0x8001, 0x8003], [0x800C, 0x800C]], "dialog", [[0xA, 0xB]], "settle", [[0x800C, 0x800C]], "panel", [[0x8001, 0x8001]])
+    static _foregroundHook := 0, _threadHooks := [], _watched := 0, _phase := "", _eventCallback := 0, _dragHook := 0
+    static _alwaysPoll := false, _threadPoll := false, _polling := false
     static _foreground := 0, _foregroundAt := 0, _fromManager := false
     ; Clicking a dialog may bring the program that owns it (e.g. Word) to the front for a moment first: when the dialog follows within
     ; OwnerPassMs, the window before the program still counts as the window before the dialog
@@ -77,13 +81,14 @@ class QuickSwitch {
     ; AutoSwitch jumps at once when the dialog takes a message jump (see SetDialogPath); a jump that types waits until the switch is over
     ; (see _InputSettled), at most AutoSwitchWaitMs
     static AutoSwitchWaitMs := 3000
-    static _checkTimer := "", _pollTimer := "", _placeTimer := "", _dragTimer := ""
+    static _checkTimer := "", _settleTimer := "", _pollTimer := "", _placeTimer := "", _dragTimer := ""
 
     static _StartWatching() {
-        QuickSwitch._checkTimer := Logger.Watch("quick switch check", () => QuickSwitch._Check())   ; one-shot (events) and repeating (polling) need separate timers
+        QuickSwitch._checkTimer := Logger.Watch("quick switch check", () => QuickSwitch._Check())   ; one-shot (events), the end of settle
+        QuickSwitch._settleTimer := Logger.Watch("quick switch settle", () => QuickSwitch._Check())  ; and repeating (polling) need separate timers
         QuickSwitch._pollTimer := Logger.Watch("quick switch watch", () => QuickSwitch._Check())
         QuickSwitch._placeTimer := () => QuickSwitch._panelFor && QuickSwitch._PlacePanel(QuickSwitch._panelFor)
-        QuickSwitch._dragTimer := () => QuickSwitch._panelFor && QuickSwitch._PlacePanel(QuickSwitch._panelFor)   ; one-shot and repeating need separate timers
+        QuickSwitch._dragTimer := () => QuickSwitch._panelFor && QuickSwitch._PlacePanel(QuickSwitch._panelFor)   ; only if the drag hook can't be set
         if !(QuickSwitch._foregroundHook := QuickSwitch._HookEvent(0x3, 0x3)) {   ; EVENT_SYSTEM_FOREGROUND, every process
             Logger.Error("QuickSwitch: cannot watch foreground changes, checking every " QuickSwitch.PollMs " ms")
             QuickSwitch._alwaysPoll := true
@@ -99,43 +104,56 @@ class QuickSwitch {
 
     ; Keep the callback short: the work runs from a timer, after the event is handled
     static _OnEvent(hook, event, hwnd, idObject, idChild, thread, time) {
-        if (event = 0x3) {                                                  ; EVENT_SYSTEM_FOREGROUND
-            QuickSwitch._settleUntil := A_TickCount + QuickSwitch.SettleMs
+        if (event = 0x3)                                                    ; EVENT_SYSTEM_FOREGROUND
             return SetTimer(QuickSwitch._checkTimer, -1)
-        }
         if (event = 0xA || event = 0xB) {                                   ; EVENT_SYSTEM_MOVESIZESTART / END: the dialog is dragged or resized
             if (hwnd && hwnd = QuickSwitch._panelFor)
-                SetTimer(QuickSwitch._dragTimer, event = 0xA ? QuickSwitch.DragMs : 0), SetTimer(QuickSwitch._placeTimer, -1)
+                QuickSwitch._Drag(event = 0xA)
             return
         }
         if (idObject != 0 || idChild != 0 || !hwnd)                         ; windows only (OBJID_WINDOW), not the caret, the cursor or parts of controls
             return
+        if (event = 0x800B)                                                 ; EVENT_OBJECT_LOCATIONCHANGE while the dialog is dragged
+            return (hwnd = QuickSwitch._panelFor) ? SetTimer(QuickSwitch._placeTimer, -1) : 0
         SetTimer(QuickSwitch._checkTimer, -QuickSwitch.CheckDelayMs)
     }
 
-    ; The UI thread of the window in front (one window at a time), with the events for its phase (see above)
-    static _WatchWindow(hwnd, recognized) {
-        if (hwnd = QuickSwitch._watched && recognized = QuickSwitch._recognized)
+    ; The UI thread of this window (one window at a time), with the events of its phase (see Phases above)
+    static _WatchWindow(hwnd, phase) {
+        if (hwnd = QuickSwitch._watched && phase = QuickSwitch._phase)
             return
         QuickSwitch._UnwatchWindow()
-        QuickSwitch._watched := hwnd, QuickSwitch._recognized := recognized
-        ranges := recognized ? [[0xA, 0xB]] : [[0x8001, 0x8003], [0x800C, 0x800C]]   ; MOVESIZESTART..END / DESTROY..HIDE, NAMECHANGE
+        QuickSwitch._watched := hwnd, QuickSwitch._phase := phase
+        ranges := QuickSwitch.Phases[phase]
         if (tid := DllCall("GetWindowThreadProcessId", "Ptr", hwnd, "UInt*", &pid := 0, "UInt"))
             for range in ranges
                 if (hook := QuickSwitch._HookEvent(range[1], range[2], pid, tid))
                     QuickSwitch._threadHooks.Push(hook)
         if (QuickSwitch._threadHooks.Length < ranges.Length) {
             QuickSwitch._threadPoll := true
-            Logger.Warn("QuickSwitch: cannot watch the events of a dialog, checking every " QuickSwitch.PollMs " ms while it is in front")
+            Logger.Warn("QuickSwitch: cannot watch the events of a window (" phase "), checking every " QuickSwitch.PollMs " ms meanwhile")
         }
     }
 
     static _UnwatchWindow() {
         for hook in QuickSwitch._threadHooks
             DllCall("UnhookWinEvent", "Ptr", hook)
-        QuickSwitch._threadHooks := [], QuickSwitch._watched := 0, QuickSwitch._recognized := false, QuickSwitch._threadPoll := false
+        QuickSwitch._threadHooks := [], QuickSwitch._watched := 0, QuickSwitch._phase := "", QuickSwitch._threadPoll := false
+        QuickSwitch._Drag(false, false)
+    }
+
+    ; The dialog is dragged or resized (on = MOVESIZESTART): the location changes of its thread move the panel along, and it is placed once
+    ; more at the end. Every DragMs instead if that hook can't be set
+    static _Drag(on, place := true) {
+        if QuickSwitch._dragHook
+            DllCall("UnhookWinEvent", "Ptr", QuickSwitch._dragHook), QuickSwitch._dragHook := 0
         if (QuickSwitch._dragTimer != "")                                   ; not before _StartWatching
             SetTimer(QuickSwitch._dragTimer, 0)
+        if (on && (tid := DllCall("GetWindowThreadProcessId", "Ptr", QuickSwitch._panelFor, "UInt*", &pid := 0, "UInt"))
+            && !(QuickSwitch._dragHook := QuickSwitch._HookEvent(0x800B, 0x800B, pid, tid)))   ; EVENT_OBJECT_LOCATIONCHANGE
+            SetTimer(QuickSwitch._dragTimer, QuickSwitch.DragMs)
+        if (place && QuickSwitch._placeTimer != "")
+            SetTimer(QuickSwitch._placeTimer, -1)
     }
 
     static _Poll(on) {
@@ -189,7 +207,9 @@ class QuickSwitch {
         if (IsObject(QuickSwitch._panel) && active = QuickSwitch._panel.Hwnd) {   ; typing in the panel's search box: the dialog and panel stay as they are
             if !DllCall("IsWindow", "Ptr", QuickSwitch._panelFor)          ; the dialog was closed (by its program): close the panel too
                 QuickSwitch.HidePanel(), QuickSwitch._UnwatchWindow()
-            return QuickSwitch._Poll(true)                                  ; until the caret leaves the panel (a foreground event)
+            else
+                QuickSwitch._WatchWindow(QuickSwitch._panelFor, "panel")    ; until the caret leaves the panel (a foreground event)
+            return QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll)
         }
         className := ""
         try className := WinGetClass("ahk_id " active)
@@ -206,11 +226,16 @@ class QuickSwitch {
 
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
             QuickSwitch._UpdatePanel(isDialog ? active : 0)
-        if (isDialog || QuickSwitch._MayBeDialog(active))
-            QuickSwitch._WatchWindow(active, isDialog)
-        else
+        if isDialog
+            QuickSwitch._WatchWindow(active, "dialog")
+        else if QuickSwitch._MayBeDialog(active)
+            QuickSwitch._WatchWindow(active, "candidate")
+        else if (active = QuickSwitch._foreground && (left := QuickSwitch.SettleMs - (A_TickCount - QuickSwitch._foregroundAt)) > 0) {
+            QuickSwitch._WatchWindow(active, "settle")
+            SetTimer(QuickSwitch._settleTimer, -left)                       ; then the title no longer counts: unwatched
+        } else
             QuickSwitch._UnwatchWindow()
-        QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll || !QuickSwitch._watched && A_TickCount < QuickSwitch._settleUntil)
+        QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll)
     }
 
     ; AutoSwitch: jump to the file manager's folder once per switch. previous: the window before, on the first check after the switch (debug log)

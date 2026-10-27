@@ -308,19 +308,12 @@ class ExtensionTests {
         eq("other window in front: not a dialog", QuickSwitch._MayBeDialog(), false)
         hiddenDialog.Destroy(), otherWindow.Destroy()
         QuickSwitch.Options := savedOptions
-        ; Dragging the dialog (EVENT_SYSTEM_MOVESIZESTART / END): the panel follows every DragMs until it ends; other windows don't count
-        savedDrag := [QuickSwitch._dragTimer, QuickSwitch._placeTimer, QuickSwitch._panelFor]
-        drags := {Count: 0}
-        QuickSwitch._dragTimer := () => drags.Count++, QuickSwitch._placeTimer := () => 0, QuickSwitch._panelFor := 0x1234
-        QuickSwitch._OnEvent(0, 0xA, 0x5678, 0, 0, 0, 0), Sleep(150)
-        otherDragged := drags.Count
-        QuickSwitch._OnEvent(0, 0xA, 0x1234, 0, 0, 0, 0), Sleep(150)
-        QuickSwitch._OnEvent(0, 0xB, 0x1234, 0, 0, 0, 0)
-        followed := drags.Count, Sleep(150)
-        eq("drag: another window", otherDragged, 0)
-        TestRunner.True("QuickSwitch.drag: the panel follows (" followed ")", followed >= 3)
-        eq("drag: stops when it ends", drags.Count, followed)
-        QuickSwitch._dragTimer := savedDrag[1], QuickSwitch._placeTimer := savedDrag[2], QuickSwitch._panelFor := savedDrag[3]
+        ; Dragging another window than the dialog: nothing to follow
+        savedDrag := [QuickSwitch._placeTimer, QuickSwitch._panelFor]
+        QuickSwitch._placeTimer := () => 0, QuickSwitch._panelFor := 0x1234
+        QuickSwitch._OnEvent(0, 0xA, 0x5678, 0, 0, 0, 0)
+        eq("drag: another window", QuickSwitch._dragHook, 0)
+        QuickSwitch._placeTimer := savedDrag[1], QuickSwitch._panelFor := savedDrag[2]
         ; Foreground changes and a possible dialog's controls arrive as events, with no polling (Wine doesn't deliver WinEvents, so only checked on Windows)
         if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
             saved := QuickSwitch._checkTimer
@@ -332,24 +325,48 @@ class ExtensionTests {
             WinActivate("ahk_id " first.Hwnd), Sleep(300)
             WinActivate("ahk_id " second.Hwnd), Sleep(300)
             switched := counts.Check
-            QuickSwitch._WatchWindow(first.Hwnd, false)                     ; a possible dialog: object events of its UI thread
-            candidateHooks := QuickSwitch._threadHooks.Length
+            QuickSwitch._WatchWindow(first.Hwnd, "candidate")              ; a possible dialog: object events of its UI thread
+            hooks := QuickSwitch._threadHooks.Length
             counts.Check := 0
             first.Add("Button", , "Late control"), Sleep(300)               ; a control created after the window came to the front
             shownLater := counts.Check
-            QuickSwitch._WatchWindow(first.Hwnd, true)                      ; recognized: only moving / resizing
-            dialogHooks := QuickSwitch._threadHooks.Length
+            QuickSwitch._WatchWindow(first.Hwnd, "dialog")                 ; recognized: only moving / resizing
+            hooks .= " " QuickSwitch._threadHooks.Length
             counts.Check := 0
             first.Add("Button", , "Another control"), Sleep(300)
             shownAfter := counts.Check
+            QuickSwitch._WatchWindow(first.Hwnd, "settle")                 ; another window just in front: its title only
+            hooks .= " " QuickSwitch._threadHooks.Length
+            counts.Check := 0
+            first.Title := "QuickSwitch event A renamed", Sleep(300)
+            renamed := counts.Check
+            QuickSwitch._WatchWindow(first.Hwnd, "panel")                  ; the caret in the panel: the dialog's thread, its windows going
+            hooks .= " " QuickSwitch._threadHooks.Length
+            ; Dragging the dialog: its location changes move the panel along until the drag ends, no timer
+            savedDrag := [QuickSwitch._placeTimer, QuickSwitch._panelFor, QuickSwitch._dragTimer]
+            places := {Count: 0}
+            QuickSwitch._placeTimer := () => places.Count++, QuickSwitch._dragTimer := () => 0, QuickSwitch._panelFor := first.Hwnd
+            QuickSwitch._OnEvent(0, 0xA, first.Hwnd, 0, 0, 0, 0)
+            dragHooked := QuickSwitch._dragHook != 0
+            Loop 5
+                WinMove(100 + A_Index * 20, 100, , , "ahk_id " first.Hwnd), Sleep(60)
+            followed := places.Count
+            QuickSwitch._OnEvent(0, 0xB, first.Hwnd, 0, 0, 0, 0), Sleep(100)
+            afterEnd := places.Count
+            WinMove(300, 100, , , "ahk_id " first.Hwnd), Sleep(200)
+            dragUnhooked := QuickSwitch._dragHook = 0
+            QuickSwitch._placeTimer := savedDrag[1], QuickSwitch._panelFor := savedDrag[2], QuickSwitch._dragTimer := savedDrag[3]
             QuickSwitch._UnwatchWindow()
             DllCall("UnhookWinEvent", "Ptr", hook)
             first.Destroy(), second.Destroy()
             QuickSwitch._checkTimer := saved
             TestRunner.True("QuickSwitch.foreground events (" switched ")", hook && switched >= 2)
-            eq("thread events hooked: possible dialog / recognized", candidateHooks " / " dialogHooks, "2 / 1")
+            eq("thread events hooked: candidate dialog settle panel", hooks, "2 1 1 1")
             TestRunner.True("QuickSwitch.a control shown later is checked (" shownLater ")", shownLater >= 1)
             eq("controls of a recognized dialog aren't watched", shownAfter, 0)
+            TestRunner.True("QuickSwitch.settle: a title set later is checked (" renamed ")", renamed >= 1)
+            TestRunner.True("QuickSwitch.drag: the panel follows the location changes (" followed ")", dragHooked && followed >= 3)
+            eq("drag: unhooked when it ends, placed once more", dragUnhooked " " (afterEnd - followed >= 1) " " (places.Count = afterEnd), "1 1 1")
             ; The whole way: an Open dialog in another process gets the panel, nothing polls while it is open, and the panel closes with it
             QuickSwitch.Options := AppSettings.Extension("QuickSwitch")
             GroupAdd("ALTRunDialogs", "ahk_class #32770")
@@ -366,18 +383,21 @@ class ExtensionTests {
                 Sleep(100)
             }
             Sleep(QuickSwitch.SettleMs + 300)
-            pollingWhileOpen := QuickSwitch._polling
+            pollingWhileOpen := QuickSwitch._polling, phaseWhileOpen := QuickSwitch._phase
             try WinClose("ahk_id " dialog)
             if !ProcessWaitClose(dialogPid, 3)
                 try ProcessClose(dialogPid)
             Sleep(300)
             panelGone := !IsObject(QuickSwitch._panel)
+            Sleep(QuickSwitch.SettleMs + 300)                               ; the window in front afterwards: watched for its title only for SettleMs
+            idleAfter := QuickSwitch._polling " " (QuickSwitch._phase = "settle")
             DllCall("UnhookWinEvent", "Ptr", QuickSwitch._foregroundHook), QuickSwitch._foregroundHook := 0
             QuickSwitch._UnwatchWindow()
             SetTimer(QuickSwitch._pollTimer, 0), SetTimer(QuickSwitch._checkTimer, 0), QuickSwitch._polling := false
             QuickSwitch.HidePanel()
             TestRunner.True("QuickSwitch.panel below another process's Open dialog", dialog && panelShown)
-            eq("no polling while the dialog is open", pollingWhileOpen, false)
+            eq("no polling while the dialog is open", pollingWhileOpen " " phaseWhileOpen, "0 dialog")
+            eq("afterwards: no polling, not watched for longer than SettleMs", idleAfter, "0 0")
             TestRunner.True("QuickSwitch.panel closed with the dialog", panelGone)
         }
         ; A real one: AutoHotkey's DirSelect is SHBrowseForFolder (option 4 = classic style). Detected, the folder is
