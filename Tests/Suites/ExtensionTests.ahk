@@ -291,6 +291,15 @@ class ExtensionTests {
         eq("file manager windows", QuickSwitch.IsFileManager(0), false)
         eq("transient windows while switching", QuickSwitch.IsTransientWindow("Shell_TrayWnd") QuickSwitch.IsTransientWindow("XamlExplorerHostIslandWindow"), "11")
         eq("not transient", QuickSwitch.IsTransientWindow("TTOTAL_CMD") QuickSwitch.IsTransientWindow("#32770"), "00")
+        ; Windows 11's Alt+Tab window is already hidden when its foreground event is handled: still read its class, and pass over it
+        passing := Gui()
+        eq("class of a hidden window", QuickSwitch.ClassOf(passing.Hwnd), "AutoHotkeyGUI")
+        eq("a hidden window in front is passing", QuickSwitch.IsPassingWindow(passing.Hwnd, "AutoHotkeyGUI"), true)
+        passing.Show("NA w100 h50")
+        eq("a shown window is not", QuickSwitch.IsPassingWindow(passing.Hwnd, "AutoHotkeyGUI"), false)
+        gone := passing.Hwnd
+        passing.Destroy()
+        eq("a window gone is passing", QuickSwitch.ClassOf(gone) "|" QuickSwitch.IsPassingWindow(gone, ""), "|1")
         ; A dialog can be in front before it is shown: it still counts as a possible dialog (polling goes on until it shows)
         savedOptions := QuickSwitch.Options
         QuickSwitch.Options := AppSettings.Extension("QuickSwitch")
@@ -478,6 +487,7 @@ class ExtensionTests {
                     try QuickSwitch.SetDialogPath(target "\", dialog)
                     finally Send("{" held " up}")
                     Sleep(500)
+                    shown := WinExist("ahk_id " dialog) ? QuickSwitch.DialogFolder(dialog) : "the dialog closed"
                     nameAfter := WinExist("ahk_id " dialog) ? ControlGetText("Edit1", "ahk_id " dialog) : "the dialog closed"
                     DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; OK
                 }
@@ -486,6 +496,7 @@ class ExtensionTests {
                 saved := ""
                 try saved := FileRead(result, "UTF-8")
                 eq("message jump: a system Save As", jumpMethod, "message")
+                eq("message jump (" held " held): the address bar shows the folder", dialog ? shown : "no dialog", target)
                 eq("message jump (" held " held): suggested name put back", nameAfter, nameBefore)
                 eq("message jump (" held " held): saved in the folder jumped to", RegExReplace(saved, "\.txt$"), target "\Report 2026")
                 try FileDelete(A_WinDir "\Report 2026*")                    ; only if a jump went wrong and saved in the old folder

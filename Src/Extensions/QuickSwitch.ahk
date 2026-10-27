@@ -181,7 +181,17 @@ class QuickSwitch {
         finally DetectHiddenWindows(hidden)
     }
 
-    ; Windows that are in front only for a moment while switching (taskbar, Alt+Tab): they don't count as "the window before" for AutoSwitch
+    ; Windows that are in front only for a moment while switching (taskbar, Alt+Tab): they don't count as "the window before" for AutoSwitch.
+    ; Also any window already hidden or gone when the event is handled: Windows 11's Alt+Tab window hides right after the switch, and
+    ; read with hidden windows not detected its class was "", so it counted as the window before the dialog and AutoSwitch didn't jump
+    static IsPassingWindow(hwnd, className) => QuickSwitch.IsTransientWindow(className) || !DllCall("IsWindowVisible", "Ptr", hwnd)
+
+    ; A window's class, also when it is hidden (WinGetClass doesn't find hidden windows unless DetectHiddenWindows is on); "" if it is gone
+    static ClassOf(hwnd) {
+        name := Buffer(512)
+        return DllCall("GetClassNameW", "Ptr", hwnd, "Ptr", name, "Int", 256) ? StrGet(name) : ""
+    }
+
     static IsTransientWindow(className) => RegExMatch(className, "i)^(Shell_TrayWnd|Shell_SecondaryTrayWnd|MultitaskingViewFrame|XamlExplorerHostIslandWindow|TaskSwitcherWnd|ForegroundStaging)$") > 0
 
     ; WM_KEYDOWN rather than a hotkey: while a Chinese IME is composing (not yet committed) keys are VK_PROCESSKEY and aren't taken for Enter / Esc
@@ -211,16 +221,17 @@ class QuickSwitch {
                 QuickSwitch._WatchWindow(QuickSwitch._panelFor, "panel")    ; until the caret leaves the panel (a foreground event)
             return QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll)
         }
-        className := ""
-        try className := WinGetClass("ahk_id " active)
+        className := QuickSwitch.ClassOf(active)
         switched := false, previous := QuickSwitch._foreground
-        if (active != previous && !QuickSwitch.IsTransientWindow(className)) {   ; another window came to the front: was the one before a file manager?
+        if (active != previous && !QuickSwitch.IsPassingWindow(active, className)) {   ; another window came to the front: was the one before a file manager?
             owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr")  ; GW_OWNER
             if !(owner && owner = previous && A_TickCount - QuickSwitch._foregroundAt < QuickSwitch.OwnerPassMs)   ; see OwnerPassMs
                 QuickSwitch._fromManager := QuickSwitch.IsFileManager(previous)
             QuickSwitch._foreground := active, QuickSwitch._foregroundAt := A_TickCount, QuickSwitch._settledSince := 0, switched := true
         }
         isDialog := QuickSwitch._IsFileDialogWindow(active)
+        if (Logger.Enabled && active != QuickSwitch._loggedForeground)
+            QuickSwitch._LogForeground(active, className, isDialog)
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active))
             QuickSwitch._AutoSwitch(active, switched ? previous : 0)
 
@@ -238,13 +249,23 @@ class QuickSwitch {
         QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll)
     }
 
+    ; For the debug log: each window that comes to the front, and whether AutoSwitch counts the window before it as a file manager
+    static _loggedForeground := 0
+    static _LogForeground(active, className, isDialog) {
+        QuickSwitch._loggedForeground := active
+        exe := "", ownerClass := ""
+        try exe := WinGetProcessName("ahk_id " active)
+        if (owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr"))
+            ownerClass := QuickSwitch.ClassOf(owner)
+        Logger.Debug(Format("QuickSwitch: in front 0x{:X} {} of {}, owner 0x{:X} {}, passing {}, file dialog {}, from a file manager {}", active, className, exe
+            , owner, ownerClass, QuickSwitch.IsPassingWindow(active, className), isDialog, QuickSwitch._fromManager))
+    }
+
     ; AutoSwitch: jump to the file manager's folder once per switch. previous: the window before, on the first check after the switch (debug log)
     static _AutoSwitch(dialog, previous) {
         method := QuickSwitch.DialogJumpMethod(dialog)
         if (previous && Logger.Enabled) {
-            previousClass := ""
-            try previousClass := WinGetClass("ahk_id " previous)
-            Logger.Debug("QuickSwitch: AutoSwitch from " previousClass ", jump by " method)
+            Logger.Debug("QuickSwitch: AutoSwitch from " QuickSwitch.ClassOf(previous) ", jump by " method ", " (A_TickCount - QuickSwitch._foregroundAt) " ms after the switch")
         }
         if (method = "message" || method = "browse" || QuickSwitch._InputSettled(dialog)) {
             QuickSwitch._fromManager := false                               ; once per switch
@@ -722,6 +743,8 @@ class QuickSwitch {
         manager := QuickSwitch.FileManagerFolder()
         if !(IsObject(manager) && manager.Path != "")
             return silent ? "" : MsgBox(I18n.T("QuickSwitch.NoFileManager"), App.Name, 48)
+        if Logger.Enabled
+            Logger.Debug("QuickSwitch: " manager.Tag " is in [" manager.Path "]")
         QuickSwitch.SetDialogPath(RTrim(manager.Path, "\") "\")             ; with a trailing backslash: AutoCAD and others need it
     }
 
@@ -1002,16 +1025,25 @@ class QuickSwitch {
     ;      save dialogs alike. Sent, not posted, so the old name goes back only after the dialog has read the box
     static _JumpByMessage(folder, dialog) {
         target := "ahk_id " dialog, saved := ""
+        if Logger.Enabled
+            Logger.Debug("QuickSwitch: jump to [" folder "] by message" QuickSwitch._DialogState(dialog))
         try {
             box := ControlGetHwnd("Edit1", target)
             try saved := ControlGetText(box)
-            if !QuickSwitch._SetBoxText(box, folder)
+            if !QuickSwitch._SetBoxText(box, folder) {
+                Logger.Debug("QuickSwitch: the file name box didn't take the folder, or the dialog didn't take the change notice")
                 return false
-        } catch
+            }
+        } catch as e {
+            Logger.Debug("QuickSwitch: no file name box - " e.Message)
             return false
-        if !QuickSwitch._SendCommand(dialog, DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr"), 0, 1)   ; BN_CLICKED from IDOK
+        }
+        started := A_TickCount
+        if !(answered := QuickSwitch._SendCommand(dialog, DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr"), 0, 1))   ; BN_CLICKED from IDOK
             Logger.Warn("QuickSwitch: the dialog didn't answer the OK command in 2 s")   ; it may still go there: no second try with keys
-        else if QuickSwitch.ShouldRestoreName(saved) {                      ; put back a name Save As suggested, so it isn't lost
+        else if Logger.Enabled
+            Logger.Debug("QuickSwitch: OK command answered in " (A_TickCount - started) " ms" QuickSwitch._DialogState(dialog))
+        if (answered && QuickSwitch.ShouldRestoreName(saved)) {             ; put back a name Save As suggested, so it isn't lost
             Loop 6 {                                                        ; the dialog may put it back itself after going there: leave that
                 Sleep(50)
                 text := ""
@@ -1022,6 +1054,31 @@ class QuickSwitch {
             try QuickSwitch._SetBoxText(box, saved)
         }
         return true
+    }
+
+    ; The folder a system dialog shows, from its address bar ("Address: C:\Docs", the label in the UI language); "" if it can't be read.
+    ; The tests check a jump with it
+    static DialogFolder(dialog) {
+        text := ""
+        try text := WinGetText("ahk_id " dialog)
+        Loop Parse, text, "`n", "`r"
+            if RegExMatch(A_LoopField, "^[^:：\\]{1,40}[:：]\s*((?:[A-Za-z]:\\|\\\\)[^\r\n]*)$", &m)
+                return RTrim(m[1], "\")
+        return ""
+    }
+
+    ; For the debug log: the file name box, the focused control, the dialog thread's state (GUITHREADINFO flags) and whether it is in front
+    static _DialogState(dialog) {
+        box := "", focus := "", flags := -1
+        try box := ControlGetText("Edit1", "ahk_id " dialog)
+        info := Buffer(A_PtrSize = 8 ? 72 : 48, 0)
+        NumPut("UInt", info.Size, info)
+        if ((tid := DllCall("GetWindowThreadProcessId", "Ptr", dialog, "Ptr", 0, "UInt")) && DllCall("GetGUIThreadInfo", "UInt", tid, "Ptr", info)) {
+            flags := NumGet(info, 4, "UInt")
+            if (focused := NumGet(info, 8 + A_PtrSize, "Ptr"))             ; hwndFocus
+                try focus := WinGetClass("ahk_id " focused)
+        }
+        return Format(" (0x{:X}), box [{}], focus {}, thread flags 0x{:X}, in front {}", dialog, box, focus, flags, DllCall("GetForegroundWindow", "Ptr") = dialog)
     }
 
     ; Puts text into a dialog's file name box and tells its parent, as typing does (see _JumpByMessage, step 2); false if the box
