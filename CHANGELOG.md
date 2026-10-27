@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.27.1]
+
+测试版。
+
+Test build.
+
+### 新增
+- 热键可以区分左右的 `Ctrl` / `Alt` / `Shift` / `Win` ([#303](https://github.com/zhugecaomao/ALTRun/issues/303)): 偏好设置 → 通用 勾选 "热键区分左右 Ctrl / Alt / Shift / Win" 后, 之后录制的热键记住按的是哪一边, 例如按左 Alt + 空格记成 `LAlt+Space` (设置文件里是 `<!Space`), 只有左 Alt 能触发, 右 Alt + 空格可以留给其它软件 (例如语音输入)。默认关闭; 已经设好的热键不变, 两边同时按住记成左右都可以
+- 热键显示带上左右: `<!Space` 显示为 `LAlt+Space`, `<^>!` 显示为 `AltGr`
+- 保存时的热键冲突检查也区分左右: `Alt+Space` 和 `LAlt+Space` 算冲突, `LAlt+Space` 和 `RAlt+Space` 不算
+
 ## [2026.10.26.17]
 
 测试版。
@@ -1068,7 +1079,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.27.1...HEAD
+[2026.10.27.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...2026.10.27.1
 [2026.10.26.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.16...2026.10.26.17
 [2026.10.26.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.15...2026.10.26.16
 [2026.10.26.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.14...2026.10.26.15

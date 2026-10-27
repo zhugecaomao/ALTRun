@@ -5,6 +5,8 @@
 ; and press the combination to record it. The settings still store the AutoHotkey form (^!c), so the settings file format is unchanged.
 ;   Esc / Tab cancel (the old hotkey stays), Backspace / Delete clear it (no hotkey)
 ;   single letters, digits, Space etc. (which would get in the way of typing) need Ctrl / Alt / Win; F1 ~ F24 etc. work alone
+;   with Sides on (Preferences: General.HotkeySides), a modifier held on one side only is recorded with that side: left Alt + Space -> <!Space
+;   (only the left Alt triggers it, so another program can have the right one); both sides held -> either side, as without Sides
 ;   with mouse = true, a middle / side button click in the box records a mouse hotkey (MButton / XButton1 / XButton2)
 ; While recording, InputHook catches every key (Alt+Space, Win+E don't trigger system or other programs' functions), and
 ; ALTRun's own hotkeys are suspended (Suspend), otherwise pressing the show hotkey would show the search window instead of being recorded.
@@ -18,7 +20,7 @@
 ;   HotkeyBox.Value(box)                -> "!Space" (AutoHotkey form; onChange is called when a new hotkey is recorded)
 ;   HotkeyBox.CancelActive()            before closing a window: ends a recording in progress and restores ALTRun's hotkeys
 ;   HotkeyBox.Label("~MButton")         -> "Middle button" (for display in lists etc.)
-;   HotkeyBox.Compose("^!", "c")        -> "^!c"
+;   HotkeyBox.Compose("^!", "c")        -> "^!c"; HotkeyBox.Compose("<!", "Space") -> "<!Space"
 ;   HotkeyBox.IsAllowed("a")            -> false (needs Ctrl / Alt / Win)
 ;===============================================================================
 
@@ -27,6 +29,7 @@ class HotkeyBox {
     static _active := "", _hook := "", _suspended := false, _mouseHooked := false, _watchTimer := ""
     static _held := Map()                                                   ; modifier keys held while recording (LControl, RAlt...) -> true
     static TipId := 20
+    static Sides := false                                                   ; record which side a modifier was pressed on (see above)
 
     static Add(g, options, value, mouse := false, onChange := "") {
         HotkeyBox.Prune()
@@ -77,18 +80,19 @@ class HotkeyBox {
                  , "LButton", I18n.T("Hotkey.LButton"), "RButton", I18n.T("Hotkey.RButton"))
     }
 
-    ; mods: any combination of "^" "!" "+" "#"; key: the name GetKeyName gives. Modifiers sorted Ctrl Alt Shift Win, letters lower case
+    ; mods: any combination of "^" "!" "+" "#", each may have "<" (left) or ">" (right) before it; key: the name GetKeyName gives.
+    ; Modifiers sorted Ctrl Alt Shift Win, letters lower case
     static Compose(mods, key) {
         ordered := ""
         for m in ["^", "!", "+", "#"]
-            if InStr(mods, m)
-                ordered .= m
+            if RegExMatch(mods, "[<>]?\" m, &found)
+                ordered .= found[0]
         return ordered ((StrLen(key) = 1) ? StrLower(key) : key)
     }
 
     ; Keys that would get in the way of typing (letters, digits, symbols, Space, Enter, numpad...) need Ctrl / Alt / Win; Shift doesn't count
     static IsAllowed(hk) {
-        if !RegExMatch(hk, "^([\^!+#]*)(.+)$", &m)
+        if !RegExMatch(hk, "^((?:[<>]?[\^!+#])*)(.+)$", &m)
             return false
         if RegExMatch(m[1], "[\^!#]")
             return true
@@ -201,20 +205,22 @@ class HotkeyBox {
             state.Ctrl.Value := SubStr(state.Ctrl.Value, 1, -1)             ; "Ctrl+Alt+X" -> "Ctrl+Alt+"
     }
 
-    ; Held modifiers -> a combination of "^!+#". While recording, the key downs / ups InputHook received count (_held): keys from remote desktops
+    ; Held modifiers -> a combination of "^!+#"; with Sides, "<" / ">" before one held on the left / right side only. While recording, the key downs / ups InputHook received count (_held): keys from remote desktops
     ; (Chrome Remote Desktop, RDP...) and other programs' simulated keys aren't "physically down", and caught keys don't change the logical state,
     ; so by GetKeyState alone Ctrl+Alt+K would be taken as K. When not recording (a middle click in the box) the key states are used
     static _Mods() {
         mods := ""
         for pair in [["Control", "^"], ["Alt", "!"], ["Shift", "+"], ["Win", "#"]] {
-            down := false
+            down := Map()
             for side in ["L", "R", ""]                                     ; "" = Control / Shift / Alt without left or right (some programs simulate keys that way)
                 if (HotkeyBox._held.Has(side pair[1]) || (side != "" && !IsObject(HotkeyBox._active) && GetKeyState(side pair[1])))
-                    down := true
+                    down[side] := true
             if (pair[1] = "Control" && HotkeyBox._held.Has("Ctrl"))
-                down := true
-            if down
-                mods .= pair[2]
+                down[""] := true
+            if !down.Count
+                continue
+            side := (down.Count = 1 && !down.Has("")) ? (down.Has("L") ? "<" : ">") : ""   ; both sides or a side not known: either side
+            mods .= (HotkeyBox.Sides ? side : "") pair[2]
         }
         return mods
     }

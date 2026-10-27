@@ -575,7 +575,8 @@ class PreferencesTests {
         ok := (n, c) => TestRunner.True("HotkeyText." n, c)
         for pair in [["!Space", "Alt+Space"], ["^!c", "Ctrl+Alt+C"], ["!^c", "Ctrl+Alt+C"], ["#e", "Win+E"], ["^+F12", "Ctrl+Shift+F12"]
                    , ["~MButton", "MButton"], ["$*F5", "F5"], ["CapsLock & j", "CapsLock+J"], ["^+", "Ctrl++"], ["!r", "Alt+R"]
-                   , ["<^>!a", "Ctrl+Alt+A"], ["F1 up", "F1 Up"], ["", ""], ["None", ""]]
+                   , ["<^>!a", "AltGr+A"], ["F1 up", "F1 Up"], ["", ""], ["None", ""]
+                   , ["<!Space", "LAlt+Space"], [">^>+F1", "RCtrl+RShift+F1"], ["<#e", "LWin+E"], ["^>!x", "Ctrl+RAlt+X"]]
             eq("label " pair[1], Win.HotkeyLabel(pair[1]), pair[2])
         eq("names", Win.HotkeyLabel("~^MButton", Map("MButton", "Middle")), "Ctrl+Middle")
         eq("box label", HotkeyBox.Label("~MButton"), "Middle mouse button")
@@ -584,6 +585,7 @@ class PreferencesTests {
         eq("compose order", HotkeyBox.Compose("#+!^", "C"), "^!+#c")
         eq("compose name", HotkeyBox.Compose("!", "Space"), "!Space")
         eq("compose none", HotkeyBox.Compose("", "F5"), "F5")
+        eq("compose sides", HotkeyBox.Compose("#>+<!^", "C"), "^<!>+#c")
         ; while recording, modifiers count by the downs / ups InputHook received (keys simulated by a remote desktop aren't physically down)
         savedActive := HotkeyBox._active
         HotkeyBox._active := {Hwnd: 0}
@@ -593,11 +595,19 @@ class PreferencesTests {
         eq("held generic Control", HotkeyBox._Mods(), "^+#")
         HotkeyBox._held := Map()
         eq("nothing held", HotkeyBox._Mods(), "")
+        ; with Sides (#303): a modifier held on one side only keeps that side; both sides, or one without a side, mean either side
+        savedSides := HotkeyBox.Sides, HotkeyBox.Sides := true
+        HotkeyBox._held := Map("RControl", true, "LAlt", true)
+        eq("sides: held mods", HotkeyBox._Mods(), ">^<!")
+        HotkeyBox._held := Map("LShift", true, "RShift", true, "Control", true, "RWin", true)
+        eq("sides: both sides or none", HotkeyBox._Mods(), "^+>#")
+        eq("sides: recorded", HotkeyBox.Compose(">^<!", "k"), ">^<!k")
+        HotkeyBox.Sides := savedSides, HotkeyBox._held := Map()
         HotkeyBox._active := savedActive
         ok("modifier names", HotkeyBox.IsModifier("LControl") && HotkeyBox.IsModifier("RWin") && HotkeyBox.IsModifier("Shift") && !HotkeyBox.IsModifier("k"))
-        for hk in ["^!c", "!Space", "#e", "F5", "^Numpad1", "+F3", "Pause", "MButton", "!Enter"]
+        for hk in ["^!c", "!Space", "#e", "F5", "^Numpad1", "+F3", "Pause", "MButton", "!Enter", "<!Space", ">^>+k"]
             ok("allowed " hk, HotkeyBox.IsAllowed(hk))
-        for hk in ["a", "+a", "Space", "+Space", "Enter", "Tab", "Numpad5", "1", "Delete"]
+        for hk in ["a", "+a", "Space", "+Space", "Enter", "Tab", "Numpad5", "1", "Delete", "<+a", ">+Space"]
             ok("not allowed " hk, !HotkeyBox.IsAllowed(hk))
         ; boxes of closed windows must go: handles are reused, and a middle click on another control would count as recording
         g := Gui()
@@ -622,6 +632,11 @@ class PreferencesTests {
         eq("duplicate", IsObject(clash) ? clash.First "|" clash.Second : "", "B|C")
         eq("duplicate order", PreferencesWindow.DuplicateHotkey([{Key: "^!c", Label: "A"}, {Key: "!^c", Label: "B"}]).Second, "B")
         eq("no duplicate", PreferencesWindow.DuplicateHotkey([{Key: "!Space", Label: "A"}, {Key: "!r", Label: "B"}]), "")
+        ; left / right (#303): either side clashes with one side, the left and the right one don't
+        eq("either side clashes with the left", PreferencesWindow.DuplicateHotkey([{Key: "!Space", Label: "A"}, {Key: "<!Space", Label: "B"}]).Second, "B")
+        eq("left and right don't clash", PreferencesWindow.DuplicateHotkey([{Key: "<!Space", Label: "A"}, {Key: ">!Space", Label: "B"}]), "")
+        eq("sides in any order", PreferencesWindow.DuplicateHotkey([{Key: "<^>!k", Label: "A"}, {Key: "~>!<^K", Label: "B"}]).Second, "B")
+        eq("more modifiers aren't the same press", PreferencesWindow.DuplicateHotkey([{Key: "<!Space", Label: "A"}, {Key: "^<!Space", Label: "B"}]), "")
         data := AppSettings.Defaults()
         data["Hotkeys"] := [Map("Key", "^!c", "Action", "Lock", "WinTitle", ""), Map("Key", "!Space", "Action", "Lock", "WinTitle", "ahk_exe notepad.exe")]
         keys := ""

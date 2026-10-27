@@ -3,7 +3,7 @@
 # Search and shortcuts
 
 ## Search window
-Press `Alt+Space` to open it and start typing. You can change the hotkey in Preferences → General: click the box and press the new keys. You can also set a "Second hotkey", or open it like Listary with "Double-tap Ctrl" / "Double-tap Shift". Each row shows an icon, a title and one line of details (path, arguments or type), with the `Ctrl+number` shortcut on the right. The window hides itself when it loses focus. If ALTRun is already running, double-clicking `ALTRun.exe` again also opens the search window (it doesn't restart).
+Press `Alt+Space` to open it and start typing. You can change the hotkey in Preferences → General: click the box and press the new keys (to use only the left or right `Alt`, see [Setting hotkeys](Hotkeys#setting-hotkeys)). You can also set a "Second hotkey", or open it like Listary with "Double-tap Ctrl" / "Double-tap Shift". Each row shows an icon, a title and one line of details (path, arguments or type), with the `Ctrl+number` shortcut on the right. The window hides itself when it loses focus. If ALTRun is already running, double-clicking `ALTRun.exe` again also opens the search window (it doesn't restart).
 
 ### Starting in the background
 Launching ALTRun normally displays the search window, giving users visible confirmation that the application has started successfully. To run ALTRun in the background and show the search window only when needed, use the `-Startup` command-line argument:

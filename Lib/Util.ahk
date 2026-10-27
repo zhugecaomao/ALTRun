@@ -517,7 +517,7 @@ class Win {
         DllCall("InvalidateRect", "Ptr", hwnd, "Ptr", 0, "Int", 1)          ; changing the cue of a box already shown needs a repaint
     }
 
-    ; Hotkey string -> human-readable label: "^!c" -> "Ctrl+Alt+C", "!Space" -> "Alt+Space", "~MButton" -> "MButton",
+    ; Hotkey string -> human-readable label: "^!c" -> "Ctrl+Alt+C", "!Space" -> "Alt+Space", "<!Space" -> "LAlt+Space", "~MButton" -> "MButton",
     ; "CapsLock & j" -> "CapsLock+J". Only leading modifiers count (so "^+" is Ctrl + the plus key); ~ * $ aren't shown.
     ; names: optional Map that replaces key names with other text, e.g. Map("MButton", "Middle button")
     static HotkeyLabel(hk, names := "") {
@@ -534,7 +534,18 @@ class Win {
         key := SubStr(hk, i), up := ""
         if RegExMatch(key, "i)^(.+?)\s+up$", &m)
             key := m[1], up := " Up"
-        label := (InStr(mods, "^") ? "Ctrl+" : "") (InStr(mods, "!") ? "Alt+" : "") (InStr(mods, "+") ? "Shift+" : "") (InStr(mods, "#") ? "Win+" : "")
+        sides := Map(), side := ""                                          ; "<" / ">" before a modifier: only the left / right one ("<!" -> "LAlt")
+        Loop Parse, mods
+            if InStr("<>", A_LoopField)
+                side := (A_LoopField = "<") ? "L" : "R"
+            else if InStr("^!+#", A_LoopField)
+                sides[A_LoopField] := side, side := ""
+        label := ""
+        if (sides.Has("^") && sides.Has("!") && sides["^"] = "L" && sides["!"] = "R")   ; <^>! is how AutoHotkey writes AltGr
+            label := "AltGr+", sides.Delete("^"), sides.Delete("!")
+        for pair in [["^", "Ctrl"], ["!", "Alt"], ["+", "Shift"], ["#", "Win"]]
+            if sides.Has(pair[1])
+                label .= sides[pair[1]] pair[2] "+"
         return label Win.KeyLabel(key, names) up
     }
 

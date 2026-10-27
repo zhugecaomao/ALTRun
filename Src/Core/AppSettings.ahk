@@ -312,6 +312,7 @@ class AppSettings {
                 "CapsLockNotify"      , 1,                                  ; show a "Caps Lock: on / off" notice when Caps Lock is toggled
                 "CapsLockElevated"    , 0,                                  ; also in administrator windows: a small helper that only handles CapsLock runs as administrator from a scheduled task (see CapsLockHelper)
                 "SelectionHotkey"     , "^!\",                              ; after selecting text / files: open their actions directly (Ctrl+Alt+\)
+                "HotkeySides"         , 0,                                  ; hotkeys recorded in Preferences keep the side of Ctrl / Alt / Shift / Win pressed (<!Space = left Alt + Space)
                 "Language"            , "auto",                             ; auto or a language code in Resources\Lang (zh-CN / zh-TW / ja), en
                 "LaunchAtLogin"       , 1,
                 "ShowTrayIcon"        , 1,
