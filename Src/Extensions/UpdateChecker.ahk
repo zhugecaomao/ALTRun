@@ -112,13 +112,14 @@ class UpdateChecker {
     ; Called at start-up: the network may not be up yet at boot, so the first check is after 1 minute
     static Schedule() {
         UpdateChecker._timer := () => UpdateChecker._Tick()
-        SetTimer(() => UpdateChecker._Tick(UpdateChecker.StartupHours), -60000)
+        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
+        WinTimer.Set(() => UpdateChecker._Tick(UpdateChecker.StartupHours), -60000)
     }
 
     static _Tick(hours := "") {
         if UpdateChecker.IsDue(UpdateChecker.LoadState()["LastCheck"], A_Now, hours)
             UpdateChecker.CheckInBackground()
-        SetTimer(UpdateChecker._timer, -3600000)
+        WinTimer.Set(UpdateChecker._timer, -3600000)
     }
 
     ; Whether the last check (yyyyMMddHHmmss) is at least hours old (default CheckHours); also checks when never checked or the time is invalid (system clock changed)

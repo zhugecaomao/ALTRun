@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.5"
+    static Version := "2026.10.26.6"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -271,7 +271,8 @@ class App {
         App._settingsTime := FileGetTime(AppSettings.File, "M")
         if (App._watchTimer = "")
             App._watchTimer := Logger.Watch("settings watch", () => App._CheckSettingsChanged())
-        SetTimer(App._watchTimer, 1500)
+        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
+        WinTimer.Set(App._watchTimer, 1500)
         Run('notepad.exe "' AppSettings.File '"')
     }
 

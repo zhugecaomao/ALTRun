@@ -39,7 +39,8 @@ class FileIndex {
 
     static Start() {
         FileIndex._refreshTimer := Logger.Watch("file index refresh check", () => FileIndex._CheckRefresh())
-        SetTimer(FileIndex._refreshTimer, 60000)
+        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
+        WinTimer.Set(FileIndex._refreshTimer, 60000)
         options := AppSettings.Feature("FileSearch")
         if (options["UseEverything"] && Everything.IsRunning()) {
             FileIndex.Deferred := true
@@ -70,12 +71,12 @@ class FileIndex {
         if (FileIndex._watchTimer = "")
             FileIndex._watchTimer := Logger.Watch("file index watch", () => FileIndex._PollWatches())
         if FileIndex._watcher.Count
-            SetTimer(FileIndex._watchTimer, 2000)
+            WinTimer.Set(FileIndex._watchTimer, 2000)
     }
 
     static StopWatching() {
         if (FileIndex._watchTimer != "")
-            SetTimer(FileIndex._watchTimer, 0)
+            WinTimer.Set(FileIndex._watchTimer, 0)
         if IsObject(FileIndex._watcher)
             FileIndex._watcher.Stop()
         FileIndex._watcher := "", FileIndex._changedAt := 0
