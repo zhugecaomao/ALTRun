@@ -968,26 +968,48 @@ class QuickSwitch {
 
     ; A system dialog's file name box gets the folder and the dialog its OK command, all as messages, no keys: the jump works while Alt or a
     ; mouse button is still held (AutoSwitch right after Alt+Tab or a click on the title bar, the Ctrl of the hotkey), during the title bar's
-    ; move loop and wherever the focus is. WM_COMMAND IDOK is what Enter in a dialog becomes (IsDialogMessage); with a folder in the box the
-    ; dialog goes there, for open and save dialogs alike. OK is only sent once the box holds exactly the folder: with anything else in it
-    ; (a file name) it would open or save that file. Sent, not posted, so the old name goes back only after the dialog has read the box
+    ; move loop and wherever the focus is. Keys were not safe there: with Alt held, a Save As took the posted Enter as OK for the name it
+    ; already had and saved that file in its old folder (measured on Windows Server 2025).
+    ;   1. WM_SETTEXT puts the folder into the box, and it is read back: OK with anything else in it would open or save that
+    ;   2. the box's parent is told the text changed, as typing does (CBN_EDITCHANGE from the combo box of an Explorer-style dialog,
+    ;      EN_CHANGE from a plain edit box): the Explorer-style dialog keeps the name it last saw and would otherwise use that one
+    ;   3. WM_COMMAND IDOK, what Enter in a dialog becomes (IsDialogMessage): with a folder in the box the dialog goes there, for open and
+    ;      save dialogs alike. Sent, not posted, so the old name goes back only after the dialog has read the box
     static _JumpByMessage(folder, dialog) {
         target := "ahk_id " dialog, saved := ""
         try {
             box := ControlGetHwnd("Edit1", target)
             try saved := ControlGetText(box)
-            ControlSetText(folder, box)
-            if (ControlGetText(box) != folder)
+            if !QuickSwitch._SetBoxText(box, folder)
                 return false
         } catch
             return false
-        ok := DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr")         ; IDOK
-        result := 0
-        if !DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", ok, "UInt", 0x2, "UInt", 2000, "Ptr*", &result)   ; WM_COMMAND (BN_CLICKED, IDOK), SMTO_ABORTIFHUNG
+        if !QuickSwitch._SendCommand(dialog, DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr"), 0, 1)   ; BN_CLICKED from IDOK
             Logger.Warn("QuickSwitch: the dialog didn't answer the OK command in 2 s")   ; it may still go there: no second try with keys
-        else if QuickSwitch.ShouldRestoreName(saved)                        ; put back a name Save As suggested, so it isn't lost
-            try ControlSetText(saved, box)
+        else if QuickSwitch.ShouldRestoreName(saved) {                      ; put back a name Save As suggested, so it isn't lost
+            Sleep(100)
+            try QuickSwitch._SetBoxText(box, saved)
+        }
         return true
+    }
+
+    ; Puts text into a dialog's file name box and tells its parent, as typing does (see _JumpByMessage, step 2); false if the box
+    ; doesn't hold exactly that text afterwards or the dialog didn't take the notice
+    static _SetBoxText(box, text) {
+        ControlSetText(text, box)
+        if (ControlGetText(box) != text)
+            return false
+        parent := DllCall("GetParent", "Ptr", box, "Ptr")
+        if (WinGetClass("ahk_id " parent) = "ComboBox")
+            return QuickSwitch._SendCommand(DllCall("GetParent", "Ptr", parent, "Ptr"), parent, 5)   ; CBN_EDITCHANGE
+        return QuickSwitch._SendCommand(parent, box, 0x300)                                       ; EN_CHANGE
+    }
+
+    ; WM_COMMAND (code, the control's id) from control to window, sent with a 2 s limit; false if it didn't get through
+    static _SendCommand(window, control, code, id := "") {
+        id := (id != "") ? id : DllCall("GetDlgCtrlID", "Ptr", control, "Int")
+        return window && DllCall("SendMessageTimeoutW", "Ptr", window, "UInt", 0x111, "Ptr", (code << 16) | (id & 0xFFFF), "Ptr", control
+            , "UInt", 0x2, "UInt", 2000, "Ptr", 0, "Ptr") != 0              ; SMTO_ABORTIFHUNG
     }
 
     ; How the folder goes into this dialog, see JumpMethod; "browse" = a folder tree dialog (SelectInBrowseDialog)

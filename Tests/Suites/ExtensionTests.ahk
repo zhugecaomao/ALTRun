@@ -435,69 +435,43 @@ class ExtensionTests {
         catch
             threw := true
         eq("closed dialog ignored", threw, false)
-        ; PROBE (temporary): which way of jumping makes a real Save As go to the folder while Alt is held, without saving
+        ; A real Save As in another process: the jump goes in as messages (no keys), also while Alt is held as right after Alt+Tab; the name
+        ; Save As suggested is put back, and OK then saves in the folder jumped to (Wine's dialogs differ, so only checked on Windows)
         if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
             target := A_Temp "\ALTRun jump test"
             try DirDelete(target, true)
             DirCreate(target)
             target := TestRunner.LongPath(target)
-            report := ""
-            for strategy in ["notify", "sendkey", "controlsend", "notify-noalt", "sendkey-noalt"] {
-                helper := A_Temp "\ALTRunProbe.ahk", result := A_Temp "\ALTRunProbe.txt"
+            helper := A_Temp "\ALTRunTestSaveDialog.ahk", result := A_Temp "\ALTRunTestSaveDialog.txt"
+            for held in ["Alt", "Ctrl"] {                                   ; Alt: AutoSwitch right after Alt+Tab; Ctrl: the Ctrl+G hotkey
                 try FileDelete(helper)
                 try FileDelete(result)
+                try FileDelete(target "\Report 2026.txt")
                 FileAppend('#NoTrayIcon`nFileAppend(FileSelect("S", A_WinDir "\\Report 2026.txt", "Save probe"), "' result '", "UTF-8")`n', helper, "UTF-8")
                 Run('"' A_AhkPath '" "' helper '"', , , &dialogPid)
                 dialog := WinWait("Save probe ahk_class #32770 ahk_pid " dialogPid, , 10)
-                outcome := "no dialog"
+                jumpMethod := dialog ? QuickSwitch.DialogJumpMethod(dialog) : "", nameAfter := "no dialog"
                 if dialog {
-                    WinActivate("ahk_id " dialog), WinWaitActive("ahk_id " dialog, , 3), Sleep(500)
-                    edit := ControlGetHwnd("Edit1", "ahk_id " dialog)
-                    chain := ""
-                    p := edit
-                    Loop 4 {
-                        p := DllCall("GetParent", "Ptr", p, "Ptr")
-                        if !p
-                            break
-                        chain .= WinGetClass("ahk_id " p) "(" DllCall("GetDlgCtrlID", "Ptr", p, "Int") ")>"
-                    }
-                    folder := target "\"
-                    if !InStr(strategy, "noalt")
-                        Send("{Alt down}")
-                    try {
-                        ControlSetText(folder, edit)
-                        if InStr(strategy, "notify") {
-                            combo := DllCall("GetParent", "Ptr", edit, "Ptr"), id := DllCall("GetDlgCtrlID", "Ptr", combo, "Int")
-                            DllCall("SendMessageTimeoutW", "Ptr", DllCall("GetParent", "Ptr", combo, "Ptr"), "UInt", 0x111, "Ptr", (5 << 16) | (id & 0xFFFF), "Ptr", combo, "UInt", 2, "UInt", 2000, "Ptr", 0)   ; CBN_EDITCHANGE
-                            DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr"), "UInt", 2, "UInt", 2000, "Ptr", 0)
-                        } else if InStr(strategy, "sendkey") {
-                            DllCall("SendMessageTimeoutW", "Ptr", edit, "UInt", 0x100, "Ptr", 0x0D, "Ptr", 0x001C0001, "UInt", 2, "UInt", 2000, "Ptr", 0)   ; WM_KEYDOWN VK_RETURN
-                            DllCall("SendMessageTimeoutW", "Ptr", edit, "UInt", 0x102, "Ptr", 0x0D, "Ptr", 0x001C0001, "UInt", 2, "UInt", 2000, "Ptr", 0)   ; WM_CHAR
-                            DllCall("SendMessageTimeoutW", "Ptr", edit, "UInt", 0x101, "Ptr", 0x0D, "Ptr", 0xC01C0001, "UInt", 2, "UInt", 2000, "Ptr", 0)   ; WM_KEYUP
-                        } else
-                            ControlSend("{Enter}", edit)
-                    } finally {
-                        if !InStr(strategy, "noalt")
-                            Send("{Alt up}")
-                    }
-                    Sleep(800)
-                    if !WinExist("ahk_id " dialog)
-                        outcome := "CLOSED(" (FileExist(result) ? FileRead(result, "UTF-8") : "") ")"
-                    else {
-                        text := WinGetText("ahk_id " dialog)
-                        outcome := InStr(text, "ALTRun jump test") ? "navigated" : "stayed"
-                        try outcome .= " box=[" ControlGetText(edit) "]"
-                    }
-                    report .= strategy ": " outcome " chain=" chain " | "
+                    WinActivate("ahk_id " dialog), WinWaitActive("ahk_id " dialog, , 3), Sleep(300)
+                    Send("{" held " down}")
+                    try QuickSwitch.SetDialogPath(target "\", dialog)
+                    finally Send("{" held " up}")
+                    Sleep(500)
+                    nameAfter := WinExist("ahk_id " dialog) ? ControlGetText("Edit1", "ahk_id " dialog) : "the dialog closed"
+                    DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; OK
                 }
-                try WinClose("ahk_id " dialog)
-                if !ProcessWaitClose(dialogPid, 3)
+                if !ProcessWaitClose(dialogPid, 5)
                     try ProcessClose(dialogPid)
-                try FileDelete(target "\Report 2026.txt")
-                try FileDelete(A_WinDir "\Report 2026.txt")
+                saved := ""
+                try saved := FileRead(result, "UTF-8")
+                eq("message jump: a system Save As", jumpMethod, "message")
+                eq("message jump (" held " held): suggested name put back", nameAfter, "Report 2026.txt")
+                eq("message jump (" held " held): saved in the folder jumped to", saved, target "\Report 2026.txt")
+                try FileDelete(A_WinDir "\Report 2026.txt")                 ; only if a jump went wrong and saved in the old folder
             }
-            eq("PROBE", report, "")
             try DirDelete(target, true)
+            try FileDelete(helper)
+            try FileDelete(result)
         }
         QuickSwitch._BuildPanel(A_ScriptHwnd)                              ; really build the panel once (a wrong Gui option would throw here)
         TestRunner.True("FolderMenu.panel built", IsObject(QuickSwitch._panel) && IsObject(QuickSwitch._panelList))
