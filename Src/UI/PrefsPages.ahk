@@ -11,6 +11,8 @@ class PrefsPages {
         PrefsForm.BeginPage("Prefs.Page.General", 120)
         PrefsForm.Pair(["General.Hotkey", "Prefs.Hotkey", "K", "hotkey"], ["General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey"])
         PrefsForm.Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
+        sides := PrefsForm.Check("General.HotkeySides", "Prefs.HotkeySides")    ; how the hotkey boxes record, on every page: takes effect at once
+        sides.OnEvent("Click", (ctrl, *) => HotkeyBox.Sides := ctrl.Value = 1)
         PrefsForm.Pair(["General.DoubleTap", "Prefs.DoubleTap", "K", "choice", ["", "Ctrl", "Shift"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")]]
             , ["General.Language", "Prefs.Language", "K", "choice", PrefsPages._LanguageValues(), PrefsPages._LanguageLabels()])
         PrefsForm.Gap()

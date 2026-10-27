@@ -43,6 +43,7 @@ class PreferencesWindow {
         }
         SearchWindow.Hide()
         PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
+        HotkeyBox.Sides := PreferencesWindow.GetPath(PreferencesWindow.Working, "General.HotkeySides") ? true : false
         PreferencesWindow.Binds := [], PrefsForm.Wider := Map(), PreferencesWindow._lists := Map(), PreferencesWindow._helpButton := ""
         PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false, PreferencesWindow._page := 0
         ; Pages are built when needed (_BuildPage): opening builds only the page shown, the others when first clicked. Opening used to build all 19 pages,
@@ -415,18 +416,41 @@ class PreferencesWindow {
         return list
     }
 
-    ; The first duplicate hotkey -> {Key, First, Second} (the names of both); "" without duplicates. ~ * $ don't change whether it is the same key
+    ; The first duplicate hotkey -> {Key, First, Second} (the names of both); "" without duplicates. ~ * $ don't change whether it is the same key.
+    ; Two hotkeys clash when one key press triggers both: Alt+Space clashes with LAlt+Space (either side includes the left one), LAlt+Space
+    ; and RAlt+Space don't
     static DuplicateHotkey(list) {
-        seen := Map()
+        seen := []
         for entry in list {
-            key := StrLower(RegExReplace(Trim(entry.Key), "^[~*$]+"))
-            if RegExMatch(key, "^([\^!+#]+)(.+)$", &m)                     ; a different modifier order is the same key (!^c = ^!c)
-                key := StrReplace(Sort(RegExReplace(m[1], "(.)", "$1`n")), "`n") m[2]
-            if seen.Has(key)
-                return {Key: entry.Key, First: seen[key], Second: entry.Label}
-            seen[key] := entry.Label
+            parts := PreferencesWindow.HotkeyParts(entry.Key)
+            for before in seen
+                if PreferencesWindow._SameKeyPress(before.Parts, parts)
+                    return {Key: entry.Key, First: before.Label, Second: entry.Label}
+            seen.Push({Parts: parts, Label: entry.Label})
         }
         return ""
+    }
+
+    ; "~<!^C" -> {Key: "c", Mods: Map("^", "", "!", "<")}: the key in lower case and each modifier with its side ("<" left, ">" right, "" either)
+    static HotkeyParts(hk) {
+        hk := StrLower(RegExReplace(Trim(hk), "^[~*$]+")), mods := Map(), side := "", i := 1
+        while (i < StrLen(hk) && InStr("<>^!+#", c := SubStr(hk, i, 1))) {
+            if InStr("<>", c)
+                side := c
+            else
+                mods[c] := side, side := ""
+            i++
+        }
+        return {Key: SubStr(hk, i), Mods: mods}
+    }
+
+    static _SameKeyPress(a, b) {
+        if (a.Key != b.Key || a.Mods.Count != b.Mods.Count)
+            return false
+        for m, side in a.Mods
+            if !(b.Mods.Has(m) && (side = "" || b.Mods[m] = "" || side = b.Mods[m]))
+                return false
+        return true
     }
 
     ; Pure function: whether the scan scope of the application index / file index changed between before and after saving -> {Apps, Files}

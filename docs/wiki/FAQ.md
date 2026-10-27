@@ -4,7 +4,7 @@
 
 ### Nothing happens when I press Alt+Space
 - Make sure the ALTRun icon is in the notification area (if not, run it again)
-- Another program (an input method, PowerToys Run, another launcher) may use the same hotkey. Pick another one in Preferences → General, or set a "Second hotkey"
+- Another program (an input method, PowerToys Run, another launcher) may use the same hotkey. Pick another one in Preferences → General, or set a "Second hotkey". If the other program only uses the right `Alt` (or the left), tick "Tell left and right Ctrl / Alt / Shift / Win apart" there and record the hotkey again with the other side, see [Setting hotkeys](Hotkeys#setting-hotkeys)
 - Programs running as administrator don't pass hotkeys to an ALTRun running with normal rights. Run ALTRun as administrator if you need that
 
 ### A program can't be found
