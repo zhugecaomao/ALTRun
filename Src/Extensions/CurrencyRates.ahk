@@ -22,13 +22,14 @@ class CurrencyRates {
     static Start() {
         CurrencyRates.Load()
         CurrencyRates._timer := () => CurrencyRates._Tick()
-        SetTimer(CurrencyRates._timer, -90000)
+        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
+        WinTimer.Set(CurrencyRates._timer, -90000)
     }
 
     static _Tick() {
         if CurrencyRates.IsStale(CurrencyRates.Fetched, A_Now)
             CurrencyRates.Refresh()
-        SetTimer(CurrencyRates._timer, -3600000)
+        WinTimer.Set(CurrencyRates._timer, -3600000)
     }
 
     static IsStale(fetched, now) {

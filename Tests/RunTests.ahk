@@ -23,6 +23,7 @@
 #Include %A_ScriptDir%\..\Lib\Dialogs.ahk
 #Include %A_ScriptDir%\..\Lib\HttpGet.ahk
 #Include %A_ScriptDir%\..\Lib\FolderWatcher.ahk
+#Include %A_ScriptDir%\..\Lib\WinTimer.ahk
 #Include %A_ScriptDir%\..\Lib\WindowsRecent.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk

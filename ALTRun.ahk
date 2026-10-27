@@ -44,6 +44,7 @@
 #Include Lib\Dialogs.ahk
 #Include Lib\HttpGet.ahk
 #Include Lib\FolderWatcher.ahk
+#Include Lib\WinTimer.ahk
 #Include Lib\WindowsRecent.ahk
 
 ; --- Src\Core ---

@@ -214,12 +214,13 @@ class IconCache {
             return
         if (IconCache._saveTimer = "")
             IconCache._saveTimer := Logger.Watch("save icon cache", () => IconCache._SaveWhenIdle())
-        SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)
+        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
+        WinTimer.Set(IconCache._saveTimer, -IconCache.DiskSaveDelay)
     }
 
     static _SaveWhenIdle() {
         if !BackgroundWork.CanRun()
-            return SetTimer(IconCache._saveTimer, -IconCache.DiskSaveDelay)  ; the window is shown: save after it hides
+            return WinTimer.Set(IconCache._saveTimer, -IconCache.DiskSaveDelay) ; the window is shown: save after it hides
         IconCache.SaveDisk()
     }
 

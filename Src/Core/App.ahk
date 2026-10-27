@@ -271,7 +271,8 @@ class App {
         App._settingsTime := FileGetTime(AppSettings.File, "M")
         if (App._watchTimer = "")
             App._watchTimer := Logger.Watch("settings watch", () => App._CheckSettingsChanged())
-        SetTimer(App._watchTimer, 1500)
+        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
+        WinTimer.Set(App._watchTimer, 1500)
         Run('notepad.exe "' AppSettings.File '"')
     }
 
