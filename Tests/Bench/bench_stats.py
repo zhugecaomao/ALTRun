@@ -1,5 +1,9 @@
-"""bench_stats.py - 汇总 BenchDriver 的结果 (每行 label|metric|value; label = <版本>-r<轮>) 成 Markdown 表"""
+"""bench_stats.py - sums up BenchDriver's results (one line label|metric|value; label = <version>-r<round>) as Markdown tables"""
 import sys, statistics, collections
+
+# Idle CPU budget, Mcycles per minute (median): after #291 / #295 / #299 ALTRun measured 18 to 25, a script with no timer 0.8,
+# and a single SetTimer left set brings back AutoHotkey's 10 ms timer at about 330. Over the budget the candidate is flagged
+IDLE_METRIC, IDLE_BUDGET = "idle cpu Mcycles per minute", 60
 
 def pct(values, p):
     s = sorted(values)
@@ -77,4 +81,10 @@ out.append("| round | " + " | ".join(keys) + " |")
 out.append("|---|" + "---|" * len(keys))
 for label in res:
     out.append(f"| {label} | " + " | ".join(res[label].get(k, "") for k in keys) + " |")
+candidate = "candidate" if "candidate" in versions else (versions[-1] if versions else "")   # bench.yml names the versions baseline and candidate
+idle = samples.get((candidate, IDLE_METRIC), [])
+if idle and statistics.median(idle) > IDLE_BUDGET:
+    message = f"Idle CPU over budget: {candidate} median {statistics.median(idle):.1f} Mcycles per minute (budget {IDLE_BUDGET}); is a SetTimer left set while idle?"
+    out.insert(0, f"**{message}**\n")
+    out.append(f"::warning::{message}")                          # an annotation on the run; bench.yml keeps this line out of the summary
 print("\n".join(out))

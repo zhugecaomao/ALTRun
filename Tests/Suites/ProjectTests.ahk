@@ -267,7 +267,8 @@ class ProjectTests {
     }
 
     ; Timers that stay set while idle use WinTimer, not SetTimer: while any SetTimer timer is set, AutoHotkey checks its timers every 10 ms
-    ; (about 330 million CPU cycles a minute). Flags SetTimer with a literal period of 2 s or more, or a one-shot delay of a minute or more
+    ; (about 330 million CPU cycles a minute). Flags SetTimer with a literal period of 2 s or more, or a one-shot delay of a minute or more.
+    ; Periods held in variables aren't seen: the benchmark's idle CPU budget (Tests\Bench\bench_stats.py) checks the running program
     static LongTimers() {
         found := ""
         for folder in ["Src", "Lib"]

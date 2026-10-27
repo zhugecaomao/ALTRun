@@ -37,7 +37,6 @@ class CapsLockHelper {
         CapsLockSwitch.Mode := mode
         CapsLockSwitch.Notify := (on) => CapsLockHelper._TellMain(on)
         CapsLockSwitch.Register((key, fn) => Hotkey(key, fn))
-        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
         WinTimer.Set(() => App._RunningInstance() || ExitApp(), 3000)          ; ALTRun is gone (ended, crashed): exit too
     }
 

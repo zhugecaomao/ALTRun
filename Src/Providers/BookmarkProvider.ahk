@@ -19,7 +19,6 @@ class BookmarkProvider {
 
     static Init() {
         BookmarkProvider.Load()
-        ; WinTimer, not SetTimer: it stays set while ALTRun is idle, and a SetTimer timer would wake AutoHotkey every 10 ms (see Lib\WinTimer.ahk)
         WinTimer.Set(Logger.Watch("bookmarks refresh", () => BookmarkProvider._RefreshIfChanged()), 30000)        ; check the bookmark files in the background, not during searches while typing
     }
 
