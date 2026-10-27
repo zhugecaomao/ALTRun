@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.15]
+
+测试版。
+
+Test build.
+
+### 修复
+- 自动跳转 (Alt+Tab) 的诊断: 调试日志列出跳转的对话框和同一程序的所有对话框 (包括隐藏的), 每个对话框的地址栏文字、是否可见、位置、所属窗口, 以及屏幕上对话框中间实际看到的是哪个窗口; 每一行带窗口句柄。用来判断跳转的对话框是不是屏幕上看到的那个
+- 调试日志: 很快又跳转时, 不再记录上一次跳转的 2 秒检查
+
 ## [2026.10.26.14]
 
 测试版。
@@ -1039,7 +1049,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.15...HEAD
+[2026.10.26.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.14...2026.10.26.15
 [2026.10.26.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.13...2026.10.26.14
 [2026.10.26.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.12...2026.10.26.13
 [2026.10.26.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.11...2026.10.26.12
