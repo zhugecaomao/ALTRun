@@ -70,7 +70,13 @@ class QuickSwitch {
     static PollMs := 250, SettleMs := 1500, CheckDelayMs := 50, DragMs := 15
     static _foregroundHook := 0, _threadHooks := [], _watched := 0, _recognized := false, _eventCallback := 0
     static _alwaysPoll := false, _threadPoll := false, _polling := false, _settleUntil := 0
-    static _foreground := 0, _fromManager := false
+    static _foreground := 0, _foregroundAt := 0, _fromManager := false
+    ; Clicking a dialog may bring the program that owns it (e.g. Word) to the front for a moment first: when the dialog follows within
+    ; OwnerPassMs, the window before the program still counts as the window before the dialog
+    static OwnerPassMs := 500
+    ; AutoSwitch jumps at once when the dialog takes a message jump (see SetDialogPath); a jump that types waits until the switch is over
+    ; (see _InputSettled), at most AutoSwitchWaitMs
+    static AutoSwitchWaitMs := 3000
     static _checkTimer := "", _pollTimer := "", _placeTimer := "", _dragTimer := ""
 
     static _StartWatching() {
@@ -187,15 +193,17 @@ class QuickSwitch {
         }
         className := ""
         try className := WinGetClass("ahk_id " active)
-        if (active != QuickSwitch._foreground && !QuickSwitch.IsTransientWindow(className)) {   ; another window came to the front: was the one before a file manager?
-            QuickSwitch._fromManager := QuickSwitch.IsFileManager(QuickSwitch._foreground)
-            QuickSwitch._foreground := active
+        switched := false, previous := QuickSwitch._foreground
+        if (active != previous && !QuickSwitch.IsTransientWindow(className)) {   ; another window came to the front: was the one before a file manager?
+            owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr")  ; GW_OWNER
+            if !(owner && owner = previous && A_TickCount - QuickSwitch._foregroundAt < QuickSwitch.OwnerPassMs)   ; see OwnerPassMs
+                QuickSwitch._fromManager := QuickSwitch.IsFileManager(previous)
+            QuickSwitch._foreground := active, QuickSwitch._foregroundAt := A_TickCount, QuickSwitch._settledSince := 0, switched := true
         }
         isDialog := QuickSwitch._IsFileDialogWindow(active)
-        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active)) {
-            QuickSwitch._fromManager := false                               ; once per switch
-            QuickSwitch.SyncFileManagerPath(true)
-        }
+        if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active))
+            QuickSwitch._AutoSwitch(active, switched ? previous : 0)
+
         if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
             QuickSwitch._UpdatePanel(isDialog ? active : 0)
         if (isDialog || QuickSwitch._MayBeDialog(active))
@@ -203,6 +211,44 @@ class QuickSwitch {
         else
             QuickSwitch._UnwatchWindow()
         QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll || !QuickSwitch._watched && A_TickCount < QuickSwitch._settleUntil)
+    }
+
+    ; AutoSwitch: jump to the file manager's folder once per switch. previous: the window before, on the first check after the switch (debug log)
+    static _AutoSwitch(dialog, previous) {
+        method := QuickSwitch.DialogJumpMethod(dialog)
+        if (previous && Logger.Enabled) {
+            previousClass := ""
+            try previousClass := WinGetClass("ahk_id " previous)
+            Logger.Debug("QuickSwitch: AutoSwitch from " previousClass ", jump by " method)
+        }
+        if (method = "message" || method = "browse" || QuickSwitch._InputSettled(dialog)) {
+            QuickSwitch._fromManager := false                               ; once per switch
+            return QuickSwitch.SyncFileManagerPath(true)
+        }
+        if (A_TickCount - QuickSwitch._foregroundAt < QuickSwitch.AutoSwitchWaitMs)
+            return SetTimer(QuickSwitch._checkTimer, -QuickSwitch.CheckDelayMs)   ; the switch is still going on: check again a moment later
+        QuickSwitch._fromManager := false
+        Logger.Debug("QuickSwitch: AutoSwitch gave up, keys or the mouse still held")
+    }
+
+    ; A jump that types (see SetDialogPath) needs the switch to be over. The foreground event comes as soon as the dialog is activated, while
+    ; Alt (Alt+Tab) or the mouse button (a click on the title bar) may still be held: keys sent then would be read with Alt still down, or
+    ; taken by the title bar's move loop. Settled = no mouse button or modifier physically down and the dialog's thread not in a move / size
+    ; or menu loop (GetGUIThreadInfo), then InputSettleMs more: posted keys are read before input still queued (the Alt release)
+    static InputSettleMs := 100, _settledSince := 0
+
+    static _InputSettled(dialog) {
+        for key in ["LButton", "RButton", "MButton", "Alt", "Ctrl", "Shift", "LWin", "RWin"]
+            if GetKeyState(key, "P")
+                return (QuickSwitch._settledSince := 0, false)
+        info := Buffer(A_PtrSize = 8 ? 72 : 48, 0)                         ; GUITHREADINFO
+        NumPut("UInt", info.Size, info)
+        tid := DllCall("GetWindowThreadProcessId", "Ptr", dialog, "Ptr", 0, "UInt")
+        if (tid && DllCall("GetGUIThreadInfo", "UInt", tid, "Ptr", info) && NumGet(info, 4, "UInt") & 0x1E)   ; GUI_INMOVESIZE | GUI_INMENUMODE | GUI_SYSTEMMENUMODE | GUI_POPUPMENUMODE
+            return (QuickSwitch._settledSince := 0, false)
+        if !QuickSwitch._settledSince
+            QuickSwitch._settledSince := A_TickCount
+        return A_TickCount - QuickSwitch._settledSince >= QuickSwitch.InputSettleMs
     }
 
     static _SearchesFiles() => QuickSwitch.Options.Has("PanelSearch") && QuickSwitch.Options["PanelSearch"] = "all"
@@ -883,18 +929,24 @@ class QuickSwitch {
         if !(dialog && WinExist("ahk_id " dialog))
             return
         Usage.Count("QuickSwitch")
-        if QuickSwitch.IsBrowseWindow(dialog)                               ; folder tree only: select it there, pressing Enter would mean OK
+        method := QuickSwitch.DialogJumpMethod(dialog)
+        if (method = "browse")                                              ; folder tree only: select it there, pressing Enter would mean OK
             return QuickSwitch.SelectInBrowseDialog(folder, dialog)
-        className := "", hasEdit := false
+        if (method = "message") {
+            if QuickSwitch._JumpByMessage(folder, dialog)
+                return
+            method := "address"                                             ; the box didn't take the folder: as if there were none
+        }
+        className := ""
         try className := WinGetClass("ahk_id " dialog)
-        try hasEdit := ControlGetHwnd("Edit1", "ahk_id " dialog) != 0
-        method := QuickSwitch.JumpMethod(className, hasEdit)
         if (method = "edit") {
             try {
                 saved := ""
                 try saved := ControlGetText("Edit1", "ahk_id " dialog)         ; what the file name box held (e.g. a name Save As filled in)
                 ControlFocus("Edit1", "ahk_id " dialog)
                 ControlSetText(folder, "Edit1", "ahk_id " dialog)
+                if (ControlGetText("Edit1", "ahk_id " dialog) != folder)    ; Enter with anything else in the box would open / save that
+                    throw Error("the file name box didn't take the folder")
                 ControlSend("{Enter}", "Edit1", "ahk_id " dialog)
                 if QuickSwitch.ShouldRestoreName(saved) {                   ; put it back after the jump, so the suggested name isn't lost
                     Sleep(150)
@@ -914,12 +966,49 @@ class QuickSwitch {
         SendInput("{Enter}")                                                ; file name box has the focus; a folder path + Enter goes there
     }
 
+    ; A system dialog's file name box gets the folder and the dialog its OK command, all as messages, no keys: the jump works while Alt or a
+    ; mouse button is still held (AutoSwitch right after Alt+Tab or a click on the title bar, the Ctrl of the hotkey), during the title bar's
+    ; move loop and wherever the focus is. WM_COMMAND IDOK is what Enter in a dialog becomes (IsDialogMessage); with a folder in the box the
+    ; dialog goes there, for open and save dialogs alike. OK is only sent once the box holds exactly the folder: with anything else in it
+    ; (a file name) it would open or save that file. Sent, not posted, so the old name goes back only after the dialog has read the box
+    static _JumpByMessage(folder, dialog) {
+        target := "ahk_id " dialog, saved := ""
+        try {
+            box := ControlGetHwnd("Edit1", target)
+            try saved := ControlGetText(box)
+            ControlSetText(folder, box)
+            if (ControlGetText(box) != folder)
+                return false
+        } catch
+            return false
+        ok := DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr")         ; IDOK
+        result := 0
+        if !DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", ok, "UInt", 0x2, "UInt", 2000, "Ptr*", &result)   ; WM_COMMAND (BN_CLICKED, IDOK), SMTO_ABORTIFHUNG
+            Logger.Warn("QuickSwitch: the dialog didn't answer the OK command in 2 s")   ; it may still go there: no second try with keys
+        else if QuickSwitch.ShouldRestoreName(saved)                        ; put back a name Save As suggested, so it isn't lost
+            try ControlSetText(saved, box)
+        return true
+    }
+
+    ; How the folder goes into this dialog, see JumpMethod; "browse" = a folder tree dialog (SelectInBrowseDialog)
+    static DialogJumpMethod(dialog) {
+        if QuickSwitch.IsBrowseWindow(dialog)
+            return "browse"
+        className := "", hasEdit := false
+        try className := WinGetClass("ahk_id " dialog)
+        try hasEdit := ControlGetHwnd("Edit1", "ahk_id " dialog) != 0
+        return QuickSwitch.JumpMethod(className, hasEdit, DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr") != 0)
+    }
+
     ; How to put the folder into a dialog:
-    ;   edit    = into its file name box (Edit1) + Enter: system dialogs and programs with real edit controls
+    ;   message = a system dialog (#32770) with a file name box and an OK button (IDOK): the folder and OK as messages (see _JumpByMessage)
+    ;   edit    = into its file name box (Edit1) + Enter: programs with real edit controls that aren't system dialogs
     ;   address = a system dialog (#32770) without that box: Alt+D (address bar), type, Enter
     ;   type    = a dialog a program draws itself (WPS / Qt, GTK, Java...): type into the focused file name box, Enter.
     ;             No Alt+D there: it isn't the address bar and may press some button of the dialog
-    static JumpMethod(className, hasEdit) {
+    static JumpMethod(className, hasEdit, hasOk := false) {
+        if (hasEdit && hasOk && className = "#32770")
+            return "message"
         if hasEdit
             return "edit"
         return (className = "#32770") ? "address" : "type"

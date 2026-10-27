@@ -270,6 +270,7 @@ class ExtensionTests {
         ; How the folder goes in: the file name box when there is one; Alt+D (address bar) only in system dialogs;
         ; dialogs that programs draw themselves get the path typed into the focused box, no Alt+D
         eq("jump: file name box", QuickSwitch.JumpMethod("#32770", true) " " QuickSwitch.JumpMethod("TMyOpenDialog", true), "edit edit")
+        eq("jump: system dialog with OK, as messages", QuickSwitch.JumpMethod("#32770", true, true) " " QuickSwitch.JumpMethod("TMyOpenDialog", true, true), "message edit")
         eq("jump: system dialog without the box", QuickSwitch.JumpMethod("#32770", false), "address")
         eq("jump: drawn dialogs", QuickSwitch.JumpMethod("Qt5QWindowIcon", false) " " QuickSwitch.JumpMethod("SunAwtDialog", false) " " QuickSwitch.JumpMethod("gdkWindowToplevel", false), "type type type")
         ; Directory Opus: "dopusrt /info <file>,paths" output -> tabs; the jump uses the source tab of the lister
@@ -434,6 +435,41 @@ class ExtensionTests {
         catch
             threw := true
         eq("closed dialog ignored", threw, false)
+        ; A real Save As in another process: the jump goes in as messages (no keys), also while Alt is held as right after Alt+Tab; the name
+        ; Save As suggested is put back, and OK then saves in the folder jumped to (Wine's dialogs differ, so only checked on Windows)
+        if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {
+            target := A_Temp "\ALTRun jump test"
+            try DirDelete(target, true)
+            DirCreate(target)
+            target := TestRunner.LongPath(target)
+            helper := A_Temp "\ALTRunTestSaveDialog.ahk", result := A_Temp "\ALTRunTestSaveDialog.txt"
+            try FileDelete(helper)
+            try FileDelete(result)
+            FileAppend('#NoTrayIcon`nFileAppend(FileSelect("S", A_WinDir "\Report 2026.txt", "Save probe"), "' result '", "UTF-8")`n', helper, "UTF-8")
+            Run('"' A_AhkPath '" "' helper '"', , , &dialogPid)
+            dialog := WinWait("Save probe ahk_class #32770 ahk_pid " dialogPid, , 10)
+            jumpMethod := dialog ? QuickSwitch.DialogJumpMethod(dialog) : ""
+            if dialog {
+                WinActivate("ahk_id " dialog), WinWaitActive("ahk_id " dialog, , 3)
+                Send("{Alt down}")
+                try QuickSwitch.SetDialogPath(target "", dialog)
+                finally Send("{Alt up}")
+                Sleep(500)
+                nameAfter := ""
+                try nameAfter := ControlGetText("Edit1", "ahk_id " dialog)
+                DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; OK
+            }
+            if !ProcessWaitClose(dialogPid, 5)
+                try ProcessClose(dialogPid)
+            saved := ""
+            try saved := FileRead(result, "UTF-8")
+            eq("message jump: a system Save As", jumpMethod, "message")
+            eq("message jump: suggested name put back", dialog ? nameAfter : "no dialog", "Report 2026.txt")
+            eq("message jump: saved in the folder jumped to (Alt held)", saved, target "\Report 2026.txt")
+            try DirDelete(target, true)
+            try FileDelete(helper)
+            try FileDelete(result)
+        }
         QuickSwitch._BuildPanel(A_ScriptHwnd)                              ; really build the panel once (a wrong Gui option would throw here)
         TestRunner.True("FolderMenu.panel built", IsObject(QuickSwitch._panel) && IsObject(QuickSwitch._panelList))
         QuickSwitch._ShowFolders([])                                       ; nothing open (no TC / Explorer, no recent folders)
