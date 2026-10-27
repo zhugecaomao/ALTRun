@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.27.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- 自动跳转 (AutoSwitch): 点击 Word 等程序的另存为对话框切过去时, 如果 Windows 先把这个程序的主窗口带到前面一下, 再交给对话框, 中间这一下不再算作 "上一个窗口" (500 ms 内); 打开 "写入调试日志" 时, 自动跳转会在 %Temp%\ALTRun.log 里记录切换顺序和等待原因, 便于排查
+
 ## [2026.10.26.8]
 
 测试版。
@@ -977,7 +986,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.27.1...HEAD
+[2026.10.27.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.8...2026.10.27.1
 [2026.10.26.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...2026.10.26.8
 [2026.10.26.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.5
 [2026.10.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...2026.10.26.4

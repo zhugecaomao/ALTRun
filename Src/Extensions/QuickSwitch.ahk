@@ -70,7 +70,10 @@ class QuickSwitch {
     static PollMs := 250, SettleMs := 1500, CheckDelayMs := 50, DragMs := 15
     static _foregroundHook := 0, _threadHooks := [], _watched := 0, _recognized := false, _eventCallback := 0
     static _alwaysPoll := false, _threadPoll := false, _polling := false, _settleUntil := 0
-    static _foreground := 0, _fromManager := false
+    static _foreground := 0, _foregroundAt := 0, _fromManager := false
+    ; Clicking a dialog may bring the program that owns it to the front for a moment first: when the dialog follows within OwnerPassMs,
+    ; the window before the program still counts as the window before the dialog
+    static OwnerPassMs := 500
     static _checkTimer := "", _pollTimer := "", _placeTimer := "", _dragTimer := ""
 
     static _StartWatching() {
@@ -187,14 +190,22 @@ class QuickSwitch {
         }
         className := ""
         try className := WinGetClass("ahk_id " active)
+        switched := false
         if (active != QuickSwitch._foreground && !QuickSwitch.IsTransientWindow(className)) {   ; another window came to the front: was the one before a file manager?
-            QuickSwitch._fromManager := QuickSwitch.IsFileManager(QuickSwitch._foreground)
-            QuickSwitch._foreground := active, QuickSwitch._settledSince := 0
+            owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr")  ; GW_OWNER
+            if !(owner && owner = QuickSwitch._foreground && A_TickCount - QuickSwitch._foregroundAt < QuickSwitch.OwnerPassMs)   ; see OwnerPassMs
+                QuickSwitch._fromManager := QuickSwitch.IsFileManager(QuickSwitch._foreground)
+            previous := QuickSwitch._foreground, previousClass := ""
+            try previousClass := WinGetClass("ahk_id " previous)
+            QuickSwitch._foreground := active, QuickSwitch._foregroundAt := A_TickCount, QuickSwitch._settledSince := 0, switched := true
         }
         isDialog := QuickSwitch._IsFileDialogWindow(active)
+        if (switched && isDialog && QuickSwitch.Options["AutoSwitch"])
+            Logger.Debug("QuickSwitch: dialog " className " in front after " previousClass (owner = previous ? " (its owner)" : "") ", from a file manager: " QuickSwitch._fromManager)
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active)) {
             if QuickSwitch._InputSettled(active) {
                 QuickSwitch._fromManager := false                           ; once per switch
+                Logger.Debug("QuickSwitch: AutoSwitch jumps")
                 QuickSwitch.SyncFileManagerPath(true)
             } else
                 SetTimer(QuickSwitch._checkTimer, -QuickSwitch.CheckDelayMs)   ; the switch is still going on: try again a moment later
@@ -217,21 +228,25 @@ class QuickSwitch {
     static InputSettleMs := 100, _settledSince := 0
 
     static _InputSettled(dialog) {
-        busy := false
+        busy := ""
         for key in ["LButton", "RButton", "MButton", "Alt", "Ctrl", "Shift", "LWin", "RWin"]
             if GetKeyState(key, "P") {
-                busy := true
+                busy := key " down"
                 break
             }
-        if !busy {
+        if (busy = "") {
             info := Buffer(A_PtrSize = 8 ? 72 : 48, 0)                     ; GUITHREADINFO
             NumPut("UInt", info.Size, info)
             tid := DllCall("GetWindowThreadProcessId", "Ptr", dialog, "Ptr", 0, "UInt")
-            busy := tid && DllCall("GetGUIThreadInfo", "UInt", tid, "Ptr", info) && (NumGet(info, 4, "UInt") & 0x1E) != 0   ; GUI_INMOVESIZE | GUI_INMENUMODE | GUI_SYSTEMMENUMODE | GUI_POPUPMENUMODE
+            if (tid && DllCall("GetGUIThreadInfo", "UInt", tid, "Ptr", info) && (flags := NumGet(info, 4, "UInt") & 0x1E))   ; GUI_INMOVESIZE | GUI_INMENUMODE | GUI_SYSTEMMENUMODE | GUI_POPUPMENUMODE
+                busy := Format("thread flags 0x{:X}", flags)
         }
-        if busy
-            return (QuickSwitch._settledSince := 0, false)
-        if !QuickSwitch._settledSince
+        if (busy != "") {
+            if (QuickSwitch._settledSince != -1)                            ; logged once per wait
+                Logger.Debug("QuickSwitch: AutoSwitch waits, " busy)
+            return (QuickSwitch._settledSince := -1, false)
+        }
+        if (QuickSwitch._settledSince <= 0)
             QuickSwitch._settledSince := A_TickCount
         return A_TickCount - QuickSwitch._settledSince >= QuickSwitch.InputSettleMs
     }
