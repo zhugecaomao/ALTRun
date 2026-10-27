@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.13]
+
+测试版。
+
+Test build.
+
+### 修复
+- 自动跳转: 用 Alt+Tab 切到打开 / 保存对话框时没有跳过去 (点标题栏、点任务栏正常)。跳转后 0.4 秒确认对话框地址栏显示的文件夹, 没到就再跳一次 (仍然只在文件名框里确实是这个文件夹时才发 "确定", 不会误保存)
+- 调试日志更详细, 方便查跳转问题: 文件管理器的文件夹、跳转前后对话框显示的文件夹、文件名框的内容、焦点所在的控件、对话框线程的状态、每一步消息的结果
+
 ## [2026.10.26.12]
 
 测试版。
@@ -1019,7 +1029,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.13...HEAD
+[2026.10.26.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.12...2026.10.26.13
 [2026.10.26.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.11...2026.10.26.12
 [2026.10.26.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.10...2026.10.26.11
 [2026.10.26.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.9...2026.10.26.10

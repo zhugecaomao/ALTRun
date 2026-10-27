@@ -478,6 +478,7 @@ class ExtensionTests {
                     try QuickSwitch.SetDialogPath(target "\", dialog)
                     finally Send("{" held " up}")
                     Sleep(500)
+                    shown := WinExist("ahk_id " dialog) ? QuickSwitch.DialogFolder(dialog) : "the dialog closed"
                     nameAfter := WinExist("ahk_id " dialog) ? ControlGetText("Edit1", "ahk_id " dialog) : "the dialog closed"
                     DllCall("SendMessageTimeoutW", "Ptr", dialog, "UInt", 0x111, "Ptr", 1, "Ptr", 0, "UInt", 0x2, "UInt", 3000, "Ptr", 0)   ; OK
                 }
@@ -486,6 +487,7 @@ class ExtensionTests {
                 saved := ""
                 try saved := FileRead(result, "UTF-8")
                 eq("message jump: a system Save As", jumpMethod, "message")
+                eq("message jump (" held " held): the address bar shows the folder", dialog ? shown : "no dialog", target)
                 eq("message jump (" held " held): suggested name put back", nameAfter, nameBefore)
                 eq("message jump (" held " held): saved in the folder jumped to", RegExReplace(saved, "\.txt$"), target "\Report 2026")
                 try FileDelete(A_WinDir "\Report 2026*")                    ; only if a jump went wrong and saved in the old folder
