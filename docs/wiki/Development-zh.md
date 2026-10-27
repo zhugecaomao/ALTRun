@@ -181,6 +181,11 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 测试副本里多 #Include 一个 `Tests\Bench\BenchProbe.ahk`, 驱动程序 (`BenchDriver.ahk`) 通过它知道 "当前输入的结果画好了没有";
 发布的程序里没有它。改了测试脚本推到 main 以外的分支时会自动用很少的次数跑一遍。
 
+### 文件索引性能测试
+GitHub → Actions → **File index benchmark** 在 Windows 上运行 `Tests\RunTests.ahk FileIndexBench` (`Tests\Bench\FileIndexBench.ahk`): 创建 64000 个空文件 (400 个文件夹, 十分之一是中文名), 测量和 ALTRun 一样在后台完整扫描一遍、写入和读取缓存、匹配少和匹配多的搜索各要多久, 数字在运行摘要里。改到文件索引、文件搜索或 `FuzzyMatcher` 的 PR 也会自动运行, 和 `main` 上最近一次的数字比较。
+
+AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一份, `obj.prop .= x` 也会重新生成整个字符串。字符串很长时 (文件索引把所有文件名放在一个字符串里), 线性的工作会变成平方级: 长字符串在局部变量或数组里拼接, 需要一小段一小段读取的文字放在 `Buffer` 里 (按偏移用 `StrGet` 读)。
+
 ## 质量验证与局限
 
 - `Tests\RunTests.ahk`: 覆盖匹配、查询解析、设置迁移、排序、剪贴板和索引等纯逻辑; 不等于完整的手动 UI 测试。

@@ -1,0 +1,40 @@
+# Times the built-in file index (Tests\Bench\FileIndexBench.ahk) on Windows: on pull requests that change it, or run by hand on any branch
+name: File index benchmark
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - Src/Core/FileIndex.ahk
+      - Src/Providers/FileSearchProvider.ahk
+      - Src/Core/FuzzyMatcher.ahk
+      - Tests/Bench/FileIndexBench.ahk
+
+permissions:
+  contents: read
+
+jobs:
+  bench:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = 'v2.0.31'
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+
+      - name: File index benchmark
+        shell: pwsh
+        run: |
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk', 'FileIndexBench' `
+                  -PassThru -NoNewWindow -RedirectStandardOutput bench.log -RedirectStandardError bench.err
+          if (-not $proc.WaitForExit(900000)) { $proc.Kill(); throw "The benchmark didn't finish in 15 minutes" }
+          Get-Content bench.log, bench.err
+          Get-Content bench.log | ForEach-Object { "- $_" } | Out-File -Append -Encoding utf8 $env:GITHUB_STEP_SUMMARY
+          if ($proc.ExitCode -ne 0) { throw "The benchmark failed (exit code $($proc.ExitCode))" }

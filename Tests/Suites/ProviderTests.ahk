@@ -456,24 +456,35 @@ class ProviderTests {
         eq("an entry once (two matches in the name)", FileIndex.Search("atlas", 10).Length, 6)
         eq("extension filter", FileIndex.Search("atlas", 10, false, Map("dwg", true))[1].Path, "C:\Docs\Project Atlas\Atlas Plan.DWG")
         eq("folders only", FileIndex.Search("atlas", 10, true).Length, 2)
-        savedFile := FileIndex.File, savedOld := FileIndex.OldFile
-        FileIndex.File := A_Temp "\ALTRunPackedIndex.txt", FileIndex.OldFile := A_Temp "\ALTRunPackedIndex.json"
+        savedFile := FileIndex.File, savedOld := FileIndex.OldFiles
+        FileIndex.File := A_Temp "\ALTRunPackedIndex.bin", FileIndex.OldFiles := [A_Temp "\ALTRunPackedIndex.txt", A_Temp "\ALTRunPackedIndex.json"]
         try {
             FileIndex._SaveCache()
             FileIndex.SetEntries([])
-            FileAppend("{}", FileIndex.OldFile)
+            for oldFile in FileIndex.OldFiles
+                FileAppend("ALTRun file index 2`n", oldFile)
             eq("cache read", FileIndex._LoadCache(), true)
             again := ""
             Loop FileIndex.Count
                 again .= FileIndex.Data.PathAt(A_Index) "|" FileIndex.Data.IsFolderAt(A_Index) ";"
             eq("cache round trip", again, back)
-            eq("old JSON cache deleted", FileExist(FileIndex.OldFile), "")
-            FileDelete(FileIndex.File), FileAppend('{"Paths": [], "Folders": []}', FileIndex.File)
+            eq("cache round trip: each folder once", FileIndex.Data.Dirs.Length, 3)
+            eq("cache round trip: search", FileIndex.Search("atlas", 10).Length "|" FileIndex.Search("plan.dwg", 10)[1].Path, "6|C:\Docs\Project Atlas\Atlas Plan.DWG")
+            eq("cache round trip: pinyin initials", FileIndex.Initials.Count "|" FileIndex.Initials[6] "|" (FileIndex._initialsFor == FileIndex.Data), "1|cs atlas.docx|1")
+            eq("old caches deleted", FileExist(FileIndex.OldFiles[1]) FileExist(FileIndex.OldFiles[2]), "")
+            whole := FileRead(FileIndex.File, "RAW")
+            cut := FileOpen(FileIndex.File, "w"), cut.RawWrite(whole, whole.Size - 2), cut.Close()
+            eq("a cache cut short isn't read", FileIndex._LoadCache(), false)
+            FileDelete(FileIndex.File), FileAppend("ALTRun file index 2`nD`tC:\Docs`n1`tatlas.txt`n", FileIndex.File)
             eq("a cache in another format isn't read", FileIndex._LoadCache(), false)
+            FileIndex.SetEntries([])
+            FileIndex._SaveCache()
+            eq("an empty index round-trips", FileIndex._LoadCache() "|" FileIndex.Count "|" FileIndex.Data.Dirs.Length, "1|0|0")
         } finally {
             try FileDelete(FileIndex.File)
-            try FileDelete(FileIndex.OldFile)
-            FileIndex.File := savedFile, FileIndex.OldFile := savedOld
+            for oldFile in FileIndex.OldFiles
+                try FileDelete(oldFile)
+            FileIndex.File := savedFile, FileIndex.OldFiles := savedOld
         }
         FileIndex.SetEntries([])
         eq("empty index", FileIndex.Search("atlas", 10).Length, 0)
@@ -1188,10 +1199,7 @@ class ProviderTests {
 
         ; the built-in index (without Everything) also finds by pinyin initials
         paths := ["C:\D\测试.bat", "C:\D\cs_report.bat", "C:\D\证件扫描文件.zip", "C:\D\项目测试报告.docx", "C:\D\notes.txt"]
-        FileIndex.SetEntries(paths)
-        eq("index: before initials are ready", names("zjsm"), "")
-        FileIndex.BuildInitials()                                             ; computed in the background in batches
-        eq("index: initials built in the background", TestUtil.WaitFor(() => FileIndex._initialsFor == FileIndex.Data), true)
+        FileIndex.SetEntries(paths)                                           ; with the initials (a scan computes them as it goes)
         eq("index initials", FileIndex.Initials.Count "|" FileIndex.Initials[1] "|" FileIndex.Initials.Has(2) "|" FileIndex.Initials[3], "3|cs.bat|0|zjsmwj.zip")
         names(needle) {
             list := ""
@@ -1206,15 +1214,15 @@ class ProviderTests {
         eq("index: typing on keeps pinyin", (names("c"), names("cs")), "cs_report.bat|测试.bat|项目测试报告.docx")
         eq("index: chinese input", names("测试"), "测试.bat|项目测试报告.docx")
         eq("index: several words", names("zj sm"), "")
-        FileIndex.SetEntries(paths)                                           ; a new index: the initials belong to the old one, so no pinyin until rebuilt
+        FileIndex._initialsFor := ""                                          ; initials of another index: no pinyin
         eq("index: initials for another index", names("zjsm"), "")
-        savedFile := FileIndex.File, FileIndex.File := A_Temp "\ALTRunPinyinIndex.txt"
+        savedFile := FileIndex.File, FileIndex.File := A_Temp "\ALTRunPinyinIndex.bin"
         try {
             FileIndex.SetEntries(["C:\D\证件扫描文件.zip", "C:\D\notes.txt"])
             FileIndex._SaveCache(), FileIndex.SetEntries([])
             FileIndex._LoadCache()
-            TestUtil.WaitFor(() => FileIndex._initialsFor == FileIndex.Data)
-            eq("cache load builds initials", FileIndex.Initials.Count "|" FileIndex.Initials[1], "1|zjsmwj.zip")
+            eq("cache keeps the initials", (FileIndex._initialsFor == FileIndex.Data) "|" FileIndex.Initials.Count "|" FileIndex.Initials[1], "1|1|zjsmwj.zip")
+            eq("index: pinyin after reading the cache", names("zjsm"), "证件扫描文件.zip")
         } finally {
             try FileDelete(FileIndex.File)
             FileIndex.File := savedFile

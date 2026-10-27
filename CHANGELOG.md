@@ -5,6 +5,20 @@
 
 ## [未发布]
 
+## [2026.10.26.21]
+
+测试版。
+
+Test build.
+
+### 修复
+- 内置文件索引 (没有 Everything 时用) 在文件多时非常慢 (2026.10.26.9 起的测试版): 6.4 万个文件完整扫描一遍要 94 秒, 启动时读取缓存要 92 秒 (期间 ALTRun 不响应), 写缓存 36 秒。原因是 AutoHotkey 往对象属性里追加字符串、读取属性里的长字符串时每次都复制整串, 耗时随文件数平方增长。现在文件名先收集在数组里最后一次拼接, 显示用的文件名放在内存缓冲区里按位置读取
+
+### 改进
+- 文件索引的缓存改成二进制格式 `Data\FileIndex.bin` (读写 6.4 万个文件只要几毫秒, 拼音首字母也存在里面, 读取后不用再算); 旧的 `FileIndex.txt` 会被删除, 第一次启动时在后台重建一次
+- 匹配很多的文件搜索更快: 只取前几十个结果时不再把所有匹配都排序 (1.28 万个匹配: 37 → 4.6 ms)
+- 新的 "File index benchmark" 工作流: 在 Windows 上用 6.4 万个文件测量扫描、缓存读写和搜索的耗时, 改到文件索引的 PR 自动运行
+
 ## [2026.10.26.20]
 
 测试版。
@@ -1101,7 +1115,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.20...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.21...HEAD
+[2026.10.26.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.20...2026.10.26.21
 [2026.10.26.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.19...2026.10.26.20
 [2026.10.26.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.18...2026.10.26.19
 [2026.10.26.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...2026.10.26.18
