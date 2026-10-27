@@ -1039,7 +1039,7 @@ class QuickSwitch {
     ; The jump is checked ConfirmMs later in the dialog's address bar: when it isn't in the folder (seen once when switching with Alt+Tab, the
     ; dialog still activating), the jump is made once more. Safe to repeat: OK is only sent with exactly the folder in the box.
     ; The dialog is also redrawn then: after Alt+Tab its address bar read the new folder while the old one could still be seen
-    static ConfirmMs := 400, RecheckMs := 2000
+    static ConfirmMs := 400, RecheckMs := 2000, _recheck := 0
 
     static _ConfirmJump(folder, dialog, before, retries) {
         if !WinExist("ahk_id " dialog)
@@ -1048,7 +1048,10 @@ class QuickSwitch {
         now := QuickSwitch.DialogFolder(dialog), wanted := RTrim(folder, "\")
         if Logger.Enabled {
             Logger.Debug("QuickSwitch: after the jump the dialog shows [" now "] (before [" before "], wanted [" wanted "]), redrawn" QuickSwitch._DialogState(dialog))
-            SetTimer(QuickSwitch._LogDialogFolder.Bind(QuickSwitch, dialog, wanted), -QuickSwitch.RecheckMs)
+            QuickSwitch._LogDialogWindows(dialog)
+            if QuickSwitch._recheck
+                SetTimer(QuickSwitch._recheck, 0)                            ; a new jump: the check of the one before no longer applies
+            SetTimer(QuickSwitch._recheck := QuickSwitch._LogDialogFolder.Bind(QuickSwitch, dialog, wanted), -QuickSwitch.RecheckMs)
         }
         if (now = "" || now = wanted || !retries)                          ; "" = the address bar can't be read: nothing to compare
             return
@@ -1061,6 +1064,44 @@ class QuickSwitch {
     static _LogDialogFolder(dialog, wanted) {
         if WinExist("ahk_id " dialog)
             Logger.Debug("QuickSwitch: " QuickSwitch.RecheckMs " ms later the dialog shows [" QuickSwitch.DialogFolder(dialog) "] (wanted [" wanted "])" QuickSwitch._DialogState(dialog))
+    }
+
+    ; For the debug log: the dialog jumped in and every other dialog of its program (also hidden ones), each with its address bar texts,
+    ; to tell whether the dialog jumped in is the one on the screen
+    static _LogDialogWindows(dialog) {
+        try QuickSwitch._LogDialogWindowsNow(dialog)
+        catch as e
+            Logger.Debug("QuickSwitch: dialog windows not listed - " e.Message)
+    }
+
+    static _LogDialogWindowsNow(dialog) {
+        pid := WinGetPID("ahk_id " dialog), exe := ""
+        try exe := WinGetProcessName("ahk_id " dialog)
+        owner := DllCall("GetWindow", "Ptr", dialog, "UInt", 4, "Ptr"), popup := owner ? DllCall("GetLastActivePopup", "Ptr", owner, "Ptr") : 0
+        WinGetPos(&x, &y, &w, &h, "ahk_id " dialog)                         ; the window seen in the middle of the dialog (in front of it if another)
+        seen := DllCall("GetAncestor", "Ptr", DllCall("WindowFromPoint", "Int64", ((x + w // 2) & 0xFFFFFFFF) | ((y + h // 2) << 32), "Ptr"), "UInt", 2, "Ptr")   ; GA_ROOT
+        seenClass := "", seenExe := ""
+        try seenClass := WinGetClass("ahk_id " seen), seenExe := WinGetProcessName("ahk_id " seen)
+        Logger.Debug(Format("QuickSwitch: jumped in 0x{:X} of {}, owner 0x{:X}, the owner's last active popup 0x{:X}, foreground 0x{:X}, seen in its middle 0x{:X} {} of {}"
+            , dialog, exe, owner, popup, DllCall("GetForegroundWindow", "Ptr"), seen, seenClass, seenExe))
+        hidden := DetectHiddenWindows(true)                                 ; also the program's hidden dialogs
+        try {
+            for hwnd in WinGetList("ahk_pid " pid) {
+                className := WinGetClass("ahk_id " hwnd)
+                if (className != "#32770" && hwnd != owner)
+                    continue
+                WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
+                texts := ""
+                for control in (className = "#32770" ? WinGetControlsHwnd("ahk_id " hwnd) : []) {
+                    text := ""
+                    try text := ControlGetText(control)
+                    if RegExMatch(text, "^[^:：\\]{1,40}[:：]\s*([A-Za-z]:\\|\\\\)")
+                        texts .= " | " WinGetClass("ahk_id " control) " [" text "] visible " DllCall("IsWindowVisible", "Ptr", control)
+                }
+                Logger.Debug(Format("QuickSwitch:   0x{:X} {} [{}] visible {} enabled {} at {},{} {}x{} owner 0x{:X}{}", hwnd, className, WinGetTitle("ahk_id " hwnd)
+                    , DllCall("IsWindowVisible", "Ptr", hwnd), DllCall("IsWindowEnabled", "Ptr", hwnd), x, y, w, h, DllCall("GetWindow", "Ptr", hwnd, "UInt", 4, "Ptr"), texts))
+            }
+        } finally DetectHiddenWindows(hidden)
     }
 
     ; The folder a system dialog shows, from its address bar ("Address: C:\Docs", the label in the UI language); "" if it can't be read
@@ -1086,7 +1127,7 @@ class QuickSwitch {
         }
         cloaked := 0
         try DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", dialog, "UInt", 14, "UInt*", &cloaked, "UInt", 4)   ; DWMWA_CLOAKED
-        return Format(", box [{}], focus {}, thread flags 0x{:X}, in front {}, cloaked {}, Alt down {}", box, focus, flags
+        return Format(" (0x{:X}), box [{}], focus {}, thread flags 0x{:X}, in front {}, cloaked {}, Alt down {}", dialog, box, focus, flags
             , DllCall("GetForegroundWindow", "Ptr") = dialog, cloaked, GetKeyState("Alt", "P"))
     }
 
