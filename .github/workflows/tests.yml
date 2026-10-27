@@ -39,6 +39,19 @@ jobs:
           Write-Host $output
           if ($proc.ExitCode -ne 0 -or $output.Trim()) { throw "Validation failed (exit code $($proc.ExitCode))" }
 
+      # The benchmark and screenshot scripts run unattended in other workflows: a load-time warning there would wait for a dialog
+      # nobody closes (an undefined class from a Lib file they didn't include hung both runs once). Both send warnings to stdout
+      - name: Validate the benchmark and screenshot scripts
+        shell: pwsh
+        run: |
+          foreach ($script in "Tests\Bench\BenchDriver.ahk", "Tests\Screenshots\TakeScreenshots.ahk") {
+            $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', '/validate', $script `
+                    -Wait -PassThru -NoNewWindow -RedirectStandardOutput validate.log -RedirectStandardError validate.err
+            $output = (Get-Content validate.log, validate.err -Raw) -join ""
+            Write-Host "${script}: $output"
+            if ($proc.ExitCode -ne 0 -or $output.Trim()) { throw "Validation of $script failed (exit code $($proc.ExitCode))" }
+          }
+
       - name: Unit tests
         shell: pwsh
         run: |

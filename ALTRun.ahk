@@ -32,6 +32,7 @@
 #Warn All, OutputDebug
 
 ; --- Lib ---
+#Include Lib\SafeFile.ahk
 #Include Lib\JSON.ahk
 #Include Lib\Logger.ahk
 #Include Lib\Util.ahk

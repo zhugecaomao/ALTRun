@@ -10,6 +10,8 @@
 ;   JSON.WriteFile("x.json", data)      writes a temporary file first and then replaces the file; UTF-8 without BOM
 ;===============================================================================
 
+#Include %A_LineFile%\..\SafeFile.ahk                                          ; JSON.WriteFile: included here so a script needs only JSON.ahk
+
 class JSON {
 
     ;--- Parsing -----------------------------------------------------------------
@@ -53,7 +55,7 @@ class JSON {
     }
 
     ;--- Writing files -----------------------------------------------------------
-    ; UTF-8 without BOM (JSON standard RFC 8259), written safely: see SafeFile.WriteText in Util.ahk
+    ; UTF-8 without BOM (JSON standard RFC 8259), written safely: see Lib\SafeFile.ahk
     static WriteFile(file, data, indent := 0) => SafeFile.WriteText(file, JSON.Stringify(data, indent))
 
     ;--- String escaping ---------------------------------------------------------

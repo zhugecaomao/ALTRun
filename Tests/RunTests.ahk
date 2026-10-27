@@ -11,6 +11,7 @@
 #NoTrayIcon
 #Warn All, StdOut
 
+#Include %A_ScriptDir%\..\Lib\SafeFile.ahk
 #Include %A_ScriptDir%\..\Lib\JSON.ahk
 #Include %A_ScriptDir%\..\Lib\Logger.ahk
 #Include %A_ScriptDir%\..\Lib\Util.ahk
