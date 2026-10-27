@@ -27,6 +27,8 @@
 ## 添加和修改
 偏好设置 → 网页搜索: 列表里双击修改, 或者点 "添加"。每个引擎有这几项:
 
+![偏好设置 → 网页搜索](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-websearch.png)
+
 | 字段 | 说明 |
 |---|---|
 | 名称 | 显示在结果里, 例如 "Search Google for ..." |

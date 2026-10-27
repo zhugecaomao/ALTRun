@@ -11,6 +11,8 @@
 
 偏好设置 → 高级 → 数据 → "打开数据文件夹" 可以直接打开它。
 
+![偏好设置 → 高级](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-advanced.png)
+
 ## Data 文件夹里的文件
 | 文件 | 内容 | 删掉会怎样 |
 |---|---|---|
