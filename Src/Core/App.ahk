@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.22"
+    static Version := "2026.10.26.23"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -80,7 +80,7 @@ class App {
         PTToolsWindow.Load(AppSettings.Extension("PTTools"))
         Logger.Time("startup: snippets, extensions", phase), phase := Logger.Ms()
         App._UpdateShellShortcuts()
-        OnExit((*) => App._OnExit())
+        OnExit((reason, *) => App._OnExit(reason))
         Logger.Time("startup: shortcuts", phase)
 
         if (AppSettings.ImportedFrom != "")
@@ -319,6 +319,7 @@ class App {
 
     ; Restarts ALTRun with command-line arguments (default -Reloaded: doesn't show the search window)
     static Restart(arguments := "-Reloaded") {
+        App._exitBy := "restart " arguments
         if A_IsCompiled
             Run('"' A_ScriptFullPath '" /restart ' arguments)
         else
@@ -327,7 +328,24 @@ class App {
     }
 
     static Quit() {
+        App._exitBy := "quit"
         ExitApp()
+    }
+
+    ; For the log: why ALTRun exits, the keys still held down and the window in front (2026-10: a properties dialog opened
+    ; in Total Commander after "quit", as if Alt+Enter reached it)
+    static _exitBy := ""
+    static ExitNote(reason, by, held, foreground) {
+        return "App: exit (" reason (by = "" ? "" : ", " by) "); keys held: " (held = "" ? "none" : held) "; foreground: " foreground
+    }
+
+    ; The keys physically held down, e.g. "Enter+LAlt" ("" = none)
+    static HeldKeys() {
+        held := ""
+        for key in ["Enter", "NumpadEnter", "LAlt", "RAlt", "LCtrl", "RCtrl", "LShift", "RShift", "LWin", "RWin"]
+            if GetKeyState(key, "P")
+                held .= (held = "" ? "" : "+") key
+        return held
     }
 
     ; About: the Advanced page of Preferences (icon, version, home page, check for updates)
@@ -634,7 +652,9 @@ class App {
     }
 
     ; a non-zero return from an OnExit callback cancels the exit, so nothing is returned here
-    static _OnExit() {
+    static _OnExit(reason := "") {
+        if Logger.Enabled
+            Logger.Debug(App.ExitNote(reason, App._exitBy, App.HeldKeys(), SearchWindow.ForegroundText()))
         CapsLockHelper.Stop()
         try ApplicationProvider.SavePending()                              ; indexes rebuilt in the background but not written yet
         catch as e

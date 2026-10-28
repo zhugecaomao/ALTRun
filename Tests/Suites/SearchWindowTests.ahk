@@ -1383,6 +1383,14 @@ class SearchWindowTests {
         eq("hook still works", A_IsSuspended, 0)
     }
 
+    ; Exit log line: the reason, quit / restart, the keys still held down and the window in front
+    static ExitLog() {
+        eq := (n, a, e) => TestRunner.Equal("ExitLog." n, a, e)
+        eq("quit", App.ExitNote("Exit", "quit", "Enter+LAlt", "totalcmd64.exe TCmpForm"), "App: exit (Exit, quit); keys held: Enter+LAlt; foreground: totalcmd64.exe TCmpForm")
+        eq("tray close, no keys", App.ExitNote("Close", "", "", "none"), "App: exit (Close); keys held: none; foreground: none")
+        eq("held keys", RegExMatch(App.HeldKeys(), "^([A-Za-z]+(\+[A-Za-z]+)*)?$") > 0, true)
+    }
+
     static IconLoadingOnce() {
         eq := (n, a, e) => TestRunner.Equal("IconLoadingOnce." n, a, e)
         key := IconCache._CacheKey("ext:.loadingonce")
