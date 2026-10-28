@@ -12,17 +12,12 @@ Root := A_ScriptDir "\..\..", Work := "C:\MemProbe", DataFolder := "C:\MemData"
 Ahk := A_AhkPath
 Out := ""
 Variants := [
-    {Name: "#289 (arrays) default settings", Kind: "app", Off: ["Clipboard"], Src: "v289"},
-    {Name: "before #311 default settings", Kind: "app", Off: ["Clipboard"], Src: "base"},
-    {Name: "after #311 default settings", Kind: "app", Off: ["Clipboard"], Src: "new"},
-    {Name: "#289 (arrays) 30,000 files scanned and saved", Kind: "app", Off: ["Clipboard"], Files: true, Src: "v289"},
-    {Name: "#289 (arrays) restarted, index from cache", Kind: "app", Off: ["Clipboard"], Files: true, Keep: true, Src: "v289"},
-    {Name: "before #311 30,000 files scanned and saved", Kind: "app", Off: ["Clipboard"], Files: true, Src: "base"},
-    {Name: "before #311 restarted, index from cache", Kind: "app", Off: ["Clipboard"], Files: true, Keep: true, Src: "base"},
-    {Name: "after #311 30,000 files scanned and saved", Kind: "app", Off: ["Clipboard"], Files: true, Src: "new"},
-    {Name: "after #311 restarted, index from cache", Kind: "app", Off: ["Clipboard"], Files: true, Keep: true, Src: "new"},
+    {Name: "main (array of names) 30,000 files scanned and saved", Kind: "app", Off: ["Clipboard"], Files: true, Src: "base"},
+    {Name: "main (array of names) restarted, index from cache", Kind: "app", Off: ["Clipboard"], Files: true, Keep: true, Src: "base"},
+    {Name: "pieces of 64 30,000 files scanned and saved", Kind: "app", Off: ["Clipboard"], Files: true, Src: "new"},
+    {Name: "pieces of 64 restarted, index from cache", Kind: "app", Off: ["Clipboard"], Files: true, Keep: true, Src: "new"},
 ]
-Loop 2 {
+Loop 3 {
     pass := A_Index
     for v in Variants {
         m := RunVariant(v)

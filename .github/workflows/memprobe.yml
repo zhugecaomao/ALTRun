@@ -1,7 +1,7 @@
 name: Memory probe (temporary)
 on:
   push:
-    branches: [exp/memory-311]
+    branches: [exp/memory-pieces]
 jobs:
   probe:
     runs-on: windows-latest
@@ -11,11 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: actions/checkout@v7
-        with: {ref: 36022da99657a01b741a8cd2a1a75b456eda5527, path: v289}
+        with: {ref: 27e5c8e36c0fb77178fe6c78c6de4b11a8f7b1f9, path: base}
       - uses: actions/checkout@v7
-        with: {ref: ab00f617ea76b3bb5fd085d63415d922deebc3e7, path: base}
-      - uses: actions/checkout@v7
-        with: {ref: 27e5c8e36c0fb77178fe6c78c6de4b11a8f7b1f9, path: new}
+        with: {ref: 094ab93af70d4ced32727a9ed8dab60065be8268, path: new}
       - shell: pwsh
         run: |
           gh release download v2.0.31 --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
