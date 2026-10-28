@@ -1,0 +1,25 @@
+name: Memory probe (temporary)
+on:
+  push:
+    branches: [exp/memory-311]
+jobs:
+  probe:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with: {ref: 36022da99657a01b741a8cd2a1a75b456eda5527, path: v289}
+      - uses: actions/checkout@v7
+        with: {ref: ab00f617ea76b3bb5fd085d63415d922deebc3e7, path: base}
+      - uses: actions/checkout@v7
+        with: {ref: 27e5c8e36c0fb77178fe6c78c6de4b11a8f7b1f9, path: new}
+      - shell: pwsh
+        run: |
+          gh release download v2.0.31 --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+          foreach ($d in 1..30) { $dir = "C:\MemData\Folder $d"; New-Item -ItemType Directory $dir -Force | Out-Null
+            foreach ($f in 1..1000) { [IO.File]::WriteAllText("$dir\Document $d-$f.txt", "") } }
+          tools/ahk/AutoHotkey64.exe /ErrorStdOut Tests/Tools/MemoryProbe.ahk | Out-Default
