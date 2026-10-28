@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.23]
+
+测试版。
+
+Test build.
+
+### 改进
+- 调试日志记录退出的原因 (退出命令、重启、关机等)、退出时还按着的键 (Enter、Alt、Ctrl、Shift、Win) 和前台窗口, 用来查退出后别的程序收到按键的问题 (只记程序名和窗口类名, 不记窗口标题)
+
 ## [2026.10.26.22]
 
 测试版。
@@ -1125,7 +1134,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.22...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.23...HEAD
+[2026.10.26.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.22...2026.10.26.23
 [2026.10.26.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.21...2026.10.26.22
 [2026.10.26.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.20...2026.10.26.21
 [2026.10.26.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.19...2026.10.26.20
