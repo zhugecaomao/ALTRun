@@ -50,8 +50,9 @@ jobs:
             echo "No en- redirect pages ($after releases since 2026.10.20)"
           fi
           cd wiki
-          git config user.name "github-actions[bot]"
-          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          # the pages come from docs/wiki/ as reviewed and merged by the maintainer: the Wiki shows the maintainer as the editor
+          git config user.name "zhugecaomao"
+          git config user.email "11486126+zhugecaomao@users.noreply.github.com"
           git add -A
           if git diff --cached --quiet; then
             echo "Wiki is already up to date"
