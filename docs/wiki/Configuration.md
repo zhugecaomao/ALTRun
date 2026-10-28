@@ -33,7 +33,7 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 ## Structure
 ```jsonc
 {
-  "SchemaVersion": 5,
+  "SchemaVersion": 6,
   "General":    { ... },          // general
   "Appearance": { ... },          // appearance
   "Features":   { ... },          // the search features

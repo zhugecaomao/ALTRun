@@ -26,6 +26,7 @@
 - [Privacy and network access](Privacy)
 - [FAQ](FAQ)
 - [Development guide](Development)
+- [Contributing](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md)
 
 **[中文](Home-zh)**
 - [5 分钟上手](Getting-Started-zh)
@@ -53,6 +54,7 @@
 - [隐私与网络访问](Privacy-zh)
 - [常见问题](FAQ-zh)
 - [开发指南](Development-zh)
+- [参与贡献](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md#%E5%8F%82%E4%B8%8E%E8%B4%A1%E7%8C%AE)
 
 ---
 [Download 下载](https://github.com/zhugecaomao/ALTRun/releases/latest) · [Changelog 更新日志](https://github.com/zhugecaomao/ALTRun/blob/main/CHANGELOG.md) · [Feedback 反馈](https://github.com/zhugecaomao/ALTRun/issues/new/choose)

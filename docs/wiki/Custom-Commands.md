@@ -38,7 +38,7 @@ Each field in the edit dialog has a line of gray help text below it.
 | Arguments | Command-line arguments passed to the program, for example `/k ipconfig /all` |
 | Keyword | Optional. Typing exactly this keyword puts the command first. Several keywords: separate with commas, for example `np, ㅜㅔ` (handy when you switch keyboard layouts: any of them works) |
 
-Besides the title and keyword, `File` / `Folder` commands also match the target's file name (without the extension) or folder name: with the Target `Q:\Projects\PT1001 - 24 Harbor` and the title `Tower A, B, C`, typing `harbor` or `1001` finds it too. At the same match quality, a title match ranks first.
+Besides the title and keyword, `File` / `Folder` commands also match the target's file name (without the extension) or folder name: with the Target `D:\Demo\Sample Project\Tower A` and the title `Sample Tower`, typing `tower` or `sample` finds it too. At the same match quality, a title match ranks first.
 
 Folders open in Preferences → General → File manager (Explorer by default; Total Commander and others work too).
 

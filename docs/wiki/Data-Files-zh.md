@@ -18,7 +18,7 @@
 |---|---|---|
 | `ALTRun.json` | 所有设置、自定义命令、文字片段、热键、网页搜索, 见 [设置文件参考](Configuration-zh) | 恢复成默认设置, 自定义命令和片段都没了 (**要备份的就是它**) |
 | `ALTRun.json.bak` | 偏好设置 → 高级 → "恢复默认设置" 之前的备份 | 没有影响 |
-| `ALTRun.v<版本>.backup.json` | 设置格式升级之前的备份 (例如 `ALTRun.v4.backup.json`) | 没有影响; 想退回旧版本时用它 |
+| `ALTRun.v<版本>.backup.json` | 设置格式升级之前的备份 (例如 `ALTRun.v<旧版本>.backup.json`) | 没有影响; 想退回旧版本时用它 |
 | `ALTRun.json.bad` | 设置文件格式有错误时, 原文件改成这个名字保留下来, 修好后改回 `ALTRun.json` | 没有影响 |
 | `AppIndex.json` | 应用索引 | 启动时重新扫描 |
 | `FileIndex.bin` | 内置文件索引 (没有 Everything 时用) | 后台重新扫描 |
