@@ -736,15 +736,15 @@ class ProviderTests {
         eq("trim keeps newest", keys, "ac")
         eq("trim used map", IconCache._used.Count, 2)
         IconCache._icons := savedIcons, IconCache._used := savedUsed
-        eq("remote unc", Path.IsRemote("\\server\share\PT1001"), true)
+        eq("remote unc", Path.IsRemote("\\server\share\P1001"), true)
         eq("remote local", Path.IsRemote("C:\Windows"), false)
-        eq("remote folder key", IconCache._CacheKey("\\server\share\PT1001 - 24 Harbor"), "folder:")
-        eq("remote folder slash", IconCache._CacheKey("\\server\share\PT1001\"), "folder:")
+        eq("remote folder key", IconCache._CacheKey("\\server\share\P1001 - Riverside Park"), "folder:")
+        eq("remote folder slash", IconCache._CacheKey("\\server\share\P1001\"), "folder:")
         eq("remote file key", IconCache._CacheKey("\\server\share\Report.PDF"), "ext:.pdf")
         eq("remote exe key", IconCache._CacheKey("\\server\share\tool.exe"), "ext:.exe")
         ; a folder with a dot in its name has no "extension" (it used to get a blank icon)
         eq("remote dotted folder", IconCache._CacheKey("\\server\Proposals\2025\26. 18 Sample Road (A)"), "folder:")
-        eq("remote dotted folder slash", IconCache._CacheKey("\\server\share\10.PT1002-29Harbor\"), "folder:")
+        eq("remote dotted folder slash", IconCache._CacheKey("\\server\share\10.P1002-Riverside\"), "folder:")
         eq("local dotted folder", IconCache._CacheKey("C:\Projects\26. 18 Sample Road (A)"), "c:\projects\26. 18 sample road (a)")
         eq("extension", Path.Extension("C:\a\Report.PDF"), "PDF")
         eq("extension with spaces", Path.Extension("C:\a\26. 18 New Road"), "")
@@ -798,12 +798,12 @@ class ProviderTests {
         eq := (n, a, e) => TestRunner.Equal("CheckTargets." n, a, e)
         dir := A_Temp "\ALTRunTest_CheckTargets"
         try DirDelete(dir, true)
-        DirCreate(dir "\PT1001 - 24 Harbor")
+        DirCreate(dir "\P1001 - Riverside Park")
         FileAppend("", dir "\summary.pdf")
         check(type, target, roots := "") => CustomCommandProvider.CheckTarget(Map("Title", "t", "Type", type, "Target", target), roots)
-        eq("folder ok", check("Folder", dir "\PT1001 - 24 Harbor"), "OK")
-        eq("folder renamed", check("Folder", dir "\PT1001 - 24 Harbor (old)"), "Missing")
-        eq("folder trailing slash", check("Folder", dir "\PT1001 - 24 Harbor\"), "OK")
+        eq("folder ok", check("Folder", dir "\P1001 - Riverside Park"), "OK")
+        eq("folder renamed", check("Folder", dir "\P1001 - Riverside Park (old)"), "Missing")
+        eq("folder trailing slash", check("Folder", dir "\P1001 - Riverside Park\"), "OK")
         eq("file ok", check("File", dir "\summary.pdf"), "OK")
         eq("quoted file", check("File", '"' dir '\summary.pdf"'), "OK")
         eq("file moved", check("File", dir "\summary-old.pdf"), "Missing")
@@ -820,7 +820,7 @@ class ProviderTests {
         eq("clsid skipped", check("Folder", "::{20D04FE0-3AEA-1069-A2D8-08002B30309D}"), "Skipped")
         ; disconnected network drives: whether a drive is reachable is kept in roots, so it isn't waited for item by item
         offline := Map("Q:", false)
-        eq("drive offline", check("Folder", "Q:\Projects\PT1001", offline), "Unavailable")
+        eq("drive offline", check("Folder", "Q:\Demo\P1001", offline), "Unavailable")
         eq("unc offline", check("File", "\\server\share\a.pdf", Map("\\server\share", false)), "Unavailable")
         roots := Map()
         check("Folder", dir, roots)
@@ -833,8 +833,8 @@ class ProviderTests {
         eq := (n, a, e) => TestRunner.Equal("CommandTargets." n, a, e)
         saved := AppSettings.Data["CustomCommands"]
         AppSettings.Data["CustomCommands"] := [
-            Map("Title", "Tower A, B, C", "Type", "Folder", "Target", "Q:\Projects\Design-2019\PT1001 - 24 Harbor", "Arguments", "", "Keyword", ""),
-            Map("Title", "Harbor Report", "Type", "File", "Target", "Q:\Docs\summary.pdf", "Arguments", "", "Keyword", ""),
+            Map("Title", "Tower A, B, C", "Type", "Folder", "Target", "Q:\Demo\P1001 - Riverside Park", "Arguments", "", "Keyword", ""),
+            Map("Title", "Riverside Report", "Type", "File", "Target", "Q:\Docs\summary.pdf", "Arguments", "", "Keyword", ""),
             Map("Title", "Check IP", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ipconfig", "Keyword", ""),
             Map("Title", "Drive Q", "Type", "Folder", "Target", "Q:\", "Arguments", "", "Keyword", "")]
         titles(text) {
@@ -844,8 +844,8 @@ class ProviderTests {
             return RTrim(list, "|")
         }
         eq("folder name", titles("1001"), "Tower A, B, C")
-        eq("title first", titles("harbor"), "Harbor Report|Tower A, B, C")
-        eq("file name without extension", titles("summary"), "Harbor Report")
+        eq("title first", titles("riverside"), "Riverside Report|Tower A, B, C")
+        eq("file name without extension", titles("summary"), "Riverside Report")
         eq("extension not searched", titles("pdf"), "")
         eq("command target not searched", titles("cmd"), "")
         eq("drive root not a name", titles("q:"), "")

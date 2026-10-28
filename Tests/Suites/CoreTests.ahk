@@ -814,7 +814,7 @@ File | C:\Windows\Notepad.exe=9
 Dir | A_Desktop | Desktop=99
 CMD | cmd.exe /k ipconfig | Check IP Address=9
 URL | https://www.google.com/search?q_Equal_x_Semicolon_y | Google Query=5
-Dir | Q:\Projects\Design-2019\PT1001 - 24 Harbor | Tower A, B, C=3
+Dir | Q:\Demo\P1001 - Riverside Park | Tower A, B, C=3
 Func | PTTools | PT Tools (AHK)=99
 [History]
 1=Dir | A_Desktop | Desktop
@@ -855,7 +855,7 @@ Func | PTTools | PT Tools (AHK)=99
         commands := Map()
         for command in settings["CustomCommands"]
             commands[command["Title"]] := command
-        eq("folder command", commands["Tower A, B, C"]["Target"], "Q:\Projects\Design-2019\PT1001 - 24 Harbor")
+        eq("folder command", commands["Tower A, B, C"]["Target"], "Q:\Demo\P1001 - Riverside Park")
         eq("command args", commands["Check IP Address"]["Arguments"], "/k ipconfig")
         eq("url unescaped", commands["Google Query"]["Target"], "https://www.google.com/search?q=x;y")
         eq("file title", commands["Notepad"]["Type"], "File")
