@@ -73,7 +73,7 @@ Case-insensitive, scored in this order:
 
 The characters in a result title that match your input are highlighted (consecutive characters, word initials, several keywords, letters in order and pinyin initials are all marked); the colors come from the theme's `Highlight` / `SelectedHighlight`, see [Themes](Themes). Results matched on something other than the title (a keyword, the path, a snippet's text and so on) have no highlighted title.
 
-Custom commands are also matched on the folder / file name of their target: if the Target is `Q:\Projects\PT1001 - 24 Harbor`, typing `harbor` finds it.
+Custom commands are also matched on the folder / file name of their target: if the Target is `D:\Demo\Projects\P1001 - Riverside Park`, typing `riverside` finds it.
 
 ### Learned ranking
 ALTRun remembers "what you typed → which result you finally picked": if you typed `no` and picked Notepad, Notepad comes first the next time you type `no` or `not`; items you use often move up in general. Press `Ctrl+↑` / `Ctrl+↓` to recall the previous / next search. The learned ranking is saved in `Data\Knowledge.json` and can be reset in Preferences → Advanced.

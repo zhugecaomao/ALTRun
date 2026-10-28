@@ -43,6 +43,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Privacy and network access](Privacy) | When ALTRun goes online, where to, and what is stored on your PC |
 | [FAQ](FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives, privacy... |
 | [Development guide](Development) | Architecture, adding a search feature, code style, tests |
+| [Contributing](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md) | Contribution guidelines and pull request workflow |
 
 ## Get going in 30 seconds
 | To do this | Type |

@@ -43,6 +43,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [隐私与网络访问](Privacy-zh) | ALTRun 什么时候联网、访问哪里、本机保存了什么 |
 | [常见问题](FAQ-zh) | 热键冲突、搜不到、杀毒软件误报、隐私... |
 | [开发指南](Development-zh) | 架构、新增搜索功能、代码规范、测试 |
+| [参与贡献](https://github.com/zhugecaomao/ALTRun/blob/main/CONTRIBUTING.md#%E5%8F%82%E4%B8%8E%E8%B4%A1%E7%8C%AE) | 贡献规范和 Pull Request 流程 |
 
 ## 30 秒上手
 | 想做什么 | 输入 |

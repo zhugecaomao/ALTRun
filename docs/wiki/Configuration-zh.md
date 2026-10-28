@@ -33,7 +33,7 @@
 ## 结构
 ```jsonc
 {
-  "SchemaVersion": 5,
+  "SchemaVersion": 6,
   "General":    { ... },          // 通用
   "Appearance": { ... },          // 外观
   "Features":   { ... },          // 各个搜索功能

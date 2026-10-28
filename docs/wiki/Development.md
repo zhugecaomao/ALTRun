@@ -3,7 +3,7 @@
 # Development guide
 
 ## Environment
-- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 or later. Release builds and the benchmark use a pinned version, currently v2.0.31 (`$ahkTag` in `.github/workflows/release.yml` and `bench.yml`; change both together); the unit tests on CI always use the latest stable release, so a new AutoHotkey version is tested before it is pinned
+- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 or later. Release builds and the two benchmarks use a pinned version, currently v2.0.31 (`$ahkTag` in `.github/workflows/release.yml`, `bench.yml` and `file-index-bench.yml`; change all three together); the unit tests on CI always use the latest stable release, so a new AutoHotkey version is tested before it is pinned
 - Any editor; VS Code with the AutoHotkey v2 Language Support extension is recommended
 
 ```
