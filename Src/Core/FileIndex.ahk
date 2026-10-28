@@ -28,7 +28,7 @@
 ; A search finds the needle in the long lower-case string with InStr (case-sensitive, both sides are lower case) instead of scoring
 ; every name in a loop, so it only touches the names that contain it, see Entries.Find.
 ; AutoHotkey copies a string held in an object property whenever an expression reads it, and "obj.prop .= x" builds a new string each time.
-; So the names are collected in an array and joined once (Seal), and the names as shown are kept in a Buffer, read one at a time with
+; So the names are collected in short pieces and joined once (Seal), and the names as shown are kept in a Buffer, read one at a time with
 ; StrGet: appending to the property and reading names out of it made a rescan of 64,000 entries take 94 s and reading its cache 92 s.
 ; The cache is binary (Entries.Save / Load): the Buffer and the folder table as they are in memory, read back in a few milliseconds
 ;===============================================================================
@@ -385,7 +385,9 @@ class FileIndex {
     ; one starts. Dirs: each folder path once, by number. Built with Add, then Seal; or read from the cache with Load
     ;---------------------------------------------------------------------------
     class Entries {
-        Count := 0, Lower := "`n", Shown := "", Dirs := [], Info := Buffer(8 * 1024), _names := [], _dirIds := Map(), _end := 1
+        Count := 0, Lower := "`n", Shown := "", Dirs := [], Info := Buffer(8 * 1024), _dirIds := Map(), _end := 1
+        _pieces := [], _piece := "", _inPiece := 0                          ; the names added so far, in pieces of up to PieceNames (see Add)
+        static PieceNames := 64
 
         Add(dir, name, isFolder) {
             if !this._dirIds.Has(dir)
@@ -395,8 +397,12 @@ class FileIndex {
                 this.Info.Size *= 2
             NumPut("Int", this._end, "Int", isFolder ? -id : id, this.Info, this.Count * 8)
             this.Count++
-            this._names.Push(name)                                          ; joined once in Seal: appending to a property copies it every time
             this._end += StrLen(name) + 1
+            ; Appending to a property copies it, so the piece is kept short and set aside every PieceNames names; joined once in Seal.
+            ; A separate string per name (an array of names) left about 8 MB more in use after scanning 30,000 files (freed, but the heap keeps it)
+            this._piece .= name "`n"
+            if (++this._inPiece >= FileIndex.Entries.PieceNames)
+                this._pieces.Push(this._piece), this._piece := "", this._inPiece := 0
         }
 
         ; Done adding: the closing place, no spare room, no lookup of folder numbers; the names joined into Shown and Lower
@@ -404,9 +410,10 @@ class FileIndex {
             NumPut("Int", this._end, this.Info, this.Count * 8)
             this.Info.Size := (this.Count + 1) * 8, this._dirIds := ""
             text := "`n"
-            for name in this._names                                         ; a local variable grows in place
-                text .= name "`n"
-            this._names := ""
+            for piece in this._pieces                                       ; a local variable grows in place
+                text .= piece
+            text .= this._piece
+            this._pieces := "", this._piece := ""
             this.Shown := Buffer(StrLen(text) * 2 + 2)
             StrPut(text, this.Shown, "UTF-16")
             this.Lower := StrLower(text)
@@ -492,7 +499,7 @@ class FileIndex {
                 count := input.ReadUInt(), shownChars := input.ReadUInt(), dirsChars := input.ReadUInt(), initialsChars := input.ReadUInt()
                 if (size != headerSize + (count + 1) * 8 + (shownChars + dirsChars + initialsChars) * 2)
                     return ""
-                data := FileIndex.Entries(), data._names := "", data._dirIds := ""
+                data := FileIndex.Entries(), data._pieces := "", data._dirIds := ""
                 data.Count := count, data.Info := Buffer((count + 1) * 8), input.RawRead(data.Info, data.Info.Size)
                 if (NumGet(data.Info, 0, "Int") != 1 || NumGet(data.Info, count * 8, "Int") != shownChars)
                     return ""

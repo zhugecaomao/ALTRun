@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.22]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内置文件索引扫描后少占内存: 扫描时文件名不再每个单独存成一个字符串, 而是每 64 个攒成一段, 最后一起拼接 (2026.10.26.21 里 3 万个文件扫描后约 25 MB, 比从缓存读取时多 4～5 MB; 内存释放后进程的堆不还给系统, 会一直留到重启)
+
 ## [2026.10.26.21]
 
 测试版。
@@ -1116,7 +1125,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.21...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.22...HEAD
+[2026.10.26.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.21...2026.10.26.22
 [2026.10.26.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.20...2026.10.26.21
 [2026.10.26.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.19...2026.10.26.20
 [2026.10.26.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.18...2026.10.26.19
