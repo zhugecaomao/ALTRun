@@ -73,7 +73,7 @@
 
 结果标题里和输入匹配的字会换颜色高亮 (连续的字、单词首字母、多个关键词、按顺序的字母、拼音首字母都会标出), 颜色由主题的 `Highlight` / `SelectedHighlight` 决定, 见 [主题](Themes-zh)。靠关键字、路径、片段正文等标题以外的内容匹配到的结果, 标题不高亮。
 
-自定义命令还会按目标的文件夹名 / 文件名匹配, 例如 Target 是 `D:\Demo\Sample Project\Tower A` 时输入 `tower` 也能找到。
+自定义命令还会按目标的文件夹名 / 文件名匹配, 例如 Target 是 `D:\Demo\Projects\P1001 - Riverside Park` 时输入 `riverside` 也能找到。
 
 ### 学习排序
 ALTRun 记住 "输入了什么 → 最后选了哪一项": 输入 `no` 选过记事本, 下次输入 `no` 或 `not` 时记事本排第一; 常用的项目整体也会靠前。按 `Ctrl+↑` / `Ctrl+↓` 调出上一条 / 下一条搜索记录。学习记录保存在 `Data\Knowledge.json`, 可以在 偏好设置 → 高级 里重置。

@@ -3,7 +3,7 @@
 # 开发指南
 
 ## 环境
-- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新。Release、Bench 和 File index benchmark 使用固定版本, 目前为 v2.0.31 (分别见 `.github/workflows/release.yml`、`bench.yml` 和 `file-index-bench.yml`; 更新时三处同步修改); CI 单元测试始终使用最新稳定版, 新版本会先经过测试再固定
+- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新。发布构建和两个基准测试使用固定版本, 目前是 v2.0.31 (`.github/workflows/release.yml`、`bench.yml` 和 `file-index-bench.yml` 里的 `$ahkTag`; 三处一起改); CI 上的单元测试总是用最新的稳定版, 所以 AutoHotkey 新版本先经过测试再固定
 - 任意编辑器; 推荐 VS Code + AutoHotkey v2 Language Support 插件
 
 ```
