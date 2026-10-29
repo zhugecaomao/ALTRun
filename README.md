@@ -89,35 +89,26 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 - **PT Tools**: rebar / mesh area calculations and SPF2M post-tensioning tendon profiles, with results you can copy to Excel.
 
 
-## In action
-| **Quick Switch: jump an Open / Save dialog to a folder you have open** | **Clipboard history: find what you copied and paste it** |
-|:---:|:---:|
-| <img src="docs/images/screenshots/demo-quickswitch.png" alt="Quick Switch: Ctrl+G and the folder panel jump the dialog to an open folder"> | <img src="docs/images/screenshots/demo-clipboard.png" alt="Clipboard history: Ctrl+Alt+C, filter, Enter pastes"> |
-| **Snippets: type `;thx` in any program** | **Browse folders: `Tab` goes in, `Backspace` goes up** |
-| <img src="docs/images/screenshots/demo-snippets.png" alt="Snippets: ;thx expands into an email reply"> | <img src="docs/images/screenshots/demo-browse.png" alt="Browse folders: type a path, Tab, filter, Backspace"> |
-| **Calculator and unit conversion** | |
-| <img src="docs/images/screenshots/demo-calculator.png" alt="Calculator: arithmetic and unit conversion as you type"> | |
-
 ## Screenshots
 | Search window | Action panel (`→`) |
 |:---:|:---:|
 | <img src="docs/images/screenshots/search.png" alt="Search window"> | <img src="docs/images/screenshots/actions.png" alt="Action panel"> |
 | **File search (`Space` + name)** | **Search by file type (`doc` + name)** |
 | <img src="docs/images/screenshots/files.png" alt="File search"> | <img src="docs/images/screenshots/filetype.png" alt="Search by file type"> |
-| **Calculator** | **Pinyin initials (`jsb` finds 记事本, Notepad)** |
-| <img src="docs/images/screenshots/calculator.png" alt="Calculator"> | <img src="docs/images/screenshots/pinyin.png" alt="Pinyin initials"> |
-| **Clipboard history (`clip`)** | **Pinned and recent items (empty search box)** |
-| <img src="docs/images/screenshots/clipboard.png" alt="Clipboard history"> | <img src="docs/images/screenshots/empty.png" alt="Pinned and recent items"> |
-| **Browse folders (type a path)** | **Web search (`g` + keywords)** |
-| <img src="docs/images/screenshots/browse.png" alt="Browse folders"> | <img src="docs/images/screenshots/websearch.png" alt="Web search"> |
-| **Quick Switch (folder panel below an Open / Save dialog)** | **Themes (Preferences → Appearance)** |
-| <img src="docs/images/screenshots/quickswitch.png" alt="Quick Switch"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="Themes"> |
+| **Calculator and unit conversion** | **Pinyin initials (`jsb` finds 记事本, Notepad)** |
+| <img src="docs/images/screenshots/demo-calculator.png" alt="Calculator: arithmetic and unit conversion as you type"> | <img src="docs/images/screenshots/pinyin.png" alt="Pinyin initials"> |
+| **Clipboard history (`Ctrl+Alt+C` / `clip`): find and paste** | **Pinned and recent items (empty search box)** |
+| <img src="docs/images/screenshots/demo-clipboard.png" alt="Clipboard history: Ctrl+Alt+C, filter, Enter pastes"> | <img src="docs/images/screenshots/empty.png" alt="Pinned and recent items"> |
+| **Browse folders: `Tab` goes in, `Backspace` goes up** | **Web search (`g` + keywords)** |
+| <img src="docs/images/screenshots/demo-browse.png" alt="Browse folders: type a path, Tab, filter, Backspace"> | <img src="docs/images/screenshots/websearch.png" alt="Web search"> |
+| **Quick Switch: jump an Open / Save dialog to a folder you have open** | **Themes (Preferences → Appearance)** |
+| <img src="docs/images/screenshots/demo-quickswitch.png" alt="Quick Switch: Ctrl+G and the folder panel jump the dialog to an open folder"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="Themes"> |
 | **Window switching (`w` + Space)** | **Add commands from Explorer (right-click → Send to → ALTRun)** |
 | <img src="docs/images/screenshots/windows.png" alt="Window switching"> | <img src="docs/images/screenshots/sendto.png" alt="Send to ALTRun"> |
 | **Preferences** | **Custom commands** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="Preferences"> | <img src="docs/images/screenshots/prefs-commands.png" alt="Custom commands"> |
-| **Snippets** | **Scripts** |
-| <img src="docs/images/screenshots/prefs-snippets.png" alt="Snippets"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> |
+| **Snippets: type `;thx` in any program** | **Scripts** |
+| <img src="docs/images/screenshots/demo-snippets.png" alt="Snippets: ;thx expands into an email reply"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="Scripts"> |
 
 <details>
 <summary><b>Built-in themes</b> (22 in total, each in three densities; click to expand)</summary>
