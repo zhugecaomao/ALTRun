@@ -880,6 +880,8 @@ class ExtensionTests {
         eq("caret back: LF only", SnippetProvider.CaretBack(&text) "|" text, "2|a`nb")
         text := "no cursor"
         eq("caret back: none", SnippetProvider.CaretBack(&text) "|" text, "0|no cursor")
+        text := "a{cursor}b{cursor}c"
+        eq("caret back: only the first {cursor}", SnippetProvider.CaretBack(&text) "|" text, "2|abc")
         text := "end{cursor}"
         eq("caret back: at the end", SnippetProvider.CaretBack(&text), 0)
         uuids := SnippetProvider.Expand("{uuid} {uuid}")

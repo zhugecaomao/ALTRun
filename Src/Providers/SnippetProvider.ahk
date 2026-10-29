@@ -210,8 +210,8 @@ class SnippetProvider {
     static CaretBack(&text) {
         if !(cursorPos := InStr(text, "{cursor}"))
             return 0
-        after := SubStr(text, cursorPos + StrLen("{cursor}"))
-        text := StrReplace(text, "{cursor}")
+        text := StrReplace(text, "{cursor}")                                ; only the first counts; any others just go
+        after := SubStr(text, cursorPos)
         return StrLen(StrReplace(after, "`r`n", "`n"))
     }
 
