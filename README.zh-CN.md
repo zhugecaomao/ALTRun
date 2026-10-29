@@ -89,6 +89,15 @@
 - **PT 工具箱**：钢筋 / BRC 面积计算、SPF2M 后张预应力束线型计算，结果可复制到 Excel。
 
 
+## 功能演示
+| **对话框快速跳转：打开 / 保存对话框跳到已经打开的文件夹** | **剪贴板历史：找到复制过的内容并粘贴** |
+|:---:|:---:|
+| <img src="docs/images/screenshots/demo-quickswitch.png" alt="对话框快速跳转：Ctrl+G 和文件夹面板让对话框跳到打开的文件夹"> | <img src="docs/images/screenshots/demo-clipboard.png" alt="剪贴板历史：Ctrl+Alt+C、筛选、Enter 粘贴"> |
+| **文字片段：在任何程序里输入 `;thx`** | **浏览文件夹：`Tab` 进入，`Backspace` 返回上一级** |
+| <img src="docs/images/screenshots/demo-snippets.png" alt="文字片段：;thx 展开成一封回复邮件"> | <img src="docs/images/screenshots/demo-browse.png" alt="浏览文件夹：输入路径、Tab、筛选、Backspace"> |
+| **计算器和单位换算** | |
+| <img src="docs/images/screenshots/demo-calculator.png" alt="计算器：边输入边算出结果和单位换算"> | |
+
 ## 截图
 | 搜索窗口 | 操作面板（`→`） |
 |:---:|:---:|

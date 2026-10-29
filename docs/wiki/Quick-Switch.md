@@ -4,6 +4,8 @@
 
 Quick Switch jumps an Open / Save dialog to a folder you already have open, without browsing through the directory tree again. For the visual folder panel and its settings, see [Dialog Folder Panel](Quick-Switch-Panel).
 
+![Quick Switch: Ctrl+G jumps the dialog to the folder open in Explorer, then the folder panel's search box jumps to another one](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-quickswitch.png)
+
 ## Shortcuts
 
 In a standard Open / Save file dialog:

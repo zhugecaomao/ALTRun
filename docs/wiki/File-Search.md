@@ -39,7 +39,7 @@ Folders you use often work better as [custom commands](Custom-Commands): custom 
 ## Browsing folders
 Type a path in the search box to list what's in that folder (folders first); the last part of the path filters the list:
 
-![Browsing folders](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/browse.png)
+![Browsing folders: type a path, Tab goes in, typing filters, Backspace goes up](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-browse.png)
 
 | Input | Result |
 |---|---|

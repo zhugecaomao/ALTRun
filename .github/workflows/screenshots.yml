@@ -69,18 +69,16 @@ jobs:
         shell: pwsh
         run: pwsh -NoProfile -File Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Skip normal-scale
 
-      # Screenshots get Windows 11-style rounded corners (the VM has no GPU acceleration, so the system draws none); the README front page animation demo.png (APNG)
-      # is assembled from the frames the "demo" scene saved (rounded corners, shadow, blurred background); all with Pillow, corners and margins scaled by SHOT_SCALE
-      - name: Rounded corners and demo GIF
+      # Screenshots get Windows 11-style rounded corners (the VM has no GPU acceleration, so the system draws none); the animations (APNG: demo.png on the README
+      # front page, demo-*.png for the features) are assembled from the frames the "demo" scenes saved (rounded corners, shadow, blurred background);
+      # all with Pillow, corners and margins scaled by SHOT_SCALE
+      - name: Rounded corners and animations
         shell: pwsh
         run: |
           python -m pip install --quiet --disable-pip-version-check pillow
           python Tests/Screenshots/RoundCorners.py docs/images/screenshots
           if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
-          $frames = Join-Path $env:TEMP "ALTRunDemoFrames"
-          if (-not (Test-Path (Join-Path $frames "frames.txt"))) { Write-Host "No demo frames"; exit 0 }
-          python Tests/Screenshots/MakeDemo.py $frames docs/images/screenshots/demo.png
-          if ($LASTEXITCODE -ne 0) { throw "MakeDemo.py failed" }
+          pwsh -NoProfile -File Tests/Screenshots/MakeDemos.ps1
 
       # Preferences and Quick Switch (Shots.NormalScale) are too big at 150%: set the scaling back to 100% and shoot again (fonts with ClearType), corners with the 100% radius
       # (RoundCorners.py leaves images that already have rounded corners alone)
@@ -95,6 +93,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "screenshots at 100% failed" }
           python Tests/Screenshots/RoundCorners.py docs/images/screenshots
           if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
+          pwsh -NoProfile -File Tests/Screenshots/MakeDemos.ps1
 
       - uses: actions/upload-artifact@v7
         with:
