@@ -254,7 +254,8 @@ class QuickSwitch {
     static _LogForeground(active, className, isDialog) {
         QuickSwitch._loggedForeground := active
         exe := "", ownerClass := ""
-        try exe := WinGetProcessName("ahk_id " active)
+        if DllCall("GetWindowThreadProcessId", "Ptr", active, "UInt*", &pid := 0, "UInt")   ; WinGetProcessName doesn't see hidden windows
+            try exe := ProcessGetName(pid)
         if (owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr"))
             ownerClass := QuickSwitch.ClassOf(owner)
         Logger.Debug(Format("QuickSwitch: in front 0x{:X} {} of {}, owner 0x{:X} {}, passing {}, file dialog {}, from a file manager {}", active, className, exe

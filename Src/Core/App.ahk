@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.23"
+    static Version := "2026.10.26.24"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -339,10 +339,10 @@ class App {
         return "App: exit (" reason (by = "" ? "" : ", " by) "); keys held: " (held = "" ? "none" : held) "; foreground: " foreground
     }
 
-    ; The keys physically held down, e.g. "Enter+LAlt" ("" = none)
+    ; The keys physically held down, e.g. "Enter+LAlt" ("" = none). No NumpadEnter: it shares its virtual key with Enter, so it reads the same
     static HeldKeys() {
         held := ""
-        for key in ["Enter", "NumpadEnter", "LAlt", "RAlt", "LCtrl", "RCtrl", "LShift", "RShift", "LWin", "RWin"]
+        for key in ["Enter", "LAlt", "RAlt", "LCtrl", "RCtrl", "LShift", "RShift", "LWin", "RWin"]
             if GetKeyState(key, "P")
                 held .= (held = "" ? "" : "+") key
         return held
