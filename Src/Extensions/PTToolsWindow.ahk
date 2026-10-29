@@ -15,12 +15,12 @@
 ; SPF2M.EXE (a DOS program that used to run in DOSBox and is no longer shipped).
 ;
 ; Settings live in the Extensions.PTTools node of ALTRun.json (AppSettings.Extension("PTTools"));
-; Settings points straight at that Map, and saving calls AppSettings.Save(). The field names are
-; more descriptive than the old ones (SpanWidth1 / RebarSize1 / ... numbered by GroupBox); the old
-; keys were renamed by hand in the only existing ALTRun.json, so there is no migration code.
+; Settings points straight at that Map, and saving calls AppSettings.Save(). Only inputs are saved; results are
+; calculated again when a window opens. The tools have a single user, so keys are renamed or removed without
+; migration: Load drops keys that are no longer in Defaults, and a renamed field starts from its default.
 ;
 ; Usage: the system commands "PTTools" / "SPF2M" (see SystemProvider), or the same Action in custom hotkeys
-;   PTToolsWindow.Show()          ; rebar / BRC calculator
+;   PTToolsWindow.Show()          ; rebar / mesh area calculator
 ;   PTToolsWindow.ShowSpf2m()     ; SPF2M tendon profile calculator
 ;===============================================================================
 
@@ -34,20 +34,18 @@ Class PTToolsWindow {
         "WinLeft", 500, "WinTop", 500,
         "Spf2mWinLeft", 550, "Spf2mWinTop", 550,
 
-        ; Total Rebar Area
+        ; Rebar area
         "RebarSpanWidth", 3000, "RebarBarDiameter", "20", "RebarBarSpacing", 200,
-        "RebarTotalArea", 5969.04, "RebarBarCount", 19,
 
-        ; Rebar Qty Required
-        "RequiredAreaExpression", "1000", "RequiredTotalArea", "1000", "RequiredBarDiameter", "20",
-        "SafetyFactorEnabled", 0, "SafetyFactor", 1.0, "RequiredBarCount", 4,
+        ; Bars required
+        "RequiredAreaExpression", "1000", "RequiredBarDiameter", "20",
+        "SafetyFactorEnabled", 0, "SafetyFactor", 1.0,
 
-        ; Mesh area (the keys keep their former "Brc" names)
-        "BrcSpanWidth", 3800, "BrcTopMeshMark", "A7", "BrcTopArea", 731.196,
-        "BrcBotMeshMark", "A9", "BrcBotArea", 1208.742,
+        ; Mesh area
+        "MeshSpanWidth", 3000, "MeshTopMark", "A7", "MeshBotMark", "A9",
 
-        ; Expression Evaluation
-        "ExprInput", "100+50", "ExprResult", "150",
+        ; Calculator
+        "ExprInput", "100+50",
 
         ; SPF2M profile
         "ProfileType", 1, "TendonType", 3,                                  ; 12S
@@ -61,13 +59,12 @@ Class PTToolsWindow {
         "DuctDia19s", "", "DuctDia22s", "", "DuctDia31s", ""
     )
 
-    ; PT Tools (Rebar/BRC) window fields - round-trip through Show()/Save().
+    ; PT Tools window inputs - round-trip through Show()/Save() (the results are calculated, not saved)
     static RebarFieldNames := [
-        "RebarSpanWidth", "RebarBarDiameter", "RebarBarSpacing", "RebarTotalArea", "RebarBarCount",
-        "RequiredAreaExpression", "RequiredTotalArea", "RequiredBarDiameter",
-        "SafetyFactorEnabled", "SafetyFactor", "RequiredBarCount",
-        "BrcSpanWidth", "BrcTopMeshMark", "BrcTopArea", "BrcBotMeshMark", "BrcBotArea",
-        "ExprInput", "ExprResult"
+        "RebarSpanWidth", "RebarBarDiameter", "RebarBarSpacing",
+        "RequiredAreaExpression", "RequiredBarDiameter", "SafetyFactorEnabled", "SafetyFactor",
+        "MeshSpanWidth", "MeshTopMark", "MeshBotMark",
+        "ExprInput"
     ]
 
     ; SPF2M window fields - round-trip through ShowSpf2m()/SaveSpf2m().
@@ -89,8 +86,8 @@ Class PTToolsWindow {
     static Expressions  := ["100+50", "1200*1.09", "(6000/200+1)*201.06", "3.1416*16^2/4", "2^10-24"]   ; examples: + - * / ^ and parentheses
     static ComboFields := Map("RebarSpanWidth", PTToolsWindow.SpanWidths, "RebarBarDiameter", PTToolsWindow.BarDiameters
         , "RebarBarSpacing", PTToolsWindow.BarSpacings, "RequiredAreaExpression", PTToolsWindow.RequiredAreas
-        , "RequiredBarDiameter", PTToolsWindow.BarDiameters, "BrcSpanWidth", PTToolsWindow.SpanWidths
-        , "BrcTopMeshMark", PTToolsWindow.MeshMarks, "BrcBotMeshMark", PTToolsWindow.MeshMarks
+        , "RequiredBarDiameter", PTToolsWindow.BarDiameters, "MeshSpanWidth", PTToolsWindow.SpanWidths
+        , "MeshTopMark", PTToolsWindow.MeshMarks, "MeshBotMark", PTToolsWindow.MeshMarks
         , "SafetyFactor", PTToolsWindow.SafetyFactors, "ExprInput", PTToolsWindow.Expressions)
 
     static ProfileTypes := ["Double Parabolic Profile", "Parabolic-Straight-Parabolic",
@@ -110,6 +107,9 @@ Class PTToolsWindow {
         for key, value in PTToolsWindow.Defaults
             if !saved.Has(key)
                 saved[key] := value
+        for key in [saved*]                                                 ; keys no longer used (renamed or removed fields, saved results)
+            if !PTToolsWindow.Defaults.Has(key)
+                saved.Delete(key)
         PTToolsWindow.Settings := saved
         return saved
     }
@@ -150,7 +150,7 @@ Class PTToolsWindow {
 
         rebarRight    := PTToolsWindow.BuildRebarAreaGroup(g, S, PTToolsWindow.Margin)
         requiredRight := PTToolsWindow.BuildRequiredQtyGroup(g, S, rebarRight + PTToolsWindow.RebarColGap)
-        meshRight     := PTToolsWindow.BuildBrcAreaGroup(g, S, requiredRight + PTToolsWindow.RebarColGap)
+        meshRight     := PTToolsWindow.BuildMeshAreaGroup(g, S, requiredRight + PTToolsWindow.RebarColGap)
         PTToolsWindow.BuildExpressionGroup(g, S, requiredRight)
 
         ; ComboBox initial text is set last, once every sibling control any of
@@ -162,7 +162,7 @@ Class PTToolsWindow {
             inner := DllCall("FindWindowEx", "Ptr", g[name].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
             if (name != "ExprInput")                                        ; an expression reads from the left
                 try ControlSetStyle("+0x2", inner)                          ; the edit box inside is right-aligned too (ES_RIGHT), like the other numbers
-            style := InStr(name, "MeshMark") ? "+0x8"                       ; mesh marks in capitals (ES_UPPERCASE), "a7" -> "A7"
+            style := InStr(name, "Mark") ? "+0x8"                       ; mesh marks in capitals (ES_UPPERCASE), "a7" -> "A7"
                 : (name = "RebarSpanWidth") ? "+0x2000" : ""               ; digits only (ES_NUMBER), as before
             if (style != "")
                 try ControlSetStyle(style, inner)
@@ -173,10 +173,11 @@ Class PTToolsWindow {
         ; the same margin left, right and below the groups (AutoSize would add the GUI's own margins, smaller on the right and below)
         g.Show("x" S["WinLeft"] " y" S["WinTop"] " w" (meshRight + PTToolsWindow.Margin) " h" (PTToolsWindow.TopY + PTToolsWindow.TallGroupH + PTToolsWindow.Margin))
 
-        ; Derived display fields (BrcTopCombinedArea/BrcBotCombinedArea) aren't
-        ; persisted, they're recomputed from RebarTotalArea + BRC areas every
-        ; time the window opens.
-        PTToolsWindow.RecalculateCombinedAreas()
+        ; results aren't saved: calculated from the inputs every time the window opens
+        PTToolsWindow.UpdateRebarArea()
+        PTToolsWindow.OnRequiredExpressionChanged()
+        PTToolsWindow.OnMeshFieldChanged()
+        PTToolsWindow.OnExpressionChanged()
     }
 
     static SetupHotkeys() {
@@ -252,8 +253,8 @@ Class PTToolsWindow {
         PTToolsWindow.Combo(g, labelX, editX, y + 27, "Span width (mm)", "RebarSpanWidth").OnEvent("Change", changed)
         PTToolsWindow.Combo(g, labelX, editX, y + 67, "Bar diameter (mm)", "RebarBarDiameter").OnEvent("Change", changed)
         PTToolsWindow.Combo(g, labelX, editX, y + 107, "Bar spacing (mm)", "RebarBarSpacing").OnEvent("Change", changed)
-        PTToolsWindow.Field(g, labelX, editX, y + 147, PTToolsWindow.RebarFieldW, "Rebar area (mm²)", "RebarTotalArea", PTToolsWindow.Fmt2(S["RebarTotalArea"]), "ReadOnly Right")
-        PTToolsWindow.Field(g, labelX, editX, y + 187, PTToolsWindow.RebarFieldW, "Number of bars", "RebarBarCount", PTToolsWindow.Fmt2(S["RebarBarCount"]), "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 147, PTToolsWindow.RebarFieldW, "Rebar area (mm²)", "RebarTotalArea", "", "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 187, PTToolsWindow.RebarFieldW, "Number of bars", "RebarBarCount", "", "ReadOnly Right")
 
         return x0 + w
     }
@@ -267,7 +268,7 @@ Class PTToolsWindow {
         g.Add("GroupBox", "x" x0 " y" PTToolsWindow.TopY " w" w " h240", "Bars required")
         PTToolsWindow.Combo(g, labelX, editX, y + 27, "Area expression", "RequiredAreaExpression")
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredExpressionChanged(p*))
-        PTToolsWindow.Field(g, labelX, editX, y + 67, PTToolsWindow.RebarFieldW, "Total area (mm²)", "RequiredTotalArea", PTToolsWindow.Fmt2(S["RequiredTotalArea"]), "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 67, PTToolsWindow.RebarFieldW, "Total area (mm²)", "RequiredTotalArea", "", "ReadOnly Right")
         PTToolsWindow.Combo(g, labelX, editX, y + 107, "Bar diameter (mm)", "RequiredBarDiameter")
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredFieldChanged(p*))
 
@@ -279,27 +280,27 @@ Class PTToolsWindow {
         g.AddComboBox("x" editX " y" (y + 147) " w" PTToolsWindow.RebarFieldW " vSafetyFactor", PTToolsWindow.SafetyFactors)
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredFieldChanged(p*))
 
-        PTToolsWindow.Field(g, labelX, editX, y + 187, PTToolsWindow.RebarFieldW, "Number of bars", "RequiredBarCount", S["RequiredBarCount"], "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 187, PTToolsWindow.RebarFieldW, "Number of bars", "RequiredBarCount", "", "ReadOnly Right")
 
         g["SafetyFactor"].Enabled := S["SafetyFactorEnabled"]
         return x0 + w
     }
 
-    static BuildBrcAreaGroup(g, S, x0) {
+    static BuildMeshAreaGroup(g, S, x0) {
         labelX := x0 + 15
         editX  := labelX + PTToolsWindow.RebarLabelGap
         w := (editX + PTToolsWindow.RebarFieldW + 15) - x0
         y := PTToolsWindow.TopY
 
         g.Add("GroupBox", "x" x0 " y" PTToolsWindow.TopY " w" w " h" PTToolsWindow.TallGroupH, "Mesh area")
-        changed := (p*) => PTToolsWindow.OnBrcFieldChanged(p*)
-        PTToolsWindow.Combo(g, labelX, editX, y + 27, "Span width (mm)", "BrcSpanWidth").OnEvent("Change", changed)
-        PTToolsWindow.Combo(g, labelX, editX, y + 67, "Top mesh (A/B/D/E)", "BrcTopMeshMark").OnEvent("Change", changed)
-        PTToolsWindow.Field(g, labelX, editX, y + 107, PTToolsWindow.RebarFieldW, "Top mesh area (mm²)", "BrcTopArea", PTToolsWindow.Fmt2(S["BrcTopArea"]), "ReadOnly Right")
-        PTToolsWindow.Field(g, labelX, editX, y + 147, PTToolsWindow.RebarFieldW, "Top mesh + bar (mm²)", "BrcTopCombinedArea", "0.00", "ReadOnly Right")
-        PTToolsWindow.Combo(g, labelX, editX, y + 187, "Bot mesh (A/B/D/E)", "BrcBotMeshMark").OnEvent("Change", changed)
-        PTToolsWindow.Field(g, labelX, editX, y + 227, PTToolsWindow.RebarFieldW, "Bot mesh area (mm²)", "BrcBotArea", PTToolsWindow.Fmt2(S["BrcBotArea"]), "ReadOnly Right")
-        PTToolsWindow.Field(g, labelX, editX, y + 267, PTToolsWindow.RebarFieldW, "Bot mesh + bar (mm²)", "BrcBotCombinedArea", "0.00", "ReadOnly Right")
+        changed := (p*) => PTToolsWindow.OnMeshFieldChanged(p*)
+        PTToolsWindow.Combo(g, labelX, editX, y + 27, "Span width (mm)", "MeshSpanWidth").OnEvent("Change", changed)
+        PTToolsWindow.Combo(g, labelX, editX, y + 67, "Top mesh (A/B/D/E)", "MeshTopMark").OnEvent("Change", changed)
+        PTToolsWindow.Field(g, labelX, editX, y + 107, PTToolsWindow.RebarFieldW, "Top mesh area (mm²)", "MeshTopArea", "", "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 147, PTToolsWindow.RebarFieldW, "Top mesh + bar (mm²)", "MeshTopCombinedArea", "", "ReadOnly Right")
+        PTToolsWindow.Combo(g, labelX, editX, y + 187, "Bot mesh (A/B/D/E)", "MeshBotMark").OnEvent("Change", changed)
+        PTToolsWindow.Field(g, labelX, editX, y + 227, PTToolsWindow.RebarFieldW, "Bot mesh area (mm²)", "MeshBotArea", "", "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 267, PTToolsWindow.RebarFieldW, "Bot mesh + bar (mm²)", "MeshBotCombinedArea", "", "ReadOnly Right")
         return x0 + w
     }
 
@@ -318,21 +319,26 @@ Class PTToolsWindow {
         g.AddComboBox("x" (x0 + 15) " y" (y + 28) " w" inputW " vExprInput", PTToolsWindow.Expressions)
             .OnEvent("Change", (p*) => PTToolsWindow.OnExpressionChanged(p*))
         g.AddText("x" eqX " y" (y + 31) " w15", "=")
-        g.AddEdit("x" resultX " y" (y + 28) " w" resultW " r1 ReadOnly -Tabstop Right vExprResult", PTToolsWindow.Fmt2(S["ExprResult"]))
+        g.AddEdit("x" resultX " y" (y + 28) " w" resultW " r1 ReadOnly -Tabstop Right vExprResult")
     }
 
+    ; An input of Rebar area changed: its results, and the mesh area's span width follows (values changed by the program don't fire Change,
+    ; so the mesh area and "+ bar" are recomputed here too)
     static OnRebarFieldChanged(*) {
+        g := PTToolsWindow.G
+        PTToolsWindow.UpdateRebarArea()
+        g["MeshSpanWidth"].Text := PTToolsWindow.Num(g["RebarSpanWidth"].Text)
+        PTToolsWindow.OnMeshFieldChanged()
+    }
+
+    static UpdateRebarArea() {
         g := PTToolsWindow.G
         spanWidth := PTToolsWindow.Num(g["RebarSpanWidth"].Text)           ; combo boxes: .Value would be the LIST INDEX when the text matches a preset item
         spacing   := PTToolsWindow.Num(g["RebarBarSpacing"].Text)
         diameter  := PTToolsWindow.Num(g["RebarBarDiameter"].Text)
-
-        g["BrcSpanWidth"].Text := spanWidth
         count := (spacing != 0) ? Round(spanWidth / spacing, 2) : 0
         g["RebarBarCount"].Value := PTToolsWindow.Fmt2(count)
         g["RebarTotalArea"].Value := PTToolsWindow.Fmt2(count * PTToolsWindow.CalculateRebarArea(diameter))
-
-        PTToolsWindow.OnBrcFieldChanged()                                   ; the mesh area's span width follows (values changed by the program don't fire Change): the mesh area and "+ bar" are recomputed together
     }
 
     static OnRequiredExpressionChanged(*) {
@@ -358,15 +364,15 @@ Class PTToolsWindow {
         PTToolsWindow.OnRequiredFieldChanged()
     }
 
-    static OnBrcFieldChanged(*) {
+    static OnMeshFieldChanged(*) {
         g := PTToolsWindow.G
-        spanWidth := PTToolsWindow.Num(g["BrcSpanWidth"].Text)
+        spanWidth := PTToolsWindow.Num(g["MeshSpanWidth"].Text)
 
-        topMesh := PTToolsWindow.CalculateMeshArea(g["BrcTopMeshMark"].Text)
-        g["BrcTopArea"].Value := IsNumber(topMesh) ? PTToolsWindow.Fmt2(spanWidth / 1000 * topMesh) : ""
+        topMesh := PTToolsWindow.CalculateMeshArea(g["MeshTopMark"].Text)
+        g["MeshTopArea"].Value := IsNumber(topMesh) ? PTToolsWindow.Fmt2(spanWidth / 1000 * topMesh) : ""
 
-        botMesh := PTToolsWindow.CalculateMeshArea(g["BrcBotMeshMark"].Text)
-        g["BrcBotArea"].Value := IsNumber(botMesh) ? PTToolsWindow.Fmt2(spanWidth / 1000 * botMesh) : ""
+        botMesh := PTToolsWindow.CalculateMeshArea(g["MeshBotMark"].Text)
+        g["MeshBotArea"].Value := IsNumber(botMesh) ? PTToolsWindow.Fmt2(spanWidth / 1000 * botMesh) : ""
 
         PTToolsWindow.RecalculateCombinedAreas()
     }
@@ -376,10 +382,10 @@ Class PTToolsWindow {
     static RecalculateCombinedAreas() {
         g := PTToolsWindow.G
         rebarArea := PTToolsWindow.Num(g["RebarTotalArea"].Value)
-        topArea   := g["BrcTopArea"].Value
-        botArea   := g["BrcBotArea"].Value
-        g["BrcTopCombinedArea"].Value := IsNumber(topArea) ? PTToolsWindow.Fmt2(topArea + rebarArea) : ""
-        g["BrcBotCombinedArea"].Value := IsNumber(botArea) ? PTToolsWindow.Fmt2(botArea + rebarArea) : ""
+        topArea   := g["MeshTopArea"].Value
+        botArea   := g["MeshBotArea"].Value
+        g["MeshTopCombinedArea"].Value := IsNumber(topArea) ? PTToolsWindow.Fmt2(topArea + rebarArea) : ""
+        g["MeshBotCombinedArea"].Value := IsNumber(botArea) ? PTToolsWindow.Fmt2(botArea + rebarArea) : ""
     }
 
     static OnExpressionChanged(*) {

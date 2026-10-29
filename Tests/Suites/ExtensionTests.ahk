@@ -589,6 +589,23 @@ class ExtensionTests {
     ; Input checks, support spacing, cases SPF2M didn't handle well (crashes / shows nothing)
     ; PT Tools window: result boxes take no Tab stop (from Area expression straight to Bar diameter), units written as mm², even margins,
     ; inputs are combo boxes with their common values, the span width follows into the mesh area
+    ; Only inputs are saved: Load fills in the defaults and drops keys no longer used (renamed fields, saved results)
+    static PTToolsLoad() {
+        eq := (n, a, e) => TestRunner.Equal("PTToolsLoad." n, a, e)
+        saved := PTToolsWindow.Settings
+        try {
+            data := PTToolsWindow.Load(Map("RebarSpanWidth", "5700", "BrcSpanWidth", 3800, "RebarTotalArea", 5969.04))
+            eq("kept", data["RebarSpanWidth"], "5700")
+            eq("default filled in", data["MeshSpanWidth"], 3000)
+            eq("old and result keys dropped", data.Has("BrcSpanWidth") || data.Has("RebarTotalArea"), false)
+            stray := ""
+            for name in PTToolsWindow.RebarFieldNames
+                stray .= PTToolsWindow.Defaults.Has(name) ? "" : name " "
+            eq("every saved field has a default", stray, "")
+        } finally
+            PTToolsWindow.Settings := saved
+    }
+
     static PTToolsWindowUi() {
         eq := (n, a, e) => TestRunner.Equal("PTToolsWindowUi." n, a, e)
         saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"]]
@@ -604,6 +621,7 @@ class ExtensionTests {
                 oldUnit .= ctrl.Text " | "
         }
         eq("even margins", PTToolsWindowUi_EvenMargins(g), true)
+        eq("results calculated on opening", g["RebarBarCount"].Value != "" && g["RequiredBarCount"].Value != "" && g["MeshTopCombinedArea"].Value != "" && g["ExprResult"].Value != "", true)
         eq("read-only fields skip tab", tabbed, "")
         eq("units", oldUnit, "")
         next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")
@@ -619,15 +637,15 @@ class ExtensionTests {
         eq("combo boxes with the saved text", types, "")
         spanEdit := DllCall("FindWindowEx", "Ptr", g["RebarSpanWidth"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
         eq("span width digits only", (ControlGetStyle(spanEdit) & 0x2000) != 0, true)
-        meshEdit := DllCall("FindWindowEx", "Ptr", g["BrcTopMeshMark"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+        meshEdit := DllCall("FindWindowEx", "Ptr", g["MeshTopMark"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
         eq("mesh mark in capitals", (ControlGetStyle(meshEdit) & 0x8) != 0, true)
         g["RebarSpanWidth"].Text := "5700"                                  ; a list item: .Value would be its index, the handlers read .Text
         g["RebarBarSpacing"].Text := "150"
         PTToolsWindow.OnRebarFieldChanged()
         eq("bar count from the combo texts", g["RebarBarCount"].Value, "38.00")
-        eq("mesh span follows", g["BrcSpanWidth"].Text, "5700")
-        eq("top mesh area recalculated", g["BrcTopArea"].Value, PTToolsWindow.Fmt2(5.7 * PTToolsWindow.CalculateMeshArea(g["BrcTopMeshMark"].Text)))
-        eq("bottom mesh area recalculated", g["BrcBotArea"].Value, PTToolsWindow.Fmt2(5.7 * PTToolsWindow.CalculateMeshArea(g["BrcBotMeshMark"].Text)))
+        eq("mesh span follows", g["MeshSpanWidth"].Text, "5700")
+        eq("top mesh area recalculated", g["MeshTopArea"].Value, PTToolsWindow.Fmt2(5.7 * PTToolsWindow.CalculateMeshArea(g["MeshTopMark"].Text)))
+        eq("bottom mesh area recalculated", g["MeshBotArea"].Value, PTToolsWindow.Fmt2(5.7 * PTToolsWindow.CalculateMeshArea(g["MeshBotMark"].Text)))
         g["RequiredAreaExpression"].Text := "5000"
         PTToolsWindow.OnRequiredExpressionChanged()
         eq("area expression from the combo text", g["RequiredTotalArea"].Value, "5000.00")
