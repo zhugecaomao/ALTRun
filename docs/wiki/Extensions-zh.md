@@ -24,7 +24,7 @@ PT 工具箱没有单独的页面, 见下面。
 
 ## PT 工具箱
 预应力设计用的小工具, 输入 `PTTools` / `SPF2M` 或用自定义热键打开:
-- **PT Tools**: 钢筋 / 网片面积计算器, 以及算式计算。跨度、钢筋直径、钢筋间距、面积算式和网片型号是下拉组合框: 可以从列表里选常用值, 也可以自己输入
+- **PT Tools**: 钢筋 / 网片面积计算器, 以及算式计算。所有输入框都是下拉组合框: 可以从列表里选常用值 (跨度、钢筋直径和间距、网片型号、安全系数、算式示例), 也可以自己输入
 
   ![PT Tools](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pttools.png)
 - **SPF2M Post-Tensioning Tendon Profile Calculator (束线型计算)**: 直接在 ALTRun 里计算, 不再需要 DOSBox。选择线型 (双抛物线 / 抛物线-直线-抛物线 / 抛物线-直线 / 直线-抛物线) 和钢绞线类型, 输入起点、终点标高和水平距离, 右边的表格立即给出每个支架处的高度 (Actual、Beam 按 5mm、Slab 按 10mm 取整), 以及曲率半径和反弯点位置

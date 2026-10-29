@@ -587,8 +587,8 @@ class ExtensionTests {
     }
 
     ; Input checks, support spacing, cases SPF2M didn't handle well (crashes / shows nothing)
-    ; PT Tools window: result boxes take no Tab stop (from Area expression straight to Bar diameter), units written as mm², no select-all on click,
-    ; combo boxes with their common values, the span width follows into the mesh area
+    ; PT Tools window: result boxes take no Tab stop (from Area expression straight to Bar diameter), units written as mm², even margins,
+    ; inputs are combo boxes with their common values, the span width follows into the mesh area
     static PTToolsWindowUi() {
         eq := (n, a, e) => TestRunner.Equal("PTToolsWindowUi." n, a, e)
         saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"]]
@@ -615,15 +615,11 @@ class ExtensionTests {
         eq("units", oldUnit, "")
         next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")
         eq("expression -> diameter", next = g["RequiredBarDiameter"].Hwnd, true)
-        expr := g["ExprInput"]
-        g["RebarSpanWidth"].Focus()
-        point := (8 << 16) | 6                                              ; a click near the start of the box (y 8, x 6)
-        SendMessage(0x201, 1, point, expr), SendMessage(0x202, 0, point, expr)   ; WM_LBUTTONDOWN / UP: focus and caret where clicked
-        Sleep(100)                                                          ; anything posted (the former select-all) is handled
-        start := 0, finish := 0
-        DllCall("SendMessage", "Ptr", expr.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
-        eq("click: caret, no select all", (start = finish) "|" (StrLen(expr.Value) > 0), "1|1")
-        eq("right margin", (SendMessage(0xD4, 0, 0, expr) >> 16) >= 4, true)   ; EM_GETMARGINS: the caret doesn't touch the digits
+        editable := ""                                                      ; every input is a combo box (native: the first click selects all); Edit only for results
+        for ctrl in g
+            if (ctrl.Type = "Edit" && !(ControlGetStyle(ctrl) & 0x800))
+                editable .= ctrl.Name " "
+        eq("inputs are combo boxes", editable, "")
         types := ""
         for name, list in PTToolsWindow.ComboFields
             types .= (g[name].Type = "ComboBox" && g[name].Text = PTToolsWindow.Settings[name]) ? "" : name " "
@@ -642,6 +638,13 @@ class ExtensionTests {
         g["RequiredAreaExpression"].Text := "5000"
         PTToolsWindow.OnRequiredExpressionChanged()
         eq("area expression from the combo text", g["RequiredTotalArea"].Value, "5000.00")
+        g["ExprInput"].Text := "(6000/200+1)*201.06"
+        PTToolsWindow.OnExpressionChanged()
+        eq("calculator from the combo text", g["ExprResult"].Value, "6232.86")
+        examples := ""
+        for expr in PTToolsWindow.Expressions
+            examples .= IsNumber(Calc.Eval(expr)) ? "" : expr " "
+        eq("calculator examples all work", examples, "")
         safety := g["SafetyFactorEnabled"]
         eq("safety factor checkbox skips tab", (ControlGetStyle(safety) & 0x10000) != 0, false)
         ; Numbers in the bar diameter combo box are right-aligned: the first character's position (EM_POSFROMCHAR) is in the right half of the box (Wine doesn't support changing alignment after creation, so only checked on Windows)

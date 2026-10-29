@@ -85,10 +85,13 @@ Class PTToolsWindow {
     static BarSpacings  := ["100", "125", "150", "175", "200", "225", "250", "275", "300", "350", "500", "1000"]
     static RequiredAreas := ["3500", "5000", "7500", "9500", "10000", "12000"]
     static MeshMarks    := ["A6", "A7", "A8", "A9", "A10", "A12", "A13", "B8", "B10", "B12", "D8", "D10", "D12", "E8", "E10", "E12"]
+    static SafetyFactors := ["1.1", "1.2", "1.25", "1.5"]
+    static Expressions  := ["100+50", "1200*1.09", "(6000/200+1)*201.06", "3.1416*16^2/4", "2^10-24"]   ; examples: + - * / ^ and parentheses
     static ComboFields := Map("RebarSpanWidth", PTToolsWindow.SpanWidths, "RebarBarDiameter", PTToolsWindow.BarDiameters
         , "RebarBarSpacing", PTToolsWindow.BarSpacings, "RequiredAreaExpression", PTToolsWindow.RequiredAreas
         , "RequiredBarDiameter", PTToolsWindow.BarDiameters, "BrcSpanWidth", PTToolsWindow.SpanWidths
-        , "BrcTopMeshMark", PTToolsWindow.MeshMarks, "BrcBotMeshMark", PTToolsWindow.MeshMarks)
+        , "BrcTopMeshMark", PTToolsWindow.MeshMarks, "BrcBotMeshMark", PTToolsWindow.MeshMarks
+        , "SafetyFactor", PTToolsWindow.SafetyFactors, "ExprInput", PTToolsWindow.Expressions)
 
     static ProfileTypes := ["Double Parabolic Profile", "Parabolic-Straight-Parabolic",
         "Parabolic-Straight Profile", "Straight-Parabolic Profile"]
@@ -157,7 +160,8 @@ Class PTToolsWindow {
         for name in PTToolsWindow.ComboFields {
             g[name].Text := S[name]
             inner := DllCall("FindWindowEx", "Ptr", g[name].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
-            try ControlSetStyle("+0x2", inner)                              ; the edit box inside is right-aligned too (ES_RIGHT), like the other numbers
+            if (name != "ExprInput")                                        ; an expression reads from the left
+                try ControlSetStyle("+0x2", inner)                          ; the edit box inside is right-aligned too (ES_RIGHT), like the other numbers
             style := InStr(name, "MeshMark") ? "+0x8"                       ; mesh marks in capitals (ES_UPPERCASE), "a7" -> "A7"
                 : (name = "RebarSpanWidth") ? "+0x2000" : ""               ; digits only (ES_NUMBER), as before
             if (style != "")
@@ -165,7 +169,6 @@ Class PTToolsWindow {
         }
 
         PTToolsWindow.SetupHotkeys()
-        PTToolsWindow.SetupInputs(g)
 
         ; the same margin left, right and below the groups (AutoSize would add the GUI's own margins, smaller on the right and below)
         g.Show("x" S["WinLeft"] " y" S["WinTop"] " w" (meshRight + PTToolsWindow.Margin) " h" (PTToolsWindow.TopY + PTToolsWindow.TallGroupH + PTToolsWindow.Margin))
@@ -184,20 +187,6 @@ Class PTToolsWindow {
         Hotkey("Enter", (*) => SendInput("{Tab}"))
         Hotkey("NumpadEnter", (*) => SendInput("{Tab}"))
         HotIfWinActive()
-    }
-
-    ; Input and result boxes: a little margin on both sides, so a right-aligned caret doesn't touch the digits.
-    ; Clicking places the caret as usual in Windows; Tab / Enter into a box selects all (a click used to select all too, but a slight
-    ; mouse movement while clicking turned it into a partial selection)
-    static SetupInputs(g) {
-        margin := Round(4 * A_ScreenDPI / 96), margins := (margin << 16) | margin
-        for ctrl in g {
-            if (ctrl.Type != "Edit" && ctrl.Type != "ComboBox")
-                continue
-            inner := (ctrl.Type = "Edit") ? ctrl.Hwnd : DllCall("FindWindowEx", "Ptr", ctrl.Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
-            if inner
-                SendMessage(0xD3, 3, margins, inner)                         ; EM_SETMARGINS: EC_LEFTMARGIN | EC_RIGHTMARGIN
-        }
     }
 
     static OnClose(GuiObj) {
@@ -287,7 +276,7 @@ Class PTToolsWindow {
         ; by default so it never silently changes a result the user didn't ask for.
         g.AddCheckBox("x" labelX " y" (y + 149) " w130 -Tabstop vSafetyFactorEnabled Checked" S["SafetyFactorEnabled"], "Safety factor")
             .OnEvent("Click", (p*) => PTToolsWindow.OnSafetyFactorToggled(p*))
-        g.AddEdit("x" editX " y" (y + 147) " w" PTToolsWindow.RebarFieldW " r1 Right vSafetyFactor", S["SafetyFactor"])
+        g.AddComboBox("x" editX " y" (y + 147) " w" PTToolsWindow.RebarFieldW " vSafetyFactor", PTToolsWindow.SafetyFactors)
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredFieldChanged(p*))
 
         PTToolsWindow.Field(g, labelX, editX, y + 187, PTToolsWindow.RebarFieldW, "Number of bars", "RequiredBarCount", S["RequiredBarCount"], "ReadOnly Right")
@@ -326,7 +315,7 @@ Class PTToolsWindow {
         resultX := eqX + 23
         resultW := w - (resultX - x0) - 15
 
-        g.AddEdit("x" (x0 + 15) " y" (y + 28) " w" inputW " r1 vExprInput", S["ExprInput"])
+        g.AddComboBox("x" (x0 + 15) " y" (y + 28) " w" inputW " vExprInput", PTToolsWindow.Expressions)
             .OnEvent("Change", (p*) => PTToolsWindow.OnExpressionChanged(p*))
         g.AddText("x" eqX " y" (y + 31) " w15", "=")
         g.AddEdit("x" resultX " y" (y + 28) " w" resultW " r1 ReadOnly -Tabstop Right vExprResult", PTToolsWindow.Fmt2(S["ExprResult"]))
@@ -357,7 +346,7 @@ Class PTToolsWindow {
         g := PTToolsWindow.G
         totalArea := PTToolsWindow.Num(g["RequiredTotalArea"].Value)
         if (g["SafetyFactorEnabled"].Value)
-            totalArea *= PTToolsWindow.Num(g["SafetyFactor"].Value, 1.0)
+            totalArea *= PTToolsWindow.Num(g["SafetyFactor"].Text, 1.0)
         area := PTToolsWindow.CalculateRebarArea(PTToolsWindow.Num(g["RequiredBarDiameter"].Text)) ; .Value would be the LIST INDEX when the text matches a preset item
         g["RequiredBarCount"].Value := (area != 0) ? Ceil(totalArea / area) : 0
     }
@@ -395,7 +384,7 @@ Class PTToolsWindow {
 
     static OnExpressionChanged(*) {
         g := PTToolsWindow.G
-        g["ExprResult"].Value := PTToolsWindow.Fmt2(Calc.Eval(g["ExprInput"].Value))
+        g["ExprResult"].Value := PTToolsWindow.Fmt2(Calc.Eval(g["ExprInput"].Text))
     }
 
     ; Bar cross-section area from the bar diameter (mm2)
@@ -439,7 +428,6 @@ Class PTToolsWindow {
         right := PTToolsWindow.BuildProfileGroup(g, S, 20)
         PTToolsWindow.BuildResultGroup(g, right + 10)
         PTToolsWindow.SetupSpf2mHotkeys()
-        PTToolsWindow.SetupInputs(g)
         PTToolsWindow.OnTendonChanged()                                    ; the hints for minimum radius / duct diameter follow the strand type
         g.Show("x" S["Spf2mWinLeft"] " y" S["Spf2mWinTop"] " AutoSize")
     }

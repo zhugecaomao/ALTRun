@@ -24,7 +24,7 @@ See [System commands and terminal](System-Commands#terminal).
 
 ## PT Tools
 Small tools for post-tensioning design; type `PTTools` / `SPF2M` or open them with a custom hotkey:
-- **PT Tools**: rebar / mesh area calculator, plus an expression calculator. Span width, bar diameter, bar spacing, area expression and mesh marks are combo boxes: pick a common value from the list or type your own
+- **PT Tools**: rebar / mesh area calculator, plus an expression calculator. Every input is a combo box: pick a common value from the list (span widths, bar diameters and spacings, mesh marks, safety factors, example expressions) or type your own
 
   ![PT Tools](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pttools.png)
 - **SPF2M Post-Tensioning Tendon Profile Calculator**: calculated directly in ALTRun, no DOSBox needed any more. Pick the profile (double parabola / parabola-straight-parabola / parabola-straight / straight-parabola) and the strand type, enter the start and end levels and the horizontal distance, and the table on the right immediately gives the height at every support (Actual, Beam rounded to 5 mm, Slab rounded to 10 mm), plus the radius of curvature and the inflection point position
