@@ -9,9 +9,8 @@
 ;
 ; The output folder defaults to docs\images\screenshots; no scene names = all scenes; "-scene" = all but these;
 ; "normal-scale" / "-normal-scale" = the scenes in Shots.NormalScale / all but them.
-; The "demo" scene isn't a single shot: every frame of a sequence goes to %Temp%\ALTRunDemoFrames (frames.txt, each line: file name Tab ms shown
-; Tab the key pressed for this step),
-; and MakeDemo.py turns them into the animation demo.png on the README front page. RoundCorners.py adds the rounded corners; before the shots SetDisplay.ps1 sets the screen to
+; The "demo" scenes aren't single shots: every frame of a sequence goes to %Temp%\ALTRunDemoFrames\<scene> (frames.txt, each line: file name Tab ms shown),
+; and MakeDemo.py (run by MakeDemos.ps1) turns each folder into the animation <scene>.png: demo.png on the README front page, demo-quickswitch.png etc. for the features. RoundCorners.py adds the rounded corners; before the shots SetDisplay.ps1 sets the screen to
 ; 1920 x 1080 at 150% scaling (see screenshots.yml), and the coordinates below scale by Shots.Scale. The Preferences and Quick Switch shots
 ; (Shots.NormalScale) are too big at 150%, so screenshots.yml sets the scaling back to 100% and takes them separately.
 ; GitHub Actions' "Screenshots" workflow runs it on Windows and commits the screenshots back to the branch.
@@ -33,7 +32,7 @@ class Shots {
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
 
-    static NormalScale := ["quickswitch", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "demo-quickswitch", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -56,6 +55,11 @@ class Shots {
             ["windows",     "Light", "", () => Shots.Windows()],                 ; window switching (w + Space)
             ["sendto",      "Light", "", () => Shots.SendTo(), () => Shots.EnableSendTo()],
             ["demo",        "Light", "", () => Shots.Demo(), () => Shots.PrepareDemo()],
+            ["demo-quickswitch", "Light", "", () => Shots.DemoQuickSwitch(), () => Shots.WriteRecentFolders()],   ; feature animations (README, site, Wiki)
+            ["demo-clipboard",   "Light", "", () => Shots.DemoClipboard(), () => Shots.WriteClipboard()],
+            ["demo-snippets",    "Light", "", () => Shots.DemoSnippets()],
+            ["demo-browse",      "Light", "", () => Shots.DemoBrowse()],
+            ["demo-calculator",  "Light", "", () => Shots.DemoCalculator(), () => Shots.PrepareDemo()],
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
@@ -456,29 +460,64 @@ class Shots {
         }
     }
 
-    ; The animation on the README front page: 7 scenes (applications, actions panel, files, clipboard history, window switching, calculator, system commands); each step saves the same screen area
-    ; as a frame, noting the key pressed for it. MakeDemo.py then cuts out the window, puts it on a blurred background and draws the keys at the bottom right. Returns "" (no separate shot)
+    ;---------------------------------------------------------------------------
+    ; Animations: each step saves the same screen area as a frame (FramesStart / Frame / FramesEnd); MakeDemo.py then cuts out the window
+    ; (or, with several windows, the area they cover) and puts it on a blurred background. The scenes return "" (no separate shot)
+    ;---------------------------------------------------------------------------
     static DemoFrames := A_Temp "\ALTRunDemoFrames"
     static SamplePids := [], HiddenWindows := []
+    static _frames := ""
+
+    ; windows: the frames show several windows (Notepad and the search window, a dialog and its panel): a marker file tells MakeDemo.py to keep the area they cover
+    static FramesStart(scene, region, windows := false) {
+        dir := Shots.DemoFrames "\" scene
+        try DirDelete(dir, true)
+        DirCreate(dir)
+        if windows
+            FileAppend("", dir "\windows")
+        Shots._frames := {Dir: dir, Region: region, List: "", Count: 0}
+    }
+
+    static Frame(ms) {
+        f := Shots._frames, r := f.Region
+        name := Format("frame-{:02}.png", ++f.Count)
+        hbm := Shots.CaptureRect(r.X, r.Y, r.W, r.H)
+        try Shots.SavePng(hbm, f.Dir "\" name)
+        finally DllCall("DeleteObject", "Ptr", hbm)
+        f.List .= name "`t" ms "`n"
+    }
+
+    static FramesEnd() {
+        f := Shots._frames
+        FileAppend(f.List, f.Dir "\frames.txt", "UTF-8-RAW")
+        Shots.Log("saved " f.Count " frames to " f.Dir)
+        return ""
+    }
+
+    ; The area around the search window, tall enough for the result list it shows later
+    static SearchRegion(hwnd) {
+        r := Shots.FrameRect(hwnd)
+        return {X: r.X, Y: r.Y, W: r.W, H: Max(r.H, Round(600 * Shots.Scale))}
+    }
+
+    ; The area around several rectangles {X, Y, W, H} with a margin, within the screen
+    static Around(rects) {
+        pad := Round(24 * Shots.Scale)
+        left := 99999, top := 99999, right := -99999, bottom := -99999
+        for r in rects
+            left := Min(left, r.X), top := Min(top, r.Y), right := Max(right, r.X + r.W), bottom := Max(bottom, r.Y + r.H)
+        left := Max(0, left - pad), top := Max(0, top - pad)
+        return {X: left, Y: top, W: Min(A_ScreenWidth, right + pad) - left, H: Min(A_ScreenHeight, bottom + pad) - top}
+    }
+
+    ; The animation on the README front page: 7 scenes (applications, actions panel, files, clipboard history, window switching, calculator, system commands)
     static Demo() {
         hwnd := Shots.SearchWindow()
         Shots.OpenSampleWindows()
         WinActivate(hwnd)
         Shots.WaitPainted(hwnd, 10)
-        dir := Shots.DemoFrames
-        try DirDelete(dir, true)
-        DirCreate(dir)
-        r := Shots.FrameRect(hwnd)
-        pad := Round(24 * Shots.Scale)
-        region := {X: Max(0, r.X - pad), Y: Max(0, r.Y - pad), W: r.W + 2 * pad, H: Min(A_ScreenHeight - Max(0, r.Y - pad), Round(640 * Shots.Scale))}
-        state := {Frames: "", Count: 0}                                     ; inner functions change outer variables: passed through an object
-        frame(ms, keys := "") {
-            name := Format("frame-{:02}.png", ++state.Count)
-            hbm := Shots.CaptureRect(region.X, region.Y, region.W, region.H)
-            try Shots.SavePng(hbm, dir "\" name)
-            finally DllCall("DeleteObject", "Ptr", hbm)
-            state.Frames .= name "`t" ms "`t" keys "`n"
-        }
+        Shots.FramesStart("demo", Shots.Around([Shots.SearchRegion(hwnd)]))
+        frame(ms, keys := "") => Shots.Frame(ms)                           ; keys: the key pressed for this step (the status bar shows it)
         type(text, ms) {
             ControlSend("{Text}" text, "Edit1", hwnd)
             Sleep(900)
@@ -499,9 +538,101 @@ class Shots {
         clear(), type("w ", 2000)
         clear(), type("1200*1.09", 1800)
         clear(), type("lock", 1800)
-        FileAppend(state.Frames, dir "\frames.txt", "UTF-8-RAW")
-        Shots.Log("saved " state.Count " demo frames to " dir)
-        return ""
+        return Shots.FramesEnd()
+    }
+
+    ; Notepad above the backdrop, below the search window's top (the search window, topmost and shown later, covers its top part)
+    static OpenNotepad(search) {
+        Run("notepad.exe")
+        if !(hwnd := WinWait("ahk_class Notepad", , 10))
+            throw Error("Notepad not shown")
+        Shots.SamplePids.Push(WinGetPID(hwnd))
+        k := Shots.Scale
+        WinSetAlwaysOnTop(1, hwnd)
+        WinMove(search.X - Round(40 * k), search.Y + Round(70 * k), search.W + Round(80 * k), Round(380 * k), hwnd)
+        WinActivate(hwnd)
+        WinWaitActive(hwnd, , 3)
+        Sleep(800)
+        return hwnd
+    }
+
+    ; Quick Switch: the Open dialog in Travel; Ctrl+G jumps to the folder of the Explorer window in front (Annual Report 2026),
+    ; Ctrl+Shift+G puts the caret in the panel's search box, "web" + Enter jumps to Website Redesign
+    static DemoQuickSwitch() {
+        windows := Shots.QuickSwitch()
+        dialog := windows[1], panel := windows[2]
+        for window in windows
+            DllCall("SetWindowPos", "Ptr", window, "Ptr", -1, "Int", 0, "Int", 0, "Int", 0, "Int", 0, "UInt", 0x13)   ; HWND_TOPMOST, no size / move / activate
+        Shots.BackdropBehind(dialog)
+        p := Shots.FrameRect(panel)
+        Shots.FramesStart("demo-quickswitch", Shots.Around([Shots.FrameRect(dialog), {X: p.X, Y: p.Y, W: p.W, H: p.H + Round(40 * Shots.Scale)}]), true)
+        SendLevel(1)                                                        ; the hotkeys of another script (ALTRun) see these keys
+        Shots.Frame(1800)
+        WinActivate(dialog), Sleep(300)
+        Send("^g"), Sleep(1800), Shots.Frame(2200)
+        Send("^+g"), Sleep(800)
+        Send("{Text}web"), Sleep(1200), Shots.Frame(1800)
+        Send("{Enter}"), Sleep(1800), Shots.Frame(3000)
+        SendLevel(0)
+        return Shots.FramesEnd()
+    }
+
+    ; Clipboard history: Ctrl+Alt+C in Notepad, "meet" filters, Enter pastes the item into Notepad
+    static DemoClipboard() {
+        hwnd := Shots.SearchWindow()
+        search := Shots.SearchRegion(hwnd)
+        ControlSend("{Esc}", "Edit1", hwnd), Sleep(500)
+        note := Shots.OpenNotepad(search)
+        Send("{Text}Reply to Sam: "), Sleep(400)
+        Shots.FramesStart("demo-clipboard", Shots.Around([search, Shots.FrameRect(note)]), true)
+        Shots.Frame(1200)
+        Send("^!c"), Sleep(1500), Shots.Frame(1800)
+        ControlSend("{Text}meet", "Edit1", hwnd), Sleep(1200), Shots.Frame(1800)
+        ControlSend("{Enter}", "Edit1", hwnd), Sleep(1500), Shots.Frame(3000)
+        return Shots.FramesEnd()
+    }
+
+    ; Snippets: typing ;thx in Notepad expands the default "Email: thank you" snippet, with the caret where {cursor} was
+    static DemoSnippets() {
+        hwnd := Shots.SearchWindow()
+        search := Shots.SearchRegion(hwnd)
+        ControlSend("{Esc}", "Edit1", hwnd), Sleep(500)
+        note := Shots.OpenNotepad(search)
+        Shots.FramesStart("demo-snippets", Shots.Around([Shots.FrameRect(note)]), true)
+        SendLevel(1)                                                        ; ALTRun's hotstrings see these keys
+        Shots.Frame(1000)
+        for char in StrSplit(";thx")
+            Send("{Text}" char), Sleep(300), Shots.Frame(400)
+        Sleep(900), Shots.Frame(1800)
+        Send("{Text}Sam"), Sleep(600), Shots.Frame(3000)
+        SendLevel(0)
+        return Shots.FramesEnd()
+    }
+
+    ; Browsing folders: type a path, Tab goes into the selected folder, typing filters, Backspace goes up a level
+    static DemoBrowse() {
+        hwnd := Shots.SearchWindow()
+        WinActivate(hwnd)
+        Shots.WaitPainted(hwnd, 10)
+        Shots.FramesStart("demo-browse", Shots.Around([Shots.SearchRegion(hwnd)]))
+        Shots.Frame(800)
+        ControlSend("{Text}" Shots.DemoDir "\", "Edit1", hwnd), Sleep(1500), Shots.Frame(2000)
+        ControlSend("{Tab}", "Edit1", hwnd), Sleep(1500), Shots.Frame(2000)
+        ControlSend("{Text}bud", "Edit1", hwnd), Sleep(1200), Shots.Frame(2000)
+        ControlSend("{Backspace 3}", "Edit1", hwnd), Sleep(600)
+        ControlSend("{Backspace}", "Edit1", hwnd), Sleep(1500), Shots.Frame(2500)
+        return Shots.FramesEnd()
+    }
+
+    ; Calculator: arithmetic and unit conversions, the result shown as you type
+    static DemoCalculator() {
+        hwnd := Shots.SearchWindow()
+        WinActivate(hwnd)
+        Shots.WaitPainted(hwnd, 10)
+        Shots.FramesStart("demo-calculator", Shots.Around([Shots.SearchRegion(hwnd)]))
+        for query in ["(200+100)*2", "10 km in mi", "100 f to c", "1 GB to MB"]
+            Shots.SetQuery(hwnd, query), Shots.Frame(1800)
+        return Shots.FramesEnd()
     }
 
     ; Windows to switch to (all behind the backdrop): Explorer, Notepad with a text file, Character Map, Remote Desktop Connection; returns how many didn't show

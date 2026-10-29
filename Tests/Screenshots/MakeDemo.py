@@ -1,17 +1,18 @@
-"""MakeDemo.py - README 首页的动图 demo.png (APNG)
+"""MakeDemo.py - animations (APNG): demo.png on the README front page and the feature animations demo-*.png
 
-把 TakeScreenshots.ahk 的 "demo" 场景存下的帧 (frames.txt: 每行 "文件名 Tab 毫秒 Tab 按键") 合成循环播放的动画 PNG:
-每一帧里找出搜索窗口 (和截图时的纯色背景不同的范围), 加上圆角和阴影, 放在一张高斯模糊的背景图上。
-不再在右下角画这一步按的键: 搜索窗口底部的状态栏已经显示 Enter / → 等按键 (frames.txt 的第三列不用了)。
-窗口的左上角固定, 窗口变高变矮时动图大小不变。
+Turns the frames a "demo" scene of TakeScreenshots.ahk saved (frames.txt: each line "file name Tab ms") into a looping animated PNG:
+in each frame it finds the search window (the area that differs from the plain backdrop of the shots), adds rounded corners and a shadow,
+and puts it on a blurred background. The window's top left stays put, so the animation keeps its size when the window gets taller or shorter.
+With a "windows" file in the frame folder (several windows: Notepad and the search window, a dialog and its folder panel) it keeps
+the area any window covers in any frame instead, and the backdrop between the windows becomes the blurred background, with their shadow.
 
-背景: Tests/Screenshots/backdrop.jpg (或 .png) 存在时用它 (缩放裁剪后模糊), 否则生成一张蓝紫色调的抽象图
-(几团彩色光斑 + 高斯模糊, 和 Windows 11 的默认壁纸类似)。
-用 APNG 而不是 GIF: GIF 只有 256 色, 背景的渐变要抖动 (有颗粒), 窗口的圆角也不能半透明 (有锯齿)。
-浏览器和 GitHub 都直接播放 APNG; Pillow 只存每一帧变化的部分, 文件不大。
-截图按 150% 缩放截的时候 (环境变量 SHOT_SCALE=1.5), 边距、阴影、圆角也跟着放大。
+Background: Tests/Screenshots/backdrop.jpg (or .png) when there is one (scaled, cropped and blurred), otherwise an abstract blue-purple picture
+(a few colored light spots + Gaussian blur, like the Windows 11 default wallpaper).
+APNG rather than GIF: GIF has only 256 colors, so the background gradient would be dithered (grainy) and the rounded corners couldn't be semi-transparent (jaggies).
+Browsers and GitHub play APNG directly; Pillow stores only the part of each frame that changed, so the files stay small.
+When the shots are taken at 150% scaling (environment variable SHOT_SCALE=1.5), the margins, shadow and corners scale up too.
 
-    python Tests/Screenshots/MakeDemo.py <帧所在的文件夹> <输出的 png>
+    python Tests/Screenshots/MakeDemo.py <frame folder> <output png>
 """
 import os
 import sys
@@ -30,13 +31,13 @@ HERE = Path(__file__).resolve().parent
 
 
 def window_box(image):
-    """帧里和背景色不同的范围 (搜索窗口)"""
+    """The area of the frame that differs from the backdrop color (the search window)"""
     diff = ImageChops.difference(image, Image.new("RGB", image.size, BACKDROP)).convert("L").point(lambda v: 255 if v > 8 else 0)
     return diff.getbbox()
 
 
 def background(size):
-    """高斯模糊的背景图"""
+    """The blurred background picture"""
     for name in ("backdrop.jpg", "backdrop.png"):
         path = HERE / name
         if path.exists():
@@ -64,7 +65,7 @@ def background(size):
 
 
 def with_shadow(canvas_bg, window_size):
-    """背景 + 窗口的阴影 (窗口本身还没放上去)"""
+    """The background with the window's shadow (the window itself isn't on it yet)"""
     shadow = Image.new("RGBA", canvas_bg.size, (0, 0, 0, 0))
     mask = rounded_mask(window_size, CORNER).point(lambda v: v * SHADOW_OPACITY // 255)
     shadow.paste((0, 0, 0, 255), (MARGIN, MARGIN + SHADOW_OFFSET), mask)
@@ -72,9 +73,27 @@ def with_shadow(canvas_bg, window_size):
     return Image.alpha_composite(canvas_bg.convert("RGBA"), shadow).convert("RGB")
 
 
+def several_windows(images):
+    """The frames cropped to the area any window covers; the backdrop color around and between them shows the background"""
+    boxes = [window_box(image) or (0, 0, image.width, image.height) for image in images]
+    box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+    size = (box[2] - box[0] + 2 * MARGIN, box[3] - box[1] + 2 * MARGIN)
+    canvas_bg = background(size)
+    frames = []
+    for image in images:
+        crop = image.crop(box)
+        mask = ImageChops.difference(crop, Image.new("RGB", crop.size, BACKDROP)).convert("L").point(lambda v: 255 if v > 8 else 0)
+        shadow = Image.new("RGBA", size, (0, 0, 0, 0))
+        shadow.paste((0, 0, 0, 255), (MARGIN, MARGIN + SHADOW_OFFSET), mask.point(lambda v: v * SHADOW_OPACITY // 255))
+        frame = Image.alpha_composite(canvas_bg.convert("RGBA"), shadow.filter(ImageFilter.GaussianBlur(SHADOW_BLUR))).convert("RGB")
+        frame.paste(crop, (MARGIN, MARGIN), mask)
+        frames.append(frame)
+    return frames
+
+
 def main(frame_dir, output):
     frame_dir = Path(frame_dir)
-    entries = []                                                        # (image, ms, keys)
+    entries = []                                                        # (image, ms, keys: no longer used)
     for line in (frame_dir / "frames.txt").read_text(encoding="utf-8").splitlines():
         if line.strip():
             fields = line.split("\t") if "\t" in line else line.rsplit(" ", 1)
@@ -83,6 +102,10 @@ def main(frame_dir, output):
     if not entries:
         raise SystemExit("no frames")
 
+    if (frame_dir / "windows").exists():
+        frames = several_windows([entry[0] for entry in entries])
+        save(frames, entries, output)
+        return
     windows = []
     for image, *_ in entries:
         box = window_box(image) or (0, 0, image.width, image.height)
@@ -95,9 +118,13 @@ def main(frame_dir, output):
         frame = with_shadow(canvas_bg, window.size).convert("RGBA")
         frame.alpha_composite(round_image(window, CORNER), (MARGIN, MARGIN))     # semi-transparent rounded edges, no jaggies
         frames.append(frame.convert("RGB"))
+    save(frames, entries, output)
+
+
+def save(frames, entries, output):
     frames[0].save(output, format="PNG", save_all=True, append_images=frames[1:], duration=[entry[1] for entry in entries],
                    loop=0, disposal=0, blend=0, optimize=True)
-    print(f"{output}: {len(frames)} frames, {width}x{height}, {Path(output).stat().st_size // 1024} KB")
+    print(f"{output}: {len(frames)} frames, {frames[0].width}x{frames[0].height}, {Path(output).stat().st_size // 1024} KB")
 
 
 if __name__ == "__main__":
