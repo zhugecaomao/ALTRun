@@ -804,6 +804,8 @@
   "Theme.Sunset": "サンセット",
   "Theme.HighContrast": "ハイコントラスト",
   "Theme.SolarizedLight": "Solarized ライト",
+  "Theme.ReadError": "テーマファイル {1} を読み込めないため、{2} を使用します。",
+  "Theme.ReadErrorLine": "テーマファイル {1} の {2} 行目にエラーがあるため、{3} を使用します。",
   "Theme.System": "システムに合わせる (ライト / ダーク)",
   "Theme.TokyoNight": "Tokyo Night",
   "Tool.Calculator": "電卓",

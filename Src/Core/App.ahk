@@ -83,6 +83,8 @@ class App {
         OnExit((reason, *) => App._OnExit(reason))
         Logger.Time("startup: shortcuts", phase)
 
+        if (ThemeManager.ReadError != "")
+            App.Toast(App.ThemeErrorText(ThemeManager.ReadError), 8000)
         if (AppSettings.ImportedFrom != "")
             App.Toast(I18n.T("Settings.ImportedIni", AppSettings.ImportedFrom), 6000)
         else if AppSettings.MigratedFrom
@@ -325,6 +327,14 @@ class App {
         else
             Run('"' A_AhkPath '" /restart "' A_ScriptFullPath '" ' arguments)
         ExitApp()
+    }
+
+    ; The notice for a theme file that couldn't be read (e.g. a JSON error in a custom theme): which file and line. Light takes its place,
+    ; whether it is the chosen theme or one of its "Base" themes
+    static ThemeErrorText(readError) {
+        SplitPath(readError["File"], &fileName)
+        light := I18n.T("Theme.Light")
+        return readError["Line"] ? I18n.T("Theme.ReadErrorLine", fileName, readError["Line"], light) : I18n.T("Theme.ReadError", fileName, light)
     }
 
     static Quit() {

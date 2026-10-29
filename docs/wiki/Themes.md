@@ -81,6 +81,7 @@ You can also write only the keys you want to change and use `Base` to say which 
 
 - A theme in `Themes\` with the same name as a built-in theme wins. For example, `Themes\Dark.json` with `"Base": "Dark"` and a few changed colors modifies the built-in Dark theme
 - Theme files go in the `Themes\` folder (Preferences → Appearance → Open Themes Folder) and appear in the theme list
+- If a theme file has a syntax error (a missing comma, say), ALTRun shows a notice at startup with the file name and line, and uses Light in its place (also when it is only the `Base` of the chosen theme)
 
 ## Available keys
 Colors are always `RRGGBB` (without `#`); font sizes are in pt; sizes are pixels at 96 DPI and scale with the display automatically.

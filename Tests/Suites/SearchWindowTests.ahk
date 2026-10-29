@@ -337,6 +337,36 @@ class SearchWindowTests {
         }
     }
 
+    ; A custom theme file with a JSON error: Light is used, ReadError names the file and line (also for a broken "Base"), and the notice says so
+    static ThemeReadError() {
+        eq := (n, a, e) => TestRunner.Equal("ThemeReadError." n, a, e)
+        saved := [ThemeManager.BuiltinDir, ThemeManager.UserDir, ThemeManager.Name, ThemeManager.Current, ThemeManager.Resolved, ThemeManager.MenuMode]
+        ThemeManager.BuiltinDir := A_ScriptDir "\..\Resources\Themes"
+        ThemeManager.UserDir := A_Temp "\ALTRunThemeErrorTest"
+        try DirDelete(ThemeManager.UserDir, true)
+        DirCreate(ThemeManager.UserDir)
+        try {
+            FileAppend('{`n  "Base": "Dark",`n  "Title": "FF0000"`n  "Opacity": 240`n}', ThemeManager.UserDir "\Broken.json", "UTF-8")
+            FileAppend('{ "Base": "Broken", "SelectedRadius": 12 }', ThemeManager.UserDir "\OnBroken.json", "UTF-8")
+            ThemeManager.Load("Broken")
+            eq("light instead", ThemeManager.Resolved, "Light")
+            eq("file", ThemeManager.ReadError["File"], ThemeManager.UserDir "\Broken.json")
+            eq("line", ThemeManager.ReadError["Line"], 4)
+            eq("notice", App.ThemeErrorText(ThemeManager.ReadError), I18n.T("Theme.ReadErrorLine", "Broken.json", 4, I18n.T("Theme.Light")))
+            eq("notice without a line", App.ThemeErrorText(Map("File", "C:\x\Mine.json", "Line", 0)), I18n.T("Theme.ReadError", "Mine.json", I18n.T("Theme.Light")))
+            ThemeManager.Load("OnBroken")
+            eq("broken base: still its own keys", ThemeManager.Resolved "|" ThemeManager.Current["SelectedRadius"], "OnBroken|12")
+            eq("broken base named", ThemeManager.ReadError["File"], ThemeManager.UserDir "\Broken.json")
+            ThemeManager.Load("Dark")
+            eq("cleared on the next load", ThemeManager.ReadError, "")
+        } finally {
+            try DirDelete(ThemeManager.UserDir, true)
+            ThemeManager.BuiltinDir := saved[1], ThemeManager.UserDir := saved[2]
+            ThemeManager.Load(saved[3])
+            ThemeManager.Current := saved[4], ThemeManager.Resolved := saved[5], ThemeManager.MenuMode := saved[6]
+        }
+    }
+
     static Themes() {
         eq := (n, a, e) => TestRunner.Equal("Themes." n, a, e)
         ThemeManager.BuiltinDir := A_ScriptDir "\..\Resources\Themes"

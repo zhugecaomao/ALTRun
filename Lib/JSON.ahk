@@ -129,7 +129,15 @@ class JSON {
             pos := stop
             return numText + 0
         }
-        throw Error("JSON: 位置 " pos " 处有无法识别的字符")
+        JSON._Fail(&text, pos, "unexpected character")
+    }
+
+    ; A parse error at character pos: the message names the line and column; Extra is the line (the settings / theme notices show it)
+    static _Fail(&text, pos, problem) {
+        before := SubStr(text, 1, pos - 1)
+        StrReplace(before, "`n", , , &breaks)
+        column := pos - InStr(before, "`n", , -1)
+        throw Error(Format("JSON: line {1}, column {2}: {3}", breaks + 1, column, problem), "JSON.Parse", breaks + 1)
     }
 
     static _Object(&text, &pos) {
@@ -143,11 +151,11 @@ class JSON {
         loop {
             JSON._Space(&text, &pos)
             if (SubStr(text, pos, 1) != '"')
-                throw Error("JSON: 位置 " pos " 处应该是键名")
+                JSON._Fail(&text, pos, "a key in quotes expected")
             key := JSON._String(&text, &pos)
             JSON._Space(&text, &pos)
             if (SubStr(text, pos, 1) != ":")
-                throw Error("JSON: 位置 " pos " 处缺少 ':'")
+                JSON._Fail(&text, pos, "':' expected")
             pos++
             obj[key] := JSON._Value(&text, &pos)
             JSON._Space(&text, &pos)
@@ -157,7 +165,7 @@ class JSON {
                 continue
             if (ch = "}")
                 return obj
-            throw Error("JSON: 位置 " (pos - 1) " 处缺少 ',' 或 '}'")
+            JSON._Fail(&text, pos - 1, "',' or '}' expected")
         }
     }
 
@@ -178,7 +186,7 @@ class JSON {
                 continue
             if (ch = "]")
                 return items
-            throw Error("JSON: 位置 " (pos - 1) " 处缺少 ',' 或 ']'")
+            JSON._Fail(&text, pos - 1, "',' or ']' expected")
         }
     }
 
@@ -188,7 +196,7 @@ class JSON {
         loop {
             quote := InStr(text, '"', true, from)
             if !quote
-                throw Error("JSON: 位置 " pos " 处的字符串没有结束")
+                JSON._Fail(&text, pos, "the string isn't closed")
             back := quote - 1
             while (SubStr(text, back, 1) = "\")
                 back--
