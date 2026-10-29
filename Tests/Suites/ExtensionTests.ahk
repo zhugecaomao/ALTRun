@@ -587,7 +587,8 @@ class ExtensionTests {
     }
 
     ; Input checks, support spacing, cases SPF2M didn't handle well (crashes / shows nothing)
-    ; PT Tools window: result boxes take no Tab stop (from Area Expression straight to Rebar Diameter), units written as mm², clicking into an input box selects all
+    ; PT Tools window: result boxes take no Tab stop (from Area expression straight to Bar diameter), units written as mm², no select-all on click,
+    ; combo boxes with their common values, the span width follows into the mesh area
     static PTToolsWindowUi() {
         eq := (n, a, e) => TestRunner.Equal("PTToolsWindowUi." n, a, e)
         saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"]]
@@ -606,19 +607,33 @@ class ExtensionTests {
         eq("units", oldUnit, "")
         next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")
         eq("expression -> diameter", next = g["RequiredBarDiameter"].Hwnd, true)
-        span := g["RebarSpanWidth"]
-        SendMessage(0xB1, 1, 1, span)                                       ; caret in the middle
-        span.Focus()
-        Sleep(100)                                                          ; handle the PostMessage select-all
+        expr := g["ExprInput"]
+        g["RebarSpanWidth"].Focus()
+        point := (8 << 16) | 6                                              ; a click near the start of the box (y 8, x 6)
+        SendMessage(0x201, 1, point, expr), SendMessage(0x202, 0, point, expr)   ; WM_LBUTTONDOWN / UP: focus and caret where clicked
+        Sleep(100)                                                          ; anything posted (the former select-all) is handled
         start := 0, finish := 0
-        DllCall("SendMessage", "Ptr", span.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
-        eq("select all on focus", start "-" finish, "0-" StrLen(span.Value))
-        eq("right margin", (SendMessage(0xD4, 0, 0, span) >> 16) >= 4, true)   ; EM_GETMARGINS: the caret doesn't touch the digits
-        g["RebarSpanWidth"].Value := 5000                                   ; the first group's Span Width -> BRC's Span Width -> the mesh area recomputed together
+        DllCall("SendMessage", "Ptr", expr.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
+        eq("click: caret, no select all", (start = finish) "|" (StrLen(expr.Value) > 0), "1|1")
+        eq("right margin", (SendMessage(0xD4, 0, 0, expr) >> 16) >= 4, true)   ; EM_GETMARGINS: the caret doesn't touch the digits
+        types := ""
+        for name, list in PTToolsWindow.ComboFields
+            types .= (g[name].Type = "ComboBox" && g[name].Text = PTToolsWindow.Settings[name]) ? "" : name " "
+        eq("combo boxes with the saved text", types, "")
+        spanEdit := DllCall("FindWindowEx", "Ptr", g["RebarSpanWidth"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+        eq("span width digits only", (ControlGetStyle(spanEdit) & 0x2000) != 0, true)
+        meshEdit := DllCall("FindWindowEx", "Ptr", g["BrcTopMeshMark"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+        eq("mesh mark in capitals", (ControlGetStyle(meshEdit) & 0x8) != 0, true)
+        g["RebarSpanWidth"].Text := "5700"                                  ; a list item: .Value would be its index, the handlers read .Text
+        g["RebarBarSpacing"].Text := "150"
         PTToolsWindow.OnRebarFieldChanged()
-        eq("brc span follows", g["BrcSpanWidth"].Value, "5000")
-        eq("top mesh area recalculated", g["BrcTopArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcTopMeshMark"].Value)))
-        eq("bottom mesh area recalculated", g["BrcBotArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcBotMeshMark"].Value)))
+        eq("bar count from the combo texts", g["RebarBarCount"].Value, "38.00")
+        eq("mesh span follows", g["BrcSpanWidth"].Text, "5700")
+        eq("top mesh area recalculated", g["BrcTopArea"].Value, PTToolsWindow.Fmt2(5.7 * PTToolsWindow.CalculateMeshArea(g["BrcTopMeshMark"].Text)))
+        eq("bottom mesh area recalculated", g["BrcBotArea"].Value, PTToolsWindow.Fmt2(5.7 * PTToolsWindow.CalculateMeshArea(g["BrcBotMeshMark"].Text)))
+        g["RequiredAreaExpression"].Text := "5000"
+        PTToolsWindow.OnRequiredExpressionChanged()
+        eq("area expression from the combo text", g["RequiredTotalArea"].Value, "5000.00")
         safety := g["SafetyFactorEnabled"]
         eq("safety factor checkbox skips tab", (ControlGetStyle(safety) & 0x10000) != 0, false)
         ; Numbers in the bar diameter combo box are right-aligned: the first character's position (EM_POSFROMCHAR) is in the right half of the box (Wine doesn't support changing alignment after creation, so only checked on Windows)

@@ -32,7 +32,7 @@ class Shots {
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
 
-    static NormalScale := ["quickswitch", "demo-quickswitch", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -54,6 +54,8 @@ class Shots {
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
             ["windows",     "Light", "", () => Shots.Windows()],                 ; window switching (w + Space)
             ["sendto",      "Light", "", () => Shots.SendTo(), () => Shots.EnableSendTo()],
+            ["pttools",     "Light", "", () => Shots.ToolWindow("PTTools", "PT Tools")],          ; Wiki: extensions
+            ["spf2m",       "Light", "", () => Shots.ToolWindow("SPF2M", "SPF2M")],
             ["demo",        "Light", "", () => Shots.Demo(), () => Shots.PrepareDemo()],
             ["demo-quickswitch", "Light", "", () => Shots.DemoQuickSwitch(), () => Shots.WriteRecentFolders()],   ; feature animations (README, site, Wiki)
             ["demo-clipboard",   "Light", "", () => Shots.DemoClipboard(), () => Shots.WriteClipboard()],
@@ -438,6 +440,18 @@ class Shots {
         return [dialog, panel]
     }
     static HelperPid := 0
+
+    ; PT Tools / SPF2M: the system command opens the window (its default inputs), at the top left so it fits the screen
+    static ToolWindow(command, title) {
+        hwnd := Shots.SearchWindow()
+        Shots.SetQuery(hwnd, command)
+        ControlSend("{Enter}", "Edit1", hwnd)
+        if !(window := WinWait(title " ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 5))
+            throw Error(title " not shown")
+        WinMove(Round(40 * Shots.Scale), Round(40 * Shots.Scale), , , window)
+        Sleep(800)
+        return window
+    }
 
     ; Closes the windows the scenes opened (Quick Switch dialog, Explorer, Notepad, context menu), shows the hidden terminal, puts the Send to shortcut back
     static CloseHelpers() {

@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.26.28]
+
+测试版。
+
+Test build.
+
+### 改进
+- PT Tools: 跨度、钢筋直径、钢筋间距、面积算式和网片型号改成下拉组合框, 可以从常用值里选, 也可以自己输入 (跨度 3000 / 5700 / 6000 / 7200, 间距 100 ~ 1000, 面积 3500 ~ 12000, 网片 A6 ~ E12)
+- PT Tools: 点击输入框不再自动全选 (点击时鼠标稍微一动就只选中一部分, 反而干扰); 和 Windows 一样, 用 Tab / Enter 进入时全选
+- PT Tools: 窗口变窄, 标签改短 ("Bar diameter"、"Bot mesh + bar" 等), 第三组标题从 "BRC Area" 改成 "Mesh area"; PT Tools 和 SPF2M 窗口的标签和分组标题改成句首大写 (例如 "Span width (mm)"), 和偏好设置一致
+
 ## [2026.10.26.27]
 
 测试版。
@@ -1174,7 +1185,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...HEAD
+[2026.10.26.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...2026.10.26.28
 [2026.10.26.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...2026.10.26.27
 [2026.10.26.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.25...2026.10.26.26
 [2026.10.26.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.24...2026.10.26.25

@@ -24,7 +24,9 @@ See [System commands and terminal](System-Commands#terminal).
 
 ## PT Tools
 Small tools for post-tensioning design; type `PTTools` / `SPF2M` or open them with a custom hotkey:
-- **PT Tools**: rebar / BRC mesh area calculator, plus an expression calculator
+- **PT Tools**: rebar / mesh area calculator, plus an expression calculator. Span width, bar diameter, bar spacing, area expression and mesh marks are combo boxes: pick a common value from the list or type your own
+
+  ![PT Tools](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/pttools.png)
 - **SPF2M Post-Tensioning Tendon Profile Calculator**: calculated directly in ALTRun, no DOSBox needed any more. Pick the profile (double parabola / parabola-straight-parabola / parabola-straight / straight-parabola) and the strand type, enter the start and end levels and the horizontal distance, and the table on the right immediately gives the height at every support (Actual, Beam rounded to 5 mm, Slab rounded to 10 mm), plus the radius of curvature and the inflection point position
   - The results match the original SPF2M.EXE exactly: 139 cases (4 profiles × 6 strand types, rising / falling, non-whole-meter spans, custom radius / inflection point / support spacing) were run with the original program in DOSBox, and more than 1,100 values are compared one by one as part of the unit tests
   - Leaving an optional field empty = SPF2M's default (shown in gray): **minimum radius of curvature** (Slab 5000, 7S 3200, 12S 4200, 19S 5300, 22S 5700, 31S 6700), **inflection point distance** (when given, the radius is worked back from it, with a warning if it's below the minimum radius), **support spacing** (at most 1000 mm by default, with the remainder on the high-point side; you can also write `500, 1500, 800 ...`, which must add up to the horizontal distance)

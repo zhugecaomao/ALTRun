@@ -86,7 +86,7 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 
 **For structural engineers**
 - **Structural calculations** (off by default): the calculator can add beam main bars and rebar area below its result.
-- **PT Tools**: rebar / BRC mesh area calculations and SPF2M post-tensioning tendon profiles, with results you can copy to Excel.
+- **PT Tools**: rebar / mesh area calculations and SPF2M post-tensioning tendon profiles, with results you can copy to Excel.
 
 
 ## In action
