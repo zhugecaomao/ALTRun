@@ -15,6 +15,7 @@
 ;   Ctrl+1 ~ Ctrl+9                  run visible row N directly
 ;   Tab                              complete the name; on a folder, browse into it (the box becomes "path\")
 ;                                    with TabKey = "Next": Tab / Shift+Tab = next / previous result (wraps), Ctrl+Tab completes
+;   Backspace (browsing a folder)    the box ends in "\" with the caret at the end: up a level ("C:\Projects\Reports\" -> "C:\Projects\")
 ;   Insert                           mark / unmark files and folders (several can be marked); → acts on all marked ones
 ;   →  (caret at the end)            open the actions panel; ← / Esc go back
 ;   Space (empty search box)         file search mode (files only, hint "Search files..."); Backspace goes back

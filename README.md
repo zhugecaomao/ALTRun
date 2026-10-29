@@ -148,6 +148,7 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `PgUp` `PgDn` | Previous / next page |
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history |
 | `Tab` | Autocomplete; folders: browse into them (or select the next result, see Preferences → Keyboard) |
+| `Backspace` (browsing a folder) | Up a level |
 | `Insert` | Mark several files / folders, then press `→` to act on all of them |
 | `Space` (in an empty search box, or with the cursor at the start) | Switch to file search, keeping what you typed; `Backspace` in an empty box or at the start switches back |
 | `folder name` | Search folders only |
