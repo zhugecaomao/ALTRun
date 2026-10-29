@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.26.24]
+
+测试版。
+
+Test build.
+
+### 修复
+- 窗口刚失去焦点时马上再按热键呼出, "失去焦点时隐藏" 可能在窗口还没激活时就把它隐藏, 看起来像热键没反应; 现在显示过程中不隐藏, 显示完再检查一次
+
+### 改进
+- 调试日志: 退出时按着的键不再同时记 `Enter` 和 `NumpadEnter` (两者是同一个虚拟键, 分不出来); Quick Switch 记录前台窗口时, 隐藏的窗口和 ALTRun 自己的窗口也能记上程序名
+
 ## [2026.10.26.23]
 
 测试版。
@@ -1134,7 +1146,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.23...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.24...HEAD
+[2026.10.26.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.23...2026.10.26.24
 [2026.10.26.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.22...2026.10.26.23
 [2026.10.26.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.21...2026.10.26.22
 [2026.10.26.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.20...2026.10.26.21
