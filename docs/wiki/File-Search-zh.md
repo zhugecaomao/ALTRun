@@ -39,7 +39,7 @@ Everything 的搜索语法可以直接用, 原样交给 Everything: 例如 `空�
 ## 浏览文件夹
 在搜索框里输入路径, 列出这个文件夹里的内容 (文件夹在前), 路径最后一段用来过滤:
 
-![浏览文件夹](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/browse.png)
+![浏览文件夹: 输入路径, Tab 进入, 输入几个字筛选, Backspace 返回上一级](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-browse.png)
 
 | 输入 | 结果 |
 |---|---|

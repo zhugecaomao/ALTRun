@@ -4,6 +4,8 @@
 
 在 Windows 的打开 / 保存对话框里, 快速跳到已经打开的文件夹, 不必重新浏览目录。文件夹面板的使用方式和设置见[对话框文件夹面板](Quick-Switch-Panel-zh)。
 
+![对话框快速跳转: Ctrl+G 让对话框跳到资源管理器打开的文件夹, 再用文件夹面板的搜索框跳到另一个](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-quickswitch.png)
+
 ## 快捷键
 
 在标准的打开 / 保存文件对话框里:

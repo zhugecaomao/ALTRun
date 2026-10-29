@@ -89,6 +89,15 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 - **PT Tools**: rebar / BRC mesh area calculations and SPF2M post-tensioning tendon profiles, with results you can copy to Excel.
 
 
+## In action
+| **Quick Switch: jump an Open / Save dialog to a folder you have open** | **Clipboard history: find what you copied and paste it** |
+|:---:|:---:|
+| <img src="docs/images/screenshots/demo-quickswitch.png" alt="Quick Switch: Ctrl+G and the folder panel jump the dialog to an open folder"> | <img src="docs/images/screenshots/demo-clipboard.png" alt="Clipboard history: Ctrl+Alt+C, filter, Enter pastes"> |
+| **Snippets: type `;thx` in any program** | **Browse folders: `Tab` goes in, `Backspace` goes up** |
+| <img src="docs/images/screenshots/demo-snippets.png" alt="Snippets: ;thx expands into an email reply"> | <img src="docs/images/screenshots/demo-browse.png" alt="Browse folders: type a path, Tab, filter, Backspace"> |
+| **Calculator and unit conversion** | |
+| <img src="docs/images/screenshots/demo-calculator.png" alt="Calculator: arithmetic and unit conversion as you type"> | |
+
 ## Screenshots
 | Search window | Action panel (`→`) |
 |:---:|:---:|
