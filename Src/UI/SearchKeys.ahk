@@ -207,6 +207,12 @@ class SearchKeys {
                     SearchKeys.DeletePreviousWord()
                     return 0
                 }
+                ; browsing a folder ("C:\Projects\Reports\", caret at the end): up a level to "C:\Projects\" instead of deleting the "\"
+                if (!actions && SearchKeys.CaretAtEnd() && !SearchKeys.HasTextSelection()
+                    && (parent := SearchKeys.UpLevel(SearchWindow.Input.Value)) != "") {
+                    SearchWindow._SetInput(parent)
+                    return 0
+                }
                 return
         }
 
@@ -240,6 +246,17 @@ class SearchKeys {
             SearchWindow._RunVisibleRow(vk - 0x30)
             return 0
         }
+    }
+
+    ; A browsed folder path ending in "\" -> the path of the folder above it ("C:\Projects\Reports\" -> "C:\Projects\"); "" when it isn't
+    ; one, or is already the top (C:\, \\server\share\, ~\, %OneDrive%\): Backspace then deletes a character as usual
+    static UpLevel(text) {
+        if (SubStr(text, -1) != "\" || !IsObject(FileSearchProvider.BrowsePath(text)))
+            return ""
+        if !(pos := InStr(SubStr(text, 1, -1), "\", , -1))
+            return ""
+        parent := SubStr(text, 1, pos)
+        return IsObject(FileSearchProvider.BrowsePath(parent)) ? parent : ""
     }
 
     ; Caret at the start, no text selected

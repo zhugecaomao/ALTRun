@@ -1443,6 +1443,20 @@ class SearchWindowTests {
         }
     }
 
+    ; Backspace while browsing a folder: up a level; not above the top of a path, not for other text
+    static BackspaceUpLevel() {
+        eq := (n, a, e) => TestRunner.Equal("BackspaceUpLevel." n, a, e)
+        eq("folder", SearchKeys.UpLevel("C:\Demo Projects\Annual Report 2026\"), "C:\Demo Projects\")
+        eq("to the drive", SearchKeys.UpLevel("C:\Demo Projects\"), "C:\")
+        eq("drive: no further", SearchKeys.UpLevel("C:\"), "")
+        eq("filter typed: a character", SearchKeys.UpLevel("C:\Demo Projects\bud"), "")
+        eq("network folder", SearchKeys.UpLevel("\\server\share\Reports\"), "\\server\share\")
+        eq("network share: no further", SearchKeys.UpLevel("\\server\share\"), "")
+        eq("user folder", SearchKeys.UpLevel("~\Documents\"), "~\")
+        eq("user folder: no further", SearchKeys.UpLevel("~\"), "")
+        eq("not a path", SearchKeys.UpLevel("notes\"), "")
+    }
+
     ; Exit log line: the reason, quit / restart, the keys still held down and the window in front
     static ExitLog() {
         eq := (n, a, e) => TestRunner.Equal("ExitLog." n, a, e)
