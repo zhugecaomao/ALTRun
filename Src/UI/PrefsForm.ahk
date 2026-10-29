@@ -19,6 +19,7 @@ class PrefsForm {
     ; the left column's width is set per page by its labels (BeginPage); input boxes have only three widths, check boxes get group labels in the left column,
     ; buttons share one size, and gray descriptions align with the controls
     static ContentX := 190, ContentW := 560, LabelW := 190
+    static CheckIndent := 18                                                ; a check box's text (its description and sub-options start there)
     static WidthS := 70, WidthM := 220, ButtonW := 200, ButtonH := 26       ; WidthL = the whole control column (InputW)
     static WidthK := 150                                                    ; hotkey box ("K")
     static ButtonY := 619                                                   ; where the bottom buttons are; page content must stay above (y < ButtonY - 10)
@@ -178,7 +179,7 @@ class PrefsForm {
         PrefsForm.Bind(path, () => ctrl.Value)
         hasDesc := (desc != "" || PrefsForm.HasDesc(labelKey))
         PrefsForm.Below(hasDesc ? 0 : 6, ctrl)
-        PrefsForm.Desc(labelKey, x + 18, desc)                              ; aligned with the check box's text
+        PrefsForm.Desc(labelKey, x + PrefsForm.CheckIndent, desc)           ; aligned with the check box's text
         return ctrl
     }
 
@@ -199,9 +200,10 @@ class PrefsForm {
         return ctrl
     }
 
-    ; A label directly followed by an input box (for pages arranged in sections, without the left column): "Search history entries [30]"
-    static InlineField(path, labelKey, size, kind := "text") {
-        x := PrefsForm.InputX()
+    ; A label directly followed by an input box (for pages arranged in sections, without the left column): "Search history entries [30]".
+    ; indent: a sub-option of the check box above, the label aligned with that check box's text
+    static InlineField(path, labelKey, size, kind := "text", indent := false) {
+        x := PrefsForm.InputX() + (indent ? PrefsForm.CheckIndent : 0)
         PrefsForm._y += 3
         label := PrefsForm.Add("Text", "x" x, I18n.T(labelKey))
         PrefsForm._y -= 3

@@ -30,7 +30,7 @@ class PrefsPages {
         PrefsForm.Section("Prefs.Group.Window")
         PrefsForm.Check("General.HideOnDeactivate", "Prefs.HideOnDeactivate")
         keepLast := PrefsForm.Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
-        keepFor := PrefsForm.InlineField("General.KeepLastQueryMinutes", "Prefs.KeepLastQueryMinutes", "S", "number")
+        keepFor := PrefsForm.InlineField("General.KeepLastQueryMinutes", "Prefs.KeepLastQueryMinutes", "S", "number", true)
         keepFor.Enabled := keepLast.Value                                   ; only matters while the last search is kept
         keepLast.OnEvent("Click", (*) => keepFor.Enabled := keepLast.Value)
         PrefsForm.Check("Appearance.StatusBar", "Prefs.StatusBar")                ; the usage tips are in the status bar (in the empty search box when the status bar is off): kept together

@@ -689,7 +689,7 @@ class I18n {
         s["Prefs.TabKey.Next"]         := "Select next result"
         s["Prefs.KeepLastQuery"]       := "Keep the last search when the window opens"
         s["Prefs.KeepLastQuery.Desc"]  := "Comes back selected: Enter runs it again; typing or Backspace starts a new search (file search ends too); press → first to edit it."
-        s["Prefs.KeepLastQueryMinutes"] := "Keep it for (minutes)"
+        s["Prefs.KeepLastQueryMinutes"] := "Keep the last search for (minutes)"
         s["Prefs.KeepLastQueryMinutes.Desc"] := "0 = no limit. After that the window opens with an empty search box."
         s["Prefs.ShowTips"]            := "Show a usage tip"
         s["Prefs.ShowTips.Desc"]       := "In the empty search box, a different one each time. Type `"?`" to see all."
