@@ -603,14 +603,7 @@ class ExtensionTests {
             if InStr(ctrl.Text, "mm2")
                 oldUnit .= ctrl.Text " | "
         }
-        left := 99999, right := 0, bottom := 0                              ; the same margin left, right and below the groups
-        for ctrl in g
-            if (ctrl.Type = "GroupBox") {
-                ControlGetPos(&cx, &cy, &cw, &ch, ctrl)
-                left := Min(left, cx), right := Max(right, cx + cw), bottom := Max(bottom, cy + ch)
-            }
-        WinGetClientPos(, , &clientW, &clientH, g)
-        eq("even margins", Abs(clientW - right - left) <= 1 && Abs(clientH - bottom - left) <= 1, true)
+        eq("even margins", PTToolsWindowUi_EvenMargins(g), true)
         eq("read-only fields skip tab", tabbed, "")
         eq("units", oldUnit, "")
         next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")
@@ -657,6 +650,25 @@ class ExtensionTests {
         }
         g.Destroy(), PTToolsWindow.G := ""
         PTToolsWindow.Settings["WinLeft"] := saved[1], PTToolsWindow.Settings["WinTop"] := saved[2]
+
+        saved := [PTToolsWindow.Settings["Spf2mWinLeft"], PTToolsWindow.Settings["Spf2mWinTop"]]   ; SPF2M: the same margins
+        PTToolsWindow.Settings["Spf2mWinLeft"] := -3000, PTToolsWindow.Settings["Spf2mWinTop"] := -3000
+        PTToolsWindow.ShowSpf2m()
+        eq("SPF2M even margins", PTToolsWindowUi_EvenMargins(PTToolsWindow.SpfG), true)
+        PTToolsWindow.SpfG.Destroy(), PTToolsWindow.SpfG := ""
+        PTToolsWindow.Settings["Spf2mWinLeft"] := saved[1], PTToolsWindow.Settings["Spf2mWinTop"] := saved[2]
+
+        ; the same margin left, right and below the group boxes (the title bar is above)
+        PTToolsWindowUi_EvenMargins(g) {
+            left := 99999, right := 0, bottom := 0
+            for ctrl in g
+                if (ctrl.Type = "GroupBox") {
+                    ControlGetPos(&cx, &cy, &cw, &ch, ctrl)
+                    left := Min(left, cx), right := Max(right, cx + cw), bottom := Max(bottom, cy + ch)
+                }
+            WinGetClientPos(, , &clientW, &clientH, g)
+            return Abs(clientW - right - left) <= 1 && Abs(clientH - bottom - left) <= 1
+        }
     }
 
     static TendonProfileInputs() {

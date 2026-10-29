@@ -425,11 +425,11 @@ Class PTToolsWindow {
         g.SetFont("s9", "Microsoft YaHei")
         g.OnEvent("Close", (p*) => PTToolsWindow.OnCloseSpf2m(p*))
 
-        right := PTToolsWindow.BuildProfileGroup(g, S, 20)
-        PTToolsWindow.BuildResultGroup(g, right + 10)
+        right := PTToolsWindow.BuildProfileGroup(g, S, PTToolsWindow.Margin)
+        right := PTToolsWindow.BuildResultGroup(g, right + PTToolsWindow.RebarColGap)
         PTToolsWindow.SetupSpf2mHotkeys()
         PTToolsWindow.OnTendonChanged()                                    ; the hints for minimum radius / duct diameter follow the strand type
-        g.Show("x" S["Spf2mWinLeft"] " y" S["Spf2mWinTop"] " AutoSize")
+        g.Show("x" S["Spf2mWinLeft"] " y" S["Spf2mWinTop"] " w" (right + PTToolsWindow.Margin) " h" (PTToolsWindow.TopY + PTToolsWindow.GroupH + PTToolsWindow.Margin))   ; the same margins as PT Tools
     }
 
     static SetupSpf2mHotkeys() {
@@ -486,39 +486,40 @@ Class PTToolsWindow {
         fullW  := PTToolsWindow.ProfileFieldW + PTToolsWindow.ProfileCbGap + PTToolsWindow.ProfileCbW
         w := (cbX + PTToolsWindow.ProfileCbW + 15) - x0
         recalc := (*) => PTToolsWindow.Recalculate()
+        y := PTToolsWindow.TopY
 
-        g.Add("GroupBox", "x" x0 " y15 w" w " h" PTToolsWindow.GroupH, "Tendon profile")
-        g.AddText("x" labelX " y45", "Profile type")
-        g.AddDropDownList("x" editX " y42 w" fullW " Choose" S["ProfileType"] " vProfileType AltSubmit", PTToolsWindow.ProfileTypes).OnEvent("Change", recalc)
-        g.AddText("x" labelX " y80", "Tendon type")
-        g.AddDropDownList("x" editX " y77 w" fullW " Choose" S["TendonType"] " vTendonType AltSubmit", PTToolsWindow.TendonTypes)
+        g.Add("GroupBox", "x" x0 " y" y " w" w " h" PTToolsWindow.GroupH, "Tendon profile")
+        g.AddText("x" labelX " y" (y + 30), "Profile type")
+        g.AddDropDownList("x" editX " y" (y + 27) " w" fullW " Choose" S["ProfileType"] " vProfileType AltSubmit", PTToolsWindow.ProfileTypes).OnEvent("Change", recalc)
+        g.AddText("x" labelX " y" (y + 65), "Tendon type")
+        g.AddDropDownList("x" editX " y" (y + 62) " w" fullW " Choose" S["TendonType"] " vTendonType AltSubmit", PTToolsWindow.TendonTypes)
             .OnEvent("Change", (*) => PTToolsWindow.OnTendonChanged(true))
 
-        PTToolsWindow.Field(g, labelX, editX, 112, PTToolsWindow.ProfileFieldW, "Start level (mm)", "StartLevel", S["StartLevel"]).OnEvent("Change", recalc)
-        g.AddCheckBox("x" cbX " y114 w" PTToolsWindow.ProfileCbW " vStartAtCG Checked" S["StartAtCG"], "At C.G.").OnEvent("Click", recalc)
-        PTToolsWindow.Field(g, labelX, editX, 147, PTToolsWindow.ProfileFieldW, "End level (mm)", "EndLevel", S["EndLevel"]).OnEvent("Change", recalc)
-        g.AddCheckBox("x" cbX " y149 w" PTToolsWindow.ProfileCbW " vEndAtCG Checked" S["EndAtCG"], "At C.G.").OnEvent("Click", recalc)
-        PTToolsWindow.Field(g, labelX, editX, 182, PTToolsWindow.ProfileFieldW, "Horizontal distance (mm)", "HorizontalDistance", S["HorizontalDistance"]).OnEvent("Change", recalc)
+        PTToolsWindow.Field(g, labelX, editX, y + 97, PTToolsWindow.ProfileFieldW, "Start level (mm)", "StartLevel", S["StartLevel"]).OnEvent("Change", recalc)
+        g.AddCheckBox("x" cbX " y" (y + 99) " w" PTToolsWindow.ProfileCbW " vStartAtCG Checked" S["StartAtCG"], "At C.G.").OnEvent("Click", recalc)
+        PTToolsWindow.Field(g, labelX, editX, y + 132, PTToolsWindow.ProfileFieldW, "End level (mm)", "EndLevel", S["EndLevel"]).OnEvent("Change", recalc)
+        g.AddCheckBox("x" cbX " y" (y + 134) " w" PTToolsWindow.ProfileCbW " vEndAtCG Checked" S["EndAtCG"], "At C.G.").OnEvent("Click", recalc)
+        PTToolsWindow.Field(g, labelX, editX, y + 167, PTToolsWindow.ProfileFieldW, "Horizontal distance (mm)", "HorizontalDistance", S["HorizontalDistance"]).OnEvent("Change", recalc)
 
-        g.AddText("x" labelX " y222 w" (w - 30) " h1 0x10")                ; separator: optional fields below, empty = SPF2M's default
-        PTToolsWindow.Field(g, labelX, editX, 235, PTToolsWindow.ProfileFieldW, "Min. radius of curvature (mm)", "MinRadius", S["MinRadius"]).OnEvent("Change", recalc)
-        PTToolsWindow.Field(g, labelX, editX, 270, PTToolsWindow.ProfileFieldW, "Point of contraflexure (mm)", "Contraflexure", S["Contraflexure"]).OnEvent("Change", recalc)
-        PTToolsWindow.Field(g, labelX, editX, 305, fullW, "Support intervals (mm)", "SupportIntervals", S["SupportIntervals"]).OnEvent("Change", recalc)
+        g.AddText("x" labelX " y" (y + 207) " w" (w - 30) " h1 0x10")                ; separator: optional fields below, empty = SPF2M's default
+        PTToolsWindow.Field(g, labelX, editX, y + 220, PTToolsWindow.ProfileFieldW, "Min. radius of curvature (mm)", "MinRadius", S["MinRadius"]).OnEvent("Change", recalc)
+        PTToolsWindow.Field(g, labelX, editX, y + 255, PTToolsWindow.ProfileFieldW, "Point of contraflexure (mm)", "Contraflexure", S["Contraflexure"]).OnEvent("Change", recalc)
+        PTToolsWindow.Field(g, labelX, editX, y + 290, fullW, "Support intervals (mm)", "SupportIntervals", S["SupportIntervals"]).OnEvent("Change", recalc)
         Win.SetCueBanner(g["SupportIntervals"].Hwnd, "auto: max. 1000")
-        PTToolsWindow.Field(g, labelX, editX, 340, PTToolsWindow.ProfileFieldW, "Duct dia. for At C.G. (mm)", "DuctDia", "").OnEvent("Change", recalc)
+        PTToolsWindow.Field(g, labelX, editX, y + 325, PTToolsWindow.ProfileFieldW, "Duct dia. for At C.G. (mm)", "DuctDia", "").OnEvent("Change", recalc)
         g.SetFont("s8 cGray")
-        g.AddText("x" labelX " y378 w" (w - 30) " h" (PTToolsWindow.GroupH - 370), "Empty fields use the SPF2M defaults (in gray). Intervals: e.g. 500, 1500, 800 ... must add up to the distance. Distances are from the high end.")
+        g.AddText("x" labelX " y" (y + 363) " w" (w - 30) " h" (PTToolsWindow.GroupH - 370), "Empty fields use the SPF2M defaults (in gray). Intervals: e.g. 500, 1500, 800 ... must add up to the distance. Distances are from the high end.")
         g.SetFont("s9 cDefault")
         return x0 + w
     }
 
     static BuildResultGroup(g, x0) {
-        w := 480
-        g.Add("GroupBox", "x" x0 " y15 w" w " h" PTToolsWindow.GroupH, "Tendon profile - support heights (mm)")
+        w := 480, y := PTToolsWindow.TopY
+        g.Add("GroupBox", "x" x0 " y" y " w" w " h" PTToolsWindow.GroupH, "Tendon profile - support heights (mm)")
         ; laid out bottom-up: the Copy Table button at the bottom of the frame, two or three summary lines above, the rest of the height for the table
-        buttonY  := PTToolsWindow.GroupH - 25
+        buttonY  := y + PTToolsWindow.GroupH - 40
         summaryY := buttonY - 53
-        list := g.AddListView("x" (x0 + 12) " y40 w" (w - 24) " h" (summaryY - 48) " vResultList -Multi NoSort Grid"
+        list := g.AddListView("x" (x0 + 12) " y" (y + 25) " w" (w - 24) " h" (summaryY - y - 33) " vResultList -Multi NoSort Grid"
             , ["Distance", "Interval", "Actual", "Beam @ 5mm", "Slab @ 10mm"])
         for index, width in [80, 76, 82, 100, 100]
             list.ModifyCol(index, width " Right")
@@ -527,6 +528,7 @@ Class PTToolsWindow {
         g.AddText("x" (x0 + 12) " y" summaryY " w" (w - 24) " h48 vResultError Hidden")
         g.SetFont("cDefault")
         g.AddButton("x" (x0 + 12) " y" buttonY " w140 h30", "Copy Table").OnEvent("Click", (*) => PTToolsWindow.CopyProfileTable())
+        return x0 + w
     }
 
     ; The strand type changed: the gray hint for minimum radius becomes this type's default, the duct diameter the value remembered for it
