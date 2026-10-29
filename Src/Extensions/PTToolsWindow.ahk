@@ -84,7 +84,7 @@ Class PTToolsWindow {
     static BarDiameters := ["10", "13", "16", "20", "25", "32", "40"]
     static BarSpacings  := ["100", "125", "150", "175", "200", "225", "250", "275", "300", "350", "500", "1000"]
     static RequiredAreas := ["3500", "5000", "7500", "9500", "10000", "12000"]
-    static MeshMarks    := ["A6", "A7", "A8", "A9", "A10", "A12", "A13", "B8", "B10", "B12", "D8", "D10", "D12", "E10", "E12"]
+    static MeshMarks    := ["A6", "A7", "A8", "A9", "A10", "A12", "A13", "B8", "B10", "B12", "D8", "D10", "D12", "E8", "E10", "E12"]
     static ComboFields := Map("RebarSpanWidth", PTToolsWindow.SpanWidths, "RebarBarDiameter", PTToolsWindow.BarDiameters
         , "RebarBarSpacing", PTToolsWindow.BarSpacings, "RequiredAreaExpression", PTToolsWindow.RequiredAreas
         , "RequiredBarDiameter", PTToolsWindow.BarDiameters, "BrcSpanWidth", PTToolsWindow.SpanWidths
