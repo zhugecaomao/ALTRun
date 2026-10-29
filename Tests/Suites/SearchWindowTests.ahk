@@ -1413,6 +1413,55 @@ class SearchWindowTests {
         eq("hook still works", A_IsSuspended, 0)
     }
 
+    ; Keep the last search: only within KeepLastQueryMinutes; typing or Backspace over the restored (selected) search starts a new, normal search,
+    ; editing it after moving the caret keeps file search mode, Space over a restored file search starts a new file search
+    static KeepLastSearch() {
+        eq := (n, a, e) => TestRunner.Equal("KeepLastSearch." n, a, e)
+        last := {Text: "report", FileMode: true, Selected: 1, Time: 1000000}
+        general := Map("KeepLastQuery", 1, "KeepLastQueryMinutes", 5)
+        eq("within the minutes", SearchWindow.KeepsLast(last, general, 1000000 + 4 * 60000), true)
+        eq("after the minutes", SearchWindow.KeepsLast(last, general, 1000000 + 6 * 60000), false)
+        general["KeepLastQueryMinutes"] := 0
+        eq("0 = no limit", SearchWindow.KeepsLast(last, general, 1000000 + 600 * 60000), true)
+        general["KeepLastQuery"] := 0
+        eq("off", SearchWindow.KeepsLast(last, general, 1000000), false)
+
+        saved := Map()
+        for name in ["_RunSearch", "IsVisible"]
+            saved[name] := SearchWindow.GetOwnPropDesc(name)
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedList := SearchWindow.List, savedMode := SearchWindow.Mode, savedFile := SearchWindow.FileMode
+        SearchWindow.DefineProp("_RunSearch", {Call: (*) => ""})
+        SearchWindow.DefineProp("IsVisible", {Call: (*) => false})
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200"), SearchWindow.List := g.AddListView("w200", ["Title"])
+        SearchWindow.Mode := "results"
+        restore := () => (SearchWindow.Input.Value := "report", SearchWindow.FileMode := true, SearchWindow._restoredSelection := true
+            , SendMessage(0xB1, 0, -1, SearchWindow.Input.Hwnd))            ; the restored file search, all selected
+        try {
+            restore()
+            SendMessage(0xC2, 1, StrPtr("n"), SearchWindow.Input.Hwnd)      ; EM_REPLACESEL: typed over it
+            SearchWindow._OnInputChange()
+            eq("typing over it: normal search", SearchWindow.FileMode "|" SearchWindow._restoredSelection "|" SearchWindow.Input.Value, "0|0|n")
+            restore()
+            SendMessage(0xB1, 6, 6, SearchWindow.Input.Hwnd)                ; → : the caret at the end
+            SearchKeys.OnKeyDown(0x53, 0, 0x100, SearchWindow.Input.Hwnd)    ; the next key (S)
+            SendMessage(0xC2, 1, StrPtr("s"), SearchWindow.Input.Hwnd)
+            SearchWindow._OnInputChange()
+            eq("editing it: still file search", SearchWindow.FileMode "|" SearchWindow.Input.Value, "1|reports")
+            restore()
+            eq("space over it: handled", SearchKeys.OnKeyDown(0x20, 0, 0x100, SearchWindow.Input.Hwnd), 0)
+            eq("space over it: a new file search", SearchWindow.FileMode "|" SearchWindow.Input.Value "|" SearchWindow._restoredSelection, "1||0")
+        } finally {
+            SetTimer(SearchWindow._searchTimer, 0)
+            SearchWindow._restoredSelection := false
+            for name, desc in saved
+                SearchWindow.DefineProp(name, desc)
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.List := savedList, SearchWindow.Mode := savedMode, SearchWindow.FileMode := savedFile
+            SearchWindow._inputLen := 0
+            g.Destroy()
+        }
+    }
+
     ; Hide on deactivate: the timer that interrupts a showing (not active yet) doesn't hide; it checks again after the showing
     static HideWhileShowing() {
         eq := (n, a, e) => TestRunner.Equal("HideWhileShowing." n, a, e)

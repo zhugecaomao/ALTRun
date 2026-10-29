@@ -61,7 +61,7 @@ class SearchWindow {
     static _shownRows := -1                                                 ; how many result rows the window is currently sized for
     static _tip := ""                                                       ; the usage tip for this showing (HelpProvider.NextTip)
     static LastArea := "", HiddenAt := 0                                    ; work area of the screen at the last hide, and its time (for Hud)
-    static _last := ""                                                      ; the search at the last hide {Text, FileMode, Selected} (KeepLastQuery)
+    static _last := ""                                                      ; the search at the last hide {Text, FileMode, Selected, Time} (KeepLastQuery)
     static _keepOpen := false                                               ; don't hide on focus loss during a context menu / delete confirmation
 
     ;---------------------------------------------------------------------------
@@ -189,6 +189,8 @@ class SearchWindow {
             return SearchWindow.Hide("Esc")
         text := typed.Text
         if (text != "") {
+            if SearchKeys.AllTextSelected()                                 ; typed over the restored search: a new search (a leading space enters file search below)
+                SearchWindow._LeaveRestored()
             if (SubStr(text, 1, 1) = " " && SearchWindow.Mode = "results" && !SearchWindow.FileMode) {
                 if SearchKeys.AllTextSelected()
                     SearchWindow.Input.Value := ""
@@ -265,7 +267,7 @@ class SearchWindow {
         SearchWindow.Marked := Map()
         Usage.Count("Show")
         last := SearchWindow._last
-        restore := (text = "" && AppSettings.General["KeepLastQuery"] && IsObject(last) && last.Text != "")
+        restore := (text = "" && SearchWindow.KeepsLast(last, AppSettings.General))
         ; Restoring the last search with the box and results still as they were when hidden: show them as they are without searching again (only new input searches).
         ; A search (e.g. file search) takes tens of milliseconds; searching before showing meant the first key pressed meanwhile was still in the old window, lost or delayed
         reuse := restore && SearchWindow.Mode = "results" && SearchWindow.Input.Value == last.Text && SearchWindow.FileMode = last.FileMode
@@ -274,6 +276,7 @@ class SearchWindow {
         SearchWindow._prepared := false                                     ; use it once; prepared again after the next hide
         SearchWindow.Mode := "results"
         SearchWindow.FileMode := restore ? last.FileMode : false
+        SearchWindow._restoredSelection := restore                          ; until the caret moves: typing over it starts a new search (_LeaveRestored)
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
         SearchStatusBar.Update()
@@ -503,7 +506,30 @@ class SearchWindow {
     static _RememberQuery() {
         actions := (SearchWindow.Mode = "actions")
         SearchWindow._last := {Text: actions ? SearchWindow.SavedQuery : SearchWindow.Input.Value
-                             , FileMode: SearchWindow.FileMode, Selected: actions ? 1 : Max(1, SearchWindow.Selected)}
+                             , FileMode: SearchWindow.FileMode, Selected: actions ? 1 : Max(1, SearchWindow.Selected), Time: A_TickCount}
+    }
+
+    ; Whether the last search comes back (KeepLastQuery): only within KeepLastQueryMinutes after hiding (0 = no limit), like Alfred's
+    ; "show latest query if within N minutes"; after that the window opens with an empty search box
+    static KeepsLast(last, general, now := A_TickCount) {
+        if !(general["KeepLastQuery"] && IsObject(last) && last.Text != "")
+            return false
+        minutes := general["KeepLastQueryMinutes"]
+        return !IsNumber(minutes) || minutes <= 0 || now - last.Time <= minutes * 60000
+    }
+
+    ; The restored last search is still all selected: typing or Backspace over it starts a new, normal search (file search mode ends too),
+    ; like Alfred, where the file search prefix is part of the text. Enter runs the restored search again; moving the caret first
+    ; (→, End, a click) keeps it for editing, file search mode included (see SearchKeys.OnKeyDown)
+    static _restoredSelection := false
+    static _LeaveRestored() {
+        if !SearchWindow._restoredSelection
+            return
+        SearchWindow._restoredSelection := false
+        if SearchWindow.FileMode {
+            SearchWindow.FileMode := false
+            SearchWindow._UpdateCueBanner()
+        }
     }
 
     static Toggle() {
@@ -519,6 +545,7 @@ class SearchWindow {
     static _SetInput(text) {
         if (text = "" && Logger.Enabled && SearchWindow.IsVisible())
             SearchWindow._LogEmptied(StrLen(SearchWindow.Input.Value), "by ALTRun, mode " SearchWindow.Mode)
+        SearchWindow._restoredSelection := false                            ; text filled in by ALTRun is no longer the restored search
         SearchWindow._inputLen := StrLen(text), SearchWindow.Input.Value := text
         len := StrLen(text)
         SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)                ; EM_SETSEL: caret to the end
@@ -536,6 +563,7 @@ class SearchWindow {
     static _OnInputChange() {
         if (SearchWindow._quietText != "" && SearchWindow.Input.Value == SearchWindow._quietText)
             return                                                          ; text filled in by restoring the last search: search after showing (_FinishRestore)
+        SearchWindow._LeaveRestored()                                       ; the first edit replaced the restored search: a new, normal search
         text := SearchWindow.Input.Value
         if (text = "" && Logger.Enabled)
             SearchWindow._LogEmptied(SearchWindow._inputLen, "by an edit")

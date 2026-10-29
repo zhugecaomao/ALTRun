@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.26.29]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 搜索窗口: "保留时间 (分钟)" (`KeepLastQueryMinutes`, 默认 5): 上一次的搜索只保留这么多分钟, 隔一段时间再呼出窗口, 搜索框是空的 (和 Alfred 一样); `0` = 不限
+
+### 改进
+- 保留上一次的搜索时, 在全选的文字上直接输入或按 `Backspace` 开始新的普通搜索: 上一次是文件搜索时也会退出文件搜索 (以前还停在文件搜索里, 输入的命令搜不到); 按 `空格` 开始新的空白文件搜索; 先按 `→` / `End` 移动光标再修改, 仍然保持原来的模式
+
 ## [2026.10.26.28]
 
 测试版。
@@ -1189,7 +1201,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.29...HEAD
+[2026.10.26.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...2026.10.26.29
 [2026.10.26.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...2026.10.26.28
 [2026.10.26.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...2026.10.26.27
 [2026.10.26.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.25...2026.10.26.26

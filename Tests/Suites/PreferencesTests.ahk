@@ -383,7 +383,7 @@ class PreferencesTests {
                     Loop count
                         expected .= (A_Index = 1 ? "" : " ") first
                     TestRunner.Equal("PreferencesFit." lang " " page.Key " controls aligned", lefts, expected)
-                    TestRunner.Equal("PreferencesFit." lang " " page.Key " control count", count, page.Key = "Prefs.Page.Window" ? 2 : 4)
+                    TestRunner.Equal("PreferencesFit." lang " " page.Key " control count", count, page.Key = "Prefs.Page.Window" ? 3 : 4)
                 }
                 suffix := I18n.T("Prefs.DefaultChoice", "")
                 for ctrl in page.Controls                                   ; every drop-down marks exactly one option "(default)" and shows its longest option in full

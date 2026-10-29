@@ -70,7 +70,8 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 | RestoreInput | 1 | With `SwitchToEnglishInput` on, switch back to the previous input method or mode when the window hides (with 1: not needed, and not done, when Windows is set to use a separate input method for each app window) |
 | SpaceToRun | 0 | After typing, Space runs the selected result and `Shift+Space` types a space |
 | TabKey | `"Complete"` | What `Tab` does in the search window: `"Complete"` autocompletes (on a folder, browses into it); `"Next"` goes to the next result (`Shift+Tab` the previous one, wrapping around), and `Ctrl+Tab` autocompletes |
-| KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again, typing starts a new search. Taken over from `KeepInput` when upgrading from 2.x |
+| KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again; typing or `Backspace` starts a new search (and leaves file search); `Space` starts a new file search. Taken over from `KeepInput` when upgrading from 2.x |
+| KeepLastQueryMinutes | 5 | With `KeepLastQuery` on, keep the last search only for this many minutes after it was made; after that the window opens with an empty search box. `0` = no limit |
 | ShowTips | 1 | Show a usage tip, a different one each time, as gray text in the empty search box |
 | FileManager | `explorer.exe` | Program that opens folders, optionally with parameters, for example `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` reuse the open window, `/T` new tab, `/S` active panel); quote a path with spaces |
 | SendToMenu | 1 | Add to Explorer's "Send to" menu |
