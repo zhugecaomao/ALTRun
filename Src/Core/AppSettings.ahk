@@ -322,6 +322,7 @@ class AppSettings {
                 "SpaceToRun"          , 0,                                  ; Space runs the selected result (Shift+Space types a space)
                 "TabKey"              , "Complete",                         ; Tab: "Complete" = complete the name / browse into a folder; "Next" = next result (Shift+Tab previous, Ctrl+Tab completes)
                 "KeepLastQuery"       , 0,                                  ; restore the last search when shown (text selected)
+                "KeepLastQueryMinutes", 5,                                  ; ... only within this many minutes after hiding (0 = no limit)
                 "ShowTips"            , 1,                                  ; rotate usage tips in the empty search box
                 "FileManager"         , "explorer.exe",
                 "SendToMenu"          , 1,

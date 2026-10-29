@@ -89,6 +89,8 @@ class SearchKeys {
         shift := GetKeyState("Shift")
         alt   := (msg = 0x104) || GetKeyState("Alt")
         actions := SearchWindow.Mode = "actions"
+        if (SearchWindow._restoredSelection && !SearchKeys.AllTextSelected())   ; the caret moved off the restored search: editing it keeps file search mode
+            SearchWindow._restoredSelection := false
 
         switch vk {
             case 0x0D:                                                      ; Enter
@@ -105,9 +107,13 @@ class SearchKeys {
             case 0x20:                                                      ; Space: in the empty search box (or with the caret at the start), enter file search mode
                 if (ctrl || alt)
                     return
-                ; with all text selected (the restored last search) a space would replace it, so treat it as an empty search box
-                if (!shift && !actions && !SearchWindow.FileMode && SearchKeys.AllTextSelected()) {
+                ; with all text selected (the restored last search) a space would replace it, so treat it as an empty search box;
+                ; over a restored file search: a new, empty file search
+                if (!shift && !actions && SearchKeys.AllTextSelected() && (!SearchWindow.FileMode || SearchWindow._restoredSelection)) {
+                    SearchWindow._restoredSelection := false
                     SearchWindow._SetInput("")
+                    if SearchWindow.FileMode
+                        return 0
                     if SearchWindow._CanEnterFileMode() {
                         SearchWindow._SetFileMode(true)
                         return 0

@@ -70,7 +70,8 @@
 | RestoreInput | 1 | 打开 `SwitchToEnglishInput` 时, 窗口隐藏后切回原来的输入法或中 / 英模式 (1 时: Windows 设置了每个应用窗口各用各的输入法时不需要, 也不会切换) |
 | SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
 | TabKey | `"Complete"` | 搜索窗口里 `Tab` 的作用: `"Complete"` 自动补全 (文件夹: 进入浏览); `"Next"` 选下一个结果 (`Shift+Tab` 上一个, 到头后循环), `Ctrl+Tab` 自动补全 |
-| KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次, 直接输入开始新的搜索。从 2.x 升级时沿用 `KeepInput` |
+| KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次; 直接输入或按 `Backspace` 开始新的搜索 (文件搜索也会退出); 按 `空格` 开始新的文件搜索。从 2.x 升级时沿用 `KeepInput` |
+| KeepLastQueryMinutes | 5 | 打开 `KeepLastQuery` 时, 上一次的搜索只保留这么多分钟; 超过以后呼出窗口, 搜索框是空的。`0` = 不限 |
 | ShowTips | 1 | 轮换显示使用提示, 用灰色文字显示在空搜索框里 |
 | FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号 |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |

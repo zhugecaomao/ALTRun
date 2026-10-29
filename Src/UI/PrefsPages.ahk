@@ -29,14 +29,17 @@ class PrefsPages {
         PrefsForm.BeginPage("Prefs.Page.Window", 16)                         ; arranged in sections, each section's content indented a little
         PrefsForm.Section("Prefs.Group.Window")
         PrefsForm.Check("General.HideOnDeactivate", "Prefs.HideOnDeactivate")
-        PrefsForm.Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
+        keepLast := PrefsForm.Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
+        keepFor := PrefsForm.InlineField("General.KeepLastQueryMinutes", "Prefs.KeepLastQueryMinutes", "S", "number", true)
+        keepFor.Enabled := keepLast.Value                                   ; only matters while the last search is kept
+        keepLast.OnEvent("Click", (*) => keepFor.Enabled := keepLast.Value)
         PrefsForm.Check("Appearance.StatusBar", "Prefs.StatusBar")                ; the usage tips are in the status bar (in the empty search box when the status bar is off): kept together
         PrefsForm.Check("General.ShowTips", "Prefs.ShowTips")
         PrefsForm.Section("Prefs.Section.EmptyBox")
         placeholder := PrefsForm.InlineField("Appearance.Placeholder", "Prefs.Placeholder", "M")
         Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; empty shows the default text in gray
         recent := PrefsForm.InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
-        PrefsForm.AlignLeft(placeholder, recent)                            ; the input boxes on this page share one left edge
+        PrefsForm.AlignLeft(keepFor, placeholder, recent)                   ; the input boxes on this page share one left edge
     }
 
     ; Keyboard: input method switching (Caps Lock, English when shown) and the keys in the search box.
