@@ -805,6 +805,8 @@
   "Theme.Sunset": "日落",
   "Theme.HighContrast": "高對比",
   "Theme.SolarizedLight": "Solarized 淺色",
+  "Theme.ReadError": "主題檔案 {1} 無法讀取, 改用 {2}。",
+  "Theme.ReadErrorLine": "主題檔案 {1} 第 {2} 行有錯誤, 改用 {3}。",
   "Theme.System": "跟隨系統 (淺色 / 深色)",
   "Theme.TokyoNight": "Tokyo Night",
   "Tool.Calculator": "小算盤",

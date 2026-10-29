@@ -997,6 +997,12 @@ Func | PTTools | PT Tools (AHK)=99
         eq("round trip nested", again["List"][3]["k"], "v")
         for bad in ['{"a": 1', '{"a" 1}', '[1, 2', '"open', '{a: 1}', '[1 2]', '@']
             ok("error: " bad, !JsonReadWrite_Parses(bad))
+        try {
+            JSON.Parse('{`n  "a": 1,`n  "b" 2`n}')
+            eq("error line and column", "no error", "an error")
+        } catch as e {
+            eq("error line and column", e.Message "|" e.Extra, "JSON: line 3, column 7: ':' expected|3")
+        }
 
         ; control characters (e.g. ESC copied from a terminal) are written as \u001B; no raw control characters in the file
         control := "a" Chr(27) "[0m" Chr(8) Chr(12) Chr(1) "z"

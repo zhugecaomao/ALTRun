@@ -714,6 +714,8 @@ class I18n {
         s["Prefs.CopyTheme"]           := "Copy as Custom Theme..."
         s["Prefs.CopyThemePrompt"]     := "Name of the new theme (saved in the Themes folder):"
         s["Prefs.ThemeExists"]         := "Theme '{1}' already exists. Replace it?"
+        s["Theme.ReadError"]           := "The theme file {1} can't be read; {2} is used in its place."
+        s["Theme.ReadErrorLine"]       := "The theme file {1} has an error at line {2}; {3} is used in its place."
         s["Theme.System"]              := "System (Light / Dark)"
         s["Theme.Light"]               := "Light"
         s["Theme.Dark"]                := "Dark"

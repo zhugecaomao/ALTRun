@@ -36,6 +36,7 @@
 ;   ThemeManager.FontName()              -> the font actually used
 ;   ThemeManager.Names()                 -> System, Light, built-in themes, user themes
 ;   ThemeManager.Resolve("Ocean")        -> the complete Map of keys ("" if not found)
+;   ThemeManager.ReadError               -> after Load: the theme file that couldn't be read (a JSON error), "" if none
 ;===============================================================================
 
 class ThemeManager {
@@ -48,6 +49,8 @@ class ThemeManager {
                           , "DarkModern", "LightModern", "Monokai", "OneDark", "TokyoNight", "Dracula", "CatppuccinMocha", "GruvboxDark", "SolarizedLight"]   ; order in the list
     static Densities := ["Comfortable", "Normal", "Compact"]
     static Density := "Comfortable"                 ; the density actually used
+    static ReadError := ""                          ; a theme file of the last Load that couldn't be read: Map("File", path, "Line", n) (0 = unknown)
+    static _readError := ""
     ; The factor sizes are multiplied by per density (Comfortable = 1). Light's sizes (20 / 13 / 9.5 / 9 / 14 / 54 / 32) at Normal are exactly the former Dark Compact
     ; (17 / 11.5 / 9 / 8.5 / 12 / 48 / 28); at Compact they are 15 / 10.5 / 8.5 / 8 / 10 / 42 / 24
     static DensityScale := Map(
@@ -68,7 +71,9 @@ class ThemeManager {
             themeName := ThemeManager.SystemUsesDark() ? "Dark" : "Light"
             ThemeManager._WatchSystemTheme()
         }
+        ThemeManager._readError := ""
         theme := ThemeManager.Resolve(themeName)
+        ThemeManager.ReadError := ThemeManager._readError                  ; the theme or one of its "Base" themes: App.Start tells the user
         if !IsObject(theme) {
             Logger.Error("ThemeManager: theme '" themeName "' not found, using Light")
             themeName := "Light"
@@ -170,6 +175,8 @@ class ThemeManager {
             data := JSON.Parse(FileRead(themeFile, "UTF-8"))
         } catch as e {
             Logger.Error("ThemeManager: cannot read " themeFile " - " e.Message)
+            if (ThemeManager._readError = "")
+                ThemeManager._readError := Map("File", themeFile, "Line", IsInteger(e.Extra) ? e.Extra : 0)
             return ""
         }
         if !(data is Map)

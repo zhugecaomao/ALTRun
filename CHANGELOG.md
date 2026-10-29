@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.25]
+
+测试版。
+
+Test build.
+
+### 改进
+- 自定义主题文件格式有错误 (例如少了逗号) 时, 启动时提示是哪个文件、第几行出错, 并说明改用了浅色主题; 以前只写进日志, 主题悄悄变回浅色, 看不出原因。出错的是所选主题的 `Base` 时也会提示
+- 设置文件 `ALTRun.json` 格式有错误时, 提示里写出第几行第几列 (以前是字符位置, 而且所有语言都显示中文)
+
 ## [2026.10.26.24]
 
 测试版。
@@ -1146,7 +1156,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.24...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.25...HEAD
+[2026.10.26.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.24...2026.10.26.25
 [2026.10.26.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.23...2026.10.26.24
 [2026.10.26.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.22...2026.10.26.23
 [2026.10.26.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.21...2026.10.26.22
