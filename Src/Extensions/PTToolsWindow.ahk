@@ -187,6 +187,7 @@ Class PTToolsWindow {
         HotIfWinActive("PT Tools")                                        ; Enter / numpad Enter = move to next field, same as the old tool
         Hotkey("Enter", (*) => SendInput("{Tab}"))
         Hotkey("NumpadEnter", (*) => SendInput("{Tab}"))
+        Hotkey("F1", (*) => PTToolsWindow.OpenHelp("pt-tools"))
         HotIfWinActive()
     }
 
@@ -445,7 +446,14 @@ Class PTToolsWindow {
         HotIfWinActive(PTToolsWindow.Spf2mTitle " ahk_class AutoHotkeyGUI")                    ; Enter / numpad Enter = move to next field, same as PT Tools
         Hotkey("Enter", (*) => SendInput("{Tab}"))
         Hotkey("NumpadEnter", (*) => SendInput("{Tab}"))
+        Hotkey("F1", (*) => PTToolsWindow.OpenHelp("spf2m"))
         HotIfWinActive()
+    }
+
+    ; F1: the Wiki page of both tools (Chinese page for the Chinese UI), at this window's section; the headings are the same in both languages
+    static HelpUrl(section) => HelpProvider.WikiPage("PT-Tools") "#" section
+    static OpenHelp(section) {
+        try Run(PTToolsWindow.HelpUrl(section))
     }
 
     static OnCloseSpf2m(GuiObj) {

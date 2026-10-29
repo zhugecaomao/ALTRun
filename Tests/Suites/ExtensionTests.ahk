@@ -602,6 +602,12 @@ class ExtensionTests {
             for name in PTToolsWindow.RebarFieldNames
                 stray .= PTToolsWindow.Defaults.Has(name) ? "" : name " "
             eq("every saved field has a default", stray, "")
+            eq("help: English page", PTToolsWindow.HelpUrl("spf2m"), HelpProvider.WikiUrl "PT-Tools#spf2m")
+            eq("help: Chinese page", HelpProvider.WikiPage("PT-Tools", "zh-CN"), HelpProvider.WikiUrl "PT-Tools-zh")
+            for page in ["PT-Tools", "PT-Tools-zh"] {                        ; the sections F1 opens exist on both pages
+                text := FileRead(A_ScriptDir "\..\docs\wiki\" page ".md", "UTF-8")
+                eq("help sections on " page, RegExMatch(text, "m)^## PT Tools$") > 0 && RegExMatch(text, "m)^## SPF2M$") > 0, true)
+            }
         } finally
             PTToolsWindow.Settings := saved
     }

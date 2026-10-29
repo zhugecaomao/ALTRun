@@ -186,7 +186,8 @@ The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wi
 | [Snippets](https://github.com/zhugecaomao/ALTRun/wiki/Snippets) | Placeholders, snippet expansion, windows without expansion, import / export |
 | [File search](https://github.com/zhugecaomao/ALTRun/wiki/File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](https://github.com/zhugecaomao/ALTRun/wiki/Themes) | Built-in themes, custom themes, every available key |
-| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/Extensions) | Quick Switch, date stamp, custom hotkeys, system commands, PT Tools |
+| [Extensions](https://github.com/zhugecaomao/ALTRun/wiki/Extensions) | Quick Switch, date stamp, custom hotkeys, system commands |
+| [PT Tools](https://github.com/zhugecaomao/ALTRun/wiki/PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles |
 | [Settings reference](https://github.com/zhugecaomao/ALTRun/wiki/Configuration) | Every ALTRun.json setting and its default value |
 | [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ) | Hotkey conflicts, things that can't be found, antivirus false positives and more |
 | [Development guide](https://github.com/zhugecaomao/ALTRun/wiki/Development) | Architecture, adding a search feature, code style, tests |

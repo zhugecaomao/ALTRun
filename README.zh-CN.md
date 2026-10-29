@@ -186,7 +186,8 @@
 | [文字片段](https://github.com/zhugecaomao/ALTRun/wiki/Snippets-zh) | 占位符、自动展开、不展开的窗口、导入 / 导出 |
 | [文件搜索](https://github.com/zhugecaomao/ALTRun/wiki/File-Search-zh) | Everything 联动、内置索引、排除规则 |
 | [主题](https://github.com/zhugecaomao/ALTRun/wiki/Themes-zh) | 内置主题、自定义主题、全部可用的键 |
-| [扩展功能](https://github.com/zhugecaomao/ALTRun/wiki/Extensions-zh) | 对话框快速跳转、一键加日期、自定义热键、系统命令、PT 工具箱 |
+| [扩展功能](https://github.com/zhugecaomao/ALTRun/wiki/Extensions-zh) | 对话框快速跳转、一键加日期、自定义热键、系统命令 |
+| [PT 工具箱](https://github.com/zhugecaomao/ALTRun/wiki/PT-Tools-zh) | 钢筋和网片面积、所需钢筋根数、计算器; SPF2M 束线型计算 |
 | [设置文件参考](https://github.com/zhugecaomao/ALTRun/wiki/Configuration-zh) | ALTRun.json 各项的含义和默认值 |
 | [常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ-zh) | 热键冲突、搜索不到、杀毒软件误报等 |
 | [开发指南](https://github.com/zhugecaomao/ALTRun/wiki/Development-zh) | 架构、新增搜索功能、代码规范、测试 |
