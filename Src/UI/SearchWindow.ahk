@@ -1121,6 +1121,8 @@ class SearchWindow {
     static _HideIfInactive() {
         if SearchWindow._keepOpen
             return
+        if SearchWindow._showing                                            ; this timer interrupted a showing (hotkey pressed right after the window lost the focus):
+            return SetTimer(SearchWindow._hideTimer, -50)                   ; it isn't active yet, check again once the showing has finished
         if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
             SearchWindow.Hide(Logger.Enabled ? "deactivated by " SearchWindow.ForegroundText() : "")
     }

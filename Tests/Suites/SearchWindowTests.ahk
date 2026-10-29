@@ -1413,6 +1413,36 @@ class SearchWindowTests {
         eq("hook still works", A_IsSuspended, 0)
     }
 
+    ; Hide on deactivate: the timer that interrupts a showing (not active yet) doesn't hide; it checks again after the showing
+    static HideWhileShowing() {
+        eq := (n, a, e) => TestRunner.Equal("HideWhileShowing." n, a, e)
+        saved := Map()
+        for name in ["IsVisible", "Hide"]
+            saved[name] := SearchWindow.GetOwnPropDesc(name)
+        savedGui := SearchWindow.Gui, savedTimer := SearchWindow._hideTimer, savedKeep := SearchWindow._keepOpen
+        hidden := 0
+        SearchWindow.DefineProp("IsVisible", {Call: (*) => true})
+        SearchWindow.DefineProp("Hide", {Call: (*) => hidden++})
+        g := Gui()                                                          ; never shown: not the active window
+        SearchWindow.Gui := g, SearchWindow._keepOpen := false
+        SearchWindow._hideTimer := () => SearchWindow._HideIfInactive()
+        try {
+            SearchWindow._showing := true
+            SearchWindow._HideIfInactive()
+            eq("not hidden while showing", hidden, 0)
+            SearchWindow._showing := false
+            Sleep(120)                                                      ; the check again, after the showing
+            eq("hidden once shown and inactive", hidden, 1)
+        } finally {
+            SetTimer(SearchWindow._hideTimer, 0)
+            SearchWindow._showing := false
+            for name, desc in saved
+                SearchWindow.DefineProp(name, desc)
+            SearchWindow.Gui := savedGui, SearchWindow._hideTimer := savedTimer, SearchWindow._keepOpen := savedKeep
+            g.Destroy()
+        }
+    }
+
     ; Exit log line: the reason, quit / restart, the keys still held down and the window in front
     static ExitLog() {
         eq := (n, a, e) => TestRunner.Equal("ExitLog." n, a, e)
