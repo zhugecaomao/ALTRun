@@ -16,8 +16,8 @@
 ;
 ; Settings live in the Extensions.PTTools node of ALTRun.json (AppSettings.Extension("PTTools"));
 ; Settings points straight at that Map, and saving calls AppSettings.Save(). Only inputs are saved; results are
-; calculated again when a window opens. The tools have a single user, so keys are renamed or removed without
-; migration: Load drops keys that are no longer in Defaults, and a renamed field starts from its default.
+; calculated again when a window opens. Keys may be renamed or removed: Load drops keys that are no longer in Defaults,
+; and a renamed field starts from its default (no migration so far; add one when renamed values need to be kept).
 ;
 ; Usage: the system commands "PTTools" / "SPF2M" (see SystemProvider), or the same Action in custom hotkeys
 ;   PTToolsWindow.Show()          ; rebar / mesh area calculator
