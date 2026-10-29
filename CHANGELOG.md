@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.27]
+
+测试版。
+
+Test build.
+
+### 新增
+- 浏览文件夹时 (输入框是以 `\` 结尾的路径, 光标在最后), 按 `Backspace` 返回上一级 (`C:\Projects\Reports\` → `C:\Projects\`), 和 `Tab` 进入配合使用; 已经是 `C:\`、网络共享、`~\` 这样的最上层, 或者路径后面输入了筛选文字时, 照常删一个字。Wiki 里一直这样写, 但以前没有实现
+
 ## [2026.10.26.26]
 
 测试版。
@@ -1165,7 +1174,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...HEAD
+[2026.10.26.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...2026.10.26.27
 [2026.10.26.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.25...2026.10.26.26
 [2026.10.26.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.24...2026.10.26.25
 [2026.10.26.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.23...2026.10.26.24

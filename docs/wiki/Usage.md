@@ -99,6 +99,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `PgUp` `PgDn` | Previous / next page (as many rows as the window shows) |
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history (like Alfred); going past the newest restores what you had typed |
 | `Tab` | Autocomplete; on a folder, go into it (the input becomes `path\`) and browse its contents. With Preferences → Keyboard → "Tab key" set to "Select next result", `Tab` / `Shift+Tab` go to the next / previous result (after the last one, back to the first) and `Ctrl+Tab` autocompletes |
+| `Backspace` (browsing a folder: the input ends in `\`, the caret at the end) | Up a level (`C:\Projects\Reports\` → `C:\Projects\`); with a filter typed after the path, it deletes a character as usual |
 | `Insert` | Mark / unmark the selected file or folder and move to the next row (like Total Commander); marked rows have a bar on the left. Then press `→` to act on all marked items: open all, copy / cut (paste in TC or Explorer), copy paths, copy / move to the current folder in TC, add to custom commands, move to the Recycle Bin |
 | `Space` (empty search box, or cursor at the start) | Switch to file search, keeping what you typed (typed `seismic` first? press `Home`, then `Space`); `Backspace` in an empty box or at the start goes back to a normal search |
 | `Space` (after typing) | With Preferences → Keyboard → "Space runs the selected result" turned on: runs the selected result; `Shift+Space` types a space (for several keywords) |
