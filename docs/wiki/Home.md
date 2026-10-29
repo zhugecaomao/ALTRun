@@ -37,7 +37,8 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Scripts](Scripts) | Turn your own scripts into commands in the search results |
 | [System commands and terminal](System-Commands) | Every system command (lock, shut down...); `>` runs a command |
 | [Custom hotkeys](Hotkeys) | Assign system commands to hotkeys, Caps Lock input switching, how to set hotkeys |
-| [Extensions](Extensions) | PT Tools, and links to the extension pages |
+| [Extensions](Extensions) | Links to the extension pages |
+| [PT Tools](PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles |
 | [Settings reference](Configuration) | Every ALTRun.json setting and its default value |
 | [Data files](Data-Files) | Where the data folder is, what each file is, backups and moving to another PC |
 | [Privacy and network access](Privacy) | When ALTRun goes online, where to, and what is stored on your PC |

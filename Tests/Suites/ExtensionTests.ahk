@@ -587,7 +587,31 @@ class ExtensionTests {
     }
 
     ; Input checks, support spacing, cases SPF2M didn't handle well (crashes / shows nothing)
-    ; PT Tools window: result boxes take no Tab stop (from Area Expression straight to Rebar Diameter), units written as mm², clicking into an input box selects all
+    ; PT Tools window: result boxes take no Tab stop (from Area expression straight to Bar diameter), units written as mm², even margins,
+    ; inputs are combo boxes with their common values, the span width follows into the mesh area
+    ; Only inputs are saved: Load fills in the defaults and drops keys no longer used (renamed fields, saved results)
+    static PTToolsLoad() {
+        eq := (n, a, e) => TestRunner.Equal("PTToolsLoad." n, a, e)
+        saved := PTToolsWindow.Settings
+        try {
+            data := PTToolsWindow.Load(Map("RebarSpanWidth", "5700", "BrcSpanWidth", 3800, "RebarTotalArea", 5969.04))
+            eq("kept", data["RebarSpanWidth"], "5700")
+            eq("default filled in", data["MeshSpanWidth"], 3000)
+            eq("old and result keys dropped", data.Has("BrcSpanWidth") || data.Has("RebarTotalArea"), false)
+            stray := ""
+            for name in PTToolsWindow.RebarFieldNames
+                stray .= PTToolsWindow.Defaults.Has(name) ? "" : name " "
+            eq("every saved field has a default", stray, "")
+            eq("help: English page", PTToolsWindow.HelpUrl("spf2m"), HelpProvider.WikiUrl "PT-Tools#spf2m")
+            eq("help: Chinese page", HelpProvider.WikiPage("PT-Tools", "zh-CN"), HelpProvider.WikiUrl "PT-Tools-zh")
+            for page in ["PT-Tools", "PT-Tools-zh"] {                        ; the sections F1 opens exist on both pages
+                text := FileRead(A_ScriptDir "\..\docs\wiki\" page ".md", "UTF-8")
+                eq("help sections on " page, RegExMatch(text, "m)^## PT Tools$") > 0 && RegExMatch(text, "m)^## SPF2M$") > 0, true)
+            }
+        } finally
+            PTToolsWindow.Settings := saved
+    }
+
     static PTToolsWindowUi() {
         eq := (n, a, e) => TestRunner.Equal("PTToolsWindowUi." n, a, e)
         saved := [PTToolsWindow.Settings["WinLeft"], PTToolsWindow.Settings["WinTop"]]
@@ -602,23 +626,42 @@ class ExtensionTests {
             if InStr(ctrl.Text, "mm2")
                 oldUnit .= ctrl.Text " | "
         }
+        eq("even margins", PTToolsWindowUi_EvenMargins(g), true)
+        eq("results calculated on opening", g["RebarBarCount"].Value != "" && g["RequiredBarCount"].Value != "" && g["MeshTopCombinedArea"].Value != "" && g["ExprResult"].Value != "", true)
         eq("read-only fields skip tab", tabbed, "")
         eq("units", oldUnit, "")
         next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")
         eq("expression -> diameter", next = g["RequiredBarDiameter"].Hwnd, true)
-        span := g["RebarSpanWidth"]
-        SendMessage(0xB1, 1, 1, span)                                       ; caret in the middle
-        span.Focus()
-        Sleep(100)                                                          ; handle the PostMessage select-all
-        start := 0, finish := 0
-        DllCall("SendMessage", "Ptr", span.Hwnd, "UInt", 0xB0, "UInt*", &start, "UInt*", &finish)   ; EM_GETSEL
-        eq("select all on focus", start "-" finish, "0-" StrLen(span.Value))
-        eq("right margin", (SendMessage(0xD4, 0, 0, span) >> 16) >= 4, true)   ; EM_GETMARGINS: the caret doesn't touch the digits
-        g["RebarSpanWidth"].Value := 5000                                   ; the first group's Span Width -> BRC's Span Width -> the mesh area recomputed together
+        editable := ""                                                      ; every input is a combo box (native: the first click selects all); Edit only for results
+        for ctrl in g
+            if (ctrl.Type = "Edit" && !(ControlGetStyle(ctrl) & 0x800))
+                editable .= ctrl.Name " "
+        eq("inputs are combo boxes", editable, "")
+        types := ""
+        for name, list in PTToolsWindow.ComboFields
+            types .= (g[name].Type = "ComboBox" && g[name].Text = PTToolsWindow.Settings[name]) ? "" : name " "
+        eq("combo boxes with the saved text", types, "")
+        spanEdit := DllCall("FindWindowEx", "Ptr", g["RebarSpanWidth"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+        eq("span width digits only", (ControlGetStyle(spanEdit) & 0x2000) != 0, true)
+        meshEdit := DllCall("FindWindowEx", "Ptr", g["MeshTopMark"].Hwnd, "Ptr", 0, "Str", "Edit", "Ptr", 0, "Ptr")
+        eq("mesh mark in capitals", (ControlGetStyle(meshEdit) & 0x8) != 0, true)
+        g["RebarSpanWidth"].Text := "5700"                                  ; a list item: .Value would be its index, the handlers read .Text
+        g["RebarBarSpacing"].Text := "150"
         PTToolsWindow.OnRebarFieldChanged()
-        eq("brc span follows", g["BrcSpanWidth"].Value, "5000")
-        eq("top mesh area recalculated", g["BrcTopArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcTopMeshMark"].Value)))
-        eq("bottom mesh area recalculated", g["BrcBotArea"].Value, PTToolsWindow.Fmt2(5 * PTToolsWindow.CalculateMeshArea(g["BrcBotMeshMark"].Value)))
+        eq("bar count from the combo texts", g["RebarBarCount"].Value, "38.00")
+        eq("mesh span follows", g["MeshSpanWidth"].Text, "5700")
+        eq("top mesh area recalculated", g["MeshTopArea"].Value, PTToolsWindow.Fmt2(5.7 * PTToolsWindow.CalculateMeshArea(g["MeshTopMark"].Text)))
+        eq("bottom mesh area recalculated", g["MeshBotArea"].Value, PTToolsWindow.Fmt2(5.7 * PTToolsWindow.CalculateMeshArea(g["MeshBotMark"].Text)))
+        g["RequiredAreaExpression"].Text := "5000"
+        PTToolsWindow.OnRequiredExpressionChanged()
+        eq("area expression from the combo text", g["RequiredTotalArea"].Value, "5000.00")
+        g["ExprInput"].Text := "(6000/200+1)*201.06"
+        PTToolsWindow.OnExpressionChanged()
+        eq("calculator from the combo text", g["ExprResult"].Value, "6232.86")
+        examples := ""
+        for expr in PTToolsWindow.Expressions
+            examples .= IsNumber(Calc.Eval(expr)) ? "" : expr " "
+        eq("calculator examples all work", examples, "")
         safety := g["SafetyFactorEnabled"]
         eq("safety factor checkbox skips tab", (ControlGetStyle(safety) & 0x10000) != 0, false)
         ; Numbers in the bar diameter combo box are right-aligned: the first character's position (EM_POSFROMCHAR) is in the right half of the box (Wine doesn't support changing alignment after creation, so only checked on Windows)
@@ -631,6 +674,30 @@ class ExtensionTests {
         }
         g.Destroy(), PTToolsWindow.G := ""
         PTToolsWindow.Settings["WinLeft"] := saved[1], PTToolsWindow.Settings["WinTop"] := saved[2]
+
+        saved := [PTToolsWindow.Settings["Spf2mWinLeft"], PTToolsWindow.Settings["Spf2mWinTop"]]   ; SPF2M: the same margins
+        PTToolsWindow.Settings["Spf2mWinLeft"] := -3000, PTToolsWindow.Settings["Spf2mWinTop"] := -3000
+        PTToolsWindow.ShowSpf2m()
+        eq("SPF2M even margins", PTToolsWindowUi_EvenMargins(PTToolsWindow.SpfG), true)
+        list := PTToolsWindow.SpfG["ResultList"], columns := 0                 ; the table's columns leave room for a vertical scroll bar, no horizontal one
+        Loop 5
+            columns += SendMessage(0x101D, A_Index - 1, 0, list)            ; LVM_GETCOLUMNWIDTH
+        rect := Buffer(16, 0), DllCall("GetClientRect", "Ptr", list.Hwnd, "Ptr", rect)
+        eq("SPF2M table fits", columns <= NumGet(rect, 8, "Int") && !(ControlGetStyle(list) & 0x100000), true)   ; WS_HSCROLL
+        PTToolsWindow.SpfG.Destroy(), PTToolsWindow.SpfG := ""
+        PTToolsWindow.Settings["Spf2mWinLeft"] := saved[1], PTToolsWindow.Settings["Spf2mWinTop"] := saved[2]
+
+        ; the same margin left, right and below the group boxes (the title bar is above)
+        PTToolsWindowUi_EvenMargins(g) {
+            left := 99999, right := 0, bottom := 0
+            for ctrl in g
+                if (ctrl.Type = "GroupBox") {
+                    ControlGetPos(&cx, &cy, &cw, &ch, ctrl)
+                    left := Min(left, cx), right := Max(right, cx + cw), bottom := Max(bottom, cy + ch)
+                }
+            WinGetClientPos(, , &clientW, &clientH, g)
+            return Abs(clientW - right - left) <= 1 && Abs(clientH - bottom - left) <= 1
+        }
     }
 
     static TendonProfileInputs() {
