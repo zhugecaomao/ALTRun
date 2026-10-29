@@ -89,35 +89,26 @@
 - **PT 工具箱**：钢筋 / 网片面积计算、SPF2M 后张预应力束线型计算，结果可复制到 Excel。
 
 
-## 功能演示
-| **对话框快速跳转：打开 / 保存对话框跳到已经打开的文件夹** | **剪贴板历史：找到复制过的内容并粘贴** |
-|:---:|:---:|
-| <img src="docs/images/screenshots/demo-quickswitch.png" alt="对话框快速跳转：Ctrl+G 和文件夹面板让对话框跳到打开的文件夹"> | <img src="docs/images/screenshots/demo-clipboard.png" alt="剪贴板历史：Ctrl+Alt+C、筛选、Enter 粘贴"> |
-| **文字片段：在任何程序里输入 `;thx`** | **浏览文件夹：`Tab` 进入，`Backspace` 返回上一级** |
-| <img src="docs/images/screenshots/demo-snippets.png" alt="文字片段：;thx 展开成一封回复邮件"> | <img src="docs/images/screenshots/demo-browse.png" alt="浏览文件夹：输入路径、Tab、筛选、Backspace"> |
-| **计算器和单位换算** | |
-| <img src="docs/images/screenshots/demo-calculator.png" alt="计算器：边输入边算出结果和单位换算"> | |
-
 ## 截图
 | 搜索窗口 | 操作面板（`→`） |
 |:---:|:---:|
 | <img src="docs/images/screenshots/search.png" alt="搜索窗口"> | <img src="docs/images/screenshots/actions.png" alt="操作面板"> |
 | **文件搜索（`空格` + 名称）** | **按类型搜索（`doc` + 名称）** |
 | <img src="docs/images/screenshots/files.png" alt="文件搜索"> | <img src="docs/images/screenshots/filetype.png" alt="按类型搜索"> |
-| **计算器** | **拼音首字母（`jsb` 找到记事本）** |
-| <img src="docs/images/screenshots/calculator.png" alt="计算器"> | <img src="docs/images/screenshots/pinyin.png" alt="拼音首字母"> |
-| **剪贴板历史（`clip`）** | **置顶和最近使用（空搜索框）** |
-| <img src="docs/images/screenshots/clipboard.png" alt="剪贴板历史"> | <img src="docs/images/screenshots/empty.png" alt="置顶和最近使用"> |
-| **浏览文件夹（输入路径）** | **网页搜索（`g` + 关键词）** |
-| <img src="docs/images/screenshots/browse.png" alt="浏览文件夹"> | <img src="docs/images/screenshots/websearch.png" alt="网页搜索"> |
-| **对话框快速跳转（打开 / 保存对话框下面的文件夹面板）** | **主题（偏好设置 → 外观）** |
-| <img src="docs/images/screenshots/quickswitch.png" alt="对话框快速跳转"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="主题"> |
+| **计算器和单位换算** | **拼音首字母（`jsb` 找到记事本）** |
+| <img src="docs/images/screenshots/demo-calculator.png" alt="计算器：边输入边算出结果和单位换算"> | <img src="docs/images/screenshots/pinyin.png" alt="拼音首字母"> |
+| **剪贴板历史（`Ctrl+Alt+C` / `clip`）：找到并粘贴** | **置顶和最近使用（空搜索框）** |
+| <img src="docs/images/screenshots/demo-clipboard.png" alt="剪贴板历史：Ctrl+Alt+C、筛选、Enter 粘贴"> | <img src="docs/images/screenshots/empty.png" alt="置顶和最近使用"> |
+| **浏览文件夹：`Tab` 进入，`Backspace` 返回上一级** | **网页搜索（`g` + 关键词）** |
+| <img src="docs/images/screenshots/demo-browse.png" alt="浏览文件夹：输入路径、Tab、筛选、Backspace"> | <img src="docs/images/screenshots/websearch.png" alt="网页搜索"> |
+| **对话框快速跳转：打开 / 保存对话框跳到已经打开的文件夹** | **主题（偏好设置 → 外观）** |
+| <img src="docs/images/screenshots/demo-quickswitch.png" alt="对话框快速跳转：Ctrl+G 和文件夹面板让对话框跳到打开的文件夹"> | <img src="docs/images/screenshots/prefs-appearance.png" alt="主题"> |
 | **窗口切换（`w` + 空格）** | **从资源管理器添加命令（右键 → 发送到 → ALTRun）** |
 | <img src="docs/images/screenshots/windows.png" alt="窗口切换"> | <img src="docs/images/screenshots/sendto.png" alt="发送到 ALTRun"> |
 | **偏好设置** | **自定义命令** |
 | <img src="docs/images/screenshots/prefs-general.png" alt="偏好设置"> | <img src="docs/images/screenshots/prefs-commands.png" alt="自定义命令"> |
-| **文字片段** | **脚本扩展** |
-| <img src="docs/images/screenshots/prefs-snippets.png" alt="文字片段"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> |
+| **文字片段：在任何程序里输入 `;thx`** | **脚本扩展** |
+| <img src="docs/images/screenshots/demo-snippets.png" alt="文字片段：;thx 展开成一封回复邮件"> | <img src="docs/images/screenshots/prefs-scripts.png" alt="脚本扩展"> |
 
 <details>
 <summary><b>内置主题</b>（共 22 套，每套都有宽松 / 常规 / 紧凑三种密度，点击展开）</summary>
