@@ -535,14 +535,31 @@ Class PTToolsWindow {
         summaryY := buttonY - 53
         list := g.AddListView("x" (x0 + 12) " y" (y + 25) " w" (w - 24) " h" (summaryY - y - 33) " vResultList -Multi NoSort Grid"
             , ["Distance", "Interval", "Actual", "Beam @ 5mm", "Slab @ 10mm"])
-        for index, width in [80, 76, 82, 100, 100]
-            list.ModifyCol(index, width " Right")
+        Loop 5
+            list.ModifyCol(A_Index, "Right")
+        PTToolsWindow.FitColumns(list, [80, 76, 82, 100, 100])
         g.AddText("x" (x0 + 12) " y" summaryY " w" (w - 24) " h48 vResultSummary")
         g.SetFont("cRed")
         g.AddText("x" (x0 + 12) " y" summaryY " w" (w - 24) " h48 vResultError Hidden")
         g.SetFont("cDefault")
         g.AddButton("x" (x0 + 12) " y" buttonY " w140 h30", "Copy Table").OnEvent("Click", (*) => PTToolsWindow.CopyProfileTable())
         return x0 + w
+    }
+
+    ; Column widths in these proportions, filling the list's width less a vertical scroll bar: the table never needs a horizontal one
+    static FitColumns(list, weights) {
+        rect := Buffer(16, 0)
+        DllCall("GetClientRect", "Ptr", list.Hwnd, "Ptr", rect)
+        room := NumGet(rect, 8, "Int") - SysGet(2)                          ; SM_CXVSCROLL
+        total := 0
+        for weight in weights
+            total += weight
+        used := 0
+        for index, weight in weights {
+            width := (index = weights.Length) ? room - used : Floor(room * weight / total)
+            used += width
+            SendMessage(0x101E, index - 1, width, list)                     ; LVM_SETCOLUMNWIDTH, in pixels
+        }
     }
 
     ; The strand type changed: the gray hint for minimum radius becomes this type's default, the duct diameter the value remembered for it

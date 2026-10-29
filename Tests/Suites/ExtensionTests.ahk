@@ -679,6 +679,11 @@ class ExtensionTests {
         PTToolsWindow.Settings["Spf2mWinLeft"] := -3000, PTToolsWindow.Settings["Spf2mWinTop"] := -3000
         PTToolsWindow.ShowSpf2m()
         eq("SPF2M even margins", PTToolsWindowUi_EvenMargins(PTToolsWindow.SpfG), true)
+        list := PTToolsWindow.SpfG["ResultList"], columns := 0                 ; the table's columns leave room for a vertical scroll bar, no horizontal one
+        Loop 5
+            columns += SendMessage(0x101D, A_Index - 1, 0, list)            ; LVM_GETCOLUMNWIDTH
+        rect := Buffer(16, 0), DllCall("GetClientRect", "Ptr", list.Hwnd, "Ptr", rect)
+        eq("SPF2M table fits", columns <= NumGet(rect, 8, "Int") && !(ControlGetStyle(list) & 0x100000), true)   ; WS_HSCROLL
         PTToolsWindow.SpfG.Destroy(), PTToolsWindow.SpfG := ""
         PTToolsWindow.Settings["Spf2mWinLeft"] := saved[1], PTToolsWindow.Settings["Spf2mWinTop"] := saved[2]
 
