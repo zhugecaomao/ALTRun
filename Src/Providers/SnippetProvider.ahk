@@ -198,15 +198,21 @@ class SnippetProvider {
     ; focusPrevious = false: auto expansion pastes into the current window directly
     static Paste(text, focusPrevious := true) {
         text := SnippetProvider.Expand(text)
-        caretBack := 0
-        if (cursorPos := InStr(text, "{cursor}")) {
-            text := StrReplace(text, "{cursor}")
-            caretBack := StrLen(text) - cursorPos + 1
-        }
+        caretBack := SnippetProvider.CaretBack(&text)
         if !ActionCatalog.PasteText(text, focusPrevious)
             return
         if (caretBack > 0)
             SendInput("{Left " caretBack "}")
+    }
+
+    ; Takes {cursor} out of the text; returns how many times Left moves the caret back there after pasting (0 = no {cursor}).
+    ; A line break is one step for Left in Notepad, Word, browsers and edit controls alike, so `r`n counts once
+    static CaretBack(&text) {
+        if !(cursorPos := InStr(text, "{cursor}"))
+            return 0
+        text := StrReplace(text, "{cursor}")                                ; only the first counts; any others just go
+        after := SubStr(text, cursorPos)
+        return StrLen(StrReplace(after, "`r`n", "`n"))
     }
 
     static Expand(text) {

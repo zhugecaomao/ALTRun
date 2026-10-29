@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.26]
+
+测试版。
+
+Test build.
+
+### 修复
+- 多行的文字片段里有 `{cursor}` 时, 展开或粘贴后光标停错位置: 每个换行多退了一格 (默认的 "Email: thank you" 等片段, 光标跑到了第一行开头)。现在换行按一格计算, 光标停在 `{cursor}` 的位置
+
 ## [2026.10.26.25]
 
 测试版。
@@ -1156,7 +1165,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.25...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...HEAD
+[2026.10.26.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.25...2026.10.26.26
 [2026.10.26.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.24...2026.10.26.25
 [2026.10.26.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.23...2026.10.26.24
 [2026.10.26.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.22...2026.10.26.23

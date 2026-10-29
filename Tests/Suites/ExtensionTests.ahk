@@ -874,6 +874,16 @@ class ExtensionTests {
         eq("default date", SnippetProvider.Expand("{date}"), FormatTime(, AppSettings.Extension("AutoDate")["DateFormat"]))
         eq("time format", StrLen(SnippetProvider.Expand("{time:HH:mm:ss}")), 8)
         eq("cursor untouched", SnippetProvider.Expand("a{cursor}b"), "a{cursor}b")
+        text := "Hi {cursor},`r`n`r`nThanks.`r`n`r`nBest regards,"
+        eq("caret back: a line break is one step", SnippetProvider.CaretBack(&text) "|" text, "25|Hi ,`r`n`r`nThanks.`r`n`r`nBest regards,")
+        text := "a{cursor}`nb"
+        eq("caret back: LF only", SnippetProvider.CaretBack(&text) "|" text, "2|a`nb")
+        text := "no cursor"
+        eq("caret back: none", SnippetProvider.CaretBack(&text) "|" text, "0|no cursor")
+        text := "a{cursor}b{cursor}c"
+        eq("caret back: only the first {cursor}", SnippetProvider.CaretBack(&text) "|" text, "2|abc")
+        text := "end{cursor}"
+        eq("caret back: at the end", SnippetProvider.CaretBack(&text), 0)
         uuids := SnippetProvider.Expand("{uuid} {uuid}")
         ok("uuid format", RegExMatch(uuids, "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} [0-9a-f-]{36}$"))
         ok("uuid different", StrSplit(uuids, " ")[1] != StrSplit(uuids, " ")[2])
