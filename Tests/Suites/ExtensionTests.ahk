@@ -603,6 +603,14 @@ class ExtensionTests {
             if InStr(ctrl.Text, "mm2")
                 oldUnit .= ctrl.Text " | "
         }
+        left := 99999, right := 0, bottom := 0                              ; the same margin left, right and below the groups
+        for ctrl in g
+            if (ctrl.Type = "GroupBox") {
+                ControlGetPos(&cx, &cy, &cw, &ch, ctrl)
+                left := Min(left, cx), right := Max(right, cx + cw), bottom := Max(bottom, cy + ch)
+            }
+        WinGetClientPos(, , &clientW, &clientH, g)
+        eq("even margins", Abs(clientW - right - left) <= 1 && Abs(clientH - bottom - left) <= 1, true)
         eq("read-only fields skip tab", tabbed, "")
         eq("units", oldUnit, "")
         next := DllCall("GetNextDlgTabItem", "Ptr", g.Hwnd, "Ptr", g["RequiredAreaExpression"].Hwnd, "Int", 0, "Ptr")

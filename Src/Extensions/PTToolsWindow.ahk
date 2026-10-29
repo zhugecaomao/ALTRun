@@ -145,9 +145,9 @@ Class PTToolsWindow {
         g.SetFont("s10", "Segoe UI")                                        ; the Windows UI font: clearer English and digits
         g.OnEvent("Close", (p*) => PTToolsWindow.OnClose(p*))
 
-        rebarRight    := PTToolsWindow.BuildRebarAreaGroup(g, S, 20)
+        rebarRight    := PTToolsWindow.BuildRebarAreaGroup(g, S, PTToolsWindow.Margin)
         requiredRight := PTToolsWindow.BuildRequiredQtyGroup(g, S, rebarRight + PTToolsWindow.RebarColGap)
-        PTToolsWindow.BuildBrcAreaGroup(g, S, requiredRight + PTToolsWindow.RebarColGap)
+        meshRight     := PTToolsWindow.BuildBrcAreaGroup(g, S, requiredRight + PTToolsWindow.RebarColGap)
         PTToolsWindow.BuildExpressionGroup(g, S, requiredRight)
 
         ; ComboBox initial text is set last, once every sibling control any of
@@ -167,7 +167,8 @@ Class PTToolsWindow {
         PTToolsWindow.SetupHotkeys()
         PTToolsWindow.SetupInputs(g)
 
-        g.Show("x" S["WinLeft"] " y" S["WinTop"] " AutoSize")
+        ; the same margin left, right and below the groups (AutoSize would add the GUI's own margins, smaller on the right and below)
+        g.Show("x" S["WinLeft"] " y" S["WinTop"] " w" (meshRight + PTToolsWindow.Margin) " h" (PTToolsWindow.TopY + PTToolsWindow.TallGroupH + PTToolsWindow.Margin))
 
         ; Derived display fields (BrcTopCombinedArea/BrcBotCombinedArea) aren't
         ; persisted, they're recomputed from RebarTotalArea + BRC areas every
@@ -231,6 +232,9 @@ Class PTToolsWindow {
     static RebarLabelGap := 145
     static RebarFieldW   := 80
     static RebarColGap   := 10
+    static Margin        := 15                                              ; window edge to the groups: left, right and below (the title bar is above)
+    static TopY          := 3                                               ; top of the groups
+    static TallGroupH    := 320                                             ; Mesh area; Rebar area / Bars required (240) + Calculator (70) end at the same line
 
     ; Adds a "Label:" + Edit control pair on one row (label at x, edit at
     ; editX) and returns the Edit control, so callers can still chain
@@ -252,14 +256,15 @@ Class PTToolsWindow {
         labelX := x0 + 15
         editX  := labelX + PTToolsWindow.RebarLabelGap
         w := (editX + PTToolsWindow.RebarFieldW + 15) - x0
+        y := PTToolsWindow.TopY
 
-        g.Add("GroupBox", "x" x0 " y8 w" w " h240", "Rebar area")
+        g.Add("GroupBox", "x" x0 " y" PTToolsWindow.TopY " w" w " h240", "Rebar area")
         changed := (p*) => PTToolsWindow.OnRebarFieldChanged(p*)
-        PTToolsWindow.Combo(g, labelX, editX, 35, "Span width (mm)", "RebarSpanWidth").OnEvent("Change", changed)
-        PTToolsWindow.Combo(g, labelX, editX, 75, "Bar diameter (mm)", "RebarBarDiameter").OnEvent("Change", changed)
-        PTToolsWindow.Combo(g, labelX, editX, 115, "Bar spacing (mm)", "RebarBarSpacing").OnEvent("Change", changed)
-        PTToolsWindow.Field(g, labelX, editX, 155, PTToolsWindow.RebarFieldW, "Rebar area (mm²)", "RebarTotalArea", PTToolsWindow.Fmt2(S["RebarTotalArea"]), "ReadOnly Right")
-        PTToolsWindow.Field(g, labelX, editX, 195, PTToolsWindow.RebarFieldW, "Number of bars", "RebarBarCount", PTToolsWindow.Fmt2(S["RebarBarCount"]), "ReadOnly Right")
+        PTToolsWindow.Combo(g, labelX, editX, y + 27, "Span width (mm)", "RebarSpanWidth").OnEvent("Change", changed)
+        PTToolsWindow.Combo(g, labelX, editX, y + 67, "Bar diameter (mm)", "RebarBarDiameter").OnEvent("Change", changed)
+        PTToolsWindow.Combo(g, labelX, editX, y + 107, "Bar spacing (mm)", "RebarBarSpacing").OnEvent("Change", changed)
+        PTToolsWindow.Field(g, labelX, editX, y + 147, PTToolsWindow.RebarFieldW, "Rebar area (mm²)", "RebarTotalArea", PTToolsWindow.Fmt2(S["RebarTotalArea"]), "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 187, PTToolsWindow.RebarFieldW, "Number of bars", "RebarBarCount", PTToolsWindow.Fmt2(S["RebarBarCount"]), "ReadOnly Right")
 
         return x0 + w
     }
@@ -268,23 +273,24 @@ Class PTToolsWindow {
         labelX := x0 + 15
         editX  := labelX + PTToolsWindow.RebarLabelGap
         w := (editX + PTToolsWindow.RebarFieldW + 15) - x0
+        y := PTToolsWindow.TopY
 
-        g.Add("GroupBox", "x" x0 " y8 w" w " h240", "Bars required")
-        PTToolsWindow.Combo(g, labelX, editX, 35, "Area expression", "RequiredAreaExpression")
+        g.Add("GroupBox", "x" x0 " y" PTToolsWindow.TopY " w" w " h240", "Bars required")
+        PTToolsWindow.Combo(g, labelX, editX, y + 27, "Area expression", "RequiredAreaExpression")
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredExpressionChanged(p*))
-        PTToolsWindow.Field(g, labelX, editX, 75, PTToolsWindow.RebarFieldW, "Total area (mm²)", "RequiredTotalArea", PTToolsWindow.Fmt2(S["RequiredTotalArea"]), "ReadOnly Right")
-        PTToolsWindow.Combo(g, labelX, editX, 115, "Bar diameter (mm)", "RequiredBarDiameter")
+        PTToolsWindow.Field(g, labelX, editX, y + 67, PTToolsWindow.RebarFieldW, "Total area (mm²)", "RequiredTotalArea", PTToolsWindow.Fmt2(S["RequiredTotalArea"]), "ReadOnly Right")
+        PTToolsWindow.Combo(g, labelX, editX, y + 107, "Bar diameter (mm)", "RequiredBarDiameter")
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredFieldChanged(p*))
 
         ; Safety factor: an optional multiplier on the required area before it's
         ; converted to a bar count, e.g. 1.20 for a 20% design margin. Disabled
         ; by default so it never silently changes a result the user didn't ask for.
-        g.AddCheckBox("x" labelX " y157 w130 -Tabstop vSafetyFactorEnabled Checked" S["SafetyFactorEnabled"], "Safety factor")
+        g.AddCheckBox("x" labelX " y" (y + 149) " w130 -Tabstop vSafetyFactorEnabled Checked" S["SafetyFactorEnabled"], "Safety factor")
             .OnEvent("Click", (p*) => PTToolsWindow.OnSafetyFactorToggled(p*))
-        g.AddEdit("x" editX " y155 w" PTToolsWindow.RebarFieldW " r1 Right vSafetyFactor", S["SafetyFactor"])
+        g.AddEdit("x" editX " y" (y + 147) " w" PTToolsWindow.RebarFieldW " r1 Right vSafetyFactor", S["SafetyFactor"])
             .OnEvent("Change", (p*) => PTToolsWindow.OnRequiredFieldChanged(p*))
 
-        PTToolsWindow.Field(g, labelX, editX, 195, PTToolsWindow.RebarFieldW, "Number of bars", "RequiredBarCount", S["RequiredBarCount"], "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 187, PTToolsWindow.RebarFieldW, "Number of bars", "RequiredBarCount", S["RequiredBarCount"], "ReadOnly Right")
 
         g["SafetyFactor"].Enabled := S["SafetyFactorEnabled"]
         return x0 + w
@@ -294,33 +300,36 @@ Class PTToolsWindow {
         labelX := x0 + 15
         editX  := labelX + PTToolsWindow.RebarLabelGap
         w := (editX + PTToolsWindow.RebarFieldW + 15) - x0
+        y := PTToolsWindow.TopY
 
-        g.Add("GroupBox", "x" x0 " y8 w" w " h320", "Mesh area")
+        g.Add("GroupBox", "x" x0 " y" PTToolsWindow.TopY " w" w " h" PTToolsWindow.TallGroupH, "Mesh area")
         changed := (p*) => PTToolsWindow.OnBrcFieldChanged(p*)
-        PTToolsWindow.Combo(g, labelX, editX, 35, "Span width (mm)", "BrcSpanWidth").OnEvent("Change", changed)
-        PTToolsWindow.Combo(g, labelX, editX, 75, "Top mesh (A/B/D/E)", "BrcTopMeshMark").OnEvent("Change", changed)
-        PTToolsWindow.Field(g, labelX, editX, 115, PTToolsWindow.RebarFieldW, "Top mesh area (mm²)", "BrcTopArea", PTToolsWindow.Fmt2(S["BrcTopArea"]), "ReadOnly Right")
-        PTToolsWindow.Field(g, labelX, editX, 155, PTToolsWindow.RebarFieldW, "Top mesh + bar (mm²)", "BrcTopCombinedArea", "0.00", "ReadOnly Right")
-        PTToolsWindow.Combo(g, labelX, editX, 195, "Bot mesh (A/B/D/E)", "BrcBotMeshMark").OnEvent("Change", changed)
-        PTToolsWindow.Field(g, labelX, editX, 235, PTToolsWindow.RebarFieldW, "Bot mesh area (mm²)", "BrcBotArea", PTToolsWindow.Fmt2(S["BrcBotArea"]), "ReadOnly Right")
-        PTToolsWindow.Field(g, labelX, editX, 275, PTToolsWindow.RebarFieldW, "Bot mesh + bar (mm²)", "BrcBotCombinedArea", "0.00", "ReadOnly Right")
+        PTToolsWindow.Combo(g, labelX, editX, y + 27, "Span width (mm)", "BrcSpanWidth").OnEvent("Change", changed)
+        PTToolsWindow.Combo(g, labelX, editX, y + 67, "Top mesh (A/B/D/E)", "BrcTopMeshMark").OnEvent("Change", changed)
+        PTToolsWindow.Field(g, labelX, editX, y + 107, PTToolsWindow.RebarFieldW, "Top mesh area (mm²)", "BrcTopArea", PTToolsWindow.Fmt2(S["BrcTopArea"]), "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 147, PTToolsWindow.RebarFieldW, "Top mesh + bar (mm²)", "BrcTopCombinedArea", "0.00", "ReadOnly Right")
+        PTToolsWindow.Combo(g, labelX, editX, y + 187, "Bot mesh (A/B/D/E)", "BrcBotMeshMark").OnEvent("Change", changed)
+        PTToolsWindow.Field(g, labelX, editX, y + 227, PTToolsWindow.RebarFieldW, "Bot mesh area (mm²)", "BrcBotArea", PTToolsWindow.Fmt2(S["BrcBotArea"]), "ReadOnly Right")
+        PTToolsWindow.Field(g, labelX, editX, y + 267, PTToolsWindow.RebarFieldW, "Bot mesh + bar (mm²)", "BrcBotCombinedArea", "0.00", "ReadOnly Right")
+        return x0 + w
     }
 
     static BuildExpressionGroup(g, S, requiredGroupRight) {
         ; Sits under the Rebar area + Bars required columns only
         ; (the taller Mesh area column stands beside it, not above it).
-        w := requiredGroupRight - 20
-        g.Add("GroupBox", "x20 y258 w" w " h70", "Calculator")   ; bottom aligned with Mesh area (8 + 320)
+        x0 := PTToolsWindow.Margin, y := PTToolsWindow.TopY + PTToolsWindow.TallGroupH - 70   ; bottom aligned with Mesh area
+        w := requiredGroupRight - x0
+        g.Add("GroupBox", "x" x0 " y" y " w" w " h70", "Calculator")
 
-        inputW  := (w - 65) // 2                                            ; 65 = margins (35+15) + "=" sign column (15)
-        eqX     := 35 + inputW + 8
+        inputW  := (w - 45) // 2                                            ; 45 = margins (15+15) + "=" sign column (15)
+        eqX     := x0 + 15 + inputW + 8
         resultX := eqX + 23
-        resultW := w - (resultX - 20) - 15
+        resultW := w - (resultX - x0) - 15
 
-        g.AddEdit("x35 y286 w" inputW " r1 vExprInput", S["ExprInput"])
+        g.AddEdit("x" (x0 + 15) " y" (y + 28) " w" inputW " r1 vExprInput", S["ExprInput"])
             .OnEvent("Change", (p*) => PTToolsWindow.OnExpressionChanged(p*))
-        g.AddText("x" eqX " y289 w15", "=")
-        g.AddEdit("x" resultX " y286 w" resultW " r1 ReadOnly -Tabstop Right vExprResult", PTToolsWindow.Fmt2(S["ExprResult"]))
+        g.AddText("x" eqX " y" (y + 31) " w15", "=")
+        g.AddEdit("x" resultX " y" (y + 28) " w" resultW " r1 ReadOnly -Tabstop Right vExprResult", PTToolsWindow.Fmt2(S["ExprResult"]))
     }
 
     static OnRebarFieldChanged(*) {
