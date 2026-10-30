@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.6.0.schema.json
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.28.0.schema.json
 PackageIdentifier: zhugecaomao.ALTRun
 PackageVersion: 2026.10.26
 InstallerType: zip
@@ -12,4 +12,4 @@ Installers:
   InstallerUrl: https://github.com/zhugecaomao/ALTRun/releases/download/2026.10.26/ALTRun_v2026.10.26.zip
   InstallerSha256: F0D2324D182D6375264070F0A8B4786A872471E56C265CAA0DCC0F30D9D106F1
 ManifestType: installer
-ManifestVersion: 1.6.0
+ManifestVersion: 1.28.0

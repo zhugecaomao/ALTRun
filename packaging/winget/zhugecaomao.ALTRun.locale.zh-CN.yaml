@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.6.0.schema.json
+# yaml-language-server: $schema=https://aka.ms/winget-manifest.locale.1.28.0.schema.json
 PackageIdentifier: zhugecaomao.ALTRun
 PackageVersion: 2026.10.26
 PackageLocale: zh-CN
@@ -11,4 +11,4 @@ Description: |-
   按 Alt+Space 输入即可打开程序、文件、文件夹和网页; 用 Everything 搜索文件; 剪贴板历史、文字片段、计算器、系统命令;
   中文名称可以按拼音首字母搜索。
 ManifestType: locale
-ManifestVersion: 1.6.0
+ManifestVersion: 1.28.0
