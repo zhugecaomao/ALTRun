@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.26.32]
+
+测试版。
+
+Test build.
+
+### 修复
+- 区分左右的呼出热键 (例如 `LAlt+Space`) 在开始菜单或 Windows 搜索开着时按下, ALTRun 被挡在后面、拿不到焦点: 现在先关掉开始菜单 / 搜索再显示 (不分左右的 `Alt+Space` 是系统热键, Windows 会自己关掉它们; 区分左右的热键走键盘钩子, 不会) (#303)
+
+### 文档
+- Wiki 的设置热键和常见问题: 区分左右的热键在以管理员身份运行的窗口前面不起作用 (Windows 的系统热键不分左右, 只能用键盘钩子, 而 Windows 不让普通权限的钩子收到管理员窗口里的按键), 需要时以管理员身份运行 ALTRun
+
 ## [2026.10.26.29]
 
 测试版。
@@ -1201,7 +1213,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.29...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.32...HEAD
+[2026.10.26.32]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.31...2026.10.26.32
 [2026.10.26.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...2026.10.26.29
 [2026.10.26.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...2026.10.26.28
 [2026.10.26.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...2026.10.26.27
