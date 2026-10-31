@@ -176,28 +176,24 @@ class Shots {
             , Shots.AppDir "\Scripts\Today.ps1", "UTF-8")
     }
 
-    ; Builds the app index once (Data\AppIndex.json) with ALTRun started in the background: each scene then loads it at start-up.
-    ; Without it every scene scanned the apps 3 s after start-up (the cache isn't written before a scene closes ALTRun), and with
-    ; the short wait in Launch the first results missed the apps (2026-10: "re" without Remote Desktop, "jsb" without Notepad)
+    ; Builds the app index once (Data\AppIndex.json, the demo apps folder) with ALTRun started in the background, and keeps a copy
+    ; that WriteSettings puts back into each scene's new Data folder. Without it every scene scanned the apps 3 s after start-up,
+    ; and with the short wait in Launch the first results missed them (2026-10: "re" without Remote Desktop, "jsb" without Notepad)
+    static AppIndexCopy => Shots.AppDir "\AppIndex.ready.json"             ; kept outside Data, which WriteSettings clears for each scene
     static PrepareAppIndex() {
         indexFile := Shots.AppDir "\Data\AppIndex.json"
+        try FileDelete(Shots.AppIndexCopy)
         Shots.WriteSettings("Light")
+        started := A_TickCount
         Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" -Startup', Shots.AppDir, , &pid)
-        ; The file is written more than once (2026-10: a first write of 620 bytes before the scan's results): ready when it has kept
-        ; its size for 4 s, at least 8 s after start-up (the scan starts 3 s after start-up), at most 40 s
-        started := A_TickCount, lastSize := -1, stableSince := 0
-        while (A_TickCount - started < 40000) {
+        while (!FileExist(indexFile) && A_TickCount - started < 30000)
             Sleep(250)
-            size := FileExist(indexFile) ? FileGetSize(indexFile) : -1
-            if (size != lastSize)
-                lastSize := size, stableSince := A_TickCount
-            else if (size > 0 && A_TickCount - started >= 8000 && A_TickCount - stableSince >= 4000)
-                break
-        }
+        Sleep(500)                                                          ; written through a temporary file and renamed; a moment more anyway
         try ProcessClose(pid)
         ProcessWaitClose(pid, 5)
         if !FileExist(indexFile)
             return Shots.Log("app index not written: scenes may miss apps")
+        FileCopy(indexFile, Shots.AppIndexCopy, true)
         text := FileRead(indexFile, "UTF-8")
         Shots.Log("app index ready after " Round((A_TickCount - started) / 1000, 1) " s (" StrLen(text) " characters, Notepad " (InStr(text, "notepad") ? "in it" : "missing") ")")
     }
@@ -273,6 +269,8 @@ class Shots {
         try DirDelete(Shots.AppDir "\Data", true)                           ; each scene starts with an empty index and learned ranking
         try FileDelete(Shots.AppDir "\ALTRun.json")                         ; the location of old versions
         DirCreate(Shots.AppDir "\Data")
+        if FileExist(Shots.AppIndexCopy)                                    ; but with the app index built once (PrepareAppIndex), so no scene waits for a scan
+            FileCopy(Shots.AppIndexCopy, Shots.AppDir "\Data\AppIndex.json", true)
         FileAppend(JSON.Stringify(settings, 4), Shots.AppDir "\Data\ALTRun.json", "UTF-8")
     }
 
