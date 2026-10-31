@@ -85,6 +85,45 @@ class EverythingTests {
         }
     }
 
+    ; File search with Everything: the separate folder query only when the first one was cut off at its limit (with fewer
+    ; results every match is there, folders included), and not after Everything didn't answer (no second wait)
+    static FileSearchQueries() {
+        eq := (n, a, e) => TestRunner.Equal("EverythingFileSearch." n, a, e)
+        if EverythingTests._Skip("FileSearchQueries")
+            return
+        options := AppSettings.Feature("FileSearch")
+        saved := [options["UseEverything"], FileSearchProvider.EverythingTimeoutMs]
+        options["UseEverything"] := 1, FileSearchProvider.EverythingTimeoutMs := 100
+        fake := FakeEverything(EverythingTests._Items)
+        try {
+            found := FileSearchProvider.Query("report", 30, false)
+            eq("all found in one query", fake.Queries.Length "|" found.Length, "1|2")
+            eq("first query", InStr(fake.Queries[1].Search, "report !C:\Windows\") = 1 && fake.Queries[1].Max = FileSearchProvider.EverythingFetch, true)
+
+            many := []
+            Loop 20
+                many.Push({Path: "C:\Work\report " A_Index ".txt", IsFolder: false})
+            fake.Results := many, fake.Queries := []
+            FileSearchProvider.Query("report", 5, true)                     ; default results: 4 x 5 = 20 asked for
+            eq("cut off: folders asked separately", fake.Queries.Length, 2)
+            if (fake.Queries.Length = 2)
+                eq("folder query", InStr(fake.Queries[2].Search, "startwith:folder:report ") = 1, true)
+            fake.Queries := []
+            FileSearchProvider.Query("folder:report", 5, true)
+            eq("folder: typed: no second query", fake.Queries.Length, 1)
+
+            fake.Delay := -1, fake.Queries := []
+            started := A_TickCount
+            found := FileSearchProvider.Query("report", 5, true)
+            elapsed := A_TickCount - started
+            eq("no answer: no second query", fake.Queries.Length "|" found.Length, "1|0")
+            eq("waits EverythingTimeoutMs, not 1 s", elapsed < 600, true)
+        } finally {
+            fake.Close()
+            options["UseEverything"] := saved[1], FileSearchProvider.EverythingTimeoutMs := saved[2]
+        }
+    }
+
     ; The 1.5 alphas run as the named instance "1.5a"
     static NamedInstance() {
         eq := (n, a, e) => TestRunner.Equal("EverythingNamedInstance." n, a, e)
