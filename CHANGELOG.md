@@ -15,6 +15,27 @@ Test build.
 - 调试日志 (打开 "保存日志" 时) 多记录一些按键信息, 用来查 "用 Enter 执行后 Total Commander 弹出属性框" 的原因: 按 Enter 执行时是第一次按下还是自动重复、当时按着哪些键; 之后 2 秒内 Enter 和 Alt 每次按下 / 松开的时间和当时的前台窗口 (只记录, 不拦截按键); 退出和重新启动时的按键和前台窗口
 - 新的诊断工具 `Tests/Tools/KeyWatch.ahk` (不随程序发布): 单独运行, ALTRun 退出、重启时也照常记录; 只记 Enter、Alt、空格、Esc、Ctrl、Shift、Win 等几个键的按下 / 松开 (不记字母和数字), 是键盘按的还是程序发的, 以及每次前台窗口的变化, 写到 `%TEMP%\KeyWatch.log`
 
+## [2026.10.26.32]
+
+测试版。
+
+Test build.
+
+### 修复
+- 区分左右的呼出热键 (例如 `LAlt+Space`) 在开始菜单或 Windows 搜索开着时按下, ALTRun 被挡在后面、拿不到焦点: 现在先关掉开始菜单 / 搜索再显示 (不分左右的 `Alt+Space` 是系统热键, Windows 会自己关掉它们; 区分左右的热键走键盘钩子, 不会) (#303)
+
+### 文档
+- 偏好设置 → 通用 "热键区分左右" 的说明和 Wiki 的设置热键、常见问题: 区分左右的热键在以管理员身份运行的窗口前面不起作用 (Windows 的系统热键不分左右, 只能用键盘钩子, 而 Windows 不让普通权限的钩子收到管理员窗口里的按键), 需要时以管理员身份运行 ALTRun
+
+## [2026.10.26.31]
+
+测试版。
+
+Test build.
+
+### 改进
+- 几处以前失败时没有任何记录的地方写进日志 (打开 "保存日志" 时), 方便排查: 文件索引达到条目上限 (`MaxEntries`) 时后面的文件没有索引进来、索引时有文件夹读不了; 剪贴板里的图片保存失败; 更新后旧程序 (`ALTRun.exe.old`) 删不掉; 更新检查的状态文件读不了; 启动时关不掉另一个正在运行的 ALTRun
+
 ## [2026.10.26.30]
 
 测试版。
@@ -1228,6 +1249,8 @@ Smoother typing, easier to get started, and a few useful new features.
 
 [未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.33...HEAD
 [2026.10.26.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.32...2026.10.26.33
+[2026.10.26.32]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.31...2026.10.26.32
+[2026.10.26.31]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.30...2026.10.26.31
 [2026.10.26.30]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.29...2026.10.26.30
 [2026.10.26.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...2026.10.26.29
 [2026.10.26.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...2026.10.26.28

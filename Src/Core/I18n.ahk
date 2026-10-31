@@ -660,7 +660,7 @@ class I18n {
         s["Prefs.SelectionHotkey"]     := "Selection hotkey"
         s["Prefs.SelectionHotkey.Desc"] := 'Select text, files or a link in any program and press this to show its actions: search the web, change case, save as a snippet; for files, copy the path or open a terminal there. <a href="{1}">All actions</a>'
         s["Prefs.HotkeySides"]         := "Tell left and right Ctrl / Alt / Shift / Win apart"
-        s["Prefs.HotkeySides.Desc"]    := "Hotkeys recorded from now on keep the side you press: LAlt+Space works only with the left Alt, so another program can use the right Alt + Space. Hotkeys already set stay as they are."
+        s["Prefs.HotkeySides.Desc"]    := "Hotkeys recorded from now on keep the side you press: LAlt+Space works only with the left Alt, so another program can use the right Alt + Space. Hotkeys already set stay as they are. They don't work while a window running as administrator is in front."
         s["Prefs.Language"]            := "Language"
         s["Prefs.Language.auto"]       := "Automatic"
         s["Prefs.Language.Desc"]       := "Automatic follows the Windows display language."

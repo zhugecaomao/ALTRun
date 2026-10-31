@@ -84,6 +84,8 @@ class ProviderRegistry {
         try {
             for item in ProviderRegistry.EmptyResults()
                 specs.Push(item.Icon)
+        } catch as e {
+            Logger.Error("ProviderRegistry: EmptyResults failed - " e.Message)
         }
         for provider in ProviderRegistry.Providers {
             if !ProviderRegistry.IsEnabled(provider) || !HasMethod(provider, "IconItems")
