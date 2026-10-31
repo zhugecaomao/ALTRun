@@ -49,12 +49,13 @@ class EverythingCheck {
 
         EverythingCheck.Check("no results for a name nobody has", Everything.Query(name "_nothing_like_it", 10).Length = 0)
 
-        ; How long a query takes once the index is ready (information only: a CI runner is no PC)
+        ; How long a query takes once the index is ready (information only: a CI runner is no PC). Timed with the
+        ; performance counter: A_TickCount only moves in 15.6 ms steps
         times := []
         Loop 20 {
-            t := A_TickCount
+            t := EverythingCheck.NowMs()
             Everything.Query(name, 10)
-            times.Push(A_TickCount - t)
+            times.Push(Round(EverythingCheck.NowMs() - t, 1))
         }
         EverythingCheck.Log("query time over 20 queries: median " EverythingCheck.Median(times) " ms, max " Max(times*) " ms")
         ExitApp(EverythingCheck.Failures)
@@ -81,6 +82,14 @@ class EverythingCheck {
     }
 
     static Log(text) => FileAppend(text "`n", "*", "UTF-8")
+
+    static NowMs() {
+        static freq := 0
+        if !freq
+            DllCall("QueryPerformanceFrequency", "Int64*", &freq)
+        DllCall("QueryPerformanceCounter", "Int64*", &now := 0)
+        return now * 1000 / freq
+    }
 
     static Median(values) {
         sorted := []

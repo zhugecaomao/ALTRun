@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.39]
+
+测试版。
+
+Test build.
+
+### 改进
+- 用 Everything 搜索文件更快: 等 Everything 回复时不再每次凑满系统计时周期 (15.6 ms), 回复一到就处理。文件搜索模式每打一个字要问 Everything 一到两次, 以前每次至少 16–31 ms
+
 ## [2026.10.26.38]
 
 测试版。
@@ -1292,7 +1301,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.38...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.39...HEAD
+[2026.10.26.39]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.38...2026.10.26.39
 [2026.10.26.38]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.37...2026.10.26.38
 [2026.10.26.37]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.36...2026.10.26.37
 [2026.10.26.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.35...2026.10.26.36

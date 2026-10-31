@@ -43,7 +43,7 @@ class Everything {
         }
 
         Everything._pending := ++Everything._replyId
-        Everything._results := ""
+        Everything._results := "", Everything._foreign := 0                ; a reply can already come while the query is being sent
 
         ; EVERYTHING_IPC_QUERY2: 7 DWORDs + the UTF-16 search text (with the terminating 0)
         size := 28 + (StrLen(search) + 1) * 2
@@ -62,18 +62,27 @@ class Everything {
         if !DllCall("SendMessageTimeoutW", "Ptr", everythingHwnd, "UInt", 0x4A, "Ptr", A_ScriptHwnd, "Ptr", copyData.Ptr
                   , "UInt", 2, "UInt", timeoutMs, "UPtr*", &accepted) || !accepted {
             Everything.LastProblem := "query not accepted after " (A_TickCount - started) " ms"
+            Everything._pending := 0
             return []
         }
 
-        Everything._foreign := 0
-        deadline := A_TickCount + timeoutMs
-        while (!IsObject(Everything._results) && A_TickCount < deadline)
-            Sleep(5)
+        Everything._WaitForReply(A_TickCount + timeoutMs)
         if !IsObject(Everything._results)                                   ; no reply: Everything is busy, or the reply collided with another WM_COPYDATA
             Everything.LastProblem := "no reply in " (A_TickCount - started) " ms (other WM_COPYDATA while waiting: " Everything._foreign ")"
         results := IsObject(Everything._results) ? Everything._results : []
         Everything._pending := 0
         return results
+    }
+
+    ; Waits until the reply has come (or the deadline): MsgWaitForMultipleObjects returns as soon as a message arrives
+    ; (Everything's reply is a WM_COPYDATA sent from its thread: QS_SENDMESSAGE), and Sleep(-1) lets AutoHotkey hand it to
+    ; _OnCopyData at once. Sleep(5) used to wait a whole timer tick (15.6 ms) each round: on Windows with Everything 1.4
+    ; and 1.5 every query took 31 ms (median), whatever Everything needed itself
+    static _WaitForReply(deadline) {
+        while (!IsObject(Everything._results) && (remaining := deadline - A_TickCount) > 0) {
+            DllCall("MsgWaitForMultipleObjects", "UInt", 0, "Ptr", 0, "Int", 0, "UInt", remaining, "UInt", 0x4FF)   ; QS_ALLINPUT
+            Sleep(-1)
+        }
     }
 
     ; The EVERYTHING_IPC_LIST2 Everything sends back:
