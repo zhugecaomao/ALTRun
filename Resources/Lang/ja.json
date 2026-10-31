@@ -548,7 +548,7 @@
   "Prefs.SelectionHotkey": "選択範囲の操作",
   "Prefs.SelectionHotkey.Desc": "任意のプログラムでテキスト・ファイル・リンクを選択して押すと、操作を表示します (Web 検索、大文字/小文字の変換、スニペットとして保存、ファイルのパスのコピー、ここでターミナルを開くなど)。<a href=\"{1}\">すべての操作</a>",
   "Prefs.HotkeySides": "左右の Ctrl / Alt / Shift / Win を区別する",
-  "Prefs.HotkeySides.Desc": "これから記録するホットキーは押した側を記憶します。例えば LAlt+Space は左の Alt でだけ動作し、右の Alt+Space は他のソフトに使えます。設定済みのホットキーはそのままです。",
+  "Prefs.HotkeySides.Desc": "これから記録するホットキーは押した側を記憶します。例えば LAlt+Space は左の Alt でだけ動作し、右の Alt+Space は他のソフトに使えます。設定済みのホットキーはそのままです。管理者として実行中のウィンドウが前面にあるときは動作しません。",
   "Prefs.SendToMenu": "エクスプローラーの「送る」メニューに追加",
   "Prefs.SendToMenu.Desc": "エクスプローラーで右クリック → 送る → ALTRun でカスタムコマンドに追加できます。1件選択時は編集画面が開き、複数選択時は一括で追加されます。",
   "Prefs.SettingsPages": "Windows の設定ページ",

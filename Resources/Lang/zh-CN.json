@@ -548,7 +548,7 @@
   "Prefs.SelectionHotkey": "选中内容的操作",
   "Prefs.SelectionHotkey.Desc": "在任何程序里选中文字、文件或网址后按下, 直接显示它的操作: 文字可以网页搜索、转换大小写 / 简繁、存为片段; 文件可以复制路径、在此处打开终端等。<a href=\"{1}\">查看全部操作</a>",
   "Prefs.HotkeySides": "热键区分左右 Ctrl / Alt / Shift / Win",
-  "Prefs.HotkeySides.Desc": "之后录制的热键会记住按的是左边还是右边: 例如 LAlt+Space 只有左 Alt 能触发, 右 Alt+空格可以留给其它软件。已经设好的热键不变。",
+  "Prefs.HotkeySides.Desc": "之后录制的热键会记住按的是左边还是右边: 例如 LAlt+Space 只有左 Alt 能触发, 右 Alt+空格可以留给其它软件。已经设好的热键不变。以管理员身份运行的窗口在前面时, 这种热键不起作用。",
   "Prefs.SendToMenu": "添加到资源管理器 '发送到' 菜单",
   "Prefs.SendToMenu.Desc": "资源管理器里右键 → 发送到 → ALTRun 添加自定义命令: 选中 1 个时弹出编辑对话框, 选中多个时全部直接添加",
   "Prefs.SettingsPages": "Windows 设置页面",
