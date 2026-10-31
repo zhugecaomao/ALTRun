@@ -64,8 +64,8 @@ class SearchStatusBar {
     ; tip is in the empty box instead), what Enter / Ctrl+Enter do with the selected result ("" = nothing to show),
     ; whether F3 edits it and whether "Actions →" is shown
     static Texts() {
-        actions := SearchWindow.Mode = "actions"
-        left := actions ? I18n.T("Status.Back") : SearchWindow.FileMode ? I18n.T("Status.FileMode") : ""
+        actions := SearchWindow.Session.Mode = "actions"
+        left := actions ? I18n.T("Status.Back") : SearchWindow.Session.FileMode ? I18n.T("Status.FileMode") : ""
         item := SearchWindow.SelectedItem()
         enter := !IsObject(item) ? "" : actions ? I18n.T("Status.Run") : SearchStatusBar.EnterTitle(item)
         usable := !actions && IsObject(item) && item.Valid
