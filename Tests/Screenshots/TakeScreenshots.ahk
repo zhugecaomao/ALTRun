@@ -42,6 +42,7 @@ class Shots {
             ["search",      "Light", "", () => Shots.Search("re")],
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
+            ["shellmenu",   "Light", "", () => Shots.ShellMenu()],              ; Wiki: the Windows context menu from the actions panel
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)
             ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: with the two rows of structural calculation
@@ -374,6 +375,21 @@ class Shots {
         ControlSend("{Right}", "Edit1", hwnd)
         Sleep(1500)
         return hwnd
+    }
+
+    ; A file's actions panel filtered to "Windows Context Menu", then Enter: the search window and the Explorer menu over it
+    static ShellMenu() {
+        hwnd := Shots.Search(Shots.DemoDir "\Annual Report 2026\Budget")
+        ControlSend("{Right}", "Edit1", hwnd)
+        Sleep(800)
+        ControlSend("{Text}context", "Edit1", hwnd)
+        Sleep(800)
+        ControlSend("{Enter}", "Edit1", hwnd)
+        popup := WinWait("ahk_class #32768 ahk_pid " Shots.Pid, , 5)
+        if !popup
+            throw Error("Context menu not shown")
+        Sleep(1500)                                                         ; the menu's icons (owner-drawn items)
+        return [hwnd, popup]
     }
 
     static FileMode(text) {

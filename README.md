@@ -70,7 +70,7 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 - **System commands**: lock, sleep, shut down, empty the Recycle Bin, volume and media control, Windows tools, more than 40 Windows Settings pages (Display, Bluetooth, Wi-Fi and so on), and text conversions (case, sorting, Simplified / Traditional Chinese and more).
 
 **Productivity**
-- **Action panel**: select a result and press `→` (or right-click) to list what you can do with it, such as run as administrator, open file location, copy path, open a terminal here or show properties.
+- **Action panel**: select a result and press `→` (or right-click) to list what you can do with it, such as run as administrator, open file location, copy path, open a terminal here, show properties or open the Windows context menu (with the items 7-Zip, Git and other programs add).
 - **Actions on selected content**: select text, files or a URL in any program and press `Ctrl+Alt+\` for actions such as web search, save as a snippet, or convert and replace the original text.
 - **Edit in place**: press `F3` to edit a command, snippet or search engine; apps and files can be turned into custom commands in one step.
 - **Clipboard history**: press `Ctrl+Alt+C` or type `clip`. Records text, files and images; pin the ones you use often, paste as plain text, and ignore anything copied from password managers.

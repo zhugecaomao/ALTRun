@@ -100,7 +100,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `Ctrl+↑` / `Ctrl+↓` | Previous / next search from history (like Alfred); going past the newest restores what you had typed |
 | `Tab` | Autocomplete; on a folder, go into it (the input becomes `path\`) and browse its contents. With Preferences → Keyboard → "Tab key" set to "Select next result", `Tab` / `Shift+Tab` go to the next / previous result (after the last one, back to the first) and `Ctrl+Tab` autocompletes |
 | `Backspace` (browsing a folder: the input ends in `\`, the caret at the end) | Up a level (`C:\Projects\Reports\` → `C:\Projects\`); with a filter typed after the path, it deletes a character as usual |
-| `Insert` | Mark / unmark the selected file or folder and move to the next row (like Total Commander); marked rows have a bar on the left. Then press `→` to act on all marked items: open all, copy / cut (paste in TC or Explorer), copy paths, copy / move to the current folder in TC, add to custom commands, move to the Recycle Bin |
+| `Insert` | Mark / unmark the selected file or folder and move to the next row (like Total Commander); marked rows have a bar on the left. Then press `→` to act on all marked items: open all, copy / cut (paste in TC or Explorer), copy paths, copy / move to the current folder in TC, Windows context menu (when they are in the same folder), add to custom commands, move to the Recycle Bin |
 | `Space` (empty search box, or cursor at the start) | Switch to file search, keeping what you typed (typed `seismic` first? press `Home`, then `Space`); `Backspace` in an empty box or at the start goes back to a normal search |
 | `Space` (after typing) | With Preferences → Keyboard → "Space runs the selected result" turned on: runs the selected result; `Shift+Space` types a space (for several keywords) |
 | `→` (cursor at the end) | Open the action panel; `←` / `Esc` go back. Holding `→` to move the cursor doesn't open it when the cursor reaches the end; press `→` once more |
@@ -125,8 +125,8 @@ Select a result and press `→` (or right-click) to list everything you can do w
 
 | Result type | Actions |
 |---|---|
-| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Properties, Move to Recycle Bin |
-| Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC, Properties, Move to Recycle Bin |
+| Program / file | Open, Run as Administrator (exe / lnk / bat...), Edit (`Ctrl+E`, when the file type has a registered editor; its name is shown on the right), Open With..., Reveal in File Manager, Copy Path, Copy Name, Copy File / Cut File, Copy / Move to Current Folder in TC, Open Terminal Here, Windows Context Menu, Properties, Move to Recycle Bin |
+| Folder | Open, Open Terminal Here, Reveal in File Manager, Copy Path, copy / cut the folder, Copy / Move to Current Folder in TC, Windows Context Menu, Properties, Move to Recycle Bin |
 | URL | Open, Copy URL |
 | Text | Copy to Clipboard, Paste to Front Window |
 | All | Edit... / Add to Custom Commands... (`F3`), Delete (`Ctrl+Del`), Show in Large Type (`Ctrl+L`, when turned on) |
@@ -135,6 +135,9 @@ File actions (like Listary):
 - **Copy File / Cut File**: puts the file itself on the clipboard; press `Ctrl+V` in TC or Explorer to paste it (a cut file is moved when pasted).
 - **Copy / Move to Current Folder in TC**: the target is the folder currently open in the frontmost Total Commander (or Explorer) window; not shown when the file is already in that folder. Uses Windows' own copy, with a progress window, a prompt when names clash, and undo.
 - **Move to Recycle Bin**: Windows asks first, and you can restore it from the Recycle Bin.
+- **Windows Context Menu**: the menu Explorer shows when you right-click the file, with the items other programs add (7-Zip, Git, antivirus, Send to...). It opens at the selected row; the search window closes once you choose an item, and `Esc` goes back to the action panel. Choose it with `Shift+Enter` for Explorer's extended items too (as with `Shift`+right-click), for example "Copy as path". Marked files get it too when they are all in the same folder.
+
+![Windows context menu](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/shellmenu.png)
 
 ## Actions on selected content
 Like Alfred's Universal Actions: select text, files or a URL in any program and press `Ctrl+Alt+\` (change it in Preferences → General → "Selection hotkey"); ALTRun opens the action panel for that content directly, and you can type to filter:

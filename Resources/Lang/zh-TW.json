@@ -46,6 +46,7 @@
   "Action.RunAsAdmin": "以系統管理員身分執行",
   "Action.SaveSnippet": "存為文字片段...",
   "Action.SearchWith": "用 {1} 搜尋",
+  "Action.ShellMenu": "Windows 右鍵選單",
   "Action.Unpin": "取消釘選",
   "App.Admin": "系統管理員",
   "App.ConfirmHide": "從搜尋結果中刪除 '{1}' 嗎?\n\n不會解除安裝程式, 可以在 偏好設定 → 應用程式搜尋 裡恢復。",

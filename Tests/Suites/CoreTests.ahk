@@ -1231,4 +1231,47 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.True("System search", SystemProvider.Search(SearchQuery("lock")).Length >= 1)
         TestRunner.Equal("Color", Win.ColorToBgr("#112233"), 0x332211)
     }
+    ; The Windows context menu (Lib\ShellContextMenu.ahk) and the actions panel item for it: files / folders, several only in one folder
+    static ShellMenu() {
+        eq := (n, a, e) => TestRunner.Equal("ShellMenu." n, a, e)
+        root := A_Temp "\ALTRun-shell-menu-test"
+        try DirDelete(root, true)
+        DirCreate(root "\sub")
+        FileAppend("a", root "\a.txt"), FileAppend("b", root "\b.txt"), FileAppend("c", root "\sub\c.txt")
+        try {
+            eq("one file", ShellContextMenu.CanShow([root "\a.txt"]), true)
+            eq("same folder", ShellContextMenu.CanShow([root "\a.txt", root "\b.txt", root "\sub"]), true)
+            eq("other folder", ShellContextMenu.CanShow([root "\a.txt", root "\sub\c.txt"]), false)
+            eq("missing", ShellContextMenu.CanShow([root "\a.txt", root "\gone.txt"]), false)
+            eq("drive root alone", ShellContextMenu.CanShow([SubStr(A_WinDir, 1, 3)]), true)
+            eq("drive root with others", ShellContextMenu.CanShow([SubStr(A_WinDir, 1, 3), root "\a.txt"]), false)
+            eq("none", ShellContextMenu.CanShow([]), false)
+            shellMenu := ShellContextMenu([root "\a.txt", root "\b.txt"])
+            TestRunner.True("ShellMenu.filled", DllCall("GetMenuItemCount", "Ptr", shellMenu.Fill(), "Int") > 0)
+            TestRunner.True("ShellMenu.submenu handler", shellMenu.HandlerLevel >= 2)
+            TestRunner.True("ShellMenu.menu text", ShellContextMenu.MenuText(shellMenu.Menu) != "")
+            shellMenu := ""
+            thrown := false
+            try ShellContextMenu([root "\gone.txt"])
+            catch
+                thrown := true
+            eq("missing throws", thrown, true)
+
+            titles(list) {
+                text := "", flags := ""
+                for action in list
+                    text .= action.Title "|", flags .= action.KeepWindow ? action.Title "|" : ""
+                return {Text: text, KeepWindow: flags}
+            }
+            label := I18n.T("Action.ShellMenu") "|"
+            single := titles(ResultActions.ListFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.txt"})))
+            eq("file: offered, keeps the window", InStr(single.Text, label) > 0 && single.KeepWindow = label, true)
+            eq("folder: offered", InStr(titles(ResultActions.ListFor(ResultItem("sub", "", {Kind: "folder", Arg: root "\sub"}))).Text, label) > 0, true)
+            eq("missing file: not offered", InStr(titles(ResultActions.ListFor(ResultItem("x", "", {Kind: "file", Arg: root "\gone.txt"}))).Text, label), 0)
+            eq("store app: not offered", InStr(titles(ResultActions.ListFor(ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"}))).Text, label), 0)
+            eq("marked in one folder: offered", InStr(titles(ResultActions.ListForMany([root "\a.txt", root "\b.txt"])).Text, label) > 0, true)
+            eq("marked in two folders: not offered", InStr(titles(ResultActions.ListForMany([root "\a.txt", root "\sub\c.txt"])).Text, label), 0)
+        } finally
+            try DirDelete(root, true)
+    }
 }

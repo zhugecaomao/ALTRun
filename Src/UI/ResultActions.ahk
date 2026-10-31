@@ -14,6 +14,7 @@
 ; Usage:
 ;   ResultActions.ListFor(item)           -> [ResultItem...] the actions panel
 ;   ResultActions.ListForMany(paths)      -> [ResultItem...] for several marked files
+; Files and folders also get the Windows context menu (Lib\ShellContextMenu.ahk, SearchWindow.ShellMenu).
 ;   ResultActions.CanEdit(item) / EditItem(item) / CanDelete(item) / DeleteItem(item) / DeletePrompt(item)
 ;===============================================================================
 
@@ -44,6 +45,7 @@ class ResultActions {
                 add("Action.CopyName", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(Path.Leaf(target)))
                 ResultActions._FileActions(list, target)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(ActionCatalog.ParentDir(target)))
+                ResultActions._ShellMenuAction(list, [target], target)
                 if !ActionCatalog.IsShellItem(target)                       ; Store apps (shell:AppsFolder\...) have no properties window
                     add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
                 if FileExist(target)
@@ -54,6 +56,7 @@ class ResultActions {
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
                 ResultActions._FileActions(list, target)
+                ResultActions._ShellMenuAction(list, [target], target)
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
                 if (FileExist(target) && !RegExMatch(RTrim(target, "\"), "^[A-Za-z]:$"))       ; drive roots can't be deleted
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
@@ -105,9 +108,17 @@ class ResultActions {
             add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), destination)
             add(I18n.T("Action.MoveTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination, true), destination)
         }
+        ResultActions._ShellMenuAction(list, paths, paths[1])
         add(I18n.T("Action.AddAllCommands"), "res:imageres.dll,-2", (*) => CustomCommandProvider.AddFromPaths(paths))
         add(I18n.T("Action.RecycleAll", count), "res:shell32.dll,-32", (*) => ActionCatalog.RecycleMany(paths))
         return list
+    }
+
+    ; The Windows (Explorer) context menu of the file(s), with the items other programs add (7-Zip, Git...); several only when in one folder.
+    ; Shown over the search window at the selected row (KeepWindow); Shift+Enter shows Explorer's extended items too
+    static _ShellMenuAction(list, paths, icon) {
+        if ShellContextMenu.CanShow(paths)
+            list.Push(ResultItem(I18n.T("Action.ShellMenu"), "", {Icon: icon, KeepWindow: true, OnRun: (source) => SearchWindow.ShellMenu(source, paths)}))
     }
 
     ;---------------------------------------------------------------------------

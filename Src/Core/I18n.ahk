@@ -169,6 +169,7 @@ class I18n {
         s["Action.LargeType"]          := "Show in Large Type"
         s["Action.OpenTerminal"]       := "Open Terminal Here"
         s["Action.Properties"]         := "Properties"
+        s["Action.ShellMenu"]          := "Windows Context Menu"
         s["Action.AddCommand"]         := "Add to Custom Commands..."
         s["Action.Edit"]               := "Edit..."
         s["Action.Delete"]             := "Delete"

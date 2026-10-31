@@ -774,6 +774,8 @@ class SearchWindow {
 
         if (SearchWindow.Mode = "actions") {
             source := SearchWindow.ActionSource
+            if item.KeepWindow                                              ; it shows something over the window first and closes the window itself (ShellMenu)
+                return SearchWindow._Later(() => SearchWindow._SafeRun(() => item.OnRun.Call(source)))
             Knowledge.Record(SearchWindow.SavedQuery, source.Uid)
             RecentProvider.Remember(source)
             Usage.CountItem(source)
@@ -1006,17 +1008,61 @@ class SearchWindow {
             if (A_Index = 1)
                 contextMenu.Default := label
         }
-        ; While the menu shows, AHK can't handle NM_CUSTOMDRAW and the list would paint in the default style (blue selection bar):
-        ; remove ListView's own selection state first and paint in our style before showing the menu
-        Critical("Off")
-        SearchWindow.List.Modify(0, "-Select -Focus")
-        SearchWindow._Repaint()
-        DllCall("UpdateWindow", "Ptr", SearchWindow.List.Hwnd)
+        SearchWindow._PaintForMenu()
         SearchWindow._keepOpen := true
         contextMenu.Show(x, y)
         SearchWindow._keepOpen := false
         if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
             try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
+    }
+
+    ; While a menu shows, AHK can't handle NM_CUSTOMDRAW and the list would paint in the default style (blue selection bar):
+    ; remove ListView's own selection state first and paint in our style before showing the menu
+    static _PaintForMenu() {
+        Critical("Off")
+        SearchWindow.List.Modify(0, "-Select -Focus")
+        SearchWindow._Repaint()
+        DllCall("UpdateWindow", "Ptr", SearchWindow.List.Hwnd)
+    }
+
+    ; The Windows context menu of the file(s) (Lib\ShellContextMenu.ahk), shown at the selected row over the window, as Explorer shows it
+    ; at the selected item (Shift: Explorer's extended items too). The window closes once an item is chosen, before it runs (an Open
+    ; or a dialog comes to the front); closing the menu without choosing goes back to the window as it was
+    static ShellMenu(source, paths) {
+        shellMenu := ShellContextMenu(paths)
+        query := SearchWindow._CurrentQuery()
+        SearchWindow._SelectedRowPoint(&x, &y)
+        SearchWindow._PaintForMenu()                                        ; also lets the menu messages (submenus) through while the menu shows
+        SearchWindow._keepOpen := true
+        try id := shellMenu.Track(SearchWindow.Gui.Hwnd, x, y, GetKeyState("Shift"))
+        finally SearchWindow._keepOpen := false
+        if !id {
+            if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
+                try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
+            return
+        }
+        Knowledge.Record(query, source.Uid)
+        RecentProvider.Remember(source)
+        Usage.CountItem(source)
+        SearchWindow.Marked := Map()
+        SearchWindow.Hide("run")
+        result := shellMenu.Invoke(id)
+        if (result < 0 && result != -2147023673)                            ; 0x800704C7: canceled by the user (e.g. in a delete confirmation)
+            Logger.Warn("SearchWindow: context menu item " id " failed (0x" Format("{:08X}", result & 0xFFFFFFFF) ")")
+    }
+
+    ; Screen position for a menu at the selected row: below the row, past the icon (the mouse position when the row can't be found)
+    static _SelectedRowPoint(&x, &y) {
+        rect := Buffer(16, 0), point := Buffer(8, 0)
+        row := SearchWindow.Selected - SearchWindow.Offset - 1
+        if (row < 0 || !SendMessage(0x100E, row, rect, SearchWindow.List.Hwnd)) {   ; LVM_GETITEMRECT (LVIR_BOUNDS)
+            DllCall("GetCursorPos", "Ptr", point)
+            x := NumGet(point, 0, "Int"), y := NumGet(point, 4, "Int")
+            return
+        }
+        NumPut("Int", NumGet(rect, 0, "Int") + SearchWindow.RowHeight, "Int", NumGet(rect, 12, "Int"), point)
+        DllCall("ClientToScreen", "Ptr", SearchWindow.List.Hwnd, "Ptr", point)
+        x := NumGet(point, 0, "Int"), y := NumGet(point, 4, "Int")
     }
 
     ; a separate method makes the closure, so each menu item keeps its own action
@@ -1026,6 +1072,8 @@ class SearchWindow {
 
     static _RunMenuAction(action, item) {
         SearchWindow._keepOpen := false
+        if action.KeepWindow                                                ; e.g. the Windows context menu: shown at the row, it closes the window itself
+            return SearchWindow._Later(() => SearchWindow._SafeRun(() => action.OnRun.Call(item)))
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
         RecentProvider.Remember(item)
         Usage.CountItem(item)

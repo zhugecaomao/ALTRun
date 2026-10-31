@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.30]
+
+测试版。
+
+Test build.
+
+### 新增
+- 操作面板里的 "Windows 右键菜单": 文件和文件夹 (以及在同一个文件夹里的多个标记文件) 可以打开资源管理器的右键菜单, 包括 7-Zip、Git、杀毒软件、发送到等其它软件加的菜单项。菜单在选中的那一行弹出, 选了菜单项以后搜索窗口才关闭, 按 `Esc` 回到操作面板; 用 `Shift+Enter` 选它还会显示资源管理器的扩展菜单项 (例如 "复制文件地址")
+
 ## [2026.10.26.29]
 
 测试版。
@@ -1201,7 +1210,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.29...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.30...HEAD
+[2026.10.26.30]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.29...2026.10.26.30
 [2026.10.26.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...2026.10.26.29
 [2026.10.26.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...2026.10.26.28
 [2026.10.26.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...2026.10.26.27

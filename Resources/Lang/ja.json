@@ -45,6 +45,7 @@
   "Action.RunAsAdmin": "管理者として実行",
   "Action.SaveSnippet": "スニペットとして保存...",
   "Action.SearchWith": "{1} で検索",
+  "Action.ShellMenu": "Windows のコンテキスト メニュー",
   "Action.Unpin": "ピン留めを解除",
   "App.Admin": "管理者",
   "App.ConfirmHide": "'{1}' を検索結果から削除しますか?\n\nプログラム自体はアンインストールされません。環境設定 → アプリ検索 で復元できます。",
