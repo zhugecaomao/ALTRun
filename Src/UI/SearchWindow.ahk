@@ -346,24 +346,19 @@ class SearchWindow {
             return SearchWindow._BringToFront(started)
         SearchWindow._Step("previous window")
         App.RememberActiveWindow()
-        SearchWindow.Session.ActionsOnly := false
-        SearchWindow.Session.Marked := Map()
         Usage.Count("Show")
         last := SearchWindow.Session.Last
-        restore := (text = "" && SearchWindow.KeepsLast(last, AppSettings.General))
+        restore := (text = "" && SearchWindow.Session.KeepsLast(AppSettings.General))
         ; Restoring the last search with the box and results still as they were when hidden: show them as they are without searching again (only new input searches).
         ; A search (e.g. file search) takes tens of milliseconds; searching before showing meant the first key pressed meanwhile was still in the old window, lost or delayed
         reuse := restore && SearchWindow.Session.Mode = "results" && SearchWindow.Input.Value == last.Text && SearchWindow.Session.FileMode = last.FileMode
         ; the empty search box was already prepared after hiding (PrepareEmpty): no search first either, refresh after showing (_RefreshShown)
         prepared := !restore && text = "" && !wasVisible && SearchWindow.IsPrepared()
         SearchWindow._prepared := false                                     ; use it once; prepared again after the next hide
-        SearchWindow.Session.Mode := "results"
-        SearchWindow.Session.FileMode := restore ? last.FileMode : false
-        SearchWindow.Session.RestoredSelection := restore                          ; until the caret moves: typing over it starts a new search (_LeaveRestored)
+        SearchWindow.Session.StartShowing(restore)                          ; results, no marks; the restored search selected until the caret moves (_LeaveRestored)
         SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
         SearchStatusBar.Update()
-        SearchWindow.Session.HistoryIndex := 0
         SearchWindow._Step("results")
         if (!reuse && !prepared) {
             if restore                                                      ; restoring the last search: show the results that don't need waiting first, then search fully after showing (_FinishRestore)
@@ -587,31 +582,14 @@ class SearchWindow {
 
     ; Remembers the search on hide (for KeepLastQuery); in the actions panel the search before the panel opened
     static _RememberQuery() {
-        actions := (SearchWindow.Session.Mode = "actions")
-        SearchWindow.Session.Last := {Text: actions ? SearchWindow.Session.SavedQuery : SearchWindow.Input.Value
-                             , FileMode: SearchWindow.Session.FileMode, Selected: actions ? 1 : Max(1, SearchWindow.Session.Selected), Time: A_TickCount}
+        SearchWindow.Session.Remember(SearchWindow.Input.Value)
     }
 
-    ; Whether the last search comes back (KeepLastQuery): only within KeepLastQueryMinutes after hiding (0 = no limit), like Alfred's
-    ; "show latest query if within N minutes"; after that the window opens with an empty search box
-    static KeepsLast(last, general, now := A_TickCount) {
-        if !(general["KeepLastQuery"] && IsObject(last) && last.Text != "")
-            return false
-        minutes := general["KeepLastQueryMinutes"]
-        return !IsNumber(minutes) || minutes <= 0 || now - last.Time <= minutes * 60000
-    }
-
-    ; The restored last search is still all selected: typing or Backspace over it starts a new, normal search (file search mode ends too),
-    ; like Alfred, where the file search prefix is part of the text. Enter runs the restored search again; moving the caret first
-    ; (→, End, a click) keeps it for editing, file search mode included (see SearchKeys.OnKeyDown)
+    ; Typed over the restored last search (see SearchSession.LeaveRestored). Enter runs the restored search again; moving the caret
+    ; first (→, End, a click) keeps it for editing, file search mode included (see SearchKeys.OnKeyDown)
     static _LeaveRestored() {
-        if !SearchWindow.Session.RestoredSelection
-            return
-        SearchWindow.Session.RestoredSelection := false
-        if SearchWindow.Session.FileMode {
-            SearchWindow.Session.FileMode := false
+        if SearchWindow.Session.LeaveRestored()
             SearchWindow._UpdateCueBanner()
-        }
     }
 
     static Toggle() {
@@ -666,13 +644,8 @@ class SearchWindow {
     static _RunSearch() {
         gen := ++SearchWindow.Session.SearchGen
         text := SearchWindow.Input.Value
-        if (SearchWindow.Session.Mode = "actions") {
-            filtered := []
-            for action in SearchWindow.Session.AllActions
-                if (Trim(text) = "" || FuzzyMatcher.Score(text, action.Title) > 0)
-                    filtered.Push(action)
-            return SearchWindow.SetResults(filtered)
-        }
+        if (SearchWindow.Session.Mode = "actions")
+            return SearchWindow.SetResults(SearchWindow.Session.FilterActions(text))
         browse := FileSearchProvider.BrowsePath(text)                       ; browsing a folder: only the last part (the filter text) is highlighted, not the words in the path
         SearchWindow.Session.HighlightText := IsObject(browse) ? browse.Filter : text
         results := SearchWindow.Session.FileMode ? ProviderRegistry.SearchOnly(FileSearchProvider, text) : ProviderRegistry.Search(text)
@@ -686,9 +659,7 @@ class SearchWindow {
     static SetResults(results) {
         Critical("On")
         SearchWindow._NoteResults(results.Length)
-        SearchWindow.Session.Results  := results
-        SearchWindow.Session.Selected := results.Length ? 1 : 0
-        SearchWindow.Session.Offset   := 0
+        SearchWindow.Session.SetResults(results)
         SearchWindow._Layout()
         Critical("Off")
         SearchWindow._Repaint()                                             ; repaint once what was painted during Critical (the custom-draw callback can't run then)
@@ -822,27 +793,12 @@ class SearchWindow {
         SetTimer(SearchWindow._paintCheck, -100)
     }
 
-    static SelectedItem() {
-        if (SearchWindow.Session.Selected < 1 || SearchWindow.Session.Selected > SearchWindow.Session.Results.Length)
-            return ""
-        return SearchWindow.Session.Results[SearchWindow.Session.Selected]
-    }
+    static SelectedItem() => SearchWindow.Session.SelectedItem()
 
     ; wrap: past the last result go back to the first (and the other way round), used by Tab cycling
     static MoveSelection(step, wrap := false) {
-        count := SearchWindow.Session.Results.Length
-        if !count
-            return
-        if (wrap && (SearchWindow.Session.Selected + step > count || SearchWindow.Session.Selected + step < 1))
-            SearchWindow.Session.Selected := (step > 0) ? 1 : count
-        else
-            SearchWindow.Session.Selected := Max(1, Min(count, SearchWindow.Session.Selected + step))
-        visible := SearchWindow.VisibleRows
-        if (SearchWindow.Session.Selected <= SearchWindow.Session.Offset)
-            SearchWindow.Session.Offset := SearchWindow.Session.Selected - 1
-        else if (SearchWindow.Session.Selected > SearchWindow.Session.Offset + visible)
-            SearchWindow.Session.Offset := SearchWindow.Session.Selected - visible
-        SearchWindow._Repaint()
+        if SearchWindow.Session.MoveSelection(step, SearchWindow.VisibleRows, wrap)
+            SearchWindow._Repaint()
     }
 
     ;---------------------------------------------------------------------------
@@ -914,29 +870,24 @@ class SearchWindow {
     static _OpenActionsFor(item) {
         if (!IsObject(item) || !item.Valid || SearchWindow.Session.Mode = "actions")
             return false
-        if SearchWindow.Session.Marked.Count {                                      ; files are marked: act on all marked ones together
-            paths := []
-            for key, markedPath in SearchWindow.Session.Marked
-                paths.Push(markedPath)
+        if SearchWindow.Session.Marked.Count {                              ; files are marked: act on all marked ones together
+            paths := SearchWindow.Session.MarkedPaths()
             item := ResultItem(I18n.T("Search.MarkedItems", paths.Length), "", {Icon: "folder:"})
             actions := ResultActions.ListForMany(paths)
         } else
             actions := ResultActions.ListFor(item)
         if !actions.Length
             return false
-        SearchWindow.Session.SavedQuery := SearchWindow.Input.Value
-        SearchWindow.Session.ActionSource := item
-        SearchWindow.Session.AllActions := actions
-        SearchWindow.Session.Mode := "actions"
+        SearchWindow.Session.OpenActions(item, actions, SearchWindow.Input.Value)
         Win.SetCueBanner(SearchWindow.Input.Hwnd, I18n.T("Search.ActionsFor", item.Title))
         SearchWindow._SetInput("")
         return true
     }
 
     static _CloseActions() {
-        SearchWindow.Session.Mode := "results"
+        query := SearchWindow.Session.CloseActions()
         SearchWindow._UpdateCueBanner()
-        SearchWindow._SetInput(SearchWindow.Session.SavedQuery)
+        SearchWindow._SetInput(query)
     }
 
     ;---------------------------------------------------------------------------
@@ -1188,33 +1139,17 @@ class SearchWindow {
     static RecallHistory(step) {
         if (SearchWindow.Session.Mode = "actions" || SearchWindow.Session.FileMode)
             return
-        history := Knowledge.History
-        current := SearchWindow.Input.Value
-        index := SearchWindow.Session.HistoryIndex
-        if (index = 0)
-            SearchWindow.Session.HistoryDraft := current
-        Loop {
-            index += step
-            if (index < 0 || index > history.Length)
-                return                                                      ; already the oldest / newest entry
-            text := index ? history[index] : SearchWindow.Session.HistoryDraft
-            if (text != current || index = 0)
-                break
-        }
-        SearchWindow._SetInput(text)
-        SearchWindow.Session.HistoryIndex := index                                  ; _SetInput doesn't go through the Change event: keep the history position here
+        entry := SearchWindow.Session.HistoryStep(step, Knowledge.History, SearchWindow.Input.Value)
+        if !IsObject(entry)
+            return                                                          ; already the oldest / newest entry
+        SearchWindow._SetInput(entry.Text)
+        SearchWindow.Session.HistoryIndex := entry.Index                    ; _SetInput doesn't go through the Change event: keep the history position here
     }
 
     ; Marks / unmarks the selected file or folder, then moves to the next row
     static ToggleMark() {
-        item := SearchWindow.SelectedItem()
-        if !(IsObject(item) && (item.Kind = "file" || item.Kind = "folder") && item.Arg != "")
+        if !SearchWindow.Session.ToggleMark(SearchWindow.SelectedItem())
             return false
-        key := StrLower(item.Arg)
-        if SearchWindow.Session.Marked.Has(key)
-            SearchWindow.Session.Marked.Delete(key)
-        else
-            SearchWindow.Session.Marked[key] := item.Arg
         if (SearchWindow.Session.Selected < SearchWindow.Session.Results.Length)
             SearchWindow.MoveSelection(1)
         else
@@ -1222,9 +1157,7 @@ class SearchWindow {
         return true
     }
 
-    static IsMarked(item) {
-        return SearchWindow.Session.Marked.Count && IsObject(item) && (item.Kind = "file" || item.Kind = "folder") && SearchWindow.Session.Marked.Has(StrLower(item.Arg))
-    }
+    static IsMarked(item) => SearchWindow.Session.IsMarked(item)
 
     static _AutoComplete() {
         item := SearchWindow.SelectedItem()
