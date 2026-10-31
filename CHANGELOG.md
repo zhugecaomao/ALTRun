@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.31]
+
+测试版。
+
+Test build.
+
+### 改进
+- 几处以前失败时没有任何记录的地方写进日志 (打开 "保存日志" 时), 方便排查: 文件索引达到条目上限 (`MaxEntries`) 时后面的文件没有索引进来、索引时有文件夹读不了; 剪贴板里的图片保存失败; 更新后旧程序 (`ALTRun.exe.old`) 删不掉; 更新检查的状态文件读不了; 启动时关不掉另一个正在运行的 ALTRun
+
 ## [2026.10.26.29]
 
 测试版。
@@ -1201,7 +1210,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.29...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.31...HEAD
+[2026.10.26.31]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.30...2026.10.26.31
 [2026.10.26.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...2026.10.26.29
 [2026.10.26.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...2026.10.26.28
 [2026.10.26.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...2026.10.26.27

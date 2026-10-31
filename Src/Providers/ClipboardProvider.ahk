@@ -301,8 +301,11 @@ class ClipboardProvider {
         name := "img-" A_Now "-" Random(100000, 999999) ".png"
         imageFile := ClipboardProvider.Folder "\" name
         size := ClipboardData.SaveImage(imageFile)
-        if !IsObject(size)
+        if !IsObject(size) {
+            if ClipboardData.HasImage()                                     ; there was an image, but it couldn't be written (folder not writable, disk full)
+                Logger.Warn("ClipboardProvider: could not save the clipboard image to " ClipboardProvider.Folder)
             return false
+        }
         return ClipboardProvider.AddImageFile(name, size.Width, size.Height, source)
     }
 
