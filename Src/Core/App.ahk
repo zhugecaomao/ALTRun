@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.30"
+    static Version := "2026.10.26.31"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -220,7 +220,8 @@ class App {
             WinClose(hwnd)
             if !WinWaitClose(hwnd, , 3)
                 ProcessClose(pid)
-        }
+        } catch as e
+            Logger.Warn("App: could not close the other instance - " e.Message)
         DetectHiddenWindows(saved)
     }
 

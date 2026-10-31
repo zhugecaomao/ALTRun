@@ -204,12 +204,15 @@ class UpdateChecker {
 
     static LoadState() {
         state := Map("LastCheck", "", "Skip", "")
+        if !FileExist(UpdateChecker.StateFile)
+            return state
         try {
             data := JSON.Parse(FileRead(UpdateChecker.StateFile, "UTF-8"))
             for key in ["LastCheck", "Skip"]
                 if (data is Map && data.Has(key))
                     state[key] := String(data[key])
-        }
+        } catch as e
+            Logger.Warn("UpdateChecker.LoadState: " e.Message " (checking again and forgetting a skipped version)")
         return state
     }
 
@@ -405,6 +408,8 @@ class UpdateChecker {
             try FileDelete(old)
             if FileExist(old) && (attempt < 10)
                 SetTimer(() => UpdateChecker.CleanUp(attempt + 1), -1000)
+            else if FileExist(old)
+                Logger.Warn("UpdateChecker: could not delete " old " (still in use?); it can be deleted by hand")
         }
         if (attempt = 1 && InStr(FileExist(UpdateChecker.TempDir), "D"))
             try DirDelete(UpdateChecker.TempDir, true)
