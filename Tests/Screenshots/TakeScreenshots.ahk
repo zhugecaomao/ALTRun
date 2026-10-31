@@ -123,6 +123,8 @@ class Shots {
         wanted := Map(), skipped := Map(), within := Map()                  ; "name": shoot it, "-name": skip it, "=name": only scenes also listed so
         Loop args.Length - 1 {
             name := args[A_Index + 1]
+            if (Trim(name, " -=") = "")                                      ; an empty name would select no scene at all
+                continue
             target := (SubStr(name, 1, 1) = "-") ? skipped : (SubStr(name, 1, 1) = "=") ? within : wanted
             name := LTrim(name, "-=")
             for scene in (name = "normal-scale") ? Shots.NormalScale : (name = "themes") ? Shots.Themes() : [name]
@@ -130,6 +132,10 @@ class Shots {
         }
         DirCreate(Shots.OutDir)
         Shots.Log("screen " A_ScreenWidth " x " A_ScreenHeight ", DPI " A_ScreenDPI)
+        count := 0
+        for scene in Shots.Scenes()
+            count += !((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]) || (within.Count && !within.Has(scene[1])))
+        Shots.Log(count " scene(s) to shoot")
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
         Shots.PrepareAppIndex()

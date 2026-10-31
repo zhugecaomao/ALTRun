@@ -121,7 +121,8 @@ jobs:
       - name: Take screenshots
         shell: pwsh
         run: |
-          $scenes = @(-split $env:SCENES); $only = @(-split "${{ matrix.only }}"); $skip = @(-split "${{ matrix.skip }}")
+          $words = { param($text) @(-split "$text" | Where-Object { $_ }) }    # -split "" gives one empty string, not an empty list
+          $scenes = @(& $words $env:SCENES); $only = @(& $words "${{ matrix.only }}"); $skip = @(& $words "${{ matrix.skip }}")
           if ($scenes.Count) { $within = $only; $only = $scenes } else { $within = @() }
           & Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only $only -Skip $skip -Within $within   # & so the lists bind as arrays
 
