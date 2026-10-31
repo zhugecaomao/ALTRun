@@ -220,7 +220,8 @@ class App {
             WinClose(hwnd)
             if !WinWaitClose(hwnd, , 3)
                 ProcessClose(pid)
-        }
+        } catch as e
+            Logger.Warn("App: could not close the other instance - " e.Message)
         DetectHiddenWindows(saved)
     }
 

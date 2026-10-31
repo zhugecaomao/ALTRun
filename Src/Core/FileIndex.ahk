@@ -42,7 +42,7 @@ class FileIndex {
     ; (after the index changed they don't match and pinyin isn't used). Computed while scanning and kept in the cache
     static Initials := Map(), _initialsFor := ""
     static Scanning := false
-    static _stack := [], _new := "", _newInitials := "", _timer := ""
+    static _stack := [], _new := "", _newInitials := "", _timer := "", _unreadable := 0, _truncated := false   ; folders that couldn't be read, MaxEntries reached (for the log)
 
     static Count => FileIndex.Data.Count
     static Deferred := false                                               ; Everything ran at start-up; the cache isn't read yet
@@ -174,7 +174,7 @@ class FileIndex {
             if (resolved != "" && DirExist(resolved))
                 FileIndex._stack.Push([resolved, 0])
         }
-        FileIndex._new := FileIndex.Entries(), FileIndex._newInitials := Map()
+        FileIndex._new := FileIndex.Entries(), FileIndex._newInitials := Map(), FileIndex._unreadable := 0, FileIndex._truncated := false
         FileIndex.Scanning := true
         if (FileIndex._timer = "")
             FileIndex._timer := Logger.Watch("file index scan", () => FileIndex._ScanSome())
@@ -204,11 +204,12 @@ class FileIndex {
                     if (isFolder && depth + 1 < options["ScopeDepth"])
                         FileIndex._stack.Push([A_LoopFileFullPath, depth + 1])
                     if (found.Count >= options["MaxEntries"]) {
-                        FileIndex._stack := []
+                        FileIndex._stack := [], FileIndex._truncated := true
                         break
                     }
                 }
-            }
+            } catch
+                FileIndex._unreadable += 1                                  ; e.g. a folder removed during the scan; counted for the log line below
         }
         if FileIndex._stack.Length
             return
@@ -217,7 +218,9 @@ class FileIndex {
         FileIndex.Initials := initials, FileIndex._initialsFor := found
         FileIndex._new := "", FileIndex._newInitials := "", FileIndex.Scanning := false
         FileIndex._SaveWhenIdle()
-        Logger.Debug("FileIndex: " found.Count " entries")
+        Logger.Debug("FileIndex: " found.Count " entries" (FileIndex._unreadable ? ", " FileIndex._unreadable " folders could not be read" : ""))
+        if FileIndex._truncated                                             ; files beyond the limit are missing from the index without anything else showing it
+            Logger.Warn("FileIndex: stopped at MaxEntries (" options["MaxEntries"] "); narrow the indexed folders or raise the limit")
         if IsObject(done := FileIndex._onDone) {
             FileIndex._onDone := "", count := found.Count
             SetTimer(() => done.Call(count), -1)                            ; no dialog inside the scan timer (it would count towards its time)

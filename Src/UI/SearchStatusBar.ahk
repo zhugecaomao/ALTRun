@@ -173,8 +173,7 @@ class SearchStatusBar {
         CoordMode("Menu", "Client")
         mainMenu.Show(SearchWindow.Padding, y)
         SearchWindow._keepOpen := false
-        if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
-            try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
+        SearchWindow.AfterMenu()
     }
 
     ; Mixes two colors ("RRGGBB") by t (0 ~ 1); returns BGR for GDI
