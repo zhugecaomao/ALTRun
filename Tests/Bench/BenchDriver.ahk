@@ -9,7 +9,7 @@
 ;   BenchDriver.ahk round <label> <appDir> <outFile> <seed> <searches> <others>
 ;
 ; One round: start ALTRun, randomly mix searches searches and others each of running programs / opening files and folders, the actions panel, calculator,
-; Quick Switch, opening and saving Preferences, snippet expansion (before them, three idle minutes measure the CPU used while idle); each timing goes into outFile (one line label|item|ms), and at the end
+; Quick Switch, opening and saving Preferences, snippet expansion (before them, an idle minute measures the CPU used while idle); each timing goes into outFile (one line label|item|ms), and at the end
 ; CPU, memory, GDI / USER objects and handle counts are noted before a normal exit. Input uses real key presses (SendLevel 1, so hotkeys and hotstrings respond),
 ; and a "BenchEdit" window is always in front (normally some program is in front when the hotkey is pressed). bench_stats.py summarizes it into a table.
 #Requires AutoHotkey v2.0
@@ -245,9 +245,11 @@ Resources(when) {
 
 ; CPU ALTRun uses with another program in front and nothing typed (timers, polling): Samples one-minute samples in a row, each recorded,
 ; so background work that happens to fall into one (start-up prefetch, a cache write) shows as one outlier and the median stays meaningful.
-; Counted in CPU cycles (QueryProcessCycleTime): process times only advance in 15.6 ms steps, too coarse for a few timers a minute
+; One per round: with 2 rounds per version on each of the runners (bench.yml) that is 8 per version on 4 runners. A sample stays a whole
+; minute, so a timer running once a minute is always in it. Counted in CPU cycles (QueryProcessCycleTime): process times only advance in
+; 15.6 ms steps, too coarse for a few timers a minute
 IdleCpu() {
-    static Samples := 3, SampleMs := 60000
+    static Samples := 1, SampleMs := 60000
     try WinActivate("ahk_id " B.Editor.Hwnd)
     Sleep(2000)                                                             ; let the switch settle
     Loop Samples {

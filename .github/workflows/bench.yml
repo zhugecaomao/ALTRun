@@ -1,7 +1,10 @@
 # Simulates daily use on Windows to compare the performance of two versions (Tests/Bench/BenchDriver.ahk); results go to the run summary, raw data is an artifact.
 #   Run manually (Actions → Bench → Run workflow): baseline defaults to the latest release, candidate to the branch it runs on;
-#   2 rounds per version x (searches searches + others of each action), default 500 / 100 (1000 searches + 200 of each per version, about 1 hour)
-#   When the test scripts change on a branch other than main: a short run with few iterations (smoke test, about 20 minutes)
+#   2 rounds per version x (searches searches + others of each action), default 500 / 100 (1000 searches + 200 of each per version)
+#   The work is split over several runners at the same time (runners, default 4: about 17 minutes instead of 50 on one). Each runs
+#   both versions alternating (A B B A) with its share of the operations, so the two are always compared on the same machine; the
+#   summary job pools the results and shows the candidate / baseline ratio on each runner (they should agree)
+#   When the test scripts change on a branch other than main: a short run with few iterations on 2 runners (smoke test, about 7 minutes)
 name: Bench
 
 on:
@@ -23,6 +26,10 @@ on:
         description: "Each other operation per round"
         required: false
         default: "100"
+      runners:
+        description: "Runners sharing the work (each runs both versions, A B B A)"
+        required: false
+        default: "4"
   push:
     branches-ignore: [main]
     paths:
@@ -33,15 +40,34 @@ permissions:
   contents: read
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      runners: ${{ steps.plan.outputs.runners }}
+    steps:
+      - id: plan
+        env:
+          RUNNERS: ${{ inputs.runners || '2' }}
+        run: |
+          n=$(( RUNNERS < 1 ? 1 : (RUNNERS > 10 ? 10 : RUNNERS) ))
+          echo "runners=[$(seq -s, 1 $n)]" >> "$GITHUB_OUTPUT"
+
   bench:
+    needs: plan
     runs-on: windows-latest
     timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: ${{ fromJSON(needs.plan.outputs.runners) }}
     env:
       GH_TOKEN: ${{ github.token }}
       BASELINE: ${{ inputs.baseline }}
       CANDIDATE: ${{ inputs.candidate }}
       SEARCHES: ${{ inputs.searches || '20' }}
       OTHERS: ${{ inputs.others || '4' }}
+      RUNNER_NO: ${{ matrix.runner }}
+      RUNNER_COUNT: ${{ strategy.job-total }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -86,30 +112,76 @@ jobs:
         run: |
           $root = (Get-Location).Path
           $ahk = "$root\tools\ahk\AutoHotkey64.exe"
-          $out = "$root\bench.txt"
-          # the two versions alternate (A B B A), ALTRun restarted each round, one random seed per pair
-          $rounds = @(@("baseline", 1, 11), @("candidate", 1, 11), @("candidate", 2, 22), @("baseline", 2, 22))
+          $out = "$root\bench-$env:RUNNER_NO.txt"
+          # this runner's share of the operations (the first runners take the remainder)
+          $n = [int]$env:RUNNER_COUNT; $i = [int]$env:RUNNER_NO
+          $share = { param($total) [math]::Floor([int]$total / $n) + $(if ($i -le [int]$total % $n) { 1 } else { 0 }) }
+          $searches = & $share $env:SEARCHES; $others = & $share $env:OTHERS
+          Write-Host "runner $i of $n`: $searches searches, $others of each other operation per round"
+          # the two versions alternate (A B B A), ALTRun restarted each round, one random seed per pair (different on each runner);
+          # the label is <version>-r<round>s<runner>
+          $base = 100 * ($i - 1)
+          $rounds = @(@("baseline", 1, ($base + 11)), @("candidate", 1, ($base + 11)), @("candidate", 2, ($base + 22)), @("baseline", 2, ($base + 22)))
           foreach ($r in $rounds) {
-            $label = "$($r[0])-r$($r[1])"
+            $label = "$($r[0])-r$($r[1])s$i"
             Write-Host "== $label $(Get-Date -Format HH:mm:ss)"
-            $p = Start-Process $ahk -ArgumentList @("`"$root\Tests\Bench\BenchDriver.ahk`"", "round", $label, "`"C:\Bench\$($r[0])`"", "`"$out`"", $r[2], $env:SEARCHES, $env:OTHERS) -PassThru
+            $p = Start-Process $ahk -ArgumentList @("`"$root\Tests\Bench\BenchDriver.ahk`"", "round", $label, "`"C:\Bench\$($r[0])`"", "`"$out`"", $r[2], $searches, $others) -PassThru
             if (-not $p.WaitForExit(55 * 60 * 1000)) { $p.Kill(); Add-Content $out "$label|fatal|timeout" }
             Get-Process AutoHotkey64 -ErrorAction SilentlyContinue | Stop-Process -Force
             Start-Sleep 5
           }
           if (Test-Path "$env:TEMP\BenchDriverErrors.txt") { Write-Host "driver errors:"; Get-Content "$env:TEMP\BenchDriverErrors.txt" | Select-Object -First 30 }
-          $summary = python "$root\Tests\Bench\bench_stats.py" $out
-          $summary
-          "## ALTRun benchmark`n" | Add-Content $env:GITHUB_STEP_SUMMARY
-          (Get-Content versions.txt) -join ", " | Add-Content $env:GITHUB_STEP_SUMMARY
-          "`nSearches / other operations per round: $env:SEARCHES / $env:OTHERS (2 rounds per version)`n" | Add-Content $env:GITHUB_STEP_SUMMARY
-          $summary | Where-Object { $_ -notmatch '^::' } | Add-Content $env:GITHUB_STEP_SUMMARY
-          "`nOS: $((Get-CimInstance Win32_OperatingSystem).Caption) $([Environment]::OSVersion.Version), CPU: $((Get-CimInstance Win32_Processor).Name)" | Tee-Object -Append $env:GITHUB_STEP_SUMMARY
+          python "$root\Tests\Bench\bench_stats.py" $out                  # this runner's results in its log; the summary job pools them
+          "runner $i`: $((Get-CimInstance Win32_OperatingSystem).Caption) $([Environment]::OSVersion.Version), CPU: $((Get-CimInstance Win32_Processor).Name.Trim())" | Set-Content "machine-$i.txt"
 
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: bench
+          name: bench-${{ matrix.runner }}
           path: |
-            bench.txt
+            bench-${{ matrix.runner }}.txt
+            machine-${{ matrix.runner }}.txt
             versions.txt
+
+  summary:
+    needs: bench
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    env:
+      SEARCHES: ${{ inputs.searches || '20' }}
+      OTHERS: ${{ inputs.others || '4' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          sparse-checkout: Tests/Bench
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: bench-*
+          path: results
+          merge-multiple: true
+
+      - name: Summarize
+        run: |
+          sed -i 's/\r$//' results/*.txt                                   # written on Windows
+          cat results/bench-*.txt > bench.txt
+          summary=$(python3 Tests/Bench/bench_stats.py bench.txt)
+          echo "$summary"
+          {
+            echo "## ALTRun benchmark"
+            echo
+            paste -sd, results/versions.txt | sed 's/,/, /g'
+            echo
+            echo "Searches / other operations per round: $SEARCHES / $OTHERS (2 rounds per version), split over $(ls results/bench-*.txt | wc -l) runners"
+            echo
+            echo "$summary" | grep -v '^::'
+            echo
+            cat results/machine-*.txt | sed 's/$/  /'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$summary" | grep '^::' || true                           # annotations (e.g. idle CPU over budget)
+          cp bench.txt results/
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: bench
+          path: results
