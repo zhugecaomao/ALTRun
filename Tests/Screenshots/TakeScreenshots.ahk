@@ -183,13 +183,23 @@ class Shots {
         indexFile := Shots.AppDir "\Data\AppIndex.json"
         Shots.WriteSettings("Light")
         Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" -Startup', Shots.AppDir, , &pid)
-        deadline := A_TickCount + 30000
-        while (!FileExist(indexFile) && A_TickCount < deadline)
+        ; The file is written more than once (2026-10: a first write of 620 bytes before the scan's results): ready when it has kept
+        ; its size for 4 s, at least 8 s after start-up (the scan starts 3 s after start-up), at most 40 s
+        started := A_TickCount, lastSize := -1, stableSince := 0
+        while (A_TickCount - started < 40000) {
             Sleep(250)
-        Sleep(500)                                                          ; let the write finish (SafeFile renames a finished temporary file, but just in case)
+            size := FileExist(indexFile) ? FileGetSize(indexFile) : -1
+            if (size != lastSize)
+                lastSize := size, stableSince := A_TickCount
+            else if (size > 0 && A_TickCount - started >= 8000 && A_TickCount - stableSince >= 4000)
+                break
+        }
         try ProcessClose(pid)
         ProcessWaitClose(pid, 5)
-        Shots.Log(FileExist(indexFile) ? "app index ready (" FileGetSize(indexFile) " bytes)" : "app index not written: scenes may miss apps")
+        if !FileExist(indexFile)
+            return Shots.Log("app index not written: scenes may miss apps")
+        text := FileRead(indexFile, "UTF-8")
+        Shots.Log("app index ready after " Round((A_TickCount - started) / 1000, 1) " s (" StrLen(text) " characters, Notepad " (InStr(text, "notepad") ? "in it" : "missing") ")")
     }
 
     ; generic sample folders
