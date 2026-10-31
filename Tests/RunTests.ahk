@@ -86,8 +86,10 @@
 #Include %A_ScriptDir%\..\Src\Extensions\SelectionActions.ahk
 
 #Include %A_ScriptDir%\TestUtil.ahk
+#Include %A_ScriptDir%\FakeEverything.ahk
 #Include %A_ScriptDir%\Bench\FileIndexBench.ahk
 #Include %A_ScriptDir%\Suites\CoreTests.ahk
+#Include %A_ScriptDir%\Suites\EverythingTests.ahk
 #Include %A_ScriptDir%\Suites\ProviderTests.ahk
 #Include %A_ScriptDir%\Suites\SearchWindowTests.ahk
 #Include %A_ScriptDir%\Suites\SearchSessionTests.ahk
@@ -117,7 +119,7 @@ class TestRunner {
         return DllCall("GetLongPathNameW", "WStr", shortPath, "Ptr", buf, "UInt", 32767, "UInt") ? StrGet(buf) : shortPath
     }
 
-    static Suites := [CoreTests, ProviderTests, SearchWindowTests, SearchSessionTests, PreferencesTests, ExtensionTests, ProjectTests]
+    static Suites := [CoreTests, EverythingTests, ProviderTests, SearchWindowTests, SearchSessionTests, PreferencesTests, ExtensionTests, ProjectTests]
 
     ; Runs every test of every suite: a test is a static method whose name doesn't start with "_".
     ; Within a suite the tests run in name order (OwnProps lists them that way).

@@ -75,6 +75,17 @@ jobs:
           $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\Integration\EverythingCheck.ahk', "`"$env:CHECK_FOLDER`"", $env:CHECK_NAME `
                   -Wait -PassThru -NoNewWindow -RedirectStandardOutput check.log -RedirectStandardError check.err
           Get-Content check.log, check.err
+          if ("${{ github.base_ref }}") {
+            # On a pull request: the same check with the base branch's Lib/Everything.ahk on this runner, to compare the query time
+            git fetch -q --depth=1 origin "${{ github.base_ref }}"
+            New-Item -ItemType Directory base/Lib, base/Tests/Integration -Force | Out-Null
+            git show "FETCH_HEAD:Lib/Everything.ahk" | Set-Content base/Lib/Everything.ahk -Encoding utf8BOM
+            Copy-Item Tests/Integration/EverythingCheck.ahk base/Tests/Integration/
+            Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'base\Tests\Integration\EverythingCheck.ahk', "`"$env:CHECK_FOLDER`"", $env:CHECK_NAME `
+              -Wait -NoNewWindow -RedirectStandardOutput base.log -RedirectStandardError base.err
+            Write-Host "--- with the base branch's Lib/Everything.ahk (for comparison):"
+            Get-Content base.log, base.err
+          }
           & $everything -exit
           Wait-Process -Name everything -Timeout 30 -ErrorAction SilentlyContinue
           if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) check(s) failed" }
