@@ -144,14 +144,14 @@ class SearchWindowTests {
         eq("segments clipped", segs("Visual St…", [[8, 6]]), "Visual [St…]")
         eq("segments beyond", segs("Visual", [[8, 2]]), "Visual")
         item := ResultItem("Visual Studio Code")
-        savedText := SearchWindow.HighlightText
-        SearchWindow.HighlightText := "vsc"
+        savedText := SearchWindow.Session.HighlightText
+        SearchWindow.Session.HighlightText := "vsc"
         eq("item ranges", str(ResultRows.HighlightRanges(item)), "1+1 8+1 15+1")
-        SearchWindow.HighlightText := "code"
+        SearchWindow.Session.HighlightText := "code"
         eq("item ranges updated", str(ResultRows.HighlightRanges(item)), "15+4")
-        SearchWindow.HighlightText := ""
+        SearchWindow.Session.HighlightText := ""
         eq("no query", str(ResultRows.HighlightRanges(item)), "")
-        SearchWindow.HighlightText := savedText
+        SearchWindow.Session.HighlightText := savedText
     }
 
     ; Highlighted and other characters are drawn in segments; character positions must not move with the highlight boundary (jitter while typing)
@@ -577,9 +577,9 @@ class SearchWindowTests {
         eq("empty", titles(root "\Reports\"), I18n.T("Files.EmptyFolder"))
         eq("file mode", FileSearchProvider.SearchOnly(root "\arc")[1].Title, "Archive")
 
-        SearchWindow.Marked := Map(StrLower(items[2].Arg), items[2].Arg)
+        SearchWindow.Session.Marked := Map(StrLower(items[2].Arg), items[2].Arg)
         eq("marked", SearchWindow.IsMarked(items[2]) "|" SearchWindow.IsMarked(items[1]), "1|0")
-        SearchWindow.Marked := Map()
+        SearchWindow.Session.Marked := Map()
         actions := ""
         for action in ResultActions.ListForMany([root "\readme.txt", root "\Archive"])
             actions .= action.Title "|"
@@ -705,7 +705,7 @@ class SearchWindowTests {
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0})
         g := Gui()
         SearchWindow.Input := g.AddEdit("w200")
-        SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow.HistoryIndex := 0
+        SearchWindow.Session.Mode := "results", SearchWindow.Session.FileMode := false, SearchWindow.Session.HistoryIndex := 0
         Knowledge.History := ["report", "notes", "pt tools"]
         try {
             SearchWindow.Input.Value := "typed"
@@ -714,21 +714,21 @@ class SearchWindowTests {
             SearchWindow.RecallHistory(1)
             eq("ctrl+up older", SearchWindow.Input.Value, "notes")
             SearchWindow.RecallHistory(1), SearchWindow.RecallHistory(1)
-            eq("stops at oldest", SearchWindow.Input.Value "|" SearchWindow.HistoryIndex, "pt tools|3")
+            eq("stops at oldest", SearchWindow.Input.Value "|" SearchWindow.Session.HistoryIndex, "pt tools|3")
             SearchWindow.RecallHistory(-1)
             eq("ctrl+down newer", SearchWindow.Input.Value, "notes")
             SearchWindow.RecallHistory(-1), SearchWindow.RecallHistory(-1)
-            eq("back to typed text", SearchWindow.Input.Value "|" SearchWindow.HistoryIndex, "typed|0")
+            eq("back to typed text", SearchWindow.Input.Value "|" SearchWindow.Session.HistoryIndex, "typed|0")
             SearchWindow.RecallHistory(-1)
             eq("ctrl+down at the start does nothing", SearchWindow.Input.Value, "typed")
-            SearchWindow.Input.Value := "report", SearchWindow.HistoryIndex := 0     ; e.g. the restored last search
+            SearchWindow.Input.Value := "report", SearchWindow.Session.HistoryIndex := 0     ; e.g. the restored last search
             SearchWindow.RecallHistory(1)
             eq("same text skipped", SearchWindow.Input.Value, "notes")
-            SearchWindow.HistoryIndex := 0, SearchWindow.FileMode := true
+            SearchWindow.Session.HistoryIndex := 0, SearchWindow.Session.FileMode := true
             SearchWindow.RecallHistory(1)
             eq("not in file mode", SearchWindow.Input.Value, "notes")
         } finally {
-            SearchWindow.FileMode := false, SearchWindow.HistoryIndex := 0
+            SearchWindow.Session.FileMode := false, SearchWindow.Session.HistoryIndex := 0
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, Knowledge.History := savedHistory
             g.Destroy()
@@ -746,29 +746,29 @@ class SearchWindowTests {
         hwnd := SearchWindow.Input.Hwnd
         caret := (start, end := "") => SendMessage(0xB1, start, end = "" ? start : end, hwnd)   ; EM_SETSEL
         key := (vk) => SearchKeys.OnKeyDown(vk, 0, 0x100, hwnd)
-        SearchWindow.Mode := "results", SearchWindow.FileMode := false
+        SearchWindow.Session.Mode := "results", SearchWindow.Session.FileMode := false
         options["SpacePrefix"] := 1, options["Enabled"] := 1
         try {
             SearchWindow.Input.Value := "seismic", caret(7)
-            eq("space at the end types a space", key(0x20) "|" SearchWindow.FileMode, "|0")
+            eq("space at the end types a space", key(0x20) "|" SearchWindow.Session.FileMode, "|0")
             caret(0, 3)
-            eq("space with a selection types a space", key(0x20) "|" SearchWindow.FileMode, "|0")
+            eq("space with a selection types a space", key(0x20) "|" SearchWindow.Session.FileMode, "|0")
             caret(0)
-            eq("space at the start enters file mode", key(0x20) "|" SearchWindow.FileMode "|" SearchWindow.Input.Value, "0|1|seismic")
+            eq("space at the start enters file mode", key(0x20) "|" SearchWindow.Session.FileMode "|" SearchWindow.Input.Value, "0|1|seismic")
             caret(3)
-            eq("backspace inside the text deletes", key(0x08) "|" SearchWindow.FileMode, "|1")
+            eq("backspace inside the text deletes", key(0x08) "|" SearchWindow.Session.FileMode, "|1")
             caret(0)
-            eq("backspace at the start leaves file mode", key(0x08) "|" SearchWindow.FileMode "|" SearchWindow.Input.Value, "0|0|seismic")
+            eq("backspace at the start leaves file mode", key(0x08) "|" SearchWindow.Session.FileMode "|" SearchWindow.Input.Value, "0|0|seismic")
             caret(0)
-            eq("backspace at the start in normal search", key(0x08) "|" SearchWindow.FileMode, "|0")
+            eq("backspace at the start in normal search", key(0x08) "|" SearchWindow.Session.FileMode, "|0")
             options["SpacePrefix"] := 0
             caret(0)
-            eq("space prefix off", key(0x20) "|" SearchWindow.FileMode, "|0")
+            eq("space prefix off", key(0x20) "|" SearchWindow.Session.FileMode, "|0")
             options["SpacePrefix"] := 1, SearchWindow.Input.Value := ""
-            eq("empty box still enters file mode", key(0x20) "|" SearchWindow.FileMode, "0|1")
-            eq("backspace in the empty box leaves it", key(0x08) "|" SearchWindow.FileMode, "0|0")
+            eq("empty box still enters file mode", key(0x20) "|" SearchWindow.Session.FileMode, "0|1")
+            eq("backspace in the empty box leaves it", key(0x08) "|" SearchWindow.Session.FileMode, "0|0")
         } finally {
-            SearchWindow.FileMode := false
+            SearchWindow.Session.FileMode := false
             options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
@@ -780,8 +780,8 @@ class SearchWindowTests {
     static TabKey() {
         eq := (n, a, e) => TestRunner.Equal("TabKey." n, a, e)
         eq("default complete", AppSettings.Defaults()["General"]["TabKey"], "Complete")
-        saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Results, Selected: SearchWindow.Selected
-            , Offset: SearchWindow.Offset, Mode: SearchWindow.Mode, TabKey: AppSettings.General["TabKey"]}
+        saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Session.Results, Selected: SearchWindow.Session.Selected
+            , Offset: SearchWindow.Session.Offset, Mode: SearchWindow.Session.Mode, TabKey: AppSettings.General["TabKey"]}
         savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch"), savedRepaint := SearchWindow.GetOwnPropDesc("_Repaint")
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0}), SearchWindow.DefineProp("_Repaint", {Call: (*) => 0})
         g := Gui()
@@ -789,25 +789,25 @@ class SearchWindowTests {
         hwnd := SearchWindow.Input.Hwnd
         tab := () => SearchKeys.OnKeyDown(0x09, 0, 0x100, hwnd)
         try {
-            SearchWindow.Mode := "results", SearchWindow.Offset := 0
-            SearchWindow.Results := [ResultItem("Notepad"), ResultItem("Notes"), ResultItem("Notion")], SearchWindow.Selected := 1
+            SearchWindow.Session.Mode := "results", SearchWindow.Session.Offset := 0
+            SearchWindow.Session.Results := [ResultItem("Notepad"), ResultItem("Notes"), ResultItem("Notion")], SearchWindow.Session.Selected := 1
             SearchWindow.Input.Value := "no"
             AppSettings.General["TabKey"] := "Complete"
             eq("complete: handled", tab(), 0)
-            eq("complete: fills in the name", SearchWindow.Input.Value "|" SearchWindow.Selected, "Notepad|1")
+            eq("complete: fills in the name", SearchWindow.Input.Value "|" SearchWindow.Session.Selected, "Notepad|1")
             AppSettings.General["TabKey"] := "Next", SearchWindow.Input.Value := "no"
             tab()
-            eq("next: second result", SearchWindow.Selected "|" SearchWindow.Input.Value, "2|no")
+            eq("next: second result", SearchWindow.Session.Selected "|" SearchWindow.Input.Value, "2|no")
             tab()
-            eq("next: third result", SearchWindow.Selected, 3)
+            eq("next: third result", SearchWindow.Session.Selected, 3)
             tab()
-            eq("next: wraps to the first", SearchWindow.Selected, 1)
+            eq("next: wraps to the first", SearchWindow.Session.Selected, 1)
             SearchWindow.MoveSelection(-1, true)                            ; what Shift+Tab does
-            eq("previous: wraps to the last", SearchWindow.Selected, 3)
+            eq("previous: wraps to the last", SearchWindow.Session.Selected, 3)
             SearchWindow.MoveSelection(1)
-            eq("down arrow still stops at the last", SearchWindow.Selected, 3)
-            SearchWindow.Results := []
-            eq("next: no results", tab() "|" SearchWindow.Selected, "0|3")
+            eq("down arrow still stops at the last", SearchWindow.Session.Selected, 3)
+            SearchWindow.Session.Results := []
+            eq("next: no results", tab() "|" SearchWindow.Session.Selected, "0|3")
             ; The cheat sheet / tip for Tab follows the setting
             savedLang := I18n.Lang
             I18n.Init("en")
@@ -824,8 +824,8 @@ class SearchWindowTests {
         } finally {
             AppSettings.General["TabKey"] := saved.TabKey
             SearchWindow.DefineProp("_RunSearch", savedSearch), SearchWindow.DefineProp("_Repaint", savedRepaint)
-            SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results
-            SearchWindow.Selected := saved.Selected, SearchWindow.Offset := saved.Offset, SearchWindow.Mode := saved.Mode
+            SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Session.Results := saved.Results
+            SearchWindow.Session.Selected := saved.Selected, SearchWindow.Session.Offset := saved.Offset, SearchWindow.Session.Mode := saved.Mode
             g.Destroy()
         }
     }
@@ -834,8 +834,8 @@ class SearchWindowTests {
     ; not OnMessage. A sent WM_KEYDOWN is not monitored either, so it stands in for the modal loop here
     static SystemDialogKeys() {
         eq := (n, a, e) => TestRunner.Equal("SystemDialogKeys." n, a, e)
-        saved := {Input: SearchWindow.Input, List: SearchWindow.List, Gui: SearchWindow.Gui, Results: SearchWindow.Results
-            , Selected: SearchWindow.Selected, Offset: SearchWindow.Offset, Mode: SearchWindow.Mode, TabKey: AppSettings.General["TabKey"]}
+        saved := {Input: SearchWindow.Input, List: SearchWindow.List, Gui: SearchWindow.Gui, Results: SearchWindow.Session.Results
+            , Selected: SearchWindow.Session.Selected, Offset: SearchWindow.Session.Offset, Mode: SearchWindow.Session.Mode, TabKey: AppSettings.General["TabKey"]}
         savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch"), savedRepaint := SearchWindow.GetOwnPropDesc("_Repaint")
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0}), SearchWindow.DefineProp("_Repaint", {Call: (*) => 0})
         g := Gui()
@@ -848,31 +848,31 @@ class SearchWindowTests {
             SetTimer(() => (found := SearchKeys.InSystemDialog(), found && WinClose("ahk_id " found)), -300)
             MsgBox("SystemDialogKeys", , "T3")                              ; closed by the timer above (or after 3 s)
             eq("finds an open MsgBox", found != 0, true)
-            SearchWindow.Mode := "results", SearchWindow.Offset := 0, SearchWindow.Input.Value := "no"
-            SearchWindow.Results := [ResultItem("Notepad"), ResultItem("Notes"), ResultItem("Notion")], SearchWindow.Selected := 1
+            SearchWindow.Session.Mode := "results", SearchWindow.Session.Offset := 0, SearchWindow.Input.Value := "no"
+            SearchWindow.Session.Results := [ResultItem("Notepad"), ResultItem("Notes"), ResultItem("Notion")], SearchWindow.Session.Selected := 1
             AppSettings.General["TabKey"] := "Next"
             tab()
-            eq("not hooked: the key is lost", SearchWindow.Selected, 1)
+            eq("not hooked: the key is lost", SearchWindow.Session.Selected, 1)
             SearchKeys.Hook()
             eq("hooked: handled", tab(), 0)
-            eq("hooked: next result", SearchWindow.Selected, 2)
+            eq("hooked: next result", SearchWindow.Session.Selected, 2)
             eq("its WM_CHAR is swallowed", SendMessage(0x102, 0x09, 0, hwnd) "|" SearchKeys._swallowChar, "0|0")
             SendMessage(0x100, 0x26, 0, SearchWindow.List.Hwnd)              ; ↑ with the list focused
-            eq("list: previous result", SearchWindow.Selected, 1)
+            eq("list: previous result", SearchWindow.Session.Selected, 1)
             SearchKeys._seen := true                                        ; OnMessage already handled this one
             tab()
-            eq("seen by OnMessage: not handled twice", SearchWindow.Selected "|" SearchKeys._seen, "1|0")
+            eq("seen by OnMessage: not handled twice", SearchWindow.Session.Selected "|" SearchKeys._seen, "1|0")
             SendMessage(0x100, 0x41, 0, hwnd)                               ; A: not a search window key
             eq("other keys go on to the box", SearchKeys._swallowChar, 0)
             SearchKeys.Unhook()
             tab()
-            eq("unhooked", SearchWindow.Selected "|" SearchKeys._hooked, "1|0")
+            eq("unhooked", SearchWindow.Session.Selected "|" SearchKeys._hooked, "1|0")
         } finally {
             SearchKeys.Unhook()
             AppSettings.General["TabKey"] := saved.TabKey
             SearchWindow.DefineProp("_RunSearch", savedSearch), SearchWindow.DefineProp("_Repaint", savedRepaint)
-            SearchWindow.Input := saved.Input, SearchWindow.List := saved.List, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results
-            SearchWindow.Selected := saved.Selected, SearchWindow.Offset := saved.Offset, SearchWindow.Mode := saved.Mode
+            SearchWindow.Input := saved.Input, SearchWindow.List := saved.List, SearchWindow.Gui := saved.Gui, SearchWindow.Session.Results := saved.Results
+            SearchWindow.Session.Selected := saved.Selected, SearchWindow.Session.Offset := saved.Offset, SearchWindow.Session.Mode := saved.Mode
             g.Destroy()
         }
     }
@@ -892,17 +892,17 @@ class SearchWindowTests {
         eq("hint row: complete", SearchStatusBar.EnterTitle(ResultItem("g", "", {Valid: false, AutoComplete: "g "})), "Complete")
         eq("hint row without completion", SearchStatusBar.EnterTitle(ResultItem("x", "", {Valid: false})), "")
 
-        saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Results, Selected: SearchWindow.Selected
-            , Mode: SearchWindow.Mode, FileMode: SearchWindow.FileMode, Tip: SearchWindow._tip, Status: SearchStatusBar.Height}
+        saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Session.Results, Selected: SearchWindow.Session.Selected
+            , Mode: SearchWindow.Session.Mode, FileMode: SearchWindow.Session.FileMode, Tip: SearchWindow._tip, Status: SearchStatusBar.Height}
         savedOpen := SearchWindow.GetOwnPropDesc("_OpenActions")
         g := Gui()
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         try {
-            SearchWindow.Mode := "results", SearchWindow.FileMode := false, SearchWindow._tip := "Tip: ? cheat sheet"
-            SearchWindow.Input.Value := "", SearchWindow.Results := [], SearchWindow.Selected := 0
+            SearchWindow.Session.Mode := "results", SearchWindow.Session.FileMode := false, SearchWindow._tip := "Tip: ? cheat sheet"
+            SearchWindow.Input.Value := "", SearchWindow.Session.Results := [], SearchWindow.Session.Selected := 0
             texts := SearchStatusBar.Texts()
             eq("empty box: the tip is in the box, not the status bar", texts.Left "|" texts.Enter "|" texts.Actions, "||0")
-            SearchWindow.Input.Value := "note", SearchWindow.Results := [fileItem, ResultItem("b")], SearchWindow.Selected := 1
+            SearchWindow.Input.Value := "note", SearchWindow.Session.Results := [fileItem, ResultItem("b")], SearchWindow.Session.Selected := 1
             texts := SearchStatusBar.Texts()
             eq("results: enter, ctrl+enter, edit, actions", texts.Left "|" texts.Enter "|" texts.Ctrl "|" texts.Edit "|" texts.Actions, "|Open|Reveal|1|1")
             parts := SearchStatusBar.Parts(texts), shown := ""
@@ -924,12 +924,12 @@ class SearchWindowTests {
             for entry in items
                 labels .= (IsObject(entry) ? StrSplit(entry[1], "`t")[1] : "-") ";"
             eq("menu", labels, "Preferences...;Shortcuts and Syntax;-;Rebuild Index;Check for Updates;-;Reload;Quit;")
-            SearchWindow.FileMode := true, SearchWindow.Input.Value := ""
+            SearchWindow.Session.FileMode := true, SearchWindow.Input.Value := ""
             eq("fileItem mode", SearchStatusBar.Texts().Left, I18n.T("Status.FileMode"))
-            SearchWindow.FileMode := false, SearchWindow.Mode := "actions"
+            SearchWindow.Session.FileMode := false, SearchWindow.Session.Mode := "actions"
             texts := SearchStatusBar.Texts()
             eq("action panel", texts.Left "|" texts.Enter "|" texts.Actions, "Esc  Back|Run|0")
-            SearchWindow.Mode := "results"
+            SearchWindow.Session.Mode := "results"
             eq("mix colors", Format("{:06X}", SearchStatusBar.MixColor("FFFFFF", "000000", 0.5)), "808080")
 
             SearchStatusBar.Height := 0
@@ -952,8 +952,8 @@ class SearchWindowTests {
             eq("right arrow again opens actions", (SearchKeys.OnKeyDown(0x27, 1, 0x100, hwnd), opened.Count), 2)
         } finally {
             SearchWindow.DefineProp("_OpenActions", savedOpen)
-            SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Results := saved.Results, SearchWindow.Selected := saved.Selected
-            SearchWindow.Mode := saved.Mode, SearchWindow.FileMode := saved.FileMode, SearchWindow._tip := saved.Tip, SearchStatusBar.Height := saved.Status
+            SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Session.Results := saved.Results, SearchWindow.Session.Selected := saved.Selected
+            SearchWindow.Session.Mode := saved.Mode, SearchWindow.Session.FileMode := saved.FileMode, SearchWindow._tip := saved.Tip, SearchStatusBar.Height := saved.Status
             g.Destroy()
         }
     }
@@ -981,20 +981,20 @@ class SearchWindowTests {
     static ShowPrepared() {
         eq := (n, a, e) => TestRunner.Equal("ShowPrepared." n, a, e)
         savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch")
-        saved := [SearchWindow.Mode, SearchWindow.FileMode, SearchWindow._prepared]
+        saved := [SearchWindow.Session.Mode, SearchWindow.Session.FileMode, SearchWindow._prepared]
         searches := {Count: 0}
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => searches.Count++})
         g := Gui()
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         try {
-            SearchWindow.Input.Value := "abc", SearchWindow.Mode := "actions", SearchWindow.FileMode := true
+            SearchWindow.Input.Value := "abc", SearchWindow.Session.Mode := "actions", SearchWindow.Session.FileMode := true
             SearchWindow.PrepareEmpty()                                     ; the window is hidden: clear the box and search once
-            eq("prepared", SearchWindow.IsPrepared() "|" SearchWindow.Input.Value "|" SearchWindow.Mode "|" SearchWindow.FileMode "|" searches.Count, "1||results|0|1")
+            eq("prepared", SearchWindow.IsPrepared() "|" SearchWindow.Input.Value "|" SearchWindow.Session.Mode "|" SearchWindow.Session.FileMode "|" searches.Count, "1||results|0|1")
             SearchWindow.Input.Value := "x"
             eq("input changed", SearchWindow.IsPrepared(), false)
-            SearchWindow.Input.Value := "", SearchWindow.FileMode := true
+            SearchWindow.Input.Value := "", SearchWindow.Session.FileMode := true
             eq("file mode", SearchWindow.IsPrepared(), false)
-            SearchWindow.FileMode := false, SearchWindow._prepared := false
+            SearchWindow.Session.FileMode := false, SearchWindow._prepared := false
             eq("used", SearchWindow.IsPrepared(), false)
             g.Show("Hide"), g.Show("NoActivate")
             searches.Count := 0, SearchWindow.PrepareEmpty()
@@ -1006,7 +1006,7 @@ class SearchWindowTests {
             eq("changed title", SearchWindow.SameResults(a, b), false)
             eq("changed count", SearchWindow.SameResults(a, [a[1]]), false)
         } finally {
-            SearchWindow.Mode := saved[1], SearchWindow.FileMode := saved[2], SearchWindow._prepared := saved[3]
+            SearchWindow.Session.Mode := saved[1], SearchWindow.Session.FileMode := saved[2], SearchWindow._prepared := saved[3]
             SearchWindow.DefineProp("_RunSearch", savedSearch)
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui
             g.Destroy()
@@ -1021,17 +1021,17 @@ class SearchWindowTests {
             saved[name] := SearchWindow.GetOwnPropDesc(name)
         savedRegistry := ProviderRegistry.GetOwnPropDesc("Search")
         savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedTimer := SearchWindow._searchTimer
-        savedState := [SearchWindow.Mode, SearchWindow.FileMode, SearchWindow.Results, SearchWindow.Selected]
+        savedState := [SearchWindow.Session.Mode, SearchWindow.Session.FileMode, SearchWindow.Session.Results, SearchWindow.Session.Selected]
         calls := []
         ProviderRegistry.DefineProp("Search", {Call: (this, text, skip := "") => (calls.Push((skip = FileSearchProvider ? "quick " : "full ") text)
             , [ResultItem("A", "a"), ResultItem("B", "b"), ResultItem("C", "c")])})
-        SearchWindow.DefineProp("SetResults", {Call: (this, results) => (SearchWindow.Results := results, SearchWindow.Selected := results.Length ? 1 : 0)})
-        SearchWindow.DefineProp("MoveSelection", {Call: (this, delta) => SearchWindow.Selected += delta})
+        SearchWindow.DefineProp("SetResults", {Call: (this, results) => (SearchWindow.Session.Results := results, SearchWindow.Session.Selected := results.Length ? 1 : 0)})
+        SearchWindow.DefineProp("MoveSelection", {Call: (this, delta) => SearchWindow.Session.Selected += delta})
         searches := {Count: 0}
         g := Gui()
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         try {
-            SearchWindow.Mode := "results", SearchWindow.FileMode := false
+            SearchWindow.Session.Mode := "results", SearchWindow.Session.FileMode := false
             SearchWindow._ShowQuickResults("rep")
             eq("quick search, no files", calls.Length = 1 && calls[1] = "quick rep", true)
             eq("text restored", SearchWindow.Input.Value, "rep")
@@ -1042,21 +1042,21 @@ class SearchWindowTests {
             g.Show("NoActivate")
             SearchWindow._FinishRestore(SearchWindow.Session.Request, {Text: "rep", Selected: 3})
             eq("full search after showing", calls.Length = 2 && calls[2] = "full rep", true)
-            eq("last row selected", SearchWindow.Selected, 3)
+            eq("last row selected", SearchWindow.Session.Selected, 3)
             eq("quiet text cleared", SearchWindow._quietText, "")
             SearchWindow._ShowQuickResults("rep")
             request := SearchWindow.Session.Request
             SearchWindow._quietText := "", SearchWindow.Input.Value := "repo"   ; typed right after showing
             SearchWindow._FinishRestore(request, {Text: "rep", Selected: 3})
             eq("typed: no full search for the old text", calls.Length, 3)
-            SearchWindow.FileMode := true
+            SearchWindow.Session.FileMode := true
             SearchWindow._ShowQuickResults("plan")
-            eq("file mode: nothing until the full search", SearchWindow.Results.Length "|" calls.Length, "0|3")
+            eq("file mode: nothing until the full search", SearchWindow.Session.Results.Length "|" calls.Length, "0|3")
         } finally {
             for name, desc in saved
                 SearchWindow.DefineProp(name, desc)
             ProviderRegistry.DefineProp("Search", savedRegistry)
-            SearchWindow.Mode := savedState[1], SearchWindow.FileMode := savedState[2], SearchWindow.Results := savedState[3], SearchWindow.Selected := savedState[4]
+            SearchWindow.Session.Mode := savedState[1], SearchWindow.Session.FileMode := savedState[2], SearchWindow.Session.Results := savedState[3], SearchWindow.Session.Selected := savedState[4]
             SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow._searchTimer := savedTimer, SearchWindow._quietText := ""
             g.Destroy()
         }
@@ -1077,7 +1077,7 @@ class SearchWindowTests {
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         hwnd := SearchWindow.Input.Hwnd
         apply := (text, key := "", modifier := "") => (calls.Text := "", SearchWindow._ApplyTypeAhead({Text: text, Key: key, Modifier: modifier}), calls.Text)
-        SearchWindow.Mode := "results", SearchWindow.FileMode := false
+        SearchWindow.Session.Mode := "results", SearchWindow.Session.FileMode := false
         options["SpacePrefix"] := 1, options["Enabled"] := 1
         try {
             SearchWindow.Input.Value := ""
@@ -1092,14 +1092,14 @@ class SearchWindowTests {
             eq("text then ctrl+enter", apply("vsc", "NumpadEnter", "ctrl"), "search:vsc;run:ctrl;")
             eq("escape hides", apply("x", "Escape"), "hide;")
             SearchWindow.Input.Value := ""
-            eq("leading space enters file mode", apply(" seismic") "|" SearchWindow.FileMode "|" SearchWindow.Input.Value, "search:seismic;|1|seismic")
-            SearchWindow.FileMode := false, options["SpacePrefix"] := 0, SearchWindow.Input.Value := ""
-            eq("space prefix off", apply(" a") "|" SearchWindow.FileMode, "search: a;|0")
+            eq("leading space enters file mode", apply(" seismic") "|" SearchWindow.Session.FileMode "|" SearchWindow.Input.Value, "search:seismic;|1|seismic")
+            SearchWindow.Session.FileMode := false, options["SpacePrefix"] := 0, SearchWindow.Input.Value := ""
+            eq("space prefix off", apply(" a") "|" SearchWindow.Session.FileMode, "search: a;|0")
             eq("no hook: nothing", TypeAhead.Take().Text, "")
             eq("log: count only", TypeAhead.Summary({Text: "secret", Key: "", Modifier: ""}), "6 chars")
             eq("log: leading space and key", TypeAhead.Summary({Text: " ab", Key: "Enter", Modifier: ""}), "3 chars (leading space) + Enter")
         } finally {
-            SearchWindow.FileMode := false
+            SearchWindow.Session.FileMode := false
             options["SpacePrefix"] := savedOptions[1], options["Enabled"] := savedOptions[2]
             for name, desc in saved
                 SearchWindow.DefineProp(name, desc)
@@ -1123,25 +1123,25 @@ class SearchWindowTests {
     static ShowWhileOpen() {
         eq := (n, a, e) => TestRunner.Equal("ShowWhileOpen." n, a, e)
         savedSet := SearchWindow.GetOwnPropDesc("_SetInput")
-        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedMode := SearchWindow.Mode
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedMode := SearchWindow.Session.Mode
         calls := {Text: ""}
         SearchWindow.DefineProp("_SetInput", {Call: (this, text) => calls.Text .= "set:" text ";"})
         g := Gui("+ToolWindow")
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
         try {
             g.Show("NoActivate w220 h40")
-            SearchWindow.Input.Value := "half typed", SearchWindow.Mode := "actions"
+            SearchWindow.Input.Value := "half typed", SearchWindow.Session.Mode := "actions"
             SendMessage(0xB1, 4, 4, SearchWindow.Input.Hwnd)
             SearchWindow._Show("")
             selection := SendMessage(0xB0, 0, 0, SearchWindow.Input.Hwnd)
             eq("text kept", SearchWindow.Input.Value, "half typed")
-            eq("mode kept", SearchWindow.Mode, "actions")
+            eq("mode kept", SearchWindow.Session.Mode, "actions")
             eq("caret kept", (selection & 0xFFFF) "-" ((selection >> 16) & 0xFFFF), "4-4")
             eq("not searched again", calls.Text, "")
             eq("still visible", SearchWindow.IsVisible() ? 1 : 0, 1)
         } finally {
             SearchWindow.DefineProp("_SetInput", savedSet)
-            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.Mode := savedMode
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.Session.Mode := savedMode
             g.Destroy()
         }
     }
@@ -1156,14 +1156,14 @@ class SearchWindowTests {
         saved := Map()
         for name in ["_RunSearch", "IsVisible"]
             saved[name] := SearchWindow.GetOwnPropDesc(name)
-        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedMode := SearchWindow.Mode
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedMode := SearchWindow.Session.Mode
         savedList := SearchWindow.List, savedRecent := SearchWindow._recent.Clone()
         savedLog := [Logger.Enabled, Logger.File, Logger.Immediate]
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => ""})
         SearchWindow.DefineProp("IsVisible", {Call: (*) => true})
         g := Gui()
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200"), SearchWindow.List := g.AddListView("w200", ["Title"])
-        SearchWindow.Mode := "results"
+        SearchWindow.Session.Mode := "results"
         Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunEmptiedTest.log"
         try FileDelete(Logger.File)
         try {
@@ -1189,7 +1189,7 @@ class SearchWindowTests {
             Logger.Enabled := savedLog[1], Logger.File := savedLog[2], Logger.Immediate := savedLog[3]
             for name, desc in saved
                 SearchWindow.DefineProp(name, desc)
-            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.Mode := savedMode, SearchWindow._inputLen := 0
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.Session.Mode := savedMode, SearchWindow._inputLen := 0
             SearchWindow.List := savedList, SearchWindow._recent := savedRecent
             g.Destroy()
         }
@@ -1429,34 +1429,34 @@ class SearchWindowTests {
         saved := Map()
         for name in ["_RunSearch", "IsVisible"]
             saved[name] := SearchWindow.GetOwnPropDesc(name)
-        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedList := SearchWindow.List, savedMode := SearchWindow.Mode, savedFile := SearchWindow.FileMode
+        savedInput := SearchWindow.Input, savedGui := SearchWindow.Gui, savedList := SearchWindow.List, savedMode := SearchWindow.Session.Mode, savedFile := SearchWindow.Session.FileMode
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => ""})
         SearchWindow.DefineProp("IsVisible", {Call: (*) => false})
         g := Gui()
         SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200"), SearchWindow.List := g.AddListView("w200", ["Title"])
-        SearchWindow.Mode := "results"
-        restore := () => (SearchWindow.Input.Value := "report", SearchWindow.FileMode := true, SearchWindow._restoredSelection := true
+        SearchWindow.Session.Mode := "results"
+        restore := () => (SearchWindow.Input.Value := "report", SearchWindow.Session.FileMode := true, SearchWindow.Session.RestoredSelection := true
             , SendMessage(0xB1, 0, -1, SearchWindow.Input.Hwnd))            ; the restored file search, all selected
         try {
             restore()
             SendMessage(0xC2, 1, StrPtr("n"), SearchWindow.Input.Hwnd)      ; EM_REPLACESEL: typed over it
             SearchWindow._OnInputChange()
-            eq("typing over it: normal search", SearchWindow.FileMode "|" SearchWindow._restoredSelection "|" SearchWindow.Input.Value, "0|0|n")
+            eq("typing over it: normal search", SearchWindow.Session.FileMode "|" SearchWindow.Session.RestoredSelection "|" SearchWindow.Input.Value, "0|0|n")
             restore()
             SendMessage(0xB1, 6, 6, SearchWindow.Input.Hwnd)                ; → : the caret at the end
             SearchKeys.OnKeyDown(0x53, 0, 0x100, SearchWindow.Input.Hwnd)    ; the next key (S)
             SendMessage(0xC2, 1, StrPtr("s"), SearchWindow.Input.Hwnd)
             SearchWindow._OnInputChange()
-            eq("editing it: still file search", SearchWindow.FileMode "|" SearchWindow.Input.Value, "1|reports")
+            eq("editing it: still file search", SearchWindow.Session.FileMode "|" SearchWindow.Input.Value, "1|reports")
             restore()
             eq("space over it: handled", SearchKeys.OnKeyDown(0x20, 0, 0x100, SearchWindow.Input.Hwnd), 0)
-            eq("space over it: a new file search", SearchWindow.FileMode "|" SearchWindow.Input.Value "|" SearchWindow._restoredSelection, "1||0")
+            eq("space over it: a new file search", SearchWindow.Session.FileMode "|" SearchWindow.Input.Value "|" SearchWindow.Session.RestoredSelection, "1||0")
         } finally {
             SetTimer(SearchWindow._searchTimer, 0)
-            SearchWindow._restoredSelection := false
+            SearchWindow.Session.RestoredSelection := false
             for name, desc in saved
                 SearchWindow.DefineProp(name, desc)
-            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.List := savedList, SearchWindow.Mode := savedMode, SearchWindow.FileMode := savedFile
+            SearchWindow.Input := savedInput, SearchWindow.Gui := savedGui, SearchWindow.List := savedList, SearchWindow.Session.Mode := savedMode, SearchWindow.Session.FileMode := savedFile
             SearchWindow._inputLen := 0
             g.Destroy()
         }
@@ -1600,13 +1600,13 @@ class SearchWindowTests {
 
     static SkippedPaint() {
         eq := (n, a, e) => TestRunner.Equal("SkippedPaint." n, a, e)
-        saved := [SearchWindow.Gui, SearchWindow.List, SearchWindow.Input, SearchWindow.Results, Logger.Enabled, Logger.File, Logger.Immediate]
+        saved := [SearchWindow.Gui, SearchWindow.List, SearchWindow.Input, SearchWindow.Session.Results, Logger.Enabled, Logger.File, Logger.Immediate]
         g := Gui("-Caption")
         input := g.AddEdit("w200")
         list := g.AddListView("w200 h100 -Hdr", [""])                       ; no custom-draw callback connected: every paint is as if the callback was skipped
         list.Add("", "")
         g.Show("NA x0 y0")
-        SearchWindow.Gui := g, SearchWindow.List := list, SearchWindow.Input := input, SearchWindow.Results := []
+        SearchWindow.Gui := g, SearchWindow.List := list, SearchWindow.Input := input, SearchWindow.Session.Results := []
         Logger.Enabled := true, Logger.Immediate := true, Logger.File := A_Temp "\ALTRunPaintTest.log"
         try FileDelete(Logger.File)
         pending := () => DllCall("GetUpdateRect", "Ptr", list.Hwnd, "Ptr", 0, "Int", 0)
@@ -1637,7 +1637,7 @@ class SearchWindowTests {
             Critical("Off")
             SetTimer(SearchWindow._paintCheck, 0)
             try FileDelete(Logger.File)
-            SearchWindow.Gui := saved[1], SearchWindow.List := saved[2], SearchWindow.Input := saved[3], SearchWindow.Results := saved[4]
+            SearchWindow.Gui := saved[1], SearchWindow.List := saved[2], SearchWindow.Input := saved[3], SearchWindow.Session.Results := saved[4]
             Logger.Enabled := saved[5], Logger.File := saved[6], Logger.Immediate := saved[7]
             g.Destroy()
         }

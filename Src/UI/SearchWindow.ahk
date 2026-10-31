@@ -47,68 +47,6 @@
 class SearchWindow {
     static Gui := "", Input := "", List := "", Separator := ""
     static Session := SearchSession()                                       ; what is searched and shown (mode, results, selection, actions panel...), see SearchSession.ahk
-
-    ; The old names, forwarding to Session: only for the tests and the benchmark probe until they use Session (other code reads Session)
-    static Mode {
-        get => SearchWindow.Session.Mode
-        set => SearchWindow.Session.Mode := value
-    }
-    static FileMode {
-        get => SearchWindow.Session.FileMode
-        set => SearchWindow.Session.FileMode := value
-    }
-    static Results {
-        get => SearchWindow.Session.Results
-        set => SearchWindow.Session.Results := value
-    }
-    static Selected {
-        get => SearchWindow.Session.Selected
-        set => SearchWindow.Session.Selected := value
-    }
-    static Offset {
-        get => SearchWindow.Session.Offset
-        set => SearchWindow.Session.Offset := value
-    }
-    static HighlightText {
-        get => SearchWindow.Session.HighlightText
-        set => SearchWindow.Session.HighlightText := value
-    }
-    static ActionSource {
-        get => SearchWindow.Session.ActionSource
-        set => SearchWindow.Session.ActionSource := value
-    }
-    static SavedQuery {
-        get => SearchWindow.Session.SavedQuery
-        set => SearchWindow.Session.SavedQuery := value
-    }
-    static AllActions {
-        get => SearchWindow.Session.AllActions
-        set => SearchWindow.Session.AllActions := value
-    }
-    static _actionsOnly {
-        get => SearchWindow.Session.ActionsOnly
-        set => SearchWindow.Session.ActionsOnly := value
-    }
-    static HistoryIndex {
-        get => SearchWindow.Session.HistoryIndex
-        set => SearchWindow.Session.HistoryIndex := value
-    }
-    static Marked {
-        get => SearchWindow.Session.Marked
-        set => SearchWindow.Session.Marked := value
-    }
-    static _historyDraft {
-        get => SearchWindow.Session.HistoryDraft
-        set => SearchWindow.Session.HistoryDraft := value
-    }
-    static _last {
-        get => SearchWindow.Session.Last
-        set => SearchWindow.Session.Last := value
-    }
-    static _restoredSelection {
-        get => SearchWindow.Session.RestoredSelection
-        set => SearchWindow.Session.RestoredSelection := value
-    }
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
     static SelectedRadius := 0
     static _searchTimer := "", _hideTimer := ""

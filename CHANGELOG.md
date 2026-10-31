@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.37]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内部整理 (使用上没有变化): 测试和性能测试的探针直接读 `SearchWindow.Session`, 删掉 `SearchWindow` 上为它们保留的旧名字 (转发属性)。把搜索逻辑和界面分开的整理到这里完成 (第 4 步)
+
 ## [2026.10.26.36]
 
 测试版。
@@ -1274,7 +1283,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.36...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.37...HEAD
+[2026.10.26.37]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.36...2026.10.26.37
 [2026.10.26.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.35...2026.10.26.36
 [2026.10.26.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.34...2026.10.26.35
 [2026.10.26.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.33...2026.10.26.34

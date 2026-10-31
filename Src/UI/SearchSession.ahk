@@ -5,10 +5,8 @@
 ; search kept from the last showing. SearchWindow draws it and turns keys and clicks into changes of it; nothing here touches a
 ; window, so it can be tested without one.
 ;
-; Moved here step by step: the code reads and changes the session (SearchWindow.Session.Mode ...); SearchWindow still has the old
-; names (SearchWindow.Mode, .Results ...) as properties forwarding here, only for the tests and the benchmark probe until they
-; use the session too. Searches are requests (SearchRequest): the session numbers them, and results are shown only for the newest
-; one, so a search finishing after a newer one started (later: in the background) is dropped.
+; Searches are requests (SearchRequest): the session numbers them, and results are shown only for the newest one, so a search
+; finishing after a newer one started (later: in the background) is dropped.
 ;
 ; Usage:
 ;   session := SearchWindow.Session
