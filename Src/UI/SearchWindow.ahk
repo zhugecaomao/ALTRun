@@ -168,6 +168,7 @@ class SearchWindow {
             return
         if (SearchWindow._prepareTimer != "")
             SetTimer(SearchWindow._prepareTimer, 0)
+        SearchWindow._CloseStartMenu()                                      ; before TypeAhead, which would take its Esc as "close the window"
         if catchTyping
             TypeAhead.Start()
         SearchWindow._showing := true, SearchWindow._showStarted := A_TickCount, SearchWindow._showStep := "start"
@@ -177,6 +178,31 @@ class SearchWindow {
             typed := TypeAhead.Take()
         }
         SearchWindow._ApplyTypeAhead(typed)
+    }
+
+    ; The Start menu or Windows Search in front: close it first, or the search window opens behind it without the focus. A system hotkey
+    ; (Alt+Space) closes them by itself; a hotkey that tells left and right apart (LAlt+Space) comes through the keyboard hook, which
+    ; doesn't (#303). Esc closes both; waits until they are gone (at most StartMenuWaitMs)
+    static StartMenuProcesses := Map("startmenuexperiencehost.exe", 1, "searchhost.exe", 1, "searchapp.exe", 1, "shellexperiencehost.exe", 1)
+    static StartMenuWaitMs := 300
+
+    static IsStartMenu(processName) => SearchWindow.StartMenuProcesses.Has(StrLower(processName))
+
+    static _CloseStartMenu() {
+        if !SearchWindow._StartMenuInFront()
+            return
+        Send("{Esc}")                                                       ; not {Blind}: with Alt still held that would be Alt+Esc (next window)
+        deadline := A_TickCount + SearchWindow.StartMenuWaitMs
+        while (A_TickCount < deadline && SearchWindow._StartMenuInFront())
+            Sleep(10)
+        Logger.Debug("SearchWindow: closed the Start menu / Search first" (SearchWindow._StartMenuInFront() ? " (still in front)" : ""))
+    }
+
+    static _StartMenuInFront() {
+        if !(hwnd := DllCall("GetForegroundWindow", "Ptr"))
+            return false
+        try return SearchWindow.IsStartMenu(WinGetProcessName("ahk_id " hwnd))
+        return false
     }
 
     ; Treats the characters typed while showing as typed in the search box: they replace selected text (the restored last search); a leading space enters file search mode

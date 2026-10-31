@@ -1697,4 +1697,11 @@ class SearchWindowTests {
         Hud.Hide()
         eq("hidden", Hud.Gui, "")
     }
+    ; The Start menu / Windows Search are closed before showing (a left / right hotkey comes through the hook, which doesn't close them, #303)
+    static StartMenuProcesses() {
+        for name in ["StartMenuExperienceHost.exe", "SearchHost.exe", "SearchApp.exe", "ShellExperienceHost.exe", "searchhost.EXE"]
+            TestRunner.Equal("StartMenu." name, SearchWindow.IsStartMenu(name), true)
+        for name in ["explorer.exe", "notepad.exe", "TOTALCMD64.EXE", ""]
+            TestRunner.Equal("StartMenu.not " name, SearchWindow.IsStartMenu(name), false)
+    }
 }
