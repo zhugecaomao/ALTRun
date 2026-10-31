@@ -1,9 +1,15 @@
 # Makes the UI screenshots for the README / Wiki on Windows (Tests\Screenshots\TakeScreenshots.ahk),
 # uploads them as an artifact; on branches other than main it commits the screenshots back to the branch.
+# Run by hand, "scenes" can name only the scenes to shoot (e.g. "prefs-general shellmenu"); empty = all of them.
 name: Screenshots
 
 on:
   workflow_dispatch:
+    inputs:
+      scenes:
+        description: "Scenes to shoot, separated by spaces (empty = all)"
+        type: string
+        default: ""
   push:
     branches-ignore: [main]
     paths:
@@ -14,10 +20,35 @@ permissions:
   contents: write
 
 jobs:
+  # A push also counts the screenshot script changes that merging main brought in: shoot only when the branch itself changed it
+  # (compared with where it left main), so a merge of main doesn't start a full run that only commits pixel noise
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      shoot: ${{ steps.check.outputs.shoot }}
+    steps:
+      - uses: actions/checkout@v7
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 0
+      - id: check
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" != "push" ]; then echo "shoot=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          base=$(git merge-base origin/main HEAD)
+          if git diff --quiet "$base" HEAD -- Tests/Screenshots .github/workflows/screenshots.yml; then
+            echo "Only changes from main: no screenshots"; echo "shoot=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "shoot=true" >> "$GITHUB_OUTPUT"
+          fi
+
   screenshots:
+    needs: changes
+    if: needs.changes.outputs.shoot == 'true'
     runs-on: windows-latest
     env:
       GH_TOKEN: ${{ github.token }}
+      SCENES: ${{ inputs.scenes }}
     steps:
       - uses: actions/checkout@v7
 
@@ -67,7 +98,9 @@ jobs:
 
       - name: Take screenshots
         shell: pwsh
-        run: pwsh -NoProfile -File Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Skip normal-scale
+        run: |
+          $only = @(-split $env:SCENES)                                       # called with & (not pwsh -File) so the list binds as an array
+          & Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only $only -Skip normal-scale
 
       # Screenshots get Windows 11-style rounded corners (the VM has no GPU acceleration, so the system draws none); the animations (APNG: demo.png on the README
       # front page, demo-*.png for the features) are assembled from the frames the "demo" scenes saved (rounded corners, shadow, blurred background);
@@ -89,8 +122,9 @@ jobs:
       - name: Take screenshots at 100%
         shell: pwsh
         run: |
-          pwsh -NoProfile -File Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only normal-scale
-          if ($LASTEXITCODE -ne 0) { throw "screenshots at 100% failed" }
+          $only = @(-split $env:SCENES)
+          if ($only.Count) { & Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only $only -Within normal-scale }
+          else { & Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only normal-scale }
           python Tests/Screenshots/RoundCorners.py docs/images/screenshots
           if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
           pwsh -NoProfile -File Tests/Screenshots/MakeDemos.ps1

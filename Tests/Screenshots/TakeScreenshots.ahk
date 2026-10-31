@@ -31,6 +31,7 @@ class Shots {
     static Pid      := 0
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
+    static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"
@@ -110,11 +111,11 @@ class Shots {
 
     static Run(args) {
         Shots.OutDir := (args.Length >= 1) ? Shots._FullPath(args[1]) : Shots.RepoDir "\docs\images\screenshots"
-        wanted := Map(), skipped := Map()
+        wanted := Map(), skipped := Map(), within := Map()                  ; "name": shoot it, "-name": skip it, "=name": only scenes also listed so
         Loop args.Length - 1 {
             name := args[A_Index + 1]
-            target := (SubStr(name, 1, 1) = "-") ? skipped : wanted
-            name := LTrim(name, "-")
+            target := (SubStr(name, 1, 1) = "-") ? skipped : (SubStr(name, 1, 1) = "=") ? within : wanted
+            name := LTrim(name, "-=")
             for scene in (name = "normal-scale") ? Shots.NormalScale : [name]
                 target[scene] := true
         }
@@ -124,7 +125,7 @@ class Shots {
         Shots.PrepareDemoFiles()
         Shots.ShowBackdrop()
         for scene in Shots.Scenes() {
-            if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]))
+            if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]) || (within.Count && !within.Has(scene[1])))
                 continue
             Shots.Log("== " scene[1])
             ; When the result rows stay blank, restart ALTRun and try again (a safeguard). The former cause: a timer slipping in while a row was painted asked for a repaint, and the list kept waiting for it
@@ -336,8 +337,19 @@ class Shots {
             prepare()
         Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" ' args, Shots.AppDir, , &pid)
         Shots.Pid := pid
-        ; the "ALTRun is already running" notice at the top of the screen at start-up disappears after 3 s
-        Sleep(4500)
+        ; Started without arguments, ALTRun ends its start-up by showing the search window and the "ALTRun is running" notice (3 s):
+        ; hide the notice as soon as it shows instead of waiting for it to go. With arguments (-Preferences ...) there is no notice:
+        ; wait for its (hidden) main window. Then a moment for what runs 0.5 s after start-up (icon cache, warm-up)
+        if (args = "") {
+            if (hud := WinWait("ALTRun HUD ahk_pid " pid, , 10))
+                try WinHide(hud)
+        } else {
+            saved := A_DetectHiddenWindows
+            DetectHiddenWindows(true)
+            WinWait("ahk_class AutoHotkey ahk_pid " pid, , 10)
+            DetectHiddenWindows(saved)
+        }
+        Sleep(Shots.SettleMs)
     }
 
     static Close() {
