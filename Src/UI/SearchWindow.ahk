@@ -109,10 +109,6 @@ class SearchWindow {
         get => SearchWindow.Session.RestoredSelection
         set => SearchWindow.Session.RestoredSelection := value
     }
-    static _searchGen {
-        get => SearchWindow.Session.SearchGen
-        set => SearchWindow.Session.SearchGen := value
-    }
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
     static SelectedRadius := 0
     static _searchTimer := "", _hideTimer := ""
@@ -401,12 +397,12 @@ class SearchWindow {
             SendMessage(0xB1, len, len, SearchWindow.Input.Hwnd)            ; the Edit selects all on focus: put the caret back at the end
         SearchInputLanguage.SwitchOnShow(wasVisible)
         if prepared {
-            gen := SearchWindow.Session.SearchGen
-            SetTimer(() => SearchWindow._RefreshShown(gen), -1)
+            request := SearchWindow.Session.Request
+            SetTimer(() => SearchWindow._RefreshShown(request), -1)
         }
         if (restore && !reuse) {
-            gen := SearchWindow.Session.SearchGen
-            SetTimer(() => SearchWindow._FinishRestore(gen, last), -1)
+            request := SearchWindow.Session.Request
+            SetTimer(() => SearchWindow._FinishRestore(request, last), -1)
         }
         Logger.Time(prepared ? "show (prepared)" : "show", started)
     }
@@ -537,16 +533,13 @@ class SearchWindow {
     static _ShowQuickResults(text) {
         SearchWindow._quietText := text
         SearchWindow._inputLen := StrLen(text), SearchWindow.Input.Value := text
-        ++SearchWindow.Session.SearchGen
-        browse := FileSearchProvider.BrowsePath(text)
-        SearchWindow.Session.HighlightText := IsObject(browse) ? browse.Filter : text
-        SearchWindow.SetResults(SearchWindow.Session.FileMode ? [] : ProviderRegistry.Search(text, FileSearchProvider))
+        SearchWindow.SetResults(SearchWindow.Session.StartSearch(text, true).Run())
     }
 
     ; Full search after showing, selecting the row selected last time; not needed once typing started / the actions panel opened
-    static _FinishRestore(gen, last) {
+    static _FinishRestore(request, last) {
         SearchWindow._quietText := ""
-        if (gen != SearchWindow.Session.SearchGen || !SearchWindow.IsVisible() || SearchWindow.Session.Mode != "results"
+        if (!SearchWindow.Session.IsCurrent(request) || !SearchWindow.IsVisible() || SearchWindow.Session.Mode != "results"
             || SearchWindow.Input.Value != last.Text)
             return
         if (SearchWindow._searchTimer != "")
@@ -562,12 +555,12 @@ class SearchWindow {
     }
 
     ; Searches again after showing the prepared results: swaps in only if something changed while hidden (e.g. a new version was just found); not needed once typing started
-    static _RefreshShown(gen) {
-        if (gen != SearchWindow.Session.SearchGen || !SearchWindow.IsVisible() || SearchWindow.Session.Mode != "results" || SearchWindow.Session.FileMode
+    static _RefreshShown(request) {
+        if (!SearchWindow.Session.IsCurrent(request) || !SearchWindow.IsVisible() || SearchWindow.Session.Mode != "results" || SearchWindow.Session.FileMode
             || SearchWindow.Input.Value != "")
             return
-        results := ProviderRegistry.Search("")
-        if (gen = SearchWindow.Session.SearchGen && !SearchWindow.SameResults(results, SearchWindow.Session.Results))
+        results := request.Run()                                            ; the prepared search again: the empty box, not file search mode
+        if (SearchWindow.Session.IsCurrent(request) && !SearchWindow.SameResults(results, SearchWindow.Session.Results))
             SearchWindow.SetResults(results)
     }
 
@@ -642,16 +635,12 @@ class SearchWindow {
     ; Searches on every character typed (the box's Change event, each its own AHK thread). When a search is slow, the search for the next character
     ; slips in and finishes first; the earlier results are out of date then and aren't shown (they would cover the new ones, and the window height and list wouldn't match)
     static _RunSearch() {
-        gen := ++SearchWindow.Session.SearchGen
-        text := SearchWindow.Input.Value
+        request := SearchWindow.Session.StartSearch(SearchWindow.Input.Value)
         if (SearchWindow.Session.Mode = "actions")
-            return SearchWindow.SetResults(SearchWindow.Session.FilterActions(text))
-        browse := FileSearchProvider.BrowsePath(text)                       ; browsing a folder: only the last part (the filter text) is highlighted, not the words in the path
-        SearchWindow.Session.HighlightText := IsObject(browse) ? browse.Filter : text
-        results := SearchWindow.Session.FileMode ? ProviderRegistry.SearchOnly(FileSearchProvider, text) : ProviderRegistry.Search(text)
-        if (gen != SearchWindow.Session.SearchGen)                                 ; more characters were typed during the search: use the newer search's results
-            return
-        SearchWindow.SetResults(results)
+            return SearchWindow.SetResults(SearchWindow.Session.FilterActions(request.Text))
+        results := request.Run()
+        if SearchWindow.Session.IsCurrent(request)                          ; else more characters were typed during the search: the newer search's results are shown
+            SearchWindow.SetResults(results)
     }
 
     ; Swaps in new results and adjusts the list and window height. Not interruptible (Critical): if another search slipped in halfway,

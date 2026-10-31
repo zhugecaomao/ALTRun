@@ -7,8 +7,8 @@
 ;
 ; Moved here step by step: the code reads and changes the session (SearchWindow.Session.Mode ...); SearchWindow still has the old
 ; names (SearchWindow.Mode, .Results ...) as properties forwarding here, only for the tests and the benchmark probe until they
-; use the session too. Next steps: the changes between states become methods here, then searches become requests whose results
-; come back with their number (for searching in the background).
+; use the session too. Searches are requests (SearchRequest): the session numbers them, and results are shown only for the newest
+; one, so a search finishing after a newer one started (later: in the background) is dropped.
 ;
 ; Usage:
 ;   session := SearchWindow.Session
@@ -24,6 +24,7 @@ class SearchSession {
     Offset        := 0           ; the first result shown in the list is Results[Offset + 1]
     HighlightText := ""          ; characters in result titles matching it are highlighted (when browsing a folder only the filter part)
     SearchGen     := 0           ; counts the searches: a search finding a newer one started meanwhile drops its results
+    Request       := ""          ; the newest search (SearchRequest); only its results are shown
 
     ; Actions panel
     ActionSource  := ""          ; the result the panel was opened for
@@ -81,6 +82,23 @@ class SearchSession {
         this.FileMode := false
         return true
     }
+
+    ;---------------------------------------------------------------------------
+    ; Searches
+    ;---------------------------------------------------------------------------
+    ; A new search for text: numbered after the ones before it, which no longer count. In search results the highlight follows
+    ; the text (browsing a folder: only the filter part, not the words in the path); the actions panel keeps it.
+    ; quick: only the features that don't make you wait (no file search; see SearchRequest)
+    StartSearch(text, quick := false) {
+        if (this.Mode = "results") {
+            browse := FileSearchProvider.BrowsePath(text)
+            this.HighlightText := IsObject(browse) ? browse.Filter : text
+        }
+        return this.Request := SearchRequest(++this.SearchGen, text, this.FileMode, quick)
+    }
+
+    ; Whether request is still the newest search (its results are shown)
+    IsCurrent(request) => IsObject(request) && request.Gen = this.SearchGen
 
     ;---------------------------------------------------------------------------
     ; Results and selection
@@ -179,5 +197,22 @@ class SearchSession {
             if (text != current || index = 0)
                 return {Text: text, Index: index}
         }
+    }
+}
+
+;===============================================================================
+; SearchRequest - one search: its number, text and kind (made by SearchSession.StartSearch)
+;===============================================================================
+class SearchRequest {
+    __New(gen, text, fileMode, quick := false) {
+        this.Gen := gen, this.Text := text, this.FileMode := fileMode, this.Quick := quick
+    }
+
+    ; The results: in file search mode files only; quick = without file search (Everything may wait up to its timeout), nothing
+    ; in file search mode
+    Run() {
+        if this.Quick
+            return this.FileMode ? [] : ProviderRegistry.Search(this.Text, FileSearchProvider)
+        return this.FileMode ? ProviderRegistry.SearchOnly(FileSearchProvider, this.Text) : ProviderRegistry.Search(this.Text)
     }
 }
