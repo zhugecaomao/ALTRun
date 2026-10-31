@@ -8,7 +8,7 @@
 ;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [output folder] [scene... | -scene...]
 ;
 ; The output folder defaults to docs\images\screenshots; no scene names = all scenes; "-scene" = all but these;
-; "normal-scale" / "-normal-scale" = the scenes in Shots.NormalScale / all but them.
+; "normal-scale" / "-normal-scale" = the scenes in Shots.NormalScale / all but them; "themes" / "-themes" = the theme-... scenes / all but them.
 ; The "demo" scenes aren't single shots: every frame of a sequence goes to %Temp%\ALTRunDemoFrames\<scene> (frames.txt, each line: file name Tab ms shown),
 ; and MakeDemo.py (run by MakeDemos.ps1) turns each folder into the animation <scene>.png: demo.png on the README front page, demo-quickswitch.png etc. for the features. RoundCorners.py adds the rounded corners; before the shots SetDisplay.ps1 sets the screen to
 ; 1920 x 1080 at 150% scaling (see screenshots.yml), and the coordinates below scale by Shots.Scale. The Preferences and Quick Switch shots
@@ -31,10 +31,20 @@ class Shots {
     static Pid      := 0
     static Failures := 0
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
+    static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
+
+    ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
+    static Themes() {
+        names := []
+        for scene in Shots.Scenes()
+            if (SubStr(scene[1], 1, 6) = "theme-")
+                names.Push(scene[1])
+        return names
+    }
 
     ; scene name -> [theme, start arguments, function, function preparing data before start-up (optional)]
     static Scenes() {
@@ -110,21 +120,28 @@ class Shots {
 
     static Run(args) {
         Shots.OutDir := (args.Length >= 1) ? Shots._FullPath(args[1]) : Shots.RepoDir "\docs\images\screenshots"
-        wanted := Map(), skipped := Map()
+        wanted := Map(), skipped := Map(), within := Map()                  ; "name": shoot it, "-name": skip it, "=name": only scenes also listed so
         Loop args.Length - 1 {
             name := args[A_Index + 1]
-            target := (SubStr(name, 1, 1) = "-") ? skipped : wanted
-            name := LTrim(name, "-")
-            for scene in (name = "normal-scale") ? Shots.NormalScale : [name]
+            if (Trim(name, " -=") = "")                                      ; an empty name would select no scene at all
+                continue
+            target := (SubStr(name, 1, 1) = "-") ? skipped : (SubStr(name, 1, 1) = "=") ? within : wanted
+            name := LTrim(name, "-=")
+            for scene in (name = "normal-scale") ? Shots.NormalScale : (name = "themes") ? Shots.Themes() : [name]
                 target[scene] := true
         }
         DirCreate(Shots.OutDir)
         Shots.Log("screen " A_ScreenWidth " x " A_ScreenHeight ", DPI " A_ScreenDPI)
+        count := 0
+        for scene in Shots.Scenes()
+            count += !((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]) || (within.Count && !within.Has(scene[1])))
+        Shots.Log(count " scene(s) to shoot")
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
+        Shots.PrepareAppIndex()
         Shots.ShowBackdrop()
         for scene in Shots.Scenes() {
-            if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]))
+            if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]) || (within.Count && !within.Has(scene[1])))
                 continue
             Shots.Log("== " scene[1])
             ; When the result rows stay blank, restart ALTRun and try again (a safeguard). The former cause: a timer slipping in while a row was painted asked for a repaint, and the list kept waiting for it
@@ -172,6 +189,28 @@ class Shots {
             . "RunWait('ping ' A_Args[1])`n", Shots.AppDir "\Scripts\Ping.ahk", "UTF-8")
         FileAppend("# @altrun.title    Today's date`n# @altrun.keyword  today`n# @altrun.mode     silent`nGet-Date -Format 'dddd, d MMMM yyyy'`n"
             , Shots.AppDir "\Scripts\Today.ps1", "UTF-8")
+    }
+
+    ; Builds the app index once (Data\AppIndex.json, the demo apps folder) with ALTRun started in the background, and keeps a copy
+    ; that WriteSettings puts back into each scene's new Data folder. Without it every scene scanned the apps 3 s after start-up,
+    ; and with the short wait in Launch the first results missed them (2026-10: "re" without Remote Desktop, "jsb" without Notepad)
+    static AppIndexCopy => Shots.AppDir "\AppIndex.ready.json"             ; kept outside Data, which WriteSettings clears for each scene
+    static PrepareAppIndex() {
+        indexFile := Shots.AppDir "\Data\AppIndex.json"
+        try FileDelete(Shots.AppIndexCopy)
+        Shots.WriteSettings("Light")
+        started := A_TickCount
+        Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" -Startup', Shots.AppDir, , &pid)
+        while (!FileExist(indexFile) && A_TickCount - started < 30000)
+            Sleep(250)
+        Sleep(500)                                                          ; written through a temporary file and renamed; a moment more anyway
+        try ProcessClose(pid)
+        ProcessWaitClose(pid, 5)
+        if !FileExist(indexFile)
+            return Shots.Log("app index not written: scenes may miss apps")
+        FileCopy(indexFile, Shots.AppIndexCopy, true)
+        text := FileRead(indexFile, "UTF-8")
+        Shots.Log("app index ready after " Round((A_TickCount - started) / 1000, 1) " s (" StrLen(text) " characters, Notepad " (InStr(text, "notepad") ? "in it" : "missing") ")")
     }
 
     ; generic sample folders
@@ -245,6 +284,8 @@ class Shots {
         try DirDelete(Shots.AppDir "\Data", true)                           ; each scene starts with an empty index and learned ranking
         try FileDelete(Shots.AppDir "\ALTRun.json")                         ; the location of old versions
         DirCreate(Shots.AppDir "\Data")
+        if FileExist(Shots.AppIndexCopy)                                    ; but with the app index built once (PrepareAppIndex), so no scene waits for a scan
+            FileCopy(Shots.AppIndexCopy, Shots.AppDir "\Data\AppIndex.json", true)
         FileAppend(JSON.Stringify(settings, 4), Shots.AppDir "\Data\ALTRun.json", "UTF-8")
     }
 
@@ -336,8 +377,19 @@ class Shots {
             prepare()
         Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" ' args, Shots.AppDir, , &pid)
         Shots.Pid := pid
-        ; the "ALTRun is already running" notice at the top of the screen at start-up disappears after 3 s
-        Sleep(4500)
+        ; Started without arguments, ALTRun ends its start-up by showing the search window and the "ALTRun is running" notice (3 s):
+        ; hide the notice as soon as it shows instead of waiting for it to go. With arguments (-Preferences ...) there is no notice:
+        ; wait for its (hidden) main window. Then a moment for what runs 0.5 s after start-up (icon cache, warm-up)
+        if (args = "") {
+            if (hud := WinWait("ALTRun HUD ahk_pid " pid, , 10))
+                try WinHide(hud)
+        } else {
+            saved := A_DetectHiddenWindows
+            DetectHiddenWindows(true)
+            WinWait("ahk_class AutoHotkey ahk_pid " pid, , 10)
+            DetectHiddenWindows(saved)
+        }
+        Sleep(Shots.SettleMs)
     }
 
     static Close() {
