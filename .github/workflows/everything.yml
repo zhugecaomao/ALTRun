@@ -1,0 +1,92 @@
+# ALTRun's Everything IPC (Lib/Everything.ahk) against a real Everything on Windows: 1.4 (stable, what winget and Scoop
+# install) and 1.5 (beta), each downloaded from voidtools.com with a fixed version and SHA256 (to update: change both).
+# Tests/Integration/EverythingCheck.ahk searches a uniquely named test file and folder and checks the results; with 1.5
+# it also runs Everything as the named instance "1.5a", as the 1.5 alphas did. The runner is an administrator, so
+# Everything indexes the NTFS volumes itself (no service needed)
+name: Everything
+
+on:
+  pull_request:
+    paths:
+      - Lib/Everything.ahk
+      - Tests/Integration/**
+      - .github/workflows/everything.yml
+  push:
+    branches: [main]
+    paths:
+      - Lib/Everything.ahk
+      - Tests/Integration/**
+      - .github/workflows/everything.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  everything:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: 1.4.1.1032
+            sha256: 698df475ec44e638f66f1b6a32d28fea613cec78d3b6310e6abe53431eeb940c
+          - version: 1.5.0.1424b
+            sha256: f8e5d907305fc1aff288ad4d722548f36a1ef8c3389933b1fbc935dba7083084
+    name: Everything ${{ matrix.version }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CHECK_NAME: altrun_ipc_check_${{ github.run_id }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = gh release list --repo AutoHotkey/AutoHotkey --limit 30 --exclude-pre-releases --json tagName --jq '[.[].tagName | select(startswith("v2."))][0]'
+          if (-not $ahkTag) { throw "No AutoHotkey v2 release found" }
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+
+      - name: Download Everything ${{ matrix.version }}
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://www.voidtools.com/Everything-${{ matrix.version }}.x64.zip" -OutFile everything.zip
+          $hash = (Get-FileHash everything.zip -Algorithm SHA256).Hash
+          if ($hash -ne "${{ matrix.sha256 }}") { throw "Unexpected SHA256 $hash (expected ${{ matrix.sha256 }})" }
+          Expand-Archive everything.zip tools/everything
+          Get-ChildItem tools/everything | Format-Table Name, Length
+
+      - name: Test file and folder
+        shell: pwsh
+        run: |
+          $folder = Join-Path $env:RUNNER_TEMP "everything-check"
+          New-Item -ItemType Directory "$folder\$env:CHECK_NAME`_dir" -Force | Out-Null
+          Set-Content "$folder\$env:CHECK_NAME.txt" "ALTRun Everything check"
+          "CHECK_FOLDER=$folder" | Add-Content $env:GITHUB_ENV
+
+      - name: Default instance
+        shell: pwsh
+        run: |
+          $everything = (Get-ChildItem tools/everything -Filter "everything.exe").FullName
+          Start-Process $everything -ArgumentList "-startup"
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\Integration\EverythingCheck.ahk', "`"$env:CHECK_FOLDER`"", $env:CHECK_NAME `
+                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput check.log -RedirectStandardError check.err
+          Get-Content check.log, check.err
+          & $everything -exit
+          Wait-Process -Name everything -Timeout 30 -ErrorAction SilentlyContinue
+          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) check(s) failed" }
+
+      - name: Named instance 1.5a (the 1.5 alphas)
+        if: startsWith(matrix.version, '1.5')
+        shell: pwsh
+        run: |
+          $everything = (Get-ChildItem tools/everything -Filter "everything.exe").FullName
+          Start-Process $everything -ArgumentList "-startup", "-instance", "1.5a"
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\Integration\EverythingCheck.ahk', "`"$env:CHECK_FOLDER`"", $env:CHECK_NAME `
+                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput check.log -RedirectStandardError check.err
+          Get-Content check.log, check.err
+          & $everything -instance 1.5a -exit
+          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) check(s) failed" }

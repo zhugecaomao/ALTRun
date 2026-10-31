@@ -187,6 +187,9 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 ### 文件索引性能测试
 GitHub → Actions → **File index benchmark** 在 Windows 上运行 `Tests\RunTests.ahk FileIndexBench` (`Tests\Bench\FileIndexBench.ahk`): 创建 64000 个空文件 (400 个文件夹, 十分之一是中文名), 测量和 ALTRun 一样在后台完整扫描一遍、写入和读取缓存、匹配少和匹配多的搜索各要多久, 数字在运行摘要里。改到文件索引、文件搜索或 `FuzzyMatcher` 的 PR 也会自动运行, 和 `main` 上最近一次的数字比较。
 
+### Everything
+GitHub → Actions → **Everything** 在 Windows 上用真实的 Everything 检查 ALTRun 的 Everything IPC (`Lib\Everything.ahk`): 1.4 (稳定版) 和 1.5 (beta), 都从 voidtools.com 下载固定的版本并校验 SHA256 (更新时在 `.github/workflows/everything.yml` 里两个一起改)。`Tests\Integration\EverythingCheck.ahk` 搜索一个名字唯一的测试文件和文件夹, 检查路径和是否文件夹; 1.5 还会以命名实例 "1.5a" 运行一次, 和 1.5 alpha 一样。改到 `Lib\Everything.ahk` 或这个检查的 PR 会自动运行; 脚本也可以在自己的电脑上 Everything 运行时使用 (`EverythingCheck.ahk <文件夹> <名字>`)。
+
 AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一份, `obj.prop .= x` 也会重新生成整个字符串。字符串很长时 (文件索引把所有文件名放在一个字符串里), 线性的工作会变成平方级: 长字符串在局部变量或数组里拼接, 需要一小段一小段读取的文字放在 `Buffer` 里 (按偏移用 `StrGet` 读)。
 
 ## 质量验证与局限

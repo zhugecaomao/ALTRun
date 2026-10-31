@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.38]
+
+测试版。
+
+Test build.
+
+### 改进
+- Everything 1.5 alpha (以 "1.5a" 命名实例运行) 也能找到了, 以前会显示 "没有运行", 只用 ALTRun 自己的文件索引。在 Windows 上用真实的 Everything 1.4 和 1.5 自动测试文件搜索
+
 ## [2026.10.26.37]
 
 测试版。
@@ -1283,7 +1292,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.37...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.38...HEAD
+[2026.10.26.38]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.37...2026.10.26.38
 [2026.10.26.37]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.36...2026.10.26.37
 [2026.10.26.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.35...2026.10.26.36
 [2026.10.26.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.34...2026.10.26.35
