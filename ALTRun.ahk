@@ -47,6 +47,7 @@
 #Include Lib\FolderWatcher.ahk
 #Include Lib\WinTimer.ahk
 #Include Lib\WindowsRecent.ahk
+#Include Lib\ShellContextMenu.ahk
 
 ; --- Src\Core ---
 #Include Src\Core\App.ahk

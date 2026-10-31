@@ -14,6 +14,7 @@
 ; Usage:
 ;   ResultActions.ListFor(item)           -> [ResultItem...] the actions panel
 ;   ResultActions.ListForMany(paths)      -> [ResultItem...] for several marked files
+; Files and folders also get the Windows context menu (Lib\ShellContextMenu.ahk, SearchWindow.ShellMenu).
 ;   ResultActions.CanEdit(item) / EditItem(item) / CanDelete(item) / DeleteItem(item) / DeletePrompt(item)
 ;===============================================================================
 
@@ -44,6 +45,7 @@ class ResultActions {
                 add("Action.CopyName", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(Path.Leaf(target)))
                 ResultActions._FileActions(list, target)
                 add("Action.OpenTerminal", "res:imageres.dll,-5323", (*) => TerminalProvider.OpenAt(ActionCatalog.ParentDir(target)))
+                ResultActions._ShellMenuAction(list, [target], target)
                 if !ActionCatalog.IsShellItem(target)                       ; Store apps (shell:AppsFolder\...) have no properties window
                     add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
                 if FileExist(target)
@@ -54,6 +56,7 @@ class ResultActions {
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
                 ResultActions._FileActions(list, target)
+                ResultActions._ShellMenuAction(list, [target], target)
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
                 if (FileExist(target) && !RegExMatch(RTrim(target, "\"), "^[A-Za-z]:$"))       ; drive roots can't be deleted
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
@@ -102,12 +105,27 @@ class ResultActions {
         manager := QuickSwitch.FileManagerFolder()
         destination := IsObject(manager) ? manager.Path : ""
         if (destination != "" && DirExist(destination)) {
-            add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), destination)
-            add(I18n.T("Action.MoveTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination, true), destination)
+            add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), Path.Compact(destination))
+            add(I18n.T("Action.MoveTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination, true), Path.Compact(destination))
         }
+        ResultActions._ShellMenuAction(list, paths, paths[1])
         add(I18n.T("Action.AddAllCommands"), "res:imageres.dll,-2", (*) => CustomCommandProvider.AddFromPaths(paths))
         add(I18n.T("Action.RecycleAll", count), "res:shell32.dll,-32", (*) => ActionCatalog.RecycleMany(paths))
         return list
+    }
+
+    ; The Windows (Explorer) context menu of the file(s), with the items other programs add (7-Zip, Git...); several only when in one folder.
+    ; Shown over the search window at the selected row (KeepWindow); Shift+Enter shows Explorer's extended items too
+    ; Off by default (Preferences → Features). Targets are resolved first (custom commands may say %ProgramFiles%\..., A_ScriptDir\...)
+    static _ShellMenuAction(list, paths, icon) {
+        try enabled := AppSettings.Feature("ContextMenu")["Enabled"]
+        if !(IsSet(enabled) && enabled)
+            return
+        resolved := []
+        for target in paths
+            resolved.Push(ActionCatalog.IsShellItem(target) ? target : Path.Resolve(target))
+        if ShellContextMenu.CanShow(resolved)
+            list.Push(ResultItem(I18n.T("Action.ShellMenu"), "", {Icon: icon, KeepWindow: true, OnRun: (source) => SearchWindow.ShellMenu(source, resolved)}))
     }
 
     ;---------------------------------------------------------------------------
@@ -182,7 +200,8 @@ class ResultActions {
         inside := (InStr(RTrim(destination, "\") "\", RTrim(target, "\") "\") = 1)   ; a folder can't be copied into itself
         if (StrLower(RTrim(destination, "\")) = StrLower(parent) || inside)
             return
-        list.Push(ResultItem(I18n.T("Action.CopyTo", manager.Tag), destination, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination)}))
-        list.Push(ResultItem(I18n.T("Action.MoveTo", manager.Tag), destination, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination, true)}))
+        shown := Path.Compact(destination)                                  ; the hint column (and the right-click menu) stays narrow with long paths
+        list.Push(ResultItem(I18n.T("Action.CopyTo", manager.Tag), shown, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination)}))
+        list.Push(ResultItem(I18n.T("Action.MoveTo", manager.Tag), shown, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination, true)}))
     }
 }

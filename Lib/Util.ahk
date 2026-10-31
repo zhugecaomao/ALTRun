@@ -153,6 +153,20 @@ class Path {
         SplitPath(path, &name)
         return name != "" ? name : path
     }
+
+    ; A long path shortened for a menu or a hint: the root and the last folder, the middle left out ("Q:\…\13. Reports").
+    ; Paths up to maxLen characters stay as they are; a last folder that is itself too long is cut with "…"
+    static Compact(fullPath, maxLen := 40) {
+        if (StrLen(fullPath) <= maxLen)
+            return fullPath
+        trimmed := RTrim(fullPath, "\")
+        root := RegExMatch(trimmed, "^(\\\\[^\\]+\\[^\\]+\\|[A-Za-z]:\\)", &m) ? m[1] : ""
+        last := Path.Leaf(trimmed)
+        dots := Chr(0x2026), room := maxLen - StrLen(root) - 2              ; "…\"
+        if (StrLen(last) > room)
+            last := SubStr(last, 1, Max(room - 1, 1)) dots
+        return root dots "\" last
+    }
 }
 
 

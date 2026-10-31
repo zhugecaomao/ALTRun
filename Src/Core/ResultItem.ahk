@@ -20,6 +20,8 @@
 ;   Source       the settings entry the result comes from (the Map of a custom command / snippet / search engine), for editing and deleting
 ;   Exclusive    true = a keyword-mode result ("clip " / "g xxx" / ">cmd"); when there are such results only they are shown
 ;   Pinned       true = a pinned result (clipboard, empty search box); a pin is drawn at the icon's bottom right
+;   KeepWindow   for an action: run it with the search window still open (it shows something over the window first and closes the window itself,
+;                e.g. the Windows context menu); otherwise the window closes before the action runs
 ;
 ; Usage:
 ;   ResultItem("Notepad", "C:\Windows\notepad.exe", {Kind: "file", Arg: path, Uid: "app:" path})
@@ -51,6 +53,7 @@ class ResultItem {
         this.Score        := 0
         this.Exclusive    := false
         this.Pinned       := false
+        this.KeepWindow   := false
         this.Source       := ""
         this.Provider     := ""
         if IsObject(props) {

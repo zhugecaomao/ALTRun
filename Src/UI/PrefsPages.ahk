@@ -233,11 +233,13 @@ class PrefsPages {
                 rowH := Max(rowH, checkH + 4)
             }
         }
-        PrefsForm._y := startY + (features.Length // 2) * rowH                ; last row: Large Type (not a search feature), Windows Settings pages (part of the system commands)
+        PrefsForm._y := startY + (features.Length // 2) * rowH                ; then the action panel's extras (not search features): Large Type, the Windows context menu,
         PrefsForm.Check("Features.LargeType.Enabled", "Prefs.Feature.LargeType", PrefsForm.InputX(), , "", columnW)
         PrefsForm._y := startY + (features.Length // 2) * rowH
-        PrefsForm.Check("Features.System.SettingsPages", "Prefs.SettingsPages", PrefsForm.InputX() + columnW, , "", columnW)
-        PrefsForm._y := startY + Ceil((features.Length + 1) / 2) * rowH
+        PrefsForm.Check("Features.ContextMenu.Enabled", "Prefs.Feature.ContextMenu", PrefsForm.InputX() + columnW, , "", columnW)
+        PrefsForm._y := startY + (features.Length // 2 + 1) * rowH            ; and Windows Settings pages (part of the system commands)
+        PrefsForm.Check("Features.System.SettingsPages", "Prefs.SettingsPages", PrefsForm.InputX(), , "", columnW)
+        PrefsForm._y := startY + (features.Length // 2 + 2) * rowH
         PrefsForm.Section("Prefs.Section.FeatureOptions")
         PrefsForm.Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
         PrefsForm.LinesButton("Features.System.Hidden", "Prefs.SysHidden")
