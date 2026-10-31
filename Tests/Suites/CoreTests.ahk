@@ -1284,4 +1284,15 @@ Func | PTTools | PT Tools (AHK)=99
             try DirDelete(root, true)
         }
     }
+    ; Path.Compact: long paths keep the root and the last folder (the copy / move targets in the action panel and the right-click menu)
+    static PathCompact() {
+        eq := (n, a, e) => TestRunner.Equal("PathCompact." n, a, e)
+        dots := Chr(0x2026)
+        eq("short stays", Path.Compact("C:\Projects\Reports"), "C:\Projects\Reports")
+        eq("long", Path.Compact("Q:\TENDER PROPOSAL\2026\64. Jalan Buroh (SoilBuild, BK)\From BK\13. BK cmts - 23.10.2026"), "Q:\" dots "\13. BK cmts - 23.10.2026")
+        eq("trailing backslash", Path.Compact("Q:\TENDER PROPOSAL\2026\64. Jalan Buroh (SoilBuild, BK)\Reports\"), "Q:\" dots "\Reports")
+        eq("network share", Path.Compact("\\server\share\Projects\2026\Very Long Folder Name\Final"), "\\server\share\" dots "\Final")
+        long := Path.Compact("D:\Work\" StrRepeat("x", 60))
+        eq("long last folder cut", StrLen(long) <= 40 && SubStr(long, -1) = dots && InStr(long, "D:\" dots "\xxx") = 1, true)
+    }
 }

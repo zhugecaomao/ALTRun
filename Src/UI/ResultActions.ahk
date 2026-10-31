@@ -105,8 +105,8 @@ class ResultActions {
         manager := QuickSwitch.FileManagerFolder()
         destination := IsObject(manager) ? manager.Path : ""
         if (destination != "" && DirExist(destination)) {
-            add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), destination)
-            add(I18n.T("Action.MoveTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination, true), destination)
+            add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), Path.Compact(destination))
+            add(I18n.T("Action.MoveTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination, true), Path.Compact(destination))
         }
         ResultActions._ShellMenuAction(list, paths, paths[1])
         add(I18n.T("Action.AddAllCommands"), "res:imageres.dll,-2", (*) => CustomCommandProvider.AddFromPaths(paths))
@@ -200,7 +200,8 @@ class ResultActions {
         inside := (InStr(RTrim(destination, "\") "\", RTrim(target, "\") "\") = 1)   ; a folder can't be copied into itself
         if (StrLower(RTrim(destination, "\")) = StrLower(parent) || inside)
             return
-        list.Push(ResultItem(I18n.T("Action.CopyTo", manager.Tag), destination, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination)}))
-        list.Push(ResultItem(I18n.T("Action.MoveTo", manager.Tag), destination, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination, true)}))
+        shown := Path.Compact(destination)                                  ; the hint column (and the right-click menu) stays narrow with long paths
+        list.Push(ResultItem(I18n.T("Action.CopyTo", manager.Tag), shown, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination)}))
+        list.Push(ResultItem(I18n.T("Action.MoveTo", manager.Tag), shown, {Icon: "folder:", OnRun: (*) => ActionCatalog.CopyTo(target, destination, true)}))
     }
 }
