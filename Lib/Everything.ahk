@@ -4,6 +4,8 @@
 ; No Everything64.dll / es.exe needed: as long as Everything runs, it is queried through its public IPC
 ; interface (WM_COPYDATA, EVERYTHING_IPC_COPYDATA_QUERY2W), the same thing the official SDK does.
 ; Everything sends the results back to our window (A_ScriptHwnd) with WM_COPYDATA.
+; Works with Everything 1.4 and 1.5 (checked on Windows by .github/workflows/everything.yml); the 1.5 alphas ran as a
+; named instance "1.5a", whose IPC window has the instance name in its class.
 ;
 ; Usage:
 ;   if Everything.IsRunning()
@@ -17,14 +19,22 @@ class Everything {
     static _replyId := 0x414C5400, _pending := 0, _results := "", _listening := false
     static LastProblem := "", _foreign := 0                               ; Why the last query came back empty (not received / timed out), for the caller's log
 
-    static IsRunning() {
-        return DllCall("FindWindowW", "Str", "EVERYTHING_TASKBAR_NOTIFICATION", "Ptr", 0, "Ptr") != 0
+    ; The IPC window of the default instance (1.4, 1.5), then of the 1.5 alphas' named instance
+    static WindowClasses := ["EVERYTHING_TASKBAR_NOTIFICATION", "EVERYTHING_TASKBAR_NOTIFICATION_(1.5a)"]
+
+    static IsRunning() => Everything._Window() != 0
+
+    static _Window() {
+        for cls in Everything.WindowClasses
+            if (hwnd := DllCall("FindWindowW", "Str", cls, "Ptr", 0, "Ptr"))
+                return hwnd
+        return 0
     }
 
     ; Returns [{Path, IsFolder}]; an empty array when Everything isn't running or times out (the reason is in LastProblem)
     static Query(search, maxResults := 30, sort := 14, timeoutMs := 1000) {
         Everything.LastProblem := ""
-        everythingHwnd := DllCall("FindWindowW", "Str", "EVERYTHING_TASKBAR_NOTIFICATION", "Ptr", 0, "Ptr")
+        everythingHwnd := Everything._Window()
         if !everythingHwnd
             return []
         if !Everything._listening {

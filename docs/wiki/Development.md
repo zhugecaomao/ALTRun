@@ -196,6 +196,9 @@ the released program doesn't contain it. Pushing changes to the benchmark script
 ### File index benchmark
 GitHub → Actions → **File index benchmark** runs `Tests\RunTests.ahk FileIndexBench` (`Tests\Bench\FileIndexBench.ahk`) on Windows: it creates 64,000 empty files in 400 folders (one in ten with a Chinese name) and times a full rescan as ALTRun does it, writing and reading the cache, and searches with few and many matches; the numbers are in the run summary. It also runs on pull requests that change the file index, file search or `FuzzyMatcher`, so compare those numbers with the last run on `main`.
 
+### Everything
+GitHub → Actions → **Everything** checks ALTRun's Everything IPC (`Lib\Everything.ahk`) against a real Everything on Windows: 1.4 (stable) and 1.5 (beta), each downloaded from voidtools.com with a fixed version and SHA256 (to update, change both in `.github/workflows/everything.yml`). `Tests\Integration\EverythingCheck.ahk` searches a uniquely named test file and folder and checks the paths and the folder flag; with 1.5 it also runs Everything as the named instance "1.5a", as the 1.5 alphas did. It runs on pull requests that change `Lib\Everything.ahk` or the check; the script also works on your own PC while Everything runs (`EverythingCheck.ahk <folder> <name>`).
+
 AutoHotkey copies a string held in an object property every time an expression reads it, and `obj.prop .= x` builds a whole new string. With long strings (the file index keeps all names in one) that turns linear work into quadratic: build long strings in a local variable or an array, and keep text that is read in small pieces in a `Buffer` (`StrGet` at an offset).
 
 ## Quality checks and limitations
