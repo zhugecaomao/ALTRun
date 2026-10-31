@@ -1246,6 +1246,7 @@ Func | PTTools | PT Tools (AHK)=99
             eq("drive root alone", ShellContextMenu.CanShow([SubStr(A_WinDir, 1, 3)]), true)
             eq("drive root with others", ShellContextMenu.CanShow([SubStr(A_WinDir, 1, 3), root "\a.txt"]), false)
             eq("none", ShellContextMenu.CanShow([]), false)
+            eq("Store app", ShellContextMenu.CanShow(["shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"]), true)
             shellMenu := ShellContextMenu([root "\a.txt", root "\b.txt"])
             TestRunner.True("ShellMenu.filled", DllCall("GetMenuItemCount", "Ptr", shellMenu.Fill(), "Int") > 0)
             TestRunner.True("ShellMenu.submenu handler", shellMenu.HandlerLevel >= 2)
@@ -1264,14 +1265,23 @@ Func | PTTools | PT Tools (AHK)=99
                 return {Text: text, KeepWindow: flags}
             }
             label := I18n.T("Action.ShellMenu") "|"
+            feature := AppSettings.Feature("ContextMenu"), wasEnabled := feature["Enabled"]
+            feature["Enabled"] := 0
+            eq("off by default: not offered", InStr(titles(ResultActions.ListFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.txt"}))).Text, label), 0)
+            feature["Enabled"] := 1
             single := titles(ResultActions.ListFor(ResultItem("a", "", {Kind: "file", Arg: root "\a.txt"})))
             eq("file: offered, keeps the window", InStr(single.Text, label) > 0 && single.KeepWindow = label, true)
             eq("folder: offered", InStr(titles(ResultActions.ListFor(ResultItem("sub", "", {Kind: "folder", Arg: root "\sub"}))).Text, label) > 0, true)
             eq("missing file: not offered", InStr(titles(ResultActions.ListFor(ResultItem("x", "", {Kind: "file", Arg: root "\gone.txt"}))).Text, label), 0)
-            eq("store app: not offered", InStr(titles(ResultActions.ListFor(ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"}))).Text, label), 0)
+            eq("store app: offered", InStr(titles(ResultActions.ListFor(ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"}))).Text, label) > 0, true)
+            eq("custom command with %Temp%: offered", InStr(titles(ResultActions.ListFor(ResultItem("a", "", {Kind: "file", Arg: "%Temp%\ALTRun-shell-menu-test\a.txt"}))).Text, label) > 0, true)
+            eq("custom command by program name: offered", InStr(titles(ResultActions.ListFor(ResultItem("Notepad", "", {Kind: "file", Arg: "notepad"}))).Text, label) > 0, true)
+            eq("command line: not offered", InStr(titles(ResultActions.ListFor(ResultItem("ping", "", {Kind: "file", Arg: "ping -t localhost"}))).Text, label), 0)
             eq("marked in one folder: offered", InStr(titles(ResultActions.ListForMany([root "\a.txt", root "\b.txt"])).Text, label) > 0, true)
             eq("marked in two folders: not offered", InStr(titles(ResultActions.ListForMany([root "\a.txt", root "\sub\c.txt"])).Text, label), 0)
-        } finally
+        } finally {
+            try feature["Enabled"] := wasEnabled
             try DirDelete(root, true)
+        }
     }
 }

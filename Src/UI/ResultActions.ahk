@@ -116,9 +116,16 @@ class ResultActions {
 
     ; The Windows (Explorer) context menu of the file(s), with the items other programs add (7-Zip, Git...); several only when in one folder.
     ; Shown over the search window at the selected row (KeepWindow); Shift+Enter shows Explorer's extended items too
+    ; Off by default (Preferences → Features). Targets are resolved first (custom commands may say %ProgramFiles%\..., A_ScriptDir\...)
     static _ShellMenuAction(list, paths, icon) {
-        if ShellContextMenu.CanShow(paths)
-            list.Push(ResultItem(I18n.T("Action.ShellMenu"), "", {Icon: icon, KeepWindow: true, OnRun: (source) => SearchWindow.ShellMenu(source, paths)}))
+        try enabled := AppSettings.Feature("ContextMenu")["Enabled"]
+        if !(IsSet(enabled) && enabled)
+            return
+        resolved := []
+        for target in paths
+            resolved.Push(ActionCatalog.IsShellItem(target) ? target : Path.Resolve(target))
+        if ShellContextMenu.CanShow(resolved)
+            list.Push(ResultItem(I18n.T("Action.ShellMenu"), "", {Icon: icon, KeepWindow: true, OnRun: (source) => SearchWindow.ShellMenu(source, resolved)}))
     }
 
     ;---------------------------------------------------------------------------

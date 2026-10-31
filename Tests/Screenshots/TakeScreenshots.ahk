@@ -42,7 +42,7 @@ class Shots {
             ["search",      "Light", "", () => Shots.Search("re")],
             ["pinyin",      "Light", "", () => Shots.Search("jsb")],
             ["actions",     "Light", "", () => Shots.Actions("website")],
-            ["shellmenu",   "Light", "", () => Shots.ShellMenu()],              ; Wiki: the Windows context menu from the actions panel
+            ["shellmenu",   "Light", "", () => Shots.ShellMenu(), () => Shots.EnableContextMenu()],   ; Wiki: the Windows context menu from the actions panel
             ["files",       "Light", "", () => Shots.FileMode("report")],
             ["filetype",    "Light", "", () => Shots.TypeSearch("doc report")],   ; search by type: documents only (doc in TypeFilters)
             ["calculator",  "Light", "", () => Shots.Search("(200+100)*2")],     ; 600: with the two rows of structural calculation
@@ -707,6 +707,15 @@ class Shots {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
         settings["Features"]["FileSearch"]["InDefaultResults"] := 1
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; The action panel's "Windows Context Menu" is off by default
+    static EnableContextMenu() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["Features"]["ContextMenu"] := Map("Enabled", 1)
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

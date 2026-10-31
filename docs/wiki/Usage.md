@@ -135,7 +135,7 @@ File actions (like Listary):
 - **Copy File / Cut File**: puts the file itself on the clipboard; press `Ctrl+V` in TC or Explorer to paste it (a cut file is moved when pasted).
 - **Copy / Move to Current Folder in TC**: the target is the folder currently open in the frontmost Total Commander (or Explorer) window; not shown when the file is already in that folder. Uses Windows' own copy, with a progress window, a prompt when names clash, and undo.
 - **Move to Recycle Bin**: Windows asks first, and you can restore it from the Recycle Bin.
-- **Windows Context Menu**: the menu Explorer shows when you right-click the file, with the items other programs add (7-Zip, Git, antivirus, Send to...). It opens at the selected row; the search window closes once you choose an item, and `Esc` goes back to the action panel. Choose it with `Shift+Enter` for Explorer's extended items too (as with `Shift`+right-click), for example "Copy as path". Marked files get it too when they are all in the same folder.
+- **Windows Context Menu** (off by default: turn it on in Preferences → Features): the menu Explorer shows when you right-click the file, with the items other programs add (7-Zip, Git, antivirus, Send to...); applications and custom commands that point to a file or folder have it too (Store apps: Pin to Start, Uninstall...). It opens at the selected row; the search window closes once you choose an item, and `Esc` goes back to the action panel. Choose it with `Shift+Enter` for Explorer's extended items too (as with `Shift`+right-click), for example "Copy as path". Marked files get it too when they are all in the same folder.
 
 ![Windows context menu](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/shellmenu.png)
 

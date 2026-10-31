@@ -26,13 +26,14 @@ class ShellContextMenu {
     static _active := ""                                                    ; the menu being shown (gets the menu messages)
     Paths := [], Menu := 0, Owner := 0, Handler := 0, HandlerLevel := 0, _pidls := [], _folder := 0, _contextMenu := 0
 
-    ; Whether the paths can share one context menu: at least one, all exist, all in the same folder (drive roots each on their own)
+    ; Whether the paths can share one context menu: at least one, all exist, all in the same folder (drive roots each on their own).
+    ; Apps in shell:AppsFolder (Store apps, as the Start menu lists them) count as existing: their menu has Pin to Start, Uninstall...
     static CanShow(paths) {
         if !(paths is Array) || !paths.Length
             return false
         parent := ""
         for item in paths {
-            if !FileExist(item)
+            if !(FileExist(item) || RegExMatch(item, "i)^shell:AppsFolder\\."))
                 return false
             folder := ShellContextMenu._Parent(item)
             if (A_Index = 1)

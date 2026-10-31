@@ -1012,8 +1012,24 @@ class SearchWindow {
         SearchWindow._keepOpen := true
         contextMenu.Show(x, y)
         SearchWindow._keepOpen := false
-        if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
+        SearchWindow.AfterMenu()
+    }
+
+    ; After a menu over the window closed without running anything. AHK shows its menus from its hidden main window, so the search
+    ; window is no longer active: closed with Esc (the focus is still in ALTRun) it gets the focus back; closed by clicking another window,
+    ; that window keeps the focus and the search window hides as on any focus loss ("hide when it loses focus"). Before, it was
+    ; activated again, which Windows may refuse then: the window stayed visible but inactive, and with no further focus loss to see,
+    ; never hid
+    static AfterMenu() {
+        if (!SearchWindow.IsVisible() || WinActive("ahk_id " SearchWindow.Gui.Hwnd))
+            return
+        foreground := DllCall("GetForegroundWindow", "Ptr"), pid := 0
+        if foreground
+            DllCall("GetWindowThreadProcessId", "Ptr", foreground, "UInt*", &pid)
+        if (!foreground || pid = DllCall("GetCurrentProcessId", "UInt")) {
             try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
+        } else if AppSettings.General["HideOnDeactivate"]
+            SearchWindow.Hide(Logger.Enabled ? "deactivated by " SearchWindow.ForegroundText() " (menu closed)" : "")
     }
 
     ; While a menu shows, AHK can't handle NM_CUSTOMDRAW and the list would paint in the default style (blue selection bar):
@@ -1029,18 +1045,19 @@ class SearchWindow {
     ; at the selected item (Shift: Explorer's extended items too). The window closes once an item is chosen, before it runs (an Open
     ; or a dialog comes to the front); closing the menu without choosing goes back to the window as it was
     static ShellMenu(source, paths) {
-        shellMenu := ShellContextMenu(paths)
+        try shellMenu := ShellContextMenu(paths)
+        catch as e {                                                        ; e.g. the file was deleted meanwhile, or a shell item Windows can't parse
+            Logger.Warn("SearchWindow: no context menu for " paths[1] " - " e.Message)
+            return App.Notify(I18n.T("Action.ShellMenu.None"))
+        }
         query := SearchWindow._CurrentQuery()
         SearchWindow._SelectedRowPoint(&x, &y)
         SearchWindow._PaintForMenu()                                        ; also lets the menu messages (submenus) through while the menu shows
         SearchWindow._keepOpen := true
         try id := shellMenu.Track(SearchWindow.Gui.Hwnd, x, y, GetKeyState("Shift"))
         finally SearchWindow._keepOpen := false
-        if !id {
-            if (SearchWindow.IsVisible() && !WinActive("ahk_id " SearchWindow.Gui.Hwnd))
-                try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
-            return
-        }
+        if !id
+            return SearchWindow.AfterMenu()
         Knowledge.Record(query, source.Uid)
         RecentProvider.Remember(source)
         Usage.CountItem(source)

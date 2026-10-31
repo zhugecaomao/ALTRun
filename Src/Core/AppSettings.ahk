@@ -429,6 +429,7 @@ class AppSettings {
                 ),
                 "Help", Map("Enabled", 1),                                  ; typing ? shows every input syntax and shortcut
                 "LargeType", Map("Enabled", 0),                             ; "Large Type" with Ctrl+L / in the actions panel (off for new installs; older settings files keep it on)
+                "ContextMenu", Map("Enabled", 0),                           ; "Windows Context Menu" in the actions panel of files and folders
                 "Bookmarks", Map(
                     "Enabled"         , 1,
                     "Keyword"         , "bm",                               ; "bm word" searches bookmarks only

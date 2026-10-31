@@ -203,6 +203,11 @@ See [File search](File-Search#settings).
 |---|---|---|
 | Enabled | 0 | `Ctrl+L` and "Show in Large Type" in the action panel. Off on new installations; upgrades from before 2026.10.19.15 keep it on |
 
+### ContextMenu (Windows context menu)
+| Key | Default | Description |
+|---|---|---|
+| Enabled | 0 | "Windows Context Menu" in the action panel of files, folders, applications and custom commands: the menu Explorer shows on right-click, see [Action panel](Usage#action-panel) |
+
 ### System (system commands)
 | Key | Default | Description |
 |---|---|---|
