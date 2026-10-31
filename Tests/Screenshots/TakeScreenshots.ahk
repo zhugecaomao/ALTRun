@@ -123,6 +123,7 @@ class Shots {
         Shots.Log("screen " A_ScreenWidth " x " A_ScreenHeight ", DPI " A_ScreenDPI)
         Shots.PrepareApp()
         Shots.PrepareDemoFiles()
+        Shots.PrepareAppIndex()
         Shots.ShowBackdrop()
         for scene in Shots.Scenes() {
             if ((wanted.Count && !wanted.Has(scene[1])) || skipped.Has(scene[1]) || (within.Count && !within.Has(scene[1])))
@@ -173,6 +174,22 @@ class Shots {
             . "RunWait('ping ' A_Args[1])`n", Shots.AppDir "\Scripts\Ping.ahk", "UTF-8")
         FileAppend("# @altrun.title    Today's date`n# @altrun.keyword  today`n# @altrun.mode     silent`nGet-Date -Format 'dddd, d MMMM yyyy'`n"
             , Shots.AppDir "\Scripts\Today.ps1", "UTF-8")
+    }
+
+    ; Builds the app index once (Data\AppIndex.json) with ALTRun started in the background: each scene then loads it at start-up.
+    ; Without it every scene scanned the apps 3 s after start-up (the cache isn't written before a scene closes ALTRun), and with
+    ; the short wait in Launch the first results missed the apps (2026-10: "re" without Remote Desktop, "jsb" without Notepad)
+    static PrepareAppIndex() {
+        indexFile := Shots.AppDir "\Data\AppIndex.json"
+        Shots.WriteSettings("Light")
+        Run('"' A_AhkPath '" "' Shots.AppDir '\ALTRun.ahk" -Startup', Shots.AppDir, , &pid)
+        deadline := A_TickCount + 30000
+        while (!FileExist(indexFile) && A_TickCount < deadline)
+            Sleep(250)
+        Sleep(500)                                                          ; let the write finish (SafeFile renames a finished temporary file, but just in case)
+        try ProcessClose(pid)
+        ProcessWaitClose(pid, 5)
+        Shots.Log(FileExist(indexFile) ? "app index ready (" FileGetSize(indexFile) " bytes)" : "app index not written: scenes may miss apps")
     }
 
     ; generic sample folders
