@@ -869,7 +869,7 @@ class QuickSwitch {
             className := ""
             try className := WinGetClass("ahk_id " hwnd)
             switch className {
-                case "TTOTAL_CMD"   : return {Path: QuickSwitch.TotalCmdFolder(hwnd), Tag: "Total Commander", Hwnd: hwnd}
+                case "TTOTAL_CMD"   : return {Path: QuickSwitch.TotalCmdFolder(hwnd), Tag: "TC", Hwnd: hwnd}
                 case "dopus.lister" : return {Path: QuickSwitch.DOpusFolder(hwnd), Tag: "Directory Opus", Hwnd: hwnd}
                 case "CabinetWClass": return {Path: QuickSwitch.ExplorerFolder(hwnd), Tag: I18n.T("QuickSwitch.TagExplorer"), Hwnd: hwnd}
             }
