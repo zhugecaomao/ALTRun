@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.40]
+
+测试版。
+
+Test build.
+
+### 改进
+- 用 Everything 搜索文件少问一次: 第一次查询没有被截断时 (结果少于上限), 符合的文件夹已经都在里面, 不再单独查文件夹 (每次查询 Everything 要 16–22 ms)。Everything 正忙、没有回复时不再接着查第二次, 等待上限从 1 秒改为 0.5 秒, 最坏的情况从 2 秒降到 0.5 秒
+
 ## [2026.10.26.39]
 
 测试版。
@@ -1301,7 +1310,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.39...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.40...HEAD
+[2026.10.26.40]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.39...2026.10.26.40
 [2026.10.26.39]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.38...2026.10.26.39
 [2026.10.26.38]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.37...2026.10.26.38
 [2026.10.26.37]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.36...2026.10.26.37

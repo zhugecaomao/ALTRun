@@ -300,18 +300,21 @@ class FileSearchProvider {
             fetch := preferPrefix ? limit * 4 : Max(limit, FileSearchProvider.EverythingFetch)
             scoreNeedle := FileSearchProvider.ScoreNeedle(needle)
             seen := Map()
-            for item in Everything.Query(Trim(search), fetch, Everything.SORT_DATE_MODIFIED_DESC) {
+            for item in Everything.Query(Trim(search), fetch, Everything.SORT_DATE_MODIFIED_DESC, FileSearchProvider.EverythingTimeoutMs) {
                 SplitPath(item.Path, &name)
                 found.Push({Path: item.Path, IsFolder: item.IsFolder, Score: FileSearchProvider.NameScore(scoreNeedle, name)})
                 seen[StrLower(item.Path)] := true
             }
-            if (Everything.LastProblem != "")
+            answered := (Everything.LastProblem = ""), complete := answered && found.Length < fetch
+            if !answered
                 Logger.Warn("FileSearch: Everything " Everything.LastProblem)
             ; When files and folders are searched together and many files share the name (e.g. a "plans" folder holding hundreds of
-            ; plans_xxx.dwg), the first fetch results by modification time may all be files and the folder of that exact name is left out: fetch folders separately
-            if (!IsObject(scope) && !scope && !RegExMatch(term, "i)(^|\s)(folder|file|files|ext):")) {   ; not when folder: / ext: etc. is already given
+            ; plans_xxx.dwg), the first fetch results by modification time may all be files and the folder of that exact name is left out: fetch folders separately.
+            ; Only then: with fewer results than asked for, every match is there already, folders included (it is the same search); and
+            ; when Everything didn't answer (busy), not a second wait. Each query takes Everything 16-22 ms (1.4 / 1.5 on a CI runner)
+            if (answered && !complete && !IsObject(scope) && !scope && !RegExMatch(term, "i)(^|\s)(folder|file|files|ext):")) {   ; not when folder: / ext: etc. is already given
                 folderSearch := (preferPrefix ? "startwith:" : "") "folder:" FileSearchProvider._EverythingTerm(term) " " options["EverythingFilter"]
-                for item in Everything.Query(Trim(folderSearch), 50, Everything.SORT_DATE_MODIFIED_DESC) {
+                for item in Everything.Query(Trim(folderSearch), 50, Everything.SORT_DATE_MODIFIED_DESC, FileSearchProvider.EverythingTimeoutMs) {
                     if seen.Has(StrLower(item.Path))
                         continue
                     SplitPath(item.Path, &name)
@@ -332,6 +335,10 @@ class FileSearchProvider {
     }
 
     static EverythingFetch := 300
+    ; How long a search waits for Everything (a query normally takes 16-22 ms). A busy Everything (building its index) or a very slow
+    ; search (regex / path: over millions of files) gets this long, then the results show without its files (logged). 1 s before,
+    ; twice per keystroke; regex searches can take a few hundred milliseconds, so not shorter
+    static EverythingTimeoutMs := 500
 
     ; Results from Everything are scored again by file name (for sorting). With pinyin in Everything (the pinyin option of 1.5, IbEverythingExt for 1.4),
     ; "测试.bat" found by "cs" has no "cs" in its name: score it again by pinyin initials, 5 points below a direct match of the same tier.
