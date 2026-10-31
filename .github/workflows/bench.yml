@@ -87,8 +87,10 @@ jobs:
         run: |
           $root = (Get-Location).Path
           $baseline = if ($env:BASELINE) { $env:BASELINE } else { gh api repos/${{ github.repository }}/releases/latest --jq .tag_name }
-          git worktree add v-baseline $baseline | Out-Null
-          if ($env:CANDIDATE) { git worktree add v-candidate $env:CANDIDATE | Out-Null; $candidateDir = "$root\v-candidate" } else { $candidateDir = $root }
+          # detached: a branch checked out here already (e.g. main when running on main) can't be checked out again
+          git worktree add --detach v-baseline $baseline | Out-Null
+          if ($env:CANDIDATE) { git worktree add --detach v-candidate $env:CANDIDATE | Out-Null; $candidateDir = "$root\v-candidate" } else { $candidateDir = $root }
+          if (-not (Test-Path "$root\v-baseline\ALTRun.ahk") -or ($env:CANDIDATE -and -not (Test-Path "$candidateDir\ALTRun.ahk"))) { throw "could not check out the versions" }
           foreach ($v in @(@{name = "baseline"; src = "$root\v-baseline"}, @{name = "candidate"; src = $candidateDir})) {
             $app = "C:\Bench\$($v.name)"
             New-Item -ItemType Directory $app -Force | Out-Null
