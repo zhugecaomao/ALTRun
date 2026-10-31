@@ -86,8 +86,8 @@ class ResultRows {
         hdc := NumGet(lParam, A_PtrSize = 8 ? 32 : 16, "Ptr")
         row := NumGet(lParam, A_PtrSize = 8 ? 56 : 36, "UPtr")             ; dwItemSpec, 0-based
         ; Take this row's result before painting: another thread may slip in while painting (e.g. hiding the window after running a command, or a new search from clearing the box)
-        ; and swap in fewer results with SetResults; reading SearchWindow.Results by index afterwards would be out of range ("Invalid index")
-        results := SearchWindow.Results, index := SearchWindow.Offset + row + 1
+        ; and swap in fewer results with SetResults; reading SearchWindow.Session.Results by index afterwards would be out of range ("Invalid index")
+        results := SearchWindow.Session.Results, index := SearchWindow.Session.Offset + row + 1
         if (index > results.Length) {
             SearchWindow._LogBlankRow(row + 1, results.Length)
             return CDRF_SKIPDEFAULT
@@ -96,7 +96,7 @@ class ResultRows {
 
         rect := Buffer(16, 0)                                               ; left = LVIR_BOUNDS (0)
         SendMessage(0x100E, row, rect.Ptr, SearchWindow.List.Hwnd)          ; LVM_GETITEMRECT
-        ResultRows._PaintRow(hdc, rect, item, index = SearchWindow.Selected, row + 1)
+        ResultRows._PaintRow(hdc, rect, item, index = SearchWindow.Session.Selected, row + 1)
         return CDRF_SKIPDEFAULT
     }
 
@@ -124,7 +124,7 @@ class ResultRows {
             DllCall("FillRect", "Ptr", hdc, "Ptr", rect, "Ptr", selected ? gdi["Selected"] : gdi["Background"])
         }
         DllCall("SetBkMode", "Ptr", hdc, "Int", 1)                          ; TRANSPARENT
-        if (SearchWindow.Mode = "results" && SearchWindow.IsMarked(item)) {  ; marked: a vertical bar in the highlight color on the left
+        if (SearchWindow.Session.Mode = "results" && SearchWindow.IsMarked(item)) {  ; marked: a vertical bar in the highlight color on the left
             mark := Buffer(16)
             NumPut("Int", left + Win.Scale(2), "Int", top + Win.Scale(4), "Int", left + Win.Scale(6), "Int", bottom - Win.Scale(4), mark)
             brush := DllCall("CreateSolidBrush", "UInt", gdi["HighlightColor"], "Ptr")
@@ -145,10 +145,10 @@ class ResultRows {
         oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["ShortcutFont"], "Ptr")
         textRight := right - pad - shortcutW - Win.Scale(8)
 
-        if (visibleRow <= 9 && SearchWindow.Mode = "results") {             ; Ctrl+N hint on the right
+        if (visibleRow <= 9 && SearchWindow.Session.Mode = "results") {             ; Ctrl+N hint on the right
             DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedShortcutColor"] : gdi["ShortcutColor"])
             ResultRows.DrawText(hdc, "Ctrl+" visibleRow, right - pad - shortcutW, top, right - pad, bottom, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX)
-        } else if (SearchWindow.Mode = "actions") {                         ; actions panel: shortcut or description on the right, with room for its actual width
+        } else if (SearchWindow.Session.Mode = "actions") {                         ; actions panel: shortcut or description on the right, with room for its actual width
             hintW := 0, gap := Win.Scale(12)
             if (item.Subtitle != "") {
                 hintW := ResultRows.TextWidth(hdc, item.Subtitle)
@@ -164,9 +164,9 @@ class ResultRows {
 
         DllCall("SelectObject", "Ptr", hdc, "Ptr", gdi["TitleFont"])
         DllCall("SetTextColor", "Ptr", hdc, "UInt", selected ? gdi["SelectedTitleColor"] : gdi["TitleColor"])
-        hasSubtitle := (item.Subtitle != "" && SearchWindow.Mode = "results")
+        hasSubtitle := (item.Subtitle != "" && SearchWindow.Session.Mode = "results")
         middle := top + Round(rowH * 0.54)
-        ranges := (SearchWindow.Mode = "results") ? ResultRows.HighlightRanges(item) : []
+        ranges := (SearchWindow.Session.Mode = "results") ? ResultRows.HighlightRanges(item) : []
         if hasSubtitle
             ResultRows.DrawTitle(hdc, item.Title, ranges, textLeft, top, textRight, middle, DT_BOTTOM | DT_SINGLELINE | DT_NOPREFIX, selected)
         else
@@ -189,7 +189,7 @@ class ResultRows {
 
     ; Positions to highlight in the title, cached on the result per search text (not recomputed for repaints or selection moves)
     static HighlightRanges(item) {
-        text := SearchWindow.HighlightText
+        text := SearchWindow.Session.HighlightText
         if (Trim(text) = "" || item.Title = "")
             return []
         if (!item.HasOwnProp("HighlightFor") || item.HighlightFor !== text)

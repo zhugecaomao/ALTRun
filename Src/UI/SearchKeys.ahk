@@ -111,9 +111,9 @@ class SearchKeys {
         ctrl  := GetKeyState("Ctrl")
         shift := GetKeyState("Shift")
         alt   := (msg = 0x104) || GetKeyState("Alt")
-        actions := SearchWindow.Mode = "actions"
-        if (SearchWindow._restoredSelection && !SearchKeys.AllTextSelected())   ; the caret moved off the restored search: editing it keeps file search mode
-            SearchWindow._restoredSelection := false
+        actions := SearchWindow.Session.Mode = "actions"
+        if (SearchWindow.Session.RestoredSelection && !SearchKeys.AllTextSelected())   ; the caret moved off the restored search: editing it keeps file search mode
+            SearchWindow.Session.RestoredSelection := false
 
         switch vk {
             case 0x0D:                                                      ; Enter
@@ -122,7 +122,7 @@ class SearchKeys {
                 SearchWindow._Execute(ctrl ? "ctrl" : alt ? "alt" : "")
                 return 0
             case 0x1B:                                                      ; Esc
-                if (actions && SearchWindow._actionsOnly)
+                if (actions && SearchWindow.Session.ActionsOnly)
                     SearchWindow.Hide("Esc")
                 else if actions
                     SearchWindow._CloseActions()
@@ -134,10 +134,10 @@ class SearchKeys {
                     return
                 ; with all text selected (the restored last search) a space would replace it, so treat it as an empty search box;
                 ; over a restored file search: a new, empty file search
-                if (!shift && !actions && SearchKeys.AllTextSelected() && (!SearchWindow.FileMode || SearchWindow._restoredSelection)) {
-                    SearchWindow._restoredSelection := false
+                if (!shift && !actions && SearchKeys.AllTextSelected() && (!SearchWindow.Session.FileMode || SearchWindow.Session.RestoredSelection)) {
+                    SearchWindow.Session.RestoredSelection := false
                     SearchWindow._SetInput("")
-                    if SearchWindow.FileMode
+                    if SearchWindow.Session.FileMode
                         return 0
                     if SearchWindow._CanEnterFileMode() {
                         SearchWindow._SetFileMode(true)
@@ -193,7 +193,7 @@ class SearchKeys {
                 return
             case 0x25:                                                      ; ←
                 if (actions && SearchWindow.Input.Value = "") {
-                    if SearchWindow._actionsOnly
+                    if SearchWindow.Session.ActionsOnly
                         SearchWindow.Hide()
                     else
                         SearchWindow._CloseActions()
@@ -223,14 +223,14 @@ class SearchKeys {
                 return
             case 0x08:                                                      ; Backspace
                 if (actions && SearchWindow.Input.Value = "") {
-                    if SearchWindow._actionsOnly
+                    if SearchWindow.Session.ActionsOnly
                         SearchWindow.Hide()
                     else
                         SearchWindow._CloseActions()
                     return 0
                 }
                 ; pressed again after emptying the box in file search mode, or with the caret at the start: back to normal search
-                if (SearchWindow.FileMode && (SearchWindow.Input.Value = "" || !actions && SearchKeys.CaretAtStart())) {
+                if (SearchWindow.Session.FileMode && (SearchWindow.Input.Value = "" || !actions && SearchKeys.CaretAtStart())) {
                     SearchWindow._SetFileMode(false)
                     return 0
                 }

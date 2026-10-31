@@ -44,6 +44,7 @@
 #Include %A_ScriptDir%\..\Src\UI\ThemePreview.ahk
 #Include %A_ScriptDir%\..\Src\UI\NavIcons.ahk
 #Include %A_ScriptDir%\..\Src\UI\IconCache.ahk
+#Include %A_ScriptDir%\..\Src\UI\SearchSession.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchWindow.ahk
 #Include %A_ScriptDir%\..\Src\UI\ResultRows.ahk
 #Include %A_ScriptDir%\..\Src\UI\SearchStatusBar.ahk

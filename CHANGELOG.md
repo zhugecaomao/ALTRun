@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.34]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内部整理 (使用上没有变化): 搜索窗口的状态 (模式、结果、选中行、操作面板、标记、历史记录、保留上一次搜索) 从窗口代码里分出来, 放进单独的 `SearchSession`。这是把搜索逻辑和界面分开的第 1 步, 之后在它上面做后台搜索 (Everything 忙的时候输入不卡)
+
 ## [2026.10.26.33]
 
 测试版。
@@ -1247,7 +1256,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.33...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.34...HEAD
+[2026.10.26.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.33...2026.10.26.34
 [2026.10.26.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.32...2026.10.26.33
 [2026.10.26.32]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.31...2026.10.26.32
 [2026.10.26.31]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.30...2026.10.26.31
