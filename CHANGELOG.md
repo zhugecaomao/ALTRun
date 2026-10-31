@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.33]
+
+测试版。
+
+Test build.
+
+### 改进
+- 调试日志 (打开 "保存日志" 时) 多记录一些按键信息, 用来查 "用 Enter 执行后 Total Commander 弹出属性框" 的原因: 按 Enter 执行时是第一次按下还是自动重复、当时按着哪些键; 之后 2 秒内 Enter 和 Alt 每次按下 / 松开的时间和当时的前台窗口 (只记录, 不拦截按键); 退出和重新启动时的按键和前台窗口
+- 新的诊断工具 `Tests/Tools/KeyWatch.ahk` (不随程序发布): 单独运行, ALTRun 退出、重启时也照常记录; 只记 Enter、Alt、空格、Esc、Ctrl、Shift、Win 等几个键的按下 / 松开 (不记字母和数字), 是键盘按的还是程序发的, 以及每次前台窗口的变化, 写到 `%TEMP%\KeyWatch.log`
+
 ## [2026.10.26.30]
 
 测试版。
@@ -1216,7 +1226,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.30...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.33...HEAD
+[2026.10.26.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.32...2026.10.26.33
 [2026.10.26.30]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.29...2026.10.26.30
 [2026.10.26.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...2026.10.26.29
 [2026.10.26.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...2026.10.26.28

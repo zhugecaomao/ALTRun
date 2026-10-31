@@ -1697,4 +1697,14 @@ class SearchWindowTests {
         Hud.Hide()
         eq("hidden", Hud.Gui, "")
     }
+    ; The Enter trace for the debug log: notes the time, watches without blocking, stops by itself
+    static EnterTrace() {
+        before := A_TickCount
+        SearchKeys.TraceEnter(0, 0x100)
+        TestRunner.True("EnterTrace.time noted", SearchKeys.EnterAt >= before)
+        TestRunner.Equal("EnterTrace.watching", SearchKeys._trace.InProgress, 1)
+        SearchKeys._trace.Stop(), SetTimer(SearchKeys._traceStop, 0)
+        TestRunner.Equal("EnterTrace.stopped", SearchKeys._trace.InProgress, 0)
+        SearchKeys.EnterAt := 0
+    }
 }
