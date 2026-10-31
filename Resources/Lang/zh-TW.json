@@ -552,7 +552,7 @@
   "Prefs.SelectionHotkey": "選取內容的操作",
   "Prefs.SelectionHotkey.Desc": "在任何程式裡選取文字、檔案或網址後按下, 直接顯示它的操作: 文字可以網頁搜尋、轉換大小寫 / 簡繁、存成片段; 檔案可以複製路徑、在此處開啟終端機等。<a href=\"{1}\">查看全部操作</a>",
   "Prefs.HotkeySides": "熱鍵區分左右 Ctrl / Alt / Shift / Win",
-  "Prefs.HotkeySides.Desc": "之後錄製的熱鍵會記住按的是左邊還是右邊: 例如 LAlt+Space 只有左 Alt 能觸發, 右 Alt+空白鍵可以留給其他軟體。已經設定好的熱鍵不變。",
+  "Prefs.HotkeySides.Desc": "之後錄製的熱鍵會記住按的是左邊還是右邊: 例如 LAlt+Space 只有左 Alt 能觸發, 右 Alt+空白鍵可以留給其他軟體。已經設定好的熱鍵不變。以系統管理員身分執行的視窗在前面時, 這種熱鍵不起作用。",
   "Prefs.SendToMenu": "新增到檔案總管 '傳送到' 選單",
   "Prefs.SendToMenu.Desc": "檔案總管裡右鍵 → 傳送到 → ALTRun 新增自訂指令: 選取 1 個時彈出編輯對話框, 選取多個時全部直接新增",
   "Prefs.SettingsPages": "Windows 設定頁面",

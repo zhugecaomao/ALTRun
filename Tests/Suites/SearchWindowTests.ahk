@@ -1697,4 +1697,22 @@ class SearchWindowTests {
         Hud.Hide()
         eq("hidden", Hud.Gui, "")
     }
+    ; The Enter trace for the debug log: notes the time, watches without blocking, stops by itself
+    static EnterTrace() {
+        before := A_TickCount
+        SearchKeys.TraceEnter(0, 0x100)
+        TestRunner.True("EnterTrace.time noted", SearchKeys.EnterAt >= before)
+        TestRunner.Equal("EnterTrace.watching", SearchKeys._trace.InProgress, 1)
+        SearchKeys._trace.Stop(), SetTimer(SearchKeys._traceStop, 0)
+        TestRunner.Equal("EnterTrace.stopped", SearchKeys._trace.InProgress, 0)
+        SearchKeys.EnterAt := 0
+    }
+
+    ; The Start menu / Windows Search are closed before showing (a left / right hotkey comes through the hook, which doesn't close them, #303)
+    static StartMenuProcesses() {
+        for name in ["StartMenuExperienceHost.exe", "SearchHost.exe", "SearchApp.exe", "ShellExperienceHost.exe", "searchhost.EXE"]
+            TestRunner.Equal("StartMenu." name, SearchWindow.IsStartMenu(name), true)
+        for name in ["explorer.exe", "notepad.exe", "TOTALCMD64.EXE", ""]
+            TestRunner.Equal("StartMenu.not " name, SearchWindow.IsStartMenu(name), false)
+    }
 }

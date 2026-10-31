@@ -44,7 +44,7 @@ In Preferences → Keyboard, set "Switch to English" to "English (US) keyboard" 
 - Some programs (games, Remote Desktop, programs running as administrator) don't receive simulated input
 
 ### Caps Lock and other features don't work in windows running as administrator
-Windows doesn't let programs with normal rights control windows running as administrator. While such a window is in front, switching the input method with Caps Lock, double-tapping Ctrl, snippet expansion, pasting a result into that window and Quick Switch for its dialogs don't work; showing ALTRun, searching and opening programs work as usual.
+Windows doesn't let programs with normal rights control windows running as administrator. While such a window is in front, switching the input method with Caps Lock, double-tapping Ctrl, snippet expansion, pasting a result into that window and Quick Switch for its dialogs don't work; showing ALTRun, searching and opening programs work as usual. A hotkey that tells left and right apart (such as `LAlt+Space`) doesn't work there either: Windows' system hotkeys can't tell the sides apart, so it goes through the keyboard hook; the same hotkey without a side (`Alt+Space`) does work.
 
 **Just switching the input method with Caps Lock**: tick "Also in windows running as administrator" in Preferences → Keyboard. Only a small helper that handles Caps Lock runs as administrator; ALTRun itself keeps normal rights, without the side effects below. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method).
 
