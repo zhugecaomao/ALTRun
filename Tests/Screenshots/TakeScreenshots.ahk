@@ -8,7 +8,7 @@
 ;   AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [output folder] [scene... | -scene...]
 ;
 ; The output folder defaults to docs\images\screenshots; no scene names = all scenes; "-scene" = all but these;
-; "normal-scale" / "-normal-scale" = the scenes in Shots.NormalScale / all but them.
+; "normal-scale" / "-normal-scale" = the scenes in Shots.NormalScale / all but them; "themes" / "-themes" = the theme-... scenes / all but them.
 ; The "demo" scenes aren't single shots: every frame of a sequence goes to %Temp%\ALTRunDemoFrames\<scene> (frames.txt, each line: file name Tab ms shown),
 ; and MakeDemo.py (run by MakeDemos.ps1) turns each folder into the animation <scene>.png: demo.png on the README front page, demo-quickswitch.png etc. for the features. RoundCorners.py adds the rounded corners; before the shots SetDisplay.ps1 sets the screen to
 ; 1920 x 1080 at 150% scaling (see screenshots.yml), and the coordinates below scale by Shots.Scale. The Preferences and Quick Switch shots
@@ -36,6 +36,15 @@ class Shots {
     static NormalScale := ["quickswitch", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
+
+    ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
+    static Themes() {
+        names := []
+        for scene in Shots.Scenes()
+            if (SubStr(scene[1], 1, 6) = "theme-")
+                names.Push(scene[1])
+        return names
+    }
 
     ; scene name -> [theme, start arguments, function, function preparing data before start-up (optional)]
     static Scenes() {
@@ -116,7 +125,7 @@ class Shots {
             name := args[A_Index + 1]
             target := (SubStr(name, 1, 1) = "-") ? skipped : (SubStr(name, 1, 1) = "=") ? within : wanted
             name := LTrim(name, "-=")
-            for scene in (name = "normal-scale") ? Shots.NormalScale : [name]
+            for scene in (name = "normal-scale") ? Shots.NormalScale : (name = "themes") ? Shots.Themes() : [name]
                 target[scene] := true
         }
         DirCreate(Shots.OutDir)

@@ -1,5 +1,5 @@
 # Makes the UI screenshots for the README / Wiki on Windows (Tests\Screenshots\TakeScreenshots.ahk),
-# uploads them as an artifact; on branches other than main it commits the screenshots back to the branch.
+# uploads the changed ones as artifacts (one per group); on branches other than main it commits them back to the branch.
 # Run by hand, "scenes" can name only the scenes to shoot (e.g. "prefs-general shellmenu"); empty = all of them.
 name: Screenshots
 
@@ -42,10 +42,29 @@ jobs:
             echo "shoot=true" >> "$GITHUB_OUTPUT"
           fi
 
+  # Three runners in parallel, each with its own display scale: the themes (150%), the other search window scenes (150%) and the
+  # Preferences / Quick Switch scenes (100%, Shots.NormalScale). Each scene starts its own ALTRun, so the groups don't depend on each other.
+  # Each uploads the screenshots it changed; "commit" puts them together and commits them once
   screenshots:
     needs: changes
     if: needs.changes.outputs.shoot == 'true'
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - group: themes                                  # only = the group's scenes, skip = scenes left to the other groups
+            scale: 150
+            only: themes
+            skip: ""
+          - group: search
+            scale: 150
+            only: ""
+            skip: "normal-scale themes"
+          - group: normal-scale
+            scale: 100
+            only: normal-scale
+            skip: ""
     env:
       GH_TOKEN: ${{ github.token }}
       SCENES: ${{ inputs.scenes }}
@@ -62,9 +81,10 @@ jobs:
           gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
           Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
 
-      # Windows 11's short context menu has no "Send to": the "sendto" scene needs the full one, so the VM is set to always show it
+      # Windows 11's short context menu has no "Send to": the "sendto" scene (normal-scale group) needs the full one, so the VM is set to always show it
       # (only the current user's registry, only on the GitHub VM; takes effect after Explorer restarts). Screenshots go on as usual if it fails
       - name: Full context menu
+        if: matrix.group == 'normal-scale'
         continue-on-error: true
         shell: pwsh
         run: |
@@ -91,20 +111,23 @@ jobs:
           [Shots.Shell]::SHChangeNotify(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero)   # SHCNE_ASSOCCHANGED: refresh the icons
           Write-Host "Document icons registered from $icons"
 
-      # 1920 x 1080, 150% scaling, grayscale font smoothing: sharper screenshots (stays at 100% if it fails)
+      # 1920 x 1080; 150% (grayscale font smoothing: sharper screenshots) or 100% for Preferences and Quick Switch, which are too big at 150%
+      # (ClearType). Stays at 100% if it fails; SHOT_SCALE tells RoundCorners.py / MakeDemo.py the scale
       - name: Display settings for screenshots
         shell: pwsh
-        run: pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe
+        run: pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Scale ${{ matrix.scale }}
 
+      # With "scenes" given: those of them that belong to this group
       - name: Take screenshots
         shell: pwsh
         run: |
-          $only = @(-split $env:SCENES)                                       # called with & (not pwsh -File) so the list binds as an array
-          & Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only $only -Skip normal-scale
+          $scenes = @(-split $env:SCENES); $only = @(-split "${{ matrix.only }}"); $skip = @(-split "${{ matrix.skip }}")
+          if ($scenes.Count) { $within = $only; $only = $scenes } else { $within = @() }
+          & Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only $only -Skip $skip -Within $within   # & so the lists bind as arrays
 
       # Screenshots get Windows 11-style rounded corners (the VM has no GPU acceleration, so the system draws none); the animations (APNG: demo.png on the README
       # front page, demo-*.png for the features) are assembled from the frames the "demo" scenes saved (rounded corners, shadow, blurred background);
-      # all with Pillow, corners and margins scaled by SHOT_SCALE
+      # all with Pillow, corners and margins scaled by SHOT_SCALE (RoundCorners.py leaves images that already have rounded corners alone)
       - name: Rounded corners and animations
         shell: pwsh
         run: |
@@ -113,35 +136,44 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
           pwsh -NoProfile -File Tests/Screenshots/MakeDemos.ps1
 
-      # Preferences and Quick Switch (Shots.NormalScale) are too big at 150%: set the scaling back to 100% and shoot again (fonts with ClearType), corners with the 100% radius
-      # (RoundCorners.py leaves images that already have rounded corners alone)
-      - name: Display at 100% for Preferences and Quick Switch
-        shell: pwsh
-        run: pwsh -NoProfile -File Tests/Screenshots/SetDisplay.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Scale 100
-
-      - name: Take screenshots at 100%
+      # Only the screenshots this group changed or added
+      - name: Collect the changed screenshots
         shell: pwsh
         run: |
-          $only = @(-split $env:SCENES)
-          if ($only.Count) { & Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only $only -Within normal-scale }
-          else { & Tests/Screenshots/RunShots.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Only normal-scale }
-          python Tests/Screenshots/RoundCorners.py docs/images/screenshots
-          if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
-          pwsh -NoProfile -File Tests/Screenshots/MakeDemos.ps1
+          New-Item -ItemType Directory shots-out -Force | Out-Null
+          Set-Content shots-out/group.txt $env:GROUP                          # the artifact is never empty (download-artifact then finds every group)
+          $changed = @(git status --porcelain --untracked-files=all -- docs/images/screenshots | ForEach-Object { $_.Substring(3).Trim('"') })
+          foreach ($file in $changed) { Copy-Item $file shots-out/ }
+          Write-Host "$($changed.Count) changed screenshot(s) in the $env:GROUP group"
+        env:
+          GROUP: ${{ matrix.group }}
 
       - uses: actions/upload-artifact@v7
         with:
-          name: screenshots
-          path: docs/images/screenshots
+          name: screenshots-${{ matrix.group }}
+          path: shots-out
+
+  # All groups done without failures: put the changed screenshots together and commit them to the branch once
+  commit:
+    needs: screenshots
+    if: github.ref_name != 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: screenshots-*
+          path: shots
+          merge-multiple: true
 
       - name: Commit screenshots to the branch
-        if: github.ref_name != 'main'
-        shell: pwsh
+        shell: bash
         run: |
+          cp shots/*.png docs/images/screenshots/ 2>/dev/null || true
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/images/screenshots
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) { Write-Host "No changes"; exit 0 }
+          if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "Update screenshots"
           git push origin "HEAD:${{ github.ref_name }}"
