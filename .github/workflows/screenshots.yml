@@ -71,6 +71,13 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # Pillow (rounded corners, animations) installs in the background while the screenshots are taken: on a slow runner it took 88 s
+      - name: Start installing Pillow
+        shell: pwsh
+        run: |
+          $proc = Start-Process python -ArgumentList '-m pip install --quiet --disable-pip-version-check pillow' -PassThru -NoNewWindow -RedirectStandardOutput pip.log -RedirectStandardError pip.err
+          "PIP_PID=$($proc.Id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
       - name: Download AutoHotkey v2
         shell: pwsh
         run: |
@@ -132,6 +139,7 @@ jobs:
       - name: Rounded corners and animations
         shell: pwsh
         run: |
+          Wait-Process -Id $env:PIP_PID -ErrorAction SilentlyContinue        # the background install (above); then make sure it's there
           python -m pip install --quiet --disable-pip-version-check pillow
           python Tests/Screenshots/RoundCorners.py docs/images/screenshots
           if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
