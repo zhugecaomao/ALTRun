@@ -1419,12 +1419,13 @@ class SearchWindowTests {
         eq := (n, a, e) => TestRunner.Equal("KeepLastSearch." n, a, e)
         last := {Text: "report", FileMode: true, Selected: 1, Time: 1000000}
         general := Map("KeepLastQuery", 1, "KeepLastQueryMinutes", 5)
-        eq("within the minutes", SearchWindow.KeepsLast(last, general, 1000000 + 4 * 60000), true)
-        eq("after the minutes", SearchWindow.KeepsLast(last, general, 1000000 + 6 * 60000), false)
+        session := SearchSession(), session.Last := last
+        eq("within the minutes", session.KeepsLast(general, 1000000 + 4 * 60000), true)
+        eq("after the minutes", session.KeepsLast(general, 1000000 + 6 * 60000), false)
         general["KeepLastQueryMinutes"] := 0
-        eq("0 = no limit", SearchWindow.KeepsLast(last, general, 1000000 + 600 * 60000), true)
+        eq("0 = no limit", session.KeepsLast(general, 1000000 + 600 * 60000), true)
         general["KeepLastQuery"] := 0
-        eq("off", SearchWindow.KeepsLast(last, general, 1000000), false)
+        eq("off", session.KeepsLast(general, 1000000), false)
 
         saved := Map()
         for name in ["_RunSearch", "IsVisible"]
