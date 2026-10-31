@@ -8,7 +8,7 @@
   "Action.ConfirmRecycleAll": "把这 {1} 项移到回收站吗?",
   "Action.Copy": "复制到剪贴板",
   "Action.CopyFile": "复制文件",
-  "Action.CopyFile.Hint": "然后在 TC 里粘贴",
+  "Action.CopyFile.Hint": "然后在 Total Commander 里粘贴",
   "Action.CopyFiles": "复制 {1} 项",
   "Action.CopyName": "复制名称",
   "Action.CopyPath": "复制路径",

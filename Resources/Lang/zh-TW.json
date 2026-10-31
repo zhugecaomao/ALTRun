@@ -9,7 +9,7 @@
   "Action.ConfirmRecycleAll": "把這 {1} 項移到資源回收筒嗎?",
   "Action.Copy": "複製到剪貼簿",
   "Action.CopyFile": "複製檔案",
-  "Action.CopyFile.Hint": "然後在 TC 裡貼上",
+  "Action.CopyFile.Hint": "然後在 Total Commander 裡貼上",
   "Action.CopyFiles": "複製 {1} 項",
   "Action.CopyName": "複製名稱",
   "Action.CopyPath": "複製路徑",

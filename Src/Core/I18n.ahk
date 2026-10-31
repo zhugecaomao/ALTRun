@@ -198,7 +198,7 @@ class I18n {
         s["Action.EditFile"]           := "Edit"
         s["Action.CopyFile"]           := "Copy File"
         s["Action.CutFile"]            := "Cut File"
-        s["Action.CopyFile.Hint"]      := "Then paste in TC"
+        s["Action.CopyFile.Hint"]      := "Then paste in Total Commander"
         s["Action.FileCopied"]         := "Copied {1} - paste it in a folder"
         s["Action.FileCut"]            := "Cut {1} - paste it in a folder to move it"
         s["Action.CopyTo"]             := "Copy to Current Folder in {1}"

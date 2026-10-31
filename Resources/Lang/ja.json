@@ -8,7 +8,7 @@
   "Action.ConfirmRecycleAll": "{1} 項目をごみ箱に移動しますか?",
   "Action.Copy": "クリップボードにコピー",
   "Action.CopyFile": "ファイルをコピー",
-  "Action.CopyFile.Hint": "TC で貼り付け",
+  "Action.CopyFile.Hint": "Total Commander で貼り付け",
   "Action.CopyFiles": "{1} 項目をコピー",
   "Action.CopyName": "名前をコピー",
   "Action.CopyPath": "パスをコピー",
