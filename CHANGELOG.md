@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.36]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内部整理 (使用上没有变化): 每次搜索变成一个带编号的请求 (`SearchRequest`), 结果只给最新的那次搜索显示, 比新搜索晚回来的结果直接丢掉。普通搜索、恢复上次搜索时先显示的快速结果和之后的完整搜索、预先准备好的空搜索框的刷新都走它。这是把搜索逻辑和界面分开的第 3 步, 之后的后台搜索接在这里
+
 ## [2026.10.26.35]
 
 测试版。
@@ -1265,7 +1274,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.35...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.36...HEAD
+[2026.10.26.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.35...2026.10.26.36
 [2026.10.26.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.34...2026.10.26.35
 [2026.10.26.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.33...2026.10.26.34
 [2026.10.26.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.32...2026.10.26.33

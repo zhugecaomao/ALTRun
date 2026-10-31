@@ -42,6 +42,25 @@ class SearchSessionTests {
         eq("no results: row 1", s.Last.Selected, 1)
     }
 
+    ; Searches: numbered requests, only the newest counts; the highlight follows the text in search results, not in the actions panel
+    static Requests() {
+        eq := (n, a, e) => TestRunner.Equal("SessionRequests." n, a, e)
+        s := SearchSession()
+        first := s.StartSearch("rep")
+        eq("first", first.Gen "|" first.Text "|" first.FileMode "|" first.Quick "|" s.HighlightText "|" s.IsCurrent(first), "1|rep|0|0|rep|1")
+        s.FileMode := true
+        second := s.StartSearch("repo", true)
+        eq("newer one started", s.IsCurrent(first) "|" s.IsCurrent(second) "|" (s.Request == second), "0|1|1")
+        eq("its kind", second.FileMode "|" second.Quick, "1|1")
+        eq("quick in file search mode: nothing", second.Run().Length, 0)
+        eq("no request", s.IsCurrent(""), false)
+        browse := s.StartSearch(A_WinDir "\sys")
+        eq("browsing a folder: the filter part", s.HighlightText, "sys")
+        s.OpenActions(ResultItem("Budget.xlsx"), [ResultItem("Open")], "budget")
+        actions := s.StartSearch("op")
+        eq("actions panel keeps the highlight", s.HighlightText "|" s.IsCurrent(actions) "|" s.IsCurrent(browse), "sys|1|0")
+    }
+
     ; Selection: clamped, scrolled into the visible rows, wrapping only when asked (Tab cycling)
     static Selection() {
         eq := (n, a, e) => TestRunner.Equal("SessionSelection." n, a, e)

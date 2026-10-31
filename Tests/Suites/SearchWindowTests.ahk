@@ -1040,15 +1040,14 @@ class SearchWindowTests {
             Sleep(30)
             eq("own text change ignored", searches.Count, 0)
             g.Show("NoActivate")
-            gen := SearchWindow._searchGen
-            SearchWindow._FinishRestore(gen, {Text: "rep", Selected: 3})
+            SearchWindow._FinishRestore(SearchWindow.Session.Request, {Text: "rep", Selected: 3})
             eq("full search after showing", calls.Length = 2 && calls[2] = "full rep", true)
             eq("last row selected", SearchWindow.Selected, 3)
             eq("quiet text cleared", SearchWindow._quietText, "")
             SearchWindow._ShowQuickResults("rep")
-            gen := SearchWindow._searchGen
+            request := SearchWindow.Session.Request
             SearchWindow._quietText := "", SearchWindow.Input.Value := "repo"   ; typed right after showing
-            SearchWindow._FinishRestore(gen, {Text: "rep", Selected: 3})
+            SearchWindow._FinishRestore(request, {Text: "rep", Selected: 3})
             eq("typed: no full search for the old text", calls.Length, 3)
             SearchWindow.FileMode := true
             SearchWindow._ShowQuickResults("plan")
