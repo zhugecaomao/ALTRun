@@ -10,10 +10,12 @@ class BenchProbe {
     static _Set(orig, self, results) {
         r := orig(self, results)
         BenchProbe.Calls += 1
-        BenchProbe.Text := SearchWindow.Input.Value, BenchProbe.Mode := SearchWindow.Mode
+        BenchProbe.Text := SearchWindow.Input.Value, BenchProbe.Mode := BenchProbe._Mode()
         BenchProbe.Paints := SearchWindow._paints, BenchProbe.Count := results.Length
         return r
     }
+    ; The window's mode: in SearchWindow.Session from 2026.10.26.34 on, on SearchWindow itself before (the baseline may be older)
+    static _Mode() => SearchWindow.HasOwnProp("Session") ? SearchWindow.Session.Mode : SearchWindow.Mode
     ; w = 1: search results ready (l = the number of characters the box should have); 3: actions panel ready; 2: just a reply (started, idle)
     static _Query(w, l) {
         if (w = 2)
@@ -26,11 +28,11 @@ class BenchProbe {
             return SearchWindow._paints
         if !SearchWindow.IsVisible()
             return 0
-        if (w = 3 && SearchWindow.Mode != "actions")
+        if (w = 3 && BenchProbe._Mode() != "actions")
             return 0
         if (w = 1 && StrLen(SearchWindow.Input.Value) != l)
             return 0
-        ready := BenchProbe.Text == SearchWindow.Input.Value && BenchProbe.Mode = SearchWindow.Mode
+        ready := BenchProbe.Text == SearchWindow.Input.Value && BenchProbe.Mode = BenchProbe._Mode()
             && (BenchProbe.Count = 0 || SearchWindow._paints > BenchProbe.Paints)
         return ready ? 1 : 0
     }
