@@ -2,8 +2,8 @@
 #   Run manually (Actions → Bench → Run workflow): baseline defaults to the latest release, candidate to the branch it runs on;
 #   2 rounds per version x (searches searches + others of each action), default 500 / 100 (1000 searches + 200 of each per version)
 #   The work is split over several runners at the same time (runners, default 4: about 17 minutes instead of 50 on one). Each runs
-#   both versions alternating (A B B A) with its share of the operations, so the two are always compared on the same machine; the
-#   summary job pools the results and shows the candidate / baseline ratio on each runner (they should agree)
+#   both versions alternating (A B B A, or B A A B on even runners) with its share of the operations, so the two are always compared
+#   on the same machine; the summary job pools the results and shows the candidate / baseline ratio on each runner (they should agree)
 #   When the test scripts change on a branch other than main: a short run with few iterations on 2 runners (smoke test, about 7 minutes)
 name: Bench
 
@@ -118,10 +118,12 @@ jobs:
           $share = { param($total) [math]::Floor([int]$total / $n) + $(if ($i -le [int]$total % $n) { 1 } else { 0 }) }
           $searches = & $share $env:SEARCHES; $others = & $share $env:OTHERS
           Write-Host "runner $i of $n`: $searches searches, $others of each other operation per round"
-          # the two versions alternate (A B B A), ALTRun restarted each round, one random seed per pair (different on each runner);
-          # the label is <version>-r<round>s<runner>
+          # the two versions alternate, ALTRun restarted each round, one random seed per pair (different on each runner); odd runners
+          # A B B A, even ones B A A B, so each version gets the first and last rounds as often (the first round on a fresh machine
+          # differs: first-time caches, Windows still busy). The label is <version>-r<round>s<runner>
           $base = 100 * ($i - 1)
-          $rounds = @(@("baseline", 1, ($base + 11)), @("candidate", 1, ($base + 11)), @("candidate", 2, ($base + 22)), @("baseline", 2, ($base + 22)))
+          $first, $second = if ($i % 2) { "baseline", "candidate" } else { "candidate", "baseline" }
+          $rounds = @(@($first, 1, ($base + 11)), @($second, 1, ($base + 11)), @($second, 2, ($base + 22)), @($first, 2, ($base + 22)))
           foreach ($r in $rounds) {
             $label = "$($r[0])-r$($r[1])s$i"
             Write-Host "== $label $(Get-Date -Format HH:mm:ss)"

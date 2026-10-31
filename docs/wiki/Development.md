@@ -187,7 +187,7 @@ alternating (A B B A), with ALTRun restarted for every round:
 - Background tasks over 50 ms (`Perf: slow`, in versions that log them) and errors from the ALTRun log
 
 By default each round has 500 searches + 100 of each other operation, split over 4 runners working at the same time (about 17 minutes; `runners` sets how many).
-Each runner runs both versions alternating (A B B A) with its share of the operations, so the two are always compared on the same machine; before the operations,
+Each runner runs both versions alternating (A B B A, or B A A B on even runners so each version gets the first round as often) with its share of the operations, so the two are always compared on the same machine; before the operations,
 each round measures the CPU used while idle for a minute. The results (median / p90 / p99 / max) of all runners are pooled in the run summary, followed by the
 candidate / baseline median on each runner: they should agree, and a difference seen on only one runner is not to be trusted. The raw data is an artifact.
 The test copies #Include one extra file, `Tests\Bench\BenchProbe.ahk`, which tells the driver (`BenchDriver.ahk`) whether the results for the current input have been drawn;

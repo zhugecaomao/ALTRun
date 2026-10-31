@@ -178,7 +178,7 @@ GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟
 - ALTRun 日志里一次超过 50 ms 的后台任务 (`Perf: slow`, 有这种记录的版本) 和错误
 
 默认每轮 500 次搜索 + 每种操作 100 次, 分给 4 台 runner 同时跑 (约 17 分钟; 台数用 `runners` 设置)。
-每台都轮流跑两个版本 (A B B A), 做自己那一份操作, 所以两个版本总是在同一台机器上比较; 每轮开始操作前先测一分钟空闲时的 CPU。
+每台都轮流跑两个版本 (A B B A, 双数的 runner 是 B A A B, 两个版本排在第一轮的次数一样), 做自己那一份操作, 所以两个版本总是在同一台机器上比较; 每轮开始操作前先测一分钟空闲时的 CPU。
 所有 runner 的结果 (中位数 / p90 / p99 / 最慢) 合在一起放在运行摘要里, 后面是每台 runner 上 candidate / baseline 的中位数比值:
 各台应该一致, 只在一台上出现的差别不可信。原始数据是 artifact。
 测试副本里多 #Include 一个 `Tests\Bench\BenchProbe.ahk`, 驱动程序 (`BenchDriver.ahk`) 通过它知道 "当前输入的结果画好了没有";
