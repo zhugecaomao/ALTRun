@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.32"
+    static Version := "2026.10.26.33"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -323,6 +323,7 @@ class App {
     ; Restarts ALTRun with command-line arguments (default -Reloaded: doesn't show the search window)
     static Restart(arguments := "-Reloaded") {
         App._exitBy := "restart " arguments
+        App._LogExitRequest()
         if A_IsCompiled
             Run('"' A_ScriptFullPath '" /restart ' arguments)
         else
@@ -340,7 +341,17 @@ class App {
 
     static Quit() {
         App._exitBy := "quit"
+        App._LogExitRequest()
         ExitApp()
+    }
+
+    ; Debug log: the keys held and the window in front when quitting / restarting is asked for, and how long after Enter ran a result
+    ; (the exit note in _OnExit comes later, after the settings are saved)
+    static _LogExitRequest() {
+        if !Logger.Enabled
+            return
+        since := (SearchKeys.EnterAt && A_TickCount - SearchKeys.EnterAt < 5000) ? ", " (A_TickCount - SearchKeys.EnterAt) " ms after Enter" : ""
+        Logger.Debug("App: " App._exitBy " asked" since "; keys held: " ((held := App.HeldKeys()) = "" ? "none" : held) "; foreground: " SearchWindow.ForegroundText())
     }
 
     ; For the log: why ALTRun exits, the keys still held down and the window in front (2026-10: a properties dialog opened

@@ -80,6 +80,29 @@ class SearchKeys {
         return DllCall("comctl32\DefSubclassProc", "Ptr", hwnd, "UInt", msg, "UPtr", wParam, "Ptr", lParam, "Ptr")
     }
 
+    ; Debug log only (2026-10: Total Commander opened a properties dialog right after Enter ran a result, as if Alt+Enter reached it):
+    ; how Enter came in and the keys held then, and for EnterTraceMs afterwards each Enter / Alt key event with the window in front.
+    ; It only watches (InputHook "V"): nothing is blocked. Tests\Tools\KeyWatch.ahk also logs after ALTRun exits
+    static EnterTraceMs := 2000, EnterAt := 0, _trace := "", _traceStop := ""
+    static TraceEnter(lParam, msg) {
+        SearchKeys.EnterAt := A_TickCount
+        Logger.Debug("SearchKeys: Enter " ((lParam >> 30) & 1 ? "repeat" : "down") (msg = 0x104 ? " (WM_SYSKEYDOWN)" : "")
+            . "; keys held: " ((held := App.HeldKeys()) = "" ? "none" : held))
+        if !IsObject(SearchKeys._trace) {
+            trace := InputHook("V L0")
+            trace.KeyOpt("{Enter}{NumpadEnter}{LAlt}{RAlt}", "N")
+            trace.OnKeyDown := (hook, vk, sc) => SearchKeys._TraceKey(vk, sc, "down")
+            trace.OnKeyUp := (hook, vk, sc) => SearchKeys._TraceKey(vk, sc, "up")
+            SearchKeys._trace := trace, SearchKeys._traceStop := () => SearchKeys._trace.Stop()
+        }
+        SearchKeys._trace.Start()                                           ; already running: goes on, the stop below moves later
+        SetTimer(SearchKeys._traceStop, -SearchKeys.EnterTraceMs)
+    }
+
+    static _TraceKey(vk, sc, direction) {
+        Logger.Debug(Format("SearchKeys: +{} ms {} {}, foreground: {}", A_TickCount - SearchKeys.EnterAt, GetKeyName(Format("vk{:X}sc{:X}", vk, sc)), direction, SearchWindow.ForegroundText()))
+    }
+
     ; 0 = the key is handled and not passed to the input box; empty = handled the normal way
     static OnKeyDown(wParam, lParam, msg, hwnd) {
         if !SearchKeys.IsOwnWindow(hwnd)
@@ -94,6 +117,8 @@ class SearchKeys {
 
         switch vk {
             case 0x0D:                                                      ; Enter
+                if Logger.Enabled
+                    SearchKeys.TraceEnter(lParam, msg)
                 SearchWindow._Execute(ctrl ? "ctrl" : alt ? "alt" : "")
                 return 0
             case 0x1B:                                                      ; Esc
