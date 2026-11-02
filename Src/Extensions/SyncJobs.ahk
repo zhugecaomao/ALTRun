@@ -27,7 +27,7 @@ class SyncJobs {
     static PollMs := 1000
     static StateFile => AppSettings.DataDir "\SyncRunning.json"
     static LogDir => AppSettings.DataDir "\SyncLogs"
-    static _poll := () => SyncJobs._Poll()
+    static _pollTimer := () => SyncJobs._Poll()
 
     static Key(name) => StrLower(Trim(name))
     static FileName(name) => RegExReplace(Trim(name), '[\\/:*?"<>|]', "_")
@@ -141,7 +141,7 @@ class SyncJobs {
         SyncJobs.Jobs[key] := {Name: task["Name"], Pid: pid, Handle: handle, Preview: preview, Monitor: !preview && RoboSync._Get(task, "Monitor")
             , Started: A_Now, LogFile: logFile, OnDone: onDone}
         Logger.Debug("SyncJobs: started " task["Name"] (preview ? " (preview)" : "") ", pid " pid)
-        WinTimer.Set(SyncJobs._poll, SyncJobs.PollMs)
+        WinTimer.Set(SyncJobs._pollTimer, SyncJobs.PollMs)
         return ""
     }
 
@@ -182,7 +182,7 @@ class SyncJobs {
                 SyncJobs._Report(job, code)
         }
         if !SyncJobs.Jobs.Count
-            WinTimer.Set(SyncJobs._poll, 0)
+            WinTimer.Set(SyncJobs._pollTimer, 0)
     }
 
     ; A run that ended on its own: how it went (copied files from the log's last summary)
@@ -226,7 +226,7 @@ class SyncJobs {
                 , Started: entry["Started"], LogFile: entry["LogFile"], OnDone: ""}
         }
         if SyncJobs.Jobs.Count
-            WinTimer.Set(SyncJobs._poll, SyncJobs.PollMs)
+            WinTimer.Set(SyncJobs._pollTimer, SyncJobs.PollMs)
     }
 
     ;---------------------------------------------------------------------------
