@@ -537,6 +537,19 @@ class ExtensionTests {
                 eq("preview with threads: the files", Trim(StrReplace(Sort(files), "`n", " ")), "Copy:a.txt Copy:b.txt Delete:extra.txt")
                 real["Threads"] := 0
             }
+            ; Names with accented letters and characters outside the ANSI code page (Chinese on an English runner) in the preview list
+            DirCreate(root "\uni\src"), DirCreate(root "\uni\dst")
+            FileAppend("x", root "\uni\src\Café 测试.txt", "UTF-8")
+            uni := RoboSync.NewTask()
+            uni["Name"] := "Unicode", uni["Source"] := root "\uni\src", uni["Destination"] := root "\uni\dst", uni["Retries"] := 0, uni["Wait"] := 0
+            done.Length := 0
+            SyncJobs.Start(uni, true, (job, code) => done.Push([job, code]))
+            wait("Unicode")
+            names := ""
+            if done.Length
+                for change in SyncJobs.ReadPreview(done[1][1].LogFile).Changes
+                    names .= change.Path "|"
+            eq("preview list: accented and Chinese names", InStr(names, "\Café 测试.txt|") ? 1 : names, 1)
             eq("run started", SyncJobs.Start(real), "")
             wait("Check")
             logFile := root "\logs\Check_" FormatTime(, "yyyyMMdd") ".log"
