@@ -304,6 +304,126 @@ class ExtensionTests {
         eq("editor fields", fields, "Name:text Target:file Arguments:text Delay:number Enabled:check ")
     }
 
+    ; Sync tasks (RoboSync): the robocopy command line of a task, a command line read back (Total Commander import), checks, exit codes.
+    ; Made-up paths and names
+    static RoboSync() {
+        eq := (n, a, e) => TestRunner.Equal("RoboSync." n, a, e)
+        eq("empty by default, kept on reset", AppSettings.Defaults()["SyncTasks"].Length "|" AppSettings.ResetData(Map("SyncTasks", [RoboSync.NewTask()]))["SyncTasks"].Length, "0|1")
+        now := "20261102093005"
+        task := RoboSync.NewTask()
+        task["Name"] := "Projects", task["Source"] := "\\fileserver\Projects", task["Destination"] := "D:\Sync\Projects"
+        task["ExcludeFiles"] := ["thumbs.db", "~$*.*", "*.bak"], task["ExcludeDirs"] := ["$Recycle.Bin", "Old Versions"]
+        task["LogFile"] := "D:\Sync\Logs\Projects_{date}.log"
+        eq("new task", RoboSync.Build(task, false, now).Args
+            , '\\fileserver\Projects D:\Sync\Projects *.* /MIR /COPY:DAT /DCOPY:DA /R:1 /W:1 /MT:16 /XF thumbs.db ~$*.* *.bak /XD $Recycle.Bin "Old Versions" /LOG+:D:\Sync\Logs\Projects_20261102.log /NP')
+        eq("program", RoboSync.Build(task).Program, A_WinDir "\System32\robocopy.exe")
+        task["Monitor"] := 1, task["MonitorChanges"] := 2, task["MonitorMinutes"] := 10
+        eq("monitoring", InStr(RoboSync.Build(task, false, now).Args, "/MT:16 /MON:2 /MOT:10 /XF") > 0, true)
+        preview := RoboSync.Build(task, true, now).Args
+        eq("preview: /L, no monitoring", InStr(preview, "*.* /L /MIR") > 0 && !InStr(preview, "/MON"), true)
+        task["Mode"] := "Copy", task["Threads"] := 0, task["Monitor"] := 0, task["AppendLog"] := 0, task["Extra"] := ""
+        task["Source"] := "C:\", task["Destination"] := "%TEMP%\Sync Copy", task["Files"] := '*.docx "My File.*"', task["LogFile"] := ""
+        eq("copy, no threads, a root, spaces", RoboSync.Build(task, false, now).Args
+            , 'C:\ "' EnvGet("TEMP") '\Sync Copy" *.docx "My File.*" /E /COPY:DAT /DCOPY:DA /R:1 /W:1 /XF thumbs.db ~$*.* *.bak /XD $Recycle.Bin "Old Versions"')
+        eq("quoting", RoboSync.Quote("C:\") "|" RoboSync.Quote("C:\My Files\") "|" RoboSync.Quote("") "|" RoboSync.Quote("a b"), 'C:\|"C:\My Files\\"|""|"a b"')
+        eq("placeholders", RoboSync.Expand("X_{date}_{time}.log", now), "X_20261102_093005.log")
+        tokens := RoboSync.Tokens('"C:\My Files\\" D:\x "a b" /XF "~$*.*"')
+        eq("tokens", tokens.Length = 5 ? tokens[1] "|" tokens[2] "|" tokens[3] "|" tokens[5] : tokens.Length, "C:\My Files\|D:\x|a b|~$*.*")
+
+        ; A Total Commander start menu entry (parameters only, as in its settings), read back
+        line := '"\\fileserver\Team Share" "%|OneDrive|\Work\Team" *.* /COPY:DAT /DCOPY:DA /MIR /R:1 /W:1 /MON:1 /MOT:5 /MT:16 '
+            . '/XF thumbs.db plot.log "~$*.*" "*.dwl" desktop.ini /XD "System Volume Information" "$Recycle.Bin" /NP /NS /TEE '
+            . '/LOG+:%|OneDrive|\Logs\TEAM_%|$DATE:YMD|.log'
+        parsed := RoboSync.Parse(line), t := parsed.Task
+        eq("import: folders", t["Source"] "|" t["Destination"] "|" t["Files"], "\\fileserver\Team Share|%OneDrive%\Work\Team|*.*")
+        eq("import: options", t["Mode"] "|" t["Copy"] "|" t["DirCopy"] "|" t["Retries"] "|" t["Wait"] "|" t["Threads"] "|" t["Monitor"] "|" t["MonitorChanges"] "|" t["MonitorMinutes"]
+            , "Mirror|DAT|DA|1|1|16|1|1|5")
+        eq("import: excludes", t["ExcludeFiles"].Length "|" t["ExcludeFiles"][3] "|" t["ExcludeDirs"].Length "|" t["ExcludeDirs"][2], "5|~$*.*|2|$Recycle.Bin")
+        eq("import: log", t["LogFile"] "|" t["AppendLog"], "%OneDrive%\Logs\TEAM_{date}.log|1")
+        eq("import: others kept", t["Extra"], "/NP /NS /TEE")
+        eq("import: name, no notes", t["Name"] "|" parsed.Notes.Length, "Team|0")
+        again := RoboSync.Parse(RoboSync.Build(t, false, now).Args).Task                ; built and read back: the same
+        eq("round trip", again["Mode"] again["Threads"] again["Monitor"] again["ExcludeFiles"].Length again["ExcludeDirs"].Length, "Mirror16152")
+
+        parsed := RoboSync.Parse('robocopy.exe C:\Data\ "E:\Backup\Data" /L /MT /LOG:E:\log.txt /XO')
+        t := parsed.Task
+        eq("with robocopy, preview, defaults", t["Source"] "|" t["Destination"] "|" t["Mode"] "|" t["Threads"] "|" t["Retries"] "|" t["Wait"] "|" t["AppendLog"] "|" t["Extra"] "|" t["Copy"]
+            , "C:\Data|E:\Backup\Data|Top|8|1000000|30|0|/XO|")
+        eq("preview noted", parsed.Notes.Length = 1 ? parsed.Notes[1] : parsed.Notes.Length, "Preview")
+        eq("missing folders noted", RoboSync.Parse("/MIR").Notes[1], "NoFolders")
+        notes := []
+        eq("Total Commander variables", RoboSync.FromTotalCommander("%|OneDrive|\a_%|$DATE:YMD|_%|$DATE:YMDhm|.log", notes) "|" notes.Length, "%OneDrive%\a_{date}_%|$DATE:YMDhm|.log|1")
+
+        ; Checks
+        codes(list) {
+            text := ""
+            for problem in list
+                text .= problem.Level ":" problem.Code (problem.Detail != "" ? "=" problem.Detail : "") " "
+            return text
+        }
+        mk(name, source, target, mode := "Mirror", log := "") => Map("Name", name, "Source", source, "Destination", target, "Mode", mode, "LogFile", log)
+        eq("fine", codes(RoboSync.Check(mk("A", "\\srv\share\a", "D:\Sync\a"))), "")
+        eq("empty", codes(RoboSync.Check(mk("A", "", " "))), "Error:NoSource Error:NoDestination ")
+        eq("same", codes(RoboSync.Check(mk("A", "D:\Sync\a\", "d:\sync\A"))), "Error:SamePath ")
+        eq("nested", codes(RoboSync.Check(mk("A", "D:\Sync", "D:\Sync\a"))) codes(RoboSync.Check(mk("A", "D:\Sync\a\b", "D:\Sync\a"))), "Error:Nested Error:Nested ")
+        eq("not nested by name only", codes(RoboSync.Check(mk("A", "D:\Sync\ab", "D:\Sync\a"))), "")
+        eq("mirror into a drive or share root", codes(RoboSync.Check(mk("A", "\\srv\x", "E:\"))) codes(RoboSync.Check(mk("A", "D:\x", "\\nas\backup"))), "Error:MirrorRoot=e: Error:MirrorRoot=\\nas\backup ")
+        eq("mirror into the user folder", codes(RoboSync.Check(mk("A", "\\srv\x", "%UserProfile%"))), "Error:MirrorRoot=" StrLower(EnvGet("UserProfile")) " ")
+        eq("copy into a root is fine", codes(RoboSync.Check(mk("A", "\\srv\x", "E:\", "Copy"))), "")
+        threads := mk("A", "\\srv\x", "D:\y"), threads["Threads"] := 200
+        eq("threads", codes(RoboSync.Check(threads)), "Error:Threads=200 ")
+        a := mk("A", "\\srv\a", "D:\Sync\Tenders", , "D:\Logs\T_{date}.log"), b := mk("B", "\\srv\a\2026", "D:\Sync\Tenders\2026", , "D:\Logs\T_{date}.log"), c := mk("C", "\\srv\c", "D:\Sync\Other")
+        eq("overlap and shared log", codes(RoboSync.Check(a, [a, b, c])), "Warning:Overlap=B Warning:SameLog=B ")
+
+        ; Before a mirror: the source must be there and not empty
+        root := A_Temp "\ALTRun-robosync-test"
+        try DirDelete(root, true)
+        DirCreate(root "\empty")
+        try {
+            eq("source missing", RoboSync.CheckSource(mk("A", root "\gone", "D:\x")), "SourceMissing")
+            eq("source empty", RoboSync.CheckSource(mk("A", root "\empty", "D:\x")), "SourceEmpty")
+            FileAppend("x", root "\empty\a.txt")
+            eq("source with files", RoboSync.CheckSource(mk("A", root "\empty", "D:\x")), "")
+        } finally {
+            try DirDelete(root, true)
+        }
+
+        ; The command line with the real robocopy (Windows; Wine's is a stub that knows none of these options): spaces, excludes, a preview
+        ; changes nothing, a mirror deletes extras
+        if (FileExist(RoboSync.Program) && !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")) {
+            DirCreate(root "\My Source\sub"), DirCreate(root "\Old Versions"), DirCreate(root "\Copy Here")
+            FileAppend("a", root "\My Source\a.txt"), FileAppend("b", root "\My Source\sub\b.txt"), FileAppend("t", root "\My Source\~$temp.docx")
+            DirCreate(root "\My Source\Old Versions"), FileAppend("o", root "\My Source\Old Versions\o.txt")
+            FileAppend("x", root "\Copy Here\extra.txt")
+            try {
+                real := mk("Real", root "\My Source\", root "\Copy Here", "Mirror", root "\sync {date}.log")
+                real["ExcludeFiles"] := ["~$*.*"], real["ExcludeDirs"] := ["Old Versions"], real["Threads"] := 0, real["Retries"] := 0, real["Wait"] := 0, real["Extra"] := "/NP"
+                run(task, preview) {
+                    command := RoboSync.Build(task, preview, now)
+                    return RunWait('"' command.Program '" ' command.Args, , "Hide")
+                }
+                code := run(real, true)
+                eq("robocopy preview: changes nothing", (RoboSync.Result(code).Ok ? 1 : 0) (FileExist(root "\Copy Here\a.txt") != "") (FileExist(root "\Copy Here\extra.txt") != ""), "101")
+                code := run(real, false)
+                done := RoboSync.Result(code), here := root "\Copy Here\"
+                eq("robocopy mirror: copied, extras deleted", (done.Ok && done.Copied && done.Extras) "|" (FileExist(here "a.txt") != "") (FileExist(here "sub\b.txt") != "") (FileExist(here "extra.txt") != ""), "1|110")
+                eq("robocopy mirror: excludes", (FileExist(here "~$temp.docx") != "") (DirExist(here "Old Versions") != ""), "00")
+                eq("robocopy log with the date", FileExist(root "\sync 20261102.log") != "", true)
+                eq("robocopy again: nothing to do", run(real, false), 0)
+            } finally {
+                try DirDelete(root, true)
+            }
+        }
+
+        ; Exit codes
+        result(code) {
+            r := RoboSync.Result(code)
+            return (r.Ok ? "ok" : "fail") (r.Copied ? " copied" : "") (r.Extras ? " extras" : "") (r.Mismatched ? " mismatched" : "") (r.Failed ? " failed" : "") (r.Fatal ? " fatal" : "")
+        }
+        eq("exit codes", result(0) "|" result(1) "|" result(3) "|" result(7) "|" result(8) "|" result(9) "|" result(16) "|" result(-1)
+            , "ok|ok copied|ok copied extras|ok copied extras mismatched|fail failed|fail copied failed|fail fatal|fail")
+    }
+
     ; The dialogs' folder menu: recent folders (Windows' "Recent items"), menu text
     static FolderMenu() {
         eq := (n, a, e) => TestRunner.Equal("FolderMenu." n, a, e)
