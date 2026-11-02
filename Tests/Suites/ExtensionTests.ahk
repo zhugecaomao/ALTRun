@@ -280,6 +280,10 @@ class ExtensionTests {
         for scope, where in DelayedStart.Scopes()
             writable .= scope "=" (where.Writable ? 1 : 0) " "
         eq("scopes, which this user can turn off", writable, "Common=0 HKCU=1 HKLM=0 HKLM32=0 User=1 ")
+        order := ""
+        for scope in DelayedStart.ScopeOrder
+            order .= scope (DelayedStart.Scopes().Has(scope) ? "" : "?") " "
+        eq("listed this user's first", order, "HKCU User HKLM HKLM32 Common ")
         eq("approved keys", DelayedStart.Scopes()["HKCU"].Approved "|" DelayedStart.Scopes()["User"].Approved
             , "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run|HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder")
         eq("where", DelayedStart.SourceText("HKCU|OneDrive") "|" DelayedStart.SourceText("Common|Teams.lnk"), "Run (you): OneDrive|Startup folder (all users): Teams.lnk")

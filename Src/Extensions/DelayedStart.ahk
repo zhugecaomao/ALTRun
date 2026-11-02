@@ -146,6 +146,7 @@ class DelayedStart {
     ; One can be turned into a delayed start entry; its own start is then turned off the way Task Manager does it (StartupApproved),
     ; nothing is deleted, and it can be turned on again there or by removing the entry here
     ;---------------------------------------------------------------------------
+    static ScopeOrder := ["HKCU", "User", "HKLM", "HKLM32", "Common"]
     static ApprovedKey := "\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\"
 
     ; Where startup apps are: scope -> {Run: registry key or "", Folder: folder or "", Approved: its StartupApproved key, Writable: this user
@@ -163,8 +164,9 @@ class DelayedStart {
     ; The startup apps: [{Source: "HKCU|OneDrive", Scope, Name, Command, Program, Arguments, Off, Writable}...];
     ; includeOff: also those turned off in Task Manager
     static AutoStartEntries(includeOff := false) {
-        entries := []
-        for scope, where in DelayedStart.Scopes() {
+        entries := [], scopes := DelayedStart.Scopes()
+        for scope in DelayedStart.ScopeOrder {                             ; this user's first, then those for all users
+            where := scopes[scope]
             if (where.Run != "") {
                 try {
                     Loop Reg, where.Run, "V" {
