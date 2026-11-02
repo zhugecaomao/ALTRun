@@ -5,7 +5,7 @@
 ; Enter switches to it (restoring it first if minimized).
 ;   "w word" (Keyword)     searches windows only; only "w " lists all windows (in z-order)
 ;   typing directly        with InDefaultResults = 1, windows whose title matches well show too (after applications and commands, at most 3)
-; Actions panel (→): close the window.
+; Actions panel (→): close the window. Every window is a result of its own (three documents open in Word: three results).
 ; Only windows visible on the taskbar are listed: visible, with a title, not tool windows / windows owned by another window,
 ; not on another virtual desktop (DWM cloaked), and none of ALTRun's own windows.
 ; The window list is reused within a search; typing within 1 s doesn't enumerate again.
@@ -49,7 +49,8 @@ class WindowProvider {
         hwnd := window.Hwnd
         return ResultItem(window.Title, I18n.T("Win.Subtitle", window.Process), {
             Icon: (window.Path != "") ? window.Path : "res:imageres.dll,-102", Score: score, Exclusive: exclusive,
-            Uid: "window:" StrLower(window.Process), Arg: window.Title,
+            Arg: window.Title,                                              ; no Uid: results with the same Uid are merged (one window per program), and a window isn't worth learning
+
             OnRun: (*) => WindowProvider.Activate(hwnd),
             Actions: [ResultItem(I18n.T("Action.CloseWindow"), window.Title, {Icon: "res:imageres.dll,-98", OnRun: (*) => WindowProvider.Close(hwnd)})]
         })

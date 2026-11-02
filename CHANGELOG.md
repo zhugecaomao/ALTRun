@@ -5,14 +5,43 @@
 
 ## [未发布]
 
-## [2026.10.26.49]
+## [2026.10.26.51]
 
 测试版。
 
 Test build.
 
 ### 新增
-- 同步任务第 2 步: 在搜索窗口里运行同步任务。输入任务名或 `sync ` (列出所有任务), Enter 运行, 运行中再按 Enter 停止; `→` 里有 运行、预览 (不做任何改动)、打开日志、打开源 / 目标文件夹。结果里显示状态 (运行中、持续同步中、上次成功 / 失败)。镜像运行前先预览, 会删除东西时先说明要删多少个文件和文件夹, 确认后才运行; 源找不到或是空的时不运行。任务结束时提示复制和删除了多少文件, 失败时可以打开日志。没有自己的日志文件时写到 `Data\SyncLogs`。退出 ALTRun 时停止持续同步的任务, 只是重新启动 (改设置、升级) 时继续运行。任务暂时写在设置文件里 (`SyncTasks`), 编辑界面在下一步
+- 同步任务第 2 步: 在搜索窗口里运行同步任务。输入任务名或 `sync ` (列出所有任务), Enter 运行, 运行中再按 Enter 停止; `→` 里有 运行、预览 (不做任何改动)、打开日志、打开源 / 目标文件夹。结果里显示状态 (运行中、持续同步中、上次成功 / 失败)。镜像运行前先预览, 会删除东西时先说明要删多少个文件和文件夹, 确认后才运行; 源找不到或是空的时不运行。任务结束时提示复制和删除了多少文件, 失败时可以打开日志。退出 ALTRun 时停止持续同步的任务, 只是重新启动 (改设置、升级) 时继续运行。任务暂时写在设置文件里 (`SyncTasks`), 编辑界面在下一步
+- 同步任务新增 "更新" 模式 (`"Mode": "Update"`, robocopy `/E /XO`): 只复制新的和更新过的文件, 不覆盖目标里更新的文件, 不删除
+- 同步日志: 没有自己的日志文件时写到 `%TEMP%\ALTRun\SyncLogs` (不放 Data 文件夹, Data 在 OneDrive 里时不会一直上传日志); 超过 30 天的日志在运行任务时自动删除 (`Features.Sync.KeepLogDays`, `0` = 全部保留); 每次运行在 `ALTRun.log` 里记一行结果
+
+## [2026.10.26.50]
+
+测试版。
+
+Test build.
+
+### 修复
+- 窗口切换: 同一个程序开了几个窗口 (例如 3 个文档) 时只能搜到其中一个, 输入 `w ` 列出全部窗口时也一样。以前每个程序只算一个结果, 现在每个窗口都是单独的结果
+
+## [2026.10.26.49]
+
+测试版。
+
+Test build.
+
+### 修复
+- 延迟启动页面的 "启动项..." 选好一个程序后报错 "Too many parameters passed to function" (2026.10.26.46 起的测试版), 现在会正常打开编辑框
+
+## [2026.10.26.48]
+
+测试版。
+
+Test build.
+
+### 修复
+- 延迟启动: ALTRun 启动 30 秒后对任务计划程序里的任务的检查 (换电脑或路径变化后自动更新任务) 一直没有执行 (2026.10.26.42 起的测试版): 计时器调用方式写错了, 而且错误被悄悄忽略。保存偏好设置时的同步不受影响。现在后台计时器出错会记进日志, 并加了检查防止同类写法
 
 ## [2026.10.26.47]
 
@@ -1377,8 +1406,11 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.49...HEAD
-[2026.10.26.49]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...2026.10.26.49
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.51...HEAD
+[2026.10.26.51]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.50...2026.10.26.51
+[2026.10.26.50]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.49...2026.10.26.50
+[2026.10.26.49]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.48...2026.10.26.49
+[2026.10.26.48]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...2026.10.26.48
 [2026.10.26.47]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.46...2026.10.26.47
 [2026.10.26.46]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...2026.10.26.46
 [2026.10.26.45]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...2026.10.26.45
