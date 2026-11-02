@@ -550,6 +550,28 @@ class CoreTests {
     }
 
     ; Quitting / restarting waits until Enter is let go (Total Commander opened a properties window when ALTRun exited with Enter held)
+    ; "Launch ALTRun at login" turned off in Task Manager → Startup apps: Preferences shows it off; ticking it turns it on there again
+    static LaunchAtLoginTaskManager() {
+        eq := (n, a, e) => TestRunner.Equal("LaunchAtLoginTaskManager." n, a, e)
+        name := "ALTRun unit test.lnk"                                      ; a value of its own: the real ALTRun.lnk entry is left alone
+        key := App.StartupApprovedKey
+        try {
+            try RegDelete(key, name)
+            eq("no entry: on", App.LaunchOffInTaskManager(name), false)
+            eq("on: nothing written", App.TurnOnInTaskManager(name), false)
+            RegWrite(DelayedStart.ApprovedData(true), "REG_BINARY", key, name)
+            eq("turned off in Task Manager", App.LaunchOffInTaskManager(name), true)
+            eq("turned on again", App.TurnOnInTaskManager(name) "|" App.LaunchOffInTaskManager(name) "|" RegRead(key, name), "1|0|020000000000000000000000")
+        } finally {
+            try RegDelete(key, name)
+        }
+        working := Map("General", Map("LaunchAtLogin", 1))
+        PreferencesWindow.ShowActualStartup(working, false)
+        eq("Preferences: on", working["General"]["LaunchAtLogin"], 1)
+        PreferencesWindow.ShowActualStartup(working, true)
+        eq("Preferences: off in Task Manager shows off", working["General"]["LaunchAtLogin"], 0)
+    }
+
     static ExitAfterEnter() {
         eq := (n, a, e) => TestRunner.Equal("ExitAfterEnter." n, a, e)
         pauses := 0

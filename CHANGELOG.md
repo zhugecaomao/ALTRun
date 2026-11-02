@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.52]
+
+测试版。
+
+Test build.
+
+### 修复
+- "开机自动启动" 在 任务管理器 → 启动应用 里被禁用后, 偏好设置里仍然显示为勾选, 其实已经不会启动。现在偏好设置显示真实状态 (禁用了就显示为关闭); 重新勾选并保存时, 也会在任务管理器里启用。ALTRun 启动时不会自己重新启用, 以任务管理器里的选择为准
+
 ## [2026.10.26.50]
 
 测试版。
@@ -1395,7 +1404,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.50...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.52...HEAD
+[2026.10.26.52]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.51...2026.10.26.52
 [2026.10.26.50]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.49...2026.10.26.50
 [2026.10.26.49]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.48...2026.10.26.49
 [2026.10.26.48]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...2026.10.26.48
