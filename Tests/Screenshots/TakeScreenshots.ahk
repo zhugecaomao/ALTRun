@@ -840,7 +840,7 @@ class Shots {
         for ctrl in WinGetControlsHwnd(prefs) {                             ; the controls of the page on show (other pages' are hidden)
             if !ControlGetVisible(ctrl)
                 continue
-            if (!list && WinGetClass(ctrl) = "SysListView32")
+            if (!list && WinGetClass(ctrl) = "SysListView32" && ControlGetClassNN(ctrl) != "SysListView321")   ; SysListView321 = the page list on the left
                 list := ctrl
             if (!button && WinGetClass(ctrl) = "Button" && ControlGetText(ctrl) = buttonText)
                 button := ctrl

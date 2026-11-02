@@ -73,7 +73,7 @@ class PreferencesWindow {
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
-        icons := NavIcons.ImageList(PreferencesWindow.PageKeys)             ; the image list's height is the row height (a roomier sidebar)
+        icons := NavIcons.ImageList(PreferencesWindow.PageKeys, PreferencesWindow.PageRowHeight())   ; the image list's height is the row height (a roomier sidebar)
         if icons
             pageList.SetImageList(icons, 1)
         for index, name in names
@@ -124,6 +124,10 @@ class PreferencesWindow {
 
     ; The selected row is shown by its highlight only, without a dotted focus rectangle (like the navigation in Windows Settings). Windows decides whether to show focus rectangles
     ; by "whether the keyboard was used recently", so the first time Preferences opens the dots sometimes show and sometimes don't; CDIS_FOCUS is removed before each row is drawn
+    ; The icon cell height of the page list: 26 (a roomy sidebar), less when all pages wouldn't fit without scrolling
+    ; (a row is the cell plus 2; the list is ButtonY - 24 high with a 2 px border)
+    static PageRowHeight() => Min(26, (PrefsForm.ButtonY - 24 - 4) // PreferencesWindow.PageKeys.Length - 2)
+
     static _OnPageListDraw(lParam) {
         stage := NumGet(lParam, 3 * A_PtrSize, "UInt")                      ; NMCUSTOMDRAW.dwDrawStage
         if (stage = 0x1)                                                    ; CDDS_PREPAINT

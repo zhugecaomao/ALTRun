@@ -37,13 +37,14 @@ class NavIcons {
         "Prefs.Page.Advanced",     0xE90F)    ; Repair
     static Color := 0x505050                                                ; RGB, a dark gray close to the body text
 
-    ; An image list with one icon per page (in the order of keys), cells 28 wide and 26 high (scaled with DPI), 16 px glyphs centered
-    static ImageList(keys) {
+    ; An image list with one icon per page (in the order of keys), cells 28 wide and cellH high (scaled with DPI), 16 px glyphs centered.
+    ; The cell height is the row height of the page list (plus 2 the list adds)
+    static ImageList(keys, cellH := 26) {
         font := NavIcons.FontName()
         if (font = "")
             return 0
         scale := A_ScreenDPI / 96
-        w := Round(28 * scale), h := Round(26 * scale)
+        w := Round(28 * scale), h := Round(cellH * scale)
         il := DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x20, "Int", keys.Length, "Int", 0, "Ptr")   ; ILC_COLOR32
         hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
         hFont := DllCall("CreateFontW", "Int", -Round(16 * scale), "Int", 0, "Int", 0, "Int", 0, "Int", 400, "UInt", 0, "UInt", 0, "UInt", 0

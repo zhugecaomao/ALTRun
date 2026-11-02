@@ -538,7 +538,7 @@ class ExtensionTests {
                 kinds := ""
                 for change in SyncJobs.Changes(FileRead(done[1][1].LogFile))
                     kinds .= change.Kind (change.Folder ? "/" : "") ":" RegExReplace(change.Path, ".*\\(?=[^\\]+\\?$)") " "
-                eq("preview: the list from the real log", kinds, "Copy:a.txt Delete:extra.txt Copy/:sub\ Copy:b.txt ")
+                eq("preview: the list from the real log", kinds, "Delete:extra.txt Copy:a.txt Copy/:sub\ Copy:b.txt ")   ; robocopy lists a folder's extra files first
             }
             eq("run started", SyncJobs.Start(real), "")
             wait("Check")
@@ -604,6 +604,7 @@ class ExtensionTests {
             eq("window: rows", SendMessage(0x1004, 0, 0, "SysListView321", g.Hwnd), 7)          ; LVM_GETITEMCOUNT
             eq("window: run and delete, close focused", (ControlGetHwnd("Run and Delete", g.Hwnd) ? 1 : 0) (ControlGetFocus(g.Hwnd) = ControlGetHwnd("Close", g.Hwnd) ? 1 : 0), "11")
             g.Move(, , 900, 600)                                            ; resizing keeps the buttons inside
+            Sleep(100)                                                      ; the Size event comes as a message
             ControlGetPos(&bx, &by, &bw, &bh, "Close", g.Hwnd)
             WinGetClientPos(, , &cw, &ch, g.Hwnd)
             eq("window: resized, Close at the bottom right", (bx + bw <= cw && by + bh <= ch && by + bh > ch - 40) ? 1 : 0, 1)
