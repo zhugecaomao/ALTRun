@@ -51,6 +51,7 @@ jobs:
     needs: changes
     if: needs.changes.outputs.shoot == 'true'
     runs-on: windows-latest
+    timeout-minutes: 45                                  # a normal run takes about 5 minutes; TakeScreenshots.ahk has its own limit (RunShots.ps1)
     strategy:
       fail-fast: false
       matrix:

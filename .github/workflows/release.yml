@@ -25,6 +25,7 @@ permissions:
 jobs:
   build:
     runs-on: windows-latest
+    timeout-minutes: 45                                    # a normal run takes under 10 minutes; the unit tests have their own limit (Tests/Tools/RunAhk.ps1)
     env:
       GH_TOKEN: ${{ github.token }}
       WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
@@ -82,12 +83,13 @@ jobs:
       - name: Unit tests
         shell: pwsh
         run: |
-          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk' `
-                  -Wait -PassThru -NoNewWindow -RedirectStandardOutput test.log -RedirectStandardError test.err
+          & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', 'Tests\RunTests.ahk' `
+            -Out test.log -Err test.err -TimeoutSeconds 600                 # about 70 s on GitHub's runners
+          $code = $LASTEXITCODE
           Get-Content test.log | Where-Object { $_ -notmatch '^PASS' }
           Get-Content test.log | Where-Object { $_ -match '^(FAIL|UNCAUGHT)' } | ForEach-Object { Write-Host "::error::$_" }   # failed tests show in the annotations of the check results
           Get-Content test.err
-          if ($proc.ExitCode -ne 0) { throw "Unit tests failed (exit code $($proc.ExitCode))" }
+          if ($code -ne 0) { throw "Unit tests failed (exit code $code)" }
 
       - name: Compile ALTRun.exe
         shell: pwsh
