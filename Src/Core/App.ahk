@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.51"
+    static Version := "2026.10.26.52"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -601,7 +601,7 @@ class App {
         sendTo := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
         description := App.Name " - " I18n.T("App.Tagline")
         for shortcut in [
-            [general["LaunchAtLogin"], A_Startup "\ALTRun.lnk", "-Startup"],
+            [general["LaunchAtLogin"], A_Startup "\" App.StartupLinkName, "-Startup"],
             [general["SendToMenu"], sendTo, "-SendTo"],
             [general["StartMenuShortcut"], A_Programs "\ALTRun.lnk", ""]
         ] {
@@ -614,6 +614,31 @@ class App {
             } catch as e {
                 Logger.Error("App: shortcut " shortcut[2] " - " e.Message)
             }
+        }
+    }
+
+    ; "Launch ALTRun at login" can also be turned off in Task Manager → Startup apps: the shortcut stays, and Windows marks it off in
+    ; StartupApproved (see DelayedStart.SetEntryOff). Preferences shows the option as off then, and turns it on again there when ticked.
+    ; ALTRun itself never turns it back on at start-up: what the user chose in Task Manager stands
+    static StartupLinkName := "ALTRun.lnk"
+    static StartupApprovedKey => "HKCU" DelayedStart.ApprovedKey "StartupFolder"
+
+    static LaunchOffInTaskManager(name := App.StartupLinkName) {
+        data := ""
+        try data := RegRead(App.StartupApprovedKey, name)
+        return DelayedStart.IsOffData(data)
+    }
+
+    ; Ticked in Preferences: on in Task Manager too (only when it is off there; nothing is written otherwise)
+    static TurnOnInTaskManager(name := App.StartupLinkName) {
+        if !App.LaunchOffInTaskManager(name)
+            return false
+        try {
+            RegWrite(DelayedStart.ApprovedData(false), "REG_BINARY", App.StartupApprovedKey, name)
+            return true
+        } catch as e {
+            Logger.Error("App: cannot turn on the start-up shortcut in Task Manager - " e.Message)
+            return false
         }
     }
 
