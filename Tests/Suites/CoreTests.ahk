@@ -1270,6 +1270,17 @@ Func | PTTools | PT Tools (AHK)=99
             TestRunner.True("ShellMenu.submenu handler", shellMenu.HandlerLevel >= 2)
             TestRunner.True("ShellMenu.menu text", ShellContextMenu.MenuText(shellMenu.Menu) != "")
             shellMenu := ""
+            if !DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr") {   ; Wine's GetCommandString doesn't return
+                has(verbs, name) {
+                    for verb in verbs
+                        if (verb = name)
+                            return true
+                    return false
+                }
+                program := ShellContextMenu([A_WinDir "\System32\notepad.exe"]).Verbs()
+                eq("verbs: a program can run as administrator", has(program, "runas") && has(program, "open"), true)
+                eq("verbs: a text file can't", has(ShellContextMenu([root "\a.txt"]).Verbs(), "runas"), false)
+            }
             thrown := false
             try ShellContextMenu([root "\gone.txt"])
             catch
@@ -1292,6 +1303,30 @@ Func | PTTools | PT Tools (AHK)=99
             eq("folder: offered", InStr(titles(ResultActions.ListFor(ResultItem("sub", "", {Kind: "folder", Arg: root "\sub"}))).Text, label) > 0, true)
             eq("missing file: not offered", InStr(titles(ResultActions.ListFor(ResultItem("x", "", {Kind: "file", Arg: root "\gone.txt"}))).Text, label), 0)
             eq("store app: offered", InStr(titles(ResultActions.ListFor(ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"}))).Text, label) > 0, true)
+
+            ; Run as administrator: by extension, and for Store / packaged apps when their context menu has it (as in the Start menu)
+            admin := I18n.T("Action.RunAsAdmin") "|"
+            savedVerbs := ActionCatalog.AppVerbs, asked := []
+            fakeVerbs(target) {                                             ; Terminal: a desktop app; Broken: no context menu
+                asked.Push(target)
+                if InStr(target, "Broken")
+                    throw Error("no menu")
+                return InStr(target, "Terminal") ? ["open", "runas"] : ["open"]
+            }
+            ActionCatalog.AppVerbs := fakeVerbs
+            ActionCatalog._runAs.Clear()
+            try {
+                terminal := "shell:AppsFolder\Microsoft.WindowsTerminal_8wekyb3d8bbwe!App", calculator := "shell:AppsFolder\Microsoft.WindowsCalculator_8wekyb3d8bbwe!App"
+                eq("run as admin: desktop Store app", InStr(titles(ResultActions.ListFor(ResultItem("Terminal", "", {Kind: "file", Arg: terminal}))).Text, admin) > 0, true)
+                eq("run as admin: UWP app not", InStr(titles(ResultActions.ListFor(ResultItem("Calculator", "", {Kind: "file", Arg: calculator}))).Text, admin), 0)
+                ResultActions.ListFor(ResultItem("Terminal", "", {Kind: "file", Arg: terminal}))
+                eq("run as admin: asked once per app", asked.Length, 2)
+                eq("run as admin: no menu = not offered", ActionCatalog.CanRunAsAdmin("shell:AppsFolder\Broken_1!App"), false)
+                eq("run as admin: by extension, without asking", (ActionCatalog.CanRunAsAdmin("C:\Tools\x.EXE") ? 1 : 0) (ActionCatalog.CanRunAsAdmin("C:\a.txt") ? 1 : 0) (ActionCatalog.CanRunAsAdmin("shell:AppsFolder\a\b") ? 1 : 0) "|" asked.Length, "100|3")
+                eq("packaged app", (ActionCatalog.IsPackagedApp(terminal) ? 1 : 0) (ActionCatalog.IsPackagedApp("shell:AppsFolder") ? 1 : 0) (ActionCatalog.IsPackagedApp("shell:Downloads") ? 1 : 0), "100")
+            } finally {
+                ActionCatalog.AppVerbs := savedVerbs, ActionCatalog._runAs.Clear()
+            }
             eq("custom command with %Temp%: offered", InStr(titles(ResultActions.ListFor(ResultItem("a", "", {Kind: "file", Arg: "%Temp%\ALTRun-shell-menu-test\a.txt"}))).Text, label) > 0, true)
             eq("custom command by program name: offered", InStr(titles(ResultActions.ListFor(ResultItem("Notepad", "", {Kind: "file", Arg: "notepad"}))).Text, label) > 0, true)
             eq("command line: not offered", InStr(titles(ResultActions.ListFor(ResultItem("ping", "", {Kind: "file", Arg: "ping -t localhost"}))).Text, label), 0)
