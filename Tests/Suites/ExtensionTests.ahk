@@ -350,6 +350,16 @@ class ExtensionTests {
         eq("mirror into a drive or share root", codes(RoboSync.Check(mk("A", "\\srv\x", "E:\"))) codes(RoboSync.Check(mk("A", "D:\x", "\\nas\backup"))), "Error:MirrorRoot=e: Error:MirrorRoot=\\nas\backup ")
         eq("mirror into the user folder", codes(RoboSync.Check(mk("A", "\\srv\x", "%UserProfile%"))), "Error:MirrorRoot=" StrLower(EnvGet("UserProfile")) " ")
         eq("copy into a root is fine", codes(RoboSync.Check(mk("A", "\\srv\x", "E:\", "Copy"))), "")
+        ; Only full paths: a relative one, "\folder" (the current drive's root), "D:folder", a variable this PC doesn't have, a bare server
+        eq("not full paths", codes(RoboSync.Check(mk("A", "Sync\src", "%ALTRunNoSuchVariable%\x", "Copy")))
+            , "Error:SourceNotAbsolute=sync\src Error:DestinationNotAbsolute=%altrunnosuchvariable%\x ")
+        eq("not full paths: root-relative, drive-relative, server only", codes(RoboSync.Check(mk("A", "\\srv", "\Users", "Copy"))) codes(RoboSync.Check(mk("A", "D:folder", "E:\x", "Copy")))
+            , "Error:SourceNotAbsolute=\\srv Error:DestinationNotAbsolute=\users Error:SourceNotAbsolute=d:folder ")
+        eq("full paths", (RoboSync.IsAbsolute("d:") ? 1 : 0) (RoboSync.IsAbsolute("d:\x") ? 1 : 0) (RoboSync.IsAbsolute("\\srv\share") ? 1 : 0) (RoboSync.IsAbsolute(RoboSync.Normal("%TEMP%\x")) ? 1 : 0), "1111")
+        monitored := mk("A", "\\srv\x", "D:\y"), monitored["Monitor"] := 1
+        eq("a mirror can't keep in sync", codes(RoboSync.Check(monitored)), "Error:MirrorMonitor ")
+        monitored["Mode"] := "Update"
+        eq("an update can", codes(RoboSync.Check(monitored)), "")
         threads := mk("A", "\\srv\x", "D:\y"), threads["Threads"] := 200
         eq("threads", codes(RoboSync.Check(threads)), "Error:Threads=200 ")
         a := mk("A", "\\srv\a", "D:\Sync\Tenders", , "D:\Logs\T_{date}.log"), b := mk("B", "\\srv\a\2026", "D:\Sync\Tenders\2026", , "D:\Logs\T_{date}.log"), c := mk("C", "\\srv\c", "D:\Sync\Other")
@@ -644,6 +654,8 @@ class ExtensionTests {
         eq("read: mode, monitor, numbers (not a number = default)", edited["Mode"] "|" edited["Monitor"] "|" edited["MonitorChanges"] "|" edited["MonitorMinutes"] "|" edited["Retries"] "|" edited["Wait"] "|" edited["Threads"], "Update|1|3|5|2|1|8")
         eq("read: patterns", RoboSync.JoinPatterns(edited["ExcludeFiles"]) "|" RoboSync.JoinPatterns(edited["ExcludeDirs"]), "~$*.*; *.tmp; Old File.bak|Archive; $Recycle.Bin")
         eq("read: other keys kept, original unchanged", edited["Custom"] "|" edited["Extra"] "|" task["Name"], "kept|/NP|Old")
+        values["Mode"] := 1                                                 ; Mirror: keeping in sync is turned off
+        eq("read: a mirror doesn't keep in sync", SyncEditor.Read(task, values)["Monitor"], 0)
         eq("mode names", RoboSync.ModeText("Mirror") "|" RoboSync.ModeText("Update") "|" RoboSync.ModeText("Copy") "|" RoboSync.ModeText("Top") "|" RoboSync.ModeText("x"), "Mirror|Update|Copy all|Top folder only|Copy all")
         eq("problem fields", SyncEditor.FieldOf("Nested") "|" SyncEditor.FieldOf("MirrorRoot") "|" SyncEditor.FieldOf("Threads"), "Source|Destination|Threads")
 

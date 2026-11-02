@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.10.26.55]
+
+测试版。
+
+Test build.
+
+### 修复
+- 同步任务的源和目标必须是完整路径 (`D:\...` 或 `\\server\share\...`): 相对路径、`\文件夹` (当前盘的根目录)、这台电脑上没有的环境变量 (例如没装 OneDrive 时的 `%OneDrive%`) 以前会让 robocopy 在别的文件夹里操作, 镜像时可能删掉不相干的文件。现在这样的任务在编辑窗口里不能保存, 也不会运行
+- 镜像不再能持续同步: robocopy 之后每一轮都会删除, 却没有 ALTRun 运行前的检查 (源找不到或是空的)。编辑窗口里选镜像时 "何时运行" 固定为 "只在我运行时", 并说明原因; 设置文件里已有的这种任务运行时会提示改用 "更新" 模式
+- robocopy 在 TEMP 文件夹里运行, 不再在 ALTRun 的程序文件夹里
+
 ## [2026.10.26.54]
 
 测试版。
@@ -1435,7 +1446,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.54...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.55...HEAD
+[2026.10.26.55]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.54...2026.10.26.55
 [2026.10.26.54]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.53...2026.10.26.54
 [2026.10.26.53]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.52...2026.10.26.53
 [2026.10.26.52]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.51...2026.10.26.52

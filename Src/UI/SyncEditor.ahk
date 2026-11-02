@@ -79,7 +79,7 @@ class SyncEditor {
         c["MonitorChanges"] := g.AddEdit("x+6 ys-3 w44 r1 -Multi Number", task["MonitorChanges"])
         g.AddText("x+12 ys", I18n.T("Sync.Field.MonitorMinutes"))
         c["MonitorMinutes"] := g.AddEdit("x+6 ys-3 w44 r1 -Multi Number", task["MonitorMinutes"])
-        hint(I18n.T("Sync.Field.When.Hint"))
+        whenHint := hint(I18n.T("Sync.Field.When.Hint") "`n ")              ; two lines tall: the mirror's note fits
 
         label("Sync.Field.ExcludeFiles")
         c["ExcludeFiles"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w" inputW " r1 -Multi", RoboSync.JoinPatterns(task["ExcludeFiles"]))
@@ -143,6 +143,10 @@ class SyncEditor {
             mode := RoboSync.Modes[c["Mode"].Value]
             modeHint.Opt(mode = "Mirror" ? "cC42B1C" : "cGray")
             modeHint.Value := I18n.T("Sync.ModeHint." mode)
+            if (mode = "Mirror")                                            ; a mirror only runs when started (RoboSync.Check: MirrorMonitor)
+                c["Monitor"].Value := 1
+            c["Monitor"].Enabled := (mode != "Mirror")
+            whenHint.Value := I18n.T(mode = "Mirror" ? "Sync.Field.When.Mirror" : "Sync.Field.When.Hint")
             monitor := c["Monitor"].Value = 2
             c["MonitorChanges"].Enabled := monitor, c["MonitorMinutes"].Enabled := monitor
             built := RoboSync.Build(SyncEditor.Read(task, Values()))
@@ -189,8 +193,9 @@ class SyncEditor {
     ; The field to go back to for a problem code
     static FieldOf(code) {
         switch code {
-            case "NoSource", "SamePath", "Nested": return "Source"
-            case "NoDestination", "MirrorRoot": return "Destination"
+            case "NoSource", "SamePath", "Nested", "SourceNotAbsolute": return "Source"
+            case "NoDestination", "MirrorRoot", "DestinationNotAbsolute": return "Destination"
+            case "MirrorMonitor": return "Mode"
             case "Threads": return "Threads"
         }
         return "Name"
@@ -207,7 +212,7 @@ class SyncEditor {
         for key in ["Source", "Destination"]
             edited[key] := RoboSync.TrimSlash(edited[key])
         edited["Mode"] := RoboSync.Modes[Max(1, Min(RoboSync.Modes.Length, values["Mode"]))]
-        edited["Monitor"] := values["Monitor"] = 2 ? 1 : 0
+        edited["Monitor"] := (values["Monitor"] = 2 && edited["Mode"] != "Mirror") ? 1 : 0   ; a mirror doesn't keep in sync
         for key in ["MonitorChanges", "MonitorMinutes", "Retries", "Wait", "Threads"]
             edited[key] := number(key)
         edited["AppendLog"] := values["AppendLog"] ? 1 : 0

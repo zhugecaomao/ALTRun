@@ -179,7 +179,7 @@ class SyncJobs {
         SplitPath(logFile, , &logDir)
         try DirCreate(logDir)                                               ; robocopy doesn't create the log's folder
         pid := 0
-        try Run('"' command.Program '" ' command.Args, , "Hide", &pid)
+        try Run('"' command.Program '" ' command.Args, A_Temp, "Hide", &pid)   ; the folders are full paths (RoboSync.Check); a relative log file goes to TEMP
         catch as e {
             Logger.Error("SyncJobs: cannot start robocopy for " task["Name"] " - " e.Message)
             return "StartFailed"
