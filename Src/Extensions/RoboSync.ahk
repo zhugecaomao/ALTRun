@@ -8,7 +8,8 @@
 ;
 ; ALTRun.json, settings key "SyncTasks" (paths may use %environment variables%; {date} / {time} in the log file name):
 ;   [ { "Name": "Projects", "Source": "\\\\server\\projects", "Destination": "%OneDrive%\\Projects", "Files": "*.*",
-;       "Mode": "Mirror",                Mirror = /MIR (deletes in the destination what isn't in the source), Copy = /E, Top = top folder only
+;       "Mode": "Mirror",                Mirror = /MIR (deletes in the destination what isn't in the source), Update = /E /XO (new and
+;                                        newer files only, never overwrites a newer one), Copy = /E (all that differ), Top = top folder only
 ;       "Copy": "DAT", "DirCopy": "DA",  /COPY: /DCOPY: (data, attributes, times; no permissions, which OneDrive doesn't keep anyway)
 ;       "Retries": 1, "Wait": 1, "Threads": 16,                      /R: /W: /MT: (0 = no /MT)
 ;       "Monitor": 0, "MonitorChanges": 1, "MonitorMinutes": 5,      /MON: /MOT: (keeps running, syncs again after changes / minutes)
@@ -47,6 +48,7 @@ class RoboSync {
             args.Push("/L")
         switch get("Mode") {
             case "Mirror": args.Push("/MIR")
+            case "Update": args.Push("/E", "/XO")
             case "Copy": args.Push("/E")
         }
         if (get("Copy") != "")
@@ -106,7 +108,7 @@ class RoboSync {
         tokens := RoboSync.Tokens(RoboSync.FromTotalCommander(commandLine, notes))
         if (tokens.Length && RegExMatch(tokens[1], "i)(^|\\)robocopy(\.exe)?$"))
             tokens.RemoveAt(1)
-        positional := [], extra := [], list := ""
+        positional := [], extra := [], list := "", skipOlder := false
         for token in tokens {
             if (SubStr(token, 1, 1) != "/") {
                 if IsObject(list)
@@ -124,6 +126,8 @@ class RoboSync {
             } else if (option = "/E") {
                 if (task["Mode"] != "Mirror")
                     task["Mode"] := "Copy"
+            } else if (option = "/XO") {
+                skipOlder := true
             } else if (option = "/L") {
                 notes.Push("Preview")
             } else if RegExMatch(token, "i)^/(R|W|MON|MOT):(\d+)$", &m) {
@@ -151,6 +155,10 @@ class RoboSync {
                 files .= (files = "" ? "" : " ") RoboSync.Quote(positional[A_Index + 2])
             task["Files"] := files
         }
+        if (skipOlder && task["Mode"] = "Copy")                             ; /E /XO: the Update mode
+            task["Mode"] := "Update"
+        else if skipOlder
+            extra.InsertAt(1, "/XO")
         for item in extra
             task["Extra"] .= (task["Extra"] = "" ? "" : " ") item
         if (positional.Length < 2)
