@@ -33,8 +33,9 @@ class DelayedStart {
 
     static Schedule() {
         if DelayedStart.Items.Length
-            WinTimer.Set(DelayedStart._StartupSync, -DelayedStart.StartupSyncMs)
+            WinTimer.Set(DelayedStart._startupTimer, -DelayedStart.StartupSyncMs)
     }
+    static _startupTimer := () => DelayedStart._StartupSync()               ; a function to call: DelayedStart._StartupSync on its own would lack "this" (ProjectTests.TimerCallbacks)
 
     static _StartupSync() {
         problems := DelayedStart.Sync()

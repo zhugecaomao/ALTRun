@@ -86,6 +86,8 @@ class WinTimer {
             WinTimer._Delete(id)
         timer.Running := true
         try timer.Fn.Call()
+        catch as e                                                          ; logged, not shown: a timer is background work (a dialog every tick would be worse)
+            Logger.Error("WinTimer: " e.Message " (" e.What ", " e.File ":" e.Line ")")
         finally {
             if (WinTimer._byId.Has(id) && WinTimer._byId[id].Fn = timer.Fn)   ; may have been stopped or set again meanwhile
                 WinTimer._byId[id].Running := false
