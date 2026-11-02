@@ -28,12 +28,13 @@ class ShellContextMenu {
 
     ; Whether the paths can share one context menu: at least one, all exist, all in the same folder (drive roots each on their own).
     ; Apps in shell:AppsFolder (Store apps, as the Start menu lists them) count as existing: their menu has Pin to Start, Uninstall...
+    ; Paths on the network aren't checked here (the actions panel would wait for an offline server); the menu reports them when opened
     static CanShow(paths) {
         if !(paths is Array) || !paths.Length
             return false
         parent := ""
         for item in paths {
-            if !(FileExist(item) || RegExMatch(item, "i)^shell:AppsFolder\\."))
+            if !(RegExMatch(item, "i)^shell:AppsFolder\\.") || RegExMatch(item, "^([A-Za-z]:\\|\\\\)") && Path.ExistsOrRemote(item))
                 return false
             folder := ShellContextMenu._Parent(item)
             if (A_Index = 1)
@@ -129,12 +130,17 @@ class ShellContextMenu {
     }
 
     ; Fills the popup menu (QueryContextMenu) without showing it; Track does this first. Returns the menu handle (destroyed with the object).
-    ; extended: CMF_EXTENDEDVERBS; no CMF_CANRENAME, since renaming needs Explorer's own view
+    ; extended: CMF_EXTENDEDVERBS; no CMF_CANRENAME, since renaming needs Explorer's own view. Throws when it fails or adds nothing
+    ; (an empty menu would show as a blank box)
     Fill(extended := false) {
         if this.Menu
             DllCall("DestroyMenu", "Ptr", this.Menu)
         this.Menu := DllCall("CreatePopupMenu", "Ptr")
-        ComCall(3, this._contextMenu, "Ptr", this.Menu, "UInt", 0, "UInt", ShellContextMenu.FirstId, "UInt", ShellContextMenu.LastId, "UInt", extended ? 0x100 : 0, "Int")
+        result := ComCall(3, this._contextMenu, "Ptr", this.Menu, "UInt", 0, "UInt", ShellContextMenu.FirstId, "UInt", ShellContextMenu.LastId, "UInt", extended ? 0x100 : 0, "Int")
+        if (result < 0)
+            throw OSError("QueryContextMenu failed (0x" Format("{:08X}", result & 0xFFFFFFFF) ")", -1)
+        if (DllCall("GetMenuItemCount", "Ptr", this.Menu, "Int") <= 0)
+            throw Error("The context menu has no items", -1)
         return this.Menu
     }
 

@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.26.41]
+
+测试版。
+
+Test build.
+
+### 修复
+- 偏好设置 → 通用 → "文件管理器" 里写的路径可以用环境变量了, 例如 `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (以前打不开文件夹); 找不到这个程序时改用资源管理器打开, 并记在日志里。自定义命令等的路径也能用所有环境变量 (`%LocalAppData%`、`%ProgramFiles%`...), 以前只认 `%Temp%`、`%OneDrive%`、`%AppData%`、`%UserProfile%`
+- 文件在离线的服务器或网络盘上时, 按 `→` 打开操作面板要等网络超时才出来: 现在列出操作时不再访问网络路径, 真正执行时才检查
+- 文件管理器名字里带 explorer 的 (例如 Explorer++、XYplorer) 以前会被当成资源管理器, 现在按程序本身识别
+- Windows 右键菜单生成失败或没有菜单项时, 不再弹出一个空白的菜单, 而是提示 "这一项没有 Windows 右键菜单"
+
 ## [2026.10.26.40]
 
 测试版。
@@ -1310,7 +1322,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.40...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.41...HEAD
+[2026.10.26.41]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.40...2026.10.26.41
 [2026.10.26.40]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.39...2026.10.26.40
 [2026.10.26.39]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.38...2026.10.26.39
 [2026.10.26.38]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.37...2026.10.26.38
