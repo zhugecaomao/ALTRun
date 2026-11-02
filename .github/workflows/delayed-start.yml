@@ -51,6 +51,10 @@ jobs:
           net user $name $password /add
           if ($LASTEXITCODE -ne 0) { throw "could not create the test user" }
           $credential = New-Object System.Management.Automation.PSCredential("$env:COMPUTERNAME\$name", (ConvertTo-SecureString $password -AsPlainText -Force))
+          # A process started with other credentials inherits this environment: TEMP would be the administrator's (no access)
+          $env:TEMP = $env:TMP = "$root\temp"
+          New-Item -ItemType Directory $env:TEMP -Force | Out-Null
+          icacls $env:TEMP /grant "${name}:(OI)(CI)M" | Out-Null
           $proc = Start-Process "$root\tools\ahk\AutoHotkey64.exe" -Credential $credential -LoadUserProfile -WorkingDirectory $root `
                   -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk', 'DelayedStartCheck' `
                   -PassThru -RedirectStandardOutput "$root\check.log" -RedirectStandardError "$root\check.err"
