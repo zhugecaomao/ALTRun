@@ -485,7 +485,9 @@ class PrefsForm {
         return ctrl
     }
 
-    ; List page: a ListView shows the array at path; Add / Edit / Delete use ItemEditor
+    ; List page: a ListView shows the array at path; Add / Edit / Delete use ItemEditor (fields), or an editor of the page's own
+    ; (fields = (owner, title, item, original) => the edited item or "")
+    ; Returns the list object: {Items, Insert, Append, Edit, Reload, Selected, View}; its functions are properties, called with .Call
     ; check: optional, (item, roots) => "OK" / "Missing" / "Unavailable" / "Skipped".
     ; When given there is a "Check paths" button, with the results in a "Status" column (the items themselves have no such key)
     ; The filter box right of the buttons: only items containing all the typed words (searched in every column's text, case-insensitive)
@@ -538,8 +540,17 @@ class PrefsForm {
                 statuses[ObjPtr(item)] := check(item, Map())
         }
         AddItem(*) => Insert(newItem())
+        EditWith(item, original := "") {                                    ; fields: the editor's fields, or an editor of its own: (owner, title, item, original) => edited / ""
+            if (fields is Array)
+                return ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, item)
+            return fields.Call(PreferencesWindow.Gui, pageName, item, original)
+        }
+        SelectedItem() {                                                    ; the item of the selected row, "" when none
+            row := listView.GetNext()
+            return row ? items[shown[row]] : ""
+        }
         Insert(item) {                                                      ; Opens the edit dialog (item = the prefilled content) and adds the result to the list on OK
-            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, item)
+            edited := EditWith(item)
             if IsObject(edited)
                 Append(edited)
         }
@@ -566,7 +577,7 @@ class PrefsForm {
             if !row
                 return
             index := shown[row]
-            edited := ItemEditor.Edit(PreferencesWindow.Gui, pageName, fields, ItemEditor.WithDefaults(items[index], newItem()))
+            edited := EditWith(ItemEditor.WithDefaults(items[index], newItem()), items[index])
             if IsObject(edited) {
                 if statuses.Has(ObjPtr(items[index]))
                     statuses.Delete(ObjPtr(items[index]))
@@ -617,7 +628,8 @@ class PrefsForm {
                 filterBox.Value := ""
             Refresh()
         }
-        list := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting, Reload: ReloadList}
+        RedrawList() => Refresh(listView.GetNext())                          ; the texts again (e.g. a state column), keeping the filter and the selection
+        list := {Items: items, Insert: Insert, Append: Append, Edit: EditExisting, Reload: ReloadList, Redraw: RedrawList, Selected: SelectedItem, View: listView}
         PreferencesWindow._lists[path] := list                              ; items added from outside (AddCommands)
         PrefsForm._y += height - 34
         PrefsForm.Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
@@ -634,6 +646,7 @@ class PrefsForm {
         Win.SetCueBanner(filterBox.Hwnd, I18n.T("Prefs.Filter"))
         filterBox.OnEvent("Change", (*) => Refresh())
         PrefsForm._y += 38
+        return list
     }
 
     ; Filter box: shown only when every word of filter (separated by spaces) appears in some column, case-insensitive; all shown when empty

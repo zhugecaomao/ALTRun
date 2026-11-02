@@ -535,6 +535,21 @@ class ExtensionTests {
             if done.Length {
                 s := SyncJobs.Summary(FileRead(done[1][1].LogFile))
                 eq("preview: would copy 2, delete 1, nothing changed", RoboSync.Result(done[1][2]).Ok "|" (IsObject(s) ? s.Files.Copied "|" s.Files.Extras : "no summary") "|" (FileExist(root "\dst\a.txt") != ""), "1|2|1|0")
+                kinds := ""
+                for change in SyncJobs.Changes(FileRead(done[1][1].LogFile))
+                    kinds .= change.Kind (change.Folder ? "/" : "") ":" RegExReplace(change.Path, ".*\\(?=[^\\]+\\?$)") " "
+                eq("preview: the list from the real log", kinds, "Delete:extra.txt Copy:a.txt Copy/:sub\ Copy:b.txt ")   ; robocopy lists a folder's extra files first
+                real["Threads"] := 8                                        ; several threads (the default 16): the log has full paths, no folder lines
+                done.Length := 0
+                SyncJobs.Start(real, true, (job, code) => done.Push([job, code]))
+                wait("Check")
+                files := ""
+                if done.Length
+                    for change in SyncJobs.Changes(FileRead(done[1][1].LogFile))
+                        if !change.Folder
+                            files .= change.Kind ":" RegExReplace(change.Path, ".*\\") "`n"
+                eq("preview with threads: the files", Trim(StrReplace(Sort(files), "`n", " ")), "Copy:a.txt Copy:b.txt Delete:extra.txt")
+                real["Threads"] := 0
             }
             eq("run started", SyncJobs.Start(real), "")
             wait("Check")
@@ -558,6 +573,115 @@ class ExtensionTests {
             SyncJobs.StopAll(), SyncJobs.Last.Clear()
             AppSettings.DataDir := savedDir, SyncJobs.LogDir := savedLogDir
             try DirDelete(root, true)
+        }
+    }
+
+    ; Step 3: the preview's list read from a robocopy log, the preview window's rows, the editor's values, the short states
+    static SyncPreview() {
+        eq := (n, a, e) => TestRunner.Equal("SyncPreview." n, a, e)
+        logText := "-------------------------------------------------------------------------------`r`n"
+            . "   ROBOCOPY     ::     Robust File Copy for Windows`r`n`r`n"
+            . "   Source : C:\src\`r`n     Dest : D:\dst\`r`n`r`n    Files : *.*`r`n`t    `r`n"
+            . "  Options : *.* /L /S /E /DCOPY:DA /COPY:DAT /PURGE /MIR /R:0 /W:0`r`n`r`n"
+            . "`t                   2`tC:\src\`r`n"
+            . "`t    New File  `t`t       1`ta.txt`r`n"
+            . "`t    Newer     `t`t    1.5 m`tplan.dwg`r`n"
+            . "`t  *EXTRA File `t`t       1`textra.txt`r`n"
+            . "`t  New Dir          1`tC:\src\sub\`r`n"
+            . "`t    New File  `t`t       1`tb.txt`r`n"
+            . "`t*EXTRA Dir        -1`tD:\dst\old\`r`n"
+            . "`t  *EXTRA File `t`t       3`told.txt`r`n"
+            . "`r`n               Total    Copied   Skipped  Mismatch    FAILED    Extras`r`n"
+            . "    Dirs :         3         1         1         0         0         1`r`n"
+            . "   Files :         4         3         0         0         0         2`r`n"
+        changes := SyncJobs.Changes(logText)
+        text := ""
+        for change in changes
+            text .= change.Kind (change.Folder ? "/" : "") " " change.Path "|"
+        eq("changes", text, "Copy C:\src\a.txt|Copy C:\src\plan.dwg|Delete C:\src\extra.txt|Copy/ C:\src\sub\|Copy C:\src\sub\b.txt|Delete/ D:\dst\old\|Delete D:\dst\old\old.txt|")
+        eq("labels as robocopy wrote them", changes[2].Label "|" changes[6].Label, "Newer|*EXTRA Dir")
+        limited := SyncJobs.Changes(logText, 2)
+        eq("limit, total", limited.Length "|" limited.Total, "2|7")
+        multi := "`t    New File  `t`t       6`tC:\Demo Sync\Server\Projects\Plan.docx`r`n"     ; /MT: no folder lines, full paths
+            . "`t  *EXTRA File `t`t       6`tC:\Demo Sync\OneDrive\Projects\Old Notes.txt`r`n"
+        text := ""
+        for change in SyncJobs.Changes(multi)
+            text .= change.Kind " " change.Path "|"
+        eq("changes with /MT", text, "Copy C:\Demo Sync\Server\Projects\Plan.docx|Delete C:\Demo Sync\OneDrive\Projects\Old Notes.txt|")
+        eq("no list", SyncJobs.Changes("").Length "|" SyncJobs.Changes("ERROR 53`tAccessing Source Directory \\srv\x\").Length, "0|0")
+        rows := SyncPreview.Rows(changes, "C:\src", "D:\dst\")
+        eq("rows: deletions first, relative", rows[1][1] " " rows[1][2] "|" rows[2][2] "|" rows[3][2] "|" rows[4][1] " " rows[4][2] "|" rows[7][2], "Delete extra.txt|old\|old\old.txt|Copy a.txt|sub\b.txt")
+        eq("rows: folders", rows[2][1] "|" rows[6][1], "Delete folder|New folder")
+
+        ; The preview window: the summary, the list, Run and Delete only when asked for; Enter closes it
+        result := {Summary: SyncJobs.Summary(logText), Changes: changes, LogFile: ""}
+        previewTask := Map("Name", "Projects", "Source", "C:\src", "Destination", "D:\dst", "Mode", "Mirror")
+        g := SyncPreview.Show(previewTask, result, {Run: true, Confirm: true})
+        try {
+            eq("window: rows", SendMessage(0x1004, 0, 0, "SysListView321", g.Hwnd), 7)          ; LVM_GETITEMCOUNT
+            eq("window: run and delete, close focused", (ControlGetHwnd("Run and Delete", g.Hwnd) ? 1 : 0) (ControlGetFocus(g.Hwnd) = ControlGetHwnd("Close", g.Hwnd) ? 1 : 0), "11")
+            g.Move(, , 900, 600)                                            ; resizing keeps the buttons inside
+            Sleep(100)                                                      ; the Size event comes as a message
+            ControlGetPos(&bx, &by, &bw, &bh, "Close", g.Hwnd)
+            WinGetClientPos(, , &cw, &ch, g.Hwnd)
+            eq("window: resized, Close at the bottom right", (bx + bw <= cw && by + bh <= ch && by + bh > ch - 40) ? 1 : 0, 1)
+        } finally {
+            try g.Destroy()
+        }
+        g := SyncPreview.Show(previewTask, result, {Run: false, Confirm: false})
+        try eq("window: preview from the editor offers no run", ControlGetHwnd("Run Now", g.Hwnd) || 0, 0)
+        catch
+            TestRunner.Passed++                                             ; ControlGetHwnd throws when there is no such button
+        try g.Destroy()
+
+        ; The edit window: opens with the task, shows the command, OK returns the task as edited
+        owner := Gui()
+        seen := {Command: "", Error: ""}
+        task := RoboSync.NewTask()
+        task["Name"] := "Team", task["Source"] := "\\srv\team", task["Destination"] := "D:\Sync\Team"
+        SetTimer(PressOk, -400)
+        edited := SyncEditor.Edit(owner, "Sync test", task, "", [])
+        eq("editor: command shown", (InStr(seen.Command, "robocopy \\srv\team D:\Sync\Team *.* /MIR") = 1) ? 1 : seen.Command seen.Error, 1)
+        eq("editor: OK returns the task", IsObject(edited) ? edited["Name"] "|" edited["Mode"] "|" edited["Destination"] : "cancelled", "Team|Mirror|D:\Sync\Team")
+        owner.Destroy()
+        PressOk() {
+            try {
+                hwnd := WinExist("Sync test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())
+                for ctrl in WinGetControlsHwnd(hwnd)
+                    if (WinGetClass(ctrl) = "Edit" && InStr(ControlGetText(ctrl), "robocopy ") = 1)
+                        seen.Command := ControlGetText(ctrl)
+                ControlClick("OK", hwnd)
+            } catch as e {
+                seen.Error := e.Message
+                try WinClose(hwnd)
+            }
+        }
+
+        ; The editor's values -> the task
+        task := RoboSync.NewTask()
+        task["Name"] := "Old", task["Custom"] := "kept"
+        values := Map("Name", "  Team  ", "Source", "\\srv\team\", "Destination", "D:\Sync\Team\", "Files", "", "Mode", 2, "Monitor", 2
+            , "MonitorChanges", "3", "MonitorMinutes", "x", "ExcludeFiles", "~$*.*; *.tmp `;; Old File.bak", "ExcludeDirs", "Archive`n$Recycle.Bin"
+            , "Retries", "2", "Wait", "", "Threads", "8", "Copy", "dat", "DirCopy", "DA", "LogFile", "", "AppendLog", 1, "Extra", " /NP ")
+        edited := SyncEditor.Read(task, values)
+        eq("read: text, trailing slashes, files", edited["Name"] "|" edited["Source"] "|" edited["Destination"] "|" edited["Files"], "Team|\\srv\team|D:\Sync\Team|*.*")
+        eq("read: mode, monitor, numbers (not a number = default)", edited["Mode"] "|" edited["Monitor"] "|" edited["MonitorChanges"] "|" edited["MonitorMinutes"] "|" edited["Retries"] "|" edited["Wait"] "|" edited["Threads"], "Update|1|3|5|2|1|8")
+        eq("read: patterns", RoboSync.JoinPatterns(edited["ExcludeFiles"]) "|" RoboSync.JoinPatterns(edited["ExcludeDirs"]), "~$*.*; *.tmp; Old File.bak|Archive; $Recycle.Bin")
+        eq("read: other keys kept, original unchanged", edited["Custom"] "|" edited["Extra"] "|" task["Name"], "kept|/NP|Old")
+        eq("mode names", RoboSync.ModeText("Mirror") "|" RoboSync.ModeText("Update") "|" RoboSync.ModeText("Copy") "|" RoboSync.ModeText("Top") "|" RoboSync.ModeText("x"), "Mirror|Update|Copy all|Top folder only|Copy all")
+        eq("problem fields", SyncEditor.FieldOf("Nested") "|" SyncEditor.FieldOf("MirrorRoot") "|" SyncEditor.FieldOf("Threads"), "Source|Destination|Threads")
+
+        ; The state column
+        eq("not run yet", SyncJobs.ShortState("Team"), "")
+        try {
+            SyncJobs.Last[SyncJobs.Key("Team")] := {Code: 1, Ended: "20261102093000", Preview: false}
+            eq("last run ok", SyncJobs.ShortState("team"), "OK 09:30")
+            SyncJobs.Last[SyncJobs.Key("Team")] := {Code: 16, Ended: "20261102093000", Preview: false}
+            eq("last run failed", SyncJobs.ShortState("Team"), "Failed 09:30")
+            SyncJobs.Jobs[SyncJobs.Key("Team")] := {Name: "Team", Pid: 0, Handle: 0, Preview: false, Monitor: true, Started: "20261102100500", LogFile: "", OnDone: ""}
+            eq("monitoring", SyncJobs.ShortState("Team"), "Monitoring")
+        } finally {
+            SyncJobs.Jobs.Clear(), SyncJobs.Last.Clear()
         }
     }
 

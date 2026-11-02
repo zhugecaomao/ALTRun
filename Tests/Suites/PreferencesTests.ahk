@@ -142,6 +142,7 @@ class PreferencesTests {
         NumPut("UInt", 0x10001, draw, 3 * A_PtrSize), NumPut("UInt", 0x11, draw, 6 * A_PtrSize + 16)   ; CDIS_SELECTED | CDIS_FOCUS
         PreferencesWindow._OnPageListDraw(draw.Ptr)
         eq("row drawn without the focus rectangle", NumGet(draw, 6 * A_PtrSize + 16, "UInt"), 0x1)
+        eq("every page fits in the list, no scroll bar", SendMessage(0x1028, 0, 0, PreferencesWindow.PageList) >= PreferencesWindow.PageKeys.Length, true)   ; LVM_GETCOUNTPERPAGE
         listRect := Buffer(16)                                              ; the only column fills the list width (no column separator left)
         DllCall("GetClientRect", "Ptr", PreferencesWindow.PageList.Hwnd, "Ptr", listRect)
         eq("column fills the list", SendMessage(0x101D, 0, 0, PreferencesWindow.PageList), NumGet(listRect, 8, "Int"))   ; LVM_GETCOLUMNWIDTH

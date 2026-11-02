@@ -197,7 +197,7 @@ class ProjectTests {
         Loop Files, A_ScriptDir "\..\Src\*.ahk", "R"
             if (A_LoopFileName != "I18n.ahk")
                 source .= FileRead(A_LoopFileFullPath, "UTF-8")
-        dynamic := ["Help.", "Theme.", "Setting.", "Usage.F.", "Usage.Col.", "Prefs.Feature.", "Prefs.Status.", "Prefs.TypeShort.", "Cmd.Field.", "DelayedStart.Where.", "Sync.Problem."]
+        dynamic := ["Help.", "Theme.", "Setting.", "Usage.F.", "Usage.Col.", "Prefs.Feature.", "Prefs.Status.", "Prefs.TypeShort.", "Cmd.Field.", "DelayedStart.Where.", "Sync.Problem.", "Sync.Mode.", "Sync.ModeHint.", "Sync.Preview.Copy", "Sync.Preview.Delete", "Sync.Warn."]
         unused := ""
         for key in I18n.Strings {
             if (InStr(source, '"' key '"', true) || SubStr(key, -5) = ".Desc" || SubStr(key, -5) = ".Help")

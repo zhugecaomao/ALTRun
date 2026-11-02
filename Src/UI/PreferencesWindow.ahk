@@ -26,7 +26,7 @@ class PreferencesWindow {
     ; the order of the pages (matching PageBuilders, checked by a test); search entries like "ALTRun Preferences: Appearance" come from it without opening the window
     static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Keyboard", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
         , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
-        , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp", "Prefs.Page.DelayedStart"
+        , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp", "Prefs.Page.DelayedStart", "Prefs.Page.Sync"
         , "Prefs.Page.Usage", "Prefs.Page.Advanced"]
     static _page := 0
     static _dirty := false, _ready := false, ApplyButton := ""
@@ -73,7 +73,7 @@ class PreferencesWindow {
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
-        icons := NavIcons.ImageList(PreferencesWindow.PageKeys)             ; the image list's height is the row height (a roomier sidebar)
+        icons := NavIcons.ImageList(PreferencesWindow.PageKeys, PreferencesWindow.PageRowHeight())   ; the image list's height is the row height (a roomier sidebar)
         if icons
             pageList.SetImageList(icons, 1)
         for index, name in names
@@ -124,6 +124,10 @@ class PreferencesWindow {
 
     ; The selected row is shown by its highlight only, without a dotted focus rectangle (like the navigation in Windows Settings). Windows decides whether to show focus rectangles
     ; by "whether the keyboard was used recently", so the first time Preferences opens the dots sometimes show and sometimes don't; CDIS_FOCUS is removed before each row is drawn
+    ; The icon cell height of the page list: 26 (a roomy sidebar), less when all pages wouldn't fit without scrolling
+    ; (a row is the cell plus 2; the list is ButtonY - 24 high with a 2 px border)
+    static PageRowHeight() => Min(26, (PrefsForm.ButtonY - 24 - 4) // PreferencesWindow.PageKeys.Length - 2)
+
     static _OnPageListDraw(lParam) {
         stage := NumGet(lParam, 3 * A_PtrSize, "UInt")                      ; NMCUSTOMDRAW.dwDrawStage
         if (stage = 0x1)                                                    ; CDDS_PREPAINT
@@ -262,7 +266,7 @@ class PreferencesWindow {
                           , "Prefs.Page.Features", "Usage", "Prefs.Page.Applications", "Configuration", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Commands", "Custom-Commands", "Prefs.Page.Snippets", "Snippets"
                           , "Prefs.Page.Clipboard", "Clipboard", "Prefs.Page.WebSearch", "Web-Search", "Prefs.Page.Calculator", "Calculator"
-                          , "Prefs.Page.Scripts", "Scripts", "Prefs.Page.Hotkeys", "Hotkeys", "Prefs.Page.DelayedStart", "Delayed-Start", "Prefs.Page.QuickSwitch", "Quick-Switch"
+                          , "Prefs.Page.Scripts", "Scripts", "Prefs.Page.Hotkeys", "Hotkeys", "Prefs.Page.DelayedStart", "Delayed-Start", "Prefs.Page.Sync", "Sync-Tasks", "Prefs.Page.QuickSwitch", "Quick-Switch"
                           , "Prefs.Page.QSPanel", "Quick-Switch-Panel", "Prefs.Page.DateStamp", "Date-Stamp", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
@@ -360,7 +364,7 @@ class PreferencesWindow {
     ; how each page is built, one per PageKeys entry
     static PageBuilders := ["BuildGeneral", "BuildWindow", "BuildKeyboard", "BuildAppearance", "BuildFeatures", "BuildApplications"
         , "BuildFileSearch", "BuildFileIndex", "BuildCommands", "BuildSnippets", "BuildClipboard", "BuildWebSearch"
-        , "BuildCalculator", "BuildScripts", "BuildHotkeys", "BuildQuickSwitch", "BuildQuickSwitchPanel", "BuildDateStamp", "BuildDelayedStart"
+        , "BuildCalculator", "BuildScripts", "BuildHotkeys", "BuildQuickSwitch", "BuildQuickSwitchPanel", "BuildDateStamp", "BuildDelayedStart", "BuildSync"
         , "BuildUsage", "BuildAdvanced"]
     static _helpButton := ""
     ; Builds every page (for the tests that check each page's layout)
