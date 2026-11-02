@@ -1481,7 +1481,8 @@ class ProviderTests {
         eq := (n, a, e) => TestRunner.Equal("WindowSwitch." n, a, e)
         script := A_Temp "\ALTRun-window-test.ahk", title := "ALTRun Window Test " A_TickCount
         try FileDelete(script)
-        FileAppend('#NoTrayIcon`ng := Gui(, "' title '")`ng.OnEvent("Close", (*) => ExitApp())`ng.Show("w300 h120")`nSetTimer(() => ExitApp(), -20000)', script, "UTF-8")
+        FileAppend('#NoTrayIcon`ng := Gui(, "' title '")`ng.OnEvent("Close", (*) => ExitApp())`ng.Show("w300 h120")'
+            . '`ng2 := Gui(, "' title ' second")`ng2.Show("x10 y10 w300 h120")`nSetTimer(() => ExitApp(), -20000)', script, "UTF-8")
         Run('"' A_AhkPath '" "' script '"', , , &pid)
         found := WinWait(title, , 10)
         eq("test window shown", found != 0, true)
@@ -1492,6 +1493,12 @@ class ProviderTests {
             if (candidate.Title = title)
                 item := candidate
         eq("found by keyword", IsObject(item) ? item.Exclusive "|" InStr(item.Subtitle, "AutoHotkey") : "missing", "1|1")
+        WinWait(title " second", , 5)
+        WindowProvider._listTime := 0
+        both := 0
+        for candidate in ProviderRegistry._Dedupe(WindowProvider.Search(SearchQuery("w " SubStr(title, 1, 18))))   ; as the results are merged
+            both += InStr(candidate.Title, title) ? 1 : 0
+        eq("two windows of one program: both", both, 2)
         all := WindowProvider.Search(SearchQuery("w "))
         own := false
         for candidate in all
