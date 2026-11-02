@@ -57,6 +57,8 @@
 #Include %A_ScriptDir%\..\Src\UI\LargeType.ahk
 #Include %A_ScriptDir%\..\Src\UI\Hud.ahk
 #Include %A_ScriptDir%\..\Src\UI\ItemEditor.ahk
+#Include %A_ScriptDir%\..\Src\UI\SyncEditor.ahk
+#Include %A_ScriptDir%\..\Src\UI\SyncPreview.ahk
 #Include %A_ScriptDir%\..\Src\UI\HotkeyBox.ahk
 #Include %A_ScriptDir%\..\Src\UI\PreferencesWindow.ahk
 #Include %A_ScriptDir%\..\Src\UI\PrefsForm.ahk

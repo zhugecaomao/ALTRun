@@ -30,6 +30,7 @@ class SyncJobs {
     static StateFile => AppSettings.DataDir "\SyncRunning.json"
     static LogDir := A_Temp "\ALTRun\SyncLogs"
     static _pollTimer := () => SyncJobs._Poll()
+    static Changed := ""                                                    ; a function called when a job starts or ends (the Preferences page shows the states)
 
     static Key(name) => StrLower(Trim(name))
     static FileName(name) => RegExReplace(Trim(name), '[\\/:*?"<>|]', "_")
@@ -50,42 +51,82 @@ class SyncJobs {
             SyncJobs._Tell(problem, name)
     }
 
-    ; The preview before a mirror ended: run it, after asking when it would delete anything
+    ; The preview before a mirror ended: run it at once when it deletes nothing; otherwise the preview window lists what it would
+    ; delete and runs it only when the user chooses to
     static _AfterCheck(task, job, code) {
         name := task["Name"]
         if !RoboSync.Result(code).Ok
             return SyncJobs._Failed(name, code, job.LogFile)
-        summary := ""
-        try summary := SyncJobs.Summary(FileRead(job.LogFile))
-        deletes := IsObject(summary) ? summary.Files.Extras + summary.Dirs.Extras : 0
-        if (deletes > 0 && MsgBox(I18n.T("Sync.ConfirmDelete", name, summary.Files.Copied, summary.Files.Extras, summary.Dirs.Extras)
-                , App.Name, "YesNo Icon! Default2") != "Yes")
-            return
+        result := SyncJobs.ReadPreview(job.LogFile)
+        if (IsObject(result.Summary) && result.Summary.Files.Extras + result.Summary.Dirs.Extras > 0)
+            return SyncPreview.Show(task, result, {Run: true, Confirm: true})
         SyncJobs._Started(SyncJobs.Start(task), name)
     }
 
-    static Preview(task) {
+    ; options.Run: the preview window offers to run the task (not for a task still being edited)
+    static Preview(task, options := "") {
         name := task["Name"]
         if (problem := SyncJobs._Problem(task, true))
             return SyncJobs._Tell(problem, name)
         App.Notify(I18n.T("Sync.Checking", name))
-        problem := SyncJobs.Start(task, true, (job, code) => SyncJobs._ShowPreview(task, job, code))
+        options := IsObject(options) ? options : {Run: true}
+        problem := SyncJobs.Start(task, true, (job, code) => SyncJobs._ShowPreview(task, job, code, options))
         if (problem != "")
             SyncJobs._Tell(problem, name)
     }
 
-    static _ShowPreview(task, job, code) {
+    static _ShowPreview(task, job, code, options) {
         if !RoboSync.Result(code).Ok
             return SyncJobs._Failed(task["Name"], code, job.LogFile)
-        summary := ""
-        try summary := SyncJobs.Summary(FileRead(job.LogFile))
-        if !IsObject(summary)
+        result := SyncJobs.ReadPreview(job.LogFile)
+        if !IsObject(result.Summary)
             return Path.OpenText(job.LogFile)
-        text := I18n.T("Sync.PreviewResult", task["Name"], summary.Files.Copied, summary.Files.Total)
-        if (task["Mode"] = "Mirror")
-            text .= "`n" I18n.T("Sync.PreviewDeletes", summary.Files.Extras, summary.Dirs.Extras)
-        if (MsgBox(text "`n`n" I18n.T("Sync.OpenList"), App.Name, "YesNo Iconi") = "Yes")
-            Path.OpenText(job.LogFile)
+        SyncPreview.Show(task, result, {Run: options.HasOwnProp("Run") && options.Run, Confirm: false})
+    }
+
+    ; A preview's log -> {Summary, Changes, LogFile} (Summary "" when the log has none)
+    static ReadPreview(logFile) {
+        text := ""
+        try text := FileRead(logFile)
+        return {Summary: SyncJobs.Summary(text), Changes: SyncJobs.Changes(text), LogFile: logFile}
+    }
+
+    ; The files and folders a run (or a preview, /L) lists in its log: [{Kind: "Copy" | "Delete", Folder, Path, Label}...], at most limit
+    ; (Total: how many there are). Lines are tab-separated: a folder line ends with its full path ("\t  New Dir  2\tC:\src\sub\";
+    ; an unchanged folder has only the count), and the file lines after it give the name ("\t    New File  \t\t  1024\ta.txt").
+    ; robocopy writes the labels (New File, Newer, *EXTRA File...) in Windows' language; the ones it deletes start with "*" (*EXTRA)
+    static Changes(logText, limit := 2000) {
+        list := [], folder := "", total := 0
+        for line in StrSplit(StrReplace(logText, "`r"), "`n") {
+            if !InStr(line, "`t")
+                continue
+            fields := StrSplit(line, "`t")
+            name := fields[fields.Length]
+            if (Trim(name) = "")
+                continue
+            if (RegExMatch(name, "^(?:[A-Za-z]:\\|\\\\)") && SubStr(name, -1) = "\") {   ; a folder: C:\x\ or \\server\share\x\
+                folder := name
+                label := Trim(RegExReplace(fields.Length >= 2 ? fields[fields.Length - 1] : "", "\s*-?\d+\s*$"))
+                if (label = "")
+                    continue                                                ; unchanged: only the folder the next files are in
+                isFolder := true, itemPath := name
+            } else {
+                label := ""
+                Loop fields.Length - 1
+                    if RegExMatch(fields[A_Index], "[^\d\s.,]{2,}") {     ; the label, not a size such as "1.5 m"
+                        label := Trim(fields[A_Index])
+                        break
+                    }
+                if (label = "" || folder = "")
+                    continue
+                isFolder := false, itemPath := folder name
+            }
+            total++
+            if (list.Length < limit)
+                list.Push({Kind: SubStr(label, 1, 1) = "*" ? "Delete" : "Copy", Folder: isFolder, Path: itemPath, Label: label})
+        }
+        list.Total := total
+        return list
     }
 
     ; A reason not to run (a problem code), "" when it may run. A preview changes nothing: only the settings' errors stop it
@@ -125,7 +166,7 @@ class SyncJobs {
         copy := task.Clone()
         if preview {
             copy["LogFile"] := SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_preview.log", copy["AppendLog"] := 0
-            copy["Extra"] := Trim(RegExReplace(RoboSync._Get(task, "Extra"), "i)(^|\s)/(NJS|TEE)(?=\s|$)"))   ; the summary is read from the log
+            copy["Extra"] := Trim(RegExReplace(RoboSync._Get(task, "Extra"), "i)(^|\s)/(NJS|NFL|NDL|V|X|TEE)(?=\s|$)"))   ; the summary and the list are read from the log
         } else if (RoboSync._Get(task, "LogFile") = "") {
             copy["LogFile"] := SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_{date}.log", copy["AppendLog"] := 1
         }
@@ -146,7 +187,13 @@ class SyncJobs {
             , Started: A_Now, LogFile: logFile, OnDone: onDone}
         Logger.Debug("SyncJobs: started " task["Name"] (preview ? " (preview)" : "") ", pid " pid)
         WinTimer.Set(SyncJobs._pollTimer, SyncJobs.PollMs)
+        SyncJobs._Notify()
         return ""
+    }
+
+    static _Notify() {
+        if IsObject(SyncJobs.Changed)
+            SyncJobs.Changed.Call()
     }
 
     ; Deletes the logs in LogDir older than KeepLogDays (0 = keeps them all). Only ALTRun's own folder: a task's own log file is the user's
@@ -203,6 +250,7 @@ class SyncJobs {
             SyncJobs.Jobs.Delete(key)
             SyncJobs.Last[key] := {Code: code, Ended: A_Now, Preview: job.Preview}
             Logger.Debug("SyncJobs: " job.Name (job.Preview ? " (preview)" : "") " ended, exit code " code)
+            SyncJobs._Notify()
             if IsObject(job.OnDone)
                 job.OnDone.Call(job, code)
             else if (!job.Preview && code != -1 && !job.HasOwnProp("Stopped"))
@@ -287,6 +335,20 @@ class SyncJobs {
     }
 
     ; For the search results: "Running since 10:05", "Monitoring since 10:05", "Last run 09:30: OK", ...
+    ; The state in a word or two, for the Preferences list: "Running", "Monitoring", "OK 09:30", "Failed 09:30"; "" when not run yet
+    static ShortState(name) {
+        key := SyncJobs.Key(name)
+        if SyncJobs.Jobs.Has(key) {
+            job := SyncJobs.Jobs[key]
+            return I18n.T(job.Preview ? "Sync.Short.Checking" : job.Monitor ? "Sync.Short.Monitoring" : "Sync.Short.Running")
+        }
+        if SyncJobs.Last.Has(key) {
+            last := SyncJobs.Last[key]
+            return I18n.T(RoboSync.Result(last.Code).Ok ? "Sync.Short.Ok" : "Sync.Short.Failed", FormatTime(last.Ended, "HH:mm"))
+        }
+        return ""
+    }
+
     static State(name) {
         key := SyncJobs.Key(name)
         if SyncJobs.Jobs.Has(key) {

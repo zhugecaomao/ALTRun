@@ -34,7 +34,7 @@ class Shots {
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps"
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -93,8 +93,11 @@ class Shots {
             ["prefs-websearch",  "Light", "-Preferences 12", () => Shots.Preferences()],     ; Wiki: web search
             ["prefs-delayedstart", "Light", "-Preferences 19", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
             ["prefs-startupapps", "Light", "-Preferences 19", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
-            ["prefs-usage",      "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
-            ["prefs-advanced",   "Light", "-Preferences 21", () => Shots.Preferences()],     ; Wiki: data files
+            ["prefs-sync",       "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
+            ["sync-editor",      "Light", "-Preferences 20", () => Shots.SyncWindow("Edit", "Sync"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
+            ["sync-preview",     "Light", "-Preferences 20", () => Shots.SyncWindow("Preview", "Preview: "), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
+            ["prefs-usage",      "Light", "-Preferences 21", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
+            ["prefs-advanced",   "Light", "-Preferences 22", () => Shots.Preferences()],     ; Wiki: data files
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
@@ -800,6 +803,61 @@ class Shots {
             , Map("Name", "Chat", "Target", "C:\Tools\Chat\Chat.exe", "Arguments", "", "Delay", 600, "Enabled", 0)]
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; Sync tasks (made up). local: the first task syncs two sample folders, so Preview has something real to show
+    ; (a new file, a changed one, and one only in the destination, which a mirror deletes)
+    static SyncTasks(local := false) {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        task(name, source, destination, mode, monitor := 0) => Map("Name", name, "Source", source, "Destination", destination, "Files", "*.*", "Mode", mode
+            , "Copy", "DAT", "DirCopy", "DA", "Retries", 1, "Wait", 1, "Threads", 16, "Monitor", monitor, "MonitorChanges", 1, "MonitorMinutes", 5
+            , "ExcludeFiles", ["thumbs.db", "desktop.ini", "~$*.*"], "ExcludeDirs", ["System Volume Information", "$Recycle.Bin"], "LogFile", "", "AppendLog", 1, "Extra", "/NP")
+        tasks := [task("Projects", "\\fileserver\Projects", "%OneDrive%\Work\Projects", "Mirror", 1)
+            , task("Templates", "\\fileserver\Templates", "%OneDrive%\Work\Templates", "Update")
+            , task("Photos Backup", "%UserProfile%\Pictures", "E:\Backup\Pictures", "Copy")]
+        if local {
+            root := "C:\Demo Sync"
+            try DirDelete(root, true)
+            for file in ["Server\Projects\Plan.docx", "Server\Projects\Budget.xlsx", "Server\Projects\Drawings\Site Plan.pdf", "Server\Projects\Drawings\Elevations.pdf"
+                       , "OneDrive\Projects\Plan.docx", "OneDrive\Projects\Old Notes.txt"] {
+                SplitPath(root "\" file, , &dir)
+                DirCreate(dir)
+                FileAppend("sample", root "\" file)
+            }
+            FileSetTime("20260101000000", root "\OneDrive\Projects\Plan.docx")      ; older than the source's: copied again
+            tasks[1]["Source"] := root "\Server\Projects", tasks[1]["Destination"] := root "\OneDrive\Projects", tasks[1]["Monitor"] := 0
+        }
+        settings["SyncTasks"] := tasks
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; Preferences → Sync: selects the first task, clicks a button (Edit / Preview) and returns the window that opens (its title starts with title)
+    static SyncWindow(buttonText, title) {
+        prefs := Shots.Preferences()
+        list := 0, button := 0
+        for ctrl in WinGetControlsHwnd(prefs) {                             ; the controls of the page on show (other pages' are hidden)
+            if !ControlGetVisible(ctrl)
+                continue
+            if (!list && WinGetClass(ctrl) = "SysListView32")
+                list := ctrl
+            if (!button && WinGetClass(ctrl) = "Button" && ControlGetText(ctrl) = buttonText)
+                button := ctrl
+        }
+        if !(list && button)
+            throw Error("sync page: list or " buttonText " button not found")
+        ControlFocus(list), ControlSend("{Home}", list)
+        Sleep(300)
+        ControlClick(button, prefs)
+        window := WinWait(title " ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 20)
+        if !window {
+            Shots.Diagnose(prefs)
+            throw Error(buttonText ": window not shown")
+        }
+        WinSetAlwaysOnTop(1, window)
+        Sleep(1000)
+        return window
     }
 
     ; The action panel's "Windows Context Menu" is off by default

@@ -82,6 +82,8 @@
 #Include Src\UI\LargeType.ahk
 #Include Src\UI\Hud.ahk
 #Include Src\UI\ItemEditor.ahk
+#Include Src\UI\SyncEditor.ahk
+#Include Src\UI\SyncPreview.ahk
 #Include Src\UI\HotkeyBox.ahk
 #Include Src\UI\PreferencesWindow.ahk
 #Include Src\UI\PrefsForm.ahk

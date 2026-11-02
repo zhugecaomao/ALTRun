@@ -26,7 +26,7 @@ class PreferencesWindow {
     ; the order of the pages (matching PageBuilders, checked by a test); search entries like "ALTRun Preferences: Appearance" come from it without opening the window
     static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Keyboard", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
         , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
-        , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp", "Prefs.Page.DelayedStart"
+        , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp", "Prefs.Page.DelayedStart", "Prefs.Page.Sync"
         , "Prefs.Page.Usage", "Prefs.Page.Advanced"]
     static _page := 0
     static _dirty := false, _ready := false, ApplyButton := ""
@@ -261,7 +261,7 @@ class PreferencesWindow {
                           , "Prefs.Page.Features", "Usage", "Prefs.Page.Applications", "Configuration", "Prefs.Page.FileSearch", "File-Search"
                           , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Commands", "Custom-Commands", "Prefs.Page.Snippets", "Snippets"
                           , "Prefs.Page.Clipboard", "Clipboard", "Prefs.Page.WebSearch", "Web-Search", "Prefs.Page.Calculator", "Calculator"
-                          , "Prefs.Page.Scripts", "Scripts", "Prefs.Page.Hotkeys", "Hotkeys", "Prefs.Page.DelayedStart", "Delayed-Start", "Prefs.Page.QuickSwitch", "Quick-Switch"
+                          , "Prefs.Page.Scripts", "Scripts", "Prefs.Page.Hotkeys", "Hotkeys", "Prefs.Page.DelayedStart", "Delayed-Start", "Prefs.Page.Sync", "Sync-Tasks", "Prefs.Page.QuickSwitch", "Quick-Switch"
                           , "Prefs.Page.QSPanel", "Quick-Switch-Panel", "Prefs.Page.DateStamp", "Date-Stamp", "Prefs.Page.Usage", "Usage")
         return pages.Has(nameKey) ? pages[nameKey] : "Configuration"
     }
@@ -348,7 +348,7 @@ class PreferencesWindow {
     ; how each page is built, one per PageKeys entry
     static PageBuilders := ["BuildGeneral", "BuildWindow", "BuildKeyboard", "BuildAppearance", "BuildFeatures", "BuildApplications"
         , "BuildFileSearch", "BuildFileIndex", "BuildCommands", "BuildSnippets", "BuildClipboard", "BuildWebSearch"
-        , "BuildCalculator", "BuildScripts", "BuildHotkeys", "BuildQuickSwitch", "BuildQuickSwitchPanel", "BuildDateStamp", "BuildDelayedStart"
+        , "BuildCalculator", "BuildScripts", "BuildHotkeys", "BuildQuickSwitch", "BuildQuickSwitchPanel", "BuildDateStamp", "BuildDelayedStart", "BuildSync"
         , "BuildUsage", "BuildAdvanced"]
     static _helpButton := ""
     ; Builds every page (for the tests that check each page's layout)

@@ -287,6 +287,26 @@ class RoboSync {
 
     static _Number(value, default) => IsInteger(value) ? Max(0, Integer(value)) : default
 
+    static Modes := ["Mirror", "Update", "Copy", "Top"]
+    static ModeText(mode) => I18n.T("Sync.Mode." (RoboSync._Index(RoboSync.Modes, mode) ? mode : "Copy"))
+
+    ; Exclude lists as one line of text: "thumbs.db; ~$*.*" <-> ["thumbs.db", "~$*.*"] (patterns may contain spaces, not ";")
+    static JoinPatterns(list) => (list is Array) ? TextTools.JoinList(list, "; ") : String(list)
+    static SplitPatterns(text) {
+        list := []
+        for item in StrSplit(text, [";", "`n"])
+            if ((item := Trim(item, " `t`r")) != "")
+                list.Push(item)
+        return list
+    }
+
+    static _Index(list, value) {
+        for index, item in list
+            if (item = value)
+                return index
+        return 0
+    }
+
     static _Get(task, key) {
         if (task is Map && task.Has(key))
             return task[key]

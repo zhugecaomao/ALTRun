@@ -32,6 +32,7 @@ class NavIcons {
         "Prefs.Page.QSPanel",      0xE8A0,    ; OpenPane
         "Prefs.Page.DateStamp",    0xE787,    ; Calendar
         "Prefs.Page.DelayedStart", 0xE916,    ; Stopwatch
+        "Prefs.Page.Sync",         0xE895,    ; Sync
         "Prefs.Page.Usage",        0xE9D2,    ; AreaChart
         "Prefs.Page.Advanced",     0xE90F)    ; Repair
     static Color := 0x505050                                                ; RGB, a dark gray close to the body text
