@@ -14,6 +14,17 @@ Test build.
 ### 修复
 - "开机自动启动" 在 任务管理器 → 启动应用 里被禁用后, 偏好设置里仍然显示为勾选, 其实已经不会启动。现在偏好设置显示真实状态 (禁用了就显示为关闭); 重新勾选并保存时, 也会在任务管理器里启用。ALTRun 启动时不会自己重新启用, 以任务管理器里的选择为准
 
+## [2026.10.26.51]
+
+测试版。
+
+Test build.
+
+### 新增
+- 同步任务第 2 步: 在搜索窗口里运行同步任务。输入任务名或 `sync ` (列出所有任务), Enter 运行, 运行中再按 Enter 停止; `→` 里有 运行、预览 (不做任何改动)、打开日志、打开源 / 目标文件夹。结果里显示状态 (运行中、持续同步中、上次成功 / 失败)。镜像运行前先预览, 会删除东西时先说明要删多少个文件和文件夹, 确认后才运行; 源找不到或是空的时不运行。任务结束时提示复制和删除了多少文件, 失败时可以打开日志。退出 ALTRun 时停止持续同步的任务, 只是重新启动 (改设置、升级) 时继续运行。任务暂时写在设置文件里 (`SyncTasks`), 编辑界面在下一步
+- 同步任务新增 "更新" 模式 (`"Mode": "Update"`, robocopy `/E /XO`): 只复制新的和更新过的文件, 不覆盖目标里更新的文件, 不删除
+- 同步日志: 没有自己的日志文件时写到 `%TEMP%\ALTRun\SyncLogs` (不放 Data 文件夹, Data 在 OneDrive 里时不会一直上传日志); 超过 30 天的日志在运行任务时自动删除 (`Features.Sync.KeepLogDays`, `0` = 全部保留); 每次运行在 `ALTRun.log` 里记一行结果
+
 ## [2026.10.26.50]
 
 测试版。
@@ -1406,6 +1417,7 @@ Smoother typing, easier to get started, and a few useful new features.
 
 [未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.52...HEAD
 [2026.10.26.52]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.51...2026.10.26.52
+[2026.10.26.51]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.50...2026.10.26.51
 [2026.10.26.50]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.49...2026.10.26.50
 [2026.10.26.49]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.48...2026.10.26.49
 [2026.10.26.48]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...2026.10.26.48

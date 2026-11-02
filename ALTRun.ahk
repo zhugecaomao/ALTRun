@@ -102,6 +102,7 @@
 #Include Src\Providers\RecentProvider.ahk
 #Include Src\Providers\ScriptProvider.ahk
 #Include Src\Providers\HelpProvider.ahk
+#Include Src\Providers\SyncProvider.ahk
 
 ; --- Src\Extensions ---
 #Include Src\Extensions\SnippetExpander.ahk
@@ -113,6 +114,7 @@
 #Include Src\Extensions\PTToolsWindow.ahk
 #Include Src\Extensions\DelayedStart.ahk
 #Include Src\Extensions\RoboSync.ahk
+#Include Src\Extensions\SyncJobs.ahk
 #Include Src\Extensions\UpdateChecker.ahk
 #Include Src\Extensions\CurrencyRates.ahk
 #Include Src\Extensions\SelectionActions.ahk
