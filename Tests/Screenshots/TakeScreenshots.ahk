@@ -34,7 +34,7 @@ class Shots {
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart"
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -92,6 +92,7 @@ class Shots {
             ["prefs-clipboard",  "Light", "-Preferences 11", () => Shots.Preferences()],     ; Wiki: clipboard history
             ["prefs-websearch",  "Light", "-Preferences 12", () => Shots.Preferences()],     ; Wiki: web search
             ["prefs-delayedstart", "Light", "-Preferences 19", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
+            ["prefs-startupapps", "Light", "-Preferences 19", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
             ["prefs-usage",      "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
             ["prefs-advanced",   "Light", "-Preferences 21", () => Shots.Preferences()],     ; Wiki: data files
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
@@ -762,6 +763,32 @@ class Shots {
         settings["Features"]["FileSearch"]["InDefaultResults"] := 1
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; The startup apps picker of the Delayed Start page, with two made-up startup apps of this user (Run key). They are deleted again once the
+    ; picker has listed them, so a run on your own PC leaves nothing behind
+    static StartupApps() {
+        runKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
+        demo := [["ALTRun Demo Sync Tool", '"C:\Tools\SyncTool\SyncTool.exe" --tray'], ["ALTRun Demo Chat", '"C:\Tools\Chat\Chat.exe" /minimized']]
+        for value in demo
+            RegWrite(value[2], "REG_SZ", runKey, value[1])
+        try {
+            prefs := Shots.Preferences()
+            button := ControlGetHwnd("Startup Apps...", prefs)               ; the screenshots use the English interface
+            Shots.Log("button: visible " ControlGetVisible(button) ", enabled " ControlGetEnabled(button))
+            ControlClick(button, prefs)
+            picker := WinWait("Startup Apps ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
+            if !picker {
+                Shots.Diagnose(prefs)
+                throw Error("startup apps window not shown")
+            }
+        } finally {
+            for value in demo
+                try RegDelete(runKey, value[1])
+        }
+        WinSetAlwaysOnTop(1, picker)
+        Sleep(800)
+        return picker
     }
 
     ; A delayed start list (made up)

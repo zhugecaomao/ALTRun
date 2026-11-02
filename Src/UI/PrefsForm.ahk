@@ -100,8 +100,7 @@ class PrefsForm {
     static DescLinks := Map("Prefs.SelectionHotkey", ["Usage", "#选中内容的操作", "#actions-on-selected-content"])
 
     ; The small gray description below a setting ("<labelKey>.Desc" in I18n); nothing if there is none. x: aligned with the left of the control above
-    static Desc(labelKey, x, text := "") {
-        controlType := "Text"
+    static Desc(labelKey, x, text := "", controlType := "Text") {
         if (text = "") {
             if !PrefsForm.HasDesc(labelKey)
                 return
@@ -134,6 +133,11 @@ class PrefsForm {
     ; A full-width gray description (below lists)
     static Note(textKey) {
         PrefsForm.Desc("", PrefsForm.ContentX, I18n.T(textKey))
+    }
+
+    ; The same with links (<a href="...">...</a>: the target is run when clicked, a web page or a program)
+    static LinkNote(text) {
+        PrefsForm.Desc("", PrefsForm.ContentX, text, "Link")
     }
 
     static Gap() {

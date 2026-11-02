@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.46]
+
+测试版。
+
+Test build.
+
+### 新增
+- 延迟启动页面新增 "启动项..." 按钮: 列出 Windows 登录时启动的程序 (和 任务管理器 → 启动应用 一样: Run 注册表项和启动文件夹), 选一个就改成延迟启动, 名称、程序和参数自动填好。点 应用 或 确定 时先设置好延迟任务, 再像任务管理器那样禁用它自己的启动 (不删除任何东西, 可以在任务管理器里重新启用); 任务没设置好时不动原来的启动项。以后删除这一项时会问要不要恢复它自己的启动。为所有用户启动的程序需要管理员权限才能禁用, 会提示并可以打开任务管理器
+- 手动添加一个自己也会自启动的程序时, 不再只是提示, 可以直接选择在应用时关掉它自己的启动
+
 ## [2026.10.26.45]
 
 测试版。
@@ -1349,7 +1359,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.46...HEAD
+[2026.10.26.46]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...2026.10.26.46
 [2026.10.26.45]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...2026.10.26.45
 [2026.10.26.43]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...2026.10.26.43
 [2026.10.26.42]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.41...2026.10.26.42

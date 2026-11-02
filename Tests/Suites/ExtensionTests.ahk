@@ -268,6 +268,36 @@ class ExtensionTests {
         ; programs that also start by themselves
         eq("command program", DelayedStart.CommandProgram('"C:\Program Files\App\app.exe" /min') "|" DelayedStart.CommandProgram("C:\Users\Me\OneDrive.exe /background")
             . "|" DelayedStart.CommandProgram("C:\Program Files\x y\z.exe -a") "|" DelayedStart.CommandProgram("rundll32 shell32.dll"), "C:\Program Files\App\app.exe|C:\Users\Me\OneDrive.exe|C:\Program Files\x y\z.exe|rundll32")
+        eq("command arguments", DelayedStart.CommandArguments('"C:\Program Files\App\app.exe" /min  -x') "|" DelayedStart.CommandArguments("C:\Users\Me\OneDrive.exe /background")
+            . "|" DelayedStart.CommandArguments('"C:\x\y.exe"') "|" DelayedStart.CommandArguments("rundll32 shell32.dll,Control_RunDLL"), "/min  -x|/background||shell32.dll,Control_RunDLL")
+
+        ; startup apps turned into entries: Task Manager's on / off value, where they are, what changed in the list
+        eq("approved data", DelayedStart.ApprovedData(false) "|" DelayedStart.ApprovedData(true, 0x01DC4B2A3F5E6D70), "020000000000000000000000|03000000706D5E3F2A4BDC01")
+        eq("off data", (DelayedStart.IsOffData("030000001122334455667788") ? 1 : 0) (DelayedStart.IsOffData("020000000000000000000000") ? 1 : 0)
+            . (DelayedStart.IsOffData("060000000000000000000000") ? 1 : 0) (DelayedStart.IsOffData("01") ? 1 : 0) (DelayedStart.IsOffData("") ? 1 : 0) (DelayedStart.IsOffData("zz") ? 1 : 0), "100100")
+        eq("today's time when off", SubStr(DelayedStart.ApprovedData(true), 1, 8) "|" StrLen(DelayedStart.ApprovedData(true)), "03000000|24")
+        writable := ""
+        for scope, where in DelayedStart.Scopes()
+            writable .= scope "=" (where.Writable ? 1 : 0) " "
+        eq("scopes, which this user can turn off", writable, "Common=0 HKCU=1 HKLM=0 HKLM32=0 User=1 ")
+        order := ""
+        for scope in DelayedStart.ScopeOrder
+            order .= scope (DelayedStart.Scopes().Has(scope) ? "" : "?") " "
+        eq("listed this user's first", order, "HKCU User HKLM HKLM32 Common ")
+        eq("approved keys", DelayedStart.Scopes()["HKCU"].Approved "|" DelayedStart.Scopes()["User"].Approved
+            , "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run|HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\StartupFolder")
+        eq("where", DelayedStart.SourceText("HKCU|OneDrive") "|" DelayedStart.SourceText("Common|Teams.lnk"), "Run (you): OneDrive|Startup folder (all users): Teams.lnk")
+        item := DelayedStart.ItemFromEntry({Source: "User|Sync Tool.lnk", Name: "Sync Tool.lnk", Program: "C:\Tools\sync.exe", Arguments: "--tray"})
+        eq("entry from a startup app", item["Name"] "|" item["Target"] "|" item["Arguments"] "|" item["Delay"] "|" item["Enabled"] "|" item["Source"]
+            , "Sync Tool|C:\Tools\sync.exe|--tray|300|1|User|Sync Tool.lnk")
+        changes := DelayedStart.SourceChanges([Map("Source", "HKCU|A"), Map("Source", "HKCU|B"), Map("Name", "x")], [Map("Source", "HKCU|B"), Map("Source", "User|C.lnk"), Map("Source", "")])
+        eq("source changes", (changes.Added.Length = 1 ? changes.Added[1] : changes.Added.Length) "|" (changes.Removed.Length = 1 ? changes.Removed[1] : changes.Removed.Length), "User|C.lnk|HKCU|A")
+        thrown := false
+        try DelayedStart.SetEntryOff("Nowhere|x", true)
+        catch ValueError
+            thrown := true
+        eq("unknown source refused", thrown, true)
+
         fields := ""
         for field in DelayedStart.EditorFields()
             fields .= field.Key ":" field.Type " "

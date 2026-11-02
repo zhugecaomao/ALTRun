@@ -4,7 +4,7 @@
 ; Run by Tests\RunTests.ahk DelayedStartCheck: on Windows CI by .github/workflows/delayed-start.yml, as a new standard
 ; (non-administrator) user and as the administrator; also works on your own PC (it only touches its own task folder,
 ; \ALTRun\<user name> check, and deletes it again). Registers tasks through DelayedStart.Sync, reads them back,
-; changes and removes them. Prints one line per check (PASS / FAIL / INFO); returns the number of failed checks.
+; changes and removes them; turns a startup app made for the check (HKCU Run) off and on again, then deletes it. Prints one line per check (PASS / FAIL / INFO); returns the number of failed checks.
 ;===============================================================================
 class DelayedStartCheck {
     static Failures := 0
@@ -68,7 +68,34 @@ class DelayedStartCheck {
             try DelayedStart.Sync([], folderPath)
         }
         try DirDelete(dir, true)
+        DelayedStartCheck.StartupApps()
         return DelayedStartCheck.Failures
+    }
+
+    ; A startup app of this user (a Run value made for the check): listed, turned off and on again as Task Manager does it, made into an entry
+    static StartupApps() {
+        runKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run", name := "ALTRun check startup app", source := "HKCU|" name
+        approved := DelayedStart.Scopes()["HKCU"].Approved
+        try {
+            RegWrite('"' EnvGet("SystemRoot") '\System32\notepad.exe" /a b.txt', "REG_SZ", runKey, name)
+            entry := DelayedStart.FindEntry(source)
+            DelayedStartCheck.Check("startup app listed, on, this user can turn it off", IsObject(entry) && !entry.Off && entry.Writable
+                && entry.Program = EnvGet("SystemRoot") "\System32\notepad.exe" && entry.Arguments == "/a b.txt", IsObject(entry) ? entry.Command : "not found")
+            DelayedStartCheck.Check("found for its program", IsObject(found := DelayedStart.AutoStartEntry("%SystemRoot%\System32\notepad.exe")) && found.Source = source)
+            DelayedStart.SetEntryOff(source, true)
+            data := RegRead(approved, name)
+            DelayedStartCheck.Check("turned off as in Task Manager", SubStr(data, 1, 8) = "03000000" && StrLen(data) = 24, data)
+            DelayedStartCheck.Check("listed as off, not among those that start", DelayedStart.FindEntry(source).Off && !IsObject(DelayedStart.AutoStartEntry("%SystemRoot%\System32\notepad.exe")))
+            DelayedStart.SetEntryOff(source, false)
+            data := RegRead(approved, name)
+            DelayedStartCheck.Check("turned on again", data = "020000000000000000000000" && !DelayedStart.FindEntry(source).Off, data)
+            item := DelayedStart.ItemFromEntry(DelayedStart.FindEntry(source))
+            DelayedStartCheck.Check("entry made from it", item["Name"] = name && item["Arguments"] == "/a b.txt" && item["Source"] = source)
+        } catch as e {
+            DelayedStartCheck.Check("startup apps: no error", false, e.Message " (" e.What ", line " e.Line ")")
+        }
+        try RegDelete(runKey, name)
+        try RegDelete(approved, name)
     }
 
     ; The settings ALTRun sets that differ from Task Scheduler's defaults, and the sign-in trigger for this user only
