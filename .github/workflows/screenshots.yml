@@ -1,6 +1,8 @@
 # Makes the UI screenshots for the README / Wiki on Windows (Tests\Screenshots\TakeScreenshots.ahk),
 # uploads the changed ones as artifacts (one per group); on branches other than main it commits them back to the branch.
 # Run by hand, "scenes" can name only the scenes to shoot (e.g. "prefs-general shellmenu"); empty = all of them.
+# Not on Dependabot's branches: a version bump of an action in this file doesn't change the screenshots, and the commit would add
+# pixel noise to its pull request (and clash with screenshots changed on main meanwhile)
 name: Screenshots
 
 on:
@@ -11,7 +13,7 @@ on:
         type: string
         default: ""
   push:
-    branches-ignore: [main]
+    branches-ignore: [main, 'dependabot/**']
     paths:
       - Tests/Screenshots/**
       - .github/workflows/screenshots.yml
@@ -170,7 +172,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@v8
         with:
           pattern: screenshots-*
           path: shots
