@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.43]
+
+测试版。
+
+Test build.
+
+### 修复
+- 在 Total Commander 的 "同步目录" 窗口前用 Enter 执行 "退出" 后, 有时会弹出一个文件属性窗口: 两次出现时都是 ALTRun 在 Enter 还没松开时就退出了。现在退出和重新启动前先等 Enter 松开 (最多 2 秒)
+
 ## [2026.10.26.42]
 
 测试版。
@@ -1331,7 +1340,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...HEAD
+[2026.10.26.43]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...2026.10.26.43
 [2026.10.26.42]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.41...2026.10.26.42
 [2026.10.26.41]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.40...2026.10.26.41
 [2026.10.26.40]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.39...2026.10.26.40
