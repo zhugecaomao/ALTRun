@@ -73,7 +73,7 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 | KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again; typing or `Backspace` starts a new search (and leaves file search); `Space` starts a new file search. Taken over from `KeepInput` when upgrading from 2.x |
 | KeepLastQueryMinutes | 5 | With `KeepLastQuery` on, keep the last search only for this many minutes after it was made; after that the window opens with an empty search box. `0` = no limit |
 | ShowTips | 1 | Show a usage tip, a different one each time, as gray text in the empty search box |
-| FileManager | `explorer.exe` | Program that opens folders, optionally with parameters, for example `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` reuse the open window, `/T` new tab, `/S` active panel); quote a path with spaces |
+| FileManager | `explorer.exe` | Program that opens folders, optionally with parameters, for example `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` reuse the open window, `/T` new tab, `/S` active panel); quote a path with spaces. Environment variables work, e.g. `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S`; when the program isn't found, File Explorer opens the folder (noted in the log) |
 | SendToMenu | 1 | Add to Explorer's "Send to" menu |
 | StartMenuShortcut | 1 | Add to the Start menu |
 | CheckForUpdates | 1 | Check GitHub for new versions in the background at startup and every 6 hours after; a new version is shown in the search window, see [One-key updates](Installation#one-key-updates) |
@@ -206,7 +206,7 @@ See [File search](File-Search#settings).
 ### ContextMenu (Windows context menu)
 | Key | Default | Description |
 |---|---|---|
-| Enabled | 0 | "Windows Context Menu" in the action panel of files, folders, applications and custom commands: the menu Explorer shows on right-click, see [Action panel](Usage#action-panel) |
+| Enabled | 0 | "Windows Context Menu" in the action panel of files, folders, applications and custom commands: the menu Explorer shows on right-click, see [Action panel](Usage#action-panel). The items other programs add run inside ALTRun, as they run inside Explorer: a faulty one can make ALTRun hang or close |
 
 ### System (system commands)
 | Key | Default | Description |

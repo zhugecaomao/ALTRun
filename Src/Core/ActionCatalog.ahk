@@ -92,20 +92,42 @@ class ActionCatalog {
 
     static OpenFolder(target) {
         resolved := Path.Resolve(target)
-        fileManager := AppSettings.General["FileManager"]
-        if (fileManager = "" || InStr(fileManager, "explorer"))
+        manager := ActionCatalog.FileManagerCommand(AppSettings.General["FileManager"])
+        if manager.Explorer
             return Run('explorer.exe "' resolved '"')
-        Run(fileManager ' "' resolved '"')
+        Run(Trim('"' manager.Exe '" ' manager.Args) ' "' resolved '"')
     }
 
     static Reveal(target) {
         resolved := Path.Resolve(target)
-        fileManager := AppSettings.General["FileManager"]
-        if (fileManager = "" || InStr(fileManager, "explorer"))
+        manager := ActionCatalog.FileManagerCommand(AppSettings.General["FileManager"])
+        if manager.Explorer
             return Run('explorer.exe /select,"' resolved '"')
-        if InStr(fileManager, "totalcmd")
-            return Run(fileManager ' /P "' resolved '"')                   ; Total Commander: open the containing folder and select the file
-        Run(fileManager ' "' ActionCatalog.ParentDir(resolved) '"')        ; other file managers take different arguments: open the containing folder
+        command := Trim('"' manager.Exe '" ' manager.Args)
+        if InStr(manager.Exe, "totalcmd")
+            return Run(command ' /P "' resolved '"')                        ; Total Commander: open the containing folder and select the file
+        Run(command ' "' ActionCatalog.ParentDir(resolved) '"')            ; other file managers take different arguments: open the containing folder
+    }
+
+    ; The FileManager setting -> {Exe, Args, Explorer}: the program ("quoted" when it has spaces, or up to .exe) with its
+    ; %environment variables% expanded (%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S; Run doesn't expand them, so such a
+    ; setting used to fail) and the parameters after it. Explorer when empty, explorer.exe, or a program that isn't there (logged)
+    static FileManagerCommand(setting) {
+        setting := Trim(setting)
+        if RegExMatch(setting, '^"([^"]+)"\s*(.*)$', &m) || RegExMatch(setting, "i)^(.+?\.exe)(?:\s+(.*))?$", &m)
+            program := m[1], args := m.Count >= 2 ? m[2] : ""
+        else
+            program := setting, args := ""
+        manager := {Exe: "", Args: Trim(args), Explorer: true}
+        if (program = "" || Path.Leaf(program) = "explorer.exe" || program = "explorer")
+            return manager
+        exe := Path.Resolve(program)                                        ; %variables%, A_ variables, a program name found on PATH
+        if !FileExist(exe) {
+            Logger.Warn("ActionCatalog: file manager not found (" exe "), using File Explorer")
+            return manager
+        }
+        manager.Exe := exe, manager.Explorer := false
+        return manager
     }
 
     static OpenUrl(address) {

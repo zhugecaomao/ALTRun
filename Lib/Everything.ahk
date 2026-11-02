@@ -76,8 +76,8 @@ class Everything {
 
     ; Waits until the reply has come (or the deadline): MsgWaitForMultipleObjects returns as soon as a message arrives
     ; (Everything's reply is a WM_COPYDATA sent from its thread: QS_SENDMESSAGE), and Sleep(-1) lets AutoHotkey hand it to
-    ; _OnCopyData at once. Sleep(5) used to wait a whole timer tick (15.6 ms) each round: on Windows with Everything 1.4
-    ; and 1.5 every query took 31 ms (median), whatever Everything needed itself
+    ; _OnCopyData at once. Sleep(5) used to wait a whole timer tick (15.6 ms) each round: on a Windows CI runner with Everything
+    ; 1.4 and 1.5 every query took 31 ms (median), whatever Everything needed itself
     static _WaitForReply(deadline) {
         while (!IsObject(Everything._results) && (remaining := deadline - A_TickCount) > 0) {
             DllCall("MsgWaitForMultipleObjects", "UInt", 0, "Ptr", 0, "Int", 0, "UInt", remaining, "UInt", 0x4FF)   ; QS_ALLINPUT

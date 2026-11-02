@@ -73,7 +73,7 @@
 | KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次; 直接输入或按 `Backspace` 开始新的搜索 (文件搜索也会退出); 按 `空格` 开始新的文件搜索。从 2.x 升级时沿用 `KeepInput` |
 | KeepLastQueryMinutes | 5 | 打开 `KeepLastQuery` 时, 上一次的搜索只保留这么多分钟; 超过以后呼出窗口, 搜索框是空的。`0` = 不限 |
 | ShowTips | 1 | 轮换显示使用提示, 用灰色文字显示在空搜索框里 |
-| FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号 |
+| FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号。可以用环境变量, 例如 `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S`; 找不到这个程序时用资源管理器打开文件夹 (记在日志里) |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |
 | CheckForUpdates | 1 | 启动时和之后每 6 小时在后台检查一次 GitHub 上的新版本, 有新版本时显示在搜索窗口里, 见 [一键更新](Installation-zh#一键更新) |
@@ -206,7 +206,7 @@
 ### ContextMenu Windows 右键菜单
 | 键 | 默认 | 说明 |
 |---|---|---|
-| Enabled | 0 | 文件、文件夹、应用和自定义命令的操作面板里的 "Windows 右键菜单": 资源管理器里右键时的那个菜单, 见 [操作面板](Usage-zh#操作面板) |
+| Enabled | 0 | 文件、文件夹、应用和自定义命令的操作面板里的 "Windows 右键菜单": 资源管理器里右键时的那个菜单, 见 [操作面板](Usage-zh#操作面板)。其它软件加的菜单项和在资源管理器里一样, 是在 ALTRun 里运行的: 有问题的菜单项可能让 ALTRun 卡住或退出 |
 
 ### System 系统命令
 | 键 | 默认 | 说明 |

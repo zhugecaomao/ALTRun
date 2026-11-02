@@ -65,16 +65,36 @@ class Path {
         raw := Trim(raw)
         if (InStr(raw, "A_") = 1)
             raw := Path.Resolve(raw)
-        size := DllCall("ExpandEnvironmentStringsW", "WStr", raw, "Ptr", 0, "UInt", 0, "UInt")
-        buf := Buffer(size * 2)
-        DllCall("ExpandEnvironmentStringsW", "WStr", raw, "Ptr", buf, "UInt", size, "UInt")
-        raw := StrGet(buf)
+        raw := Path.ExpandEnv(raw)
         if !RegExMatch(raw, "^([A-Za-z]:|\\\\)")
             raw := RTrim(base, "\") "\" raw
         buf := Buffer(32767 * 2)
         if DllCall("GetFullPathNameW", "WStr", raw, "UInt", 32767, "Ptr", buf, "Ptr", 0, "UInt")
             raw := StrGet(buf)
         return RTrim(raw, "\")
+    }
+
+    ; %Environment variables% expanded (%OneDrive%, %LocalAppData%, %ProgramFiles%...); unknown ones stay as they are
+    static ExpandEnv(text) {
+        if !InStr(text, "%")
+            return text
+        size := DllCall("ExpandEnvironmentStringsW", "WStr", text, "Ptr", 0, "UInt", 0, "UInt")
+        buf := Buffer(size * 2)
+        DllCall("ExpandEnvironmentStringsW", "WStr", text, "Ptr", buf, "UInt", size, "UInt")
+        return StrGet(buf)
+    }
+
+    ; Whether a full path can be offered without waiting: local paths are checked (FileExist), paths on the network (\\server\share,
+    ; a mapped network drive) are taken as they are, since FileExist waits for the network timeout when the server is offline
+    ; (seconds). For lists such as the actions panel; the action itself reports a path that turns out to be missing
+    static ExistsOrRemote(fullPath) {
+        if RegExMatch(fullPath, "^\\\\[^\\]+\\")
+            return true
+        if !RegExMatch(fullPath, "^[A-Za-z]:")
+            return FileExist(fullPath) != ""
+        if (DllCall("GetDriveTypeW", "Str", SubStr(fullPath, 1, 2) "\", "UInt") = 4)   ; DRIVE_REMOTE: answers without the network
+            return true
+        return FileExist(fullPath) != ""
     }
 
     ; Whether files can be written in this folder (tries to create a temporary file and delete it)
@@ -112,11 +132,8 @@ class Path {
             }
         }
 
-        ; environment-variable placeholder
-        raw := StrReplace(raw, "%Temp%"    , A_Temp)
-        raw := StrReplace(raw, "%OneDrive%", EnvGet("OneDrive"))
-        raw := StrReplace(raw, "%AppData%" , A_AppData)
-        raw := StrReplace(raw, "%UserProfile%", EnvGet("UserProfile"))
+        ; %environment variables%: all of them (only %Temp%, %OneDrive%, %AppData% and %UserProfile% before)
+        raw := Path.ExpandEnv(raw)
 
         ; Bare file name: search PATH; without an extension look for .exe ("notepad" -> notepad.exe)
         ; Check for "\" first: a full path doesn't touch the disk (FileExist hangs when a network drive is disconnected)

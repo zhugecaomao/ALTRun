@@ -1247,6 +1247,10 @@ Func | PTTools | PT Tools (AHK)=99
             eq("drive root with others", ShellContextMenu.CanShow([SubStr(A_WinDir, 1, 3), root "\a.txt"]), false)
             eq("none", ShellContextMenu.CanShow([]), false)
             eq("Store app", ShellContextMenu.CanShow(["shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"]), true)
+            started := A_TickCount
+            eq("offline server: offered, checked when opened", ShellContextMenu.CanShow(["\\192.0.2.1\share\a.txt", "\\192.0.2.1\share\b.txt"]), true)
+            eq("without waiting", A_TickCount - started < 200, true)
+            eq("not a path", ShellContextMenu.CanShow(["https://example.com"]), false)
             shellMenu := ShellContextMenu([root "\a.txt", root "\b.txt"])
             TestRunner.True("ShellMenu.filled", DllCall("GetMenuItemCount", "Ptr", shellMenu.Fill(), "Int") > 0)
             TestRunner.True("ShellMenu.submenu handler", shellMenu.HandlerLevel >= 2)
@@ -1294,5 +1298,51 @@ Func | PTTools | PT Tools (AHK)=99
         eq("network share", Path.Compact("\\server\share\Projects\2026\Very Long Folder Name\Final"), "\\server\share\" dots "\Final")
         long := Path.Compact("D:\Work\" StrRepeat("x", 60))
         eq("long last folder cut", StrLen(long) <= 40 && SubStr(long, -1) = dots && InStr(long, "D:\" dots "\xxx") = 1, true)
+    }
+
+    ; %Environment variables% in paths: all of them (only four before), unknown ones kept; network paths offered without waiting
+    static PathEnvironment() {
+        eq := (n, a, e) => TestRunner.Equal("PathEnvironment." n, a, e)
+        EnvSet("ALTRUN_TEST_DIR", "C:\Tools Dir")
+        try {
+            eq("any variable", Path.Resolve("%ALTRUN_TEST_DIR%\TotalCMD64\TOTALCMD64.exe"), "C:\Tools Dir\TotalCMD64\TOTALCMD64.exe")
+            eq("temp as before", Path.Resolve("%Temp%\x.txt"), A_Temp "\x.txt")
+            eq("unknown kept", Path.Resolve("%ALTRUN_NO_SUCH_VAR%\x.exe"), "%ALTRUN_NO_SUCH_VAR%\x.exe")
+            eq("percent sign in a name", Path.Resolve("C:\Reports\100% done.txt"), "C:\Reports\100% done.txt")
+            eq("full path", Path.Full("%ALTRUN_TEST_DIR%\Sub"), "C:\Tools Dir\Sub")
+        } finally
+            EnvSet("ALTRUN_TEST_DIR")
+        started := A_TickCount
+        eq("offline server: offered", Path.ExistsOrRemote("\\192.0.2.1\share\report.docx"), true)
+        eq("without waiting", A_TickCount - started < 200, true)
+        eq("local missing", Path.ExistsOrRemote(A_Temp "\ALTRun-no-such-file.txt"), false)
+        eq("local present", Path.ExistsOrRemote(A_WinDir), true)
+        eq("not a path", Path.ExistsOrRemote("\\\Uninstaller\"), false)    ; a Total Commander plugin folder
+    }
+
+    ; The FileManager setting: program with %variables% and parameters; File Explorer when empty, explorer.exe or missing
+    static FileManagerCommand() {
+        eq := (n, a, e) => TestRunner.Equal("FileManagerCommand." n, a, e)
+        root := A_Temp "\ALTRun-file-manager-test"
+        try DirDelete(root, true)
+        DirCreate(root "\My Tools")
+        FileAppend("", root "\TOTALCMD64.exe"), FileAppend("", root "\My Tools\dopus.exe"), FileAppend("", root "\Explorer++.exe")
+        EnvSet("ALTRUN_FM", root)
+        try {
+            m := ActionCatalog.FileManagerCommand("%ALTRUN_FM%\TOTALCMD64.exe /O /T /S")
+            eq("variable expanded", m.Exe "|" m.Args "|" m.Explorer, root "\TOTALCMD64.exe|/O /T /S|0")
+            m := ActionCatalog.FileManagerCommand('"%ALTRUN_FM%\My Tools\dopus.exe" /acmd Go')
+            eq("quoted with spaces", m.Exe "|" m.Args, root "\My Tools\dopus.exe|/acmd Go")
+            m := ActionCatalog.FileManagerCommand(root "\TOTALCMD64.exe")
+            eq("no parameters", m.Exe "|" m.Args "|" m.Explorer, root "\TOTALCMD64.exe||0")
+            eq("Explorer++ is not File Explorer", ActionCatalog.FileManagerCommand(root "\Explorer++.exe").Explorer, false)
+            eq("explorer.exe", ActionCatalog.FileManagerCommand("explorer.exe").Explorer, true)
+            eq("full explorer path", ActionCatalog.FileManagerCommand(A_WinDir "\explorer.exe /e").Explorer, true)
+            eq("empty", ActionCatalog.FileManagerCommand("").Explorer, true)
+            eq("missing: File Explorer", ActionCatalog.FileManagerCommand("%ALTRUN_FM%\gone.exe /O").Explorer, true)
+        } finally {
+            EnvSet("ALTRUN_FM")
+            try DirDelete(root, true)
+        }
     }
 }

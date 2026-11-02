@@ -1014,7 +1014,13 @@ class SearchWindow {
         SearchWindow._PaintForMenu()                                        ; also lets the menu messages (submenus) through while the menu shows
         SearchWindow._keepOpen := true
         try id := shellMenu.Track(SearchWindow.Gui.Hwnd, x, y, GetKeyState("Shift"))
-        finally SearchWindow._keepOpen := false
+        catch as e {                                                        ; QueryContextMenu failed or gave an empty menu
+            SearchWindow._keepOpen := false
+            Logger.Warn("SearchWindow: context menu for " paths[1] " - " e.Message)
+            SearchWindow.AfterMenu()
+            return App.Notify(I18n.T("Action.ShellMenu.None"))
+        }
+        SearchWindow._keepOpen := false
         if !id
             return SearchWindow.AfterMenu()
         Knowledge.Record(query, source.Uid)

@@ -38,7 +38,7 @@ class ResultActions {
                 if IsObject(editor := ActionCatalog.EditorFor(target))      ; the file type has an "Edit" verb (e.g. .ahk opens in an editor)
                     list.Push(ResultItem(I18n.T("Action.EditFile"), editor.Name (editor.Name != "" ? "  " : "") "Ctrl+E"
                         , {Icon: editor.Icon, OnRun: (*) => ActionCatalog.EditFile(target)}))
-                if FileExist(target)
+                if Path.ExistsOrRemote(target)
                     add("Action.OpenWith", "res:shell32.dll,-3", (*) => ActionCatalog.OpenWith(target))   ; the generic program icon
                 add("Action.Reveal", "folder:", (*) => ActionCatalog.Reveal(target), "Ctrl+Enter")
                 add("Action.CopyPath", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
@@ -48,7 +48,7 @@ class ResultActions {
                 ResultActions._ShellMenuAction(list, [target], target)
                 if !ActionCatalog.IsShellItem(target)                       ; Store apps (shell:AppsFolder\...) have no properties window
                     add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
-                if FileExist(target)
+                if Path.ExistsOrRemote(target)
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "folder":
                 add("Action.Open", target, (*) => ActionCatalog.OpenFolder(target), enter)
@@ -58,7 +58,7 @@ class ResultActions {
                 ResultActions._FileActions(list, target)
                 ResultActions._ShellMenuAction(list, [target], target)
                 add("Action.Properties", "res:imageres.dll,-81", (*) => ActionCatalog.ShowProperties(target))
-                if (FileExist(target) && !RegExMatch(RTrim(target, "\"), "^[A-Za-z]:$"))       ; drive roots can't be deleted
+                if (Path.ExistsOrRemote(target) && !RegExMatch(RTrim(target, "\"), "^[A-Za-z]:$"))       ; drive roots can't be deleted
                     add("Action.Recycle", "res:shell32.dll,-32", (*) => ActionCatalog.Recycle(target))
             case "url":
                 add("Action.Open", "url:", (*) => ActionCatalog.OpenUrl(target), enter)
@@ -104,7 +104,7 @@ class ResultActions {
         add(I18n.T("Action.CopyPaths", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(joined))
         manager := QuickSwitch.FileManagerFolder()
         destination := IsObject(manager) ? manager.Path : ""
-        if (destination != "" && DirExist(destination)) {
+        if (destination != "" && Path.ExistsOrRemote(destination)) {      ; no wait when the folder is on an offline server
             add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), Path.Compact(destination))
             add(I18n.T("Action.MoveTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination, true), Path.Compact(destination))
         }
@@ -186,15 +186,16 @@ class ResultActions {
         return IsObject(provider) && HasMethod(provider, method)
     }
 
-    ; Copy / cut the file, copy / move to the file manager's current folder (only for real local or network paths)
+    ; Copy / cut the file, copy / move to the file manager's current folder (only for real local or network paths). Paths on the
+    ; network aren't checked (the panel would wait for an offline server's timeout); copying reports a missing one
     static _FileActions(list, target) {
-        if (!RegExMatch(target, "^([A-Za-z]:\\|\\\\)") || !FileExist(target))
+        if (!RegExMatch(target, "^([A-Za-z]:\\|\\\\)") || !Path.ExistsOrRemote(target))
             return
         list.Push(ResultItem(I18n.T("Action.CopyFile"), I18n.T("Action.CopyFile.Hint"), {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target])}))
         list.Push(ResultItem(I18n.T("Action.CutFile"), I18n.T("Action.CopyFile.Hint"), {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target], true)}))
         manager := QuickSwitch.FileManagerFolder()
         destination := IsObject(manager) ? manager.Path : ""
-        if (destination = "" || !DirExist(destination))
+        if (destination = "" || !Path.ExistsOrRemote(destination))
             return
         parent := RTrim(ActionCatalog.ParentDir(RTrim(target, "\")), "\")
         inside := (InStr(RTrim(destination, "\") "\", RTrim(target, "\") "\") = 1)   ; a folder can't be copied into itself
