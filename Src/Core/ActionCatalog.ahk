@@ -86,9 +86,41 @@ class ActionCatalog {
         Run(Trim('"' resolved '" ' arguments), DirExist(workDir) ? workDir : "")
     }
 
+    ; Store / packaged apps (shell:AppsFolder\<app id>) through their context menu's "Run as administrator", as the Start menu does
     static RunAsAdmin(target, arguments := "") {
+        if ActionCatalog.IsPackagedApp(target) {
+            result := ShellContextMenu([target]).InvokeVerb("runas")
+            if (result < 0 && result != -2147023673)                       ; 0x800704C7: UAC canceled
+                throw OSError("Run as administrator failed (0x" Format("{:08X}", result & 0xFFFFFFFF) ")", -1)
+            return
+        }
         Run(Trim('*RunAs "' Path.Resolve(target) '" ' arguments))
     }
+
+    static IsPackagedApp(target) => RegExMatch(target, "i)^shell:AppsFolder\\[^\\]+$") ? true : false
+
+    ; Whether "Run as administrator" fits the target: programs, shortcuts and scripts by their extension; a Store / packaged app when its
+    ; context menu has the command, as in the Start menu (desktop apps such as Windows Terminal do, UWP apps such as Calculator don't).
+    ; Asking the context menu takes some milliseconds, so the answer is kept per app (_runAs)
+    static CanRunAsAdmin(target) {
+        if RegExMatch(target, "i)\.(exe|lnk|bat|cmd|msc|ps1)$")
+            return true
+        if !ActionCatalog.IsPackagedApp(target)
+            return false
+        if ActionCatalog._runAs.Has(target)
+            return ActionCatalog._runAs[target]
+        found := false
+        try {
+            for verb in ActionCatalog.AppVerbs.Call(target)
+                if (verb = "runas")
+                    found := true
+        } catch as e
+            Logger.Debug("ActionCatalog: no context menu for " target " - " e.Message)
+        return ActionCatalog._runAs[target] := found
+    }
+    static _runAs := Map()
+    ; The context menu's commands of a packaged app (replaced in the tests: on a CI runner, which has no desktop shell, the Apps folder doesn't answer)
+    static AppVerbs := (target) => ShellContextMenu([target]).Verbs()
 
     static OpenFolder(target) {
         resolved := Path.Resolve(target)

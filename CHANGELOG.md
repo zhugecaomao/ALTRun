@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.45]
+
+测试版。
+
+Test build.
+
+### 修复
+- 应用商店安装的桌面程序 (例如 Windows Terminal) 在操作面板里没有 "以管理员身份运行": 以前只按文件扩展名判断。现在和开始菜单一样, 看这个应用的右键菜单里有没有这一项 (Windows Terminal 这类桌面应用有, 计算器这类 UWP 应用没有), 执行时也调用右键菜单的这个命令。感谢 @liyangdal 发现并提交了修改 (#342)
+
 ## [2026.10.26.43]
 
 测试版。
@@ -1340,7 +1349,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...HEAD
+[2026.10.26.45]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...2026.10.26.45
 [2026.10.26.43]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...2026.10.26.43
 [2026.10.26.42]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.41...2026.10.26.42
 [2026.10.26.41]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.40...2026.10.26.41
