@@ -499,7 +499,7 @@ class Shots {
         FileAppend('#NoTrayIcon`nFileSelect(, "' Shots.DemoDir '\Travel", "Open")`n', helper, "UTF-8")
         Run('"' A_AhkPath '" "' helper '"', , , &pid)
         Shots.HelperPid := pid
-        dialog := WinWait("Open ahk_class #32770 ahk_pid " pid, , 10)
+        dialog := WinWait("Open ahk_class #32770 ahk_pid " pid, , 30)      ; the first file dialog on a fresh runner can take over 10 s (the shell starts up)
         if !dialog
             throw Error("Open dialog not shown")
         WinSetAlwaysOnTop(1, dialog)                                        ; above the backdrop
