@@ -84,16 +84,10 @@ class SyncJobs {
         SyncPreview.Show(task, result, {Run: options.HasOwnProp("Run") && options.Run, Confirm: false})
     }
 
-    ; A robocopy log's text. Logs are written with /UNILOG (UTF-16 with its byte order mark): /LOG doesn't write Unicode, and names
-    ; outside its code page come out wrong (Chinese names become ??). A log without the mark (an older /LOG one) is read as before
-    static ReadLog(logFile) {
-        handle := FileOpen(logFile, "r")
-        if !handle
-            throw OSError(A_LastError, , logFile)
-        head := handle.Length >= 2 ? handle.ReadUShort() : 0
-        handle.Close()
-        return FileRead(logFile, head = 0xFEFF ? "UTF-16" : "CP0")
-    }
+    ; A robocopy log's text. Logs are written with /UNILOG (UTF-16 with a byte order mark): /LOG doesn't write Unicode, and names
+    ; outside its code page come out wrong (Chinese names become ??). FileRead goes by the mark; an older /LOG log has none and is
+    ; read in the system code page, as before
+    static ReadLog(logFile) => FileRead(logFile)
 
     ; A preview's log -> {Summary, Changes, LogFile} (Summary "" when the log has none)
     static ReadPreview(logFile) {

@@ -550,14 +550,19 @@ class ExtensionTests {
                 for change in SyncJobs.ReadPreview(done[1][1].LogFile).Changes
                     names .= change.Path "|"
             eq("preview list: accented and Chinese names", InStr(names, "\Café 测试.txt|") ? 1 : names, 1)
-            mark := (f) => (h := FileOpen(f, "r")) ? (h.Length >= 2 ? Format("{:04X}", h.ReadUShort()) : "empty") : "missing"
-            eq("preview log: UTF-16 mark", done.Length ? mark(done[1][1].LogFile) : "no log", "FEFF")
+            mark := (f) => !FileExist(f) ? "missing" : (b := FileRead(f, "RAW m4")).Size < 4 ? "short" : Format("{:02X}{:02X}{:02X}{:02X}", NumGet(b, 0, "UChar"), NumGet(b, 1, "UChar"), NumGet(b, 2, "UChar"), NumGet(b, 3, "UChar"))
+            eq("preview log: UTF-16 mark", done.Length ? SubStr(mark(done[1][1].LogFile), 1, 4) : "no log", "FFFE")
+            eq("run started: Unicode names", SyncJobs.Start(uni), "")       ; a run's log is appended to (/UNILOG+), today's file is new
+            wait("Unicode")
+            uniLog := root "\logs\Unicode_" FormatTime(, "yyyyMMdd") ".log"
+            text := FileExist(uniLog) ? SyncJobs.ReadLog(uniLog) : ""
+            eq("run log (appended): UTF-16 mark, Chinese names", SubStr(mark(uniLog), 1, 4) "|" (InStr(text, "Café 测试.txt") ? 1 : 0), "FFFE|1")
             eq("run started", SyncJobs.Start(real), "")
             wait("Check")
             logFile := root "\logs\Check_" FormatTime(, "yyyyMMdd") ".log"
             eq("run: copied, extra deleted, default log", (FileExist(root "\dst\sub\b.txt") != "") (FileExist(root "\dst\extra.txt") != "") (FileExist(logFile) != ""), "101")
             eq("last result", RoboSync.Result(SyncJobs.Last[SyncJobs.Key("Check")].Code).Ok, true)
-            eq("run log (appended): UTF-16 mark, summary read", mark(logFile) "|" IsObject(SyncJobs.Summary(SyncJobs.ReadLog(logFile))), "FEFF|1")
+            eq("run log: summary read", IsObject(SyncJobs.Summary(SyncJobs.ReadLog(logFile))), 1)
 
             real["Monitor"] := 1, real["MonitorChanges"] := 1, real["MonitorMinutes"] := 1
             eq("monitor started", SyncJobs.Start(real), "")
