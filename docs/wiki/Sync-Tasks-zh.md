@@ -1,13 +1,13 @@
 [English](Sync-Tasks) · **中文**
 
-# 同步任务
+# 文件夹同步
 
 用 Windows 自带的 `robocopy` 让一个文件夹和另一个保持一致, 例如把服务器共享同步到 OneDrive。ALTRun 在后台运行它, 先检查危险的设置, 完成后告诉你结果。
 
 ## 设置任务
-偏好设置 → **同步** 列出所有任务, 包括模式、文件夹和状态 (*运行中*、*持续同步中*、*成功 09:30*、*失败 09:30*)。
+偏好设置 → **文件夹同步** 列出所有任务, 包括模式、文件夹和状态 (*运行中*、*持续同步中*、*成功 09:30*、*失败 09:30*)。
 
-![偏好设置 → 同步](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-sync.png)
+![偏好设置 → 文件夹同步](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-sync.png)
 
 - **添加**、**编辑** (或双击)、**删除**、**复制一份** (复制后再改, 例如用于另一个文件夹)。
 - **预览**、**运行**、**停止**、**打开日志** 直接作用于选中的任务, 用的是列表里现在的内容 (不用先点应用)。

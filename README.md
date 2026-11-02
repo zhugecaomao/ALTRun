@@ -82,7 +82,7 @@ You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` w
 - **Quick Switch**: in an Open / Save dialog, press `Ctrl+G` to jump to the folder of the file manager you used last (Total Commander, Directory Opus or Explorer); a folder panel next to the dialog lists every open and recently used folder. Also works in the older Browse for Folder dialog (folder tree only).
 - **Date stamp**: while renaming a file, press `Ctrl+D` to add or update a date before the extension (`Report.docx` → `Report - 28.09.2026.docx`).
 - **Custom hotkeys**: assign a hotkey to any system command, optionally only inside specific programs.
-- **Sync tasks**: keep a folder in step with another one (for example a server share and your OneDrive) with Windows' robocopy: set up in Preferences, run from there or the search window; a preview lists what a mirror would delete before anything is deleted.
+- **Folder sync**: keep a folder in step with another one (for example a server share and your OneDrive) with Windows' robocopy: set up in Preferences, run from there or the search window; a preview lists what a mirror would delete before anything is deleted.
 - **Delayed start**: start programs such as OneDrive a few minutes after signing in to Windows, so the desktop is ready sooner (Windows Task Scheduler starts them, no administrator rights needed).
 - **Scripts**: put `.ahk`, `.ps1`, `.bat` or `.py` scripts into the `Scripts\` folder and run them from the search window, with an argument, in the background or with their output shown.
 

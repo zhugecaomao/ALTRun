@@ -1,13 +1,13 @@
 **English** · [中文](Sync-Tasks-zh)
 
-# Sync Tasks
+# Folder Sync
 
 Keep a folder in step with another one, for example a server share copied into your OneDrive, with Windows' own `robocopy`. ALTRun runs it in the background, checks risky settings first and tells you how it went.
 
 ## Setting up tasks
-Preferences → **Sync** lists the tasks, with their mode, folders and state (*Running*, *Monitoring*, *OK 09:30*, *Failed 09:30*).
+Preferences → **Folder Sync** lists the tasks, with their mode, folders and state (*Running*, *Monitoring*, *OK 09:30*, *Failed 09:30*).
 
-![Preferences → Sync](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-sync.png)
+![Preferences → Folder Sync](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-sync.png)
 
 - **Add**, **Edit** (or double-click), **Delete**, **Duplicate** (a copy to change, e.g. for a second folder).
 - **Preview**, **Run**, **Stop**, **Open log** act on the selected task right away, as it is in the list (no need to click Apply first).

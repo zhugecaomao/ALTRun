@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.57]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置里的 "同步" 页改名为 "文件夹同步", 编辑窗口的标题改为 "文件夹同步任务", 搜索里的提示和页面上 "在搜索结果里显示…" 的选项也改为 "文件夹同步任务": 只写 "同步" 说不清同步的是什么, 容易以为是同步 ALTRun 的设置。搜索关键字仍是 `sync`, 设置文件不变
+
 ## [2026.10.26.56]
 
 测试版。
@@ -1462,7 +1471,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.56...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.57...HEAD
+[2026.10.26.57]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.56...2026.10.26.57
 [2026.10.26.56]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.55...2026.10.26.56
 [2026.10.26.55]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.54...2026.10.26.55
 [2026.10.26.54]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.53...2026.10.26.54

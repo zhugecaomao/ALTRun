@@ -472,7 +472,7 @@ class ExtensionTests {
             eq("keyword: all, only them", titles(SyncProvider.Search(SearchQuery("sync "))), "Sync: Team Files*|Sync: Archive*|")
             eq("keyword and name", titles(SyncProvider.Search(SearchQuery("sync arch"))), "Sync: Archive*|")
             eq("by name", titles(SyncProvider.Search(SearchQuery("team"))), "Sync: Team Files|")
-            eq("keyword alone: a hint", titles(SyncProvider.Search(SearchQuery("sync"))), "Sync tasks|")
+            eq("keyword alone: a hint", titles(SyncProvider.Search(SearchQuery("sync"))), "Folder sync tasks|")
             item := SyncProvider.Search(SearchQuery("team"))[1]
             actions := ""
             for action in item.Actions

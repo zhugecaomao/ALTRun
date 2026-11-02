@@ -557,14 +557,14 @@ class PrefsPages {
         PrefsForm.LinkNote(I18n.T("DelayedStart.Note", '<a href="taskschd.msc">', '<a href="taskmgr.exe /0 /startup">', "</a>"))   ; links: Task Scheduler, Task Manager's startup apps
     }
 
-    ; Sync tasks: the list (state of each task in the last column, kept up to date while the page is open), the buttons that act on
+    ; Folder sync tasks: the list (state of each task in the last column, kept up to date while the page is open), the buttons that act on
     ; the selected task, then the options. Run / Preview use the task as it is in the list, before Apply or OK
     static BuildSync() {
         PrefsForm.BeginPage("Prefs.Page.Sync", 150)
         list := PrefsForm.List("SyncTasks", 300
             , [["Prefs.Col.Name", "Name", 110], ["Sync.Col.Mode", "Mode", 70, (v) => RoboSync.ModeText(v)], ["Sync.Col.Source", "Source", 140]
              , ["Sync.Col.Destination", "Destination", 140], ["Sync.Col.State", "Name", 90, (v) => SyncJobs.ShortState(v)]]
-            , (owner, title, item, original) => SyncEditor.Edit(owner, title, item, original, PreferencesWindow.Working["SyncTasks"])
+            , (owner, title, item, original) => SyncEditor.Edit(owner, I18n.T("Sync.Editor.Title"), item, original, PreferencesWindow.Working["SyncTasks"])
             , () => RoboSync.NewTask())
         PrefsPages._syncList := list
         hwnd := PreferencesWindow.Gui.Hwnd
