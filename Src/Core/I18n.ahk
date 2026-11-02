@@ -1039,6 +1039,7 @@ class I18n {
         s["Sync.Preview.Copy"]              := "Would copy {1} of {2} files and create {3} folders."
         s["Sync.Preview.Delete"]            := "Would DELETE {1} files and {2} folders in the destination that aren't in the source."
         s["Sync.Preview.ConfirmText"]       := "This task mirrors: the files below would be deleted for good, not moved to the Recycle Bin. Nothing has been changed yet."
+        s["Sync.Preview.Waiting"]           := "Sync {1} would delete files: it waits for you in its window."
         s["Sync.Preview.Col.Action"]        := "Action"
         s["Sync.Preview.Col.Item"]          := "File or folder"
         s["Sync.Preview.Col.Robocopy"]      := "robocopy"

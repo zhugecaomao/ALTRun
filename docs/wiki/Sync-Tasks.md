@@ -38,6 +38,9 @@ The edit window, top to bottom:
 
 ## Safety
 - **Mirror** (`/MIR`) makes the destination an exact copy of the source: files in the destination that aren't in the source are **deleted**. Before a mirror runs, ALTRun previews it (`/L`, which changes nothing); when the run would delete anything, the preview window lists what would be deleted, and nothing runs until you click **Run and Delete** (Enter or Esc closes it).
+  - The window opens when the preview has finished. If you have gone on working in another program by then, it can't come to the front (Windows doesn't let a background program take the focus): it flashes in the taskbar and a notification says it is waiting.
+  - Each task has its own window: previewing another task doesn't close one still waiting.
+  - A window left open for more than 5 minutes previews again when you click **Run and Delete**, as the destination may have changed since.
 - A mirror doesn't run when the source folder can't be found or is empty (for example a server share that didn't connect), since that would empty the destination.
 - A task doesn't run when the source and destination are the same folder or one is inside the other, or when a mirror would go into a drive, a share, the OneDrive folder or the user folder (it would delete everything else there).
 - Source and destination must be full paths (`D:\Sync\Projects`, `\\server\share\folder`). A relative path, `\folder` (the root of whichever drive is current) or an environment variable that doesn't exist on this PC (`%OneDrive%` without OneDrive) would make robocopy work in some other folder, so such a task doesn't run.
@@ -48,6 +51,7 @@ The edit window, top to bottom:
 Each run is logged: to the task's own log file, or to `%TEMP%\ALTRun\SyncLogs\<task name>_<date>.log`. **Open log** opens today's log.
 - The logs aren't kept in the Data folder: when that is in OneDrive, logs that grow all the time would keep uploading.
 - Logs in `%TEMP%\ALTRun\SyncLogs` older than 30 days are deleted when a task runs (`Features.Sync.KeepLogDays`, `0` = keep them all). A task's own log file is never deleted.
+- Logs are written in Unicode (`/UNILOG`), so file names in any language read correctly.
 - `ALTRun.log` gets one line per run: when it started and how it ended (files copied and deleted, or the exit code).
 
 ## In the settings file

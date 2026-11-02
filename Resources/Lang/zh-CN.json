@@ -501,6 +501,7 @@
   "Sync.Preview.Copy": "会复制 {2} 个文件中的 {1} 个, 新建 {3} 个文件夹。",
   "Sync.Preview.Delete": "会删除目标里源中没有的 {1} 个文件和 {2} 个文件夹。",
   "Sync.Preview.ConfirmText": "这个任务是镜像: 下面的文件会被永久删除, 不进回收站。现在还没有做任何改动。",
+  "Sync.Preview.Waiting": "同步 {1} 会删除文件: 在它的窗口里等你确认。",
   "Sync.Preview.Col.Action": "操作",
   "Sync.Preview.Col.Item": "文件或文件夹",
   "Sync.Preview.Col.Robocopy": "robocopy",
