@@ -403,7 +403,7 @@ class ExtensionTests {
                     return RunWait('"' command.Program '" ' command.Args, , "Hide")
                 }
                 code := run(real, true)
-                eq("robocopy preview: changes nothing", RoboSync.Result(code).Ok && !FileExist(root "\Copy Here\a.txt") && FileExist(root "\Copy Here\extra.txt"), true)
+                eq("robocopy preview: changes nothing", (RoboSync.Result(code).Ok ? 1 : 0) (FileExist(root "\Copy Here\a.txt") != "") (FileExist(root "\Copy Here\extra.txt") != ""), "101")
                 code := run(real, false)
                 done := RoboSync.Result(code), here := root "\Copy Here\"
                 eq("robocopy mirror: copied, extras deleted", (done.Ok && done.Copied && done.Extras) "|" (FileExist(here "a.txt") != "") (FileExist(here "sub\b.txt") != "") (FileExist(here "extra.txt") != ""), "1|110")

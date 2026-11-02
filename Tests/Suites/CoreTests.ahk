@@ -553,13 +553,13 @@ class CoreTests {
     static ExitAfterEnter() {
         eq := (n, a, e) => TestRunner.Equal("ExitAfterEnter." n, a, e)
         pauses := 0
-        pause := (ms) => (pauses++, Sleep(ms))
-        eq("not held: no wait", App.WaitForEnterUp(2000, () => false, pause) "|" pauses, "0|0")
+        pauser := (ms) => (pauses++, Sleep(ms))
+        eq("not held: no wait", App.WaitForEnterUp(2000, () => false, pauser) "|" pauses, "0|0")
         checks := 0
-        waited := App.WaitForEnterUp(2000, () => ++checks <= 3, pause)       ; held for the first 3 checks
+        waited := App.WaitForEnterUp(2000, () => ++checks <= 3, pauser)       ; held for the first 3 checks
         eq("held: waits until let go", pauses = 3 && waited > 0 && waited < 1000, true)
         pauses := 0, started := A_TickCount
-        waited := App.WaitForEnterUp(100, () => true, pause)                ; never let go: gives up after maxMs
+        waited := App.WaitForEnterUp(100, () => true, pauser)                ; never let go: gives up after maxMs
         eq("stuck key: gives up", waited >= 100 && A_TickCount - started < 1000, true)
     }
 

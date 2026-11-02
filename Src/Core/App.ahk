@@ -351,13 +351,13 @@ class App {
     ; Quitting / restarting right after Enter ran Quit (or Apply in Preferences): wait until Enter is let go, at most maxMs, so ALTRun doesn't
     ; exit with Enter still held. Twice Total Commander's Synchronize directories window, in front again once the search window hid, opened a
     ; properties window right after ALTRun exited that way (2026-10-31 and 2026-11-02, ALTRun log and Tests\Tools\KeyWatch.ahk); Enter run
-    ; from the search window without exiting never did. Returns the milliseconds waited. isDown / pause are replaced in the tests
-    static WaitForEnterUp(maxMs := 2000, isDown := "", pause := "") {
+    ; from the search window without exiting never did. Returns the milliseconds waited. isDown / wait are replaced in the tests
+    static WaitForEnterUp(maxMs := 2000, isDown := "", wait := "") {
         isDown := IsObject(isDown) ? isDown : () => GetKeyState("Enter", "P") || GetKeyState("NumpadEnter", "P")
-        pause := IsObject(pause) ? pause : Sleep
+        wait := IsObject(wait) ? wait : Sleep
         started := A_TickCount, waited := 0
         while (isDown() && waited < maxMs) {
-            pause(10)
+            wait(10)
             waited := A_TickCount - started
         }
         if (waited && Logger.Enabled)
