@@ -72,7 +72,8 @@ class SyncPreview {
         buttons.Push(closeButton)
         g.OnEvent("Escape", (*) => g.Destroy())
         g.OnEvent("Close", (*) => g.Destroy())
-        g.OnEvent("Size", (gui, minMax, w, h) => SyncPreview._Layout(minMax, w, h, list, note, buttons))
+        gaps := SyncPreview._Gaps(list, note, buttons)
+        g.OnEvent("Size", (gui, minMax, w, h) => SyncPreview._Layout(minMax, w, h, list, note, buttons, gaps))
         g.Show()
         closeButton.Focus()                                                 ; Enter closes: running (and deleting) needs a click
         return g
@@ -85,27 +86,39 @@ class SyncPreview {
         SyncJobs._Started(SyncJobs.Start(task), task["Name"])
     }
 
-    ; Resizing: the list takes the room, the note and the buttons stay below it
-    static _Layout(minMax, w, h, list, note, buttons) {
+    ; The spaces between the controls as first laid out, in the units GetPos / Move and the Size event use (no DPI arithmetic here)
+    static _Gaps(list, note, buttons) {
+        list.GetPos(&listX, &listY, , &listH)
+        note.GetPos(, &noteY, , &noteH)
+        buttons[1].GetPos(, &buttonY)
+        last := buttons[buttons.Length], lastX := 0, prevRight := 0
+        last.GetPos(&lastX)
+        if (buttons.Length >= 3) {
+            buttons[buttons.Length - 1].GetPos(&prevX, , &prevW)
+            prevRight := prevX + prevW
+        }
+        return {Margin: listX, ListNote: noteY - listY - listH, NoteButtons: buttonY - noteY - noteH, Between: prevRight ? lastX - prevRight : listX}
+    }
+
+    ; Resizing: the list takes the room, the note and the buttons stay below it, Run and Close at the right edge
+    static _Layout(minMax, w, h, list, note, buttons, gaps) {
         if (minMax = -1)
             return
-        list.GetPos(&listX, &listY)
+        list.GetPos(, &listY)
         buttons[1].GetPos(, , , &buttonH)
         note.GetPos(, , , &noteH)
-        scale := A_ScreenDPI / 96
-        buttonY := h - Round(12 * scale) - buttonH
-        noteY := buttonY - Round(12 * scale) - noteH
-        listH := noteY - Round(4 * scale) - listY
-        list.Move(, , w - 2 * listX, listH)
-        note.Move(, noteY, w - 2 * listX)
+        buttonY := h - gaps.Margin - buttonH
+        noteY := buttonY - gaps.NoteButtons - noteH
+        list.Move(, , w - 2 * gaps.Margin, Max(40, noteY - gaps.ListNote - listY))
+        note.Move(, noteY, w - 2 * gaps.Margin)
         buttons[1].Move(, buttonY)
-        right := w - listX
-        Loop buttons.Length - 1 {                                           ; Run and Close at the right edge
+        right := w - gaps.Margin
+        Loop buttons.Length - 1 {
             button := buttons[buttons.Length - A_Index + 1]
             button.GetPos(, , &bw)
             right -= bw
             button.Move(right, buttonY)
-            right -= Round(10 * scale)
+            right -= gaps.Between
         }
     }
 

@@ -614,6 +614,7 @@ class PrefsPages {
         list := PrefsPages._syncList
         if !IsObject(task := list.Selected.Call())
             return MsgBox(I18n.T("Sync.SelectFirst"), I18n.T("Prefs.Page.Sync"), "Iconi Owner" PreferencesWindow.Gui.Hwnd)
+        task := ItemEditor.WithDefaults(task, RoboSync.NewTask())           ; a task written by hand may leave keys out
         PreferencesWindow.Gui.Opt("+OwnDialogs")
         switch what {
             case "Preview": SyncJobs.Preview(task)
