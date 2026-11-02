@@ -26,7 +26,7 @@
 
 class SyncJobs {
     static Jobs := Map(), Last := Map()                                     ; Key(name) -> the running job / how the last run ended
-    static PollMs := 1000
+    static PollMs := 1000, StopWaitMs := 2000
     static StateFile => AppSettings.DataDir "\SyncRunning.json"
     static LogDir := A_Temp "\ALTRun\SyncLogs"
     static _pollTimer := () => SyncJobs._Poll()
@@ -174,8 +174,12 @@ class SyncJobs {
             return false
         job := SyncJobs.Jobs[key]
         job.OnDone := "", job.Stopped := true                               ; stopped on purpose: no "failed" message
-        try ProcessClose(job.Pid)
-        SyncJobs._Poll()
+        try ProcessClose(job.Pid)                                           ; TerminateProcess only starts ending it: wait (2 s at most) so it is gone when this returns
+        if job.Handle
+            DllCall("WaitForSingleObject", "Ptr", job.Handle, "UInt", SyncJobs.StopWaitMs, "UInt")
+        else if job.Pid
+            ProcessWaitClose(job.Pid, SyncJobs.StopWaitMs / 1000)
+        SyncJobs._Poll()                                                    ; still running after that: the poll timer ends the job later
         return true
     }
 
