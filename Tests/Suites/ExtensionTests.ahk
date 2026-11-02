@@ -327,36 +327,12 @@ class ExtensionTests {
             , 'C:\ "' EnvGet("TEMP") '\Sync Copy" *.docx "My File.*" /E /COPY:DAT /DCOPY:DA /R:1 /W:1 /XF thumbs.db ~$*.* *.bak /XD $Recycle.Bin "Old Versions"')
         task["Mode"] := "Update"
         eq("update: new and newer files only", InStr(RoboSync.Build(task, false, now).Args, '*.docx "My File.*" /E /XO /COPY:DAT') > 0, true)
-        eq("update read back", RoboSync.Parse(RoboSync.Build(task, false, now).Args).Task["Mode"], "Update")
-        eq("/XO without /E kept as is", RoboSync.Parse('C:\a D:\b /XO /NP').Task["Extra"], "/XO /NP")
         eq("quoting", RoboSync.Quote("C:\") "|" RoboSync.Quote("C:\My Files\") "|" RoboSync.Quote("") "|" RoboSync.Quote("a b"), 'C:\|"C:\My Files\\"|""|"a b"')
         eq("placeholders", RoboSync.Expand("X_{date}_{time}.log", now), "X_20261102_093005.log")
         tokens := RoboSync.Tokens('"C:\My Files\\" D:\x "a b" /XF "~$*.*"')
         eq("tokens", tokens.Length = 5 ? tokens[1] "|" tokens[2] "|" tokens[3] "|" tokens[5] : tokens.Length, "C:\My Files\|D:\x|a b|~$*.*")
 
-        ; A Total Commander start menu entry (parameters only, as in its settings), read back
-        line := '"\\fileserver\Team Share" "%|OneDrive|\Work\Team" *.* /COPY:DAT /DCOPY:DA /MIR /R:1 /W:1 /MON:1 /MOT:5 /MT:16 '
-            . '/XF thumbs.db plot.log "~$*.*" "*.dwl" desktop.ini /XD "System Volume Information" "$Recycle.Bin" /NP /NS /TEE '
-            . '/LOG+:%|OneDrive|\Logs\TEAM_%|$DATE:YMD|.log'
-        parsed := RoboSync.Parse(line), t := parsed.Task
-        eq("import: folders", t["Source"] "|" t["Destination"] "|" t["Files"], "\\fileserver\Team Share|%OneDrive%\Work\Team|*.*")
-        eq("import: options", t["Mode"] "|" t["Copy"] "|" t["DirCopy"] "|" t["Retries"] "|" t["Wait"] "|" t["Threads"] "|" t["Monitor"] "|" t["MonitorChanges"] "|" t["MonitorMinutes"]
-            , "Mirror|DAT|DA|1|1|16|1|1|5")
-        eq("import: excludes", t["ExcludeFiles"].Length "|" t["ExcludeFiles"][3] "|" t["ExcludeDirs"].Length "|" t["ExcludeDirs"][2], "5|~$*.*|2|$Recycle.Bin")
-        eq("import: log", t["LogFile"] "|" t["AppendLog"], "%OneDrive%\Logs\TEAM_{date}.log|1")
-        eq("import: others kept", t["Extra"], "/NP /NS /TEE")
-        eq("import: name, no notes", t["Name"] "|" parsed.Notes.Length, "Team|0")
-        again := RoboSync.Parse(RoboSync.Build(t, false, now).Args).Task                ; built and read back: the same
-        eq("round trip", again["Mode"] again["Threads"] again["Monitor"] again["ExcludeFiles"].Length again["ExcludeDirs"].Length, "Mirror16152")
-
-        parsed := RoboSync.Parse('robocopy.exe C:\Data\ "E:\Backup\Data" /L /MT /LOG:E:\log.txt /XO')
-        t := parsed.Task
-        eq("with robocopy, preview, defaults", t["Source"] "|" t["Destination"] "|" t["Mode"] "|" t["Threads"] "|" t["Retries"] "|" t["Wait"] "|" t["AppendLog"] "|" t["Extra"] "|" t["Copy"]
-            , "C:\Data|E:\Backup\Data|Top|8|1000000|30|0|/XO|")
-        eq("preview noted", parsed.Notes.Length = 1 ? parsed.Notes[1] : parsed.Notes.Length, "Preview")
-        eq("missing folders noted", RoboSync.Parse("/MIR").Notes[1], "NoFolders")
-        notes := []
-        eq("Total Commander variables", RoboSync.FromTotalCommander("%|OneDrive|\a_%|$DATE:YMD|_%|$DATE:YMDhm|.log", notes) "|" notes.Length, "%OneDrive%\a_{date}_%|$DATE:YMDhm|.log|1")
+        eq("suggested name, trailing slash", RoboSync.SuggestName("%OneDrive%\Work\Team\") "|" RoboSync.TrimSlash("C:\") "|" RoboSync.TrimSlash("D:\Sync\"), "Team|C:\|D:\Sync")
 
         ; Checks
         codes(list) {

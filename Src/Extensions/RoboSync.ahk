@@ -2,9 +2,9 @@
 ; RoboSync.ahk - folder sync tasks run with Windows' robocopy (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; A sync task copies or mirrors one folder into another, typically a server share into a local (OneDrive) folder, with
-; robocopy, which comes with Windows. This file holds the tasks' model: the robocopy command line made from a task, a
-; command line read back into a task (to import what was set up elsewhere, such as a Total Commander start menu entry),
-; the safety checks and what robocopy's exit code means. Running the tasks, the editor and search come in later steps.
+; robocopy, which comes with Windows. This file holds the tasks' model: the robocopy command line made from a task, the
+; safety checks and what robocopy's exit code means. Running the tasks is in SyncJobs, the search results in SyncProvider,
+; the editor and the preview in Src\UI (SyncEditor, SyncPreview).
 ;
 ; ALTRun.json, settings key "SyncTasks" (paths may use %environment variables%; {date} / {time} in the log file name):
 ;   [ { "Name": "Projects", "Source": "\\\\server\\projects", "Destination": "%OneDrive%\\Projects", "Files": "*.*",
@@ -20,7 +20,6 @@
 ; Usage:
 ;   RoboSync.NewTask()                       a task with the defaults
 ;   RoboSync.Build(task, preview)            -> {Program, Args}; preview: /L (lists what it would do, changes nothing), no monitoring
-;   RoboSync.Parse(commandLine)              -> {Task, Notes}: a robocopy command line (Total Commander variables converted)
 ;   RoboSync.Check(task, others)             -> [{Level: "Error" | "Warning", Code, Detail}...]: settings that are wrong or risky
 ;   RoboSync.CheckSource(task)               -> "" / "SourceMissing" / "SourceEmpty": before a mirror (an empty source would empty the destination)
 ;   RoboSync.Result(exitCode)                -> {Ok, Copied, Extras, Mismatched, Failed, Fatal}: robocopy's exit code is a bit mask, < 8 = success
@@ -95,86 +94,6 @@ class RoboSync {
         return '"' (SubStr(arg, -1) = "\" ? arg "\" : arg) '"'
     }
 
-    ;---------------------------------------------------------------------------
-    ; Command line -> task
-    ;---------------------------------------------------------------------------
-    ; A robocopy command line (with or without "robocopy" in front) as a task. Total Commander's variables are converted:
-    ; %|OneDrive| -> %OneDrive%, %|$DATE:YMD| -> {date}. /L (a preview) isn't kept: previewing is a separate command.
-    ; Notes: what was left out or changed, for the import to show
-    static Parse(commandLine) {
-        task := RoboSync.NewTask(), notes := []
-        task["ExcludeFiles"] := [], task["ExcludeDirs"] := [], task["Extra"] := "", task["Mode"] := "Top", task["Threads"] := 0
-        task["Copy"] := "", task["DirCopy"] := "", task["Retries"] := 1000000, task["Wait"] := 30   ; robocopy's own defaults when not given
-        tokens := RoboSync.Tokens(RoboSync.FromTotalCommander(commandLine, notes))
-        if (tokens.Length && RegExMatch(tokens[1], "i)(^|\\)robocopy(\.exe)?$"))
-            tokens.RemoveAt(1)
-        positional := [], extra := [], list := "", skipOlder := false
-        for token in tokens {
-            if (SubStr(token, 1, 1) != "/") {
-                if IsObject(list)
-                    list.Push(token)
-                else
-                    positional.Push(token)
-                continue
-            }
-            list := ""
-            option := StrUpper(token)
-            if (option = "/XF" || option = "/XD") {
-                list := task[option = "/XF" ? "ExcludeFiles" : "ExcludeDirs"]
-            } else if (option = "/MIR") {
-                task["Mode"] := "Mirror"
-            } else if (option = "/E") {
-                if (task["Mode"] != "Mirror")
-                    task["Mode"] := "Copy"
-            } else if (option = "/XO") {
-                skipOlder := true
-            } else if (option = "/L") {
-                notes.Push("Preview")
-            } else if RegExMatch(token, "i)^/(R|W|MON|MOT):(\d+)$", &m) {
-                key := Map("R", "Retries", "W", "Wait", "MON", "MonitorChanges", "MOT", "MonitorMinutes")[StrUpper(m[1])]
-                task[key] := Integer(m[2])
-                if (key = "MonitorChanges" || key = "MonitorMinutes")
-                    task["Monitor"] := 1
-            } else if RegExMatch(token, "i)^/MT(:(\d+))?$", &m) {
-                task["Threads"] := (m[2] = "") ? 8 : Integer(m[2])
-            } else if RegExMatch(token, "i)^/(D?COPY):(\w+)$", &m) {
-                task[StrUpper(m[1]) = "COPY" ? "Copy" : "DirCopy"] := StrUpper(m[2])
-            } else if RegExMatch(token, "i)^/LOG(\+?):(.+)$", &m) {
-                task["LogFile"] := m[2], task["AppendLog"] := (m[1] = "+") ? 1 : 0
-            } else {
-                extra.Push(RoboSync.Quote(token))
-            }
-        }
-        if (positional.Length >= 1)
-            task["Source"] := RoboSync.TrimSlash(positional[1])
-        if (positional.Length >= 2)
-            task["Destination"] := RoboSync.TrimSlash(positional[2])
-        if (positional.Length >= 3) {
-            files := ""
-            Loop positional.Length - 2
-                files .= (files = "" ? "" : " ") RoboSync.Quote(positional[A_Index + 2])
-            task["Files"] := files
-        }
-        if (skipOlder && task["Mode"] = "Copy")                             ; /E /XO: the Update mode
-            task["Mode"] := "Update"
-        else if skipOlder
-            extra.InsertAt(1, "/XO")
-        for item in extra
-            task["Extra"] .= (task["Extra"] = "" ? "" : " ") item
-        if (positional.Length < 2)
-            notes.Push("NoFolders")
-        task["Name"] := RoboSync.SuggestName(task["Destination"] != "" ? task["Destination"] : task["Source"])
-        return {Task: task, Notes: notes}
-    }
-
-    ; Total Commander's %|NAME| (an environment variable) and %|$DATE:YMD| (the date) in the ALTRun form; other date formats are noted
-    static FromTotalCommander(text, notes := "") {
-        text := RegExReplace(text, "i)%\|\$DATE:YMD\|", "{date}")
-        if (RegExMatch(text, "i)%\|\$DATE:[^|]*\|") && IsObject(notes))
-            notes.Push("DateFormat")
-        return RegExReplace(text, "%\|([A-Za-z_][\w()]*)\|", "%$1%")
-    }
-
     ; The arguments of a command line, as programs started with it read them (CommandLineToArgvW); a dummy program name goes first,
     ; since the first word is read by other rules
     static Tokens(commandLine) {
@@ -196,7 +115,7 @@ class RoboSync {
 
     static TrimSlash(folder) => RegExMatch(folder, "^[A-Za-z]:\\$") ? folder : RTrim(folder, "\")
 
-    ; A name for an imported task: the last folder of its path
+    ; A name for a task that has none yet (the editor's Preview): the last folder of its path
     static SuggestName(folder) {
         folder := RTrim(RegExReplace(folder, "%(\w+)%", "$1"), "\")
         SplitPath(folder, &leaf)
