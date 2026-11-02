@@ -539,6 +539,17 @@ class ExtensionTests {
                 for change in SyncJobs.Changes(FileRead(done[1][1].LogFile))
                     kinds .= change.Kind (change.Folder ? "/" : "") ":" RegExReplace(change.Path, ".*\\(?=[^\\]+\\?$)") " "
                 eq("preview: the list from the real log", kinds, "Delete:extra.txt Copy:a.txt Copy/:sub\ Copy:b.txt ")   ; robocopy lists a folder's extra files first
+                real["Threads"] := 8                                        ; several threads (the default 16): the log has full paths, no folder lines
+                done.Length := 0
+                SyncJobs.Start(real, true, (job, code) => done.Push([job, code]))
+                wait("Check")
+                files := ""
+                if done.Length
+                    for change in SyncJobs.Changes(FileRead(done[1][1].LogFile))
+                        if !change.Folder
+                            files .= change.Kind ":" RegExReplace(change.Path, ".*\\") "`n"
+                eq("preview with threads: the files", Trim(StrReplace(Sort(files), "`n", " ")), "Copy:a.txt Copy:b.txt Delete:extra.txt")
+                real["Threads"] := 0
             }
             eq("run started", SyncJobs.Start(real), "")
             wait("Check")
@@ -591,6 +602,12 @@ class ExtensionTests {
         eq("labels as robocopy wrote them", changes[2].Label "|" changes[6].Label, "Newer|*EXTRA Dir")
         limited := SyncJobs.Changes(logText, 2)
         eq("limit, total", limited.Length "|" limited.Total, "2|7")
+        multi := "`t    New File  `t`t       6`tC:\Demo Sync\Server\Projects\Plan.docx`r`n"     ; /MT: no folder lines, full paths
+            . "`t  *EXTRA File `t`t       6`tC:\Demo Sync\OneDrive\Projects\Old Notes.txt`r`n"
+        text := ""
+        for change in SyncJobs.Changes(multi)
+            text .= change.Kind " " change.Path "|"
+        eq("changes with /MT", text, "Copy C:\Demo Sync\Server\Projects\Plan.docx|Delete C:\Demo Sync\OneDrive\Projects\Old Notes.txt|")
         eq("no list", SyncJobs.Changes("").Length "|" SyncJobs.Changes("ERROR 53`tAccessing Source Directory \\srv\x\").Length, "0|0")
         rows := SyncPreview.Rows(changes, "C:\src", "D:\dst\")
         eq("rows: deletions first, relative", rows[1][1] " " rows[1][2] "|" rows[2][2] "|" rows[3][2] "|" rows[4][1] " " rows[4][2] "|" rows[7][2], "Delete extra.txt|old\|old\old.txt|Copy a.txt|sub\b.txt")

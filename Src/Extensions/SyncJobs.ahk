@@ -94,6 +94,7 @@ class SyncJobs {
     ; The files and folders a run (or a preview, /L) lists in its log: [{Kind: "Copy" | "Delete", Folder, Path, Label}...], at most limit
     ; (Total: how many there are). Lines are tab-separated: a folder line ends with its full path ("\t  New Dir  2\tC:\src\sub\";
     ; an unchanged folder has only the count), and the file lines after it give the name ("\t    New File  \t\t  1024\ta.txt").
+    ; With /MT (several threads, the default) there are no folder lines and each file line has the full path instead.
     ; robocopy writes the labels (New File, Newer, *EXTRA File...) in Windows' language; the ones it deletes start with "*" (*EXTRA)
     static Changes(logText, limit := 2000) {
         list := [], folder := "", total := 0
@@ -117,9 +118,10 @@ class SyncJobs {
                         label := Trim(fields[A_Index])
                         break
                     }
-                if (label = "" || folder = "")
+                full := RegExMatch(name, "^(?:[A-Za-z]:\\|\\\\)")             ; /MT: the file's full path
+                if (label = "" || (!full && folder = ""))
                     continue
-                isFolder := false, itemPath := folder name
+                isFolder := false, itemPath := full ? name : folder name
             }
             total++
             if (list.Length < limit)
