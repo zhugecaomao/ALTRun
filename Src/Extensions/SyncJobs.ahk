@@ -84,7 +84,7 @@ class SyncJobs {
         SyncPreview.Show(task, result, {Run: options.HasOwnProp("Run") && options.Run, Confirm: false})
     }
 
-    ; A robocopy log's text. Logs are written with /UNILOG (UTF-16 with a byte order mark): /LOG doesn't write Unicode, and names
+    ; A robocopy log's text. Logs are written with /UNILOG (UTF-16 with a byte order mark; Start writes the mark for /UNILOG+): /LOG doesn't write Unicode, and names
     ; outside its code page come out wrong (Chinese names become ??). FileRead goes by the mark; an older /LOG log has none and is
     ; read in the system code page, as before
     static ReadLog(logFile) => FileRead(logFile)
@@ -183,6 +183,10 @@ class SyncJobs {
         logFile := RoboSync.Expand(copy["LogFile"])
         SplitPath(logFile, , &logDir)
         try DirCreate(logDir)                                               ; robocopy doesn't create the log's folder
+        ; /UNILOG+ starts a new file in the code page, not Unicode (Chinese names become ??): a file that already starts with the UTF-16
+        ; mark is appended to in UTF-16. A file an older version wrote (no mark) is left as it is
+        if (RoboSync._Get(copy, "AppendLog") && RoboSync.IsAbsolute(logFile) && !FileExist(logFile))
+            try FileOpen(logFile, "w", "UTF-16").Close()
         pid := 0
         try Run('"' command.Program '" ' command.Args, A_Temp, "Hide", &pid)   ; the folders are full paths (RoboSync.Check); a relative log file goes to TEMP
         catch as e {
