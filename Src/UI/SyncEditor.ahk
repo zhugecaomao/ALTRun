@@ -112,7 +112,7 @@ class SyncEditor {
         hint(I18n.T("Sync.Field.Extra.Hint"))
 
         label("Sync.Field.Command")
-        command := g.AddEdit("xs+" (labelW + 8) " ys-3 w" inputW " r3 +Multi ReadOnly -VScroll")
+        command := g.AddEdit("xs+" (labelW + 8) " ys-3 w" inputW " r4 +Multi ReadOnly -VScroll")   ; four lines: the log path at the end fits
 
         copyButton := g.AddButton("xm y+18 w120", I18n.T("Sync.Field.CopyCommand"))
         copyButton.OnEvent("Click", (*) => (A_Clipboard := command.Value, App.Notify(I18n.T("Sync.Field.CommandCopied"))))
