@@ -424,6 +424,121 @@ class ExtensionTests {
             , "ok|ok copied|ok copied extras|ok copied extras mismatched|fail failed|fail copied failed|fail fatal|fail")
     }
 
+    ; Running sync tasks (SyncJobs) and the search results (SyncProvider); robocopy itself only on Windows (Wine's is a stub)
+    static SyncJobs() {
+        eq := (n, a, e) => TestRunner.Equal("SyncJobs." n, a, e)
+        ; The summary at the end of a run: English and other languages (rows found by their numbers), the last run of an appended log
+        english := "`r`n------------------------------------------------------------------------------`r`n`r`n"
+            . "               Total    Copied   Skipped  Mismatch    FAILED    Extras`r`n"
+            . "    Dirs :         5         1         4         0         0         2`r`n"
+            . "   Files :        40        12        28         0         0         7`r`n"
+            . "   Bytes :    1.5 m    20.1 k     1.4 m         0         0     3.2 k`r`n"
+            . "   Times :   0:00:01   0:00:00                       0:00:00   0:00:00`r`n"
+        s := SyncJobs.Summary(english)
+        eq("summary", s.Dirs.Total s.Dirs.Copied s.Dirs.Extras "|" s.Files.Total "|" s.Files.Copied "|" s.Files.Skipped "|" s.Files.Extras, "512|40|12|28|7")
+        chinese := "`n                  总数        复制        跳过       不匹配        失败        其他`n"
+            . "       目录:         3         0         3         0         0         0`n"
+            . "       文件:        10         2         8         0         0         1`n"
+            . "       字节:       100        20        80         0         0         5`n"
+        s := SyncJobs.Summary(english chinese)
+        eq("summary in another language, the last run, integer bytes", s.Dirs.Total "|" s.Files.Copied "|" s.Files.Extras, "3|2|1")
+        eq("no summary", SyncJobs.Summary("ERROR 53 (0x00000035) Accessing Source Directory\\srv\x\") "|" SyncJobs.Summary(""), "|")
+        eq("file names", SyncJobs.FileName(' A/B: "x" '), "A_B_ _x_")
+
+        ; The search results
+        saved := AppSettings.Data["SyncTasks"]
+        task := RoboSync.NewTask()
+        task["Name"] := "Team Files", task["Source"] := "\\srv\team", task["Destination"] := "D:\Sync\Team"
+        other := RoboSync.NewTask()
+        other["Name"] := "Archive", other["Source"] := "\\srv\archive", other["Destination"] := "D:\Sync\Archive", other["Mode"] := "Copy"
+        titles(list) {
+            text := ""
+            for item in list
+                text .= item.Title (item.Exclusive ? "*" : "") "|"
+            return text
+        }
+        try {
+            AppSettings.Data["SyncTasks"] := []
+            eq("no tasks: nothing", titles(SyncProvider.Search(SearchQuery("sync "))), "")
+            AppSettings.Data["SyncTasks"] := [task, other]
+            eq("keyword: all, only them", titles(SyncProvider.Search(SearchQuery("sync "))), "Sync: Team Files*|Sync: Archive*|")
+            eq("keyword and name", titles(SyncProvider.Search(SearchQuery("sync arch"))), "Sync: Archive*|")
+            eq("by name", titles(SyncProvider.Search(SearchQuery("team"))), "Sync: Team Files|")
+            eq("keyword alone: a hint", titles(SyncProvider.Search(SearchQuery("sync"))), "Sync tasks|")
+            item := SyncProvider.Search(SearchQuery("team"))[1]
+            actions := ""
+            for action in item.Actions
+                actions .= action.Title "|"
+            eq("subtitle", item.Subtitle, "Mirror \\srv\team → D:\Sync\Team")
+            eq("actions", actions, "Run|Preview (changes nothing)|Open log|Open source folder|Open destination folder|")
+            SyncJobs.Jobs[SyncJobs.Key("Team Files")] := {Name: "Team Files", Pid: 0, Handle: 0, Preview: false, Monitor: true, Started: "20261102100500", LogFile: "", OnDone: ""}
+            item := SyncProvider.Search(SearchQuery("team"))[1]
+            eq("running: Enter stops, state", item.Title "|" item.Subtitle "|" item.Actions[1].Title, "Stop syncing: Team Files|Monitoring since 10:05 · Mirror \\srv\team → D:\Sync\Team|Stop")
+            SyncJobs.Jobs.Delete(SyncJobs.Key("Team Files"))
+            SyncJobs.Last[SyncJobs.Key("Archive")] := {Code: 1, Ended: "20261102093000", Preview: false}
+            eq("last run", SyncProvider.Search(SearchQuery("arch"))[1].Subtitle, "Last run 09:30: OK · Copy \\srv\archive → D:\Sync\Archive")
+            SyncJobs.Last[SyncJobs.Key("Archive")] := {Code: 8, Ended: "20261102093000", Preview: false}
+            eq("last run failed", SyncJobs.State("Archive"), "Last run 09:30: failed (8)")
+            eq("refused before robocopy", SyncJobs._Problem(Map("Name", "x", "Source", "", "Destination", "D:\y", "Mode", "Copy"), false), "NoSource")
+        } finally {
+            AppSettings.Data["SyncTasks"] := saved
+            SyncJobs.Last.Clear()
+        }
+
+        ; With the real robocopy: a preview and its summary, a run with the default log, a monitoring task kept over a restart and stopped
+        if (!FileExist(RoboSync.Program) || DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr"))
+            return
+        root := A_Temp "\ALTRun-syncjobs-test"
+        try DirDelete(root, true)
+        DirCreate(root "\src\sub"), DirCreate(root "\dst")
+        FileAppend("a", root "\src\a.txt"), FileAppend("b", root "\src\sub\b.txt"), FileAppend("x", root "\dst\extra.txt")
+        savedDir := AppSettings.DataDir
+        AppSettings.DataDir := root "\data"
+        wait(name) {
+            started := A_TickCount
+            while (SyncJobs.IsRunning(name) && A_TickCount - started < 30000) {
+                Sleep(100)
+                SyncJobs._Poll()
+            }
+        }
+        try {
+            real := RoboSync.NewTask()
+            real["Name"] := "Check", real["Source"] := root "\src", real["Destination"] := root "\dst", real["Threads"] := 0, real["Retries"] := 0, real["Wait"] := 0
+            done := []
+            eq("preview started", SyncJobs.Start(real, true, (job, code) => done.Push([job, code])), "")
+            eq("running", SyncJobs.IsRunning("Check") && InStr(SyncJobs.State("Check"), "Checking since") = 1, true)
+            eq("one at a time", SyncJobs.Start(real), "Running")
+            wait("Check")
+            eq("preview ended", done.Length, 1)
+            if done.Length {
+                s := SyncJobs.Summary(FileRead(done[1][1].LogFile))
+                eq("preview: would copy 2, delete 1, nothing changed", RoboSync.Result(done[1][2]).Ok "|" (IsObject(s) ? s.Files.Copied "|" s.Files.Extras : "no summary") "|" (FileExist(root "\dst\a.txt") != ""), "1|2|1|0")
+            }
+            eq("run started", SyncJobs.Start(real), "")
+            wait("Check")
+            logFile := root "\data\SyncLogs\Check_" FormatTime(, "yyyyMMdd") ".log"
+            eq("run: copied, extra deleted, default log", (FileExist(root "\dst\sub\b.txt") != "") (FileExist(root "\dst\extra.txt") != "") (FileExist(logFile) != ""), "101")
+            eq("last result", RoboSync.Result(SyncJobs.Last[SyncJobs.Key("Check")].Code).Ok, true)
+
+            real["Monitor"] := 1, real["MonitorChanges"] := 1, real["MonitorMinutes"] := 1
+            eq("monitor started", SyncJobs.Start(real), "")
+            Sleep(1500), SyncJobs._Poll()
+            eq("monitoring keeps running", SyncJobs.IsRunning("Check") && InStr(SyncJobs.State("Check"), "Monitoring since") = 1, true)
+            pid := SyncJobs.Jobs[SyncJobs.Key("Check")].Pid
+            SyncJobs.Shutdown("restart -Reloaded")                          ; a restart: written down, still running
+            eq("restart: kept", ProcessExist(pid) = pid && FileExist(SyncJobs.StateFile) != "", true)
+            DllCall("CloseHandle", "Ptr", SyncJobs.Jobs[SyncJobs.Key("Check")].Handle), SyncJobs.Jobs.Clear()
+            SyncJobs.Adopt()                                                ; the new ALTRun takes it over
+            eq("taken over", SyncJobs.IsRunning("Check") && !FileExist(SyncJobs.StateFile), true)
+            SyncJobs.Shutdown("quit")                                       ; quitting stops it
+            eq("quit: stopped", !SyncJobs.IsRunning("Check") && !ProcessExist(pid), true)
+        } finally {
+            SyncJobs.StopAll(), SyncJobs.Last.Clear()
+            AppSettings.DataDir := savedDir
+            try DirDelete(root, true)
+        }
+    }
+
     ; The dialogs' folder menu: recent folders (Windows' "Recent items"), menu text
     static FolderMenu() {
         eq := (n, a, e) => TestRunner.Equal("FolderMenu." n, a, e)

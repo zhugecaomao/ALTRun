@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.49]
+
+测试版。
+
+Test build.
+
+### 新增
+- 同步任务第 2 步: 在搜索窗口里运行同步任务。输入任务名或 `sync ` (列出所有任务), Enter 运行, 运行中再按 Enter 停止; `→` 里有 运行、预览 (不做任何改动)、打开日志、打开源 / 目标文件夹。结果里显示状态 (运行中、持续同步中、上次成功 / 失败)。镜像运行前先预览, 会删除东西时先说明要删多少个文件和文件夹, 确认后才运行; 源找不到或是空的时不运行。任务结束时提示复制和删除了多少文件, 失败时可以打开日志。没有自己的日志文件时写到 `Data\SyncLogs`。退出 ALTRun 时停止持续同步的任务, 只是重新启动 (改设置、升级) 时继续运行。任务暂时写在设置文件里 (`SyncTasks`), 编辑界面在下一步
+
 ## [2026.10.26.47]
 
 测试版。
@@ -1368,7 +1377,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.49...HEAD
+[2026.10.26.49]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...2026.10.26.49
 [2026.10.26.47]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.46...2026.10.26.47
 [2026.10.26.46]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...2026.10.26.46
 [2026.10.26.45]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...2026.10.26.45

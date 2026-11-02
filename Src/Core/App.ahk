@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.47"
+    static Version := "2026.10.26.49"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -63,7 +63,7 @@ class App {
         Logger.Time("startup: learning, usage, theme", phase)
 
         for provider in [ClipboardProvider, ApplicationProvider, CustomCommandProvider, SnippetProvider, SystemProvider
-                        , CalculatorProvider, WebSearchProvider, BookmarkProvider, WindowProvider, ScriptProvider, FileSearchProvider, TerminalProvider, HelpProvider, RecentProvider]
+                        , CalculatorProvider, WebSearchProvider, BookmarkProvider, WindowProvider, ScriptProvider, FileSearchProvider, TerminalProvider, HelpProvider, RecentProvider, SyncProvider]
             ProviderRegistry.Register(provider)
         ProviderRegistry.InitAll()
 
@@ -97,6 +97,7 @@ class App {
         if AppSettings.General["CheckForUpdates"]
             UpdateChecker.Schedule()                                        ; checked in the background (see UpdateChecker); a new version shows in the search window
         DelayedStart.Schedule()                                             ; the delayed start tasks follow the list, 30 s later (only with entries)
+        SyncJobs.Adopt()                                                    ; sync tasks a restart left running
 
         Logger.Time("startup: total", started)
         Logger.Flush(), Logger.Immediate := true                            ; from now on each log line is written at once (kept even if the program hangs and is killed)
@@ -698,6 +699,7 @@ class App {
         if Logger.Enabled
             Logger.Debug(App.ExitNote(reason, App._exitBy, App.HeldKeys(), SearchWindow.ForegroundText()))
         CapsLockHelper.Stop()
+        SyncJobs.Shutdown(App._exitBy)                                      ; quitting stops the sync tasks, a restart hands them over
         try ApplicationProvider.SavePending()                              ; indexes rebuilt in the background but not written yet
         catch as e
             Logger.Error("App: cannot save the app index on exit - " e.Message)

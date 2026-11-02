@@ -437,6 +437,10 @@ class AppSettings {
                     "Keyword"         , "bm",                               ; "bm word" searches bookmarks only
                     "InDefaultResults", 1                                   ; also show matching bookmarks when typing a name (after applications and commands)
                 ),
+                "Sync", Map(
+                    "Enabled"    , 1,                                       ; the sync tasks (SyncTasks) in the search results
+                    "Keyword"    , "sync"                                   ; "sync " lists them all, "sync proj" searches only them
+                ),
                 "Scripts", Map(
                     "Enabled"    , 1,                                       ; scripts in the Scripts\ folder become commands
                     "Keyword"    , "script"                                 ; "script backup" searches scripts only, "script " lists them all
