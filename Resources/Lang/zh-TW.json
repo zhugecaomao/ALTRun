@@ -474,7 +474,7 @@
   "Sync.Field.MonitorMinutes": "分鐘",
   "Sync.Field.When.Hint": "持續同步: robocopy 一直執行, 來源有變更時再同步 (達到這麼多次變更, 每隔這麼多分鐘檢查一次), 直到停止或結束 ALTRun。",
   "Sync.Field.ExcludeFiles": "排除檔案",
-  "Sync.Field.ExcludeFiles.Hint": "用 ; 分隔, 例如 ~$*.* (Office 暫存檔)、*.tmp、*.dwl; *.dwl2 (AutoCAD 鎖定檔)",
+  "Sync.Field.ExcludeFiles.Hint": "用 ; 分隔。例如: ~$*.*; *.tmp; *.dwl; *.dwl2 (Office 暫存檔、暫存檔、AutoCAD 鎖定檔)",
   "Sync.Field.ExcludeDirs": "排除資料夾",
   "Sync.Field.ExcludeDirs.Hint": "資料夾名稱或完整路徑, 用 ; 分隔",
   "Sync.Section.Advanced": "進階",

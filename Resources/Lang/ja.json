@@ -473,7 +473,7 @@
   "Sync.Field.MonitorMinutes": "分",
   "Sync.Field.When.Hint": "同期し続ける: robocopy が実行し続け、コピー元が変わると再び同期します (この変更数に達したら、この分数ごとに確認)。停止するか ALTRun を終了するまで続きます。",
   "Sync.Field.ExcludeFiles": "除外するファイル",
-  "Sync.Field.ExcludeFiles.Hint": "; で区切ります (例: ~$*.* (Office の一時ファイル)、*.tmp、*.dwl; *.dwl2 (AutoCAD のロック))",
+  "Sync.Field.ExcludeFiles.Hint": "; で区切ります。例: ~$*.*; *.tmp; *.dwl; *.dwl2 (Office の一時ファイル、一時ファイル、AutoCAD のロック)",
   "Sync.Field.ExcludeDirs": "除外するフォルダー",
   "Sync.Field.ExcludeDirs.Hint": "フォルダー名またはフルパスを ; で区切ります",
   "Sync.Section.Advanced": "詳細",

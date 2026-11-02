@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.10.26.58]
+
+测试版。
+
+Test build.
+
+### 修复
+- 文件夹同步的编辑窗口: "排除文件" 下面的例子以前混用了 `,` 和 `;`, 看起来逗号也能分隔; 实际只有 `;` (或换行) 分隔。例子改为全部用 `;`: `~$*.*; *.tmp; *.dwl; *.dwl2`
+- 排除文件和排除文件夹里给一项加了双引号 (例如从 robocopy 命令里复制来的 `"Old Versions"`) 时, 以前命令里会变成两层引号, robocopy 读错; 现在去掉输入的引号, 需要时 (有空格) 由 ALTRun 加上。`~$*.*` 这样没有空格的不需要引号
+
 ## [2026.10.26.57]
 
 测试版。
@@ -1471,7 +1481,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.57...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.58...HEAD
+[2026.10.26.58]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.57...2026.10.26.58
 [2026.10.26.57]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.56...2026.10.26.57
 [2026.10.26.56]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.55...2026.10.26.56
 [2026.10.26.55]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.54...2026.10.26.55
