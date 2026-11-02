@@ -83,6 +83,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\DelayedStart.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\RoboSync.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CurrencyRates.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SelectionActions.ahk

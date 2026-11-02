@@ -17,6 +17,7 @@
 ;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword" } ],
 ;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ],
 ;   "DelayedStart"  : [ { "Name", "Target", "Arguments", "Delay", "Enabled" } ],   programs started after signing in (Task Scheduler)
+;   "SyncTasks"     : [ { "Name", "Source", "Destination", "Mode", ... } ],          folder sync tasks run with robocopy (see RoboSync)
 ;   "DataLocation"  : "D:\\OneDrive\\ALTRun"   optional, only in the file at the default location: use this data folder instead (see ResolveDataDir)
 ; }
 ;
@@ -102,7 +103,7 @@ class AppSettings {
     }
 
     ; Kept when resetting to the defaults (Preferences → Advanced): content the user added, not options
-    static KeptOnReset := [["CustomCommands"], ["Snippets"], ["Hotkeys"], ["DelayedStart"], ["Features", "WebSearch", "Engines"]
+    static KeptOnReset := [["CustomCommands"], ["Snippets"], ["Hotkeys"], ["DelayedStart"], ["SyncTasks"], ["Features", "WebSearch", "Engines"]
         , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["Extensions", "PTTools"], ["DataLocation"]]
 
     ; current after a reset to the defaults: the defaults + the KeptOnReset parts of current
@@ -488,7 +489,8 @@ class AppSettings {
             ],
             "CustomCommands", AppSettings._DefaultCommands(),
             "Snippets", AppSettings._DefaultSnippets(),
-            "DelayedStart", []                                              ; programs started some time after signing in (see DelayedStart)
+            "DelayedStart", [],                                             ; programs started some time after signing in (see DelayedStart)
+            "SyncTasks", []                                                 ; folder sync tasks run with robocopy (see RoboSync)
         )
     }
 

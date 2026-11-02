@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.47]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内部准备 (使用上还没有变化): 文件夹同步功能的第 1 步。新增同步任务的数据结构 (设置里的 `SyncTasks`, 默认为空) 和 robocopy 命令行的生成与解析: 能读入 Total Commander 开始菜单里的 robocopy 命令 (`%|OneDrive|` 换成 `%OneDrive%`, `%|$DATE:YMD|` 换成日期), 检查危险的设置 (源和目标相同或互相包含、镜像到盘符根目录 / 共享根目录 / OneDrive 或用户文件夹、源文件夹不存在或是空的、和其他任务的目标重叠或共用日志文件), 按 robocopy 的规则解释退出码 (小于 8 算成功)。运行、编辑窗口和搜索在后面几步
+
 ## [2026.10.26.46]
 
 测试版。
@@ -1359,7 +1368,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.46...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...HEAD
+[2026.10.26.47]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.46...2026.10.26.47
 [2026.10.26.46]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...2026.10.26.46
 [2026.10.26.45]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...2026.10.26.45
 [2026.10.26.43]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...2026.10.26.43
