@@ -17,7 +17,7 @@
 ![偏好设置 → 延迟启动](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-delayedstart.png)
 
 ## 工作方式
-- 每一项是 Windows 任务计划程序里的一个任务 (页面上的 **任务计划程序** 按钮可以打开它)，放在文件夹 `ALTRun\<你的用户名>` 里，在你登录时、过了延迟时间后启动。程序由 Windows 启动，所以 ALTRun 没有运行也会启动，延迟从登录开始算。
+- 每一项是 Windows 任务计划程序里的一个任务 (列表下面说明里的 "任务计划程序" 链接可以打开它)，放在文件夹 `ALTRun\<你的用户名>` 里，在你登录时、过了延迟时间后启动。程序由 Windows 启动，所以 ALTRun 没有运行也会启动，延迟从登录开始算。
 - 任务在你的会话里用你的普通权限运行，和你自己启动程序一样，不保存密码。需要管理员权限的程序不能这样启动。
 - 和任务计划程序的默认设置不同，这些任务用电池时也会启动、拔掉电源不会停止、没有运行时间限制，并以正常优先级运行。
 - 这个文件夹归 ALTRun 管：ALTRun 会让它和列表一致，在任务计划程序里对这些任务的修改会被替换。列表清空后文件夹会被删除。
@@ -25,15 +25,21 @@
 - 电脑上的每个用户有自己的任务，看不到其他用户的任务。
 
 ## 自己会自启动的程序
-很多程序登录时会自己启动 (OneDrive、Teams 等)，这样它会立即启动，不会等延迟时间。添加这样的程序时，ALTRun 会提示它从哪里启动 (`Run: OneDrive`、`Startup: Teams.lnk`)；请在 任务管理器 → 启动应用 或程序自己的设置里关掉它的自启动。
+很多程序登录时会自己启动 (OneDrive、Teams 等), 也就是 任务管理器 → 启动应用 里列出的那些。这样它会立即启动, 不会等延迟时间。有两种办法把它改成延迟启动:
 
-示例，5 分钟后启动 OneDrive：
-1. 在 OneDrive 的设置里关掉 "登录 Windows 时自动启动 OneDrive" (或在 任务管理器 → 启动应用 里禁用 OneDrive)。
-2. 添加一项：程序 `%LocalAppData%\Microsoft\OneDrive\OneDrive.exe`，参数 `/background` (启动时不打开 OneDrive 窗口)，延迟 `300`。
+- 页面上的 **启动项...** 列出 Windows 登录时启动的程序 (Run 注册表项和启动文件夹, 已经禁用的也列出)。选一个后会打开编辑框, 名称、程序和参数已经填好, 延迟默认 5 分钟。
+- 手动添加一个自己也会自启动的程序时, ALTRun 会提示它从哪里启动, 并问要不要关掉。
+
+点 **应用** 或 **确定** 时, ALTRun 先设置好延迟启动的任务, 再像任务管理器那样关掉这个程序自己的启动 (启动应用 → 禁用): 什么都不删除, 可以在任务管理器里重新启用。如果任务没能设置好, 程序自己的启动保持不变, 它照样会启动。以后删除这样的一项时, 会问要不要让它重新自己启动。
+
+为 **所有用户** 启动的程序 (所有用户的 Run、所有用户的启动文件夹) 需要管理员权限才能关掉: ALTRun 设置好延迟启动的任务后, 会问要不要打开 任务管理器 → 启动应用, 在那里禁用。应用商店应用的启动任务 (打包应用的 startup task) 不在列表里。
+
+示例, 5 分钟后启动 OneDrive: 点 **启动项...**, 选 OneDrive, 确认参数是 `/background` (启动时不打开 OneDrive 窗口)、延迟是 `300`, 点 确定, 再点 应用。
 
 ## 设置文件里的写法
 ```jsonc
 "DelayedStart": [
-  { "Name": "OneDrive", "Target": "%LocalAppData%\\Microsoft\\OneDrive\\OneDrive.exe", "Arguments": "/background", "Delay": 300, "Enabled": 1 }
+  { "Name": "OneDrive", "Target": "%LocalAppData%\\Microsoft\\OneDrive\\OneDrive.exe", "Arguments": "/background", "Delay": 300, "Enabled": 1, "Source": "HKCU|OneDrive" }
 ]
 ```
+`Source` (只有从启动项转来的条目才有) 记录来自哪个启动项: `HKCU` / `HKLM` / `HKLM32` (当前用户 / 所有用户 / 所有用户 32 位的 Run) 或 `User` / `Common` (当前用户 / 所有用户的启动文件夹), 后面是它的名字。

@@ -331,9 +331,7 @@ class PreferencesWindow {
         AppSettings.Data := PreferencesWindow.Working
         if !AppSettings.Save()
             return
-        problems := DelayedStart.AfterSave(delayedBefore, AppSettings.Data["DelayedStart"])   ; the Task Scheduler tasks follow the list
-        if (problems != "")
-            MsgBox(I18n.T("DelayedStart.SyncFailed", problems), I18n.T("Prefs.Title"), "Icon! Owner" PreferencesWindow.Gui.Hwnd)
+        DelayedStart.AfterSave(delayedBefore, AppSettings.Data["DelayedStart"], PreferencesWindow.Gui.Hwnd)   ; the Task Scheduler tasks follow the list
         if stale.Apps                                                       ; the index scope changed: rescan in the background after restarting (the old index is used until then)
             ApplicationProvider.ExpireCache()
         if stale.Files

@@ -553,14 +553,14 @@ class PrefsPages {
             , [["Prefs.Col.Name", "Name", 130], ["Prefs.Col.Program", "Target", 250], ["Prefs.Col.Delay", "Delay", 80, (v) => DelayedStart.DelayText(v)]
              , ["Prefs.Col.Enabled", "Enabled", 60, (v) => I18n.T((v = "" || v) ? "DelayedStart.On" : "DelayedStart.Off")]]   ; missing = on, as DelayedStart reads it
             , DelayedStart.EditorFields(), () => DelayedStart.NewItem(), ""
-            , [{Label: I18n.T("DelayedStart.OpenScheduler"), Width: 120, Click: (*) => PrefsPages._OpenTaskScheduler()}])
-        PrefsForm.Note("DelayedStart.Note")
+            , [{Label: I18n.T("DelayedStart.StartupApps"), Width: 115, Click: (list, *) => PrefsPages._AddStartupApp(list)}])
+        PrefsForm.LinkNote(I18n.T("DelayedStart.Note", '<a href="taskschd.msc">', '<a href="taskmgr.exe /0 /startup">', "</a>"))   ; links: Task Scheduler, Task Manager's startup apps
     }
 
-    static _OpenTaskScheduler() {
-        try Run("taskschd.msc")
-        catch as e
-            Logger.Warn("Prefs: Task Scheduler - " e.Message)
+    ; "Startup Apps...": an entry made from one of the startup apps, opened in the edit dialog first
+    static _AddStartupApp(list) {
+        if IsObject(item := DelayedStart.PickStartupApp(PreferencesWindow.Gui, list.Items))
+            list.Insert(item)
     }
 
     ; "About" at the top (icon, name, version, home page, check for updates), the settings and data file locations and actions below
