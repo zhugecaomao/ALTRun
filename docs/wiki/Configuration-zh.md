@@ -26,6 +26,7 @@
 | 计算器 | [计算器](Calculator-zh) |
 | 脚本扩展 | [脚本扩展](Scripts-zh) |
 | 键盘 / 自定义热键 | [自定义热键](Hotkeys-zh) (CapsLock、切换到英文; 空格和 Tab 键另见 [快捷键](Usage-zh#快捷键)) |
+| 延迟启动 | [延迟启动](Delayed-Start-zh) |
 | 对话框跳转 | [对话框快速跳转](Quick-Switch-zh) |
 | 对话框面板 | [对话框文件夹面板](Quick-Switch-Panel-zh) |
 | 一键加日期 | [一键加日期](Date-Stamp-zh) |
@@ -41,6 +42,7 @@
   "Hotkeys":        [ ... ],      // 自定义热键
   "CustomCommands": [ ... ],      // 自定义命令
   "Snippets":       [ ... ],      // 文字片段
+  "DelayedStart":   [ ... ],      // 延迟启动
   "DataLocation":   "%OneDrive%\\ALTRun"   // 可选: 改用这个数据文件夹
 }
 ```
@@ -237,9 +239,12 @@
 ],
 "Snippets": [
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
+],
+"DelayedStart": [
+  { "Name": "OneDrive", "Target": "%LocalAppData%\\Microsoft\\OneDrive\\OneDrive.exe", "Arguments": "/background", "Delay": 300, "Enabled": 1 }
 ]
 ```
-字段说明见 [自定义命令](Custom-Commands-zh#字段)、[文字片段](Snippets-zh) 和 [自定义热键](Hotkeys-zh)。
+字段说明见 [自定义命令](Custom-Commands-zh#字段)、[文字片段](Snippets-zh)、[自定义热键](Hotkeys-zh) 和 [延迟启动](Delayed-Start-zh)。
 
 ## Data 文件夹
 数据文件夹在哪里、里面每个文件是什么、能不能删、怎样备份, 见 [数据文件](Data-Files-zh)。

@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.41"
+    static Version := "2026.10.26.42"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -96,6 +96,7 @@ class App {
         SetTimer(() => IconCache.Prefetch(ProviderRegistry.IconSpecs()), -SearchWindow.IconPrefetchDelay)   ; then read the common items' icons in the background
         if AppSettings.General["CheckForUpdates"]
             UpdateChecker.Schedule()                                        ; checked in the background (see UpdateChecker); a new version shows in the search window
+        DelayedStart.Schedule()                                             ; the delayed start tasks follow the list, 30 s later (only with entries)
 
         Logger.Time("startup: total", started)
         Logger.Flush(), Logger.Immediate := true                            ; from now on each log line is written at once (kept even if the program hangs and is killed)

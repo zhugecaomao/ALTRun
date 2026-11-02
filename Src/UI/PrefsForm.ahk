@@ -506,7 +506,9 @@ class PrefsForm {
             for index, item in items {
                 cells := []
                 for column in columns
-                    cells.Push((column[2] = "Status") ? StatusText(item) : PrefsForm.Cell(item, column[2]))
+                    cells.Push((column[2] = "Status") ? StatusText(item)
+                        : (column.Length >= 4) ? column[4].Call(item is Map && item.Has(column[2]) ? item[column[2]] : "")   ; the column's own text, e.g. a delay as "5 min"
+                        : PrefsForm.Cell(item, column[2]))
                 if !PrefsForm.FilterMatch(filter, cells)
                     continue
                 listView.Add("", cells*)

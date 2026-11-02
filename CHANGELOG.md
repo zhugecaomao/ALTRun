@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.42]
+
+测试版。
+
+Test build.
+
+### 新增
+- 延迟启动 (偏好设置 → 延迟启动): 登录 Windows 一段时间后再启动程序, 例如 5 分钟后启动 OneDrive, 让桌面更快可用。每一项是任务计划程序里的一个任务 (文件夹 `ALTRun\<用户名>`), 由 Windows 启动, ALTRun 没有运行也会启动; 用你的普通权限运行, 不需要管理员权限。程序自己也会自启动时 (例如 OneDrive 的 "登录时自动启动"), 添加时会提示它从哪里启动, 以免它不等延迟就启动
+
 ## [2026.10.26.41]
 
 测试版。
@@ -1322,7 +1331,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.41...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...HEAD
+[2026.10.26.42]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.41...2026.10.26.42
 [2026.10.26.41]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.40...2026.10.26.41
 [2026.10.26.40]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.39...2026.10.26.40
 [2026.10.26.39]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.38...2026.10.26.39

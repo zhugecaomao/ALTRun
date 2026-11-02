@@ -37,6 +37,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [脚本扩展](Scripts-zh) | 把自己的脚本变成搜索结果里的命令 |
 | [系统命令和终端](System-Commands-zh) | 锁屏、关机等系统命令的完整列表; `>` 运行命令 |
 | [自定义热键](Hotkeys-zh) | 给热键指定系统命令、CapsLock 切换输入法、怎样设置热键 |
+| [延迟启动](Delayed-Start-zh) | 登录几分钟后再启动 OneDrive 等程序 |
 | [扩展功能](Extensions-zh) | 各扩展页面的入口 |
 | [PT 工具箱](PT-Tools-zh) | 钢筋和网片面积、所需钢筋根数、计算器; SPF2M 束线型计算 |
 | [设置文件参考](Configuration-zh) | ALTRun.json 每一项的含义和默认值 |

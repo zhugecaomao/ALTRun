@@ -211,6 +211,69 @@ class ExtensionTests {
         SnippetExpander.Refresh()
     }
 
+    ; Delayed start (DelayedStart, Lib\TaskScheduler.ahk): the tasks the list asks for and what to change in Task Scheduler.
+    ; Registering real tasks is checked on Windows as a standard user by .github/workflows/delayed-start.yml
+    static DelayedStart() {
+        eq := (n, a, e) => TestRunner.Equal("DelayedStart." n, a, e)
+        eq("empty by default, kept on reset", AppSettings.Defaults()["DelayedStart"].Length "|" AppSettings.ResetData(Map("DelayedStart", [DelayedStart.NewItem()]))["DelayedStart"].Length, "0|1")
+        eq("new entry", JSON.Stringify(DelayedStart.NewItem()), JSON.Stringify(Map("Name", "", "Target", "", "Arguments", "", "Delay", 300, "Enabled", 1)))
+
+        ; durations as Task Scheduler takes and gives them
+        durations := ""
+        for seconds in [0, 30, 300, 330, 3600, 3630, 5400]
+            durations .= TaskScheduler.Duration(seconds) " "
+        eq("duration", durations, " PT30S PT5M PT5M30S PT1H PT1H30S PT1H30M ")
+        eq("seconds", TaskScheduler.Seconds("") "|" TaskScheduler.Seconds("PT5M") "|" TaskScheduler.Seconds("PT1H0M30S") "|" TaskScheduler.Seconds("P1DT1S") "|" TaskScheduler.Seconds("5 min"), "0|300|3630|86401|-1")
+        eq("delay text", DelayedStart.DelayText(0) "|" DelayedStart.DelayText(45) "|" DelayedStart.DelayText(300) "|" DelayedStart.DelayText(90) "|" DelayedStart.DelayText(""), "At once|45 s|5 min|1 min 30 s|At once")
+        eq("safe names", DelayedStart.SafeName(' One/Drive: "sync" ') "|" DelayedStart.SafeName("a<b>c|d*e?f\g.") "|" DelayedStart.SafeName("..."), "One_Drive_ _sync_|a_b_c_d_e_f_g|")
+
+        ; the tasks the list asks for
+        items := [Map("Name", "OneDrive", "Target", "C:\Users\Me\AppData\Local\Microsoft\OneDrive\OneDrive.exe", "Arguments", " /background ", "Delay", 300, "Enabled", 1)
+                , Map("Name", "OneDrive", "Target", "C:\Program Files\Tool\tool.exe", "Arguments", "", "Delay", "x", "Enabled", 0)
+                , Map("Name", "", "Target", "C:\Apps\Sync It.exe", "Arguments", "-q", "Delay", 60, "Enabled", 1)
+                , Map("Name", "No program", "Target", "  ", "Delay", 60, "Enabled", 1)
+                , Map("Name", "Old entry", "Target", "C:\Apps\old.exe")]      ; keys added later missing: the defaults
+        desired := DelayedStart.Desired(items)
+        eq("entries with a program", desired.Length, 4)
+        if (desired.Length = 4) {
+            first := desired[1].Spec, second := desired[2].Spec, third := desired[3].Spec, fourth := desired[4].Spec
+            eq("names unique, from the file when empty", desired[1].Name "|" desired[2].Name "|" desired[3].Name "|" desired[4].Name, "OneDrive|OneDrive (2)|Sync It.exe|Old entry")
+            eq("first", first.Path "|" first.Arguments "|" first.WorkingDirectory "|" first.Delay "|" first.Enabled
+                , "C:\Users\Me\AppData\Local\Microsoft\OneDrive\OneDrive.exe|/background|C:\Users\Me\AppData\Local\Microsoft\OneDrive|300|1")
+            eq("path with spaces quoted, bad delay = 0, off", second.Path "|" second.WorkingDirectory "|" second.Delay "|" second.Enabled, '"C:\Program Files\Tool\tool.exe"|C:\Program Files\Tool|0|0')
+            eq("description", InStr(third.Description, "ALTRun") > 0, true)
+            eq("missing keys", fourth.Arguments "|" fourth.Delay "|" fourth.Enabled, "|0|1")
+        }
+        eq("environment variables", DelayedStart.ProgramPath("%SystemRoot%\notepad.exe"), EnvGet("SystemRoot") "\notepad.exe")
+        eq("relative to the ALTRun folder", DelayedStart.ProgramPath("Tools\x.exe"), Path.Full("Tools\x.exe"))
+
+        ; what to change: tasks already right are left alone, others registered, those no entry asks for deleted
+        task(name, path, args, dir, delay, enabled) => {Name: name, Path: path, Arguments: args, WorkingDirectory: dir, Delay: delay, Enabled: enabled}
+        existing := [task("onedrive", "C:\Users\Me\AppData\Local\Microsoft\OneDrive\OneDrive.exe", "/background", "C:\Users\Me\AppData\Local\Microsoft\OneDrive", 300, 1)   ; right (case of the name aside)
+                   , task("OneDrive (2)", '"C:\Program Files\Tool\tool.exe"', "", "C:\Program Files\Tool", 0, 1)                                      ; enabled: changed
+                   , task("Sync It.exe", '"C:\Apps\Sync It.exe"', "-q", "C:\Apps", 120, 1)                                                            ; delay: changed
+                   , task("Removed", "C:\x.exe", "", "C:\", 60, 1)]
+        plan := DelayedStart.Plan(desired, existing)
+        names := ""
+        for entry in plan.Register
+            names .= entry.Name ";"
+        eq("register", names, "OneDrive (2);Sync It.exe;Old entry;")
+        eq("delete", plan.Delete.Length = 1 ? plan.Delete[1] : plan.Delete.Length, "Removed")
+        eq("quotes don't count", DelayedStart.Same(desired[3].Spec, task("x", "C:\Apps\Sync It.exe", "-q", "C:\Apps", 60, 1)), true)
+        eq("an unreadable trigger never counts as right", DelayedStart.Same(desired[1].Spec, task("x", desired[1].Spec.Path, "/background", desired[1].Spec.WorkingDirectory, -1, 1)), false)
+        plan := DelayedStart.Plan([], existing)
+        eq("empty list: delete all", plan.Register.Length "|" plan.Delete.Length, "0|4")
+        eq("Preferences unchanged: no sync", DelayedStart.AfterSave([Map("Name", "a")], [Map("Name", "a")]), "")
+
+        ; programs that also start by themselves
+        eq("command program", DelayedStart.CommandProgram('"C:\Program Files\App\app.exe" /min') "|" DelayedStart.CommandProgram("C:\Users\Me\OneDrive.exe /background")
+            . "|" DelayedStart.CommandProgram("C:\Program Files\x y\z.exe -a") "|" DelayedStart.CommandProgram("rundll32 shell32.dll"), "C:\Program Files\App\app.exe|C:\Users\Me\OneDrive.exe|C:\Program Files\x y\z.exe|rundll32")
+        fields := ""
+        for field in DelayedStart.EditorFields()
+            fields .= field.Key ":" field.Type " "
+        eq("editor fields", fields, "Name:text Target:file Arguments:text Delay:number Enabled:check ")
+    }
+
     ; The dialogs' folder menu: recent folders (Windows' "Recent items"), menu text
     static FolderMenu() {
         eq := (n, a, e) => TestRunner.Equal("FolderMenu." n, a, e)
