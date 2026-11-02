@@ -43,6 +43,7 @@ class PreferencesWindow {
         }
         SearchWindow.Hide()
         PreferencesWindow.Working := PreferencesWindow.DeepCopy(AppSettings.Data)
+        PreferencesWindow.ShowActualStartup(PreferencesWindow.Working)
         HotkeyBox.Sides := PreferencesWindow.GetPath(PreferencesWindow.Working, "General.HotkeySides") ? true : false
         PreferencesWindow.Binds := [], PrefsForm.Wider := Map(), PreferencesWindow._lists := Map(), PreferencesWindow._helpButton := ""
         PreferencesWindow._dirty := false, PreferencesWindow._ready := false, PreferencesWindow._positionReset := false, PreferencesWindow._page := 0
@@ -301,6 +302,15 @@ class PreferencesWindow {
         return true
     }
 
+    ; "Launch ALTRun at login" as it really is: off when it was turned off in Task Manager → Startup apps (saving then keeps it off)
+    static ShowActualStartup(working, offInTaskManager := "") {
+        general := working["General"]
+        if (offInTaskManager = "")
+            offInTaskManager := general["LaunchAtLogin"] && App.LaunchOffInTaskManager()
+        if offInTaskManager
+            general["LaunchAtLogin"] := 0
+    }
+
     ; Command line "-Preferences page [x y]" (reopening after Apply) -> {Page, X, Y}
     static ParseArgs(args) {
         value(i) => (args.Length >= i && IsInteger(args[i])) ? Integer(args[i]) : ""
@@ -332,6 +342,8 @@ class PreferencesWindow {
         if !AppSettings.Save()
             return
         DelayedStart.AfterSave(delayedBefore, AppSettings.Data["DelayedStart"], PreferencesWindow.Gui.Hwnd)   ; the Task Scheduler tasks follow the list
+        if general["LaunchAtLogin"]                                         ; ticked: on in Task Manager → Startup apps too
+            App.TurnOnInTaskManager()
         if stale.Apps                                                       ; the index scope changed: rescan in the background after restarting (the old index is used until then)
             ApplicationProvider.ExpireCache()
         if stale.Files

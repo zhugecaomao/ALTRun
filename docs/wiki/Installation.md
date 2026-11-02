@@ -59,7 +59,7 @@ winget upgrade zhugecaomao.ALTRun     # later upgrades (quit ALTRun first)
 
 ## Start with Windows, Start menu, "Send to"
 In Preferences → General:
-- **Launch ALTRun at login**: creates a shortcut in the Startup folder
+- **Launch ALTRun at login**: creates a shortcut in the Startup folder. It is listed in Task Manager → Startup apps; turned off there, the option shows as off in Preferences, and ticking it again turns it on in Task Manager too
 - **Add to Start menu**: lets you open ALTRun from the Start menu
 - **Add to Explorer 'Send to' menu**: right-click a file in Explorer → Send to → ALTRun adds it as a custom command (one file opens the edit dialog; several are all added at once)
 
