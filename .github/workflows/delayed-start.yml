@@ -1,0 +1,68 @@
+# Delayed start against the real Windows Task Scheduler (Tests\Integration\DelayedStartCheck.ahk): as a new standard user,
+# which is what matters (schtasks /SC ONLOGON needs an administrator; the COM interface ALTRun uses doesn't), then as the
+# administrator the runner is. On pull requests that change it, on main, or run by hand
+name: Delayed start
+
+on:
+  pull_request:
+    paths:
+      - Lib/TaskScheduler.ahk
+      - Src/Extensions/DelayedStart.ahk
+      - Tests/Integration/DelayedStartCheck.ahk
+      - .github/workflows/delayed-start.yml
+  push:
+    branches: [main]
+    paths:
+      - Lib/TaskScheduler.ahk
+      - Src/Extensions/DelayedStart.ahk
+      - Tests/Integration/DelayedStartCheck.ahk
+      - .github/workflows/delayed-start.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = 'v2.0.31'
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+
+      - name: As a standard user
+        shell: pwsh
+        run: |
+          # A copy the test user can read, outside the runner's work folder
+          $root = "C:\Users\Public\altrun-check"
+          New-Item -ItemType Directory $root -Force | Out-Null
+          Copy-Item Lib, Src, Resources, Tests, tools -Destination $root -Recurse
+          $name = "altruncheck"
+          $password = "Aa1!" + [guid]::NewGuid().ToString("N").Substring(0, 10)   # a throwaway account on a throwaway runner; at most 14 characters, or net user asks to confirm
+          net user $name $password /add
+          if ($LASTEXITCODE -ne 0) { throw "could not create the test user" }
+          $credential = New-Object System.Management.Automation.PSCredential("$env:COMPUTERNAME\$name", (ConvertTo-SecureString $password -AsPlainText -Force))
+          $proc = Start-Process "$root\tools\ahk\AutoHotkey64.exe" -Credential $credential -LoadUserProfile -WorkingDirectory $root `
+                  -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk', 'DelayedStartCheck' `
+                  -PassThru -RedirectStandardOutput "$root\check.log" -RedirectStandardError "$root\check.err"
+          if (-not $proc.WaitForExit(300000)) { $proc.Kill(); throw "The check didn't finish in 5 minutes" }
+          Get-Content "$root\check.log", "$root\check.err" -ErrorAction SilentlyContinue
+          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) check(s) failed" }
+
+      - name: As the administrator
+        shell: pwsh
+        run: |
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\RunTests.ahk', 'DelayedStartCheck' `
+                  -PassThru -NoNewWindow -RedirectStandardOutput check.log -RedirectStandardError check.err
+          if (-not $proc.WaitForExit(300000)) { $proc.Kill(); throw "The check didn't finish in 5 minutes" }
+          Get-Content check.log, check.err
+          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) check(s) failed" }

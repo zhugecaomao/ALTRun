@@ -37,6 +37,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Scripts](Scripts) | Turn your own scripts into commands in the search results |
 | [System commands and terminal](System-Commands) | Every system command (lock, shut down...); `>` runs a command |
 | [Custom hotkeys](Hotkeys) | Assign system commands to hotkeys, Caps Lock input switching, how to set hotkeys |
+| [Delayed start](Delayed-Start) | Start programs such as OneDrive a few minutes after signing in |
 | [Extensions](Extensions) | Links to the extension pages |
 | [PT Tools](PT-Tools) | Rebar and mesh areas, bars required, a calculator; SPF2M tendon profiles |
 | [Settings reference](Configuration) | Every ALTRun.json setting and its default value |

@@ -27,6 +27,7 @@
 #Include %A_ScriptDir%\..\Lib\WinTimer.ahk
 #Include %A_ScriptDir%\..\Lib\WindowsRecent.ahk
 #Include %A_ScriptDir%\..\Lib\ShellContextMenu.ahk
+#Include %A_ScriptDir%\..\Lib\TaskScheduler.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
 #Include %A_ScriptDir%\..\Src\Core\AppSettings.ahk
@@ -81,6 +82,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\CapsLockHelper.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\TendonProfile.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\DelayedStart.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CurrencyRates.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SelectionActions.ahk
@@ -88,6 +90,7 @@
 #Include %A_ScriptDir%\TestUtil.ahk
 #Include %A_ScriptDir%\FakeEverything.ahk
 #Include %A_ScriptDir%\Bench\FileIndexBench.ahk
+#Include %A_ScriptDir%\Integration\DelayedStartCheck.ahk
 #Include %A_ScriptDir%\Suites\CoreTests.ahk
 #Include %A_ScriptDir%\Suites\EverythingTests.ahk
 #Include %A_ScriptDir%\Suites\ProviderTests.ahk
@@ -108,6 +111,8 @@ Pinyin.DataFile := A_ScriptDir "\..\Resources\Pinyin.txt"                   ; th
 
 if (A_Args.Length && A_Args[1] = "FileIndexBench")                      ; RunTests.ahk FileIndexBench: time the built-in file index (see the file)
     FileIndexBench.Run(), ExitApp(0)
+if (A_Args.Length && A_Args[1] = "DelayedStartCheck")                  ; RunTests.ahk DelayedStartCheck: delayed start with the real Task Scheduler (see the file)
+    ExitApp(DelayedStartCheck.Run())
 TestRunner.Run()
 
 class TestRunner {

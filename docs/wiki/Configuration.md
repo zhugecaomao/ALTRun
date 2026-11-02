@@ -26,6 +26,7 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 | Calculator | [Calculator](Calculator) |
 | Scripts | [Scripts](Scripts) |
 | Keyboard / Hotkeys | [Custom hotkeys](Hotkeys) (Caps Lock, switching to English, the Space and Tab keys: see also [Shortcuts](Usage#shortcuts)) |
+| Delayed Start | [Delayed start](Delayed-Start) |
 | Quick Switch | [Quick Switch](Quick-Switch) |
 | Dialog Panel | [Dialog Folder Panel](Quick-Switch-Panel) |
 | Date Stamp | [Date Stamp](Date-Stamp) |
@@ -41,6 +42,7 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
   "Hotkeys":        [ ... ],      // custom hotkeys
   "CustomCommands": [ ... ],      // custom commands
   "Snippets":       [ ... ],      // snippets
+  "DelayedStart":   [ ... ],      // delayed start
   "DataLocation":   "%OneDrive%\\ALTRun"   // optional: use this data folder instead
 }
 ```
@@ -237,9 +239,12 @@ See [Extensions](Extensions).
 ],
 "Snippets": [
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }
+],
+"DelayedStart": [
+  { "Name": "OneDrive", "Target": "%LocalAppData%\\Microsoft\\OneDrive\\OneDrive.exe", "Arguments": "/background", "Delay": 300, "Enabled": 1 }
 ]
 ```
-For the fields, see [Custom commands](Custom-Commands#fields), [Snippets](Snippets) and [Custom hotkeys](Hotkeys).
+For the fields, see [Custom commands](Custom-Commands#fields), [Snippets](Snippets), [Custom hotkeys](Hotkeys) and [Delayed start](Delayed-Start).
 
 ## The Data folder
 Where the data folder is, what each file in it is, whether it can be deleted and how to back it up: see [Data files](Data-Files).

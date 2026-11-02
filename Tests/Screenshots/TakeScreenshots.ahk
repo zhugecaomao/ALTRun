@@ -34,7 +34,7 @@ class Shots {
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp"
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -91,8 +91,9 @@ class Shots {
             ["prefs-applications", "Light", "-Preferences 6", () => Shots.Preferences()],    ; Wiki: automatic app index updates
             ["prefs-clipboard",  "Light", "-Preferences 11", () => Shots.Preferences()],     ; Wiki: clipboard history
             ["prefs-websearch",  "Light", "-Preferences 12", () => Shots.Preferences()],     ; Wiki: web search
-            ["prefs-usage",      "Light", "-Preferences 19", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
-            ["prefs-advanced",   "Light", "-Preferences 20", () => Shots.Preferences()],     ; Wiki: data files
+            ["prefs-delayedstart", "Light", "-Preferences 19", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
+            ["prefs-usage",      "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
+            ["prefs-advanced",   "Light", "-Preferences 21", () => Shots.Preferences()],     ; Wiki: data files
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
@@ -759,6 +760,17 @@ class Shots {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
         settings["Features"]["FileSearch"]["InDefaultResults"] := 1
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; A delayed start list (made up)
+    static DelayedStartList() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["DelayedStart"] := [Map("Name", "OneDrive", "Target", "%LocalAppData%\Microsoft\OneDrive\OneDrive.exe", "Arguments", "/background", "Delay", 300, "Enabled", 1)
+            , Map("Name", "Sync Tool", "Target", "C:\Tools\SyncTool\SyncTool.exe", "Arguments", "--tray", "Delay", 90, "Enabled", 1)
+            , Map("Name", "Chat", "Target", "C:\Tools\Chat\Chat.exe", "Arguments", "", "Delay", 600, "Enabled", 0)]
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

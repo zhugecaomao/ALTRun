@@ -546,6 +546,23 @@ class PrefsPages {
         PrefsForm.LinesButton(base "AppendWindows", "Prefs.AppendWindows")
     }
 
+    ; Programs started some time after signing in, as Task Scheduler tasks (see DelayedStart)
+    static BuildDelayedStart() {
+        PrefsForm.BeginPage("Prefs.Page.DelayedStart")
+        PrefsForm.List("DelayedStart", 420
+            , [["Prefs.Col.Name", "Name", 130], ["Prefs.Col.Program", "Target", 250], ["Prefs.Col.Delay", "Delay", 80, (v) => DelayedStart.DelayText(v)]
+             , ["Prefs.Col.Enabled", "Enabled", 60, (v) => I18n.T((v = "" || v) ? "DelayedStart.On" : "DelayedStart.Off")]]   ; missing = on, as DelayedStart reads it
+            , DelayedStart.EditorFields(), () => DelayedStart.NewItem(), ""
+            , [{Label: I18n.T("DelayedStart.OpenScheduler"), Width: 120, Click: (*) => PrefsPages._OpenTaskScheduler()}])
+        PrefsForm.Note("DelayedStart.Note")
+    }
+
+    static _OpenTaskScheduler() {
+        try Run("taskschd.msc")
+        catch as e
+            Logger.Warn("Prefs: Task Scheduler - " e.Message)
+    }
+
     ; "About" at the top (icon, name, version, home page, check for updates), the settings and data file locations and actions below
     static BuildAdvanced() {
         PrefsForm.BeginPage("Prefs.Page.Advanced", 110)

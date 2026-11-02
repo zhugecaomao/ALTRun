@@ -16,6 +16,7 @@
 ;   "Hotkeys"       : [ { "Key", "Action", "WinTitle" } ],   custom hotkeys -> system commands
 ;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword" } ],
 ;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ],
+;   "DelayedStart"  : [ { "Name", "Target", "Arguments", "Delay", "Enabled" } ],   programs started after signing in (Task Scheduler)
 ;   "DataLocation"  : "D:\\OneDrive\\ALTRun"   optional, only in the file at the default location: use this data folder instead (see ResolveDataDir)
 ; }
 ;
@@ -101,7 +102,7 @@ class AppSettings {
     }
 
     ; Kept when resetting to the defaults (Preferences → Advanced): content the user added, not options
-    static KeptOnReset := [["CustomCommands"], ["Snippets"], ["Hotkeys"], ["Features", "WebSearch", "Engines"]
+    static KeptOnReset := [["CustomCommands"], ["Snippets"], ["Hotkeys"], ["DelayedStart"], ["Features", "WebSearch", "Engines"]
         , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["Extensions", "PTTools"], ["DataLocation"]]
 
     ; current after a reset to the defaults: the defaults + the KeptOnReset parts of current
@@ -486,7 +487,8 @@ class AppSettings {
                 Map("Key", "^r", "Action", "RebuildIndex", "WinTitle", "ALTRun")
             ],
             "CustomCommands", AppSettings._DefaultCommands(),
-            "Snippets", AppSettings._DefaultSnippets()
+            "Snippets", AppSettings._DefaultSnippets(),
+            "DelayedStart", []                                              ; programs started some time after signing in (see DelayedStart)
         )
     }
 
