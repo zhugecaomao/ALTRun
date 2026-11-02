@@ -560,7 +560,7 @@ class PrefsPages {
     ; "Startup Apps...": an entry made from one of the startup apps, opened in the edit dialog first
     static _AddStartupApp(list) {
         if IsObject(item := DelayedStart.PickStartupApp(PreferencesWindow.Gui, list.Items))
-            list.Insert(item)
+            list.Insert.Call(item)                                         ; Insert is a function kept in the list object, not a method: called with .Call
     }
 
     ; "About" at the top (icon, name, version, home page, check for updates), the settings and data file locations and actions below

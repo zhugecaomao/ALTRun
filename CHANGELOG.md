@@ -14,6 +14,15 @@ Test build.
 ### 修复
 - 窗口切换: 同一个程序开了几个窗口 (例如 3 个文档) 时只能搜到其中一个, 输入 `w ` 列出全部窗口时也一样。以前每个程序只算一个结果, 现在每个窗口都是单独的结果
 
+## [2026.10.26.49]
+
+测试版。
+
+Test build.
+
+### 修复
+- 延迟启动页面的 "启动项..." 选好一个程序后报错 "Too many parameters passed to function" (2026.10.26.46 起的测试版), 现在会正常打开编辑框
+
 ## [2026.10.26.48]
 
 测试版。
@@ -1387,7 +1396,8 @@ Smoother typing, easier to get started, and a few useful new features.
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
 [未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.50...HEAD
-[2026.10.26.50]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.48...2026.10.26.50
+[2026.10.26.50]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.49...2026.10.26.50
+[2026.10.26.49]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.48...2026.10.26.49
 [2026.10.26.48]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...2026.10.26.48
 [2026.10.26.47]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.46...2026.10.26.47
 [2026.10.26.46]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...2026.10.26.46
