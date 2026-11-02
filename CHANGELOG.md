@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.10.26.56]
+
+测试版。
+
+Test build.
+
+### 修复
+- 镜像的确认窗口在后台预览完成后才打开, 这时如果你已经在别的程序里工作, 它不能自己跳到最前面, 以前可能一直藏在别的窗口后面; 现在它在任务栏里闪烁, 并有通知说它在等待确认
+- 每个同步任务有自己的预览窗口: 以前预览另一个任务会关掉还在等待确认的镜像窗口
+- 确认窗口开着超过 5 分钟后再点 "运行并删除", 先重新预览一次 (目标可能已经变了), 不再按旧的预览直接删除
+- 同步日志改用 Unicode (`/UNILOG`): 以前预览列表和日志里的中文文件名会变成 `??`, 带重音的字母也会显示错 (例如 `Café`)
+
 ## [2026.10.26.55]
 
 测试版。
@@ -1446,7 +1458,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.55...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.56...HEAD
+[2026.10.26.56]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.55...2026.10.26.56
 [2026.10.26.55]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.54...2026.10.26.55
 [2026.10.26.54]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.53...2026.10.26.54
 [2026.10.26.53]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.52...2026.10.26.53
