@@ -827,6 +827,7 @@ class Shots {
             }
             FileSetTime("20260101000000", root "\OneDrive\Projects\Plan.docx")      ; older than the source's: copied again
             tasks[1]["Source"] := root "\Server\Projects", tasks[1]["Destination"] := root "\OneDrive\Projects", tasks[1]["Monitor"] := 0
+            settings["General"]["SaveLog"] := 1                             ; errors in the background (the preview ends in a timer) go to ALTRun.log, which Diagnose shows
         }
         settings["SyncTasks"] := tasks
         FileDelete(settingsFile)
