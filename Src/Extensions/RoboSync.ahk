@@ -99,7 +99,9 @@ class RoboSync {
     ; Command line -> task
     ;---------------------------------------------------------------------------
     ; A robocopy command line (with or without "robocopy" in front) as a task. Total Commander's variables are converted:
-    ; %|OneDrive| -> %OneDrive%, %|$DATE:YMD| -> {date}. /L (a preview) isn't kept: previewing is a separate command.
+    ; %|OneDrive| -> %OneDrive%, %|$DATE:YMD| -> {date}. /L (a preview) isn't kept as a run mode, and it drops monitoring:
+    ; a test-mode line imports as a manual task, with the /MON and /MOT values kept for the editor (note PreviewMonitorDropped).
+    ; Previewing is a separate command.
     ; Notes: what was left out or changed, for the import to show
     static Parse(commandLine) {
         task := RoboSync.NewTask(), notes := []
@@ -108,7 +110,7 @@ class RoboSync {
         tokens := RoboSync.Tokens(RoboSync.FromTotalCommander(commandLine, notes))
         if (tokens.Length && RegExMatch(tokens[1], "i)(^|\\)robocopy(\.exe)?$"))
             tokens.RemoveAt(1)
-        positional := [], extra := [], list := "", skipOlder := false
+        positional := [], extra := [], list := "", skipOlder := false, listOnly := false, monitorSeen := false
         for token in tokens {
             if (SubStr(token, 1, 1) != "/") {
                 if IsObject(list)
@@ -129,12 +131,12 @@ class RoboSync {
             } else if (option = "/XO") {
                 skipOlder := true
             } else if (option = "/L") {
-                notes.Push("Preview")
+                notes.Push("Preview"), listOnly := true
             } else if RegExMatch(token, "i)^/(R|W|MON|MOT):(\d+)$", &m) {
                 key := Map("R", "Retries", "W", "Wait", "MON", "MonitorChanges", "MOT", "MonitorMinutes")[StrUpper(m[1])]
                 task[key] := Integer(m[2])
                 if (key = "MonitorChanges" || key = "MonitorMinutes")
-                    task["Monitor"] := 1
+                    task["Monitor"] := 1, monitorSeen := true
             } else if RegExMatch(token, "i)^/MT(:(\d+))?$", &m) {
                 task["Threads"] := (m[2] = "") ? 8 : Integer(m[2])
             } else if RegExMatch(token, "i)^/(D?COPY):(\w+)$", &m) {
@@ -161,6 +163,10 @@ class RoboSync {
             extra.InsertAt(1, "/XO")
         for item in extra
             task["Extra"] .= (task["Extra"] = "" ? "" : " ") item
+        if (listOnly && monitorSeen) {                                         ; a test-mode line must not become a live monitor task
+            task["Monitor"] := 0
+            notes.Push("PreviewMonitorDropped")
+        }
         if (positional.Length < 2)
             notes.Push("NoFolders")
         task["Name"] := RoboSync.SuggestName(task["Destination"] != "" ? task["Destination"] : task["Source"])

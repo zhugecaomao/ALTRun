@@ -354,6 +354,14 @@ class ExtensionTests {
         eq("with robocopy, preview, defaults", t["Source"] "|" t["Destination"] "|" t["Mode"] "|" t["Threads"] "|" t["Retries"] "|" t["Wait"] "|" t["AppendLog"] "|" t["Extra"] "|" t["Copy"]
             , "C:\Data|E:\Backup\Data|Top|8|1000000|30|0|/XO|")
         eq("preview noted", parsed.Notes.Length = 1 ? parsed.Notes[1] : parsed.Notes.Length, "Preview")
+        parsed := RoboSync.Parse('C:\Data\ "E:\Backup\Data" /L /MIR /MON:1 /MOT:5 /R:2 /W:3 /MT:16')
+        t := parsed.Task
+        eq("preview drops monitoring", t["Mode"] "|" t["Monitor"] "|" t["MonitorChanges"] "|" t["MonitorMinutes"] "|" t["Retries"] "|" t["Wait"], "Mirror|0|1|5|2|3")
+        eq("preview drops monitoring, noted", parsed.Notes.Length = 2 ? parsed.Notes[1] "|" parsed.Notes[2] : parsed.Notes.Length, "Preview|PreviewMonitorDropped")
+        parsed := RoboSync.Parse('C:\Data\ "E:\Backup\Data" /MON:1 /MOT:5 /L /MIR')
+        eq("preview drops monitoring whatever the order", parsed.Task["Monitor"], 0)
+        parsed := RoboSync.Parse('C:\Data\ "E:\Backup\Data" /MIR /MON:1 /MOT:5')
+        eq("monitoring kept without preview", parsed.Task["Monitor"] "|" parsed.Notes.Length, "1|0")
         eq("missing folders noted", RoboSync.Parse("/MIR").Notes[1], "NoFolders")
         notes := []
         eq("Total Commander variables", RoboSync.FromTotalCommander("%|OneDrive|\a_%|$DATE:YMD|_%|$DATE:YMDhm|.log", notes) "|" notes.Length, "%OneDrive%\a_{date}_%|$DATE:YMDhm|.log|1")
