@@ -679,6 +679,8 @@ class ExtensionTests {
         SetTimer(PressOk, -400)
         edited := SyncEditor.Edit(owner, "Sync test", task, "", [])
         eq("editor: command shown", (InStr(seen.Command, "robocopy \\srv\team D:\Sync\Team *.* /MIR") = 1) ? 1 : seen.Command seen.Error, 1)
+        defaultLog := " /UNILOG+:" RoboSync.Quote(SyncJobs.LogDir "\Team_" FormatTime(, "yyyyMMdd") ".log")
+        eq("editor: command with the log it runs with (the default one)", InStr(seen.Command, defaultLog) ? 1 : seen.Command, 1)
         eq("editor: OK returns the task", IsObject(edited) ? edited["Name"] "|" edited["Mode"] "|" edited["Destination"] : "cancelled", "Team|Mirror|D:\Sync\Team")
         owner.Destroy()
         PressOk() {
@@ -692,6 +694,31 @@ class ExtensionTests {
                 seen.Error := e.Message
                 try WinClose(hwnd)
             }
+        }
+
+        ; The task as it runs: the default log when it has none, its own log as it is, a preview's own log
+        own := RoboSync.NewTask(), own["Name"] := "A/B", own["LogFile"] := "D:\Logs\x.log", own["AppendLog"] := 0
+        none := own.Clone(), none["LogFile"] := ""
+        eq("as run: default log, appended", SyncJobs.AsRun(none)["LogFile"] "|" SyncJobs.AsRun(none)["AppendLog"], SyncJobs.LogDir "\A_B_{date}.log|1")
+        eq("as run: own log kept, task unchanged", SyncJobs.AsRun(own)["LogFile"] "|" SyncJobs.AsRun(own)["AppendLog"] "|" none["LogFile"], "D:\Logs\x.log|0|")
+        eq("as run: preview", SyncJobs.AsRun(own, true)["LogFile"] "|" SyncJobs.AsRun(own, true)["AppendLog"], SyncJobs.LogDir "\A_B_preview.log|0")
+
+        ; Retries and File info: Wait and Folder info boxes in one column, after the longer label
+        lg := Gui()
+        try {
+            lg.AddText("xm Section w80", "Retries")
+            lg.AddEdit("x+8 ys-3 w70")
+            waitLabel := lg.AddText("x+16 ys", "Wait (s)"), waitEdit := lg.AddEdit("x+6 ys-3 w70")
+            threadsLabel := lg.AddText("x+16 ys", "Threads"), threadsEdit := lg.AddEdit("x+6 ys-3 w70")
+            lg.AddText("xm y+12 Section w80", "File info")
+            lg.AddEdit("x+8 ys-3 w70")
+            dirLabel := lg.AddText("x+16 ys", "A much longer folder label"), dirEdit := lg.AddEdit("x+6 ys-3 w70")
+            SyncEditor.AlignColumns(waitLabel, waitEdit, dirLabel, dirEdit, threadsLabel, threadsEdit)
+            waitEdit.GetPos(&wx, , &ww), dirEdit.GetPos(&dx), dirLabel.GetPos(&lx, , &lw), threadsLabel.GetPos(&tx, , &tw), threadsEdit.GetPos(&ex)
+            eq("align: one column after the longer label", (wx = dx) "|" (dx = lx + lw + 6), "1|1")
+            eq("align: Threads follows Wait", (tx = wx + ww + 16) "|" (ex = tx + tw + 6), "1|1")
+        } finally {
+            lg.Destroy()
         }
 
         ; The editor's values -> the task

@@ -90,16 +90,17 @@ class SyncEditor {
 
         section("Sync.Section.Advanced")
         label("Sync.Field.Retries", 10)
-        c["Retries"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w50 r1 -Multi Number", task["Retries"])
-        g.AddText("x+16 ys", I18n.T("Sync.Field.Wait"))
-        c["Wait"] := g.AddEdit("x+6 ys-3 w50 r1 -Multi Number", task["Wait"])
-        g.AddText("x+16 ys", I18n.T("Sync.Field.Threads"))
-        c["Threads"] := g.AddEdit("x+6 ys-3 w50 r1 -Multi Number", task["Threads"])
+        c["Retries"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w70 r1 -Multi Number", task["Retries"])
+        waitLabel := g.AddText("x+16 ys", I18n.T("Sync.Field.Wait"))
+        c["Wait"] := g.AddEdit("x+6 ys-3 w70 r1 -Multi Number", task["Wait"])
+        threadsLabel := g.AddText("x+16 ys", I18n.T("Sync.Field.Threads"))
+        c["Threads"] := g.AddEdit("x+6 ys-3 w70 r1 -Multi Number", task["Threads"])
         hint(I18n.T("Sync.Field.Retries.Hint"))
         label("Sync.Field.Copy")
         c["Copy"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w70 r1 -Multi Uppercase", task["Copy"])
-        g.AddText("x+16 ys", I18n.T("Sync.Field.DirCopy"))
+        dirLabel := g.AddText("x+16 ys", I18n.T("Sync.Field.DirCopy"))
         c["DirCopy"] := g.AddEdit("x+6 ys-3 w70 r1 -Multi Uppercase", task["DirCopy"])
+        SyncEditor.AlignColumns(waitLabel, c["Wait"], dirLabel, c["DirCopy"], threadsLabel, c["Threads"])
         hint(I18n.T("Sync.Field.Copy.Hint"))
         label("Sync.Field.LogFile")
         c["LogFile"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w" (inputW - 130) " r1 -Multi", task["LogFile"])
@@ -111,7 +112,7 @@ class SyncEditor {
         hint(I18n.T("Sync.Field.Extra.Hint"))
 
         label("Sync.Field.Command")
-        command := g.AddEdit("xs+" (labelW + 8) " ys-3 w" inputW " r3 +Multi ReadOnly -VScroll")
+        command := g.AddEdit("xs+" (labelW + 8) " ys-3 w" inputW " r4 +Multi ReadOnly -VScroll")   ; four lines: the log path at the end fits
 
         copyButton := g.AddButton("xm y+18 w120", I18n.T("Sync.Field.CopyCommand"))
         copyButton.OnEvent("Click", (*) => (A_Clipboard := command.Value, App.Notify(I18n.T("Sync.Field.CommandCopied"))))
@@ -149,7 +150,10 @@ class SyncEditor {
             whenHint.Value := I18n.T(mode = "Mirror" ? "Sync.Field.When.Mirror" : "Sync.Field.When.Hint")
             monitor := c["Monitor"].Value = 2
             c["MonitorChanges"].Enabled := monitor, c["MonitorMinutes"].Enabled := monitor
-            built := RoboSync.Build(SyncEditor.Read(task, Values()))
+            edited := SyncEditor.Read(task, Values())
+            if (edited["Name"] = "")                                        ; the default log is named after the task
+                edited["Name"] := RoboSync.SuggestName(edited["Destination"] != "" ? edited["Destination"] : edited["Source"])
+            built := RoboSync.Build(SyncJobs.AsRun(edited))                 ; with the log it runs with (the default one when none is set)
             command.Value := "robocopy " built.Args
         }
         OnPreview(*) {
@@ -199,6 +203,17 @@ class SyncEditor {
             case "Threads": return "Threads"
         }
         return "Name"
+    }
+
+    ; Retries and File info: the second boxes in one column, after the longer of the two labels (Wait, Folder info); Threads follows
+    static AlignColumns(waitLabel, wait, dirLabel, dirCopy, threadsLabel, threads) {
+        waitLabel.GetPos(, , &waitW), dirLabel.GetPos(&labelX, , &dirW)
+        editX := labelX + Max(waitW, dirW) + 6
+        wait.Move(editX), dirCopy.Move(editX)
+        wait.GetPos(, , &editW)
+        threadsLabel.Move(editX + editW + 16)
+        threadsLabel.GetPos(&threadsX, , &threadsW)
+        threads.Move(threadsX + threadsW + 6)
     }
 
     ; The task with the window's values: numbers that aren't numbers become the defaults, exclude lists are split at ";"

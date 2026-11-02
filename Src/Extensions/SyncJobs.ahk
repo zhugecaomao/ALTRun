@@ -161,15 +161,9 @@ class SyncJobs {
             Path.OpenText(logFile)
     }
 
-    ;---------------------------------------------------------------------------
-    ; Processes
-    ;---------------------------------------------------------------------------
-    ; Starts robocopy for the task, without asking anything. onDone(job, exitCode) when it ends. Returns "" or a problem code
-    ; (Running, StartFailed). A preview logs to a file of its own (overwritten) that the summary is read from
-    static Start(task, preview := false, onDone := "") {
-        key := SyncJobs.Key(task["Name"])
-        if SyncJobs.Jobs.Has(key)
-            return "Running"
+    ; The task as robocopy runs it: without a log file of its own, the default one (appended to, a file a day); a preview logs to a
+    ; file of its own (overwritten) that the summary and the list are read from. The edit window shows its command
+    static AsRun(task, preview := false) {
         copy := task.Clone()
         if preview {
             copy["LogFile"] := SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_preview.log", copy["AppendLog"] := 0
@@ -177,6 +171,19 @@ class SyncJobs {
         } else if (RoboSync._Get(task, "LogFile") = "") {
             copy["LogFile"] := SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_{date}.log", copy["AppendLog"] := 1
         }
+        return copy
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Processes
+    ;---------------------------------------------------------------------------
+    ; Starts robocopy for the task, without asking anything. onDone(job, exitCode) when it ends. Returns "" or a problem code
+    ; (Running, StartFailed). It runs the task as AsRun gives it (the default log, the preview's log)
+    static Start(task, preview := false, onDone := "") {
+        key := SyncJobs.Key(task["Name"])
+        if SyncJobs.Jobs.Has(key)
+            return "Running"
+        copy := SyncJobs.AsRun(task, preview)
         if !preview
             SyncJobs.CleanLogs()
         command := RoboSync.Build(copy, preview)
