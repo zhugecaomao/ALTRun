@@ -13,6 +13,8 @@
 ;   if id
 ;       menu.Invoke(id)                                 runs the chosen item (Open, Send to, Properties...)
 ;   ShellContextMenu.CanShow(paths)                     -> whether paths can share one menu (they exist, same folder)
+;   menu.Verbs()                                        -> the commands' language-independent names ("open", "runas"...)
+;   menu.InvokeVerb("runas")                            runs one of them by that name
 ; The COM objects are released when the object goes away.
 ;===============================================================================
 
@@ -142,6 +144,37 @@ class ShellContextMenu {
         if (DllCall("GetMenuItemCount", "Ptr", this.Menu, "Int") <= 0)
             throw Error("The context menu has no items", -1)
         return this.Menu
+    }
+
+    ; Runs a command by its language-independent name ("runas"...), as Explorer does for that menu item. Returns the HRESULT
+    InvokeVerb(verb, ownerHwnd := 0) {
+        this.Fill()                                                         ; some handlers only know their verbs after QueryContextMenu
+        p := A_PtrSize, info := Buffer(24 + 10 * p, 0), ansi := Buffer(StrPut(verb, "CP0"))   ; CMINVOKECOMMANDINFOEX
+        StrPut(verb, ansi, "CP0")
+        NumPut("UInt", info.Size, info, 0)
+        NumPut("UInt", 0x4000, info, 4)                                     ; CMIC_MASK_UNICODE
+        NumPut("Ptr", ownerHwnd, info, 8)
+        NumPut("Ptr", ansi.Ptr, info, 8 + p)                                ; lpVerb
+        NumPut("Int", 1, info, 8 + 4 * p)                                   ; SW_SHOWNORMAL
+        NumPut("Ptr", StrPtr(verb), info, 16 + 6 * p)                       ; lpVerbW
+        return ComCall(4, this._contextMenu, "Ptr", info, "Int")            ; InvokeCommand
+    }
+
+    ; The language-independent names of the menu's top-level commands ("open", "runas", "properties"...; items without one are left out).
+    ; Fills the menu first
+    Verbs(extended := false) {
+        this.Fill(extended)
+        verbs := [], buf := Buffer(260 * 2, 0)
+        Loop DllCall("GetMenuItemCount", "Ptr", this.Menu, "Int") {
+            id := DllCall("GetMenuItemID", "Ptr", this.Menu, "Int", A_Index - 1, "Int")
+            if (id < ShellContextMenu.FirstId || id > ShellContextMenu.LastId)
+                continue                                                    ; separators and submenus (-1)
+            NumPut("UShort", 0, buf)
+            if (ComCall(5, this._contextMenu, "UPtr", id - ShellContextMenu.FirstId, "UInt", 4, "Ptr", 0, "Ptr", buf, "UInt", 260, "Int") = 0)   ; GetCommandString, GCS_VERBW
+                && (verb := StrGet(buf)) != ""
+                verbs.Push(verb)
+        }
+        return verbs
     }
 
     __Delete() {
