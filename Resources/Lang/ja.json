@@ -501,6 +501,7 @@
   "Sync.Preview.Copy": "{2} 個中 {1} 個のファイルをコピーし、{3} 個のフォルダーを作成します。",
   "Sync.Preview.Delete": "コピー元にないファイル {1} 個とフォルダー {2} 個をコピー先から削除します。",
   "Sync.Preview.ConfirmText": "このタスクはミラーです。下のファイルは完全に削除され、ごみ箱には入りません。まだ何も変更していません。",
+  "Sync.Preview.Waiting": "同期 {1} はファイルを削除します。ウィンドウで確認を待っています。",
   "Sync.Preview.Col.Action": "操作",
   "Sync.Preview.Col.Item": "ファイルまたはフォルダー",
   "Sync.Preview.Col.Robocopy": "robocopy",

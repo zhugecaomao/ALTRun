@@ -14,7 +14,7 @@
 ;       "Retries": 1, "Wait": 1, "Threads": 16,                      /R: /W: /MT: (0 = no /MT)
 ;       "Monitor": 0, "MonitorChanges": 1, "MonitorMinutes": 5,      /MON: /MOT: (keeps running, syncs again after changes / minutes)
 ;       "ExcludeFiles": ["thumbs.db", "~$*.*"], "ExcludeDirs": ["$Recycle.Bin"],   /XF /XD, per task
-;       "LogFile": "%OneDrive%\\Logs\\Projects_{date}.log", "AppendLog": 1,        /LOG+: (AppendLog 0: /LOG:)
+;       "LogFile": "%OneDrive%\\Logs\\Projects_{date}.log", "AppendLog": 1,        /UNILOG+: (AppendLog 0: /UNILOG:)
 ;       "Extra": "/NP" } ]                                           other robocopy options, as they are
 ;
 ; Usage:
@@ -68,7 +68,7 @@ class RoboSync {
             }
         }
         if (get("LogFile") != "")
-            args.Push((get("AppendLog") ? "/LOG+:" : "/LOG:") RoboSync.Quote(RoboSync.Expand(get("LogFile"), now)))
+            args.Push((get("AppendLog") ? "/UNILOG+:" : "/UNILOG:") RoboSync.Quote(RoboSync.Expand(get("LogFile"), now)))
         if (Trim(get("Extra")) != "")
             args.Push(Trim(get("Extra")))
         text := ""

@@ -502,6 +502,7 @@
   "Sync.Preview.Copy": "會複製 {2} 個檔案中的 {1} 個, 新建 {3} 個資料夾。",
   "Sync.Preview.Delete": "會刪除目標裡來源中沒有的 {1} 個檔案和 {2} 個資料夾。",
   "Sync.Preview.ConfirmText": "這個任務是鏡像: 下面的檔案會被永久刪除, 不進資源回收筒。現在還沒有做任何變更。",
+  "Sync.Preview.Waiting": "同步 {1} 會刪除檔案: 在它的視窗裡等你確認。",
   "Sync.Preview.Col.Action": "操作",
   "Sync.Preview.Col.Item": "檔案或資料夾",
   "Sync.Preview.Col.Robocopy": "robocopy",

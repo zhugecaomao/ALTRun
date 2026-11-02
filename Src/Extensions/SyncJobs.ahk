@@ -84,10 +84,21 @@ class SyncJobs {
         SyncPreview.Show(task, result, {Run: options.HasOwnProp("Run") && options.Run, Confirm: false})
     }
 
+    ; A robocopy log's text. Logs are written with /UNILOG (UTF-16 with its byte order mark): /LOG doesn't write Unicode, and names
+    ; outside its code page come out wrong (Chinese names become ??). A log without the mark (an older /LOG one) is read as before
+    static ReadLog(logFile) {
+        handle := FileOpen(logFile, "r")
+        if !handle
+            throw OSError(A_LastError, , logFile)
+        head := handle.Length >= 2 ? handle.ReadUShort() : 0
+        handle.Close()
+        return FileRead(logFile, head = 0xFEFF ? "UTF-16" : "CP0")
+    }
+
     ; A preview's log -> {Summary, Changes, LogFile} (Summary "" when the log has none)
     static ReadPreview(logFile) {
         text := ""
-        try text := FileRead(logFile)
+        try text := SyncJobs.ReadLog(logFile)
         return {Summary: SyncJobs.Summary(text), Changes: SyncJobs.Changes(text), LogFile: logFile}
     }
 
@@ -269,7 +280,7 @@ class SyncJobs {
             return SyncJobs._Failed(job.Name, code, job.LogFile)
         }
         summary := ""
-        try summary := SyncJobs.Summary(FileRead(job.LogFile))
+        try summary := SyncJobs.Summary(SyncJobs.ReadLog(job.LogFile))
         if IsObject(summary)
             Logger.Debug("SyncJobs: " job.Name " done, copied " summary.Files.Copied " files, deleted " summary.Files.Extras " files and " summary.Dirs.Extras " folders")
         App.Toast(IsObject(summary) ? I18n.T("Sync.Done", job.Name, summary.Files.Copied, summary.Files.Extras) : I18n.T("Sync.DoneShort", job.Name))

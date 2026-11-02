@@ -4,7 +4,11 @@
 ; Like FreeFileSync's "Compare": a summary on top (files to copy, files and folders to delete), the changes below
 ; (the first SyncJobs.Changes limit of them; the log has all), deletions first. Opened by:
 ;   - Preview (search: → Preview, Preferences → Sync → Preview, the editor's Preview button)
-;   - Run of a mirror that would delete something: Confirm, the window asks before anything is deleted (Close is the default)
+;   - Run of a mirror that would delete something: Confirm, the window asks before anything is deleted (Close is the default).
+;     It comes from a background timer, so it may not get to the front (Windows doesn't let a background program take the
+;     focus): it flashes in the taskbar and a notification says it is waiting
+; One window per task: another task's preview doesn't close a confirmation still waiting. A mirror previewed more than StaleMs ago
+; is previewed (and confirmed) again when run, as the destination may have changed since
 ;
 ; Usage:
 ;   SyncPreview.Show(task, {Summary, Changes, LogFile}, {Run: true | false, Confirm: true | false})
@@ -12,16 +16,18 @@
 ;===============================================================================
 
 class SyncPreview {
-    static Gui := ""
+    static Windows := Map()                                                 ; SyncJobs.Key(name) -> the task's preview window
+    static StaleMs := 5 * 60 * 1000
 
     static Show(task, result, options) {
-        if IsObject(SyncPreview.Gui)
-            try SyncPreview.Gui.Destroy()
+        key := SyncJobs.Key(task["Name"])
+        SyncPreview.Close(key)                                              ; the same task's older preview
+        created := A_TickCount
         name := task["Name"], summary := result.Summary, changes := result.Changes
         mirror := RoboSync._Get(task, "Mode") = "Mirror"
         title := I18n.T(options.Confirm ? "Sync.Preview.ConfirmTitle" : "Sync.Preview.Title", name)
         g := Gui("+Resize +MinSize480x300 -MinimizeBox", title)
-        SyncPreview.Gui := g
+        SyncPreview.Windows[key] := g
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
         width := 680
@@ -63,28 +69,44 @@ class SyncPreview {
         if options.Run {
             runText := I18n.T(options.Confirm ? "Sync.Preview.RunDelete" : "Sync.Preview.Run")
             runButton := g.AddButton("x" (14 + width - 90 - 10 - 150) " yp w150", runText)
-            runButton.OnEvent("Click", (*) => SyncPreview._Run(task))
+            runButton.OnEvent("Click", (*) => SyncPreview._Run(task, created))
             runButton.Enabled := !SyncJobs.IsRunning(name)
             buttons.Push(runButton)
         }
         closeButton := g.AddButton("x" (14 + closeX) " yp w90 Default", I18n.T("Sync.Preview.Close"))
-        closeButton.OnEvent("Click", (*) => g.Destroy())
+        closeButton.OnEvent("Click", (*) => SyncPreview.Close(key))
         buttons.Push(closeButton)
-        g.OnEvent("Escape", (*) => g.Destroy())
-        g.OnEvent("Close", (*) => g.Destroy())
+        g.OnEvent("Escape", (*) => SyncPreview.Close(key))
+        g.OnEvent("Close", (*) => SyncPreview.Close(key))
         gaps := SyncPreview._Gaps(list, note, buttons)
         g.OnEvent("Size", (gui, minMax, w, h) => SyncPreview._Layout(minMax, w, h, list, note, buttons, gaps))
         g.Show()
         closeButton.Focus()                                                 ; Enter closes: running (and deleting) needs a click
+        if (options.Confirm && !WinActive("ahk_id " g.Hwnd)) {             ; shown from the background: tell where the question is
+            DllCall("user32\FlashWindow", "Ptr", g.Hwnd, "Int", 1)
+            App.Toast(I18n.T("Sync.Preview.Waiting", name))
+        }
         return g
     }
 
-    ; Run now: what the preview showed is what runs, so a mirror isn't previewed again
-    static _Run(task) {
-        if IsObject(SyncPreview.Gui)
-            try SyncPreview.Gui.Destroy()
+    static Close(key) {
+        if !SyncPreview.Windows.Has(key)
+            return
+        try SyncPreview.Windows[key].Destroy()
+        SyncPreview.Windows.Delete(key)
+    }
+
+    ; Run now: what a recent preview showed is what runs, so a mirror isn't previewed again; an older mirror preview is done again
+    ; (SyncJobs.Run: checks, preview, and the question when it would delete anything)
+    static _Run(task, created, now := A_TickCount) {
+        SyncPreview.Close(SyncJobs.Key(task["Name"]))
+        if SyncPreview.IsStale(task, created, now)
+            return SyncJobs.Run(task)
         SyncJobs._Started(SyncJobs.Start(task), task["Name"])
     }
+
+    ; A mirror's preview older than StaleMs (other modes don't delete: their preview can't be out of date in a harmful way)
+    static IsStale(task, created, now := A_TickCount) => RoboSync._Get(task, "Mode") = "Mirror" && now - created > SyncPreview.StaleMs
 
     ; The spaces between the controls as first laid out, in the units GetPos / Move and the Size event use (no DPI arithmetic here)
     static _Gaps(list, note, buttons) {

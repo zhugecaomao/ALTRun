@@ -315,7 +315,7 @@ class ExtensionTests {
         task["ExcludeFiles"] := ["thumbs.db", "~$*.*", "*.bak"], task["ExcludeDirs"] := ["$Recycle.Bin", "Old Versions"]
         task["LogFile"] := "D:\Sync\Logs\Projects_{date}.log"
         eq("new task", RoboSync.Build(task, false, now).Args
-            , '\\fileserver\Projects D:\Sync\Projects *.* /MIR /COPY:DAT /DCOPY:DA /R:1 /W:1 /MT:16 /XF thumbs.db ~$*.* *.bak /XD $Recycle.Bin "Old Versions" /LOG+:D:\Sync\Logs\Projects_20261102.log /NP')
+            , '\\fileserver\Projects D:\Sync\Projects *.* /MIR /COPY:DAT /DCOPY:DA /R:1 /W:1 /MT:16 /XF thumbs.db ~$*.* *.bak /XD $Recycle.Bin "Old Versions" /UNILOG+:D:\Sync\Logs\Projects_20261102.log /NP')
         eq("program", RoboSync.Build(task).Program, A_WinDir "\System32\robocopy.exe")
         task["Monitor"] := 1, task["MonitorChanges"] := 2, task["MonitorMinutes"] := 10
         eq("monitoring", InStr(RoboSync.Build(task, false, now).Args, "/MT:16 /MON:2 /MOT:10 /XF") > 0, true)
@@ -550,11 +550,14 @@ class ExtensionTests {
                 for change in SyncJobs.ReadPreview(done[1][1].LogFile).Changes
                     names .= change.Path "|"
             eq("preview list: accented and Chinese names", InStr(names, "\Café 测试.txt|") ? 1 : names, 1)
+            mark := (f) => (h := FileOpen(f, "r")) ? (h.Length >= 2 ? Format("{:04X}", h.ReadUShort()) : "empty") : "missing"
+            eq("preview log: UTF-16 mark", done.Length ? mark(done[1][1].LogFile) : "no log", "FEFF")
             eq("run started", SyncJobs.Start(real), "")
             wait("Check")
             logFile := root "\logs\Check_" FormatTime(, "yyyyMMdd") ".log"
             eq("run: copied, extra deleted, default log", (FileExist(root "\dst\sub\b.txt") != "") (FileExist(root "\dst\extra.txt") != "") (FileExist(logFile) != ""), "101")
             eq("last result", RoboSync.Result(SyncJobs.Last[SyncJobs.Key("Check")].Code).Ok, true)
+            eq("run log (appended): UTF-16 mark, summary read", mark(logFile) "|" IsObject(SyncJobs.Summary(SyncJobs.ReadLog(logFile))), "FEFF|1")
 
             real["Monitor"] := 1, real["MonitorChanges"] := 1, real["MonitorMinutes"] := 1
             eq("monitor started", SyncJobs.Start(real), "")
@@ -608,6 +611,19 @@ class ExtensionTests {
             text .= change.Kind " " change.Path "|"
         eq("changes with /MT", text, "Copy C:\Demo Sync\Server\Projects\Plan.docx|Delete C:\Demo Sync\OneDrive\Projects\Old Notes.txt|")
         eq("no list", SyncJobs.Changes("").Length "|" SyncJobs.Changes("ERROR 53`tAccessing Source Directory \\srv\x\").Length, "0|0")
+        ; Logs: UTF-16 ones (/UNILOG) by their mark, older ones (/LOG) as before
+        temp := A_Temp "\ALTRun-readlog-test.log"
+        try {
+            try FileDelete(temp)
+            FileAppend("Café 测试", temp, "UTF-16")
+            eq("read log: UTF-16", SyncJobs.ReadLog(temp), "Café 测试")
+            FileDelete(temp), FileAppend("Files : 1", temp, "CP0")
+            eq("read log: older, no mark", SyncJobs.ReadLog(temp), "Files : 1")
+            FileDelete(temp), FileAppend("", temp)
+            eq("read log: empty", SyncJobs.ReadLog(temp), "")
+        } finally {
+            try FileDelete(temp)
+        }
         rows := SyncPreview.Rows(changes, "C:\src", "D:\dst\")
         eq("rows: deletions first, relative", rows[1][1] " " rows[1][2] "|" rows[2][2] "|" rows[3][2] "|" rows[4][1] " " rows[4][2] "|" rows[7][2], "Delete extra.txt|old\|old\old.txt|Copy a.txt|sub\b.txt")
         eq("rows: folders", rows[2][1] "|" rows[6][1], "Delete folder|New folder")
@@ -625,13 +641,30 @@ class ExtensionTests {
             WinGetClientPos(, , &cw, &ch, g.Hwnd)
             eq("window: resized, Close at the bottom right", (bx + bw <= cw && by + bh <= ch && by + bh > ch - 40) ? 1 : 0, 1)
         } finally {
-            try g.Destroy()
+            SyncPreview.Close(SyncJobs.Key("Projects"))
         }
         g := SyncPreview.Show(previewTask, result, {Run: false, Confirm: false})
         try eq("window: preview from the editor offers no run", ControlGetHwnd("Run Now", g.Hwnd) || 0, 0)
         catch
             TestRunner.Passed++                                             ; ControlGetHwnd throws when there is no such button
-        try g.Destroy()
+
+        ; One window per task: another task's preview leaves a waiting confirmation open, the same task's replaces it
+        otherTask := Map("Name", "Photos", "Source", "C:\photos", "Destination", "D:\photos", "Mode", "Update")
+        try {
+            other := SyncPreview.Show(otherTask, result, {Run: true, Confirm: false})
+            eq("windows: two tasks", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) (WinExist("ahk_id " other.Hwnd) ? 1 : 0) "|" SyncPreview.Windows.Count, "11|2")
+            first := g.Hwnd
+            g := SyncPreview.Show(previewTask, result, {Run: true, Confirm: true})
+            eq("windows: the same task replaces its window", (WinExist("ahk_id " first) ? 1 : 0) (WinExist("ahk_id " g.Hwnd) ? 1 : 0) "|" SyncPreview.Windows.Count, "01|2")
+        } finally {
+            SyncPreview.Close(SyncJobs.Key("Projects")), SyncPreview.Close(SyncJobs.Key("Photos"))
+        }
+        eq("windows: closed", SyncPreview.Windows.Count, 0)
+
+        ; Run from an old preview: a mirror is previewed again (the destination may have changed), other modes aren't
+        old := 1000000, fresh := old + SyncPreview.StaleMs - 1, late := old + SyncPreview.StaleMs + 1
+        eq("stale: mirror", (SyncPreview.IsStale(previewTask, old, fresh) ? 1 : 0) (SyncPreview.IsStale(previewTask, old, late) ? 1 : 0), "01")
+        eq("stale: update never", SyncPreview.IsStale(otherTask, old, late) ? 1 : 0, 0)
 
         ; The edit window: opens with the task, shows the command, OK returns the task as edited
         owner := Gui()
