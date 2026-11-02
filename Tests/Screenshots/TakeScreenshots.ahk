@@ -1020,6 +1020,11 @@ class Shots {
             if (WinGetClass(window) = "#32770")
                 Shots.Log(WinGetText(window))
         }
+        logText := ""                                                       ; the end of ALTRun's own log (errors from timers and background work go there)
+        try logText := FileRead(A_Temp "\ALTRun.log")
+        lines := StrSplit(Trim(logText, "`r`n"), "`n")
+        Loop Min(15, lines.Length)
+            Shots.Log("ALTRun.log: " RTrim(lines[lines.Length - Min(15, lines.Length) + A_Index], "`r"))
     }
 
     ; The window's visible area on screen {X, Y, W, H}
