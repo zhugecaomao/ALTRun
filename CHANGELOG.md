@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.48]
+
+测试版。
+
+Test build.
+
+### 修复
+- 延迟启动: ALTRun 启动 30 秒后对任务计划程序里的任务的检查 (换电脑或路径变化后自动更新任务) 一直没有执行 (2026.10.26.42 起的测试版): 计时器调用方式写错了, 而且错误被悄悄忽略。保存偏好设置时的同步不受影响。现在后台计时器出错会记进日志, 并加了检查防止同类写法
+
 ## [2026.10.26.47]
 
 测试版。
@@ -1368,7 +1377,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.48...HEAD
+[2026.10.26.48]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...2026.10.26.48
 [2026.10.26.47]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.46...2026.10.26.47
 [2026.10.26.46]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...2026.10.26.46
 [2026.10.26.45]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...2026.10.26.45

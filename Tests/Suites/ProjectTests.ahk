@@ -279,6 +279,24 @@ class ProjectTests {
         TestRunner.Equal("LongTimers.SetTimer kept set while idle (use WinTimer)", found, "")
     }
 
+    ; A timer's function is called without arguments, so a static method passed on its own (WinTimer.Set(Class.Method, ...)) fails:
+    ; it lacks its "this" ("Missing a required parameter"), and WinTimer only logs it. Pass a function such as () => Class.Method(),
+    ; kept in a static property so the same function stops it again. Flags Class.Name passed to WinTimer.Set / SetTimer when Class has a
+    ; method of that name (DelayedStart's start-up check never ran this way)
+    static TimerCallbacks() {
+        source := "", found := ""
+        for folder in ["Src", "Lib"]
+            Loop Files, A_ScriptDir "\..\" folder "\*.ahk", "R"
+                source .= FileRead(A_LoopFileFullPath, "UTF-8") "`n"
+        pos := 1
+        while (pos := RegExMatch(source, "(?:WinTimer\.Set|SetTimer)\((\w+)\.(\w+)\s*,", &m, pos)) {
+            pos += m.Len
+            if RegExMatch(source, "im)^\s*static\s+\Q" m[2] "\E\(") && RegExMatch(source, "im)^class\s+\Q" m[1] "\E\b")
+                found .= m[1] "." m[2] " "
+        }
+        TestRunner.Equal("TimerCallbacks.static method passed as a timer function", found, "")
+    }
+
     ; The version in the compile info (;@Ahk2Exe-SetVersion in ALTRun.ahk) must match App.Version
     static ReleaseVersion() {
         main := FileRead(A_ScriptDir "\..\ALTRun.ahk", "UTF-8")
