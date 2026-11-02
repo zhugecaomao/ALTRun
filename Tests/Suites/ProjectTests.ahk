@@ -297,6 +297,18 @@ class ProjectTests {
         TestRunner.Equal("TimerCallbacks.static method passed as a timer function", found, "")
     }
 
+    ; The Preferences list (PrefsForm.List) hands out its functions in an object ({Items, Insert, Append, Edit, Reload}). They are plain
+    ; functions, not methods: list.Insert(item) would pass the object as well ("Too many parameters"), so they are called with .Call
+    ; (Startup Apps... on the Delayed Start page failed this way)
+    static ListFunctions() {
+        found := ""
+        Loop Files, A_ScriptDir "\..\Src\*.ahk", "R"
+            Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r"
+                if RegExMatch(A_LoopField, "^\s*[^;]*\blist\.(Insert|Append|Edit|Reload)\(")
+                    found .= A_LoopFileName ":" A_Index " "
+        TestRunner.Equal("ListFunctions.called without .Call", found, "")
+    }
+
     ; The version in the compile info (;@Ahk2Exe-SetVersion in ALTRun.ahk) must match App.Version
     static ReleaseVersion() {
         main := FileRead(A_ScriptDir "\..\ALTRun.ahk", "UTF-8")
