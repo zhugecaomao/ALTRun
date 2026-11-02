@@ -22,7 +22,7 @@ The edit window, top to bottom:
 - **When**: only when you run it, or **Keep in sync** (robocopy keeps running and syncs again after changes). A mirror only runs when you run it (see below).
 - **Exclude files** / **Exclude folders**, separated by `;`.
 - **Advanced**: retries and wait, threads, which file and folder information to copy, the log file, other robocopy options.
-- **Command** shows the robocopy command line the task makes, updated as you type (**Copy Command** copies it).
+- **Command** shows the robocopy command line the task makes, updated as you type, with the log it runs with (the default one when **Log file** is empty). **Copy Command** copies it.
 - **Preview** shows what the task would change before you save it. **OK** checks the task: mistakes (no source, the same folder twice, mirroring into a drive...) must be fixed; a destination that overlaps another task's asks first.
 
 ## Preview
