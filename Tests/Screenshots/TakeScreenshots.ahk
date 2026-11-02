@@ -805,9 +805,9 @@ class Shots {
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
 
-    ; Sync tasks (made up). local: the first task syncs two sample folders, so Preview has something real to show
+    ; Sync tasks (made up). sampleFolders: the first task syncs two sample folders, so Preview has something real to show
     ; (a new file, a changed one, and one only in the destination, which a mirror deletes)
-    static SyncTasks(local := false) {
+    static SyncTasks(sampleFolders := false) {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
         task(name, source, destination, mode, monitor := 0) => Map("Name", name, "Source", source, "Destination", destination, "Files", "*.*", "Mode", mode
@@ -816,14 +816,14 @@ class Shots {
         tasks := [task("Projects", "\\fileserver\Projects", "%OneDrive%\Work\Projects", "Mirror", 1)
             , task("Templates", "\\fileserver\Templates", "%OneDrive%\Work\Templates", "Update")
             , task("Photos Backup", "%UserProfile%\Pictures", "E:\Backup\Pictures", "Copy")]
-        if local {
+        if sampleFolders {
             root := "C:\Demo Sync"
             try DirDelete(root, true)
-            for file in ["Server\Projects\Plan.docx", "Server\Projects\Budget.xlsx", "Server\Projects\Drawings\Site Plan.pdf", "Server\Projects\Drawings\Elevations.pdf"
+            for sample in ["Server\Projects\Plan.docx", "Server\Projects\Budget.xlsx", "Server\Projects\Drawings\Site Plan.pdf", "Server\Projects\Drawings\Elevations.pdf"
                        , "OneDrive\Projects\Plan.docx", "OneDrive\Projects\Old Notes.txt"] {
-                SplitPath(root "\" file, , &dir)
+                SplitPath(root "\" sample, , &dir)
                 DirCreate(dir)
-                FileAppend("sample", root "\" file)
+                FileAppend("sample", root "\" sample)
             }
             FileSetTime("20260101000000", root "\OneDrive\Projects\Plan.docx")      ; older than the source's: copied again
             tasks[1]["Source"] := root "\Server\Projects", tasks[1]["Destination"] := root "\OneDrive\Projects", tasks[1]["Monitor"] := 0
