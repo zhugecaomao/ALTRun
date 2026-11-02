@@ -446,7 +446,7 @@
   "Sync.Button.Preview": "预览",
   "Sync.PageNote": "每个任务用 Windows 自带的 robocopy 把一个文件夹复制或镜像到另一个文件夹。可以在这里运行, 也可以在搜索窗口里运行 (输入 sync 和任务名)。预览显示运行会改变什么, 但不做任何改动。运行和预览用的是列表里现在的任务, 不用先点应用或确定。",
   "Prefs.Section.SyncOptions": "选项",
-  "Sync.Prefs.Enabled": "在搜索结果里显示同步任务",
+  "Sync.Prefs.Enabled": "在搜索结果里显示文件夹同步任务",
   "Sync.Prefs.Keyword": "搜索关键字",
   "Sync.Prefs.KeepLogDays": "日志保留天数",
   "Sync.Prefs.LogFolder": "日志文件夹",

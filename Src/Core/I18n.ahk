@@ -984,7 +984,7 @@ class I18n {
         s["Sync.Button.Preview"]            := "Preview"
         s["Sync.PageNote"]                  := "Each task copies or mirrors one folder into another with Windows' robocopy. Run it here or in the search window (type sync and the task's name). Preview shows what a run would change, without changing anything. Run and Preview use the task as it is in the list, before you click Apply or OK."
         s["Prefs.Section.SyncOptions"]      := "Options"
-        s["Sync.Prefs.Enabled"]             := "Show sync tasks in the search results"
+        s["Sync.Prefs.Enabled"]             := "Show folder sync tasks in the search results"
         s["Sync.Prefs.Keyword"]             := "Search keyword"
         s["Sync.Prefs.KeepLogDays"]         := "Keep logs (days)"
         s["Sync.Prefs.LogFolder"]           := "Log folder"
