@@ -779,7 +779,7 @@ class Shots {
             prefs := Shots.Preferences()
             button := ControlGetHwnd("Startup Apps...", prefs)               ; the screenshots use the English interface
             Shots.Log("button: visible " ControlGetVisible(button) ", enabled " ControlGetEnabled(button))
-            ControlClick(button, prefs)
+            PostMessage(0xF5, 0, 0, button)                                 ; BM_CLICK, as in SyncWindow: a ControlClick was sometimes lost
             picker := WinWait("Startup Apps ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
             if !picker {
                 Shots.Diagnose(prefs)
