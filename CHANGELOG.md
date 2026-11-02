@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.10.26.54]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内部清理 (使用上没有变化): 从 Total Commander 导入 robocopy 命令的功能决定不做了, 删掉了为它准备、但一直没有用到的命令行解析代码 (2026.10.26.47 里的 "能读入 Total Commander 开始菜单里的 robocopy 命令") 和对应的测试
+
 ## [2026.10.26.53]
 
 测试版。
@@ -1426,7 +1435,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.53...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.54...HEAD
+[2026.10.26.54]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.53...2026.10.26.54
 [2026.10.26.53]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.52...2026.10.26.53
 [2026.10.26.52]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.51...2026.10.26.52
 [2026.10.26.51]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.50...2026.10.26.51
