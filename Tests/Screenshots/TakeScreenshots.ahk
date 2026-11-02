@@ -774,10 +774,14 @@ class Shots {
             RegWrite(value[2], "REG_SZ", runKey, value[1])
         try {
             prefs := Shots.Preferences()
-            ControlClick("Startup Apps...", prefs)                          ; the screenshots use the English interface
-            picker := WinWait("Startup Apps ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 5)
-            if !picker
+            button := ControlGetHwnd("Startup Apps...", prefs)               ; the screenshots use the English interface
+            Shots.Log("button: visible " ControlGetVisible(button) ", enabled " ControlGetEnabled(button))
+            ControlClick(button, prefs)
+            picker := WinWait("Startup Apps ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 10)
+            if !picker {
+                Shots.Diagnose(prefs)
                 throw Error("startup apps window not shown")
+            }
         } finally {
             for value in demo
                 try RegDelete(runKey, value[1])
