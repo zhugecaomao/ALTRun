@@ -19,7 +19,10 @@ Keep a folder in step with another one, for example a server share copied into y
 - **Monitoring** tasks (`/MON`, `/MOT`) keep running and sync again after changes. They stop when ALTRun quits; when ALTRun only restarts (after changing a setting, an update), they keep running.
 
 ## Logs
-Each run is logged: to the task's own log file, or to `Data\SyncLogs\<task name>_<date>.log`. **Open log** opens today's log.
+Each run is logged: to the task's own log file, or to `%TEMP%\ALTRun\SyncLogs\<task name>_<date>.log`. **Open log** opens today's log.
+- The logs aren't kept in the Data folder: when that is in OneDrive, logs that grow all the time would keep uploading.
+- Logs in `%TEMP%\ALTRun\SyncLogs` older than 30 days are deleted when a task runs (`Features.Sync.KeepLogDays`, `0` = keep them all). A task's own log file is never deleted.
+- `ALTRun.log` gets one line per run: when it started and how it ended (files copied and deleted, or the exit code).
 
 ## In the settings file
 ```jsonc
@@ -29,7 +32,7 @@ Each run is logged: to the task's own log file, or to `Data\SyncLogs\<task name>
     "Source": "\\\\fileserver\\Projects",
     "Destination": "%OneDrive%\\Work\\Projects",
     "Files": "*.*",
-    "Mode": "Mirror",            // Mirror (/MIR), Copy (/E) or Top (top folder only)
+    "Mode": "Mirror",            // Mirror (/MIR), Update (/E /XO: new and newer files, never deletes), Copy (/E: all that differ, never deletes) or Top (top folder only)
     "Copy": "DAT", "DirCopy": "DA",
     "Retries": 1, "Wait": 1, "Threads": 16,
     "Monitor": 0, "MonitorChanges": 1, "MonitorMinutes": 5,

@@ -8,7 +8,9 @@
 ;   - the settings are checked first (RoboSync.Check); a mirror also needs a source that exists and isn't empty (CheckSource)
 ;   - a mirror is previewed first (/L, which changes nothing): when it would delete anything in the destination, ALTRun says
 ;     how many files and folders and asks before running. Previews that delete nothing go straight on
-;   - a task without a log file of its own logs to Data\SyncLogs\<name>_<date>.log, so there is always a log to open
+;   - a task without a log file of its own logs to %TEMP%\ALTRun\SyncLogs\<name>_<date>.log, so there is always a log to open;
+;     logs there older than KeepLogDays (Features.Sync, 30) are deleted when a task runs. Not in Data: it may be in OneDrive,
+;     which would upload logs that grow all the time. Each run also leaves a line in ALTRun.log (started, how it ended)
 ;   - a task that ends tells how it went (a notification); a monitoring task (/MON /MOT) keeps running until stopped
 ; Monitoring tasks stop when ALTRun quits. When ALTRun only restarts (after Preferences, an update), they keep running and the
 ; new ALTRun takes them over (Data\SyncRunning.json), so changing a setting doesn't interrupt a sync.
@@ -26,7 +28,7 @@ class SyncJobs {
     static Jobs := Map(), Last := Map()                                     ; Key(name) -> the running job / how the last run ended
     static PollMs := 1000
     static StateFile => AppSettings.DataDir "\SyncRunning.json"
-    static LogDir => AppSettings.DataDir "\SyncLogs"
+    static LogDir := A_Temp "\ALTRun\SyncLogs"
     static _pollTimer := () => SyncJobs._Poll()
 
     static Key(name) => StrLower(Trim(name))
@@ -122,11 +124,13 @@ class SyncJobs {
             return "Running"
         copy := task.Clone()
         if preview {
-            copy["LogFile"] := A_Temp "\ALTRun sync preview " SyncJobs.FileName(task["Name"]) ".log", copy["AppendLog"] := 0
+            copy["LogFile"] := SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_preview.log", copy["AppendLog"] := 0
             copy["Extra"] := Trim(RegExReplace(RoboSync._Get(task, "Extra"), "i)(^|\s)/(NJS|TEE)(?=\s|$)"))   ; the summary is read from the log
         } else if (RoboSync._Get(task, "LogFile") = "") {
             copy["LogFile"] := SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_{date}.log", copy["AppendLog"] := 1
         }
+        if !preview
+            SyncJobs.CleanLogs()
         command := RoboSync.Build(copy, preview)
         logFile := RoboSync.Expand(copy["LogFile"])
         SplitPath(logFile, , &logDir)
@@ -143,6 +147,25 @@ class SyncJobs {
         Logger.Debug("SyncJobs: started " task["Name"] (preview ? " (preview)" : "") ", pid " pid)
         WinTimer.Set(SyncJobs._pollTimer, SyncJobs.PollMs)
         return ""
+    }
+
+    ; Deletes the logs in LogDir older than KeepLogDays (0 = keeps them all). Only ALTRun's own folder: a task's own log file is the user's
+    static CleanLogs(days := "") {
+        if (days = "") {
+            sync := AppSettings.Feature("Sync")
+            days := sync.Has("KeepLogDays") ? sync["KeepLogDays"] : 30
+        }
+        if (!IsInteger(days) || days <= 0 || !DirExist(SyncJobs.LogDir))
+            return 0
+        cutoff := DateAdd(A_Now, -days, "Days"), deleted := 0
+        Loop Files SyncJobs.LogDir "\*.log" {
+            if (A_LoopFileTimeModified < cutoff) {
+                try FileDelete(A_LoopFileFullPath), deleted++
+            }
+        }
+        if deleted
+            Logger.Debug("SyncJobs: deleted " deleted " logs older than " days " days")
+        return deleted
     }
 
     static Stop(name) {
@@ -187,10 +210,14 @@ class SyncJobs {
 
     ; A run that ended on its own: how it went (copied files from the log's last summary)
     static _Report(job, code) {
-        if !RoboSync.Result(code).Ok
+        if !RoboSync.Result(code).Ok {
+            Logger.Warn("SyncJobs: " job.Name " failed, exit code " code ", log " job.LogFile)
             return SyncJobs._Failed(job.Name, code, job.LogFile)
+        }
         summary := ""
         try summary := SyncJobs.Summary(FileRead(job.LogFile))
+        if IsObject(summary)
+            Logger.Debug("SyncJobs: " job.Name " done, copied " summary.Files.Copied " files, deleted " summary.Files.Extras " files and " summary.Dirs.Extras " folders")
         App.Toast(IsObject(summary) ? I18n.T("Sync.Done", job.Name, summary.Files.Copied, summary.Files.Extras) : I18n.T("Sync.DoneShort", job.Name))
     }
 

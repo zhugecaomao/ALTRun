@@ -41,7 +41,7 @@ class SyncProvider {
     static ItemFor(task, score) {
         name := task["Name"], running := SyncJobs.IsRunning(name)
         state := SyncJobs.State(name)
-        subtitle := I18n.T(task["Mode"] = "Mirror" ? "Sync.Mirror" : "Sync.Copy", RoboSync.Expand(task["Source"]), RoboSync.Expand(task["Destination"]))
+        subtitle := I18n.T(task["Mode"] = "Mirror" ? "Sync.Mirror" : task["Mode"] = "Update" ? "Sync.Update" : "Sync.Copy", RoboSync.Expand(task["Source"]), RoboSync.Expand(task["Destination"]))
         if (state != "")
             subtitle := state " · " subtitle
         item := ResultItem(I18n.T(running ? "Sync.StopTitle" : "Sync.RunTitle", name), subtitle, {Icon: SyncProvider.Icon, Score: score

@@ -19,7 +19,10 @@
 - **持续同步** (`/MON`、`/MOT`) 的任务会一直运行, 有变化后再同步。退出 ALTRun 时会停止; ALTRun 只是重新启动 (改了设置、升级) 时会继续运行。
 
 ## 日志
-每次运行都有日志: 写到任务自己的日志文件, 或 `Data\SyncLogs\<任务名>_<日期>.log`。**打开日志** 打开当天的日志。
+每次运行都有日志: 写到任务自己的日志文件, 或 `%TEMP%\ALTRun\SyncLogs\<任务名>_<日期>.log`。**打开日志** 打开当天的日志。
+- 日志不放在 Data 文件夹里: Data 在 OneDrive 里时, 不断变大的日志会一直上传。
+- `%TEMP%\ALTRun\SyncLogs` 里超过 30 天的日志在运行任务时自动删除 (`Features.Sync.KeepLogDays`, `0` = 全部保留)。任务自己的日志文件不会删除。
+- 每次运行在 `ALTRun.log` 里记一行: 什么时候开始、结果怎样 (复制、删除了多少文件, 或退出码)。
 
 ## 设置文件里的写法
 ```jsonc
@@ -29,7 +32,7 @@
     "Source": "\\\\fileserver\\Projects",
     "Destination": "%OneDrive%\\Work\\Projects",
     "Files": "*.*",
-    "Mode": "Mirror",            // Mirror (/MIR 镜像)、Copy (/E 复制) 或 Top (只复制顶层)
+    "Mode": "Mirror",            // Mirror (/MIR 镜像)、Update (/E /XO 更新: 只复制新的和更新过的文件, 不删除)、Copy (/E 全部复制: 不同的都复制, 不删除) 或 Top (只复制顶层)
     "Copy": "DAT", "DirCopy": "DA",
     "Retries": 1, "Wait": 1, "Threads": 16,
     "Monitor": 0, "MonitorChanges": 1, "MonitorMinutes": 5,

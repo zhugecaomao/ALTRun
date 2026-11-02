@@ -940,6 +940,7 @@ class I18n {
         s["Sync.RunTitle"]                 := "Sync: {1}"
         s["Sync.StopTitle"]                := "Stop syncing: {1}"
         s["Sync.Mirror"]                   := "Mirror {1} → {2}"
+        s["Sync.Update"]                   := "Update {1} → {2}"
         s["Sync.Copy"]                     := "Copy {1} → {2}"
         s["Sync.Action.Run"]               := "Run"
         s["Sync.Action.Stop"]              := "Stop"

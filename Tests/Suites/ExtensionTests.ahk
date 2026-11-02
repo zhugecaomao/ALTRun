@@ -325,6 +325,10 @@ class ExtensionTests {
         task["Source"] := "C:\", task["Destination"] := "%TEMP%\Sync Copy", task["Files"] := '*.docx "My File.*"', task["LogFile"] := ""
         eq("copy, no threads, a root, spaces", RoboSync.Build(task, false, now).Args
             , 'C:\ "' EnvGet("TEMP") '\Sync Copy" *.docx "My File.*" /E /COPY:DAT /DCOPY:DA /R:1 /W:1 /XF thumbs.db ~$*.* *.bak /XD $Recycle.Bin "Old Versions"')
+        task["Mode"] := "Update"
+        eq("update: new and newer files only", InStr(RoboSync.Build(task, false, now).Args, '*.docx "My File.*" /E /XO /COPY:DAT') > 0, true)
+        eq("update read back", RoboSync.Parse(RoboSync.Build(task, false, now).Args).Task["Mode"], "Update")
+        eq("/XO without /E kept as is", RoboSync.Parse('C:\a D:\b /XO /NP').Task["Extra"], "/XO /NP")
         eq("quoting", RoboSync.Quote("C:\") "|" RoboSync.Quote("C:\My Files\") "|" RoboSync.Quote("") "|" RoboSync.Quote("a b"), 'C:\|"C:\My Files\\"|""|"a b"')
         eq("placeholders", RoboSync.Expand("X_{date}_{time}.log", now), "X_20261102_093005.log")
         tokens := RoboSync.Tokens('"C:\My Files\\" D:\x "a b" /XF "~$*.*"')
@@ -445,6 +449,24 @@ class ExtensionTests {
         eq("no summary", SyncJobs.Summary("ERROR 53 (0x00000035) Accessing Source Directory\\srv\x\") "|" SyncJobs.Summary(""), "|")
         eq("file names", SyncJobs.FileName(' A/B: "x" '), "A_B_ _x_")
 
+        ; Old logs in ALTRun's log folder are deleted; recent ones and other files stay
+        eq("log folder: in TEMP, not in Data", SyncJobs.LogDir, A_Temp "\ALTRun\SyncLogs")
+        eq("keep logs 30 days by default", AppSettings.Defaults()["Features"]["Sync"]["KeepLogDays"], 30)
+        savedLogDir := SyncJobs.LogDir, SyncJobs.LogDir := A_Temp "\ALTRun-synclogs-test"
+        try {
+            try DirDelete(SyncJobs.LogDir, true)
+            DirCreate(SyncJobs.LogDir)
+            for name in ["old.log", "new.log", "old.txt"]
+                FileAppend("x", SyncJobs.LogDir "\" name)
+            FileSetTime(DateAdd(A_Now, -31, "Days"), SyncJobs.LogDir "\old.log")
+            FileSetTime(DateAdd(A_Now, -31, "Days"), SyncJobs.LogDir "\old.txt")
+            eq("0 days: all kept", SyncJobs.CleanLogs(0), 0)
+            eq("older than 30 days deleted", SyncJobs.CleanLogs(30) "|" (FileExist(SyncJobs.LogDir "\old.log") != "") (FileExist(SyncJobs.LogDir "\new.log") != "") (FileExist(SyncJobs.LogDir "\old.txt") != ""), "1|011")
+        } finally {
+            try DirDelete(SyncJobs.LogDir, true)
+            SyncJobs.LogDir := savedLogDir
+        }
+
         ; The search results
         saved := AppSettings.Data["SyncTasks"]
         task := RoboSync.NewTask()
@@ -492,8 +514,8 @@ class ExtensionTests {
         try DirDelete(root, true)
         DirCreate(root "\src\sub"), DirCreate(root "\dst")
         FileAppend("a", root "\src\a.txt"), FileAppend("b", root "\src\sub\b.txt"), FileAppend("x", root "\dst\extra.txt")
-        savedDir := AppSettings.DataDir
-        AppSettings.DataDir := root "\data"
+        savedDir := AppSettings.DataDir, savedLogDir := SyncJobs.LogDir
+        AppSettings.DataDir := root "\data", SyncJobs.LogDir := root "\logs"
         wait(name) {
             started := A_TickCount
             while (SyncJobs.IsRunning(name) && A_TickCount - started < 30000) {
@@ -516,7 +538,7 @@ class ExtensionTests {
             }
             eq("run started", SyncJobs.Start(real), "")
             wait("Check")
-            logFile := root "\data\SyncLogs\Check_" FormatTime(, "yyyyMMdd") ".log"
+            logFile := root "\logs\Check_" FormatTime(, "yyyyMMdd") ".log"
             eq("run: copied, extra deleted, default log", (FileExist(root "\dst\sub\b.txt") != "") (FileExist(root "\dst\extra.txt") != "") (FileExist(logFile) != ""), "101")
             eq("last result", RoboSync.Result(SyncJobs.Last[SyncJobs.Key("Check")].Code).Ok, true)
 
@@ -534,7 +556,7 @@ class ExtensionTests {
             eq("quit: stopped", !SyncJobs.IsRunning("Check") && !ProcessExist(pid), true)
         } finally {
             SyncJobs.StopAll(), SyncJobs.Last.Clear()
-            AppSettings.DataDir := savedDir
+            AppSettings.DataDir := savedDir, SyncJobs.LogDir := savedLogDir
             try DirDelete(root, true)
         }
     }

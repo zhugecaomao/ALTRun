@@ -402,6 +402,7 @@
   "Sync.RunTitle": "同步: {1}",
   "Sync.StopTitle": "停止同步: {1}",
   "Sync.Mirror": "镜像 {1} → {2}",
+  "Sync.Update": "更新 {1} → {2}",
   "Sync.Copy": "复制 {1} → {2}",
   "Sync.Action.Run": "运行",
   "Sync.Action.Stop": "停止",

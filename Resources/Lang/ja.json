@@ -402,6 +402,7 @@
   "Sync.RunTitle": "同期: {1}",
   "Sync.StopTitle": "同期を停止: {1}",
   "Sync.Mirror": "ミラー {1} → {2}",
+  "Sync.Update": "更新 {1} → {2}",
   "Sync.Copy": "コピー {1} → {2}",
   "Sync.Action.Run": "実行",
   "Sync.Action.Stop": "停止",
