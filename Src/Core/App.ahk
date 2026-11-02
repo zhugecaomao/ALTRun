@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.10.26.42"
+    static Version := "2026.10.26.43"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -325,6 +325,7 @@ class App {
     static Restart(arguments := "-Reloaded") {
         App._exitBy := "restart " arguments
         App._LogExitRequest()
+        App.WaitForEnterUp()
         if A_IsCompiled
             Run('"' A_ScriptFullPath '" /restart ' arguments)
         else
@@ -343,7 +344,25 @@ class App {
     static Quit() {
         App._exitBy := "quit"
         App._LogExitRequest()
+        App.WaitForEnterUp()
         ExitApp()
+    }
+
+    ; Quitting / restarting right after Enter ran Quit (or Apply in Preferences): wait until Enter is let go, at most maxMs, so ALTRun doesn't
+    ; exit with Enter still held. Twice Total Commander's Synchronize directories window, in front again once the search window hid, opened a
+    ; properties window right after ALTRun exited that way (2026-10-31 and 2026-11-02, ALTRun log and Tests\Tools\KeyWatch.ahk); Enter run
+    ; from the search window without exiting never did. Returns the milliseconds waited. isDown / pause are replaced in the tests
+    static WaitForEnterUp(maxMs := 2000, isDown := "", pause := "") {
+        isDown := IsObject(isDown) ? isDown : () => GetKeyState("Enter", "P") || GetKeyState("NumpadEnter", "P")
+        pause := IsObject(pause) ? pause : Sleep
+        started := A_TickCount, waited := 0
+        while (isDown() && waited < maxMs) {
+            pause(10)
+            waited := A_TickCount - started
+        }
+        if (waited && Logger.Enabled)
+            Logger.Debug("App: waited " waited " ms for Enter to be released before exiting")
+        return waited
     }
 
     ; Debug log: the keys held and the window in front when quitting / restarting is asked for, and how long after Enter ran a result
