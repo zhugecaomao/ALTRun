@@ -128,15 +128,24 @@ class RoboSync {
     ; Settings that are wrong (Error: don't run) or risky (Warning), without touching the disk. others: the other tasks, for overlaps.
     ; Codes: NoSource, NoDestination, SamePath, Nested (one folder inside the other), MirrorRoot (a mirror into a drive / share root,
     ; the OneDrive folder or the user folder: it would delete everything else there), Threads (1 to 128), Overlap (another task writes
-    ; into the same folders; Detail = its name), SameLog (another task writes the same log file; Detail = its name)
+    ; into the same folders; Detail = its name), SameLog (another task writes the same log file; Detail = its name),
+    ; SourceNotAbsolute / DestinationNotAbsolute (not D:\... or \\server\share\...: a relative path, or an environment variable that
+    ; doesn't exist on this PC and stays as %Name%, would make robocopy work in some other folder), MirrorMonitor (a mirror can't keep
+    ; in sync: robocopy's later rounds would delete without the checks ALTRun makes before each run, see SyncJobs)
     static Check(task, others := "") {
         problems := []
         add(level, code, detail := "") => problems.Push({Level: level, Code: code, Detail: detail})
         source := RoboSync.Normal(RoboSync._Get(task, "Source")), target := RoboSync.Normal(RoboSync._Get(task, "Destination"))
         if (source = "")
             add("Error", "NoSource")
+        else if !RoboSync.IsAbsolute(source)
+            add("Error", "SourceNotAbsolute", source)
         if (target = "")
             add("Error", "NoDestination")
+        else if !RoboSync.IsAbsolute(target)
+            add("Error", "DestinationNotAbsolute", target)
+        if (RoboSync._Get(task, "Mode") = "Mirror" && RoboSync._Get(task, "Monitor"))
+            add("Error", "MirrorMonitor")
         if (source != "" && target != "") {
             if (source = target)
                 add("Error", "SamePath")
@@ -181,6 +190,10 @@ class RoboSync {
     }
 
     static Inside(inner, outer) => (outer != "" && SubStr(inner, 1, StrLen(outer) + 1) = outer "\")
+
+    ; A full path after expanding: a drive and a backslash (D:\..., D: from Normal for a drive root) or a share (\\server\share...).
+    ; Not a relative path, "\folder" (the root of whatever drive is current) or "D:folder", and no %Name% left over
+    static IsAbsolute(folder) => (RegExMatch(folder, "i)^([a-z]:(\\|$)|\\\\[^\\]+\\[^\\]+)") && !RegExMatch(folder, "%[^%\s]+%")) ? true : false
 
     ; A drive (C:), a share (\\server\share), the OneDrive folder or the user folder (lower case, from Normal)
     static IsRootLike(folder) {

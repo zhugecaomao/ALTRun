@@ -79,7 +79,7 @@ class SyncEditor {
         c["MonitorChanges"] := g.AddEdit("x+6 ys-3 w44 r1 -Multi Number", task["MonitorChanges"])
         g.AddText("x+12 ys", I18n.T("Sync.Field.MonitorMinutes"))
         c["MonitorMinutes"] := g.AddEdit("x+6 ys-3 w44 r1 -Multi Number", task["MonitorMinutes"])
-        hint(I18n.T("Sync.Field.When.Hint"))
+        whenHint := hint(I18n.T("Sync.Field.When.Hint") "`n ")              ; two lines tall: the mirror's note fits
 
         label("Sync.Field.ExcludeFiles")
         c["ExcludeFiles"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w" inputW " r1 -Multi", RoboSync.JoinPatterns(task["ExcludeFiles"]))
@@ -90,16 +90,17 @@ class SyncEditor {
 
         section("Sync.Section.Advanced")
         label("Sync.Field.Retries", 10)
-        c["Retries"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w50 r1 -Multi Number", task["Retries"])
-        g.AddText("x+16 ys", I18n.T("Sync.Field.Wait"))
-        c["Wait"] := g.AddEdit("x+6 ys-3 w50 r1 -Multi Number", task["Wait"])
-        g.AddText("x+16 ys", I18n.T("Sync.Field.Threads"))
-        c["Threads"] := g.AddEdit("x+6 ys-3 w50 r1 -Multi Number", task["Threads"])
+        c["Retries"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w70 r1 -Multi Number", task["Retries"])
+        waitLabel := g.AddText("x+16 ys", I18n.T("Sync.Field.Wait"))
+        c["Wait"] := g.AddEdit("x+6 ys-3 w70 r1 -Multi Number", task["Wait"])
+        threadsLabel := g.AddText("x+16 ys", I18n.T("Sync.Field.Threads"))
+        c["Threads"] := g.AddEdit("x+6 ys-3 w70 r1 -Multi Number", task["Threads"])
         hint(I18n.T("Sync.Field.Retries.Hint"))
         label("Sync.Field.Copy")
         c["Copy"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w70 r1 -Multi Uppercase", task["Copy"])
-        g.AddText("x+16 ys", I18n.T("Sync.Field.DirCopy"))
+        dirLabel := g.AddText("x+16 ys", I18n.T("Sync.Field.DirCopy"))
         c["DirCopy"] := g.AddEdit("x+6 ys-3 w70 r1 -Multi Uppercase", task["DirCopy"])
+        SyncEditor.AlignColumns(waitLabel, c["Wait"], dirLabel, c["DirCopy"], threadsLabel, c["Threads"])
         hint(I18n.T("Sync.Field.Copy.Hint"))
         label("Sync.Field.LogFile")
         c["LogFile"] := g.AddEdit("xs+" (labelW + 8) " ys-3 w" (inputW - 130) " r1 -Multi", task["LogFile"])
@@ -111,7 +112,7 @@ class SyncEditor {
         hint(I18n.T("Sync.Field.Extra.Hint"))
 
         label("Sync.Field.Command")
-        command := g.AddEdit("xs+" (labelW + 8) " ys-3 w" inputW " r3 +Multi ReadOnly -VScroll")
+        command := g.AddEdit("xs+" (labelW + 8) " ys-3 w" inputW " r4 +Multi ReadOnly -VScroll")   ; four lines: the log path at the end fits
 
         copyButton := g.AddButton("xm y+18 w120", I18n.T("Sync.Field.CopyCommand"))
         copyButton.OnEvent("Click", (*) => (A_Clipboard := command.Value, App.Notify(I18n.T("Sync.Field.CommandCopied"))))
@@ -143,9 +144,16 @@ class SyncEditor {
             mode := RoboSync.Modes[c["Mode"].Value]
             modeHint.Opt(mode = "Mirror" ? "cC42B1C" : "cGray")
             modeHint.Value := I18n.T("Sync.ModeHint." mode)
+            if (mode = "Mirror")                                            ; a mirror only runs when started (RoboSync.Check: MirrorMonitor)
+                c["Monitor"].Value := 1
+            c["Monitor"].Enabled := (mode != "Mirror")
+            whenHint.Value := I18n.T(mode = "Mirror" ? "Sync.Field.When.Mirror" : "Sync.Field.When.Hint")
             monitor := c["Monitor"].Value = 2
             c["MonitorChanges"].Enabled := monitor, c["MonitorMinutes"].Enabled := monitor
-            built := RoboSync.Build(SyncEditor.Read(task, Values()))
+            edited := SyncEditor.Read(task, Values())
+            if (edited["Name"] = "")                                        ; the default log is named after the task
+                edited["Name"] := RoboSync.SuggestName(edited["Destination"] != "" ? edited["Destination"] : edited["Source"])
+            built := RoboSync.Build(SyncJobs.AsRun(edited))                 ; with the log it runs with (the default one when none is set)
             command.Value := "robocopy " built.Args
         }
         OnPreview(*) {
@@ -189,11 +197,23 @@ class SyncEditor {
     ; The field to go back to for a problem code
     static FieldOf(code) {
         switch code {
-            case "NoSource", "SamePath", "Nested": return "Source"
-            case "NoDestination", "MirrorRoot": return "Destination"
+            case "NoSource", "SamePath", "Nested", "SourceNotAbsolute": return "Source"
+            case "NoDestination", "MirrorRoot", "DestinationNotAbsolute": return "Destination"
+            case "MirrorMonitor": return "Mode"
             case "Threads": return "Threads"
         }
         return "Name"
+    }
+
+    ; Retries and File info: the second boxes in one column, after the longer of the two labels (Wait, Folder info); Threads follows
+    static AlignColumns(waitLabel, wait, dirLabel, dirCopy, threadsLabel, threads) {
+        waitLabel.GetPos(, , &waitW), dirLabel.GetPos(&labelX, , &dirW)
+        editX := labelX + Max(waitW, dirW) + 6
+        wait.Move(editX), dirCopy.Move(editX)
+        wait.GetPos(, , &editW)
+        threadsLabel.Move(editX + editW + 16)
+        threadsLabel.GetPos(&threadsX, , &threadsW)
+        threads.Move(threadsX + threadsW + 6)
     }
 
     ; The task with the window's values: numbers that aren't numbers become the defaults, exclude lists are split at ";"
@@ -207,7 +227,7 @@ class SyncEditor {
         for key in ["Source", "Destination"]
             edited[key] := RoboSync.TrimSlash(edited[key])
         edited["Mode"] := RoboSync.Modes[Max(1, Min(RoboSync.Modes.Length, values["Mode"]))]
-        edited["Monitor"] := values["Monitor"] = 2 ? 1 : 0
+        edited["Monitor"] := (values["Monitor"] = 2 && edited["Mode"] != "Mirror") ? 1 : 0   ; a mirror doesn't keep in sync
         for key in ["MonitorChanges", "MonitorMinutes", "Retries", "Wait", "Threads"]
             edited[key] := number(key)
         edited["AppendLog"] := values["AppendLog"] ? 1 : 0

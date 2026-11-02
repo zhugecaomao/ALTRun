@@ -19,10 +19,10 @@ The edit window, top to bottom:
 
 - **Name**, **Source** and **Destination** (with **⇅** to swap them), **Files** (`*.*` = all).
 - **Mode**: **Mirror** (the destination becomes the same as the source; what the source doesn't have is deleted), **Update** (new and newer files only, never deletes), **Copy all** (everything that differs, never deletes), **Top folder only**. The line under it says what the mode does; mirror's is red.
-- **When**: only when you run it, or **Keep in sync** (robocopy keeps running and syncs again after changes).
+- **When**: only when you run it, or **Keep in sync** (robocopy keeps running and syncs again after changes). A mirror only runs when you run it (see below).
 - **Exclude files** / **Exclude folders**, separated by `;`.
 - **Advanced**: retries and wait, threads, which file and folder information to copy, the log file, other robocopy options.
-- **Command** shows the robocopy command line the task makes, updated as you type (**Copy Command** copies it).
+- **Command** shows the robocopy command line the task makes, updated as you type, with the log it runs with (the default one when **Log file** is empty). **Copy Command** copies it.
 - **Preview** shows what the task would change before you save it. **OK** checks the task: mistakes (no source, the same folder twice, mirroring into a drive...) must be fixed; a destination that overlaps another task's asks first.
 
 ## Preview
@@ -40,6 +40,8 @@ The edit window, top to bottom:
 - **Mirror** (`/MIR`) makes the destination an exact copy of the source: files in the destination that aren't in the source are **deleted**. Before a mirror runs, ALTRun previews it (`/L`, which changes nothing); when the run would delete anything, the preview window lists what would be deleted, and nothing runs until you click **Run and Delete** (Enter or Esc closes it).
 - A mirror doesn't run when the source folder can't be found or is empty (for example a server share that didn't connect), since that would empty the destination.
 - A task doesn't run when the source and destination are the same folder or one is inside the other, or when a mirror would go into a drive, a share, the OneDrive folder or the user folder (it would delete everything else there).
+- Source and destination must be full paths (`D:\Sync\Projects`, `\\server\share\folder`). A relative path, `\folder` (the root of whichever drive is current) or an environment variable that doesn't exist on this PC (`%OneDrive%` without OneDrive) would make robocopy work in some other folder, so such a task doesn't run.
+- A mirror can't **keep in sync**: robocopy's later rounds would delete without the checks above (a server share that suddenly looks empty would empty the destination). Keep in sync with **Update**, or run the mirror yourself.
 - **Monitoring** tasks (`/MON`, `/MOT`) keep running and sync again after changes. They stop when ALTRun quits; when ALTRun only restarts (after changing a setting, an update), they keep running.
 
 ## Logs
