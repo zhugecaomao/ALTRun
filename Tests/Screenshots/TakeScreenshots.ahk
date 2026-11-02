@@ -850,7 +850,7 @@ class Shots {
             throw Error("sync page: list or " buttonText " button not found")
         ControlFocus(list), ControlSend("{Home}", list)
         Sleep(300)
-        ControlClick(button, prefs)
+        PostMessage(0xF5, 0, 0, button)                                     ; BM_CLICK: a posted mouse click (ControlClick) was sometimes lost; posted, so Edit's modal window doesn't block
         window := WinWait(title " ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 20)
         if !window {
             Shots.Diagnose(prefs)
