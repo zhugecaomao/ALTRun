@@ -59,7 +59,7 @@ class SyncProvider {
         return item
     }
 
-    ; Today's log of the task (its own log file, or the one in Data\SyncLogs); its folder when there is none yet
+    ; Today's log of the task (its own log file, or the one in %TEMP%\ALTRun\SyncLogs); its folder when there is none yet
     static OpenLog(task) {
         logFile := (RoboSync._Get(task, "LogFile") != "") ? RoboSync.Expand(task["LogFile"])
             : SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_" FormatTime(, "yyyyMMdd") ".log"
