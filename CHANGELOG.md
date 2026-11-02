@@ -15,6 +15,15 @@ Test build.
 - 延迟启动页面新增 "启动项..." 按钮: 列出 Windows 登录时启动的程序 (和 任务管理器 → 启动应用 一样: Run 注册表项和启动文件夹), 选一个就改成延迟启动, 名称、程序和参数自动填好。点 应用 或 确定 时先设置好延迟任务, 再像任务管理器那样禁用它自己的启动 (不删除任何东西, 可以在任务管理器里重新启用); 任务没设置好时不动原来的启动项。以后删除这一项时会问要不要恢复它自己的启动。为所有用户启动的程序需要管理员权限才能禁用, 会提示并可以打开任务管理器
 - 手动添加一个自己也会自启动的程序时, 不再只是提示, 可以直接选择在应用时关掉它自己的启动
 
+## [2026.10.26.43]
+
+测试版。
+
+Test build.
+
+### 修复
+- 在 Total Commander 的 "同步目录" 窗口前用 Enter 执行 "退出" 后, 有时会弹出一个文件属性窗口: 两次出现时都是 ALTRun 在 Enter 还没松开时就退出了。现在退出和重新启动前先等 Enter 松开 (最多 2 秒)
+
 ## [2026.10.26.42]
 
 测试版。
@@ -1342,7 +1351,8 @@ Smoother typing, easier to get started, and a few useful new features.
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
 [未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.44...HEAD
-[2026.10.26.44]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...2026.10.26.44
+[2026.10.26.44]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...2026.10.26.44
+[2026.10.26.43]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...2026.10.26.43
 [2026.10.26.42]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.41...2026.10.26.42
 [2026.10.26.41]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.40...2026.10.26.41
 [2026.10.26.40]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.39...2026.10.26.40
