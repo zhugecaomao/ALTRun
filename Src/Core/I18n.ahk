@@ -936,7 +936,7 @@ class I18n {
         s["Prefs.Fallbacks.Desc"]       := "Shown when nothing matches: engine Ids (google, bing, baidu...) or files. Separate with commas."
         s["Prefs.HotkeysNote"]          := "Global hotkeys for ALTRun commands. Fill in the window to limit a hotkey to one program; ALTRun means only in the ALTRun search window."
         ; Sync tasks
-        s["Sync.Keyword"]                  := "Sync tasks"
+        s["Sync.Keyword"]                  := "Folder sync tasks"
         s["Sync.RunTitle"]                 := "Sync: {1}"
         s["Sync.StopTitle"]                := "Stop syncing: {1}"
         s["Sync.Mirror"]                   := "Mirror {1} → {2}"
@@ -974,7 +974,8 @@ class I18n {
         s["Sync.Problem.DestinationNotAbsolute"] := "Sync {1}: the destination folder isn't a full path such as D:\Sync\Folder or \\server\share\folder. If it uses an environment variable such as %OneDrive%, that variable doesn't exist on this PC."
         s["Sync.Problem.MirrorMonitor"]     := "Sync {1}: a mirror can't keep in sync. Every new round would delete what the source no longer has, without the checks ALTRun makes before a run (for example when a server share suddenly looks empty). To keep in sync choose Update; or run the mirror yourself."
         s["Sync.Field.When.Mirror"]         := "A mirror only runs when you run it: each run is checked first (the source exists and isn't empty) and asks before deleting. To keep in sync, choose Update."
-        s["Prefs.Page.Sync"]                := "Sync"
+        s["Prefs.Page.Sync"]                := "Folder Sync"
+        s["Sync.Editor.Title"]              := "Folder Sync Task"
         s["Sync.Col.Mode"]                  := "Mode"
         s["Sync.Col.Source"]                := "Source"
         s["Sync.Col.Destination"]           := "Destination"

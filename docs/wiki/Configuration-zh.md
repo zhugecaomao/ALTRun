@@ -43,7 +43,7 @@
   "CustomCommands": [ ... ],      // 自定义命令
   "Snippets":       [ ... ],      // 文字片段
   "DelayedStart":   [ ... ],      // 延迟启动
-  "SyncTasks":      [ ... ],      // 同步任务, 见 同步任务
+  "SyncTasks":      [ ... ],      // 文件夹同步任务, 见 文件夹同步
   "DataLocation":   "%OneDrive%\\ALTRun"   // 可选: 改用这个数据文件夹
 }
 ```

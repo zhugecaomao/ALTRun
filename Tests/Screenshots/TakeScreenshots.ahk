@@ -94,7 +94,7 @@ class Shots {
             ["prefs-delayedstart", "Light", "-Preferences 19", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
             ["prefs-startupapps", "Light", "-Preferences 19", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
             ["prefs-sync",       "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
-            ["sync-editor",      "Light", "-Preferences 20", () => Shots.SyncWindow("Edit...", "Sync"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
+            ["sync-editor",      "Light", "-Preferences 20", () => Shots.SyncWindow("Edit...", "Folder Sync Task"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
             ["sync-preview",     "Light", "-Preferences 20", () => Shots.SyncWindow("Preview", "Preview: "), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
             ["prefs-usage",      "Light", "-Preferences 21", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
             ["prefs-advanced",   "Light", "-Preferences 22", () => Shots.Preferences()],     ; Wiki: data files

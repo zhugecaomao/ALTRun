@@ -43,7 +43,7 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
   "CustomCommands": [ ... ],      // custom commands
   "Snippets":       [ ... ],      // snippets
   "DelayedStart":   [ ... ],      // delayed start
-  "SyncTasks":      [ ... ],      // sync tasks, see Sync tasks
+  "SyncTasks":      [ ... ],      // folder sync tasks, see Folder sync
   "DataLocation":   "%OneDrive%\\ALTRun"   // optional: use this data folder instead
 }
 ```
