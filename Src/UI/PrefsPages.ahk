@@ -618,7 +618,7 @@ class PrefsPages {
         PreferencesWindow.Gui.Opt("+OwnDialogs")
         switch what {
             case "Preview": SyncJobs.Preview(task)
-            case "Run": SyncJobs.Run(task)
+            case "Run": SyncJobs.IsRunning(task["Name"]) ? SyncPreview.ShowJob(task["Name"]) : SyncJobs.Run(task)   ; running: its window
             case "Stop": SyncJobs.Stop(task["Name"])
             case "Log": SyncProvider.OpenLog(task)
         }

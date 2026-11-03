@@ -25,22 +25,30 @@ The edit window, top to bottom:
 - **Command** shows the robocopy command line the task makes, updated as you type, with the log it runs with (the default one when **Log file** is empty). **Copy Command** copies it.
 - **Preview** shows what the task would change before you save it. **OK** checks the task: mistakes (no source, the same folder twice, mirroring into a drive...) must be fixed; a destination that overlaps another task's asks first.
 
-## Preview
-**Preview** runs robocopy with `/L`, which changes nothing, and lists what a run would do: how many files it would copy, how many files and folders it would delete, and each of them (deletions first, in red text above the list). **Run Now** runs the task as previewed.
+## The sync window
+Each task has its own window, *<task> - Folder Sync*. Preview and Run open it at once, and it follows the task until it ends. Its buttons stay in place: **Preview**, **Sync Now**, **Stop** and **Open log** are only enabled when they can be used.
+- **Checking** (a preview, robocopy with `/L`, which changes nothing): the changes appear in the list as robocopy finds them, with how many so far and the time. Large folders take a while to compare, so you see it working; **Stop** ends it.
+- **Preview**: what a run would do: how many files it would copy and their size, how many files and folders it would delete (in red above the list), and each of them, deletions first, with why it is copied (*Copy (newer)*) and its size. **Sync Now** runs the task as previewed, in the same window. Folders to create are counted only when the task runs without threads (**Threads** 0): with several threads robocopy doesn't list folders.
+- **Running**: the files appear as robocopy copies them; the bar shows the bytes copied against what the preview found (after a preview, as for every mirror), and moves back and forth for Update and Copy all, which aren't previewed first so large folders aren't compared twice. **Stop** ends it.
+- **Done**: files copied (and their size), files deleted, and the time; files that couldn't be copied are counted in red, and the bar turns red (yellow when stopped).
+- The bar's progress also shows on the window's taskbar button, so you can see it while working in another program (the window can be minimized).
+- The list shows the first 2000 changes; the log (**Open log**) has all of them. A path that doesn't fit shows whole when you point at it; double-click a row to show the file in Explorer.
+- Closing the window doesn't stop the task: its result in the search window (Enter) or **Run** in Preferences opens the window again. A notification says how it ended when the window isn't in front.
 
 ![Preview of a sync task](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/sync-preview.png)
 
 ## Running a task
-- Type the task's name, or `sync ` to list all tasks (`sync proj` searches only them). **Enter** runs the task; while it runs, Enter stops it.
-- `→` opens the actions: Run, Preview (changes nothing), Open log, open the source or destination folder.
+- Type the task's name, or `sync ` to list all tasks (`sync proj` searches only them). **Enter** only opens the task's window (nothing starts until you click **Preview** or **Sync Now** there); while it runs, Enter shows its progress.
+- `→` opens the actions: Sync Now (runs it straight away; a mirror is still previewed and asks before deleting), Preview (changes nothing), Open log, open the source or destination folder; while it runs, Show progress and Stop.
 - The result shows what the task does and how it is doing: *Running since 10:05*, *Monitoring since 10:05*, *Last run 09:30: OK*.
-- A task that ends says how it went (files copied and removed). If it fails, ALTRun offers to open its log.
+- A task that ends says how it went (files copied and removed) in its window, and with a notification when the window isn't in front. If it fails without a window, ALTRun offers to open its log.
 
 ## Safety
-- **Mirror** (`/MIR`) makes the destination an exact copy of the source: files in the destination that aren't in the source are **deleted**. Before a mirror runs, ALTRun previews it (`/L`, which changes nothing); when the run would delete anything, the preview window lists what would be deleted, and nothing runs until you click **Run and Delete** (Enter or Esc closes it).
+- **Mirror** (`/MIR`) makes the destination an exact copy of the source: files in the destination that aren't in the source are **deleted**. Before a mirror runs, ALTRun previews it (`/L`, which changes nothing); when the run would delete anything, the preview window lists what would be deleted, and nothing runs until you click **Sync and Delete** (Enter or Esc closes it).
   - The window opens when the preview has finished. If you have gone on working in another program by then, it can't come to the front (Windows doesn't let a background program take the focus): it flashes in the taskbar and a notification says it is waiting.
   - Each task has its own window: previewing another task doesn't close one still waiting.
-  - A window left open for more than 5 minutes previews again when you click **Run and Delete**, as the destination may have changed since.
+  - A window left open for more than 5 minutes previews again when you click **Sync and Delete**, as the destination may have changed since.
+- Excluded files and folders are never deleted from the destination, even by a mirror. robocopy still counts the ones that are only in the destination as "extras" in its summary; ALTRun doesn't count them as deletions and says they stay.
 - A mirror doesn't run when the source folder can't be found or is empty (for example a server share that didn't connect), since that would empty the destination.
 - A task doesn't run when the source and destination are the same folder or one is inside the other, or when a mirror would go into a drive, a share, the OneDrive folder or the user folder (it would delete everything else there).
 - Source and destination must be full paths (`D:\Sync\Projects`, `\\server\share\folder`). A relative path, `\folder` (the root of whichever drive is current) or an environment variable that doesn't exist on this PC (`%OneDrive%` without OneDrive) would make robocopy work in some other folder, so such a task doesn't run.

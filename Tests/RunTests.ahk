@@ -28,6 +28,7 @@
 #Include %A_ScriptDir%\..\Lib\WindowsRecent.ahk
 #Include %A_ScriptDir%\..\Lib\ShellContextMenu.ahk
 #Include %A_ScriptDir%\..\Lib\TaskScheduler.ahk
+#Include %A_ScriptDir%\..\Lib\TaskbarProgress.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
 #Include %A_ScriptDir%\..\Src\Core\AppSettings.ahk
@@ -87,6 +88,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\DelayedStart.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\RoboSync.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\SyncProgress.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SyncJobs.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CurrencyRates.ahk

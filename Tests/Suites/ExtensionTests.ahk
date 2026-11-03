@@ -478,10 +478,16 @@ class ExtensionTests {
             for action in item.Actions
                 actions .= action.Title "|"
             eq("subtitle", item.Subtitle, "Mirror \\srv\team → D:\Sync\Team")
-            eq("actions", actions, "Run|Preview (changes nothing)|Open log|Open source folder|Open destination folder|")
+            eq("actions", actions, "Sync Now|Preview (changes nothing)|Open log|Open source folder|Open destination folder|")
+            try {
+                item.OnRun.Call()                                           ; Enter only opens the window: nothing starts
+                eq("Enter: the window, ready", SyncPreview.Windows.Has(SyncJobs.Key("Team Files")) ? SyncPreview.Windows[SyncJobs.Key("Team Files")].Phase "|" SyncJobs.IsRunning("Team Files") : "none", "Ready|0")
+            } finally {
+                SyncPreview.Close(SyncJobs.Key("Team Files"))
+            }
             SyncJobs.Jobs[SyncJobs.Key("Team Files")] := {Name: "Team Files", Pid: 0, Handle: 0, Preview: false, Monitor: true, Started: "20261102100500", LogFile: "", OnDone: ""}
             item := SyncProvider.Search(SearchQuery("team"))[1]
-            eq("running: Enter stops, state", item.Title "|" item.Subtitle "|" item.Actions[1].Title, "Stop syncing: Team Files|Monitoring since 10:05 · Mirror \\srv\team → D:\Sync\Team|Stop")
+            eq("running: Enter shows its window, state, then Stop", item.Title "|" item.Subtitle "|" item.Actions[1].Title "|" item.Actions[2].Title, "Sync: Team Files|Monitoring since 10:05 · Mirror \\srv\team → D:\Sync\Team|Show progress|Stop")
             SyncJobs.Jobs.Delete(SyncJobs.Key("Team Files"))
             SyncJobs.Last[SyncJobs.Key("Archive")] := {Code: 1, Ended: "20261102093000", Preview: false}
             eq("last run", SyncProvider.Search(SearchQuery("arch"))[1].Subtitle, "Last run 09:30: OK · Copy \\srv\archive → D:\Sync\Archive")
@@ -583,6 +589,70 @@ class ExtensionTests {
         }
     }
 
+    ; The sync window with the real robocopy (Windows): a preview fills the list while robocopy finds the changes, then shows them;
+    ; the run that follows counts the files it copies (default settings: 16 threads) and ends with the result
+    static SyncWindowReal() {
+        if (!FileExist(RoboSync.Program) || DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr"))
+            return
+        eq := (n, a, e) => TestRunner.Equal("SyncWindowReal." n, a, e)
+        root := A_Temp "\ALTRun-syncwindow-test"
+        try DirDelete(root, true)
+        DirCreate(root "\src\deep"), DirCreate(root "\dst")
+        Loop 3000
+            FileAppend("x", root "\src\deep\file" A_Index ".txt")
+        handle := FileOpen(root "\src\big.bin", "w"), handle.Length := 50 * 1024 * 1024, handle.Close()
+        FileAppend("y", root "\dst\extra.txt")
+        savedLogDir := SyncJobs.LogDir, SyncJobs.LogDir := root "\logs"
+        key := SyncJobs.Key("Window")
+        wait() {
+            started := A_TickCount
+            while (SyncJobs.Jobs.Has(key) && A_TickCount - started < 60000) {
+                Sleep(100)
+                SyncJobs._Poll(), SyncPreview._Tick()
+            }
+        }
+        try {
+            task := RoboSync.NewTask()
+            task["Name"] := "Window", task["Source"] := root "\src", task["Destination"] := root "\dst", task["Mode"] := "Update", task["Retries"] := 0, task["Wait"] := 0
+            SyncJobs.Preview(task, {Run: true})
+            w := SyncPreview.Windows[key]
+            eq("preview: opens at once, checking", w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled, "Check|1|0")
+            wait()
+            eq("preview: then what it found", w.Phase "|" w.List.GetCount() "|" w.Sync.Enabled "|" w.Stop.Enabled, "Preview|2000|1|0")   ; 3001 to copy: the first 2000 listed
+            eq("preview: totals for the run (MB)", IsObject(w.Totals) ? w.Totals.Files "|" Round(w.Totals.Bytes / 1048576) : "none", "3001|50")
+            SyncPreview._Sync(w)
+            eq("run: same window, running", w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled "|" SyncJobs.IsRunning("Window"), "Run|1|0|1")
+            wait()
+            eq("run: done, every file counted", w.Phase "|" InStr(w.Status.Value, "Finished: 3001 files copied") "|" w.List.GetCount() "|" w.Bar.Value "|" w.Sync.Enabled, "Done|1|2000|1000|1")
+            eq("run: copied", FileExist(root "\dst\big.bin") != "" && FileExist(root "\dst\deep\file3000.txt") != "" && FileExist(root "\dst\extra.txt") != "", true)
+        } finally {
+            SyncJobs.StopAll(), SyncJobs.Last.Clear()
+            SyncPreview.Close(key)
+            SyncJobs.LogDir := savedLogDir
+            try DirDelete(root, true)
+        }
+    }
+
+    ; The taskbar button's progress: the last state kept for when the button is made again (TaskbarButtonCreated); None forgets it.
+    ; Without ITaskbarList3 (Wine) nothing happens
+    static TaskbarProgress() {
+        eq := (n, a, e) => TestRunner.Equal("TaskbarProgress." n, a, e)
+        g := Gui(, "Taskbar progress test")
+        try {
+            g.Show("w200 h80 NoActivate")
+            if !TaskbarProgress.Set(g.Hwnd, "Normal", 500)
+                return eq("not there: nothing kept", TaskbarProgress.Last.Has(g.Hwnd), false)
+            eq("kept", TaskbarProgress.Last[g.Hwnd][1] "|" TaskbarProgress.Last[g.Hwnd][2], "Normal|500")
+            TaskbarProgress._Created(g.Hwnd)                                ; set again when the button is made
+            eq("error, paused, moving", TaskbarProgress.Set(g.Hwnd, "Error", 1000) && TaskbarProgress.Set(g.Hwnd, "Paused", 300) && TaskbarProgress.Set(g.Hwnd, "Indeterminate"), true)
+            TaskbarProgress.Set(g.Hwnd, "None")
+            eq("none: forgotten", TaskbarProgress.Last.Has(g.Hwnd), false)
+        } finally {
+            TaskbarProgress.Set(g.Hwnd, "None")
+            g.Destroy()
+        }
+    }
+
     ; Step 3: the preview's list read from a robocopy log, the preview window's rows, the editor's values, the short states
     static SyncPreview() {
         eq := (n, a, e) => TestRunner.Equal("SyncPreview." n, a, e)
@@ -630,8 +700,25 @@ class ExtensionTests {
             try FileDelete(temp)
         }
         rows := SyncPreview.Rows(changes, "C:\src", "D:\dst\")
-        eq("rows: deletions first, relative", rows[1][1] " " rows[1][2] "|" rows[2][2] "|" rows[3][2] "|" rows[4][1] " " rows[4][2] "|" rows[7][2], "Delete extra.txt|old\|old\old.txt|Copy a.txt|sub\b.txt")
-        eq("rows: folders", rows[2][1] "|" rows[6][1], "Delete folder|New folder")
+        eq("rows: deletions first, relative", rows[1][2] " " rows[1][1] "|" rows[2][1] "|" rows[3][1] "|" rows[4][2] " " rows[4][1] "|" rows[7][1], "Delete extra.txt|old\|old\old.txt|Copy (new) a.txt|sub\b.txt")
+        eq("rows: folders, why a file is copied", rows[2][2] "|" rows[6][2] "|" rows[5][2], "Delete folder|New folder|Copy (newer)")
+        eq("rows: full paths, a delete in the destination", rows[1][4] "|" rows[2][4] "|" rows[4][4] "|" rows[6][4], "D:\dst\extra.txt|D:\dst\old\|C:\src\a.txt|C:\src\sub\")
+        eq("rows: a label robocopy wrote in another language", SyncPreview.Action({Kind: "Copy", Folder: false, Label: "Neuer"}), "Copy (Neuer)")
+
+        ; The summary line. With /MT robocopy's Dirs Copied is every folder and there are no New Dir lines (probed on Windows):
+        ; folders to create come from the New Dir lines
+        summary := SyncJobs.Summary(logText)
+        eq("summary: copy and create", SyncPreview.Summary(summary, changes), "Would copy 3 of 4 files (0 B) and create 1 folders.")
+        eq("summary: /MT, no folder lines", SyncPreview.Summary(summary, {NewDirs: 0}), "Would copy 3 of 4 files (0 B).")
+        same := {Files: {Copied: 0, Total: 538, Extras: 0}, Dirs: {Copied: 91, Total: 91, Extras: 0}, Bytes: ""}
+        eq("summary: the same, /MT counting every folder", SyncPreview.Summary(same, {NewDirs: 0}), "Nothing to do: the destination is up to date (538 files, 91 folders).")
+        eq("summary: folders only", SyncPreview.Summary(same, {NewDirs: 2}), "Would create 2 folders; there are no files to copy.")
+        same.Files.Extras := 1                                              ; robocopy's Extras also counts excluded files only in the destination, which it keeps
+        eq("summary: only an excluded file in the destination (kept, not listed)", SyncPreview.Summary(same, {NewDirs: 0, DeleteFiles: 0}) "|" SyncPreview.Kept(same, {DeleteFiles: 0, DeleteDirs: 0})
+            , "Nothing to do: the destination is up to date (538 files, 91 folders).|1")
+        eq("summary: only deletions", SyncPreview.Summary(same, {NewDirs: 0, DeleteFiles: 1}) "|" SyncPreview.Kept(same, {DeleteFiles: 1, DeleteDirs: 0}), "No files to copy.|0")
+        eq("changes: what to delete counted from the lines", changes.DeleteFiles "|" changes.DeleteDirs, "2|1")
+        eq("summary: none", SyncPreview.Summary("", {}), I18n.T("Sync.Preview.NoSummary"))
 
         ; The preview window: the summary, the list, Run and Delete only when asked for; Enter closes it
         result := {Summary: SyncJobs.Summary(logText), Changes: changes, LogFile: ""}
@@ -639,7 +726,7 @@ class ExtensionTests {
         g := SyncPreview.Show(previewTask, result, {Run: true, Confirm: true})
         try {
             eq("window: rows", SendMessage(0x1004, 0, 0, "SysListView321", g.Hwnd), 7)          ; LVM_GETITEMCOUNT
-            eq("window: run and delete, close focused", (ControlGetHwnd("Run and Delete", g.Hwnd) ? 1 : 0) (ControlGetFocus(g.Hwnd) = ControlGetHwnd("Close", g.Hwnd) ? 1 : 0), "11")
+            eq("window: sync and delete, close focused", (ControlGetHwnd("Sync and Delete", g.Hwnd) ? 1 : 0) (ControlGetFocus(g.Hwnd) = ControlGetHwnd("Close", g.Hwnd) ? 1 : 0), "11")
             g.Move(, , 900, 600)                                            ; resizing keeps the buttons inside
             Sleep(100)                                                      ; the Size event comes as a message
             ControlGetPos(&bx, &by, &bw, &bh, "Close", g.Hwnd)
@@ -649,27 +736,102 @@ class ExtensionTests {
             SyncPreview.Close(SyncJobs.Key("Projects"))
         }
         g := SyncPreview.Show(previewTask, result, {Run: false, Confirm: false})
-        try eq("window: preview from the editor offers no run", ControlGetHwnd("Run Now", g.Hwnd) || 0, 0)
-        catch
-            TestRunner.Passed++                                             ; ControlGetHwnd throws when there is no such button
+        w := SyncPreview.Windows[SyncJobs.Key("Projects")]
+        eq("window: preview from the editor offers no sync (nor stop), preview again", w.Sync.Enabled "|" w.Stop.Enabled "|" w.Preview.Enabled, "0|0|1")
+        eq("window: title, path column takes the width", WinGetTitle(g.Hwnd) "|" (SendMessage(0x101D, 0, 0, w.List) > 400), "Projects - Folder Sync|1")
 
-        ; One window per task: another task's preview leaves a waiting confirmation open, the same task's replaces it
+        ; One window per task: another task's preview leaves a waiting confirmation open, the same task's goes on in the same window
         otherTask := Map("Name", "Photos", "Source", "C:\photos", "Destination", "D:\photos", "Mode", "Update")
         try {
             other := SyncPreview.Show(otherTask, result, {Run: true, Confirm: false})
             eq("windows: two tasks", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) (WinExist("ahk_id " other.Hwnd) ? 1 : 0) "|" SyncPreview.Windows.Count, "11|2")
             first := g.Hwnd
             g := SyncPreview.Show(previewTask, result, {Run: true, Confirm: true})
-            eq("windows: the same task replaces its window", (WinExist("ahk_id " first) ? 1 : 0) (WinExist("ahk_id " g.Hwnd) ? 1 : 0) "|" SyncPreview.Windows.Count, "01|2")
+            eq("windows: the same task goes on in its window", (g.Hwnd = first) "|" SyncPreview.Windows.Count "|" SyncPreview.Windows[SyncJobs.Key("Projects")].Sync.Text, "1|2|Sync and Delete")
         } finally {
             SyncPreview.Close(SyncJobs.Key("Projects")), SyncPreview.Close(SyncJobs.Key("Photos"))
         }
         eq("windows: closed", SyncPreview.Windows.Count, 0)
 
+        ; Only an excluded file in the destination (desktop.ini...): robocopy counts it as an extra but keeps it, so nothing to delete
+        keptOnly := {Summary: {Files: {Copied: 0, Total: 538, Extras: 1}, Dirs: {Copied: 91, Total: 91, Extras: 0}, Bytes: ""}, Changes: SyncJobs.Changes(""), LogFile: ""}
+        try {
+            SyncPreview.Show(previewTask, keptOnly, {Run: true, Confirm: false})
+            w := SyncPreview.Windows[SyncJobs.Key("Projects")]
+            eq("window: an excluded extra isn't a deletion", w.Sync.Text "|" w.DetailColor "|" InStr(w.Detail.Value, "1 excluded files or folders"), "Sync Now|cGray|1")
+        } finally {
+            SyncPreview.Close(SyncJobs.Key("Projects"))
+        }
+
         ; Run from an old preview: a mirror is previewed again (the destination may have changed), other modes aren't
         old := 1000000, fresh := old + SyncPreview.StaleMs - 1, late := old + SyncPreview.StaleMs + 1
         eq("stale: mirror", (SyncPreview.IsStale(previewTask, old, fresh) ? 1 : 0) (SyncPreview.IsStale(previewTask, old, late) ? 1 : 0), "01")
         eq("stale: update never", SyncPreview.IsStale(otherTask, old, late) ? 1 : 0, 0)
+
+        ; Sizes as robocopy writes them, and for people
+        eq("size: bytes, units of 1024, not a size", SyncProgress.ParseSize(" 966803") "|" SyncProgress.ParseSize("400.0 m") "|" SyncProgress.ParseSize("1.5 g") "|" SyncProgress.ParseSize("12 k") "|" SyncProgress.ParseSize("New File"), "966803|419430400|1610612736|12288|")
+        eq("size for people", SyncProgress.FormatSize(512) "|" SyncProgress.FormatSize(990003) "|" SyncProgress.FormatSize(1572864) "|" SyncProgress.FormatSize(41446522470), "512 B|966.8 KB|1.5 MB|38.6 GB")
+        eq("changes with sizes", changes[1].Size "|" changes[2].Size "|" changes[4].Size, "1|1572864|")
+
+        ; The log read while robocopy writes it: lines as they are complete, counts, errors
+        progress := SyncProgress()
+        part := "`t    New File  `t`t  402089`tC:\Demo Sync\Server\Plan.pdf`r`n`t    Newer     `t`t 1.0 m`tC:\Demo Sync\Server\Re"
+        eq("progress: only complete lines", progress.Feed(part).Length "|" progress.CopyFiles "|" progress.CopyBytes, "1|1|402089")
+        rest := "port.pdf`r`n`t  *EXTRA File `t`t       6`tC:\Demo Sync\OneDrive\Old.txt`r`n`t*EXTRA Dir        -1`tC:\Demo Sync\OneDrive\Old\`r`n"
+            . "2026/11/03 10:00:00 ERROR 32 (0x00000020) Copying File C:\Demo Sync\Server\Open.dwg`r`n"
+        kept := progress.Feed(rest)
+        eq("progress: the rest of a line, deletions, errors", kept.Length "|" kept[1].Path "|" progress.CopyFiles "|" progress.CopyBytes "|" progress.DeleteFiles "|" progress.DeleteDirs "|" progress.Errors
+            , "3|C:\Demo Sync\Server\Report.pdf|2|1450665|1|1|1")
+        limited := SyncProgress("", 0, 2)
+        limited.Feed(part rest, true)
+        eq("progress: keeps the first changes, counts them all", limited.Changes.Length "|" limited.Total, "2|4")
+
+        ; From the log file: only this run's part (after start), in UTF-16
+        logFile := A_Temp "\ALTRun-progress-test.log"
+        try {
+            try FileDelete(logFile)
+            FileAppend("Older run`r`n`t    New File  `t`t  1`tC:\x\old.txt`r`n", logFile, "UTF-16")
+            start := FileGetSize(logFile)
+            reader := SyncProgress(logFile, start)
+            FileAppend("`t    New File  `t`t  2048`tC:\Demo Sync\Server\Café 测试.txt`r`n", logFile, "UTF-16-RAW")
+            got := reader.Read()
+            eq("progress from the log: after start only, Unicode", got.Length "|" (got.Length ? got[1].Path : "") "|" reader.CopyBytes, "1|C:\Demo Sync\Server\Café 测试.txt|2048")
+            eq("progress from the log: nothing new", reader.Read().Length, 0)
+        } finally {
+            try FileDelete(logFile)
+        }
+
+        ; The summary's Bytes row
+        withBytes := logText "   Bytes :  400.00 m  1.5 m         0         0         0     966803`r`n"
+        bytes := SyncJobs.Summary(withBytes).Bytes
+        eq("summary: bytes", IsObject(bytes) ? bytes.Total "|" bytes.Copied "|" bytes.Extras : "none", "419430400|1572864|966803")
+        eq("summary: no bytes row", SyncJobs.Summary(logText).Bytes, "")
+
+        ; The window through a task's phases: checking (Stop, the bar moving), then stopped
+        fake := {Name: "Projects", Preview: true, Monitor: false, StartTick: A_TickCount - 65000, LogFile: "", Progress: SyncProgress()}
+        wine := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
+        try {
+            g := SyncPreview.Open(previewTask, "Check", {Run: true, Confirm: true})
+            w := SyncPreview.Windows[SyncJobs.Key("Projects")]
+            eq("phases: checking", w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled "|" w.Preview.Enabled "|" w.List.GetCount(), "Check|1|0|0|0")
+            barState := () => w.BarState (wine ? "" : SendMessage(0x411, 0, 0, w.Bar))    ; PBM_GETSTATE (Wine's bar has no states)
+            eq("phases: stopped (the bar yellow)", SyncPreview.Finish(fake, "Stopped") "|" w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled "|" w.Status.Value "|" barState()
+                , "1|Done|0|1|Stopped after 1:05.|Paused" (wine ? "" : 3))
+            eq("phases: a finished window takes no more", SyncPreview.Finish(fake, 0), false)
+            SyncPreview.Show(previewTask, result, {Run: true, Confirm: false})
+            eq("phases: a preview in the same window", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) "|" w.Phase "|" w.Sync.Enabled "|" w.List.GetCount() "|" w.Bar.Visible "|" w.Bar.Value, "1|Preview|1|7|1|0")
+            eq("phases: the columns (path, action, size)", w.List.GetText(1, 1) "|" w.List.GetText(1, 2) "|" w.List.GetText(2, 1) "|" w.List.GetText(2, 3), "extra.txt|Delete|old\|")
+            SyncPreview.Open(previewTask, "Check", {Run: true, Confirm: true})
+            eq("phases: failed (the bar red)", SyncPreview.Finish(fake, 16) "|" w.Phase "|" barState(), "1|Done|Error" (wine ? "" : 2))
+            SyncPreview.Close(SyncJobs.Key("Projects"))
+            g := SyncPreview.OpenTask(previewTask)                          ; from Preferences: waits for Preview or Sync Now
+            w := SyncPreview.Windows[SyncJobs.Key("Projects")]
+            eq("phases: ready", w.Phase "|" w.Preview.Enabled "|" w.Sync.Enabled "|" w.Stop.Enabled "|" w.List.GetCount() "|" (w.Status.Value = I18n.T("Sync.Window.Ready")) "|" w.Bar.Value
+                , "Ready|1|1|0|0|1|0")
+        } finally {
+            SyncPreview.Close(SyncJobs.Key("Projects"))
+        }
+        eq("elapsed", SyncPreview.Elapsed(42000) "|" SyncPreview.Elapsed(725000) "|" SyncPreview.Elapsed(3723000), "0:42|12:05|1:02:03")
 
         ; The edit window: opens with the task, shows the command, OK returns the task as edited
         owner := Gui()

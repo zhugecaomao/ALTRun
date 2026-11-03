@@ -2,15 +2,17 @@
 ; SyncProvider.ahk - the sync tasks (RoboSync) in the search results (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Each task is a result, found by its name ("projects") or with the keyword (Features.Sync.Keyword, "sync": "sync " lists
-; them all, "sync proj" only the tasks). Enter runs the task (SyncJobs.Run: checks, a mirror is previewed and asks before
-; deleting), or stops it when it runs. The actions panel: Preview, Run / Stop, Open log, open the source or destination.
+; them all, "sync proj" only the tasks). Enter only opens the task's sync window (SyncPreview.OpenTask: Preview or Sync Now there
+; starts it), or shows its progress when it runs, so an Enter by mistake never syncs. The actions panel: Sync Now (SyncJobs.Run:
+; checks, a mirror is previewed and asks before deleting) and Preview / Show progress and Stop, Open log, open the source or
+; destination.
 ; The subtitle says what it does and how it is doing ("Running since 10:05", "Last run 09:30: OK").
 ; Without sync tasks nothing shows.
 ;===============================================================================
 
 class SyncProvider {
     static Id := "Sync"
-    static Icon := "res:imageres.dll,-5375"                                 ; sync arrows
+    static Icon => IconCache.Own("Sync", A_ScriptDir "\Resources\ALTRun.ico")   ; Resources\Icons\Sync.ico (imageres.dll's icon numbers differ between Windows builds)
 
     static Init() {
     }
@@ -44,11 +46,13 @@ class SyncProvider {
         subtitle := I18n.T(task["Mode"] = "Mirror" ? "Sync.Mirror" : task["Mode"] = "Update" ? "Sync.Update" : "Sync.Copy", RoboSync.Expand(task["Source"]), RoboSync.Expand(task["Destination"]))
         if (state != "")
             subtitle := state " · " subtitle
-        item := ResultItem(I18n.T(running ? "Sync.StopTitle" : "Sync.RunTitle", name), subtitle, {Icon: SyncProvider.Icon, Score: score
-            , Uid: "sync:" SyncJobs.Key(name), Source: task, OnRun: running ? (*) => SyncJobs.Stop(name) : (*) => SyncJobs.Run(task)})
+        item := ResultItem(I18n.T("Sync.RunTitle", name), subtitle, {Icon: SyncProvider.Icon, Score: score
+            , Uid: "sync:" SyncJobs.Key(name), Source: task, OnRun: (*) => SyncPreview.OpenTask(task)})
         add(titleKey, icon, fn) => item.Actions.Push(ResultItem(I18n.T(titleKey), "", {Icon: icon, OnRun: fn}))
-        if running
+        if running {
+            add("Sync.Action.Show", SyncProvider.Icon, (*) => SyncPreview.ShowJob(name))
             add("Sync.Action.Stop", "res:imageres.dll,-98", (*) => SyncJobs.Stop(name))
+        }
         else {
             add("Sync.Action.Run", SyncProvider.Icon, (*) => SyncJobs.Run(task))
             add("Sync.Action.Preview", "res:imageres.dll,-177", (*) => SyncJobs.Preview(task))
