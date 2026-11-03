@@ -196,7 +196,7 @@ AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一
 
 - `Tests\RunTests.ahk`: 覆盖匹配、查询解析、设置迁移、排序、剪贴板和索引等纯逻辑; 不等于完整的手动 UI 测试。
 - 测试就是 `Tests\Suites\` 里各个类的静态方法, 名字不以 `_` 开头 (`_` 开头的是辅助函数); 不用另外登记就会运行。测试改了设置、界面语言或日志开关要改回去, 否则算失败, 所以测试之间不依赖先后顺序。程序读到的每个设置都要在 `AppSettings.Defaults()` 里有默认值 (`SettingsKeys` 检查)。
-- Windows CI: 运行单元测试和语法检查, 并检查偏好设置布局、Wiki 页面配对和文档链接。
+- Windows CI: 运行单元测试、语法检查和重名检查 (`Tests\Tools\NameCheck.ahk`, 见下面的 "避免重名"), 并检查偏好设置布局、Wiki 页面配对和文档链接。
 - CI 通过 `Tests\Tools\RunAhk.ps1` 运行 AutoHotkey 脚本, 每个脚本都有时间上限 (单元测试 10 分钟, 每个语法检查 2 分钟, 截图 25 分钟)。脚本卡在没人关的对话框上时 (例如类初始化时出错, 弹出了错误窗口) 会被停止, 日志里打出它的窗口标题和文字, 从对话框的内容就能看出哪里出错。每个任务另外还有 `timeout-minutes` 兜底。
 - 截图测试: 检查主要窗口在不同语言 / 主题下的显示; 不验证所有交互流程。
 - 性能基准: 在 Windows 上模拟常见操作比较改动前后的耗时, 应在相同环境下对比。
@@ -206,7 +206,9 @@ AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一
 - **文件与类**: 一个文件一个类, 文件名 = 类名, PascalCase (`SearchWindow.ahk` → `class SearchWindow`)
 - **文件夹**: `Lib\` 放和 ALTRun 无关、可以拿到别的项目用的通用库; ALTRun 自己的代码放 `Src\` 下对应的子文件夹
 - **命名**: 类、方法、属性用 PascalCase; 局部变量用 camelCase; 内部使用的成员以 `_` 开头 (`_Layout()`、`_cache`)
-- **避免重名**: AutoHotkey 的名字不区分大小写, 局部变量不要和类同名 (例如不要把变量叫 `pinyin`, 会遮住 `Pinyin` 类); 同一个类里的方法和属性也不要只差大小写
+- **避免重名**: AutoHotkey 的名字不区分大小写, `_tick` 和 `_Tick()` 是同一个名字
+  - 存函数的属性 (计时器回调、传进来的回调) 加后缀, 就不会和方法重名: `_tickTimer`、`_pollTimer`、`onDoneFn`。类里写 `static _tick := ...`, 旁边又有方法 `_Tick()`, 会在类初始化时出错, 这时 ALTRun 还接不住错误, ALTRun (和单元测试) 启动时就停在一个对话框上; `this._tick := ...` 在运行到这一行时出错。CI 用 `Tests\Tools\NameCheck.ahk` 检查这两种 (也会看项目里从别的类继承来的方法); 自己运行: `AutoHotkey64.exe /ErrorStdOut Tests\Tools\NameCheck.ahk`
+  - 局部变量不要和类或内置函数同名: `pinyin` 会遮住 `Pinyin` 类, `path` 遮住 `Path` 类, `file` 遮住 AutoHotkey 的 `File` 类, `log` 遮住它的 `Log()` 函数; 用 `filePath`、`handle`、`logFile`。这种情况 `#Warn` 会报
 - **注释**: 每个文件开头说明用途和用法; 代码里的注释说明 "为什么", 一律用英文写。`.git-blame-ignore-revs` 里列出的提交 (例如注释的一次性翻译) 在 `git blame` 里跳过: 本地运行一次 `git config blame.ignoreRevsFile .git-blame-ignore-revs`, GitHub 会自动使用
 - **设置**: 新的设置项加到 `AppSettings.Defaults()`; 改变已有设置的结构见上面的 "修改设置结构"
 - **界面文字**: 英文原文写在 `I18n.ahk`, 翻译写在 `Resources\Lang\` 的每个语言文件里, 见上面的 "界面翻译"
