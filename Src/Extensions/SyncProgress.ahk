@@ -5,11 +5,11 @@
 ; grows line by line). A SyncProgress reads the part written since the last Read, from Start on: the log's size when the task
 ; started, since a run appends to the day's log. It keeps:
 ;   Changes   the first Limit files and folders copied / deleted, [{Kind: "Copy" | "Delete", Folder, Path, Label, Size}...]
-;   Total     how many there are in all; CopyFiles / CopyBytes, DeleteFiles / DeleteDirs
+;   Total     how many there are in all; CopyFiles / CopyBytes, NewDirs, DeleteFiles / DeleteDirs
 ;   Errors    robocopy's ERROR lines (a file that couldn't be copied after the retries), LastError the last one
 ; Log lines are tab-separated: a folder line ends with its full path ("\t  New Dir  2\tC:\src\sub\"; an unchanged folder only
 ; has the count) and the file lines after it give the name ("\t    New File  \t\t  1024\ta.txt"). With /MT (several threads, the
-; default) there are no folder lines and each file line has the full path. robocopy writes the labels (New File, Newer,
+; default) there are no folder lines (so no New Dir lines either) and each file line has the full path. robocopy writes the labels (New File, Newer,
 ; *EXTRA File...) in Windows' language; the ones it deletes start with "*" (*EXTRA). Sizes are bytes ("966803") or a number with
 ; a unit of 1024 ("400.0 m", "1.5 g"): ParseSize; FormatSize writes them for people ("966.8 KB").
 ;
@@ -23,7 +23,7 @@ class SyncProgress {
     __New(logFile := "", start := 0, limit := 2000) {
         this.LogFile := logFile, this.Pos := start, this.Limit := limit
         this.Changes := [], this.Total := 0
-        this.CopyFiles := 0, this.CopyBytes := 0, this.DeleteFiles := 0, this.DeleteDirs := 0
+        this.CopyFiles := 0, this.CopyBytes := 0, this.NewDirs := 0, this.DeleteFiles := 0, this.DeleteDirs := 0
         this.Errors := 0, this.LastError := ""
         this._rest := "", this._folder := ""
     }
@@ -59,6 +59,8 @@ class SyncProgress {
                 this.DeleteDirs++
             else if (!change.Folder && change.Kind = "Delete")
                 this.DeleteFiles++
+            else if change.Folder
+                this.NewDirs++
             else if !change.Folder
                 this.CopyFiles++, this.CopyBytes += change.Size
             if (this.Changes.Length < this.Limit)

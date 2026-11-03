@@ -610,14 +610,14 @@ class ExtensionTests {
             task["Name"] := "Window", task["Source"] := root "\src", task["Destination"] := root "\dst", task["Mode"] := "Update", task["Retries"] := 0, task["Wait"] := 0
             SyncJobs.Preview(task, {Run: true})
             w := SyncPreview.Windows[key]
-            eq("preview: opens at once, checking", w.Phase "|" w.Stop.Visible, "Check|1")
+            eq("preview: opens at once, checking", w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled, "Check|1|0")
             wait()
-            eq("preview: then what it found", w.Phase "|" w.List.GetCount() "|" w.Run.Visible, "Preview|2000|1")   ; 3001 to copy: the first 2000 listed
+            eq("preview: then what it found", w.Phase "|" w.List.GetCount() "|" w.Sync.Enabled "|" w.Stop.Enabled, "Preview|2000|1|0")   ; 3001 to copy: the first 2000 listed
             eq("preview: totals for the run (MB)", IsObject(w.Totals) ? w.Totals.Files "|" Round(w.Totals.Bytes / 1048576) : "none", "3001|50")
-            SyncPreview._Run(task, w.Created)
-            eq("run: same window, running", w.Phase "|" w.Stop.Visible "|" SyncJobs.IsRunning("Window"), "Run|1|1")
+            SyncPreview._Sync(w)
+            eq("run: same window, running", w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled "|" SyncJobs.IsRunning("Window"), "Run|1|0|1")
             wait()
-            eq("run: done, every file counted", w.Phase "|" InStr(w.Status.Value, "Finished: 3001 files copied") "|" w.List.GetCount() "|" w.Bar.Value, "Done|1|2000|1000")
+            eq("run: done, every file counted", w.Phase "|" InStr(w.Status.Value, "Finished: 3001 files copied") "|" w.List.GetCount() "|" w.Bar.Value "|" w.Sync.Enabled, "Done|1|2000|1000|1")
             eq("run: copied", FileExist(root "\dst\big.bin") != "" && FileExist(root "\dst\deep\file3000.txt") != "" && FileExist(root "\dst\extra.txt") != "", true)
         } finally {
             SyncJobs.StopAll(), SyncJobs.Last.Clear()
@@ -627,45 +627,23 @@ class ExtensionTests {
         }
     }
 
-    ; PROBE (temporary): what robocopy's "Dirs : Copied" counts in a preview, with and without /MT
-    static SyncDirsProbe() {
-        if (!FileExist(RoboSync.Program) || DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr"))
-            return
-        root := A_Temp "\ALTRun-dirsprobe"
-        try DirDelete(root, true)
-        DirCreate(root "\src\a"), DirCreate(root "\src\b\c"), DirCreate(root "\src\empty"), DirCreate(root "\dst")
-        FileAppend("1", root "\src\a\f1.txt"), FileAppend("2", root "\src\b\c\f2.txt"), FileAppend("3", root "\src\top.txt")
-        out(text) => FileAppend("PROBE " text "`n", "*")
-        run(label, threads, preview := true) {
-            task := RoboSync.NewTask()
-            task["Source"] := root "\src", task["Destination"] := root "\dst", task["Threads"] := threads
-            task["LogFile"] := root "\log.txt", task["AppendLog"] := 0
-            cmd := RoboSync.Build(task, preview)
-            code := RunWait(cmd.Program " " cmd.Args, , "Hide")
-            text := SyncJobs.ReadLog(root "\log.txt")
-            dirs := "", files := "", newDirs := 0, folderLines := 0, other := ""
-            for line in StrSplit(text, "`n", "`r") {
-                if RegExMatch(line, "^\s*Dirs :")
-                    dirs := Trim(line)
-                else if RegExMatch(line, "^\s*Files :")
-                    files := Trim(line)
-                else if InStr(line, "New Dir")
-                    newDirs++, other .= " [" Trim(line) "]"
-                else if RegExMatch(line, "^\t\s+\d+\t")
-                    folderLines++
-                else if RegExMatch(line, "^\t\s+\S") && !InStr(line, "New File")
-                    other .= " {" Trim(line) "}"
-            }
-            out(label " (MT " threads ", exit " code "): " dirs " | " files " | New Dir lines " newDirs ", folder lines " folderLines other)
-        }
+    ; The taskbar button's progress: the last state kept for when the button is made again (TaskbarButtonCreated); None forgets it.
+    ; Without ITaskbarList3 (Wine) nothing happens
+    static TaskbarProgress() {
+        eq := (n, a, e) => TestRunner.Equal("TaskbarProgress." n, a, e)
+        g := Gui(, "Taskbar progress test")
         try {
-            run("first run (real)", 16, false)
-            run("identical", 16), run("identical", 0)
-            DirCreate(root "\dst\old\deeper"), DirCreate(root "\dst\gone"), FileAppend("x", root "\dst\old\x.txt"), FileAppend("y", root "\dst\b\extra.txt")
-            DirDelete(root "\dst\empty")
-            run("2 extra folders (1 nested), 2 extra files, 1 folder missing", 16), run("2 extra folders (1 nested), 2 extra files, 1 folder missing", 0)
+            g.Show("w200 h80 NoActivate")
+            if !TaskbarProgress.Set(g.Hwnd, "Normal", 500)
+                return eq("not there: nothing kept", TaskbarProgress.Last.Has(g.Hwnd), false)
+            eq("kept", TaskbarProgress.Last[g.Hwnd][1] "|" TaskbarProgress.Last[g.Hwnd][2], "Normal|500")
+            TaskbarProgress._Created(g.Hwnd)                                ; set again when the button is made
+            eq("error, paused, moving", TaskbarProgress.Set(g.Hwnd, "Error", 1000) && TaskbarProgress.Set(g.Hwnd, "Paused", 300) && TaskbarProgress.Set(g.Hwnd, "Indeterminate"), true)
+            TaskbarProgress.Set(g.Hwnd, "None")
+            eq("none: forgotten", TaskbarProgress.Last.Has(g.Hwnd), false)
         } finally {
-            try DirDelete(root, true)
+            TaskbarProgress.Set(g.Hwnd, "None")
+            g.Destroy()
         }
     }
 
@@ -716,8 +694,22 @@ class ExtensionTests {
             try FileDelete(temp)
         }
         rows := SyncPreview.Rows(changes, "C:\src", "D:\dst\")
-        eq("rows: deletions first, relative", rows[1][1] " " rows[1][2] "|" rows[2][2] "|" rows[3][2] "|" rows[4][1] " " rows[4][2] "|" rows[7][2], "Delete extra.txt|old\|old\old.txt|Copy a.txt|sub\b.txt")
-        eq("rows: folders", rows[2][1] "|" rows[6][1], "Delete folder|New folder")
+        eq("rows: deletions first, relative", rows[1][2] " " rows[1][1] "|" rows[2][1] "|" rows[3][1] "|" rows[4][2] " " rows[4][1] "|" rows[7][1], "Delete extra.txt|old\|old\old.txt|Copy (new) a.txt|sub\b.txt")
+        eq("rows: folders, why a file is copied", rows[2][2] "|" rows[6][2] "|" rows[5][2], "Delete folder|New folder|Copy (newer)")
+        eq("rows: full paths, a delete in the destination", rows[1][4] "|" rows[2][4] "|" rows[4][4] "|" rows[6][4], "D:\dst\extra.txt|D:\dst\old\|C:\src\a.txt|C:\src\sub\")
+        eq("rows: a label robocopy wrote in another language", SyncPreview.Action({Kind: "Copy", Folder: false, Label: "Neuer"}), "Copy (Neuer)")
+
+        ; The summary line. With /MT robocopy's Dirs Copied is every folder and there are no New Dir lines (probed on Windows):
+        ; folders to create come from the New Dir lines
+        summary := SyncJobs.Summary(logText)
+        eq("summary: copy and create", SyncPreview.Summary(summary, changes), "Would copy 3 of 4 files (0 B) and create 1 folders.")
+        eq("summary: /MT, no folder lines", SyncPreview.Summary(summary, {NewDirs: 0}), "Would copy 3 of 4 files (0 B).")
+        same := {Files: {Copied: 0, Total: 538, Extras: 0}, Dirs: {Copied: 91, Total: 91, Extras: 0}, Bytes: ""}
+        eq("summary: the same, /MT counting every folder", SyncPreview.Summary(same, {NewDirs: 0}), "Nothing to do: the destination is up to date (538 files, 91 folders).")
+        eq("summary: folders only", SyncPreview.Summary(same, {NewDirs: 2}), "Would create 2 folders; there are no files to copy.")
+        same.Files.Extras := 1
+        eq("summary: only deletions", SyncPreview.Summary(same, {NewDirs: 0}), "No files to copy.")
+        eq("summary: none", SyncPreview.Summary("", {}), I18n.T("Sync.Preview.NoSummary"))
 
         ; The preview window: the summary, the list, Run and Delete only when asked for; Enter closes it
         result := {Summary: SyncJobs.Summary(logText), Changes: changes, LogFile: ""}
@@ -725,7 +717,7 @@ class ExtensionTests {
         g := SyncPreview.Show(previewTask, result, {Run: true, Confirm: true})
         try {
             eq("window: rows", SendMessage(0x1004, 0, 0, "SysListView321", g.Hwnd), 7)          ; LVM_GETITEMCOUNT
-            eq("window: run and delete, close focused", (ControlGetHwnd("Run and Delete", g.Hwnd) ? 1 : 0) (ControlGetFocus(g.Hwnd) = ControlGetHwnd("Close", g.Hwnd) ? 1 : 0), "11")
+            eq("window: sync and delete, close focused", (ControlGetHwnd("Sync and Delete", g.Hwnd) ? 1 : 0) (ControlGetFocus(g.Hwnd) = ControlGetHwnd("Close", g.Hwnd) ? 1 : 0), "11")
             g.Move(, , 900, 600)                                            ; resizing keeps the buttons inside
             Sleep(100)                                                      ; the Size event comes as a message
             ControlGetPos(&bx, &by, &bw, &bh, "Close", g.Hwnd)
@@ -736,7 +728,8 @@ class ExtensionTests {
         }
         g := SyncPreview.Show(previewTask, result, {Run: false, Confirm: false})
         w := SyncPreview.Windows[SyncJobs.Key("Projects")]
-        eq("window: preview from the editor offers no run (nor stop)", w.Run.Visible "|" w.Stop.Visible "|" w.CloseButton.Visible, "0|0|1")
+        eq("window: preview from the editor offers no sync (nor stop), preview again", w.Sync.Enabled "|" w.Stop.Enabled "|" w.Preview.Enabled, "0|0|1")
+        eq("window: title, path column takes the width", WinGetTitle(g.Hwnd) "|" (SendMessage(0x101D, 0, 0, w.List) > 400), "Projects - Folder Sync|1")
 
         ; One window per task: another task's preview leaves a waiting confirmation open, the same task's goes on in the same window
         otherTask := Map("Name", "Photos", "Source", "C:\photos", "Destination", "D:\photos", "Mode", "Update")
@@ -745,7 +738,7 @@ class ExtensionTests {
             eq("windows: two tasks", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) (WinExist("ahk_id " other.Hwnd) ? 1 : 0) "|" SyncPreview.Windows.Count, "11|2")
             first := g.Hwnd
             g := SyncPreview.Show(previewTask, result, {Run: true, Confirm: true})
-            eq("windows: the same task goes on in its window", (g.Hwnd = first) "|" SyncPreview.Windows.Count "|" SyncPreview.Windows[SyncJobs.Key("Projects")].Run.Text, "1|2|Run and Delete")
+            eq("windows: the same task goes on in its window", (g.Hwnd = first) "|" SyncPreview.Windows.Count "|" SyncPreview.Windows[SyncJobs.Key("Projects")].Sync.Text, "1|2|Sync and Delete")
         } finally {
             SyncPreview.Close(SyncJobs.Key("Projects")), SyncPreview.Close(SyncJobs.Key("Photos"))
         }
@@ -797,18 +790,25 @@ class ExtensionTests {
 
         ; The window through a task's phases: checking (Stop, the bar moving), then stopped
         fake := {Name: "Projects", Preview: true, Monitor: false, StartTick: A_TickCount - 65000, LogFile: "", Progress: SyncProgress()}
+        wine := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
         try {
             g := SyncPreview.Open(previewTask, "Check", {Run: true, Confirm: true})
             w := SyncPreview.Windows[SyncJobs.Key("Projects")]
-            eq("phases: checking", w.Phase "|" w.Stop.Visible "|" w.Run.Visible "|" w.Bar.Visible "|" w.List.GetCount(), "Check|1|0|1|0")
-            eq("phases: stopped", SyncPreview.Finish(fake, "Stopped") "|" w.Phase "|" w.Stop.Visible "|" w.Status.Value, "1|Done|0|Stopped after 1:05.")
+            eq("phases: checking", w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled "|" w.Preview.Enabled "|" w.List.GetCount(), "Check|1|0|0|0")
+            barState := () => w.BarState (wine ? "" : SendMessage(0x411, 0, 0, w.Bar))    ; PBM_GETSTATE (Wine's bar has no states)
+            eq("phases: stopped (the bar yellow)", SyncPreview.Finish(fake, "Stopped") "|" w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled "|" w.Status.Value "|" barState()
+                , "1|Done|0|1|Stopped after 1:05.|Paused" (wine ? "" : 3))
             eq("phases: a finished window takes no more", SyncPreview.Finish(fake, 0), false)
             SyncPreview.Show(previewTask, result, {Run: true, Confirm: false})
-            eq("phases: a preview in the same window", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) "|" w.Phase "|" w.Run.Visible "|" w.List.GetCount() "|" w.Bar.Visible, "1|Preview|1|7|0")
-            row := []
-            Loop 4
-                row.Push(w.List.GetText(2, A_Index))
-            eq("phases: the size column", row[2] "|" row[3], "old\|")
+            eq("phases: a preview in the same window", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) "|" w.Phase "|" w.Sync.Enabled "|" w.List.GetCount() "|" w.Bar.Visible "|" w.Bar.Value, "1|Preview|1|7|1|0")
+            eq("phases: the columns (path, action, size)", w.List.GetText(1, 1) "|" w.List.GetText(1, 2) "|" w.List.GetText(2, 1) "|" w.List.GetText(2, 3), "extra.txt|Delete|old\|")
+            SyncPreview.Open(previewTask, "Check", {Run: true, Confirm: true})
+            eq("phases: failed (the bar red)", SyncPreview.Finish(fake, 16) "|" w.Phase "|" barState(), "1|Done|Error" (wine ? "" : 2))
+            SyncPreview.Close(SyncJobs.Key("Projects"))
+            g := SyncPreview.OpenTask(previewTask)                          ; from Preferences: waits for Preview or Sync Now
+            w := SyncPreview.Windows[SyncJobs.Key("Projects")]
+            eq("phases: ready", w.Phase "|" w.Preview.Enabled "|" w.Sync.Enabled "|" w.Stop.Enabled "|" w.List.GetCount() "|" (w.Status.Value = I18n.T("Sync.Window.Ready")) "|" w.Bar.Value
+                , "Ready|1|1|0|0|1|0")
         } finally {
             SyncPreview.Close(SyncJobs.Key("Projects"))
         }

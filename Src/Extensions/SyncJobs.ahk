@@ -116,12 +116,13 @@ class SyncJobs {
     }
 
     ; The files and folders a run (or a preview, /L) lists in its log: [{Kind: "Copy" | "Delete", Folder, Path, Label, Size}...], at
-    ; most limit (Total: how many there are). How the lines are read: SyncProgress
+    ; most limit (Total: how many there are; NewDirs: the folders it creates, 0 with /MT, which lists no folders). How the lines are
+    ; read: SyncProgress
     static Changes(logText, limit := 2000) {
         progress := SyncProgress("", 0, limit)
         progress.Feed(logText, true)
         list := progress.Changes
-        list.Total := progress.Total
+        list.Total := progress.Total, list.NewDirs := progress.NewDirs
         return list
     }
 

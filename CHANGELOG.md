@@ -5,6 +5,24 @@
 
 ## [未发布]
 
+## [2026.11.03.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 同步窗口:
+  - 标题改成 "<任务名> - 文件夹同步"; 按钮固定为 打开日志 / 预览 / 立即同步 / 停止 / 关闭, 不再显示或隐藏, 只按状态启用或禁用; 可以在窗口里重新预览
+  - "立即运行" 改名为 "立即同步", 要删除东西时是 "同步并删除"
+  - 窗口更宽, 文件或文件夹一列占满剩下的宽度; 去掉 robocopy 一列, 复制的原因并到操作一列 (例如 "复制 (较新)"); 路径显示不全时鼠标停在上面显示完整路径; 双击一行在资源管理器里显示这个文件
+  - 进度条一直显示, 窗口布局不再随状态变化跳动; 没能复制的文件让进度条变红, 停止时变黄
+  - 进度同时显示在任务栏按钮上; 窗口可以最小化
+- 完全相同、不需要同步的预览显示 "没有要做的: 目标已经是最新的 (538 个文件, 91 个文件夹)"
+
+### 修复
+- 预览显示 "新建 91 个文件夹", 其实一个都不用新建: robocopy 多线程 (`/MT`, 默认 16 线程) 时汇总里的 "Dirs Copied" 总是所有文件夹 (在 Windows 上探测确认)。现在按日志里的 "New Dir" 行计数, 多线程时日志里没有文件夹行, 就不再提新建文件夹
+
 ## [2026.11.03.1]
 
 测试版。
@@ -1048,7 +1066,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.2...HEAD
+[2026.11.03.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...2026.11.03.2
 [2026.11.03.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03...2026.11.03.1
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26

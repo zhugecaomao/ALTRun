@@ -1,81 +1,107 @@
 ;===============================================================================
-; SyncPreview.ahk - the sync window: follows a task while robocopy works, and shows what a preview found (AutoHotkey v2)
+; SyncPreview.ahk - the sync window: previews and runs a task, following robocopy while it works (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; One window per task. It opens as soon as a task is previewed or run and goes through these phases:
+; One window per task, titled "<task> - Folder Sync". It goes through these phases, its controls staying where they are (the
+; buttons are only enabled or disabled, see Enabled):
+;   Ready    opened from Preferences (Sync...): the folders and how the last run went; Preview or Sync Now starts it
 ;   Check    a preview (robocopy /L) is running: the changes it finds so far appear in the list; the bar moves, Stop ends it
 ;   Preview  what a run would change: a summary on top (files and size to copy, files and folders to delete), the changes below,
-;            deletions first. Run Now (Run and Delete for a mirror that would delete something: Confirm, Close is the default)
+;            deletions first. Sync Now runs it (Sync and Delete when it would delete something; Close is the default button)
 ;   Run      robocopy copies: the files appear as they are done; the bar shows the bytes done against what the preview found
 ;            (moving without a preview, e.g. Update and Copy modes, which aren't previewed so the folders aren't scanned twice)
 ;   Done     how it ended: copied, deleted, failed, or stopped
-; The list shows the first SyncProgress.Limit changes (the log has all of them), with their size. Closing the window doesn't stop
-; robocopy; the task's result in the search window or Preferences opens it again. A window opened from the background (a mirror
-; asking to confirm when its preview ends) may not get to the front, as Windows doesn't let a background program take the focus:
-; it flashes in the taskbar and a notification says it is waiting. A mirror previewed more than StaleMs ago is previewed (and
-; confirmed) again when run, as the destination may have changed since.
+; The list shows the first SyncProgress.Limit changes (the log has all of them), with their size; double-click shows one in
+; Explorer. The bar's progress is also on the window's taskbar button (TaskbarProgress); red when files failed, yellow when
+; stopped. Closing the window doesn't stop robocopy; the task's result in the search window or Preferences opens it again.
+; A window opened from the background (a mirror asking to confirm when its preview ends) may not get to the front, as Windows
+; doesn't let a background program take the focus: it flashes in the taskbar and a notification says it is waiting. A mirror
+; previewed more than StaleMs ago is previewed (and confirmed) again when run, as the destination may have changed since.
 ;
 ; Usage:
-;   SyncPreview.Open(task, "Check" | "Run", {Run, Confirm, Totals})     follow the task's running robocopy
+;   SyncPreview.OpenTask(task)                                          the task's window: its progress when running, else Ready
+;   SyncPreview.Open(task, "Ready" | "Check" | "Run", {Run, Confirm, Totals})   Run: false = no Sync Now (the editor's preview)
 ;   SyncPreview.Show(task, {Summary, Changes, LogFile}, {Run, Confirm}) what a preview found
 ;   SyncPreview.Finish(job, code | "Stopped") -> true when a window showed it        SyncPreview.ShowJob(name)  reopen a running task's window
-;   SyncPreview.Rows(changes, source, destination)   -> [[action, item, size, robocopy's label]...]: deletions first
+;   SyncPreview.Rows(changes, source, destination)   -> [[item, action, size, full path]...]: deletions first
 ;===============================================================================
 
 class SyncPreview {
     static Windows := Map()                                                 ; SyncJobs.Key(name) -> the task's window (see _Create)
     static StaleMs := 5 * 60 * 1000, TickMs := 500
+    static Width := 860, ActionWidth := 150, SizeWidth := 80
+    static Enabled := Map("Ready", [1, 1, 0], "Check", [0, 0, 1], "Preview", [1, 1, 0], "Run", [0, 0, 1], "Done", [1, 1, 0])   ; Preview, Sync Now, Stop
     static _tickTimer := () => SyncPreview._Tick()
 
     ;---------------------------------------------------------------------------
     ; Phases
     ;---------------------------------------------------------------------------
-    ; Follows the task's running robocopy: a preview (Check) or a run (Run). options.Totals: {Files, Bytes} a preview found
+    ; From Preferences: the window of a running task, or a new one that waits for Preview or Sync Now
+    static OpenTask(task) {
+        if SyncJobs.IsRunning(task["Name"])
+            return SyncPreview.ShowJob(task["Name"])
+        return SyncPreview.Open(task, "Ready")
+    }
+
+    ; Ready, or following the task's running robocopy: a preview (Check) or a run (Run). options.Totals: {Files, Bytes} a preview found
     static Open(task, phase, options := "") {
         options := IsObject(options) ? options : {}
-        w := SyncPreview._Window(task, phase = "Check" ? I18n.T("Sync.Preview.Title", task["Name"]) : I18n.T("Sync.Window.Title", task["Name"]))
-        w.Phase := phase, w.Options := options
+        w := SyncPreview._Window(task, options)
+        w.Phase := phase
         w.Totals := (options.HasOwnProp("Totals") && IsObject(options.Totals)) ? options.Totals : ""
-        w.Shown := 0
-        w.List.Delete()
-        w.Warn.Value := "", w.Confirm.Value := ""
-        w.Note.Value := (phase = "Check") ? I18n.T("Sync.Preview.Note") : ""
-        SyncPreview._Buttons(w, ["Log", "Stop", "Close"])
-        SyncPreview._Bar(w, "", phase)
-        SyncPreview._Update(w)
+        SyncPreview._Fill(w, [])
+        w.Sync.Text := I18n.T("Sync.Preview.Run")
+        if (phase = "Ready") {
+            w.Status.Value := I18n.T("Sync.Window.Ready")
+            SyncPreview._Detail(w, SyncJobs.State(task["Name"]))
+            w.Note.Value := ""
+        } else {
+            SyncPreview._Detail(w, "")
+            w.Note.Value := (phase = "Check") ? I18n.T("Sync.Preview.Note") : ""
+        }
         SyncPreview._Present(w)
-        SetTimer(SyncPreview._tickTimer, SyncPreview.TickMs)
+        SyncPreview._Buttons(w)
+        SyncPreview._Bar(w, phase = "Ready" ? 0 : "")
+        if (phase != "Ready") {
+            SyncPreview._Update(w)
+            SetTimer(SyncPreview._tickTimer, SyncPreview.TickMs)
+        }
         return w.Gui
     }
 
-    ; What a preview found. options.Run: offers to run it; options.Confirm: a mirror that would delete something asks first
+    ; What a preview found. options.Run: offers to run it; options.Confirm: a mirror that would delete something waits for the user
     static Show(task, result, options) {
         name := task["Name"], summary := result.Summary, changes := result.Changes
-        w := SyncPreview._Window(task, I18n.T(options.Confirm ? "Sync.Preview.ConfirmTitle" : "Sync.Preview.Title", name))
-        w.Phase := "Preview", w.Options := options, w.Created := A_TickCount, w.Totals := SyncJobs.Totals(result)
+        w := SyncPreview._Window(task, options)
+        w.Phase := "Preview", w.Created := A_TickCount, w.Totals := SyncJobs.Totals(result)
         deletes := IsObject(summary) ? summary.Files.Extras + summary.Dirs.Extras : 0
-        if !IsObject(summary)
-            text := I18n.T("Sync.Preview.NoSummary")
-        else if (summary.Files.Copied = 0 && deletes = 0 && summary.Dirs.Copied = 0)
-            text := I18n.T("Sync.Preview.UpToDate")
-        else
-            text := I18n.T("Sync.Preview.Copy", summary.Files.Copied, summary.Files.Total, summary.Dirs.Copied
-                , SyncProgress.FormatSize(IsObject(summary.Bytes) ? summary.Bytes.Copied : 0))
-        w.Status.Value := text
-        w.Warn.Value := deletes ? I18n.T("Sync.Preview.Delete", summary.Files.Extras, summary.Dirs.Extras) : ""
-        w.Confirm.Value := options.Confirm ? I18n.T("Sync.Preview.ConfirmText") : ""
+        w.Status.Value := SyncPreview.Summary(summary, changes)
+        SyncPreview._Detail(w, deletes ? I18n.T("Sync.Preview.Delete", summary.Files.Extras, summary.Dirs.Extras) " " I18n.T("Sync.Preview.ConfirmText") : "", true)
         SyncPreview._Fill(w, SyncPreview.Rows(changes, w.Source, w.Destination))
         more := (changes.HasOwnProp("Total") && changes.Total > changes.Length) ? I18n.T("Sync.Preview.More", changes.Length, changes.Total) : ""
         w.Note.Value := (more != "") ? more : I18n.T("Sync.Preview.Note")
-        w.Run.Text := I18n.T(options.Confirm ? "Sync.Preview.RunDelete" : "Sync.Preview.Run")
-        w.Run.Enabled := !SyncJobs.IsRunning(name)
-        SyncPreview._Buttons(w, (options.HasOwnProp("Run") && options.Run) ? ["Log", "Run", "Close"] : ["Log", "Close"])
-        SyncPreview._Bar(w, "", "Preview")
+        w.Sync.Text := I18n.T(deletes ? "Sync.Preview.RunDelete" : "Sync.Preview.Run")
         SyncPreview._Present(w)
-        if (options.Confirm && !WinActive("ahk_id " w.Gui.Hwnd)) {          ; shown from the background: tell where the question is
+        SyncPreview._Buttons(w)
+        SyncPreview._Bar(w, 0)
+        if (options.HasOwnProp("Confirm") && options.Confirm && !WinActive("ahk_id " w.Gui.Hwnd)) {   ; shown from the background: tell where the question is
             DllCall("user32\FlashWindow", "Ptr", w.Gui.Hwnd, "Int", 1)
             App.Toast(I18n.T("Sync.Preview.Waiting", name))
         }
         return w.Gui
+    }
+
+    ; The preview's summary line. Folders to create come from the log's "New Dir" lines: with /MT (several threads, the default)
+    ; robocopy's "Dirs : Copied" is every folder, even when nothing changes, and it writes no folder lines (probed on Windows)
+    static Summary(summary, changes) {
+        if !IsObject(summary)
+            return I18n.T("Sync.Preview.NoSummary")
+        files := summary.Files.Copied, newDirs := changes.HasOwnProp("NewDirs") ? changes.NewDirs : 0
+        size := SyncProgress.FormatSize(IsObject(summary.Bytes) ? summary.Bytes.Copied : 0)
+        if (files = 0 && newDirs = 0)
+            return (summary.Files.Extras + summary.Dirs.Extras) ? I18n.T("Sync.Preview.NothingToCopy") : I18n.T("Sync.Preview.UpToDate", summary.Files.Total, summary.Dirs.Total)
+        if (files = 0)
+            return I18n.T("Sync.Preview.FoldersOnly", newDirs)
+        return newDirs ? I18n.T("Sync.Preview.CopyFolders", files, summary.Files.Total, size, newDirs) : I18n.T("Sync.Preview.Copy", files, summary.Files.Total, size)
     }
 
     ; robocopy ended (code, or "Stopped"): the window's last word. false when the task has no window following it
@@ -88,6 +114,7 @@ class SyncPreview {
             return false
         if IsObject(job.Progress)
             SyncPreview._Add(w, job.Progress.Read())
+        failed := 0
         if (code = "Stopped")
             w.Status.Value := I18n.T("Sync.Window.Stopped", SyncPreview.Elapsed(A_TickCount - job.StartTick))
         else if !RoboSync.Result(code).Ok
@@ -101,12 +128,14 @@ class SyncPreview {
             deleted := IsObject(summary) ? summary.Files.Extras : progress.DeleteFiles
             w.Status.Value := I18n.T("Sync.Window.Done", copied, SyncProgress.FormatSize(bytes), deleted, SyncPreview.Elapsed(A_TickCount - job.StartTick))
             failed := IsObject(summary) ? summary.Files.Failed : progress.Errors
-            w.Warn.Value := failed ? I18n.T("Sync.Window.FailedFiles", failed) : ""
         }
+        SyncPreview._Detail(w, failed ? I18n.T("Sync.Window.FailedFiles", failed) : "", true)
         w.Phase := "Done"
-        SyncPreview._Bar(w, RoboSync.Result(code = "Stopped" ? 16 : code).Ok ? 1000 : "", "Done")
-        SyncPreview._Buttons(w, ["Log", "Close"])
-        SyncPreview._Relayout(w)
+        if (code = "Stopped")
+            SyncPreview._Bar(w, w.Bar.Value, "Paused")
+        else
+            SyncPreview._Bar(w, 1000, (!RoboSync.Result(code).Ok || failed) ? "Error" : "Normal")
+        SyncPreview._Buttons(w)
         return true
     }
 
@@ -125,17 +154,18 @@ class SyncPreview {
     static Close(key) {
         if !SyncPreview.Windows.Has(key)
             return
+        hwnd := SyncPreview.Windows[key].Gui.Hwnd
+        TaskbarProgress.Set(hwnd, "None")
         try SyncPreview.Windows[key].Gui.Destroy()
         SyncPreview.Windows.Delete(key)
     }
 
-    ; Run now: what a recent preview showed is what runs, so a mirror isn't previewed again; an older mirror preview is done again
-    ; (SyncJobs.Run: checks, preview, and the question when it would delete anything)
-    static _Run(task, created, now := A_TickCount) {
-        if SyncPreview.IsStale(task, created, now)
-            return SyncJobs.Run(task)
-        key := SyncJobs.Key(task["Name"])
-        SyncJobs.RunNow(task, SyncPreview.Windows.Has(key) ? SyncPreview.Windows[key].Totals : "")
+    ; Sync Now: after a recent preview, what it showed is what runs, so a mirror isn't previewed again; otherwise (an older
+    ; preview, or none: Ready, Done) SyncJobs.Run checks, previews a mirror and asks when it would delete anything
+    static _Sync(w, now := A_TickCount) {
+        if (w.Phase = "Preview" && !SyncPreview.IsStale(w.Task, w.Created, now))
+            return SyncJobs.RunNow(w.Task, w.Totals)
+        SyncJobs.Run(w.Task)
     }
 
     ; A mirror's preview older than StaleMs (other modes don't delete: their preview can't be out of date in a harmful way)
@@ -178,12 +208,11 @@ class SyncPreview {
             w.Status.Value := I18n.T("Sync.Window.Running", progress.CopyFiles, totals.Files, size, SyncProgress.FormatSize(totals.Bytes), elapsed)
         else
             w.Status.Value := I18n.T("Sync.Window.RunningCount", progress.CopyFiles, size, elapsed)
-        w.Warn.Value := progress.Errors ? I18n.T("Sync.Window.FailedFiles", progress.Errors) : ""
-        if (w.Warn.Visible != (w.Warn.Value != ""))
-            SyncPreview._Relayout(w)
+        SyncPreview._Detail(w, progress.Errors ? I18n.T("Sync.Window.FailedFiles", progress.Errors) : "", true)
+        w.Note.Value := (progress.Total > w.Shown) ? I18n.T("Sync.Preview.More", w.Shown, progress.Total) : ""
         if (!job.Monitor && IsObject(totals) && (totals.Bytes > 0 || totals.Files > 0)) {
             done := totals.Bytes > 0 ? progress.CopyBytes / totals.Bytes : progress.CopyFiles / totals.Files
-            SyncPreview._Bar(w, Min(990, Round(done * 1000)), "Run")      ; full only when robocopy has ended
+            SyncPreview._Bar(w, Min(990, Round(done * 1000)), progress.Errors ? "Error" : "Normal")   ; full only when robocopy has ended
         }
     }
 
@@ -191,11 +220,10 @@ class SyncPreview {
     static _Add(w, changes) {
         if !changes.Length
             return
-        w.List.Opt("-Redraw")
+        rows := []
         for change in changes
-            w.List.Add("", SyncPreview._Row(change, w.Source, w.Destination)*)
-        w.List.Opt("+Redraw")
-        w.Shown += changes.Length
+            rows.Push(SyncPreview._Row(change, w.Source, w.Destination))
+        SyncPreview._Fill(w, rows, true)
     }
 
     ; "0:42", "12:05", "1:02:03"
@@ -207,49 +235,51 @@ class SyncPreview {
     ;---------------------------------------------------------------------------
     ; The window
     ;---------------------------------------------------------------------------
-    ; The task's window, made when it has none: one window goes through all the phases, so it stays where the user put it
-    static _Window(task, title) {
+    ; The task's window, made when it has none: one window goes through all the phases, so it stays where the user put it.
+    ; options.Run: false when the task is still being edited (the editor's preview), so it can't be run from here
+    static _Window(task, options) {
         key := SyncJobs.Key(task["Name"])
-        if SyncPreview.Windows.Has(key) {
-            w := SyncPreview.Windows[key]
-            w.Task := task
-            w.Gui.Title := title
-            return w
-        }
-        w := SyncPreview._Create(task, title)
-        SyncPreview.Windows[key] := w
+        if !SyncPreview.Windows.Has(key)
+            SyncPreview.Windows[key] := SyncPreview._Create(task)
+        w := SyncPreview.Windows[key]
+        w.Task := task, w.Options := options
+        w.CanRun := !(options.HasOwnProp("Run") && !options.Run)
+        w.Source := RoboSync.Expand(RoboSync._Get(task, "Source")), w.Destination := RoboSync.Expand(RoboSync._Get(task, "Destination"))
+        w.Folders.Value := w.Source " → " w.Destination
         return w
     }
 
-    static _Create(task, title) {
+    static _Create(task) {
         key := SyncJobs.Key(task["Name"])
-        g := Gui("+Resize +MinSize480x300 -MinimizeBox", title)
+        g := Gui("+Resize +MinSize640x380", I18n.T("Sync.Window.Title", task["Name"]))
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
-        width := 680
-        w := {Key: key, Task: task, Gui: g, Phase: "", Options: {}, Created: A_TickCount, Totals: "", Shown: 0}
-        w.Source := RoboSync.Expand(RoboSync._Get(task, "Source")), w.Destination := RoboSync.Expand(RoboSync._Get(task, "Destination"))
-        g.AddText("w" width " cGray", w.Source " → " w.Destination)
+        width := SyncPreview.Width
+        w := {Key: key, Task: task, Gui: g, Phase: "", Options: {}, CanRun: true, Created: A_TickCount, Totals: "", Shown: 0, Paths: []}
+        w.Folders := g.AddText("w" width " cGray")
         g.SetFont("s10 bold")
         w.Status := g.AddText("w" width " y+8")
         g.SetFont("s9 norm")
-        w.Warn := g.AddText("w" width " y+4 cC42B1C")
-        w.Confirm := g.AddText("w" width " y+4 r2")
-        w.List := g.AddListView("w" width " r16 y+6 -Multi Grid", [I18n.T("Sync.Preview.Col.Action"), I18n.T("Sync.Preview.Col.Item")
-            , I18n.T("Sync.Preview.Col.Size"), I18n.T("Sync.Preview.Col.Robocopy")])
-        w.List.ModifyCol(1, 110), w.List.ModifyCol(2, width - 110 - 80 - 110 - 24), w.List.ModifyCol(3, "80 Right"), w.List.ModifyCol(4, 110)
+        w.Detail := g.AddText("w" width " y+4 r2")                         ; the deletions, files that failed, the last run: two lines, always there
+        w.List := g.AddListView("w" width " r16 y+6 -Multi Grid NoSortHdr +LV0x4000", [I18n.T("Sync.Preview.Col.Item"), I18n.T("Sync.Preview.Col.Action")
+            , I18n.T("Sync.Preview.Col.Size")])                             ; LVS_EX_LABELTIP: a cut-off path shows whole on hover
+        w.List.ModifyCol(1, width - SyncPreview.ActionWidth - SyncPreview.SizeWidth - 24), w.List.ModifyCol(2, SyncPreview.ActionWidth), w.List.ModifyCol(3, SyncPreview.SizeWidth " Right")
+        w.List.OnEvent("DoubleClick", (list, row) => SyncPreview._ShowItem(w, row))
         w.Bar := g.AddProgress("w" width " h10 y+6 Range0-1000")
         g.SetFont("s8")
         w.Note := g.AddText("w" width " y+4 cGray")
         g.SetFont("s9")
         w.Log := g.AddButton("xm y+10 w120", I18n.T("Sync.Action.OpenLog"))
         w.Log.OnEvent("Click", (*) => Path.OpenText(SyncPreview._LogFile(w)))
-        w.Run := g.AddButton("x" (14 + width - 90 - 10 - 150) " yp w150", I18n.T("Sync.Preview.Run"))
-        w.Run.OnEvent("Click", (*) => SyncPreview._Run(w.Task, w.Created))
-        w.Stop := g.AddButton("xp yp wp", I18n.T("Sync.Action.Stop"))
-        w.Stop.OnEvent("Click", (*) => SyncJobs.Stop(w.Task["Name"]))
-        w.CloseButton := g.AddButton("x" (14 + width - 90) " yp w90 Default", I18n.T("Sync.Preview.Close"))
+        right := 14 + width
+        w.CloseButton := g.AddButton("x" (right - 90) " yp w90 Default", I18n.T("Sync.Preview.Close"))
+        w.Stop := g.AddButton("x" (right - 90 - 8 - 90) " yp w90", I18n.T("Sync.Action.Stop"))
+        w.Sync := g.AddButton("x" (right - 90 - 8 - 90 - 8 - 150) " yp w150", I18n.T("Sync.Preview.Run"))
+        w.Preview := g.AddButton("x" (right - 90 - 8 - 90 - 8 - 150 - 8 - 110) " yp w110", I18n.T("Sync.Button.Preview"))
         w.CloseButton.OnEvent("Click", (*) => SyncPreview.Close(key))
+        w.Stop.OnEvent("Click", (*) => SyncJobs.Stop(w.Task["Name"]))
+        w.Sync.OnEvent("Click", (*) => SyncPreview._Sync(w))
+        w.Preview.OnEvent("Click", (*) => SyncJobs.Preview(w.Task, {Run: w.CanRun}))
         g.OnEvent("Escape", (*) => SyncPreview.Close(key))
         g.OnEvent("Close", (*) => SyncPreview.Close(key))
         w.Gaps := SyncPreview._Gaps(w)
@@ -260,33 +290,51 @@ class SyncPreview {
     ; Shows the window (once laid out), Close focused: Enter closes, running (and deleting) needs a click
     static _Present(w) {
         w.Gui.Show()
-        SyncPreview._Relayout(w)                                            ; the same size as before: no Size event
+        w.Gui.GetClientPos(, , &cw, &ch)                                    ; the same size as before: no Size event
+        SyncPreview._Layout(w, 0, cw, ch)
         w.CloseButton.Focus()
         return w.Gui
     }
 
-    ; The buttons a phase has: Log, Run, Stop, Close (Run and Stop share a place)
-    static _Buttons(w, names) {
-        for name in ["Log", "Run", "Stop"]
-            w.%name%.Visible := false
-        for name in names
-            if (name != "Close")
-                w.%name%.Visible := true
+    ; The buttons the phase allows (Enabled); the focus moves off a button that was just disabled
+    static _Buttons(w) {
+        focused := w.Gui.FocusedCtrl
+        allowed := SyncPreview.Enabled[w.Phase]
+        w.Preview.Enabled := allowed[1]
+        w.Sync.Enabled := allowed[2] && w.CanRun
+        w.Stop.Enabled := allowed[3]
+        if (!IsObject(focused) || !focused.Enabled)
+            (w.Stop.Enabled ? w.Stop : w.CloseButton).Focus()
     }
 
-    ; The bar: a value 0-1000, or "" to move back and forth (marquee) while running without a known total / hidden otherwise
-    static _Bar(w, value, phase) {
-        marquee := (value = "" && (phase = "Check" || phase = "Run"))
-        w.Bar.Visible := (value != "" || marquee)
-        if marquee {
-            w.Bar.Opt("+0x8")                                               ; PBS_MARQUEE
+    ; The line under the summary: the deletions or failed files in red (warn), otherwise gray
+    static _Detail(w, text, warn := false) {
+        color := (warn && text != "") ? "cC42B1C" : "cGray"
+        if (w.HasOwnProp("DetailColor") && w.DetailColor = color && w.Detail.Value = text)
+            return
+        w.DetailColor := color
+        w.Detail.SetFont(color)
+        w.Detail.Value := text
+    }
+
+    ; The bar (and the taskbar button): a value 0-1000, or "" to move back and forth while robocopy works without a known total.
+    ; state: Normal, Error (red: files failed), Paused (yellow: stopped)
+    static _Bar(w, value, state := "Normal") {
+        if (value = "") {
+            w.Bar.Opt("+0x8"), w.BarState := "Moving"                      ; PBS_MARQUEE
             SendMessage(0x40A, 1, 30, w.Bar)                                ; PBM_SETMARQUEE
-        } else {
-            SendMessage(0x40A, 0, 0, w.Bar)
-            w.Bar.Opt("-0x8")
-            if (value != "")
-                w.Bar.Value := value
+            TaskbarProgress.Set(w.Gui.Hwnd, "Indeterminate")
+            return
         }
+        SendMessage(0x40A, 0, 0, w.Bar)
+        w.Bar.Opt("-0x8")
+        w.BarState := state
+        SendMessage(0x410, state = "Error" ? 2 : state = "Paused" ? 3 : 1, 0, w.Bar)   ; PBM_SETSTATE: PBST_NORMAL / ERROR / PAUSED
+        w.Bar.Value := value
+        if (w.Phase = "Run" || w.Phase = "Done" && state != "Normal")       ; a run's progress; a finished run only when it went wrong
+            TaskbarProgress.Set(w.Gui.Hwnd, state, value)
+        else
+            TaskbarProgress.Set(w.Gui.Hwnd, "None")
     }
 
     ; The log of the running or last run (a preview logs to a file of its own)
@@ -301,13 +349,29 @@ class SyncPreview {
         return (w.Phase = "Preview" || !FileExist(today)) ? preview : today
     }
 
-    static _Fill(w, rows) {
+    ; The list's rows (append: after the ones there), each row's full path kept for double-click
+    static _Fill(w, rows, append := false) {
         w.List.Opt("-Redraw")
-        w.List.Delete()
+        if !append
+            w.List.Delete(), w.Paths := []
         for row in rows
-            w.List.Add("", row*)
+            w.List.Add("", row[1], row[2], row[3]), w.Paths.Push(row[4])
+        SyncPreview._Columns(w)
         w.List.Opt("+Redraw")
-        w.Shown := rows.Length
+        w.Shown := w.Paths.Length
+    }
+
+    ; Double-click: the file or folder in Explorer (the source's for a copy, the destination's for a delete); its folder when it
+    ; isn't there (any more)
+    static _ShowItem(w, row) {
+        if (row < 1 || row > w.Paths.Length)
+            return
+        target := RTrim(w.Paths[row], "\")
+        while (target != "" && !FileExist(target) && InStr(target, "\"))
+            target := SubStr(target, 1, InStr(target, "\", , -1) - 1)
+        if (target = "" || !FileExist(target))
+            return
+        try Run((target = RTrim(w.Paths[row], "\")) ? 'explorer.exe /select,"' target '"' : 'explorer.exe "' target '"')
     }
 
     ; The spaces between the controls as first laid out, in the units GetPos / Move and the Size event use (no DPI arithmetic here)
@@ -316,37 +380,17 @@ class SyncPreview {
         w.Bar.GetPos(, &barY, , &barH)
         w.Note.GetPos(, &noteY, , &noteH)
         w.Log.GetPos(, &buttonY)
-        w.Run.GetPos(&runX, , &runW)
+        w.Stop.GetPos(&stopX, , &stopW)
         w.CloseButton.GetPos(&closeX)
-        return {Margin: listX, ListBar: barY - listY - listH, BarNote: noteY - barY - barH, NoteButtons: buttonY - noteY - noteH, Between: closeX - runX - runW, Line: 4}
+        return {Margin: listX, ListY: listY, ListBar: barY - listY - listH, BarNote: noteY - barY - barH, NoteButtons: buttonY - noteY - noteH, Between: closeX - stopX - stopW}
     }
 
-    ; The lines above the list take room only when they have text (the warning in red, the question before deleting): -> the list's y
-    static _Top(w) {
-        w.Status.GetPos(, &y, , &h)
-        y += h
-        for ctrl in [w.Warn, w.Confirm] {
-            ctrl.Visible := (ctrl.Value != "")
-            if ctrl.Visible {
-                ctrl.GetPos(, , , &h)
-                ctrl.Move(, y + w.Gaps.Line), y += w.Gaps.Line + h
-            }
-        }
-        return y + w.Gaps.Line + 2
-    }
-
-    ; Lays the window out again after the texts or the buttons of a phase changed
-    static _Relayout(w) {
-        w.Gui.GetClientPos(, , &cw, &ch)                                    ; the units GetPos / Move use, as the Size event's
-        SyncPreview._Layout(w, 0, cw, ch)
-    }
-
-    ; Resizing: the list takes the room, the bar, the note and the buttons stay below it, Run / Stop and Close at the right edge
+    ; Resizing: the list takes the room and its first column the width; the bar, the note and the buttons stay below it,
+    ; Preview, Sync Now, Stop and Close at the right edge
     static _Layout(w, minMax, cw, ch) {
         if (minMax = -1)
             return
         gaps := w.Gaps
-        listY := SyncPreview._Top(w)
         w.Log.GetPos(, , , &buttonH)
         w.Note.GetPos(, , , &noteH)
         w.Bar.GetPos(, , , &barH)
@@ -354,19 +398,31 @@ class SyncPreview {
         noteY := buttonY - gaps.NoteButtons - noteH
         barY := noteY - gaps.BarNote - barH
         width := cw - 2 * gaps.Margin
-        listBottom := w.Bar.Visible ? barY - gaps.ListBar : noteY - gaps.BarNote          ; no bar: the list takes its place
-        w.List.Move(, listY, width, Max(40, listBottom - listY))
+        w.List.Move(, , width, Max(40, barY - gaps.ListBar - gaps.ListY))
         w.Bar.Move(, barY, width)
         w.Note.Move(, noteY, width)
-        for ctrl in [w.Status, w.Warn, w.Confirm]
+        for ctrl in [w.Folders, w.Status, w.Detail]
             ctrl.Move(, , width)
         w.Log.Move(, buttonY)
-        w.CloseButton.GetPos(, , &closeW)
-        closeX := cw - gaps.Margin - closeW
-        w.CloseButton.Move(closeX, buttonY)
-        w.Run.GetPos(, , &runW)
-        w.Run.Move(closeX - gaps.Between - runW, buttonY)
-        w.Stop.Move(closeX - gaps.Between - runW, buttonY)
+        x := cw - gaps.Margin
+        for button in [w.CloseButton, w.Stop, w.Sync, w.Preview] {
+            button.GetPos(, , &bw)
+            x -= bw
+            button.Move(x, buttonY)
+            x -= gaps.Between
+        }
+        SyncPreview._Columns(w)
+    }
+
+    ; The first column (the path) takes the list's width that the other columns leave. In the list's own pixels (LVM_*)
+    static _Columns(w) {
+        rect := Buffer(16, 0)
+        DllCall("GetClientRect", "Ptr", w.List.Hwnd, "Ptr", rect)
+        client := NumGet(rect, 8, "Int")
+        if !(WinGetStyle(w.List.Hwnd) & 0x200000)                           ; no WS_VSCROLL yet: leave room for it
+            client -= DllCall("GetSystemMetrics", "Int", 2)                 ; SM_CXVSCROLL
+        others := SendMessage(0x101D, 1, 0, w.List) + SendMessage(0x101D, 2, 0, w.List)   ; LVM_GETCOLUMNWIDTH
+        SendMessage(0x101E, 0, Max(80, client - others), w.List)            ; LVM_SETCOLUMNWIDTH
     }
 
     ;---------------------------------------------------------------------------
@@ -382,6 +438,8 @@ class SyncPreview {
         return rows
     }
 
+    ; [item, action, size, full path]: the item relative to the source or destination; the path in the source for a copy, in the
+    ; destination for a delete (robocopy lists a file to delete under the source folder it compares, without /MT)
     static _Row(change, source, destination) {
         item := change.Path
         for root in [RTrim(source, "\") "\", RTrim(destination, "\") "\"]
@@ -389,10 +447,21 @@ class SyncPreview {
                 item := SubStr(item, StrLen(root) + 1)
                 break
             }
+        full := (item = change.Path) ? item : RTrim(change.Kind = "Delete" ? destination : source, "\") "\" item
         if (item = "")
             item := "."
-        action := I18n.T("Sync.Preview." change.Kind (change.Folder ? "Folder" : "File"))
         size := (!change.Folder && change.HasOwnProp("Size") && change.Size != "") ? SyncProgress.FormatSize(change.Size) : ""
-        return [action, item, size, change.Label]
+        return [item, SyncPreview.Action(change), size, full]
+    }
+
+    ; "Copy (newer)", "New folder", "Delete": why a file is copied comes from robocopy's label, in Windows' language; the English
+    ; ones are translated, others shown as robocopy wrote them
+    static Action(change) {
+        action := I18n.T("Sync.Preview." change.Kind (change.Folder ? "Folder" : "File"))
+        if (change.Kind = "Delete" || change.Folder || change.Label = "")
+            return action
+        static reasons := Map("new file", "New", "newer", "Newer", "older", "Older", "changed", "Changed")
+        label := StrLower(Trim(change.Label))
+        return I18n.T("Sync.Preview.CopyWhy", reasons.Has(label) ? I18n.T("Sync.Preview.Why." reasons[label]) : Trim(change.Label))
     }
 }
