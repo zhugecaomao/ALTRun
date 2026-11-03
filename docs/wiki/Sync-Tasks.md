@@ -25,16 +25,22 @@ The edit window, top to bottom:
 - **Command** shows the robocopy command line the task makes, updated as you type, with the log it runs with (the default one when **Log file** is empty). **Copy Command** copies it.
 - **Preview** shows what the task would change before you save it. **OK** checks the task: mistakes (no source, the same folder twice, mirroring into a drive...) must be fixed; a destination that overlaps another task's asks first.
 
-## Preview
-**Preview** runs robocopy with `/L`, which changes nothing, and lists what a run would do: how many files it would copy, how many files and folders it would delete, and each of them (deletions first, in red text above the list). **Run Now** runs the task as previewed.
+## The sync window
+Preview and Run open the task's window at once, and it follows the task until it ends:
+- **Checking** (a preview, robocopy with `/L`, which changes nothing): the changes appear in the list as robocopy finds them, with how many so far and the time. Large folders take a while to compare, so you see it working; **Stop** ends it.
+- **Preview**: what a run would do: how many files it would copy and their size, how many files and folders it would delete (in red above the list), and each of them, deletions first, with its size. **Run Now** runs the task as previewed, in the same window.
+- **Running**: the files appear as robocopy copies them; the bar shows the bytes copied against what the preview found (after a preview, as for every mirror), and moves back and forth for Update and Copy all, which aren't previewed first so large folders aren't compared twice. **Stop** ends it.
+- **Done**: files copied (and their size), files deleted, and the time; files that couldn't be copied are counted in red.
+- The list shows the first 2000 changes; the log (**Open log**) has all of them.
+- Closing the window doesn't stop the task: its result in the search window (Enter) or **Run** in Preferences opens the window again. A notification says how it ended when the window isn't in front.
 
 ![Preview of a sync task](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/sync-preview.png)
 
 ## Running a task
-- Type the task's name, or `sync ` to list all tasks (`sync proj` searches only them). **Enter** runs the task; while it runs, Enter stops it.
-- `→` opens the actions: Run, Preview (changes nothing), Open log, open the source or destination folder.
+- Type the task's name, or `sync ` to list all tasks (`sync proj` searches only them). **Enter** runs the task; while it runs, Enter shows its window.
+- `→` opens the actions: Run, Preview (changes nothing), Open log, open the source or destination folder; while it runs, Show progress and Stop.
 - The result shows what the task does and how it is doing: *Running since 10:05*, *Monitoring since 10:05*, *Last run 09:30: OK*.
-- A task that ends says how it went (files copied and removed). If it fails, ALTRun offers to open its log.
+- A task that ends says how it went (files copied and removed) in its window, and with a notification when the window isn't in front. If it fails without a window, ALTRun offers to open its log.
 
 ## Safety
 - **Mirror** (`/MIR`) makes the destination an exact copy of the source: files in the destination that aren't in the source are **deleted**. Before a mirror runs, ALTRun previews it (`/L`, which changes nothing); when the run would delete anything, the preview window lists what would be deleted, and nothing runs until you click **Run and Delete** (Enter or Esc closes it).

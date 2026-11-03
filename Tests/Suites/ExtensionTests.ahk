@@ -481,7 +481,7 @@ class ExtensionTests {
             eq("actions", actions, "Run|Preview (changes nothing)|Open log|Open source folder|Open destination folder|")
             SyncJobs.Jobs[SyncJobs.Key("Team Files")] := {Name: "Team Files", Pid: 0, Handle: 0, Preview: false, Monitor: true, Started: "20261102100500", LogFile: "", OnDone: ""}
             item := SyncProvider.Search(SearchQuery("team"))[1]
-            eq("running: Enter stops, state", item.Title "|" item.Subtitle "|" item.Actions[1].Title, "Stop syncing: Team Files|Monitoring since 10:05 · Mirror \\srv\team → D:\Sync\Team|Stop")
+            eq("running: Enter shows its window, state, then Stop", item.Title "|" item.Subtitle "|" item.Actions[1].Title "|" item.Actions[2].Title, "Sync: Team Files|Monitoring since 10:05 · Mirror \\srv\team → D:\Sync\Team|Show progress|Stop")
             SyncJobs.Jobs.Delete(SyncJobs.Key("Team Files"))
             SyncJobs.Last[SyncJobs.Key("Archive")] := {Code: 1, Ended: "20261102093000", Preview: false}
             eq("last run", SyncProvider.Search(SearchQuery("arch"))[1].Subtitle, "Last run 09:30: OK · Copy \\srv\archive → D:\Sync\Archive")
@@ -583,81 +583,45 @@ class ExtensionTests {
         }
     }
 
-    ; PROBE (temporary, for the live sync window): can the log be read while robocopy writes it, how it grows, and when /MT writes
-    ; a file's line (before or after the file is copied). Prints PROBE lines, asserts nothing; removed once the window is built
-    static SyncLogProbe() {
+    ; The sync window with the real robocopy (Windows): a preview fills the list while robocopy finds the changes, then shows them;
+    ; the run that follows counts the files it copies (default settings: 16 threads) and ends with the result
+    static SyncWindowReal() {
         if (!FileExist(RoboSync.Program) || DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr"))
             return
-        out := (text) => FileAppend("PROBE " text "`n", "*")
-        root := A_Temp "\ALTRun-synclog-probe"
+        eq := (n, a, e) => TestRunner.Equal("SyncWindowReal." n, a, e)
+        root := A_Temp "\ALTRun-syncwindow-test"
         try DirDelete(root, true)
         DirCreate(root "\src\deep"), DirCreate(root "\dst")
-        Loop 4000
+        Loop 3000
             FileAppend("x", root "\src\deep\file" A_Index ".txt")
-        bigSize := 24 * 1024 * 1024                                         ; copied slowly: /IPG waits between 64 KB blocks
-        handle := FileOpen(root "\src\big.bin", "w"), handle.Length := bigSize, handle.Close()
-        FileSetTime("20200101000000", root "\src\big.bin")
+        handle := FileOpen(root "\src\big.bin", "w"), handle.Length := 50 * 1024 * 1024, handle.Close()
         FileAppend("y", root "\dst\extra.txt")
         savedLogDir := SyncJobs.LogDir, SyncJobs.LogDir := root "\logs"
+        key := SyncJobs.Key("Window")
+        wait() {
+            started := A_TickCount
+            while (SyncJobs.Jobs.Has(key) && A_TickCount - started < 60000) {
+                Sleep(100)
+                SyncJobs._Poll(), SyncPreview._Tick()
+            }
+        }
         try {
             task := RoboSync.NewTask()
-            task["Name"] := "Probe", task["Source"] := root "\src", task["Destination"] := root "\dst", task["Retries"] := 0, task["Wait"] := 0
-            task["Extra"] := "/NP /IPG:15"
-            for preview in [true, false] {
-                mode := preview ? "preview" : "run"
-                state := {Done: false}
-                problem := SyncJobs.Start(task, preview, (job, code) => state.Done := true)
-                if (problem != "") {
-                    out(mode ": start failed " problem)
-                    continue
-                }
-                logFile := SyncJobs.Jobs[SyncJobs.Key("Probe")].LogFile
-                started := A_TickCount, reads := 0, fails := 0, lastError := "", lastLength := -1, changes := 0, samples := "", nextSample := 0
-                bigSeen := "", bigSizeThen := "", bigDone := "", bigExists := "", smallCount := ""
-                while (!state.Done && A_TickCount - started < 180000) {
-                    Sleep(50)
-                    SyncJobs._Poll()
-                    elapsed := A_TickCount - started
-                    text := ""
-                    try {
-                        handle := FileOpen(logFile, "r")
-                        text := handle.Read(), handle.Close()
-                        reads++
-                    } catch as e {
-                        fails++, lastError := e.Message
-                    }
-                    if (StrLen(text) != lastLength)
-                        changes++, lastLength := StrLen(text)
-                    StrReplace(text, "`t", "`t", , &tabs)
-                    if (elapsed >= nextSample) {
-                        samples .= elapsed "ms:" StrLen(text) "ch/" tabs "tabs "
-                        nextSample := elapsed + 500
-                    }
-                    if (!preview) {
-                        dstBig := root "\dst\big.bin"
-                        if (bigExists = "" && FileExist(dstBig))
-                            bigExists := elapsed
-                        if (bigSeen = "" && InStr(text, "big.bin"))
-                            bigSeen := elapsed, bigSizeThen := FileExist(dstBig) ? FileGetSize(dstBig) " bytes, modified " FileGetTime(dstBig) : "none"
-                        if (bigDone = "" && FileExist(dstBig) && FileGetTime(dstBig) = "20200101000000")
-                            bigDone := elapsed
-                        if (smallCount = "" && bigDone != "")
-                            StrReplace(text, "file", "file", , &smallCount)
-                    }
-                }
-                out(mode ": " (state.Done ? "ended" : "TIMEOUT") " after " (A_TickCount - started) " ms; reads ok " reads ", failed " fails " " lastError "; length changed " changes " times")
-                out(mode ": samples " samples)
-                if !preview
-                    out("run: big.bin in the destination at " bigExists " ms, its line in the log at " bigSeen " ms (destination then " bigSizeThen "), its time set (copy finished) at " bigDone " ms; small files in the log then " smallCount)
-                final := ""
-                try final := SyncJobs.ReadLog(logFile)
-                lines := StrSplit(StrReplace(final, "`r"), "`n")
-                for line in lines
-                    if InStr(line, "big.bin") || InStr(line, "extra.txt") || InStr(line, "file1.txt") || RegExMatch(line, "^\s*(Dirs|Files|Bytes|Times)\s*:")
-                        out(mode ": line [" StrReplace(line, "`t", "<TAB>") "]")
-            }
+            task["Name"] := "Window", task["Source"] := root "\src", task["Destination"] := root "\dst", task["Mode"] := "Update", task["Retries"] := 0, task["Wait"] := 0
+            SyncJobs.Preview(task, {Run: true})
+            w := SyncPreview.Windows[key]
+            eq("preview: opens at once, checking", w.Phase "|" w.Stop.Visible, "Check|1")
+            wait()
+            eq("preview: then what it found", w.Phase "|" w.List.GetCount() "|" w.Run.Visible, "Preview|2000|1")   ; 3001 to copy: the first 2000 listed
+            eq("preview: totals for the run (MB)", IsObject(w.Totals) ? w.Totals.Files "|" Round(w.Totals.Bytes / 1048576) : "none", "3001|50")
+            SyncPreview._Run(task, w.Created)
+            eq("run: same window, running", w.Phase "|" w.Stop.Visible "|" SyncJobs.IsRunning("Window"), "Run|1|1")
+            wait()
+            eq("run: done, every file counted", w.Phase "|" InStr(w.Status.Value, "Finished: 3001 files copied") "|" w.List.GetCount() "|" w.Bar.Value, "Done|1|2000|1000")
+            eq("run: copied", FileExist(root "\dst\big.bin") != "" && FileExist(root "\dst\deep\file3000.txt") != "" && FileExist(root "\dst\extra.txt") != "", true)
         } finally {
             SyncJobs.StopAll(), SyncJobs.Last.Clear()
+            SyncPreview.Close(key)
             SyncJobs.LogDir := savedLogDir
             try DirDelete(root, true)
         }
@@ -729,18 +693,17 @@ class ExtensionTests {
             SyncPreview.Close(SyncJobs.Key("Projects"))
         }
         g := SyncPreview.Show(previewTask, result, {Run: false, Confirm: false})
-        try eq("window: preview from the editor offers no run", ControlGetHwnd("Run Now", g.Hwnd) || 0, 0)
-        catch
-            TestRunner.Passed++                                             ; ControlGetHwnd throws when there is no such button
+        w := SyncPreview.Windows[SyncJobs.Key("Projects")]
+        eq("window: preview from the editor offers no run (nor stop)", w.Run.Visible "|" w.Stop.Visible "|" w.CloseButton.Visible, "0|0|1")
 
-        ; One window per task: another task's preview leaves a waiting confirmation open, the same task's replaces it
+        ; One window per task: another task's preview leaves a waiting confirmation open, the same task's goes on in the same window
         otherTask := Map("Name", "Photos", "Source", "C:\photos", "Destination", "D:\photos", "Mode", "Update")
         try {
             other := SyncPreview.Show(otherTask, result, {Run: true, Confirm: false})
             eq("windows: two tasks", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) (WinExist("ahk_id " other.Hwnd) ? 1 : 0) "|" SyncPreview.Windows.Count, "11|2")
             first := g.Hwnd
             g := SyncPreview.Show(previewTask, result, {Run: true, Confirm: true})
-            eq("windows: the same task replaces its window", (WinExist("ahk_id " first) ? 1 : 0) (WinExist("ahk_id " g.Hwnd) ? 1 : 0) "|" SyncPreview.Windows.Count, "01|2")
+            eq("windows: the same task goes on in its window", (g.Hwnd = first) "|" SyncPreview.Windows.Count "|" SyncPreview.Windows[SyncJobs.Key("Projects")].Run.Text, "1|2|Run and Delete")
         } finally {
             SyncPreview.Close(SyncJobs.Key("Projects")), SyncPreview.Close(SyncJobs.Key("Photos"))
         }
@@ -750,6 +713,64 @@ class ExtensionTests {
         old := 1000000, fresh := old + SyncPreview.StaleMs - 1, late := old + SyncPreview.StaleMs + 1
         eq("stale: mirror", (SyncPreview.IsStale(previewTask, old, fresh) ? 1 : 0) (SyncPreview.IsStale(previewTask, old, late) ? 1 : 0), "01")
         eq("stale: update never", SyncPreview.IsStale(otherTask, old, late) ? 1 : 0, 0)
+
+        ; Sizes as robocopy writes them, and for people
+        eq("size: bytes, units of 1024, not a size", SyncProgress.ParseSize(" 966803") "|" SyncProgress.ParseSize("400.0 m") "|" SyncProgress.ParseSize("1.5 g") "|" SyncProgress.ParseSize("12 k") "|" SyncProgress.ParseSize("New File"), "966803|419430400|1610612736|12288|")
+        eq("size for people", SyncProgress.FormatSize(512) "|" SyncProgress.FormatSize(990003) "|" SyncProgress.FormatSize(1572864) "|" SyncProgress.FormatSize(41446522470), "512 B|966.8 KB|1.5 MB|38.6 GB")
+        eq("changes with sizes", changes[1].Size "|" changes[2].Size "|" changes[4].Size, "1|1572864|")
+
+        ; The log read while robocopy writes it: lines as they are complete, counts, errors
+        progress := SyncProgress()
+        part := "`t    New File  `t`t  402089`tC:\Demo Sync\Server\Plan.pdf`r`n`t    Newer     `t`t 1.0 m`tC:\Demo Sync\Server\Re"
+        eq("progress: only complete lines", progress.Feed(part).Length "|" progress.CopyFiles "|" progress.CopyBytes, "1|1|402089")
+        rest := "port.pdf`r`n`t  *EXTRA File `t`t       6`tC:\Demo Sync\OneDrive\Old.txt`r`n`t*EXTRA Dir        -1`tC:\Demo Sync\OneDrive\Old\`r`n"
+            . "2026/11/03 10:00:00 ERROR 32 (0x00000020) Copying File C:\Demo Sync\Server\Open.dwg`r`n"
+        kept := progress.Feed(rest)
+        eq("progress: the rest of a line, deletions, errors", kept.Length "|" kept[1].Path "|" progress.CopyFiles "|" progress.CopyBytes "|" progress.DeleteFiles "|" progress.DeleteDirs "|" progress.Errors
+            , "3|C:\Demo Sync\Server\Report.pdf|2|1450665|1|1|1")
+        limited := SyncProgress("", 0, 2)
+        limited.Feed(part rest, true)
+        eq("progress: keeps the first changes, counts them all", limited.Changes.Length "|" limited.Total, "2|4")
+
+        ; From the log file: only this run's part (after start), in UTF-16
+        logFile := A_Temp "\ALTRun-progress-test.log"
+        try {
+            try FileDelete(logFile)
+            FileAppend("Older run`r`n`t    New File  `t`t  1`tC:\x\old.txt`r`n", logFile, "UTF-16")
+            start := FileGetSize(logFile)
+            reader := SyncProgress(logFile, start)
+            FileAppend("`t    New File  `t`t  2048`tC:\Demo Sync\Server\Café 测试.txt`r`n", logFile, "UTF-16-RAW")
+            got := reader.Read()
+            eq("progress from the log: after start only, Unicode", got.Length "|" (got.Length ? got[1].Path : "") "|" reader.CopyBytes, "1|C:\Demo Sync\Server\Café 测试.txt|2048")
+            eq("progress from the log: nothing new", reader.Read().Length, 0)
+        } finally {
+            try FileDelete(logFile)
+        }
+
+        ; The summary's Bytes row
+        withBytes := logText "   Bytes :  400.00 m  1.5 m         0         0         0     966803`r`n"
+        bytes := SyncJobs.Summary(withBytes).Bytes
+        eq("summary: bytes", IsObject(bytes) ? bytes.Total "|" bytes.Copied "|" bytes.Extras : "none", "419430400|1572864|966803")
+        eq("summary: no bytes row", SyncJobs.Summary(logText).Bytes, "")
+
+        ; The window through a task's phases: checking (Stop, the bar moving), then stopped
+        fake := {Name: "Projects", Preview: true, Monitor: false, StartTick: A_TickCount - 65000, LogFile: "", Progress: SyncProgress()}
+        try {
+            g := SyncPreview.Open(previewTask, "Check", {Run: true, Confirm: true})
+            w := SyncPreview.Windows[SyncJobs.Key("Projects")]
+            eq("phases: checking", w.Phase "|" w.Stop.Visible "|" w.Run.Visible "|" w.Bar.Visible "|" w.List.GetCount(), "Check|1|0|1|0")
+            eq("phases: stopped", SyncPreview.Finish(fake, "Stopped") "|" w.Phase "|" w.Stop.Visible "|" w.Status.Value, "1|Done|0|Stopped after 1:05.")
+            eq("phases: a finished window takes no more", SyncPreview.Finish(fake, 0), false)
+            SyncPreview.Show(previewTask, result, {Run: true, Confirm: false})
+            eq("phases: a preview in the same window", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) "|" w.Phase "|" w.Run.Visible "|" w.List.GetCount() "|" w.Bar.Visible, "1|Preview|1|7|0")
+            row := []
+            Loop 4
+                row.Push(w.List.GetText(2, A_Index))
+            eq("phases: the size column", row[2] "|" row[3], "old\|")
+        } finally {
+            SyncPreview.Close(SyncJobs.Key("Projects"))
+        }
+        eq("elapsed", SyncPreview.Elapsed(42000) "|" SyncPreview.Elapsed(725000) "|" SyncPreview.Elapsed(3723000), "0:42|12:05|1:02:03")
 
         ; The edit window: opens with the task, shows the command, OK returns the task as edited
         owner := Gui()

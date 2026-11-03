@@ -6,21 +6,25 @@
 ;
 ; Run (search: "sync <name>", Enter):
 ;   - the settings are checked first (RoboSync.Check); a mirror also needs a source that exists and isn't empty (CheckSource)
-;   - a mirror is previewed first (/L, which changes nothing): when it would delete anything in the destination, ALTRun says
-;     how many files and folders and asks before running. Previews that delete nothing go straight on
+;   - the sync window (SyncPreview) opens at once and follows it: what robocopy finds and copies, read from its log as it is written
+;     (SyncProgress), a progress bar, the result
+;   - a mirror is previewed first (/L, which changes nothing): when it would delete anything in the destination, the window lists
+;     it and asks before running. Previews that delete nothing go straight on, in the same window
 ;   - a task without a log file of its own logs to %TEMP%\ALTRun\SyncLogs\<name>_<date>.log, so there is always a log to open;
 ;     logs there older than KeepLogDays (Features.Sync, 30) are deleted when a task runs. Not in Data: it may be in OneDrive,
 ;     which would upload logs that grow all the time. Each run also leaves a line in ALTRun.log (started, how it ended)
-;   - a task that ends tells how it went (a notification); a monitoring task (/MON /MOT) keeps running until stopped
+;   - a task that ends tells how it went in its window, and with a notification when the window isn't in front (or closed);
+;     a monitoring task (/MON /MOT) keeps running until stopped
 ; Monitoring tasks stop when ALTRun quits. When ALTRun only restarts (after Preferences, an update), they keep running and the
 ; new ALTRun takes them over (Data\SyncRunning.json), so changing a setting doesn't interrupt a sync.
 ;
 ; Usage:
 ;   SyncJobs.Run(task)            the user's Run (checks, preview of a mirror, asks before deleting)
+;   SyncJobs.RunNow(task, totals) runs it without a preview, the window following it
 ;   SyncJobs.Preview(task)        /L, then what it would do
 ;   SyncJobs.Start(task, preview, onDone)   -> "" or a problem code: starts robocopy, nothing asked
 ;   SyncJobs.Stop(name) / StopAll()        SyncJobs.IsRunning(name)        SyncJobs.Last[key] = {Code, Ended, Preview}
-;   SyncJobs.Summary(logText)     -> {Dirs, Files} ({Total, Copied, Skipped, Mismatch, Failed, Extras}) of the last run in a log, "" if none
+;   SyncJobs.Summary(logText)     -> {Dirs, Files, Bytes} ({Total, Copied, Skipped, Mismatch, Failed, Extras}) of the last run in a log, "" if none
 ;   SyncJobs.Shutdown(exitBy) / Adopt()     ALTRun quits or restarts / at start-up
 ;===============================================================================
 
@@ -39,28 +43,43 @@ class SyncJobs {
     ;---------------------------------------------------------------------------
     ; What the user runs
     ;---------------------------------------------------------------------------
+    ; The sync window (SyncPreview) opens at once and follows the task: the preview as robocopy finds the changes, the run as it copies
     static Run(task) {
         name := task["Name"]
         if (problem := SyncJobs._Problem(task, false))
             return SyncJobs._Tell(problem, name)
         if (task["Mode"] != "Mirror")
-            return SyncJobs._Started(SyncJobs.Start(task), name)
-        App.Notify(I18n.T("Sync.Checking", name))
+            return SyncJobs.RunNow(task)
         problem := SyncJobs.Start(task, true, (job, code) => SyncJobs._AfterCheck(task, job, code))
         if (problem != "")
-            SyncJobs._Tell(problem, name)
+            return SyncJobs._Tell(problem, name)
+        SyncPreview.Open(task, "Check", {Run: true, Confirm: true})
+    }
+
+    ; Runs it without a preview (checked already), the sync window following it. totals: {Files, Bytes} a preview found, for the progress bar
+    static RunNow(task, totals := "") {
+        if (problem := SyncJobs.Start(task))
+            return SyncJobs._Tell(problem, task["Name"])
+        SyncPreview.Open(task, "Run", {Totals: totals})
     }
 
     ; The preview before a mirror ended: run it at once when it deletes nothing; otherwise the preview window lists what it would
     ; delete and runs it only when the user chooses to
     static _AfterCheck(task, job, code) {
-        name := task["Name"]
         if !RoboSync.Result(code).Ok
-            return SyncJobs._Failed(name, code, job.LogFile)
+            return SyncPreview.Finish(job, code) || SyncJobs._Failed(task["Name"], code, job.LogFile)
         result := SyncJobs.ReadPreview(job.LogFile)
         if (IsObject(result.Summary) && result.Summary.Files.Extras + result.Summary.Dirs.Extras > 0)
             return SyncPreview.Show(task, result, {Run: true, Confirm: true})
-        SyncJobs._Started(SyncJobs.Start(task), name)
+        SyncJobs.RunNow(task, SyncJobs.Totals(result))
+    }
+
+    ; What a preview would copy, for the progress bar of the run that follows: {Files, Bytes}
+    static Totals(result) {
+        summary := result.Summary
+        if IsObject(summary)
+            return {Files: summary.Files.Copied, Bytes: IsObject(summary.Bytes) ? summary.Bytes.Copied : 0}
+        return ""
     }
 
     ; options.Run: the preview window offers to run the task (not for a task still being edited)
@@ -68,16 +87,16 @@ class SyncJobs {
         name := task["Name"]
         if (problem := SyncJobs._Problem(task, true))
             return SyncJobs._Tell(problem, name)
-        App.Notify(I18n.T("Sync.Checking", name))
         options := IsObject(options) ? options : {Run: true}
         problem := SyncJobs.Start(task, true, (job, code) => SyncJobs._ShowPreview(task, job, code, options))
         if (problem != "")
-            SyncJobs._Tell(problem, name)
+            return SyncJobs._Tell(problem, name)
+        SyncPreview.Open(task, "Check", {Run: options.HasOwnProp("Run") && options.Run, Confirm: false})
     }
 
     static _ShowPreview(task, job, code, options) {
         if !RoboSync.Result(code).Ok
-            return SyncJobs._Failed(task["Name"], code, job.LogFile)
+            return SyncPreview.Finish(job, code) || SyncJobs._Failed(task["Name"], code, job.LogFile)
         result := SyncJobs.ReadPreview(job.LogFile)
         if !IsObject(result.Summary)
             return Path.OpenText(job.LogFile)
@@ -96,43 +115,13 @@ class SyncJobs {
         return {Summary: SyncJobs.Summary(text), Changes: SyncJobs.Changes(text), LogFile: logFile}
     }
 
-    ; The files and folders a run (or a preview, /L) lists in its log: [{Kind: "Copy" | "Delete", Folder, Path, Label}...], at most limit
-    ; (Total: how many there are). Lines are tab-separated: a folder line ends with its full path ("\t  New Dir  2\tC:\src\sub\";
-    ; an unchanged folder has only the count), and the file lines after it give the name ("\t    New File  \t\t  1024\ta.txt").
-    ; With /MT (several threads, the default) there are no folder lines and each file line has the full path instead.
-    ; robocopy writes the labels (New File, Newer, *EXTRA File...) in Windows' language; the ones it deletes start with "*" (*EXTRA)
+    ; The files and folders a run (or a preview, /L) lists in its log: [{Kind: "Copy" | "Delete", Folder, Path, Label, Size}...], at
+    ; most limit (Total: how many there are). How the lines are read: SyncProgress
     static Changes(logText, limit := 2000) {
-        list := [], folder := "", total := 0
-        for line in StrSplit(StrReplace(logText, "`r"), "`n") {
-            if !InStr(line, "`t")
-                continue
-            fields := StrSplit(line, "`t")
-            name := fields[fields.Length]
-            if (Trim(name) = "")
-                continue
-            if (RegExMatch(name, "^(?:[A-Za-z]:\\|\\\\)") && SubStr(name, -1) = "\") {   ; a folder: C:\x\ or \\server\share\x\
-                folder := name
-                label := Trim(RegExReplace(fields.Length >= 2 ? fields[fields.Length - 1] : "", "\s*-?\d+\s*$"))
-                if (label = "")
-                    continue                                                ; unchanged: only the folder the next files are in
-                isFolder := true, itemPath := name
-            } else {
-                label := ""
-                Loop fields.Length - 1
-                    if RegExMatch(fields[A_Index], "[^\d\s.,]{2,}") {     ; the label, not a size such as "1.5 m"
-                        label := Trim(fields[A_Index])
-                        break
-                    }
-                full := RegExMatch(name, "^(?:[A-Za-z]:\\|\\\\)")             ; /MT: the file's full path
-                if (label = "" || (!full && folder = ""))
-                    continue
-                isFolder := false, itemPath := full ? name : folder name
-            }
-            total++
-            if (list.Length < limit)
-                list.Push({Kind: SubStr(label, 1, 1) = "*" ? "Delete" : "Copy", Folder: isFolder, Path: itemPath, Label: label})
-        }
-        list.Total := total
+        progress := SyncProgress("", 0, limit)
+        progress.Feed(logText, true)
+        list := progress.Changes
+        list.Total := progress.Total
         return list
     }
 
@@ -146,12 +135,6 @@ class SyncJobs {
         if (!preview && task["Mode"] = "Mirror")
             return RoboSync.CheckSource(task)
         return ""
-    }
-
-    static _Started(problem, name) {
-        if (problem != "")
-            return SyncJobs._Tell(problem, name)
-        App.Notify(I18n.T("Sync.Started", name))
     }
 
     static _Tell(problem, name) => MsgBox(I18n.T("Sync.Problem." problem, name), App.Name, "Icon!")
@@ -194,6 +177,9 @@ class SyncJobs {
         ; mark is appended to in UTF-16. A file an older version wrote (no mark) is left as it is
         if (RoboSync._Get(copy, "AppendLog") && RoboSync.IsAbsolute(logFile) && !FileExist(logFile))
             try FileOpen(logFile, "w", "UTF-16").Close()
+        logStart := 0                                                       ; where this run's part of the log starts (a run appends to the day's log)
+        if (RoboSync._Get(copy, "AppendLog") && FileExist(logFile))
+            try logStart := FileGetSize(logFile)
         pid := 0
         try Run('"' command.Program '" ' command.Args, A_Temp, "Hide", &pid)   ; the folders are full paths (RoboSync.Check); a relative log file goes to TEMP
         catch as e {
@@ -202,7 +188,7 @@ class SyncJobs {
         }
         handle := DllCall("OpenProcess", "UInt", 0x101000, "Int", 0, "UInt", pid, "Ptr")   ; SYNCHRONIZE | PROCESS_QUERY_LIMITED_INFORMATION
         SyncJobs.Jobs[key] := {Name: task["Name"], Pid: pid, Handle: handle, Preview: preview, Monitor: !preview && RoboSync._Get(task, "Monitor")
-            , Started: A_Now, LogFile: logFile, OnDone: onDone}
+            , Started: A_Now, StartTick: A_TickCount, LogFile: logFile, Progress: SyncProgress(logFile, logStart), OnDone: onDone}
         Logger.Debug("SyncJobs: started " task["Name"] (preview ? " (preview)" : "") ", pid " pid)
         WinTimer.Set(SyncJobs._pollTimer, SyncJobs.PollMs)
         SyncJobs._Notify()
@@ -269,9 +255,11 @@ class SyncJobs {
             SyncJobs.Last[key] := {Code: code, Ended: A_Now, Preview: job.Preview}
             Logger.Debug("SyncJobs: " job.Name (job.Preview ? " (preview)" : "") " ended, exit code " code)
             SyncJobs._Notify()
-            if IsObject(job.OnDone)
+            if job.HasOwnProp("Stopped")
+                SyncPreview.Finish(job, "Stopped")
+            else if IsObject(job.OnDone)
                 job.OnDone.Call(job, code)
-            else if (!job.Preview && code != -1 && !job.HasOwnProp("Stopped"))
+            else if (!job.Preview && code != -1)
                 SyncJobs._Report(job, code)
         }
         if !SyncJobs.Jobs.Count
@@ -279,16 +267,22 @@ class SyncJobs {
     }
 
     ; A run that ended on its own: how it went (copied files from the log's last summary)
+    ; The sync window shows it when it is open; a notification as well when the window isn't in front, or instead of it when closed
     static _Report(job, code) {
+        shown := SyncPreview.Finish(job, code)
+        active := shown && SyncPreview.IsActive(job.Name)
         if !RoboSync.Result(code).Ok {
             Logger.Warn("SyncJobs: " job.Name " failed, exit code " code ", log " job.LogFile)
-            return SyncJobs._Failed(job.Name, code, job.LogFile)
+            if !shown
+                return SyncJobs._Failed(job.Name, code, job.LogFile)
+            return active ? "" : App.Toast(I18n.T("Sync.Failed", job.Name, code))
         }
         summary := ""
         try summary := SyncJobs.Summary(SyncJobs.ReadLog(job.LogFile))
         if IsObject(summary)
             Logger.Debug("SyncJobs: " job.Name " done, copied " summary.Files.Copied " files, deleted " summary.Files.Extras " files and " summary.Dirs.Extras " folders")
-        App.Toast(IsObject(summary) ? I18n.T("Sync.Done", job.Name, summary.Files.Copied, summary.Files.Extras) : I18n.T("Sync.DoneShort", job.Name))
+        if !active
+            App.Toast(IsObject(summary) ? I18n.T("Sync.Done", job.Name, summary.Files.Copied, summary.Files.Extras) : I18n.T("Sync.DoneShort", job.Name))
     }
 
     ;---------------------------------------------------------------------------
@@ -320,7 +314,8 @@ class SyncJobs {
                 continue
             handle := DllCall("OpenProcess", "UInt", 0x101000, "Int", 0, "UInt", pid, "Ptr")
             SyncJobs.Jobs[SyncJobs.Key(entry["Name"])] := {Name: entry["Name"], Pid: pid, Handle: handle, Preview: false, Monitor: entry["Monitor"] ? true : false
-                , Started: entry["Started"], LogFile: entry["LogFile"], OnDone: ""}
+                , Started: entry["Started"], StartTick: A_TickCount, LogFile: entry["LogFile"], OnDone: ""
+                , Progress: SyncProgress(entry["LogFile"], FileExist(entry["LogFile"]) ? FileGetSize(entry["LogFile"]) : 0)}
         }
         if SyncJobs.Jobs.Count
             WinTimer.Set(SyncJobs._pollTimer, SyncJobs.PollMs)
@@ -349,7 +344,17 @@ class SyncJobs {
             return ""
         row(values) => {Total: Integer(values[1]), Copied: Integer(values[2]), Skipped: Integer(values[3]), Mismatch: Integer(values[4])
             , Failed: Integer(values[5]), Extras: Integer(values[6])}
-        return {Dirs: row(rows[found].Values), Files: row(rows[found + 1].Values)}
+        bytes := ""                                                         ; the row after Files: sizes, bytes or with a unit ("400.00 m")
+        next := rows[found + 1].Index + 1
+        if (next <= lines.Length && RegExMatch(lines[next], "^\s*[^\d\s][^:：]*[:：](.*)$", &m)) {
+            values := [], at := 1
+            while (at := RegExMatch(m[1], "i)(\d+(?:\.\d+)?)(?:\s([kmgt]))?(?=\s|$)", &v, at)) {
+                values.Push(SyncProgress.ParseSize(v[0])), at += StrLen(v[0])
+            }
+            if (values.Length = 6)
+                bytes := row(values)
+        }
+        return {Dirs: row(rows[found].Values), Files: row(rows[found + 1].Values), Bytes: bytes}
     }
 
     ; For the search results: "Running since 10:05", "Monitoring since 10:05", "Last run 09:30: OK", ...

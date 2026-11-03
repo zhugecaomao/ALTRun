@@ -87,6 +87,7 @@
 #Include %A_ScriptDir%\..\Src\Extensions\PTToolsWindow.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\DelayedStart.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\RoboSync.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\SyncProgress.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SyncJobs.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\UpdateChecker.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CurrencyRates.ahk

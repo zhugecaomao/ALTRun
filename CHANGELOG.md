@@ -5,6 +5,25 @@
 
 ## [未发布]
 
+## [2026.11.03.1]
+
+测试版。
+
+Test build.
+
+### 新增
+- 文件夹同步的同步窗口: 点预览或运行时马上打开, 一直跟到任务结束, 不用再等很久才看到结果
+  - 检查中 (预览): robocopy 找到的变化实时出现在列表里, 显示已找到多少项和用时, 可以停止; 几百 GB 的文件夹比较要很久, 现在能看到它在工作
+  - 预览: 要复制的文件数和总大小、要删除的文件和文件夹, 每一项带大小 (KB / MB / GB, 以前日志里是 `966803` 或 `1.0 m` 这样的写法)
+  - 同步中: 复制的文件实时列出; 预览过的 (镜像都会先预览) 进度条按已复制的字节数和预览时的总量显示, 没有预览的 (更新、全部复制) 显示已复制多少; 可以停止
+  - 完成: 复制了多少个文件 (和大小)、删除了多少个、用时, 没能复制的文件个数用红字显示
+  - 关掉窗口不会停止同步; 运行中在搜索窗口里按 Enter (或偏好设置里点运行) 重新打开窗口, `→` 里有 "显示进度" 和 "停止"
+- 列表最多显示前 2000 项, 日志里有全部
+
+### 改进
+- 开始同步时不再先后弹出两条相似的提示 ("正在检查..." 和 "已开始"), 由窗口显示; 结束时窗口不在最前面才发通知
+- 运行中的任务在搜索窗口里按 Enter 显示它的窗口, 不再直接停止 (避免误按停止了同步)
+
 ## [2026.11.03]
 
 ### Summary
@@ -1029,7 +1048,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...HEAD
+[2026.11.03.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03...2026.11.03.1
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26
 [2026.10.20]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.20
