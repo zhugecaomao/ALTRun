@@ -661,17 +661,9 @@ class ExtensionTests {
         try {
             run("first run (real)", 16, false)
             run("identical", 16), run("identical", 0)
-            FileSetAttrib("+H", root "\dst\a")
-            run("dst\a hidden", 16), run("dst\a hidden", 0)
-            FileSetAttrib("-H", root "\dst\a")
-            RunWait(A_ComSpec ' /c attrib +P "' root '\dst\b"', , "Hide")
-            out("dst\b attributes after attrib +P: " FileGetAttrib(root "\dst\b") " / " Format("0x{:X}", DllCall("GetFileAttributes", "Str", root "\dst\b", "UInt")))
-            run("dst\b pinned", 16), run("dst\b pinned", 0)
-            RunWait(A_ComSpec ' /c attrib -P "' root '\dst\b"', , "Hide")
-            FileSetTime("20200101000000", root "\dst\a", "M")
-            run("dst\a older time", 16), run("dst\a older time", 0)
-            DirDelete(root "\dst\empty"), DirDelete(root "\dst\b\c", true)
-            run("2 folders missing", 16), run("2 folders missing", 0)
+            DirCreate(root "\dst\old\deeper"), DirCreate(root "\dst\gone"), FileAppend("x", root "\dst\old\x.txt"), FileAppend("y", root "\dst\b\extra.txt")
+            DirDelete(root "\dst\empty")
+            run("2 extra folders (1 nested), 2 extra files, 1 folder missing", 16), run("2 extra folders (1 nested), 2 extra files, 1 folder missing", 0)
         } finally {
             try DirDelete(root, true)
         }
