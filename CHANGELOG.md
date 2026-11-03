@@ -5,570 +5,115 @@
 
 ## [未发布]
 
-### 改进
-- ALTRun 已收录到 winget 官方仓库: `winget install zhugecaomao.ALTRun` 安装, `winget upgrade zhugecaomao.ALTRun` 升级。README、Wiki 安装页和官网的下载区都写上了 winget, 并排在 Scoop 前面 (Windows 自带, 不用先装别的工具)
-
-## [2026.10.26.58]
-
-测试版。
-
-Test build.
-
-### 修复
-- 文件夹同步的编辑窗口: "排除文件" 下面的例子以前混用了 `,` 和 `;`, 看起来逗号也能分隔; 实际只有 `;` (或换行) 分隔。例子改为全部用 `;`: `~$*.*; *.tmp; *.dwl; *.dwl2`
-- 排除文件和排除文件夹里给一项加了双引号 (例如从 robocopy 命令里复制来的 `"Old Versions"`) 时, 以前命令里会变成两层引号, robocopy 读错; 现在去掉输入的引号, 需要时 (有空格) 由 ALTRun 加上。`~$*.*` 这样没有空格的不需要引号
-
-## [2026.10.26.57]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置里的 "同步" 页改名为 "文件夹同步", 编辑窗口的标题改为 "文件夹同步任务", 搜索里的提示和页面上 "在搜索结果里显示…" 的选项也改为 "文件夹同步任务": 只写 "同步" 说不清同步的是什么, 容易以为是同步 ALTRun 的设置。搜索关键字仍是 `sync`, 设置文件不变
-
-## [2026.10.26.56]
-
-测试版。
-
-Test build.
-
-### 修复
-- 镜像的确认窗口在后台预览完成后才打开, 这时如果你已经在别的程序里工作, 它不能自己跳到最前面, 以前可能一直藏在别的窗口后面; 现在它在任务栏里闪烁, 并有通知说它在等待确认
-- 每个同步任务有自己的预览窗口: 以前预览另一个任务会关掉还在等待确认的镜像窗口
-- 确认窗口开着超过 5 分钟后再点 "运行并删除", 先重新预览一次 (目标可能已经变了), 不再按旧的预览直接删除
-- 同步日志改用 Unicode (`/UNILOG`): 以前预览列表和日志里的中文文件名会变成 `??`, 带重音的字母也会显示错 (例如 `Café`)
-
-## [2026.10.26.55]
-
-测试版。
-
-Test build.
-
-### 修复
-- 同步任务的源和目标必须是完整路径 (`D:\...` 或 `\\server\share\...`): 相对路径、`\文件夹` (当前盘的根目录)、这台电脑上没有的环境变量 (例如没装 OneDrive 时的 `%OneDrive%`) 以前会让 robocopy 在别的文件夹里操作, 镜像时可能删掉不相干的文件。现在这样的任务在编辑窗口里不能保存, 也不会运行
-- 镜像不再能持续同步: robocopy 之后每一轮都会删除, 却没有 ALTRun 运行前的检查 (源找不到或是空的)。编辑窗口里选镜像时 "何时运行" 固定为 "只在我运行时", 并说明原因; 设置文件里已有的这种任务运行时会提示改用 "更新" 模式
-- robocopy 在 TEMP 文件夹里运行, 不再在 ALTRun 的程序文件夹里
-
-### 改进
-- 编辑窗口的 "命令" 包括运行时用的日志: 日志文件空着时显示默认的日志, 复制出来的命令和实际运行的一样
-- 编辑窗口的 "重试 / 等待 / 线程" 和 "文件信息 / 文件夹信息" 两行的输入框按列对齐
-
-## [2026.10.26.54]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内部清理 (使用上没有变化): 从 Total Commander 导入 robocopy 命令的功能决定不做了, 删掉了为它准备、但一直没有用到的命令行解析代码 (2026.10.26.47 里的 "能读入 Total Commander 开始菜单里的 robocopy 命令") 和对应的测试
-
-## [2026.10.26.53]
-
-测试版。
-
-Test build.
-
-### 新增
-- 同步任务第 3 步: 偏好设置里的 "同步" 页。列表显示每个任务的模式、源、目标和状态 (运行中、持续同步中、成功 / 失败和时间, 页面打开时自动更新); 添加、编辑、删除、复制一份; 选中任务后可以直接 预览、运行、停止、打开日志 (用列表里现在的内容, 不用先点应用)。选项: 在搜索结果里显示任务、搜索关键字、日志保留天数、打开日志文件夹
-- 同步任务的编辑窗口: 名称、源和目标 (可以一键交换)、文件、模式 (镜像 / 更新 / 全部复制 / 只复制顶层, 下面一行说明每个模式做什么, 镜像的说明是红色的)、何时运行 (只在运行时 / 持续同步)、排除文件和文件夹 (用 ; 分隔)、高级选项 (重试、等待、线程、复制哪些信息、日志文件、其他参数); 下面显示 robocopy 命令行, 输入时随时更新, 可以复制。确定时检查: 错误必须改正, 和其他任务的目标重叠时先询问, 名称不能重复。"预览" 可以在保存前看看会改变什么
-- 预览窗口: 代替原来的提示框, 上面是汇总 (会复制多少个文件、会删除多少个文件和文件夹), 下面列出每一项 (删除的排在前面), 可以打开日志、立即运行。镜像运行前如果会删除东西, 也打开这个窗口, 点 "运行并删除" 才运行 (Enter 或 Esc 只关闭窗口)
-
-## [2026.10.26.52]
-
-测试版。
-
-Test build.
-
-### 修复
-- "开机自动启动" 在 任务管理器 → 启动应用 里被禁用后, 偏好设置里仍然显示为勾选, 其实已经不会启动。现在偏好设置显示真实状态 (禁用了就显示为关闭); 重新勾选并保存时, 也会在任务管理器里启用。ALTRun 启动时不会自己重新启用, 以任务管理器里的选择为准
-
-## [2026.10.26.51]
-
-测试版。
-
-Test build.
-
-### 新增
-- 同步任务第 2 步: 在搜索窗口里运行同步任务。输入任务名或 `sync ` (列出所有任务), Enter 运行, 运行中再按 Enter 停止; `→` 里有 运行、预览 (不做任何改动)、打开日志、打开源 / 目标文件夹。结果里显示状态 (运行中、持续同步中、上次成功 / 失败)。镜像运行前先预览, 会删除东西时先说明要删多少个文件和文件夹, 确认后才运行; 源找不到或是空的时不运行。任务结束时提示复制和删除了多少文件, 失败时可以打开日志。退出 ALTRun 时停止持续同步的任务, 只是重新启动 (改设置、升级) 时继续运行。任务暂时写在设置文件里 (`SyncTasks`), 编辑界面在下一步
-- 同步任务新增 "更新" 模式 (`"Mode": "Update"`, robocopy `/E /XO`): 只复制新的和更新过的文件, 不覆盖目标里更新的文件, 不删除
-- 同步日志: 没有自己的日志文件时写到 `%TEMP%\ALTRun\SyncLogs` (不放 Data 文件夹, Data 在 OneDrive 里时不会一直上传日志); 超过 30 天的日志在运行任务时自动删除 (`Features.Sync.KeepLogDays`, `0` = 全部保留); 每次运行在 `ALTRun.log` 里记一行结果
-
-## [2026.10.26.50]
-
-测试版。
-
-Test build.
-
-### 修复
-- 窗口切换: 同一个程序开了几个窗口 (例如 3 个文档) 时只能搜到其中一个, 输入 `w ` 列出全部窗口时也一样。以前每个程序只算一个结果, 现在每个窗口都是单独的结果
-
-## [2026.10.26.49]
-
-测试版。
-
-Test build.
-
-### 修复
-- 延迟启动页面的 "启动项..." 选好一个程序后报错 "Too many parameters passed to function" (2026.10.26.46 起的测试版), 现在会正常打开编辑框
-
-## [2026.10.26.48]
-
-测试版。
-
-Test build.
-
-### 修复
-- 延迟启动: ALTRun 启动 30 秒后对任务计划程序里的任务的检查 (换电脑或路径变化后自动更新任务) 一直没有执行 (2026.10.26.42 起的测试版): 计时器调用方式写错了, 而且错误被悄悄忽略。保存偏好设置时的同步不受影响。现在后台计时器出错会记进日志, 并加了检查防止同类写法
-
-## [2026.10.26.47]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内部准备 (使用上还没有变化): 文件夹同步功能的第 1 步。新增同步任务的数据结构 (设置里的 `SyncTasks`, 默认为空) 和 robocopy 命令行的生成与解析: 能读入 Total Commander 开始菜单里的 robocopy 命令 (`%|OneDrive|` 换成 `%OneDrive%`, `%|$DATE:YMD|` 换成日期), 检查危险的设置 (源和目标相同或互相包含、镜像到盘符根目录 / 共享根目录 / OneDrive 或用户文件夹、源文件夹不存在或是空的、和其他任务的目标重叠或共用日志文件), 按 robocopy 的规则解释退出码 (小于 8 算成功)。运行、编辑窗口和搜索在后面几步
-
-## [2026.10.26.46]
-
-测试版。
-
-Test build.
-
-### 新增
-- 延迟启动页面新增 "启动项..." 按钮: 列出 Windows 登录时启动的程序 (和 任务管理器 → 启动应用 一样: Run 注册表项和启动文件夹), 选一个就改成延迟启动, 名称、程序和参数自动填好。点 应用 或 确定 时先设置好延迟任务, 再像任务管理器那样禁用它自己的启动 (不删除任何东西, 可以在任务管理器里重新启用); 任务没设置好时不动原来的启动项。以后删除这一项时会问要不要恢复它自己的启动。为所有用户启动的程序需要管理员权限才能禁用, 会提示并可以打开任务管理器
-- 手动添加一个自己也会自启动的程序时, 不再只是提示, 可以直接选择在应用时关掉它自己的启动
-
-## [2026.10.26.45]
-
-测试版。
-
-Test build.
-
-### 修复
-- 应用商店安装的桌面程序 (例如 Windows Terminal) 在操作面板里没有 "以管理员身份运行": 以前只按文件扩展名判断。现在和开始菜单一样, 看这个应用的右键菜单里有没有这一项 (Windows Terminal 这类桌面应用有, 计算器这类 UWP 应用没有), 执行时也调用右键菜单的这个命令。感谢 @liyangdal 发现并提交了修改 (#342)
-
-## [2026.10.26.43]
-
-测试版。
-
-Test build.
-
-### 修复
-- 在 Total Commander 的 "同步目录" 窗口前用 Enter 执行 "退出" 后, 有时会弹出一个文件属性窗口: 两次出现时都是 ALTRun 在 Enter 还没松开时就退出了。现在退出和重新启动前先等 Enter 松开 (最多 2 秒)
-
-## [2026.10.26.42]
-
-测试版。
-
-Test build.
-
-### 新增
-- 延迟启动 (偏好设置 → 延迟启动): 登录 Windows 一段时间后再启动程序, 例如 5 分钟后启动 OneDrive, 让桌面更快可用。每一项是任务计划程序里的一个任务 (文件夹 `ALTRun\<用户名>`), 由 Windows 启动, ALTRun 没有运行也会启动; 用你的普通权限运行, 不需要管理员权限。程序自己也会自启动时 (例如 OneDrive 的 "登录时自动启动"), 添加时会提示它从哪里启动, 以免它不等延迟就启动
-
-## [2026.10.26.41]
-
-测试版。
-
-Test build.
-
-### 修复
-- 偏好设置 → 通用 → "文件管理器" 里写的路径可以用环境变量了, 例如 `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (以前打不开文件夹); 找不到这个程序时改用资源管理器打开, 并记在日志里。自定义命令等的路径也能用所有环境变量 (`%LocalAppData%`、`%ProgramFiles%`...), 以前只认 `%Temp%`、`%OneDrive%`、`%AppData%`、`%UserProfile%`
-- 文件在离线的服务器或网络盘上时, 按 `→` 打开操作面板要等网络超时才出来: 现在列出操作时不再访问网络路径, 真正执行时才检查
-- 文件管理器名字里带 explorer 的 (例如 Explorer++、XYplorer) 以前会被当成资源管理器, 现在按程序本身识别
-- Windows 右键菜单生成失败或没有菜单项时, 不再弹出一个空白的菜单, 而是提示 "这一项没有 Windows 右键菜单"
-
-## [2026.10.26.40]
-
-测试版。
-
-Test build.
-
-### 改进
-- 用 Everything 搜索文件少问一次: 第一次查询没有被截断时 (结果少于上限), 符合的文件夹已经都在里面, 不再单独查文件夹 (每次查询 Everything 要 16–22 ms)。Everything 正忙、没有回复时不再接着查第二次, 等待上限从 1 秒改为 0.5 秒, 最坏的情况从 2 秒降到 0.5 秒
-
-## [2026.10.26.39]
-
-测试版。
-
-Test build.
-
-### 改进
-- 用 Everything 搜索文件更快: 等 Everything 回复时不再每次凑满系统计时周期 (15.6 ms), 回复一到就处理。文件搜索模式每打一个字要问 Everything 一到两次, 以前每次至少 16–31 ms
-
-## [2026.10.26.38]
-
-测试版。
-
-Test build.
-
-### 改进
-- Everything 1.5 alpha (以 "1.5a" 命名实例运行) 也能找到了, 以前会显示 "没有运行", 只用 ALTRun 自己的文件索引。在 Windows 上用真实的 Everything 1.4 和 1.5 自动测试文件搜索
-
-## [2026.10.26.37]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内部整理 (使用上没有变化): 测试和性能测试的探针直接读 `SearchWindow.Session`, 删掉 `SearchWindow` 上为它们保留的旧名字 (转发属性)。把搜索逻辑和界面分开的整理到这里完成 (第 4 步)
-
-## [2026.10.26.36]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内部整理 (使用上没有变化): 每次搜索变成一个带编号的请求 (`SearchRequest`), 结果只给最新的那次搜索显示, 比新搜索晚回来的结果直接丢掉。普通搜索、恢复上次搜索时先显示的快速结果和之后的完整搜索、预先准备好的空搜索框的刷新都走它。这是把搜索逻辑和界面分开的第 3 步, 之后的后台搜索接在这里
-
-## [2026.10.26.35]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内部整理 (使用上没有变化): 搜索窗口状态的变化 (每次呼出时的重置、隐藏时记住这次搜索、移动选中行、打开 / 关闭 / 筛选操作面板、标记文件、翻历史记录) 改成 `SearchSession` 的方法, 并加上不需要窗口的测试。这是把搜索逻辑和界面分开的第 2 步
-
-## [2026.10.26.34]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内部整理 (使用上没有变化): 搜索窗口的状态 (模式、结果、选中行、操作面板、标记、历史记录、保留上一次搜索) 从窗口代码里分出来, 放进单独的 `SearchSession`。这是把搜索逻辑和界面分开的第 1 步, 之后在它上面做后台搜索 (Everything 忙的时候输入不卡)
-
-## [2026.10.26.33]
-
-测试版。
-
-Test build.
-
-### 改进
-- 调试日志 (打开 "保存日志" 时) 多记录一些按键信息, 用来查 "用 Enter 执行后 Total Commander 弹出属性框" 的原因: 按 Enter 执行时是第一次按下还是自动重复、当时按着哪些键; 之后 2 秒内 Enter 和 Alt 每次按下 / 松开的时间和当时的前台窗口 (只记录, 不拦截按键); 退出和重新启动时的按键和前台窗口
-- 新的诊断工具 `Tests/Tools/KeyWatch.ahk` (不随程序发布): 单独运行, ALTRun 退出、重启时也照常记录; 只记 Enter、Alt、空格、Esc、Ctrl、Shift、Win 等几个键的按下 / 松开 (不记字母和数字), 是键盘按的还是程序发的, 以及每次前台窗口的变化, 写到 `%TEMP%\KeyWatch.log`
-
-## [2026.10.26.32]
-
-测试版。
-
-Test build.
-
-### 修复
-- 区分左右的呼出热键 (例如 `LAlt+Space`) 在开始菜单或 Windows 搜索开着时按下, ALTRun 被挡在后面、拿不到焦点: 现在先关掉开始菜单 / 搜索再显示 (不分左右的 `Alt+Space` 是系统热键, Windows 会自己关掉它们; 区分左右的热键走键盘钩子, 不会) (#303)
-
-### 文档
-- 偏好设置 → 通用 "热键区分左右" 的说明和 Wiki 的设置热键、常见问题: 区分左右的热键在以管理员身份运行的窗口前面不起作用 (Windows 的系统热键不分左右, 只能用键盘钩子, 而 Windows 不让普通权限的钩子收到管理员窗口里的按键), 需要时以管理员身份运行 ALTRun
-
-## [2026.10.26.31]
-
-测试版。
-
-Test build.
-
-### 改进
-- 几处以前失败时没有任何记录的地方写进日志 (打开 "保存日志" 时), 方便排查: 文件索引达到条目上限 (`MaxEntries`) 时后面的文件没有索引进来、索引时有文件夹读不了; 剪贴板里的图片保存失败; 更新后旧程序 (`ALTRun.exe.old`) 删不掉; 更新检查的状态文件读不了; 启动时关不掉另一个正在运行的 ALTRun
-
-## [2026.10.26.30]
-
-测试版。
-
-Test build.
-
-### 新增
-- 操作面板里的 "Windows 右键菜单" (默认关闭, 在 偏好设置 → 功能 里打开, `Features.ContextMenu`): 文件、文件夹、指向文件或文件夹的应用和自定义命令 (以及在同一个文件夹里的多个标记文件) 可以打开资源管理器的右键菜单, 包括 7-Zip、Git、杀毒软件、发送到等其它软件加的菜单项; 商店应用是 "开始" 菜单里的那个菜单 (固定到 "开始"、卸载...)。菜单在选中的那一行弹出, 选了菜单项以后搜索窗口才关闭, 按 `Esc` 回到操作面板; 用 `Shift+Enter` 选它还会显示资源管理器的扩展菜单项 (例如 "复制文件地址")
-
-### 改进
-- 操作面板和右键菜单变窄: "复制文件 / 剪切文件" 的提示改成 "然后在 Total Commander 里粘贴"; "复制 / 移动到 Total Commander 当前的文件夹" 右边的目标路径太长时只显示盘符和最后一级文件夹 (`Q:\…\13. 报告`), 以前长路径把右键菜单撑得很宽, 操作面板里又从右边截断, 看不到最后一级文件夹
-
-### 修复
-- 搜索窗口的右键菜单或 ☰ 菜单打开后, 点别的窗口关掉菜单, 搜索窗口不会再隐藏了 (以前关掉菜单后会把焦点抢回搜索窗口, Windows 不允许时窗口就一直开着、也不再隐藏)。现在点别的窗口关掉菜单时, 和平时失去焦点一样隐藏; 按 `Esc` 关掉菜单时回到搜索窗口
-
-## [2026.10.26.29]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 搜索窗口: "保留上一次搜索的时间 (分钟)" (`KeepLastQueryMinutes`, 默认 5, 作为 "呼出窗口时保留上一次的搜索" 的子选项缩进, 和它的说明文字对齐): 上一次的搜索只保留这么多分钟, 隔一段时间再呼出窗口, 搜索框是空的 (和 Alfred 一样); `0` = 不限
-
-### 改进
-- 保留上一次的搜索时, 在全选的文字上直接输入或按 `Backspace` 开始新的普通搜索: 上一次是文件搜索时也会退出文件搜索 (以前还停在文件搜索里, 输入的命令搜不到); 按 `空格` 开始新的空白文件搜索; 先按 `→` / `End` 移动光标再修改, 仍然保持原来的模式
-
-## [2026.10.26.28]
-
-测试版。
-
-Test build.
-
-### 新增
-- Wiki 新页面 "PT 工具箱": PT Tools 各分组的输入和算法、SPF2M 的输入、默认值和结果; PT Tools 和 SPF2M 窗口里按 `F1` 打开它 (中文界面打开中文页)
-
-### 改进
-- PT Tools: 所有输入框改成下拉组合框, 可以从常用值里选, 也可以自己输入 (跨度 3000 / 5700 / 6000 / 7200, 间距 100 ~ 1000, 面积 3500 ~ 12000, 网片 A6 ~ E12, 安全系数 1.1 ~ 1.5, 计算器给出几个算式示例); 第一次点击组合框全选, 再点一下放光标 (Windows 组合框自己的行为)
-- PT Tools: 去掉以前加的 "点击输入框全选" (点击时鼠标稍微一动就只选中一部分, 反而干扰) 和输入框两侧的额外留白, 都用 Windows 的默认效果
-- PT Tools: 只保存输入值, 计算结果在打开窗口时重新算 (以前保存的结果可能和输入对不上); 网片面积的设置项改名为 `Mesh...`, 以前保存的网片输入恢复默认值, 不再使用的设置项自动删除
-- PT Tools: 窗口变窄, 分组上移一点, 左、右、下三边的边距一致 (SPF2M 窗口也一样, 结果表的列宽正好放下竖向滚动条, 不再出现横向滚动条); 标签改短 ("Bar diameter"、"Bot mesh + bar" 等), 第三组标题从 "BRC Area" 改成 "Mesh area"; PT Tools 和 SPF2M 窗口的标签和分组标题改成句首大写 (例如 "Span width (mm)"), 和偏好设置一致
-
-## [2026.10.26.27]
-
-测试版。
-
-Test build.
-
-### 新增
-- 浏览文件夹时 (输入框是以 `\` 结尾的路径, 光标在最后), 按 `Backspace` 返回上一级 (`C:\Projects\Reports\` → `C:\Projects\`), 和 `Tab` 进入配合使用; 已经是 `C:\`、网络共享、`~\` 这样的最上层, 或者路径后面输入了筛选文字时, 照常删一个字。Wiki 里一直这样写, 但以前没有实现
-
-## [2026.10.26.26]
-
-测试版。
-
-Test build.
-
-### 修复
-- 多行的文字片段里有 `{cursor}` 时, 展开或粘贴后光标停错位置: 每个换行多退了一格 (默认的 "Email: thank you" 等片段, 光标跑到了第一行开头)。现在换行按一格计算, 光标停在 `{cursor}` 的位置
-
-## [2026.10.26.25]
-
-测试版。
-
-Test build.
-
-### 改进
-- 自定义主题文件格式有错误 (例如少了逗号) 时, 启动时提示是哪个文件、第几行出错, 并说明改用了浅色主题; 以前只写进日志, 主题悄悄变回浅色, 看不出原因。出错的是所选主题的 `Base` 时也会提示
-- 设置文件 `ALTRun.json` 格式有错误时, 提示里写出第几行第几列 (以前是字符位置, 而且所有语言都显示中文)
-
-## [2026.10.26.24]
-
-测试版。
-
-Test build.
-
-### 修复
-- 窗口刚失去焦点时马上再按热键呼出, "失去焦点时隐藏" 可能在窗口还没激活时就把它隐藏, 看起来像热键没反应; 现在显示过程中不隐藏, 显示完再检查一次
-
-### 改进
-- 调试日志: 退出时按着的键不再同时记 `Enter` 和 `NumpadEnter` (两者是同一个虚拟键, 分不出来); Quick Switch 记录前台窗口时, 隐藏的窗口和 ALTRun 自己的窗口也能记上程序名
-
-## [2026.10.26.23]
-
-测试版。
-
-Test build.
-
-### 改进
-- 调试日志记录退出的原因 (退出命令、重启、关机等)、退出时还按着的键 (Enter、Alt、Ctrl、Shift、Win) 和前台窗口, 用来查退出后别的程序收到按键的问题 (只记程序名和窗口类名, 不记窗口标题)
-
-## [2026.10.26.22]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内置文件索引扫描后少占内存: 扫描时文件名不再每个单独存成一个字符串, 而是每 64 个攒成一段, 最后一起拼接。3 万个文件扫描完: 约 25 → 18 MB, 扫描时的峰值约 57 → 41 MB (2026.10.26.21 释放的内存进程的堆不还给系统, 会一直留到重启); 从缓存读取时不变 (约 21 MB)
-
-## [2026.10.26.21]
-
-测试版。
-
-Test build.
-
-### 修复
-- 内置文件索引 (没有 Everything 时用) 在文件多时非常慢 (2026.10.26.9 起的测试版): 6.4 万个文件完整扫描一遍要 94 秒, 启动时读取缓存要 92 秒 (期间 ALTRun 不响应), 写缓存 36 秒。原因是 AutoHotkey 往对象属性里追加字符串、读取属性里的长字符串时每次都复制整串, 耗时随文件数平方增长。现在文件名先收集在数组里最后一次拼接, 显示用的文件名放在内存缓冲区里按位置读取
-
-### 改进
-- 文件索引的缓存改成二进制格式 `Data\FileIndex.bin` (读写 6.4 万个文件只要几毫秒, 拼音首字母也存在里面, 读取后不用再算); 旧的 `FileIndex.txt` 会被删除, 第一次启动时在后台重建一次
-- 匹配很多的文件搜索更快: 只取前几十个结果时不再把所有匹配都排序 (1.28 万个匹配: 37 → 4.6 ms)
-- 按拼音首字母搜文件更快: 中文文件名的首字母合成一个字符串一次查找, 不再逐个检查 (6400 个中文文件名时每次搜索省约 2 ms)
-- 新的 "File index benchmark" 工作流: 在 Windows 上用 6.4 万个文件测量扫描、缓存读写和搜索的耗时, 改到文件索引的 PR 自动运行
-
-## [2026.10.26.20]
-
-测试版。
-
-Test build.
-
-### 新增
-- 普通搜索里显示文件时可以选匹配方式 ([讨论 #308](https://github.com/zhugecaomao/ALTRun/discussions/308)): 偏好设置 → 文件搜索 → "匹配方式", "文件名或词的开头" (默认, 和以前一样) 或 "文件名包含" (例如 `udge` 也能找到 `2026-Budget.xlsx`, 和先按空格的文件搜索一样)。适合内置索引只包括自己文件夹的情况, 输入就能直接找到文件, 不用先按空格
-
-### 改进
-- 偏好设置 → 文件搜索 的 "搜索结果" 一节重新排成两行: "匹配方式 + 最少字数", "文件搜索结果数 + 普通结果里的文件数" (和上面的关键字框对齐), 每个选项都有说明; 没有勾选 "普通搜索时也显示匹配的文件和文件夹" 时只和它有关的几项变灰; "最多结果数" 改名为 "文件搜索结果数"。"浏览文件夹" 一节的长说明改成一句话加 Wiki 链接
-- Wiki 的文件搜索页加了这一页的截图 (CI 自动截取)
-
-## [2026.10.26.19]
-
-测试版。
-
-Test build.
-
-### 修复
-- 偏好设置里点了 "重建文件索引" 后, 索引建完前就关闭偏好设置, 有时会报错 "Invalid window handle" ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): 窗口刚关掉的一瞬间结果正好出来, 提示框找的还是已经关闭的窗口。现在只在偏好设置还开着时弹提示框, 否则改成通知
-
-## [2026.10.26.18]
-
-测试版。
-
-Test build.
-
-### 新增
-- 热键可以区分左右的 `Ctrl` / `Alt` / `Shift` / `Win` ([#303](https://github.com/zhugecaomao/ALTRun/issues/303)): 偏好设置 → 通用 勾选 "热键区分左右 Ctrl / Alt / Shift / Win" 后, 之后录制的热键记住按的是哪一边, 例如按左 Alt + 空格记成 `LAlt+Space` (设置文件里是 `<!Space`), 只有左 Alt 能触发, 右 Alt + 空格可以留给其它软件 (例如语音输入)。默认关闭; 已经设好的热键不变, 两边同时按住记成左右都可以
-- 热键显示带上左右: `<!Space` 显示为 `LAlt+Space`, `<^>!` 显示为 `AltGr`
-- 保存时的热键冲突检查也区分左右: `Alt+Space` 和 `LAlt+Space` 算冲突, `LAlt+Space` 和 `RAlt+Space` 不算
-
-## [2026.10.26.17]
-
-测试版。
-
-Test build.
-
-### 修复
-- 自动跳转: 用 Alt+Tab 从文件管理器切到打开 / 保存对话框时没有跳转 (点标题栏、点任务栏正常)。Windows 11 的 Alt+Tab 切换界面在切换后马上隐藏, 处理切换时读不到它的类名, 没被当成切换中的临时窗口, 而被当成了对话框之前的窗口, 所以不算从文件管理器切过来。现在隐藏窗口的类名也能读到, 处理时已经隐藏或关闭的窗口一律当作临时窗口跳过
-- 去掉 .13 到 .15 为排查加的跳转后确认、重试和重绘 (跳转本身没有问题); 调试日志保留跳转的每一步和每个切到前面的窗口
-
-## [2026.10.26.16]
-
-测试版。
-
-Test build.
-
-### 修复
-- 自动跳转 (Alt+Tab) 的诊断: 用 Alt+Tab 切到对话框时自动跳转没有触发。调试日志记录每个切到前面的窗口 (类名、程序、所属窗口、是否算作切换中的临时窗口、是否文件对话框、是否从文件管理器切过来), 用来找出 Alt+Tab 时中间经过了哪个窗口
-
-## [2026.10.26.15]
-
-测试版。
-
-Test build.
-
-### 修复
-- 自动跳转 (Alt+Tab) 的诊断: 调试日志列出跳转的对话框和同一程序的所有对话框 (包括隐藏的), 每个对话框的地址栏文字、是否可见、位置、所属窗口, 以及屏幕上对话框中间实际看到的是哪个窗口; 每一行带窗口句柄。用来判断跳转的对话框是不是屏幕上看到的那个
-- 调试日志: 很快又跳转时, 不再记录上一次跳转的 2 秒检查
-
-## [2026.10.26.14]
-
-测试版。
-
-Test build.
-
-### 修复
-- 自动跳转: 用 Alt+Tab 切到对话框后, 对话框地址栏已经是新文件夹, 看到的却还是原来的文件夹。跳转后 0.4 秒重绘一次对话框
-- 调试日志: 跳转后 2 秒再记一次对话框显示的文件夹; 状态里加上对话框是否被系统隐藏 (cloaked) 和 Alt 是否按着
-
-## [2026.10.26.13]
-
-测试版。
-
-Test build.
-
-### 修复
-- 自动跳转: 用 Alt+Tab 切到打开 / 保存对话框时没有跳过去 (点标题栏、点任务栏正常)。跳转后 0.4 秒确认对话框地址栏显示的文件夹, 没到就再跳一次 (仍然只在文件名框里确实是这个文件夹时才发 "确定", 不会误保存)
-- 调试日志更详细, 方便查跳转问题: 文件管理器的文件夹、跳转前后对话框显示的文件夹、文件名框的内容、焦点所在的控件、对话框线程的状态、每一步消息的结果
-
-## [2026.10.26.12]
-
-测试版。
-
-Test build.
-
-### 改进
-- 正式构建改用 AutoHotkey v2.0.31 (原来是 v2.0.30), 基准测试也一样; 单元测试本来就用最新的稳定版, 已经在 v2.0.31 上全部通过。v2.0.31 是修复版: `a.b[c]` 在 `a.b` 是方法时会报错, 以及设断点时的一个崩溃
-
-## [2026.10.26.11]
-
-测试版。
-
-Test build.
-
-### 改进
-- 文件对话框面板 (Quick Switch) 不再有任何轮询, 全部由窗口事件驱动 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): 以前每次切换窗口后会每 250 ms 检查一次、共 1.5 秒 (为了标题稍后才设好的窗口), 光标在面板搜索框里时也每 250 ms 检查对话框还在不在, 拖动对话框时每 15 ms 移一次面板; 现在分别改成监听这个窗口的标题变化、对话框被关闭和对话框位置变化, 只在真的有变化时才处理, 拖动时面板跟得更紧
-
-## [2026.10.26.10]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内置文件索引 (没有 Everything 时用) 的内存减少约 90%, 搜索更快 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): 以前每个文件存成几个单独的字符串 (完整路径、小写文件名), 3 万个文件的索引占约 35 MB; 现在所有文件名拼成长字符串, 每个文件的位置和所在文件夹存在一块二进制数据里, 文件夹路径只存一份, 约 4.7 MB。搜索用 `InStr` 在长字符串里直接找, 不再逐个文件比较, 命中不多时从约 13 ms 降到 1 ms 以内
-- 索引缓存改成文本文件 `Data\FileIndex.txt`, 读取时直接装进紧凑结构; 旧的 `FileIndex.json` 会删掉, 第一次启动时在后台重新扫描一次
-
-## [2026.10.26.9]
-
-测试版。
-
-Test build.
-
-### 修复
-- 自动跳转 (AutoSwitch): 从 Total Commander 等文件管理器用 Alt+Tab 或点击对话框标题栏切到打开 / 保存对话框时, 路径填进了文件名框但没有跳过去 (2026.10.26.5 起); 在 "另存为" 对话框里按着 Alt 时更糟, 对话框会把模拟的 Enter 当成 "保存", 用原来的文件名直接保存在原来的文件夹里。原因是跳转模拟按下 Enter, 而这时 Alt 或鼠标键还按着。现在标准对话框不再模拟按键: 用窗口消息把文件夹写进文件名框, 确认确实写进去了, 像打字一样通知对话框文字已经改了, 再发 "确定" 命令 (和在对话框里按 Enter 一样), 不受按键和鼠标状态影响; 快捷键 `Ctrl+G` 和文件夹面板也走这条路。另存为已经填好的文件名跳转后放回去
-- 程序自己画的对话框 (WPS / Qt 等) 仍然要输入文字, 自动跳转时会等按键和鼠标松开再输入
-- 点击对话框时如果它的程序 (例如 Word) 先到前面一下, 程序之前的窗口仍然算作对话框的 "上一个窗口"
-- 文件名框没能写进文件夹时不再按 Enter (以前可能直接打开 / 保存框里原来的文件名)
-
-## [2026.10.26.6]
-
-测试版。
-
-Test build.
-
-### 改进
-- 空闲时几乎不再占用 CPU ([#290](https://github.com/zhugecaomao/ALTRun/issues/290)): AutoHotkey 只要有一个计时器在等 (哪怕 1 小时后才执行), 就每 10 ms 醒来检查一次, 空闲时每分钟约 3.3 亿个 CPU 周期, 任务管理器里一直显示 0.1% 左右。一直在等的计时器 (每 2 秒检查文件夹变化、每 30 / 60 秒的检查、每小时的更新检查和汇率、保存图标缓存、编辑设置文件时的检查、CapsLock 管理员辅助进程) 改用 Windows 计时器 (新的 `Lib/WinTimer.ahk`), 到时间才运行。和上一版 Quick Switch 改成窗口事件一起, 空闲时不再有任何 AutoHotkey 计时器在等
-- 新增项目测试: 源码里周期 2 秒以上或一次性 1 分钟以上的 `SetTimer` 会报错, 要用 `WinTimer`
-- `WinTimer` 和 `SetTimer` 一样不会重入: 函数还在运行时到点就跳过这一次; 计时器可以合并唤醒 (`SetCoalescableTimer`, 容差为时间的十分之一, 最多 1 秒), Windows 可以把它们和其它计时器对齐, 更省电
-
-## [2026.10.26.5]
-
-测试版。
-
-Test build.
-
-### 改进
-- 文件对话框面板 (Quick Switch) 改由 Windows 的窗口事件驱动, 不再轮询: 以前每 250 ms 检查一次前台窗口是不是打开 / 保存对话框, 空闲时也一直占用一点 CPU; 现在只在前台窗口切换, 或者对话框显示出来、建好文件列表、设好标题、被拖动时才处理, 空闲时和对话框开着时都不占 CPU; 在对话框里浏览文件夹也不会让 ALTRun 收到大量事件 ([#290](https://github.com/zhugecaomao/ALTRun/issues/290))
-- 对话框的文件列表一出来面板就出现 (以前最多等 250 ms); 拖动或调整对话框大小时面板实时跟着移动, 切走或关闭对话框时面板马上消失
-- 自动跳转 (AutoSwitch) 更准: 从 Total Commander 等文件管理器经任务栏或 Alt+Tab 切到对话框时, 中间一闪而过的任务栏 / 切换窗口不再被当成 "上一个窗口"
-
-## [2026.10.26.4]
-
-测试版。
-
-Test build.
-
-### 改进
-- 片段和剪贴板的关键字还没输完整时 (例如 `sni`、`cli`), 列表最后也显示提示, 按 `Enter`、`Tab` 或双击补全成 `snip ` / `clip ` (和上一版的 `scrip`、`fol` 一样); 输完整的 `snip` / `clip` 照旧直接列出片段 / 剪贴板历史
-- 只输入书签关键字 `bm` 时, 以前什么都不显示, 现在显示一行提示, 按 `Enter` 补全成 `bm `
-- 代码整理: 关键字提示行改由共用的 `ResultItem.KeywordHint` 生成 (文件搜索、脚本、片段、剪贴板、书签), 分数和补全规则只在一个地方
-
-## [2026.10.26.3]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内置关键字还没输完整时 (至少 3 个字母, 例如 `scr`、`scrip`、`fol`、`rec`、`vid`), 列表最后也显示这个关键字的提示, 按 `Enter`、`Tab` 或双击补全成 `script `、`folder ` 等。以前要把关键字输完整才有提示, 输到一半时往下翻也找不到。提示排在所有匹配结果后面, 不影响其它结果; `doc`、`zip` 这类只有 3 个字母的关键字照旧
-
-## [2026.10.26.2]
-
-测试版。
-
-Test build.
-
-### 改进
-- 只输入内置关键字 (`script`、`recent`、`folder`、`open` / `find` / `file`、`doc` 等文件类型) 时, 提示行不再总排在最后: 名字以这个词开头或首字母对得上的应用、命令 (例如 `doc` 对应的 Docker) 仍然排在前面, 按 `Enter` 照样打开它们; 没有的话提示排第一, 按 `Enter` 直接补全成 `doc `。名字里只是包含这个词的结果排在提示后面。网页搜索 (`g`) 和自定义命令的关键字是自己设的, 仍然排在最前面
-
-## [2026.10.26.1]
-
-测试版。
-
-Test build.
-
-### 修复
-- 只输入关键字 (`script`、`recent`、`folder`、`open` / `find` / `file`、`doc` 等文件类型) 时显示的提示行, 选中后按 `Enter` 或双击没有反应, 按 `Tab` 填进去的是提示的标题。现在和网页搜索 (`g`) 的提示一样, 按 `Enter`、`Tab` 或双击补全成输入的关键字加空格 (例如 `script `), 状态栏显示 "补全"; 提示仍然排在其它结果下面
+## [2026.11.03]
+
+### Summary
+
+Folder Sync: keep folders in step with Windows' robocopy, with a Preferences page, an edit window and a preview that lists what a mirror would delete before anything is deleted; Delayed Start: start programs such as OneDrive a few minutes after signing in, so the desktop is ready sooner; the Windows context menu in the actions panel; hotkeys can tell left and right Alt / Ctrl / Shift / Win apart; ALTRun is now in winget. Idle CPU use dropped by about 94% and the built-in file index uses about 90% less memory; searching with Everything is faster; automatic switching in file dialogs works with Alt+Tab too.
+
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- Installed with Scoop: `scoop update altrun`
+- The settings file version is unchanged. The built-in file index cache becomes `Data\FileIndex.bin`: the old `FileIndex.json` is deleted and the index is rebuilt once in the background after the first start (searching works meanwhile). PT Tools: the mesh inputs are reset to their defaults once (the setting was renamed)
+
+### New
+- **Folder Sync** (Preferences → Folder Sync): keep a folder in step with another one, e.g. a server share and your OneDrive, with Windows' robocopy
+  - Tasks with four modes: Mirror (the destination becomes an exact copy; files the source doesn't have are deleted), Update (copies new and newer files, deletes nothing), Copy all, Top folder only; excludes, retries, threads, which file information to copy, the log file and other robocopy options; the edit window shows the robocopy command as you type, with the log it runs with
+  - Run, preview (changes nothing), stop and open the log from Preferences or the search window (type the task's name, or `sync ` for all tasks); the state of each task (running, keeping in sync, last run OK / failed) shows in both
+  - Preview window: how many files would be copied and deleted, and each of them, deletions first. Before a mirror deletes anything this window asks, and nothing runs until you click "Run and Delete" (Enter and Esc only close it); when it opens in the background it flashes in the taskbar and a notification says it is waiting; a preview older than 5 minutes is done again
+  - Safety: a mirror doesn't run when the source is missing or empty, when source and destination overlap, or into a drive, a share, the OneDrive folder or the user folder; source and destination must be full paths; a mirror can't keep in sync (robocopy's later rounds would delete without these checks)
+  - Logs in Unicode (Chinese names read correctly), in `%TEMP%\ALTRun\SyncLogs` (not in Data, which may be in OneDrive), deleted after 30 days
+- **Delayed Start** (Preferences → Delayed Start): start programs a while after signing in to Windows, e.g. OneDrive after 5 minutes, so the desktop is usable sooner. Each item is a Task Scheduler task (folder `ALTRun\<user name>`) that Windows starts with your normal rights, even when ALTRun isn't running. "Startup Apps..." lists the programs that start at sign-in (as in Task Manager), fills in the item and turns off the program's own startup the way Task Manager does (nothing is deleted; removing the item asks whether to turn it back on)
+- **Windows context menu in the actions panel** (off by default, Preferences → Features): files, folders, apps and custom commands pointing to them, and several marked files in one folder, get Explorer's context menu, including 7-Zip, Git, antivirus and "Send to"; `Shift+Enter` shows the extended items too
+- **Hotkeys can tell left and right Ctrl / Alt / Shift / Win apart** (#303, Preferences → General): e.g. `LAlt+Space` works only with the left Alt, leaving the right Alt + Space to another program; the conflict check tells sides apart as well
+- **Matching for files in normal search** ([discussion #308](https://github.com/zhugecaomao/ALTRun/discussions/308), Preferences → File Search → "Match"): "Start of name or word" (default) or "Anywhere in the name" (e.g. `udge` finds `2026-Budget.xlsx`)
+- **Keep the last search for N minutes** (Preferences → Search Window, default 5): after that the window opens with an empty search box; typing or `Backspace` on the kept search starts a new normal search, also when it was a file search
+- **`Backspace` goes up a level** when browsing folders (`C:\Projects\Reports\` → `C:\Projects\`), together with `Tab` to go in
+- **Hints for keywords typed halfway**: `scr`, `fol`, `rec`, `sni`, `cli`, `bm` and so on show the keyword at the end of the list; `Enter`, `Tab` or a double-click completes it to `script `, `folder ` etc.
+- **ALTRun is in winget**: `winget install zhugecaomao.ALTRun`
+- New Wiki page "PT Tools" (inputs, methods, defaults and results); `F1` in PT Tools and SPF2M opens it
+
+### Improvements
+- **Idle CPU use is down by about 94%** (#290): waiting timers use Windows timers (they no longer wake AutoHotkey every 10 ms), and the file dialog panel (Quick Switch) follows window events instead of checking every 250 ms. Benchmark against 2026.10.26: about 24 instead of 389 million CPU cycles per idle minute
+- **The built-in file index (used without Everything) uses about 90% less memory and is faster** (#290): 30,000 files take about 4.7 MB instead of 35 MB; the cache is a binary `Data\FileIndex.bin` (64,000 files read and written in milliseconds); searches with many matches (12,800: 37 → 4.6 ms) and pinyin initials are faster; less memory while scanning
+- **Searching with Everything is faster**: replies are handled as soon as they arrive (each query used to wait at least 16–31 ms), one query fewer when the first isn't cut off, at most 0.5 s instead of 2 s when Everything is busy; Everything 1.5 alpha (the "1.5a" instance) is found; tested against real Everything 1.4 and 1.5 on Windows
+- **The file dialog panel** appears as soon as the dialog's file list does, follows the dialog while you drag or resize it, and disappears at once when you switch away
+- Window switching lists every window of a program (e.g. three Word documents) instead of one per program
+- Preferences → General → "File manager" accepts environment variables (e.g. `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S`), and so do paths in custom commands; file managers with "explorer" in their name (Explorer++, XYplorer) are no longer taken for Windows Explorer
+- Store desktop apps such as Windows Terminal get "Run as administrator" in the actions panel, as in the Start menu (thanks to @liyangdal, #342)
+- "Launch ALTRun at login" shows the real state when the startup was turned off in Task Manager; ticking it again turns it back on there too
+- An error in a custom theme file or in `ALTRun.json` says which file and which line (the settings file message is in your language now)
+- The actions panel and its menus are narrower: long Total Commander target paths are shortened to the drive and the last folder (`Q:\…\13. Reports`)
+- PT Tools: the inputs are dropdowns with common values (spans, spacing, areas, meshes, safety factors) that also take typed values; only the inputs are saved and results are worked out when the window opens; narrower windows, even margins and shorter, sentence case labels in PT Tools and SPF2M
+- The debug log records more for troubleshooting (why ALTRun quit, keys held at the time, the foreground window, a few failures that used to be silent; never typed text or window titles); built with AutoHotkey v2.0.31
+
+### Fixes
+- Automatic switching in Open / Save dialogs didn't jump when you came from Total Commander with Alt+Tab (clicking the title bar or the taskbar worked); in "Save As" with Alt held, the dialog could save. The path is now only confirmed when the file name box really holds it
+- Opening the actions panel for a file on an offline server or network drive waited for the network to time out
+- The Windows context menu showed an empty menu when it couldn't be built; it now says the item has no context menu
+- After quitting ALTRun with Enter in front of Total Commander's "Synchronize directories" window, a file properties window sometimes opened (ALTRun quit before Enter was released)
+- Hotkeys that tell left and right apart didn't bring the search window to the front while the Start menu or Windows search was open
+- Pressing the hotkey right after the search window lost focus could hide it again at once
+- Closing the search window's menu (right-click or ☰) by clicking another window left the search window open
+- The hint row shown for a keyword alone (`script`, `recent`, `folder`, `doc`...) did nothing on `Enter` or a double-click, and `Tab` filled in its title
+- After a multi-line snippet with `{cursor}` was expanded, the cursor ended up in the wrong place (one character too far per line break)
+- Closing Preferences while the file index was being rebuilt could show "Invalid window handle" (#290)
+
+---
+
+### 中文说明
+
+文件夹同步: 用 Windows 自带的 robocopy 让文件夹保持同步, 有偏好设置页、编辑窗口和预览, 镜像删除任何东西之前先列出要删除的文件; 延迟启动: 登录几分钟后再启动 OneDrive 这类程序, 桌面更快可用; 操作面板里的 Windows 右键菜单; 热键可以区分左右的 Alt / Ctrl / Shift / Win; ALTRun 已收录到 winget。空闲时的 CPU 占用降低约 94%, 内置文件索引的内存减少约 90%; 用 Everything 搜索更快; 文件对话框的自动跳转用 Alt+Tab 切过去也能跳。
+
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 用 Scoop 安装的: `scoop update altrun`
+- 设置文件的版本不变。内置文件索引的缓存改为 `Data\FileIndex.bin`: 旧的 `FileIndex.json` 会删除, 第一次启动后在后台重建一次 (期间照常可以搜索)。PT Tools: 网片的输入值恢复一次默认值 (设置项改了名字)
+
+#### 新增
+- **文件夹同步** (偏好设置 → 文件夹同步): 用 Windows 自带的 robocopy 让一个文件夹和另一个保持一致, 例如服务器共享和你的 OneDrive
+  - 任务有四种模式: 镜像 (目标和源完全一致, 源里没有的文件会被删除)、更新 (复制新的和更新过的文件, 不删除)、全部复制、只复制顶层; 可以设置排除项、重试、线程、复制哪些文件信息、日志文件和其他 robocopy 参数; 编辑窗口随输入显示 robocopy 命令, 包括运行时用的日志
+  - 在偏好设置或搜索窗口里运行、预览 (不做任何改动)、停止、打开日志 (输入任务名, 或 `sync ` 列出所有任务); 两处都显示每个任务的状态 (运行中、持续同步中、上次成功 / 失败)
+  - 预览窗口: 会复制和删除多少个文件, 以及每一项, 删除的排在前面。镜像删除任何东西之前, 用这个窗口确认, 点 "运行并删除" 才运行 (Enter 和 Esc 只关闭窗口); 在后台打开时在任务栏里闪烁, 并有通知说它在等待确认; 预览超过 5 分钟会重新预览
+  - 安全措施: 源找不到或是空的、源和目标重叠、镜像到盘符、共享、OneDrive 文件夹或用户文件夹的根目录时不运行; 源和目标必须是完整路径; 镜像不能持续同步 (robocopy 之后每一轮的删除没有这些检查)
+  - 日志用 Unicode (中文文件名显示正常), 放在 `%TEMP%\ALTRun\SyncLogs` (不放 Data, Data 可能在 OneDrive 里), 30 天后自动删除
+- **延迟启动** (偏好设置 → 延迟启动): 登录 Windows 一段时间后再启动程序, 例如 5 分钟后启动 OneDrive, 让桌面更快可用。每一项是任务计划程序里的一个任务 (文件夹 `ALTRun\<用户名>`), 由 Windows 用你的普通权限启动, ALTRun 没有运行也会启动。"启动项..." 列出登录时启动的程序 (和任务管理器一样), 选一个就填好这一项, 并像任务管理器那样关掉它自己的启动 (不删除任何东西; 删除这一项时会问要不要恢复)
+- **操作面板里的 Windows 右键菜单** (默认关闭, 偏好设置 → 功能): 文件、文件夹、指向文件或文件夹的应用和自定义命令, 以及同一个文件夹里的多个标记文件, 可以打开资源管理器的右键菜单, 包括 7-Zip、Git、杀毒软件和 "发送到"; 用 `Shift+Enter` 还会显示扩展菜单项
+- **热键可以区分左右的 Ctrl / Alt / Shift / Win** (#303, 偏好设置 → 通用): 例如 `LAlt+Space` 只有左 Alt 能触发, 右 Alt + 空格留给别的软件; 热键冲突检查也区分左右
+- **普通搜索里文件的匹配方式** ([讨论 #308](https://github.com/zhugecaomao/ALTRun/discussions/308), 偏好设置 → 文件搜索 → "匹配方式"): "文件名或词的开头" (默认) 或 "文件名包含" (例如 `udge` 也能找到 `2026-Budget.xlsx`)
+- **上一次的搜索保留 N 分钟** (偏好设置 → 搜索窗口, 默认 5): 超过这个时间再呼出窗口, 搜索框是空的; 在保留的搜索上直接输入或按 `Backspace` 开始新的普通搜索, 上一次是文件搜索时也一样
+- 浏览文件夹时按 **`Backspace` 返回上一级** (`C:\Projects\Reports\` → `C:\Projects\`), 和 `Tab` 进入配合使用
+- **关键字输到一半时的提示**: `scr`、`fol`、`rec`、`sni`、`cli`、`bm` 等在列表最后显示关键字提示, 按 `Enter`、`Tab` 或双击补全成 `script `、`folder ` 等
+- **ALTRun 已收录到 winget**: `winget install zhugecaomao.ALTRun`
+- Wiki 新页面 "PT 工具箱" (输入、算法、默认值和结果); PT Tools 和 SPF2M 窗口里按 `F1` 打开它
+
+#### 改进
+- **空闲时的 CPU 占用降低约 94%** (#290): 一直在等的计时器改用 Windows 计时器 (不再让 AutoHotkey 每 10 ms 醒来一次), 文件对话框面板 (Quick Switch) 改由窗口事件驱动, 不再每 250 ms 检查一次。和 2026.10.26 的性能对比: 空闲时每分钟约 2400 万个 CPU 周期, 以前约 3.89 亿
+- **内置文件索引 (没有 Everything 时用) 的内存减少约 90%, 速度更快** (#290): 3 万个文件约 4.7 MB, 以前约 35 MB; 缓存改为二进制的 `Data\FileIndex.bin` (6.4 万个文件读写只要几毫秒); 匹配很多的搜索 (1.28 万个匹配: 37 → 4.6 ms) 和拼音首字母搜索更快; 扫描时占用的内存也更少
+- **用 Everything 搜索更快**: 回复一到就处理 (以前每次查询至少等 16–31 ms); 第一次查询没有被截断时少查一次; Everything 忙的时候最多等 0.5 秒, 以前是 2 秒; 能找到 Everything 1.5 alpha ("1.5a" 实例); 在 Windows 上用真实的 Everything 1.4 和 1.5 自动测试
+- **文件对话框面板**: 对话框的文件列表一出来就出现, 拖动或调整对话框大小时跟着移动, 切走时马上消失
+- 窗口切换列出一个程序的每个窗口 (例如 3 个 Word 文档), 以前每个程序只有一个结果
+- 偏好设置 → 通用 → "文件管理器" 可以用环境变量 (例如 `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S`), 自定义命令的路径也可以; 名字里带 explorer 的文件管理器 (Explorer++、XYplorer) 不再被当成资源管理器
+- Windows Terminal 这类应用商店安装的桌面程序, 在操作面板里有 "以管理员身份运行", 和开始菜单一样 (感谢 @liyangdal, #342)
+- "开机自动启动" 在任务管理器里被禁用后, 偏好设置显示真实状态; 重新勾选时也会在任务管理器里启用
+- 自定义主题文件或 `ALTRun.json` 格式有错误时, 提示是哪个文件、第几行 (设置文件的提示现在也用你的界面语言)
+- 操作面板和它的菜单变窄: Total Commander 的目标路径太长时只显示盘符和最后一级文件夹 (`Q:\…\13. 报告`)
+- PT Tools: 输入框改成下拉组合框, 可以从常用值里选 (跨度、间距、面积、网片、安全系数), 也可以自己输入; 只保存输入值, 打开窗口时重新计算结果; PT Tools 和 SPF2M 窗口变窄, 边距一致, 标签更短, 句首大写
+- 调试日志多记录一些信息方便排查 (退出的原因、当时按着的键、前台窗口、几处以前没有记录的失败; 不记录输入的文字和窗口标题); 正式构建改用 AutoHotkey v2.0.31
+
+#### 修复
+- 从 Total Commander 用 Alt+Tab 切到打开 / 保存对话框时没有自动跳转 (点标题栏、点任务栏正常); 按着 Alt 时 "另存为" 对话框可能直接保存。现在只有文件名框里确实是这个文件夹时才确认
+- 文件在离线的服务器或网络盘上时, 打开操作面板要等网络超时
+- Windows 右键菜单生成失败时弹出空白菜单; 现在提示这一项没有右键菜单
+- 在 Total Commander 的 "同步目录" 窗口前用 Enter 退出 ALTRun 后, 有时会弹出文件属性窗口 (ALTRun 在 Enter 松开之前就退出了)
+- 开始菜单或 Windows 搜索开着时, 区分左右的热键不能把搜索窗口带到前面
+- 搜索窗口刚失去焦点就按热键, 窗口可能马上又被隐藏
+- 点别的窗口关掉搜索窗口的菜单 (右键或 ☰) 后, 搜索窗口不再隐藏
+- 只输入关键字 (`script`、`recent`、`folder`、`doc`...) 时的提示行, 按 `Enter` 或双击没有反应, 按 `Tab` 填进去的是提示的标题
+- 多行片段里有 `{cursor}` 时, 展开后光标停错位置 (每个换行多退一格)
+- 重建文件索引时关闭偏好设置, 可能报错 "Invalid window handle" (#290)
 
 ## [2026.10.26]
 
@@ -1484,62 +1029,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.58...HEAD
-[2026.10.26.58]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.57...2026.10.26.58
-[2026.10.26.57]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.56...2026.10.26.57
-[2026.10.26.56]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.55...2026.10.26.56
-[2026.10.26.55]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.54...2026.10.26.55
-[2026.10.26.54]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.53...2026.10.26.54
-[2026.10.26.53]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.52...2026.10.26.53
-[2026.10.26.52]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.51...2026.10.26.52
-[2026.10.26.51]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.50...2026.10.26.51
-[2026.10.26.50]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.49...2026.10.26.50
-[2026.10.26.49]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.48...2026.10.26.49
-[2026.10.26.48]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.47...2026.10.26.48
-[2026.10.26.47]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.46...2026.10.26.47
-[2026.10.26.46]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.45...2026.10.26.46
-[2026.10.26.45]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.43...2026.10.26.45
-[2026.10.26.43]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.42...2026.10.26.43
-[2026.10.26.42]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.41...2026.10.26.42
-[2026.10.26.41]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.40...2026.10.26.41
-[2026.10.26.40]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.39...2026.10.26.40
-[2026.10.26.39]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.38...2026.10.26.39
-[2026.10.26.38]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.37...2026.10.26.38
-[2026.10.26.37]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.36...2026.10.26.37
-[2026.10.26.36]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.35...2026.10.26.36
-[2026.10.26.35]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.34...2026.10.26.35
-[2026.10.26.34]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.33...2026.10.26.34
-[2026.10.26.33]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.32...2026.10.26.33
-[2026.10.26.32]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.31...2026.10.26.32
-[2026.10.26.31]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.30...2026.10.26.31
-[2026.10.26.30]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.29...2026.10.26.30
-[2026.10.26.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.28...2026.10.26.29
-[2026.10.26.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.27...2026.10.26.28
-[2026.10.26.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.26...2026.10.26.27
-[2026.10.26.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.25...2026.10.26.26
-[2026.10.26.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.24...2026.10.26.25
-[2026.10.26.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.23...2026.10.26.24
-[2026.10.26.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.22...2026.10.26.23
-[2026.10.26.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.21...2026.10.26.22
-[2026.10.26.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.20...2026.10.26.21
-[2026.10.26.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.19...2026.10.26.20
-[2026.10.26.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.18...2026.10.26.19
-[2026.10.26.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.17...2026.10.26.18
-[2026.10.26.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.16...2026.10.26.17
-[2026.10.26.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.15...2026.10.26.16
-[2026.10.26.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.14...2026.10.26.15
-[2026.10.26.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.13...2026.10.26.14
-[2026.10.26.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.12...2026.10.26.13
-[2026.10.26.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.11...2026.10.26.12
-[2026.10.26.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.10...2026.10.26.11
-[2026.10.26.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.9...2026.10.26.10
-[2026.10.26.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.6...2026.10.26.9
-[2026.10.26.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.5...2026.10.26.6
-[2026.10.26.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.4...2026.10.26.5
-[2026.10.26.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.3...2026.10.26.4
-[2026.10.26.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.2...2026.10.26.3
-[2026.10.26.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26.1...2026.10.26.2
-[2026.10.26.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.10.26...2026.10.26.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03...HEAD
+[2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26
 [2026.10.20]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.20
 [2026.10.14]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.14
