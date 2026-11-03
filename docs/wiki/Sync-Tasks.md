@@ -38,8 +38,8 @@ Each task has its own window, *<task> - Folder Sync*. Preview and Run open it at
 ![Preview of a sync task](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/sync-preview.png)
 
 ## Running a task
-- Type the task's name, or `sync ` to list all tasks (`sync proj` searches only them). **Enter** runs the task; while it runs, Enter shows its window.
-- `→` opens the actions: Run, Preview (changes nothing), Open log, open the source or destination folder; while it runs, Show progress and Stop.
+- Type the task's name, or `sync ` to list all tasks (`sync proj` searches only them). **Enter** only opens the task's window (nothing starts until you click **Preview** or **Sync Now** there); while it runs, Enter shows its progress.
+- `→` opens the actions: Sync Now (runs it straight away; a mirror is still previewed and asks before deleting), Preview (changes nothing), Open log, open the source or destination folder; while it runs, Show progress and Stop.
 - The result shows what the task does and how it is doing: *Running since 10:05*, *Monitoring since 10:05*, *Last run 09:30: OK*.
 - A task that ends says how it went (files copied and removed) in its window, and with a notification when the window isn't in front. If it fails without a window, ALTRun offers to open its log.
 

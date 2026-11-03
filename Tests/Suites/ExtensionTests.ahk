@@ -478,7 +478,13 @@ class ExtensionTests {
             for action in item.Actions
                 actions .= action.Title "|"
             eq("subtitle", item.Subtitle, "Mirror \\srv\team → D:\Sync\Team")
-            eq("actions", actions, "Run|Preview (changes nothing)|Open log|Open source folder|Open destination folder|")
+            eq("actions", actions, "Sync Now|Preview (changes nothing)|Open log|Open source folder|Open destination folder|")
+            try {
+                item.OnRun.Call()                                           ; Enter only opens the window: nothing starts
+                eq("Enter: the window, ready", SyncPreview.Windows.Has(SyncJobs.Key("Team Files")) ? SyncPreview.Windows[SyncJobs.Key("Team Files")].Phase "|" SyncJobs.IsRunning("Team Files") : "none", "Ready|0")
+            } finally {
+                SyncPreview.Close(SyncJobs.Key("Team Files"))
+            }
             SyncJobs.Jobs[SyncJobs.Key("Team Files")] := {Name: "Team Files", Pid: 0, Handle: 0, Preview: false, Monitor: true, Started: "20261102100500", LogFile: "", OnDone: ""}
             item := SyncProvider.Search(SearchQuery("team"))[1]
             eq("running: Enter shows its window, state, then Stop", item.Title "|" item.Subtitle "|" item.Actions[1].Title "|" item.Actions[2].Title, "Sync: Team Files|Monitoring since 10:05 · Mirror \\srv\team → D:\Sync\Team|Show progress|Stop")

@@ -941,7 +941,7 @@ class I18n {
         s["Sync.Mirror"]                   := "Mirror {1} → {2}"
         s["Sync.Update"]                   := "Update {1} → {2}"
         s["Sync.Copy"]                     := "Copy {1} → {2}"
-        s["Sync.Action.Run"]               := "Run"
+        s["Sync.Action.Run"]               := "Sync Now"
         s["Sync.Action.Stop"]              := "Stop"
         s["Sync.Action.Show"]              := "Show progress"
         s["Sync.Action.Preview"]           := "Preview (changes nothing)"

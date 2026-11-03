@@ -404,7 +404,7 @@
   "Sync.Mirror": "鏡像 {1} → {2}",
   "Sync.Update": "更新 {1} → {2}",
   "Sync.Copy": "複製 {1} → {2}",
-  "Sync.Action.Run": "執行",
+  "Sync.Action.Run": "立即同步",
   "Sync.Action.Stop": "停止",
   "Sync.Action.Show": "顯示進度",
   "Sync.Action.Preview": "預覽 (不做任何變更)",

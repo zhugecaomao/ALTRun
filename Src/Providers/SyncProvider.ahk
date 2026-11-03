@@ -2,9 +2,10 @@
 ; SyncProvider.ahk - the sync tasks (RoboSync) in the search results (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Each task is a result, found by its name ("projects") or with the keyword (Features.Sync.Keyword, "sync": "sync " lists
-; them all, "sync proj" only the tasks). Enter runs the task (SyncJobs.Run: checks, a mirror is previewed and asks before
-; deleting; the sync window follows it), or shows its window when it runs. The actions panel: Preview, Run / Show progress and
-; Stop, Open log, open the source or destination.
+; them all, "sync proj" only the tasks). Enter only opens the task's sync window (SyncPreview.OpenTask: Preview or Sync Now there
+; starts it), or shows its progress when it runs, so an Enter by mistake never syncs. The actions panel: Sync Now (SyncJobs.Run:
+; checks, a mirror is previewed and asks before deleting) and Preview / Show progress and Stop, Open log, open the source or
+; destination.
 ; The subtitle says what it does and how it is doing ("Running since 10:05", "Last run 09:30: OK").
 ; Without sync tasks nothing shows.
 ;===============================================================================
@@ -46,7 +47,7 @@ class SyncProvider {
         if (state != "")
             subtitle := state " · " subtitle
         item := ResultItem(I18n.T("Sync.RunTitle", name), subtitle, {Icon: SyncProvider.Icon, Score: score
-            , Uid: "sync:" SyncJobs.Key(name), Source: task, OnRun: running ? (*) => SyncPreview.ShowJob(name) : (*) => SyncJobs.Run(task)})
+            , Uid: "sync:" SyncJobs.Key(name), Source: task, OnRun: (*) => SyncPreview.OpenTask(task)})
         add(titleKey, icon, fn) => item.Actions.Push(ResultItem(I18n.T(titleKey), "", {Icon: icon, OnRun: fn}))
         if running {
             add("Sync.Action.Show", SyncProvider.Icon, (*) => SyncPreview.ShowJob(name))
