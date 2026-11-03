@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.5]
+
+测试版。
+
+Test build.
+
+### 修复
+- 在 Total Commander 的 "同步目录" 窗口里用 Alt+Space 打开 ALTRun, 再按 Enter 退出 ALTRun, TC 会弹出属性窗口: TC 收到了 Alt 按下, 但 Alt 松开送到了 ALTRun, TC 一直以为 Alt 还按着, 把之后单独收到的 Enter 松开当成了 Alt+Enter (属性)。现在 ALTRun 隐藏、原来的窗口回到前面时, 给它补发缺少的 Alt 松开 (前面先发一个不起作用的屏蔽键, 不会打开菜单栏); 退出和重新加载会等 Enter 松开后再隐藏窗口, 这个 Enter 松开不再送到别的窗口
+
 ## [2026.11.03.4]
 
 测试版。
@@ -1089,7 +1098,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.5...HEAD
+[2026.11.03.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...2026.11.03.5
 [2026.11.03.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.3...2026.11.03.4
 [2026.11.03.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.2...2026.11.03.3
 [2026.11.03.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...2026.11.03.2

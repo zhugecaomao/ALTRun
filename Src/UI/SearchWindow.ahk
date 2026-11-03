@@ -280,6 +280,7 @@ class SearchWindow {
             return SearchWindow._BringToFront(started)
         SearchWindow._Step("previous window")
         App.RememberActiveWindow()
+        SearchWindow._heldAtShow := HeldKeys.Held()                        ; the hotkey's modifiers: their key-down went to that window, their key-up will come here
         Usage.Count("Show")
         last := SearchWindow.Session.Last
         restore := (text = "" && SearchWindow.Session.KeepsLast(AppSettings.General))
@@ -435,10 +436,28 @@ class SearchWindow {
             if AppSettings.Appearance["Fade"]
                 WindowFade.Out(SearchWindow.Gui.Hwnd)                       ; the window hides at once as usual, leaving a shadow that fades out
             SearchWindow.Gui.Hide()
+            SearchWindow._ReleaseHeld()
             SearchKeys.Unhook()
             SearchWindow._PrepareLater()
         }
         LargeType.Close()
+    }
+
+    ; Hidden, with the window that was in front before back in front: it saw the hotkey's modifiers go down (Alt of Alt+Space) but their
+    ; key-up came to the search window. A program that goes by the key messages it got still thinks Alt is down and takes the next key as
+    ; Alt+key: Total Commander's Synchronize directories window opened a properties window on a stray Enter key-up (2026-11, KeyWatch and
+    ; ALTRun logs; Alt+Enter there opens it). Sends it the missing key-ups (HeldKeys.Release; not for keys still held, nor to another window)
+    static _heldAtShow := []
+    static _ReleaseHeld() {
+        held := SearchWindow._heldAtShow, SearchWindow._heldAtShow := []
+        if (!held.Length || !App.PreviousWindow || !WinActive("ahk_id " App.PreviousWindow))
+            return
+        if ((sent := HeldKeys.Release(held)) && Logger.Enabled) {
+            names := ""
+            for name in held
+                names .= (names = "" ? "" : " ") name
+            Logger.Debug("SearchWindow: sent the key-up of " names " to " SearchWindow.ForegroundText() " (" sent " key(s); their key-down went there before showing)")
+        }
     }
 
     ; After hiding, prepare the next showing in the background: the empty search box and its results (pinned, recently opened items, the new version notice).
@@ -757,6 +776,8 @@ class SearchWindow {
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
         RecentProvider.Remember(item)
         Usage.CountItem(item)
+        if item.WaitKeysUp && (waited := HeldKeys.WaitUp(["Enter", "NumpadEnter"], 500)) && Logger.Enabled
+            Logger.Debug("SearchWindow: waited " waited " ms for Enter to be let go before hiding")
         SearchWindow.Hide("run")
         if (modifier = "")
             SearchWindow._SafeRun(() => ActionCatalog.RunDefault(item))

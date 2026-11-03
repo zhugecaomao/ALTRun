@@ -22,6 +22,8 @@
 ;   Pinned       true = a pinned result (clipboard, empty search box); a pin is drawn at the icon's bottom right
 ;   KeepWindow   for an action: run it with the search window still open (it shows something over the window first and closes the window itself,
 ;                e.g. the Windows context menu); otherwise the window closes before the action runs
+;   WaitKeysUp   true = the window stays until Enter is let go before it closes and runs it: for commands that open no window of their own
+;                (Quit, Reload), so Enter's key-up doesn't go alone to the window in front, which never saw the key-down (see HeldKeys)
 ;
 ; Usage:
 ;   ResultItem("Notepad", "C:\Windows\notepad.exe", {Kind: "file", Arg: path, Uid: "app:" path})
@@ -54,6 +56,7 @@ class ResultItem {
         this.Exclusive    := false
         this.Pinned       := false
         this.KeepWindow   := false
+        this.WaitKeysUp   := false
         this.Source       := ""
         this.Provider     := ""
         if IsObject(props) {
