@@ -33,7 +33,7 @@ scoop install altrun
 - When installed with Scoop, a new version found by "Check for Updates" tells you to upgrade with `scoop update altrun`; don't unzip over it by hand
 
 ### Installing with winget
-The winget manifest is ready (`packaging\winget`). Once the [official winget repository](https://github.com/microsoft/winget-pkgs) accepts it, you can run:
+ALTRun is in the [official winget repository](https://github.com/microsoft/winget-pkgs) (winget comes with Windows 10 / 11):
 
 ```powershell
 winget install zhugecaomao.ALTRun

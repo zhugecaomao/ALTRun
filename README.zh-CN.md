@@ -50,7 +50,7 @@
 
 如果 Windows SmartScreen 拦截程序，点击 **更多信息** → **仍要运行**。杀毒软件误报请参阅[常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ-zh#杀毒软件报毒)。
 
-也可以通过 Scoop 或 winget（审核收录后）安装，或使用 AutoHotkey v2 直接运行 `ALTRun.ahk`。详情请参阅[其他安装方式与升级](#其他安装方式与升级)。
+也可以通过 Scoop 或 winget 安装，或使用 AutoHotkey v2 直接运行 `ALTRun.ahk`。详情请参阅[其他安装方式与升级](#其他安装方式与升级)。
 
 
 ## 功能
@@ -194,7 +194,11 @@ scoop install altrun
 scoop update altrun    # 升级（请先退出 ALTRun）
 ```
 
-winget 清单已提交，等待审核收录；收录后可使用 `winget install zhugecaomao.ALTRun` 安装。
+**通过 winget 安装**（Windows 10 / 11 自带）：
+```powershell
+winget install zhugecaomao.ALTRun
+winget upgrade zhugecaomao.ALTRun    # 升级（请先退出 ALTRun）
+```
 
 从源码运行：安装 [AutoHotkey v2](https://www.autohotkey.com/)，然后运行 `ALTRun.ahk`。
 

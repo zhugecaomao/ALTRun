@@ -33,7 +33,7 @@ scoop install altrun
 - 用 Scoop 安装时, "检查更新" 发现新版本会提示用 `scoop update altrun` 升级, 不要手动解压覆盖
 
 ### 用 winget 安装
-winget 清单已经准备好 (`packaging\winget`), 等 [winget 官方仓库](https://github.com/microsoft/winget-pkgs) 收录后就可以:
+ALTRun 已经收录在 [winget 官方仓库](https://github.com/microsoft/winget-pkgs) 里 (Windows 10 / 11 自带 winget):
 
 ```powershell
 winget install zhugecaomao.ALTRun

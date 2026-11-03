@@ -50,7 +50,7 @@
 
 If Windows SmartScreen blocks the app, choose **More info** → **Run anyway**. For antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#my-antivirus-flags-it).
 
-You can also install with Scoop or winget (once accepted), or run `ALTRun.ahk` with AutoHotkey v2. See [Installation options and upgrades](#installation-options-and-upgrades) for details.
+You can also install with Scoop or winget, or run `ALTRun.ahk` with AutoHotkey v2. See [Installation options and upgrades](#installation-options-and-upgrades) for details.
 
 
 ## Features
@@ -194,7 +194,11 @@ scoop install altrun
 scoop update altrun    # upgrade (quit ALTRun first)
 ```
 
-The winget manifest has been submitted and is awaiting acceptance. Once accepted, install with `winget install zhugecaomao.ALTRun`.
+**winget** (built into Windows 10 / 11):
+```powershell
+winget install zhugecaomao.ALTRun
+winget upgrade zhugecaomao.ALTRun    # upgrade (quit ALTRun first)
+```
 
 To run from source, install [AutoHotkey v2](https://www.autohotkey.com/) and launch `ALTRun.ahk`.
 

@@ -134,6 +134,7 @@ html[data-lang="zh"] [lang="en"], html[data-lang="en"] [lang="zh"] { display: no
 .install li { margin-bottom: 6px; }
 .install pre { margin: 0 0 12px; background: var(--code-bg); border-radius: 8px; padding: 12px; overflow-x: auto; }
 .install pre code { background: none; padding: 0; }
+.install h3.next { margin-top: 20px; }                      /* a second install method in the same card (Scoop, then winget) */
 .copy {
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
   border-radius: 8px; padding: 4px 12px; font: inherit; font-size: 0.85rem; cursor: pointer;

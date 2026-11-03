@@ -3,7 +3,7 @@
 | 文件 | 说明 |
 |---|---|
 | `../bucket/altrun.json` | Scoop 清单。仓库本身就是一个 bucket: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun` |
-| `winget/*.yaml` | winget 清单 (zip 里的便携版 ALTRun.exe), 提交到 [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) 后可以 `winget install zhugecaomao.ALTRun` |
+| `winget/*.yaml` | winget 清单 (zip 里的便携版 ALTRun.exe)。2026-11 已收录到 [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs): `winget install zhugecaomao.ALTRun` |
 | `Update-Manifests.ps1` | 把两个清单更新到新版本 (版本号、下载地址、SHA256) |
 
 ## 发布新版本时
@@ -11,7 +11,7 @@ Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 1. 运行 `Update-Manifests.ps1`, 把 Scoop / winget 清单更新到新版本并提交到 main。Scoop 用户 `scoop update altrun` 就能拿到新版本
 2. 如果仓库设置了 `WINGET_TOKEN` secret, 用 [wingetcreate](https://github.com/microsoft/winget-create) 向 winget-pkgs 提交新版本的 PR (微软自动检查后合并, 一般 1~3 天)
 
-`WINGET_TOKEN`: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), 勾选 `public_repo`; 然后在本仓库 Settings → Secrets and variables → Actions 里新建 `WINGET_TOKEN`。没有设置时跳过这一步, 也可以每次手动运行 `wingetcreate update` (见下文)。
+`WINGET_TOKEN`: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), 勾选 `public_repo`; 然后在本仓库 Settings → Secrets and variables → Actions 里新建 `WINGET_TOKEN`。没有设置时跳过这一步, winget 用户就收不到新版本, 需要每次手动运行 `wingetcreate update` (见下文)。
 
 ## 代码签名 (SignPath)
 ALTRun.exe 没有签名时, Windows SmartScreen 会提示 "无法识别的应用 / 未知发布者", 部分杀毒软件也更容易误报。
@@ -34,8 +34,8 @@ ALTRun.exe 没有签名时, Windows SmartScreen 会提示 "无法识别的应用
 
 README 的 "代码签名策略 / Code signing policy" 一节和官网下载区 (https://zhugecaomao.github.io/ALTRun/#download) 的说明已经写好 (SignPath Foundation 要求下载页写明使用他们的代码签名), 申请表里的 Download URL 填官网的这个地址。
 
-## 第一次提交到 winget
-winget-pkgs 里还没有 ALTRun 时, 自动更新不起作用, 需要先手动提交一次 (在 Windows 上):
+## 第一次提交到 winget (已完成)
+2026-11 已经完成, winget-pkgs 收录了 2026.10.26。下面的步骤留作记录 (在 Windows 上):
 
 ```powershell
 winget install Microsoft.WingetCreate      # 装好后关闭并重新打开 PowerShell
@@ -46,9 +46,9 @@ wingetcreate submit .\ALTRun-main\packaging\winget
 ```
 (不需要安装 git: 直接下载仓库的 zip, 只用到里面 `packaging\winget` 的 4 个文件。)
 
-第一次运行会打开浏览器要求登录 GitHub 并授权 wingetcreate; 它会 fork winget-pkgs 并创建 PR。PR 里的自动检查 (清单验证、下载、杀毒扫描、安装测试) 全部通过后, 由微软的维护者合并。合并以后:
-- `winget install zhugecaomao.ALTRun` 就可以安装
-- 以后的版本: 设置 `WINGET_TOKEN` 让 Release 工作流自动提交; 或者手动运行
+第一次运行会打开浏览器要求登录 GitHub 并授权 wingetcreate; 它会 fork winget-pkgs 并创建 PR。PR 里的自动检查 (清单验证、下载、杀毒扫描、安装测试) 全部通过后, 由微软的维护者合并。
+
+以后的版本: 设置 `WINGET_TOKEN` 让 Release 工作流自动提交; 或者手动运行
   `wingetcreate update zhugecaomao.ALTRun --version <版本> --urls <zip 下载地址> --submit`
 
 ## 设置保存在哪里
