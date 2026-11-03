@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.03.4]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 文件夹同步只用来设置任务: 按钮合成一行 (添加 / 编辑 / 删除 / 复制一份 / 同步...); "同步..." 打开任务的同步窗口, 只是打开, 在窗口里点预览或立即同步才开始, 任务正在运行时显示进度; 预览、运行、停止、打开日志都在同步窗口里
+- 去掉任务列表的 "状态" 一列, 任务的状态在搜索结果和同步窗口里显示; 列表的源和目标两列更宽
+
 ## [2026.11.03.3]
 
 测试版。
@@ -1079,7 +1089,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...HEAD
+[2026.11.03.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.3...2026.11.03.4
 [2026.11.03.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.2...2026.11.03.3
 [2026.11.03.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...2026.11.03.2
 [2026.11.03.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03...2026.11.03.1

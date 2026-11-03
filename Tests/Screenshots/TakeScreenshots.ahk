@@ -95,7 +95,7 @@ class Shots {
             ["prefs-startupapps", "Light", "-Preferences 19", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
             ["prefs-sync",       "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
             ["sync-editor",      "Light", "-Preferences 20", () => Shots.SyncWindow("Edit...", "Folder Sync Task"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
-            ["sync-preview",     "Light", "-Preferences 20", () => Shots.SyncWindow("Preview", "Projects - Folder Sync"), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
+            ["sync-preview",     "Light", "-Preferences 20", () => Shots.SyncPreview(), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
             ["prefs-usage",      "Light", "-Preferences 21", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
             ["prefs-advanced",   "Light", "-Preferences 22", () => Shots.Preferences()],     ; Wiki: data files
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
@@ -858,6 +858,20 @@ class Shots {
         }
         WinSetAlwaysOnTop(1, window)
         Sleep(1000)
+        return window
+    }
+
+    ; Preferences → Sync → Sync... opens the task's window (Ready); its Preview button previews the sample folders in it
+    static SyncPreview() {
+        window := Shots.SyncWindow("Sync...", "Projects - Folder Sync")
+        preview := 0
+        for ctrl in WinGetControlsHwnd(window)
+            if (WinGetClass(ctrl) = "Button" && ControlGetText(ctrl) = "Preview")
+                preview := ctrl
+        if !preview
+            throw Error("sync window: Preview button not found")
+        PostMessage(0xF5, 0, 0, preview)                                    ; BM_CLICK
+        Sleep(3000)                                                         ; robocopy /L of the sample folders, then the list
         return window
     }
 

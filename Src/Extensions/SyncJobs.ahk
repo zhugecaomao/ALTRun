@@ -34,7 +34,6 @@ class SyncJobs {
     static StateFile => AppSettings.DataDir "\SyncRunning.json"
     static LogDir := A_Temp "\ALTRun\SyncLogs"
     static _pollTimer := () => SyncJobs._Poll()
-    static Changed := ""                                                    ; a function called when a job starts or ends (the Preferences page shows the states)
 
     static Key(name) => StrLower(Trim(name))
     static FileName(name) => RegExReplace(Trim(name), '[\\/:*?"<>|]', "_")
@@ -194,13 +193,7 @@ class SyncJobs {
             , Started: A_Now, StartTick: A_TickCount, LogFile: logFile, Progress: SyncProgress(logFile, logStart), OnDone: onDone}
         Logger.Debug("SyncJobs: started " task["Name"] (preview ? " (preview)" : "") ", pid " pid)
         WinTimer.Set(SyncJobs._pollTimer, SyncJobs.PollMs)
-        SyncJobs._Notify()
         return ""
-    }
-
-    static _Notify() {
-        if IsObject(SyncJobs.Changed)
-            SyncJobs.Changed.Call()
     }
 
     ; Deletes the logs in LogDir older than KeepLogDays (0 = keeps them all). Only ALTRun's own folder: a task's own log file is the user's
@@ -257,7 +250,6 @@ class SyncJobs {
             SyncJobs.Jobs.Delete(key)
             SyncJobs.Last[key] := {Code: code, Ended: A_Now, Preview: job.Preview}
             Logger.Debug("SyncJobs: " job.Name (job.Preview ? " (preview)" : "") " ended, exit code " code)
-            SyncJobs._Notify()
             if job.HasOwnProp("Stopped")
                 SyncPreview.Finish(job, "Stopped")
             else if IsObject(job.OnDone)
@@ -362,21 +354,7 @@ class SyncJobs {
         return {Dirs: row(rows[found].Values), Files: row(rows[found + 1].Values), Bytes: bytes}
     }
 
-    ; For the search results: "Running since 10:05", "Monitoring since 10:05", "Last run 09:30: OK", ...
-    ; The state in a word or two, for the Preferences list: "Running", "Monitoring", "OK 09:30", "Failed 09:30"; "" when not run yet
-    static ShortState(name) {
-        key := SyncJobs.Key(name)
-        if SyncJobs.Jobs.Has(key) {
-            job := SyncJobs.Jobs[key]
-            return I18n.T(job.Preview ? "Sync.Short.Checking" : job.Monitor ? "Sync.Short.Monitoring" : "Sync.Short.Running")
-        }
-        if SyncJobs.Last.Has(key) {
-            last := SyncJobs.Last[key]
-            return I18n.T(RoboSync.Result(last.Code).Ok ? "Sync.Short.Ok" : "Sync.Short.Failed", FormatTime(last.Ended, "HH:mm"))
-        }
-        return ""
-    }
-
+    ; For the search results and the sync window: "Running since 10:05", "Monitoring since 10:05", "Last run 09:30: OK", ...
     static State(name) {
         key := SyncJobs.Key(name)
         if SyncJobs.Jobs.Has(key) {

@@ -557,27 +557,17 @@ class PrefsPages {
         PrefsForm.LinkNote(I18n.T("DelayedStart.Note", '<a href="taskschd.msc">', '<a href="taskmgr.exe /0 /startup">', "</a>"))   ; links: Task Scheduler, Task Manager's startup apps
     }
 
-    ; Folder sync tasks: the list (state of each task in the last column, kept up to date while the page is open), the buttons that act on
-    ; the selected task, then the options. Run / Preview use the task as it is in the list, before Apply or OK
+    ; Folder sync tasks: the list with its buttons (Duplicate, and Sync... for the task's window: previewing, running and stopping are
+    ; there, this page only sets tasks up), then the options. The window uses the task as it is in the list, before Apply or OK
     static BuildSync() {
         PrefsForm.BeginPage("Prefs.Page.Sync", 150)
         list := PrefsForm.List("SyncTasks", 300
-            , [["Prefs.Col.Name", "Name", 110], ["Sync.Col.Mode", "Mode", 70, (v) => RoboSync.ModeText(v)], ["Sync.Col.Source", "Source", 140]
-             , ["Sync.Col.Destination", "Destination", 140], ["Sync.Col.State", "Name", 90, (v) => SyncJobs.ShortState(v)]]
+            , [["Prefs.Col.Name", "Name", 120], ["Sync.Col.Mode", "Mode", 80, (v) => RoboSync.ModeText(v)], ["Sync.Col.Source", "Source", 180]
+             , ["Sync.Col.Destination", "Destination", 180]]
             , (owner, title, item, original) => SyncEditor.Edit(owner, I18n.T("Sync.Editor.Title"), item, original, PreferencesWindow.Working["SyncTasks"])
-            , () => RoboSync.NewTask())
-        PrefsPages._syncList := list
-        hwnd := PreferencesWindow.Gui.Hwnd
-        SyncJobs.Changed := () => WinExist("ahk_id " hwnd) ? PrefsPages._RedrawSync() : (SyncJobs.Changed := "")   ; Preferences closed: no more
-        PrefsForm._y -= 4
-        x := PrefsForm.ContentX, w := 104
-        for spec in [["Sync.Duplicate", (*) => PrefsPages._SyncDuplicate()], ["Sync.Button.Preview", (*) => PrefsPages._SyncDo("Preview")]
-                   , ["Sync.Action.Run", (*) => PrefsPages._SyncDo("Run")], ["Sync.Action.Stop", (*) => PrefsPages._SyncDo("Stop")]
-                   , ["Sync.Action.OpenLog", (*) => PrefsPages._SyncDo("Log")]] {
-            PrefsForm.Add("Button", "x" x " w" w " h" PrefsForm.ButtonH, I18n.T(spec[1])).OnEvent("Click", spec[2])
-            x += w + 10
-        }
-        PrefsForm._y += PrefsForm.ButtonH + 8
+            , () => RoboSync.NewTask(), ""
+            , [{Label: I18n.T("Sync.Duplicate"), Width: 90, Click: (list, *) => PrefsPages._SyncDuplicate(list)}
+             , {Label: I18n.T("Sync.Button.Open"), Width: 90, Click: (list, *) => PrefsPages._SyncOpen(list)}])
         PrefsForm.Note("Sync.PageNote")
 
         PrefsForm.Section("Prefs.Section.SyncOptions")
@@ -590,12 +580,8 @@ class PrefsPages {
         PrefsForm.Desc("", PrefsForm.InputX(), I18n.T("Sync.Prefs.LogNote"))
     }
 
-    static _syncList := ""
-    static _RedrawSync() => PrefsPages._syncList.Redraw.Call()
-
     ; Duplicate: a copy of the selected task in the edit dialog, named "<name> (2)"
-    static _SyncDuplicate() {
-        list := PrefsPages._syncList
+    static _SyncDuplicate(list) {
         if !IsObject(task := list.Selected.Call())
             return
         copy := PreferencesWindow.DeepCopy(task)
@@ -609,20 +595,11 @@ class PrefsPages {
         list.Insert.Call(copy)
     }
 
-    ; Preview / Run / Stop / Log on the selected task
-    static _SyncDo(what) {
-        list := PrefsPages._syncList
+    ; Sync...: the selected task's window, which only opens (Preview or Sync Now starts it); a running task's shows its progress
+    static _SyncOpen(list) {
         if !IsObject(task := list.Selected.Call())
             return MsgBox(I18n.T("Sync.SelectFirst"), I18n.T("Prefs.Page.Sync"), "Iconi Owner" PreferencesWindow.Gui.Hwnd)
-        task := ItemEditor.WithDefaults(task, RoboSync.NewTask())           ; a task written by hand may leave keys out
-        PreferencesWindow.Gui.Opt("+OwnDialogs")
-        switch what {
-            case "Preview": SyncJobs.Preview(task)
-            case "Run": SyncJobs.IsRunning(task["Name"]) ? SyncPreview.ShowJob(task["Name"]) : SyncJobs.Run(task)   ; running: its window
-            case "Stop": SyncJobs.Stop(task["Name"])
-            case "Log": SyncProvider.OpenLog(task)
-        }
-        PrefsPages._RedrawSync()
+        return SyncPreview.OpenTask(ItemEditor.WithDefaults(task, RoboSync.NewTask()))   ; a task written by hand may leave keys out
     }
 
     ; "Startup Apps...": an entry made from one of the startup apps, opened in the edit dialog first

@@ -485,6 +485,12 @@ class ExtensionTests {
             } finally {
                 SyncPreview.Close(SyncJobs.Key("Team Files"))
             }
+            try {                                                           ; Preferences' Sync...: the selected task's window, ready
+                PrefsPages._SyncOpen({Selected: () => Map("Name", "Archive", "Source", "\\srv\archive", "Destination", "D:\Sync\Archive", "Mode", "Copy")})
+                eq("Sync...: the window, ready", SyncPreview.Windows.Has(SyncJobs.Key("Archive")) ? SyncPreview.Windows[SyncJobs.Key("Archive")].Phase "|" SyncJobs.IsRunning("Archive") : "none", "Ready|0")
+            } finally {
+                SyncPreview.Close(SyncJobs.Key("Archive"))
+            }
             SyncJobs.Jobs[SyncJobs.Key("Team Files")] := {Name: "Team Files", Pid: 0, Handle: 0, Preview: false, Monitor: true, Started: "20261102100500", LogFile: "", OnDone: ""}
             item := SyncProvider.Search(SearchQuery("team"))[1]
             eq("running: Enter shows its window, state, then Stop", item.Title "|" item.Subtitle "|" item.Actions[1].Title "|" item.Actions[2].Title, "Sync: Team Files|Monitoring since 10:05 · Mirror \\srv\team → D:\Sync\Team|Show progress|Stop")
@@ -903,15 +909,15 @@ class ExtensionTests {
         eq("mode names", RoboSync.ModeText("Mirror") "|" RoboSync.ModeText("Update") "|" RoboSync.ModeText("Copy") "|" RoboSync.ModeText("Top") "|" RoboSync.ModeText("x"), "Mirror|Update|Copy all|Top folder only|Copy all")
         eq("problem fields", SyncEditor.FieldOf("Nested") "|" SyncEditor.FieldOf("MirrorRoot") "|" SyncEditor.FieldOf("Threads"), "Source|Destination|Threads")
 
-        ; The state column
-        eq("not run yet", SyncJobs.ShortState("Team"), "")
+        ; The state (search results, the sync window when ready)
+        eq("not run yet", SyncJobs.State("Team"), "")
         try {
             SyncJobs.Last[SyncJobs.Key("Team")] := {Code: 1, Ended: "20261102093000", Preview: false}
-            eq("last run ok", SyncJobs.ShortState("team"), "OK 09:30")
+            eq("last run ok", SyncJobs.State("team"), "Last run 09:30: OK")
             SyncJobs.Last[SyncJobs.Key("Team")] := {Code: 16, Ended: "20261102093000", Preview: false}
-            eq("last run failed", SyncJobs.ShortState("Team"), "Failed 09:30")
+            eq("last run failed", SyncJobs.State("Team"), "Last run 09:30: failed (16)")
             SyncJobs.Jobs[SyncJobs.Key("Team")] := {Name: "Team", Pid: 0, Handle: 0, Preview: false, Monitor: true, Started: "20261102100500", LogFile: "", OnDone: ""}
-            eq("monitoring", SyncJobs.ShortState("Team"), "Monitoring")
+            eq("monitoring", SyncJobs.State("Team"), "Monitoring since 10:05")
         } finally {
             SyncJobs.Jobs.Clear(), SyncJobs.Last.Clear()
         }

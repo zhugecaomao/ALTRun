@@ -5,12 +5,12 @@
 Keep a folder in step with another one, for example a server share copied into your OneDrive, with Windows' own `robocopy`. ALTRun runs it in the background, checks risky settings first and tells you how it went.
 
 ## Setting up tasks
-Preferences → **Folder Sync** lists the tasks, with their mode, folders and state (*Running*, *Monitoring*, *OK 09:30*, *Failed 09:30*).
+Preferences → **Folder Sync** lists the tasks, with their mode and folders. The page only sets tasks up; previewing, running and stopping happen in the task's window (see below).
 
 ![Preferences → Folder Sync](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-sync.png)
 
 - **Add**, **Edit** (or double-click), **Delete**, **Duplicate** (a copy to change, e.g. for a second folder).
-- **Preview**, **Run**, **Stop**, **Open log** act on the selected task right away, as it is in the list (no need to click Apply first).
+- **Sync...** opens the selected task's window, as the task is in the list (no need to click Apply first). It only opens: **Preview** or **Sync Now** in the window starts it. For a task that is running, it shows its progress.
 - Options: show the tasks in the search results, the search keyword (`sync`), how many days logs are kept, and the log folder.
 
 The edit window, top to bottom:
@@ -33,7 +33,7 @@ Each task has its own window, *<task> - Folder Sync*. Preview and Run open it at
 - **Done**: files copied (and their size), files deleted, and the time; files that couldn't be copied are counted in red, and the bar turns red (yellow when stopped).
 - The bar's progress also shows on the window's taskbar button, so you can see it while working in another program (the window can be minimized).
 - The list shows the first 2000 changes; the log (**Open log**) has all of them. A path that doesn't fit shows whole when you point at it; double-click a row to show the file in Explorer.
-- Closing the window doesn't stop the task: its result in the search window (Enter) or **Run** in Preferences opens the window again. A notification says how it ended when the window isn't in front.
+- Closing the window doesn't stop the task: its result in the search window (Enter) or **Sync...** in Preferences opens the window again. A notification says how it ended when the window isn't in front.
 
 ![Preview of a sync task](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/sync-preview.png)
 
