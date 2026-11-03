@@ -583,6 +583,80 @@ class ExtensionTests {
         }
     }
 
+    ; PROBE (temporary, for the live sync window): can the log be read while robocopy writes it, how it grows, and when /MT writes
+    ; a file's line (before or after the file is copied). Prints PROBE lines, asserts nothing; removed once the window is built
+    static SyncLogProbe() {
+        if (!FileExist(RoboSync.Program) || DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr"))
+            return
+        out := (text) => FileAppend("PROBE " text "`n", "*")
+        root := A_Temp "\ALTRun-synclog-probe"
+        try DirDelete(root, true)
+        DirCreate(root "\src\deep"), DirCreate(root "\dst")
+        Loop 4000
+            FileAppend("x", root "\src\deep\file" A_Index ".txt")
+        bigSize := 400 * 1024 * 1024
+        handle := FileOpen(root "\src\big.bin", "w"), handle.Length := bigSize, handle.Close()
+        FileAppend("y", root "\dst\extra.txt")
+        savedLogDir := SyncJobs.LogDir, SyncJobs.LogDir := root "\logs"
+        try {
+            task := RoboSync.NewTask()
+            task["Name"] := "Probe", task["Source"] := root "\src", task["Destination"] := root "\dst", task["Retries"] := 0, task["Wait"] := 0
+            for preview in [true, false] {
+                mode := preview ? "preview" : "run"
+                state := {Done: false}
+                problem := SyncJobs.Start(task, preview, (job, code) => state.Done := true)
+                if (problem != "") {
+                    out(mode ": start failed " problem)
+                    continue
+                }
+                logFile := SyncJobs.Jobs[SyncJobs.Key("Probe")].LogFile
+                started := A_TickCount, reads := 0, fails := 0, lastError := "", lastLength := -1, changes := 0, samples := "", nextSample := 0
+                bigSeen := "", bigSizeThen := "", bigDone := ""
+                while (!state.Done && A_TickCount - started < 180000) {
+                    Sleep(50)
+                    SyncJobs._Poll()
+                    elapsed := A_TickCount - started
+                    text := ""
+                    try {
+                        file := FileOpen(logFile, "r")
+                        text := file.Read(), file.Close()
+                        reads++
+                    } catch as e {
+                        fails++, lastError := e.Message
+                    }
+                    if (StrLen(text) != lastLength)
+                        changes++, lastLength := StrLen(text)
+                    StrReplace(text, "`t", "`t", , &tabs)
+                    if (elapsed >= nextSample) {
+                        samples .= elapsed "ms:" StrLen(text) "ch/" tabs "tabs "
+                        nextSample := elapsed + 500
+                    }
+                    if (!preview) {
+                        dstBig := root "\dst\big.bin"
+                        if (bigSeen = "" && InStr(text, "big.bin"))
+                            bigSeen := elapsed, bigSizeThen := FileExist(dstBig) ? FileGetSize(dstBig) : "none"
+                        if (bigDone = "" && FileExist(dstBig) && FileGetSize(dstBig) = bigSize)
+                            bigDone := elapsed
+                    }
+                }
+                out(mode ": " (state.Done ? "ended" : "TIMEOUT") " after " (A_TickCount - started) " ms; reads ok " reads ", failed " fails " " lastError "; length changed " changes " times")
+                out(mode ": samples " samples)
+                if !preview
+                    out("run: big.bin line seen at " bigSeen " ms (destination size then " bigSizeThen "), big.bin fully copied at " bigDone " ms")
+                final := ""
+                try final := SyncJobs.ReadLog(logFile)
+                lines := StrSplit(StrReplace(final, "`r"), "`n")
+                for line in lines
+                    if InStr(line, "big.bin") || InStr(line, "extra.txt") || InStr(line, "file1.txt") || RegExMatch(line, "^\s*(Dirs|Files|Bytes|Times)\s*:")
+                        out(mode ": line [" StrReplace(line, "`t", "<TAB>") "]")
+            }
+        } finally {
+            SyncJobs.StopAll(), SyncJobs.Last.Clear()
+            SyncJobs.LogDir := savedLogDir
+            try DirDelete(root, true)
+        }
+    }
+
     ; Step 3: the preview's list read from a robocopy log, the preview window's rows, the editor's values, the short states
     static SyncPreview() {
         eq := (n, a, e) => TestRunner.Equal("SyncPreview." n, a, e)
