@@ -58,10 +58,10 @@ class CoreTests {
         child := "#NoTrayIcon`n#SingleInstance Off`n"
             . "g := Gui(, 'HeldKeys child'), g.MenuBar := MenuBar(), m := Menu(), m.Add('Item', (*) => 0), g.MenuBar.Add('&File', m)`n"
             . "for msg in [0x100, 0x101, 0x104, 0x105]`n    OnMessage(msg, Keys)`n"
-            . "OnMessage(0x211, (*) => FileAppend('menu loop`n', A_Args[1]))`n"
+            . "OnMessage(0x211, (*) => FileAppend('menu loop``n', A_Args[1]))`n"
             . "g.Show('w300 h120')`n"
             . "Keys(wParam, lParam, msg, hwnd) {`n"
-            . "    FileAppend(Format('{:X} {:X} alt={}`n', msg, wParam, DllCall('GetKeyState', 'Int', 0x12, 'Short') < 0 ? 'down' : 'up'), A_Args[1])`n"
+            . "    FileAppend(Format('{:X} {:X} alt={}``n', msg, wParam, DllCall('GetKeyState', 'Int', 0x12, 'Short') < 0 ? 'down' : 'up'), A_Args[1])`n"
             . "}`n"
         FileAppend(child, dir "\child.ahk", "UTF-8")
         Run('"' A_AhkPath '" "' dir '\child.ahk" "' logFile '"', , , &pid)
