@@ -647,6 +647,51 @@ class ExtensionTests {
         }
     }
 
+    ; PROBE (temporary): an excluded file (/XF) or folder (/XD) only in the destination: counted as extra? listed? deleted?
+    static SyncExcludedProbe() {
+        if (!FileExist(RoboSync.Program) || DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr"))
+            return
+        root := A_Temp "\ALTRun-exclprobe"
+        out(text) => FileAppend("PROBE " text "`n", "*")
+        run(label, threads, preview, extra := "") {
+            task := RoboSync.NewTask()                                      ; default excludes: thumbs.db desktop.ini ~$*.* / System Volume Information $Recycle.Bin
+            task["Source"] := root "\src", task["Destination"] := root "\dst", task["Threads"] := threads
+            task["LogFile"] := root "\log.txt", task["AppendLog"] := 0, task["Extra"] := "/NP " extra
+            cmd := RoboSync.Build(task, preview)
+            code := RunWait(cmd.Program " " cmd.Args, , "Hide")
+            text := SyncJobs.ReadLog(root "\log.txt"), dirsRow := "", filesRow := "", listed := ""
+            for line in StrSplit(text, "`n", "`r") {
+                if RegExMatch(line, "^\s*Dirs :")
+                    dirsRow := Trim(line)
+                else if RegExMatch(line, "^\s*Files :")
+                    filesRow := Trim(line)
+                else if InStr(line, "EXTRA")
+                    listed .= " [" Trim(RegExReplace(line, "\s+", " ")) "]"
+            }
+            out(label " (MT " threads (preview ? ", /L" : "") (extra != "" ? ", " extra : "") ", exit " code "): " dirsRow " | " filesRow " | listed:" (listed = "" ? " none" : listed))
+        }
+        left() => (FileExist(root "\dst\sub\desktop.ini") ? "desktop.ini " : "") (FileExist(root "\dst\Thumbs.db") ? "Thumbs.db " : "")
+            . (FileExist(root "\dst\sub\~$Plan.docx") ? "~$Plan.docx " : "") (FileExist(root "\dst\$Recycle.Bin\x.txt") ? "$Recycle.Bin\x.txt " : "")
+        try {
+            for threads in [32, 0] {
+                try DirDelete(root, true)
+                DirCreate(root "\src\sub"), FileAppend("1", root "\src\sub\a.txt")
+                RunWait(RoboSync.Program ' "' root '\src" "' root '\dst" /MIR /NP /R:0 /W:0', , "Hide")
+                FileAppend("x", root "\dst\sub\desktop.ini"), FileSetAttrib("+HS", root "\dst\sub\desktop.ini")
+                FileAppend("x", root "\dst\Thumbs.db")
+                FileAppend("x", root "\dst\sub\~$Plan.docx")
+                DirCreate(root "\dst\$Recycle.Bin"), FileAppend("x", root "\dst\$Recycle.Bin\x.txt")
+                run("excluded extras only (desktop.ini, Thumbs.db, ~$Plan.docx, $Recycle.Bin\x.txt)", threads, true)
+                run("  same with /X", threads, true, "/X")
+                run("  same with /V", threads, true, "/V")
+                run("  real run", threads, false)
+                out("  left after the run: " left())
+            }
+        } finally {
+            try DirDelete(root, true)
+        }
+    }
+
     ; Step 3: the preview's list read from a robocopy log, the preview window's rows, the editor's values, the short states
     static SyncPreview() {
         eq := (n, a, e) => TestRunner.Equal("SyncPreview." n, a, e)
