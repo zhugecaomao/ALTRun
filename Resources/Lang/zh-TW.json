@@ -499,6 +499,7 @@
   "Sync.Preview.CopyFolders": "會複製 {2} 個檔案中的 {1} 個 ({3}), 新建 {4} 個資料夾。",
   "Sync.Preview.FoldersOnly": "會新建 {1} 個資料夾; 沒有要複製的檔案。",
   "Sync.Preview.NothingToCopy": "沒有要複製的檔案。",
+  "Sync.Preview.Kept": "目標裡有 {1} 個被排除的檔案或資料夾 (來源裡沒有), 會保留: robocopy 把它們算作多餘的, 但不會刪除。",
   "Sync.Preview.CopyWhy": "複製 ({1})",
   "Sync.Preview.Why.New": "新檔案",
   "Sync.Preview.Why.Newer": "較新",

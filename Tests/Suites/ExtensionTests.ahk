@@ -647,50 +647,6 @@ class ExtensionTests {
         }
     }
 
-    ; PROBE (temporary): an excluded file (/XF) or folder (/XD) only in the destination: counted as extra? listed? deleted?
-    static SyncExcludedProbe() {
-        if (!FileExist(RoboSync.Program) || DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr"))
-            return
-        root := A_Temp "\ALTRun-exclprobe"
-        out(text) => FileAppend("PROBE " text "`n", "*")
-        run(label, threads, preview, extra := "") {
-            task := RoboSync.NewTask()                                      ; default excludes: thumbs.db desktop.ini ~$*.* / System Volume Information $Recycle.Bin
-            task["Source"] := root "\src", task["Destination"] := root "\dst", task["Threads"] := threads
-            task["LogFile"] := root "\log.txt", task["AppendLog"] := 0, task["Extra"] := "/NP " extra
-            cmd := RoboSync.Build(task, preview)
-            code := RunWait(cmd.Program " " cmd.Args, , "Hide")
-            text := SyncJobs.ReadLog(root "\log.txt"), dirsRow := "", filesRow := "", listed := ""
-            for line in StrSplit(text, "`n", "`r") {
-                if RegExMatch(line, "^\s*Dirs :")
-                    dirsRow := Trim(line)
-                else if RegExMatch(line, "^\s*Files :")
-                    filesRow := Trim(line)
-                else if InStr(line, "EXTRA")
-                    listed .= " [" Trim(RegExReplace(line, "\s+", " ")) "]"
-            }
-            out(label " (MT " threads (preview ? ", /L" : "") (extra != "" ? ", " extra : "") ", exit " code "): " dirsRow " | " filesRow " | listed:" (listed = "" ? " none" : listed))
-        }
-        left() => (FileExist(root "\dst\sub\desktop.ini") ? "desktop.ini " : "") (FileExist(root "\dst\Thumbs.db") ? "Thumbs.db " : "")
-            . (FileExist(root "\dst\sub\~$Plan.docx") ? "~$Plan.docx " : "") (FileExist(root "\dst\$Recycle.Bin\x.txt") ? "$Recycle.Bin\x.txt " : "")
-        try {
-            for threads in [32, 0] {
-                try DirDelete(root, true)
-                DirCreate(root "\src\sub"), FileAppend("1", root "\src\sub\a.txt")
-                RunWait(RoboSync.Program ' "' root '\src" "' root '\dst" /MIR /NP /R:0 /W:0', , "Hide")
-                FileAppend("x", root "\dst\sub\desktop.ini"), FileSetAttrib("+HS", root "\dst\sub\desktop.ini")
-                FileAppend("x", root "\dst\Thumbs.db")
-                FileAppend("x", root "\dst\sub\~$Plan.docx")
-                DirCreate(root "\dst\$Recycle.Bin"), FileAppend("x", root "\dst\$Recycle.Bin\x.txt")
-                DirCreate(root "\dst\gone\deeper"), DirCreate(root "\dst\empty"), FileAppend("x", root "\dst\gone\old.txt")
-                run("excluded extras + extra folders gone (with old.txt), gone\deeper, empty", threads, true)
-                run("  real run", threads, false)
-                out("  left after the run: " left() (DirExist(root "\dst\gone") ? "gone " : "") (DirExist(root "\dst\empty") ? "empty " : ""))
-            }
-        } finally {
-            try DirDelete(root, true)
-        }
-    }
-
     ; Step 3: the preview's list read from a robocopy log, the preview window's rows, the editor's values, the short states
     static SyncPreview() {
         eq := (n, a, e) => TestRunner.Equal("SyncPreview." n, a, e)
@@ -751,8 +707,11 @@ class ExtensionTests {
         same := {Files: {Copied: 0, Total: 538, Extras: 0}, Dirs: {Copied: 91, Total: 91, Extras: 0}, Bytes: ""}
         eq("summary: the same, /MT counting every folder", SyncPreview.Summary(same, {NewDirs: 0}), "Nothing to do: the destination is up to date (538 files, 91 folders).")
         eq("summary: folders only", SyncPreview.Summary(same, {NewDirs: 2}), "Would create 2 folders; there are no files to copy.")
-        same.Files.Extras := 1
-        eq("summary: only deletions", SyncPreview.Summary(same, {NewDirs: 0}), "No files to copy.")
+        same.Files.Extras := 1                                              ; robocopy's Extras also counts excluded files only in the destination, which it keeps
+        eq("summary: only an excluded file in the destination (kept, not listed)", SyncPreview.Summary(same, {NewDirs: 0, DeleteFiles: 0}) "|" SyncPreview.Kept(same, {DeleteFiles: 0, DeleteDirs: 0})
+            , "Nothing to do: the destination is up to date (538 files, 91 folders).|1")
+        eq("summary: only deletions", SyncPreview.Summary(same, {NewDirs: 0, DeleteFiles: 1}) "|" SyncPreview.Kept(same, {DeleteFiles: 1, DeleteDirs: 0}), "No files to copy.|0")
+        eq("changes: what to delete counted from the lines", changes.DeleteFiles "|" changes.DeleteDirs, "2|1")
         eq("summary: none", SyncPreview.Summary("", {}), I18n.T("Sync.Preview.NoSummary"))
 
         ; The preview window: the summary, the list, Run and Delete only when asked for; Enter closes it
@@ -787,6 +746,16 @@ class ExtensionTests {
             SyncPreview.Close(SyncJobs.Key("Projects")), SyncPreview.Close(SyncJobs.Key("Photos"))
         }
         eq("windows: closed", SyncPreview.Windows.Count, 0)
+
+        ; Only an excluded file in the destination (desktop.ini...): robocopy counts it as an extra but keeps it, so nothing to delete
+        keptOnly := {Summary: {Files: {Copied: 0, Total: 538, Extras: 1}, Dirs: {Copied: 91, Total: 91, Extras: 0}, Bytes: ""}, Changes: SyncJobs.Changes(""), LogFile: ""}
+        try {
+            SyncPreview.Show(previewTask, keptOnly, {Run: true, Confirm: false})
+            w := SyncPreview.Windows[SyncJobs.Key("Projects")]
+            eq("window: an excluded extra isn't a deletion", w.Sync.Text "|" w.DetailColor "|" InStr(w.Detail.Value, "1 excluded files or folders"), "Sync Now|cGray|1")
+        } finally {
+            SyncPreview.Close(SyncJobs.Key("Projects"))
+        }
 
         ; Run from an old preview: a mirror is previewed again (the destination may have changed), other modes aren't
         old := 1000000, fresh := old + SyncPreview.StaleMs - 1, late := old + SyncPreview.StaleMs + 1

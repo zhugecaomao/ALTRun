@@ -73,9 +73,12 @@ class SyncPreview {
         name := task["Name"], summary := result.Summary, changes := result.Changes
         w := SyncPreview._Window(task, options)
         w.Phase := "Preview", w.Created := A_TickCount, w.Totals := SyncJobs.Totals(result)
-        deletes := IsObject(summary) ? summary.Files.Extras + summary.Dirs.Extras : 0
+        deletes := SyncPreview._Count(changes, "DeleteFiles") + SyncPreview._Count(changes, "DeleteDirs")
         w.Status.Value := SyncPreview.Summary(summary, changes)
-        SyncPreview._Detail(w, deletes ? I18n.T("Sync.Preview.Delete", summary.Files.Extras, summary.Dirs.Extras) " " I18n.T("Sync.Preview.ConfirmText") : "", true)
+        if deletes
+            SyncPreview._Detail(w, I18n.T("Sync.Preview.Delete", changes.DeleteFiles, changes.DeleteDirs) " " I18n.T("Sync.Preview.ConfirmText"), true)
+        else
+            SyncPreview._Detail(w, (kept := SyncPreview.Kept(summary, changes)) ? I18n.T("Sync.Preview.Kept", kept) : "")
         SyncPreview._Fill(w, SyncPreview.Rows(changes, w.Source, w.Destination))
         more := (changes.HasOwnProp("Total") && changes.Total > changes.Length) ? I18n.T("Sync.Preview.More", changes.Length, changes.Total) : ""
         w.Note.Value := (more != "") ? more : I18n.T("Sync.Preview.Note")
@@ -90,19 +93,29 @@ class SyncPreview {
         return w.Gui
     }
 
-    ; The preview's summary line. Folders to create come from the log's "New Dir" lines: with /MT (several threads, the default)
-    ; robocopy's "Dirs : Copied" is every folder, even when nothing changes, and it writes no folder lines (probed on Windows)
+    ; The preview's summary line. Folders to create and what to delete come from the log's lines (SyncJobs.Changes), not the summary:
+    ; with /MT (several threads, the default) robocopy's "Dirs : Copied" is every folder, even when nothing changes, and it writes no
+    ; folder lines; "Extras" also counts excluded files and folders only in the destination, which it keeps (probed on Windows)
     static Summary(summary, changes) {
         if !IsObject(summary)
             return I18n.T("Sync.Preview.NoSummary")
-        files := summary.Files.Copied, newDirs := changes.HasOwnProp("NewDirs") ? changes.NewDirs : 0
+        files := summary.Files.Copied, newDirs := SyncPreview._Count(changes, "NewDirs")
         size := SyncProgress.FormatSize(IsObject(summary.Bytes) ? summary.Bytes.Copied : 0)
         if (files = 0 && newDirs = 0)
-            return (summary.Files.Extras + summary.Dirs.Extras) ? I18n.T("Sync.Preview.NothingToCopy") : I18n.T("Sync.Preview.UpToDate", summary.Files.Total, summary.Dirs.Total)
+            return (SyncPreview._Count(changes, "DeleteFiles") + SyncPreview._Count(changes, "DeleteDirs")) ? I18n.T("Sync.Preview.NothingToCopy") : I18n.T("Sync.Preview.UpToDate", summary.Files.Total, summary.Dirs.Total)
         if (files = 0)
             return I18n.T("Sync.Preview.FoldersOnly", newDirs)
         return newDirs ? I18n.T("Sync.Preview.CopyFolders", files, summary.Files.Total, size, newDirs) : I18n.T("Sync.Preview.Copy", files, summary.Files.Total, size)
     }
+
+    ; Excluded files and folders only in the destination: in the summary's Extras, but robocopy neither lists nor deletes them
+    static Kept(summary, changes) {
+        if !IsObject(summary)
+            return 0
+        return Max(0, summary.Files.Extras - SyncPreview._Count(changes, "DeleteFiles")) + Max(0, summary.Dirs.Extras - SyncPreview._Count(changes, "DeleteDirs"))
+    }
+
+    static _Count(changes, name) => changes.HasOwnProp(name) ? changes.%name% : 0
 
     ; robocopy ended (code, or "Stopped"): the window's last word. false when the task has no window following it
     static Finish(job, code) {
@@ -125,7 +138,7 @@ class SyncPreview {
             progress := job.Progress
             copied := IsObject(summary) ? summary.Files.Copied : progress.CopyFiles
             bytes := (IsObject(summary) && IsObject(summary.Bytes)) ? summary.Bytes.Copied : progress.CopyBytes
-            deleted := IsObject(summary) ? summary.Files.Extras : progress.DeleteFiles
+            deleted := progress.DeleteFiles                                 ; what the log lists (Extras counts kept excluded files too)
             w.Status.Value := I18n.T("Sync.Window.Done", copied, SyncProgress.FormatSize(bytes), deleted, SyncPreview.Elapsed(A_TickCount - job.StartTick))
             failed := IsObject(summary) ? summary.Files.Failed : progress.Errors
         }

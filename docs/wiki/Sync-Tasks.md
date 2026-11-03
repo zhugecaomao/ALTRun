@@ -48,6 +48,7 @@ Each task has its own window, *<task> - Folder Sync*. Preview and Run open it at
   - The window opens when the preview has finished. If you have gone on working in another program by then, it can't come to the front (Windows doesn't let a background program take the focus): it flashes in the taskbar and a notification says it is waiting.
   - Each task has its own window: previewing another task doesn't close one still waiting.
   - A window left open for more than 5 minutes previews again when you click **Sync and Delete**, as the destination may have changed since.
+- Excluded files and folders are never deleted from the destination, even by a mirror. robocopy still counts the ones that are only in the destination as "extras" in its summary; ALTRun doesn't count them as deletions and says they stay.
 - A mirror doesn't run when the source folder can't be found or is empty (for example a server share that didn't connect), since that would empty the destination.
 - A task doesn't run when the source and destination are the same folder or one is inside the other, or when a mirror would go into a drive, a share, the OneDrive folder or the user folder (it would delete everything else there).
 - Source and destination must be full paths (`D:\Sync\Projects`, `\\server\share\folder`). A relative path, `\folder` (the root of whichever drive is current) or an environment variable that doesn't exist on this PC (`%OneDrive%` without OneDrive) would make robocopy work in some other folder, so such a task doesn't run.

@@ -498,6 +498,7 @@
   "Sync.Preview.CopyFolders": "{2} 個中 {1} 個のファイル ({3}) をコピーし、{4} 個のフォルダーを作成します。",
   "Sync.Preview.FoldersOnly": "{1} 個のフォルダーを作成します。コピーするファイルはありません。",
   "Sync.Preview.NothingToCopy": "コピーするファイルはありません。",
+  "Sync.Preview.Kept": "コピー先にだけある除外対象のファイルまたはフォルダー {1} 個は残ります。robocopy は余分として数えますが、削除しません。",
   "Sync.Preview.CopyWhy": "コピー ({1})",
   "Sync.Preview.Why.New": "新規",
   "Sync.Preview.Why.Newer": "新しい",

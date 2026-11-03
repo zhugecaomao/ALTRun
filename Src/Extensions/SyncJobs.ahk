@@ -69,7 +69,7 @@ class SyncJobs {
         if !RoboSync.Result(code).Ok
             return SyncPreview.Finish(job, code) || SyncJobs._Failed(task["Name"], code, job.LogFile)
         result := SyncJobs.ReadPreview(job.LogFile)
-        if (IsObject(result.Summary) && result.Summary.Files.Extras + result.Summary.Dirs.Extras > 0)
+        if (result.Changes.DeleteFiles + result.Changes.DeleteDirs > 0)
             return SyncPreview.Show(task, result, {Run: true, Confirm: true})
         SyncJobs.RunNow(task, SyncJobs.Totals(result))
     }
@@ -116,13 +116,15 @@ class SyncJobs {
     }
 
     ; The files and folders a run (or a preview, /L) lists in its log: [{Kind: "Copy" | "Delete", Folder, Path, Label, Size}...], at
-    ; most limit (Total: how many there are; NewDirs: the folders it creates, 0 with /MT, which lists no folders). How the lines are
-    ; read: SyncProgress
+    ; most limit (Total: how many there are; NewDirs: the folders it creates, 0 with /MT, which lists no folders; DeleteFiles /
+    ; DeleteDirs: what it deletes). What to delete comes from these lines, not the summary's Extras column: Extras also counts
+    ; excluded files and folders that are only in the destination, which robocopy keeps and doesn't list (probed on Windows).
+    ; How the lines are read: SyncProgress
     static Changes(logText, limit := 2000) {
         progress := SyncProgress("", 0, limit)
         progress.Feed(logText, true)
         list := progress.Changes
-        list.Total := progress.Total, list.NewDirs := progress.NewDirs
+        list.Total := progress.Total, list.NewDirs := progress.NewDirs, list.DeleteFiles := progress.DeleteFiles, list.DeleteDirs := progress.DeleteDirs
         return list
     }
 
@@ -280,10 +282,12 @@ class SyncJobs {
         }
         summary := ""
         try summary := SyncJobs.Summary(SyncJobs.ReadLog(job.LogFile))
+        progress := job.Progress                                            ; deleted: the files the log lists (Extras counts kept excluded ones too)
+        progress.Read()
         if IsObject(summary)
-            Logger.Debug("SyncJobs: " job.Name " done, copied " summary.Files.Copied " files, deleted " summary.Files.Extras " files and " summary.Dirs.Extras " folders")
+            Logger.Debug("SyncJobs: " job.Name " done, copied " summary.Files.Copied " files, deleted " progress.DeleteFiles " files and " progress.DeleteDirs " folders")
         if !active
-            App.Toast(IsObject(summary) ? I18n.T("Sync.Done", job.Name, summary.Files.Copied, summary.Files.Extras) : I18n.T("Sync.DoneShort", job.Name))
+            App.Toast(IsObject(summary) ? I18n.T("Sync.Done", job.Name, summary.Files.Copied, progress.DeleteFiles) : I18n.T("Sync.DoneShort", job.Name))
     }
 
     ;---------------------------------------------------------------------------

@@ -1036,6 +1036,7 @@ class I18n {
         s["Sync.Preview.CopyFolders"]       := "Would copy {1} of {2} files ({3}) and create {4} folders."
         s["Sync.Preview.FoldersOnly"]       := "Would create {1} folders; there are no files to copy."
         s["Sync.Preview.NothingToCopy"]     := "No files to copy."
+        s["Sync.Preview.Kept"]              := "{1} excluded files or folders that are only in the destination stay: robocopy counts them as extras but doesn't delete them."
         s["Sync.Preview.CopyWhy"]           := "Copy ({1})"
         s["Sync.Preview.Why.New"]           := "new"
         s["Sync.Preview.Why.Newer"]         := "newer"
