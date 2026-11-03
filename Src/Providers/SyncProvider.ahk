@@ -11,7 +11,7 @@
 
 class SyncProvider {
     static Id := "Sync"
-    static Icon := "res:imageres.dll,-5375"                                 ; sync arrows
+    static Icon => IconCache.Own("Sync", A_ScriptDir "\Resources\ALTRun.ico")   ; Resources\Icons\Sync.ico (imageres.dll's icon numbers differ between Windows builds)
 
     static Init() {
     }
