@@ -490,8 +490,9 @@ class PrefsForm {
     ; Returns the list object: {Items, Insert, Append, Edit, Reload, Selected, View}; its functions are properties, called with .Call
     ; check: optional, (item, roots) => "OK" / "Missing" / "Unavailable" / "Skipped".
     ; When given there is a "Check paths" button, with the results in a "Status" column (the items themselves have no such key)
-    ; The filter box right of the buttons: only items containing all the typed words (searched in every column's text, case-insensitive)
-    static List(path, height, columns, fields, newItem, check := "", buttons := "") {
+    ; The filter box right of the buttons: only items containing all the typed words (searched in every column's text, case-insensitive).
+    ; withFilter: false leaves it out, for a short list whose own buttons need the row (Folder Sync)
+    static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true) {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
         for column in columns
@@ -637,14 +638,16 @@ class PrefsForm {
         PrefsForm.Add("Button", "x+8 yp w80", I18n.T("Prefs.Delete")).OnEvent("Click", DeleteItem)
         if IsObject(check)
             PrefsForm.Add("Button", "x+24 yp w100", I18n.T("Prefs.CheckTargets")).OnEvent("Click", CheckItems)
-        if IsObject(buttons)                                                ; the page's own buttons: [{Label, Width, Click: (list, button) => ...}]
-            for extra in buttons
-                PrefsForm.Add("Button", "x+24 yp w" extra.Width, extra.Label).OnEvent("Click", ((extra, button, *) => extra.Click.Call(list, button)).Bind(extra))
-        listView.GetPos(&listX, , &listW)
-        filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; not Add: filtering doesn't change the settings
-        PrefsForm._current.Controls.Push(filterBox)
-        Win.SetCueBanner(filterBox.Hwnd, I18n.T("Prefs.Filter"))
-        filterBox.OnEvent("Change", (*) => Refresh())
+        if IsObject(buttons)                                                ; the page's own buttons: [{Label, Width, Click: (list, button) => ..., Gap}]
+            for extra in buttons                                            ; Gap: the space before it (24 sets it apart; 8 = one row with Add / Edit / Delete)
+                PrefsForm.Add("Button", "x+" (extra.HasOwnProp("Gap") ? extra.Gap : 24) " yp w" extra.Width, extra.Label).OnEvent("Click", ((extra, button, *) => extra.Click.Call(list, button)).Bind(extra))
+        if withFilter {
+            listView.GetPos(&listX, , &listW)
+            filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; not Add: filtering doesn't change the settings
+            PrefsForm._current.Controls.Push(filterBox)
+            Win.SetCueBanner(filterBox.Hwnd, I18n.T("Prefs.Filter"))
+            filterBox.OnEvent("Change", (*) => Refresh())
+        }
         PrefsForm._y += 38
         return list
     }
