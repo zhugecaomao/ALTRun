@@ -106,6 +106,7 @@ class SyncPreview {
         w.Phase := "Done"
         SyncPreview._Bar(w, RoboSync.Result(code = "Stopped" ? 16 : code).Ok ? 1000 : "", "Done")
         SyncPreview._Buttons(w, ["Log", "Close"])
+        SyncPreview._Relayout(w)
         return true
     }
 
@@ -178,6 +179,8 @@ class SyncPreview {
         else
             w.Status.Value := I18n.T("Sync.Window.RunningCount", progress.CopyFiles, size, elapsed)
         w.Warn.Value := progress.Errors ? I18n.T("Sync.Window.FailedFiles", progress.Errors) : ""
+        if (w.Warn.Visible != (w.Warn.Value != ""))
+            SyncPreview._Relayout(w)
         if (!job.Monitor && IsObject(totals) && (totals.Bytes > 0 || totals.Files > 0)) {
             done := totals.Bytes > 0 ? progress.CopyBytes / totals.Bytes : progress.CopyFiles / totals.Files
             SyncPreview._Bar(w, Min(990, Round(done * 1000)), "Run")      ; full only when robocopy has ended
@@ -257,6 +260,7 @@ class SyncPreview {
     ; Shows the window (once laid out), Close focused: Enter closes, running (and deleting) needs a click
     static _Present(w) {
         w.Gui.Show()
+        SyncPreview._Relayout(w)                                            ; the same size as before: no Size event
         w.CloseButton.Focus()
         return w.Gui
     }
@@ -314,7 +318,27 @@ class SyncPreview {
         w.Log.GetPos(, &buttonY)
         w.Run.GetPos(&runX, , &runW)
         w.CloseButton.GetPos(&closeX)
-        return {Margin: listX, ListBar: barY - listY - listH, BarNote: noteY - barY - barH, NoteButtons: buttonY - noteY - noteH, Between: closeX - runX - runW}
+        return {Margin: listX, ListBar: barY - listY - listH, BarNote: noteY - barY - barH, NoteButtons: buttonY - noteY - noteH, Between: closeX - runX - runW, Line: 4}
+    }
+
+    ; The lines above the list take room only when they have text (the warning in red, the question before deleting): -> the list's y
+    static _Top(w) {
+        w.Status.GetPos(, &y, , &h)
+        y += h
+        for ctrl in [w.Warn, w.Confirm] {
+            ctrl.Visible := (ctrl.Value != "")
+            if ctrl.Visible {
+                ctrl.GetPos(, , , &h)
+                ctrl.Move(, y + w.Gaps.Line), y += w.Gaps.Line + h
+            }
+        }
+        return y + w.Gaps.Line + 2
+    }
+
+    ; Lays the window out again after the texts or the buttons of a phase changed
+    static _Relayout(w) {
+        w.Gui.GetClientPos(, , &cw, &ch)                                    ; the units GetPos / Move use, as the Size event's
+        SyncPreview._Layout(w, 0, cw, ch)
     }
 
     ; Resizing: the list takes the room, the bar, the note and the buttons stay below it, Run / Stop and Close at the right edge
@@ -322,7 +346,7 @@ class SyncPreview {
         if (minMax = -1)
             return
         gaps := w.Gaps
-        w.List.GetPos(, &listY)
+        listY := SyncPreview._Top(w)
         w.Log.GetPos(, , , &buttonH)
         w.Note.GetPos(, , , &noteH)
         w.Bar.GetPos(, , , &barH)
@@ -330,7 +354,8 @@ class SyncPreview {
         noteY := buttonY - gaps.NoteButtons - noteH
         barY := noteY - gaps.BarNote - barH
         width := cw - 2 * gaps.Margin
-        w.List.Move(, , width, Max(40, barY - gaps.ListBar - listY))
+        listBottom := w.Bar.Visible ? barY - gaps.ListBar : noteY - gaps.BarNote          ; no bar: the list takes its place
+        w.List.Move(, listY, width, Max(40, listBottom - listY))
         w.Bar.Move(, barY, width)
         w.Note.Move(, noteY, width)
         for ctrl in [w.Status, w.Warn, w.Confirm]
