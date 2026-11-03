@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.3]
+
+测试版。
+
+Test build.
+
+### 修复
+- 搜索结果里同步任务的图标在有的 Windows 上显示成打印机: 以前用的是 Windows 图标库 (imageres.dll) 里的编号, 不同版本的 Windows 编号对应的图标不一样; 现在用 ALTRun 自己的同步图标 (`Resources\Icons\Sync.ico`)
+
 ## [2026.11.03.2]
 
 测试版。
@@ -1066,7 +1075,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.3...HEAD
+[2026.11.03.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.2...2026.11.03.3
 [2026.11.03.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...2026.11.03.2
 [2026.11.03.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03...2026.11.03.1
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
