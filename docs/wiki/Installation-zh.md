@@ -19,21 +19,8 @@ ALTRun 是绿色软件, 不需要安装, 不写注册表。
 
 建议放在自己能写入的文件夹里 (例如 `D:\Apps\ALTRun`), 设置和数据保存在程序目录的 `Data\` 里, 整个文件夹可以直接带走。放在需要管理员权限才能写入的文件夹 (例如 `C:\Program Files`) 时, 设置和数据改为保存在 `%APPDATA%\ALTRun\`, 但一键更新不能替换程序文件, 要手动下载新版本。
 
-### 用 Scoop 安装
-[Scoop](https://scoop.sh/) 是 Windows 的命令行软件管理工具。ALTRun 的仓库本身就是一个 Scoop bucket:
-
-```powershell
-scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
-scoop install altrun
-```
-
-- 安装后开始菜单里有 "Scoop Apps → ALTRun", 程序在 `scoop\apps\altrun\current`
-- 升级: 先退出 ALTRun, 再运行 `scoop update altrun`。设置和数据 (`Data\`, 包括 `Data\ALTRun.json`)、`Themes\` 都会保留
-- 卸载: `scoop uninstall altrun`, 设置留在 `scoop\persist\altrun`, 重新安装后自动恢复; 连设置一起删除用 `scoop uninstall altrun --purge`
-- 用 Scoop 安装时, "检查更新" 发现新版本会提示用 `scoop update altrun` 升级, 不要手动解压覆盖
-
 ### 用 winget 安装
-ALTRun 已经收录在 [winget 官方仓库](https://github.com/microsoft/winget-pkgs) 里 (Windows 10 / 11 自带 winget):
+ALTRun 已经收录在 [winget 官方仓库](https://github.com/microsoft/winget-pkgs) 里 (Windows 10 / 11 自带 winget)。新版本要经过微软审核才会出现在 winget 里, 一般在发布后 1–3 天:
 
 ```powershell
 winget install zhugecaomao.ALTRun
@@ -45,6 +32,19 @@ winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
 - winget 本身不创建开始菜单快捷方式: 第一次用 `altrun` 启动后, ALTRun 会自己添加到开始菜单 (偏好设置 → 通用 → "添加到开始菜单")
 - 卸载前先在 偏好设置 → 通用 里关闭 "开机自动启动"、"添加到开始菜单"、"添加到 '发送到' 菜单", 否则这些快捷方式会留下
 - 第一次运行时 Windows 可能提示 "无法验证发布者" (程序是从网上下载的), 选择 "运行" 即可
+
+### 用 Scoop 安装
+[Scoop](https://scoop.sh/) 是 Windows 的命令行软件管理工具。ALTRun 的仓库本身就是一个 Scoop bucket, 新版本发布当天就能更新:
+
+```powershell
+scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
+scoop install altrun
+```
+
+- 安装后开始菜单里有 "Scoop Apps → ALTRun", 程序在 `scoop\apps\altrun\current`
+- 升级: 先退出 ALTRun, 再运行 `scoop update altrun`。设置和数据 (`Data\`, 包括 `Data\ALTRun.json`)、`Themes\` 都会保留
+- 卸载: `scoop uninstall altrun`, 设置留在 `scoop\persist\altrun`, 重新安装后自动恢复; 连设置一起删除用 `scoop uninstall altrun --purge`
+- 用 Scoop 安装时, "检查更新" 发现新版本会提示用 `scoop update altrun` 升级, 不要手动解压覆盖
 
 ## 程序目录里的文件
 | 文件 / 文件夹 | 说明 | 升级时 |
@@ -65,8 +65,8 @@ winget upgrade zhugecaomao.ALTRun     # 以后升级 (先退出 ALTRun)
 
 ## 升级
 - 一键升级: 托盘图标 → 检查更新 → 安装更新
-- 用 Scoop 安装的: `scoop update altrun`
 - 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 用 Scoop 安装的: `scoop update altrun`
 
 下面是详细说明。
 
@@ -82,7 +82,7 @@ ALTRun 在后台到 GitHub 检查新版本 (启动时和之后每 6 小时一次
 更新过程中出现任何问题 (网络、校验、写入权限), 原来的程序保持不变, 并提示打开下载页面手动更新。命令行 `ALTRun.exe -Update` 会直接检查并安装更新, 不询问。
 
 以下情况不能一键更新, 搜索窗口里的那一条会说明怎么做:
-- 用 Scoop / winget 安装: `Enter` 复制升级命令 (`scoop update altrun` / `winget upgrade zhugecaomao.ALTRun`), 退出 ALTRun 后在终端里运行
+- 用 winget / Scoop 安装: `Enter` 复制升级命令 (`winget upgrade zhugecaomao.ALTRun` / `scoop update altrun`), 退出 ALTRun 后在终端里运行
 - 运行源码 `ALTRun.ahk`: 用 `git pull` 更新, 或 `Enter` 打开下载页面
 - 程序放在没有写入权限的文件夹里: `Enter` 打开下载页面
 

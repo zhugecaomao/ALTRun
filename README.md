@@ -50,7 +50,7 @@
 
 If Windows SmartScreen blocks the app, choose **More info** → **Run anyway**. For antivirus warnings, see the [FAQ](https://github.com/zhugecaomao/ALTRun/wiki/FAQ#my-antivirus-flags-it).
 
-You can also install with Scoop or winget, or run `ALTRun.ahk` with AutoHotkey v2. See [Installation options and upgrades](#installation-options-and-upgrades) for details.
+You can also install with winget or Scoop, or run `ALTRun.ahk` with AutoHotkey v2. See [Installation options and upgrades](#installation-options-and-upgrades) for details.
 
 
 ## Features
@@ -173,7 +173,7 @@ The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wi
 
 | Page | Contents |
 |---|---|
-| [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation) | Download, Scoop / winget, start with Windows, automatic updates, upgrading from 2.x, uninstalling |
+| [Installation and upgrades](https://github.com/zhugecaomao/ALTRun/wiki/Installation) | Download, winget / Scoop, start with Windows, automatic updates, upgrading from 2.x, uninstalling |
 | [Search and shortcuts](https://github.com/zhugecaomao/ALTRun/wiki/Usage) | Search syntax, shortcuts, action panel, learned ranking, usage statistics |
 | [Custom commands](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands) | Command types, commands with an argument, path variables |
 | [Snippets](https://github.com/zhugecaomao/ALTRun/wiki/Snippets) | Placeholders, snippet expansion, windows without expansion, import / export |
@@ -187,17 +187,17 @@ The full documentation is in the [wiki](https://github.com/zhugecaomao/ALTRun/wi
 
 
 ## Installation options and upgrades
-**Scoop** (adds a Start menu shortcut and keeps settings across upgrades):
+**winget** (built into Windows 10 / 11; new versions arrive after Microsoft's review, usually 1–3 days):
+```powershell
+winget install zhugecaomao.ALTRun
+winget upgrade zhugecaomao.ALTRun    # upgrade (quit ALTRun first)
+```
+
+**Scoop** (new versions the day they are released; adds a Start menu shortcut and keeps settings across upgrades):
 ```powershell
 scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
 scoop install altrun
 scoop update altrun    # upgrade (quit ALTRun first)
-```
-
-**winget** (built into Windows 10 / 11):
-```powershell
-winget install zhugecaomao.ALTRun
-winget upgrade zhugecaomao.ALTRun    # upgrade (quit ALTRun first)
 ```
 
 To run from source, install [AutoHotkey v2](https://www.autohotkey.com/) and launch `ALTRun.ahk`.

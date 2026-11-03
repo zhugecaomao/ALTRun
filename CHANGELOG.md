@@ -6,7 +6,7 @@
 ## [未发布]
 
 ### 改进
-- ALTRun 已收录到 winget 官方仓库: `winget install zhugecaomao.ALTRun` 安装, `winget upgrade zhugecaomao.ALTRun` 升级。README、Wiki 安装页和官网的下载区都写上了 winget
+- ALTRun 已收录到 winget 官方仓库: `winget install zhugecaomao.ALTRun` 安装, `winget upgrade zhugecaomao.ALTRun` 升级。README、Wiki 安装页和官网的下载区都写上了 winget, 并排在 Scoop 前面 (Windows 自带, 不用先装别的工具)
 
 ## [2026.10.26.58]
 

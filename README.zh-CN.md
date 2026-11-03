@@ -50,7 +50,7 @@
 
 如果 Windows SmartScreen 拦截程序，点击 **更多信息** → **仍要运行**。杀毒软件误报请参阅[常见问题](https://github.com/zhugecaomao/ALTRun/wiki/FAQ-zh#杀毒软件报毒)。
 
-也可以通过 Scoop 或 winget 安装，或使用 AutoHotkey v2 直接运行 `ALTRun.ahk`。详情请参阅[其他安装方式与升级](#其他安装方式与升级)。
+也可以通过 winget 或 Scoop 安装，或使用 AutoHotkey v2 直接运行 `ALTRun.ahk`。详情请参阅[其他安装方式与升级](#其他安装方式与升级)。
 
 
 ## 功能
@@ -173,7 +173,7 @@
 
 | 页面 | 内容 |
 |---|---|
-| [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation-zh) | 下载、Scoop / winget、开机启动、自动更新、从 2.x 升级、卸载 |
+| [安装与升级](https://github.com/zhugecaomao/ALTRun/wiki/Installation-zh) | 下载、winget / Scoop、开机启动、自动更新、从 2.x 升级、卸载 |
 | [搜索与快捷键](https://github.com/zhugecaomao/ALTRun/wiki/Usage-zh) | 输入语法、快捷键、操作面板、学习排序、使用统计 |
 | [自定义命令](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands-zh) | 命令类型、带参数的命令、路径变量 |
 | [文字片段](https://github.com/zhugecaomao/ALTRun/wiki/Snippets-zh) | 占位符、自动展开、不展开的窗口、导入 / 导出 |
@@ -187,17 +187,17 @@
 
 
 ## 其他安装方式与升级
-**通过 [Scoop](https://scoop.sh/) 安装**（自动创建开始菜单快捷方式，升级时保留设置）：
+**通过 winget 安装**（Windows 10 / 11 自带；新版本经微软审核后才能更新，一般 1–3 天）：
+```powershell
+winget install zhugecaomao.ALTRun
+winget upgrade zhugecaomao.ALTRun    # 升级（请先退出 ALTRun）
+```
+
+**通过 [Scoop](https://scoop.sh/) 安装**（新版本发布当天就能更新；自动创建开始菜单快捷方式，升级时保留设置）：
 ```powershell
 scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
 scoop install altrun
 scoop update altrun    # 升级（请先退出 ALTRun）
-```
-
-**通过 winget 安装**（Windows 10 / 11 自带）：
-```powershell
-winget install zhugecaomao.ALTRun
-winget upgrade zhugecaomao.ALTRun    # 升级（请先退出 ALTRun）
 ```
 
 从源码运行：安装 [AutoHotkey v2](https://www.autohotkey.com/)，然后运行 `ALTRun.ahk`。
