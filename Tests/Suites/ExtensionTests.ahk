@@ -681,11 +681,10 @@ class ExtensionTests {
                 FileAppend("x", root "\dst\Thumbs.db")
                 FileAppend("x", root "\dst\sub\~$Plan.docx")
                 DirCreate(root "\dst\$Recycle.Bin"), FileAppend("x", root "\dst\$Recycle.Bin\x.txt")
-                run("excluded extras only (desktop.ini, Thumbs.db, ~$Plan.docx, $Recycle.Bin\x.txt)", threads, true)
-                run("  same with /X", threads, true, "/X")
-                run("  same with /V", threads, true, "/V")
+                DirCreate(root "\dst\gone\deeper"), DirCreate(root "\dst\empty"), FileAppend("x", root "\dst\gone\old.txt")
+                run("excluded extras + extra folders gone (with old.txt), gone\deeper, empty", threads, true)
                 run("  real run", threads, false)
-                out("  left after the run: " left())
+                out("  left after the run: " left() (DirExist(root "\dst\gone") ? "gone " : "") (DirExist(root "\dst\empty") ? "empty " : ""))
             }
         } finally {
             try DirDelete(root, true)
