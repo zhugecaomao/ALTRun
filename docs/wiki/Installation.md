@@ -19,21 +19,8 @@ If Windows SmartScreen says "Windows protected your PC" when you first run it, c
 
 Put it in a folder you can write to (for example `D:\Apps\ALTRun`): settings and data are saved in the `Data\` folder next to the program, so you can take the whole folder with you. In a folder that needs admin rights to write to (such as `C:\Program Files`), settings and data are saved in `%APPDATA%\ALTRun\` instead, but one-key updates can't replace the program files and you have to download new versions by hand.
 
-### Installing with Scoop
-[Scoop](https://scoop.sh/) is a command-line installer for Windows. The ALTRun repository is itself a Scoop bucket:
-
-```powershell
-scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
-scoop install altrun
-```
-
-- After installing, the Start menu has "Scoop Apps → ALTRun"; the program is in `scoop\apps\altrun\current`
-- Upgrading: quit ALTRun first, then run `scoop update altrun`. Settings and data (`Data\`, including `Data\ALTRun.json`) and `Themes\` are kept
-- Uninstalling: `scoop uninstall altrun`; your settings stay in `scoop\persist\altrun` and come back when you reinstall. To delete them too, use `scoop uninstall altrun --purge`
-- When installed with Scoop, a new version found by "Check for Updates" tells you to upgrade with `scoop update altrun`; don't unzip over it by hand
-
 ### Installing with winget
-The winget manifest is ready (`packaging\winget`). Once the [official winget repository](https://github.com/microsoft/winget-pkgs) accepts it, you can run:
+ALTRun is in the [official winget repository](https://github.com/microsoft/winget-pkgs) (winget comes with Windows 10 / 11). New versions reach winget after Microsoft's review, usually 1–3 days after the release:
 
 ```powershell
 winget install zhugecaomao.ALTRun
@@ -45,6 +32,19 @@ winget upgrade zhugecaomao.ALTRun     # later upgrades (quit ALTRun first)
 - winget itself doesn't create a Start menu shortcut: after you start it once with `altrun`, ALTRun adds itself to the Start menu (Preferences → General → "Add to Start menu")
 - Before uninstalling, turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" in Preferences → General, otherwise those shortcuts are left behind
 - The first time it runs, Windows may say it "couldn't verify the publisher" (the program was downloaded from the internet); choose "Run"
+
+### Installing with Scoop
+[Scoop](https://scoop.sh/) is a command-line installer for Windows. The ALTRun repository is itself a Scoop bucket, so new versions are there the day they are released:
+
+```powershell
+scoop bucket add altrun https://github.com/zhugecaomao/ALTRun
+scoop install altrun
+```
+
+- After installing, the Start menu has "Scoop Apps → ALTRun"; the program is in `scoop\apps\altrun\current`
+- Upgrading: quit ALTRun first, then run `scoop update altrun`. Settings and data (`Data\`, including `Data\ALTRun.json`) and `Themes\` are kept
+- Uninstalling: `scoop uninstall altrun`; your settings stay in `scoop\persist\altrun` and come back when you reinstall. To delete them too, use `scoop uninstall altrun --purge`
+- When installed with Scoop, a new version found by "Check for Updates" tells you to upgrade with `scoop update altrun`; don't unzip over it by hand
 
 ## Files in the program folder
 | File / folder | What it is | On upgrade |
@@ -65,8 +65,8 @@ In Preferences → General:
 
 ## Upgrading
 - One-click upgrade: tray icon → Check for Updates → Install Update
-- Installed with Scoop: `scoop update altrun`
 - Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- Installed with Scoop: `scoop update altrun`
 
 Details below.
 
@@ -82,7 +82,7 @@ To check right away: tray menu → "Check for Updates", or search for "Check for
 If anything goes wrong during an update (network, checksum, write permission), the old program is left as it was and you're offered the download page to update by hand. The command line `ALTRun.exe -Update` checks for and installs an update without asking.
 
 One-key updates aren't possible in these cases; the item in the search window tells you what to do instead:
-- Installed with Scoop / winget: `Enter` copies the upgrade command (`scoop update altrun` / `winget upgrade zhugecaomao.ALTRun`); quit ALTRun and run it in a terminal
+- Installed with winget / Scoop: `Enter` copies the upgrade command (`winget upgrade zhugecaomao.ALTRun` / `scoop update altrun`); quit ALTRun and run it in a terminal
 - Running the source `ALTRun.ahk`: update with `git pull`, or press `Enter` to open the download page
 - The program is in a folder you can't write to: `Enter` opens the download page
 

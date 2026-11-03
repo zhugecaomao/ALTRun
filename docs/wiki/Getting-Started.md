@@ -3,7 +3,7 @@
 # Getting started in 5 minutes
 
 ## 1. Install and start
-Download `ALTRun_v<version>.zip` from [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder (for example `D:\Tools\ALTRun`) and run `ALTRun.exe`. Nothing to install and no administrator rights needed; for Scoop / winget see [Installation and upgrades](Installation).
+Download `ALTRun_v<version>.zip` from [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases/latest), unzip it to any folder (for example `D:\Tools\ALTRun`) and run `ALTRun.exe`. Nothing to install and no administrator rights needed; for winget / Scoop see [Installation and upgrades](Installation).
 
 The first run opens the search window and puts the ALTRun icon in the notification area. ALTRun starts with Windows by default (turn it off in Preferences → General).
 

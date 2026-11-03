@@ -3,7 +3,7 @@
 # 5 分钟上手
 
 ## 1. 安装和启动
-从 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases/latest) 下载 `ALTRun_v<版本>.zip`, 解压到任意文件夹 (例如 `D:\Tools\ALTRun`), 运行 `ALTRun.exe`。不需要安装, 也不需要管理员权限; 用 Scoop / winget 安装见 [安装与升级](Installation-zh)。
+从 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases/latest) 下载 `ALTRun_v<版本>.zip`, 解压到任意文件夹 (例如 `D:\Tools\ALTRun`), 运行 `ALTRun.exe`。不需要安装, 也不需要管理员权限; 用 winget / Scoop 安装见 [安装与升级](Installation-zh)。
 
 第一次运行会弹出搜索窗口, 托盘里出现 ALTRun 的图标。默认开机自动启动 (偏好设置 → 通用 可以关掉)。
 

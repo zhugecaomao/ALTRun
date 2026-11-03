@@ -134,8 +134,8 @@
       </article>
       <article>
         <h3><span lang="zh">一键更新</span><span lang="en">One-key updates</span></h3>
-        <p><span lang="zh">有新版本时搜索窗口里提示，按 <kbd>Enter</kbd> 安装，自动校验 SHA256，设置保留；也支持 Scoop。</span>
-           <span lang="en">New versions show up in the search window; press <kbd>Enter</kbd> to install (SHA256 verified, settings kept). Scoop is supported too.</span></p>
+        <p><span lang="zh">有新版本时搜索窗口里提示，按 <kbd>Enter</kbd> 安装，自动校验 SHA256，设置保留；也支持 winget 和 Scoop。</span>
+           <span lang="en">New versions show up in the search window; press <kbd>Enter</kbd> to install (SHA256 verified, settings kept). winget and Scoop are supported too.</span></p>
       </article>
       <article>
         <h3><span lang="zh">随心定制</span><span lang="en">Customizable</span></h3>
@@ -201,7 +201,10 @@
            <span lang="en">If Windows SmartScreen says “Windows protected your PC”, click <b>More info</b> → <b>Run anyway</b>; for antivirus warnings see the <a href="https://github.com/{{REPO}}/wiki/FAQ#my-antivirus-flags-it">FAQ</a>.</span></p>
       </article>
       <article>
-        <h3>Scoop</h3>
+        <h3>winget</h3>
+        <pre><code>winget install zhugecaomao.ALTRun</code></pre>
+        <button class="copy" type="button" data-copy="winget install zhugecaomao.ALTRun"><span lang="zh">复制</span><span lang="en">Copy</span></button>
+        <h3 class="next">Scoop</h3>
         <pre><code>scoop bucket add altrun https://github.com/{{REPO}}
 scoop install altrun</code></pre>
         <button class="copy" type="button" data-copy="scoop bucket add altrun https://github.com/{{REPO}}&#10;scoop install altrun"><span lang="zh">复制</span><span lang="en">Copy</span></button>
