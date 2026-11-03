@@ -1,0 +1,46 @@
+# Submits a released version to winget-pkgs (a pull request from the token owner's fork), with wingetcreate.
+# Runs in the Release workflow after publishing, and in the "Submit to winget" workflow to submit an existing release again:
+#   $env:WINGET_TOKEN = '<token with public_repo>'; pwsh packaging/Submit-Winget.ps1 -Version 2026.11.03
+#
+# wingetcreate opens the pull request from the token owner's fork of winget-pkgs and fails when it can't bring that fork up to
+# date ("The forked repository could not be synced with the upstream commits"): winget-pkgs gets hundreds of commits a day, so
+# a fork left alone falls far behind. The fork is synced first with GitHub's merge-upstream API; when that fails (the fork's
+# master has commits of its own) the log says so and wingetcreate tries anyway. A missing fork is fine: wingetcreate creates it.
+param(
+    [Parameter(Mandatory)][string]$Version,
+    [string]$Repository = 'zhugecaomao/ALTRun',
+    [string]$Package = 'zhugecaomao.ALTRun'
+)
+$ErrorActionPreference = 'Stop'
+$token = $env:WINGET_TOKEN
+if (-not $token) { throw 'WINGET_TOKEN is not set' }
+$headers = @{ Authorization = "Bearer $token"; Accept = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28' }
+
+# 1. Bring the fork up to date
+$owner = (Invoke-RestMethod https://api.github.com/user -Headers $headers).login
+try {
+    $fork = Invoke-RestMethod "https://api.github.com/repos/$owner/winget-pkgs" -Headers $headers
+} catch {
+    $fork = $null
+}
+if (-not $fork) {
+    Write-Host "No fork $owner/winget-pkgs yet: wingetcreate creates it"
+} elseif (-not $fork.fork -or $fork.parent.full_name -ne 'microsoft/winget-pkgs') {
+    Write-Host "::warning::$owner/winget-pkgs isn't a fork of microsoft/winget-pkgs; not syncing it"
+} else {
+    $branch = $fork.parent.default_branch
+    try {
+        $result = Invoke-RestMethod "https://api.github.com/repos/$owner/winget-pkgs/merge-upstream" -Method Post -Headers $headers `
+            -Body (@{ branch = $branch } | ConvertTo-Json) -ContentType 'application/json'
+        Write-Host "Fork $owner/winget-pkgs ($branch): $($result.message)"
+    } catch {
+        $status = $_.Exception.Response.StatusCode.value__
+        Write-Host "::warning::Couldn't sync the fork $owner/winget-pkgs (HTTP $status): sync it on GitHub (Sync fork → Discard commits) or delete it, then run the ""Submit to winget"" workflow"
+    }
+}
+
+# 2. Submit the new version
+$url = "https://github.com/$Repository/releases/download/$Version/ALTRun_v$Version.zip"
+Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
+.\wingetcreate.exe update $Package --version $Version --urls $url --submit --token $token
+if ($LASTEXITCODE -ne 0) { throw "wingetcreate failed (exit code $LASTEXITCODE)" }

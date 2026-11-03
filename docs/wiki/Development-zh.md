@@ -165,7 +165,7 @@ AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景
    - 这一节里不要用 `##` 标题 (Release workflow 取到下一个 `##` 为止); 删掉测试版各节和它们的比较链接; 文件末尾 `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD`, `[未发布]: .../compare/YYYY.MM.DD...HEAD`
 3. 合并到 main 后, 在 main 上运行 **Release**, `publish = true`
 
-Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe → 单元测试 → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本。
+Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe → 单元测试 → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本 (`packaging/Submit-Winget.ps1`: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR; 失败时用 **Submit to winget** 工作流重新提交已发布的版本)。
 
 ## 性能测试
 GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟机上用真实的按键模拟日常操作, 比较两个版本

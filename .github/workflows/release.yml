@@ -289,15 +289,10 @@ jobs:
           git commit --quiet -m "Packaging: update Scoop / winget manifests to $version"
           git push origin main
 
-      # only packages already in winget-pkgs can be updated; for the first submission see packaging/README.md
+      # syncs the token owner's fork of winget-pkgs first, then opens the pull request (packaging/Submit-Winget.ps1); when it fails,
+      # the release stands and the "Submit to winget" workflow submits it again
       - name: Submit the new version to winget-pkgs
         if: inputs.publish && env.WINGET_TOKEN != ''
         continue-on-error: true
         shell: pwsh
-        run: |
-          $version = "${{ steps.version.outputs.version }}"
-          Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-          .\wingetcreate.exe update zhugecaomao.ALTRun --version $version `
-            --urls "https://github.com/${{ github.repository }}/releases/download/$version/ALTRun_v$version.zip" `
-            --submit --token $env:WINGET_TOKEN
-          if ($LASTEXITCODE -ne 0) { throw "wingetcreate failed (exit code $LASTEXITCODE)" }
+        run: ./packaging/Submit-Winget.ps1 -Version "${{ steps.version.outputs.version }}" -Repository "${{ github.repository }}"
