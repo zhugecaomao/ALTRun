@@ -78,7 +78,7 @@ jobs:
       - name: Start installing Pillow
         shell: pwsh
         run: |
-          $proc = Start-Process python -ArgumentList '-m pip install --quiet --disable-pip-version-check pillow' -PassThru -NoNewWindow -RedirectStandardOutput pip.log -RedirectStandardError pip.err
+          $proc = Start-Process python -ArgumentList '-m pip install --quiet --disable-pip-version-check --timeout 30 pillow' -PassThru -NoNewWindow -RedirectStandardOutput pip.log -RedirectStandardError pip.err
           "PIP_PID=$($proc.Id)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Download AutoHotkey v2
@@ -141,9 +141,15 @@ jobs:
       # all with Pillow, corners and margins scaled by SHOT_SCALE (RoundCorners.py leaves images that already have rounded corners alone)
       - name: Rounded corners and animations
         shell: pwsh
+        timeout-minutes: 10                              # usually seconds; once it hung for 15 minutes waiting on pip (a network hang on the runner)
         run: |
-          Wait-Process -Id $env:PIP_PID -ErrorAction SilentlyContinue        # the background install (above); then make sure it's there
-          python -m pip install --quiet --disable-pip-version-check pillow
+          Wait-Process -Id $env:PIP_PID -Timeout 300 -ErrorAction SilentlyContinue   # the background install (above), at most 5 minutes
+          if (Get-Process -Id $env:PIP_PID -ErrorAction SilentlyContinue) {
+            Write-Host "::warning::The background pip install didn't finish in 5 minutes; installing again"
+            Get-Content pip.log, pip.err -ErrorAction SilentlyContinue
+            Stop-Process -Id $env:PIP_PID -Force -ErrorAction SilentlyContinue
+          }
+          python -m pip install --quiet --disable-pip-version-check --timeout 30 pillow   # makes sure it's there
           python Tests/Screenshots/RoundCorners.py docs/images/screenshots
           if ($LASTEXITCODE -ne 0) { throw "RoundCorners.py failed" }
           pwsh -NoProfile -File Tests/Screenshots/MakeDemos.ps1
