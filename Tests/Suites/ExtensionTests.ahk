@@ -594,13 +594,15 @@ class ExtensionTests {
         DirCreate(root "\src\deep"), DirCreate(root "\dst")
         Loop 4000
             FileAppend("x", root "\src\deep\file" A_Index ".txt")
-        bigSize := 400 * 1024 * 1024
+        bigSize := 24 * 1024 * 1024                                         ; copied slowly: /IPG waits between 64 KB blocks
         handle := FileOpen(root "\src\big.bin", "w"), handle.Length := bigSize, handle.Close()
+        FileSetTime("20200101000000", root "\src\big.bin")
         FileAppend("y", root "\dst\extra.txt")
         savedLogDir := SyncJobs.LogDir, SyncJobs.LogDir := root "\logs"
         try {
             task := RoboSync.NewTask()
             task["Name"] := "Probe", task["Source"] := root "\src", task["Destination"] := root "\dst", task["Retries"] := 0, task["Wait"] := 0
+            task["Extra"] := "/NP /IPG:15"
             for preview in [true, false] {
                 mode := preview ? "preview" : "run"
                 state := {Done: false}
@@ -611,15 +613,15 @@ class ExtensionTests {
                 }
                 logFile := SyncJobs.Jobs[SyncJobs.Key("Probe")].LogFile
                 started := A_TickCount, reads := 0, fails := 0, lastError := "", lastLength := -1, changes := 0, samples := "", nextSample := 0
-                bigSeen := "", bigSizeThen := "", bigDone := ""
+                bigSeen := "", bigSizeThen := "", bigDone := "", bigExists := "", smallCount := ""
                 while (!state.Done && A_TickCount - started < 180000) {
                     Sleep(50)
                     SyncJobs._Poll()
                     elapsed := A_TickCount - started
                     text := ""
                     try {
-                        file := FileOpen(logFile, "r")
-                        text := file.Read(), file.Close()
+                        handle := FileOpen(logFile, "r")
+                        text := handle.Read(), handle.Close()
                         reads++
                     } catch as e {
                         fails++, lastError := e.Message
@@ -633,16 +635,20 @@ class ExtensionTests {
                     }
                     if (!preview) {
                         dstBig := root "\dst\big.bin"
+                        if (bigExists = "" && FileExist(dstBig))
+                            bigExists := elapsed
                         if (bigSeen = "" && InStr(text, "big.bin"))
-                            bigSeen := elapsed, bigSizeThen := FileExist(dstBig) ? FileGetSize(dstBig) : "none"
-                        if (bigDone = "" && FileExist(dstBig) && FileGetSize(dstBig) = bigSize)
+                            bigSeen := elapsed, bigSizeThen := FileExist(dstBig) ? FileGetSize(dstBig) " bytes, modified " FileGetTime(dstBig) : "none"
+                        if (bigDone = "" && FileExist(dstBig) && FileGetTime(dstBig) = "20200101000000")
                             bigDone := elapsed
+                        if (smallCount = "" && bigDone != "")
+                            StrReplace(text, "file", "file", , &smallCount)
                     }
                 }
                 out(mode ": " (state.Done ? "ended" : "TIMEOUT") " after " (A_TickCount - started) " ms; reads ok " reads ", failed " fails " " lastError "; length changed " changes " times")
                 out(mode ": samples " samples)
                 if !preview
-                    out("run: big.bin line seen at " bigSeen " ms (destination size then " bigSizeThen "), big.bin fully copied at " bigDone " ms")
+                    out("run: big.bin in the destination at " bigExists " ms, its line in the log at " bigSeen " ms (destination then " bigSizeThen "), its time set (copy finished) at " bigDone " ms; small files in the log then " smallCount)
                 final := ""
                 try final := SyncJobs.ReadLog(logFile)
                 lines := StrSplit(StrReplace(final, "`r"), "`n")
