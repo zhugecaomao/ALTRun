@@ -54,6 +54,19 @@ jobs:
           Write-Host $output
           if ($code -ne 0 -or $output.Trim()) { throw "Validation failed (exit code $code)" }
 
+      # A value with a method's name (static _tick := ... next to _Tick()) stops ALTRun on a dialog while the class is set up,
+      # before the unit tests could report it; /validate and #Warn don't see it (Tests/Tools/NameCheck.ahk)
+      - name: Check names (values that overwrite a method)
+        shell: pwsh
+        run: |
+          & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', 'Tests\Tools\NameCheck.ahk' `
+            -Out names.log -Err names.err -TimeoutSeconds 120
+          $code = $LASTEXITCODE
+          $output = (Get-Content names.log, names.err -Raw) -join ""
+          Write-Host $output
+          Get-Content names.log | Where-Object { $_.Trim() } | ForEach-Object { Write-Host "::error::$_" }
+          if ($code -ne 0 -or $output.Trim()) { throw "Name check failed (exit code $code)" }
+
       # The benchmark and screenshot scripts run unattended in other workflows: a load-time warning there would wait for a dialog
       # nobody closes (an undefined class from a Lib file they didn't include hung both runs once). Both send warnings to stdout
       - name: Validate the benchmark, screenshot and Everything check scripts
