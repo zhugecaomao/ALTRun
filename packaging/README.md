@@ -5,11 +5,13 @@
 | `../bucket/altrun.json` | Scoop 清单。仓库本身就是一个 bucket: `scoop bucket add altrun https://github.com/zhugecaomao/ALTRun` |
 | `winget/*.yaml` | winget 清单 (zip 里的便携版 ALTRun.exe)。2026-11 已收录到 [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs): `winget install zhugecaomao.ALTRun` |
 | `Update-Manifests.ps1` | 把两个清单更新到新版本 (版本号、下载地址、SHA256) |
+| `Submit-Winget.ps1` | 向 winget-pkgs 提交新版本: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR |
 
 ## 发布新版本时
 Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 1. 运行 `Update-Manifests.ps1`, 把 Scoop / winget 清单更新到新版本并提交到 main。Scoop 用户 `scoop update altrun` 就能拿到新版本
-2. 如果仓库设置了 `WINGET_TOKEN` secret, 用 [wingetcreate](https://github.com/microsoft/winget-create) 向 winget-pkgs 提交新版本的 PR (微软自动检查后合并, 一般 1~3 天)
+2. 如果仓库设置了 `WINGET_TOKEN` secret, 运行 `Submit-Winget.ps1`: 先用 GitHub 的 merge-upstream 把你 fork 的 winget-pkgs 同步到最新 (winget-pkgs 每天有几百个提交, fork 放着不管会落后很多, wingetcreate 自己同步不了时会失败, 2026.11.03 就遇到过), 再用 [wingetcreate](https://github.com/microsoft/winget-create) 提交新版本的 PR (微软自动检查后合并, 一般 1~3 天)。这一步失败不影响发布
+3. 提交失败时 (日志里会写原因): 在 Actions 里运行 **Submit to winget** 工作流重新提交 (版本号留空 = 最新的 Release)。如果日志说 fork 同步不了 (fork 的 master 上有自己的提交), 先在 GitHub 上打开你的 winget-pkgs fork → Sync fork → Discard commits, 或者直接删掉这个 fork (下次会重新创建), 再运行
 
 `WINGET_TOKEN`: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), 勾选 `public_repo`; 然后在本仓库 Settings → Secrets and variables → Actions 里新建 `WINGET_TOKEN`。没有设置时跳过这一步, winget 用户就收不到新版本, 需要每次手动运行 `wingetcreate update` (见下文)。
 

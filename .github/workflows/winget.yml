@@ -1,0 +1,35 @@
+# Submits a released version to winget-pkgs again (packaging/Submit-Winget.ps1): for when the Release workflow's submission
+# failed, e.g. the token owner's fork of winget-pkgs couldn't be synced. Run by hand: Actions → Submit to winget → Run workflow;
+# "version" empty = the latest release. Needs the WINGET_TOKEN secret (a GitHub token with public_repo scope).
+name: Submit to winget
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Released version to submit (empty = the latest release)"
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Submit
+        shell: pwsh
+        run: |
+          if (-not $env:WINGET_TOKEN) { throw "The WINGET_TOKEN secret is not set" }
+          $version = "${{ inputs.version }}".Trim()
+          if (-not $version) { $version = gh release view --repo "${{ github.repository }}" --json tagName --jq .tagName }
+          if (-not $version) { throw "No release found" }
+          Write-Host "Submitting $version"
+          ./packaging/Submit-Winget.ps1 -Version $version -Repository "${{ github.repository }}"
