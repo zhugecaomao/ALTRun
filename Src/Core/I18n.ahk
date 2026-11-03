@@ -1011,7 +1011,7 @@ class I18n {
         s["Sync.Field.MonitorMinutes"]      := "Minutes"
         s["Sync.Field.When.Hint"]           := "Keep in sync: robocopy keeps running and syncs again when the source has changed (after this many changes, checked every so many minutes), until you stop it or quit ALTRun."
         s["Sync.Field.ExcludeFiles"]        := "Exclude files"
-        s["Sync.Field.ExcludeFiles.Hint"]   := "Separated by `; e.g. ~$*.* (Office temporary files), *.tmp, *.dwl; *.dwl2 (AutoCAD locks)"
+        s["Sync.Field.ExcludeFiles.Hint"]   := "Separated by `;. Example: ~$*.*; *.tmp; *.dwl; *.dwl2 (Office and AutoCAD temporary files)"
         s["Sync.Field.ExcludeDirs"]         := "Exclude folders"
         s["Sync.Field.ExcludeDirs.Hint"]    := "Folder names or full paths, separated by `;"
         s["Sync.Section.Advanced"]          := "Advanced"

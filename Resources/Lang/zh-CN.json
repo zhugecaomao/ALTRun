@@ -473,7 +473,7 @@
   "Sync.Field.MonitorMinutes": "分钟",
   "Sync.Field.When.Hint": "持续同步: robocopy 一直运行, 源有变化时再同步 (达到这么多次变化, 每隔这么多分钟检查一次), 直到停止或退出 ALTRun。",
   "Sync.Field.ExcludeFiles": "排除文件",
-  "Sync.Field.ExcludeFiles.Hint": "用 ; 分隔, 例如 ~$*.* (Office 临时文件)、*.tmp、*.dwl; *.dwl2 (AutoCAD 锁文件)",
+  "Sync.Field.ExcludeFiles.Hint": "用 ; 分隔。例如: ~$*.*; *.tmp; *.dwl; *.dwl2 (Office 和 AutoCAD 的临时文件)",
   "Sync.Field.ExcludeDirs": "排除文件夹",
   "Sync.Field.ExcludeDirs.Hint": "文件夹名或完整路径, 用 ; 分隔",
   "Sync.Section.Advanced": "高级",

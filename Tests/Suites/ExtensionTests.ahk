@@ -731,6 +731,10 @@ class ExtensionTests {
         eq("read: text, trailing slashes, files", edited["Name"] "|" edited["Source"] "|" edited["Destination"] "|" edited["Files"], "Team|\\srv\team|D:\Sync\Team|*.*")
         eq("read: mode, monitor, numbers (not a number = default)", edited["Mode"] "|" edited["Monitor"] "|" edited["MonitorChanges"] "|" edited["MonitorMinutes"] "|" edited["Retries"] "|" edited["Wait"] "|" edited["Threads"], "Update|1|3|5|2|1|8")
         eq("read: patterns", RoboSync.JoinPatterns(edited["ExcludeFiles"]) "|" RoboSync.JoinPatterns(edited["ExcludeDirs"]), "~$*.*; *.tmp; Old File.bak|Archive; $Recycle.Bin")
+        quoted := RoboSync.SplitPatterns('"~$*.*"; "Old Versions" `; ""`; "')
+        eq("read: quotes typed around a pattern taken off", TextTools.JoinList(quoted, "|"), '~$*.*|Old Versions|"')
+        quotedTask := RoboSync.NewTask(), quotedTask["Source"] := "C:\src", quotedTask["Destination"] := "D:\dst", quotedTask["ExcludeFiles"] := quoted, quotedTask["ExcludeDirs"] := []
+        eq("read: quoted once in the command", InStr(RoboSync.Build(quotedTask).Args, '/XF ~$*.* "Old Versions"') ? 1 : RoboSync.Build(quotedTask).Args, 1)
         eq("read: other keys kept, original unchanged", edited["Custom"] "|" edited["Extra"] "|" task["Name"], "kept|/NP|Old")
         values["Mode"] := 1                                                 ; Mirror: keeping in sync is turned off
         eq("read: a mirror doesn't keep in sync", SyncEditor.Read(task, values)["Monitor"], 0)

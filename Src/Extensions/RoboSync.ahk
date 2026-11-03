@@ -224,11 +224,17 @@ class RoboSync {
 
     ; Exclude lists as one line of text: "thumbs.db; ~$*.*" <-> ["thumbs.db", "~$*.*"] (patterns may contain spaces, not ";")
     static JoinPatterns(list) => (list is Array) ? TextTools.JoinList(list, "; ") : String(list)
+    ; The patterns typed in the edit window (separated by ; or new lines). Quotes typed around one, as in a robocopy command
+    ; ("Old Versions"), are taken off: Build adds them where needed, and quoting again would break the command line
     static SplitPatterns(text) {
         list := []
-        for item in StrSplit(text, [";", "`n"])
-            if ((item := Trim(item, " `t`r")) != "")
+        for item in StrSplit(text, [";", "`n"]) {
+            item := Trim(item, " `t`r")
+            if (StrLen(item) >= 2 && SubStr(item, 1, 1) = '"' && SubStr(item, -1) = '"')
+                item := Trim(SubStr(item, 2, -1))
+            if (item != "")
                 list.Push(item)
+        }
         return list
     }
 
