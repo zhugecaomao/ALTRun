@@ -567,7 +567,7 @@ class PrefsPages {
             , (owner, title, item, original) => SyncEditor.Edit(owner, I18n.T("Sync.Editor.Title"), item, original, PreferencesWindow.Working["SyncTasks"])
             , () => RoboSync.NewTask(), ""
             , [{Label: I18n.T("Sync.Duplicate"), Width: 90, Click: (list, *) => PrefsPages._SyncDuplicate(list)}
-             , {Label: I18n.T("Sync.Button.Open"), Width: 90, Click: (list, *) => PrefsPages._SyncOpen(list)}])
+             , {Label: I18n.T("Sync.Button.Open"), Width: 90, Click: (list, *) => PrefsPages._SyncOpen(list)}], false)   ; a short list: its buttons use the row, no filter box
         PrefsForm.Note("Sync.PageNote")
 
         PrefsForm.Section("Prefs.Section.SyncOptions")
