@@ -1,4 +1,4 @@
-# Scoop / winget 安装包
+# Scoop / winget / Microsoft Store 安装包
 
 | 文件 | 说明 |
 |---|---|
@@ -7,6 +7,10 @@
 | `Update-Manifests.ps1` | 把两个清单更新到新版本 (版本号、下载地址、SHA256) |
 | `Submit-Winget.ps1` | 向 winget-pkgs 提交新版本: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR |
 
+| `msix/AppxManifest.xml` | Microsoft Store 包 (MSIX) 的清单: 标识 (`zhugecaomao.ALTRun`、发布者) 来自 Partner Center 的 "产品标识" 页; 关掉了文件和注册表的写重定向 (设置照样放在 `%APPDATA%\ALTRun`, 延迟启动能改启动项), 带执行别名 `altrun` |
+| `msix/Make-Msix.ps1` | 用发布目录打 MSIX 包 (makeappx): 版本号 `2026.11.03` → `2026.11.3.0`, 测试版 `2026.11.03.9` → `2026.11.3.9` |
+| `msix/Assets/*.png` | 包里的图标, 由 `icon/make_store_assets.py` 生成 (和程序图标同一套图形) |
+
 ## 发布新版本时
 Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 1. 运行 `Update-Manifests.ps1`, 把 Scoop / winget 清单更新到新版本并提交到 main。Scoop 用户 `scoop update altrun` 就能拿到新版本
@@ -14,6 +18,13 @@ Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 3. 提交失败时 (日志里会写原因): 在 Actions 里运行 **Submit to winget** 工作流重新提交 (版本号留空 = 最新的 Release)。如果日志说 fork 同步不了 (fork 的 master 上有自己的提交), 先在 GitHub 上打开你的 winget-pkgs fork → Sync fork → Discard commits, 或者直接删掉这个 fork (下次会重新创建), 再运行
 
 `WINGET_TOKEN`: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), 勾选 `public_repo`; 然后在本仓库 Settings → Secrets and variables → Actions 里新建 `WINGET_TOKEN`。没有设置时跳过这一步, winget 用户就收不到新版本, 需要每次手动运行 `wingetcreate update` (见下文)。
+
+## Microsoft Store (MSIX)
+Release 工作流每次都会生成 MSIX 包, 放在运行页面底部的 Artifacts 里 (`ALTRun_v<版本>_msix`)。包没有签名, 发布到 Store 时由 Store 签名; 所以不能直接双击安装。工作流会用临时证书签一份测试用的副本, 装上后通过 `altrun` 别名启动 ALTRun, 检查它在包里运行、设置写在 `%APPDATA%\ALTRun`、开机启动的快捷方式指向别名, 再跑 Windows App Certification Kit (可选项只报告, 必需项失败就算失败)。
+
+提交新版本 (正式版发布后): Partner Center → 应用和游戏 → ALTRun → 新建提交 → 程序包, 上传正式版那次运行的 `.msix`, 保存后提交认证。只有正式版 (版本号最后一位是 0) 能提交; 测试版的包只用来检查。
+
+商店版和其它版本的区别 (见 `App.PackageFamily`): 由 Store 更新 ("检查更新" 打开 Store 页面, 不在后台检查); 开机启动、"发送到" 和 CapsLock 辅助的计划任务用 `altrun` 别名启动 (包的安装目录每次更新都会变); 不另建开始菜单快捷方式。
 
 ## 代码签名 (SignPath)
 ALTRun.exe 没有签名时, Windows SmartScreen 会提示 "无法识别的应用 / 未知发布者", 部分杀毒软件也更容易误报。
