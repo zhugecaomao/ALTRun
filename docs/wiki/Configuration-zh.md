@@ -134,7 +134,7 @@
 | MaxItems | 200 | 保存多少条 |
 | MaxItemLength | 100000 | 超过这么多字的内容不记录 |
 | Persist | 1 | 保存到磁盘 (`ClipboardHistory.json`, 超过 4000 字的条目和图片单独存在 `Clipboard\` 文件夹; 存在哪里见 `LocalFiles`); 0 = 只在内存里 |
-| LocalFiles | 1 | 剪贴板历史存在哪里 (偏好设置 → 剪贴板 → "保存位置"); 本机 = `%LOCALAPPDATA%\ALTRun`, 不跟着同步盘或 U 盘里的 Data 文件夹走。**1** = 图片和很长的条目 (`Clipboard\` 文件夹) 只存本机: Data 在 OneDrive 等同步盘里时, 复制图片不会触发上传; `ClipboardHistory.json` 仍在 Data 里照常同步, 另一台电脑上没有对应文件的图片 / 长条目不显示。**2** = `ClipboardHistory.json` 也只存本机, 剪贴板历史完全不离开这台电脑。**0** = 都放在 Data 文件夹 (例如放在 U 盘里随身带)。改了之后, 下次启动时自动把文件从原来的位置搬过去; 两边都有时 (例如同步盘里另一台电脑的历史) 不覆盖, 用新位置的 |
+| LocalFiles | 2 | 剪贴板历史存在哪里 (偏好设置 → 剪贴板 → "保存位置"); 本机 = `%LOCALAPPDATA%\ALTRun`, 不跟着同步盘或 U 盘里的 Data 文件夹走。**2** = 全部只存本机 (`ClipboardHistory.json` 和 `Clipboard\` 文件夹): 剪贴板历史完全不离开这台电脑。**1** = 只有图片和很长的条目 (`Clipboard\` 文件夹) 只存本机: Data 在 OneDrive 等同步盘里时, 复制图片不会触发上传; `ClipboardHistory.json` 仍在 Data 里照常同步, 另一台电脑上没有对应文件的图片 / 长条目不显示 (2026.11.03.14 以前的默认值, 那时的设置文件保持不变)。**0** = 都放在 Data 文件夹 (例如放在 U 盘里随身带)。改了之后, 下次启动时自动把文件从原来的位置搬过去; 两边都有时 (例如同步盘里另一台电脑的历史) 不覆盖, 用新位置的 |
 | Images | 1 | 也记录图片 (存成 PNG); 需要 `Persist = 1` |
 | MaxImages | 50 | 最多保存多少张图片, 超过时先删最早的 |
 | MergeDoubleCopy | 0 | 1 = 快速按两次 `Ctrl+C` 时把这次复制的文字接到上一条后面 |

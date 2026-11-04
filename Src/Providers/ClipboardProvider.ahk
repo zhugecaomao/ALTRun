@@ -25,8 +25,8 @@
 ;   Enabled / Keyword / Hotkey / MaxItems / MaxItemLength / Persist / IgnoreApps
 ;   Images / MaxImages     record images, how many to keep at most
 ;   MergeDoubleCopy        press Ctrl+C twice quickly: append the copied text to the previous entry (off by default)
-;   LocalFiles             where it is stored: 0 = all in the Data folder; 1 = images and long entries (Clipboard folder) only on this PC (default);
-;                          2 = the history (ClipboardHistory.json) too. This PC = %LOCALAPPDATA%\ALTRun, see PlaceStorage
+;   LocalFiles             where it is stored: 0 = all in the Data folder; 1 = images and long entries (Clipboard folder) only on this PC;
+;                          2 = the history (ClipboardHistory.json) too (default; older settings files keep 1). This PC = %LOCALAPPDATA%\ALTRun, see PlaceStorage
 ;
 ; Usage:
 ;   ClipboardProvider.Add(text, source)    adds an entry by hand (source = process name of the program it came from)
@@ -38,7 +38,7 @@ class ClipboardProvider {
     static Id      := "Clipboard"
     static File    := AppSettings.DataDir "\ClipboardHistory.json"
     static Folder  := AppSettings.DataDir "\Clipboard"                         ; very long entries and images
-    static LocalDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun" : ""   ; stored here with LocalFiles = 1 (default) / 2
+    static LocalDir := EnvGet("LOCALAPPDATA") != "" ? EnvGet("LOCALAPPDATA") "\ALTRun" : ""   ; stored here with LocalFiles = 1 / 2 (default)
     static LargeText := 4000
     static Icon => IconCache.Own("Clipboard", "res:imageres.dll,-5314")   ; icon of text entries
     static MergeWindow := 400                                               ; at most this many milliseconds between two Ctrl+C count as a double press
@@ -60,9 +60,9 @@ class ClipboardProvider {
     }
 
     ; Where the clipboard history is stored (LocalFiles): on this PC it doesn't travel with the Data folder into OneDrive and other sync folders or a USB drive.
-    ;   1 (default): images and very long entries (Clipboard folder) on this PC: images are big, and in a sync folder every copy would upload one.
+    ;   1: images and very long entries (Clipboard folder) on this PC: images are big, and in a sync folder every copy would upload one.
     ;      ClipboardHistory.json stays in Data (the text history syncs as usual); on another PC images / long entries without their files are skipped when read
-    ;   2: ClipboardHistory.json on this PC too: the clipboard history never leaves this PC
+    ;   2 (default; settings files from before 2026.11.03.14 keep 1): ClipboardHistory.json on this PC too: the clipboard history never leaves this PC
     ;   0: all in Data (e.g. the whole folder carried on a USB drive)
     ; After the setting changes, the files are moved from the other location at the first start-up; if they can't be moved, the old location is used this time and it tries again next time.
     ; When both exist (e.g. another PC's history in a sync folder) nothing is overwritten and the new location's is used

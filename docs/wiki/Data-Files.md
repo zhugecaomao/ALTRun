@@ -25,8 +25,8 @@ Preferences → Advanced → Data → "Open Data Folder" opens it.
 | `FileIndex.bin` | Built-in file index (used without Everything) | Rescanned in the background |
 | `Knowledge.json` | Learned ranking, search history, recent items (pinned items are in `ALTRun.json`) | Ranking has to be learned again, recent items are cleared |
 | `Usage.json` | Usage statistics (how often each feature was used each day) | Statistics start from zero |
-| `ClipboardHistory.json` | Clipboard history (text) | History is cleared |
-| `Clipboard\` | Images and very long items of the clipboard history (only here when "Save in" is set to keep everything in the Data folder) | Those items no longer show in the history |
+| `ClipboardHistory.json` | Clipboard history (text; only here when Preferences → Clipboard → "Save in" isn't "Everything on this PC only") | History is cleared |
+| `Clipboard\` | Images and very long items of the clipboard history (only here when "Save in" is "The Data folder") | Those items no longer show in the history |
 | `Currency.json` | Exchange rates for currency conversion (only once it is turned on) | Downloaded again at the next start |
 | `Update.json` | Time of the last update check, skipped versions | Checked again at the next start |
 | `Icons\` | Web search icons saved by "Download Site Icon" | Those engines use the default icon |
@@ -37,7 +37,7 @@ Apart from `ALTRun.json`, every file is created at runtime and simply rebuilt if
 | Location | Contents |
 |---|---|
 | `%LOCALAPPDATA%\ALTRun\IconCache\` | Icon cache (`Icons-<size>.bin`) so icons show at once after a restart; one per PC, rebuilt automatically if deleted |
-| `%LOCALAPPDATA%\ALTRun\Clipboard\` | Images and very long clipboard items (kept here by default so they don't follow a sync folder); with "everything on this PC only", `ClipboardHistory.json` is in `%LOCALAPPDATA%\ALTRun\` too |
+| `%LOCALAPPDATA%\ALTRun\ClipboardHistory.json`, `%LOCALAPPDATA%\ALTRun\Clipboard\` | Clipboard history, with its images and very long items in `Clipboard\` (kept here by default so it doesn't follow a sync folder or USB stick); with "Images and long items on this PC only", only `Clipboard\` is here |
 | `Themes\` in the program folder (`%APPDATA%\ALTRun\Themes\` if it isn't writable) | Your own themes, see [Themes](Themes#custom-themes) |
 | `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` if it isn't writable) | Your own scripts, see [Scripts](Scripts) |
 | `%Temp%\ALTRun.log` | Debug log, written only with Preferences → Advanced → "Write a debug log" on; an unexpected error (with where it happened) is written even when it is off |
@@ -46,7 +46,7 @@ Apart from `ALTRun.json`, every file is created at runtime and simply rebuilt if
 For the startup, Start menu and "Send to" shortcuts, the administrator helper's scheduled task and the [Delayed Start](Delayed-Start) tasks, see [Uninstalling](Installation#uninstalling).
 
 ## Backups and moving to another PC
-- **One file is enough**: `ALTRun.json` holds every setting, custom command and snippet. To take the learned ranking and clipboard history along too, back up the whole Data folder
+- **One file is enough**: `ALTRun.json` holds every setting, custom command and snippet. To take the learned ranking along too, back up the whole Data folder (the clipboard history is on this PC by default, see above)
 - **New PC**: copy the whole program folder (including `Data\`); use [path variables](Custom-Commands#variables-in-paths) in paths so they still work with a different user name
 - **Syncing several PCs**: move the data folder into a sync folder, see [Using the same settings on several PCs](FAQ#using-the-same-settings-on-several-pcs). Don't change settings on two PCs with ALTRun open at the same time, or the sync service may create conflict copies
 - **Snippets only**: Preferences → Snippets → Import / Export saves them as CSV, see [Snippets](Snippets#importing-and-exporting)

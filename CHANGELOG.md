@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.14]
+
+测试版。
+
+Test build.
+
+### 改进
+- 剪贴板历史默认只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun`): 新安装的 偏好设置 → 剪贴板 → "保存位置" 默认是 "全部只存本机", 便携版放在 OneDrive 等同步盘或 U 盘里时, 复制过的文字不再跟着 Data 文件夹走。已有的设置文件保持原来的选择 (文字历史仍在 Data 文件夹里), 需要时可以在偏好设置里改 (#368)
+
 ## [2026.11.03.13]
 
 测试版。
@@ -1166,7 +1175,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.14...HEAD
+[2026.11.03.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.13...2026.11.03.14
 [2026.11.03.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.12...2026.11.03.13
 [2026.11.03.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.11...2026.11.03.12
 [2026.11.03.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.10...2026.11.03.11

@@ -266,11 +266,27 @@ class AppSettings {
 
     ; Adds the keys that defaults has and target lacks (recursively; only Maps are filled in, arrays count as a whole).
     ; Returns whether anything changed. A wrong type (e.g. a Map edited into a string by hand) is replaced by the default too.
-    ; New settings that an existing settings file doesn't have yet: keep the old behavior instead of the new install's default (see the two below). Returns whether one was added
+    ; New settings that an existing settings file doesn't have yet: keep the old behavior instead of the new install's default (see the three below). Returns whether one was added
     static _KeepPrevious(data) {
         keptDensity := AppSettings._KeepDensity(data)
         keptLargeType := AppSettings._KeepLargeType(data)                  ; not called largeType: that would shadow the LargeType class
-        return keptDensity || keptLargeType
+        keptClipboard := AppSettings._KeepClipboardStorage(data)
+        return keptDensity || keptLargeType || keptClipboard
+    }
+
+    ; An existing settings file without Features.Clipboard.LocalFiles: keep the clipboard history where it was before 2026.11.03.14
+    ; (1 = ClipboardHistory.json in the Data folder) instead of the new install's default 2 (all on this PC). Not for settings imported from
+    ; 2.x's ALTRun.ini: it had no clipboard history, so there is nothing to keep
+    static _KeepClipboardStorage(data) {
+        if (AppSettings.ImportedFrom != "" || !(data.Has("Features") && data["Features"] is Map))
+            return false
+        features := data["Features"]
+        if !(features.Has("Clipboard") && features["Clipboard"] is Map)
+            features["Clipboard"] := Map()
+        else if features["Clipboard"].Has("LocalFiles")
+            return false
+        features["Clipboard"]["LocalFiles"] := 1
+        return true
     }
 
     ; An existing settings file without Features.LargeType (before 2026.10.19.15): Large Type was always on, keep it on
@@ -408,7 +424,7 @@ class AppSettings {
                     "MaxItemLength", 100000,                                ; content longer than this many characters isn't recorded
                     "Persist"      , 1,                                     ; 0 = in memory only, cleared on exit
                     "Images"       , 1,                                     ; record images too (saved as Clipboard\*.png, needs Persist = 1)
-                    "LocalFiles"   , 1,                                     ; where it is stored: 0 = all in Data; 1 = images and very long entries only on this PC (%LOCALAPPDATA%\ALTRun); 2 = the history too (see ClipboardProvider.PlaceStorage)
+                    "LocalFiles"   , 2,                                     ; where it is stored: 0 = all in Data; 1 = images and very long entries only on this PC (%LOCALAPPDATA%\ALTRun); 2 = the history too (see ClipboardProvider.PlaceStorage)
                     "MaxImages"    , 50,
                     "MergeDoubleCopy", 0,                                   ; press Ctrl+C twice quickly: append to the previous entry
                     "IgnoreApps"   , ["KeePass.exe", "KeePassXC.exe", "1Password.exe", "Bitwarden.exe"]
