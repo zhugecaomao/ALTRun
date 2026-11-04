@@ -61,6 +61,8 @@ ALTRun itself connects to the internet only in these cases:
 | Exchange rates | api.frankfurter.dev | Once a day, only when currency conversion is turned on (off by default) | Preferences → Calculator → "Currency conversion" |
 | Web search icon | The website in that web search's URL | Only when you click "Download Site Icon" while editing a web search | Do not click it |
 
+The Microsoft Store version doesn't check GitHub for updates or download them: the Microsoft Store updates it, under Microsoft's privacy statement. "Check for updates" opens its page in the Store app.
+
 These are plain HTTPS requests that send no personal data; like any web request they reveal your IP address to the server. Web searches, release notes and links that you open from ALTRun are opened in your web browser and are subject to the privacy policy of those websites. The Everything integration uses local inter-process communication, not the network.
 
 ### Data stored on your computer
