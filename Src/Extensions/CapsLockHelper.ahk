@@ -105,13 +105,13 @@ class CapsLockHelper {
     ; Creates the scheduled task (UAC confirmed once). true = created; false when UAC is canceled or it fails
     static Install() {
         if A_IsCompiled
-            command := A_ScriptFullPath, arguments := CapsLockHelper.Arg
+            command := App.ExePath, arguments := CapsLockHelper.Arg
         else
             command := A_AhkPath, arguments := '"' A_ScriptFullPath '" ' CapsLockHelper.Arg
         xmlFile := A_Temp "\ALTRunCapsLockHelper.xml"
         try {
             try FileDelete(xmlFile)
-            FileAppend(CapsLockHelper.TaskXml(command, arguments, A_ScriptDir, CapsLockHelper.UserId()), xmlFile, "UTF-16")
+            FileAppend(CapsLockHelper.TaskXml(command, arguments, App.ExeDir, CapsLockHelper.UserId()), xmlFile, "UTF-16")
             code := RunWait('*RunAs schtasks.exe /create /tn "' CapsLockHelper.TaskName '" /xml "' xmlFile '" /f', , "Hide")
         } catch as e {
             Logger.Debug("CapsLockHelper: install failed - " e.Message)

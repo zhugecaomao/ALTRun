@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.9]
+
+测试版。
+
+Test build.
+
+### 改进
+- 为上架 Microsoft Store 做准备: 以商店版 (MSIX 包) 运行时, 由 Store 负责更新, 不再在后台检查更新, "检查更新" 打开 ALTRun 在 Store 的页面; 开机启动、"发送到" 和 CapsLock 辅助的计划任务改用 `altrun` 命令启动 (商店版每次更新安装位置都会变); 不另建开始菜单快捷方式 (商店版自带开始菜单项); 偏好设置里这两个选项变灰。普通版 (zip、Scoop、winget) 没有变化
+
 ## [2026.11.03.8]
 
 测试版。
@@ -1119,7 +1128,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.9...HEAD
+[2026.11.03.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.8...2026.11.03.9
 [2026.11.03.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.7...2026.11.03.8
 [2026.11.03.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.6...2026.11.03.7
 [2026.11.03.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...2026.11.03.6

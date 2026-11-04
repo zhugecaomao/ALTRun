@@ -26,11 +26,14 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.03.8"
+    static Version := "2026.11.03.9"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
     static PreviousWindow := 0
+    ; Installed from the Microsoft Store (an MSIX package): its package family name, "" otherwise. The package folder changes with each
+    ; update, so shortcuts and tasks that start ALTRun use its execution alias (ExePath); the Store updates it (see UpdateChecker)
+    static PackageFamily := App._PackageFamily()
     static _settingsTime := ""
     static _watchTimer := ""
     static _handOffNote := ""
@@ -593,11 +596,26 @@ class App {
             try TraySetIcon(App.IconFile)
     }
 
+    static _PackageFamily() {
+        size := 0
+        if (DllCall("GetCurrentPackageFamilyName", "UInt*", &size, "Ptr", 0) != 122)   ; ERROR_INSUFFICIENT_BUFFER: there is a package (else APPMODEL_ERROR_NO_PACKAGE)
+            return ""
+        buf := Buffer(size * 2, 0)
+        DllCall("GetCurrentPackageFamilyName", "UInt*", &size, "Ptr", buf)
+        return StrGet(buf)
+    }
+
+    ; The program that starts ALTRun, and its folder: packaged, the execution alias "altrun" (AppxManifest.xml), which stays the same
+    ; across updates and starts it in its package; otherwise the running program
+    static ExePath => App.PackageFamily != "" ? EnvGet("LOCALAPPDATA") "\Microsoft\WindowsApps\altrun.exe" : A_ScriptFullPath
+    static ExeDir => App.PackageFamily != "" ? EnvGet("LOCALAPPDATA") "\Microsoft\WindowsApps" : A_ScriptDir
+
     ; The start-up / Explorer "Send to" / Start menu shortcuts, created or deleted as set.
-    ; Only ALTRun's own are deleted (see IsOwnShortcut): a shortcut of the same name the user put there is left alone
+    ; Only ALTRun's own are deleted (see IsOwnShortcut): a shortcut of the same name the user put there is left alone.
+    ; Packaged, no Start menu shortcut of its own: the package has its Start menu entry
     static _UpdateShellShortcuts() {
         general := AppSettings.General
-        target := A_IsCompiled ? A_ScriptFullPath : A_AhkPath
+        target := A_IsCompiled ? App.ExePath : A_AhkPath
         prefix := A_IsCompiled ? "" : '"' A_ScriptFullPath '" '
         icon := (!A_IsCompiled && FileExist(App.IconFile)) ? App.IconFile : ""   ; when running the source, the shortcuts don't use the AutoHotkey icon
         sendTo := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
@@ -605,14 +623,14 @@ class App {
         for shortcut in [
             [general["LaunchAtLogin"], A_Startup "\" App.StartupLinkName, "-Startup"],
             [general["SendToMenu"], sendTo, "-SendTo"],
-            [general["StartMenuShortcut"], A_Programs "\ALTRun.lnk", ""]
+            [general["StartMenuShortcut"] && App.PackageFamily = "", A_Programs "\ALTRun.lnk", ""]
         ] {
             try {
                 arguments := Trim(prefix shortcut[3])
                 if !shortcut[1]
                     App.RemoveOwnShortcut(shortcut[2], shortcut[3])
-                else if !App.ShortcutMatches(shortcut[2], target, A_ScriptDir, arguments, description, icon)
-                    FileCreateShortcut(target, shortcut[2], A_ScriptDir, arguments, description, icon)
+                else if !App.ShortcutMatches(shortcut[2], target, App.ExeDir, arguments, description, icon)
+                    FileCreateShortcut(target, shortcut[2], App.ExeDir, arguments, description, icon)
             } catch as e {
                 Logger.Error("App: shortcut " shortcut[2] " - " e.Message)
             }

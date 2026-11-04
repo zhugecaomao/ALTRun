@@ -24,6 +24,7 @@
 ;   3. start the new version (-Updated), which deletes ALTRun.exe.old at start-up
 ; Installed with Scoop / winget: show the matching upgrade command (Enter in the search window copies it); running the source: suggest
 ; git pull or downloading the new version; when the program folder isn't writable or the Release has no SHA256, open the download page.
+; Installed from the Microsoft Store (App.PackageFamily): the Store updates it, so no background checks; checking opens its Store page.
 ;===============================================================================
 
 class UpdateChecker {
@@ -45,11 +46,21 @@ class UpdateChecker {
 
     ; Downloads the release info in the background (ALTRun doesn't hang) and reports when done; clicking again during a check doesn't start another
     static Check(install := false) {
+        if (App.PackageFamily != "")
+            return UpdateChecker.OpenStore()
         if UpdateChecker._checking
             return
         UpdateChecker._checking := true
         UpdateChecker.FetchAsync((release) => (UpdateChecker._checking := false, UpdateChecker._Checked(release, install))
             , (message) => (UpdateChecker._checking := false, UpdateChecker._CheckFailed(message)))
+    }
+
+    ; The Store page of the installed package (Update there when a new version is out)
+    static StoreUrl() => "ms-windows-store://pdp/?PFN=" App.PackageFamily
+    static OpenStore() {
+        try Run(UpdateChecker.StoreUrl())
+        catch as e
+            Logger.Error("UpdateChecker: cannot open the Microsoft Store - " e.Message)
     }
 
     static _CheckFailed(message) {
@@ -111,6 +122,8 @@ class UpdateChecker {
     ;---------------------------------------------------------------------------
     ; Called at start-up: the network may not be up yet at boot, so the first check is after 1 minute
     static Schedule() {
+        if (App.PackageFamily != "")                                        ; the Store updates it
+            return false
         UpdateChecker._timer := () => UpdateChecker._Tick()
         WinTimer.Set(() => UpdateChecker._Tick(UpdateChecker.StartupHours), -60000)
     }
