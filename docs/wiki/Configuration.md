@@ -91,7 +91,7 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 | Width | 700 | Search window width (pixels, scaled with the display; at least 450) |
 | VisibleRows | 8 | Maximum number of result rows shown (1–9) |
 | Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (not shown while there is a usage tip) |
-| StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: ☰ menu, what `Enter` / `Ctrl+Enter` / `F3` / `→` do); 0 = off |
+| StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: what `Enter` and `→` do); 0 = off |
 | ShowOn | `Mouse` | Which screen the search window opens on: `Mouse` the one with the mouse pointer / `Primary` the main screen / `Active` the one with the active window |
 | Fade | 0 | Fade the search window in and out when showing and hiding (about 120 ms in, up to the theme opacity; about 100 ms out); the window still gets focus at once, so typing is never delayed |
 | RememberPosition | 0 | Remember the position after dragging the search window (drag the empty space around the input box) |

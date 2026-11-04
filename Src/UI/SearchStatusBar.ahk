@@ -1,9 +1,9 @@
 ;===============================================================================
 ; SearchStatusBar.ahk - the status bar at the bottom of the search window (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; A picture control below the result rows, drawn into a bitmap: the ☰ menu button and the mode on the left, and
-; what Enter / Ctrl+Enter / F3 / → do with the selected result on the right (round key caps). Part of SearchWindow,
-; whose window, fonts (ResultRows.Gdi) and layout it uses.
+; A picture control below the result rows, drawn into a bitmap: the mode on the left, and what Enter and → do with
+; the selected result on the right (round key caps). Part of SearchWindow, whose window, fonts (ResultRows.Gdi) and
+; layout it uses. The menu is the icon right of the search box (SearchWindow.ShowMenu).
 ;
 ; Usage:
 ;   SearchStatusBar.Create(gui, width, padding)   while the window is built
@@ -13,8 +13,8 @@
 
 class SearchStatusBar {
     ; Status bar at the bottom (Appearance.StatusBar, like Listary / Raycast), shown when there are result rows. On the left
-    ; the ☰ menu button (Preferences, cheat sheet, rebuild index, check for updates, reload, quit) and the file search /
-    ; actions panel state; on the right what Enter, Ctrl+Enter, F3 and → do with the selected result (round key caps).
+    ; the file search / actions panel state; on the right what Enter and → do with the selected result (round key caps),
+    ; as Raycast does: the other actions and their keys (Ctrl+Enter, F3...) are in the actions panel.
     ; The usage tip is in the empty search box (its cue banner), not here
     static Height := 0, Control := "", _key := ""
 
@@ -25,7 +25,6 @@ class SearchStatusBar {
             return
         SearchStatusBar.Height := Win.Scale(38)
         SearchStatusBar.Control := g.AddPicture("x0 y0 w" w " h" SearchStatusBar.Height " Hidden +0xE")     ; 0xE = SS_BITMAP
-        SearchStatusBar.Control.OnEvent("Click", (*) => SearchStatusBar._OnClick())     ; click on ☰: the menu (clicks elsewhere on the status bar do nothing)
         SearchStatusBar.Place(0)
     }
 
@@ -53,35 +52,21 @@ class SearchStatusBar {
         if !SearchStatusBar.Height
             return
         texts := SearchStatusBar.Texts()
-        key := texts.Left "`n" texts.Enter "`n" texts.Ctrl "`n" texts.Edit "`n" texts.Actions
+        key := texts.Left "`n" texts.Enter "`n" texts.Actions
         if (key == SearchStatusBar._key)
             return
         SearchStatusBar._key := key
         SearchStatusBar._Render(texts)
     }
 
-    ; {Left, Enter, Ctrl, Edit, Actions}: the text on the left (file search mode / Esc in the actions panel; the usage
-    ; tip is in the empty box instead), what Enter / Ctrl+Enter do with the selected result ("" = nothing to show),
-    ; whether F3 edits it and whether "Actions →" is shown
+    ; {Left, Enter, Actions}: the text on the left (file search mode / Esc in the actions panel; the usage tip is in the
+    ; empty box instead), what Enter does with the selected result ("" = nothing to show) and whether "Actions →" is shown
     static Texts() {
         actions := SearchWindow.Session.Mode = "actions"
         left := actions ? I18n.T("Status.Back") : SearchWindow.Session.FileMode ? I18n.T("Status.FileMode") : ""
         item := SearchWindow.SelectedItem()
         enter := !IsObject(item) ? "" : actions ? I18n.T("Status.Run") : SearchStatusBar.EnterTitle(item)
-        usable := !actions && IsObject(item) && item.Valid
-        ctrl := usable ? SearchStatusBar.CtrlEnterTitle(item, enter) : ""
-        return {Left: left, Enter: enter, Ctrl: ctrl, Edit: (usable && ResultActions.CanEdit(item)) ? 1 : 0, Actions: usable ? 1 : 0}
-    }
-
-    ; What Ctrl+Enter does (ActionCatalog.RunModifier); "" when it is the same as Enter
-    static CtrlEnterTitle(item, enter) {
-        switch item.Kind {
-            case "file", "folder": title := I18n.T("Status.Reveal")
-            case "text"          : title := I18n.T("Status.Paste")
-            case "url"           : title := I18n.T("Status.Copy")
-            default              : return ""
-        }
-        return (title = enter) ? "" : title
+        return {Left: left, Enter: enter, Actions: (!actions && IsObject(item) && item.Valid) ? 1 : 0}
     }
 
     ; What Enter does for the selected result (a short name): the result's own (RunTitle) > by type (open / copy / paste / run); hint rows that can't run: complete
@@ -97,16 +82,11 @@ class SearchStatusBar {
         return I18n.T("Status.Run")
     }
 
-    ; The parts on the right: [{Label, Keys: [key caps...]}], a line between two parts:
-    ; Open ↵ | Reveal Ctrl ↵ | Edit F3 | Actions →
+    ; The parts on the right: [{Label, Keys: [key caps...]}], a line between two parts: Open ↵ | Actions →
     static Parts(texts) {
         parts := []
         if (texts.Enter != "")
             parts.Push({Label: texts.Enter, Keys: ["↵"]})
-        if (texts.Ctrl != "")
-            parts.Push({Label: texts.Ctrl, Keys: ["Ctrl", "↵"]})
-        if texts.Edit
-            parts.Push({Label: I18n.T("Status.Edit"), Keys: ["F3"]})
         if texts.Actions
             parts.Push({Label: I18n.T("Status.Actions"), Keys: ["→"]})
         return parts
@@ -134,46 +114,6 @@ class SearchStatusBar {
         DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
         DllCall("DeleteDC", "Ptr", hdc)
         return width
-    }
-
-    ; width taken by the ☰ button (from the left of the status bar)
-    static MenuWidth() => SearchStatusBar.MenuWidthFor(SearchWindow.Padding)
-
-    static MenuWidthFor(pad) => pad + Win.Scale(28)
-
-    ; The status bar was clicked: show the menu when the click is on ☰
-    static _OnClick() {
-        point := Buffer(8)
-        DllCall("GetCursorPos", "Ptr", point)
-        DllCall("ScreenToClient", "Ptr", SearchStatusBar.Control.Hwnd, "Ptr", point)
-        if (NumGet(point, 0, "Int") <= SearchStatusBar.MenuWidth())
-            SearchStatusBar.ShowMenu()
-    }
-
-    ; The ☰ menu's items: [[name, function], ...], "" = separator
-    static MenuItems() {
-        later := (fn) => (*) => (SearchWindow.Hide(), SetTimer(fn, -1))     ; hide the search window first, act after the menu closes
-        return [[I18n.T("Tray.Preferences") "`tCtrl+,", later(() => App.OpenPreferences())]
-              , [I18n.T("Menu.CheatSheet") "`t?", (*) => SearchWindow._SetInput("?")]
-              , ""
-              , [I18n.T("Tray.RebuildIndex"), later(() => App.RebuildIndex())]
-              , [I18n.T("Tray.CheckUpdate"), later(() => UpdateChecker.Check())]
-              , ""
-              , [I18n.T("Tray.Reload"), later(() => App.Reload())]
-              , [I18n.T("Tray.Exit"), later(() => App.Quit())]]
-    }
-
-    ; Shows the menu above ☰ (the status bar is at the bottom of the window; the system puts the menu where it fits)
-    static ShowMenu() {
-        mainMenu := Menu()
-        for entry in SearchStatusBar.MenuItems()
-            IsObject(entry) ? mainMenu.Add(entry[1], entry[2]) : mainMenu.Add()
-        SearchStatusBar.Control.GetPos(&x, &y)
-        SearchWindow._keepOpen := true
-        CoordMode("Menu", "Client")
-        mainMenu.Show(SearchWindow.Padding, y)
-        SearchWindow._keepOpen := false
-        SearchWindow.AfterMenu()
     }
 
     ; Mixes two colors ("RRGGBB") by t (0 ~ 1); returns BGR for GDI
@@ -247,14 +187,9 @@ class SearchStatusBar {
             index--
         }
 
-        ; Left: the ☰ menu button (three lines) + the tip (with an ellipsis if it doesn't fit)
-        lineW := Win.Scale(14), lineH := Max(1, Round(Win.Scale(1) * 1.5)), lineGap := Win.Scale(4)
-        lineTop := (h - 3 * lineH - 2 * lineGap) // 2 + 1
-        Loop 3
-            SearchStatusBar.FillRect(hdc, pad, lineTop + (A_Index - 1) * (lineH + lineGap), pad + lineW, lineTop + (A_Index - 1) * (lineH + lineGap) + lineH, labelBgr)
-        left := SearchStatusBar.MenuWidth()
+        ; Left: the mode (with an ellipsis if it doesn't fit)
         DllCall("SetTextColor", "Ptr", hdc, "UInt", gdi["SubtitleColor"])
-        ResultRows.DrawText(hdc, texts.Left, left, 1, x - Win.Scale(16), h, 0x8824)     ; DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS
+        ResultRows.DrawText(hdc, texts.Left, pad, 1, x - Win.Scale(16), h, 0x8824)      ; DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS
 
         DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
         DllCall("SelectObject", "Ptr", hdc, "Ptr", oldBitmap)

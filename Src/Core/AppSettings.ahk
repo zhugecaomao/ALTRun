@@ -339,7 +339,7 @@ class AppSettings {
                 "Width"      , 700,
                 "VisibleRows", 8,
                 "Placeholder", "",                                          ; gray text in the empty search box, empty = the default ("ALTRun Search")
-                "StatusBar"  , 1,                                           ; status bar at the bottom of the search window (☰ menu, usage tips, the selected result's Enter action and →)
+                "StatusBar"  , 1,                                           ; status bar at the bottom of the search window (the mode, the selected result's Enter action and →)
                 "Fade"       , 0,                                           ; fade in / out when showing / hiding (see WindowFade)
                 "ShowOn"     , "Mouse",                                     ; which screen: Mouse = under the mouse / Primary = primary screen / Active = the active window's
                 "RememberPosition", 0,                                      ; remember the position after the window is dragged
