@@ -202,6 +202,15 @@ AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一
 - 性能基准: 在 Windows 上模拟常见操作比较改动前后的耗时, 应在相同环境下对比。
 - Wiki 自动检查只能发现缺页和断链, 不能判断说明是否准确或是否覆盖每个设置项; 修改设置时仍需逐项对照代码和中英文文档。
 
+### 在用户电脑上排查按键问题
+
+有些按键问题只在某一台电脑上、用真键盘才出现, CI 上用程序发键复现不了。`Tests\Tools\KeyDiag.ahk` 记录在那台电脑上哪些按键送到了哪个窗口。用 AutoHotkey v2 运行, 权限和出问题的程序一样; 它待在托盘里, ALTRun 退出、重启时也照样记录。
+
+- 只在 ALTRun 或 `KeyDiagSettings.Watch` 里的程序在前面时记录: 每个按键的按下 / 松开 (字母、数字、符号和输入的文字只记成 `key`)、按键来自键盘还是程序、自动重复、到前面的窗口、打开的菜单, 以及 ALTRun 退出和启动。不记录窗口标题。
+- 出问题的窗口 (`KeyDiagSettings.Trigger*`) 出现时, 响一声并保存 `KeyDiag-hit-<时间>.txt`: 之前 15 秒的记录、键盘设置和正在运行的程序 (名字和版本)。文件放在 `%LOCALAPPDATA%\ALTRun\KeyDiag`, 用户只要发这一个文件。
+- `Ctrl+F9` 从 `KeyDiagSettings.TestWindow` 开始自动测试: 按 ALTRun 的热键、输入退出的文字、按 Enter (短按和按住带自动重复), 检查有没有出现那个窗口, 再重启 ALTRun。`Ctrl+F10` 保存最近 60 秒的报告。
+- 默认设置针对写它时的问题: Total Commander 的 "同步目录" 窗口在 Alt+Space、对 "退出" 按 Enter 之后弹出属性窗口, 因为它把单独收到的 Enter 松开当成了 Alt+Enter (2026.11.03.7 已修复)。排查别的问题时改开头的设置。
+
 ## 代码规范
 - **文件与类**: 一个文件一个类, 文件名 = 类名, PascalCase (`SearchWindow.ahk` → `class SearchWindow`)
 - **文件夹**: `Lib\` 放和 ALTRun 无关、可以拿到别的项目用的通用库; ALTRun 自己的代码放 `Src\` 下对应的子文件夹

@@ -211,6 +211,15 @@ AutoHotkey copies a string held in an object property every time an expression r
 - Performance benchmarks simulate common operations on Windows and compare before / after timings; compare runs in the same environment.
 - Wiki automation detects missing pages and broken links, but cannot tell whether explanations are accurate or cover every setting. When settings change, check the code and both language versions item by item.
 
+### Diagnosing key problems on a user's PC
+
+Some key problems only happen on one PC, with a real keyboard: injected keys on CI don't reproduce them. `Tests\Tools\KeyDiag.ahk` records which keys reach which window there. Run it with AutoHotkey v2, with the same rights as the program in question; it stays in the tray, also while ALTRun exits and restarts.
+
+- It records only while ALTRun or a program in `KeyDiagSettings.Watch` is in front: each key down / up (letters, digits, symbols and typed text show only as `key`), whether it came from the keyboard or was sent by a program, auto-repeat, the windows coming to the front, menus opening, and ALTRun quitting and starting. Window titles are not recorded.
+- When the window in question shows (`KeyDiagSettings.Trigger*`), it beeps and saves `KeyDiag-hit-<time>.txt` with the 15 s before it, the keyboard settings and the programs running (names and versions). Files go to `%LOCALAPPDATA%\ALTRun\KeyDiag`; the user sends that one file.
+- `Ctrl+F9` runs an automatic test from `KeyDiagSettings.TestWindow`: ALTRun's hotkey, the quit text, Enter (briefly and held with auto-repeat), a check for the window, then ALTRun restarts. `Ctrl+F10` saves a report of the last 60 s.
+- The defaults are set for the case it was written for: Total Commander's Synchronize directories window opened a properties dialog after Alt+Space and Enter on Quit, because it took the lone Enter key-up as Alt+Enter (fixed in 2026.11.03.7). For another problem, change the settings at the top.
+
 ## Code style
 - **Files and classes**: one class per file, file name = class name, PascalCase (`SearchWindow.ahk` → `class SearchWindow`)
 - **Folders**: `Lib\` holds general-purpose libraries with nothing ALTRun-specific that could be reused in other projects; ALTRun's own code goes in the matching subfolder of `Src\`
