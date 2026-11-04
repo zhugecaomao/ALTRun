@@ -138,7 +138,7 @@ class AppSettings {
     static Load() {
         AppSettings.MoveLegacyFile()
         data := AppSettings._ReadFile()
-        changed := false
+        changed := AppSettings.Restored                                     ; restored from the backup: written back as ALTRun.json
 
         ; The released 2.x (up to v2026.08.12) kept its settings in ALTRun.ini: imported from it while there is no ALTRun.json yet.
         ; ALTRun.ini stays unchanged, so going back to the old version still works
@@ -177,9 +177,21 @@ class AppSettings {
             AppSettings.Save()
     }
 
+    ; ALTRun.json.bak: the settings as they were before the last save (a file that read fine, or that ALTRun wrote). When ALTRun.json
+    ; can't be read (e.g. hand-edited with a mistake, or damaged), ALTRun offers to start with it instead of the defaults (_ReadFile)
+    static BackupFile => AppSettings.File ".bak"
+    static ResetBackupFile => AppSettings.DataDir "\ALTRun.reset.backup.json"           ; the settings before "Restore Defaults" (PrefsPages)
+    static Restored := false                                                ; this start-up's settings came from ALTRun.json.bak
+    static _fileGood := false                                               ; ALTRun.json on disk read fine or was written by ALTRun: worth backing up
+    static _askFn := (text) => MsgBox(text, App.Name, "YesNo Icon! 0x40000") = "Yes"   ; replaced in the tests
+    static _noticeFn := (text) => MsgBox(text, App.Name, "Icon! 0x40000")
+
     static Save() {
         try {
+            if (AppSettings._fileGood && FileExist(AppSettings.File))
+                try FileCopy(AppSettings.File, AppSettings.BackupFile, true)
             JSON.WriteFile(AppSettings.File, AppSettings.Data)
+            AppSettings._fileGood := true
             return true
         } catch as e {
             Logger.Error("AppSettings.Save: " e.Message)
@@ -207,7 +219,7 @@ class AppSettings {
         }
         AppSettings.MovedFrom := legacy
         Loop Files, fromDir "\ALTRun.*", "F" {
-            if (A_LoopFileName = "ALTRun.json.bad" || RegExMatch(A_LoopFileName, "i)^ALTRun\.v\d+\.backup\.json$"))
+            if (A_LoopFileName = "ALTRun.json.bad" || A_LoopFileName = "ALTRun.json.bak" || RegExMatch(A_LoopFileName, "i)^ALTRun\.(v\d+|reset)\.backup\.json$"))
                 if !FileExist(toDir "\" A_LoopFileName)
                     try FileMove(A_LoopFileFullPath, toDir "\" A_LoopFileName)
         }
@@ -219,16 +231,37 @@ class AppSettings {
             return Map()
         try {
             parsed := JSON.Parse(FileRead(AppSettings.File, "UTF-8"))
+            AppSettings._fileGood := true
             return (parsed is Map) ? parsed : Map()
         } catch as e {
+            AppSettings._fileGood := false                                  ; not to be copied over the backup
             badFile := AppSettings.File ".bad"
             try FileMove(AppSettings.File, badFile, true)
             catch as moveError                                              ; the defaults written next would replace the user's file
                 Logger.Error("AppSettings: cannot keep the invalid file as " badFile " - " moveError.Message)
             Logger.Error("AppSettings: invalid JSON - " e.Message)
-            MsgBox(I18n.T("Settings.ParseError", e.Message, badFile), App.Name, "Icon! 0x40000")
+            if IsObject(backup := AppSettings._ReadBackup()) {
+                when := FormatTime(FileGetTime(AppSettings.BackupFile), "yyyy-MM-dd HH:mm")
+                if AppSettings._askFn.Call(I18n.T("Settings.RestoreBackup", e.Message, badFile, when)) {
+                    Logger.Debug("AppSettings: restored the settings from " AppSettings.BackupFile)
+                    AppSettings.Restored := true
+                    return backup
+                }
+                return Map()
+            }
+            AppSettings._noticeFn.Call(I18n.T("Settings.ParseError", e.Message, badFile))
             return Map()
         }
+    }
+
+    ; The backup's settings, "" when there is none or it can't be read either
+    static _ReadBackup() {
+        try {
+            parsed := JSON.Parse(FileRead(AppSettings.BackupFile, "UTF-8"))
+            if (parsed is Map && parsed.Count)
+                return parsed
+        }
+        return ""
     }
 
     ; Adds the keys that defaults has and target lacks (recursively; only Maps are filled in, arrays count as a whole).

@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.03.13]
+
+测试版。
+
+Test build.
+
+### 改进
+- 设置更不容易丢: 保存设置、剪贴板历史和文件索引时, 先确实写到磁盘再替换旧文件 (以前刚保存完就断电或蓝屏, 文件可能变成全是 0)。每次保存设置时, 上一个版本保留为 `ALTRun.json.bak`; `ALTRun.json` 读不出来时 (格式错误或损坏), 会问要不要用这份备份启动, 不再直接换成默认设置 (#368)
+- "恢复默认设置" 之前的备份改名为 `ALTRun.reset.backup.json`, 以后的保存不会覆盖它
+
 ## [2026.11.03.12]
 
 测试版。
@@ -1156,7 +1166,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.12...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.13...HEAD
+[2026.11.03.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.12...2026.11.03.13
 [2026.11.03.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.11...2026.11.03.12
 [2026.11.03.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.10...2026.11.03.11
 [2026.11.03.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.9...2026.11.03.10
