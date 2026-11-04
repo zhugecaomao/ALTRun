@@ -5,7 +5,7 @@
 ; was run with Enter (2026-10). Runs on its own, so it keeps logging while ALTRun exits and restarts. Not shipped with ALTRun.
 ;
 ; Logged to %TEMP%\KeyWatch.log (a new file each start; the previous one is kept as KeyWatch.old.log):
-;   - key down / up of Enter, Numpad Enter, Alt, Space, Esc, Ctrl, Shift, Win, the Menu key, F10 and vkE8 only (no letters or
+;   - key down / up of Enter, Numpad Enter, Alt, Space, Esc, Ctrl, Shift, Win, the Menu key and F10 only (no letters or
 ;     digits, so nothing typed is recorded), with the window in front, and whether the key came from the keyboard or was
 ;     sent by a program ("sent"; "sent by AHK" when an AutoHotkey script such as ALTRun sent it)
 ;   - every change of the window in front: class, title, program, owner window
@@ -16,15 +16,13 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 Persistent
-DetectHiddenWindows(true)                                                   ; a window coming to the front may not be shown yet: read it anyway
 
 KeyWatch.Start()
 
 class KeyWatch {
     static File := A_Temp "\KeyWatch.log"
     static Keys := Map(0x0D, "Enter", 0x10, "Shift", 0x11, "Ctrl", 0x12, "Alt", 0x1B, "Esc", 0x20, "Space", 0x5B, "LWin", 0x5C, "RWin"
-                     , 0x5D, "Menu", 0x79, "F10", 0xA0, "LShift", 0xA1, "RShift", 0xA2, "LCtrl", 0xA3, "RCtrl", 0xA4, "LAlt", 0xA5, "RAlt"
-                     , 0xE8, "vkE8")                                        ; vkE8: the unassigned key sent before a lone Alt key-up (ALTRun's HeldKeys, AutoHotkey's menu mask)
+                     , 0x5D, "Menu", 0x79, "F10", 0xA0, "LShift", 0xA1, "RShift", 0xA2, "LCtrl", 0xA3, "RCtrl", 0xA4, "LAlt", 0xA5, "RAlt")
     static _lines := "", _hook := 0, _winHook := 0, _keyProc := 0, _winProc := 0, _lastDown := Map()
 
     static Start() {

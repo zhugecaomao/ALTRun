@@ -65,7 +65,7 @@ class ResultActions {
                 add("Action.CopyUrl", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), "Alt+Enter")
             case "text":
                 add("Action.Copy", "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(target), enter)
-                add("Action.Paste", "res:imageres.dll,-5314", (*) => ActionCatalog.PasteText(target), "Ctrl+Enter")
+                add("Action.Paste", "res:imageres.dll,-5314", ResultActions._PasteFn(item, target), "Ctrl+Enter")
             default:
                 add("Action.Run", item.Icon, (*) => ActionCatalog.RunDefault(item), enter)
         }
@@ -168,6 +168,13 @@ class ResultActions {
     static AddAsCommand(item) {
         commandType := (item.Kind = "folder") ? "Folder" : (item.Kind = "url") ? "Url" : "File"
         return CustomCommandProvider.Edit("", Map("Title", item.Title, "Type", commandType, "Target", item.Arg, "Arguments", item.Arguments))
+    }
+
+    ; "Paste" of a text result; a clipboard history entry pastes like Enter (moves to the top, stays on the clipboard)
+    static _PasteFn(item, target) {
+        if (item.Provider = ClipboardProvider.Id && item.Source is Map)
+            return (*) => ClipboardProvider.PasteEntry(item.Source)
+        return (*) => ActionCatalog.PasteText(target)
     }
 
     ; Only results that carry a Source (their entry in the settings) and whose provider implements method can be edited / deleted

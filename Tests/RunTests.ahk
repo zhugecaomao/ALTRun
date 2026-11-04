@@ -29,7 +29,6 @@
 #Include %A_ScriptDir%\..\Lib\ShellContextMenu.ahk
 #Include %A_ScriptDir%\..\Lib\TaskScheduler.ahk
 #Include %A_ScriptDir%\..\Lib\TaskbarProgress.ahk
-#Include %A_ScriptDir%\..\Lib\HeldKeys.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
 #Include %A_ScriptDir%\..\Src\Core\AppSettings.ahk

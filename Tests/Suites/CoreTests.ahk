@@ -40,66 +40,6 @@ class CoreTests {
         DetectHiddenWindows(hidden)
     }
 
-    ; HeldKeys: a window in another process that got Alt's key-down but not its key-up (it went to another window, as when a hotkey
-    ; shows ALTRun), then a lone Enter key-up (Total Commander's Synchronize directories window opened a properties window then).
-    ; What that window reads for Alt, with and without HeldKeys.Release; Release must not open its menu bar. On Windows only
-    static HeldKeys() {
-        eq := (n, a, e) => TestRunner.Equal("HeldKeys." n, a, e)
-        held := Map("LAlt", false, "Enter", true)
-        eq("wait: until let go", HeldKeys.WaitUp(["Enter"], 500, (k) => held[k], (ms) => held["Enter"] := false) < 100, true)
-        held["Enter"] := true
-        eq("wait: at most", HeldKeys.WaitUp(["Enter"], 30, (k) => held[k], (ms) => Sleep(ms)) >= 30, true)
-        eq("release: only keys let go", HeldKeys.Release(["LAlt", "LShift", "Space"], (k) => k = "LShift") , 1)   ; LAlt sent (mask first); LShift still held; Space isn't a modifier
-        if DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
-            return
-        dir := A_Temp "\ALTRun-heldkeys", logFile := dir "\keys.log"
-        try DirDelete(dir, true)
-        DirCreate(dir)
-        child := "#NoTrayIcon`n#SingleInstance Off`n"
-            . "g := Gui(, 'HeldKeys child'), g.MenuBar := MenuBar(), m := Menu(), m.Add('Item', (*) => 0), g.MenuBar.Add('&File', m)`n"
-            . "for msg in [0x100, 0x101, 0x104, 0x105]`n    OnMessage(msg, Keys)`n"
-            . "OnMessage(0x211, (*) => FileAppend('menu loop``n', A_Args[1]))`n"
-            . "g.Show('w300 h120')`n"
-            . "Keys(wParam, lParam, msg, hwnd) {`n"
-            . "    FileAppend(Format('{:X} {:X} alt={}``n', msg, wParam, DllCall('GetKeyState', 'Int', 0x12, 'Short') < 0 ? 'down' : 'up'), A_Args[1])`n"
-            . "}`n"
-        FileAppend(child, dir "\child.ahk", "UTF-8")
-        Run('"' A_AhkPath '" "' dir '\child.ahk" "' logFile '"', , , &pid)
-        other := Gui(, "HeldKeys other")
-        send(vk, up) => HeldKeys._Send([[vk, up]])
-        lines() {
-            Sleep(300)
-            text := FileExist(logFile) ? FileRead(logFile) : ""
-            try FileDelete(logFile)
-            return StrReplace(Trim(text, "`n"), "`n", " | ")
-        }
-        scenario(release) {
-            WinActivate("HeldKeys child"), WinWaitActive("HeldKeys child", , 2), Sleep(200)
-            send(0xA4, false)                                               ; Alt down in the child
-            other.Show("w200 h80"), WinActivate("ahk_id " other.Hwnd), WinWaitActive("ahk_id " other.Hwnd, , 2), Sleep(200)
-            send(0xA4, true)                                                ; Alt up in the other window
-            WinActivate("HeldKeys child"), WinWaitActive("HeldKeys child", , 2), Sleep(200)
-            if release
-                HeldKeys.Release(["LAlt"], (k) => false)
-            Sleep(100)
-            send(0x0D, true)                                                ; a lone Enter key-up
-            return lines()
-        }
-        try {
-            WinWait("HeldKeys child", , 5)
-            lines()
-            without := scenario(false)
-            FileAppend("PROBE without Release: " without "`n", "*")
-            with := scenario(true)
-            FileAppend("PROBE with Release: " with "`n", "*")
-            eq("with Release: Enter's key-up without Alt, no menu", (InStr(with, "101 D alt=up") ? 1 : 0) (InStr(with, "menu loop") ? 1 : 0), "10")
-        } finally {
-            other.Destroy()
-            try ProcessClose(pid)
-            try DirDelete(dir, true)
-        }
-    }
-
     static FuzzyMatcher() {
         eq := (n, a, e) => TestRunner.Equal("FuzzyMatcher." n, a, e)
         ok := (n, c) => TestRunner.True("FuzzyMatcher." n, c)
@@ -643,6 +583,17 @@ class CoreTests {
         pauses := 0, started := A_TickCount
         waited := App.WaitForEnterUp(100, () => true, pauser)                ; never let go: gives up after maxMs
         eq("stuck key: gives up", waited >= 100 && A_TickCount - started < 1000, true)
+        ; Quit and Reload open no window of their own: the search window waits for Enter's key-up before hiding (the window coming back
+        ; to the front would get it alone); other commands don't wait
+        for text, expected in Map("quit", true, "reload", true, "lock", false) {
+            item := ""
+            for result in SystemProvider.Search(SearchQuery(text))
+                if (result.Uid = "system:" StrTitle(text)) {
+                    item := result
+                    break
+                }
+            eq(text ": waits for Enter up", IsObject(item) ? item.WaitKeysUp : "not found", expected)
+        }
     }
 
     ; Only one ALTRun: a second start hands the command-line arguments to the running one (WM_COPYDATA); a restart (/restart) replaces it

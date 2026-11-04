@@ -5,14 +5,23 @@
 
 ## [未发布]
 
-## [2026.11.03.5]
+## [2026.11.03.7]
 
 测试版。
 
 Test build.
 
 ### 修复
-- 在 Total Commander 的 "同步目录" 窗口里用 Alt+Space 打开 ALTRun, 再按 Enter 退出 ALTRun, TC 会弹出属性窗口: TC 收到了 Alt 按下, 但 Alt 松开送到了 ALTRun, TC 一直以为 Alt 还按着, 把之后单独收到的 Enter 松开当成了 Alt+Enter (属性)。现在 ALTRun 隐藏、原来的窗口回到前面时, 给它补发缺少的 Alt 松开 (前面先发一个不起作用的屏蔽键, 不会打开菜单栏); 退出和重新加载会等 Enter 松开后再隐藏窗口, 这个 Enter 松开不再送到别的窗口
+- 在 Total Commander 的 "同步目录" 窗口里按 Alt+Space 打开 ALTRun, 再按 Enter 退出 (或重新加载) ALTRun, TC 会弹出属性窗口。用真键盘记录确认了原因: TC 收到了 Alt 按下, Alt 松开却送到了 ALTRun, TC 一直以为 Alt 还按着; ALTRun 在 Enter 按下时就隐藏了窗口, Enter 松开单独送到了回到前面的 TC, TC 把它当成 Alt+Enter (属性)。以前是窗口隐藏以后才等 Enter 松开, 不起作用; 现在退出和重新加载会先等 Enter 松开 (最多 0.45 秒) 再隐藏窗口, Enter 松开留在 ALTRun 自己的窗口里
+
+## [2026.11.03.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 从剪贴板历史里粘贴的那一条会留在剪贴板里 (和 Ditto、Windows 的 `Win+V` 一样), 之后直接按 `Ctrl+V` 还能再粘贴, 不用再打开 ALTRun。以前粘贴完剪贴板里还是最近复制的内容 (短文字是直接打字输入的, 其它的粘贴后会还原剪贴板)。片段、"粘贴为纯文本" 等照旧, 用完还原剪贴板 (#375)
 
 ## [2026.11.03.4]
 
@@ -1098,8 +1107,9 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.5...HEAD
-[2026.11.03.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...2026.11.03.5
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.7...HEAD
+[2026.11.03.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.6...2026.11.03.7
+[2026.11.03.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...2026.11.03.6
 [2026.11.03.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.3...2026.11.03.4
 [2026.11.03.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.2...2026.11.03.3
 [2026.11.03.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...2026.11.03.2

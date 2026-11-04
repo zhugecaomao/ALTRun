@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.03.5"
+    static Version := "2026.11.03.7"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -349,10 +349,12 @@ class App {
         ExitApp()
     }
 
-    ; Quitting / restarting right after Enter ran Quit (or Apply in Preferences): wait until Enter is let go, at most maxMs, so ALTRun doesn't
-    ; exit with Enter still held. Twice Total Commander's Synchronize directories window, in front again once the search window hid, opened a
-    ; properties window right after ALTRun exited that way (2026-10-31 and 2026-11-02, ALTRun log and Tests\Tools\KeyWatch.ahk); Enter run
-    ; from the search window without exiting never did. Returns the milliseconds waited. isDown / wait are replaced in the tests
+    ; Waits until Enter is let go, at most maxMs, so its key-up comes to an ALTRun window still in front and not alone to the window that
+    ; comes back once that one hides or ALTRun exits. That window saw neither Enter's key-down nor, when the hotkey was Alt+Space started
+    ; there, Alt's key-up: Total Commander's Synchronize directories window then takes the lone Enter key-up as Alt+Enter and opens a
+    ; properties window (recorded on a real keyboard, 2026-11-04). So the search window waits before hiding for Quit and Reload
+    ; (ResultItem.WaitKeysUp); Quit / Restart wait again for the other ways in (e.g. Apply in Preferences, whose window is still in front).
+    ; Waiting after the search window hid didn't help. Returns the milliseconds waited. isDown / wait are replaced in the tests
     static WaitForEnterUp(maxMs := 2000, isDown := "", wait := "") {
         isDown := IsObject(isDown) ? isDown : () => GetKeyState("Enter", "P") || GetKeyState("NumpadEnter", "P")
         wait := IsObject(wait) ? wait : Sleep
@@ -362,7 +364,7 @@ class App {
             waited := A_TickCount - started
         }
         if (waited && Logger.Enabled)
-            Logger.Debug("App: waited " waited " ms for Enter to be released before exiting")
+            Logger.Debug("App: waited " waited " ms for Enter to be released")
         return waited
     }
 

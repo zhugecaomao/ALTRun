@@ -50,6 +50,8 @@ Preferences → Snippets → "Don't expand in" (`Features.Snippets.ExpandExclude
 - `Clipboard`: borrows the clipboard + `Ctrl+V`, then restores the clipboard (the default before 2026.10.14; changed to `Auto` on upgrade)
 - `Type`: types the text character by character, for programs that don't accept pasting
 
+The clipboard history uses the same setting, but what it pastes stays on the clipboard: with `Auto` and `Clipboard` it always goes through the clipboard (nothing is restored, so there is no wait); with `Type` it is typed and also put on the clipboard.
+
 ## Importing and exporting
 Preferences → Snippets → "Import/Export":
 - **Import from a table**: paste cells copied from Excel, or click "Open File" to read a CSV / TSV file (UTF-8, or the system's default encoding). Columns: Name | Keyword | Text | Expand automatically (optional, `1` / `0`, blank = on). A header row is skipped, rows without text are skipped, and a missing name is taken from the keyword or the first line of the text
