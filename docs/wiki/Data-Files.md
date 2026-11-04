@@ -39,7 +39,7 @@ Apart from `ALTRun.json`, every file is created at runtime and simply rebuilt if
 | `%LOCALAPPDATA%\ALTRun\Clipboard\` | Images and very long clipboard items (kept here by default so they don't follow a sync folder); with "everything on this PC only", `ClipboardHistory.json` is in `%LOCALAPPDATA%\ALTRun\` too |
 | `Themes\` in the program folder (`%APPDATA%\ALTRun\Themes\` if it isn't writable) | Your own themes, see [Themes](Themes#custom-themes) |
 | `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` if it isn't writable) | Your own scripts, see [Scripts](Scripts) |
-| `%Temp%\ALTRun.log` | Debug log, written only with Preferences → Advanced → "Write a debug log" on |
+| `%Temp%\ALTRun.log` | Debug log, written only with Preferences → Advanced → "Write a debug log" on; an unexpected error (with where it happened) is written even when it is off |
 
 For the startup, Start menu and "Send to" shortcuts and the administrator helper's scheduled task, see [Uninstalling](Installation#uninstalling).
 

@@ -590,6 +590,42 @@ class CoreTests {
         }
     }
 
+    ; Errors nothing caught after start-up: logged even with the log off, with the place and stack; handled (no dialog) unless they end the
+    ; script. Also for real: an error thrown in a timer is caught by the installed handler, logged, and the test run goes on
+    static UncaughtErrors() {
+        eq := (n, a, e) => TestRunner.Equal("UncaughtErrors." n, a, e)
+        logFile := A_Temp "\ALTRunErrorTest.log"
+        read := () => FileExist(logFile) ? FileRead(logFile, "UTF-8") : ""
+        saved := [Logger.Enabled, Logger.File, Logger.Immediate, ErrorHandler.Count]
+        Logger.Close()
+        try FileDelete(logFile)
+        Logger.Enabled := false, Logger.Immediate := true, Logger.File := logFile
+        handler := (thrown, mode) => ErrorHandler.Handle(thrown, mode, false)
+        try {
+            try throw ValueError("bad value", , "the extra")
+            catch as err
+                caught := err
+            eq("handled", ErrorHandler.Handle(caught, "Exit", false), 1)
+            text := read()
+            eq("logged with the log off", InStr(text, "[ERR] Uncaught error (Exit): ValueError: bad value (the extra) at CoreTests.ahk:") > 0, true)
+            eq("with the stack", InStr(text, "stack: ") > 0, true)
+            eq("one line", StrSplit(Trim(text, "`r`n"), "`r`n").Length, 1)
+            eq("log still off", Logger.Enabled, false)
+            eq("ending the script: AutoHotkey's dialog", ErrorHandler.Handle(caught, "ExitApp", false), 0)
+            eq("thrown string", ErrorHandler.Describe("oops") "|" ErrorHandler.Summary("oops"), "thrown value: oops|oops")
+            eq("summary", ErrorHandler.Summary(caught), "bad value")
+            OnError(handler, -1)                                            ; before the test runner's own handler (which ends the run)
+            SetTimer(ThrowForTest, -1)
+            Sleep(200)
+            eq("from a timer: caught and logged", InStr(read(), "Error: thrown in a timer") > 0, true)
+        } finally {
+            OnError(handler, 0)
+            Logger.Close()
+            try FileDelete(logFile)
+            Logger.Enabled := saved[1], Logger.File := saved[2], Logger.Immediate := saved[3], ErrorHandler.Count := saved[4]
+        }
+    }
+
     static ExitAfterEnter() {
         eq := (n, a, e) => TestRunner.Equal("ExitAfterEnter." n, a, e)
         pauses := 0
@@ -1445,4 +1481,8 @@ Func | PTTools | PT Tools (AHK)=99
             try DirDelete(root, true)
         }
     }
+}
+
+ThrowForTest() {                                                            ; for CoreTests.UncaughtErrors: an error nothing catches
+    throw Error("thrown in a timer")
 }

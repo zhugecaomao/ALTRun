@@ -867,6 +867,7 @@
   "Settings.ImportedIni": "已从旧版本导入设置、命令和热键 ({1})。原文件保留不变。",
   "Settings.Migrated": "设置已从版本 {1} 升级, 原文件备份为 {2}。",
   "Settings.Moved": "设置文件已移到 Data 文件夹: {1}",
+  "App.UncaughtError": "ALTRun 遇到意外错误, 已停止这个操作:\n{1}\n详细信息见 {2}",
   "Settings.ParseError": "ALTRun.json 无法解析:\n\n{1}\n\n已改名为 {2}, 现在使用默认设置。",
   "Settings.SaveError": "无法保存 ALTRun.json:\n\n{1}",
   "Snippet.Hint.AutoExpand": "在任何程序里输入 {1} + 关键字, 立即替换成正文。关闭后只能从搜索窗口粘贴",

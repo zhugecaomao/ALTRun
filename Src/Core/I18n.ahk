@@ -145,6 +145,7 @@ class I18n {
         s["Settings.SaveError"]        := "Could not save ALTRun.json:`n`n{1}"
         s["Settings.ImportedIni"]      := "Settings, commands and hotkeys were imported from the previous version ({1}). That file is kept unchanged."
         s["Settings.Moved"]            := "Settings now live in the Data folder: {1}"
+        s["App.UncaughtError"]         := "ALTRun ran into an unexpected error and stopped that action:`n{1}`nDetails are in {2}"
         s["Settings.Migrated"]         := "Settings were upgraded from version {1}. A backup was saved as {2}."
         s["Settings.EditHint"]         := "ALTRun reloads when you save ALTRun.json."
 

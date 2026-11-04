@@ -39,7 +39,7 @@
 | `%LOCALAPPDATA%\ALTRun\Clipboard\` | 剪贴板历史里的图片和很长的条目 (默认存在这里, 不跟着同步盘走); "全部只存本机" 时 `ClipboardHistory.json` 也在 `%LOCALAPPDATA%\ALTRun\` |
 | 程序目录的 `Themes\` (程序目录不能写入时 `%APPDATA%\ALTRun\Themes\`) | 自己做的主题, 见 [主题](Themes-zh#自定义主题) |
 | 程序目录的 `Scripts\` (程序目录不能写入时 `%APPDATA%\ALTRun\Scripts\`) | 自己的脚本, 见 [脚本扩展](Scripts-zh) |
-| `%Temp%\ALTRun.log` | 调试日志, 只在 偏好设置 → 高级 → "写入调试日志" 打开时写 |
+| `%Temp%\ALTRun.log` | 调试日志, 只在 偏好设置 → 高级 → "写入调试日志" 打开时写; 意外错误 (和出错的位置) 在关闭时也会写入 |
 
 开机启动、开始菜单、"发送到" 的快捷方式和管理员小助手的计划任务见 [卸载](Installation-zh#卸载)。
 
