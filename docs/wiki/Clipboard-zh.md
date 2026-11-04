@@ -2,7 +2,7 @@
 
 # 剪贴板历史
 
-按 `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字、文件和图片 (还没输完整时, 例如 `cli`, 列表最后有一行提示, 按 `Enter` 补全成 `clip `), `clip 关键词` 过滤, `Enter` 粘贴到前台窗口, `Ctrl+Del` 从历史中删除。
+按 `Ctrl+Alt+C` 或输入 `clip` 列出复制过的文字、文件和图片 (还没输完整时, 例如 `cli`, 列表最后有一行提示, 按 `Enter` 补全成 `clip `), `clip 关键词` 过滤, `Enter` 粘贴到前台窗口, `Ctrl+Del` 从历史中删除。粘贴的这一条会排到最前面并留在剪贴板里 (和 Ditto、Windows 的 `Win+V` 一样), 之后直接按 `Ctrl+V` 还能再粘贴, 不用再打开 ALTRun。
 
 ![剪贴板历史: 在记事本里按 Ctrl+Alt+C, 输入几个字筛选, 回车粘贴](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/demo-clipboard.png)
 
