@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.03.8]
+
+测试版。
+
+Test build.
+
+### 改进
+- 文件夹同步窗口默认更大 (更宽、列表多显示几行); "操作" 一列按当前语言里最长的操作文字定宽, 多出来的宽度留给文件路径
+
+### 修复
+- 拖动改变文件夹同步窗口的大小时画面会花掉 (文字和按钮留下残影): 调整布局后整个窗口重新绘制
+
 ## [2026.11.03.7]
 
 测试版。
@@ -1107,7 +1119,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.8...HEAD
+[2026.11.03.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.7...2026.11.03.8
 [2026.11.03.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.6...2026.11.03.7
 [2026.11.03.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...2026.11.03.6
 [2026.11.03.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.3...2026.11.03.4
