@@ -189,9 +189,12 @@ jobs:
         shell: bash
         run: |
           cp shots/*.png docs/images/screenshots/ 2>/dev/null || true
+          # the Microsoft Store screenshots (1920 x 1080) from the updated ones (Tests/Screenshots/MakeStore.py)
+          python3 -m venv "$RUNNER_TEMP/venv" && "$RUNNER_TEMP/venv/bin/pip" install --quiet --disable-pip-version-check --timeout 30 pillow
+          "$RUNNER_TEMP/venv/bin/python" Tests/Screenshots/MakeStore.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/images/screenshots
+          git add docs/images/screenshots packaging/msix/Screenshots
           if git diff --cached --quiet; then echo "No changes"; exit 0; fi
           git commit -m "Update screenshots"
           git push origin "HEAD:${{ github.ref_name }}"
