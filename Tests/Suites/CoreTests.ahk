@@ -577,6 +577,7 @@ class CoreTests {
     static StorePackage() {
         eq := (n, a, e) => TestRunner.Equal("StorePackage." n, a, e)
         eq("not packaged here", App._PackageFamily() "|" (App.ExePath = A_ScriptFullPath) "|" (App.ExeDir = A_ScriptDir), "|1|1")
+        eq("no such function (Windows 7): not packaged", App._PackageFamily("NoSuchFunctionInAnyDll"), "")
         saved := App.PackageFamily, savedTimer := UpdateChecker._timer
         try {
             App.PackageFamily := "zhugecaomao.ALTRun_6dpjkjyg02fec", UpdateChecker._timer := ""
