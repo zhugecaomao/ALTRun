@@ -28,7 +28,7 @@
 class SyncPreview {
     static Windows := Map()                                                 ; SyncJobs.Key(name) -> the task's window (see _Create)
     static StaleMs := 5 * 60 * 1000, TickMs := 500
-    static Width := 860, ActionWidth := 150, SizeWidth := 80
+    static Width := 1000, ListRows := 20, SizeWidth := 80
     static Enabled := Map("Ready", [1, 1, 0], "Check", [0, 0, 1], "Preview", [1, 1, 0], "Run", [0, 0, 1], "Done", [1, 1, 0])   ; Preview, Sync Now, Stop
     static _tickTimer := () => SyncPreview._Tick()
 
@@ -274,9 +274,10 @@ class SyncPreview {
         w.Status := g.AddText("w" width " y+8")
         g.SetFont("s9 norm")
         w.Detail := g.AddText("w" width " y+4 r2")                         ; the deletions, files that failed, the last run: two lines, always there
-        w.List := g.AddListView("w" width " r16 y+6 -Multi Grid NoSortHdr +LV0x4000", [I18n.T("Sync.Preview.Col.Item"), I18n.T("Sync.Preview.Col.Action")
+        w.List := g.AddListView("w" width " r" SyncPreview.ListRows " y+6 -Multi Grid NoSortHdr +LV0x4000", [I18n.T("Sync.Preview.Col.Item"), I18n.T("Sync.Preview.Col.Action")
             , I18n.T("Sync.Preview.Col.Size")])                             ; LVS_EX_LABELTIP: a cut-off path shows whole on hover
-        w.List.ModifyCol(1, width - SyncPreview.ActionWidth - SyncPreview.SizeWidth - 24), w.List.ModifyCol(2, SyncPreview.ActionWidth), w.List.ModifyCol(3, SyncPreview.SizeWidth " Right")
+        w.List.ModifyCol(3, SyncPreview.SizeWidth " Right")
+        SyncPreview._ActionColumn(w)                                        ; the path column takes the rest (_Columns, when laid out)
         w.List.OnEvent("DoubleClick", (list, row) => SyncPreview._ShowItem(w, row))
         w.Bar := g.AddProgress("w" width " h10 y+6 Range0-1000")
         g.SetFont("s8")
@@ -425,6 +426,26 @@ class SyncPreview {
             x -= gaps.Between
         }
         SyncPreview._Columns(w)
+        DllCall("RedrawWindow", "Ptr", w.Gui.Hwnd, "Ptr", 0, "Ptr", 0, "UInt", 0x185)   ; RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_UPDATENOW:
+    }                                                                       ; moving doesn't repaint, so the texts and buttons left pieces behind
+
+    ; The texts the Action column can show in this language, and its header
+    static ActionTexts() {
+        texts := [I18n.T("Sync.Preview.Col.Action")]
+        for kind in ["CopyFile", "CopyFolder", "DeleteFile", "DeleteFolder"]
+            texts.Push(I18n.T("Sync.Preview." kind))
+        for reason in ["New", "Newer", "Older", "Changed"]
+            texts.Push(I18n.T("Sync.Preview.CopyWhy", I18n.T("Sync.Preview.Why." reason)))
+        return texts
+    }
+
+    ; The Action column as wide as the widest of those in the list's font, plus the cell's padding and a little room. In the list's own pixels (LVM_*)
+    static _ActionColumn(w) {
+        widest := 0
+        for text in SyncPreview.ActionTexts()
+            widest := Max(widest, SendMessage(0x1057, 0, StrPtr(text), w.List))   ; LVM_GETSTRINGWIDTHW
+        SendMessage(0x101E, 1, widest + Round(30 * A_ScreenDPI / 96), w.List)    ; LVM_SETCOLUMNWIDTH
+        return widest
     }
 
     ; The first column (the path) takes the list's width that the other columns leave. In the list's own pixels (LVM_*)

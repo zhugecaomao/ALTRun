@@ -758,6 +758,11 @@ class ExtensionTests {
         w := SyncPreview.Windows[SyncJobs.Key("Projects")]
         eq("window: preview from the editor offers no sync (nor stop), preview again", w.Sync.Enabled "|" w.Stop.Enabled "|" w.Preview.Enabled, "0|0|1")
         eq("window: title, path column takes the width", WinGetTitle(g.Hwnd) "|" (SendMessage(0x101D, 0, 0, w.List) > 400), "Projects - Folder Sync|1")
+        widest := 0                                                         ; the Action column fits its longest text (in this language) with a little room, no more
+        for text in SyncPreview.ActionTexts()
+            widest := Max(widest, SendMessage(0x1057, 0, StrPtr(text), w.List))   ; LVM_GETSTRINGWIDTHW
+        actionWidth := SendMessage(0x101D, 1, 0, w.List)
+        eq("window: Action column fits " widest " px of text, is " actionWidth, (actionWidth >= widest + 12 && actionWidth <= widest + 60) ? 1 : 0, 1)
 
         ; One window per task: another task's preview leaves a waiting confirmation open, the same task's goes on in the same window
         otherTask := Map("Name", "Photos", "Source", "C:\photos", "Destination", "D:\photos", "Mode", "Update")
