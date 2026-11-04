@@ -151,6 +151,7 @@ class I18n {
 
         ; --- Search window ---
         s["Search.Placeholder"]        := "ALTRun Search"
+        s["Search.Menu"]               := "Menu"
         s["Search.FilesPlaceholder"]   := "Search files..."
         s["Search.ActionsFor"]         := "Actions for {1}"
         s["Search.Copied"]             := "Copied: {1}"
@@ -640,8 +641,6 @@ class I18n {
         s["Status.Run"]                := "Run"
         s["Status.Copy"]               := "Copy"
         s["Status.Paste"]              := "Paste"
-        s["Status.Reveal"]             := "Reveal"
-        s["Status.Edit"]               := "Edit"
         s["Status.Complete"]           := "Complete"
         s["Status.Actions"]            := "Actions"
         s["Status.Back"]               := "Esc  Back"

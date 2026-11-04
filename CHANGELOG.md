@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.03.12]
+
+测试版。
+
+Test build.
+
+### 改进
+- 搜索框右边加了 ALTRun 图标, 点它打开菜单 (偏好设置、快捷键和语法、重建索引、检查更新、重新载入、退出), 和 Alfred、Listary 一样。它一直都在: 刚安装还没有结果时、关掉状态栏时也能找到菜单。状态栏左下角的 ☰ 去掉了
+- 状态栏右边只显示 `Enter` 和 `→` (操作) 两项, 和 Raycast 一样更简洁; `Ctrl+Enter` (定位、粘贴)、`F3` (编辑) 等其它操作和快捷键都列在操作面板 (`→`) 里
+
 ## [2026.11.03.11]
 
 测试版。
@@ -1146,7 +1156,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.12...HEAD
+[2026.11.03.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.11...2026.11.03.12
 [2026.11.03.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.10...2026.11.03.11
 [2026.11.03.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.9...2026.11.03.10
 [2026.11.03.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.8...2026.11.03.9

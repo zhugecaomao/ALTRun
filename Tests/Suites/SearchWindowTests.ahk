@@ -904,7 +904,7 @@ class SearchWindowTests {
             eq("empty box: the tip is in the box, not the status bar", texts.Left "|" texts.Enter "|" texts.Actions, "||0")
             SearchWindow.Input.Value := "note", SearchWindow.Session.Results := [fileItem, ResultItem("b")], SearchWindow.Session.Selected := 1
             texts := SearchStatusBar.Texts()
-            eq("results: enter, ctrl+enter, edit, actions", texts.Left "|" texts.Enter "|" texts.Ctrl "|" texts.Edit "|" texts.Actions, "|Open|Reveal|1|1")
+            eq("results: enter and actions", texts.Left "|" texts.Enter "|" texts.Actions, "|Open|1")
             parts := SearchStatusBar.Parts(texts), shown := ""
             for part in parts {
                 keys := ""
@@ -912,18 +912,17 @@ class SearchWindowTests {
                     keys .= (keys = "" ? "" : " ") key
                 shown .= (shown = "" ? "" : " | ") part.Label " " keys
             }
-            eq("four parts", shown, "Open ↵ | Reveal Ctrl ↵ | Edit F3 | Actions →")
+            eq("two parts", shown, "Open ↵ | Actions →")
             ; A tip too long for the box ends with "…" (one character per unit here)
             eq("fit: short tip unchanged", SearchWindow.FitWidth("Tip: ? cheat sheet", 30, (t) => StrLen(t)), "Tip: ? cheat sheet")
             eq("fit: long tip shortened", SearchWindow.FitWidth("Tip: folder + name  search folders only", 20, (t) => StrLen(t)), "Tip: folder + name…")
-            eq("ctrl+enter: text pastes", SearchStatusBar.CtrlEnterTitle(ResultItem("42", "", {Kind: "text"}), "Copy"), "Paste")
-            eq("ctrl+enter: same as enter is not shown", SearchStatusBar.CtrlEnterTitle(ResultItem("s", "", {Kind: "text", OnRun: (*) => 0}), "Paste"), "")
-            eq("ctrl+enter: url copies", SearchStatusBar.CtrlEnterTitle(ResultItem("w", "", {Kind: "url"}), "Open"), "Copy")
-            eq("ctrl+enter: commands have none", SearchStatusBar.CtrlEnterTitle(ResultItem("Lock", "", {OnRun: (*) => 0}), "Run"), "")
-            items := SearchStatusBar.MenuItems(), labels := ""
+            items := SearchWindow.MenuItems(), labels := ""
             for entry in items
                 labels .= (IsObject(entry) ? StrSplit(entry[1], "`t")[1] : "-") ";"
             eq("menu", labels, "Preferences...;Shortcuts and Syntax;-;Rebuild Index;Check for Updates;-;Reload;Quit;")
+            w := Win.Scale(700), pad := Win.Scale(16)                       ; the menu icon right of the box, inside the padding, a gap between them
+            eq("menu icon at the right", SearchWindow.MenuIconX(w, pad) + SearchWindow.MenuIconSize(), w - pad)
+            eq("box ends before the icon", SearchWindow.MenuIconX(w, pad) - (pad + SearchWindow.InputWidth(w, pad)), Win.Scale(10))
             SearchWindow.Session.FileMode := true, SearchWindow.Input.Value := ""
             eq("fileItem mode", SearchStatusBar.Texts().Left, I18n.T("Status.FileMode"))
             SearchWindow.Session.FileMode := false, SearchWindow.Session.Mode := "actions"
@@ -958,7 +957,7 @@ class SearchWindowTests {
         }
     }
 
-    ; At the narrowest window (450 px) the four parts on the right still leave room for the ☰ button, in every language
+    ; At the narrowest window (450 px) the two parts on the right fit with room to spare, in every language
     static StatusBarFit() {
         savedLang := I18n.Lang, savedGdi := ResultRows.Gdi.Clone()
         ResultRows.CreateGdi()
@@ -966,8 +965,8 @@ class SearchWindowTests {
         try {
             for language in I18n.Languages() {
                 I18n.Init(language[1])
-                parts := SearchStatusBar.Parts({Enter: I18n.T("Status.Open"), Ctrl: I18n.T("Status.Reveal"), Edit: 1, Actions: 1})
-                used := SearchStatusBar.PartsWidth(parts) + pad + SearchStatusBar.MenuWidthFor(pad)         ; right padding + the ☰ button
+                parts := SearchStatusBar.Parts({Enter: I18n.T("Status.Open"), Actions: 1})
+                used := SearchStatusBar.PartsWidth(parts) + 2 * pad + Win.Scale(100)                         ; both paddings + room for the mode on the left
                 TestRunner.True("StatusBarFit." language[1] " (" used " of " Win.Scale(PreferencesWindow.MinWindowWidth) ")", used <= Win.Scale(PreferencesWindow.MinWindowWidth))
             }
         } finally {

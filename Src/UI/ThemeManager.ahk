@@ -9,7 +9,7 @@
 ;                             Monokai / OneDark / TokyoNight / Dracula / CatppuccinMocha / GruvboxDark / SolarizedLight (common editor color schemes)
 ;   Themes\*.json             the user's own themes, untouched by upgrades; the user's wins over a built-in theme of the same name
 ;   System                    follows the Windows light / dark setting (Light or Dark), updated when the system switches
-; Popup menus (tray, ☰, the results' context menu, Quick Switch's folder menu) follow the theme's darkness, see ApplyMenuMode
+; Popup menus (tray, the search box's menu icon, the results' context menu, Quick Switch's folder menu) follow the theme's darkness, see ApplyMenuMode
 ; Density (Appearance.Density): font sizes, padding, row height and icons of any theme scale by DensityScale (see Scaled):
 ;   Comfortable = the theme's own size; Normal (the default for new installs) = the former Dark Compact; Compact = one step smaller
 ; The former built-in themes DarkCompact / LightCompact / MidnightCompact are gone: when the settings still name them (or a user theme's "Base"

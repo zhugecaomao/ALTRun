@@ -45,7 +45,7 @@
 ;===============================================================================
 
 class SearchWindow {
-    static Gui := "", Input := "", List := "", Separator := ""
+    static Gui := "", Input := "", List := "", Separator := "", MenuIcon := ""
     static Session := SearchSession()                                       ; what is searched and shown (mode, results, selection, actions panel...), see SearchSession.ahk
     static Width := 0, Padding := 0, InputHeight := 0, RowHeight := 0, IconSize := 0, VisibleRows := 8
     static SelectedRadius := 0
@@ -81,11 +81,18 @@ class SearchWindow {
         g.MarginX := 0, g.MarginY := 0
         g.SetFont("s" ThemeManager.Get("InputFontSize") " c" ThemeManager.Get("InputText"), ThemeManager.FontName())
 
-        searchBox := g.AddEdit("x" pad " y" pad " w" (w - 2 * pad) " r1 -Multi -E0x200 -VScroll -WantReturn Background" background)
+        iconSize := SearchWindow.MenuIconSize()
+        searchBox := g.AddEdit("x" pad " y" pad " w" SearchWindow.InputWidth(w, pad) " r1 -Multi -E0x200 -VScroll -WantReturn Background" background)
         searchBox.GetPos(, , , &editH)
         SearchWindow.InputHeight := Max(editH, Win.Scale(40))
         metrics := Win.CapMetrics(searchBox.Hwnd)
         searchBox.Move(pad, pad + SearchWindow.InputTop(SearchWindow.InputHeight, editH, pad, metrics.Ascent, metrics.Cap))
+        ; The ALTRun icon right of the box opens the menu (like Alfred / Listary): always there, also before there are results
+        ; and with the status bar off. A static control: clicking it doesn't take the focus from the box
+        menuIcon := g.AddPicture("x" SearchWindow.MenuIconX(w, pad) " y" (pad + (SearchWindow.InputHeight - iconSize) // 2) " w" iconSize " h" iconSize
+            , SearchWindow._MenuIconFile())
+        menuIcon.OnEvent("Click", (*) => SearchWindow.ShowMenu())
+        Win.AddTooltip(menuIcon.Hwnd, I18n.T("Search.Menu"))
         searchBox.OnEvent("Change", (*) => SearchWindow._OnInputChange())
         Win.SetCueBanner(searchBox.Hwnd, SearchWindow.Placeholder())
 
@@ -107,7 +114,7 @@ class SearchWindow {
 
         g.OnEvent("Close", (*) => SearchWindow.Hide())
 
-        SearchWindow.Gui := g, SearchWindow.Input := searchBox, SearchWindow.List := list, SearchWindow.Separator := separator
+        SearchWindow.Gui := g, SearchWindow.Input := searchBox, SearchWindow.List := list, SearchWindow.Separator := separator, SearchWindow.MenuIcon := menuIcon
         SearchStatusBar.Create(g, w, pad)
 
         OnMessage(0x100, (p*) => SearchKeys.OnKeyMessage(p*))               ; WM_KEYDOWN
@@ -883,6 +890,40 @@ class SearchWindow {
 
     ; Gray text in the empty search box: the setting (Appearance.Placeholder) if given, "ALTRun Search" if empty;
     ; only spaces = show nothing
+    ; The search box and, right of it, the menu icon (about the size of the box's text) inside the window's padding
+    static MenuIconSize() => Win.Scale(22)
+    static MenuIconX(w, pad) => w - pad - SearchWindow.MenuIconSize()
+    static InputWidth(w, pad) => SearchWindow.MenuIconX(w, pad) - Win.Scale(10) - pad
+
+    ; ALTRun's icon (the compiled exe has the same); running the source without Resources: the AutoHotkey icon
+    static _MenuIconFile() => FileExist(App.IconFile) ? App.IconFile : A_IsCompiled ? A_ScriptFullPath : A_AhkPath
+
+    ; The menu's items: [[name, function], ...], "" = separator
+    static MenuItems() {
+        later := (fn) => (*) => (SearchWindow.Hide(), SetTimer(fn, -1))     ; hide the search window first, act after the menu closes
+        return [[I18n.T("Tray.Preferences") "`tCtrl+,", later(() => App.OpenPreferences())]
+              , [I18n.T("Menu.CheatSheet") "`t?", (*) => SearchWindow._SetInput("?")]
+              , ""
+              , [I18n.T("Tray.RebuildIndex"), later(() => App.RebuildIndex())]
+              , [I18n.T("Tray.CheckUpdate"), later(() => UpdateChecker.Check())]
+              , ""
+              , [I18n.T("Tray.Reload"), later(() => App.Reload())]
+              , [I18n.T("Tray.Exit"), later(() => App.Quit())]]
+    }
+
+    ; Shows the menu below the icon (the system moves it where it fits); the window stays while it is open
+    static ShowMenu() {
+        mainMenu := Menu()
+        for entry in SearchWindow.MenuItems()
+            IsObject(entry) ? mainMenu.Add(entry[1], entry[2]) : mainMenu.Add()
+        SearchWindow.MenuIcon.GetPos(&x, &y, , &h)
+        SearchWindow._keepOpen := true
+        CoordMode("Menu", "Client")
+        mainMenu.Show(x, y + h + Win.Scale(4))
+        SearchWindow._keepOpen := false
+        SearchWindow.AfterMenu()
+    }
+
     static Placeholder() {
         text := AppSettings.Appearance.Get("Placeholder", "")
         return (text = "") ? I18n.T("Search.Placeholder") : Trim(text)
