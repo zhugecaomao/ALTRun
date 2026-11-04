@@ -82,7 +82,7 @@ class SearchKeys {
 
     ; Debug log only (2026-10: Total Commander opened a properties dialog right after Enter ran a result, as if Alt+Enter reached it):
     ; how Enter came in and the keys held then, and for EnterTraceMs afterwards each Enter / Alt key event with the window in front.
-    ; It only watches (InputHook "V"): nothing is blocked. Tests\Tools\KeyWatch.ahk also logs after ALTRun exits
+    ; It only watches (InputHook "V"): nothing is blocked. Tests\Tools\KeyDiag.ahk also records after ALTRun exits
     static EnterTraceMs := 2000, EnterAt := 0, _trace := "", _traceStop := ""
     static TraceEnter(lParam, msg) {
         SearchKeys.EnterAt := A_TickCount
