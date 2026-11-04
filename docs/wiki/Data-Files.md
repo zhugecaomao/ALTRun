@@ -41,8 +41,9 @@ Apart from `ALTRun.json`, every file is created at runtime and simply rebuilt if
 | `Themes\` in the program folder (`%APPDATA%\ALTRun\Themes\` if it isn't writable) | Your own themes, see [Themes](Themes#custom-themes) |
 | `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` if it isn't writable) | Your own scripts, see [Scripts](Scripts) |
 | `%Temp%\ALTRun.log` | Debug log, written only with Preferences → Advanced → "Write a debug log" on; an unexpected error (with where it happened) is written even when it is off |
+| `%Temp%\ALTRun\SyncLogs\` | [Folder Sync](Sync-Tasks) logs (`<task>_<date>.log`) of the tasks without a log file of their own; those older than 30 days are deleted when a task runs |
 
-For the startup, Start menu and "Send to" shortcuts and the administrator helper's scheduled task, see [Uninstalling](Installation#uninstalling).
+For the startup, Start menu and "Send to" shortcuts, the administrator helper's scheduled task and the [Delayed Start](Delayed-Start) tasks, see [Uninstalling](Installation#uninstalling).
 
 ## Backups and moving to another PC
 - **One file is enough**: `ALTRun.json` holds every setting, custom command and snippet. To take the learned ranking and clipboard history along too, back up the whole Data folder

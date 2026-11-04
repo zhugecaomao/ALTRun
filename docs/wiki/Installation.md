@@ -30,7 +30,7 @@ winget upgrade zhugecaomao.ALTRun     # later upgrades (quit ALTRun first)
 - The program is in `%LOCALAPPDATA%\Microsoft\WinGet\Packages\zhugecaomao.ALTRun_...`; type `altrun` on the command line to start it
 - Upgrading and uninstalling only remove the files that came in the zip; settings and data (`Data\`, `Themes\`) are kept. Only `winget uninstall --purge` deletes them as well, or delete the folder above by hand after uninstalling
 - winget itself doesn't create a Start menu shortcut: after you start it once with `altrun`, ALTRun adds itself to the Start menu (Preferences → General → "Add to Start menu")
-- Before uninstalling, turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" in Preferences → General, otherwise those shortcuts are left behind
+- Before uninstalling, turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" in Preferences → General, otherwise those shortcuts are left behind; remove the Delayed Start entries too, see [Uninstalling](#uninstalling)
 - The first time it runs, Windows may say it "couldn't verify the publisher" (the program was downloaded from the internet); choose "Run"
 
 ### Installing with Scoop
@@ -103,6 +103,7 @@ The old `Res\` folder has been renamed to `Resources\`; at startup, any files yo
 
 ## Uninstalling
 1. In Preferences → General, turn off "Launch ALTRun at login", "Add to Start menu" and "Add to Explorer 'Send to' menu" (or delete those shortcuts by hand); if you ticked Preferences → Hotkeys → "Also in windows running as administrator", untick it too so its scheduled task is removed
-2. Tray menu → Quit
-3. Delete the program folder
-4. To remove everything, also delete `%LOCALAPPDATA%\ALTRun` (clipboard images, icon cache; and `%APPDATA%\ALTRun` if the settings were stored there because the program folder was not writable) and `%Temp%\ALTRun.log` (the debug log, only there if you turned it on). If you moved the data folder (Preferences → Advanced → Data), delete that folder too. Where every file lives: [Data files](Data-Files)
+2. In Preferences → [Delayed Start](Delayed-Start), remove every entry and click OK: ALTRun deletes its tasks in Task Scheduler (folder `\ALTRun\<user name>`) and, for each program whose own start it turned off, asks whether to let it start by itself again. Otherwise the tasks stay and keep starting those programs, and the programs' own start stays off (by hand: delete the `ALTRun` folder in Task Scheduler and turn the programs on again in Task Manager → Startup apps)
+3. Tray menu → Quit
+4. Delete the program folder
+5. To remove everything, also delete `%LOCALAPPDATA%\ALTRun` (clipboard images, icon cache; and `%APPDATA%\ALTRun` if the settings were stored there because the program folder was not writable), `%Temp%\ALTRun.log` (the debug log, only there if you turned it on) and `%Temp%\ALTRun\` (Folder Sync logs). If you moved the data folder (Preferences → Advanced → Data), delete that folder too. Where every file lives: [Data files](Data-Files)
