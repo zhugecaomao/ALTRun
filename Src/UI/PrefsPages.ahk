@@ -18,8 +18,11 @@ class PrefsPages {
         PrefsForm.Gap()
         for row in [["LaunchAtLogin", "Prefs.LaunchAtLogin", "Prefs.Group.Startup"], ["ShowTrayIcon", "Prefs.ShowTrayIcon", ""]
                    , ["SendToMenu", "Prefs.SendToMenu", "Prefs.Group.Integration"], ["StartMenuShortcut", "Prefs.StartMenu", ""]
-                   , ["CheckForUpdates", "Prefs.CheckUpdates", "Prefs.Group.Updates"]]   ; writing the debug log is under Advanced → Diagnostics
-            PrefsForm.Check("General." row[1], row[2], , , row[3])
+                   , ["CheckForUpdates", "Prefs.CheckUpdates", "Prefs.Group.Updates"]] {  ; writing the debug log is under Advanced → Diagnostics
+            box := PrefsForm.Check("General." row[1], row[2], , , row[3])
+            if (App.PackageFamily != "" && (row[1] = "StartMenuShortcut" || row[1] = "CheckForUpdates"))
+                box.Enabled := false                                        ; from the Store: its own Start menu entry and updates
+        }
         PrefsForm.Gap()
         PrefsForm.Field("General.FileManager", "Prefs.FileManager", "L", "file")
     }
