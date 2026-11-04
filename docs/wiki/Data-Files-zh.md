@@ -25,8 +25,8 @@
 | `FileIndex.bin` | 内置文件索引 (没有 Everything 时用) | 后台重新扫描 |
 | `Knowledge.json` | 学习排序、搜索历史、最近使用的项目 (置顶的项目在 `ALTRun.json` 里) | 排序要重新学, 最近使用清空 |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) | 统计从零开始 |
-| `ClipboardHistory.json` | 剪贴板历史 (文字) | 历史清空 |
-| `Clipboard\` | 剪贴板历史里的图片和很长的条目 (只在 "保存位置" 选了 "都放在 Data 文件夹" 时在这里) | 这些条目在历史里不再显示 |
+| `ClipboardHistory.json` | 剪贴板历史 (文字; 只在 偏好设置 → 剪贴板 → "保存位置" 不是 "全部只存本机" 时在这里) | 历史清空 |
+| `Clipboard\` | 剪贴板历史里的图片和很长的条目 (只在 "保存位置" 选了 "Data 文件夹" 时在这里) | 这些条目在历史里不再显示 |
 | `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) | 下次启动重新下载 |
 | `Update.json` | 上次检查更新的时间、跳过的版本 | 下次启动重新检查 |
 | `Icons\` | "下载网站图标" 保存的网页搜索图标 | 那些引擎改用默认图标 |
@@ -37,7 +37,7 @@
 | 位置 | 内容 |
 |---|---|
 | `%LOCALAPPDATA%\ALTRun\IconCache\` | 图标缓存 (`Icons-<尺寸>.bin`), 重启后图标马上显示; 每台电脑各一份, 删掉自动重建 |
-| `%LOCALAPPDATA%\ALTRun\Clipboard\` | 剪贴板历史里的图片和很长的条目 (默认存在这里, 不跟着同步盘走); "全部只存本机" 时 `ClipboardHistory.json` 也在 `%LOCALAPPDATA%\ALTRun\` |
+| `%LOCALAPPDATA%\ALTRun\ClipboardHistory.json`、`%LOCALAPPDATA%\ALTRun\Clipboard\` | 剪贴板历史, 图片和很长的条目在 `Clipboard\` 里 (默认存在这里, 不跟着同步盘或 U 盘走); "图片和长条目只存本机" 时只有 `Clipboard\` 在这里 |
 | 程序目录的 `Themes\` (程序目录不能写入时 `%APPDATA%\ALTRun\Themes\`) | 自己做的主题, 见 [主题](Themes-zh#自定义主题) |
 | 程序目录的 `Scripts\` (程序目录不能写入时 `%APPDATA%\ALTRun\Scripts\`) | 自己的脚本, 见 [脚本扩展](Scripts-zh) |
 | `%Temp%\ALTRun.log` | 调试日志, 只在 偏好设置 → 高级 → "写入调试日志" 打开时写; 意外错误 (和出错的位置) 在关闭时也会写入 |
@@ -46,7 +46,7 @@
 开机启动、开始菜单、"发送到" 的快捷方式, 管理员小助手的计划任务和 [延迟启动](Delayed-Start-zh) 的任务见 [卸载](Installation-zh#卸载)。
 
 ## 备份和换电脑
-- **只备份一个文件就够**: `ALTRun.json` 包括所有设置、自定义命令和片段。想连学习排序、剪贴板历史一起带走, 备份整个 Data 文件夹
+- **只备份一个文件就够**: `ALTRun.json` 包括所有设置、自定义命令和片段。想连学习排序一起带走, 备份整个 Data 文件夹 (剪贴板历史默认存在本机, 见上面)
 - **换电脑**: 把整个程序文件夹 (连同 `Data\`) 复制过去即可; 路径尽量用 [路径变量](Custom-Commands-zh#路径里可以用的变量), 换了用户名也能用
 - **多台电脑同步**: 把数据文件夹换到同步盘里, 见 [多台电脑共用设置](FAQ-zh#在多台电脑上使用同一份设置)。不要在两台电脑上同时开着 ALTRun 修改设置, 否则同步盘可能生成冲突副本
 - **只导出文字片段**: 偏好设置 → 文字片段 → 导入 / 导出, 存成 CSV, 见 [文字片段](Snippets-zh#批量导入--导出)

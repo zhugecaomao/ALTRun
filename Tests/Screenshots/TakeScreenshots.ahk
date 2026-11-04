@@ -89,7 +89,7 @@ class Shots {
             ["prefs-window",     "Light", "-Preferences 2", () => Shots.Preferences()],      ; Wiki: search and shortcuts
             ["prefs-features",   "Light", "-Preferences 5", () => Shots.Preferences()],      ; Wiki: settings reference (features)
             ["prefs-applications", "Light", "-Preferences 6", () => Shots.Preferences()],    ; Wiki: automatic app index updates
-            ["prefs-clipboard",  "Light", "-Preferences 11", () => Shots.Preferences()],     ; Wiki: clipboard history
+            ["prefs-clipboard",  "Light", "-Preferences 11", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
             ["prefs-websearch",  "Light", "-Preferences 12", () => Shots.Preferences()],     ; Wiki: web search
             ["prefs-delayedstart", "Light", "-Preferences 19", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
             ["prefs-startupapps", "Light", "-Preferences 19", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
@@ -274,7 +274,8 @@ class Shots {
                 "Applications", Map("Folders", [Shots.AppsDir], "StoreApps", 0),
                 "Calculator", Map("StructuralCalc", 1),
                 "Recent", Map("Pinned", Shots.Pinned, "RecentCount", 5),
-                "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0)
+                "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0),
+                "Clipboard", Map("LocalFiles", 0)                           ; the made-up history stays in this Data folder, away from this PC's %LOCALAPPDATA%
             ),
             "Extensions", Map("QuickSwitch", Map("RecentFolders", 3)),         ; the folder panel only lists the recent items WriteRecentFolders created
             "CustomCommands", [
@@ -759,6 +760,15 @@ class Shots {
     ; Explorer's "Send to": ALTRun creates its Send to shortcut at start-up when SendToMenu is on (off in all other scenes).
     ; A Send to shortcut already there (your own ALTRun's, when run locally) is put aside and restored by CloseHelpers
     static SendToLink := RegExReplace(A_StartMenu, "\\Start Menu$", "\SendTo") "\ALTRun.lnk"
+    ; The Clipboard page shows the default "Save in" (everything on this PC only) instead of the scenes' Data folder (WriteSettings)
+    static ClipboardDefault() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["Features"]["Clipboard"]["LocalFiles"] := 2
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
     ; The File Search page with "Also show matching files and folders in normal results" ticked, so its options aren't grayed out
     static FilesInNormalResults() {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"

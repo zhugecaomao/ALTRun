@@ -1603,7 +1603,17 @@ class ProviderTests {
         eq("both kept", where(), "DL D-")
         ClipboardProvider.PlaceStorage(2, data, "")                            ; no %LOCALAPPDATA%: all in Data
         eq("no local", ClipboardProvider.File "|" ClipboardProvider.Folder, data "\ClipboardHistory.json|" data "\Clipboard")
-        eq("default", AppSettings.Defaults()["Features"]["Clipboard"]["LocalFiles"], 1)
+        eq("default", AppSettings.Defaults()["Features"]["Clipboard"]["LocalFiles"], 2)
+        old := Map("Features", Map("Clipboard", Map("Persist", 1)))          ; a settings file from before the default changed: stays 1
+        eq("existing file keeps 1", AppSettings._KeepPrevious(old) "|" old["Features"]["Clipboard"]["LocalFiles"], "1|1")
+        old := Map("Features", Map("Help", Map("Enabled", 1)))
+        eq("existing file without Clipboard", AppSettings._KeepClipboardStorage(old) "|" old["Features"]["Clipboard"]["LocalFiles"], "1|1")
+        set := Map("Features", Map("Clipboard", Map("LocalFiles", 0)))
+        eq("already set", AppSettings._KeepClipboardStorage(set) "|" set["Features"]["Clipboard"]["LocalFiles"], "0|0")
+        eq("new file", AppSettings._KeepClipboardStorage(Map()), false)
+        savedImport := AppSettings.ImportedFrom, AppSettings.ImportedFrom := "ALTRun.ini"   ; imported from 2.x (no clipboard history there): the new default
+        eq("imported from 2.x", AppSettings._KeepClipboardStorage(Map("Features", Map("Help", Map("Enabled", 1)))), false)
+        AppSettings.ImportedFrom := savedImport
         ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2]
         try DirDelete(root, true)
     }
