@@ -171,8 +171,9 @@ ALTRun 是 GPL-3.0 许可的自由软件。文档、源代码和问题反馈: ht
 ## Screenshots / 截图
 
 Partner Center wants desktop screenshots of at least 1366 × 768 (PNG, up to 10, the first ones show first). The README's
-screenshots are window-sized (about 700–1000 px wide), so the Store set is made separately: the windows on a 1920 × 1080
-background, English interface, made-up data (as all of ALTRun's screenshots). Planned order:
+screenshots are window-sized (about 700–1000 px wide), so the Store set is made separately: `packaging/msix/Screenshots/*.png`,
+the windows on a 1920 × 1080 background, English interface, made-up data (as all of ALTRun's screenshots). Made by
+`Tests/Screenshots/MakeStore.py`; the Screenshots workflow makes them again whenever it updates the screenshots. Order:
 
 1. Search window with results (`search.png` / `demo.png`)
 2. Action panel (`actions.png`)
@@ -183,4 +184,4 @@ background, English interface, made-up data (as all of ALTRun's screenshots). Pl
 7. Themes (`theme-dark.png` and others)
 8. Preferences (`prefs-general.png`)
 
-商店截图至少 1366 × 768。README 里的截图是窗口大小, 所以另外做一套: 窗口放在 1920 × 1080 的背景上, 英文界面、虚构数据。
+商店截图至少 1366 × 768。README 里的截图是窗口大小, 所以另外做一套 (`packaging/msix/Screenshots/*.png`): 窗口放在 1920 × 1080 的背景上, 英文界面、虚构数据。由 `Tests/Screenshots/MakeStore.py` 生成, 截图工作流更新截图时会一起重新生成。
