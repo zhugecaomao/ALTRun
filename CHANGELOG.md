@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.10]
+
+测试版。
+
+Test build.
+
+### 修复
+- 测试版 2026.11.03.9 在 Windows 7 上启动时会报错: 检查是不是商店版时用到的系统函数 (`GetCurrentPackageFamilyName`) 从 Windows 8 才有。现在找不到这个函数时就当作普通版。ALTRun 正式支持的是 Windows 10 / 11, 这里只是不让它在旧系统上一启动就出错
+
 ## [2026.11.03.9]
 
 测试版。
@@ -1128,7 +1137,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.10...HEAD
+[2026.11.03.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.9...2026.11.03.10
 [2026.11.03.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.8...2026.11.03.9
 [2026.11.03.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.7...2026.11.03.8
 [2026.11.03.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.6...2026.11.03.7

@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.03.9"
+    static Version := "2026.11.03.10"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -596,12 +596,16 @@ class App {
             try TraySetIcon(App.IconFile)
     }
 
-    static _PackageFamily() {
+    ; function: replaced in the tests. Windows 7 has no GetCurrentPackageFamilyName (Windows 8 and later): not packaged then
+    static _PackageFamily(function := "GetCurrentPackageFamilyName") {
         size := 0
-        if (DllCall("GetCurrentPackageFamilyName", "UInt*", &size, "Ptr", 0) != 122)   ; ERROR_INSUFFICIENT_BUFFER: there is a package (else APPMODEL_ERROR_NO_PACKAGE)
+        try code := DllCall(function, "UInt*", &size, "Ptr", 0)
+        catch
+            return ""
+        if (code != 122)                                                    ; ERROR_INSUFFICIENT_BUFFER: there is a package (else APPMODEL_ERROR_NO_PACKAGE)
             return ""
         buf := Buffer(size * 2, 0)
-        DllCall("GetCurrentPackageFamilyName", "UInt*", &size, "Ptr", buf)
+        DllCall(function, "UInt*", &size, "Ptr", buf)
         return StrGet(buf)
     }
 
