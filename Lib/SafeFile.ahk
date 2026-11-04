@@ -1,7 +1,9 @@
 ;===============================================================================
 ; SafeFile.ahk - writing a file so that a crash or power cut halfway can't damage it (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; Writes a temporary file in the same folder, then replaces the original. Creates the folder if needed; UTF-8 without BOM.
+; Writes a temporary file in the same folder, flushes it to the disk, then replaces the original (MoveFileEx with
+; MOVEFILE_WRITE_THROUGH: the rename is on the disk too before it returns). Without the flush, a power cut or blue screen right
+; after saving could leave the new file zero-filled once the old one is gone. Creates the folder if needed; UTF-8 without BOM.
 ; Sync folders such as OneDrive and antivirus software hold a just-changed file for a moment: on failure retry every 100 ms,
 ; up to MoveTries times, then throw (the original is kept, the temporary file deleted)
 ;
@@ -25,24 +27,24 @@ class SafeFile {
             tmpFile := file "." A_TickCount ".tmp"
         if !(out := FileOpen(tmpFile, "w", "UTF-8-RAW"))
             throw OSError(A_LastError, -1, tmpFile)
-        try writer(out)
-        catch as e {
+        try {
+            writer(out)
+            DllCall("FlushFileBuffers", "Ptr", out.Handle)                  ; reading Handle writes AutoHotkey's buffer to the file; then Windows' cache to the disk
+        } catch as e {
             out.Close()
             try FileDelete(tmpFile)
             throw e
         }
         out.Close()
         Loop SafeFile.MoveTries {
-            try {
-                FileMove(tmpFile, file, true)
+            if DllCall("MoveFileEx", "Str", tmpFile, "Str", file, "UInt", 0x9)   ; MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
                 return
-            } catch as e {
-                if (A_Index = SafeFile.MoveTries) {
-                    try FileDelete(tmpFile)
-                    throw e
-                }
-                Sleep(100)
+            code := A_LastError
+            if (A_Index = SafeFile.MoveTries) {
+                try FileDelete(tmpFile)
+                throw OSError(code, -1, file)
             }
+            Sleep(100)
         }
     }
 }

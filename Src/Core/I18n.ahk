@@ -142,6 +142,7 @@ class I18n {
 
         ; --- Settings / migration ---
         s["Settings.ParseError"]       := "ALTRun.json could not be read:`n`n{1}`n`nIt was renamed to {2} and the default settings are used."
+        s["Settings.RestoreBackup"]    := "ALTRun.json could not be read:`n`n{1}`n`nIt was renamed to {2}.`n`nRestore the backup saved {3}? (No: start with the default settings)"
         s["Settings.SaveError"]        := "Could not save ALTRun.json:`n`n{1}"
         s["Settings.ImportedIni"]      := "Settings, commands and hotkeys were imported from the previous version ({1}). That file is kept unchanged."
         s["Settings.Moved"]            := "Settings now live in the Data folder: {1}"

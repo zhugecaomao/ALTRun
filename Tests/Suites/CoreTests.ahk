@@ -626,6 +626,58 @@ class CoreTests {
         }
     }
 
+    ; ALTRun.json.bak: each save keeps the previous file; when ALTRun.json can't be read, the backup is offered (yes: used and written
+    ; back, no: the defaults); a file that didn't read is never copied over the backup. Also how long a safe save takes (printed, not checked)
+    static SettingsBackup() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsBackup." n, a, e)
+        dir := A_Temp "\ALTRun-backup-test"
+        try DirDelete(dir, true)
+        DirCreate(dir)
+        saved := {File: AppSettings.File, Data: AppSettings.Data, Good: AppSettings._fileGood, Restored: AppSettings.Restored, Ask: AppSettings._askFn, Notice: AppSettings._noticeFn}
+        asked := [], noticed := []
+        AppSettings._askFn := (text) => (asked.Push(text), asked.Length = 1)    ; yes the first time, then no
+        AppSettings._noticeFn := (text) => noticed.Push(text)
+        read := (file) => FileExist(file) ? JSON.Parse(FileRead(file, "UTF-8"))["A"] : "none"
+        try {
+            AppSettings.File := dir "\ALTRun.json", AppSettings._fileGood := false, AppSettings.Restored := false
+            AppSettings.Data := Map("A", 1), AppSettings.Save()
+            eq("first save: no backup", read(AppSettings.BackupFile), "none")
+            AppSettings.Data := Map("A", 2), AppSettings.Save()
+            eq("second save: the previous one kept", read(AppSettings.File) "|" read(AppSettings.BackupFile), "2|1")
+            FileDelete(AppSettings.File), FileAppend("{broken", AppSettings.File)
+            data := AppSettings._ReadFile()
+            eq("broken: backup offered and used", (data is Map ? data["A"] : "?") "|" AppSettings.Restored "|" asked.Length, "1|1|1")
+            eq("broken file kept as .bad", FileExist(AppSettings.File ".bad") != "" && InStr(asked[1], AppSettings.File ".bad") > 0, true)
+            AppSettings.Restored := false
+            FileAppend("{broken again", AppSettings.File)
+            data := AppSettings._ReadFile()
+            eq("declined: the defaults", data.Count "|" AppSettings.Restored "|" asked.Length, "0|0|2")
+            FileAppend("{still broken", AppSettings.File), AppSettings._fileGood := false
+            AppSettings.Data := Map("A", 3), AppSettings.Save()
+            eq("a file that didn't read isn't copied over the backup", read(AppSettings.BackupFile), 1)
+            FileDelete(AppSettings.BackupFile), FileAppend("{broken", AppSettings.BackupFile)
+            FileDelete(AppSettings.File), FileAppend("{broken", AppSettings.File)
+            AppSettings._ReadFile()
+            eq("no usable backup: the old notice", asked.Length "|" noticed.Length, "2|1")
+            text := ""
+            Loop 2000
+                text .= "line " A_Index " of the settings`n"
+            started := A_TickCount
+            Loop 20 {                                                       ; as before: no flush, a plain replace
+                out := FileOpen(dir "\timing.json.tmp", "w", "UTF-8-RAW"), out.Write(text), out.Close()
+                FileMove(dir "\timing.json.tmp", dir "\timing.json", true)
+            }
+            before := Round((A_TickCount - started) / 20, 1), started := A_TickCount
+            Loop 20
+                SafeFile.WriteText(dir "\timing.json", text)
+            FileAppend("NOTE SafeFile: " before " ms before, " Round((A_TickCount - started) / 20, 1) " ms flushed, per write of " Round(StrLen(text) / 1024) " KB`n", "*")
+        } finally {
+            AppSettings.File := saved.File, AppSettings.Data := saved.Data, AppSettings._fileGood := saved.Good, AppSettings.Restored := saved.Restored
+            AppSettings._askFn := saved.Ask, AppSettings._noticeFn := saved.Notice
+            try DirDelete(dir, true)
+        }
+    }
+
     static ExitAfterEnter() {
         eq := (n, a, e) => TestRunner.Equal("ExitAfterEnter." n, a, e)
         pauses := 0

@@ -871,6 +871,7 @@
   "Settings.Moved": "設定檔案已移到 Data 資料夾: {1}",
   "App.UncaughtError": "ALTRun 發生非預期的錯誤, 已停止這個操作:\n{1}\n詳細資訊見 {2}",
   "Settings.ParseError": "ALTRun.json 無法解析:\n\n{1}\n\n已改名為 {2}, 現在使用預設設定。",
+  "Settings.RestoreBackup": "ALTRun.json 無法解析:\n\n{1}\n\n已改名為 {2}。\n\n要還原 {3} 儲存的備份嗎? (選「否」使用預設設定)",
   "Settings.SaveError": "無法儲存 ALTRun.json:\n\n{1}",
   "Snippet.Hint.AutoExpand": "在任何程式裡輸入 {1} + 關鍵字, 立即替換成正文。關閉後只能從搜尋視窗貼上",
   "Snippet.ImportExport": "匯入/匯出",

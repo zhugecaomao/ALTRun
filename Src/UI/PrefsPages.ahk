@@ -673,12 +673,13 @@ class PrefsPages {
         App.OpenLog()
     }
 
-    ; Reset to defaults: after confirming, back up ALTRun.json, keep what the user added (see AppSettings.KeptOnReset), replace the rest with the defaults and reload.
+    ; Reset to defaults: after confirming, back up ALTRun.json (as ALTRun.reset.backup.json, which later saves don't touch, unlike ALTRun.json.bak),
+    ; keep what the user added (see AppSettings.KeptOnReset), replace the rest with the defaults and reload.
     ; changes not yet applied in Preferences are dropped
     static _RestoreDefaults() {
         if (MsgBox(I18n.T("Prefs.RestoreDefaultsConfirm"), App.Name, "YesNo Icon! Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
             return
-        backup := AppSettings.File ".bak"
+        backup := AppSettings.ResetBackupFile
         try FileCopy(AppSettings.File, backup, true)
         catch as e
             return MsgBox(I18n.T("Settings.SaveError", e.Message), App.Name, "Icon! Owner" PreferencesWindow.Gui.Hwnd)
