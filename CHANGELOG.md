@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.11]
+
+测试版。
+
+Test build.
+
+### 改进
+- 意外错误不再弹出 AutoHotkey 的英文报错框: 热键、计时器、窗口事件里没有处理到的错误, 现在写进日志 (`%Temp%\ALTRun.log`, 包括出错的文件、行号和调用栈; 调试日志关着也写), 并显示一条简短的提示, 说明出了什么错、详细信息在哪里 (10 秒内最多提示一次)。出错的那个操作停止, ALTRun 继续运行。启动过程中的错误仍然显示报错框 (#368)
+
 ## [2026.11.03.10]
 
 测试版。
@@ -1137,7 +1146,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.11...HEAD
+[2026.11.03.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.10...2026.11.03.11
 [2026.11.03.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.9...2026.11.03.10
 [2026.11.03.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.8...2026.11.03.9
 [2026.11.03.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.7...2026.11.03.8

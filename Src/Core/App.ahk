@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.03.10"
+    static Version := "2026.11.03.11"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -104,6 +104,7 @@ class App {
 
         Logger.Time("startup: total", started)
         Logger.Flush(), Logger.Immediate := true                            ; from now on each log line is written at once (kept even if the program hangs and is killed)
+        ErrorHandler.Install()                                              ; from now on an error nothing caught is logged and noted, without AutoHotkey's dialog
         Logger.TraceUntil := A_TickCount + 60000                            ; log finer steps for 1 minute after start-up (Logger.Trace)
         OnMessage(0x4A, (p*) => App._OnCopyData(p*))                        ; command-line arguments handed over by ALTRun instances started later (WM_COPYDATA)
         App._WatchWake()

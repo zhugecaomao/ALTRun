@@ -30,6 +30,7 @@
 #Include %A_ScriptDir%\..\Lib\TaskScheduler.ahk
 #Include %A_ScriptDir%\..\Lib\TaskbarProgress.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk
+#Include %A_ScriptDir%\..\Src\Core\ErrorHandler.ahk
 #Include %A_ScriptDir%\..\Src\Core\I18n.ahk
 #Include %A_ScriptDir%\..\Src\Core\AppSettings.ahk
 #Include %A_ScriptDir%\..\Src\Core\SchemaMigration.ahk

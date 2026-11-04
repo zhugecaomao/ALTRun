@@ -867,6 +867,7 @@
   "Settings.ImportedIni": "旧バージョン ({1}) から設定、コマンド、ホットキーをインポートしました。元のファイルは変更されていません。",
   "Settings.Migrated": "設定をバージョン {1} からアップグレードしました。バックアップは {2} として保存されました。",
   "Settings.Moved": "設定ファイルは Data フォルダーに移動しました: {1}",
+  "App.UncaughtError": "予期しないエラーが発生したため、この操作を中止しました:\n{1}\n詳細は {2} にあります",
   "Settings.ParseError": "ALTRun.json を読み込めませんでした:\n\n{1}\n\n{2} に改名し、既定の設定を使用します。",
   "Settings.SaveError": "ALTRun.json を保存できませんでした:\n\n{1}",
   "Snippet.Hint.AutoExpand": "任意のアプリで {1} + キーワードを入力すると、すぐに本文に置き換わります。オフにすると検索ウィンドウからのみ貼り付けます。",

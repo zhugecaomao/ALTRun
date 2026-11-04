@@ -8,6 +8,7 @@
 ;
 ; Usage:
 ;   Logger.Debug("xxx")  /  Logger.Warn("xxx")  /  Logger.Error("xxx")
+;   Logger.Record("ERR", "xxx")   ; written even when the log is off (errors nothing caught, see ErrorHandler)
 ;   Logger.Flush()   ; writes the buffer now; rarely needed by hand, it is called once on exit
 ;   Logger.Close()   ; closes the log file (normally kept open, reopened on the next write); called once on exit
 ;   Logger.Rotate()  ; when the log is too big, keeps it as .old and starts a new one; called once at start-up
@@ -66,6 +67,14 @@ class Logger {
     }
     static Warn(msg)  => Logger._Write("WRN", msg)
     static Error(msg) => Logger._Write("ERR", msg)
+
+    ; Written even when the log is off (Enabled false): for the one thing a bug report needs, an error nothing caught (see ErrorHandler)
+    static Record(level, msg) {
+        saved := Logger.Enabled
+        Logger.Enabled := true
+        try Logger._Write(level, msg)
+        finally Logger.Enabled := saved
+    }
 
     static _Write(level, msg) {
         if !Logger.Enabled
