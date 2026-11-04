@@ -230,6 +230,68 @@ jobs:
           if ($processes.Count -ne 1 -or -not $alive) { throw "Starting ALTRun.exe again did not hand over to the running instance" }
           if ($after -ne $before + 2) { throw "Send to did not add the commands in the running instance" }
 
+      # The Microsoft Store package (packaging/msix): built from the same files, unsigned (the Store signs it when it publishes it).
+      # Its test copy is signed with a throwaway certificate, installed, ALTRun started from it through the "altrun" alias and
+      # checked; then the Windows App Certification Kit runs on it (optional tests only reported). See packaging/README.md
+      - name: MSIX package
+        shell: pwsh
+        run: ./packaging/msix/Make-Msix.ps1 -Source build/ALTRun -Version "${{ steps.version.outputs.version }}" -Out "build/msix/ALTRun_v${{ steps.version.outputs.version }}_x64.msix"
+
+      - name: MSIX test (installed with a test certificate)
+        shell: pwsh
+        run: |
+          $test = Join-Path $env:RUNNER_TEMP "ALTRun-test.msix"
+          Copy-Item (Get-Item build/msix/*.msix).FullName $test
+          $publisher = ([xml](Get-Content packaging/msix/AppxManifest.xml -Raw)).Package.Identity.Publisher
+          $cert = New-SelfSignedCertificate -Type Custom -Subject $publisher -KeyUsage DigitalSignature -FriendlyName "ALTRun MSIX test" `
+                  -CertStoreLocation Cert:\CurrentUser\My -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.3", "2.5.29.19={text}")
+          $cer = Join-Path $env:RUNNER_TEMP "msix-test.cer"
+          Export-Certificate -Cert $cert -FilePath $cer | Out-Null
+          Import-Certificate -FilePath $cer -CertStoreLocation Cert:\LocalMachine\TrustedPeople | Out-Null
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" | Sort-Object { [version]$_.Directory.Parent.Name } -Descending | Select-Object -First 1
+          & $signtool.FullName sign /fd SHA256 /sha1 $cert.Thumbprint /s My $test | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "Signing the test copy failed" }
+          Add-AppxPackage $test
+          $package = Get-AppxPackage zhugecaomao.ALTRun
+          Write-Host "Installed $($package.PackageFullName)"
+          $alias = "$env:LOCALAPPDATA\Microsoft\WindowsApps\altrun.exe"
+          $json = "$env:APPDATA\ALTRun\Data\ALTRun.json"
+          $startup = "$env:APPDATA\Microsoft\Windows\Start Menu\Programs\Startup\ALTRun.lnk"
+          Remove-Item "$env:APPDATA\ALTRun" -Recurse -Force -ErrorAction SilentlyContinue
+          Start-Process $alias
+          for ($i = 0; $i -lt 30 -and -not (Test-Path $json); $i++) { Start-Sleep -Seconds 1 }
+          Start-Sleep -Seconds 4
+          $process = Get-CimInstance Win32_Process -Filter "Name = 'ALTRun.exe'" | Select-Object -First 1
+          $target = if (Test-Path $startup) { (New-Object -ComObject WScript.Shell).CreateShortcut($startup).TargetPath } else { "" }
+          Get-Process ALTRun -ErrorAction SilentlyContinue | Stop-Process -Force
+          Write-Host "Running: $($process.ExecutablePath)"
+          Write-Host "Settings in %APPDATA%\ALTRun\Data: $(Test-Path $json)"
+          Write-Host "Start-up shortcut: $target"
+          $failures = @()
+          if (-not $process -or $process.ExecutablePath -notlike "$($package.InstallLocation)\*") { $failures += "ALTRun didn't run from the package" }
+          if (-not (Test-Path $json)) { $failures += "no settings in %APPDATA%\ALTRun\Data (is write virtualization off?)" }
+          if ($target -ne $alias) { $failures += "the start-up shortcut doesn't start the altrun alias" }
+          $kit = "${env:ProgramFiles(x86)}\Windows Kits\10\App Certification Kit\appcert.exe"
+          if (Test-Path $kit) {
+            $report = Join-Path $env:RUNNER_TEMP "wack.xml"
+            & $kit reset | Out-Null
+            & $kit test -appxpackagepath $test -reportoutputpath $report | Out-Null
+            [xml]$xml = Get-Content $report
+            Write-Host "Windows App Certification Kit: $($xml.REPORT.OVERALL_RESULT)"
+            foreach ($check in $xml.SelectNodes("//TEST")) {
+              $result = $check.RESULT.InnerText.Trim()
+              if ($result -eq 'PASS') { continue }
+              Write-Host "  $result $($check.NAME)$(if ($check.OPTIONAL -eq 'TRUE') { ' (optional)' })"
+              $check.SelectNodes('.//MESSAGE') | ForEach-Object { Write-Host "    $($_.TEXT)" }
+              if ($result -eq 'FAIL' -and $check.OPTIONAL -ne 'TRUE') { $failures += "certification kit: $($check.NAME)" }
+            }
+          } else {
+            Write-Host "Windows App Certification Kit not installed: skipped"
+          }
+          Remove-AppxPackage $package.PackageFullName
+          Remove-Item "Cert:\LocalMachine\TrustedPeople\$($cert.Thumbprint)", "Cert:\CurrentUser\My\$($cert.Thumbprint)" -ErrorAction SilentlyContinue
+          if ($failures) { throw ($failures -join "; ") }
+
       - name: Package
         shell: pwsh
         run: |
@@ -264,6 +326,11 @@ jobs:
           path: |
             build/ALTRun_v*.zip
             build/notes.md
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ALTRun_v${{ steps.version.outputs.version }}_msix          # for the Microsoft Store submission (unsigned: can't be installed as it is)
+          path: build/msix/*.msix
 
       - name: Create GitHub release
         if: inputs.publish
