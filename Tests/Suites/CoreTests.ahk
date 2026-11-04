@@ -583,6 +583,17 @@ class CoreTests {
         pauses := 0, started := A_TickCount
         waited := App.WaitForEnterUp(100, () => true, pauser)                ; never let go: gives up after maxMs
         eq("stuck key: gives up", waited >= 100 && A_TickCount - started < 1000, true)
+        ; Quit and Reload open no window of their own: the search window waits for Enter's key-up before hiding (the window coming back
+        ; to the front would get it alone); other commands don't wait
+        for text, expected in Map("quit", true, "reload", true, "lock", false) {
+            item := ""
+            for result in SystemProvider.Search(SearchQuery(text))
+                if (result.Uid = "system:" StrTitle(text)) {
+                    item := result
+                    break
+                }
+            eq(text ": waits for Enter up", IsObject(item) ? item.WaitKeysUp : "not found", expected)
+        }
     }
 
     ; Only one ALTRun: a second start hands the command-line arguments to the running one (WM_COPYDATA); a restart (/restart) replaces it

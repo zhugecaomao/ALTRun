@@ -47,7 +47,7 @@ class SystemProvider {
                 continue
             results.Push(ResultItem(command["Title"], command["Subtitle"], {
                 Icon: command["Icon"], Uid: "system:" command["Id"], Score: score, Source: command,
-                OnRun: SystemProvider._Runner(command["Id"])
+                OnRun: SystemProvider._Runner(command["Id"]), WaitKeysUp: (command["Id"] = "Quit" || command["Id"] = "Reload")
             }))
             if (command["Id"] = "CheckUpdate" && IsObject(update := UpdateChecker.PendingItem())) {
                 update.Score := score + 1                                   ; with a new version available, searching "update" puts "Update" before "Check for updates"
