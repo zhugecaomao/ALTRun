@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 从剪贴板历史里粘贴的那一条会留在剪贴板里 (和 Ditto、Windows 的 `Win+V` 一样), 之后直接按 `Ctrl+V` 还能再粘贴, 不用再打开 ALTRun。以前粘贴完剪贴板里还是最近复制的内容 (短文字是直接打字输入的, 其它的粘贴后会还原剪贴板)。片段、"粘贴为纯文本" 等照旧, 用完还原剪贴板 (#375)
+
 ## [2026.11.03.4]
 
 测试版。
@@ -1089,7 +1098,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.6...HEAD
+[2026.11.03.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...2026.11.03.6
 [2026.11.03.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.3...2026.11.03.4
 [2026.11.03.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.2...2026.11.03.3
 [2026.11.03.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...2026.11.03.2

@@ -229,10 +229,11 @@ class ClipboardProvider {
         return true
     }
 
-    ; Pastes a history entry into the foreground window and moves it to the top
+    ; Pastes a history entry into the foreground window and moves it to the top; it stays on the clipboard, so Ctrl+V pastes it again
+    ; (like Ditto and Win+V). Putting it there isn't recorded as a new copy: the clipboard is borrowed meanwhile
     static Paste(text) {
         ClipboardProvider.Add(text, ClipboardProvider._EntryApp(text))
-        ActionCatalog.PasteText(text)
+        return ActionCatalog.PasteText(text, true, true)
     }
 
     static PasteEntry(entry) {
@@ -249,20 +250,17 @@ class ClipboardProvider {
         return ClipboardProvider.Paste(entry["Text"])
     }
 
-    ; Puts files / an image on the clipboard for a moment, Ctrl+V, then restores it (like ActionCatalog.PasteText, not recorded meanwhile)
+    ; Puts files / an image on the clipboard and pastes them with Ctrl+V; they stay there, like text (see Paste)
     static _PasteWith(setter) {
-        delay := Max(AppSettings.Feature("Snippets")["PasteDelay"], 500)    ; Explorer reads the clipboard slowly when pasting files
         App.FocusPreviousWindow()
         Win.WaitModifiersUp()
-        ClipboardData.Borrow(delay + 1000)
+        ClipboardData.Borrow(AppSettings.Feature("Snippets")["PasteDelay"] + 1000)
         saved := ClipboardAll()
         if !setter() {
             A_Clipboard := saved
             return false
         }
         SendInput("^v")
-        Sleep(delay)
-        A_Clipboard := saved
         return true
     }
 

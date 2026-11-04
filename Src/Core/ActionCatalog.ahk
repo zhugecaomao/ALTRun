@@ -185,7 +185,9 @@ class ActionCatalog {
     ; Pastes text into the window that was active before ALTRun was shown (focusPrevious = false: into the current window).
     ; Paste mode, see Features.Snippets.PasteMode: "Clipboard" = borrow the clipboard + Ctrl+V
     ; (restored afterwards; the clipboard history doesn't record it meanwhile); "Type" = typed character by character
-    static PasteText(text, focusPrevious := true) {
+    ; keep: the text stays on the clipboard afterwards, so Ctrl+V pastes it again (the clipboard history, like Ditto and Win+V);
+    ; then it is pasted with the clipboard even when short (no restoring, so no wait), or typed and also put on the clipboard in Type mode
+    static PasteText(text, focusPrevious := true, keep := false) {
         snippetSettings := AppSettings.Feature("Snippets")
         mode  := snippetSettings["PasteMode"]
         delay := snippetSettings["PasteDelay"]
@@ -193,7 +195,8 @@ class ActionCatalog {
         if focusPrevious
             App.FocusPreviousWindow()
         Win.WaitModifiersUp()
-        if ActionCatalog.TypesText(text, mode) {
+        typed := keep ? mode = "Type" : ActionCatalog.TypesText(text, mode)
+        if (typed && !keep) {
             SendInput("{Text}" text)
             return true
         }
@@ -205,7 +208,9 @@ class ActionCatalog {
             A_Clipboard := savedClipboard
             return false
         }
-        SendInput("^v")
+        SendInput(typed ? "{Text}" text : "^v")
+        if keep
+            return true
         Sleep(delay)
         A_Clipboard := savedClipboard
         return true

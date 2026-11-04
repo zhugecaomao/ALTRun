@@ -182,6 +182,19 @@ class ExtensionTests {
                 Sleep(100)
                 eq("auto: text typed", box.Value, "typed text")
                 eq("auto: clipboard untouched", A_Clipboard, "keep me")
+                ; keep (the clipboard history): pasted with the clipboard even when short, and left there for the next Ctrl+V
+                box.Value := ""
+                eq("keep: pasted", ActionCatalog.PasteText("kept text", false, true), true)
+                Sleep(300)
+                eq("keep: text pasted", box.Value, "kept text")
+                eq("keep: left on the clipboard", A_Clipboard, "kept text")
+                eq("keep: not recorded again", ClipboardData.Borrowed(), true)
+                box.Value := ""
+                snippets["PasteMode"] := "Type"
+                eq("keep type: pasted", ActionCatalog.PasteText("typed and kept", false, true), true)
+                Sleep(100)
+                eq("keep type: text typed", box.Value, "typed and kept")
+                eq("keep type: left on the clipboard", A_Clipboard, "typed and kept")
             } else {
                 FileAppend("NOTE SnippetPasteMode: test window not active, typing test skipped`n", "*")
             }
