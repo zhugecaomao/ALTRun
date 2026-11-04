@@ -4,7 +4,7 @@
 自动更新的内容:
   - 最新版本号、发布日期、下载链接和 zip 大小、总下载次数 (GitHub API; 取不到时用 App.ahk 里的版本号)
   - 主题截图 (docs/images/screenshots/theme-*.png, 顺序和名称取自 ThemeManager.ahk / I18n.ahk / Resources/Lang/zh-CN.json)
-  - 最新版本的更新内容 (CHANGELOG.md 里正在下载的那个版本; 英文页面显示其中的英文概要, 中文明细可以展开)
+  - 最新版本的更新内容 (CHANGELOG.md 里正在下载的那个版本; 英文页面显示其中的英文概要, 中英明细可以展开)
   - 首页动图 demo.png (APNG) 的宽高
 
 只用 Python 标准库。本地预览:
@@ -115,7 +115,7 @@ def changes_html(lines):
 
 def latest_changes(version):
     """CHANGELOG.md 里正在下载的版本 (没有这一节时用第一个三段的正式版本, 不用测试版 YYYY.MM.DD.N) -> (版本号, HTML)。
-    中文页面显示全部; 英文页面显示英文概要 (版本说明里不含中文的段落), 中文明细放在可以展开的 <details> 里"""
+    中文页面显示全部; 英文页面显示英文概要 (版本说明里不含中文的段落), 中英明细放在可以展开的 <details> 里"""
     changelog = read("CHANGELOG.md")
     match = re.search(r"^## \[(" + re.escape(version) + r")\]\s*\n(.*?)(?=^## \[|\Z)", changelog, re.M | re.S) \
         or re.search(r"^## \[(\d{4}\.\d{2}\.\d{2})\]\s*\n(.*?)(?=^## \[|\Z)", changelog, re.M | re.S)
@@ -125,7 +125,7 @@ def latest_changes(version):
     english = [line for line in lines if line and not line.startswith(("- ", "### ", "  ")) and not CJK.search(line)]
     details = [line for line in lines if line not in english]
     en = changes_html(english) or "<p>Release notes (in Chinese):</p>"
-    en += ('\n<details><summary>Details (in Chinese)</summary>\n<div lang="zh-CN">\n'   # lang="zh-CN": not hidden by the [lang="zh"] rules
+    en += ('\n<details><summary>Details (in English and Chinese)</summary>\n<div lang="zh-CN">\n'   # lang="zh-CN": not hidden by the [lang="zh"] rules
            + changes_html(details) + "\n</div>\n</details>")
     return match.group(1), f'<div lang="zh">\n{changes_html(lines)}\n</div>\n<div lang="en">\n{en}\n</div>'
 
