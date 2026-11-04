@@ -5,13 +5,14 @@
 ; folder open in the file manager used last: Total Commander, Directory Opus or File Explorer (see FileManagerFolder).
 ; AutoSwitch = 1: switching from one of them to a dialog jumps automatically.
 ; The folder panel (ShowPanel, on by default, like Listary's Quick Switch window): as soon as a dialog appears, a search box +
-; folder list (both panels of every TC window, Explorer windows, recently used folders) sits below it; one click jumps there, no hotkey to remember;
+; folder list (favorite folders, both panels of every TC window, Explorer windows, recently used folders) sits below it, as wide as the dialog; one click jumps there, no hotkey to remember;
 ; the search box also searches folders (with PanelSearch = all, files too: choosing a file jumps to its folder). Hidden when the dialog isn't in front,
 ; refreshed when back in the dialog (a folder change in TC shows right away). The colors follow ALTRun's theme.
 ; Hotkey (MenuHotkey, default Ctrl+Shift+G): the caret jumps to the panel's search box to choose with the keyboard; shows the panel for the moment when automatic showing is off.
+; Favorite folders (Favorites) stay at the top of the panel: right-click a row to add or remove it, or to add the dialog's current folder (also Ctrl+D in the panel).
 ;
 ; Settings (ALTRun.json -> Extensions.QuickSwitch):
-;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / RecentFolders / ShowPanel / PanelSearch / AutoSwitch /
+;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / Favorites (folder paths, environment variables allowed) / RecentFolders / ShowPanel / PanelSearch / AutoSwitch /
 ;   StandardDialogs (ahk_class #32770) / BrowseDialogs / DialogWindows / ExcludeWindows / AutoSwitchExclude
 ;   The window lists are arrays of window conditions (ahk_class / ahk_exe / part of the title)
 ;
@@ -19,6 +20,7 @@
 ;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    at start-up
 ;   QuickSwitch.FolderOfWindow(hwnd)     current folder of a TC / Opus / Explorer window (read only, for "terminal here")
 ;   QuickSwitch.MenuFolders()            the folders in the panel [{Path, Group, Tag}]
+;   QuickSwitch.AddFavorite(folder) / RemoveFavorite(folder) / IsFavorite(folder)   the favorite folders (saved in ALTRun.json)
 ;   QuickSwitch.RecentFolders(n)         the n most recently used folders (opened files count by their folder)
 ;===============================================================================
 
@@ -204,6 +206,10 @@ class QuickSwitch {
             case 0x28: QuickSwitch.PanelKey("Down")
             case 0x0D: QuickSwitch.PanelKey("Enter")
             case 0x1B: QuickSwitch.PanelKey("Escape")
+            case 0x44:                                                      ; Ctrl+D: the dialog's current folder becomes a favorite (as bookmarking in a browser)
+                if !(GetKeyState("Ctrl") && !GetKeyState("Alt") && !GetKeyState("Shift"))
+                    return
+                QuickSwitch.AddDialogFolder()
             default:   return
         }
         return 0
@@ -348,7 +354,7 @@ class QuickSwitch {
         QuickSwitch._panelFor := dialog
         QuickSwitch._panelBase := QuickSwitch.MenuFolders(false)
         rect := QuickSwitch._FrameRect(dialog)
-        width := QuickSwitch.PanelWidthFor(IsObject(rect) ? rect.W : 600)
+        width := IsObject(rect) ? QuickSwitch._PanelWidthAt(rect) : QuickSwitch.PanelWidthFor(600)
         colors := QuickSwitch.PanelColors()                                 ; follows ALTRun's theme (light / dark...)
         ; -DPIScale: the panel is as wide as the dialog, in the dialog's real pixels; the row height is measured in pixels too. Letting AHK scale by DPI again
         ; would make the panel half again as wide as the dialog at 150%, with an empty area below. Fixed margins are converted with Win.Scale
@@ -367,6 +373,7 @@ class QuickSwitch {
         IL_Add(icons, "shell32.dll", 1)                                     ; 2 = file
         list.SetImageList(icons)
         list.OnEvent("Click", (ctrl, row) => QuickSwitch._PanelJump(row))
+        list.OnEvent("ContextMenu", (ctrl, row, *) => QuickSwitch._ShowRowMenu(row))
         list.OnNotify(-12, (ctrl, lParam) => QuickSwitch._OnCustomDraw(lParam))   ; NM_CUSTOMDRAW: the selected row and gray text in the theme's colors
         list.Add("Icon1", "X")                                              ; the row height can only be measured with one row in (LVM_APPROXIMATEVIEWRECT)
         QuickSwitch._rowTop := SendMessage(0x1040, 1, 0, list) >> 16
@@ -395,8 +402,13 @@ class QuickSwitch {
 
     static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
 
-    ; Panel width = dialog width (420 ~ 1000, converted by DPI; all real pixels)
-    static PanelWidthFor(dialogWidth) => Max(Win.Scale(420), Min(dialogWidth, Win.Scale(1000)))
+    ; Panel width = dialog width, at least 420 (converted by DPI) and at most maxWidth (the work area of the dialog's monitor); all real pixels
+    static PanelWidthFor(dialogWidth, maxWidth := 0) => Max(Win.Scale(420), maxWidth > 0 ? Min(dialogWidth, maxWidth) : dialogWidth)
+
+    static _PanelWidthAt(rect) {
+        area := Win.WorkAreaAt(rect.X + rect.W // 2, rect.Y + rect.H // 2)
+        return QuickSwitch.PanelWidthFor(rect.W, area.Right - area.Left)
+    }
 
     ; The panel's colors: background / text / separator colors of ALTRun's current theme; light while no theme is loaded yet
     static PanelColors() {
@@ -445,9 +457,9 @@ class QuickSwitch {
     }
 
     ; the dialog's width changed: the panel follows
-    static _ResizePanel(dialogWidth) {
-        width := QuickSwitch.PanelWidthFor(dialogWidth)
-        QuickSwitch._panelDialogW := dialogWidth
+    static _ResizePanel(rect) {
+        width := QuickSwitch._PanelWidthAt(rect)
+        QuickSwitch._panelDialogW := rect.W
         if (width = QuickSwitch._panelWidth)
             return
         QuickSwitch._panelWidth := width
@@ -610,7 +622,7 @@ class QuickSwitch {
         if !IsObject(rect)
             return QuickSwitch.HidePanel()
         if (QuickSwitch._panelDialogW && rect.W != QuickSwitch._panelDialogW)
-            return QuickSwitch._ResizePanel(rect.W)
+            return QuickSwitch._ResizePanel(rect)
         if !QuickSwitch._panelPos                                           ; first showing, or the size changed: compute the size from the content first
             QuickSwitch._panel.Show(DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) ? "NA AutoSize" : "NA Hide AutoSize")
         QuickSwitch._panel.GetPos(, , &panelW, &panelH)
@@ -792,8 +804,8 @@ class QuickSwitch {
     ;---------------------------------------------------------------------------
     ; The folders in the panel
     ;---------------------------------------------------------------------------
-    ; [{Path, Group: "open" / "recent", Tag}]: the active and other panel of each TC window, each Explorer window,
-    ; recent folders (RecentFolders of them), without duplicates
+    ; [{Path, Group: "favorite" / "open" / "recent", Tag}]: the favorite folders, the active and other panel of each TC window, each Explorer window,
+    ; recent folders (RecentFolders of them), without duplicates (a favorite open in Explorer shows once, as a favorite)
     ; opus = false: without Directory Opus (the panel adds those a moment later, see _AddDOpusFolders)
     static MenuFolders(opus := true) {
         list := [], seen := Map()
@@ -803,6 +815,8 @@ class QuickSwitch {
             seen[StrLower(RTrim(folder, "\"))] := true
             list.Push({Path: folder, Group: group, Tag: tag})
         }
+        for folder in QuickSwitch.Favorites()
+            add(folder, "favorite", I18n.T("QuickSwitch.TagFavorite"))
         for hwnd in WinGetList("ahk_class TTOTAL_CMD") {
             add(QuickSwitch.TotalCmdFolder(hwnd), "open", I18n.T("QuickSwitch.TagTC"))
             add(QuickSwitch.TotalCmdFolder(hwnd, true), "open", I18n.T("QuickSwitch.TagTCOther"))
@@ -820,6 +834,103 @@ class QuickSwitch {
         for folder in QuickSwitch.RecentFolders(count)
             add(folder, "recent", I18n.T("QuickSwitch.TagRecent"))
         return list
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Favorite folders (Options["Favorites"], saved in ALTRun.json): listed first in the panel, in the order they were added.
+    ; Environment variables in the setting (e.g. %USERPROFILE%\Documents, typed in Preferences) are expanded when listed;
+    ; a folder that doesn't exist (an unplugged drive) is still listed: checking network paths could hang
+    ;---------------------------------------------------------------------------
+    static Favorites() {
+        folders := []
+        for folder in QuickSwitch._FavoriteSetting()
+            folders.Push(QuickSwitch._FavoritePath(folder))
+        return folders
+    }
+
+    static _FavoriteSetting() => (QuickSwitch.Options.Has("Favorites") && QuickSwitch.Options["Favorites"] is Array) ? QuickSwitch.Options["Favorites"] : []
+
+    ; One entry of the setting as a folder: environment variables expanded, no trailing backslash ("D:\" for a drive root); "" if empty
+    static _FavoritePath(folder) {
+        folder := Trim(Path.ExpandEnv(folder))
+        return RegExMatch(folder, "^[A-Za-z]:\\?$") ? SubStr(folder, 1, 2) "\" : RTrim(folder, "\")
+    }
+
+    ; Position of folder in the setting (however it is written there), 0 if it isn't a favorite
+    static _FavoriteIndex(folder) {
+        key := StrLower(RTrim(folder, "\"))
+        if (key = "")
+            return 0
+        for index, entry in QuickSwitch._FavoriteSetting()
+            if (StrLower(RTrim(QuickSwitch._FavoritePath(entry), "\")) = key)
+                return index
+        return 0
+    }
+
+    static IsFavorite(folder) => QuickSwitch._FavoriteIndex(folder) > 0
+
+    ; Adds folder at the end and saves the settings; false if it is empty or already a favorite
+    static AddFavorite(folder) {
+        folder := QuickSwitch._FavoritePath(folder)
+        if (folder = "" || QuickSwitch.IsFavorite(folder))
+            return false
+        if !(QuickSwitch.Options.Has("Favorites") && QuickSwitch.Options["Favorites"] is Array)
+            QuickSwitch.Options["Favorites"] := []
+        QuickSwitch.Options["Favorites"].Push(folder)
+        AppSettings.Save()
+        return true
+    }
+
+    ; Removes folder and saves the settings; false if it isn't a favorite
+    static RemoveFavorite(folder) {
+        if !(index := QuickSwitch._FavoriteIndex(folder))
+            return false
+        QuickSwitch.Options["Favorites"].RemoveAt(index)
+        AppSettings.Save()
+        return true
+    }
+
+    ; Ctrl+D in the panel: the folder the dialog shows becomes a favorite (a toast says what happened)
+    static AddDialogFolder() {
+        folder := QuickSwitch._panelFor ? QuickSwitch.DialogFolder(QuickSwitch._panelFor) : ""
+        if (folder = "")
+            return App.Toast(I18n.T("QuickSwitch.NoDialogFolder"))
+        QuickSwitch._ToggleFavorite(folder, true)
+    }
+
+    ; Right-click on the panel's list: add / remove the row's folder; add the dialog's current folder
+    static _ShowRowMenu(row) {
+        if !QuickSwitch._panelFor
+            return
+        rowMenu := Menu(), items := 0
+        if (row >= 1 && row <= QuickSwitch._panelFolders.Length) {
+            entry := QuickSwitch._panelFolders[row]
+            if !(entry.HasOwnProp("IsFile") && entry.IsFile) {
+                folder := entry.Path, favorite := QuickSwitch.IsFavorite(folder)
+                rowMenu.Add(I18n.T(favorite ? "QuickSwitch.RemoveFavorite" : "QuickSwitch.AddFavorite"), (*) => QuickSwitch._ToggleFavorite(folder, !favorite))
+                items++
+            }
+        }
+        dialogFolder := QuickSwitch.DialogFolder(QuickSwitch._panelFor)
+        if (dialogFolder != "" && !QuickSwitch.IsFavorite(dialogFolder)) {
+            rowMenu.Add(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder)) "`tCtrl+D", (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
+            items++
+        }
+        if items
+            rowMenu.Show()
+    }
+
+    ; Adds or removes a favorite, then lists the panel's folders again (without Opus first, as when the panel opens), keeping the search
+    static _ToggleFavorite(folder, add) {
+        changed := add ? QuickSwitch.AddFavorite(folder) : QuickSwitch.RemoveFavorite(folder)
+        if add
+            App.Toast(I18n.T(changed ? "QuickSwitch.FavoriteAdded" : "QuickSwitch.FavoriteExists", QuickSwitch.FolderName(folder)))
+        if !(changed && QuickSwitch._panelFor && IsObject(QuickSwitch._panelList))
+            return
+        QuickSwitch._panelBase := QuickSwitch.MenuFolders(false)
+        QuickSwitch._SearchPanel()
+        if WinExist("ahk_class dopus.lister")
+            SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, QuickSwitch._panelFor), -1)
     }
 
     ; The newest limit folders of Windows "Recent items" (WindowsRecent); a file gives its folder.

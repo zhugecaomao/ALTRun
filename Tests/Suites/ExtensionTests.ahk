@@ -1249,9 +1249,12 @@ class ExtensionTests {
         QuickSwitch._SearchPanel()
         eq("panel search filters", QuickSwitch._panelList.GetText(1, 2), "C:\Docs")
         eq("resize before", QuickSwitch._panelWidth, QuickSwitch.PanelWidthFor(QuickSwitch._panelDialogW ? QuickSwitch._panelDialogW : 600))
-        QuickSwitch._ResizePanel(900)                                      ; the dialog gets wider: the panel follows
+        QuickSwitch._ResizePanel({X: 0, Y: 0, W: 900, H: 500})             ; the dialog gets wider: the panel follows
         QuickSwitch._panelList.GetPos(, , &listW)
         eq("resize width", QuickSwitch._panelWidth "|" listW, "900|900")
+        area := Win.WorkAreaAt(0, 0), areaW := area.Right - area.Left
+        QuickSwitch._ResizePanel({X: 0, Y: 0, W: areaW + 500, H: 500})     ; wider than the screen: as wide as the work area
+        eq("resize to the work area", QuickSwitch._panelWidth, areaW)
         eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
         eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitch._panelSearch.Hwnd), 0)
         eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; the IME is composing: not intercepted
@@ -1262,7 +1265,9 @@ class ExtensionTests {
         eq("key after hide", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, searchHwnd), "")   ; after the panel closes: no error, nothing handled
         eq("key no panel", QuickSwitch._OnKeyDown(0x0D, 0, 0x100, 0), "")
         eq("width min", QuickSwitch.PanelWidthFor(300), 420)
-        eq("width max", QuickSwitch.PanelWidthFor(1600), 1000)
+        eq("width follows a wide dialog", QuickSwitch.PanelWidthFor(1600), 1600)
+        eq("width at most the work area", QuickSwitch.PanelWidthFor(1600, 1200), 1200)
+        eq("width min with a work area", QuickSwitch.PanelWidthFor(300, 1200), 420)
         eq("dark color", QuickSwitch.IsDarkColor("1E1E1E"), true)
         eq("light color", QuickSwitch.IsDarkColor("FAFAFA"), false)
         eq("bad color", QuickSwitch.IsDarkColor("abc"), false)
@@ -1320,6 +1325,36 @@ class ExtensionTests {
     ; PT Tools window: result boxes take no Tab stop (from Area expression straight to Bar diameter), units written as mm², even margins,
     ; inputs are combo boxes with their common values, the span width follows into the mesh area
     ; Only inputs are saved: Load fills in the defaults and drops keys no longer used (renamed fields, saved results)
+    ; Favorite folders of the dialog panel: environment variables expanded, compared without case or a trailing backslash, listed first;
+    ; adding saves the settings (to a temporary file here), adding twice does nothing, removing finds the entry however it is written
+    static QuickSwitchFavorites() {
+        eq := (n, a, e) => TestRunner.Equal("QuickSwitchFavorites." n, a, e)
+        savedOptions := QuickSwitch.Options, savedFile := AppSettings.File
+        AppSettings.File := A_Temp "\ALTRun-favorites-test.json"
+        try {
+            eq("default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["Favorites"].Length, 0)
+            QuickSwitch.Options := Map("RecentFolders", 0)
+            eq("no setting", QuickSwitch.Favorites().Length "|" QuickSwitch.IsFavorite("C:\Docs"), "0|0")
+            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", ["%TEMP%\ALTRun Fav\", "", "D:"])
+            eq("listed", QuickSwitch.Favorites()[1] "|" QuickSwitch.Favorites()[3], A_Temp "\ALTRun Fav|D:\")
+            eq("is favorite", QuickSwitch.IsFavorite(StrUpper(A_Temp) "\alt" "run fav\") "|" QuickSwitch.IsFavorite("D:\"), "1|1")
+            eq("not a favorite", QuickSwitch.IsFavorite("D:\Other") "|" QuickSwitch.IsFavorite(""), "0|0")
+            folders := QuickSwitch.MenuFolders(false)
+            eq("first in the panel", folders[1].Path "|" folders[1].Group "|" folders[1].Tag, A_Temp "\ALTRun Fav|favorite|" I18n.T("QuickSwitch.TagFavorite"))
+            eq("add twice", QuickSwitch.AddFavorite(A_Temp "\ALTRun Fav"), false)
+            eq("add empty", QuickSwitch.AddFavorite(""), false)
+            eq("add", QuickSwitch.AddFavorite("E:\Projects\") "|" QuickSwitch.Options["Favorites"][4], "1|E:\Projects")
+            eq("saved", FileExist(AppSettings.File) != "", true)
+            eq("remove", QuickSwitch.RemoveFavorite(A_Temp "\ALTRun Fav") "|" QuickSwitch.Options["Favorites"].Length "|" QuickSwitch.Options["Favorites"][1], "1|3|")
+            eq("remove missing", QuickSwitch.RemoveFavorite("X:\None"), false)
+            QuickSwitch.Options := Map("RecentFolders", 0)
+            eq("add without the setting", QuickSwitch.AddFavorite("C:\Docs") "|" QuickSwitch.Options["Favorites"].Length, "1|1")
+        } finally {
+            QuickSwitch.Options := savedOptions, AppSettings.File := savedFile
+            try FileDelete(A_Temp "\ALTRun-favorites-test.json")
+        }
+    }
+
     static PTToolsLoad() {
         eq := (n, a, e) => TestRunner.Equal("PTToolsLoad." n, a, e)
         saved := PTToolsWindow.Settings

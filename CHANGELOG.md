@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.03.15]
+
+测试版。
+
+Test build.
+
+### 新增
+- 对话框文件夹面板可以收藏文件夹: 收藏的文件夹固定显示在面板最上面, 标着 "收藏"。在面板里右键点文件夹可以加入或删除收藏, 右键 → "把当前文件夹加入收藏" (或者在面板里按 `Ctrl+D`) 把对话框现在显示的文件夹加进去; 也可以在 偏好设置 → 对话框面板 → "收藏的文件夹" 里编辑, 支持环境变量
+
+### 改进
+- 文件夹面板和对话框一样宽: 以前最宽 1000 像素, 对话框拉得更宽时面板不跟着变宽; 现在最宽到屏幕的宽度
+
 ## [2026.11.03.14]
 
 测试版。
@@ -1175,7 +1187,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.15...HEAD
+[2026.11.03.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.14...2026.11.03.15
 [2026.11.03.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.13...2026.11.03.14
 [2026.11.03.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.12...2026.11.03.13
 [2026.11.03.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.11...2026.11.03.12
