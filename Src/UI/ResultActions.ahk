@@ -117,15 +117,28 @@ class ResultActions {
     ; The Windows (Explorer) context menu of the file(s), with the items other programs add (7-Zip, Git...); several only when in one folder.
     ; Shown over the search window at the selected row (KeepWindow); Shift+Enter shows Explorer's extended items too
     ; Off by default (Preferences → Features). Targets are resolved first (custom commands may say %ProgramFiles%\..., A_ScriptDir\...)
+    ; The hint shows the shortcut that opens it without the panel (SearchWindow.OpenShellMenu)
     static _ShellMenuAction(list, paths, icon) {
+        if IsObject(resolved := ResultActions.ShellMenuPaths(paths))
+            list.Push(ResultItem(I18n.T("Action.ShellMenu"), "Shift+→", {Icon: icon, KeepWindow: true, OnRun: (source) => SearchWindow.ShellMenu(source, resolved)}))
+    }
+
+    ; The paths resolved for the Windows context menu, or "" when it is off (Preferences → Features) or can't be shown for them
+    static ShellMenuPaths(paths) {
         try enabled := AppSettings.Feature("ContextMenu")["Enabled"]
-        if !(IsSet(enabled) && enabled)
-            return
+        if !(IsSet(enabled) && enabled && paths.Length)
+            return ""
         resolved := []
         for target in paths
             resolved.Push(ActionCatalog.IsShellItem(target) ? target : Path.Resolve(target))
-        if ShellContextMenu.CanShow(resolved)
-            list.Push(ResultItem(I18n.T("Action.ShellMenu"), "", {Icon: icon, KeepWindow: true, OnRun: (source) => SearchWindow.ShellMenu(source, resolved)}))
+        return ShellContextMenu.CanShow(resolved) ? resolved : ""
+    }
+
+    ; The files / folders the Windows context menu is for: the marked ones, else the result when it is a file or folder; [] otherwise
+    static ShellMenuTargets(item, markedPaths) {
+        if markedPaths.Length
+            return markedPaths
+        return (IsObject(item) && item.Valid && (item.Kind = "file" || item.Kind = "folder")) ? [item.Arg] : []
     }
 
     ;---------------------------------------------------------------------------

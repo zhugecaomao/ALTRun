@@ -107,6 +107,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `Space` (after typing) | With Preferences → Keyboard → "Space runs the selected result" turned on: runs the selected result; `Shift+Space` types a space (for several keywords) |
 | `→` (cursor at the end) | Open the action panel; `←` / `Esc` go back. Holding `→` to move the cursor doesn't open it when the cursor reaches the end; press `→` once more |
 | `F3` | Edit the selected result, see below |
+| `Shift+→` (cursor at the end), `Shift+F10`, Menu key | Open the [Windows context menu](#action-panel) of the selected file or folder (or the marked ones) right away, when it is turned on in Preferences → Features; otherwise these keys work as before |
 | `Ctrl+Del` (cursor at the end) | Delete the selected result, see below |
 | `Ctrl+C` | Copy the selected result (copies text as usual when text is selected in the input box) |
 | `Ctrl+L` | Large type: shows the selected result in huge text in the middle of the screen (phone numbers, codes, calculation results...); any key closes it. Turn it on in Preferences → Features first (off by default on new installations) |
@@ -118,7 +119,7 @@ You normally don't need to do anything. If an app still doesn't appear, check **
 | `Esc` | Close the action panel / hide the window |
 | `Ctrl+Alt+C` (global) | Clipboard history |
 
-Mouse: click to select, double-click to run, the wheel moves the selection, right-click opens the action menu.
+Mouse: click to select, double-click to run, the wheel moves the selection, right-click opens the action menu, `Shift`+right-click on a file or folder opens the Windows context menu (when it is turned on, see below).
 
 ## Action panel
 Select a result and press `→` (or right-click) to list everything you can do with it; keep typing to filter:
@@ -137,7 +138,7 @@ File actions (like Listary):
 - **Copy File / Cut File**: puts the file itself on the clipboard; press `Ctrl+V` in TC or Explorer to paste it (a cut file is moved when pasted).
 - **Copy / Move to Current Folder in TC**: the target is the folder currently open in the frontmost Total Commander (or Explorer) window; not shown when the file is already in that folder. Uses Windows' own copy, with a progress window, a prompt when names clash, and undo.
 - **Move to Recycle Bin**: Windows asks first, and you can restore it from the Recycle Bin.
-- **Windows Context Menu** (off by default: turn it on in Preferences → Features): the menu Explorer shows when you right-click the file, with the items other programs add (7-Zip, Git, antivirus, Send to...); applications and custom commands that point to a file or folder have it too (Store apps: Pin to Start, Uninstall...). It opens at the selected row; the search window closes once you choose an item, and `Esc` goes back to the action panel. Choose it with `Shift+Enter` for Explorer's extended items too (as with `Shift`+right-click), for example "Copy as path". Marked files get it too when they are all in the same folder.
+- **Windows Context Menu** (off by default: turn it on in Preferences → Features): the menu Explorer shows when you right-click the file, with the items other programs add (7-Zip, Git, antivirus, Send to...); applications and custom commands that point to a file or folder have it too (Store apps: Pin to Start, Uninstall...). It opens at the selected row; the search window closes once you choose an item, and `Esc` goes back to the action panel. Choose it with `Shift+Enter` for Explorer's extended items too (as with `Shift`+right-click), for example "Copy as path". Marked files get it too when they are all in the same folder. To open it without the action panel: `Shift`+right-click the result, or press `Shift+→`, `Shift+F10` or the Menu key (`Shift`+right-click and the keys with `Shift` show the extended items too). `Esc` then goes back to the results.
 
 ![Windows context menu](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/shellmenu.png)
 

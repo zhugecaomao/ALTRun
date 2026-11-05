@@ -18,6 +18,8 @@
 ;   Backspace (browsing a folder)    the box ends in "\" with the caret at the end: up a level ("C:\Projects\Reports\" -> "C:\Projects\")
 ;   Insert                           mark / unmark files and folders (several can be marked); → acts on all marked ones
 ;   →  (caret at the end)            open the actions panel; ← / Esc go back
+;   Shift+→ (caret at the end), Shift+F10, the Menu key   the Windows context menu of the selected file / folder (or the marked ones) right away,
+;                                    when Preferences → Features → Windows context menu is on (otherwise they do what they did before)
 ;   Space (empty search box)         file search mode (files only, hint "Search files..."); Backspace goes back
 ;   Space (text typed, SpaceToRun)   run the selected result; Shift+Space types a space
 ;   Ctrl+C (no text selected in the box)  copy the current result
@@ -29,7 +31,8 @@
 ;   F2 / Ctrl+,                      Preferences
 ;   F4                               edit Data\ALTRun.json in Notepad
 ;   Esc                              close the actions panel / hide the window
-; Mouse: click selects, double-click runs, right-click shows the result's action menu (the same as the actions panel);
+; Mouse: click selects, double-click runs, right-click shows the result's action menu (the same as the actions panel), Shift+right-click
+;   the Windows context menu of a file / folder (as Explorer's Shift+right-click, with the extended items);
 ;        dragging the blank area around the input box moves the window
 ;
 ; Position: Appearance.ShowOn decides the screen (Mouse = under the mouse / Primary = primary screen /
@@ -118,7 +121,14 @@ class SearchWindow {
         SearchStatusBar.Create(g, w, pad)
 
         OnMessage(0x100, (p*) => SearchKeys.OnKeyMessage(p*))               ; WM_KEYDOWN
-        OnMessage(0x104, (p*) => SearchKeys.OnKeyMessage(p*))               ; WM_SYSKEYDOWN (Alt+...)
+        OnMessage(0x104, (p*) => SearchKeys.OnKeyMessage(p*))               ; WM_SYSKEYDOWN (Alt+..., F10)
+        ; The Menu key: a hotkey (only while the window is active), because the key messages can't keep the box from showing its own
+        ; Cut / Copy / Paste menu: Windows makes it from the key even when they are held back (Windows CI)
+        HotIf((*) => SearchWindow.IsActive())
+        try Hotkey("AppsKey", (*) => SearchWindow._OnMenuKey())
+        catch as e
+            Logger.Error("SearchWindow: cannot register the Menu key - " e.Message)
+        HotIf()
         OnMessage(0x6,   (p*) => SearchWindow._OnActivate(p*))              ; WM_ACTIVATE
         OnMessage(0x20A, (p*) => SearchWindow._OnMouseWheel(p*))            ; WM_MOUSEWHEEL
         OnMessage(0x201, (p*) => SearchWindow._OnLButtonDown(p*))           ; WM_LBUTTONDOWN: drag the window
@@ -891,7 +901,7 @@ class SearchWindow {
     ; Gray text in the empty search box: the setting (Appearance.Placeholder) if given, "ALTRun Search" if empty;
     ; only spaces = show nothing
     ; The search box and, right of it, the menu icon (about the size of the box's text) inside the window's padding
-    static MenuIconSize() => Win.Scale(22)
+    static MenuIconSize() => Win.Scale(28)
     static MenuIconX(w, pad) => w - pad - SearchWindow.MenuIconSize()
     static InputWidth(w, pad) => SearchWindow.MenuIconX(w, pad) - Win.Scale(10) - pad
 
@@ -980,7 +990,12 @@ class SearchWindow {
         if (answer = "Yes")
             SearchWindow._SafeRun(() => ResultActions.DeleteItem(item))
         selected := SearchWindow.Session.Selected
-        SearchWindow._Reopen(query)
+        if (answer = "Yes" && query = "" && SearchWindow.IsVisible()) {    ; the empty box (e.g. a recent item): Show("") would only bring the open window to the front, so search again
+            if (SearchWindow.Session.Mode = "actions")
+                SearchWindow._CloseActions()
+            SearchWindow._RunSearch()
+        } else
+            SearchWindow._Reopen(query)
         if (answer = "Yes" && selected > 1)
             SearchWindow.MoveSelection(selected - 2)                        ; select the row above the deleted one (MoveSelection is relative to row 1)
     }
@@ -1004,6 +1019,8 @@ class SearchWindow {
             return
         if (SearchWindow.Session.Mode = "actions")                                  ; right-click in the actions panel = run that item
             return SearchWindow._Execute()
+        if (GetKeyState("Shift") && SearchWindow.OpenShellMenu())                  ; Shift+right-click: the Windows context menu, as in Explorer
+            return
         contextMenu := Menu()
         for action in ResultActions.ListFor(item) {
             label := StrReplace(action.Title, "&", "&&") (action.Subtitle != "" ? "`t" action.Subtitle : "")
@@ -1042,6 +1059,30 @@ class SearchWindow {
         SearchWindow.List.Modify(0, "-Select -Focus")
         SearchWindow._Repaint()
         DllCall("UpdateWindow", "Ptr", SearchWindow.List.Hwnd)
+    }
+
+    ; Shift+→ / Shift+F10 / the Menu key / Shift+right-click: the Windows context menu of the selected file or folder (or of the marked ones)
+    ; without going through the actions panel. false when there is none (the feature is off, or the result isn't a file or folder): the key
+    ; or click then does what it did before. Shown from a timer, after the key message is handled (as the actions panel item does)
+    static OpenShellMenu() {
+        if !IsObject(target := SearchWindow.ShellMenuTarget())
+            return false
+        SearchWindow._Later(() => SearchWindow._SafeRun(() => SearchWindow.ShellMenu(target.Item, target.Paths)))
+        return true
+    }
+
+    ; The Menu key: the Windows context menu of the selection; otherwise the box's own menu, as the key would show it (WM_CONTEXTMENU from the keyboard)
+    static _OnMenuKey() {
+        if (!SearchWindow.OpenShellMenu() && DllCall("GetFocus", "Ptr") = SearchWindow.Input.Hwnd)
+            PostMessage(0x7B, SearchWindow.Input.Hwnd, -1, SearchWindow.Input)
+    }
+
+    ; {Item, Paths} for OpenShellMenu, or "" when there is no Windows context menu for the selection
+    static ShellMenuTarget() {
+        if (SearchWindow.Session.Mode != "results" || !IsObject(item := SearchWindow.SelectedItem()))
+            return ""
+        marked := SearchWindow.Session.Marked.Count ? SearchWindow.Session.MarkedPaths() : []
+        return IsObject(paths := ResultActions.ShellMenuPaths(ResultActions.ShellMenuTargets(item, marked))) ? {Item: item, Paths: paths} : ""
     }
 
     ; The Windows context menu of the file(s) (Lib\ShellContextMenu.ahk), shown at the selected row over the window, as Explorer shows it
