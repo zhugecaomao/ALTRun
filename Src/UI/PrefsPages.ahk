@@ -531,6 +531,7 @@ class PrefsPages {
         PrefsForm.Check(base "ShowPanel", "Prefs.QSPanel", , , "Prefs.Group.Status")
         PrefsForm.Choice(base "PanelSearch", "Prefs.QSPanelSearch", ["folders", "all"], [I18n.T("Prefs.QSPanelSearch.Folders"), I18n.T("Prefs.QSPanelSearch.All")], "K")
         PrefsForm.Field(base "RecentFolders", "Prefs.QSRecent", "S", "number")
+        PrefsForm.LinesButton(base "Favorites", "Prefs.QSFavorites")      ; long paths: the box reaches the right edge
         PrefsForm.Section("Prefs.QSMenuSection")
         PrefsForm.Field(base "MenuHotkey", "Prefs.QSMenu", "K", "hotkey")
     }

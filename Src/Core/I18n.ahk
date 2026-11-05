@@ -1110,7 +1110,7 @@ class I18n {
         s["Prefs.QSMenu"]              := "Hotkey"
         s["Prefs.QSPanel"]             := "Show the folder panel below dialogs"
         s["Prefs.QSPanelSection"]      := "Folder panel"
-        s["Prefs.QSPanelSection.Desc"] := "Below Open / Save dialogs: both panels of every Total Commander window, Explorer windows, recent folders and a search box. Click a folder to jump there. Colors follow the ALTRun theme."
+        s["Prefs.QSPanelSection.Desc"] := "Below Open / Save dialogs: favorite folders, both panels of every Total Commander window, Explorer windows, recent folders and a search box. Click a folder to jump there. Colors follow the ALTRun theme."
         s["Prefs.QSMenuSection"]       := "Keyboard"
         s["Prefs.QSMenuSection.Desc"]  := "In a dialog, press the hotkey to jump into the panel's search box, then ↑ ↓ to pick, Enter to jump, Esc to go back. Also works when the panel is not shown automatically."
         s["Prefs.QSPanelSearch"]       := "Search box finds"
@@ -1119,6 +1119,8 @@ class I18n {
         s["Prefs.QSPanelSearch.All"]   := "Folders and files"
         s["Prefs.QSPanelSearch.Folders"] := "Folders only"
         s["Prefs.QSRecent"]            := "Recent folders"
+        s["Prefs.QSFavorites"] := "Favorite folders"
+        s["Prefs.QSFavorites.Desc"] := "Always at the top of the panel. In the panel, right-click a folder to add or remove it; Ctrl+D adds the dialog's current folder."
         s["Prefs.QSAuto"]              := "Jump automatically when switching from TC / Opus / Explorer"
         s["Prefs.Section.QSDialogs"]    := "Dialogs"
         s["Prefs.Section.QSAuto"]       := "When a dialog opens"
@@ -1252,6 +1254,13 @@ class I18n {
         s["QuickSwitch.SearchCueFolders"] := "Search folders"
         s["QuickSwitch.TagSearch"]     := "Search"
         s["QuickSwitch.TagFile"]       := "File"
+        s["QuickSwitch.TagFavorite"] := "Favorite"
+        s["QuickSwitch.AddFavorite"] := "Add to Favorites"
+        s["QuickSwitch.RemoveFavorite"] := "Remove from Favorites"
+        s["QuickSwitch.AddDialogFolder"] := 'Add Current Folder "{1}" to Favorites'
+        s["QuickSwitch.FavoriteAdded"] := "Added to favorites: {1}"
+        s["QuickSwitch.FavoriteExists"] := "Already a favorite: {1}"
+        s["QuickSwitch.NoDialogFolder"] := "Can't read the dialog's current folder."
         s["QuickSwitch.NoFileManager"] := "No Total Commander, Directory Opus or File Explorer window is open."
         return s
     }

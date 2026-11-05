@@ -277,7 +277,7 @@ class Shots {
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0),
                 "Clipboard", Map("LocalFiles", 0)                           ; the made-up history stays in this Data folder, away from this PC's %LOCALAPPDATA%
             ),
-            "Extensions", Map("QuickSwitch", Map("RecentFolders", 3)),         ; the folder panel only lists the recent items WriteRecentFolders created
+            "Extensions", Map("QuickSwitch", Map("RecentFolders", 3, "Favorites", [demo])),   ; the folder panel: one favorite, and only the recent items WriteRecentFolders created
             "CustomCommands", [
                 Map("Title", "Website Redesign", "Type", "Folder", "Target", demo "\Website Redesign", "Arguments", "", "Keyword", ""),
                 Map("Title", "Annual Report 2026", "Type", "Folder", "Target", demo "\Annual Report 2026", "Arguments", "", "Keyword", ""),
