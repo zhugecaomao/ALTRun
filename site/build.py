@@ -146,7 +146,8 @@ def theme_gallery():
     order = re.findall(r'"(\w+)"', re.search(r"BuiltinOrder\s*:=\s*\[(.*?)\]", read("Src", "UI", "ThemeManager.ahk"), re.S).group(1))
     files = {"light": "search.png"}
     for name in os.listdir(SHOTS):
-        if name.startswith("theme-") and name.endswith(".png"):
+        # theme-compact.png shows Dark in Compact density, not a separate theme, so it is not counted or shown
+        if name.startswith("theme-") and name.endswith(".png") and name != "theme-compact.png":
             files[name[6:-4]] = name
     keys = ["light"] + [k.lower() for k in order]
     keys += sorted(k for k in files if k not in keys)                    # screenshots that exist but aren't in the list are shown too
