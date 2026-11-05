@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""生成 ALTRun 官网 (GitHub Pages): site/index.html 模板 + 仓库里的数据 -> _site/
+"""Builds the ALTRun website (GitHub Pages): the site/index.html template + data from the repository -> _site/
 
-自动更新的内容:
-  - 最新版本号、发布日期、下载链接和 zip 大小、总下载次数 (GitHub API; 取不到时用 App.ahk 里的版本号)
-  - 主题截图 (docs/images/screenshots/theme-*.png, 顺序和名称取自 ThemeManager.ahk / I18n.ahk / Resources/Lang/zh-CN.json)
-  - 最新版本的更新内容 (CHANGELOG.md 里正在下载的那个版本; 英文页面显示其中的英文概要, 中文明细可以展开)
-  - 首页动图 demo.png (APNG) 的宽高
+Filled in automatically:
+  - the latest version, release date, download link and zip size, total downloads (GitHub API; the version in App.ahk if it can't be read)
+  - the theme screenshots (docs/images/screenshots/theme-*.png; order and names from ThemeManager.ahk / I18n.ahk / Resources/Lang/zh-CN.json)
+  - the latest version's changes (the section of CHANGELOG.md for the version being downloaded; the English page shows its English
+    summary, with the English and Chinese details in a section that can be expanded)
+  - the width and height of the front page animation demo.png (APNG)
 
-只用 Python 标准库。本地预览:
+Python standard library only. Local preview:
   python3 site/build.py && python3 -m http.server -d _site
-环境变量: GITHUB_REPOSITORY (默认 zhugecaomao/ALTRun), GITHUB_TOKEN (可选, 避免 API 限流), SITE_OUT (默认 _site),
-          SITE_URL (网站地址, 分享预览图要用完整网址; 默认 https://zhugecaomao.github.io/ALTRun/)
+Environment variables: GITHUB_REPOSITORY (default zhugecaomao/ALTRun), GITHUB_TOKEN (optional, avoids the API rate limit), SITE_OUT (default _site),
+                       SITE_URL (the site's address; link previews need the full URL; default https://zhugecaomao.github.io/ALTRun/)
 """
 import html
 import json
@@ -114,8 +115,9 @@ def changes_html(lines):
 
 
 def latest_changes(version):
-    """CHANGELOG.md 里正在下载的版本 (没有这一节时用第一个三段的正式版本, 不用测试版 YYYY.MM.DD.N) -> (版本号, HTML)。
-    中文页面显示全部; 英文页面显示英文概要 (版本说明里不含中文的段落), 中文明细放在可以展开的 <details> 里"""
+    """The section of CHANGELOG.md for the version being downloaded (without one, the first three-part release, never a test build
+    YYYY.MM.DD.N) -> (version, HTML). The Chinese page shows all of it; the English page shows the English summary (the paragraphs
+    without Chinese) and puts the English and Chinese details in a <details> that can be expanded"""
     changelog = read("CHANGELOG.md")
     match = re.search(r"^## \[(" + re.escape(version) + r")\]\s*\n(.*?)(?=^## \[|\Z)", changelog, re.M | re.S) \
         or re.search(r"^## \[(\d{4}\.\d{2}\.\d{2})\]\s*\n(.*?)(?=^## \[|\Z)", changelog, re.M | re.S)
@@ -125,7 +127,7 @@ def latest_changes(version):
     english = [line for line in lines if line and not line.startswith(("- ", "### ", "  ")) and not CJK.search(line)]
     details = [line for line in lines if line not in english]
     en = changes_html(english) or "<p>Release notes (in Chinese):</p>"
-    en += ('\n<details><summary>Details (in Chinese)</summary>\n<div lang="zh-CN">\n'   # lang="zh-CN": not hidden by the [lang="zh"] rules
+    en += ('\n<details><summary>Details (in English and Chinese)</summary>\n<div lang="zh-CN">\n'   # lang="zh-CN": not hidden by the [lang="zh"] rules
            + changes_html(details) + "\n</div>\n</details>")
     return match.group(1), f'<div lang="zh">\n{changes_html(lines)}\n</div>\n<div lang="en">\n{en}\n</div>'
 
@@ -146,7 +148,8 @@ def theme_gallery():
     order = re.findall(r'"(\w+)"', re.search(r"BuiltinOrder\s*:=\s*\[(.*?)\]", read("Src", "UI", "ThemeManager.ahk"), re.S).group(1))
     files = {"light": "search.png"}
     for name in os.listdir(SHOTS):
-        if name.startswith("theme-") and name.endswith(".png"):
+        # theme-compact.png shows Dark in Compact density, not a separate theme, so it is not counted or shown
+        if name.startswith("theme-") and name.endswith(".png") and name != "theme-compact.png":
             files[name[6:-4]] = name
     keys = ["light"] + [k.lower() for k in order]
     keys += sorted(k for k in files if k not in keys)                    # screenshots that exist but aren't in the list are shown too
