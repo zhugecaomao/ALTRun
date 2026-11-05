@@ -18,9 +18,10 @@ In a standard Open / Save dialog, `Ctrl+Shift+G` temporarily shows the panel and
 
 ## Favorite folders
 
-Folders you often save to or open from can be kept at the top of the panel, marked "Favorite":
+Folders you often save to or open from can be kept at the top of the panel, with a star icon and marked "Favorite":
 
-- **Add**: right-click a folder in the panel → **Add to Favorites**, or right-click → **Add Current Folder "…" to Favorites** (or `Ctrl+D` in the panel) for the folder the dialog shows now.
+- **Add**: right-click a folder in the panel → **Add to Favorites**, or right-click → **Add Current Folder "…" to Favorites** for the folder the dialog shows now. A short notice confirms it and the favorite is selected.
+- **Keyboard**: `Ctrl+D` adds the dialog's current folder while the caret is in the panel (click the panel, or press `Ctrl+Shift+G`, first). In the dialog itself `Ctrl+D` is the [date stamp](Date-Stamp) hotkey and adds a date to the file name.
 - **Remove**: right-click a favorite → **Remove from Favorites**.
 - **Edit the list**: Preferences → Dialog Panel → "Favorite folders" → **Edit...**, one folder per line; environment variables such as `%USERPROFILE%\Documents` work.
 

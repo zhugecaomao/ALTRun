@@ -1349,6 +1349,16 @@ class ExtensionTests {
             eq("remove missing", QuickSwitch.RemoveFavorite("X:\None"), false)
             QuickSwitch.Options := Map("RecentFolders", 0)
             eq("add without the setting", QuickSwitch.AddFavorite("C:\Docs") "|" QuickSwitch.Options["Favorites"].Length, "1|1")
+            eq("row icons", QuickSwitch.RowIcon({Path: "C:\A", Group: "favorite"}) QuickSwitch.RowIcon({Path: "C:\A", Group: "open"})
+                . QuickSwitch.RowIcon({Path: "C:\A.txt", Group: "search", IsFile: true}), "312")
+            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])     ; in the panel: an added favorite is listed with the star and selected
+            QuickSwitch._BuildPanel(A_ScriptHwnd)
+            QuickSwitch._ToggleFavorite("C:\Fav Test\", true)
+            row := QuickSwitch._panelList.GetNext()
+            eq("panel: added and selected", row ? QuickSwitch._panelList.GetText(row, 2) "|" QuickSwitch._panelFolders[row].Group : "nothing selected", "C:\Fav Test|favorite")
+            QuickSwitch._ToggleFavorite("C:\Fav Test", false)
+            eq("panel: removed", QuickSwitch.IsFavorite("C:\Fav Test") "|" (QuickSwitch._panelFolders.Length && QuickSwitch._panelFolders[1].Group = "favorite"), "0|0")
+            QuickSwitch.HidePanel(), Hud.Hide()
         } finally {
             QuickSwitch.Options := savedOptions, AppSettings.File := savedFile
             try FileDelete(A_Temp "\ALTRun-favorites-test.json")

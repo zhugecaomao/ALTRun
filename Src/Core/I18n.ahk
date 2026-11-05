@@ -1120,7 +1120,7 @@ class I18n {
         s["Prefs.QSPanelSearch.Folders"] := "Folders only"
         s["Prefs.QSRecent"]            := "Recent folders"
         s["Prefs.QSFavorites"] := "Favorite folders"
-        s["Prefs.QSFavorites.Desc"] := "Always at the top of the panel. In the panel, right-click a folder to add or remove it; Ctrl+D adds the dialog's current folder."
+        s["Prefs.QSFavorites.Desc"] := "Always at the top of the panel, with a star. In the panel, right-click a folder to add or remove it; Ctrl+D adds the dialog's current folder (with the caret in the panel: click it or press the hotkey below first)."
         s["Prefs.QSAuto"]              := "Jump automatically when switching from TC / Opus / Explorer"
         s["Prefs.Section.QSDialogs"]    := "Dialogs"
         s["Prefs.Section.QSAuto"]       := "When a dialog opens"
@@ -1260,6 +1260,7 @@ class I18n {
         s["QuickSwitch.AddDialogFolder"] := 'Add Current Folder "{1}" to Favorites'
         s["QuickSwitch.FavoriteAdded"] := "Added to favorites: {1}"
         s["QuickSwitch.FavoriteExists"] := "Already a favorite: {1}"
+        s["QuickSwitch.FavoriteRemoved"] := "Removed from favorites: {1}"
         s["QuickSwitch.NoDialogFolder"] := "Can't read the dialog's current folder."
         s["QuickSwitch.NoFileManager"] := "No Total Commander, Directory Opus or File Explorer window is open."
         return s
