@@ -1424,7 +1424,7 @@ Func | PTTools | PT Tools (AHK)=99
                 copyMenu := ShellContextMenu([root "\sub"])
                 result := copyMenu.InvokeVerb("copyaspath")
                 Sleep(300)
-                eq("copy as path", Format("0x{:X}", result & 0xFFFFFFFF) " " A_Clipboard, '0x0 "' root '\sub"')
+                eq("copy as path", Format("0x{:X}", result & 0xFFFFFFFF) " " A_Clipboard, '0x0 "' TestRunner.LongPath(root "\sub") '"')   ; Windows copies the long form of a short (8.3) temp path
                 copyMenu := "", A_Clipboard := savedClip
             }
             thrown := false
