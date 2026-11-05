@@ -921,6 +921,7 @@ class SearchWindowTests {
                 labels .= (IsObject(entry) ? StrSplit(entry[1], "`t")[1] : "-") ";"
             eq("menu", labels, "Preferences...;Shortcuts and Syntax;-;Rebuild Index;Check for Updates;-;Reload;Quit;")
             w := Win.Scale(700), pad := Win.Scale(16)                       ; the menu icon right of the box, inside the padding, a gap between them
+            eq("menu icon size", SearchWindow.MenuIconSize(), Win.Scale(28))
             eq("menu icon at the right", SearchWindow.MenuIconX(w, pad) + SearchWindow.MenuIconSize(), w - pad)
             eq("box ends before the icon", SearchWindow.MenuIconX(w, pad) - (pad + SearchWindow.InputWidth(w, pad)), Win.Scale(10))
             SearchWindow.Session.FileMode := true, SearchWindow.Input.Value := ""

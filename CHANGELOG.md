@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.11.03.17]
+
+测试版。
+
+Test build.
+
+### 改进
+- Windows 右键菜单可以直接打开, 不用先进操作面板: 在文件或文件夹上按住 `Shift` 右键 (和资源管理器一样, 带扩展菜单项), 或者按 `Shift+→` (光标在末尾时)、`Shift+F10`、菜单键。需要在 偏好设置 → 功能 里打开 "Windows 右键菜单"; 没打开时这些键和以前一样。操作面板里的这一项改用表示菜单的图标 (以前是文件本身的图标), 右边显示 `Shift+→`
+- 搜索框右边的菜单图标调大一些
+
+### 修复
+- 在空搜索框里用 `Ctrl+Del` 删除最近使用的项目后, 它要等窗口关掉再打开才消失; 现在马上从列表里去掉
+
 ## [2026.11.03.16]
 
 测试版。
@@ -1197,7 +1210,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.17...HEAD
+[2026.11.03.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.16...2026.11.03.17
 [2026.11.03.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.15...2026.11.03.16
 [2026.11.03.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.14...2026.11.03.15
 [2026.11.03.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.13...2026.11.03.14

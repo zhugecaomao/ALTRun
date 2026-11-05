@@ -1442,6 +1442,22 @@ Func | PTTools | PT Tools (AHK)=99
             eq("folder: offered", InStr(titles(ResultActions.ListFor(ResultItem("sub", "", {Kind: "folder", Arg: root "\sub"}))).Text, label) > 0, true)
             eq("missing file: not offered", InStr(titles(ResultActions.ListFor(ResultItem("x", "", {Kind: "file", Arg: root "\gone.txt"}))).Text, label), 0)
             eq("store app: offered", InStr(titles(ResultActions.ListFor(ResultItem("Notepad", "", {Kind: "file", Arg: "shell:AppsFolder\Microsoft.WindowsNotepad_8wekyb3d8bbwe!App"}))).Text, label) > 0, true)
+            ; Shift+→ / Shift+F10 / the Menu key / Shift+right-click (SearchWindow.OpenShellMenu): the targets, and the shortcut shown in the panel
+            fileItem := ResultItem("a", "", {Kind: "file", Arg: root "\a.txt"})
+            hint := "", icon := ""
+            for action in ResultActions.ListFor(fileItem)
+                if (action.Title = I18n.T("Action.ShellMenu"))
+                    hint := action.Subtitle, icon := action.Icon
+            eq("shortcut hint", hint, "Shift+→")
+            eq("its own icon, not the file's", icon, "res:shell32.dll,-16788")
+            eq("targets: the file", ResultActions.ShellMenuTargets(fileItem, [])[1], root "\a.txt")
+            eq("targets: the marked ones first", ResultActions.ShellMenuTargets(fileItem, [root "\sub", root "\a.txt"]).Length, 2)
+            eq("targets: not a url", ResultActions.ShellMenuTargets(ResultItem("u", "", {Kind: "url", Arg: "https://example.com"}), []).Length, 0)
+            eq("paths: offered", ResultActions.ShellMenuPaths([root "\a.txt"]).Length, 1)
+            eq("paths: nothing", ResultActions.ShellMenuPaths([]), "")
+            feature["Enabled"] := 0
+            eq("paths: off", ResultActions.ShellMenuPaths([root "\a.txt"]), "")
+            feature["Enabled"] := 1
 
             ; Run as administrator: by extension, and for Store / packaged apps when their context menu has it (as in the Start menu)
             admin := I18n.T("Action.RunAsAdmin") "|"

@@ -185,11 +185,16 @@ class SearchKeys {
                 else
                     SearchWindow._AutoComplete()
                 return 0
-            case 0x27:                                                      ; →
+            case 0x27:                                                      ; →  (Shift+→: the Windows context menu, see OpenShellMenu)
                 ; Only a fresh →: holding → to move the caret doesn't open the actions panel by auto-repeat when the caret reaches the end (lParam bit 30 = already down)
                 ; With text selected (e.g. the restored last search selected all), like a normal input box it only deselects and moves the caret to the end, so editing an expression doesn't open the panel
-                if (!(lParam & 0x40000000) && SearchKeys.CaretAtEnd() && !SearchKeys.HasTextSelection() && SearchWindow._OpenActions())
+                if (!(lParam & 0x40000000) && SearchKeys.CaretAtEnd() && !SearchKeys.HasTextSelection()
+                    && ((shift && !actions && SearchWindow.OpenShellMenu()) || SearchWindow._OpenActions()))
                     return 0
+                return
+            case 0x79:                                                      ; Shift+F10 (a system key: WM_SYSKEYDOWN, so not taken for Alt): the Windows context menu
+                if (shift && !GetKeyState("Alt") && !ctrl && SearchWindow.OpenShellMenu())
+                    return 0                                                ; not passed on: the box would show its own Cut / Copy / Paste menu
                 return
             case 0x25:                                                      ; ←
                 if (actions && SearchWindow.Input.Value = "") {
