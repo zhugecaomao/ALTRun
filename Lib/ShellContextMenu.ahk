@@ -92,10 +92,11 @@ class ShellContextMenu {
         return id
     }
 
-    ; Runs the command chosen in Track (verb = its offset from FirstId). ownerHwnd: the window for any dialog it shows (0 = none).
-    ; Returns the HRESULT (negative = failed; 0x800704C7 = canceled by the user, e.g. in a confirmation)
+    ; Runs the command chosen in Track (verb = its offset from FirstId). ownerHwnd: the window for any dialog it shows; 0 = the script's
+    ; hidden main window (OwnerOf). Returns the HRESULT (negative = failed; 0x800704C7 = canceled by the user, e.g. in a confirmation)
     Invoke(id, ownerHwnd := 0) {
         p := A_PtrSize, info := Buffer(24 + 10 * p, 0)                      ; CMINVOKECOMMANDINFOEX
+        ownerHwnd := ShellContextMenu.OwnerOf(ownerHwnd)
         NumPut("UInt", info.Size, info, 0)
         mask := 0x4000                                                      ; CMIC_MASK_UNICODE
         mask |= GetKeyState("Shift") ? 0x10000000 : 0                       ; CMIC_MASK_SHIFT_DOWN
@@ -146,8 +147,14 @@ class ShellContextMenu {
         return this.Menu
     }
 
+    ; Some commands fail without an owner window: "Copy as path" returns E_FAIL and copies nothing (Windows CI), while Open,
+    ; Properties... work either way. The script's hidden main window is always there and is never shown, so a dialog owned by
+    ; it doesn't sit over (or disable) a window of ALTRun
+    static OwnerOf(ownerHwnd) => ownerHwnd ? ownerHwnd : A_ScriptHwnd
+
     ; Runs a command by its language-independent name ("runas"...), as Explorer does for that menu item. Returns the HRESULT
     InvokeVerb(verb, ownerHwnd := 0) {
+        ownerHwnd := ShellContextMenu.OwnerOf(ownerHwnd)
         this.Fill()                                                         ; some handlers only know their verbs after QueryContextMenu
         p := A_PtrSize, info := Buffer(24 + 10 * p, 0), ansi := Buffer(StrPut(verb, "CP0"))   ; CMINVOKECOMMANDINFOEX
         StrPut(verb, ansi, "CP0")
