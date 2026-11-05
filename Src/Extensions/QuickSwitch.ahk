@@ -368,9 +368,10 @@ class QuickSwitch {
         line := panel.AddText("x0 y+" Win.Scale(6) " w" width " h1 Background" colors.Separator)   ; separator between the search box and the list
         panel.SetFont("s9 c" colors.Text)
         list := panel.AddListView("x0 y+" Win.Scale(2) " w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 Background" colors.Background, ["Name", "Folder", "From"])   ; 0x400 = the full path on hover when it is too long
-        icons := IL_Create(2)
+        icons := IL_Create(3)
         IL_Add(icons, "shell32.dll", 4)                                     ; 1 = folder
         IL_Add(icons, "shell32.dll", 1)                                     ; 2 = file
+        IL_Add(icons, "shell32.dll", 44)                                    ; 3 = favorite folder (the star)
         list.SetImageList(icons)
         list.OnEvent("Click", (ctrl, row) => QuickSwitch._PanelJump(row))
         list.OnEvent("ContextMenu", (ctrl, row, *) => QuickSwitch._ShowRowMenu(row))
@@ -492,7 +493,7 @@ class QuickSwitch {
         list.Opt("-Redraw")
         list.Delete()
         for entry in folders
-            list.Add(entry.HasOwnProp("IsFile") && entry.IsFile ? "Icon2" : "Icon1", QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
+            list.Add("Icon" QuickSwitch.RowIcon(entry), QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
         list.ModifyCol(3, "Auto"), list.ModifyCol(1, "Auto")
         nameW := Max(Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3), Win.Scale(120))   ; LVM_GETCOLUMNWIDTH
         list.ModifyCol(1, nameW)
@@ -512,6 +513,9 @@ class QuickSwitch {
             QuickSwitch._PlacePanel(QuickSwitch._panelFor)
         }
     }
+
+    ; The row's icon in the panel's image list: 1 folder, 2 file, 3 favorite folder (a star, so favorites stand out)
+    static RowIcon(entry) => (entry.HasOwnProp("IsFile") && entry.IsFile) ? 2 : (entry.HasOwnProp("Group") && entry.Group = "favorite") ? 3 : 1
 
     ; "D:\Projects\Tower" -> "Tower"; drive roots show as "D:\"
     static FolderName(folder) {
@@ -890,11 +894,12 @@ class QuickSwitch {
         return true
     }
 
-    ; Ctrl+D in the panel: the folder the dialog shows becomes a favorite (a toast says what happened)
+    ; Ctrl+D in the panel (the caret is in the panel: after clicking it, or after the MenuHotkey): the folder the dialog shows becomes a favorite.
+    ; In the dialog itself Ctrl+D is the date stamp's hotkey (AutoDate), so it is only taken here
     static AddDialogFolder() {
         folder := QuickSwitch._panelFor ? QuickSwitch.DialogFolder(QuickSwitch._panelFor) : ""
         if (folder = "")
-            return App.Toast(I18n.T("QuickSwitch.NoDialogFolder"))
+            return App.Notify(I18n.T("QuickSwitch.NoDialogFolder"), 2500)
         QuickSwitch._ToggleFavorite(folder, true)
     }
 
@@ -920,17 +925,29 @@ class QuickSwitch {
             rowMenu.Show()
     }
 
-    ; Adds or removes a favorite, then lists the panel's folders again (without Opus first, as when the panel opens), keeping the search
+    ; Adds or removes a favorite, then lists the panel's folders again (without Opus first, as when the panel opens), keeping the search;
+    ; an added favorite is selected. The notice is ALTRun's own (Hud), shown at once: Windows notifications may be turned off
     static _ToggleFavorite(folder, add) {
         changed := add ? QuickSwitch.AddFavorite(folder) : QuickSwitch.RemoveFavorite(folder)
-        if add
-            App.Toast(I18n.T(changed ? "QuickSwitch.FavoriteAdded" : "QuickSwitch.FavoriteExists", QuickSwitch.FolderName(folder)))
+        App.Notify(I18n.T(!add ? "QuickSwitch.FavoriteRemoved" : changed ? "QuickSwitch.FavoriteAdded" : "QuickSwitch.FavoriteExists", QuickSwitch.FolderName(folder)))
         if !(changed && QuickSwitch._panelFor && IsObject(QuickSwitch._panelList))
             return
         QuickSwitch._panelBase := QuickSwitch.MenuFolders(false)
         QuickSwitch._SearchPanel()
+        if add
+            QuickSwitch._SelectFolder(folder)
         if WinExist("ahk_class dopus.lister")
             SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, QuickSwitch._panelFor), -1)
+    }
+
+    ; Selects the panel's row of folder (case and a trailing backslash don't matter); nothing if it isn't listed
+    static _SelectFolder(folder) {
+        key := StrLower(RTrim(folder, "\"))
+        for row, entry in QuickSwitch._panelFolders
+            if (StrLower(RTrim(entry.Path, "\")) = key) {
+                QuickSwitch._panelList.Modify(0, "-Select"), QuickSwitch._panelList.Modify(row, "Select Focus Vis")
+                return
+            }
     }
 
     ; The newest limit folders of Windows "Recent items" (WindowsRecent); a file gives its folder.

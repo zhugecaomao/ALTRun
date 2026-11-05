@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.03.16]
+
+测试版。
+
+Test build.
+
+### 改进
+- 对话框文件夹面板的收藏更容易看清: 收藏的文件夹用星形图标; 加入或删除收藏后弹出 ALTRun 自己的提示 (以前用 Windows 通知, 关掉通知时看不到), 加入后选中这个收藏
+- 说明写清楚 `Ctrl+D` 要在光标位于面板里时按 (先点一下面板, 或者按 `Ctrl+Shift+G`); 在对话框里按 `Ctrl+D` 是日期戳的热键
+
 ## [2026.11.03.15]
 
 测试版。
@@ -1187,7 +1197,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.16...HEAD
+[2026.11.03.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.15...2026.11.03.16
 [2026.11.03.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.14...2026.11.03.15
 [2026.11.03.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.13...2026.11.03.14
 [2026.11.03.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.12...2026.11.03.13
