@@ -1419,6 +1419,13 @@ Func | PTTools | PT Tools (AHK)=99
                 program := ShellContextMenu([A_WinDir "\System32\notepad.exe"]).Verbs()
                 eq("verbs: a program can run as administrator", has(program, "runas") && has(program, "open"), true)
                 eq("verbs: a text file can't", has(ShellContextMenu([root "\a.txt"]).Verbs(), "runas"), false)
+                ; "Copy as path" (an extended item) needs an owner window: without one it failed and copied nothing
+                savedClip := ClipboardAll(), A_Clipboard := "before"
+                copyMenu := ShellContextMenu([root "\sub"])
+                result := copyMenu.InvokeVerb("copyaspath")
+                Sleep(300)
+                eq("copy as path", Format("0x{:X}", result & 0xFFFFFFFF) " " A_Clipboard, '0x0 "' root '\sub"')
+                copyMenu := "", A_Clipboard := savedClip
             }
             thrown := false
             try ShellContextMenu([root "\gone.txt"])

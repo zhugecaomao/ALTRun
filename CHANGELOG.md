@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.18]
+
+测试版。
+
+Test build.
+
+### 修复
+- Windows 右键菜单里的 "复制文件地址" (按住 `Shift` 时的扩展菜单项) 没有复制任何内容; 现在会把路径复制到剪贴板。打开、属性等其它菜单项不受影响
+
 ## [2026.11.03.17]
 
 测试版。
@@ -1210,7 +1219,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.17...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.18...HEAD
+[2026.11.03.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.17...2026.11.03.18
 [2026.11.03.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.16...2026.11.03.17
 [2026.11.03.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.15...2026.11.03.16
 [2026.11.03.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.14...2026.11.03.15
