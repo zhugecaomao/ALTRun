@@ -14,7 +14,7 @@ class TestUtil {
 }
 
 class FakeHttpRequest {                                                    ; a fake request for the HttpGet tests (the parts of Msxml2.XMLHTTP that are used)
-    readyState := 1, status := 0, statusText := "", responseText := ""
+    readyState := 1, status := 0, statusText := "", responseText := "", responseBody := ""
     Method := "", Url := "", Async := "", Header := "", Aborted := false
     open(method, url, async) => (this.Method := method, this.Url := url, this.Async := async)
     setRequestHeader(name, value) => (this.Header := name)

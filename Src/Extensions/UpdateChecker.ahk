@@ -17,7 +17,10 @@
 ; "New version available: ALTRun x": Enter installs it, → release notes / skip this version (skipped versions are kept in Update.json).
 ;
 ; One-click update ("Update now" when a new version is found):
-;   1. download ALTRun_v<version>.zip from the Release and verify the SHA256 GitHub gives
+;   1. download ALTRun_v<version>.zip from the Release in the background (HttpGet with follow: ALTRun keeps responding; a progress
+;      window with Cancel; at most DownloadTimeoutMs). When that fails for a network reason (e.g. only a proxy script lets it out), it
+;      downloads once more with AutoHotkey's Download (WinINet, the system proxy as the update check uses it), which holds ALTRun until done.
+;      Then verify the SHA256 GitHub gives
 ;   2. extract to a temporary folder, copy the files other than the exe first (Resources\ etc.), then rename the running
 ;      ALTRun.exe to ALTRun.exe.old (a running exe can't be overwritten but can be renamed) and copy the new exe;
 ;      overwritten files are backed up first, and any failing step restores everything. Data\ (with ALTRun.json) and Themes\ aren't in the zip and stay untouched
@@ -42,7 +45,8 @@ class UpdateChecker {
     static CheckHours  := 6                                                 ; while running: check when the last check is this many hours old
     static StartupHours := 1                                                ; at start-up: check when the last check is this many hours old
     static Pending     := ""                                                ; a new version found in the background (the result of ParseRelease + Mode)
-    static _timer      := "", _checking := false
+    static DownloadTimeoutMs := 5 * 60 * 1000                               ; the zip is about 1.3 MB: minutes only on a very slow network
+    static _timer      := "", _checking := false, _installing := ""
 
     ; Downloads the release info in the background (ALTRun doesn't hang) and reports when done; clicking again during a check doesn't start another
     static Check(install := false) {
@@ -292,32 +296,92 @@ class UpdateChecker {
         return ""
     }
 
-    ; Download -> verify SHA256 -> extract -> replace -> start the new version; on errors offer to open the download page
+    ; Download (in the background) -> verify SHA256 -> extract -> replace -> start the new version; on errors offer to open the download
+    ; page. While it downloads, ALTRun keeps responding and the progress window's Cancel (or Esc) stops it; asking again while it
+    ; downloads shows that window instead of starting a second download
     static Install(release) {
-        progress := UpdateChecker._Progress(I18n.T("Update.Downloading", release.Version))
+        if IsObject(UpdateChecker._installing) {
+            try WinActivate("ahk_id " UpdateChecker._installing.Progress.Hwnd)
+            return
+        }
+        progress := UpdateChecker._Progress(I18n.T("Update.Downloading", release.Version), () => UpdateChecker.CancelInstall())
+        job := {Release: release, Progress: progress, Request: ""}
+        UpdateChecker._installing := job
         try {
             dir := UpdateChecker.TempDir
             try DirDelete(dir, true)
             DirCreate(dir)
             zip := dir "\ALTRun_v" release.Version ".zip"
-            Download(release.ZipUrl, zip)
+        } catch as e
+            return UpdateChecker._InstallFailed(job, e.Message)
+        job.Request := HttpGet.Start(release.ZipUrl, (file) => UpdateChecker._Downloaded(job, file)
+            , (message) => UpdateChecker._DownloadFailed(job, message, zip), UpdateChecker.DownloadTimeoutMs, zip, true)
+    }
+
+    ; The background download failed: an HTTP error would come back the same; a network error (no direct connection, a proxy script
+    ; WinHTTP can't use) gets one more try with AutoHotkey's Download, as before this download moved to the background
+    static _DownloadFailed(job, message, zip) {
+        if (UpdateChecker._installing != job)
+            return
+        if RegExMatch(message, "^HTTP \d")
+            return UpdateChecker._InstallFailed(job, message)
+        Logger.Warn("UpdateChecker: background download failed (" message "), trying again with AutoHotkey's Download")
+        try job.Progress["Cancel"].Enabled := false
+        try {
+            UpdateChecker.downloadFn.Call(job.Release.ZipUrl, zip)
+        } catch as e
+            return UpdateChecker._InstallFailed(job, e.Message)
+        UpdateChecker._Downloaded(job, zip)
+    }
+    static downloadFn := (url, file) => Download(url, file)                   ; replaced in the tests
+
+    ; The zip has downloaded: verify, extract and replace (quick, so Cancel is off now), then restart as the new version
+    static _Downloaded(job, zip) {
+        if (UpdateChecker._installing != job)                               ; cancelled meanwhile
+            return
+        release := job.Release
+        try {
             actual := UpdateChecker.Sha256File(zip)
             if (actual != release.Sha256)
                 throw Error("SHA256 does not match (expected " release.Sha256 ", got " actual ").")
-            progress["Text"].Value := I18n.T("Update.Installing", release.Version)
-            files := dir "\files"
+            try job.Progress["Text"].Value := I18n.T("Update.Installing", release.Version), job.Progress["Cancel"].Enabled := false
+            files := UpdateChecker.TempDir "\files"
             UpdateChecker.Extract(zip, files)
             UpdateChecker.Apply(files, A_ScriptDir, A_ScriptName)
-        } catch as e {
-            progress.Destroy()
-            Logger.Error("UpdateChecker: install " release.Version " - " e.Message)
-            if (MsgBox(I18n.T("Update.InstallFailed", UpdateChecker.FailureText(e.Message)), App.Name, "YesNo Icon!") = "Yes")
-                Run(release.Page)
-            return
-        }
-        progress.Destroy()
+        } catch as e
+            return UpdateChecker._InstallFailed(job, e.Message)
+        UpdateChecker._EndInstall(job)
         Logger.Debug("UpdateChecker: updated to " release.Version)
         App.Restart("-Updated " release.Version)
+    }
+
+    static _InstallFailed(job, message) {
+        if (UpdateChecker._installing != job)
+            return
+        UpdateChecker._EndInstall(job)
+        Logger.Error("UpdateChecker: install " job.Release.Version " - " message)
+        if (UpdateChecker.askFn.Call(I18n.T("Update.InstallFailed", UpdateChecker.FailureText(message))) = "Yes")
+            Run(job.Release.Page)
+    }
+    static askFn := (text) => MsgBox(text, App.Name, "YesNo Icon!")         ; replaced in the tests
+
+    ; Cancel in the progress window: the download stops, its files are deleted and nothing is changed
+    static CancelInstall() {
+        job := UpdateChecker._installing
+        if !IsObject(job)
+            return false
+        if IsObject(job.Request)
+            HttpGet.Cancel(job.Request)
+        UpdateChecker._EndInstall(job)
+        try DirDelete(UpdateChecker.TempDir, true)
+        Logger.Debug("UpdateChecker: download of " job.Release.Version " cancelled")
+        App.Notify(I18n.T("Update.Cancelled", job.Release.Version), 3000)
+        return true
+    }
+
+    static _EndInstall(job) {
+        try job.Progress.Destroy()
+        UpdateChecker._installing := ""
     }
 
     ; zip -> folder. First tar.exe, built in since Windows 10 (1803) (fast, not limited by PowerShell policies);
@@ -475,11 +539,16 @@ class UpdateChecker {
         return choice
     }
 
-    static _Progress(text) {
+    ; The download / install window: the text, a moving bar (the download's size isn't known while it runs) and Cancel (also Esc)
+    static _Progress(text, cancel) {
         dlg := Gui("+AlwaysOnTop -SysMenu +ToolWindow", App.Name)
         dlg.SetFont("s10")
         dlg.MarginX := 24, dlg.MarginY := 18
         dlg.AddText("w320 vText", text)
+        bar := dlg.AddProgress("w320 h12 y+10 vBar 0x8")                    ; PBS_MARQUEE
+        SendMessage(0x40A, 1, 30, bar)                                      ; PBM_SETMARQUEE: on, every 30 ms
+        dlg.AddButton("x" (24 + 320 - 90) " y+14 w90 vCancel", I18n.T("Update.Cancel")).OnEvent("Click", (*) => cancel.Call())
+        dlg.OnEvent("Escape", (*) => (dlg["Cancel"].Enabled ? cancel.Call() : 0))
         dlg.Show()
         return dlg
     }

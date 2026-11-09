@@ -773,9 +773,10 @@ class CoreTests {
     ; Background downloads: asynchronous requests; on completion / error / timeout the callback runs in its own thread (fake requests, no network)
     static HttpGet() {
         eq := (n, a, e) => TestRunner.Equal("HttpGet." n, a, e)
-        saved := [HttpGet.NewRequest, HttpGet.PollMs]
+        saved := [HttpGet.NewRequest, HttpGet.PollMs, HttpGet.NewFollowRequest]
         fakes := []
         HttpGet.NewRequest := () => (fakes.Push(r := FakeHttpRequest()), r)
+        HttpGet.NewFollowRequest := () => (fakes.Push(r := FakeHttpRequest()), r.Follow := true, r)
         HttpGet.PollMs := 10
         got := []
         try {
@@ -820,22 +821,47 @@ class CoreTests {
             TestUtil.WaitFor(() => got.Length >= 3, 4000)
             eq("callbacks do not block each other", got.Length = 3 ? got[3] : TextTools.JoinList(got, ","), "a end")
 
+            ; with a file: the body is saved as it came (binary) and done gets the file name
+            got.Length := 0, savedFile := A_Temp "\ALTRun-httpget-test.bin"
+            try FileDelete(savedFile)
+            request := HttpGet.Start("https://example.test/zip", (f) => got.Push("done " f), (m) => got.Push("fail " m), , savedFile, true)
+            eq("follow: the request that follows redirects", fakes[fakes.Length].HasOwnProp("Follow"), true)
+            body := ComObjArray(0x11, 4)                                       ; VT_UI1
+            for i, byte in [0x50, 0x4B, 0x00, 0xFF]
+                body[i - 1] := byte
+            n := fakes.Length, fakes[n].status := 200, fakes[n].responseBody := body, fakes[n].readyState := 4
+            eq("file: done with its name", TestUtil.WaitFor(() => got.Length) ? got[1] : "", "done " savedFile)
+            data := FileRead(savedFile, "RAW")
+            eq("file: the bytes as they came", data.Size "|" NumGet(data, 0, "UChar") "|" NumGet(data, 2, "UChar") "|" NumGet(data, 3, "UChar"), "4|80|0|255")
+            try FileDelete(savedFile)
+
+            got.Length := 0                                                    ; Cancel: aborted, no callback, nothing pending
+            request := HttpGet.Start("https://example.test/cancel", (t) => got.Push("done"), (m) => got.Push("fail " m))
+            n := fakes.Length
+            eq("cancel", HttpGet.Cancel(request) "|" fakes[n].Aborted "|" HttpGet.Pending, "1|1|0")
+            fakes[n].status := 200, fakes[n].readyState := 4
+            Sleep(60)
+            eq("cancel: no callback", got.Length "|" HttpGet.Cancel(request), "0|0")
+
             HttpGet.NewRequest := () => ComObject("ALTRun.NoSuchClass")
             got.Length := 0
             HttpGet.Start("https://example.test/x", (t) => got.Push("done"), (m) => got.Push("fail " m))
             eq("cannot start -> fail", TestUtil.WaitFor(() => got.Length) ? SubStr(got[1], 1, 5) : "", "fail ")
         } finally {
-            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2]
+            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2], HttpGet.NewFollowRequest := saved[3]
         }
+        proxy := HttpGet.SystemProxy()
+        eq("system proxy read", proxy.HasOwnProp("Server") && proxy.HasOwnProp("Bypass"), true)
 
-        ; update and exchange-rate checks no longer use Download() (the whole program stops while it downloads); the one-click update's zip download has a progress window and still uses Download()
+        ; update checks and exchange rates don't use Download() (the whole program stops while it downloads); the update's download uses it
+        ; only as a fallback when the background download fails for a network reason
         for name in ["UpdateChecker", "CurrencyRates"] {
             text := FileRead(A_ScriptDir "\..\Src\Extensions\" name ".ahk", "UTF-8")
             pos := 1, count := 0
             while (pos := RegExMatch(text, "\bDownload\(", , pos)) {
                 count++, pos++
             }
-            eq(name ": synchronous downloads", count, name = "UpdateChecker" ? 1 : 0)
+            eq(name ": synchronous downloads", count, name = "UpdateChecker" ? 1 : 0)   ; the update's fallback only (_DownloadFailed)
         }
 
         ; Check for updates: the release info is handled after it has downloaded (a fake reply)
@@ -845,6 +871,7 @@ class CoreTests {
         UpdateChecker.StateFile := root "\Update.json"
         fakes := []
         HttpGet.NewRequest := () => (fakes.Push(r := FakeHttpRequest()), r)
+        HttpGet.NewFollowRequest := HttpGet.NewRequest
         HttpGet.PollMs := 10
         try {
             UpdateChecker.Pending := ""
@@ -856,8 +883,55 @@ class CoreTests {
             eq("update: found in background", IsObject(UpdateChecker.Pending) ? UpdateChecker.Pending.Version : "", "2999.01.01")
             eq("update: check time saved", UpdateChecker.LoadState()["LastCheck"] != "", true)
             eq("manual check: busy flag starts clear", UpdateChecker._checking, false)
+
+            ; one-click update: downloads in the background; a second request shows the same window; a broken download offers the page
+            asked := [], savedAsk := UpdateChecker.askFn
+            UpdateChecker.askFn := (text) => (asked.Push(text), "No")
+            release := {Version: "2999.01.01", ZipUrl: "https://example.test/ALTRun_v2999.01.01.zip", Sha256: StrRepeat("0", 64), Page: "https://x/notes"}
+            try {
+                count := fakes.Length
+                UpdateChecker.Install(release)
+                job := UpdateChecker._installing, hwnd := IsObject(job) ? job.Progress.Hwnd : 0
+                eq("install: downloading in the background", IsObject(job) && fakes.Length = count + 1 && fakes[count + 1].Url = release.ZipUrl, true)
+                eq("install: progress window with Cancel", IsObject(job) && WinExist("ahk_id " job.Progress.Hwnd) && job.Progress["Cancel"].Enabled, true)
+                UpdateChecker.Install(release)
+                eq("install: asked again, no second download", fakes.Length "|" (UpdateChecker._installing == job), (count + 1) "|1")
+                body := ComObjArray(0x11, 1), body[0] := 1
+                fakes[count + 1].status := 200, fakes[count + 1].responseBody := body, fakes[count + 1].readyState := 4
+                TestUtil.WaitFor(() => asked.Length)
+                eq("install: wrong checksum -> not installed, page offered", asked.Length && InStr(asked[1], I18n.T("Update.Corrupt")) > 0, true)
+                eq("install: window closed", UpdateChecker._installing "|" WinExist("ahk_id " hwnd), "|0")
+
+                UpdateChecker.Install(release)                                  ; Cancel: the download stops, its folder is deleted
+                job := UpdateChecker._installing, n := fakes.Length, hwnd := job.Progress.Hwnd
+                eq("cancel: stopped", UpdateChecker.CancelInstall() "|" fakes[n].Aborted "|" HttpGet.Pending "|" UpdateChecker._installing, "1|1|0|")
+                eq("cancel: files and window gone", FileExist(UpdateChecker.TempDir) "|" WinExist("ahk_id " hwnd), "|0")
+                eq("cancel: nothing to cancel now", UpdateChecker.CancelInstall(), false)
+
+                ; a network error: one more try with Download() (fake here); an HTTP error isn't tried again
+                downloads := [], savedDownload := UpdateChecker.downloadFn, asked.Length := 0
+                UpdateChecker.downloadFn := (url, target) => (downloads.Push(url), FileAppend("x", target))
+                try {
+                    UpdateChecker.Install(release), n := fakes.Length
+                    fakes[n].status := 12029, fakes[n].readyState := 4             ; ERROR_INTERNET_CANNOT_CONNECT
+                    TestUtil.WaitFor(() => asked.Length)
+                    eq("network error: tried again with Download()", downloads.Length "|" (downloads.Length ? downloads[1] : ""), "1|" release.ZipUrl)
+                    eq("network error: then verified (wrong checksum here)", asked.Length && InStr(asked[1], I18n.T("Update.Corrupt")) > 0, true)
+                    asked.Length := 0, downloads.Length := 0
+                    UpdateChecker.Install(release), n := fakes.Length
+                    fakes[n].status := 404, fakes[n].statusText := "Not Found", fakes[n].readyState := 4
+                    TestUtil.WaitFor(() => asked.Length)
+                    eq("http error: not tried again", downloads.Length "|" (asked.Length && InStr(asked[1], I18n.T("Update.NotFound")) > 0), "0|1")
+                } finally
+                    UpdateChecker.downloadFn := savedDownload
+                Hud.Hide()
+            } finally {
+                UpdateChecker.askFn := savedAsk
+                if IsObject(UpdateChecker._installing)
+                    UpdateChecker.CancelInstall()
+            }
         } finally {
-            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2]
+            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2], HttpGet.NewFollowRequest := saved[3]
             UpdateChecker.StateFile := savedState[1], UpdateChecker.Pending := savedState[2]
             try DirDelete(root, true)
         }
@@ -877,6 +951,22 @@ class CoreTests {
                 eq("real request", result, "done GNU GENERAL PUBLIC LICENSE")
                 eq("real request: kept running while waiting", ticks > 1, true)
             }
+            ; a real release zip (binary, through GitHub's redirect to its download server): saved byte for byte, so its SHA256 matches
+            savedFile := A_Temp "\ALTRun-httpget-zip-test.zip", got := [], ticks := 0
+            try FileDelete(savedFile)
+            HttpGet.Start("https://github.com/zhugecaomao/ALTRun/releases/download/2026.11.03/ALTRun_v2026.11.03.zip", (f) => got.Push("done"), (m) => got.Push("fail " m), 60000, savedFile, true)
+            start := A_TickCount
+            while (!got.Length && A_TickCount - start < 65000)
+                Sleep(10), ticks++
+            result := got.Length ? got[1] : "fail no answer"
+            if RegExMatch(result, "^fail (Network error|Timed out|no answer)")
+                FileAppend("NOTE HttpGet.real zip skipped: " result "`n", "*")
+            else {
+                eq("real zip", result, "done")
+                eq("real zip: SHA256", FileExist(savedFile) ? UpdateChecker.Sha256File(savedFile) : "", "ec0bb1848f799a92ed9a8bbf501bc1488907eaee78dfa1534cc193f6aa9c68b8")
+                eq("real zip: kept running while downloading", ticks > 1, true)
+            }
+            try FileDelete(savedFile)
         }
     }
 
