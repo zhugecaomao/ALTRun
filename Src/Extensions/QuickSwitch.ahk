@@ -1064,10 +1064,21 @@ class QuickSwitch {
                 , (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
         favMenu.Add(I18n.T("QuickSwitch.EditFavorites"), (*) => App.OpenPreferences("Prefs.Page.QSPanel"))
         QuickSwitch._panelStar.GetPos(&x, &y, &w, &h)
-        point := Buffer(8), NumPut("Int", x, "Int", y + h, point)
-        DllCall("ClientToScreen", "Ptr", QuickSwitch._panel.Hwnd, "Ptr", point)
-        CoordMode("Menu", "Screen")
-        favMenu.Show(NumGet(point, 0, "Int"), NumGet(point, 4, "Int"))
+        rect := Buffer(16), NumPut("Int", x, "Int", y, "Int", x + w, "Int", y + h, rect)
+        DllCall("MapWindowPoints", "Ptr", QuickSwitch._panel.Hwnd, "Ptr", 0, "Ptr", rect, "UInt", 2)   ; client -> screen
+        QuickSwitch.ShowMenuBelow(favMenu, rect)
+    }
+
+    ; Shows m as a drop-down of a button at the right (button = screen RECT): its right edge at the button's, below it, or above it
+    ; when there is no room below (TPMPARAMS keeps the button uncovered). Menu.Show can only align the left edge, so the menu would
+    ; run past the panel. The items run as with Menu.Show: TrackPopupMenuEx with the script's window sends it the item's WM_COMMAND
+    static ShowMenuBelow(m, button) {
+        params := Buffer(20, 0), NumPut("UInt", 20, params)                 ; TPMPARAMS: cbSize, rcExclude
+        DllCall("RtlMoveMemory", "Ptr", params.Ptr + 4, "Ptr", button, "Ptr", 16)
+        DllCall("SetForegroundWindow", "Ptr", A_ScriptHwnd)                 ; else the menu doesn't close when clicking elsewhere
+        DllCall("TrackPopupMenuEx", "Ptr", m.Handle, "UInt", 0x0008 | 0x0040   ; TPM_RIGHTALIGN | TPM_VERTICAL
+            , "Int", NumGet(button, 8, "Int"), "Int", NumGet(button, 12, "Int"), "Ptr", A_ScriptHwnd, "Ptr", params)
+        DllCall("PostMessage", "Ptr", A_ScriptHwnd, "UInt", 0, "Ptr", 0, "Ptr", 0)   ; WM_NULL, as the TrackPopupMenu documentation asks
     }
 
     ; The newest limit folders of Windows "Recent items" (WindowsRecent); a file gives its folder.

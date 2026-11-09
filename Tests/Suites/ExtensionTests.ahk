@@ -1375,6 +1375,14 @@ class ExtensionTests {
             eq("reads subfolders", QuickSwitch.ReadsSubfolders(A_Temp) "|" QuickSwitch.ReadsSubfolders("\\server\share") "|" QuickSwitch.ReadsSubfolders(""), "1|0|0")
             eq("menu label", QuickSwitch.MenuLabel("R&D"), "R&&D")
             eq("menu item jumps", QuickSwitch.JumpTo.Bind(QuickSwitch, "C:\Docs").Call("Docs", 1, Menu()), "")   ; a menu passes its item name, position and menu
+            picked := {Name: ""}                                               ; the drop-down (TrackPopupMenuEx without TPM_RETURNCMD) sends the script's window
+            testMenu := Menu()                                                 ; the chosen item's WM_COMMAND: it runs the item, as with Menu.Show
+            testMenu.Add("First", (name, *) => picked.Name := name)
+            testMenu.Add("Second", (name, *) => picked.Name := name)
+            itemId := DllCall("GetMenuItemID", "Ptr", testMenu.Handle, "Int", 1, "UInt")
+            DllCall("PostMessage", "Ptr", A_ScriptHwnd, "UInt", 0x0111, "Ptr", itemId, "Ptr", 0)   ; WM_COMMAND
+            Sleep(100)
+            eq("drop-down runs the item", picked.Name, "Second")
             try DirDelete(menuRoot, true)
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])     ; in the panel: the star button right of the search box
             QuickSwitch._BuildPanel(A_ScriptHwnd)
