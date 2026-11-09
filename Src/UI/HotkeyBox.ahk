@@ -118,7 +118,7 @@ class HotkeyBox {
         }
         HotkeyBox._held := Map()
         for key in ["LControl", "RControl", "LAlt", "RAlt", "LShift", "RShift", "LWin", "RWin"]   ; already held before recording started
-            if GetKeyState(key, "P")
+            if App.IsKeyDown(key)                                           ; also held through a remote desktop tool
                 HotkeyBox._held[key] := true
         ih := InputHook("L0")
         ih.KeyOpt("{All}", "NS")                                            ; all keys: notify + catch

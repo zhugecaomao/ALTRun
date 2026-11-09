@@ -287,13 +287,13 @@ class QuickSwitch {
 
     ; A jump that types (see SetDialogPath) needs the switch to be over. The foreground event comes as soon as the dialog is activated, while
     ; Alt (Alt+Tab) or the mouse button (a click on the title bar) may still be held: keys sent then would be read with Alt still down, or
-    ; taken by the title bar's move loop. Settled = no mouse button or modifier physically down and the dialog's thread not in a move / size
+    ; taken by the title bar's move loop. Settled = no mouse button or modifier held (App.IsKeyDown: also a remote desktop's) and the dialog's thread not in a move / size
     ; or menu loop (GetGUIThreadInfo), then InputSettleMs more: posted keys are read before input still queued (the Alt release)
     static InputSettleMs := 100, _settledSince := 0
 
     static _InputSettled(dialog) {
         for key in ["LButton", "RButton", "MButton", "Alt", "Ctrl", "Shift", "LWin", "RWin"]
-            if GetKeyState(key, "P")
+            if App.IsKeyDown(key)
                 return (QuickSwitch._settledSince := 0, false)
         info := Buffer(A_PtrSize = 8 ? 72 : 48, 0)                         ; GUITHREADINFO
         NumPut("UInt", info.Size, info)

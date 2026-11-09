@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.3]
+
+测试版。
+
+Test build.
+
+### 修复
+- 通过远程桌面 (Chrome 远程桌面等) 操作时, 对话框自动跳转会在 Alt / Ctrl / Shift 还按着时就开始往对话框里输入路径: 远程桌面送来的按键, ALTRun 以前只看 "物理按下", 看不到。现在也看系统认为按下的状态, 等按键松开再输入。录制快捷键时, 开始前已经按着的修饰键也同样认得出
+
 ## [2026.11.09.2]
 
 测试版。
@@ -1144,7 +1153,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...HEAD
+[2026.11.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.2...2026.11.09.3
 [2026.11.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.1...2026.11.09.2
 [2026.11.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09...2026.11.09.1
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
