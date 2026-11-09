@@ -541,6 +541,9 @@ class AppSettings {
             ),
             "Hotkeys", [                                                    ; examples: global, only in one program, only in ALTRun
                 Map("Key", "^!#v", "Action", "PastePlain", "WinTitle", ""),                         ; same key as PowerToys "Paste as plain text"
+                Map("Key", "^!#f", "Action", "Show", "Text", "folder ", "WinTitle", ""),            ; Show opens the search window with Text already typed: folders only
+                Map("Key", "^!#r", "Action", "Show", "Text", "recent ", "WinTitle", ""),            ; recent files and folders
+                Map("Key", "^!#d", "Action", "Show", "Text", "doc ", "WinTitle", ""),               ; documents only (the "doc" file type filter)
                 Map("Key", "^!t", "Action", "TerminalHere", "WinTitle", "ahk_class CabinetWClass"), ; File Explorer
                 Map("Key", "^r", "Action", "RebuildIndex", "WinTitle", "ALTRun")
             ],

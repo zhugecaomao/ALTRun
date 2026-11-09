@@ -497,7 +497,7 @@ class PrefsPages {
         for command in SystemProvider.Commands()
             actions.Push([command["Id"], command["Title"] " (" command["Id"] ")"])
         PrefsForm.List("Hotkeys", 500
-            , [["Prefs.Col.Key", "Key", 150], ["Prefs.Col.Action", "Action", 120], ["Prefs.Col.SearchText", "Text", 100], ["Prefs.Col.WinTitle", "WinTitle", 170]]
+            , [["Prefs.Col.Key", "Key", 160], ["Prefs.Col.Action", "Action", 150], ["Prefs.Col.WinTitle", "WinTitle", 230]]
             , [ItemEditor.Field("Key", "Prefs.Col.Key", "hotkey", true, "", I18n.T("Prefs.HotkeyHint"))
              , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)
              , ItemEditor.Field("Text", "Prefs.Col.SearchText", "text", false, "", I18n.T("Prefs.SearchTextHint"))

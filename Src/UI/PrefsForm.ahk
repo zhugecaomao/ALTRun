@@ -671,6 +671,8 @@ class PrefsForm {
             return ""
         if (key = "Target" && item.Has("Arguments") && Trim(item["Arguments"]) != "")   ; custom commands: the arguments follow the target
             return RegExReplace(item["Target"] " " item["Arguments"], "\s+", " ")
+        if (key = "Action" && item.Has("Text") && Trim(item["Text"]) != "" && item[key] = "Show")   ; custom hotkeys: Show and its search text in one cell ("Show folder")
+            return Trim(RegExReplace(item[key] " " item["Text"], "\s+", " "))
         if (key = "Key")                                                    ; custom hotkeys: shown as Ctrl+Alt+P, Middle button
             return HotkeyBox.Label(item[key])
         if (key = "Type") {                                                 ; the type of a custom command shows its translated name

@@ -231,6 +231,7 @@ See [Extensions](Extensions).
 ```jsonc
 "Hotkeys": [
   { "Key": "^!#v", "Action": "PastePlain", "WinTitle": "" },
+  { "Key": "^!#f", "Action": "Show", "Text": "folder ", "WinTitle": "" },
   { "Key": "^!t", "Action": "TerminalHere", "WinTitle": "ahk_class CabinetWClass" },
   { "Key": "^r", "Action": "RebuildIndex", "WinTitle": "ALTRun" }
 ],
