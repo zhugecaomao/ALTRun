@@ -1387,6 +1387,18 @@ class ExtensionTests {
         eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
         eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitch._panelSearch.Hwnd), 0)
         eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; the IME is composing: not intercepted
+        ; Alt+↓ (WM_SYSKEYDOWN) or F4 in the search box opens the ☆ menu, as for a drop-down list; other Alt keys and ↓ alone don't
+        opened := {Count: 0}, savedShow := QuickSwitch.GetOwnPropDesc("ShowFavoritesMenu")
+        QuickSwitch.DefineProp("ShowFavoritesMenu", {Call: (*) => opened.Count++})
+        try {
+            search := QuickSwitch._panelSearch.Hwnd
+            eq("Alt+Down opens the menu", QuickSwitch._OnKeyDown(0x28, 0, 0x104, search) "|" opened.Count, "0|1")
+            eq("F4 opens the menu", QuickSwitch._OnKeyDown(0x73, 0, 0x100, search) "|" opened.Count, "0|2")
+            eq("other Alt keys go on (Alt+F4)", QuickSwitch._OnKeyDown(0x73, 0, 0x104, search) "|" opened.Count, "|2")
+            eq("Down alone: the next row", QuickSwitch._OnKeyDown(0x28, 0, 0x100, search) "|" opened.Count, "0|2")
+            eq("Alt+Down in another window: not ours", QuickSwitch._OnKeyDown(0x28, 0, 0x104, A_ScriptHwnd) "|" opened.Count, "|2")
+        } finally
+            QuickSwitch.DefineProp("ShowFavoritesMenu", savedShow)
         searchHwnd := QuickSwitch._searchHwnd
         QuickSwitch.HidePanel()
         eq("panel hidden", QuickSwitch._panel, "")
