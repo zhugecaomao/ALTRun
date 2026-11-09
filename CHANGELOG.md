@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.14]
+
+测试版。
+
+Test build.
+
+### 改进
+- 对话框面板的搜索框在没有 Everything、又搜不到结果时, 会显示一行提示: 内置索引只覆盖哪些文件夹 (默认是桌面、文档、下载), 按 Enter 或点击这一行打开 "文件搜索" 页, 把要搜的文件夹加进去。以前只显示空列表, 看不出是没有这个文件夹还是索引没覆盖到 (Refs #424)
+
 ## [2026.11.09.13]
 
 测试版。
@@ -1234,7 +1243,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.14...HEAD
+[2026.11.09.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.13...2026.11.09.14
 [2026.11.09.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.12...2026.11.09.13
 [2026.11.09.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.11...2026.11.09.12
 [2026.11.09.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.10...2026.11.09.11

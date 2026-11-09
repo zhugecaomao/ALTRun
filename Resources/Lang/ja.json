@@ -795,6 +795,7 @@
   "Prefs.WinTitleHint": "例: ahk_exe notepad.exe。ALTRun と入力すると ALTRun の検索ウィンドウ内でのみ有効です。",
   "Prefs.WindowPosition": "ウィンドウの位置",
   "QuickSwitch.NoFileManager": "Total Commander、Directory Opus、エクスプローラーのウィンドウが開いていません。",
+  "QuickSwitch.NoMatchIndex": "見つかりません。Everything が起動していないため、内蔵インデックスの対象は {1} のみです。Enter で追加",
   "QuickSwitch.SearchCue": "フォルダーとファイルを検索",
   "QuickSwitch.SearchCueFolders": "フォルダーを検索",
   "QuickSwitch.TagExplorer": "エクスプローラー",

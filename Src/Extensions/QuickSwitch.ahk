@@ -516,7 +516,10 @@ class QuickSwitch {
         list.Opt("-Redraw")
         list.Delete()
         for entry in folders
-            list.Add("Icon" QuickSwitch.RowIcon(entry), QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
+            if entry.HasOwnProp("Hint")
+                list.Add("Icon1", "", entry.Text, "")                      ; the hint row: its text in the wide column
+            else
+                list.Add("Icon" QuickSwitch.RowIcon(entry), QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
         list.ModifyCol(3, "Auto"), list.ModifyCol(1, "Auto")
         nameW := Max(Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3), Win.Scale(120))   ; LVM_GETCOLUMNWIDTH
         list.ModifyCol(1, nameW)
@@ -557,7 +560,27 @@ class QuickSwitch {
         term := Trim(QuickSwitch._panelSearch.Value)
         if (term = "")
             return QuickSwitch._ShowFolders(QuickSwitch._panelBase)
-        QuickSwitch._ShowFolders(QuickSwitch.FilterFolders(QuickSwitch.SearchBase(QuickSwitch._panelBase), term, QuickSwitch._FindItems(term)))
+        found := QuickSwitch.FilterFolders(QuickSwitch.SearchBase(QuickSwitch._panelBase), term, QuickSwitch._FindItems(term))
+        if (!found.Length && !QuickSwitch._EverythingInUse())
+            found.Push(QuickSwitch.IndexHint(AppSettings.Feature("FileSearch")["ScopeFolders"]))
+        QuickSwitch._ShowFolders(found)
+    }
+
+    static _EverythingInUse() => AppSettings.Feature("FileSearch")["UseEverything"] && Everything.IsRunning()
+
+    ; The row shown when a search finds nothing and Everything isn't used: the built-in index covers only the ScopeFolders, so the
+    ; folder looked for may simply be outside it. Choosing the row (click or Enter) opens Preferences -> File Search to add folders
+    static IndexHint(scopeFolders) {
+        names := "", count := 0
+        for folder in scopeFolders {
+            if ((resolved := RTrim(Path.Resolve(folder), "\")) = "")
+                continue
+            if (++count <= 4)
+                names .= (names = "" ? "" : ", ") QuickSwitch.FolderName(resolved)
+        }
+        if (count > 4)
+            names .= ", ..."
+        return {Path: "", Hint: true, Group: "hint", Tag: "", Text: I18n.T("QuickSwitch.NoMatchIndex", names = "" ? "-" : names)}
     }
 
     ; What a search filters: the favorite folders first, then the panel's folders that aren't favorites
@@ -616,6 +639,8 @@ class QuickSwitch {
         if (row < 1 || row > QuickSwitch._panelFolders.Length || !QuickSwitch._panelFor)
             return
         entry := QuickSwitch._panelFolders[row]
+        if entry.HasOwnProp("Hint")
+            return App.OpenPreferences("Prefs.Page.FileSearch")
         if (entry.HasOwnProp("IsFile") && entry.IsFile) {
             dialog := QuickSwitch._panelFor
             QuickSwitch._BackToDialog()
@@ -959,7 +984,7 @@ class QuickSwitch {
         rowMenu := Menu(), items := 0
         if (row >= 1 && row <= QuickSwitch._panelFolders.Length) {
             entry := QuickSwitch._panelFolders[row]
-            if !(entry.HasOwnProp("IsFile") && entry.IsFile) {
+            if !(entry.HasOwnProp("IsFile") && entry.IsFile) && !entry.HasOwnProp("Hint") {
                 folder := entry.Path, favorite := QuickSwitch.IsFavorite(folder)
                 rowMenu.Add(I18n.T(favorite ? "QuickSwitch.RemoveFavorite" : "QuickSwitch.AddFavorite"), (*) => QuickSwitch._ToggleFavorite(folder, !favorite))
                 items++
