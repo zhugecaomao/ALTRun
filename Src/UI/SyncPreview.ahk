@@ -336,6 +336,20 @@ class SyncPreview {
         AppSettings.Save()
     }
 
+    ; On exit (App._OnExit): the open windows aren't closed one by one, so the one in front is remembered, as if it were the last
+    ; one closed. Returns whether one was saved
+    static SaveOnExit() {
+        if !SyncPreview.Windows.Count
+            return false
+        open := Map()
+        for key, w in SyncPreview.Windows
+            try open[w.Gui.Hwnd] := true
+        for hwnd in WinGetList()                                            ; top to bottom
+            if open.Has(hwnd)
+                return SyncPreview.SavePlacement(hwnd)
+        return false
+    }
+
     ; Remembers where hwnd is (a minimized window: where it goes back to, maximized or not)
     static SavePlacement(hwnd) {
         placement := Buffer(44, 0), NumPut("UInt", 44, placement)

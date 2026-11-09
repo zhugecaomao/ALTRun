@@ -14,6 +14,15 @@ Test build.
 ### 改进
 - 同一处反复出现的未捕获错误 (例如一个每秒都出错的计时器), 日志只完整记前 5 次, 之后只计数, 每小时 (以及退出时) 写一行 "又出现了多少次"。以前每次都写一条带调用栈的日志, 即使关了调试日志, ALTRun 连续运行几周时日志会一直变大
 
+## [2026.11.09.8]
+
+测试版。
+
+Test build.
+
+### 修复
+- 开着同步窗口时退出或重启 ALTRun, 窗口的位置和大小以前不会保存 (只在关闭窗口时保存)。现在退出时保存最前面那个同步窗口的位置
+
 ## [2026.11.09.6]
 
 测试版。
@@ -1191,6 +1200,7 @@ Smoother typing, easier to get started, and a few useful new features.
 
 [未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.9...HEAD
 [2026.11.09.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.8...2026.11.09.9
+[2026.11.09.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.7...2026.11.09.8
 [2026.11.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.5...2026.11.09.6
 [2026.11.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...2026.11.09.5
 [2026.11.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...2026.11.09.4

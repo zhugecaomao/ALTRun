@@ -784,6 +784,17 @@ class ExtensionTests {
             WinGetPos(&x, &y, , , "ahk_id " SyncPreview.Windows[key].Gui.Hwnd)
             eq("off-screen: opened on a monitor", DllCall("MonitorFromWindow", "Ptr", SyncPreview.Windows[key].Gui.Hwnd, "UInt", 0, "Ptr") != 0 && x > -10000, true)
             SyncPreview.Close(key)
+            ; quitting ALTRun with windows open: the one in front is saved (no window is closed then)
+            eq("on exit, nothing open: nothing saved", SyncPreview.SaveOnExit(), false)
+            settings["Window"] := place(Win.Scale(120), Win.Scale(90), Win.Scale(120) + Win.Scale(820), Win.Scale(90) + Win.Scale(520))
+            SyncPreview.Open(task, "Ready"), SyncPreview.Open(other, "Ready")
+            front := SyncPreview.Windows[SyncJobs.Key("Placement Other")].Gui.Hwnd
+            WinActivate("ahk_id " front), WinWaitActive("ahk_id " front, , 2)
+            WinGetPos(&x, &y, , , "ahk_id " front)
+            WinMove(x + 50, y + 20, , , "ahk_id " front)
+            eq("on exit: the window in front saved", SyncPreview.SaveOnExit() "|" settings["Window"]["Left"] "," settings["Window"]["Top"]
+                , "1|" (x + 50 - SyncPreview.WorkspaceOffset().X) "," (y + 20 - SyncPreview.WorkspaceOffset().Y))
+            eq("on exit: the windows stay open", SyncPreview.Windows.Count, 2)
         } finally {
             for name in ["Placement Test", "Placement Other"]
                 SyncPreview.Close(SyncJobs.Key(name))
