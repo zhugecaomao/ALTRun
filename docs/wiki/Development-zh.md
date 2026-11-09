@@ -192,6 +192,9 @@ GitHub → Actions → **Everything** 在 Windows 上用真实的 Everything 检
 
 AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一份, `obj.prop .= x` 也会重新生成整个字符串。字符串很长时 (文件索引把所有文件名放在一个字符串里), 线性的工作会变成平方级: 长字符串在局部变量或数组里拼接, 需要一小段一小段读取的文字放在 `Buffer` 里 (按偏移用 `StrGet` 读)。
 
+### Quick Switch
+GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.ahk` 在真实的 Windows 桌面上检查自动跳转 (`Extensions.QuickSwitch.AutoSwitch`)。它启动一份打开了自动跳转的 ALTRun, 用资源管理器打开一个文件夹、再打开一个 "打开" 对话框, 然后用三种方式从资源管理器切到对话框: 直接激活 (`SetForegroundWindow`)、模拟 Alt+Tab、点对话框的标题栏。每种方式试 5 次, 每次对话框都要在 5 秒内跳到资源管理器的文件夹; 失败的那一轮会打印 ALTRun 日志里 Quick Switch 的几行。修改 `Src\Extensions\QuickSwitch.ahk`、`Src\Core\App.ahk` 或这个检查的 PR 会运行它, main 上也会; 想找偶尔出现的失败, 可以手动运行并加大次数。脚本也能在自己电脑上运行 (会占用键盘和屏幕一分钟左右): `QuickSwitchCheck.ahk <仓库的一份副本> [次数]`。
+
 ## 质量验证与局限
 
 - `Tests\RunTests.ahk`: 覆盖匹配、查询解析、设置迁移、排序、剪贴板和索引等纯逻辑; 不等于完整的手动 UI 测试。
