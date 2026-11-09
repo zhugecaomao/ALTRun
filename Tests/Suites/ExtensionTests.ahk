@@ -1439,6 +1439,29 @@ class ExtensionTests {
     ; Favorite folders of the dialog panel: environment variables expanded, compared without case or a trailing backslash, in the star menu
     ; (with one level of subfolders, not in the list) and found first by the panel's search;
     ; adding saves the settings (to a temporary file here), adding twice does nothing, removing finds the entry however it is written
+    ; Automatic switching waits until no key is held: also a key a remote desktop tool injects (SendInput, marked as Chrome Remote
+    ; Desktop marks it), which AutoHotkey never sees as physically down. Ctrl here: an Alt press and release alone would open the window's menu mode
+    static QuickSwitchInputSettled() {
+        eq := (n, a, e) => TestRunner.Equal("QuickSwitchInputSettled." n, a, e)
+        input := Buffer(40, 0)
+        inject := (up) => (NumPut("UInt", 1, input, 0), NumPut("UShort", 0x11, input, 8), NumPut("UInt", up ? 2 : 0, input, 12), NumPut("UPtr", 0x43524430, input, 24)
+            , DllCall("SendInput", "UInt", 1, "Ptr", input, "Int", 40, "UInt"))
+        guard := Gui(, "Injected Ctrl test"), guard.AddEdit("w100"), guard.Show("NoActivate w150 h50")   ; the key goes to this window
+        WinActivate("ahk_id " guard.Hwnd), WinWaitActive("ahk_id " guard.Hwnd, , 2)
+        saved := QuickSwitch.InputSettleMs, QuickSwitch.InputSettleMs := 0
+        try {
+            eq("nothing held: settled", QuickSwitch._InputSettled(guard.Hwnd), true)
+            inject(false), Sleep(50)
+            eq("injected Ctrl: held", GetKeyState("Ctrl") "|" QuickSwitch._InputSettled(guard.Hwnd), "1|0")
+            inject(true), Sleep(50)
+            eq("injected Ctrl let go: settled", GetKeyState("Ctrl") "|" QuickSwitch._InputSettled(guard.Hwnd), "0|1")
+        } finally {
+            inject(true)
+            QuickSwitch.InputSettleMs := saved, QuickSwitch._settledSince := 0
+            guard.Destroy()
+        }
+    }
+
     static QuickSwitchFavorites() {
         eq := (n, a, e) => TestRunner.Equal("QuickSwitchFavorites." n, a, e)
         savedOptions := QuickSwitch.Options, savedFile := AppSettings.File
