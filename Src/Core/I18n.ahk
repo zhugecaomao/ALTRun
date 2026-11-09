@@ -988,6 +988,8 @@ class I18n {
         s["Sync.PageNote"]                  := "Each task copies or mirrors one folder into another with Windows' robocopy. Sync... opens the task's window: Preview shows what a sync would change, without changing anything, and Sync Now runs it. In the search window, type sync and the task's name. The window uses the task as it is in the list, before you click Apply or OK."
         s["Prefs.Section.SyncOptions"]      := "Options"
         s["Sync.Prefs.Enabled"]             := "Show folder sync tasks in the search results"
+        s["Sync.Prefs.AutoPreview"]         := "Start the preview when a task's window opens"
+        s["Sync.Prefs.AutoPreview.Desc"]    := "From the search window or Sync... above. A preview only reads the folders and changes nothing; large or network folders take a while to compare."
         s["Sync.Prefs.Keyword"]             := "Search keyword"
         s["Sync.Prefs.KeepLogDays"]         := "Keep logs (days)"
         s["Sync.Prefs.LogFolder"]           := "Log folder"

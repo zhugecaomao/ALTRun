@@ -577,6 +577,7 @@ class PrefsPages {
 
         PrefsForm.Section("Prefs.Section.SyncOptions")
         PrefsForm.Check("Features.Sync.Enabled", "Sync.Prefs.Enabled")
+        PrefsForm.Check("Features.Sync.AutoPreview", "Sync.Prefs.AutoPreview")
         PrefsForm.Pair(["Features.Sync.Keyword", "Sync.Prefs.Keyword", "S"], ["Features.Sync.KeepLogDays", "Sync.Prefs.KeepLogDays", "S", "number"])
         folder := PrefsForm.Info("Sync.Prefs.LogFolder", SyncJobs.LogDir, " r1 cGray 0x8100")
         Win.AddTooltip(folder.Hwnd, SyncJobs.LogDir)

@@ -18,7 +18,7 @@
 ; previewed more than StaleMs ago is previewed (and confirmed) again when run, as the destination may have changed since.
 ;
 ; Usage:
-;   SyncPreview.OpenTask(task)                                          the task's window: its progress when running, else Ready
+;   SyncPreview.OpenTask(task)                                          the task's window: its progress when running, else Ready (or Check: AutoPreview)
 ;   SyncPreview.Open(task, "Ready" | "Check" | "Run", {Run, Confirm, Totals})   Run: false = no Sync Now (the editor's preview)
 ;   SyncPreview.Show(task, {Summary, Changes, LogFile}, {Run, Confirm}) what a preview found
 ;   SyncPreview.Finish(job, code | "Stopped") -> true when a window showed it        SyncPreview.ShowJob(name)  reopen a running task's window
@@ -37,12 +37,19 @@ class SyncPreview {
     ;---------------------------------------------------------------------------
     ; Phases
     ;---------------------------------------------------------------------------
-    ; From Preferences: the window of a running task, or a new one that waits for Preview or Sync Now
+    ; From Preferences or the search window: the window of a running task, or a new one that waits for Preview or Sync Now;
+    ; with Features.Sync.AutoPreview the preview starts at once (it only reads; a problem such as a missing folder is told as for
+    ; Preview, and the window stays Ready). Never runs the task by itself
     static OpenTask(task) {
         if SyncJobs.IsRunning(task["Name"])
             return SyncPreview.ShowJob(task["Name"])
-        return SyncPreview.Open(task, "Ready")
+        window := SyncPreview.Open(task, "Ready")
+        if SyncPreview.AutoPreview()
+            SyncJobs.Preview(task, {Run: true})
+        return window
     }
+
+    static AutoPreview() => (settings := AppSettings.Feature("Sync")).Has("AutoPreview") && settings["AutoPreview"]
 
     ; Ready, or following the task's running robocopy: a preview (Check) or a run (Run). options.Totals: {Files, Bytes} a preview found
     static Open(task, phase, options := "") {

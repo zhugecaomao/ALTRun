@@ -10,8 +10,8 @@ Preferences → **Folder Sync** lists the tasks, with their mode and folders. Th
 ![Preferences → Folder Sync](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-sync.png)
 
 - **Add**, **Edit** (or double-click), **Delete**, **Duplicate** (a copy to change, e.g. for a second folder).
-- **Sync...** opens the selected task's window, as the task is in the list (no need to click Apply first). It only opens: **Preview** or **Sync Now** in the window starts it. For a task that is running, it shows its progress.
-- Options: show the tasks in the search results, the search keyword (`sync`), how many days logs are kept, and the log folder.
+- **Sync...** opens the selected task's window, as the task is in the list (no need to click Apply first). It only opens: **Preview** or **Sync Now** in the window starts it (or the preview starts at once with the option below). For a task that is running, it shows its progress.
+- Options: show the tasks in the search results; **Start the preview when a task's window opens** (off by default, `Features.Sync.AutoPreview`: the preview only reads the folders, but large or network folders take a while to compare, and a run is never started this way); the search keyword (`sync`), how many days logs are kept, and the log folder.
 
 The edit window, top to bottom:
 
@@ -39,7 +39,7 @@ Each task has its own window, *<task> - Folder Sync*. Preview and Run open it at
 ![Preview of a sync task](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/sync-preview.png)
 
 ## Running a task
-- Type the task's name, or `sync ` to list all tasks (`sync proj` searches only them). **Enter** only opens the task's window (nothing starts until you click **Preview** or **Sync Now** there); while it runs, Enter shows its progress.
+- Type the task's name, or `sync ` to list all tasks (`sync proj` searches only them). **Enter** only opens the task's window (nothing starts until you click **Preview** or **Sync Now** there, except the preview with **Start the preview when a task's window opens**); while it runs, Enter shows its progress.
 - `→` opens the actions: Sync Now (runs it straight away; a mirror is still previewed and asks before deleting), Preview (changes nothing), Open log, open the source or destination folder; while it runs, Show progress and Stop.
 - The result shows what the task does and how it is doing: *Running since 10:05*, *Monitoring since 10:05*, *Last run 09:30: OK*.
 - A task that ends says how it went (files copied and removed) in its window, and with a notification when the window isn't in front. If it fails without a window, ALTRun offers to open its log.
