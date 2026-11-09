@@ -988,25 +988,37 @@ class QuickSwitch {
     ; The ☆ menu: the favorite folders, each with one level of its subfolders (read when the menu opens). Only folders on this PC's own
     ; drives are read: a network path (\\server\share, a mapped drive) or a CD would wait for the network or the drive, and a menu can't
     ; show "loading". A favorite with subfolders is a submenu whose first item is the favorite itself (in bold): clicking an item always
-    ; jumps, never only opens a submenu (in Listary's favorites menu it was unclear when a click opens the folder and when it expands it)
+    ; jumps, never only opens a submenu (in Listary's favorites menu it was unclear when a click opens the folder and when it expands it).
+    ; The menu is read on the UI thread each time it opens, so at most MaxReadSubfolders subfolders are read ("470+ more folders"):
+    ; a favorite with thousands of them, or a disk that has to spin up, would hold the click. They are sorted by name as Explorer
+    ; sorts them (StrCmpLogicalW: "2" before "10"), since FAT / exFAT drives (USB sticks) list folders unsorted; then the first
+    ; MaxSubfolders are shown. With more than MaxReadSubfolders on such a drive, those are the first of the ones read
     ;---------------------------------------------------------------------------
-    static MaxSubfolders := 30
+    static MaxSubfolders := 30, MaxReadSubfolders := 500
 
-    ; [{Path, Name, Subfolders: [paths], More: how many more than MaxSubfolders}]; hidden and system folders are left out
-    static FavoritesMenuItems(maxSubfolders := QuickSwitch.MaxSubfolders) {
+    ; [{Path, Name, Subfolders: [paths], More: how many more than MaxSubfolders, MoreAtLeast: true when reading stopped at maxRead}];
+    ; hidden and system folders are left out
+    static FavoritesMenuItems(maxSubfolders := QuickSwitch.MaxSubfolders, maxRead := QuickSwitch.MaxReadSubfolders) {
         items := []
         for folder in QuickSwitch.Favorites() {
             if (folder = "")
                 continue
-            item := {Path: folder, Name: QuickSwitch.FolderName(folder), Subfolders: [], More: 0}
+            item := {Path: folder, Name: QuickSwitch.FolderName(folder), Subfolders: [], More: 0, MoreAtLeast: false}
             if QuickSwitch.ReadsSubfolders(folder) {
-                count := 0
+                found := "", count := 0
                 try Loop Files RTrim(folder, "\") "\*", "D" {
                     if InStr(A_LoopFileAttrib, "H") || InStr(A_LoopFileAttrib, "S")
                         continue
-                    if (++count <= maxSubfolders)
-                        item.Subfolders.Push(A_LoopFileFullPath)
+                    if (++count > maxRead) {
+                        count := maxRead, item.MoreAtLeast := true
+                        break
+                    }
+                    found .= (found = "" ? "" : "`n") A_LoopFileFullPath
                 }
+                if (found != "")
+                    for subfolder in StrSplit(Sort(found, "CLogical"), "`n")   ; same parent: sorting the paths sorts the names
+                        if (A_Index <= maxSubfolders)
+                            item.Subfolders.Push(subfolder)
                 item.More := Max(0, count - maxSubfolders)
             }
             items.Push(item)
@@ -1045,7 +1057,7 @@ class QuickSwitch {
                     subMenu.SetIcon(name, "shell32.dll", 4)
                 }
                 if item.More {
-                    more := I18n.T("QuickSwitch.MoreFolders", item.More)
+                    more := I18n.T("QuickSwitch.MoreFolders", item.More (item.MoreAtLeast ? "+" : ""))
                     subMenu.Add(more, (*) => 0), subMenu.Disable(more)
                 }
                 favMenu.Add(label, subMenu)
