@@ -1502,9 +1502,46 @@ class ExtensionTests {
             for folder in items[1].Subfolders
                 names .= (names = "" ? "" : "|") QuickSwitch.FolderName(folder)
             eq("menu items", items.Length "|" items[1].Name "|" items[2].Path, "2|ALTRun Fav Menu|\\server\share\Docs")
-            eq("menu subfolders", Sort(names, "D|") "|" items[1].More, "Alpha|Beta|Gamma|0")
+            eq("menu subfolders, sorted by name", names "|" items[1].More "|" items[1].MoreAtLeast, "Alpha|Beta|Gamma|0|0")
             items := QuickSwitch.FavoritesMenuItems(2)
             eq("menu at most 2", items[1].Subfolders.Length "|" items[1].More, "2|1")
+            items := QuickSwitch.FavoritesMenuItems(1, 2)                      ; reading stops after 2: "1+ more"
+            eq("menu reads at most 2", items[1].Subfolders.Length "|" items[1].More "|" items[1].MoreAtLeast, "1|1|1")
+            for name in ["Folder 10", "folder 2", "Folder 1"]                    ; as Explorer sorts: numbers by value, case ignored
+                DirCreate(menuRoot "\Numbered\" name)
+            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [menuRoot "\Numbered"])
+            names := ""
+            for folder in QuickSwitch.FavoritesMenuItems()[1].Subfolders
+                names .= (names = "" ? "" : "|") QuickSwitch.FolderName(folder)
+            eq("menu: numbers sorted by value", names, "Folder 1|folder 2|Folder 10")
+            ; a favorite with 2000 subfolders: 500 read, the first 30 by name shown, "470+ more"; on NTFS (Windows) the 500 read are the
+            ; first by name, created here in reverse order
+            many := A_Temp "\ALTRun Fav Many"
+            try DirDelete(many, true)
+            Loop 2000
+                DirCreate(many "\F" Format("{:04}", 2001 - A_Index))
+            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [many])
+            start := Logger.Ms()
+            items := QuickSwitch.FavoritesMenuItems()
+            elapsed := Round(Logger.Ms() - start)
+            start := Logger.Ms(), all := 0                                      ; for comparison: all 2000 read, as before
+            Loop Files many "\*", "D"
+                all++
+            readAll := Round(Logger.Ms() - start, 1), names500 := ""
+            Loop 500
+                names500 .= (A_Index = 1 ? "" : "`n") many "\F" Format("{:04}", 501 - A_Index)
+            start := Logger.Ms(), Sort(names500, "CLogical"), sortMs := Round(Logger.Ms() - start, 1)
+            FileAppend("NOTE QuickSwitchFavorites: menu of a favorite with 2000 subfolders read in " elapsed " ms; reading all " all ": " readAll " ms; sorting 500 names: " sortMs " ms`n", "*")
+            sorted := true
+            Loop items[1].Subfolders.Length - 1
+                sorted := sorted && StrCompare(items[1].Subfolders[A_Index], items[1].Subfolders[A_Index + 1]) < 0
+            eq("2000 subfolders: 30 shown, sorted, 470+ more", items[1].Subfolders.Length "|" sorted "|" items[1].More "|" items[1].MoreAtLeast, "30|1|470|1")
+            if (EnvGet("GITHUB_ACTIONS") = "true")
+                eq("2000 subfolders: the first by name (NTFS)", QuickSwitch.FolderName(items[1].Subfolders[1]) "|" QuickSwitch.FolderName(items[1].Subfolders[30]), "F0001|F0030")
+            eq("more text", I18n.T("QuickSwitch.MoreFolders", items[1].More (items[1].MoreAtLeast ? "+" : "")), StrReplace(I18n.T("QuickSwitch.MoreFolders", 0), "0", "470+"))
+            try DirDelete(many, true)
+            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [menuRoot, "", "\\server\share\Docs"])
+            items := QuickSwitch.FavoritesMenuItems()
             eq("menu: network folder not read", items[2].Subfolders.Length "|" items[2].More, "0|0")
             eq("reads subfolders", QuickSwitch.ReadsSubfolders(A_Temp) "|" QuickSwitch.ReadsSubfolders("\\server\share") "|" QuickSwitch.ReadsSubfolders(""), "1|0|0")
             eq("menu label", QuickSwitch.MenuLabel("R&D"), "R&&D")

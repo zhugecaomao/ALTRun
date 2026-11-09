@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.4]
+
+测试版。
+
+Test build.
+
+### 改进
+- 对话框面板的收藏菜单: 一个收藏里的子文件夹最多读 500 个就停 (显示 "还有 470+ 个文件夹"), 收藏一个有几千个子文件夹的目录或休眠中的移动硬盘时, 点星形按钮不用等很久; 子文件夹按名字排序, 和资源管理器一样 ("2" 在 "10" 前面), U 盘 (FAT / exFAT) 上列出的也是按名字排的前 30 个
+
 ## [2026.11.09.3]
 
 测试版。
@@ -1153,7 +1162,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...HEAD
+[2026.11.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...2026.11.09.4
 [2026.11.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.2...2026.11.09.3
 [2026.11.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.1...2026.11.09.2
 [2026.11.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09...2026.11.09.1
