@@ -566,7 +566,7 @@ class PrefsPages {
     ; there, this page only sets tasks up), then the options. The window uses the task as it is in the list, before Apply or OK
     static BuildSync() {
         PrefsForm.BeginPage("Prefs.Page.Sync", 150)
-        list := PrefsForm.List("SyncTasks", 300
+        list := PrefsForm.List("SyncTasks", 270
             , [["Prefs.Col.Name", "Name", 120], ["Sync.Col.Mode", "Mode", 80, (v) => RoboSync.ModeText(v)], ["Sync.Col.Source", "Source", 180]
              , ["Sync.Col.Destination", "Destination", 180]]
             , (owner, title, item, original) => SyncEditor.Edit(owner, I18n.T("Sync.Editor.Title"), item, original, PreferencesWindow.Working["SyncTasks"])
@@ -577,6 +577,7 @@ class PrefsPages {
 
         PrefsForm.Section("Prefs.Section.SyncOptions")
         PrefsForm.Check("Features.Sync.Enabled", "Sync.Prefs.Enabled")
+        PrefsForm.Check("Features.Sync.AutoPreview", "Sync.Prefs.AutoPreview")
         PrefsForm.Pair(["Features.Sync.Keyword", "Sync.Prefs.Keyword", "S"], ["Features.Sync.KeepLogDays", "Sync.Prefs.KeepLogDays", "S", "number"])
         folder := PrefsForm.Info("Sync.Prefs.LogFolder", SyncJobs.LogDir, " r1 cGray 0x8100")
         Win.AddTooltip(folder.Hwnd, SyncJobs.LogDir)

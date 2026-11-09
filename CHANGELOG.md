@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.22]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 文件夹同步 新增 "打开任务窗口时自动开始预览" (默认关): 从搜索窗口按 Enter 或在偏好设置里点 同步... 打开任务窗口时, 马上开始预览; 预览只读取文件夹, 不会自动运行同步
+
 ## [2026.11.03.21]
 
 测试版。
@@ -1250,7 +1259,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.21...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.22...HEAD
+[2026.11.03.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.21...2026.11.03.22
 [2026.11.03.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.20...2026.11.03.21
 [2026.11.03.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.19...2026.11.03.20
 [2026.11.03.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.18...2026.11.03.19

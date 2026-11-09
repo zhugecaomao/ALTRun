@@ -450,6 +450,8 @@
   "Sync.PageNote": "每個任務用 Windows 內建的 robocopy 把一個資料夾複製或鏡像到另一個資料夾。同步... 開啟任務的視窗: 預覽顯示同步會改變什麼, 但不做任何變更; 立即同步就開始同步。在搜尋視窗裡輸入 sync 和任務名稱也可以執行。視窗用的是清單裡目前的任務, 不必先按套用或確定。",
   "Prefs.Section.SyncOptions": "選項",
   "Sync.Prefs.Enabled": "在搜尋結果裡顯示資料夾同步任務",
+  "Sync.Prefs.AutoPreview": "開啟任務視窗時自動開始預覽",
+  "Sync.Prefs.AutoPreview.Desc": "從搜尋視窗或上面的 同步... 開啟時。預覽只讀取資料夾, 不做任何變更; 資料夾很大或在網路上時, 比較要花一些時間。",
   "Sync.Prefs.Keyword": "搜尋關鍵字",
   "Sync.Prefs.KeepLogDays": "日誌保留天數",
   "Sync.Prefs.LogFolder": "日誌資料夾",

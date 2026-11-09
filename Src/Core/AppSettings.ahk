@@ -489,6 +489,7 @@ class AppSettings {
                 "Sync", Map(
                     "Enabled"    , 1,                                       ; the sync tasks (SyncTasks) in the search results
                     "Keyword"    , "sync",                                  ; "sync " lists them all, "sync proj" searches only them
+                    "AutoPreview", 0,                                       ; opening a task's window (Enter in the search window, Sync... in Preferences) starts its preview
                     "KeepLogDays", 30,                                      ; logs in %TEMP%\ALTRun\SyncLogs older than this are deleted (0 = kept)
                     "Window"     , Map()                                    ; where the sync window was last closed (Left, Top, Right, Bottom, Maximized; see SyncPreview)
                 ),

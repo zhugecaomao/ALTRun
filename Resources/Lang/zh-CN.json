@@ -449,6 +449,8 @@
   "Sync.PageNote": "每个任务用 Windows 自带的 robocopy 把一个文件夹复制或镜像到另一个文件夹。同步... 打开任务的窗口: 预览显示同步会改变什么, 但不做任何改动; 立即同步就开始同步。在搜索窗口里输入 sync 和任务名也可以运行。窗口用的是列表里现在的任务, 不用先点应用或确定。",
   "Prefs.Section.SyncOptions": "选项",
   "Sync.Prefs.Enabled": "在搜索结果里显示文件夹同步任务",
+  "Sync.Prefs.AutoPreview": "打开任务窗口时自动开始预览",
+  "Sync.Prefs.AutoPreview.Desc": "从搜索窗口或上面的 同步... 打开时。预览只读取文件夹, 不做任何改动; 文件夹很大或在网络上时, 比较要花一些时间。",
   "Sync.Prefs.Keyword": "搜索关键字",
   "Sync.Prefs.KeepLogDays": "日志保留天数",
   "Sync.Prefs.LogFolder": "日志文件夹",

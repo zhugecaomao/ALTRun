@@ -492,6 +492,7 @@ class ExtensionTests {
                 actions .= action.Title "|"
             eq("subtitle", item.Subtitle, "Mirror \\srv\team → D:\Sync\Team")
             eq("actions", actions, "Sync Now|Preview (changes nothing)|Open log|Open source folder|Open destination folder|")
+            eq("auto preview off by default", AppSettings.Defaults()["Features"]["Sync"]["AutoPreview"], 0)
             try {
                 item.OnRun.Call()                                           ; Enter only opens the window: nothing starts
                 eq("Enter: the window, ready", SyncPreview.Windows.Has(SyncJobs.Key("Team Files")) ? SyncPreview.Windows[SyncJobs.Key("Team Files")].Phase "|" SyncJobs.IsRunning("Team Files") : "none", "Ready|0")
@@ -633,7 +634,9 @@ class ExtensionTests {
         try {
             task := RoboSync.NewTask()
             task["Name"] := "Window", task["Source"] := root "\src", task["Destination"] := root "\dst", task["Mode"] := "Update", task["Retries"] := 0, task["Wait"] := 0
-            SyncJobs.Preview(task, {Run: true})
+            AppSettings.Feature("Sync")["AutoPreview"] := 1                    ; opening the window (Enter, Sync...) starts the preview
+            try SyncPreview.OpenTask(task)
+            finally AppSettings.Feature("Sync")["AutoPreview"] := 0
             w := SyncPreview.Windows[key]
             eq("preview: opens at once, checking", w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled, "Check|1|0")
             wait()
