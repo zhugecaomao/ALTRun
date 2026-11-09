@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.2]
+
+测试版。
+
+Test build.
+
+### 修复
+- 同一个文件同时写两次时 (例如保存时正好碰上后台计时器也在保存), 后一次会删掉前一次的临时文件, 前一次重试 2 秒后报错 "The system cannot find the file specified" (保存设置时会提示 "设置无法保存", 内容其实已经由另一次保存好)。现在每次写入用自己的临时文件; 前一次发现更新的内容已经写好时, 保留新内容, 不再用旧内容覆盖
+
 ## [2026.11.09.1]
 
 测试版。
@@ -1135,7 +1144,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.2...HEAD
+[2026.11.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.1...2026.11.09.2
 [2026.11.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09...2026.11.09.1
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
