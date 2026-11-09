@@ -773,9 +773,10 @@ class CoreTests {
     ; Background downloads: asynchronous requests; on completion / error / timeout the callback runs in its own thread (fake requests, no network)
     static HttpGet() {
         eq := (n, a, e) => TestRunner.Equal("HttpGet." n, a, e)
-        saved := [HttpGet.NewRequest, HttpGet.PollMs]
+        saved := [HttpGet.NewRequest, HttpGet.PollMs, HttpGet.NewFollowRequest]
         fakes := []
         HttpGet.NewRequest := () => (fakes.Push(r := FakeHttpRequest()), r)
+        HttpGet.NewFollowRequest := () => (fakes.Push(r := FakeHttpRequest()), r.Follow := true, r)
         HttpGet.PollMs := 10
         got := []
         try {
@@ -823,7 +824,8 @@ class CoreTests {
             ; with a file: the body is saved as it came (binary) and done gets the file name
             got.Length := 0, file := A_Temp "\ALTRun-httpget-test.bin"
             try FileDelete(file)
-            request := HttpGet.Start("https://example.test/zip", (f) => got.Push("done " f), (m) => got.Push("fail " m), , file)
+            request := HttpGet.Start("https://example.test/zip", (f) => got.Push("done " f), (m) => got.Push("fail " m), , file, true)
+            eq("follow: the request that follows redirects", fakes[fakes.Length].HasOwnProp("Follow"), true)
             body := ComObjArray(0x11, 4)                                       ; VT_UI1
             for i, byte in [0x50, 0x4B, 0x00, 0xFF]
                 body[i - 1] := byte
@@ -846,17 +848,20 @@ class CoreTests {
             HttpGet.Start("https://example.test/x", (t) => got.Push("done"), (m) => got.Push("fail " m))
             eq("cannot start -> fail", TestUtil.WaitFor(() => got.Length) ? SubStr(got[1], 1, 5) : "", "fail ")
         } finally {
-            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2]
+            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2], HttpGet.NewFollowRequest := saved[3]
         }
+        proxy := HttpGet.SystemProxy()
+        eq("system proxy read", proxy.HasOwnProp("Server") && proxy.HasOwnProp("Bypass"), true)
 
-        ; update checks, the one-click update's download and exchange rates don't use Download() (the whole program stops while it downloads)
+        ; update checks and exchange rates don't use Download() (the whole program stops while it downloads); the update's download uses it
+        ; only as a fallback when the background download fails for a network reason
         for name in ["UpdateChecker", "CurrencyRates"] {
             text := FileRead(A_ScriptDir "\..\Src\Extensions\" name ".ahk", "UTF-8")
             pos := 1, count := 0
             while (pos := RegExMatch(text, "\bDownload\(", , pos)) {
                 count++, pos++
             }
-            eq(name ": synchronous downloads", count, 0)
+            eq(name ": synchronous downloads", count, name = "UpdateChecker" ? 1 : 0)   ; the update's fallback only (_DownloadFailed)
         }
 
         ; Check for updates: the release info is handled after it has downloaded (a fake reply)
@@ -866,6 +871,7 @@ class CoreTests {
         UpdateChecker.StateFile := root "\Update.json"
         fakes := []
         HttpGet.NewRequest := () => (fakes.Push(r := FakeHttpRequest()), r)
+        HttpGet.NewFollowRequest := HttpGet.NewRequest
         HttpGet.PollMs := 10
         try {
             UpdateChecker.Pending := ""
@@ -901,6 +907,23 @@ class CoreTests {
                 eq("cancel: stopped", UpdateChecker.CancelInstall() "|" fakes[n].Aborted "|" HttpGet.Pending "|" UpdateChecker._installing, "1|1|0|")
                 eq("cancel: files and window gone", FileExist(UpdateChecker.TempDir) "|" WinExist("ahk_id " hwnd), "|0")
                 eq("cancel: nothing to cancel now", UpdateChecker.CancelInstall(), false)
+
+                ; a network error: one more try with Download() (fake here); an HTTP error isn't tried again
+                downloads := [], savedDownload := UpdateChecker.downloadFn, asked.Length := 0
+                UpdateChecker.downloadFn := (url, file) => (downloads.Push(url), FileAppend("x", file))
+                try {
+                    UpdateChecker.Install(release), n := fakes.Length
+                    fakes[n].status := 12029, fakes[n].readyState := 4             ; ERROR_INTERNET_CANNOT_CONNECT
+                    TestUtil.WaitFor(() => asked.Length)
+                    eq("network error: tried again with Download()", downloads.Length "|" (downloads.Length ? downloads[1] : ""), "1|" release.ZipUrl)
+                    eq("network error: then verified (wrong checksum here)", asked.Length && InStr(asked[1], I18n.T("Update.Corrupt")) > 0, true)
+                    asked.Length := 0, downloads.Length := 0
+                    UpdateChecker.Install(release), n := fakes.Length
+                    fakes[n].status := 404, fakes[n].statusText := "Not Found", fakes[n].readyState := 4
+                    TestUtil.WaitFor(() => asked.Length)
+                    eq("http error: not tried again", downloads.Length "|" (asked.Length && InStr(asked[1], I18n.T("Update.NotFound")) > 0), "0|1")
+                } finally
+                    UpdateChecker.downloadFn := savedDownload
                 Hud.Hide()
             } finally {
                 UpdateChecker.askFn := savedAsk
@@ -908,7 +931,7 @@ class CoreTests {
                     UpdateChecker.CancelInstall()
             }
         } finally {
-            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2]
+            HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2], HttpGet.NewFollowRequest := saved[3]
             UpdateChecker.StateFile := savedState[1], UpdateChecker.Pending := savedState[2]
             try DirDelete(root, true)
         }
@@ -931,7 +954,7 @@ class CoreTests {
             ; a real release zip (binary, through GitHub's redirect to its download server): saved byte for byte, so its SHA256 matches
             file := A_Temp "\ALTRun-httpget-zip-test.zip", got := [], ticks := 0
             try FileDelete(file)
-            HttpGet.Start("https://github.com/zhugecaomao/ALTRun/releases/download/2026.11.03/ALTRun_v2026.11.03.zip", (f) => got.Push("done"), (m) => got.Push("fail " m), 60000, file)
+            HttpGet.Start("https://github.com/zhugecaomao/ALTRun/releases/download/2026.11.03/ALTRun_v2026.11.03.zip", (f) => got.Push("done"), (m) => got.Push("fail " m), 60000, file, true)
             start := A_TickCount
             while (!got.Length && A_TickCount - start < 65000)
                 Sleep(10), ticks++

@@ -17,8 +17,10 @@
 ; "New version available: ALTRun x": Enter installs it, → release notes / skip this version (skipped versions are kept in Update.json).
 ;
 ; One-click update ("Update now" when a new version is found):
-;   1. download ALTRun_v<version>.zip from the Release in the background (HttpGet: ALTRun keeps responding; a progress window with
-;      Cancel; at most DownloadTimeoutMs) and verify the SHA256 GitHub gives
+;   1. download ALTRun_v<version>.zip from the Release in the background (HttpGet with follow: ALTRun keeps responding; a progress
+;      window with Cancel; at most DownloadTimeoutMs). When that fails for a network reason (e.g. only a proxy script lets it out), it
+;      downloads once more with AutoHotkey's Download (WinINet, the system proxy as the update check uses it), which holds ALTRun until done.
+;      Then verify the SHA256 GitHub gives
 ;   2. extract to a temporary folder, copy the files other than the exe first (Resources\ etc.), then rename the running
 ;      ALTRun.exe to ALTRun.exe.old (a running exe can't be overwritten but can be renamed) and copy the new exe;
 ;      overwritten files are backed up first, and any failing step restores everything. Data\ (with ALTRun.json) and Themes\ aren't in the zip and stay untouched
@@ -313,8 +315,25 @@ class UpdateChecker {
         } catch as e
             return UpdateChecker._InstallFailed(job, e.Message)
         job.Request := HttpGet.Start(release.ZipUrl, (file) => UpdateChecker._Downloaded(job, file)
-            , (message) => UpdateChecker._InstallFailed(job, message), UpdateChecker.DownloadTimeoutMs, zip)
+            , (message) => UpdateChecker._DownloadFailed(job, message, zip), UpdateChecker.DownloadTimeoutMs, zip, true)
     }
+
+    ; The background download failed: an HTTP error would come back the same; a network error (no direct connection, a proxy script
+    ; WinHTTP can't use) gets one more try with AutoHotkey's Download, as before this download moved to the background
+    static _DownloadFailed(job, message, zip) {
+        if (UpdateChecker._installing != job)
+            return
+        if RegExMatch(message, "^HTTP \d")
+            return UpdateChecker._InstallFailed(job, message)
+        Logger.Warn("UpdateChecker: background download failed (" message "), trying again with AutoHotkey's Download")
+        try job.Progress["Cancel"].Enabled := false
+        try {
+            UpdateChecker.downloadFn.Call(job.Release.ZipUrl, zip)
+        } catch as e
+            return UpdateChecker._InstallFailed(job, e.Message)
+        UpdateChecker._Downloaded(job, zip)
+    }
+    static downloadFn := (url, file) => Download(url, file)                   ; replaced in the tests
 
     ; The zip has downloaded: verify, extract and replace (quick, so Cancel is off now), then restart as the new version
     static _Downloaded(job, zip) {

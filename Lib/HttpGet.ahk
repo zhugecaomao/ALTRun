@@ -6,10 +6,13 @@
 ; checks for completion on a timer (running only while there are requests) and then calls the callback.
 ;
 ; Usage:
-;   request := HttpGet.Start(url, done, fail?, timeoutMs?, file?)
+;   request := HttpGet.Start(url, done, fail?, timeoutMs?, file?, follow?)
 ;     done(text)      called for HTTP 2xx with the response text; if done throws (e.g. bad content), fail is called instead
 ;                     with file: the response is saved there as it came (binary) and done gets the file name
 ;     fail(message)   called for network errors, HTTP errors and timeouts (30 s by default); without fail it goes to the log
+;     follow          true: Msxml2.ServerXMLHTTP.6.0 (WinHTTP), which follows a redirect to another host, as GitHub's release
+;                     downloads do (Msxml2.XMLHTTP ends with status 0 there; probed on Windows CI). WinHTTP doesn't read the
+;                     system proxy settings by itself: a fixed proxy set in Windows is passed on; a proxy script (PAC) isn't
 ;   HttpGet.Cancel(request)   stops a request that hasn't finished: no callback is called
 ;   HttpGet.Pending   number of requests not finished yet
 ;===============================================================================
@@ -17,15 +20,18 @@
 class HttpGet {
     static PollMs := 100, TimeoutMs := 30000
     static NewRequest := () => ComObject("Msxml2.XMLHTTP.6.0")              ; replaced by a fake request in tests
+    static NewFollowRequest := () => ComObject("Msxml2.ServerXMLHTTP.6.0")
     static _active := [], _timer := ""
 
     static Pending => HttpGet._active.Length
 
-    static Start(url, done, fail := "", timeoutMs := "", file := "") {
+    static Start(url, done, fail := "", timeoutMs := "", file := "", follow := false) {
         if (timeoutMs = "")
             timeoutMs := HttpGet.TimeoutMs
         try {
-            xhr := HttpGet.NewRequest.Call()
+            xhr := follow ? HttpGet.NewFollowRequest.Call() : HttpGet.NewRequest.Call()
+            if follow
+                HttpGet._UseSystemProxy(xhr)
             xhr.open("GET", url, true)
             xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 2000 00:00:00 GMT")   ; don't use old content from the WinINet cache (ask the server every time, like Download())
             xhr.send()
@@ -39,6 +45,33 @@ class HttpGet {
             HttpGet._timer := () => HttpGet._Poll()
         SetTimer(HttpGet._timer, HttpGet.PollMs)
         return request
+    }
+
+    ; ServerXMLHTTP (WinHTTP) and the proxy set in Windows' settings: a fixed proxy is passed on (SXH_PROXY_SET_PROXY); without one, or
+    ; with only a proxy script / automatic detection, WinHTTP's own setting applies (usually a direct connection)
+    static _UseSystemProxy(xhr) {
+        proxy := HttpGet.SystemProxy()
+        if (proxy.Server != "")
+            try xhr.setProxy(2, proxy.Server, proxy.Bypass)
+    }
+
+    ; {Server, Bypass} of the current user's Internet settings ("" when no fixed proxy)
+    static SystemProxy() {
+        config := Buffer(A_PtrSize = 8 ? 32 : 16, 0)                         ; WINHTTP_CURRENT_USER_IE_PROXY_CONFIG
+        result := {Server: "", Bypass: ""}
+        if !DllCall("winhttp\WinHttpGetIEProxyConfigForCurrentUser", "Ptr", config)
+            return result
+        offsets := A_PtrSize = 8 ? [8, 16, 24] : [4, 8, 12]                   ; lpszAutoConfigUrl, lpszProxy, lpszProxyBypass
+        for i, offset in offsets {
+            if (text := NumGet(config, offset, "Ptr")) {
+                if (i = 2)
+                    result.Server := StrGet(text, "UTF-16")
+                else if (i = 3)
+                    result.Bypass := StrGet(text, "UTF-16")
+                DllCall("GlobalFree", "Ptr", text)
+            }
+        }
+        return result
     }
 
     ; Stops request (from Start) if it is still running; its callbacks aren't called. Returns whether it was running
