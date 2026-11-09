@@ -633,11 +633,30 @@ class CoreTests {
             SetTimer(ThrowForTest, -1)
             Sleep(200)
             eq("from a timer: caught and logged", InStr(read(), "Error: thrown in a timer") > 0, true)
+            ; the same error 1000 times (a timer failing every second): the first 5 in full, then only counted; the count on WriteCounts
+            Logger.Close()
+            try FileDelete(logFile)
+            Loop 1000 {
+                try throw Error("again and again")
+                catch as err
+                    ErrorHandler.Handle(err, "Exit", false)
+            }
+            lines := StrSplit(Trim(read(), "`r`n"), "`r`n")
+            eq("1000 times: 5 lines", lines.Length, 5)
+            eq("the 5th says the rest is counted", InStr(lines[5], "only counted") > 0, true)
+            ErrorHandler.WriteCounts()
+            lines := StrSplit(Trim(read(), "`r`n"), "`r`n")
+            eq("then one line with the count", lines.Length "|" (RegExMatch(lines[6], "Uncaught error at CoreTests\.ahk:\d+: 995 more since the last note \(1000 since start-up\)") > 0), "6|1")
+            ErrorHandler.WriteCounts()
+            eq("nothing more to write", StrSplit(Trim(read(), "`r`n"), "`r`n").Length, 6)
+            ErrorHandler.Handle(ValueError("elsewhere"), "Exit", false)
+            eq("a different place is written in full", InStr(read(), "ValueError: elsewhere") > 0, true)
         } finally {
             OnError(handler, 0)
             Logger.Close()
             try FileDelete(logFile)
             Logger.Enabled := saved[1], Logger.File := saved[2], Logger.Immediate := saved[3], ErrorHandler.Count := saved[4]
+            ErrorHandler._places := Map()
         }
     }
 
