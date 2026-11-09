@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.03.18"
+    static Version := "2026.11.03.19"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -471,11 +471,9 @@ class App {
         }
 
         tap := AppSettings.General.Has("DoubleTap") ? AppSettings.General["DoubleTap"] : ""
-        if (tap = "Ctrl" || tap = "Shift") {                                ; double-tap Ctrl / Shift to show
-            for side in ["L", "R"] {
-                App._TryHotkey("~" side tap, (*) => App._TapDown())
-                App._TryHotkey("~" side tap " up", (*) => App._TapUp())
-            }
+        for key in App.TapKeys(tap) {                                       ; double-tap Ctrl / Shift (or only the left / right one) to show
+            App._TryHotkey("~" key, (*) => App._TapDown())
+            App._TryHotkey("~" key " up", (*) => App._TapUp())
         }
 
         capsLock := AppSettings.General.Has("CapsLock") ? AppSettings.General["CapsLock"] : ""
@@ -558,9 +556,17 @@ class App {
     }
 
     ; a separate method makes the closure, so each hotkey keeps its own Action
-    ; Double-tap Ctrl / Shift: two separate short presses (no other key in between, e.g. Ctrl+C), at most DoubleTapMs apart
+    ; Double-tap Ctrl / Shift: two separate short presses of the same key (no other key in between, e.g. Ctrl+C), at most DoubleTapMs apart.
+    ; Left Shift then right Shift isn't a double tap: typing capitals with alternating Shift keys opened the window (AutoHotkey forum)
     static DoubleTapMs := 400, TapHoldMs := 300
-    static _tapLast := 0, _tapDownAt := 0, _tapHeld := false
+    static _tapLast := 0, _tapDownAt := 0, _tapHeld := false, _tapKey := ""
+
+    ; The keys of the DoubleTap setting: "Ctrl" / "Shift" = either side, "LCtrl" / "RCtrl" / "LShift" / "RShift" = only that one; [] = off
+    static TapKeys(setting) {
+        if (setting = "Ctrl" || setting = "Shift")
+            return ["L" setting, "R" setting]
+        return RegExMatch(setting, "i)^[LR](Ctrl|Shift)$") ? [setting] : []
+    }
 
     static _TapDown() {
         if !App._tapHeld                                                    ; auto-repeat while held doesn't count
@@ -570,21 +576,22 @@ class App {
     static _TapUp() {
         App._tapHeld := false
         key := RegExReplace(A_ThisHotkey, "i)^~|\s+up$")                  ; "LCtrl" / "RShift"
-        switch App.TapDecision(A_PriorKey, key, A_TickCount - App._tapDownAt, A_TickCount - App._tapLast) {
+        switch App.TapDecision(A_PriorKey, key, A_TickCount - App._tapDownAt, A_TickCount - App._tapLast, App._tapKey) {
             case "show":
                 App._tapLast := 0
                 SearchWindow.Toggle()
-            case "first": App._tapLast := A_TickCount
+            case "first": App._tapLast := A_TickCount, App._tapKey := key
             default:      App._tapLast := 0
         }
     }
 
-    ; priorKey: A_PriorKey (the last key pressed before the release); returns "show" (second tap) / "first" (first tap) / "reset" (a combination or held too long)
-    static TapDecision(priorKey, key, heldMs, sinceLastMs) {
+    ; priorKey: A_PriorKey (the last key pressed before the release); firstKey: the key of the tap before ("LShift"...).
+    ; Returns "show" (second tap of the same key) / "first" (a first tap, also when the other side's key was tapped before) / "reset" (a combination or held too long)
+    static TapDecision(priorKey, key, heldMs, sinceLastMs, firstKey := "") {
         expected := (key = "LCtrl") ? "LControl" : (key = "RCtrl") ? "RControl" : key
         if (!(priorKey = expected || priorKey = key) || heldMs > App.TapHoldMs)
             return "reset"
-        return (sinceLastMs <= App.DoubleTapMs) ? "show" : "first"
+        return (sinceLastMs <= App.DoubleTapMs && (firstKey = "" || firstKey = key)) ? "show" : "first"
     }
 
     ; Remember the window the hotkey was pressed in first: commands such as TerminalHere work on that window

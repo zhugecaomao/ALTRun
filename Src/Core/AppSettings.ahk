@@ -358,7 +358,7 @@ class AppSettings {
             "General", Map(
                 "Hotkey"              , "!Space",
                 "SecondaryHotkey"     , "!r",                               ; Alt+R
-                "DoubleTap"           , "",                                ; double-tap Ctrl / Shift shows the search window (as in Listary), "" = off
+                "DoubleTap"           , "",                                ; double-tap Ctrl / Shift shows the search window (as in Listary); LCtrl / RCtrl / LShift / RShift = only that key; "" = off
                 "CapsLock"            , "",                                 ; CapsLock: Layout = switch input language, Mode = toggle Chinese / English mode, "" = as usual (see CapsLockSwitch)
                 "CapsLockNotify"      , 1,                                  ; show a "Caps Lock: on / off" notice when Caps Lock is toggled
                 "CapsLockElevated"    , 0,                                  ; also in administrator windows: a small helper that only handles CapsLock runs as administrator from a scheduled task (see CapsLockHelper)

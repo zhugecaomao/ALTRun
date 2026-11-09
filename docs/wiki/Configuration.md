@@ -59,7 +59,7 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences.
 |---|---|---|
 | Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](Hotkeys#setting-hotkeys)) |
 | SecondaryHotkey | `!r` | Second hotkey (Alt+R); empty = none |
-| DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary); empty = off |
+| DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary): the same key twice, so left Shift then right Shift doesn't count; `LCtrl` / `RCtrl` / `LShift` / `RShift` = only the left or right one; empty = off |
 | CapsLock | empty | Like on a Mac: `Layout` = pressing Caps Lock switches to the next input method (like `Win+Space`), `Mode` = it switches the Chinese / English mode of the input method; holding it for 0.3 s turns caps lock on or off. Empty = Caps Lock works as usual. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method) |
 | CapsLockNotify | 1 | Show "Caps Lock On / Off" when caps lock is turned on or off; 0 = no notice |
 | CapsLockElevated | 0 | 1 = Caps Lock switching also works in windows running as administrator: a scheduled task runs a small helper with administrator rights that only handles Caps Lock, while ALTRun itself keeps normal rights. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method) |
