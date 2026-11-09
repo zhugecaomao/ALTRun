@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.27]
+
+测试版。
+
+Test build.
+
+### 新增
+- `Ctrl+Shift+Enter` 以管理员身份运行选中的程序、快捷方式或脚本 (和开始菜单、资源管理器一样; Windows Terminal 这类商店里的桌面应用也可以); 其它结果和 `Enter` 一样。操作面板里的 "以管理员身份运行" 也标出了这个快捷键, 输入 `?` 的帮助里也有
+
 ## [2026.11.03.26]
 
 测试版。
@@ -1296,7 +1305,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.26...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.27...HEAD
+[2026.11.03.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.26...2026.11.03.27
 [2026.11.03.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.25...2026.11.03.26
 [2026.11.03.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.24...2026.11.03.25
 [2026.11.03.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.23...2026.11.03.24

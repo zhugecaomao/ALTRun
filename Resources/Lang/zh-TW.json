@@ -120,6 +120,8 @@
   "Help.Convert.Text": "單位換算 (貨幣: 100 usd to sgd)",
   "Help.Copy.Key": "Alt+Enter",
   "Help.Copy.Text": "複製選取項目的路徑、網址或文字",
+  "Help.Admin.Key": "Ctrl+Shift+Enter",
+  "Help.Admin.Text": "以系統管理員身分執行選取的程式",
   "Help.Delete.Key": "Ctrl+Del",
   "Help.Delete.Text": "刪除選取的結果 (應用程式: 隱藏)",
   "Help.Edit.Key": "F3",

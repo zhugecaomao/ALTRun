@@ -145,6 +145,7 @@ The screenshots are generated automatically by [Tests/Screenshots](Tests/Screens
 | `Enter` | Open the selected result |
 | `Ctrl+Enter` | Files / folders: open the containing folder; text: paste into the active window |
 | `Alt+Enter` | Copy the path, URL or text |
+| `Ctrl+Shift+Enter` | Run the selected program as administrator |
 | `Ctrl+1`–`Ctrl+9` | Open the Nth result |
 | `↑` `↓` / `Ctrl+P` `Ctrl+N` | Move up / down one row |
 | `PgUp` `PgDn` | Previous / next page |

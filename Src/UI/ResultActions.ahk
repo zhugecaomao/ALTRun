@@ -34,7 +34,7 @@ class ResultActions {
             case "file":
                 add("Action.Open", target, (*) => ActionCatalog.OpenFile(target, item.Arguments), enter)
                 if ActionCatalog.CanRunAsAdmin(target)
-                    add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => ActionCatalog.RunAsAdmin(target, item.Arguments))
+                    add("Action.RunAsAdmin", "res:imageres.dll,-78", (*) => ActionCatalog.RunAsAdmin(target, item.Arguments), "Ctrl+Shift+Enter")
                 if IsObject(editor := ActionCatalog.EditorFor(target))      ; the file type has an "Edit" verb (e.g. .ahk opens in an editor)
                     list.Push(ResultItem(I18n.T("Action.EditFile"), editor.Name (editor.Name != "" ? "  " : "") "Ctrl+E"
                         , {Icon: editor.Icon, OnRun: (*) => ActionCatalog.EditFile(target)}))

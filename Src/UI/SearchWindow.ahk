@@ -774,7 +774,7 @@ class SearchWindow {
         Knowledge.Record(SearchWindow.Input.Value, item.Uid)
         RecentProvider.Remember(item)
         Usage.CountItem(item)
-        if item.WaitKeysUp
+        if (item.WaitKeysUp || (modifier = "admin" && ActionCatalog.CanRunElevated(item)))   ; as administrator: the UAC prompt takes the screen, not a window of the program
             App.WaitForEnterUp(450)                                         ; before hiding: Enter's key-up comes here, not to the window that comes back to the front
                                                                             ; (under the usual 500 ms before a held key repeats)
         SearchWindow.Hide("run")
