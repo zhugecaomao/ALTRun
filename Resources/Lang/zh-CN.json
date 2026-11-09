@@ -1057,6 +1057,7 @@
   "Update.InstallFailed": "自动更新失败:\n\n{1}\n\nALTRun 没有改动。是否打开下载页面手动更新?",
   "Update.InstallNow": "安装更新",
   "Update.Installing": "正在安装 ALTRun {1}...",
+  "Update.Fallback": "下载没有成功, 正在换一种方式重新下载。完成之前 ALTRun 可能暂时没有响应。",
   "Update.Cancel": "取消",
   "Update.Cancelled": "已取消更新到 {1}",
   "Update.ItemInstall": "当前版本 {1}  ·  Enter 安装更新  ·  → 更新说明、跳过此版本",

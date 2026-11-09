@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.7]
+
+测试版。
+
+Test build.
+
+### 改进
+- 一键更新的后台下载失败、改用另一种方式重新下载时, 进度窗口会说明 "正在换一种方式重新下载, 完成之前 ALTRun 可能暂时没有响应"。以前文字不变、只有取消按钮变灰, 看起来像卡住了
+
 ## [2026.11.09.6]
 
 测试版。
@@ -1180,7 +1189,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.7...HEAD
+[2026.11.09.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.6...2026.11.09.7
 [2026.11.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.5...2026.11.09.6
 [2026.11.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...2026.11.09.5
 [2026.11.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...2026.11.09.4

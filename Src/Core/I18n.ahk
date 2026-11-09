@@ -1227,6 +1227,7 @@ class I18n {
         s["Update.Later"]              := "Later"
         s["Update.Downloading"]        := "Downloading ALTRun {1}..."
         s["Update.Installing"]         := "Installing ALTRun {1}..."
+        s["Update.Fallback"]           := "The download didn't work; trying again another way. ALTRun may not respond until it's done."
         s["Update.Cancel"]             := "Cancel"
         s["Update.Cancelled"]          := "Update to {1} cancelled"
         s["Update.InstallFailed"]      := "The update could not be installed:`n`n{1}`n`nALTRun was not changed. Open the download page to update by hand?"
