@@ -922,6 +922,11 @@ class CoreTests {
                     fakes[n].status := 404, fakes[n].statusText := "Not Found", fakes[n].readyState := 4
                     TestUtil.WaitFor(() => asked.Length)
                     eq("http error: not tried again", downloads.Length "|" (asked.Length && InStr(asked[1], I18n.T("Update.NotFound")) > 0), "0|1")
+                    asked.Length := 0, downloads.Length := 0
+                    UpdateChecker.Install(release), n := fakes.Length
+                    fakes[n].status := 504, fakes[n].statusText := "Gateway Time-out", fakes[n].readyState := 4
+                    TestUtil.WaitFor(() => asked.Length)
+                    eq("server error (504): tried again with Download()", downloads.Length, 1)
                 } finally
                     UpdateChecker.downloadFn := savedDownload
                 Hud.Hide()
@@ -959,7 +964,7 @@ class CoreTests {
             while (!got.Length && A_TickCount - start < 65000)
                 Sleep(10), ticks++
             result := got.Length ? got[1] : "fail no answer"
-            if RegExMatch(result, "^fail (Network error|Timed out|no answer)")
+            if RegExMatch(result, "^fail (Network error|Timed out|no answer|HTTP 5\d\d)")   ; GitHub's 5xx: its release download is slow on a first request (~10 s) and its gateway may give up (504)
                 FileAppend("NOTE HttpGet.real zip skipped: " result "`n", "*")
             else {
                 eq("real zip", result, "done")

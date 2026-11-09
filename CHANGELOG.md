@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.25]
+
+测试版。
+
+Test build.
+
+### 修复
+- 一键更新下载时, GitHub 偶尔返回 504 (服务器网关超时: 下载地址第一次访问时 GitHub 那边很慢) 就直接报错; 现在和网络错误一样再试一次
+
 ## [2026.11.03.24]
 
 测试版。
@@ -1277,7 +1286,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.24...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.25...HEAD
+[2026.11.03.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.24...2026.11.03.25
 [2026.11.03.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.23...2026.11.03.24
 [2026.11.03.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.22...2026.11.03.23
 [2026.11.03.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.21...2026.11.03.22
