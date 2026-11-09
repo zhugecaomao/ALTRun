@@ -115,6 +115,7 @@ I18n.Init("en")
 AppSettings.Data := AppSettings.Defaults()                                  ; default settings in memory; no file is read or written
 AppSettings.Feature("Clipboard")["Persist"] := 0                           ; the clipboard history tests don't write to disk
 ActionCatalog.AppVerbs := (target) => ["open"]                             ; Store apps' context menu commands: the Apps folder doesn't answer on a CI runner (no desktop shell)
+SyncPreview.storePlacementFn := (saved) => 0                              ; closing a sync window doesn't change the settings
 IconCache.DiskDir := ""                                                     ; icons don't use the disk cache (switched on for the IconDiskCache test only)
 Pinyin.DataFile := A_ScriptDir "\..\Resources\Pinyin.txt"                   ; the scripts run from Tests\
 

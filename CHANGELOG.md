@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.21]
+
+测试版。
+
+Test build.
+
+### 改进
+- 同步窗口记住位置和大小: 在上次关掉时的位置打开, 关掉时是最大化的就最大化打开; 那个显示器已经拔掉时, 放回屏幕中间。同时打开几个任务的窗口时, 往右下依次错开一点, 不会完全叠在一起
+
 ## [2026.11.03.20]
 
 测试版。
@@ -1241,7 +1250,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.20...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.21...HEAD
+[2026.11.03.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.20...2026.11.03.21
 [2026.11.03.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.19...2026.11.03.20
 [2026.11.03.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.18...2026.11.03.19
 [2026.11.03.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.17...2026.11.03.18

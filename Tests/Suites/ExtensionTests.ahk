@@ -673,6 +673,68 @@ class ExtensionTests {
     }
 
     ; Step 3: the preview's list read from a robocopy log, the preview window's rows, the editor's values, the short states
+    ; The sync window opens where the last one was closed: saved on closing (in memory here), checked against the monitors,
+    ; a step down and right per window already open, maximized again if it was
+    static SyncWindowPlacement() {
+        eq := (n, a, e) => TestRunner.Equal("SyncWindowPlacement." n, a, e)
+        settings := AppSettings.Feature("Sync"), savedWindow := settings["Window"], savedStore := SyncPreview.storePlacementFn
+        SyncPreview.storePlacementFn := (saved) => settings["Window"] := saved
+        try {
+            eq("default", settings["Window"].Count, 0)
+            place := (l, t, r, b, m := 0) => Map("Left", l, "Top", t, "Right", r, "Bottom", b, "Maximized", m)
+            none := {X: 0, Y: 0}
+            eq("nothing saved", SyncPreview.PlacementFor(Map(), 0, 30, 320, 190, none), "")
+            eq("not numbers", SyncPreview.PlacementFor(place("a", 0, 900, 600), 0, 30, 320, 190, none), "")
+            eq("too small", SyncPreview.PlacementFor(place(100, 100, 200, 150), 0, 30, 320, 190, none), "")
+            eq("on no monitor", SyncPreview.PlacementFor(place(-90000, -90000, -89000, -89400), 0, 30, 320, 190, none), "")
+            p := SyncPreview.PlacementFor(place(100, 80, 1000, 680), 0, 30, 320, 190, none)
+            eq("as saved", p["Left"] "," p["Top"] "," p["Right"] "," p["Bottom"] "," p["Maximized"], "100,80,1000,680,0")
+            p := SyncPreview.PlacementFor(place(100, 80, 1000, 680), 2, 30, 320, 190, none)
+            eq("two open: two steps", p["Left"] "," p["Top"] "," p["Right"] "," p["Bottom"], "160,140,1060,740")
+            p := SyncPreview.PlacementFor(place(100, 80, 1000, 680, 1), 2, 30, 320, 190, none)
+            eq("maximized: no step", p["Left"] "," p["Maximized"], "100,1")
+            eq("same", SyncPreview.SamePlacement(place(1, 2, 3, 4), place(1, 2, 3, 4)) "|" SyncPreview.SamePlacement(place(1, 2, 3, 4), place(1, 2, 3, 5)) "|" SyncPreview.SamePlacement(Map(), place(1, 2, 3, 4)), "1|0|0")
+            buf := Buffer(44, 0)
+            NumPut("UInt", 44, "UInt", 2, "UInt", 2, buf), NumPut("Int", 10, "Int", 20, "Int", 810, "Int", 620, buf, 28)   ; minimized, WPF_RESTORETOMAXIMIZED
+            p := SyncPreview.PlacementFrom(buf)
+            eq("from WINDOWPLACEMENT", p["Left"] "," p["Top"] "," p["Right"] "," p["Bottom"] "," p["Maximized"], "10,20,810,620,1")
+            NumPut("UInt", 0, buf, 4), NumPut("UInt", 1, buf, 8)                ; normal
+            eq("normal", SyncPreview.PlacementFrom(buf)["Maximized"], 0)
+
+            offset := SyncPreview.WorkspaceOffset()                            ; a real window: closed, then opened again where it was
+            task := Map("Name", "Placement Test", "Source", "C:\Placement A", "Destination", "C:\Placement B", "Mode", "Copy")
+            key := SyncJobs.Key("Placement Test")
+            settings["Window"] := place(Win.Scale(120), Win.Scale(90), Win.Scale(120) + Win.Scale(820), Win.Scale(90) + Win.Scale(520))
+            SyncPreview.Open(task, "Ready")
+            WinGetPos(&x, &y, &width, &height, "ahk_id " SyncPreview.Windows[key].Gui.Hwnd)
+            eq("opened where saved", x "," y "," width "," height, (Win.Scale(120) + offset.X) "," (Win.Scale(90) + offset.Y) "," Win.Scale(820) "," Win.Scale(520))
+            WinMove(x + 40, y + 30, , , "ahk_id " SyncPreview.Windows[key].Gui.Hwnd)
+            SyncPreview.Close(key)
+            eq("saved on closing", settings["Window"]["Left"] "," settings["Window"]["Top"] "," settings["Window"]["Maximized"], (Win.Scale(120) + 40) "," (Win.Scale(90) + 30) ",0")
+            other := Map("Name", "Placement Other", "Source", "C:\Placement A", "Destination", "C:\Placement C", "Mode", "Copy")
+            SyncPreview.Open(task, "Ready"), SyncPreview.Open(other, "Ready")
+            WinGetPos(&x1, &y1, , , "ahk_id " SyncPreview.Windows[key].Gui.Hwnd)
+            WinGetPos(&x2, &y2, , , "ahk_id " SyncPreview.Windows[SyncJobs.Key("Placement Other")].Gui.Hwnd)
+            eq("second window a step further", (x2 - x1) "," (y2 - y1), Win.Scale(30) "," Win.Scale(30))
+            SyncPreview.Close(SyncJobs.Key("Placement Other"))
+            SyncPreview.Windows[key].Gui.Maximize()
+            SyncPreview.Close(key)
+            eq("maximized saved, size kept", settings["Window"]["Maximized"] "," (settings["Window"]["Right"] - settings["Window"]["Left"]), "1," Win.Scale(820))
+            SyncPreview.Open(task, "Ready")
+            eq("opened maximized", WinGetMinMax("ahk_id " SyncPreview.Windows[key].Gui.Hwnd), 1)
+            SyncPreview.Close(key)
+            settings["Window"] := place(-90000, -90000, -89000, -89400)        ; on a monitor unplugged since: Windows places it
+            SyncPreview.Open(task, "Ready")
+            WinGetPos(&x, &y, , , "ahk_id " SyncPreview.Windows[key].Gui.Hwnd)
+            eq("off-screen: opened on a monitor", DllCall("MonitorFromWindow", "Ptr", SyncPreview.Windows[key].Gui.Hwnd, "UInt", 0, "Ptr") != 0 && x > -10000, true)
+            SyncPreview.Close(key)
+        } finally {
+            for name in ["Placement Test", "Placement Other"]
+                SyncPreview.Close(SyncJobs.Key(name))
+            settings["Window"] := savedWindow, SyncPreview.storePlacementFn := savedStore
+        }
+    }
+
     static SyncPreview() {
         eq := (n, a, e) => TestRunner.Equal("SyncPreview." n, a, e)
         logText := "-------------------------------------------------------------------------------`r`n"

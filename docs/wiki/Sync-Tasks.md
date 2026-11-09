@@ -33,6 +33,7 @@ Each task has its own window, *<task> - Folder Sync*. Preview and Run open it at
 - **Done**: files copied (and their size), files deleted, and the time; files that couldn't be copied are counted in red, and the bar turns red (yellow when stopped).
 - The bar's progress also shows on the window's taskbar button, so you can see it while working in another program (the window can be minimized).
 - The list shows the first 2000 changes; the log (**Open log**) has all of them. A path that doesn't fit shows whole when you point at it; double-click a row to show the file in Explorer.
+- The window opens where you last closed one, at the same size, maximized if it was (back to the middle of the screen when that monitor is no longer connected); a second task's window opens a step down and to the right, so it doesn't cover the first. Stored in `Features.Sync.Window`.
 - Closing the window doesn't stop the task: its result in the search window (Enter) or **Sync...** in Preferences opens the window again. A notification says how it ended when the window isn't in front.
 
 ![Preview of a sync task](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/sync-preview.png)
