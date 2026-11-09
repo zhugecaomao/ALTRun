@@ -500,6 +500,7 @@
   "Sync.Field.CopyCommand": "複製命令",
   "Sync.Field.CommandCopied": "命令已複製",
   "Sync.Problem.SameName": "已經有名為 {1} 的同步任務。",
+  "Sync.Problem.DuplicateName": "同步 {1}: 另一個同步任務和它同名, ALTRun 分不清。請在 偏好設定 → 資料夾同步 裡為其中一個改名。",
   "Sync.Warn.Overlap": "它的目標和同步任務 {1} 的目標重疊: 兩個任務可能互相覆寫或刪除檔案。",
   "Sync.Warn.SameLog": "它和同步任務 {1} 寫同一個日誌檔。",
   "Sync.Preview.NoSummary": "robocopy 沒有寫出摘要。開啟日誌看看發生了什麼。",
