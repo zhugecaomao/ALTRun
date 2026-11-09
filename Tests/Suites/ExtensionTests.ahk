@@ -1325,7 +1325,8 @@ class ExtensionTests {
     ; PT Tools window: result boxes take no Tab stop (from Area expression straight to Bar diameter), units written as mm², even margins,
     ; inputs are combo boxes with their common values, the span width follows into the mesh area
     ; Only inputs are saved: Load fills in the defaults and drops keys no longer used (renamed fields, saved results)
-    ; Favorite folders of the dialog panel: environment variables expanded, compared without case or a trailing backslash, listed first;
+    ; Favorite folders of the dialog panel: environment variables expanded, compared without case or a trailing backslash, in the star menu
+    ; (with one level of subfolders, not in the list) and found first by the panel's search;
     ; adding saves the settings (to a temporary file here), adding twice does nothing, removing finds the entry however it is written
     static QuickSwitchFavorites() {
         eq := (n, a, e) => TestRunner.Equal("QuickSwitchFavorites." n, a, e)
@@ -1339,8 +1340,13 @@ class ExtensionTests {
             eq("listed", QuickSwitch.Favorites()[1] "|" QuickSwitch.Favorites()[3], A_Temp "\ALTRun Fav|D:\")
             eq("is favorite", QuickSwitch.IsFavorite(StrUpper(A_Temp) "\alt" "run fav\") "|" QuickSwitch.IsFavorite("D:\"), "1|1")
             eq("not a favorite", QuickSwitch.IsFavorite("D:\Other") "|" QuickSwitch.IsFavorite(""), "0|0")
-            folders := QuickSwitch.MenuFolders(false)
-            eq("first in the panel", folders[1].Path "|" folders[1].Group "|" folders[1].Tag, A_Temp "\ALTRun Fav|favorite|" I18n.T("QuickSwitch.TagFavorite"))
+            favoriteRows := 0                                                  ; the favorites are in the star menu, not in the panel's list
+            for entry in QuickSwitch.MenuFolders(false)
+                favoriteRows += (entry.Group = "favorite")
+            eq("not in the panel list", favoriteRows, 0)
+            found := QuickSwitch.SearchBase([{Path: "D:\", Group: "open"}, {Path: "C:\Work", Group: "open"}])   ; the panel's search finds them, first
+            eq("searched first, once", found.Length "|" found[1].Path "|" found[1].Group "|" found[1].Tag "|" found[2].Group "|" found[3].Path
+                , "3|" A_Temp "\ALTRun Fav|favorite|" I18n.T("QuickSwitch.TagFavorite") "|favorite|C:\Work")
             eq("add twice", QuickSwitch.AddFavorite(A_Temp "\ALTRun Fav"), false)
             eq("add empty", QuickSwitch.AddFavorite(""), false)
             eq("add", QuickSwitch.AddFavorite("E:\Projects\") "|" QuickSwitch.Options["Favorites"][4], "1|E:\Projects")
@@ -1351,14 +1357,40 @@ class ExtensionTests {
             eq("add without the setting", QuickSwitch.AddFavorite("C:\Docs") "|" QuickSwitch.Options["Favorites"].Length, "1|1")
             eq("row icons", QuickSwitch.RowIcon({Path: "C:\A", Group: "favorite"}) QuickSwitch.RowIcon({Path: "C:\A", Group: "open"})
                 . QuickSwitch.RowIcon({Path: "C:\A.txt", Group: "search", IsFile: true}), "312")
-            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])     ; in the panel: an added favorite is listed with the star and selected
+            menuRoot := A_Temp "\ALTRun Fav Menu"                             ; the star menu: one level of subfolders, hidden ones left out
+            try DirDelete(menuRoot, true)
+            for name in ["Gamma", "Alpha", "Beta", "Hidden", "Alpha\Deep"]
+                DirCreate(menuRoot "\" name)
+            FileSetAttrib("+H", menuRoot "\Hidden", "D")
+            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [menuRoot, "", "\\server\share\Docs"])
+            items := QuickSwitch.FavoritesMenuItems()
+            names := ""
+            for folder in items[1].Subfolders
+                names .= (names = "" ? "" : "|") QuickSwitch.FolderName(folder)
+            eq("menu items", items.Length "|" items[1].Name "|" items[2].Path, "2|ALTRun Fav Menu|\\server\share\Docs")
+            eq("menu subfolders", Sort(names, "D|") "|" items[1].More, "Alpha|Beta|Gamma|0")
+            items := QuickSwitch.FavoritesMenuItems(2)
+            eq("menu at most 2", items[1].Subfolders.Length "|" items[1].More, "2|1")
+            eq("menu: network folder not read", items[2].Subfolders.Length "|" items[2].More, "0|0")
+            eq("reads subfolders", QuickSwitch.ReadsSubfolders(A_Temp) "|" QuickSwitch.ReadsSubfolders("\\server\share") "|" QuickSwitch.ReadsSubfolders(""), "1|0|0")
+            eq("menu label", QuickSwitch.MenuLabel("R&D"), "R&&D")
+            eq("menu item jumps", QuickSwitch.JumpTo.Bind(QuickSwitch, "C:\Docs").Call("Docs", 1, Menu()), "")   ; a menu passes its item name, position and menu
+            try DirDelete(menuRoot, true)
+            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])     ; in the panel: the star button right of the search box
             QuickSwitch._BuildPanel(A_ScriptHwnd)
+            eq("panel: star button", IsObject(QuickSwitch._panelStar), true)
+            QuickSwitch._panelStar.GetPos(&starX, , &starW)
+            QuickSwitch._panelSearch.GetPos(&searchX, , &searchW)
+            eq("panel: star right of the search box", searchX + searchW < starX && starX + starW <= QuickSwitch._panelWidth, true)
             QuickSwitch._ToggleFavorite("C:\Fav Test\", true)
-            row := QuickSwitch._panelList.GetNext()
-            eq("panel: added and selected", row ? QuickSwitch._panelList.GetText(row, 2) "|" QuickSwitch._panelFolders[row].Group : "nothing selected", "C:\Fav Test|favorite")
+            favoriteRows := 0
+            for entry in QuickSwitch._panelFolders
+                favoriteRows += (entry.Group = "favorite")
+            eq("panel: added, not listed", QuickSwitch.IsFavorite("C:\Fav Test") "|" favoriteRows, "1|0")
             QuickSwitch._ToggleFavorite("C:\Fav Test", false)
-            eq("panel: removed", QuickSwitch.IsFavorite("C:\Fav Test") "|" (QuickSwitch._panelFolders.Length && QuickSwitch._panelFolders[1].Group = "favorite"), "0|0")
+            eq("panel: removed", QuickSwitch.IsFavorite("C:\Fav Test"), 0)
             QuickSwitch.HidePanel(), Hud.Hide()
+            eq("panel: star released", QuickSwitch._panelStar, "")
         } finally {
             QuickSwitch.Options := savedOptions, AppSettings.File := savedFile
             try FileDelete(A_Temp "\ALTRun-favorites-test.json")

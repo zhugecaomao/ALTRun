@@ -33,7 +33,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
-    static NormalScale := ["quickswitch", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -63,6 +63,7 @@ class Shots {
             ["system",      "Light", "", () => Shots.Search("lock")],
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
+            ["quickswitch-favorites", "Light", "", () => Shots.QuickSwitchFavorites(), () => Shots.WriteRecentFolders()],   ; Wiki: the panel's star menu
             ["windows",     "Light", "", () => Shots.Windows()],                 ; window switching (w + Space)
             ["sendto",      "Light", "", () => Shots.SendTo(), () => Shots.EnableSendTo()],
             ["pttools",     "Light", "", () => Shots.ToolWindow("PTTools", "PT Tools")],          ; Wiki: extensions
@@ -277,7 +278,7 @@ class Shots {
                 "FileSearch", Map("UseEverything", 0, "ScopeFolders", [demo], "InDefaultResults", 0),
                 "Clipboard", Map("LocalFiles", 0)                           ; the made-up history stays in this Data folder, away from this PC's %LOCALAPPDATA%
             ),
-            "Extensions", Map("QuickSwitch", Map("RecentFolders", 3, "Favorites", [demo])),   ; the folder panel: one favorite, and only the recent items WriteRecentFolders created
+            "Extensions", Map("QuickSwitch", Map("RecentFolders", 3, "Favorites", [demo, demo "\Annual Report 2026"])),   ; the folder panel: two favorites, and only the recent items WriteRecentFolders created
             "CustomCommands", [
                 Map("Title", "Website Redesign", "Type", "Folder", "Target", demo "\Website Redesign", "Arguments", "", "Keyword", ""),
                 Map("Title", "Annual Report 2026", "Type", "Folder", "Target", demo "\Annual Report 2026", "Arguments", "", "Keyword", ""),
@@ -514,6 +515,28 @@ class Shots {
         return [dialog, panel]
     }
     static HelperPid := 0
+
+    ; The panel's star menu: the favorites, the first one's subfolders open (Down selects it, Right opens its submenu)
+    static QuickSwitchFavorites() {
+        windows := Shots.QuickSwitch()
+        star := 0
+        for ctrl in WinGetControlsHwnd(windows[2])                          ; the star: the panel's only icon (Static with SS_ICON)
+            if (WinGetClass(ctrl) = "Static" && (ControlGetStyle(ctrl) & 0x1F) = 0x3)
+                star := ctrl
+        if !star
+            throw Error("Star button not found")
+        ControlClick(star)
+        if !WinWait("ahk_class #32768 ahk_pid " Shots.Pid, , 5)
+            throw Error("Favorites menu not shown")
+        Sleep(500)
+        Send("{Down}{Right}")
+        Sleep(1500)                                                         ; the submenu and the menus' icons
+        popups := WinGetList("ahk_class #32768 ahk_pid " Shots.Pid)
+        if (popups.Length < 2)
+            throw Error("Favorite's submenu not shown")
+        windows.Push(popups*)
+        return windows
+    }
 
     ; PT Tools / SPF2M: the system command opens the window (its default inputs), at the top left so it fits the screen
     static ToolWindow(command, title) {
