@@ -1037,10 +1037,20 @@ class QuickSwitch {
     ; A menu item's text: & shows as & (not as an underlined access key)
     static MenuLabel(text) => StrReplace(text, "&", "&&")
 
-    ; The ☆ button: shows the menu below it. The favorites' labels have their path on the right (two favorites may have the same name)
+    ; The ☆ button: shows the menu below it
     static ShowFavoritesMenu() {
         if !QuickSwitch._panelFor
             return
+        favMenu := QuickSwitch.BuildFavoritesMenu(QuickSwitch.DialogFolder(QuickSwitch._panelFor))
+        QuickSwitch._panelStar.GetPos(&x, &y, &w, &h)
+        rect := Buffer(16), NumPut("Int", x, "Int", y, "Int", x + w, "Int", y + h, rect)
+        DllCall("MapWindowPoints", "Ptr", QuickSwitch._panel.Hwnd, "Ptr", 0, "Ptr", rect, "UInt", 2)   ; client -> screen
+        QuickSwitch.ShowMenuBelow(favMenu, rect)
+    }
+
+    ; The ☆ menu: the favorites (their path on the right, as two may have the same name), each with subfolders as a submenu whose
+    ; first, default item is the favorite itself; "Add <dialog folder>" when it isn't a favorite yet; "Edit favorites"
+    static BuildFavoritesMenu(dialogFolder) {
         favMenu := Menu()
         items := QuickSwitch.FavoritesMenuItems()
         for item in items {
@@ -1070,15 +1080,11 @@ class QuickSwitch {
             favMenu.Add(none, (*) => 0), favMenu.Disable(none)
         }
         favMenu.Add()
-        dialogFolder := QuickSwitch.DialogFolder(QuickSwitch._panelFor)
         if (dialogFolder != "" && !QuickSwitch.IsFavorite(dialogFolder))
             favMenu.Add(QuickSwitch.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder))) "`tCtrl+D"
                 , (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
         favMenu.Add(I18n.T("QuickSwitch.EditFavorites"), (*) => App.OpenPreferences("Prefs.Page.QSPanel"))
-        QuickSwitch._panelStar.GetPos(&x, &y, &w, &h)
-        rect := Buffer(16), NumPut("Int", x, "Int", y, "Int", x + w, "Int", y + h, rect)
-        DllCall("MapWindowPoints", "Ptr", QuickSwitch._panel.Hwnd, "Ptr", 0, "Ptr", rect, "UInt", 2)   ; client -> screen
-        QuickSwitch.ShowMenuBelow(favMenu, rect)
+        return favMenu
     }
 
     ; Shows m as a drop-down of a button at the right (button = screen RECT): its right edge at the button's, below it, or above it
