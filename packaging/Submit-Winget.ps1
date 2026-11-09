@@ -6,6 +6,11 @@
 # date ("The forked repository could not be synced with the upstream commits"): winget-pkgs gets hundreds of commits a day, so
 # a fork left alone falls far behind. The fork is synced first with GitHub's merge-upstream API; when that fails (the fork's
 # master has commits of its own) the log says so and wingetcreate tries anyway. A missing fork is fine: wingetcreate creates it.
+#
+# GitHub's release download links (github.com/<repo>/releases/download/...) can answer slowly and then fail with 504 Gateway
+# Timeout (seen on 2026-11-09 during a GitHub incident: 9 ~ 11 s for each redirect, some ending in 504), and wingetcreate downloads
+# the package only once. A failed download is tried again a few times, waiting longer each time: wingetcreate reads the package
+# before it opens anything on GitHub, so trying again can't open a second pull request. Other failures are not repeated.
 param(
     [Parameter(Mandatory)][string]$Version,
     [string]$Repository = 'zhugecaomao/ALTRun',
@@ -41,6 +46,17 @@ if (-not $fork) {
 
 # 2. Submit the new version
 $url = "https://github.com/$Repository/releases/download/$Version/ALTRun_v$Version.zip"
-Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe
-.\wingetcreate.exe update $Package --version $Version --urls $url --submit --token $token
-if ($LASTEXITCODE -ne 0) { throw "wingetcreate failed (exit code $LASTEXITCODE)" }
+Invoke-WebRequest https://aka.ms/wingetcreate/latest -OutFile wingetcreate.exe -MaximumRetryCount 4 -RetryIntervalSec 15   # also a GitHub release download
+$waits = 30, 60, 120, 240                                                   # seconds before each new attempt
+for ($attempt = 1; ; $attempt++) {
+    $ErrorActionPreference = 'Continue'                                     # its error output is only shown, not a reason to stop
+    .\wingetcreate.exe update $Package --version $Version --urls $url --submit --token $token 2>&1 | Tee-Object -Variable output | Out-Host
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    if ($code -eq 0) { break }
+    $downloadFailed = ($output | Out-String) -match 'Failed to download'
+    if (-not $downloadFailed -or $attempt -gt $waits.Count) { throw "wingetcreate failed (exit code $code)" }
+    $wait = $waits[$attempt - 1]
+    Write-Host "::warning::Downloading $url failed (attempt $attempt); trying again in $wait s"
+    Start-Sleep -Seconds $wait
+}
