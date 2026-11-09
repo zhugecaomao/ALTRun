@@ -19,6 +19,7 @@
 ;       Delay in seconds; creates the folder when missing, replaces a task of the same name
 ;   TaskScheduler.Delete("\ALTRun\me", "OneDrive")
 ;   TaskScheduler.DeleteFolder("\ALTRun\me")                    only when empty; its parent too when that is empty then
+;   Each takes an optional last argument service (TaskScheduler.Service()): several calls in a row share one connection
 ;   TaskScheduler.Duration(330) = "PT5M30S"    TaskScheduler.Seconds("PT5M30S") = 330
 ; Errors (no access, Task Scheduler service not running) are thrown as they come from COM.
 ;===============================================================================
@@ -54,9 +55,9 @@ class TaskScheduler {
         return service.GetFolder("\").CreateFolder(LTrim(folderPath, "\"))
     }
 
-    static Tasks(folderPath) {
+    static Tasks(folderPath, service := "") {
         list := []
-        if !IsObject(folder := TaskScheduler.Folder(TaskScheduler.Service(), folderPath))
+        if !IsObject(folder := TaskScheduler.Folder(IsObject(service) ? service : TaskScheduler.Service(), folderPath))
             return list
         for task in folder.GetTasks(1) {                                    ; 1 = hidden ones too
             item := {Name: task.Name, Enabled: task.Enabled ? 1 : 0, Path: "", Arguments: "", WorkingDirectory: "", Delay: -1}
@@ -72,8 +73,8 @@ class TaskScheduler {
         return list
     }
 
-    static RegisterLogonTask(folderPath, name, spec) {
-        service := TaskScheduler.Service()
+    static RegisterLogonTask(folderPath, name, spec, service := "") {
+        service := IsObject(service) ? service : TaskScheduler.Service()
         folder := TaskScheduler.Folder(service, folderPath, true)
         user := TaskScheduler.UserId()
         definition := service.NewTask(0)
@@ -99,14 +100,14 @@ class TaskScheduler {
         folder.RegisterTaskDefinition(name, definition, TaskScheduler.TASK_CREATE_OR_UPDATE, , , TaskScheduler.TASK_LOGON_INTERACTIVE_TOKEN)
     }
 
-    static Delete(folderPath, name) {
-        if IsObject(folder := TaskScheduler.Folder(TaskScheduler.Service(), folderPath))
+    static Delete(folderPath, name, service := "") {
+        if IsObject(folder := TaskScheduler.Folder(IsObject(service) ? service : TaskScheduler.Service(), folderPath))
             folder.DeleteTask(name, 0)
     }
 
     ; Deletes the folder if it holds no tasks and no folders (tasks of other users can't be seen: Task Scheduler then refuses, which is fine)
-    static DeleteFolder(folderPath) {
-        service := TaskScheduler.Service()
+    static DeleteFolder(folderPath, service := "") {
+        service := IsObject(service) ? service : TaskScheduler.Service()
         Loop 2 {
             if !IsObject(folder := TaskScheduler.Folder(service, folderPath))
                 return

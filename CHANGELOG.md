@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.03.25]
+
+测试版。
+
+Test build.
+
+### 改进
+- 有几个同步任务正在运行时退出 ALTRun 更快: 先同时通知所有任务停止, 再一起等它们结束 (总共最多 2 秒; 以前一个一个等, 每个最多 2 秒)
+- 延迟启动和任务计划程序同步时, 整个过程只连接一次任务计划程序 (以前每个任务连接一次)
+
 ## [2026.11.03.24]
 
 测试版。
@@ -1277,7 +1287,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.24...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.25...HEAD
+[2026.11.03.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.24...2026.11.03.25
 [2026.11.03.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.23...2026.11.03.24
 [2026.11.03.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.22...2026.11.03.23
 [2026.11.03.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.21...2026.11.03.22

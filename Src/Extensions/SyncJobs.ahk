@@ -219,20 +219,51 @@ class SyncJobs {
         key := SyncJobs.Key(name)
         if !SyncJobs.Jobs.Has(key)
             return false
-        job := SyncJobs.Jobs[key]
-        job.OnDone := "", job.Stopped := true                               ; stopped on purpose: no "failed" message
-        try ProcessClose(job.Pid)                                           ; TerminateProcess only starts ending it: wait (2 s at most) so it is gone when this returns
-        if job.Handle
-            DllCall("WaitForSingleObject", "Ptr", job.Handle, "UInt", SyncJobs.StopWaitMs, "UInt")
-        else if job.Pid
-            ProcessWaitClose(job.Pid, SyncJobs.StopWaitMs / 1000)
-        SyncJobs._Poll()                                                    ; still running after that: the poll timer ends the job later
+        SyncJobs._StopJobs([SyncJobs.Jobs[key]])
         return true
     }
 
+    ; All running tasks (quitting): each is told to end first, then they are waited for together, StopWaitMs at most in all
+    ; (one after another it was up to StopWaitMs each). Returns how many were stopped
     static StopAll() {
-        for key, job in SyncJobs.Jobs.Clone()
-            SyncJobs.Stop(job.Name)
+        jobs := []
+        for key, job in SyncJobs.Jobs
+            jobs.Push(job)
+        return SyncJobs._StopJobs(jobs)
+    }
+
+    static _StopJobs(jobs) {
+        if !jobs.Length
+            return 0
+        for job in jobs {
+            job.OnDone := "", job.Stopped := true                           ; stopped on purpose: no "failed" message
+            try ProcessClose(job.Pid)                                       ; TerminateProcess only starts ending it (pending I/O finishes first)
+        }
+        SyncJobs.WaitGone(jobs, SyncJobs.StopWaitMs)                        ; so they are gone when this returns
+        SyncJobs._Poll()                                                    ; still running after that: the poll timer ends the job later
+        return jobs.Length
+    }
+
+    ; Waits until the jobs' processes have ended, ms at most in all: WaitForMultipleObjects on the handles (64 at a time), then
+    ; the process ids of jobs taken over without a handle. Returns the milliseconds waited
+    static WaitGone(jobs, ms) {
+        started := A_TickCount, deadline := started + ms
+        handles := [], pids := []
+        for job in jobs
+            if job.Handle
+                handles.Push(job.Handle)
+            else if job.Pid
+                pids.Push(job.Pid)
+        while handles.Length {
+            count := Min(handles.Length, 64)                                ; MAXIMUM_WAIT_OBJECTS
+            list := Buffer(count * A_PtrSize)
+            Loop count
+                NumPut("Ptr", handles.RemoveAt(1), list, (A_Index - 1) * A_PtrSize)
+            DllCall("WaitForMultipleObjects", "UInt", count, "Ptr", list, "Int", true, "UInt", Max(0, deadline - A_TickCount), "UInt")
+        }
+        for pid in pids
+            ProcessWaitClose(pid, Max(0, deadline - A_TickCount) / 1000)
+        return A_TickCount - started
     }
 
     ; Once a second while something runs: the jobs that ended (their exit code), then onDone or the notification

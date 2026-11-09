@@ -43,25 +43,28 @@ class DelayedStart {
             Logger.Warn("DelayedStart: " StrReplace(problems, "`n", "; "))
     }
 
-    ; Makes the tasks in FolderPath match items; returns "" or the problems, one per line (the other entries are still synced)
+    ; Makes the tasks in FolderPath match items; returns "" or the problems, one per line (the other entries are still synced).
+    ; One connection to Task Scheduler for all of it
     static Sync(items := DelayedStart.Items, folderPath := DelayedStart.FolderPath) {
-        try existing := TaskScheduler.Tasks(folderPath)
-        catch as e
+        try {
+            service := TaskScheduler.Service()
+            existing := TaskScheduler.Tasks(folderPath, service)
+        } catch as e
             return I18n.T("DelayedStart.NoScheduler", e.Message)
         plan := DelayedStart.Plan(DelayedStart.Desired(items), existing)
         problems := ""
         for name in plan.Delete {
-            try TaskScheduler.Delete(folderPath, name)
+            try TaskScheduler.Delete(folderPath, name, service)
             catch as e
                 problems .= name ": " e.Message "`n"
         }
         for entry in plan.Register {
-            try TaskScheduler.RegisterLogonTask(folderPath, entry.Name, entry.Spec)
+            try TaskScheduler.RegisterLogonTask(folderPath, entry.Name, entry.Spec, service)
             catch as e
                 problems .= entry.Name ": " e.Message "`n"
         }
         if (!items.Length && problems = "")
-            try TaskScheduler.DeleteFolder(folderPath)
+            try TaskScheduler.DeleteFolder(folderPath, service)
         if (plan.Delete.Length || plan.Register.Length)
             Logger.Debug("DelayedStart: " plan.Register.Length " registered, " plan.Delete.Length " deleted in " folderPath)
         return RTrim(problems, "`n")
