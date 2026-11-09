@@ -8,6 +8,14 @@
 class SearchWindowTests {
     ; File actions: copy / cut the file, Open with, move to the Recycle Bin
     ; When the file type has an "Edit" verb the actions panel has "Edit" (with the editor's name on the right) and Ctrl+E works; unregistered types don't
+    ; Enter with modifiers: Ctrl+Shift+Enter runs as administrator, Ctrl+Enter / Alt+Enter their own actions, Shift+Enter as Enter
+    static EnterModifiers() {
+        eq := (n, a, e) => TestRunner.Equal("EnterModifiers." n, a, e)
+        for combo, expected in Map("000", "", "100", "ctrl", "010", "", "001", "alt", "110", "admin", "111", "admin", "101", "ctrl", "011", "alt")
+            eq((SubStr(combo, 1, 1) ? "Ctrl+" : "") (SubStr(combo, 2, 1) ? "Shift+" : "") (SubStr(combo, 3, 1) ? "Alt+" : "") "Enter"
+                , SearchKeys.EnterModifier(SubStr(combo, 1, 1) = "1", SubStr(combo, 2, 1) = "1", SubStr(combo, 3, 1) = "1"), expected)
+    }
+
     static EditAction() {
         eq := (n, a, e) => TestRunner.Equal("EditAction." n, a, e)
         root := A_Temp "\ALTRun-test-edit"

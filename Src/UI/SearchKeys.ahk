@@ -103,6 +103,10 @@ class SearchKeys {
         Logger.Debug(Format("SearchKeys: +{} ms {} {}, foreground: {}", A_TickCount - SearchKeys.EnterAt, GetKeyName(Format("vk{:X}sc{:X}", vk, sc)), direction, SearchWindow.ForegroundText()))
     }
 
+    ; How Enter runs the result with these modifiers held (see ActionCatalog.RunModifier): Ctrl+Shift+Enter as administrator (as in
+    ; Start and Explorer), Ctrl+Enter / Alt+Enter their own actions, Shift+Enter alone the same as Enter
+    static EnterModifier(ctrl, shift, alt) => (ctrl && shift) ? "admin" : ctrl ? "ctrl" : alt ? "alt" : ""
+
     ; 0 = the key is handled and not passed to the input box; empty = handled the normal way
     static OnKeyDown(wParam, lParam, msg, hwnd) {
         if !SearchKeys.IsOwnWindow(hwnd)
@@ -119,7 +123,7 @@ class SearchKeys {
             case 0x0D:                                                      ; Enter
                 if Logger.Enabled
                     SearchKeys.TraceEnter(lParam, msg)
-                SearchWindow._Execute((ctrl && shift) ? "admin" : ctrl ? "ctrl" : alt ? "alt" : "")   ; Ctrl+Shift+Enter: as administrator (as in Start and Explorer)
+                SearchWindow._Execute(SearchKeys.EnterModifier(ctrl, shift, alt))
                 return 0
             case 0x1B:                                                      ; Esc
                 if (actions && SearchWindow.Session.ActionsOnly)
