@@ -69,10 +69,10 @@ jobs:
 
       # The benchmark and screenshot scripts run unattended in other workflows: a load-time warning there would wait for a dialog
       # nobody closes (an undefined class from a Lib file they didn't include hung both runs once). Both send warnings to stdout
-      - name: Validate the benchmark, screenshot and Everything check scripts
+      - name: Validate the benchmark, screenshot and standalone integration check scripts
         shell: pwsh
         run: |
-          foreach ($script in "Tests\Bench\BenchDriver.ahk", "Tests\Screenshots\TakeScreenshots.ahk", "Tests\Integration\EverythingCheck.ahk") {
+          foreach ($script in "Tests\Bench\BenchDriver.ahk", "Tests\Screenshots\TakeScreenshots.ahk", "Tests\Integration\EverythingCheck.ahk", "Tests\Integration\QuickSwitchCheck.ahk") {
             & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', '/validate', $script `
               -Out validate.log -Err validate.err -TimeoutSeconds 120
             $code = $LASTEXITCODE
