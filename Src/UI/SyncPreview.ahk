@@ -23,6 +23,8 @@
 ;   SyncPreview.Show(task, {Summary, Changes, LogFile}, {Run, Confirm}) what a preview found
 ;   SyncPreview.Finish(job, code | "Stopped") -> true when a window showed it        SyncPreview.ShowJob(name)  reopen a running task's window
 ;   SyncPreview.Rows(changes, source, destination)   -> [[item, action, size, full path]...]: deletions first
+; Placement: the windows open where the last one was closed, at its size, maximized if it was (Features.Sync.Window); a window
+; opened while others are open moves down and right a step per open window, so they don't cover each other exactly
 ;===============================================================================
 
 class SyncPreview {
@@ -168,6 +170,7 @@ class SyncPreview {
         if !SyncPreview.Windows.Has(key)
             return
         hwnd := SyncPreview.Windows[key].Gui.Hwnd
+        SyncPreview.SavePlacement(hwnd)
         TaskbarProgress.Set(hwnd, "None")
         try SyncPreview.Windows[key].Gui.Destroy()
         SyncPreview.Windows.Delete(key)
@@ -268,7 +271,7 @@ class SyncPreview {
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
         width := SyncPreview.Width
-        w := {Key: key, Task: task, Gui: g, Phase: "", Options: {}, CanRun: true, Created: A_TickCount, Totals: "", Shown: 0, Paths: []}
+        w := {Key: key, Task: task, Gui: g, Phase: "", Options: {}, CanRun: true, Created: A_TickCount, Totals: "", Shown: 0, Paths: [], Placed: false}
         w.Folders := g.AddText("w" width " cGray")
         g.SetFont("s10 bold")
         w.Status := g.AddText("w" width " y+8")
@@ -303,11 +306,102 @@ class SyncPreview {
 
     ; Shows the window (once laid out), Close focused: Enter closes, running (and deleting) needs a click
     static _Present(w) {
-        w.Gui.Show()
+        options := ""
+        if !w.Placed {                                                      ; the first time: where the last window was closed
+            w.Placed := true
+            options := SyncPreview._Place(w)
+        }
+        w.Gui.Show(options)
         w.Gui.GetClientPos(, , &cw, &ch)                                    ; the same size as before: no Size event
         SyncPreview._Layout(w, 0, cw, ch)
         w.CloseButton.Focus()
         return w.Gui
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Placement (WINDOWPLACEMENT: the size and position the window has when not maximized, in workspace coordinates, and
+    ; whether it is maximized; saved when a window closes, so moving it doesn't write the settings file each time)
+    ;---------------------------------------------------------------------------
+    static storePlacementFn := (saved) => SyncPreview._StorePlacement(saved)   ; replaced in the tests, which change no settings
+
+    static _StorePlacement(saved) {
+        AppSettings.Feature("Sync")["Window"] := saved
+        AppSettings.Save()
+    }
+
+    ; Remembers where hwnd is (a minimized window: where it goes back to, maximized or not)
+    static SavePlacement(hwnd) {
+        placement := Buffer(44, 0), NumPut("UInt", 44, placement)
+        if !DllCall("GetWindowPlacement", "Ptr", hwnd, "Ptr", placement)
+            return false
+        saved := SyncPreview.PlacementFrom(placement)
+        settings := AppSettings.Feature("Sync")
+        if (settings.Has("Window") && SyncPreview.SamePlacement(settings["Window"], saved))
+            return false                                                    ; unchanged: the settings file isn't written
+        SyncPreview.storePlacementFn.Call(saved)
+        return true
+    }
+
+    ; WINDOWPLACEMENT -> Map(Left, Top, Right, Bottom, Maximized)
+    static PlacementFrom(placement) {
+        flags := NumGet(placement, 4, "UInt"), showCmd := NumGet(placement, 8, "UInt")
+        maximized := (showCmd = 3) || (showCmd = 2 && (flags & 2))          ; SW_SHOWMAXIMIZED, or minimized with WPF_RESTORETOMAXIMIZED
+        return Map("Left", NumGet(placement, 28, "Int"), "Top", NumGet(placement, 32, "Int"), "Right", NumGet(placement, 36, "Int")
+            , "Bottom", NumGet(placement, 40, "Int"), "Maximized", maximized ? 1 : 0)
+    }
+
+    static SamePlacement(a, b) {
+        if !(a is Map && b is Map)
+            return false
+        for key in ["Left", "Top", "Right", "Bottom", "Maximized"]
+            if !(a.Has(key) && b.Has(key) && a[key] = b[key])
+                return false
+        return true
+    }
+
+    ; The saved placement moved by step pixels per window already open, or "" when there is none, it is too small, or no part of it
+    ; is on a monitor now (one unplugged since): it then opens in the middle of the screen as before. offset: workspace -> screen coordinates
+    static PlacementFor(saved, openWindows, step, minW, minH, offset := "") {
+        if !(saved is Map)
+            return ""
+        for key in ["Left", "Top", "Right", "Bottom"]
+            if !(saved.Has(key) && IsInteger(saved[key]))
+                return ""
+        if (saved["Right"] - saved["Left"] < minW || saved["Bottom"] - saved["Top"] < minH)
+            return ""
+        shift := (saved.Has("Maximized") && saved["Maximized"]) ? 0 : openWindows * step
+        result := Map("Left", saved["Left"] + shift, "Top", saved["Top"] + shift, "Right", saved["Right"] + shift, "Bottom", saved["Bottom"] + shift
+            , "Maximized", (saved.Has("Maximized") && saved["Maximized"]) ? 1 : 0)
+        offset := IsObject(offset) ? offset : SyncPreview.WorkspaceOffset()
+        rect := Buffer(16)
+        NumPut("Int", result["Left"] + offset.X, "Int", result["Top"] + offset.Y, "Int", result["Right"] + offset.X, "Int", result["Bottom"] + offset.Y, rect)
+        if !DllCall("MonitorFromRect", "Ptr", rect, "UInt", 0, "Ptr")       ; MONITOR_DEFAULTTONULL: on no monitor
+            return ""
+        return result
+    }
+
+    ; Workspace coordinates (WINDOWPLACEMENT) start at the primary monitor's work area: a taskbar at the top or left moves them
+    static WorkspaceOffset() {
+        primary := MonitorGetPrimary()
+        MonitorGet(primary, &left, &top)
+        MonitorGetWorkArea(primary, &workLeft, &workTop)
+        return {X: workLeft - left, Y: workTop - top}
+    }
+
+    ; Before the window first shows: puts it (still hidden) where the saved placement says; returns the options for its first Show:
+    ; "Maximize" when it was maximized (restoring it then goes back to the saved size)
+    static _Place(w) {
+        others := SyncPreview.Windows.Count - (SyncPreview.Windows.Has(w.Key) ? 1 : 0)
+        placement := SyncPreview.PlacementFor(AppSettings.Feature("Sync").Has("Window") ? AppSettings.Feature("Sync")["Window"] : ""
+            , others, Win.Scale(30), Win.Scale(320), Win.Scale(190))
+        if !IsObject(placement)
+            return ""
+        w.Gui.Show("Hide")                                                  ; laid out once at its own size, so the Size event below lays out the saved one
+        buf := Buffer(44, 0)
+        NumPut("UInt", 44, "UInt", 0, "UInt", 0, buf)                       ; SW_HIDE: placed, still hidden
+        NumPut("Int", placement["Left"], "Int", placement["Top"], "Int", placement["Right"], "Int", placement["Bottom"], buf, 28)
+        DllCall("SetWindowPlacement", "Ptr", w.Gui.Hwnd, "Ptr", buf)
+        return placement["Maximized"] ? "Maximize" : ""
     }
 
     ; The buttons the phase allows (Enabled); the focus moves off a button that was just disabled
