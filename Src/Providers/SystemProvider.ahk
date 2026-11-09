@@ -4,7 +4,8 @@
 ; Every command has a fixed Id; the Hotkeys list in ALTRun.json refers to commands by Id, for example:
 ;   { "Key": "^!t", "Action": "TerminalHere", "WinTitle": "ahk_class CabinetWClass" }
 ; The available Ids are in the list in Commands(); the function names of old versions (2.x) still work through Aliases.
-; Two more Ids only for hotkeys: "ToggleWindow" (show / hide the search window), "Show".
+; Two more Ids only for hotkeys: "ToggleWindow" (show / hide the search window), "Show" (show it; with a "Text" in the hotkey entry,
+; the search box starts with that text: { "Key": "^!f", "Action": "Show", "Text": "folder " }).
 ;
 ; Shutdown / restart / sign out / hibernate / empty Recycle Bin ask first (Features.System.ConfirmActions).
 ;
@@ -112,13 +113,14 @@ class SystemProvider {
         ActionCatalog.PasteText(text, !active || (IsObject(SearchWindow.Gui) && active = SearchWindow.Gui.Hwnd))
     }
 
-    static RunCommand(id) {
+    ; text: only for "Show", typed into the search box (a custom hotkey that opens ALTRun with "folder ", for example)
+    static RunCommand(id, text := "") {
         if SystemProvider.Aliases.Has(id)
             id := SystemProvider.Aliases[id]
         if (id = "ToggleWindow")
             return SearchWindow.Toggle()
         if (id = "Show")
-            return SearchWindow.Show()
+            return SearchWindow.Show(text)
         for command in SystemProvider.Commands() {
             if (command["Id"] != id)
                 continue

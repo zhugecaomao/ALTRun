@@ -7,7 +7,8 @@ Preferences → Hotkeys: assign a [system command](System-Commands#system-comman
 | Field | Example | Description |
 |---|---|---|
 | Hotkey (Key) | `Ctrl+Alt+T` | Click the box and press the keys (see [Setting hotkeys](#setting-hotkeys) below); mouse hotkeys: click the middle or a side button in the box. With "Keep the key's original function" ticked, the key still does what it normally does (a leading `~` in the settings file) |
-| Action | `TerminalHere` | A system command Id, or `ToggleWindow` (show / hide ALTRun) |
+| Action | `TerminalHere` | A system command Id, `ToggleWindow` (show / hide ALTRun), or `Show` (show ALTRun, optionally with a search text) |
+| Search text (Text) | `folder ` | Only for `Show`: the search box starts with this text, so one hotkey goes straight to one scope, for example `folder ` (folders only), `recent ` (recent files) or `doc ` (documents only; see [Usage](Usage) for the prefixes). A space at the end counts. Empty = an empty search box |
 | Only in window (WinTitle) | `ahk_class CabinetWClass` | Empty = everywhere; otherwise only in matching windows; `ALTRun` = only in ALTRun's search window |
 
 New installs come with three examples, one for each kind:
@@ -15,7 +16,7 @@ New installs come with three examples, one for each kind:
 - `Ctrl+Alt+T` in File Explorer (`ahk_class CabinetWClass`) opens a terminal in the current folder
 - `Ctrl+R` in the ALTRun search window (`ALTRun`) rebuilds the index
 
-Delete or change them as you like; existing settings keep their own list. `F1`–`F4` in the search window are built in, see [Shortcuts](Usage#shortcuts).
+Delete or change them as you like; existing settings keep their own list. To go straight to one scope, add a hotkey of your own: for example `Ctrl+Alt+F` with the action `Show` and the search text `folder ` opens the search window ready to search folders. `F1`–`F4` in the search window are built in, see [Shortcuts](Usage#shortcuts).
 
 ![Preferences → Hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 

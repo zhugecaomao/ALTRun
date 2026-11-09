@@ -1461,6 +1461,9 @@ class ProviderTests {
             scopes .= (entry["WinTitle"] = "" ? "global" : entry["WinTitle"] = "ALTRun" ? "altrun" : "window") " "
         }
         eq("hotkey examples: global, one program, ALTRun", scopes, "global window altrun ")
+        eq("hotkey text: Show types it", App.HotkeyText(Map("Key", "^!f", "Action", "Show", "Text", "folder ", "WinTitle", "")), "folder ")
+        eq("hotkey text: only for Show", App.HotkeyText(Map("Key", "^!f", "Action", "Lock", "Text", "folder ")), "")
+        eq("hotkey text: none set", App.HotkeyText(Map("Key", "^!f", "Action", "Show")), "")
         eq("no mouse hotkeys by default (no mouse hook)", App.UsesMouseHotkeys(defaults["Hotkeys"]), false)
         help := ""
         for item in HelpProvider.Items()

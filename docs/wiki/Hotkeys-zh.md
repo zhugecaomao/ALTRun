@@ -7,7 +7,8 @@
 | 字段 | 例子 | 说明 |
 |---|---|---|
 | 热键 (Key) | `Ctrl+Alt+T` | 点一下框, 按下组合键 (见下文 [设置热键](#设置热键)); 鼠标热键: 在框里点鼠标中键或侧键。勾选 "保留按键原来的功能" 时, 按键原来的作用照常 (设置文件里是开头的 `~`) |
-| 操作 (Action) | `TerminalHere` | 系统命令的 Id, 或 `ToggleWindow` (显示 / 隐藏 ALTRun) |
+| 操作 (Action) | `TerminalHere` | 系统命令的 Id, `ToggleWindow` (显示 / 隐藏 ALTRun), 或 `Show` (显示 ALTRun, 可以带搜索文字) |
+| 搜索文字 (Text) | `folder ` | 只用于 `Show`: 搜索框里预先填入这段文字, 一个热键直达一个范围, 例如 `folder ` (只搜文件夹)、`recent ` (最近的文件)、`doc ` (只搜文档; 前缀见 [使用方法](Usage-zh))。结尾的空格有效。留空 = 空的搜索框 |
 | 窗口 (WinTitle) | `ahk_class CabinetWClass` | 留空 = 全局; 否则只在匹配的窗口里生效; `ALTRun` = 只在 ALTRun 的搜索窗口里 |
 
 新安装时带三个示例, 每种用法一个:
@@ -15,7 +16,7 @@
 - `Ctrl+Alt+T`: 在资源管理器 (`ahk_class CabinetWClass`) 里, 在当前文件夹打开终端
 - `Ctrl+R`: 在 ALTRun 搜索窗口 (`ALTRun`) 里重建索引
 
-可以随意删除或修改; 已有的设置保留自己的列表。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage-zh#快捷键)。
+可以随意删除或修改; 已有的设置保留自己的列表。想一键直达某个范围, 自己加一个热键: 例如 `Ctrl+Alt+F`, 操作选 `Show`, 搜索文字填 `folder `, 按下就打开搜索窗口, 直接搜文件夹。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage-zh#快捷键)。
 
 ![偏好设置 → 自定义热键](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 

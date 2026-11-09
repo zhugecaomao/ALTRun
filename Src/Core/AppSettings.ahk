@@ -13,7 +13,7 @@
 ;   "Appearance"    : { theme / window width / visible rows },
 ;   "Features"      : { "<feature>": { "Enabled": 1, ...the feature's own settings } },
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
-;   "Hotkeys"       : [ { "Key", "Action", "WinTitle" } ],   custom hotkeys -> system commands
+;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "Text" } ],   custom hotkeys -> system commands (Text, optional: what the Show action types into the search box)
 ;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword" } ],
 ;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ],
 ;   "DelayedStart"  : [ { "Name", "Target", "Arguments", "Delay", "Enabled" } ],   programs started after signing in (Task Scheduler)

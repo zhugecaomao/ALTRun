@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.15]
+
+测试版。
+
+Test build.
+
+### 新增
+- 自定义热键 (偏好设置 → 热键) 的 "显示 ALTRun" (`Show`) 动作多了一个 "搜索文字": 按热键打开搜索窗口时, 搜索框里已经填好这段文字。例如 `Ctrl+Alt+F` 填 `folder ` 直接搜文件夹, 填 `recent ` 直接看最近的文件, 填 `doc ` 只搜文档。这是设置里可选的新键 `Text`, 老设置不受影响 (Refs #427)
+
 ## [2026.11.09.14]
 
 测试版。
@@ -1243,7 +1252,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.15...HEAD
+[2026.11.09.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.14...2026.11.09.15
 [2026.11.09.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.13...2026.11.09.14
 [2026.11.09.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.12...2026.11.09.13
 [2026.11.09.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.11...2026.11.09.12
