@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.23]
+
+测试版。
+
+Test build.
+
+### 修复
+- 通过远程桌面 (Chrome 远程桌面等) 操作时, 在 Total Commander 的 "同步目录" 窗口里用 ALTRun 退出或重新加载, 仍会弹出属性窗口。远程桌面软件发来的按键不算 "物理按键", ALTRun 以为 Enter 已经松开, 没等就关了窗口; 现在用键盘的逻辑状态判断, 本机键盘和远程桌面都会等 Enter 松开 (通常只等按键按住的几十毫秒)
+
 ## [2026.11.03.22]
 
 测试版。
@@ -1259,7 +1268,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.22...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.23...HEAD
+[2026.11.03.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.22...2026.11.03.23
 [2026.11.03.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.21...2026.11.03.22
 [2026.11.03.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.20...2026.11.03.21
 [2026.11.03.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.19...2026.11.03.20
