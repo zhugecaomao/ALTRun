@@ -318,12 +318,14 @@ class UpdateChecker {
             , (message) => UpdateChecker._DownloadFailed(job, message, zip), UpdateChecker.DownloadTimeoutMs, zip, true)
     }
 
-    ; The background download failed: an HTTP error would come back the same; a network error (no direct connection, a proxy script
-    ; WinHTTP can't use) gets one more try with AutoHotkey's Download, as before this download moved to the background
+    ; The background download failed: an HTTP 4xx would come back the same; a network error (no direct connection, a proxy script
+    ; WinHTTP can't use) or a server error gets one more try with AutoHotkey's Download, as before this download moved to the
+    ; background. GitHub's release download can be slow on a first request (about 10 s on Windows CI) and its gateway then gives up
+    ; with 504 now and then; the next request is quick
     static _DownloadFailed(job, message, zip) {
         if (UpdateChecker._installing != job)
             return
-        if RegExMatch(message, "^HTTP \d")
+        if RegExMatch(message, "^HTTP 4\d\d")
             return UpdateChecker._InstallFailed(job, message)
         Logger.Warn("UpdateChecker: background download failed (" message "), trying again with AutoHotkey's Download")
         try job.Progress["Cancel"].Enabled := false
