@@ -1608,6 +1608,16 @@ Func | PTTools | PT Tools (AHK)=99
                 eq("run as admin: asked once per app", asked.Length, 2)
                 eq("run as admin: no menu = not offered", ActionCatalog.CanRunAsAdmin("shell:AppsFolder\Broken_1!App"), false)
                 eq("run as admin: by extension, without asking", (ActionCatalog.CanRunAsAdmin("C:\Tools\x.EXE") ? 1 : 0) (ActionCatalog.CanRunAsAdmin("C:\a.txt") ? 1 : 0) (ActionCatalog.CanRunAsAdmin("shell:AppsFolder\a\b") ? 1 : 0) "|" asked.Length, "100|3")
+                ; Ctrl+Shift+Enter: as administrator when it fits; anything else (a folder, a document, a result with its own action) runs as Enter does
+                eq("Ctrl+Shift+Enter: program", ActionCatalog.CanRunElevated(ResultItem("x", "", {Kind: "file", Arg: "C:\Tools\x.exe"})) ? 1 : 0, 1)
+                eq("Ctrl+Shift+Enter: Store desktop app", ActionCatalog.CanRunElevated(ResultItem("t", "", {Kind: "file", Arg: terminal})) ? 1 : 0, 1)
+                eq("Ctrl+Shift+Enter: not a document, folder or own action", (ActionCatalog.CanRunElevated(ResultItem("a", "", {Kind: "file", Arg: "C:\a.txt"})) ? 1 : 0)
+                    . (ActionCatalog.CanRunElevated(ResultItem("f", "", {Kind: "folder", Arg: "C:\Tools"})) ? 1 : 0)
+                    . (ActionCatalog.CanRunElevated(ResultItem("s", "", {Kind: "file", Arg: "C:\Tools\x.exe", OnRun: (*) => 0})) ? 1 : 0), "000")
+                ran := []
+                ActionCatalog.RunModifier(ResultItem("s", "", {Kind: "text", Arg: "x", OnRun: (*) => ran.Push("default")}), "admin")
+                eq("Ctrl+Shift+Enter: otherwise what Enter does", ran.Length ? ran[1] : "", "default")
+                eq("run as admin: shortcut shown", InStr(titles(ResultActions.ListFor(ResultItem("x", "", {Kind: "file", Arg: "C:\Tools\x.exe"}))).Text, admin) > 0, true)
                 eq("packaged app", (ActionCatalog.IsPackagedApp(terminal) ? 1 : 0) (ActionCatalog.IsPackagedApp("shell:AppsFolder") ? 1 : 0) (ActionCatalog.IsPackagedApp("shell:Downloads") ? 1 : 0), "100")
             } finally {
                 ActionCatalog.AppVerbs := savedVerbs, ActionCatalog._runAs.Clear()

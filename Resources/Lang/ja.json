@@ -119,6 +119,8 @@
   "Help.Convert.Text": "単位の換算 (通貨: 100 usd to sgd)",
   "Help.Copy.Key": "Alt+Enter",
   "Help.Copy.Text": "選択した項目のパス、リンク、テキストをコピー",
+  "Help.Admin.Key": "Ctrl+Shift+Enter",
+  "Help.Admin.Text": "選択したプログラムを管理者として実行",
   "Help.Delete.Key": "Ctrl+Del",
   "Help.Delete.Text": "選択した結果を削除 (アプリは非表示)",
   "Help.Edit.Key": "F3",

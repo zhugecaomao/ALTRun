@@ -119,7 +119,7 @@ class SearchKeys {
             case 0x0D:                                                      ; Enter
                 if Logger.Enabled
                     SearchKeys.TraceEnter(lParam, msg)
-                SearchWindow._Execute(ctrl ? "ctrl" : alt ? "alt" : "")
+                SearchWindow._Execute((ctrl && shift) ? "admin" : ctrl ? "ctrl" : alt ? "alt" : "")   ; Ctrl+Shift+Enter: as administrator (as in Start and Explorer)
                 return 0
             case 0x1B:                                                      ; Esc
                 if (actions && SearchWindow.Session.ActionsOnly)

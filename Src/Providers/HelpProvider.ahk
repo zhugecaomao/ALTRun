@@ -41,6 +41,7 @@ class HelpProvider {
             ["Selection"  , ""              , "Usage"],
             ["Delete"     , ""              , "Usage"],
             ["Copy"       , ""              , "Usage"],
+            ["Admin"      , ""              , "Usage"],
             ["Number"     , ""              , "Usage"],
             ["History"    , ""              , "Usage"],
             ["Tab"        , ""              , "Usage"],

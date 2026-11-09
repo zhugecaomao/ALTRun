@@ -6,11 +6,12 @@
 ;   Enter        the default action (file / program / folder / URL: open; text: copy)
 ;   Ctrl+Enter   file / folder: reveal in the file manager; text: paste into the foreground window
 ;   Alt+Enter    copy (path / URL / text)
+;   Ctrl+Shift+Enter   run as administrator (programs, shortcuts, scripts, Store apps that have it); otherwise what Enter does
 ; The actions panel (→), F3 edit and Ctrl+Del delete are built on these in Src\UI\ResultActions.ahk.
 ;
 ; Usage:
 ;   ActionCatalog.RunDefault(item)
-;   ActionCatalog.RunModifier(item, "ctrl" | "alt")
+;   ActionCatalog.RunModifier(item, "ctrl" | "alt" | "admin")
 ;   ActionCatalog.OpenFile(path) / OpenFolder(path) / Reveal(path) / CopyText(text) / PasteText(text) ...
 ;   ActionCatalog.OpenMany(paths) / CopyMany(paths, folder) / RecycleMany(paths)   several marked files
 ;===============================================================================
@@ -28,6 +29,8 @@ class ActionCatalog {
     }
 
     static RunModifier(item, modifier) {
+        if (modifier = "admin")
+            return ActionCatalog.CanRunElevated(item) ? ActionCatalog.RunAsAdmin(item.Arg, item.Arguments) : ActionCatalog.RunDefault(item)
         if (modifier = "alt")
             return ActionCatalog.CopyText(item.CopyText())
         if (modifier = "ctrl") {
@@ -96,6 +99,10 @@ class ActionCatalog {
         }
         Run(Trim('*RunAs "' Path.Resolve(target) '" ' arguments))
     }
+
+    ; Whether Ctrl+Shift+Enter runs item as administrator: a file result (an app, a file found, a custom command for a program) whose
+    ; target fits "Run as administrator" (CanRunAsAdmin). A result with its own action (OnRun: snippets, system commands...) runs that
+    static CanRunElevated(item) => (item.Kind = "file" && !IsObject(item.OnRun) && ActionCatalog.CanRunAsAdmin(item.Arg))
 
     static IsPackagedApp(target) => RegExMatch(target, "i)^shell:AppsFolder\\[^\\]+$") ? true : false
 

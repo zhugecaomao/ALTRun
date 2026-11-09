@@ -274,6 +274,8 @@ class I18n {
         s["Help.Reveal.Text"]          := "open the folder that contains the selected item"
         s["Help.Copy.Key"]             := "Alt+Enter"
         s["Help.Copy.Text"]            := "copy the path, link or text of the selected item"
+        s["Help.Admin.Key"]            := "Ctrl+Shift+Enter"
+        s["Help.Admin.Text"]           := "run the selected program as administrator"
         s["Help.Number.Key"]           := "Ctrl+1 ~ Ctrl+9"
         s["Help.Number.Text"]          := "open result 1 ~ 9 directly"
         s["Help.History.Key"]          := "Ctrl+↑ / Ctrl+↓"
