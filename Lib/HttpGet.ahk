@@ -6,13 +6,14 @@
 ; checks for completion on a timer (running only while there are requests) and then calls the callback.
 ;
 ; Usage:
-;   request := HttpGet.Start(url, done, fail?, timeoutMs?, file?, follow?)
+;   request := HttpGet.Start(url, done, fail?, timeoutMs?, file?, follow?, headers?)
 ;     done(text)      called for HTTP 2xx with the response text; if done throws (e.g. bad content), fail is called instead
 ;                     with file: the response is saved there as it came (binary) and done gets the file name
 ;     fail(message)   called for network errors, HTTP errors and timeouts (30 s by default); without fail it goes to the log
 ;     follow          true: Msxml2.ServerXMLHTTP.6.0 (WinHTTP), which follows a redirect to another host, as GitHub's release
 ;                     downloads do (Msxml2.XMLHTTP ends with status 0 there; probed on Windows CI). WinHTTP doesn't read the
 ;                     system proxy settings by itself: a fixed proxy set in Windows is passed on; a proxy script (PAC) isn't
+;     headers         a Map of request headers (name -> value), e.g. Accept for GitHub's API
 ;   HttpGet.Cancel(request)   stops a request that hasn't finished: no callback is called
 ;   HttpGet.Pending   number of requests not finished yet
 ;===============================================================================
@@ -25,7 +26,7 @@ class HttpGet {
 
     static Pending => HttpGet._active.Length
 
-    static Start(url, done, fail := "", timeoutMs := "", file := "", follow := false) {
+    static Start(url, done, fail := "", timeoutMs := "", file := "", follow := false, headers := "") {
         if (timeoutMs = "")
             timeoutMs := HttpGet.TimeoutMs
         try {
@@ -35,6 +36,9 @@ class HttpGet {
             xhr.open("GET", url, true)
             if !follow                                                      ; WinHTTP has no cache (and a CDN may not like the header)
                 xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 2000 00:00:00 GMT")   ; don't use old content from the WinINet cache (ask the server every time, like Download())
+            if (headers is Map)
+                for name, value in headers
+                    xhr.setRequestHeader(name, value)
             xhr.send()
         } catch as e {
             HttpGet._Later(fail, "", e.Message)

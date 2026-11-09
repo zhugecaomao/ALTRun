@@ -927,6 +927,26 @@ class CoreTests {
                     fakes[n].status := 504, fakes[n].statusText := "Gateway Time-out", fakes[n].readyState := 4
                     TestUtil.WaitFor(() => asked.Length)
                     eq("server error (504): tried again with Download()", downloads.Length, 1)
+
+                    ; from GitHub's API first (Accept: the file itself); when the API refuses (here its hourly limit), the link
+                    asked.Length := 0, downloads.Length := 0
+                    viaApi := release.Clone(), viaApi.AssetUrl := "https://api.github.com/repos/zhugecaomao/ALTRun/releases/assets/1"
+                    UpdateChecker.Install(viaApi), n := fakes.Length
+                    eq("API: asked first, for the file", fakes[n].Url "|" (fakes[n].Headers.Has("Accept") ? fakes[n].Headers["Accept"] : "")
+                        , viaApi.AssetUrl "|application/octet-stream")
+                    eq("API: with a User-Agent", fakes[n].Headers.Has("User-Agent") && fakes[n].Headers["User-Agent"] != "", true)
+                    fakes[n].status := 403, fakes[n].statusText := "rate limit exceeded", fakes[n].readyState := 4
+                    TestUtil.WaitFor(() => fakes.Length > n)
+                    eq("API refused: then the link, in the background", fakes.Length > n ? fakes[n + 1].Url "|" fakes[n + 1].Headers.Count "|" downloads.Length : "", release.ZipUrl "|0|0")
+                    fakes[n + 1].status := 200, fakes[n + 1].responseBody := body, fakes[n + 1].readyState := 4
+                    TestUtil.WaitFor(() => asked.Length)
+                    eq("API refused: the link's download verified (wrong checksum here)", asked.Length && InStr(asked[1], I18n.T("Update.Corrupt")) > 0, true)
+                    ; a network error from the API (e.g. only a proxy script lets it out): the link would fail the same way, so Download() at once
+                    asked.Length := 0, downloads.Length := 0
+                    UpdateChecker.Install(viaApi), n := fakes.Length
+                    fakes[n].status := 12029, fakes[n].readyState := 4
+                    TestUtil.WaitFor(() => asked.Length)
+                    eq("API network error: Download() of the link at once", (fakes.Length - n) "|" downloads.Length "|" (downloads.Length ? downloads[1] : ""), "0|1|" release.ZipUrl)
                 } finally
                     UpdateChecker.downloadFn := savedDownload
                 Hud.Hide()
@@ -970,6 +990,24 @@ class CoreTests {
                 eq("real zip", result, "done")
                 eq("real zip: SHA256", FileExist(savedFile) ? UpdateChecker.Sha256File(savedFile) : "", "ec0bb1848f799a92ed9a8bbf501bc1488907eaee78dfa1534cc193f6aa9c68b8")
                 eq("real zip: kept running while downloading", ticks > 1, true)
+                FileAppend("NOTE HttpGet.real zip from the link: " (A_TickCount - start) " ms`n", "*")
+            }
+            try FileDelete(savedFile)
+            ; the same zip from GitHub's API (as the update downloads it first): the API redirects to the download server; the
+            ; headers go along. A refusal (403: the hourly limit without an account) is a note too, the update then uses the link
+            got := [], ticks := 0
+            HttpGet.Start("https://api.github.com/repos/zhugecaomao/ALTRun/releases/assets/704518218", (f) => got.Push("done"), (m) => got.Push("fail " m), 60000, savedFile, true
+                , UpdateChecker.DownloadSources({AssetUrl: "x", ZipUrl: ""})[1].Headers)
+            start := A_TickCount
+            while (!got.Length && A_TickCount - start < 65000)
+                Sleep(10), ticks++
+            result := got.Length ? got[1] : "fail no answer"
+            if RegExMatch(result, "^fail (Network error|Timed out|no answer|HTTP 5\d\d|HTTP 403)")
+                FileAppend("NOTE HttpGet.real zip from the API skipped: " result "`n", "*")
+            else {
+                eq("real zip from the API", result, "done")
+                eq("real zip from the API: SHA256", FileExist(savedFile) ? UpdateChecker.Sha256File(savedFile) : "", "ec0bb1848f799a92ed9a8bbf501bc1488907eaee78dfa1534cc193f6aa9c68b8")
+                FileAppend("NOTE HttpGet.real zip from the API: " (A_TickCount - start) " ms`n", "*")
             }
             try FileDelete(savedFile)
         }

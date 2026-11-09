@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.09.1]
+
+测试版。
+
+Test build.
+
+### 改进
+- 一键更新改从 GitHub 的 API 下载更新包, 失败时 (例如超过 GitHub 对未登录用户每小时 60 次的限制) 再用 Release 的下载链接, 最后才用旧的下载方式。2026-11 GitHub 两次出事故时, Release 的下载链接每次要 9 ~ 11 秒才响应, 有时直接 504; API 不到半秒就下完
+- 日志记录更新包下载用了多久、从哪里下载的
+
 ## [2026.11.09]
 
 ### Summary
@@ -1125,7 +1135,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.1...HEAD
+[2026.11.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09...2026.11.09.1
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26

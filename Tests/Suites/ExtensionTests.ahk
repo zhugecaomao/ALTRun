@@ -1685,20 +1685,25 @@ class ExtensionTests {
         digest := "3779b0aedbd58a7bf235eab4c0cc52d3b4c9f3188cb98be38319837605cef017"
         response := '{"tag_name": "v2026.10.01", "html_url": "https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01", "assets": ['
             . '{"name": "notes.txt", "browser_download_url": "https://x/notes.txt", "digest": null},'
-            . '{"name": "ALTRun_v2026.10.01.zip", "browser_download_url": "https://github.com/zhugecaomao/ALTRun/releases/download/2026.10.01/ALTRun_v2026.10.01.zip", "digest": "sha256:' StrUpper(digest) '"}]}'
+            . '{"name": "ALTRun_v2026.10.01.zip", "url": "https://api.github.com/repos/zhugecaomao/ALTRun/releases/assets/704518218"'
+            . ', "browser_download_url": "https://github.com/zhugecaomao/ALTRun/releases/download/2026.10.01/ALTRun_v2026.10.01.zip", "digest": "sha256:' StrUpper(digest) '"}]}'
         release := UpdateChecker.ParseRelease(response)
         eq("version", release.Version, "2026.10.01")
         eq("page", release.Page, "https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01")
         eq("zip", release.ZipUrl, "https://github.com/zhugecaomao/ALTRun/releases/download/2026.10.01/ALTRun_v2026.10.01.zip")
         eq("sha256", release.Sha256, digest)
+        eq("zip in the API", release.AssetUrl, "https://api.github.com/repos/zhugecaomao/ALTRun/releases/assets/704518218")
+        eq("download sources: API first, then the link", UpdateChecker.DownloadSources(release).Length "|" UpdateChecker.DownloadSources(release)[2].Url, "2|" release.ZipUrl)
         release := UpdateChecker.ParseRelease('{"tag_name": "2026.10.01", "assets": [{"name": "ALTRun_v2026.10.01.zip", "browser_download_url": "https://x/a.zip", "digest": null}]}')
         eq("no digest", release.Sha256 "|" release.Page, "|" UpdateChecker.ReleasePage)
         ok("no digest -> no install", !UpdateChecker.CanInstall(release))
         ; Only addresses in this repository are opened / downloaded (Run would start anything)
         other := UpdateChecker.ParseRelease('{"tag_name": "2026.10.01", "html_url": "calc.exe", "assets": [{"name": "ALTRun_v2026.10.01.zip"'
-            . ', "browser_download_url": "https://evil.example/ALTRun_v2026.10.01.zip", "digest": "sha256:' digest '"}]}')
+            . ', "url": "https://api.github.com/repos/someone/ALTRun/releases/assets/1", "browser_download_url": "https://evil.example/ALTRun_v2026.10.01.zip", "digest": "sha256:' digest '"}]}')
         eq("foreign page ignored", other.Page, UpdateChecker.ReleasePage)
-        eq("foreign zip ignored", other.ZipUrl, "")
+        eq("foreign zip ignored", other.ZipUrl "|" other.AssetUrl, "|")
+        for address in ["https://api.github.com/repos/zhugecaomao/ALTRun/releases/assets/1/../../x", "https://api.github.com/repos/zhugecaomao/ALTRun/releases/assets/"]
+            eq("API address that isn't an asset ignored: " address, UpdateChecker.ParseRelease('{"tag_name": "2026.10.01", "assets": [{"name": "ALTRun_v2026.10.01.zip", "url": "' address '"}]}').AssetUrl, "")
         ok("foreign zip -> no install", !UpdateChecker.CanInstall(other))
         eq("in repo", UpdateChecker.InRepo("https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.01"), true)
         eq("other repo", UpdateChecker.InRepo("https://github.com/zhugecaomao/ALTRunX/releases"), false)

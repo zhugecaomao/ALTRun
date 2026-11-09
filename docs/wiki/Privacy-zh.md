@@ -10,7 +10,7 @@ ALTRun 自己只在下面几种情况访问网络:
 | 什么时候 | 访问哪里 | 做什么 | 怎样关掉 |
 |---|---|---|---|
 | 自动检查更新: 启动 1 分钟后 (离上次检查满 1 小时), 之后一直开着时每满 6 小时 | `api.github.com` | 读取最新发布的版本号, 不发送任何本机信息 | 偏好设置 → 通用 → "自动检查更新" (`General.CheckForUpdates`) |
-| 一键更新: 你按了 "安装更新" 时 | `github.com` (Release 的下载文件) | 下载新版本的 zip, 先核对 GitHub 给出的 SHA256 再替换 | 不点就不会下载 |
+| 一键更新: 你按了 "安装更新" 时 | `api.github.com` (Release 的 zip), 失败时 `github.com` (Release 的下载链接) | 下载新版本的 zip, 先核对 GitHub 给出的 SHA256 再替换 | 不点就不会下载 |
 | 货币换算 (默认关): 启动 1.5 分钟后, 离上次下载满 12 小时 | `api.frankfurter.dev` | 下载欧洲央行等公布的参考汇率, 存在 `Data\Currency.json` | 偏好设置 → 计算器 → "货币换算" (`Features.Calculator.Currency`) |
 | 下载网站图标: 你在网页搜索的编辑框里点了 "下载网站图标" 时 | 网址所在的网站 | 下载这个网站的图标, 存在 `Data\Icons` | 不点就不会访问 |
 
