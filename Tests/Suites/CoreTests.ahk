@@ -1330,7 +1330,7 @@ Func | PTTools | PT Tools (AHK)=99
         JSON.WriteFile(jsonFile, Map("k", "中文"))
         JSON.WriteFile(jsonFile, Map("k", "v2"))
         firstByte := FileOpen(jsonFile, "r").RawRead(bytes := Buffer(3), 3) ? NumGet(bytes, 0, "UChar") : 0
-        eq("write file", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (firstByte = 0xEF ? "bom" : "no bom") "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v2|no bom|")
+        eq("write file", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (firstByte = 0xEF ? "bom" : "no bom") "|" (FileExist(jsonFile "*.tmp") ? "tmp" : ""), "v2|no bom|")
         locked := FileOpen(jsonFile, "r -rwd")                              ; a sync folder / antivirus holds the file for a moment: written once it is released
         SetTimer(() => locked.Close(), -300)
         JSON.WriteFile(jsonFile, Map("k", "v3"))
@@ -1342,7 +1342,7 @@ Func | PTTools | PT Tools (AHK)=99
             failed := true
         locked.Close(), SafeFile.MoveTries := saved
         if failed                                                           ; Wine may not support exclusive opening; then the write just succeeds
-            eq("write file: gives up, original kept, no tmp left", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (FileExist(jsonFile ".tmp") ? "tmp" : ""), "v3|")
+            eq("write file: gives up, original kept, no tmp left", JSON.Parse(FileRead(jsonFile, "UTF-8"))["k"] "|" (FileExist(jsonFile "*.tmp") ? "tmp" : ""), "v3|")
         binFile := dir "\data.bin", bytes := Buffer(4), NumPut("UInt", 0x01020304, bytes)    ; binary content through SafeFile.Write
         SafeFile.Write(binFile, (out) => (out.Write("AB"), out.RawWrite(bytes, 4)))
         back := FileRead(binFile, "RAW")
@@ -1351,7 +1351,32 @@ Func | PTTools | PT Tools (AHK)=99
         try SafeFile.Write(binFile, (out) => (out.Write("x"), Integer("not a number")))
         catch
             failed := true
-        eq("write: a writer error keeps the old file, no tmp left", failed "|" FileGetSize(binFile) "|" (FileExist(binFile ".tmp") ? "tmp" : ""), "1|6|")
+        eq("write: a writer error keeps the old file, no tmp left", failed "|" FileGetSize(binFile) "|" (FileExist(binFile "*.tmp") ? "tmp" : ""), "1|6|")
+        ; Overlapping writes of one file: while the first waits for the locked file (Sleep), a timer writes the file again. Each has
+        ; its own temporary file (a shared one was deleted by the second write and the first failed after 2 s of retries), and the
+        ; first, finding the later content already written, keeps it instead of putting its older content over it
+        overlap := dir "\overlap.json", order := []
+        SafeFile.WriteText(overlap, "old")
+        locked := FileOpen(overlap, "r -rwd")
+        SetTimer(() => (locked.Close(), SafeFile.WriteText(overlap, "second"), order.Push("second")), -150)
+        start := A_TickCount
+        SafeFile.WriteText(overlap, "first"), order.Push("first")
+        TestUtil.WaitFor(() => order.Length = 2)
+        eq("overlapping writes: both done, the later content kept, no tmp left"
+            , order.Length "|" FileRead(overlap, "UTF-8") "|" (FileExist(dir "\*.tmp") ? "tmp" : ""), "2|second|")
+        ok("overlapping writes: no 2 s of retries (" (A_TickCount - start) " ms)", A_TickCount - start < 1500)
+        ; a temporary file that has gone while waiting isn't retried for 2 s: the write fails at once, the file keeps its content
+        locked := FileOpen(overlap, "r -rwd"), code := "", start := A_TickCount
+        SetTimer(() => (DeleteTemp(), locked.Close()), -150)
+        DeleteTemp() {
+            Loop Files, dir "\overlap.json.*.tmp"
+                FileDelete(A_LoopFileFullPath)
+        }
+        try SafeFile.WriteText(overlap, "third")
+        catch OSError as e
+            code := e.Number
+        if (code != "")                                                     ; Wine may not support exclusive opening; then the write just succeeds
+            eq("temporary file gone: fails at once, content kept", code "|" (A_TickCount - start < 1500) "|" FileRead(overlap, "UTF-8"), "2|1|second")
         DirDelete(dir, true)
 
         paths := []
