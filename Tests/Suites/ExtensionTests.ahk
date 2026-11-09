@@ -1452,9 +1452,9 @@ class ExtensionTests {
         try {
             eq("nothing held: settled", QuickSwitch._InputSettled(guard.Hwnd), true)
             inject(false), Sleep(50)
-            eq("injected Ctrl: held", GetKeyState("Ctrl") "|" QuickSwitch._InputSettled(guard.Hwnd), "1|0")
+            eq("injected Ctrl: held", App.IsKeyDown("Ctrl") "|" QuickSwitch._InputSettled(guard.Hwnd), "1|0")
             inject(true), Sleep(50)
-            eq("injected Ctrl let go: settled", GetKeyState("Ctrl") "|" QuickSwitch._InputSettled(guard.Hwnd), "0|1")
+            eq("injected Ctrl let go: settled", App.IsKeyDown("Ctrl") "|" QuickSwitch._InputSettled(guard.Hwnd), "0|1")
         } finally {
             inject(true)
             QuickSwitch.InputSettleMs := saved, QuickSwitch._settledSince := 0

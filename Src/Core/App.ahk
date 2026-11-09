@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.09.2"
+    static Version := "2026.11.09.3"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -393,6 +393,10 @@ class App {
     ; counts only keys from a keyboard driver, and remote desktop tools (Chrome Remote Desktop, ...) inject every key with SendInput, so
     ; there Enter was never "physically" down and the search window hid at once (KeyDiag, 2026-11-09; probed on Windows CI)
     static IsEnterDown() => GetKeyState("Enter") || GetKeyState("NumpadEnter")
+
+    ; Whether a key or mouse button is held: down as the system sees it (also when a remote desktop tool injects it, see IsEnterDown)
+    ; or physically down (a hotkey that blocks the key leaves it logically up while held)
+    static IsKeyDown(key) => GetKeyState(key) || GetKeyState(key, "P")
 
     ; The keys held down, e.g. "Enter+LAlt" ("" = none), from the keyboard or injected (see IsEnterDown). No NumpadEnter: it shares its
     ; virtual key with Enter, so it reads the same
