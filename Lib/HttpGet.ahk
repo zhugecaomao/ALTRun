@@ -33,7 +33,8 @@ class HttpGet {
             if follow
                 HttpGet._UseSystemProxy(xhr)
             xhr.open("GET", url, true)
-            xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 2000 00:00:00 GMT")   ; don't use old content from the WinINet cache (ask the server every time, like Download())
+            if !follow                                                      ; WinHTTP has no cache (and a CDN may not like the header)
+                xhr.setRequestHeader("If-Modified-Since", "Sat, 01 Jan 2000 00:00:00 GMT")   ; don't use old content from the WinINet cache (ask the server every time, like Download())
             xhr.send()
         } catch as e {
             HttpGet._Later(fail, "", e.Message)

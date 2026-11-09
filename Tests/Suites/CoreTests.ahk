@@ -822,18 +822,18 @@ class CoreTests {
             eq("callbacks do not block each other", got.Length = 3 ? got[3] : TextTools.JoinList(got, ","), "a end")
 
             ; with a file: the body is saved as it came (binary) and done gets the file name
-            got.Length := 0, file := A_Temp "\ALTRun-httpget-test.bin"
-            try FileDelete(file)
-            request := HttpGet.Start("https://example.test/zip", (f) => got.Push("done " f), (m) => got.Push("fail " m), , file, true)
+            got.Length := 0, savedFile := A_Temp "\ALTRun-httpget-test.bin"
+            try FileDelete(savedFile)
+            request := HttpGet.Start("https://example.test/zip", (f) => got.Push("done " f), (m) => got.Push("fail " m), , savedFile, true)
             eq("follow: the request that follows redirects", fakes[fakes.Length].HasOwnProp("Follow"), true)
             body := ComObjArray(0x11, 4)                                       ; VT_UI1
             for i, byte in [0x50, 0x4B, 0x00, 0xFF]
                 body[i - 1] := byte
             n := fakes.Length, fakes[n].status := 200, fakes[n].responseBody := body, fakes[n].readyState := 4
-            eq("file: done with its name", TestUtil.WaitFor(() => got.Length) ? got[1] : "", "done " file)
-            data := FileRead(file, "RAW")
+            eq("file: done with its name", TestUtil.WaitFor(() => got.Length) ? got[1] : "", "done " savedFile)
+            data := FileRead(savedFile, "RAW")
             eq("file: the bytes as they came", data.Size "|" NumGet(data, 0, "UChar") "|" NumGet(data, 2, "UChar") "|" NumGet(data, 3, "UChar"), "4|80|0|255")
-            try FileDelete(file)
+            try FileDelete(savedFile)
 
             got.Length := 0                                                    ; Cancel: aborted, no callback, nothing pending
             request := HttpGet.Start("https://example.test/cancel", (t) => got.Push("done"), (m) => got.Push("fail " m))
@@ -910,7 +910,7 @@ class CoreTests {
 
                 ; a network error: one more try with Download() (fake here); an HTTP error isn't tried again
                 downloads := [], savedDownload := UpdateChecker.downloadFn, asked.Length := 0
-                UpdateChecker.downloadFn := (url, file) => (downloads.Push(url), FileAppend("x", file))
+                UpdateChecker.downloadFn := (url, target) => (downloads.Push(url), FileAppend("x", target))
                 try {
                     UpdateChecker.Install(release), n := fakes.Length
                     fakes[n].status := 12029, fakes[n].readyState := 4             ; ERROR_INTERNET_CANNOT_CONNECT
@@ -952,9 +952,9 @@ class CoreTests {
                 eq("real request: kept running while waiting", ticks > 1, true)
             }
             ; a real release zip (binary, through GitHub's redirect to its download server): saved byte for byte, so its SHA256 matches
-            file := A_Temp "\ALTRun-httpget-zip-test.zip", got := [], ticks := 0
-            try FileDelete(file)
-            HttpGet.Start("https://github.com/zhugecaomao/ALTRun/releases/download/2026.11.03/ALTRun_v2026.11.03.zip", (f) => got.Push("done"), (m) => got.Push("fail " m), 60000, file, true)
+            savedFile := A_Temp "\ALTRun-httpget-zip-test.zip", got := [], ticks := 0
+            try FileDelete(savedFile)
+            HttpGet.Start("https://github.com/zhugecaomao/ALTRun/releases/download/2026.11.03/ALTRun_v2026.11.03.zip", (f) => got.Push("done"), (m) => got.Push("fail " m), 60000, savedFile, true)
             start := A_TickCount
             while (!got.Length && A_TickCount - start < 65000)
                 Sleep(10), ticks++
@@ -963,10 +963,10 @@ class CoreTests {
                 FileAppend("NOTE HttpGet.real zip skipped: " result "`n", "*")
             else {
                 eq("real zip", result, "done")
-                eq("real zip: SHA256", FileExist(file) ? UpdateChecker.Sha256File(file) : "", "ec0bb1848f799a92ed9a8bbf501bc1488907eaee78dfa1534cc193f6aa9c68b8")
+                eq("real zip: SHA256", FileExist(savedFile) ? UpdateChecker.Sha256File(savedFile) : "", "ec0bb1848f799a92ed9a8bbf501bc1488907eaee78dfa1534cc193f6aa9c68b8")
                 eq("real zip: kept running while downloading", ticks > 1, true)
             }
-            try FileDelete(file)
+            try FileDelete(savedFile)
         }
     }
 
