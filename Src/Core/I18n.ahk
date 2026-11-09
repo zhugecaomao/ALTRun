@@ -1266,6 +1266,7 @@ class I18n {
         s["QuickSwitch.SearchCueFolders"] := "Search folders"
         s["QuickSwitch.TagSearch"]     := "Search"
         s["QuickSwitch.TagFile"]       := "File"
+        s["QuickSwitch.NoMatchIndex"]  := "No match. Everything isn't running; the built-in index covers only: {1}. Press Enter to add folders"
         s["QuickSwitch.TagFavorite"] := "Favorite"
         s["QuickSwitch.AddFavorite"] := "Add to Favorites"
         s["QuickSwitch.RemoveFavorite"] := "Remove from Favorites"

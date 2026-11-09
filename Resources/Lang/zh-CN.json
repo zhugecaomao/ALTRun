@@ -795,6 +795,7 @@
   "Prefs.WinTitleHint": "例如 ahk_exe notepad.exe; 填 ALTRun 表示只在 ALTRun 搜索窗口里生效",
   "Prefs.WindowPosition": "窗口位置",
   "QuickSwitch.NoFileManager": "没有打开的 Total Commander、Directory Opus 或资源管理器窗口。",
+  "QuickSwitch.NoMatchIndex": "没有找到。Everything 没有运行, 内置索引只覆盖: {1}。按 Enter 添加文件夹",
   "QuickSwitch.SearchCue": "搜索文件夹和文件",
   "QuickSwitch.SearchCueFolders": "搜索文件夹",
   "QuickSwitch.TagExplorer": "资源管理器",
