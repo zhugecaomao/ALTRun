@@ -274,7 +274,7 @@ class AppSettings {
         return keptDensity || keptLargeType || keptClipboard
     }
 
-    ; An existing settings file without Features.Clipboard.LocalFiles: keep the clipboard history where it was before 2026.11.03.14
+    ; An existing settings file without Features.Clipboard.LocalFiles: keep the clipboard history where it was before 2026.11.09
     ; (1 = ClipboardHistory.json in the Data folder) instead of the new install's default 2 (all on this PC). Not for settings imported from
     ; 2.x's ALTRun.ini: it had no clipboard history, so there is nothing to keep
     static _KeepClipboardStorage(data) {

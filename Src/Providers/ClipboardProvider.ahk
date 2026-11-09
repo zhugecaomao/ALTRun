@@ -62,7 +62,7 @@ class ClipboardProvider {
     ; Where the clipboard history is stored (LocalFiles): on this PC it doesn't travel with the Data folder into OneDrive and other sync folders or a USB drive.
     ;   1: images and very long entries (Clipboard folder) on this PC: images are big, and in a sync folder every copy would upload one.
     ;      ClipboardHistory.json stays in Data (the text history syncs as usual); on another PC images / long entries without their files are skipped when read
-    ;   2 (default; settings files from before 2026.11.03.14 keep 1): ClipboardHistory.json on this PC too: the clipboard history never leaves this PC
+    ;   2 (default; settings files from before 2026.11.09 keep 1): ClipboardHistory.json on this PC too: the clipboard history never leaves this PC
     ;   0: all in Data (e.g. the whole folder carried on a USB drive)
     ; After the setting changes, the files are moved from the other location at the first start-up; if they can't be moved, the old location is used this time and it tries again next time.
     ; When both exist (e.g. another PC's history in a sync folder) nothing is overwritten and the new location's is used

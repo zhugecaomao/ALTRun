@@ -5,281 +5,101 @@
 
 ## [未发布]
 
-## [2026.11.03.27]
-
-测试版。
-
-Test build.
-
-### 新增
-- `Ctrl+Shift+Enter` 以管理员身份运行选中的程序、快捷方式或脚本 (和开始菜单、资源管理器一样; Windows Terminal 这类商店里的桌面应用也可以); 其它结果和 `Enter` 一样。操作面板里的 "以管理员身份运行" 也标出了这个快捷键, 输入 `?` 的帮助里也有
-
-## [2026.11.03.26]
-
-测试版。
-
-Test build.
-
-### 改进
-- 有几个同步任务正在运行时退出 ALTRun 更快: 先同时通知所有任务停止, 再一起等它们结束 (总共最多 2 秒; 以前一个一个等, 每个最多 2 秒)
-- 延迟启动和任务计划程序同步时, 整个过程只连接一次任务计划程序 (以前每个任务连接一次)
-
-## [2026.11.03.25]
-
-测试版。
-
-Test build.
-
-### 修复
-- 一键更新下载时, GitHub 偶尔返回 504 (服务器网关超时: 下载地址第一次访问时 GitHub 那边很慢) 就直接报错; 现在和网络错误一样再试一次
-
-## [2026.11.03.24]
-
-测试版。
-
-Test build.
-
-### 改进
-- 一键更新改为在后台下载: 下载时热键和搜索窗口照常响应 (以前要等下载完, 网络慢时像卡住了); 进度窗口里可以点 取消 或按 Esc 停止, 下载的文件会删掉, 程序不做任何改动; 下载最多等 5 分钟
-
-## [2026.11.03.23]
-
-测试版。
-
-Test build.
-
-### 修复
-- 通过远程桌面 (Chrome 远程桌面等) 操作时, 在 Total Commander 的 "同步目录" 窗口里用 ALTRun 退出或重新加载, 仍会弹出属性窗口。远程桌面软件发来的按键不算 "物理按键", ALTRun 以为 Enter 已经松开, 没等就关了窗口; 现在用键盘的逻辑状态判断, 本机键盘和远程桌面都会等 Enter 松开 (通常只等按键按住的几十毫秒)
-
-## [2026.11.03.22]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 文件夹同步 新增 "打开任务窗口时自动开始预览" (默认关): 从搜索窗口按 Enter 或在偏好设置里点 同步... 打开任务窗口时, 马上开始预览; 预览只读取文件夹, 不会自动运行同步
-
-## [2026.11.03.21]
-
-测试版。
-
-Test build.
-
-### 改进
-- 同步窗口记住位置和大小: 在上次关掉时的位置打开, 关掉时是最大化的就最大化打开; 那个显示器已经拔掉时, 放回屏幕中间。同时打开几个任务的窗口时, 往右下依次错开一点, 不会完全叠在一起
-
-## [2026.11.03.20]
-
-测试版。
-
-Test build.
-
-### 改进
-- 对话框文件夹面板的收藏移到搜索框右边的星形按钮里: 点星形按钮弹出收藏菜单, 有子文件夹的收藏会展开一层子文件夹 (最多 30 个, 不列隐藏和系统文件夹; 网络共享、映射的网络驱动器和光盘上的收藏不读子文件夹, 菜单不会卡住); 子菜单的第一项 (粗体) 是收藏本身, 点哪一项都会跳过去。菜单里还有 "把当前文件夹加入收藏" 和 "编辑收藏..."
-- 收藏不再占用面板列表的位置, 列表只显示 Total Commander、Directory Opus、资源管理器和最近的文件夹; 面板的搜索框照样能找到收藏, 排在最前面
-
-## [2026.11.03.19]
-
-测试版。
-
-Test build.
-
-### 改进
-- 双击呼出可以只用左边或右边的键: 偏好设置 → 通用 → "双击呼出" 新增 左 Ctrl / 右 Ctrl / 左 Shift / 右 Shift (选项里不再重复 "双击" 两个字)
-
-### 修复
-- 双击 Ctrl / Shift 呼出时, 先按左边的键再按右边的键也会呼出 (例如打字时左右 Shift 交替输入大写字母); 现在要同一个键按两下
-
-## [2026.11.03.18]
-
-测试版。
-
-Test build.
-
-### 修复
-- Windows 右键菜单里的 "复制文件地址" (按住 `Shift` 时的扩展菜单项) 没有复制任何内容; 现在会把路径复制到剪贴板。打开、属性等其它菜单项不受影响
-
-## [2026.11.03.17]
-
-测试版。
-
-Test build.
-
-### 改进
-- Windows 右键菜单可以直接打开, 不用先进操作面板: 在文件或文件夹上按住 `Shift` 右键 (和资源管理器一样, 带扩展菜单项), 或者按 `Shift+→` (光标在末尾时)、`Shift+F10`、菜单键。需要在 偏好设置 → 功能 里打开 "Windows 右键菜单"; 没打开时这些键和以前一样。操作面板里的这一项改用表示菜单的图标 (以前是文件本身的图标), 右边显示 `Shift+→`
-- 搜索框右边的菜单图标调大一些
-
-### 修复
-- 在空搜索框里用 `Ctrl+Del` 删除最近使用的项目后, 它要等窗口关掉再打开才消失; 现在马上从列表里去掉
-
-## [2026.11.03.16]
-
-测试版。
-
-Test build.
-
-### 改进
-- 对话框文件夹面板的收藏更容易看清: 收藏的文件夹用星形图标; 加入或删除收藏后弹出 ALTRun 自己的提示 (以前用 Windows 通知, 关掉通知时看不到), 加入后选中这个收藏
-- 说明写清楚 `Ctrl+D` 要在光标位于面板里时按 (先点一下面板, 或者按 `Ctrl+Shift+G`); 在对话框里按 `Ctrl+D` 是日期戳的热键
-
-## [2026.11.03.15]
-
-测试版。
-
-Test build.
-
-### 新增
-- 对话框文件夹面板可以收藏文件夹: 收藏的文件夹固定显示在面板最上面, 标着 "收藏"。在面板里右键点文件夹可以加入或删除收藏, 右键 → "把当前文件夹加入收藏" (或者在面板里按 `Ctrl+D`) 把对话框现在显示的文件夹加进去; 也可以在 偏好设置 → 对话框面板 → "收藏的文件夹" 里编辑, 支持环境变量
-
-### 改进
-- 文件夹面板和对话框一样宽: 以前最宽 1000 像素, 对话框拉得更宽时面板不跟着变宽; 现在最宽到屏幕的宽度
-
-## [2026.11.03.14]
-
-测试版。
-
-Test build.
-
-### 改进
-- 剪贴板历史默认只存在这台电脑上 (`%LOCALAPPDATA%\ALTRun`): 新安装的 偏好设置 → 剪贴板 → "保存位置" 默认是 "全部只存本机", 便携版放在 OneDrive 等同步盘或 U 盘里时, 复制过的文字不再跟着 Data 文件夹走。已有的设置文件保持原来的选择 (文字历史仍在 Data 文件夹里), 需要时可以在偏好设置里改 (#368)
-
-## [2026.11.03.13]
-
-测试版。
-
-Test build.
-
-### 改进
-- 设置更不容易丢: 保存设置、剪贴板历史和文件索引时, 先确实写到磁盘再替换旧文件 (以前刚保存完就断电或蓝屏, 文件可能变成全是 0)。每次保存设置时, 上一个版本保留为 `ALTRun.json.bak`; `ALTRun.json` 读不出来时 (格式错误或损坏), 会问要不要用这份备份启动, 不再直接换成默认设置 (#368)
-- "恢复默认设置" 之前的备份改名为 `ALTRun.reset.backup.json`, 以后的保存不会覆盖它
-
-## [2026.11.03.12]
-
-测试版。
-
-Test build.
-
-### 改进
-- 搜索框右边加了 ALTRun 图标, 点它打开菜单 (偏好设置、快捷键和语法、重建索引、检查更新、重新载入、退出), 和 Alfred、Listary 一样。它一直都在: 刚安装还没有结果时、关掉状态栏时也能找到菜单。状态栏左下角的 ☰ 去掉了
-- 状态栏右边只显示 `Enter` 和 `→` (操作) 两项, 和 Raycast 一样更简洁; `Ctrl+Enter` (定位、粘贴)、`F3` (编辑) 等其它操作和快捷键都列在操作面板 (`→`) 里
-
-## [2026.11.03.11]
-
-测试版。
-
-Test build.
-
-### 改进
-- 意外错误不再弹出 AutoHotkey 的英文报错框: 热键、计时器、窗口事件里没有处理到的错误, 现在写进日志 (`%Temp%\ALTRun.log`, 包括出错的文件、行号和调用栈; 调试日志关着也写), 并显示一条简短的提示, 说明出了什么错、详细信息在哪里 (10 秒内最多提示一次)。出错的那个操作停止, ALTRun 继续运行。启动过程中的错误仍然显示报错框 (#368)
-
-## [2026.11.03.10]
-
-测试版。
-
-Test build.
-
-### 修复
-- 测试版 2026.11.03.9 在 Windows 7 上启动时会报错: 检查是不是商店版时用到的系统函数 (`GetCurrentPackageFamilyName`) 从 Windows 8 才有。现在找不到这个函数时就当作普通版。ALTRun 正式支持的是 Windows 10 / 11, 这里只是不让它在旧系统上一启动就出错
-
-## [2026.11.03.9]
-
-测试版。
-
-Test build.
-
-### 改进
-- 为上架 Microsoft Store 做准备: 以商店版 (MSIX 包) 运行时, 由 Store 负责更新, 不再在后台检查更新, "检查更新" 打开 ALTRun 在 Store 的页面; 开机启动、"发送到" 和 CapsLock 辅助的计划任务改用 `altrun` 命令启动 (商店版每次更新安装位置都会变); 不另建开始菜单快捷方式 (商店版自带开始菜单项); 偏好设置里这两个选项变灰。普通版 (zip、Scoop、winget) 没有变化
-
-## [2026.11.03.8]
-
-测试版。
-
-Test build.
-
-### 改进
-- 文件夹同步窗口默认更大 (更宽、列表多显示几行); "操作" 一列按当前语言里最长的操作文字定宽, 多出来的宽度留给文件路径
-
-### 修复
-- 拖动改变文件夹同步窗口的大小时画面会花掉 (文字和按钮留下残影): 调整布局后整个窗口重新绘制
-
-## [2026.11.03.7]
-
-测试版。
-
-Test build.
-
-### 修复
-- 在 Total Commander 的 "同步目录" 窗口里按 Alt+Space 打开 ALTRun, 再按 Enter 退出 (或重新加载) ALTRun, TC 会弹出属性窗口。用真键盘记录确认了原因: TC 收到了 Alt 按下, Alt 松开却送到了 ALTRun, TC 一直以为 Alt 还按着; ALTRun 在 Enter 按下时就隐藏了窗口, Enter 松开单独送到了回到前面的 TC, TC 把它当成 Alt+Enter (属性)。以前是窗口隐藏以后才等 Enter 松开, 不起作用; 现在退出和重新加载会先等 Enter 松开 (最多 0.45 秒) 再隐藏窗口, Enter 松开留在 ALTRun 自己的窗口里
-
-## [2026.11.03.6]
-
-测试版。
-
-Test build.
-
-### 改进
-- 从剪贴板历史里粘贴的那一条会留在剪贴板里 (和 Ditto、Windows 的 `Win+V` 一样), 之后直接按 `Ctrl+V` 还能再粘贴, 不用再打开 ALTRun。以前粘贴完剪贴板里还是最近复制的内容 (短文字是直接打字输入的, 其它的粘贴后会还原剪贴板)。片段、"粘贴为纯文本" 等照旧, 用完还原剪贴板 (#375)
-
-## [2026.11.03.4]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置 → 文件夹同步只用来设置任务: 按钮合成一行 (添加 / 编辑 / 删除 / 复制一份 / 同步...); "同步..." 打开任务的同步窗口, 只是打开, 在窗口里点预览或立即同步才开始, 任务正在运行时显示进度; 预览、运行、停止、打开日志都在同步窗口里
-- 去掉任务列表的 "状态" 一列, 任务的状态在搜索结果和同步窗口里显示; 列表的源和目标两列更宽
-
-## [2026.11.03.3]
-
-测试版。
-
-Test build.
-
-### 改进
-- 在搜索窗口里对同步任务按 Enter 只打开它的同步窗口, 不再直接预览或同步 (在窗口里点预览或立即同步才开始); 想直接同步可以用 `→` 里的 "立即同步"
-
-### 修复
-- 镜像预览错报 "会删除 1 个文件" (列表里却没有), 还要求确认 "同步并删除", 结束时又说删除了 1 个文件: 目标里只有、但在排除列表里的文件和文件夹 (例如 `desktop.ini`、`~$` 临时文件、`*.bak`), robocopy 会算进汇总的 "Extras", 但不列出也不删除 (在 Windows 上探测确认)。现在要删除的数量按日志里列出的行计数; 只有被排除的文件时不再要求确认, 并说明这些文件会保留
-- 搜索结果里同步任务的图标在有的 Windows 上显示成打印机: 以前用的是 Windows 图标库 (imageres.dll) 里的编号, 不同版本的 Windows 编号对应的图标不一样; 现在用 ALTRun 自己的同步图标 (`Resources\Icons\Sync.ico`)
-
-## [2026.11.03.2]
-
-测试版。
-
-Test build.
-
-### 改进
-- 同步窗口:
-  - 标题改成 "<任务名> - 文件夹同步"; 按钮固定为 打开日志 / 预览 / 立即同步 / 停止 / 关闭, 不再显示或隐藏, 只按状态启用或禁用; 可以在窗口里重新预览
-  - "立即运行" 改名为 "立即同步", 要删除东西时是 "同步并删除"
-  - 窗口更宽, 文件或文件夹一列占满剩下的宽度; 去掉 robocopy 一列, 复制的原因并到操作一列 (例如 "复制 (较新)"); 路径显示不全时鼠标停在上面显示完整路径; 双击一行在资源管理器里显示这个文件
-  - 进度条一直显示, 窗口布局不再随状态变化跳动; 没能复制的文件让进度条变红, 停止时变黄
-  - 进度同时显示在任务栏按钮上; 窗口可以最小化
-- 完全相同、不需要同步的预览显示 "没有要做的: 目标已经是最新的 (538 个文件, 91 个文件夹)"
-
-### 修复
-- 预览显示 "新建 91 个文件夹", 其实一个都不用新建: robocopy 多线程 (`/MT`, 默认 16 线程) 时汇总里的 "Dirs Copied" 总是所有文件夹 (在 Windows 上探测确认)。现在按日志里的 "New Dir" 行计数, 多线程时日志里没有文件夹行, 就不再提新建文件夹
-
-## [2026.11.03.1]
-
-测试版。
-
-Test build.
-
-### 新增
-- 文件夹同步的同步窗口: 点预览或运行时马上打开, 一直跟到任务结束, 不用再等很久才看到结果
-  - 检查中 (预览): robocopy 找到的变化实时出现在列表里, 显示已找到多少项和用时, 可以停止; 几百 GB 的文件夹比较要很久, 现在能看到它在工作
-  - 预览: 要复制的文件数和总大小、要删除的文件和文件夹, 每一项带大小 (KB / MB / GB, 以前日志里是 `966803` 或 `1.0 m` 这样的写法)
-  - 同步中: 复制的文件实时列出; 预览过的 (镜像都会先预览) 进度条按已复制的字节数和预览时的总量显示, 没有预览的 (更新、全部复制) 显示已复制多少; 可以停止
-  - 完成: 复制了多少个文件 (和大小)、删除了多少个、用时, 没能复制的文件个数用红字显示
-  - 关掉窗口不会停止同步; 运行中在搜索窗口里按 Enter (或偏好设置里点运行) 重新打开窗口, `→` 里有 "显示进度" 和 "停止"
-- 列表最多显示前 2000 项, 日志里有全部
-
-### 改进
-- 开始同步时不再先后弹出两条相似的提示 ("正在检查..." 和 "已开始"), 由窗口显示; 结束时窗口不在最前面才发通知
-- 运行中的任务在搜索窗口里按 Enter 显示它的窗口, 不再直接停止 (避免误按停止了同步)
+## [2026.11.09]
+
+### Summary
+
+Folder Sync gets a live sync window: changes show up while robocopy works, with a progress bar, Stop and the result, and the window opens where you left it. The file dialog panel gets favorite folders in a star menu, each with one level of subfolders. The Windows context menu opens straight from a result, and `Ctrl+Shift+Enter` runs a program as administrator. One-click updates download in the background. Settings are written safely to disk with a backup, and unexpected errors are logged instead of showing AutoHotkey's error dialog. Total Commander's Synchronize directories window no longer opens a properties window after ALTRun quits, also over a remote desktop.
+
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- The settings file version is unchanged. From now on the settings as they were before each save are kept as `Data\ALTRun.json.bak`; the backup made by "Restore Defaults" is now `ALTRun.reset.backup.json`. Existing settings keep where the clipboard history is stored (new installations keep it on this PC only)
+
+### New
+- **Live sync window** for Folder Sync: Preview and Sync Now open it at once, and it follows the task to the end
+  - Checking (a preview): the changes robocopy finds appear as it finds them, with a count and the time; large folders take a while to compare, now you can see it working; Stop ends it
+  - Preview: how many files would be copied and their size, which files and folders would be deleted, each with its size (KB / MB / GB)
+  - Running: the files appear as robocopy copies them; the bar shows the bytes copied against what the preview found, or a count without a preview; Stop ends it
+  - Done: files copied (and their size), deleted, the time; files that couldn't be copied are counted in red
+  - The progress also shows on the taskbar button; double-click a row to show the file in Explorer; closing the window doesn't stop the task, and Enter on the task in the search window opens it again
+  - The window opens where it was last closed, at the same size, maximized if it was; a second task's window opens a step down and to the right
+- **Favorite folders in the file dialog panel**: the star button right of the panel's search box opens them; a favorite with subfolders opens a submenu with one level of them (up to 30; not read on network shares, mapped network drives or CDs, so the menu can't hang); the favorite itself is the first, bold item, so a click always jumps. Add the dialog's folder from the menu, by right-clicking a folder in the panel, or with `Ctrl+D` while the caret is in the panel; edit the list in Preferences → Dialog Panel. The panel's search finds favorites too, listed first
+- **Windows context menu straight from a result**: `Shift` + right-click (with the extended items, as in Explorer), `Shift+→` (caret at the end), `Shift+F10` or the menu key. Needs "Windows context menu" on in Preferences → Features
+- **`Ctrl+Shift+Enter` runs the selected program, shortcut or script as administrator**, as in Start and Explorer (also Store desktop apps such as Windows Terminal); for other results it does what `Enter` does
+- Preferences → Folder Sync → **"Start the preview when a task's window opens"** (off by default)
+- Double-tap to show the search window can use one side only: left / right Ctrl, left / right Shift
+
+### Improvements
+- **One-click updates download in the background**: hotkeys and the search window keep working; Cancel (or Esc) in the progress window stops it and changes nothing; it gives up after 5 minutes, and tries once more after a network or server error
+- **Settings are harder to lose**: settings, clipboard history and the file index are written to the disk before the old file is replaced (a power cut right after saving could leave a zero-filled file); if `ALTRun.json` can't be read, ALTRun offers to start from `ALTRun.json.bak` instead of the defaults
+- **Unexpected errors no longer show AutoHotkey's English error dialog**: they are written to `%Temp%\ALTRun.log` (with the file, line and call stack, even with the debug log off) and a short notice says where; the failed action stops and ALTRun keeps running
+- **Clipboard history stays on this PC by default** for new installations (`%LOCALAPPDATA%\ALTRun`), so copied text doesn't travel with a portable copy in OneDrive or on a USB stick
+- **An item pasted from the clipboard history stays on the clipboard**, so `Ctrl+V` pastes it again, as in Ditto and `Win+V` (#375)
+- Search window: an ALTRun icon right of the search box opens the menu (Preferences, help, rebuild index, check for updates, reload, quit); the status bar shows only `Enter` and `→`, the other keys are in the actions panel
+- Folder Sync in Preferences only sets tasks up: the buttons are in one row and **Sync...** opens the task's window; Enter on a sync task in the search window opens its window too (Sync Now is under `→`), and a running task's window instead of stopping it
+- Quitting with several sync tasks running is faster: all of them are told to stop at once (2 seconds at most in all, instead of up to 2 seconds each)
+- The file dialog panel is as wide as the dialog, up to the width of the screen (it used to stop at 1000 pixels)
+- Ready for the Microsoft Store: run as the Store package, ALTRun leaves updates to the Store and starts its scheduled tasks with the `altrun` command; the zip, Scoop and winget versions are unchanged
+
+### Fixes
+- After quitting or reloading ALTRun with Enter in front of Total Commander's Synchronize directories window, a properties window opened: Enter's key-up reached that window before its focus was back, and Windows hands such a key-up over as a system key (taken as Alt+Enter). ALTRun now waits until Enter is released before it hides, also when the keys come from a remote desktop (Chrome Remote Desktop and others), whose keys never count as physically pressed
+- "Copy as path" in the Windows context menu copied nothing
+- Double-tapping Ctrl or Shift also showed the search window after the left key and then the right one (e.g. typing capitals with both Shift keys)
+- A mirror preview reported deleting files that robocopy keeps (excluded files in the destination) and asked for "Sync and Delete"
+- With threads (the default), a preview said it would create folders that already existed
+- On some Windows versions a sync task's icon showed as a printer
+- Resizing the sync window left traces of text and buttons
+- A recent item deleted with `Ctrl+Del` in the empty search box only disappeared after the window was opened again
+
+---
+
+### 中文说明
+
+文件夹同步有了实时的同步窗口: robocopy 运行时变化实时列出, 有进度条、停止按钮和结果, 窗口在上次关掉的地方打开。文件对话框面板可以收藏文件夹, 收藏在星形菜单里, 每个收藏带一层子文件夹。Windows 右键菜单可以直接从结果打开, `Ctrl+Shift+Enter` 以管理员身份运行程序。一键更新改为在后台下载。设置先确实写到磁盘并保留备份, 意外错误写进日志, 不再弹出 AutoHotkey 的报错框。ALTRun 退出后, Total Commander 的 "同步目录" 窗口不再弹出属性窗口, 通过远程桌面操作时也一样。
+
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 设置文件的版本没有变。从这个版本起, 每次保存设置前的版本保留为 `Data\ALTRun.json.bak`; "恢复默认设置" 前的备份改名为 `ALTRun.reset.backup.json`。已有的设置保持剪贴板历史原来的保存位置 (新安装的只存在本机)
+
+#### 新增
+- **文件夹同步的实时同步窗口**: 点预览或立即同步时马上打开, 一直跟到任务结束
+  - 检查中 (预览): robocopy 找到的变化实时出现在列表里, 显示已找到多少项和用时; 大文件夹比较要花一些时间, 现在能看到它在工作; 可以停止
+  - 预览: 会复制多少个文件和总大小、会删除哪些文件和文件夹, 每一项带大小 (KB / MB / GB)
+  - 同步中: 复制的文件实时列出; 进度条按已复制的字节数和预览时的总量显示, 没有预览时显示已复制多少; 可以停止
+  - 完成: 复制了多少个文件 (和大小)、删除了多少个、用时; 没能复制的文件个数用红字显示
+  - 进度也显示在任务栏按钮上; 双击一行在资源管理器里显示这个文件; 关掉窗口不会停止任务, 在搜索窗口里对任务按 Enter 可以重新打开
+  - 窗口在上次关掉时的位置打开, 大小一样, 关掉时是最大化的就最大化打开; 同时打开另一个任务的窗口时往右下错开一点
+- **文件对话框面板可以收藏文件夹**: 面板搜索框右边的星形按钮打开收藏菜单; 有子文件夹的收藏会展开一层子文件夹 (最多 30 个; 网络共享、映射的网络驱动器和光盘上的不读, 菜单不会卡住); 子菜单第一项 (粗体) 是收藏本身, 点哪一项都会跳过去。可以从菜单里、在面板里右键点文件夹, 或者光标在面板里时按 `Ctrl+D`, 把对话框的文件夹加入收藏; 在 偏好设置 → 对话框面板 里编辑列表。面板的搜索也能找到收藏, 排在最前面
+- **Windows 右键菜单可以直接从结果打开**: 按住 `Shift` 右键 (带扩展菜单项, 和资源管理器一样)、`Shift+→` (光标在末尾时)、`Shift+F10` 或菜单键。需要在 偏好设置 → 功能 里打开 "Windows 右键菜单"
+- **`Ctrl+Shift+Enter` 以管理员身份运行选中的程序、快捷方式或脚本**, 和开始菜单、资源管理器一样 (Windows Terminal 这类商店里的桌面应用也可以); 其它结果和 `Enter` 一样
+- 偏好设置 → 文件夹同步 新增 **"打开任务窗口时自动开始预览"** (默认关)
+- 双击呼出可以只用一边的键: 左 / 右 Ctrl、左 / 右 Shift
+
+#### 改进
+- **一键更新改为在后台下载**: 下载时热键和搜索窗口照常响应; 进度窗口里点 取消 (或按 Esc) 可以停止, 程序不做任何改动; 最多等 5 分钟, 遇到网络或服务器错误会再试一次
+- **设置更不容易丢**: 保存设置、剪贴板历史和文件索引时, 先确实写到磁盘再替换旧文件 (以前刚保存完就断电, 文件可能变成全是 0); `ALTRun.json` 读不出来时, 会问要不要用 `ALTRun.json.bak` 启动, 不再直接换成默认设置
+- **意外错误不再弹出 AutoHotkey 的英文报错框**: 写进 `%Temp%\ALTRun.log` (包括文件、行号和调用栈, 调试日志关着也写), 并显示一条简短的提示说明在哪里; 出错的操作停止, ALTRun 继续运行
+- **剪贴板历史默认只存在这台电脑上** (新安装的, `%LOCALAPPDATA%\ALTRun`): 便携版放在 OneDrive 或 U 盘里时, 复制过的文字不再跟着走
+- **从剪贴板历史粘贴的那一条会留在剪贴板里**, 之后按 `Ctrl+V` 还能再粘贴, 和 Ditto、`Win+V` 一样 (#375)
+- 搜索窗口: 搜索框右边的 ALTRun 图标打开菜单 (偏好设置、帮助、重建索引、检查更新、重新载入、退出); 状态栏只显示 `Enter` 和 `→`, 其它快捷键都在操作面板里
+- 偏好设置里的文件夹同步只用来设置任务: 按钮合成一行, **同步...** 打开任务的窗口; 在搜索窗口里对同步任务按 Enter 也是打开窗口 (立即同步在 `→` 里), 任务运行中时按 Enter 显示它的窗口, 不再停止任务
+- 有几个同步任务在运行时退出更快: 同时通知所有任务停止 (总共最多 2 秒, 以前每个最多 2 秒)
+- 文件对话框面板和对话框一样宽, 最宽到屏幕的宽度 (以前最宽 1000 像素)
+- 为上架 Microsoft Store 做好准备: 以商店版运行时由 Store 负责更新, 计划任务改用 `altrun` 命令启动; zip、Scoop、winget 版本没有变化
+
+#### 修复
+- 在 Total Commander 的 "同步目录" 窗口前按 Enter 退出或重新加载 ALTRun 后, 会弹出属性窗口: Enter 的松开在那个窗口恢复焦点之前送到, Windows 把这样的松开当成系统键送过去 (被当成 Alt+Enter)。现在 ALTRun 等 Enter 松开后才隐藏窗口, 通过远程桌面 (Chrome 远程桌面等) 操作时也一样 (远程桌面发来的按键从来不算物理按下)
+- Windows 右键菜单里的 "复制文件地址" 没有复制任何内容
+- 双击 Ctrl 或 Shift 呼出时, 先按左边再按右边的键也会呼出 (例如用左右两个 Shift 输入大写字母)
+- 镜像预览把 robocopy 会保留的文件 (目标里被排除的文件) 算成要删除, 还要求 "同步并删除"
+- 多线程 (默认) 时, 预览说要新建其实已经存在的文件夹
+- 在有的 Windows 上, 同步任务的图标显示成打印机
+- 拖动改变同步窗口大小时, 文字和按钮留下残影
+- 在空搜索框里用 `Ctrl+Del` 删除最近使用的项目后, 要重新打开窗口才消失
 
 ## [2026.11.03]
 
@@ -1305,33 +1125,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.27...HEAD
-[2026.11.03.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.26...2026.11.03.27
-[2026.11.03.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.25...2026.11.03.26
-[2026.11.03.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.24...2026.11.03.25
-[2026.11.03.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.23...2026.11.03.24
-[2026.11.03.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.22...2026.11.03.23
-[2026.11.03.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.21...2026.11.03.22
-[2026.11.03.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.20...2026.11.03.21
-[2026.11.03.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.19...2026.11.03.20
-[2026.11.03.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.18...2026.11.03.19
-[2026.11.03.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.17...2026.11.03.18
-[2026.11.03.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.16...2026.11.03.17
-[2026.11.03.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.15...2026.11.03.16
-[2026.11.03.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.14...2026.11.03.15
-[2026.11.03.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.13...2026.11.03.14
-[2026.11.03.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.12...2026.11.03.13
-[2026.11.03.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.11...2026.11.03.12
-[2026.11.03.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.10...2026.11.03.11
-[2026.11.03.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.9...2026.11.03.10
-[2026.11.03.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.8...2026.11.03.9
-[2026.11.03.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.7...2026.11.03.8
-[2026.11.03.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.6...2026.11.03.7
-[2026.11.03.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.4...2026.11.03.6
-[2026.11.03.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.3...2026.11.03.4
-[2026.11.03.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.2...2026.11.03.3
-[2026.11.03.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.1...2026.11.03.2
-[2026.11.03.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03...2026.11.03.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09...HEAD
+[2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26
 [2026.10.20]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.20
