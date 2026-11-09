@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.11]
+
+测试版。
+
+Test build.
+
+### 修复
+- 对话框面板的星形菜单或右键菜单用 Esc 或点别处关掉后, 前台留在 ALTRun 看不见的主窗口上, 接着打字进不了对话框, 要先点一下对话框。现在菜单关掉后对话框回到前台 (点了别的程序关掉菜单时不抢回焦点)
+
 ## [2026.11.09.10]
 
 测试版。
@@ -1207,7 +1216,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.11...HEAD
+[2026.11.09.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.10...2026.11.09.11
 [2026.11.09.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.9...2026.11.09.10
 [2026.11.09.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.8...2026.11.09.9
 [2026.11.09.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.7...2026.11.09.8

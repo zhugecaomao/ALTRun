@@ -7,6 +7,8 @@
 ;   activate      SetForegroundWindow (WinActivate), as a program bringing the dialog to the front
 ;   alt+tab       a simulated Alt+Tab (SendInput), as the keyboard does it
 ;   title click   a click on the dialog's title bar, as the mouse does it
+; Then the folder panel's ☆ menu: opened with a click on the star and closed with Esc, the dialog must be in front again (so
+; typing goes on in the dialog).
 ; Each way is tried Rounds times; the dialog is sent back to "Start" in between. Prints one line per round (PASS / FAIL) and
 ; ALTRun's QuickSwitch log lines on failure; the exit code is the number of failed rounds.
 ;
@@ -30,6 +32,8 @@ try {
     for method in ["activate", "alt+tab", "title click"]
         Loop Rounds
             Round_(method, A_Index)
+    Loop Rounds
+        MenuRound(A_Index)
 } catch as setupError {
     Say("FAIL setup: " setupError.Message " (line " setupError.Line ")")
     Failures++
@@ -110,6 +114,45 @@ Round_(method, n) {
     if !ShowsFolder("Folder A")
         return Fail(method, n, "the dialog didn't jump to Folder A", logSize)
     Say("PASS " method " " n ": jumped in " (A_TickCount - start) " ms")
+}
+
+; The panel's ☆ menu, closed with Esc: the dialog is the foreground window again
+MenuRound(n) {
+    WinActivate(Dialog)
+    if !WinWaitActive(Dialog, , 3)
+        return Fail("menu esc", n, "the dialog didn't come to the front")
+    panel := 0
+    start := A_TickCount
+    while (!panel && A_TickCount - start < 3000)
+        panel := WinExist("ALTRun Quick Switch ahk_pid " AppPid), Sleep(50)
+    if !panel
+        return Fail("menu esc", n, "the folder panel isn't shown")
+    star := "", panelW := 0
+    WinGetClientPos(&px, &py, &panelW, , panel)
+    for ctl in WinGetControls(panel)                                        ; the star: the small picture (the other Static is the full-width line)
+        if (InStr(ctl, "Static") = 1) {
+            ControlGetPos(&cx, &cy, &cw, &ch, ctl, panel)
+            if (cw < panelW // 4)
+                star := {X: px + cx + cw // 2, Y: py + cy + ch // 2}
+        }
+    if !IsObject(star)
+        return Fail("menu esc", n, "no star button in the panel")
+    CoordMode("Mouse", "Screen")
+    Click(star.X, star.Y)
+    popup := WinWait("ahk_class #32768", , 3)
+    if !popup
+        return Fail("menu esc", n, "the menu didn't open")
+    Send("{Esc}")
+    WinWaitClose("ahk_id " popup, , 2)
+    Sleep(300)
+    front := DllCall("GetForegroundWindow", "Ptr")
+    if (front != Dialog) {
+        DetectHiddenWindows(true)
+        what := front ? WinGetClass(front) " of " WinGetProcessName(front) (DllCall("IsWindowVisible", "Ptr", front) ? "" : " (hidden)") : "none"
+        DetectHiddenWindows(false)
+        return Fail("menu esc", n, "after Esc the window in front is " what ", not the dialog")
+    }
+    Say("PASS menu esc " n ": the dialog is in front again")
 }
 
 Fail(method, n, why, logSize := -1) {
