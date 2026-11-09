@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.5]
+
+测试版。
+
+Test build.
+
+### 修复
+- 在 ALTRun.json 里手写出两个同名的同步任务 (不分大小写和首尾空格) 时, 它们会共用运行状态、同步窗口、日志文件和搜索结果。现在运行或预览这样的任务会提示 "另一个同步任务和它同名", 请在偏好设置里改名 (编辑窗口本来就不允许重名)
+
 ## [2026.11.09.4]
 
 测试版。
@@ -1162,7 +1171,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.5...HEAD
+[2026.11.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...2026.11.09.5
 [2026.11.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...2026.11.09.4
 [2026.11.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.2...2026.11.09.3
 [2026.11.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.1...2026.11.09.2

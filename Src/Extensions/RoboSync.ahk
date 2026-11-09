@@ -131,7 +131,9 @@ class RoboSync {
     ; into the same folders; Detail = its name), SameLog (another task writes the same log file; Detail = its name),
     ; SourceNotAbsolute / DestinationNotAbsolute (not D:\... or \\server\share\...: a relative path, or an environment variable that
     ; doesn't exist on this PC and stays as %Name%, would make robocopy work in some other folder), MirrorMonitor (a mirror can't keep
-    ; in sync: robocopy's later rounds would delete without the checks ALTRun makes before each run, see SyncJobs)
+    ; in sync: robocopy's later rounds would delete without the checks ALTRun makes before each run, see SyncJobs), DuplicateName
+    ; (another task has the same name, ignoring case and spaces at the ends: the editor doesn't allow it, but ALTRun.json can be
+    ; edited by hand; the two would share the running job, its window, its log file and their search result)
     static Check(task, others := "") {
         problems := []
         add(level, code, detail := "") => problems.Push({Level: level, Code: code, Detail: detail})
@@ -163,6 +165,8 @@ class RoboSync {
                 if (other = task)
                     continue
                 name := RoboSync._Get(other, "Name"), otherTarget := RoboSync.Normal(RoboSync._Get(other, "Destination"))
+                if (Trim(name) != "" && StrLower(Trim(name)) = StrLower(Trim(RoboSync._Get(task, "Name"))))
+                    add("Error", "DuplicateName", Trim(name))
                 if (target != "" && otherTarget != "" && (target = otherTarget || RoboSync.Inside(target, otherTarget) || RoboSync.Inside(otherTarget, target)))
                     add("Warning", "Overlap", name)
                 if (logFile != "" && logFile = RoboSync.Normal(RoboSync.Expand(RoboSync._Get(other, "LogFile"), "20000101")))

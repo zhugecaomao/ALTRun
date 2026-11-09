@@ -131,7 +131,7 @@ class SyncJobs {
     static _Problem(task, preview) {
         if SyncJobs.IsRunning(task["Name"])
             return "Running"
-        for problem in RoboSync.Check(task)
+        for problem in RoboSync.Check(task, RoboSync.Items)                  ; with the other tasks: a duplicate name (see RoboSync.Check)
             if (problem.Level = "Error")
                 return problem.Code
         if (!preview && task["Mode"] = "Mirror")

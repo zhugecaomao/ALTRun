@@ -383,6 +383,9 @@ class ExtensionTests {
         eq("threads", codes(RoboSync.Check(threads)), "Error:Threads=200 ")
         a := mk("A", "\\srv\a", "D:\Sync\Tenders", , "D:\Logs\T_{date}.log"), b := mk("B", "\\srv\a\2026", "D:\Sync\Tenders\2026", , "D:\Logs\T_{date}.log"), c := mk("C", "\\srv\c", "D:\Sync\Other")
         eq("overlap and shared log", codes(RoboSync.Check(a, [a, b, c])), "Warning:Overlap=B Warning:SameLog=B ")
+        twin := mk(" c ", "\\srv\d", "E:\Other")                           ; written by hand in ALTRun.json: the editor doesn't allow it
+        eq("duplicate name (case and spaces ignored)", codes(RoboSync.Check(c, [a, c, twin])) codes(RoboSync.Check(twin, [a, c, twin])), "Error:DuplicateName=c Error:DuplicateName=C ")
+        eq("unnamed tasks aren't duplicates", codes(RoboSync.Check(mk("", "\\srv\x", "E:\x"), [mk("", "\\srv\y", "E:\y")])), "")
 
         ; Before a mirror: the source must be there and not empty
         root := A_Temp "\ALTRun-robosync-test"
@@ -520,6 +523,10 @@ class ExtensionTests {
             SyncJobs.Last[SyncJobs.Key("Archive")] := {Code: 8, Ended: "20261102093000", Preview: false}
             eq("last run failed", SyncJobs.State("Archive"), "Last run 09:30: failed (8)")
             eq("refused before robocopy", SyncJobs._Problem(Map("Name", "x", "Source", "", "Destination", "D:\y", "Mode", "Copy"), false), "NoSource")
+            first := Map("Name", "Twin", "Source", "\\srv\a", "Destination", "D:\Sync\A", "Mode", "Copy")
+            AppSettings.Data["SyncTasks"] := [first, Map("Name", "twin ", "Source", "\\srv\b", "Destination", "D:\Sync\B", "Mode", "Copy")]
+            eq("duplicate name: refused, also a preview", SyncJobs._Problem(first, false) "|" SyncJobs._Problem(first, true), "DuplicateName|DuplicateName")
+            eq("duplicate name: the message says what to do", InStr(I18n.T("Sync.Problem.DuplicateName", "Twin"), I18n.T("Prefs.Page.Sync")) > 0, true)
         } finally {
             AppSettings.Data["SyncTasks"] := saved
             SyncJobs.Last.Clear()
