@@ -517,7 +517,7 @@ class AppSettings {
                     "Enabled"          , 1,
                     "Hotkey"           , "^g",                              ; the jump hotkey: folder of the TC / Opus / Explorer window used last
                     "MenuHotkey"       , "^+g",                             ; folder menu: every TC panel, Explorer window and recent folder
-                    "Favorites"        , [],                                ; favorite folders, listed first in the folder panel (right-click a row there to add / remove)
+                    "Favorites"        , [],                                ; favorite folders, in the folder panel's star menu (right-click a row there to add / remove)
                     "RecentFolders"    , 10,                                ; how many recent folders the menu lists, 0 = none
                     "PanelSearch"      , "folders",                         ; panel search box: folders = folders only, all = folders and files
                     "ShowPanel"        , 1,                                 ; show the folder panel below a dialog as soon as it appears (as in Listary); one click jumps there

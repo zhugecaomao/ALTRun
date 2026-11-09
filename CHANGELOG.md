@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.03.20]
+
+测试版。
+
+Test build.
+
+### 改进
+- 对话框文件夹面板的收藏移到搜索框右边的星形按钮里: 点星形按钮弹出收藏菜单, 有子文件夹的收藏会展开一层子文件夹 (最多 30 个, 不列隐藏和系统文件夹; 网络共享、映射的网络驱动器和光盘上的收藏不读子文件夹, 菜单不会卡住); 子菜单的第一项 (粗体) 是收藏本身, 点哪一项都会跳过去。菜单里还有 "把当前文件夹加入收藏" 和 "编辑收藏..."
+- 收藏不再占用面板列表的位置, 列表只显示 Total Commander、Directory Opus、资源管理器和最近的文件夹; 面板的搜索框照样能找到收藏, 排在最前面
+
 ## [2026.11.03.19]
 
 测试版。
@@ -1231,7 +1241,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.19...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.20...HEAD
+[2026.11.03.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.19...2026.11.03.20
 [2026.11.03.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.18...2026.11.03.19
 [2026.11.03.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.17...2026.11.03.18
 [2026.11.03.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.16...2026.11.03.17

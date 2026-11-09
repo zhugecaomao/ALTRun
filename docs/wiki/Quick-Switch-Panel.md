@@ -8,7 +8,7 @@ The folder panel is the visual way to use Quick Switch. It is enabled by default
 
 ## Contents and controls
 
-- Lists your [favorite folders](#favorite-folders) first, then the current and opposite panels of each Total Commander window, the current tab (and the other side) of each Directory Opus window, open File Explorer windows and recently used folders.
+- Lists the current and opposite panels of each Total Commander window, the current tab (and the other side) of each Directory Opus window, open File Explorer windows and recently used folders. Your [favorite folders](#favorite-folders) are in the star menu at the top right.
 - The search box filters the list first, then searches matching folder and file names with Everything (or ALTRun's built-in file index); folders are listed before files.
 - Selecting a file jumps to its containing folder; it does not open or save the file.
 - Use `↑` / `↓` to select, `Enter` to jump and `Esc` to return to the original dialog. With a Chinese input method, the first `Enter` may commit the composition; press it again to jump.
@@ -18,14 +18,18 @@ In a standard Open / Save dialog, `Ctrl+Shift+G` temporarily shows the panel and
 
 ## Favorite folders
 
-Folders you often save to or open from can be kept at the top of the panel, with a star icon and marked "Favorite":
+Folders you often save to or open from are in the star menu at the top right of the panel:
 
-- **Add**: right-click a folder in the panel → **Add to Favorites**, or right-click → **Add Current Folder "…" to Favorites** for the folder the dialog shows now. A short notice confirms it and the favorite is selected.
+![The panel's star menu with a favorite's subfolders](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch-favorites.png)
+
+- **Jump**: click the star, then a favorite. A favorite with subfolders opens a submenu with its subfolders (one level); the favorite itself is the first, bold item, so a click always jumps. Up to 30 subfolders are listed; hidden and system folders are left out.
+- **Search**: the panel's search box also finds favorites, listed first and marked "Favorite".
+- **Add**: star menu → **Add Current Folder "…" to Favorites** for the folder the dialog shows now, or right-click a folder in the panel → **Add to Favorites**. A short notice confirms it.
 - **Keyboard**: `Ctrl+D` adds the dialog's current folder while the caret is in the panel (click the panel, or press `Ctrl+Shift+G`, first). In the dialog itself `Ctrl+D` is the [date stamp](Date-Stamp) hotkey and adds a date to the file name.
-- **Remove**: right-click a favorite → **Remove from Favorites**.
-- **Edit the list**: Preferences → Dialog Panel → "Favorite folders" → **Edit...**, one folder per line; environment variables such as `%USERPROFILE%\Documents` work.
+- **Remove**: right-click a favorite in the panel (open in a file manager, or found by the search) → **Remove from Favorites**.
+- **Edit the list**: star menu → **Edit Favorites...**, or Preferences → Dialog Panel → "Favorite folders" → **Edit...**, one folder per line; environment variables such as `%USERPROFILE%\Documents` work.
 
-Favorites are listed in the order they were added and are saved in `ALTRun.json`. A favorite that is also open in Explorer or Total Commander shows once, as a favorite. A favorite on a drive that isn't connected is still listed (ALTRun doesn't check, so a disconnected network drive can't make the panel hang).
+Favorites are listed in the order they were added and are saved in `ALTRun.json`. Subfolders are read when the menu opens, and only on this PC's own drives: for a favorite on a network share, a mapped network drive or a CD, the menu shows the favorite without subfolders, so a disconnected drive can't make the menu hang.
 
 ## Search scope
 
@@ -46,7 +50,7 @@ Change these in Preferences → Dialog Panel. They are stored under `Extensions.
 |---|---|---|
 | `ShowPanel` | `1` | Automatically show the folder panel |
 | `PanelSearch` | `folders` / `all` | Search folders only, or both folders and files |
-| `Favorites` | `[]` | Favorite folders, listed first (see [Favorite folders](#favorite-folders)) |
+| `Favorites` | `[]` | Favorite folders, in the star menu (see [Favorite folders](#favorite-folders)) |
 | `RecentFolders` | `10` | Number of recent folders; `0` = none |
 | `MenuHotkey` | `Ctrl+Shift+G` | Show the panel and focus its search box |
 

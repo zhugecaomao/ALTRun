@@ -9,7 +9,8 @@
 ; the search box also searches folders (with PanelSearch = all, files too: choosing a file jumps to its folder). Hidden when the dialog isn't in front,
 ; refreshed when back in the dialog (a folder change in TC shows right away). The colors follow ALTRun's theme.
 ; Hotkey (MenuHotkey, default Ctrl+Shift+G): the caret jumps to the panel's search box to choose with the keyboard; shows the panel for the moment when automatic showing is off.
-; Favorite folders (Favorites) stay at the top of the panel: right-click a row to add or remove it, or to add the dialog's current folder (also Ctrl+D in the panel).
+; Favorite folders (Favorites): the ☆ button right of the panel's search box shows them in a menu, each with one level of its subfolders;
+; the search box finds them too. Right-click a row to add it, or add the dialog's current folder (also Ctrl+D in the panel).
 ;
 ; Settings (ALTRun.json -> Extensions.QuickSwitch):
 ;   Enabled / Hotkey (the jump hotkey, for all three) / MenuHotkey / Favorites (folder paths, environment variables allowed) / RecentFolders / ShowPanel / PanelSearch / AutoSwitch /
@@ -343,7 +344,7 @@ class QuickSwitch {
         if IsObject(QuickSwitch._panel)
             try QuickSwitch._panel.Destroy()
         QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := ""
-        QuickSwitch._panelSearch := "", QuickSwitch._panelList := "", QuickSwitch._panelLine := ""   ; the controls are destroyed: no more references
+        QuickSwitch._panelSearch := "", QuickSwitch._panelList := "", QuickSwitch._panelLine := "", QuickSwitch._panelStar := ""   ; the controls are destroyed: no more references
         QuickSwitch._searchHwnd := 0, QuickSwitch._listHwnd := 0
     }
 
@@ -361,7 +362,11 @@ class QuickSwitch {
         panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border -DPIScale", "ALTRun Quick Switch")
         panel.MarginX := 0, panel.MarginY := 0, panel.BackColor := colors.Background
         panel.SetFont("s10 c" colors.Text, QuickSwitch._FontName())
-        search := panel.AddEdit("x" Win.Scale(10) " y" Win.Scale(8) " w" (width - Win.Scale(20)) " r1 -Multi -E0x200 Background" colors.Background)
+        search := panel.AddEdit("x" Win.Scale(10) " y" Win.Scale(8) " w" QuickSwitch.SearchWidth(width) " r1 -Multi -E0x200 Background" colors.Background)
+        search.GetPos(, &searchY, , &searchH)
+        star := panel.AddPicture("x" QuickSwitch.StarX(width) " y" (searchY + (searchH - QuickSwitch.StarSize()) // 2) " w" QuickSwitch.StarSize() " h" QuickSwitch.StarSize() " Icon44", "shell32.dll")
+        star.OnEvent("Click", (*) => QuickSwitch.ShowFavoritesMenu())       ; the favorite folders (like the favorites button of Listary's Quick Switch window)
+        Win.AddTooltip(star.Hwnd, I18n.T("QuickSwitch.FavoritesButton"))
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
         DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: gray cue text
         search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
@@ -381,7 +386,7 @@ class QuickSwitch {
         QuickSwitch._rowHeight := (SendMessage(0x1040, 2, 0, list) >> 16) - QuickSwitch._rowTop
         list.Delete()
         QuickSwitch._panel := panel, QuickSwitch._panelList := list, QuickSwitch._panelSearch := search, QuickSwitch._panelWidth := width
-        QuickSwitch._panelLine := line, QuickSwitch._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitch._panelColors := colors
+        QuickSwitch._panelLine := line, QuickSwitch._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitch._panelColors := colors, QuickSwitch._panelStar := star
         QuickSwitch._searchHwnd := search.Hwnd, QuickSwitch._listHwnd := list.Hwnd
         if colors.Dark
             try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; dark theme: dark scroll bars and selected row too
@@ -401,7 +406,12 @@ class QuickSwitch {
             QuickSwitch._ShowFolders(QuickSwitch._panelBase)
     }
 
-    static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
+    static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelStar := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
+
+    ; The search box and the ☆ button right of it (real pixels): the box ends a gap before the button, the button keeps the box's right margin
+    static StarSize() => Win.Scale(20)
+    static StarX(width) => width - Win.Scale(10) - QuickSwitch.StarSize()
+    static SearchWidth(width) => QuickSwitch.StarX(width) - Win.Scale(8) - Win.Scale(10)
 
     ; Panel width = dialog width, at least 420 (converted by DPI) and at most maxWidth (the work area of the dialog's monitor); all real pixels
     static PanelWidthFor(dialogWidth, maxWidth := 0) => Max(Win.Scale(420), maxWidth > 0 ? Min(dialogWidth, maxWidth) : dialogWidth)
@@ -464,7 +474,8 @@ class QuickSwitch {
         if (width = QuickSwitch._panelWidth)
             return
         QuickSwitch._panelWidth := width
-        QuickSwitch._panelSearch.Move(, , width - Win.Scale(20))
+        QuickSwitch._panelSearch.Move(, , QuickSwitch.SearchWidth(width))
+        QuickSwitch._panelStar.Move(QuickSwitch.StarX(width))
         QuickSwitch._panelLine.Move(, , width)
         QuickSwitch._panelList.Move(, , width)
         QuickSwitch._ShowFolders(QuickSwitch._panelFolders)                ; Recomputes the column widths and adjusts the panel's size and position
@@ -526,12 +537,26 @@ class QuickSwitch {
         return (name != "") ? name : folder
     }
 
-    ; The text in the search box: filter the list first (paths containing every word), then add the folders and files found (Everything or the built-in index, at most 30)
+    ; The text in the search box: filter the list and the favorite folders first (paths containing every word), then add the folders and files
+    ; found (Everything or the built-in index, at most 30). The favorites aren't in the list itself (they are in the ☆ menu), only in searches
     static _SearchPanel() {
         if !IsObject(QuickSwitch._panelSearch)
             return
         term := Trim(QuickSwitch._panelSearch.Value)
-        QuickSwitch._ShowFolders(QuickSwitch.FilterFolders(QuickSwitch._panelBase, term, term = "" ? [] : QuickSwitch._FindItems(term)))
+        if (term = "")
+            return QuickSwitch._ShowFolders(QuickSwitch._panelBase)
+        QuickSwitch._ShowFolders(QuickSwitch.FilterFolders(QuickSwitch.SearchBase(QuickSwitch._panelBase), term, QuickSwitch._FindItems(term)))
+    }
+
+    ; What a search filters: the favorite folders first, then the panel's folders that aren't favorites
+    static SearchBase(base) {
+        result := QuickSwitch.FavoriteEntries(), seen := Map()
+        for entry in result
+            seen[StrLower(RTrim(entry.Path, "\"))] := true
+        for entry in base
+            if !seen.Has(StrLower(RTrim(entry.Path, "\")))
+                result.Push(entry)
+        return result
     }
 
     ; [{Path, IsFolder}], folders first. Folders are searched separately (searched together with files, a folder with exactly the name might not make it in for not being recently modified);
@@ -578,12 +603,26 @@ class QuickSwitch {
     static _PanelJump(row) {
         if (row < 1 || row > QuickSwitch._panelFolders.Length || !QuickSwitch._panelFor)
             return
-        entry := QuickSwitch._panelFolders[row], dialog := QuickSwitch._panelFor
-        QuickSwitch._BackToDialog()
-        if (entry.HasOwnProp("IsFile") && entry.IsFile)
+        entry := QuickSwitch._panelFolders[row]
+        if (entry.HasOwnProp("IsFile") && entry.IsFile) {
+            dialog := QuickSwitch._panelFor
+            QuickSwitch._BackToDialog()
             QuickSwitch.PickFile(entry.Path, dialog)
-        else
-            QuickSwitch.SetDialogPath(RTrim(entry.Path, "\") "\", dialog)
+            QuickSwitch._ClearSearch()
+        } else
+            QuickSwitch.JumpTo(entry.Path)
+    }
+
+    ; The dialog jumps to folder (a row of the panel, an item of the ☆ menu: * takes the menu's item name, position and menu)
+    static JumpTo(folder, *) {
+        if !(dialog := QuickSwitch._panelFor)
+            return
+        QuickSwitch._BackToDialog()
+        QuickSwitch.SetDialogPath(RTrim(folder, "\") "\", dialog)
+        QuickSwitch._ClearSearch()
+    }
+
+    static _ClearSearch() {
         if (IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value != "") {   ; after jumping, clear the search so the list is back as it was
             QuickSwitch._panelSearch.Value := ""
             QuickSwitch._ShowFolders(QuickSwitch._panelBase)
@@ -808,8 +847,8 @@ class QuickSwitch {
     ;---------------------------------------------------------------------------
     ; The folders in the panel
     ;---------------------------------------------------------------------------
-    ; [{Path, Group: "favorite" / "open" / "recent", Tag}]: the favorite folders, the active and other panel of each TC window, each Explorer window,
-    ; recent folders (RecentFolders of them), without duplicates (a favorite open in Explorer shows once, as a favorite)
+    ; [{Path, Group: "open" / "recent", Tag}]: the active and other panel of each TC window, each Explorer window,
+    ; recent folders (RecentFolders of them), without duplicates. The favorite folders are in the ☆ menu (and in searches, SearchBase)
     ; opus = false: without Directory Opus (the panel adds those a moment later, see _AddDOpusFolders)
     static MenuFolders(opus := true) {
         list := [], seen := Map()
@@ -819,8 +858,6 @@ class QuickSwitch {
             seen[StrLower(RTrim(folder, "\"))] := true
             list.Push({Path: folder, Group: group, Tag: tag})
         }
-        for folder in QuickSwitch.Favorites()
-            add(folder, "favorite", I18n.T("QuickSwitch.TagFavorite"))
         for hwnd in WinGetList("ahk_class TTOTAL_CMD") {
             add(QuickSwitch.TotalCmdFolder(hwnd), "open", I18n.T("QuickSwitch.TagTC"))
             add(QuickSwitch.TotalCmdFolder(hwnd, true), "open", I18n.T("QuickSwitch.TagTCOther"))
@@ -918,15 +955,15 @@ class QuickSwitch {
         }
         dialogFolder := QuickSwitch.DialogFolder(QuickSwitch._panelFor)
         if (dialogFolder != "" && !QuickSwitch.IsFavorite(dialogFolder)) {
-            rowMenu.Add(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder)) "`tCtrl+D", (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
+            rowMenu.Add(QuickSwitch.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder))) "`tCtrl+D", (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
             items++
         }
         if items
             rowMenu.Show()
     }
 
-    ; Adds or removes a favorite, then lists the panel's folders again (without Opus first, as when the panel opens), keeping the search;
-    ; an added favorite is selected. The notice is ALTRun's own (Hud), shown at once: Windows notifications may be turned off
+    ; Adds or removes a favorite, then lists the panel's folders again (without Opus first, as when the panel opens), keeping the search.
+    ; The notice is ALTRun's own (Hud), shown at once: Windows notifications may be turned off
     static _ToggleFavorite(folder, add) {
         changed := add ? QuickSwitch.AddFavorite(folder) : QuickSwitch.RemoveFavorite(folder)
         App.Notify(I18n.T(!add ? "QuickSwitch.FavoriteRemoved" : changed ? "QuickSwitch.FavoriteAdded" : "QuickSwitch.FavoriteExists", QuickSwitch.FolderName(folder)))
@@ -934,20 +971,114 @@ class QuickSwitch {
             return
         QuickSwitch._panelBase := QuickSwitch.MenuFolders(false)
         QuickSwitch._SearchPanel()
-        if add
-            QuickSwitch._SelectFolder(folder)
         if WinExist("ahk_class dopus.lister")
             SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, QuickSwitch._panelFor), -1)
     }
 
-    ; Selects the panel's row of folder (case and a trailing backslash don't matter); nothing if it isn't listed
-    static _SelectFolder(folder) {
-        key := StrLower(RTrim(folder, "\"))
-        for row, entry in QuickSwitch._panelFolders
-            if (StrLower(RTrim(entry.Path, "\")) = key) {
-                QuickSwitch._panelList.Modify(0, "-Select"), QuickSwitch._panelList.Modify(row, "Select Focus Vis")
-                return
+    ; The favorite folders as rows of a search ([{Path, Group: "favorite", Tag}])
+    static FavoriteEntries() {
+        entries := []
+        for folder in QuickSwitch.Favorites()
+            if (folder != "")
+                entries.Push({Path: folder, Group: "favorite", Tag: I18n.T("QuickSwitch.TagFavorite")})
+        return entries
+    }
+
+    ;---------------------------------------------------------------------------
+    ; The ☆ menu: the favorite folders, each with one level of its subfolders (read when the menu opens). Only folders on this PC's own
+    ; drives are read: a network path (\\server\share, a mapped drive) or a CD would wait for the network or the drive, and a menu can't
+    ; show "loading". A favorite with subfolders is a submenu whose first item is the favorite itself (in bold): clicking an item always
+    ; jumps, never only opens a submenu (in Listary's favorites menu it was unclear when a click opens the folder and when it expands it)
+    ;---------------------------------------------------------------------------
+    static MaxSubfolders := 30
+
+    ; [{Path, Name, Subfolders: [paths], More: how many more than MaxSubfolders}]; hidden and system folders are left out
+    static FavoritesMenuItems(maxSubfolders := QuickSwitch.MaxSubfolders) {
+        items := []
+        for folder in QuickSwitch.Favorites() {
+            if (folder = "")
+                continue
+            item := {Path: folder, Name: QuickSwitch.FolderName(folder), Subfolders: [], More: 0}
+            if QuickSwitch.ReadsSubfolders(folder) {
+                count := 0
+                try Loop Files RTrim(folder, "\") "\*", "D" {
+                    if InStr(A_LoopFileAttrib, "H") || InStr(A_LoopFileAttrib, "S")
+                        continue
+                    if (++count <= maxSubfolders)
+                        item.Subfolders.Push(A_LoopFileFullPath)
+                }
+                item.More := Max(0, count - maxSubfolders)
             }
+            items.Push(item)
+        }
+        return items
+    }
+
+    ; Whether the menu reads the subfolders of folder: on a fixed, removable or RAM drive of this PC (GetDriveType doesn't touch the drive)
+    static ReadsSubfolders(folder) {
+        if !RegExMatch(folder, "^[A-Za-z]:\\", &root)
+            return false
+        driveType := DllCall("GetDriveType", "Str", root[0], "UInt")
+        return (driveType = 2 || driveType = 3 || driveType = 6)        ; DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_RAMDISK
+    }
+
+    ; A menu item's text: & shows as & (not as an underlined access key)
+    static MenuLabel(text) => StrReplace(text, "&", "&&")
+
+    ; The ☆ button: shows the menu below it. The favorites' labels have their path on the right (two favorites may have the same name)
+    static ShowFavoritesMenu() {
+        if !QuickSwitch._panelFor
+            return
+        favMenu := Menu()
+        items := QuickSwitch.FavoritesMenuItems()
+        for item in items {
+            label := QuickSwitch.MenuLabel(item.Name) "`t" QuickSwitch.MenuLabel(Path.Compact(item.Path))
+            jump := QuickSwitch.JumpTo.Bind(QuickSwitch, item.Path)
+            if item.Subfolders.Length {
+                subMenu := Menu()
+                subMenu.Add(label, jump), subMenu.Default := label
+                subMenu.SetIcon(label, "shell32.dll", 44)
+                subMenu.Add()
+                for folder in item.Subfolders {
+                    name := QuickSwitch.MenuLabel(QuickSwitch.FolderName(folder))
+                    subMenu.Add(name, QuickSwitch.JumpTo.Bind(QuickSwitch, folder))
+                    subMenu.SetIcon(name, "shell32.dll", 4)
+                }
+                if item.More {
+                    more := I18n.T("QuickSwitch.MoreFolders", item.More)
+                    subMenu.Add(more, (*) => 0), subMenu.Disable(more)
+                }
+                favMenu.Add(label, subMenu)
+            } else
+                favMenu.Add(label, jump)
+            favMenu.SetIcon(label, "shell32.dll", 44)
+        }
+        if !items.Length {
+            none := I18n.T("QuickSwitch.NoFavorites")
+            favMenu.Add(none, (*) => 0), favMenu.Disable(none)
+        }
+        favMenu.Add()
+        dialogFolder := QuickSwitch.DialogFolder(QuickSwitch._panelFor)
+        if (dialogFolder != "" && !QuickSwitch.IsFavorite(dialogFolder))
+            favMenu.Add(QuickSwitch.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder))) "`tCtrl+D"
+                , (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
+        favMenu.Add(I18n.T("QuickSwitch.EditFavorites"), (*) => App.OpenPreferences("Prefs.Page.QSPanel"))
+        QuickSwitch._panelStar.GetPos(&x, &y, &w, &h)
+        rect := Buffer(16), NumPut("Int", x, "Int", y, "Int", x + w, "Int", y + h, rect)
+        DllCall("MapWindowPoints", "Ptr", QuickSwitch._panel.Hwnd, "Ptr", 0, "Ptr", rect, "UInt", 2)   ; client -> screen
+        QuickSwitch.ShowMenuBelow(favMenu, rect)
+    }
+
+    ; Shows m as a drop-down of a button at the right (button = screen RECT): its right edge at the button's, below it, or above it
+    ; when there is no room below (TPMPARAMS keeps the button uncovered). Menu.Show can only align the left edge, so the menu would
+    ; run past the panel. The items run as with Menu.Show: TrackPopupMenuEx with the script's window sends it the item's WM_COMMAND
+    static ShowMenuBelow(m, button) {
+        params := Buffer(20, 0), NumPut("UInt", 20, params)                 ; TPMPARAMS: cbSize, rcExclude
+        DllCall("RtlMoveMemory", "Ptr", params.Ptr + 4, "Ptr", button, "Ptr", 16)
+        DllCall("SetForegroundWindow", "Ptr", A_ScriptHwnd)                 ; else the menu doesn't close when clicking elsewhere
+        DllCall("TrackPopupMenuEx", "Ptr", m.Handle, "UInt", 0x0008 | 0x0040   ; TPM_RIGHTALIGN | TPM_VERTICAL
+            , "Int", NumGet(button, 8, "Int"), "Int", NumGet(button, 12, "Int"), "Ptr", A_ScriptHwnd, "Ptr", params)
+        DllCall("PostMessage", "Ptr", A_ScriptHwnd, "UInt", 0, "Ptr", 0, "Ptr", 0)   ; WM_NULL, as the TrackPopupMenu documentation asks
     }
 
     ; The newest limit folders of Windows "Recent items" (WindowsRecent); a file gives its folder.
