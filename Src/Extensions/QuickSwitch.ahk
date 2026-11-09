@@ -52,7 +52,8 @@ class QuickSwitch {
         } catch as e {
             Logger.Error("QuickSwitch: cannot register hotkeys - " e.Message)
         }
-        OnMessage(0x100, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_KEYDOWN: ↑ ↓ Enter Esc in the panel's search box
+        OnMessage(0x100, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_KEYDOWN: ↑ ↓ Enter Esc F4 in the panel's search box
+        OnMessage(0x104, (p*) => QuickSwitch._OnKeyDown(p*))                ; WM_SYSKEYDOWN: Alt+↓ there
 
         QuickSwitch._StartWatching()
     }
@@ -199,12 +200,23 @@ class QuickSwitch {
 
     ; WM_KEYDOWN rather than a hotkey: while a Chinese IME is composing (not yet committed) keys are VK_PROCESSKEY and aren't taken for Enter / Esc
     ; compare only the window handles noted: after the panel closes its control objects are destroyed and their Hwnd can't be read
+    ; Alt+↓ or F4 opens the ☆ menu, as they open a drop-down list (a combo box) in Windows
     static _OnKeyDown(wParam, lParam, msg, hwnd) {
         if !(hwnd && (hwnd = QuickSwitch._searchHwnd || hwnd = QuickSwitch._listHwnd))
             return
+        if (msg = 0x104) {                                                  ; WM_SYSKEYDOWN: only Alt+↓ is ours, other Alt keys go on (Alt+F4...)
+            if (wParam != 0x28)
+                return
+            QuickSwitch.ShowFavoritesMenu()
+            return 0
+        }
         switch wParam {
             case 0x26: QuickSwitch.PanelKey("Up")
             case 0x28: QuickSwitch.PanelKey("Down")
+            case 0x73:                                                      ; F4 (alone)
+                if (GetKeyState("Ctrl") || GetKeyState("Shift"))
+                    return
+                QuickSwitch.ShowFavoritesMenu()
             case 0x0D: QuickSwitch.PanelKey("Enter")
             case 0x1B: QuickSwitch.PanelKey("Escape")
             case 0x44:                                                      ; Ctrl+D: the dialog's current folder becomes a favorite (as bookmarking in a browser)
@@ -366,7 +378,7 @@ class QuickSwitch {
         search.GetPos(, &searchY, , &searchH)
         star := panel.AddPicture("x" QuickSwitch.StarX(width) " y" (searchY + (searchH - QuickSwitch.StarSize()) // 2) " w" QuickSwitch.StarSize() " h" QuickSwitch.StarSize() " Icon44", "shell32.dll")
         star.OnEvent("Click", (*) => QuickSwitch.ShowFavoritesMenu())       ; the favorite folders (like the favorites button of Listary's Quick Switch window)
-        Win.AddTooltip(star.Hwnd, I18n.T("QuickSwitch.FavoritesButton"))
+        Win.AddTooltip(star.Hwnd, I18n.T("QuickSwitch.FavoritesButton") "  (Alt+↓, F4)")
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
         DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: gray cue text
         search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
@@ -958,8 +970,19 @@ class QuickSwitch {
             rowMenu.Add(QuickSwitch.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder))) "`tCtrl+D", (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
             items++
         }
-        if items
+        if items {
             rowMenu.Show()
+            QuickSwitch._DialogAfterMenu()
+        }
+    }
+
+    ; After a panel menu: Menu.Show and ShowMenuBelow make ALTRun's hidden window the foreground window for the menu (or it wouldn't
+    ; close on a click elsewhere). A chosen item jumps back to the dialog by itself, but a menu closed with Esc or a click elsewhere
+    ; left the hidden window in front, and typing went nowhere (checked on Windows CI: Tests\Integration\QuickSwitchCheck.ahk).
+    ; So the dialog comes back to the front when nothing else has taken it
+    static _DialogAfterMenu() {
+        if (DllCall("GetForegroundWindow", "Ptr") = A_ScriptHwnd)            ; not when another program was clicked to close the menu
+            QuickSwitch._BackToDialog()
     }
 
     ; Adds or removes a favorite, then lists the panel's folders again (without Opus first, as when the panel opens), keeping the search.
@@ -1037,10 +1060,20 @@ class QuickSwitch {
     ; A menu item's text: & shows as & (not as an underlined access key)
     static MenuLabel(text) => StrReplace(text, "&", "&&")
 
-    ; The ☆ button: shows the menu below it. The favorites' labels have their path on the right (two favorites may have the same name)
+    ; The ☆ button: shows the menu below it
     static ShowFavoritesMenu() {
         if !QuickSwitch._panelFor
             return
+        favMenu := QuickSwitch.BuildFavoritesMenu(QuickSwitch.DialogFolder(QuickSwitch._panelFor))
+        QuickSwitch._panelStar.GetPos(&x, &y, &w, &h)
+        rect := Buffer(16), NumPut("Int", x, "Int", y, "Int", x + w, "Int", y + h, rect)
+        DllCall("MapWindowPoints", "Ptr", QuickSwitch._panel.Hwnd, "Ptr", 0, "Ptr", rect, "UInt", 2)   ; client -> screen
+        QuickSwitch.ShowMenuBelow(favMenu, rect)
+    }
+
+    ; The ☆ menu: the favorites (their path on the right, as two may have the same name), each with subfolders as a submenu whose
+    ; first, default item is the favorite itself; "Add <dialog folder>" when it isn't a favorite yet; "Edit favorites"
+    static BuildFavoritesMenu(dialogFolder) {
         favMenu := Menu()
         items := QuickSwitch.FavoritesMenuItems()
         for item in items {
@@ -1070,15 +1103,11 @@ class QuickSwitch {
             favMenu.Add(none, (*) => 0), favMenu.Disable(none)
         }
         favMenu.Add()
-        dialogFolder := QuickSwitch.DialogFolder(QuickSwitch._panelFor)
         if (dialogFolder != "" && !QuickSwitch.IsFavorite(dialogFolder))
             favMenu.Add(QuickSwitch.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder))) "`tCtrl+D"
                 , (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
         favMenu.Add(I18n.T("QuickSwitch.EditFavorites"), (*) => App.OpenPreferences("Prefs.Page.QSPanel"))
-        QuickSwitch._panelStar.GetPos(&x, &y, &w, &h)
-        rect := Buffer(16), NumPut("Int", x, "Int", y, "Int", x + w, "Int", y + h, rect)
-        DllCall("MapWindowPoints", "Ptr", QuickSwitch._panel.Hwnd, "Ptr", 0, "Ptr", rect, "UInt", 2)   ; client -> screen
-        QuickSwitch.ShowMenuBelow(favMenu, rect)
+        return favMenu
     }
 
     ; Shows m as a drop-down of a button at the right (button = screen RECT): its right edge at the button's, below it, or above it
@@ -1091,6 +1120,7 @@ class QuickSwitch {
         DllCall("TrackPopupMenuEx", "Ptr", m.Handle, "UInt", 0x0008 | 0x0040   ; TPM_RIGHTALIGN | TPM_VERTICAL
             , "Int", NumGet(button, 8, "Int"), "Int", NumGet(button, 12, "Int"), "Ptr", A_ScriptHwnd, "Ptr", params)
         DllCall("PostMessage", "Ptr", A_ScriptHwnd, "UInt", 0, "Ptr", 0, "Ptr", 0)   ; WM_NULL, as the TrackPopupMenu documentation asks
+        QuickSwitch._DialogAfterMenu()
     }
 
     ; The newest limit folders of Windows "Recent items" (WindowsRecent); a file gives its folder.

@@ -784,6 +784,17 @@ class ExtensionTests {
             WinGetPos(&x, &y, , , "ahk_id " SyncPreview.Windows[key].Gui.Hwnd)
             eq("off-screen: opened on a monitor", DllCall("MonitorFromWindow", "Ptr", SyncPreview.Windows[key].Gui.Hwnd, "UInt", 0, "Ptr") != 0 && x > -10000, true)
             SyncPreview.Close(key)
+            ; quitting ALTRun with windows open: the one in front is saved (no window is closed then)
+            eq("on exit, nothing open: nothing saved", SyncPreview.SaveOnExit(), false)
+            settings["Window"] := place(Win.Scale(120), Win.Scale(90), Win.Scale(120) + Win.Scale(820), Win.Scale(90) + Win.Scale(520))
+            SyncPreview.Open(task, "Ready"), SyncPreview.Open(other, "Ready")
+            front := SyncPreview.Windows[SyncJobs.Key("Placement Other")].Gui.Hwnd
+            WinActivate("ahk_id " front), WinWaitActive("ahk_id " front, , 2)
+            WinGetPos(&x, &y, , , "ahk_id " front)
+            WinMove(x + 50, y + 20, , , "ahk_id " front)
+            eq("on exit: the window in front saved", SyncPreview.SaveOnExit() "|" settings["Window"]["Left"] "," settings["Window"]["Top"]
+                , "1|" (x + 50 - SyncPreview.WorkspaceOffset().X) "," (y + 20 - SyncPreview.WorkspaceOffset().Y))
+            eq("on exit: the windows stay open", SyncPreview.Windows.Count, 2)
         } finally {
             for name in ["Placement Test", "Placement Other"]
                 SyncPreview.Close(SyncJobs.Key(name))
@@ -1376,6 +1387,18 @@ class ExtensionTests {
         eq("key other window", QuickSwitch._OnKeyDown(0x28, 0, 0x100, A_ScriptHwnd), "")
         eq("key down handled", QuickSwitch._OnKeyDown(0x28, 0, 0x100, QuickSwitch._panelSearch.Hwnd), 0)
         eq("ime key passes", QuickSwitch._OnKeyDown(0xE5, 0, 0x100, QuickSwitch._panelSearch.Hwnd), "")   ; the IME is composing: not intercepted
+        ; Alt+↓ (WM_SYSKEYDOWN) or F4 in the search box opens the ☆ menu, as for a drop-down list; other Alt keys and ↓ alone don't
+        opened := {Count: 0}, savedShow := QuickSwitch.GetOwnPropDesc("ShowFavoritesMenu")
+        QuickSwitch.DefineProp("ShowFavoritesMenu", {Call: (*) => opened.Count++})
+        try {
+            search := QuickSwitch._panelSearch.Hwnd
+            eq("Alt+Down opens the menu", QuickSwitch._OnKeyDown(0x28, 0, 0x104, search) "|" opened.Count, "0|1")
+            eq("F4 opens the menu", QuickSwitch._OnKeyDown(0x73, 0, 0x100, search) "|" opened.Count, "0|2")
+            eq("other Alt keys go on (Alt+F4)", QuickSwitch._OnKeyDown(0x73, 0, 0x104, search) "|" opened.Count, "|2")
+            eq("Down alone: the next row", QuickSwitch._OnKeyDown(0x28, 0, 0x100, search) "|" opened.Count, "0|2")
+            eq("Alt+Down in another window: not ours", QuickSwitch._OnKeyDown(0x28, 0, 0x104, A_ScriptHwnd) "|" opened.Count, "|2")
+        } finally
+            QuickSwitch.DefineProp("ShowFavoritesMenu", savedShow)
         searchHwnd := QuickSwitch._searchHwnd
         QuickSwitch.HidePanel()
         eq("panel hidden", QuickSwitch._panel, "")
@@ -1561,6 +1584,35 @@ class ExtensionTests {
             DllCall("PostMessage", "Ptr", A_ScriptHwnd, "UInt", 0x0111, "Ptr", itemId, "Ptr", 0)   ; WM_COMMAND
             Sleep(100)
             eq("drop-down runs the item", picked.Name, "Second")
+            ; the menu as Windows has it (GetMenuString): a favorite with subfolders is a submenu whose default first item is the
+            ; favorite itself, then the subfolders and a disabled "more"; & in a name stays a character; Add (the dialog's folder) and Edit
+            DirCreate(menuRoot "\R&D Notes")
+            QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [menuRoot, menuRoot "\R&D Notes"])
+            savedMax := QuickSwitch.MaxSubfolders, QuickSwitch.MaxSubfolders := 2
+            try {
+                expected := QuickSwitch.FavoritesMenuItems()
+                built := QuickSwitch.BuildFavoritesMenu("C:\Some Dialog Folder"), h := built.Handle   ; kept: the menu goes with its object
+                text := (hm, pos) => (buf := Buffer(1024, 0), DllCall("GetMenuString", "Ptr", hm, "UInt", pos, "Ptr", buf, "Int", 512, "UInt", 0x400), StrGet(buf))
+                count := (hm) => DllCall("GetMenuItemCount", "Ptr", hm, "Int")
+                eq("menu: 2 favorites, a line, Add, Edit", count(h), 5)
+                eq("menu: a favorite's label, its path on the right", text(h, 0), "ALTRun Fav Menu`t" Path.Compact(menuRoot))
+                eq("menu: & stays a character (name and path)", text(h, 1), "R&&D Notes`t" StrReplace(Path.Compact(menuRoot "\R&D Notes"), "&", "&&"))
+                eq("menu: no submenu without subfolders", DllCall("GetSubMenu", "Ptr", h, "Int", 1, "Ptr"), 0)
+                eq("menu: add the dialog's folder", text(h, 3), I18n.T("QuickSwitch.AddDialogFolder", "Some Dialog Folder") "`tCtrl+D")
+                eq("menu: edit", text(h, 4), I18n.T("QuickSwitch.EditFavorites"))
+                sub := DllCall("GetSubMenu", "Ptr", h, "Int", 0, "Ptr")
+                eq("submenu: the favorite, a line, 2 subfolders, more", count(sub), 5)
+                eq("submenu: the favorite first, as the default item", text(sub, 0) "|" DllCall("GetMenuDefaultItem", "Ptr", sub, "UInt", 1, "UInt", 0, "Int"), text(h, 0) "|0")
+                eq("submenu: the first subfolders by name", text(sub, 2) "|" text(sub, 3), QuickSwitch.FolderName(expected[1].Subfolders[1]) "|" QuickSwitch.FolderName(expected[1].Subfolders[2]))
+                eq("submenu: more, disabled", text(sub, 4) "|" ((DllCall("GetMenuState", "Ptr", sub, "UInt", 4, "UInt", 0x400, "UInt") & 3) != 0)
+                    , I18n.T("QuickSwitch.MoreFolders", expected[1].More) "|1")
+                built := QuickSwitch.BuildFavoritesMenu(menuRoot)
+                eq("menu: no Add when the dialog's folder is a favorite", count(built.Handle), 4)
+                QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])
+                built := QuickSwitch.BuildFavoritesMenu(""), h := built.Handle
+                eq("menu without favorites: a disabled note, a line, Edit", count(h) "|" text(h, 0) "|" text(h, 2), "3|" I18n.T("QuickSwitch.NoFavorites") "|" I18n.T("QuickSwitch.EditFavorites"))
+            } finally
+                QuickSwitch.MaxSubfolders := savedMax
             try DirDelete(menuRoot, true)
             QuickSwitch.Options := Map("RecentFolders", 0, "Favorites", [])     ; in the panel: the star button right of the search box
             QuickSwitch._BuildPanel(A_ScriptHwnd)

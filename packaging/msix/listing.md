@@ -24,6 +24,23 @@ the limits in brackets are Partner Center's. Screenshots: at least 1366 × 768 (
 >
 > **unvirtualizedResources**: ALTRun keeps its settings in %APPDATA%\ALTRun, the same place as its other editions (portable zip, winget, Scoop), so users can move between them and back up or sync their settings. Its Delayed Start feature turns off other programs' start-up entries (HKCU\...\Explorer\StartupApproved) and starts them later through Task Scheduler; with registry write virtualization those changes would not reach Windows. Nothing is written outside the user's own profile and registry hive.
 
+## Notes for certification / 给审核人员的说明 (Submission options)
+
+```
+ALTRun is a keyboard launcher for the Windows desktop. No account, sign-in or setup is needed.
+
+How to test:
+1. Start ALTRun from the Start menu (or run "altrun"). It runs in the notification area (tray icon).
+2. Press Alt+Space to open the search window. Type a few letters, e.g. "notepad" or "calc", and press Enter to start it.
+3. Type "=2*21" for the calculator, or ";" to see the snippets. The tray menu opens Preferences.
+
+Why it needs a full-trust desktop process: it starts the programs, files and folders the user searches for, registers the global hotkey Alt+Space with a low-level keyboard hook, reads the clipboard for its clipboard history (text only stays on this PC; content from password managers is skipped), and moves Open / Save dialogs to folders open in file managers.
+
+Optional features that change Windows settings only when the user turns them on in Preferences: start with Windows, and Delayed Start (turns off another program's start-up entry and starts it later through Task Scheduler).
+
+ALTRun is free, open source (GPL-3.0) and has no telemetry or ads. Source code: https://github.com/zhugecaomao/ALTRun
+```
+
 ---
 
 ## English (en-us)
@@ -168,6 +185,152 @@ ALTRun 是 GPL-3.0 许可的自由软件。文档、源代码和问题反馈: ht
 
 ---
 
+## 中文（繁體）(zh-tw)
+
+The package declares zh-TW and ja-JP (`AppxManifest.xml` Resources), so Partner Center asks for a listing in each. Taiwan terms.
+
+套件宣告了 zh-TW 和 ja-JP (`AppxManifest.xml` 的 Resources), 所以 Partner Center 要求每種語言都有商店頁面。用台灣的用語。
+
+### 簡短說明 [1000]
+
+按 Alt+Space, 輸入幾個字母, 再按 Enter: 應用程式、檔案、網頁搜尋、計算、剪貼簿歷程和系統指令, 都在一個小巧、快速、以鍵盤為主的視窗裡完成。免費開源。
+
+### 說明 [10000]
+
+ALTRun 是一款輕巧、開源的 Windows 啟動器。按 Alt+Space, 輸入幾個字母再按 Enter, 就能開啟應用程式、檔案或網站, 計算、換算單位, 從剪貼簿歷程貼上, 或執行系統指令, 雙手不用離開鍵盤。
+
+又快又小
+• 邊輸入邊出結果。執行 Everything (voidtools) 時, 幾毫秒就能搜尋所有磁碟的檔案; 沒有它時使用 ALTRun 自己的索引。
+• 約 2.5 MB, 不需安裝任何執行階段, 記憶體佔用少。
+
+聰明的搜尋
+• 記住你選了什麼, 常用的排在前面。
+• 支援英文單字字首 (vsc → Visual Studio Code) 和拼音字首 (wx → 微信), 並醒目標示符合的部分。
+• 自動收錄開始功能表、桌面和 Microsoft Store 裡的應用程式。
+
+不只是啟動器
+• 計算機, 支援單位、進位制、日期換算和可選的匯率換算。
+• 剪貼簿歷程, 記錄文字、檔案和圖片, 可以釘選; 密碼管理工具複製的內容不會記錄。
+• 文字片段, 在任何程式裡輸入 ;關鍵字 自動展開。
+• 可自訂的網頁搜尋、瀏覽器書籤、視窗切換、40 多個 Windows 設定頁面和系統指令。
+• Quick Switch: 在開啟 / 儲存對話方塊裡一鍵跳到檔案總管、Total Commander 或 Directory Opus 目前的資料夾。
+• 對任何程式裡選取的文字、檔案或網址執行動作。
+• 附即時進度視窗的資料夾同步、登入後延遲啟動程式, 以及指令碼 (.ahk、.ps1、.bat、.py)。
+
+為鍵盤而設計
+• → 開啟動作面板 (以系統管理員身分執行、開啟檔案位置、複製路徑、在此開啟終端機、Windows 右鍵選單)。
+• F3 直接編輯; Ctrl+1 到 Ctrl+9 直接開啟結果; 狀態列顯示 Enter 會做什麼。
+
+隨你調整
+• 英文、簡體中文、繁體中文和日文介面。
+• 22 款主題, 三種密度, 跟隨 Windows 淺色 / 深色模式。
+• 設定是一般的 JSON 檔案。
+
+重視隱私
+• 不需要帳號, 沒有遙測, 沒有廣告。資料都留在你的電腦上。
+
+ALTRun 是採用 GPL-3.0 授權的自由軟體。文件、原始碼和問題回報: https://github.com/zhugecaomao/ALTRun
+
+### 此版本的新功能 [1500]
+
+首次在 Microsoft Store 發佈。由 Store 負責更新; 設定仍儲存在 %APPDATA%\ALTRun。
+
+### 產品功能 [20 × 200]
+
+1. 在一個視窗裡開啟應用程式、檔案、資料夾和網站: Alt+Space, 幾個字母, Enter
+2. 邊輸入邊出結果; 記住你的選擇
+3. 英文單字字首和拼音字首比對, 並醒目標示
+4. 搭配 Everything 瞬間搜尋所有磁碟, 或使用內建索引
+5. 計算機: 單位、進位制、日期和匯率換算
+6. 剪貼簿歷程: 文字、檔案和圖片, 可以釘選
+7. 文字片段: 在任何程式裡輸入 ;關鍵字 展開
+8. 可自訂的網頁搜尋和瀏覽器書籤
+9. 視窗切換和 40 多個 Windows 設定頁面
+10. Quick Switch: 開啟 / 儲存對話方塊一鍵跳到檔案管理工具目前的資料夾
+11. 對任何程式裡選取的文字、檔案或網址執行動作
+12. 動作面板: 以系統管理員身分執行、開啟檔案位置、複製路徑、在此開啟終端機
+13. 附即時進度的資料夾同步; 登入後延遲啟動程式
+14. 英文、簡體中文、繁體中文和日文介面
+15. 22 款主題, 跟隨 Windows 淺色和深色模式
+16. 不需要帳號、沒有遙測和廣告; 免費開源 (GPL-3.0)
+
+### 搜尋詞 [7 × 30]
+
+啟動器, 快速啟動, 檔案搜尋, 剪貼簿歷程, 效率工具, 鍵盤, launcher
+
+---
+
+## 日本語 (ja-jp)
+
+### 簡単な説明 [1000]
+
+Alt+Space を押して数文字入力し Enter: アプリ、ファイル、Web 検索、計算、クリップボード履歴、システムコマンドを、小さく高速なキーボード中心のウィンドウ 1 つで。無料のオープンソース。
+
+### 説明 [10000]
+
+ALTRun は軽量でオープンソースの Windows 用ランチャーです。Alt+Space を押して数文字入力し Enter を押すだけで、アプリ、ファイル、Web サイトを開いたり、計算や単位変換をしたり、クリップボード履歴から貼り付けたり、システムコマンドを実行したりできます。マウスに手を伸ばす必要はありません。
+
+高速で軽量
+• 入力と同時に結果が表示されます。Everything (voidtools) が動いていれば、すべてのドライブのファイルを数ミリ秒で検索。なければ ALTRun 独自のインデックスを使います。
+• 約 2.5 MB。ランタイムのインストールは不要で、メモリ使用量も少なめです。
+
+賢い検索
+• 選んだ項目を学習し、よく使うものを上位に表示します。
+• 単語の頭文字 (vsc → Visual Studio Code) や中国語ピンインの頭文字に対応し、一致した部分を強調表示します。
+• スタートメニュー、デスクトップ、Microsoft Store のアプリを自動で登録します。
+
+ランチャー以上の機能
+• 単位・進数・日付の変換、オプションで為替換算もできる電卓。
+• テキスト、ファイル、画像のクリップボード履歴 (ピン留め可能)。パスワードマネージャーからコピーした内容は記録しません。
+• どのアプリでも ;キーワード と入力すると展開されるテキストスニペット。
+• カスタマイズ可能な Web 検索、ブラウザーのブックマーク、ウィンドウ切り替え、40 以上の Windows 設定ページとシステムコマンド。
+• Quick Switch: [開く] / [保存] ダイアログを、エクスプローラー、Total Commander、Directory Opus で開いているフォルダーへ移動。
+• どのアプリでも、選択したテキスト、ファイル、URL に対して操作を実行。
+• リアルタイムの進捗ウィンドウ付きフォルダー同期、サインイン後のプログラム遅延起動、スクリプト (.ahk、.ps1、.bat、.py)。
+
+キーボード中心の設計
+• → でアクションパネルを開く (管理者として実行、ファイルの場所を開く、パスのコピー、ここでターミナルを開く、Windows のコンテキストメニュー)。
+• F3 でその場で編集、Ctrl+1 ～ Ctrl+9 で結果を直接開く。ステータスバーに Enter で何が起きるかを表示します。
+
+自分好みに
+• 英語、簡体字中国語、繁体字中国語、日本語に対応。
+• 22 種類のテーマと 3 段階の表示密度。Windows のライト / ダークモードに追従します。
+• 設定はシンプルな JSON ファイル。
+
+プライバシー
+• アカウント不要、テレメトリなし、広告なし。データはあなたの PC に保存されます。
+
+ALTRun は GPL-3.0 ライセンスのフリーソフトウェアです。ドキュメント、ソースコード、問題の報告: https://github.com/zhugecaomao/ALTRun
+
+### このバージョンの新機能 [1500]
+
+Microsoft Store での初めてのリリースです。更新は Store が行います。設定は引き続き %APPDATA%\ALTRun に保存されます。
+
+### 製品の機能 [20 × 200]
+
+1. アプリ、ファイル、フォルダー、Web サイトを 1 つのウィンドウから: Alt+Space、数文字、Enter
+2. 入力と同時に結果を表示、選んだ項目を学習
+3. 単語の頭文字とピンインの頭文字で検索、一致部分を強調表示
+4. Everything ですべてのドライブを瞬時に検索、または内蔵インデックス
+5. 電卓: 単位・進数・日付・為替の変換
+6. クリップボード履歴: テキスト、ファイル、画像、ピン留め可能
+7. テキストスニペット: どのアプリでも ;キーワード で展開
+8. カスタマイズ可能な Web 検索とブラウザーのブックマーク
+9. ウィンドウ切り替えと 40 以上の Windows 設定ページ
+10. Quick Switch: [開く] / [保存] ダイアログをファイルマネージャーのフォルダーへ移動
+11. どのアプリでも選択したテキスト、ファイル、URL を操作
+12. アクションパネル: 管理者として実行、ファイルの場所を開く、パスのコピー、ターミナル
+13. リアルタイム進捗付きのフォルダー同期、サインイン後の遅延起動
+14. 英語、簡体字中国語、繁体字中国語、日本語
+15. 22 種類のテーマ、Windows のライト / ダークモードに追従
+16. アカウント不要、テレメトリ・広告なし、無料のオープンソース (GPL-3.0)
+
+### 検索語句 [7 × 30]
+
+ランチャー, アプリ起動, ファイル検索, クリップボード履歴, キーボード, 効率化, launcher
+
+---
+
 ## Screenshots / 截图
 
 Partner Center wants desktop screenshots of at least 1366 × 768 (PNG, up to 10, the first ones show first). The README's
@@ -185,3 +348,18 @@ the windows on a 1920 × 1080 background, English interface, made-up data (as al
 8. Preferences (`prefs-general.png`)
 
 商店截图至少 1366 × 768。README 里的截图是窗口大小, 所以另外做一套 (`packaging/msix/Screenshots/*.png`): 窗口放在 1920 × 1080 的背景上, 英文界面、虚构数据。由 `Tests/Screenshots/MakeStore.py` 生成, 截图工作流更新截图时会一起重新生成。
+
+### Captions / 截图说明 (each screenshot, optional)
+
+| File | en-us | zh-cn | zh-tw | ja-jp |
+|---|---|---|---|---|
+| 01-search.png | Alt+Space, a few letters, Enter | Alt+Space, 几个字母, 回车 | Alt+Space, 幾個字母, Enter | Alt+Space、数文字、Enter |
+| 02-actions.png | The action panel: run as administrator, open file location, copy path | 操作面板: 以管理员身份运行、打开所在位置、复制路径 | 動作面板: 以系統管理員身分執行、開啟檔案位置、複製路徑 | アクションパネル: 管理者として実行、ファイルの場所を開く、パスのコピー |
+| 03-calculator.png | Calculator with unit and currency conversion | 计算器, 支持单位和汇率换算 | 計算機, 支援單位和匯率換算 | 単位と為替の換算ができる電卓 |
+| 04-clipboard.png | Clipboard history for text, files and images | 剪贴板历史: 文字、文件和图片 | 剪貼簿歷程: 文字、檔案和圖片 | クリップボード履歴: テキスト、ファイル、画像 |
+| 05-files.png | Instant file search with Everything | 配合 Everything 瞬间搜索文件 | 搭配 Everything 瞬間搜尋檔案 | Everything で瞬時にファイル検索 |
+| 06-quickswitch.png | Quick Switch: jump Open / Save dialogs to your open folders | Quick Switch: 打开 / 保存对话框跳到当前文件夹 | Quick Switch: 開啟 / 儲存對話方塊跳到目前的資料夾 | Quick Switch: [開く] / [保存] ダイアログを開いているフォルダーへ |
+| 07-theme-dark.png | 22 themes, light and dark | 22 款主题, 浅色和深色 | 22 款主題, 淺色和深色 | 22 種類のテーマ、ライトとダーク |
+| 08-prefs-appearance.png | Preferences | 偏好设置 | 偏好設定 | 設定 |
+
+The same English screenshots go into every language's listing (each needs at least one). / 每种语言的商店页面都用同一套英文截图 (每种至少要一张)。

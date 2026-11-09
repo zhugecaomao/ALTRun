@@ -5,7 +5,7 @@
 
 ## [未发布]
 
-## [2026.11.09.7]
+## [2026.11.09.13]
 
 测试版。
 
@@ -13,6 +13,51 @@ Test build.
 
 ### 改进
 - 一键更新的后台下载失败、改用另一种方式重新下载时, 进度窗口会说明 "正在换一种方式重新下载, 完成之前 ALTRun 可能暂时没有响应"。以前文字不变、只有取消按钮变灰, 看起来像卡住了
+
+## [2026.11.09.12]
+
+测试版。
+
+Test build.
+
+### 新增
+- 对话框面板的收藏菜单可以用键盘打开: 在面板的搜索框里按 `Alt+↓` 或 `F4` (和 Windows 的下拉框一样)。星形按钮的提示里写上了这两个键
+
+## [2026.11.09.11]
+
+测试版。
+
+Test build.
+
+### 修复
+- 对话框面板的星形菜单或右键菜单用 Esc 或点别处关掉后, 前台留在 ALTRun 看不见的主窗口上, 接着打字进不了对话框, 要先点一下对话框。现在菜单关掉后对话框回到前台 (点了别的程序关掉菜单时不抢回焦点)
+
+## [2026.11.09.10]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内部整理: 收藏菜单的建立和弹出分开, Enter 和修饰键对应的运行方式单独成一个函数, 都补上了测试 (用 Windows 的菜单接口检查菜单里的每一项)。用户看不出变化
+
+## [2026.11.09.9]
+
+测试版。
+
+Test build.
+
+### 改进
+- 同一处反复出现的未捕获错误 (例如一个每秒都出错的计时器), 日志只完整记前 5 次, 之后只计数, 每小时 (以及退出时) 写一行 "又出现了多少次"。以前每次都写一条带调用栈的日志, 即使关了调试日志, ALTRun 连续运行几周时日志会一直变大
+
+## [2026.11.09.8]
+
+测试版。
+
+Test build.
+
+### 修复
+- 开着同步窗口时退出或重启 ALTRun, 窗口的位置和大小以前不会保存 (只在关闭窗口时保存)。现在退出时保存最前面那个同步窗口的位置
 
 ## [2026.11.09.6]
 
@@ -1189,8 +1234,13 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.7...HEAD
-[2026.11.09.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.6...2026.11.09.7
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.13...HEAD
+[2026.11.09.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.12...2026.11.09.13
+[2026.11.09.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.11...2026.11.09.12
+[2026.11.09.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.10...2026.11.09.11
+[2026.11.09.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.9...2026.11.09.10
+[2026.11.09.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.8...2026.11.09.9
+[2026.11.09.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.6...2026.11.09.8
 [2026.11.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.5...2026.11.09.6
 [2026.11.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...2026.11.09.5
 [2026.11.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...2026.11.09.4
