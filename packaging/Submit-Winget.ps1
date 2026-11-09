@@ -4,8 +4,11 @@
 #
 # wingetcreate opens the pull request from the token owner's fork of winget-pkgs and fails when it can't bring that fork up to
 # date ("The forked repository could not be synced with the upstream commits"): winget-pkgs gets hundreds of commits a day, so
-# a fork left alone falls far behind. The fork is synced first with GitHub's merge-upstream API; when that fails (the fork's
-# master has commits of its own) the log says so and wingetcreate tries anyway. A missing fork is fine: wingetcreate creates it.
+# a fork left alone falls far behind. The fork is synced first with GitHub's merge-upstream API. When that can't merge (HTTP 409 /
+# 422: the fork's master has commits of its own, seen on 2026-11-03 and 2026-11-09), its master is set to upstream's commit, as
+# "Sync fork → Discard commits" does on GitHub: the fork only serves to open winget pull requests (each from a branch of its own),
+# so nothing on its master is wanted. A fork shares upstream's objects, so the commit is there. When that fails too the log says
+# so and wingetcreate tries anyway. A missing fork is fine: wingetcreate creates it.
 #
 # GitHub's release download links (github.com/<repo>/releases/download/...) can answer slowly and then fail with 504 Gateway
 # Timeout (seen on 2026-11-09 during a GitHub incident: 9 ~ 11 s for each redirect, some ending in 504), and wingetcreate downloads
@@ -40,7 +43,21 @@ if (-not $fork) {
         Write-Host "Fork $owner/winget-pkgs ($branch): $($result.message)"
     } catch {
         $status = $_.Exception.Response.StatusCode.value__
-        Write-Host "::warning::Couldn't sync the fork $owner/winget-pkgs (HTTP $status): sync it on GitHub (Sync fork → Discard commits) or delete it, then run the ""Submit to winget"" workflow"
+        $synced = $false
+        if ($status -in 409, 422) {
+            try {
+                $upstream = (Invoke-RestMethod "https://api.github.com/repos/microsoft/winget-pkgs/git/ref/heads/$branch" -Headers $headers).object.sha
+                Invoke-RestMethod "https://api.github.com/repos/$owner/winget-pkgs/git/refs/heads/$branch" -Method Patch -Headers $headers `
+                    -Body (@{ sha = $upstream; force = $true } | ConvertTo-Json) -ContentType 'application/json' | Out-Null
+                Write-Host "::warning::Fork $owner/winget-pkgs ($branch) had commits of its own (HTTP $status): discarded them, it is now at upstream's $upstream"
+                $synced = $true
+            } catch {
+                $status = "$status, then $($_.Exception.Response.StatusCode.value__) setting it to upstream's commit"
+            }
+        }
+        if (-not $synced) {
+            Write-Host "::warning::Couldn't sync the fork $owner/winget-pkgs (HTTP $status): sync it on GitHub (Sync fork → Discard commits) or delete it, then run the ""Submit to winget"" workflow"
+        }
     }
 }
 
