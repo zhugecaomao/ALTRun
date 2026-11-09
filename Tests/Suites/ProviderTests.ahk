@@ -1455,28 +1455,28 @@ class ProviderTests {
             commandIds[command["Id"]] := true
         commandIds["Show"] := true                                          ; the two Ids only for hotkeys
         scopes := ""
-        texts := ""
+        prefixes := ""
         for entry in defaults["Hotkeys"] {                                  ; F1 ~ F4 are built into the search window, not custom hotkeys
             TestRunner.True("DefaultExamples.no F-key hotkey " entry["Key"], !RegExMatch(entry["Key"], "i)^F[1-4]$"))
             TestRunner.True("DefaultExamples.hotkey action " entry["Action"], commandIds.Has(entry["Action"]))
             eq("hotkey key order " entry["Key"], HotkeyBox.Compose(RegExReplace(entry["Key"], "i)\w+$"), RegExReplace(entry["Key"], "^[\^!+#]+")), entry["Key"])   ; as Preferences would record it
             scopes .= (entry["WinTitle"] = "" ? "global" : entry["WinTitle"] = "ALTRun" ? "altrun" : "window") " "
             if (entry["Action"] = "Show")
-                texts .= entry["Text"] "|"
+                prefixes .= entry["Prefix"] "|"
         }
         eq("hotkey examples: global, one program, ALTRun", scopes, "global global global global window altrun ")
-        eq("hotkey examples: Show types a search text", texts, "folder |recent |doc |")
-        eq("hotkey text: Show types it", App.HotkeyText(Map("Key", "^!f", "Action", "Show", "Text", "folder ", "WinTitle", "")), "folder ")
-        eq("hotkey text: only for Show", App.HotkeyText(Map("Key", "^!f", "Action", "Lock", "Text", "folder ")), "")
-        eq("hotkey text: none set", App.HotkeyText(Map("Key", "^!f", "Action", "Show")), "")
+        eq("hotkey examples: Show types a search prefix", prefixes, "folder |recent |doc |")
+        eq("hotkey prefix: Show types it", App.HotkeyPrefix(Map("Key", "^!f", "Action", "Show", "Prefix", "folder ", "WinTitle", "")), "folder ")
+        eq("hotkey prefix: only for Show", App.HotkeyPrefix(Map("Key", "^!f", "Action", "Lock", "Prefix", "folder ")), "")
+        eq("hotkey prefix: none set", App.HotkeyPrefix(Map("Key", "^!f", "Action", "Show")), "")
         eq("no mouse hotkeys by default (no mouse hook)", App.UsesMouseHotkeys(defaults["Hotkeys"]), false)
         help := ""
         for item in HelpProvider.Items()
             help .= item.Id " "
         eq("help lists F1 and F4", (InStr(help, "About ") && InStr(help, "EditJson ")) ? 1 : 0, 1)
-        eq("hotkey action shows its search text", PrefsForm.Cell(Map("Key", "^!#f", "Action", "Show", "Text", "folder "), "Action"), "Show folder")
-        eq("hotkey action without text", PrefsForm.Cell(Map("Key", "^!#f", "Action", "Show", "Text", " "), "Action"), "Show")
-        eq("hotkey text only for Show", PrefsForm.Cell(Map("Key", "^!#f", "Action", "Lock", "Text", "folder "), "Action"), "Lock")
+        eq("hotkey action shows its search prefix", PrefsForm.Cell(Map("Key", "^!f", "Action", "Show", "Prefix", "folder "), "Action"), "Show ALTRun: folder")
+        eq("hotkey action without text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Show", "Prefix", " "), "Action"), "Show")
+        eq("hotkey prefix only for Show", PrefsForm.Cell(Map("Key", "^!f", "Action", "Lock", "Prefix", "folder "), "Action"), "Lock")
         eq("command target shows arguments", PrefsForm.Cell(Map("Target", "cmd.exe", "Arguments", "/k ipconfig /all"), "Target"), "cmd.exe /k ipconfig /all")
         eq("url type name", I18n.Strings["Prefs.Type.Url"], "Web address / link")
         ids := Map()

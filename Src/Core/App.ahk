@@ -501,7 +501,7 @@ class App {
         if (clipboard["Enabled"] && clipboard["Hotkey"] != "")
             App._TryHotkey(clipboard["Hotkey"], (*) => SearchWindow.Show(AppSettings.Feature("Clipboard")["Keyword"] " "))
 
-        ; custom hotkeys: Key -> system command Action (Show also types its Text); with a WinTitle only in that window
+        ; custom hotkeys: Key -> system command Action (Show also types its Prefix); with a WinTitle only in that window
         for entry in AppSettings.Hotkeys {
             if !(entry is Map) || !entry.Has("Key") || !entry.Has("Action")
                 continue
@@ -511,7 +511,7 @@ class App {
                     HotIf((*) => SearchWindow.IsActive())
                 else if (winTitle != "")
                     HotIfWinActive(winTitle)
-                App._TryHotkey(entry["Key"], App._HotkeyAction(entry["Action"], App.HotkeyText(entry)))
+                App._TryHotkey(entry["Key"], App._HotkeyAction(entry["Action"], App.HotkeyPrefix(entry)))
             } catch as e {                                                  ; a wrong WinTitle makes HotIfWinActive fail too
                 Logger.Error("App: cannot register hotkey " entry["Key"] " - " e.Message)
             }
@@ -606,12 +606,12 @@ class App {
     }
 
     ; Remember the window the hotkey was pressed in first: commands such as TerminalHere work on that window
-    static _HotkeyAction(actionId, text := "") {
-        return (*) => (App.RememberActiveWindow(), SystemProvider.RunCommand(actionId, text))
+    static _HotkeyAction(actionId, prefix := "") {
+        return (*) => (App.RememberActiveWindow(), SystemProvider.RunCommand(actionId, prefix))
     }
 
-    ; The search text of a custom hotkey: only the Show action types it into the search box (for example "folder "); "" for any other
-    static HotkeyText(entry) => (entry.Has("Action") && entry["Action"] = "Show" && entry.Has("Text")) ? entry["Text"] "" : ""
+    ; The search prefix of a custom hotkey (for example "folder "): only the Show action types it into the search box; "" for any other
+    static HotkeyPrefix(entry) => (entry.Has("Action") && entry["Action"] = "Show" && entry.Has("Prefix")) ? entry["Prefix"] "" : ""
 
     static _SetIcon() {
         if FileExist(App.IconFile)
