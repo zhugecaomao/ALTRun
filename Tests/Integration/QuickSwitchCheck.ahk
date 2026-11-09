@@ -20,7 +20,7 @@
 
 global AppDir := A_Args.Length ? A_Args[1] : A_ScriptDir "\..\.."
 global Rounds := A_Args.Length > 1 ? Integer(A_Args[2]) : 5
-global Demo := A_Temp "\QuickSwitchCheck", LogFile := A_Temp "\ALTRun.log"
+global Demo := "C:\QuickSwitchCheck\demo", LogFile := A_Temp "\ALTRun.log"
 global Failures := 0, AppPid := 0, DialogPid := 0, Explorer := 0, Dialog := 0
 SetTitleMatchMode(3)
 SetKeyDelay(30, 30)
@@ -63,16 +63,22 @@ Setup() {
     Sleep(5000)                                                             ; start-up done
 
     Run('explorer.exe "' Demo '\Folder A"')
-    Explorer := WinWait("Folder A ahk_class CabinetWClass", , 15)
-    if !Explorer
+    SetTitleMatchMode(2)                                                    ; "Folder A" or "Folder A - File Explorer"
+    Explorer := WinWait("Folder A ahk_class CabinetWClass", , 30)           ; the first Explorer window on a fresh runner takes a while
+    SetTitleMatchMode(3)
+    if !Explorer {
+        Windows()
         throw Error("Explorer didn't open Folder A")
+    }
     helper := A_Temp "\QuickSwitchCheckDialog.ahk"
     try FileDelete(helper)
     FileAppend('#NoTrayIcon`nFileSelect(, "' Demo '\Start", "Open")`n', helper, "UTF-8")
     Run('"' A_AhkPath '" "' helper '"', , , &DialogPid)
     Dialog := WinWait("Open ahk_class #32770 ahk_pid " DialogPid, , 10)
-    if !Dialog
+    if !Dialog {
+        Windows()
         throw Error("the Open dialog didn't open")
+    }
     Say("INFO ALTRun pid " AppPid ", Explorer " Format("0x{:X}", Explorer) ", dialog " Format("0x{:X}", Dialog))
 }
 
@@ -139,6 +145,12 @@ ShowsFolder(name) {
                 return true
     }
     return false
+}
+
+; The visible top-level windows, to see what is there when something didn't appear
+Windows() {
+    for hwnd in WinGetList()
+        try Say("     window: " WinGetClass(hwnd) " | " WinGetTitle(hwnd) " | " WinGetProcessName(hwnd))
 }
 
 LogLength() => FileExist(LogFile) ? FileGetSize(LogFile) : 0
