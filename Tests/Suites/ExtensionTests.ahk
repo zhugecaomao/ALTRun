@@ -236,6 +236,12 @@ class ExtensionTests {
         for seconds in [0, 30, 300, 330, 3600, 3630, 5400]
             durations .= TaskScheduler.Duration(seconds) " "
         eq("duration", durations, " PT30S PT5M PT5M30S PT1H PT1H30S PT1H30M ")
+        if (EnvGet("GITHUB_ACTIONS") = "true") {                            ; Windows CI: what one connection to Task Scheduler costs (Sync now makes one, not one per task)
+            started := A_TickCount
+            Loop 5
+                TaskScheduler.Service()
+            FileAppend("NOTE DelayedStart: a Task Scheduler connection takes " Round((A_TickCount - started) / 5, 1) " ms`n", "*")
+        }
         eq("seconds", TaskScheduler.Seconds("") "|" TaskScheduler.Seconds("PT5M") "|" TaskScheduler.Seconds("PT1H0M30S") "|" TaskScheduler.Seconds("P1DT1S") "|" TaskScheduler.Seconds("5 min"), "0|300|3630|86401|-1")
         eq("delay text", DelayedStart.DelayText(0) "|" DelayedStart.DelayText(45) "|" DelayedStart.DelayText(300) "|" DelayedStart.DelayText(90) "|" DelayedStart.DelayText(""), "At once|45 s|5 min|1 min 30 s|At once")
         eq("safe names", DelayedStart.SafeName(' One/Drive: "sync" ') "|" DelayedStart.SafeName("a<b>c|d*e?f\g.") "|" DelayedStart.SafeName("..."), "One_Drive_ _sync_|a_b_c_d_e_f_g|")
@@ -606,6 +612,46 @@ class ExtensionTests {
             SyncJobs.StopAll(), SyncJobs.Last.Clear()
             AppSettings.DataDir := savedDir, SyncJobs.LogDir := savedLogDir
             try DirDelete(root, true)
+        }
+    }
+
+    ; Stopping several sync tasks (quitting): all are told to end first, then waited for together, StopWaitMs at most in all
+    ; (one after another it was up to StopWaitMs each). Real processes stand in for robocopy
+    static SyncStopAll() {
+        eq := (n, a, e) => TestRunner.Equal("SyncStopAll." n, a, e)
+        script := A_Temp "\ALTRun-stop-test.ahk"
+        FileOpen(script, "w", "UTF-8").Write("#NoTrayIcon`nSleep(30000)`n")
+        pids := [], jobs := []
+        savedJobs := SyncJobs.Jobs.Clone(), savedLast := SyncJobs.Last.Clone()
+        SyncJobs.Jobs.Clear()
+        try {
+            Loop 3 {
+                Run('"' A_AhkPath '" "' script '"', , , &pid)
+                pids.Push(pid)
+                handle := DllCall("OpenProcess", "UInt", 0x101000, "Int", 0, "UInt", pid, "Ptr")
+                job := {Name: "Stop " A_Index, Pid: pid, Handle: handle, Preview: false, Monitor: false, Started: A_Now, StartTick: A_TickCount, LogFile: "", OnDone: ""}
+                jobs.Push(job)
+            }
+            ; still running (not told to end): the wait gives up after the limit once, not once per task
+            waited := SyncJobs.WaitGone(jobs, 300)
+            FileAppend("NOTE SyncStopAll: 3 tasks that don't end: waited " waited " ms in all (one after another: up to " 3 * 300 " ms)`n", "*")
+            eq("waits once for all", waited >= 280 && waited < 600, true)
+            for i, job in jobs
+                SyncJobs.Jobs[SyncJobs.Key(job.Name)] := job
+            started := A_TickCount
+            eq("stops all", SyncJobs.StopAll(), 3)
+            elapsed := A_TickCount - started
+            gone := 0
+            for pid in pids
+                gone += !ProcessExist(pid)
+            eq("all ended, none left", gone "|" SyncJobs.Jobs.Count, "3|0")
+            eq("quick", elapsed < SyncJobs.StopWaitMs, true)
+            eq("nothing running: nothing to stop", SyncJobs.StopAll(), 0)
+        } finally {
+            for pid in pids
+                try ProcessClose(pid)
+            SyncJobs.Jobs := savedJobs, SyncJobs.Last := savedLast
+            try FileDelete(script)
         }
     }
 
