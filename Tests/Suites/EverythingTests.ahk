@@ -85,6 +85,28 @@ class EverythingTests {
         }
     }
 
+    ; A query started while another waits for its reply (a keystroke handled during the wait starts a new search): each gets
+    ; its own reply. They used to share one reply slot, so the outer query took the inner one's results
+    static NestedQuery() {
+        eq := (n, a, e) => TestRunner.Equal("EverythingNestedQuery." n, a, e)
+        if EverythingTests._Skip("NestedQuery")
+            return
+        fake := FakeEverything()
+        fake.ResultsFor := (search) => [{Path: "C:\Work\" search ".txt", IsFolder: false}]
+        fake.Delay := 80
+        got := {Inner: ""}
+        try {
+            SetTimer(() => got.Inner := Everything.Query("inner", 30, 14, 2000), -20)   ; runs while the outer query waits
+            outer := Everything.Query("outer", 30, 14, 2000)
+            TestUtil.WaitFor(() => IsObject(got.Inner), 3000)
+            eq("both queries sent", fake.Queries.Length, 2)
+            eq("outer query: its own results", outer.Length ? outer[1].Path : "none", "C:\Work\outer.txt")
+            eq("inner query: its own results", IsObject(got.Inner) && got.Inner.Length ? got.Inner[1].Path : "none", "C:\Work\inner.txt")
+        } finally {
+            fake.Close()
+        }
+    }
+
     ; File search with Everything: the separate folder query only when the first one was cut off at its limit (with fewer
     ; results every match is there, folders included), and not after Everything didn't answer (no second wait)
     static FileSearchQueries() {

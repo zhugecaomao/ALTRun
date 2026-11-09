@@ -10,12 +10,13 @@
 ;   fake := FakeEverything([{Path: "C:\Work\Report.docx", IsFolder: false}])
 ;   fake.Delay := 50                ; reply after 50 ms (0 = at once, while the query is being sent; < 0 = never)
 ;   fake.StaleFirst := true         ; first a reply with an older id (a search the user has typed past)
+;   fake.ResultsFor := (search) => [...]   ; results that depend on the search (instead of Results)
 ;   ... Everything.Query("report") ...   fake.Queries[1].Search = "report"
 ;   fake.Close()                    ; always (try / finally): the class can be registered only once
 ;===============================================================================
 
 class FakeEverything {
-    Results := [], Delay := 0, StaleFirst := false, Queries := []
+    Results := [], Delay := 0, StaleFirst := false, Queries := [], ResultsFor := ""
     Hwnd := 0, _class := "", _proc := 0
 
     __New(results := [], className := "EVERYTHING_TASKBAR_NOTIFICATION") {
@@ -57,10 +58,11 @@ class FakeEverything {
         this.Queries.Push(query)
         if this.StaleFirst
             this._Reply(query.ReplyHwnd, query.ReplyId - 1, [{Path: "C:\Stale\old result.txt", IsFolder: false}])
+        results := IsObject(this.ResultsFor) ? this.ResultsFor.Call(query.Search) : this.Results
         if (this.Delay = 0)
-            this._Reply(query.ReplyHwnd, query.ReplyId, this.Results)
+            this._Reply(query.ReplyHwnd, query.ReplyId, results)
         else if (this.Delay > 0)
-            SetTimer(() => this._Reply(query.ReplyHwnd, query.ReplyId, this.Results), -this.Delay)
+            SetTimer(() => this._Reply(query.ReplyHwnd, query.ReplyId, results), -this.Delay)
         return 1
     }
 

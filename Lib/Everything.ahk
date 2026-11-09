@@ -16,7 +16,10 @@
 
 class Everything {
     static SORT_NAME := 1, SORT_DATE_MODIFIED_DESC := 14
-    static _replyId := 0x414C5400, _pending := 0, _results := "", _listening := false
+    static _replyId := 0x414C5400, _listening := false
+    ; The queries waiting for their reply: reply id -> "" until the reply has come, then its results. One slot per query, since a
+    ; query can start while another waits (the wait handles messages, and a keystroke handled then may start a new search)
+    static _replies := Map()
     static LastProblem := "", _foreign := 0                               ; Why the last query came back empty (not received / timed out), for the caller's log
 
     ; The IPC window of the default instance (1.4, 1.5), then of the 1.5 alphas' named instance
@@ -42,13 +45,13 @@ class Everything {
             Everything._listening := true
         }
 
-        Everything._pending := ++Everything._replyId
-        Everything._results := "", Everything._foreign := 0                ; a reply can already come while the query is being sent
+        replyId := ++Everything._replyId
+        Everything._replies[replyId] := "", Everything._foreign := 0       ; a reply can already come while the query is being sent
 
         ; EVERYTHING_IPC_QUERY2: 7 DWORDs + the UTF-16 search text (with the terminating 0)
         size := 28 + (StrLen(search) + 1) * 2
         query := Buffer(size, 0)
-        NumPut("UInt", A_ScriptHwnd, "UInt", Everything._pending, "UInt", 0, "UInt", 0
+        NumPut("UInt", A_ScriptHwnd, "UInt", replyId, "UInt", 0, "UInt", 0
              , "UInt", maxResults, "UInt", 0x4, "UInt", sort, query)            ; 0x4 = REQUEST_FULL_PATH_AND_NAME
         StrPut(search, query.Ptr + 28, "UTF-16")
 
@@ -62,15 +65,16 @@ class Everything {
         if !DllCall("SendMessageTimeoutW", "Ptr", everythingHwnd, "UInt", 0x4A, "Ptr", A_ScriptHwnd, "Ptr", copyData.Ptr
                   , "UInt", 2, "UInt", timeoutMs, "UPtr*", &accepted) || !accepted {
             Everything.LastProblem := "query not accepted after " (A_TickCount - started) " ms"
-            Everything._pending := 0
+            Everything._replies.Delete(replyId)
             return []
         }
 
-        Everything._WaitForReply(A_TickCount + timeoutMs)
-        if !IsObject(Everything._results)                                   ; no reply: Everything is busy, or the reply collided with another WM_COPYDATA
+        Everything._WaitForReply(replyId, A_TickCount + timeoutMs)
+        results := Everything._replies.Delete(replyId)
+        if !IsObject(results) {                                             ; no reply: Everything is busy, or the reply collided with another WM_COPYDATA
             Everything.LastProblem := "no reply in " (A_TickCount - started) " ms (other WM_COPYDATA while waiting: " Everything._foreign ")"
-        results := IsObject(Everything._results) ? Everything._results : []
-        Everything._pending := 0
+            results := []
+        }
         return results
     }
 
@@ -78,8 +82,8 @@ class Everything {
     ; (Everything's reply is a WM_COPYDATA sent from its thread: QS_SENDMESSAGE), and Sleep(-1) lets AutoHotkey hand it to
     ; _OnCopyData at once. Sleep(5) used to wait a whole timer tick (15.6 ms) each round: on a Windows CI runner with Everything
     ; 1.4 and 1.5 every query took 31 ms (median), whatever Everything needed itself
-    static _WaitForReply(deadline) {
-        while (!IsObject(Everything._results) && (remaining := deadline - A_TickCount) > 0) {
+    static _WaitForReply(replyId, deadline) {
+        while (!IsObject(Everything._replies[replyId]) && (remaining := deadline - A_TickCount) > 0) {
             DllCall("MsgWaitForMultipleObjects", "UInt", 0, "Ptr", 0, "Int", 0, "UInt", remaining, "UInt", 0x4FF)   ; QS_ALLINPUT
             Sleep(-1)
         }
@@ -90,8 +94,8 @@ class Everything {
     ;   then numitems {flags, data_offset}; at data_offset a DWORD length + the UTF-16 path
     static _OnCopyData(wParam, lParam, msg, hwnd) {
         replyId := NumGet(lParam, 0, "UPtr")
-        if (!Everything._pending || replyId != Everything._pending) {
-            if Everything._pending
+        if !Everything._replies.Has(replyId) {                              ; not a reply to a waiting query (an old one, another program's)
+            if Everything._replies.Count
                 Everything._foreign++
             return
         }
@@ -105,7 +109,7 @@ class Everything {
             length := NumGet(dataPtr, 0, "UInt")
             results.Push({Path: StrGet(dataPtr + 4, length, "UTF-16"), IsFolder: (flags & 1) ? true : false})
         }
-        Everything._results := results
+        Everything._replies[replyId] := results
         return true
     }
 }

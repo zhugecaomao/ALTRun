@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.6]
+
+测试版。
+
+Test build.
+
+### 修复
+- 用 Everything 搜索文件时, 等待 Everything 回复期间如果又发起一次搜索 (例如这时处理了一次按键), 两次查询共用同一个回复位置, 前一次可能拿到后一次的结果 (界面会丢掉过期结果, 最多白查一次)。现在每次查询有自己的回复位置
+
 ## [2026.11.09.5]
 
 测试版。
@@ -1171,7 +1180,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.6...HEAD
+[2026.11.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.5...2026.11.09.6
 [2026.11.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...2026.11.09.5
 [2026.11.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...2026.11.09.4
 [2026.11.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.2...2026.11.09.3
