@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.12]
+
+测试版。
+
+Test build.
+
+### 新增
+- 对话框面板的收藏菜单可以用键盘打开: 在面板的搜索框里按 `Alt+↓` 或 `F4` (和 Windows 的下拉框一样)。星形按钮的提示里写上了这两个键
+
 ## [2026.11.09.11]
 
 测试版。
@@ -1216,7 +1225,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.12...HEAD
+[2026.11.09.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.11...2026.11.09.12
 [2026.11.09.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.10...2026.11.09.11
 [2026.11.09.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.9...2026.11.09.10
 [2026.11.09.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.8...2026.11.09.9

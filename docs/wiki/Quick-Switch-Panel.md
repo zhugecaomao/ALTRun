@@ -22,7 +22,7 @@ Folders you often save to or open from are in the star menu at the top right of 
 
 ![The panel's star menu with a favorite's subfolders](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/quickswitch-favorites.png)
 
-- **Jump**: click the star, then a favorite. A favorite with subfolders opens a submenu with its subfolders (one level); the favorite itself is the first, bold item, so a click always jumps. The first 30 subfolders by name are listed, sorted as in Explorer ("2" before "10"); hidden and system folders are left out. At most 500 are read, so a favorite with thousands of subfolders opens at once ("470+ more folders").
+- **Jump**: click the star (or press `Alt+↓` or `F4` in the panel's search box, as for a drop-down list), then a favorite. A favorite with subfolders opens a submenu with its subfolders (one level); the favorite itself is the first, bold item, so a click always jumps. The first 30 subfolders by name are listed, sorted as in Explorer ("2" before "10"); hidden and system folders are left out. At most 500 are read, so a favorite with thousands of subfolders opens at once ("470+ more folders").
 - **Search**: the panel's search box also finds favorites, listed first and marked "Favorite".
 - **Add**: star menu → **Add Current Folder "…" to Favorites** for the folder the dialog shows now, or right-click a folder in the panel → **Add to Favorites**. A short notice confirms it.
 - **Keyboard**: `Ctrl+D` adds the dialog's current folder while the caret is in the panel (click the panel, or press `Ctrl+Shift+G`, first). In the dialog itself `Ctrl+D` is the [date stamp](Date-Stamp) hotkey and adds a date to the file name.
