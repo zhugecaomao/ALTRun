@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.09.6"
+    static Version := "2026.11.09.8"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -767,6 +767,9 @@ class App {
         if Logger.Enabled
             Logger.Debug(App.ExitNote(reason, App._exitBy, App.HeldKeys(), SearchWindow.ForegroundText()))
         CapsLockHelper.Stop()
+        try SyncPreview.SaveOnExit()                                       ; where an open sync window is (closing one saves it, quitting doesn't close them)
+        catch as e
+            Logger.Error("App: cannot save the sync window's place on exit - " e.Message)
         SyncJobs.Shutdown(App._exitBy)                                      ; quitting stops the sync tasks, a restart hands them over
         try ApplicationProvider.SavePending()                              ; indexes rebuilt in the background but not written yet
         catch as e

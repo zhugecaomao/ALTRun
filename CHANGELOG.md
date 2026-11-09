@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.8]
+
+测试版。
+
+Test build.
+
+### 修复
+- 开着同步窗口时退出或重启 ALTRun, 窗口的位置和大小以前不会保存 (只在关闭窗口时保存)。现在退出时保存最前面那个同步窗口的位置
+
 ## [2026.11.09.6]
 
 测试版。
@@ -1180,7 +1189,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.8...HEAD
+[2026.11.09.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.7...2026.11.09.8
 [2026.11.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.5...2026.11.09.6
 [2026.11.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...2026.11.09.5
 [2026.11.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...2026.11.09.4
