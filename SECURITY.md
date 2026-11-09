@@ -57,7 +57,7 @@ ALTRun itself connects to the internet only in these cases:
 | Purpose | Destination | When | How to turn it off |
 |---|---|---|---|
 | Check for updates | api.github.com | At startup (if the last check was more than an hour ago), every 6 hours while running, or when you check manually | Preferences → General → "Check for updates automatically" |
-| Download an update | github.com (GitHub Releases) | Only after you choose to install an update | Do not install updates from ALTRun |
+| Download an update | api.github.com, then github.com if that fails (GitHub Releases) | Only after you choose to install an update | Do not install updates from ALTRun |
 | Exchange rates | api.frankfurter.dev | Once a day, only when currency conversion is turned on (off by default) | Preferences → Calculator → "Currency conversion" |
 | Web search icon | The website in that web search's URL | Only when you click "Download Site Icon" while editing a web search | Do not click it |
 
@@ -145,7 +145,7 @@ ALTRun 本身只在以下情况联网:
 | 用途 | 地址 | 什么时候 | 怎样关闭 |
 |---|---|---|---|
 | 检查更新 | api.github.com | 启动时 (距上次检查满 1 小时)、运行期间每 6 小时, 或手动检查时 | 偏好设置 → 通用 → "自动检查更新" |
-| 下载更新 | github.com (GitHub Releases) | 只在你选择安装更新之后 | 不在 ALTRun 里安装更新 |
+| 下载更新 | api.github.com, 失败时 github.com (GitHub Releases) | 只在你选择安装更新之后 | 不在 ALTRun 里安装更新 |
 | 汇率 | api.frankfurter.dev | 打开货币换算后每天一次 (默认关闭) | 偏好设置 → 计算器 → "货币换算" |
 | 网页搜索的图标 | 这个网页搜索的网址所在的网站 | 只在编辑网页搜索时点了 "下载网站图标" | 不点这个按钮 |
 

@@ -10,7 +10,7 @@ ALTRun itself only accesses the network in these cases:
 | When | Where | What for | How to turn it off |
 |---|---|---|---|
 | Automatic update check: 1 minute after startup (if the last check was over 1 hour ago), then every 6 hours while it keeps running | `api.github.com` | Reads the latest release's version number; sends nothing about your PC | Preferences → General → "Check for updates automatically" (`General.CheckForUpdates`) |
-| One-key update: when you press "Install update" | `github.com` (the release download) | Downloads the new version's zip and checks GitHub's SHA256 before replacing anything | Nothing is downloaded unless you press it |
+| One-key update: when you press "Install update" | `api.github.com` (the release's zip), `github.com` if that fails (the release download link) | Downloads the new version's zip and checks GitHub's SHA256 before replacing anything | Nothing is downloaded unless you press it |
 | Currency conversion (off by default): 1.5 minutes after startup, when the last download is over 12 hours old | `api.frankfurter.dev` | Downloads reference exchange rates published by the ECB and other central banks, saved in `Data\Currency.json` | Preferences → Calculator → "Currency conversion" (`Features.Calculator.Currency`) |
 | Download Site Icon: when you click "Download Site Icon" in the web search editor | The website in the URL | Downloads that site's icon and saves it in `Data\Icons` | Never accessed unless you click it |
 

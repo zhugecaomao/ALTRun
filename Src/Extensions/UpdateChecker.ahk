@@ -18,8 +18,12 @@
 ;
 ; One-click update ("Update now" when a new version is found):
 ;   1. download ALTRun_v<version>.zip from the Release in the background (HttpGet with follow: ALTRun keeps responding; a progress
-;      window with Cancel; at most DownloadTimeoutMs). When that fails for a network reason (e.g. only a proxy script lets it out), it
-;      downloads once more with AutoHotkey's Download (WinINet, the system proxy as the update check uses it), which holds ALTRun until done.
+;      window with Cancel; at most DownloadTimeoutMs for each address). First from GitHub's API (the asset's "url" with Accept:
+;      application/octet-stream), then from the Release's download link: the link (github.com/.../releases/download/...) goes through
+;      GitHub's web front end, which took 9 ~ 11 s to answer and sometimes gave up with 504 during GitHub's incidents of November 2026,
+;      while the API answered in under half a second (and an API refusal, e.g. its hourly limit of 60 requests without an account, only
+;      moves on to the link). When the link fails too for a network reason (e.g. only a proxy script lets it out), it downloads once
+;      more with AutoHotkey's Download (WinINet, the system proxy as the update check uses it), which holds ALTRun until done.
 ;      Then verify the SHA256 GitHub gives
 ;   2. extract to a temporary folder, copy the files other than the exe first (Resources\ etc.), then rename the running
 ;      ALTRun.exe to ALTRun.exe.old (a running exe can't be overwritten but can be renamed) and copy the new exe;
@@ -33,6 +37,7 @@
 class UpdateChecker {
     static ApiUrl      := "https://api.github.com/repos/zhugecaomao/ALTRun/releases/latest"
     static ReleasePage := "https://github.com/zhugecaomao/ALTRun/releases"
+    static AssetApiUrl := "https://api.github.com/repos/zhugecaomao/ALTRun/releases/assets/"   ; + the asset's number
     static RepoUrl     := "https://github.com/zhugecaomao/ALTRun/"
     static TempDir     := A_Temp "\ALTRun-update"
     static OldSuffix   := ".old"
@@ -249,12 +254,12 @@ class UpdateChecker {
         HttpGet.Start(UpdateChecker.ApiUrl, (text) => done.Call(UpdateChecker.ParseRelease(text)), fail)
     }
 
-    ; GitHub API releases/latest -> {Version, Page, ZipUrl, Sha256} ("" without zip / SHA256)
+    ; GitHub API releases/latest -> {Version, Page, ZipUrl, AssetUrl, Sha256} ("" without zip / SHA256); AssetUrl: the zip in GitHub's API
     static ParseRelease(text) {
         data := JSON.Parse(text)
         if !(data is Map) || !data.Has("tag_name") || data["tag_name"] = ""
             throw Error("Cannot find 'tag_name' in the GitHub response.")
-        release := {Version: Trim(data["tag_name"], "vV "), Page: UpdateChecker.ReleasePage, ZipUrl: "", Sha256: ""}
+        release := {Version: Trim(data["tag_name"], "vV "), Page: UpdateChecker.ReleasePage, ZipUrl: "", AssetUrl: "", Sha256: ""}
         ; The page is opened with Run and the zip is downloaded: only addresses in this repository are used, whatever
         ; else the response says (the SHA256 comes from the same response, so it only catches a broken download)
         if data.Has("html_url") && UpdateChecker.InRepo(data["html_url"])
@@ -265,6 +270,8 @@ class UpdateChecker {
                     continue
                 release.ZipUrl := (asset.Has("browser_download_url") && UpdateChecker.InRepo(asset["browser_download_url"], "releases/download/"))
                     ? asset["browser_download_url"] : ""
+                if asset.Has("url") && (asset["url"] is String) && RegExMatch(asset["url"], "^\Q" UpdateChecker.AssetApiUrl "\E\d+$")
+                    release.AssetUrl := asset["url"]
                 if asset.Has("digest") && RegExMatch(asset["digest"], "i)^sha256:([0-9a-f]{64})$", &m)
                     release.Sha256 := StrLower(m[1])
                 break
@@ -305,7 +312,7 @@ class UpdateChecker {
             return
         }
         progress := UpdateChecker._Progress(I18n.T("Update.Downloading", release.Version), () => UpdateChecker.CancelInstall())
-        job := {Release: release, Progress: progress, Request: ""}
+        job := {Release: release, Progress: progress, Request: "", Sources: UpdateChecker.DownloadSources(release), Source: 0, Started: A_TickCount, Via: ""}
         UpdateChecker._installing := job
         try {
             dir := UpdateChecker.TempDir
@@ -314,21 +321,45 @@ class UpdateChecker {
             zip := dir "\ALTRun_v" release.Version ".zip"
         } catch as e
             return UpdateChecker._InstallFailed(job, e.Message)
-        job.Request := HttpGet.Start(release.ZipUrl, (file) => UpdateChecker._Downloaded(job, file)
-            , (message) => UpdateChecker._DownloadFailed(job, message, zip), UpdateChecker.DownloadTimeoutMs, zip, true)
+        UpdateChecker._StartDownload(job, zip, 1)
     }
 
-    ; The background download failed: an HTTP 4xx would come back the same; a network error (no direct connection, a proxy script
-    ; WinHTTP can't use) or a server error gets one more try with AutoHotkey's Download, as before this download moved to the
-    ; background. GitHub's release download can be slow on a first request (about 10 s on Windows CI) and its gateway then gives up
-    ; with 504 now and then; the next request is quick
+    ; Where the zip is downloaded from, in order: [{Url, Headers}...]. GitHub's API needs a User-Agent and, for the file itself rather
+    ; than its description, Accept: application/octet-stream; it then redirects to the same download server as the link
+    static DownloadSources(release) {
+        sources := []
+        if (release.HasOwnProp("AssetUrl") && release.AssetUrl != "")
+            sources.Push({Url: release.AssetUrl, Headers: Map("Accept", "application/octet-stream", "User-Agent", App.Name "/" App.Version)})
+        sources.Push({Url: release.ZipUrl, Headers: ""})
+        return sources
+    }
+
+    static _StartDownload(job, zip, index) {
+        source := job.Sources[index]
+        job.Source := index, job.Via := UpdateChecker.Host(source.Url)
+        job.Request := HttpGet.Start(source.Url, (file) => UpdateChecker._Downloaded(job, file)
+            , (message) => UpdateChecker._DownloadFailed(job, message, zip), UpdateChecker.DownloadTimeoutMs, zip, true, source.Headers)
+    }
+
+    static Host(url) => RegExReplace(url, "^[a-z]+://([^/]+).*$", "$1")
+
+    ; A background download failed. When the server answered with an error (the API refused, e.g. its hourly limit, or failed) and
+    ; another address is left, that one is tried. A network error (no direct connection, a proxy script WinHTTP can't use) would
+    ; come back the same from the next address, so it goes straight to one more try with AutoHotkey's Download, as before this
+    ; download moved to the background; so does a server error from the last address. An HTTP 4xx from the last address would come back the same
     static _DownloadFailed(job, message, zip) {
         if (UpdateChecker._installing != job)
             return
+        if (job.Source < job.Sources.Length && RegExMatch(message, "^HTTP ")) {
+            next := job.Sources[job.Source + 1]
+            Logger.Warn("UpdateChecker: download from " job.Via " failed (" message "), trying " UpdateChecker.Host(next.Url))
+            return UpdateChecker._StartDownload(job, zip, job.Source + 1)
+        }
         if RegExMatch(message, "^HTTP 4\d\d")
             return UpdateChecker._InstallFailed(job, message)
         Logger.Warn("UpdateChecker: background download failed (" message "), trying again with AutoHotkey's Download")
         try job.Progress["Cancel"].Enabled := false
+        job.Via := "AutoHotkey Download, " UpdateChecker.Host(job.Release.ZipUrl)
         try {
             UpdateChecker.downloadFn.Call(job.Release.ZipUrl, zip)
         } catch as e
@@ -342,6 +373,7 @@ class UpdateChecker {
         if (UpdateChecker._installing != job)                               ; cancelled meanwhile
             return
         release := job.Release
+        Logger.Debug("Perf: update download " (A_TickCount - job.Started) " ms (" job.Via ")")
         try {
             actual := UpdateChecker.Sha256File(zip)
             if (actual != release.Sha256)
