@@ -929,12 +929,20 @@ class CoreTests {
 
                 ; a network error: one more try with Download() (fake here); an HTTP error isn't tried again
                 downloads := [], savedDownload := UpdateChecker.downloadFn, asked.Length := 0
-                UpdateChecker.downloadFn := (url, target) => (downloads.Push(url), FileAppend("x", target))
+                shown := {Text: "", BarBelow: 0}                                   ; what the progress window says while Download() holds ALTRun
+                FakeDownload(url, target) {
+                    downloads.Push(url), FileAppend("x", target)
+                    dlg := UpdateChecker._installing.Progress
+                    dlg["Text"].GetPos(, &textY, , &textH), dlg["Bar"].GetPos(, &barY)
+                    shown.Text := dlg["Text"].Value, shown.BarBelow := (barY >= textY + textH)
+                }
+                UpdateChecker.downloadFn := FakeDownload
                 try {
                     UpdateChecker.Install(release), n := fakes.Length
                     fakes[n].status := 12029, fakes[n].readyState := 4             ; ERROR_INTERNET_CANNOT_CONNECT
                     TestUtil.WaitFor(() => asked.Length)
                     eq("network error: tried again with Download()", downloads.Length "|" (downloads.Length ? downloads[1] : ""), "1|" release.ZipUrl)
+                    eq("network error: the window says so first, the bar below the longer text", shown.Text "|" shown.BarBelow, I18n.T("Update.Fallback") "|1")
                     eq("network error: then verified (wrong checksum here)", asked.Length && InStr(asked[1], I18n.T("Update.Corrupt")) > 0, true)
                     asked.Length := 0, downloads.Length := 0
                     UpdateChecker.Install(release), n := fakes.Length

@@ -359,6 +359,7 @@ class UpdateChecker {
             return UpdateChecker._InstallFailed(job, message)
         Logger.Warn("UpdateChecker: background download failed (" message "), trying again with AutoHotkey's Download")
         try job.Progress["Cancel"].Enabled := false
+        UpdateChecker._SayFallback(job.Progress)
         job.Via := "AutoHotkey Download, " UpdateChecker.Host(job.Release.ZipUrl)
         try {
             UpdateChecker.downloadFn.Call(job.Release.ZipUrl, zip)
@@ -367,6 +368,22 @@ class UpdateChecker {
         UpdateChecker._Downloaded(job, zip)
     }
     static downloadFn := (url, file) => Download(url, file)                   ; replaced in the tests
+
+    ; AutoHotkey's Download holds ALTRun until it ends, with no time limit: the progress window says so (one more line for the text)
+    ; and is painted now, since nothing repaints it while that download runs
+    static _SayFallback(dlg) {
+        try {
+            text := dlg["Text"]
+            text.GetPos(, , , &h)
+            text.Move(, , , h * 2), text.Value := I18n.T("Update.Fallback")
+            for name in ["Bar", "Cancel"] {
+                dlg[name].GetPos(, &y)
+                dlg[name].Move(, y + h)
+            }
+            dlg.Show("AutoSize NoActivate")
+            DllCall("UpdateWindow", "Ptr", dlg.Hwnd)
+        }
+    }
 
     ; The zip has downloaded: verify, extract and replace (quick, so Cancel is off now), then restart as the new version
     static _Downloaded(job, zip) {
