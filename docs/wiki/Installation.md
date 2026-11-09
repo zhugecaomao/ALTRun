@@ -72,7 +72,7 @@ Details below.
 
 ### One-key updates
 ALTRun checks GitHub for new versions in the background (at startup and then every 6 hours) (Preferences → General → "Check for updates automatically"). Like Alfred, it doesn't pop up a window: once a new version is found, the empty search box shows **"Update Available: ALTRun x"** when you open the search window, with the current version and the keys on the line below (typing `update` finds it too):
-- `Enter`: **Install Update**. Downloads the new version, checks its SHA256 checksum, replaces the program files and restarts automatically. `Data\` (settings and data) and `Themes\` are not touched
+- `Enter`: **Install Update**. Downloads the new version in the background (ALTRun keeps responding; **Cancel** or `Esc` in the progress window stops it), checks its SHA256 checksum, replaces the program files and restarts automatically. `Data\` (settings and data) and `Themes\` are not touched
 - `→`: **Release Notes** (opens this version's notes on GitHub) or **Skip This Version** (you'll be told again when there is a newer one)
 
 After Windows starts, it waits 1 minute (the network may not be up yet) and checks if the last check was more than 1 hour ago, so a version released the day before is found when you start your PC; after that it looks every hour whether 6 hours have passed since the last check. The time of the last check and skipped versions are kept in `Data\Update.json`, so reloading ALTRun after changing settings doesn't check again and again. When there's no network it only writes a log entry and tries again an hour later.

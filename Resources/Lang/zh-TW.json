@@ -1055,6 +1055,8 @@
   "Update.InstallFailed": "自動更新失敗:\n\n{1}\n\nALTRun 沒有改動。是否開啟下載頁面手動更新?",
   "Update.InstallNow": "安裝更新",
   "Update.Installing": "正在安裝 ALTRun {1}...",
+  "Update.Cancel": "取消",
+  "Update.Cancelled": "已取消更新到 {1}",
   "Update.ItemInstall": "目前版本 {1}  ·  Enter 安裝更新  ·  → 更新說明、跳過此版本",
   "Update.ItemPage": "目前版本 {1}  ·  Enter 開啟下載頁面  ·  → 跳過此版本",
   "Update.ItemSource": "執行的是原始碼: 用 git pull 更新  ·  Enter 開啟下載頁面",

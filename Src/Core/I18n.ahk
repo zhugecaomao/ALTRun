@@ -1224,6 +1224,8 @@ class I18n {
         s["Update.Later"]              := "Later"
         s["Update.Downloading"]        := "Downloading ALTRun {1}..."
         s["Update.Installing"]         := "Installing ALTRun {1}..."
+        s["Update.Cancel"]             := "Cancel"
+        s["Update.Cancelled"]          := "Update to {1} cancelled"
         s["Update.InstallFailed"]      := "The update could not be installed:`n`n{1}`n`nALTRun was not changed. Open the download page to update by hand?"
         s["Update.Done"]               := "ALTRun has been updated to {1}"
         s["Update.AvailableVia"]       := "A new version {1} is available.`n`nALTRun was installed with a package manager - exit ALTRun, then run:`n`n    {2}`n`nOpen the release page to see what's new?"

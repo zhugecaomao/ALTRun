@@ -1054,6 +1054,8 @@
   "Update.InstallFailed": "更新をインストールできませんでした:\n\n{1}\n\nALTRun は変更されていません。ダウンロードページを開いて手動で更新しますか?",
   "Update.InstallNow": "インストール",
   "Update.Installing": "ALTRun {1} をインストール中...",
+  "Update.Cancel": "キャンセル",
+  "Update.Cancelled": "{1} への更新をキャンセルしました",
   "Update.ItemInstall": "現在のバージョン {1}  ·  Enter: アップデートをインストール  ·  →: リリースノート、このバージョンをスキップ",
   "Update.ItemPage": "現在のバージョン {1}  ·  Enter: ダウンロードページを開く  ·  →: このバージョンをスキップ",
   "Update.ItemSource": "ソースを実行中: git pull で更新  ·  Enter: ダウンロードページ",

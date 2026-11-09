@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.03.24]
+
+测试版。
+
+Test build.
+
+### 改进
+- 一键更新改为在后台下载: 下载时热键和搜索窗口照常响应 (以前要等下载完, 网络慢时像卡住了); 进度窗口里可以点 取消 或按 Esc 停止, 下载的文件会删掉, 程序不做任何改动; 下载最多等 5 分钟
+
 ## [2026.11.03.23]
 
 测试版。
@@ -1268,7 +1277,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.23...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.24...HEAD
+[2026.11.03.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.23...2026.11.03.24
 [2026.11.03.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.22...2026.11.03.23
 [2026.11.03.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.21...2026.11.03.22
 [2026.11.03.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.20...2026.11.03.21
