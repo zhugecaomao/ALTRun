@@ -407,6 +407,21 @@ class CoreTests {
         eq("ctrl+c", App.TapDecision("c", "LCtrl", 80, 250), "reset")
         eq("held too long", App.TapDecision("LControl", "LCtrl", 800, 250), "reset")
         eq("default off", AppSettings.Defaults()["General"]["DoubleTap"], "")
+        eq("same key twice", App.TapDecision("LShift", "LShift", 80, 250, "LShift"), "show")
+        eq("left then right shift: a new first tap", App.TapDecision("RShift", "RShift", 80, 250, "LShift"), "first")
+        eq("left then right ctrl", App.TapDecision("RControl", "RCtrl", 80, 250, "LCtrl"), "first")
+        keys(setting) {                                                     ; the hotkeys registered for a DoubleTap setting
+            text := ""
+            for key in App.TapKeys(setting)
+                text .= (text = "" ? "" : " ") key
+            return text
+        }
+        eq("keys: either shift", keys("Shift"), "LShift RShift")
+        eq("keys: either ctrl", keys("Ctrl"), "LCtrl RCtrl")
+        eq("keys: left shift only", keys("LShift"), "LShift")
+        eq("keys: right ctrl only", keys("RCtrl"), "RCtrl")
+        eq("keys: off", keys(""), "")
+        eq("keys: unknown", keys("Alt"), "")
     }
 
     ; Several keywords in the keyword field (comma-separated): web searches, custom commands, snippets work with any of them; hints and completion use the one typed (the first if none)

@@ -59,7 +59,7 @@
 |---|---|---|
 | Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Hotkeys-zh#设置热键)) |
 | SecondaryHotkey | `!r` | 第二个呼出热键 (Alt+R), 留空 = 不用 |
-| DoubleTap | 空 | `Ctrl` / `Shift` = 快速按两下这个键也能呼出 (和 Listary 一样), 空 = 不用 |
+| DoubleTap | 空 | `Ctrl` / `Shift` = 快速按两下这个键也能呼出 (和 Listary 一样): 要同一个键按两下, 先按左 Shift 再按右 Shift 不算; `LCtrl` / `RCtrl` / `LShift` / `RShift` = 只用左边或右边的那个键; 空 = 不用 |
 | CapsLock | 空 | 和 Mac 一样: `Layout` = 按一下 CapsLock 切换到下一个输入法 (和 `Win+Space` 一样), `Mode` = 切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定。空 = CapsLock 照常。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |
 | CapsLockNotify | 1 | 开 / 关大写锁定时显示 "大写锁定: 开 / 关" 的提示; 0 = 不显示 |
 | CapsLockElevated | 0 | 1 = CapsLock 切换在管理员权限的窗口里也生效: 用计划任务以管理员身份运行一个只管 CapsLock 的小助手, ALTRun 本身还是普通权限。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |

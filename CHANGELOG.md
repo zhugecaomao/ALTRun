@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.03.19]
+
+测试版。
+
+Test build.
+
+### 改进
+- 双击呼出可以只用左边或右边的键: 偏好设置 → 通用 → "双击呼出" 新增 左 Ctrl / 右 Ctrl / 左 Shift / 右 Shift (选项里不再重复 "双击" 两个字)
+
+### 修复
+- 双击 Ctrl / Shift 呼出时, 先按左边的键再按右边的键也会呼出 (例如打字时左右 Shift 交替输入大写字母); 现在要同一个键按两下
+
 ## [2026.11.03.18]
 
 测试版。
@@ -1219,7 +1231,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.19...HEAD
+[2026.11.03.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.18...2026.11.03.19
 [2026.11.03.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.17...2026.11.03.18
 [2026.11.03.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.16...2026.11.03.17
 [2026.11.03.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.03.15...2026.11.03.16
