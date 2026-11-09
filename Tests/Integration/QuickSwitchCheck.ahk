@@ -46,7 +46,7 @@ Setup() {
     DirCreate(Demo "\Folder A"), DirCreate(Demo "\Start")
     settings := Map("SchemaVersion", 6
         , "General", Map("Language", "en", "LaunchAtLogin", 0, "CheckForUpdates", 0, "ShowTips", 0, "SaveLog", 1, "SendToMenu", 0, "StartMenuShortcut", 0)
-        , "Extensions", Map("QuickSwitch", Map("AutoSwitch", 0)))
+        , "Extensions", Map("QuickSwitch", Map("AutoSwitch", 1)))
     try DirDelete(AppDir "\Data", true)
     DirCreate(AppDir "\Data")
     FileAppend(JSON.Stringify(settings, 4), AppDir "\Data\ALTRun.json", "UTF-8")
