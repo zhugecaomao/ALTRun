@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.09.6"
+    static Version := "2026.11.09.9"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -766,6 +766,7 @@ class App {
     static _OnExit(reason := "") {
         if Logger.Enabled
             Logger.Debug(App.ExitNote(reason, App._exitBy, App.HeldKeys(), SearchWindow.ForegroundText()))
+        try ErrorHandler.WriteCounts()                                     ; uncaught errors counted but not written yet
         CapsLockHelper.Stop()
         SyncJobs.Shutdown(App._exitBy)                                      ; quitting stops the sync tasks, a restart hands them over
         try ApplicationProvider.SavePending()                              ; indexes rebuilt in the background but not written yet
