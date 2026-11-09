@@ -1,5 +1,5 @@
 {
-    "version": "2026.11.03",
+    "version": "2026.11.09",
     "description": "Lightweight, open-source Alfred-style launcher for Windows",
     "homepage": "https://zhugecaomao.github.io/ALTRun/",
     "license": "GPL-3.0-only",
@@ -9,8 +9,8 @@
     ],
     "architecture": {
         "64bit": {
-            "url": "https://github.com/zhugecaomao/ALTRun/releases/download/2026.11.03/ALTRun_v2026.11.03.zip",
-            "hash": "ec0bb1848f799a92ed9a8bbf501bc1488907eaee78dfa1534cc193f6aa9c68b8"
+            "url": "https://github.com/zhugecaomao/ALTRun/releases/download/2026.11.09/ALTRun_v2026.11.09.zip",
+            "hash": "6f747d5452c55749e4aacdebb92ccbb4a6ab291fd53af77d57ba2388e1612720"
         }
     },
     "pre_install": [
