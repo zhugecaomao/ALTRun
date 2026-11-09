@@ -958,8 +958,19 @@ class QuickSwitch {
             rowMenu.Add(QuickSwitch.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder))) "`tCtrl+D", (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
             items++
         }
-        if items
+        if items {
             rowMenu.Show()
+            QuickSwitch._DialogAfterMenu()
+        }
+    }
+
+    ; After a panel menu: Menu.Show and ShowMenuBelow make ALTRun's hidden window the foreground window for the menu (or it wouldn't
+    ; close on a click elsewhere). A chosen item jumps back to the dialog by itself, but a menu closed with Esc or a click elsewhere
+    ; left the hidden window in front, and typing went nowhere (checked on Windows CI: Tests\Integration\QuickSwitchCheck.ahk).
+    ; So the dialog comes back to the front when nothing else has taken it
+    static _DialogAfterMenu() {
+        if (DllCall("GetForegroundWindow", "Ptr") = A_ScriptHwnd)            ; not when another program was clicked to close the menu
+            QuickSwitch._BackToDialog()
     }
 
     ; Adds or removes a favorite, then lists the panel's folders again (without Opus first, as when the panel opens), keeping the search.
@@ -1091,6 +1102,7 @@ class QuickSwitch {
         DllCall("TrackPopupMenuEx", "Ptr", m.Handle, "UInt", 0x0008 | 0x0040   ; TPM_RIGHTALIGN | TPM_VERTICAL
             , "Int", NumGet(button, 8, "Int"), "Int", NumGet(button, 12, "Int"), "Ptr", A_ScriptHwnd, "Ptr", params)
         DllCall("PostMessage", "Ptr", A_ScriptHwnd, "UInt", 0, "Ptr", 0, "Ptr", 0)   ; WM_NULL, as the TrackPopupMenu documentation asks
+        QuickSwitch._DialogAfterMenu()
     }
 
     ; The newest limit folders of Windows "Recent items" (WindowsRecent); a file gives its folder.
