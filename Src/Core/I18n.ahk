@@ -874,6 +874,8 @@ class I18n {
         s["Prefs.Col.Key"]             := "Hotkey"
         s["Prefs.Col.Action"]          := "Action"
         s["Prefs.Col.WinTitle"]        := "Only in window (optional)"
+        s["Prefs.Col.SearchPrefix"]    := "Search prefix"
+        s["Prefs.SearchPrefixHint"]    := "Only for Show: the prefix the search box starts with, choosing what to search, e.g. folder, recent, doc (a space at the end counts)."
         s["Prefs.WinTitleHint"]         := "e.g. ahk_exe notepad.exe. ALTRun = only in the ALTRun search window."
         s["Prefs.Col.AutoExpand"]      := "Expand automatically when typed"
         s["Snippet.Hint.Name"]         := "Shown in search results and used for searching. Use words you would type to find it, e.g. PT quotation."
