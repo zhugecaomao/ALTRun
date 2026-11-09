@@ -16,16 +16,22 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk             单元测试, 退�
 ```
 ALTRun.ahk          入口: #Include 所有模块, 调用 App.Start()
 Lib\                通用库, 与 ALTRun 无关, 可以直接拿到别的项目用
-                    (JSON, Logger, Util: Path/Win/Url..., TextTools, Kanji, Dialogs, Everything IPC)
-Src\Core\           App (启动流程), AppSettings + SchemaMigration (设置和版本升级),
+                    (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
+                    Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ClipboardData,
+                    TaskScheduler, TaskbarProgress)
+Src\Core\           App (启动、单实例、退出), ErrorHandler (未捕获的错误), I18n (界面文字),
+                    AppSettings + SchemaMigration (设置和版本升级),
                     SearchQuery / ResultItem (搜索模型), FuzzyMatcher (匹配打分),
                     Knowledge (学习排序), Usage (使用统计), ActionCatalog (执行结果: 打开、复制、粘贴...),
                     ProviderRegistry, FileIndex, BackgroundWork (后台任务什么时候可以运行)
-Src\UI\             SearchWindow (+ SearchKeys 键盘、ResultRows 结果行绘制、SearchStatusBar 状态栏、TypeAhead、SearchInputLanguage),
-                    ResultActions (操作面板、编辑、删除), PreferencesWindow (+ PrefsPages 各个页面、
-                    PrefsForm 表单工具和布局尺寸), ItemEditor, LargeType, ThemeManager, IconCache
+Src\UI\             SearchWindow (+ SearchSession、SearchKeys 键盘、ResultRows 结果行绘制、SearchStatusBar 状态栏、TypeAhead、
+                    SearchInputLanguage、WindowFade), ResultActions (操作面板、编辑、删除), PreferencesWindow (+ PrefsPages 各个页面、
+                    PrefsForm 表单工具和布局尺寸), ItemEditor, HotkeyBox, LargeType, Hud (简短提示),
+                    ThemeManager + ThemePreview, IconCache, NavIcons, SyncEditor + SyncPreview (同步任务编辑和同步窗口)
 Src\Providers\      搜索功能, 每个功能一个类
-Src\Extensions\     搜索窗口以外的功能 (SnippetExpander, QuickSwitch, AutoDate, CapsLockSwitch, TendonProfile + PTToolsWindow, UpdateChecker)
+Src\Extensions\     搜索窗口以外的功能: SnippetExpander, QuickSwitch (文件对话框), AutoDate, CapsLockSwitch +
+                    CapsLockHelper, SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
+                    DelayedStart, RoboSync + SyncJobs + SyncProgress (用 robocopy 同步文件夹)
 Resources\          随程序发布的数据 (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  单元测试的入口: 载入程序代码 (设置只在内存里), 运行所有测试类
 Tests\Suites\       单元测试, 每个方面一个类 (Core, Provider, SearchWindow, Preferences, Extension, Project)
@@ -39,7 +45,7 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 .github\            GitHub Actions (测试、截图、发布、Wiki、官网、同步到 Gitee)、Issue / PR 模板
 ```
 
-分层: `Lib` 不用 `Src` 里的任何东西; `Src\Core` 不用 `UI`、`Providers`、`Extensions` (只有负责启动的 `App.ahk` 可以)。Core 需要上层的信息时, 由上层设置回调或调用 Core, 例如 `BackgroundWork.IsBusy` (搜索窗口设置) 和 `IconCache.Prefetch(ProviderRegistry.IconSpecs())` (`App` 调用)。测试 `Layers` 检查这一点。
+分层: `Lib` 不用 `Src` 里的任何东西; `Src\Core` 不用 `UI`、`Providers`、`Extensions` (只有负责启动的 `App.ahk` 可以)。Core 需要上层的信息时, 由上层设置回调或调用 Core, 例如 `BackgroundWork.IsBusy` (搜索窗口设置) 和 `IconCache.Prefetch(ProviderRegistry.IconSpecs())` (`App` 调用)。测试 `Layers` 检查这一点。Core 以上的 `UI`、`Providers`、`Extensions` 之间直接互相调用 (Provider 打开 `ItemEditor`, `SyncJobs` 打开同步窗口); 把各部分接起来的只有 `App`, 所以新模块在 `App.Start()` 里启动, 有需要保存或停止的东西就在 `App._OnExit()` 里处理。
 
 运行后程序目录下会生成 `Data\` (设置文件 `ALTRun.json`, 以及可以删除的索引和历史) 和 `Themes\` (自定义主题)。
 
@@ -63,6 +69,29 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 一次典型的生命周期是: 启动并加载设置 → 初始化 Provider 和窗口 → 接收搜索输入 → 解析查询并收集结果 → 排序和显示 → 执行选中项的操作。设置变更会保存后重新载入; 退出时停止文件夹监视和后台任务, 并完成待保存的缓存处理。
 
 后台工作要注意窗口和资源生命周期: 计时器回调通过 `Logger.Watch(label, fn)` 记录耗时; 网络请求使用 `HttpGet.Start` 异步启动, 不要在主线程里同步等待下载; 索引缓存通常在键鼠空闲后保存, 退出时会立即处理待保存数据。
+
+### 设置和数据
+- **位置**: 便携运行时 `AppSettings.DataDir` 是程序旁边的 `Data\`, 否则在用户目录下; 设置文件里的 `DataLocation` 可以指到别处 (`AppSettings.ResolveDataDir`)。ALTRun 写的东西都在这里: `ALTRun.json`、索引、历史、缓存
+- **读取**: `AppSettings.Load()` 读 `ALTRun.json`, 旧格式经 `SchemaMigration` 升级 (先备份 `ALTRun.vN.backup.json`), 缺少的项从 `AppSettings.Defaults()` 补上。读不了的文件不会被覆盖: ALTRun 提议改用 `ALTRun.json.bak`
+- **保存**: `AppSettings.Save()` 先把上一次正常的文件复制成 `ALTRun.json.bak`, 再经 `SafeFile` 写入 (每次写入自己的临时文件, 刷到磁盘, 再用带 write-through 的 `MoveFileEx` 替换), 崩溃或断电不会留下写了一半的文件。所有数据文件都经 `SafeFile` / `JSON.WriteFile` 写, 不要用 `FileAppend` 直接写正式文件
+- **偏好设置** 在副本上编辑; 确定 / 应用时保存并重新载入 ALTRun, 没有窗口直接改运行中的设置
+- **退出** (`App._OnExit`): 在这里写入后台重建的索引、学习排序、使用统计、剪贴板历史、图标缓存和日志。新加的、在内存里存数据的功能, 把保存加到这里
+
+### 线程、消息和重入
+AutoHotkey 同一时间只运行一个线程, 但热键、计时器、`OnMessage` 处理函数和界面事件会开一个新线程, **在当前线程等待时插进来**: `Sleep`、`MsgBox` 等对话框、`WinWait`、`Download()`, 以及会处理消息的 `DllCall` / `SendMessage`。等待过的代码继续时, 要假设共享的状态已经变了:
+- 同一个函数可能同时运行两次。`SafeFile` 每次写入用自己的临时文件, 并以最新的内容为准; `Everything` 每个查询 id 一个回复位置 (等回复时可能又开始一个查询)
+- `Critical("On")` 让一小段代码不被打断 (画结果行、图标缓存); 期间消息会排队, 所以要短, 结束后重绘 (`SearchWindow`)
+- **共用的消息**: 同一个消息有几个处理函数, 只在是自己的消息时才返回值: `WM_COPYDATA` (0x4A) 有 `App` (后启动的 ALTRun 传来的命令行)、`Everything` (查询回复)、`QuickSwitch` (Total Commander 的回复) 和 `CapsLockHelper`, 各自检查 `dwData`; 按键消息 (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) 每个窗口的处理函数都会收到, 各自检查窗口
+- **菜单**: `Menu.Show` / `TrackPopupMenuEx` 会把 ALTRun 隐藏的主窗口设成前台; 没选菜单项就关掉时, 要把焦点还回去 (`QuickSwitch._DialogAfterMenu`)
+- **按键状态**: 远程桌面软件注入所有按键, `GetKeyState(key, "P")` 永远看不到它们按下; 用 `App.IsKeyDown(key)` (逻辑或物理按下)
+
+### 计时器和空闲 CPU
+ALTRun 空闲时应该不占 CPU。只要设置了**任何一个** `SetTimer` 计时器 (哪怕一小时后才触发), AutoHotkey 内部就一直开着一个 10 毫秒的计时器, 一个长周期的 `SetTimer` 每分钟大约要 3.3 亿个 CPU 周期 (#290 里任务管理器一直显示的 0.1%)。规则:
+
+- **`WinTimer.Set(fn, ms)`** (`Lib\WinTimer.ahk`, 用法和 `SetTimer` 一样) 用于空闲时也一直设着的计时器: 定期检查、文件夹监视的轮询、每小时的检查、一分钟以上的延迟。它是 Windows 计时器, 到时间之前什么都不运行
+- **`SetTimer`** 只用于有事要做时才设、做完就关掉的短时间工作: 后台扫描的分批、打字时的延迟、淡入淡出、`-1` 表示当前事件之后再运行
+- **窗口状态靠事件, 不靠轮询**: `SetWinEventHook` (见 `Src\Extensions\QuickSwitch.ahk` 的各个阶段)、`OnMessage`、经 `FolderWatcher` 的文件夹变化
+- 由 `ProjectTests.LongTimers` 检查 (周期写成字面量 2 秒以上的 `SetTimer`, 或一分钟以上的一次性计时器会失败; 放在变量里的周期看不到), 性能测试也会检查: 候选版本空闲 CPU 的中位数超过 `Tests\Bench\bench_stats.py` 里的上限时, 会在运行摘要里标出
 
 ## 新增一个搜索功能
 1. 在 `Src\Providers\` 新建 `XxxProvider.ahk`:
@@ -109,6 +138,23 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 ## 修改设置结构
 - 只是加新的设置项: 加到 `AppSettings.Defaults()` 即可, 旧文件缺少的项会自动补上
 - 改名、移动或改变已有项的结构: `AppSettings.CurrentVersion + 1`, 在 `SchemaMigration` 里加一个 `_FromN(data)` 把版本 N 转换成 N+1。升级前会自动备份为 `ALTRun.vN.backup.json`
+
+## 修改清单
+一处改动往往牵涉不止那一行。动手前先搜出用到要改的东西的所有地方 (整个仓库, 包括 `Tests\`、`docs\`、`Resources\Lang\` 和 `.github\`), 再对照下面相应的一条:
+
+| 改动 | 还要改 |
+|---|---|
+| **新的设置项** | `AppSettings.Defaults()` 里的默认值 (没有的话 `SettingsKeys` 会失败); 偏好设置页面上的控件 (`PrefsPages`); 四种语言的界面文字; 介绍这个功能的 Wiki 页 (英文和 `-zh`); 测试 |
+| **已有设置的结构** (改名、移动、改格式) | 见 "修改设置结构": `CurrentVersion + 1` 和 `SchemaMigration` 里的 `_FromN`, 加上从旧文件升级的测试; 攒到下次升级设置版本时一起做 |
+| **界面文字** (新加、修改、删除) | `I18n.ahk` 和 `Resources\Lang\` 的三个文件 (`I18nLanguages`、`I18nUnused`); 偏好设置里检查日文是否还放得下 (`PreferencesFit`、`PreferencesSpacing`) |
+| **偏好设置页面** | 排版规则: 短框两列对齐, 长内容伸到右边; 这一页的截图场景; 界面改动先用截图确认再合并 |
+| **新的搜索功能** | 见 "新增一个搜索功能" |
+| **搜索窗口以外的功能** (扩展、后台工作) | 在 `App.Start()` 里启动, 在 `App._OnExit()` 里停止 / 保存数据; 一直设着的计时器用 `WinTimer` (见 "计时器和空闲 CPU"); 会处理消息的等待按 "线程、消息和重入" 处理 |
+| **联网** | 只用 `HttpGet.Start` (异步); 写进 Wiki 的隐私页 (英文和 `-zh`)、`SECURITY.md` 和 README |
+| **依赖 Windows 或别的程序的行为** (API 的返回、命令的输出、注册表、任务计划程序、窗口类名) | 先在 Windows CI 上探测, 按实际返回写代码; 能自动化的写成集成检查 (`Tests\Integration\`) |
+| **新的测试或检查脚本** | CI 要运行的, 加到 `tests.yml` 的语法检查列表 (`foreach ($script in ...)`), 经 `Tests\Tools\RunAhk.ps1` 有时间上限地运行, 并把相关文件列进 workflow 的 `paths` |
+| **改名或删除函数、设置、文字** | 搜出所有用到的地方, 包括测试、Wiki、语言文件和 workflow; 跑 `NameCheck.ahk` (改了名的局部变量可能遮住某个类) |
+| **用户能看到的变化** | README (中英文)、Wiki 页 (英文和 `-zh`)、`CHANGELOG.md` (测试版一节)、版本号 (`App.Version` 和 `;@Ahk2Exe-SetVersion`) |
 
 ## 文档
 Wiki 的源文件在仓库的 `docs/wiki/`, 合并到 `main` 后自动发布到 Wiki (`.github/workflows/wiki.yml`)。请通过 PR 修改 `docs/wiki/`, 不要直接在网页上编辑。
@@ -194,6 +240,9 @@ AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一
 
 ### Quick Switch
 GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.ahk` 在真实的 Windows 桌面上检查自动跳转 (`Extensions.QuickSwitch.AutoSwitch`)。它启动一份打开了自动跳转的 ALTRun, 用资源管理器打开一个文件夹、再打开一个 "打开" 对话框, 然后用三种方式从资源管理器切到对话框: 直接激活 (`SetForegroundWindow`)、模拟 Alt+Tab、点对话框的标题栏。每种方式试 5 次, 每次对话框都要在 5 秒内跳到资源管理器的文件夹; 失败的那一轮会打印 ALTRun 日志里 Quick Switch 的几行。修改 `Src\Extensions\QuickSwitch.ahk`、`Src\Core\App.ahk` 或这个检查的 PR 会运行它, main 上也会; 想找偶尔出现的失败, 可以手动运行并加大次数。脚本也能在自己电脑上运行 (会占用键盘和屏幕一分钟左右): `QuickSwitchCheck.ahk <仓库的一份副本> [次数]`。
+
+### 延迟启动
+GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartCheck.ahk` (以 `Tests\RunTests.ahk DelayedStartCheck` 运行) 对真实的 Windows 任务计划程序检查延迟启动: 先用一个新建的普通用户 (这才是关键: `schtasks /SC ONLOGON` 需要管理员, ALTRun 用的 COM 接口不需要), 再用 runner 本身的管理员。它通过 `DelayedStart.Sync` 注册任务, 读回来, 修改再删除, 并把为检查建的一个开机启动程序关掉再打开。修改延迟启动或这个检查的 PR 和 main 上会运行; 在自己的电脑上也能跑, 它只动自己的任务文件夹 (`\ALTRun\<用户名> check`), 最后会删掉。
 
 ## 质量验证与局限
 

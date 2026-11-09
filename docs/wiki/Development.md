@@ -16,16 +16,22 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk             unit tests; exit co
 ```
 ALTRun.ahk          Entry point: #Includes every module and calls App.Start()
 Lib\                Shared libraries with nothing ALTRun-specific, usable in other projects as is
-                    (JSON, Logger, Util: Path/Win/Url..., TextTools, Kanji, Dialogs, Everything IPC)
-Src\Core\           App (startup), AppSettings + SchemaMigration (settings and version upgrades),
+                    (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
+                    Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ClipboardData,
+                    TaskScheduler, TaskbarProgress)
+Src\Core\           App (startup, single instance, shutdown), ErrorHandler (uncaught errors), I18n (UI text),
+                    AppSettings + SchemaMigration (settings and version upgrades),
                     SearchQuery / ResultItem (search model), FuzzyMatcher (match scoring),
                     Knowledge (learned ranking), Usage (usage statistics), ActionCatalog (running results: open, copy, paste...),
                     ProviderRegistry, FileIndex, BackgroundWork (when background work may run)
-Src\UI\             SearchWindow (+ SearchKeys, ResultRows, SearchStatusBar, TypeAhead, SearchInputLanguage),
-                    ResultActions (actions panel, edit, delete), PreferencesWindow (+ PrefsPages: the pages,
-                    PrefsForm: form helpers and layout constants), ItemEditor, LargeType, ThemeManager, IconCache
+Src\UI\             SearchWindow (+ SearchSession, SearchKeys, ResultRows, SearchStatusBar, TypeAhead, SearchInputLanguage,
+                    WindowFade), ResultActions (actions panel, edit, delete), PreferencesWindow (+ PrefsPages: the pages,
+                    PrefsForm: form helpers and layout constants), ItemEditor, HotkeyBox, LargeType, Hud (short notices),
+                    ThemeManager + ThemePreview, IconCache, NavIcons, SyncEditor + SyncPreview (sync task editor and sync window)
 Src\Providers\      Search features, one class per feature
-Src\Extensions\     Features outside the search window (SnippetExpander, QuickSwitch, AutoDate, CapsLockSwitch, TendonProfile + PTToolsWindow, UpdateChecker)
+Src\Extensions\     Features outside the search window: SnippetExpander, QuickSwitch (file dialogs), AutoDate, CapsLockSwitch +
+                    CapsLockHelper, SelectionActions, TendonProfile + PTToolsWindow, CurrencyRates, UpdateChecker,
+                    DelayedStart, RoboSync + SyncJobs + SyncProgress (folder sync with robocopy)
 Resources\          Data shipped with the program (Kanji.txt, Pinyin.txt, Themes\*.json, Lang\*.json, Icons\*.ico)
 Tests\RunTests.ahk  Unit test runner: loads the code with in-memory settings and runs every suite
 Tests\Suites\       Unit tests, one class per area (Core, Provider, SearchWindow, Preferences, Extension, Project)
@@ -39,7 +45,7 @@ site\               Website template and build script (published to GitHub Pages
 .github\            GitHub Actions (tests, screenshots, release, wiki, website, Gitee sync), issue / PR templates
 ```
 
-Layers: `Lib` uses nothing from `Src`; `Src\Core` uses nothing from `UI`, `Providers` or `Extensions` (only `App.ahk`, which starts everything, does). Where Core needs to know something from above, the upper layer sets a callback or calls Core, for example `BackgroundWork.IsBusy` (set by the search window) and `IconCache.Prefetch(ProviderRegistry.IconSpecs())` (called by `App`). The `Layers` test checks this.
+Layers: `Lib` uses nothing from `Src`; `Src\Core` uses nothing from `UI`, `Providers` or `Extensions` (only `App.ahk`, which starts everything, does). Where Core needs to know something from above, the upper layer sets a callback or calls Core, for example `BackgroundWork.IsBusy` (set by the search window) and `IconCache.Prefetch(ProviderRegistry.IconSpecs())` (called by `App`). The `Layers` test checks this. Above Core, `UI`, `Providers` and `Extensions` call each other directly (a provider opens `ItemEditor`, `SyncJobs` opens the sync window); `App` is the one place that wires everything together at startup and shutdown, so a new module is started in `App.Start()` and, if it holds anything, stopped or saved in `App._OnExit()`.
 
 When it runs, ALTRun creates `Data\` in its folder (the settings file `ALTRun.json`, plus indexes and history that can be deleted) and `Themes\` (custom themes).
 
@@ -63,6 +69,21 @@ When it runs, ALTRun creates `Data\` in its folder (the settings file `ALTRun.js
 A typical lifecycle is: start and load settings → initialize providers and windows → receive search input → parse the query and collect results → rank and display them → execute the selected action. Settings changes are saved and then reloaded. Shutdown stops folder watchers and background work and handles pending cache saves.
 
 Background work must respect window and resource lifetimes. Timer callbacks are wrapped with `Logger.Watch(label, fn)` for timing; network requests use asynchronous `HttpGet.Start` rather than blocking the main thread; index caches are normally saved after keyboard and mouse idle, with pending data handled immediately at shutdown.
+
+### Settings and data
+- **Where**: `AppSettings.DataDir` is `Data\` next to the program when it runs portable, otherwise under the user's profile; a `DataLocation` entry in the settings file can point elsewhere (`AppSettings.ResolveDataDir`). Everything ALTRun writes goes there: `ALTRun.json`, indexes, history, caches
+- **Loading**: `AppSettings.Load()` reads `ALTRun.json`, upgrades an older format through `SchemaMigration` (with a `ALTRun.vN.backup.json` first) and fills in every missing entry from `AppSettings.Defaults()`. A file that can't be read is not overwritten: ALTRun offers `ALTRun.json.bak` instead
+- **Saving**: `AppSettings.Save()` copies the last good file to `ALTRun.json.bak`, then writes through `SafeFile` (a temporary file of its own, flushed to the disk, then `MoveFileEx` with write-through), so a crash or power cut can't leave a half-written file. Write every data file through `SafeFile` / `JSON.WriteFile`, never `FileAppend` over the real file
+- **Preferences** edit a working copy; OK / Apply saves it and reloads ALTRun, so no window changes the live settings directly
+- **Exit** (`App._OnExit`): pending index saves, learned ranking, usage, clipboard history, the icon cache and the log are written there. Anything new that keeps data in memory adds its save to that list
+
+### Threads, messages and re-entrancy
+AutoHotkey runs one thread at a time, but a hotkey, timer, `OnMessage` handler or GUI event starts a new thread that **interrupts the current one whenever it waits**: `Sleep`, `MsgBox` and other dialogs, `WinWait`, `Download()`, and `DllCall`s or `SendMessage`s that pump messages. Code that waits must expect shared state to have changed when it continues:
+- Two calls of the same function can overlap. `SafeFile` gives each write its own temporary file and lets the newest content win; `Everything` keeps one reply slot per query id (a query started while another waits for its reply)
+- `Critical("On")` keeps a short section from being interrupted (painting the result rows, the icon cache); messages wait meanwhile, so keep it short and repaint afterwards (`SearchWindow`)
+- **Shared messages**: several handlers listen to the same message, so a handler returns a value only for its own: `WM_COPYDATA` (0x4A) goes to `App` (command lines from a second ALTRun), `Everything` (query replies), `QuickSwitch` (Total Commander's reply) and `CapsLockHelper`, each checking `dwData`; key messages (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) go to every window's handler, each checking the window
+- **Menus**: `Menu.Show` / `TrackPopupMenuEx` make ALTRun's hidden main window the foreground window; when the menu is closed without a choice, give the focus back (`QuickSwitch._DialogAfterMenu`)
+- **Key state**: remote desktop tools inject every key, so `GetKeyState(key, "P")` never sees them down; use `App.IsKeyDown(key)` (logical or physical)
 
 ### Timers and idle CPU
 While ALTRun sits idle it should use no CPU. AutoHotkey keeps an internal 10 ms timer running as long as **any** `SetTimer` timer is set, even one due in an hour, so a single long `SetTimer` costs about 330 million CPU cycles a minute (the constant 0.1% in Task Manager of #290). Rules:
@@ -117,6 +138,23 @@ Optional:
 ## Changing the settings structure
 - Only adding new settings: add them to `AppSettings.Defaults()`; entries missing from older files are filled in automatically
 - Renaming, moving or restructuring existing entries: `AppSettings.CurrentVersion + 1`, and add a `_FromN(data)` to `SchemaMigration` that converts version N to N+1. A backup `ALTRun.vN.backup.json` is made automatically before upgrading
+
+## Change checklists
+A change usually touches more than the line that motivates it. Before you start, find every place that uses what you change (search the whole repository, including `Tests\`, `docs\`, `Resources\Lang\` and `.github\`), and go through the list that fits:
+
+| Change | Also change |
+|---|---|
+| **A new setting** | Default in `AppSettings.Defaults()` (`SettingsKeys` fails without one); the control on its Preferences page (`PrefsPages`); UI text in four languages; the wiki page that describes the feature (English and `-zh`); a test |
+| **The structure of existing settings** (rename, move, change a format) | See "Changing the settings structure": `CurrentVersion + 1` and a `_FromN` in `SchemaMigration`, with a test from an old file; collected for the next schema version |
+| **A UI text** (new, changed or removed) | `I18n.ahk` and the three files in `Resources\Lang\` (`I18nLanguages`, `I18nUnused`); in Preferences, check that Japanese still fits (`PreferencesFit`, `PreferencesSpacing`) |
+| **A Preferences page** | The layout rules: short boxes in two aligned columns, long content up to the right edge; the screenshot scene of that page; UI changes are confirmed with screenshots before merging |
+| **A new search feature** | See "Adding a search feature" |
+| **A feature outside the search window** (extension, background work) | Start it in `App.Start()`, stop it / save its data in `App._OnExit()`; timers that stay set use `WinTimer` (see "Timers and idle CPU"); waits that pump messages follow "Threads, messages and re-entrancy" |
+| **Network access** | Only through `HttpGet.Start` (asynchronous); list it in the wiki's Privacy page (English and `-zh`), `SECURITY.md` and the README |
+| **Behaviour of Windows or another program** (an API's result, a command's output, the registry, Task Scheduler, window classes) | Probe it on Windows CI first and write the code from what it returned; an integration check where it can be automated (`Tests\Integration\`) |
+| **A new test or check script** | If CI runs it, add it to the syntax check list in `tests.yml` (`foreach ($script in ...)`), run it through `Tests\Tools\RunAhk.ps1` with a time limit, and list its files in the workflow's `paths` |
+| **Renaming or removing a function, setting or text** | Search every use, including tests, the wiki, the language files and workflows; run `NameCheck.ahk` (a renamed local may now hide a class) |
+| **Anything users can see** | README (English and Chinese), the wiki page (English and `-zh`), `CHANGELOG.md` (test build section), version (`App.Version` and `;@Ahk2Exe-SetVersion`) |
 
 ## Documentation
 The wiki sources are in `docs/wiki/` in the repository and are published to the wiki automatically after merging to `main` (`.github/workflows/wiki.yml`). Change `docs/wiki/` through pull requests; don't edit the wiki on the web.
@@ -203,6 +241,9 @@ AutoHotkey copies a string held in an object property every time an expression r
 
 ### Quick Switch
 GitHub → Actions → **Quick Switch** checks automatic switching (`Extensions.QuickSwitch.AutoSwitch`) on a real Windows desktop with `Tests\Integration\QuickSwitchCheck.ahk`. It starts a copy of ALTRun with AutoSwitch on, opens Explorer at a folder and an Open dialog at another, then switches from Explorer to the dialog in three ways: activating it (`SetForegroundWindow`), a simulated Alt+Tab and a click on its title bar. Each way is tried 5 times, and each time the dialog must show Explorer's folder within 5 s; ALTRun's Quick Switch log lines are printed for a round that fails. It runs on pull requests that change `Src\Extensions\QuickSwitch.ahk`, `Src\Core\App.ahk` or the check, and on main; run it by hand with more rounds to look for occasional failures. The script also works on your own PC (it takes over the keyboard and the screen for about a minute): `QuickSwitchCheck.ahk <copy of the repository> [rounds]`.
+
+### Delayed start
+GitHub → Actions → **Delayed start** checks delayed start against the real Windows Task Scheduler with `Tests\Integration\DelayedStartCheck.ahk` (run as `Tests\RunTests.ahk DelayedStartCheck`): first as a new standard user, which is what matters (`schtasks /SC ONLOGON` needs an administrator, the COM interface ALTRun uses doesn't), then as the administrator the runner is. It registers tasks through `DelayedStart.Sync`, reads them back, changes and removes them, and turns a startup app made for the check off and on again. It runs on pull requests that change delayed start or the check, and on main; on your own PC it only touches its own task folder (`\ALTRun\<user name> check`) and deletes it again.
 
 ## Quality checks and limitations
 
