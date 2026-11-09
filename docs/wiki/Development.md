@@ -201,6 +201,9 @@ GitHub → Actions → **Everything** checks ALTRun's Everything IPC (`Lib\Every
 
 AutoHotkey copies a string held in an object property every time an expression reads it, and `obj.prop .= x` builds a whole new string. With long strings (the file index keeps all names in one) that turns linear work into quadratic: build long strings in a local variable or an array, and keep text that is read in small pieces in a `Buffer` (`StrGet` at an offset).
 
+### Quick Switch
+GitHub → Actions → **Quick Switch** checks automatic switching (`Extensions.QuickSwitch.AutoSwitch`) on a real Windows desktop with `Tests\Integration\QuickSwitchCheck.ahk`. It starts a copy of ALTRun with AutoSwitch on, opens Explorer at a folder and an Open dialog at another, then switches from Explorer to the dialog in three ways: activating it (`SetForegroundWindow`), a simulated Alt+Tab and a click on its title bar. Each way is tried 5 times, and each time the dialog must show Explorer's folder within 5 s; ALTRun's Quick Switch log lines are printed for a round that fails. It runs on pull requests that change `Src\Extensions\QuickSwitch.ahk`, `Src\Core\App.ahk` or the check, and on main; run it by hand with more rounds to look for occasional failures. The script also works on your own PC (it takes over the keyboard and the screen for about a minute): `QuickSwitchCheck.ahk <copy of the repository> [rounds]`.
+
 ## Quality checks and limitations
 
 - `Tests\RunTests.ahk` covers pure logic such as matching, query parsing, settings migration, ranking, clipboard and indexes; it is not a full manual UI test.
