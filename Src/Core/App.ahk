@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.03.22"
+    static Version := "2026.11.03.23"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -354,13 +354,14 @@ class App {
     }
 
     ; Waits until Enter is let go, at most maxMs, so its key-up comes to an ALTRun window still in front and not alone to the window that
-    ; comes back once that one hides or ALTRun exits. That window saw neither Enter's key-down nor, when the hotkey was Alt+Space started
-    ; there, Alt's key-up: Total Commander's Synchronize directories window then takes the lone Enter key-up as Alt+Enter and opens a
-    ; properties window (recorded on a real keyboard, 2026-11-04). So the search window waits before hiding for Quit and Reload
-    ; (ResultItem.WaitKeysUp); Quit / Restart wait again for the other ways in (e.g. Apply in Preferences, whose window is still in front).
-    ; Waiting after the search window hid didn't help. Returns the milliseconds waited. isDown / wait are replaced in the tests
+    ; comes back once that one hides or ALTRun exits. That window is active before its focus is restored, and a key-up arriving while no
+    ; window has the focus comes as WM_SYSKEYUP to the active window (probed on Windows CI, 2026-11-09): Total Commander's Synchronize
+    ; directories window takes WM_SYSKEYUP with Enter as Alt+Enter and opens a properties window. So the search window waits before hiding
+    ; for Quit and Reload (ResultItem.WaitKeysUp); Quit / Restart wait again for the other ways in (e.g. Apply in Preferences, whose window
+    ; is still in front). Waiting after the search window hid didn't help. Usually it waits the time the key is held (tens of ms).
+    ; Returns the milliseconds waited. isDown / wait are replaced in the tests
     static WaitForEnterUp(maxMs := 2000, isDown := "", wait := "") {
-        isDown := IsObject(isDown) ? isDown : () => GetKeyState("Enter", "P") || GetKeyState("NumpadEnter", "P")
+        isDown := IsObject(isDown) ? isDown : () => App.IsEnterDown()
         wait := IsObject(wait) ? wait : Sleep
         started := A_TickCount, waited := 0
         while (isDown() && waited < maxMs) {
@@ -388,11 +389,17 @@ class App {
         return "App: exit (" reason (by = "" ? "" : ", " by) "); keys held: " (held = "" ? "none" : held) "; foreground: " foreground
     }
 
-    ; The keys physically held down, e.g. "Enter+LAlt" ("" = none). No NumpadEnter: it shares its virtual key with Enter, so it reads the same
+    ; Whether Enter is down, from the keyboard or from a program typing for the user. Not the physical state ("P"): AutoHotkey's hook
+    ; counts only keys from a keyboard driver, and remote desktop tools (Chrome Remote Desktop, ...) inject every key with SendInput, so
+    ; there Enter was never "physically" down and the search window hid at once (KeyDiag, 2026-11-09; probed on Windows CI)
+    static IsEnterDown() => GetKeyState("Enter") || GetKeyState("NumpadEnter")
+
+    ; The keys held down, e.g. "Enter+LAlt" ("" = none), from the keyboard or injected (see IsEnterDown). No NumpadEnter: it shares its
+    ; virtual key with Enter, so it reads the same
     static HeldKeys() {
         held := ""
         for key in ["Enter", "LAlt", "RAlt", "LCtrl", "RCtrl", "LShift", "RShift", "LWin", "RWin"]
-            if GetKeyState(key, "P")
+            if GetKeyState(key)
                 held .= (held = "" ? "" : "+") key
         return held
     }

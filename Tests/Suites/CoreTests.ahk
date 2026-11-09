@@ -701,6 +701,19 @@ class CoreTests {
         checks := 0
         waited := App.WaitForEnterUp(2000, () => ++checks <= 3, pauser)       ; held for the first 3 checks
         eq("held: waits until let go", pauses = 3 && waited > 0 && waited < 1000, true)
+        input := Buffer(40, 0)                                              ; Enter typed by a remote desktop tool: SendInput, marked as Chrome Remote Desktop marks it
+        inject := (up) => (NumPut("UInt", 1, input, 0), NumPut("UShort", 0x0D, input, 8), NumPut("UInt", up ? 2 : 0, input, 12), NumPut("UPtr", 0x43524430, input, 24)
+            , DllCall("SendInput", "UInt", 1, "Ptr", input, "Int", 40, "UInt"))
+        guard := Gui(, "Injected Enter test"), guard.AddEdit("w100"), guard.Show("NoActivate w150 h50")   ; the Enter goes to this window, not to whatever is in front
+        WinActivate("ahk_id " guard.Hwnd), WinWaitActive("ahk_id " guard.Hwnd, , 2)
+        try {
+            inject(false), Sleep(50)
+            eq("injected Enter is down", App.IsEnterDown() "|" (InStr(App.HeldKeys(), "Enter") > 0), "1|1")
+        } finally {
+            inject(true), Sleep(50)
+            guard.Destroy()
+        }
+        eq("injected Enter let go", App.IsEnterDown(), 0)
         pauses := 0, started := A_TickCount
         waited := App.WaitForEnterUp(100, () => true, pauser)                ; never let go: gives up after maxMs
         eq("stuck key: gives up", waited >= 100 && A_TickCount - started < 1000, true)
