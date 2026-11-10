@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.24]
+
+测试版。
+
+Test build.
+
+### 新增
+- 自定义命令的编辑窗口加了 "用于选中的内容" (#434): 旁边的 **类型** 按钮打开菜单, 列出内置类型和自己的内容类型 (偏好设置打开时用正在编辑的), 已选的打勾, 点一下勾选或取消; 也可以直接输入, 用逗号分隔, 保存时整理格式 (`a,b ,, c` → `a, b, c`)。写了不存在的类型名时保存前提醒。留空时不保存这一项, 没设过的命令不会多出 `"Selection": ""`。不用再手改 `ALTRun.json`
+
 ## [2026.11.09.23]
 
 测试版。
@@ -1334,7 +1343,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.23...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.24...HEAD
+[2026.11.09.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.23...2026.11.09.24
 [2026.11.09.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.22...2026.11.09.23
 [2026.11.09.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.21...2026.11.09.22
 [2026.11.09.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.20...2026.11.09.21

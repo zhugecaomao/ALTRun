@@ -33,7 +33,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
-    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -77,6 +77,7 @@ class Shots {
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
+            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 9)],   ; Wiki: custom commands (edit window of Ping, set for IP addresses)
             ["prefs-selection",  "Light", "-Preferences 10", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
             ["prefs-snippets",   "Light", "-Preferences 11", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences 14", () => Shots.Preferences()],

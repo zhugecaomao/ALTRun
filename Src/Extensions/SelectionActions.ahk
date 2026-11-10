@@ -274,6 +274,36 @@ class SelectionActions {
         return false
     }
 
+    ; The type names offered in a command's "For selection" menu: the built-in ones, then the user's (being edited in Preferences when it is open)
+    static TypeNamesForEditor() {
+        names := SelectionActions.BuiltInTypes.Clone()
+        userTypes := SelectionActions.UserTypes(SelectionActions._EditingTypes())
+        if userTypes.Length
+            names.Push("-")
+        for each in userTypes
+            names.Push(each.Name)
+        return names
+    }
+
+    ; The SelectionTypes being edited in Preferences, "" when it isn't open (then the saved ones count)
+    static _EditingTypes() {
+        if (IsObject(PreferencesWindow.Gui) && IsObject(PreferencesWindow.Working) && PreferencesWindow.Working.Has("SelectionTypes"))
+            return PreferencesWindow.Working["SelectionTypes"]
+        return ""
+    }
+
+    ; "" when every name in a command's "For selection" is a known type, else a warning naming the others (a typo would never match)
+    static UnknownTypesWarning(value) {
+        known := Map(), known.CaseSense := false
+        for each in SelectionActions.TypeNamesForEditor()
+            known[each] := true
+        unknown := ""
+        for each in StrSplit(ItemEditor.TagsText(value), ",")
+            if ((each := Trim(each)) != "" && !known.Has(each))
+                unknown .= (unknown = "" ? "" : ", ") each
+        return (unknown = "") ? "" : I18n.T("Cmd.Selection.Unknown", unknown)
+    }
+
     static NewType() {
         return Map("Name", "", "Kind", "Text", "Pattern", "")
     }

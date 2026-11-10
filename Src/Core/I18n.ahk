@@ -357,6 +357,9 @@ class I18n {
         s["Cmd.Field.Target"]           := "Path, program or web address. Variables work, e.g. A_Desktop\Projects or %OneDrive%\Documents. File and folder names are searched too."
         s["Cmd.Field.Arguments"]       := "Passed to the program, e.g. /k ipconfig /all. Usually empty for files, folders and web addresses. {query} in the target or arguments is replaced by the text typed after the keyword."
         s["Cmd.Field.Keyword"]          := "Optional. Typing exactly this word puts the command first, e.g. np for Notepad. Several keywords: separate with commas, e.g. np, ㅜㅔ."
+        s["Cmd.Selection.Unknown"] := "Not a content type: {1}. Add it in Preferences → Selection, or the command won't be shown for it."
+        s["Cmd.Field.Selection.Button"] := "Types"
+        s["Cmd.Field.Selection"] := "Optional. The content types (Preferences → Selection) this command comes first for when you select something and press Ctrl+Alt+\. {query} becomes the selected text or path; without {query} a program gets it as its last argument."
         s["Index.Done"]                := "Index rebuilt: {1} applications."
 
         ; --- System commands ---
@@ -608,7 +611,7 @@ class I18n {
         s["Prefs.Page.Commands"]       := "Custom Commands"
         s["Prefs.Page.Selection"]       := "Selection"
         s["Prefs.Section.ContentTypes"] := "Content types"
-        s["Prefs.Section.ContentTypes.Desc"] := '1. Add a content type: Text matches the selected text with a regular expression, File matches selected files by extension.`n2. Set custom commands for a type ("Selection" in ALTRun.json for now); {query} becomes the selected text or path.`n3. Select something in any program and press the hotkey: the commands for its types come first. <a href="{1}">More</a>'
+        s["Prefs.Section.ContentTypes.Desc"] := '1. Add a content type: Text matches the selected text with a regular expression, File matches selected files by extension.`n2. In a custom command, choose the types it is for ("For selection"); {query} becomes the selected text or path.`n3. Select something in any program and press the hotkey: the commands for its types come first. <a href="{1}">More</a>'
         s["Prefs.Col.Kind"]             := "Kind"
         s["Prefs.Col.Pattern"]          := "Pattern"
         s["Prefs.Col.UsedBy"]           := "Used by commands"
@@ -920,6 +923,7 @@ class I18n {
         s["Prefs.Col.Status"]          := "Status"
         s["Prefs.Col.Arguments"]       := "Arguments"
         s["Prefs.Col.Keyword"]         := "Keyword"
+        s["Prefs.Col.Selection"] := "For selection"
         s["Prefs.Col.Name"]            := "Name"
         s["Prefs.Col.Argument"]        := "Argument"
         s["Prefs.Col.Mode"]            := "Runs as"
@@ -951,6 +955,7 @@ class I18n {
         s["Snippet.Export.Done"]        := "Exported {1} snippets to:`n{2}"
         s["Snippet.KeywordTooLong"]    := "This keyword cannot auto-expand: the prefix {1} plus the keyword can be at most {2} characters, without spaces.`n`nShorten the keyword, or turn off auto-expansion (the snippet can still be found by name and text)."
         s["Editor.SaveAnyway"]         := "Save anyway?"
+        s["Editor.Choose"] := "Choose"
         s["Prefs.Type.File"]           := "File / Program"
         s["Prefs.Type.Folder"]         := "Folder"
         s["Prefs.Type.Command"]        := "Command line"
