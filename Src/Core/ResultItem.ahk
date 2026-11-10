@@ -13,6 +13,7 @@
 ;   OnRun        the function fn(item) for the default action (Enter); empty = the default action for Kind
 ;   RunTitle     OnRun's name in the actions panel (e.g. "Paste image"); when set it is the first row of the panel
 ;   Actions      extra actions [{Title, Subtitle, Icon, Run: fn(item)}], shown in the actions panel
+;   LeadActions  actions shown first in the actions panel, before the built-in ones (the custom commands for a selection, see SelectionActions)
 ;   Valid        false = can't run (e.g. a hint row); Enter autocompletes instead
 ;   AutoComplete the text Tab completes to
 ;   LargeText    the text for Ctrl+L Large Type, Title if empty
@@ -49,6 +50,7 @@ class ResultItem {
         this.OnRun        := ""
         this.RunTitle     := ""
         this.Actions      := []
+        this.LeadActions  := []
         this.Valid        := true
         this.AutoComplete := ""
         this.LargeText    := ""

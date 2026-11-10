@@ -19,12 +19,16 @@
 ;===============================================================================
 
 class ResultActions {
-    ; The actions panel: the default action first, then the general actions for this kind of result, then the result's own actions
+    ; The actions panel: the user's commands for a selection (LeadActions) first, then the default action, the general actions for this kind of result, and the result's own actions
     static ListFor(item) {
         list := []
         add(titleKey, icon, fn, hint := "") => list.Push(ResultItem(I18n.T(titleKey), hint, {Icon: icon, OnRun: fn}))
         target := item.Arg
         enter := "Enter"
+        for lead in item.LeadActions {                                      ; the user's commands for a selection come first: Enter runs the first
+            list.Push(lead)
+            enter := ""
+        }
         if (item.RunTitle != "" && IsObject(item.OnRun)) {                   ; the result's own default action (e.g. images in the clipboard history: paste)
             list.Push(ResultItem(item.RunTitle, "Enter", {Icon: item.Icon, OnRun: (*) => item.OnRun.Call(item)}))
             enter := ""

@@ -155,6 +155,28 @@ Like Alfred's Universal Actions: select text, files or a URL in any program and 
 
 The selection is read by simulating a copy (`Ctrl+C`); the clipboard is restored right after and the copy isn't recorded in the clipboard history. In console / terminal windows `Ctrl+C` would interrupt the running program, so `Ctrl+Insert` is used there. `Esc` or `←` closes the window.
 
+### Your own actions for a selection
+Custom commands can be shown for a selection too, first in the action panel (Enter runs the first one), so the same order number can go to several systems:
+
+1. Describe your **content types** once in `ALTRun.json` (`F4` opens it; saved changes reload automatically). `Text` types are a regular expression, matched against the selected text without leading and trailing spaces and line breaks; `File` types are extensions:
+   ```jsonc
+   "SelectionTypes": [
+     { "Name": "PO",  "Kind": "Text", "Pattern": "^PO\\d{8}$" },
+     { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
+   ]
+   ```
+   The built-in types need no definition: `Text` (any text), `Url`, `File`, `Folder`, `Files` (several files or folders).
+2. Add `"Selection"` to a custom command, with one or more type names (separated by commas):
+   ```jsonc
+   { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Selection": "PO" },
+   { "Title": "Open in PDF tool", "Type": "File", "Target": "C:\\Tools\\PdfTool.exe", "Selection": "PDF" }
+   ```
+   `{query}` becomes the selected text or path (encoded in a `Url`); several files become `"a" "b"` (each quoted). A `File` / `Command` without `{query}` gets the selection added as its last argument, in quotes.
+
+Select `PO12345678` and press `Ctrl+Alt+\`: "ERP order" comes first, and typing filters the list as usual. The commands still work as before in the search box (by name or keyword).
+
+So that selected text can't run something else, a command is left out of the panel when the text has a line break or a double quote (except for `Url` commands, where it is encoded), or when the command runs a shell (`cmd`, a batch file, PowerShell...) and the text has that shell's special characters (such as `&` `|` `%`). The content types and this option will get their own page in Preferences.
+
 ## Editing and deleting in the results
 | Selected result | `F3` | `Ctrl+Del` |
 |---|---|---|
