@@ -2178,6 +2178,30 @@ class ExtensionTests {
             AppSettings.Data["SelectionTypes"] := savedTypes
             AppSettings.Data["CustomCommands"] := savedCommands
         }
+        ; the test box and the type editor in Preferences (a list being edited, not the saved settings)
+        editing := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$"), Map("Name", "PDF", "Kind", "File", "Pattern", "pdf")]
+        joined(list) {
+            text := ""
+            for each in list
+                text .= each "|"
+            return RTrim(text, "|")
+        }
+        eq("sample: text", joined(SelectionActions.SampleTypes(" PO12345678 ", editing)), "Text|PO")
+        eq("sample: a path not on the disk", joined(SelectionActions.SampleTypes("Z:\nowhere\plan.pdf", editing)), "File|PDF")
+        eq("sample: a folder path", joined(SelectionActions.SampleTypes("Z:\nowhere\", editing)), "Folder")
+        eq("sample: url", joined(SelectionActions.SampleTypes("https://example.com", editing)), "Url")
+        eq("sample: empty", SelectionActions.SampleTypes("  ", editing).Length, 0)
+        eq("pattern: valid", SelectionActions.PatternProblem("Text", "^PO\d{8}$"), "")
+        ok("pattern: invalid", InStr(SelectionActions.PatternProblem("Text", "(unclosed"), "Not a valid regular expression") = 1)
+        eq("pattern: extensions aren't a regex", SelectionActions.PatternProblem("File", "(pdf"), "")
+        fields := SelectionActions.TypeEditorFields()
+        eq("editor fields", fields[1].Key "|" fields[2].Key "|" fields[3].Key, "Name|Kind|Pattern")
+        ok("editor: built-in name warns", InStr(fields[1].Check.Call("url", Map()), "built-in") > 0)
+        eq("editor: own name is fine", fields[1].Check.Call("PO", Map()), "")
+        ok("editor: bad regex warns", fields[3].Check.Call("(x", Map("Kind", "Text")) != "")
+        commands := [Map("Title", "A", "Selection", "PO"), Map("Title", "B"), Map("Title", "C", "Selection", ["pdf", "po"])]
+        eq("command titles", joined(SelectionActions.CommandTitles(["Text", "PO"], commands)), "A|C")
+        eq("kind text", SelectionActions.KindText("File") "|" SelectionActions.KindText("Text"), "File (extensions)|Text (regex)")
         eq("defaults: no user types", AppSettings.Defaults()["SelectionTypes"].Length, 0)
         eq("kept on reset", AppSettings.ResetData(Map("SelectionTypes", [Map("Name", "X", "Kind", "Text", "Pattern", "x")]))["SelectionTypes"].Length, 1)
     }

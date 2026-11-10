@@ -249,6 +249,7 @@ class PreferencesTests {
         eq("wiki file search", PreferencesWindow.WikiPage("Prefs.Page.FileSearch"), "File-Search")
         eq("wiki file index", PreferencesWindow.WikiPage("Prefs.Page.FileIndex"), "File-Search")
         eq("wiki commands", PreferencesWindow.WikiPage("Prefs.Page.Commands"), "Custom-Commands")
+        eq("wiki selection", PreferencesWindow.WikiPage("Prefs.Page.Selection"), "Usage")
         eq("wiki snippets", PreferencesWindow.WikiPage("Prefs.Page.Snippets"), "Snippets")
         eq("wiki clipboard", PreferencesWindow.WikiPage("Prefs.Page.Clipboard"), "Clipboard")
         eq("wiki web search", PreferencesWindow.WikiPage("Prefs.Page.WebSearch"), "Web-Search")
@@ -592,6 +593,55 @@ class PreferencesTests {
 
     ; Preferences pages are built when needed: on opening only the page shown exists; switching builds the page, with Tab order list -> page -> bottom buttons;
     ; values the program fills in while building don't count as changes, later changes are recorded as usual
+    ; Preferences → Selection: the hotkey, the content types with the commands that use them, and the test box (#434)
+    static PreferencesSelectionPage() {
+        eq := (n, a, e) => TestRunner.Equal("PreferencesSelectionPage." n, a, e)
+        savedTypes := AppSettings.Data.Has("SelectionTypes") ? AppSettings.Data["SelectionTypes"] : []
+        savedCommands := AppSettings.Data["CustomCommands"]
+        AppSettings.Data["SelectionTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$"), Map("Name", "PDF", "Kind", "File", "Pattern", "pdf")]
+        AppSettings.Data["CustomCommands"] := [Map("Title", "ERP", "Type", "Url", "Target", "https://erp.example.com/{query}", "Arguments", "", "Keyword", "", "Selection", "PO")
+            , Map("Title", "WMS", "Type", "Url", "Target", "https://wms.example.com/{query}", "Arguments", "", "Keyword", "", "Selection", "po, Text")]
+        PreferencesWindow.Show("Prefs.Page.Selection", -3000, -3000)
+        try {
+            index := PreferencesWindow._PageIndex("Prefs.Page.Selection")
+            eq("page after Commands", index, PreferencesWindow._PageIndex("Prefs.Page.Commands") + 1)
+            ui := PrefsPages._selection
+            eq("types listed", ui.List.View.GetCount(), 2)
+            eq("kind shown", ui.List.View.GetText(2, 2), "File (extensions)")
+            eq("commands of a type", ui.List.View.GetText(1, 4), "ERP, WMS")
+            eq("unused type", ui.List.View.GetText(2, 4), "")
+            hotkeyHere := false
+            for ctrl in PreferencesWindow.Pages[index].Controls
+                hotkeyHere := hotkeyHere || (ctrl.Type = "Text" && ctrl.Text = "Selection hotkey")
+            eq("hotkey on this page", hotkeyHere, true)
+            ui.Sample.Value := "PO12345678"
+            PreferencesWindow.Pages[index].OnShow.Call()
+            eq("test: types and commands", ui.Result.Value, "Types: Text, PO`nCommands: ERP, WMS")
+            ui.Sample.Value := "C:\Docs\report.PDF"
+            PreferencesWindow.Pages[index].OnShow.Call()
+            eq("test: a path is a file", ui.Result.Value, "Types: File, PDF`nCommands: none")
+            ui.Sample.Value := ""
+            PreferencesWindow.Pages[index].OnShow.Call()
+            eq("test: empty", ui.Result.Value, "")
+            eq("testing is not a change", PreferencesWindow._dirty, false)
+            ; a type added on this page (not saved yet) is used by the test box at once
+            ui.List.Items.Push(Map("Name", "Mail", "Kind", "Text", "Pattern", "@"))
+            ui.Sample.Value := "a@b.com"
+            PreferencesWindow.Pages[index].OnShow.Call()
+            eq("test: unsaved type", ui.Result.Value, "Types: Text, Mail`nCommands: WMS")
+            general := PreferencesWindow._PageIndex("Prefs.Page.General")
+            PreferencesWindow._SelectRow(general)
+            onGeneral := false
+            for ctrl in PreferencesWindow.Pages[general].Controls
+                onGeneral := onGeneral || (ctrl.Type = "Text" && ctrl.Text = "Selection hotkey")
+            eq("hotkey no longer on General", onGeneral, false)
+        } finally {
+            AppSettings.Data["SelectionTypes"] := savedTypes
+            AppSettings.Data["CustomCommands"] := savedCommands
+            PreferencesWindow.Close()
+        }
+    }
+
     static PreferencesLazyPages() {
         eq := (n, a, e) => TestRunner.Equal("PreferencesLazyPages." n, a, e)
         PreferencesWindow.Show("Prefs.Page.Appearance", -3000, -3000)

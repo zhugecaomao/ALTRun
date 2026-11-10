@@ -144,7 +144,7 @@ File actions (like Listary):
 ![Windows context menu](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/shellmenu.png)
 
 ## Actions on selected content
-Like Alfred's Universal Actions: select text, files or a URL in any program and press `Ctrl+Alt+\` (change it in Preferences → General → "Selection hotkey"); ALTRun opens the action panel for that content directly, and you can type to filter:
+Like Alfred's Universal Actions: select text, files or a URL in any program and press `Ctrl+Alt+\` (change it in Preferences → Selection → "Selection hotkey"); ALTRun opens the action panel for that content directly, and you can type to filter:
 
 | Selection | Actions |
 |---|---|
@@ -158,15 +158,16 @@ The selection is read by simulating a copy (`Ctrl+C`); the clipboard is restored
 ### Your own actions for a selection
 Custom commands can be shown for a selection too, first in the action panel (Enter runs the first one), so the same order number can go to several systems:
 
-1. Describe your **content types** once in `ALTRun.json` (`F4` opens it; saved changes reload automatically). `Text` types are a regular expression, matched against the selected text without leading and trailing spaces and line breaks; `File` types are extensions:
+1. Describe your **content types** once in Preferences → Selection → Content types (Add): a name, the kind and the pattern. `Text (regex)` types are a regular expression, matched against the selected text without leading and trailing spaces and line breaks (for example `^PO\d{8}$`; start it with `i)` to ignore case); `File (extensions)` types are extensions (for example `pdf, docx`). The **Test** box below the list shows which types a sample text or file path has, and which commands it would show. The "Used by commands" column shows the commands set for each type.
+   The built-in types need no definition: `Text` (any text), `Url`, `File`, `Folder`, `Files` (several files or folders).
+   In `ALTRun.json` (`F4`) the types are kept as:
    ```jsonc
    "SelectionTypes": [
      { "Name": "PO",  "Kind": "Text", "Pattern": "^PO\\d{8}$" },
      { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
    ]
    ```
-   The built-in types need no definition: `Text` (any text), `Url`, `File`, `Folder`, `Files` (several files or folders).
-2. Add `"Selection"` to a custom command, with one or more type names (separated by commas):
+2. Add `"Selection"` to a custom command (for now in `ALTRun.json`; the command's edit dialog gets this field next), with one or more type names (separated by commas):
    ```jsonc
    { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Selection": "PO" },
    { "Title": "Open in PDF tool", "Type": "File", "Target": "C:\\Tools\\PdfTool.exe", "Selection": "PDF" }
@@ -175,7 +176,7 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
 
 Select `PO12345678` and press `Ctrl+Alt+\`: "ERP order" comes first, and typing filters the list as usual. The commands still work as before in the search box (by name or keyword).
 
-So that selected text can't run something else, a command is left out of the panel when the text has a line break or a double quote (except for `Url` commands, where it is encoded), or when the command runs a shell (`cmd`, a batch file, PowerShell...) and the text has that shell's special characters (such as `&` `|` `%`). The content types and this option will get their own page in Preferences.
+So that selected text can't run something else, a command is left out of the panel when the text has a line break or a double quote (except for `Url` commands, where it is encoded), or when the command runs a shell (`cmd`, a batch file, PowerShell...) and the text has that shell's special characters (such as `&` `|` `%`).
 
 ## Editing and deleting in the results
 | Selected result | `F3` | `Ctrl+Del` |

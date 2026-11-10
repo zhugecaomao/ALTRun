@@ -22,6 +22,7 @@ class NavIcons {
         "Prefs.Page.FileSearch",   0xEC50,    ; FileExplorer
         "Prefs.Page.FileIndex",    0xE8F1,    ; Library
         "Prefs.Page.Commands",     0xE945,    ; LightningBolt
+        "Prefs.Page.Selection",    0xE8B3,    ; SelectAll
         "Prefs.Page.Snippets",     0xE70F,    ; Edit
         "Prefs.Page.Clipboard",    0xE77F,    ; Paste
         "Prefs.Page.WebSearch",    0xE774,    ; Globe

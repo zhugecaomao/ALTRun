@@ -10,7 +10,6 @@ class PrefsPages {
     static BuildGeneral() {
         PrefsForm.BeginPage("Prefs.Page.General", 120)
         PrefsForm.Pair(["General.Hotkey", "Prefs.Hotkey", "K", "hotkey"], ["General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey"])
-        PrefsForm.Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
         sides := PrefsForm.Check("General.HotkeySides", "Prefs.HotkeySides")    ; how the hotkey boxes record, on every page: takes effect at once
         sides.OnEvent("Click", (ctrl, *) => HotkeyBox.Sides := ctrl.Value = 1)
         PrefsForm.Pair(["General.DoubleTap", "Prefs.DoubleTap", "K", "choice", ["", "Ctrl", "Shift", "LCtrl", "RCtrl", "LShift", "RShift"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")
@@ -321,6 +320,51 @@ class PrefsPages {
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)})
         PrefsForm.Note("Prefs.CommandsNote")
     }
+
+    ; Actions on selected content: the hotkey, the user's content types (a list), and a test box that shows the types and commands of a sample
+    static BuildSelection() {
+        PrefsForm.BeginPage("Prefs.Page.Selection")
+        PrefsForm.Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
+        PrefsForm.Section("Prefs.Section.ContentTypes")
+        commands := () => PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands")
+        usedBy(name) {                                                      ; the commands (being edited too) that list this type
+            commandList := commands()
+            text := ""
+            for title in SelectionActions.CommandTitles([name], (commandList is Array) ? commandList : [])
+                text .= (text = "" ? "" : ", ") title
+            return text
+        }
+        list := PrefsForm.List("SelectionTypes", 230
+            , [["Prefs.Col.Name", "Name", 110], ["Prefs.Col.Kind", "Kind", 100, (kind) => SelectionActions.KindText(kind)]
+             , ["Prefs.Col.Pattern", "Pattern", 170], ["Prefs.Col.UsedBy", "Name", 180, usedBy]]
+            , SelectionActions.TypeEditorFields(), () => SelectionActions.NewType())
+        PrefsForm.Note("Prefs.SelectionTypesNote")
+        ; the test box: not a setting (no "Apply"), so its controls are added here rather than through PrefsForm.Add
+        PrefsForm.Label("Prefs.SelectionTest")
+        window := PreferencesWindow.Gui
+        sample := window.Add("Edit", "x" PrefsForm.InputX() " y" PrefsForm._y " w" PrefsForm.InputW() " r1 Hidden")
+        Win.SetCueBanner(sample.Hwnd, I18n.T("Prefs.SelectionTest.Cue"))
+        PrefsForm._current.Controls.Push(sample)
+        PrefsForm.Below(4, sample)
+        result := window.Add("Text", "x" PrefsForm.InputX() " y" PrefsForm._y " w" PrefsForm.InputW() " r2 cGray Hidden")
+        PrefsForm._current.Controls.Push(result)
+        PrefsForm.Below(4, result)
+        update(*) {
+            types := SelectionActions.SampleTypes(sample.Value, list.Items)
+            if !types.Length
+                return result.Value := ""
+            names := "", titles := ""
+            for name in types
+                names .= (names = "" ? "" : ", ") name
+            for title in SelectionActions.CommandTitles(types, commands() is Array ? commands() : [])
+                titles .= (titles = "" ? "" : ", ") title
+            result.Value := I18n.T("Prefs.SelectionTest.Types", names) "`n" I18n.T("Prefs.SelectionTest.Commands", (titles = "") ? I18n.T("Prefs.SelectionTest.None") : titles)
+        }
+        sample.OnEvent("Change", update)
+        PrefsForm._current.OnShow := () => (list.Reload.Call(), update())   ; commands may have changed on their own page meanwhile
+        PrefsPages._selection := {List: list, Sample: sample, Result: result}
+    }
+    static _selection := ""
 
     static BuildSnippets() {
         PrefsForm.BeginPage("Prefs.Page.Snippets", 150)

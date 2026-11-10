@@ -144,7 +144,7 @@ ALTRun 会监视应用索引文件夹: 当前用户和所有用户的开始菜�
 ![Windows 右键菜单](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/shellmenu.png)
 
 ## 选中内容的操作
-和 Alfred 的 Universal Actions 一样: 在任何程序里选中文字、文件或网址, 按 `Ctrl+Alt+\` (偏好设置 → 通用 → "选中内容的操作" 可以改), ALTRun 直接打开这些内容的操作面板, 可以继续输入文字过滤:
+和 Alfred 的 Universal Actions 一样: 在任何程序里选中文字、文件或网址, 按 `Ctrl+Alt+\` (偏好设置 → 选中内容 → "选中内容的操作" 可以改), ALTRun 直接打开这些内容的操作面板, 可以继续输入文字过滤:
 
 | 选中的是 | 操作 |
 |---|---|
@@ -158,15 +158,16 @@ ALTRun 会监视应用索引文件夹: 当前用户和所有用户的开始菜�
 ### 自己的操作 (内容类型)
 自定义命令也可以用于选中的内容, 排在操作面板的最前面 (回车运行第一个), 同一个订单号可以分别去几个系统查:
 
-1. 在 `ALTRun.json` 里定义一次 **内容类型** (`F4` 打开, 保存后自动重新加载)。`Text` 类型是正则表达式, 和去掉首尾空格、换行后的选中文字比较; `File` 类型是扩展名:
+1. 在 偏好设置 → 选中内容 → 内容类型 里定义一次 **内容类型** (添加): 名称、种类和规则。`文字 (正则)` 是正则表达式, 和去掉首尾空格、换行后的选中文字比较 (例如 `^PO\d{8}$`; 开头加 `i)` 不分大小写); `文件 (扩展名)` 是扩展名 (例如 `pdf, docx`)。列表下面的 **测试** 框可以输入一段示例文字或文件路径, 显示它属于哪些类型、会显示哪些命令。"使用的命令" 一列显示每个类型用在哪些命令上。
+   内置类型不用定义: `Text` (任何文字)、`Url`、`File`、`Folder`、`Files` (多个文件或文件夹)。
+   在 `ALTRun.json` (`F4`) 里保存成:
    ```jsonc
    "SelectionTypes": [
      { "Name": "PO",  "Kind": "Text", "Pattern": "^PO\\d{8}$" },
      { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
    ]
    ```
-   内置类型不用定义: `Text` (任何文字)、`Url`、`File`、`Folder`、`Files` (多个文件或文件夹)。
-2. 在自定义命令里加 `"Selection"`, 写一个或几个类型名 (用逗号分隔):
+2. 在自定义命令里加 `"Selection"` (暂时在 `ALTRun.json` 里写; 下一步命令的编辑窗口会加上这一项), 写一个或几个类型名 (用逗号分隔):
    ```jsonc
    { "Title": "ERP 查订单", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Selection": "PO" },
    { "Title": "用 PDF 工具打开", "Type": "File", "Target": "C:\\Tools\\PdfTool.exe", "Selection": "PDF" }

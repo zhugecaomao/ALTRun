@@ -71,7 +71,7 @@ You can also install with winget or Scoop, or run `ALTRun.ahk` with AutoHotkey v
 
 **Productivity**
 - **Action panel**: select a result and press `→` (or right-click) to list what you can do with it, such as run as administrator, open file location, copy path, open a terminal here, show properties or (when turned on) open the Windows context menu with the items 7-Zip, Git and other programs add (also directly with `Shift`+right-click or `Shift+→`).
-- **Actions on selected content**: select text, files or a URL in any program and press `Ctrl+Alt+\` for actions such as web search, save as a snippet, or convert and replace the original text.
+- **Actions on selected content**: select text, files or a URL in any program and press `Ctrl+Alt+\` for actions such as web search, save as a snippet, or convert and replace the original text; your own commands for content types you define (an order number pattern, PDF files...) come first.
 - **Edit in place**: press `F3` to edit a command, snippet or search engine; apps and files can be turned into custom commands in one step.
 - **Clipboard history**: press `Ctrl+Alt+C` or type `clip`. Records text, files and images; what you paste stays on the clipboard for the next `Ctrl+V`; pin the ones you use often, paste as plain text, and ignore anything copied from password managers.
 - **Text snippets**: search by name, keyword or content; placeholders such as `{date}`, `{clipboard}` and `{cursor}`; type `;keyword` in any program to expand a snippet; import them in bulk from Excel / CSV, or export them.
