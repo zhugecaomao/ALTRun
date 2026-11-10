@@ -156,6 +156,8 @@ Like Alfred's Universal Actions: select text, files or a URL in any program and 
 The selection is read by simulating a copy (`Ctrl+C`); the clipboard is restored right after and the copy isn't recorded in the clipboard history. In console / terminal windows `Ctrl+C` would interrupt the running program, so `Ctrl+Insert` is used there. `Esc` or `←` closes the window.
 
 ### Your own actions for a selection
+![Preferences → Selection](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-selection.png)
+
 Custom commands can be shown for a selection too, first in the action panel (Enter runs the first one), so the same order number can go to several systems:
 
 1. Describe your **content types** once in Preferences → Selection → Content types (Add): a name, the kind and the pattern. `Text (regex)` types are a regular expression, matched against the selected text without leading and trailing spaces and line breaks (for example `^PO\d{8}$`; start it with `i)` to ignore case); `File (extensions)` types are extensions (for example `pdf, docx`). The **Test** box below the list shows which types a sample text or file path has, and which commands it would show. The "Used by commands" column shows the commands set for each type.
