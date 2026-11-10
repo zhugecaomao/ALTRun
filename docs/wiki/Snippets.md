@@ -53,8 +53,9 @@ Preferences → Snippets → "Don't expand in" (`Features.Snippets.ExpandExclude
 The clipboard history uses the same setting, but what it pastes stays on the clipboard: with `Auto` and `Clipboard` it always goes through the clipboard (nothing is restored, so there is no wait); with `Type` it is typed and also put on the clipboard.
 
 ## Importing and exporting
-Preferences → Snippets → "Import/Export":
+Preferences → Snippets → "More ▾":
 - **Import from a table**: paste cells copied from Excel, or click "Open File" to read a CSV / TSV file (UTF-8, or the system's default encoding). Columns: Name | Keyword | Text | Expand automatically (optional, `1` / `0`, blank = on). A header row is skipped, rows without text are skipped, and a missing name is taken from the keyword or the first line of the text
 - A row whose keyword matches an existing snippet (ignoring case; or whose name matches, when there's no keyword) updates it; other rows are added. If a keyword is too long or has spaces (so it can't expand), auto-expansion is turned off for it
 - Imported snippets are saved when you click OK or Apply in Preferences; Cancel discards them
 - **Export to CSV**: with a header row, UTF-8 with BOM, so Excel opens it directly; edit it there and import it again
+- **Add Examples** (in the same menu): adds the default snippets you don't have yet (a snippet with the same name or keyword counts as already there) and tells you how many were added and skipped; saved when you press OK / Apply

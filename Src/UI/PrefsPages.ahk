@@ -317,7 +317,8 @@ class PrefsPages {
         PrefsForm.List("CustomCommands", 540
             , [["Prefs.Col.Title", "Title", 140], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 190], ["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Status", "Status", 70]]
             , CustomCommandProvider.EditorFields(), () => CustomCommandProvider.NewCommand()
-            , (item, roots) => CustomCommandProvider.CheckTarget(item, roots))
+            , (item, roots) => CustomCommandProvider.CheckTarget(item, roots), "", true
+            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)})
         PrefsForm.Note("Prefs.CommandsNote")
     }
 
@@ -325,8 +326,10 @@ class PrefsPages {
         PrefsForm.BeginPage("Prefs.Page.Snippets", 150)
         PrefsForm.List("Snippets", 220
             , [["Prefs.Col.Name", "Name", 150], ["Prefs.Col.Keyword", "Keyword", 90], ["Prefs.Col.Text", "Text", 300]]
-            , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet(), ""
-            , [{Label: I18n.T("Snippet.ImportExport"), Width: 100, Click: (list, button) => PrefsPages._SnippetMenu(list, button)}])
+            , SnippetProvider.EditorFields(), () => SnippetProvider.NewSnippet(), "", "", true
+            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.SnippetKeys(item)}
+            , [{Label: I18n.T("Snippet.Import"), Click: (list, *) => PrefsPages._ImportSnippets(list)}   ; More ▾: Import / Export, then Add Examples
+             , {Label: I18n.T("Snippet.Export"), Click: (list, *) => PrefsPages._ExportSnippets(list)}])
         PrefsForm.Section("Prefs.Section.Options")
         PrefsForm.Check("Features.Snippets.SearchText", "Prefs.SnippetSearchText", , , "Prefs.Group.Search")
         PrefsForm.Check("Features.Snippets.AutoExpand", "Prefs.SnippetAutoExpand", , , "Prefs.Group.AutoExpand")
@@ -338,14 +341,31 @@ class PrefsPages {
         PrefsForm.LinesButton("Features.Snippets.ExpandExclude", "Prefs.ExpandExclude")
     }
 
-    ; The "Import / Export" button on the Snippets page: shows a menu
-    static _SnippetMenu(list, button) {
-        popup := Menu()
-        popup.Add(I18n.T("Snippet.Import"), (*) => PrefsPages._ImportSnippets(list))
-        popup.Add(I18n.T("Snippet.Export"), (*) => PrefsPages._ExportSnippets(list))
-        button.GetPos(&x, &y, , &h)
-        popup.Show(x, y + h)
+    ; "Add Examples" / "Add Built-ins": the texts that identify an item, so that a default already in the list is skipped (PrefsForm.AddMissing).
+    ; Keywords may hold several, separated by commas: sharing any one of them counts. "" = nothing to compare
+    static CommandKeys(item) => PrefsPages._Keys(item, "Title")             ; custom commands: the title or a keyword
+    static SnippetKeys(item) => PrefsPages._Keys(item, "Name")              ; snippets: the name or a keyword
+    static EngineKeys(item) => PrefsPages._Keys(item, "Id")                 ; search engines: the built-in Id or a keyword
+
+    ; custom hotkeys: the key and the window it works in, together; the key as HotkeyBox writes it (Ctrl+Alt+F typed as !^f is ^!f)
+    static HotkeyKeys(item) {
+        key := RegExReplace(PrefsPages._Field(item, "Key"), "^[~*$]+")      ; hotkey options that don't change the key
+        if (key = "")
+            return [""]
+        if RegExMatch(key, "^((?:[<>]?[\^!+#])*)(.+)$", &m)
+            key := HotkeyBox.Compose(m[1], m[2])
+        return [key "|" PrefsPages._Field(item, "WinTitle")]
     }
+
+    static _Keys(item, nameKey) {
+        name := PrefsPages._Field(item, nameKey)
+        keys := [name = "" ? "" : nameKey ": " name]
+        for keyword in SearchQuery.Keywords(PrefsPages._Field(item, "Keyword"))
+            keys.Push("Keyword: " keyword)
+        return keys
+    }
+
+    static _Field(item, key) => (item is Map && item.Has(key)) ? Trim(item[key] "") : ""
 
     ; Import from a table: paste what was copied from Excel, or read a CSV / TSV file; merged into the list (closing Preferences with Cancel doesn't save it)
     static _ImportSnippets(list) {
@@ -436,7 +456,8 @@ class PrefsPages {
         PrefsForm.BeginPage("Prefs.Page.WebSearch", 130)
         PrefsForm.List("Features.WebSearch.Engines", 320
             , [["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Title", "Title", 130], ["Prefs.Col.Url", "Url", 340]]
-            , WebSearchProvider.EditorFields(), () => WebSearchProvider.NewEngine())
+            , WebSearchProvider.EditorFields(), () => WebSearchProvider.NewEngine(), "", "", true
+            , {Label: "Prefs.AddBuiltins", Keys: (item) => PrefsPages.EngineKeys(item)})
         PrefsForm.Csv("Features.WebSearch.Fallbacks", "Prefs.Fallbacks", "L")
     }
 
@@ -502,7 +523,8 @@ class PrefsPages {
              , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)
              , ItemEditor.Field("Prefix", "Prefs.Col.SearchPrefix", "text", false, "", I18n.T("Prefs.SearchPrefixHint"))
              , ItemEditor.Field("WinTitle", "Prefs.Col.WinTitle", "text", false, "", I18n.T("Prefs.WinTitleHint"))]
-            , () => Map("Key", "", "Action", "ToggleWindow", "Prefix", "", "WinTitle", ""))
+            , () => Map("Key", "", "Action", "ToggleWindow", "Prefix", "", "WinTitle", ""), "", "", true
+            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.HotkeyKeys(item)})
         PrefsForm.Note("Prefs.HotkeysNote")
     }
 

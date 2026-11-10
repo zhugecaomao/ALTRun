@@ -148,6 +148,7 @@ ALTRun 空闲时应该不占 CPU。只要设置了**任何一个** `SetTimer` �
 | **已有设置的结构** (改名、移动、改格式) | 见 "修改设置结构": `CurrentVersion + 1` 和 `SchemaMigration` 里的 `_FromN`, 加上从旧文件升级的测试; 攒到下次升级设置版本时一起做 |
 | **界面文字** (新加、修改、删除) | `I18n.ahk` 和 `Resources\Lang\` 的三个文件 (`I18nLanguages`、`I18nUnused`); 偏好设置里检查日文是否还放得下 (`PreferencesFit`、`PreferencesSpacing`) |
 | **偏好设置页面** | 排版规则: 短框两列对齐, 长内容伸到右边; 这一页的截图场景; 界面改动先用截图确认再合并 |
+| **列表的默认条目** (自定义热键、命令、文字片段、网页搜索引擎) | 只写在 `AppSettings.Defaults()` 里: 列表的 "添加示例" 按钮从那里读。新的列表页要有默认条目时, 给 `PrefsForm.List` 传 `examples` 和 `Keys` 函数 (怎样算同一个条目, 见 `PrefsPages.HotkeyKeys`), 在 `ListExamples` 里测试。列表的额外命令多于一个时放进 "更多 ▾" 菜单 (`menu`), 按钮行给筛选框留出位置 (`PreferencesFit`) |
 | **新的搜索功能** | 见 "新增一个搜索功能" |
 | **搜索窗口以外的功能** (扩展、后台工作) | 在 `App.Start()` 里启动, 在 `App._OnExit()` 里停止 / 保存数据; 一直设着的计时器用 `WinTimer` (见 "计时器和空闲 CPU"); 会处理消息的等待按 "线程、消息和重入" 处理 |
 | **联网** | 只用 `HttpGet.Start` (异步); 写进 Wiki 的隐私页 (英文和 `-zh`)、`SECURITY.md` 和 README |

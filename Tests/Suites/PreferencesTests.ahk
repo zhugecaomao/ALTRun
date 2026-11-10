@@ -45,6 +45,49 @@ class PreferencesTests {
             eq("help: " key, I18n.Strings.Has(key ".Help"), true)
     }
 
+    ; "Add Examples" / "Add Built-ins" on the list pages: only the defaults missing from the list are added, the rest are counted as skipped
+    static ListExamples() {
+        eq := (n, a, e) => TestRunner.Equal("ListExamples." n, a, e)
+        pages := [["Hotkeys", (item) => PrefsPages.HotkeyKeys(item)], ["CustomCommands", (item) => PrefsPages.CommandKeys(item)]
+            , ["Snippets", (item) => PrefsPages.SnippetKeys(item)], ["Features.WebSearch.Engines", (item) => PrefsPages.EngineKeys(item)]]
+        for page in pages {
+            defaults := PreferencesWindow.GetPath(AppSettings.Defaults(), page[1])
+            items := []
+            result := PrefsForm.AddMissing(items, defaults, page[2])
+            eq(page[1] ": empty list gets all", result.Added "|" result.Skipped "|" items.Length, defaults.Length "|0|" defaults.Length)
+            result := PrefsForm.AddMissing(items, PreferencesWindow.GetPath(AppSettings.Defaults(), page[1]), page[2])
+            eq(page[1] ": again adds none", result.Added "|" result.Skipped "|" items.Length, "0|" defaults.Length "|" defaults.Length)
+        }
+
+        hotkeys := [Map("Key", "!^F", "Action", "ToggleWindow", "WinTitle", "")       ; Ctrl+Alt+F in another order and case: the same key
+                  , Map("Key", "^r", "Action", "ToggleWindow", "WinTitle", "")         ; Ctrl+R everywhere: not the same as Ctrl+R only in ALTRun
+                  , Map("Key", "~^!#v", "Action", "ToggleWindow", "WinTitle", "")]     ; ~ doesn't change the key
+        result := PrefsForm.AddMissing(hotkeys, AppSettings.Defaults()["Hotkeys"], (item) => PrefsPages.HotkeyKeys(item))
+        eq("hotkeys: counts", result.Added "|" result.Skipped, "4|2")
+        eq("hotkeys: own kept first", hotkeys[1]["Action"] "|" hotkeys.Length, "ToggleWindow|7")
+        eq("hotkeys: added in order", hotkeys[4]["Key"] "|" hotkeys[7]["Key"] "|" hotkeys[7]["WinTitle"], "^!r|^r|ALTRun")
+        eq("hotkey key", PrefsPages.HotkeyKeys(Map("Key", "+^!A", "WinTitle", " ahk_exe a.exe "))[1], "^!+a|ahk_exe a.exe")
+        eq("hotkey empty", PrefsPages.HotkeyKeys(Map("Key", "", "WinTitle", "x"))[1], "")
+        sameWindow := [Map("Key", "^R", "WinTitle", "altrun")]                          ; window names compared regardless of case
+        eq("hotkeys: window case", PrefsForm.AddMissing(sameWindow, [Map("Key", "^r", "WinTitle", "ALTRun")], (item) => PrefsPages.HotkeyKeys(item)).Added, 0)
+
+        commands := [Map("Title", "notepad", "Keyword", "")                             ; the same title (any case)
+                   , Map("Title", "My downloads", "Keyword", "x, DL")                    ; one of several keywords
+                   , Map("Title", "", "Keyword", "")]                                    ; an empty title matches nothing
+        result := PrefsForm.AddMissing(commands, AppSettings._DefaultCommands(), (item) => PrefsPages.CommandKeys(item))
+        eq("commands: counts", result.Added "|" result.Skipped, (AppSettings._DefaultCommands().Length - 2) "|2")
+
+        snippets := [Map("Name", "Mine", "Keyword", "THX"), Map("Name", "today's date", "Keyword", "d")]
+        result := PrefsForm.AddMissing(snippets, AppSettings._DefaultSnippets(), (item) => PrefsPages.SnippetKeys(item))
+        eq("snippets: counts", result.Added "|" result.Skipped, (AppSettings._DefaultSnippets().Length - 2) "|2")
+
+        engines := [Map("Id", "", "Keyword", "g", "Title", "My search")                  ; a keyword of a built-in engine, taken by the user's own one
+                  , Map("Id", "bing", "Keyword", "b", "Title", "Bing")]                  ; a built-in one with its keyword changed
+        result := PrefsForm.AddMissing(engines, AppSettings._DefaultEngines(), (item) => PrefsPages.EngineKeys(item))
+        eq("engines: counts", result.Added "|" result.Skipped, (AppSettings._DefaultEngines().Length - 2) "|2")
+        eq("engines: no empty key", PrefsPages.EngineKeys(Map("Id", "", "Keyword", ""))[1], "")
+    }
+
     ; Custom command editor: with the type set to "Folder" the browse button chooses a folder
     static BrowseKind() {
         eq := (n, a, e) => TestRunner.Equal("BrowseKind." n, a, e)
@@ -406,6 +449,20 @@ class PreferencesTests {
                         TestRunner.Equal("PreferencesFit." lang " " page.Key " default marked once (" ControlGetItems(ctrl)[1] ")", marked, 1)
                         TestRunner.True("PreferencesFit." lang " " page.Key " drop-down fits (" ControlGetItems(ctrl)[1] ", " w " < " PrefsForm.ChoiceWidth(ctrl) ")", w >= PrefsForm.ChoiceWidth(ctrl))
                     }
+                listButtons := Map("Prefs.Page.Hotkeys", "Prefs.AddExamples", "Prefs.Page.WebSearch", "Prefs.AddBuiltins"   ; the list's extra button ends before its filter box
+                    , "Prefs.Page.Commands", "Prefs.More", "Prefs.Page.Snippets", "Prefs.More")
+                if listButtons.Has(page.Key) {
+                    buttonRight := "", filterX := ""
+                    for ctrl in page.Controls {
+                        ctrl.GetPos(&x, , &w)
+                        if (ctrl.Type = "Button" && ctrl.Text = I18n.T(listButtons[page.Key]))
+                            buttonRight := x + w
+                        else if (ctrl.Type = "Edit" && w = 160 && buttonRight != "" && filterX = "")
+                            filterX := x
+                    }
+                    TestRunner.True("PreferencesFit." lang " " page.Key " list button before the filter (" buttonRight " + 8 <= " filterX ")"
+                        , buttonRight != "" && filterX != "" && buttonRight + 8 <= filterX)
+                }
                 bottom := 0, right := 0
                 for ctrl in page.Controls {
                     ctrl.GetPos(&x, &y, &w, &h)

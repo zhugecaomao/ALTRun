@@ -49,4 +49,4 @@ For the startup, Start menu and "Send to" shortcuts, the administrator helper's 
 - **One file is enough**: `ALTRun.json` holds every setting, custom command and snippet. To take the learned ranking along too, back up the whole Data folder (the clipboard history is on this PC by default, see above)
 - **New PC**: copy the whole program folder (including `Data\`); use [path variables](Custom-Commands#variables-in-paths) in paths so they still work with a different user name
 - **Syncing several PCs**: move the data folder into a sync folder, see [Using the same settings on several PCs](FAQ#using-the-same-settings-on-several-pcs). Don't change settings on two PCs with ALTRun open at the same time, or the sync service may create conflict copies
-- **Snippets only**: Preferences → Snippets → Import / Export saves them as CSV, see [Snippets](Snippets#importing-and-exporting)
+- **Snippets only**: Preferences → Snippets → More ▾ → Export to CSV saves them as CSV, see [Snippets](Snippets#importing-and-exporting)

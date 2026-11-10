@@ -516,6 +516,11 @@ class I18n {
         s["Prefs.EditList"]            := "Edit..."
         s["Prefs.DefaultChoice"]       := "{1} (default)"                ; the default option in a drop-down
         s["Prefs.CheckTargets"]        := "Check Paths"
+        s["Prefs.AddExamples"]         := "Add Examples"                 ; list pages: adds the default items not in the list yet
+        s["Prefs.AddBuiltins"]         := "Add Built-ins"                ; the web search engines that come with ALTRun
+        s["Prefs.More"]                := "More ▾"                       ; ▾: the button opens a menu (… would mean a dialog)
+        s["Prefs.ExamplesAdded"]       := "Added {1}, skipped {2} already in the list.`n`nClick OK or Apply in Preferences to save them."
+        s["Prefs.ExamplesNone"]        := "Nothing was added: all {2} are already in the list."
         s["Prefs.CheckAllOk"]          := "All {1} paths exist."
         s["Prefs.CheckResult"]         := "Not found: {1}`nLocation not reachable (drive or network share not connected?): {2}`n`nThey are marked in the Status column. Double-click a command to fix its path."
         s["Prefs.CheckSkipped"]        := "{1} web addresses and shell locations were not checked."
@@ -882,7 +887,6 @@ class I18n {
         s["Snippet.Hint.Keyword"]      := "Optional short code, e.g. pq. An exact match ranks first; to auto-expand, type {1}pq in any app. Several codes: separate with commas. Max {2} characters each, no spaces."
         s["Snippet.Hint.Text"]         := "Enter pastes it into the window you were in. Words in the text are searchable too (3+ characters). Placeholders, filled in when pasting:"
         s["Snippet.Hint.AutoExpand"]   := "Type {1} + keyword in any app and it is replaced by the text right away. Turn off to paste it only from the search window."
-        s["Snippet.ImportExport"]       := "Import/Export"
         s["Snippet.Import"]             := "Import from a table..."
         s["Snippet.Export"]             := "Export to CSV..."
         s["Snippet.Import.Title"]       := "Import Snippets"

@@ -17,7 +17,7 @@ New installs come with six examples:
 - `Ctrl+Alt+T` in File Explorer (`ahk_class CabinetWClass`) opens a terminal in the current folder
 - `Ctrl+R` in the ALTRun search window (`ALTRun`) rebuilds the index
 
-Delete or change them as you like; existing settings keep their own list. To go straight to another scope, add a `Show` hotkey of your own with the prefix you would type, for example `pic ` for pictures. `F1`–`F4` in the search window are built in, see [Shortcuts](Usage#shortcuts).
+Delete or change them as you like; existing settings keep their own list. **Add Examples** below the list adds the ones you don't have (a hotkey with the same key and window counts as already there) and tells you how many were added and skipped; they are saved when you press OK / Apply. To go straight to another scope, add a `Show` hotkey of your own with the prefix you would type, for example `pic ` for pictures. `F1`–`F4` in the search window are built in, see [Shortcuts](Usage#shortcuts).
 
 ![Preferences → Hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 
