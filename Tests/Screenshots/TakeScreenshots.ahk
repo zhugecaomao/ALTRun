@@ -33,7 +33,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
-    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -77,6 +77,7 @@ class Shots {
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
+            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.PingForIp()],   ; Wiki: custom commands (edit window of the default Ping: {query} and the type IP)
             ["prefs-selection",  "Light", "-Preferences 10", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
             ["prefs-snippets",   "Light", "-Preferences 11", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences 14", () => Shots.Preferences()],
@@ -836,6 +837,16 @@ class Shots {
         settings["DelayedStart"] := [Map("Name", "OneDrive", "Target", "%LocalAppData%\Microsoft\OneDrive\OneDrive.exe", "Arguments", "/background", "Delay", 300, "Enabled", 1)
             , Map("Name", "Sync Tool", "Target", "C:\Tools\SyncTool\SyncTool.exe", "Arguments", "--tray", "Delay", 90, "Enabled", 1)
             , Map("Name", "Chat", "Target", "C:\Tools\Chat\Chat.exe", "Arguments", "", "Delay", 600, "Enabled", 0)]
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; The default type IP and the default Ping command set for it, added after the six demo commands (row 7), for the command editor
+    static PingForIp() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["SelectionTypes"] := [Map("Name", "IP", "Kind", "Text", "Pattern", "^(\d{1,3}\.){3}\d{1,3}$")]   ; as in AppSettings._DefaultSelectionTypes
+        settings["CustomCommands"].Push(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "ping", "Selection", "IP"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

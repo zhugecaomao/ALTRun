@@ -11,7 +11,10 @@
 ;     {Key: "Text",   Label: "Text", Type: "multiline"},
 ;     {Key: "AutoExpand", Label: "Auto expand", Type: "check"}
 ;   ]
-; Type can be: text / multiline / choice / check / file / folder / number / hotkey
+; Type can be: text / multiline / choice / check / file / folder / number / hotkey / tags
+; tags: a text box of names separated by commas + a drop-down button whose menu checks / unchecks each name (Choices: an array of names,
+;   or a function returning one, read each time the menu opens; "-" = a separator); an Array value is shown joined with ", "
+; OmitEmpty: true = an empty value removes the key instead of saving "" (an optional key most records don't have)
 ; A file field can have FolderWhen: ["Type", "Folder"] = when another field (Type) is set to Folder, "Browse" chooses a folder instead
 ; hotkey: a hotkey recording box (HotkeyBox, can record middle / side buttons) + a check box "keep the key's own function" (the ~ in front)
 ; Hint: gray description below the box; Check: (value, editedMap) => warning text; on OK a warning asks "Save anyway?"
@@ -76,6 +79,10 @@ class ItemEditor {
                     browse.OnEvent("Click", ItemEditor._Browser(ctrl, kind, g))
                     if extraW
                         g.AddButton("x+4 yp w" (extraW - 4), field.Button.Label).OnEvent("Click", ItemEditor._FieldButton(field.Button, controls, g))
+                case "tags":
+                    ctrl := g.AddEdit("x+8 ys-3 w" (inputW - 88) " r1 -Multi", ItemEditor.TagsText(value))
+                    pick := g.AddButton("x+8 yp-1 w80", field.HasOwnProp("ButtonLabel") ? field.ButtonLabel : I18n.T("Editor.Choose"))
+                    PrefsForm.MenuButton(pick, ItemEditor._TagActions(field, ctrl), "")
                 case "number":
                     ctrl := g.AddEdit("x+8 ys-3 w100 r1 -Multi Number", value)
                 case "hotkey":
@@ -124,6 +131,13 @@ class ItemEditor {
                             newValue := LTrim(newValue, "~")
                     default      : newValue := input.Value
                 }
+                if (spec.Type = "tags")
+                    newValue := ItemEditor.TagsText(newValue)                   ; tidy: "a,b ,, c" -> "a, b, c"
+                if (spec.HasOwnProp("OmitEmpty") && spec.OmitEmpty && Trim(newValue) = "") {
+                    if edited.Has(spec.Key)
+                        edited.Delete(spec.Key)
+                    continue
+                }
                 if (spec.HasOwnProp("Required") && spec.Required && Trim(newValue) = "") {
                     MsgBox(I18n.T("Prefs.Required", spec.Label), title, 48)
                     input.Focus()
@@ -132,7 +146,7 @@ class ItemEditor {
                 edited[spec.Key] := newValue
             }
             for spec in fields {                                            ; Check: run after all fields are read, so it can look at other fields (returns warning text = a problem)
-                if !spec.HasOwnProp("Check") || (warning := spec.Check.Call(edited[spec.Key], edited)) = ""
+                if !spec.HasOwnProp("Check") || (warning := spec.Check.Call(edited.Has(spec.Key) ? edited[spec.Key] : "", edited)) = ""
                     continue
                 if (MsgBox(warning "`n`n" I18n.T("Editor.SaveAnyway"), title, "YesNo Icon! Default2") != "Yes") {
                     controls[spec.Key].Focus()
@@ -171,6 +185,67 @@ class ItemEditor {
             state.Result := TextTools.SplitLines(box.Value)
             g.Destroy()
         }
+    }
+
+    ; The names of a tags field as text: "a, b" (from an Array or from text with stray commas / spaces); names compared without case, repeats dropped
+    static TagsText(value) {
+        names := [], seen := Map(), seen.CaseSense := false
+        for each in (value is Array) ? value : StrSplit(value "", ",")
+            if (!IsObject(each) && (each := Trim(each)) != "" && !seen.Has(each))
+                seen[each] := true, names.Push(each)
+        text := ""
+        for each in names
+            text .= (text = "" ? "" : ", ") each
+        return text
+    }
+
+    ; The text with name checked or unchecked: added at the end, or removed (any case)
+    static ToggleTag(text, name) {
+        names := [], found := false
+        for each in StrSplit(ItemEditor.TagsText(text), ",") {
+            each := Trim(each)
+            if (each = "")
+                continue
+            if (each = name)
+                found := true
+            else
+                names.Push(each)
+        }
+        if !found
+            names.Push(name)
+        return ItemEditor.TagsText(names)
+    }
+
+    ; The menu of a tags field: one item per name (checked when in the box), built when the menu opens
+    static _TagActions(field, box) {
+        return () => ItemEditor._TagMenu(field, box)
+    }
+
+    static _TagMenu(field, box) {
+        actions := []
+        names := field.Choices
+        if !(names is Array)
+            names := names.Call()
+        for name in names {
+            if (name = "-") {
+                actions.Push("-")
+                continue
+            }
+            actions.Push({Label: name, Checked: ItemEditor._HasTag(box.Value, name), Click: ((name, *) => ItemEditor._Toggle(box, name)).Bind(name)})
+        }
+        return actions
+    }
+
+    static _Toggle(box, name) {
+        box.Value := ItemEditor.ToggleTag(box.Value, name)
+        try box.Focus()                                                     ; back to the box, so typing goes on there
+    }
+
+    static _HasTag(text, name) {
+        for each in StrSplit(text, ",")
+            if (Trim(each) = name)
+                return true
+        return false
     }
 
     ; The field's own button: OnClick(controls, g), controls = field Key -> control

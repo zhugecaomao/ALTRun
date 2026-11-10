@@ -692,7 +692,7 @@ class PrefsForm {
 
     ; A button that opens a menu below it: a split button (BS_SPLITBUTTON), Windows draws the drop-down arrow and the line before it.
     ; Both parts open the menu (there is no default command): a click on the text (also Space / Enter) and the arrow's BCN_DROPDOWN, once.
-    ; actions = [{Label, Click: (list, button) => ...} or "-" (a separator)]
+    ; actions = [{Label, Click: (list, button) => ...[, Checked: true]} or "-" (a separator)], or a function returning them (built each time the menu opens)
     static MenuButton(button, actions, list) {
         static BM_SETSTYLE := 0xF4, BS_SPLITBUTTON := 0xC, BCN_DROPDOWN := -1248
         SendMessage(BM_SETSTYLE, BS_SPLITBUTTON, true, button)              ; not as a Gui option: AutoHotkey keeps a Button a push button
@@ -710,11 +710,16 @@ class PrefsForm {
     static ShowMenu(actions, list, button) {
         static BCM_SETDROPDOWNSTATE := 0x1606
         popup := Menu()
+        if !(actions is Array)
+            actions := actions.Call()
         for action in actions {
-            if !IsObject(action)
+            if !IsObject(action) {
                 popup.Add()
-            else
-                popup.Add(action.Label, ((action, *) => action.Click.Call(list, button)).Bind(action))
+                continue
+            }
+            popup.Add(action.Label, ((action, *) => action.Click.Call(list, button)).Bind(action))
+            if (action.HasOwnProp("Checked") && action.Checked)
+                popup.Check(action.Label)
         }
         button.GetPos(&x, &y, , &h)
         try SendMessage(BCM_SETDROPDOWNSTATE, 1, 0, button)                 ; the arrow stays pressed while the menu is open

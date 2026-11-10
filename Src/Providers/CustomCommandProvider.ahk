@@ -225,7 +225,17 @@ class CustomCommandProvider {
               , ItemEditor.Field("Type", "Prefs.Col.Type", "choice", false, types, hint("Type"))
               , target
               , ItemEditor.Field("Arguments", "Prefs.Col.Arguments", "text", false, "", hint("Arguments"))
-              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", false, "", hint("Keyword"))]
+              , ItemEditor.Field("Keyword", "Prefs.Col.Keyword", "text", false, "", hint("Keyword"))
+              , CustomCommandProvider._SelectionField(hint("Selection"))]
+    }
+
+    ; "Selection types": the content types the command comes first for (Ctrl+Alt+\), picked from a menu; saved only when set
+    static _SelectionField(hintText) {
+        field := ItemEditor.Field("Selection", "Prefs.Col.Selection", "tags", false, () => SelectionActions.TypeNamesForEditor(), hintText)
+        field.ButtonLabel := I18n.T("Cmd.Field.Selection.Button")
+        field.OmitEmpty := true
+        field.Check := (value, *) => SelectionActions.UnknownTypesWarning(value)
+        return field
     }
 
     ; Checks whether a command's target still exists (renamed folders and moved files break commands); returns:

@@ -103,6 +103,65 @@ class PreferencesTests {
         eq("no such field", ItemEditor.KindFor(["Nope", "Folder"], fields, controls), "file")
     }
 
+    ; A custom command's "Selection types" (#434): a box of type names with a menu that checks / unchecks each, saved only when set
+    static CommandSelectionField() {
+        eq := (n, a, e) => TestRunner.Equal("CommandSelectionField." n, a, e)
+        shown := ""
+        fields := CustomCommandProvider.EditorFields()
+        field := fields[fields.Length]
+        eq("last field", field.Key "|" field.Type "|" field.OmitEmpty "|" field.ButtonLabel, "Selection|tags|1|Types")
+        eq("tags text", ItemEditor.TagsText(" PO,pdf ,, po , Images") "|" ItemEditor.TagsText(["IP", "Email"]), "PO, pdf, Images|IP, Email")
+        eq("toggle on", ItemEditor.ToggleTag("PO", "Email"), "PO, Email")
+        eq("toggle off (any case)", ItemEditor.ToggleTag("PO, email, IP", "Email"), "PO, IP")
+        eq("toggle the last off", ItemEditor.ToggleTag("Email", "email"), "")
+        savedTypes := AppSettings.Data["SelectionTypes"]
+        AppSettings.Data["SelectionTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d+$")]
+        try {
+            names := ""
+            for each in SelectionActions.TypeNamesForEditor()
+                names .= each "|"
+            eq("menu names: built-in, then the user's", names, "Text|Url|File|Folder|Files|-|PO|")
+            box := {Value: "po, Files"}
+            menu := ItemEditor._TagMenu(field, box)
+            eq("menu checks what is in the box", menu[1].Checked "|" menu[5].Checked "|" menu[7].Checked "|" menu[6], "0|1|1|-")
+            menu[1].Click.Call("", "")
+            eq("menu click adds", box.Value, "po, Files, Text")
+            eq("known types: no warning", SelectionActions.UnknownTypesWarning("text, PO"), "")
+            eq("unknown type warned", SelectionActions.UnknownTypesWarning("PO, Invoice, PDFs"), "Not a content type: Invoice, PDFs. Add it in Preferences → Selection, or the command won't be shown for it.")
+            ; the dialog itself: what is typed is tidied, and an empty box leaves no "Selection" key
+            edited := CoreFieldsDialog(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "", "Keyword", "", "Selection", "IP"), "Text ,po,")
+            eq("shown in the box", shown, "IP")
+            eq("saved tidied", IsObject(edited) ? edited["Selection"] : "no result", "Text, po")
+            edited := CoreFieldsDialog(Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "", "Keyword", "", "Selection", "IP"), "")
+            eq("emptied: key removed", IsObject(edited) ? edited.Has("Selection") : "no result", false)
+            edited := CoreFieldsDialog(Map("Title", "Notes", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", ""), "")
+            eq("never set: no key", IsObject(edited) ? edited.Has("Selection") : "no result", false)
+            edited := CoreFieldsDialog(Map("Title", "Notes", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "Selection", ["Text", "PO"]), "keep")
+            eq("an array is shown joined", shown, "Text, PO")
+            eq("kept as text", IsObject(edited) ? edited["Selection"] : "no result", "Text, PO")
+        } finally
+            AppSettings.Data["SelectionTypes"] := savedTypes
+
+        ; Opens the command editor with item, types into "Selection types" ("keep" leaves it as shown), clicks OK; the edited Map or "".
+        ; shown: what the box showed when the dialog opened
+        CoreFieldsDialog(item, typed) {
+            shown := ""
+            SetTimer(Fill, -200)
+            return ItemEditor.Edit(ItemEditor.Owner(), "Selection Field Test", fields, item)
+            Fill() {
+                if !(hwnd := WinExist("Selection Field Test ahk_class AutoHotkeyGUI ahk_pid " ProcessExist())) {
+                    SetTimer(Fill, -100)
+                    return
+                }
+                selectionBox := ControlGetHwnd("Edit5", hwnd)                ; Title, Target, Arguments, Keyword, Selection (Type is a drop-down list)
+                shown := ControlGetText(selectionBox)
+                if (typed != "keep")
+                    ControlSetText(typed, selectionBox)
+                PostMessage(0xF5, 0, 0, ControlGetHwnd("OK", hwnd))          ; BM_CLICK
+            }
+        }
+    }
+
     static ThemeGallery() {
         eq := (n, a, e) => TestRunner.Equal("ThemeGallery." n, a, e)
         pixel(hbm, x, y) {

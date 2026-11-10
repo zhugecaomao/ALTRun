@@ -169,7 +169,7 @@ ALTRun 会监视应用索引文件夹: 当前用户和所有用户的开始菜�
      { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
    ]
    ```
-2. 在自定义命令里加 `"Selection"` (暂时在 `ALTRun.json` 里写; 下一步命令的编辑窗口会加上这一项), 写一个或几个类型名 (用逗号分隔):
+2. 在自定义命令的编辑窗口里, 在 **选中内容类型** 选它用于哪些类型: **类型** 按钮打开菜单, 列出内置类型和你自己的类型, 点一下勾选或取消 (也可以直接输入类型名, 用逗号分隔)。保存时如果有不存在的类型名会提醒。在 `ALTRun.json` 里保存成 `"Selection"`:
    ```jsonc
    { "Title": "ERP 查订单", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Selection": "PO" },
    { "Title": "用 PDF 工具打开", "Type": "File", "Target": "C:\\Tools\\PdfTool.exe", "Selection": "PDF" }
