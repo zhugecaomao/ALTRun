@@ -169,7 +169,7 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
      { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
    ]
    ```
-2. In a custom command's edit dialog, choose the types it is for in **For selection**: the **Types** button opens a menu of the built-in and your own types; click one to check or uncheck it (or type the names, separated by commas). Saving warns about a name that isn't a type. In `ALTRun.json` it is kept as `"Selection"`:
+2. In a custom command's edit dialog, choose the types it is for in **Selection types**: the **Types** button opens a menu of the built-in and your own types; click one to check or uncheck it (or type the names, separated by commas). Saving warns about a name that isn't a type. In `ALTRun.json` it is kept as `"Selection"`:
    ```jsonc
    { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Selection": "PO" },
    { "Title": "Open in PDF tool", "Type": "File", "Target": "C:\\Tools\\PdfTool.exe", "Selection": "PDF" }

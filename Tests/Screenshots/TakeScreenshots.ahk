@@ -77,7 +77,7 @@ class Shots {
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
-            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.SelectionTypes()],   ; Wiki: custom commands (edit window of "ERP Order", the first command SelectionTypes adds after the 6 demo ones, set for PO)
+            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.TextFilesCommand()],   ; Wiki: custom commands (edit window of Notepad, set for the default type Text files)
             ["prefs-selection",  "Light", "-Preferences 10", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
             ["prefs-snippets",   "Light", "-Preferences 11", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences 14", () => Shots.Preferences()],
@@ -837,6 +837,16 @@ class Shots {
         settings["DelayedStart"] := [Map("Name", "OneDrive", "Target", "%LocalAppData%\Microsoft\OneDrive\OneDrive.exe", "Arguments", "/background", "Delay", 300, "Enabled", 1)
             , Map("Name", "Sync Tool", "Target", "C:\Tools\SyncTool\SyncTool.exe", "Arguments", "--tray", "Delay", 90, "Enabled", 1)
             , Map("Name", "Chat", "Target", "C:\Tools\Chat\Chat.exe", "Arguments", "", "Delay", 600, "Enabled", 0)]
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; The default type "Text files" and Notepad set for it, added after the six demo commands (row 7), for the command editor
+    static TextFilesCommand() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["SelectionTypes"] := [Map("Name", "Text files", "Kind", "File", "Pattern", "txt, log, ini, csv, json, md, xml")]   ; as in AppSettings._DefaultSelectionTypes
+        settings["CustomCommands"].Push(Map("Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np", "Selection", "Text files"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

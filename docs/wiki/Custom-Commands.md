@@ -38,7 +38,7 @@ Each field in the edit dialog has a line of gray help text below it.
 | Target | Path, program or web address |
 | Arguments | Command-line arguments passed to the program, for example `/k ipconfig /all` |
 | Keyword | Optional. Typing exactly this keyword puts the command first. Several keywords: separate with commas, for example `np, ㅜㅔ` (handy when you switch keyboard layouts: any of them works) |
-| For selection (Selection) | Optional. Content types (for example `IP, Email`; pick them from the **Types** menu) the command comes first for when you select something and press `Ctrl+Alt+\`, see [Your own actions for a selection](Usage#your-own-actions-for-a-selection) |
+| Selection types (Selection) | Optional. Content types from Preferences → Selection (for example `IP, Text files`; pick them from the **Types** menu) the command comes first for when you select something and press `Ctrl+Alt+\`, see [Your own actions for a selection](Usage#your-own-actions-for-a-selection) |
 
 Besides the title and keyword, `File` / `Folder` commands also match the target's file name (without the extension) or folder name: with the Target `D:\Demo\Projects\P1001 - Riverside Park` and the title `Tower A, B, C`, typing `riverside` or `1001` finds it too. At the same match quality, a title match ranks first.
 

@@ -359,7 +359,7 @@ class I18n {
         s["Cmd.Field.Keyword"]          := "Optional. Typing exactly this word puts the command first, e.g. np for Notepad. Several keywords: separate with commas, e.g. np, ㅜㅔ."
         s["Cmd.Selection.Unknown"] := "Not a content type: {1}. Add it in Preferences → Selection, or the command won't be shown for it."
         s["Cmd.Field.Selection.Button"] := "Types"
-        s["Cmd.Field.Selection"] := "Optional. The content types (Preferences → Selection) this command comes first for when you select something and press Ctrl+Alt+\. {query} becomes the selected text or path; without {query} a program gets it as its last argument."
+        s["Cmd.Field.Selection"] := "Optional. Content types from Preferences → Selection, e.g. IP, Text files: when you select such content and press Ctrl+Alt+\, this command comes first. {query} becomes the selected text or path; without {query} a program gets it as its last argument."
         s["Index.Done"]                := "Index rebuilt: {1} applications."
 
         ; --- System commands ---
@@ -611,7 +611,7 @@ class I18n {
         s["Prefs.Page.Commands"]       := "Custom Commands"
         s["Prefs.Page.Selection"]       := "Selection"
         s["Prefs.Section.ContentTypes"] := "Content types"
-        s["Prefs.Section.ContentTypes.Desc"] := '1. Add a content type: Text matches the selected text with a regular expression, File matches selected files by extension.`n2. In a custom command, choose the types it is for ("For selection"); {query} becomes the selected text or path.`n3. Select something in any program and press the hotkey: the commands for its types come first. <a href="{1}">More</a>'
+        s["Prefs.Section.ContentTypes.Desc"] := '1. Add a content type: Text matches the selected text with a regular expression, File matches selected files by extension.`n2. In a custom command, choose the types it is for ("Selection types"); {query} becomes the selected text or path.`n3. Select something in any program and press the hotkey: the commands for its types come first. <a href="{1}">More</a>'
         s["Prefs.Col.Kind"]             := "Kind"
         s["Prefs.Col.Pattern"]          := "Pattern"
         s["Prefs.Col.UsedBy"]           := "Used by commands"
@@ -923,7 +923,7 @@ class I18n {
         s["Prefs.Col.Status"]          := "Status"
         s["Prefs.Col.Arguments"]       := "Arguments"
         s["Prefs.Col.Keyword"]         := "Keyword"
-        s["Prefs.Col.Selection"] := "For selection"
+        s["Prefs.Col.Selection"] := "Selection types"
         s["Prefs.Col.Name"]            := "Name"
         s["Prefs.Col.Argument"]        := "Argument"
         s["Prefs.Col.Mode"]            := "Runs as"

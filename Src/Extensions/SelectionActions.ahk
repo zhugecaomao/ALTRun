@@ -274,7 +274,7 @@ class SelectionActions {
         return false
     }
 
-    ; The type names offered in a command's "For selection" menu: the built-in ones, then the user's (being edited in Preferences when it is open)
+    ; The type names offered in a command's "Selection types" menu: the built-in ones, then the user's (being edited in Preferences when it is open)
     static TypeNamesForEditor() {
         names := SelectionActions.BuiltInTypes.Clone()
         userTypes := SelectionActions.UserTypes(SelectionActions._EditingTypes())
@@ -292,7 +292,7 @@ class SelectionActions {
         return ""
     }
 
-    ; "" when every name in a command's "For selection" is a known type, else a warning naming the others (a typo would never match)
+    ; "" when every name in a command's "Selection types" is a known type, else a warning naming the others (a typo would never match)
     static UnknownTypesWarning(value) {
         known := Map(), known.CaseSense := false
         for each in SelectionActions.TypeNamesForEditor()

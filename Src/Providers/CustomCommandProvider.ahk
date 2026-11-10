@@ -229,7 +229,7 @@ class CustomCommandProvider {
               , CustomCommandProvider._SelectionField(hint("Selection"))]
     }
 
-    ; "For selection": the content types the command comes first for (Ctrl+Alt+\), picked from a menu; saved only when set
+    ; "Selection types": the content types the command comes first for (Ctrl+Alt+\), picked from a menu; saved only when set
     static _SelectionField(hintText) {
         field := ItemEditor.Field("Selection", "Prefs.Col.Selection", "tags", false, () => SelectionActions.TypeNamesForEditor(), hintText)
         field.ButtonLabel := I18n.T("Cmd.Field.Selection.Button")

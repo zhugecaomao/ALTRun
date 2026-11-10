@@ -103,7 +103,7 @@ class PreferencesTests {
         eq("no such field", ItemEditor.KindFor(["Nope", "Folder"], fields, controls), "file")
     }
 
-    ; A custom command's "For selection" (#434): a box of type names with a menu that checks / unchecks each, saved only when set
+    ; A custom command's "Selection types" (#434): a box of type names with a menu that checks / unchecks each, saved only when set
     static CommandSelectionField() {
         eq := (n, a, e) => TestRunner.Equal("CommandSelectionField." n, a, e)
         shown := ""
@@ -142,7 +142,7 @@ class PreferencesTests {
         } finally
             AppSettings.Data["SelectionTypes"] := savedTypes
 
-        ; Opens the command editor with item, types into "For selection" ("keep" leaves it as shown), clicks OK; the edited Map or "".
+        ; Opens the command editor with item, types into "Selection types" ("keep" leaves it as shown), clicks OK; the edited Map or "".
         ; shown: what the box showed when the dialog opened
         CoreFieldsDialog(item, typed) {
             shown := ""
