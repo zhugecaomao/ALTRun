@@ -514,16 +514,10 @@ class PrefsPages {
 
     static BuildHotkeys() {
         PrefsForm.BeginPage("Prefs.Page.Hotkeys", 100)                         ; narrow label column: the list starts at the left edge (Caps Lock is on the Keyboard page)
-        actions := [["ToggleWindow", "Show / hide ALTRun (ToggleWindow)"], ["Show", "Show ALTRun with a search prefix (Show)"]]
-        for command in SystemProvider.Commands()
-            actions.Push([command["Id"], command["Title"] " (" command["Id"] ")"])
         PrefsForm.List("Hotkeys", 500
-            , [["Prefs.Col.Key", "Key", 160], ["Prefs.Col.Action", "Action", 150], ["Prefs.Col.WinTitle", "WinTitle", 230]]
-            , [ItemEditor.Field("Key", "Prefs.Col.Key", "hotkey", true, "", I18n.T("Prefs.HotkeyHint"))
-             , ItemEditor.Field("Action", "Prefs.Col.Action", "choice", false, actions)
-             , ItemEditor.Field("Prefix", "Prefs.Col.SearchPrefix", "text", false, "", I18n.T("Prefs.SearchPrefixHint"))
-             , ItemEditor.Field("WinTitle", "Prefs.Col.WinTitle", "text", false, "", I18n.T("Prefs.WinTitleHint"))]
-            , () => Map("Key", "", "Action", "ToggleWindow", "Prefix", "", "WinTitle", ""), "", "", true
+            , [["Prefs.Col.Key", "Key", 150], ["Prefs.Col.Action", "Action", 200], ["Prefs.Col.WinTitle", "WinTitle", 190]]
+            , (owner, title, item, original) => HotkeyEditor.Edit(owner, item, original)   ; its own window: groups with descriptions, a summary line
+            , () => Map("Key", "", "Action", "Search", "SearchText", "", "WinTitle", ""), "", "", true
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.HotkeyKeys(item)})
         PrefsForm.Note("Prefs.HotkeysNote")
     }

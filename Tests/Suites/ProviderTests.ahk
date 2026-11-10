@@ -1433,6 +1433,74 @@ class ProviderTests {
     }
 
     ; Default examples for new users: custom commands of every type, snippets only with supported placeholders; default hotkeys; window lists
+    ; Search hotkeys: {selection} becomes the selected text (one line, at most 100 characters), nothing / files selected: left out
+    static HotkeySearchText() {
+        eq := (n, a, e) => TestRunner.Equal("HotkeySearchText." n, a, e)
+        fill := (template, selection) => SystemProvider.FillSearchText(template, selection)
+        eq("selected text", fill("folder {selection}", {Text: "  Project X  "}), "folder Project X")
+        eq("any case", fill("doc {Selection}", {Text: "budget"}), "doc budget")
+        eq("several lines on one", fill("folder {selection}", {Text: "Tower`r`n  B`tlevel 3`n"}), "folder Tower B level 3")
+        eq("nothing selected", fill("folder {selection}", ""), "folder ")
+        eq("files selected", fill("folder {selection}", {Files: ["C:\a.txt"]}), "folder ")
+        eq("dollar kept", fill("g {selection}", {Text: "$1 and $$"}), "g $1 and $$")
+        long := ""
+        Loop 30
+            long .= "word "
+        eq("at most 100 characters", StrLen(fill("{selection}", {Text: long})), 99)   ; 100, the space at the end trimmed
+        eq("without {selection}: as it is, nothing copied", fill("recent ", "not looked at"), "recent ")
+        eq("twice", fill("{selection} {selection}", {Text: "a"}), "a a")
+    }
+
+    ; The hotkey edit window: old forms shown as Search, the summary line, and every control inside the window in every language
+    static HotkeyEditorWindow() {
+        eq := (n, a, e) => TestRunner.Equal("HotkeyEditorWindow." n, a, e)
+        item := HotkeyEditor.Normalize(Map("Key", "^!f", "Action", "Show", "Prefix", "folder ", "WinTitle", ""))
+        eq("test build form", item["Action"] "|" item["SearchText"] "|" item.Has("Prefix"), "Search|folder |0")
+        item := HotkeyEditor.Normalize(Map("Key", "^!a", "Action", "Activate", "WinTitle", ""))   ; the 2.x name of Show
+        eq("old Show: an empty search", item["Action"] "|" item["SearchText"], "Search|")
+        item := HotkeyEditor.Normalize(Map("Key", "^!r", "Action", "Reindex"))
+        eq("old command name", item["Action"] "|" item["WinTitle"], "RebuildIndex|")
+        actions := HotkeyEditor.Actions("FutureCommand")
+        eq("own actions first, unknown kept", actions[1][1] "|" actions[2][1] "|" actions[actions.Length][1], "Search|ToggleWindow|FutureCommand")
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        eq("summary search", HotkeyEditor.Summary(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}", "WinTitle", ""))
+            , 'Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs.')
+        eq("summary empty search, ALTRun", HotkeyEditor.Summary(Map("Key", "~^r", "Action", "Search", "SearchText", "", "WinTitle", "ALTRun"))
+            , "Ctrl+R opens ALTRun only in the ALTRun search window.")
+        lockName := ""
+        for command in SystemProvider.Commands()                            ; the names as the command list has them (made once, in the language of that time)
+            if (command["Id"] = "Lock")
+                lockName := command["Title"]
+        eq("summary command in a window", HotkeyEditor.Summary(Map("Key", "^!t", "Action", "Lock", "WinTitle", "ahk_class CabinetWClass"))
+            , 'Ctrl+Alt+T runs "' lockName '" only in windows matching ahk_class CabinetWClass.')
+        eq("summary no key", HotkeyEditor.Summary(Map("Key", "", "Action", "Search")), I18n.T("HotkeyEditor.Summary.NoKey"))
+        owner := Gui()
+        for language in I18n.Languages() {
+            I18n.Init(language[1])
+            ui := HotkeyEditor.Build(owner, Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}", "WinTitle", "ahk_exe WINWORD.EXE"), Map())
+            g := ui.Gui
+            g.Show("Hide")
+            WinGetClientPos(, , &clientW, &clientH, g.Hwnd)
+            right := 0, bottom := 0
+            for ctrl in g {
+                ctrl.GetPos(&x, &y, &w, &h)
+                right := Max(right, x + w), bottom := Max(bottom, y + h)
+            }
+            TestRunner.True("HotkeyEditorWindow." language[1] " fits (" right " x " bottom " in " clientW " x " clientH ")", right <= clientW && bottom <= clientH)
+            eq(language[1] " title", g.Title, I18n.T("HotkeyEditor.TitleEdit"))
+            eq(language[1] " read back", HotkeyEditor.Read(ui)["Action"] "|" HotkeyEditor.Read(ui)["SearchText"] "|" HotkeyEditor.Read(ui)["WinTitle"] "|" ui.Only.Value
+                , "Search|folder {selection}|ahk_exe WINWORD.EXE|1")
+            eq(language[1] " summary shown", ui.SummaryText.Value, HotkeyEditor.Summary(HotkeyEditor.Read(ui)))
+            eq(language[1] " insert is a drop-down", ControlGetStyle(ui.Insert) & 0xF, 12)   ; BS_SPLITBUTTON
+            ui.Action.Value := 2                                            ; Show / hide: no search text
+            eq(language[1] " read without search", HotkeyEditor.Read(ui)["SearchText"], "")
+            g.Destroy()
+        }
+        owner.Destroy()
+        I18n.Init(savedLang)
+    }
+
     static DefaultExamples() {
         eq := (n, a, e) => TestRunner.Equal("DefaultExamples." n, a, e)
         defaults := AppSettings.Defaults()
@@ -1453,7 +1521,7 @@ class ProviderTests {
         commandIds := Map()
         for command in SystemProvider.Commands()
             commandIds[command["Id"]] := true
-        commandIds["Show"] := true                                          ; the two Ids only for hotkeys
+        commandIds["Search"] := true                                        ; the Ids only for hotkeys
         scopes := ""
         prefixes := ""
         for entry in defaults["Hotkeys"] {                                  ; F1 ~ F4 are built into the search window, not custom hotkeys
@@ -1461,22 +1529,26 @@ class ProviderTests {
             TestRunner.True("DefaultExamples.hotkey action " entry["Action"], commandIds.Has(entry["Action"]))
             eq("hotkey key order " entry["Key"], HotkeyBox.Compose(RegExReplace(entry["Key"], "i)\w+$"), RegExReplace(entry["Key"], "^[\^!+#]+")), entry["Key"])   ; as Preferences would record it
             scopes .= (entry["WinTitle"] = "" ? "global" : entry["WinTitle"] = "ALTRun" ? "altrun" : "window") " "
-            if (entry["Action"] = "Show")
-                prefixes .= entry["Prefix"] "|"
+            if (entry["Action"] = "Search")
+                prefixes .= entry["SearchText"] "|"
         }
         eq("hotkey examples: global, one program, ALTRun", scopes, "global global global global window altrun ")
-        eq("hotkey examples: Show types a search prefix", prefixes, "folder |recent |doc |")
-        eq("hotkey prefix: Show types it", App.HotkeyPrefix(Map("Key", "^!f", "Action", "Show", "Prefix", "folder ", "WinTitle", "")), "folder ")
-        eq("hotkey prefix: only for Show", App.HotkeyPrefix(Map("Key", "^!f", "Action", "Lock", "Prefix", "folder ")), "")
-        eq("hotkey prefix: none set", App.HotkeyPrefix(Map("Key", "^!f", "Action", "Show")), "")
+        eq("hotkey examples: Search with the selected text", prefixes, "folder {selection}|recent |doc {selection}|")
+        eq("hotkey search text: Search types it", App.HotkeySearchText(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}", "WinTitle", "")), "folder {selection}")
+        eq("hotkey search text: only for Search", App.HotkeySearchText(Map("Key", "^!f", "Action", "Lock", "SearchText", "folder ")), "")
+        eq("hotkey search text: none set", App.HotkeySearchText(Map("Key", "^!f", "Action", "Search")), "")
+        test := Map("Key", "^!f", "Action", "Show", "Prefix", "folder ")      ; the test builds 2026.11.09.15 / .16 saved Search this way
+        eq("hotkey test build form", App.HotkeyActionId(test) "|" App.HotkeySearchText(test), "Search|folder ")
+        eq("hotkey plain Show stays", App.HotkeyActionId(Map("Key", "^!f", "Action", "Show")) "|" App.HotkeyActionId(Map("Key", "^!f", "Action", "Show", "Prefix", "")), "Show|Show")
         eq("no mouse hotkeys by default (no mouse hook)", App.UsesMouseHotkeys(defaults["Hotkeys"]), false)
         help := ""
         for item in HelpProvider.Items()
             help .= item.Id " "
         eq("help lists F1 and F4", (InStr(help, "About ") && InStr(help, "EditJson ")) ? 1 : 0, 1)
-        eq("hotkey action shows its search prefix", PrefsForm.Cell(Map("Key", "^!f", "Action", "Show", "Prefix", "folder "), "Action"), "Show ALTRun: folder")
-        eq("hotkey action without text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Show", "Prefix", " "), "Action"), "Show")
-        eq("hotkey prefix only for Show", PrefsForm.Cell(Map("Key", "^!f", "Action", "Lock", "Prefix", "folder "), "Action"), "Lock")
+        eq("hotkey action shows its search text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}"), "Action"), "Search: folder {selection}")
+        eq("hotkey action without text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Search", "SearchText", " "), "Action"), "Search")
+        eq("hotkey test build form shown as Search", PrefsForm.Cell(Map("Key", "^!f", "Action", "Show", "Prefix", "folder "), "Action"), "Search: folder")
+        eq("hotkey search text only for Search", PrefsForm.Cell(Map("Key", "^!f", "Action", "Lock", "SearchText", "folder "), "Action"), "Lock")
         eq("command target shows arguments", PrefsForm.Cell(Map("Target", "cmd.exe", "Arguments", "/k ipconfig /all"), "Target"), "cmd.exe /k ipconfig /all")
         eq("url type name", I18n.Strings["Prefs.Type.Url"], "Web address / link")
         ids := Map()

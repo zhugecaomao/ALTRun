@@ -2,22 +2,30 @@
 
 # 自定义热键
 
-偏好设置 → 自定义热键: 给任意热键指定一条 [系统命令](System-Commands-zh#系统命令), 可以限定只在某个窗口里生效。
+偏好设置 → 自定义热键: 给任意热键指定一条 [系统命令](System-Commands-zh#系统命令), 可以限定只在某个窗口里生效; 也可以打开 ALTRun 并填好搜索内容, 例如在某个范围里搜选中的文字。
 
-| 字段 | 例子 | 说明 |
+**添加** / **修改** 打开热键窗口。从上到下分几组, 每组下面一行灰色说明; 最下面一行用文字说明这个热键会做什么 (例如 `Ctrl+Alt+F: 打开 ALTRun 搜索 "folder <选中的文字>" (所有程序)。`):
+
+| 部分 | 设置文件里 | 说明 |
 |---|---|---|
-| 热键 (Key) | `Ctrl+Alt+T` | 点一下框, 按下组合键 (见下文 [设置热键](#设置热键)); 鼠标热键: 在框里点鼠标中键或侧键。勾选 "保留按键原来的功能" 时, 按键原来的作用照常 (设置文件里是开头的 `~`) |
-| 操作 (Action) | `TerminalHere` | 系统命令的 Id, `ToggleWindow` (显示 / 隐藏 ALTRun), 或 `Show` (显示 ALTRun, 可以带搜索功能前缀) |
-| 搜索功能前缀 (Prefix) | `folder ` | 只用于 `Show`: 搜索框里预先填入这个前缀, 一个热键直达一个范围, 例如 `folder ` (只搜文件夹)、`recent ` (最近的文件)、`doc ` (只搜文档; 前缀见 [使用方法](Usage-zh))。结尾的空格有效。留空 = 空的搜索框。列表里显示在操作后面, 如 `Show ALTRun: folder` |
-| 窗口 (WinTitle) | `ahk_class CabinetWClass` | 留空 = 全局; 否则只在匹配的窗口里生效; `ALTRun` = 只在 ALTRun 的搜索窗口里 |
+| 热键 | `Key`, 如 `^!f` | 点一下框, 按下组合键 (见下文 [设置热键](#设置热键)); 鼠标热键: 在框里点鼠标中键或侧键。勾选 "保留按键原来的功能" 时, 按键原来的作用照常 (开头的 `~`) |
+| 动作 | `Action` | **在 ALTRun 中搜索** (`Search`)、**显示 / 隐藏 ALTRun** (`ToggleWindow`), 或按名称选一条系统命令 (文件里存的是 Id, 如 `TerminalHere`) |
+| 搜索内容 | `SearchText`, 如 `folder {selection}` | 只用于 "在 ALTRun 中搜索": 搜索框里预先填好的文字。`{selection}` 换成当前程序里选中的文字 (合成一行, 最多 100 字); 没有选中或选中的是文件时为空, 只填 `folder `。**插入 ▾** 在光标处插入 `{selection}`, 或把一个范围放到最前面: `folder` (文件夹)、`file`、`doc` (文档)、`pic` (图片)、`recent`、`g` (Google); 前缀见 [使用方法](Usage-zh)。留空 = 空的搜索框。列表里显示在动作后面, 如 `Search: folder {selection}` |
+| 生效范围 | `WinTitle` | **所有程序** (留空), 或 **只在这些窗口里**: `ahk_exe WINWORD.EXE`、`ahk_class CabinetWClass` (资源管理器); `ALTRun` = 只在 ALTRun 的搜索窗口里 |
+
+取选中的文字时, ALTRun 在那个程序里按一次 `Ctrl+C`: 没有选中时最多等 0.8 秒窗口才出来, 所以只在需要的热键里用 `{selection}`。剪贴板随后恢复原样。
+
+![偏好设置 → 自定义热键 → 修改](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/hotkey-editor.png)
 
 新安装时带六个示例:
 - `Ctrl+Alt+Win+V`: 在任何地方把剪贴板粘贴为纯文本 (和 PowerToys 的 "粘贴为纯文本" 同一个键)
-- `Ctrl+Alt+F`、`Ctrl+Alt+R`、`Ctrl+Alt+D`: 打开搜索窗口, 搜索框里已经填好 `folder `、`recent ` 或 `doc ` (操作 `Show`): 只搜文件夹、看最近的文件、只搜文档
+- `Ctrl+Alt+F`: 在任何地方 (邮件、图纸目录...) 选中一个名字再按, ALTRun 直接搜这个名字的文件夹 (`folder {selection}`); 没有选中时打开并填好 `folder `
+- `Ctrl+Alt+D`: 同样搜文档 (`doc {selection}`)
+- `Ctrl+Alt+R`: 最近的文件和文件夹 (`recent `)
 - `Ctrl+Alt+T`: 在资源管理器 (`ahk_class CabinetWClass`) 里, 在当前文件夹打开终端
 - `Ctrl+R`: 在 ALTRun 搜索窗口 (`ALTRun`) 里重建索引
 
-可以随意删除或修改; 已有的设置保留自己的列表。列表下面的 **添加示例** 只补上还没有的示例 (键和窗口都相同的算已有), 并提示添加了几个、跳过了几个; 点 "确定" / "应用" 后保存。想直达别的范围, 自己加一个 `Show` 热键, 搜索功能前缀填平时会输入的前缀, 例如 `pic ` (图片)。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage-zh#快捷键)。
+可以随意删除或修改; 已有的设置保留自己的列表。列表下面的 **添加示例** 只补上还没有的示例 (键和窗口都相同的算已有), 并提示添加了几个、跳过了几个; 点 "确定" / "应用" 后保存。想直达别的范围, 自己加一个 "在 ALTRun 中搜索" 的热键, 例如 `pic {selection}` (图片), 或 `g {selection}` 用 Google 搜选中的文字。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage-zh#快捷键)。
 
 ![偏好设置 → 自定义热键](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 

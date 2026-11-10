@@ -26,7 +26,7 @@ Src\Core\           App (启动、单实例、退出), ErrorHandler (未捕获�
                     ProviderRegistry, FileIndex, BackgroundWork (后台任务什么时候可以运行)
 Src\UI\             SearchWindow (+ SearchSession、SearchKeys 键盘、ResultRows 结果行绘制、SearchStatusBar 状态栏、TypeAhead、
                     SearchInputLanguage、WindowFade), ResultActions (操作面板、编辑、删除), PreferencesWindow (+ PrefsPages 各个页面、
-                    PrefsForm 表单工具和布局尺寸), ItemEditor, HotkeyBox, LargeType, Hud (简短提示),
+                    PrefsForm 表单工具和布局尺寸), ItemEditor, HotkeyEditor (自定义热键窗口), HotkeyBox, LargeType, Hud (简短提示),
                     ThemeManager + ThemePreview, IconCache, NavIcons, SyncEditor + SyncPreview (同步任务编辑和同步窗口)
 Src\Providers\      搜索功能, 每个功能一个类
 Src\Extensions\     搜索窗口以外的功能: SnippetExpander, QuickSwitch (文件对话框), AutoDate, CapsLockSwitch +
