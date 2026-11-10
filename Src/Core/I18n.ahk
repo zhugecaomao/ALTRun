@@ -518,7 +518,7 @@ class I18n {
         s["Prefs.CheckTargets"]        := "Check Paths"
         s["Prefs.AddExamples"]         := "Add Examples"                 ; list pages: adds the default items not in the list yet
         s["Prefs.AddBuiltins"]         := "Add Built-ins"                ; the web search engines that come with ALTRun
-        s["Prefs.More"]                := "More ▾"                       ; ▾: the button opens a menu (… would mean a dialog)
+        s["Prefs.More"]                := "More"                         ; a drop-down button: Windows draws the arrow
         s["Prefs.ExamplesAdded"]       := "Added {1}, skipped {2} already in the list.`n`nClick OK or Apply in Preferences to save them."
         s["Prefs.ExamplesNone"]        := "Nothing was added: all {2} are already in the list."
         s["Prefs.CheckAllOk"]          := "All {1} paths exist."
@@ -906,7 +906,7 @@ class I18n {
         s["Prefs.Type.Folder"]         := "Folder"
         s["Prefs.Type.Command"]        := "Command line"
         s["Prefs.Type.Url"]            := "Web address / link"
-        s["Prefs.CommandsNote"]        := "Double-click to edit. More ▾ → Check Paths finds commands whose file or folder was renamed or moved."
+        s["Prefs.CommandsNote"]        := "Double-click to edit. More → Check Paths finds commands whose file or folder was renamed or moved."
         s["Prefs.SnippetAutoExpand"]   := "Expand snippet keywords typed in any app"
         s["Prefs.SnippetAutoExpand.Desc"] := 'Type the prefix and keyword in any program (e.g. "`;sig") and it is replaced by the text. Not in password boxes or the windows below.'
         s["Prefs.ExpandExclude"]       := "Don't expand in"

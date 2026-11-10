@@ -452,16 +452,23 @@ class PreferencesTests {
                 listButtons := Map("Prefs.Page.Hotkeys", "Prefs.AddExamples", "Prefs.Page.WebSearch", "Prefs.AddBuiltins"   ; the list's extra button ends before its filter box
                     , "Prefs.Page.Commands", "Prefs.More", "Prefs.Page.Snippets", "Prefs.More")
                 if listButtons.Has(page.Key) {
-                    buttonRight := "", filterX := ""
+                    buttonRight := "", filterX := "", deleteRight := "", buttonLeft := "", buttonW := "", buttonStyle := 0
                     for ctrl in page.Controls {
                         ctrl.GetPos(&x, , &w)
+                        if (ctrl.Type = "Button" && ctrl.Text = I18n.T("Prefs.Delete"))
+                            deleteRight := x + w
                         if (ctrl.Type = "Button" && ctrl.Text = I18n.T(listButtons[page.Key]))
-                            buttonRight := x + w
+                            buttonRight := x + w, buttonLeft := x, buttonW := w, buttonStyle := ControlGetStyle(ctrl)
                         else if (ctrl.Type = "Edit" && w = 160 && buttonRight != "" && filterX = "")
                             filterX := x
                     }
                     TestRunner.True("PreferencesFit." lang " " page.Key " list button before the filter (" buttonRight " + 8 <= " filterX ")"
                         , buttonRight != "" && filterX != "" && buttonRight + 8 <= filterX)
+                    TestRunner.Equal("PreferencesFit." lang " " page.Key " list button spaced like Delete", buttonLeft - deleteRight, 8)
+                    if (listButtons[page.Key] = "Prefs.More")                ; the drop-down button: as wide as Add / Edit / Delete, an arrow drawn by Windows
+                        TestRunner.Equal("PreferencesFit." lang " " page.Key " More button", buttonW "|" (buttonStyle & 0xF), "80|12")   ; BS_SPLITBUTTON
+                    else
+                        TestRunner.True("PreferencesFit." lang " " page.Key " list button at least 80 (" buttonW ")", buttonW >= 80)
                 }
                 bottom := 0, right := 0
                 for ctrl in page.Controls {
