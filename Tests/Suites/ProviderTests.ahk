@@ -1493,6 +1493,13 @@ class ProviderTests {
                 , "Search|folder {selection}|ahk_exe WINWORD.EXE|1")
             eq(language[1] " summary shown", ui.SummaryText.Value, HotkeyEditor.Summary(HotkeyEditor.Read(ui)))
             eq(language[1] " insert is a drop-down", ControlGetStyle(ui.Insert) & 0xF, 12)   ; BS_SPLITBUTTON
+            for ctrl in g                                                   ; the hotkey hint on one line, the check box beside the box
+                if (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.HotkeyHint")) {
+                    ctrl.GetPos(, , &hintW)
+                    TestRunner.True("HotkeyEditorWindow." language[1] " hotkey hint on one line (" Win.TextExtent(ctrl.Hwnd, ctrl.Text) " <= " hintW ")", Win.TextExtent(ctrl.Hwnd, ctrl.Text) <= hintW)
+                }
+            ui.Key.GetPos(&keyX, &keyY, &keyW), ui.Pass.GetPos(&passX, &passY)
+            TestRunner.True("HotkeyEditorWindow." language[1] " keep-function box beside the hotkey box", passX > keyX + keyW && Abs(passY - keyY) <= 4)
             ui.Action.Value := 2                                            ; Show / hide: no search text
             eq(language[1] " read without search", HotkeyEditor.Read(ui)["SearchText"], "")
             g.Destroy()
