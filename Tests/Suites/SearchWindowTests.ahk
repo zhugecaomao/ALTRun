@@ -743,6 +743,37 @@ class SearchWindowTests {
         }
     }
 
+    ; Hiding to run something allows the started program to take the focus (AllowSetForegroundWindow) while the search window is still in the
+    ; foreground; other reasons (Esc, the hotkey...) don't, and nothing happens when the window is already hidden
+    static HideAllowsForeground() {
+        eq := (n, a, e) => TestRunner.Equal("HideAllowsForeground." n, a, e)
+        saved := {Gui: SearchWindow.Gui, Input: SearchWindow.Input, Last: SearchWindow.Session.Last, LastArea: SearchWindow.LastArea
+            , HiddenAt: SearchWindow.HiddenAt, Fade: AppSettings.Appearance["Fade"]}
+        savedAllow := SearchWindow.GetOwnPropDesc("_AllowForeground"), savedPrepare := SearchWindow.GetOwnPropDesc("_PrepareLater")
+        allowed := 0
+        SearchWindow.DefineProp("_AllowForeground", {Call: (*) => allowed++})
+        SearchWindow.DefineProp("_PrepareLater", {Call: (*) => 0})
+        AppSettings.Appearance["Fade"] := false
+        g := Gui()
+        SearchWindow.Gui := g, SearchWindow.Input := g.AddEdit("w200")
+        try {
+            g.Show("NoActivate w220 h40")
+            SearchWindow.Hide("Esc")
+            eq("Esc", allowed "|" SearchWindow.IsVisible(), "0|0")
+            g.Show("NoActivate w220 h40")
+            SearchWindow.Hide("run")
+            eq("run", allowed "|" SearchWindow.IsVisible(), "1|0")
+            SearchWindow.Hide("run")
+            eq("already hidden", allowed, 1)
+        } finally {
+            SearchWindow.DefineProp("_AllowForeground", savedAllow), SearchWindow.DefineProp("_PrepareLater", savedPrepare)
+            AppSettings.Appearance["Fade"] := saved.Fade
+            SearchWindow.Gui := saved.Gui, SearchWindow.Input := saved.Input, SearchWindow.Session.Last := saved.Last
+            SearchWindow.LastArea := saved.LastArea, SearchWindow.HiddenAt := saved.HiddenAt
+            g.Destroy()
+        }
+    }
+
     ; Space with the caret at the start: the typed text switches to file search; Backspace at the start in file search mode: back to normal search; the text stays either way
     static FileModeKeys() {
         eq := (n, a, e) => TestRunner.Equal("FileModeKeys." n, a, e)

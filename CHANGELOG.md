@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.19]
+
+测试版。
+
+Test build.
+
+### 修复
+- 用 ALTRun 启动一个已经在运行、被别的窗口挡住的程序时, 有的程序 (只允许运行一个实例的, 例如一些聊天软件) 窗口不到前台, 只是任务栏按钮闪烁; 从开始菜单启动却正常。原因是 ALTRun 先隐藏搜索窗口再启动程序, 这时它已经不是前台窗口, Windows 就不让那个程序把窗口切到前台。现在 ALTRun 在隐藏之前允许接下来启动的程序取得焦点 (`AllowSetForegroundWindow`), 回车运行、操作面板、右键菜单、Windows 右键菜单和 "编辑" 都一样 (AutoHotkey 论坛反馈)
+
 ## [2026.11.09.18]
 
 测试版。
@@ -1283,7 +1292,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.18...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.19...HEAD
+[2026.11.09.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.18...2026.11.09.19
 [2026.11.09.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.17...2026.11.09.18
 [2026.11.09.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.16...2026.11.09.17
 [2026.11.09.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.15...2026.11.09.16
