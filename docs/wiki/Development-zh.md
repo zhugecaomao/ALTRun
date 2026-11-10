@@ -129,6 +129,7 @@ ALTRun 空闲时应该不占 CPU。只要设置了**任何一个** `SetTimer` �
 | Arg / Arguments | 目标和命令行参数 |
 | OnRun | 自定义的执行函数, 优先于 Kind |
 | Actions | 额外的操作面板项 |
+| LeadActions | 排在内置操作前面的操作面板项 (选中内容的自定义命令, 见 `SelectionActions`) |
 | Uid | 学习排序和去重用的唯一标识 |
 | Score | 分数, 越大越靠前 (匹配分 0~100, 再加各功能自己的偏移) |
 | Valid / AutoComplete | `Valid = false` 时 Enter 只把 AutoComplete 填进输入框 |

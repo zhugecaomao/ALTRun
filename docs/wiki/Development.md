@@ -129,6 +129,7 @@ Optional:
 | Arg / Arguments | Target and command-line arguments |
 | OnRun | A custom run function, takes precedence over Kind |
 | Actions | Extra action panel items |
+| LeadActions | Action panel items shown before the built-in ones (the custom commands for a selection, see `SelectionActions`) |
 | Uid | Unique id for learned ranking and de-duplication |
 | Score | Score; higher comes first (match score 0–100 plus each feature's own offset) |
 | Valid / AutoComplete | With `Valid = false`, Enter only puts AutoComplete into the input box |

@@ -41,6 +41,7 @@
   "Extensions": { ... },          // 扩展功能
   "Hotkeys":        [ ... ],      // 自定义热键
   "CustomCommands": [ ... ],      // 自定义命令
+  "SelectionTypes": [ ... ],      // 选中内容的类型, 见 使用 → 选中内容的操作
   "Snippets":       [ ... ],      // 文字片段
   "DelayedStart":   [ ... ],      // 延迟启动
   "SyncTasks":      [ ... ],      // 文件夹同步任务, 见 文件夹同步
@@ -237,7 +238,12 @@
 ],
 "CustomCommands": [
   { "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },
-  { "Title": "IP Configuration", "Type": "Command", "Target": "cmd.exe", "Arguments": "/k ipconfig /all", "Keyword": "ipconfig" }
+  { "Title": "IP Configuration", "Type": "Command", "Target": "cmd.exe", "Arguments": "/k ipconfig /all", "Keyword": "ipconfig" },
+  { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Arguments": "", "Keyword": "erp", "Selection": "PO" }
+],
+"SelectionTypes": [
+  { "Name": "PO", "Kind": "Text", "Pattern": "^PO\\d{8}$" },
+  { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
 ],
 "Snippets": [
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }

@@ -2088,4 +2088,97 @@ class ExtensionTests {
         ok("files: add all", InStr(titles(item), "Add All to Custom Commands|"))
         eq("transform", SelectionActions.Transforms()[1][2].Call("abc"), "ABC")
     }
+
+    ; The user's content types of a selection and the custom commands shown first for them (#434)
+    static SelectionCommands() {
+        eq := (n, a, e) => TestRunner.Equal("SelectionCommands." n, a, e)
+        ok := (n, c) => TestRunner.True("SelectionCommands." n, c)
+        savedTypes := AppSettings.Data.Has("SelectionTypes") ? AppSettings.Data["SelectionTypes"] : []
+        savedCommands := AppSettings.Data["CustomCommands"]
+        AppSettings.Data["SelectionTypes"] := [
+            Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$"),
+            Map("Name", "Ticket", "Kind", "Text", "Pattern", "i)^[a-z]+-\d+$"),
+            Map("Name", "Bad", "Kind", "Text", "Pattern", "(unclosed"),       ; not a valid regular expression: skipped, nothing breaks
+            Map("Name", "PDF", "Kind", "File", "Pattern", "pdf, .DOCX"),
+            Map("Name", "text", "Kind", "Text", "Pattern", "x"),              ; named like a built-in type: left out
+            Map("Name", "Empty", "Kind", "Text", "Pattern", " ")              ; no pattern: left out
+        ]
+        cmd := (title, type, target, args, selection) => Map("Title", title, "Type", type, "Target", target, "Arguments", args, "Keyword", "", "Selection", selection)
+        AppSettings.Data["CustomCommands"] := [
+            cmd("ERP", "Url", "https://erp.example.com/o?id={query}", "", "po"),
+            cmd("WMS", "Url", "https://wms.example.com/{query}", "", ["PO", "Ticket"]),
+            cmd("Foxit", "File", "C:\Tools\Foxit.exe", "", "PDF"),
+            cmd("Ping", "Command", "cmd.exe", "/k ping {query}", "Text"),
+            cmd("PS", "Command", "powershell.exe", "-NoExit -Command Write-Output {query}", "Text"),
+            cmd("Merge", "File", "C:\Tools\merge.exe", "-o out.pdf {query}", "Files"),
+            cmd("Folder tool", "File", "C:\Tools\tool.exe", "", "Folder"),
+            Map("Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np")
+        ]
+        typesOf(selection) {
+            text := ""
+            for name in SelectionActions.Classify(selection).Types
+                text .= name "|"
+            return RTrim(text, "|")
+        }
+        leads(selection) {
+            text := ""
+            for action in SelectionActions.ItemFor(selection).LeadActions
+                text .= action.Title "|"
+            return RTrim(text, "|")
+        }
+        try {
+            eq("user types", SelectionActions.UserTypes().Length, 4)
+            eq("text + PO (trimmed)", typesOf({Text: " PO12345678`r`n"}), "Text|PO")
+            eq("plain text", typesOf({Text: "hello"}), "Text")
+            eq("ticket, any case", typesOf({Text: "abc-12"}), "Text|Ticket")
+            eq("url", typesOf({Text: "https://example.com/PO12345678"}), "Url")
+            eq("one pdf", typesOf({Files: ["C:\a\x.pdf"]}), "File|PDF")
+            eq("docx, any case", typesOf({Files: ["C:\a\x.DocX"]}), "File|PDF")
+            eq("txt", typesOf({Files: ["C:\a\x.txt"]}), "File")
+            eq("folder", typesOf({Files: [A_WinDir]}), "Folder")
+            eq("files all pdf", typesOf({Files: ["C:\a\x.pdf", "C:\b\y.docx"]}), "Files|PDF")
+            eq("files mixed", typesOf({Files: ["C:\a\x.pdf", "C:\b\y.txt"]}), "Files")
+
+            ; commands for the types, in the order of the command list
+            eq("PO commands", leads({Text: "PO12345678"}), "ERP|WMS|Ping|PS")
+            item := SelectionActions.ItemFor({Text: "PO12345678"})
+            erp := item.LeadActions[1]
+            eq("url filled", erp.Kind "|" erp.Arg, "url|https://erp.example.com/o?id=PO12345678")
+            eq("title without the term", erp.Title, "ERP")
+            ok("runs through OnRun", IsObject(erp.OnRun))
+            list := ResultActions.ListFor(item)
+            eq("panel: commands first", list[1].Title "|" list[2].Title "|" list[5].Title, "ERP|WMS|Copy to Clipboard")
+            eq("panel: Enter hint moves to the first row", list[5].Subtitle, "")
+            eq("plain text: the Text commands", leads({Text: "a b/c"}), "Ping|PS")
+            eq("ping filled", SelectionActions.ItemFor({Text: "10.0.0.1"}).LeadActions[1].Arguments, "/k ping 10.0.0.1")
+            eq("pdf: appended, quoted", SelectionActions.ItemFor({Files: ["C:\a\my file.pdf"]}).LeadActions[1].Arguments, '"C:\a\my file.pdf"')
+            eq("files: each quoted", SelectionActions.ItemFor({Files: ["C:\a\x.pdf", "C:\b\y.pdf"]}).LeadActions[2].Arguments
+                , '-o out.pdf "C:\a\x.pdf" "C:\b\y.pdf"')
+            eq("files: PDF commands too", leads({Files: ["C:\a\x.pdf", "C:\b\y.pdf"]}), "Foxit|Merge")
+            eq("folder", leads({Files: [A_WinDir]}), "Folder tool")
+            eq("no types, no commands", leads({Files: ["C:\a\x.txt"]}), "")
+            eq("quote a drive root", SelectionActions.Quote("C:\"), '"C:\\"')
+
+            ; selected text can't break out of the command line
+            eq("cmd: & refused", leads({Text: "1.1.1.1 & calc"}), "")
+            eq("cmd: % refused", leads({Text: "%PATH%"}), "")
+            eq("powershell: $() refused, cmd fine", leads({Text: "$(calc)"}), "Ping")
+            eq("double quote refused", leads({Text: 'say "hi"'}), "")
+            eq("line break refused", leads({Text: "line one`nline two"}), "")
+            urlCommand := cmd("Q", "Url", "https://q.example.com/?q={query}", "", "Text")
+            eq("url: a double quote is encoded", SelectionActions._CommandAction(urlCommand, SelectionActions.Classify({Text: 'say "hi"'})).Arg
+                , "https://q.example.com/?q=" Url.Encode('say "hi"'))
+
+            ; custom commands turned off: none
+            features := AppSettings.Data["Features"]["CustomCommands"]
+            enabled := features["Enabled"], features["Enabled"] := 0
+            eq("custom commands off", leads({Text: "PO12345678"}), "")
+            features["Enabled"] := enabled
+        } finally {
+            AppSettings.Data["SelectionTypes"] := savedTypes
+            AppSettings.Data["CustomCommands"] := savedCommands
+        }
+        eq("defaults: no user types", AppSettings.Defaults()["SelectionTypes"].Length, 0)
+        eq("kept on reset", AppSettings.ResetData(Map("SelectionTypes", [Map("Name", "X", "Kind", "Text", "Pattern", "x")]))["SelectionTypes"].Length, 1)
+    }
 }

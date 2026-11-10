@@ -41,6 +41,7 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
   "Extensions": { ... },          // extensions
   "Hotkeys":        [ ... ],      // custom hotkeys
   "CustomCommands": [ ... ],      // custom commands
+  "SelectionTypes": [ ... ],      // content types of a selection, see Usage → Actions on selected content
   "Snippets":       [ ... ],      // snippets
   "DelayedStart":   [ ... ],      // delayed start
   "SyncTasks":      [ ... ],      // folder sync tasks, see Folder sync
@@ -237,7 +238,12 @@ See [Extensions](Extensions).
 ],
 "CustomCommands": [
   { "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },
-  { "Title": "IP Configuration", "Type": "Command", "Target": "cmd.exe", "Arguments": "/k ipconfig /all", "Keyword": "ipconfig" }
+  { "Title": "IP Configuration", "Type": "Command", "Target": "cmd.exe", "Arguments": "/k ipconfig /all", "Keyword": "ipconfig" },
+  { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Arguments": "", "Keyword": "erp", "Selection": "PO" }
+],
+"SelectionTypes": [
+  { "Name": "PO", "Kind": "Text", "Pattern": "^PO\\d{8}$" },
+  { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" }
 ],
 "Snippets": [
   { "Name": "Today's date", "Keyword": "today", "Text": "{date}", "AutoExpand": 1 }

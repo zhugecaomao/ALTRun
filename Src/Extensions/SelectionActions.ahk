@@ -11,9 +11,22 @@
 ; The selection is read as in Alfred: simulate copying (Ctrl+C), restore the clipboard right after reading, and keep it out of the clipboard history.
 ; In command-line / terminal windows Ctrl+C would interrupt the running program, so those use Ctrl+Insert (copy).
 ;
+; Content types and the user's own actions (custom commands shown for a selection):
+;   Built-in types: Text, Url, File, Folder, Files (several files / folders). The user's own types are in ALTRun.json:
+;     "SelectionTypes": [ { "Name": "PO", "Kind": "Text", "Pattern": "^PO\\d{8}$" },    Text: a regular expression, matched against the trimmed text
+;                         { "Name": "PDF", "Kind": "File", "Pattern": "pdf, docx" } ]   File: extensions; several files match when all of them do
+;   A text selection is Text plus every Text type it matches; a URL is Url plus the Text types it matches; one file is File (a folder: Folder)
+;   plus the File types of its extension; several files are Files plus the File types all of them match.
+;   A custom command with "Selection": "PO, PDF" (type names, any case) is shown first in the panel of a selection of any of those types:
+;     {query} in Target / Arguments becomes the selected text or path (encoded in URLs); several files become "a" "b" (each quoted);
+;     a File / Command without {query} gets the selection appended as its last argument, quoted (as "Open with").
+;   Selected text can't break out of the command line: a command isn't shown when the text has a line break or a double quote
+;   (except URLs, which are encoded), nor when it runs a shell (cmd, PowerShell, a batch file...) and the text has that shell's special characters.
+;
 ; Usage:
 ;   SelectionActions.Run()                    called by the hotkey
 ;   SelectionActions.ItemFor({Text: "..."})   -> ResultItem (the source of the actions panel); can also be {Files: [...]}
+;   SelectionActions.Classify(selection)      -> {Kind, Types, Term, ...}: what the selection is and which content types it has
 ;===============================================================================
 
 class SelectionActions {
@@ -53,19 +66,204 @@ class SelectionActions {
     }
 
     static ItemFor(selection) {
+        info := SelectionActions.Classify(selection)
+        switch info.Kind {
+            case "files"        : item := SelectionActions._FilesItem(info.Files)
+            case "file", "folder": item := SelectionActions._FileItem(info.Path)
+            case "url"          : item := ResultItem(info.Text, I18n.T("Selection.Link"), {Kind: "url", Arg: info.Text, Icon: "url:", Provider: "Selection"})
+            default             : item := SelectionActions._TextItem(info.Text)
+        }
+        item.LeadActions := SelectionActions.CommandActions(info)
+        return item
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Content types and the user's commands for them
+    ;---------------------------------------------------------------------------
+    static BuiltInTypes := ["Text", "Url", "File", "Folder", "Files"]
+
+    ; What the selection is: {Kind: text / url / file / folder / files, Types: [type names], Term: what {query} becomes,
+    ; Quoted: Term as one quoted argument (several files: each quoted), Text / Path / Files}
+    static Classify(selection) {
         if selection.HasOwnProp("Files") {
             files := selection.Files
             if (files.Length = 1)
-                return SelectionActions._FileItem(files[1])
-            return SelectionActions._FilesItem(files)
+                return SelectionActions._PathInfo(files[1])
+            types := ["Files"]
+            for userType in SelectionActions.UserTypes()
+                if (userType.Kind = "File" && SelectionActions._AllMatch(userType, files))
+                    types.Push(userType.Name)
+            quoted := ""
+            for filePath in files
+                quoted .= (quoted = "" ? "" : " ") SelectionActions.Quote(filePath)
+            return {Kind: "files", Types: types, Term: quoted, Quoted: quoted, Files: files}
         }
         text := selection.Text
         trimmed := Trim(text, " `t`r`n")
         if RegExMatch(trimmed, "i)^https?://\S+$")
-            return ResultItem(trimmed, I18n.T("Selection.Link"), {Kind: "url", Arg: trimmed, Icon: "url:", Provider: "Selection"})
+            return {Kind: "url", Types: SelectionActions._TextTypes(trimmed, "Url"), Term: trimmed, Quoted: SelectionActions.Quote(trimmed), Text: trimmed}
         if (!InStr(trimmed, "`n") && RegExMatch(trimmed, "^(?:[A-Za-z]:\\|\\\\)") && FileExist(trimmed))   ; the selection is one path
-            return SelectionActions._FileItem(trimmed)
-        return SelectionActions._TextItem(text)
+            return SelectionActions._PathInfo(trimmed)
+        return {Kind: "text", Types: SelectionActions._TextTypes(trimmed, "Text"), Term: trimmed, Quoted: SelectionActions.Quote(trimmed), Text: text}
+    }
+
+    static _PathInfo(filePath) {
+        isFolder := InStr(FileExist(filePath), "D") ? true : false
+        types := [isFolder ? "Folder" : "File"]
+        if !isFolder
+            for userType in SelectionActions.UserTypes()
+                if (userType.Kind = "File" && SelectionActions._ExtMatches(userType, filePath))
+                    types.Push(userType.Name)
+        return {Kind: isFolder ? "folder" : "file", Types: types, Term: filePath, Quoted: SelectionActions.Quote(filePath), Path: filePath}
+    }
+
+    ; builtIn first, then each Text type whose pattern matches (a pattern that isn't a valid regular expression is skipped, logged once)
+    static _TextTypes(text, builtIn) {
+        static badPatterns := Map()
+        types := [builtIn]
+        for userType in SelectionActions.UserTypes() {
+            if (userType.Kind != "Text")
+                continue
+            try {
+                if (RegExMatch(text, userType.Pattern) > 0)
+                    types.Push(userType.Name)
+            } catch as err {
+                if !badPatterns.Has(userType.Pattern) {
+                    badPatterns[userType.Pattern] := true
+                    Logger.Warn("Selection type " userType.Name ": bad pattern " userType.Pattern " (" err.Message ")")
+                }
+            }
+        }
+        return types
+    }
+
+    static _AllMatch(userType, files) {
+        for filePath in files
+            if !SelectionActions._ExtMatches(userType, filePath)
+                return false
+        return true
+    }
+
+    ; a file (not a folder) whose extension is one of the type's ("pdf, .docx" - separated by commas, semicolons, | or spaces)
+    static _ExtMatches(userType, filePath) {
+        SplitPath(filePath, , , &ext)
+        if (ext = "")
+            return false
+        for each in StrSplit(userType.Pattern, [",", ";", "|", " ", "`t"])
+            if ((each := LTrim(Trim(each), ".")) != "" && each = ext)
+                return !InStr(FileExist(filePath), "D")                    ; the disk is asked only when the extension matches
+        return false
+    }
+
+    ; The user's content types from ALTRun.json "SelectionTypes": [{Name, Kind: Text | File, Pattern}]; entries without a name or pattern,
+    ; or named like a built-in type, are left out
+    static UserTypes() {
+        types := []
+        if !(AppSettings.Data.Has("SelectionTypes") && AppSettings.Data["SelectionTypes"] is Array)
+            return types
+        for entry in AppSettings.Data["SelectionTypes"] {
+            if !(entry is Map)
+                continue
+            name := Trim(entry.Has("Name") ? entry["Name"] : "")
+            pattern := entry.Has("Pattern") ? entry["Pattern"] : ""
+            if (name = "" || Trim(pattern) = "" || SelectionActions.IsBuiltInType(name))
+                continue
+            kind := (entry.Has("Kind") && entry["Kind"] = "File") ? "File" : "Text"
+            types.Push({Name: name, Kind: kind, Pattern: pattern})
+        }
+        return types
+    }
+
+    static IsBuiltInType(name) {
+        for each in SelectionActions.BuiltInTypes
+            if (each = name)
+                return true
+        return false
+    }
+
+    ; The type names of a custom command's "Selection" ("PO, PDF", or an array)
+    static CommandTypes(command) {
+        names := []
+        if !(command is Map && command.Has("Selection"))
+            return names
+        value := command["Selection"]
+        for each in (value is Array) ? value : StrSplit(value, ",")
+            if (!IsObject(each) && (each := Trim(each)) != "")
+                names.Push(each)
+        return names
+    }
+
+    ; The custom commands for a selection (Classify's result), in the order of the command list; none with custom commands turned off
+    static CommandActions(info) {
+        actions := []
+        if !ProviderRegistry.IsEnabled(CustomCommandProvider)
+            return actions
+        for command in AppSettings.CustomCommands {
+            matched := false
+            for name in SelectionActions.CommandTypes(command) {
+                for each in info.Types
+                    if (each = name) {
+                        matched := true
+                        break
+                    }
+                if matched
+                    break
+            }
+            if (matched && IsObject(action := SelectionActions._CommandAction(command, info)))
+                actions.Push(action)
+        }
+        return actions
+    }
+
+    ; The panel row of a custom command for the selection, "" when the selection can't be put into its command line safely
+    static _CommandAction(command, info) {
+        commandType := command.Has("Type") ? command["Type"] : "File"
+        takesQuery := CustomCommandProvider.TakesQuery(command)
+        appends := !takesQuery && (commandType = "File" || commandType = "Command")
+        if (commandType = "Url") {
+            if (takesQuery && info.Kind = "files")                          ; several paths make no URL
+                return ""
+        } else if ((takesQuery || appends) && !SelectionActions.SafeArgument(info, command)) {
+            return ""
+        }
+        item := CustomCommandProvider._ToItem(command, 0, takesQuery ? info.Term : "")
+        item.Title := command["Title"]
+        item.AutoComplete := ""
+        if appends {
+            item.Arguments := Trim(item.Arguments " " info.Quoted)
+            item.Subtitle := Trim(item.Subtitle " " info.Quoted)
+        }
+        item.OnRun := SelectionActions._Runner(item.Kind, item.Arg, item.Arguments)   ; the actions panel runs a row through its OnRun
+        return item
+    }
+
+    ; each row keeps its own target (a separate method makes the closure)
+    static _Runner(kind, target, arguments) {
+        runItem := ResultItem("", "", {Kind: kind, Arg: target, Arguments: arguments})
+        return (*) => ActionCatalog.RunDefault(runItem)
+    }
+
+    ; Whether the selection can go into the command's command line: paths always can (they have no double quotes);
+    ; text can't have a line break or a double quote; shells also refuse their special characters
+    static SafeArgument(info, command) {
+        if (info.Kind = "text" || info.Kind = "url") {
+            if RegExMatch(info.Term, '[\r\n"]')
+                return false
+        }
+        target := command.Has("Target") ? command["Target"] : ""
+        SplitPath(Trim(target, '" '), &fileName, , &ext, &nameNoExt)
+        if (RegExMatch(nameNoExt, "i)^(cmd|command)$") || RegExMatch(ext, "i)^(bat|cmd)$"))
+            return !RegExMatch(info.Term, "[&|<>^%!]")
+        if (RegExMatch(nameNoExt, "i)^(powershell|powershell_ise|pwsh|bash|sh|wsl|zsh)$") || RegExMatch(ext, "i)^ps1$"))
+            return !RegExMatch(info.Term, "[&|<>^%!``$;(){}@']")
+        return true
+    }
+
+    ; One command-line argument in double quotes; trailing backslashes are doubled so "C:\" doesn't escape the closing quote
+    static Quote(value) {
+        if RegExMatch(value, "\\+$", &m)
+            value .= m[0]
+        return '"' value '"'
     }
 
     static _FileItem(filePath) {

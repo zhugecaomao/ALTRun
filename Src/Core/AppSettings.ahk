@@ -14,7 +14,8 @@
 ;   "Features"      : { "<feature>": { "Enabled": 1, ...the feature's own settings } },
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
 ;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "SearchText" } ],   custom hotkeys -> system commands (SearchText, optional: what the Search action types into the search box)
-;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword" } ],
+;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword", "Selection" } ],   Selection, optional: content types the command is shown for
+;   "SelectionTypes": [ { "Name", "Kind", "Pattern" } ],   the user's content types of a selection (Kind Text: regular expression / File: extensions), see SelectionActions
 ;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ],
 ;   "DelayedStart"  : [ { "Name", "Target", "Arguments", "Delay", "Enabled" } ],   programs started after signing in (Task Scheduler)
 ;   "SyncTasks"     : [ { "Name", "Source", "Destination", "Mode", ... } ],          folder sync tasks run with robocopy (see RoboSync)
@@ -103,7 +104,7 @@ class AppSettings {
     }
 
     ; Kept when resetting to the defaults (Preferences → Advanced): content the user added, not options
-    static KeptOnReset := [["CustomCommands"], ["Snippets"], ["Hotkeys"], ["DelayedStart"], ["SyncTasks"], ["Features", "WebSearch", "Engines"]
+    static KeptOnReset := [["CustomCommands"], ["SelectionTypes"], ["Snippets"], ["Hotkeys"], ["DelayedStart"], ["SyncTasks"], ["Features", "WebSearch", "Engines"]
         , ["Features", "Recent", "Pinned"], ["Features", "System", "Hidden"], ["Extensions", "PTTools"], ["DataLocation"]]
 
     ; current after a reset to the defaults: the defaults + the KeptOnReset parts of current
@@ -548,6 +549,7 @@ class AppSettings {
                 Map("Key", "^r", "Action", "RebuildIndex", "WinTitle", "ALTRun")
             ],
             "CustomCommands", AppSettings._DefaultCommands(),
+            "SelectionTypes", [],                                           ; the user's content types of a selection (see SelectionActions)
             "Snippets", AppSettings._DefaultSnippets(),
             "DelayedStart", [],                                             ; programs started some time after signing in (see DelayedStart)
             "SyncTasks", []                                                 ; folder sync tasks run with robocopy (see RoboSync)

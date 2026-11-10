@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.20]
+
+测试版。
+
+Test build.
+
+### 新增
+- 选中内容的操作可以加入自己的命令 (#434): 在 `ALTRun.json` 里用 `SelectionTypes` 定义内容类型 (`Text` 用正则表达式, 例如订单号 `^PO\d{8}$`; `File` 用扩展名, 例如 `pdf, docx`), 再给自定义命令加 `"Selection": "PO"`。选中内容后按 `Ctrl+Alt+\`, 符合类型的命令排在操作面板最前面 (回车运行第一个, 照常可以打字筛选); `{query}` 换成选中的文字或路径, `File` / `Command` 没写 `{query}` 时选中的内容加在参数最后。内置类型 `Text`、`Url`、`File`、`Folder`、`Files` 不用定义。文字里有换行、双引号, 或命令运行 `cmd` / PowerShell 而文字里有它们的特殊字符时, 不显示这个命令, 免得选中的文字执行别的命令。偏好设置里的设置页面以后再加
+
 ## [2026.11.09.19]
 
 测试版。
@@ -1292,7 +1301,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.19...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.20...HEAD
+[2026.11.09.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.19...2026.11.09.20
 [2026.11.09.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.18...2026.11.09.19
 [2026.11.09.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.17...2026.11.09.18
 [2026.11.09.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.16...2026.11.09.17
