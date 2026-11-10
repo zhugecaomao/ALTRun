@@ -49,7 +49,8 @@ class PreferencesTests {
     static ListExamples() {
         eq := (n, a, e) => TestRunner.Equal("ListExamples." n, a, e)
         pages := [["Hotkeys", (item) => PrefsPages.HotkeyKeys(item)], ["CustomCommands", (item) => PrefsPages.CommandKeys(item)]
-            , ["Snippets", (item) => PrefsPages.SnippetKeys(item)], ["Features.WebSearch.Engines", (item) => PrefsPages.EngineKeys(item)]]
+            , ["Snippets", (item) => PrefsPages.SnippetKeys(item)], ["Features.WebSearch.Engines", (item) => PrefsPages.EngineKeys(item)]
+            , ["SelectionTypes", (item) => PrefsPages.SelectionTypeKeys(item)]]
         for page in pages {
             defaults := PreferencesWindow.GetPath(AppSettings.Defaults(), page[1])
             items := []
@@ -620,9 +621,23 @@ class PreferencesTests {
             ui.Sample.Value := "C:\Docs\report.PDF"
             PreferencesWindow.Pages[index].OnShow.Call()
             eq("test: a path is a file", ui.Result.Value, "Types: File, PDF`nCommands: none")
+            ui.Sample.Value := "hello"
+            PreferencesWindow.Pages[index].OnShow.Call()
+            eq("test: no own type", ui.Result.Value, "Types: Text (none of your types matches)`nCommands: WMS")
             ui.Sample.Value := ""
             PreferencesWindow.Pages[index].OnShow.Call()
             eq("test: empty", ui.Result.Value, "")
+            ui.Sample.GetPos(&sampleX), ui.Browse.GetPos(&browseX)
+            eq("test: browse button after the box", browseX > sampleX, true)
+            hotkeyX := testX := hotkeyW := testW := 0
+            for ctrl in PreferencesWindow.Pages[index].Controls {
+                if (ctrl.Type = "Text" && ctrl.Text = "Selection hotkey")
+                    ctrl.GetPos(&hotkeyX, , &hotkeyW)
+                if (ctrl.Type = "Text" && ctrl.Text = "Test")
+                    ctrl.GetPos(&testX, , &testW)
+            }
+            eq("test label under the hotkey label", testX + testW = hotkeyX + hotkeyW && hotkeyW > 0, true)   ; right-aligned labels: the same right edge
+            generalHotkeyX := generalHotkeyW := 0
             eq("testing is not a change", PreferencesWindow._dirty, false)
             ; a type added on this page (not saved yet) is used by the test box at once
             ui.List.Items.Push(Map("Name", "Mail", "Kind", "Text", "Pattern", "@"))
@@ -632,9 +647,23 @@ class PreferencesTests {
             general := PreferencesWindow._PageIndex("Prefs.Page.General")
             PreferencesWindow._SelectRow(general)
             onGeneral := false
-            for ctrl in PreferencesWindow.Pages[general].Controls
+            for ctrl in PreferencesWindow.Pages[general].Controls {
                 onGeneral := onGeneral || (ctrl.Type = "Text" && ctrl.Text = "Selection hotkey")
+                if (ctrl.Type = "Text" && ctrl.Text = "ALTRun hotkey")
+                    ctrl.GetPos(&generalHotkeyX, , &generalHotkeyW)
+            }
             eq("hotkey no longer on General", onGeneral, false)
+            eq("same label column as General", hotkeyX + hotkeyW, generalHotkeyX + generalHotkeyW)
+            ; the page list: every page visible, and only a little space below the last row (with the icon font, i.e. on Windows)
+            pageList := PreferencesWindow.PageList
+            eq("page list: no scrolling", SendMessage(0x1028, 0, 0, pageList) >= pageList.GetCount(), true)   ; LVM_GETCOUNTPERPAGE
+            if (NavIcons.FontName() != "") {
+                rect := Buffer(16, 0), client := Buffer(16, 0)
+                SendMessage(0x100E, pageList.GetCount() - 1, rect, pageList)   ; LVM_GETITEMRECT of the last row
+                DllCall("GetClientRect", "Ptr", pageList.Hwnd, "Ptr", client)
+                rowH := NumGet(rect, 12, "Int") - NumGet(rect, 4, "Int")
+                eq("page list: little space below", NumGet(client, 12, "Int") - NumGet(rect, 12, "Int") < rowH, true)
+            }
         } finally {
             AppSettings.Data["SelectionTypes"] := savedTypes
             AppSettings.Data["CustomCommands"] := savedCommands

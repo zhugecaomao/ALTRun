@@ -97,7 +97,8 @@ class PrefsForm {
     }
 
     ; Settings whose description has a Wiki link: {1} in the description becomes the URL of [page, anchor on the Chinese page, anchor on the English page]
-    static DescLinks := Map("Prefs.SelectionHotkey", ["Usage", "#选中内容的操作", "#actions-on-selected-content"])
+    static DescLinks := Map("Prefs.SelectionHotkey", ["Usage", "#选中内容的操作", "#actions-on-selected-content"]
+        , "Prefs.Section.ContentTypes", ["Usage", "#自己的操作-内容类型", "#your-own-actions-for-a-selection"])
 
     ; The small gray description below a setting ("<labelKey>.Desc" in I18n); nothing if there is none. x: aligned with the left of the control above
     static Desc(labelKey, x, text := "", controlType := "Text") {

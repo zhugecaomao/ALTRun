@@ -549,7 +549,7 @@ class AppSettings {
                 Map("Key", "^r", "Action", "RebuildIndex", "WinTitle", "ALTRun")
             ],
             "CustomCommands", AppSettings._DefaultCommands(),
-            "SelectionTypes", [],                                           ; the user's content types of a selection (see SelectionActions)
+            "SelectionTypes", AppSettings._DefaultSelectionTypes(),         ; the user's content types of a selection (see SelectionActions)
             "Snippets", AppSettings._DefaultSnippets(),
             "DelayedStart", [],                                             ; programs started some time after signing in (see DelayedStart)
             "SyncTasks", []                                                 ; folder sync tasks run with robocopy (see RoboSync)
@@ -571,14 +571,34 @@ class AppSettings {
             ["Documents subfolder" , "Folder" , "%UserProfile%\Documents\{query}", ""                               , "docs"],   ; {query}: "docs <folder name>"
             ; command line: program + arguments
             ["IP Configuration"    , "Command", "cmd.exe"                , "/k ipconfig /all"                       , "ipconfig"],
-            ["Ping"                , "Command", "cmd.exe"                , "/k ping {query}"                        , "ping"],     ; {query}: "ping 10.0.0.1"
+            ["Ping"                , "Command", "cmd.exe"                , "/k ping {query}"                        , "ping", "IP"],   ; {query}: "ping 10.0.0.1"; also for a selected IP address
             ; URL: a web page, or a system link such as ms-settings:
             ["ALTRun on GitHub"    , "Url"    , "https://github.com/zhugecaomao/ALTRun", ""                     , "altrun"],
             ["Google Maps"         , "Url"    , "https://www.google.com/maps/search/{query}", ""                 , "maps"],     ; {query}: "maps Changi Airport"
             ["Windows Update"      , "Url"    , "ms-settings:windowsupdate", ""                                  , ""]
         ]
-            commands.Push(Map("Title", row[1], "Type", row[2], "Target", row[3], "Arguments", row[4], "Keyword", row[5]))
+        {
+            command := Map("Title", row[1], "Type", row[2], "Target", row[3], "Arguments", row[4], "Keyword", row[5])
+            if (row.Length >= 6)
+                command["Selection"] := row[6]                              ; shown first for a selection of these content types
+            commands.Push(command)
+        }
         return commands
+    }
+
+    ; Typical content types of a selection (see SelectionActions): text by a regular expression, files by extension.
+    ; New installs get them; "Add Examples" on Preferences → Selection adds the missing ones
+    static _DefaultSelectionTypes() {
+        types := []
+        for row in [
+            ["Email"    , "Text", "^[\w.+-]+@[\w-]+(\.[\w-]+)+$"],
+            ["IP"       , "Text", "^(\d{1,3}\.){3}\d{1,3}$"],
+            ["Ticket"   , "Text", "^[A-Z][A-Z0-9]{1,9}-\d+$"],                 ; issue keys such as ABC-123
+            ["Documents", "File", "pdf, doc, docx, xls, xlsx, ppt, pptx"],
+            ["Images"   , "File", "jpg, jpeg, png, gif, bmp, webp"]
+        ]
+            types.Push(Map("Name", row[1], "Kind", row[2], "Pattern", row[3]))
+        return types
     }
 
     ; The default snippets: dates, the clipboard and a few common email lines (type ;keyword to expand, or search the name in the search window)

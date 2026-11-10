@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.11.09.22]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置左边的页面列表: 每一行高一点, 列表下面只留一点空白 (按实际的行高计算, 以前少算了 1 像素, 下面空出一截)
+- "选中内容" 页 (#434): 热键框和 "通用" 页的呼出热键在同一位置, "测试" 和热键对齐; 内容类型上面加了三步用法说明和 Wiki 链接; 测试框下面加了说明, 文件可以拖到框里或点 `...` 选择; 只匹配到内置类型时注明 "没有符合的自定义类型"
+- 新安装自带常用的内容类型: Email、IP、Ticket (例如 `ABC-123`)、Documents、Images, 默认的 "Ping" 命令用于选中的 IP 地址; 已有的设置可以在 "选中内容" 页点 "添加示例" 补上
+
 ## [2026.11.09.21]
 
 测试版。
@@ -1310,7 +1321,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.21...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.22...HEAD
+[2026.11.09.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.21...2026.11.09.22
 [2026.11.09.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.20...2026.11.09.21
 [2026.11.09.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.19...2026.11.09.20
 [2026.11.09.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.18...2026.11.09.19

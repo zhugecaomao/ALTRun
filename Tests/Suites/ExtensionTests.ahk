@@ -2202,7 +2202,20 @@ class ExtensionTests {
         commands := [Map("Title", "A", "Selection", "PO"), Map("Title", "B"), Map("Title", "C", "Selection", ["pdf", "po"])]
         eq("command titles", joined(SelectionActions.CommandTitles(["Text", "PO"], commands)), "A|C")
         eq("kind text", SelectionActions.KindText("File") "|" SelectionActions.KindText("Text"), "File (extensions)|Text (regex)")
-        eq("defaults: no user types", AppSettings.Defaults()["SelectionTypes"].Length, 0)
+        defaultTypes := AppSettings.Defaults()["SelectionTypes"]
+        eq("defaults: typical types", PrefsPages.SelectionTypeKeys(defaultTypes[1])[1] "|" defaultTypes.Length, "Name: Email|5")
+        allValid := true
+        for each in defaultTypes
+            allValid := allValid && SelectionActions.PatternProblem(each["Kind"], each["Pattern"]) = "" && !SelectionActions.IsBuiltInType(each["Name"])
+        eq("defaults: valid patterns", allValid, true)
+        eq("defaults: types", joined(SelectionActions.SampleTypes("192.168.1.10", defaultTypes)) "/" joined(SelectionActions.SampleTypes("me@example.com", defaultTypes))
+            "/" joined(SelectionActions.SampleTypes("ABC-123", defaultTypes)) "/" joined(SelectionActions.SampleTypes("C:\a\b.XLSX", defaultTypes))
+            "/" joined(SelectionActions.SampleTypes("C:\a\b.webp", defaultTypes)), "Text|IP/Text|Email/Text|Ticket/File|Documents/File|Images")
+        ping := ""
+        for command in AppSettings._DefaultCommands()
+            if (command["Title"] = "Ping")
+                ping := command
+        eq("defaults: Ping for an IP address", SelectionActions.CommandTitles(["Text", "IP"], [ping]).Length, 1)
         eq("kept on reset", AppSettings.ResetData(Map("SelectionTypes", [Map("Name", "X", "Kind", "Text", "Pattern", "x")]))["SelectionTypes"].Length, 1)
     }
 }
