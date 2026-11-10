@@ -2178,7 +2178,66 @@ class ExtensionTests {
             AppSettings.Data["SelectionTypes"] := savedTypes
             AppSettings.Data["CustomCommands"] := savedCommands
         }
-        eq("defaults: no user types", AppSettings.Defaults()["SelectionTypes"].Length, 0)
+        ; the test box and the type editor in Preferences (a list being edited, not the saved settings)
+        editing := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$"), Map("Name", "PDF", "Kind", "File", "Pattern", "pdf")]
+        joined(list) {
+            text := ""
+            for each in list
+                text .= each "|"
+            return RTrim(text, "|")
+        }
+        eq("sample: text", joined(SelectionActions.SampleTypes(" PO12345678 ", editing)), "Text|PO")
+        eq("sample: a path not on the disk", joined(SelectionActions.SampleTypes("Z:\nowhere\plan.pdf", editing)), "File|PDF")
+        eq("sample: a folder path", joined(SelectionActions.SampleTypes("Z:\nowhere\", editing)), "Folder")
+        eq("sample: url", joined(SelectionActions.SampleTypes("https://example.com", editing)), "Url")
+        eq("sample: empty", SelectionActions.SampleTypes("  ", editing).Length, 0)
+        eq("pattern: valid", SelectionActions.PatternProblem("Text", "^PO\d{8}$"), "")
+        ok("pattern: invalid", InStr(SelectionActions.PatternProblem("Text", "(unclosed"), "Not a valid regular expression") = 1)
+        eq("pattern: extensions aren't a regex", SelectionActions.PatternProblem("File", "(pdf"), "")
+        fields := SelectionActions.TypeEditorFields()
+        eq("editor fields", fields[1].Key "|" fields[2].Key "|" fields[3].Key, "Name|Kind|Pattern")
+        ok("editor: built-in name warns", InStr(fields[1].Check.Call("url", Map()), "built-in") > 0)
+        eq("editor: own name is fine", fields[1].Check.Call("PO", Map()), "")
+        ok("editor: bad regex warns", fields[3].Check.Call("(x", Map("Kind", "Text")) != "")
+        commands := [Map("Title", "A", "Selection", "PO"), Map("Title", "B"), Map("Title", "C", "Selection", ["pdf", "po"])]
+        eq("command titles", joined(SelectionActions.CommandTitles(["Text", "PO"], commands)), "A|C")
+        eq("kind text", SelectionActions.KindText("File") "|" SelectionActions.KindText("Text"), "File (extensions)|Text (regex)")
+        defaultTypes := AppSettings.Defaults()["SelectionTypes"]
+        eq("defaults: typical types", PrefsPages.SelectionTypeKeys(defaultTypes[1])[1] "|" defaultTypes.Length, "Name: Email|5")
+        allValid := true
+        for each in defaultTypes
+            allValid := allValid && SelectionActions.PatternProblem(each["Kind"], each["Pattern"]) = "" && !SelectionActions.IsBuiltInType(each["Name"])
+        eq("defaults: valid patterns", allValid, true)
+        eq("defaults: types", joined(SelectionActions.SampleTypes("192.168.1.10", defaultTypes)) "/" joined(SelectionActions.SampleTypes("me@example.com", defaultTypes))
+            "/" joined(SelectionActions.SampleTypes("1.3521, 103.8198", defaultTypes)) "/" joined(SelectionActions.SampleTypes("C:\a\b.LOG", defaultTypes))
+            "/" joined(SelectionActions.SampleTypes("C:\a\b.webp", defaultTypes)), "Text|IP/Text|Email/Text|Coordinates/File|Text files/File|Images")
+        ; every example type has an example command that works with it (#434: the examples can be used as they are)
+        defaultCommands := AppSettings._DefaultCommands()
+        for each in defaultTypes {
+            titles := SelectionActions.CommandTitles([each["Name"]], defaultCommands)
+            eq("defaults: a command for " each["Name"], titles.Length, 1)
+        }
+        sample(text, files := "") {                                         ; the first row of the panel with the default types and commands
+            savedTypes2 := AppSettings.Data["SelectionTypes"], savedCommands2 := AppSettings.Data["CustomCommands"]
+            AppSettings.Data["SelectionTypes"] := defaultTypes, AppSettings.Data["CustomCommands"] := defaultCommands
+            try lead := SelectionActions.ItemFor(IsObject(files) ? {Files: files} : {Text: text}).LeadActions
+            finally AppSettings.Data["SelectionTypes"] := savedTypes2, AppSettings.Data["CustomCommands"] := savedCommands2
+            return lead.Length ? lead[1].Title "|" lead[1].Arg "|" lead[1].Arguments : ""
+        }
+        eq("example: email", sample("me@example.com"), "Send Email|mailto:me@example.com|")
+        eq("example: ip", sample("10.0.0.1"), "Ping|cmd.exe|/k ping 10.0.0.1")
+        eq("example: coordinates", sample("1.3521, 103.8198"), "Google Maps|https://www.google.com/maps/search/1.3521%2C%20103.8198|")
+        eq("example: text file", sample("", ["C:\Logs\app.log"]), 'Notepad|notepad.exe|"C:\Logs\app.log"')
+        eq("example: image", sample("", ["C:\Pics\a.png"]), 'Paint|mspaint.exe|"C:\Pics\a.png"')
+        ; "Add Examples" on the Selection page brings the example commands along
+        mine := [Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping -t {query}", "Keyword", "")   ; mine, not set for a type
+               , Map("Title", "notepad", "Type", "File", "Target", "C:\Tools\np++.exe", "Arguments", "", "Keyword", "", "Selection", "Code")]   ; mine, already set
+        result := SelectionActions.AddExampleCommands(mine, defaultCommands)
+        eq("examples: added / linked", result.Added "|" result.Linked, "3|1")
+        eq("examples: mine linked, kept", mine[1]["Selection"] "|" mine[1]["Arguments"], "IP|/k ping -t {query}")
+        eq("examples: set ones untouched", mine[2]["Selection"], "Code")
+        eq("examples: again none", SelectionActions.AddExampleCommands(mine, defaultCommands).Added, 0)
+        eq("mailto keeps @", CustomCommandProvider.UrlTerm("mailto:{query}", "a.b@c.com") "|" CustomCommandProvider.UrlTerm("https://x/?q={query}", "a@b"), "a.b@c.com|a%40b")
         eq("kept on reset", AppSettings.ResetData(Map("SelectionTypes", [Map("Name", "X", "Kind", "Text", "Pattern", "x")]))["SelectionTypes"].Length, 1)
     }
 }

@@ -27,6 +27,8 @@
 ;   SelectionActions.Run()                    called by the hotkey
 ;   SelectionActions.ItemFor({Text: "..."})   -> ResultItem (the source of the actions panel); can also be {Files: [...]}
 ;   SelectionActions.Classify(selection)      -> {Kind, Types, Term, ...}: what the selection is and which content types it has
+;   SelectionActions.SampleTypes(text, list)  the types of a sample text or path (the test box in Preferences → Selection), list = SelectionTypes being edited
+;   SelectionActions.TypeEditorFields()       the fields of a content type in the edit dialog
 ;===============================================================================
 
 class SelectionActions {
@@ -84,13 +86,16 @@ class SelectionActions {
 
     ; What the selection is: {Kind: text / url / file / folder / files, Types: [type names], Term: what {query} becomes,
     ; Quoted: Term as one quoted argument (several files: each quoted), Text / Path / Files}
-    static Classify(selection) {
+    ; userTypes: UserTypes() of the saved settings when not given
+    static Classify(selection, userTypes := "") {
+        if !IsObject(userTypes)
+            userTypes := SelectionActions.UserTypes()
         if selection.HasOwnProp("Files") {
             files := selection.Files
             if (files.Length = 1)
-                return SelectionActions._PathInfo(files[1])
+                return SelectionActions._PathInfo(files[1], userTypes)
             types := ["Files"]
-            for userType in SelectionActions.UserTypes()
+            for userType in userTypes
                 if (userType.Kind = "File" && SelectionActions._AllMatch(userType, files))
                     types.Push(userType.Name)
             quoted := ""
@@ -101,27 +106,27 @@ class SelectionActions {
         text := selection.Text
         trimmed := Trim(text, " `t`r`n")
         if RegExMatch(trimmed, "i)^https?://\S+$")
-            return {Kind: "url", Types: SelectionActions._TextTypes(trimmed, "Url"), Term: trimmed, Quoted: SelectionActions.Quote(trimmed), Text: trimmed}
+            return {Kind: "url", Types: SelectionActions._TextTypes(trimmed, "Url", userTypes), Term: trimmed, Quoted: SelectionActions.Quote(trimmed), Text: trimmed}
         if (!InStr(trimmed, "`n") && RegExMatch(trimmed, "^(?:[A-Za-z]:\\|\\\\)") && FileExist(trimmed))   ; the selection is one path
-            return SelectionActions._PathInfo(trimmed)
-        return {Kind: "text", Types: SelectionActions._TextTypes(trimmed, "Text"), Term: trimmed, Quoted: SelectionActions.Quote(trimmed), Text: text}
+            return SelectionActions._PathInfo(trimmed, userTypes)
+        return {Kind: "text", Types: SelectionActions._TextTypes(trimmed, "Text", userTypes), Term: trimmed, Quoted: SelectionActions.Quote(trimmed), Text: text}
     }
 
-    static _PathInfo(filePath) {
-        isFolder := InStr(FileExist(filePath), "D") ? true : false
+    static _PathInfo(filePath, userTypes) {
+        isFolder := (InStr(FileExist(filePath), "D") || SubStr(filePath, -1) = "\") ? true : false
         types := [isFolder ? "Folder" : "File"]
         if !isFolder
-            for userType in SelectionActions.UserTypes()
+            for userType in userTypes
                 if (userType.Kind = "File" && SelectionActions._ExtMatches(userType, filePath))
                     types.Push(userType.Name)
         return {Kind: isFolder ? "folder" : "file", Types: types, Term: filePath, Quoted: SelectionActions.Quote(filePath), Path: filePath}
     }
 
     ; builtIn first, then each Text type whose pattern matches (a pattern that isn't a valid regular expression is skipped, logged once)
-    static _TextTypes(text, builtIn) {
+    static _TextTypes(text, builtIn, userTypes) {
         static badPatterns := Map()
         types := [builtIn]
-        for userType in SelectionActions.UserTypes() {
+        for userType in userTypes {
             if (userType.Kind != "Text")
                 continue
             try {
@@ -156,12 +161,12 @@ class SelectionActions {
     }
 
     ; The user's content types from ALTRun.json "SelectionTypes": [{Name, Kind: Text | File, Pattern}]; entries without a name or pattern,
-    ; or named like a built-in type, are left out
-    static UserTypes() {
+    ; or named like a built-in type, are left out. list: the entries to read (the copy being edited in Preferences), the saved ones when not given
+    static UserTypes(list := "") {
         types := []
-        if !(AppSettings.Data.Has("SelectionTypes") && AppSettings.Data["SelectionTypes"] is Array)
-            return types
-        for entry in AppSettings.Data["SelectionTypes"] {
+        if !IsObject(list)
+            list := (AppSettings.Data.Has("SelectionTypes") && AppSettings.Data["SelectionTypes"] is Array) ? AppSettings.Data["SelectionTypes"] : []
+        for entry in list {
             if !(entry is Map)
                 continue
             name := Trim(entry.Has("Name") ? entry["Name"] : "")
@@ -198,22 +203,102 @@ class SelectionActions {
         actions := []
         if !ProviderRegistry.IsEnabled(CustomCommandProvider)
             return actions
-        for command in AppSettings.CustomCommands {
-            matched := false
-            for name in SelectionActions.CommandTypes(command) {
-                for each in info.Types
-                    if (each = name) {
-                        matched := true
-                        break
-                    }
-                if matched
-                    break
-            }
-            if (matched && IsObject(action := SelectionActions._CommandAction(command, info)))
+        for command in AppSettings.CustomCommands
+            if (SelectionActions.CommandFor(command, info.Types) && IsObject(action := SelectionActions._CommandAction(command, info)))
                 actions.Push(action)
-        }
         return actions
     }
+
+    ; Whether a custom command is shown for a selection of these types (any of its "Selection" names, any case)
+    static CommandFor(command, types) {
+        for name in SelectionActions.CommandTypes(command)
+            for each in types
+                if (each = name)
+                    return true
+        return false
+    }
+
+    ; The titles of the commands (a list being edited in Preferences) that are shown for these types
+    static CommandTitles(types, commands) {
+        titles := []
+        for command in commands
+            if (command is Map && SelectionActions.CommandFor(command, types))
+                titles.Push(command.Has("Title") ? command["Title"] : "")
+        return titles
+    }
+
+    ;---------------------------------------------------------------------------
+    ; Editing content types (Preferences → Selection)
+    ;---------------------------------------------------------------------------
+    ; The types of a sample in the test box: a path (C:\..., \\server\...) counts as a selected file without looking at the disk
+    ; (a folder when it ends with \ or exists as one), anything else as selected text; list = the SelectionTypes being edited
+    static SampleTypes(text, list) {
+        userTypes := SelectionActions.UserTypes(list)
+        trimmed := Trim(text, " `t`r`n")
+        if (trimmed = "")
+            return []
+        if (!InStr(trimmed, "`n") && RegExMatch(trimmed, "^(?:[A-Za-z]:\\|\\\\)"))
+            return SelectionActions._PathInfo(trimmed, userTypes).Types
+        return SelectionActions.Classify({Text: text}, userTypes).Types
+    }
+
+    ; The example commands (defaults with "Selection") into commands: a missing one is added (a copy); one with the same title or keyword
+    ; that isn't set for any type gets the example's types. Returns {Added, Linked}
+    static AddExampleCommands(commands, examples) {
+        added := 0, linked := 0
+        for example in examples {
+            if !(example.Has("Selection") && example["Selection"] != "")
+                continue
+            existing := ""
+            for command in commands
+                if (command is Map && SelectionActions._SameCommand(command, example)) {
+                    existing := command
+                    break
+                }
+            if !IsObject(existing) {
+                commands.Push(example.Clone())
+                added += 1
+            } else if !SelectionActions.CommandTypes(existing).Length {
+                existing["Selection"] := example["Selection"]
+                linked += 1
+            }
+        }
+        return {Added: added, Linked: linked}
+    }
+
+    static _SameCommand(command, example) {
+        for key in PrefsPages.CommandKeys(command)
+            for exampleKey in PrefsPages.CommandKeys(example)
+                if (key != "" && key = exampleKey)
+                    return true
+        return false
+    }
+
+    static NewType() {
+        return Map("Name", "", "Kind", "Text", "Pattern", "")
+    }
+
+    static TypeEditorFields() {
+        kinds := [["Text", I18n.T("Prefs.SelKind.Text")], ["File", I18n.T("Prefs.SelKind.File")]]
+        name := ItemEditor.Field("Name", "Prefs.Col.Name", "text", true, "", I18n.T("SelType.Field.Name"))
+        name.Check := (value, *) => SelectionActions.IsBuiltInType(Trim(value)) ? I18n.T("SelType.BuiltInName", Trim(value)) : ""
+        pattern := ItemEditor.Field("Pattern", "Prefs.Col.Pattern", "text", true, "", I18n.T("SelType.Field.Pattern"))
+        pattern.Check := (value, edited) => SelectionActions.PatternProblem(edited.Has("Kind") ? edited["Kind"] : "Text", value)
+        return [name, ItemEditor.Field("Kind", "Prefs.Col.Kind", "choice", false, kinds, I18n.T("SelType.Field.Kind")), pattern]
+    }
+
+    ; "" when the pattern can be used, else the warning: a Text type's pattern must be a valid regular expression
+    static PatternProblem(kind, pattern) {
+        if (kind = "File" || Trim(pattern) = "")
+            return ""
+        try RegExMatch("", pattern)
+        catch as err
+            return I18n.T("SelType.BadPattern", err.Message)
+        return ""
+    }
+
+    ; The text of a type's Kind in the list
+    static KindText(kind) => I18n.T((kind = "File") ? "Prefs.SelKind.File" : "Prefs.SelKind.Text")
 
     ; The panel row of a custom command for the selection, "" when the selection can't be put into its command line safely
     static _CommandAction(command, info) {

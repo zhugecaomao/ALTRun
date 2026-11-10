@@ -33,7 +33,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
-    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -77,29 +77,30 @@ class Shots {
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
-            ["prefs-snippets",   "Light", "-Preferences 10", () => Shots.Preferences()],
-            ["prefs-calculator", "Light", "-Preferences 13", () => Shots.Preferences()],
-            ["prefs-scripts",    "Light", "-Preferences 14", () => Shots.Preferences()],
+            ["prefs-selection",  "Light", "-Preferences 10", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
+            ["prefs-snippets",   "Light", "-Preferences 11", () => Shots.Preferences()],
+            ["prefs-calculator", "Light", "-Preferences 14", () => Shots.Preferences()],
+            ["prefs-scripts",    "Light", "-Preferences 15", () => Shots.Preferences()],
             ["prefs-filesearch", "Light", "-Preferences 7", () => Shots.Preferences(), () => Shots.FilesInNormalResults()],   ; Wiki: file search (files in normal results)
             ["prefs-searchsources", "Light", "-Preferences 8", () => Shots.Preferences()],   ; Wiki: file search
             ["prefs-keyboard",   "Light", "-Preferences 3", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
-            ["prefs-hotkeys",    "Light", "-Preferences 15", () => Shots.Preferences()],     ; Wiki: custom hotkeys
-            ["hotkey-editor",    "Light", "-Preferences 15", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 2)],   ; Wiki: custom hotkeys (edit window, Ctrl+Alt+F)
-            ["prefs-quickswitch", "Light", "-Preferences 16", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
-            ["prefs-dialogpanel", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
-            ["prefs-datestamp",  "Light", "-Preferences 18", () => Shots.Preferences()],     ; Wiki: date stamp
+            ["prefs-hotkeys",    "Light", "-Preferences 16", () => Shots.Preferences()],     ; Wiki: custom hotkeys
+            ["hotkey-editor",    "Light", "-Preferences 16", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 2)],   ; Wiki: custom hotkeys (edit window, Ctrl+Alt+F)
+            ["prefs-quickswitch", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
+            ["prefs-dialogpanel", "Light", "-Preferences 18", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
+            ["prefs-datestamp",  "Light", "-Preferences 19", () => Shots.Preferences()],     ; Wiki: date stamp
             ["prefs-window",     "Light", "-Preferences 2", () => Shots.Preferences()],      ; Wiki: search and shortcuts
             ["prefs-features",   "Light", "-Preferences 5", () => Shots.Preferences()],      ; Wiki: settings reference (features)
             ["prefs-applications", "Light", "-Preferences 6", () => Shots.Preferences()],    ; Wiki: automatic app index updates
-            ["prefs-clipboard",  "Light", "-Preferences 11", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
-            ["prefs-websearch",  "Light", "-Preferences 12", () => Shots.Preferences()],     ; Wiki: web search
-            ["prefs-delayedstart", "Light", "-Preferences 19", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
-            ["prefs-startupapps", "Light", "-Preferences 19", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
-            ["prefs-sync",       "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
-            ["sync-editor",      "Light", "-Preferences 20", () => Shots.SyncWindow("Edit...", "Folder Sync Task"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
-            ["sync-preview",     "Light", "-Preferences 20", () => Shots.SyncPreview(), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
-            ["prefs-usage",      "Light", "-Preferences 21", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
-            ["prefs-advanced",   "Light", "-Preferences 22", () => Shots.Preferences()],     ; Wiki: data files
+            ["prefs-clipboard",  "Light", "-Preferences 12", () => Shots.Preferences(), () => Shots.ClipboardDefault()],   ; Wiki: clipboard history
+            ["prefs-websearch",  "Light", "-Preferences 13", () => Shots.Preferences()],     ; Wiki: web search
+            ["prefs-delayedstart", "Light", "-Preferences 20", () => Shots.Preferences(), () => Shots.DelayedStartList()],   ; Wiki: delayed start
+            ["prefs-startupapps", "Light", "-Preferences 20", () => Shots.StartupApps(), () => Shots.DelayedStartList()],   ; Wiki: delayed start (startup apps)
+            ["prefs-sync",       "Light", "-Preferences 21", () => Shots.Preferences(), () => Shots.SyncTasks()],    ; Wiki: sync tasks
+            ["sync-editor",      "Light", "-Preferences 21", () => Shots.SyncWindow("Edit...", "Folder Sync Task"), () => Shots.SyncTasks()],   ; Wiki: sync tasks (edit window)
+            ["sync-preview",     "Light", "-Preferences 21", () => Shots.SyncPreview(), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
+            ["prefs-usage",      "Light", "-Preferences 22", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
+            ["prefs-advanced",   "Light", "-Preferences 23", () => Shots.Preferences()],     ; Wiki: data files
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
@@ -835,6 +836,22 @@ class Shots {
         settings["DelayedStart"] := [Map("Name", "OneDrive", "Target", "%LocalAppData%\Microsoft\OneDrive\OneDrive.exe", "Arguments", "/background", "Delay", 300, "Enabled", 1)
             , Map("Name", "Sync Tool", "Target", "C:\Tools\SyncTool\SyncTool.exe", "Arguments", "--tray", "Delay", 90, "Enabled", 1)
             , Map("Name", "Chat", "Target", "C:\Tools\Chat\Chat.exe", "Arguments", "", "Delay", 600, "Enabled", 0)]
+        FileDelete(settingsFile)
+        FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
+    }
+
+    ; Content types of a selection and commands that use them (made up), for Preferences → Selection
+    static SelectionTypes() {
+        settingsFile := Shots.AppDir "\Data\ALTRun.json"
+        settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
+        settings["SelectionTypes"] := [Map("Name", "PO", "Kind", "Text", "Pattern", "^PO\d{8}$")
+            , Map("Name", "Ticket", "Kind", "Text", "Pattern", "i)^[A-Z]{2,5}-\d+$")
+            , Map("Name", "PDF", "Kind", "File", "Pattern", "pdf")
+            , Map("Name", "Drawing", "Kind", "File", "Pattern", "dwg, dxf")]
+        for row in [["ERP Order", "https://erp.example.com/order?id={query}", "PO"], ["Warehouse Shipment", "https://wms.example.com/ship/{query}", "PO"]
+                  , ["Issue Tracker", "https://issues.example.com/browse/{query}", "Ticket"]]
+            settings["CustomCommands"].Push(Map("Title", row[1], "Type", "Url", "Target", row[2], "Arguments", "", "Keyword", "", "Selection", row[3]))
+        settings["CustomCommands"].Push(Map("Title", "PDF Tool", "Type", "File", "Target", "C:\Tools\PdfTool\PdfTool.exe", "Arguments", "", "Keyword", "", "Selection", "PDF"))
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

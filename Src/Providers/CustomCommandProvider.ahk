@@ -154,6 +154,12 @@ class CustomCommandProvider {
         return [FuzzyMatcher.Key(name), (pinyinText != name) ? FuzzyMatcher.Key(pinyinText) : ""]
     }
 
+    ; The text for {query} in a URL: encoded; right after "mailto:" an address keeps its @ (mail programs don't all decode %40 there)
+    static UrlTerm(target, term) {
+        encoded := Url.Encode(term)
+        return RegExMatch(target, "i)^mailto:\{query\}") ? StrReplace(encoded, "%40", "@") : encoded
+    }
+
     ; Target / Arguments contain {query}
     static TakesQuery(command) {
         return InStr(command["Target"], "{query}") || (command.Has("Arguments") && InStr(command["Arguments"], "{query}"))
@@ -175,7 +181,7 @@ class CustomCommandProvider {
                 extra := {Valid: false, AutoComplete: keyword " "}
             else if (term != "")
                 title .= ": " term, extra := {AutoComplete: keyword " " term}
-            target := StrReplace(target, "{query}", (commandType = "Url") ? Url.Encode(term) : term)
+            target := StrReplace(target, "{query}", (commandType = "Url") ? CustomCommandProvider.UrlTerm(target, term) : term)
             arguments := StrReplace(arguments, "{query}", term)
         }
         switch commandType, false {

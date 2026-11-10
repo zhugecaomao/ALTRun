@@ -10,7 +10,6 @@ class PrefsPages {
     static BuildGeneral() {
         PrefsForm.BeginPage("Prefs.Page.General", 120)
         PrefsForm.Pair(["General.Hotkey", "Prefs.Hotkey", "K", "hotkey"], ["General.SecondaryHotkey", "Prefs.SecondaryHotkey", "K", "hotkey"])
-        PrefsForm.Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
         sides := PrefsForm.Check("General.HotkeySides", "Prefs.HotkeySides")    ; how the hotkey boxes record, on every page: takes effect at once
         sides.OnEvent("Click", (ctrl, *) => HotkeyBox.Sides := ctrl.Value = 1)
         PrefsForm.Pair(["General.DoubleTap", "Prefs.DoubleTap", "K", "choice", ["", "Ctrl", "Shift", "LCtrl", "RCtrl", "LShift", "RShift"], [I18n.T("Prefs.DoubleTap.None"), I18n.T("Prefs.DoubleTap.Ctrl"), I18n.T("Prefs.DoubleTap.Shift")
@@ -321,6 +320,92 @@ class PrefsPages {
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)})
         PrefsForm.Note("Prefs.CommandsNote")
     }
+
+    ; Actions on selected content: the hotkey, the user's content types (a list), and a test box that shows the types and commands of a sample.
+    ; The label column is as narrow as on General, so the hotkey box is in the same place there and here
+    static BuildSelection() {
+        PrefsForm.BeginPage("Prefs.Page.Selection", 120)
+        PrefsForm.Field("General.SelectionHotkey", "Prefs.SelectionHotkey", "K", "hotkey")
+        PrefsForm.Section("Prefs.Section.ContentTypes")                     ; its description: how to use it, in three steps
+        commands := () => PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands")
+        commandList() => (commands() is Array) ? commands() : []
+        usedBy(name) {                                                      ; the commands (being edited too) that list this type
+            text := ""
+            for title in SelectionActions.CommandTitles([name], commandList())
+                text .= (text = "" ? "" : ", ") title
+            return text
+        }
+        list := PrefsForm.List("SelectionTypes", 190
+            , [["Prefs.Col.Name", "Name", 100], ["Prefs.Col.Kind", "Kind", 110, (kind) => SelectionActions.KindText(kind)]
+             , ["Prefs.Col.Pattern", "Pattern", 190], ["Prefs.Col.UsedBy", "Name", 160, usedBy]]
+            , SelectionActions.TypeEditorFields(), () => SelectionActions.NewType(), "", "", true
+            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.SelectionTypeKeys(item), After: () => PrefsPages._AddSelectionExampleCommands()})
+        PrefsForm.Note("Prefs.SelectionTypesNote")
+        ; the test box: not a setting (no "Apply"), so its controls are added here rather than through PrefsForm.Add.
+        ; A file path can be typed, dropped on the box or chosen with "..."
+        PrefsForm.Label("Prefs.SelectionTest")
+        window := PreferencesWindow.Gui
+        sample := window.Add("Edit", "x" PrefsForm.InputX() " y" PrefsForm._y " w" PrefsForm.Width("L", true) " r1 Hidden")
+        Win.SetCueBanner(sample.Hwnd, I18n.T("Prefs.SelectionTest.Cue"))
+        browse := window.Add("Button", "x+4 yp-1 w30 h" (PrefsForm.ButtonH - 2) " Hidden", "...")
+        PrefsForm._current.Controls.Push(sample, browse)
+        PrefsForm.Below(4, sample, browse)
+        PrefsForm.Desc("Prefs.SelectionTest", PrefsForm.InputX())          ; how to use the test box
+        PrefsForm._y -= 6
+        result := window.Add("Text", "x" PrefsForm.InputX() " y" PrefsForm._y " w" PrefsForm.InputW() " r2 Hidden")
+        PrefsForm._current.Controls.Push(result)
+        PrefsForm.Below(4, result)
+        update(*) {
+            types := SelectionActions.SampleTypes(sample.Value, list.Items)
+            result.Value := types.Length ? PrefsPages.SelectionTestText(types, commandList()) : ""
+        }
+        choose(*) {
+            window.Opt("+OwnDialogs")                                       ; the file dialog belongs to Preferences: it stays in front and Preferences waits for it
+            if ((chosen := FileSelect(1, , I18n.T("Prefs.SelectionTest"))) != "")   ; 1: the file must exist
+                sample.Value := chosen, update()
+        }
+        dropped(guiObj, ctrl, files, *) {
+            if (IsObject(ctrl) && ctrl.Hwnd = sample.Hwnd && files.Length)
+                sample.Value := files[1], update()
+        }
+        sample.OnEvent("Change", update)
+        browse.OnEvent("Click", choose)
+        window.OnEvent("DropFiles", dropped)
+        PrefsForm._current.OnShow := () => (list.Reload.Call(), update())   ; commands may have changed on their own page meanwhile
+        PrefsPages._selection := {List: list, Sample: sample, Result: result, Browse: browse}
+    }
+
+    ; The test result: the types (saying when none of the user's own matched) and the commands that would come first
+    static SelectionTestText(types, commands) {
+        names := ""
+        for name in types
+            names .= (names = "" ? "" : ", ") name
+        if (types.Length = 1)
+            names .= " " I18n.T("Prefs.SelectionTest.NoOwnType")
+        titles := ""
+        for title in SelectionActions.CommandTitles(types, commands)
+            titles .= (titles = "" ? "" : ", ") title
+        return I18n.T("Prefs.SelectionTest.Types", names) "`n" I18n.T("Prefs.SelectionTest.Commands", (titles = "") ? I18n.T("Prefs.SelectionTest.None") : titles)
+    }
+
+    ; "Add Examples" on the Selection page also brings the example commands for the example types into Custom Commands (being edited):
+    ; adds the missing ones, and sets the type on a command of the same name that isn't set for any type yet. Returns the line for the message
+    static _AddSelectionExampleCommands() {
+        commands := PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands")
+        if !(commands is Array)
+            return ""
+        result := SelectionActions.AddExampleCommands(commands, AppSettings._DefaultCommands())
+        if !(result.Added || result.Linked)
+            return ""
+        PreferencesWindow.MarkDirty(true)
+        if PreferencesWindow._lists.Has("CustomCommands")                  ; the Commands page is built: show them there too
+            PreferencesWindow._lists["CustomCommands"].Reload.Call()
+        return I18n.T("Prefs.SelectionExampleCommands", result.Added, result.Linked)
+    }
+
+    ; content types: the name ("Add Examples" skips a default whose name is already in the list)
+    static SelectionTypeKeys(item) => [PrefsPages._Field(item, "Name") = "" ? "" : "Name: " PrefsPages._Field(item, "Name")]
+    static _selection := ""
 
     static BuildSnippets() {
         PrefsForm.BeginPage("Prefs.Page.Snippets", 150)

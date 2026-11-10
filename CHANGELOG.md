@@ -5,6 +5,39 @@
 
 ## [未发布]
 
+## [2026.11.09.23]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内容类型的示例都配了能直接用的命令 (#434): Email → 新的默认命令 Send Email (`mailto:{query}`), IP → Ping, Coordinates (例如 `1.3521, 103.8198`) → Google Maps, Text files → Notepad, Images → Paint (取代上一版的 Ticket 和 Documents, 它们没有通用的命令)。"选中内容" 页的 "添加示例" 同时把这些命令带到自定义命令里: 没有的添加, 同名但还没设类型的设为用于这个类型, 提示里说明各有几个
+- 网址类型的自定义命令以 `mailto:{query}` 开头时, 地址里的 `@` 不再编码成 `%40`
+
+### 修复
+- "选中内容" 页测试框的 `...` 打开的文件选择窗口不是偏好设置的模态窗口, 偏好设置会盖住它; 现在它属于偏好设置, 关闭前偏好设置不能操作
+
+## [2026.11.09.22]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置左边的页面列表: 每一行高一点, 列表下面只留一点空白 (按实际的行高计算, 以前少算了 1 像素, 下面空出一截)
+- "选中内容" 页 (#434): 热键框和 "通用" 页的呼出热键在同一位置, "测试" 和热键对齐; 内容类型上面加了三步用法说明和 Wiki 链接; 测试框下面加了说明, 文件可以拖到框里或点 `...` 选择; 只匹配到内置类型时注明 "没有符合的自定义类型"
+- 新安装自带常用的内容类型: Email、IP、Ticket (例如 `ABC-123`)、Documents、Images, 默认的 "Ping" 命令用于选中的 IP 地址; 已有的设置可以在 "选中内容" 页点 "添加示例" 补上
+
+## [2026.11.09.21]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置新增 "选中内容" 页 (#434): 选中内容的热键从 "通用" 页移到这里; 内容类型可以在列表里添加、编辑、删除 (名称、种类 `文字 (正则)` / `文件 (扩展名)`、规则), 正则写错或名称和内置类型重名时保存前提醒; "使用的命令" 一列显示每个类型用在哪些自定义命令上; 下面的 **测试** 框输入一段示例文字或文件路径, 马上显示它属于哪些类型、会显示哪些命令 (用的是还没保存的设置, 不算修改)。自定义命令的 "Selection" 暂时还在 `ALTRun.json` 里写, 下一步加进命令的编辑窗口
+
 ## [2026.11.09.20]
 
 测试版。
@@ -1301,7 +1334,10 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.20...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.23...HEAD
+[2026.11.09.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.22...2026.11.09.23
+[2026.11.09.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.21...2026.11.09.22
+[2026.11.09.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.20...2026.11.09.21
 [2026.11.09.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.19...2026.11.09.20
 [2026.11.09.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.18...2026.11.09.19
 [2026.11.09.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.17...2026.11.09.18

@@ -25,7 +25,7 @@ class PreferencesWindow {
     static _lists := Map()                                                  ; setting path of a list page (e.g. "CustomCommands") -> the method that adds / edits items
     ; the order of the pages (matching PageBuilders, checked by a test); search entries like "ALTRun Preferences: Appearance" come from it without opening the window
     static PageKeys := ["Prefs.Page.General", "Prefs.Page.Window", "Prefs.Page.Keyboard", "Prefs.Page.Appearance", "Prefs.Page.Features", "Prefs.Page.Applications"
-        , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
+        , "Prefs.Page.FileSearch", "Prefs.Page.FileIndex", "Prefs.Page.Commands", "Prefs.Page.Selection", "Prefs.Page.Snippets", "Prefs.Page.Clipboard", "Prefs.Page.WebSearch"
         , "Prefs.Page.Calculator", "Prefs.Page.Scripts", "Prefs.Page.Hotkeys", "Prefs.Page.QuickSwitch", "Prefs.Page.QSPanel", "Prefs.Page.DateStamp", "Prefs.Page.DelayedStart", "Prefs.Page.Sync"
         , "Prefs.Page.Usage", "Prefs.Page.Advanced"]
     static _page := 0
@@ -73,11 +73,17 @@ class PreferencesWindow {
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
-        icons := NavIcons.ImageList(PreferencesWindow.PageKeys, PreferencesWindow.PageRowHeight())   ; the image list's height is the row height (a roomier sidebar)
+        cellH := PreferencesWindow.PageRowHeight()
+        icons := NavIcons.ImageList(PreferencesWindow.PageKeys, cellH)   ; the image list's height is the row height (a roomier sidebar)
         if icons
             pageList.SetImageList(icons, 1)
         for index, name in names
             pageList.Add("Icon" index, name)
+        if icons && (taller := PreferencesWindow._SpareRowHeight(pageList)) > 0 {   ; the rows fill the list, leaving only a few pixels below the last one
+            old := pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, cellH + taller), 1)
+            if old
+                DllCall("comctl32\ImageList_Destroy", "Ptr", old)
+        }
         pageList.ModifyCol(1, "AutoHdr")                                    ; the only column fills the list width (a column narrower than the list would add a column separator on the right)
         DllCall("uxtheme\SetWindowTheme", "Ptr", pageList.Hwnd, "Str", "Explorer", "Ptr", 0)   ; the same hover / selection look as Explorer
         pageList.OnNotify(-101, (ctrl, lParam) => PreferencesWindow._OnPageRow(lParam))   ; LVN_ITEMCHANGED (the ItemSelect event sometimes doesn't arrive)
@@ -124,9 +130,23 @@ class PreferencesWindow {
 
     ; The selected row is shown by its highlight only, without a dotted focus rectangle (like the navigation in Windows Settings). Windows decides whether to show focus rectangles
     ; by "whether the keyboard was used recently", so the first time Preferences opens the dots sometimes show and sometimes don't; CDIS_FOCUS is removed before each row is drawn
-    ; The icon cell height of the page list: 26 (a roomy sidebar), less when all pages wouldn't fit without scrolling
-    ; (a row is the cell plus 2; the list is ButtonY - 24 high with a 2 px border)
+    ; The icon cell height of the page list to start with: 26 (a roomy sidebar), less when all pages wouldn't fit without scrolling
+    ; (a row is about the cell plus 2; the list is ButtonY - 24 high with a 2 px border). _SpareRowHeight then measures the real rows
     static PageRowHeight() => Min(26, (PrefsForm.ButtonY - 24 - 4) // PreferencesWindow.PageKeys.Length - 2)
+
+    ; How much taller (at 96 DPI) each row of the page list can be so that all rows still fit: the list's client height divided by the rows,
+    ; minus the real row height (LVM_GETITEMRECT; Windows adds 1 or 2 pixels to the icon cell depending on the version and theme)
+    static _SpareRowHeight(pageList) {
+        rect := Buffer(16, 0)
+        NumPut("Int", 0, rect, 0)                                           ; LVIR_BOUNDS
+        if !SendMessage(0x100E, 0, rect, pageList)                          ; LVM_GETITEMRECT, row 0
+            return 0
+        rowH := NumGet(rect, 12, "Int") - NumGet(rect, 4, "Int")
+        client := Buffer(16, 0)
+        DllCall("GetClientRect", "Ptr", pageList.Hwnd, "Ptr", client)
+        target := NumGet(client, 12, "Int") // pageList.GetCount()
+        return (rowH > 0 && target > rowH) ? (target - rowH) * 96 // A_ScreenDPI : 0
+    }
 
     static _OnPageListDraw(lParam) {
         stage := NumGet(lParam, 3 * A_PtrSize, "UInt")                      ; NMCUSTOMDRAW.dwDrawStage
@@ -170,6 +190,9 @@ class PreferencesWindow {
         hwnd := PreferencesWindow.Gui.Hwnd
         previous := PreferencesWindow._page
         PreferencesWindow._page := pageIndex
+        shown := PreferencesWindow.Pages[pageIndex]
+        if (shown.HasOwnProp("OnShow") && IsObject(shown.OnShow))           ; a page that shows what other pages changed (Selection: the commands of each type)
+            shown.OnShow.Call()
         for index, page in PreferencesWindow.Pages {
             if (index = pageIndex || index = previous || previous = 0)      ; right after building, every page has to be hidden once
                 for ctrl in page.Controls
@@ -264,7 +287,7 @@ class PreferencesWindow {
     static WikiPage(nameKey) {
         static pages := Map("Prefs.Page.General", "Configuration", "Prefs.Page.Window", "Usage", "Prefs.Page.Keyboard", "Hotkeys", "Prefs.Page.Appearance", "Themes"
                           , "Prefs.Page.Features", "Usage", "Prefs.Page.Applications", "Configuration", "Prefs.Page.FileSearch", "File-Search"
-                          , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Commands", "Custom-Commands", "Prefs.Page.Snippets", "Snippets"
+                          , "Prefs.Page.FileIndex", "File-Search", "Prefs.Page.Commands", "Custom-Commands", "Prefs.Page.Selection", "Usage", "Prefs.Page.Snippets", "Snippets"
                           , "Prefs.Page.Clipboard", "Clipboard", "Prefs.Page.WebSearch", "Web-Search", "Prefs.Page.Calculator", "Calculator"
                           , "Prefs.Page.Scripts", "Scripts", "Prefs.Page.Hotkeys", "Hotkeys", "Prefs.Page.DelayedStart", "Delayed-Start", "Prefs.Page.Sync", "Sync-Tasks", "Prefs.Page.QuickSwitch", "Quick-Switch"
                           , "Prefs.Page.QSPanel", "Quick-Switch-Panel", "Prefs.Page.DateStamp", "Date-Stamp", "Prefs.Page.Usage", "Usage")
@@ -363,7 +386,7 @@ class PreferencesWindow {
     ;---------------------------------------------------------------------------
     ; how each page is built, one per PageKeys entry
     static PageBuilders := ["BuildGeneral", "BuildWindow", "BuildKeyboard", "BuildAppearance", "BuildFeatures", "BuildApplications"
-        , "BuildFileSearch", "BuildFileIndex", "BuildCommands", "BuildSnippets", "BuildClipboard", "BuildWebSearch"
+        , "BuildFileSearch", "BuildFileIndex", "BuildCommands", "BuildSelection", "BuildSnippets", "BuildClipboard", "BuildWebSearch"
         , "BuildCalculator", "BuildScripts", "BuildHotkeys", "BuildQuickSwitch", "BuildQuickSwitchPanel", "BuildDateStamp", "BuildDelayedStart", "BuildSync"
         , "BuildUsage", "BuildAdvanced"]
     static _helpButton := ""
