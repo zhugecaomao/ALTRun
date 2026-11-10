@@ -242,6 +242,38 @@ class SelectionActions {
         return SelectionActions.Classify({Text: text}, userTypes).Types
     }
 
+    ; The example commands (defaults with "Selection") into commands: a missing one is added (a copy); one with the same title or keyword
+    ; that isn't set for any type gets the example's types. Returns {Added, Linked}
+    static AddExampleCommands(commands, examples) {
+        added := 0, linked := 0
+        for example in examples {
+            if !(example.Has("Selection") && example["Selection"] != "")
+                continue
+            existing := ""
+            for command in commands
+                if (command is Map && SelectionActions._SameCommand(command, example)) {
+                    existing := command
+                    break
+                }
+            if !IsObject(existing) {
+                commands.Push(example.Clone())
+                added += 1
+            } else if !SelectionActions.CommandTypes(existing).Length {
+                existing["Selection"] := example["Selection"]
+                linked += 1
+            }
+        }
+        return {Added: added, Linked: linked}
+    }
+
+    static _SameCommand(command, example) {
+        for key in PrefsPages.CommandKeys(command)
+            for exampleKey in PrefsPages.CommandKeys(example)
+                if (key != "" && key = exampleKey)
+                    return true
+        return false
+    }
+
     static NewType() {
         return Map("Name", "", "Kind", "Text", "Pattern", "")
     }

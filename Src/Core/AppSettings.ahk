@@ -561,9 +561,9 @@ class AppSettings {
         commands := []
         for row in [
             ; file / program: runs the program or opens the file; Arguments are passed along
-            ["Notepad"             , "File"   , "notepad.exe"            , ""                                       , "np"],
+            ["Notepad"             , "File"   , "notepad.exe"            , ""                                       , "np", "Text files"],   ; also opens a selected text file
             ["Edit hosts file"     , "File"   , "notepad.exe"            , "C:\Windows\System32\drivers\etc\hosts"  , "hosts"],
-            ["Paint"               , "File"   , "mspaint.exe"            , ""                                       , ""],
+            ["Paint"               , "File"   , "mspaint.exe"            , ""                                       , "", "Images"],         ; also opens a selected image
             ; folder: opens in the file manager; built-in variables such as A_Desktop or environment variables such as %UserProfile% work
             ["Desktop"             , "Folder" , "A_Desktop"              , ""                                       , ""],
             ["Downloads"           , "Folder" , "%UserProfile%\Downloads", ""                                       , "dl"],
@@ -574,7 +574,8 @@ class AppSettings {
             ["Ping"                , "Command", "cmd.exe"                , "/k ping {query}"                        , "ping", "IP"],   ; {query}: "ping 10.0.0.1"; also for a selected IP address
             ; URL: a web page, or a system link such as ms-settings:
             ["ALTRun on GitHub"    , "Url"    , "https://github.com/zhugecaomao/ALTRun", ""                     , "altrun"],
-            ["Google Maps"         , "Url"    , "https://www.google.com/maps/search/{query}", ""                 , "maps"],     ; {query}: "maps Changi Airport"
+            ["Google Maps"         , "Url"    , "https://www.google.com/maps/search/{query}", ""                 , "maps", "Coordinates"],   ; {query}: "maps Changi Airport"; also selected coordinates
+            ["Send Email"          , "Url"    , "mailto:{query}"         , ""                                       , "mail", "Email"],      ; a new email to a selected address
             ["Windows Update"      , "Url"    , "ms-settings:windowsupdate", ""                                  , ""]
         ]
         {
@@ -591,11 +592,11 @@ class AppSettings {
     static _DefaultSelectionTypes() {
         types := []
         for row in [
-            ["Email"    , "Text", "^[\w.+-]+@[\w-]+(\.[\w-]+)+$"],
-            ["IP"       , "Text", "^(\d{1,3}\.){3}\d{1,3}$"],
-            ["Ticket"   , "Text", "^[A-Z][A-Z0-9]{1,9}-\d+$"],                 ; issue keys such as ABC-123
-            ["Documents", "File", "pdf, doc, docx, xls, xlsx, ppt, pptx"],
-            ["Images"   , "File", "jpg, jpeg, png, gif, bmp, webp"]
+            ["Email"      , "Text", "^[\w.+-]+@[\w-]+(\.[\w-]+)+$"],                ; the default "Send Email" is for it
+            ["IP"         , "Text", "^(\d{1,3}\.){3}\d{1,3}$"],                     ; "Ping"
+            ["Coordinates", "Text", "^-?\d{1,2}\.\d+,\s*-?\d{1,3}\.\d+$"],         ; "Google Maps", e.g. 1.3521, 103.8198
+            ["Text files" , "File", "txt, log, ini, csv, json, md, xml"],         ; "Notepad"
+            ["Images"     , "File", "jpg, jpeg, png, gif, bmp, webp"]               ; "Paint"
         ]
             types.Push(Map("Name", row[1], "Kind", row[2], "Pattern", row[3]))
         return types

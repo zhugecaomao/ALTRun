@@ -339,7 +339,7 @@ class PrefsPages {
             , [["Prefs.Col.Name", "Name", 100], ["Prefs.Col.Kind", "Kind", 110, (kind) => SelectionActions.KindText(kind)]
              , ["Prefs.Col.Pattern", "Pattern", 190], ["Prefs.Col.UsedBy", "Name", 160, usedBy]]
             , SelectionActions.TypeEditorFields(), () => SelectionActions.NewType(), "", "", true
-            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.SelectionTypeKeys(item)})
+            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.SelectionTypeKeys(item), After: () => PrefsPages._AddSelectionExampleCommands()})
         PrefsForm.Note("Prefs.SelectionTypesNote")
         ; the test box: not a setting (no "Apply"), so its controls are added here rather than through PrefsForm.Add.
         ; A file path can be typed, dropped on the box or chosen with "..."
@@ -360,6 +360,7 @@ class PrefsPages {
             result.Value := types.Length ? PrefsPages.SelectionTestText(types, commandList()) : ""
         }
         choose(*) {
+            window.Opt("+OwnDialogs")                                       ; the file dialog belongs to Preferences: it stays in front and Preferences waits for it
             if ((chosen := FileSelect(1, , I18n.T("Prefs.SelectionTest"))) != "")   ; 1: the file must exist
                 sample.Value := chosen, update()
         }
@@ -385,6 +386,21 @@ class PrefsPages {
         for title in SelectionActions.CommandTitles(types, commands)
             titles .= (titles = "" ? "" : ", ") title
         return I18n.T("Prefs.SelectionTest.Types", names) "`n" I18n.T("Prefs.SelectionTest.Commands", (titles = "") ? I18n.T("Prefs.SelectionTest.None") : titles)
+    }
+
+    ; "Add Examples" on the Selection page also brings the example commands for the example types into Custom Commands (being edited):
+    ; adds the missing ones, and sets the type on a command of the same name that isn't set for any type yet. Returns the line for the message
+    static _AddSelectionExampleCommands() {
+        commands := PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands")
+        if !(commands is Array)
+            return ""
+        result := SelectionActions.AddExampleCommands(commands, AppSettings._DefaultCommands())
+        if !(result.Added || result.Linked)
+            return ""
+        PreferencesWindow.MarkDirty(true)
+        if PreferencesWindow._lists.Has("CustomCommands")                  ; the Commands page is built: show them there too
+            PreferencesWindow._lists["CustomCommands"].Reload.Call()
+        return I18n.T("Prefs.SelectionExampleCommands", result.Added, result.Linked)
     }
 
     ; content types: the name ("Add Examples" skips a default whose name is already in the list)

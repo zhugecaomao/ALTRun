@@ -2209,13 +2209,35 @@ class ExtensionTests {
             allValid := allValid && SelectionActions.PatternProblem(each["Kind"], each["Pattern"]) = "" && !SelectionActions.IsBuiltInType(each["Name"])
         eq("defaults: valid patterns", allValid, true)
         eq("defaults: types", joined(SelectionActions.SampleTypes("192.168.1.10", defaultTypes)) "/" joined(SelectionActions.SampleTypes("me@example.com", defaultTypes))
-            "/" joined(SelectionActions.SampleTypes("ABC-123", defaultTypes)) "/" joined(SelectionActions.SampleTypes("C:\a\b.XLSX", defaultTypes))
-            "/" joined(SelectionActions.SampleTypes("C:\a\b.webp", defaultTypes)), "Text|IP/Text|Email/Text|Ticket/File|Documents/File|Images")
-        ping := ""
-        for command in AppSettings._DefaultCommands()
-            if (command["Title"] = "Ping")
-                ping := command
-        eq("defaults: Ping for an IP address", SelectionActions.CommandTitles(["Text", "IP"], [ping]).Length, 1)
+            "/" joined(SelectionActions.SampleTypes("1.3521, 103.8198", defaultTypes)) "/" joined(SelectionActions.SampleTypes("C:\a\b.LOG", defaultTypes))
+            "/" joined(SelectionActions.SampleTypes("C:\a\b.webp", defaultTypes)), "Text|IP/Text|Email/Text|Coordinates/File|Text files/File|Images")
+        ; every example type has an example command that works with it (#434: the examples can be used as they are)
+        defaultCommands := AppSettings._DefaultCommands()
+        for each in defaultTypes {
+            titles := SelectionActions.CommandTitles([each["Name"]], defaultCommands)
+            eq("defaults: a command for " each["Name"], titles.Length, 1)
+        }
+        sample(text, files := "") {                                         ; the first row of the panel with the default types and commands
+            savedTypes2 := AppSettings.Data["SelectionTypes"], savedCommands2 := AppSettings.Data["CustomCommands"]
+            AppSettings.Data["SelectionTypes"] := defaultTypes, AppSettings.Data["CustomCommands"] := defaultCommands
+            try lead := SelectionActions.ItemFor(IsObject(files) ? {Files: files} : {Text: text}).LeadActions
+            finally AppSettings.Data["SelectionTypes"] := savedTypes2, AppSettings.Data["CustomCommands"] := savedCommands2
+            return lead.Length ? lead[1].Title "|" lead[1].Arg "|" lead[1].Arguments : ""
+        }
+        eq("example: email", sample("me@example.com"), "Send Email|mailto:me@example.com|")
+        eq("example: ip", sample("10.0.0.1"), "Ping|cmd.exe|/k ping 10.0.0.1")
+        eq("example: coordinates", sample("1.3521, 103.8198"), "Google Maps|https://www.google.com/maps/search/1.3521%2C%20103.8198|")
+        eq("example: text file", sample("", ["C:\Logs\app.log"]), 'Notepad|notepad.exe|"C:\Logs\app.log"')
+        eq("example: image", sample("", ["C:\Pics\a.png"]), 'Paint|mspaint.exe|"C:\Pics\a.png"')
+        ; "Add Examples" on the Selection page brings the example commands along
+        mine := [Map("Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping -t {query}", "Keyword", "")   ; mine, not set for a type
+               , Map("Title", "notepad", "Type", "File", "Target", "C:\Tools\np++.exe", "Arguments", "", "Keyword", "", "Selection", "Code")]   ; mine, already set
+        result := SelectionActions.AddExampleCommands(mine, defaultCommands)
+        eq("examples: added / linked", result.Added "|" result.Linked, "3|1")
+        eq("examples: mine linked, kept", mine[1]["Selection"] "|" mine[1]["Arguments"], "IP|/k ping -t {query}")
+        eq("examples: set ones untouched", mine[2]["Selection"], "Code")
+        eq("examples: again none", SelectionActions.AddExampleCommands(mine, defaultCommands).Added, 0)
+        eq("mailto keeps @", CustomCommandProvider.UrlTerm("mailto:{query}", "a.b@c.com") "|" CustomCommandProvider.UrlTerm("https://x/?q={query}", "a@b"), "a.b@c.com|a%40b")
         eq("kept on reset", AppSettings.ResetData(Map("SelectionTypes", [Map("Name", "X", "Kind", "Text", "Pattern", "x")]))["SelectionTypes"].Length, 1)
     }
 }

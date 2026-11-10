@@ -645,6 +645,7 @@
   "Prefs.SelKind.Text": "文字 (正则)",
   "Prefs.SelKind.File": "文件 (扩展名)",
   "Prefs.SelectionTypesNote": "双击编辑。内置类型不用添加: Text (任何文字)、Url、File、Folder、Files (多个文件)。",
+  "Prefs.SelectionExampleCommands": "自定义命令: 添加了 {1} 个示例命令, {2} 个已有的命令设为用于对应的类型。",
   "Prefs.SelectionTest": "测试",
   "Prefs.SelectionTest.Desc": "输入或粘贴一段示例文字; 文件可以输入路径、拖到框里或点 ... 选择。显示它属于哪些类型、哪些命令会排在最前面 (用上面还没保存的列表)。",
   "Prefs.SelectionTest.Cue": "输入或粘贴一段示例文字或文件路径",

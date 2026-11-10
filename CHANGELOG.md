@@ -5,6 +5,19 @@
 
 ## [未发布]
 
+## [2026.11.09.23]
+
+测试版。
+
+Test build.
+
+### 改进
+- 内容类型的示例都配了能直接用的命令 (#434): Email → 新的默认命令 Send Email (`mailto:{query}`), IP → Ping, Coordinates (例如 `1.3521, 103.8198`) → Google Maps, Text files → Notepad, Images → Paint (取代上一版的 Ticket 和 Documents, 它们没有通用的命令)。"选中内容" 页的 "添加示例" 同时把这些命令带到自定义命令里: 没有的添加, 同名但还没设类型的设为用于这个类型, 提示里说明各有几个
+- 网址类型的自定义命令以 `mailto:{query}` 开头时, 地址里的 `@` 不再编码成 `%40`
+
+### 修复
+- "选中内容" 页测试框的 `...` 打开的文件选择窗口不是偏好设置的模态窗口, 偏好设置会盖住它; 现在它属于偏好设置, 关闭前偏好设置不能操作
+
 ## [2026.11.09.22]
 
 测试版。
@@ -1321,7 +1334,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.22...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.23...HEAD
+[2026.11.09.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.22...2026.11.09.23
 [2026.11.09.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.21...2026.11.09.22
 [2026.11.09.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.20...2026.11.09.21
 [2026.11.09.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.19...2026.11.09.20

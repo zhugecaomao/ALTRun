@@ -615,6 +615,7 @@ class I18n {
         s["Prefs.SelKind.Text"]         := "Text (regex)"
         s["Prefs.SelKind.File"]         := "File (extensions)"
         s["Prefs.SelectionTypesNote"]   := "Double-click to edit. Built-in types need no entry: Text (any text), Url, File, Folder, Files (several)."
+        s["Prefs.SelectionExampleCommands"] := "Custom Commands: added {1} example commands, set {2} existing ones for their types."
         s["Prefs.SelectionTest"]        := "Test"
         s["Prefs.SelectionTest.Desc"]   := "Type or paste a sample text. For a file, type its path, drop it on the box or choose it with ... Shows its types and the commands that would come first, using the list above before saving."
         s["Prefs.SelectionTest.Cue"]    := "Type or paste a sample text or file path"

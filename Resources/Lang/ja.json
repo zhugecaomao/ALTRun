@@ -645,6 +645,7 @@
   "Prefs.SelKind.Text": "テキスト (正規表現)",
   "Prefs.SelKind.File": "ファイル (拡張子)",
   "Prefs.SelectionTypesNote": "ダブルクリックで編集します。組み込みの種類は追加不要です: Text (すべてのテキスト)、Url、File、Folder、Files (複数)。",
+  "Prefs.SelectionExampleCommands": "カスタムコマンド: 例のコマンドを {1} 件追加し、既存の {2} 件を対応する種類に割り当てました。",
   "Prefs.SelectionTest": "テスト",
   "Prefs.SelectionTest.Desc": "サンプルのテキストを入力するか貼り付けます。ファイルはパスを入力するか、ボックスにドロップするか、... で選びます。種類と先頭に表示されるコマンドを表示します (保存前の上の一覧を使います)。",
   "Prefs.SelectionTest.Cue": "サンプルのテキストかファイルパスを入力",

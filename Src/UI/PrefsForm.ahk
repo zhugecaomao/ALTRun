@@ -493,7 +493,8 @@ class PrefsForm {
     ; When given there is a "Check paths" command, with the results in a "Status" column (the items themselves have no such key)
     ; The filter box right of the buttons: only items containing all the typed words (searched in every column's text, case-insensitive).
     ; withFilter: false leaves it out, for a short list whose own buttons need the row (Folder Sync)
-    ; examples: optional {Label, Keys: (item) => [...]}: a button that adds the default items (AppSettings.Defaults() at path) missing from the list.
+    ; examples: optional {Label, Keys: (item) => [...], After: () => ""}: a button that adds the default items (AppSettings.Defaults() at path) missing from the list;
+    ; After (optional) runs next, e.g. to add what belongs with them elsewhere, and returns a line for the message ("" = nothing more).
     ; Keys gives the texts that identify an item (compared case-insensitively); a default sharing any of them with an item in the list is skipped
     ; menu: optional, the page's own commands [{Label, Click: (list, button) => ...}] for the "More" menu.
     ; Check paths, menu and examples share one button: shown as it is when there is just one of them, else a "More" drop-down button (MenuButton)
@@ -629,6 +630,9 @@ class PrefsForm {
 
         AddExamples(*) {                                                    ; the default items not yet in the list, then how many were added / skipped
             result := PrefsForm.AddMissing(items, PreferencesWindow.GetPath(AppSettings.Defaults(), path), examples.Keys)
+            more := examples.HasOwnProp("After") ? examples.After.Call() : ""   ; the page's own follow-up (Selection: the example commands), "" or a line for the message
+            if (more != "" && !result.Added)
+                Refresh(listView.GetNext())
             if result.Added {
                 PreferencesWindow.MarkDirty(true)
                 Loop result.Added
@@ -637,7 +641,7 @@ class PrefsForm {
                     filterBox.Value := ""
                 Refresh(items.Length - result.Added + 1)
             }
-            MsgBox(I18n.T(result.Added ? "Prefs.ExamplesAdded" : "Prefs.ExamplesNone", result.Added, result.Skipped), pageName, "Iconi Owner" PreferencesWindow.Gui.Hwnd)
+            MsgBox(I18n.T(result.Added ? "Prefs.ExamplesAdded" : "Prefs.ExamplesNone", result.Added, result.Skipped) (more != "" ? "`n`n" more : ""), pageName, "Iconi Owner" PreferencesWindow.Gui.Hwnd)
         }
 
         listView.OnEvent("DoubleClick", EditItem)

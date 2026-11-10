@@ -646,6 +646,7 @@
   "Prefs.SelKind.Text": "文字 (規則運算式)",
   "Prefs.SelKind.File": "檔案 (副檔名)",
   "Prefs.SelectionTypesNote": "按兩下編輯。內建類型不用新增: Text (任何文字)、Url、File、Folder、Files (多個檔案)。",
+  "Prefs.SelectionExampleCommands": "自訂指令: 新增了 {1} 個範例指令, {2} 個已有的指令設為用於對應的類型。",
   "Prefs.SelectionTest": "測試",
   "Prefs.SelectionTest.Desc": "輸入或貼上一段範例文字; 檔案可以輸入路徑、拖到框裡或按 ... 選擇。顯示它屬於哪些類型、哪些指令會排在最前面 (用上面還沒儲存的清單)。",
   "Prefs.SelectionTest.Cue": "輸入或貼上一段範例文字或檔案路徑",
