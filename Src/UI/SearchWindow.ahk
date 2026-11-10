@@ -443,6 +443,8 @@ class SearchWindow {
         if SearchWindow.IsVisible() {
             if Logger.Enabled
                 Logger.Debug("SearchWindow: hide" (reason != "" ? " (" reason ")" : ""))
+            if (reason = "run")
+                SearchWindow._AllowForeground()
             try {                                                           ; a notice right after hiding (e.g. "Pinned") shows on the same screen, see Hud
                 WinGetPos(&x, &y, &w, &h, "ahk_id " SearchWindow.Gui.Hwnd)
                 SearchWindow.LastArea := Win.WorkAreaAt(x + w // 2, y + SearchWindow.InputHeight // 2), SearchWindow.HiddenAt := A_TickCount
@@ -457,6 +459,12 @@ class SearchWindow {
         }
         LargeType.Close()
     }
+
+    ; "run": the program started next may bring a window that is already open to the front (starting a single-instance program again hands over to
+    ; the running one, which then asks for the focus). Windows only allows that while the starter is the foreground window, and ALTRun hides first,
+    ; so the taskbar button only flashed (AutoHotkey forum, 2026-11: works from the Start menu, not from ALTRun). Allowed here while the search
+    ; window is still in the foreground (ASFW_ANY: whichever process asks first)
+    static _AllowForeground() => DllCall("AllowSetForegroundWindow", "UInt", 0xFFFFFFFF)   ; ASFW_ANY
 
     ; After hiding, prepare the next showing in the background: the empty search box and its results (pinned, recently opened items, the new version notice).
     ; Showing then needs no search first: it shows and takes focus at once, so typing can start right after the hotkey; it searches again after showing (_RefreshShown) and swaps in only if something changed.
@@ -1145,7 +1153,7 @@ class SearchWindow {
         RecentProvider.Remember(item)
         Usage.CountItem(item)
         SearchWindow.Session.SavedQuery := SearchWindow.Input.Value
-        SearchWindow.Hide()
+        SearchWindow.Hide("run")
         SearchWindow._SafeRun(() => action.OnRun.Call(item))
     }
 
@@ -1200,7 +1208,7 @@ class SearchWindow {
         item := SearchWindow.SelectedItem()
         if !(IsObject(item) && item.Kind = "file" && IsObject(ActionCatalog.EditorFor(item.Arg)))
             return
-        SearchWindow.Hide()
+        SearchWindow.Hide("run")
         SearchWindow._SafeRun(() => ActionCatalog.EditFile(item.Arg))
     }
 
