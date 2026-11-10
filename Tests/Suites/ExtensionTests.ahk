@@ -437,6 +437,30 @@ class ExtensionTests {
     }
 
     ; Running sync tasks (SyncJobs) and the search results (SyncProvider); robocopy itself only on Windows (Wine's is a stub)
+    ; A task opened from Preferences (Folder Sync → Sync...) is a copy of the saved one: it is not a duplicate of itself, so Preview
+    ; and Sync Now run (the copy used to be refused as "a duplicate name", and the screenshot of the preview came out empty)
+    static SyncTaskCopyNotDuplicate() {
+        eq := (n, a, e) => TestRunner.Equal("SyncTaskCopyNotDuplicate." n, a, e)
+        saved := AppSettings.Data["SyncTasks"]
+        root := A_Temp "\ALTRun-dup-test"
+        DirCreate(root "\src"), DirCreate(root "\dst")
+        task := (name, dst) => Map("Name", name, "Source", root "\src", "Destination", root "\" dst, "Files", "*.*", "Mode", "Update"
+            , "Copy", "DAT", "DirCopy", "DA", "Retries", 1, "Wait", 1, "Threads", 8, "Monitor", 0, "LogFile", "", "Extra", "")
+        try {
+            projects := task("Projects", "dst"), other := task("Templates", "dst2")
+            AppSettings.Data["SyncTasks"] := [projects, other]
+            eq("the saved task itself", SyncJobs._Problem(projects, true), "")
+            eq("a copy of it (Preferences)", SyncJobs._Problem(ItemEditor.WithDefaults(projects, RoboSync.NewTask()), true), "")
+            eq("a copy, to run", SyncJobs._Problem(projects.Clone(), false), "")
+            AppSettings.Data["SyncTasks"] := [projects, task("projects", "dst3")]                 ; two saved tasks share the name (any case)
+            eq("a real duplicate: the task", SyncJobs._Problem(projects, true), "DuplicateName")
+            eq("a real duplicate: a copy", SyncJobs._Problem(projects.Clone(), true), "DuplicateName")
+        } finally {
+            AppSettings.Data["SyncTasks"] := saved
+            try DirDelete(root, true)
+        }
+    }
+
     static SyncJobs() {
         eq := (n, a, e) => TestRunner.Equal("SyncJobs." n, a, e)
         ; The summary at the end of a run: English and other languages (rows found by their numbers), the last run of an appended log

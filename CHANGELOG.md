@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.26]
+
+测试版。
+
+Test build.
+
+### 修复
+- 从 偏好设置 → 文件夹同步 → "同步..." 打开的同步窗口, 点 "预览" 或 "立即同步" 会提示任务名重复而不运行 (2026.11.09.5 起): 这个窗口用的是任务的副本, 检查重名时被当成了另一个同名任务。现在副本对应的那个已保存任务不算重名; 真有两个同名任务时仍然提示。从搜索窗口打开的同步窗口不受影响
+
 ## [2026.11.09.25]
 
 测试版。
@@ -1352,7 +1361,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.25...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.26...HEAD
+[2026.11.09.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.25...2026.11.09.26
 [2026.11.09.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.24...2026.11.09.25
 [2026.11.09.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.23...2026.11.09.24
 [2026.11.09.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.22...2026.11.09.23

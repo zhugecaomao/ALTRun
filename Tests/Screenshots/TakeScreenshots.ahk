@@ -934,7 +934,20 @@ class Shots {
         if !preview
             throw Error("sync window: Preview button not found")
         PostMessage(0xF5, 0, 0, preview)                                    ; BM_CLICK
-        Sleep(3000)                                                         ; robocopy /L of the sample folders, then the list
+        list := 0                                                           ; robocopy /L of the sample folders, then the list: wait for its rows
+        for ctrl in WinGetControlsHwnd(window)
+            if (WinGetClass(ctrl) = "SysListView32")
+                list := ctrl
+        Loop 60 {
+            Sleep(250)
+            if (list && SendMessage(0x1004, 0, 0, list) > 0)                 ; LVM_GETITEMCOUNT
+                break
+        }
+        if !(list && SendMessage(0x1004, 0, 0, list) > 0) {                 ; no rows: don't save an empty preview (a message box may say why)
+            Shots.Diagnose(window)
+            throw Error("sync preview: no changes listed after 15 s")
+        }
+        Sleep(500)
         return window
     }
 

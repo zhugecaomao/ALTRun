@@ -128,10 +128,30 @@ class SyncJobs {
     }
 
     ; A reason not to run (a problem code), "" when it may run. A preview changes nothing: only the settings' errors stop it
+    ; The saved tasks other than this one. The task may be a copy (Preferences → Folder Sync → Sync... opens a copy of the saved
+    ; task): then the first saved task of the same name is the one it stands for and is left out, so a copy isn't taken for
+    ; a duplicate of itself, while two saved tasks that share a name still are
+    static _Others(task) {
+        others := [], same := false
+        for item in RoboSync.Items
+            same := same || (item = task)
+        name := StrLower(Trim(task.Has("Name") ? task["Name"] : ""))
+        for item in RoboSync.Items {
+            if (item = task)
+                continue
+            if (!same && name != "" && item is Map && StrLower(Trim(item.Has("Name") ? item["Name"] : "")) = name) {
+                same := true                                                ; the saved task this copy stands for
+                continue
+            }
+            others.Push(item)
+        }
+        return others
+    }
+
     static _Problem(task, preview) {
         if SyncJobs.IsRunning(task["Name"])
             return "Running"
-        for problem in RoboSync.Check(task, RoboSync.Items)                  ; with the other tasks: a duplicate name (see RoboSync.Check)
+        for problem in RoboSync.Check(task, SyncJobs._Others(task))          ; with the other tasks: a duplicate name (see RoboSync.Check)
             if (problem.Level = "Error")
                 return problem.Code
         if (!preview && task["Mode"] = "Mirror")
