@@ -77,7 +77,7 @@ class Shots {
             ["prefs-general",    "Light", "-Preferences 1", () => Shots.Preferences()],
             ["prefs-appearance", "Light", "-Preferences 4", () => Shots.Preferences()],
             ["prefs-commands",   "Light", "-Preferences 9", () => Shots.Preferences()],
-            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 8)],   ; Wiki: custom commands (edit window; row 8 is Ping, set for IP addresses, in the screenshots' command list: row 9 showed the command after it)
+            ["command-editor",   "Light", "-Preferences 9", () => Shots.SyncWindow("Edit...", "Custom Commands", 7), () => Shots.SelectionTypes()],   ; Wiki: custom commands (edit window of "ERP Order", the first command SelectionTypes adds after the 6 demo ones, set for PO)
             ["prefs-selection",  "Light", "-Preferences 10", () => Shots.Preferences(), () => Shots.SelectionTypes()],   ; Wiki: actions on selected content
             ["prefs-snippets",   "Light", "-Preferences 11", () => Shots.Preferences()],
             ["prefs-calculator", "Light", "-Preferences 14", () => Shots.Preferences()],
