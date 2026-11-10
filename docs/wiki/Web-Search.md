@@ -25,7 +25,7 @@ Type "keyword search terms" to search a website, for example `g autohotkey hotke
 - Select text in any program and press `Ctrl+Alt+\`: the action panel can search the selection on every site, see [Actions on selected content](Usage#actions-on-selected-content)
 
 ## Adding and editing
-Preferences → Web Search: double-click an engine in the list to edit it, or click "Add". Each engine has these fields:
+Preferences → Web Search: double-click an engine in the list to edit it, or click "Add". **Add Built-ins** puts back the built-in engines you deleted (an engine with the same Id or keyword counts as already there) and tells you how many were added and skipped; saved when you press OK / Apply. Each engine has these fields:
 
 ![Preferences → Web Search](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-websearch.png)
 

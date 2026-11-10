@@ -17,7 +17,7 @@
 - `Ctrl+Alt+T`: 在资源管理器 (`ahk_class CabinetWClass`) 里, 在当前文件夹打开终端
 - `Ctrl+R`: 在 ALTRun 搜索窗口 (`ALTRun`) 里重建索引
 
-可以随意删除或修改; 已有的设置保留自己的列表。想直达别的范围, 自己加一个 `Show` 热键, 搜索功能前缀填平时会输入的前缀, 例如 `pic ` (图片)。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage-zh#快捷键)。
+可以随意删除或修改; 已有的设置保留自己的列表。列表下面的 **添加示例** 只补上还没有的示例 (键和窗口都相同的算已有), 并提示添加了几个、跳过了几个; 点 "确定" / "应用" 后保存。想直达别的范围, 自己加一个 `Show` 热键, 搜索功能前缀填平时会输入的前缀, 例如 `pic ` (图片)。搜索窗口里的 `F1` ~ `F4` 是内置的, 见 [使用方法](Usage-zh#快捷键)。
 
 ![偏好设置 → 自定义热键](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 

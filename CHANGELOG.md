@@ -5,7 +5,17 @@
 
 ## [未发布]
 
-## [2026.11.09.15]
+## [2026.11.09.16]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置的自定义热键、自定义命令、文字片段、网页搜索四个列表可以 **添加示例**: 只补上列表里还没有的默认条目 (删掉过的示例、老设置里没有的新示例), 跳过已有的, 然后提示 "添加了 N 条, 跳过了 M 条"; 点 "确定" / "应用" 后才保存, 自己的条目不受影响。判断已有: 热键看键和窗口 (`!^f` 和 `^!f` 算同一个键), 命令看标题或任一关键字, 片段看名称或任一关键字, 搜索引擎看 Id 或任一关键字。热键页的按钮是 "添加示例", 网页搜索页是 "添加内置项"
+
+### 改进
+- 自定义命令页的 "检查路径" 和文字片段页的 "导入/导出" 收进 "更多 ▾" 按钮的菜单 (和 "添加示例" 在一起), 按钮行留给筛选框
 
 测试版。
 
@@ -1252,7 +1262,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.16...HEAD
+[2026.11.09.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.15...2026.11.09.16
 [2026.11.09.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.14...2026.11.09.15
 [2026.11.09.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.13...2026.11.09.14
 [2026.11.09.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.12...2026.11.09.13

@@ -489,10 +489,14 @@ class PrefsForm {
     ; (fields = (owner, title, item, original) => the edited item or "")
     ; Returns the list object: {Items, Insert, Append, Edit, Reload, Selected, View}; its functions are properties, called with .Call
     ; check: optional, (item, roots) => "OK" / "Missing" / "Unavailable" / "Skipped".
-    ; When given there is a "Check paths" button, with the results in a "Status" column (the items themselves have no such key)
+    ; When given there is a "Check paths" command, with the results in a "Status" column (the items themselves have no such key)
     ; The filter box right of the buttons: only items containing all the typed words (searched in every column's text, case-insensitive).
     ; withFilter: false leaves it out, for a short list whose own buttons need the row (Folder Sync)
-    static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true) {
+    ; examples: optional {Label, Keys: (item) => [...]}: a button that adds the default items (AppSettings.Defaults() at path) missing from the list.
+    ; Keys gives the texts that identify an item (compared case-insensitively); a default sharing any of them with an item in the list is skipped
+    ; menu: optional, the page's own commands [{Label, Click: (list, button) => ...}] for the "More" menu.
+    ; Check paths, menu and examples share one button: shown as it is when there is just one of them, else a "More" drop-down button (MenuButton)
+    static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true, examples := "", menu := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
         for column in columns
@@ -622,6 +626,19 @@ class PrefsForm {
             Refresh(row)
         }
 
+        AddExamples(*) {                                                    ; the default items not yet in the list, then how many were added / skipped
+            result := PrefsForm.AddMissing(items, PreferencesWindow.GetPath(AppSettings.Defaults(), path), examples.Keys)
+            if result.Added {
+                PreferencesWindow.MarkDirty(true)
+                Loop result.Added
+                    Recheck(items[items.Length - result.Added + A_Index])
+                if IsObject(filterBox)
+                    filterBox.Value := ""
+                Refresh(items.Length - result.Added + 1)
+            }
+            MsgBox(I18n.T(result.Added ? "Prefs.ExamplesAdded" : "Prefs.ExamplesNone", result.Added, result.Skipped), pageName, "Iconi Owner" PreferencesWindow.Gui.Hwnd)
+        }
+
         listView.OnEvent("DoubleClick", EditItem)
         Refresh()
         ReloadList() {                                                      ; after items were changed from outside (import)
@@ -636,11 +653,27 @@ class PrefsForm {
         PrefsForm.Add("Button", "w80", I18n.T("Prefs.Add")).OnEvent("Click", AddItem)
         PrefsForm.Add("Button", "x+8 yp w80", I18n.T("Prefs.Edit")).OnEvent("Click", EditItem)
         PrefsForm.Add("Button", "x+8 yp w80", I18n.T("Prefs.Delete")).OnEvent("Click", DeleteItem)
+        actions := []                                                       ; Check paths, the page's menu, Add examples: one button, or "More" with a menu
         if IsObject(check)
-            PrefsForm.Add("Button", "x+24 yp w100", I18n.T("Prefs.CheckTargets")).OnEvent("Click", CheckItems)
+            actions.Push({Label: I18n.T("Prefs.CheckTargets"), Click: (list, button) => CheckItems(button)})
+        if IsObject(menu)
+            actions.Push(menu*)
+        if IsObject(examples) {
+            if actions.Length
+                actions.Push("-")
+            actions.Push({Label: I18n.T(examples.Label), Click: (*) => AddExamples()})
+        }
+        if (actions.Length = 1) {                                           ; spaced and sized like Add / Edit / Delete; wider only for a longer text
+            action := actions[1]
+            actionButton := PrefsForm.Add("Button", "x+8 yp w80", action.Label)
+            actionButton.Move(, , Max(80, Win.TextExtent(actionButton.Hwnd, action.Label) + 24))
+            actionButton.OnEvent("Click", (button, *) => action.Click.Call(list, button))
+        } else if actions.Length {
+            PrefsForm.MenuButton(PrefsForm.Add("Button", "x+8 yp w80", I18n.T("Prefs.More")), actions, list)
+        }
         if IsObject(buttons)                                                ; the page's own buttons: [{Label, Width, Click: (list, button) => ..., Gap}]
-            for extra in buttons                                            ; Gap: the space before it (24 sets it apart; 8 = one row with Add / Edit / Delete)
-                PrefsForm.Add("Button", "x+" (extra.HasOwnProp("Gap") ? extra.Gap : 24) " yp w" extra.Width, extra.Label).OnEvent("Click", ((extra, button, *) => extra.Click.Call(list, button)).Bind(extra))
+            for extra in buttons                                            ; Gap: the space before it (default 8: one row with Add / Edit / Delete)
+                PrefsForm.Add("Button", "x+" (extra.HasOwnProp("Gap") ? extra.Gap : 8) " yp w" extra.Width, extra.Label).OnEvent("Click", ((extra, button, *) => extra.Click.Call(list, button)).Bind(extra))
         if withFilter {
             listView.GetPos(&listX, , &listW)
             filterBox := PreferencesWindow.Gui.Add("Edit", "x" (listX + listW - 160) " yp+1 w160 r1 -Multi Hidden")   ; not Add: filtering doesn't change the settings
@@ -650,6 +683,68 @@ class PrefsForm {
         }
         PrefsForm._y += 38
         return list
+    }
+
+    ; A button that opens a menu below it: a split button (BS_SPLITBUTTON) without the split line (BCSS_NOSPLIT), so Windows draws the
+    ; drop-down arrow and the whole button opens the menu. A click (also Space / Enter) and the arrow's BCN_DROPDOWN both open it, once.
+    ; actions = [{Label, Click: (list, button) => ...} or "-" (a separator)]
+    static MenuButton(button, actions, list) {
+        static BM_SETSTYLE := 0xF4, BS_SPLITBUTTON := 0xC, BCM_SETSPLITINFO := 0x1607, BCSIF_STYLE := 0x4, BCSS_NOSPLIT := 0x1, BCN_DROPDOWN := -1248
+        SendMessage(BM_SETSTYLE, BS_SPLITBUTTON, true, button)              ; not as a Gui option: AutoHotkey keeps a Button a push button
+        info := Buffer(A_PtrSize = 8 ? 32 : 20, 0)                         ; BUTTON_SPLITINFO: mask, himlGlyph, uSplitStyle, size
+        NumPut("UInt", BCSIF_STYLE, info, 0)
+        NumPut("UInt", BCSS_NOSPLIT, info, 2 * A_PtrSize)
+        SendMessage(BCM_SETSPLITINFO, 0, info, button)
+        state := {Closed: 0}
+        Open(*) {
+            if (A_TickCount - state.Closed < 300)                           ; the click that follows a drop-down (or closes the menu) doesn't open it again
+                return
+            PrefsForm.ShowMenu(actions, list, button)
+            state.Closed := A_TickCount
+        }
+        button.OnEvent("Click", Open)
+        button.OnNotify(BCN_DROPDOWN, Open)
+    }
+
+    static ShowMenu(actions, list, button) {
+        static BCM_SETDROPDOWNSTATE := 0x1606
+        popup := Menu()
+        for action in actions {
+            if !IsObject(action)
+                popup.Add()
+            else
+                popup.Add(action.Label, ((action, *) => action.Click.Call(list, button)).Bind(action))
+        }
+        button.GetPos(&x, &y, , &h)
+        try SendMessage(BCM_SETDROPDOWNSTATE, 1, 0, button)                 ; the arrow stays pressed while the menu is open
+        popup.Show(x, y + h)
+        try SendMessage(BCM_SETDROPDOWNSTATE, 0, 0, button)
+    }
+
+    ; Adds the defaults that aren't in items yet: one is left out when keysFn gives it a text (compared case-insensitively) that an item in items
+    ; (or a default added before it) also has. Returns {Added, Skipped}; the added ones are at the end of items, in the order of defaults
+    static AddMissing(items, defaults, keysFn) {
+        seen := Map(), seen.CaseSense := false
+        for item in items
+            for key in keysFn(item)
+                if (key != "")
+                    seen[key] := true
+        added := 0, skipped := 0
+        for item in defaults {
+            keys := keysFn(item), found := false
+            for key in keys
+                found := found || (key != "" && seen.Has(key))
+            if found {
+                skipped += 1
+                continue
+            }
+            for key in keys
+                if (key != "")
+                    seen[key] := true
+            items.Push(item)
+            added += 1
+        }
+        return {Added: added, Skipped: skipped}
     }
 
     ; Filter box: shown only when every word of filter (separated by spaces) appears in some column, case-insensitive; all shown when empty
