@@ -4,8 +4,8 @@
 ; Every command has a fixed Id; the Hotkeys list in ALTRun.json refers to commands by Id, for example:
 ;   { "Key": "^!t", "Action": "TerminalHere", "WinTitle": "ahk_class CabinetWClass" }
 ; The available Ids are in the list in Commands(); the function names of old versions (2.x) still work through Aliases.
-; Two more Ids only for hotkeys: "ToggleWindow" (show / hide the search window), "Show" (show it; with a "Prefix" in the hotkey entry,
-; the search box starts with it: { "Key": "^!f", "Action": "Show", "Prefix": "folder " }).
+; More Ids only for hotkeys: "ToggleWindow" (show / hide the search window), "Show" (show it) and "Search" (show it with the hotkey
+; entry's "SearchText" in the search box, {selection} replaced by the selected text: { "Key": "^!f", "Action": "Search", "SearchText": "folder {selection}" }).
 ;
 ; Shutdown / restart / sign out / hibernate / empty Recycle Bin ask first (Features.System.ConfirmActions).
 ;
@@ -29,6 +29,21 @@ class SystemProvider {
         "ClipToTraditional", "TextToTraditional", "ClipToSimplified", "TextToSimplified", "UrlEncode", "TextUrlEncode",
         "Activate", "Show"
     )
+
+    ; A custom hotkey's search text with {selection} (any case) replaced by the text selected in the program in front: on one line
+    ; (line breaks and runs of spaces as one space), at most 100 characters; nothing selected, or files: left out ("folder ").
+    ; The selection is copied only when the text asks for it: with nothing selected, waiting for the copy takes up to 0.8 s.
+    ; selection: the copied selection ({Text} / {Files} / ""), given by the tests
+    static FillSearchText(template, selection?) {
+        if !RegExMatch(template, "i)\{selection\}")
+            return template
+        if !IsSet(selection)
+            selection := SelectionActions.Capture()
+        text := (IsObject(selection) && selection.HasOwnProp("Text")) ? Trim(RegExReplace(selection.Text, "\s+", " ")) : ""
+        if (StrLen(text) > 100)
+            text := RTrim(SubStr(text, 1, 100))
+        return RegExReplace(template, "i)\{selection\}", StrReplace(text, "$", "$$"))
+    }
 
     static Init() {
         SystemProvider.Commands()
@@ -113,14 +128,16 @@ class SystemProvider {
         ActionCatalog.PasteText(text, !active || (IsObject(SearchWindow.Gui) && active = SearchWindow.Gui.Hwnd))
     }
 
-    ; prefix: only for "Show", typed into the search box (a custom hotkey that opens ALTRun with "folder ", for example)
-    static RunCommand(id, prefix := "") {
+    ; searchText: only for "Search", typed into the search box (a custom hotkey that opens ALTRun with "folder {selection}", for example)
+    static RunCommand(id, searchText := "") {
         if SystemProvider.Aliases.Has(id)
             id := SystemProvider.Aliases[id]
         if (id = "ToggleWindow")
             return SearchWindow.Toggle()
+        if (id = "Search")
+            return SearchWindow.Show(SystemProvider.FillSearchText(searchText))
         if (id = "Show")
-            return SearchWindow.Show(prefix)
+            return SearchWindow.Show()
         for command in SystemProvider.Commands() {
             if (command["Id"] != id)
                 continue

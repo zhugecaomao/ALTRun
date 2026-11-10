@@ -13,7 +13,7 @@
 ;   "Appearance"    : { theme / window width / visible rows },
 ;   "Features"      : { "<feature>": { "Enabled": 1, ...the feature's own settings } },
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
-;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "Prefix" } ],   custom hotkeys -> system commands (Prefix, optional: what the Show action types into the search box)
+;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "SearchText" } ],   custom hotkeys -> system commands (SearchText, optional: what the Search action types into the search box)
 ;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword" } ],
 ;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ],
 ;   "DelayedStart"  : [ { "Name", "Target", "Arguments", "Delay", "Enabled" } ],   programs started after signing in (Task Scheduler)
@@ -541,9 +541,9 @@ class AppSettings {
             ),
             "Hotkeys", [                                                    ; examples: global, only in one program, only in ALTRun
                 Map("Key", "^!#v", "Action", "PastePlain", "WinTitle", ""),                         ; same key as PowerToys "Paste as plain text"
-                Map("Key", "^!f", "Action", "Show", "Prefix", "folder ", "WinTitle", ""),            ; Show opens the search window with the Prefix already typed: folders only
-                Map("Key", "^!r", "Action", "Show", "Prefix", "recent ", "WinTitle", ""),            ; recent files and folders
-                Map("Key", "^!d", "Action", "Show", "Prefix", "doc ", "WinTitle", ""),               ; documents only (the "doc" file type filter)
+                Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}", "WinTitle", ""),   ; Search opens the search window with this text: folders, named like the selected text
+                Map("Key", "^!r", "Action", "Search", "SearchText", "recent ", "WinTitle", ""),              ; recent files and folders
+                Map("Key", "^!d", "Action", "Search", "SearchText", "doc {selection}", "WinTitle", ""),      ; documents only (the "doc" file type filter)
                 Map("Key", "^!t", "Action", "TerminalHere", "WinTitle", "ahk_class CabinetWClass"), ; File Explorer
                 Map("Key", "^r", "Action", "RebuildIndex", "WinTitle", "ALTRun")
             ],

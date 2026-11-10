@@ -685,16 +685,12 @@ class PrefsForm {
         return list
     }
 
-    ; A button that opens a menu below it: a split button (BS_SPLITBUTTON) without the split line (BCSS_NOSPLIT), so Windows draws the
-    ; drop-down arrow and the whole button opens the menu. A click (also Space / Enter) and the arrow's BCN_DROPDOWN both open it, once.
+    ; A button that opens a menu below it: a split button (BS_SPLITBUTTON), Windows draws the drop-down arrow and the line before it.
+    ; Both parts open the menu (there is no default command): a click on the text (also Space / Enter) and the arrow's BCN_DROPDOWN, once.
     ; actions = [{Label, Click: (list, button) => ...} or "-" (a separator)]
     static MenuButton(button, actions, list) {
-        static BM_SETSTYLE := 0xF4, BS_SPLITBUTTON := 0xC, BCM_SETSPLITINFO := 0x1607, BCSIF_STYLE := 0x4, BCSS_NOSPLIT := 0x1, BCN_DROPDOWN := -1248
+        static BM_SETSTYLE := 0xF4, BS_SPLITBUTTON := 0xC, BCN_DROPDOWN := -1248
         SendMessage(BM_SETSTYLE, BS_SPLITBUTTON, true, button)              ; not as a Gui option: AutoHotkey keeps a Button a push button
-        info := Buffer(A_PtrSize = 8 ? 32 : 20, 0)                         ; BUTTON_SPLITINFO: mask, himlGlyph, uSplitStyle, size
-        NumPut("UInt", BCSIF_STYLE, info, 0)
-        NumPut("UInt", BCSS_NOSPLIT, info, 2 * A_PtrSize)
-        SendMessage(BCM_SETSPLITINFO, 0, info, button)
         state := {Closed: 0}
         Open(*) {
             if (A_TickCount - state.Closed < 300)                           ; the click that follows a drop-down (or closes the menu) doesn't open it again
@@ -766,8 +762,10 @@ class PrefsForm {
             return ""
         if (key = "Target" && item.Has("Arguments") && Trim(item["Arguments"]) != "")   ; custom commands: the arguments follow the target
             return RegExReplace(item["Target"] " " item["Arguments"], "\s+", " ")
-        if (key = "Action" && item.Has("Prefix") && Trim(item["Prefix"]) != "" && item[key] = "Show")   ; custom hotkeys: Show and its search prefix in one cell ("Show ALTRun: folder")
-            return "Show ALTRun: " Trim(item["Prefix"])
+        if (key = "Action" && App.HotkeyActionId(item) = "Search") {       ; custom hotkeys: Search and its text in one cell ("Search: folder {selection}")
+            text := Trim(App.HotkeySearchText(item))
+            return (text = "") ? "Search" : "Search: " text
+        }
         if (key = "Key")                                                    ; custom hotkeys: shown as Ctrl+Alt+P, Middle button
             return HotkeyBox.Label(item[key])
         if (key = "Type") {                                                 ; the type of a custom command shows its translated name

@@ -34,7 +34,7 @@ class Shots {
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview"
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -84,6 +84,7 @@ class Shots {
             ["prefs-searchsources", "Light", "-Preferences 8", () => Shots.Preferences()],   ; Wiki: file search
             ["prefs-keyboard",   "Light", "-Preferences 3", () => Shots.Preferences()],      ; Wiki: Custom Hotkeys (Caps Lock)
             ["prefs-hotkeys",    "Light", "-Preferences 15", () => Shots.Preferences()],     ; Wiki: custom hotkeys
+            ["hotkey-editor",    "Light", "-Preferences 15", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 2)],   ; Wiki: custom hotkeys (edit window, Ctrl+Alt+F)
             ["prefs-quickswitch", "Light", "-Preferences 16", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
             ["prefs-dialogpanel", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
             ["prefs-datestamp",  "Light", "-Preferences 18", () => Shots.Preferences()],     ; Wiki: date stamp
@@ -868,7 +869,8 @@ class Shots {
     }
 
     ; Preferences → Sync: selects the first task, clicks a button (Edit / Preview) and returns the window that opens (its title starts with title)
-    static SyncWindow(buttonText, title) {
+    ; A list page's button that opens a window (also the hotkey editor): row = the list row selected first
+    static SyncWindow(buttonText, title, row := 1) {
         prefs := Shots.Preferences()
         list := 0, button := 0
         for ctrl in WinGetControlsHwnd(prefs) {                             ; the controls of the page on show (other pages' are hidden)
@@ -881,7 +883,7 @@ class Shots {
         }
         if !(list && button)
             throw Error("sync page: list or " buttonText " button not found")
-        ControlFocus(list), ControlSend("{Home}", list)
+        ControlFocus(list), ControlSend("{Home}" (row > 1 ? "{Down " (row - 1) "}" : ""), list)
         Sleep(300)
         PostMessage(0xF5, 0, 0, button)                                     ; BM_CLICK: a posted mouse click (ControlClick) was sometimes lost; posted, so Edit's modal window doesn't block
         window := WinWait(title " ahk_class AutoHotkeyGUI ahk_pid " Shots.Pid, , 20)

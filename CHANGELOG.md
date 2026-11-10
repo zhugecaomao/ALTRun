@@ -5,7 +5,19 @@
 
 ## [未发布]
 
-## [2026.11.09.16]
+## [2026.11.09.17]
+
+测试版。
+
+Test build.
+
+### 新增
+- 自定义热键可以 **在 ALTRun 中搜索选中的文字**: 在任何程序里选中一段文字 (例如邮件里的项目名) 再按热键, ALTRun 打开并直接搜。搜索内容里写 `{selection}` 的地方换成选中的文字 (合成一行, 最多 100 字), 例如 `folder {selection}` 搜这个名字的文件夹、`g {selection}` 用 Google 搜; 没有选中时为空。新安装的示例: `Ctrl+Alt+F` = `folder {selection}`、`Ctrl+Alt+D` = `doc {selection}`、`Ctrl+Alt+R` = `recent ` (Refs #427)
+- 热键有了自己的编辑窗口 (偏好设置 → 自定义热键 → 添加 / 修改): 分成 热键 / 动作 / 搜索内容 / 生效范围 几组, 每组有说明; "插入 ▾" 可以插入 `{selection}` 或常用范围 (folder、doc、pic、recent...); 生效范围改成 "所有程序 / 只在这些窗口里" 两个选项; 最下面一行实时说明这个热键会做什么
+
+### 改进
+- "更多" 和 "插入" 下拉按钮在箭头前显示分隔线 (和 Windows 的分割按钮一样); 点文字或箭头都打开菜单
+- 测试版 2026.11.09.15 / .16 的 "显示 ALTRun + 搜索功能前缀" (`Show` + `Prefix`) 改名为 "在 ALTRun 中搜索" (`Search` + `SearchText`); 已经保存的旧写法照常使用, 在编辑窗口里保存一次就换成新写法
 
 测试版。
 
@@ -1262,7 +1274,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.16...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.17...HEAD
+[2026.11.09.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.16...2026.11.09.17
 [2026.11.09.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.15...2026.11.09.16
 [2026.11.09.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.14...2026.11.09.15
 [2026.11.09.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.13...2026.11.09.14

@@ -2,22 +2,30 @@
 
 # Custom Hotkeys
 
-Preferences → Hotkeys: assign a [system command](System-Commands#system-commands) to any hotkey, optionally only inside a certain window.
+Preferences → Hotkeys: assign a [system command](System-Commands#system-commands) to any hotkey, optionally only inside a certain window, or open ALTRun with a search already typed, for example the selected text in one scope.
 
-| Field | Example | Description |
+**Add...** / **Edit...** open the hotkey window. From top to bottom, each part with a gray line saying what it is for; the line at the bottom says in words what the hotkey will do (for example `Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs.`):
+
+| Part | In the settings file | Description |
 |---|---|---|
-| Hotkey (Key) | `Ctrl+Alt+T` | Click the box and press the keys (see [Setting hotkeys](#setting-hotkeys) below); mouse hotkeys: click the middle or a side button in the box. With "Keep the key's original function" ticked, the key still does what it normally does (a leading `~` in the settings file) |
-| Action | `TerminalHere` | A system command Id, `ToggleWindow` (show / hide ALTRun), or `Show` (show ALTRun, optionally with a search prefix) |
-| Search prefix (Prefix) | `folder ` | Only for `Show`: the search box starts with this prefix, so one hotkey goes straight to one scope, for example `folder ` (folders only), `recent ` (recent files) or `doc ` (documents only; see [Usage](Usage) for the prefixes). A space at the end counts. Empty = an empty search box. The list shows it after the action, like `Show ALTRun: folder` |
-| Only in window (WinTitle) | `ahk_class CabinetWClass` | Empty = everywhere; otherwise only in matching windows; `ALTRun` = only in ALTRun's search window |
+| Hotkey | `Key`, e.g. `^!f` | Click the box and press the keys (see [Setting hotkeys](#setting-hotkeys) below); mouse hotkeys: click the middle or a side button in the box. With "Keep the key's original function" ticked, the key still does what it normally does (a leading `~`) |
+| Action | `Action` | **Search in ALTRun** (`Search`), **Show / hide ALTRun** (`ToggleWindow`), or a system command by name (the Id, e.g. `TerminalHere`, is what the file stores) |
+| Search text | `SearchText`, e.g. `folder {selection}` | Only for Search: the search box starts with this text. `{selection}` is replaced by the text selected in the program you are in (on one line, at most 100 characters); when nothing is selected, or files are, it is left out and only `folder ` is typed. **Insert ▾** adds `{selection}` at the cursor or puts a scope first: `folder` (folders), `file`, `doc` (documents), `pic` (pictures), `recent`, `g` (Google); see [Usage](Usage) for the prefixes. Empty = an empty search box. The list shows it after the action, like `Search: folder {selection}` |
+| Works in | `WinTitle` | **All programs** (empty), or **only in windows matching** a window: `ahk_exe WINWORD.EXE`, `ahk_class CabinetWClass` (File Explorer); `ALTRun` = only in ALTRun's search window |
+
+To copy the selected text ALTRun presses `Ctrl+C` in that program: with nothing selected it waits up to 0.8 s before the window opens, so only use `{selection}` where you want it. The clipboard is put back afterwards.
+
+![Preferences → Hotkeys → Edit...](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/hotkey-editor.png)
 
 New installs come with six examples:
 - `Ctrl+Alt+Win+V` pastes the clipboard as plain text, everywhere (the same key as PowerToys "Paste as plain text")
-- `Ctrl+Alt+F`, `Ctrl+Alt+R` and `Ctrl+Alt+D` open the search window with `folder `, `recent ` or `doc ` already typed (action `Show`): search folders only, recent files, or documents only
+- `Ctrl+Alt+F`: select a name anywhere (an email, a drawing list...) and press it: ALTRun searches folders with that name (`folder {selection}`); with nothing selected it opens with `folder ` typed
+- `Ctrl+Alt+D`: the same for documents (`doc {selection}`)
+- `Ctrl+Alt+R`: recent files and folders (`recent `)
 - `Ctrl+Alt+T` in File Explorer (`ahk_class CabinetWClass`) opens a terminal in the current folder
 - `Ctrl+R` in the ALTRun search window (`ALTRun`) rebuilds the index
 
-Delete or change them as you like; existing settings keep their own list. **Add Examples** below the list adds the ones you don't have (a hotkey with the same key and window counts as already there) and tells you how many were added and skipped; they are saved when you press OK / Apply. To go straight to another scope, add a `Show` hotkey of your own with the prefix you would type, for example `pic ` for pictures. `F1`–`F4` in the search window are built in, see [Shortcuts](Usage#shortcuts).
+Delete or change them as you like; existing settings keep their own list. **Add Examples** below the list adds the ones you don't have (a hotkey with the same key and window counts as already there) and tells you how many were added and skipped; they are saved when you press OK / Apply. To go straight to another scope, add a Search hotkey of your own, for example `pic {selection}` for pictures or `g {selection}` to search Google for the selected text. `F1`–`F4` in the search window are built in, see [Shortcuts](Usage#shortcuts).
 
 ![Preferences → Hotkeys](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-hotkeys.png)
 
