@@ -285,7 +285,7 @@
   "Prefs.Col.Type": "類型",
   "Prefs.Col.Url": "網址",
   "Prefs.Col.WinTitle": "只在此視窗生效 (選用)",
-  "Prefs.CommandsNote": "按兩下編輯。'檢查路徑' 可以找出檔案或資料夾改名、移走後失效的指令",
+  "Prefs.CommandsNote": "按兩下編輯。'更多 ▾' → '檢查路徑' 可以找出檔案或資料夾改名、移走後失效的指令",
   "Prefs.ConfirmActions": "執行系統指令前確認",
   "Prefs.ConfirmActions.Desc": "關機、重新啟動、登出、清空資源回收筒前先詢問",
   "Prefs.ConfirmDelete": "確定刪除 '{1}' 嗎?",

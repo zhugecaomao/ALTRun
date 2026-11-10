@@ -906,7 +906,7 @@ class I18n {
         s["Prefs.Type.Folder"]         := "Folder"
         s["Prefs.Type.Command"]        := "Command line"
         s["Prefs.Type.Url"]            := "Web address / link"
-        s["Prefs.CommandsNote"]        := "Double-click to edit. Check Paths finds commands whose file or folder was renamed or moved."
+        s["Prefs.CommandsNote"]        := "Double-click to edit. More ▾ → Check Paths finds commands whose file or folder was renamed or moved."
         s["Prefs.SnippetAutoExpand"]   := "Expand snippet keywords typed in any app"
         s["Prefs.SnippetAutoExpand.Desc"] := 'Type the prefix and keyword in any program (e.g. "`;sig") and it is replaced by the text. Not in password boxes or the windows below.'
         s["Prefs.ExpandExclude"]       := "Don't expand in"
