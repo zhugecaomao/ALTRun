@@ -20,9 +20,9 @@ Release 工作流 (publish = true) 创建 GitHub Release 之后会自动:
 `WINGET_TOKEN`: GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic), 勾选 `public_repo`; 然后在本仓库 Settings → Secrets and variables → Actions 里新建 `WINGET_TOKEN`。没有设置时跳过这一步, winget 用户就收不到新版本, 需要每次手动运行 `wingetcreate update` (见下文)。
 
 ## Microsoft Store (MSIX)
-Release 工作流每次都会生成 MSIX 包, 放在运行页面底部的 Artifacts 里 (`ALTRun_v<版本>_msix`)。包没有签名, 发布到 Store 时由 Store 签名; 所以不能直接双击安装。工作流会用临时证书签一份测试用的副本, 装上后通过 `altrun` 别名启动 ALTRun, 检查它在包里运行、设置写在 `%APPDATA%\ALTRun`、开机启动的快捷方式指向别名, 再跑 Windows App Certification Kit (可选项只报告, 必需项失败就算失败)。
+正式版的版本号 (`YYYY.MM.DD`, 三段: Release PR 上的构建和 publish = true) 运行 Release 工作流时会生成 MSIX 包, 放在运行页面底部的 Artifacts 里 (`ALTRun_v<版本>_msix`); 测试版 (四段版本号) 不打包, 构建快一些。包没有签名, 发布到 Store 时由 Store 签名; 所以不能直接双击安装。工作流会用临时证书签一份测试用的副本, 装上后通过 `altrun` 别名启动 ALTRun, 检查它在包里运行、设置写在 `%APPDATA%\ALTRun`、开机启动的快捷方式指向别名, 再跑 Windows App Certification Kit (可选项只报告, 必需项失败就算失败)。
 
-提交新版本 (正式版发布后): Partner Center → 应用和游戏 → ALTRun → 新建提交 → 程序包, 上传正式版那次运行的 `.msix`, 保存后提交认证。只有正式版 (版本号最后一位是 0) 能提交; 测试版的包只用来检查。
+提交新版本 (正式版发布后): Partner Center → 应用和游戏 → ALTRun → 新建提交 → 程序包, 上传正式版那次运行的 `.msix`, 保存后提交认证。只有正式版 (版本号最后一位是 0) 能提交。
 
 商店版和其它版本的区别 (见 `App.PackageFamily`): 由 Store 更新 ("检查更新" 打开 Store 页面, 不在后台检查); 开机启动、"发送到" 和 CapsLock 辅助的计划任务用 `altrun` 别名启动 (包的安装目录每次更新都会变); 不另建开始菜单快捷方式。
 
