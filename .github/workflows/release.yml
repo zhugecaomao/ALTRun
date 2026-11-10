@@ -56,6 +56,10 @@ jobs:
           $version = $match.Matches[0].Groups[1].Value
           Write-Host "Version: $version"
           "version=$version" >> $env:GITHUB_OUTPUT
+          # A formal version (YYYY.MM.DD, as on a release PR and when publishing) also builds and tests the Microsoft Store package
+          $formal = if ($version -match '^\d{4}\.\d{2}\.\d{2}$') { 'true' } else { 'false' }
+          Write-Host "Formal version (MSIX package): $formal"
+          "formal=$formal" >> $env:GITHUB_OUTPUT
           if ("${{ inputs.publish }}" -eq "true") {
             if ($version -notmatch '^\d{4}\.\d{2}\.\d{2}$') {
               throw "Formal release version must have three parts (YYYY.MM.DD); found $version"
@@ -233,11 +237,14 @@ jobs:
       # The Microsoft Store package (packaging/msix): built from the same files, unsigned (the Store signs it when it publishes it).
       # Its test copy is signed with a throwaway certificate, installed, ALTRun started from it through the "altrun" alias and
       # checked; then the Windows App Certification Kit runs on it (optional tests only reported). See packaging/README.md
+      # Only for a formal version: only those go to the Store, and test builds are quicker without it
       - name: MSIX package
+        if: steps.version.outputs.formal == 'true'
         shell: pwsh
         run: ./packaging/msix/Make-Msix.ps1 -Source build/ALTRun -Version "${{ steps.version.outputs.version }}" -Out "build/msix/ALTRun_v${{ steps.version.outputs.version }}_x64.msix"
 
       - name: MSIX test (installed with a test certificate)
+        if: steps.version.outputs.formal == 'true'
         shell: pwsh
         run: |
           $test = Join-Path $env:RUNNER_TEMP "ALTRun-test.msix"
@@ -328,6 +335,7 @@ jobs:
             build/notes.md
 
       - uses: actions/upload-artifact@v7
+        if: steps.version.outputs.formal == 'true'
         with:
           name: ALTRun_v${{ steps.version.outputs.version }}_msix          # for the Microsoft Store submission (unsigned: can't be installed as it is)
           path: build/msix/*.msix
