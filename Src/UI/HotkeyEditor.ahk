@@ -2,7 +2,7 @@
 ; HotkeyEditor.ahk - the edit window of a custom hotkey (Preferences → Hotkeys → Add / Edit) (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Top to bottom in the order people decide things, each group with a gray line saying what it is for:
-;   Hotkey      the recording box (HotkeyBox, mouse buttons too), and below it "Keep the key's original function" (a leading ~)
+;   Hotkey      the recording box (HotkeyBox, mouse buttons too) and "Keep the key's original function" (a leading ~)
 ;   Action      Search in ALTRun / Show or hide ALTRun first, then the system commands by name
 ;   Search text only for Search: what the search box starts with; {selection} = the text selected in the program in front.
 ;               "Insert" (a drop-down button) adds {selection} or a search scope (folder, doc, recent...), so nothing has to be remembered
@@ -18,7 +18,7 @@
 ;===============================================================================
 
 class HotkeyEditor {
-    static Width := 420                                                     ; the content width: narrower than the general editor, the groups go down
+    static Width := 460                                                     ; the content width: narrower than the general editor (the groups go down), wide enough for the hotkey hint on one line
     static Scopes := ["folder", "file", "doc", "pic", "recent", "g"]       ; the search scopes "Insert" offers (prefixes of the search box)
 
     static Edit(owner, item, original := "") {
@@ -73,10 +73,13 @@ class HotkeyEditor {
         }
 
         section("HotkeyEditor.Section.Key", true)
-        ui.Key := HotkeyBox.Add(g, "xm y+8 w260", LTrim(item["Key"], "~"), true, () => Update())   ; room for long combinations (Ctrl+Alt+Shift+Win+...)
-        hint(I18n.T("Prefs.HotkeyHint"))
-        ui.Pass := g.AddCheckbox("xm y+6", I18n.T("Hotkey.PassThrough"))   ; below the box: a long text in any language fits
+        ui.Key := HotkeyBox.Add(g, "xm y+8 w220", LTrim(item["Key"], "~"), true, () => Update())
+        ui.Pass := g.AddCheckbox("x+14 yp+3", I18n.T("Hotkey.PassThrough"))
         ui.Pass.Value := (SubStr(item["Key"], 1, 1) = "~") ? 1 : 0
+        ui.Key.GetPos(, &keyY, , &keyH)
+        g.SetFont("s8")
+        g.AddText("xm y" (keyY + keyH + 4) " w" w " cGray", I18n.T("Prefs.HotkeyHint"))   ; below the box (the check box beside it is shorter)
+        g.SetFont("s9")
 
         section("HotkeyEditor.Section.Action")
         ui.Actions := HotkeyEditor.Actions(item["Action"])
