@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.11.10]
+
+测试版。
+
+Test build.
+
+### 修复
+- 文件夹同步: "其他参数" 里写了 `/MIR` 或 `/PURGE` 的任务会像镜像一样删除目标里多出来的文件, 原来却因为模式不是 "镜像" 而不预览、不询问, 源文件夹找不到或是空的也照样运行。现在这样的任务按镜像对待: 运行前先预览, 要删除时先询问; 源找不到或为空时不运行; 不能镜像到盘符、共享、OneDrive 文件夹和用户文件夹的根目录; 不能持续同步
+- 文件夹同步: "其他参数" 里有 `/MOV` 或 `/MOVE` (robocopy 复制完会删掉源里的文件) 时, 保存任务时提醒一次
+
 ## [2026.11.11.9]
 
 测试版。
@@ -1295,7 +1305,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.9...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.10...HEAD
+[2026.11.11.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.9...2026.11.11.10
 [2026.11.11.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.8...2026.11.11.9
 [2026.11.11.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.7...2026.11.11.8
 [2026.11.11.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.6...2026.11.11.7

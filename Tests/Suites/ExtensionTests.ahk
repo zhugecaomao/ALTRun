@@ -369,6 +369,15 @@ class ExtensionTests {
         eq("mirror into a drive or share root", codes(RoboSync.Check(mk("A", "\\srv\x", "E:\"))) codes(RoboSync.Check(mk("A", "D:\x", "\\nas\backup"))), "Error:MirrorRoot=e: Error:MirrorRoot=\\nas\backup ")
         eq("mirror into the user folder", codes(RoboSync.Check(mk("A", "\\srv\x", "%UserProfile%"))), "Error:MirrorRoot=" StrLower(EnvGet("UserProfile")) " ")
         eq("copy into a root is fine", codes(RoboSync.Check(mk("A", "\\srv\x", "E:\", "Copy"))), "")
+        ; /MIR or /PURGE among the other options deletes like a mirror: the same checks, whatever the mode says
+        purge := mk("A", "\\srv\x", "E:\", "Copy"), purge["Extra"] := "/NP /mir"
+        eq("/MIR in the other options: a mirror", RoboSync.Purges(purge) "|" codes(RoboSync.Check(purge)), "1|Error:MirrorRoot=e: ")
+        purge["Extra"] := "/PURGE", purge["Destination"] := "D:\x", purge["Monitor"] := 1
+        eq("/PURGE: can't keep in sync either", codes(RoboSync.Check(purge)), "Error:MirrorMonitor ")
+        purge["Extra"] := "/NP /XF mirror.txt /MIRROR", purge["Monitor"] := 0
+        eq("only the switch itself", RoboSync.Purges(purge) "|" RoboSync.Purges(mk("A", "D:\a", "D:\b", "Copy")) "|" RoboSync.Purges(mk("A", "D:\a", "D:\b")), "0|0|1")
+        purge["Extra"] := "/Z /move"
+        eq("/MOVE: a warning when saving", codes(RoboSync.Check(purge)) "|" RoboSync.Purges(purge), "Warning:ExtraMoves=/MOVE |0")
         ; Only full paths: a relative one, "\folder" (the current drive's root), "D:folder", a variable this PC doesn't have, a bare server
         eq("not full paths", codes(RoboSync.Check(mk("A", "Sync\src", "%ALTRunNoSuchVariable%\x", "Copy")))
             , "Error:SourceNotAbsolute=sync\src Error:DestinationNotAbsolute=%altrunnosuchvariable%\x ")
@@ -396,6 +405,10 @@ class ExtensionTests {
             eq("source empty", RoboSync.CheckSource(mk("A", root "\empty", "D:\x")), "SourceEmpty")
             FileAppend("x", root "\empty\a.txt")
             eq("source with files", RoboSync.CheckSource(mk("A", root "\empty", "D:\x")), "")
+            purging := mk("Purging", root "\gone", "D:\x", "Copy")
+            eq("a copy runs without the source check", SyncJobs._Problem(purging, false), "")
+            purging["Extra"] := "/purge"
+            eq("/PURGE in the other options: the source is checked", SyncJobs._Problem(purging, false) "|" SyncJobs._Problem(purging, true), "SourceMissing|")
         } finally {
             try DirDelete(root, true)
         }
@@ -944,6 +957,8 @@ class ExtensionTests {
         old := 1000000, fresh := old + SyncPreview.StaleMs - 1, late := old + SyncPreview.StaleMs + 1
         eq("stale: mirror", (SyncPreview.IsStale(previewTask, old, fresh) ? 1 : 0) (SyncPreview.IsStale(previewTask, old, late) ? 1 : 0), "01")
         eq("stale: update never", SyncPreview.IsStale(otherTask, old, late) ? 1 : 0, 0)
+        purgingTask := otherTask.Clone(), purgingTask["Extra"] := "/MIR"
+        eq("stale: /MIR in the other options", SyncPreview.IsStale(purgingTask, old, late) ? 1 : 0, 1)
 
         ; Sizes as robocopy writes them, and for people
         eq("size: bytes, units of 1024, not a size", SyncProgress.ParseSize(" 966803") "|" SyncProgress.ParseSize("400.0 m") "|" SyncProgress.ParseSize("1.5 g") "|" SyncProgress.ParseSize("12 k") "|" SyncProgress.ParseSize("New File"), "966803|419430400|1610612736|12288|")

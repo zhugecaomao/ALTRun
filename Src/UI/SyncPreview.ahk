@@ -192,7 +192,7 @@ class SyncPreview {
     }
 
     ; A mirror's preview older than StaleMs (other modes don't delete: their preview can't be out of date in a harmful way)
-    static IsStale(task, created, now := A_TickCount) => RoboSync._Get(task, "Mode") = "Mirror" && now - created > SyncPreview.StaleMs
+    static IsStale(task, created, now := A_TickCount) => RoboSync.Purges(task) && now - created > SyncPreview.StaleMs
 
     ;---------------------------------------------------------------------------
     ; While robocopy works
