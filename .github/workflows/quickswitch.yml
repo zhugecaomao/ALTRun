@@ -1,6 +1,7 @@
 # Automatic switching to a file dialog on a real Windows desktop (Tests\Integration\QuickSwitchCheck.ahk): Explorer at a folder,
 # an Open dialog, then switching from Explorer to the dialog (activate, Alt+Tab, a click on the title bar) must make the dialog
-# jump to Explorer's folder. On pull requests that change Quick Switch, on main, or run by hand
+# jump to Explorer's folder. On pull requests that change Quick Switch, on main, every Monday (a new runner image can change how
+# windows come to the front without any change here), or run by hand
 name: Quick Switch
 
 on:
@@ -17,6 +18,8 @@ on:
       - Src/Core/App.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
       - .github/workflows/quickswitch.yml
+  schedule:
+    - cron: '41 1 * * 1'                                                  # Mondays 01:41 UTC
   workflow_dispatch:
     inputs:
       rounds:

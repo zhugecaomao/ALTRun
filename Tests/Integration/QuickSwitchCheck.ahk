@@ -8,7 +8,8 @@
 ;   alt+tab       a simulated Alt+Tab (SendInput), as the keyboard does it
 ;   title click   a click on the dialog's title bar, as the mouse does it
 ; Then the folder panel's ☆ menu: opened with a click on the star, or with Alt+↓ in the panel's search box, and closed with Esc:
-; the dialog must be in front again (so typing goes on in the dialog).
+; the dialog must be in front again within 2 s (so typing goes on in the dialog); a failure prints the windows in front before
+; and after Esc.
 ; Each way is tried Rounds times; the dialog is sent back to "Start" in between. Prints one line per round (PASS / FAIL) and
 ; ALTRun's QuickSwitch log lines on failure; the exit code is the number of failed rounds.
 ;
@@ -23,7 +24,7 @@
 global AppDir := A_Args.Length ? A_Args[1] : A_ScriptDir "\..\.."
 global Rounds := A_Args.Length > 1 ? Integer(A_Args[2]) : 5
 global Demo := "C:\QuickSwitchCheck\demo", LogFile := A_Temp "\ALTRun.log"
-global Failures := 0, AppPid := 0, DialogPid := 0, Explorer := 0, Dialog := 0
+global Failures := 0, AppPid := 0, AppWindow := 0, DialogPid := 0, Explorer := 0, Dialog := 0
 SetTitleMatchMode(3)
 SetKeyDelay(30, 30)
 
@@ -46,7 +47,7 @@ ExitApp(Failures)
 Say(text) => FileAppend(text "`n", "*")
 
 Setup() {
-    global AppPid, DialogPid, Explorer, Dialog
+    global AppPid, AppWindow, DialogPid, Explorer, Dialog
     try DirDelete(Demo, true)
     DirCreate(Demo "\Folder A"), DirCreate(Demo "\Start")
     settings := Map("SchemaVersion", 6
@@ -60,10 +61,10 @@ Setup() {
     Run('"' A_AhkPath '" "' AppDir '\ALTRun.ahk"', AppDir, , &AppPid)
     DetectHiddenWindows(true)
     SetTitleMatchMode(2)
-    main := WinWait("ALTRun.ahk ahk_class AutoHotkey ahk_pid " AppPid, , 30)
+    AppWindow := WinWait("ALTRun.ahk ahk_class AutoHotkey ahk_pid " AppPid, , 30)
     SetTitleMatchMode(3)
     DetectHiddenWindows(false)
-    if !main
+    if !AppWindow
         throw Error("ALTRun didn't start")
     Sleep(5000)                                                             ; start-up done
 
@@ -151,17 +152,43 @@ MenuRound(how, n) {
     popup := WinWait("ahk_class #32768", , 3)
     if !popup
         return Fail(name, n, "the menu didn't open")
+    before := DllCall("GetForegroundWindow", "Ptr")                         ; with the menu open: ALTRun's hidden window, the menu's owner
     Send("{Esc}")
-    WinWaitClose("ahk_id " popup, , 2)
-    Sleep(300)
-    front := DllCall("GetForegroundWindow", "Ptr")
-    if (front != Dialog) {
-        DetectHiddenWindows(true)
-        what := front ? WinGetClass(front) " of " WinGetProcessName(front) (DllCall("IsWindowVisible", "Ptr", front) ? "" : " (hidden)") : "none"
-        DetectHiddenWindows(false)
-        return Fail(name, n, "after Esc the window in front is " what ", not the dialog")
+    start := A_TickCount
+    ; Every window that comes to the front after Esc, with the time, until the dialog does (at most 2 s): when it doesn't,
+    ; this shows which window kept the front and whether the dialog came back late or not at all
+    front := -1, trace := "", closed := -1
+    while (A_TickCount - start < 2000) {
+        if (closed < 0 && !WinExist("ahk_id " popup))
+            closed := A_TickCount - start
+        now := DllCall("GetForegroundWindow", "Ptr")
+        if (now != front)
+            front := now, trace .= "`n       " (A_TickCount - start) " ms: " Describe(front)
+        if (front = Dialog && closed >= 0)
+            break
+        Sleep(10)
     }
-    Say("PASS " name " " n ": the dialog is in front again")
+    if (front != Dialog)
+        return Fail(name, n, "after Esc the window in front is " Describe(front) ", not the dialog`n     before Esc: " Describe(before)
+            . "`n     menu closed: " (closed < 0 ? "no" : "after " closed " ms") "`n     in front after Esc:" trace)
+    Say("PASS " name " " n ": the dialog is in front again after " (A_TickCount - start) " ms")
+    Sleep(300)                                                              ; a click on the star right after the menu closed doesn't open it again
+}
+
+; A window for the failure messages: its handle, class, process and whose it is (ALTRun's hidden main window, this check, ...)
+Describe(hwnd) {
+    if !hwnd
+        return "none"
+    prev := DetectHiddenWindows(true)
+    try {
+        pid := WinGetPID(hwnd)
+        whose := hwnd = Dialog ? "the dialog" : hwnd = Explorer ? "Explorer" : hwnd = AppWindow ? "ALTRun's hidden main window"
+            : pid = AppPid ? "ALTRun" : pid = DialogPid ? "the dialog's script" : pid = ProcessExist() ? "this check" : WinGetProcessName(hwnd)
+        text := Format("0x{:X} {} of pid {} ({}{})", hwnd, WinGetClass(hwnd), pid, whose, DllCall("IsWindowVisible", "Ptr", hwnd) ? "" : ", hidden")
+    } catch
+        text := Format("0x{:X} (gone)", hwnd)
+    DetectHiddenWindows(prev)
+    return text
 }
 
 Fail(method, n, why, logSize := -1) {
