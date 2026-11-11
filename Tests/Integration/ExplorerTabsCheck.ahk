@@ -7,6 +7,7 @@
 ;     also when the window isn't in front
 ;   - Ctrl still held from Ctrl+Enter (Reveal) when it starts: it waits for the key, so the tab still goes to the folder and
 ;     no other window opens (with Ctrl down, Explorer took the navigation for Ctrl+click and the tab stayed empty)
+;   - two Opens at once (the second interrupting the first while it waits for its tab) each get their own tab
 ;   - a folder that can't be reached returns false and leaves no empty tab behind
 ; Prints PASS / FAIL lines; the exit code is the number of failures. On a system without Explorer tabs it prints SKIP and exits 0
 ;===============================================================================
@@ -15,7 +16,14 @@
 #Warn All, StdOut
 #Include %A_ScriptDir%\..\..\Lib\ExplorerTabs.ahk
 
+OnError(PrintError)
 Main()
+
+; an error is printed as a FAIL line and ends the check, instead of a dialog that keeps it waiting until the time limit
+PrintError(err, *) {
+    FileAppend("FAIL exception: " err.Message " (" err.What ", line " err.Line ")`n", "*", "UTF-8")
+    ExitApp(99)
+}
 
 Main() {
     failures := 0
@@ -62,6 +70,40 @@ Main() {
         check("one more tab " folder, ExplorerTabs._Tabs(hwnd).Length = before + 1, ExplorerTabs._Tabs(hwnd).Length " tabs")
         check("in that window " folder, HasTab(hwnd, folder))
         check("file selected " folder, Selected(hwnd, folder) = "note.txt", Selected(hwnd, folder) "; " ExplorerTabs.SelectInfo)
+    }
+
+    ; Two at once (two folder hotkeys pressed quickly): a timer starts the second Open while the first waits for its tab, so
+    ; the second interrupts the first. Each folder must end up in its own new tab with its file selected, no tab left empty
+    for delay in [10, 30, 50, 80, 150] {
+        pairDelay := delay                                                 ; a for-loop variable has no value in OpenSecond
+        pairA := root "\Pair " delay " A", pairB := root "\Pair " delay " B"
+        for folder in [pairA, pairB]
+            DirCreate(folder), FileAppend("x", folder "\note.txt", "UTF-8")
+        before := ExplorerTabs._Tabs(hwnd).Length
+        front.Show()
+        second := ""
+        SetTimer(OpenSecond, -delay)
+        out("INFO two at once (" delay " ms): first starts")
+        first := ExplorerTabs.Open(pairA, "note.txt")
+        out("INFO two at once (" delay " ms): first done")
+        firstError := ExplorerTabs.LastError
+        deadline := A_TickCount + 15000
+        while (second = "" && A_TickCount < deadline)
+            Sleep(100)
+        name := "two at once (" delay " ms): "
+        check(name "first opened", first, firstError)
+        check(name "second opened", second != "" && second.Opened, second = "" ? "didn't finish" : second.Error)
+        check(name "two more tabs", ExplorerTabs._Tabs(hwnd).Length = before + 2, ExplorerTabs._Tabs(hwnd).Length " tabs, " before " before")
+        for folder in [pairA, pairB] {
+            check(name "in that window " folder, HasTab(hwnd, folder), TabPaths(hwnd))
+            check(name "file selected " folder, Selected(hwnd, folder) = "note.txt", Selected(hwnd, folder))
+        }
+    }
+    OpenSecond() {
+        out("INFO two at once (" pairDelay " ms): the second starts with " (ExplorerTabs._Tabs(hwnd).Length - before) " new tab(s) there")
+        opened := ExplorerTabs.Open(pairB, "note.txt")
+        second := {Opened: opened, Error: ExplorerTabs.LastError}
+        out("INFO two at once (" pairDelay " ms): second done")
     }
 
     ctrlFolder := root "\Ctrl held"                                        ; Reveal with Ctrl+Enter, Ctrl let go 0.7 s later
@@ -122,4 +164,12 @@ Selected(hwnd, folder) {
         }
     }
     return "no tab"
+}
+
+; the folders of the window's tabs, for a failure's detail
+TabPaths(hwnd) {
+    paths := ""
+    for each in ExplorerTabs._Tabs(hwnd)
+        paths .= (paths = "" ? "" : " | ") ExplorerTabs._Path(hwnd, each.Tab)
+    return paths
 }
