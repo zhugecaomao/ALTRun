@@ -5,260 +5,91 @@
 
 ## [未发布]
 
-## [2026.11.09.28]
-
-测试版。
-
-Test build.
-
-### 修复
-- 在新标签页中打开文件夹 (#440): 用 `Ctrl+Enter` "在文件管理器中显示" 时如果 Ctrl 还没松开, 资源管理器把导航当成 Ctrl+点击, 新标签留空, 文件夹在另一个窗口打开 (维护者实测发现)。现在先等 Ctrl / Alt / Shift / Win 松开 (最多 2 秒) 再开标签
-- "在文件管理器中显示" 时新标签里偶尔没选中文件 (Windows CI 上约三分之一): 窗口在后面时, 新标签一直不列出文件 (诊断看到 3 秒内都是 0 项), 没有东西可选。现在导航到位后先把窗口带到前台再选中, 1 秒后还没有文件时刷新一次这个标签, 选中后再核对, 最多试 3 秒
-
-## [2026.11.09.27]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置 → 通用 → 文件管理器 下面加了 "在新标签页中打开文件夹" (#440, AutoHotkey 论坛): 资源管理器在最近用过的窗口 (显示 ALTRun 之前在前台的那个, 没有就用当前虚拟桌面上最前面的那个) 里开新标签页, "在文件管理器中显示" 时也选中那个文件; 要 Windows 11 22H2 及以上。资源管理器没有开新标签的参数和接口, 做法是给窗口发 "新建标签页" 的命令 (Ctrl+T 背后的命令), 再让新标签导航过去 (用 PIDL, 中文、空格、`#`、`%` 都不用转义); 没有打开的资源管理器窗口、Windows 版本不够或者不成功时, 和以前一样新开窗口, 开出的空标签会关掉。Total Commander 自动加 `/O /T`; 其他文件管理器请在上面填它自己的参数。新增在 Windows 上实际开标签页的集成检查
-
-## [2026.11.09.26]
-
-测试版。
-
-Test build.
-
-### 修复
-- 从 偏好设置 → 文件夹同步 → "同步..." 打开的同步窗口, 点 "预览" 或 "立即同步" 会提示任务名重复而不运行 (2026.11.09.5 起): 这个窗口用的是任务的副本, 检查重名时被当成了另一个同名任务。现在副本对应的那个已保存任务不算重名; 真有两个同名任务时仍然提示。从搜索窗口打开的同步窗口不受影响
-
-## [2026.11.09.25]
-
-测试版。
-
-Test build.
-
-### 改进
-- 自定义命令编辑窗口里的这一项改名为 "选中内容类型" (英文 Selection types), 和偏好设置的 "选中内容" 页对应; 说明文字开头点出类型在哪里定义, 并举例 `IP, Text files` (#434)
-
-## [2026.11.09.24]
-
-测试版。
-
-Test build.
-
-### 新增
-- 自定义命令的编辑窗口加了 "选中内容类型" (#434): 旁边的 **类型** 按钮打开菜单, 列出内置类型和自己的内容类型 (偏好设置打开时用正在编辑的), 已选的打勾, 点一下勾选或取消; 也可以直接输入, 用逗号分隔, 保存时整理格式 (`a,b ,, c` → `a, b, c`)。写了不存在的类型名时保存前提醒。留空时不保存这一项, 没设过的命令不会多出 `"Selection": ""`。不用再手改 `ALTRun.json`
-
-## [2026.11.09.23]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内容类型的示例都配了能直接用的命令 (#434): Email → 新的默认命令 Send Email (`mailto:{query}`), IP → Ping, Coordinates (例如 `1.3521, 103.8198`) → Google Maps, Text files → Notepad, Images → Paint (取代上一版的 Ticket 和 Documents, 它们没有通用的命令)。"选中内容" 页的 "添加示例" 同时把这些命令带到自定义命令里: 没有的添加, 同名但还没设类型的设为用于这个类型, 提示里说明各有几个
-- 网址类型的自定义命令以 `mailto:{query}` 开头时, 地址里的 `@` 不再编码成 `%40`
-
-### 修复
-- "选中内容" 页测试框的 `...` 打开的文件选择窗口不是偏好设置的模态窗口, 偏好设置会盖住它; 现在它属于偏好设置, 关闭前偏好设置不能操作
-
-## [2026.11.09.22]
-
-测试版。
-
-Test build.
-
-### 改进
-- 偏好设置左边的页面列表: 每一行高一点, 列表下面只留一点空白 (按实际的行高计算, 以前少算了 1 像素, 下面空出一截)
-- "选中内容" 页 (#434): 热键框和 "通用" 页的呼出热键在同一位置, "测试" 和热键对齐; 内容类型上面加了三步用法说明和 Wiki 链接; 测试框下面加了说明, 文件可以拖到框里或点 `...` 选择; 只匹配到内置类型时注明 "没有符合的自定义类型"
-- 新安装自带常用的内容类型: Email、IP、Ticket (例如 `ABC-123`)、Documents、Images, 默认的 "Ping" 命令用于选中的 IP 地址; 已有的设置可以在 "选中内容" 页点 "添加示例" 补上
-
-## [2026.11.09.21]
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置新增 "选中内容" 页 (#434): 选中内容的热键从 "通用" 页移到这里; 内容类型可以在列表里添加、编辑、删除 (名称、种类 `文字 (正则)` / `文件 (扩展名)`、规则), 正则写错或名称和内置类型重名时保存前提醒; "使用的命令" 一列显示每个类型用在哪些自定义命令上; 下面的 **测试** 框输入一段示例文字或文件路径, 马上显示它属于哪些类型、会显示哪些命令 (用的是还没保存的设置, 不算修改)。自定义命令的 "Selection" 暂时还在 `ALTRun.json` 里写, 下一步加进命令的编辑窗口
-
-## [2026.11.09.20]
-
-测试版。
-
-Test build.
-
-### 新增
-- 选中内容的操作可以加入自己的命令 (#434): 在 `ALTRun.json` 里用 `SelectionTypes` 定义内容类型 (`Text` 用正则表达式, 例如订单号 `^PO\d{8}$`; `File` 用扩展名, 例如 `pdf, docx`), 再给自定义命令加 `"Selection": "PO"`。选中内容后按 `Ctrl+Alt+\`, 符合类型的命令排在操作面板最前面 (回车运行第一个, 照常可以打字筛选); `{query}` 换成选中的文字或路径, `File` / `Command` 没写 `{query}` 时选中的内容加在参数最后。内置类型 `Text`、`Url`、`File`、`Folder`、`Files` 不用定义。文字里有换行、双引号, 或命令运行 `cmd` / PowerShell 而文字里有它们的特殊字符时, 不显示这个命令, 免得选中的文字执行别的命令。偏好设置里的设置页面以后再加
-
-## [2026.11.09.19]
-
-测试版。
-
-Test build.
-
-### 修复
-- 用 ALTRun 启动一个已经在运行、被别的窗口挡住的程序时, 有的程序 (只允许运行一个实例的, 例如一些聊天软件) 窗口不到前台, 只是任务栏按钮闪烁; 从开始菜单启动却正常。原因是 ALTRun 先隐藏搜索窗口再启动程序, 这时它已经不是前台窗口, Windows 就不让那个程序把窗口切到前台。现在 ALTRun 在隐藏之前允许接下来启动的程序取得焦点 (`AllowSetForegroundWindow`), 回车运行、操作面板、右键菜单、Windows 右键菜单和 "编辑" 都一样 (AutoHotkey 论坛反馈)
-
-## [2026.11.09.18]
-
-测试版。
-
-Test build.
-
-### 改进
-- 热键编辑窗口加宽一些: 热键框下面的说明在四种语言下都是一行; "保留按键原来的功能" 仍在热键框右边
-
-## [2026.11.09.17]
-
-测试版。
-
-Test build.
-
-### 新增
-- 自定义热键可以 **在 ALTRun 中搜索选中的文字**: 在任何程序里选中一段文字 (例如邮件里的项目名) 再按热键, ALTRun 打开并直接搜。搜索内容里写 `{selection}` 的地方换成选中的文字 (合成一行, 最多 100 字), 例如 `folder {selection}` 搜这个名字的文件夹、`g {selection}` 用 Google 搜; 没有选中时为空。新安装的示例: `Ctrl+Alt+F` = `folder {selection}`、`Ctrl+Alt+D` = `doc {selection}`、`Ctrl+Alt+R` = `recent ` (Refs #427)
-- 热键有了自己的编辑窗口 (偏好设置 → 自定义热键 → 添加 / 修改): 分成 热键 / 动作 / 搜索内容 / 生效范围 几组, 每组有说明; "插入 ▾" 可以插入 `{selection}` 或常用范围 (folder、doc、pic、recent...); 生效范围改成 "所有程序 / 只在这些窗口里" 两个选项; 最下面一行实时说明这个热键会做什么
-
-### 改进
-- "更多" 和 "插入" 下拉按钮在箭头前显示分隔线 (和 Windows 的分割按钮一样); 点文字或箭头都打开菜单
-- 测试版 2026.11.09.15 / .16 的 "显示 ALTRun + 搜索功能前缀" (`Show` + `Prefix`) 改名为 "在 ALTRun 中搜索" (`Search` + `SearchText`); 已经保存的旧写法照常使用, 在编辑窗口里保存一次就换成新写法
-
-测试版。
-
-Test build.
-
-### 新增
-- 偏好设置的自定义热键、自定义命令、文字片段、网页搜索四个列表可以 **添加示例**: 只补上列表里还没有的默认条目 (删掉过的示例、老设置里没有的新示例), 跳过已有的, 然后提示 "添加了 N 条, 跳过了 M 条"; 点 "确定" / "应用" 后才保存, 自己的条目不受影响。判断已有: 热键看键和窗口 (`!^f` 和 `^!f` 算同一个键), 命令看标题或任一关键字, 片段看名称或任一关键字, 搜索引擎看 Id 或任一关键字。热键页的按钮是 "添加示例", 网页搜索页是 "添加内置项"
-
-### 改进
-- 自定义命令页的 "检查路径" 和文字片段页的 "导入/导出" 收进 "更多 ▾" 按钮的菜单 (和 "添加示例" 在一起), 按钮行留给筛选框
-
-测试版。
-
-Test build.
-
-### 新增
-- 自定义热键 (偏好设置 → 热键) 的 "显示 ALTRun" (`Show`) 动作多了一个 "搜索功能前缀": 按热键打开搜索窗口时, 搜索框里已经填好这个前缀。例如 `Ctrl+Alt+F` 填 `folder ` 直接搜文件夹, 填 `recent ` 直接看最近的文件, 填 `doc ` 只搜文档。这是设置里可选的新键 `Prefix`, 老设置不受影响。新安装带三个示例: `Ctrl+Alt+F` (`folder `)、`Ctrl+Alt+R` (`recent `)、`Ctrl+Alt+D` (`doc `) (Refs #427)
-
-## [2026.11.09.14]
-
-测试版。
-
-Test build.
-
-### 改进
-- 对话框面板的搜索框在没有 Everything、又搜不到结果时, 会显示一行提示: 内置索引只覆盖哪些文件夹 (默认是桌面、文档、下载), 按 Enter 或点击这一行打开 "文件搜索" 页, 把要搜的文件夹加进去。以前只显示空列表, 看不出是没有这个文件夹还是索引没覆盖到 (Refs #424)
-
-## [2026.11.09.13]
-
-测试版。
-
-Test build.
-
-### 改进
-- 一键更新的后台下载失败、改用另一种方式重新下载时, 进度窗口会说明 "正在换一种方式重新下载, 完成之前 ALTRun 可能暂时没有响应"。以前文字不变、只有取消按钮变灰, 看起来像卡住了
-
-## [2026.11.09.12]
-
-测试版。
-
-Test build.
-
-### 新增
-- 对话框面板的收藏菜单可以用键盘打开: 在面板的搜索框里按 `Alt+↓` 或 `F4` (和 Windows 的下拉框一样)。星形按钮的提示里写上了这两个键
-
-## [2026.11.09.11]
-
-测试版。
-
-Test build.
-
-### 修复
-- 对话框面板的星形菜单或右键菜单用 Esc 或点别处关掉后, 前台留在 ALTRun 看不见的主窗口上, 接着打字进不了对话框, 要先点一下对话框。现在菜单关掉后对话框回到前台 (点了别的程序关掉菜单时不抢回焦点)
-
-## [2026.11.09.10]
-
-测试版。
-
-Test build.
-
-### 改进
-- 内部整理: 收藏菜单的建立和弹出分开, Enter 和修饰键对应的运行方式单独成一个函数, 都补上了测试 (用 Windows 的菜单接口检查菜单里的每一项)。用户看不出变化
-
-## [2026.11.09.9]
-
-测试版。
-
-Test build.
-
-### 改进
-- 同一处反复出现的未捕获错误 (例如一个每秒都出错的计时器), 日志只完整记前 5 次, 之后只计数, 每小时 (以及退出时) 写一行 "又出现了多少次"。以前每次都写一条带调用栈的日志, 即使关了调试日志, ALTRun 连续运行几周时日志会一直变大
-
-## [2026.11.09.8]
-
-测试版。
-
-Test build.
-
-### 修复
-- 开着同步窗口时退出或重启 ALTRun, 窗口的位置和大小以前不会保存 (只在关闭窗口时保存)。现在退出时保存最前面那个同步窗口的位置
-
-## [2026.11.09.6]
-
-测试版。
-
-Test build.
-
-### 修复
-- 用 Everything 搜索文件时, 等待 Everything 回复期间如果又发起一次搜索 (例如这时处理了一次按键), 两次查询共用同一个回复位置, 前一次可能拿到后一次的结果 (界面会丢掉过期结果, 最多白查一次)。现在每次查询有自己的回复位置
-
-## [2026.11.09.5]
-
-测试版。
-
-Test build.
-
-### 修复
-- 在 ALTRun.json 里手写出两个同名的同步任务 (不分大小写和首尾空格) 时, 它们会共用运行状态、同步窗口、日志文件和搜索结果。现在运行或预览这样的任务会提示 "另一个同步任务和它同名", 请在偏好设置里改名 (编辑窗口本来就不允许重名)
-
-## [2026.11.09.4]
-
-测试版。
-
-Test build.
-
-### 改进
-- 对话框面板的收藏菜单: 一个收藏里的子文件夹最多读 500 个就停 (显示 "还有 470+ 个文件夹"), 收藏一个有几千个子文件夹的目录或休眠中的移动硬盘时, 点星形按钮不用等很久; 子文件夹按名字排序, 和资源管理器一样 ("2" 在 "10" 前面), U 盘 (FAT / exFAT) 上列出的也是按名字排的前 30 个
-
-## [2026.11.09.3]
-
-测试版。
-
-Test build.
-
-### 修复
-- 通过远程桌面 (Chrome 远程桌面等) 操作时, 对话框自动跳转会在 Alt / Ctrl / Shift 还按着时就开始往对话框里输入路径: 远程桌面送来的按键, ALTRun 以前只看 "物理按下", 看不到。现在也看系统认为按下的状态, 等按键松开再输入。录制快捷键时, 开始前已经按着的修饰键也同样认得出
-
-## [2026.11.09.2]
-
-测试版。
-
-Test build.
-
-### 修复
-- 同一个文件同时写两次时 (例如保存时正好碰上后台计时器也在保存), 后一次会删掉前一次的临时文件, 前一次重试 2 秒后报错 "The system cannot find the file specified" (保存设置时会提示 "设置无法保存", 内容其实已经由另一次保存好)。现在每次写入用自己的临时文件; 前一次发现更新的内容已经写好时, 保留新内容, 不再用旧内容覆盖
-
-## [2026.11.09.1]
-
-测试版。
-
-Test build.
-
-### 改进
-- 一键更新改从 GitHub 的 API 下载更新包, 失败时 (例如超过 GitHub 对未登录用户每小时 60 次的限制) 再用 Release 的下载链接, 最后才用旧的下载方式。2026-11 GitHub 两次出事故时, Release 的下载链接每次要 9 ~ 11 秒才响应, 有时直接 504; API 不到半秒就下完
-- 日志记录更新包下载用了多久、从哪里下载的
+## [2026.11.11]
+
+### Summary
+
+**Your own actions for selected content**: define content types such as an order number pattern or PDF files, and the custom commands you set for them come first when you select something and press `Ctrl+Alt+\`, ready to filter by typing; a new Preferences → Selection page has a test box, and typical types come with working commands (an email address → Send Email, an IP address → Ping, coordinates → Google Maps, text files → Notepad, images → Paint). **Folders can open in a new tab** of the File Explorer window you used last (Windows 11) or of Total Commander. **Hotkeys can search the selected text in ALTRun** (`Ctrl+Alt+F` for folders, `Ctrl+Alt+D` for documents), set up in a new hotkey window. A program started from ALTRun that is already running now comes to the front instead of only flashing on the taskbar, and a sync task opened from Preferences can preview and run again.
+
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- The settings file version is unchanged; the new settings are added with their defaults. The selection hotkey (`Ctrl+Alt+\`) moved from Preferences → General to the new Selection page. The new examples (content types, hotkeys, commands) come with new installations; existing settings get them with **Add Examples** on each list page
+
+### New
+- **Your own actions for selected content** (#434): select text, files or a URL in any program and press `Ctrl+Alt+\`; the custom commands set for its content types come first in the actions panel (Enter runs the first, typing filters)
+  - Preferences → **Selection**: the hotkey and the **content types**: `Text (regex)` types match the selected text with a regular expression (e.g. `^PO\d{8}$`), `File (extensions)` types match selected files (e.g. `pdf, docx`); built-in types `Text`, `Url`, `File`, `Folder`, `Files` need no entry. A **Test** box shows which types a sample text or file has and which commands come first (type it, paste it, drop a file or choose one with `...`); the list shows the commands that use each type
+  - In a custom command's edit window, **Selection types** picks the types from a menu; `{query}` becomes the selected text or path (encoded in URLs), and a program without `{query}` gets the selection as its last argument
+  - Typical types with working commands: Email → **Send Email** (new default command, `mailto:{query}`), IP → Ping, Coordinates (e.g. `1.3521, 103.8198`) → Google Maps, Text files → Notepad, Images → Paint; **Add Examples** on the Selection page also brings the commands along
+  - Selected text can't run something else: a command is left out when the text has a line break or a double quote (except web addresses, which are encoded), or when the command runs `cmd` or PowerShell and the text has their special characters
+- **Open folders in a new tab** (#440, AutoHotkey forum): Preferences → General → File manager → "Open folders in a new tab"
+  - File Explorer (Windows 11 22H2 or later): a new tab of the Explorer window you used last; Reveal (`Ctrl+Enter`) selects the file in it. With no Explorer window open, a new window as before
+  - Total Commander: `/O /T` are added
+- **Search the selected text in ALTRun from a hotkey** (#427): a custom hotkey's action "Search in ALTRun" types its search text into the search box, with `{selection}` replaced by the text selected in the program in front; new installations have `Ctrl+Alt+F` (`folder {selection}`), `Ctrl+Alt+D` (`doc {selection}`) and `Ctrl+Alt+R` (`recent `)
+- **A hotkey window of its own** (Preferences → Hotkeys → Add / Edit): hotkey, action, search text (with an **Insert ▾** menu for `{selection}` and the search scopes) and where it works, each with a description, and a line that says what the hotkey will do
+- **Add Examples** on the Hotkeys, Custom Commands, Snippets and Web Search pages (on Web Search: Add Built-ins): adds the default items missing from your list, skips the ones you have, and says how many
+- The file dialog panel's favorites menu opens from the keyboard: `Alt+↓` or `F4` in the panel's search box
+
+### Improvements
+- **One-click updates download faster** through GitHub's API (the release download links took 9–11 seconds or failed during GitHub's incidents in November), falling back to the download link and then the old way; when it falls back to the old way, the progress window says ALTRun may not respond for a moment
+- The file dialog panel: when nothing is found and Everything isn't running, a line says which folders the built-in index covers and opens File Search to add more (#424)
+- The favorites menu reads at most 500 subfolders of a favorite and lists them by name, as Explorer does, so a huge folder or a sleeping USB disk doesn't keep you waiting
+- Preferences: the page list fills its height; the extra list commands (Check Paths, Import / Export, Add Examples) are in a **More ▾** menu, and drop-down buttons show a separator before the arrow
+- A URL custom command starting with `mailto:{query}` keeps the `@` of the address
+- The same unexpected error repeating (e.g. every second) is logged in full 5 times, then counted once an hour, so the log doesn't keep growing
+
+### Fixes
+- **A program that is already running, behind other windows, now comes to the front** when started from ALTRun, instead of only flashing on the taskbar (AutoHotkey forum)
+- **Folder Sync**: a task's window opened from Preferences → Folder Sync → Sync... refused to preview or run, saying another task had the same name (since 2026.11.09). Two tasks that really share a name (written by hand in `ALTRun.json`) are refused, as they would share their state, window and log
+- Switching to a file dialog over a remote desktop could type the path while Alt / Ctrl / Shift was still held; recording a hotkey now sees modifiers held over a remote desktop too
+- Closing the file dialog panel's star or right-click menu with Esc left the focus in ALTRun's hidden window, so typing didn't reach the dialog
+- Two writes of the same file at once (e.g. a save while a timer saves) could fail after 2 seconds with "The system cannot find the file specified" and "settings couldn't be saved"
+- An Everything search started while another one waited for its reply could get the other one's results
+- A sync window's place and size are saved when ALTRun quits, not only when the window is closed
+
+---
+
+### 中文说明
+
+**选中内容的操作可以加入自己的命令**: 定义内容类型 (例如订单号的格式、PDF 文件), 选中内容后按 `Ctrl+Alt+\`, 为这些类型设定的自定义命令排在最前面, 照常可以打字筛选; 偏好设置新增 "选中内容" 页, 有测试框, 还自带常用的类型和能直接用的命令 (邮箱地址 → 发邮件、IP 地址 → Ping、坐标 → Google 地图、文本文件 → 记事本、图片 → 画图)。**文件夹可以在新标签页中打开**: 资源管理器 (Windows 11) 在最近用过的窗口里开新标签, Total Commander 也一样。**热键可以直接在 ALTRun 中搜索选中的文字** (`Ctrl+Alt+F` 搜文件夹、`Ctrl+Alt+D` 搜文档), 热键有了自己的编辑窗口。从 ALTRun 启动一个已经在运行的程序时, 它的窗口会到前台, 不再只是任务栏闪烁; 从偏好设置打开的同步任务又能预览和运行了。
+
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 设置文件的版本没有变, 新的设置项用默认值补上。选中内容的热键 (`Ctrl+Alt+\`) 从 偏好设置 → 通用 移到了新的 "选中内容" 页。新的示例 (内容类型、热键、命令) 随新安装提供, 已有的设置可以在各列表页点 **添加示例** 补上
+
+#### 新增
+- **选中内容的操作可以加入自己的命令** (#434): 在任何程序里选中文字、文件或网址, 按 `Ctrl+Alt+\`, 为它的内容类型设定的自定义命令排在操作面板最前面 (回车运行第一个, 打字筛选)
+  - 偏好设置 → **选中内容**: 热键和 **内容类型**: `文字 (正则)` 用正则表达式匹配选中的文字 (例如 `^PO\d{8}$`), `文件 (扩展名)` 匹配选中的文件 (例如 `pdf, docx`); 内置类型 `Text`、`Url`、`File`、`Folder`、`Files` 不用添加。**测试** 框显示一段示例文字或一个文件属于哪些类型、哪些命令会排在最前面 (输入、粘贴、拖入文件或点 `...` 选择); 列表里显示每个类型用在哪些命令上
+  - 自定义命令的编辑窗口里, **选中内容类型** 用菜单勾选类型; `{query}` 换成选中的文字或路径 (网址里会编码), 没写 `{query}` 的程序把选中的内容作为最后一个参数
+  - 常用类型都配了能直接用的命令: Email → **Send Email** (新的默认命令, `mailto:{query}`)、IP → Ping、Coordinates (例如 `1.3521, 103.8198`) → Google Maps、Text files → Notepad、Images → Paint; "选中内容" 页的 **添加示例** 会把命令一起带上
+  - 选中的文字不会执行别的命令: 文字里有换行或双引号时不显示这个命令 (网址除外, 会编码); 命令运行 `cmd` 或 PowerShell 而文字里有它们的特殊字符时也不显示
+- **在新标签页中打开文件夹** (#440, AutoHotkey 论坛): 偏好设置 → 通用 → 文件管理器 → "在新标签页中打开文件夹"
+  - 资源管理器 (Windows 11 22H2 及以上): 在最近用过的资源管理器窗口里开新标签; "在文件管理器中显示" (`Ctrl+Enter`) 时选中那个文件。没有打开的资源管理器窗口时和以前一样新开窗口
+  - Total Commander: 自动加 `/O /T`
+- **用热键在 ALTRun 中搜索选中的文字** (#427): 自定义热键的动作 "在 ALTRun 中搜索" 把搜索内容填进搜索框, `{selection}` 换成前台程序里选中的文字; 新安装带 `Ctrl+Alt+F` (`folder {selection}`)、`Ctrl+Alt+D` (`doc {selection}`) 和 `Ctrl+Alt+R` (`recent `)
+- **热键有了自己的编辑窗口** (偏好设置 → 自定义热键 → 添加 / 修改): 热键、动作、搜索内容 (**插入 ▾** 菜单可以插入 `{selection}` 和常用的搜索范围)、生效范围, 每组有说明, 最下面一行说明这个热键会做什么
+- 自定义热键、自定义命令、文字片段、网页搜索几个列表页可以 **添加示例** (网页搜索页是 "添加内置项"): 补上列表里没有的默认条目, 跳过已有的, 并提示各有几条
+- 文件对话框面板的收藏菜单可以用键盘打开: 在面板的搜索框里按 `Alt+↓` 或 `F4`
+
+#### 改进
+- **一键更新下载更快**: 改从 GitHub 的 API 下载 (11 月 GitHub 出事故时, Release 的下载链接要 9–11 秒才响应, 有时直接失败), 失败时再用下载链接, 最后才用旧的方式; 用旧方式时进度窗口会说明 ALTRun 可能暂时没有响应
+- 文件对话框面板: 搜不到结果又没有运行 Everything 时, 显示一行提示, 说明内置索引覆盖哪些文件夹, 点它打开 "文件搜索" 页添加 (#424)
+- 收藏菜单的一个收藏最多读 500 个子文件夹, 按名字排序 (和资源管理器一样), 收藏很大的文件夹或休眠中的移动硬盘时不用久等
+- 偏好设置: 左边的页面列表填满整个高度; 列表页的额外命令 (检查路径、导入 / 导出、添加示例) 收进 **更多 ▾** 菜单; 下拉按钮在箭头前显示分隔线
+- 网址类型的自定义命令以 `mailto:{query}` 开头时, 地址里的 `@` 不再编码
+- 同一个意外错误反复出现时 (例如每秒一次), 日志只完整记录前 5 次, 之后每小时汇总一次, 日志不会一直变大
+
+#### 修复
+- **已经在运行、被别的窗口挡住的程序, 从 ALTRun 启动时会到前台**, 不再只是任务栏按钮闪烁 (AutoHotkey 论坛反馈)
+- **文件夹同步**: 从 偏好设置 → 文件夹同步 → "同步..." 打开的任务窗口, 点预览或立即同步会提示 "另一个任务和它同名" 而不运行 (2026.11.09 起)。真有两个同名任务时 (在 `ALTRun.json` 里手写的) 仍然拒绝, 因为它们会共用状态、窗口和日志
+- 通过远程桌面切换到文件对话框时, 可能在 Alt / Ctrl / Shift 还按着时就开始输入路径; 录制热键时也能认出远程桌面按着的修饰键
+- 用 Esc 关掉文件对话框面板的星形菜单或右键菜单后, 焦点留在 ALTRun 的隐藏窗口上, 打字进不了对话框
+- 同一个文件同时写两次时 (例如保存时正好碰上计时器也在保存), 可能 2 秒后报错 "The system cannot find the file specified" 并提示设置无法保存
+- 等待 Everything 回复时又发起一次搜索, 前一次可能拿到后一次的结果
+- 退出 ALTRun 时也保存同步窗口的位置和大小, 不只是关掉窗口时
 
 ## [2026.11.09]
 
@@ -1380,34 +1211,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.28...HEAD
-[2026.11.09.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.27...2026.11.09.28
-[2026.11.09.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.26...2026.11.09.27
-[2026.11.09.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.25...2026.11.09.26
-[2026.11.09.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.24...2026.11.09.25
-[2026.11.09.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.23...2026.11.09.24
-[2026.11.09.23]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.22...2026.11.09.23
-[2026.11.09.22]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.21...2026.11.09.22
-[2026.11.09.21]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.20...2026.11.09.21
-[2026.11.09.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.19...2026.11.09.20
-[2026.11.09.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.18...2026.11.09.19
-[2026.11.09.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.17...2026.11.09.18
-[2026.11.09.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.16...2026.11.09.17
-[2026.11.09.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.15...2026.11.09.16
-[2026.11.09.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.14...2026.11.09.15
-[2026.11.09.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.13...2026.11.09.14
-[2026.11.09.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.12...2026.11.09.13
-[2026.11.09.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.11...2026.11.09.12
-[2026.11.09.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.10...2026.11.09.11
-[2026.11.09.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.9...2026.11.09.10
-[2026.11.09.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.8...2026.11.09.9
-[2026.11.09.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.6...2026.11.09.8
-[2026.11.09.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.5...2026.11.09.6
-[2026.11.09.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.4...2026.11.09.5
-[2026.11.09.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.3...2026.11.09.4
-[2026.11.09.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.2...2026.11.09.3
-[2026.11.09.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.1...2026.11.09.2
-[2026.11.09.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09...2026.11.09.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11...HEAD
+[2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
 [2026.10.26]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.10.26
