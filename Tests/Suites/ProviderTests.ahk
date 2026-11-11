@@ -2065,7 +2065,7 @@ class ProviderTests {
             started := A_TickCount
             none := BrowserHistoryProvider.Matches("nothing here", 30).Length
             noneMs := A_TickCount - started
-            FileAppend("NOTE BrowserHistory: 10000 pages read in " loadMs " ms; search 2 words " wordsMs " ms, pinyin (first) " pinyinMs " ms, no match " noneMs " ms`\n", "*")
+            FileAppend("NOTE BrowserHistory: 10000 pages read in " loadMs " ms; search 2 words " wordsMs " ms, pinyin (first) " pinyinMs " ms, no match " noneMs " ms`n", "*")
             eq("time: pages", BrowserHistoryProvider.Items.Length "|" words "|" pinyin "|" none, "10000|30|30|0")
             ok("time: read under 3 s", loadMs < 3000)
             try DirDelete(root, true)
