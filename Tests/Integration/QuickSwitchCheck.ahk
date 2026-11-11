@@ -172,6 +172,7 @@ MenuRound(how, n) {
         return Fail(name, n, "after Esc the window in front is " Describe(front) ", not the dialog`n     before Esc: " Describe(before)
             . "`n     menu closed: " (closed < 0 ? "no" : "after " closed " ms") "`n     in front after Esc:" trace)
     Say("PASS " name " " n ": the dialog is in front again after " (A_TickCount - start) " ms")
+    Sleep(300)                                                              ; a click on the star right after the menu closed doesn't open it again
 }
 
 ; A window for the failure messages: its handle, class, process and whose it is (ALTRun's hidden main window, this check, ...)
