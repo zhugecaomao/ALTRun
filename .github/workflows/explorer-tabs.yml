@@ -1,5 +1,6 @@
 # Opening folders in a new tab of File Explorer on a real Windows desktop (Tests\Integration\ExplorerTabsCheck.ahk):
-# windows-latest is Windows Server 2025, whose Explorer has tabs. On pull requests that change it, on main, or run by hand
+# windows-latest is Windows Server 2025, whose Explorer has tabs. On pull requests that change it, on main, every Monday (a new
+# runner image can change how Explorer behaves without any change here), or run by hand
 name: Explorer tabs
 
 on:
@@ -14,6 +15,8 @@ on:
       - Lib/ExplorerTabs.ahk
       - Tests/Integration/ExplorerTabsCheck.ahk
       - .github/workflows/explorer-tabs.yml
+  schedule:
+    - cron: '23 1 * * 1'                                                  # Mondays 01:23 UTC
   workflow_dispatch:
 
 permissions:
