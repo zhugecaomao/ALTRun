@@ -202,7 +202,7 @@ AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景
 **测试版** (每个改了程序的 PR):
 1. 版本号四段 `YYYY.MM.DD.N` (例如 `2026.10.20.1`); 要比下一个正式版小, 否则装了测试版的检测不到正式版的更新
 2. `CHANGELOG.md` 在 `## [未发布]` 下面加一节 `## [YYYY.MM.DD.N]`: 第一段 "测试版。", 第二段 "Test build.", 再写 新增 / 改进 / 修复 (用中文); 文件末尾加比较链接 `[YYYY.MM.DD.N]: .../compare/<上一版>...<这一版>`, `[未发布]` 改成从这一版比较
-3. 在 PR 的分支上运行 **Release** workflow, `publish = false`; 构建好的程序在 Actions 页面底部的 Artifacts (`ALTRun_v<版本>`)
+3. PR 合并到 main 后自动构建测试版 (`App.Version` 变了时, **Release** workflow 以 `publish = false` 运行); 构建好的程序在 Actions 页面底部的 Artifacts (`ALTRun_v<版本>`)。合并前就要测试版时, 在 PR 的分支上运行 **Release**, `publish = false`
 
 **正式版** (每天最多一个):
 1. 开一个 PR, 版本号改成三段 `YYYY.MM.DD`
@@ -211,7 +211,7 @@ AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景
    - `---`
    - `### 中文说明` (中文摘要一段) / `#### 升级` / `#### 新增` / `#### 改进` / `#### 修复`
    - 这一节里不要用 `##` 标题 (Release workflow 取到下一个 `##` 为止); 删掉测试版各节和它们的比较链接; 文件末尾 `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD`, `[未发布]: .../compare/YYYY.MM.DD...HEAD`
-3. 合并到 main 后, 在 main 上运行 **Release**, `publish = true`
+3. 合并到 main 后会自动跑一次检查构建 (`publish = false`); 再在 main 上运行 **Release**, `publish = true`
 
 Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe → 单元测试 → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本 (`packaging/Submit-Winget.ps1`: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR; 失败时用 **Submit to winget** 工作流重新提交已发布的版本)。
 

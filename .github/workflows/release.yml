@@ -4,13 +4,20 @@
 # Release steps:
 #   1. update App.Version in Src\Core\App.ahk and ;@Ahk2Exe-SetVersion in ALTRun.ahk (a test checks they match)
 #   2. add a section "## [<version>] ..." to CHANGELOG.md, used as the release notes
-#   3. after merging to main, run "Release" on the Actions page: first publish = false to check, then publish = true to release
+#   3. merging the PR to main builds it by itself (publish = false: the "push" trigger below, only when App.Version changed);
+#      to release, run "Release" on the Actions page on main with publish = true
+# A test build on a PR branch before merging: run "Release" on that branch with publish = false.
 # After publishing, the Scoop (bucket/altrun.json) and winget (packaging/winget) manifests are updated to the new version and committed to main;
 # with the WINGET_TOKEN secret (a GitHub token with public_repo scope) wingetcreate also submits the new version to winget-pkgs.
 name: Release
 run-name: ${{ inputs.publish && 'Publish release' || 'Test build' }}
 
 on:
+  # A merged PR that changes Src/Core/App.ahk; the "version" job builds only when the App.Version line itself changed.
+  # Building after the merge (not on the PR branch) also avoids signing failures: SignPath fetches the branch, which is deleted on merge.
+  push:
+    branches: [main]
+    paths: [Src/Core/App.ahk]
   workflow_dispatch:
     inputs:
       publish:
@@ -23,7 +30,29 @@ permissions:
   actions: read                   # SignPath reads this build and downloads the artifacts to sign with GITHUB_TOKEN
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.check.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v7
+        if: github.event_name == 'push'
+        with:
+          fetch-depth: 2
+      - name: Did App.Version change?
+        id: check
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != push ]; then echo "changed=true" >> "$GITHUB_OUTPUT"; exit 0; fi
+          git cat-file -e "$BEFORE" 2>/dev/null || git fetch -q --depth=1 origin "$BEFORE"
+          if git diff "$BEFORE" HEAD -- Src/Core/App.ahk | grep -qE '^\+\s*static Version\s*:='; then changed=true; else changed=false; fi
+          echo "App.Version changed: $changed"
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: version
+    if: needs.version.outputs.changed == 'true'
     runs-on: windows-latest
     timeout-minutes: 45                                    # a normal run takes under 10 minutes; the unit tests have their own limit (Tests/Tools/RunAhk.ps1)
     env:
