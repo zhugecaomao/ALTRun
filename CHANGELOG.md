@@ -22,7 +22,7 @@
   - Preferences → **Selection**: the hotkey and the **content types**: `Text (regex)` types match the selected text with a regular expression (e.g. `^PO\d{8}$`), `File (extensions)` types match selected files (e.g. `pdf, docx`); built-in types `Text`, `Url`, `File`, `Folder`, `Files` need no entry. A **Test** box shows which types a sample text or file has and which commands come first (type it, paste it, drop a file or choose one with `...`); the list shows the commands that use each type
   - In a custom command's edit window, **Selection types** picks the types from a menu; `{query}` becomes the selected text or path (encoded in URLs), and a program without `{query}` gets the selection as its last argument
   - Typical types with working commands: Email → **Send Email** (new default command, `mailto:{query}`), IP → Ping, Coordinates (e.g. `1.3521, 103.8198`) → Google Maps, Text files → Notepad, Images → Paint; **Add Examples** on the Selection page also brings the commands along
-  - Selected text can't run something else: a command is left out when the text has a line break or a double quote (except web addresses, which are encoded), or when the command runs `cmd` or PowerShell and the text has their special characters
+  - Selected text can't run something else: a command is left out when the text has a line break or a double quote (except web addresses, which are encoded), or when the command runs `cmd` or PowerShell (also through `%ComSpec%` or another program such as `wt.exe`) and the text has their special characters
 - **Open folders in a new tab** (#440, AutoHotkey forum): Preferences → General → File manager → "Open folders in a new tab"
   - File Explorer (Windows 11 22H2 or later): a new tab of the Explorer window you used last; Reveal (`Ctrl+Enter`) selects the file in it. With no Explorer window open, a new window as before
   - Total Commander: `/O /T` are added
@@ -65,7 +65,7 @@
   - 偏好设置 → **选中内容**: 热键和 **内容类型**: `文字 (正则)` 用正则表达式匹配选中的文字 (例如 `^PO\d{8}$`), `文件 (扩展名)` 匹配选中的文件 (例如 `pdf, docx`); 内置类型 `Text`、`Url`、`File`、`Folder`、`Files` 不用添加。**测试** 框显示一段示例文字或一个文件属于哪些类型、哪些命令会排在最前面 (输入、粘贴、拖入文件或点 `...` 选择); 列表里显示每个类型用在哪些命令上
   - 自定义命令的编辑窗口里, **选中内容类型** 用菜单勾选类型; `{query}` 换成选中的文字或路径 (网址里会编码), 没写 `{query}` 的程序把选中的内容作为最后一个参数
   - 常用类型都配了能直接用的命令: Email → **Send Email** (新的默认命令, `mailto:{query}`)、IP → Ping、Coordinates (例如 `1.3521, 103.8198`) → Google Maps、Text files → Notepad、Images → Paint; "选中内容" 页的 **添加示例** 会把命令一起带上
-  - 选中的文字不会执行别的命令: 文字里有换行或双引号时不显示这个命令 (网址除外, 会编码); 命令运行 `cmd` 或 PowerShell 而文字里有它们的特殊字符时也不显示
+  - 选中的文字不会执行别的命令: 文字里有换行或双引号时不显示这个命令 (网址除外, 会编码); 命令运行 `cmd` 或 PowerShell (也包括写成 `%ComSpec%`、或通过 `wt.exe` 等别的程序启动) 而文字里有它们的特殊字符时也不显示
 - **在新标签页中打开文件夹** (#440, AutoHotkey 论坛): 偏好设置 → 通用 → 文件管理器 → "在新标签页中打开文件夹"
   - 资源管理器 (Windows 11 22H2 及以上): 在最近用过的资源管理器窗口里开新标签; "在文件管理器中显示" (`Ctrl+Enter`) 时选中那个文件。没有打开的资源管理器窗口时和以前一样新开窗口
   - Total Commander: 自动加 `/O /T`
