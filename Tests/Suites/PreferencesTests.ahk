@@ -263,6 +263,8 @@ class PreferencesTests {
             eq("one icon per page", DllCall("comctl32\ImageList_GetImageCount", "Ptr", il), PreferencesWindow.PageKeys.Length)
             DllCall("comctl32\ImageList_Destroy", "Ptr", il)
             eq("glyphs exist in " NavIcons.FontName(), NavIcons.MissingGlyphs(), "")
+            eq("glyphs within their box", NavIcons.GlyphsOutsideBox(), "")   ; ImageList converts only the box to gray
+            eq("glyphs within their box, low row", NavIcons.GlyphsOutsideBox(18), "")
         }
         PreferencesWindow.SelectPage(PreferencesWindow._PageIndex("Prefs.Page.Appearance"))
         page := PreferencesWindow.Pages[PreferencesWindow._PageIndex("Prefs.Page.Appearance")]

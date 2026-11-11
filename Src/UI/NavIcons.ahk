@@ -7,6 +7,7 @@
 ;
 ; Usage:
 ;   il := NavIcons.ImageList(PreferencesWindow.PageKeys)   ; 0 = no icon font
+;   il := NavIcons.EmptyList(cellH)                         ; the same cell size without images (to measure rows)
 ;===============================================================================
 
 class NavIcons {
@@ -44,12 +45,9 @@ class NavIcons {
         font := NavIcons.FontName()
         if (font = "")
             return 0
-        scale := A_ScreenDPI / 96
-        w := Round(28 * scale), h := Round(cellH * scale)
-        il := DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x20, "Int", keys.Length, "Int", 0, "Ptr")   ; ILC_COLOR32
+        il := NavIcons.EmptyList(cellH, keys.Length, &w, &h)
         hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
-        hFont := DllCall("CreateFontW", "Int", -Round(16 * scale), "Int", 0, "Int", 0, "Int", 0, "Int", 400, "UInt", 0, "UInt", 0, "UInt", 0
-                       , "UInt", 1, "UInt", 0, "UInt", 0, "UInt", 4, "UInt", 0, "Str", font, "Ptr")   ; 4 = ANTIALIASED_QUALITY (grayscale, without ClearType's color fringes)
+        hFont := NavIcons._GlyphFont(font)
         oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", hFont, "Ptr")
         DllCall("SetTextColor", "Ptr", hdc, "UInt", 0xFFFFFF)
         DllCall("SetBkMode", "Ptr", hdc, "Int", 1)
@@ -62,13 +60,19 @@ class NavIcons {
             if NavIcons.Glyphs.Has(key) {
                 rect := Buffer(16, 0)
                 NumPut("Int", 0, "Int", 0, "Int", w, "Int", h, rect)
-                DllCall("DrawTextW", "Ptr", hdc, "Str", Chr(NavIcons.Glyphs[key]), "Int", -1, "Ptr", rect, "UInt", 0x825)   ; CENTER | VCENTER | SINGLELINE | NOPREFIX
+                glyph := Chr(NavIcons.Glyphs[key])
+                DllCall("DrawTextW", "Ptr", hdc, "Str", glyph, "Int", -1, "Ptr", rect, "UInt", 0x825)   ; CENTER | VCENTER | SINGLELINE | NOPREFIX
                 DllCall("GdiFlush")
-                ; white text on black: the brightness is the opacity; turn it into premultiplied-alpha dark gray
-                Loop w * h {
-                    offset := (A_Index - 1) * 4
-                    if (a := NumGet(bits, offset, "UChar"))
-                        NumPut("UInt", (a << 24) | ((r * a // 255) << 16) | ((g * a // 255) << 8) | (b * a // 255), bits, offset)
+                ; white text on black: the brightness is the opacity; turn it into premultiplied-alpha dark gray. Only the glyph's
+                ; box is read (about half the cell): these loops in AutoHotkey are most of the time the page list takes to build
+                box := NavIcons.GlyphBox(hdc, glyph, w, h)
+                Loop box.Y1 - box.Y0 {
+                    offset := ((box.Y0 + A_Index - 1) * w + box.X0) * 4
+                    Loop box.X1 - box.X0 {
+                        if (a := NumGet(bits, offset, "UChar"))
+                            NumPut("UInt", (a << 24) | ((r * a // 255) << 16) | ((g * a // 255) << 8) | (b * a // 255), bits, offset)
+                        offset += 4
+                    }
                 }
             }
             DllCall("SelectObject", "Ptr", hdc, "Ptr", old)
@@ -79,6 +83,65 @@ class NavIcons {
         DllCall("DeleteObject", "Ptr", hFont)
         DllCall("DeleteDC", "Ptr", hdc)
         return il
+    }
+
+    ; Where glyph (drawn centered in a w x h cell with the font selected in hdc) can have pixels: its text extent centered as DrawText
+    ; centers it, plus 2 px for antialiasing and rounding, within the cell. {X0, Y0, X1, Y1}, X1 and Y1 exclusive
+    static GlyphBox(hdc, glyph, w, h) {
+        rect := Buffer(16, 0)
+        DllCall("DrawTextW", "Ptr", hdc, "Str", glyph, "Int", -1, "Ptr", rect, "UInt", 0xC20)   ; CALCRECT | SINGLELINE | NOPREFIX
+        gw := NumGet(rect, 8, "Int"), gh := NumGet(rect, 12, "Int")
+        return {X0: Max(0, (w - gw) // 2 - 2), Y0: Max(0, (h - gh) // 2 - 2), X1: Min(w, (w + gw + 1) // 2 + 2), Y1: Min(h, (h + gh + 1) // 2 + 2)}
+    }
+
+    ; The font the glyphs are drawn with: 16 px at 96 DPI, grayscale antialiasing (4 = ANTIALIASED_QUALITY, without ClearType's color fringes)
+    static _GlyphFont(font) => DllCall("CreateFontW", "Int", -Round(16 * A_ScreenDPI / 96), "Int", 0, "Int", 0, "Int", 0, "Int", 400, "UInt", 0, "UInt", 0, "UInt", 0
+                                     , "UInt", 1, "UInt", 0, "UInt", 0, "UInt", 4, "UInt", 0, "Str", font, "Ptr")
+
+    ; Pages whose glyph has pixels outside its GlyphBox (for tests: ImageList reads only the box, so such pixels would stay white), separated by spaces
+    static GlyphsOutsideBox(cellH := 26) {
+        outside := ""
+        DllCall("comctl32\ImageList_Destroy", "Ptr", NavIcons.EmptyList(cellH, 1, &w, &h))
+        hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
+        hFont := NavIcons._GlyphFont(NavIcons.FontName())
+        oldFont := DllCall("SelectObject", "Ptr", hdc, "Ptr", hFont, "Ptr")
+        DllCall("SetTextColor", "Ptr", hdc, "UInt", 0xFFFFFF)
+        DllCall("SetBkMode", "Ptr", hdc, "Int", 1)
+        for key, code in NavIcons.Glyphs {
+            info := Buffer(40, 0)
+            NumPut("UInt", 40, "Int", w, "Int", -h, "UShort", 1, "UShort", 32, info)
+            hbm := DllCall("CreateDIBSection", "Ptr", hdc, "Ptr", info, "UInt", 0, "Ptr*", &bits := 0, "Ptr", 0, "UInt", 0, "Ptr")
+            old := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbm, "Ptr")
+            rect := Buffer(16, 0)
+            NumPut("Int", 0, "Int", 0, "Int", w, "Int", h, rect)
+            DllCall("DrawTextW", "Ptr", hdc, "Str", Chr(code), "Int", -1, "Ptr", rect, "UInt", 0x825)
+            DllCall("GdiFlush")
+            box := NavIcons.GlyphBox(hdc, Chr(code), w, h)
+            Loop h {
+                y := A_Index - 1
+                Loop w {
+                    x := A_Index - 1
+                    if ((x < box.X0 || x >= box.X1 || y < box.Y0 || y >= box.Y1) && NumGet(bits, (y * w + x) * 4, "UInt") & 0xFFFFFF) {
+                        outside .= key " "
+                        break 2
+                    }
+                }
+            }
+            DllCall("SelectObject", "Ptr", hdc, "Ptr", old)
+            DllCall("DeleteObject", "Ptr", hbm)
+        }
+        DllCall("SelectObject", "Ptr", hdc, "Ptr", oldFont)
+        DllCall("DeleteObject", "Ptr", hFont)
+        DllCall("DeleteDC", "Ptr", hdc)
+        return outside
+    }
+
+    ; An image list without images, cells of the size ImageList(keys, cellH) draws (w, h: that size in pixels). The page list measures
+    ; its rows with it before the icons are drawn once at the final height: a row's height follows the image list's cell height
+    static EmptyList(cellH, count := 1, &w := 0, &h := 0) {
+        scale := A_ScreenDPI / 96
+        w := Round(28 * scale), h := Round(cellH * scale)
+        return DllCall("comctl32\ImageList_Create", "Int", w, "Int", h, "UInt", 0x20, "Int", count, "Int", 0, "Ptr")   ; ILC_COLOR32
     }
 
     ; pages without an icon (for tests), separated by spaces
