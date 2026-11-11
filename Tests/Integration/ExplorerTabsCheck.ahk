@@ -93,7 +93,7 @@ Main() {
             ExplorerTabs._CloseTab(hwnd, tab)
         Sleep(500)
     }
-    for delay in [10, 50, 150] {
+    for delay in [10, 20, 30, 40, 50, 60, 70, 80, 150] {
         pairDelay := delay                                                 ; a for-loop variable has no value in OpenSecond
         pairA := root "\Pair " delay " A", pairB := root "\Pair " delay " B"
         for folder in [pairA, pairB]
