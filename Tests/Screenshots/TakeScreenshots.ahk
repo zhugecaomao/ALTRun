@@ -33,7 +33,7 @@ class Shots {
     static Scale    := A_ScreenDPI / 96                             ; screen scaling (150% = 1.5)
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
-    static NormalScale := ["quickswitch", "quickswitch-favorites", "review-qs-tall", "review-qs-max", "review-qs-max-open", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
+    static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced"]   ; scenes shot at 100% (see screenshots.yml)
 
@@ -64,9 +64,6 @@ class Shots {
             ["hud",         "Dark",  "", () => Shots.Hud("12*3")],
             ["quickswitch", "Light", "", () => Shots.QuickSwitch(), () => Shots.WriteRecentFolders()],
             ["quickswitch-favorites", "Light", "", () => Shots.QuickSwitchFavorites(), () => Shots.WriteRecentFolders()],   ; Wiki: the panel's star menu
-            ["review-qs-tall", "Light", "", () => Shots.QuickSwitch(890), () => Shots.WriteRecentFolders()],   ; TEMPORARY (#440 review): fewer rows below a tall dialog
-            ["review-qs-max", "Light", "", () => Shots.QuickSwitch(0), () => Shots.WriteRecentFolders()],      ; TEMPORARY: maximized, only the search box
-            ["review-qs-max-open", "Light", "", () => Shots.QuickSwitchOpen(), () => Shots.WriteRecentFolders()],   ; TEMPORARY: maximized, the caret in the panel
             ["windows",     "Light", "", () => Shots.Windows()],                 ; window switching (w + Space)
             ["sendto",      "Light", "", () => Shots.SendTo(), () => Shots.EnableSendTo()],
             ["pttools",     "Light", "", () => Shots.ToolWindow("PTTools", "PT Tools")],          ; Wiki: extensions
@@ -497,7 +494,7 @@ class Shots {
 
     ; Quick Switch: two Explorer windows open, another program (OpenDialog.ahk) shows an "Open" dialog with the folder panel attached below.
     ; the screen may be only 1024 x 768: the dialog goes at the top so the panel fits
-    static QuickSwitch(height := 440) {   ; height 0 = maximized
+    static QuickSwitch() {
         try ControlSend("{Esc}", "Edit1", Shots.SearchWindow())            ; close the search window opened at start-up first
         for folder in ["Website Redesign", "Annual Report 2026"]
             Run('explorer.exe "' Shots.DemoDir "\" folder '"')
@@ -512,9 +509,7 @@ class Shots {
             throw Error("Open dialog not shown")
         WinSetAlwaysOnTop(1, dialog)                                        ; above the backdrop
         k := Shots.Scale
-        WinMove(Round(160 * k), Round(20 * k), Round(720 * k), Round((height ? height : 440) * k), dialog)
-        if !height
-            WinMaximize(dialog)
+        WinMove(Round(160 * k), Round(20 * k), Round(720 * k), Round(440 * k), dialog)
         WinActivate(dialog)
         panel := WinWait("ALTRun Quick Switch ahk_pid " Shots.Pid, , 5)
         if !panel
@@ -523,14 +518,6 @@ class Shots {
         return [dialog, panel]
     }
     static HelperPid := 0
-
-    ; TEMPORARY (#440 review): a maximized dialog, then Ctrl+Shift+G puts the caret in the panel and its list opens
-    static QuickSwitchOpen() {
-        windows := Shots.QuickSwitch(0)
-        SendLevel(1), Send("^+g"), SendLevel(0)
-        Sleep(1500)
-        return windows
-    }
 
     ; The panel's star menu: the favorites, the first one's subfolders open (Down selects it, Right opens its submenu)
     static QuickSwitchFavorites() {
