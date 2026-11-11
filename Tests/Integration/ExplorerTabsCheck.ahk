@@ -88,6 +88,7 @@ Main() {
 
     before := ExplorerTabs._Tabs(hwnd).Length
     check("unreachable folder: not opened", !ExplorerTabs.Open(root "\Missing\Nowhere"), ExplorerTabs.LastError)
+    check("unreachable folder: a normal case (not logged as Explorer failing)", ExplorerTabs.LastErrorExpected = true, ExplorerTabs.LastError)
     Sleep(500)
     check("unreachable folder: no empty tab left", ExplorerTabs._Tabs(hwnd).Length = before, ExplorerTabs._Tabs(hwnd).Length " tabs, " before " before")
     check("window still open", WinExist("ahk_id " hwnd) != 0)

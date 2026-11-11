@@ -22,6 +22,8 @@
 ;   ExplorerTabs.Open(folder [, file, preferred])     true = shown in a new tab of an open window (file selected in it);
 ;                                                     preferred: an Explorer window to use first (e.g. the one in front before)
 ;   ExplorerTabs.LastError                            why the last Open returned false
+;   ExplorerTabs.LastErrorExpected                    true when that is a normal case (no tabs on this Windows, no Explorer
+;                                                     window open, a key held, a folder that can't be reached), not Explorer failing
 ;===============================================================================
 
 class ExplorerTabs {
@@ -30,24 +32,27 @@ class ExplorerTabs {
     static SelectTimeout := 3000                                          ; a new tab ignored SelectItem for more than 1.5 s once on CI
     static KeysTimeout := 2000                                            ; ms to wait for modifier keys to be let go
     static LastError := ""
+    static LastErrorExpected := false
     static SelectInfo := ""                                               ; how the last selection went (tries, time, last state), for diagnosis
 
     static Supported(version := A_OSVersion) => VerCompare(version, ExplorerTabs.MinVersion) >= 0
 
     static Open(folder, file := "", preferred := 0) {
-        ExplorerTabs.LastError := ""
+        ExplorerTabs.LastError := "", ExplorerTabs.LastErrorExpected := false, ExplorerTabs.SelectInfo := ""
         if !ExplorerTabs.Supported()
-            return ExplorerTabs._Fail("no tabs before Windows 11 22H2")
+            return ExplorerTabs._Fail("no tabs before Windows 11 22H2", true)
         if !(hwnd := ExplorerTabs.Target(preferred))
-            return ExplorerTabs._Fail("no Explorer window open")
+            return ExplorerTabs._Fail("no Explorer window open", true)
         if !ExplorerTabs._WaitKeysUp()
-            return ExplorerTabs._Fail("a modifier key is still held")
+            return ExplorerTabs._Fail("a modifier key is still held", true)
+        if !IsObject(bytes := ExplorerTabs.PidlBytes(folder))                ; before a tab is opened: no empty tab for a missing folder
+            return ExplorerTabs._Fail("the folder can't be reached", true)
         try {
             before := ExplorerTabs._TabSet(hwnd)
             SendMessage(0x0111, 0xA21B, 0, "ShellTabWindowClass1", "ahk_id " hwnd, , , , 2000)   ; WM_COMMAND: new tab
             if !(tab := ExplorerTabs._WaitNewTab(hwnd, before))
                 return ExplorerTabs._Fail("no new tab came")
-            if !(ExplorerTabs._Navigate(hwnd, tab, folder) && ExplorerTabs._WaitPath(hwnd, tab, folder)) {
+            if !(ExplorerTabs._Navigate(hwnd, tab, bytes) && ExplorerTabs._WaitPath(hwnd, tab, folder)) {
                 ExplorerTabs._CloseTab(hwnd, tab)                           ; don't leave an empty tab behind
                 return ExplorerTabs._Fail("the new tab didn't go to the folder")
             }
@@ -147,10 +152,8 @@ class ExplorerTabs {
     }
 
     ; Navigate2 with the folder's PIDL (VT_ARRAY | VT_UI1), which only moves that tab
-    static _Navigate(hwnd, tab, folder) {
+    static _Navigate(hwnd, tab, bytes) {
         if !IsObject(item := ExplorerTabs._Item(hwnd, tab))
-            return false
-        if !IsObject(bytes := ExplorerTabs.PidlBytes(folder))
             return false
         item.Navigate2(bytes)
         return true
@@ -259,8 +262,8 @@ class ExplorerTabs {
         }
     }
 
-    static _Fail(reason) {
-        ExplorerTabs.LastError := reason
+    static _Fail(reason, expected := false) {
+        ExplorerTabs.LastError := reason, ExplorerTabs.LastErrorExpected := expected
         return false
     }
 }

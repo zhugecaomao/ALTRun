@@ -158,10 +158,28 @@ class ActionCatalog {
 
     ; A new tab of an Explorer window already open: the one in front before ALTRun was shown first; false = open a new window
     static _InExplorerTab(folder, file := "") {
-        if ExplorerTabs.Open(folder, file, App.PreviousWindow)
+        if ExplorerTabs.Open(folder, file, App.PreviousWindow) {
+            if (file != "" && InStr(ExplorerTabs.SelectInfo, "failed") = 1)
+                ActionCatalog._TabProblem("the file was not selected in the new Explorer tab (" ExplorerTabs.SelectInfo ")")
             return true
-        Logger.Debug("ActionCatalog: new Explorer tab not used (" ExplorerTabs.LastError "), opening a window")
+        }
+        if ExplorerTabs.LastErrorExpected
+            Logger.Debug("ActionCatalog: new Explorer tab not used (" ExplorerTabs.LastError "), opening a window")
+        else
+            ActionCatalog._TabProblem("new Explorer tab failed (" ExplorerTabs.LastError "), opened a window instead")
         return false
+    }
+
+    ; New tabs rely on Explorer commands that aren't documented, so a Windows update may break them. The first problem in a run
+    ; is written to the log even when the log is off (Logger.Record), so a report of "folders open in a new window" can say why;
+    ; later ones only to the debug log
+    static _tabWarned := false
+    static _TabProblem(text) {
+        text := "ActionCatalog: " text "; Windows " A_OSVersion
+        if ActionCatalog._tabWarned
+            return Logger.Debug(text)
+        ActionCatalog._tabWarned := true
+        Logger.Record("WRN", text " (written once a run)")
     }
 
     ; The file manager's parameters; with General.FolderNewTab, Total Commander's gain /O (the running one) and /T (a new tab)
