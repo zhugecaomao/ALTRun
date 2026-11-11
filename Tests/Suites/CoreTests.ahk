@@ -335,7 +335,8 @@ class CoreTests {
 
     ; Every setting the code reads exists in AppSettings.Defaults() (a typo in a key name would only show at run time).
     ; Reads guarded by .Has("Key") are optional and may be missing. SchemaMigration reads old names on purpose
-    ; Folders in a new tab (#440): which Windows has Explorer tabs, Total Commander's /O /T, and the PIDL Explorer navigates to.
+    ; Folders in a new tab (#440): which Windows has Explorer tabs, Total Commander's /O /T, the PIDL Explorer navigates to and the
+    ; check of network folders before it.
     ; Opening a real tab is checked on Windows by Tests\Integration\ExplorerTabsCheck.ahk
     static FolderNewTab() {
         eq := (n, a, e) => TestRunner.Equal("FolderNewTab." n, a, e)
@@ -345,6 +346,12 @@ class CoreTests {
         bytes := ExplorerTabs.PidlBytes(A_WinDir)
         eq("pidl of a folder", IsObject(bytes) && bytes.MaxIndex() > 2, true)
         eq("pidl of nothing", ExplorerTabs.PidlBytes(A_Temp "\no such folder\really not"), "")
+        ; network folders are checked on a thread of their own first (an offline server is checked on Windows CI)
+        eq("network paths", ExplorerTabs.IsNetwork("\\nas\share\x") "|" ExplorerTabs.IsNetwork(A_WinDir) "|" ExplorerTabs.IsNetwork("x"), "1|0|0")
+        eq("local folder: not checked", ExplorerTabs.Reachable(A_Temp "\no such folder\really not"), true)
+        eq("folder within: a folder / missing / a file", ExplorerTabs.FolderWithin(A_WinDir, 2000) "|"
+            . ExplorerTabs.FolderWithin(A_Temp "\no such folder\really not", 2000) "|" ExplorerTabs.FolderWithin(A_WinDir "\win.ini", 2000), "1|0|0")
+        eq("folder within: no thread left waiting", ExplorerTabs._pending.Length, 0)
         general := AppSettings.General, saved := general["FolderNewTab"]
         tc := {Exe: "C:\Apps\TotalCMD64\TOTALCMD64.EXE", Args: "", Explorer: false}
         try {

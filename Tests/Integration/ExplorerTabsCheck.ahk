@@ -9,6 +9,8 @@
 ;     no other window opens (with Ctrl down, Explorer took the navigation for Ctrl+click and the tab stayed empty)
 ;   - two Opens at once (the second interrupting the first while it waits for its tab) each get their own tab
 ;   - a folder that can't be reached returns false and leaves no empty tab behind
+;   - a network folder on a server that doesn't answer returns false within about NetworkTimeout (not after the network timeout);
+;     a network folder that answers (\\localhost\C$) opens in a new tab
 ; Prints PASS / FAIL lines; the exit code is the number of failures. On a system without Explorer tabs it prints SKIP and exits 0
 ;===============================================================================
 #Requires AutoHotkey v2.0
@@ -133,6 +135,28 @@ Main() {
     check("unreachable folder: a normal case (not logged as Explorer failing)", ExplorerTabs.LastErrorExpected = true, ExplorerTabs.LastError)
     Sleep(500)
     check("unreachable folder: no empty tab left", ExplorerTabs._Tabs(hwnd).Length = before, ExplorerTabs._Tabs(hwnd).Length " tabs, " before " before")
+
+    ; A network folder on a server that doesn't answer (192.0.2.x is reserved for documentation, nothing answers there): Open gives
+    ; up after NetworkTimeout instead of waiting for the network (21 s), and ALTRun opens a new window. One that answers gets a tab
+    offline := "\\192.0.2.1\share\folder"
+    before := ExplorerTabs._Tabs(hwnd).Length
+    t0 := A_TickCount
+    opened := ExplorerTabs.Open(offline)
+    elapsed := A_TickCount - t0
+    check("offline network folder: not opened", !opened, ExplorerTabs.LastError)
+    check("offline network folder: no long wait", elapsed < ExplorerTabs.NetworkTimeout + 1500, elapsed " ms")
+    check("offline network folder: a normal case", ExplorerTabs.LastErrorExpected = true, ExplorerTabs.LastError)
+    check("offline network folder: no empty tab", ExplorerTabs._Tabs(hwnd).Length = before, ExplorerTabs._Tabs(hwnd).Length " tabs, " before " before")
+    shared := "\\localhost\C$\ExplorerTabsCheck\Plain"
+    before := ExplorerTabs._Tabs(hwnd).Length
+    front.Show()
+    t0 := A_TickCount
+    opened := ExplorerTabs.Open(shared, "note.txt")
+    check("network folder: opened", opened, (A_TickCount - t0) " ms " ExplorerTabs.LastError)
+    check("network folder: one more tab", ExplorerTabs._Tabs(hwnd).Length = before + 1, ExplorerTabs._Tabs(hwnd).Length " tabs, " before " before")
+    check("network folder: in that window", HasTab(hwnd, shared), TabPaths(hwnd))
+    check("network folder: file selected", Selected(hwnd, shared) = "note.txt", Selected(hwnd, shared))
+
     check("window still open", WinExist("ahk_id " hwnd) != 0)
 
     front.Destroy()

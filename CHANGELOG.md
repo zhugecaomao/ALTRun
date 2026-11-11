@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.7]
+
+测试版。
+
+Test build.
+
+### 修复
+- 在新标签打开文件夹 (#440): 打开离线服务器或 NAS 上的文件夹时, ALTRun 不再卡住约 20 秒; 网络文件夹 0.5 秒内没有响应时新开窗口, 由资源管理器去等
+
 ## [2026.11.11.6]
 
 测试版。
@@ -1265,7 +1274,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.7...HEAD
+[2026.11.11.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.6...2026.11.11.7
 [2026.11.11.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.5...2026.11.11.6
 [2026.11.11.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.4...2026.11.11.5
 [2026.11.11.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.3...2026.11.11.4
