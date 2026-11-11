@@ -1,6 +1,6 @@
 ﻿;===============================================================================
 ; ProviderTests.ahk - Result providers: web search, clipboard, file index and file search,
-;   applications, commands, windows, recent items, scripts, bookmarks and snippets search
+;   applications, commands, windows, recent items, scripts, bookmarks, browser history and snippets search
 ;-------------------------------------------------------------------------------
 ; Included by Tests\RunTests.ahk. Every static method whose name doesn't start with "_" is a test;
 ; TestRunner runs them in name order, and each one must put back the shared state it changes.
@@ -1969,5 +1969,107 @@ class ProviderTests {
         for command in SystemProvider.Commands()
             ids .= command["Id"] "|"
         ok("media commands", InStr(ids, "MediaPlayPause|MediaNext|MediaPrev|MediaStop|"))
+    }
+
+    ; Browser history: "h word" (keyword only), most recent first, every word in the title or URL; the History files read through winsqlite3.dll
+    static BrowserHistory() {
+        eq := (n, a, e) => TestRunner.Equal("BrowserHistory." n, a, e)
+        ok := (n, c) => TestRunner.True("BrowserHistory." n, c)
+        savedItems := BrowserHistoryProvider.Items, savedLoaded := BrowserHistoryProvider._loaded, savedActive := BrowserHistoryProvider._active
+        page := (title, url, time) => {Title: title, Url: url, Time: time, Text: StrLower(title " " url), Cjk: RegExMatch(title, "[\x{2E80}-\x{9FFF}]") > 0, Initials: ""}
+        BrowserHistoryProvider.Items := [page("Tender Portal - Login", "https://tenders.example.com/login", 3)       ; most recent first
+            , page("中文 标题 测试", "https://example.cn/zh", 2), page("GitHub", "https://github.com/", 1)]
+        BrowserHistoryProvider._loaded := A_TickCount, BrowserHistoryProvider._active := true   ; don't read this PC's history files
+        eq("not without the keyword", BrowserHistoryProvider.Search(SearchQuery("tender")).Length, 0)
+        hint := BrowserHistoryProvider.Search(SearchQuery("h"))           ; the keyword alone: its hint, Enter completes "h "
+        eq("keyword alone: hint", hint.Length "|" hint[1].Valid "|" hint[1].AutoComplete "|" hint[1].Exclusive, "1|0|h |0")
+        eq("every word, title or URL", BrowserHistoryProvider.Matches("tender LOGIN", 10).Length, 1)
+        eq("a word missing", BrowserHistoryProvider.Matches("tender github", 10).Length, 0)
+        eq("Chinese title", BrowserHistoryProvider.Matches("标题", 10).Length, 1)
+        eq("pinyin initials", BrowserHistoryProvider.Matches("zwbt", 10).Length "|" BrowserHistoryProvider.Matches("zwbt", 10)[1].Url, "1|https://example.cn/zh")
+        eq("empty: most recent first", BrowserHistoryProvider.Matches("", 2).Length "|" BrowserHistoryProvider.Matches("", 2)[1].Title, "2|Tender Portal - Login")
+        eq("most recent first", BrowserHistoryProvider.Matches("https", 10)[3].Title, "GitHub")
+        if Sqlite.Available() {
+            results := BrowserHistoryProvider.Search(SearchQuery("h com"))
+            eq("keyword: urls in order", results.Length "|" results[1].Arg "|" results[2].Arg, "2|https://tenders.example.com/login|https://github.com/")
+            ok("keyword: exclusive url results", results[1].Exclusive && results[1].Kind = "url" && results[1].Uid = "history:https://tenders.example.com/login" && results[1].Score = results[2].Score)
+            none := BrowserHistoryProvider.Search(SearchQuery("h nothing-like-this"))
+            eq("no match: says so", none.Length "|" none[1].Valid "|" none[1].Exclusive "|" none[1].Title, "1|0|1|" I18n.T("BrowserHistory.NoMatch"))
+        } else {
+            none := BrowserHistoryProvider.Search(SearchQuery("h com"))
+            eq("no winsqlite3.dll: says so", none.Length "|" none[1].Valid "|" none[1].Title, "1|0|" I18n.T("BrowserHistory.Unavailable"))
+        }
+        BrowserHistoryProvider.Search(SearchQuery("tender"))                ; leaving history search: the next one reads again when old
+        eq("leaving history search", BrowserHistoryProvider._active, false)
+        ; Chromium's time: microseconds since 1601-01-01 UTC
+        offset := DateDiff(A_Now, A_NowUTC, "Seconds")
+        chrome := (localStamp) => (DateDiff(localStamp, "16010101", "Seconds") - offset) * 1000000
+        eq("time today", BrowserHistoryProvider.TimeText(chrome("20261111140500"), "20261111200000"), "14:05")
+        eq("time this year", BrowserHistoryProvider.TimeText(chrome("20260309081500"), "20261111200000"), "03-09 08:15")
+        eq("time earlier", BrowserHistoryProvider.TimeText(chrome("20251231235900"), "20261111200000"), "2025-12-31")
+        eq("no time", BrowserHistoryProvider.TimeText(0), "")
+        eq("file uri", Sqlite.FileUri("C:\A b#%\中文\History"), "file:///C:/A%20b%23%25/中文/History")
+        if !Sqlite.Available() {
+            TestRunner.Equal("BrowserHistory.files (skipped: no winsqlite3.dll, e.g. Wine)", true, true)
+        } else {
+            ; real History files: two browsers / profiles, a page in both (its last visit counts), hidden and non-http pages left out
+            root := A_Temp "\ALTRun-test-history"
+            try DirDelete(root, true)
+            schema := "CREATE TABLE urls(id INTEGER PRIMARY KEY, url LONGVARCHAR, title LONGVARCHAR, visit_count INTEGER DEFAULT 0 NOT NULL,"
+                . " typed_count INTEGER DEFAULT 0 NOT NULL, last_visit_time INTEGER NOT NULL, hidden INTEGER DEFAULT 0 NOT NULL);"
+            DirCreate(root "\Google\Chrome\User Data\Default")
+            Sqlite.Exec(root "\Google\Chrome\User Data\Default\History", schema
+                . "INSERT INTO urls(url, title, last_visit_time) VALUES ('https://a.example.com/', 'Page A', 13400000000000000),"
+                . " ('https://b.example.com/', '中文 页面', 13400000000000300), ('javascript:alert(1)', 'Script', 13400000000000400),"
+                . " ('chrome://settings/', 'Settings', 13400000000000500), ('https://shared.example.com/', 'Shared', 13400000000000100);"
+                . "INSERT INTO urls(url, title, last_visit_time, hidden) VALUES ('https://hidden.example.com/', 'Hidden', 13400000000000600, 1);")
+            DirCreate(root "\Microsoft\Edge\User Data\Profile 1")
+            Sqlite.Exec(root "\Microsoft\Edge\User Data\Profile 1\History", schema
+                . "INSERT INTO urls(url, title, last_visit_time) VALUES ('https://shared.example.com/', 'Shared', 13400000000000700),"
+                . " ('http://c.example.com/', '', 13400000000000200);")
+            savedLocal := EnvGet("LOCALAPPDATA")
+            EnvSet("LOCALAPPDATA", root)
+            BrowserHistoryProvider.Load()
+            EnvSet("LOCALAPPDATA", savedLocal)
+            list := ""
+            for item in BrowserHistoryProvider.Items
+                list .= item.Title "|"
+            eq("files: merged, most recent first", list, "Shared|中文 页面|http://c.example.com/|Page A|")
+            eq("files: Chinese title read", BrowserHistoryProvider.Matches("zwym", 5).Length, 1)
+            rows := Sqlite.Query(root "\Google\Chrome\User Data\Default\History", "SELECT count(*) FROM urls", 0, "immutable")
+            eq("immutable read", rows[1][1], 6)
+            ok("nothing copied to TEMP", !DirExist(A_Temp "\ALTRun-History-" DllCall("GetCurrentProcessId")))
+            threw := false
+            try Sqlite.Query(root "\nothing\History", "SELECT 1", 0, "read")
+            catch
+                threw := true
+            ok("missing file throws", threw)
+            ; time: 10,000 pages (MaxItems of one profile), half with Chinese titles; the first pinyin search works out every initial
+            try DirDelete(root, true)
+            DirCreate(root "\Google\Chrome\User Data\Default")
+            Sqlite.Exec(root "\Google\Chrome\User Data\Default\History", schema
+                . "INSERT INTO urls(url, title, last_visit_time) WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 10000)"
+                . " SELECT 'https://site' || i || '.example.com/docs/page', CASE WHEN i % 2 THEN 'Project page ' || i ELSE '项目 文档 第' || i || '页' END,"
+                . " 13400000000000000 + i FROM n;")
+            EnvSet("LOCALAPPDATA", root)
+            started := A_TickCount
+            BrowserHistoryProvider.Load()
+            loadMs := A_TickCount - started
+            EnvSet("LOCALAPPDATA", savedLocal)
+            started := A_TickCount
+            words := BrowserHistoryProvider.Matches("site9 docs", 30).Length
+            wordsMs := A_TickCount - started
+            started := A_TickCount
+            pinyin := BrowserHistoryProvider.Matches("xmwd", 30).Length
+            pinyinMs := A_TickCount - started
+            started := A_TickCount
+            none := BrowserHistoryProvider.Matches("nothing here", 30).Length
+            noneMs := A_TickCount - started
+            FileAppend("NOTE BrowserHistory: 10000 pages read in " loadMs " ms; search 2 words " wordsMs " ms, pinyin (first) " pinyinMs " ms, no match " noneMs " ms`n", "*")
+            eq("time: pages", BrowserHistoryProvider.Items.Length "|" words "|" pinyin "|" none, "10000|30|30|0")
+            ok("time: read under 3 s", loadMs < 3000)
+            try DirDelete(root, true)
+        }
+        BrowserHistoryProvider.Items := savedItems, BrowserHistoryProvider._loaded := savedLoaded, BrowserHistoryProvider._active := savedActive
     }
 }

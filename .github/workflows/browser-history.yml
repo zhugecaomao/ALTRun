@@ -1,0 +1,65 @@
+# Reading the History of Edge and Chrome while they run (Tests\Integration\BrowserHistoryCheck.ahk): windows-latest has both.
+# On pull requests that change it, on main, or run by hand
+name: Browser history
+
+on:
+  pull_request:
+    paths:
+      - Lib/Sqlite.ahk
+      - Src/Providers/BrowserHistoryProvider.ahk
+      - Tests/Integration/BrowserHistoryCheck.ahk
+      - .github/workflows/browser-history.yml
+  push:
+    branches: [main]
+    paths:
+      - Lib/Sqlite.ahk
+      - Src/Providers/BrowserHistoryProvider.ahk
+      - Tests/Integration/BrowserHistoryCheck.ahk
+      - .github/workflows/browser-history.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = 'v2.0.31'
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+
+      - name: Open pages in Edge and Chrome, read their history while they run
+        shell: pwsh
+        run: |
+          # a local site: one page with a Chinese title (UTF-8), opened one after another so they have different times
+          New-Item -ItemType Directory site -Force | Out-Null
+          Set-Content site/one.html '<html><head><title>History Check One</title></head><body>1</body></html>' -Encoding UTF8
+          Set-Content site/zh.html '<html><head><meta charset="utf-8"><title>中文 标题 测试</title></head><body>2</body></html>' -Encoding UTF8
+          Start-Process python -ArgumentList '-m', 'http.server', '8765', '--directory', 'site' -WindowStyle Hidden
+          Start-Sleep 2
+          $pages = 'http://127.0.0.1:8765/one.html|History Check One', 'http://127.0.0.1:8765/zh.html|中文 标题 测试'
+          $browsers = "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe", "$env:ProgramFiles\Google\Chrome\Application\chrome.exe"
+          foreach ($browser in $browsers) {
+            if (-not (Test-Path $browser)) { throw "No $browser on this runner" }
+            foreach ($page in $pages) {
+              Start-Process $browser -ArgumentList '--no-first-run', '--no-default-browser-check', ($page -split '\|')[0]
+              Start-Sleep 4
+            }
+          }
+          Start-Sleep 15                                   # the browsers write History a few seconds after a visit
+          Set-Content pages.txt $pages -Encoding UTF8          # a full path below: Start-Process doesn't start in PowerShell's current folder
+          & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', 'Tests\Integration\BrowserHistoryCheck.ahk', (Resolve-Path pages.txt).Path `
+            -Out check.log -Err check.err -TimeoutSeconds 120
+          $code = $LASTEXITCODE
+          Get-Content check.log, check.err -Encoding UTF8 -ErrorAction SilentlyContinue
+          if ($code -ne 0) { throw "$code check(s) failed" }

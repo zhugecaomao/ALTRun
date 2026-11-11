@@ -18,7 +18,7 @@ ALTRun.ahk          Entry point: #Includes every module and calls App.Start()
 Lib\                Shared libraries with nothing ALTRun-specific, usable in other projects as is
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
                     Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
-                    TaskScheduler, TaskbarProgress)
+                    TaskScheduler, TaskbarProgress, Sqlite: read-only queries through Windows' winsqlite3.dll)
 Src\Core\           App (startup, single instance, shutdown), ErrorHandler (uncaught errors), I18n (UI text),
                     AppSettings + SchemaMigration (settings and version upgrades),
                     SearchQuery / ResultItem (search model), FuzzyMatcher (match scoring),

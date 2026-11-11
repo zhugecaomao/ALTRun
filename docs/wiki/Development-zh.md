@@ -18,7 +18,7 @@ ALTRun.ahk          入口: #Include 所有模块, 调用 App.Start()
 Lib\                通用库, 与 ALTRun 无关, 可以直接拿到别的项目用
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
                     Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
-                    TaskScheduler, TaskbarProgress)
+                    TaskScheduler, TaskbarProgress, Sqlite: 通过 Windows 自带的 winsqlite3.dll 只读查询)
 Src\Core\           App (启动、单实例、退出), ErrorHandler (未捕获的错误), I18n (界面文字),
                     AppSettings + SchemaMigration (设置和版本升级),
                     SearchQuery / ResultItem (搜索模型), FuzzyMatcher (匹配打分),

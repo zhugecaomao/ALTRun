@@ -160,6 +160,13 @@ The index updates itself by watching the `Folders`: when a shortcut is added, re
 
 Also in Preferences → Features → Feature options. Reads the bookmarks of every profile of Chrome, Edge, Brave and Vivaldi; Firefox keeps its bookmarks in an SQLite database and isn't supported yet.
 
+### BrowserHistory
+| Key | Default | Description |
+|---|---|---|
+| Keyword | `h` | Keyword that searches the browser history (`h words`; `h ` lists the most recent pages). History is only searched with the keyword |
+
+Also in Preferences → Features → Feature options. See [Browser history](Bookmarks#browser-history).
+
 ### Scripts
 | Key | Default | Description |
 |---|---|---|

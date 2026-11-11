@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.4]
+
+测试版。
+
+Test build.
+
+### 新增
+- 搜索浏览器历史记录 (#448): 输入 `h 关键词` 搜索 Chrome、Edge、Brave、Vivaldi (所有用户配置) 的历史记录, 标题或网址里包含每个关键词的网页按最近访问时间排列, 中文标题也能用拼音首字母; 只输入 `h ` 列出最近访问的网页。`Enter` 在默认浏览器打开, `Alt+Enter` 复制网址。只在输入关键字时才搜, 不会混进普通搜索结果; 只在本机读取浏览器的 History 数据库 (用 Windows 自带的 winsqlite3.dll, 不锁定、不修改, 浏览器开着也可以), ALTRun 不另存历史记录、不上传。关键字和开关在偏好设置 → 功能。见 Wiki [浏览器书签](https://github.com/zhugecaomao/ALTRun/wiki/Bookmarks-zh)
+
 ## [2026.11.11.3]
 
 测试版。
@@ -1238,7 +1247,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.4...HEAD
+[2026.11.11.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.3...2026.11.11.4
 [2026.11.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.2...2026.11.11.3
 [2026.11.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.1...2026.11.11.2
 [2026.11.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11...2026.11.11.1

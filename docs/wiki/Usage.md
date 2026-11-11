@@ -42,6 +42,7 @@ The ALTRun icon at the right of the search box opens the menu: Preferences, shor
 | `255 in hex` `0xff to dec` `10 in bin` / `0b1010` | Number bases (hex / bin / oct / dec); a number starting with `0x`, `0b` or `0o` on its own lists decimal, hexadecimal and binary |
 | `today + 30 days` `2026-12-25 - 2w` / `2026-12-25 - today` | Date arithmetic (units d w m y), with the day of the week; subtracting two dates gives the number of days between them |
 | `bm xxx` | Browser bookmarks only (typing a bookmark name without `bm` finds it too, ranked after apps and commands), see [Browser bookmarks](Bookmarks) |
+| `h xxx` / `h ` | Browser history (Chrome, Edge...), most recently visited first; `h ` alone lists the most recent pages. Only with the keyword, see [Browser history](Bookmarks#browser-history) |
 | `w xxx` / `w ` | Switch to an open window (by title or program name; `w ` alone lists them all); `→` can close the window. Windows whose title matches well also show up without `w` (at most 3). See [Window switching](Window-Switching) |
 | `file report` / `open report` / `'report` | Files and folders only, see [File search](File-Search) |
 | `doc report` `pic logo` `cad plan` | One kind of file only (documents / pictures / CAD...); the kinds can be changed |
