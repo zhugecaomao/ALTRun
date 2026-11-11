@@ -144,6 +144,8 @@ class I18n {
         s["Settings.ParseError"]       := "ALTRun.json could not be read:`n`n{1}`n`nIt was renamed to {2} and the default settings are used."
         s["Settings.RestoreBackup"]    := "ALTRun.json could not be read:`n`n{1}`n`nIt was renamed to {2}.`n`nRestore the backup saved {3}? (No: start with the default settings)"
         s["Settings.SaveError"]        := "Could not save ALTRun.json:`n`n{1}"
+        s["Settings.ReadError"]        := "ALTRun.json can't be read right now:`n`n{2}`n`n{1}`n`nAnother program may be using it (a sync tool, antivirus software), or it isn't available offline. The file was not changed.`n`nTry again? (Cancel quits ALTRun)"
+        s["Settings.Newer"]            := "ALTRun.json was saved by a newer version of ALTRun (settings version {1}; this version knows up to {2}). Update ALTRun on this PC too: until then, newer settings are kept but have no effect."
         s["Settings.ImportedIni"]      := "Settings, commands and hotkeys were imported from the previous version ({1}). That file is kept unchanged."
         s["Settings.Moved"]            := "Settings now live in the Data folder: {1}"
         s["App.UncaughtError"]         := "ALTRun ran into an unexpected error and stopped that action:`n{1}`nDetails are in {2}"

@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.11.8"
+    static Version := "2026.11.11.9"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -94,6 +94,8 @@ class App {
             App.Toast(I18n.T("Settings.Migrated", AppSettings.MigratedFrom, SchemaMigration.BackupFile(AppSettings.File, AppSettings.MigratedFrom)), 5000)
         else if (AppSettings.MovedFrom != "")
             App.Toast(I18n.T("Settings.Moved", AppSettings.File), 5000)
+        else if AppSettings.NewerVersion
+            App.Toast(I18n.T("Settings.Newer", AppSettings.NewerVersion, AppSettings.CurrentVersion), 8000)
         UpdateChecker.CleanUp()
         SetTimer(() => (IconCache.LoadDisk(), ProviderRegistry.WarmUp(), SearchWindow._PrepareLater()), -500)   ; before the first input: load the icon cache, compute the search keys, prepare the empty search box
         SetTimer(() => IconCache.Prefetch(ProviderRegistry.IconSpecs()), -SearchWindow.IconPrefetchDelay)   ; then read the common items' icons in the background

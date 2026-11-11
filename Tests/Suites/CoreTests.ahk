@@ -1344,6 +1344,109 @@ Func | PTTools | PT Tools (AHK)=99
         try DirDelete(root, true)
     }
 
+    ; A settings file that can't be read is not a damaged one: tried again, then the user retries or quits; it is never renamed and
+    ; nothing is written over it. An invalid file that can't be kept as .bad is treated the same way
+    static _ReadFails() {                                                   ; as a file held by another program: ERROR_SHARING_VIOLATION
+        throw OSError(32, -1)
+    }
+
+    static SettingsUnreadable() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsUnreadable." n, a, e)
+        dir := A_Temp "\ALTRun-unreadable-test"
+        try DirDelete(dir, true)
+        DirCreate(dir)
+        saved := {File: AppSettings.File, Data: AppSettings.Data, Good: AppSettings._fileGood, Retry: AppSettings._retryFn, Quit: AppSettings._quitFn
+            , Ask: AppSettings._askFn, Notice: AppSettings._noticeFn, Read: SafeFile.readFn, Wait: SafeFile.ReadWaitMs}
+        state := {Fail: 0, Reads: 0, Asked: [], Quit: 0, Retries: 0}
+        SafeFile.ReadWaitMs := 0
+        SafeFile.readFn := (file, encoding) => (state.Reads += 1, (state.Fail = -1 || state.Reads <= state.Fail) ? CoreTests._ReadFails() : FileRead(file, encoding))
+        AppSettings._retryFn := (text) => (state.Asked.Push(text), state.Asked.Length <= state.Retries)
+        AppSettings._quitFn := () => state.Quit += 1
+        AppSettings._askFn := (text) => false, AppSettings._noticeFn := (text) => 0
+        content := (file) => FileExist(file) ? FileRead(file, "UTF-8") : "none"
+        try {
+            AppSettings.File := dir "\ALTRun.json", AppSettings._fileGood := false
+            AppSettings.Data := Map("A", 1), AppSettings.Save()
+            good := content(AppSettings.File)
+
+            state.Fail := 3, state.Reads := 0                               ; busy for a moment: read on the 4th try, nobody asked
+            data := AppSettings._ReadFile()
+            eq("busy for a moment: read", data["A"] "|" state.Reads "|" state.Asked.Length "|" AppSettings._fileGood, "1|4|0|1")
+
+            state.Fail := -1, state.Reads := 0, state.Retries := 1          ; never readable: asked, retried once, then quit
+            thrown := ""
+            try AppSettings._ReadFile()
+            catch as e
+                thrown := e.Message
+            eq("unreadable: asked twice, quit once", state.Asked.Length "|" state.Quit "|" (thrown != ""), "2|1|1")
+            eq("unreadable: tried ReadTries times each", state.Reads, SafeFile.ReadTries * 2)
+            eq("unreadable: the message names the file", InStr(state.Asked[1], AppSettings.File) > 0, true)
+            eq("unreadable: file untouched, no .bad", (content(AppSettings.File) == good) "|" FileExist(AppSettings.File ".bad"), "1|")
+            eq("unreadable: not counted as a good file", AppSettings._fileGood, 0)
+
+            state.Fail := 0, state.Asked := [], state.Quit := 0, state.Retries := 0   ; invalid, and it can't be kept as .bad (a folder has that name)
+            FileDelete(AppSettings.File), FileAppend("{broken", AppSettings.File, "UTF-8-RAW")
+            FileAppend("older", AppSettings.File ".bad", "UTF-8-RAW")
+            lock := FileOpen(AppSettings.File ".bad", "r -rwd")             ; held by another program: can't be replaced
+            thrown := ""
+            try AppSettings._ReadFile()
+            catch as e
+                thrown := e.Message
+            eq("invalid and can't be set aside: asked, quit", state.Asked.Length "|" state.Quit "|" (thrown != ""), "1|1|1")
+            lock.Close()
+            eq("invalid and can't be set aside: file untouched", content(AppSettings.File) "|" content(AppSettings.File ".bad"), "{broken|older")
+
+            data := AppSettings._ReadFile()                                 ; as before when it can be kept: .bad, then the defaults
+            eq("invalid: kept as .bad", data.Count "|" content(AppSettings.File ".bad") "|" FileExist(AppSettings.File), "0|{broken|")
+
+            state.Fail := 0, state.Reads := 0                               ; SafeFile.ReadText itself: a missing file throws at once
+            missing := ""
+            try SafeFile.ReadText(dir "\none.json")
+            catch OSError as e
+                missing := e.Number
+            eq("ReadText: a missing file isn't tried again", missing "|" state.Reads, "2|1")
+        } finally {
+            AppSettings.File := saved.File, AppSettings.Data := saved.Data, AppSettings._fileGood := saved.Good
+            AppSettings._retryFn := saved.Retry, AppSettings._quitFn := saved.Quit, AppSettings._askFn := saved.Ask, AppSettings._noticeFn := saved.Notice
+            SafeFile.readFn := saved.Read, SafeFile.ReadWaitMs := saved.Wait
+            try DirDelete(dir, true)
+        }
+    }
+
+    ; Settings saved by a newer ALTRun keep their version (written back as this version's, the newer one would upgrade them again)
+    ; and the entries this version doesn't know
+    static SettingsNewer() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsNewer." n, a, e)
+        root := A_Temp "\ALTRun-newer-test"
+        try DirDelete(root, true)
+        DirCreate(root "\Data")
+        saved := {File: AppSettings.File, Legacy: AppSettings.LegacyFile, Data: AppSettings.Data, Good: AppSettings._fileGood, Newer: AppSettings.NewerVersion
+            , Migrated: AppSettings.MigratedFrom, Imported: AppSettings.ImportedFrom, Moved: AppSettings.MovedFrom}
+        try {
+            AppSettings.File := root "\Data\ALTRun.json", AppSettings.LegacyFile := root "\ALTRun.json"
+            newer := AppSettings.Defaults(), version := AppSettings.CurrentVersion + 2
+            newer["SchemaVersion"] := version, newer["FromTheFuture"] := Map("Kept", 1), newer["General"]["Hotkey"] := "#Space"
+            FileAppend(JSON.Stringify(newer), AppSettings.File, "UTF-8-RAW")
+            AppSettings.NewerVersion := 0, AppSettings.MigratedFrom := 0, AppSettings.ImportedFrom := "", AppSettings.MovedFrom := ""
+            AppSettings.Load()
+            eq("noted, not upgraded", AppSettings.NewerVersion "|" AppSettings.MigratedFrom, version "|0")
+            eq("settings used", AppSettings.General["Hotkey"], "#Space")
+            AppSettings.General["Hotkey"] := "#a", AppSettings.Save()
+            written := JSON.Parse(FileRead(AppSettings.File, "UTF-8"))
+            eq("saved with its version and unknown entries", written["SchemaVersion"] "|" written["FromTheFuture"]["Kept"] "|" written["General"]["Hotkey"], version "|1|#a")
+            eq("no upgrade backup", FileExist(SchemaMigration.BackupFile(AppSettings.File, version)), "")
+            current := AppSettings.Defaults()
+            FileDelete(AppSettings.File), FileAppend(JSON.Stringify(current), AppSettings.File, "UTF-8-RAW")
+            AppSettings.NewerVersion := 0
+            AppSettings.Load()
+            eq("this version's file: nothing noted", AppSettings.NewerVersion "|" AppSettings.Data["SchemaVersion"], "0|" AppSettings.CurrentVersion)
+        } finally {
+            AppSettings.File := saved.File, AppSettings.LegacyFile := saved.Legacy, AppSettings.Data := saved.Data, AppSettings._fileGood := saved.Good
+            AppSettings.NewerVersion := saved.Newer, AppSettings.MigratedFrom := saved.Migrated, AppSettings.ImportedFrom := saved.Imported, AppSettings.MovedFrom := saved.Moved
+            try DirDelete(root, true)
+        }
+    }
+
     ; Usage statistics: counted per day and feature; totals / per day / save and load (with temporary files, not the real Data\Usage.json)
     static UsageStats() {
         eq := (n, a, e) => TestRunner.Equal("Usage." n, a, e)

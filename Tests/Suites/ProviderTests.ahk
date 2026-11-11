@@ -183,6 +183,66 @@ class ProviderTests {
         }
     }
 
+    ; A saved history that can't be read at start-up is not an empty one: nothing is saved over it and none of its files are deleted;
+    ; once it can be read, its entries come back after this run's. A file that doesn't parse is kept as .bad
+    static _CountFiles(pattern) {
+        count := 0
+        Loop Files, pattern
+            count++
+        return count
+    }
+
+    static ClipboardUnread() {
+        eq := (n, a, e) => TestRunner.Equal("ClipboardUnread." n, a, e)
+        saved := {File: ClipboardProvider.File, Folder: ClipboardProvider.Folder, Entries: ClipboardProvider.Entries, Unread: ClipboardProvider._unread
+            , Persist: AppSettings.Feature("Clipboard")["Persist"], Read: SafeFile.readFn, Wait: SafeFile.ReadWaitMs}
+        root := A_Temp "\ALTRun-test-clip-unread"
+        try DirDelete(root, true)
+        DirCreate(root)
+        fail := {On: false}
+        try {
+            ClipboardProvider.File := root "\ClipboardHistory.json", ClipboardProvider.Folder := root "\Clipboard"
+            AppSettings.Feature("Clipboard")["Persist"] := 1
+            long := ""
+            Loop 500
+                long .= "line " A_Index "`r`n"
+            ClipboardProvider._unread := false
+            ClipboardProvider.Entries := [Map("Text", "old pinned", "Time", "20260929010101", "App", "a.exe", "Pinned", 1), Map("Text", long, "Time", "20260929010102", "App", "b.exe")
+                , Map("Text", "both", "Time", "20260929010103", "App", "c.exe", "Pinned", 1)]
+            ClipboardProvider.Save()
+            onDisk := FileRead(ClipboardProvider.File, "UTF-8")
+            longFiles := () => ProviderTests._CountFiles(root "\Clipboard\*.txt")
+
+            SafeFile.ReadWaitMs := 0
+            SafeFile.readFn := (file, encoding) => fail.On ? CoreTests._ReadFails() : FileRead(file, encoding)
+            fail.On := true
+            ClipboardProvider.Entries := [], ClipboardProvider._Load()
+            eq("unreadable: noted, nothing loaded", ClipboardProvider._unread "|" ClipboardProvider.Entries.Length, "1|0")
+            ClipboardProvider.Entries := [Map("Text", "new one", "Time", A_Now, "App", "d.exe"), Map("Text", "both", "Time", A_Now, "App", "d.exe")]
+            ClipboardProvider.Save()
+            eq("still unreadable: file and long entry untouched", (FileRead(ClipboardProvider.File, "UTF-8") == onDisk) "|" longFiles(), "1|1")
+
+            fail.On := false                                                ; readable again: merged before the next save
+            ClipboardProvider.Save()
+            texts := ""
+            for entry in ClipboardProvider.Entries
+                texts .= (StrLen(entry["Text"]) > 50 ? "long" : entry["Text"]) (ClipboardProvider.IsPinned(entry) ? "*" : "") "|"
+            eq("readable again: this run's first, then the saved ones, the same text once", texts, "new one|both*|old pinned*|long|")
+            eq("readable again: saved, long entry kept", ClipboardProvider._unread "|" longFiles(), "0|1")
+            ClipboardProvider.Entries := [], ClipboardProvider._Load()
+            eq("reloaded", ClipboardProvider.Entries.Length, 4)
+
+            FileDelete(ClipboardProvider.File), FileAppend("{broken", ClipboardProvider.File, "UTF-8-RAW")   ; doesn't parse: kept as .bad
+            ClipboardProvider.Entries := [], ClipboardProvider._Load()
+            eq("invalid: kept as .bad, empty history", ClipboardProvider.Entries.Length "|" ClipboardProvider._unread "|" FileRead(ClipboardProvider.File ".bad", "UTF-8"), "0|0|{broken")
+        } finally {
+            SafeFile.readFn := saved.Read, SafeFile.ReadWaitMs := saved.Wait
+            ClipboardProvider.File := saved.File, ClipboardProvider.Folder := saved.Folder, ClipboardProvider.Entries := saved.Entries, ClipboardProvider._unread := saved.Unread
+            AppSettings.Feature("Clipboard")["Persist"] := saved.Persist
+            try DirDelete(root, true)
+        }
+    }
+
     static Clipboard() {
         eq := (n, a, e) => TestRunner.Equal("Clipboard." n, a, e)
         ; saving: very long entries are stored as separate files and read back the same; files not in the history are deleted

@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.11.9]
+
+测试版。
+
+Test build.
+
+### 修复
+- 设置文件一时打不开 (同步工具或杀毒软件正在使用、云端文件离线) 不再被当成 "格式错误": 原来会把它改名为 `.bad`, 改名失败时默认设置之后可能盖掉原来的设置。现在先重试约 2 秒, 仍打不开就问 "重试" 还是 "退出", 文件不改名、不覆盖
+- 格式有错误的设置文件留不成 `.bad` 时 (改名和复制都失败), 也不再写入默认设置, 同样问重试还是退出
+- 剪贴板历史在启动时一时打不开, 不再被当成空的: 原来下一次复制就会用新的列表覆盖历史文件, 并删掉其中的图片和长文本 (置顶的条目也丢)。现在先不动它, 保存之前再读一次, 读到后把原来的条目接在这次新复制的后面; 格式有错误的历史文件留成 `ClipboardHistory.json.bad`
+- 设置文件由更新版本的 ALTRun 保存时 (几台电脑共用数据文件夹而版本不同, 或者退回旧版本), 旧版本不再把设置版本号改回去 (原来新版本会因此把升级再做一遍), 不认识的设置原样保留; 启动时提示这台电脑上的 ALTRun 需要更新
+
 ## [2026.11.11.8]
 
 测试版。
@@ -1283,7 +1295,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.8...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.9...HEAD
+[2026.11.11.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.8...2026.11.11.9
 [2026.11.11.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.7...2026.11.11.8
 [2026.11.11.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.6...2026.11.11.7
 [2026.11.11.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.5...2026.11.11.6

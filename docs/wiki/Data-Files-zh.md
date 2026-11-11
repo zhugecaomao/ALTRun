@@ -20,12 +20,12 @@
 | `ALTRun.json.bak` | 上一次保存之前的设置。`ALTRun.json` 读不出来时 (格式错误, 或者断电损坏), ALTRun 会问要不要用这份备份启动, 而不是用默认设置 | 没有影响 |
 | `ALTRun.reset.backup.json` | 偏好设置 → 高级 → "恢复默认设置" 之前的备份 | 没有影响 |
 | `ALTRun.v<版本>.backup.json` | 设置格式升级之前的备份, `<版本>` 是升级前的设置版本 (例如从 5 升级到 6 时是 `ALTRun.v5.backup.json`) | 没有影响; 想退回旧版本时用它 |
-| `ALTRun.json.bad` | 设置文件格式有错误时, 原文件改成这个名字保留下来 (并提示可以用 `ALTRun.json.bak` 恢复), 修好后改回 `ALTRun.json` | 没有影响 |
+| `ALTRun.json.bad` | 设置文件格式有错误时, 原文件改成这个名字保留下来 (并提示可以用 `ALTRun.json.bak` 恢复), 修好后改回 `ALTRun.json`。文件根本打不开时 (别的程序正在用, 或者云端文件离线) 不改名: ALTRun 先试一两秒, 然后问要重试还是退出, 什么都不改 | 没有影响 |
 | `AppIndex.json` | 应用索引 | 启动时重新扫描 |
 | `FileIndex.bin` | 内置文件索引 (没有 Everything 时用) | 后台重新扫描 |
 | `Knowledge.json` | 学习排序、搜索历史、最近使用的项目 (置顶的项目在 `ALTRun.json` 里) | 排序要重新学, 最近使用清空 |
 | `Usage.json` | 使用统计 (每天每个功能用了几次) | 统计从零开始 |
-| `ClipboardHistory.json` | 剪贴板历史 (文字; 只在 偏好设置 → 剪贴板 → "保存位置" 不是 "全部只存本机" 时在这里) | 历史清空 |
+| `ClipboardHistory.json` | 剪贴板历史 (文字; 只在 偏好设置 → 剪贴板 → "保存位置" 不是 "全部只存本机" 时在这里)。启动时打不开就先不动它, 保存之前再读一次; 格式有错误的留成 `ClipboardHistory.json.bad` | 历史清空 |
 | `Clipboard\` | 剪贴板历史里的图片和很长的条目 (只在 "保存位置" 选了 "Data 文件夹" 时在这里) | 这些条目在历史里不再显示 |
 | `Currency.json` | 货币换算用的汇率 (打开货币换算后才有) | 下次启动重新下载 |
 | `Update.json` | 上次检查更新的时间、跳过的版本 | 下次启动重新检查 |

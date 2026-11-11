@@ -20,12 +20,12 @@ Preferences → Advanced → Data → "Open Data Folder" opens it.
 | `ALTRun.json.bak` | The settings as they were before the last save. When `ALTRun.json` can't be read (a format error, or damaged by a power cut), ALTRun offers to start with this backup instead of the defaults | No effect |
 | `ALTRun.reset.backup.json` | Backup taken by Preferences → Advanced → "Restore Defaults" | No effect |
 | `ALTRun.v<version>.backup.json` | Backup taken before the settings format was upgraded; `<version>` is the settings version before the upgrade (for example `ALTRun.v5.backup.json` when upgrading from 5 to 6) | No effect; use it to go back to an older version |
-| `ALTRun.json.bad` | When the settings file has a format error, the original is kept under this name (and ALTRun offers `ALTRun.json.bak`); fix it and rename it back to `ALTRun.json` | No effect |
+| `ALTRun.json.bad` | When the settings file has a format error, the original is kept under this name (and ALTRun offers `ALTRun.json.bak`); fix it and rename it back to `ALTRun.json`. A file that can't be opened at all (another program is using it, or a cloud file is offline) is not renamed: ALTRun tries for a couple of seconds, then asks whether to try again or quit, and changes nothing | No effect |
 | `AppIndex.json` | App index | Rescanned at startup |
 | `FileIndex.bin` | Built-in file index (used without Everything) | Rescanned in the background |
 | `Knowledge.json` | Learned ranking, search history, recent items (pinned items are in `ALTRun.json`) | Ranking has to be learned again, recent items are cleared |
 | `Usage.json` | Usage statistics (how often each feature was used each day) | Statistics start from zero |
-| `ClipboardHistory.json` | Clipboard history (text; only here when Preferences → Clipboard → "Save in" isn't "Everything on this PC only") | History is cleared |
+| `ClipboardHistory.json` | Clipboard history (text; only here when Preferences → Clipboard → "Save in" isn't "Everything on this PC only"). When it can't be opened at startup it is left alone and read again before anything is saved; one with a format error is kept as `ClipboardHistory.json.bad` | History is cleared |
 | `Clipboard\` | Images and very long items of the clipboard history (only here when "Save in" is "The Data folder") | Those items no longer show in the history |
 | `Currency.json` | Exchange rates for currency conversion (only once it is turned on) | Downloaded again at the next start |
 | `Update.json` | Time of the last update check, skipped versions | Checked again at the next start |
