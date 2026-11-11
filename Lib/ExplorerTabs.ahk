@@ -19,11 +19,15 @@
 ; Two Opens can overlap: a hotkey or timer starts a second one while the first waits. A new tab is listed 60-125 ms after the
 ; command (CI), so the second could take the first's tab for its own; each Open takes only a new tab that no Open running now has
 ; taken, and the waits check once more after their deadline (the Open that interrupted may have taken longer than it).
+; Network folders: parsing a path on a server that is offline waits for the network timeout on the calling thread (21 s on CI for
+; an address that doesn't answer), which would hang ALTRun's window, so a network folder is first checked on a thread of its own
+; for up to NetworkTimeout (Reachable); one that doesn't answer opens in a new window, where Explorer does the waiting.
 ;
 ; Usage:
 ;   ExplorerTabs.Supported()                          Windows 11 22H2 or later
 ;   ExplorerTabs.Open(folder [, file, preferred])     true = shown in a new tab of an open window (file selected in it);
 ;                                                     preferred: an Explorer window to use first (e.g. the one in front before)
+;   ExplorerTabs.Reachable(folder)                    false when a network folder doesn't answer within NetworkTimeout
 ;   ExplorerTabs.LastError                            why the last Open returned false
 ;   ExplorerTabs.LastErrorExpected                    true when that is a normal case (no tabs on this Windows, no Explorer
 ;                                                     window open, a key held, a folder that can't be reached), not Explorer failing
@@ -34,11 +38,14 @@ class ExplorerTabs {
     static TabTimeout := 3000, NavigateTimeout := 3000                    ; ms; on CI a tab came in 100-800 ms, a navigation in 300-550 ms
     static SelectTimeout := 3000                                          ; a new tab ignored SelectItem for more than 1.5 s once on CI
     static KeysTimeout := 2000                                            ; ms to wait for modifier keys to be let go
+    static NetworkTimeout := 500                                          ; ms to wait for a network folder to answer (Reachable)
     static LastError := ""
     static LastErrorExpected := false
     static SelectInfo := ""                                               ; how the last selection went (tries, time, last state), for diagnosis
     static _claimed := Map()                                              ; new tabs taken by the Opens running now (cleared when none runs)
     static _running := 0
+    static _pending := []                                                 ; network checks still waiting after NetworkTimeout
+    static _endPendingTimer := ObjBindMethod(ExplorerTabs, "_EndPending")
 
     static Supported(version := A_OSVersion) => VerCompare(version, ExplorerTabs.MinVersion) >= 0
 
@@ -50,6 +57,8 @@ class ExplorerTabs {
             return ExplorerTabs._Fail("no Explorer window open", true)
         if !ExplorerTabs._WaitKeysUp()
             return ExplorerTabs._Fail("a modifier key is still held", true)
+        if !ExplorerTabs.Reachable(folder)                                  ; before parsing it: that would wait for an offline server
+            return ExplorerTabs._Fail("the network folder can't be reached or didn't answer in " ExplorerTabs.NetworkTimeout " ms", true)
         if !IsObject(bytes := ExplorerTabs.PidlBytes(folder))                ; before a tab is opened: no empty tab for a missing folder
             return ExplorerTabs._Fail("the folder can't be reached", true)
         ExplorerTabs._running += 1
@@ -171,6 +180,54 @@ class ExplorerTabs {
             return false
         item.Navigate2(bytes)
         return true
+    }
+
+    ; \\server\share\... or a mapped network drive (GetDriveType answers without the network)
+    static IsNetwork(path) {
+        if (SubStr(path, 1, 2) = "\\")
+            return true
+        return RegExMatch(path, "^[A-Za-z]:") > 0 && DllCall("GetDriveTypeW", "Str", SubStr(path, 1, 2) "\", "UInt") = 4   ; DRIVE_REMOTE
+    }
+
+    ; Whether a folder can be opened without waiting: local folders aren't checked here (PidlBytes tells a missing one quickly);
+    ; a network folder must be there within NetworkTimeout ms (see the header)
+    static Reachable(folder) => !ExplorerTabs.IsNetwork(folder) || ExplorerTabs.FolderWithin(folder, ExplorerTabs.NetworkTimeout)
+
+    ; Whether folder is a folder, asked on a thread of its own and waited for up to timeout ms; false when it isn't or didn't answer.
+    ; GetFileAttributesW takes one pointer and returns a DWORD, so it serves as the thread routine itself and its result is the
+    ; thread's exit code (probed on CI: an offline server timed out after 500 ms, the thread ending 21 s later; \\localhost\C$ 0 ms).
+    ; The wait sleeps, so hotkeys and timers keep working meanwhile. A thread still waiting keeps its handle and path buffer in
+    ; _pending until it ends (_EndPending)
+    static FolderWithin(folder, timeout) {
+        static routine := DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "kernel32", "Ptr"), "AStr", "GetFileAttributesW", "Ptr")
+        buf := Buffer(StrPut(folder, "UTF-16")), StrPut(folder, buf, "UTF-16")
+        if !(routine && (hThread := DllCall("CreateThread", "Ptr", 0, "UPtr", 0, "Ptr", routine, "Ptr", buf, "UInt", 0, "Ptr", 0, "Ptr")))
+            return false
+        deadline := A_TickCount + timeout
+        while (DllCall("WaitForSingleObject", "Ptr", hThread, "UInt", 0, "UInt") = 0x102) {     ; WAIT_TIMEOUT: still running
+            if (A_TickCount >= deadline) {
+                ExplorerTabs._pending.Push({Thread: hThread, Path: buf})
+                SetTimer(ExplorerTabs._endPendingTimer, 1000)
+                return false
+            }
+            Sleep(15)
+        }
+        attributes := 0xFFFFFFFF
+        DllCall("GetExitCodeThread", "Ptr", hThread, "UInt*", &attributes)
+        DllCall("CloseHandle", "Ptr", hThread)
+        return attributes != 0xFFFFFFFF && (attributes & 0x10) != 0          ; INVALID_FILE_ATTRIBUTES, FILE_ATTRIBUTE_DIRECTORY
+    }
+
+    static _EndPending() {
+        waiting := []
+        for each in ExplorerTabs._pending
+            if (DllCall("WaitForSingleObject", "Ptr", each.Thread, "UInt", 0, "UInt") = 0x102)
+                waiting.Push(each)
+            else
+                DllCall("CloseHandle", "Ptr", each.Thread)
+        ExplorerTabs._pending := waiting
+        if !waiting.Length
+            SetTimer(ExplorerTabs._endPendingTimer, 0)
     }
 
     ; The PIDL of a path as a COM byte array, "" when the path can't be parsed

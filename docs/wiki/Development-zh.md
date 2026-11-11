@@ -83,6 +83,7 @@ AutoHotkey 同一时间只运行一个线程, 但热键、计时器、`OnMessage
 - `Critical("On")` 让一小段代码不被打断 (画结果行、图标缓存); 期间消息会排队, 所以要短, 结束后重绘 (`SearchWindow`)
 - **共用的消息**: 同一个消息有几个处理函数, 只在是自己的消息时才返回值: `WM_COPYDATA` (0x4A) 有 `App` (后启动的 ALTRun 传来的命令行)、`Everything` (查询回复)、`QuickSwitch` (Total Commander 的回复) 和 `CapsLockHelper`, 各自检查 `dwData`; 按键消息 (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) 每个窗口的处理函数都会收到, 各自检查窗口
 - **菜单**: `Menu.Show` / `TrackPopupMenuEx` 会把 ALTRun 隐藏的主窗口设成前台; 没选菜单项就关掉时, 要把焦点还回去 (`QuickSwitch._DialogAfterMenu`)
+- **网络路径**: 服务器离线时, `FileExist`、`DirExist` 和解析路径 (`SHParseDisplayName`) 会在调用的线程里等网络超时 (CI 上 21 秒), ALTRun 卡住。不要在界面线程里不限时地访问网络路径 (`\\server\share`、映射的网络驱动器): 直接当作存在 (`Path.ExistsOrRemote`), 或者在单独的线程里限时检查 (`ExplorerTabs.FolderWithin`)
 - **按键状态**: 远程桌面软件注入所有按键, `GetKeyState(key, "P")` 永远看不到它们按下; 用 `App.IsKeyDown(key)` (逻辑或物理按下)
 
 ### 计时器和空闲 CPU

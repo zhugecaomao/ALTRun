@@ -83,6 +83,7 @@ AutoHotkey runs one thread at a time, but a hotkey, timer, `OnMessage` handler o
 - `Critical("On")` keeps a short section from being interrupted (painting the result rows, the icon cache); messages wait meanwhile, so keep it short and repaint afterwards (`SearchWindow`)
 - **Shared messages**: several handlers listen to the same message, so a handler returns a value only for its own: `WM_COPYDATA` (0x4A) goes to `App` (command lines from a second ALTRun), `Everything` (query replies), `QuickSwitch` (Total Commander's reply) and `CapsLockHelper`, each checking `dwData`; key messages (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) go to every window's handler, each checking the window
 - **Menus**: `Menu.Show` / `TrackPopupMenuEx` make ALTRun's hidden main window the foreground window; when the menu is closed without a choice, give the focus back (`QuickSwitch._DialogAfterMenu`)
+- **Paths on the network**: `FileExist`, `DirExist` and parsing a path (`SHParseDisplayName`) on a server that is offline wait for the network timeout on the calling thread (21 s on CI), freezing ALTRun. Don't touch a network path (`\\server\share`, a mapped drive) on the UI thread without a limit: take it as it is (`Path.ExistsOrRemote`), or check it on a thread of its own for a short time (`ExplorerTabs.FolderWithin`)
 - **Key state**: remote desktop tools inject every key, so `GetKeyState(key, "P")` never sees them down; use `App.IsKeyDown(key)` (logical or physical)
 
 ### Timers and idle CPU
