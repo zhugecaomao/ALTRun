@@ -94,6 +94,7 @@ Main() {
         Sleep(500)
     }
     for delay in [10, 50, 150] {
+        pairDelay := delay                                                 ; a for-loop variable has no value in OpenSecond
         pairA := root "\Pair " delay " A", pairB := root "\Pair " delay " B"
         for folder in [pairA, pairB]
             DirCreate(folder), FileAppend("x", folder "\note.txt", "UTF-8")
@@ -118,10 +119,10 @@ Main() {
         }
     }
     OpenSecond() {
-        out("INFO two at once (" delay " ms): the second starts with " (ExplorerTabs._Tabs(hwnd).Length - before) " new tab(s) there")
+        out("INFO two at once (" pairDelay " ms): the second starts with " (ExplorerTabs._Tabs(hwnd).Length - before) " new tab(s) there")
         opened := ExplorerTabs.Open(pairB, "note.txt")
         second := {Opened: opened, Error: ExplorerTabs.LastError}
-        out("INFO two at once (" delay " ms): second done")
+        out("INFO two at once (" pairDelay " ms): second done")
     }
 
     ctrlFolder := root "\Ctrl held"                                        ; Reveal with Ctrl+Enter, Ctrl let go 0.7 s later
