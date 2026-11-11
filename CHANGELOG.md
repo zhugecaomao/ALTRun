@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 对话框文件夹面板不再挡住对话框的按钮和文件列表 (#440): 对话框上下放不下整个列表时少显示几行 (至少 3 行, 其余滚动); 连 3 行都放不下时 (对话框很高或最大化) 只显示搜索框, 放在对话框下方、上方或标题栏上, 点它或按 `Ctrl+Shift+G` 才打开列表, 回到对话框又收起
+
 ## [2026.11.11.5]
 
 测试版。
@@ -1256,7 +1265,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.6...HEAD
+[2026.11.11.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.5...2026.11.11.6
 [2026.11.11.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.4...2026.11.11.5
 [2026.11.11.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.3...2026.11.11.4
 [2026.11.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.2...2026.11.11.3

@@ -236,8 +236,10 @@ class QuickSwitch {
         if (IsObject(QuickSwitch._panel) && active = QuickSwitch._panel.Hwnd) {   ; typing in the panel's search box: the dialog and panel stay as they are
             if !DllCall("IsWindow", "Ptr", QuickSwitch._panelFor)          ; the dialog was closed (by its program): close the panel too
                 QuickSwitch.HidePanel(), QuickSwitch._UnwatchWindow()
-            else
+            else {
+                QuickSwitch._PlacePanel(QuickSwitch._panelFor)             ; a panel shown as only its search box opens its list now (see PanelLayout)
                 QuickSwitch._WatchWindow(QuickSwitch._panelFor, "panel")    ; until the caret leaves the panel (a foreground event)
+            }
             return QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll)
         }
         className := QuickSwitch.ClassOf(active)
@@ -355,7 +357,7 @@ class QuickSwitch {
     static HidePanel() {
         if IsObject(QuickSwitch._panel)
             try QuickSwitch._panel.Destroy()
-        QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := ""
+        QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := "", QuickSwitch._panelRows := -1
         QuickSwitch._panelSearch := "", QuickSwitch._panelList := "", QuickSwitch._panelLine := "", QuickSwitch._panelStar := ""   ; the controls are destroyed: no more references
         QuickSwitch._searchHwnd := 0, QuickSwitch._listHwnd := 0
     }
@@ -382,6 +384,7 @@ class QuickSwitch {
         hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
         DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: gray cue text
         search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
+        QuickSwitch._barHeight := searchY + searchH + searchY               ; the panel shown as only its search box (see PanelLayout), client height
         line := panel.AddText("x0 y+" Win.Scale(6) " w" width " h1 Background" colors.Separator)   ; separator between the search box and the list
         panel.SetFont("s9 c" colors.Text)
         list := panel.AddListView("x0 y+" Win.Scale(2) " w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 Background" colors.Background, ["Name", "Folder", "From"])   ; 0x400 = the full path on hover when it is too long
@@ -397,6 +400,10 @@ class QuickSwitch {
         QuickSwitch._rowTop := SendMessage(0x1040, 1, 0, list) >> 16
         QuickSwitch._rowHeight := (SendMessage(0x1040, 2, 0, list) >> 16) - QuickSwitch._rowTop
         list.Delete()
+        list.GetPos(, &listY)
+        panel.Show("NA Hide w" width " h100")                               ; the border around the client area: the panel's height for a number of rows
+        panel.GetPos(, , , &outerH), panel.GetClientPos(, , , &clientH)
+        QuickSwitch._listY := listY, QuickSwitch._frameH := outerH - clientH, QuickSwitch._panelRows := -1
         QuickSwitch._panel := panel, QuickSwitch._panelList := list, QuickSwitch._panelSearch := search, QuickSwitch._panelWidth := width
         QuickSwitch._panelLine := line, QuickSwitch._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitch._panelColors := colors, QuickSwitch._panelStar := star
         QuickSwitch._searchHwnd := search.Hwnd, QuickSwitch._listHwnd := list.Hwnd
@@ -419,6 +426,7 @@ class QuickSwitch {
     }
 
     static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelStar := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
+    static _listY := 40, _frameH := 2, _barHeight := 40, _panelRows := -1
 
     ; The search box and the ☆ button right of it (real pixels): the box ends a gap before the button, the button keeps the box's right margin
     static StarSize() => Win.Scale(20)
@@ -520,25 +528,43 @@ class QuickSwitch {
                 list.Add("Icon1", "", entry.Text, "")                      ; the hint row: its text in the wide column
             else
                 list.Add("Icon" QuickSwitch.RowIcon(entry), QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
-        list.ModifyCol(3, "Auto"), list.ModifyCol(1, "Auto")
-        nameW := Max(Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3), Win.Scale(120))   ; LVM_GETCOLUMNWIDTH
-        list.ModifyCol(1, nameW)
-        list.ModifyCol(2, QuickSwitch._panelWidth - nameW - SendMessage(0x101D, 2, 0, list) - Win.Scale(folders.Length > QuickSwitch.PanelRows ? 22 : 4))
         if folders.Length
             list.Modify(1, "Select Focus")
         list.Opt("+Redraw")
-        rows := Max(3, Min(folders.Length, QuickSwitch.PanelRows))           ; the height follows the content (3 ~ PanelRows rows)
-        list.Move(, , , QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + Win.Scale(4))
-        list.ModifyCol(3, "AutoHdr")                                        ; the last column fills to the right so the selected row's color spans the row; computed after the height is set (with a scroll bar where needed), so no horizontal scroll bar appears
-        ; The last column is never narrower than its (hidden) header text: with no rows, or only short tags, it can stick out
-        ; past the right edge and bring up a horizontal scrollbar. Take the difference off the path column
-        if (over := QuickSwitch.ColumnsWidth(list) - QuickSwitch.ClientWidth(list)) > 0
-            list.ModifyCol(2, Max(0, SendMessage(0x101D, 1, 0, list) - over))
+        layout := QuickSwitch._Layout(QuickSwitch._FrameRect(QuickSwitch._panelFor))
+        QuickSwitch._SizeList(layout ? layout.Rows : QuickSwitch.WantedRows(folders.Length))
         if DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) {     ; The search results changed: adjust the size and position again
             QuickSwitch._panelPos := ""
             QuickSwitch._PlacePanel(QuickSwitch._panelFor)
         }
     }
+
+    ; The list's height for this many rows (0 = the panel shows only its search box), and the column widths that go with it
+    static _SizeList(rows) {
+        list := QuickSwitch._panelList, folders := QuickSwitch._panelFolders
+        QuickSwitch._panelRows := rows, QuickSwitch._panelPos := ""
+        list.Visible := QuickSwitch._panelLine.Visible := rows > 0
+        if !rows
+            return
+        list.ModifyCol(3, "Auto"), list.ModifyCol(1, "Auto")
+        nameW := Max(Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3), Win.Scale(120))   ; LVM_GETCOLUMNWIDTH
+        list.ModifyCol(1, nameW)
+        list.ModifyCol(2, QuickSwitch._panelWidth - nameW - SendMessage(0x101D, 2, 0, list) - Win.Scale(folders.Length > rows ? 22 : 4))
+        list.Move(, , , QuickSwitch.ListHeight(rows))
+        list.ModifyCol(3, "AutoHdr")                                        ; the last column fills to the right so the selected row's color spans the row; computed after the height is set (with a scroll bar where needed), so no horizontal scroll bar appears
+        ; The last column is never narrower than its (hidden) header text: with no rows, or only short tags, it can stick out
+        ; past the right edge and bring up a horizontal scrollbar. Take the difference off the path column
+        if (over := QuickSwitch.ColumnsWidth(list) - QuickSwitch.ClientWidth(list)) > 0
+            list.ModifyCol(2, Max(0, SendMessage(0x101D, 1, 0, list) - over))
+        if (row := list.GetNext(0, "F"))
+            list.Modify(row, "Vis")                                         ; fewer rows: the selected one stays in view
+    }
+
+    static ListHeight(rows) => QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + Win.Scale(4)
+
+    ; The height follows the content: 3 ~ PanelRows rows
+    static WantedRows(count) => Max(QuickSwitch.MinRows, Min(count, QuickSwitch.PanelRows))
+    static MinRows := 3
 
     ; The row's icon in the panel's image list: 1 folder, 2 file, 3 favorite folder (a star, so favorites stand out)
     static RowIcon(entry) => (entry.HasOwnProp("IsFile") && entry.IsFile) ? 2 : (entry.HasOwnProp("Group") && entry.Group = "favorite") ? 3 : 1
@@ -703,16 +729,26 @@ class QuickSwitch {
             return QuickSwitch.HidePanel()
         if (QuickSwitch._panelDialogW && rect.W != QuickSwitch._panelDialogW)
             return QuickSwitch._ResizePanel(rect)
-        if !QuickSwitch._panelPos                                           ; first showing, or the size changed: compute the size from the content first
-            QuickSwitch._panel.Show(DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) ? "NA AutoSize" : "NA Hide AutoSize")
-        QuickSwitch._panel.GetPos(, , &panelW, &panelH)
-        area := Win.WorkAreaAt(rect.X + rect.W // 2, rect.Y + rect.H // 2)
-        pos := QuickSwitch.PanelPosition(rect.X, rect.Y, rect.W, rect.H, panelW, panelH, area)
-        key := pos.X "," pos.Y
+        layout := QuickSwitch._Layout(rect)
+        if (layout.Rows != QuickSwitch._panelRows)                          ; more or less room (the dialog moved), or the caret came into / left the panel
+            QuickSwitch._SizeList(layout.Rows)
+        key := layout.X "," layout.Y "," layout.Rows
         if (key != QuickSwitch._panelPos) {                                 ; reposition only when the dialog moved
-            QuickSwitch._panel.Show("NA x" pos.X " y" pos.Y)
+            height := layout.Rows ? QuickSwitch._listY + QuickSwitch.ListHeight(layout.Rows) : QuickSwitch._barHeight
+            QuickSwitch._panel.Show("NA x" layout.X " y" layout.Y " w" QuickSwitch._panelWidth " h" height)   ; client size
             QuickSwitch._panelPos := key
         }
+    }
+
+    ; Where the panel goes for the dialog at rect, with how many rows ("" without a dialog); the caret in the panel opens its list
+    static _Layout(rect) {
+        if !(IsObject(rect) && IsObject(QuickSwitch._panel))
+            return ""
+        area := Win.WorkAreaAt(rect.X + rect.W // 2, rect.Y + rect.H // 2)
+        rowsH := QuickSwitch._frameH + QuickSwitch._listY + QuickSwitch.ListHeight(0)   ; the panel's height with 0 rows; each row adds _rowHeight
+        open := DllCall("GetForegroundWindow", "Ptr") = QuickSwitch._panel.Hwnd
+        return QuickSwitch.PanelLayout(rect.X, rect.Y, rect.W, rect.H, QuickSwitch._panelWidth, QuickSwitch.WantedRows(QuickSwitch._panelFolders.Length)
+            , rowsH, QuickSwitch._rowHeight, QuickSwitch._frameH + QuickSwitch._barHeight, area, open)
     }
 
     ; the window's visible frame (Win10/11 windows have an invisible resize border around them, which WinGetPos includes)
@@ -730,15 +766,28 @@ class QuickSwitch {
         return ""
     }
 
-    ; Panel position (as in Listary): right below the dialog, left-aligned; above the dialog when there is no room below;
-    ; inside the dialog at its bottom when there is room neither above nor below
-    static PanelPosition(x, y, w, h, panelW, panelH, area) {
+    ; Panel position and rows {X, Y, Rows} (as in Listary), never over the dialog's buttons and file list (#440): right below the dialog,
+    ; left-aligned, else above it, with all wanted rows; else on the side with more room, with the rows that fit there (at least MinRows,
+    ; the list scrolls); else (a tall or maximized dialog) only the search box (Rows 0): below or above the dialog, or inside it at its top
+    ; (over the title bar). open = the caret is in the panel: then it opens its list with all rows from there, over the dialog where needed.
+    ; The panel's height with n rows is rowsH + n * rowH, with none barH; all in real pixels
+    static PanelLayout(x, y, w, h, panelW, wanted, rowsH, rowH, barH, area, open := false) {
         left := Max(area.Left, Min(x, area.Right - panelW))
-        if (y + h + panelH <= area.Bottom)
-            return {X: left, Y: y + h}
-        if (y - panelH >= area.Top)
-            return {X: left, Y: y - panelH}
-        return {X: left, Y: Max(area.Top, area.Bottom - panelH)}
+        below := area.Bottom - (y + h), above := y - area.Top
+        fullH := rowsH + wanted * rowH
+        if (fullH <= below)
+            return {X: left, Y: y + h, Rows: wanted}
+        if (fullH <= above)
+            return {X: left, Y: y - fullH, Rows: wanted}
+        fitBelow := (below - rowsH) // rowH, fitAbove := (above - rowsH) // rowH
+        if (fitBelow >= QuickSwitch.MinRows && fitBelow >= fitAbove)
+            return {X: left, Y: y + h, Rows: fitBelow}
+        if (fitAbove >= QuickSwitch.MinRows)
+            return {X: left, Y: y - (rowsH + fitAbove * rowH), Rows: fitAbove}
+        barY := (barH <= below) ? y + h : (barH <= above) ? y - barH : Max(area.Top, y)
+        if !open
+            return {X: left, Y: barY, Rows: 0}
+        return {X: left, Y: Max(area.Top, Min(barY, area.Bottom - fullH)), Rows: wanted}
     }
 
     ; Only real open / save file dialogs count (a file name box + a file list + buttons or an address bar)

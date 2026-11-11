@@ -14,6 +14,7 @@ The folder panel is the visual way to use Quick Switch. It is enabled by default
 - Without Everything, the built-in index covers only the folders listed in Preferences → File Search (by default the Desktop, Documents and Downloads). When nothing is found, the panel shows a row naming them; press `Enter` (or click it) to open that page and add the folders you search.
 - Use `↑` / `↓` to select, `Enter` to jump and `Esc` to return to the original dialog. With a Chinese input method, the first `Enter` may commit the composition; press it again to jump.
 - The panel hides when the dialog is not in the foreground and uses the current ALTRun theme. It is as wide as the dialog (at least 420 pixels at 100% scaling, at most the width of the screen), and follows when the dialog is resized.
+- The panel never covers the dialog's buttons or file list. When there is not enough room below or above the dialog for the whole list, it shows fewer rows (at least 3; scroll for the rest). When even 3 rows don't fit (a tall or maximized dialog), only the search box is shown, below or above the dialog, or over its title bar; click it (or press `Ctrl+Shift+G`) to open the list, and it closes again when you go back to the dialog.
 
 In a standard Open / Save dialog, `Ctrl+Shift+G` temporarily shows the panel and focuses its search box. This works even when automatic display is disabled.
 
