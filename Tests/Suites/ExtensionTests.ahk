@@ -995,6 +995,8 @@ class ExtensionTests {
             eq("phases: stopped (the bar yellow)", SyncPreview.Finish(fake, "Stopped") "|" w.Phase "|" w.Stop.Enabled "|" w.Sync.Enabled "|" w.Status.Value "|" barState()
                 , "1|Done|0|1|Stopped after 1:05.|Paused" (wine ? "" : 3))
             eq("phases: a finished window takes no more", SyncPreview.Finish(fake, 0), false)
+            SyncPreview.Open(previewTask, "Check", {Run: true, Confirm: true})   ; Preview again after Stop: the bar moves (a paused bar's marquee stands still)
+            eq("phases: checking again after stopped (the bar normal)", w.Phase "|" barState(), "Check|Moving" (wine ? "" : 1))
             SyncPreview.Show(previewTask, result, {Run: true, Confirm: false})
             eq("phases: a preview in the same window", (WinExist("ahk_id " g.Hwnd) ? 1 : 0) "|" w.Phase "|" w.Sync.Enabled "|" w.List.GetCount() "|" w.Bar.Visible "|" w.Bar.Value, "1|Preview|1|7|1|0")
             eq("phases: the columns (path, action, size)", w.List.GetText(1, 1) "|" w.List.GetText(1, 2) "|" w.List.GetText(2, 1) "|" w.List.GetText(2, 3), "extra.txt|Delete|old\|")
