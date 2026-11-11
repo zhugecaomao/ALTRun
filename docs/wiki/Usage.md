@@ -178,6 +178,8 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
 
 Select `PO12345678` and press `Ctrl+Alt+\`: "ERP order" comes first, and typing filters the list as usual. The commands still work as before in the search box (by name or keyword).
 
+**A hotkey for one content type**: give the commands for that type the same keyword with `{query}` (for example `po` for "ERP order" and "WMS order"), then add a hotkey in Preferences → Hotkeys with the action "Search in ALTRun" and the search text `po {selection}`. Select an order number and press it: the search window lists just those commands with the number filled in; Enter runs the first, ↓ picks another. This uses the selected text only (on one line, at most 100 characters; see [Hotkeys](Hotkeys)), and the check for shells below doesn't apply there, as when you type the text yourself; for files, use `Ctrl+Alt+\`, where the commands for the file's type come first.
+
 So that selected text can't run something else, a command is left out of the panel when the text has a line break or a double quote (except for `Url` commands, where it is encoded), or when the command runs a shell (`cmd`, a batch file, PowerShell...; also through `%ComSpec%` or another program, such as `wt.exe` with `cmd /k ...` in the arguments) and the text has that shell's special characters (such as `&` `|` `%`).
 
 ## Editing and deleting in the results

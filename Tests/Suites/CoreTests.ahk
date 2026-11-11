@@ -515,6 +515,13 @@ class CoreTests {
         eq("command: query after second keyword", items.Length "|" items[1].Arg "|" items[1].AutoComplete, "1|https://jira.test/ABC-1|ㅓㅑㄱㅁ ABC-1")
         item := CustomCommandProvider._ToItem(AppSettings.Data["CustomCommands"][2], 50)
         eq("command: hint uses first", item.AutoComplete "|" (InStr(item.Subtitle, I18n.T("Search.TypeAfter", "jira")) = 1), "jira |1")
+        ; One keyword for several commands (a hotkey "po {selection}" lists only these, see Usage "A hotkey for one content type")
+        AppSettings.Data["CustomCommands"].Push(Map("Title", "ERP order", "Type", "Url", "Target", "https://erp.test/?id={query}", "Arguments", "", "Keyword", "po")
+            , Map("Title", "WMS order", "Type", "Url", "Target", "https://wms.test/{query}", "Arguments", "", "Keyword", "po"))
+        CustomCommandProvider._ResetNarrowing()
+        items := CustomCommandProvider.Search(SearchQuery("po PO12345678"))
+        eq("command: shared keyword lists each, only them", items.Length "|" items[1].Title "|" items[1].Arg "|" items[2].Title "|" items[2].Arg "|" items[1].Exclusive "|" items[2].Exclusive
+            , "2|ERP order: PO12345678|https://erp.test/?id=PO12345678|WMS order: PO12345678|https://wms.test/PO12345678|1|1")
         AppSettings.Data["CustomCommands"] := saved
         CustomCommandProvider._ResetNarrowing()
 
