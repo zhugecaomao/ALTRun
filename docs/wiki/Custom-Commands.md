@@ -56,6 +56,16 @@ Put `{query}` in the target or arguments and give the command a keyword; typing 
 
 A new installation already has four examples among the default commands: Ping, Google Maps, Send Email (`mailto:{query}`; the address keeps its `@`) and Documents subfolder (`docs folder-name` opens a subfolder of Documents). When you find such a command by its name, the line below it says what to type (for example "Type after 'ping ', then press Enter"), and `Enter` completes it to "keyword " so you can type the argument. Without a keyword, `{query}` is replaced by nothing. "Check Paths" skips paths containing `{query}`.
 
+## The window you came from ({hwnd}, {pid})
+`{hwnd}` and `{pid}` in the target or arguments become the handle and the process ID (in decimal) of the window that was in front before you opened ALTRun, so a script can work on that window, for example find the file it has open:
+
+| Name | Type | Target | Arguments |
+|---|---|---|---|
+| Window info | Command line | `C:\Tools\WindowInfo.ahk` | `{hwnd}` |
+| Process details | Command line | `powershell.exe` | `-NoExit -Command Get-Process -Id {pid} \| Format-List *` |
+
+In an AutoHotkey script, `WinGetTitle("ahk_id " A_Args[1])` reads that window. Prefer `{hwnd}` to `{pid}`: one program often has several windows, and the handle is the one you were using. They are filled in each time the command runs, also from the actions panel for selected content (`Ctrl+Alt+\`) and when it's pinned or recently used. If that window has been closed meanwhile (or ALTRun was opened from the tray with no window in front), both become empty. "Check Paths" skips paths containing them.
+
 ## Variables in paths
 | Write | Meaning |
 |---|---|

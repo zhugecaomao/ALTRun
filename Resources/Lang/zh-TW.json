@@ -83,7 +83,7 @@
   "Clipboard.Subtitle": "{1} · {2} · {3} 個字元",
   "Clipboard.Unpin": "取消釘選",
   "Clipboard.UnpinnedDone": "已取消釘選",
-  "Cmd.Field.Arguments": "執行程式時附帶的參數, 例如 /k ipconfig /all; 檔案、資料夾和網址一般留空。目標或參數裡的 {query} 會換成關鍵字後面輸入的文字",
+  "Cmd.Field.Arguments": "執行程式時附帶的參數, 例如 /k ipconfig /all; 檔案、資料夾和網址一般留空。目標或參數裡的 {query} 會換成關鍵字後面輸入的文字, {hwnd} / {pid} 換成叫出 ALTRun 之前前景視窗的控制代碼 / 處理程序 ID",
   "Cmd.Field.Keyword": "選用。輸入的文字和關鍵字完全一樣時排在最前面, 例如給記事本設 np。可以寫幾個, 用逗號分隔, 例如 np, ㅜㅔ",
   "Cmd.Field.Selection": "選用。偏好設定 → 選取內容 裡定義的內容類型, 例如 IP, Text files: 選取這類內容再按 Ctrl+Alt+\\ 時, 這個指令排在最前面。{query} 換成選取的文字或路徑; 沒寫 {query} 時, 選取的內容作為程式的最後一個參數。",
   "Cmd.Field.Selection.Button": "類型",

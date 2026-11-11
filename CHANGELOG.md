@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.3]
+
+测试版。
+
+Test build.
+
+### 新增
+- 自定义命令的目标或参数里可以写 `{hwnd}` 和 `{pid}` (#445): 运行时换成呼出 ALTRun 之前前台窗口的句柄和进程 ID (十进制), 脚本可以拿它对这个窗口做后续操作 (例如取它打开的文件)。从选中内容的动作面板 (`Ctrl+Alt+\`) 运行、置顶或最近使用的条目也是每次运行时才填入当时的窗口; 那个窗口已经关掉时换成空。见 Wiki [自定义命令](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands-zh)
+
 ## [2026.11.11.2]
 
 测试版。
@@ -1229,7 +1238,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.3...HEAD
+[2026.11.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.2...2026.11.11.3
 [2026.11.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.1...2026.11.11.2
 [2026.11.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11...2026.11.11.1
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11

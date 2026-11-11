@@ -11,6 +11,7 @@
 ;   Arguments    command-line arguments when running a program (optional, file type)
 ;   Uid          a stable unique Id to learn "what was typed -> what was chosen"; empty = not learned
 ;   OnRun        the function fn(item) for the default action (Enter); empty = the default action for Kind
+;   WindowArgs   true = Arg / Arguments contain {hwnd} / {pid} (a custom command), filled in only when it runs (ActionCatalog.ForWindow)
 ;   RunTitle     OnRun's name in the actions panel (e.g. "Paste image"); when set it is the first row of the panel
 ;   Actions      extra actions [{Title, Subtitle, Icon, Run: fn(item)}], shown in the actions panel
 ;   LeadActions  actions shown first in the actions panel, before the built-in ones (the custom commands for a selection, see SelectionActions)
@@ -46,6 +47,7 @@ class ResultItem {
         this.Kind         := "command"
         this.Arg          := ""
         this.Arguments    := ""
+        this.WindowArgs   := false
         this.Uid          := ""
         this.OnRun        := ""
         this.RunTitle     := ""

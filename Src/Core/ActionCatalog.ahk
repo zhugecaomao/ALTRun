@@ -20,6 +20,7 @@ class ActionCatalog {
     static RunDefault(item) {
         if IsObject(item.OnRun)
             return item.OnRun.Call(item)
+        item := ActionCatalog.ForWindow(item)
         switch item.Kind {
             case "file"  : ActionCatalog.OpenFile(item.Arg, item.Arguments)
             case "folder": ActionCatalog.OpenFolder(item.Arg)
@@ -30,7 +31,7 @@ class ActionCatalog {
 
     static RunModifier(item, modifier) {
         if (modifier = "admin")
-            return ActionCatalog.CanRunElevated(item) ? ActionCatalog.RunAsAdmin(item.Arg, item.Arguments) : ActionCatalog.RunDefault(item)
+            return ActionCatalog.CanRunElevated(item) ? ActionCatalog.RunAsAdmin((filled := ActionCatalog.ForWindow(item)).Arg, filled.Arguments) : ActionCatalog.RunDefault(item)
         if (modifier = "alt")
             return ActionCatalog.CopyText(item.CopyText())
         if (modifier = "ctrl") {
@@ -41,6 +42,37 @@ class ActionCatalog {
             }
         }
         ActionCatalog.RunDefault(item)
+    }
+
+    ; {hwnd} / {pid} in a custom command's target or arguments (item.WindowArgs): the window in front before ALTRun was shown
+    ; (its handle and process id, in decimal), filled in when the command runs, so a pinned or recently used entry gets the window
+    ; of that moment. Returns a copy with Kind / Arg / Arguments filled in, or the item itself when it has none
+    static ForWindow(item) {
+        if !item.WindowArgs
+            return item
+        hwnd := App.PreviousWindow
+        return ResultItem(item.Title, item.Subtitle, {Kind: item.Kind, Arg: ActionCatalog.FillWindow(item.Arg, hwnd)
+            , Arguments: ActionCatalog.FillWindow(item.Arguments, hwnd)})
+    }
+
+    ; text with {hwnd} / {pid} (any case) replaced by the window's handle and process id; both empty when the window is gone or hwnd is 0
+    static FillWindow(text, hwnd) {
+        if !RegExMatch(text, "i)\{(hwnd|pid)\}")
+            return text
+        alive := hwnd && WinExist("ahk_id " hwnd)
+        pid := ""
+        if alive
+            try pid := WinGetPID("ahk_id " hwnd)
+        text := StrReplace(text, "{hwnd}", alive ? hwnd : "")
+        return StrReplace(text, "{pid}", pid)
+    }
+
+    ; Target / Arguments contain {hwnd} or {pid}
+    static UsesWindow(texts*) {
+        for text in texts
+            if RegExMatch(text, "i)\{(hwnd|pid)\}")
+                return true
+        return false
     }
 
     static OpenMany(paths) {

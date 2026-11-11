@@ -1616,6 +1616,39 @@ class ProviderTests {
     }
 
     ; Empty search box: pinned first, then recently opened (deduplicated, limited count); only results that can be opened again are kept
+    ; {hwnd} / {pid} in a custom command (#445): left in the result, filled in with the window in front before ALTRun when it runs,
+    ; also for pinned / recently used entries; empty when that window is gone
+    static WindowPlaceholders() {
+        eq := (n, a, e) => TestRunner.Equal("WindowPlaceholders." n, a, e)
+        g := Gui("+ToolWindow", "ALTRun window placeholder test")
+        g.Show("x-3000 y-3000 w120 h40 NoActivate")
+        hwnd := g.Hwnd, pid := DllCall("GetCurrentProcessId")
+        eq("fill", ActionCatalog.FillWindow("/c {hwnd} {PID} {Hwnd}", hwnd), "/c " hwnd " " pid " " hwnd)
+        eq("nothing to fill", ActionCatalog.FillWindow("/k ping {query}", hwnd), "/k ping {query}")
+        eq("no window", ActionCatalog.FillWindow("{hwnd}|{pid}", 0), "|")
+        eq("uses window", ActionCatalog.UsesWindow("cmd.exe", "/c {pid}") "|" ActionCatalog.UsesWindow("cmd.exe", "/c {query}"), "1|0")
+
+        command := Map("Title", "Window Info", "Type", "Command", "Target", "cmd.exe", "Arguments", "/c echo {hwnd} {pid}", "Keyword", "wi")
+        item := CustomCommandProvider._ToItem(command, 0)
+        eq("result keeps placeholders", item.WindowArgs "|" item.Arguments, "1|/c echo {hwnd} {pid}")
+        eq("plain command", CustomCommandProvider._ToItem(Map("Title", "t", "Type", "File", "Target", "notepad.exe"), 0).WindowArgs, false)
+        eq("path not checked", CustomCommandProvider.CheckTarget(Map("Title", "t", "Type", "File", "Target", "C:\Tools\{pid}.txt")), "Skipped")
+
+        savedPrevious := App.PreviousWindow
+        App.PreviousWindow := hwnd
+        filled := ActionCatalog.ForWindow(item)
+        eq("filled when run", filled.Kind "|" filled.Arg "|" filled.Arguments "|" filled.WindowArgs, "file|cmd.exe|/c echo " hwnd " " pid "|0")
+        eq("others unchanged", ActionCatalog.ForWindow(item := ResultItem("a", "", {Kind: "file", Arg: "C:\a{pid}.txt"})) == item, true)
+
+        entry := RecentProvider.Snapshot(CustomCommandProvider._ToItem(command, 0).DefineProp("Provider", {Value: "CustomCommands"}))
+        eq("saved with placeholders", entry["Arguments"] "|" entry["WindowArgs"], "/c echo {hwnd} {pid}|1")
+        again := RecentProvider.ItemFor(entry, true)
+        eq("recent entry filled when run", ActionCatalog.ForWindow(again).Arguments, "/c echo " hwnd " " pid)
+        g.Destroy()
+        eq("window gone", ActionCatalog.ForWindow(again).Arguments, "/c echo  ")
+        App.PreviousWindow := savedPrevious
+    }
+
     static RecentItems() {
         eq := (n, a, e) => TestRunner.Equal("RecentItems." n, a, e)
         eq("default count", AppSettings.Defaults()["Features"]["Recent"]["RecentCount"], 0)   ; by default only pinned items show
