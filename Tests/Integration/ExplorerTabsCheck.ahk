@@ -16,7 +16,14 @@
 #Warn All, StdOut
 #Include %A_ScriptDir%\..\..\Lib\ExplorerTabs.ahk
 
+OnError(PrintError)
 Main()
+
+; an error is printed as a FAIL line and ends the check, instead of a dialog that keeps it waiting until the time limit
+PrintError(err, *) {
+    FileAppend("FAIL exception: " err.Message " (" err.What ", line " err.Line ")`n", "*", "UTF-8")
+    ExitApp(99)
+}
 
 Main() {
     failures := 0
@@ -94,7 +101,9 @@ Main() {
         front.Show()
         second := ""
         SetTimer(OpenSecond, -delay)
+        out("INFO two at once (" delay " ms): first starts")
         first := ExplorerTabs.Open(pairA, "note.txt")
+        out("INFO two at once (" delay " ms): first done")
         firstError := ExplorerTabs.LastError
         deadline := A_TickCount + 15000
         while (second = "" && A_TickCount < deadline)
@@ -112,6 +121,7 @@ Main() {
         out("INFO two at once (" delay " ms): the second starts with " (ExplorerTabs._Tabs(hwnd).Length - before) " new tab(s) there")
         opened := ExplorerTabs.Open(pairB, "note.txt")
         second := {Opened: opened, Error: ExplorerTabs.LastError}
+        out("INFO two at once (" delay " ms): second done")
     }
 
     ctrlFolder := root "\Ctrl held"                                        ; Reveal with Ctrl+Enter, Ctrl let go 0.7 s later

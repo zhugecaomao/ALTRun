@@ -41,6 +41,8 @@ jobs:
         run: |
           $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\Integration\ExplorerTabsCheck.ahk' `
                   -PassThru -NoNewWindow -RedirectStandardOutput check.log -RedirectStandardError check.err
-          if (-not $proc.WaitForExit(300000)) { $proc.Kill(); Get-Content check.log, check.err -Encoding UTF8 -ErrorAction SilentlyContinue; throw "The check didn't finish in 5 minutes" }
+          if (-not $proc.WaitForExit(300000)) {
+            Get-Process | Where-Object MainWindowTitle | Format-Table Id, ProcessName, Responding, MainWindowTitle -AutoSize | Out-String -Width 200
+            $proc.Kill(); Get-Content check.log, check.err -Encoding UTF8 -ErrorAction SilentlyContinue; throw "The check didn't finish in 5 minutes" }
           Get-Content check.log, check.err -Encoding UTF8 -ErrorAction SilentlyContinue
           if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) check(s) failed" }
