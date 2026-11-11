@@ -5,6 +5,8 @@
 ;   - with no Explorer window open, ExplorerTabs.Open returns false (ALTRun opens a new window instead)
 ;   - with one open, a plain folder, one with spaces / # / % and a Chinese one each open in a new tab of it, with the file selected,
 ;     also when the window isn't in front
+;   - Ctrl still held from Ctrl+Enter (Reveal) when it starts: it waits for the key, so the tab still goes to the folder and
+;     no other window opens (with Ctrl down, Explorer took the navigation for Ctrl+click and the tab stayed empty)
 ;   - a folder that can't be reached returns false and leaves no empty tab behind
 ; Prints PASS / FAIL lines; the exit code is the number of failures. On a system without Explorer tabs it prints SKIP and exits 0
 ;===============================================================================
@@ -60,6 +62,28 @@ Main() {
         check("in that window " folder, HasTab(hwnd, folder))
         check("file selected " folder, Selected(hwnd, folder) = "note.txt", Selected(hwnd, folder))
     }
+
+    ctrlFolder := root "\Ctrl held"                                        ; Reveal with Ctrl+Enter, Ctrl let go 0.7 s later
+    DirCreate(ctrlFolder), FileAppend("x", ctrlFolder "\note.txt", "UTF-8")
+    before := ExplorerTabs._Tabs(hwnd).Length
+    windows := WinGetList("ahk_class CabinetWClass").Length
+    front.Show()
+    Send("{Ctrl down}")
+    SetTimer(() => Send("{Ctrl up}"), -700)
+    try opened := ExplorerTabs.Open(ctrlFolder, "note.txt")
+    finally {
+        Sleep(800)
+        if GetKeyState("Ctrl")
+            Send("{Ctrl up}")
+    }
+    check("Ctrl held: opened", opened, ExplorerTabs.LastError)
+    check("Ctrl held: one more tab", ExplorerTabs._Tabs(hwnd).Length = before + 1, ExplorerTabs._Tabs(hwnd).Length " tabs, " before " before")
+    check("Ctrl held: in that window", HasTab(hwnd, ctrlFolder))
+    check("Ctrl held: file selected", Selected(hwnd, ctrlFolder) = "note.txt", Selected(hwnd, ctrlFolder))
+    check("Ctrl held: no other window", WinGetList("ahk_class CabinetWClass").Length = windows, WinGetList("ahk_class CabinetWClass").Length " windows")
+    for other in WinGetList("ahk_class CabinetWClass")                     ; a window Explorer opened for the folder instead
+        if (other != hwnd)
+            try WinClose("ahk_id " other)
 
     before := ExplorerTabs._Tabs(hwnd).Length
     check("unreachable folder: not opened", !ExplorerTabs.Open(root "\Missing\Nowhere"), ExplorerTabs.LastError)
