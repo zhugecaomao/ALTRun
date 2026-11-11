@@ -363,6 +363,33 @@ class CoreTests {
         } finally
             general["FolderNewTab"] := saved
         eq("default off", AppSettings.Defaults()["General"]["FolderNewTab"], 0)
+
+        ; When a new tab isn't used: normal cases only to the debug log; Explorer failing once a run to the log even when it is off
+        logged := []
+        savedOpen := ExplorerTabs.GetOwnPropDesc("Open"), savedRecord := Logger.GetOwnPropDesc("Record"), savedDebug := Logger.GetOwnPropDesc("Debug")
+        savedWarned := ActionCatalog._tabWarned, savedError := ExplorerTabs.LastError, savedExpected := ExplorerTabs.LastErrorExpected, savedInfo := ExplorerTabs.SelectInfo
+        fake := {Ok: false, Error: "", Expected: false, Info: ""}
+        ExplorerTabs.DefineProp("Open", {Call: (*) => (ExplorerTabs.LastError := fake.Error, ExplorerTabs.LastErrorExpected := fake.Expected, ExplorerTabs.SelectInfo := fake.Info, fake.Ok)})
+        Logger.DefineProp("Record", {Call: (cls, level, msg) => logged.Push(level ": " msg)})
+        Logger.DefineProp("Debug", {Call: (cls, msg) => logged.Push("DBG: " msg)})
+        try {
+            ActionCatalog._tabWarned := false
+            fake.Error := "no Explorer window open", fake.Expected := true
+            eq("expected: a window, debug only", ActionCatalog._InExplorerTab("C:\Demo") "|" logged.Length "|" InStr(logged[1], "DBG: ") "|" ActionCatalog._tabWarned, "0|1|1|0")
+            fake.Error := "no new tab came", fake.Expected := false
+            eq("Explorer failing: a window, written once", ActionCatalog._InExplorerTab("C:\Demo") "|" logged.Length "|" logged[2]
+                , "0|2|WRN: ActionCatalog: new Explorer tab failed (no new tab came), opened a window instead; Windows " A_OSVersion " (written once a run)")
+            ActionCatalog._InExplorerTab("C:\Demo")
+            eq("Explorer failing again: debug only", logged.Length "|" InStr(logged[3], "DBG: ActionCatalog: new Explorer tab failed"), "3|1")
+            ActionCatalog._tabWarned := false
+            fake.Ok := true, fake.Info := "failed after 30 tries, 3010 ms; last: at 'C:\Demo' items 4, no report.pdf"
+            eq("tab but file not selected: written", ActionCatalog._InExplorerTab("C:\Demo", "report.pdf") "|" logged.Length "|" InStr(logged[4], "WRN: ActionCatalog: the file was not selected in the new Explorer tab (failed after 30 tries"), "1|4|1")
+            fake.Info := "ok after 2 tries, 150 ms"
+            eq("tab and file selected: nothing", ActionCatalog._InExplorerTab("C:\Demo", "report.pdf") "|" logged.Length, "1|4")
+        } finally {
+            ExplorerTabs.DefineProp("Open", savedOpen), Logger.DefineProp("Record", savedRecord), Logger.DefineProp("Debug", savedDebug)
+            ActionCatalog._tabWarned := savedWarned, ExplorerTabs.LastError := savedError, ExplorerTabs.LastErrorExpected := savedExpected, ExplorerTabs.SelectInfo := savedInfo
+        }
     }
 
     static SettingsKeys() {

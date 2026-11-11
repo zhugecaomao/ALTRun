@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.2]
+
+测试版。
+
+Test build.
+
+### 改进
+- 在新标签页中打开文件夹 (#440): 资源管理器的新标签没能打开 (或者没能选中文件) 时, 每次运行第一次会写进日志 `%Temp%\ALTRun.log`, 日志关着也写, 带原因和 Windows 版本。新标签靠的是资源管理器没有公开的命令, Windows 更新后可能失效; 以前只写调试日志 (默认关), 用户只看到文件夹改成在新窗口打开, 查不出原因。没有资源管理器窗口、文件夹不存在或连不上、Windows 10 等正常情况不写; 文件夹不存在时也不再先开一个空标签再关掉 (发布前体检发现)
+
 ## [2026.11.11.1]
 
 测试版。
@@ -1220,7 +1229,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.1...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.2...HEAD
+[2026.11.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.1...2026.11.11.2
 [2026.11.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11...2026.11.11.1
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
