@@ -5,7 +5,7 @@
 ; (the file named on the command line lists them, one "url|title" per line in the order they were opened). Checks the part that depends on Windows and the browsers:
 ;   - winsqlite3.dll is there
 ;   - BrowserHistoryProvider.ReadFile reads each browser's History while the browser keeps it open (in place, without
-;     locking it): every page is found, with its title (a Chinese one too), most recent first
+;     locking it): every page is found, with its title (a Chinese one too), most recent first by the stored visit time
 ;   - the browser still runs afterwards, and no copy is left in %TEMP%
 ; The rest (several profiles, filters, matching) is in the unit tests (ProviderTests.BrowserHistory) with test databases.
 ; Prints PASS / FAIL lines; the exit code is the number of failures.
@@ -61,17 +61,18 @@ Main() {
         elapsed := A_TickCount - start
         check(browser[1] ": read in place", !Logger.Lines.Length, Logger.Lines.Length ? Logger.Lines[1] : elapsed " ms, " rows.Length " pages")
         Logger.Lines := []
-        found := Map()
-        for index, row in rows
+        found := Map(), sorted := true
+        for index, row in rows {
             found[row[1]] := {Index: index, Title: row[2], Time: row[3]}
-        previous := 0
+            if (index > 1 && row[3] > rows[index - 1][3])
+                sorted := false
+        }
+        ; most recent first by the visit times the browser stored (not by the order the pages were opened: a browser that is
+        ; still starting can finish loading the first page after the second)
+        check(browser[1] ": most recent first", sorted)
         for page in expected {
             ok := found.Has(page[1]) && found[page[1]].Title = page[2]
-            check(browser[1] ": " page[1], ok, ok ? "" : (found.Has(page[1]) ? "title " found[page[1]].Title : "not found"))
-            if (ok && previous)
-                check(browser[1] ": " page[1] " before the page opened earlier", found[page[1]].Index < previous)
-            if ok
-                previous := found[page[1]].Index
+            check(browser[1] ": " page[1], ok, ok ? "row " found[page[1]].Index ", visited " found[page[1]].Time : (found.Has(page[1]) ? "title " found[page[1]].Title : "not found"))
         }
         check(browser[1] ": still running", ProcessExist(browser[3]) > 0)
     }
