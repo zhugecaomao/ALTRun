@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.5]
+
+测试版。
+
+Test build.
+
+### 修复
+- 在新标签打开文件夹 (#440): 很快地连续打开两个文件夹 (例如连按两个文件夹的热键) 时, 每个文件夹都进自己的新标签, 不会两次用到同一个标签而留下空标签; 等待被另一次打开打断太久时, 不再误判失败
+
 ## [2026.11.11.4]
 
 测试版。
@@ -1247,7 +1256,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.5...HEAD
+[2026.11.11.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.4...2026.11.11.5
 [2026.11.11.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.3...2026.11.11.4
 [2026.11.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.2...2026.11.11.3
 [2026.11.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.1...2026.11.11.2

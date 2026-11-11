@@ -16,6 +16,9 @@
 ; opened is closed again.
 ; Modifier keys: Explorer reads them while it navigates - with Ctrl still held from Ctrl+Enter (Reveal) it takes the navigation
 ; for Ctrl+click, the new tab stays empty and the folder opens elsewhere - so Open first waits for Ctrl / Alt / Shift / Win to be let go.
+; Two Opens can overlap: a hotkey or timer starts a second one while the first waits. A new tab is listed 60-125 ms after the
+; command (CI), so the second could take the first's tab for its own; each Open takes only a new tab that no Open running now has
+; taken, and the waits check once more after their deadline (the Open that interrupted may have taken longer than it).
 ;
 ; Usage:
 ;   ExplorerTabs.Supported()                          Windows 11 22H2 or later
@@ -34,6 +37,8 @@ class ExplorerTabs {
     static LastError := ""
     static LastErrorExpected := false
     static SelectInfo := ""                                               ; how the last selection went (tries, time, last state), for diagnosis
+    static _claimed := Map()                                              ; new tabs taken by the Opens running now (cleared when none runs)
+    static _running := 0
 
     static Supported(version := A_OSVersion) => VerCompare(version, ExplorerTabs.MinVersion) >= 0
 
@@ -47,6 +52,7 @@ class ExplorerTabs {
             return ExplorerTabs._Fail("a modifier key is still held", true)
         if !IsObject(bytes := ExplorerTabs.PidlBytes(folder))                ; before a tab is opened: no empty tab for a missing folder
             return ExplorerTabs._Fail("the folder can't be reached", true)
+        ExplorerTabs._running += 1
         try {
             before := ExplorerTabs._TabSet(hwnd)
             SendMessage(0x0111, 0xA21B, 0, "ShellTabWindowClass1", "ahk_id " hwnd, , , , 2000)   ; WM_COMMAND: new tab
@@ -62,6 +68,10 @@ class ExplorerTabs {
             return true
         } catch as err {
             return ExplorerTabs._Fail(err.Message)
+        } finally {
+            ExplorerTabs._running -= 1
+            if (ExplorerTabs._running = 0)
+                ExplorerTabs._claimed.Clear()
         }
     }
 
@@ -140,15 +150,19 @@ class ExplorerTabs {
         return 0
     }
 
+    ; The new tab: one the window didn't have before and no other Open running now has taken (see the header)
     static _WaitNewTab(hwnd, before) {
         deadline := A_TickCount + ExplorerTabs.TabTimeout
-        while (A_TickCount < deadline) {
+        loop {
             for each in ExplorerTabs._Tabs(hwnd)
-                if (each.Tab && !before.Has(each.Tab))
+                if (each.Tab && !before.Has(each.Tab) && !ExplorerTabs._claimed.Has(each.Tab)) {
+                    ExplorerTabs._claimed[each.Tab] := true
                     return each.Tab
+                }
+            if (A_TickCount >= deadline)
+                return 0
             Sleep(50)
         }
-        return 0
     }
 
     ; Navigate2 with the folder's PIDL (VT_ARRAY | VT_UI1), which only moves that tab
@@ -176,12 +190,13 @@ class ExplorerTabs {
 
     static _WaitPath(hwnd, tab, folder) {
         deadline := A_TickCount + ExplorerTabs.NavigateTimeout
-        while (A_TickCount < deadline) {
+        loop {
             if ExplorerTabs.SameFolder(ExplorerTabs._Path(hwnd, tab), folder)
                 return true
+            if (A_TickCount >= deadline)
+                return false
             Sleep(50)
         }
-        return false
     }
 
     static _Path(hwnd, tab) {

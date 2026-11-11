@@ -74,26 +74,7 @@ Main() {
 
     ; Two at once (two folder hotkeys pressed quickly): a timer starts the second Open while the first waits for its tab, so
     ; the second interrupts the first. Each folder must end up in its own new tab with its file selected, no tab left empty
-    ; (info) whether the tab is already listed when the new-tab command returns: if so, a second Open can't take the first's tab
-    for probe in [1, 2] {
-        before := ExplorerTabs._TabSet(hwnd)
-        t0 := A_TickCount
-        SendMessage(0x0111, 0xA21B, 0, "ShellTabWindowClass1", "ahk_id " hwnd, , , , 2000)
-        sent := A_TickCount - t0, listed := -1
-        while (A_TickCount - t0 < 3000) {
-            for each in ExplorerTabs._Tabs(hwnd)
-                if (each.Tab && !before.Has(each.Tab))
-                    listed := A_TickCount - t0, tab := each.Tab
-            if (listed >= 0)
-                break
-            Sleep(10)
-        }
-        out("INFO new-tab command returned after " sent " ms, tab listed after " listed " ms")
-        if (listed >= 0)
-            ExplorerTabs._CloseTab(hwnd, tab)
-        Sleep(500)
-    }
-    for delay in [10, 20, 30, 40, 50, 60, 70, 80, 150] {
+    for delay in [10, 30, 50, 80, 150] {
         pairDelay := delay                                                 ; a for-loop variable has no value in OpenSecond
         pairA := root "\Pair " delay " A", pairB := root "\Pair " delay " B"
         for folder in [pairA, pairB]

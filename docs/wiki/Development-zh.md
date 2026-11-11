@@ -79,7 +79,7 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 
 ### 线程、消息和重入
 AutoHotkey 同一时间只运行一个线程, 但热键、计时器、`OnMessage` 处理函数和界面事件会开一个新线程, **在当前线程等待时插进来**: `Sleep`、`MsgBox` 等对话框、`WinWait`、`Download()`, 以及会处理消息的 `DllCall` / `SendMessage`。等待过的代码继续时, 要假设共享的状态已经变了:
-- 同一个函数可能同时运行两次。`SafeFile` 每次写入用自己的临时文件, 并以最新的内容为准; `Everything` 每个查询 id 一个回复位置 (等回复时可能又开始一个查询)
+- 同一个函数可能同时运行两次。`SafeFile` 每次写入用自己的临时文件, 并以最新的内容为准; `Everything` 每个查询 id 一个回复位置 (等回复时可能又开始一个查询); `ExplorerTabs.Open` 只拿没有被其他正在运行的 Open 拿走的新标签
 - `Critical("On")` 让一小段代码不被打断 (画结果行、图标缓存); 期间消息会排队, 所以要短, 结束后重绘 (`SearchWindow`)
 - **共用的消息**: 同一个消息有几个处理函数, 只在是自己的消息时才返回值: `WM_COPYDATA` (0x4A) 有 `App` (后启动的 ALTRun 传来的命令行)、`Everything` (查询回复)、`QuickSwitch` (Total Commander 的回复) 和 `CapsLockHelper`, 各自检查 `dwData`; 按键消息 (`WM_KEYDOWN` / `WM_SYSKEYDOWN`) 每个窗口的处理函数都会收到, 各自检查窗口
 - **菜单**: `Menu.Show` / `TrackPopupMenuEx` 会把 ALTRun 隐藏的主窗口设成前台; 没选菜单项就关掉时, 要把焦点还回去 (`QuickSwitch._DialogAfterMenu`)
