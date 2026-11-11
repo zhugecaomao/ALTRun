@@ -73,14 +73,16 @@ class PreferencesWindow {
         names := []
         for page in PreferencesWindow.Pages
             names.Push(page.Name)
+        ; The image list's height is the row height (a roomier sidebar). The rows are measured with an empty image list first, then the
+        ; icons are drawn once at the height that makes the rows fill the list, leaving only a few pixels below the last one
         cellH := PreferencesWindow.PageRowHeight()
-        icons := NavIcons.ImageList(PreferencesWindow.PageKeys, cellH)   ; the image list's height is the row height (a roomier sidebar)
-        if icons
-            pageList.SetImageList(icons, 1)
+        sizer := (NavIcons.FontName() != "") ? NavIcons.EmptyList(cellH) : 0
+        if sizer
+            pageList.SetImageList(sizer, 1)
         for index, name in names
             pageList.Add("Icon" index, name)
-        if icons && (taller := PreferencesWindow._SpareRowHeight(pageList)) > 0 {   ; the rows fill the list, leaving only a few pixels below the last one
-            old := pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, cellH + taller), 1)
+        if sizer {
+            old := pageList.SetImageList(NavIcons.ImageList(PreferencesWindow.PageKeys, cellH + PreferencesWindow._SpareRowHeight(pageList)), 1)
             if old
                 DllCall("comctl32\ImageList_Destroy", "Ptr", old)
         }
@@ -131,7 +133,7 @@ class PreferencesWindow {
     ; The selected row is shown by its highlight only, without a dotted focus rectangle (like the navigation in Windows Settings). Windows decides whether to show focus rectangles
     ; by "whether the keyboard was used recently", so the first time Preferences opens the dots sometimes show and sometimes don't; CDIS_FOCUS is removed before each row is drawn
     ; The icon cell height of the page list to start with: 26 (a roomy sidebar), less when all pages wouldn't fit without scrolling
-    ; (a row is about the cell plus 2; the list is ButtonY - 24 high with a 2 px border). _SpareRowHeight then measures the real rows
+    ; (a row is about the cell plus 2; the list is ButtonY - 24 high with a 2 px border). _SpareRowHeight then measures the real rows (with NavIcons.EmptyList)
     static PageRowHeight() => Min(26, (PrefsForm.ButtonY - 24 - 4) // PreferencesWindow.PageKeys.Length - 2)
 
     ; How much taller (at 96 DPI) each row of the page list can be so that all rows still fit: the list's client height divided by the rows,

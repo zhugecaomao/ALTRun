@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.8]
+
+测试版。
+
+Test build.
+
+### 改进
+- 打开偏好设置更快: 左侧页面列表的图标只画一次 (原来画两次), 而且只处理图标所在的区域
+
 ## [2026.11.11.7]
 
 测试版。
@@ -1274,7 +1283,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.7...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.8...HEAD
+[2026.11.11.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.7...2026.11.11.8
 [2026.11.11.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.6...2026.11.11.7
 [2026.11.11.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.5...2026.11.11.6
 [2026.11.11.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.4...2026.11.11.5
