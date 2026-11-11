@@ -30,6 +30,7 @@ class ExplorerTabs {
     static SelectTimeout := 3000                                          ; a new tab ignored SelectItem for more than 1.5 s once on CI
     static KeysTimeout := 2000                                            ; ms to wait for modifier keys to be let go
     static LastError := ""
+    static SelectInfo := ""                                               ; how the last selection went (tries, time, last state), for diagnosis
 
     static Supported(version := A_OSVersion) => VerCompare(version, ExplorerTabs.MinVersion) >= 0
 
@@ -191,19 +192,36 @@ class ExplorerTabs {
     ; reached the folder may not list its files yet and ignore it (seen on CI with the first tab), so it is checked and tried
     ; again for up to SelectTimeout; true = selected
     static _Select(hwnd, tab, file) {
-        deadline := A_TickCount + ExplorerTabs.SelectTimeout
+        deadline := A_TickCount + ExplorerTabs.SelectTimeout, tries := 0, start := A_TickCount
         loop {
+            tries += 1, state := ""
             try {
-                doc := ExplorerTabs._Item(hwnd, tab).Document
-                if IsObject(fileItem := doc.Folder.ParseName(file)) {
-                    doc.SelectItem(fileItem, 1 | 4 | 8 | 16)
-                    chosen := doc.SelectedItems()
-                    if (chosen.Count = 1 && chosen.Item(0).Path = fileItem.Path)
-                        return true
+                item := ExplorerTabs._Item(hwnd, tab)
+                if !IsObject(item) {
+                    state := "tab not found"
+                } else {
+                    doc := item.Document
+                    state := "at '" doc.Folder.Self.Path "' items " doc.Folder.Items().Count
+                    if !IsObject(fileItem := doc.Folder.ParseName(file)) {
+                        state .= ", no " file
+                    } else {
+                        doc.SelectItem(fileItem, 1 | 4 | 8 | 16)
+                        chosen := doc.SelectedItems()
+                        state .= ", selected " chosen.Count (chosen.Count ? " '" chosen.Item(0).Path "'" : "")
+                        if (chosen.Count = 1 && chosen.Item(0).Path = fileItem.Path) {
+                            ExplorerTabs.SelectInfo := "ok after " tries " tries, " (A_TickCount - start) " ms"
+                            return true
+                        }
+                    }
                 }
+            } catch as err {
+                state .= " error: " err.Message
             }
-            if (A_TickCount >= deadline)
+            if (A_TickCount >= deadline) {
+                ExplorerTabs.SelectInfo := "failed after " tries " tries, " (A_TickCount - start) " ms; last: " state
+                    . "; window in front: " (WinActive("ahk_id " hwnd) ? "yes" : "no")
                 return false
+            }
             Sleep(100)
         }
     }

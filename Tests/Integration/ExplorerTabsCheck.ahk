@@ -31,7 +31,8 @@ Main() {
     }
     root := "C:\ExplorerTabsCheck"
     try DirDelete(root, true)
-    folders := [root "\Plain", root "\A b #1 100% x", root "\中文 文件夹"]
+    folders := [root "\Plain", root "\A b #1 100% x", root "\中文 文件夹"                    ; two of each kind: more tries of the selection
+             , root "\Plain 2", root "\A b #2 100% y", root "\中文 文件夹 二"]
     for folder in folders {
         DirCreate(folder)
         FileAppend("x", folder "\note.txt", "UTF-8")
@@ -60,7 +61,7 @@ Main() {
         check("opened " folder, opened, (A_TickCount - t0) " ms " ExplorerTabs.LastError)
         check("one more tab " folder, ExplorerTabs._Tabs(hwnd).Length = before + 1, ExplorerTabs._Tabs(hwnd).Length " tabs")
         check("in that window " folder, HasTab(hwnd, folder))
-        check("file selected " folder, Selected(hwnd, folder) = "note.txt", Selected(hwnd, folder))
+        check("file selected " folder, Selected(hwnd, folder) = "note.txt", Selected(hwnd, folder) "; " ExplorerTabs.SelectInfo)
     }
 
     ctrlFolder := root "\Ctrl held"                                        ; Reveal with Ctrl+Enter, Ctrl let go 0.7 s later
