@@ -45,6 +45,7 @@ class ClipboardProvider {
     static Entries := []              ; newest first, see the top of the file
     static ReadDelay := 150                                                 ; how long to wait after the clipboard changed before reading it (milliseconds)
     static _saveTimer := "", _mergeUntil := 0, _pending := "", _readTimer := ""
+    static _unread := false                                                 ; the saved history is there but couldn't be read yet (see _Load)
 
     static Init() {
         options := AppSettings.Feature("Clipboard")
@@ -341,6 +342,8 @@ class ClipboardProvider {
     }
 
     static Clear() {                                                        ; pinned entries are kept
+        if ClipboardProvider._unread                                        ; the saved history too, if it can be read now
+            ClipboardProvider._LoadUnread()
         kept := []
         for entry in ClipboardProvider.Entries
             if ClipboardProvider.IsPinned(entry)
@@ -525,14 +528,56 @@ class ClipboardProvider {
     ;---------------------------------------------------------------------------
     ; Persistence
     ;---------------------------------------------------------------------------
+    ; Reads the saved history. A file that can't be read right now (held by a sync tool or antivirus) is not an empty history: taken
+    ; for one, the next copy would save the new list over it and delete the long entries and images it lists as "no longer in the
+    ; history". It is left alone and read again before anything is saved (_LoadUnread)
     static _Load() {
+        ClipboardProvider._unread := false
         if !FileExist(ClipboardProvider.File)
             return
+        try text := SafeFile.ReadText(ClipboardProvider.File)
+        catch as e {
+            ClipboardProvider._unread := true
+            Logger.Error("ClipboardProvider: cannot read history now (kept; read again before saving) - " e.Message)
+            return
+        }
+        ClipboardProvider.Entries := ClipboardProvider._ParseHistory(text)
+    }
+
+    ; The history that couldn't be read at start-up, read now: its entries go after this run's (the same text or files once, pinned
+    ; if either was). false while it still can't be read: nothing is saved then
+    static _LoadUnread() {
+        if FileExist(ClipboardProvider.File) {
+            try text := SafeFile.ReadText(ClipboardProvider.File, , 1)
+            catch
+                return false
+            for entry in ClipboardProvider._ParseHistory(text) {
+                same := ""
+                if (ClipboardProvider.TypeOf(entry) != "image") {
+                    for current in ClipboardProvider.Entries
+                        if (ClipboardProvider.TypeOf(current) = ClipboardProvider.TypeOf(entry) && current["Text"] == entry["Text"]) {
+                            same := current
+                            break
+                        }
+                }
+                if !IsObject(same)
+                    ClipboardProvider.Entries.Push(entry)
+                else if ClipboardProvider.IsPinned(entry)
+                    same["Pinned"] := 1
+            }
+            ClipboardProvider._Trim()
+        }
+        ClipboardProvider._unread := false
+        return true
+    }
+
+    ; The text of ClipboardHistory.json -> its entries. A file that doesn't parse is kept as .bad before a save replaces it
+    static _ParseHistory(text) {
+        entries := []
         try {
-            data := JSON.Parse(FileRead(ClipboardProvider.File, "UTF-8"))
+            data := JSON.Parse(text)
             if !(data is Map && data.Has("Entries") && data["Entries"] is Array)
-                return
-            entries := []
+                return entries
             for entry in data["Entries"] {
                 if !(entry is Map)
                     continue
@@ -558,15 +603,19 @@ class ClipboardProvider {
                     entry["Time"] := A_Now
                 entries.Push(entry)
             }
-            ClipboardProvider.Entries := entries
         } catch as e {
             Logger.Error("ClipboardProvider: cannot read history - " e.Message)
+            try FileCopy(ClipboardProvider.File, ClipboardProvider.File ".bad", true)
+            return []
         }
+        return entries
     }
 
     static Save() {
         if !AppSettings.Feature("Clipboard")["Persist"]
             return
+        if (ClipboardProvider._unread && !ClipboardProvider._LoadUnread())  ; the saved history still can't be read: nothing is written
+            return                                                          ; over it (tried again at the next save)
         try {
             DirCreate(AppSettings.DataDir)
             list := [], keep := Map()

@@ -1,5 +1,5 @@
 ;===============================================================================
-; SafeFile.ahk - writing a file so that a crash or power cut halfway can't damage it (AutoHotkey v2)
+; SafeFile.ahk - writing a file so that a crash or power cut halfway can't damage it, and reading one that is busy (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
 ; Writes a temporary file in the same folder, flushes it to the disk, then replaces the original (MoveFileEx with
 ; MOVEFILE_WRITE_THROUGH: the rename is on the disk too before it returns). Without the flush, a power cut or blue screen right
@@ -16,12 +16,30 @@
 ; Usage:
 ;   SafeFile.WriteText("x.txt", text)
 ;   SafeFile.Write("x.bin", (out) => out.RawWrite(buf, buf.Size))   writer gets the File object (opened as UTF-8 without BOM)
+;   text := SafeFile.ReadText("x.txt")       tries again while the file is busy, then throws; never "" for a file that couldn't be read
 ;===============================================================================
 class SafeFile {
     static MoveTries := 20
     static _count := 0, _saved := Map()                                    ; writes started; file -> number of the last write that replaced it
 
     static WriteText(file, text) => SafeFile.Write(file, (out) => out.Write(text))
+
+    ; Reads a data file. The same sync folders and antivirus software, or a program writing it, can hold the file for a moment: on failure
+    ; it is read again every ReadWaitMs, up to tries times, then the error is thrown (at once when the file isn't there). A caller must
+    ; not take a file that couldn't be read for an empty or damaged one: it would write new content over a good file
+    static ReadTries := 10, ReadWaitMs := 200
+    static readFn := (file, encoding) => FileRead(file, encoding)           ; replaced in the tests
+
+    static ReadText(file, encoding := "UTF-8", tries := SafeFile.ReadTries) {
+        Loop tries {
+            try return SafeFile.readFn.Call(file, encoding)
+            catch OSError as e {
+                if (A_Index >= tries || e.Number = 2 || e.Number = 3)       ; ERROR_FILE_NOT_FOUND / ERROR_PATH_NOT_FOUND: waiting doesn't help
+                    throw e
+            }
+            Sleep(SafeFile.ReadWaitMs)
+        }
+    }
 
     ; writer(out) writes the content into out, a File object open for writing (UTF-8 without BOM for text; RawWrite for binary data)
     static Write(file, writer) {

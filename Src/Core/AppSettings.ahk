@@ -43,6 +43,7 @@ class AppSettings {
     static Data := Map()
     static MigratedFrom := 0          ; the version upgraded from at this start-up (0 = no upgrade)
     static ImportedFrom := ""         ; the old ALTRun.ini imported at this start-up ("" = none)
+    static NewerVersion := 0          ; the file's SchemaVersion when a newer ALTRun saved it (0 = no), see Load
     static MovedFrom := ""            ; moved from the program folder to Data\ at this start-up ("" = no)
 
     static General        => AppSettings.Data["General"]
@@ -71,7 +72,7 @@ class AppSettings {
         if !FileExist(settingsFile)
             return ""
         try {
-            if !RegExMatch(FileRead(settingsFile, "UTF-8"), '"DataLocation"\s*:\s*("(?:[^"\\]|\\.)*")', &m)
+            if !RegExMatch(SafeFile.ReadText(settingsFile), '"DataLocation"\s*:\s*("(?:[^"\\]|\\.)*")', &m)   ; a busy file is tried again
                 return ""
             location := Trim(JSON.Parse("[" m[1] "]")[1])
             if (location != "" && (location := Path.Full(location)) != AppSettings.DefaultDataDir())
@@ -158,6 +159,12 @@ class AppSettings {
                 data := SchemaMigration.Upgrade(data, fromVersion)
                 AppSettings.MigratedFrom := fromVersion
                 changed := true
+            } else if (fromVersion > AppSettings.CurrentVersion) {
+                ; Saved by a newer ALTRun (another PC sharing the Data folder that was updated first, or after going back to an older
+                ; version). The file keeps its version: written back as CurrentVersion, the newer ALTRun would run its upgrades again
+                ; over settings that are already upgraded. Entries this version doesn't know stay in the file as they are
+                AppSettings.NewerVersion := fromVersion
+                Logger.Warn("AppSettings: settings version " fromVersion " is newer than this ALTRun's (" AppSettings.CurrentVersion "), kept")
             }
         } else {
             changed := true                                                 ; first run: write a file with the defaults
@@ -171,7 +178,7 @@ class AppSettings {
             changed := true
         if (AppSettings.DataDir != AppSettings.DefaultDataDir() && data.Has("DataLocation"))
             data.Delete("DataLocation")                                     ; this entry has no effect in the folder redirected to: remove it to avoid confusion
-        data["SchemaVersion"] := AppSettings.CurrentVersion
+        data["SchemaVersion"] := Max(AppSettings.CurrentVersion, AppSettings.NewerVersion)
         AppSettings.Data := data
 
         if (changed)
@@ -186,6 +193,8 @@ class AppSettings {
     static _fileGood := false                                               ; ALTRun.json on disk read fine or was written by ALTRun: worth backing up
     static _askFn := (text) => MsgBox(text, App.Name, "YesNo Icon! 0x40000") = "Yes"   ; replaced in the tests
     static _noticeFn := (text) => MsgBox(text, App.Name, "Icon! 0x40000")
+    static _retryFn := (text) => MsgBox(text, App.Name, "RetryCancel Icon! 0x40000") = "Retry"
+    static _quitFn := () => ExitApp()
 
     static Save() {
         try {
@@ -227,32 +236,73 @@ class AppSettings {
         Logger.Debug("AppSettings: moved " legacy " to " target)
     }
 
+    ; The settings in ALTRun.json (an empty Map when there is no file, or the user chose to start with the defaults).
+    ; Two different failures:
+    ;   - the file doesn't parse (hand-edited with a mistake, damaged): it is kept as ALTRun.json.bad and ALTRun offers the backup
+    ;   - the file can't be read at all (held by a sync tool or antivirus, a cloud file that is offline, no access), or the invalid file
+    ;     can't be kept as .bad: nothing is known about its content, so nothing may be written in its place. SafeFile.ReadText has tried
+    ;     for a moment already; the user then tries again or quits. Starting with the defaults here would save them over the real
+    ;     settings as soon as the file can be written again
     static _ReadFile() {
-        if !FileExist(AppSettings.File)
-            return Map()
-        try {
-            parsed := JSON.Parse(FileRead(AppSettings.File, "UTF-8"))
-            AppSettings._fileGood := true
-            return (parsed is Map) ? parsed : Map()
-        } catch as e {
-            AppSettings._fileGood := false                                  ; not to be copied over the backup
-            badFile := AppSettings.File ".bad"
-            try FileMove(AppSettings.File, badFile, true)
-            catch as moveError                                              ; the defaults written next would replace the user's file
-                Logger.Error("AppSettings: cannot keep the invalid file as " badFile " - " moveError.Message)
-            Logger.Error("AppSettings: invalid JSON - " e.Message)
-            if IsObject(backup := AppSettings._ReadBackup()) {
-                when := FormatTime(FileGetTime(AppSettings.BackupFile), "yyyy-MM-dd HH:mm")
-                if AppSettings._askFn.Call(I18n.T("Settings.RestoreBackup", e.Message, badFile, when)) {
-                    Logger.Debug("AppSettings: restored the settings from " AppSettings.BackupFile)
-                    AppSettings.Restored := true
-                    return backup
-                }
+        loop {
+            if !FileExist(AppSettings.File)
                 return Map()
+            problem := "", invalid := ""
+            try text := SafeFile.ReadText(AppSettings.File)
+            catch as e
+                problem := e.Message
+            if (problem = "") {
+                try {
+                    parsed := JSON.Parse(text)
+                    AppSettings._fileGood := true
+                    return (parsed is Map) ? parsed : Map()
+                } catch as e {
+                    invalid := e.Message
+                }
+                AppSettings._fileGood := false                              ; not to be copied over the backup
+                Logger.Error("AppSettings: invalid JSON - " invalid)
+                if AppSettings._SetAside(AppSettings.File ".bad")
+                    return AppSettings._AfterInvalid(invalid, AppSettings.File ".bad")
+                problem := invalid
             }
-            AppSettings._noticeFn.Call(I18n.T("Settings.ParseError", e.Message, badFile))
+            AppSettings._fileGood := false
+            Logger.Error("AppSettings: cannot use " AppSettings.File " - " problem)
+            if !AppSettings._retryFn.Call(I18n.T("Settings.ReadError", AppSettings.File, problem)) {
+                AppSettings._quitFn.Call()
+                throw Error("The settings file can't be read", -1, problem)  ; only reached when quitting is replaced (tests)
+            }
+        }
+    }
+
+    ; Keeps the file that doesn't parse as badFile before anything is written in its place: renamed, or copied when it can't be renamed
+    ; (another program has it open). false when neither worked
+    static _SetAside(badFile) {
+        try {
+            FileMove(AppSettings.File, badFile, true)
+            return true
+        } catch as moveError {
+            try {
+                FileCopy(AppSettings.File, badFile, true)
+                return true
+            } catch as copyError
+                Logger.Error("AppSettings: cannot keep the invalid file as " badFile " - " moveError.Message " / " copyError.Message)
+        }
+        return false
+    }
+
+    ; The invalid file is kept as badFile: the backup if there is one and the user wants it, otherwise the defaults
+    static _AfterInvalid(problem, badFile) {
+        if IsObject(backup := AppSettings._ReadBackup()) {
+            when := FormatTime(FileGetTime(AppSettings.BackupFile), "yyyy-MM-dd HH:mm")
+            if AppSettings._askFn.Call(I18n.T("Settings.RestoreBackup", problem, badFile, when)) {
+                Logger.Debug("AppSettings: restored the settings from " AppSettings.BackupFile)
+                AppSettings.Restored := true
+                return backup
+            }
             return Map()
         }
+        AppSettings._noticeFn.Call(I18n.T("Settings.ParseError", problem, badFile))
+        return Map()
     }
 
     ; The backup's settings, "" when there is none or it can't be read either

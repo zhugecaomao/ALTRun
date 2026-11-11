@@ -72,7 +72,7 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 
 ### 设置和数据
 - **位置**: 便携运行时 `AppSettings.DataDir` 是程序旁边的 `Data\`, 否则在用户目录下; 设置文件里的 `DataLocation` 可以指到别处 (`AppSettings.ResolveDataDir`)。ALTRun 写的东西都在这里: `ALTRun.json`、索引、历史、缓存
-- **读取**: `AppSettings.Load()` 读 `ALTRun.json`, 旧格式经 `SchemaMigration` 升级 (先备份 `ALTRun.vN.backup.json`), 缺少的项从 `AppSettings.Defaults()` 补上。读不了的文件不会被覆盖: ALTRun 提议改用 `ALTRun.json.bak`
+- **读取**: `AppSettings.Load()` 读 `ALTRun.json`, 旧格式经 `SchemaMigration` 升级 (先备份 `ALTRun.vN.backup.json`), 缺少的项从 `AppSettings.Defaults()` 补上。解析不了的文件留成 `ALTRun.json.bad`, ALTRun 提议改用 `ALTRun.json.bak`; 打不开的文件 (被占用、离线) 既不改名也不覆盖: `SafeFile.ReadText` 先重试一会儿, 然后由用户选重试还是退出 (`_ReadFile`)。"没读出来" 不等于 "是空的": 凡是会写回去的数据文件都用 `SafeFile.ReadText` 读, 读失败时保留原文件 (`ClipboardProvider._Load`)。更新版本的 ALTRun 保存的文件保留它的 `SchemaVersion` 和不认识的项 (`AppSettings.NewerVersion`)
 - **保存**: `AppSettings.Save()` 先把上一次正常的文件复制成 `ALTRun.json.bak`, 再经 `SafeFile` 写入 (每次写入自己的临时文件, 刷到磁盘, 再用带 write-through 的 `MoveFileEx` 替换), 崩溃或断电不会留下写了一半的文件。所有数据文件都经 `SafeFile` / `JSON.WriteFile` 写, 不要用 `FileAppend` 直接写正式文件
 - **偏好设置** 在副本上编辑; 确定 / 应用时保存并重新载入 ALTRun, 没有窗口直接改运行中的设置
 - **退出** (`App._OnExit`): 在这里写入后台重建的索引、学习排序、使用统计、剪贴板历史、图标缓存和日志。新加的、在内存里存数据的功能, 把保存加到这里
