@@ -403,7 +403,7 @@
   "Prefs.FileManager": "檔案管理員",
   "Prefs.FileManager.Desc": "開啟資料夾用的程式, 後面可以帶參數, 例如 C:\\Apps\\TotalCMD64\\TOTALCMD64.exe /O /T /S (Total Commander: /O 用已開啟的視窗, /T 新分頁, /S 目前面板); 路徑有空格時加引號。預設: explorer.exe",
   "Prefs.FolderNewTab": "在新索引標籤中開啟資料夾",
-  "Prefs.FolderNewTab.Desc": "檔案總管: 在最近用過的檔案總管視窗裡開新索引標籤 (Windows 11 22H2 以上; 沒有開著的視窗時開新視窗)。Total Commander: 自動加 /O /T。其他檔案管理員: 在上面填它自己的參數。",
+  "Prefs.FolderNewTab.Desc": "檔案總管: 在最近用過的視窗裡開新索引標籤 (Windows 11 22H2 以上)。Total Commander: 加 /O /T。其他: 在上面填它的參數。",
   "Prefs.FileMaxResults": "檔案搜尋結果數",
   "Prefs.FileMaxResults.Desc": "檔案搜尋 (先按空白鍵或用關鍵字) 最多顯示的結果數, 和一般結果裡最多顯示的檔案數",
   "Prefs.FileMinLength": "最少字數",
