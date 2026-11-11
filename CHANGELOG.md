@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.09.28]
+
+测试版。
+
+Test build.
+
+### 修复
+- 在新标签页中打开文件夹 (#440): 用 `Ctrl+Enter` "在文件管理器中显示" 时如果 Ctrl 还没松开, 资源管理器把导航当成 Ctrl+点击, 新标签留空, 文件夹在另一个窗口打开 (维护者实测发现)。现在先等 Ctrl / Alt / Shift / Win 松开 (最多 2 秒) 再开标签
+- 新标签里选中文件偶尔超过 1.5 秒才生效 (Windows CI 上见到), 重试时间加到 3 秒
+
 ## [2026.11.09.27]
 
 测试版。
@@ -1370,7 +1380,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.27...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.28...HEAD
+[2026.11.09.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.27...2026.11.09.28
 [2026.11.09.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.26...2026.11.09.27
 [2026.11.09.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.25...2026.11.09.26
 [2026.11.09.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.24...2026.11.09.25

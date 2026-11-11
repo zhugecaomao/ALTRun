@@ -14,6 +14,8 @@
 ; typing the path) depend on the focus, the input method and tab bar add-ons. Thanks to the ideas in #440 and AHK forum t=141197 #47.
 ; Anything that fails returns false (LastError says why) and the caller opens a new window as before; an empty tab this
 ; opened is closed again.
+; Modifier keys: Explorer reads them while it navigates - with Ctrl still held from Ctrl+Enter (Reveal) it takes the navigation
+; for Ctrl+click, the new tab stays empty and the folder opens elsewhere - so Open first waits for Ctrl / Alt / Shift / Win to be let go.
 ;
 ; Usage:
 ;   ExplorerTabs.Supported()                          Windows 11 22H2 or later
@@ -25,7 +27,8 @@
 class ExplorerTabs {
     static MinVersion := "10.0.22621"
     static TabTimeout := 3000, NavigateTimeout := 3000                    ; ms; on CI a tab came in 100-800 ms, a navigation in 300-550 ms
-    static SelectTimeout := 1500
+    static SelectTimeout := 3000                                          ; a new tab ignored SelectItem for more than 1.5 s once on CI
+    static KeysTimeout := 2000                                            ; ms to wait for modifier keys to be let go
     static LastError := ""
 
     static Supported(version := A_OSVersion) => VerCompare(version, ExplorerTabs.MinVersion) >= 0
@@ -36,6 +39,8 @@ class ExplorerTabs {
             return ExplorerTabs._Fail("no tabs before Windows 11 22H2")
         if !(hwnd := ExplorerTabs.Target(preferred))
             return ExplorerTabs._Fail("no Explorer window open")
+        if !ExplorerTabs._WaitKeysUp()
+            return ExplorerTabs._Fail("a modifier key is still held")
         try {
             before := ExplorerTabs._TabSet(hwnd)
             SendMessage(0x0111, 0xA21B, 0, "ShellTabWindowClass1", "ahk_id " hwnd, , , , 2000)   ; WM_COMMAND: new tab
@@ -184,7 +189,7 @@ class ExplorerTabs {
 
     ; Select a file of the folder in that tab (select, deselect the others, make it visible, focus it). A tab that has only just
     ; reached the folder may not list its files yet and ignore it (seen on CI with the first tab), so it is checked and tried
-    ; again for a while; true = selected
+    ; again for up to SelectTimeout; true = selected
     static _Select(hwnd, tab, file) {
         deadline := A_TickCount + ExplorerTabs.SelectTimeout
         loop {
@@ -212,6 +217,21 @@ class ExplorerTabs {
             if (WinGetMinMax("ahk_id " hwnd) = -1)
                 WinRestore("ahk_id " hwnd)
             WinActivate("ahk_id " hwnd)
+        }
+    }
+
+    ; true when Ctrl, Alt, Shift and the Win keys are all up (their logical state, which remote desktop tools set too)
+    static _WaitKeysUp() {
+        deadline := A_TickCount + ExplorerTabs.KeysTimeout
+        loop {
+            down := false
+            for key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"]
+                down := down || GetKeyState(key)
+            if !down
+                return true
+            if (A_TickCount >= deadline)
+                return false
+            Sleep(30)
         }
     }
 
