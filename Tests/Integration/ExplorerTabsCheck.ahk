@@ -40,7 +40,7 @@ Main() {
 
     check("no window: not opened", !ExplorerTabs.Open(folders[1]), ExplorerTabs.LastError)
 
-    Run('explorer.exe "' folders[1] '"')
+    Run('explorer.exe "' root '"')                                         ; the window starts at the root: each folder below is only in its new tab
     hwnd := WinWait("ahk_class CabinetWClass", , 15)
     check("explorer window", hwnd != 0)
     if !hwnd
