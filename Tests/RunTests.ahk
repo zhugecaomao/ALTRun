@@ -27,6 +27,7 @@
 #Include %A_ScriptDir%\..\Lib\WinTimer.ahk
 #Include %A_ScriptDir%\..\Lib\WindowsRecent.ahk
 #Include %A_ScriptDir%\..\Lib\ShellContextMenu.ahk
+#Include %A_ScriptDir%\..\Lib\ExplorerTabs.ahk
 #Include %A_ScriptDir%\..\Lib\TaskScheduler.ahk
 #Include %A_ScriptDir%\..\Lib\TaskbarProgress.ahk
 #Include %A_ScriptDir%\..\Src\Core\App.ahk

@@ -129,23 +129,51 @@ class ActionCatalog {
     ; The context menu's commands of a packaged app (replaced in the tests: on a CI runner, which has no desktop shell, the Apps folder doesn't answer)
     static AppVerbs := (target) => ShellContextMenu([target]).Verbs()
 
+    ; General.FolderNewTab: File Explorer opens the folder in a new tab of a window already open (ExplorerTabs; a new window as
+    ; before when there is none or it fails), Total Commander gets /O /T (see TabArgs); other file managers use their own parameters
     static OpenFolder(target) {
         resolved := Path.Resolve(target)
         manager := ActionCatalog.FileManagerCommand(AppSettings.General["FileManager"])
-        if manager.Explorer
+        if manager.Explorer {
+            if (AppSettings.General["FolderNewTab"] && ActionCatalog._InExplorerTab(resolved))
+                return
             return Run('explorer.exe "' resolved '"')
-        Run(Trim('"' manager.Exe '" ' manager.Args) ' "' resolved '"')
+        }
+        Run(Trim('"' manager.Exe '" ' ActionCatalog.TabArgs(manager)) ' "' resolved '"')
     }
 
     static Reveal(target) {
         resolved := Path.Resolve(target)
         manager := ActionCatalog.FileManagerCommand(AppSettings.General["FileManager"])
-        if manager.Explorer
+        if manager.Explorer {
+            if (AppSettings.General["FolderNewTab"] && ActionCatalog._InExplorerTab(ActionCatalog.ParentDir(resolved), Path.Leaf(resolved)))
+                return
             return Run('explorer.exe /select,"' resolved '"')
-        command := Trim('"' manager.Exe '" ' manager.Args)
+        }
+        command := Trim('"' manager.Exe '" ' ActionCatalog.TabArgs(manager))
         if InStr(manager.Exe, "totalcmd")
             return Run(command ' /P "' resolved '"')                        ; Total Commander: open the containing folder and select the file
         Run(command ' "' ActionCatalog.ParentDir(resolved) '"')            ; other file managers take different arguments: open the containing folder
+    }
+
+    ; A new tab of an Explorer window already open: the one in front before ALTRun was shown first; false = open a new window
+    static _InExplorerTab(folder, file := "") {
+        if ExplorerTabs.Open(folder, file, App.PreviousWindow)
+            return true
+        Logger.Debug("ActionCatalog: new Explorer tab not used (" ExplorerTabs.LastError "), opening a window")
+        return false
+    }
+
+    ; The file manager's parameters; with General.FolderNewTab, Total Commander's gain /O (the running one) and /T (a new tab)
+    ; when they aren't there yet
+    static TabArgs(manager) {
+        args := manager.Args
+        if !(AppSettings.General["FolderNewTab"] && InStr(Path.Leaf(manager.Exe), "totalcmd"))
+            return args
+        for flag in ["/O", "/T"]
+            if !RegExMatch(args, "i)(^|\s)" flag "(\s|$)")
+                args := Trim(args " " flag)
+        return args
     }
 
     ; The FileManager setting -> {Exe, Args, Explorer}: the program ("quoted" when it has spaces, or up to .exe) with its

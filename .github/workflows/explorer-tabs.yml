@@ -1,0 +1,46 @@
+# Opening folders in a new tab of File Explorer on a real Windows desktop (Tests\Integration\ExplorerTabsCheck.ahk):
+# windows-latest is Windows Server 2025, whose Explorer has tabs. On pull requests that change it, on main, or run by hand
+name: Explorer tabs
+
+on:
+  pull_request:
+    paths:
+      - Lib/ExplorerTabs.ahk
+      - Tests/Integration/ExplorerTabsCheck.ahk
+      - .github/workflows/explorer-tabs.yml
+  push:
+    branches: [main]
+    paths:
+      - Lib/ExplorerTabs.ahk
+      - Tests/Integration/ExplorerTabsCheck.ahk
+      - .github/workflows/explorer-tabs.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download AutoHotkey v2
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory tools -Force | Out-Null
+          $ahkTag = 'v2.0.31'
+          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
+          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+
+      - name: Open folders in new tabs
+        shell: pwsh
+        run: |
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\Integration\ExplorerTabsCheck.ahk' `
+                  -PassThru -NoNewWindow -RedirectStandardOutput check.log -RedirectStandardError check.err
+          if (-not $proc.WaitForExit(300000)) { $proc.Kill(); Get-Content check.log, check.err -Encoding UTF8 -ErrorAction SilentlyContinue; throw "The check didn't finish in 5 minutes" }
+          Get-Content check.log, check.err -Encoding UTF8 -ErrorAction SilentlyContinue
+          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) check(s) failed" }

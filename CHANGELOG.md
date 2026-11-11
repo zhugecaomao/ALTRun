@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.27]
+
+测试版。
+
+Test build.
+
+### 新增
+- 偏好设置 → 通用 → 文件管理器 下面加了 "在新标签页中打开文件夹" (#440, AutoHotkey 论坛): 资源管理器在最近用过的窗口 (显示 ALTRun 之前在前台的那个, 没有就用当前虚拟桌面上最前面的那个) 里开新标签页, "在文件管理器中显示" 时也选中那个文件; 要 Windows 11 22H2 及以上。资源管理器没有开新标签的参数和接口, 做法是给窗口发 "新建标签页" 的命令 (Ctrl+T 背后的命令), 再让新标签导航过去 (用 PIDL, 中文、空格、`#`、`%` 都不用转义); 没有打开的资源管理器窗口、Windows 版本不够或者不成功时, 和以前一样新开窗口, 开出的空标签会关掉。Total Commander 自动加 `/O /T`; 其他文件管理器请在上面填它自己的参数。新增在 Windows 上实际开标签页的集成检查
+
 ## [2026.11.09.26]
 
 测试版。
@@ -1361,7 +1370,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.26...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.27...HEAD
+[2026.11.09.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.26...2026.11.09.27
 [2026.11.09.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.25...2026.11.09.26
 [2026.11.09.25]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.24...2026.11.09.25
 [2026.11.09.24]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.23...2026.11.09.24
