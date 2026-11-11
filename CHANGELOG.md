@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.09.29]
+
+测试版。
+
+Test build.
+
+### 修复
+- 选中内容的操作 (#434): 命令通过别的方式运行 shell 时, 选中的文字仍可能多执行程序。原来只看目标的文件名, 目标写成 `%ComSpec%`, 或通过别的程序启动 shell (例如目标 `wt.exe`、参数 `cmd /k ping {query}`), 检测不到 `cmd`, 选中 `1.1.1.1 & calc` 会多运行计算器。现在目标先展开 (环境变量、`A_ScriptDir` 等路径变量、PATH), 参数里出现 `cmd`、PowerShell、批处理、`.ps1` 等也算 shell (发布前体检发现)
+
 ## [2026.11.09.28]
 
 测试版。
@@ -1380,7 +1389,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.28...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.29...HEAD
+[2026.11.09.29]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.28...2026.11.09.29
 [2026.11.09.28]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.27...2026.11.09.28
 [2026.11.09.27]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.26...2026.11.09.27
 [2026.11.09.26]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.09.25...2026.11.09.26
