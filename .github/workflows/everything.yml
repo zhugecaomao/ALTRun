@@ -9,13 +9,13 @@ on:
   pull_request:
     paths:
       - Lib/Everything.ahk
-      - Tests/Integration/**
+      - Tests/Integration/EverythingCheck.ahk
       - .github/workflows/everything.yml
   push:
     branches: [main]
     paths:
       - Lib/Everything.ahk
-      - Tests/Integration/**
+      - Tests/Integration/EverythingCheck.ahk
       - .github/workflows/everything.yml
   workflow_dispatch:
 
