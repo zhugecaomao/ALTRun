@@ -202,7 +202,7 @@ Versions are dates. `App.Version` in `Src\Core\App.ahk` and `;@Ahk2Exe-SetVersio
 **Test builds** (every PR that changes the program):
 1. A four-part version `YYYY.MM.DD.N` (for example `2026.10.20.1`); it must be lower than the next release, or installed test builds won't see that release as an update
 2. In `CHANGELOG.md`, add a section `## [YYYY.MM.DD.N]` below `## [未发布]`: first paragraph "测试版。", second "Test build.", then 新增 / 改进 / 修复 (New / Improvements / Fixes, in Chinese); add the compare link `[YYYY.MM.DD.N]: .../compare/<previous>...<this>` at the end and make `[未发布]` compare from this version
-3. Run the **Release** workflow on the PR branch with `publish = false`; the build is under Artifacts at the bottom of the Actions page (`ALTRun_v<version>`)
+3. Merging the PR to main builds the test build by itself (the **Release** workflow runs with `publish = false` when `App.Version` changed); the build is under Artifacts at the bottom of the Actions page (`ALTRun_v<version>`). To get a build before merging, run **Release** on the PR branch with `publish = false`
 
 **Releases** (at most one per day):
 1. Open a pull request that sets the three-part version `YYYY.MM.DD`
@@ -211,7 +211,7 @@ Versions are dates. `App.Version` in `Src\Core\App.ahk` and `;@Ahk2Exe-SetVersio
    - `---`
    - `### 中文说明` (one Chinese paragraph) / `#### 升级` / `#### 新增` / `#### 改进` / `#### 修复`
    - Don't use `##` headings inside the section (the Release workflow takes everything up to the next `##`); remove the test build sections and their compare links; at the end of the file, `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD` and `[未发布]: .../compare/YYYY.MM.DD...HEAD`
-3. After merging to main, run **Release** on main with `publish = true`
+3. Merging to main runs a check build (`publish = false`) by itself; then run **Release** on main with `publish = true`
 
 On Windows the Release workflow: reads the version → downloads AutoHotkey and Ahk2Exe → runs the unit tests → compiles `ALTRun.exe` → signs it when SignPath is configured → checks the program icon → runs the upgrade test with a 2.x `ALTRun.ini` → runs the single instance test on the compiled program → packages `ALTRun_v<version>.zip`. With `publish = true` it then: takes that CHANGELOG section as the release notes → creates the GitHub release (GitHub provides the SHA256 that one-key updates verify) → updates the Scoop and winget manifests in `packaging/` and commits them to main → submits the new version to winget-pkgs when `WINGET_TOKEN` is configured (`packaging/Submit-Winget.ps1`: syncs the token owner's fork of winget-pkgs first, then opens the pull request with wingetcreate; if it fails, the **Submit to winget** workflow submits a released version again).
 
