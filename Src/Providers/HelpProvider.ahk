@@ -61,6 +61,7 @@ class HelpProvider {
             ["Browse"     , "FileSearch"    , "File-Search"],
             ["Mark"       , "FileSearch"    , "File-Search"],
             ["Bookmarks"  , "Bookmarks"     , "Bookmarks"],
+            ["BrowserHistory", "BrowserHistory", "Bookmarks"],
             ["LargeType"  , "LargeType"     , "Usage"],
             ["CheckPaths" , "CustomCommands", "Custom-Commands"],
             ["Help"       , ""              , "Usage"]
@@ -149,6 +150,7 @@ class HelpProvider {
             case "Expand":      return [AppSettings.Feature("Snippets")["ExpandPrefix"]]
             case "Terminal":    return [AppSettings.Feature("Terminal")["Prefix"]]
             case "Bookmarks":   return [AppSettings.Feature("Bookmarks")["Keyword"]]
+            case "BrowserHistory": return [AppSettings.Feature("BrowserHistory")["Keyword"]]
             case "Windows":     return [AppSettings.Feature("Windows")["Keyword"]]
             case "Selection":   return [Win.HotkeyLabel(AppSettings.General["SelectionHotkey"])]
             case "WebSearch":

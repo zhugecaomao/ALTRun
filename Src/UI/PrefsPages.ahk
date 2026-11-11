@@ -224,7 +224,7 @@ class PrefsPages {
     static BuildFeatures() {
         PrefsForm.BeginPage("Prefs.Page.Features", 140)
         PrefsForm.Section("Prefs.EnabledFeatures")
-        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "Windows", "Recent", "FileSearch", "Scripts", "Terminal", "System", "Help"]
+        features := ["Applications", "CustomCommands", "Snippets", "Clipboard", "Calculator", "WebSearch", "Bookmarks", "BrowserHistory", "Windows", "Recent", "FileSearch", "Scripts", "Terminal", "System", "Help"]
         startY := PrefsForm._y, columnW := PrefsForm.InputW() // 2                       ; two columns: the English names are long, three would wrap
         rowH := 20                                                          ; row spacing: at least 4 more than a check box (Chinese and Japanese check boxes are taller)
         for index, feature in features {
@@ -237,22 +237,33 @@ class PrefsPages {
                 rowH := Max(rowH, checkH + 4)
             }
         }
-        PrefsForm._y := startY + (features.Length // 2) * rowH                ; then the action panel's extras (not search features): Large Type, the Windows context menu,
-        PrefsForm.Check("Features.LargeType.Enabled", "Prefs.Feature.LargeType", PrefsForm.InputX(), , "", columnW)
-        PrefsForm._y := startY + (features.Length // 2) * rowH
-        PrefsForm.Check("Features.ContextMenu.Enabled", "Prefs.Feature.ContextMenu", PrefsForm.InputX() + columnW, , "", columnW)
-        PrefsForm._y := startY + (features.Length // 2 + 1) * rowH            ; and Windows Settings pages (part of the system commands)
-        PrefsForm.Check("Features.System.SettingsPages", "Prefs.SettingsPages", PrefsForm.InputX(), , "", columnW)
-        PrefsForm._y := startY + (features.Length // 2 + 2) * rowH
+        ; then, in the same two columns, the action panel's extras (not search features): Large Type, the Windows context menu,
+        ; and Windows Settings pages (part of the system commands)
+        extras := [["Features.LargeType.Enabled", "Prefs.Feature.LargeType"], ["Features.ContextMenu.Enabled", "Prefs.Feature.ContextMenu"]
+                 , ["Features.System.SettingsPages", "Prefs.SettingsPages"]]
+        for extra in extras {
+            index := features.Length + A_Index
+            PrefsForm._y := startY + ((index - 1) // 2) * rowH
+            PrefsForm.Check(extra[1], extra[2], PrefsForm.InputX() + Mod(index - 1, 2) * columnW, , "", columnW)
+        }
+        PrefsForm._y := startY + Ceil((features.Length + extras.Length) / 2) * rowH
         PrefsForm.Section("Prefs.Section.FeatureOptions")
         PrefsForm.Check("Features.System.ConfirmActions", "Prefs.ConfirmActions", , , "Prefs.Feature.System")
         PrefsForm.LinesButton("Features.System.Hidden", "Prefs.SysHidden")
         PrefsForm._y += 4                                                   ; a little less than Gap: this page is full
         PrefsForm.Pair(["Features.Terminal.Prefix", "Prefs.TerminalPrefix", "S"]
             , ["Features.Terminal.Shell", "Prefs.TerminalShell", "M", "choice", ["cmd", "powershell", "pwsh", "wt"], ["Command Prompt (cmd)", "Windows PowerShell", "PowerShell 7 (pwsh)", "Windows Terminal (wt)"]])
-        for row in [["Bookmarks", "Prefs.Feature.Bookmarks"], ["Windows", "Prefs.Feature.Windows"]] {   ; bookmarks and windows: also in normal search + a keyword that searches only them
+        ; bookmarks and windows: also in normal search + a keyword that searches only them; browser history: only with its keyword (private)
+        for row in [["Bookmarks", "Prefs.Feature.Bookmarks"], ["Windows", "Prefs.Feature.Windows"], ["BrowserHistory", "Prefs.Feature.BrowserHistory"]] {
             rowY := PrefsForm._y
-            PrefsForm.Check("Features." row[1] ".InDefaultResults", "Prefs.ShowInNormal", , , row[2], columnW)
+            if (row[1] = "BrowserHistory") {
+                PrefsForm.GroupLabel(row[2])
+                PrefsForm._y += 3
+                PrefsForm.Add("Text", "x" PrefsForm.InputX() " w" columnW, I18n.T("Prefs.KeywordOnly"))
+                PrefsForm._y -= 3
+            } else {
+                PrefsForm.Check("Features." row[1] ".InDefaultResults", "Prefs.ShowInNormal", , , row[2], columnW)
+            }
             field := PrefsForm.SideField(rowY, PrefsForm.InputX() + columnW, "Features." row[1] ".Keyword", "Prefs.FeatureKeyword")                     ; aligned with the right column of the features above
             field.GetPos(, &fieldY, , &fieldH)
             PrefsForm._y := Max(rowY + 25, fieldY + fieldH + 8)             ; keyword boxes on two rows at least 5 apart (Chinese / Japanese input boxes are taller)

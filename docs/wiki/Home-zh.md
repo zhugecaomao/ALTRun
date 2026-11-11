@@ -26,7 +26,7 @@ ALTRun 是一个参照 macOS 上的 [Alfred](https://www.alfredapp.com/) 设计�
 | [剪贴板历史](Clipboard-zh) | 文字、图片和文件的历史, 粘贴、合并、排除的程序 |
 | [文件搜索](File-Search-zh) | Everything 联动、内置索引、排除规则 |
 | [主题](Themes-zh) | 22 套内置主题 (也可以跟随系统浅色 / 深色)、显示密度、自定义主题、全部可用的键 |
-| [浏览器书签](Bookmarks-zh) | 搜索、打开和复制书签 URL |
+| [浏览器书签](Bookmarks-zh) | 搜索、打开和复制书签 URL; 搜索浏览器历史记录 (`h`) |
 | [网页搜索](Web-Search-zh) | `g` / `bd` 等关键字、自己加搜索引擎、兜底搜索 |
 | [窗口切换](Window-Switching-zh) | 搜索已经打开的窗口并切换过去 |
 | [置顶和最近使用](Recent-zh) | 空搜索框显示的置顶项目和最近打开的项目 |

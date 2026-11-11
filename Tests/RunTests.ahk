@@ -26,6 +26,7 @@
 #Include %A_ScriptDir%\..\Lib\FolderWatcher.ahk
 #Include %A_ScriptDir%\..\Lib\WinTimer.ahk
 #Include %A_ScriptDir%\..\Lib\WindowsRecent.ahk
+#Include %A_ScriptDir%\..\Lib\Sqlite.ahk
 #Include %A_ScriptDir%\..\Lib\ShellContextMenu.ahk
 #Include %A_ScriptDir%\..\Lib\ExplorerTabs.ahk
 #Include %A_ScriptDir%\..\Lib\TaskScheduler.ahk
@@ -75,6 +76,7 @@
 #Include %A_ScriptDir%\..\Src\Providers\CalculatorProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\WebSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\BookmarkProvider.ahk
+#Include %A_ScriptDir%\..\Src\Providers\BrowserHistoryProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\FileSearchProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\TerminalProvider.ahk
 #Include %A_ScriptDir%\..\Src\Providers\WindowProvider.ahk

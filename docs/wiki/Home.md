@@ -26,7 +26,7 @@ ALTRun is a launcher for Windows modeled on [Alfred](https://www.alfredapp.com/)
 | [Clipboard history](Clipboard) | Text, image and file history, pasting, merging, excluded programs |
 | [File search](File-Search) | Everything integration, built-in index, exclusion rules |
 | [Themes](Themes) | 22 built-in themes (or follow the Windows light / dark mode), density, custom themes, every available key |
-| [Browser bookmarks](Bookmarks) | Search, open and copy bookmark URLs |
+| [Browser bookmarks](Bookmarks) | Search, open and copy bookmark URLs; search the browser history (`h`) |
 | [Web search](Web-Search) | Keywords such as `g` / `bd`, adding your own engines, fallback searches |
 | [Window switching](Window-Switching) | Find an open window and switch to it |
 | [Pinned and recent items](Recent) | Pinned and recently opened items shown when the search box is empty |

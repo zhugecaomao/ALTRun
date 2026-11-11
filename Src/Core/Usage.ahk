@@ -20,7 +20,7 @@ class Usage {
     static File     := AppSettings.DataDir "\Usage.json"
     static KeepDays := 400
     ; order on the statistics page (for equal counts); "Show" is shown separately and isn't counted as a use
-    static Features := ["Applications", "CustomCommands", "FileSearch", "WebSearch", "Bookmarks", "Calculator", "Clipboard",
+    static Features := ["Applications", "CustomCommands", "FileSearch", "WebSearch", "Bookmarks", "BrowserHistory", "Calculator", "Clipboard",
                         "Snippets", "System", "Windows", "Scripts", "Recent", "Terminal", "SnippetExpand", "Selection", "QuickSwitch", "AutoDate"]
     static Days  := Map()        ; "yyyy-MM-dd" -> Map(feature -> count)
     static Since := ""           ; the date counting started

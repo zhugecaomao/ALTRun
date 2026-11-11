@@ -488,6 +488,10 @@ class AppSettings {
                     "Keyword"         , "bm",                               ; "bm word" searches bookmarks only
                     "InDefaultResults", 1                                   ; also show matching bookmarks when typing a name (after applications and commands)
                 ),
+                "BrowserHistory", Map(
+                    "Enabled", 1,
+                    "Keyword", "h"                                          ; "h word" searches browser history (only with the keyword: history is private)
+                ),
                 "Sync", Map(
                     "Enabled"    , 1,                                       ; the sync tasks (SyncTasks) in the search results
                     "Keyword"    , "sync",                                  ; "sync " lists them all, "sync proj" searches only them
