@@ -25,6 +25,7 @@
 class ExplorerTabs {
     static MinVersion := "10.0.22621"
     static TabTimeout := 3000, NavigateTimeout := 3000                    ; ms; on CI a tab came in 100-800 ms, a navigation in 300-550 ms
+    static SelectTimeout := 1500
     static LastError := ""
 
     static Supported(version := A_OSVersion) => VerCompare(version, ExplorerTabs.MinVersion) >= 0
@@ -181,12 +182,24 @@ class ExplorerTabs {
 
     static SameFolder(a, b) => (a != "" && StrLower(RTrim(a, "\ ")) = StrLower(RTrim(b, "\ ")))
 
-    ; Select a file of the folder in that tab (select, deselect the others, make it visible, focus it)
+    ; Select a file of the folder in that tab (select, deselect the others, make it visible, focus it). A tab that has only just
+    ; reached the folder may not list its files yet and ignore it (seen on CI with the first tab), so it is checked and tried
+    ; again for a while; true = selected
     static _Select(hwnd, tab, file) {
-        try {
-            doc := ExplorerTabs._Item(hwnd, tab).Document
-            if IsObject(fileItem := doc.Folder.ParseName(file))
-                doc.SelectItem(fileItem, 1 | 4 | 8 | 16)
+        deadline := A_TickCount + ExplorerTabs.SelectTimeout
+        loop {
+            try {
+                doc := ExplorerTabs._Item(hwnd, tab).Document
+                if IsObject(fileItem := doc.Folder.ParseName(file)) {
+                    doc.SelectItem(fileItem, 1 | 4 | 8 | 16)
+                    chosen := doc.SelectedItems()
+                    if (chosen.Count = 1 && chosen.Item(0).Path = fileItem.Path)
+                        return true
+                }
+            }
+            if (A_TickCount >= deadline)
+                return false
+            Sleep(100)
         }
     }
 

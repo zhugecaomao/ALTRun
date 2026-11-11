@@ -80,7 +80,8 @@ HasTab(hwnd, folder) {
     return false
 }
 
-; the selected file's name in the tab showing folder
+; the selected file's name in the tab showing folder (from its path: Name is the display name, without the extension when
+; Explorer hides extensions)
 Selected(hwnd, folder) {
     for each in ExplorerTabs._Tabs(hwnd) {
         try {
@@ -88,7 +89,10 @@ Selected(hwnd, folder) {
             if !ExplorerTabs.SameFolder(doc.Folder.Self.Path, folder)
                 continue
             items := doc.SelectedItems()
-            return (items.Count = 1) ? items.Item(0).Name : items.Count " selected"
+            if (items.Count != 1)
+                return items.Count " selected"
+            SplitPath(items.Item(0).Path, &name)
+            return name
         }
     }
     return "no tab"
