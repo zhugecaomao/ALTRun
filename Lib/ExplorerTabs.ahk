@@ -14,6 +14,8 @@
 ; typing the path) depend on the focus, the input method and tab bar add-ons. Thanks to the ideas in #440 and AHK forum t=141197 #47.
 ; Anything that fails returns false (LastError says why) and the caller opens a new window as before; an empty tab this
 ; opened is closed again.
+; Modifier keys: Explorer reads them while it navigates - with Ctrl still held from Ctrl+Enter (Reveal) it takes the navigation
+; for Ctrl+click, the new tab stays empty and the folder opens elsewhere - so Open first waits for Ctrl / Alt / Shift / Win to be let go.
 ;
 ; Usage:
 ;   ExplorerTabs.Supported()                          Windows 11 22H2 or later
@@ -25,8 +27,10 @@
 class ExplorerTabs {
     static MinVersion := "10.0.22621"
     static TabTimeout := 3000, NavigateTimeout := 3000                    ; ms; on CI a tab came in 100-800 ms, a navigation in 300-550 ms
-    static SelectTimeout := 1500
+    static SelectTimeout := 3000                                          ; a new tab ignored SelectItem for more than 1.5 s once on CI
+    static KeysTimeout := 2000                                            ; ms to wait for modifier keys to be let go
     static LastError := ""
+    static SelectInfo := ""                                               ; how the last selection went (tries, time, last state), for diagnosis
 
     static Supported(version := A_OSVersion) => VerCompare(version, ExplorerTabs.MinVersion) >= 0
 
@@ -36,6 +40,8 @@ class ExplorerTabs {
             return ExplorerTabs._Fail("no tabs before Windows 11 22H2")
         if !(hwnd := ExplorerTabs.Target(preferred))
             return ExplorerTabs._Fail("no Explorer window open")
+        if !ExplorerTabs._WaitKeysUp()
+            return ExplorerTabs._Fail("a modifier key is still held")
         try {
             before := ExplorerTabs._TabSet(hwnd)
             SendMessage(0x0111, 0xA21B, 0, "ShellTabWindowClass1", "ahk_id " hwnd, , , , 2000)   ; WM_COMMAND: new tab
@@ -45,9 +51,9 @@ class ExplorerTabs {
                 ExplorerTabs._CloseTab(hwnd, tab)                           ; don't leave an empty tab behind
                 return ExplorerTabs._Fail("the new tab didn't go to the folder")
             }
+            ExplorerTabs._Show(hwnd)                                        ; in front first: a tab in a window behind may not list its files
             if (file != "")
                 ExplorerTabs._Select(hwnd, tab, file)
-            ExplorerTabs._Show(hwnd)
             return true
         } catch as err {
             return ExplorerTabs._Fail(err.Message)
@@ -183,22 +189,45 @@ class ExplorerTabs {
     static SameFolder(a, b) => (a != "" && StrLower(RTrim(a, "\ ")) = StrLower(RTrim(b, "\ ")))
 
     ; Select a file of the folder in that tab (select, deselect the others, make it visible, focus it). A tab that has only just
-    ; reached the folder may not list its files yet and ignore it (seen on CI with the first tab), so it is checked and tried
-    ; again for a while; true = selected
+    ; reached the folder may not list its files yet and ignore it: on CI some new tabs listed no files at all for 3 s (items 0),
+    ; so the window is brought up before (Open) and, with still no files after 1 s, the tab is refreshed once. Checked and tried
+    ; again for up to SelectTimeout; true = selected; SelectInfo says how it went
     static _Select(hwnd, tab, file) {
-        deadline := A_TickCount + ExplorerTabs.SelectTimeout
+        deadline := A_TickCount + ExplorerTabs.SelectTimeout, tries := 0, start := A_TickCount, refreshed := false
         loop {
+            tries += 1, state := ""
             try {
-                doc := ExplorerTabs._Item(hwnd, tab).Document
-                if IsObject(fileItem := doc.Folder.ParseName(file)) {
-                    doc.SelectItem(fileItem, 1 | 4 | 8 | 16)
-                    chosen := doc.SelectedItems()
-                    if (chosen.Count = 1 && chosen.Item(0).Path = fileItem.Path)
-                        return true
+                item := ExplorerTabs._Item(hwnd, tab)
+                if !IsObject(item) {
+                    state := "tab not found"
+                } else {
+                    doc := item.Document
+                    count := doc.Folder.Items().Count
+                    state := "at '" doc.Folder.Self.Path "' items " count
+                    if (count = 0 && !refreshed && A_TickCount - start > 1000) {   ; still no files listed: have the tab list them again
+                        refreshed := true
+                        item.Refresh()
+                    }
+                    if !IsObject(fileItem := doc.Folder.ParseName(file)) {
+                        state .= ", no " file
+                    } else {
+                        doc.SelectItem(fileItem, 1 | 4 | 8 | 16)
+                        chosen := doc.SelectedItems()
+                        state .= ", selected " chosen.Count (chosen.Count ? " '" chosen.Item(0).Path "'" : "")
+                        if (chosen.Count = 1 && chosen.Item(0).Path = fileItem.Path) {
+                            ExplorerTabs.SelectInfo := "ok after " tries " tries, " (A_TickCount - start) " ms" (refreshed ? ", refreshed" : "")
+                            return true
+                        }
+                    }
                 }
+            } catch as err {
+                state .= " error: " err.Message
             }
-            if (A_TickCount >= deadline)
+            if (A_TickCount >= deadline) {
+                ExplorerTabs.SelectInfo := "failed after " tries " tries, " (A_TickCount - start) " ms" (refreshed ? ", refreshed" : "") "; last: " state
+                    . "; window in front: " (WinActive("ahk_id " hwnd) ? "yes" : "no")
                 return false
+            }
             Sleep(100)
         }
     }
@@ -212,6 +241,21 @@ class ExplorerTabs {
             if (WinGetMinMax("ahk_id " hwnd) = -1)
                 WinRestore("ahk_id " hwnd)
             WinActivate("ahk_id " hwnd)
+        }
+    }
+
+    ; true when Ctrl, Alt, Shift and the Win keys are all up (their logical state, which remote desktop tools set too)
+    static _WaitKeysUp() {
+        deadline := A_TickCount + ExplorerTabs.KeysTimeout
+        loop {
+            down := false
+            for key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"]
+                down := down || GetKeyState(key)
+            if !down
+                return true
+            if (A_TickCount >= deadline)
+                return false
+            Sleep(30)
         }
     }
 
