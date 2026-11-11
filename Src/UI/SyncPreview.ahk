@@ -450,6 +450,7 @@ class SyncPreview {
     ; state: Normal, Error (red: files failed), Paused (yellow: stopped)
     static _Bar(w, value, state := "Normal") {
         if (value = "") {
+            SendMessage(0x410, 1, 0, w.Bar)                                 ; PBST_NORMAL first: a paused or red bar's marquee stands still
             w.Bar.Opt("+0x8"), w.BarState := "Moving"                      ; PBS_MARQUEE
             SendMessage(0x40A, 1, 30, w.Bar)                                ; PBM_SETMARQUEE
             TaskbarProgress.Set(w.Gui.Hwnd, "Indeterminate")

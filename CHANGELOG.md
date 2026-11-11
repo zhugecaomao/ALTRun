@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.1]
+
+测试版。
+
+Test build.
+
+### 修复
+- 同步窗口: 点 **停止** 之后再点 **预览**, 进度条不动。停止时进度条变成暂停 (黄色), 再预览切换到来回移动的进度条时没有恢复成正常状态, 暂停状态下它不会动; 现在先恢复正常 (发布前体检发现)
+
 ## [2026.11.11]
 
 ### Summary
@@ -1211,7 +1220,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.1...HEAD
+[2026.11.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11...2026.11.11.1
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
