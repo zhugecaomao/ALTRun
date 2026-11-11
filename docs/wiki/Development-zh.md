@@ -17,7 +17,7 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk             单元测试, 退�
 ALTRun.ahk          入口: #Include 所有模块, 调用 App.Start()
 Lib\                通用库, 与 ALTRun 无关, 可以直接拿到别的项目用
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
-                    Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ClipboardData,
+                    Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
                     TaskScheduler, TaskbarProgress)
 Src\Core\           App (启动、单实例、退出), ErrorHandler (未捕获的错误), I18n (界面文字),
                     AppSettings + SchemaMigration (设置和版本升级),

@@ -17,7 +17,7 @@ AutoHotkey64.exe /ErrorStdOut Tests\RunTests.ahk             unit tests; exit co
 ALTRun.ahk          Entry point: #Includes every module and calls App.Start()
 Lib\                Shared libraries with nothing ALTRun-specific, usable in other projects as is
                     (JSON, SafeFile, Logger, Util: Path/Win/Url..., TextTools, DelimitedText, Kanji, Units, Dialogs,
-                    Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ClipboardData,
+                    Everything IPC, HttpGet, FolderWatcher, WinTimer, WindowsRecent, ShellContextMenu, ExplorerTabs, ClipboardData,
                     TaskScheduler, TaskbarProgress)
 Src\Core\           App (startup, single instance, shutdown), ErrorHandler (uncaught errors), I18n (UI text),
                     AppSettings + SchemaMigration (settings and version upgrades),

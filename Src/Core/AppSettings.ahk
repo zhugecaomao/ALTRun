@@ -377,6 +377,7 @@ class AppSettings {
                 "KeepLastQueryMinutes", 5,                                  ; ... only within this many minutes after hiding (0 = no limit)
                 "ShowTips"            , 1,                                  ; rotate usage tips in the empty search box
                 "FileManager"         , "explorer.exe",
+                "FolderNewTab"        , 0,                                  ; open folders in a new tab: File Explorer (Windows 11 22H2+, a window already open) / Total Commander (/O /T)
                 "SendToMenu"          , 1,
                 "StartMenuShortcut"   , 1,
                 "CheckForUpdates"     , 1,

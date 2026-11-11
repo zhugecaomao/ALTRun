@@ -25,6 +25,7 @@ class PrefsPages {
         }
         PrefsForm.Gap()
         PrefsForm.Field("General.FileManager", "Prefs.FileManager", "L", "file")
+        PrefsForm.Check("General.FolderNewTab", "Prefs.FolderNewTab")
     }
 
     ; Search window behavior (the settings are still in General, just on a page of their own)

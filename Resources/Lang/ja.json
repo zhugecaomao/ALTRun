@@ -401,6 +401,8 @@
   "Prefs.FileKeywords.Desc": "ファイルキーワード: \"open 報告書\" で名前に \"報告書\" を含むファイルとフォルダーを検索します。フォルダーキーワード: \"folder プロジェクト\" でフォルダーのみ検索します。複数はカンマ区切りです。",
   "Prefs.FileManager": "ファイルマネージャー",
   "Prefs.FileManager.Desc": "フォルダーを開くプログラム。引数も指定可 (例: C:\\Apps\\TotalCMD64\\TOTALCMD64.exe /O /T /S。/O 既存ウィンドウ、/T 新しいタブ、/S アクティブパネル)。空白を含むパスは引用符で囲みます。",
+  "Prefs.FolderNewTab": "フォルダーを新しいタブで開く",
+  "Prefs.FolderNewTab.Desc": "エクスプローラー: 最後に使ったウィンドウに新しいタブ (Windows 11 22H2 以降)。Total Commander: /O /T を追加。その他: 上の欄に独自のパラメーター。",
   "Prefs.FileMaxResults": "ファイル検索の結果数",
   "Prefs.FileMaxResults.Desc": "ファイル検索 (先に Space、またはキーワード) の最大結果数と、通常の結果に表示するファイルの最大数。",
   "Prefs.FileMinLength": "最小文字数",

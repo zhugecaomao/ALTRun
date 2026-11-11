@@ -774,6 +774,8 @@ class I18n {
         s["Prefs.SaveLog.Desc"]        := "Writes %Temp%\ALTRun.log for troubleshooting. Normally leave it off."
         s["Prefs.FileManager"]         := "File manager"
         s["Prefs.FileManager.Desc"]     := "Program that opens folders; parameters can follow, e.g. C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S (Total Commander: /O reuse window, /T new tab, /S active panel). Quote a path with spaces. Default: explorer.exe"
+        s["Prefs.FolderNewTab"] := "Open folders in a new tab"
+        s["Prefs.FolderNewTab.Desc"] := "File Explorer: a new tab of the window used last (Windows 11 22H2 or later). Total Commander: adds /O /T. Others: put their own parameters above."
         s["Prefs.HistorySize"]         := "Search history size"
         s["Prefs.HistorySize.Desc"]    := "Ctrl+↑ / Ctrl+↓ bring back recent searches."
         s["Prefs.RecentCount"]         := "Recent items to show"

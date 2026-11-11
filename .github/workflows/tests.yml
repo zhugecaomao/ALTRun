@@ -72,7 +72,7 @@ jobs:
       - name: Validate the benchmark, screenshot and standalone integration check scripts
         shell: pwsh
         run: |
-          foreach ($script in "Tests\Bench\BenchDriver.ahk", "Tests\Screenshots\TakeScreenshots.ahk", "Tests\Integration\EverythingCheck.ahk", "Tests\Integration\QuickSwitchCheck.ahk") {
+          foreach ($script in "Tests\Bench\BenchDriver.ahk", "Tests\Screenshots\TakeScreenshots.ahk", "Tests\Integration\EverythingCheck.ahk", "Tests\Integration\QuickSwitchCheck.ahk", "Tests\Integration\ExplorerTabsCheck.ahk") {
             & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', '/validate', $script `
               -Out validate.log -Err validate.err -TimeoutSeconds 120
             $code = $LASTEXITCODE

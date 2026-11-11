@@ -401,6 +401,8 @@
   "Prefs.FileKeywords.Desc": "文件关键字: 输入 \"open 报告\" 搜名称含 \"报告\" 的文件和文件夹。文件夹关键字: \"folder 项目\" 只搜文件夹。多个关键字用逗号分隔",
   "Prefs.FileManager": "文件管理器",
   "Prefs.FileManager.Desc": "打开文件夹用的程序, 后面可以带参数, 例如 C:\\Apps\\TotalCMD64\\TOTALCMD64.exe /O /T /S (Total Commander: /O 用已打开的窗口, /T 新标签页, /S 当前面板); 路径有空格时加引号。默认: explorer.exe",
+  "Prefs.FolderNewTab": "在新标签页中打开文件夹",
+  "Prefs.FolderNewTab.Desc": "资源管理器: 在最近用过的窗口里开新标签 (Windows 11 22H2 及以上)。Total Commander: 加 /O /T。其他: 在上面填它的参数。",
   "Prefs.FileMaxResults": "文件搜索结果数",
   "Prefs.FileMaxResults.Desc": "文件搜索 (先按空格或用关键字) 最多显示的结果数, 和普通结果里最多显示的文件数",
   "Prefs.FileMinLength": "最少字数",

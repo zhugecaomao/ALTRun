@@ -335,6 +335,36 @@ class CoreTests {
 
     ; Every setting the code reads exists in AppSettings.Defaults() (a typo in a key name would only show at run time).
     ; Reads guarded by .Has("Key") are optional and may be missing. SchemaMigration reads old names on purpose
+    ; Folders in a new tab (#440): which Windows has Explorer tabs, Total Commander's /O /T, and the PIDL Explorer navigates to.
+    ; Opening a real tab is checked on Windows by Tests\Integration\ExplorerTabsCheck.ahk
+    static FolderNewTab() {
+        eq := (n, a, e) => TestRunner.Equal("FolderNewTab." n, a, e)
+        eq("tabs: Windows 11 22H2", ExplorerTabs.Supported("10.0.22621") "|" ExplorerTabs.Supported("10.0.26100"), "1|1")
+        eq("no tabs: Windows 10 / 11 21H2", ExplorerTabs.Supported("10.0.19045") "|" ExplorerTabs.Supported("10.0.22000"), "0|0")
+        eq("same folder", ExplorerTabs.SameFolder("C:\A\b\", "c:\a\B") "|" ExplorerTabs.SameFolder("", ""), "1|0")
+        bytes := ExplorerTabs.PidlBytes(A_WinDir)
+        eq("pidl of a folder", IsObject(bytes) && bytes.MaxIndex() > 2, true)
+        eq("pidl of nothing", ExplorerTabs.PidlBytes(A_Temp "\no such folder\really not"), "")
+        general := AppSettings.General, saved := general["FolderNewTab"]
+        tc := {Exe: "C:\Apps\TotalCMD64\TOTALCMD64.EXE", Args: "", Explorer: false}
+        try {
+            general["FolderNewTab"] := 0
+            eq("TC, off", ActionCatalog.TabArgs(tc), "")
+            general["FolderNewTab"] := 1
+            eq("TC, on", ActionCatalog.TabArgs(tc), "/O /T")
+            tc.Args := "/O /S"
+            eq("TC keeps its own", ActionCatalog.TabArgs(tc), "/O /S /T")
+            tc.Args := "/t /o"
+            eq("TC already has them (any case)", ActionCatalog.TabArgs(tc), "/t /o")
+            tc.Args := "/TT"
+            eq("TC: /TT isn't /T", ActionCatalog.TabArgs(tc), "/TT /O /T")
+            other := {Exe: "C:\Apps\Opus\dopus.exe", Args: "/x", Explorer: false}
+            eq("other file managers untouched", ActionCatalog.TabArgs(other), "/x")
+        } finally
+            general["FolderNewTab"] := saved
+        eq("default off", AppSettings.Defaults()["General"]["FolderNewTab"], 0)
+    }
+
     static SettingsKeys() {
         defaults := AppSettings.Defaults(), missing := "", count := 0
         Loop Files, A_ScriptDir "\..\Src\*.ahk", "R" {
