@@ -1,4 +1,5 @@
-# Packages a release of ALTRun: compiles ALTRun.exe on Windows, runs the unit tests, verifies upgrading from an old ALTRun.ini,
+# Packages a release of ALTRun: compiles ALTRun.exe on Windows, runs the unit tests (only when publishing: a test build's commit is
+# tested by the Tests workflow at the same time, and signing waits for nothing), verifies upgrading from an old ALTRun.ini,
 # packs ALTRun_v<version>.zip; with publish = true it also creates the GitHub Release (tag = version).
 #
 # Release steps:
@@ -114,6 +115,7 @@ jobs:
           if (-not (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)) { throw "Ahk2Exe.exe missing" }
 
       - name: Unit tests
+        if: ${{ inputs.publish }}                                          # a test build (publish = false): the Tests workflow tests the same commit
         shell: pwsh
         run: |
           & Tests/Tools/RunAhk.ps1 -Ahk tools/ahk/AutoHotkey64.exe -Arguments '/ErrorStdOut', 'Tests\RunTests.ahk' `
