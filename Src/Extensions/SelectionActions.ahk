@@ -359,19 +359,31 @@ class SelectionActions {
     }
 
     ; Whether the selection can go into the command's command line: paths always can (they have no double quotes);
-    ; text can't have a line break or a double quote; shells also refuse their special characters
+    ; text can't have a line break or a double quote; shells also refuse their special characters. A shell is looked for
+    ; in the target after expanding it (%ComSpec%, A_WinDir, a name found on PATH) and anywhere in the arguments, so a
+    ; shell started through another program ("wt.exe cmd /k ...", "conhost.exe powershell ...") is caught too
     static SafeArgument(info, command) {
         if (info.Kind = "text" || info.Kind = "url") {
             if RegExMatch(info.Term, '[\r\n"]')
                 return false
         }
         target := command.Has("Target") ? command["Target"] : ""
-        SplitPath(Trim(target, '" '), &fileName, , &ext, &nameNoExt)
-        if (RegExMatch(nameNoExt, "i)^(cmd|command)$") || RegExMatch(ext, "i)^(bat|cmd)$"))
-            return !RegExMatch(info.Term, "[&|<>^%!]")
-        if (RegExMatch(nameNoExt, "i)^(powershell|powershell_ise|pwsh|bash|sh|wsl|zsh)$") || RegExMatch(ext, "i)^ps1$"))
-            return !RegExMatch(info.Term, "[&|<>^%!``$;(){}@']")
+        arguments := command.Has("Arguments") ? command["Arguments"] : ""
+        switch SelectionActions.ShellIn(target " " CustomCommandProvider._Resolve(Trim(target, '" ')) " " Path.ExpandEnv(arguments)) {
+            case "posix": return !RegExMatch(info.Term, "[&|<>^%!``$;(){}@']")   ; PowerShell / Unix shells: also cmd's characters (cmd may be in between)
+            case "cmd":   return !RegExMatch(info.Term, "[&|<>^%!]")
+        }
         return true
+    }
+
+    ; "posix" when a command line names PowerShell or a Unix shell, "cmd" when it names cmd or a batch file, else "".
+    ; Whole names only (not "-Command"); a false match only refuses more selections
+    static ShellIn(commandLine) {
+        if RegExMatch(commandLine, "i)(?<![\w.-])(powershell|powershell_ise|pwsh|bash|sh|wsl|zsh)(\.exe)?(?![\w.-])|\.ps1(?![\w.])")
+            return "posix"
+        if RegExMatch(commandLine, "i)(?<![\w.-])(cmd|command)(\.exe|\.com)?(?![\w.-])|\.(bat|cmd)(?![\w.])")
+            return "cmd"
+        return ""
     }
 
     ; One command-line argument in double quotes; trailing backslashes are doubled so "C:\" doesn't escape the closing quote

@@ -178,7 +178,7 @@ Custom commands can be shown for a selection too, first in the action panel (Ent
 
 Select `PO12345678` and press `Ctrl+Alt+\`: "ERP order" comes first, and typing filters the list as usual. The commands still work as before in the search box (by name or keyword).
 
-So that selected text can't run something else, a command is left out of the panel when the text has a line break or a double quote (except for `Url` commands, where it is encoded), or when the command runs a shell (`cmd`, a batch file, PowerShell...) and the text has that shell's special characters (such as `&` `|` `%`).
+So that selected text can't run something else, a command is left out of the panel when the text has a line break or a double quote (except for `Url` commands, where it is encoded), or when the command runs a shell (`cmd`, a batch file, PowerShell...; also through `%ComSpec%` or another program, such as `wt.exe` with `cmd /k ...` in the arguments) and the text has that shell's special characters (such as `&` `|` `%`).
 
 ## Editing and deleting in the results
 | Selected result | `F3` | `Ctrl+Del` |
