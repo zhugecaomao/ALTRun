@@ -211,7 +211,7 @@ class ProjectTests {
     }
 
     ; Wiki pages in English and Chinese (English Usage / Chinese Usage-zh): every page has a Chinese page, Wiki links in pages point to pages that exist,
-    ; and the help pages the program opens (cheat sheet, F1 in Preferences) exist in both languages; no old en- pages any more (wiki.yml generates the redirect pages when publishing)
+    ; and the help pages the program opens (cheat sheet, F1 in Preferences) exist in both languages; no old en- pages any more
     static WikiPages() {
         dir := A_ScriptDir "\..\docs\wiki\"
         pages := Map()

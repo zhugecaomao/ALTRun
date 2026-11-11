@@ -166,7 +166,7 @@ Wiki 的源文件在仓库的 `docs/wiki/`, 合并到 `main` 后自动发布到 
 - README: `README.md` (英文, GitHub 默认显示) 和 `README.zh-CN.md` (中文), 开头互相链接
 - `CONTRIBUTING.md` 和 `SECURITY.md`: 一个文件里英文在前、中文在后, 开头有跳到两种语言的链接。`CONTRIBUTING.md` 只写反馈问题和提交 PR 的要点, 详细内容在这一页
 - Wiki: 每页两个文件, 英文 `Usage.md` (默认, 和 `README.md` 一样) 和中文 `Usage-zh.md`; 每页开头链接到另一种语言, 中文页之间的链接写 `-zh` 的页面名。侧边栏 `_Sidebar.md` 分中英两组。程序里的帮助 (速查表、偏好设置的 `F1`) 按界面语言打开: 中文界面 (简体、繁体) 打开 `-zh` 页, 其它语言打开英文页 (`HelpProvider.WikiPage`)。`WikiPages` 测试检查每页都有中文页、链接指向存在的页面
-- 2026.10.20 以前英文页叫 `en-Usage`、中文页叫 `Usage`。为了旧链接和旧版本的 ALTRun, `.github/workflows/wiki.yml` 会发布一行的 `en-Usage` 页面指向新的名字; 2026.10.20 之后发布满三个正式版后自动停止
+- 2026.10.20 以前英文页叫 `en-Usage`、中文页叫 `Usage`。为了旧链接和旧版本的 ALTRun, `.github/workflows/wiki.yml` 曾发布一行的 `en-Usage` 页面指向新的名字, 2026.10.20 之后发布满三个正式版后已停止, 这些页面已经删除
 - CHANGELOG: 测试版各节用中文写; 正式版那一节英文在前、中文在后, 也是 Release 的说明 (格式见下面的 "发布流程")
 - Wiki 页面之间的链接写页面名, 不带 `.md` (例如 `[主题](Themes-zh)`, 英文页写 `[Themes](Themes)`)。英文不熟悉的话可以只改中文, 在 PR 里说明, 维护者会补上英文
 
@@ -214,7 +214,7 @@ AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景
    - 这一节里不要用 `##` 标题 (Release workflow 取到下一个 `##` 为止); 删掉测试版各节和它们的比较链接; 文件末尾 `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD`, `[未发布]: .../compare/YYYY.MM.DD...HEAD`
 3. 合并到 main 后会自动跑一次检查构建 (`publish = false`); 再在 main 上运行 **Release**, `publish = true`
 
-Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe → 单元测试 → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本 (`packaging/Submit-Winget.ps1`: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR; 失败时用 **Submit to winget** 工作流重新提交已发布的版本)。
+Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe → 单元测试 (只在发布正式版时; 测试版的同一个提交由 Tests workflow 测试) → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本 (`packaging/Submit-Winget.ps1`: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR; 失败时用 **Submit to winget** 工作流重新提交已发布的版本)。
 
 ## 性能测试
 GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟机上用真实的按键模拟日常操作, 比较两个版本
@@ -242,7 +242,7 @@ GitHub → Actions → **Everything** 在 Windows 上用真实的 Everything 检
 AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一份, `obj.prop .= x` 也会重新生成整个字符串。字符串很长时 (文件索引把所有文件名放在一个字符串里), 线性的工作会变成平方级: 长字符串在局部变量或数组里拼接, 需要一小段一小段读取的文字放在 `Buffer` 里 (按偏移用 `StrGet` 读)。
 
 ### Quick Switch
-GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.ahk` 在真实的 Windows 桌面上检查自动跳转 (`Extensions.QuickSwitch.AutoSwitch`)。它启动一份打开了自动跳转的 ALTRun, 用资源管理器打开一个文件夹、再打开一个 "打开" 对话框, 然后用三种方式从资源管理器切到对话框: 直接激活 (`SetForegroundWindow`)、模拟 Alt+Tab、点对话框的标题栏。每种方式试 5 次, 每次对话框都要在 5 秒内跳到资源管理器的文件夹; 失败的那一轮会打印 ALTRun 日志里 Quick Switch 的几行。然后打开文件夹面板的 ☆ 菜单 (点星号、在搜索框里按 Alt+↓), 按 Esc 关掉: 对话框要在 2 秒内回到前台; 失败时打印 Esc 之后到过前台的每个窗口。修改 `Src\Extensions\QuickSwitch.ahk`、`Src\Core\App.ahk` 或这个检查的 PR 会运行它, main 上也会, 每周一也运行一次 (运行环境的新镜像可能改变窗口到前台的方式; **Explorer tabs** 也是每周一运行); 想找偶尔出现的失败, 可以手动运行并加大次数。脚本也能在自己电脑上运行 (会占用键盘和屏幕一分钟左右): `QuickSwitchCheck.ahk <仓库的一份副本> [次数]`。
+GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.ahk` 在真实的 Windows 桌面上检查自动跳转 (`Extensions.QuickSwitch.AutoSwitch`)。它启动一份打开了自动跳转的 ALTRun, 用资源管理器打开一个文件夹、再打开一个 "打开" 对话框, 然后用三种方式从资源管理器切到对话框: 直接激活 (`SetForegroundWindow`)、模拟 Alt+Tab、点对话框的标题栏。每种方式试 5 次, 每次对话框都要在 5 秒内跳到资源管理器的文件夹; 失败的那一轮会打印 ALTRun 日志里 Quick Switch 的几行。然后打开文件夹面板的 ☆ 菜单 (点星号、在搜索框里按 Alt+↓), 按 Esc 关掉: 对话框要在 2 秒内回到前台; 失败时打印 Esc 之后到过前台的每个窗口。修改 `Src\Extensions\QuickSwitch.ahk` 或这个检查的 PR 会运行它, main 上也会, 每周一也运行一次 (运行环境的新镜像可能改变窗口到前台的方式; **Explorer tabs** 也是每周一运行); 想找偶尔出现的失败, 可以手动运行并加大次数。脚本也能在自己电脑上运行 (会占用键盘和屏幕一分钟左右): `QuickSwitchCheck.ahk <仓库的一份副本> [次数]`。
 
 ### 延迟启动
 GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartCheck.ahk` (以 `Tests\RunTests.ahk DelayedStartCheck` 运行) 对真实的 Windows 任务计划程序检查延迟启动: 先用一个新建的普通用户 (这才是关键: `schtasks /SC ONLOGON` 需要管理员, ALTRun 用的 COM 接口不需要), 再用 runner 本身的管理员。它通过 `DelayedStart.Sync` 注册任务, 读回来, 修改再删除, 并把为检查建的一个开机启动程序关掉再打开。修改延迟启动或这个检查的 PR 和 main 上会运行; 在自己的电脑上也能跑, 它只动自己的任务文件夹 (`\ALTRun\<用户名> check`), 最后会删掉。

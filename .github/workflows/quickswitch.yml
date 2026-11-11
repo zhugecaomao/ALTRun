@@ -8,14 +8,12 @@ on:
   pull_request:
     paths:
       - Src/Extensions/QuickSwitch.ahk
-      - Src/Core/App.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
       - .github/workflows/quickswitch.yml
   push:
     branches: [main]
     paths:
       - Src/Extensions/QuickSwitch.ahk
-      - Src/Core/App.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
       - .github/workflows/quickswitch.yml
   schedule:
