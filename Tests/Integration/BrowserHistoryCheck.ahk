@@ -36,9 +36,13 @@ Main() {
     if !Sqlite.Available()
         ExitApp(failures)
     expected := []                                                          ; [url, title] in the order they were opened (the last is the most recent)
-    for line in StrSplit(FileRead(A_Args[1], "UTF-8"), "`n", "`r")
-        if (line != "")
-            expected.Push(StrSplit(line, "|", , 2))
+    try {
+        for line in StrSplit(FileRead(A_Args[1], "UTF-8"), "`n", "`r")
+            if (line != "")
+                expected.Push(StrSplit(line, "|", , 2))
+    } catch as e {
+        check("read the list of pages", false, (A_Args.Length ? A_Args[1] : "no file named") " - " e.Message)
+    }
     check("pages to look for", expected.Length >= 2, expected.Length)
     for browser in [["Edge", "Microsoft\Edge\User Data\Default\History", "msedge.exe"], ["Chrome", "Google\Chrome\User Data\Default\History", "chrome.exe"]] {
         historyPath := EnvGet("LOCALAPPDATA") "\" browser[2]
