@@ -9,6 +9,8 @@
 ; Target / Arguments can contain {query}: typing "keyword text" replaces it with the text (encoded in URLs), e.g.
 ;   { "Title": "Jira", "Type": "Url", "Target": "https://jira.example.com/browse/{query}", "Keyword": "jira" }
 ;   typing "jira ABC-123" opens .../browse/ABC-123; when the command is found but no text typed yet, Enter completes to "jira "
+; {hwnd} / {pid} become the handle / process id of the window in front before ALTRun was shown, when the command runs
+;   (e.g. Arguments "C:\Tools\WindowInfo.ahk {hwnd}"; see ActionCatalog.ForWindow)
 ; Searched: name, keyword, pinyin initials of the name; for File / Folder also the target's file name
 ; (without extension) or folder name, e.g. Target "D:\Projects\2026 - Annual Report" is found by "annual" too.
 ; At the same match level, name matches come before file / folder name matches.
@@ -195,7 +197,7 @@ class CustomCommandProvider {
             subtitle := I18n.T("Search.TypeAfter", keyword) " · " subtitle
         item := ResultItem(title, subtitle, {
             Kind: kind, Arg: target, Arguments: arguments, Icon: icon, Score: score, Source: command,
-            Uid: CustomCommandProvider._Uid(command)
+            Uid: CustomCommandProvider._Uid(command), WindowArgs: ActionCatalog.UsesWindow(target, arguments)
         })
         for name, value in extra.OwnProps()
             item.%name% := value
@@ -251,7 +253,7 @@ class CustomCommandProvider {
         raw := Trim(command.Has("Target") ? command["Target"] : "", "`" `t")
         if (raw = "")
             return "Missing"
-        if InStr(raw, "{query}")                                            ; the path contains an argument, known only once typed
+        if (InStr(raw, "{query}") || ActionCatalog.UsesWindow(raw))         ; the path contains an argument, known only once typed or run
             return "Skipped"
         target := Path.Resolve(raw)
         if RegExMatch(target, "i)^([a-z][a-z0-9+.-]+:|::\{)")               ; shell:, ms-settings:, http: etc. (not "C:")

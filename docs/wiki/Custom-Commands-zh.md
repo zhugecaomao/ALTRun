@@ -56,6 +56,16 @@
 
 新安装时默认命令里已经有 Ping、Google Maps、Send Email (`mailto:{query}`; 地址里的 `@` 不编码) 和 Documents subfolder (`docs 文件夹名` 打开 "文档" 里的子文件夹) 四个例子。只输入名称搜到这条命令时, 下面一行会说明接着输入什么 (例如 "在 'ping ' 后面输入内容, 再按 Enter"), 按 `Enter` 补全成 "关键字 ", 接着输入参数。没有关键字时 `{query}` 换成空。"检查路径" 不检查带 `{query}` 的路径。
 
+## 呼出 ALTRun 之前的窗口 ({hwnd}, {pid})
+目标或参数里的 `{hwnd}` 和 `{pid}` 会换成呼出 ALTRun 之前前台窗口的句柄和进程 ID (十进制), 脚本可以拿它对这个窗口做后续操作, 例如取它打开的文件:
+
+| 名称 | 类型 | 目标 | 参数 |
+|---|---|---|---|
+| 窗口信息 | 命令行 | `C:\Tools\WindowInfo.ahk` | `{hwnd}` |
+| 进程详情 | 命令行 | `powershell.exe` | `-NoExit -Command Get-Process -Id {pid} \| Format-List *` |
+
+AutoHotkey 脚本里用 `WinGetTitle("ahk_id " A_Args[1])` 就能读这个窗口。建议用 `{hwnd}` 而不是 `{pid}`: 同一个程序常有好几个窗口, 句柄才是你刚才在用的那一个。每次运行命令时才填入, 从选中内容的动作面板 (`Ctrl+Alt+\`) 运行、置顶或最近使用的条目也一样。那个窗口已经关掉 (或者从托盘打开 ALTRun, 前台没有窗口) 时两个都换成空。"检查路径" 不检查带它们的路径。
+
 ## 路径里可以用的变量
 | 写法 | 含义 |
 |---|---|

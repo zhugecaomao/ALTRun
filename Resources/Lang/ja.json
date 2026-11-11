@@ -82,7 +82,7 @@
   "Clipboard.Subtitle": "{1} · {2} · {3} 文字",
   "Clipboard.Unpin": "ピン留めを解除",
   "Clipboard.UnpinnedDone": "ピン留めを解除しました",
-  "Cmd.Field.Arguments": "プログラムに渡す引数です (例: /k ipconfig /all)。ファイル・フォルダー・Web アドレスでは通常空欄にします。対象や引数の {query} はキーワードの後に入力した文字に置き換わります。",
+  "Cmd.Field.Arguments": "プログラムに渡す引数です (例: /k ipconfig /all)。ファイル・フォルダー・Web アドレスでは通常空欄にします。対象や引数の {query} はキーワードの後に入力した文字に、{hwnd} / {pid} は ALTRun を表示する前の前面ウィンドウのハンドル / プロセス ID に置き換わります。",
   "Cmd.Field.Keyword": "任意設定。この文字列を完全一致で入力すると、そのコマンドが最上位に表示されます (例: メモ帳に np)。複数ある場合はカンマで区切ります (例: np, ㅜㅔ)。",
   "Cmd.Field.Selection": "任意設定。環境設定 → 選択範囲 で定義した内容の種類 (例: IP, Text files)。この種類の内容を選択して Ctrl+Alt+\\ を押すと、このコマンドが先頭に表示されます。{query} は選択したテキストやパスになり、{query} がなければプログラムの最後の引数として渡されます。",
   "Cmd.Field.Selection.Button": "種類",

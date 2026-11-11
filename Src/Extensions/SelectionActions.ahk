@@ -348,13 +348,13 @@ class SelectionActions {
             item.Arguments := Trim(item.Arguments " " info.Quoted)
             item.Subtitle := Trim(item.Subtitle " " info.Quoted)
         }
-        item.OnRun := SelectionActions._Runner(item.Kind, item.Arg, item.Arguments)   ; the actions panel runs a row through its OnRun
+        item.OnRun := SelectionActions._Runner(item.Kind, item.Arg, item.Arguments, item.WindowArgs)   ; the actions panel runs a row through its OnRun
         return item
     }
 
     ; each row keeps its own target (a separate method makes the closure)
-    static _Runner(kind, target, arguments) {
-        runItem := ResultItem("", "", {Kind: kind, Arg: target, Arguments: arguments})
+    static _Runner(kind, target, arguments, windowArgs := false) {
+        runItem := ResultItem("", "", {Kind: kind, Arg: target, Arguments: arguments, WindowArgs: windowArgs})
         return (*) => ActionCatalog.RunDefault(runItem)
     }
 

@@ -51,9 +51,13 @@ class RecentProvider {
             return ""
         if RegExMatch(item.Uid, "^system:(.+)$", &m)
             return Map("System", m[1], "Title", item.Title, "Uid", item.Uid)
-        if (RegExMatch(item.Kind, "^(file|folder|url)$") && item.Arg != "" && !IsObject(item.OnRun))
-            return Map("Title", item.Title, "Subtitle", item.Subtitle, "Kind", item.Kind, "Arg", item.Arg, "Arguments", item.Arguments
-                     , "Icon", IsObject(item.Icon) ? "" : item.Icon, "Uid", (item.Uid != "") ? item.Uid : item.Kind ":" StrLower(item.Arg))
+        if (RegExMatch(item.Kind, "^(file|folder|url)$") && item.Arg != "" && !IsObject(item.OnRun)) {
+            entry := Map("Title", item.Title, "Subtitle", item.Subtitle, "Kind", item.Kind, "Arg", item.Arg, "Arguments", item.Arguments
+                       , "Icon", IsObject(item.Icon) ? "" : item.Icon, "Uid", (item.Uid != "") ? item.Uid : item.Kind ":" StrLower(item.Arg))
+            if item.WindowArgs                                              ; {hwnd} / {pid} stay as they are, filled in each time it runs
+                entry["WindowArgs"] := 1
+            return entry
+        }
         return ""
     }
 
@@ -123,6 +127,7 @@ class RecentProvider {
         if (icon = "")
             icon := (kind = "folder") ? IconCache.FolderIcon(entry["Arg"]) : (kind = "url") ? "url:" : Path.Resolve(entry["Arg"])
         extra.Kind := kind, extra.Arg := entry["Arg"], extra.Arguments := entry.Has("Arguments") ? entry["Arguments"] : "", extra.Icon := icon
+        extra.WindowArgs := entry.Has("WindowArgs") && entry["WindowArgs"] ? true : false
         return RecentProvider._Item(entry["Title"], entry.Has("Subtitle") ? entry["Subtitle"] : "", extra, pinned)
     }
 
