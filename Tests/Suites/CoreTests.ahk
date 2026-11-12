@@ -218,6 +218,25 @@ class CoreTests {
         TestRunner.True("Migration.no downgrade", SchemaMigration.Upgrade(Map("SchemaVersion", AppSettings.CurrentVersion), AppSettings.CurrentVersion)["SchemaVersion"] = AppSettings.CurrentVersion)
     }
 
+    static SettingsRanges() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsRanges." n, a, e)
+        data := AppSettings.Defaults()
+        eq("defaults are in range", AppSettings.ClampNumbers(data), false)
+        data["Appearance"]["Width"] := 50, data["Appearance"]["VisibleRows"] := 40, data["Appearance"]["Position"]["X"] := -5
+        data["Features"]["Clipboard"]["MaxItems"] := 0, data["Features"]["FileSearch"]["MaxResults"] := "abc"
+        data["General"]["HistorySize"] := "45", data["Features"]["Snippets"]["PasteDelay"] := 250.6, data["Features"]["Recent"]["RecentCount"] := Map()
+        eq("changed", AppSettings.ClampNumbers(data), true)
+        eq("raised / lowered to the range", data["Appearance"]["Width"] "|" data["Appearance"]["VisibleRows"] "|" data["Appearance"]["Position"]["X"] "|" data["Features"]["Clipboard"]["MaxItems"], "450|9|0|1")
+        eq("not a number -> default", data["Features"]["FileSearch"]["MaxResults"] "|" data["Features"]["Recent"]["RecentCount"], "30|0")
+        eq("text and decimals -> whole numbers", Type(data["General"]["HistorySize"]) "|" data["General"]["HistorySize"] "|" data["Features"]["Snippets"]["PasteDelay"], "Integer|45|251")
+        eq("second pass changes nothing", AppSettings.ClampNumbers(data), false)
+        eq("missing sections skipped", AppSettings.ClampNumbers(Map("General", "broken", "Appearance", Map("Position", 5))), false)
+        defaults := AppSettings.Defaults()
+        for range in AppSettings.NumberRanges
+            eq("default " range[1] "." range[2] " exists", PreferencesWindow.GetPath(defaults, range[1] "." range[2]) is Integer, true)
+        eq("width low end = MinWindowWidth", AppSettings.NumberRanges[4][2] "|" AppSettings.NumberRanges[4][3], "Width|" PreferencesWindow.MinWindowWidth)
+    }
+
     static Calculator() {
         eq := (n, a, e) => TestRunner.Equal("Calculator." n, a, e)
         eq("basic", CalculatorProvider.Search(SearchQuery("12*(3+4)"))[1].Title, "84")

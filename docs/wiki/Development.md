@@ -157,7 +157,7 @@ A change usually touches more than the line that motivates it. Before you start,
 
 | Change | Also change |
 |---|---|
-| **A new setting** | Default in `AppSettings.Defaults()` (`SettingsKeys` fails without one); the control on its Preferences page (`PrefsPages`); UI text in four languages; the wiki page that describes the feature (English and `-zh`); a test |
+| **A new setting** | Default in `AppSettings.Defaults()` (`SettingsKeys` fails without one); a number setting also gets its working range in `AppSettings.NumberRanges` (out-of-range values are clamped at load and on saving Preferences, and logged); the control on its Preferences page (`PrefsPages`); UI text in four languages; the wiki page that describes the feature (English and `-zh`); a test |
 | **The structure of existing settings** (rename, move, change a format) | See "Changing the settings structure": `CurrentVersion + 1` and a `_FromN` in `SchemaMigration`, with a test from an old file; collected for the next schema version |
 | **A UI text** (new, changed or removed) | `I18n.ahk` and the three files in `Resources\Lang\` (`I18nLanguages`, `I18nUnused`); in Preferences, check that Japanese still fits (`PreferencesFit`, `PreferencesSpacing`) |
 | **A Preferences page** | The layout rules: short boxes in two aligned columns, long content up to the right edge; the screenshot scene of that page (a new page shifts the `-Preferences N` numbers of the scenes after it); a page that shows what other pages change sets `page.OnShow` in its builder (called each time the page is shown, see Selection); UI changes are confirmed with screenshots before merging |

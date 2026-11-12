@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.15]
+
+测试版。
+
+Test build.
+
+### 改进
+- 设置里的数值 (窗口宽度、显示行数、剪贴板历史条数、文件搜索结果数等) 超出可用范围时, 启动和偏好设置保存时改成最接近的允许值, 不是数字的改回默认值, 并写进日志; 避免手动编辑 ALTRun.json 或偏好设置里留空的数字框造成窗口过窄、列表被清空等问题
+
 ## [2026.11.11.14]
 
 测试版。
@@ -1361,7 +1370,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.14...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.15...HEAD
+[2026.11.11.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.14...2026.11.11.15
 [2026.11.11.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.13...2026.11.11.14
 [2026.11.11.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.12...2026.11.11.13
 [2026.11.11.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.11...2026.11.11.12

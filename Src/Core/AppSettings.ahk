@@ -176,6 +176,8 @@ class AppSettings {
             changed := true
         if AppSettings._MergeDefaults(data, AppSettings.Defaults())
             changed := true
+        if AppSettings.ClampNumbers(data)
+            changed := true
         if (AppSettings.DataDir != AppSettings.DefaultDataDir() && data.Has("DataLocation"))
             data.Delete("DataLocation")                                     ; this entry has no effect in the folder redirected to: remove it to avoid confusion
         data["SchemaVersion"] := Max(AppSettings.CurrentVersion, AppSettings.NewerVersion)
@@ -376,6 +378,63 @@ class AppSettings {
                 continue
             if (engine["Url"] == upgrades[engine["Id"]][1])
                 engine["Url"] := upgrades[engine["Id"]][2], changed := true
+        }
+        return changed
+    }
+
+    ; Number settings and the range each one works in: [section path, key, lowest, highest]. A value outside its range (e.g. hand-edited
+    ; into ALTRun.json, or an empty box in Preferences saved as 0) is moved to the nearest end; one that isn't a number gets the default.
+    ; The ranges only keep out values that break something (a window narrower than the status bar, a list cut to nothing, a
+    ; negative delay), so they are wide: any value a user would choose on purpose stays as it is
+    static NumberRanges := [
+        ["General"                , "KeepLastQueryMinutes", 0, 100000],    ; 0 = no limit
+        ["General"                , "HistorySize"         , 0, 1000],
+        ["General"                , "SwitchToEnglishInput", 0, 2],
+        ["Appearance"             , "Width"               , 450, 4000],    ; 450 = PreferencesWindow.MinWindowWidth (room for the status bar)
+        ["Appearance"             , "VisibleRows"         , 1, 9],
+        ["Appearance.Position"    , "X"                   , 0, 1000],      ; per mille of the screen
+        ["Appearance.Position"    , "Y"                   , 0, 1000],
+        ["Features.Applications"  , "Depth"               , 0, 10],
+        ["Features.Snippets"      , "PasteDelay"          , 0, 10000],
+        ["Features.Clipboard"     , "MaxItems"            , 1, 10000],
+        ["Features.Clipboard"     , "MaxItemLength"       , 1, 10000000],
+        ["Features.Clipboard"     , "LocalFiles"          , 0, 2],
+        ["Features.Clipboard"     , "MaxImages"           , 0, 1000],
+        ["Features.Calculator"    , "RebarCover"          , 0, 1000],
+        ["Features.Calculator"    , "MaxBarSpacing"       , 1, 10000],
+        ["Features.FileSearch"    , "MaxResults"          , 1, 1000],
+        ["Features.FileSearch"    , "DefaultResultsLimit" , 0, 100],
+        ["Features.FileSearch"    , "MinQueryLength"      , 1, 50],
+        ["Features.FileSearch"    , "ScopeDepth"          , 1, 32],
+        ["Features.FileSearch"    , "MaxEntries"          , 1000, 2000000],
+        ["Features.FileSearch"    , "RefreshMinutes"      , 5, 10080],     ; FileIndex uses at least 5 anyway
+        ["Features.Sync"          , "KeepLogDays"         , 0, 3650],      ; 0 = kept
+        ["Features.Recent"        , "RecentCount"         , 0, 100],
+        ["Extensions.QuickSwitch" , "RecentFolders"       , 0, 100]
+    ]
+
+    ; Puts the number settings of data in range (see NumberRanges), writing each change to the log. Whole numbers only: "700" and 7.6
+    ; become 700 and 8. Sections that are missing or not Maps are skipped (_MergeDefaults fills them in first). Returns whether anything changed
+    static ClampNumbers(data) {
+        changed := false
+        defaults := AppSettings.Defaults()
+        for range in AppSettings.NumberRanges {
+            section := data, defaultSection := defaults
+            for name in StrSplit(range[1], ".") {
+                section := (section is Map && section.Has(name)) ? section[name] : ""
+                defaultSection := defaultSection[name]
+            }
+            key := range[2], low := range[3], high := range[4]
+            if !(section is Map && section.Has(key))
+                continue
+            value := section[key]
+            fixed := IsNumber(value) ? Max(low, Min(high, Round(value))) : defaultSection[key]
+            if (value is Integer && value == fixed)
+                continue
+            section[key] := fixed
+            changed := true
+            if !(IsNumber(value) && value = fixed)                         ; "700" -> 700 is not worth a log line
+                Logger.Warn("AppSettings: " range[1] "." key " = " (IsObject(value) ? Type(value) : value is String ? '"' value '"' : value) " is outside " low "-" high ", set to " fixed)
         }
         return changed
     }
