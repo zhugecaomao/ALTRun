@@ -49,7 +49,7 @@ class SnippetProvider {
             preview := SnippetProvider._Preview(snippet["Text"], found)
             item := ResultItem((name != "") ? name : preview, I18n.T("Snippet.Subtitle", preview), {
                 Kind: "text", Arg: snippet["Text"], Icon: SnippetProvider.Icon,
-                Uid: "snippet:" StrLower(keyword "|" name), Score: score + (onlySnippets ? 30 : 0), Source: snippet,
+                Uid: SnippetProvider.Uid(snippet), Score: score + (onlySnippets ? 30 : 0), Source: snippet,
                 Exclusive: onlySnippets && query.HasRest,
                 LargeText: SnippetProvider._ExpandLater(snippet["Text"])   ; only for Ctrl+L: expanding reads the clipboard (history), not wanted on every key
             })
@@ -60,6 +60,9 @@ class SnippetProvider {
     }
 
     static _ExpandLater(text) => () => SnippetProvider.Expand(text)
+
+    ; "snippet:<Id>": the learned ranking stays with the snippet when it is renamed (without an Id yet: the Uid before settings version 7)
+    static Uid(snippet) => (snippet.Has("Id") && snippet["Id"] != "") ? "snippet:" snippet["Id"] : Knowledge.LegacyUid("snippet", snippet)
 
     ; The text compared when searching: each keyword and the name (kept, not built again on every key)
     static _MatchTexts(keyword, name) {

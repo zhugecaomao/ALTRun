@@ -214,9 +214,14 @@ class HotkeyEditor {
                 does := I18n.T("HotkeyEditor.Summary.Toggle", label)
             default:
                 name := action
-                for command in SystemProvider.Commands()
-                    if (command["Id"] = action)
+                if (SubStr(action, 1, 7) = "custom:") {                     ; a custom command: its name ("" when it was deleted: the Id)
+                    if IsObject(command := CustomCommandProvider.FindById(SubStr(action, 8)))
                         name := command["Title"]
+                } else {
+                    for command in SystemProvider.Commands()
+                        if (command["Id"] = action)
+                            name := command["Title"]
+                }
                 does := I18n.T("HotkeyEditor.Summary.Command", label, name)
         }
         winTitle := Trim(item.Has("WinTitle") ? item["WinTitle"] : "")

@@ -3,7 +3,7 @@
 ;-------------------------------------------------------------------------------
 ; One table (Entries) serves two purposes:
 ;   ?          lists all input syntax and shortcuts; text after ? filters them (? file), Enter opens the matching Wiki page (by UI language, see WikiPage)
-;   NextTip()  each time the search window is shown, the status bar shows the next tip in turn (General.ShowTips)
+;   NextTip()  each time the search window is shown, the status bar shows the next tip in turn (Window.ShowTips)
 ; Each entry: [Id, feature it belongs to (hidden when that feature is off, "" = always shown), Wiki page]
 ; The order is the order in the cheat sheet and in the tips: the most useful entries come first.
 ; The text is in I18n: Help.<Id>.Key (input / keys) and Help.<Id>.Text (what it does);
@@ -84,7 +84,7 @@ class HelpProvider {
                 continue
             if (entry[1] = "Pinyin" && I18n.Lang != "zh-CN")                ; pinyin initials only cover Simplified Chinese, so only that UI shows it
                 continue
-            textId := (entry[1] = "Tab" && AppSettings.General["TabKey"] = "Next") ? "TabNext" : entry[1]   ; the Tab tip follows the Tab key setting
+            textId := (entry[1] = "Tab" && AppSettings.Keyboard["TabKey"] = "Next") ? "TabNext" : entry[1]   ; the Tab tip follows the Tab key setting
             items.Push({Id: entry[1], Key: I18n.T("Help." textId ".Key", HelpProvider._Args(entry[1])*)
                       , Text: I18n.T("Help." textId ".Text"), Url: HelpProvider.WikiPage(entry[3])})
         }

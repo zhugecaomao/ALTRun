@@ -61,11 +61,11 @@ class SearchSession {
 
     ; Whether the last search comes back (KeepLastQuery): only within KeepLastQueryMinutes after hiding (0 = no limit), like Alfred's
     ; "show latest query if within N minutes"; after that the window opens with an empty search box
-    KeepsLast(general, now := A_TickCount) {
+    KeepsLast(options, now := A_TickCount) {
         last := this.Last
-        if !(general["KeepLastQuery"] && IsObject(last) && last.Text != "")
+        if !(options["KeepLastQuery"] && IsObject(last) && last.Text != "")
             return false
-        minutes := general["KeepLastQueryMinutes"]
+        minutes := options["KeepLastQueryMinutes"]
         return !IsNumber(minutes) || minutes <= 0 || now - last.Time <= minutes * 60000
     }
 

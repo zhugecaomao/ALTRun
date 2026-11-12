@@ -24,6 +24,7 @@ Preferences → Advanced → Data → "Open Data Folder" opens it.
 | `AppIndex.json` | App index | Rescanned at startup |
 | `FileIndex.bin` | Built-in file index (used without Everything) | Rescanned in the background |
 | `Knowledge.json` | Learned ranking, search history, recent items (pinned items are in `ALTRun.json`) | Ranking has to be learned again, recent items are cleared |
+| `Knowledge.v1.backup.json` | `Knowledge.json` before it was converted to the format of settings version 7 (custom commands, snippets and sync tasks by their `Id`) | No effect; use it with `ALTRun.v6.backup.json` to go back to an older version, see [FAQ](FAQ#how-do-i-go-back-to-an-older-version) |
 | `Usage.json` | Usage statistics (how often each feature was used each day) | Statistics start from zero |
 | `ClipboardHistory.json` | Clipboard history (text; only here when Preferences → Clipboard → "Save in" isn't "Everything on this PC only"). When it can't be opened at startup it is left alone and read again before anything is saved; one with a format error is kept as `ClipboardHistory.json.bad` | History is cleared |
 | `Clipboard\` | Images and very long items of the clipboard history (only here when "Save in" is "The Data folder") | Those items no longer show in the history |

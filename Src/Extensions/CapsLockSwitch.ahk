@@ -1,7 +1,7 @@
 ;===============================================================================
 ; CapsLockSwitch.ahk - as on macOS: tap CapsLock to switch the input language, hold it for Caps Lock (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; Settings (ALTRun.json -> General.CapsLock):
+; Settings (ALTRun.json -> Keyboard.CapsLock):
 ;   ""       off (default), CapsLock as usual
 ;   "Layout" switch to the next input language (like Win+Space, e.g. English (US) <-> Microsoft Pinyin)
 ;   "Mode"   toggle the Chinese / English mode of the current Chinese IME (like Shift in Microsoft Pinyin)

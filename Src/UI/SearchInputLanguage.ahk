@@ -1,7 +1,7 @@
 ;===============================================================================
 ; SearchInputLanguage.ahk - switches the search box to English input while it is shown, and back afterwards (AutoHotkey v2)
 ;-------------------------------------------------------------------------------
-; General.SwitchToEnglishInput: 1 = the English (US) keyboard, 2 = the English mode of the current input method;
+; Keyboard.SwitchToEnglishInput: 1 = the English (US) keyboard, 2 = the English mode of the current input method;
 ; General.RestoreInput switches back when the window hides.
 ;
 ; Usage (SearchWindow):
@@ -15,7 +15,7 @@ class SearchInputLanguage {
 
     ; Called by SearchWindow._Show once the search box has focus; the steps are logged like the other steps of showing
     static SwitchOnShow(wasVisible) {
-        switch AppSettings.General["SwitchToEnglishInput"] {
+        switch AppSettings.Keyboard["SwitchToEnglishInput"] {
             case 1:                                                         ; switch to the English (US) keyboard
                 SearchWindow._Step("input language: read")                  ; logged in two steps: right after boot this once took 17 s; see which step
                 step := Logger.Ms()
@@ -55,7 +55,7 @@ class SearchInputLanguage {
     static Restore() {
         SearchInputLanguage._RestoreMode()
         layout := SearchInputLanguage._layoutBefore, SearchInputLanguage._layoutBefore := 0
-        if (!layout || AppSettings.General["SwitchToEnglishInput"] != 1 || !AppSettings.General["RestoreInput"]
+        if (!layout || AppSettings.Keyboard["SwitchToEnglishInput"] != 1 || !AppSettings.Keyboard["RestoreInput"]
             || Win.PerWindowInputMethod() || layout = Win.KeyboardLayout())
             return
         if SearchWindow.IsActive() {                                        ; still in the foreground: switch back ourselves, which applies to all programs
@@ -69,7 +69,7 @@ class SearchInputLanguage {
     ; so without restoring, other programs would be in English too. If focus is already lost, set it on the foreground window (like switching the input language back above)
     static _RestoreMode() {
         before := SearchInputLanguage._imeBefore, SearchInputLanguage._imeBefore := ""
-        if (!IsObject(before) || AppSettings.General["SwitchToEnglishInput"] != 2 || !AppSettings.General["RestoreInput"])
+        if (!IsObject(before) || AppSettings.Keyboard["SwitchToEnglishInput"] != 2 || !AppSettings.Keyboard["RestoreInput"])
             return
         if !(hwnd := WinExist("A")) || !(imeWnd := Win.ImeWindow(hwnd))
             return

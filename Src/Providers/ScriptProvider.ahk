@@ -65,9 +65,13 @@ class ScriptProvider {
         return results
     }
 
+    ; "script:<file name>" (the Scripts folder isn't searched below its top level, so the name is unique): the same in a portable
+    ; and an installed ALTRun, and after the data folder moves. Before settings version 7 it was the full path (see Knowledge.ConvertUids)
+    static Uid(script) => "script:" StrLower(script.Name)
+
     static ItemFor(script, score, argument := "") {
         props := {Kind: "file", Arg: script.Path, Icon: ScriptProvider._Icon(script), Score: score, Source: script
-            , Uid: "script:" StrLower(script.Path), OnRun: (*) => ScriptProvider.Run(script, argument)}
+            , Uid: ScriptProvider.Uid(script), OnRun: (*) => ScriptProvider.Run(script, argument)}
         title := script.Title, subtitle := I18n.T("Script.Subtitle", script.Name)
         if (script.Argument != "") {
             if (argument = "") {

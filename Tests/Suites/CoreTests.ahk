@@ -190,7 +190,7 @@ class CoreTests {
                 , "AutoDate", Map("RenameHotkey", "^!d", "AppendHotkey", "^d", "RenameWindows", "ahk_class CabinetWClass", "AppendWindows", "ahk_exe a.exe, ahk_exe b.exe")))
         v6 := SchemaMigration.Upgrade(v5, 5)
         quick := v6["Extensions"]["QuickSwitch"], dates := v6["Extensions"]["AutoDate"]
-        eq("5->6 version", v6["SchemaVersion"], 6)
+        eq("5->7 version", v6["SchemaVersion"], 7)
         eq("5->6 jump hotkey renamed", quick["Hotkey"] "|" quick.Has("TotalCmdHotkey") "|" quick.Has("ExplorerHotkey"), "^!g|0|0")
         eq("5->6 date hotkey renamed", dates["Hotkey"] "|" dates.Has("RenameHotkey") "|" dates.Has("AppendHotkey"), "^!d|0|0")
         eq("5->6 standard dialogs split out", quick["StandardDialogs"] "|" TextTools.JoinList(quick["DialogWindows"], ","), "1|ahk_class Qt5QWindowIcon")
@@ -224,17 +224,17 @@ class CoreTests {
         eq("defaults are in range", AppSettings.ClampNumbers(data), false)
         data["Appearance"]["Width"] := 50, data["Appearance"]["VisibleRows"] := 40, data["Appearance"]["Position"]["X"] := -5
         data["Features"]["Clipboard"]["MaxItems"] := 0, data["Features"]["FileSearch"]["MaxResults"] := "abc"
-        data["General"]["HistorySize"] := "45", data["Features"]["Snippets"]["PasteDelay"] := 250.6, data["Features"]["Recent"]["RecentCount"] := Map()
+        data["Keyboard"]["HistorySize"] := "45", data["Features"]["Snippets"]["PasteDelay"] := 250.6, data["Window"]["RecentCount"] := Map()
         eq("changed", AppSettings.ClampNumbers(data), true)
         eq("raised / lowered to the range", data["Appearance"]["Width"] "|" data["Appearance"]["VisibleRows"] "|" data["Appearance"]["Position"]["X"] "|" data["Features"]["Clipboard"]["MaxItems"], "450|9|0|1")
-        eq("not a number -> default", data["Features"]["FileSearch"]["MaxResults"] "|" data["Features"]["Recent"]["RecentCount"], "30|0")
-        eq("text and decimals -> whole numbers", Type(data["General"]["HistorySize"]) "|" data["General"]["HistorySize"] "|" data["Features"]["Snippets"]["PasteDelay"], "Integer|45|251")
+        eq("not a number -> default", data["Features"]["FileSearch"]["MaxResults"] "|" data["Window"]["RecentCount"], "30|0")
+        eq("text and decimals -> whole numbers", Type(data["Keyboard"]["HistorySize"]) "|" data["Keyboard"]["HistorySize"] "|" data["Features"]["Snippets"]["PasteDelay"], "Integer|45|251")
         eq("second pass changes nothing", AppSettings.ClampNumbers(data), false)
         eq("missing sections skipped", AppSettings.ClampNumbers(Map("General", "broken", "Appearance", Map("Position", 5))), false)
         defaults := AppSettings.Defaults()
         for range in AppSettings.NumberRanges
             eq("default " range[1] "." range[2] " exists", PreferencesWindow.GetPath(defaults, range[1] "." range[2]) is Integer, true)
-        eq("width low end = MinWindowWidth", AppSettings.NumberRanges[4][2] "|" AppSettings.NumberRanges[4][3], "Width|" PreferencesWindow.MinWindowWidth)
+        eq("width low end = MinWindowWidth", AppSettings.NumberRanges[5][2] "|" AppSettings.NumberRanges[5][3], "Width|" PreferencesWindow.MinWindowWidth)
     }
 
     static Calculator() {
@@ -456,6 +456,133 @@ class CoreTests {
         }
     }
 
+    ; Ids of custom commands, snippets and sync tasks (settings version 7): made for missing / malformed / repeated ones, never changed otherwise
+    static SettingsIds() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsIds." n, a, e)
+        commands := [Map("Title", "a", "Id", "keep0001"), Map("Title", "b"), Map("Title", "c", "Id", "BAD-ID"), Map("Title", "d", "Id", "keep0001")
+                   , "not a map", Map("Title", "e", "Id", 12345678), Map("Title", "f", "Id", "short")]
+        data := Map("CustomCommands", commands, "Snippets", [Map("Name", "s", "Id", "keep0001")], "SyncTasks", "broken")
+        eq("changed", AppSettings.EnsureIds(data), true)
+        eq("a valid Id is kept", commands[1]["Id"], "keep0001")
+        eq("the second of two equal Ids gets a new one", commands[4]["Id"] != "keep0001" && AppSettings.IsId(commands[4]["Id"]), true)
+        eq("a number Id becomes text", commands[6]["Id"] "|" Type(commands[6]["Id"]), "12345678|String")
+        ids := Map(), valid := true
+        for command in commands
+            if (command is Map)
+                valid := valid && AppSettings.IsId(command["Id"]), ids[command["Id"]] := true
+        eq("all valid and different", valid "|" ids.Count, "1|6")
+        eq("lists are separate", data["Snippets"][1]["Id"], "keep0001")
+        eq("second pass changes nothing", AppSettings.EnsureIds(data), false)
+        eq("IsId", AppSettings.IsId("a1b2c3d4") "|" AppSettings.IsId("A1B2C3D4") "|" AppSettings.IsId("a1b2c3d") "|" AppSettings.IsId(12345678), "1|0|0|0")
+        eq("NewId avoids taken", AppSettings.IsId(id := AppSettings.NewId(Map("aaaaaaaa", true))) && id != "aaaaaaaa", true)
+        eq("ItemById", AppSettings.ItemById(commands, "keep0001")["Title"] "|" AppSettings.ItemById(commands, "nothere1") "|" AppSettings.ItemById("x", "keep0001"), "a||")
+        eq("defaults have no Ids (given when saving)", AppSettings.Defaults()["CustomCommands"][1].Has("Id"), false)
+    }
+
+    ; The settings of the Search Window and Keyboard pages live in Window / Keyboard (settings version 7); MoveGroups runs at every load
+    static SettingsGroups() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsGroups." n, a, e)
+        defaults := AppSettings.Defaults()
+        eq("moved keys have defaults in the new group only", CoreTests._MovedDefaults(defaults), "")
+        data := Map("General", Map("Hotkey", "!q", "TabKey", "Next", "HideOnDeactivate", 0, "CapsLock", "Mode"), "Appearance", Map("Theme", "Dark", "StatusBar", 0)
+            , "Features", Map("Recent", Map("Enabled", 1, "RecentCount", 4)))
+        eq("moved", AppSettings.MoveGroups(data), true)
+        eq("values in the new groups", data["Keyboard"]["TabKey"] "|" data["Keyboard"]["CapsLock"] "|" data["Window"]["HideOnDeactivate"] "|" data["Window"]["StatusBar"] "|" data["Window"]["RecentCount"], "Next|Mode|0|0|4")
+        eq("gone from the old places", data["General"].Has("TabKey") "|" data["Appearance"].Has("StatusBar") "|" data["Features"]["Recent"].Has("RecentCount"), "0|0|0")
+        eq("other keys stay", data["General"]["Hotkey"] "|" data["Appearance"]["Theme"], "!q|Dark")
+        eq("second pass changes nothing", AppSettings.MoveGroups(data), false)
+        ; an older ALTRun read the file and filled the old places in with its defaults: the new places win
+        data["General"]["TabKey"] := "Complete", data["General"]["HideOnDeactivate"] := 1
+        eq("left-overs of an older version removed", AppSettings.MoveGroups(data) "|" data["Keyboard"]["TabKey"] "|" data["Window"]["HideOnDeactivate"] "|" data["General"].Has("TabKey"), "1|Next|0|0")
+        empty := Map("General", Map("Hotkey", "!q"))
+        eq("no group made without a key to move", AppSettings.MoveGroups(empty) "|" empty.Has("Window") "|" empty.Has("Keyboard"), "0|0|0")
+        broken := Map("General", Map("SpaceToRun", 1), "Keyboard", "broken")
+        eq("a broken group is replaced", AppSettings.MoveGroups(broken) "|" broken["Keyboard"]["SpaceToRun"], "1|1")
+    }
+
+    ; "" when every moved key has a default in its new group and none in its old place; else the keys that don't
+    static _MovedDefaults(defaults) {
+        wrong := ""
+        for move in AppSettings.MovedKeys
+            if !CoreTests._HasSetting(defaults, [move[3], move[2]]) || CoreTests._HasSetting(defaults, StrSplit(move[1] "." move[2], "."))
+                wrong .= move[2] " "
+        return wrong
+    }
+
+    ; 6 -> 7: Ids, the groups, pinned custom commands with the new Uid
+    static SettingsVersion7() {
+        eq := (n, a, e) => TestRunner.Equal("SettingsVersion7." n, a, e)
+        notepad := Map("Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np")
+        v6 := Map("SchemaVersion", 6, "General", Map("Hotkey", "!Space", "SpaceToRun", 1, "KeepLastQuery", 1)
+            , "Appearance", Map("Placeholder", "Go"), "CustomCommands", [notepad], "Snippets", [Map("Name", "sig", "Keyword", "sig", "Text", "x")]
+            , "SyncTasks", [Map("Name", "Backup")]
+            , "Features", Map("Recent", Map("RecentCount", 3, "Pinned", [Map("Uid", "custom:file|notepad.exe|", "Kind", "file", "Arg", "notepad.exe")
+                , Map("Uid", "system:Lock", "System", "Lock"), Map("Uid", "custom:file|gone.exe|", "Kind", "file", "Arg", "gone.exe")])))
+        v7 := SchemaMigration.Upgrade(v6, 6)
+        eq("version", v7["SchemaVersion"], 7)
+        eq("Ids", AppSettings.IsId(notepad["Id"]) "|" AppSettings.IsId(v7["Snippets"][1]["Id"]) "|" AppSettings.IsId(v7["SyncTasks"][1]["Id"]), "1|1|1")
+        eq("groups", v7["Keyboard"]["SpaceToRun"] "|" v7["Window"]["KeepLastQuery"] "|" v7["Window"]["Placeholder"] "|" v7["Window"]["RecentCount"], "1|1|Go|3")
+        pinned := v7["Features"]["Recent"]["Pinned"]
+        eq("pinned command: new Uid", pinned[1]["Uid"], "custom:" notepad["Id"])
+        eq("others unchanged (system, deleted command)", pinned[2]["Uid"] "|" pinned[3]["Uid"], "system:Lock|custom:file|gone.exe|")
+        eq("missing sections not created", SchemaMigration.Upgrade(Map("SchemaVersion", 6), 6).Count, 1)
+        ; a version 7 file read by a version 6 ALTRun: its defaults land in the old places; back on version 7 they go away
+        back := Map("SchemaVersion", 7, "General", Map("SpaceToRun", 0), "Keyboard", Map("SpaceToRun", 1))
+        AppSettings.MoveGroups(back)
+        eq("after going back and forth", back["Keyboard"]["SpaceToRun"] "|" back["General"].Has("SpaceToRun"), "1|0")
+    }
+
+    ; Knowledge.json version 2: the Uids of custom commands, snippets, sync tasks (by Id) and scripts (by file name)
+    static KnowledgeUids() {
+        eq := (n, a, e) => TestRunner.Equal("KnowledgeUids." n, a, e)
+        data := Map("CustomCommands", [Map("Id", "cmdaaaa1", "Type", "File", "Target", "Notepad.exe", "Title", "Notepad")
+                , Map("Id", "cmdbbbb2", "Type", "File", "Target", "notepad.exe", "Title", "Edit notes", "Keyword", "en"), Map("Title", "no id", "Target", "x.exe")]
+            , "Snippets", [Map("Id", "snpaaaa1", "Name", "Sig", "Keyword", "sig")], "SyncTasks", [Map("Id", "syncaaa1", "Name", " Backup ")])
+        uidMap := Knowledge.LegacyUids(data)
+        eq("same old Uid -> both commands", TextTools.JoinList(uidMap["custom:file|notepad.exe|"], ","), "custom:cmdaaaa1,custom:cmdbbbb2")
+        eq("snippet and sync", uidMap["snippet:sig|sig"][1] "|" uidMap["sync:backup"][1], "snippet:snpaaaa1|sync:syncaaa1")
+        eq("without an Id: nothing", uidMap.Count, 3)
+        eq("script path -> file name", Knowledge.NewUids("script:c:\tools\altrun\scripts\backup.ps1", uidMap)[1], "script:backup.ps1")
+        eq("others unchanged", Knowledge.NewUids("app:c:\x.lnk", uidMap)[1] "|" Knowledge.NewUids("system:lock", uidMap)[1], "app:c:\x.lnk|system:lock")
+
+        saved := {Picks: Knowledge.Picks, QueryPicks: Knowledge.QueryPicks, Recent: Knowledge.Recent, History: Knowledge.History, File: Knowledge.File
+            , Version: Knowledge.FileVersion, Commands: AppSettings.Data["CustomCommands"]}
+        try {
+            Knowledge.Picks := Map("custom:file|notepad.exe|", Map("Count", 4, "Last", "20261101120000"), "script:d:\a\scripts\x.ahk", Map("Count", 1, "Last", "20261102120000")
+                , "script:c:\b\scripts\x.ahk", Map("Count", 2, "Last", "20261103120000"))
+            Knowledge.QueryPicks := Map("no", Map("custom:file|notepad.exe|", 3, "app:c:\n.lnk", 1))
+            Knowledge.Recent := [Map("Uid", "custom:file|notepad.exe|", "Kind", "file", "Arg", "notepad.exe")]
+            Knowledge.ConvertUids(uidMap)
+            eq("picks copied to each command", Knowledge.Picks["custom:cmdaaaa1"]["Count"] "|" Knowledge.Picks["custom:cmdbbbb2"]["Count"] "|" Knowledge.Picks.Has("custom:file|notepad.exe|"), "4|4|0")
+            eq("two script paths of one name add up, newest time", Knowledge.Picks["script:x.ahk"]["Count"] "|" Knowledge.Picks["script:x.ahk"]["Last"], "3|20261103120000")
+            eq("query picks", Knowledge.QueryPicks["no"]["custom:cmdbbbb2"] "|" Knowledge.QueryPicks["no"]["app:c:\n.lnk"], "3|1")
+            eq("recent: the first command", Knowledge.Recent[1]["Uid"], "custom:cmdaaaa1")
+
+            ; loading a version 1 file: backed up, converted, written as version 2 (from the commands in the settings)
+            Knowledge.File := A_Temp "\ALTRun-knowledge-v1-test.json"
+            for testFile in [Knowledge.File, Knowledge.V1BackupFile]
+                try FileDelete(testFile)
+            FileAppend('{"Picks": {"custom:url|https://example.com|": {"Count": 2, "Last": "20261101000000"}}, "QueryPicks": {}, "History": [], "Recent": []}', Knowledge.File, "UTF-8")
+            AppSettings.Data["CustomCommands"] := [Map("Id", "exmpl001", "Type", "Url", "Target", "https://example.com", "Title", "Example")]
+            Knowledge.Load()
+            written := JSON.Parse(FileRead(Knowledge.File, "UTF-8"))
+            eq("loaded converted", Knowledge.Picks.Has("custom:exmpl001"), true)
+            eq("written as version 2", written["Version"] "|" written["Picks"].Has("custom:exmpl001"), "2|1")
+            eq("version 1 backup", FileExist(Knowledge.V1BackupFile) != "" && InStr(FileRead(Knowledge.V1BackupFile, "UTF-8"), "custom:url|https://example.com|") > 0, true)
+            Knowledge.Load()
+            eq("version 2 isn't converted again", Knowledge.FileVersion "|" Knowledge.Picks["custom:exmpl001"]["Count"], "2|2")
+            FileDelete(Knowledge.File)
+            FileAppend('{"Version": 3, "Picks": {}}', Knowledge.File, "UTF-8")
+            Knowledge.Load(), Knowledge.Save()
+            eq("a newer version is kept", JSON.Parse(FileRead(Knowledge.File, "UTF-8"))["Version"], 3)
+        } finally {
+            for testFile in [Knowledge.File, Knowledge.V1BackupFile]
+                try FileDelete(testFile)
+            Knowledge.Picks := saved.Picks, Knowledge.QueryPicks := saved.QueryPicks, Knowledge.Recent := saved.Recent, Knowledge.History := saved.History
+            Knowledge.File := saved.File, Knowledge.FileVersion := saved.Version, AppSettings.Data["CustomCommands"] := saved.Commands
+        }
+    }
+
     static SettingsKeys() {
         defaults := AppSettings.Defaults(), missing := "", count := 0
         Loop Files, A_ScriptDir "\..\Src\*.ahk", "R" {
@@ -472,6 +599,7 @@ class CoreTests {
         TestRunner.True("SettingsKeys.found reads (" count ")", count > 100)
         TestRunner.Equal("SettingsKeys.every read key has a default", missing, "")
         TestRunner.True("SettingsKeys.a typo is caught", !CoreTests._HasSetting(defaults, ["Features", "FileSearch", "Keyword"]))
+        TestRunner.True("SettingsKeys.a moved key is caught in its old place", !CoreTests._HasSetting(defaults, ["General", "TabKey"]))
     }
 
     ; "Features.FileSearch.Keywords"-style paths read in one source file: AppSettings.Feature("X")["Y"], .General["Y"],
@@ -481,9 +609,9 @@ class CoreTests {
         paths := Map()
         for m in CoreTests._Matches(text, 'AppSettings\.(Feature|Extension)\("(\w+)"\)\["(\w+)"\]')
             paths[CoreTests._Section(m[1]) "." m[2] "." m[3]] := true
-        for m in CoreTests._Matches(text, 'AppSettings\.(General|Appearance)\["(\w+)"\]')
+        for m in CoreTests._Matches(text, 'AppSettings\.(General|Window|Keyboard|Appearance)(?:\["|\.Get\(")(\w+)"')
             paths[m[1] "." m[2]] := true
-        for m in CoreTests._Matches(text, '"((?:Features|Extensions)\.\w+\.\w+|(?:General|Appearance)\.\w+)"')
+        for m in CoreTests._Matches(text, '"((?:Features|Extensions)\.\w+\.\w+|(?:General|Window|Keyboard|Appearance)\.\w+)"')
             paths[m[1]] := true
         for method in StrSplit(text, "static ") {
             for m in CoreTests._Matches(method, '(\w+) := AppSettings\.(Feature|Extension)\("(\w+)"\)')
@@ -1384,9 +1512,10 @@ Func | PTTools | PT Tools (AHK)=99
         eq("index placeholder dropped", settings["Features"]["Applications"]["Folders"].Length, 2)
         eq("structural calc", settings["Features"]["Calculator"]["StructuralCalc"], 1)
         eq("quick switch", settings["Extensions"]["QuickSwitch"]["AutoSwitch"], 1)
-        eq("space to run", settings["General"]["SpaceToRun"], 1)
-        eq("keep input off", settings["General"]["KeepLastQuery"], 0)
-        eq("english input", settings["General"]["SwitchToEnglishInput"], 1)
+        eq("space to run", settings["Keyboard"]["SpaceToRun"], 1)
+        eq("keep input off", settings["Window"]["KeepLastQuery"], 0)
+        eq("english input", settings["Keyboard"]["SwitchToEnglishInput"], 1)
+        eq("not left in General", settings["General"].Has("SpaceToRun") "|" settings["General"].Has("KeepLastQuery"), "0|0")
         eq("conditional hotkey", settings["Hotkeys"][1]["Action"], "PTTools")
         eq("commands (Func skipped)", settings["CustomCommands"].Length, 5)
         commands := Map()
@@ -1401,8 +1530,8 @@ Func | PTTools | PT Tools (AHK)=99
         fixture := SchemaMigration.Upgrade(SchemaMigration.ReadLegacyIni(A_ScriptDir "\Fixtures\ALTRun.v2026.08.12.ini"), 2)
         eq("fixture commands", fixture["CustomCommands"].Length, 10)
         eq("fixture language", fixture["General"]["Language"], "zh-CN")
-        eq("fixture keep input (2.x default on)", fixture["General"]["KeepLastQuery"], 1)
-        eq("keep last query default off", AppSettings.Defaults()["General"]["KeepLastQuery"], 0)
+        eq("fixture keep input (2.x default on)", fixture["Window"]["KeepLastQuery"], 1)
+        eq("keep last query default off", AppSettings.Defaults()["Window"]["KeepLastQuery"], 0)
         eq("fixture hotkey", fixture["Hotkeys"][1]["Key"], "~Mbutton")
 
         ; second start: ALTRun.json exists now, no import again
@@ -1830,26 +1959,26 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.Equal("Misc.open text: falls back to Notepad", calls.Length = 2 ? calls[2] : "", 'notepad.exe "C:\Temp\a.log"')
         TestRunner.True("Input.layout of this thread", Win.KeyboardLayout() != 0)
         TestRunner.True("Input.per-window setting is a flag", Win.PerWindowInputMethod() = true || Win.PerWindowInputMethod() = false)
-        saved := AppSettings.General["SwitchToEnglishInput"]
-        AppSettings.General["SwitchToEnglishInput"] := 0
+        saved := AppSettings.Keyboard["SwitchToEnglishInput"]
+        AppSettings.Keyboard["SwitchToEnglishInput"] := 0
         SearchInputLanguage._layoutBefore := 0x08040804
         SearchInputLanguage.Restore()                                        ; the option is off: do nothing, only clear the record
         TestRunner.Equal("Input.restore clears the saved layout", SearchInputLanguage._layoutBefore, 0)
         SearchInputLanguage._imeBefore := {Open: 1, Conv: 0x401}
         SearchInputLanguage.Restore()                                        ; English mode too: not restored when off, only the record cleared
         TestRunner.Equal("Input.restore clears the saved IME mode", SearchInputLanguage._imeBefore, "")
-        AppSettings.General["SwitchToEnglishInput"] := 1
+        AppSettings.Keyboard["SwitchToEnglishInput"] := 1
         SearchInputLanguage._imeBefore := {Open: 1, Conv: 0x401}
         SearchInputLanguage.Restore()                                        ; the English keyboard was chosen: the Chinese / English mode is left alone
         TestRunner.Equal("Input.keyboard choice leaves the IME mode alone", SearchInputLanguage._imeBefore, "")
-        savedPlaceholder := AppSettings.Appearance["Placeholder"]
-        AppSettings.Appearance["Placeholder"] := ""
+        savedPlaceholder := AppSettings.Window["Placeholder"]
+        AppSettings.Window["Placeholder"] := ""
         TestRunner.Equal("Placeholder.default", SearchWindow.Placeholder(), "ALTRun Search")
-        AppSettings.Appearance["Placeholder"] := " "
+        AppSettings.Window["Placeholder"] := " "
         TestRunner.Equal("Placeholder.only spaces: nothing", SearchWindow.Placeholder(), "")
-        AppSettings.Appearance["Placeholder"] := " Type to search "
+        AppSettings.Window["Placeholder"] := " Type to search "
         TestRunner.Equal("Placeholder.custom (trimmed)", SearchWindow.Placeholder(), "Type to search")
-        AppSettings.Appearance["Placeholder"] := savedPlaceholder
+        AppSettings.Window["Placeholder"] := savedPlaceholder
         ; The input box is centered on the capital-letter height (#158): at 150% the baseline measured 42 and the capital height 33, so it moves down 7 pixels
         TestRunner.Equal("InputTop.cap centered", SearchWindow.InputTop(64, 64, 21, 42, 33), 7)
         TestRunner.Equal("InputTop.at most half the padding", SearchWindow.InputTop(64, 64, 8, 42, 33), 4)
@@ -1869,8 +1998,8 @@ Func | PTTools | PT Tools (AHK)=99
         TestRunner.Equal("ListRowHeight.existing rows kept", (Win.ListRowHeight(list, 0) = rowH) " " list.GetCount(), "1 2")
         g.Destroy()
         TestRunner.True("InputTop.font metrics (ascent " metrics.Ascent ", cap " metrics.Cap ")", metrics.Ascent > metrics.Cap && metrics.Cap > 10)
-        TestRunner.Equal("Input.english choices", AppSettings.Defaults()["General"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
-        AppSettings.General["SwitchToEnglishInput"] := saved
+        TestRunner.Equal("Input.english choices", AppSettings.Defaults()["Keyboard"]["SwitchToEnglishInput"] " " I18n.T("Prefs.EnglishInput.Mode"), "0 English mode of the current input method")
+        AppSettings.Keyboard["SwitchToEnglishInput"] := saved
         ; Reset to defaults: options become the defaults, what the user added (commands, snippets, hotkeys, web searches, pinned items, hidden system commands) stays
         current := AppSettings.Defaults()
         current["General"]["Hotkey"] := "^Space", current["Appearance"]["Theme"] := "Dark"

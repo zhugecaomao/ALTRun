@@ -14,6 +14,9 @@
 ;   Knowledge.Boost(queryText, uid)     the bonus when ranking search results
 ;   Knowledge.History                   recent search text (newest first)
 ;   Knowledge.Prune()                   before each save: forgets the results chosen longest ago past MaxPicks / MaxQueries
+;
+; The file has a "Version" (none = 1). Version 2 (settings version 7) keys custom commands, snippets and sync tasks by their Id and
+; scripts by their file name; a version 1 file is backed up as Knowledge.v1.backup.json and converted when loaded (ConvertUids)
 ;===============================================================================
 
 class Knowledge {
@@ -25,14 +28,19 @@ class Knowledge {
     static MaxQueryLen := 20
     static MaxPicks    := 3000       ; past these the oldest are forgotten when saving (Prune), so the file and each save stay small
     static MaxQueries  := 5000
+    static Version     := 2          ; the version this ALTRun writes (see the top); a newer file keeps its own
+    static FileVersion := 2          ; the version of the file loaded
+    static V1BackupFile => RegExReplace(Knowledge.File, "i)\.json$", ".v1.backup.json")   ; Knowledge.v1.backup.json next to it
     static _saveTimer  := ""
 
     static Load() {
         Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := [], Knowledge.Recent := []
+        Knowledge.FileVersion := Knowledge.Version
         if !FileExist(Knowledge.File)
             return
         try {
             data := JSON.Parse(FileRead(Knowledge.File, "UTF-8"))
+            Knowledge.FileVersion := (data is Map && data.Has("Version") && IsInteger(data["Version"])) ? data["Version"] + 0 : 1
             Knowledge.Picks := Knowledge.ValidPicks(data.Has("Picks") ? data["Picks"] : "")
             Knowledge.QueryPicks := Knowledge.ValidQueryPicks(data.Has("QueryPicks") ? data["QueryPicks"] : "")
             if (data.Has("History") && data["History"] is Array)
@@ -45,7 +53,84 @@ class Knowledge {
                         Knowledge.Recent.Push(entry)
         } catch as e {
             Logger.Error("Knowledge.Load: " e.Message)
+            return
         }
+        if (Knowledge.FileVersion < 2) {
+            try FileCopy(Knowledge.File, Knowledge.V1BackupFile)            ; an older backup is kept (the one from before the first conversion)
+            Knowledge.ConvertUids(Knowledge.LegacyUids(AppSettings.Data))
+            Knowledge.FileVersion := 2
+            Knowledge.Save()
+            Logger.Debug("Knowledge: converted to version 2")
+        }
+    }
+
+    ; Uid before settings version 7 -> [the Uid now, ...], from the items in the settings data: several when commands are the same
+    ; but for their name or keyword (the old Uid didn't tell them apart; each keeps what was learned)
+    static LegacyUids(data) {
+        result := Map()
+        add(old, new) {
+            if (old == new)
+                return
+            if !result.Has(old)
+                result[old] := []
+            result[old].Push(new)
+        }
+        for listName, kind in Map("CustomCommands", "custom", "Snippets", "snippet", "SyncTasks", "sync")
+            if (data is Map && data.Has(listName) && data[listName] is Array)
+                for item in data[listName]
+                    if (item is Map && item.Has("Id") && AppSettings.IsId(item["Id"]))
+                        add(Knowledge.LegacyUid(kind, item), kind ":" item["Id"])
+        return result
+    }
+
+    ; The Uid of a custom command / snippet / sync task (kind "custom" / "snippet" / "sync") before settings version 7: custom commands by
+    ; type | target | arguments, snippets by keyword | name, sync tasks by name. Also used for an item that has no Id yet (added since loading)
+    static LegacyUid(kind, item) {
+        field(key, fallback := "") => item.Has(key) ? item[key] : fallback
+        switch kind {
+            case "custom":  return "custom:" StrLower(field("Type", "File") "|" field("Target") "|" field("Arguments"))
+            case "snippet": return "snippet:" StrLower(field("Keyword") "|" field("Name"))
+            case "sync":    return "sync:" StrLower(Trim(field("Name")))
+        }
+        return ""
+    }
+
+    ; The Uids of an old Uid (LegacyUids); scripts: the full path becomes the file name; anything else stays as it is
+    ; (applications, files, system commands; a deleted command's old Uid is forgotten by Prune in time)
+    static NewUids(uid, uidMap) {
+        if uidMap.Has(uid)
+            return uidMap[uid]
+        if RegExMatch(uid, "^script:.*\\([^\\]+)$", &m)
+            return ["script:" m[1]]
+        return [uid]
+    }
+
+    ; Converts Picks, QueryPicks and Recent to the Uids of version 2 (Uids that become one are added up)
+    static ConvertUids(uidMap) {
+        picks := Map()
+        for uid, entry in Knowledge.Picks {
+            for newUid in Knowledge.NewUids(uid, uidMap) {
+                if !picks.Has(newUid) {
+                    picks[newUid] := entry.Clone()
+                    continue
+                }
+                have := picks[newUid]
+                have["Count"] := have["Count"] + entry["Count"]
+                if (Knowledge._Last(entry) > Knowledge._Last(have))
+                    have["Last"] := entry["Last"]
+            }
+        }
+        queryPicks := Map()
+        for queryText, chosen in Knowledge.QueryPicks {
+            converted := Map()
+            for uid, count in chosen
+                for newUid in Knowledge.NewUids(uid, uidMap)
+                    converted[newUid] := (converted.Has(newUid) ? converted[newUid] : 0) + count
+            queryPicks[queryText] := converted
+        }
+        for entry in Knowledge.Recent
+            entry["Uid"] := Knowledge.NewUids(entry["Uid"], uidMap)[1]
+        Knowledge.Picks := picks, Knowledge.QueryPicks := queryPicks
     }
 
     ; Only entries the ranking can use, from a file that may have been edited by hand or cut short: uid -> Map with a number Count
@@ -77,7 +162,8 @@ class Knowledge {
     static Save() {
         Knowledge.Prune()
         try {
-            JSON.WriteFile(Knowledge.File, Map("Picks", Knowledge.Picks, "QueryPicks", Knowledge.QueryPicks, "History", Knowledge.History, "Recent", Knowledge.Recent))
+            JSON.WriteFile(Knowledge.File, Map("Version", Max(Knowledge.Version, Knowledge.FileVersion), "Picks", Knowledge.Picks
+                , "QueryPicks", Knowledge.QueryPicks, "History", Knowledge.History, "Recent", Knowledge.Recent))
         } catch as e {
             Logger.Error("Knowledge.Save: " e.Message)
         }
@@ -166,7 +252,7 @@ class Knowledge {
             }
         }
         Knowledge.History.InsertAt(1, queryText)
-        limit := AppSettings.General["HistorySize"]
+        limit := AppSettings.Keyboard["HistorySize"]
         while (Knowledge.History.Length > limit)
             Knowledge.History.Pop()
     }

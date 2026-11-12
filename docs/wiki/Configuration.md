@@ -35,8 +35,10 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 ## Structure
 ```jsonc
 {
-  "SchemaVersion": 6,
+  "SchemaVersion": 7,
   "General":    { ... },          // general
+  "Window":     { ... },          // the search window (Preferences → Search Window)
+  "Keyboard":   { ... },          // Caps Lock, input method, Space / Tab keys (Preferences → Keyboard)
   "Appearance": { ... },          // appearance
   "Features":   { ... },          // the search features
   "Extensions": { ... },          // extensions
@@ -53,7 +55,7 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 `DataLocation` only works in the file at the default location (`Data\ALTRun.json`, or `%APPDATA%\ALTRun\Data\ALTRun.json`): when it's there, ALTRun uses the settings and data in that folder, and the file at the default location only points the way. Normally you set it in Preferences → Advanced → Settings and data → Change Location... rather than by hand; environment variables work (`%COMPUTERNAME%` gives each PC its own folder; a variable a PC doesn't have makes that PC use the default folder), and relative paths start from the program folder.
 
 ## General
-Split over the "General", "Search Window" and "Keyboard" pages in Preferences (`SelectionHotkey` is on the "Selection" page).
+Preferences → General (`SelectionHotkey` is on the "Selection" page).
 
 ![Preferences → General](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-general.png)
 
@@ -62,28 +64,43 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences (`
 | Hotkey | `!Space` | The ALTRun hotkey (AutoHotkey syntax: `!` Alt `^` Ctrl `+` Shift `#` Win; Preferences records the keys directly, see [Setting hotkeys](Hotkeys#setting-hotkeys)) |
 | SecondaryHotkey | `!r` | Second hotkey (Alt+R); empty = none |
 | DoubleTap | empty | `Ctrl` / `Shift` = pressing this key twice quickly also opens ALTRun (like Listary): the same key twice, so left Shift then right Shift doesn't count; `LCtrl` / `RCtrl` / `LShift` / `RShift` = only the left or right one; empty = off |
-| CapsLock | empty | Like on a Mac: `Layout` = pressing Caps Lock switches to the next input method (like `Win+Space`), `Mode` = it switches the Chinese / English mode of the input method; holding it for 0.3 s turns caps lock on or off. Empty = Caps Lock works as usual. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method) |
-| CapsLockNotify | 1 | Show "Caps Lock On / Off" when caps lock is turned on or off; 0 = no notice |
-| CapsLockElevated | 0 | 1 = Caps Lock switching also works in windows running as administrator: a scheduled task runs a small helper with administrator rights that only handles Caps Lock, while ALTRun itself keeps normal rights. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method) |
 | HotkeySides | 0 | 1 = hotkeys recorded in Preferences keep the side of `Ctrl` / `Alt` / `Shift` / `Win` you press (`<!Space` = left Alt + Space only), see [Setting hotkeys](Hotkeys#setting-hotkeys); hotkeys already set don't change |
 | SelectionHotkey | `^!\` | Press it after selecting text / files / a URL to open their actions directly (Ctrl+Alt+\), see [Actions on selected content](Usage#actions-on-selected-content); empty = off |
 | Language | `auto` | `auto` follows the Windows display language, or a language code: `en` / `zh-CN` (Simplified Chinese) / `zh-TW` (Traditional Chinese) / `ja`; apart from English, each language is a file in `Resources\Lang\` (the old `zh` means `zh-CN`) |
 | LaunchAtLogin | 1 | Launch ALTRun at login |
 | ShowTrayIcon | 1 | Show the tray icon |
-| HideOnDeactivate | 1 | Hide the search window when it loses focus |
-| SwitchToEnglishInput | 0 | Switch to English when the search window opens: 0 = off, 1 = English (United States) keyboard (only switches between input methods that are already installed; no keyboard layout is added), 2 = English mode of the current input method (same input method, its Chinese mode turned off) |
-| RestoreInput | 1 | With `SwitchToEnglishInput` on, switch back to the previous input method or mode when the window hides (with 1: not needed, and not done, when Windows is set to use a separate input method for each app window) |
-| SpaceToRun | 0 | After typing, Space runs the selected result and `Shift+Space` types a space |
-| TabKey | `"Complete"` | What `Tab` does in the search window: `"Complete"` autocompletes (on a folder, browses into it); `"Next"` goes to the next result (`Shift+Tab` the previous one, wrapping around), and `Ctrl+Tab` autocompletes |
-| KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again; typing or `Backspace` starts a new search (and leaves file search); `Space` starts a new file search. Taken over from `KeepInput` when upgrading from 2.x |
-| KeepLastQueryMinutes | 5 | With `KeepLastQuery` on, keep the last search only for this many minutes after it was made; after that the window opens with an empty search box. `0` = no limit |
-| ShowTips | 1 | Show a usage tip, a different one each time, as gray text in the empty search box |
 | FileManager | `explorer.exe` | Program that opens folders, optionally with parameters, for example `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` reuse the open window, `/T` new tab, `/S` active panel); quote a path with spaces. Environment variables work, e.g. `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S`; when the program isn't found, File Explorer opens the folder (noted in the log) |
 | FolderNewTab | `0` | 1 = open folders in a new tab (Preferences → General → "Open folders in a new tab"). File Explorer: a new tab of the Explorer window used last (the one in front before ALTRun was shown, else the frontmost one on the current virtual desktop), with the file selected for "Reveal"; Windows 11 22H2 or later, and a new window as before when no Explorer window is open, a network folder doesn't answer within 0.5 s (a server that is offline), or it doesn't work. Total Commander: `/O /T` are added when the parameters don't have them. Other file managers: use their own parameters in FileManager |
 | SendToMenu | 1 | Add to Explorer's "Send to" menu |
 | StartMenuShortcut | 1 | Add to the Start menu |
 | CheckForUpdates | 1 | Check GitHub for new versions in the background at startup and every 6 hours after; a new version is shown in the search window, see [One-key updates](Installation#one-key-updates) |
 | SaveLog | 0 | Write a debug log (`%Temp%\ALTRun.log`), including how many milliseconds each startup phase and any search over 30 ms took (lines starting with `Perf:`; what you typed is not recorded) |
+
+## Window
+Preferences → Search Window. Up to settings version 6 (ALTRun 2026.11.12) these were in `General` (`StatusBar` and `Placeholder` in `Appearance`, `RecentCount` in `Features.Recent`); they are moved when upgrading.
+
+| Key | Default | Description |
+|---|---|---|
+| HideOnDeactivate | 1 | Hide the search window when it loses focus |
+| KeepLastQuery | 0 | Keep the last search (input, file search mode and selected row) when the window opens, with the text selected: `Enter` runs it again; typing or `Backspace` starts a new search (and leaves file search); `Space` starts a new file search. Taken over from `KeepInput` when upgrading from 2.x |
+| KeepLastQueryMinutes | 5 | With `KeepLastQuery` on, keep the last search only for this many minutes after it was made; after that the window opens with an empty search box. `0` = no limit |
+| ShowTips | 1 | Show a usage tip, a different one each time, as gray text in the empty search box |
+| StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: what `Enter` and `→` do); 0 = off |
+| Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (not shown while there is a usage tip) |
+| RecentCount | 0 | How many recently opened items the empty search box shows; 0 = none (only pinned items by default) |
+
+## Keyboard
+Preferences → Keyboard. Up to settings version 6 these were in `General`.
+
+| Key | Default | Description |
+|---|---|---|
+| CapsLock | empty | Like on a Mac: `Layout` = pressing Caps Lock switches to the next input method (like `Win+Space`), `Mode` = it switches the Chinese / English mode of the input method; holding it for 0.3 s turns caps lock on or off. Empty = Caps Lock works as usual. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method) |
+| CapsLockNotify | 1 | Show "Caps Lock On / Off" when caps lock is turned on or off; 0 = no notice |
+| CapsLockElevated | 0 | 1 = Caps Lock switching also works in windows running as administrator: a scheduled task runs a small helper with administrator rights that only handles Caps Lock, while ALTRun itself keeps normal rights. See [Caps Lock switches the input method](Hotkeys#caps-lock-switches-the-input-method) |
+| SwitchToEnglishInput | 0 | Switch to English when the search window opens: 0 = off, 1 = English (United States) keyboard (only switches between input methods that are already installed; no keyboard layout is added), 2 = English mode of the current input method (same input method, its Chinese mode turned off) |
+| RestoreInput | 1 | With `SwitchToEnglishInput` on, switch back to the previous input method or mode when the window hides (with 1: not needed, and not done, when Windows is set to use a separate input method for each app window) |
+| SpaceToRun | 0 | After typing, Space runs the selected result and `Shift+Space` types a space |
+| TabKey | `"Complete"` | What `Tab` does in the search window: `"Complete"` autocompletes (on a folder, browses into it); `"Next"` goes to the next result (`Shift+Tab` the previous one, wrapping around), and `Ctrl+Tab` autocompletes |
 | HistorySize | 30 | How many recent searches to remember |
 
 ## Appearance
@@ -93,8 +110,6 @@ Split over the "General", "Search Window" and "Keyboard" pages in Preferences (`
 | Density | `Normal` | Density for every theme: `Comfortable` (the theme's own size) / `Normal` / `Compact`, see [Themes](Themes#density). Upgrades get `Comfortable` (keeps the previous size) |
 | Width | 700 | Search window width (pixels, scaled with the display; at least 450) |
 | VisibleRows | 8 | Maximum number of result rows shown (1–9) |
-| Placeholder | "" | Gray text in the empty search box; empty = the default "ALTRun Search", only spaces = show nothing (not shown while there is a usage tip) |
-| StatusBar | 1 | Status bar at the bottom of the search window (shown when there are results: what `Enter` and `→` do); 0 = off |
 | ShowOn | `Mouse` | Which screen the search window opens on: `Mouse` the one with the mouse pointer / `Primary` the main screen / `Active` the one with the active window |
 | Fade | 0 | Fade the search window in and out when showing and hiding (about 120 ms in, up to the theme opacity; about 100 ms out); the window still gets focus at once, so typing is never delayed |
 | RememberPosition | 0 | Remember the position after dragging the search window (drag the empty space around the input box) |
@@ -176,9 +191,10 @@ Also in Preferences → Features → Feature options. See [Browser history](Book
 Scripts go in `Scripts\` in the program folder (`%APPDATA%\ALTRun\Scripts\` when the program folder isn't writable); see [Scripts](Scripts) for how to write them.
 
 ### Recent (pinned and recent items)
+How many recent items show: `Window.RecentCount`.
+
 | Key | Default | Description |
 |---|---|---|
-| RecentCount | 0 | How many recently opened items the empty search box shows; 0 = none (only pinned items by default) |
 | Pinned | `[]` | Items pinned to the empty search box (pin / unpin them in the action panel, no need to edit by hand) |
 
 Recently opened items are kept in `Data\Knowledge.json`, see [Pinned and recent items](Recent).
@@ -243,10 +259,11 @@ See [Extensions](Extensions).
   { "Key": "^!#v", "Action": "PastePlain", "WinTitle": "" },
   { "Key": "^!f", "Action": "Search", "SearchText": "folder {selection}", "WinTitle": "" },
   { "Key": "^!t", "Action": "TerminalHere", "WinTitle": "ahk_class CabinetWClass" },
-  { "Key": "^r", "Action": "RebuildIndex", "WinTitle": "ALTRun" }
+  { "Key": "^r", "Action": "RebuildIndex", "WinTitle": "ALTRun" },
+  { "Key": "^!n", "Action": "custom:k3x9a2mq", "WinTitle": "" }
 ],
 "CustomCommands": [
-  { "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },
+  { "Id": "k3x9a2mq", "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },
   { "Title": "IP Configuration", "Type": "Command", "Target": "cmd.exe", "Arguments": "/k ipconfig /all", "Keyword": "ipconfig" },
   { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Arguments": "", "Keyword": "erp", "Selection": "PO" }
 ],
@@ -262,6 +279,8 @@ See [Extensions](Extensions).
 ]
 ```
 For the fields, see [Custom commands](Custom-Commands#fields), [Snippets](Snippets), [Custom hotkeys](Hotkeys) and [Delayed start](Delayed-Start).
+
+`Id` (custom commands, snippets, sync tasks): 8 characters `a-z 0-9`, made by ALTRun, unique in its list. It stays the same when the item is renamed or its target changes: a hotkey runs a custom command by it (`"Action": "custom:<Id>"`), and the learned ranking and recent items follow it. Don't change it by hand; leave it out for an item you add by hand (one is made when ALTRun loads the file). A missing or repeated one is replaced.
 
 ## The Data folder
 Where the data folder is, what each file in it is, whether it can be deleted and how to back it up: see [Data files](Data-Files).

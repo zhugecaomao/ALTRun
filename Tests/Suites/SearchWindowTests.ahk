@@ -823,9 +823,9 @@ class SearchWindowTests {
     ; Tab: completes by default; with TabKey = "Next" it moves to the next result (wrapping), Shift+Tab to the previous
     static TabKey() {
         eq := (n, a, e) => TestRunner.Equal("TabKey." n, a, e)
-        eq("default complete", AppSettings.Defaults()["General"]["TabKey"], "Complete")
+        eq("default complete", AppSettings.Defaults()["Keyboard"]["TabKey"], "Complete")
         saved := {Input: SearchWindow.Input, Gui: SearchWindow.Gui, Results: SearchWindow.Session.Results, Selected: SearchWindow.Session.Selected
-            , Offset: SearchWindow.Session.Offset, Mode: SearchWindow.Session.Mode, TabKey: AppSettings.General["TabKey"]}
+            , Offset: SearchWindow.Session.Offset, Mode: SearchWindow.Session.Mode, TabKey: AppSettings.Keyboard["TabKey"]}
         savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch"), savedRepaint := SearchWindow.GetOwnPropDesc("_Repaint")
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0}), SearchWindow.DefineProp("_Repaint", {Call: (*) => 0})
         g := Gui()
@@ -836,10 +836,10 @@ class SearchWindowTests {
             SearchWindow.Session.Mode := "results", SearchWindow.Session.Offset := 0
             SearchWindow.Session.Results := [ResultItem("Notepad"), ResultItem("Notes"), ResultItem("Notion")], SearchWindow.Session.Selected := 1
             SearchWindow.Input.Value := "no"
-            AppSettings.General["TabKey"] := "Complete"
+            AppSettings.Keyboard["TabKey"] := "Complete"
             eq("complete: handled", tab(), 0)
             eq("complete: fills in the name", SearchWindow.Input.Value "|" SearchWindow.Session.Selected, "Notepad|1")
-            AppSettings.General["TabKey"] := "Next", SearchWindow.Input.Value := "no"
+            AppSettings.Keyboard["TabKey"] := "Next", SearchWindow.Input.Value := "no"
             tab()
             eq("next: second result", SearchWindow.Session.Selected "|" SearchWindow.Input.Value, "2|no")
             tab()
@@ -862,11 +862,11 @@ class SearchWindowTests {
                 return ""
             }
             eq("tip in next mode", keyOf("Tab"), "Tab / Shift+Tab|next / previous result; Ctrl+Tab autocompletes")
-            AppSettings.General["TabKey"] := "Complete"
+            AppSettings.Keyboard["TabKey"] := "Complete"
             eq("tip in complete mode", keyOf("Tab"), "Tab|" I18n.T("Help.Tab.Text"))
             I18n.Init(savedLang)
         } finally {
-            AppSettings.General["TabKey"] := saved.TabKey
+            AppSettings.Keyboard["TabKey"] := saved.TabKey
             SearchWindow.DefineProp("_RunSearch", savedSearch), SearchWindow.DefineProp("_Repaint", savedRepaint)
             SearchWindow.Input := saved.Input, SearchWindow.Gui := saved.Gui, SearchWindow.Session.Results := saved.Results
             SearchWindow.Session.Selected := saved.Selected, SearchWindow.Session.Offset := saved.Offset, SearchWindow.Session.Mode := saved.Mode
@@ -879,7 +879,7 @@ class SearchWindowTests {
     static SystemDialogKeys() {
         eq := (n, a, e) => TestRunner.Equal("SystemDialogKeys." n, a, e)
         saved := {Input: SearchWindow.Input, List: SearchWindow.List, Gui: SearchWindow.Gui, Results: SearchWindow.Session.Results
-            , Selected: SearchWindow.Session.Selected, Offset: SearchWindow.Session.Offset, Mode: SearchWindow.Session.Mode, TabKey: AppSettings.General["TabKey"]}
+            , Selected: SearchWindow.Session.Selected, Offset: SearchWindow.Session.Offset, Mode: SearchWindow.Session.Mode, TabKey: AppSettings.Keyboard["TabKey"]}
         savedSearch := SearchWindow.GetOwnPropDesc("_RunSearch"), savedRepaint := SearchWindow.GetOwnPropDesc("_Repaint")
         SearchWindow.DefineProp("_RunSearch", {Call: (*) => 0}), SearchWindow.DefineProp("_Repaint", {Call: (*) => 0})
         g := Gui()
@@ -894,7 +894,7 @@ class SearchWindowTests {
             eq("finds an open MsgBox", found != 0, true)
             SearchWindow.Session.Mode := "results", SearchWindow.Session.Offset := 0, SearchWindow.Input.Value := "no"
             SearchWindow.Session.Results := [ResultItem("Notepad"), ResultItem("Notes"), ResultItem("Notion")], SearchWindow.Session.Selected := 1
-            AppSettings.General["TabKey"] := "Next"
+            AppSettings.Keyboard["TabKey"] := "Next"
             tab()
             eq("not hooked: the key is lost", SearchWindow.Session.Selected, 1)
             SearchKeys.Hook()
@@ -913,7 +913,7 @@ class SearchWindowTests {
             eq("unhooked", SearchWindow.Session.Selected "|" SearchKeys._hooked, "1|0")
         } finally {
             SearchKeys.Unhook()
-            AppSettings.General["TabKey"] := saved.TabKey
+            AppSettings.Keyboard["TabKey"] := saved.TabKey
             SearchWindow.DefineProp("_RunSearch", savedSearch), SearchWindow.DefineProp("_Repaint", savedRepaint)
             SearchWindow.Input := saved.Input, SearchWindow.List := saved.List, SearchWindow.Gui := saved.Gui, SearchWindow.Session.Results := saved.Results
             SearchWindow.Session.Selected := saved.Selected, SearchWindow.Session.Offset := saved.Offset, SearchWindow.Session.Mode := saved.Mode
@@ -924,7 +924,7 @@ class SearchWindowTests {
     ; Bottom status bar: the tip / state on the left, the selected result's Enter action on the right; the window height includes it; → ignores auto-repeat
     static StatusBar() {
         eq := (n, a, e) => TestRunner.Equal("StatusBar." n, a, e)
-        eq("on by default", AppSettings.Defaults()["Appearance"]["StatusBar"], 1)
+        eq("on by default", AppSettings.Defaults()["Window"]["StatusBar"], 1)
         fileItem := ResultItem("Notepad", "", {Kind: "file", Arg: "C:\Windows\notepad.exe"})
         eq("file: open", SearchStatusBar.EnterTitle(fileItem), "Open")
         eq("folder: open", SearchStatusBar.EnterTitle(ResultItem("Docs", "", {Kind: "folder"})), "Open")

@@ -547,6 +547,8 @@ class I18n {
         s["Hotkey.PressTip"]           := "Press the keys, e.g. Ctrl+Alt+C  ·  Esc: cancel  ·  Backspace: clear"
         s["Hotkey.NeedModifier"]       := "{1} would get in the way of typing. Add Ctrl, Alt or Win."
         s["Hotkey.PassThrough"]        := "Keep the key's original function"
+        s["Hotkey.CommandMissing"]     := "This hotkey's custom command was deleted. Change the hotkey in Preferences → Hotkeys."
+        s["Hotkey.SelectionRefused"]   := "The selection can't be passed to `"{1}`": it has a line break, a double quote or characters the command line treats specially."
         s["HotkeyEditor.TitleAdd"]      := "Add Hotkey"
         s["HotkeyEditor.TitleEdit"]     := "Edit Hotkey"
         s["HotkeyEditor.Section.Key"]   := "Hotkey"
@@ -735,7 +737,7 @@ class I18n {
         s["Prefs.CapsLockElevated.NeedsMode"] := "Choose how Caps Lock switches above first."
         s["Prefs.CapsLockElevatedWritable"] := "Programs without administrator rights can change the files in ALTRun's folder:`n{1}`n`nOne of them could replace ALTRun there and then start this helper, which runs with administrator rights without asking. Move ALTRun to a folder only administrators can change (for example C:\Program Files) first.`n`nTurn it on anyway?"
         s["Prefs.CapsLockElevatedFailed"] := "Caps Lock for administrator windows could not be set up (the confirmation may have been cancelled). The option stays off."
-        s["Caps.HelperFailed"]         := "Caps Lock in administrator windows could not start. Turn the option off and on again in Preferences → Hotkeys."
+        s["Caps.HelperFailed"]         := "Caps Lock in administrator windows could not start. Turn the option off and on again in Preferences → Keyboard."
         s["Prefs.SelectionHotkey"]     := "Selection hotkey"
         s["Prefs.SelectionHotkey.Desc"] := 'Select text, files or a link in any program and press this to show its actions: search the web, change case, save as a snippet; for files, copy the path or open a terminal there. <a href="{1}">All actions</a>'
         s["Prefs.HotkeySides"]         := "Tell left and right Ctrl / Alt / Shift / Win apart"

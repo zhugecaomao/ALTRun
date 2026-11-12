@@ -15,6 +15,8 @@
 
 取选中的文字时, ALTRun 在那个程序里按一次 `Ctrl+C`: 没有选中时最多等 0.8 秒窗口才出来, 所以只在需要的热键里用 `{selection}`。剪贴板随后恢复原样。
 
+**运行自定义命令**: `"Action": "custom:<Id>"` 运行 `Id` 是这个值的 [自定义命令](Custom-Commands-zh) (命令的 `Id` 在 `ALTRun.json` 里; 目前只能在设置文件里写)。带 `{query}` 或设了内容类型的命令, 和 [选中内容的操作](Usage-zh#选中内容的操作) 一样拿到选中的内容: `{query}` 换成选中的文字或路径, 没有 `{query}` 的文件或命令行把它加在最后一个参数; 选中的文字有换行、双引号或命令行的特殊字符时不传 (会提示原因)。没有选中时, 带 `{query}` 又有关键字的命令打开搜索窗口并填好关键字, 接着输入就行。其他命令直接运行, 不复制选中的内容。命令被删除时热键会提示。
+
 ![偏好设置 → 自定义热键 → 修改](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/hotkey-editor.png)
 
 新安装时带六个示例:

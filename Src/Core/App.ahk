@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.12.2"
+    static Version := "2026.11.12.3"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -174,10 +174,10 @@ class App {
             DllCall("ChangeWindowMessageFilterEx", "Ptr", A_ScriptHwnd, "UInt", msg, "UInt", 1, "Ptr", 0)   ; MSGFLT_ALLOW
     }
 
-    ; The Caps Lock on / off notice (CapsLockSwitch and the helper for administrator windows); not shown when General.CapsLockNotify is off
+    ; The Caps Lock on / off notice (CapsLockSwitch and the helper for administrator windows); not shown when Keyboard.CapsLockNotify is off
     static CapsLockNotice(on) {
-        general := AppSettings.General
-        if (!general.Has("CapsLockNotify") || general["CapsLockNotify"])
+        keyboard := AppSettings.Keyboard
+        if (!keyboard.Has("CapsLockNotify") || keyboard["CapsLockNotify"])
             App.Notify(CapsLockSwitch.StateText(on), CapsLockSwitch.NotifyMs)
     }
 
@@ -430,8 +430,8 @@ class App {
             "Windows: " windows,
             "Display: " MonitorGetCount() " monitor(s), " A_ScreenWidth "x" A_ScreenHeight ", scale " Round(A_ScreenDPI / 96 * 100) "%",
             "Language: " I18n.Lang " (setting " general["Language"] "), Windows " A_Language,
-            Format("Input: {} keyboard layout(s), current {:08X}, CapsLock '{}', switch to English {}", layouts, Win.KeyboardLayout() & 0xFFFFFFFF, general["CapsLock"], general["SwitchToEnglishInput"]),
-            "Theme: " appearance["Theme"] ", status bar " (appearance["StatusBar"] ? "on" : "off"),
+            Format("Input: {} keyboard layout(s), current {:08X}, CapsLock '{}', switch to English {}", layouts, Win.KeyboardLayout() & 0xFFFFFFFF, AppSettings.Keyboard["CapsLock"], AppSettings.Keyboard["SwitchToEnglishInput"]),
+            "Theme: " appearance["Theme"] ", status bar " (AppSettings.Window["StatusBar"] ? "on" : "off"),
             "Everything: " everythingState,
             "Data folder: " location
         ]
@@ -487,7 +487,7 @@ class App {
             App._TryHotkey("~" key " up", (*) => App._TapUp())
         }
 
-        capsLock := AppSettings.General.Has("CapsLock") ? AppSettings.General["CapsLock"] : ""
+        capsLock := AppSettings.Keyboard.Has("CapsLock") ? AppSettings.Keyboard["CapsLock"] : ""
         if CapsLockSwitch.IsMode(capsLock) {                                ; CapsLock switches the input language; Caps Lock only when held
             CapsLockSwitch.Mode := capsLock
             CapsLockSwitch.Register((key, fn) => App._TryHotkey(key, fn))
@@ -501,7 +501,7 @@ class App {
         if (clipboard["Enabled"] && clipboard["Hotkey"] != "")
             App._TryHotkey(clipboard["Hotkey"], (*) => SearchWindow.Show(AppSettings.Feature("Clipboard")["Keyword"] " "))
 
-        ; custom hotkeys: Key -> system command Action (Search also types its SearchText); with a WinTitle only in that window
+        ; custom hotkeys: Key -> Action (a system command, Search typing its SearchText, or "custom:<Id>" = a custom command); with a WinTitle only in that window
         for entry in AppSettings.Hotkeys {
             if !(entry is Map) || !entry.Has("Key") || !entry.Has("Action")
                 continue
@@ -605,8 +605,11 @@ class App {
         return (sinceLastMs <= App.DoubleTapMs && (firstKey = "" || firstKey = key)) ? "show" : "first"
     }
 
-    ; Remember the window the hotkey was pressed in first: commands such as TerminalHere work on that window
+    ; Remember the window the hotkey was pressed in first: commands such as TerminalHere work on that window, and {hwnd} / {pid}
+    ; of a custom command become it. "custom:<Id>" runs the user's custom command with that Id
     static _HotkeyAction(actionId, searchText := "") {
+        if (SubStr(actionId, 1, 7) = "custom:")
+            return (*) => (App.RememberActiveWindow(), CustomCommandProvider.RunFromHotkey(SubStr(actionId, 8)))
         return (*) => (App.RememberActiveWindow(), SystemProvider.RunCommand(actionId, searchText))
     }
 

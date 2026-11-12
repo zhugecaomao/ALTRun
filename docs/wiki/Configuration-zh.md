@@ -35,8 +35,10 @@
 ## 结构
 ```jsonc
 {
-  "SchemaVersion": 6,
+  "SchemaVersion": 7,
   "General":    { ... },          // 通用
+  "Window":     { ... },          // 搜索窗口 (偏好设置 → 搜索窗口)
+  "Keyboard":   { ... },          // CapsLock、输入法、空格 / Tab 键 (偏好设置 → 键盘)
   "Appearance": { ... },          // 外观
   "Features":   { ... },          // 各个搜索功能
   "Extensions": { ... },          // 扩展功能
@@ -53,7 +55,7 @@
 `DataLocation` 只在默认位置 (`Data\ALTRun.json`, 或 `%APPDATA%\ALTRun\Data\ALTRun.json`) 的文件里起作用: 有这一项时, ALTRun 改用那个文件夹里的设置和数据, 默认位置的文件只用来指路。一般在 偏好设置 → 高级 → 数据 → 更改位置 里设置, 不用手动写; 可以用环境变量 (加上 `%COMPUTERNAME%` 每台电脑各用一个文件夹; 某台电脑没有这个变量时, 那台电脑用默认位置), 相对路径从程序目录算起。
 
 ## General 通用
-偏好设置里分在 "通用"、"搜索窗口" 和 "键盘" 三页 (`SelectionHotkey` 在 "选中内容" 页)。
+偏好设置 → 通用 (`SelectionHotkey` 在 "选中内容" 页)。
 
 ![偏好设置 → 通用](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-general.png)
 
@@ -62,28 +64,43 @@
 | Hotkey | `!Space` | 呼出热键 (AutoHotkey 写法, `!` Alt `^` Ctrl `+` Shift `#` Win; 偏好设置里直接按键录制, 见 [设置热键](Hotkeys-zh#设置热键)) |
 | SecondaryHotkey | `!r` | 第二个呼出热键 (Alt+R), 留空 = 不用 |
 | DoubleTap | 空 | `Ctrl` / `Shift` = 快速按两下这个键也能呼出 (和 Listary 一样): 要同一个键按两下, 先按左 Shift 再按右 Shift 不算; `LCtrl` / `RCtrl` / `LShift` / `RShift` = 只用左边或右边的那个键; 空 = 不用 |
-| CapsLock | 空 | 和 Mac 一样: `Layout` = 按一下 CapsLock 切换到下一个输入法 (和 `Win+Space` 一样), `Mode` = 切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定。空 = CapsLock 照常。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |
-| CapsLockNotify | 1 | 开 / 关大写锁定时显示 "大写锁定: 开 / 关" 的提示; 0 = 不显示 |
-| CapsLockElevated | 0 | 1 = CapsLock 切换在管理员权限的窗口里也生效: 用计划任务以管理员身份运行一个只管 CapsLock 的小助手, ALTRun 本身还是普通权限。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |
 | HotkeySides | 0 | 1 = 在偏好设置里录制的热键记住按的是左边还是右边的 `Ctrl` / `Alt` / `Shift` / `Win` (`<!Space` = 只有左 Alt + 空格), 见 [设置热键](Hotkeys-zh#设置热键); 已经设好的热键不变 |
 | SelectionHotkey | `^!\` | 选中文字 / 文件 / 网址后按下, 直接打开它们的操作 (Ctrl+Alt+\), 见 [选中内容的操作](Usage-zh#选中内容的操作); 留空 = 不用 |
 | Language | `auto` | `auto` 跟随 Windows 的显示语言, 或语言代码: `en` / `zh-CN` (简体中文) / `zh-TW` (繁體中文) / `ja`; 除了英文, 每种语言是 `Resources\Lang\` 里的一个文件 (以前的 `zh` 等于 `zh-CN`) |
 | LaunchAtLogin | 1 | 开机自动启动 |
 | ShowTrayIcon | 1 | 显示托盘图标 |
-| HideOnDeactivate | 1 | 搜索窗口失去焦点时隐藏 |
-| SwitchToEnglishInput | 0 | 显示搜索窗口时切换到英文: 0 = 不切换, 1 = 英语 (美国) 键盘 (只在已经装好的输入法之间切换, 不会添加新的键盘布局), 2 = 当前输入法的英文模式 (输入法不变, 关掉它的中文) |
-| RestoreInput | 1 | 打开 `SwitchToEnglishInput` 时, 窗口隐藏后切回原来的输入法或中 / 英模式 (1 时: Windows 设置了每个应用窗口各用各的输入法时不需要, 也不会切换) |
-| SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
-| TabKey | `"Complete"` | 搜索窗口里 `Tab` 的作用: `"Complete"` 自动补全 (文件夹: 进入浏览); `"Next"` 选下一个结果 (`Shift+Tab` 上一个, 到头后循环), `Ctrl+Tab` 自动补全 |
-| KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次; 直接输入或按 `Backspace` 开始新的搜索 (文件搜索也会退出); 按 `空格` 开始新的文件搜索。从 2.x 升级时沿用 `KeepInput` |
-| KeepLastQueryMinutes | 5 | 打开 `KeepLastQuery` 时, 上一次的搜索只保留这么多分钟; 超过以后呼出窗口, 搜索框是空的。`0` = 不限 |
-| ShowTips | 1 | 轮换显示使用提示, 用灰色文字显示在空搜索框里 |
 | FileManager | `explorer.exe` | 打开文件夹用的程序, 后面可以带参数, 例如 `C:\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S` (Total Commander: `/O` 用已打开的窗口, `/T` 新标签页, `/S` 当前面板); 路径有空格时加引号。可以用环境变量, 例如 `%OneDrive%\Apps\TotalCMD64\TOTALCMD64.exe /O /T /S`; 找不到这个程序时用资源管理器打开文件夹 (记在日志里) |
 | FolderNewTab | `0` | 1 = 在新标签页中打开文件夹 (偏好设置 → 通用 → "在新标签页中打开文件夹")。资源管理器: 在最近用过的资源管理器窗口 (显示 ALTRun 之前在前台的那个, 没有就用当前虚拟桌面上最前面的那个) 里开新标签页, "在文件管理器中显示" 时选中那个文件; 要 Windows 11 22H2 及以上, 没有打开的资源管理器窗口、网络文件夹 0.5 秒内没有响应 (服务器离线) 或者不成功时, 和以前一样新开窗口。Total Commander: 参数里没有 `/O /T` 时自动加上。其他文件管理器: 在 FileManager 里填它自己的参数 |
 | SendToMenu | 1 | 添加到资源管理器的 "发送到" 菜单 |
 | StartMenuShortcut | 1 | 添加到开始菜单 |
 | CheckForUpdates | 1 | 启动时和之后每 6 小时在后台检查一次 GitHub 上的新版本, 有新版本时显示在搜索窗口里, 见 [一键更新](Installation-zh#一键更新) |
 | SaveLog | 0 | 写入调试日志 (`%Temp%\ALTRun.log`), 包括启动各阶段和超过 30 ms 的搜索用了多少毫秒 (`Perf:` 开头, 不记输入的文字) |
+
+## Window 搜索窗口
+偏好设置 → 搜索窗口。设置版本 6 (ALTRun 2026.11.12) 及以前在 `General` 里 (`StatusBar` 和 `Placeholder` 在 `Appearance`, `RecentCount` 在 `Features.Recent`), 升级时自动搬过来。
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| HideOnDeactivate | 1 | 搜索窗口失去焦点时隐藏 |
+| KeepLastQuery | 0 | 呼出窗口时保留上一次的搜索 (输入、文件搜索模式和选中的行), 文字全选: `Enter` 再执行一次; 直接输入或按 `Backspace` 开始新的搜索 (文件搜索也会退出); 按 `空格` 开始新的文件搜索。从 2.x 升级时沿用 `KeepInput` |
+| KeepLastQueryMinutes | 5 | 打开 `KeepLastQuery` 时, 上一次的搜索只保留这么多分钟; 超过以后呼出窗口, 搜索框是空的。`0` = 不限 |
+| ShowTips | 1 | 轮换显示使用提示, 用灰色文字显示在空搜索框里 |
+| StatusBar | 1 | 搜索窗口底部的状态栏 (有结果时显示: `Enter` 和 `→` 做什么); 0 = 不显示 |
+| Placeholder | "" | 空搜索框里的灰色文字; 空 = 默认的 "ALTRun 搜索", 只写空格 = 什么都不显示 (有使用提示时不显示) |
+| RecentCount | 0 | 空搜索框里显示几个最近打开的项目, 0 = 不显示 (默认只显示置顶的项目) |
+
+## Keyboard 键盘
+偏好设置 → 键盘。设置版本 6 及以前在 `General` 里。
+
+| 键 | 默认 | 说明 |
+|---|---|---|
+| CapsLock | 空 | 和 Mac 一样: `Layout` = 按一下 CapsLock 切换到下一个输入法 (和 `Win+Space` 一样), `Mode` = 切换输入法的中 / 英模式; 按住 0.3 秒才开 / 关大写锁定。空 = CapsLock 照常。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |
+| CapsLockNotify | 1 | 开 / 关大写锁定时显示 "大写锁定: 开 / 关" 的提示; 0 = 不显示 |
+| CapsLockElevated | 0 | 1 = CapsLock 切换在管理员权限的窗口里也生效: 用计划任务以管理员身份运行一个只管 CapsLock 的小助手, ALTRun 本身还是普通权限。见 [CapsLock 切换输入法](Hotkeys-zh#capslock-切换输入法) |
+| SwitchToEnglishInput | 0 | 显示搜索窗口时切换到英文: 0 = 不切换, 1 = 英语 (美国) 键盘 (只在已经装好的输入法之间切换, 不会添加新的键盘布局), 2 = 当前输入法的英文模式 (输入法不变, 关掉它的中文) |
+| RestoreInput | 1 | 打开 `SwitchToEnglishInput` 时, 窗口隐藏后切回原来的输入法或中 / 英模式 (1 时: Windows 设置了每个应用窗口各用各的输入法时不需要, 也不会切换) |
+| SpaceToRun | 0 | 已输入文字时按空格执行选中项, `Shift+空格` 输入空格 |
+| TabKey | `"Complete"` | 搜索窗口里 `Tab` 的作用: `"Complete"` 自动补全 (文件夹: 进入浏览); `"Next"` 选下一个结果 (`Shift+Tab` 上一个, 到头后循环), `Ctrl+Tab` 自动补全 |
 | HistorySize | 30 | 记住多少条最近的搜索 |
 
 ## Appearance 外观
@@ -93,8 +110,6 @@
 | Density | `Normal` | 显示密度, 对任何主题都有效: `Comfortable` 宽松 (主题本来的大小) / `Normal` 常规 / `Compact` 紧凑, 见 [主题](Themes-zh#显示密度)。从旧版本升级时是 `Comfortable` (保持原来的大小) |
 | Width | 700 | 搜索窗口宽度 (像素, 按屏幕缩放; 最小 450) |
 | VisibleRows | 8 | 最多显示几行结果 (1~9) |
-| Placeholder | "" | 空搜索框里的灰色文字; 空 = 默认的 "ALTRun 搜索", 只写空格 = 什么都不显示 (有使用提示时不显示) |
-| StatusBar | 1 | 搜索窗口底部的状态栏 (有结果时显示: `Enter` 和 `→` 做什么); 0 = 不显示 |
 | ShowOn | `Mouse` | 搜索窗口显示在哪块屏幕: `Mouse` 鼠标所在 / `Primary` 主屏幕 / `Active` 当前窗口所在 |
 | Fade | 0 | 显示和隐藏搜索窗口时淡入淡出 (淡入约 120 ms 到主题的透明度, 淡出约 100 ms); 窗口照样马上获得焦点, 不影响打字 |
 | RememberPosition | 0 | 拖动搜索窗口 (按住输入框四周的空白处) 后记住位置 |
@@ -176,9 +191,10 @@
 脚本放在程序目录的 `Scripts\` 里 (程序目录不能写入时在 `%APPDATA%\ALTRun\Scripts\`), 写法见 [脚本扩展](Scripts-zh)。
 
 ### Recent 置顶和最近使用
+显示几个最近使用的项目: `Window.RecentCount`。
+
 | 键 | 默认 | 说明 |
 |---|---|---|
-| RecentCount | 0 | 空搜索框里显示几个最近打开的项目, 0 = 不显示 (默认只显示置顶的项目) |
 | Pinned | `[]` | 置顶到空搜索框的项目 (在操作面板里置顶 / 取消, 不用手动改) |
 
 最近打开的项目记在 `Data\Knowledge.json` 里, 见 [置顶和最近使用](Recent-zh)。
@@ -243,10 +259,11 @@
   { "Key": "^!#v", "Action": "PastePlain", "WinTitle": "" },
   { "Key": "^!f", "Action": "Search", "SearchText": "folder {selection}", "WinTitle": "" },
   { "Key": "^!t", "Action": "TerminalHere", "WinTitle": "ahk_class CabinetWClass" },
-  { "Key": "^r", "Action": "RebuildIndex", "WinTitle": "ALTRun" }
+  { "Key": "^r", "Action": "RebuildIndex", "WinTitle": "ALTRun" },
+  { "Key": "^!n", "Action": "custom:k3x9a2mq", "WinTitle": "" }
 ],
 "CustomCommands": [
-  { "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },
+  { "Id": "k3x9a2mq", "Title": "Desktop", "Type": "Folder", "Target": "A_Desktop", "Arguments": "", "Keyword": "" },
   { "Title": "IP Configuration", "Type": "Command", "Target": "cmd.exe", "Arguments": "/k ipconfig /all", "Keyword": "ipconfig" },
   { "Title": "ERP order", "Type": "Url", "Target": "https://erp.example.com/order?id={query}", "Arguments": "", "Keyword": "erp", "Selection": "PO" }
 ],
@@ -262,6 +279,8 @@
 ]
 ```
 字段说明见 [自定义命令](Custom-Commands-zh#字段)、[文字片段](Snippets-zh)、[自定义热键](Hotkeys-zh) 和 [延迟启动](Delayed-Start-zh)。
+
+`Id` (自定义命令、文字片段、同步任务): 8 位 `a-z 0-9`, 由 ALTRun 生成, 在同一个列表里不重复。改名或改目标时不变: 热键按它运行自定义命令 (`"Action": "custom:<Id>"`), 学到的排序和最近使用也跟着它。不要手动改; 手动添加的条目不用写 (ALTRun 读取时会补上)。缺少或重复的会换成新的。
 
 ## Data 文件夹
 数据文件夹在哪里、里面每个文件是什么、能不能删、怎样备份, 见 [数据文件](Data-Files-zh)。

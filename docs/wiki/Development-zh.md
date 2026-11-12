@@ -152,6 +152,8 @@ ALTRun 空闲时应该不占 CPU。只要设置了**任何一个** `SetTimer` �
 ## 修改设置结构
 - 只是加新的设置项: 加到 `AppSettings.Defaults()` 即可, 旧文件缺少的项会自动补上
 - 改名、移动或改变已有项的结构: `AppSettings.CurrentVersion + 1`, 在 `SchemaMigration` 里加一个 `_FromN(data)` 把版本 N 转换成 N+1。升级前会自动备份为 `ALTRun.vN.backup.json`
+- 把设置项挪到另一组: 加到 `AppSettings.MovedKeys`。`AppSettings.MoveGroups` 每次加载都跑, 不只在升级时: 旧版 ALTRun 读这个文件时会在旧位置补上默认值, 新版下次加载时删掉 (以新位置为准)
+- 自定义命令、文字片段、同步任务有 `Id` (`AppSettings.EnsureIds`, 每次加载和保存前都跑): 热键按它引用命令 (`custom:<Id>`), 学到的排序也按它记 (`Knowledge.json` 有自己的 `Version`; `Knowledge.ConvertUids`)。有效的 Id 不改; 复制出来的条目去掉 Id (保存时生成新的)
 
 ## 修改清单
 一处改动往往牵涉不止那一行。动手前先搜出用到要改的东西的所有地方 (整个仓库, 包括 `Tests\`、`docs\`、`Resources\Lang\` 和 `.github\`), 再对照下面相应的一条:

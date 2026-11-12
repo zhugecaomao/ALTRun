@@ -121,6 +121,7 @@ Logger.Enabled := false
 I18n.LangDir := A_ScriptDir "\..\Resources\Lang"
 I18n.Init("en")
 AppSettings.Data := AppSettings.Defaults()                                  ; default settings in memory; no file is read or written
+AppSettings.EnsureIds(AppSettings.Data)                                     ; as after loading: the default commands get their Ids (saving would add them otherwise)
 AppSettings.Feature("Clipboard")["Persist"] := 0                           ; the clipboard history tests don't write to disk
 ActionCatalog.AppVerbs := (target) => ["open"]                             ; Store apps' context menu commands: the Apps folder doesn't answer on a CI runner (no desktop shell)
 SyncPreview.storePlacementFn := (saved) => 0                              ; closing a sync window doesn't change the settings

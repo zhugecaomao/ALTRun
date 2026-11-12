@@ -299,7 +299,7 @@ class SearchWindow {
         App.RememberActiveWindow()
         Usage.Count("Show")
         last := SearchWindow.Session.Last
-        restore := (text = "" && SearchWindow.Session.KeepsLast(AppSettings.General))
+        restore := (text = "" && SearchWindow.Session.KeepsLast(AppSettings.Window))
         ; Restoring the last search with the box and results still as they were when hidden: show them as they are without searching again (only new input searches).
         ; A search (e.g. file search) takes tens of milliseconds; searching before showing meant the first key pressed meanwhile was still in the old window, lost or delayed
         reuse := restore && SearchWindow.Session.Mode = "results" && SearchWindow.Input.Value == last.Text && SearchWindow.Session.FileMode = last.FileMode
@@ -307,7 +307,7 @@ class SearchWindow {
         prepared := !restore && text = "" && !wasVisible && SearchWindow.IsPrepared()
         SearchWindow._prepared := false                                     ; use it once; prepared again after the next hide
         SearchWindow.Session.StartShowing(restore)                          ; results, no marks; the restored search selected until the caret moves (_LeaveRestored)
-        SearchWindow._tip := AppSettings.General["ShowTips"] ? HelpProvider.NextTip() : ""
+        SearchWindow._tip := AppSettings.Window["ShowTips"] ? HelpProvider.NextTip() : ""
         SearchWindow._UpdateCueBanner()
         SearchStatusBar.Update()
         SearchWindow._Step("results")
@@ -473,7 +473,7 @@ class SearchWindow {
     ; the box and results stay as they are (see reuse in _Show), nothing to prepare
     static PrepareDelay := 200, _prepareTimer := "", _prepared := false
     static _PrepareLater() {
-        if AppSettings.General["KeepLastQuery"]
+        if AppSettings.Window["KeepLastQuery"]
             return
         if (SearchWindow._prepareTimer = "")
             SearchWindow._prepareTimer := () => SearchWindow.PrepareEmpty()
@@ -907,7 +907,7 @@ class SearchWindow {
         return Max(centered, Min(Round(bandH / 2 - (ascent - cap / 2)), bandH - editH + pad // 2))
     }
 
-    ; Gray text in the empty search box: the setting (Appearance.Placeholder) if given, "ALTRun Search" if empty;
+    ; Gray text in the empty search box: the setting (Window.Placeholder) if given, "ALTRun Search" if empty;
     ; only spaces = show nothing
     ; The search box and, right of it, the menu icon (about the size of the box's text) inside the window's padding
     static MenuIconSize() => Win.Scale(28)
@@ -944,7 +944,7 @@ class SearchWindow {
     }
 
     static Placeholder() {
-        text := AppSettings.Appearance.Get("Placeholder", "")
+        text := AppSettings.Window.Get("Placeholder", "")
         return (text = "") ? I18n.T("Search.Placeholder") : Trim(text)
     }
 
@@ -1057,7 +1057,7 @@ class SearchWindow {
             DllCall("GetWindowThreadProcessId", "Ptr", foreground, "UInt*", &pid)
         if (!foreground || pid = DllCall("GetCurrentProcessId", "UInt")) {
             try WinActivate("ahk_id " SearchWindow.Gui.Hwnd)
-        } else if AppSettings.General["HideOnDeactivate"]
+        } else if AppSettings.Window["HideOnDeactivate"]
             SearchWindow.Hide(Logger.Enabled ? "deactivated by " SearchWindow.ForegroundText() " (menu closed)" : "")
     }
 
@@ -1246,7 +1246,7 @@ class SearchWindow {
     static _OnActivate(wParam, lParam, msg, hwnd) {
         if (!IsObject(SearchWindow.Gui) || hwnd != SearchWindow.Gui.Hwnd)
             return
-        if ((wParam & 0xFFFF) = 0 && AppSettings.General["HideOnDeactivate"]) {
+        if ((wParam & 0xFFFF) = 0 && AppSettings.Window["HideOnDeactivate"]) {
             if (SearchWindow._hideTimer = "")
                 SearchWindow._hideTimer := () => SearchWindow._HideIfInactive()
             SetTimer(SearchWindow._hideTimer, -50)

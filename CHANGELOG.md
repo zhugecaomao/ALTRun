@@ -5,6 +5,26 @@
 
 ## [未发布]
 
+## [2026.11.12.3]
+
+测试版。
+
+Test build.
+
+### 新增
+- 热键可以运行自定义命令: 热键的 `Action` 写 `custom:<Id>` (命令的 `Id` 见 `ALTRun.json`; 目前只能在设置文件里写, 热键编辑窗口里选命令在下一个测试版)。带 `{query}` 或设了内容类型的命令拿到选中的内容 (和选中内容的操作一样, 同样检查 shell 特殊字符); 没有选中时, 带 `{query}` 和关键字的命令打开搜索窗口并填好关键字; 其他命令直接运行, 不复制选中的内容
+
+### 改进
+- 设置版本升级到 7 (自动升级, 升级前备份为 `ALTRun.v6.backup.json`, 提示一次):
+  - 自定义命令、文字片段、同步任务有了固定的 `Id`: 改名、改目标后学到的排序和最近使用都还在 (以前改了目标就要重新学); 学习排序 (`Knowledge.json`) 自动转换, 转换前备份为 `Knowledge.v1.backup.json`
+  - 脚本学到的排序按文件名记, 便携版和安装版、换数据文件夹以后都保留
+  - 搜索窗口页和键盘页的 15 个设置在 `ALTRun.json` 里挪到新的 `Window` 和 `Keyboard` 两组, 和偏好设置的页面对应
+  - 类型、目标、参数完全一样的两条自定义命令 (名字或关键字不同) 以前只列出一条, 现在都列出
+- 退回旧版本的做法写进常见问题: 用 `ALTRun.v6.backup.json` (和 `Knowledge.v1.backup.json`) 换回
+
+### 修复
+- 管理员窗口里的 CapsLock 小助手启动失败时, 提示指向 偏好设置 → 键盘 (以前写的是自定义热键页)
+
 ## [2026.11.12.2]
 
 测试版。
@@ -1349,7 +1369,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.2...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.3...HEAD
+[2026.11.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.2...2026.11.12.3
 [2026.11.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.1...2026.11.12.2
 [2026.11.12.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12...2026.11.12.1
 [2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12

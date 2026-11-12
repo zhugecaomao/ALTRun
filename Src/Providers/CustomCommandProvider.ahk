@@ -18,6 +18,7 @@
 ; Usage:
 ;   CustomCommandProvider.AddFromPaths(paths)            "Send to" menu: one opens the edit dialog, several are added directly
 ;   CustomCommandProvider.Edit(command [, prefill])      opens the edit dialog; command = "" creates a new one
+;   CustomCommandProvider.RunFromHotkey(id)              a custom hotkey with Action "custom:<Id>" (see App._HotkeyAction)
 ;   F3 / right-click "Edit" in the results calls EditItem(), Ctrl+Del calls DeleteItem()
 ;===============================================================================
 
@@ -116,11 +117,16 @@ class CustomCommandProvider {
         return items
     }
 
+    ; "custom:<Id>": the learned ranking and recent items stay with the command when its name or target changes (a command
+    ; without an Id yet, added since loading, gets one when saving: until then the Uid of versions before 7)
     static _Uid(command) {
-        arguments := command.Has("Arguments") ? command["Arguments"] : ""
-        commandType := command.Has("Type") ? command["Type"] : "File"
-        return "custom:" StrLower(commandType "|" command["Target"] "|" arguments)
+        if (command.Has("Id") && command["Id"] != "")
+            return "custom:" command["Id"]
+        return Knowledge.LegacyUid("custom", command)
     }
+
+    ; The command with this Id ("custom:<Id>" in a hotkey), "" if it no longer exists
+    static FindById(id) => AppSettings.ItemById(AppSettings.CustomCommands, id)
 
     ; Search keys of the name / each keyword / pinyin initials, cached by "name|keyword" (a changed command gets new keys naturally)
     static _KeysFor(title, keyword) {
@@ -285,7 +291,7 @@ class CustomCommandProvider {
     }
 
     static NewCommand() {
-        return Map("Title", "", "Type", "File", "Target", "", "Arguments", "", "Keyword", "")
+        return Map("Title", "", "Type", "File", "Target", "", "Arguments", "", "Keyword", "")   ; the Id is given when saving (AppSettings.EnsureIds)
     }
 
     ; command: an entry of AppSettings.CustomCommands (changed in place), or "" for a new one (prefill = the prefilled fields)
@@ -305,6 +311,38 @@ class CustomCommandProvider {
                 command[key] := value
         CustomCommandProvider._ResetNarrowing()
         return AppSettings.Save()
+    }
+
+    ; A custom hotkey whose Action is "custom:<Id>". A command that takes something (it has {query}, or content types) gets the
+    ; selection as from the selection panel (SelectionActions._CommandAction): {query} becomes the selected text or path; a File /
+    ; Command without {query} gets it as its last argument. The panel's checks keep selected text out of a shell; the content types
+    ; aren't checked (the hotkey was set for this command on purpose). Nothing selected: a {query} command with a keyword opens the
+    ; search window with "keyword " to type the rest, one without a keyword says so, one with only content types runs as it is.
+    ; Any other command runs directly, without copying the selection (the clipboard isn't touched).
+    ; capture: replaces SelectionActions.Capture in the tests
+    static RunFromHotkey(id, capture := "") {
+        command := CustomCommandProvider.FindById(id)
+        if !IsObject(command) {
+            Logger.Warn("CustomCommandProvider: the hotkey's command custom:" id " no longer exists")
+            return App.Notify(I18n.T("Hotkey.CommandMissing"), 3000)
+        }
+        takesQuery := CustomCommandProvider.TakesQuery(command), item := ""
+        if (takesQuery || SelectionActions.CommandTypes(command).Length) {
+            selection := IsObject(capture) ? capture.Call() : SelectionActions.Capture()
+            if IsObject(selection) {
+                item := SelectionActions._CommandAction(command, SelectionActions.Classify(selection))
+                if !IsObject(item)
+                    return App.Notify(I18n.T("Hotkey.SelectionRefused", command["Title"]), 3000)
+            } else if takesQuery {
+                keywords := SearchQuery.Keywords(command.Has("Keyword") ? command["Keyword"] : "")
+                return keywords.Length ? SearchWindow.Show(keywords[1] " ") : App.Notify(I18n.T("Selection.None"), 2000)
+            }
+        }
+        if !IsObject(item)
+            item := CustomCommandProvider._ToItem(command, 0)
+        Usage.Count(CustomCommandProvider.Id)
+        DllCall("AllowSetForegroundWindow", "UInt", 0xFFFFFFFF)            ; ASFW_ANY: the program started may come to the front
+        ActionCatalog.RunDefault(item)
     }
 
     static EditItem(item) {

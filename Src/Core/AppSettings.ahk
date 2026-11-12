@@ -6,21 +6,27 @@
 ; the Data\ folder, each in a file of its own: deleting an index only makes it rebuild, the settings aren't affected.
 ; 3.x to v2026.09.26 kept ALTRun.json in the program folder; at start-up it is moved to Data\ (MoveLegacyFile).
 ;
-; File structure (SchemaVersion 6):
+; File structure (SchemaVersion 7; the groups follow the Preferences pages):
 ; {
-;   "SchemaVersion" : 6,
-;   "General"       : { show hotkey / start with Windows / tray icon / hide on focus loss / language ... },
+;   "SchemaVersion" : 7,
+;   "General"       : { show hotkey / start with Windows / tray icon / language / file manager ... },
+;   "Window"        : { hide on focus loss / keep the last search / tips / status bar / placeholder / recent items (Preferences → Search Window) },
+;   "Keyboard"      : { Caps Lock / English input / Space and Tab keys / search history (Preferences → Keyboard) },
 ;   "Appearance"    : { theme / window width / visible rows },
 ;   "Features"      : { "<feature>": { "Enabled": 1, ...the feature's own settings } },
 ;   "Extensions"    : { "QuickSwitch": {...}, "AutoDate": {...}, "PTTools": {...} },
-;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "SearchText" } ],   custom hotkeys -> system commands (SearchText, optional: what the Search action types into the search box)
-;   "CustomCommands": [ { "Title", "Type", "Target", "Arguments", "Keyword", "Selection" } ],   Selection, optional: content types the command is shown for
+;   "Hotkeys"       : [ { "Key", "Action", "WinTitle", "SearchText" } ],   custom hotkeys. Action: a built-in command Id (Search, ToggleWindow,
+;                     a system command) or "custom:<Id>" = the user's custom command with that Id (SearchText, optional: what Search types into the search box)
+;   "CustomCommands": [ { "Id", "Title", "Type", "Target", "Arguments", "Keyword", "Selection" } ],   Selection, optional: content types the command is shown for
 ;   "SelectionTypes": [ { "Name", "Kind", "Pattern" } ],   the user's content types of a selection (Kind Text: regular expression / File: extensions), see SelectionActions
-;   "Snippets"      : [ { "Name", "Keyword", "Text", "AutoExpand" } ],
+;   "Snippets"      : [ { "Id", "Name", "Keyword", "Text", "AutoExpand" } ],
 ;   "DelayedStart"  : [ { "Name", "Target", "Arguments", "Delay", "Enabled" } ],   programs started after signing in (Task Scheduler)
-;   "SyncTasks"     : [ { "Name", "Source", "Destination", "Mode", ... } ],          folder sync tasks run with robocopy (see RoboSync)
+;   "SyncTasks"     : [ { "Id", "Name", "Source", "Destination", "Mode", ... } ],    folder sync tasks run with robocopy (see RoboSync)
 ;   "DataLocation"  : "D:\\OneDrive\\ALTRun"   optional, only in the file at the default location: use this data folder instead (see ResolveDataDir)
 ; }
+; Id: 8 characters a-z 0-9, unique in its list, fixed for the item's life (renaming or changing its target keeps it). Hotkeys refer to
+; commands by it, and the learned ranking / recent items use it (Uid "custom:<Id>", "snippet:<Id>", "sync:<Id>"). EnsureIds fills in missing
+; or repeated Ids at every load and before every save, so items added by hand or by an older ALTRun get one too.
 ;
 ; Old versions (the 2.x format without SchemaVersion) are upgraded by SchemaMigration; the original file is
 ; backed up first, see SchemaMigration.ahk.
@@ -33,7 +39,7 @@
 ;===============================================================================
 
 class AppSettings {
-    static CurrentVersion := 6
+    static CurrentVersion := 7
     static Portable := Path.IsWritable(A_ScriptDir)                          ; the program folder is writable: data goes in the program folder (portable)
     static UserDir := A_AppData "\ALTRun"                                   ; used when the program folder isn't writable (e.g. installed in Program Files)
     static DataLocation := ""                                                ; "DataLocation" as written (may have %environment variables%); "" = the default folder
@@ -49,6 +55,8 @@ class AppSettings {
     static MovedFrom := ""            ; moved from the program folder to Data\ at this start-up ("" = no)
 
     static General        => AppSettings.Data["General"]
+    static Window         => AppSettings.Data["Window"]
+    static Keyboard       => AppSettings.Data["Keyboard"]
     static Appearance     => AppSettings.Data["Appearance"]
     static Hotkeys        => AppSettings.Data["Hotkeys"]
     static CustomCommands => AppSettings.Data["CustomCommands"]
@@ -179,6 +187,8 @@ class AppSettings {
         if (AppSettings.DataLocationMissing != "")
             Logger.Warn("AppSettings: DataLocation " AppSettings.DataLocation " has %" AppSettings.DataLocationMissing "%, which this PC doesn't have; the default data folder is used")
 
+        if (data.Count && AppSettings.MoveGroups(data))                    ; before the defaults fill the new places in
+            changed := true
         if (data.Count && AppSettings._KeepPrevious(data))
             changed := true
         if (data.Count && AppSettings._UpgradeEngines(data))
@@ -186,6 +196,8 @@ class AppSettings {
         if AppSettings._MergeDefaults(data, AppSettings.Defaults())
             changed := true
         if AppSettings.ClampNumbers(data)
+            changed := true
+        if AppSettings.EnsureIds(data)
             changed := true
         if (AppSettings.DataDir != AppSettings.DefaultDataDir() && data.Has("DataLocation"))
             data.Delete("DataLocation")                                     ; this entry has no effect in the folder redirected to: remove it to avoid confusion
@@ -211,6 +223,7 @@ class AppSettings {
         try {
             if (AppSettings._fileGood && FileExist(AppSettings.File))
                 try FileCopy(AppSettings.File, AppSettings.BackupFile, true)
+            AppSettings.EnsureIds(AppSettings.Data)                         ; items added since loading (Preferences, Send to, editing from the results)
             JSON.WriteFile(AppSettings.File, AppSettings.Data)
             AppSettings._fileGood := true
             return true
@@ -391,14 +404,102 @@ class AppSettings {
         return changed
     }
 
+    ; Settings that moved to the group of their Preferences page in version 7: [old section path, key, new section]
+    static MovedKeys := [
+        ["General", "HideOnDeactivate", "Window"], ["General", "KeepLastQuery", "Window"], ["General", "KeepLastQueryMinutes", "Window"]
+      , ["General", "ShowTips", "Window"], ["Appearance", "StatusBar", "Window"], ["Appearance", "Placeholder", "Window"]
+      , ["Features.Recent", "RecentCount", "Window"]
+      , ["General", "CapsLock", "Keyboard"], ["General", "CapsLockNotify", "Keyboard"], ["General", "CapsLockElevated", "Keyboard"]
+      , ["General", "SwitchToEnglishInput", "Keyboard"], ["General", "RestoreInput", "Keyboard"], ["General", "SpaceToRun", "Keyboard"]
+      , ["General", "TabKey", "Keyboard"], ["General", "HistorySize", "Keyboard"]
+    ]
+
+    ; Moves those settings to their new group: a value only in the old place is moved there; when both places have one (an older ALTRun
+    ; read this file and filled the old place in with its default), the new place wins and the old one is removed. Runs at every load, not
+    ; only when upgrading, so going back to an older version and forward again tidies up by itself. Returns whether anything changed
+    static MoveGroups(data) {
+        changed := false
+        for move in AppSettings.MovedKeys {
+            from := data
+            for name in StrSplit(move[1], ".")
+                from := (from is Map && from.Has(name)) ? from[name] : ""
+            key := move[2], group := move[3]
+            if !(from is Map && from.Has(key))
+                continue
+            if !(data.Has(group) && data[group] is Map)
+                data[group] := Map()
+            if !data[group].Has(key)
+                data[group][key] := from[key]
+            from.Delete(key)
+            changed := true
+        }
+        return changed
+    }
+
+    ; The lists whose items have an Id (see the file structure above)
+    static IdLists := ["CustomCommands", "Snippets", "SyncTasks"]
+
+    static IsId(id) => (id is String) && RegExMatch(id, "^[a-z0-9]{8}$") > 0
+
+    ; Gives every item of the IdLists a valid Id of its own: a missing or malformed one is made; of two items with the same Id the first
+    ; keeps it (a copy usually comes after its original; copying in Preferences drops the Id anyway). Valid Ids are never changed, since
+    ; hotkeys refer to them. Returns whether anything changed
+    static EnsureIds(data) {
+        changed := false
+        for name in AppSettings.IdLists {
+            if !(data.Has(name) && data[name] is Array)
+                continue
+            taken := Map(), keep := Map()
+            for item in data[name] {
+                if !(item is Map)
+                    continue
+                id := item.Has("Id") ? item["Id"] : ""
+                if (id is Integer && AppSettings.IsId(String(id)))         ; "Id": 12345678 written by hand: the same Id as text
+                    item["Id"] := id := String(id), changed := true
+                if (AppSettings.IsId(id) && !taken.Has(id))
+                    taken[id] := true, keep[ObjPtr(item)] := true
+            }
+            for item in data[name] {
+                if !(item is Map) || keep.Has(ObjPtr(item))
+                    continue
+                item["Id"] := AppSettings.NewId(taken)
+                taken[item["Id"]] := true
+                changed := true
+            }
+        }
+        return changed
+    }
+
+    ; A random Id that isn't in taken (a Map of the Ids in use)
+    static NewId(taken := "") {
+        static chars := "abcdefghijklmnopqrstuvwxyz0123456789"
+        loop {
+            id := ""
+            Loop 8
+                id .= SubStr(chars, Random(1, 36), 1)
+            if !(IsObject(taken) && taken.Has(id))
+                return id
+        }
+    }
+
+    ; The item of list (e.g. AppSettings.CustomCommands) with this Id, "" if none
+    static ItemById(list, id) {
+        if (id != "" && list is Array)
+            for item in list
+                if (item is Map && item.Has("Id") && item["Id"] == id)
+                    return item
+        return ""
+    }
+
     ; Number settings and the range each one works in: [section path, key, lowest, highest]. A value outside its range (e.g. hand-edited
     ; into ALTRun.json, or an empty box in Preferences saved as 0) is moved to the nearest end; one that isn't a number gets the default.
     ; The ranges only keep out values that break something (a window narrower than the status bar, a list cut to nothing, a
     ; negative delay), so they are wide: any value a user would choose on purpose stays as it is
     static NumberRanges := [
-        ["General"                , "KeepLastQueryMinutes", 0, 100000],    ; 0 = no limit
-        ["General"                , "HistorySize"         , 0, 1000],
-        ["General"                , "SwitchToEnglishInput", 0, 2],
+        ["Window"                 , "KeepLastQueryMinutes", 0, 100000],    ; 0 = no limit
+        ["Window"                 , "RecentCount"         , 0, 100],
+        ["Keyboard"               , "HistorySize"         , 0, 1000],
+        ["Keyboard"               , "SwitchToEnglishInput", 0, 2],
         ["Appearance"             , "Width"               , 450, 4000],    ; 450 = PreferencesWindow.MinWindowWidth (room for the status bar)
         ["Appearance"             , "VisibleRows"         , 1, 9],
         ["Appearance.Position"    , "X"                   , 0, 1000],      ; per mille of the screen
@@ -418,7 +519,6 @@ class AppSettings {
         ["Features.FileSearch"    , "MaxEntries"          , 1000, 2000000],
         ["Features.FileSearch"    , "RefreshMinutes"      , 5, 10080],     ; FileIndex uses at least 5 anyway
         ["Features.Sync"          , "KeepLogDays"         , 0, 3650],      ; 0 = kept
-        ["Features.Recent"        , "RecentCount"         , 0, 100],
         ["Extensions.QuickSwitch" , "RecentFolders"       , 0, 100]
     ]
 
@@ -478,37 +578,42 @@ class AppSettings {
                 "Hotkey"              , "!Space",
                 "SecondaryHotkey"     , "!r",                               ; Alt+R
                 "DoubleTap"           , "",                                ; double-tap Ctrl / Shift shows the search window (as in Listary); LCtrl / RCtrl / LShift / RShift = only that key; "" = off
-                "CapsLock"            , "",                                 ; CapsLock: Layout = switch input language, Mode = toggle Chinese / English mode, "" = as usual (see CapsLockSwitch)
-                "CapsLockNotify"      , 1,                                  ; show a "Caps Lock: on / off" notice when Caps Lock is toggled
-                "CapsLockElevated"    , 0,                                  ; also in administrator windows: a small helper that only handles CapsLock runs as administrator from a scheduled task (see CapsLockHelper)
                 "SelectionHotkey"     , "^!\",                              ; after selecting text / files: open their actions directly (Ctrl+Alt+\)
                 "HotkeySides"         , 0,                                  ; hotkeys recorded in Preferences keep the side of Ctrl / Alt / Shift / Win pressed (<!Space = left Alt + Space)
                 "Language"            , "auto",                             ; auto or a language code in Resources\Lang (zh-CN / zh-TW / ja), en
                 "LaunchAtLogin"       , 1,
                 "ShowTrayIcon"        , 1,
-                "HideOnDeactivate"    , 1,
-                "SwitchToEnglishInput", 0,                                 ; switch to English when shown: 1 = English (US) keyboard, 2 = English mode of the current input method
-                "RestoreInput"        , 1,                                 ; with SwitchToEnglishInput: switch back to the previous input language after the window hides
-                "SpaceToRun"          , 0,                                  ; Space runs the selected result (Shift+Space types a space)
-                "TabKey"              , "Complete",                         ; Tab: "Complete" = complete the name / browse into a folder; "Next" = next result (Shift+Tab previous, Ctrl+Tab completes)
-                "KeepLastQuery"       , 0,                                  ; restore the last search when shown (text selected)
-                "KeepLastQueryMinutes", 5,                                  ; ... only within this many minutes after hiding (0 = no limit)
-                "ShowTips"            , 1,                                  ; rotate usage tips in the empty search box
                 "FileManager"         , "explorer.exe",
                 "FolderNewTab"        , 0,                                  ; open folders in a new tab: File Explorer (Windows 11 22H2+, a window already open) / Total Commander (/O /T)
                 "SendToMenu"          , 1,
                 "StartMenuShortcut"   , 1,
                 "CheckForUpdates"     , 1,
-                "SaveLog"             , 0,
-                "HistorySize"         , 30
+                "SaveLog"             , 0
+            ),
+            "Window", Map(                                                  ; Preferences → Search Window
+                "HideOnDeactivate"    , 1,
+                "KeepLastQuery"       , 0,                                  ; restore the last search when shown (text selected)
+                "KeepLastQueryMinutes", 5,                                  ; ... only within this many minutes after hiding (0 = no limit)
+                "ShowTips"            , 1,                                  ; rotate usage tips in the empty search box
+                "StatusBar"           , 1,                                  ; status bar at the bottom of the search window (the mode, the selected result's Enter action and →)
+                "Placeholder"         , "",                                 ; gray text in the empty search box, empty = the default ("ALTRun Search")
+                "RecentCount"         , 0                                   ; how many recently opened items the empty search box shows (0 = none; by default only the pinned ones)
+            ),
+            "Keyboard", Map(                                                ; Preferences → Keyboard
+                "CapsLock"            , "",                                 ; CapsLock: Layout = switch input language, Mode = toggle Chinese / English mode, "" = as usual (see CapsLockSwitch)
+                "CapsLockNotify"      , 1,                                  ; show a "Caps Lock: on / off" notice when Caps Lock is toggled
+                "CapsLockElevated"    , 0,                                  ; also in administrator windows: a small helper that only handles CapsLock runs as administrator from a scheduled task (see CapsLockHelper)
+                "SwitchToEnglishInput", 0,                                  ; switch to English when shown: 1 = English (US) keyboard, 2 = English mode of the current input method
+                "RestoreInput"        , 1,                                  ; with SwitchToEnglishInput: switch back to the previous input language after the window hides
+                "SpaceToRun"          , 0,                                  ; Space runs the selected result (Shift+Space types a space)
+                "TabKey"              , "Complete",                         ; Tab: "Complete" = complete the name / browse into a folder; "Next" = next result (Shift+Tab previous, Ctrl+Tab completes)
+                "HistorySize"         , 30                                  ; searches Ctrl+Up / Down bring back
             ),
             "Appearance", Map(
                 "Theme"      , "System",                                    ; a built-in theme (see ThemeManager; System = follow Windows dark / light) or Themes\<name>.json
                 "Density"    , "Normal",                                    ; density (any theme): Comfortable (the theme's own size) / Normal / Compact, see ThemeManager.DensityScale
                 "Width"      , 700,
                 "VisibleRows", 8,
-                "Placeholder", "",                                          ; gray text in the empty search box, empty = the default ("ALTRun Search")
-                "StatusBar"  , 1,                                           ; status bar at the bottom of the search window (the mode, the selected result's Enter action and →)
                 "Fade"       , 0,                                           ; fade in / out when showing / hiding (see WindowFade)
                 "ShowOn"     , "Mouse",                                     ; which screen: Mouse = under the mouse / Primary = primary screen / Active = the active window's
                 "RememberPosition", 0,                                      ; remember the position after the window is dragged
@@ -622,8 +727,7 @@ class AppSettings {
                     "Keyword"    , "script"                                 ; "script backup" searches scripts only, "script " lists them all
                 ),
                 "Recent", Map(
-                    "Enabled"    , 1,
-                    "RecentCount", 0,                                       ; how many recently opened items the empty search box shows (0 = none; by default only the pinned ones)
+                    "Enabled"    , 1,                                       ; how many recent items show: Window.RecentCount
                     "Pinned"     , []                                       ; items pinned to the empty search box ("Pin" in the actions panel)
                 ),
                 "Windows", Map(
