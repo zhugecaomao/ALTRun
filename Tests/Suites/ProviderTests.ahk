@@ -1066,7 +1066,7 @@ class ProviderTests {
             if DllCall("GetProcAddress", "Ptr", DllCall("GetModuleHandle", "Str", "ntdll", "Ptr"), "AStr", "wine_get_version", "Ptr")
                 return
             apps := store()
-            FileAppend("INFO StoreAppsScan: " apps.Length " store apps in " ms " ms`\n", "*")
+            FileAppend("INFO StoreAppsScan: " apps.Length " store apps in " ms " ms`n", "*")
             eq("listed", apps.Length > 0, true)
             eq("previous replaced", InStr(JSON.Stringify(apps), "Old_1!App"), 0)
             good := true
