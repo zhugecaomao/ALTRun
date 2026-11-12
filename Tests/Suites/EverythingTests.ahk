@@ -46,14 +46,14 @@ class EverythingTests {
         eq := (n, a, e) => TestRunner.Equal("EverythingMalformed." n, a, e)
         list(paths, size := 0) {                                            ; EVERYTHING_IPC_LIST2: 5 DWORDs, {flags, offset} per item, then length + UTF-16 path
             need := 20 + paths.Length * 8
-            for path in paths
-                need += 4 + StrLen(path) * 2
+            for item in paths
+                need += 4 + StrLen(item) * 2
             buf := Buffer(Max(need, size), 0), NumPut("UInt", paths.Length, buf, 4)
             offset := 20 + paths.Length * 8
-            for index, path in paths {
+            for index, item in paths {
                 NumPut("UInt", index = 2 ? 1 : 0, "UInt", offset, buf, 20 + (index - 1) * 8)
-                NumPut("UInt", StrLen(path), buf, offset), StrPut(path, buf.Ptr + offset + 4, StrLen(path), "UTF-16")
-                offset += 4 + StrLen(path) * 2
+                NumPut("UInt", StrLen(item), buf, offset), StrPut(item, buf.Ptr + offset + 4, StrLen(item), "UTF-16")
+                offset += 4 + StrLen(item) * 2
             }
             return buf
         }

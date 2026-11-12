@@ -84,23 +84,23 @@ class DelayedStartCheck {
             tasks := DelayedStartCheck.ByName(TaskScheduler.Tasks(folderPath))
             DelayedStartCheck.Check("task from XML held open: schtasks read it", code = 0 && tasks.Has(name) && tasks[name].Arguments == "/a b.txt"
                 , "exit code " code ", " DelayedStartCheck.Names(tasks))
-            file := A_Temp "\ALTRun check held.xml"
-            FileAppend("<Task/>", file, "UTF-16")
-            held := FileOpen(file, "r-wd", "UTF-16")
+            heldFile := A_Temp "\ALTRun check held.xml"
+            FileAppend("<Task/>", heldFile, "UTF-16")
+            held := FileOpen(heldFile, "r-wd", "UTF-16")
             blocked := 0
-            try FileAppend("x", file)
+            try FileAppend("x", heldFile)
             catch
                 blocked++
-            try FileDelete(file)
+            try FileDelete(heldFile)
             catch
                 blocked++
-            try FileMove(file, file ".moved")
+            try FileMove(heldFile, heldFile ".moved")
             catch
                 blocked++
-            reader := FileOpen(file, "r", "UTF-16")
+            reader := FileOpen(heldFile, "r", "UTF-16")
             DelayedStartCheck.Check("held file: no writing, deleting, renaming; reading works", blocked = 3 && reader.Read() == "<Task/>", blocked " of 3 blocked")
             reader.Close(), held.Close()
-            try FileDelete(file)
+            try FileDelete(heldFile)
         } catch as e
             DelayedStartCheck.Check("task from XML: no error", false, e.Message " (" e.What ", line " e.Line ")")
         try TaskScheduler.Delete(folderPath, name)
