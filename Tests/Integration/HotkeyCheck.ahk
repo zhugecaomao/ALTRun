@@ -118,7 +118,8 @@ Deleted(n) {
         Sleep(200)
         found := InStr(LogSince(before), "custom:gone0001 no longer exists") > 0
     }
-    Result("deleted", n, found && !FileExist(PlainMarker) && !FileExist(QueryMarker), found ? "a marker was written" : "no log line in 5 s")
+    ran := FileExist(PlainMarker) || FileExist(QueryMarker)
+    Result("deleted", n, found && !ran, (found ? "logged" : "no log line in 5 s") (ran ? ", but a command ran" : ", nothing ran"))
 }
 
 FrontSource() {
