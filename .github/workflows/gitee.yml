@@ -4,15 +4,13 @@
 #                              (Gitee's repository deploy keys are read-only and can't push)
 #   GITEE_REPO      (Variable) optional, user/repository on Gitee, default zhugecaomao/ALTRun
 # Does nothing without GITEE_SSH_KEY.
-# Commits and tags the release workflow pushes with GITHUB_TOKEN don't trigger other workflows, so it also syncs once a day on a schedule.
+# Runs once a night (00:17 Singapore time) instead of on every push: the mirror can be a day behind, and merges don't add a run each.
+# Run it by hand (Actions -> Sync to Gitee -> Run workflow) when the mirror is needed sooner.
 name: Sync to Gitee
 
 on:
-  push:
-    branches: [main]
-    tags: ["*"]
   schedule:
-    - cron: "17 3 * * *"
+    - cron: "17 16 * * *"   # UTC
   workflow_dispatch:
 
 permissions:
@@ -47,8 +45,7 @@ jobs:
           mkdir -p ~/.ssh
           printf '%s\n' "$GITEE_SSH_KEY" > ~/.ssh/gitee
           chmod 600 ~/.ssh/gitee
-          ssh-keyscan -t ed25519,rsa gitee.com >> ~/.ssh/known_hosts 2>/dev/null
-          # Connections from GitHub's machines to Gitee sometimes drop (Connection reset): keep the connection alive and retry each failed push a few times
+          # Connections from GitHub's machines to Gitee sometimes drop (Connection reset): keep the connection alive and retry each failed step a few times
           export GIT_SSH_COMMAND="ssh -i ~/.ssh/gitee -o IdentitiesOnly=yes -o ServerAliveInterval=15 -o ServerAliveCountMax=8"
           remote="git@gitee.com:${GITEE_REPO}.git"
           retry() {
@@ -57,8 +54,15 @@ jobs:
               echo "Attempt $attempt failed, retrying in $((attempt * 15)) s..."
               sleep $((attempt * 15))
             done
+            echo "::error::Failed after 4 attempts: $*"
             return 1
           }
+          # errors stay visible: a failed key scan used to end the step with no output
+          scan_host_keys() {
+            ssh-keyscan -t ed25519,rsa gitee.com > gitee-host-keys.txt && test -s gitee-host-keys.txt
+          }
+          retry scan_host_keys
+          cat gitee-host-keys.txt >> ~/.ssh/known_hosts
           git fetch --tags origin
           retry git push --force "$remote" "refs/remotes/origin/main:refs/heads/main"
           # tags are pushed one by one, only those missing on Gitee or pointing to a different commit; pushing too many at once tends to disconnect
