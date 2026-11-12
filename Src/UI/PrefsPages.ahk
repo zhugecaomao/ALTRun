@@ -28,21 +28,21 @@ class PrefsPages {
         PrefsForm.Check("General.FolderNewTab", "Prefs.FolderNewTab")
     }
 
-    ; Search window behavior (the settings are still in General, just on a page of their own)
+    ; Search window behavior (the Window group of the settings)
     static BuildWindow() {
         PrefsForm.BeginPage("Prefs.Page.Window", 16)                         ; arranged in sections, each section's content indented a little
         PrefsForm.Section("Prefs.Group.Window")
-        PrefsForm.Check("General.HideOnDeactivate", "Prefs.HideOnDeactivate")
-        keepLast := PrefsForm.Check("General.KeepLastQuery", "Prefs.KeepLastQuery")
-        keepFor := PrefsForm.InlineField("General.KeepLastQueryMinutes", "Prefs.KeepLastQueryMinutes", "S", "number", true)
+        PrefsForm.Check("Window.HideOnDeactivate", "Prefs.HideOnDeactivate")
+        keepLast := PrefsForm.Check("Window.KeepLastQuery", "Prefs.KeepLastQuery")
+        keepFor := PrefsForm.InlineField("Window.KeepLastQueryMinutes", "Prefs.KeepLastQueryMinutes", "S", "number", true)
         keepFor.Enabled := keepLast.Value                                   ; only matters while the last search is kept
         keepLast.OnEvent("Click", (*) => keepFor.Enabled := keepLast.Value)
-        PrefsForm.Check("Appearance.StatusBar", "Prefs.StatusBar")                ; the usage tips are in the status bar (in the empty search box when the status bar is off): kept together
-        PrefsForm.Check("General.ShowTips", "Prefs.ShowTips")
+        PrefsForm.Check("Window.StatusBar", "Prefs.StatusBar")                ; the usage tips are in the status bar (in the empty search box when the status bar is off): kept together
+        PrefsForm.Check("Window.ShowTips", "Prefs.ShowTips")
         PrefsForm.Section("Prefs.Section.EmptyBox")
-        placeholder := PrefsForm.InlineField("Appearance.Placeholder", "Prefs.Placeholder", "M")
+        placeholder := PrefsForm.InlineField("Window.Placeholder", "Prefs.Placeholder", "M")
         Win.SetCueBanner(placeholder.Hwnd, I18n.T("Search.Placeholder"))  ; empty shows the default text in gray
-        recent := PrefsForm.InlineField("Features.Recent.RecentCount", "Prefs.RecentCount", "S", "number")
+        recent := PrefsForm.InlineField("Window.RecentCount", "Prefs.RecentCount", "S", "number")
         PrefsForm.AlignLeft(keepFor, placeholder, recent)                   ; the input boxes on this page share one left edge
     }
 
@@ -52,9 +52,9 @@ class PrefsPages {
         PrefsForm.BeginPage("Prefs.Page.Keyboard", 150)
         PrefsForm.Section("Prefs.Group.InputMethod")
         capsLabels := [I18n.T("Prefs.CapsLock.Off"), I18n.T("Prefs.CapsLock.Layout"), I18n.T("Prefs.CapsLock.Mode")]
-        capsLock := PrefsForm.Choice("General.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"], capsLabels)            ; Caps Lock switches the input method (CapsLockSwitch)
-        notice := PrefsForm.Check("General.CapsLockNotify", "Prefs.CapsLockNotify")            ; hint when Caps Lock turns on / off
-        elevated := PrefsForm.Check("General.CapsLockElevated", "Prefs.CapsLockElevated")            ; also in administrator windows (CapsLockHelper)
+        capsLock := PrefsForm.Choice("Keyboard.CapsLock", "Prefs.CapsLock", ["", "Layout", "Mode"], capsLabels)            ; Caps Lock switches the input method (CapsLockSwitch)
+        notice := PrefsForm.Check("Keyboard.CapsLockNotify", "Prefs.CapsLockNotify")            ; hint when Caps Lock turns on / off
+        elevated := PrefsForm.Check("Keyboard.CapsLockElevated", "Prefs.CapsLockElevated")            ; also in administrator windows (CapsLockHelper)
         controls := PrefsForm._current.Controls
         elevatedDesc := controls[controls.Length]                           ; the description just added (sized for two lines, so the shorter text fits too)
         PreferencesWindow._ShieldAfter(elevated)                            ; turning it on / off asks for UAC
@@ -63,15 +63,15 @@ class PrefsPages {
         update()
         capsLock.OnEvent("Change", update)
         englishLabels := [I18n.T("Prefs.EnglishInput.Off"), I18n.T("Prefs.EnglishInput.Keyboard"), I18n.T("Prefs.EnglishInput.Mode")]
-        english := PrefsForm.Choice("General.SwitchToEnglishInput", "Prefs.EnglishInput", [0, 1, 2], englishLabels)            ; switch to English when shown
-        restore := PrefsForm.Check("General.RestoreInput", "Prefs.RestoreInput")
+        english := PrefsForm.Choice("Keyboard.SwitchToEnglishInput", "Prefs.EnglishInput", [0, 1, 2], englishLabels)            ; switch to English when shown
+        restore := PrefsForm.Check("Keyboard.RestoreInput", "Prefs.RestoreInput")
         restore.Enabled := english.Value > 1
         english.OnEvent("Change", (*) => restore.Enabled := english.Value > 1)
         PrefsForm.Section("Prefs.Group.SearchKeys")
-        PrefsForm.Check("General.SpaceToRun", "Prefs.SpaceToRun", , , "Prefs.Group.SpaceKey")
+        PrefsForm.Check("Keyboard.SpaceToRun", "Prefs.SpaceToRun", , , "Prefs.Group.SpaceKey")
         tabLabels := [I18n.T("Prefs.TabKey.Complete"), I18n.T("Prefs.TabKey.Next")]
-        tab := PrefsForm.Choice("General.TabKey", "Prefs.TabKey", ["Complete", "Next"], tabLabels)
-        PrefsForm.Field("General.HistorySize", "Prefs.HistorySize", "S", "number")            ; Ctrl+↑ / ↓ recall earlier searches
+        tab := PrefsForm.Choice("Keyboard.TabKey", "Prefs.TabKey", ["Complete", "Next"], tabLabels)
+        PrefsForm.Field("Keyboard.HistorySize", "Prefs.HistorySize", "S", "number")            ; Ctrl+↑ / ↓ recall earlier searches
         PrefsForm.SameWidth(capsLock, english, tab)
     }
 
@@ -705,6 +705,8 @@ class PrefsPages {
         if !IsObject(task := list.Selected.Call())
             return
         copy := PreferencesWindow.DeepCopy(task)
+        if copy.Has("Id")                                                   ; a new task: it gets an Id of its own when saving (hotkeys keep pointing at the original)
+            copy.Delete("Id")
         names := Map()
         for item in list.Items
             names[SyncJobs.Key(RoboSync._Get(item, "Name"))] := true

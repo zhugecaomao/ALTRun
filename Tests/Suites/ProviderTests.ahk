@@ -1461,7 +1461,7 @@ class ProviderTests {
     ; Typing ? shows the cheat sheet; usage tips rotate in the empty search box
     static HelpAndTips() {
         eq := (n, a, e) => TestRunner.Equal("HelpAndTips." n, a, e)
-        eq("tips default on", AppSettings.Defaults()["General"]["ShowTips"], 1)
+        eq("tips default on", AppSettings.Defaults()["Window"]["ShowTips"], 1)
         eq("help default on", AppSettings.Defaults()["Features"]["Help"]["Enabled"], 1)
         items := HelpProvider.Items()
         all := HelpProvider.Search(SearchQuery("?"))
@@ -1562,6 +1562,51 @@ class ProviderTests {
         eq("at most 100 characters", StrLen(fill("{selection}", {Text: long})), 99)   ; 100, the space at the end trimmed
         eq("without {selection}: as it is, nothing copied", fill("recent ", "not looked at"), "recent ")
         eq("twice", fill("{selection} {selection}", {Text: "a"}), "a a")
+    }
+
+    ; A hotkey with Action "custom:<Id>": runs the custom command; the selection goes to commands that take it, with the panel's checks
+    static HotkeyCustomCommand() {
+        eq := (n, a, e) => TestRunner.Equal("HotkeyCustomCommand." n, a, e)
+        ran := [], notices := [], shown := [], captured := 0
+        savedRun := ActionCatalog.GetOwnPropDesc("RunDefault"), savedNotify := App.GetOwnPropDesc("Notify"), savedShow := SearchWindow.GetOwnPropDesc("Show")
+        savedCommands := AppSettings.Data["CustomCommands"], savedUsage := Usage.Days.Clone()
+        ActionCatalog.DefineProp("RunDefault", {Call: (this, item) => ran.Push(item)})
+        App.DefineProp("Notify", {Call: (this, text, *) => notices.Push(text)})
+        SearchWindow.DefineProp("Show", {Call: (this, text := "", *) => shown.Push(text)})
+        capture(selection) => () => (captured++, selection)
+        try {
+            AppSettings.Data["CustomCommands"] := [
+                Map("Id", "plain001", "Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np")
+              , Map("Id", "query001", "Title", "Google", "Type", "Url", "Target", "https://www.google.com/search?q={query}", "Arguments", "", "Keyword", "gg")
+              , Map("Id", "query002", "Title", "Ping", "Type", "Command", "Target", "cmd.exe", "Arguments", "/k ping {query}", "Keyword", "")
+              , Map("Id", "types001", "Title", "Open in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "Selection", "Text files")]
+            runHotkey := (id, selection := "") => CustomCommandProvider.RunFromHotkey(id, capture(selection))
+
+            runHotkey("plain001", {Text: "ignored"})
+            eq("plain: runs, the selection isn't copied", ran.Length "|" ran[1].Arg "|" ran[1].Arguments "|" captured, "1|notepad.exe||0")
+            runHotkey("query001", {Text: "red apple"})
+            eq("{query}: the selected text, encoded", ran.Length "|" ran[2].Arg "|" captured, "2|https://www.google.com/search?q=red%20apple|1")
+            runHotkey("query001")
+            eq("nothing selected, with a keyword: the search window with it", shown.Length "|" shown[1] "|" ran.Length, "1|gg |2")
+            runHotkey("query002")
+            eq("nothing selected, no keyword: says so", notices.Length "|" notices[1] "|" ran.Length, "1|" I18n.T("Selection.None") "|2")
+            runHotkey("query002", {Text: "8.8.8.8 & del x"})
+            eq("shell characters for cmd: refused", notices.Length "|" notices[2] "|" ran.Length, "2|" I18n.T("Hotkey.SelectionRefused", "Ping") "|2")
+            runHotkey("query002", {Text: "8.8.8.8"})
+            eq("safe text: passed", ran.Length "|" ran[3].Arguments, "3|/k ping 8.8.8.8")
+            runHotkey("types001", {Files: ["C:\Docs\report.pdf"]})
+            eq("content types: the path as the last argument, type not checked", ran.Length "|" ran[4].Arguments, '4|"C:\Docs\report.pdf"')
+            runHotkey("types001")
+            eq("content types, nothing selected: runs as it is", ran.Length "|" ran[5].Arguments, "5|")
+            runHotkey("gone0001", {Text: "x"})
+            eq("deleted command: says so, nothing runs", notices.Length "|" notices[3] "|" ran.Length, "3|" I18n.T("Hotkey.CommandMissing") "|5")
+            eq("summary names the command", InStr(HotkeyEditor.Summary(Map("Key", "^!n", "Action", "custom:plain001", "WinTitle", "")), "Notepad") > 0, true)
+            eq("summary of a deleted command: its Id", InStr(HotkeyEditor.Summary(Map("Key", "^!n", "Action", "custom:gone0001", "WinTitle", "")), "custom:gone0001") > 0, true)
+            eq("editor keeps the action", HotkeyEditor.Normalize(Map("Key", "^!n", "Action", "custom:plain001"))["Action"], "custom:plain001")
+        } finally {
+            ActionCatalog.DefineProp("RunDefault", savedRun), App.DefineProp("Notify", savedNotify), SearchWindow.DefineProp("Show", savedShow)
+            AppSettings.Data["CustomCommands"] := savedCommands, Usage.Days := savedUsage
+        }
     }
 
     ; The hotkey edit window: old forms shown as Search, the summary line, and every control inside the window in every language
@@ -1759,11 +1804,11 @@ class ProviderTests {
 
     static RecentItems() {
         eq := (n, a, e) => TestRunner.Equal("RecentItems." n, a, e)
-        eq("default count", AppSettings.Defaults()["Features"]["Recent"]["RecentCount"], 0)   ; by default only pinned items show
+        eq("default count", AppSettings.Defaults()["Window"]["RecentCount"], 0)   ; by default only pinned items show
         saved := {Recent: Knowledge.Recent, File: Knowledge.File, SettingsFile: AppSettings.File}
-        options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedCount := options["RecentCount"]
+        options := AppSettings.Feature("Recent"), savedPinned := options["Pinned"], savedCount := AppSettings.Window["RecentCount"]
         Knowledge.Recent := [], Knowledge.File := A_Temp "\ALTRun-recent-test.json", AppSettings.File := A_Temp "\ALTRun-recent-settings.json"
-        options["Pinned"] := [], options["RecentCount"] := 2
+        options["Pinned"] := [], AppSettings.Window["RecentCount"] := 2
         fileItem := (name) => ResultItem(name, "C:\Docs\" name, {Kind: "file", Arg: "C:\Docs\" name, Uid: "file:" name, Provider: "FileSearch", Icon: "C:\Docs\" name})
         RecentProvider.Remember(fileItem("a.txt"))
         RecentProvider.Remember(fileItem("b.txt"))
@@ -1795,10 +1840,10 @@ class ProviderTests {
         eq("forget", titles(RecentProvider.EmptyResults()), "c.txt|" I18n.T("Sys.Lock") "|b.txt")
         RecentProvider.DeleteItem(items[1])                                  ; pinned: unpinned
         eq("unpin", options["Pinned"].Length, 0)
-        options["RecentCount"] := 0
+        AppSettings.Window["RecentCount"] := 0
         eq("count 0", RecentProvider.EmptyResults().Length, 0)
         Knowledge.Recent := saved.Recent, Knowledge.File := saved.File, AppSettings.File := saved.SettingsFile
-        options["Pinned"] := savedPinned, options["RecentCount"] := savedCount
+        options["Pinned"] := savedPinned, AppSettings.Window["RecentCount"] := savedCount
         try FileDelete(A_Temp "\ALTRun-recent-test.json")
         try FileDelete(A_Temp "\ALTRun-recent-settings.json")
     }

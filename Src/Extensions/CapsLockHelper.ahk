@@ -4,7 +4,7 @@
 ; Windows doesn't let programs with normal rights control windows with administrator rights (UIPI): with an administrator window in front, ALTRun's keyboard hook gets no keys,
 ; and switch messages sent to it are blocked (#158). Running all of ALTRun as administrator would make every program it opens elevated too
 ; (mapped network drives invisible, drag and drop refused). So a separate small helper runs as administrator and only does the CapsLock switch:
-;   - with General.CapsLockElevated = 1 (Preferences → Custom hotkeys), a scheduled task with "highest privileges" is created (UAC is confirmed once,
+;   - with Keyboard.CapsLockElevated = 1 (Preferences → Keyboard), a scheduled task with "highest privileges" is created (UAC is confirmed once,
 ;     only then); ALTRun runs this task at every start-up (schtasks /run, no UAC prompt) to start the helper, and makes it exit on exit
 ;   - the helper is ALTRun itself started with -CapsLockHelper: it only registers the CapsLock hotkey (CapsLockSwitch), creates no windows,
 ;     writes no settings and runs no programs. Its main window's title becomes Title, so it isn't taken for "an ALTRun already running"
@@ -40,12 +40,14 @@ class CapsLockHelper {
         WinTimer.Set(() => App._RunningInstance() || ExitApp(), 3000)          ; ALTRun is gone (ended, crashed): exit too
     }
 
-    ; General.CapsLock from the settings file (read only, never written back); "" if it can't be read
+    ; Keyboard.CapsLock from the settings file (read only, never written back); "" if it can't be read or the option is off.
+    ; A file not yet upgraded to settings version 7 (ALTRun was updated while this helper ran) has them in General
     static ModeFromSettings(file) {
         try {
-            general := JSON.Parse(FileRead(file, "UTF-8"))["General"]
-            if (general["CapsLockElevated"] && general.Has("CapsLock"))
-                return general["CapsLock"]
+            data := JSON.Parse(FileRead(file, "UTF-8"))
+            keyboard := (data.Has("Keyboard") && data["Keyboard"] is Map && data["Keyboard"].Has("CapsLockElevated")) ? data["Keyboard"] : data["General"]
+            if (keyboard["CapsLockElevated"] && keyboard.Has("CapsLock"))
+                return keyboard["CapsLock"]
         }
         return ""
     }
@@ -68,13 +70,13 @@ class CapsLockHelper {
     ; ALTRun's side (normal rights)
     ;---------------------------------------------------------------------------
     ; With the option on, CapsLock set to switch the input language and ALTRun itself not elevated, run the scheduled task in the background to start the helper
-    static Wanted(general) {
-        return general.Has("CapsLockElevated") && general["CapsLockElevated"] && general.Has("CapsLock")
-            && CapsLockSwitch.IsMode(general["CapsLock"])
+    static Wanted(keyboard) {
+        return keyboard.Has("CapsLockElevated") && keyboard["CapsLockElevated"] && keyboard.Has("CapsLock")
+            && CapsLockSwitch.IsMode(keyboard["CapsLock"])
     }
 
     static Start() {
-        if (A_IsAdmin || !CapsLockHelper.Wanted(AppSettings.General) || CapsLockHelper.Window())
+        if (A_IsAdmin || !CapsLockHelper.Wanted(AppSettings.Keyboard) || CapsLockHelper.Window())
             return
         SetTimer(() => CapsLockHelper._RunTask(), -500)                     ; don't slow down start-up
     }

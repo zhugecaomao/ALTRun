@@ -74,6 +74,9 @@ Windows 不允许普通权限的程序控制以管理员身份运行的窗口。
 ### 怎样升级到新版本
 ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时呼出搜索窗口就能看到 "发现新版本: ALTRun x", 按 `Enter` 即可 (也可以托盘图标 → 检查更新), 设置和数据都保留; 用 Scoop 安装的用 `scoop update altrun`。详见 [安装与升级](Installation-zh#升级)。
 
+### 怎样退回旧版本
+新版本改了设置格式时, 升级之前的设置留在 `Data` 文件夹里 (`ALTRun.v<版本>.backup.json`, 例如 `ALTRun.v6.backup.json`)。退回的做法: 退出 ALTRun (托盘图标 → 退出), 把 `ALTRun.v6.backup.json` 复制成 `ALTRun.json` (覆盖), 再启动旧版本。有 `Knowledge.v1.backup.json` 的话也复制成 `Knowledge.json`, 不然旧版本里自定义命令、文字片段、同步任务和脚本学到的排序不起作用 (其他都正常)。升级以后做的改动不在备份里。不用备份旧版本也能启动, 只是 "搜索窗口" 和 "键盘" 两页的设置显示成默认值。
+
 ### 在多台电脑上使用同一份设置
 两种做法:
 - **只同步设置和数据**: 偏好设置 → 高级 → 数据 → **更改位置...**, 选同步盘 (OneDrive、Dropbox...) 里的一个文件夹。现在的设置和数据会复制过去, ALTRun 重新载入后改用那里; 在另一台电脑上选同一个文件夹, 提示 "已经有 ALTRun 的设置" 时选 **是** 就会用那里的设置。对话框列出这台电脑上有的常用位置 (`%OneDrive%\ALTRun\Data`、工作或学校 OneDrive 的 `%OneDriveCommercial%\ALTRun\Data`、`%USERPROFILE%\Dropbox\ALTRun\Data`...), 也可以直接输入或点 **浏览...**。环境变量按写的样子保存, 每台电脑的 OneDrive 路径不同也能用; 对话框里会显示在这台电脑上是哪个文件夹。选的位置记在默认位置 `Data\ALTRun.json` 的 `"DataLocation"` 里; 选列表最后一项 (默认位置) 就回到默认位置

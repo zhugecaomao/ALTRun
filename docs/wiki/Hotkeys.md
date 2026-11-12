@@ -15,6 +15,8 @@ Preferences → Hotkeys: assign a [system command](System-Commands#system-comman
 
 To copy the selected text ALTRun presses `Ctrl+C` in that program: with nothing selected it waits up to 0.8 s before the window opens, so only use `{selection}` where you want it. The clipboard is put back afterwards.
 
+**Running a custom command**: `"Action": "custom:<Id>"` runs the [custom command](Custom-Commands) with that `Id` (see the command's `Id` in `ALTRun.json`; for now this is set in the settings file only). A command with `{query}` or content types gets the selection as from [Actions on selected content](Usage#actions-on-selected-content): `{query}` becomes the selected text or path, and a file or command line without `{query}` gets it as its last argument; selected text with a line break, a double quote or characters a command line treats specially is not passed (a notice says why). With nothing selected, a `{query}` command with a keyword opens the search window with the keyword typed, so you type the rest. Other commands run directly, without copying the selection. If the command was deleted, the hotkey says so.
+
 ![Preferences → Hotkeys → Edit...](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/hotkey-editor.png)
 
 New installs come with six examples:

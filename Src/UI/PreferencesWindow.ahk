@@ -318,17 +318,17 @@ class PreferencesWindow {
     ; Turning on "also in administrator windows" creates the scheduled task, turning it off deletes it (one UAC prompt each). If creating fails (UAC canceled), explain and turn the option off again;
     ; when ALTRun's folder can be changed without administrator rights, say what that means and turn it on only if the user still wants it.
     ; false = don't save (the user chose to go back and change it)
-    static _ApplyCapsLockHelper(general) {
-        was := AppSettings.General.Has("CapsLockElevated") && AppSettings.General["CapsLockElevated"]
-        now := general.Has("CapsLockElevated") && general["CapsLockElevated"]
-        if (now && !CapsLockSwitch.IsMode(general["CapsLock"]))
-            general["CapsLockElevated"] := now := 0                         ; the option has no effect while CapsLock works as usual
+    static _ApplyCapsLockHelper(keyboard) {
+        was := AppSettings.Keyboard.Has("CapsLockElevated") && AppSettings.Keyboard["CapsLockElevated"]
+        now := keyboard.Has("CapsLockElevated") && keyboard["CapsLockElevated"]
+        if (now && !CapsLockSwitch.IsMode(keyboard["CapsLock"]))
+            keyboard["CapsLockElevated"] := now := 0                         ; the option has no effect while CapsLock works as usual
         if (now && !was && (folder := CapsLockHelper.WritableFolder()) != ""
             && MsgBox(I18n.T("Prefs.CapsLockElevatedWritable", folder), I18n.T("Prefs.Title"), "YesNo Icon! Default2 Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
-            general["CapsLockElevated"] := now := 0                         ; the other settings are saved; the option stays off
+            keyboard["CapsLockElevated"] := now := 0                        ; the other settings are saved; the option stays off
         if (now && !was && !CapsLockHelper.Install()) {
             MsgBox(I18n.T("Prefs.CapsLockElevatedFailed"), I18n.T("Prefs.Title"), "Icon! Owner" PreferencesWindow.Gui.Hwnd)
-            general["CapsLockElevated"] := 0
+            keyboard["CapsLockElevated"] := 0
         } else if (was && !now) {
             CapsLockHelper.Uninstall()
         }
@@ -383,7 +383,7 @@ class PreferencesWindow {
         if !PreferencesWindow._positionReset                                ; the search window was dragged after Preferences opened: use the new position
             appearance["Position"] := PreferencesWindow.DeepCopy(AppSettings.Appearance["Position"])
 
-        if !PreferencesWindow._ApplyCapsLockHelper(general)
+        if !PreferencesWindow._ApplyCapsLockHelper(PreferencesWindow.Working["Keyboard"])
             return
         stale := PreferencesWindow.StaleIndexes(AppSettings.Data, PreferencesWindow.Working)
         delayedBefore := AppSettings.Data["DelayedStart"]

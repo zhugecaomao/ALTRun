@@ -8,7 +8,7 @@
 ; Only results that can be opened again are kept: files, folders, programs, URLs (path saved) and system commands (Id saved, shown with the name in the current language);
 ; clipboard history, calculation results, snippets, web searches, windows and others that depend on the input or the moment aren't.
 ;
-; Settings (ALTRun.json -> Features.Recent): Enabled / RecentCount / Pinned
+; Settings (ALTRun.json): Features.Recent: Enabled / Pinned; Window.RecentCount
 ;===============================================================================
 
 class RecentProvider {
@@ -34,7 +34,7 @@ class RecentProvider {
         }
         shown := 0
         for entry in Knowledge.Recent {
-            if (shown >= options["RecentCount"])
+            if (shown >= AppSettings.Window["RecentCount"])
                 break
             if (!(entry is Map) || !entry.Has("Uid") || seen.Has(entry["Uid"]))
                 continue

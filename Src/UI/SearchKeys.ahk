@@ -154,7 +154,7 @@ class SearchKeys {
                     return 0
                 }
                 ; SpaceToRun (the 2.x option of the same name): with text typed, Space runs the selected result; Shift+Space types a space as usual
-                if (!shift && AppSettings.General["SpaceToRun"] && SearchWindow.Input.Value != "" && IsObject(SearchWindow.SelectedItem())) {
+                if (!shift && AppSettings.Keyboard["SpaceToRun"] && SearchWindow.Input.Value != "" && IsObject(SearchWindow.SelectedItem())) {
                     SearchWindow._Execute()
                     return 0
                 }
@@ -184,7 +184,7 @@ class SearchKeys {
                 }
                 return
             case 0x09:                                                      ; Tab: complete, or (TabKey = "Next") next / previous result; Ctrl+Tab always completes
-                if (!ctrl && AppSettings.General["TabKey"] = "Next")
+                if (!ctrl && AppSettings.Keyboard["TabKey"] = "Next")
                     SearchWindow.MoveSelection(shift ? -1 : 1, true)
                 else
                     SearchWindow._AutoComplete()

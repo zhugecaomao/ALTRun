@@ -9,7 +9,7 @@ class ExtensionTests {
     ; CapsLock switches the input language: setting values, choosing the next input language
     static CapsLockSwitch() {
         eq := (n, a, e) => TestRunner.Equal("CapsLockSwitch." n, a, e)
-        eq("off by default", AppSettings.Defaults()["General"]["CapsLock"], "")
+        eq("off by default", AppSettings.Defaults()["Keyboard"]["CapsLock"], "")
         eq("modes", (CapsLockSwitch.IsMode("Layout") ? 1 : 0) (CapsLockSwitch.IsMode("Mode") ? 1 : 0) (CapsLockSwitch.IsMode("") ? 1 : 0) (CapsLockSwitch.IsMode("x") ? 1 : 0), "1100")
         eq("hold time", CapsLockSwitch.HoldMs, 300)
         eq("notification text", CapsLockSwitch.StateText(true) "|" CapsLockSwitch.StateText(false), "Caps Lock On|Caps Lock Off")
@@ -21,27 +21,33 @@ class ExtensionTests {
         eq("no too-many-hotkeys warning", A_HotkeyInterval, 0)
         A_HotkeyInterval := savedInterval
 
-        ; the Caps Lock notice can be turned off (General.CapsLockNotify)
-        eq("notice on by default", AppSettings.Defaults()["General"]["CapsLockNotify"], 1)
+        ; the Caps Lock notice can be turned off (Keyboard.CapsLockNotify)
+        eq("notice on by default", AppSettings.Defaults()["Keyboard"]["CapsLockNotify"], 1)
         notices := [], savedNotify := App.GetOwnPropDesc("Notify")
         App.DefineProp("Notify", {Call: (this, text, *) => notices.Push(text)})
-        savedNotice := AppSettings.General.Has("CapsLockNotify") ? AppSettings.General["CapsLockNotify"] : 1
-        AppSettings.General["CapsLockNotify"] := 1, App.CapsLockNotice(true)
-        AppSettings.General["CapsLockNotify"] := 0, App.CapsLockNotice(false)
-        AppSettings.General["CapsLockNotify"] := savedNotice
+        savedNotice := AppSettings.Keyboard.Has("CapsLockNotify") ? AppSettings.Keyboard["CapsLockNotify"] : 1
+        AppSettings.Keyboard["CapsLockNotify"] := 1, App.CapsLockNotice(true)
+        AppSettings.Keyboard["CapsLockNotify"] := 0, App.CapsLockNotice(false)
+        AppSettings.Keyboard["CapsLockNotify"] := savedNotice
         App.DefineProp("Notify", savedNotify)
         eq("notice shown only when on", notices.Length = 1 ? notices[1] : notices.Length, "Caps Lock On")
 
         ; the helper for administrator windows (CapsLockHelper, #158)
-        eq("helper off by default", AppSettings.Defaults()["General"]["CapsLockElevated"], 0)
+        eq("helper off by default", AppSettings.Defaults()["Keyboard"]["CapsLockElevated"], 0)
         eq("helper wanted", (CapsLockHelper.Wanted(Map("CapsLock", "Mode", "CapsLockElevated", 1)) ? 1 : 0)
             . (CapsLockHelper.Wanted(Map("CapsLock", "", "CapsLockElevated", 1)) ? 1 : 0)
             . (CapsLockHelper.Wanted(Map("CapsLock", "Layout", "CapsLockElevated", 0)) ? 1 : 0)
             . (CapsLockHelper.Wanted(Map("CapsLock", "Layout")) ? 1 : 0), "1000")
         settingsFile := A_Temp "\ALTRunHelperTest.json"
         try FileDelete(settingsFile)
-        FileAppend('{"General": {"CapsLock": "Layout", "CapsLockElevated": 1}}', settingsFile, "UTF-8")
+        FileAppend('{"Keyboard": {"CapsLock": "Layout", "CapsLockElevated": 1}}', settingsFile, "UTF-8")
         eq("helper reads the mode", CapsLockHelper.ModeFromSettings(settingsFile), "Layout")
+        FileDelete(settingsFile)
+        FileAppend('{"General": {"CapsLock": "Mode", "CapsLockElevated": 1}}', settingsFile, "UTF-8")   ; settings version 6, not upgraded yet
+        eq("helper reads a version 6 file", CapsLockHelper.ModeFromSettings(settingsFile), "Mode")
+        FileDelete(settingsFile)
+        FileAppend('{"General": {"CapsLock": "Mode", "CapsLockElevated": 1}, "Keyboard": {"CapsLock": "Layout", "CapsLockElevated": 0}}', settingsFile, "UTF-8")
+        eq("helper: Keyboard wins over left-over General", CapsLockHelper.ModeFromSettings(settingsFile), "")
         FileDelete(settingsFile)
         FileAppend('{"General": {"CapsLock": "Layout", "CapsLockElevated": 0}}', settingsFile, "UTF-8")
         eq("helper: option off", CapsLockHelper.ModeFromSettings(settingsFile), "")

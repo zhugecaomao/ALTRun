@@ -152,6 +152,8 @@ Optional:
 ## Changing the settings structure
 - Only adding new settings: add them to `AppSettings.Defaults()`; entries missing from older files are filled in automatically
 - Renaming, moving or restructuring existing entries: `AppSettings.CurrentVersion + 1`, and add a `_FromN(data)` to `SchemaMigration` that converts version N to N+1. A backup `ALTRun.vN.backup.json` is made automatically before upgrading
+- Moving a setting to another group: add it to `AppSettings.MovedKeys`. `AppSettings.MoveGroups` runs at every load, not only when upgrading: an older ALTRun reading the file fills the old place in with its default, and the next load of the newer one removes it (the new place wins)
+- Custom commands, snippets and sync tasks have an `Id` (`AppSettings.EnsureIds`, at every load and before every save): hotkeys refer to commands by it (`custom:<Id>`), and the learned ranking uses it (`Knowledge.json` has its own `Version`; `Knowledge.ConvertUids`). Never change a valid Id; a copied item drops it (a new one is made when saving)
 
 ## Change checklists
 A change usually touches more than the line that motivates it. Before you start, find every place that uses what you change (search the whole repository, including `Tests\`, `docs\`, `Resources\Lang\` and `.github\`), and go through the list that fits:

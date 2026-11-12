@@ -10,6 +10,8 @@
 ;   4 -> 5   _From4()   snippet paste mode Clipboard -> Auto; windows / keywords added to the defaults later are added; small cleanups (see issue #176)
 ;   5 -> 6   _From5()   window lists become arrays; StandardDialogs split out of DialogWindows; two hotkeys renamed to
 ;                       Hotkey; unused keys removed; old ScopeExclude default and Compact themes replaced (#176)
+;   6 -> 7   _From6()   custom commands, snippets and sync tasks get an Id; the settings of the Search Window and Keyboard pages
+;                       move to the Window / Keyboard groups; pinned commands use the new Uid (#176)
 ;
 ; When the settings structure changes later: AppSettings.CurrentVersion + 1, and add a _FromN() here.
 ; Before upgrading, Backup() copies the original file to ALTRun.v<N>.backup.json.
@@ -102,6 +104,27 @@ class SchemaMigration {
             return ""
         }
         return backup
+    }
+
+    ;---------------------------------------------------------------------------
+    ; 6 -> 7
+    ;---------------------------------------------------------------------------
+    ; Commands get a fixed Id, so hotkeys can run them ("custom:<Id>") and what was learned stays with them when they change:
+    ;   - CustomCommands, Snippets, SyncTasks: an Id each (AppSettings.EnsureIds; it runs at every load too)
+    ;   - the 15 settings of the Search Window and Keyboard pages move to the Window / Keyboard groups (AppSettings.MoveGroups, also
+    ;     at every load: going back to an older version leaves its defaults in the old places, removed when this version loads again)
+    ;   - pinned custom commands (Features.Recent.Pinned) get the new Uid "custom:<Id>"; Knowledge.json converts itself (Knowledge.Load)
+    ; Going back to an older version: quit ALTRun, put ALTRun.v6.backup.json back as ALTRun.json (and Knowledge.v1.backup.json as Knowledge.json)
+    static _From6(data) {
+        AppSettings.EnsureIds(data)
+        AppSettings.MoveGroups(data)
+        uidMap := Knowledge.LegacyUids(data)
+        recent := SchemaMigration._Section(SchemaMigration._Section(data, "Features"), "Recent")
+        if (recent.Has("Pinned") && recent["Pinned"] is Array)
+            for entry in recent["Pinned"]
+                if (entry is Map && entry.Has("Uid") && uidMap.Has(entry["Uid"]))
+                    entry["Uid"] := uidMap[entry["Uid"]][1]
+        return data
     }
 
     ;---------------------------------------------------------------------------
@@ -272,10 +295,10 @@ class SchemaMigration {
         general["Language"]             := pick(config, "Chinese", 0) ? "zh-CN" : "auto"
         general["LaunchAtLogin"]        := pick(config, "AutoStartup", 1)
         general["ShowTrayIcon"]         := pick(config, "ShowTrayIcon", 1)
-        general["HideOnDeactivate"]     := pick(config, "HideOnLostFocus", 1)
-        general["SwitchToEnglishInput"] := pick(config, "AutoEngIME", 0)
-        general["SpaceToRun"]           := pick(config, "SpaceToRun", 0)
-        general["KeepLastQuery"]        := pick(config, "KeepInput", 1)     ; 2.x kept the input by default
+        data["Window"]["HideOnDeactivate"]       := pick(config, "HideOnLostFocus", 1)   ; data has the current groups already (the defaults)
+        data["Window"]["KeepLastQuery"]          := pick(config, "KeepInput", 1)         ; 2.x kept the input by default
+        data["Keyboard"]["SwitchToEnglishInput"] := pick(config, "AutoEngIME", 0)
+        data["Keyboard"]["SpaceToRun"]           := pick(config, "SpaceToRun", 0)
         general["FileManager"]          := pick(config, "FileMgr", "explorer.exe")
         general["SendToMenu"]           := pick(config, "EnableSendTo", 1)
         general["StartMenuShortcut"]    := pick(config, "InStartMenu", 1)

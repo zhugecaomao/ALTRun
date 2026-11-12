@@ -47,7 +47,7 @@ class SyncProvider {
         if (state != "")
             subtitle := state " · " subtitle
         item := ResultItem(I18n.T("Sync.RunTitle", name), subtitle, {Icon: SyncProvider.Icon, Score: score
-            , Uid: "sync:" SyncJobs.Key(name), Source: task, OnRun: (*) => SyncPreview.OpenTask(task)})
+            , Uid: SyncProvider.Uid(task), Source: task, OnRun: (*) => SyncPreview.OpenTask(task)})
         add(titleKey, icon, fn) => item.Actions.Push(ResultItem(I18n.T(titleKey), "", {Icon: icon, OnRun: fn}))
         if running {
             add("Sync.Action.Show", SyncProvider.Icon, (*) => SyncPreview.ShowJob(name))
@@ -64,6 +64,9 @@ class SyncProvider {
     }
 
     ; Today's log of the task (its own log file, or the one in %TEMP%\ALTRun\SyncLogs); its folder when there is none yet
+    ; "sync:<Id>": the learned ranking stays with the task when it is renamed (without an Id yet: the Uid before settings version 7)
+    static Uid(task) => (task.Has("Id") && task["Id"] != "") ? "sync:" task["Id"] : Knowledge.LegacyUid("sync", task)
+
     static OpenLog(task) {
         logFile := (RoboSync._Get(task, "LogFile") != "") ? RoboSync.Expand(task["LogFile"])
             : SyncJobs.LogDir "\" SyncJobs.FileName(task["Name"]) "_" FormatTime(, "yyyyMMdd") ".log"

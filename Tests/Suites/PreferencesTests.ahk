@@ -412,7 +412,7 @@ class PreferencesTests {
             limit := PrefsForm.ButtonY - 6
             rightLimit := PrefsForm.ContentX + PrefsForm.ContentW + 3                   ; the thin line below sections (SS_ETCHEDHORZ) is 2 pixels wider
             for index, page in PreferencesWindow.Pages {
-                if (page.Key = "Prefs.Page.Keyboard" && !AppSettings.General["CapsLock"]) {  ; Caps Lock as usual: "also in administrator windows" is grayed out, with the reason
+                if (page.Key = "Prefs.Page.Keyboard" && !AppSettings.Keyboard["CapsLock"]) {  ; Caps Lock as usual: "also in administrator windows" is grayed out, with the reason
                     hint := 0
                     for ctrl in page.Controls
                         hint := hint || (ctrl.Type = "Text" && ctrl.Text = I18n.T("Prefs.CapsLockElevated.NeedsMode"))

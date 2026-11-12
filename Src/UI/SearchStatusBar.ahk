@@ -12,7 +12,7 @@
 ;===============================================================================
 
 class SearchStatusBar {
-    ; Status bar at the bottom (Appearance.StatusBar, like Listary / Raycast), shown when there are result rows. On the left
+    ; Status bar at the bottom (Window.StatusBar, like Listary / Raycast), shown when there are result rows. On the left
     ; the file search / actions panel state; on the right what Enter and → do with the selected result (round key caps),
     ; as Raycast does: the other actions and their keys (Ctrl+Enter, F3...) are in the actions panel.
     ; The usage tip is in the empty search box (its cue banner), not here
@@ -29,8 +29,8 @@ class SearchStatusBar {
     }
 
     static Enabled() {
-        appearance := AppSettings.Appearance
-        return !appearance.Has("StatusBar") || appearance["StatusBar"]
+        window := AppSettings.Window
+        return !window.Has("StatusBar") || window["StatusBar"]
     }
 
     ; status bar height: only shown with result rows
