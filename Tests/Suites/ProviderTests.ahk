@@ -727,7 +727,7 @@ class ProviderTests {
             eq("default keyword", AppSettings.Defaults()["Features"]["FileSearch"]["RecentKeywords"][1], "recent")
             FileSetTime("20260601000000", recent "\notes.txt.lnk")             ; opened again: moves to the top
             eq("reopened moves up", WindowsRecent.Items(300)[1].Name, "notes.txt")
-            eq("quick switch folders", QuickSwitch.RecentFolders(10, recent).Length, 2)
+            eq("quick switch folders", FileManagers.RecentFolders(10, recent).Length, 2)
         } finally {
             WindowsRecent.Dir := saved[1], WindowsRecent.CacheMs := saved[2]
             try DirDelete(root, true)

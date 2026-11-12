@@ -17,17 +17,19 @@
 ;   StandardDialogs (ahk_class #32770) / BrowseDialogs / DialogWindows / ExcludeWindows / AutoSwitchExclude
 ;   The window lists are arrays of window conditions (ahk_class / ahk_exe / part of the title)
 ;
+; This file: start-up, the hotkeys and watching which window is in front (Windows events). The other parts, each its own class:
+;   QuickSwitchPanel.ahk      the folder panel below the dialog (search box + folder list)
+;   QuickSwitchFavorites.ahk  the folders in the panel, the favorite folders and the ☆ menu
+;   FileDialogs.ahk           recognizing open / save / "Browse for Folder" dialogs and jumping them to a folder
+;   FileManagers.ahk          the current folder of Total Commander, Directory Opus and File Explorer; recent folders
+;
 ; Usage:
 ;   QuickSwitch.Init(AppSettings.Extension("QuickSwitch"))    at start-up
-;   QuickSwitch.FolderOfWindow(hwnd)     current folder of a TC / Opus / Explorer window (read only, for "terminal here")
-;   QuickSwitch.MenuFolders()            the folders in the panel [{Path, Group, Tag}]
-;   QuickSwitch.AddFavorite(folder) / RemoveFavorite(folder) / IsFavorite(folder)   the favorite folders (saved in ALTRun.json)
-;   QuickSwitch.RecentFolders(n)         the n most recently used folders (opened files count by their folder)
+;   QuickSwitch.SyncFileManagerPath()    the jump hotkey: the dialog goes to the folder of the file manager used last
 ;===============================================================================
 
 class QuickSwitch {
     static Options := Map(), _hasExclude := false
-    static _panel := "", _panelFor := 0, _panelFolders := [], _panelPos := ""
 
     static Init(options) {
         QuickSwitch.Options := options
@@ -43,7 +45,7 @@ class QuickSwitch {
         for window in options["AutoSwitchExclude"]
             GroupAdd("ALTRunAutoSwitchExclude", window)
 
-        HotIf((*) => QuickSwitch.IsFileDialog())
+        HotIf((*) => FileDialogs.IsFileDialog())
         try {
             if (options["Hotkey"] != "")
                 Hotkey(options["Hotkey"], (*) => QuickSwitch.SyncFileManagerPath())
@@ -91,8 +93,8 @@ class QuickSwitch {
         QuickSwitch._checkTimer := Logger.Watch("quick switch check", () => QuickSwitch._Check())   ; one-shot (events), the end of settle
         QuickSwitch._settleTimer := Logger.Watch("quick switch settle", () => QuickSwitch._Check())  ; and repeating (polling) need separate timers
         QuickSwitch._pollTimer := Logger.Watch("quick switch watch", () => QuickSwitch._Check())
-        QuickSwitch._placeTimer := () => QuickSwitch._panelFor && QuickSwitch._PlacePanel(QuickSwitch._panelFor)
-        QuickSwitch._dragTimer := () => QuickSwitch._panelFor && QuickSwitch._PlacePanel(QuickSwitch._panelFor)   ; only if the drag hook can't be set
+        QuickSwitch._placeTimer := () => QuickSwitchPanel._panelFor && QuickSwitchPanel._PlacePanel(QuickSwitchPanel._panelFor)
+        QuickSwitch._dragTimer := () => QuickSwitchPanel._panelFor && QuickSwitchPanel._PlacePanel(QuickSwitchPanel._panelFor)   ; only if the drag hook can't be set
         if !(QuickSwitch._foregroundHook := QuickSwitch._HookEvent(0x3, 0x3)) {   ; EVENT_SYSTEM_FOREGROUND, every process
             Logger.Error("QuickSwitch: cannot watch foreground changes, checking every " QuickSwitch.PollMs " ms")
             QuickSwitch._alwaysPoll := true
@@ -111,14 +113,14 @@ class QuickSwitch {
         if (event = 0x3)                                                    ; EVENT_SYSTEM_FOREGROUND
             return SetTimer(QuickSwitch._checkTimer, -1)
         if (event = 0xA || event = 0xB) {                                   ; EVENT_SYSTEM_MOVESIZESTART / END: the dialog is dragged or resized
-            if (hwnd && hwnd = QuickSwitch._panelFor)
+            if (hwnd && hwnd = QuickSwitchPanel._panelFor)
                 QuickSwitch._Drag(event = 0xA)
             return
         }
         if (idObject != 0 || idChild != 0 || !hwnd)                         ; windows only (OBJID_WINDOW), not the caret, the cursor or parts of controls
             return
         if (event = 0x800B)                                                 ; EVENT_OBJECT_LOCATIONCHANGE while the dialog is dragged
-            return (hwnd = QuickSwitch._panelFor) ? SetTimer(QuickSwitch._placeTimer, -1) : 0
+            return (hwnd = QuickSwitchPanel._panelFor) ? SetTimer(QuickSwitch._placeTimer, -1) : 0
         SetTimer(QuickSwitch._checkTimer, -QuickSwitch.CheckDelayMs)
     }
 
@@ -153,7 +155,7 @@ class QuickSwitch {
             DllCall("UnhookWinEvent", "Ptr", QuickSwitch._dragHook), QuickSwitch._dragHook := 0
         if (QuickSwitch._dragTimer != "")                                   ; not before _StartWatching
             SetTimer(QuickSwitch._dragTimer, 0)
-        if (on && (tid := DllCall("GetWindowThreadProcessId", "Ptr", QuickSwitch._panelFor, "UInt*", &pid := 0, "UInt"))
+        if (on && (tid := DllCall("GetWindowThreadProcessId", "Ptr", QuickSwitchPanel._panelFor, "UInt*", &pid := 0, "UInt"))
             && !(QuickSwitch._dragHook := QuickSwitch._HookEvent(0x800B, 0x800B, pid, tid)))   ; EVENT_OBJECT_LOCATIONCHANGE
             SetTimer(QuickSwitch._dragTimer, QuickSwitch.DragMs)
         if (place && QuickSwitch._placeTimer != "")
@@ -202,27 +204,27 @@ class QuickSwitch {
     ; compare only the window handles noted: after the panel closes its control objects are destroyed and their Hwnd can't be read
     ; Alt+↓ or F4 opens the ☆ menu, as they open a drop-down list (a combo box) in Windows
     static _OnKeyDown(wParam, lParam, msg, hwnd) {
-        if !(hwnd && (hwnd = QuickSwitch._searchHwnd || hwnd = QuickSwitch._listHwnd))
+        if !(hwnd && (hwnd = QuickSwitchPanel._searchHwnd || hwnd = QuickSwitchPanel._listHwnd))
             return
         if (msg = 0x104) {                                                  ; WM_SYSKEYDOWN: only Alt+↓ is ours, other Alt keys go on (Alt+F4...)
             if (wParam != 0x28)
                 return
-            QuickSwitch.ShowFavoritesMenu()
+            QuickSwitchFavorites.ShowFavoritesMenu()
             return 0
         }
         switch wParam {
-            case 0x26: QuickSwitch.PanelKey("Up")
-            case 0x28: QuickSwitch.PanelKey("Down")
+            case 0x26: QuickSwitchPanel.PanelKey("Up")
+            case 0x28: QuickSwitchPanel.PanelKey("Down")
             case 0x73:                                                      ; F4 (alone)
                 if (GetKeyState("Ctrl") || GetKeyState("Shift"))
                     return
-                QuickSwitch.ShowFavoritesMenu()
-            case 0x0D: QuickSwitch.PanelKey("Enter")
-            case 0x1B: QuickSwitch.PanelKey("Escape")
+                QuickSwitchFavorites.ShowFavoritesMenu()
+            case 0x0D: QuickSwitchPanel.PanelKey("Enter")
+            case 0x1B: QuickSwitchPanel.PanelKey("Escape")
             case 0x44:                                                      ; Ctrl+D: the dialog's current folder becomes a favorite (as bookmarking in a browser)
                 if !(GetKeyState("Ctrl") && !GetKeyState("Alt") && !GetKeyState("Shift"))
                     return
-                QuickSwitch.AddDialogFolder()
+                QuickSwitchFavorites.AddDialogFolder()
             default:   return
         }
         return 0
@@ -233,12 +235,12 @@ class QuickSwitch {
     static _Check() {
         if !(active := DllCall("GetForegroundWindow", "Ptr"))               ; read once: every step below is about the same window
             return                                                          ; none for a moment while switching: the next event comes
-        if (IsObject(QuickSwitch._panel) && active = QuickSwitch._panel.Hwnd) {   ; typing in the panel's search box: the dialog and panel stay as they are
-            if !DllCall("IsWindow", "Ptr", QuickSwitch._panelFor)          ; the dialog was closed (by its program): close the panel too
-                QuickSwitch.HidePanel(), QuickSwitch._UnwatchWindow()
+        if (IsObject(QuickSwitchPanel._panel) && active = QuickSwitchPanel._panel.Hwnd) {   ; typing in the panel's search box: the dialog and panel stay as they are
+            if !DllCall("IsWindow", "Ptr", QuickSwitchPanel._panelFor)          ; the dialog was closed (by its program): close the panel too
+                QuickSwitchPanel.HidePanel(), QuickSwitch._UnwatchWindow()
             else {
-                QuickSwitch._PlacePanel(QuickSwitch._panelFor)             ; a panel shown as only its search box opens its list now (see PanelLayout)
-                QuickSwitch._WatchWindow(QuickSwitch._panelFor, "panel")    ; until the caret leaves the panel (a foreground event)
+                QuickSwitchPanel._PlacePanel(QuickSwitchPanel._panelFor)             ; a panel shown as only its search box opens its list now (see PanelLayout)
+                QuickSwitch._WatchWindow(QuickSwitchPanel._panelFor, "panel")    ; until the caret leaves the panel (a foreground event)
             }
             return QuickSwitch._Poll(QuickSwitch._alwaysPoll || QuickSwitch._threadPoll)
         }
@@ -247,17 +249,17 @@ class QuickSwitch {
         if (active != previous && !QuickSwitch.IsPassingWindow(active, className)) {   ; another window came to the front: was the one before a file manager?
             owner := DllCall("GetWindow", "Ptr", active, "UInt", 4, "Ptr")  ; GW_OWNER
             if !(owner && owner = previous && A_TickCount - QuickSwitch._foregroundAt < QuickSwitch.OwnerPassMs)   ; see OwnerPassMs
-                QuickSwitch._fromManager := QuickSwitch.IsFileManager(previous)
+                QuickSwitch._fromManager := FileManagers.IsFileManager(previous)
             QuickSwitch._foreground := active, QuickSwitch._foregroundAt := A_TickCount, QuickSwitch._settledSince := 0, switched := true
         }
-        isDialog := QuickSwitch._IsFileDialogWindow(active)
+        isDialog := FileDialogs._IsFileDialogWindow(active)
         if (Logger.Enabled && active != QuickSwitch._loggedForeground)
             QuickSwitch._LogForeground(active, className, isDialog)
         if (isDialog && QuickSwitch.Options["AutoSwitch"] && QuickSwitch._fromManager && !WinExist("ahk_group ALTRunAutoSwitchExclude ahk_id " active))
             QuickSwitch._AutoSwitch(active, switched ? previous : 0)
 
-        if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitch._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
-            QuickSwitch._UpdatePanel(isDialog ? active : 0)
+        if (QuickSwitch._PanelEnabled() || IsObject(QuickSwitchPanel._panel))    ; with automatic showing off, a panel opened by the hotkey still follows the dialog
+            QuickSwitchPanel._UpdatePanel(isDialog ? active : 0)
         if isDialog
             QuickSwitch._WatchWindow(active, "dialog")
         else if QuickSwitch._MayBeDialog(active)
@@ -285,7 +287,7 @@ class QuickSwitch {
 
     ; AutoSwitch: jump to the file manager's folder once per switch. previous: the window before, on the first check after the switch (debug log)
     static _AutoSwitch(dialog, previous) {
-        method := QuickSwitch.DialogJumpMethod(dialog)
+        method := FileDialogs.DialogJumpMethod(dialog)
         if (previous && Logger.Enabled) {
             Logger.Debug("QuickSwitch: AutoSwitch from " QuickSwitch.ClassOf(previous) ", jump by " method ", " (A_TickCount - QuickSwitch._foregroundAt) " ms after the switch")
         }
@@ -326,1196 +328,25 @@ class QuickSwitch {
     ; Hotkey (MenuHotkey, default Ctrl+Shift+G): the caret jumps to the panel's search box to choose with the keyboard; shows the panel for the moment when automatic showing is off
     static FocusPanel() {
         dialog := WinExist("A")
-        if (!IsObject(QuickSwitch._panel) || QuickSwitch._panelFor != dialog) {
-            QuickSwitch._BuildPanel(dialog)
-            QuickSwitch._PlacePanel(dialog)
+        if (!IsObject(QuickSwitchPanel._panel) || QuickSwitchPanel._panelFor != dialog) {
+            QuickSwitchPanel._BuildPanel(dialog)
+            QuickSwitchPanel._PlacePanel(dialog)
         }
-        if !IsObject(QuickSwitch._panel)
+        if !IsObject(QuickSwitchPanel._panel)
             return
         try {
-            WinActivate("ahk_id " QuickSwitch._panel.Hwnd)
-            ControlFocus(QuickSwitch._panelSearch)
+            WinActivate("ahk_id " QuickSwitchPanel._panel.Hwnd)
+            ControlFocus(QuickSwitchPanel._panelSearch)
         }
-    }
-
-    ;---------------------------------------------------------------------------
-    ; The folder panel (like Listary's Quick Switch window): attached below the dialog, as wide as it;
-    ; the search box on top (filters the list first, then finds folders and files with Everything / the built-in index), the list below.
-    ; Clicking an item or Enter in the search box jumps there (files: see PickFile); Esc goes back to the dialog
-    ;---------------------------------------------------------------------------
-    static _UpdatePanel(dialog) {
-        if !dialog
-            return QuickSwitch.HidePanel()
-        if (dialog != QuickSwitch._panelFor) {                              ; a new dialog, or back from another window: list the folders again
-            if !QuickSwitch._PanelEnabled()
-                return QuickSwitch.HidePanel()
-            QuickSwitch._BuildPanel(dialog)
-        }
-        QuickSwitch._PlacePanel(dialog)
-    }
-
-    static HidePanel() {
-        if IsObject(QuickSwitch._panel)
-            try QuickSwitch._panel.Destroy()
-        QuickSwitch._panel := "", QuickSwitch._panelFor := 0, QuickSwitch._panelPos := "", QuickSwitch._panelRows := -1
-        QuickSwitch._panelSearch := "", QuickSwitch._panelList := "", QuickSwitch._panelLine := "", QuickSwitch._panelStar := ""   ; the controls are destroyed: no more references
-        QuickSwitch._searchHwnd := 0, QuickSwitch._listHwnd := 0
-    }
-
-    static PanelRows := 8
-
-    static _BuildPanel(dialog) {
-        QuickSwitch.HidePanel()
-        QuickSwitch._panelFor := dialog
-        QuickSwitch._panelBase := QuickSwitch.MenuFolders(false)
-        rect := QuickSwitch._FrameRect(dialog)
-        width := IsObject(rect) ? QuickSwitch._PanelWidthAt(rect) : QuickSwitch.PanelWidthFor(600)
-        colors := QuickSwitch.PanelColors()                                 ; follows ALTRun's theme (light / dark...)
-        ; -DPIScale: the panel is as wide as the dialog, in the dialog's real pixels; the row height is measured in pixels too. Letting AHK scale by DPI again
-        ; would make the panel half again as wide as the dialog at 150%, with an empty area below. Fixed margins are converted with Win.Scale
-        panel := Gui("-Caption +ToolWindow +AlwaysOnTop +Border -DPIScale", "ALTRun Quick Switch")
-        panel.MarginX := 0, panel.MarginY := 0, panel.BackColor := colors.Background
-        panel.SetFont("s10 c" colors.Text, QuickSwitch._FontName())
-        search := panel.AddEdit("x" Win.Scale(10) " y" Win.Scale(8) " w" QuickSwitch.SearchWidth(width) " r1 -Multi -E0x200 Background" colors.Background)
-        search.GetPos(, &searchY, , &searchH)
-        star := panel.AddPicture("x" QuickSwitch.StarX(width) " y" (searchY + (searchH - QuickSwitch.StarSize()) // 2) " w" QuickSwitch.StarSize() " h" QuickSwitch.StarSize() " Icon44", "shell32.dll")
-        star.OnEvent("Click", (*) => QuickSwitch.ShowFavoritesMenu())       ; the favorite folders (like the favorites button of Listary's Quick Switch window)
-        Win.AddTooltip(star.Hwnd, I18n.T("QuickSwitch.FavoritesButton") "  (Alt+↓, F4)")
-        hint := (QuickSwitch.Options.Has("MenuHotkey") && QuickSwitch.Options["MenuHotkey"] != "") ? "  (" Win.HotkeyLabel(QuickSwitch.Options["MenuHotkey"]) ")" : ""
-        DllCall("SendMessage", "Ptr", search.Hwnd, "UInt", 0x1501, "Ptr", 1, "WStr", " " I18n.T(QuickSwitch._SearchesFiles() ? "QuickSwitch.SearchCue" : "QuickSwitch.SearchCueFolders") hint)   ; EM_SETCUEBANNER: gray cue text
-        search.OnEvent("Change", (*) => SetTimer(QuickSwitch._searchTimer, -150))
-        QuickSwitch._barHeight := searchY + searchH + searchY               ; the panel shown as only its search box (see PanelLayout), client height
-        line := panel.AddText("x0 y+" Win.Scale(6) " w" width " h1 Background" colors.Separator)   ; separator between the search box and the list
-        panel.SetFont("s9 c" colors.Text)
-        list := panel.AddListView("x0 y+" Win.Scale(2) " w" width " h100 -Hdr -Multi -E0x200 +LV0x10400 Background" colors.Background, ["Name", "Folder", "From"])   ; 0x400 = the full path on hover when it is too long
-        icons := IL_Create(3)
-        IL_Add(icons, "shell32.dll", 4)                                     ; 1 = folder
-        IL_Add(icons, "shell32.dll", 1)                                     ; 2 = file
-        IL_Add(icons, "shell32.dll", 44)                                    ; 3 = favorite folder (the star)
-        list.SetImageList(icons)
-        list.OnEvent("Click", (ctrl, row) => QuickSwitch._PanelJump(row))
-        list.OnEvent("ContextMenu", (ctrl, row, *) => QuickSwitch._ShowRowMenu(row))
-        list.OnNotify(-12, (ctrl, lParam) => QuickSwitch._OnCustomDraw(lParam))   ; NM_CUSTOMDRAW: the selected row and gray text in the theme's colors
-        list.Add("Icon1", "X")                                              ; the row height can only be measured with one row in (LVM_APPROXIMATEVIEWRECT)
-        QuickSwitch._rowTop := SendMessage(0x1040, 1, 0, list) >> 16
-        QuickSwitch._rowHeight := (SendMessage(0x1040, 2, 0, list) >> 16) - QuickSwitch._rowTop
-        list.Delete()
-        list.GetPos(, &listY)
-        panel.Show("NA Hide w" width " h100")                               ; the border around the client area: the panel's height for a number of rows
-        panel.GetPos(, , , &outerH), panel.GetClientPos(, , , &clientH)
-        QuickSwitch._listY := listY, QuickSwitch._frameH := outerH - clientH, QuickSwitch._panelRows := -1
-        QuickSwitch._panel := panel, QuickSwitch._panelList := list, QuickSwitch._panelSearch := search, QuickSwitch._panelWidth := width
-        QuickSwitch._panelLine := line, QuickSwitch._panelDialogW := IsObject(rect) ? rect.W : 0, QuickSwitch._panelColors := colors, QuickSwitch._panelStar := star
-        QuickSwitch._searchHwnd := search.Hwnd, QuickSwitch._listHwnd := list.Hwnd
-        if colors.Dark
-            try DllCall("uxtheme\SetWindowTheme", "Ptr", list.Hwnd, "Str", "DarkMode_Explorer", "Ptr", 0)   ; dark theme: dark scroll bars and selected row too
-        try DllCall("dwmapi\DwmSetWindowAttribute", "Ptr", panel.Hwnd, "UInt", 33, "Int*", 3, "UInt", 4)   ; Win11: small rounded corners
-        QuickSwitch._ShowFolders(QuickSwitch._panelBase)
-        if (QuickSwitch._placeTimer != "")
-            SetTimer(QuickSwitch._placeTimer, -500)                         ; once more: some dialogs move or resize themselves right after they are shown
-        if WinExist("ahk_class dopus.lister")                               ; reading Opus takes a moment: show the panel first
-            SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, dialog), -1)
-    }
-
-    static _AddDOpusFolders(dialog) {
-        if (QuickSwitch._panelFor != dialog || !IsObject(QuickSwitch._panelList))
-            return
-        QuickSwitch._panelBase := QuickSwitch.MenuFolders()
-        if (QuickSwitch._panelFor = dialog && IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value = "")   ; not while searching
-            QuickSwitch._ShowFolders(QuickSwitch._panelBase)
-    }
-
-    static _searchHwnd := 0, _listHwnd := 0, _panelColors := "", _panelBase := [], _panelList := "", _panelSearch := "", _panelLine := "", _panelStar := "", _panelWidth := 600, _panelDialogW := 0, _rowTop := 20, _rowHeight := 18
-    static _listY := 40, _frameH := 2, _barHeight := 40, _panelRows := -1
-
-    ; The search box and the ☆ button right of it (real pixels): the box ends a gap before the button, the button keeps the box's right margin
-    static StarSize() => Win.Scale(20)
-    static StarX(width) => width - Win.Scale(10) - QuickSwitch.StarSize()
-    static SearchWidth(width) => QuickSwitch.StarX(width) - Win.Scale(8) - Win.Scale(10)
-
-    ; Panel width = dialog width, at least 420 (converted by DPI) and at most maxWidth (the work area of the dialog's monitor); all real pixels
-    static PanelWidthFor(dialogWidth, maxWidth := 0) => Max(Win.Scale(420), maxWidth > 0 ? Min(dialogWidth, maxWidth) : dialogWidth)
-
-    static _PanelWidthAt(rect) {
-        area := Win.WorkAreaAt(rect.X + rect.W // 2, rect.Y + rect.H // 2)
-        return QuickSwitch.PanelWidthFor(rect.W, area.Right - area.Left)
-    }
-
-    ; The panel's colors: background / text / separator colors of ALTRun's current theme; light while no theme is loaded yet
-    static PanelColors() {
-        get(key, fallback) => ((value := ThemeManager.Get(key)) != "") ? value : fallback
-        background := get("Background", "FFFFFF")
-        return {Background: background, Text: get("Title", "1F1F1F"), Subtitle: get("Subtitle", "808080"), Separator: get("Separator", "E4E4E4")
-              , Selected: get("SelectedBackground", "DDE7F6"), SelectedText: get("SelectedTitle", "000000"), SelectedSubtitle: get("SelectedSubtitle", "4A5568")
-              , Dark: QuickSwitch.IsDarkColor(background)}
-    }
-
-    ; "RRGGBB" -> a Windows COLORREF (0x00BBGGRR)
-    static ColorRef(hex) {
-        value := Integer("0x" hex)
-        return ((value & 0xFF) << 16) | (value & 0xFF00) | ((value >> 16) & 0xFF)
-    }
-
-    ; Each cell sets its own colors: the selected row in the theme's selection color, paths and sources in gray (NMLVCUSTOMDRAW)
-    static _OnCustomDraw(lParam) {
-        static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001, CDDS_SUBITEMPREPAINT := 0x30001
-        static CDRF_NEWFONT := 0x2, CDRF_NOTIFYITEMDRAW := 0x20, CDRF_NOTIFYSUBITEMDRAW := 0x20
-        x64 := (A_PtrSize = 8)
-        stage := NumGet(lParam, A_PtrSize * 3, "UInt")
-        if (stage = CDDS_PREPAINT)
-            return CDRF_NOTIFYITEMDRAW
-        if (stage = CDDS_ITEMPREPAINT)
-            return CDRF_NOTIFYSUBITEMDRAW
-        if (stage != CDDS_SUBITEMPREPAINT)
-            return 0
-        colors := QuickSwitch._panelColors
-        row := NumGet(lParam, x64 ? 56 : 36, "UPtr")
-        column := NumGet(lParam, x64 ? 88 : 56, "Int")
-        selected := SendMessage(0x102C, row, 0x2, QuickSwitch._panelList) & 0x2   ; LVM_GETITEMSTATE / LVIS_SELECTED
-        stateOffset := x64 ? 64 : 40
-        NumPut("UInt", NumGet(lParam, stateOffset, "UInt") & ~0x11, lParam, stateOffset)   ; remove CDIS_SELECTED / CDIS_FOCUS so the system's blue highlight isn't drawn
-        text := selected ? (column ? colors.SelectedSubtitle : colors.SelectedText) : (column ? colors.Subtitle : colors.Text)
-        NumPut("UInt", QuickSwitch.ColorRef(text), lParam, x64 ? 80 : 48)
-        NumPut("UInt", QuickSwitch.ColorRef(selected ? colors.Selected : colors.Background), lParam, x64 ? 84 : 52)
-        return CDRF_NEWFONT
-    }
-
-    static IsDarkColor(hex) => ThemeManager.IsDarkColor(hex)
-
-    static _FontName() {
-        try return ThemeManager.FontName()
-        return "Segoe UI"
-    }
-
-    ; the dialog's width changed: the panel follows
-    static _ResizePanel(rect) {
-        width := QuickSwitch._PanelWidthAt(rect)
-        QuickSwitch._panelDialogW := rect.W
-        if (width = QuickSwitch._panelWidth)
-            return
-        QuickSwitch._panelWidth := width
-        QuickSwitch._panelSearch.Move(, , QuickSwitch.SearchWidth(width))
-        QuickSwitch._panelStar.Move(QuickSwitch.StarX(width))
-        QuickSwitch._panelLine.Move(, , width)
-        QuickSwitch._panelList.Move(, , width)
-        QuickSwitch._ShowFolders(QuickSwitch._panelFolders)                ; Recomputes the column widths and adjusts the panel's size and position
-    }
-    static _searchTimer := () => QuickSwitch._SearchPanel()
-
-    static ColumnsWidth(list) {
-        total := 0
-        loop 3
-            total += SendMessage(0x101D, A_Index - 1, 0, list)            ; LVM_GETCOLUMNWIDTH
-        return total
-    }
-
-    static ClientWidth(list) {
-        rect := Buffer(16)
-        DllCall("GetClientRect", "Ptr", list.Hwnd, "Ptr", rect)
-        return NumGet(rect, 8, "Int")
-    }
-
-    ; List: folder name | full path | source (TC / Explorer / recent / search)
-    static _ShowFolders(folders) {
-        list := QuickSwitch._panelList
-        if !IsObject(list)
-            return
-        QuickSwitch._panelFolders := folders
-        list.Opt("-Redraw")
-        list.Delete()
-        for entry in folders
-            if entry.HasOwnProp("Hint")
-                list.Add("Icon1", "", entry.Text, "")                      ; the hint row: its text in the wide column
-            else
-                list.Add("Icon" QuickSwitch.RowIcon(entry), QuickSwitch.FolderName(entry.Path), entry.Path, entry.Tag)
-        if folders.Length
-            list.Modify(1, "Select Focus")
-        list.Opt("+Redraw")
-        layout := QuickSwitch._Layout(QuickSwitch._FrameRect(QuickSwitch._panelFor))
-        QuickSwitch._SizeList(layout ? layout.Rows : QuickSwitch.WantedRows(folders.Length))
-        if DllCall("IsWindowVisible", "Ptr", QuickSwitch._panel.Hwnd) {     ; The search results changed: adjust the size and position again
-            QuickSwitch._panelPos := ""
-            QuickSwitch._PlacePanel(QuickSwitch._panelFor)
-        }
-    }
-
-    ; The list's height for this many rows (0 = the panel shows only its search box), and the column widths that go with it
-    static _SizeList(rows) {
-        list := QuickSwitch._panelList, folders := QuickSwitch._panelFolders
-        QuickSwitch._panelRows := rows, QuickSwitch._panelPos := ""
-        list.Visible := QuickSwitch._panelLine.Visible := rows > 0
-        if !rows
-            return
-        list.ModifyCol(3, "Auto"), list.ModifyCol(1, "Auto")
-        nameW := Max(Min(SendMessage(0x101D, 0, 0, list), QuickSwitch._panelWidth // 3), Win.Scale(120))   ; LVM_GETCOLUMNWIDTH
-        list.ModifyCol(1, nameW)
-        list.ModifyCol(2, QuickSwitch._panelWidth - nameW - SendMessage(0x101D, 2, 0, list) - Win.Scale(folders.Length > rows ? 22 : 4))
-        list.Move(, , , QuickSwitch.ListHeight(rows))
-        list.ModifyCol(3, "AutoHdr")                                        ; the last column fills to the right so the selected row's color spans the row; computed after the height is set (with a scroll bar where needed), so no horizontal scroll bar appears
-        ; The last column is never narrower than its (hidden) header text: with no rows, or only short tags, it can stick out
-        ; past the right edge and bring up a horizontal scrollbar. Take the difference off the path column
-        if (over := QuickSwitch.ColumnsWidth(list) - QuickSwitch.ClientWidth(list)) > 0
-            list.ModifyCol(2, Max(0, SendMessage(0x101D, 1, 0, list) - over))
-        if (row := list.GetNext(0, "F"))
-            list.Modify(row, "Vis")                                         ; fewer rows: the selected one stays in view
-    }
-
-    static ListHeight(rows) => QuickSwitch._rowTop + (rows - 1) * QuickSwitch._rowHeight + Win.Scale(4)
-
-    ; The height follows the content: 3 ~ PanelRows rows
-    static WantedRows(count) => Max(QuickSwitch.MinRows, Min(count, QuickSwitch.PanelRows))
-    static MinRows := 3
-
-    ; The row's icon in the panel's image list: 1 folder, 2 file, 3 favorite folder (a star, so favorites stand out)
-    static RowIcon(entry) => (entry.HasOwnProp("IsFile") && entry.IsFile) ? 2 : (entry.HasOwnProp("Group") && entry.Group = "favorite") ? 3 : 1
-
-    ; "D:\Projects\Tower" -> "Tower"; drive roots show as "D:\"
-    static FolderName(folder) {
-        trimmed := RTrim(folder, "\")
-        if (trimmed ~= "^[A-Za-z]:$")
-            return trimmed "\"
-        SplitPath(trimmed, &name)
-        return (name != "") ? name : folder
-    }
-
-    ; The text in the search box: filter the list and the favorite folders first (paths containing every word), then add the folders and files
-    ; found (Everything or the built-in index, at most 30). The favorites aren't in the list itself (they are in the ☆ menu), only in searches
-    static _SearchPanel() {
-        if !IsObject(QuickSwitch._panelSearch)
-            return
-        term := Trim(QuickSwitch._panelSearch.Value)
-        if (term = "")
-            return QuickSwitch._ShowFolders(QuickSwitch._panelBase)
-        found := QuickSwitch.FilterFolders(QuickSwitch.SearchBase(QuickSwitch._panelBase), term, QuickSwitch._FindItems(term))
-        if (!found.Length && !QuickSwitch._EverythingInUse())
-            found.Push(QuickSwitch.IndexHint(AppSettings.Feature("FileSearch")["ScopeFolders"]))
-        QuickSwitch._ShowFolders(found)
-    }
-
-    static _EverythingInUse() => AppSettings.Feature("FileSearch")["UseEverything"] && Everything.IsRunning()
-
-    ; The row shown when a search finds nothing and Everything isn't used: the built-in index covers only the ScopeFolders, so the
-    ; folder looked for may simply be outside it. Choosing the row (click or Enter) opens Preferences -> File Search to add folders
-    static IndexHint(scopeFolders) {
-        names := "", count := 0
-        for folder in scopeFolders {
-            if ((resolved := RTrim(Path.Resolve(folder), "\")) = "")
-                continue
-            if (++count <= 4)
-                names .= (names = "" ? "" : ", ") QuickSwitch.FolderName(resolved)
-        }
-        if (count > 4)
-            names .= ", ..."
-        return {Path: "", Hint: true, Group: "hint", Tag: "", Text: I18n.T("QuickSwitch.NoMatchIndex", names = "" ? "-" : names)}
-    }
-
-    ; What a search filters: the favorite folders first, then the panel's folders that aren't favorites
-    static SearchBase(base) {
-        result := QuickSwitch.FavoriteEntries(), seen := Map()
-        for entry in result
-            seen[StrLower(RTrim(entry.Path, "\"))] := true
-        for entry in base
-            if !seen.Has(StrLower(RTrim(entry.Path, "\")))
-                result.Push(entry)
-        return result
-    }
-
-    ; [{Path, IsFolder}], folders first. Folders are searched separately (searched together with files, a folder with exactly the name might not make it in for not being recently modified);
-    ; PanelSearch = "folders" searches folders only
-    static _FindItems(term) {
-        found := [], seen := Map()
-        try {
-            for item in FileSearchProvider.Query(term, 15, false, true)
-                found.Push({Path: item.Path, IsFolder: true}), seen[StrLower(item.Path)] := true
-            if !QuickSwitch._SearchesFiles()
-                return found
-            for item in FileSearchProvider.Query(term, 30, false)
-                if (!item.IsFolder && !seen.Has(StrLower(item.Path)))
-                    found.Push({Path: item.Path, IsFolder: false})
-        }
-        return found
-    }
-
-    ; Filters base (case-insensitive, every word must appear in the path), then appends the items of extra that aren't duplicates:
-    ; each item of extra is a path (folder) or {Path, IsFolder}; folders get the source "search", files "file"
-    static FilterFolders(base, term, extra) {
-        result := [], seen := Map(), words := StrSplit(Trim(term), " ")
-        for entry in base {
-            matched := true
-            for word in words
-                if (word != "" && !InStr(entry.Path, word))
-                    matched := false
-            if matched {
-                result.Push(entry)
-                seen[StrLower(RTrim(entry.Path, "\"))] := true
-            }
-        }
-        for item in extra {
-            itemPath := IsObject(item) ? item.Path : item
-            isFile := IsObject(item) && !item.IsFolder
-            if seen.Has(StrLower(RTrim(itemPath, "\")))
-                continue
-            seen[StrLower(RTrim(itemPath, "\"))] := true
-            result.Push({Path: itemPath, Group: "search", IsFile: isFile, Tag: I18n.T(isFile ? "QuickSwitch.TagFile" : "QuickSwitch.TagSearch")})
-        }
-        return result
-    }
-
-    static _PanelJump(row) {
-        if (row < 1 || row > QuickSwitch._panelFolders.Length || !QuickSwitch._panelFor)
-            return
-        entry := QuickSwitch._panelFolders[row]
-        if entry.HasOwnProp("Hint")
-            return App.OpenPreferences("Prefs.Page.FileSearch")
-        if (entry.HasOwnProp("IsFile") && entry.IsFile) {
-            dialog := QuickSwitch._panelFor
-            QuickSwitch._BackToDialog()
-            QuickSwitch.PickFile(entry.Path, dialog)
-            QuickSwitch._ClearSearch()
-        } else
-            QuickSwitch.JumpTo(entry.Path)
-    }
-
-    ; The dialog jumps to folder (a row of the panel, an item of the ☆ menu: * takes the menu's item name, position and menu)
-    static JumpTo(folder, *) {
-        if !(dialog := QuickSwitch._panelFor)
-            return
-        QuickSwitch._BackToDialog()
-        QuickSwitch.SetDialogPath(RTrim(folder, "\") "\", dialog)
-        QuickSwitch._ClearSearch()
-    }
-
-    static _ClearSearch() {
-        if (IsObject(QuickSwitch._panelSearch) && QuickSwitch._panelSearch.Value != "") {   ; after jumping, clear the search so the list is back as it was
-            QuickSwitch._panelSearch.Value := ""
-            QuickSwitch._ShowFolders(QuickSwitch._panelBase)
-        }
-    }
-
-    static _BackToDialog() {
-        dialog := QuickSwitch._panelFor
-        if (!dialog || WinActive("ahk_id " dialog))
-            return
-        try {
-            WinActivate("ahk_id " dialog)
-            WinWaitActive("ahk_id " dialog, , 1)
-        }
-    }
-
-    ; Keys in the search box: ↑ ↓ choose, Enter jumps, Esc goes back to the dialog
-    static PanelKey(key) {
-        list := QuickSwitch._panelList
-        if !IsObject(list)
-            return
-        count := list.GetCount(), row := list.GetNext()
-        switch key {
-            case "Up", "Down":
-                if !count
-                    return
-                row := (key = "Down") ? Min(row + 1, count) : Max(row - 1, 1)
-                list.Modify(0, "-Select"), list.Modify(row, "Select Focus Vis")
-            case "Enter":
-                QuickSwitch._PanelJump(row ? row : 1)
-            case "Escape":
-                QuickSwitch._BackToDialog()
-        }
-    }
-
-    static _PlacePanel(dialog) {
-        if !IsObject(QuickSwitch._panel)
-            return
-        rect := QuickSwitch._FrameRect(dialog)
-        if !IsObject(rect)
-            return QuickSwitch.HidePanel()
-        if (QuickSwitch._panelDialogW && rect.W != QuickSwitch._panelDialogW)
-            return QuickSwitch._ResizePanel(rect)
-        layout := QuickSwitch._Layout(rect)
-        if (layout.Rows != QuickSwitch._panelRows)                          ; more or less room (the dialog moved), or the caret came into / left the panel
-            QuickSwitch._SizeList(layout.Rows)
-        key := layout.X "," layout.Y "," layout.Rows
-        if (key != QuickSwitch._panelPos) {                                 ; reposition only when the dialog moved
-            height := layout.Rows ? QuickSwitch._listY + QuickSwitch.ListHeight(layout.Rows) : QuickSwitch._barHeight
-            QuickSwitch._panel.Show("NA x" layout.X " y" layout.Y " w" QuickSwitch._panelWidth " h" height)   ; client size
-            QuickSwitch._panelPos := key
-        }
-    }
-
-    ; Where the panel goes for the dialog at rect, with how many rows ("" without a dialog); the caret in the panel opens its list
-    static _Layout(rect) {
-        if !(IsObject(rect) && IsObject(QuickSwitch._panel))
-            return ""
-        area := Win.WorkAreaAt(rect.X + rect.W // 2, rect.Y + rect.H // 2)
-        rowsH := QuickSwitch._frameH + QuickSwitch._listY + QuickSwitch.ListHeight(0)   ; the panel's height with 0 rows; each row adds _rowHeight
-        open := DllCall("GetForegroundWindow", "Ptr") = QuickSwitch._panel.Hwnd
-        return QuickSwitch.PanelLayout(rect.X, rect.Y, rect.W, rect.H, QuickSwitch._panelWidth, QuickSwitch.WantedRows(QuickSwitch._panelFolders.Length)
-            , rowsH, QuickSwitch._rowHeight, QuickSwitch._frameH + QuickSwitch._barHeight, area, open)
-    }
-
-    ; the window's visible frame (Win10/11 windows have an invisible resize border around them, which WinGetPos includes)
-    static _FrameRect(hwnd) {
-        rect := Buffer(16, 0)
-        if !DllCall("dwmapi\DwmGetWindowAttribute", "Ptr", hwnd, "UInt", 9, "Ptr", rect, "UInt", 16) {   ; DWMWA_EXTENDED_FRAME_BOUNDS
-            left := NumGet(rect, 0, "Int"), top := NumGet(rect, 4, "Int")
-            if (NumGet(rect, 8, "Int") > left)
-                return {X: left, Y: top, W: NumGet(rect, 8, "Int") - left, H: NumGet(rect, 12, "Int") - top}
-        }
-        try {
-            WinGetPos(&x, &y, &w, &h, "ahk_id " hwnd)
-            return {X: x, Y: y, W: w, H: h}
-        }
-        return ""
-    }
-
-    ; Panel position and rows {X, Y, Rows} (as in Listary), never over the dialog's buttons and file list (#440): right below the dialog,
-    ; left-aligned, else above it, with all wanted rows; else on the side with more room, with the rows that fit there (at least MinRows,
-    ; the list scrolls); else (a tall or maximized dialog) only the search box (Rows 0): below or above the dialog, or inside it at its top
-    ; (over the title bar). open = the caret is in the panel: then it opens its list with all rows from there, over the dialog where needed.
-    ; The panel's height with n rows is rowsH + n * rowH, with none barH; all in real pixels
-    static PanelLayout(x, y, w, h, panelW, wanted, rowsH, rowH, barH, area, open := false) {
-        left := Max(area.Left, Min(x, area.Right - panelW))
-        below := area.Bottom - (y + h), above := y - area.Top
-        fullH := rowsH + wanted * rowH
-        if (fullH <= below)
-            return {X: left, Y: y + h, Rows: wanted}
-        if (fullH <= above)
-            return {X: left, Y: y - fullH, Rows: wanted}
-        fitBelow := (below - rowsH) // rowH, fitAbove := (above - rowsH) // rowH
-        if (fitBelow >= QuickSwitch.MinRows && fitBelow >= fitAbove)
-            return {X: left, Y: y + h, Rows: fitBelow}
-        if (fitAbove >= QuickSwitch.MinRows)
-            return {X: left, Y: y - (rowsH + fitAbove * rowH), Rows: fitAbove}
-        barY := (barH <= below) ? y + h : (barH <= above) ? y - barH : Max(area.Top, y)
-        if !open
-            return {X: left, Y: barY, Rows: 0}
-        return {X: left, Y: Max(area.Top, Min(barY, area.Bottom - fullH)), Rows: wanted}
-    }
-
-    ; Only real open / save file dialogs count (a file name box + a file list + buttons or an address bar)
-    static IsFileDialog(*) => QuickSwitch._IsFileDialogWindow(WinExist("A"))   ; also the hotkeys' condition (HotIf)
-
-    static _IsFileDialogWindow(hwnd) {
-        if !(hwnd && DllCall("IsWindowVisible", "Ptr", hwnd) && QuickSwitch._MayBeDialog(hwnd))
-            return false
-        target := "ahk_id " hwnd, controls := [], title := "", winClass := ""  ; read once for both kinds
-        try controls := WinGetControls(target)
-        try title := WinGetTitle(target)
-        try winClass := WinGetClass(target)
-        browse := QuickSwitch.Options.Has("BrowseDialogs") && QuickSwitch.Options["BrowseDialogs"]
-        if (browse && QuickSwitch.LooksLikeBrowseDialog(winClass, controls, QuickSwitch._TreeId(controls, target)))
-            return true
-        return QuickSwitch._Matches("ahk_group ALTRunDialogs", hwnd) && QuickSwitch.LooksLikeFileDialog(winClass, controls, title)
-    }
-
-    ; Decided by the window's controls (independent of the system language). #32770 is a system dialog: it needs Explorer's file view to count;
-    ; one with only a plain list (e.g. the main window of "System Information" msinfo32, with a find box, a list and buttons) doesn't.
-    ; Other programs ("other dialogs" added in Preferences) count with a plain list too; those whose controls can't be read (Qt etc.) are decided by title
-    static LooksLikeFileDialog(winClass, controls, title := "") {
-        if !controls.Length
-            return RegExMatch(title, "i)(open|save|select|import|export|browse|打开|另存|选择|导入|导出)") > 0
-        hasNameEdit := QuickSwitch._HasControl(controls, "^Edit\d+$")
-        hasFileView := (winClass = "#32770")
-            ? QuickSwitch._HasControl(controls, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$")
-            : QuickSwitch._HasControl(controls, "^DirectUIHWND\d+$", "^SHELLDLL_DefView\d*$", "^SysListView32\d*$")
-        hasButtons  := QuickSwitch._HasControl(controls, "^Button\d+$", "^ToolbarWindow32\d+$", "^ComboBoxEx32\d+$", "^ComboBox\d+$")
-        return hasNameEdit && hasFileView && hasButtons
-    }
-
-    ; The old "Browse for Folder" dialog (SHBrowseForFolder): only a folder tree, no file list, so it is not one
-    ; of the dialogs above. Told apart by fixed names, whatever the system language: the new style puts the tree
-    ; in a "SHBrowseForFolder ShellNameSpace Control", the classic style has the tree itself with control ID 0x3741.
-    ; Turned on by Works in → "Browse for Folder dialogs" (BrowseDialogs); ExcludeWindows applies too
-    static IsBrowseWindow(hwnd) {
-        controls := [], winClass := ""
-        try controls := WinGetControls("ahk_id " hwnd), winClass := WinGetClass("ahk_id " hwnd)
-        return QuickSwitch.LooksLikeBrowseDialog(winClass, controls, QuickSwitch._TreeId(controls, "ahk_id " hwnd))
-    }
-
-    static LooksLikeBrowseDialog(winClass, controls, treeId := 0) {
-        return winClass = "#32770" && (treeId = 0x3741 || QuickSwitch._HasControl(controls, "^SHBrowseForFolder ShellNameSpace Control\d+$"))
-    }
-
-    ; Control ID of the dialog's first tree view (0 = none)
-    static _TreeId(controls, win) {
-        for name in controls
-            if (name = "SysTreeView321")
-                try return DllCall("GetDlgCtrlID", "Ptr", ControlGetHwnd(name, win), "Int")
-        return 0
-    }
-
-    ; Select a folder in a "Browse for Folder" dialog's tree, like Listary: BFFM_SETSELECTIONW expands the tree to it.
-    ; The message carries a pointer, so the path is first written into the dialog's own process. Doesn't press OK.
-    ; A dialog of a program running as administrator can't be reached from ALTRun without administrator rights (its process can't
-    ; be opened, and Windows blocks the message, UIPI): logged, and a hint says so instead of nothing happening
-    static SelectInBrowseDialog(folder, dialog) {
-        folder := RTrim(folder, "\")
-        if RegExMatch(folder, "^[A-Za-z]:$")
-            folder .= "\"                                                   ; a drive needs its backslash
-        pid := 0
-        try pid := WinGetPID("ahk_id " dialog)
-        if !pid
-            return QuickSwitch._BrowseFailed(folder, 0, "its process isn't known")
-        if !(process := DllCall("OpenProcess", "UInt", 0x38, "Int", false, "UInt", pid, "Ptr")) {   ; PROCESS_VM_OPERATION | VM_READ | VM_WRITE
-            err := A_LastError
-            return QuickSwitch._BrowseFailed(folder, pid, "cannot open its process, error " err, err = 5)   ; ERROR_ACCESS_DENIED
-        }
-        size := (StrLen(folder) + 1) * 2, ok := false, sent := true, reason := "cannot reserve memory in its process"
-        remote := DllCall("VirtualAllocEx", "Ptr", process, "Ptr", 0, "UPtr", size, "UInt", 0x3000, "UInt", 0x04, "Ptr")   ; MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE
-        if remote {
-            DllCall("IsWow64Process", "Ptr", process, "Int*", &wow64 := 0)
-            text := Buffer(size), StrPut(folder, text, "UTF-16")
-            if (wow64 && remote > 0xFFFFFFFF)                               ; a 32-bit program only sees the low 4 GB
-                reason := "the memory is out of reach of a 32-bit program"
-            else if !DllCall("WriteProcessMemory", "Ptr", process, "Ptr", remote, "Ptr", text, "UPtr", size, "Ptr", 0)
-                reason := "cannot write into its process"
-            else {
-                try {
-                    SendMessage(0x467, 1, remote, , "ahk_id " dialog, , , , 2000)   ; BFFM_SETSELECTIONW (WM_USER + 103); wParam TRUE = lParam is a path
-                    ok := true
-                } catch
-                    sent := false, reason := "the message didn't get through in 2 s"
-            }
-            if sent                                                         ; not after a timeout: the dialog may still read the path later,
-                DllCall("VirtualFreeEx", "Ptr", process, "Ptr", remote, "UPtr", 0, "UInt", 0x8000)   ; from freed memory (a few hundred bytes are left instead). MEM_RELEASE
-        }
-        DllCall("CloseHandle", "Ptr", process)
-        if !ok
-            return QuickSwitch._BrowseFailed(folder, pid, reason)
-        Logger.Debug("QuickSwitch: selected [" folder "] in the Browse for Folder dialog")
-        return true
-    }
-
-    ; Logs why the folder couldn't be selected; when the dialog's program runs as administrator and ALTRun doesn't, also tells the user.
-    ; denied: opening the process was refused (a normal process can't always ask an elevated one whether it is elevated)
-    static _BrowseFailed(folder, pid, reason, denied := false) {
-        Logger.Error("QuickSwitch: cannot select " folder " in the Browse for Folder dialog - " reason)
-        if (!A_IsAdmin && pid && (denied || Win.IsElevated(pid)))
-            App.Notify(I18n.T("QuickSwitch.ElevatedDialog"), 4000)
-        return false
-    }
-
-    static _HasControl(controls, patterns*) {
-        for name in controls
-            for pattern in patterns
-                if RegExMatch(name, "i)" pattern)
-                    return true
-        return false
     }
 
     ; The jump hotkey: the folder of the file manager used last (TC, Opus or Explorer, see FileManagerFolder)
     static SyncFileManagerPath(silent := false) {
-        manager := QuickSwitch.FileManagerFolder()
+        manager := FileManagers.FileManagerFolder()
         if !(IsObject(manager) && manager.Path != "")
             return silent ? "" : MsgBox(I18n.T("QuickSwitch.NoFileManager"), App.Name, 48)
         if Logger.Enabled
             Logger.Debug("QuickSwitch: " manager.Tag " is in [" manager.Path "]")
-        QuickSwitch.SetDialogPath(RTrim(manager.Path, "\") "\")             ; with a trailing backslash: AutoCAD and others need it
-    }
-
-    ; The folder of a Total Commander panel: asked directly through TC's WM_COPYDATA interface (since TC 8.0), without touching the clipboard.
-    ; hwnd = 0 takes the frontmost TC window; otherPanel = true takes the other panel
-    static TotalCmdFolder(hwnd := 0, otherPanel := false) {
-        if !(hwnd := hwnd ? hwnd : WinExist("ahk_class TTOTAL_CMD"))
-            return ""
-        folder := RTrim(QuickSwitch.TotalCmdAsk(hwnd, otherPanel ? "TP" : "SP"), "\")
-        return (folder ~= "^([A-Za-z]:|\\\\)") ? folder : ""               ; only real paths (no FTP, inside archives etc.)
-    }
-
-    ; Sends WM_COPYDATA (dwData = "GW", an ANSI command) to TC, which replies at once with WM_COPYDATA (dwData = "RW", UTF-16)
-    ; to the window in wParam. Commands: A = which side is active (L / R); two letters: first L left / R right / S active / T the other,
-    ; second P path / C file count / I caret position / N file name under the caret. "" if TC doesn't reply
-    static _tcWaiting := false, _tcReply := "", _tcListening := false
-    static TotalCmdAsk(hwnd, command, timeoutMs := 500) {
-        if !QuickSwitch._tcListening {
-            OnMessage(0x4A, (p*) => QuickSwitch._OnTotalCmdReply(p*))         ; WM_COPYDATA
-            QuickSwitch._tcListening := true
-        }
-        request := Buffer(StrPut(command, "CP0"))
-        StrPut(command, request, "CP0")
-        copyData := Buffer(A_PtrSize * 3, 0)                                    ; COPYDATASTRUCT
-        NumPut("UPtr", Ord("G") + 256 * Ord("W"), copyData, 0)
-        NumPut("UInt", request.Size, copyData, A_PtrSize)
-        NumPut("Ptr", request.Ptr, copyData, A_PtrSize * 2)
-        QuickSwitch._tcReply := "", QuickSwitch._tcWaiting := true, accepted := 0
-        DllCall("SendMessageTimeoutW", "Ptr", hwnd, "UInt", 0x4A, "Ptr", A_ScriptHwnd, "Ptr", copyData.Ptr
-              , "UInt", 2, "UInt", timeoutMs, "UPtr*", &accepted)                 ; 2 = SMTO_ABORTIFHUNG: don't wait when TC hangs
-        QuickSwitch._tcWaiting := false                                         ; TC replies while handling this message, so no extra wait
-        return QuickSwitch._tcReply
-    }
-
-    static _OnTotalCmdReply(wParam, lParam, msg, hwnd) {
-        if (!QuickSwitch._tcWaiting || NumGet(lParam, 0, "UPtr") != Ord("R") + 256 * Ord("W"))
-            return                                                              ; not the reply waited for: leave it to other handlers (Everything)
-        QuickSwitch._tcReply := Win.CopyDataText(lParam), QuickSwitch._tcWaiting := false
-        return true
-    }
-
-    ;---------------------------------------------------------------------------
-    ; The folders in the panel
-    ;---------------------------------------------------------------------------
-    ; [{Path, Group: "open" / "recent", Tag}]: the active and other panel of each TC window, each Explorer window,
-    ; recent folders (RecentFolders of them), without duplicates. The favorite folders are in the ☆ menu (and in searches, SearchBase)
-    ; opus = false: without Directory Opus (the panel adds those a moment later, see _AddDOpusFolders)
-    static MenuFolders(opus := true) {
-        list := [], seen := Map()
-        add(folder, group, tag) {
-            if (folder = "" || seen.Has(StrLower(RTrim(folder, "\"))))
-                return
-            seen[StrLower(RTrim(folder, "\"))] := true
-            list.Push({Path: folder, Group: group, Tag: tag})
-        }
-        for hwnd in WinGetList("ahk_class TTOTAL_CMD") {
-            add(QuickSwitch.TotalCmdFolder(hwnd), "open", I18n.T("QuickSwitch.TagTC"))
-            add(QuickSwitch.TotalCmdFolder(hwnd, true), "open", I18n.T("QuickSwitch.TagTCOther"))
-        }
-        if opus                                                             ; the source tab of each lister, then the other side
-            for state in [1, 2]
-                for tab in QuickSwitch.DOpusTabs()
-                    if (tab.State = state)
-                        add(tab.Path, "open", I18n.T(state = 1 ? "QuickSwitch.TagOpus" : "QuickSwitch.TagOpusOther"))
-        try {
-            for window in ComObject("Shell.Application").Windows
-                try add(window.Document.Folder.Self.Path, "open", I18n.T("QuickSwitch.TagExplorer"))
-        }
-        count := QuickSwitch.Options.Has("RecentFolders") ? QuickSwitch.Options["RecentFolders"] : 10
-        for folder in QuickSwitch.RecentFolders(count)
-            add(folder, "recent", I18n.T("QuickSwitch.TagRecent"))
-        return list
-    }
-
-    ;---------------------------------------------------------------------------
-    ; Favorite folders (Options["Favorites"], saved in ALTRun.json): listed first in the panel, in the order they were added.
-    ; Environment variables in the setting (e.g. %USERPROFILE%\Documents, typed in Preferences) are expanded when listed;
-    ; a folder that doesn't exist (an unplugged drive) is still listed: checking network paths could hang
-    ;---------------------------------------------------------------------------
-    static Favorites() {
-        folders := []
-        for folder in QuickSwitch._FavoriteSetting()
-            folders.Push(QuickSwitch._FavoritePath(folder))
-        return folders
-    }
-
-    static _FavoriteSetting() => (QuickSwitch.Options.Has("Favorites") && QuickSwitch.Options["Favorites"] is Array) ? QuickSwitch.Options["Favorites"] : []
-
-    ; One entry of the setting as a folder: environment variables expanded, no trailing backslash ("D:\" for a drive root); "" if empty
-    static _FavoritePath(folder) {
-        folder := Trim(Path.ExpandEnv(folder))
-        return RegExMatch(folder, "^[A-Za-z]:\\?$") ? SubStr(folder, 1, 2) "\" : RTrim(folder, "\")
-    }
-
-    ; Position of folder in the setting (however it is written there), 0 if it isn't a favorite
-    static _FavoriteIndex(folder) {
-        key := StrLower(RTrim(folder, "\"))
-        if (key = "")
-            return 0
-        for index, entry in QuickSwitch._FavoriteSetting()
-            if (StrLower(RTrim(QuickSwitch._FavoritePath(entry), "\")) = key)
-                return index
-        return 0
-    }
-
-    static IsFavorite(folder) => QuickSwitch._FavoriteIndex(folder) > 0
-
-    ; Adds folder at the end and saves the settings; false if it is empty or already a favorite
-    static AddFavorite(folder) {
-        folder := QuickSwitch._FavoritePath(folder)
-        if (folder = "" || QuickSwitch.IsFavorite(folder))
-            return false
-        if !(QuickSwitch.Options.Has("Favorites") && QuickSwitch.Options["Favorites"] is Array)
-            QuickSwitch.Options["Favorites"] := []
-        QuickSwitch.Options["Favorites"].Push(folder)
-        AppSettings.Save()
-        return true
-    }
-
-    ; Removes folder and saves the settings; false if it isn't a favorite
-    static RemoveFavorite(folder) {
-        if !(index := QuickSwitch._FavoriteIndex(folder))
-            return false
-        QuickSwitch.Options["Favorites"].RemoveAt(index)
-        AppSettings.Save()
-        return true
-    }
-
-    ; Ctrl+D in the panel (the caret is in the panel: after clicking it, or after the MenuHotkey): the folder the dialog shows becomes a favorite.
-    ; In the dialog itself Ctrl+D is the date stamp's hotkey (AutoDate), so it is only taken here
-    static AddDialogFolder() {
-        folder := QuickSwitch._panelFor ? QuickSwitch.DialogFolder(QuickSwitch._panelFor) : ""
-        if (folder = "")
-            return App.Notify(I18n.T("QuickSwitch.NoDialogFolder"), 2500)
-        QuickSwitch._ToggleFavorite(folder, true)
-    }
-
-    ; Right-click on the panel's list: add / remove the row's folder; add the dialog's current folder
-    static _ShowRowMenu(row) {
-        if !QuickSwitch._panelFor
-            return
-        rowMenu := Menu(), items := 0
-        if (row >= 1 && row <= QuickSwitch._panelFolders.Length) {
-            entry := QuickSwitch._panelFolders[row]
-            if !(entry.HasOwnProp("IsFile") && entry.IsFile) && !entry.HasOwnProp("Hint") {
-                folder := entry.Path, favorite := QuickSwitch.IsFavorite(folder)
-                rowMenu.Add(I18n.T(favorite ? "QuickSwitch.RemoveFavorite" : "QuickSwitch.AddFavorite"), (*) => QuickSwitch._ToggleFavorite(folder, !favorite))
-                items++
-            }
-        }
-        dialogFolder := QuickSwitch.DialogFolder(QuickSwitch._panelFor)
-        if (dialogFolder != "" && !QuickSwitch.IsFavorite(dialogFolder)) {
-            rowMenu.Add(QuickSwitch.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder))) "`tCtrl+D", (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
-            items++
-        }
-        if items {
-            rowMenu.Show()
-            QuickSwitch._DialogAfterMenu()
-        }
-    }
-
-    ; After a panel menu: Menu.Show and ShowMenuBelow make ALTRun's hidden window the foreground window for the menu (or it wouldn't
-    ; close on a click elsewhere). A chosen item jumps back to the dialog by itself, but a menu closed with Esc or a click elsewhere
-    ; left the hidden window in front, and typing went nowhere (checked on Windows CI: Tests\Integration\QuickSwitchCheck.ahk).
-    ; So the dialog comes back to the front when nothing else has taken it
-    static _DialogAfterMenu() {
-        if (DllCall("GetForegroundWindow", "Ptr") = A_ScriptHwnd)            ; not when another program was clicked to close the menu
-            QuickSwitch._BackToDialog()
-    }
-
-    ; Adds or removes a favorite, then lists the panel's folders again (without Opus first, as when the panel opens), keeping the search.
-    ; The notice is ALTRun's own (Hud), shown at once: Windows notifications may be turned off
-    static _ToggleFavorite(folder, add) {
-        changed := add ? QuickSwitch.AddFavorite(folder) : QuickSwitch.RemoveFavorite(folder)
-        App.Notify(I18n.T(!add ? "QuickSwitch.FavoriteRemoved" : changed ? "QuickSwitch.FavoriteAdded" : "QuickSwitch.FavoriteExists", QuickSwitch.FolderName(folder)))
-        if !(changed && QuickSwitch._panelFor && IsObject(QuickSwitch._panelList))
-            return
-        QuickSwitch._panelBase := QuickSwitch.MenuFolders(false)
-        QuickSwitch._SearchPanel()
-        if WinExist("ahk_class dopus.lister")
-            SetTimer(QuickSwitch._AddDOpusFolders.Bind(QuickSwitch, QuickSwitch._panelFor), -1)
-    }
-
-    ; The favorite folders as rows of a search ([{Path, Group: "favorite", Tag}])
-    static FavoriteEntries() {
-        entries := []
-        for folder in QuickSwitch.Favorites()
-            if (folder != "")
-                entries.Push({Path: folder, Group: "favorite", Tag: I18n.T("QuickSwitch.TagFavorite")})
-        return entries
-    }
-
-    ;---------------------------------------------------------------------------
-    ; The ☆ menu: the favorite folders, each with one level of its subfolders (read when the menu opens). Only folders on this PC's own
-    ; drives are read: a network path (\\server\share, a mapped drive) or a CD would wait for the network or the drive, and a menu can't
-    ; show "loading". A favorite with subfolders is a submenu whose first item is the favorite itself (in bold): clicking an item always
-    ; jumps, never only opens a submenu (in Listary's favorites menu it was unclear when a click opens the folder and when it expands it).
-    ; The menu is read on the UI thread each time it opens, so at most MaxReadSubfolders subfolders are read ("470+ more folders"):
-    ; a favorite with thousands of them, or a disk that has to spin up, would hold the click. They are sorted by name as Explorer
-    ; sorts them (StrCmpLogicalW: "2" before "10"), since FAT / exFAT drives (USB sticks) list folders unsorted; then the first
-    ; MaxSubfolders are shown. With more than MaxReadSubfolders on such a drive, those are the first of the ones read
-    ;---------------------------------------------------------------------------
-    static MaxSubfolders := 30, MaxReadSubfolders := 500
-
-    ; [{Path, Name, Subfolders: [paths], More: how many more than MaxSubfolders, MoreAtLeast: true when reading stopped at maxRead}];
-    ; hidden and system folders are left out
-    static FavoritesMenuItems(maxSubfolders := QuickSwitch.MaxSubfolders, maxRead := QuickSwitch.MaxReadSubfolders) {
-        items := []
-        for folder in QuickSwitch.Favorites() {
-            if (folder = "")
-                continue
-            item := {Path: folder, Name: QuickSwitch.FolderName(folder), Subfolders: [], More: 0, MoreAtLeast: false}
-            if QuickSwitch.ReadsSubfolders(folder) {
-                found := "", count := 0
-                try Loop Files RTrim(folder, "\") "\*", "D" {
-                    if InStr(A_LoopFileAttrib, "H") || InStr(A_LoopFileAttrib, "S")
-                        continue
-                    if (++count > maxRead) {
-                        count := maxRead, item.MoreAtLeast := true
-                        break
-                    }
-                    found .= (found = "" ? "" : "`n") A_LoopFileFullPath
-                }
-                if (found != "")
-                    for subfolder in StrSplit(Sort(found, "CLogical"), "`n")   ; same parent: sorting the paths sorts the names
-                        if (A_Index <= maxSubfolders)
-                            item.Subfolders.Push(subfolder)
-                item.More := Max(0, count - maxSubfolders)
-            }
-            items.Push(item)
-        }
-        return items
-    }
-
-    ; Whether the menu reads the subfolders of folder: on a fixed, removable or RAM drive of this PC (GetDriveType doesn't touch the drive)
-    static ReadsSubfolders(folder) {
-        if !RegExMatch(folder, "^[A-Za-z]:\\", &root)
-            return false
-        driveType := DllCall("GetDriveType", "Str", root[0], "UInt")
-        return (driveType = 2 || driveType = 3 || driveType = 6)        ; DRIVE_REMOVABLE, DRIVE_FIXED, DRIVE_RAMDISK
-    }
-
-    ; A menu item's text: & shows as & (not as an underlined access key)
-    static MenuLabel(text) => StrReplace(text, "&", "&&")
-
-    ; The ☆ button: shows the menu below it
-    static ShowFavoritesMenu() {
-        if !QuickSwitch._panelFor
-            return
-        favMenu := QuickSwitch.BuildFavoritesMenu(QuickSwitch.DialogFolder(QuickSwitch._panelFor))
-        QuickSwitch._panelStar.GetPos(&x, &y, &w, &h)
-        rect := Buffer(16), NumPut("Int", x, "Int", y, "Int", x + w, "Int", y + h, rect)
-        DllCall("MapWindowPoints", "Ptr", QuickSwitch._panel.Hwnd, "Ptr", 0, "Ptr", rect, "UInt", 2)   ; client -> screen
-        QuickSwitch.ShowMenuBelow(favMenu, rect)
-    }
-
-    ; The ☆ menu: the favorites (their path on the right, as two may have the same name), each with subfolders as a submenu whose
-    ; first, default item is the favorite itself; "Add <dialog folder>" when it isn't a favorite yet; "Edit favorites"
-    static BuildFavoritesMenu(dialogFolder) {
-        favMenu := Menu()
-        items := QuickSwitch.FavoritesMenuItems()
-        for item in items {
-            label := QuickSwitch.MenuLabel(item.Name) "`t" QuickSwitch.MenuLabel(Path.Compact(item.Path))
-            jump := QuickSwitch.JumpTo.Bind(QuickSwitch, item.Path)
-            if item.Subfolders.Length {
-                subMenu := Menu()
-                subMenu.Add(label, jump), subMenu.Default := label
-                subMenu.SetIcon(label, "shell32.dll", 44)
-                subMenu.Add()
-                for folder in item.Subfolders {
-                    name := QuickSwitch.MenuLabel(QuickSwitch.FolderName(folder))
-                    subMenu.Add(name, QuickSwitch.JumpTo.Bind(QuickSwitch, folder))
-                    subMenu.SetIcon(name, "shell32.dll", 4)
-                }
-                if item.More {
-                    more := I18n.T("QuickSwitch.MoreFolders", item.More (item.MoreAtLeast ? "+" : ""))
-                    subMenu.Add(more, (*) => 0), subMenu.Disable(more)
-                }
-                favMenu.Add(label, subMenu)
-            } else
-                favMenu.Add(label, jump)
-            favMenu.SetIcon(label, "shell32.dll", 44)
-        }
-        if !items.Length {
-            none := I18n.T("QuickSwitch.NoFavorites")
-            favMenu.Add(none, (*) => 0), favMenu.Disable(none)
-        }
-        favMenu.Add()
-        if (dialogFolder != "" && !QuickSwitch.IsFavorite(dialogFolder))
-            favMenu.Add(QuickSwitch.MenuLabel(I18n.T("QuickSwitch.AddDialogFolder", QuickSwitch.FolderName(dialogFolder))) "`tCtrl+D"
-                , (*) => QuickSwitch._ToggleFavorite(dialogFolder, true))
-        favMenu.Add(I18n.T("QuickSwitch.EditFavorites"), (*) => App.OpenPreferences("Prefs.Page.QSPanel"))
-        return favMenu
-    }
-
-    ; Shows m as a drop-down of a button at the right (button = screen RECT): its right edge at the button's, below it, or above it
-    ; when there is no room below (TPMPARAMS keeps the button uncovered). Menu.Show can only align the left edge, so the menu would
-    ; run past the panel. The items run as with Menu.Show: TrackPopupMenuEx with the script's window sends it the item's WM_COMMAND
-    static ShowMenuBelow(m, button) {
-        params := Buffer(20, 0), NumPut("UInt", 20, params)                 ; TPMPARAMS: cbSize, rcExclude
-        DllCall("RtlMoveMemory", "Ptr", params.Ptr + 4, "Ptr", button, "Ptr", 16)
-        DllCall("SetForegroundWindow", "Ptr", A_ScriptHwnd)                 ; else the menu doesn't close when clicking elsewhere
-        DllCall("TrackPopupMenuEx", "Ptr", m.Handle, "UInt", 0x0008 | 0x0040   ; TPM_RIGHTALIGN | TPM_VERTICAL
-            , "Int", NumGet(button, 8, "Int"), "Int", NumGet(button, 12, "Int"), "Ptr", A_ScriptHwnd, "Ptr", params)
-        DllCall("PostMessage", "Ptr", A_ScriptHwnd, "UInt", 0, "Ptr", 0, "Ptr", 0)   ; WM_NULL, as the TrackPopupMenu documentation asks
-        QuickSwitch._DialogAfterMenu()
-    }
-
-    ; The newest limit folders of Windows "Recent items" (WindowsRecent); a file gives its folder.
-    ; Only the newest limit * 6 shortcuts are looked at, not all of the hundreds there may be
-    static RecentFolders(limit, recentDir := "") {
-        folders := [], seen := Map()
-        if (limit <= 0)
-            return folders
-        for item in WindowsRecent.Items(limit * 6, recentDir) {
-            folder := RTrim(item.IsFolder ? item.Path : QuickSwitch._Parent(item.Path), "\")
-            if (folder ~= "^[A-Za-z]:$")
-                folder .= "\"
-            if (folder = "" || seen.Has(StrLower(folder)))
-                continue
-            seen[StrLower(folder)] := true
-            folders.Push(folder)
-            if (folders.Length >= limit)
-                break
-        }
-        return folders
-    }
-
-    static _Parent(target) {
-        SplitPath(RTrim(target, "\"), , &dir)
-        return dir
-    }
-
-    ; The current folder of an Explorer window; hwnd = 0 takes the frontmost Explorer window
-    static ExplorerFolder(hwnd := 0) {
-        if !hwnd
-            hwnd := WinExist("ahk_class CabinetWClass")
-        if !hwnd
-            return ""
-        try {
-            for window in ComObject("Shell.Application").Windows
-                if (window.HWND = hwnd)
-                    return window.Document.Folder.Self.Path
-        }
-        return ""
-    }
-
-    ; Current folder of the TC / Opus / Explorer window nearest the top: {Path, Tag, Hwnd}, "" when none.
-    ; Windows are listed front to back, so with a dialog in front this is the file manager used last
-    ; (the jump hotkey, auto jump, "Copy to ..." in the actions)
-    static FileManagerFolder() {
-        for hwnd in WinGetList() {
-            className := ""
-            try className := WinGetClass("ahk_id " hwnd)
-            switch className {
-                case "TTOTAL_CMD"   : return {Path: QuickSwitch.TotalCmdFolder(hwnd), Tag: "Total Commander", Hwnd: hwnd}
-                case "dopus.lister" : return {Path: QuickSwitch.DOpusFolder(hwnd), Tag: "Directory Opus", Hwnd: hwnd}
-                case "CabinetWClass": return {Path: QuickSwitch.ExplorerFolder(hwnd), Tag: I18n.T("QuickSwitch.TagExplorer"), Hwnd: hwnd}
-            }
-        }
-        return ""
-    }
-
-    static IsFileManager(hwnd) {
-        className := ""
-        try className := WinGetClass("ahk_id " hwnd)
-        return className = "TTOTAL_CMD" || className = "dopus.lister" || className = "CabinetWClass"
-    }
-
-    static FolderOfWindow(hwnd) {
-        if (!hwnd || !WinExist("ahk_id " hwnd))
-            return ""
-        switch WinGetClass("ahk_id " hwnd) {
-            case "TTOTAL_CMD"   : return QuickSwitch.TotalCmdFolder(hwnd)
-            case "dopus.lister" : return QuickSwitch.DOpusFolder(hwnd)
-            case "CabinetWClass": return QuickSwitch.ExplorerFolder(hwnd)
-        }
-        return ""
-    }
-
-    ;---------------------------------------------------------------------------
-    ; Directory Opus: its own "dopusrt.exe /info <file>,paths" writes every lister's tabs to a small XML file
-    ; (read only, no clipboard). It runs only when an Opus window is open and a folder is actually needed,
-    ; and a result is reused for DOpusCacheMs
-    ;---------------------------------------------------------------------------
-    static DOpusCacheMs := 1500, _dopusTabs := [], _dopusAt := 0
-
-    ; Source (focused) tab of a lister; hwnd 0 = the active lister
-    static DOpusFolder(hwnd := 0) => QuickSwitch.PickDOpusFolder(QuickSwitch.DOpusTabs(), hwnd)
-
-    static PickDOpusFolder(tabs, hwnd := 0) {
-        for tab in tabs
-            if (tab.State = 1 && (hwnd ? tab.Lister = hwnd : tab.ActiveLister))
-                return tab.Path
-        for tab in tabs                                                     ; lister not found (e.g. Opus just opened it): the active one
-            if (tab.State = 1 && tab.ActiveLister)
-                return tab.Path
-        return ""
-    }
-
-    static DOpusTabs() {
-        if !(lister := WinExist("ahk_class dopus.lister"))
-            return []
-        if (QuickSwitch._dopusAt && A_TickCount - QuickSwitch._dopusAt < QuickSwitch.DOpusCacheMs)
-            return QuickSwitch._dopusTabs
-        started := Logger.Ms(), tabs := []
-        try {
-            SplitPath(WinGetProcessPath("ahk_id " lister), , &dir)
-            xmlFile := A_Temp "\ALTRun.dopus-paths.xml"
-            try FileDelete(xmlFile)
-            Run('"' dir '\dopusrt.exe" /info "' xmlFile '",paths', , "Hide", &pid)
-            if ProcessWaitClose(pid, 3)                                     ; still running after 3 s (returns its PID): never hang the dialog on it
-                try ProcessClose(pid)
-            tabs := QuickSwitch.ParseDOpusPaths(FileRead(xmlFile, "UTF-8"))
-            try FileDelete(xmlFile)
-        } catch as e {
-            Logger.Error("QuickSwitch: cannot read the Directory Opus folders - " e.Message)
-        }
-        QuickSwitch._dopusTabs := tabs, QuickSwitch._dopusAt := A_TickCount
-        if Logger.Enabled
-            Logger.Debug(Format("Perf: Directory Opus paths {} ms, {} tabs", Round(Logger.Ms() - started), tabs.Length))
-        return tabs
-    }
-
-    ; <path active_lister="1" active_tab="1" tab_state="1" side="1" lister="0x70e2a" tab="0x50e1a" ...>C:\Folder</path>
-    ; tab_state: 1 = the source (focused) tab of its lister, 2 = the tab shown on the other side of a dual lister
-    static ParseDOpusPaths(xml) {
-        tabs := [], pos := 1, attrs := ""
-        value(name) => RegExMatch(attrs, "\b" name '="([^"]*)"', &a) ? a[1] : ""
-        while (pos := RegExMatch(xml, "s)<path\b([^>]*)>(.*?)</path>", &m, pos)) {
-            pos += m.Len
-            attrs := m[1], folder := m[2]
-            for entity in [["&lt;", "<"], ["&gt;", ">"], ["&quot;", '"'], ["&apos;", "'"], ["&amp;", "&"]]   ; &amp; last
-                folder := StrReplace(folder, entity[1], entity[2])
-            lister := value("lister"), state := value("tab_state")
-            tabs.Push({Path: Trim(folder), Lister: IsInteger(lister) ? Integer(lister) : 0, State: IsInteger(state) ? Integer(state) : 0
-                , ActiveLister: value("active_lister") = "1"})
-        }
-        return tabs
-    }
-
-    ; Choosing a file in a dialog: for open and save dialogs alike, jump to its folder (without opening or saving for the user)
-    static PickFile(filePath, dialog := 0) {
-        SplitPath(filePath, , &dir)
-        if (dir != "")
-            QuickSwitch.SetDialogPath(RTrim(dir, "\") "\", dialog)
-    }
-
-    ; fill the old name back only when the file name box held a normal file name (not when empty, a path or a filter like *.txt)
-    static ShouldRestoreName(saved) {
-        saved := Trim(saved)
-        return saved != "" && !RegExMatch(saved, "[\\/:*?]")
-    }
-
-    ; dialog: the dialog to jump in (the current window by default). Before simulating keyboard input, make sure it is the foreground window,
-    ; otherwise the text would go to another window (e.g. switching back to the dialog failed and the panel is still in front)
-    static SetDialogPath(folder, dialog := 0) {
-        if (folder = "" || !FileExist(folder))
-            return
-        if !dialog
-            dialog := WinExist("A")
-        if !(dialog && WinExist("ahk_id " dialog))
-            return
-        Usage.Count("QuickSwitch")
-        method := QuickSwitch.DialogJumpMethod(dialog)
-        if (method = "browse")                                              ; folder tree only: select it there, pressing Enter would mean OK
-            return QuickSwitch.SelectInBrowseDialog(folder, dialog)
-        if (method = "message") {
-            if QuickSwitch._JumpByMessage(folder, dialog)
-                return
-            method := "address"                                             ; the box didn't take the folder: as if there were none
-        }
-        className := ""
-        try className := WinGetClass("ahk_id " dialog)
-        if (method = "edit") {
-            try {
-                saved := ""
-                try saved := ControlGetText("Edit1", "ahk_id " dialog)         ; what the file name box held (e.g. a name Save As filled in)
-                ControlFocus("Edit1", "ahk_id " dialog)
-                ControlSetText(folder, "Edit1", "ahk_id " dialog)
-                if (ControlGetText("Edit1", "ahk_id " dialog) != folder)    ; Enter with anything else in the box would open / save that
-                    throw Error("the file name box didn't take the folder")
-                ControlSend("{Enter}", "Edit1", "ahk_id " dialog)
-                if QuickSwitch.ShouldRestoreName(saved) {                   ; put it back after the jump, so the suggested name isn't lost
-                    Sleep(150)
-                    try ControlSetText(saved, "Edit1", "ahk_id " dialog)
-                }
-                return
-            }
-            method := (className = "#32770") ? "address" : "type"           ; the box refused: as if there were none
-        }
-        if !WinActive("ahk_id " dialog)                                     ; typing goes to the foreground window: only into the dialog
-            return
-        if (method = "address") {                                           ; a system dialog without the box: its address bar
-            SendInput("!d")
-            Sleep(60)
-        }
-        SendText(folder)                                                    ; dialogs a program draws itself (WPS / Qt, GTK, Java...): the
-        SendInput("{Enter}")                                                ; file name box has the focus; a folder path + Enter goes there
-    }
-
-    ; A system dialog's file name box gets the folder and the dialog its OK command, all as messages, no keys: the jump works while Alt or a
-    ; mouse button is still held (AutoSwitch right after Alt+Tab or a click on the title bar, the Ctrl of the hotkey), during the title bar's
-    ; move loop and wherever the focus is. Keys were not safe there: with Alt held, a Save As took the posted Enter as OK for the name it
-    ; already had and saved that file in its old folder (measured on Windows Server 2025).
-    ;   1. WM_SETTEXT puts the folder into the box, and it is read back: OK with anything else in it would open or save that
-    ;   2. the box's parent is told the text changed, as typing does (CBN_EDITCHANGE from the combo box of an Explorer-style dialog,
-    ;      EN_CHANGE from a plain edit box): the Explorer-style dialog keeps the name it last saw and would otherwise use that one
-    ;   3. WM_COMMAND IDOK, what Enter in a dialog becomes (IsDialogMessage): with a folder in the box the dialog goes there, for open and
-    ;      save dialogs alike. Sent, not posted, so the old name goes back only after the dialog has read the box
-    static _JumpByMessage(folder, dialog) {
-        target := "ahk_id " dialog, saved := ""
-        if Logger.Enabled
-            Logger.Debug("QuickSwitch: jump to [" folder "] by message" QuickSwitch._DialogState(dialog))
-        try {
-            box := ControlGetHwnd("Edit1", target)
-            try saved := ControlGetText(box)
-            if !QuickSwitch._SetBoxText(box, folder) {
-                Logger.Debug("QuickSwitch: the file name box didn't take the folder, or the dialog didn't take the change notice")
-                return false
-            }
-        } catch as e {
-            Logger.Debug("QuickSwitch: no file name box - " e.Message)
-            return false
-        }
-        started := A_TickCount
-        if !(answered := QuickSwitch._SendCommand(dialog, DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr"), 0, 1))   ; BN_CLICKED from IDOK
-            Logger.Warn("QuickSwitch: the dialog didn't answer the OK command in 2 s")   ; it may still go there: no second try with keys
-        else if Logger.Enabled
-            Logger.Debug("QuickSwitch: OK command answered in " (A_TickCount - started) " ms" QuickSwitch._DialogState(dialog))
-        if (answered && QuickSwitch.ShouldRestoreName(saved)) {             ; put back a name Save As suggested, so it isn't lost
-            Loop 6 {                                                        ; the dialog may put it back itself after going there: leave that
-                Sleep(50)
-                text := ""
-                try text := ControlGetText(box)
-                if (text != folder && text != "")
-                    return true
-            }
-            try QuickSwitch._SetBoxText(box, saved)
-        }
-        return true
-    }
-
-    ; The folder a system dialog shows, from its address bar ("Address: C:\Docs", the label in the UI language); "" if it can't be read.
-    ; The tests check a jump with it
-    static DialogFolder(dialog) {
-        text := ""
-        try text := WinGetText("ahk_id " dialog)
-        Loop Parse, text, "`n", "`r"
-            if RegExMatch(A_LoopField, "^[^:：\\]{1,40}[:：]\s*((?:[A-Za-z]:\\|\\\\)[^\r\n]*)$", &m)
-                return RTrim(m[1], "\")
-        return ""
-    }
-
-    ; For the debug log: the file name box, the focused control, the dialog thread's state (GUITHREADINFO flags) and whether it is in front
-    static _DialogState(dialog) {
-        box := "", focus := "", flags := -1
-        try box := ControlGetText("Edit1", "ahk_id " dialog)
-        info := Buffer(A_PtrSize = 8 ? 72 : 48, 0)
-        NumPut("UInt", info.Size, info)
-        if ((tid := DllCall("GetWindowThreadProcessId", "Ptr", dialog, "Ptr", 0, "UInt")) && DllCall("GetGUIThreadInfo", "UInt", tid, "Ptr", info)) {
-            flags := NumGet(info, 4, "UInt")
-            if (focused := NumGet(info, 8 + A_PtrSize, "Ptr"))             ; hwndFocus
-                try focus := WinGetClass("ahk_id " focused)
-        }
-        return Format(" (0x{:X}), box [{}], focus {}, thread flags 0x{:X}, in front {}", dialog, box, focus, flags, DllCall("GetForegroundWindow", "Ptr") = dialog)
-    }
-
-    ; Puts text into a dialog's file name box and tells its parent, as typing does (see _JumpByMessage, step 2); false if the box
-    ; doesn't hold exactly that text afterwards or the dialog didn't take the notice
-    static _SetBoxText(box, text) {
-        ControlSetText(text, box)
-        if (ControlGetText(box) != text)
-            return false
-        parent := DllCall("GetParent", "Ptr", box, "Ptr")
-        if (WinGetClass("ahk_id " parent) = "ComboBox")
-            return QuickSwitch._SendCommand(DllCall("GetParent", "Ptr", parent, "Ptr"), parent, 5)   ; CBN_EDITCHANGE
-        return QuickSwitch._SendCommand(parent, box, 0x300)                                       ; EN_CHANGE
-    }
-
-    ; WM_COMMAND (code, the control's id) from control to window, sent with a 2 s limit; false if it didn't get through
-    static _SendCommand(window, control, code, id := "") {
-        id := (id != "") ? id : DllCall("GetDlgCtrlID", "Ptr", control, "Int")
-        return window && DllCall("SendMessageTimeoutW", "Ptr", window, "UInt", 0x111, "Ptr", (code << 16) | (id & 0xFFFF), "Ptr", control
-            , "UInt", 0x2, "UInt", 2000, "Ptr", 0, "Ptr") != 0              ; SMTO_ABORTIFHUNG
-    }
-
-    ; How the folder goes into this dialog, see JumpMethod; "browse" = a folder tree dialog (SelectInBrowseDialog)
-    static DialogJumpMethod(dialog) {
-        if QuickSwitch.IsBrowseWindow(dialog)
-            return "browse"
-        className := "", hasEdit := false
-        try className := WinGetClass("ahk_id " dialog)
-        try hasEdit := ControlGetHwnd("Edit1", "ahk_id " dialog) != 0
-        return QuickSwitch.JumpMethod(className, hasEdit, DllCall("GetDlgItem", "Ptr", dialog, "Int", 1, "Ptr") != 0)
-    }
-
-    ; How to put the folder into a dialog:
-    ;   message = a system dialog (#32770) with a file name box and an OK button (IDOK): the folder and OK as messages (see _JumpByMessage)
-    ;   edit    = into its file name box (Edit1) + Enter: programs with real edit controls that aren't system dialogs
-    ;   address = a system dialog (#32770) without that box: Alt+D (address bar), type, Enter
-    ;   type    = a dialog a program draws itself (WPS / Qt, GTK, Java...): type into the focused file name box, Enter.
-    ;             No Alt+D there: it isn't the address bar and may press some button of the dialog
-    static JumpMethod(className, hasEdit, hasOk := false) {
-        if (hasEdit && hasOk && className = "#32770")
-            return "message"
-        if hasEdit
-            return "edit"
-        return (className = "#32770") ? "address" : "type"
+        FileDialogs.SetDialogPath(RTrim(manager.Path, "\") "\")             ; with a trailing backslash: AutoCAD and others need it
     }
 }

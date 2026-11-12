@@ -6,7 +6,7 @@
 ;
 ; Used by:
 ;   FileSearchProvider.RecentResults   "recent report": recent files and folders by name
-;   QuickSwitch.RecentFolders          the recent folders in the dialog panel
+;   FileManagers.RecentFolders          the recent folders in the dialog panel
 ;
 ; Usage:
 ;   WindowsRecent.Items(300)            -> [{Path, Name, IsFolder}], newest first

@@ -86,6 +86,10 @@
 #Include %A_ScriptDir%\..\Src\Providers\SyncProvider.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\SnippetExpander.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\QuickSwitch.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\QuickSwitchPanel.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\QuickSwitchFavorites.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\FileDialogs.ahk
+#Include %A_ScriptDir%\..\Src\Extensions\FileManagers.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\AutoDate.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CapsLockSwitch.ahk
 #Include %A_ScriptDir%\..\Src\Extensions\CapsLockHelper.ahk

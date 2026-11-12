@@ -8,6 +8,10 @@ on:
   pull_request:
     paths:
       - Src/Extensions/QuickSwitch.ahk
+      - Src/Extensions/QuickSwitchPanel.ahk
+      - Src/Extensions/QuickSwitchFavorites.ahk
+      - Src/Extensions/FileDialogs.ahk
+      - Src/Extensions/FileManagers.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
       - .github/workflows/quickswitch.yml
       - .github/actions/setup-ahk/**
@@ -15,6 +19,10 @@ on:
     branches: [main]
     paths:
       - Src/Extensions/QuickSwitch.ahk
+      - Src/Extensions/QuickSwitchPanel.ahk
+      - Src/Extensions/QuickSwitchFavorites.ahk
+      - Src/Extensions/FileDialogs.ahk
+      - Src/Extensions/FileManagers.ahk
       - Tests/Integration/QuickSwitchCheck.ahk
       - .github/workflows/quickswitch.yml
       - .github/actions/setup-ahk/**

@@ -57,7 +57,7 @@ class TerminalProvider {
 
     ; The folder open in Explorer / Total Commander (the window active before ALTRun was shown)
     static OpenAtCurrentFolder() {
-        folder := QuickSwitch.FolderOfWindow(App.PreviousWindow)
+        folder := FileManagers.FolderOfWindow(App.PreviousWindow)
         if (folder = "")
             return MsgBox(I18n.T("Sys.NoFolder"), App.Name, 48)
         TerminalProvider.OpenAt(folder)

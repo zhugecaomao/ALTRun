@@ -106,7 +106,7 @@ class ResultActions {
         add(I18n.T("Action.CutFiles", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyFiles(paths, true), I18n.T("Action.CopyFile.Hint"))
         joined := TextTools.Join(paths)
         add(I18n.T("Action.CopyPaths", count), "res:imageres.dll,-5314", (*) => ActionCatalog.CopyText(joined))
-        manager := QuickSwitch.FileManagerFolder()
+        manager := FileManagers.FileManagerFolder()
         destination := IsObject(manager) ? manager.Path : ""
         if (destination != "" && Path.ExistsOrRemote(destination)) {      ; no wait when the folder is on an offline server
             add(I18n.T("Action.CopyTo", manager.Tag), "folder:", (*) => ActionCatalog.CopyMany(paths, destination), Path.Compact(destination))
@@ -219,7 +219,7 @@ class ResultActions {
             return
         list.Push(ResultItem(I18n.T("Action.CopyFile"), I18n.T("Action.CopyFile.Hint"), {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target])}))
         list.Push(ResultItem(I18n.T("Action.CutFile"), I18n.T("Action.CopyFile.Hint"), {Icon: "res:imageres.dll,-5314", OnRun: (*) => ActionCatalog.CopyFiles([target], true)}))
-        manager := QuickSwitch.FileManagerFolder()
+        manager := FileManagers.FileManagerFolder()
         destination := IsObject(manager) ? manager.Path : ""
         if (destination = "" || !Path.ExistsOrRemote(destination))
             return
