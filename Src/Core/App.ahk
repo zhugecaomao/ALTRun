@@ -610,19 +610,14 @@ class App {
         return (*) => (App.RememberActiveWindow(), SystemProvider.RunCommand(actionId, searchText))
     }
 
-    ; A custom hotkey's action Id. The test builds 2026.11.09.15 / .16 saved Search as "Show" with a "Prefix": read as Search
-    static HotkeyActionId(entry) {
-        action := entry.Has("Action") ? entry["Action"] "" : ""
-        return (action = "Show" && entry.Has("Prefix") && entry["Prefix"] != "") ? "Search" : action
-    }
+    ; A custom hotkey's action Id
+    static HotkeyActionId(entry) => entry.Has("Action") ? entry["Action"] "" : ""
 
     ; The search text of a custom hotkey (for example "folder {selection}"): only Search types it into the search box; "" for any other
     static HotkeySearchText(entry) {
         action := entry.Has("Action") ? entry["Action"] "" : ""
         if (action = "Search")
             return entry.Has("SearchText") ? entry["SearchText"] "" : ""
-        if (action = "Show" && entry.Has("Prefix"))                         ; the test builds' "Show" + "Prefix"
-            return entry["Prefix"] ""
         return ""
     }
 

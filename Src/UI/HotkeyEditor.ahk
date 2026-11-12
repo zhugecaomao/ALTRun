@@ -8,7 +8,7 @@
 ;               "Insert" (a drop-down button) adds {selection} or a search scope (folder, doc, recent...), so nothing has to be remembered
 ;   Works in    all programs, or only in windows matching a WinTitle (ALTRun = only in the search window)
 ; A line at the bottom says in words what the hotkey does, updated while editing (Summary), so a wrong setting shows before saving.
-; Old entries are shown as Search: the test builds' "Show" + "Prefix", and "Show" (an empty search box) of older versions.
+; "Show" (an empty search box) of older versions is shown as Search.
 ;
 ; Usage:
 ;   edited := HotkeyEditor.Edit(ownerGui, item, original)   -> the edited Map (keys not shown are kept), "" when cancelled
@@ -156,8 +156,6 @@ class HotkeyEditor {
         edited["Action"] := action
         edited["SearchText"] := (action = "Search") ? ui.SearchText.Value : ""
         edited["WinTitle"] := ui.Only.Value ? Trim(ui.WinTitle.Value) : ""
-        if edited.Has("Prefix")                                             ; the test builds' key, now SearchText
-            edited.Delete("Prefix")
         return edited
     }
 
@@ -175,8 +173,6 @@ class HotkeyEditor {
         if (action = "Show")                                                ; Show = Search with an empty search box
             action := "Search"
         result["Action"] := action, result["SearchText"] := searchText
-        if result.Has("Prefix")
-            result.Delete("Prefix")
         return result
     }
 

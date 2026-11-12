@@ -1519,8 +1519,6 @@ class ProviderTests {
     ; The hotkey edit window: old forms shown as Search, the summary line, and every control inside the window in every language
     static HotkeyEditorWindow() {
         eq := (n, a, e) => TestRunner.Equal("HotkeyEditorWindow." n, a, e)
-        item := HotkeyEditor.Normalize(Map("Key", "^!f", "Action", "Show", "Prefix", "folder ", "WinTitle", ""))
-        eq("test build form", item["Action"] "|" item["SearchText"] "|" item.Has("Prefix"), "Search|folder |0")
         item := HotkeyEditor.Normalize(Map("Key", "^!a", "Action", "Activate", "WinTitle", ""))   ; the 2.x name of Show
         eq("old Show: an empty search", item["Action"] "|" item["SearchText"], "Search|")
         item := HotkeyEditor.Normalize(Map("Key", "^!r", "Action", "Reindex"))
@@ -1609,9 +1607,7 @@ class ProviderTests {
         eq("hotkey search text: Search types it", App.HotkeySearchText(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}", "WinTitle", "")), "folder {selection}")
         eq("hotkey search text: only for Search", App.HotkeySearchText(Map("Key", "^!f", "Action", "Lock", "SearchText", "folder ")), "")
         eq("hotkey search text: none set", App.HotkeySearchText(Map("Key", "^!f", "Action", "Search")), "")
-        test := Map("Key", "^!f", "Action", "Show", "Prefix", "folder ")      ; the test builds 2026.11.09.15 / .16 saved Search this way
-        eq("hotkey test build form", App.HotkeyActionId(test) "|" App.HotkeySearchText(test), "Search|folder ")
-        eq("hotkey plain Show stays", App.HotkeyActionId(Map("Key", "^!f", "Action", "Show")) "|" App.HotkeyActionId(Map("Key", "^!f", "Action", "Show", "Prefix", "")), "Show|Show")
+        eq("hotkey plain Show stays", App.HotkeyActionId(Map("Key", "^!f", "Action", "Show")), "Show")
         eq("no mouse hotkeys by default (no mouse hook)", App.UsesMouseHotkeys(defaults["Hotkeys"]), false)
         help := ""
         for item in HelpProvider.Items()
@@ -1619,7 +1615,6 @@ class ProviderTests {
         eq("help lists F1 and F4", (InStr(help, "About ") && InStr(help, "EditJson ")) ? 1 : 0, 1)
         eq("hotkey action shows its search text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}"), "Action"), "Search: folder {selection}")
         eq("hotkey action without text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Search", "SearchText", " "), "Action"), "Search")
-        eq("hotkey test build form shown as Search", PrefsForm.Cell(Map("Key", "^!f", "Action", "Show", "Prefix", "folder "), "Action"), "Search: folder")
         eq("hotkey search text only for Search", PrefsForm.Cell(Map("Key", "^!f", "Action", "Lock", "SearchText", "folder "), "Action"), "Lock")
         eq("command target shows arguments", PrefsForm.Cell(Map("Target", "cmd.exe", "Arguments", "/k ipconfig /all"), "Target"), "cmd.exe /k ipconfig /all")
         eq("url type name", I18n.Strings["Prefs.Type.Url"], "Web address / link")
