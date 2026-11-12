@@ -99,17 +99,30 @@ class Everything {
                 Everything._foreign++
             return
         }
-        list := NumGet(lParam, A_PtrSize * 2, "Ptr")
-        count := NumGet(list, 4, "UInt")
+        Everything._replies[replyId] := Everything.ParseList(NumGet(lParam, A_PtrSize * 2, "Ptr"), NumGet(lParam, A_PtrSize, "UInt"))
+        return true
+    }
+
+    ; list, size: the EVERYTHING_IPC_LIST2 and its size in bytes (cbData) -> [{Path, IsFolder}...]. Every count and offset in it is
+    ; checked against size, so a malformed reply (or another program's message with a matching id) can't make it read past the data:
+    ; such a reply gives no results
+    static ParseList(list, size) {
         results := []
+        if (!list || size < 20)
+            return results
+        count := NumGet(list, 4, "UInt")
+        if (count > (size - 20) // 8)
+            return results
         Loop count {
             itemPtr := list + 20 + (A_Index - 1) * 8
-            flags := NumGet(itemPtr, 0, "UInt")
-            dataPtr := list + NumGet(itemPtr, 4, "UInt")
-            length := NumGet(dataPtr, 0, "UInt")
-            results.Push({Path: StrGet(dataPtr + 4, length, "UTF-16"), IsFolder: (flags & 1) ? true : false})
+            flags := NumGet(itemPtr, 0, "UInt"), offset := NumGet(itemPtr, 4, "UInt")
+            if (offset < 20 || offset + 4 > size)
+                return []
+            length := NumGet(list + offset, 0, "UInt")
+            if (length > (size - offset - 4) // 2)
+                return []
+            results.Push({Path: StrGet(list + offset + 4, length, "UTF-16"), IsFolder: (flags & 1) ? true : false})
         }
-        Everything._replies[replyId] := results
-        return true
+        return results
     }
 }

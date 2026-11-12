@@ -69,7 +69,42 @@ class DelayedStartCheck {
         }
         try DirDelete(dir, true)
         DelayedStartCheck.StartupApps()
+        if A_IsAdmin                                                        ; a standard user would get a UAC prompt nobody answers
+            DelayedStartCheck.TaskFromXml(folderPath)
         return DelayedStartCheck.Failures
+    }
+
+    ; The Caps Lock helper's task is registered by schtasks /create /xml run as administrator (CapsLockHelper.RegisterXml), while ALTRun
+    ; holds the XML file open with a handle that refuses writing and deleting: schtasks must still be able to read it, and others must not change it
+    static TaskFromXml(folderPath) {
+        name := "CapsLock XML"
+        xml := CapsLockHelper.TaskXml(EnvGet("SystemRoot") "\System32\notepad.exe", "/a b.txt", A_Temp, TaskScheduler.UserId())
+        try {
+            code := CapsLockHelper.RegisterXml(folderPath "\" name, xml)
+            tasks := DelayedStartCheck.ByName(TaskScheduler.Tasks(folderPath))
+            DelayedStartCheck.Check("task from XML held open: schtasks read it", code = 0 && tasks.Has(name) && tasks[name].Arguments == "/a b.txt"
+                , "exit code " code ", " DelayedStartCheck.Names(tasks))
+            file := A_Temp "\ALTRun check held.xml"
+            FileAppend("<Task/>", file, "UTF-16")
+            held := FileOpen(file, "r-wd", "UTF-16")
+            blocked := 0
+            try FileAppend("x", file)
+            catch
+                blocked++
+            try FileDelete(file)
+            catch
+                blocked++
+            try FileMove(file, file ".moved")
+            catch
+                blocked++
+            reader := FileOpen(file, "r", "UTF-16")
+            DelayedStartCheck.Check("held file: no writing, deleting, renaming; reading works", blocked = 3 && reader.Read() == "<Task/>", blocked " of 3 blocked")
+            reader.Close(), held.Close()
+            try FileDelete(file)
+        } catch as e
+            DelayedStartCheck.Check("task from XML: no error", false, e.Message " (" e.What ", line " e.Line ")")
+        try TaskScheduler.Delete(folderPath, name)
+        try TaskScheduler.DeleteFolder(folderPath)
     }
 
     ; A startup app of this user (a Run value made for the check): listed, turned off and on again as Task Manager does it, made into an entry

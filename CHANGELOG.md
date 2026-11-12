@@ -5,6 +5,18 @@
 
 ## [未发布]
 
+## [2026.11.11.12]
+
+测试版。
+
+Test build.
+
+### 改进
+- 一键更新: 下载的更新包放在程序文件夹里的 `Update.tmp` 里校验、解压和复制 (完成或失败后删除), 不再放在 `%TEMP%`; 程序装在受保护的文件夹 (如 Program Files) 并以管理员身份运行时, 普通权限的程序无法在校验之后替换这些文件
+- 命令行 `ALTRun.exe -Update` 交给已经在运行的 ALTRun 时, 先询问再更新 (和托盘菜单里检查更新一样); ALTRun 还没运行时仍然直接更新
+- 管理员窗口里 Caps Lock 切换输入法的计划任务: 创建时用的 XML 文件名不可预测, 并在 schtasks 读取完之前锁住不让其他程序修改
+- 接收其他程序发来的消息 (WM_COPYDATA: 新启动的 ALTRun 传来的参数、Everything 的搜索结果、Total Commander 的当前文件夹) 时只读取对方给出的长度以内的数据, 格式不对的 Everything 结果直接忽略
+
 ## [2026.11.11.11]
 
 测试版。
@@ -1320,7 +1332,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.11...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.12...HEAD
+[2026.11.11.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.11...2026.11.11.12
 [2026.11.11.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.10...2026.11.11.11
 [2026.11.11.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.9...2026.11.11.10
 [2026.11.11.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.8...2026.11.11.9

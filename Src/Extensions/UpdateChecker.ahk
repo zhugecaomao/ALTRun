@@ -6,7 +6,7 @@
 ; Usage:
 ;   UpdateChecker.Schedule()           at start-up: automatic background checks, the first after 1 minute, then every 6 hours (see below)
 ;   UpdateChecker.Check()              manual check (tray menu / system command / Preferences), always reports a result
-;   UpdateChecker.Check(true)          updates right away when there is a new version, without asking (command line -Update)
+;   UpdateChecker.Check(true)          updates right away when there is a new version, without asking (command line -Update when starting ALTRun)
 ;   UpdateChecker.PendingItem()        a new version found in the background -> a result in the search window ("" if none)
 ;   UpdateChecker.CleanUp()            at start-up: deletes the old program and temporary files left by the last update
 ;
@@ -25,7 +25,7 @@
 ;      moves on to the link). When the link fails too for a network reason (e.g. only a proxy script lets it out), it downloads once
 ;      more with AutoHotkey's Download (WinINet, the system proxy as the update check uses it), which holds ALTRun until done.
 ;      Then verify the SHA256 GitHub gives
-;   2. extract to a temporary folder, copy the files other than the exe first (Resources\ etc.), then rename the running
+;   2. extract to a temporary folder next to the program (Update.tmp, deleted afterwards), copy the files other than the exe first (Resources\ etc.), then rename the running
 ;      ALTRun.exe to ALTRun.exe.old (a running exe can't be overwritten but can be renamed) and copy the new exe;
 ;      overwritten files are backed up first, and any failing step restores everything. Data\ (with ALTRun.json) and Themes\ aren't in the zip and stay untouched
 ;   3. start the new version (-Updated), which deletes ALTRun.exe.old at start-up
@@ -39,7 +39,11 @@ class UpdateChecker {
     static ReleasePage := "https://github.com/zhugecaomao/ALTRun/releases"
     static AssetApiUrl := "https://api.github.com/repos/zhugecaomao/ALTRun/releases/assets/"   ; + the asset's number
     static RepoUrl     := "https://github.com/zhugecaomao/ALTRun/"
-    static TempDir     := A_Temp "\ALTRun-update"
+    ; The download is kept, verified, extracted and copied from here: next to the program, not in %TEMP%, where any program with normal rights
+    ; could swap the files between the SHA256 check and the copy (a privilege gain when ALTRun runs as administrator from a protected folder).
+    ; One-click updates need the program folder writable anyway (CanInstall)
+    static TempDir     := A_ScriptDir "\Update.tmp"
+    static OldTempDir  := A_Temp "\ALTRun-update"                         ; where versions up to 2026.11.11 kept it, deleted by CleanUp
     static OldSuffix   := ".old"
     static PackageExe  := "ALTRun.exe"                                     ; the program name in the zip (the local exe may have been renamed)
     ; files older versions shipped that the new one no longer needs, deleted on update (other files in Resources\ may be the user's, left alone)
@@ -410,6 +414,7 @@ class UpdateChecker {
         if (UpdateChecker._installing != job)
             return
         UpdateChecker._EndInstall(job)
+        try DirDelete(UpdateChecker.TempDir, true)                          ; nothing left in the program folder
         Logger.Error("UpdateChecker: install " job.Release.Version " - " message)
         if (UpdateChecker.askFn.Call(I18n.T("Update.InstallFailed", UpdateChecker.FailureText(message))) = "Yes")
             Run(job.Release.Page)
@@ -539,8 +544,10 @@ class UpdateChecker {
             else if FileExist(old)
                 Logger.Warn("UpdateChecker: could not delete " old " (still in use?); it can be deleted by hand")
         }
-        if (attempt = 1 && InStr(FileExist(UpdateChecker.TempDir), "D"))
-            try DirDelete(UpdateChecker.TempDir, true)
+        if (attempt = 1)
+            for dir in [UpdateChecker.TempDir, UpdateChecker.OldTempDir]
+                if InStr(FileExist(dir), "D")
+                    try DirDelete(dir, true)
     }
 
     static Sha256File(path) {

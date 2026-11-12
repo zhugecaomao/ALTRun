@@ -518,6 +518,14 @@ class Win {
     }
 
     ; Waits until all modifier keys are up, so Ctrl / Alt don't leak into the next Send
+    ; The UTF-16 text of a WM_COPYDATA (lParam = its COPYDATASTRUCT): read only within the cbData bytes the sender gave, up to the first 0,
+    ; at most maxChars; "" when there is none. Another program can send anything: without the length, text with no terminating 0 would be
+    ; read past its data
+    static CopyDataText(lParam, maxChars := 32768) {
+        size := NumGet(lParam, A_PtrSize, "UInt"), data := NumGet(lParam, A_PtrSize * 2, "Ptr")
+        return (data && size >= 2) ? StrGet(data, Min(size // 2, maxChars), "UTF-16") : ""
+    }
+
     static WaitModifiersUp(timeout := 0.5) {
         for key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"]
             KeyWait(key, "T" timeout)
