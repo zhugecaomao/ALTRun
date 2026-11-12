@@ -343,7 +343,7 @@
   "Prefs.DataFolderKind.Computer": "每台电脑一个文件夹: 设置、命令和片段不共用。",
   "Prefs.DataFolderKind.User": "每个 Windows 用户一个文件夹。",
   "Prefs.DataFolderVars": "环境变量: %OneDrive% 个人 OneDrive · %OneDriveCommercial% 工作或学校 OneDrive · %USERPROFILE% 用户文件夹 · %COMPUTERNAME% 计算机名 · %USERNAME% Windows 用户名",
-  "Prefs.DataFolderNote": "把文件夹放在 OneDrive、Dropbox 等同步盘里, 几台电脑就能共用设置。可以用环境变量: 加上 %COMPUTERNAME% 每台电脑各用一个文件夹, 加上 %USERNAME% 每个 Windows 用户各用一个。",
+  "Prefs.DataFolderNote": "放在 OneDrive 等同步盘里可以几台电脑共用设置。可以用环境变量: %COMPUTERNAME% 每台电脑一个文件夹, %USERNAME% 每个 Windows 用户一个。",
   "Prefs.DataFolderNested": "新文件夹不能在现在的数据文件夹里面, 反过来也不行。",
   "Prefs.DataFolderPrompt": "ALTRun 的设置和数据放在哪个文件夹 (例如 OneDrive 里的文件夹, 几台电脑共用)",
   "Prefs.DateFormat": "日期格式",

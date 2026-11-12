@@ -35,7 +35,7 @@ class Shots {
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
                          , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
-                         , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location"]   ; scenes shot at 100% (see screenshots.yml)
+                         , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
     static Themes() {
@@ -102,7 +102,8 @@ class Shots {
             ["sync-preview",     "Light", "-Preferences 21", () => Shots.SyncPreview(), () => Shots.SyncTasks(true)],   ; Wiki: sync tasks (preview)
             ["prefs-usage",      "Light", "-Preferences 22", () => Shots.Preferences(), () => Shots.WriteUsage()],   ; Wiki: usage statistics
             ["prefs-advanced",   "Light", "-Preferences 23", () => Shots.Preferences()],     ; Wiki: data files
-            ["data-location",    "Light", "-Preferences 23", () => Shots.DataLocation(), () => Shots.DemoOneDrive()],   ; Wiki: FAQ, several PCs (Change Location..., its list open)
+            ["data-location",    "Light", "-Preferences 23", () => Shots.DataLocation(), () => Shots.DemoOneDrive()],   ; Wiki: FAQ, several PCs (Change Location...)
+            ["data-location-list", "Light", "-Preferences 23", () => Shots.DataLocation(true), () => Shots.DemoOneDrive()],   ; the same with its list of places open
             ["theme-dark",      "Dark",     "", () => Shots.Search("re")],
             ["theme-compact", "Dark|Compact", "", () => Shots.Search("re")],   ; dark + density "Compact" (all other shots use the new install default "Normal")
             ["theme-classic",   "Classic",  "", () => Shots.Search("re")],
@@ -1053,8 +1054,8 @@ class Shots {
         return ""                                                           ; already saved
     }
 
-    ; Preferences → Advanced → Change Location...: the dialog with the per-PC OneDrive entry chosen and its list open (the dialog and the list in one shot)
-    static DataLocation() {
+    ; Preferences → Advanced → Change Location...: the dialog with the per-PC OneDrive entry chosen; openList: its list open too (the dialog and the list in one shot)
+    static DataLocation(openList := false) {
         prefs := Shots.Preferences()
         button := 0
         for ctrl in WinGetControlsHwnd(prefs)
@@ -1074,6 +1075,8 @@ class Shots {
                 combo := ctrl
         ControlChooseString("%OneDrive%\ALTRun\Data-%COMPUTERNAME%", combo)                  ; the per-PC OneDrive entry: the dialog's lines follow it
         Sleep(500)
+        if !openList
+            return window
         SendMessage(0x14F, 1, 0, combo)                                     ; CB_SHOWDROPDOWN
         Sleep(800)
         list := WinExist("ahk_class ComboLBox ahk_pid " Shots.Pid)

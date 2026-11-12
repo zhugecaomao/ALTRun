@@ -344,7 +344,7 @@
   "Prefs.DataFolderKind.Computer": "每台電腦一個資料夾: 設定、命令和片段不共用。",
   "Prefs.DataFolderKind.User": "每個 Windows 使用者一個資料夾。",
   "Prefs.DataFolderVars": "環境變數: %OneDrive% 個人 OneDrive · %OneDriveCommercial% 工作或學校 OneDrive · %USERPROFILE% 使用者資料夾 · %COMPUTERNAME% 電腦名稱 · %USERNAME% Windows 使用者名稱",
-  "Prefs.DataFolderNote": "把資料夾放在 OneDrive、Dropbox 等同步硬碟裡, 幾台電腦就能共用設定。可以使用環境變數: 加上 %COMPUTERNAME% 每台電腦各用一個資料夾, 加上 %USERNAME% 每個 Windows 使用者各用一個。",
+  "Prefs.DataFolderNote": "放在 OneDrive 等同步硬碟裡可以幾台電腦共用設定。可以使用環境變數: %COMPUTERNAME% 每台電腦一個資料夾, %USERNAME% 每個 Windows 使用者一個。",
   "Prefs.DataFolderNested": "新資料夾不能在目前的資料夾裡面, 反過來也不行。",
   "Prefs.DataFolderPrompt": "ALTRun 的設定和資料要放在哪個資料夾 (例如 OneDrive 裡的資料夾, 幾台電腦共用)",
   "Prefs.DateFormat": "日期格式",
