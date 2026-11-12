@@ -39,6 +39,10 @@ on:
 permissions:
   contents: read
 
+concurrency:                                                            # a new push to the branch stops the run for the old one; runs started by hand aren't stopped
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
 jobs:
   plan:
     runs-on: ubuntu-latest
@@ -73,14 +77,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download AutoHotkey v2
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory tools -Force | Out-Null
-          # Keep the interpreter fixed so baseline/candidate benchmark results are comparable.
-          $ahkTag = 'v2.0.31'
-          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
-          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
+      - name: Download AutoHotkey v2                                      # pinned, the same as the release build (.github/actions/setup-ahk)
+        uses: ./.github/actions/setup-ahk
 
       - name: Prepare
         shell: pwsh

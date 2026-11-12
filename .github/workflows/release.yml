@@ -58,8 +58,9 @@ jobs:
     timeout-minutes: 45                                    # a normal run takes under 10 minutes; the unit tests have their own limit (Tests/Tools/RunAhk.ps1)
     env:
       GH_TOKEN: ${{ github.token }}
-      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
-      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+      # only whether the secrets are set; each secret goes to the one step that uses it, not to every step of the job
+      HAS_SIGNPATH: ${{ secrets.SIGNPATH_API_TOKEN != '' }}
+      HAS_WINGET: ${{ secrets.WINGET_TOKEN != '' }}
     steps:
       # Git on Windows converts text files from LF to CRLF by default (core.autocrlf), so the README, LICENSE and JSON in the package
       # would differ byte for byte from the repository / source ZIP. Turn the conversion off so the package's files match the repository exactly
@@ -99,20 +100,10 @@ jobs:
             $global:LASTEXITCODE = 0
           }
 
-      - name: Download AutoHotkey v2 and Ahk2Exe
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory tools -Force | Out-Null
-          # Pin compiler versions for reproducible release artifacts; update these deliberately.
-          $ahkTag = 'v2.0.31'
-          $ahk2exeTag = 'Ahk2Exe1.1.37.02a2'
-          Write-Host "AutoHotkey $ahkTag; Ahk2Exe $ahk2exeTag"
-          gh release download $ahkTag --repo AutoHotkey/AutoHotkey --pattern "AutoHotkey_*.zip" --dir tools
-          Expand-Archive (Get-ChildItem tools -Filter "AutoHotkey_*.zip")[0].FullName tools/ahk
-          gh release download $ahk2exeTag --repo AutoHotkey/Ahk2Exe --pattern "Ahk2Exe*.zip" --dir tools
-          Expand-Archive (Get-ChildItem tools -Filter "Ahk2Exe*.zip")[0].FullName tools/ahk2exe
-          if (-not (Test-Path tools/ahk/AutoHotkey64.exe)) { throw "AutoHotkey64.exe missing" }
-          if (-not (Get-ChildItem -Recurse tools/ahk2exe -Filter Ahk2Exe.exe)) { throw "Ahk2Exe.exe missing" }
+      - name: Download AutoHotkey v2 and Ahk2Exe                          # pinned versions, SHA256 checked (.github/actions/setup-ahk)
+        uses: ./.github/actions/setup-ahk
+        with:
+          ahk2exe: true
 
       - name: Unit tests
         if: ${{ inputs.publish }}                                          # a test build (publish = false): the Tests workflow tests the same commit
@@ -150,15 +141,15 @@ jobs:
       # and the variable SIGNPATH_RELEASE_SIGNING is set to true; until then releases go out unsigned as usual
       - name: Upload unsigned ALTRun.exe for signing
         id: unsigned
-        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
+        if: env.HAS_SIGNPATH == 'true' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
         uses: actions/upload-artifact@v7
         with:
           name: ALTRun-unsigned
           path: build/ALTRun/ALTRun.exe
 
       - name: Sign ALTRun.exe (SignPath)
-        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
-        uses: signpath/github-action-submit-signing-request@v3
+        if: env.HAS_SIGNPATH == 'true' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092   # v3.0, pinned to its commit
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
@@ -170,7 +161,7 @@ jobs:
           output-artifact-directory: build/signed
 
       - name: Use the signed ALTRun.exe
-        if: env.SIGNPATH_API_TOKEN != '' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
+        if: env.HAS_SIGNPATH == 'true' && (!inputs.publish || vars.SIGNPATH_RELEASE_SIGNING == 'true')
         shell: pwsh
         run: |
           Copy-Item build/signed/ALTRun.exe build/ALTRun/ALTRun.exe -Force
@@ -398,7 +389,9 @@ jobs:
       # syncs the token owner's fork of winget-pkgs first, then opens the pull request (packaging/Submit-Winget.ps1); when it fails,
       # the release stands and the "Submit to winget" workflow submits it again
       - name: Submit the new version to winget-pkgs
-        if: inputs.publish && env.WINGET_TOKEN != ''
+        if: inputs.publish && env.HAS_WINGET == 'true'
         continue-on-error: true
         shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
         run: ./packaging/Submit-Winget.ps1 -Version "${{ steps.version.outputs.version }}" -Repository "${{ github.repository }}"

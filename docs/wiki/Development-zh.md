@@ -3,7 +3,7 @@
 # 开发指南
 
 ## 环境
-- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新。发布构建和两个基准测试使用固定版本, 目前是 v2.0.31 (`.github/workflows/release.yml`、`bench.yml` 和 `file-index-bench.yml` 里的 `$ahkTag`; 三处一起改); CI 上的单元测试总是用最新的稳定版, 所以 AutoHotkey 新版本先经过测试再固定
+- [AutoHotkey v2](https://www.autohotkey.com/) 2.0 或更新。所有 workflow (单元测试、集成检查、基准测试、发布构建) 使用同一个固定版本, 目前是 v2.0.31 和 Ahk2Exe 1.1.37.02a2, 版本和 SHA256 写在 `.github/actions/setup-ahk/action.yml` (版本和哈希一起改); Tests workflow 每周一还用最新的稳定版跑一次, 所以 AutoHotkey 新版本先经过测试再固定
 - 任意编辑器; 推荐 VS Code + AutoHotkey v2 Language Support 插件
 
 ```
@@ -214,7 +214,7 @@ AutoHotkey64.exe Tests\Screenshots\TakeScreenshots.ahk [输出文件夹] [场景
    - 这一节里不要用 `##` 标题 (Release workflow 取到下一个 `##` 为止); 删掉测试版各节和它们的比较链接; 文件末尾 `[YYYY.MM.DD]: .../releases/tag/YYYY.MM.DD`, `[未发布]: .../compare/YYYY.MM.DD...HEAD`
 3. 合并到 main 后会自动跑一次检查构建 (`publish = false`); 再在 main 上运行 **Release**, `publish = true`
 
-Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe → 单元测试 (只在发布正式版时; 测试版的同一个提交由 Tests workflow 测试) → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本 (`packaging/Submit-Winget.ps1`: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR; 失败时用 **Submit to winget** 工作流重新提交已发布的版本)。
+Release workflow 在 Windows 上依次: 读版本号 → 下载 AutoHotkey 和 Ahk2Exe (固定版本, 核对 SHA256) → 单元测试 (只在发布正式版时; 测试版的同一个提交由 Tests workflow 测试) → 编译 `ALTRun.exe` → 配置了 SignPath 时签名 → 检查程序图标 → 用 2.x 的 `ALTRun.ini` 做升级测试 → 编译后的程序做单实例测试 → 打包 `ALTRun_v<版本>.zip`。`publish = true` 时再: 从 CHANGELOG 取这一节作为 Release 说明 → 创建 GitHub Release (一键更新核对的 SHA256 由 GitHub 给出) → 更新 `packaging/` 里的 Scoop 和 winget 清单并提交到 main → 配置了 `WINGET_TOKEN` 时向 winget-pkgs 提交新版本 (`packaging/Submit-Winget.ps1`: 先把 token 所属账号 fork 的 winget-pkgs 同步到最新, 再用 wingetcreate 开 PR; 失败时用 **Submit to winget** 工作流重新提交已发布的版本)。
 
 ## 性能测试
 GitHub → Actions → **Bench** → Run workflow: 在 GitHub 的 Windows 虚拟机上用真实的按键模拟日常操作, 比较两个版本

@@ -19,13 +19,14 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 15
     env:
-      WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
 
       - name: Submit
         shell: pwsh
+        env:
+          WINGET_TOKEN: ${{ secrets.WINGET_TOKEN }}                    # only in this step
         run: |
           if (-not $env:WINGET_TOKEN) { throw "The WINGET_TOKEN secret is not set" }
           $version = "${{ inputs.version }}".Trim()

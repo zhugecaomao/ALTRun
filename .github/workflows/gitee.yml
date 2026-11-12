@@ -26,21 +26,23 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     env:
-      GITEE_SSH_KEY: ${{ secrets.GITEE_SSH_KEY }}
+      HAS_GITEE_KEY: ${{ secrets.GITEE_SSH_KEY != '' }}               # the key itself only goes to the push step
       GITEE_REPO: ${{ vars.GITEE_REPO || 'zhugecaomao/ALTRun' }}
     steps:
       - name: Check secret
-        if: env.GITEE_SSH_KEY == ''
+        if: env.HAS_GITEE_KEY != 'true'
         run: echo "GITEE_SSH_KEY is not set, skipping."
 
       - uses: actions/checkout@v7
-        if: env.GITEE_SSH_KEY != ''
+        if: env.HAS_GITEE_KEY == 'true'
         with:
           fetch-depth: 0
 
       - name: Push main and tags to Gitee
-        if: env.GITEE_SSH_KEY != ''
+        if: env.HAS_GITEE_KEY == 'true'
         timeout-minutes: 30
+        env:
+          GITEE_SSH_KEY: ${{ secrets.GITEE_SSH_KEY }}
         run: |
           mkdir -p ~/.ssh
           printf '%s\n' "$GITEE_SSH_KEY" > ~/.ssh/gitee
