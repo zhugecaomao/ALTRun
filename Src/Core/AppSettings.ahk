@@ -8,7 +8,7 @@
 ;
 ; File structure (SchemaVersion 6):
 ; {
-;   "SchemaVersion" : 5,
+;   "SchemaVersion" : 6,
 ;   "General"       : { show hotkey / start with Windows / tray icon / hide on focus loss / language ... },
 ;   "Appearance"    : { theme / window width / visible rows },
 ;   "Features"      : { "<feature>": { "Enabled": 1, ...the feature's own settings } },

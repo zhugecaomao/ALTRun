@@ -9,10 +9,9 @@ indent_style = space
 indent_size = 4
 trim_trailing_whitespace = true
 
-# 入口文件保持 UTF-8 BOM + CRLF (AutoHotkey 在旧版 Windows 上按 BOM 识别编码)
+# The entry file keeps its UTF-8 BOM (AutoHotkey reads the encoding from it); line endings are LF like the rest
 [ALTRun.ahk]
 charset = utf-8-bom
-end_of_line = crlf
 
 [*.{md,yml,json}]
 indent_size = 2

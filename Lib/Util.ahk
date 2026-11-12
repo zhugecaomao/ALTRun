@@ -188,49 +188,6 @@ class Path {
 
 
 ;===============================================================================
-; Fonts - font description string <-> AHK SetFont options
-; The settings store a human-readable form such as "Microsoft YaHei, norm s10"
-;===============================================================================
-class Fonts {
-    static Spec(text, defName := "Microsoft YaHei", defOpt := "norm s10") {
-        parts := StrSplit(text, ",")
-        name  := parts.Length >= 1 ? Trim(parts[1]) : ""
-        opt   := parts.Length >= 2 ? Trim(parts[2]) : ""
-        return { name: name != "" ? name : defName, opt: opt != "" ? opt : defOpt }
-    }
-
-    ; Shows the system font dialog; returns {name, opt} or false
-    static Choose(initName := "", ownerHwnd := 0) {
-        lf := Buffer((A_PtrSize = 4) ? 60 : 92, 0)
-        dc := DllCall("GetDC", "Ptr", 0, "Ptr")
-        dpi := DllCall("GetDeviceCaps", "Ptr", dc, "UInt", 90, "Int")
-        DllCall("ReleaseDC", "Ptr", 0, "Ptr", dc)
-
-        NumPut("UInt", Floor(10 * dpi / 72), lf)            ; 10 pt by default
-        NumPut("UInt", 400, lf, 16)
-        StrPut(initName, lf.Ptr + 28, "UTF-16")
-
-        cf  := Buffer(A_PtrSize = 8 ? 104 : 60, 0)
-        NumPut("UInt", cf.Size, cf, 0)
-        NumPut("UPtr", ownerHwnd, cf, A_PtrSize)
-        NumPut("UPtr", lf.Ptr, cf, (A_PtrSize = 8) ? 24 : 12)
-        NumPut("UInt", 0x141, cf, (A_PtrSize = 8) ? 36 : 20)  ; SCREENFONTS|EFFECTS|INITTOLOGFONT
-
-        if !DllCall("comdlg32\ChooseFont", "UPtr", cf.Ptr)
-            return false
-
-        name := StrGet(lf.Ptr + 28, "UTF-16")
-        size := NumGet(cf, A_PtrSize = 8 ? 32 : 16, "UInt") / 10
-        bold := NumGet(lf, 16, "UInt") >= 600
-        ital := NumGet(lf, 20, "UChar")
-
-        opt := "norm" (bold ? " bold" : "") (ital ? " italic" : "") " s" size
-        return { name: name, opt: opt }
-    }
-}
-
-
-;===============================================================================
 ; Win - small window helpers
 ;===============================================================================
 class Win {
