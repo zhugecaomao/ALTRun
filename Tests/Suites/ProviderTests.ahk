@@ -1616,8 +1616,7 @@ class ProviderTests {
         eq("old Show: an empty search", item["Action"] "|" item["SearchText"], "Search|")
         item := HotkeyEditor.Normalize(Map("Key", "^!r", "Action", "Reindex"))
         eq("old command name", item["Action"] "|" item["WinTitle"], "RebuildIndex|")
-        actions := HotkeyEditor.Actions("FutureCommand")
-        eq("own actions first, unknown kept", actions[1][1] "|" actions[2][1] "|" actions[actions.Length][1], "Search|ToggleWindow|FutureCommand")
+        eq("unknown action kept as it is", HotkeyEditor.Normalize(Map("Key", "^!x", "Action", "FutureCommand"))["Action"] "|" HotkeyEditor.ActionName("FutureCommand", []), "FutureCommand|FutureCommand")
         savedLang := I18n.Lang
         I18n.Init("en")
         eq("summary search", HotkeyEditor.Summary(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}", "WinTitle", ""))
@@ -1656,8 +1655,83 @@ class ProviderTests {
                 }
             ui.Key.GetPos(&keyX, &keyY, &keyW), ui.Pass.GetPos(&passX, &passY)
             TestRunner.True("HotkeyEditorWindow." language[1] " keep-function box beside the hotkey box", passX > keyX + keyW && Abs(passY - keyY) <= 4)
-            ui.Action.Value := 2                                            ; Show / hide: no search text
-            eq(language[1] " read without search", HotkeyEditor.Read(ui)["SearchText"], "")
+            eq(language[1] " action name", ui.Action.Value, I18n.T("HotkeyEditor.Action.Search"))
+            ui.Action.GetPos(&actionX, &actionY, &actionW), ui.Choose.GetPos(&chooseX, &chooseY)
+            TestRunner.True("HotkeyEditorWindow." language[1] " Choose beside the action box", chooseX > actionX + actionW && Abs(chooseY - actionY) <= 4)
+            ui.SetAction.Call("ToggleWindow")                               ; Show / hide: no search text
+            eq(language[1] " read without search", HotkeyEditor.Read(ui)["Action"] "|" HotkeyEditor.Read(ui)["SearchText"] "|" ui.SearchText.Enabled, "ToggleWindow||0")
+            eq(language[1] " detail", ui.Detail.Value, I18n.T("HotkeyEditor.Detail.Toggle"))
+            g.Destroy()
+        }
+        owner.Destroy()
+        I18n.Init(savedLang)
+    }
+
+    ; Choosing a hotkey's command: the names and the line below the name, the list (order, filtering), and the window in every language
+    static HotkeyCommandPicker() {
+        eq := (n, a, e) => TestRunner.Equal("HotkeyCommandPicker." n, a, e)
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        commands := [
+            Map("Id", "plain001", "Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np")
+          , Map("Id", "query001", "Title", "Google", "Type", "Url", "Target", "https://www.google.com/search?q={query}", "Arguments", "", "Keyword", "gg")
+          , Map("Id", "types001", "Title", "Open in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "", "Selection", "Text files")
+          , Map("Title", "Just added", "Type", "File", "Target", "calc.exe", "Arguments", "", "Keyword", "ja")]   ; added in Preferences, no Id yet
+
+        eq("name: custom", HotkeyEditor.ActionName("custom:plain001", commands), "Notepad")
+        eq("name: deleted", HotkeyEditor.ActionName("custom:gone0001", commands), "(deleted command) custom:gone0001")
+        eq("name: own", HotkeyEditor.ActionName("Search", commands), I18n.T("HotkeyEditor.Action.Search"))
+        eq("summary from the commands given", InStr(HotkeyEditor.Summary(Map("Key", "^!g", "Action", "custom:query001", "WinTitle", ""), commands), '"Google"') > 0, true)
+        detail := HotkeyEditor.ActionDetail("custom:plain001", commands)
+        eq("detail: plain", detail.Text "|" detail.Missing, "Custom command · notepad.exe · doesn't use the selection|0")
+        eq("detail: {query}", HotkeyEditor.ActionDetail("custom:query001", commands).Text, "Custom command · https://www.google.com/search?q={query} · " I18n.T("HotkeyEditor.Detail.Query"))
+        eq("detail: content types", HotkeyEditor.ActionDetail("custom:types001", commands).Text, "Custom command · notepad.exe · " I18n.T("HotkeyEditor.Detail.Types"))
+        detail := HotkeyEditor.ActionDetail("custom:gone0001", commands)
+        eq("detail: deleted", detail.Text "|" detail.Missing, I18n.T("HotkeyEditor.Detail.Missing") "|1")
+
+        choices := CommandPicker.Choices(commands)
+        eq("own first, then custom (with an Id), then system", choices[1].Id "|" choices[2].Id "|" choices[3].Id "|" choices[5].Id "|" choices[6].Kind
+            , "Search|ToggleWindow|custom:plain001|custom:types001|" I18n.T("CommandPicker.Kind.System"))
+        ids(list) => list.Length ? list[1].Id : ""
+        firstOf(list, kind) {
+            for choice in list
+                if (choice.Kind = kind)
+                    return choice.Id
+            return ""
+        }
+        eq("filter all", CommandPicker.Filter(choices, "  ").Length, choices.Length)
+        eq("filter by keyword", ids(CommandPicker.Filter(choices, "gg")), "custom:query001")
+        filtered := CommandPicker.Filter(choices, "notepad")
+        eq("filter: best first within a kind", firstOf(filtered, I18n.T("CommandPicker.Kind.Custom")), "custom:plain001")
+        eq("filter: system commands by English name", firstOf(CommandPicker.Filter(choices, "lock"), I18n.T("CommandPicker.Kind.System")), "Lock")
+        eq("filter: nothing", CommandPicker.Filter(choices, "zzqqxx").Length, 0)
+
+        AppSettings.EnsureIds(Map("CustomCommands", commands))              ; what Choose does first
+        eq("a new command gets an Id to be chosen", AppSettings.IsId(commands[4]["Id"]) "|" (CommandPicker.Choices(commands).Length = choices.Length + 1), "1|1")
+
+        owner := Gui()
+        for language in I18n.Languages() {
+            I18n.Init(language[1])
+            ui := CommandPicker.Build(owner, "custom:types001", commands)
+            g := ui.Gui
+            g.Show("Hide")
+            WinGetClientPos(, , &clientW, &clientH, g.Hwnd)
+            right := 0, bottom := 0
+            for ctrl in g {
+                ctrl.GetPos(&x, &y, &w, &h)
+                right := Max(right, x + w), bottom := Max(bottom, y + h)
+            }
+            TestRunner.True("HotkeyCommandPicker." language[1] " fits (" right " x " bottom " in " clientW " x " clientH ")", right <= clientW && bottom <= clientH)
+            eq(language[1] " current selected", CommandPicker.Selected(ui), "custom:types001")
+            total := 0
+            Loop 3
+                total += SendMessage(0x101D, A_Index - 1, 0, ui.List)        ; LVM_GETCOLUMNWIDTH
+            ui.List.GetPos(, , &listW)
+            TestRunner.True("HotkeyCommandPicker." language[1] " columns fit without a horizontal scroll bar (" total " < " listW ")", total < listW - SysGet(2))   ; SM_CXVSCROLL
+            row := ui.List.GetNext()
+            eq(language[1] " down key moves in the list", CommandPicker._OnKeyDown(ui, 0x28, 0, 0x100, ui.Search.Hwnd) "|" ui.List.GetNext(), "0|" (row + 1))
+            eq(language[1] " other keys stay in the box", CommandPicker._OnKeyDown(ui, 0x41, 0, 0x100, ui.Search.Hwnd) "|" ui.List.GetNext(), "|" (row + 1))
+            ui.Release.Call()
             g.Destroy()
         }
         owner.Destroy()

@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.12.4]
+
+测试版。
+
+Test build.
+
+### 新增
+- 热键编辑窗口里选择要运行的命令: "动作" 改成命令名称 + **选择...**, 打开一个可搜索的列表 (ALTRun 自己的两个、自定义命令、系统命令), 输入筛选 (名称、关键字、拼音首字母), `↑` `↓` 和 `Enter` 选定。不用再在 `ALTRun.json` 里写 `custom:<Id>`; 偏好设置里刚加、还没按 应用 的命令也能选
+- 命令名称下面一行灰字说明这是什么命令, 自定义命令还写出目标和怎样拿到选中的内容 (`{query}` 换成选中内容 / 作为最后一个参数 / 不使用); 命令已删除时显示红字
+
 ## [2026.11.12.3]
 
 测试版。
@@ -1369,7 +1379,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.3...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.4...HEAD
+[2026.11.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.3...2026.11.12.4
 [2026.11.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.2...2026.11.12.3
 [2026.11.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.1...2026.11.12.2
 [2026.11.12.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12...2026.11.12.1

@@ -9,13 +9,13 @@
 | 部分 | 设置文件里 | 说明 |
 |---|---|---|
 | 热键 | `Key`, 如 `^!f` | 点一下框, 按下组合键 (见下文 [设置热键](#设置热键)); 鼠标热键: 在框里点鼠标中键或侧键。勾选 "保留按键原来的功能" 时, 按键原来的作用照常 (开头的 `~`) |
-| 动作 | `Action` | **在 ALTRun 中搜索** (`Search`)、**显示 / 隐藏 ALTRun** (`ToggleWindow`), 或按名称选一条系统命令 (文件里存的是 Id, 如 `TerminalHere`) |
+| 动作 | `Action` | **选择...** 打开一个列表来选: **在 ALTRun 中搜索** (`Search`)、**显示 / 隐藏 ALTRun** (`ToggleWindow`)、你的 [自定义命令](Custom-Commands-zh) (`custom:<Id>`) 和系统命令 (文件里存的是 Id, 如 `TerminalHere`)。输入文字筛选 (名称、关键字、拼音首字母), `↑` `↓` 和 `Enter` 选定。下面的灰字说明这是什么命令、怎样拿到选中的内容; 自定义命令已删除时显示红字 |
 | 搜索内容 | `SearchText`, 如 `folder {selection}` | 只用于 "在 ALTRun 中搜索": 搜索框里预先填好的文字。`{selection}` 换成当前程序里选中的文字 (合成一行, 最多 100 字); 没有选中或选中的是文件时为空, 只填 `folder `。**插入 ▾** 在光标处插入 `{selection}`, 或把一个范围放到最前面: `folder` (文件夹)、`file`、`doc` (文档)、`pic` (图片)、`recent`、`g` (Google); 前缀见 [使用方法](Usage-zh)。留空 = 空的搜索框。列表里显示在动作后面, 如 `Search: folder {selection}` |
 | 生效范围 | `WinTitle` | **所有程序** (留空), 或 **只在这些窗口里**: `ahk_exe WINWORD.EXE`、`ahk_class CabinetWClass` (资源管理器); `ALTRun` = 只在 ALTRun 的搜索窗口里 |
 
 取选中的文字时, ALTRun 在那个程序里按一次 `Ctrl+C`: 没有选中时最多等 0.8 秒窗口才出来, 所以只在需要的热键里用 `{selection}`。剪贴板随后恢复原样。
 
-**运行自定义命令**: `"Action": "custom:<Id>"` 运行 `Id` 是这个值的 [自定义命令](Custom-Commands-zh) (命令的 `Id` 在 `ALTRun.json` 里; 目前只能在设置文件里写)。带 `{query}` 或设了内容类型的命令, 和 [选中内容的操作](Usage-zh#选中内容的操作) 一样拿到选中的内容: `{query}` 换成选中的文字或路径, 没有 `{query}` 的文件或命令行把它加在最后一个参数; 选中的文字有换行、双引号或命令行的特殊字符时不传 (会提示原因)。没有选中时, 带 `{query}` 又有关键字的命令打开搜索窗口并填好关键字, 接着输入就行。其他命令直接运行, 不复制选中的内容。命令被删除时热键会提示。
+**运行自定义命令**: 用 **选择...** 选 (存成 `"Action": "custom:<Id>"`, 即命令在 `ALTRun.json` 里的 `Id`)。带 `{query}` 或设了内容类型的命令, 和 [选中内容的操作](Usage-zh#选中内容的操作) 一样拿到选中的内容: `{query}` 换成选中的文字或路径, 没有 `{query}` 的文件或命令行把它加在最后一个参数; 选中的文字有换行、双引号或命令行的特殊字符时不传 (会提示原因)。没有选中时, 带 `{query}` 又有关键字的命令打开搜索窗口并填好关键字, 接着输入就行。其他命令直接运行, 不复制选中的内容。命令被删除时热键会提示。
 
 ![偏好设置 → 自定义热键 → 修改](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/hotkey-editor.png)
 

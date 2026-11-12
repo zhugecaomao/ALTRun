@@ -3,7 +3,9 @@
 ;-------------------------------------------------------------------------------
 ; Top to bottom in the order people decide things, each group with a gray line saying what it is for:
 ;   Hotkey      the recording box (HotkeyBox, mouse buttons too) and "Keep the key's original function" (a leading ~)
-;   Action      Search in ALTRun / Show or hide ALTRun first, then the system commands by name
+;   Action      the command's name in a read-only box and "Choose..." (CommandPicker: a searchable list of ALTRun's own two, the
+;               custom commands and the system commands); below it in gray what it is and how it gets the selection (in red when the
+;               custom command was deleted)
 ;   Search text only for Search: what the search box starts with; {selection} = the text selected in the program in front.
 ;               "Insert" (a drop-down button) adds {selection} or a search scope (folder, doc, recent...), so nothing has to be remembered
 ;   Works in    all programs, or only in windows matching a WinTitle (ALTRun = only in the search window)
@@ -11,19 +13,23 @@
 ; "Show" (an empty search box) of older versions is shown as Search.
 ;
 ; Usage:
-;   edited := HotkeyEditor.Edit(ownerGui, item, original)   -> the edited Map (keys not shown are kept), "" when cancelled
+;   edited := HotkeyEditor.Edit(ownerGui, item, original, commands)   -> the edited Map (keys not shown are kept), "" when cancelled
 ;       original: the hotkey being edited ("" = a new one: the window title says "Add")
+;       commands: the custom commands to choose from and name ("" = AppSettings.CustomCommands; Preferences passes the ones being edited)
 ;   HotkeyEditor.Normalize(item)     -> a copy with Search / SearchText for the old forms and every key the window shows
-;   HotkeyEditor.Summary(item)       -> "Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs."
+;   HotkeyEditor.Summary(item, commands)   -> "Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs."
+;   HotkeyEditor.ActionName(id, commands)  -> the name shown for an Action ("Notepad", "(deleted command) custom:k3x9a2mq")
+;   HotkeyEditor.ActionDetail(id, commands) -> {Text, Missing}: the gray line below it
 ;===============================================================================
 
 class HotkeyEditor {
     static Width := 460                                                     ; the content width: narrower than the general editor (the groups go down), wide enough for the hotkey hint on one line
+    static MissingColor := "cC42B1C"                                        ; the line below a deleted custom command (the red of Windows error text)
     static Scopes := ["folder", "file", "doc", "pic", "recent", "g"]       ; the search scopes "Insert" offers (prefixes of the search box)
 
-    static Edit(owner, item, original := "") {
+    static Edit(owner, item, original := "", commands := "") {
         state := {Result: ""}
-        ui := HotkeyEditor.Build(owner, item, original, OnOk)
+        ui := HotkeyEditor.Build(owner, item, original, OnOk, commands)
         g := ui.Gui
         owner.Opt("+Disabled")
         g.Show()
@@ -50,14 +56,15 @@ class HotkeyEditor {
         }
     }
 
-    ; The window, not shown yet (the tests check its layout): {Gui, Key, Pass, Action, Actions, SearchText, Insert, All, Only, WinTitle, SummaryText, Item}
-    static Build(owner, item, original := "", onOk := "") {
+    ; The window, not shown yet (the tests check its layout):
+    ; {Gui, Key, Pass, Action, ActionId, Choose, Detail, Commands, SearchText, Insert, All, Only, WinTitle, SummaryText, Item, SetAction}
+    static Build(owner, item, original := "", onOk := "", commands := "") {
         item := HotkeyEditor.Normalize(item)
         w := HotkeyEditor.Width
         g := Gui("+Owner" owner.Hwnd " -MinimizeBox", I18n.T(IsObject(original) ? "HotkeyEditor.TitleEdit" : "HotkeyEditor.TitleAdd"))
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
-        ui := {Gui: g, Item: item}
+        ui := {Gui: g, Item: item, ActionId: item["Action"], Commands: HotkeyEditor._Commands(commands)}
 
         section(key, first := false) {
             g.SetFont("bold")
@@ -82,13 +89,13 @@ class HotkeyEditor {
         g.SetFont("s9")
 
         section("HotkeyEditor.Section.Action")
-        ui.Actions := HotkeyEditor.Actions(item["Action"])
-        labels := []
-        for choice in ui.Actions
-            labels.Push(choice[2])
-        ui.Action := g.AddDropDownList("xm y+8 w" w, labels)
-        ui.Action.Value := HotkeyEditor._Index(ui.Actions, item["Action"])
-        ui.Action.OnEvent("Change", (*) => Update())
+        ui.Action := g.AddEdit("xm y+8 w" (w - 88) " r1 -Multi ReadOnly -TabStop")   ; laid out like the search text and "Insert" below
+        ui.Choose := g.AddButton("x+8 yp-1 w80", I18n.T("HotkeyEditor.Choose"))
+        ui.Choose.OnEvent("Click", (*) => ChooseCommand())
+        g.SetFont("s8")
+        ui.Detail := g.AddText("xm y+4 w" w " r2 cGray")                    ; two lines tall: a long target wraps instead of being cut
+        g.SetFont("s9")
+        ui.SetAction := SetAction
 
         section("HotkeyEditor.Section.SearchText")
         ui.SearchText := g.AddEdit("xm y+8 w" (w - 88) " r1 -Multi", item["SearchText"])
@@ -120,14 +127,29 @@ class HotkeyEditor {
         g.AddButton("x+10 yp w80", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => g.Destroy())
         g.OnEvent("Escape", (*) => g.Destroy())
         g.OnEvent("Close", (*) => g.Destroy())
-        Update()
+        SetAction(ui.ActionId)
         return ui
 
+        SetAction(id) {                                                     ; the command chosen: its name, the line below, the summary
+            ui.ActionId := id
+            ui.Action.Value := HotkeyEditor.ActionName(id, ui.Commands)
+            detail := HotkeyEditor.ActionDetail(id, ui.Commands)
+            ui.Detail.SetFont(detail.Missing ? HotkeyEditor.MissingColor : "cGray")
+            ui.Detail.Value := detail.Text
+            Update()
+        }
+        ChooseCommand() {
+            HotkeyBox.CancelActive()                                        ; a hotkey being recorded stops first
+            id := CommandPicker.Choose(g, ui.ActionId, ui.Commands)
+            if (id != "")
+                SetAction(id)
+            ui.Choose.Focus()
+        }
         Update(*) {
-            search := ui.Actions[ui.Action.Value][1] = "Search"
+            search := ui.ActionId = "Search"
             ui.SearchText.Enabled := search, ui.Insert.Enabled := search    ; kept in place, grayed out: the window doesn't jump
             ui.WinTitle.Enabled := ui.Only.Value
-            ui.SummaryText.Value := HotkeyEditor.Summary(HotkeyEditor.Read(ui))
+            ui.SummaryText.Value := HotkeyEditor.Summary(HotkeyEditor.Read(ui), ui.Commands)
         }
         InsertSelection() {                                                 ; {selection} at the cursor (replacing a selected part)
             ui.SearchText.Focus()
@@ -152,7 +174,7 @@ class HotkeyEditor {
         key := HotkeyBox.Value(ui.Key)
         key := LTrim(key, "~")
         edited["Key"] := (key != "" && ui.Pass.Value) ? "~" key : key
-        action := ui.Actions[ui.Action.Value][1]
+        action := ui.ActionId
         edited["Action"] := action
         edited["SearchText"] := (action = "Search") ? ui.SearchText.Value : ""
         edited["WinTitle"] := ui.Only.Value ? Trim(ui.WinTitle.Value) : ""
@@ -176,15 +198,51 @@ class HotkeyEditor {
         return result
     }
 
-    ; [[Id, label], ...]: ALTRun's own two first, then the system commands by name; an unknown Id (a newer version's) is kept as it is
-    static Actions(current := "") {
-        choices := [["Search", I18n.T("HotkeyEditor.Action.Search")], ["ToggleWindow", I18n.T("HotkeyEditor.Action.Toggle")]]
-        for command in SystemProvider.Commands()
-            choices.Push([command["Id"], command["Title"]])
-        if (current != "" && !HotkeyEditor._Index(choices, current, 0))
-            choices.Push([current, current])
-        return choices
+    ; The name shown for an Action: ALTRun's own two, a custom command's name, a system command's name; a deleted custom command
+    ; "(deleted command) custom:<Id>", an unknown Id (a newer version's) as it is
+    static ActionName(id, commands := "") {
+        switch id {
+            case "Search":       return I18n.T("HotkeyEditor.Action.Search")
+            case "ToggleWindow": return I18n.T("HotkeyEditor.Action.Toggle")
+        }
+        if (SubStr(id, 1, 7) = "custom:") {
+            command := AppSettings.ItemById(HotkeyEditor._Commands(commands), SubStr(id, 8))
+            return IsObject(command) ? command["Title"] : I18n.T("HotkeyEditor.Deleted", id)
+        }
+        command := HotkeyEditor._System(id)
+        return IsObject(command) ? command["Title"] : id
     }
+
+    ; The line below the name: what kind of command, and for a custom command its target and how it gets the selection
+    ; (the rules of CustomCommandProvider.RunFromHotkey). Missing: the custom command was deleted (shown in red)
+    static ActionDetail(id, commands := "") {
+        switch id {
+            case "Search":       return {Text: I18n.T("HotkeyEditor.Detail.Search"), Missing: false}
+            case "ToggleWindow": return {Text: I18n.T("HotkeyEditor.Detail.Toggle"), Missing: false}
+        }
+        if (SubStr(id, 1, 7) = "custom:") {
+            command := AppSettings.ItemById(HotkeyEditor._Commands(commands), SubStr(id, 8))
+            if !IsObject(command)
+                return {Text: I18n.T("HotkeyEditor.Detail.Missing"), Missing: true}
+            target := Trim(RegExReplace((command.Has("Target") ? command["Target"] : "") " " (command.Has("Arguments") ? command["Arguments"] : ""), "\s+", " "))
+            if (StrLen(target) > 80)
+                target := SubStr(target, 1, 79) "…"
+            rule := CustomCommandProvider.TakesQuery(command) ? "HotkeyEditor.Detail.Query"
+                : SelectionActions.CommandTypes(command).Length ? "HotkeyEditor.Detail.Types" : "HotkeyEditor.Detail.Plain"
+            return {Text: I18n.T("CommandPicker.Kind.Custom") " · " target " · " I18n.T(rule), Missing: false}
+        }
+        command := HotkeyEditor._System(id)
+        return {Text: IsObject(command) ? command["Subtitle"] : I18n.T("HotkeyEditor.Detail.Unknown"), Missing: false}
+    }
+
+    static _System(id) {
+        for command in SystemProvider.Commands()
+            if (command["Id"] = id)
+                return command
+        return ""
+    }
+
+    static _Commands(commands) => (commands is Array) ? commands : AppSettings.CustomCommands
 
     static ScopeText(scope) {
         switch scope {
@@ -199,7 +257,7 @@ class HotkeyEditor {
     }
 
     ; What the hotkey does, in words: "Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs."
-    static Summary(item) {
+    static Summary(item, commands := "") {
         key := LTrim(item.Has("Key") ? item["Key"] : "", "~")
         if (key = "")
             return I18n.T("HotkeyEditor.Summary.NoKey")
@@ -212,28 +270,12 @@ class HotkeyEditor {
                 does := (text = "") ? I18n.T("HotkeyEditor.Summary.SearchEmpty", label) : I18n.T("HotkeyEditor.Summary.Search", label, text)
             case "ToggleWindow":
                 does := I18n.T("HotkeyEditor.Summary.Toggle", label)
-            default:
-                name := action
-                if (SubStr(action, 1, 7) = "custom:") {                     ; a custom command: its name ("" when it was deleted: the Id)
-                    if IsObject(command := CustomCommandProvider.FindById(SubStr(action, 8)))
-                        name := command["Title"]
-                } else {
-                    for command in SystemProvider.Commands()
-                        if (command["Id"] = action)
-                            name := command["Title"]
-                }
-                does := I18n.T("HotkeyEditor.Summary.Command", label, name)
+            default:                                                        ; a custom command ("(deleted command) custom:<Id>" once deleted) or a system command
+                does := I18n.T("HotkeyEditor.Summary.Command", label, HotkeyEditor.ActionName(action, commands))
         }
         winTitle := Trim(item.Has("WinTitle") ? item["WinTitle"] : "")
         where := (winTitle = "") ? I18n.T("HotkeyEditor.Summary.All") : (winTitle = "ALTRun") ? I18n.T("HotkeyEditor.Summary.InALTRun")
             : I18n.T("HotkeyEditor.Summary.Only", winTitle)
         return does " " where
-    }
-
-    static _Index(choices, id, fallback := 1) {
-        for index, choice in choices
-            if (choice[1] = id)
-                return index
-        return fallback
     }
 }
