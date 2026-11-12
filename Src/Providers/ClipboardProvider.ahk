@@ -615,6 +615,14 @@ class ClipboardProvider {
         return entries
     }
 
+    ; Deletes the history saved on disk (the list, a .bad copy of it, the long entries and images): asked when saving it is turned off
+    static DeleteSaved() {
+        for saved in [ClipboardProvider.File, ClipboardProvider.File ".bad"]
+            try FileDelete(saved)
+        try DirDelete(ClipboardProvider.Folder, true)
+        return !FileExist(ClipboardProvider.File) && !InStr(FileExist(ClipboardProvider.Folder), "D")
+    }
+
     static Save() {
         if !AppSettings.Feature("Clipboard")["Persist"]
             return

@@ -32,13 +32,28 @@ class Usage {
             return
         try {
             data := JSON.Parse(FileRead(Usage.File, "UTF-8"))
-            if (data.Has("Days") && data["Days"] is Map)
-                Usage.Days := data["Days"]
-            if data.Has("Since")
+            Usage.Days := Usage.ValidDays(data.Has("Days") ? data["Days"] : "")
+            if (data.Has("Since") && !IsObject(data["Since"]) && RegExMatch(data["Since"], "^\d{4}-\d{2}-\d{2}$"))
                 Usage.Since := data["Since"]
         } catch as e {
             Logger.Error("Usage.Load: " e.Message)
         }
+    }
+
+    ; Only "yyyy-MM-dd" -> Map(feature -> number), from a file that may have been edited by hand (Count would fail on the rest)
+    static ValidDays(days) {
+        valid := Map()
+        if (days is Map)
+            for day, counts in days {
+                if !(counts is Map) || !RegExMatch(day, "^\d{4}-\d{2}-\d{2}$")
+                    continue
+                kept := Map()
+                for feature, count in counts
+                    if IsNumber(count)
+                        kept[feature] := count
+                valid[day] := kept
+            }
+        return valid
     }
 
     static Save() {

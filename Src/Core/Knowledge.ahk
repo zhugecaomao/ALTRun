@@ -33,17 +33,45 @@ class Knowledge {
             return
         try {
             data := JSON.Parse(FileRead(Knowledge.File, "UTF-8"))
-            if (data.Has("Picks") && data["Picks"] is Map)
-                Knowledge.Picks := data["Picks"]
-            if (data.Has("QueryPicks") && data["QueryPicks"] is Map)
-                Knowledge.QueryPicks := data["QueryPicks"]
+            Knowledge.Picks := Knowledge.ValidPicks(data.Has("Picks") ? data["Picks"] : "")
+            Knowledge.QueryPicks := Knowledge.ValidQueryPicks(data.Has("QueryPicks") ? data["QueryPicks"] : "")
             if (data.Has("History") && data["History"] is Array)
-                Knowledge.History := data["History"]
+                for text in data["History"]
+                    if (!IsObject(text) && text != "")
+                        Knowledge.History.Push(text)
             if (data.Has("Recent") && data["Recent"] is Array)
-                Knowledge.Recent := data["Recent"]
+                for entry in data["Recent"]
+                    if (entry is Map && entry.Has("Uid"))
+                        Knowledge.Recent.Push(entry)
         } catch as e {
             Logger.Error("Knowledge.Load: " e.Message)
         }
+    }
+
+    ; Only entries the ranking can use, from a file that may have been edited by hand or cut short: uid -> Map with a number Count
+    ; (Boost would fail on every search otherwise); input -> Map(uid -> number)
+    static ValidPicks(picks) {
+        valid := Map()
+        if (picks is Map)
+            for uid, entry in picks
+                if (entry is Map && entry.Has("Count") && IsNumber(entry["Count"]))
+                    valid[uid] := entry
+        return valid
+    }
+    static ValidQueryPicks(queryPicks) {
+        valid := Map()
+        if (queryPicks is Map)
+            for queryText, picks in queryPicks {
+                if !(picks is Map)
+                    continue
+                kept := Map()
+                for uid, count in picks
+                    if IsNumber(count)
+                        kept[uid] := count
+                if kept.Count
+                    valid[queryText] := kept
+            }
+        return valid
     }
 
     static Save() {

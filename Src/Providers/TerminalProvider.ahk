@@ -35,10 +35,13 @@ class TerminalProvider {
         switch shell, false {
             case "powershell": Run(prefix 'powershell.exe -NoExit -Command ' command, A_MyDocuments)
             case "pwsh"      : Run(prefix 'pwsh.exe -NoExit -Command ' command, A_MyDocuments)
-            case "wt"        : Run(prefix 'wt.exe cmd /k ' command, A_MyDocuments)
+            case "wt"        : Run(prefix 'wt.exe cmd /k ' TerminalProvider.WtText(command), A_MyDocuments)
             default          : Run(prefix A_ComSpec ' /k ' command, A_MyDocuments)
         }
     }
+
+    ; Windows Terminal reads ; as "and then open another tab", even in a quoted path: \; keeps it in the text
+    static WtText(text) => StrReplace(text, ";", "\;")
 
     static OpenAt(folder) {
         if (folder = "" || !DirExist(folder))
@@ -47,7 +50,7 @@ class TerminalProvider {
         switch shell, false {
             case "powershell": Run("powershell.exe -NoExit", folder)
             case "pwsh"      : Run("pwsh.exe -NoExit", folder)
-            case "wt"        : Run('wt.exe -d "' folder '"', folder)
+            case "wt"        : Run("wt.exe -d " TerminalProvider.WtText(Win.QuoteArg(folder)), folder)
             default          : Run(A_ComSpec, folder)
         }
     }

@@ -387,9 +387,14 @@ class PreferencesWindow {
             return
         stale := PreferencesWindow.StaleIndexes(AppSettings.Data, PreferencesWindow.Working)
         delayedBefore := AppSettings.Data["DelayedStart"]
+        persistBefore := AppSettings.Feature("Clipboard")["Persist"]
         AppSettings.Data := PreferencesWindow.Working
         if !AppSettings.Save()
             return
+        ; saving the clipboard history was turned off: the history saved so far stays on disk unless the user wants it gone (pinned entries too)
+        if (persistBefore && !AppSettings.Feature("Clipboard")["Persist"] && (FileExist(ClipboardProvider.File) || DirExist(ClipboardProvider.Folder))
+            && MsgBox(I18n.T("Prefs.ClipPersistDelete"), I18n.T("Prefs.Title"), "YesNo Icon? Default2 Owner" PreferencesWindow.Gui.Hwnd) = "Yes")
+            ClipboardProvider.DeleteSaved()
         DelayedStart.AfterSave(delayedBefore, AppSettings.Data["DelayedStart"], PreferencesWindow.Gui.Hwnd)   ; the Task Scheduler tasks follow the list
         if general["LaunchAtLogin"]                                         ; ticked: on in Task Manager → Startup apps too
             App.TurnOnInTaskManager()

@@ -279,6 +279,12 @@ class CoreTests {
         eq("regex empty", TextTools.RegexError(""), "")
         TestRunner.True("TextTools.regex error", TextTools.RegexError("i)(uninstall|readme") != "")
         eq("url", Url.Encode("a b/中"), "a%20b%2F%E4%B8%AD")
+        eq("url: emoji (surrogate pair)", Url.Encode("x😀"), "x%F0%9F%98%80")
+        eq("url: unreserved kept", Url.Encode("Az09-_.~"), "Az09-_.~")
+        ; one command-line argument as CommandLineToArgvW reads it
+        for pair in [["a b", '"a b"'], ["C:\", '"C:\\"'], ['say "hi"', '"say \"hi\""'], ['a\"b', '"a\\\"b"'], ["a\b", '"a\b"'], ["", '""']]
+            eq("quote arg " pair[1], Win.QuoteArg(pair[1]), pair[2])
+        eq("wt: semicolon kept in the text", TerminalProvider.WtText('"D:\a;b\\"'), '"D:\a\;b\\"')
     }
 
     static TopIndexes() {
@@ -326,6 +332,7 @@ class CoreTests {
     }
 
     static Knowledge() {
+        eq := (n, a, e) => TestRunner.Equal("Knowledge." n, a, e)
         Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := []
         Knowledge._saveTimer := () => 0                                     ; no disk writes in tests
         Knowledge.Record("no", "app:notepad")
@@ -334,6 +341,13 @@ class CoreTests {
         TestRunner.True("Knowledge.boost prefix", Knowledge.Boost("not", "app:notepad") > 20)
         TestRunner.Equal("Knowledge.history", Knowledge.History[1], "no")
         TestRunner.Equal("Knowledge.history dedupe", Knowledge.History.Length, 1)
+
+        ; Loading keeps only usable entries (a file edited by hand or cut short)
+        picks := Knowledge.ValidPicks(Map("a", Map("Count", 2, "Last", "20260101000000"), "b", Map("Count", "x"), "c", "text", "d", Map("Last", "1")))
+        eq("valid picks", picks.Count "|" picks.Has("a"), "1|1")
+        query := Knowledge.ValidQueryPicks(Map("no", Map("a", 1, "b", "x"), "x", 5, "y", Map("b", "y")))
+        eq("valid query picks", query.Count "|" query["no"].Count, "1|1")
+        eq("not maps", Knowledge.ValidPicks([]).Count "|" Knowledge.ValidQueryPicks("").Count, "0|0")
 
         ; Prune: past MaxPicks the results chosen longest ago go, with their inputs; past MaxQueries the inputs whose results were chosen longest ago
         savedPicks := Knowledge.MaxPicks, savedQueries := Knowledge.MaxQueries
@@ -1528,6 +1542,9 @@ Func | PTTools | PT Tools (AHK)=99
             all := Usage.Summary(0)
             eq("count item", all["CustomCommands"] "|" all["WebSearch"] "|" all["FileSearch"] "|" all.Has("Help"), "1|1|1|0")
 
+            valid := Usage.ValidDays(Map("2026-11-01", Map("A", 2, "B", "x"), "bad", Map("A", 1), "2026-11-02", "not a map"))
+            eq("load: only usable days and counts", valid.Count "|" valid["2026-11-01"].Count "|" valid["2026-11-01"]["A"], "1|1|2")
+            eq("load: not a map", Usage.ValidDays([1, 2]).Count, 0)
             Usage.Days := Map("2020-01-01", Map("Calculator", 9))           ; too old: removed when saving
             Usage.Count("Snippets")
             Usage.Save()

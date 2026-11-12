@@ -116,9 +116,26 @@ class FileSearchProvider {
             return ""
         pos := InStr(text, "\", , -1)
         dir := SubStr(text, 1, pos), filter := SubStr(text, pos + 1)
-        if !DirExist(dir)
+        if !FileSearchProvider.FolderThere(dir)
             return {Dir: dir, Filter: filter, Missing: true}
         return {Dir: dir, Filter: filter}
+    }
+
+    ; Whether the folder being browsed is there. A local one is simply asked; a network one (UNC, mapped drive) is asked on a thread
+    ; of its own for at most ExplorerTabs.NetworkTimeout ms, and the answer kept for NetworkCacheMs: BrowsePath runs on every key, and
+    ; DirExist on an offline server waits for Windows' network timeout (seconds) each time
+    static NetworkCacheMs := 10000
+    static FolderThere(dir, isNetwork := (d) => ExplorerTabs.IsNetwork(d), ask := (d) => ExplorerTabs.FolderWithin(d, ExplorerTabs.NetworkTimeout)) {
+        static answers := Map()
+        if !isNetwork(dir)
+            return DirExist(dir) != ""
+        key := StrLower(dir)
+        if (answers.Has(key) && A_TickCount - answers[key].Time < FileSearchProvider.NetworkCacheMs)
+            return answers[key].There
+        if (answers.Count > 50)
+            answers := Map()
+        answers[key] := {Time: A_TickCount, There: ask(dir) ? true : false}
+        return answers[key].There
     }
 
     ; The folder's contents (folders first), filtered by the last part; Tab on a folder completes to "path\" to go one level down

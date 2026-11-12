@@ -358,6 +358,11 @@ class SyncJobs {
         try list := JSON.Parse(FileRead(SyncJobs.StateFile, "UTF-8"))
         try FileDelete(SyncJobs.StateFile)
         for entry in (list is Array ? list : []) {
+            if !(entry is Map) || !entry.Has("Pid") || !IsInteger(entry["Pid"]) || !entry.Has("Name") || !entry.Has("LogFile")
+                continue                                                    ; a file edited by hand or cut short
+            for key, value in Map("Monitor", 0, "Started", "")
+                if !entry.Has(key)
+                    entry[key] := value
             pid := entry["Pid"]
             if !(ProcessExist(pid) && StrLower(ProcessGetName(pid)) = "robocopy.exe")
                 continue
