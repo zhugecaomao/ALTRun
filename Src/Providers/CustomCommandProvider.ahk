@@ -18,6 +18,8 @@
 ; Usage:
 ;   CustomCommandProvider.AddFromPaths(paths)            "Send to" menu: one opens the edit dialog, several are added directly
 ;   CustomCommandProvider.Edit(command [, prefill])      opens the edit dialog; command = "" creates a new one
+;   CustomCommandProvider.EditDialog(owner, title, item, settings)   the edit dialog with its "Triggers" line and "Set Hotkey..."
+;       (Preferences and Edit use it; the hotkeys set there are saved with the command on OK)
 ;   CustomCommandProvider.RunFromHotkey(id)              a custom hotkey with Action "custom:<Id>" (see App._HotkeyAction)
 ;   F3 / right-click "Edit" in the results calls EditItem(), Ctrl+Del calls DeleteItem()
 ;===============================================================================
@@ -291,26 +293,163 @@ class CustomCommandProvider {
     }
 
     static NewCommand() {
-        return Map("Title", "", "Type", "File", "Target", "", "Arguments", "", "Keyword", "")   ; the Id is given when saving (AppSettings.EnsureIds)
+        return Map("Title", "", "Type", "File", "Target", "", "Arguments", "", "Keyword", "")   ; the Id is given when the edit dialog opens (EditDialog) or when saving (AppSettings.EnsureIds)
     }
 
-    ; command: an entry of AppSettings.CustomCommands (changed in place), or "" for a new one (prefill = the prefilled fields)
+    ; command: an entry of AppSettings.CustomCommands (changed in place), or "" for a new one (prefill = the prefilled fields).
+    ; Hotkeys set in the dialog are saved with it; when they changed, ALTRun restarts so they work (only the command changed: no restart)
     static Edit(command := "", prefill := "") {
         isNew := !IsObject(command)
         base := isNew ? CustomCommandProvider.NewCommand() : ItemEditor.WithDefaults(command, CustomCommandProvider.NewCommand())
         if IsObject(prefill)
             for key, value in prefill
                 base[key] := value
-        edited := ItemEditor.Edit(ItemEditor.Owner(), I18n.T("Prefs.Page.Commands"), CustomCommandProvider.EditorFields(), base)
-        if !IsObject(edited)
+        if !(AppSettings.Data.Has("Hotkeys") && AppSettings.Hotkeys is Array)
+            AppSettings.Data["Hotkeys"] := []
+        result := CustomCommandProvider.EditDialog(ItemEditor.Owner(), I18n.T("Prefs.Page.Commands"), base
+            , {Commands: AppSettings.CustomCommands, Hotkeys: AppSettings.Hotkeys, Value: (path) => PreferencesWindow.GetPath(AppSettings.Data, path)})
+        if !IsObject(result)
             return false
         if isNew
-            AppSettings.CustomCommands.Push(edited)
+            AppSettings.CustomCommands.Push(result.Command)
         else
-            for key, value in edited
+            for key, value in result.Command
                 command[key] := value
         CustomCommandProvider._ResetNarrowing()
-        return AppSettings.Save()
+        if !AppSettings.Save()
+            return false
+        if result.HotkeysChanged                                            ; hotkeys are registered at start-up (as after Apply in Preferences)
+            App.Restart("-Reloaded")
+        return true
+    }
+
+    ; The edit dialog with a read-only "Triggers" line (keyword, content types, hotkeys) and "Set Hotkey...": with no hotkey it opens the
+    ; hotkey edit window for a new one, otherwise a menu (edit / delete each, add another). The command gets its Id when the dialog opens,
+    ; so a new one can have a hotkey before it is saved; the hotkeys are changed in a draft, written to settings.Hotkeys only on OK.
+    ; settings: {Commands, Hotkeys, Value(path)}: the commands and hotkeys being edited (Preferences: Working; otherwise AppSettings),
+    ; Value reads the other hotkey settings for the clash check.
+    ; Returns {Command: the edited Map, HotkeysChanged}, "" when cancelled
+    static EditDialog(owner, title, item, settings) {
+        item := item.Clone()
+        if !(item.Has("Id") && AppSettings.IsId(item["Id"])) {
+            taken := Map()
+            for each in settings.Commands
+                if (each is Map && each.Has("Id"))
+                    taken[each["Id"] ""] := true
+            item["Id"] := AppSettings.NewId(taken)
+        }
+        id := item["Id"], action := "custom:" id
+        draft := []                                                         ; {Entry: the hotkey as edited, Original: its Map in settings.Hotkeys ("" = new)}
+        for entry in CustomCommandProvider.HotkeysFor(item, settings.Hotkeys)
+            draft.Push({Entry: entry.Clone(), Original: entry})
+
+        fields := CustomCommandProvider.EditorFields()
+        triggers := ItemEditor.Field("Triggers", "Prefs.Col.Triggers", "info", false, "", I18n.T("Cmd.Field.Triggers"))
+        triggers.Text := (edited) => CustomCommandProvider.TriggerText(edited, Entries())
+        triggers.Button := {Label: I18n.T("Cmd.SetHotkey"), OnClick: SetHotkey}
+        fields.Push(triggers)
+        edited := ItemEditor.Edit(owner, title, fields, item)
+        if !IsObject(edited)
+            return ""
+        return {Command: edited, HotkeysChanged: CustomCommandProvider.MergeHotkeys(settings.Hotkeys, action, draft)}
+
+        Entries() {
+            list := []
+            for each in draft
+                list.Push(each.Entry)
+            return list
+        }
+        SetHotkey(edited, g, button, refresh) {
+            if !draft.Length
+                return EditHotkey(edited, g, 0)
+            m := Menu()                                                     ; an item runs after the menu closes: it updates the line itself
+            for index, each in draft
+                m.Add(I18n.T("Cmd.Hotkey.Edit", HotkeyBox.Label(LTrim(each.Entry["Key"], "~"))), ((index, *) => (EditHotkey(edited, g, index), refresh())).Bind(index))
+            m.Add(I18n.T("Cmd.Hotkey.Add"), (*) => (EditHotkey(edited, g, 0), refresh()))
+            m.Add()
+            for index, each in draft
+                m.Add(I18n.T("Cmd.Hotkey.Delete", HotkeyBox.Label(LTrim(each.Entry["Key"], "~"))), ((index, *) => (draft.RemoveAt(index), refresh())).Bind(index))
+            ControlGetPos(&x, &y, , &h, button), WinGetClientPos(&left, &top, , , g)   ; pixels, whatever the scaling
+            CoordMode("Menu", "Screen")
+            m.Show(left + x, top + y + h)                                   ; below the button
+        }
+        EditHotkey(edited, g, index) {                                      ; index 0 = a new hotkey
+            entry := index ? draft[index].Entry : Map("Key", "", "Action", action, "SearchText", "", "WinTitle", "")
+            commands := [edited]                                            ; the command as the dialog shows it now (its name in the hotkey window)
+            for each in settings.Commands
+                if !(each is Map && each.Has("Id") && each["Id"] == id)
+                    commands.Push(each)
+            hotkeys := []                                                   ; the others as they will be: this command's from the draft
+            for each in settings.Hotkeys
+                if !(each is Map && each.Has("Action") && each["Action"] == action)
+                    hotkeys.Push(each)
+            for each in draft
+                hotkeys.Push(each.Entry)
+            inUse := PreferencesWindow.AllHotkeys(Map("CustomCommands", commands, "Hotkeys", hotkeys), settings.Value)
+            result := HotkeyEditor.Edit(g, entry, index ? entry : "", commands, inUse, true)
+            if !IsObject(result)
+                return
+            if index
+                draft[index].Entry := result
+            else
+                draft.Push({Entry: result, Original: ""})
+        }
+    }
+
+    ; The "Triggers" line: "Keyword ping · Selection IP · Hotkey Ctrl+Alt+P"; "Only found by name in the search" without any
+    static TriggerText(command, hotkeys) {
+        parts := []
+        keywords := ""
+        for each in SearchQuery.Keywords(command.Has("Keyword") ? command["Keyword"] : "")
+            keywords .= (keywords = "" ? "" : ", ") each
+        if (keywords != "")
+            parts.Push(I18n.T("Cmd.Triggers.Keyword", keywords))
+        types := ItemEditor.TagsText(command.Has("Selection") ? command["Selection"] : "")
+        if (types != "")
+            parts.Push(I18n.T("Cmd.Triggers.Selection", types))
+        keys := ""
+        for entry in hotkeys
+            if (entry is Map && entry.Has("Key") && LTrim(entry["Key"], "~") != "")
+                keys .= (keys = "" ? "" : ", ") HotkeyBox.Label(LTrim(entry["Key"], "~"))
+        if (keys != "")
+            parts.Push(I18n.T("Cmd.Triggers.Hotkey", keys))
+        if !parts.Length
+            return I18n.T("Cmd.Triggers.None")
+        text := ""
+        for part in parts
+            text .= (text = "" ? "" : " · ") part
+        return text
+    }
+
+    ; Writes the hotkeys of the edit dialog's draft ({Entry, Original}...) to hotkeys (in place: the list Preferences shows): the ones
+    ; edited change in place, the ones deleted go, new ones are added at the end. Returns whether the hotkeys running action changed
+    static MergeHotkeys(hotkeys, action, draft) {
+        before := "", after := "", kept := Map()
+        for each in draft
+            if IsObject(each.Original)
+                kept[ObjPtr(each.Original)] := true
+        index := hotkeys.Length
+        while (index >= 1) {
+            entry := hotkeys[index]
+            if (entry is Map && entry.Has("Action") && entry["Action"] == action) {
+                before := JSON.Stringify(entry) "|" before
+                if !kept.Has(ObjPtr(entry))
+                    hotkeys.RemoveAt(index)
+            }
+            index--
+        }
+        for each in draft {
+            if IsObject(each.Original) {
+                each.Original.Clear()
+                for key, value in each.Entry
+                    each.Original[key] := value
+            } else
+                hotkeys.Push(each.Entry)
+        }
+        for entry in hotkeys
+            if (entry is Map && entry.Has("Action") && entry["Action"] == action)
+                after .= JSON.Stringify(entry) "|"
+        return before != after
     }
 
     ; A custom hotkey whose Action is "custom:<Id>". A command that takes something (it has {query}, or content types) gets the

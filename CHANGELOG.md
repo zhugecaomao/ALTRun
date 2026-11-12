@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.11.12.7]
+
+测试版。
+
+Test build.
+
+### 新增
+- 自定义命令的编辑窗口最下面加一行 **触发方式**: 只读, 写出除了按名称搜索之外还能怎样运行这个命令 (`关键字 ping · 选中内容 IP · 热键 Ctrl+Alt+P`), 改关键字或选中内容类型时马上更新
+- **设热键...**: 没有热键时直接打开热键窗口 (动作固定为这个命令); 已有热键时弹出菜单, 修改或删除每一个, 或再加一个。新命令在保存前也能设热键 (打开窗口时就有了 Id)
+- 热键在命令窗口按 确定 时和命令一起保存, 按 取消 一起不要; 在偏好设置里跟其他改动一样按 应用 保存, 从搜索窗口 (`F3`) 打开时热键有变化会重新启动 ALTRun 让热键马上生效 (只改命令不重启) 
+
 ## [2026.11.12.6]
 
 测试版。
@@ -1400,7 +1411,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.6...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.7...HEAD
+[2026.11.12.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.6...2026.11.12.7
 [2026.11.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.5...2026.11.12.6
 [2026.11.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.4...2026.11.12.5
 [2026.11.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.3...2026.11.12.4

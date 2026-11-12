@@ -327,12 +327,26 @@ class PrefsPages {
         PrefsForm.BeginPage("Prefs.Page.Commands")
         PrefsForm.List("CustomCommands", 540
             , [["Prefs.Col.Title", "Title", 140], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 190], ["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Status", "Status", 70]]
-            , CustomCommandProvider.EditorFields(), () => CustomCommandProvider.NewCommand()
+            , (owner, title, item, original) => PrefsPages.EditCommand(owner, title, item), () => CustomCommandProvider.NewCommand()   ; the edit dialog with "Set Hotkey..." (the Hotkeys list being edited)
             , (item, roots) => CustomCommandProvider.CheckTarget(item, roots), "", true
             , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)}, ""
             , {DeletePrompt: (item) => CustomCommandProvider.DeleteQuestion(item, PrefsPages._WorkingHotkeys())   ; the hotkeys that run it go too
              , AfterDelete: (item) => CustomCommandProvider.RemoveHotkeys(item, PrefsPages._WorkingHotkeys())})  ; (the Hotkeys page redraws when shown)
         PrefsForm.Note("Prefs.CommandsNote")
+    }
+
+    ; A command's edit dialog in Preferences: hotkeys set there go to the Hotkeys list being edited (saved on Apply, as other changes)
+    static EditCommand(owner, title, item) {
+        if !(PrefsPages._WorkingHotkeys() is Array)
+            PreferencesWindow.SetPath(PreferencesWindow.Working, "Hotkeys", [])
+        commands := PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands")
+        result := CustomCommandProvider.EditDialog(owner, title, item, {Commands: (commands is Array) ? commands : [], Hotkeys: PrefsPages._WorkingHotkeys()
+            , Value: (path) => PreferencesWindow.BoundValue(path)})
+        if !IsObject(result)
+            return ""
+        if result.HotkeysChanged                                            ; the list already changed: Apply is needed even when the command didn't
+            PreferencesWindow.MarkDirty()
+        return result.Command
     }
 
     ; Actions on selected content: the hotkey, the user's content types (a list), and a test box that shows the types and commands of a sample.

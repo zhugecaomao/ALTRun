@@ -11,7 +11,10 @@
 ;     {Key: "Text",   Label: "Text", Type: "multiline"},
 ;     {Key: "AutoExpand", Label: "Auto expand", Type: "check"}
 ;   ]
-; Type can be: text / multiline / choice / check / file / folder / number / hotkey / tags
+; Type can be: text / multiline / choice / check / file / folder / number / hotkey / tags / info
+; info: not a value of the record but a read-only line about it: Text(edited) gives the text from the fields as they are now (updated on
+;   every change); Button: {Label, OnClick(edited, g, button, refresh)} beside it; the line is updated after the click (a menu shown by the click
+;   calls refresh() itself after its item ran). Not saved
 ; tags: a text box of names separated by commas + a drop-down button whose menu checks / unchecks each name (Choices: an array of names,
 ;   or a function returning one, read each time the menu opens; "-" = a separator); an Array value is shown joined with ", "
 ; OmitEmpty: true = an empty value removes the key instead of saving "" (an optional key most records don't have)
@@ -50,7 +53,7 @@ class ItemEditor {
         g := Gui("+Owner" owner.Hwnd " -MinimizeBox", title)
         g.SetFont("s9", ThemeManager.FontName())
         g.MarginX := 14, g.MarginY := 12
-        controls := Map(), passBoxes := Map()
+        controls := Map(), passBoxes := Map(), infos := []
         labelW := 110, inputW := 540                                        ; wider, so long paths and command-line arguments are visible in full
 
         ; single-line boxes must have r1: without a row count, an initial text wider than the box (e.g. a long path) makes AHK
@@ -85,6 +88,11 @@ class ItemEditor {
                     PrefsForm.MenuButton(pick, ItemEditor._TagActions(field, ctrl), "")
                 case "number":
                     ctrl := g.AddEdit("x+8 ys-3 w100 r1 -Multi Number", value)
+                case "info":
+                    ctrl := g.AddEdit("x+8 ys-3 w" (inputW - (field.HasOwnProp("Button") ? 128 : 0)) " r1 -Multi ReadOnly -TabStop")
+                    if field.HasOwnProp("Button")
+                        g.AddButton("x+8 yp-1 w120", field.Button.Label).OnEvent("Click", ItemEditor._InfoButton(field, () => ReadAll(), g, Refresh))
+                    infos.Push({Field: field, Box: ctrl})
                 case "hotkey":
                     ctrl := HotkeyBox.Add(g, "x+8 ys-3 w200", LTrim(value, "~"), true)
                     passBoxes[field.Key] := g.AddCheckbox("x+14 yp+3", I18n.T("Hotkey.PassThrough"))
@@ -100,6 +108,17 @@ class ItemEditor {
             }
             controls[field.Key] := ctrl
         }
+        if infos.Length {                                                   ; the info lines follow every change
+            for field in fields {
+                if (field.Type = "check")
+                    controls[field.Key].OnEvent("Click", Refresh)
+                else if (field.Type != "info" && field.Type != "hotkey")
+                    controls[field.Key].OnEvent("Change", Refresh)
+                if (field.Type = "tags")                                    ; a name checked in its menu: the box gets the focus back
+                    controls[field.Key].OnEvent("Focus", Refresh)
+            }
+            Refresh()
+        }
 
         g.AddButton("xm+" (labelW + inputW - 170) " y+18 w80 Default", "OK").OnEvent("Click", OnOk)
         g.AddButton("x+10 yp w80", I18n.T("Prefs.Cancel")).OnEvent("Click", (*) => g.Destroy())
@@ -114,23 +133,27 @@ class ItemEditor {
         try WinActivate("ahk_id " owner.Hwnd)
         return state.Result
 
+        Refresh(*) {
+            edited := ReadAll()
+            for info in infos
+                info.Box.Value := info.Field.Text.Call(edited)
+        }
+        ReadAll() {                                                         ; the record as the fields show it now, not checked (Required) yet
+            edited := item.Clone()
+            for spec in fields
+                if (spec.Type != "info")
+                    edited[spec.Key] := ItemEditor._Value(spec, controls[spec.Key], passBoxes)
+            return edited
+        }
+
         OnOk(*) {
             g.Opt("+OwnDialogs")                                            ; the message box covers the edit window, which can't be used until it closes
             edited := item.Clone()
             for spec in fields {
+                if (spec.Type = "info")
+                    continue
                 input := controls[spec.Key]
-                switch spec.Type {
-                    case "check" : newValue := input.Value
-                    case "choice": newValue := spec.Choices[input.Value][1]
-                    case "number": newValue := IsInteger(input.Value) ? Integer(input.Value) : 0
-                    case "hotkey":
-                        newValue := HotkeyBox.Value(input)
-                        if (newValue != "" && passBoxes[spec.Key].Value && SubStr(newValue, 1, 1) != "~")
-                            newValue := "~" newValue
-                        else if !passBoxes[spec.Key].Value
-                            newValue := LTrim(newValue, "~")
-                    default      : newValue := input.Value
-                }
+                newValue := ItemEditor._Value(spec, input, passBoxes)
                 if (spec.Type = "tags")
                     newValue := ItemEditor.TagsText(newValue)                   ; tidy: "a,b ,, c" -> "a, b, c"
                 if (spec.HasOwnProp("OmitEmpty") && spec.OmitEmpty && Trim(newValue) = "") {
@@ -185,6 +208,28 @@ class ItemEditor {
             state.Result := TextTools.SplitLines(box.Value)
             g.Destroy()
         }
+    }
+
+    ; A field's value as its control shows it
+    static _Value(spec, input, passBoxes) {
+        switch spec.Type {
+            case "check" : return input.Value
+            case "choice": return spec.Choices[input.Value][1]
+            case "number": return IsInteger(input.Value) ? Integer(input.Value) : 0
+            case "hotkey":
+                newValue := HotkeyBox.Value(input)
+                if (newValue != "" && passBoxes[spec.Key].Value && SubStr(newValue, 1, 1) != "~")
+                    newValue := "~" newValue
+                else if !passBoxes[spec.Key].Value
+                    newValue := LTrim(newValue, "~")
+                return newValue
+        }
+        return input.Value
+    }
+
+    ; The button of an info line: OnClick(the record as shown now, g, button, refresh), then the line is updated
+    static _InfoButton(field, read, g, refresh) {
+        return (button, *) => (field.Button.OnClick.Call(read(), g, button, refresh), refresh())
     }
 
     ; The names of a tags field as text: "a, b" (from an Array or from text with stray commas / spaces); names compared without case, repeats dropped

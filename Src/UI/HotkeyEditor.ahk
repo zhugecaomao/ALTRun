@@ -19,6 +19,7 @@
 ;       original: the hotkey being edited ("" = a new one: the window title says "Add")
 ;       commands: the custom commands to choose from and name ("" = AppSettings.CustomCommands; Preferences passes the ones being edited)
 ;       inUse: the hotkeys to check for a clash, PreferencesWindow.AllHotkeys ("" = those of AppSettings.Data); original is left out
+;       fixedAction: true = the action can't be changed ("Choose..." grayed; opened from a command's edit window for that command)
 ;   HotkeyEditor.Normalize(item)     -> a copy with Search / SearchText for the old forms and every key the window shows
 ;   HotkeyEditor.Summary(item, commands)   -> "Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs."
 ;   HotkeyEditor.Clash(item, inUse)        -> the first of inUse the same key press triggers in the same windows ({Key, Label...}), "" when none
@@ -34,10 +35,11 @@ class HotkeyEditor {
     static MissingColor := "cC42B1C"                                        ; the line below a deleted custom command (the red of Windows error text)
     static Scopes := ["folder", "file", "doc", "pic", "recent", "g"]       ; the search scopes "Insert" offers (prefixes of the search box)
 
-    static Edit(owner, item, original := "", commands := "", inUse := "") {
+    static Edit(owner, item, original := "", commands := "", inUse := "", fixedAction := false) {
         state := {Result: ""}
         ui := HotkeyEditor.Build(owner, item, original, OnOk, commands, inUse)
         g := ui.Gui
+        ui.Choose.Enabled := !fixedAction
         owner.Opt("+Disabled")
         g.Show()
         WinWaitClose(g.Hwnd)
