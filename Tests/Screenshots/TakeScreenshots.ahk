@@ -34,7 +34,7 @@ class Shots {
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
