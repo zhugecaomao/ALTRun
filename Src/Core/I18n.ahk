@@ -1246,6 +1246,18 @@ class I18n {
         s["Prefs.DataFolderExisting"]  := "{1} already has ALTRun settings.`n`nYes: use the settings in that folder`nNo: replace them with the current settings`n`nALTRun then reloads. The current folder is left as it is."
         s["Prefs.DataFolderNested"]    := "The new folder cannot be inside the current data folder, or the other way round."
         s["Prefs.DataFolderFailed"]    := "Could not use {1}:`n`n{2}"
+        s["Prefs.DataFolderTitle"]     := "Data Folder Location"
+        s["Prefs.DataFolderLabel"]     := "Folder for ALTRun's settings and data:"
+        s["Prefs.DataFolderBrowse"]    := "Browse..."
+        s["Prefs.DataFolderHere"]      := "This computer: {1}"
+        s["Prefs.DataFolderMissing"]   := "This computer has no {1}."
+        s["Prefs.DataFolderMissingNow"] := "This computer has no {1}, so the default folder is used: {2}"
+        s["Prefs.DataFolderKind.Default"]  := "The default location."
+        s["Prefs.DataFolderKind.Shared"]   := "Every computer that uses this folder shares the settings."
+        s["Prefs.DataFolderKind.Computer"] := "One folder on each computer: settings, commands and snippets are not shared."
+        s["Prefs.DataFolderKind.User"]     := "One folder for each Windows user."
+        s["Prefs.DataFolderVars"]      := "Environment variables: %OneDrive% personal OneDrive · %OneDriveCommercial% work or school OneDrive · %USERPROFILE% your user folder · %COMPUTERNAME% this computer's name · %USERNAME% your Windows user name"
+        s["Prefs.DataFolderNote"]      := "Put the folder in OneDrive, Dropbox... to share the settings between computers. Environment variables can be used: add %COMPUTERNAME% for a separate folder on each computer, %USERNAME% for each Windows user."
 
         ; --- Usage statistics ---
         s["Usage.Title"]               := "Usage"

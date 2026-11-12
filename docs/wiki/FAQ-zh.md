@@ -76,8 +76,12 @@ ALTRun 在启动时和之后每 6 小时在后台检查一次, 有新版本时�
 
 ### 在多台电脑上使用同一份设置
 两种做法:
-- **只同步设置和数据**: 偏好设置 → 高级 → 数据 → **更改位置...**, 选同步盘 (OneDrive、Dropbox...) 里的一个文件夹。现在的设置和数据会复制过去, ALTRun 重新载入后改用那里; 在另一台电脑上选同一个文件夹, 提示 "已经有 ALTRun 的设置" 时选 **是** 就会用那里的设置。选的位置记在默认位置 `Data\ALTRun.json` 的 `"DataLocation"` 里 (可以写 `%OneDrive%\ALTRun` 这样的环境变量, 每台电脑的 OneDrive 路径不同也能用); 在 更改位置 里选回原来的 `Data\` 文件夹, 或者删掉这一项, 就回到默认位置
+- **只同步设置和数据**: 偏好设置 → 高级 → 数据 → **更改位置...**, 选同步盘 (OneDrive、Dropbox...) 里的一个文件夹。现在的设置和数据会复制过去, ALTRun 重新载入后改用那里; 在另一台电脑上选同一个文件夹, 提示 "已经有 ALTRun 的设置" 时选 **是** 就会用那里的设置。对话框列出这台电脑上有的常用位置 (`%OneDrive%\ALTRun\Data`、工作或学校 OneDrive 的 `%OneDriveCommercial%\ALTRun\Data`、`%USERPROFILE%\Dropbox\ALTRun\Data`...), 也可以直接输入或点 **浏览...**。环境变量按写的样子保存, 每台电脑的 OneDrive 路径不同也能用; 对话框里会显示在这台电脑上是哪个文件夹。选的位置记在默认位置 `Data\ALTRun.json` 的 `"DataLocation"` 里; 选列表最后一项 (默认位置) 就回到默认位置
 - **整个文件夹放在 U 盘或同步盘里**: ALTRun 是绿色软件, 程序和 `Data\` 一起带走
+
+**每台电脑各用一个文件夹** (例如公司电脑和家里电脑不想共用命令): 在文件夹里加上 `%COMPUTERNAME%`, 例如 `%OneDrive%\ALTRun\Data-%COMPUTERNAME%`。每台电脑用自己的文件夹 (`Data-WORK-PC`、`Data-HOME-PC`), 仍然有 OneDrive 备份; 设置、命令和片段不共用。`%USERNAME%` 同样让每个 Windows 用户各用一个文件夹 (只在几个用户共用一份绿色版时需要: 安装版本来就把每个用户的数据放在各自的 `%APPDATA%` 里)。ALTRun 程序本身放在 OneDrive 里时, 两台电脑读的是同一个默认的 `Data\ALTRun.json`, 所以这一项必须带 `%COMPUTERNAME%`: 写成完整路径的话两台电脑会用同一个文件夹。某台电脑上没有这个变量 (比如没装 OneDrive) 时, 这台电脑用默认位置, 并在 偏好设置 → 高级 里说明。
+
+![Preferences → Advanced → Change Location...](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/data-location.png)
 
 同步盘里的数据最好不要在两台电脑上同时打开 ALTRun 修改, 否则同步盘可能生成冲突副本。几台电脑上的 ALTRun 最好是同一个版本: 一台先更新、设置格式又变了的时候, 旧版本会提示 "设置是更新版本的 ALTRun 保存的"; 新的设置会留在文件里, 但要等这台也更新后才起作用。路径尽量用 [路径变量](Custom-Commands-zh#路径里可以用的变量) (例如 `A_Desktop`、`%OneDrive%`), 换电脑也能用。
 

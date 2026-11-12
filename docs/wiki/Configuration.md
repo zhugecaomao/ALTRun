@@ -50,7 +50,7 @@ The **Help** button at the bottom of Preferences, or `F1`, opens the documentati
 }
 ```
 
-`DataLocation` only works in the file at the default location (`Data\ALTRun.json`, or `%APPDATA%\ALTRun\Data\ALTRun.json`): when it's there, ALTRun uses the settings and data in that folder, and the file at the default location only points the way. Normally you set it in Preferences → Advanced → Settings and data → Change Location... rather than by hand; environment variables work, and relative paths start from the program folder.
+`DataLocation` only works in the file at the default location (`Data\ALTRun.json`, or `%APPDATA%\ALTRun\Data\ALTRun.json`): when it's there, ALTRun uses the settings and data in that folder, and the file at the default location only points the way. Normally you set it in Preferences → Advanced → Settings and data → Change Location... rather than by hand; environment variables work (`%COMPUTERNAME%` gives each PC its own folder; a variable a PC doesn't have makes that PC use the default folder), and relative paths start from the program folder.
 
 ## General
 Split over the "General", "Search Window" and "Keyboard" pages in Preferences (`SelectionHotkey` is on the "Selection" page).
