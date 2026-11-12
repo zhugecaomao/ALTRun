@@ -1738,6 +1738,61 @@ class ProviderTests {
         I18n.Init(savedLang)
     }
 
+    ; Preferences → Hotkeys shows what each hotkey runs by name, a deleted custom command in red; deleting a command deletes its hotkeys
+    static HotkeyCommandList() {
+        eq := (n, a, e) => TestRunner.Equal("HotkeyCommandList." n, a, e)
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        commands := [Map("Id", "plain001", "Title", "Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "np")
+                   , Map("Id", "other001", "Title", "Calculator", "Type", "File", "Target", "calc.exe", "Arguments", "", "Keyword", "")]
+        runKey := Map("Key", "^!n", "Action", "custom:plain001", "WinTitle", "")
+        gone := Map("Key", "^!q", "Action", "custom:gone0001", "WinTitle", "")
+        eq("custom command", HotkeyEditor.ListText(runKey, commands), "Run: Notepad")
+        eq("deleted command", HotkeyEditor.ListText(gone, commands), "(deleted command) custom:gone0001")
+        eq("system command by name", HotkeyEditor.ListText(Map("Key", "^!t", "Action", "TerminalHere"), commands), HotkeyEditor.ActionName("TerminalHere"))
+        eq("show / hide", HotkeyEditor.ListText(Map("Key", "^!h", "Action", "ToggleWindow"), commands), "Show / hide ALTRun")
+        eq("old Show: an empty search", HotkeyEditor.ListText(Map("Key", "^!s", "Action", "Show"), commands), "Search in ALTRun")
+        eq("missing", HotkeyEditor.IsMissing(runKey, commands) "|" HotkeyEditor.IsMissing(gone, commands) "|" HotkeyEditor.IsMissing(Map("Action", "Lock"), commands), "0|1|0")
+
+        savedWorking := PreferencesWindow.Working
+        PreferencesWindow.Working := Map("CustomCommands", commands, "Hotkeys", [runKey, gone])
+        try {
+            eq("list cell: the commands being edited", PrefsForm.Cell(runKey, "Action"), "Run: Notepad")
+            eq("row color: red only when deleted", PrefsPages.HotkeyRowColor(runKey) "|" PrefsPages.HotkeyRowColor(gone), "|" 0x1C2BC4)
+        } finally
+            PreferencesWindow.Working := savedWorking
+
+        hotkeys := [runKey, gone, Map("Key", "^!m", "Action", "custom:plain001", "WinTitle", "ahk_exe WINWORD.EXE"), Map("Key", "^!c", "Action", "custom:other001")]
+        eq("hotkeys of a command", CustomCommandProvider.HotkeysFor(commands[1], hotkeys).Length, 2)
+        eq("question names them", CustomCommandProvider.DeleteQuestion(commands[1], hotkeys), "Delete 'Notepad'?`n`nThe hotkeys that run it are deleted too: Ctrl+Alt+N, Ctrl+Alt+M")
+        eq("no hotkey: the usual question", CustomCommandProvider.DeleteQuestion(Map("Id", "none0001", "Title", "X"), hotkeys), "")
+        removed := CustomCommandProvider.RemoveHotkeys(commands[1], hotkeys)
+        eq("removed in place", removed.Length "|" hotkeys.Length "|" hotkeys[1]["Action"] "|" hotkeys[2]["Action"], "2|2|custom:gone0001|custom:other001")
+
+        ; Ctrl+Del in the results: the command and its hotkeys go, the hotkeys are turned off, the settings saved
+        savedCommands := AppSettings.Data["CustomCommands"], savedHotkeys := AppSettings.Data["Hotkeys"], savedFile := AppSettings.File
+        savedUnregister := App.GetOwnPropDesc("UnregisterHotkey")
+        turnedOff := []
+        App.DefineProp("UnregisterHotkey", {Call: (this, entry) => turnedOff.Push(entry["Key"])})
+        AppSettings.File := A_Temp "\ALTRunTest.json"                     ; deleting saves the settings: write to a temporary file
+        try {
+            AppSettings.Data["CustomCommands"] := [commands[1].Clone(), commands[2].Clone()]
+            AppSettings.Data["Hotkeys"] := [runKey.Clone(), Map("Key", "^!c", "Action", "custom:other001", "WinTitle", "")]
+            item := {Source: AppSettings.Data["CustomCommands"][1], Title: "Notepad"}
+            eq("search prompt names the hotkey", CustomCommandProvider.DeletePrompt(item), "Delete 'Notepad'?`n`nThe hotkeys that run it are deleted too: Ctrl+Alt+N")
+            eq("search prompt without hotkeys", CustomCommandProvider.DeletePrompt({Source: Map("Id", "none0001", "Title", "Paint"), Title: "Paint"}), I18n.T("Search.ConfirmDelete", "Paint"))
+            CustomCommandProvider.DeleteItem(item)
+            eq("deleted with its hotkey, turned off", AppSettings.CustomCommands.Length "|" AppSettings.Hotkeys.Length "|" AppSettings.Hotkeys[1]["Key"] "|" turnedOff.Length "|" turnedOff[1], "1|1|^!c|1|^!n")
+        } finally {
+            App.DefineProp("UnregisterHotkey", savedUnregister)
+            AppSettings.Data["CustomCommands"] := savedCommands, AppSettings.Data["Hotkeys"] := savedHotkeys, AppSettings.File := savedFile
+            try FileDelete(A_Temp "\ALTRunTest.json")
+            CustomCommandProvider._ResetNarrowing()
+        }
+        App.UnregisterHotkey(Map("Key", "^!F24", "WinTitle", "ALTRun"))      ; never registered: no error
+        I18n.Init(savedLang)
+    }
+
     static DefaultExamples() {
         eq := (n, a, e) => TestRunner.Equal("DefaultExamples." n, a, e)
         defaults := AppSettings.Defaults()
@@ -1780,9 +1835,9 @@ class ProviderTests {
         for item in HelpProvider.Items()
             help .= item.Id " "
         eq("help lists F1 and F4", (InStr(help, "About ") && InStr(help, "EditJson ")) ? 1 : 0, 1)
-        eq("hotkey action shows its search text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}"), "Action"), "Search: folder {selection}")
-        eq("hotkey action without text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Search", "SearchText", " "), "Action"), "Search")
-        eq("hotkey search text only for Search", PrefsForm.Cell(Map("Key", "^!f", "Action", "Lock", "SearchText", "folder "), "Action"), "Lock")
+        eq("hotkey action shows its search text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}"), "Action"), I18n.T("Prefs.Hotkey.Search", "folder {selection}"))
+        eq("hotkey action without text", PrefsForm.Cell(Map("Key", "^!f", "Action", "Search", "SearchText", " "), "Action"), I18n.T("HotkeyEditor.Action.Search"))
+        eq("hotkey search text only for Search; a system command by name", PrefsForm.Cell(Map("Key", "^!f", "Action", "Lock", "SearchText", "folder "), "Action"), HotkeyEditor.ActionName("Lock"))
         eq("command target shows arguments", PrefsForm.Cell(Map("Target", "cmd.exe", "Arguments", "/k ipconfig /all"), "Target"), "cmd.exe /k ipconfig /all")
         eq("url type name", I18n.Strings["Prefs.Type.Url"], "Web address / link")
         ids := Map()

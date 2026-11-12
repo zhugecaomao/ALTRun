@@ -34,7 +34,7 @@ class Shots {
     static SettleMs := 1200                                         ; after start-up, before a scene starts (see Launch)
 
     static NormalScale := ["quickswitch", "quickswitch-favorites", "demo-quickswitch", "pttools", "spf2m", "sendto", "prefs-general", "prefs-appearance", "prefs-filesearch", "prefs-searchsources", "prefs-commands", "command-editor", "prefs-selection", "prefs-snippets", "prefs-calculator", "prefs-scripts"
-                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor"
+                         , "prefs-keyboard", "prefs-hotkeys", "prefs-quickswitch", "prefs-dialogpanel", "prefs-datestamp", "prefs-delayedstart", "prefs-startupapps", "prefs-sync", "sync-editor", "sync-preview", "hotkey-editor", "hotkey-editor-command", "command-picker", "prefs-hotkeys-commands"
                          , "prefs-window", "prefs-features", "prefs-applications", "prefs-clipboard", "prefs-websearch", "prefs-usage", "prefs-advanced", "data-location", "data-location-list"]   ; scenes shot at 100% (see screenshots.yml)
 
     ; the theme scenes (theme-dark ...): "themes" in the scene list (screenshots.yml shoots them on a runner of their own)
@@ -89,6 +89,7 @@ class Shots {
             ["hotkey-editor",    "Light", "-Preferences 16", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 2)],   ; Wiki: custom hotkeys (edit window, Ctrl+Alt+F)
             ["hotkey-editor-command", "Light", "-Preferences 16", () => Shots.SyncWindow("Edit...", "Edit Hotkey", 1), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (running a custom command)
             ["command-picker",   "Light", "-Preferences 16", () => Shots.CommandPicker(), () => Shots.CommandHotkey()],   ; Wiki: custom hotkeys (Choose Command)
+            ["prefs-hotkeys-commands", "Light", "-Preferences 16", () => Shots.Preferences(), () => Shots.CommandHotkey(true)],   ; the list with a custom command's hotkey and one whose command was deleted (red)
             ["prefs-quickswitch", "Light", "-Preferences 17", () => Shots.Preferences()],    ; Wiki: quick switch for dialogs
             ["prefs-dialogpanel", "Light", "-Preferences 18", () => Shots.Preferences()],    ; Wiki: the dialogs' folder panel
             ["prefs-datestamp",  "Light", "-Preferences 19", () => Shots.Preferences()],     ; Wiki: date stamp
@@ -855,12 +856,17 @@ class Shots {
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }
 
-    ; A custom command and a hotkey that runs it, for the hotkey edit window and Choose Command
-    static CommandHotkey() {
+    ; A custom command and a hotkey that runs it, for the hotkey edit window and Choose Command.
+    ; withList: also a search, a system command and a hotkey whose command was deleted, for the Hotkeys page
+    static CommandHotkey(withList := false) {
         settingsFile := Shots.AppDir "\Data\ALTRun.json"
         settings := JSON.Parse(FileRead(settingsFile, "UTF-8"))
         settings["CustomCommands"].Push(Map("Id", "np4k2x7q", "Title", "Edit in Notepad", "Type", "File", "Target", "notepad.exe", "Arguments", "", "Keyword", "en", "Selection", "Text files"))
-        settings["Hotkeys"] := [Map("Key", "^!n", "Action", "custom:np4k2x7q", "WinTitle", "")]   ; the only one (the demo settings have no Hotkeys: the defaults)
+        settings["Hotkeys"] := [Map("Key", "^!n", "Action", "custom:np4k2x7q", "WinTitle", "")]   ; the first one (the demo settings have no Hotkeys: the defaults)
+        if withList
+            settings["Hotkeys"].Push(Map("Key", "^!f", "Action", "Search", "SearchText", "folder {selection}", "WinTitle", "")
+                , Map("Key", "^!t", "Action", "TerminalHere", "WinTitle", "ahk_class CabinetWClass")
+                , Map("Key", "^!q", "Action", "custom:q7w2e9rt", "WinTitle", ""))   ; no such command: deleted
         FileDelete(settingsFile)
         FileAppend(JSON.Stringify(settings, 4), settingsFile, "UTF-8")
     }

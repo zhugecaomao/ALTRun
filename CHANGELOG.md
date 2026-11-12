@@ -5,6 +5,17 @@
 
 ## [未发布]
 
+## [2026.11.12.5]
+
+测试版。
+
+Test build.
+
+### 改进
+- 偏好设置 → 自定义热键 的 "动作" 列显示名称: 运行自定义命令的显示 `运行: Notepad`, 系统命令显示名称 (以前是 `PastePlain` 这样的 Id), 搜索显示 `搜索: folder {selection}`
+- 删除自定义命令时 (自定义命令页的 删除, 或搜索结果里 `Ctrl+Del`), 运行它的热键一起删除, 删除前的确认里写出是哪些热键; `Ctrl+Del` 删掉的热键马上停用, 不用重启
+- 命令已经不在的热键 (手改设置文件、从别的电脑同步过来) 在列表里显示为红字 `(命令已删除) custom:<Id>`
+
 ## [2026.11.12.4]
 
 测试版。
@@ -1379,7 +1390,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.4...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.5...HEAD
+[2026.11.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.4...2026.11.12.5
 [2026.11.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.3...2026.11.12.4
 [2026.11.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.2...2026.11.12.3
 [2026.11.12.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.1...2026.11.12.2
