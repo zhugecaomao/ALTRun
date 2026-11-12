@@ -77,6 +77,17 @@ Background work must respect window and resource lifetimes. Timer callbacks are 
 - **Preferences** edit a working copy; OK / Apply saves it and reloads ALTRun, so no window changes the live settings directly
 - **Exit** (`App._OnExit`): pending index saves, learned ranking, usage, clipboard history, the icon cache and the log are written there. Anything new that keeps data in memory adds its save to that list
 
+### Data and security invariants
+Rules every change keeps; where a check enforces one, it is named.
+- **Writing data**: every data file read back whole (`ALTRun.json`, the other `.json` files in `Data\`, `FileIndex.bin`) is written with `SafeFile` / `JSON.WriteFile` (`ProjectTests.DataWrites`)
+- **Reading data**: a file that can't be read is never treated as empty and written over (`SafeFile.ReadText`, `AppSettings._ReadFile`, `ClipboardProvider._Load`); what is read is checked before use, keeping only entries the code can use (`Knowledge.ValidPicks`, `Usage.ValidDays`, `ApplicationProvider._LoadCache`), so a file edited by hand or cut short can't fail every search
+- **The log**: never what was typed in the search box, only its length (`ProjectTests.NoInputTextInLog`)
+- **The clipboard**: code that borrows it (`saved := ClipboardAll()`) puts it back in a `finally` block (`ProjectTests.ClipboardRestore`)
+- **Messages from other programs**: WM_COPYDATA is read only within the size the sender gave (`Win.CopyDataText`, `Everything.ParseList`); a command handed over by another instance that changes the program (`-Update`) asks first
+- **Command lines**: arguments are quoted with `Win.QuoteArg`; nothing the user typed goes through `cmd.exe` with a double quote in it (`ScriptProvider.ThroughCmd`)
+- **Anything run as administrator**: no file it uses is left where programs with normal rights can change it between the check and the use: the update is staged next to the program (`UpdateChecker.TempDir`), the task XML is held open while schtasks reads it (`CapsLockHelper.RegisterXml`); DLLs are loaded by full path
+- **The network**: only the requests listed in [SECURITY.md](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md#network-connections); a new one is added there first
+
 ### Threads, messages and re-entrancy
 AutoHotkey runs one thread at a time, but a hotkey, timer, `OnMessage` handler or GUI event starts a new thread that **interrupts the current one whenever it waits**: `Sleep`, `MsgBox` and other dialogs, `WinWait`, `Download()`, and `DllCall`s or `SendMessage`s that pump messages. Code that waits must expect shared state to have changed when it continues:
 - Two calls of the same function can overlap. `SafeFile` gives each write its own temporary file and lets the newest content win; `Everything` keeps one reply slot per query id (a query started while another waits for its reply); `ExplorerTabs.Open` takes only a new tab that no other running Open has taken
@@ -283,8 +294,6 @@ A few AutoHotkey v2 pitfalls:
 - A very large `static X := Map(...)` fails with "Declaration too long"; build it inside a method instead
 - Strings passed to functions by value are copied whole: passing a big string (a whole file) to a function over and over in a loop makes the time grow with the square of its length; pass it by reference (`&text`), see `Lib\JSON.ahk`
 - Lines starting with `Perf:` in the debug log (`General.SaveLog`) are the timings of startup phases, slow searches and slow background tasks; use `Logger.Ms()` / `Logger.Time(label, start)` to record new ones, and wrap timer callbacks in `Logger.Watch(label, fn)` (logged only over 50 ms)
-- The debug log never holds what was typed in the search box, only its length (`StrLen`); checked by `ProjectTests.NoInputTextInLog`
-- Code that borrows the clipboard (`saved := ClipboardAll()`) puts it back in a `finally` block, so an error half way doesn't lose the user's clipboard; checked by `ProjectTests.ClipboardRestore`
 - Don't download with `Download()` on the main thread (the whole program stops until it finishes); use `HttpGet.Start(url, done, fail)` to download in the background
 - To learn about changes in a folder, use `FolderWatcher` (`Lib\FolderWatcher.ahk`, call `Poll()` on a `WinTimer`, it doesn't wait) instead of rescanning the folder on a timer; when closing it waits for the pending read to finish before releasing the buffer
 - When a nested function changes an outer variable, pass the result back through an object (`state := {Result: ""}`)

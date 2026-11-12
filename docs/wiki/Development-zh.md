@@ -77,6 +77,17 @@ site\               官网模板和生成脚本 (发布到 GitHub Pages)
 - **偏好设置** 在副本上编辑; 确定 / 应用时保存并重新载入 ALTRun, 没有窗口直接改运行中的设置
 - **退出** (`App._OnExit`): 在这里写入后台重建的索引、学习排序、使用统计、剪贴板历史、图标缓存和日志。新加的、在内存里存数据的功能, 把保存加到这里
 
+### 数据和安全的不变量
+每次修改都要保持的规则; 有自动检查的写明是哪一个。
+- **写数据**: 会整个读回的数据文件 (`ALTRun.json`、`Data\` 里其它 `.json`、`FileIndex.bin`) 都用 `SafeFile` / `JSON.WriteFile` 写 (`ProjectTests.DataWrites`)
+- **读数据**: 读不出来的文件不当成空的, 也不覆盖 (`SafeFile.ReadText`、`AppSettings._ReadFile`、`ClipboardProvider._Load`); 读到的内容先检查再用, 只保留代码能用的条目 (`Knowledge.ValidPicks`、`Usage.ValidDays`、`ApplicationProvider._LoadCache`), 手动改坏或只写了一半的文件不会让每次搜索都报错
+- **日志**: 不写搜索框里输入的文字, 只写长度 (`ProjectTests.NoInputTextInLog`)
+- **剪贴板**: 借用剪贴板的代码 (`saved := ClipboardAll()`) 在 `finally` 里还原 (`ProjectTests.ClipboardRestore`)
+- **其他程序发来的消息**: WM_COPYDATA 只在发送方给出的长度内读取 (`Win.CopyDataText`、`Everything.ParseList`); 另一个实例转交过来、会改动程序的命令 (`-Update`) 先询问
+- **命令行**: 参数用 `Win.QuoteArg` 加引号; 用户输入的内容带双引号时不经过 `cmd.exe` (`ScriptProvider.ThroughCmd`)
+- **以管理员身份运行的东西**: 用到的文件不放在普通权限程序能在检查和使用之间改动的地方: 更新包暂存在程序旁边 (`UpdateChecker.TempDir`), 任务 XML 在 schtasks 读取期间被占住 (`CapsLockHelper.RegisterXml`); DLL 用完整路径加载
+- **网络**: 只有 [SECURITY.md](https://github.com/zhugecaomao/ALTRun/blob/main/SECURITY.md#联网) 里列出的请求; 新增的先写进那里
+
 ### 线程、消息和重入
 AutoHotkey 同一时间只运行一个线程, 但热键、计时器、`OnMessage` 处理函数和界面事件会开一个新线程, **在当前线程等待时插进来**: `Sleep`、`MsgBox` 等对话框、`WinWait`、`Download()`, 以及会处理消息的 `DllCall` / `SendMessage`。等待过的代码继续时, 要假设共享的状态已经变了:
 - 同一个函数可能同时运行两次。`SafeFile` 每次写入用自己的临时文件, 并以最新的内容为准; `Everything` 每个查询 id 一个回复位置 (等回复时可能又开始一个查询); `ExplorerTabs.Open` 只拿没有被其他正在运行的 Open 拿走的新标签
@@ -282,8 +293,6 @@ GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartChec
 - 很大的 `static X := Map(...)` 会报 "Declaration too long", 改成在方法里构造
 - 字符串按值传给函数时会整段复制: 在循环里反复把一个大字符串 (整个文件) 传给函数, 耗时会随长度平方增长, 要按引用传 (`&text`), 见 `Lib\JSON.ahk`
 - 调试日志 (`General.SaveLog`) 里 `Perf:` 开头的行是启动各阶段、慢搜索和慢的后台任务的耗时; 用 `Logger.Ms()` / `Logger.Time(label, start)` 记录新的, 计时器的回调用 `Logger.Watch(label, fn)` 包一层 (超过 50 ms 才记)
-- 调试日志里不写搜索框里输入的文字, 只写长度 (`StrLen`); `ProjectTests.NoInputTextInLog` 检查
-- 借用剪贴板的代码 (`saved := ClipboardAll()`) 在 `finally` 里还原, 中途出错也不会丢掉用户的剪贴板; `ProjectTests.ClipboardRestore` 检查
 - 不要在主线程里用 `Download()` 下载 (下载完之前整个程序都停着), 用 `HttpGet.Start(url, done, fail)` 在后台下载
 - 要知道文件夹里的变化, 用 `FolderWatcher` (`Lib\FolderWatcher.ahk`, 定时 `Poll()` 不等待), 不要定时扫描整个文件夹; 关闭时它会等异步读取结束再放掉缓冲区
 - 嵌套函数修改外层变量时, 通过对象传回结果 (`state := {Result: ""}`)

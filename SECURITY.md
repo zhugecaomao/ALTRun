@@ -40,7 +40,7 @@ Out of scope:
 
 ## Security measures
 
-- **Builds**: every release is built from the public source code by [GitHub Actions](.github/workflows/release.yml); no binaries are built on personal computers. Each change runs 8,000+ automated tests on Windows, and the repository is scanned by CodeQL.
+- **Builds**: every release is built from the public source code by [GitHub Actions](.github/workflows/release.yml); no binaries are built on personal computers. Each change runs more than 12,000 automated checks on Windows, and the repository is scanned by CodeQL.
 - **Updates**: one-click updates download only from this repository's GitHub Releases over HTTPS (download and release page addresses outside the repository are ignored), verify the SHA256 checksum published by GitHub before replacing any file, and restore the previous version if any step fails.
 - **Code signing**: see the [code signing policy](README.md#code-signing-policy).
 - **Least privilege**: ALTRun runs as a normal user. It needs no administrator rights and installs no services or drivers. The one exception is optional: "Also in windows running as administrator" for Caps Lock (Preferences → Keyboard) creates a scheduled task with highest privileges that starts ALTRun as a Caps Lock helper. Keep ALTRun in a folder only administrators can change (for example `C:\Program Files`) before turning it on, otherwise a program with normal rights could replace ALTRun and get administrator rights through that task; ALTRun warns when its folder can be changed.
@@ -56,10 +56,10 @@ ALTRun itself connects to the internet only in these cases:
 
 | Purpose | Destination | When | How to turn it off |
 |---|---|---|---|
-| Check for updates | api.github.com | At startup (if the last check was more than an hour ago), every 6 hours while running, or when you check manually | Preferences → General → "Check for updates automatically" |
-| Download an update | api.github.com, then github.com if that fails (GitHub Releases) | Only after you choose to install an update | Do not install updates from ALTRun |
-| Exchange rates | api.frankfurter.dev | Once a day, only when currency conversion is turned on (off by default) | Preferences → Calculator → "Currency conversion" |
-| Web search icon | The website in that web search's URL | Only when you click "Download Site Icon" while editing a web search | Do not click it |
+| Check for updates (reads the latest release's version number) | api.github.com | 1 minute after startup if the last check is over an hour old, then every 6 hours while running, or when you check manually | Preferences → General → "Check for updates automatically" (`General.CheckForUpdates`) |
+| Download an update (the release's zip, checked against GitHub's SHA256 before anything is replaced) | api.github.com, then github.com if that fails (GitHub Releases) | Only after you choose to install an update | Do not install updates from ALTRun |
+| Exchange rates (reference rates of the ECB and other central banks, saved in `Data\Currency.json`) | api.frankfurter.dev | Only when currency conversion is on (off by default): 1.5 minutes after startup and hourly after, when the last download is over 12 hours old | Preferences → Calculator → "Currency conversion" (`Features.Calculator.Currency`) |
+| Web search icon (saved in `Data\Icons`) | The website in that web search's URL | Only when you click "Download Site Icon" while editing a web search | Do not click it |
 
 The Microsoft Store version doesn't check GitHub for updates or download them: the Microsoft Store updates it, under Microsoft's privacy statement. "Check for updates" opens its page in the Store app.
 
@@ -128,7 +128,7 @@ Changes to this policy are recorded in the [changelog](CHANGELOG.md) and the [hi
 
 ## 安全措施
 
-- **构建**: 每个发布版本都由 [GitHub Actions](.github/workflows/release.yml) 从公开源码编译, 不在个人电脑上构建。每次修改都在 Windows 上运行 8000 余项自动测试, 仓库开启了 CodeQL 扫描。
+- **构建**: 每个发布版本都由 [GitHub Actions](.github/workflows/release.yml) 从公开源码编译, 不在个人电脑上构建。每次修改都在 Windows 上运行 12000 余项自动检查, 仓库开启了 CodeQL 扫描。
 - **更新**: 一键更新只从本仓库的 GitHub Releases 通过 HTTPS 下载 (不是本仓库的下载地址和发布页面地址一律不用), 替换文件前先核对 GitHub 给出的 SHA256, 任何一步出错都还原到原来的版本。
 - **代码签名**: 见 [代码签名策略](README.md#code-signing-policy)。
 - **最小权限**: ALTRun 以普通用户身份运行, 不需要管理员权限, 不安装服务或驱动。唯一的例外是可选的: CapsLock 的 "在管理员窗口里也生效" (偏好设置 → 键盘) 会建一个最高权限的计划任务, 用来启动 ALTRun 作为 CapsLock 助手。开启前请把 ALTRun 放在只有管理员能修改的文件夹 (例如 `C:\Program Files`), 否则普通权限的程序可以替换 ALTRun, 通过这个任务拿到管理员权限; 文件夹可以被修改时 ALTRun 会提醒。
@@ -144,10 +144,10 @@ ALTRun 本身只在以下情况联网:
 
 | 用途 | 地址 | 什么时候 | 怎样关闭 |
 |---|---|---|---|
-| 检查更新 | api.github.com | 启动时 (距上次检查满 1 小时)、运行期间每 6 小时, 或手动检查时 | 偏好设置 → 通用 → "自动检查更新" |
-| 下载更新 | api.github.com, 失败时 github.com (GitHub Releases) | 只在你选择安装更新之后 | 不在 ALTRun 里安装更新 |
-| 汇率 | api.frankfurter.dev | 打开货币换算后每天一次 (默认关闭) | 偏好设置 → 计算器 → "货币换算" |
-| 网页搜索的图标 | 这个网页搜索的网址所在的网站 | 只在编辑网页搜索时点了 "下载网站图标" | 不点这个按钮 |
+| 检查更新 (读取最新发布的版本号) | api.github.com | 启动 1 分钟后 (距上次检查满 1 小时)、运行期间每 6 小时, 或手动检查时 | 偏好设置 → 通用 → "自动检查更新" (`General.CheckForUpdates`) |
+| 下载更新 (Release 的 zip, 替换前先核对 GitHub 给出的 SHA256) | api.github.com, 失败时 github.com (GitHub Releases) | 只在你选择安装更新之后 | 不在 ALTRun 里安装更新 |
+| 汇率 (欧洲央行等公布的参考汇率, 存在 `Data\Currency.json`) | api.frankfurter.dev | 只在打开货币换算时 (默认关闭): 启动 1.5 分钟后和之后每小时, 距上次下载满 12 小时才下载 | 偏好设置 → 计算器 → "货币换算" (`Features.Calculator.Currency`) |
+| 网页搜索的图标 (存在 `Data\Icons`) | 这个网页搜索的网址所在的网站 | 只在编辑网页搜索时点了 "下载网站图标" | 不点这个按钮 |
 
 这些都是普通的 HTTPS 请求, 不发送任何个人数据; 和所有网络请求一样, 服务器能看到你的 IP 地址。从 ALTRun 打开的网页搜索、更新说明和链接都在你的浏览器里打开, 适用对应网站的隐私政策。Everything 联动通过本机的进程间通信, 不经过网络。
 

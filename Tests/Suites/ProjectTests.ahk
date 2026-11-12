@@ -325,6 +325,27 @@ class ProjectTests {
         TestRunner.Equal("NoInputTextInLog.search box text in a log line", found, "")
     }
 
+    ; The data files ALTRun reads back whole (the .json files in Data\ and FileIndex.bin, held in a File / IndexFile / StateFile property)
+    ; are written with SafeFile (or JSON.WriteFile, which uses it): a temporary file flushed to the disk, then swapped in, so a crash or
+    ; power cut halfway can't leave them empty or cut short. Flags FileAppend / FileOpen for writing on such a file or on a ".json" name
+    static DataWrites() {
+        found := ""
+        Loop Files, A_ScriptDir "\..\Src\*.ahk", "R" {
+            fileName := A_LoopFileName
+            Loop Parse, FileRead(A_LoopFileFullPath, "UTF-8"), "`n", "`r" {
+                code := RegExReplace(A_LoopField, "(^|\s);.*$")
+                target := ""
+                if RegExMatch(code, "\bFileAppend\((?:[^,()]|(\((?:[^()]|(?1))*\)))*,\s*([^,)]+)", &m)   ; the first argument may hold nested calls
+                    target := m[2]
+                else if RegExMatch(code, '\bFileOpen\(([^,]+),\s*"([^"]*)"', &m) && RegExMatch(m[2], "i)^[^-]*[wa]")
+                    target := m[1]
+                if (target != "" && RegExMatch(target, 'i)\.(File|IndexFile|StateFile)\b(?!\s*")|\.json"'))
+                    found .= fileName ":" A_Index " "
+            }
+        }
+        TestRunner.Equal("DataWrites.data file written without SafeFile", found, "")
+    }
+
     ; Code that borrows the clipboard (saved := ClipboardAll()) puts it back in a finally block, so an error half way doesn't
     ; leave the user's clipboard empty or overwritten. Flags a ClipboardAll() with no "finally" before the next method
     static ClipboardRestore() {
