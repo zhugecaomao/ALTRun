@@ -258,6 +258,9 @@ AutoHotkey 每次在表达式里读取对象属性里的字符串都会复制一
 ### Quick Switch
 GitHub → Actions → **Quick Switch** 用 `Tests\Integration\QuickSwitchCheck.ahk` 在真实的 Windows 桌面上检查自动跳转 (`Extensions.QuickSwitch.AutoSwitch`)。它启动一份打开了自动跳转的 ALTRun, 用资源管理器打开一个文件夹、再打开一个 "打开" 对话框, 然后用三种方式从资源管理器切到对话框: 直接激活 (`SetForegroundWindow`)、模拟 Alt+Tab、点对话框的标题栏。每种方式试 5 次, 每次对话框都要在 5 秒内跳到资源管理器的文件夹; 失败的那一轮会打印 ALTRun 日志里 Quick Switch 的几行。然后打开文件夹面板的 ☆ 菜单 (点星号、在搜索框里按 Alt+↓), 按 Esc 关掉: 对话框要在 2 秒内回到前台; 失败时打印 Esc 之后到过前台的每个窗口。修改 Quick Switch (`Src\Extensions\QuickSwitch*.ahk`、`FileDialogs.ahk`、`FileManagers.ahk`) 或这个检查的 PR 会运行它, main 上也会, 每周一也运行一次 (运行环境的新镜像可能改变窗口到前台的方式; **Explorer tabs** 也是每周一运行); 想找偶尔出现的失败, 可以手动运行并加大次数。脚本也能在自己电脑上运行 (会占用键盘和屏幕一分钟左右): `QuickSwitchCheck.ahk <仓库的一份副本> [次数]`。
 
+
+### 热键
+GitHub → Actions → **Hotkeys** 用 `Tests\Integration\HotkeyCheck.ahk` 在真实的 Windows 桌面上按运行自定义命令 (`custom:<Id>`) 的自定义热键。它启动一份 ALTRun 副本, 设两条用 `cmd.exe` 写标记文件的命令和三个热键: 一个运行没有 `{query}` 的命令 (标记文件必须写出来), 一个在检查自己的编辑框里选中文字时运行带 `{query}` 的命令 (标记文件里必须是这段文字, 剪贴板必须还是原来的内容), 一个指向不存在的命令 (什么都不运行, ALTRun 的日志里有说明)。每个试 3 次; 失败的那次打印 ALTRun 的日志。修改 `App.ahk`、`CustomCommandProvider.ahk`、`SelectionActions.ahk` 或这个检查的 PR 和 main 上会运行。在自己的电脑上也能跑 (会占用键盘半分钟左右): `HotkeyCheck.ahk <仓库副本> [次数]`。
 ### 延迟启动
 GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartCheck.ahk` (以 `Tests\RunTests.ahk DelayedStartCheck` 运行) 对真实的 Windows 任务计划程序检查延迟启动: 先用一个新建的普通用户 (这才是关键: `schtasks /SC ONLOGON` 需要管理员, ALTRun 用的 COM 接口不需要), 再用 runner 本身的管理员。它通过 `DelayedStart.Sync` 注册任务, 读回来, 修改再删除, 并把为检查建的一个开机启动程序关掉再打开。修改延迟启动或这个检查的 PR 和 main 上会运行; 在自己的电脑上也能跑, 它只动自己的任务文件夹 (`\ALTRun\<用户名> check`), 最后会删掉。
 
