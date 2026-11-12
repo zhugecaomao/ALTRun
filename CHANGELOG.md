@@ -5,209 +5,121 @@
 
 ## [未发布]
 
-## [2026.11.11.20]
+## [2026.11.12]
 
-测试版。
+### Summary
 
-Test build.
+**Search your browser history**: type `h word` to search the history of Chrome, Edge, Brave and Vivaldi (Chinese titles also by their pinyin initials); it is read only on this computer and never saved or sent anywhere. **Your settings and clipboard history are safer**: when their files are briefly in use by a sync tool or antivirus, they are no longer taken as broken or empty and overwritten. **Folder Sync is safer**: a task with `/MIR` or `/PURGE` in its other options is now previewed and asks before deleting, like a mirror. **Opening folders in a new tab is more reliable**: an offline network folder no longer freezes ALTRun for about 20 seconds, and opening two folders quickly no longer leaves an empty tab; the file dialog panel no longer covers the dialog's buttons. Custom commands can use `{hwnd}` and `{pid}` of the window in front. One-click updates, Store app listing and the administrator task were hardened, and ALTRun no longer runs hidden PowerShell commands of its own.
 
-### 改进
+### Upgrade
+- One-click upgrade: tray icon → Check for Updates → Install Update
+- Installed with Scoop: `scoop update altrun`
+- Installed with winget: `winget upgrade zhugecaomao.ALTRun`
+- The settings file version is unchanged
+
+### New
+- **Search browser history** (#448): type `h word` to search the history of Chrome, Edge, Brave and Vivaldi (every profile): pages whose title or URL contains every word, most recently visited first; Chinese titles also match by their pinyin initials. `h ` alone lists the most recently visited pages. `Enter` opens the page in the default browser, `Alt+Enter` copies the URL
+  - Searched only after the keyword, so history never mixes into normal results; read only on this computer from the browsers' History database with Windows' own winsqlite3.dll (without locking or changing it, also while the browser is open); ALTRun keeps no copy of the history and sends nothing. The page list is let go 1 minute after leaving history search
+  - The keyword and the switch are in Preferences → Features. See the Wiki: [Bookmarks](https://github.com/zhugecaomao/ALTRun/wiki/Bookmarks)
+- **`{hwnd}` and `{pid}` in custom commands** (#445): in a custom command's target or arguments they become the handle and process ID (decimal) of the window that was in front before ALTRun was shown, so a script can act on that window (e.g. get the file it has open). Run from the actions panel for selected content (`Ctrl+Alt+\`), pinned or recent items, they are also filled in with the window of that moment; empty when that window has closed. See the Wiki: [Custom Commands](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands)
+
+### Improvements
+- **Network folders (`\\server\share\`, mapped network drives) no longer freeze ALTRun at every key press while their server is offline**: it waits at most 0.5 seconds and remembers the result for 10 seconds
+- The file dialog's folder panel no longer covers the dialog's buttons and file list (#440): when the whole list doesn't fit above or below the dialog it shows fewer rows (at least 3, the rest scroll); when even 3 don't fit (a very tall or maximized dialog) only its search box is shown, below, above or on the dialog's title bar, and the list opens when you click it or press `Ctrl+Shift+G` and closes again when you go back to the dialog
+- Preferences opens faster: the page list icons are drawn once (they were drawn twice), and only where the icons are
+- Store apps are listed inside ALTRun through Windows (shell:AppsFolder) instead of a hidden PowerShell; the background refresh (at most once an hour) waits until the search window is hidden, a manual index rebuild does it at once
+- One-click updates extract with Windows' own tar.exe only, without the PowerShell (Expand-Archive) fallback, so ALTRun runs no hidden PowerShell of its own any more (your .ps1 scripts run as before). When extracting fails, it offers the download page for a manual update as before
+- One-click updates verify, extract and copy the download in `Update.tmp` in the program folder (deleted when done or failed) instead of `%TEMP%`: when ALTRun is installed in a protected folder (e.g. Program Files) and runs as administrator, programs with normal rights can't swap the files after they were checked
+- The command line `ALTRun.exe -Update` handed to an ALTRun that is already running now asks before updating (as Check for Updates in the tray menu does); when ALTRun isn't running yet it still updates right away
+- Caps Lock "also in administrator windows": when it is turned on and ALTRun's folder can be changed without administrator rights, a warning comes first (another program could replace ALTRun and get administrator rights through this highest-privilege scheduled task), suggesting a folder only administrators can change, such as C:\Program Files; you can still turn it on. SECURITY and the Wiki's Hotkeys page say so too
+- The Caps Lock scheduled task for administrator windows is created from an XML file with an unpredictable name, locked against changes until schtasks has read it
+- Messages from other programs (WM_COPYDATA: the arguments a newly started ALTRun passes on, Everything's results, Total Commander's current folder) are read only within the length the sender gives; malformed Everything results are ignored
+- Number settings (window width, visible rows, clipboard history size, file search results and so on) out of their working range are set to the nearest allowed value at start-up and when Preferences is saved, values that aren't numbers go back to the default, and this is logged; so a hand-edited ALTRun.json or a number box left empty in Preferences can't make the window too narrow or clear a list
+- Learned ranking keeps the 3000 most recently picked items (and 5000 inputs), so `Knowledge.json` doesn't keep growing and saving doesn't keep getting slower
+- Searching snippets no longer expands the placeholders of every matching snippet (`{clipboard}` reads the clipboard history); only the large view (`Ctrl+L`) expands them
+- Turning off "Save clipboard history" asks whether to delete the history already saved on disk too
+- Temporary files left by a script's "Show output" are deleted after a day
+- Opening folders in a new tab (#440): when Explorer's new tab can't be opened (or can't select the file), the first failure of each run is written to `%Temp%\ALTRun.log`, also with the log turned off, with the reason and the Windows version. The new tab relies on an undocumented Explorer command that a Windows update may break; before, only the debug log (off by default) had it, and users only saw folders open in new windows with no way to find out why. Normal cases (no Explorer window, a folder that doesn't exist or can't be reached, Windows 10) aren't logged; a folder that doesn't exist no longer opens an empty tab that is then closed
+- Usage statistics count each system command separately (`System:<Id>` in `Data\Usage.json`, also when run from a hotkey), to find out which system commands are used; not shown on the statistics page yet, and the totals are unchanged
+- Code: Quick Switch is split into 5 files by function (window watching, folder panel, favorites and the ☆ menu, file dialogs, file managers), no change in function
+
+### Fixes
+- **The settings file being briefly unreadable** (a sync tool or antivirus using it, a cloud file offline) is no longer taken as "malformed": it used to be renamed to `.bad`, and when the rename failed, the default settings could later overwrite the original. Now it retries for about 2 seconds and then asks Retry or Exit; the file isn't renamed or overwritten
+- A malformed settings file that can't be kept as `.bad` (both rename and copy fail) no longer gets the default settings written over it either; it also asks Retry or Exit
+- **The clipboard history being briefly unreadable at start-up** is no longer taken as empty: the next copy used to overwrite the history file with a new list and delete its images and long texts (pinned items too). Now it is left alone and read again before saving, and the old items are added after the new copies; a malformed history file is kept as `ClipboardHistory.json.bad`
+- A settings file saved by a newer ALTRun (computers sharing a data folder with different versions, or going back to an older version): the older version no longer sets the settings version back (which made the newer one upgrade again), keeps the settings it doesn't know as they are, and says at start-up that ALTRun on this computer needs updating
+- **Folder Sync**: a task with `/MIR` or `/PURGE` in "Other options" deletes extra files in the target like a mirror, but wasn't previewed or confirmed because its mode wasn't "Mirror", and ran even when the source folder was missing or empty. Such tasks are now treated as mirrors: previewed before running and confirmed before deleting; not run when the source is missing or empty; can't mirror to the root of a drive, share, OneDrive folder or user folder; can't sync continuously
+- Folder Sync: a task with `/MOV` or `/MOVE` in "Other options" (robocopy deletes the source files after copying) gets a warning once when saved
+- Opening folders in a new tab (#440): **a folder on an offline server or NAS no longer freezes ALTRun for about 20 seconds**; a network folder that doesn't answer within 0.5 seconds opens in a new window, and Explorer does the waiting
+- Opening folders in a new tab (#440): two folders opened in quick succession (e.g. two folder hotkeys pressed one after the other) each get their own new tab, instead of both using the same tab and leaving an empty one; a wait interrupted by another open for too long is no longer taken as a failure
+- Quick Switch: clicking a panel folder in the "Browse for Folder" dialog of a program running as administrator did nothing; now it says ALTRun has to run as administrator too to switch there, and the reason a folder can't be selected is always logged (AppInn forum)
+- Quick Switch: when selecting a folder in a "Browse for Folder" dialog times out, the memory the dialog may still read is no longer freed
+- When an action that borrows the clipboard (actions for selected content, pasting snippets and text, pasting files and images from the clipboard history) fails half way, the original clipboard content is restored too
+- The debug log no longer records the text in the search box (two diagnostic messages used to log its first 30 characters), only its length
+- Preferences → Applications / Search Sources: an invalid regular expression in "Exclude (regex)" is reported when saving and its page is opened; a bad pattern written by hand in the settings file is ignored by the scan and logged once, instead of failing again and again. An empty "Exclude" in Applications no longer excludes every Store app
+- Web search URLs were encoded wrongly when the search text had emoji and similar characters
+- Windows Terminal opened at a drive root such as `C:\` got a wrong path; a folder name or command with `;` was split into two tabs
+- A script argument ending in `\` (e.g. `C:\`) or with `\` before `"` reached the script wrongly; a script run through cmd (batch files, or "Show output" / silent runs) with `"` in its arguments isn't run and says why, so the rest can't be taken by cmd as a command
+- Learned ranking, usage statistics, the application index cache and sync task state files edited badly by hand or only half written: the bad entries are ignored instead of causing errors when searching or at start-up
+- Sync window: after **Stop**, **Preview** left the progress bar standing still. Stop turns the bar paused (yellow), and switching to the moving bar for the preview didn't set it back to normal, so it didn't move; now it does
+
+---
+
+### 中文说明
+
+**搜索浏览器历史记录**: 输入 `h 关键词` 搜索 Chrome、Edge、Brave、Vivaldi 的历史记录 (中文标题也能用拼音首字母), 只在本机读取, 不另存、不上传。**设置和剪贴板历史更不容易丢**: 文件一时被同步工具或杀毒软件占用时, 不再被当成损坏或空的而被覆盖。**文件夹同步更安全**: "其他参数" 里写了 `/MIR` 或 `/PURGE` 的任务也像镜像一样先预览, 删除前询问。**在新标签页中打开文件夹更可靠**: 离线的网络文件夹不再让 ALTRun 卡住约 20 秒, 很快地连续打开两个文件夹不再留下空标签; 对话框文件夹面板不再挡住对话框的按钮。自定义命令可以用 `{hwnd}` 和 `{pid}` 拿到前台窗口。另外一键更新、商店应用列表和管理员计划任务都加强了安全, ALTRun 自己不再在后台运行 PowerShell。
+
+#### 升级
+- 一键升级: 托盘图标 → 检查更新 → 安装更新
+- 用 Scoop 安装的: `scoop update altrun`
+- 用 winget 安装的: `winget upgrade zhugecaomao.ALTRun`
+- 设置文件的版本没有变
+
+#### 新增
+- **搜索浏览器历史记录** (#448): 输入 `h 关键词` 搜索 Chrome、Edge、Brave、Vivaldi (所有用户配置) 的历史记录, 标题或网址里包含每个关键词的网页按最近访问时间排列, 中文标题也能用拼音首字母; 只输入 `h ` 列出最近访问的网页。`Enter` 在默认浏览器打开, `Alt+Enter` 复制网址
+  - 只在输入关键字时才搜, 不会混进普通搜索结果; 只在本机读取浏览器的 History 数据库 (用 Windows 自带的 winsqlite3.dll, 不锁定、不修改, 浏览器开着也可以), ALTRun 不另存历史记录、不上传。退出历史搜索 1 分钟后释放读入的网页列表
+  - 关键字和开关在偏好设置 → 功能。见 Wiki [浏览器书签](https://github.com/zhugecaomao/ALTRun/wiki/Bookmarks-zh)
+- **自定义命令可以用 `{hwnd}` 和 `{pid}`** (#445): 写在自定义命令的目标或参数里, 运行时换成呼出 ALTRun 之前前台窗口的句柄和进程 ID (十进制), 脚本可以拿它对这个窗口做后续操作 (例如取它打开的文件)。从选中内容的动作面板 (`Ctrl+Alt+\`) 运行、置顶或最近使用的条目也是每次运行时才填入当时的窗口; 那个窗口已经关掉时换成空。见 Wiki [自定义命令](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands-zh)
+
+#### 改进
+- **浏览网络文件夹 (`\\server\share\`、映射的网络驱动器) 时, 服务器离线不再每按一个键就卡住几秒**: 最多等 0.5 秒, 结果记住 10 秒
+- 对话框文件夹面板不再挡住对话框的按钮和文件列表 (#440): 对话框上下放不下整个列表时少显示几行 (至少 3 行, 其余滚动); 连 3 行都放不下时 (对话框很高或最大化) 只显示搜索框, 放在对话框下方、上方或标题栏上, 点它或按 `Ctrl+Shift+G` 才打开列表, 回到对话框又收起
+- 打开偏好设置更快: 左侧页面列表的图标只画一次 (原来画两次), 而且只处理图标所在的区域
+- 商店应用改为在程序内通过系统接口 (shell:AppsFolder) 列出, 不再启动隐藏的 PowerShell; 后台更新 (最多每小时一次) 等搜索窗口隐藏后才做, 手动重建索引时马上做
+- 一键更新解压只用 Windows 自带的 tar.exe, 去掉 PowerShell (Expand-Archive) 后备; 这样 ALTRun 自己不会再在后台运行 PowerShell (运行你的 .ps1 脚本不变)。解压失败时和以前一样提示打开下载页手动更新
+- 一键更新: 下载的更新包放在程序文件夹里的 `Update.tmp` 里校验、解压和复制 (完成或失败后删除), 不再放在 `%TEMP%`; 程序装在受保护的文件夹 (如 Program Files) 并以管理员身份运行时, 普通权限的程序无法在校验之后替换这些文件
+- 命令行 `ALTRun.exe -Update` 交给已经在运行的 ALTRun 时, 先询问再更新 (和托盘菜单里检查更新一样); ALTRun 还没运行时仍然直接更新
+- CapsLock "在管理员窗口里也生效": 开启时如果 ALTRun 所在的文件夹不用管理员权限就能修改, 先提醒 (其他程序可以替换 ALTRun, 再通过这个最高权限的计划任务拿到管理员权限), 建议先移到 C:\Program Files 等只有管理员能修改的文件夹; 仍然可以选择开启。SECURITY 和 Wiki 热键页也写明了
+- 管理员窗口里 Caps Lock 切换输入法的计划任务: 创建时用的 XML 文件名不可预测, 并在 schtasks 读取完之前锁住不让其他程序修改
+- 接收其他程序发来的消息 (WM_COPYDATA: 新启动的 ALTRun 传来的参数、Everything 的搜索结果、Total Commander 的当前文件夹) 时只读取对方给出的长度以内的数据, 格式不对的 Everything 结果直接忽略
+- 设置里的数值 (窗口宽度、显示行数、剪贴板历史条数、文件搜索结果数等) 超出可用范围时, 启动和偏好设置保存时改成最接近的允许值, 不是数字的改回默认值, 并写进日志; 避免手动编辑 ALTRun.json 或偏好设置里留空的数字框造成窗口过窄、列表被清空等问题
+- 学习排序只保留最近选过的 3000 项 (和 5000 个输入), 用久了 `Knowledge.json` 不会一直变大, 保存也不会越来越慢
+- 搜索片段时不再为每个匹配的片段展开占位符 (`{clipboard}` 会读剪贴板历史), 只在 `Ctrl+L` 大字显示时才展开
+- 关掉 "保存剪贴板历史" 时, 会问要不要把之前保存在磁盘上的历史也删掉
+- 脚本 "显示输出" 留下的临时文件一天后自动删除
+- 在新标签页中打开文件夹 (#440): 资源管理器的新标签没能打开 (或者没能选中文件) 时, 每次运行第一次会写进日志 `%Temp%\ALTRun.log`, 日志关着也写, 带原因和 Windows 版本。新标签靠的是资源管理器没有公开的命令, Windows 更新后可能失效; 以前只写调试日志 (默认关), 用户只看到文件夹改成在新窗口打开, 查不出原因。没有资源管理器窗口、文件夹不存在或连不上、Windows 10 等正常情况不写; 文件夹不存在时也不再先开一个空标签再关掉
 - 使用统计按每条系统命令分别记次数 (`Data\Usage.json` 里的 `System:<Id>`, 用热键运行的也记), 用来判断哪些系统命令有人用; 统计页面暂不显示, 合计次数不变
-
-## [2026.11.11.19]
-
-测试版。
-
-Test build.
-
-### 改进
 - 代码整理: Quick Switch 按功能拆成 5 个文件 (窗口监视、文件夹面板、收藏夹和 ☆ 菜单、文件对话框、文件管理器), 功能不变
 
-## [2026.11.11.18]
-
-测试版。
-
-Test build.
-
-### 改进
-- 自动更新解压只用 Windows 自带的 tar.exe, 去掉 PowerShell (Expand-Archive) 后备; 这样 ALTRun 自己不会再在后台运行 PowerShell (运行你的 .ps1 脚本不变)。解压失败时和以前一样提示打开下载页手动更新
-
-## [2026.11.11.17]
-
-测试版。
-
-Test build.
-
-### 改进
-- 商店应用改为在程序内通过系统接口 (shell:AppsFolder) 列出, 不再启动隐藏的 PowerShell; 后台更新 (最多每小时一次) 等搜索窗口隐藏后才做, 手动重建索引时马上做
-
-## [2026.11.11.16]
-
-测试版。
-
-Test build.
-
-### 修复
+#### 修复
+- **设置文件一时打不开** (同步工具或杀毒软件正在使用、云端文件离线) 不再被当成 "格式错误": 原来会把它改名为 `.bad`, 改名失败时默认设置之后可能盖掉原来的设置。现在先重试约 2 秒, 仍打不开就问 "重试" 还是 "退出", 文件不改名、不覆盖
+- 格式有错误的设置文件留不成 `.bad` 时 (改名和复制都失败), 也不再写入默认设置, 同样问重试还是退出
+- **剪贴板历史在启动时一时打不开, 不再被当成空的**: 原来下一次复制就会用新的列表覆盖历史文件, 并删掉其中的图片和长文本 (置顶的条目也丢)。现在先不动它, 保存之前再读一次, 读到后把原来的条目接在这次新复制的后面; 格式有错误的历史文件留成 `ClipboardHistory.json.bad`
+- 设置文件由更新版本的 ALTRun 保存时 (几台电脑共用数据文件夹而版本不同, 或者退回旧版本), 旧版本不再把设置版本号改回去 (原来新版本会因此把升级再做一遍), 不认识的设置原样保留; 启动时提示这台电脑上的 ALTRun 需要更新
+- **文件夹同步**: "其他参数" 里写了 `/MIR` 或 `/PURGE` 的任务会像镜像一样删除目标里多出来的文件, 原来却因为模式不是 "镜像" 而不预览、不询问, 源文件夹找不到或是空的也照样运行。现在这样的任务按镜像对待: 运行前先预览, 要删除时先询问; 源找不到或为空时不运行; 不能镜像到盘符、共享、OneDrive 文件夹和用户文件夹的根目录; 不能持续同步
+- 文件夹同步: "其他参数" 里有 `/MOV` 或 `/MOVE` (robocopy 复制完会删掉源里的文件) 时, 保存任务时提醒一次
+- 在新标签页中打开文件夹 (#440): **打开离线服务器或 NAS 上的文件夹时, ALTRun 不再卡住约 20 秒**; 网络文件夹 0.5 秒内没有响应时新开窗口, 由资源管理器去等
+- 在新标签页中打开文件夹 (#440): 很快地连续打开两个文件夹 (例如连按两个文件夹的热键) 时, 每个文件夹都进自己的新标签, 不会两次用到同一个标签而留下空标签; 等待被另一次打开打断太久时, 不再误判失败
 - Quick Switch: 在以管理员身份运行的程序的 "浏览文件夹" 对话框里点面板文件夹, 以前没有任何反应, 现在提示要以管理员身份运行 ALTRun 才能跳转; 选不中文件夹的原因都写进日志 (AppInn 论坛反馈)
-
-## [2026.11.11.15]
-
-测试版。
-
-Test build.
-
-### 改进
-- 设置里的数值 (窗口宽度、显示行数、剪贴板历史条数、文件搜索结果数等) 超出可用范围时, 启动和偏好设置保存时改成最接近的允许值, 不是数字的改回默认值, 并写进日志; 避免手动编辑 ALTRun.json 或偏好设置里留空的数字框造成窗口过窄、列表被清空等问题
-
-## [2026.11.11.14]
-
-测试版。
-
-Test build.
-
-### 改进
-- 浏览网络文件夹 (`\\server\share\`、映射的网络驱动器) 时, 服务器离线不再每按一个键就卡住几秒: 最多等 0.5 秒, 结果记住 10 秒
-- 关掉 "保存剪贴板历史" 时, 会问要不要把之前保存在磁盘上的历史也删掉
-- 浏览器历史搜索 (`h`) 退出 1 分钟后释放读入的网页列表 (历史长时有几 MB)
-- 脚本 "显示输出" 留下的临时文件一天后自动删除
-
-### 修复
+- Quick Switch 选择 "浏览文件夹" 对话框里的文件夹超时时, 不再释放对话框还可能读取的内存
+- 借用剪贴板的操作 (选中内容的操作、粘贴片段和文字、粘贴剪贴板历史里的文件和图片) 中途出错时, 原来的剪贴板内容也会恢复
+- 调试日志不再写入搜索框里的文字 (两处诊断信息原来会记前 30 个字), 只记长度
+- 偏好设置 → 应用搜索 / 搜索来源 的 "排除 (正则)" 填了无效的正则表达式时, 保存时提示并跳到那一页; 手动改设置文件写错时, 扫描忽略它并在日志里记一次, 不再反复报错。另外应用搜索的 "排除" 留空时, 商店应用不会再全部被排除
 - 搜索词里有 emoji 等字符时, 网页搜索的网址编码错误
 - Windows Terminal 在 `C:\` 这类根目录打开时路径出错; 文件夹名或命令里有 `;` 时被拆成两个标签
 - 脚本参数以 `\` 结尾 (如 `C:\`) 或 `\` 后面跟着 `"` 时, 脚本收到的参数不对; 经过 cmd 运行的脚本 (批处理、显示输出或静默运行的) 参数里有 `"` 时不运行并提示, 避免后面的字符被 cmd 当成命令
-- Quick Switch 选择 "浏览文件夹" 对话框里的文件夹超时时, 不再释放对话框还可能读取的内存
 - 学习排序、使用统计、应用索引缓存和同步任务的状态文件被手动改坏或只写了一半时, 忽略坏的条目, 不再在搜索或启动时报错
-- SQLite (浏览器历史) 只从 System32 加载 `winsqlite3.dll`
-
-## [2026.11.11.13]
-
-测试版。
-
-Test build.
-
-### 改进
-- CapsLock "在管理员窗口里也生效": 开启时如果 ALTRun 所在的文件夹不用管理员权限就能修改, 先提醒 (其他程序可以替换 ALTRun, 再通过这个最高权限的计划任务拿到管理员权限), 建议先移到 C:\Program Files 等只有管理员能修改的文件夹; 仍然可以选择开启。SECURITY 和 Wiki 热键页 (中英文) 也写明了
-
-## [2026.11.11.12]
-
-测试版。
-
-Test build.
-
-### 改进
-- 一键更新: 下载的更新包放在程序文件夹里的 `Update.tmp` 里校验、解压和复制 (完成或失败后删除), 不再放在 `%TEMP%`; 程序装在受保护的文件夹 (如 Program Files) 并以管理员身份运行时, 普通权限的程序无法在校验之后替换这些文件
-- 命令行 `ALTRun.exe -Update` 交给已经在运行的 ALTRun 时, 先询问再更新 (和托盘菜单里检查更新一样); ALTRun 还没运行时仍然直接更新
-- 管理员窗口里 Caps Lock 切换输入法的计划任务: 创建时用的 XML 文件名不可预测, 并在 schtasks 读取完之前锁住不让其他程序修改
-- 接收其他程序发来的消息 (WM_COPYDATA: 新启动的 ALTRun 传来的参数、Everything 的搜索结果、Total Commander 的当前文件夹) 时只读取对方给出的长度以内的数据, 格式不对的 Everything 结果直接忽略
-
-## [2026.11.11.11]
-
-测试版。
-
-Test build.
-
-### 改进
-- 学习排序只保留最近选过的 3000 项 (和 5000 个输入), 用久了 `Knowledge.json` 不会一直变大, 保存也不会越来越慢
-- 搜索片段时不再为每个匹配的片段展开占位符 (`{clipboard}` 会读剪贴板历史), 只在 Ctrl+L 大字显示时才展开
-
-### 修复
-- 调试日志不再写入搜索框里的文字 (两处诊断信息原来会记前 30 个字), 只记长度
-- 借用剪贴板的操作 (选中内容的操作、粘贴片段和文字、粘贴剪贴板历史里的文件和图片) 中途出错时, 原来的剪贴板内容也会恢复
-- 偏好设置 → 应用搜索 / 搜索来源 的 "排除 (正则)" 填了无效的正则表达式时, 保存时提示并跳到那一页; 手动改设置文件写错时, 扫描忽略它并在日志里记一次, 不再反复报错。另外应用搜索的 "排除" 留空时, 商店应用不会再全部被排除
-
-## [2026.11.11.10]
-
-测试版。
-
-Test build.
-
-### 修复
-- 文件夹同步: "其他参数" 里写了 `/MIR` 或 `/PURGE` 的任务会像镜像一样删除目标里多出来的文件, 原来却因为模式不是 "镜像" 而不预览、不询问, 源文件夹找不到或是空的也照样运行。现在这样的任务按镜像对待: 运行前先预览, 要删除时先询问; 源找不到或为空时不运行; 不能镜像到盘符、共享、OneDrive 文件夹和用户文件夹的根目录; 不能持续同步
-- 文件夹同步: "其他参数" 里有 `/MOV` 或 `/MOVE` (robocopy 复制完会删掉源里的文件) 时, 保存任务时提醒一次
-
-## [2026.11.11.9]
-
-测试版。
-
-Test build.
-
-### 修复
-- 设置文件一时打不开 (同步工具或杀毒软件正在使用、云端文件离线) 不再被当成 "格式错误": 原来会把它改名为 `.bad`, 改名失败时默认设置之后可能盖掉原来的设置。现在先重试约 2 秒, 仍打不开就问 "重试" 还是 "退出", 文件不改名、不覆盖
-- 格式有错误的设置文件留不成 `.bad` 时 (改名和复制都失败), 也不再写入默认设置, 同样问重试还是退出
-- 剪贴板历史在启动时一时打不开, 不再被当成空的: 原来下一次复制就会用新的列表覆盖历史文件, 并删掉其中的图片和长文本 (置顶的条目也丢)。现在先不动它, 保存之前再读一次, 读到后把原来的条目接在这次新复制的后面; 格式有错误的历史文件留成 `ClipboardHistory.json.bad`
-- 设置文件由更新版本的 ALTRun 保存时 (几台电脑共用数据文件夹而版本不同, 或者退回旧版本), 旧版本不再把设置版本号改回去 (原来新版本会因此把升级再做一遍), 不认识的设置原样保留; 启动时提示这台电脑上的 ALTRun 需要更新
-
-## [2026.11.11.8]
-
-测试版。
-
-Test build.
-
-### 改进
-- 打开偏好设置更快: 左侧页面列表的图标只画一次 (原来画两次), 而且只处理图标所在的区域
-
-## [2026.11.11.7]
-
-测试版。
-
-Test build.
-
-### 修复
-- 在新标签打开文件夹 (#440): 打开离线服务器或 NAS 上的文件夹时, ALTRun 不再卡住约 20 秒; 网络文件夹 0.5 秒内没有响应时新开窗口, 由资源管理器去等
-
-## [2026.11.11.6]
-
-测试版。
-
-Test build.
-
-### 改进
-- 对话框文件夹面板不再挡住对话框的按钮和文件列表 (#440): 对话框上下放不下整个列表时少显示几行 (至少 3 行, 其余滚动); 连 3 行都放不下时 (对话框很高或最大化) 只显示搜索框, 放在对话框下方、上方或标题栏上, 点它或按 `Ctrl+Shift+G` 才打开列表, 回到对话框又收起
-
-## [2026.11.11.5]
-
-测试版。
-
-Test build.
-
-### 修复
-- 在新标签打开文件夹 (#440): 很快地连续打开两个文件夹 (例如连按两个文件夹的热键) 时, 每个文件夹都进自己的新标签, 不会两次用到同一个标签而留下空标签; 等待被另一次打开打断太久时, 不再误判失败
-
-## [2026.11.11.4]
-
-测试版。
-
-Test build.
-
-### 新增
-- 搜索浏览器历史记录 (#448): 输入 `h 关键词` 搜索 Chrome、Edge、Brave、Vivaldi (所有用户配置) 的历史记录, 标题或网址里包含每个关键词的网页按最近访问时间排列, 中文标题也能用拼音首字母; 只输入 `h ` 列出最近访问的网页。`Enter` 在默认浏览器打开, `Alt+Enter` 复制网址。只在输入关键字时才搜, 不会混进普通搜索结果; 只在本机读取浏览器的 History 数据库 (用 Windows 自带的 winsqlite3.dll, 不锁定、不修改, 浏览器开着也可以), ALTRun 不另存历史记录、不上传。关键字和开关在偏好设置 → 功能。见 Wiki [浏览器书签](https://github.com/zhugecaomao/ALTRun/wiki/Bookmarks-zh)
-
-## [2026.11.11.3]
-
-测试版。
-
-Test build.
-
-### 新增
-- 自定义命令的目标或参数里可以写 `{hwnd}` 和 `{pid}` (#445): 运行时换成呼出 ALTRun 之前前台窗口的句柄和进程 ID (十进制), 脚本可以拿它对这个窗口做后续操作 (例如取它打开的文件)。从选中内容的动作面板 (`Ctrl+Alt+\`) 运行、置顶或最近使用的条目也是每次运行时才填入当时的窗口; 那个窗口已经关掉时换成空。见 Wiki [自定义命令](https://github.com/zhugecaomao/ALTRun/wiki/Custom-Commands-zh)
-
-## [2026.11.11.2]
-
-测试版。
-
-Test build.
-
-### 改进
-- 在新标签页中打开文件夹 (#440): 资源管理器的新标签没能打开 (或者没能选中文件) 时, 每次运行第一次会写进日志 `%Temp%\ALTRun.log`, 日志关着也写, 带原因和 Windows 版本。新标签靠的是资源管理器没有公开的命令, Windows 更新后可能失效; 以前只写调试日志 (默认关), 用户只看到文件夹改成在新窗口打开, 查不出原因。没有资源管理器窗口、文件夹不存在或连不上、Windows 10 等正常情况不写; 文件夹不存在时也不再先开一个空标签再关掉 (发布前体检发现)
-
-## [2026.11.11.1]
-
-测试版。
-
-Test build.
-
-### 修复
-- 同步窗口: 点 **停止** 之后再点 **预览**, 进度条不动。停止时进度条变成暂停 (黄色), 再预览切换到来回移动的进度条时没有恢复成正常状态, 暂停状态下它不会动; 现在先恢复正常 (发布前体检发现)
+- 同步窗口: 点 **停止** 之后再点 **预览**, 进度条不动。停止时进度条变成暂停 (黄色), 再预览切换到来回移动的进度条时没有恢复成正常状态; 现在先恢复正常
 
 ## [2026.11.11]
 
@@ -1415,27 +1327,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.20...HEAD
-[2026.11.11.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.19...2026.11.11.20
-[2026.11.11.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.18...2026.11.11.19
-[2026.11.11.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.17...2026.11.11.18
-[2026.11.11.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.16...2026.11.11.17
-[2026.11.11.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.15...2026.11.11.16
-[2026.11.11.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.14...2026.11.11.15
-[2026.11.11.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.13...2026.11.11.14
-[2026.11.11.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.12...2026.11.11.13
-[2026.11.11.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.11...2026.11.11.12
-[2026.11.11.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.10...2026.11.11.11
-[2026.11.11.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.9...2026.11.11.10
-[2026.11.11.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.8...2026.11.11.9
-[2026.11.11.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.7...2026.11.11.8
-[2026.11.11.7]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.6...2026.11.11.7
-[2026.11.11.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.5...2026.11.11.6
-[2026.11.11.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.4...2026.11.11.5
-[2026.11.11.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.3...2026.11.11.4
-[2026.11.11.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.2...2026.11.11.3
-[2026.11.11.2]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.1...2026.11.11.2
-[2026.11.11.1]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11...2026.11.11.1
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12...HEAD
+[2026.11.12]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.12
 [2026.11.11]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.11
 [2026.11.09]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.09
 [2026.11.03]: https://github.com/zhugecaomao/ALTRun/releases/tag/2026.11.03
