@@ -329,7 +329,9 @@ class PrefsPages {
             , [["Prefs.Col.Title", "Title", 140], ["Prefs.Col.Type", "Type", 70], ["Prefs.Col.Target", "Target", 190], ["Prefs.Col.Keyword", "Keyword", 70], ["Prefs.Col.Status", "Status", 70]]
             , CustomCommandProvider.EditorFields(), () => CustomCommandProvider.NewCommand()
             , (item, roots) => CustomCommandProvider.CheckTarget(item, roots), "", true
-            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)})
+            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.CommandKeys(item)}, ""
+            , {DeletePrompt: (item) => CustomCommandProvider.DeleteQuestion(item, PrefsPages._WorkingHotkeys())   ; the hotkeys that run it go too
+             , AfterDelete: (item) => CustomCommandProvider.RemoveHotkeys(item, PrefsPages._WorkingHotkeys())})  ; (the Hotkeys page redraws when shown)
         PrefsForm.Note("Prefs.CommandsNote")
     }
 
@@ -611,13 +613,25 @@ class PrefsPages {
 
     static BuildHotkeys() {
         PrefsForm.BeginPage("Prefs.Page.Hotkeys", 100)                         ; narrow label column: the list starts at the left edge (Caps Lock is on the Keyboard page)
-        PrefsForm.List("Hotkeys", 500
+        list := PrefsForm.List("Hotkeys", 500
             , [["Prefs.Col.Key", "Key", 150], ["Prefs.Col.Action", "Action", 200], ["Prefs.Col.WinTitle", "WinTitle", 190]]
             , (owner, title, item, original) => HotkeyEditor.Edit(owner, item, original, PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands"))   ; its own window: groups with descriptions, a summary line; the commands being edited (one just added can be chosen)
             , () => Map("Key", "", "Action", "Search", "SearchText", "", "WinTitle", ""), "", "", true
-            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.HotkeyKeys(item)})
+            , {Label: "Prefs.AddExamples", Keys: (item) => PrefsPages.HotkeyKeys(item)}, ""
+            , {RowColor: (item) => PrefsPages.HotkeyRowColor(item)})
+        PrefsForm._current.OnShow := () => list.Redraw.Call()                ; command names may have changed on the Commands page meanwhile
         PrefsForm.Note("Prefs.HotkeysNote")
     }
+
+    ; A hotkey whose custom command was deleted is red (the color of the edit window's line, as a COLORREF); others normal
+    static HotkeyRowColor(item) {
+        if !HotkeyEditor.IsMissing(item, PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands"))
+            return ""
+        rgb := Integer("0x" SubStr(HotkeyEditor.MissingColor, 2))
+        return ((rgb & 0xFF) << 16) | (rgb & 0xFF00) | ((rgb >> 16) & 0xFF)
+    }
+
+    static _WorkingHotkeys() => PreferencesWindow.GetPath(PreferencesWindow.Working, "Hotkeys")
 
     ; Quick switch for dialogs (Listary's Quick Switch)
     static BuildQuickSwitch() {

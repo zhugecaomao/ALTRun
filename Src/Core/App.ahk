@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.12.4"
+    static Version := "2026.11.12.5"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -508,7 +508,7 @@ class App {
             winTitle := entry.Has("WinTitle") ? Trim(entry["WinTitle"]) : ""
             try {
                 if (winTitle = "ALTRun")                                    ; only in ALTRun's search window (matching the title would include the Preferences window too)
-                    HotIf((*) => SearchWindow.IsActive())
+                    HotIf(App._inSearchWindow)
                 else if (winTitle != "")
                     HotIfWinActive(winTitle)
                 App._TryHotkey(entry["Key"], App._HotkeyAction(App.HotkeyActionId(entry), App.HotkeySearchText(entry)))
@@ -517,6 +517,25 @@ class App {
             }
             HotIf()
         }
+    }
+
+    static _inSearchWindow := (*) => SearchWindow.IsActive()               ; one function object: UnregisterHotkey turns off a hotkey of this context by it
+
+    ; Turns off a custom hotkey registered by _RegisterHotkeys (its command was deleted), in the same context (WinTitle); one that
+    ; wasn't registered is left alone
+    static UnregisterHotkey(entry) {
+        if !(entry is Map && entry.Has("Key") && entry["Key"] != "")
+            return
+        winTitle := entry.Has("WinTitle") ? Trim(entry["WinTitle"]) : ""
+        try {
+            if (winTitle = "ALTRun")
+                HotIf(App._inSearchWindow)
+            else if (winTitle != "")
+                HotIfWinActive(winTitle)
+            Hotkey(entry["Key"], "Off")
+        } catch as e
+            Logger.Warn("App: cannot turn off hotkey " entry["Key"] " - " e.Message)
+        HotIf()
     }
 
     ; Reinstalls the keyboard hook after waking from sleep, unlocking or plugging in / unplugging a monitor (the same effect as reloading). With the PC on for days,

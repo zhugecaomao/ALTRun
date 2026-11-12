@@ -20,6 +20,8 @@
 ;   HotkeyEditor.Summary(item, commands)   -> "Ctrl+Alt+F opens ALTRun and searches "folder <selected text>" in all programs."
 ;   HotkeyEditor.ActionName(id, commands)  -> the name shown for an Action ("Notepad", "(deleted command) custom:k3x9a2mq")
 ;   HotkeyEditor.ActionDetail(id, commands) -> {Text, Missing}: the gray line below it
+;   HotkeyEditor.ListText(item, commands)  -> the Action column of Preferences → Hotkeys ("Search: folder {selection}", "Run: Notepad", "Lock computer")
+;   HotkeyEditor.IsMissing(item, commands) -> true when the hotkey runs a custom command that was deleted (its row is red)
 ;===============================================================================
 
 class HotkeyEditor {
@@ -233,6 +235,25 @@ class HotkeyEditor {
         }
         command := HotkeyEditor._System(id)
         return {Text: IsObject(command) ? command["Subtitle"] : I18n.T("HotkeyEditor.Detail.Unknown"), Missing: false}
+    }
+
+    ; The Action column of the hotkey list: Search with its text, a custom command as "Run: <name>", everything else by name
+    ; (old forms as the edit window shows them, see Normalize)
+    static ListText(item, commands := "") {
+        normalized := HotkeyEditor.Normalize(item)
+        id := normalized["Action"]
+        if (id = "Search") {
+            text := Trim(normalized["SearchText"])
+            return (text = "") ? I18n.T("HotkeyEditor.Action.Search") : I18n.T("Prefs.Hotkey.Search", text)
+        }
+        if (SubStr(id, 1, 7) = "custom:" && !HotkeyEditor.IsMissing(normalized, commands))
+            return I18n.T("Prefs.Hotkey.Run", HotkeyEditor.ActionName(id, commands))
+        return HotkeyEditor.ActionName(id, commands)
+    }
+
+    static IsMissing(item, commands := "") {
+        id := (item is Map && item.Has("Action")) ? item["Action"] "" : ""
+        return SubStr(id, 1, 7) = "custom:" && !IsObject(AppSettings.ItemById(HotkeyEditor._Commands(commands), SubStr(id, 8)))
     }
 
     static _System(id) {

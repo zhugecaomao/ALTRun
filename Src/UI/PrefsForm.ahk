@@ -498,7 +498,10 @@ class PrefsForm {
     ; Keys gives the texts that identify an item (compared case-insensitively); a default sharing any of them with an item in the list is skipped
     ; menu: optional, the page's own commands [{Label, Click: (list, button) => ...}] for the "More" menu.
     ; Check paths, menu and examples share one button: shown as it is when there is just one of them, else a "More" drop-down button (MenuButton)
-    static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true, examples := "", menu := "") {
+    ; options: optional {RowColor, DeletePrompt, AfterDelete}, each a function of the item:
+    ;   RowColor: the row's text color as a COLORREF (0xBBGGRR), "" = the normal color (drawn with NM_CUSTOMDRAW)
+    ;   DeletePrompt: the question before deleting it ("" = "Delete '<first column>'?"); AfterDelete: called once it is removed
+    static List(path, height, columns, fields, newItem, check := "", buttons := "", withFilter := true, examples := "", menu := "", options := "") {
         items := PreferencesWindow.GetPath(PreferencesWindow.Working, path)
         headers := []
         for column in columns
@@ -621,11 +624,32 @@ class PrefsForm {
             row := listView.GetNext()
             if !row
                 return
-            if (MsgBox(I18n.T("Prefs.ConfirmDelete", listView.GetText(row, 1)), pageName, "YesNo Icon? Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
+            item := items[shown[row]]
+            prompt := Option("DeletePrompt") ? options.DeletePrompt.Call(item) : ""
+            if (MsgBox((prompt != "") ? prompt : I18n.T("Prefs.ConfirmDelete", listView.GetText(row, 1)), pageName, "YesNo Icon? Owner" PreferencesWindow.Gui.Hwnd) != "Yes")
                 return
             items.RemoveAt(shown[row])
+            if Option("AfterDelete")
+                options.AfterDelete.Call(item)
             PreferencesWindow.MarkDirty()
             Refresh(row)
+        }
+        Option(name) => IsObject(options) && options.HasOwnProp(name) && IsObject(options.%name%)
+        RowDraw(lParam) {                                                   ; NM_CUSTOMDRAW: RowColor's text color for the rows that have one
+            static CDDS_PREPAINT := 0x1, CDDS_ITEMPREPAINT := 0x10001, CDRF_NEWFONT := 0x2, CDRF_NOTIFYITEMDRAW := 0x20
+            stage := NumGet(lParam, A_PtrSize * 3, "UInt")
+            if (stage = CDDS_PREPAINT)
+                return CDRF_NOTIFYITEMDRAW
+            if (stage != CDDS_ITEMPREPAINT)
+                return 0
+            row := NumGet(lParam, (A_PtrSize = 8) ? 56 : 36, "UPtr") + 1    ; NMCUSTOMDRAW.dwItemSpec: the 0-based row
+            if (row > shown.Length)
+                return 0
+            color := options.RowColor.Call(items[shown[row]])
+            if (color = "")
+                return 0
+            NumPut("UInt", color, lParam, (A_PtrSize = 8) ? 80 : 48)        ; NMLVCUSTOMDRAW.clrText
+            return CDRF_NEWFONT
         }
 
         AddExamples(*) {                                                    ; the default items not yet in the list, then how many were added / skipped
@@ -645,6 +669,8 @@ class PrefsForm {
         }
 
         listView.OnEvent("DoubleClick", EditItem)
+        if Option("RowColor")
+            listView.OnNotify(-12, (ctrl, lParam) => RowDraw(lParam))       ; NM_CUSTOMDRAW
         Refresh()
         ReloadList() {                                                      ; after items were changed from outside (import)
             if IsObject(filterBox)
@@ -772,10 +798,8 @@ class PrefsForm {
             return ""
         if (key = "Target" && item.Has("Arguments") && Trim(item["Arguments"]) != "")   ; custom commands: the arguments follow the target
             return RegExReplace(item["Target"] " " item["Arguments"], "\s+", " ")
-        if (key = "Action" && App.HotkeyActionId(item) = "Search") {       ; custom hotkeys: Search and its text in one cell ("Search: folder {selection}")
-            text := Trim(App.HotkeySearchText(item))
-            return (text = "") ? "Search" : "Search: " text
-        }
+        if (key = "Action")                                                 ; custom hotkeys: "Search: folder {selection}", "Run: Notepad", a system command's name
+            return HotkeyEditor.ListText(item, PreferencesWindow.GetPath(PreferencesWindow.Working, "CustomCommands"))   ; the commands being edited ("" outside Preferences: the saved ones)
         if (key = "Key")                                                    ; custom hotkeys: shown as Ctrl+Alt+P, Middle button
             return HotkeyBox.Label(item[key])
         if (key = "Type") {                                                 ; the type of a custom command shows its translated name

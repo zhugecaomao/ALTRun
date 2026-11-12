@@ -349,15 +349,53 @@ class CustomCommandProvider {
         return CustomCommandProvider.Edit(item.Source)
     }
 
+    ; Ctrl+Del in the results: the hotkeys that run the command are deleted with it (the question says so) and stop at once
     static DeleteItem(item) {
         for index, command in AppSettings.CustomCommands {
             if (ObjPtr(command) = ObjPtr(item.Source)) {
                 AppSettings.CustomCommands.RemoveAt(index)
+                for entry in CustomCommandProvider.RemoveHotkeys(command, AppSettings.Hotkeys)
+                    App.UnregisterHotkey(entry)
                 CustomCommandProvider._ResetNarrowing()
                 return AppSettings.Save()
             }
         }
         return false
+    }
+
+    static DeletePrompt(item) {
+        return CustomCommandProvider.DeleteQuestion(item.Source, AppSettings.Hotkeys) || I18n.T("Search.ConfirmDelete", item.Title)
+    }
+
+    ; The custom hotkeys (entries of hotkeys) whose Action runs this command
+    static HotkeysFor(command, hotkeys) {
+        found := []
+        if !(command is Map && command.Has("Id") && command["Id"] != "" && hotkeys is Array)
+            return found
+        for entry in hotkeys
+            if (entry is Map && entry.Has("Action") && entry["Action"] == "custom:" command["Id"])
+                found.Push(entry)
+        return found
+    }
+
+    ; "Delete 'Notepad'? Hotkeys that run it are deleted too: Ctrl+Alt+N", "" when no hotkey runs it (the usual question then)
+    static DeleteQuestion(command, hotkeys) {
+        keys := ""
+        for entry in CustomCommandProvider.HotkeysFor(command, hotkeys)
+            keys .= (keys = "" ? "" : ", ") HotkeyBox.Label(entry.Has("Key") ? entry["Key"] : "")
+        return (keys = "") ? "" : I18n.T("Custom.ConfirmDeleteHotkeys", command["Title"], keys)
+    }
+
+    ; Removes the hotkeys that run this command from hotkeys (in place: the list Preferences shows) and returns them
+    static RemoveHotkeys(command, hotkeys) {
+        removed := CustomCommandProvider.HotkeysFor(command, hotkeys)
+        for entry in removed
+            for index, existing in hotkeys
+                if (ObjPtr(existing) = ObjPtr(entry)) {
+                    hotkeys.RemoveAt(index)
+                    break
+                }
+        return removed
     }
 
     ; Explorer's "Send to → ALTRun" (all selected paths come in at once):
