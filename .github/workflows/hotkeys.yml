@@ -1,0 +1,63 @@
+# Custom hotkeys that run a custom command, pressed for real on a Windows desktop (Tests\Integration\HotkeyCheck.ahk): a command
+# without {query}, a {query} command with text selected in another window (and the clipboard put back), and a hotkey whose command
+# was deleted. On pull requests that change how these hotkeys run, on main, or run by hand
+name: Hotkeys
+
+on:
+  pull_request:
+    paths:
+      - Src/Core/App.ahk
+      - Src/Providers/CustomCommandProvider.ahk
+      - Src/Extensions/SelectionActions.ahk
+      - Tests/Integration/HotkeyCheck.ahk
+      - .github/workflows/hotkeys.yml
+      - .github/actions/setup-ahk/**
+  push:
+    branches: [main]
+    paths:
+      - Src/Core/App.ahk
+      - Src/Providers/CustomCommandProvider.ahk
+      - Src/Extensions/SelectionActions.ahk
+      - Tests/Integration/HotkeyCheck.ahk
+      - .github/workflows/hotkeys.yml
+      - .github/actions/setup-ahk/**
+  workflow_dispatch:
+    inputs:
+      rounds:
+        description: "Rounds for each hotkey"
+        type: number
+        default: 3
+
+permissions:
+  contents: read
+
+concurrency:                                                            # a new commit on a PR stops the run for the old one; on main every commit keeps its run
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Download AutoHotkey v2                                      # pinned, the same as the release build (.github/actions/setup-ahk)
+        uses: ./.github/actions/setup-ahk
+
+      - name: Press the hotkeys
+        shell: pwsh
+        run: |
+          # A copy of its own: the check writes the copy's Data\ALTRun.json
+          $app = "C:\HotkeyCheck\app"
+          New-Item -ItemType Directory $app -Force | Out-Null
+          Copy-Item ALTRun.ahk, Lib, Src, Resources -Destination $app -Recurse
+          $rounds = "${{ inputs.rounds }}"
+          if (-not $rounds) { $rounds = 3 }
+          $proc = Start-Process tools/ahk/AutoHotkey64.exe -ArgumentList '/ErrorStdOut', 'Tests\Integration\HotkeyCheck.ahk', "`"$app`"", $rounds `
+                  -PassThru -NoNewWindow -RedirectStandardOutput check.log -RedirectStandardError check.err
+          if (-not $proc.WaitForExit(300000)) { $proc.Kill(); Get-Content check.log, check.err -ErrorAction SilentlyContinue; throw "The check didn't finish in 5 minutes" }
+          Get-Content check.log, check.err -ErrorAction SilentlyContinue
+          if ($proc.ExitCode -ne 0) { throw "$($proc.ExitCode) round(s) failed" }
