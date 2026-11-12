@@ -1,0 +1,98 @@
+# Deletes the runs left behind by workflows whose file no longer exists on any branch (temporary probes and the like), so they
+# drop out of the Actions sidebar. Run by hand; by default it only lists what it would delete (Job Summary and log).
+# A workflow counts as removed only when its file is missing on every branch; GitHub's own workflows (path "dynamic/...") are skipped.
+# With "delete" on it deletes at most MAX_DELETES completed runs per run (the GITHUB_TOKEN API limit is about 1000 requests an hour);
+# run it again for the rest.
+name: Clean up runs
+
+on:
+  workflow_dispatch:
+    inputs:
+      delete:
+        description: "Delete the runs (off = only list them)"
+        type: boolean
+        default: false
+
+permissions:
+  actions: write                                                        # list and delete workflow runs
+  contents: read                                                        # read the workflow files on every branch
+
+concurrency:
+  group: cleanup-runs
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      DELETE: ${{ inputs.delete }}
+      MAX_DELETES: 800
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0                                                # all branches, to see which workflow files still exist
+
+      - name: Find and clean up runs of removed workflows
+        run: |
+          set -euo pipefail
+          # Workflow files on every branch; a failing git command stops the job, so a lookup error never counts as "removed"
+          git for-each-ref --format='%(refname)' refs/remotes/origin | grep -v '/HEAD$' > branches.txt
+          echo "Branches: $(wc -l < branches.txt)"
+          : > present.txt
+          while read -r ref; do
+            git ls-tree -r --name-only "$ref" -- .github/workflows >> present.txt
+          done < branches.txt
+          sort -u present.txt -o present.txt
+
+          gh api --paginate "repos/$REPO/actions/workflows?per_page=100" \
+            --jq '.workflows[] | [.id, .path, .name] | @tsv' > workflows.tsv
+          echo "Workflows in Actions: $(wc -l < workflows.tsv)"
+
+          {
+            if [ "$DELETE" = "true" ]; then echo "## Deleting runs of removed workflows"; else echo "## Dry run: runs of removed workflows (nothing deleted)"; fi
+            echo
+            echo "| Workflow | Path | Runs | First run | Last run |"
+            echo "|---|---|---:|---|---|"
+          } > summary.md
+
+          total=0; removed=0; deleted=0; failed=0; skipped=0; left=0
+          while IFS=$'\t' read -r id path name; do
+            case "$path" in dynamic/*) continue ;; esac              # GitHub's own (Dependabot, CodeQL, Pages)
+            grep -qxF "$path" present.txt && continue
+            removed=$((removed + 1))
+            gh api --paginate "repos/$REPO/actions/workflows/$id/runs?per_page=100" \
+              --jq '.workflow_runs[] | [.id, .status, .created_at] | @tsv' > runs.tsv < /dev/null
+            count=$(wc -l < runs.tsv)
+            total=$((total + count))
+            first=$(cut -f3 runs.tsv | sort | head -n1 | cut -c1-10)
+            last=$(cut -f3 runs.tsv | sort | tail -n1 | cut -c1-10)
+            echo "$name ($path): $count runs, ${first:--} .. ${last:--}"
+            echo "| $name | \`$path\` | $count | ${first:--} | ${last:--} |" >> summary.md
+            [ "$DELETE" = "true" ] || continue
+            while IFS=$'\t' read -r run status created; do
+              if [ "$status" != "completed" ]; then skipped=$((skipped + 1)); continue; fi
+              if [ "$deleted" -ge "$MAX_DELETES" ]; then left=$((left + 1)); continue; fi
+              if gh api -X DELETE "repos/$REPO/actions/runs/$run" --silent < /dev/null; then
+                deleted=$((deleted + 1))
+              else
+                failed=$((failed + 1)); echo "::warning::Could not delete run $run of $path"
+              fi
+            done < runs.tsv
+          done < workflows.tsv
+
+          {
+            echo "| **Total: $removed workflows** | | **$total** | | |"
+            echo
+            if [ "$DELETE" = "true" ]; then
+              echo "Deleted $deleted runs; failed $failed; skipped $skipped not completed; left $left over the limit of $MAX_DELETES (run again for those)."
+            else
+              echo "Run again with \"delete\" on to delete them."
+            fi
+          } >> summary.md
+          cat summary.md >> "$GITHUB_STEP_SUMMARY"
+          echo "Removed workflows: $removed, runs: $total"
+          [ "$DELETE" != "true" ] || echo "Deleted: $deleted, failed: $failed, skipped (not completed): $skipped, left over the limit: $left"
+          [ "$failed" -eq 0 ]

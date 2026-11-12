@@ -268,6 +268,7 @@ GitHub → Actions → **Delayed start** 用 `Tests\Integration\DelayedStartChec
 - 截图测试: 检查主要窗口在不同语言 / 主题下的显示; 不验证所有交互流程。
 - 性能基准: 在 Windows 上模拟常见操作比较改动前后的耗时, 应在相同环境下对比。
 - Wiki 自动检查只能发现缺页和断链, 不能判断说明是否准确或是否覆盖每个设置项; 修改设置时仍需逐项对照代码和中英文文档。
+- 文件已删除的 workflow (临时探测) 的运行记录会留在 Actions 侧栏。GitHub → Actions → **Clean up runs** (`.github/workflows/cleanup-runs.yml`) 列出文件在所有分支上都已不存在的 workflow 和它们的运行记录; 勾选 "delete" 再运行就删除这些记录。删掉临时 workflow 和它的分支后运行一次。
 
 ### 在用户电脑上排查按键问题
 
