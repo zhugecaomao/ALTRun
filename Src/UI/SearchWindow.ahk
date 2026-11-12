@@ -658,7 +658,7 @@ class SearchWindow {
             return
         SearchWindow._blankLogged := true
         Logger.Warn("SearchWindow: row " row " has no result (results " count ", offset " SearchWindow.Session.Offset ", list rows " SearchWindow.List.GetCount()
-            . ", window rows " SearchWindow._shownRows ", mode " SearchWindow.Session.Mode ", input '" SubStr(SearchWindow.Input.Value, 1, 30) "')")
+            . ", window rows " SearchWindow._shownRows ", mode " SearchWindow.Session.Mode ", input " StrLen(SearchWindow.Input.Value) " chars)")
         for entry in SearchWindow._recent
             Logger.Debug("  recent results: " entry)
     }
@@ -734,7 +734,7 @@ class SearchWindow {
         if (Logger.Enabled && !SearchWindow._skipLogged) {
             SearchWindow._skipLogged := true
             Logger.Warn("SearchWindow: custom draw skipped (results " SearchWindow.Session.Results.Length ", list rows " list.GetCount() ", mode " SearchWindow.Session.Mode
-                . (SearchWindow.Session.FileMode ? " (files)" : "") ", input '" SubStr(SearchWindow.Input.Value, 1, 30) "'), repainting")
+                . (SearchWindow.Session.FileMode ? " (files)" : "") ", input " StrLen(SearchWindow.Input.Value) " chars), repainting")
             for entry in SearchWindow._recent
                 Logger.Debug("  recent results: " entry)
         }

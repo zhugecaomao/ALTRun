@@ -21,6 +21,14 @@ class TextTools {
 
     static Lines(text) => StrSplit(text, "`n", "`r")
 
+    ; "" when pattern is a valid regular expression (or empty), otherwise the error, e.g. "Compile error 14 at offset 4: missing )"
+    static RegexError(pattern) {
+        try RegExMatch("", pattern)
+        catch as e
+            return e.Message
+        return ""
+    }
+
     ; One item per line: trimmed, blank lines dropped (the lists edited in Preferences)
     static SplitLines(text) {
         items := []

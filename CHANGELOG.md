@@ -5,6 +5,21 @@
 
 ## [未发布]
 
+## [2026.11.11.11]
+
+测试版。
+
+Test build.
+
+### 改进
+- 学习排序只保留最近选过的 3000 项 (和 5000 个输入), 用久了 `Knowledge.json` 不会一直变大, 保存也不会越来越慢
+- 搜索片段时不再为每个匹配的片段展开占位符 (`{clipboard}` 会读剪贴板历史), 只在 Ctrl+L 大字显示时才展开
+
+### 修复
+- 调试日志不再写入搜索框里的文字 (两处诊断信息原来会记前 30 个字), 只记长度
+- 借用剪贴板的操作 (选中内容的操作、粘贴片段和文字、粘贴剪贴板历史里的文件和图片) 中途出错时, 原来的剪贴板内容也会恢复
+- 偏好设置 → 应用搜索 / 搜索来源 的 "排除 (正则)" 填了无效的正则表达式时, 保存时提示并跳到那一页; 手动改设置文件写错时, 扫描忽略它并在日志里记一次, 不再反复报错。另外应用搜索的 "排除" 留空时, 商店应用不会再全部被排除
+
 ## [2026.11.11.10]
 
 测试版。
@@ -1305,7 +1320,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.10...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.11...HEAD
+[2026.11.11.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.10...2026.11.11.11
 [2026.11.11.10]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.9...2026.11.11.10
 [2026.11.11.9]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.8...2026.11.11.9
 [2026.11.11.8]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.7...2026.11.11.8

@@ -286,18 +286,22 @@ class ActionCatalog {
             return true
         }
         ClipboardData.Borrow(delay + 1000)
-        savedClipboard := ClipboardAll()
-        A_Clipboard := ""
-        A_Clipboard := text
-        if !ClipWait(1) {
-            A_Clipboard := savedClipboard
-            return false
+        savedClipboard := ClipboardAll(), restore := true
+        try {                                                               ; the user's clipboard comes back even when this fails half way
+            A_Clipboard := ""
+            A_Clipboard := text
+            if !ClipWait(1)
+                return false
+            SendInput(typed ? "{Text}" text : "^v")
+            if keep {                                                       ; Keep: the text stays on the clipboard
+                restore := false
+                return true
+            }
+            Sleep(delay)
+        } finally {
+            if restore
+                A_Clipboard := savedClipboard
         }
-        SendInput(typed ? "{Text}" text : "^v")
-        if keep
-            return true
-        Sleep(delay)
-        A_Clipboard := savedClipboard
         return true
     }
 

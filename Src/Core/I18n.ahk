@@ -582,6 +582,7 @@ class I18n {
         s["Hotkey.XButton2"]           := "Mouse forward button"
         s["Hotkey.LButton"]            := "Left mouse button"
         s["Hotkey.RButton"]            := "Right mouse button"
+        s["Prefs.BadPattern"]          := "{1} on the {2} page isn't a valid regular expression:`n{3}`n`nFix it before saving."
         s["Prefs.HotkeyClash"]         := "{1} is used twice: {2} and {3}. Only one of them will work.`n`nSave anyway?"
         s["Prefs.Page.General"]        := "General"
         s["Prefs.Page.Window"]         := "Search Window"

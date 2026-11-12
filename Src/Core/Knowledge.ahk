@@ -13,6 +13,7 @@
 ;   Knowledge.Record(queryText, uid)    after running a result
 ;   Knowledge.Boost(queryText, uid)     the bonus when ranking search results
 ;   Knowledge.History                   recent search text (newest first)
+;   Knowledge.Prune()                   before each save: forgets the results chosen longest ago past MaxPicks / MaxQueries
 ;===============================================================================
 
 class Knowledge {
@@ -22,6 +23,8 @@ class Knowledge {
     static History     := []
     static Recent      := []         ; recently opened items (newest first), see RecentProvider
     static MaxQueryLen := 20
+    static MaxPicks    := 3000       ; past these the oldest are forgotten when saving (Prune), so the file and each save stay small
+    static MaxQueries  := 5000
     static _saveTimer  := ""
 
     static Load() {
@@ -44,11 +47,66 @@ class Knowledge {
     }
 
     static Save() {
+        Knowledge.Prune()
         try {
             JSON.WriteFile(Knowledge.File, Map("Picks", Knowledge.Picks, "QueryPicks", Knowledge.QueryPicks, "History", Knowledge.History, "Recent", Knowledge.Recent))
         } catch as e {
             Logger.Error("Knowledge.Save: " e.Message)
         }
+    }
+
+    ; Past MaxPicks results, the ones chosen longest ago are forgotten, and what they were chosen for with them; past MaxQueries inputs,
+    ; the ones whose results were chosen longest ago. Ties at the cut are kept, so a few more may stay
+    static Prune() {
+        if (Knowledge.Picks.Count > Knowledge.MaxPicks) {
+            cutoff := Knowledge._Cutoff(Knowledge.Picks, Knowledge.MaxPicks, (entry) => Knowledge._Last(entry))
+            gone := []
+            for uid, entry in Knowledge.Picks
+                if (Knowledge._Last(entry) < cutoff)
+                    gone.Push(uid)
+            for uid in gone
+                Knowledge.Picks.Delete(uid)
+            empty := []
+            for queryText, picks in Knowledge.QueryPicks {
+                if !(picks is Map) {
+                    empty.Push(queryText)
+                    continue
+                }
+                for uid in gone
+                    if picks.Has(uid)
+                        picks.Delete(uid)
+                if !picks.Count
+                    empty.Push(queryText)
+            }
+            for queryText in empty
+                Knowledge.QueryPicks.Delete(queryText)
+        }
+        if (Knowledge.QueryPicks.Count > Knowledge.MaxQueries) {
+            cutoff := Knowledge._Cutoff(Knowledge.QueryPicks, Knowledge.MaxQueries, (picks) => Knowledge._NewestPick(picks))
+            gone := []
+            for queryText, picks in Knowledge.QueryPicks
+                if (Knowledge._NewestPick(picks) < cutoff)
+                    gone.Push(queryText)
+            for queryText in gone
+                Knowledge.QueryPicks.Delete(queryText)
+        }
+    }
+
+    ; The time (yyyyMMddHHmmss as a number, 0 = unknown) of the keep-th newest value in items; those older than it are dropped
+    static _Cutoff(items, keep, timeOf) {
+        times := ""
+        for key, value in items
+            times .= timeOf(value) "`n"
+        return Number(StrSplit(Sort(RTrim(times, "`n"), "N R"), "`n")[keep])
+    }
+    static _Last(entry) => (entry is Map && entry.Has("Last") && IsNumber(entry["Last"])) ? Number(entry["Last"]) : 0
+    static _NewestPick(picks) {
+        newest := 0
+        if (picks is Map)
+            for uid in picks
+                if (Knowledge.Picks.Has(uid) && (last := Knowledge._Last(Knowledge.Picks[uid])) > newest)
+                    newest := last
+        return newest
     }
 
     static Record(queryText, uid) {

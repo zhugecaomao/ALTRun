@@ -275,6 +275,9 @@ class CoreTests {
         eq("blank", TextTools.RemoveBlankLines("a`n`n  `nb"), "a`r`nb")
         eq("trim", TextTools.TrimLines("  a `n`tb"), "a`r`nb")
         eq("reverse", TextTools.Reverse("abc"), "cba")
+        eq("regex ok", TextTools.RegexError("i)(uninstall|readme)"), "")
+        eq("regex empty", TextTools.RegexError(""), "")
+        TestRunner.True("TextTools.regex error", TextTools.RegexError("i)(uninstall|readme") != "")
         eq("url", Url.Encode("a b/中"), "a%20b%2F%E4%B8%AD")
     }
 
@@ -331,6 +334,27 @@ class CoreTests {
         TestRunner.True("Knowledge.boost prefix", Knowledge.Boost("not", "app:notepad") > 20)
         TestRunner.Equal("Knowledge.history", Knowledge.History[1], "no")
         TestRunner.Equal("Knowledge.history dedupe", Knowledge.History.Length, 1)
+
+        ; Prune: past MaxPicks the results chosen longest ago go, with their inputs; past MaxQueries the inputs whose results were chosen longest ago
+        savedPicks := Knowledge.MaxPicks, savedQueries := Knowledge.MaxQueries
+        Knowledge.MaxPicks := 3, Knowledge.MaxQueries := 2
+        Knowledge.Picks := Map("a", Map("Count", 1, "Last", "20260101000000"), "b", Map("Count", 9, "Last", "20260301000000")
+            , "c", Map("Count", 1, "Last", "20260201000000"), "d", Map("Count", 1, "Last", "20260401000000"), "e", "not a map")
+        Knowledge.QueryPicks := Map("x", Map("a", 1), "y", Map("a", 1, "b", 2), "z", Map("c", 1), "w", Map("d", 1))
+        Knowledge.Prune()
+        keys(m) {
+            text := ""
+            for key in m
+                text .= key ","
+            return RTrim(text, ",")
+        }
+        TestRunner.Equal("Knowledge.prune picks", keys(Knowledge.Picks), "b,c,d")
+        TestRunner.Equal("Knowledge.prune queries", keys(Knowledge.QueryPicks), "w,y")       ; x (only a) went with a; of y, z, w the oldest (z: c) went
+        TestRunner.Equal("Knowledge.prune query keeps the rest", keys(Knowledge.QueryPicks["y"]), "b")
+        Knowledge.Prune()
+        TestRunner.Equal("Knowledge.prune under the limits: nothing changes", keys(Knowledge.Picks) "|" keys(Knowledge.QueryPicks), "b,c,d|w,y")
+        Knowledge.MaxPicks := savedPicks, Knowledge.MaxQueries := savedQueries
+        Knowledge.Picks := Map(), Knowledge.QueryPicks := Map(), Knowledge.History := []
     }
 
     ; Every setting the code reads exists in AppSettings.Defaults() (a typo in a key name would only show at run time).

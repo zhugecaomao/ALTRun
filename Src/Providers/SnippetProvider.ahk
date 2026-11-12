@@ -51,7 +51,7 @@ class SnippetProvider {
                 Kind: "text", Arg: snippet["Text"], Icon: SnippetProvider.Icon,
                 Uid: "snippet:" StrLower(keyword "|" name), Score: score + (onlySnippets ? 30 : 0), Source: snippet,
                 Exclusive: onlySnippets && query.HasRest,
-                LargeText: SnippetProvider.Expand(snippet["Text"])
+                LargeText: SnippetProvider._ExpandLater(snippet["Text"])   ; only for Ctrl+L: expanding reads the clipboard (history), not wanted on every key
             })
             item.OnRun := (resultItem) => SnippetProvider.Paste(resultItem.Arg)
             results.Push(item)
@@ -59,11 +59,18 @@ class SnippetProvider {
         return results
     }
 
-    ; The text compared when searching: each keyword and the name
+    static _ExpandLater(text) => () => SnippetProvider.Expand(text)
+
+    ; The text compared when searching: each keyword and the name (kept, not built again on every key)
     static _MatchTexts(keyword, name) {
-        texts := SearchQuery.Keywords(keyword).Clone()
-        texts.Push(name)
-        return texts
+        static cache := Map()
+        key := keyword "`n" name
+        if !cache.Has(key) {
+            texts := SearchQuery.Keywords(keyword).Clone()
+            texts.Push(name)
+            cache[key] := texts
+        }
+        return cache[key]
     }
 
     static EditorFields() {
