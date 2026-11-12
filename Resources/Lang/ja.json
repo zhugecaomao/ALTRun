@@ -226,6 +226,7 @@
   "HotkeyEditor.Summary.InALTRun": "(ALTRun の検索ウィンドウのみ)。",
   "HotkeyEditor.Choose": "選択...",
   "HotkeyEditor.Deleted": "(削除されたコマンド) {1}",
+  "HotkeyEditor.Clash": "{1} で既に使われています。どちらか一方しか動作しません。",
   "HotkeyEditor.Detail.Search": "ALTRun · 検索ウィンドウを開き、下の検索テキストを入力します",
   "HotkeyEditor.Detail.Toggle": "ALTRun · 検索ウィンドウを表示し、手前にあるときは隠します",
   "HotkeyEditor.Detail.Query": "{query} が選択したテキストまたはパスになります",

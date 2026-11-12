@@ -5,6 +5,16 @@
 
 ## [未发布]
 
+## [2026.11.12.6]
+
+测试版。
+
+Test build.
+
+### 改进
+- 热键编辑窗口当场检查重复: 别的热键在同样的窗口里已经用了这组键 (ALTRun 热键、第二热键、选中内容热键、剪贴板历史、其他自定义热键) 时, 窗口下方的说明下面一行红字写出是哪一个, 只有一个会起作用; 不拦 确定。以前只在偏好设置按 应用 时才提示
+- 按 应用 时的重复提示里, 自定义热键写名称 (`自定义热键 (运行: Notepad)`), 不再是 `custom:<Id>`
+
 ## [2026.11.12.5]
 
 测试版。
@@ -1390,7 +1400,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.5...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.6...HEAD
+[2026.11.12.6]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.5...2026.11.12.6
 [2026.11.12.5]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.4...2026.11.12.5
 [2026.11.12.4]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.3...2026.11.12.4
 [2026.11.12.3]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.12.2...2026.11.12.3

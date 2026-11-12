@@ -1661,9 +1661,70 @@ class ProviderTests {
             ui.SetAction.Call("ToggleWindow")                               ; Show / hide: no search text
             eq(language[1] " read without search", HotkeyEditor.Read(ui)["Action"] "|" HotkeyEditor.Read(ui)["SearchText"] "|" ui.SearchText.Enabled, "ToggleWindow||0")
             eq(language[1] " detail", ui.Detail.Value, I18n.T("HotkeyEditor.Detail.Toggle"))
+            eq(language[1] " no clash, no red line", ui.ClashText.Value, "")
+            g.Destroy()
+            ; a clash: the red line below the summary, in two lines at most, inside the window; the hotkey being edited isn't a clash with itself
+            editing := Map("Key", "^!f", "Action", "Lock", "WinTitle", "")
+            inUse := [{Key: "!Space", Label: I18n.T("Prefs.Hotkey"), WinTitle: "", Entry: ""}, {Key: "^!f", Label: "x", WinTitle: "", Entry: editing}
+                , {Key: "~^!F", Label: I18n.T("Prefs.Page.Hotkeys") " (" I18n.T("Prefs.Hotkey.Search", "folder {selection} with a rather long search text") ")", WinTitle: "", Entry: ""}]
+            ui := HotkeyEditor.Build(owner, editing, editing, "", [], inUse)
+            g := ui.Gui
+            g.Show("Hide")
+            WinGetClientPos(, , &clientW, &clientH, g.Hwnd)
+            eq(language[1] " clash shown", ui.ClashText.Value, I18n.T("HotkeyEditor.Clash", inUse[3].Label))
+            ui.ClashText.GetPos(&clashX, &clashY, &clashW, &clashH), ui.SummaryText.GetPos(, &summaryY, , &summaryH)
+            TestRunner.True("HotkeyEditorWindow." language[1] " clash below the summary, inside the window", clashY >= summaryY + summaryH && clashY + clashH <= clientH && clashX + clashW <= clientW)
+            TestRunner.True("HotkeyEditorWindow." language[1] " clash in two lines (" Win.TextExtent(ui.ClashText.Hwnd, ui.ClashText.Text) " <= 2 x " clashW ")"
+                , Win.TextExtent(ui.ClashText.Hwnd, ui.ClashText.Text) <= 2 * clashW - 40)   ; a little room for where the words wrap
+            ui.Only.Value := 1, ui.WinTitle.Value := "ahk_exe notepad.exe"
+            ui.SetAction.Call("Lock")                                       ; the window checks again (as on any change)
+            eq(language[1] " only in a window: no clash with global ones", ui.ClashText.Value, "")
             g.Destroy()
         }
         owner.Destroy()
+        I18n.Init(savedLang)
+    }
+
+    ; A hotkey that the same key press of another one also triggers in the same windows (the red line of the edit window)
+    static HotkeyEditorClash() {
+        eq := (n, a, e) => TestRunner.Equal("HotkeyEditorClash." n, a, e)
+        label(clash) => IsObject(clash) ? clash.Label : ""
+        inUse := [{Key: "!Space", Label: "show", WinTitle: "", Entry: ""}
+            , {Key: "^!c", Label: "clipboard", WinTitle: "", Entry: ""}
+            , {Key: "^!t", Label: "terminal", WinTitle: "ahk_class CabinetWClass", Entry: ""}]
+        hk(key, winTitle := "") => Map("Key", key, "Action", "Lock", "WinTitle", winTitle)
+        eq("same key", label(HotkeyEditor.Clash(hk("!Space"), inUse)), "show")
+        eq("~ and order of modifiers don't matter", label(HotkeyEditor.Clash(hk("~!^C"), inUse)), "clipboard")
+        eq("left Alt is one of either Alt", label(HotkeyEditor.Clash(hk("<!Space"), inUse)), "show")
+        eq("other key", label(HotkeyEditor.Clash(hk("!r"), inUse)), "")
+        eq("no key", label(HotkeyEditor.Clash(hk(""), inUse)), "")
+        eq("limited to a window over a global one: fine", label(HotkeyEditor.Clash(hk("!Space", "ahk_exe notepad.exe"), inUse)), "")
+        eq("the same window", label(HotkeyEditor.Clash(hk("^!T", " ahk_class CabinetWClass"), inUse)), "terminal")
+        eq("a global one over one limited to a window: fine", label(HotkeyEditor.Clash(hk("^!t"), inUse)), "")
+
+        ; the hotkeys in use: the fixed ones as settings, custom ones named as in the list (window-limited ones too); the one being edited left out
+        savedLang := I18n.Lang
+        I18n.Init("en")
+        data := AppSettings.Defaults()
+        data["CustomCommands"] := [Map("Id", "plain001", "Title", "Notepad", "Type", "File", "Target", "notepad.exe")]
+        own := Map("Key", "^!n", "Action", "custom:plain001", "WinTitle", "")
+        data["Hotkeys"] := [own, Map("Key", "^!t", "Action", "custom:plain001", "WinTitle", "ahk_exe code.exe")]
+        list := PreferencesWindow.AllHotkeys(data)
+        keys := ""
+        for each in list
+            keys .= each.Key "/" each.WinTitle "|"
+        eq("all hotkeys", keys, "!Space/|!r/|^!\/|^!c/|^!n/|^!t/ahk_exe code.exe|")
+        eq("custom one named as in the list", list[5].Label, "Hotkeys (Run: Notepad)")
+        others := HotkeyEditor._Others(list, own)
+        eq("the one being edited left out", others.Length, list.Length - 1)
+        eq("not a clash with itself", label(HotkeyEditor.Clash(own, others)), "")
+        eq("a new one with its keys", label(HotkeyEditor.Clash(hk("^!n"), HotkeyEditor._Others(list, ""))), "Hotkeys (Run: Notepad)")
+        eq("the boxes not applied yet", PreferencesWindow.AllHotkeys(data, (path) => (path = "General.Hotkey") ? "#Space" : PreferencesWindow.GetPath(data, path))[1].Key, "#Space")
+        data["Features"]["Clipboard"]["Enabled"] := false
+        keys := ""
+        for each in PreferencesWindow._GlobalHotkeys(data)
+            keys .= each.Key "|"
+        eq("global ones; clipboard history off", keys, "!Space|!r|^!\|^!n|")
         I18n.Init(savedLang)
     }
 
