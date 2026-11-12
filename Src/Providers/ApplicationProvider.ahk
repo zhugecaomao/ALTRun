@@ -438,7 +438,11 @@ class ApplicationProvider {
             return false
         try {
             data := JSON.Parse(FileRead(ApplicationProvider.IndexFile, "UTF-8"))
-            ApplicationProvider.Apps := data["Apps"]
+            apps := []                                                      ; only entries a search can show (the file may be cut short or edited)
+            for entry in (data["Apps"] is Array ? data["Apps"] : [])
+                if (entry is Map && entry.Has("Title") && entry.Has("Target") && entry.Has("Detail") && !IsObject(entry["Target"]))
+                    apps.Push(entry)
+            ApplicationProvider.Apps := apps
             return true
         } catch as e {
             Logger.Error("ApplicationProvider: cannot read cache - " e.Message)

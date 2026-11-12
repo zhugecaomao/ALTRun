@@ -23,7 +23,7 @@ Privacy:
 - Content copied from password managers (KeePass, 1Password, Bitwarden...) is never recorded, nor is content marked "don't add to clipboard history"
 - The clipboard is read about 0.15 s after a copy and closed right away (images are saved as PNG after it is closed), so screen capture tools and other programs that use the clipboard again right after writing it are not blocked
 - Add other programs you don't want recorded to `Features.Clipboard.IgnoreApps`
-- With `Persist = 0` the history is kept in memory only and is gone when ALTRun quits (no images either); otherwise it's saved on this PC only, in `%LOCALAPPDATA%\ALTRun\ClipboardHistory.json` (very long items and images separately in `%LOCALAPPDATA%\ALTRun\Clipboard\`), so it doesn't travel with a synced or portable Data folder. Preferences → Clipboard → "Save in" can keep the text history in the Data folder instead (`LocalFiles = 1`), or everything (`LocalFiles = 0`)
+- With `Persist = 0` the history is kept in memory only and is gone when ALTRun quits (no images either); turning it off in Preferences asks whether to delete the history saved so far too; otherwise it's saved on this PC only, in `%LOCALAPPDATA%\ALTRun\ClipboardHistory.json` (very long items and images separately in `%LOCALAPPDATA%\ALTRun\Clipboard\`), so it doesn't travel with a synced or portable Data folder. Preferences → Clipboard → "Save in" can keep the text history in the Data folder instead (`LocalFiles = 1`), or everything (`LocalFiles = 0`)
 - Preferences → Clipboard can clear the history
 
 ![Preferences → Clipboard](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-clipboard.png)

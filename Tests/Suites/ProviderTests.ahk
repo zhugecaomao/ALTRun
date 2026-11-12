@@ -1802,6 +1802,10 @@ class ProviderTests {
         savedImport := AppSettings.ImportedFrom, AppSettings.ImportedFrom := "ALTRun.ini"   ; imported from 2.x (no clipboard history there): the new default
         eq("imported from 2.x", AppSettings._KeepClipboardStorage(Map("Features", Map("Help", Map("Enabled", 1)))), false)
         AppSettings.ImportedFrom := savedImport
+        ; turning off saving the history may delete what was saved (the list, its .bad copy, long entries and images)
+        ClipboardProvider.PlaceStorage(0, data, localDir)
+        FileAppend("x", ClipboardProvider.File ".bad")
+        eq("delete saved: all gone", ClipboardProvider.DeleteSaved() "|" FileExist(ClipboardProvider.File ".bad") "|" (FileExist(data "\ClipboardHistory.json") || DirExist(data "\Clipboard")), "1||")
         ClipboardProvider.File := saved[1], ClipboardProvider.Folder := saved[2]
         try DirDelete(root, true)
     }
@@ -1898,6 +1902,14 @@ class ProviderTests {
         eq("default script keyword", AppSettings.Defaults()["Features"]["Scripts"]["Keyword"], "script")
         eq("ps1 command", ScriptProvider.CommandLine(byTitle["Ping Host"], "a b"), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "a b"')
         eq("bat command", ScriptProvider.CommandLine(byTitle["Clean Temp"]), A_ComSpec ' /c ""' root '\clean.bat""')
+        ; arguments as programs read them; through cmd.exe (batch files, captured output) a quote isn't safe and is refused
+        eq("argument: quote and trailing backslash", ScriptProvider.CommandLine(byTitle["Ping Host"], 'say "hi" C:\'), 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' root '\ping.ps1" "say \"hi\" C:\\"')
+        eq("through cmd", ScriptProvider.ThroughCmd({Ext: "bat", Mode: "window"}) "|" ScriptProvider.ThroughCmd({Ext: "ps1", Mode: "output"}) "|" ScriptProvider.ThroughCmd({Ext: "ps1", Mode: "window"}), "1|1|0")
+        ; output files of earlier runs are deleted after a day
+        FileAppend("old", root "\ALTRun-script-1.txt"), FileAppend("new", root "\ALTRun-script-2.txt")
+        FileSetTime(DateAdd(A_Now, -25, "Hours"), root "\ALTRun-script-1.txt", "M")
+        ScriptProvider.CleanOutputs(root)
+        eq("old output deleted, new kept", (FileExist(root "\ALTRun-script-1.txt") ? 1 : 0) "|" (FileExist(root "\ALTRun-script-2.txt") ? 1 : 0), "0|1")
         FileAppend("line one`r`n`r`nlast line  `r`n", root "\out.txt")
         eq("silent: last line", ScriptProvider._Finished(byTitle["Restart Explorer"], root "\out.txt"), "last line")
         FileAppend("", root "\empty.txt")
@@ -2069,6 +2081,14 @@ class ProviderTests {
         }
         BrowserHistoryProvider.Search(SearchQuery("tender"))                ; leaving history search: the next one reads again when old
         eq("leaving history search", BrowserHistoryProvider._active, false)
+        SetTimer(BrowserHistoryProvider._releaseTimer, 0)                   ; let go ReloadMs later; called here right away
+        kept := BrowserHistoryProvider.Items
+        BrowserHistoryProvider._releaseTimer.Call()
+        eq("pages let go after leaving", BrowserHistoryProvider.Items.Length "|" BrowserHistoryProvider._loaded, "0|0")
+        BrowserHistoryProvider.Items := kept, BrowserHistoryProvider._loaded := A_TickCount, BrowserHistoryProvider._active := true
+        BrowserHistoryProvider._releaseTimer.Call()
+        eq("kept while searching history again", BrowserHistoryProvider.Items.Length > 0, true)
+        BrowserHistoryProvider._active := false
         ; Chromium's time: microseconds since 1601-01-01 UTC
         offset := DateDiff(A_Now, A_NowUTC, "Seconds")
         chrome := (localStamp) => (DateDiff(localStamp, "16010101", "Seconds") - offset) * 1000000

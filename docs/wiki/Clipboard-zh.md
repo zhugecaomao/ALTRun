@@ -23,7 +23,7 @@
 - 密码管理器 (KeePass、1Password、Bitwarden...) 复制的内容不会记录; 带 "不要加入剪贴板历史" 标记的内容也不会记录
 - 复制后约 0.15 秒才去读剪贴板, 读完马上关掉 (图片在关掉之后再存成 PNG): 截图工具等写完剪贴板马上又要用它的程序不会被挡住
 - `Features.Clipboard.IgnoreApps` 可以加上其它不想记录的程序
-- `Persist = 0` 时只保存在内存里, 退出即清空 (也不记录图片); 否则只保存在这台电脑上, 即 `%LOCALAPPDATA%\ALTRun\ClipboardHistory.json` (很长的条目和图片单独存在 `%LOCALAPPDATA%\ALTRun\Clipboard\`), 不跟着同步盘或 U 盘里的 Data 文件夹走。偏好设置 → 剪贴板 → "保存位置" 可以改成把文字历史放在 Data 文件夹 (`LocalFiles = 1`), 或者全部放在 Data 文件夹 (`LocalFiles = 0`)
+- `Persist = 0` 时只保存在内存里, 退出即清空 (也不记录图片); 在偏好设置里关掉时会问要不要把之前保存的历史也删掉; 否则只保存在这台电脑上, 即 `%LOCALAPPDATA%\ALTRun\ClipboardHistory.json` (很长的条目和图片单独存在 `%LOCALAPPDATA%\ALTRun\Clipboard\`), 不跟着同步盘或 U 盘里的 Data 文件夹走。偏好设置 → 剪贴板 → "保存位置" 可以改成把文字历史放在 Data 文件夹 (`LocalFiles = 1`), 或者全部放在 Data 文件夹 (`LocalFiles = 0`)
 - 偏好设置 → 剪贴板历史 里可以清空历史
 
 ![偏好设置 → 剪贴板历史](https://raw.githubusercontent.com/zhugecaomao/ALTRun/main/docs/images/screenshots/prefs-clipboard.png)

@@ -517,7 +517,20 @@ class Win {
         return on != 0
     }
 
-    ; Waits until all modifier keys are up, so Ctrl / Alt don't leak into the next Send
+    ; One argument in double quotes as programs read it (CommandLineToArgvW): \" for a quote, and the backslashes before a quote or
+    ; the closing one doubled ("C:\" would otherwise escape the closing quote)
+    static QuoteArg(arg) {
+        out := '"', slashes := 0
+        Loop Parse, arg {
+            if (A_LoopField = "\") {
+                slashes++
+                continue
+            }
+            out .= StrReplace(Format("{:" (A_LoopField = '"' ? slashes * 2 + 1 : slashes) "}", ""), " ", "\") A_LoopField, slashes := 0
+        }
+        return out StrReplace(Format("{:" slashes * 2 "}", ""), " ", "\") '"'
+    }
+
     ; The UTF-16 text of a WM_COPYDATA (lParam = its COPYDATASTRUCT): read only within the cbData bytes the sender gave, up to the first 0,
     ; at most maxChars; "" when there is none. Another program can send anything: without the length, text with no terminating 0 would be
     ; read past its data
@@ -526,6 +539,7 @@ class Win {
         return (data && size >= 2) ? StrGet(data, Min(size // 2, maxChars), "UTF-16") : ""
     }
 
+    ; Waits until all modifier keys are up, so Ctrl / Alt don't leak into the next Send
     static WaitModifiersUp(timeout := 0.5) {
         for key in ["Ctrl", "Alt", "Shift", "LWin", "RWin"]
             KeyWait(key, "T" timeout)
@@ -771,18 +785,14 @@ class Calc {
 ; Url - URL helpers
 ;===============================================================================
 class Url {
-    ; Percent-encodes as UTF-8, to put search words into a {query} URL
+    ; Percent-encodes as UTF-8, to put search words into a {query} URL. The whole text is converted at once: character by character,
+    ; the two halves of an emoji or another character beyond U+FFFF (a surrogate pair) would each become a replacement character
     static Encode(text) {
-        out := ""
-        for ch in StrSplit(text) {
-            if RegExMatch(ch, "^[0-9A-Za-z\-_.~]$") {
-                out .= ch
-                continue
-            }
-            buf := Buffer(8, 0)
-            len := StrPut(ch, buf, "UTF-8") - 1
-            Loop len
-                out .= Format("%{:02X}", NumGet(buf, A_Index - 1, "UChar"))
+        buf := Buffer(StrPut(text, "UTF-8")), len := StrPut(text, buf, "UTF-8") - 1, out := ""
+        Loop len {
+            byte := NumGet(buf, A_Index - 1, "UChar")
+            out .= (byte >= 0x30 && byte <= 0x39 || byte >= 0x41 && byte <= 0x5A || byte >= 0x61 && byte <= 0x7A || byte = 0x2D || byte = 0x5F || byte = 0x2E || byte = 0x7E)
+                ? Chr(byte) : Format("%{:02X}", byte)
         }
         return out
     }

@@ -852,7 +852,7 @@ class QuickSwitch {
         try pid := WinGetPID("ahk_id " dialog)
         if !pid || !(process := DllCall("OpenProcess", "UInt", 0x38, "Int", false, "UInt", pid, "Ptr"))   ; PROCESS_VM_OPERATION | VM_READ | VM_WRITE
             return false
-        size := (StrLen(folder) + 1) * 2, ok := false
+        size := (StrLen(folder) + 1) * 2, ok := false, sent := true
         remote := DllCall("VirtualAllocEx", "Ptr", process, "Ptr", 0, "UPtr", size, "UInt", 0x3000, "UInt", 0x04, "Ptr")   ; MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE
         if remote {
             DllCall("IsWow64Process", "Ptr", process, "Int*", &wow64 := 0)
@@ -862,9 +862,11 @@ class QuickSwitch {
                 try {
                     SendMessage(0x467, 1, remote, , "ahk_id " dialog, , , , 2000)   ; BFFM_SETSELECTIONW (WM_USER + 103); wParam TRUE = lParam is a path
                     ok := true
-                }
+                } catch
+                    sent := false
             }
-            DllCall("VirtualFreeEx", "Ptr", process, "Ptr", remote, "UPtr", 0, "UInt", 0x8000)   ; MEM_RELEASE
+            if sent                                                         ; not after a timeout: the dialog may still read the path later,
+                DllCall("VirtualFreeEx", "Ptr", process, "Ptr", remote, "UPtr", 0, "UInt", 0x8000)   ; from freed memory (a few hundred bytes are left instead). MEM_RELEASE
         }
         DllCall("CloseHandle", "Ptr", process)
         if !ok

@@ -20,6 +20,8 @@ class BrowserHistoryProvider {
     static ReloadMs := 60000
     static _loaded := 0                                                     ; A_TickCount of the last read (0 = never)
     static _active := false                                                 ; the last search was a history search
+    ; ReloadMs after leaving history search the pages are let go (megabytes for a long history): coming back after that reads them again anyway
+    static _releaseTimer := () => (!BrowserHistoryProvider._active && (BrowserHistoryProvider.Items := [], BrowserHistoryProvider._loaded := 0))
 
     static Init() {                                                         ; nothing at start-up: read only when searched
     }
@@ -27,6 +29,8 @@ class BrowserHistoryProvider {
     static Search(query) {
         options := AppSettings.Feature("BrowserHistory")
         if !query.MatchKeyword([options["Keyword"]], &rest, &keyword) {
+            if BrowserHistoryProvider._active
+                SetTimer(BrowserHistoryProvider._releaseTimer, -BrowserHistoryProvider.ReloadMs)
             BrowserHistoryProvider._active := false
             return []
         }

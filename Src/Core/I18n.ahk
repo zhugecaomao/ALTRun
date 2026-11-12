@@ -583,6 +583,8 @@ class I18n {
         s["Hotkey.LButton"]            := "Left mouse button"
         s["Hotkey.RButton"]            := "Right mouse button"
         s["Prefs.BadPattern"]          := "{1} on the {2} page isn't a valid regular expression:`n{3}`n`nFix it before saving."
+        s["Script.QuoteInArgument"]   := "This script runs through cmd.exe, which can't take a double quote in its argument safely. Leave the quotes out."
+        s["Prefs.ClipPersistDelete"]   := "The clipboard history is no longer saved. Also delete the history saved on disk so far (all entries, pinned ones too)?"
         s["Prefs.HotkeyClash"]         := "{1} is used twice: {2} and {3}. Only one of them will work.`n`nSave anyway?"
         s["Prefs.Page.General"]        := "General"
         s["Prefs.Page.Window"]         := "Search Window"

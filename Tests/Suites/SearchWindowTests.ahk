@@ -569,6 +569,11 @@ class SearchWindowTests {
         eq("missing folder: hint", titles(root "\Nope\x"), I18n.T("Files.FolderNotFound"))
         wide := FileSearchProvider.BrowsePath(SubStr(root, 1, 1) "：、" StrReplace(SubStr(root, 4), "\", "、") "、rep")   ; full-width colon and ideographic comma from a Chinese IME
         eq("chinese punctuation", IsObject(wide) ? wide.Dir "|" wide.Filter : "", root "\|rep")
+        ; a network folder is asked once with a time limit and the answer kept for a while (no wait for the network on every key)
+        asked := 0
+        there(dir) => FileSearchProvider.FolderThere(dir, (d) => true, (d) => (asked++, false))
+        eq("network: unreachable", there("\\offline\share\") "|" there("\\OFFLINE\Share\") "|" asked, "0|0|1")
+        eq("local: asked directly", FileSearchProvider.FolderThere(root "\", (d) => false, (d) => (asked++, false)) "|" asked, "1|1")
         home := FileSearchProvider.BrowsePath("~")
         eq("home", IsObject(home) ? home.Dir : "", EnvGet("UserProfile") "\")
         titles(text) {

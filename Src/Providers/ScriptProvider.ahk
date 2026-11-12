@@ -90,7 +90,7 @@ class ScriptProvider {
 
     ; The command line that runs the script
     static CommandLine(script, argument := "") {
-        quoted := '"' script.Path '"' ((argument != "") ? ' "' StrReplace(argument, '"', '\"') '"' : "")
+        quoted := '"' script.Path '"' ((argument != "") ? " " Win.QuoteArg(argument) : "")
         switch script.Ext {
             case "ahk": return '"' A_AhkPath '"' (A_IsCompiled ? " /script " : " ") quoted
             case "ps1": return 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File ' quoted
@@ -99,11 +99,18 @@ class ScriptProvider {
         }
     }
 
+    ; Whether the command line goes through cmd.exe: batch files, and every script whose output is captured (cmd redirects it).
+    ; cmd doesn't know \" and ends the quoted argument there, so & | < > after it would run as commands: a quote in the argument is refused
+    static ThroughCmd(script) => script.Mode != "window" || !RegExMatch(script.Ext, "^(ahk|ps1|py)$")
+
     static Run(script, argument := "") {
+        if (InStr(argument, '"') && ScriptProvider.ThroughCmd(script))
+            return App.Notify(I18n.T("Script.QuoteInArgument"), 4000)
         SplitPath(script.Path, , &dir)
         command := ScriptProvider.CommandLine(script, argument)
         if (script.Mode = "window")
             return Run(command, dir)
+        ScriptProvider.CleanOutputs()
         output := A_Temp "\ALTRun-script-" A_TickCount ".txt"              ; runs in the background, output goes to a temporary file
         Run(A_ComSpec ' /c "' command ' > "' output '" 2>&1"', dir, "Hide", &pid)
         started := A_TickCount
@@ -116,11 +123,18 @@ class ScriptProvider {
         SetTimer(check, 300)
     }
 
+    ; The output files of earlier runs, at least a day old (the "output" mode leaves its file for the editor showing it)
+    static CleanOutputs(dir := A_Temp, hours := 24) {
+        Loop Files, dir "\ALTRun-script-*.txt"
+            if (DateDiff(A_Now, A_LoopFileTimeModified, "Hours") >= hours)
+                try FileDelete(A_LoopFileFullPath)
+    }
+
     static _Finished(script, output) {
         text := ""
         try text := FileRead(output)
         if (script.Mode = "output") {
-            Path.OpenText(output)                                           ; the default program for .txt (usually Notepad); the temporary file stays in %Temp%
+            Path.OpenText(output)                                           ; the default program for .txt (usually Notepad); the file stays a day (CleanOutputs)
             return
         }
         try FileDelete(output)

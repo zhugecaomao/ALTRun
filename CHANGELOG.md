@@ -5,6 +5,26 @@
 
 ## [未发布]
 
+## [2026.11.11.14]
+
+测试版。
+
+Test build.
+
+### 改进
+- 浏览网络文件夹 (`\\server\share\`、映射的网络驱动器) 时, 服务器离线不再每按一个键就卡住几秒: 最多等 0.5 秒, 结果记住 10 秒
+- 关掉 "保存剪贴板历史" 时, 会问要不要把之前保存在磁盘上的历史也删掉
+- 浏览器历史搜索 (`h`) 退出 1 分钟后释放读入的网页列表 (历史长时有几 MB)
+- 脚本 "显示输出" 留下的临时文件一天后自动删除
+
+### 修复
+- 搜索词里有 emoji 等字符时, 网页搜索的网址编码错误
+- Windows Terminal 在 `C:\` 这类根目录打开时路径出错; 文件夹名或命令里有 `;` 时被拆成两个标签
+- 脚本参数以 `\` 结尾 (如 `C:\`) 或 `\` 后面跟着 `"` 时, 脚本收到的参数不对; 经过 cmd 运行的脚本 (批处理、显示输出或静默运行的) 参数里有 `"` 时不运行并提示, 避免后面的字符被 cmd 当成命令
+- Quick Switch 选择 "浏览文件夹" 对话框里的文件夹超时时, 不再释放对话框还可能读取的内存
+- 学习排序、使用统计、应用索引缓存和同步任务的状态文件被手动改坏或只写了一半时, 忽略坏的条目, 不再在搜索或启动时报错
+- SQLite (浏览器历史) 只从 System32 加载 `winsqlite3.dll`
+
 ## [2026.11.11.13]
 
 测试版。
@@ -1341,7 +1361,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.13...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.14...HEAD
+[2026.11.11.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.13...2026.11.11.14
 [2026.11.11.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.12...2026.11.11.13
 [2026.11.11.12]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.11...2026.11.11.12
 [2026.11.11.11]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.10...2026.11.11.11

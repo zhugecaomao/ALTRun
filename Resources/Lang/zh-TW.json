@@ -449,6 +449,8 @@
   "Prefs.Hotkey": "呼出熱鍵",
   "Prefs.Hotkey.Desc": "顯示 / 隱藏搜尋視窗; 第二個呼出熱鍵 (預設 Alt+R) 可以不用。點一下框, 按下組合鍵",
   "Prefs.BadPattern": "「{2}」頁的「{1}」不是有效的規則運算式:\n{3}\n\n改正後再儲存。",
+  "Script.QuoteInArgument": "這個指令碼經由 cmd.exe 執行, 參數裡的雙引號沒辦法安全傳遞。請去掉引號。",
+  "Prefs.ClipPersistDelete": "剪貼簿歷史記錄不再儲存。要把之前儲存在磁碟上的歷史記錄也刪掉嗎 (所有項目, 包括釘選的)?",
   "Prefs.HotkeyClash": "{1} 用了兩次: {2} 和 {3}, 只有一個會起作用。\n\n仍然儲存嗎?",
   "Prefs.HotkeyHint": "點一下框, 按下想要的組合鍵; 滑鼠熱鍵: 在框裡點滑鼠中鍵或側鍵",
   "Prefs.HotkeysNote": "按兩下修改。熱鍵可以執行 ALTRun 的指令, 或者開啟 ALTRun 直接搜尋: folder {selection} 按選取的文字搜資料夾。",

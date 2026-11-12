@@ -21,7 +21,8 @@ class Sqlite {
     static Available() {
         if !Sqlite._tried {
             Sqlite._tried := true
-            Sqlite._module := DllCall("LoadLibrary", "Str", Sqlite.Dll, "Ptr")   ; kept loaded: only loaded when a query is made
+            Sqlite._module := DllCall("LoadLibrary", "Str", A_WinDir "\System32\" Sqlite.Dll, "Ptr")   ; kept loaded: only loaded when a query is made. The full path:
+                                                                    ; by name, a winsqlite3.dll in ALTRun's folder would be loaded first
         }
         return Sqlite._module != 0
     }
