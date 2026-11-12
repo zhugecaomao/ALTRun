@@ -843,35 +843,54 @@ class QuickSwitch {
     }
 
     ; Select a folder in a "Browse for Folder" dialog's tree, like Listary: BFFM_SETSELECTIONW expands the tree to it.
-    ; The message carries a pointer, so the path is first written into the dialog's own process. Doesn't press OK
+    ; The message carries a pointer, so the path is first written into the dialog's own process. Doesn't press OK.
+    ; A dialog of a program running as administrator can't be reached from ALTRun without administrator rights (its process can't
+    ; be opened, and Windows blocks the message, UIPI): logged, and a hint says so instead of nothing happening
     static SelectInBrowseDialog(folder, dialog) {
         folder := RTrim(folder, "\")
         if RegExMatch(folder, "^[A-Za-z]:$")
             folder .= "\"                                                   ; a drive needs its backslash
         pid := 0
         try pid := WinGetPID("ahk_id " dialog)
-        if !pid || !(process := DllCall("OpenProcess", "UInt", 0x38, "Int", false, "UInt", pid, "Ptr"))   ; PROCESS_VM_OPERATION | VM_READ | VM_WRITE
-            return false
-        size := (StrLen(folder) + 1) * 2, ok := false, sent := true
+        if !pid
+            return QuickSwitch._BrowseFailed(folder, 0, "its process isn't known")
+        if !(process := DllCall("OpenProcess", "UInt", 0x38, "Int", false, "UInt", pid, "Ptr")) {   ; PROCESS_VM_OPERATION | VM_READ | VM_WRITE
+            err := A_LastError
+            return QuickSwitch._BrowseFailed(folder, pid, "cannot open its process, error " err, err = 5)   ; ERROR_ACCESS_DENIED
+        }
+        size := (StrLen(folder) + 1) * 2, ok := false, sent := true, reason := "cannot reserve memory in its process"
         remote := DllCall("VirtualAllocEx", "Ptr", process, "Ptr", 0, "UPtr", size, "UInt", 0x3000, "UInt", 0x04, "Ptr")   ; MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE
         if remote {
             DllCall("IsWow64Process", "Ptr", process, "Int*", &wow64 := 0)
             text := Buffer(size), StrPut(folder, text, "UTF-16")
-            if (!(wow64 && remote > 0xFFFFFFFF)                             ; a 32-bit program only sees the low 4 GB
-                && DllCall("WriteProcessMemory", "Ptr", process, "Ptr", remote, "Ptr", text, "UPtr", size, "Ptr", 0)) {
+            if (wow64 && remote > 0xFFFFFFFF)                               ; a 32-bit program only sees the low 4 GB
+                reason := "the memory is out of reach of a 32-bit program"
+            else if !DllCall("WriteProcessMemory", "Ptr", process, "Ptr", remote, "Ptr", text, "UPtr", size, "Ptr", 0)
+                reason := "cannot write into its process"
+            else {
                 try {
                     SendMessage(0x467, 1, remote, , "ahk_id " dialog, , , , 2000)   ; BFFM_SETSELECTIONW (WM_USER + 103); wParam TRUE = lParam is a path
                     ok := true
                 } catch
-                    sent := false
+                    sent := false, reason := "the message didn't get through in 2 s"
             }
             if sent                                                         ; not after a timeout: the dialog may still read the path later,
                 DllCall("VirtualFreeEx", "Ptr", process, "Ptr", remote, "UPtr", 0, "UInt", 0x8000)   ; from freed memory (a few hundred bytes are left instead). MEM_RELEASE
         }
         DllCall("CloseHandle", "Ptr", process)
         if !ok
-            Logger.Error("QuickSwitch: cannot select " folder " in the Browse for Folder dialog")
-        return ok
+            return QuickSwitch._BrowseFailed(folder, pid, reason)
+        Logger.Debug("QuickSwitch: selected [" folder "] in the Browse for Folder dialog")
+        return true
+    }
+
+    ; Logs why the folder couldn't be selected; when the dialog's program runs as administrator and ALTRun doesn't, also tells the user.
+    ; denied: opening the process was refused (a normal process can't always ask an elevated one whether it is elevated)
+    static _BrowseFailed(folder, pid, reason, denied := false) {
+        Logger.Error("QuickSwitch: cannot select " folder " in the Browse for Folder dialog - " reason)
+        if (!A_IsAdmin && pid && (denied || Win.IsElevated(pid)))
+            App.Notify(I18n.T("QuickSwitch.ElevatedDialog"), 4000)
+        return false
     }
 
     static _HasControl(controls, patterns*) {

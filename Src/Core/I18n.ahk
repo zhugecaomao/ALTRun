@@ -1357,6 +1357,7 @@ class I18n {
         s["QuickSwitch.EditFavorites"] := "Edit Favorites..."
         s["QuickSwitch.MoreFolders"] := "{1} more folders"
         s["QuickSwitch.NoDialogFolder"] := "Can't read the dialog's current folder."
+        s["QuickSwitch.ElevatedDialog"] := "This dialog's program runs as administrator. Run ALTRun as administrator to jump here."
         s["QuickSwitch.NoFileManager"] := "No Total Commander, Directory Opus or File Explorer window is open."
         return s
     }

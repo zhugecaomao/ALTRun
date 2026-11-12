@@ -23,7 +23,7 @@ Enable **Auto switch** in Preferences → Quick Switch to jump automatically whe
 
 ## Browse for Folder dialogs
 
-Many programs still pick a folder with the older "Browse for Folder" dialog: a folder tree with OK / Cancel and no file list. The folder panel and `Ctrl+G` work there too: the tree expands to the folder and selects it, and you still click OK yourself (pressing Enter in that dialog would mean OK). Untick **Browse for Folder dialogs** under **Works in** to leave these dialogs alone (`BrowseDialogs`). Like other dialogs, it doesn't work in programs running as administrator.
+Many programs still pick a folder with the older "Browse for Folder" dialog: a folder tree with OK / Cancel and no file list. The folder panel and `Ctrl+G` work there too: the tree expands to the folder and selects it, and you still click OK yourself (pressing Enter in that dialog would mean OK). Untick **Browse for Folder dialogs** under **Works in** to leave these dialogs alone (`BrowseDialogs`). Like other dialogs, it doesn't work in programs running as administrator (a jump there shows a hint; run ALTRun as administrator to use it).
 
 ## Where the folders come from
 
