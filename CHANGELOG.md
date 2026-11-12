@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.20]
+
+测试版。
+
+Test build.
+
+### 改进
+- 使用统计按每条系统命令分别记次数 (`Data\Usage.json` 里的 `System:<Id>`, 用热键运行的也记), 用来判断哪些系统命令有人用; 统计页面暂不显示, 合计次数不变
+
 ## [2026.11.11.19]
 
 测试版。
@@ -1406,7 +1415,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.19...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.20...HEAD
+[2026.11.11.20]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.19...2026.11.11.20
 [2026.11.11.19]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.18...2026.11.11.19
 [2026.11.11.18]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.17...2026.11.11.18
 [2026.11.11.17]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.16...2026.11.11.17

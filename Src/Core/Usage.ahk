@@ -10,6 +10,8 @@
 ;   Usage.Load() / Usage.Save()
 ;   Usage.Count("SnippetExpand")        a feature was used (keys as in Features; "Show" = the search window was shown)
 ;   Usage.CountItem(item)               a search result was run (counted for its provider)
+;   Usage.CountCommand(id)              a system command was run (search, hotkey or recent): counted as "System:<Id>", per command,
+;                                       next to the feature counts but not in Total (not shown yet; to decide which commands are used)
 ;   Usage.Summary(days)                 counts per feature for the last days days (0 = all): Map(feature -> count)
 ;   Usage.Total(summary)                uses = the features added up (without "Show")
 ;   Usage.Daily(days)                   uses per day for the last days days [[date, count], ...], oldest first
@@ -87,6 +89,11 @@ class Usage {
             Usage.Count(feature)
     }
 
+    static CountCommand(id) {
+        if (id != "")
+            Usage.Count("System:" id)
+    }
+
     static Summary(days := 0, today := "") {
         cutoff := (days > 0) ? Usage._DaysAgo(days - 1, today) : ""
         result := Map()
@@ -102,7 +109,7 @@ class Usage {
     static Total(summary) {
         total := 0
         for feature, n in summary
-            if (feature != "Show")
+            if (feature != "Show" && !InStr(feature, ":"))                  ; per-command counts ("System:Lock") are already in their feature
                 total += n
         return total
     }
