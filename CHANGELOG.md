@@ -5,6 +5,15 @@
 
 ## [未发布]
 
+## [2026.11.11.16]
+
+测试版。
+
+Test build.
+
+### 修复
+- Quick Switch: 在以管理员身份运行的程序的 "浏览文件夹" 对话框里点面板文件夹, 以前没有任何反应, 现在提示要以管理员身份运行 ALTRun 才能跳转; 选不中文件夹的原因都写进日志 (AppInn 论坛反馈)
+
 ## [2026.11.11.15]
 
 测试版。
@@ -1370,7 +1379,8 @@ Smoother typing, easier to get started, and a few useful new features.
 ## 更早的版本
 见 [GitHub Releases](https://github.com/zhugecaomao/ALTRun/releases)。
 
-[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.15...HEAD
+[未发布]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.16...HEAD
+[2026.11.11.16]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.15...2026.11.11.16
 [2026.11.11.15]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.14...2026.11.11.15
 [2026.11.11.14]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.13...2026.11.11.14
 [2026.11.11.13]: https://github.com/zhugecaomao/ALTRun/compare/2026.11.11.12...2026.11.11.13

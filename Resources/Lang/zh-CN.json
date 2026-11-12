@@ -884,6 +884,7 @@
   "QuickSwitch.EditFavorites": "编辑收藏...",
   "QuickSwitch.MoreFolders": "还有 {1} 个文件夹",
   "QuickSwitch.NoDialogFolder": "读不出对话框当前的文件夹。",
+  "QuickSwitch.ElevatedDialog": "这个对话框的程序以管理员身份运行。以管理员身份运行 ALTRun 才能在这里跳转。",
   "QuickSwitch.TagRecent": "最近",
   "QuickSwitch.TagSearch": "搜索",
   "QuickSwitch.TagTC": "Total Commander",

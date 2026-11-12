@@ -884,6 +884,7 @@
   "QuickSwitch.EditFavorites": "お気に入りを編集...",
   "QuickSwitch.MoreFolders": "ほか {1} 個のフォルダー",
   "QuickSwitch.NoDialogFolder": "ダイアログの現在のフォルダーを読み取れません。",
+  "QuickSwitch.ElevatedDialog": "このダイアログのプログラムは管理者として実行されています。ここでジャンプするには ALTRun を管理者として実行してください。",
   "QuickSwitch.TagRecent": "最近",
   "QuickSwitch.TagSearch": "検索",
   "QuickSwitch.TagTC": "Total Commander",

@@ -1179,6 +1179,7 @@ class ExtensionTests {
         eq("other dialog with a tree", QuickSwitch.LooksLikeBrowseDialog("#32770", classic, 0x3F2), false)
         eq("browse dialog: other class", QuickSwitch.LooksLikeBrowseDialog("TMyDialog", newStyle), false)
         eq("file dialog is not a browse dialog", QuickSwitch.LooksLikeBrowseDialog("#32770", fileDialog), false)
+        eq("browse dialog gone: not selected", QuickSwitch.SelectInBrowseDialog("C:\Windows", 0x7FFFFFF0), false)   ; logged, no hint without a process
         eq("browse dialog is not a file dialog", QuickSwitch.LooksLikeFileDialog("#32770", newStyle) QuickSwitch.LooksLikeFileDialog("#32770", classic), "00")
         eq("browse dialogs on by default", AppSettings.Defaults()["Extensions"]["QuickSwitch"]["BrowseDialogs"], 1)
         ; How the folder goes in: the file name box when there is one; Alt+D (address bar) only in system dialogs;

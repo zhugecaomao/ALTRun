@@ -885,6 +885,7 @@
   "QuickSwitch.EditFavorites": "編輯收藏...",
   "QuickSwitch.MoreFolders": "還有 {1} 個資料夾",
   "QuickSwitch.NoDialogFolder": "讀不出對話方塊目前的資料夾。",
+  "QuickSwitch.ElevatedDialog": "這個對話方塊的程式以系統管理員身分執行。以系統管理員身分執行 ALTRun 才能在這裡跳轉。",
   "QuickSwitch.TagRecent": "最近",
   "QuickSwitch.TagSearch": "搜尋",
   "QuickSwitch.TagTC": "Total Commander",
