@@ -1723,6 +1723,11 @@ class ProviderTests {
             }
             TestRunner.True("HotkeyCommandPicker." language[1] " fits (" right " x " bottom " in " clientW " x " clientH ")", right <= clientW && bottom <= clientH)
             eq(language[1] " current selected", CommandPicker.Selected(ui), "custom:types001")
+            total := 0
+            Loop 3
+                total += SendMessage(0x101D, A_Index - 1, 0, ui.List)        ; LVM_GETCOLUMNWIDTH
+            ui.List.GetPos(, , &listW)
+            TestRunner.True("HotkeyCommandPicker." language[1] " columns fit without a horizontal scroll bar (" total " < " listW ")", total < listW - SysGet(2))   ; SM_CXVSCROLL
             row := ui.List.GetNext()
             eq(language[1] " down key moves in the list", CommandPicker._OnKeyDown(ui, 0x28, 0, 0x100, ui.Search.Hwnd) "|" ui.List.GetNext(), "0|" (row + 1))
             eq(language[1] " other keys stay in the box", CommandPicker._OnKeyDown(ui, 0x41, 0, 0x100, ui.Search.Hwnd) "|" ui.List.GetNext(), "|" (row + 1))

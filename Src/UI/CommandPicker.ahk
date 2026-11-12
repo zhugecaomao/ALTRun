@@ -54,7 +54,7 @@ class CommandPicker {
         Win.SetCueBanner(ui.Search.Hwnd, I18n.T("CommandPicker.Filter"))
         ui.List := g.AddListView("xm y+8 w" w " r" CommandPicker.ListRows " -Multi NoSortHdr LV0x10000"   ; LVS_EX_DOUBLEBUFFER: no flicker while typing
             , [I18n.T("Prefs.Col.Name"), I18n.T("CommandPicker.Col.Kind"), I18n.T("Prefs.Col.Keyword")])
-        ui.List.ModifyCol(1, 250), ui.List.ModifyCol(2, 120), ui.List.ModifyCol(3, w - 250 - 120 - 4)
+        ui.List.ModifyCol(1, 250), ui.List.ModifyCol(2, 120)
         ui.Search.OnEvent("Change", (*) => Fill())
         ok := g.AddButton("xm+" (w - 170) " y+14 w80 Default", "OK")
         if IsObject(onOk) {
@@ -68,6 +68,7 @@ class CommandPicker {
         OnMessage(0x100, keyHandler)                                        ; WM_KEYDOWN
         ui.Release := () => OnMessage(0x100, keyHandler, 0)                 ; called once the window is closed
         Fill(current)
+        ui.List.ModifyCol(3, "AutoHdr")                                     ; the keyword column fills the rest (beside the vertical scroll bar): no horizontal one
         return ui
 
         Fill(select := "") {                                                ; the list for the text typed; select: the Id to select (else the first row)
