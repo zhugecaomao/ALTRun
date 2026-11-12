@@ -440,23 +440,18 @@ class UpdateChecker {
         UpdateChecker._installing := ""
     }
 
-    ; zip -> folder. First tar.exe, built in since Windows 10 (1803) (fast, not limited by PowerShell policies);
-    ; PowerShell's Expand-Archive if it is missing or fails
+    ; zip -> folder with tar.exe, built in since Windows 10 (1803). There is no PowerShell fallback (Expand-Archive) any more, so
+    ; ALTRun runs no hidden PowerShell command of its own; where tar.exe is missing or fails, the failure dialog offers the download page
     static Extract(zip, dest) {
-        DirCreate(dest)
         tar := A_WinDir "\System32\tar.exe"
-        if FileExist(tar) {
-            try exitCode := RunWait('"' tar '" -xf "' zip '" -C "' dest '"', , "Hide")
-            if (IsSet(exitCode) && exitCode = 0 && FileExist(dest "\" UpdateChecker.PackageExe))
-                return
-            Logger.Debug("UpdateChecker: tar.exe could not extract the package, trying PowerShell")
-        }
-        quote := (s) => "'" StrReplace(s, "'", "''") "'"
-        cmd := 'powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "'
-             . "$ErrorActionPreference = 'Stop'; Expand-Archive -LiteralPath " quote(zip) " -DestinationPath " quote(dest) ' -Force"'
-        exitCode := RunWait(cmd, , "Hide")
+        if !FileExist(tar)
+            throw Error("Could not extract the downloaded package: " tar " is missing.")
+        DirCreate(dest)
+        try exitCode := RunWait('"' tar '" -xf "' zip '" -C "' dest '"', , "Hide")
+        catch as e
+            throw Error("Could not extract the downloaded package: tar.exe could not be started - " e.Message)
         if (exitCode != 0 || !FileExist(dest "\" UpdateChecker.PackageExe))
-            throw Error("Could not extract the downloaded package (exit code " exitCode ").")
+            throw Error("Could not extract the downloaded package (tar.exe exit code " exitCode ").")
     }
 
     ; Copies the new version in src to dest: other files first, dest\exeName last (renamed to .old, then the new one copied).
