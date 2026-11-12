@@ -368,7 +368,7 @@ class PreferencesWindow {
             PreferencesWindow.SetPath(PreferencesWindow.Working, bind.Path, bind.Read.Call())
         general := PreferencesWindow.Working["General"]
         appearance := PreferencesWindow.Working["Appearance"]
-        appearance["Width"] := Max(PreferencesWindow.MinWindowWidth, appearance["Width"])
+        AppSettings.ClampNumbers(PreferencesWindow.Working)                 ; e.g. an empty number box (0) or a width narrower than the status bar
         if (general["Hotkey"] = "")
             general["Hotkey"] := "!Space"
         if IsObject(bad := PreferencesWindow.BadPattern(PreferencesWindow.Working)) {     ; nothing is saved: a bad pattern would only be ignored later

@@ -157,7 +157,7 @@ ALTRun 空闲时应该不占 CPU。只要设置了**任何一个** `SetTimer` �
 
 | 改动 | 还要改 |
 |---|---|
-| **新的设置项** | `AppSettings.Defaults()` 里的默认值 (没有的话 `SettingsKeys` 会失败); 偏好设置页面上的控件 (`PrefsPages`); 四种语言的界面文字; 介绍这个功能的 Wiki 页 (英文和 `-zh`); 测试 |
+| **新的设置项** | `AppSettings.Defaults()` 里的默认值 (没有的话 `SettingsKeys` 会失败); 数值设置还要在 `AppSettings.NumberRanges` 里写上可用范围 (超出的值在加载和偏好设置保存时改回范围内, 并写日志); 偏好设置页面上的控件 (`PrefsPages`); 四种语言的界面文字; 介绍这个功能的 Wiki 页 (英文和 `-zh`); 测试 |
 | **已有设置的结构** (改名、移动、改格式) | 见 "修改设置结构": `CurrentVersion + 1` 和 `SchemaMigration` 里的 `_FromN`, 加上从旧文件升级的测试; 攒到下次升级设置版本时一起做 |
 | **界面文字** (新加、修改、删除) | `I18n.ahk` 和 `Resources\Lang\` 的三个文件 (`I18nLanguages`、`I18nUnused`); 偏好设置里检查日文是否还放得下 (`PreferencesFit`、`PreferencesSpacing`) |
 | **偏好设置页面** | 排版规则: 短框两列对齐, 长内容伸到右边; 这一页的截图场景 (加新页面时, 后面场景的 `-Preferences N` 编号要跟着改); 要显示别的页面改动的页面, 在构建函数里设 `page.OnShow` (每次显示这一页时调用, 见 选中内容 页); 界面改动先用截图确认再合并 |
