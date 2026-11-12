@@ -79,7 +79,7 @@ After Windows starts, it waits 1 minute (the network may not be up yet) and chec
 
 To check right away: tray menu → "Check for Updates", or search for "Check for ALTRun Updates" (`CheckUpdate`). A manual check always shows the result: you're up to date, or the "ALTRun Update Available" dialog: Install Update / Release Notes / Later.
 
-If anything goes wrong during an update (network, checksum, write permission), the old program is left as it was and you're offered the download page to update by hand. The command line `ALTRun.exe -Update` checks for and installs an update without asking.
+If anything goes wrong during an update (network, checksum, write permission), the old program is left as it was and you're offered the download page to update by hand. The command line `ALTRun.exe -Update` checks for and installs an update without asking when ALTRun isn't running yet; when it is already running, it asks first, as a check from the tray menu does.
 
 One-key updates aren't possible in these cases; the item in the search window tells you what to do instead:
 - Installed with winget / Scoop: `Enter` copies the upgrade command (`winget upgrade zhugecaomao.ALTRun` / `scoop update altrun`); quit ALTRun and run it in a terminal

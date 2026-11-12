@@ -881,6 +881,28 @@ class CoreTests {
             OnMessage(0x4A, onCopyData, 0)
             App.DefineProp("_HandleCommandLine", saved)
         }
+
+        ; WM_COPYDATA text is read only within the size the sender gave (no terminating 0 needed), up to a 0 and at most maxChars
+        data := Buffer(16, 0), StrPut("-Exit", data, "UTF-16"), NumPut("UShort", Ord("X"), data, 12)   ; "-Exit", 0, "X"
+        copyData := Buffer(A_PtrSize * 3, 0)
+        NumPut("UPtr", App.CopyDataId, copyData, 0), NumPut("Ptr", data.Ptr, copyData, A_PtrSize * 2)
+        text(size, maxChars := 32768) => (NumPut("UInt", size, copyData, A_PtrSize), Win.CopyDataText(copyData.Ptr, maxChars))
+        eq("copydata: within the size", text(10), "-Exit")
+        eq("copydata: the 0 ends it", text(16), "-Exit")
+        eq("copydata: no terminating 0, shorter size", text(4), "-E")
+        eq("copydata: at most maxChars", text(16, 3), "-Ex")
+        eq("copydata: empty", text(0) "|" text(1), "|")
+
+        ; -Update: installs right away when ALTRun starts with it; handed over to a running ALTRun (any program can send it) it asks first
+        checks := []
+        savedCheck := UpdateChecker.GetOwnPropDesc("Check")
+        UpdateChecker.DefineProp("Check", {Call: (self, install := false) => checks.Push(install)})
+        try {
+            App._HandleCommandLine(["-Update"])
+            App._HandleCommandLine(["-Update"], true)
+            eq("-Update: at start-up / handed over", checks.Length = 2 ? checks[1] "|" checks[2] : checks.Length, "1|0")
+        } finally
+            UpdateChecker.DefineProp("Check", savedCheck)
     }
 
     ; an icon being read: when the UI asks again it isn't queued twice (slow icons used to be read twice)
@@ -979,10 +1001,11 @@ class CoreTests {
         }
 
         ; Check for updates: the release info is handled after it has downloaded (a fake reply)
-        savedState := [UpdateChecker.StateFile, UpdateChecker.Pending]
+        savedState := [UpdateChecker.StateFile, UpdateChecker.Pending, UpdateChecker.TempDir]
         root := A_Temp "\ALTRun-test-update-async"
         try DirDelete(root, true)
-        UpdateChecker.StateFile := root "\Update.json"
+        eq("update: downloaded next to the program, not in %TEMP%", savedState[3], A_ScriptDir "\Update.tmp")
+        UpdateChecker.StateFile := root "\Update.json", UpdateChecker.TempDir := root "\Update.tmp"
         fakes := []
         HttpGet.NewRequest := () => (fakes.Push(r := FakeHttpRequest()), r)
         HttpGet.NewFollowRequest := HttpGet.NewRequest
@@ -1015,6 +1038,7 @@ class CoreTests {
                 TestUtil.WaitFor(() => asked.Length)
                 eq("install: wrong checksum -> not installed, page offered", asked.Length && InStr(asked[1], I18n.T("Update.Corrupt")) > 0, true)
                 eq("install: window closed", UpdateChecker._installing "|" WinExist("ahk_id " hwnd), "|0")
+                eq("install failed: nothing left in the update folder", FileExist(UpdateChecker.TempDir), "")
 
                 UpdateChecker.Install(release)                                  ; Cancel: the download stops, its folder is deleted
                 job := UpdateChecker._installing, n := fakes.Length, hwnd := job.Progress.Hwnd
@@ -1079,7 +1103,7 @@ class CoreTests {
             }
         } finally {
             HttpGet.NewRequest := saved[1], HttpGet.PollMs := saved[2], HttpGet.NewFollowRequest := saved[3]
-            UpdateChecker.StateFile := savedState[1], UpdateChecker.Pending := savedState[2]
+            UpdateChecker.StateFile := savedState[1], UpdateChecker.Pending := savedState[2], UpdateChecker.TempDir := savedState[3]
             try DirDelete(root, true)
         }
 

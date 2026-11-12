@@ -40,6 +40,42 @@ class EverythingTests {
         eq("closed", Everything.IsRunning(), false)
     }
 
+    ; The reply is read only within its size: a count or an offset or a length past the end gives no results (another program
+    ; can send a WM_COPYDATA with a matching id)
+    static MalformedReply() {
+        eq := (n, a, e) => TestRunner.Equal("EverythingMalformed." n, a, e)
+        list(paths, size := 0) {                                            ; EVERYTHING_IPC_LIST2: 5 DWORDs, {flags, offset} per item, then length + UTF-16 path
+            need := 20 + paths.Length * 8
+            for item in paths
+                need += 4 + StrLen(item) * 2
+            buf := Buffer(Max(need, size), 0), NumPut("UInt", paths.Length, buf, 4)
+            offset := 20 + paths.Length * 8
+            for index, item in paths {
+                NumPut("UInt", index = 2 ? 1 : 0, "UInt", offset, buf, 20 + (index - 1) * 8)
+                NumPut("UInt", StrLen(item), buf, offset), StrPut(item, buf.Ptr + offset + 4, StrLen(item), "UTF-16")
+                offset += 4 + StrLen(item) * 2
+            }
+            return buf
+        }
+        paths(results) {
+            text := ""
+            for r in results
+                text .= r.Path (r.IsFolder ? "\" : "") "|"
+            return text
+        }
+        good := list(["C:\a.txt", "D:\项目"])
+        eq("well formed", paths(Everything.ParseList(good.Ptr, good.Size)), "C:\a.txt|D:\项目\|")
+        eq("size cut short", paths(Everything.ParseList(good.Ptr, good.Size - 2)), "")
+        eq("smaller than the header", paths(Everything.ParseList(good.Ptr, 12)), "")
+        eq("no data", paths(Everything.ParseList(0, 0)), "")
+        bad := list(["C:\a.txt"]), NumPut("UInt", 1000000, bad, 4)
+        eq("count past the end", paths(Everything.ParseList(bad.Ptr, bad.Size)), "")
+        bad := list(["C:\a.txt"]), NumPut("UInt", 0xFFFFFFF0, bad, 24)
+        eq("offset past the end", paths(Everything.ParseList(bad.Ptr, bad.Size)), "")
+        bad := list(["C:\a.txt"]), NumPut("UInt", 0x7FFFFFFF, bad, 28)
+        eq("length past the end", paths(Everything.ParseList(bad.Ptr, bad.Size)), "")
+    }
+
     ; A reply coming later is waited for; none at all ends at the timeout, with the reason
     static Waiting() {
         eq := (n, a, e) => TestRunner.Equal("EverythingWaiting." n, a, e)

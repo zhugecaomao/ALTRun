@@ -924,9 +924,7 @@ class QuickSwitch {
     static _OnTotalCmdReply(wParam, lParam, msg, hwnd) {
         if (!QuickSwitch._tcWaiting || NumGet(lParam, 0, "UPtr") != Ord("R") + 256 * Ord("W"))
             return                                                              ; not the reply waited for: leave it to other handlers (Everything)
-        size := NumGet(lParam, A_PtrSize, "UInt"), data := NumGet(lParam, A_PtrSize * 2, "Ptr")
-        reply := (data && size >= 2) ? StrGet(data, size // 2, "UTF-16") : ""  ; up to the terminating 0
-        QuickSwitch._tcReply := reply, QuickSwitch._tcWaiting := false
+        QuickSwitch._tcReply := Win.CopyDataText(lParam), QuickSwitch._tcWaiting := false
         return true
     }
 

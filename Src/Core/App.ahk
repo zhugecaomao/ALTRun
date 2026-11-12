@@ -10,7 +10,7 @@
 ;   -Reloaded       after reloading (saved settings etc.); doesn't show the search window
 ;   -Preferences N [X Y]  after reloading, open page N of Preferences (at X, Y: "Apply" was clicked in Preferences)
 ;   -SendTo <path...>  Explorer's "Send to" menu: add the files / folders as custom commands (one opens the edit dialog)
-;   -Update         check for updates and install a new version right away (without asking)
+;   -Update         check for updates and install a new version right away (asks first when ALTRun is already running and gets it handed over)
 ;   -Updated <version>  the new version started by a one-click update: says it was updated; doesn't show the search window
 ;
 ; Only one ALTRun runs: when one is already running, a new one hands it the command-line arguments (double-clicking the exe = show
@@ -26,7 +26,7 @@
 
 class App {
     static Name    := "ALTRun"
-    static Version := "2026.11.11.11"
+    static Version := "2026.11.11.12"
     static RepoUrl := "https://github.com/zhugecaomao/ALTRun"
     static Website := "https://zhugecaomao.github.io/ALTRun/"
     static IconFile := A_ScriptDir "\Resources\ALTRun.ico"                    ; tray, windows, shortcuts (the compiled exe has the same icon)
@@ -209,11 +209,9 @@ class App {
         if (NumGet(lParam, 0, "UPtr") != App.CopyDataId)
             return                                                          ; not for us (replies from Everything, TC)
         args := []
-        if NumGet(lParam, A_PtrSize, "UInt") {
-            for arg in StrSplit(StrGet(NumGet(lParam, A_PtrSize * 2, "Ptr"), "UTF-16"), "`n")
-                if (arg != "")
-                    args.Push(arg)
-        }
+        for arg in StrSplit(Win.CopyDataText(lParam), "`n")                ; within the length given, at most 32768 characters (the longest command line)
+            if (arg != "")
+                args.Push(arg)
         Logger.Debug("App: arguments from a new instance: " (args.Length ? args[1] " (" args.Length ")" : "none"))
         SetTimer(() => App._HandleCommandLine(args, true), -1)              ; reply first (the sender is waiting), then handle it: it may open an edit dialog
         return 1
@@ -764,8 +762,8 @@ class App {
             App.CapsLockNotice(args[2] = "1")
             return
         }
-        if (args.Length >= 1 && args[1] = "-Update") {
-            UpdateChecker.Check(true)
+        if (args.Length >= 1 && args[1] = "-Update") {                     ; handed over to a running ALTRun: any program could have sent it (to one
+            UpdateChecker.Check(!forwarded)                                 ; running as administrator too), so it asks first, like a check from the tray
             return
         }
         if (args.Length >= 1 && args[1] = "-Preferences") {

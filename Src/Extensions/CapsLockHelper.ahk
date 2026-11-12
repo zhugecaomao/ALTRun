@@ -53,8 +53,7 @@ class CapsLockHelper {
     static _OnCopyData(wParam, lParam, msg, hwnd) {
         if (NumGet(lParam, 0, "UPtr") != App.CopyDataId)
             return
-        text := NumGet(lParam, A_PtrSize, "UInt") ? StrGet(NumGet(lParam, A_PtrSize * 2, "Ptr"), "UTF-16") : ""
-        if (Trim(text, "`n") = "-Exit")
+        if (Trim(Win.CopyDataText(lParam, 64), "`n") = "-Exit")
             SetTimer(() => ExitApp(), -1)
         return 1
     }
@@ -108,18 +107,33 @@ class CapsLockHelper {
             command := App.ExePath, arguments := CapsLockHelper.Arg
         else
             command := A_AhkPath, arguments := '"' A_ScriptFullPath '" ' CapsLockHelper.Arg
-        xmlFile := A_Temp "\ALTRunCapsLockHelper.xml"
-        try {
-            try FileDelete(xmlFile)
-            FileAppend(CapsLockHelper.TaskXml(command, arguments, App.ExeDir, CapsLockHelper.UserId()), xmlFile, "UTF-16")
-            code := RunWait('*RunAs schtasks.exe /create /tn "' CapsLockHelper.TaskName '" /xml "' xmlFile '" /f', , "Hide")
-        } catch as e {
-            Logger.Debug("CapsLockHelper: install failed - " e.Message)
-            code := -1
-        }
-        try FileDelete(xmlFile)
+        code := CapsLockHelper.RegisterXml(CapsLockHelper.TaskName, CapsLockHelper.TaskXml(command, arguments, App.ExeDir, CapsLockHelper.UserId()))
         Logger.Debug("CapsLockHelper: schtasks /create -> " code)
         return code = 0
+    }
+
+    ; Registers a task from its XML with schtasks /create run as administrator (UAC confirmed once); schtasks' exit code, -1 when it didn't run.
+    ; schtasks takes the XML only as a file, in %TEMP%, where any program with normal rights can write: rewritten while the UAC prompt is up,
+    ; it would put that program's command into a task with highest privileges. So the file has a name nobody can guess, and from the moment
+    ; it is written until schtasks is done it is held open with a handle that lets others read it but not change, rename or delete it;
+    ; read back through that handle, it must be the XML written. Checked against schtasks on Windows by Tests\Integration\DelayedStartCheck.ahk
+    static RegisterXml(taskName, xml) {
+        xmlFile := A_Temp "\ALTRun-task-" Format("{:08x}{:08x}", Random(0, 0xFFFFFFFF), Random(0, 0xFFFFFFFF)) ".xml"
+        held := ""
+        try {
+            FileAppend(xml, xmlFile, "UTF-16")
+            held := FileOpen(xmlFile, "r-wd", "UTF-16")
+            if (held.Read() !== xml)
+                throw Error("the task file was changed before it could be locked")
+            code := RunWait('*RunAs schtasks.exe /create /tn "' taskName '" /xml "' xmlFile '" /f', , "Hide")
+        } catch as e {
+            Logger.Debug("CapsLockHelper: registering " taskName " failed - " e.Message)
+            code := -1
+        }
+        if IsObject(held)
+            held.Close()
+        try FileDelete(xmlFile)
+        return code
     }
 
     ; Deletes the scheduled task (UAC confirmed once; canceling is fine, it won't run anymore with the option off)
