@@ -53,6 +53,7 @@ Each task has its own window, *<task> - Folder Sync*. Preview and Run open it at
 - A mirror doesn't run when the source folder can't be found or is empty (for example a server share that didn't connect), since that would empty the destination.
 - A task doesn't run when the source and destination are the same folder or one is inside the other, or when a mirror would go into a drive, a share, the OneDrive folder or the user folder (it would delete everything else there).
 - Source and destination must be full paths (`D:\Sync\Projects`, `\\server\share\folder`). A relative path, `\folder` (the root of whichever drive is current) or an environment variable that doesn't exist on this PC (`%OneDrive%` without OneDrive) would make robocopy work in some other folder, so such a task doesn't run.
+- Other robocopy options are used as they are. `/MIR` or `/PURGE` among them deletes like a mirror, so such a task is treated as one whatever its mode says: the same preview that asks before deleting, and every check above. `/MOV` or `/MOVE` (robocopy deletes the files from the source after copying them) is pointed out when you save the task.
 - A mirror can't **keep in sync**: robocopy's later rounds would delete without the checks above (a server share that suddenly looks empty would empty the destination). Keep in sync with **Update**, or run the mirror yourself.
 - **Monitoring** tasks (`/MON`, `/MOT`) keep running and sync again after changes. They stop when ALTRun quits; when ALTRun only restarts (after changing a setting, an update), they keep running.
 

@@ -1113,6 +1113,7 @@ class I18n {
         s["Sync.Problem.DuplicateName"]     := "Sync {1}: another sync task has the same name, so ALTRun can't tell them apart. Rename one of them in Preferences → Folder Sync."
         s["Sync.Warn.Overlap"]              := "Its destination overlaps with the destination of sync task {1}: the two may overwrite or delete each other's files."
         s["Sync.Warn.SameLog"]              := "It writes to the same log file as sync task {1}."
+        s["Sync.Warn.ExtraMoves"]           := "Other options has {1}: robocopy deletes each file from the source folder after copying it."
         s["Sync.Preview.NoSummary"]         := "robocopy wrote no summary. Open the log to see what happened."
         s["Sync.Window.Ready"]              := "Preview shows what a sync would change, without changing anything. Sync Now runs it."
         s["Sync.Preview.CopyFolders"]       := "Would copy {1} of {2} files ({3}) and create {4} folders."

@@ -22,6 +22,7 @@
 ;   RoboSync.Build(task, preview)            -> {Program, Args}; preview: /L (lists what it would do, changes nothing), no monitoring
 ;   RoboSync.Check(task, others)             -> [{Level: "Error" | "Warning", Code, Detail}...]: settings that are wrong or risky
 ;   RoboSync.CheckSource(task)               -> "" / "SourceMissing" / "SourceEmpty": before a mirror (an empty source would empty the destination)
+;   RoboSync.Purges(task)                    a mirror, or /MIR or /PURGE among the other options: the run deletes in the destination
 ;   RoboSync.Result(exitCode)                -> {Ok, Copied, Extras, Mismatched, Failed, Fatal}: robocopy's exit code is a bit mask, < 8 = success
 ;===============================================================================
 
@@ -128,7 +129,8 @@ class RoboSync {
     ; Settings that are wrong (Error: don't run) or risky (Warning), without touching the disk. others: the other tasks, for overlaps.
     ; Codes: NoSource, NoDestination, SamePath, Nested (one folder inside the other), MirrorRoot (a mirror into a drive / share root,
     ; the OneDrive folder or the user folder: it would delete everything else there), Threads (1 to 128), Overlap (another task writes
-    ; into the same folders; Detail = its name), SameLog (another task writes the same log file; Detail = its name),
+    ; into the same folders; Detail = its name), SameLog (another task writes the same log file; Detail = its name), ExtraMoves (the other
+    ; options have /MOV or /MOVE, Detail: robocopy deletes the files from the source after copying them),
     ; SourceNotAbsolute / DestinationNotAbsolute (not D:\... or \\server\share\...: a relative path, or an environment variable that
     ; doesn't exist on this PC and stays as %Name%, would make robocopy work in some other folder), MirrorMonitor (a mirror can't keep
     ; in sync: robocopy's later rounds would delete without the checks ALTRun makes before each run, see SyncJobs), DuplicateName
@@ -146,7 +148,7 @@ class RoboSync {
             add("Error", "NoDestination")
         else if !RoboSync.IsAbsolute(target)
             add("Error", "DestinationNotAbsolute", target)
-        if (RoboSync._Get(task, "Mode") = "Mirror" && RoboSync._Get(task, "Monitor"))
+        if (RoboSync.Purges(task) && RoboSync._Get(task, "Monitor"))
             add("Error", "MirrorMonitor")
         if (source != "" && target != "") {
             if (source = target)
@@ -154,8 +156,10 @@ class RoboSync {
             else if (RoboSync.Inside(source, target) || RoboSync.Inside(target, source))
                 add("Error", "Nested")
         }
-        if (RoboSync._Get(task, "Mode") = "Mirror" && target != "" && RoboSync.IsRootLike(target))
+        if (RoboSync.Purges(task) && target != "" && RoboSync.IsRootLike(target))
             add("Error", "MirrorRoot", target)
+        if ((moves := RoboSync.ExtraSwitch(task, "/MOV", "/MOVE")) != "")    ; the user's own option: said once when saving, not refused
+            add("Warning", "ExtraMoves", moves)
         threads := RoboSync._Get(task, "Threads")
         if (threads != "" && threads != 0 && (!IsInteger(threads) || threads < 1 || threads > 128))
             add("Error", "Threads", threads)
@@ -174,6 +178,20 @@ class RoboSync {
             }
         }
         return problems
+    }
+
+    ; Whether a run deletes in the destination what the source doesn't have: a mirror, or /MIR or /PURGE among the other options
+    ; ("Extra" goes into the command line as it is). Such a task gets everything a mirror gets: the MirrorRoot and MirrorMonitor
+    ; checks, CheckSource, and the preview that asks before deleting (SyncJobs.Run)
+    static Purges(task) => RoboSync._Get(task, "Mode") = "Mirror" || RoboSync.ExtraSwitch(task, "/MIR", "/PURGE") != ""
+
+    ; The first of these robocopy switches among the task's other options (any case), "" when none is there
+    static ExtraSwitch(task, switches*) {
+        for token in RoboSync.Tokens(RoboSync._Get(task, "Extra"))
+            for name in switches
+                if (token = name)
+                    return name
+        return ""
     }
 
     ; Before a mirror runs: the source must be there and hold something, or the mirror would delete everything in the destination

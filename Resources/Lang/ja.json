@@ -545,6 +545,7 @@
   "Sync.Field.CommandCopied": "コマンドをコピーしました",
   "Sync.Problem.SameName": "{1} という名前の同期タスクがすでにあります。",
   "Sync.Problem.DuplicateName": "同期 {1}: 同じ名前の同期タスクがほかにもあるため、ALTRun が区別できません。[環境設定] → [フォルダー同期] でどちらかの名前を変えてください。",
+  "Sync.Warn.ExtraMoves": "その他のオプションに {1} があります: robocopy はコピー後、コピー元フォルダーのファイルを削除します。",
   "Sync.Warn.Overlap": "コピー先が同期タスク {1} のコピー先と重なっています。互いのファイルを上書き・削除するおそれがあります。",
   "Sync.Warn.SameLog": "同期タスク {1} と同じログファイルに書き込みます。",
   "Sync.Preview.NoSummary": "robocopy の集計がありません。ログを開いて確認してください。",

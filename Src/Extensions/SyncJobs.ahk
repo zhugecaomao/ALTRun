@@ -5,7 +5,8 @@
 ; while something runs) whether it ended, then reads its exit code (RoboSync.Result: < 8 = success).
 ;
 ; Run (search: "sync <name>", Enter):
-;   - the settings are checked first (RoboSync.Check); a mirror also needs a source that exists and isn't empty (CheckSource)
+;   - the settings are checked first (RoboSync.Check); a mirror also needs a source that exists and isn't empty (CheckSource).
+;     A task with /MIR or /PURGE among its other options counts as a mirror here and below (RoboSync.Purges)
 ;   - the sync window (SyncPreview) opens at once and follows it: what robocopy finds and copies, read from its log as it is written
 ;     (SyncProgress), a progress bar, the result
 ;   - a mirror is previewed first (/L, which changes nothing): when it would delete anything in the destination, the window lists
@@ -47,7 +48,7 @@ class SyncJobs {
         name := task["Name"]
         if (problem := SyncJobs._Problem(task, false))
             return SyncJobs._Tell(problem, name)
-        if (task["Mode"] != "Mirror")
+        if !RoboSync.Purges(task)                                           ; a mirror, or /MIR / /PURGE among the other options
             return SyncJobs.RunNow(task)
         problem := SyncJobs.Start(task, true, (job, code) => SyncJobs._AfterCheck(task, job, code))
         if (problem != "")
@@ -154,7 +155,7 @@ class SyncJobs {
         for problem in RoboSync.Check(task, SyncJobs._Others(task))          ; with the other tasks: a duplicate name (see RoboSync.Check)
             if (problem.Level = "Error")
                 return problem.Code
-        if (!preview && task["Mode"] = "Mirror")
+        if (!preview && RoboSync.Purges(task))
             return RoboSync.CheckSource(task)
         return ""
     }
